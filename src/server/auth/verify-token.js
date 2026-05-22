@@ -1,21 +1,29 @@
 import Jwt from '@hapi/jwt'
 import Wreck from '@hapi/wreck'
-import jose from 'node-jose'
 import { getOidcConfig } from './get-oidc-config.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { createPublicKey } from 'node:crypto'
 
+/**
+ * Verify a Defra Identity access token against the OIDC JWKS endpoint.
+ * @param {string} token
+ * @returns {Promise<void>}
+ */
 async function verifyToken(token) {
   try {
     const keys = await fetchJwksKeys()
-    const key = await convertJwkToPem(keys)
-    const decoded = verifyTokenSignature(token, key)
+    const pem = convertJwkToPem(keys)
+    const decoded = verifyTokenSignature(token, pem)
     logSuccessfulVerification(decoded)
   } catch (error) {
-    handleVerificationError(error, token)
+    handleVerificationError(/** @type {ErrorResponse} */ (error), token)
     throw error
   }
 }
 
+/**
+ * @returns {Promise<Record<string, unknown>[]>} the `keys` array from the JWKS document
+ */
 async function fetchJwksKeys() {
   const { jwks_uri: uri } = await getOidcConfig()
   const { payload } = await Wreck.get(uri, { json: true })
@@ -33,16 +41,29 @@ async function fetchJwksKeys() {
   return keys
 }
 
+/**
+ * @param {Record<string, unknown>[]} keys - raw JWKS `keys` array
+ * @returns {string}
+ */
 function convertJwkToPem(keys) {
-  return jose.JWK.asKey(keys[0])
+  return createPublicKey({ key: keys[0], format: 'jwk' }).export({ format: 'pem', type: 'spki' })
 }
 
-function verifyTokenSignature(token, key) {
+/**
+ * @param {string} token
+ * @param {string} pem
+ * @returns {import('@hapi/jwt').HapiJwt.Artifacts}
+ */
+function verifyTokenSignature(token, pem) {
   const decoded = Jwt.token.decode(token)
-  Jwt.token.verify(decoded, { key: key.toPEM(), algorithm: 'RS256' })
+  Jwt.token.verify(decoded, { key: pem, algorithm: 'RS256' })
   return decoded
 }
 
+/**
+ * @param {DecodedToken} decoded - JWT artifacts (defensively read in two shapes)
+ * @returns {void}
+ */
 function logSuccessfulVerification(decoded) {
   const tokenPayload = decoded.decoded?.payload || decoded['payload'] || {}
   const userId = tokenPayload.contactId || 'unknown'
@@ -54,11 +75,16 @@ function logSuccessfulVerification(decoded) {
   })
 }
 
+/**
+ * @param {ErrorResponse} error
+ * @param {string} token
+ */
 function handleVerificationError(error, token) {
   let userId = 'unknown'
   let step = 'unknown'
 
   try {
+    /** @type {DecodedToken} */
     const decoded = Jwt.token.decode(token)
     const tokenPayload = decoded.decoded?.payload || decoded['payload'] || {}
     userId = tokenPayload.contactId || 'unknown'
@@ -78,6 +104,11 @@ function handleVerificationError(error, token) {
   error.alreadyLogged = true
 }
 
+/**
+ * @param {Error} error
+ * @param {string} defaultStep
+ * @returns {string}
+ */
 function determineVerificationStep(error, defaultStep) {
   if (error.message.includes('JWKS')) {
     return 'jwks_fetch'
@@ -93,3 +124,9 @@ function determineVerificationStep(error, defaultStep) {
 }
 
 export { verifyToken }
+
+/**
+ * @typedef {Error & { alreadyLogged?: boolean }} ErrorResponse
+ *
+ * @typedef {{ decoded?: { payload?: any }, payload?: any }} DecodedToken
+ */

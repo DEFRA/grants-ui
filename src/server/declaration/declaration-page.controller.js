@@ -10,6 +10,14 @@ import { handleGasApiError } from '~/src/server/common/helpers/gas-error-message
 import { log, LogCodes } from '../common/helpers/logging/log.js'
 import { getTaskPageBackLink } from '~/src/server/task-list/task-list.helper.js'
 import { getGrantCode } from '../common/helpers/grant-code.js'
+import { transformWoodlandAnswers } from '~/src/server/woodland/mappers/state-to-gas-answers-mapper.js'
+import { requireCsSubmitPermission } from '~/src/server/common/helpers/permissions/guards/require-cs-submit-permission.js'
+import { getReturnToApplicationPath } from '../common/helpers/permissions/guards/require-permission.js'
+
+/** @type {Record<string, (submissionState: Record<string, unknown>, rawState: Record<string, unknown>) => object>} */
+const answerTransformers = {
+  woodland: transformWoodlandAnswers
+}
 
 export default class DeclarationPageController extends SummaryPageController {
   /**
@@ -55,8 +63,8 @@ export default class DeclarationPageController extends SummaryPageController {
 
   /**
    * Gets the path to the status page (in this case /confirmation page) for the POST handler.
-   * @param {object} request - The request object containing the URL info
-   * @param {object} [context] - The context object which may contain form state
+   * @param {AnyFormRequest} [request] - The request object containing the URL info
+   * @param {FormContext} [context] - The context object which may contain form state
    * @returns {string} path to the status page
    */
   getStatusPath(request, context) {
@@ -115,7 +123,10 @@ export default class DeclarationPageController extends SummaryPageController {
       ...declarationPayload
     }
 
-    return transformStateObjectToGasApplication(identifiers, submissionState, (s) => s)
+    const grantCode = getGrantCode(request)
+    const transformAnswers = answerTransformers[grantCode] ?? ((s) => s)
+
+    return transformStateObjectToGasApplication(identifiers, submissionState, (s) => transformAnswers(s, state))
   }
 
   async handleSuccessfulSubmission({ request, context, cacheService, applicationData, sbi, crn, grantCode }) {
@@ -181,6 +192,11 @@ export default class DeclarationPageController extends SummaryPageController {
 
   makePostRouteHandler() {
     return async (request, context, h) => {
+      const returnUrl = getReturnToApplicationPath(this.model, request.params.slug ? `/${request.params.slug}` : '')
+      const permissionResult = requireCsSubmitPermission(request, h, { returnUrl })
+      if (permissionResult !== h.continue) {
+        return permissionResult
+      }
       const { sbi, crn } = request.auth.credentials
       storeSlugInContext(request, context, 'DeclarationController')
 

@@ -87,7 +87,7 @@ describe('updateApplicationStatus', () => {
       expect(fetch).toHaveBeenCalledTimes(1)
       const [calledUrl, options] = fetch.mock.calls[0]
       expect(calledUrl).toBe(
-        new URL(`/state/${TEST_USER_IDS.ORGANISATION_ID}/${TEST_USER_IDS.GRANT_ID}`, TEST_BACKEND_URL).href
+        new URL(`/state/${TEST_USER_IDS.ORGANISATION_ID}/${TEST_USER_IDS.GRANT_ID}/1.0.0`, TEST_BACKEND_URL).href
       )
       expect(options).toEqual(
         expect.objectContaining({

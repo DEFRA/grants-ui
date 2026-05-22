@@ -41,7 +41,7 @@
           <li>the Rural Payments Agency confirms your start date</li>
         </ul>
 
-        {{ defraSupportDetails({ typeOfSupport: 'question' }) }}
+        {{ defraSupportDetails({ typeOfSupport: 'question', email: supportEmail }) }}
       {% endif %}
   {% endcall %}
 {% endblock %}

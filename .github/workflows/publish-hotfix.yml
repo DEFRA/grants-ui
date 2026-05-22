@@ -33,6 +33,7 @@ jobs:
           npm run format:check
           npm run lint
           npm test
+          npm run test:contracts
 
       - name: Publish Hot Fix
         uses: DEFRA/cdp-build-action/build-hotfix@main

@@ -2,6 +2,11 @@ import crypto from 'node:crypto'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 
+/**
+ * Generate a fresh base64-encoded state token and stash it on the session.
+ * @param {AnyRequest} request
+ * @returns {string}
+ */
 function createState(request) {
   // Generate a unique state value and store it in the session
   // Defra Identity will pass this value back to the application during redirection
@@ -12,6 +17,12 @@ function createState(request) {
   return state
 }
 
+/**
+ * Verify the returned OAuth state matches the value stored on the session.
+ * @param {AnyRequest} request
+ * @param {unknown} state
+ * @throws {Error} when state is missing or mismatched
+ */
 function validateState(request, state) {
   const storedState = request.yar.get('state')
 
@@ -33,3 +44,7 @@ function validateState(request, state) {
 }
 
 export { createState, validateState }
+
+/**
+ * @import { AnyRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ */

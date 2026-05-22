@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 import defraId from './defra-id.js'
 import landGrants from './land-grants.js'
 import agreements from './agreements.js'
+import externalLinks from './external-links.js'
 import { sessionSchema } from './session.js'
 import { redisSchema } from './redis.js'
 import { rateLimitSchema } from './rate-limit.js'
@@ -302,7 +303,8 @@ export const config = convict({
   ...{
     defraId: defraId.getProperties(),
     landGrants: landGrants.getProperties(),
-    agreements: agreements.getProperties()
+    agreements: agreements.getProperties(),
+    externalLinks: externalLinks.getProperties()
   }
 })
 

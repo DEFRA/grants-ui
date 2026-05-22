@@ -1,16 +1,23 @@
 import { formatAnswer } from './utils/format-answer.js'
-import { DISPLAY_ONLY_TYPES, COMPONENT_TYPES } from './constants.js'
+import { COMPONENT_TYPES, DISPLAY_ONLY_TYPES } from './constants.js'
 import { buildPrintPaymentViewModel } from './utils/build-print-payment-view-model.js'
 import { ComponentsRegistry } from '../../../confirmation/services/components.registry.js'
 
-const COMPOSITE_FIELD_PARTS = {
+export const COMPOSITE_FIELD_PARTS = {
   [COMPONENT_TYPES.DatePartsField]: ['day', 'month', 'year'],
   [COMPONENT_TYPES.MonthYearField]: ['month', 'year'],
-  [COMPONENT_TYPES.UkAddressField]: ['addressLine1', 'addressLine2', 'town', 'county', 'postcode']
+  [COMPONENT_TYPES.UkAddressField]: ['addressLine1', 'addressLine2', 'town', 'county', 'postcode'],
+  [COMPONENT_TYPES.EastingNorthingField]: ['easting', 'northing'],
+  [COMPONENT_TYPES.LatLongField]: ['latitude', 'longitude']
 }
 
 /**
- * @typedef {{ type: string, name: string, title: string, list?: string, items?: Array<{text: string, value: string | number | boolean}> }} FormComponent
+ * @import { PrintPayment } from './types/print-payment.d.js'
+ */
+
+/**
+ * @typedef {{ text: string, value: string | number | boolean }} ListItem
+ * @typedef {{ type: string, name: string, title: string, shortDescription?: string, list?: string, items?: ListItem[] }} FormComponent
  * @typedef {{ title: string, components?: FormComponent[] }} FormPage
  * @typedef {{ pages?: FormPage[] }} FormDefinition
  * @typedef {{ title: string, path?: string, slug: string, id: string }} FormMeta
@@ -45,6 +52,7 @@ function resolveAnswer(component, answers) {
     return undefined
   }
 
+  /** @type {Record<string, unknown>} */
   const assembled = {}
   let hasValue = false
 
@@ -75,7 +83,7 @@ function extractQuestions(components, answers) {
       return rawAnswer !== undefined && rawAnswer !== null
     })
     .map((component) => ({
-      label: component.title,
+      label: component.shortDescription || component.title || '',
       answer: formatAnswer(component, resolveAnswer(component, answers))
     }))
 }
@@ -97,7 +105,7 @@ function buildSections(pages, answers) {
 
 /**
  * Resolves list UUID references on components to actual items arrays.
- * @param {FormDefinition & { lists?: { id?: string, items?: object[] }[] }} definition - Parsed YAML form definition
+ * @param {FormDefinition & { lists?: { id?: string, items?: ListItem[] }[] }} definition - Parsed YAML form definition
  * @returns {FormDefinition} The same definition, with list items resolved on components
  */
 export function enrichDefinitionWithListItems(definition) {
@@ -112,8 +120,8 @@ export function enrichDefinitionWithListItems(definition) {
 
 /**
  * Builds a Map of list ID → items from the definition's lists array.
- * @param {{ id?: string, items?: object[] }[]} lists
- * @returns {Map<string, object[]>}
+ * @param {{ id?: string, items?: ListItem[] }[]} lists
+ * @returns {Map<string, ListItem[]>}
  */
 function buildListsMap(lists) {
   const listsById = new Map()
@@ -130,7 +138,7 @@ function buildListsMap(lists) {
 /**
  * Resolves list UUID references on components to actual items arrays.
  * @param {FormComponent[]} components
- * @param {Map<string, object[]>} listsById
+ * @param {Map<string, ListItem[]>} listsById
  */
 function resolveComponentLists(components, listsById) {
   for (const component of components) {
@@ -177,7 +185,7 @@ export function buildPrintViewModel({
     },
     applicantDetailsSections,
     sections: buildSections(definition.pages, answers),
-    paymentInfo: buildPrintPaymentViewModel(answers.payment),
+    paymentInfo: buildPrintPaymentViewModel(/** @type {PrintPayment | undefined} */ (answers.payment)),
     configurablePrintContent,
     breadcrumbs: []
   }
@@ -186,9 +194,9 @@ export function buildPrintViewModel({
 /**
  * Processes configurablePrintContent from YAML metadata — replaces component placeholders
  * and {{SLUG}} tokens.
- * @param {object | undefined} configurablePrintContent
+ * @param {{ html?: string } | undefined} configurablePrintContent
  * @param {string} slug
- * @returns {object | undefined}
+ * @returns {{ html: string } | undefined}
  */
 export function processConfigurablePrintContent(configurablePrintContent, slug) {
   if (!configurablePrintContent?.html) {

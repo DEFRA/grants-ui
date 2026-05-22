@@ -1,14 +1,10 @@
 # Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities
 version: v1.25.0
 ignore:
-  'SNYK-JS-AJV-15274295':
-    - '*':
-        reason: 'Not exploitable in this repo: Ajv instantiated with $data disabled (default)'
-        expires: '2026-05-01'
   'SNYK-JS-INFLIGHT-6095116':
     - '*':
         reason: 'No upgrade or patch available'
-        expires: '2026-05-01'
+        expires: '2026-07-01'
   'SNYK-JS-CONVICT-15182994':
     - '*':
         reason: 'No upgrade or patch available — persists in 6.2.5'

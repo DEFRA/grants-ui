@@ -86,7 +86,8 @@ export class ConfirmationService {
       confirmationContent,
       serviceName: title,
       serviceUrl: url,
-      breadcrumbs: []
+      breadcrumbs: [],
+      supportEmail: form?.metadata?.supportEmail ?? null
     }
 
     if (isDevelopmentMode) {

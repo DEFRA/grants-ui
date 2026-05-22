@@ -14,6 +14,8 @@ updates:
     ignore:
       - dependency-name: "stylelint"
         update-types: ["version-update:semver-major"]
+      - dependency-name: "@pact-foundation/pact"
+        versions: [">=16.0.0"]
     groups:
       weekly-dependencies:
         patterns:

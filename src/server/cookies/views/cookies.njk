@@ -70,7 +70,8 @@
         ]
       }) }}
 
-      <form id="cookie-preferences-form" method="POST" data-cookie-name="{{ cookieConsentName }}" data-expiry-days="{{ cookieConsentExpiryDays }}" data-ga-tracking-id="{{ gaTrackingId }}" data-referrer="{{ referrer }}">
+      <form id="cookie-preferences-form" action="/cookies" method="POST" data-cookie-name="{{ cookieConsentName }}" data-expiry-days="{{ cookieConsentExpiryDays }}" data-ga-tracking-id="{{ gaTrackingId }}" data-referrer="{{ referrer }}">
+        <input type="hidden" name="crumb" value="{{ crumb }}">
         <input type="hidden" name="returnUrl" value="{{ referrer }}">
 
         {{ govukRadios({
@@ -85,12 +86,14 @@
             {
               value: "yes",
               text: "Yes",
-              id: "analytics-yes"
+              id: "analytics-yes",
+              checked: analyticsConsent === true
             },
             {
               value: "no",
               text: "No",
-              id: "analytics-no"
+              id: "analytics-no",
+              checked: analyticsConsent === false
             }
           ]
         }) }}

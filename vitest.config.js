@@ -8,7 +8,7 @@ export default {
     environment: 'jsdom',
     setupFiles: ['./.vitest/setup-file.js'],
     include: ['**/src/**/*.test.js'],
-    exclude: ['**/node_modules/**', '**/.stryker-tmp/**'],
+    exclude: ['**/node_modules/**', '**/.stryker-tmp/**', '**/*.contract.test.js'],
     env: {
       GAS_API_AUTH_TOKEN: '00000000-0000-0000-0000-000000000000'
     },

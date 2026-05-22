@@ -1,8 +1,9 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { textFormatter } from './text.formatter.js'
 import { fullNameFormatter } from './full-name.formatter.js'
 import { addressFormatter } from './address.formatter.js'
 import { contactDetailsFormatter } from './contact-details.formatter.js'
+import { phoneNumbersFormatter } from './phone-numbers.formatter.js'
 import { getFormatter } from './index.js'
 
 describe('textFormatter', () => {
@@ -78,12 +79,37 @@ describe('contactDetailsFormatter', () => {
   })
 })
 
+describe('phoneNumbersFormatter', () => {
+  it('should format landline and mobile with prefixes and line break', () => {
+    expect(phoneNumbersFormatter({ landline: '01234567890', mobile: '07700900000' })).toEqual({
+      html: 'Telephone: 01234 567890<br/>Mobile: 07700 900000'
+    })
+  })
+
+  it('should format landline only', () => {
+    expect(phoneNumbersFormatter({ landline: '01234567890' })).toEqual({
+      html: 'Telephone: 01234 567890'
+    })
+  })
+
+  it('should format mobile only', () => {
+    expect(phoneNumbersFormatter({ mobile: '07700900000' })).toEqual({
+      html: 'Mobile: 07700 900000'
+    })
+  })
+
+  it.each([null, undefined, {}, { landline: '', mobile: '' }, 'string'])('should return null for %s', (input) => {
+    expect(phoneNumbersFormatter(input)).toBeNull()
+  })
+})
+
 describe('getFormatter', () => {
   it.each([
     ['text', textFormatter],
     ['fullName', fullNameFormatter],
     ['address', addressFormatter],
-    ['contactDetails', contactDetailsFormatter]
+    ['contactDetails', contactDetailsFormatter],
+    ['phoneNumbers', phoneNumbersFormatter]
   ])('should return correct formatter for "%s"', (name, expected) => {
     expect(getFormatter(name)).toBe(expected)
   })

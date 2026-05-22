@@ -70,7 +70,7 @@ export function createContactRows(business) {
   return buildRows([
     { label: 'Landline number', value: formatPhone(business?.landlinePhoneNumber) },
     { label: 'Mobile number', value: formatPhone(business?.mobilePhoneNumber) },
-    { label: 'Email address', value: business?.email }
+    { label: 'Email address', value: business?.email?.address ?? business?.email }
   ])
 }
 

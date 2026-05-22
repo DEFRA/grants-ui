@@ -1,18 +1,12 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import jwt from 'jsonwebtoken'
 import { ApiFormService } from './api-form-service.js'
+import { getFormDef, setFormDef, setFormMeta, setSlugReverse } from './forms-redis.js'
+import { logger } from '~/src/server/common/helpers/logging/log.js'
 
 vi.mock('jsonwebtoken', () => ({
   default: {
     sign: vi.fn(() => 'mock-token')
-  }
-}))
-
-vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  logger: {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn()
   }
 }))
 
@@ -24,7 +18,7 @@ vi.mock('./forms-redis.js', () => ({
 }))
 
 const mockFetch = vi.fn()
-global.fetch = mockFetch
+globalThis.fetch = mockFetch
 
 describe('ApiFormService', () => {
   let service
@@ -75,7 +69,7 @@ describe('ApiFormService', () => {
       const result = await service.fetchFormMetadata('my-form')
 
       expect(service.apiFetch).toHaveBeenCalledWith('/forms/slug/my-form')
-      expect(result).toEqual({ id: 'api-id', slug: 'my-form', title: 'My Form', metadata: {}, source: 'api' })
+      expect(result).toEqual({ id: 'api-id', slug: 'my-form', title: 'My Form', source: 'api' })
     })
   })
 
@@ -97,7 +91,6 @@ describe('ApiFormService', () => {
       const configuredDef = { name: 'configured', pages: [] }
       vi.spyOn(service, 'fetchFormDefinition').mockResolvedValue(rawDef)
       const configure = vi.fn().mockReturnValue(configuredDef)
-      const { setFormDef } = await import('./forms-redis.js')
 
       const result = await service.fetchAndCacheDefinition({}, 'my-form', configure)
 
@@ -110,7 +103,6 @@ describe('ApiFormService', () => {
   describe('getFormDefinition', () => {
     test('returns the cached definition when Redis has a hit', async () => {
       const cached = { name: 'cached', pages: [] }
-      const { getFormDef } = await import('./forms-redis.js')
       vi.mocked(getFormDef).mockResolvedValue(cached)
 
       const result = await service.getFormDefinition({}, 'my-form', vi.fn())
@@ -119,7 +111,6 @@ describe('ApiFormService', () => {
     })
 
     test('fetches and caches when Redis returns null', async () => {
-      const { getFormDef } = await import('./forms-redis.js')
       vi.mocked(getFormDef).mockResolvedValue(null)
       const fetched = { name: 'fetched', pages: [] }
       vi.spyOn(service, 'fetchAndCacheDefinition').mockResolvedValue(fetched)
@@ -141,15 +132,44 @@ describe('ApiFormService', () => {
       const configure = vi.fn((d) => d)
       const validateWhitelist = vi.fn()
       const validateRedirect = vi.fn()
-      const { setFormMeta, setFormDef, setSlugReverse } = await import('./forms-redis.js')
+      const validateDetailsPage = vi.fn()
 
-      await service.loadAll({}, ['my-form'], {}, configure, validateWhitelist, validateRedirect)
+      await service.loadAll({}, ['my-form'], {}, configure, validateWhitelist, validateRedirect, validateDetailsPage)
 
       expect(configure).toHaveBeenCalledWith(definition)
       expect(validateWhitelist).toHaveBeenCalledWith({ title: 'My Form' }, definition)
       expect(validateRedirect).toHaveBeenCalledWith({ title: 'My Form' }, definition)
+      expect(validateDetailsPage).toHaveBeenCalledWith({ title: 'My Form' }, definition)
       expect(setFormMeta).toHaveBeenCalledWith({}, 'my-form', entry)
       expect(setFormDef).toHaveBeenCalledWith({}, 'my-form', definition, 300)
+      expect(setSlugReverse).toHaveBeenCalledWith({}, 'api-id', 'my-form')
+    })
+
+    test('hoists config section if present on a page', async () => {
+      const entry = { id: 'api-id', slug: 'my-form', title: 'My Form', metadata: {}, source: 'api' }
+      const definition = {
+        name: 'my-form',
+        metadata: { grantRedirectRules: {} },
+        pages: [{ path: 'mypage', config: { item: 'value' } }]
+      }
+      vi.spyOn(service, 'fetchFormMetadata').mockResolvedValue(entry)
+      vi.spyOn(service, 'fetchFormDefinition').mockResolvedValue(definition)
+      const configure = vi.fn((d) => d)
+      const validateWhitelist = vi.fn()
+      const validateRedirect = vi.fn()
+      const validateDetailsPage = vi.fn()
+
+      await service.loadAll({}, ['my-form'], {}, configure, validateWhitelist, validateRedirect, validateDetailsPage)
+
+      expect(configure).toHaveBeenCalledWith(definition)
+      expect(validateWhitelist).toHaveBeenCalledWith({ title: 'My Form' }, definition)
+      expect(validateRedirect).toHaveBeenCalledWith({ title: 'My Form' }, definition)
+      expect(validateDetailsPage).toHaveBeenCalledWith({ title: 'My Form' }, definition)
+      expect(setFormMeta).toHaveBeenCalledWith({}, 'my-form', {
+        ...entry,
+        metadata: { grantRedirectRules: {}, pageConfig: { mypage: { item: 'value' } } }
+      })
+      expect(setFormDef).toHaveBeenCalledWith({}, 'my-form', { ...definition, pages: [{ path: 'mypage' }] }, 300)
       expect(setSlugReverse).toHaveBeenCalledWith({}, 'api-id', 'my-form')
     })
 
@@ -165,7 +185,7 @@ describe('ApiFormService', () => {
       const configure = vi.fn((d) => d)
       const sharedRules = { preSubmission: [{ toPath: '/shared-start' }] }
 
-      await service.loadAll({}, ['my-form'], sharedRules, configure, vi.fn(), vi.fn())
+      await service.loadAll({}, ['my-form'], sharedRules, configure, vi.fn(), vi.fn(), vi.fn())
 
       expect(definition.metadata.grantRedirectRules).toMatchObject({
         preSubmission: [{ toPath: '/shared-start' }],
@@ -178,7 +198,6 @@ describe('ApiFormService', () => {
       const definition = { name: 'my-form', metadata: { whitelistCrnEnvVar: 'SOME_VAR' }, pages: [] }
       vi.spyOn(service, 'fetchFormMetadata').mockResolvedValue(entry)
       vi.spyOn(service, 'fetchFormDefinition').mockResolvedValue(definition)
-      const { setFormMeta } = await import('./forms-redis.js')
 
       await service.loadAll(
         {},
@@ -186,20 +205,21 @@ describe('ApiFormService', () => {
         {},
         vi.fn((d) => d),
         vi.fn(),
+        vi.fn(),
         vi.fn()
       )
 
       expect(setFormMeta).toHaveBeenCalledWith(
         {},
         'my-form',
-        expect.objectContaining({ metadata: expect.objectContaining({ whitelistCrnEnvVar: 'SOME_VAR' }) })
+        expect.objectContaining({ id: 'api-id', slug: 'my-form', title: 'My Form', source: 'api' })
       )
     })
 
     test('does nothing when slugs array is empty', async () => {
       vi.spyOn(service, 'fetchFormMetadata')
 
-      await service.loadAll({}, [], {}, vi.fn(), vi.fn(), vi.fn())
+      await service.loadAll({}, [], {}, vi.fn(), vi.fn(), vi.fn(), vi.fn())
 
       expect(service.fetchFormMetadata).not.toHaveBeenCalled()
     })
@@ -207,9 +227,10 @@ describe('ApiFormService', () => {
     test('throws and logs when a fetch fails', async () => {
       vi.spyOn(service, 'fetchFormMetadata').mockRejectedValue(new Error('API unavailable'))
       vi.spyOn(service, 'fetchFormDefinition').mockRejectedValue(new Error('API unavailable'))
-      const { logger } = await import('~/src/server/common/helpers/logging/log.js')
 
-      await expect(service.loadAll({}, ['bad-form'], {}, vi.fn(), vi.fn(), vi.fn())).rejects.toThrow('API unavailable')
+      await expect(service.loadAll({}, ['bad-form'], {}, vi.fn(), vi.fn(), vi.fn(), vi.fn())).rejects.toThrow(
+        'API unavailable'
+      )
       expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Failed to load API form "bad-form"'))
     })
 
@@ -221,7 +242,6 @@ describe('ApiFormService', () => {
       const validateRedirect = vi.fn().mockImplementation(() => {
         throw new Error('invalid redirect rules')
       })
-      const { logger } = await import('~/src/server/common/helpers/logging/log.js')
 
       await expect(
         service.loadAll(
@@ -230,7 +250,8 @@ describe('ApiFormService', () => {
           {},
           vi.fn((d) => d),
           vi.fn(),
-          validateRedirect
+          validateRedirect,
+          vi.fn()
         )
       ).rejects.toThrow('invalid redirect rules')
       expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Failed to load API form "my-form"'))
@@ -241,13 +262,13 @@ describe('ApiFormService', () => {
       const makeDef = () => ({ name: 'form', metadata: {}, pages: [] })
       vi.spyOn(service, 'fetchFormMetadata').mockImplementation(async (slug) => makeEntry(slug))
       vi.spyOn(service, 'fetchFormDefinition').mockResolvedValue(makeDef())
-      const { setFormMeta } = await import('./forms-redis.js')
 
       await service.loadAll(
         {},
         ['form-a', 'form-b'],
         {},
         vi.fn((d) => d),
+        vi.fn(),
         vi.fn(),
         vi.fn()
       )

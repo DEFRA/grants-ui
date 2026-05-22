@@ -17,15 +17,18 @@
 {% block head %}
   <link href="{{ getAssetPath('stylesheets/application.scss') }}" rel="stylesheet">
 
-  {# Google Analytics is loaded conditionally by cookie-consent.js after user consent #}
+  {# Google Analytics: loaded server-side below (bodyStart) for returning users who accepted, or client-side (cookie-consent.js) immediately on first accept #}
 {% endblock %}
 
 {% block bodyStart %}
-  {# Cookie banner appears at the top of the page, before the skip link #}
-  {{ defraCookieBanner({
-    config: cookieBannerConfig,
-    noscriptConfig: cookieBannerNoscriptConfig
-  }) }}
+  {# Show banner only if user hasn't made a choice yet — matches reference implementation #}
+  {% if not cookiesPolicy.confirmed %}
+    {{ defraCookieBanner({
+      config: cookieBannerConfig,
+      crumb: crumb,
+      currentPath: currentPath
+    }) }}
+  {% endif %}
 {% endblock %}
 
 {% block header %}

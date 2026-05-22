@@ -12,7 +12,7 @@
 {% block content %}
   <div class="govuk-body">
     <div class="govuk-grid-row">
-      <div class="govuk-grid-column-full">
+      <div class="{% if showPaymentActions %}govuk-grid-column-full{% else %}govuk-grid-column-two-thirds{% endif %}">
         {% if warning %}
           {{ govukWarningText({
           text: warning
@@ -32,6 +32,11 @@
         }) }}
         {% endif %}
 
+        {% if sectionTitle and sectionTitle.length and (sectionTitle !== pageTitle) %}
+        <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">
+          {{- sectionTitle -}}
+        </h2>
+        {% endif %}
         <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
 
         {% if paymentExplanation %}
@@ -126,18 +131,20 @@
               errorMessage: errors and errors[0] and errors[0].href and { text: errors[0].text, href: errors[0].href }
             }) }}
           {% endif %}
-          <div class="govuk-button-group">
-            <input type="hidden" name="crumb" value="{{ crumb }}">
-            {% block form %}
-              {{ govukButton({
-              text: "Continue",
-              preventDoubleClick: true
-            }) }}
-            {% endblock %}
-          </div>
+          {% if not hasPaymentError %}
+            <div class="govuk-button-group">
+              <input type="hidden" name="crumb" value="{{ crumb }}">
+              {% block form %}
+                {{ govukButton({
+                text: "Continue",
+                preventDoubleClick: true
+              }) }}
+              {% endblock %}
+            </div>
+          {% endif %}
         </form>
         {% if showSupportLink %}
-          {{ defraSupportDetails({ typeOfSupport: 'question' }) }}
+          {{ defraSupportDetails({ typeOfSupport: 'question', email: supportEmail }) }}
         {% endif %}
       </div>
     </div>

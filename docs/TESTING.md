@@ -141,11 +141,18 @@ npm run test:all
 
 ### Running Individual Acceptance Tests
 
-It is possible to run acceptance tests at individual feature file level by passing the path to the feature file in the test container to `run-acceptance-tests.sh`. For example:
+The core acceptance test source lives in `acceptance/`. To run tests locally against `localhost:3000` without Docker, tag the scenarios you want to run with `@runme` in the feature file, then run:
 
 ```bash
-./tools/run-acceptance-tests.sh ./test/features/example-whitelist/whitelist.feature
+./acceptance/run-local.sh
 ```
+
+This installs dependencies, sets the required environment variables for the local docker compose environment, and runs all `@runme`-tagged scenarios using your local Chrome browser.
+
+Prerequisites:
+
+- The full stack running via `npm run docker:up`
+- Chrome installed locally
 
 ### Parallel Test Execution
 
@@ -161,13 +168,13 @@ SE_NODE_MAX_SESSIONS=4 ./tools/run-acceptance-tests.sh
 
 ### Changes to Journey Test Repositories
 
-To support this concept journey test repositories must:
+The grants-ui acceptance tests live in the `acceptance/` directory of this repository and are built locally as part of the Docker test run — there is no separate image to publish.
+
+Other journey test repositories (land grants, woodland grant) must:
 
 - Publish an image to Docker Hub as per the services
 - Allow a command to be passed to the entrypoint script
 - Support an npm `run test:ci` option
-
-See `grants-ui-acceptance-tests` for an example.
 
 ### CI
 

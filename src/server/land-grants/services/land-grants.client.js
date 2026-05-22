@@ -1,32 +1,55 @@
 import { createApiHeadersForLandGrantsBackend } from '~/src/server/common/helpers/auth/backend-auth-helper.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { logUpstreamError } from '~/src/server/common/helpers/logging/upstream-error.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
 import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js'
 
+const LAND_GRANTS_SERVICE = 'grants-ui-backend'
+
 /**
  * Performs a POST request to the Land Grants API.
+ * @template T
  * @param {string} endpoint
- * @param {object} body
+ * @param {Record<string, unknown>} body
  * @param {string} baseUrl
- * @returns {Promise<Object>}
+ * @returns {Promise<T>}
  * @throws {Error}
  */
 export async function postToLandGrantsApi(endpoint, body, baseUrl) {
   const url = `${baseUrl}${endpoint}`
   log(LogCodes.LAND_GRANTS.API_REQUEST, { endpoint, url })
 
+  let attempts = 0
+  /** @type {number | null} */
+  let lastUpstreamStatus = null
+
   const apiOperation = async () => {
+    attempts += 1
     const response = await fetch(url, {
       method: 'POST',
-      headers: createApiHeadersForLandGrantsBackend(),
+      headers: /** @type {HeadersInit} */ (createApiHeadersForLandGrantsBackend()),
       body: JSON.stringify(body)
     })
 
     if (!response.ok) {
+      lastUpstreamStatus = response.status
+      let message = response.statusText
+      try {
+        const responseBody = await response.json()
+        message = responseBody?.message ?? message
+      } catch {
+        // no json found
+      }
+      logUpstreamError({
+        endpoint,
+        service: LAND_GRANTS_SERVICE,
+        upstreamStatus: response.status,
+        errorMessage: message
+      })
       /**
        * @type {Error & {code?: number, status?: number}}
        */
-      const error = new Error(response.statusText)
+      const error = new Error(message)
       error.code = response.status
       error.status = response.status
       throw error
@@ -35,10 +58,21 @@ export async function postToLandGrantsApi(endpoint, body, baseUrl) {
     return response.json()
   }
 
-  return retry(apiOperation, {
+  const result = await retry(apiOperation, {
     timeout: 30000,
     serviceName: `LandGrantsApi.postTo ${endpoint}`
+  }).catch((error) => {
+    logUpstreamError({
+      endpoint,
+      service: LAND_GRANTS_SERVICE,
+      upstreamStatus: error.status ?? error.code ?? lastUpstreamStatus,
+      errorMessage: error.message,
+      attempts
+    })
+    throw error
   })
+
+  return result
 }
 
 /**
@@ -95,17 +129,6 @@ export async function parcelsWithExtendedInfo(parcelIds, baseUrl) {
   const fields = ['actions', 'size', 'groups', ...consentTypes.map((ct) => `actions.${ct.apiField}`)]
 
   return parcelsWithFields(fields, parcelIds, baseUrl)
-}
-
-/**
- * Calls the Land Grants API calculate-wmp endpoint.
- * @param {{ parcelIds: string[], newWoodlandAreaHa: number, oldWoodlandAreaHa: number }} payload
- * @param {string} baseUrl
- * @returns {Promise<{ message: string, payment: object }>}
- * @throws {Error}
- */
-export async function calculateWmp(payload, baseUrl) {
-  return postToLandGrantsApi('/api/v2/wmp/payments/calculate', payload, baseUrl)
 }
 
 /**

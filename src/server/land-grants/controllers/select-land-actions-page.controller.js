@@ -4,7 +4,7 @@ import {
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import QuestionPageWithParcelCheckController from '~/src/server/common/controllers/question-page-with-parcel-check.controller.js'
 import { parseLandParcel } from '~/src/server/land-grants/utils/format-parcel.js'
-import { log, debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { log, error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { mapGroupedActionsToViewModel } from '~/src/server/land-grants/view-models/action.view-model.js'
 import {
   addActionsToExistingState,
@@ -90,9 +90,10 @@ export default class SelectLandActionsPageController extends QuestionPageWithPar
   async fetchActions(request, sheetId, parcelId) {
     try {
       return await fetchAvailableActionsForParcel({ parcelId, sheetId })
-    } catch (error) {
+    } catch (err) {
       const { sbi } = request.auth.credentials
-      debug(LogCodes.LAND_GRANTS.FETCH_ACTIONS_ERROR, { sbi, sheetId, parcelId, errorMessage: error.message }, request)
+      const { message: errorMessage, status: statusCode } = /** @type {Error & {status?: number}} */ (err)
+      error(LogCodes.LAND_GRANTS.FETCH_ACTIONS_ERROR, { sbi, sheetId, parcelId, errorMessage, statusCode }, request)
       return null
     }
   }
@@ -201,7 +202,12 @@ export default class SelectLandActionsPageController extends QuestionPageWithPar
     const { sbi, crn } = request.auth.credentials
 
     try {
-      const validationResult = await validateApplication({ applicationId: referenceNumber, sbi, crn, state })
+      const validationResult = await validateApplication({
+        applicationId: /** @type {string} */ (referenceNumber),
+        sbi: /** @type {string} */ (sbi),
+        crn: /** @type {string} */ (crn),
+        state
+      })
       const { valid, errorMessages = [] } = validationResult
 
       if (!valid) {
@@ -223,7 +229,15 @@ export default class SelectLandActionsPageController extends QuestionPageWithPar
         })
       }
     } catch (e) {
-      debug(LogCodes.LAND_GRANTS.VALIDATE_APPLICATION_ERROR, { parcelId, sheetId, errorMessage: e.message }, request)
+      const { message: errorMessage, status: statusCode } = /** @type {Error & {status?: number}} */ (e)
+      const selectedActions = extractLandActionFields(payload, this.actionFieldPrefix).map(
+        (field) => /** @type {Record<string, unknown>} */ (payload)[field]
+      )
+      error(
+        LogCodes.LAND_GRANTS.VALIDATE_APPLICATION_ERROR,
+        { sbi, parcelId, sheetId, errorMessage, statusCode, selectedActions },
+        request
+      )
       const addedActions = getAddedActionsForStateParcel(prevState, selectedLandParcel)
       return this.renderErrorView(h, request, context, {
         errors: [

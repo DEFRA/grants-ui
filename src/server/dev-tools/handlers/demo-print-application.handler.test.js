@@ -5,7 +5,7 @@ import {
   buildPrintViewModel,
   enrichDefinitionWithListItems
 } from '../../common/helpers/print-application-service/print-application-service.js'
-import { buildDemoData, buildDemoPrintAnswers, buildDemoPayment } from '../helpers/index.js'
+import { buildDemoData, buildDemoPayment, buildDemoPrintAnswers } from '../helpers/index.js'
 import { generateFormNotFoundResponse } from '../utils/index.js'
 import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 import { debug, LogCodes } from '../../common/helpers/logging/log.js'
@@ -26,12 +26,19 @@ const mockForm = MOCK_FORM_WITH_PATH
 
 describe('demo-print-application.handler', () => {
   let mockRequest
+  let mockGetFormService
+  let mockFormService
   let mockH
 
   beforeEach(() => {
     vi.clearAllMocks()
 
-    mockRequest = mockHapiRequest({ params: { slug: 'test-form' } })
+    mockFormService = vi.fn()
+    mockGetFormService = vi.fn().mockReturnValue(mockFormService)
+    mockRequest = mockHapiRequest({
+      params: { slug: 'test-form' },
+      server: { methods: { getFormService: mockGetFormService } }
+    })
     mockH = mockHapiResponseToolkit()
 
     buildDemoData.mockReturnValue(MOCK_DEMO_DATA)
@@ -48,7 +55,7 @@ describe('demo-print-application.handler', () => {
     await demoPrintApplicationHandler(mockRequest, mockH)
 
     expect(findFormBySlug).toHaveBeenCalledWith('test-form')
-    expect(loadFormDefinition).toHaveBeenCalledWith(mockForm)
+    expect(loadFormDefinition).toHaveBeenCalledWith(mockForm, mockFormService)
     expect(enrichDefinitionWithListItems).toHaveBeenCalledWith(mockDefinition)
     expect(buildDemoPrintAnswers).toHaveBeenCalledWith(mockDefinition)
     expect(buildPrintViewModel).toHaveBeenCalledWith(
@@ -69,7 +76,10 @@ describe('demo-print-application.handler', () => {
   })
 
   test('should include demo payment data for farm-payments slug', async () => {
-    mockRequest = mockHapiRequest({ params: { slug: 'farm-payments' } })
+    mockRequest = mockHapiRequest({
+      params: { slug: 'farm-payments' },
+      server: { methods: { getFormService: mockGetFormService } }
+    })
     findFormBySlug.mockResolvedValue(mockForm)
     buildPrintViewModel.mockReturnValue({ test: 'viewModel' })
 

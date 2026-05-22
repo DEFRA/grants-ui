@@ -1,4 +1,4 @@
-import { buildTaskListData, getCompletionStats, splitComponents } from './task-list.helper.js'
+import { buildTaskListData, getCompletionStats } from './task-list.helper.js'
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 
 export default class TaskListPageController extends QuestionPageController {
@@ -13,32 +13,29 @@ export default class TaskListPageController extends QuestionPageController {
 
   /**
    * Builds the view model for the task list page
-   * @param {AnyFormRequest} request
+   * @param {FormContextRequest} request
    * @param {FormContext} context
-   * @returns {object} The view model
+   * @returns {TaskListViewModel} The view model
    */
   getViewModel(request, context) {
     const viewModel = super.getViewModel(request, context)
-    const formModel = request.app.model
+    const formModel = /** @type {FormModel} */ (request.app.model)
     const state = context.state ?? {}
 
     // Config options
-    const tasklistConfig = viewModel.page.def.metadata.tasklist ?? {}
+    const tasklistConfig =
+      /** @type {{ tasklist?: object } | undefined} */ (viewModel.page.def.metadata)?.tasklist ?? {}
 
-    // Build task list data from sections and pages
-    const taskListSections = buildTaskListData(viewModel, formModel, state)
+    // Build task list data from tasks and task pages
+    const tasks = buildTaskListData(viewModel, formModel, state)
     const completionStats = getCompletionStats(viewModel, formModel, state)
 
-    if (taskListSections.length === 1 && formModel?.sections?.[0]) {
-      formModel.sections[0].hideTitle = true
-    }
-
     // Split viewModel.components into aboveComponents and belowComponents
-    const [aboveComponents, belowComponents] = splitComponents(viewModel.page.collection.components)
+    const [aboveComponents, belowComponents] = splitComponents(viewModel.page.collection?.components ?? [])
 
     return {
       ...viewModel,
-      taskListSections,
+      tasks,
       completionStats,
       ...tasklistConfig,
       isComplete: completionStats.completed === completionStats.total,
@@ -49,7 +46,59 @@ export default class TaskListPageController extends QuestionPageController {
 }
 
 /**
+ * Maps a component to a ViewModel component
+ * @param {Component} component - The component to map
+ * @returns {MappedViewModelComponent} The mapped ViewModel component
+ */
+function mapComponentToViewModelComponent(component) {
+  const content = /** @type {{ content?: string }} */ (component).content
+  return {
+    type: component.type,
+    isFormComponent: component.isFormComponent,
+    model: {
+      content,
+      html: content,
+      summaryHtml: component.title
+    }
+  }
+}
+
+/**
+ * Splits components into above and below positions
+ * @param {Component[]} components - Array of components
+ * @returns {[MappedViewModelComponent[], MappedViewModelComponent[]]} Array of above and below components
+ */
+function splitComponents(components) {
+  const aboveComponents = components
+    .filter((component) => /** @type {{ options?: { position?: string } }} */ (component).options?.position === 'above')
+    .map(mapComponentToViewModelComponent)
+  const belowComponents = components
+    .filter((component) => /** @type {{ options?: { position?: string } }} */ (component).options?.position === 'below')
+    .map(mapComponentToViewModelComponent)
+  return [aboveComponents, belowComponents]
+}
+
+/**
  * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
  * @import { PageQuestion } from '@defra/forms-model'
- * @import { AnyFormRequest, FormContext } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { FormContext, FormContextRequest, FormPageViewModel } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { Component } from '@defra/forms-engine-plugin/engine/components/helpers/components.js'
+ * @import { Task } from './task-list.helper.js'
+ */
+
+/**
+ * @typedef {object} MappedViewModelComponent
+ * @property {string} [type]
+ * @property {boolean} [isFormComponent]
+ * @property {{ content?: string, html?: string, summaryHtml?: string }} model
+ */
+
+/**
+ * @typedef {FormPageViewModel & {
+ *   tasks: Task[]
+ *   completionStats: { completed: number, total: number, isComplete: boolean }
+ *   isComplete: boolean
+ *   aboveComponents: MappedViewModelComponent[]
+ *   belowComponents: MappedViewModelComponent[]
+ * }} TaskListViewModel
  */

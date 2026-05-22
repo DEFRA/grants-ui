@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getGasErrorMessage, handleGasApiError } from './gas-error-messages.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 
@@ -38,7 +38,8 @@ describe('gas-error-messages', () => {
     beforeEach(() => {
       mockH = {
         view: vi.fn().mockReturnThis(),
-        code: vi.fn().mockReturnThis()
+        code: vi.fn().mockReturnThis(),
+        request: { app: { model: { def: { metadata: { supportEmail: 'ruralpayments@defra.gov.uk' } } } } }
       }
       mockContext = {
         referenceNumber: 'REF123'
@@ -53,11 +54,13 @@ describe('gas-error-messages', () => {
       handleGasApiError(mockH, mockContext, mockError)
 
       expect(mockH.view).toHaveBeenCalledWith('submission-error', {
+        pageTitle: 'Something went wrong',
         backLink: null,
         heading: 'Something went wrong',
         message:
           'An unexpected error occurred while submitting your application. Please try again or contact support if the problem persists.',
-        refNumber: 'REF123'
+        refNumber: 'REF123',
+        supportEmail: 'ruralpayments@defra.gov.uk'
       })
       expect(mockH.code).toHaveBeenCalledWith(429)
     })

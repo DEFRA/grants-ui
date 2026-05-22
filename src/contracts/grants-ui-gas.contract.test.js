@@ -1,22 +1,34 @@
 import fs from 'fs'
 import path from 'path'
 import { PactV4, SpecificationVersion, MatchersV3 } from '@pact-foundation/pact'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { makeGasApiRequest } from '../server/common/services/grant-application/grant-application.service.js'
 
-const provider = new PactV4({
-  consumer: 'grants-ui',
-  provider: 'fg-gas-backend',
-  dir: path.join(path.join(__dirname, './pacts')),
-  spec: SpecificationVersion.SPECIFICATION_VERSION_V4,
-  port: 0
+vi.mock('../server/common/helpers/retry.js', () => ({
+  retry: (operation) => operation()
+}))
+
+vi.mock('../server/common/helpers/logging/log.js', async () => {
+  const { mockLogHelper } = await import('../__mocks__/logger-mocks.js')
+  return mockLogHelper()
 })
+
+function createProvider() {
+  return new PactV4({
+    consumer: 'grants-ui',
+    provider: 'fg-gas-backend',
+    dir: path.join(__dirname, './pacts'),
+    spec: SpecificationVersion.SPECIFICATION_VERSION_V4,
+    port: 0
+  })
+}
 
 const { string, regex } = MatchersV3
 
 describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () => {
-  describe('POST /applications', () => {
+  describe('POST /grants/frps-private-beta/applications', () => {
     it('successfully submits farm-payments application', async () => {
+      const provider = createProvider()
       const payload = JSON.parse(fs.readFileSync(path.join(__dirname, 'resources/farm-payments.json'), 'utf-8'))
 
       await provider
@@ -47,6 +59,7 @@ describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () =
     })
 
     it('successfully submits farm-payments application with only required properties', async () => {
+      const provider = createProvider()
       const payload = JSON.parse(
         fs.readFileSync(path.join(__dirname, 'resources/farm-payments-required-only.json'), 'utf-8')
       )
@@ -79,6 +92,7 @@ describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () =
     })
 
     it('successfully submits amendment application', async () => {
+      const provider = createProvider()
       const payload = JSON.parse(
         fs.readFileSync(path.join(__dirname, 'resources/farm-payments-amendment.json'), 'utf-8')
       )
@@ -113,6 +127,7 @@ describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () =
 
   describe('GET /grants/{grantCode}/applications/{clientRef}/status', () => {
     it('successfully gets the status of farm-payments application with reference 710-877-8fd', async () => {
+      const provider = createProvider()
       await provider
         .addInteraction()
         .given('frps-private-beta is configured in fg-gas-backend with a client reference 710-877-8fd')
@@ -150,6 +165,7 @@ describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () =
     })
 
     it('returns 404 when application does not exist', async () => {
+      const provider = createProvider()
       await provider
         .addInteraction()
         .given('frps-private-beta is configured in fg-gas-backend')
@@ -180,6 +196,83 @@ describe('Pact between grants-ui (consumer) and fg-gas-backend (provider)', () =
               { method: 'GET' }
             )
           ).rejects.toMatchObject({ status: 404 })
+        })
+    })
+  })
+
+  describe('POST /grants/woodland/applications', () => {
+    it('successfully submits woodland application', async () => {
+      const provider = createProvider()
+      const payload = JSON.parse(fs.readFileSync(path.join(__dirname, 'resources/woodland.json'), 'utf-8'))
+
+      await provider
+        .addInteraction()
+        .given('woodland is configured in fg-gas-backend')
+        .uponReceiving('a woodland application')
+        .withRequest('POST', '/grants/woodland/applications', (builder) => {
+          builder.headers({
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer 00000000-0000-0000-0000-000000000000'
+          })
+          builder.jsonBody(payload)
+        })
+        .willRespondWith(204)
+        .executeTest(async (mockServer) => {
+          const response = await makeGasApiRequest(
+            `${mockServer.url}/grants/woodland/applications`,
+            'woodland',
+            {},
+            {
+              method: 'POST',
+              payload
+            }
+          )
+          expect(response.status).toBe(204)
+        })
+    })
+
+    it('returns 400 when woodland hectares are invalid', async () => {
+      const provider = createProvider()
+      const validPayload = JSON.parse(fs.readFileSync(path.join(__dirname, 'resources/woodland.json'), 'utf-8'))
+      const payload = {
+        ...validPayload,
+        answers: {
+          ...validPayload.answers,
+          hectaresTenOrOverYearsOld: 0.1 // invalid
+        }
+      }
+
+      await provider
+        .addInteraction()
+        .given('woodland validation fails due to invalid hectares')
+        .uponReceiving('a woodland application with invalid hectares')
+        .withRequest('POST', '/grants/woodland/applications', (builder) => {
+          builder.headers({
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer 00000000-0000-0000-0000-000000000000'
+          })
+          builder.jsonBody(payload)
+        })
+        .willRespondWith(400, (builder) => {
+          builder.headers({ 'Content-Type': 'application/json' })
+          builder.jsonBody({
+            statusCode: 400,
+            error: 'Bad Request',
+            message: MatchersV3.string('Some validation error')
+          })
+        })
+        .executeTest(async (mockServer) => {
+          await expect(
+            makeGasApiRequest(
+              `${mockServer.url}/grants/woodland/applications`,
+              'woodland',
+              {},
+              {
+                method: 'POST',
+                payload
+              }
+            )
+          ).rejects.toMatchObject({ status: 400 })
         })
     })
   })

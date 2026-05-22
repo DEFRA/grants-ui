@@ -146,11 +146,6 @@ These are required only if DEFRA ID authentication is enabled, and you are using
 | `APP_BASE_URL`          | Base URL of the Grants UI app.                 |
 | `GRANTS_UI_BACKEND_URL` | Local or remote backend endpoint.              |
 | `GAS_API_URL`           | Endpoint for Grants Application Service (GAS). |
-| `MANAGER_URL`           | Used for internal routing or redirects.        |
-| `DESIGNER_URL`          | Form designer UI base URL.                     |
-| `SUBMISSION_URL`        | Backend submission URL (Docker-safe format).   |
-| `UPLOADER_URL`          | File uploader service endpoint.                |
-| `UPLOADER_BUCKET_NAME`  | Name of the S3 or storage bucket.              |
 
 #### GAS API
 

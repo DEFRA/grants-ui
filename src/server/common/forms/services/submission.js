@@ -46,11 +46,13 @@ export function loadSubmissionSchemaValidators() {
 }
 
 /**
- * Validates an object against the applicationAnswersSchema
- * Only validates types of properties that are present, doesn't require any fields
- * @param {object} payload - The object to validate
- * @param {string} grantCode - The object to validate
- * @returns {object} - Joi validation result
+ * Validates a submission payload against the grant's JSON schema using AJV.
+ * The schema enforces property types and its `required` list; AJV is configured
+ * with `removeAdditional: 'all'`, so properties not declared in the schema are
+ * stripped from the returned value.
+ * @param {object} payload - The submission answers to validate
+ * @param {string} grantCode - The grant code whose schema to validate against
+ * @returns {{valid: true, value: object} | {valid: false, errors: import('ajv').ErrorObject[]}} AJV validation result
  */
 export function validateSubmissionAnswers(payload, grantCode) {
   const validate = validators.get(grantCode)

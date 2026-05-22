@@ -1,12 +1,19 @@
 import 'dotenv/config'
 import { config } from '~/src/config/config.js'
 import { createApiHeadersForGrantsUiBackend } from '../auth/backend-auth-helper.js'
-import { log, debug, LogCodes } from '../logging/log.js'
+import { debug, log, LogCodes } from '../logging/log.js'
 import { mintLockToken } from '../lock/lock-token.js'
 import { getGrantCode } from '../grant-code.js'
 
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
 
+/**
+ * Persists a grant submission to the Grants UI backend API.
+ *
+ * @param {Record<string, unknown>} submission - The submission payload to persist.
+ * @param {AnyRequest} request - The Hapi request, used for grant resolution and logging.
+ * @returns {Promise<void>} Resolves once the submission has been sent to the backend.
+ */
 export async function persistSubmissionToApi(submission, request) {
   if (!GRANTS_UI_BACKEND_ENDPOINT?.length) {
     return
@@ -28,11 +35,12 @@ export async function persistSubmissionToApi(submission, request) {
   )
 
   const grantCode = getGrantCode(request)
+  const grantVersion = /** @type {string | number} */ (request.app.model?.def?.metadata?.version ?? 1) // Default to 1 to support non-config broker grants
   const lockToken = mintLockToken({
-    userId: request.auth?.credentials?.contactId,
-    sbi: request.auth?.credentials?.sbi,
+    userId: /** @type {string} */ (request.auth?.credentials?.contactId),
+    sbi: /** @type {string} */ (request.auth?.credentials?.sbi),
     grantCode,
-    grantVersion: 1
+    grantVersion
   })
 
   try {
@@ -41,7 +49,7 @@ export async function persistSubmissionToApi(submission, request) {
       headers: createApiHeadersForGrantsUiBackend({ lockToken }),
       body: JSON.stringify({
         ...submission,
-        grantVersion: 1 // NOSONAR TODO: Update when support for same grant versioning is implemented
+        grantVersion
       })
     })
 
@@ -62,9 +70,13 @@ export async function persistSubmissionToApi(submission, request) {
       method: 'POST',
       endpoint: url.href,
       referenceNumber: submission.referenceNumber,
-      errorMessage: err.message
+      errorMessage: /** @type {Error} */ (err).message
     })
     // NOSONAR TODO: See TGC-873
     // throw err
   }
 }
+
+/**
+ * @import { AnyRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ */

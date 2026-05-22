@@ -28,7 +28,44 @@ else
     exit 1
 fi
 
+rm -fr localstack/config-broker-local
+
+EXAMPLE_TAG=$(curl -s https://api.github.com/repos/DEFRA/grant-config-example-grants/tags | jq -r '.[0].name')
+
+if [ -z "$EXAMPLE_TAG" ]; then
+  echo "Error: Could not fetch example-grant-with-auth tag"
+  exit 1
+fi
+
+if [ "${USE_LOCAL_CONFIG_DEFINITION:-true}" = "true" ]; then
+  echo "Using local version of the config"
+  "$(dirname "$0")/setup-local-config.sh"
+else
+  echo "Using version $EXAMPLE_TAG of the config for example-grant-with-auth"
+
+  mkdir -p localstack/config-broker-local/example-grant-with-auth@$EXAMPLE_TAG
+  curl -L https://raw.githubusercontent.com/DEFRA/grant-config-example-grants/$EXAMPLE_TAG/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml -o localstack/config-broker-local/example-grant-with-auth@$EXAMPLE_TAG/example-grant-with-auth.yaml
+  sed "s/^version:.*/version: $EXAMPLE_TAG/" localstack/config-broker/release.yml > localstack/config-broker-local/release.yml
+fi
+
+echo "Fetching example-grant-with-auth submission schema at version $EXAMPLE_TAG"
+mkdir -p acceptance/schemas
+curl -fL "https://raw.githubusercontent.com/DEFRA/grant-config-example-grants/$EXAMPLE_TAG/example-grant-with-auth/grants-ui/example-grant-with-auth-submission.schema.json" -o acceptance/schemas/example-grant-with-auth-submission.schema.json
+
+WOODLAND_TAG=$(curl -s https://api.github.com/repos/DEFRA/grant-config-woodland/tags | jq -r '.[0].name')
+
+if [ -z "$WOODLAND_TAG" ]; then
+  echo "Error: Could not fetch woodland tag"
+  exit 1
+fi
+
+echo "Fetching woodland GAS schema at version $WOODLAND_TAG"
+mkdir -p woodland-grant-journey-tests-schemas
+curl -fL "https://raw.githubusercontent.com/DEFRA/grant-config-woodland/$WOODLAND_TAG/woodland/gas/gas.json" -o woodland-grant-journey-tests-schemas/gas.schema.json
+
 COMPOSE_COMMAND='docker compose -f compose.yml -f compose.ha.yml -f compose.land-grants.yml -f compose.ci.yml'
+echo "Running pre-emptive volume cleanse..."
+docker volume prune -f
 echo "Building docker compose containers..."
 eval "${COMPOSE_COMMAND} build --quiet > /dev/null 2>&1"
 echo "Starting services with docker compose..."
@@ -86,6 +123,6 @@ if [ -n "${PERFORMANCE_TESTS_HOOK:-}" ]; then
   eval "${PERFORMANCE_TESTS_HOOK}"
 fi
 
-eval "${COMPOSE_COMMAND} down"
+eval "${COMPOSE_COMMAND} down -v"
 echo ""
 echo "Tests complete."

@@ -1,5 +1,5 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
-import { beforeEach, describe, expect, test, vi, afterEach } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 import {
   fetchAvailableActionsForParcel,
@@ -8,7 +8,34 @@ import {
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import { parseLandParcel, stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 import SelectLandActionsPageController from './select-land-actions-page.controller.js'
-import { log, debug } from '~/src/server/common/helpers/logging/log.js'
+import { error, log } from '~/src/server/common/helpers/logging/log.js'
+
+vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () => ({
+  QuestionPageController: class {
+    getViewModel() {}
+
+    makeGetRouteHandler() {
+      return async (request, context, h) => h.view('select-land-actions', this.getViewModel(request, context))
+    }
+
+    makePostRouteHandler() {
+      return async (request, context, h) => h.view('select-land-actions', this.getViewModel(request, context))
+    }
+  }
+}))
+
+vi.mock('~/src/server/task-list/task-list.helper.js', () => ({
+  withTaskContext: (Base) => Base
+}))
+
+vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.service.js', () => ({
+  fetchParcelsFromDal: vi.fn().mockResolvedValue([])
+}))
+
+vi.mock('~/src/server/land-grants/services/parcel-cache.js', () => ({
+  getCachedAuthParcels: vi.fn().mockReturnValue(null),
+  setCachedAuthParcels: vi.fn()
+}))
 
 vi.mock('~/src/config/config.js', async () => {
   const { mockLandGrantsConfig } = await import('~/src/__mocks__')
@@ -73,10 +100,15 @@ describe('SelectLandActionsPageController', () => {
 
   beforeEach(() => {
     QuestionPageController.prototype.getViewModel = vi.fn().mockReturnValue({
-      pageTitle: 'Land Actions'
+      pageTitle: 'Land Actions',
+      page: {
+        model: { pages: [] },
+        def: { pages: [], metadata: { tasklist: {} } }
+      }
     })
 
-    controller = new SelectLandActionsPageController()
+    const mockModel = { def: { metadata: { tasklist: {} } }, getSection: vi.fn(), pages: [] }
+    controller = new SelectLandActionsPageController(mockModel, {})
     controller.collection = {
       getErrors: vi.fn().mockReturnValue([])
     }
@@ -214,7 +246,7 @@ describe('SelectLandActionsPageController', () => {
         })
       )
 
-      expect(debug).toHaveBeenCalledWith(
+      expect(error).toHaveBeenCalledWith(
         expect.objectContaining({
           level: 'error',
           messageFunc: expect.any(Function)

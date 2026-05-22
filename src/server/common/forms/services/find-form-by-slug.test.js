@@ -1,4 +1,4 @@
-import { findFormBySlug, loadFormDefinition, clearYamlCache } from './find-form-by-slug.js'
+import { clearYamlCache, findFormBySlug, loadFormDefinition } from './find-form-by-slug.js'
 import { MOCK_FORM_ENTRIES } from '~/src/__test-fixtures__/mock-forms-cache.js'
 
 const { mockReadFile, mockParseYaml } = vi.hoisted(() => ({
@@ -17,8 +17,7 @@ vi.mock('yaml', () => ({
 
 vi.mock('./forms-redis.js', () => ({
   getFormsRedisClient: vi.fn(() => ({})),
-  getFormMeta: vi.fn(),
-  getFormDef: vi.fn()
+  getFormMeta: vi.fn()
 }))
 
 describe('findFormBySlug', () => {
@@ -47,13 +46,12 @@ describe('findFormBySlug', () => {
 })
 
 describe('loadFormDefinition', () => {
-  let getFormDefMock
+  let mockFormsService
 
-  beforeEach(async () => {
+  beforeEach(() => {
     vi.clearAllMocks()
     clearYamlCache()
-    const formsRedis = await import('./forms-redis.js')
-    getFormDefMock = formsRedis.getFormDef
+    mockFormsService = { getFormDefinitionBySlug: vi.fn() }
   })
 
   test('reads and parses YAML file for yaml-sourced forms', async () => {
@@ -62,7 +60,10 @@ describe('loadFormDefinition', () => {
     mockReadFile.mockResolvedValue(rawYaml)
     mockParseYaml.mockReturnValue(parsedDef)
 
-    const result = await loadFormDefinition({ source: 'yaml', path: '/path/to/form.yaml', slug: 'test-form' })
+    const result = await loadFormDefinition(
+      { source: 'yaml', path: '/path/to/form.yaml', slug: 'test-form' },
+      mockFormsService
+    )
 
     expect(mockReadFile).toHaveBeenCalledWith('/path/to/form.yaml', 'utf8')
     expect(mockParseYaml).toHaveBeenCalledWith(rawYaml)
@@ -76,8 +77,8 @@ describe('loadFormDefinition', () => {
     mockParseYaml.mockReturnValue(parsedDef)
 
     const form = { source: 'yaml', path: '/path/to/form.yaml', slug: 'test-form' }
-    await loadFormDefinition(form)
-    const result = await loadFormDefinition(form)
+    await loadFormDefinition(form, mockFormsService)
+    const result = await loadFormDefinition(form, mockFormsService)
 
     expect(mockReadFile).toHaveBeenCalledTimes(1)
     expect(mockParseYaml).toHaveBeenCalledTimes(1)
@@ -91,28 +92,28 @@ describe('loadFormDefinition', () => {
     mockParseYaml.mockReturnValue(parsedDef)
 
     const form = { source: 'yaml', path: '/path/to/form.yaml', slug: 'test-form' }
-    const first = await loadFormDefinition(form)
+    const first = await loadFormDefinition(form, mockFormsService)
     first.name = 'Mutated'
-    const second = await loadFormDefinition(form)
+    const second = await loadFormDefinition(form, mockFormsService)
 
     expect(second.name).toBe('Test Form')
   })
 
-  test('returns cached definition from Redis for api-sourced forms', async () => {
+  test('delegates to formsService.getFormDefinitionBySlug for api-sourced forms', async () => {
     const def = { name: 'API Form', pages: [] }
-    getFormDefMock.mockResolvedValue(def)
+    mockFormsService.getFormDefinitionBySlug.mockResolvedValue(def)
 
-    const result = await loadFormDefinition({ source: 'api', slug: 'api-form' })
+    const result = await loadFormDefinition({ source: 'api', slug: 'api-form' }, mockFormsService)
 
-    expect(getFormDefMock).toHaveBeenCalledWith({}, 'api-form')
+    expect(mockFormsService.getFormDefinitionBySlug).toHaveBeenCalledWith('api-form')
     expect(result).toEqual(def)
   })
 
-  test('throws when api-sourced form definition is not in Redis', async () => {
-    getFormDefMock.mockResolvedValue(null)
+  test('propagates errors from formsService.getFormDefinitionBySlug for api-sourced forms', async () => {
+    mockFormsService.getFormDefinitionBySlug.mockRejectedValue(new Error('API fetch failed'))
 
-    await expect(loadFormDefinition({ source: 'api', slug: 'api-form' })).rejects.toThrow(
-      'Form definition not found in Redis for slug: api-form'
+    await expect(loadFormDefinition({ source: 'api', slug: 'api-form' }, mockFormsService)).rejects.toThrow(
+      'API fetch failed'
     )
   })
 })

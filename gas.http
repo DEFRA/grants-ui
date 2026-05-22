@@ -2,7 +2,7 @@
 
 # @name createExampleGrantWithAuth
 
-POST {{base}}/grants HTTP/1.1
+POST {{gasUrl}}/grants HTTP/1.1
 Content-Type: application/json
 Authorization: Bearer {{serviceToken}}
 x-api-key: {{x-api-key}}
@@ -21,6 +21,7 @@ x-api-key: {{x-api-key}}
       "description": "Pre-award phase",
       "questions": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "ExampleGrantWithAuthApplicationPayload",
         "type": "object",
         "additionalProperties": false,
         "required": [
@@ -28,7 +29,8 @@ x-api-key: {{x-api-key}}
           "autocompleteField",
           "radiosField",
           "checkboxesField",
-          "numberField",
+          "numberFieldValidation",
+          "numberFieldRouting",
           "datePartsField__day",
           "datePartsField__month",
           "datePartsField__year",
@@ -36,19 +38,30 @@ x-api-key: {{x-api-key}}
           "monthYearField__year",
           "selectField",
           "multilineTextField",
-          "applicantName",
-          "applicantEmail",
-          "applicantMobile",
-          "applicantBusinessAddress__addressLine1",
-          "applicantBusinessAddress__town",
-          "applicantBusinessAddress__postcode"
+          "emailAddressField",
+          "telephoneNumberField",
+          "ukAddressField__addressLine1",
+          "ukAddressField__town",
+          "ukAddressField__postcode",
+          "eastingNorthingField__easting",
+          "eastingNorthingField__northing",
+          "osGridRefField",
+          "nationalGridFieldNumberField",
+          "latLongField__latitude",
+          "latLongField__longitude",
+          "geospatialField",
+          "projectName",
+          "projectBudget",
+          "repeatItems",
+          "landParcels"
         ],
         "properties": {
           "yesNoField": { "type": "boolean" },
           "autocompleteField": { "type": "string" },
           "radiosField": { "type": "string" },
           "checkboxesField": { "type": "array", "items": { "type": "string" } },
-          "numberField": { "type": "number" },
+          "numberFieldValidation": { "type": "number" },
+          "numberFieldRouting": { "type": "number" },
           "datePartsField__day": { "type": "number" },
           "datePartsField__month": { "type": "number" },
           "datePartsField__year": { "type": "number" },
@@ -56,16 +69,99 @@ x-api-key: {{x-api-key}}
           "monthYearField__year": { "type": "number" },
           "selectField": { "type": "string" },
           "multilineTextField": { "type": "string" },
-          "applicantName": { "type": "string" },
-          "applicantEmail": { "type": "string", "format": "email" },
-          "applicantMobile": { "type": "string" },
-          "applicantBusinessAddress__addressLine1": { "type": "string" },
-          "applicantBusinessAddress__addressLine2": {
-            "type": ["string", "null"]
+          "emailAddressField": { "type": "string", "format": "email" },
+          "telephoneNumberField": { "type": "string" },
+          "ukAddressField__addressLine1": { "type": "string" },
+          "ukAddressField__addressLine2": { "type": ["string", "null"] },
+          "ukAddressField__town": { "type": "string" },
+          "ukAddressField__county": { "type": ["string", "null"] },
+          "ukAddressField__postcode": { "type": "string" },
+          "eastingNorthingField__easting": { "type": "number" },
+          "eastingNorthingField__northing": { "type": "number" },
+          "osGridRefField": { "type": "string" },
+          "nationalGridFieldNumberField": { "type": "string" },
+          "latLongField__latitude": { "type": "number" },
+          "latLongField__longitude": { "type": "number" },
+          "geospatialField": {
+            "type": "array",
+            "minItems": 1,
+            "description": "GeoJSON-style feature objects captured by the GeospatialField component"
           },
-          "applicantBusinessAddress__town": { "type": "string" },
-          "applicantBusinessAddress__county": { "type": ["string", "null"] },
-          "applicantBusinessAddress__postcode": { "type": "string" }
+          "hiddenField": { "type": ["string", "null"] },
+          "projectName": { "type": "string" },
+          "projectDescription": { "type": "string" },
+          "projectBudget": { "type": "number" },
+          "repeatItems": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "object" },
+            "description": "RepeatPage items, each holding repeatItemName (string) and repeatItemAmount (number)"
+          },
+          "landParcels": { "type": "array", "items": { "type": "string" } },
+          "detailsConfirmedAt": { "type": "string", "format": "date-time" },
+          "applicant": {
+            "type": "object",
+            "description": "Business and customer details sourced from the DAL via the check-details controller",
+            "properties": {
+              "business": {
+                "type": "object",
+                "properties": {
+                  "reference": { "type": ["string", "null"] },
+                  "name": { "type": ["string", "null"] },
+                  "vat": { "type": ["string", "null"] },
+                  "email": {
+                    "type": "object",
+                    "properties": {
+                      "address": { "type": ["string", "null"] }
+                    }
+                  },
+                  "phone": {
+                    "type": "object",
+                    "properties": {
+                      "mobile": { "type": ["string", "null"] },
+                      "landline": { "type": ["string", "null"] }
+                    }
+                  },
+                  "address": {
+                    "type": "object",
+                    "properties": {
+                      "line1": { "type": ["string", "null"] },
+                      "line2": { "type": ["string", "null"] },
+                      "line3": { "type": ["string", "null"] },
+                      "line4": { "type": ["string", "null"] },
+                      "line5": { "type": ["string", "null"] },
+                      "street": { "type": ["string", "null"] },
+                      "city": { "type": ["string", "null"] },
+                      "postalCode": { "type": ["string", "null"] },
+                      "uprn": { "type": ["string", "null"] },
+                      "county": { "type": ["string", "null"] },
+                      "buildingName": { "type": ["string", "null"] },
+                      "buildingNumberRange": { "type": ["string", "null"] },
+                      "dependentLocality": { "type": ["string", "null"] },
+                      "doubleDependentLocality": { "type": ["string", "null"] },
+                      "flatName": { "type": ["string", "null"] },
+                      "pafOrganisationName": { "type": ["string", "null"] }
+                    }
+                  }
+                }
+              },
+              "customer": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "object",
+                    "properties": {
+                      "title": { "type": ["string", "null"] },
+                      "first": { "type": ["string", "null"] },
+                      "middle": { "type": ["string", "null"] },
+                      "last": { "type": ["string", "null"] }
+                    }
+                  }
+                }
+              },
+              "countyParishHoldings": { "type": ["string", "null"] }
+            }
+          }
         }
       },
       "stages": [
@@ -251,7 +347,7 @@ x-api-key: {{x-api-key}}
 
 # @name submitExampleGrantWithAuthApplication
 
-POST {{base}}/grants/example-grant-with-auth/applications HTTP/1.1
+POST {{gasUrl}}/grants/example-grant-with-auth/applications HTTP/1.1
 Content-Type: application/json
 Authorization: Bearer {{serviceToken}}
 
@@ -262,7 +358,8 @@ Authorization: Bearer {{serviceToken}}
     "autocompleteField": "WAL",
     "radiosField": "radiosFieldOption-A2",
     "checkboxesField": ["checkboxesFieldOption-A2"],
-    "numberField": 100000,
+    "numberFieldValidation": 50000,
+    "numberFieldRouting": 50000,
     "datePartsField__day": 1,
     "datePartsField__month": 12,
     "datePartsField__year": 2025,
@@ -270,12 +367,37 @@ Authorization: Bearer {{serviceToken}}
     "monthYearField__year": 2026,
     "selectField": "selectFieldOption-A4",
     "multilineTextField": "This is a test",
-    "applicantName": "John Smith",
-    "applicantEmail": "john.smith@example.com",
-    "applicantMobile": "07111 111111",
-    "applicantBusinessAddress__addressLine1": "111 Test Street",
-    "applicantBusinessAddress__town": "Testville",
-    "applicantBusinessAddress__postcode": "TE5 7PO"
+    "emailAddressField": "test@example.com",
+    "telephoneNumberField": "01234 567890",
+    "ukAddressField__addressLine1": "1 Example Street",
+    "ukAddressField__addressLine2": null,
+    "ukAddressField__town": "Exampleton",
+    "ukAddressField__county": null,
+    "ukAddressField__postcode": "EX1 1EX",
+    "eastingNorthingField__easting": 530000,
+    "eastingNorthingField__northing": 180000,
+    "osGridRefField": "ST 678 678",
+    "nationalGridFieldNumberField": "NG 1234 5678",
+    "latLongField__latitude": 51.51945,
+    "latLongField__longitude": -0.127758,
+    "geospatialField": [
+      {
+        "id": "a",
+        "type": "Feature",
+        "properties": {
+          "description": "Example location",
+          "coordinateGridReference": "ST 00001",
+          "centroidGridReference": "ST 00001"
+        },
+        "geometry": { "type": "Point", "coordinates": [-2.5723699, 53.2380485] }
+      }
+    ],
+    "hiddenField": "hidden value",
+    "projectName": "Test project",
+    "projectDescription": "Test description",
+    "projectBudget": 50000,
+    "repeatItems": [{ "repeatItemName": "Repeat item example", "repeatItemAmount": 12000 }],
+    "landParcels": ["SD12345678"]
   },
   "metadata": {
     "clientRef": "{{$uuid}}",
@@ -290,5 +412,5 @@ Authorization: Bearer {{serviceToken}}
 
 # @name getHealth
 
-GET {{base}}/health HTTP/1.1
+GET {{gasUrl}}/health HTTP/1.1
 x-api-key: {{x-api-key}}

@@ -104,7 +104,7 @@ export function mapPaymentInfoToParcelItems(paymentInfo, actionGroups = []) {
         cardTitle: `Land parcel ${parcelKey}`,
         headerActions: buildLandParcelHeaderActions(data.sheetId, data.parcelId),
         footerActions: buildLandParcelFooterActions(
-          paymentInfo?.parcelItems,
+          paymentInfo?.parcelItems ?? {},
           data.sheetId,
           data.parcelId,
           actionGroups
@@ -165,7 +165,7 @@ export function mapAdditionalYearlyPayments(paymentInfo) {
  * @property {string} cardTitle - Card title
  * @property {object} headerActions - Header actions configuration
  * @property {object} footerActions - Footer actions configuration
- * @property {string} parcelId - Parcel identifier
+ * @property {string} parcelId - Parcel identifier (format: "sheetId parcelId")
  * @property {Array<Array<object>>} items - Table row items
  */
 

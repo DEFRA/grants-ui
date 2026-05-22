@@ -41,13 +41,13 @@ describe('Support Details Component', () => {
     let $component
 
     beforeEach(() => {
-      $component = renderSupportDetails({ typeOfSupport: 'question' })
+      $component = renderSupportDetails({ typeOfSupport: 'question', email: 'farmpayments@rpa.gov.uk' })
     })
 
     const contactInfoTests = [
       {
         name: 'RPA telephone number',
-        selector: 'a[href="tel:03000200301"]',
+        selector: '[data-type="telephone"]',
         expectedText: '03000 200 301'
       },
       {

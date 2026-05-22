@@ -11,6 +11,7 @@ import { configConfirmation } from '~/src/server/confirmation/config-confirmatio
 import { clearApplicationState } from './dev-tools/clear-application-state.js'
 import { cookies } from '~/src/server/cookies/index.js'
 import { printSubmittedApplication } from '~/src/server/print-submitted-application/print-submitted-application.controller.js'
+import { cannotSubmit } from './cannot-submit/index.js'
 
 const cdpEnvironment = config.get('cdpEnvironment')
 
@@ -30,7 +31,7 @@ export const router = {
       await server.register([auth])
 
       // Application specific routes, add your own routes here
-      await server.register([home, agreements, configConfirmation, cookies, printSubmittedApplication])
+      await server.register([home, agreements, configConfirmation, cookies, printSubmittedApplication, cannotSubmit])
 
       // Development tools (only available in development mode)
       if (

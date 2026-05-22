@@ -2,14 +2,22 @@ import 'dotenv/config'
 import { config } from '~/src/config/config.js'
 import { parseSessionKey } from '../state/get-cache-key-helper.js'
 import { createApiHeadersForGrantsUiBackend } from '../auth/backend-auth-helper.js'
-import { log, debug, LogCodes } from '../logging/log.js'
+import { debug, log, LogCodes } from '../logging/log.js'
 
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
 
+/**
+ * Sends a PATCH to the Grants UI backend to update the stored application status.
+ *
+ * @param {string} applicationStatus - The new application status to persist.
+ * @param {string} key - The session key in `sbi:grantCode` form.
+ * @param {{ lockToken?: string, grantVersion?: string }} [options] - Optional lock token and grant version.
+ * @returns {Promise<void>} Resolves once the update request completes.
+ */
 export async function updateApplicationStatus(
   applicationStatus,
   key,
-  { lockToken } = /** @type {{ lockToken?: string }} */ ({})
+  { lockToken, grantVersion = '1.0.0' } = /** @type {{ lockToken?: string, grantVersion?: string }} */ ({})
 ) {
   if (!GRANTS_UI_BACKEND_ENDPOINT?.length) {
     return
@@ -17,7 +25,7 @@ export async function updateApplicationStatus(
 
   const { sbi, grantCode } = parseSessionKey(key)
 
-  const url = new URL(`/state/${sbi}/${grantCode}`, GRANTS_UI_BACKEND_ENDPOINT)
+  const url = new URL(`/state/${sbi}/${grantCode}/${grantVersion}`, GRANTS_UI_BACKEND_ENDPOINT)
 
   log(LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG, {
     method: 'PATCH',
@@ -52,7 +60,7 @@ export async function updateApplicationStatus(
       method: 'PATCH',
       endpoint: url.href,
       identity: key,
-      errorMessage: err.message
+      errorMessage: /** @type {Error} */ (err).message
     })
     // NOSONAR TODO: See TGC-873
     // throw err

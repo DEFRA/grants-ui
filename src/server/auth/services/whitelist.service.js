@@ -9,7 +9,14 @@ const SCENARIO_FLAGS = {
 }
 
 class WhitelistServiceFactory {
+  /** @type {Map<string, WhitelistService>} */
   static #serviceCache = new Map()
+
+  /**
+   * Get a (cached) WhitelistService for the given grant metadata.
+   * @param {GrantMetadata} [grantMetadata]
+   * @returns {WhitelistService}
+   */
   static getService(grantMetadata) {
     const whitelistCrnEnvVar = grantMetadata?.whitelistCrnEnvVar
     const whitelistSbiEnvVar = grantMetadata?.whitelistSbiEnvVar
@@ -17,7 +24,7 @@ class WhitelistServiceFactory {
     const cacheKey = `${whitelistCrnEnvVar || 'none'}:${whitelistSbiEnvVar || 'none'}`
 
     if (this.#serviceCache.has(cacheKey)) {
-      return this.#serviceCache.get(cacheKey)
+      return /** @type {WhitelistService} */ (this.#serviceCache.get(cacheKey))
     }
 
     const crnWhitelist = whitelistCrnEnvVar ? this._parseWhitelist(process.env[whitelistCrnEnvVar]) : []
@@ -29,6 +36,11 @@ class WhitelistServiceFactory {
     return service
   }
 
+  /**
+   * Parse a comma-separated whitelist string into a trimmed, non-empty array.
+   * @param {string | undefined} whitelistValue
+   * @returns {string[]}
+   */
   static _parseWhitelist(whitelistValue) {
     if (!whitelistValue || whitelistValue.trim() === '') {
       return []
@@ -46,6 +58,10 @@ class WhitelistServiceFactory {
 }
 
 class WhitelistService {
+  /**
+   * @param {string[]} [crnWhitelist]
+   * @param {string[]} [sbiWhitelist]
+   */
   constructor(crnWhitelist = [], sbiWhitelist = []) {
     this.crnWhitelist = crnWhitelist
     this.sbiWhitelist = sbiWhitelist
@@ -104,7 +120,7 @@ class WhitelistService {
    * Validate grant access for CRN and SBI based on injected whitelists
    * @param {string} crn - The user's CRN from DefraID
    * @param {string} sbi - The SBI number
-   * @returns {object} Validation result object
+   * @returns {ValidationResult} Validation result object
    */
   validateGrantAccess(crn, sbi) {
     const crnPassesValidation = this.isCrnWhitelisted(crn)
@@ -121,15 +137,14 @@ class WhitelistService {
 
   /**
    * Helper method to log whitelist events with consistent structure
-   * @param {object} logCode - Logging options.
-   * @param {import('../../common/helpers/logging/log-codes-definition.js').LogTypes.LogLevel} logCode.level - The log level.
-   * @param {Function} logCode.messageFunc - A function that creates an interpolated message string
+   * @param {LogCodesDefinition} logCode - The log code definition (level + message builder).
    * @param {string} crn - The user's CRN
    * @param {string} sbi - The SBI number
    * @param {string} path - The request path
    * @param {string} [validationType] - Optional validation type description
    */
   _logWhitelistEvent(logCode, crn, sbi, path, validationType) {
+    /** @type {{ userId: string, path: string, sbi: string, validationType?: string }} */
     const logData = {
       userId: crn,
       path,
@@ -179,6 +194,11 @@ class WhitelistService {
   /**
    * Calculate scenario key based on validation flags
    * @private
+   * @param {boolean} hasCrnValidation
+   * @param {boolean} hasSbiValidation
+   * @param {boolean} crnPassesValidation
+   * @param {boolean} sbiPassesValidation
+   * @returns {number}
    */
   _calculateScenarioKey(hasCrnValidation, hasSbiValidation, crnPassesValidation, sbiPassesValidation) {
     return (
@@ -192,8 +212,13 @@ class WhitelistService {
   /**
    * Get scenario configuration based on key
    * @private
+   * @param {number} scenarioKey
+   * @param {string} crn
+   * @param {string} sbi
+   * @returns {ScenarioConfig | undefined}
    */
   _getScenarioConfig(scenarioKey, crn, sbi) {
+    /** @type {Record<number, ScenarioConfig>} */
     const scenarios = {
       15: {
         logCode: LogCodes.AUTH.WHITELIST_ACCESS_GRANTED,
@@ -237,3 +262,26 @@ class WhitelistService {
 const whitelistService = new WhitelistService()
 
 export { WhitelistService, WhitelistServiceFactory, whitelistService }
+
+/**
+ * @import { LogCodesDefinition } from '~/src/server/common/helpers/logging/log-codes/definition.js'
+ */
+
+/**
+ * @typedef {{ whitelistCrnEnvVar?: string, whitelistSbiEnvVar?: string }} GrantMetadata
+ *
+ * @typedef {{
+ *   logCode: LogCodesDefinition,
+ *   userId: string,
+ *   sbi: string,
+ *   validationType?: string
+ * }} ScenarioConfig
+ *
+ * @typedef {{
+ *   crnPassesValidation: boolean,
+ *   sbiPassesValidation: boolean,
+ *   hasCrnValidation: boolean,
+ *   hasSbiValidation: boolean,
+ *   overallAccess: boolean
+ * }} ValidationResult
+ */

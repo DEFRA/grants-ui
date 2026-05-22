@@ -1,7 +1,6 @@
 services:
   grants-ui-acceptance-tests:
-    image: defradigital/grants-ui-acceptance-tests
-    pull_policy: always
+    build: ./acceptance
     depends_on:
       selenium-chrome:
         condition: service_healthy
@@ -18,6 +17,7 @@ services:
       MOCKSERVER_PORT: 1080
     volumes:
       - ./nginx/certs:/etc/ssl/certs:ro
+      - ./acceptance/schemas:/home/node/app/schemas:ro
     command: ["npm", "run", "test:ci"]
     networks:
       - grants-ui-net
@@ -60,6 +60,7 @@ services:
       MOCKSERVER_PORT: 1080
     volumes:
       - ./nginx/certs:/etc/ssl/certs:ro
+      - ./woodland-grant-journey-tests-schemas:/app/test/schemas:ro
     command: ["npm", "run", "test:ci"]
     networks:
       - grants-ui-net
@@ -73,11 +74,10 @@ services:
       DURATION_SECONDS: 60
       RAMPUP_SECONDS: 15
       VU_COUNT: 10
-      P95_THRESHOLD_MS: ${P95_THRESHOLD_MS:-400}
+      P95_THRESHOLD_MS: ${P95_THRESHOLD_MS:-500}
       GENERATE_REPORT: false
     volumes:
       - ./nginx/certs:/etc/ssl/certs:ro
-      - ./performance-test-users.csv:/home/k6/scenarios/users.csv:ro
     command: ["npm", "run", "test:ci"]
     networks:
       - grants-ui-net

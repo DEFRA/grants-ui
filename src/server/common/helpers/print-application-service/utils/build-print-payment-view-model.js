@@ -2,13 +2,17 @@ import { formatPrice } from '~/src/server/common/utils/payment.js'
 import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
 
 /**
+ * @import { PrintPayment, PrintParcelCard, PrintTableCell } from '~/src/server/common/helpers/print-application-service/types/print-payment.d.js'
+ */
+
+/**
  * Builds a print-friendly view model from payment data.
- * Returns null when there is no payment data.
- * @param {object | undefined} payment
- * @returns {{ totalAnnualPayment: string, parcelItems: object[], additionalPayments: object[] } | null}
+ * Returns null when there is no payment data or parcelItems is empty.
+ * @param {PrintPayment | undefined} payment
+ * @returns {{ totalAnnualPayment: string, parcelItems: PrintParcelCard[], additionalPayments: PrintTableCell[][] } | null}
  */
 export function buildPrintPaymentViewModel(payment) {
-  if (!payment) {
+  if (!payment?.parcelItems || !Object.keys(payment.parcelItems).length) {
     return null
   }
 
@@ -21,8 +25,8 @@ export function buildPrintPaymentViewModel(payment) {
 
 /**
  * Groups parcel items by sheetId + parcelId into summary cards with table rows.
- * @param {object} payment
- * @returns {Array<{ cardTitle: string, items: Array<Array<object>> }>}
+ * @param {PrintPayment} payment
+ * @returns {PrintParcelCard[]}
  */
 export function buildPrintParcelItems(payment) {
   const grouped = Object.values(payment.parcelItems || {}).reduce((acc, data) => {
@@ -42,15 +46,15 @@ export function buildPrintParcelItems(payment) {
     ])
 
     return acc
-  }, {})
+  }, /** @type {Record<string, PrintParcelCard>} */ ({}))
 
   return Object.values(grouped)
 }
 
 /**
  * Maps agreement-level items into table rows for additional annual payments.
- * @param {object} payment
- * @returns {Array<Array<object>>}
+ * @param {PrintPayment} payment
+ * @returns {PrintTableCell[][]}
  */
 export function buildPrintAdditionalPayments(payment) {
   return Object.values(payment.agreementLevelItems || {}).map((data) => [

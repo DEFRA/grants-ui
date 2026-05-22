@@ -5,11 +5,13 @@ import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.j
 import {
   fetchBusinessAndCustomerInformation,
   fetchParcelsFromDal,
+  fetchBusinessPermissions,
   executeConfigDrivenQuery,
   hasOnlyToleratedFailures,
   fetchBusinessAndCPH
 } from './consolidated-view.service.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
+import { log } from '~/src/server/common/helpers/logging/log.js'
 
 vi.mock('~/src/server/common/helpers/retry.js')
 
@@ -256,6 +258,26 @@ describe('Consolidated View Service', () => {
       )
     })
 
+    it('should log CONSOLIDATED_VIEW_API_ERROR at error level on upstream failure', async () => {
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        text: () => Promise.resolve('Server error')
+      })
+
+      await expect(fetchBusinessAndCPH(mockRequest)).rejects.toThrow()
+
+      expect(log).toHaveBeenCalledWith(
+        expect.objectContaining({ level: 'error' }),
+        expect.objectContaining({
+          sbi: mockSbi,
+          errorMessage: expect.stringContaining('500')
+        }),
+        mockRequest
+      )
+    })
+
     it('should use stub endpoint in mock mode', async () => {
       config.set('consolidatedView', {
         apiEndpoint: 'https://api.example.com/graphql',
@@ -408,6 +430,136 @@ describe('Consolidated View Service', () => {
         expect(error.details.status).toBe(500)
         expect(error.details.responseBody).toBe('Server error')
       }
+    })
+  })
+
+  describe('fetchBusinessPermissions', () => {
+    const mockPermissionGroups = [
+      {
+        id: 'COUNTRYSIDE_STEWARDSHIP_APPLICATIONS',
+        level: 'SUBMIT',
+        functions: ['View Applications', 'Submit CS Application']
+      },
+      {
+        id: 'ENVIRONMENTAL_LAND_MANAGEMENT_APPLICATIONS',
+        level: 'NO_ACCESS',
+        functions: []
+      }
+    ]
+
+    it('should fetch business permissions successfully', async () => {
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            data: {
+              customer: {
+                business: {
+                  permissionGroups: mockPermissionGroups
+                }
+              }
+            }
+          })
+      })
+
+      const result = await fetchBusinessPermissions(mockRequest)
+
+      expect(result).toEqual(mockPermissionGroups)
+
+      expect(mockFetchInstance).toHaveBeenCalledTimes(1)
+
+      const [[, calledOptions]] = mockFetchInstance.mock.calls
+
+      expect(calledOptions.headers.Authorization).toBe(`Bearer ${mockToken}`)
+      expect(calledOptions.headers['Content-Type']).toBe('application/json')
+
+      const body = JSON.parse(calledOptions.body)
+
+      expect(body.query).toContain(`business(sbi: "${mockSbi}")`)
+      expect(body.query).toContain(`customer(crn: "${mockCrn}")`)
+      expect(body.query).toContain('query GetBusinessPermissions')
+      expect(body.query).toContain('permissionGroups')
+      expect(body.query).toContain('id')
+      expect(body.query).toContain('level')
+      expect(body.query).toContain('functions')
+    })
+
+    it('should return empty array when business is null', async () => {
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            data: {
+              customer: {
+                business: null
+              }
+            }
+          })
+      })
+
+      const result = await fetchBusinessPermissions(mockRequest)
+
+      expect(result).toEqual([])
+    })
+
+    it('should return empty array when permissionGroups are missing', async () => {
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            data: {
+              customer: {
+                business: {}
+              }
+            }
+          })
+      })
+
+      const result = await fetchBusinessPermissions(mockRequest)
+
+      expect(result).toEqual([])
+    })
+
+    it('should throw error when API call fails', async () => {
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        text: () => Promise.resolve('Server error')
+      })
+
+      await expect(fetchBusinessPermissions(mockRequest)).rejects.toThrow(
+        'Failed to fetch business data: 500 Internal Server Error'
+      )
+    })
+
+    it('should execute query against stub in mock mode', async () => {
+      config.set('consolidatedView', {
+        apiEndpoint: 'https://api.example.com/graphql',
+        mockDALEnabled: true,
+        stubUrl: 'http://stub/graphql'
+      })
+
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: {
+            customer: {
+              business: {
+                permissionGroups: mockPermissionGroups
+              }
+            }
+          }
+        })
+      })
+
+      const result = await fetchBusinessPermissions(mockRequest)
+
+      expect(result).toEqual(mockPermissionGroups)
+
+      const [url] = mockFetchInstance.mock.calls[0]
+
+      expect(url).toBe('http://stub/graphql')
     })
   })
 

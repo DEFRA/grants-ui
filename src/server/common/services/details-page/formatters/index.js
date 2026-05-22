@@ -2,6 +2,7 @@ import { textFormatter } from './text.formatter.js'
 import { fullNameFormatter } from './full-name.formatter.js'
 import { addressFormatter } from './address.formatter.js'
 import { contactDetailsFormatter } from './contact-details.formatter.js'
+import { phoneNumbersFormatter } from './phone-numbers.formatter.js'
 
 /**
  * Registry of available formatters
@@ -10,7 +11,8 @@ const formatters = {
   text: textFormatter,
   fullName: fullNameFormatter,
   address: addressFormatter,
-  contactDetails: contactDetailsFormatter
+  contactDetails: contactDetailsFormatter,
+  phoneNumbers: phoneNumbersFormatter
 }
 
 /**
@@ -26,3 +28,4 @@ export { textFormatter } from './text.formatter.js'
 export { fullNameFormatter } from './full-name.formatter.js'
 export { addressFormatter } from './address.formatter.js'
 export { contactDetailsFormatter } from './contact-details.formatter.js'
+export { phoneNumbersFormatter } from './phone-numbers.formatter.js'

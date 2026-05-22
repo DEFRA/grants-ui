@@ -34,7 +34,8 @@ describe('RemoveActionPageController', () => {
   }
 
   beforeEach(() => {
-    controller = new RemoveActionPageController()
+    const mockModel = { def: { metadata: { tasklist: {} } }, getSection: vi.fn() }
+    controller = new RemoveActionPageController(mockModel, {})
     controller.setState = vi.fn().mockResolvedValue(true)
     controller.proceed = vi.fn().mockReturnValue('redirected')
     controller.performAuthCheck = vi.fn().mockResolvedValue(null)

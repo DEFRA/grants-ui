@@ -1,5 +1,6 @@
+import Joi from 'joi'
 import { cookiesController, cookiesPostController } from './cookies.controller.js'
-import { COOKIE_PAGE_URL } from './constants.js'
+import { COOKIE_PAGE_URL, MAX_RETURN_URL_LENGTH } from './constants.js'
 
 /**
  * Sets up the routes for the cookies page.
@@ -28,8 +29,15 @@ export const cookies = {
           path: COOKIE_PAGE_URL,
           options: {
             auth: false,
-            plugins: {
-              crumb: false
+            validate: {
+              payload: Joi.object({
+                analytics: Joi.boolean().required(),
+                async: Joi.boolean().default(false),
+                crumb: Joi.string().allow('').optional(),
+                returnUrl: Joi.string().allow('').max(MAX_RETURN_URL_LENGTH).optional()
+              }),
+              options: { abortEarly: false },
+              failAction: 'ignore'
             }
           },
           ...cookiesPostController

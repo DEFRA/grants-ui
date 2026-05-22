@@ -8,7 +8,7 @@ const mockStrategyFetch = vi.hoisted(() => vi.fn())
 vi.mock('~/src/server/payment/payment-strategies.js', () => ({
   paymentStrategies: {
     multiAction: {
-      fetch: mockStrategyFetch
+      calculatePayment: mockStrategyFetch
     }
   }
 }))
@@ -67,6 +67,7 @@ describe('PaymentPageController', () => {
           pageConfig: {
             '/test': {
               paymentStrategy: 'multiAction',
+              showAddMoreActionsQuestion: true,
               redirects: {
                 next: '/you-must-have-consent',
                 addMoreActions: '/select-land-parcel'
@@ -367,6 +368,39 @@ describe('PaymentPageController', () => {
         }
       }
       expect(() => new PaymentPageController(model, { path: '/test' })).not.toThrow()
+    })
+
+    test('should throw when paymentStrategy is unknown', () => {
+      const model = {
+        def: {
+          metadata: {
+            pageConfig: {
+              '/test': {
+                paymentStrategy: 'unknownStrategy',
+                redirects: { next: '/done' }
+              }
+            }
+          }
+        }
+      }
+      expect(() => new PaymentPageController(model, { path: '/test' })).toThrow(
+        'Unknown paymentStrategy "unknownStrategy"'
+      )
+    })
+
+    test('should throw when paymentStrategy is undefined', () => {
+      const model = {
+        def: {
+          metadata: {
+            pageConfig: {
+              '/test': {
+                redirects: { next: '/done' }
+              }
+            }
+          }
+        }
+      }
+      expect(() => new PaymentPageController(model, { path: '/test' })).toThrow('Unknown paymentStrategy "undefined"')
     })
   })
 })

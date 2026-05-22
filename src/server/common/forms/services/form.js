@@ -18,7 +18,11 @@ import {
 } from './forms-redis.js'
 import { waitForRedisReady } from '~/src/server/common/helpers/redis-client.js'
 import { ApiFormService } from './api-form-service.js'
+import { validateDetailsPageConfig } from '~/src/server/common/services/details-page/validate-details-page-config.js'
 
+/**
+ * @returns {Promise<SharedRedirectRules>}
+ */
 async function loadSharedRedirectRules() {
   const filePath = path.resolve(process.cwd(), 'src/server/common/forms/shared-redirect-rules.yaml')
   const raw = await readFile(filePath, 'utf8')
@@ -26,7 +30,7 @@ async function loadSharedRedirectRules() {
   const rules = parsed.sharedRedirectRules ?? {}
 
   if (rules.postSubmission) {
-    rules.postSubmission = rules.postSubmission.map((rule) => ({
+    rules.postSubmission = rules.postSubmission.map((/** @type {PostSubmissionRule} */ rule) => ({
       ...rule,
       toPath: rule.toPath === '__AGREEMENTS_BASE_URL__' ? agreements.get('baseUrl') : rule.toPath
     }))
@@ -35,6 +39,10 @@ async function loadSharedRedirectRules() {
   return rules
 }
 
+/**
+ * @param {FormDefinition} definition
+ * @returns {FormDefinition}
+ */
 export function configureFormDefinition(definition) {
   const environment = config.get('cdpEnvironment')
 
@@ -42,7 +50,8 @@ export function configureFormDefinition(definition) {
     const url = page.events?.onLoad?.options?.url
     if (url) {
       if (environment !== 'local') {
-        page.events.onLoad.options.url = url.replace('cdpEnvironment', environment)
+        const opts = /** @type {{ url: string }} */ (page.events?.onLoad?.options)
+        opts.url = url.replace('cdpEnvironment', environment)
       } else {
         logger.warn(`Unexpected environment value: ${environment}`)
       }
@@ -63,6 +72,10 @@ export function configureFormDefinition(definition) {
  *     config:
  *       myCustomParam: true
  */
+/**
+ * @param {FormDefinition} definition
+ * @returns {FormDefinition}
+ */
 export function hoistPageConfig(definition) {
   if (!definition.pages?.length) {
     return definition
@@ -70,11 +83,13 @@ export function hoistPageConfig(definition) {
 
   definition.metadata ??= {}
   definition.metadata.pageConfig ??= {}
+  const pageConfig = /** @type {Record<string, unknown>} */ (definition.metadata.pageConfig)
 
   for (const page of definition.pages) {
-    if (page.config) {
-      definition.metadata.pageConfig[page.path] = page.config
-      delete page.config
+    const p = /** @type {typeof page & { config?: Record<string, unknown> }} */ (page)
+    if (p.config) {
+      pageConfig[p.path] = p.config
+      delete p.config
     }
   }
 
@@ -82,6 +97,10 @@ export function hoistPageConfig(definition) {
 }
 
 class GrantsFormLoader extends FileFormService {
+  /**
+   * @param {string} id
+   * @returns {FormDefinition}
+   */
   getFormDefinition(id) {
     const definition = super.getFormDefinition(id)
 
@@ -90,6 +109,11 @@ class GrantsFormLoader extends FileFormService {
   }
 }
 
+/**
+ * @param {GrantsFormLoader} loader
+ * @param {YamlForm[]} forms
+ * @returns {Promise<number>}
+ */
 export async function addAllForms(loader, forms) {
   const addedForms = new Set()
 
@@ -105,23 +129,38 @@ export async function addAllForms(loader, forms) {
 
   await Promise.all(
     uniqueForms.map((form) =>
-      loader.addForm(form.path, {
-        ...metadata,
-        id: form.id,
-        slug: form.slug,
-        title: form.title,
-        metadata: form.metadata
-      })
+      loader.addForm(
+        form.path,
+        /** @type {FormMetadata} */ ({
+          ...metadata,
+          id: form.id,
+          slug: form.slug,
+          title: form.title,
+          metadata: form.metadata
+        })
+      )
     )
   )
 
   return addedForms.size
 }
 
+/**
+ * @param {unknown} a
+ * @param {unknown} b
+ * @returns {boolean}
+ */
 function exactlyOneDefined(a, b) {
   return Boolean(a) !== Boolean(b) // XOR
 }
 
+/**
+ * @param {string | undefined} whitelistCrnEnvVar
+ * @param {string | undefined} whitelistSbiEnvVar
+ * @param {FormSummary} form
+ * @param {FormDefinition} definition
+ * @returns {void}
+ */
 export function validateWhitelistVariableCompleteness(whitelistCrnEnvVar, whitelistSbiEnvVar, form, definition) {
   if (!exactlyOneDefined(whitelistCrnEnvVar, whitelistSbiEnvVar)) {
     return
@@ -138,6 +177,12 @@ export function validateWhitelistVariableCompleteness(whitelistCrnEnvVar, whitel
   )
 }
 
+/**
+ * @param {string | undefined} whitelistCrnEnvVar
+ * @param {FormSummary} form
+ * @param {FormDefinition} definition
+ * @returns {void}
+ */
 function validateCrnEnvironmentVariable(whitelistCrnEnvVar, form, definition) {
   if (whitelistCrnEnvVar && !process.env[whitelistCrnEnvVar]) {
     const formName = definition.name || form.title || 'unnamed'
@@ -150,6 +195,12 @@ function validateCrnEnvironmentVariable(whitelistCrnEnvVar, form, definition) {
   }
 }
 
+/**
+ * @param {string | undefined} whitelistSbiEnvVar
+ * @param {FormSummary} form
+ * @param {FormDefinition} definition
+ * @returns {void}
+ */
 function validateSbiEnvironmentVariable(whitelistSbiEnvVar, form, definition) {
   if (whitelistSbiEnvVar && !process.env[whitelistSbiEnvVar]) {
     const formName = definition.name || form.title || 'unnamed'
@@ -163,10 +214,31 @@ function validateSbiEnvironmentVariable(whitelistSbiEnvVar, form, definition) {
   }
 }
 
+/**
+ * @param {FormSummary} form
+ * @param {FormDefinition} definition
+ * @returns {void}
+ */
+export function validateDetailsPageConfiguration(form, definition) {
+  if (!definition.metadata?.detailsPage) {
+    return
+  }
+  const formName = definition.name || form.title || 'unnamed'
+  validateDetailsPageConfig(
+    /** @type {Parameters<typeof validateDetailsPageConfig>[0]} */ (definition.metadata.detailsPage),
+    formName
+  )
+}
+
+/**
+ * @param {FormSummary} form
+ * @param {FormDefinition} definition
+ * @returns {void}
+ */
 export function validateWhitelistConfiguration(form, definition) {
   if (definition.metadata) {
-    const whitelistCrnEnvVar = definition.metadata.whitelistCrnEnvVar
-    const whitelistSbiEnvVar = definition.metadata.whitelistSbiEnvVar
+    const whitelistCrnEnvVar = /** @type {string | undefined} */ (definition.metadata.whitelistCrnEnvVar)
+    const whitelistSbiEnvVar = /** @type {string | undefined} */ (definition.metadata.whitelistSbiEnvVar)
 
     validateWhitelistVariableCompleteness(whitelistCrnEnvVar, whitelistSbiEnvVar, form, definition)
     validateCrnEnvironmentVariable(whitelistCrnEnvVar, form, definition)
@@ -174,7 +246,12 @@ export function validateWhitelistConfiguration(form, definition) {
   }
 }
 
+/**
+ * @param {string} baseDir
+ * @returns {Promise<string[]>}
+ */
 async function listYamlFilesRecursively(baseDir) {
+  /** @type {string[]} */
   const out = []
   const entries = await fs.readdir(baseDir, { withFileTypes: true })
   for (const e of entries) {
@@ -201,10 +278,15 @@ const postSubmissionRuleSchema = Joi.object({
   toPath: Joi.string().pattern(/^\/.*/).required()
 })
 
+/**
+ * @param {FormSummary} form
+ * @param {FormDefinition} definition
+ * @returns {void}
+ */
 export function validateGrantRedirectRules(form, definition) {
   const formName = definition.name || form.title || 'unnamed'
 
-  const redirectRules = definition.metadata?.grantRedirectRules ?? {}
+  const redirectRules = /** @type {SharedRedirectRules} */ (definition.metadata?.grantRedirectRules ?? {})
   const preSubmission = redirectRules.preSubmission ?? []
   const postSubmission = redirectRules.postSubmission ?? []
 
@@ -256,20 +338,27 @@ export function validateGrantRedirectRules(form, definition) {
   }
 }
 
+/**
+ * @param {string[]} apiSlugs
+ * @param {string} [baseDir]
+ * @returns {Promise<YamlForm[]>}
+ */
 async function discoverFormsFromYaml(
   apiSlugs,
   baseDir = path.resolve(process.cwd(), 'src/server/common/forms/definitions')
 ) {
   const isProduction = config.get('cdpEnvironment')?.toLowerCase() === 'prod'
   const apiSlugSet = new Set(apiSlugs)
+  /** @type {string[]} */
   let files = []
   try {
     files = await listYamlFilesRecursively(baseDir)
   } catch (err) {
-    logger.error(`Failed to read forms directory "${baseDir}": ${err?.message}`)
+    logger.error(`Failed to read forms directory "${baseDir}": ${/** @type {Error} */ (err)?.message}`)
     return []
   }
 
+  /** @type {YamlForm[]} */
   const forms = []
   for (const filePath of files) {
     try {
@@ -298,13 +387,17 @@ async function discoverFormsFromYaml(
         })
       }
     } catch (err) {
-      logger.error(`Failed to parse YAML form "${filePath}": ${err?.message}`)
+      logger.error(`Failed to parse YAML form "${filePath}": ${/** @type {Error} */ (err)?.message}`)
     }
   }
 
   return forms
 }
 
+/**
+ * @param {string[]} apiSlugs
+ * @returns {Promise<{ loader: GrantsFormLoader, yamlForms: YamlForm[] }>}
+ */
 async function initialiseLoader(apiSlugs) {
   const loader = new GrantsFormLoader()
   const yamlForms = await discoverFormsFromYaml(apiSlugs)
@@ -312,13 +405,21 @@ async function initialiseLoader(apiSlugs) {
   return { loader, yamlForms }
 }
 
+/**
+ * @param {GrantsFormLoader} loader
+ * @param {FormsRedisClient} redis
+ * @param {YamlForm[]} yamlForms
+ * @param {SharedRedirectRules} sharedRules
+ * @returns {Promise<void>}
+ */
 async function registerYamlForms(loader, redis, yamlForms, sharedRules) {
   for (const form of yamlForms) {
     try {
       const definition = loader.getFormDefinition(form.id)
-      definition.metadata.grantRedirectRules = {
+      const meta = /** @type {Record<string, unknown>} */ (definition.metadata ??= {})
+      meta.grantRedirectRules = {
         ...sharedRules,
-        ...definition.metadata.grantRedirectRules
+        .../** @type {Record<string, unknown> | undefined} */ (meta.grantRedirectRules)
       }
 
       validateWhitelistConfiguration(form, definition)
@@ -326,6 +427,8 @@ async function registerYamlForms(loader, redis, yamlForms, sharedRules) {
 
       validateGrantRedirectRules(form, definition)
       logger.info(`Grant redirect rules validated for form: ${form.title}`)
+
+      validateDetailsPageConfiguration(form, definition)
 
       await Promise.all([
         setFormMeta(redis, form.slug, {
@@ -339,12 +442,17 @@ async function registerYamlForms(loader, redis, yamlForms, sharedRules) {
         setSlugReverse(redis, form.id, form.slug)
       ])
     } catch (error) {
-      logger.error(`Form validation failed during startup for ${form.title}: ${error.message}`)
+      logger.error(`Form validation failed during startup for ${form.title}: ${/** @type {Error} */ (error).message}`)
       throw error
     }
   }
 }
 
+/**
+ * @param {BaseFormsService} baseService
+ * @param {ApiFormService} apiFormService
+ * @param {FormsRedisClient} redis
+ */
 function buildServiceInterface(baseService, apiFormService, redis) {
   return {
     /**
@@ -374,7 +482,7 @@ function buildServiceInterface(baseService, apiFormService, redis) {
 
     /**
      * @param {string} id
-     * @param {unknown} state
+     * @param {import('@defra/forms-engine-plugin/types').FormStatus} state
      */
     getFormDefinition: async (id, state) => {
       const slug = await getSlugByFormId(redis, id)
@@ -390,6 +498,13 @@ function buildServiceInterface(baseService, apiFormService, redis) {
       } catch (error) {
         throw notFound(`Form definition '${id}' not found`, error)
       }
+    },
+
+    /**
+     * @param {string} slug
+     */
+    getFormDefinitionBySlug: async (slug) => {
+      return await apiFormService.getFormDefinition(redis, slug, configureFormDefinition)
     }
   }
 }
@@ -419,7 +534,8 @@ export const formsService = async () => {
       sharedRules,
       configureFormDefinition,
       validateWhitelistConfiguration,
-      validateGrantRedirectRules
+      validateGrantRedirectRules,
+      validateDetailsPageConfiguration
     )
   }
 
@@ -430,9 +546,62 @@ export const formsService = async () => {
 }
 
 /**
- * @typedef {import('@defra/forms-model').FormDefinition & { metadata: NonNullable<import('@defra/forms-model').FormDefinition['metadata']> }} FormDefinitionWithMetadata
+ * @import { FormDefinition, FormMetadata, FormMetadataInput } from '@defra/forms-model'
+ * @import { Redis, Cluster } from 'ioredis'
  */
 
 /**
- * @typedef {import('@defra/forms-model').FormMetadataInput & { slug: string }} FormMetadataInputWithSlug
+ * @typedef {FormDefinition & { metadata: NonNullable<FormDefinition['metadata']> }} FormDefinitionWithMetadata
+ */
+
+/**
+ * @typedef {FormMetadataInput & { slug: string }} FormMetadataInputWithSlug
+ */
+
+/**
+ * @typedef {Redis | Cluster} FormsRedisClient
+ */
+
+/**
+ * @typedef {object} PostSubmissionRule
+ * @property {string} fromGrantsStatus
+ * @property {string} gasStatus
+ * @property {string} toGrantsStatus
+ * @property {string} toPath
+ */
+
+/**
+ * @typedef {object} PreSubmissionRule
+ * @property {string} toPath
+ */
+
+/**
+ * @typedef {object} SharedRedirectRules
+ * @property {PreSubmissionRule[]} [preSubmission]
+ * @property {PostSubmissionRule[]} [postSubmission]
+ */
+
+/**
+ * @typedef {object} YamlFormMetadata
+ * @property {string} id
+ * @property {boolean} [enabledInProd]
+ */
+
+/**
+ * @typedef {object} YamlForm
+ * @property {string} path
+ * @property {string} id
+ * @property {string} slug
+ * @property {string} title
+ * @property {YamlFormMetadata & Record<string, unknown>} metadata
+ */
+
+/**
+ * @typedef {{ title?: string }} FormSummary
+ */
+
+/**
+ * @typedef {object} BaseFormsService
+ * @property {(slug: string) => Promise<unknown>} getFormMetadata
+ * @property {(id: string, state: import('@defra/forms-engine-plugin/types').FormStatus) => Promise<unknown>} getFormDefinition
  */

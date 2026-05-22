@@ -101,7 +101,8 @@ export function deleteParcelFromState(state, parcel) {
   if (Object.keys(newState.landParcels || {}).length === 0) {
     delete newState.landParcels
     delete newState.payment
-    delete newState.draftApplicationAnnualTotalPence
+    delete newState.totalPence
+    delete newState.totalPayment
   }
 
   return newState
@@ -129,7 +130,8 @@ export function deleteActionFromState(state, parcel, action) {
     if (Object.keys(newState.landParcels || {}).length === 0) {
       delete newState.landParcels
       delete newState.payment
-      delete newState.draftApplicationAnnualTotalPence
+      delete newState.totalPence
+      delete newState.totalPayment
     }
   }
 

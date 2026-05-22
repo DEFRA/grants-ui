@@ -2,6 +2,7 @@ import { beforeEach, vi } from 'vitest'
 import { mockFetch, mockFetchWithResponse, mockSimpleRequest } from '~/src/__mocks__/hapi-mocks.js'
 import { config } from '~/src/config/config.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
+import { log } from '~/src/server/common/helpers/logging/log.js'
 
 let invokeGasGetAction
 let invokeGasPostAction
@@ -248,6 +249,27 @@ describe('Grant Application service (token present)', () => {
         },
         body: JSON.stringify(payload)
       })
+    })
+
+    test('should log EXTERNAL_API_ERROR with service and upstreamStatus on GAS 5xx', async () => {
+      const mockedFetch = mockFetch()
+      mockedFetch.mockResolvedValue({
+        ok: false,
+        status: 502,
+        json: () => ({ message: 'Bad Gateway' }),
+        statusText: 'Bad Gateway'
+      })
+
+      await expect(invokeGasPostAction(code, actionName, payload)).rejects.toThrow()
+
+      expect(log).toHaveBeenCalledWith(
+        expect.objectContaining({ level: 'error' }),
+        expect.objectContaining({
+          service: 'grant-application-service',
+          upstreamStatus: 502
+        }),
+        undefined
+      )
     })
   })
 
@@ -503,6 +525,23 @@ describe('Grant Application service (token present)', () => {
       expect(thrownError.name).toBe('GrantApplicationServiceApiError')
       expect(thrownError.message).toBe('Failed to process GAS API request: Network connection failed')
       expect(thrownError.grantCode).toBe(testGrantCode)
+    })
+
+    test('should drain response body for 204 responses', async () => {
+      const mockedFetch = mockFetch()
+
+      const mockRawResponse = {
+        ok: true,
+        status: 204,
+        body: true,
+        arrayBuffer: vi.fn().mockResolvedValueOnce(undefined)
+      }
+
+      mockedFetch.mockResolvedValueOnce(mockRawResponse)
+
+      await makeGasApiRequest(testUrl, testGrantCode, mockRequest)
+
+      expect(mockRawResponse.arrayBuffer).toHaveBeenCalled()
     })
   })
 

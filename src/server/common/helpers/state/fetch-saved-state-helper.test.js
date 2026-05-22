@@ -88,7 +88,7 @@ describe('State API helpers', () => {
       it('includes authorization header in fetch request', async () => {
         mockFetch.mockResolvedValue(createMockFetchResponse({ data: MOCK_STATE_DATA.DEFAULT }))
 
-        await fetchSavedStateFromApi(key)
+        await fetchSavedStateFromApi(key, mockRequest)
 
         expect(mockFetch).toHaveBeenCalledTimes(1)
         expect(mockFetch).toHaveBeenCalledWith(
@@ -202,7 +202,7 @@ describe('State API helpers', () => {
       })
 
       it('returns null when GRANTS_UI_BACKEND_ENDPOINT is not configured', async () => {
-        const result = await fetchSavedStateFromApi(key)
+        const result = await fetchSavedStateFromApi(key, mockRequest)
 
         expect(result).toBeNull()
         expect(mockFetch).not.toHaveBeenCalled()
@@ -250,7 +250,7 @@ describe('State API helpers', () => {
       it('includes authorization header in fetch request', async () => {
         mockFetch.mockResolvedValue(createMockFetchResponse({ data: MOCK_STATE_DATA.DEFAULT }))
 
-        await clearSavedStateFromApi(key)
+        await clearSavedStateFromApi(key, mockRequest)
 
         expect(mockFetch).toHaveBeenCalledTimes(1)
         expect(mockFetch).toHaveBeenCalledWith(
@@ -364,7 +364,7 @@ describe('State API helpers', () => {
       })
 
       it('returns null when GRANTS_UI_BACKEND_ENDPOINT is not configured', async () => {
-        const result = await clearSavedStateFromApi(key)
+        const result = await clearSavedStateFromApi(key, mockRequest)
 
         expect(result).toBeNull()
         expect(mockFetch).not.toHaveBeenCalled()

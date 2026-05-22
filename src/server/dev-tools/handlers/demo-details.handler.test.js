@@ -240,7 +240,6 @@ describe('demo-details.handler', () => {
       expect(result).toEqual({
         serviceName: 'Test Form',
         serviceUrl: '/test-form',
-        continueUrl: '/test-form',
         isDevelopmentMode: true,
         backLink: { text: 'Back', href: '/test-form/check-details' }
       })
@@ -254,11 +253,10 @@ describe('demo-details.handler', () => {
       expect(result.serviceName).toBe('Check your details')
     })
 
-    test('should use fallback serviceUrl and continueUrl when slug is empty', () => {
+    test('should use fallback serviceUrl when slug is empty', () => {
       const result = buildIncorrectDetailsViewModel(mockForm, '')
 
       expect(result.serviceUrl).toBe('/')
-      expect(result.continueUrl).toBe('/')
     })
   })
 
@@ -287,7 +285,6 @@ describe('demo-details.handler', () => {
         expect.objectContaining({
           serviceName: 'Test Form',
           serviceUrl: '/test-form',
-          continueUrl: '/test-form',
           isDevelopmentMode: true
         })
       )

@@ -1,12 +1,19 @@
-import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
-import { log, debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { debug, log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import { getCachedAuthParcels, setCachedAuthParcels } from '~/src/server/land-grants/services/parcel-cache.js'
 import { stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
+import { withTaskContext } from '~/src/server/task-list/task-list.helper.js'
+import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 
-export default class QuestionPageWithParcelCheckController extends QuestionPageController {
+export default class QuestionPageWithParcelCheckController extends withTaskContext(QuestionPageController) {
+  /**
+   * Subclasses override this to declare which parcel IDs the request requires
+   * authorisation for. Return `null` to skip the auth check entirely.
+   * @param {AnyFormRequest} _request
+   * @returns {string[] | null}
+   */
   resolveParcelIds(_request) {
     throw new SystemError({
       message: `${this.constructor.name} must implement resolveParcelIds()`,
@@ -16,6 +23,11 @@ export default class QuestionPageWithParcelCheckController extends QuestionPageC
   }
 
   makeGetRouteHandler() {
+    /**
+     * @param {FormRequest} request
+     * @param {FormContext} context
+     * @param {FormResponseToolkit} h
+     */
     return async (request, context, h) => {
       const parcelIds = this.resolveParcelIds(request)
       const unauthorised = await this.performAuthCheck(request, h, parcelIds)
@@ -28,6 +40,11 @@ export default class QuestionPageWithParcelCheckController extends QuestionPageC
   }
 
   makePostRouteHandler() {
+    /**
+     * @param {FormRequestPayload} request
+     * @param {FormContext} context
+     * @param {FormResponseToolkit} h
+     */
     return async (request, context, h) => {
       const parcelIds = this.resolveParcelIds(request)
       const unauthorised = await this.performAuthCheck(request, h, parcelIds)
@@ -38,14 +55,32 @@ export default class QuestionPageWithParcelCheckController extends QuestionPageC
     }
   }
 
+  /**
+   * @param {FormRequest} request
+   * @param {FormContext} context
+   * @param {FormResponseToolkit} h
+   */
   handleGet(request, context, h) {
     return super.makeGetRouteHandler()(request, context, h)
   }
 
+  /**
+   * @param {FormRequestPayload} request
+   * @param {FormContext} context
+   * @param {FormResponseToolkit} h
+   */
   handlePost(request, context, h) {
     return super.makePostRouteHandler()(request, context, h)
   }
 
+  /**
+   * Verify each requested parcel ID is in the SBI's authorised set; render the
+   * unauthorised view (and return it) if any parcel is unknown, else `null`.
+   * @param {AnyFormRequest} request
+   * @param {FormResponseToolkit} h
+   * @param {string[] | null} parcelIds
+   * @returns {Promise<ResponseObject | null>}
+   */
   performAuthCheck = async (request, h, parcelIds) => {
     if (parcelIds !== null && !Array.isArray(parcelIds)) {
       throw new SystemError({
@@ -89,7 +124,7 @@ export default class QuestionPageWithParcelCheckController extends QuestionPageC
         LogCodes.SYSTEM.EXTERNAL_API_ERROR,
         {
           endpoint: `Consolidated view`,
-          errorMessage: `fetch parcel data for auth check: ${error.message}`
+          errorMessage: `fetch parcel data for auth check: ${/** @type {Error} */ (error).message}`
         },
         request
       )
@@ -99,7 +134,18 @@ export default class QuestionPageWithParcelCheckController extends QuestionPageC
     return null
   }
 
+  /**
+   * @param {FormResponseToolkit} h
+   * @returns {ResponseObject}
+   */
   renderUnauthorisedView = (h) => {
-    return h.response(h.view('unauthorised')).code(statusCodes.forbidden)
+    return /** @type {import('@hapi/hapi').ResponseToolkit} */ (h)
+      .response(h.view('unauthorised'))
+      .code(statusCodes.forbidden)
   }
 }
+
+/**
+ * @import { AnyFormRequest, FormContext, FormRequest, FormRequestPayload, FormResponseToolkit } from '@defra/forms-engine-plugin/types'
+ * @import { ResponseObject } from '@hapi/hapi'
+ */

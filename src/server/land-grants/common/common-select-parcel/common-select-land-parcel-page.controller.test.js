@@ -13,8 +13,15 @@ vi.mock('../../view-models/parcel.view-model.js', () => ({
   mapParcelsToViewModel: vi.fn()
 }))
 
-const mockParcels = [{ id: 'p1' }]
-const mappedParcels = [{ value: 'p1', text: 'Parcel 1' }]
+const mockParcels = [
+  { sheetId: 'S1', parcelId: 'P1', area: { value: 10 } },
+  { sheetId: 'S2', parcelId: 'P2', area: { value: 20 } }
+]
+
+const mappedParcels = [
+  { value: 'S1-P1', text: 'Parcel 1' },
+  { value: 'S2-P2', text: 'Parcel 2' }
+]
 
 const setupRequest = (method = 'get') => ({
   method,
@@ -53,9 +60,11 @@ const createController = (config = {}) => {
     nextPath: '/next'
   })
 
-  controller.getViewModel = vi.fn().mockReturnValue({
-    pageTitle: 'Select parcel'
-  })
+  controller.buildViewModel = vi.fn().mockImplementation((_request, _context, overrides = {}) => ({
+    pageTitle: 'Select parcel',
+    selectionMode: controller.enableMultipleParcelSelect ? 'multiple' : 'single',
+    ...overrides
+  }))
 
   return controller
 }
@@ -66,23 +75,25 @@ describe('CommonSelectLandParcelPageController', () => {
     mapParcelsToViewModel.mockReturnValue(mappedParcels)
   })
 
-  afterEach(vi.clearAllMocks)
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
 
   describe('resolveParcelIds', () => {
     it('returns payload values for POST', () => {
       const controller = createController()
       const request = setupRequest('post')
-      request.payload = { landParcels: 'p1' }
+      request.payload = { landParcels: 'S1-P1' }
 
-      expect(controller.resolveParcelIds(request)).toEqual(['p1'])
+      expect(controller.resolveParcelIds(request)).toEqual(['S1-P1'])
     })
 
     it('returns query value for GET', () => {
       const controller = createController()
       const request = setupRequest('get')
-      request.query = { parcelId: 'p1' }
+      request.query = { parcelId: 'S1-P1' }
 
-      expect(controller.resolveParcelIds(request)).toEqual(['p1'])
+      expect(controller.resolveParcelIds(request)).toEqual(['S1-P1'])
     })
 
     it('returns empty array when nothing provided', () => {
@@ -97,20 +108,19 @@ describe('CommonSelectLandParcelPageController', () => {
     it('renders parcels successfully', async () => {
       const controller = createController({ enableMultipleParcelSelect: true })
       const request = setupRequest()
-      const context = setupContext({ landParcels: ['p1'] })
+
+      const context = setupContext({ landParcels: ['S1-P1'] })
+
       const h = setupH()
 
       await controller.handleGet(request, context, h)
-
-      expect(fetchParcels).toHaveBeenCalled()
-      expect(mapParcelsToViewModel).toHaveBeenCalledWith(mockParcels)
 
       expect(h.view).toHaveBeenCalledWith(
         'common-select-land-parcel',
         expect.objectContaining({
           parcels: mappedParcels,
           selectionMode: 'multiple',
-          selectedParcelIds: ['p1']
+          selectedParcelIds: ['S1-P1']
         })
       )
     })
@@ -152,15 +162,10 @@ describe('CommonSelectLandParcelPageController', () => {
       )
     })
 
-    it('passes config values to view', async () => {
-      const controller = createController({
-        topSection: '<p>Top</p>',
-        bottomSection: '<p>Bottom</p>',
-        selectionHint: 'Hint text',
-        supportDetailsSummaryText: 'Help',
-        supportDetailsHtml: '<p>Help content</p>'
-      })
+    it('handles throw during fetch', async () => {
+      fetchParcels.mockRejectedValue('string error')
 
+      const controller = createController()
       const request = setupRequest()
       const context = setupContext({})
       const h = setupH()
@@ -170,11 +175,7 @@ describe('CommonSelectLandParcelPageController', () => {
       expect(h.view).toHaveBeenCalledWith(
         'common-select-land-parcel',
         expect.objectContaining({
-          topSection: '<p>Top</p>',
-          bottomSection: '<p>Bottom</p>',
-          selectionHint: 'Hint text',
-          supportDetailsSummaryText: 'Help',
-          supportDetailsHtml: '<p>Help content</p>'
+          errors: ['Unable to find parcel information, please try again later or contact the Rural Payments Agency.']
         })
       )
     })
@@ -187,7 +188,7 @@ describe('CommonSelectLandParcelPageController', () => {
       const context = setupContext({})
       const h = setupH()
 
-      request.payload = {}
+      controller.mergeState = vi.fn()
 
       await controller.handlePost(request, context, h)
 
@@ -205,7 +206,7 @@ describe('CommonSelectLandParcelPageController', () => {
       const context = setupContext({})
       const h = setupH()
 
-      request.payload = {}
+      controller.mergeState = vi.fn()
 
       await controller.handlePost(request, context, h)
 
@@ -217,28 +218,85 @@ describe('CommonSelectLandParcelPageController', () => {
       )
     })
 
-    it('merges state and proceeds when valid', async () => {
+    it('merges state and calculates total area', async () => {
       const controller = createController()
       const request = setupRequest('post')
       const context = setupContext({})
       const h = setupH()
 
-      request.payload = { landParcels: ['p1', 'p2'] }
+      request.payload = { landParcels: ['S1-P1', 'S2-P2'] }
 
       controller.mergeState = vi.fn()
 
-      const result = await controller.handlePost(request, context, h)
+      await controller.handlePost(request, context, h)
+
+      expect(fetchParcels).toHaveBeenCalled()
 
       expect(controller.mergeState).toHaveBeenCalledWith(request, context.state, {
-        landParcels: ['p1', 'p2']
+        landParcels: ['S1-P1', 'S2-P2'],
+        landParcelsDisplay: 'S1-P1, S2-P2',
+        landParcelMetadata: [
+          { parcelId: 'S1-P1', areaHa: 10 },
+          { parcelId: 'S2-P2', areaHa: 20 }
+        ],
+        totalHectaresForSelectedParcels: 30,
+        additionalAnswers: { totalHectaresForSelectedParcels: 30 }
       })
 
-      expect(controller.proceed).toHaveBeenCalledWith(request, h, '/next?selectedParcelIds=p1,p2')
-
-      expect(result).toBe('next')
+      expect(controller.setState).not.toHaveBeenCalled()
     })
 
-    it('handles fetch error during validation gracefully', async () => {
+    it('passes parcel area sum to GAS', async () => {
+      fetchParcels.mockResolvedValue([
+        { sheetId: 'S1', parcelId: 'P1', area: { value: 25.3874 } },
+        { sheetId: 'S2', parcelId: 'P2', area: { value: 169.8586 } }
+      ])
+
+      const controller = createController()
+      const request = setupRequest('post')
+      const context = setupContext({})
+      const h = setupH()
+
+      request.payload = { landParcels: ['S1-P1', 'S2-P2'] }
+      controller.mergeState = vi.fn()
+
+      await controller.handlePost(request, context, h)
+
+      const expectedTotal = 25.3874 + 169.8586
+      expect(controller.mergeState).toHaveBeenCalledWith(
+        request,
+        context.state,
+        expect.objectContaining({
+          totalHectaresForSelectedParcels: expectedTotal,
+          additionalAnswers: { totalHectaresForSelectedParcels: expectedTotal }
+        })
+      )
+    })
+
+    it('sets areaHa to null when parcel has no area value', async () => {
+      fetchParcels.mockResolvedValue([{ sheetId: 'S1', parcelId: 'P1', area: { value: null } }])
+
+      const controller = createController()
+      const request = setupRequest('post')
+      const context = setupContext({})
+      const h = setupH()
+
+      request.payload = { landParcels: ['S1-P1'] }
+      controller.mergeState = vi.fn()
+
+      await controller.handlePost(request, context, h)
+
+      expect(controller.mergeState).toHaveBeenCalledWith(
+        request,
+        context.state,
+        expect.objectContaining({
+          landParcelMetadata: [{ parcelId: 'S1-P1', areaHa: null }],
+          totalHectaresForSelectedParcels: 0
+        })
+      )
+    })
+
+    it('handles fetch error gracefully for validation', async () => {
       fetchParcels.mockRejectedValue(new Error('fail'))
 
       const controller = createController()
@@ -246,17 +304,193 @@ describe('CommonSelectLandParcelPageController', () => {
       const context = setupContext({})
       const h = setupH()
 
-      request.payload = {}
+      controller.mergeState = vi.fn()
 
       await controller.handlePost(request, context, h)
 
       expect(h.view).toHaveBeenCalledWith(
         'common-select-land-parcel',
         expect.objectContaining({
-          parcels: [],
+          parcels: mappedParcels,
           errors: 'Select a land parcel'
         })
       )
+    })
+
+    it('shows error when total area is below minimumAreaHa threshold', async () => {
+      const controller = createController({ enableMultipleParcelSelect: true, minimumAreaHa: 0.5 })
+      const request = setupRequest('post')
+      const context = setupContext({})
+      const h = setupH()
+
+      // S1-P1 has area 10 but we override to a small parcel
+      fetchParcels.mockResolvedValue([{ sheetId: 'S1', parcelId: 'P1', area: { value: 0.1654 } }])
+      mapParcelsToViewModel.mockReturnValue([{ value: 'S1-P1', text: 'PF 2617 0561' }])
+      request.payload = { landParcels: 'S1-P1' }
+
+      controller.mergeState = vi.fn()
+
+      await controller.handlePost(request, context, h)
+
+      expect(h.view).toHaveBeenCalledWith(
+        'common-select-land-parcel',
+        expect.objectContaining({
+          errors: 'Total area of selected land parcels must be more than 0.5ha'
+        })
+      )
+      expect(controller.mergeState).not.toHaveBeenCalled()
+    })
+
+    it('proceeds when total area meets minimumAreaHa threshold', async () => {
+      const controller = createController({ minimumAreaHa: 0.5 })
+      const request = setupRequest('post')
+      const context = setupContext({})
+      const h = setupH()
+
+      request.payload = { landParcels: ['S1-P1', 'S2-P2'] }
+
+      controller.mergeState = vi.fn()
+
+      const result = await controller.handlePost(request, context, h)
+
+      expect(h.view).not.toHaveBeenCalled()
+      expect(result).toBe('next')
+    })
+
+    it('proceeds without area check when minimumAreaHa is not configured', async () => {
+      const controller = createController()
+      const request = setupRequest('post')
+      const context = setupContext({})
+      const h = setupH()
+
+      fetchParcels.mockResolvedValue([{ sheetId: 'S1', parcelId: 'P1', area: { value: 0.001 } }])
+      request.payload = { landParcels: 'S1-P1' }
+
+      controller.mergeState = vi.fn()
+
+      const result = await controller.handlePost(request, context, h)
+
+      expect(h.view).not.toHaveBeenCalled()
+      expect(result).toBe('next')
+    })
+
+    it('handles non-Error throw during fetch gracefully for validation', async () => {
+      fetchParcels.mockRejectedValue('string error')
+
+      const controller = createController()
+      const request = setupRequest('post')
+      const context = setupContext({})
+      const h = setupH()
+
+      controller.mergeState = vi.fn()
+
+      await controller.handlePost(request, context, h)
+
+      expect(h.view).toHaveBeenCalledWith(
+        'common-select-land-parcel',
+        expect.objectContaining({
+          parcels: mappedParcels,
+          errors: 'Select a land parcel'
+        })
+      )
+    })
+
+    describe('invalidates', () => {
+      it('spreads invalidated state into mergeState when parcel selection changes', async () => {
+        const controller = createController({
+          invalidates: ['hectaresTenOrOverYearsOld', 'hectaresUnderTenYearsOld']
+        })
+        const request = setupRequest('post')
+        const context = setupContext({})
+        const h = setupH()
+
+        request.payload = { landParcels: ['S1-P1', 'S2-P2'] }
+        controller.mergeState = vi.fn()
+        controller.getInvalidatedState = vi
+          .fn()
+          .mockResolvedValue({ hectaresTenOrOverYearsOld: undefined, hectaresUnderTenYearsOld: undefined })
+
+        await controller.handlePost(request, context, h)
+
+        expect(controller.mergeState).toHaveBeenCalledWith(
+          request,
+          context.state,
+          expect.objectContaining({
+            hectaresTenOrOverYearsOld: undefined,
+            hectaresUnderTenYearsOld: undefined
+          })
+        )
+      })
+
+      it('spreads empty object into mergeState when parcel selection does not change', async () => {
+        const controller = createController({
+          invalidates: ['hectaresTenOrOverYearsOld', 'hectaresUnderTenYearsOld']
+        })
+        const request = setupRequest('post')
+        const context = setupContext({})
+        const h = setupH()
+
+        request.payload = { landParcels: ['S1-P1', 'S2-P2'] }
+        controller.mergeState = vi.fn()
+        controller.getInvalidatedState = vi.fn().mockResolvedValue({})
+
+        await controller.handlePost(request, context, h)
+
+        expect(controller.mergeState).toHaveBeenCalledWith(
+          request,
+          context.state,
+          expect.not.objectContaining({
+            hectaresTenOrOverYearsOld: undefined,
+            hectaresUnderTenYearsOld: undefined
+          })
+        )
+      })
+    })
+
+    describe('getInvalidatedState', () => {
+      it('clears dependent state keys when parcel selection changes', async () => {
+        const controller = createController({
+          invalidates: ['hectaresTenOrOverYearsOld', 'hectaresUnderTenYearsOld']
+        })
+        const request = setupRequest('post')
+        controller.getState = vi.fn().mockResolvedValue({ landParcels: ['S1-P1'] })
+
+        const result = await controller.getInvalidatedState(request, ['S1-P1', 'S2-P2'])
+
+        expect(result).toEqual({ hectaresTenOrOverYearsOld: undefined, hectaresUnderTenYearsOld: undefined })
+      })
+
+      it('returns empty object when parcel selection does not change', async () => {
+        const controller = createController({
+          invalidates: ['hectaresTenOrOverYearsOld', 'hectaresUnderTenYearsOld']
+        })
+        const request = setupRequest('post')
+        controller.getState = vi.fn().mockResolvedValue({ landParcels: ['S1-P1', 'S2-P2'] })
+
+        const result = await controller.getInvalidatedState(request, ['S2-P2', 'S1-P1'])
+
+        expect(result).toEqual({})
+      })
+
+      it('returns empty object when no invalidates are configured', async () => {
+        const controller = createController()
+        const request = setupRequest('post')
+        controller.getState = vi.fn().mockResolvedValue({ landParcels: ['S1-P1'] })
+
+        const result = await controller.getInvalidatedState(request, ['S2-P2'])
+
+        expect(result).toEqual({})
+      })
+
+      it('clears dependent state when switching from no previous selection', async () => {
+        const controller = createController({ invalidates: ['hectaresTenOrOverYearsOld'] })
+        const request = setupRequest('post')
+        controller.getState = vi.fn().mockResolvedValue({})
+
+        const result = await controller.getInvalidatedState(request, ['S1-P1'])
+
+        expect(result).toEqual({ hectaresTenOrOverYearsOld: undefined })
+      })
     })
   })
 })

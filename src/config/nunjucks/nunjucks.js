@@ -28,7 +28,8 @@ export const viewPaths = (() => {
     path.join(serverDir, 'score-results/views'),
     path.join(serverDir, 'task-list/views'),
     path.join(serverDir, 'print-submitted-application/views'),
-    path.join(serverDir, 'woodland/views')
+    path.join(serverDir, 'woodland/views'),
+    path.join(serverDir, 'cannot-submit/views')
   ]
 })()
 
@@ -77,8 +78,6 @@ Object.entries(globals).forEach(([name, global]) => {
 Object.entries(filters).forEach(([name, filter]) => {
   nunjucksEnvironment.addFilter(name, filter)
 })
-
-nunjucksEnvironment.addGlobal('gaTrackingId', config.get('googleAnalytics.trackingId'))
 
 /**
  * @import { ServerRegisterPluginObject } from '@hapi/hapi'

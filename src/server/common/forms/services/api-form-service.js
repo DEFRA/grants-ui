@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken'
 import { logger } from '~/src/server/common/helpers/logging/log.js'
 import { getFormDef, setFormDef, setFormMeta, setSlugReverse } from './forms-redis.js'
+import { hoistPageConfig } from '~/src/server/common/forms/services/form.js'
 
 export class ApiFormService {
   /**
@@ -16,8 +17,13 @@ export class ApiFormService {
     this.cacheTtlSeconds = cacheTtlSeconds
   }
 
+  /**
+   * @returns {string} A signed JWT for authenticating against the Config API
+   */
   generateJwt() {
-    return jwt.sign({ sub: 'grants-ui' }, this.jwtSecret, { expiresIn: this.jwtExpiry })
+    return jwt.sign({ sub: 'grants-ui' }, this.jwtSecret, {
+      expiresIn: /** @type {import('jsonwebtoken').SignOptions['expiresIn']} */ (this.jwtExpiry)
+    })
   }
 
   /**
@@ -47,7 +53,6 @@ export class ApiFormService {
       id: apiMeta.id,
       slug: apiMeta.slug,
       title: apiMeta.title,
-      metadata: {},
       source: 'api'
     }
   }
@@ -86,7 +91,7 @@ export class ApiFormService {
    */
   async getFormDefinition(redis, slug, configureDefinition) {
     const cached = await getFormDef(redis, slug)
-    return cached ?? this.fetchAndCacheDefinition(redis, slug, configureDefinition)
+    return cached ?? (await this.fetchAndCacheDefinition(redis, slug, configureDefinition))
   }
 
   /**
@@ -100,8 +105,17 @@ export class ApiFormService {
    * @param {(definition: import('@defra/forms-model').FormDefinition) => import('@defra/forms-model').FormDefinition} configureDefinition
    * @param {(form: {title: string}, definition: import('@defra/forms-model').FormDefinition) => void} validateWhitelist
    * @param {(form: {title: string}, definition: import('@defra/forms-model').FormDefinition) => void} validateRedirectRules
+   * @param {(form: {title: string}, definition: import('@defra/forms-model').FormDefinition) => void} validateDetailsPage
    */
-  async loadAll(redis, slugs, sharedRules, configureDefinition, validateWhitelist, validateRedirectRules) {
+  async loadAll(
+    redis,
+    slugs,
+    sharedRules,
+    configureDefinition,
+    validateWhitelist,
+    validateRedirectRules,
+    validateDetailsPage
+  ) {
     for (const slug of slugs) {
       try {
         const [entry, rawDefinition] = await Promise.all([this.fetchFormMetadata(slug), this.fetchFormDefinition(slug)])
@@ -114,9 +128,10 @@ export class ApiFormService {
 
         // Apply URL substitutions
         const definition = configureDefinition(rawDefinition)
+        hoistPageConfig(definition)
 
-        // Carry metadata from the definition into the cache entry
-        entry.metadata = definition.metadata ?? {}
+        // Copy metadata from the definition into the cache entry
+        entry.metadata = definition.metadata
 
         const form = { title: entry.title }
         validateWhitelist(form, definition)
@@ -124,6 +139,8 @@ export class ApiFormService {
 
         validateRedirectRules(form, definition)
         logger.info(`Grant redirect rules validated for API form: ${entry.title}`)
+
+        validateDetailsPage(form, definition)
 
         await Promise.all([
           setFormMeta(redis, slug, entry),
@@ -133,7 +150,7 @@ export class ApiFormService {
 
         logger.info(`Loaded API form into Redis: ${slug}`)
       } catch (error) {
-        logger.error(`Failed to load API form "${slug}" during startup: ${error.message}`)
+        logger.error(`Failed to load API form "${slug}" during startup: ${/** @type {Error} */ (error).message}`)
         throw error
       }
     }

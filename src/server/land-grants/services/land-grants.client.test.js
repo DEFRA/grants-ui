@@ -1,6 +1,5 @@
 import {
   calculate,
-  calculateWmp,
   parcelsGroups,
   parcelsWithExtendedInfo,
   parcelsWithFields,
@@ -10,20 +9,9 @@ import {
 } from './land-grants.client.js'
 import { vi } from 'vitest'
 import { retry } from '~/src/server/common/helpers/retry.js'
+import { log } from '~/src/server/common/helpers/logging/log.js'
 
 vi.mock('~/src/server/common/helpers/retry.js')
-
-vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  log: vi.fn(),
-  LogCodes: {
-    LAND_GRANTS: {
-      API_REQUEST: {
-        level: 'info',
-        messageFunc: (opts) => `Land Grants API request | endpoint: ${opts.endpoint} | url: ${opts.url}`
-      }
-    }
-  }
-}))
 
 /** @type {import('vitest').MockedFunction<any>} */
 const mockFetch = vi.fn()
@@ -82,10 +70,11 @@ describe('Land Grants client', () => {
       mockFetch.mockResolvedValue({
         ok: false,
         status: 404,
-        statusText: 'Not Found'
+        statusText: 'Not Found',
+        json: vi.fn().mockResolvedValue({ message: 'Resource not found' })
       })
 
-      await expect(postToLandGrantsApi('/invalid', {}, mockApiEndpoint)).rejects.toThrow('Not Found')
+      await expect(postToLandGrantsApi('/invalid', {}, mockApiEndpoint)).rejects.toThrow('Resource not found')
 
       let code, message
       try {
@@ -95,7 +84,7 @@ describe('Land Grants client', () => {
         message = error.message
       }
       expect(code).toBe(404)
-      expect(message).toBe('Not Found')
+      expect(message).toBe('Resource not found')
     })
 
     it('should handle empty endpoint', async () => {
@@ -114,7 +103,8 @@ describe('Land Grants client', () => {
       mockFetch.mockResolvedValue({
         ok: false,
         status: 500,
-        statusText: 'Internal Server Error'
+        statusText: 'Internal Server Error',
+        json: vi.fn().mockResolvedValue({ message: 'Internal error' })
       })
 
       try {
@@ -139,22 +129,56 @@ describe('Land Grants client', () => {
       expect(mockJson).toHaveBeenCalledTimes(1)
     })
 
-    it('should not call response.json() when response is not ok', async () => {
-      const mockJson = vi.fn().mockResolvedValue({ data: 'test' })
+    it('should use backend message as error message when response is not ok', async () => {
+      const backendMessage = 'The land parcel has insufficient coverage'
       mockFetch.mockResolvedValueOnce({
         ok: false,
-        status: 400,
-        statusText: 'Bad Request',
-        json: mockJson
+        status: 422,
+        statusText: 'Unprocessable Entity',
+        json: vi.fn().mockResolvedValue({ message: backendMessage })
       })
 
       try {
         await postToLandGrantsApi('/test', {}, mockApiEndpoint)
+        expect.fail('Should have thrown an error')
       } catch (error) {
-        // Expected error
+        expect(error.status).toBe(422)
+        expect(error.message).toBe(backendMessage)
       }
+    })
 
-      expect(mockJson).not.toHaveBeenCalled()
+    it('should fall back to status text when response body is not JSON', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        json: vi.fn().mockRejectedValue(new TypeError('Body is unusable'))
+      })
+
+      try {
+        await postToLandGrantsApi('/test', {}, mockApiEndpoint)
+        expect.fail('Should have thrown an error')
+      } catch (error) {
+        expect(error.status).toBe(500)
+        expect(error.message).toBe('Internal Server Error')
+      }
+    })
+
+    it('should fall back to status text when response body has no message field', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        json: vi.fn().mockResolvedValue({ error: 'some other shape' })
+      })
+
+      try {
+        await postToLandGrantsApi('/test', {}, mockApiEndpoint)
+        expect.fail('Should have thrown an error')
+      } catch (error) {
+        expect(error.status).toBe(400)
+        expect(error.message).toBe('Bad Request')
+      }
     })
 
     it('should construct URL correctly with baseUrl and endpoint', async () => {
@@ -222,24 +246,151 @@ describe('Land Grants client', () => {
       )
     })
 
-    it('should handle error with different status codes', async () => {
-      const statusCodes = [400, 401, 403, 500, 502, 503]
-
-      for (const status of statusCodes) {
+    it.each([400, 401, 403, 500, 502, 503])(
+      'propagates upstream status %i as both error.code and error.status',
+      async (status) => {
         mockFetch.mockResolvedValueOnce({
           ok: false,
           status,
-          statusText: `Error ${status}`
+          statusText: `Error ${status}`,
+          json: vi.fn().mockResolvedValue({ message: `Error message for ${status}` })
         })
 
-        try {
-          await postToLandGrantsApi('/test', {}, mockApiEndpoint)
-          expect.fail('Should have thrown an error')
-        } catch (error) {
-          expect(error.status).toBe(status)
-          expect(error.code).toBe(status)
-        }
+        await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint)).rejects.toMatchObject({
+          code: status,
+          status
+        })
       }
+    )
+
+    it('should log EXTERNAL_API_ERROR with upstreamStatus and service when BE returns 502', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 502,
+        statusText: 'Bad Gateway',
+        arrayBuffer: vi.fn().mockResolvedValue(undefined)
+      })
+
+      await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint)).rejects.toThrow('Bad Gateway')
+
+      // Call-site log: fired before the error is rethrown, capturing upstream status
+      expect(log).toHaveBeenCalledWith(
+        expect.objectContaining({ level: 'error' }),
+        expect.objectContaining({
+          endpoint: '/test',
+          service: 'grants-ui-backend',
+          upstreamStatus: 502,
+          errorMessage: 'Bad Gateway'
+        }),
+        undefined
+      )
+    })
+
+    it('should log EXTERNAL_API_ERROR with attempts after retry exhaustion', async () => {
+      // Make retry behave as if it tried multiple times before giving up.
+      retry.mockImplementationOnce(async (operation) => {
+        await operation().catch(() => {})
+        await operation().catch(() => {})
+        return operation()
+      })
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 502,
+        statusText: 'Bad Gateway',
+        arrayBuffer: vi.fn().mockResolvedValue(undefined)
+      })
+
+      await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint)).rejects.toThrow('Bad Gateway')
+
+      const exhaustionLogCall = log.mock.calls.find(
+        ([code, opts]) => code?.level === 'error' && opts?.attempts !== undefined
+      )
+      expect(exhaustionLogCall).toBeDefined()
+      expect(exhaustionLogCall[1]).toEqual(
+        expect.objectContaining({
+          endpoint: '/test',
+          service: 'grants-ui-backend',
+          upstreamStatus: 502,
+          attempts: 3,
+          errorMessage: 'Bad Gateway'
+        })
+      )
+    })
+
+    it('should fall back to lastUpstreamStatus when retry error has no status or code', async () => {
+      // Simulate a retry-level failure (e.g. timeout) where the rejected error has no status/code,
+      // but the inner operation already captured an upstream status via lastUpstreamStatus.
+      retry.mockImplementationOnce(async (operation) => {
+        await operation().catch(() => {})
+        const timeoutError = new Error('Operation timed out')
+        throw timeoutError
+      })
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 502,
+        statusText: 'Bad Gateway',
+        arrayBuffer: vi.fn().mockResolvedValue(undefined)
+      })
+
+      await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint)).rejects.toThrow('Operation timed out')
+
+      const exhaustionLogCall = log.mock.calls.find(
+        ([code, opts]) => code?.level === 'error' && opts?.errorMessage === 'Operation timed out'
+      )
+      expect(exhaustionLogCall).toBeDefined()
+      expect(exhaustionLogCall[1]).toEqual(
+        expect.objectContaining({
+          endpoint: '/test',
+          service: 'grants-ui-backend',
+          upstreamStatus: 502,
+          errorMessage: 'Operation timed out'
+        })
+      )
+    })
+
+    it('should pass null upstreamStatus when no upstream response was received', async () => {
+      // Network-level failure: fetch rejects before any HTTP response arrives.
+      retry.mockImplementationOnce(async () => {
+        throw new Error('Network down')
+      })
+
+      await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint)).rejects.toThrow('Network down')
+
+      const exhaustionLogCall = log.mock.calls.find(
+        ([code, opts]) => code?.level === 'error' && opts?.errorMessage === 'Network down'
+      )
+      expect(exhaustionLogCall).toBeDefined()
+      expect(exhaustionLogCall[1]).toEqual(
+        expect.objectContaining({
+          endpoint: '/test',
+          service: 'grants-ui-backend',
+          upstreamStatus: null,
+          errorMessage: 'Network down'
+        })
+      )
+    })
+
+    it('should use error.code when error.status is missing', async () => {
+      retry.mockImplementationOnce(async () => {
+        const err = /** @type {Error & {code?: number}} */ (new Error('Forbidden'))
+        err.code = 403
+        throw err
+      })
+
+      await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint)).rejects.toThrow('Forbidden')
+
+      const exhaustionLogCall = log.mock.calls.find(
+        ([code, opts]) => code?.level === 'error' && opts?.errorMessage === 'Forbidden'
+      )
+      expect(exhaustionLogCall).toBeDefined()
+      expect(exhaustionLogCall[1]).toEqual(
+        expect.objectContaining({
+          endpoint: '/test',
+          service: 'grants-ui-backend',
+          upstreamStatus: 403,
+          errorMessage: 'Forbidden'
+        })
+      )
     })
 
     it('should return the exact response from json()', async () => {
@@ -358,29 +509,6 @@ describe('Land Grants client', () => {
           Promise.race([parcelsWithExtendedInfo(['parcel1'], mockApiEndpoint), timeoutPromise])
         ).rejects.toThrow('Operation timed out')
       }, 10000)
-    })
-  })
-
-  describe('calculateWmp', () => {
-    it('should trigger a POST request to /api/v2/wmp/payments/calculate', async () => {
-      const mockResponse = { message: 'success', payment: { agreementTotalPence: 375000 } }
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => mockResponse
-      })
-
-      const payload = { parcelIds: ['SD6346-3387'], newWoodlandAreaHa: 0.0, oldWoodlandAreaHa: 0.0 }
-      const result = await calculateWmp(payload, mockApiEndpoint)
-
-      expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/wmp/payments/calculate`, {
-        method: 'POST',
-        headers: {
-          Authorization: expect.any(String),
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      })
-      expect(result).toEqual(mockResponse)
     })
   })
 

@@ -1,21 +1,20 @@
-import { log, debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { debug, log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { buildInvalidatedState } from '~/src/server/common/utils/state-invalidation.js'
 import LandGrantsQuestionWithAuthCheckController from '../../controllers/auth/land-grants-question-with-auth-check.controller.js'
 import { fetchParcels } from '../../services/land-grants.service.js'
 import { mapParcelsToViewModel } from '../../view-models/parcel.view-model.js'
 import { getParcelIdFromQuery, getParcelIdsFromPayload } from '../../utils/parcel-request.utils.js'
+import { stringifyParcel } from '../../utils/format-parcel.js'
+
+const PARCEL_FETCH_ERROR_MESSAGE =
+  'Unable to find parcel information, please try again later or contact the Rural Payments Agency.'
 
 export default class CommonSelectLandParcelPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'common-select-land-parcel'
 
   /**
-   * Whether this journey allows selecting multiple parcels.
-   * Configured via `config` on the page in the form definition YAML:
-   *   controller: SelectLandParcelPageController
-   *   config:
-   *     enableMultipleParcelSelect: true
-   *
    * @param {FormModel} model
-   * @param {import('@defra/forms-model').Page} pageDef
+   * @param {PageQuestion} pageDef
    */
   constructor(model, pageDef) {
     super(model, pageDef)
@@ -26,8 +25,20 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
     this.selectionHint = config.selectionHint || ''
     this.supportDetailsSummaryText = config.supportDetailsSummaryText || ''
     this.supportDetailsHtml = config.supportDetailsHtml || ''
+    this.showSupportDetails = config.showSupportDetails !== false
+    this.minimumAreaHa = config.minimumAreaHa ?? null
+    this.invalidates = Array.isArray(config.invalidates) ? config.invalidates : []
+
+    // Resolve section
+    if (pageDef.section) {
+      this.section = model.getSection(pageDef.section)
+    }
   }
 
+  /**
+   * @param {AnyFormRequest} request
+   * @returns {string[]}
+   */
   resolveParcelIds(request) {
     if (request.method === 'post') {
       return getParcelIdsFromPayload(request)
@@ -36,111 +47,170 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
     return getParcelIdFromQuery(request)
   }
 
+  /**
+   * @param {FormSubmissionState} state
+   * @returns {string[]}
+   */
   getSelectedParcelIdsFromState(state) {
-    return Array.isArray(state.landParcels) ? state.landParcels : []
+    return Array.isArray(state.landParcels) ? /** @type {string[]} */ (state.landParcels) : []
   }
 
   /**
-   * This method is called when there is a GET request to the select land parcel page.
-   * It gets the view model for the page using the `getViewModel` method,
-   * and then adds business details to the view model
-   *
+   * Returns a patch of invalidated state keys if the parcel selection has changed since last save.
+   * @param {AnyFormRequest} request
+   * @param {string[]} selectedParcelIds
+   * @returns {Promise<Record<string, undefined>>}
+   */
+  async getInvalidatedState(request, selectedParcelIds) {
+    const persistedState = await this.getState(request)
+    const previousParcelIds = this.getSelectedParcelIdsFromState(persistedState)
+    return buildInvalidatedState(previousParcelIds, selectedParcelIds, this.invalidates)
+  }
+
+  /**
+   * @param {AnyFormRequest} request
+   * @param {FormContext} context
+   * @param {{ parcels?: RadioItem[], selectedParcelIds?: string[], errors?: string | string[] }} [overrides]
+   * @returns {object}
+   */
+  buildViewModel(request, context, { parcels, selectedParcelIds, errors } = {}) {
+    const { state } = context
+
+    const sectionTitle = this.section?.hideTitle !== true ? this.section?.title : ''
+
+    return {
+      ...super.getViewModel(request, context),
+      sectionTitle,
+      parcels,
+      hasExistingLandParcels: Array.isArray(state.landParcels) && state.landParcels.length > 0,
+      selectionMode: this.enableMultipleParcelSelect ? 'multiple' : 'single',
+      topSection: this.topSection,
+      bottomSection: this.bottomSection,
+      selectedParcelIds,
+      selectionHint: this.selectionHint,
+      showSupportDetails: this.showSupportDetails,
+      supportDetailsSummaryText: this.supportDetailsSummaryText,
+      supportDetailsHtml: this.supportDetailsHtml,
+      ...(errors && { errors })
+    }
+  }
+
+  /**
    * @param {AnyFormRequest} request
    * @param {FormContext} context
    * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
    */
   async handleGet(request, context, h) {
-    const { state } = context
     const sbi = request.auth?.credentials?.sbi
-
-    const selectedParcelIds = this.getSelectedParcelIdsFromState(state)
     const { viewName } = this
-    const baseViewModel = super.getViewModel(request, context)
-    const hasExistingLandParcels = Object.keys(state.landParcels || {}).length > 0
+
     try {
       const fetchedParcels = await fetchParcels(request)
       const parcels = mapParcelsToViewModel(fetchedParcels)
 
-      if (!parcels?.length) {
+      if (!parcels.length) {
         log(LogCodes.LAND_GRANTS.NO_LAND_PARCELS_FOUND, { sbi })
-
-        const errorMessage =
-          'Unable to find parcel information, please try again later or contact the Rural Payments Agency.'
-
-        return h.view(viewName, {
-          ...baseViewModel,
-          parcels: [],
-          hasExistingLandParcels,
-          errors: [errorMessage]
-        })
-      }
-
-      const viewModel = {
-        ...baseViewModel,
-        parcels,
-        hasExistingLandParcels,
-        selectionMode: this.enableMultipleParcelSelect ? 'multiple' : 'single',
-        topSection: this.topSection,
-        bottomSection: this.bottomSection,
-        selectedParcelIds,
-        selectionHint: this.selectionHint,
-        supportDetailsSummaryText: this.supportDetailsSummaryText,
-        supportDetailsHtml: this.supportDetailsHtml
-      }
-
-      return h.view(viewName, viewModel)
-    } catch (error) {
-      debug({ level: 'error', error, messageFunc: () => `Unexpected error when fetching parcel data` }, {}, request)
-      const errorMessage =
-        'Unable to find parcel information, please try again later or contact the Rural Payments Agency.'
-
-      return h.view(viewName, {
-        ...baseViewModel,
-        hasExistingLandParcels,
-        errors: [errorMessage]
-      })
-    }
-  }
-
-  async handlePost(request, context, h) {
-    const { state } = context
-
-    const selectedParcelIds = getParcelIdsFromPayload(request)
-    const isEmpty = selectedParcelIds.length === 0
-
-    if (isEmpty) {
-      let parcels = []
-
-      try {
-        const fetchedParcels = await fetchParcels(request)
-        parcels = mapParcelsToViewModel(fetchedParcels)
-      } catch (error) {
-        debug(
-          { level: 'error', error, messageFunc: () => 'Error fetching parcels for validation error rendering' },
-          {},
-          request
+        return h.view(
+          viewName,
+          this.buildViewModel(request, context, { parcels: [], errors: [PARCEL_FETCH_ERROR_MESSAGE] })
         )
       }
 
-      return h.view(this.viewName, {
-        ...super.getViewModel(request, context),
-        parcels,
-        selectedParcelIds,
-        errors: this.enableMultipleParcelSelect ? 'Select at least one land parcel' : 'Select a land parcel',
-        selectionHint: this.selectionHint
-      })
+      return h.view(
+        viewName,
+        this.buildViewModel(request, context, {
+          parcels,
+          selectedParcelIds: this.getSelectedParcelIdsFromState(context.state)
+        })
+      )
+    } catch (error) {
+      debug(
+        {
+          level: 'error',
+          error: error instanceof Error ? error : undefined,
+          messageFunc: () => 'Unexpected error when fetching parcel data'
+        },
+        {},
+        request
+      )
+      return h.view(viewName, this.buildViewModel(request, context, { errors: [PARCEL_FETCH_ERROR_MESSAGE] }))
+    }
+  }
+
+  /**
+   * @param {AnyFormRequest} request
+   * @param {FormContext} context
+   * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
+   */
+  async handlePost(request, context, h) {
+    const { state } = context
+    const selectedParcelIds = getParcelIdsFromPayload(request)
+
+    /** @type {Parcel[]} */
+    let fetchedParcels = []
+    try {
+      fetchedParcels = await fetchParcels(request)
+    } catch (error) {
+      debug(
+        {
+          level: 'error',
+          error: error instanceof Error ? error : undefined,
+          messageFunc: () => 'Error fetching parcels for validation error rendering'
+        },
+        {},
+        request
+      )
     }
 
-    await this.mergeState(request, state, {
-      landParcels: selectedParcelIds
+    if (!selectedParcelIds.length) {
+      const parcels = mapParcelsToViewModel(fetchedParcels)
+      const validationError = this.enableMultipleParcelSelect
+        ? 'Select at least one land parcel'
+        : 'Select a land parcel'
+      return h.view(
+        this.viewName,
+        this.buildViewModel(request, context, { parcels, selectedParcelIds, errors: validationError })
+      )
+    }
+
+    const parcelMap = new Map(fetchedParcels.map((p) => [stringifyParcel(p), p]))
+    const landParcelMetadata = selectedParcelIds.map((id) => {
+      const parcel = parcelMap.get(id)
+      const rawArea = parcel?.area?.value
+      const areaHa = rawArea == null ? null : (Number(rawArea) * 10000) / 10000
+      return { parcelId: id, areaHa }
     })
 
-    return this.proceed(request, h, `${this.getNextPath(context)}?selectedParcelIds=${selectedParcelIds.join(',')}`)
+    const totalHectaresForSelectedParcels =
+      (landParcelMetadata.reduce((sum, { areaHa }) => sum + (areaHa ?? 0), 0) * 10000) / 10000
+
+    if (this.minimumAreaHa !== null && totalHectaresForSelectedParcels < this.minimumAreaHa) {
+      const parcels = mapParcelsToViewModel(fetchedParcels)
+      const validationError = `Total area of selected land parcels must be more than ${this.minimumAreaHa}ha`
+      return h.view(
+        this.viewName,
+        this.buildViewModel(request, context, { parcels, selectedParcelIds, errors: validationError })
+      )
+    }
+
+    const invalidatedState = await this.getInvalidatedState(request, selectedParcelIds)
+    await this.mergeState(request, state, {
+      ...invalidatedState,
+      landParcels: selectedParcelIds,
+      landParcelsDisplay: selectedParcelIds.join(', '),
+      landParcelMetadata,
+      totalHectaresForSelectedParcels,
+      additionalAnswers: { totalHectaresForSelectedParcels }
+    })
+
+    return this.proceed(request, h, `${this.getNextPath(context)}`)
   }
 }
 
 /**
- * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { FormContext, AnyFormRequest, FormSubmissionState } from '@defra/forms-engine-plugin/engine/types.js'
  * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
- * @import { ResponseObject, ResponseToolkit } from '@hapi/hapi'
+ * @import { PageQuestion } from '@defra/forms-model'
+ * @import { ResponseToolkit } from '@hapi/hapi'
+ * @import { RadioItem, Parcel } from '../../view-models/parcel.view-model.js'
  */

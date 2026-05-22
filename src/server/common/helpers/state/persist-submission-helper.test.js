@@ -82,7 +82,7 @@ describe('persistSubmissionToApi', () => {
       vi.unmock('~/src/config/config.js')
     })
 
-    it('persists submission successfully when response is ok', async () => {
+    it('persists submission successfully when response is ok (legacy grant, grantVersion=1)', async () => {
       fetch.mockResolvedValue(createMockFetchResponse())
 
       await persistSubmissionToApi(TEST_SUBMISSION, mockRequest)
@@ -122,6 +122,23 @@ describe('persistSubmissionToApi', () => {
       )
 
       expect(log).not.toHaveBeenCalledWith(LogCodes.SYSTEM.EXTERNAL_API_ERROR, expect.anything())
+    })
+
+    it('persists submission with semver grantVersion for config-broker grants', async () => {
+      const requestWithVersion = mockSimpleRequest({
+        params: { slug: grantCode.toLowerCase() },
+        app: { model: { def: { metadata: { version: '1.0.0' } } } }
+      })
+      fetch.mockResolvedValue(createMockFetchResponse())
+
+      await persistSubmissionToApi(TEST_SUBMISSION, requestWithVersion)
+
+      const expectedBody = JSON.stringify({
+        ...TEST_SUBMISSION,
+        grantVersion: '1.0.0'
+      })
+      const [, options] = fetch.mock.calls[0]
+      expect(options.body).toBe(expectedBody)
     })
 
     it('logs error when response is not ok', async () => {

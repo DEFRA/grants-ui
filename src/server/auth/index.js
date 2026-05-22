@@ -71,9 +71,9 @@ function handleAuthSignIn(request, h) {
       LogCodes.AUTH.SIGN_IN_FAILURE,
       {
         userId: UNKNOWN_USER,
-        errorMessage: `Error during /auth/sign-in redirect: ${error.message}`,
+        errorMessage: `Error during /auth/sign-in redirect: ${/** @type {Error} */ (error).message}`,
         step: 'auth_sign_in_redirect_error',
-        errorStack: error.stack,
+        errorStack: /** @type {Error} */ (error).stack,
         authState: {
           isAuthenticated: request.auth?.isAuthenticated,
           strategy: request.auth?.strategy,
@@ -87,11 +87,17 @@ function handleAuthSignIn(request, h) {
   }
 }
 
+/**
+ * @param {any} server - Hapi `Server`. Typed loose because handlers below use a
+ *                       project-local `RequestWithCookieAuth` which is narrower
+ *                       than Hapi's `Request` (a real fix would augment Hapi's
+ *                       Request interface via types/hapi-augmentations.d.ts).
+ */
 function setupBellOAuthErrorHandling(server) {
   // Add error handling specifically for Bell/OAuth errors
-  server.ext('onPreResponse', (request, h) => {
-    if (request.path.startsWith('/auth/') && request.response.isBoom) {
-      const error = request.response
+  server.ext('onPreResponse', (/** @type {AnyRequest} */ request, /** @type {ResponseToolkit} */ h) => {
+    if (request.path.startsWith('/auth/') && /** @type {Boom} */ (request.response).isBoom) {
+      const error = /** @type {Boom} */ (request.response)
 
       // Log detailed Bell/OAuth errors
       log(
@@ -135,6 +141,9 @@ function setupBellOAuthErrorHandling(server) {
   })
 }
 
+/**
+ * @param {any} server - Hapi `Server`. See note on `setupBellOAuthErrorHandling`.
+ */
 function setupAuthRoutes(server) {
   // Register defra-id related routes
 
@@ -297,11 +306,11 @@ function renderUnauthorisedView(request, h) {
       reason: 'view_render_failure',
       userId: UNKNOWN_USER,
       step: 'view_render_error',
-      errorStack: error.stack,
+      errorStack: /** @type {Error} */ (error).stack,
       viewError: 'errors/401.njk',
       serverWorkingDir: process.cwd()
     })
-    viewError.from(error)
+    viewError.from(/** @type {Error} */ (error))
     throw viewError
   }
 }
@@ -326,6 +335,9 @@ async function processAuthenticatedSignIn(request, h) {
   return redirectAfterSignIn(request, h)
 }
 
+/**
+ * @param {Profile | undefined} profile
+ */
 function validateProfileData(profile) {
   if (!profile?.sessionId) {
     const authError = new AuthError({
@@ -339,6 +351,11 @@ function validateProfileData(profile) {
   }
 }
 
+/**
+ * @param {Profile} profile
+ * @param {string} token
+ * @returns {{ role: string, scope: string[] }}
+ */
 function getPermissionsOrDefaults(profile, token) {
   try {
     const permissions = getPermissions(profile.crn, profile.organisationId, token)
@@ -346,7 +363,7 @@ function getPermissionsOrDefaults(profile, token) {
   } catch (permissionsError) {
     debug(LogCodes.AUTH.SIGN_IN_FAILURE, {
       userId: profile.contactId,
-      errorMessage: `Failed to get permissions: ${permissionsError.message}`,
+      errorMessage: `Failed to get permissions: ${/** @type {Error} */ (permissionsError).message}`,
       step: 'get_permissions_error',
       profileData: {
         crn: profile.crn,
@@ -360,7 +377,7 @@ function getPermissionsOrDefaults(profile, token) {
 
 /**
  * @param {RequestWithCookieAuth} request
- * @param {any} profile
+ * @param {Profile} profile
  * @param {string} role
  * @param {string[]} scope
  * @param {string} token
@@ -383,14 +400,14 @@ async function storeSessionData(request, profile, role, scope, token, refreshTok
       source: 'auth-handler',
       reason: 'cache_set_failure'
     })
-    authError.from(cacheError)
+    authError.from(/** @type {Error} */ (cacheError))
     throw authError
   }
 }
 
 /**
  * @param {RequestWithCookieAuth} request
- * @param profile
+ * @param {Profile} profile
  */
 function setCookieAuth(request, profile) {
   try {
@@ -402,7 +419,7 @@ function setCookieAuth(request, profile) {
       source: 'auth-handler',
       reason: 'cookie_set_failure'
     })
-    authError.from(cookieError)
+    authError.from(/** @type {Error} */ (cookieError))
     throw authError
   }
 }
@@ -428,7 +445,7 @@ function redirectAfterSignIn(request, h) {
       reason: 'redirect_failure'
     })
     authError.logCode = LogCodes.AUTH.SIGN_IN_FAILURE
-    authError.from(redirectError)
+    authError.from(/** @type {Error} */ (redirectError))
     throw authError
   }
 }
@@ -454,7 +471,7 @@ async function handleOidcSignIn(request, h) {
       reason: 'unexpected_error'
     })
     authError.logCode = LogCodes.AUTH.SIGN_IN_FAILURE
-    authError.from(error)
+    authError.from(/** @type {Error} */ (error))
     throw authError
   }
 }
@@ -553,10 +570,23 @@ function handleJourneyUnauthorised(_request, h) {
 }
 
 /**
+ * @import { Boom } from '@hapi/boom'
+ * @import { AnyRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ */
+
+/**
  * @typedef {import('@hapi/hapi').ServerRegisterPluginObject<void>} ServerRegisterPluginObject
  * @typedef {import('@hapi/hapi').ResponseToolkit} ResponseToolkit
  * @typedef {import('@hapi/hapi').Server} Server
  * @typedef {{ set: (value: any) => void, clear: () => void }} CookieAuth
  * @typedef {{ get: (id: string) => Promise<any>, set: (id: string, value: any) => Promise<void>, drop: (id: string) => Promise<void> }} SessionCache
  * @typedef {import('@hapi/hapi').Request & { server: Server & { app: { cache: SessionCache } }, cookieAuth: CookieAuth, yar: any, auth: { credentials: any, isAuthenticated: boolean, error?: any, strategy: string, mode: string } }} RequestWithCookieAuth
+ * @typedef {{
+ *   sessionId: string,
+ *   crn: string,
+ *   organisationId: string,
+ *   contactId: string,
+ *   currentRelationshipId?: string,
+ *   [key: string]: any
+ * }} Profile
  */

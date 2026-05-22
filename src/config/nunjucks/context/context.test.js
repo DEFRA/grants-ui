@@ -67,7 +67,9 @@ const getExpectedContext = () => ({
   cookieConsentExpiryDays: expect.any(Number),
   sessionCookieTtl: expect.any(Number),
   cookieBannerConfig: expect.any(Object),
-  cookieBannerNoscriptConfig: expect.any(Object),
+  crumb: undefined,
+  currentPath: '/',
+  cookiesPolicy: { confirmed: false, analytics: false },
   auth: {
     isAuthenticated: false,
     name: undefined,
@@ -289,7 +291,7 @@ describe('context', () => {
           auth: expect.objectContaining({
             isAuthenticated: true,
             credentials: expect.objectContaining({
-              sessionId: expect.any(String) // Allow for sessionId to be preserved or nullified
+              sessionId: expect.any(String)
             })
           }),
           method: 'GET',
@@ -306,8 +308,11 @@ describe('context', () => {
       expect(contextResult.auth).toEqual({
         isAuthenticated: true,
         sbi: undefined,
+        crn: undefined,
         name: undefined,
         organisationId: undefined,
+        organisationName: undefined,
+        relationshipId: undefined,
         role: undefined
       })
     })
@@ -315,16 +320,14 @@ describe('context', () => {
     test('Should provide correct auth properties when authenticated', async () => {
       const credentials = {
         sbi: '106284736',
+        crn: 'crn123',
         name: 'John Doe',
         organisationId: 'org123',
         organisationName: ' Farm 1',
-        role: 'admin',
+        relationshipId: 'rel456',
         sessionId: 'valid-session-id'
       }
       const request = createAuthRequest(credentials, {
-        sbi: '106284736',
-        name: 'John Doe',
-        organisationId: 'org123',
         role: 'admin'
       })
 
@@ -334,9 +337,11 @@ describe('context', () => {
       expect(contextResult.auth).toEqual({
         isAuthenticated: true,
         sbi: '106284736',
+        crn: 'crn123',
         name: 'John Doe',
         organisationId: 'org123',
         organisationName: ' Farm 1',
+        relationshipId: 'rel456',
         role: 'admin'
       })
     })
@@ -350,8 +355,11 @@ describe('context', () => {
       expect(contextResult.auth).toEqual({
         isAuthenticated: true,
         sbi: undefined,
+        crn: undefined,
         name: undefined,
         organisationId: undefined,
+        organisationName: undefined,
+        relationshipId: undefined,
         role: undefined
       })
     })
@@ -369,8 +377,11 @@ describe('context', () => {
       expect(contextResult.auth).toEqual({
         isAuthenticated: true,
         sbi: undefined,
+        crn: undefined,
         name: undefined,
         organisationId: undefined,
+        organisationName: undefined,
+        relationshipId: undefined,
         role: undefined
       })
     })
@@ -414,8 +425,11 @@ describe('context', () => {
       expect(contextResult.auth).toEqual({
         isAuthenticated: true,
         sbi: undefined,
+        crn: undefined,
         name: undefined,
         organisationId: undefined,
+        organisationName: undefined,
+        relationshipId: undefined,
         role: undefined
       })
     })
@@ -455,23 +469,20 @@ describe('context', () => {
 
       expect(contextResult.cookieBannerConfig).toBeDefined()
       expect(contextResult.cookieBannerConfig.ariaLabel).toBe('Cookies on Farm and land service')
-      expect(contextResult.cookieBannerConfig.hidden).toBe(true)
+      expect(contextResult.cookieBannerConfig.classes).toBe('js-cookies-container js-cookies-banner')
       expect(contextResult.cookieBannerConfig.attributes['data-cookie-name']).toBe('cookie_consent')
       expect(contextResult.cookieBannerConfig.attributes['data-cookie-policy-url']).toBe('/cookies')
-      expect(contextResult.cookieBannerConfig.messages).toHaveLength(1)
+      expect(contextResult.cookieBannerConfig.messages).toHaveLength(3)
       expect(contextResult.cookieBannerConfig.messages[0].actions).toHaveLength(3)
     })
 
-    test('includes cookieBannerNoscriptConfig with correct structure', async () => {
+    test('cookieBannerNoscriptConfig is no longer in context (unified banner)', async () => {
       setupManifestSuccess()
 
       const contextImport = await import('~/src/config/nunjucks/context/context.js')
       const contextResult = await contextImport.context(mockRequest)
 
-      expect(contextResult.cookieBannerNoscriptConfig).toBeDefined()
-      expect(contextResult.cookieBannerNoscriptConfig.ariaLabel).toBe('Cookies on Farm and land service')
-      expect(contextResult.cookieBannerNoscriptConfig.attributes['data-nosnippet']).toBe('')
-      expect(contextResult.cookieBannerNoscriptConfig.messages).toHaveLength(1)
+      expect(contextResult.cookieBannerNoscriptConfig).toBeUndefined()
     })
 
     test('includes cookie banner configs in fallback context', async () => {
@@ -484,8 +495,7 @@ describe('context', () => {
       expect(contextResult.cookieBannerConfig.ariaLabel).toBe('Cookies on Farm and land service')
       expect(contextResult.cookieBannerConfig.attributes['data-cookie-name']).toBe('cookie_consent')
 
-      expect(contextResult.cookieBannerNoscriptConfig).toBeDefined()
-      expect(contextResult.cookieBannerNoscriptConfig.ariaLabel).toBe('Cookies on Farm and land service')
+      expect(contextResult.cookieBannerNoscriptConfig).toBeUndefined()
     })
   })
 
@@ -508,6 +518,101 @@ describe('context', () => {
 
       expect(contextResult.sessionCookieTtl).toBeDefined()
       expect(contextResult.sessionCookieTtl).toBe(14400000)
+    })
+  })
+
+  describe('Cookie consent metadata overrides', () => {
+    test('Should use cookieConsent metadata from request when available', async () => {
+      setupManifestSuccess()
+
+      const requestWithMetadata = {
+        ...mockSimpleRequest({ path: '/' }),
+        app: {
+          model: {
+            def: {
+              metadata: {
+                cookieConsent: {
+                  serviceName: 'Custom Service',
+                  cookiePolicyUrl: '/custom-cookies',
+                  expiryDays: 90
+                }
+              }
+            }
+          }
+        }
+      }
+
+      const contextImport = await importContext()
+      const contextResult = await contextImport.context(requestWithMetadata)
+
+      expect(contextResult.serviceName).toBe('Custom Service')
+      expect(contextResult.cookiePolicyUrl).toBe('/custom-cookies')
+      expect(contextResult.cookieConsentExpiryDays).toBe(90)
+    })
+
+    test('Should fall back to config values when cookieConsent metadata is absent', async () => {
+      setupManifestSuccess()
+
+      const contextImport = await importContext()
+      const contextResult = await contextImport.context(mockSimpleRequest({ path: '/' }))
+
+      expect(contextResult.serviceName).toBe('Farm and land service')
+      expect(contextResult.cookiePolicyUrl).toBe('/cookies')
+      expect(contextResult.cookieConsentExpiryDays).toBe(365)
+    })
+  })
+
+  describe('submitButtonText in context', () => {
+    test('Should include submitButtonText when present in request metadata', async () => {
+      setupManifestSuccess()
+
+      const requestWithSubmitText = {
+        ...mockSimpleRequest({ path: '/' }),
+        app: {
+          model: {
+            def: {
+              metadata: {
+                options: {
+                  submitButtonText: 'Save and continue'
+                }
+              }
+            }
+          }
+        }
+      }
+
+      const contextImport = await importContext()
+      const contextResult = await contextImport.context(requestWithSubmitText)
+
+      expect(contextResult.submitButtonText).toBe('Save and continue')
+    })
+
+    test('Should not include submitButtonText when absent from request metadata', async () => {
+      setupManifestSuccess()
+
+      const contextImport = await importContext()
+      const contextResult = await contextImport.context(mockSimpleRequest({ path: '/' }))
+
+      expect(contextResult).not.toHaveProperty('submitButtonText')
+    })
+  })
+
+  describe('Fallback context getAssetPath', () => {
+    test('Should use inline asset path function in fallback context', async () => {
+      setupManifestSuccess()
+
+      vi.doMock('~/src/config/nunjucks/context/build-navigation.js', () => ({
+        buildNavigation: () => {
+          throw new Error('Navigation build failed')
+        }
+      }))
+
+      const contextImport = await importContext()
+      const contextResult = await contextImport.context(mockRequest)
+
+      expect(typeof contextResult.getAssetPath).toBe('function')
+      expect(contextResult.getAssetPath('images/logo.png')).toBe('/public/images/logo.png')
+      expect(contextResult.getAssetPath('test.js')).toBe('/public/test.js')
     })
   })
 
@@ -552,7 +657,7 @@ describe('context', () => {
         }
       })
       expect(contextResult.cookieBannerConfig).toBeDefined()
-      expect(contextResult.cookieBannerNoscriptConfig).toBeDefined()
+      expect(contextResult.cookieBannerNoscriptConfig).toBeUndefined()
       expect(typeof contextResult.getAssetPath).toBe('function')
     })
   })

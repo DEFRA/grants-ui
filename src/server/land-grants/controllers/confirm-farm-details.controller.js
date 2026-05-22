@@ -2,6 +2,7 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 import { fetchBusinessAndCustomerInformation } from '../../common/services/consolidated-view/consolidated-view.service.js'
 import { createBusinessRows, createContactRows, createPersonRows } from '../../common/helpers/create-rows.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { mergeAdditionalAnswers } from '~/src/server/common/helpers/state/additional-answers-helper.js'
 
 export default class ConfirmFarmDetailsController extends QuestionPageController {
   viewName = 'confirm-farm-details'
@@ -91,7 +92,7 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
    * @returns {object}
    */
   buildDetailedFarmDetails(request, data) {
-    const sbi = request.auth?.credentials?.sbi
+    const sbi = /** @type {string} */ (request.auth?.credentials?.sbi)
     const person = createPersonRows(data.customer?.name)
     const business = createBusinessRows(sbi, data.business)
     const contact = createContactRows(data.business)
@@ -135,7 +136,7 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
      * Handle POST requests to the confirm farm details page.
      * @param {AnyFormRequest} request
      * @param {FormContext} context
-     * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
+     * @param {FormResponseToolkit} h
      * @returns {Promise<ResponseObject>}
      */
     const fn = async (request, context, h) => {
@@ -144,14 +145,7 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
 
       if (sbi) {
         const applicant = await fetchBusinessAndCustomerInformation(request)
-        const prevAdditionalAnswers = /** @type {object} */ (state.additionalAnswers)
-        await this.setState(request, {
-          ...state,
-          additionalAnswers: {
-            ...prevAdditionalAnswers,
-            applicant
-          }
-        })
+        await this.setState(request, mergeAdditionalAnswers(state, { applicant }))
       }
 
       return this.proceed(request, h, this.getNextPath(context))
@@ -162,6 +156,6 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
 }
 
 /**
- * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
- * @import { ResponseObject, ResponseToolkit } from '@hapi/hapi'
+ * @import { FormContext, AnyFormRequest, FormResponseToolkit } from '@defra/forms-engine-plugin/types'
+ * @import { ResponseObject } from '@hapi/hapi'
  */

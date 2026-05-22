@@ -51,6 +51,7 @@ import WoodlandHectaresPageController from '~/src/server/woodland/woodland-hecta
 import TerminalPageController from '~/src/server/task-list/terminal-page.controller.js'
 import CheckDetailsController from '~/src/server/details-page/check-details.controller.js'
 import CommonSelectLandParcelPageController from './land-grants/common/common-select-parcel/common-select-land-parcel-page.controller.js'
+import permissions from '../plugins/permissions.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
 
@@ -102,15 +103,16 @@ const createHapiServer = () => {
  * @param {string} prefix
  */
 const registerFormsPlugin = async (server, prefix = '') => {
+  const formService = await formsService()
   await server.register({
-    plugin,
+    plugin: /** @type {import('@hapi/hapi').Plugin<any>} */ (/** @type {unknown} */ (plugin)),
     options: {
       ...(prefix && { routes: { prefix } }),
       cache: new StatePersistenceService({ server }),
       baseUrl: config.get('baseUrl'),
       onRequest: formsStatusCallback,
       services: {
-        formsService: await formsService(),
+        formsService: formService,
         outputService
       },
       filters: {
@@ -146,6 +148,7 @@ const registerFormsPlugin = async (server, prefix = '') => {
       }
     }
   })
+  server.method('getFormService', () => formService)
 }
 
 const registerPlugins = async (server) => {
@@ -163,6 +166,7 @@ const registerPlugins = async (server) => {
     sessionCache,
     nunjucksConfig,
     sso,
+    permissions,
     contentSecurityPolicy,
     whitelist
   ])

@@ -7,6 +7,9 @@ import { refreshTokens } from '~/src/server/auth/refresh-tokens.js'
 import { AuthError } from '~/src/server/common/utils/errors/AuthError.js'
 import { log, debug, LogCodes, logger } from '~/src/server/common/helpers/logging/log.js'
 
+/**
+ * @returns {Promise<OidcConfig>}
+ */
 async function setupOidcConfig() {
   const startTime = Date.now()
   try {
@@ -30,16 +33,23 @@ async function setupOidcConfig() {
       wellKnownUrl: config.get('defraId.wellKnownUrl')
     })
     authError.logCode = LogCodes.AUTH.SIGN_IN_FAILURE
-    throw authError.from(error)
+    throw authError.from(/** @type {Error} */ (error))
   }
 }
 
+/**
+ * @param {Record<string, unknown>} baseConfig
+ */
 function setConfiguration(baseConfig) {
-  return function (key, defaultValue = 'NOT_SET') {
+  return function (/** @type {string} */ key, /** @type {unknown} */ defaultValue = 'NOT_SET') {
     return baseConfig[key] ?? defaultValue
   }
 }
 
+/**
+ * @param {OidcConfig} oidcConfig
+ * @returns {Record<string, unknown>}
+ */
 function getLoggingDetails(oidcConfig) {
   const getOidcValue = setConfiguration(oidcConfig)
 
@@ -57,6 +67,11 @@ function getLoggingDetails(oidcConfig) {
   }
 }
 
+/**
+ * @param {Server} server
+ * @param {OidcConfig | undefined} oidcConfig
+ * @returns {void}
+ */
 function setupAuthStrategies(server, oidcConfig) {
   // Cookie is a built-in authentication strategy for hapi.js that authenticates users based on a session cookie
   // Used for all non-Defra Identity routes
@@ -73,13 +88,15 @@ function setupAuthStrategies(server, oidcConfig) {
     server.auth.strategy('defra-id', 'bell', bellOptions)
   }
 
-  server.ext('onPostAuth', (request, h) => mapPayloadToProfile(request, h))
+  server.ext('onPostAuth', (/** @type {Request} */ request, /** @type {ResponseToolkit} */ h) =>
+    mapPayloadToProfile(request, h)
+  )
 }
 
 export default {
   plugin: {
     name: 'auth',
-    register: async (server) => {
+    register: async (/** @type {Server} */ server) => {
       log(LogCodes.SYSTEM.PLUGIN_REGISTRATION, {
         pluginName: 'auth',
         status: 'starting'
@@ -97,6 +114,10 @@ export default {
   }
 }
 
+/**
+ * @param {BellCredentials} credentials
+ * @returns {BellCredentials}
+ */
 function processCredentialsProfile(credentials) {
   const startTime = Date.now()
   try {
@@ -119,10 +140,14 @@ function processCredentialsProfile(credentials) {
       }
     })
     authError.logCode = LogCodes.AUTH.SIGN_IN_FAILURE
-    throw authError.from(error)
+    throw authError.from(/** @type {Error} */ (error))
   }
 }
 
+/**
+ * @param {BellCredentials | undefined} credentials
+ * @returns {void}
+ */
 function validateCredentials(credentials) {
   if (!credentials) {
     log(LogCodes.AUTH.CREDENTIALS_MISSING, {})
@@ -135,6 +160,10 @@ function validateCredentials(credentials) {
   }
 }
 
+/**
+ * @param {string} token
+ * @returns {JwtPayload}
+ */
 function decodeTokenPayload(token) {
   try {
     const decoded = Jwt.token.decode(token)
@@ -155,7 +184,7 @@ function decodeTokenPayload(token) {
       throw new Error('Failed to extract payload from JWT token')
     }
 
-    return payload
+    return /** @type {JwtPayload} */ (payload)
   } catch (jwtError) {
     const authError = new AuthError({
       message: 'JWT decode failed',
@@ -166,13 +195,17 @@ function decodeTokenPayload(token) {
       }
     })
     authError.logCode = LogCodes.AUTH.SIGN_IN_FAILURE
-    throw authError.from(jwtError)
+    throw authError.from(/** @type {Error} */ (jwtError))
   }
 }
 
+/**
+ * @param {JwtPayload} payload
+ * @returns {void}
+ */
 function validatePayload(payload) {
   const requiredFields = ['contactId', 'firstName', 'lastName']
-  const missingFields = requiredFields.filter((field) => !payload[field])
+  const missingFields = requiredFields.filter((/** @type {string} */ field) => !payload[field])
 
   if (missingFields.length > 0) {
     log(LogCodes.AUTH.SIGN_IN_FAILURE, {
@@ -192,6 +225,11 @@ function validatePayload(payload) {
   }
 }
 
+/**
+ * @param {BellCredentials} credentials
+ * @param {JwtPayload} payload
+ * @returns {BellCredentials}
+ */
 function createCredentialsProfile(credentials, payload) {
   const sessionId = crypto.randomUUID()
 
@@ -202,6 +240,10 @@ function createCredentialsProfile(credentials, payload) {
   return credentials
 }
 
+/**
+ * @param {string | undefined} relationships
+ * @returns {string[]}
+ */
 function extractFarmDetails(relationships) {
   const parts = relationships?.split(':') || []
 
@@ -246,13 +288,18 @@ function extractFarmDetails(relationships) {
   ]
 }
 
+/**
+ * @param {Request} request
+ * @param {ResponseToolkit} h
+ * @returns {symbol}
+ */
 export function mapPayloadToProfile(request, h) {
   if (request.auth.isAuthenticated) {
     // Get the actual user data, handling both nested and flat structures
-    const userData = request.auth.credentials.profile || request.auth.credentials
+    const userData = /** @type {JwtPayload} */ (request.auth.credentials.profile || request.auth.credentials)
 
     const currentRelationship = (userData?.relationships || []).find(
-      (relationship) => relationship.split(':')[0] === userData.currentRelationshipId
+      (/** @type {string} */ relationship) => relationship.split(':')[0] === userData.currentRelationshipId
     )
     // eslint-disable-next-line no-unused-vars
     const [relationshipId, organisationId, organisationName, _organisationLoa, _relationship, _relationshipLoa] =
@@ -274,6 +321,9 @@ export function mapPayloadToProfile(request, h) {
   return h.continue
 }
 
+/**
+ * @param {OidcConfig} oidcConfig
+ */
 function getBellOptions(oidcConfig) {
   return {
     provider: {
@@ -283,7 +333,7 @@ function getBellOptions(oidcConfig) {
       auth: oidcConfig.authorization_endpoint,
       token: oidcConfig.token_endpoint,
       scope: ['openid', 'offline_access', config.get('defraId.clientId')],
-      profile: function (credentials) {
+      profile: function (/** @type {BellCredentials} */ credentials) {
         return processCredentialsProfile(credentials)
       }
     },
@@ -291,23 +341,23 @@ function getBellOptions(oidcConfig) {
     clientId: config.get('defraId.clientId'),
     clientSecret: config.get('defraId.clientSecret'),
     isSecure: config.get('session.cookie.secure'),
-    location: function (request) {
+    location: function (/** @type {Request} */ request) {
       const startTime = Date.now()
       try {
         const redirectParam = request.query.redirect
 
         if (redirectParam) {
           try {
-            const safeRedirect = getSafeRedirect(redirectParam)
+            const safeRedirect = getSafeRedirect(/** @type {string} */ (redirectParam))
             request.yar.set('redirect', safeRedirect)
           } catch (redirectError) {
             debug(LogCodes.AUTH.SIGN_IN_FAILURE, {
               userId: 'unknown',
-              errorMessage: `Failed to store redirect parameter: ${redirectError.message}`,
+              errorMessage: `Failed to store redirect parameter: ${/** @type {Error} */ (redirectError).message}`,
               step: 'bell_location_redirect_store_error',
               redirectError: {
-                message: redirectError.message,
-                stack: redirectError.stack,
+                message: /** @type {Error} */ (redirectError).message,
+                stack: /** @type {Error} */ (redirectError).stack,
                 originalRedirect: redirectParam
               }
             })
@@ -326,7 +376,7 @@ function getBellOptions(oidcConfig) {
           }
         })
         authError.logCode = LogCodes.AUTH.SIGN_IN_FAILURE
-        throw authError.from(error)
+        throw authError.from(/** @type {Error} */ (error))
       }
     },
     providerParams: function () {
@@ -337,6 +387,12 @@ function getBellOptions(oidcConfig) {
   }
 }
 
+/**
+ * @param {UserSession | undefined} userSession
+ * @param {string} sessionId
+ * @param {Request} request
+ * @returns {{ isValid: boolean }}
+ */
 function validateUserSession(userSession, sessionId, request) {
   if (!userSession) {
     log(
@@ -354,6 +410,12 @@ function validateUserSession(userSession, sessionId, request) {
   return { isValid: true }
 }
 
+/**
+ * @param {UserSession} userSession
+ * @param {string} sessionId
+ * @param {Request} request
+ * @returns {Promise<{ isValid: boolean }>}
+ */
 async function verifyAndRefreshToken(userSession, sessionId, request) {
   const startTime = Date.now()
   try {
@@ -362,10 +424,17 @@ async function verifyAndRefreshToken(userSession, sessionId, request) {
     logger.debug(`Token verification succeeded ${Date.now() - startTime}ms`)
     return { isValid: true }
   } catch (tokenError) {
-    return await handleTokenVerificationError(userSession, sessionId, request, tokenError) // NOSONAR - await is necessary here
+    return await handleTokenVerificationError(userSession, sessionId, request, /** @type {Error} */ (tokenError)) // NOSONAR - await is necessary here
   }
 }
 
+/**
+ * @param {UserSession} userSession
+ * @param {string} sessionId
+ * @param {Request} request
+ * @param {Error} tokenError
+ * @returns {Promise<{ isValid: boolean }>}
+ */
 async function handleTokenVerificationError(userSession, sessionId, request, tokenError) {
   const startTime = Date.now()
   if (!config.get('defraId.refreshTokens')) {
@@ -408,7 +477,7 @@ async function handleTokenVerificationError(userSession, sessionId, request, tok
       {
         message: `Token refresh failed ${Date.now() - startTime}ms`,
         userId: userSession.contactId,
-        errorMessage: refreshError.message,
+        errorMessage: /** @type {Error} */ (refreshError).message,
         step: 'token_refresh_failed',
         originalTokenError: tokenError.message
       },
@@ -428,19 +497,23 @@ function getCookieOptions() {
       isSecure: config.get('session.cookie.secure'),
       isSameSite: 'Lax'
     },
-    redirectTo: function (request) {
+    redirectTo: function (/** @type {Request} */ request) {
       return `/auth/sign-in?redirect=${request.url.pathname}${request.url.search}`
     },
-    validate: async function (request, session) {
-      const userSession = await request.server.app.cache.get(session.sessionId)
+    validate: async function (/** @type {Request} */ request, /** @type {{ sessionId: string }} */ session) {
+      const userSession = /** @type {UserSession | undefined} */ (await request.server.app.cache.get(session.sessionId))
 
       const sessionValidation = validateUserSession(userSession, session.sessionId, request)
       if (!sessionValidation.isValid) {
         return sessionValidation
       }
 
-      if (userSession.token) {
-        const tokenValidation = await verifyAndRefreshToken(userSession, session.sessionId, request)
+      if (/** @type {UserSession} */ (userSession).token) {
+        const tokenValidation = await verifyAndRefreshToken(
+          /** @type {UserSession} */ (userSession),
+          session.sessionId,
+          request
+        )
         if (!tokenValidation.isValid) {
           return tokenValidation
         }
@@ -454,3 +527,39 @@ function getCookieOptions() {
 }
 
 export { getBellOptions, getCookieOptions }
+
+/**
+ * @import { Server, Request, ResponseToolkit } from '@hapi/hapi'
+ */
+
+/**
+ * @typedef {object} OidcConfig
+ * @property {string} authorization_endpoint
+ * @property {string} token_endpoint
+ * @property {string} [issuer]
+ * @property {string} [userinfo_endpoint]
+ * @property {string} [jwks_uri]
+ * @property {string} [end_session_endpoint]
+ * @property {string[]} [scopes_supported]
+ * @property {string[]} [response_types_supported]
+ * @property {string[]} [grant_types_supported]
+ * @property {string[]} [token_endpoint_auth_methods_supported]
+ */
+
+/**
+ * @typedef {{ contactId: string, firstName: string, lastName: string, currentRelationshipId?: string, relationships?: string[], [k: string]: unknown }} JwtPayload
+ */
+
+/**
+ * @typedef {object} BellCredentials
+ * @property {string} token
+ * @property {JwtPayload & { sessionId: string }} [profile]
+ */
+
+/**
+ * @typedef {object} UserSession
+ * @property {string} token
+ * @property {string} refreshToken
+ * @property {string} [contactId]
+ * @property {string} [organisationId]
+ */

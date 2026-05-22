@@ -3,10 +3,7 @@ import path from 'node:path'
 
 import { config } from '~/src/config/config.js'
 import { buildNavigation } from '~/src/config/nunjucks/context/build-navigation.js'
-import {
-  buildCookieBannerConfig,
-  buildCookieBannerNoscriptConfig
-} from '~/src/config/nunjucks/context/build-cookie-banner-config.js'
+import { buildCookieBannerConfig } from '~/src/config/nunjucks/context/build-cookie-banner-config.js'
 import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 const assetPath = config.get('assetPath')
@@ -16,9 +13,9 @@ const manifestPath = path.join(config.get('root'), '.public/assets-manifest.json
 let webpackManifest
 
 /**
- * @param {Request | undefined } request
- * @param {string|null} role
- * @returns {object} User authentication and authorization details
+ * @param {ExtendedRequest | undefined} request
+ * @param {string | null | undefined} role
+ * @returns {AuthDetails} User authentication and authorization details
  */
 const usersDetails = (request, role) => {
   return {
@@ -32,13 +29,10 @@ const usersDetails = (request, role) => {
     role
   }
 }
-/**
- * @typedef {import('@hapi/hapi').Request & { app: { model?: { def?: { metadata?: any } }, cspNonce?: string } }} ExtendedRequest
- */
 
 /**
  * @param {ExtendedRequest | undefined} request
- * @returns {object} Cookie consent configuration including service name, policy URL, and expiry days
+ * @returns {CookieConsentConfig} Cookie consent configuration including service name, policy URL, and expiry days
  */
 const extractCookieConsentConfig = (request) => {
   const formMetadata = request?.app?.model?.def?.metadata
@@ -50,6 +44,10 @@ const extractCookieConsentConfig = (request) => {
   }
 }
 
+/**
+ * @param {ExtendedRequest | undefined} request
+ * @returns {void}
+ */
 const loadWebpackManifest = (request) => {
   if (!webpackManifest) {
     try {
@@ -58,7 +56,7 @@ const loadWebpackManifest = (request) => {
       debug(
         LogCodes.SYSTEM.SERVER_ERROR,
         {
-          errorMessage: `Webpack ${path.basename(manifestPath)} not found: ${error.message}`
+          errorMessage: `Webpack ${path.basename(manifestPath)} not found: ${/** @type {Error} */ (error).message}`
         },
         request
       )
@@ -68,7 +66,7 @@ const loadWebpackManifest = (request) => {
 
 /**
  * @param {ExtendedRequest | undefined} request
- * @returns {Promise<object>} Session data object or empty object if unavailable
+ * @returns {Promise<SessionData>} Session data object or empty object if unavailable
  */
 const getSessionData = async (request) => {
   if (!request?.auth?.isAuthenticated || !request.auth.credentials?.sessionId) {
@@ -76,19 +74,18 @@ const getSessionData = async (request) => {
   }
 
   try {
-    // @ts-ignore - cache is a custom property added to server.app
     const cache = request.server?.app?.cache
     if (!cache) {
       return {}
     }
-    return (await cache.get(request.auth.credentials.sessionId)) || {}
+    return (await cache.get(/** @type {string} */ (request.auth.credentials.sessionId))) || {}
   } catch (cacheError) {
     const sessionId = String(request.auth.credentials.sessionId || 'unknown')
     debug(
       LogCodes.AUTH.SIGN_IN_FAILURE,
       {
         userId: 'unknown',
-        errorMessage: `Cache retrieval failed for session ${sessionId}: ${cacheError.message}`,
+        errorMessage: `Cache retrieval failed for session ${sessionId}: ${/** @type {Error} */ (cacheError).message}`,
         step: 'context_cache_retrieval'
       },
       request
@@ -111,12 +108,14 @@ const createAssetPathGetter = (asset) => {
  * @param {string} serviceName
  * @param {string} cookiePolicyUrl
  * @param {number} cookieConsentExpiryDays
- * @returns {object} Common configuration object
+ * @param {ExtendedRequest | undefined} request
+ * @returns {Record<string, unknown>} Common configuration object
  */
-const buildCommonConfig = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays) => {
+const buildCommonConfig = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays, request) => {
   const cookieConsentName = config.get('cookieConsent.cookieName')
   const gaTrackingId = config.get('googleAnalytics.trackingId')
   const sessionCookieTtl = config.get('session.cookie.ttl')
+  const consentCookieValue = /** @type {any} */ (request)?.state?.[cookieConsentName]
 
   return {
     assetPath: `${assetPath}/assets/rebrand`,
@@ -133,27 +132,36 @@ const buildCommonConfig = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays
       cookieConsentName,
       cookieConsentExpiryDays,
       gaTrackingId,
-      cookiePolicyUrl
+      cookiePolicyUrl,
+      /** @type {any} */ (request)?.plugins?.crumb
     ),
-    cookieBannerNoscriptConfig: buildCookieBannerNoscriptConfig(serviceName),
+    crumb: /** @type {any} */ (request)?.plugins?.crumb,
+    currentPath: request?.path ?? '/',
+    cookiesPolicy: {
+      confirmed: Boolean(consentCookieValue),
+      analytics: consentCookieValue === 'true'
+    },
     breadcrumbs: []
   }
 }
 
 /**
- * @param {any} auth
+ * @param {AuthDetails} auth
  * @param {ExtendedRequest | undefined} request
  * @param {string} serviceName
  * @param {string} cookiePolicyUrl
  * @param {number} cookieConsentExpiryDays
- * @returns {object} Complete context object for successful authentication
+ * @returns {Record<string, unknown>} Complete context object for successful authentication
  */
 const buildSuccessContext = (auth, request, serviceName, cookiePolicyUrl, cookieConsentExpiryDays) => {
+  const submitButtonText = request?.app?.model?.def?.metadata?.options?.submitButtonText
+
   return {
-    ...buildCommonConfig(serviceName, cookiePolicyUrl, cookieConsentExpiryDays),
+    ...buildCommonConfig(serviceName, cookiePolicyUrl, cookieConsentExpiryDays, request),
     auth,
     navigation: buildNavigation(request),
-    getAssetPath: createAssetPathGetter
+    getAssetPath: createAssetPathGetter,
+    ...(submitButtonText ? { submitButtonText } : {})
   }
 }
 
@@ -161,11 +169,11 @@ const buildSuccessContext = (auth, request, serviceName, cookiePolicyUrl, cookie
  * @param {string} serviceName
  * @param {string} cookiePolicyUrl
  * @param {number} cookieConsentExpiryDays
- * @returns {object} Complete context object for fallback/unauthenticated state
+ * @returns {Record<string, unknown>} Complete context object for fallback/unauthenticated state
  */
 const buildFallbackContext = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays) => {
   return {
-    ...buildCommonConfig(serviceName, cookiePolicyUrl, cookieConsentExpiryDays),
+    ...buildCommonConfig(serviceName, cookiePolicyUrl, cookieConsentExpiryDays, undefined),
     auth: {
       isAuthenticated: false,
       sbi: null,
@@ -177,13 +185,13 @@ const buildFallbackContext = (serviceName, cookiePolicyUrl, cookieConsentExpiryD
       role: null
     },
     navigation: [],
-    getAssetPath: (asset) => `${assetPath}/${asset}`
+    getAssetPath: (/** @type {string} */ asset) => `${assetPath}/${asset}`
   }
 }
 
 /**
  * @param {ExtendedRequest | undefined} request
- * @returns {Promise<object>} Complete context object for rendering views
+ * @returns {Promise<Record<string, unknown>>} Complete context object for rendering views
  */
 export async function context(request) {
   const { serviceName, cookiePolicyUrl, cookieConsentExpiryDays } = extractCookieConsentConfig(request)
@@ -198,7 +206,7 @@ export async function context(request) {
     debug(
       LogCodes.SYSTEM.SERVER_ERROR,
       {
-        errorMessage: `Error building context: ${error.message}`
+        errorMessage: `Error building context: ${/** @type {Error} */ (error).message}`
       },
       request
     )
@@ -208,4 +216,38 @@ export async function context(request) {
 
 /**
  * @import { Request } from '@hapi/hapi'
+ */
+
+/**
+ * @typedef {object} FormMetadata
+ * @property {{ serviceName?: string, cookiePolicyUrl?: string, expiryDays?: number }} [cookieConsent]
+ * @property {{ submitButtonText?: string }} [options]
+ */
+
+/**
+ * @typedef {Request & { app: { model?: { def?: { metadata?: FormMetadata } }, cspNonce?: string } }} ExtendedRequest
+ */
+
+/**
+ * @typedef {object} AuthDetails
+ * @property {boolean} isAuthenticated
+ * @property {unknown} sbi
+ * @property {unknown} crn
+ * @property {unknown} name
+ * @property {unknown} organisationId
+ * @property {unknown} organisationName
+ * @property {unknown} relationshipId
+ * @property {string | null | undefined} role
+ */
+
+/**
+ * @typedef {object} CookieConsentConfig
+ * @property {string} serviceName
+ * @property {string} cookiePolicyUrl
+ * @property {number} cookieConsentExpiryDays
+ */
+
+/**
+ * @typedef {object} SessionData
+ * @property {string | null} [role]
  */

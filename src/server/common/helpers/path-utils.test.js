@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resolvePath } from './path-utils.js'
+import { normaliseResponseMappingPath, resolvePath } from './path-utils.js'
 
 describe('resolvePath', () => {
   it('resolves simple dot-notation paths', () => {
@@ -29,29 +29,17 @@ describe('resolvePath', () => {
     expect(resolvePath(obj, 'items[2]')).toBe('c')
   })
 
-  it('returns undefined for missing paths', () => {
-    const obj = { foo: { bar: 'value' } }
-    expect(resolvePath(obj, 'foo.missing')).toBeUndefined()
-    expect(resolvePath(obj, 'missing.path')).toBeUndefined()
-  })
-
-  it('returns undefined for out-of-bounds array indices', () => {
-    const obj = { items: ['a', 'b'] }
-    expect(resolvePath(obj, 'items[5]')).toBeUndefined()
-  })
-
-  it('returns undefined for null/undefined objects', () => {
-    expect(resolvePath(null, 'foo')).toBeUndefined()
-    expect(resolvePath(undefined, 'foo')).toBeUndefined()
-  })
-
-  it('returns undefined for empty path', () => {
-    expect(resolvePath({ foo: 'bar' }, '')).toBeUndefined()
-  })
-
-  it('returns undefined for null/undefined path', () => {
-    expect(resolvePath({ foo: 'bar' }, null)).toBeUndefined()
-    expect(resolvePath({ foo: 'bar' }, undefined)).toBeUndefined()
+  it.each([
+    ['missing property', { foo: { bar: 'value' } }, 'foo.missing'],
+    ['missing nested path', { foo: { bar: 'value' } }, 'missing.path'],
+    ['out-of-bounds array index', { items: ['a', 'b'] }, 'items[5]'],
+    ['null object', null, 'foo'],
+    ['undefined object', undefined, 'foo'],
+    ['empty path', { foo: 'bar' }, ''],
+    ['null path', { foo: 'bar' }, null],
+    ['undefined path', { foo: 'bar' }, undefined]
+  ])('returns undefined for %s', (_, obj, path) => {
+    expect(resolvePath(obj, path)).toBeUndefined()
   })
 
   it('handles null values in path correctly', () => {
@@ -94,5 +82,20 @@ describe('resolvePath', () => {
         expect(resolvePath(obj, `${dangerousKey}[0]`)).toBeUndefined()
       }
     )
+  })
+})
+
+describe('normaliseResponseMappingPath', () => {
+  it.each([
+    ['strips leading data. prefix', 'data.business.info', 'business.info'],
+    [
+      'removes array index notation',
+      'data.business.countyParishHoldings[0].cphNumber',
+      'business.countyParishHoldings.cphNumber'
+    ],
+    ['leaves paths without data. prefix unchanged', 'business.info', 'business.info'],
+    ['removes multiple array indices', 'data.items[0].sub[1].value', 'items.sub.value']
+  ])('%s', (_, input, expected) => {
+    expect(normaliseResponseMappingPath(input)).toBe(expected)
   })
 })

@@ -20,3 +20,7 @@ reports/mutation/mutation.html
 .stryker-tmp
 /http-client.private.env.json
 /performance-test-users.csv
+localstack/config-broker-local
+/.grants-ui-cli-state.json
+/acceptance/schemas/
+/woodland-grant-journey-tests-schemas/

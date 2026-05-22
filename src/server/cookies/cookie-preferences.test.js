@@ -8,7 +8,7 @@ import {
 } from './test-helpers.js'
 
 const createFormHTML = (options = {}) => {
-  const { gaTrackingId = 'G-TEST123', expiryDays = '365', includeNonce = true, referrer = '/previous-page' } = options
+  const { gaTrackingId = 'GTM-TEST123', expiryDays = '365', includeNonce = true, referrer = '/previous-page' } = options
 
   const gaAttr = gaTrackingId === null ? '' : `data-ga-tracking-id="${gaTrackingId}"`
   const expiryAttr = expiryDays === null ? '' : `data-expiry-days="${expiryDays}"`
@@ -136,14 +136,14 @@ describe('cookie-preferences', () => {
   it.each([
     {
       radioId: 'analytics-yes',
-      gaTrackingId: 'G-TEST123',
+      gaTrackingId: 'GTM-TEST123',
       expectGA: true,
       expectedCookie: 'cookie_consent=true',
       description: 'load Google Analytics when consent is yes and tracking ID is provided'
     },
     {
       radioId: 'analytics-no',
-      gaTrackingId: 'G-TEST123',
+      gaTrackingId: 'GTM-TEST123',
       expectGA: false,
       expectedCookie: 'cookie_consent=false',
       description: 'reject analytics and not load GA'
@@ -175,7 +175,7 @@ describe('cookie-preferences', () => {
     if (expectGA) {
       expect(finalScriptCount).toBeGreaterThan(initialScriptCount)
       const scripts = document.head.querySelectorAll('script')
-      const gaScript = Array.from(scripts).find((s) => s.textContent && s.textContent.includes(gaTrackingId))
+      const gaScript = Array.from(scripts).find((s) => s.src && s.src.includes(gaTrackingId))
       expect(gaScript).toBeDefined()
     } else {
       expect(finalScriptCount).toBe(initialScriptCount)
@@ -211,9 +211,8 @@ describe('cookie-preferences', () => {
     clickWithNavigationHandling(saveButton, window)
 
     const scripts = document.head.querySelectorAll('script')
-    const gaScript = Array.from(scripts).find((s) => s.textContent && s.textContent.includes('G-TEST123'))
+    const gaScript = Array.from(scripts).find((s) => s.src && s.src.includes('GTM-TEST123'))
     expect(gaScript).toBeDefined()
-    expect(gaScript.hasAttribute('nonce')).toBe(false)
   })
 
   it('should use default expiry days when not specified', async () => {

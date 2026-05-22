@@ -90,6 +90,7 @@ async function persistStatus(request, newStatus, previousStatus, grantId, existi
 
   if (newStatus !== ApplicationStatus.CLEARED) {
     const { sbi, grantCode } = getCacheKey(request)
+    const grantVersion = request.app.model?.def?.metadata?.version ?? 1 // Default to 1 to support non-config broker grants
     const contactId = request.auth?.credentials?.contactId || request.auth?.credentials?.crn
 
     if (!contactId) {
@@ -100,10 +101,10 @@ async function persistStatus(request, newStatus, previousStatus, grantId, existi
       userId: String(contactId),
       sbi,
       grantCode,
-      grantVersion: 1
+      grantVersion
     })
 
-    await updateApplicationStatus(newStatus, `${organisationId}:${grantId}`, { lockToken })
+    await updateApplicationStatus(newStatus, `${organisationId}:${grantId}`, { lockToken, grantVersion })
   }
 }
 
@@ -265,14 +266,6 @@ async function handlePostSubmission(request, h, context, previousStatus, grantCo
 
   const redirectUrl = rule.toPath === agreements.get('baseUrl') ? rule.toPath : buildRedirectUrl(grantId, rule.toPath)
 
-  const isAlreadyReopened = previousStatus === ApplicationStatus.REOPENED
-  const isStillAwaitingAmendments = gasStatus === 'APPLICATION_AMEND'
-  const isWithinGrantPages = request.headers['sec-fetch-site'] === 'same-origin' // request initiated from within grant pages
-
-  if (isAlreadyReopened && isStillAwaitingAmendments && isWithinGrantPages) {
-    return h.continue
-  }
-
   return request.path === redirectUrl ? h.continue : h.redirect(redirectUrl).takeover()
 }
 
@@ -313,6 +306,7 @@ function handlePostSubmissionError(err, request, h, context, grantId, grantCode,
 /**
  * @typedef {object} GrantModel
  * @property {{ submission: { grantCode: string }, grantRedirectRules?: object }} metadata
+ * @property {string} [startPage]
  */
 
 /**
@@ -337,9 +331,27 @@ export const formsStatusCallback = async (request, h, context) => {
 
   const previousStatus = context.state.applicationStatus
   const grantRedirectRules = request.app.model?.def?.metadata?.grantRedirectRules
+  const isWithinGrantPages = request.headers['sec-fetch-site'] === 'same-origin'
 
-  // Don't redirect if page is listed in the grant config excludedPaths
-  if (grantRedirectRules?.excludedPaths?.includes(request.params?.path)) {
+  const checkDetailsChangesPending = context.state.checkDetailsChangesPending
+  const isCheckDetailsStartPage = request.app.model?.def?.startPage === '/check-details'
+  const isPostSubmission = previousStatus === ApplicationStatus.SUBMITTED
+
+  /** Don't redirect if page is listed in the grant config excludedPaths
+   * or if the request is from within the grant pages (e.g. user refreshing the page or navigating using the back button)
+   * or check details changes are pending
+   * NOTE: Some older OS versions and browsers don't support sec-fetch-site header, so the isWithinGrantPages check is
+   * not 100% reliable, but it provides an additional layer of protection against redirect loops while still allowing
+   * the excludedPaths configuration to work as intended for most users.
+   * isWithinGrantPages is intentionally NOT applied when the application is already submitted: there is no
+   * in-progress journey to protect from redirect loops, so the post-submission redirect must always run.
+   */
+
+  if (
+    grantRedirectRules?.excludedPaths?.includes(request.params?.path) ||
+    (isWithinGrantPages && !isPostSubmission) ||
+    (checkDetailsChangesPending && isCheckDetailsStartPage)
+  ) {
     return h.continue
   }
 
@@ -347,7 +359,7 @@ export const formsStatusCallback = async (request, h, context) => {
     return preSubmissionRedirect(request, h, context)
   }
 
-  if (previousStatus !== ApplicationStatus.SUBMITTED && previousStatus !== ApplicationStatus.REOPENED) {
+  if (!isPostSubmission && previousStatus !== ApplicationStatus.REOPENED) {
     return h.continue
   }
 
