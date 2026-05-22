@@ -9,6 +9,7 @@ import { AGREEMENTS } from './agreements.js'
 import { COOKIES } from './cookies.js'
 import { RESOURCE_NOT_FOUND } from './resource-not-found.js'
 import { APPLICATION_LOCKS } from './application-locks.js'
+import { PERMISSIONS } from './permissions.js'
 import { PRINT_APPLICATION } from './print-application.js'
 import { SYSTEM } from './system.js'
 
@@ -36,6 +37,7 @@ export const LogCodes = {
   COOKIES,
   RESOURCE_NOT_FOUND,
   APPLICATION_LOCKS,
+  PERMISSIONS,
   PRINT_APPLICATION,
   SYSTEM
 }
