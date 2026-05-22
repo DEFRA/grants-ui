@@ -5,7 +5,7 @@ Feature: Reusable Components
 
         # start
         Given the user navigates to "/example-grant-with-auth"
-        And completes any login process as CRN "1100957269"
+        And logs in as CRN "1100957269"
         Then the user should see heading "Example Grant"
         And the page is analyzed for accessibility
         When the user clicks on "Start now"

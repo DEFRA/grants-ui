@@ -1,28 +1,29 @@
 export default class AutocompleteField {
-  constructor(label) {
+  constructor(page, label) {
+    this.page = page
     this.label = label
   }
 
   async clear() {
-    await this.#inputSelector().click()
-    await browser.keys('Backspace')
+    await this.#input().click()
+    await this.page.keyboard.press('Backspace')
   }
 
   async select(value) {
-    await this.#inputSelector().click()
-    await browser.keys(value.split(''))
-    await this.#optionSelectorFor(value).click()
+    await this.#input().click()
+    await this.page.keyboard.type(value)
+    await this.#option(value).click()
   }
 
   async getSelectedOption() {
-    return await this.#inputSelector().getValue()
+    return await this.#input().inputValue()
   }
 
-  #inputSelector() {
-    return $(`//label[contains(text(),'${this.label}')]/following::input[@type='text']`)
+  #input() {
+    return this.page.locator(`//label[contains(text(),'${this.label}')]/following::input[@type='text']`)
   }
 
-  #optionSelectorFor(value) {
-    return $(`//label[contains(text(),'${this.label}')]/following::ul/li[text()='${value}']`)
+  #option(value) {
+    return this.page.locator(`//label[contains(text(),'${this.label}')]/following::ul/li[text()='${value}']`)
   }
 }

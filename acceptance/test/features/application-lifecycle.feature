@@ -5,7 +5,7 @@ Feature: Application Lifecycle
 
         # start
         Given the user navigates to "/example-grant-with-auth"
-        And completes any login process as CRN "1100995048"
+        And logs in as CRN "1100995048"
         Then the user should see heading "Example Grant"
         When the user clicks on "Start now"
 
@@ -167,7 +167,7 @@ Feature: Application Lifecycle
         Given the application status in GAS is now "RECEIVED"
         And the user starts a new browser session
         And navigates to "/example-grant-with-auth/yes-no-field"
-        And completes any login process as CRN "1100995048"
+        And logs in as CRN "1100995048"
         Then the user should be at URL "confirmation"
         And the grants-ui application status for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" should still be "SUBMITTED"
 
@@ -175,7 +175,7 @@ Feature: Application Lifecycle
         Given the application status in GAS is now "OFFER_SENT"
         And the user starts a new browser session
         And navigates to "/example-grant-with-auth/yes-no-field"
-        And completes any login process as CRN "1100995048"
+        And logs in as CRN "1100995048"
         Then the user should be at URL "agreement"
         And the grants-ui application status for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" should still be "SUBMITTED"
 
@@ -183,7 +183,7 @@ Feature: Application Lifecycle
         Given the application status in GAS is now "OFFER_ACCEPTED"
         And the user starts a new browser session
         And navigates to "/example-grant-with-auth/yes-no-field"
-        And completes any login process as CRN "1100995048"
+        And logs in as CRN "1100995048"
         Then the user should be at URL "agreement"
         And the grants-ui application status for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" should still be "SUBMITTED"
 
@@ -191,6 +191,6 @@ Feature: Application Lifecycle
         Given the application status in GAS is now "OFFER_WITHDRAWN"
         And the user starts a new browser session
         And navigates to "/example-grant-with-auth/yes-no-field"
-        And completes any login process as CRN "1100995048"
+        And logs in as CRN "1100995048"
         Then the user should be at URL "agreement"
         And the grants-ui application status for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" should still be "SUBMITTED"
