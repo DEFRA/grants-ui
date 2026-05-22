@@ -1,23 +1,22 @@
-export function logPermissionEvent({ request, grantCode, permission, enforcementEnabled, authorised }) {
-  const userId = request.auth.credentials?.contactId
+import { log, LogCodes } from '../logging/log.js'
 
-  const event = {
+export function logPermissionEvent({ request, grantCode, permission, enforcementEnabled, authorised }) {
+  const logData = {
+    userId: request.auth?.credentials?.contactId || 'unknown',
     grantCode,
     permission,
-    userId,
-    enforcementEnabled,
-    authorised
+    authorised,
+    slug: request.params?.slug
   }
-
   if (!enforcementEnabled) {
-    request.logger.info(event, 'Permission enforcement bypassed')
+    log(LogCodes.PERMISSIONS.BYPASSED, logData, request)
     return
   }
 
   if (authorised) {
-    request.logger.info(event, 'Permission check successful')
+    log(LogCodes.PERMISSIONS.SUCCESS, logData, request)
     return
   }
 
-  request.logger.warn(event, 'Permission check failed')
+  log(LogCodes.PERMISSIONS.FAILURE, logData, request)
 }

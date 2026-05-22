@@ -720,6 +720,49 @@ describe('LogCodes', () => {
     })
   })
 
+  describe('PERMISSIONS log codes', () => {
+    it.each([
+      [
+        'BYPASSED',
+        'info',
+        {
+          grantCode: TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH,
+          permission: 'submit',
+          userId: TEST_USER_IDS.DEFAULT,
+          authorised: true,
+          slug: 'test-slug'
+        },
+        `Permission enforcement bypassed for grantCode=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}, permission=submit, userId=${TEST_USER_IDS.DEFAULT}, authorised=true, slug=test-slug`
+      ],
+      [
+        'SUCCESS',
+        'info',
+        {
+          grantCode: TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH,
+          permission: 'submit',
+          userId: TEST_USER_IDS.DEFAULT,
+          authorised: true,
+          slug: 'test-slug'
+        },
+        `Permission check successful for grantCode=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}, permission=submit, userId=${TEST_USER_IDS.DEFAULT}, authorised=true, slug=test-slug`
+      ],
+      [
+        'FAILURE',
+        'warn',
+        {
+          grantCode: TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH,
+          permission: 'submit',
+          userId: TEST_USER_IDS.DEFAULT,
+          authorised: false,
+          slug: 'test-slug'
+        },
+        `Permission check failed for grantCode=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}, permission=submit, userId=${TEST_USER_IDS.DEFAULT}, authorised=false, slug=test-slug`
+      ]
+    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
+      assertLogCode('PERMISSIONS', logCodeName, expectedLevel, testParams, expectedMessage)
+    })
+  })
+
   describe('SYSTEM log codes', () => {
     it.each([
       [

@@ -1,25 +1,37 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 
+vi.mock('../logging/log.js', () => ({
+  log: vi.fn(),
+  LogCodes: {
+    PERMISSIONS: {
+      BYPASSED: 'PERMISSIONS_BYPASSED',
+      FAILURE: 'PERMISSIONS_FAILURE'
+    }
+  }
+}))
+
 import { logPermissionEvent } from './permission-logger.js'
+import { log, LogCodes } from '../logging/log.js'
 
 describe('logPermissionEvent', () => {
   let request
 
   beforeEach(() => {
+    vi.clearAllMocks()
+
     request = {
       auth: {
         credentials: {
           contactId: 'user-123'
         }
       },
-      logger: {
-        info: vi.fn(),
-        warn: vi.fn()
+      params: {
+        slug: 'woodland'
       }
     }
   })
 
-  test('logs bypassed enforcement as info', () => {
+  test('logs bypassed enforcement', () => {
     logPermissionEvent({
       request,
       grantCode: 'cs',
@@ -28,21 +40,20 @@ describe('logPermissionEvent', () => {
       authorised: true
     })
 
-    expect(request.logger.info).toHaveBeenCalledWith(
+    expect(log).toHaveBeenCalledWith(
+      LogCodes.PERMISSIONS.BYPASSED,
       {
+        userId: 'user-123',
         grantCode: 'cs',
         permission: 'submit',
-        userId: 'user-123',
-        enforcementEnabled: false,
-        authorised: true
+        authorised: true,
+        slug: 'woodland'
       },
-      'Permission enforcement bypassed'
+      request
     )
-
-    expect(request.logger.warn).not.toHaveBeenCalled()
   })
 
-  test('logs successful permission check as info', () => {
+  test('logs successful permission check', () => {
     logPermissionEvent({
       request,
       grantCode: 'cs',
@@ -51,21 +62,20 @@ describe('logPermissionEvent', () => {
       authorised: true
     })
 
-    expect(request.logger.info).toHaveBeenCalledWith(
+    expect(log).toHaveBeenCalledWith(
+      LogCodes.PERMISSIONS.SUCCESS,
       {
+        userId: 'user-123',
         grantCode: 'cs',
         permission: 'submit',
-        userId: 'user-123',
-        enforcementEnabled: true,
-        authorised: true
+        authorised: true,
+        slug: 'woodland'
       },
-      'Permission check successful'
+      request
     )
-
-    expect(request.logger.warn).not.toHaveBeenCalled()
   })
 
-  test('logs failed permission check as warn', () => {
+  test('logs failed permission check', () => {
     logPermissionEvent({
       request,
       grantCode: 'cs',
@@ -74,21 +84,20 @@ describe('logPermissionEvent', () => {
       authorised: false
     })
 
-    expect(request.logger.warn).toHaveBeenCalledWith(
+    expect(log).toHaveBeenCalledWith(
+      LogCodes.PERMISSIONS.FAILURE,
       {
+        userId: 'user-123',
         grantCode: 'cs',
         permission: 'submit',
-        userId: 'user-123',
-        enforcementEnabled: true,
-        authorised: false
+        authorised: false,
+        slug: 'woodland'
       },
-      'Permission check failed'
+      request
     )
-
-    expect(request.logger.info).not.toHaveBeenCalled()
   })
 
-  test('handles missing contactId', () => {
+  test('uses unknown when contactId is missing', () => {
     request.auth.credentials.contactId = undefined
 
     logPermissionEvent({
@@ -99,15 +108,40 @@ describe('logPermissionEvent', () => {
       authorised: true
     })
 
-    expect(request.logger.info).toHaveBeenCalledWith(
+    expect(log).toHaveBeenCalledWith(
+      LogCodes.PERMISSIONS.SUCCESS,
       {
+        userId: 'unknown',
         grantCode: 'cs',
         permission: 'submit',
-        userId: undefined,
-        enforcementEnabled: true,
-        authorised: true
+        authorised: true,
+        slug: 'woodland'
       },
-      'Permission check successful'
+      request
+    )
+  })
+
+  test('uses unknown when auth is missing', () => {
+    request.auth = undefined
+
+    logPermissionEvent({
+      request,
+      grantCode: 'cs',
+      permission: 'submit',
+      enforcementEnabled: true,
+      authorised: true
+    })
+
+    expect(log).toHaveBeenCalledWith(
+      LogCodes.PERMISSIONS.SUCCESS,
+      {
+        userId: 'unknown',
+        grantCode: 'cs',
+        permission: 'submit',
+        authorised: true,
+        slug: 'woodland'
+      },
+      request
     )
   })
 })
