@@ -1054,7 +1054,8 @@ describe('LogCodes', () => {
         'warn',
         { path: TEST_PATHS.EXAMPLE_GRANT },
         `Rate limit exceeded: path=${TEST_PATHS.EXAMPLE_GRANT}, ip=unknown, userId=anonymous, userAgent=unknown`
-      ]
+      ],
+      ['CHECK_DETAILS_TERMINAL_PAGE_INJECTED', 'info', {}, 'Check details terminal page injected into model']
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
       assertLogCode('SYSTEM', logCodeName, expectedLevel, testParams, expectedMessage)
     })
