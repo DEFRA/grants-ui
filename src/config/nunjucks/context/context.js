@@ -117,13 +117,22 @@ const buildCommonConfig = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays
   const sessionCookieTtl = config.get('session.cookie.ttl')
   const consentCookieValue = /** @type {any} */ (request)?.state?.[cookieConsentName]
 
+  // Append returnUrl to the cookie policy URL so the footer link returns the user
+  // to the page they were on when they clicked the Cookies link
+  const requestPath = /** @type {any} */ (request)?.url
+  const returnUrl = requestPath ? requestPath.pathname + requestPath.search + requestPath.hash : null
+  const cookiePolicyUrlWithReturn =
+    returnUrl && !cookiePolicyUrl.includes('returnUrl')
+      ? `${cookiePolicyUrl}${cookiePolicyUrl.includes('?') ? '&' : '?'}returnUrl=${encodeURIComponent(returnUrl)}`
+      : cookiePolicyUrl
+
   return {
     assetPath: `${assetPath}/assets/rebrand`,
     serviceName,
     serviceUrl: '/',
     cdpEnvironment: config.get('cdpEnvironment'),
     gaTrackingId,
-    cookiePolicyUrl,
+    cookiePolicyUrl: cookiePolicyUrlWithReturn,
     cookieConsentName,
     cookieConsentExpiryDays,
     sessionCookieTtl,
@@ -132,7 +141,7 @@ const buildCommonConfig = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays
       cookieConsentName,
       cookieConsentExpiryDays,
       gaTrackingId,
-      cookiePolicyUrl,
+      cookiePolicyUrlWithReturn,
       /** @type {any} */ (request)?.plugins?.crumb
     ),
     crumb: /** @type {any} */ (request)?.plugins?.crumb,

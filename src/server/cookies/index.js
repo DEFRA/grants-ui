@@ -31,7 +31,9 @@ export const cookies = {
             auth: false,
             validate: {
               payload: Joi.object({
-                analytics: Joi.boolean().required(),
+                analytics: Joi.alternatives()
+                  .try(Joi.boolean(), Joi.string().valid('yes', 'no', 'true', 'false'))
+                  .required(),
                 async: Joi.boolean().default(false),
                 crumb: Joi.string().allow('').optional(),
                 returnUrl: Joi.string().allow('').max(MAX_RETURN_URL_LENGTH).optional()
