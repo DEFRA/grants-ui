@@ -1,22 +1,24 @@
 /**
- * Appends the current URL as a returnUrl parameter to cookie links.
+ * Appends the current URL as a returnUrl parameter to cookie policy links in the banner.
  * This ensures that when the user is redirected back to the previous page
  * after managing their cookie preferences, they are returned to the same page
  * they were on before clicking the cookie link.
  *
- * The cookie policy URL is read from the cookie banner's data-cookie-policy-url attribute,
- * which is configured via the COOKIE_POLICY_URL environment variable (default: /cookies)
+ * The cookie policy URL is read from the cookie banner's data-cookie-policy-url attribute.
+ * If no banner is present, this function exits early — the footer link's returnUrl is
+ * handled server-side in the Nunjucks context.
  */
 export const appendReturnUrlToLinks = () => {
   const cookieBanner = document.getElementById('cookie-banner')
+
   if (!cookieBanner) {
     return
   }
 
   const cookiePolicyUrl = cookieBanner.dataset.cookiePolicyUrl || '/cookies'
-  const allBannerAnchors = /** @type {HTMLAnchorElement[]} */ (Array.from(cookieBanner.querySelectorAll('a[href]')))
+  const allAnchors = /** @type {HTMLAnchorElement[]} */ (Array.from(cookieBanner.querySelectorAll('a[href]')))
   const targetAbsoluteHref = new URL(cookiePolicyUrl, globalThis.location.origin).href
-  const cookieLinks = allBannerAnchors.filter((link) => {
+  const cookieLinks = allAnchors.filter((link) => {
     const rawHref = link.getAttribute('href') || ''
     const absoluteHref = new URL(rawHref, globalThis.location.origin).href
     return absoluteHref === targetAbsoluteHref
