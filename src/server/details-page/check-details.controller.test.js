@@ -183,6 +183,9 @@ describe('CheckDetailsController', () => {
     }
 
     controller = new CheckDetailsController(mockModel, mockPageDef)
+    // Simulate what FormModel does after construction: add the controller to model.pages
+    // so ensureUpdateDetailsPage sees a non-empty pages array (as it would at runtime).
+    mockModel.pages.push(controller)
     setupControllerMocks(controller)
 
     // Setup default mocks
@@ -694,16 +697,26 @@ describe('CheckDetailsController', () => {
       expect(mockModel.def.pages.some((p) => p.path === '/update-details')).toBe(true)
     })
 
-    it('should insert update-details immediately after check-details in model.pages', () => {
+    it('should insert update-details immediately after check-details in model.pages', async () => {
+      // Use a fresh model so the constructor microtask hasn't injected yet
+      const freshModel = {
+        ...mockModel,
+        lists: [],
+        pages: [],
+        pageMap: new Map(),
+        conditions: {},
+        def: { ...mockModel.def, pages: [] }
+      }
+      const freshController = new CheckDetailsController(freshModel, mockPageDef)
       // Add a status page after check-details to simulate the engine's auto-added status page
       const statusPage = { path: '/status' }
-      mockModel.pages.push(controller)
-      mockModel.pages.push(statusPage)
+      freshModel.pages.push(freshController)
+      freshModel.pages.push(statusPage)
 
-      controller.ensureUpdateDetailsPage()
+      freshController.ensureUpdateDetailsPage()
 
-      const pages = mockModel.pages
-      const checkDetailsIndex = pages.indexOf(controller)
+      const pages = freshModel.pages
+      const checkDetailsIndex = pages.indexOf(freshController)
       const updateDetailsIndex = pages.findIndex((p) => p.path === '/update-details')
       expect(updateDetailsIndex).toBe(checkDetailsIndex + 1)
       // Status page should still be after update-details
@@ -756,6 +769,54 @@ describe('CheckDetailsController', () => {
       controller.ensureUpdateDetailsPage()
       const updateDetailsPageDef = mockModel.def.pages.find((p) => p.path === '/update-details')
       expect(updateDetailsPageDef.condition).toBe('detailsNotConfirmed')
+    })
+
+    it('should log CHECK_DETAILS_TERMINAL_PAGE_INJECTED when page is injected', () => {
+      controller.ensureUpdateDetailsPage()
+      expect(log).toHaveBeenCalledWith(LogCodes.SYSTEM.CHECK_DETAILS_TERMINAL_PAGE_INJECTED, {})
+    })
+
+    it('should not log CHECK_DETAILS_TERMINAL_PAGE_INJECTED when page is already present', () => {
+      controller.ensureUpdateDetailsPage()
+      vi.mocked(log).mockClear()
+      controller.ensureUpdateDetailsPage()
+      expect(log).not.toHaveBeenCalledWith(LogCodes.SYSTEM.CHECK_DETAILS_TERMINAL_PAGE_INJECTED, {})
+    })
+
+    it('should log PAGES_NOT_INITIALISED and return early when model.pages is empty', () => {
+      const emptyPagesModel = {
+        ...mockModel,
+        lists: [],
+        pages: [],
+        pageMap: new Map(),
+        conditions: {},
+        def: { ...mockModel.def, pages: [], metadata: { grantCode: 'TEST' } }
+      }
+      const emptyPagesController = new CheckDetailsController(emptyPagesModel, mockPageDef)
+      // pages is still empty (microtask hasn't fired), so ensureUpdateDetailsPage should warn and bail
+      vi.mocked(log).mockClear()
+      emptyPagesController.ensureUpdateDetailsPage()
+
+      expect(log).toHaveBeenCalledWith(LogCodes.SYSTEM.PAGES_NOT_INITIALISED, { grantCode: 'TEST' })
+      expect(emptyPagesModel.pages.some((p) => p.path === '/update-details')).toBe(false)
+    })
+
+    it('should call ensureUpdateDetailsPage via queueMicrotask after construction', async () => {
+      const freshModel = {
+        ...mockModel,
+        lists: [],
+        pages: [],
+        pageMap: new Map(),
+        conditions: {},
+        def: { ...mockModel.def, pages: [] }
+      }
+      const controller = new CheckDetailsController(freshModel, mockPageDef)
+      // Simulate FormModel adding the controller to pages synchronously after construction,
+      // before the queued microtask fires — this is the timing assumption ensureUpdateDetailsPage relies on.
+      freshModel.pages.push(controller)
+      expect(freshModel.pages.some((p) => p.path === '/update-details')).toBe(false)
+      await Promise.resolve()
+      expect(freshModel.pages.some((p) => p.path === '/update-details')).toBe(true)
     })
   })
 
