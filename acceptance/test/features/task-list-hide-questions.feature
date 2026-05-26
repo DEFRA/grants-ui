@@ -41,7 +41,7 @@ Feature: Task Lists Hiding Questions
 
         # multiple-components-task-page
         Then the user should be at URL "multiple-components-task-page"
-        # And should see task title "Example task one"
+        And should see task title "Example task one"
         And should see heading "Example multiple components"
         And the page is analyzed for accessibility
         When the user enters the following
@@ -53,7 +53,7 @@ Feature: Task Lists Hiding Questions
 
         # optional-choice-task-page - back out to task list
         Then the user should be at URL "optional-choice-task-page"
-        # And should see task title "Example task one"
+        And should see task title "Example task one"
         And should see heading "Example optional choice"
         And the page is analyzed for accessibility
         When the user navigates backward
@@ -79,7 +79,7 @@ Feature: Task Lists Hiding Questions
 
         # single-component-task-page
         Then the user should be at URL "single-component-task-page"
-        # And should see task title "Example task one"
+        And should see task title "Example task one"
         And should see label heading "Example single component"
         And the page is analyzed for accessibility
         When the user enters "cl-defra-gae-test-applicant-email@equalexperts.com" for label heading "Example single component"
@@ -96,6 +96,7 @@ Feature: Task Lists Hiding Questions
 
         # compound-component-task-page
         Then the user should be at URL "compound-component-task-page"
+        And should see task title "Example task two"
         And should see heading "Example compound component"
         And the page is analyzed for accessibility
         When the user enters the following
@@ -109,6 +110,7 @@ Feature: Task Lists Hiding Questions
 
         # select-land-parcel - back out to task list
         Then the user should be at URL "select-land-parcel"
+        And should see task title "Example task two"
         And the page is analyzed for accessibility
         When the user navigates backward
 
@@ -136,6 +138,7 @@ Feature: Task Lists Hiding Questions
 
         # conditional-question - back out to task list
         Then the user should be at URL "conditional-question"
+        And should see task title "Example task one"
         When the user navigates backward
 
         # optional-choice-task-page
@@ -157,6 +160,7 @@ Feature: Task Lists Hiding Questions
 
         # optional-choice-task-page - complete task one
         Then the user should be at URL "conditional-question"
+        And should see task title "Example task one"
         And should see heading "Example conditional question"
         When the user selects "No"
         And continues
@@ -177,12 +181,14 @@ Feature: Task Lists Hiding Questions
 
         # select-land-parcel - complete task two
         Then the user should be at URL "select-land-parcel"
+        And should see task title "Example task two"
         When the user selects the following
             | SD6351 8781 |
         And continues
 
         # example-task-with-guidance
         Then the user should be at URL "example-task-with-guidance"
+        And should see task title "Example task two"
         And should see heading "Example with guidance"
         And the page is analyzed for accessibility
         When the user enters "150000" for "Example number field"
@@ -199,12 +205,14 @@ Feature: Task Lists Hiding Questions
 
         # summary
         Then the user should be at URL "summary"
+        And should see task title "Example check and submit task"
         And should see heading "Check your answers"
         And the page is analyzed for accessibility
         When the user continues
 
         # declaration
         Then the user should be at URL "declaration"
+        And should see task title "Example check and submit task"
         And should see heading "Confirm and send"
         And the page is analyzed for accessibility
         When the user confirms and sends

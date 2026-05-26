@@ -1,8 +1,8 @@
 {% from "govuk/components/cookie-banner/macro.njk" import govukCookieBanner %}
 
-{# Fallback for users with JavaScript disabled #}
-<noscript>
-  {{ govukCookieBanner(params.noscriptConfig) }}
-</noscript>
-
-{{ govukCookieBanner(params.config) }}
+<form action="/cookies" method="post" novalidate>
+  <input type="hidden" name="crumb" value="{{ params.crumb }}">
+  <input type="hidden" name="async" value="false">
+  <input type="hidden" name="returnUrl" value="{{ params.currentPath }}">
+  {{ govukCookieBanner(params.config) }}
+</form>

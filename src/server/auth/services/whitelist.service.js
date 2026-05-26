@@ -120,7 +120,7 @@ class WhitelistService {
    * Validate grant access for CRN and SBI based on injected whitelists
    * @param {string} crn - The user's CRN from DefraID
    * @param {string} sbi - The SBI number
-   * @returns {object} Validation result object
+   * @returns {ValidationResult} Validation result object
    */
   validateGrantAccess(crn, sbi) {
     const crnPassesValidation = this.isCrnWhitelisted(crn)
@@ -137,9 +137,7 @@ class WhitelistService {
 
   /**
    * Helper method to log whitelist events with consistent structure
-   * @param {object} logCode - Logging options.
-   * @param {import('../../common/helpers/logging/log-codes/definition.js').LogTypes.LogLevel} logCode.level - The log level.
-   * @param {Function} logCode.messageFunc - A function that creates an interpolated message string
+   * @param {LogCodesDefinition} logCode - The log code definition (level + message builder).
    * @param {string} crn - The user's CRN
    * @param {string} sbi - The SBI number
    * @param {string} path - The request path
@@ -278,4 +276,12 @@ export { WhitelistService, WhitelistServiceFactory, whitelistService }
  *   sbi: string,
  *   validationType?: string
  * }} ScenarioConfig
+ *
+ * @typedef {{
+ *   crnPassesValidation: boolean,
+ *   sbiPassesValidation: boolean,
+ *   hasCrnValidation: boolean,
+ *   hasSbiValidation: boolean,
+ *   overallAccess: boolean
+ * }} ValidationResult
  */

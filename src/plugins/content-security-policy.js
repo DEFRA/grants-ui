@@ -3,13 +3,17 @@ import { config } from '~/src/config/config.js'
 
 const defaultContentPolicy = (/** @type {string} */ nonce) => {
   const gtm = 'https://www.googletagmanager.com'
+  const gtmWildCard = 'https://*.googletagmanager.com'
   const ga4 = 'https://www.google-analytics.com'
   const ga4WildCard = 'https://*.google-analytics.com'
-  const gtmWildCard = 'https://*.googletagmanager.com'
   const self = "'self'"
   const statsDblClick = 'https://stats.g.doubleclick.net'
+  // Hash for GOV.UK Frontend inline progressive enhancement script.
+  // This is a known hash published by the Design System team.
+  // See: https://frontend.design-system.service.gov.uk/import-javascript/
+  const govukFrontendHash = "'sha256-GUQ5ad8JK5KmEWmROf3LZd9ge94daqNvd8xy9YS1iDw='"
 
-  const scriptSrc = [self, "'strict-dynamic'", `'nonce-${nonce}'`, gtm, ga4].join(' ')
+  const scriptSrc = [self, "'strict-dynamic'", `'nonce-${nonce}'`, govukFrontendHash, gtmWildCard, ga4].join(' ')
   const connectSrc = [self, ga4, statsDblClick, ga4WildCard, gtmWildCard].join(' ')
   const fontSrc = [self, 'data:', 'https://fonts.gstatic.com'].join(' ')
   const imgSrc = [self, 'data:', 'blob:', ga4, statsDblClick, ga4WildCard].join(' ')
@@ -19,6 +23,7 @@ const defaultContentPolicy = (/** @type {string} */ nonce) => {
     "base-uri 'self'",
     "object-src 'none'",
     "frame-ancestors 'self'",
+    "form-action 'self'",
     `script-src ${scriptSrc}`,
     `connect-src ${connectSrc}`,
     `img-src ${imgSrc}`,

@@ -163,5 +163,15 @@ export const SYSTEM = {
     level: 'warn',
     messageFunc: (messageOptions) =>
       `State payload size ${messageOptions.size} bytes exceeds limit of ${messageOptions.limit} bytes for sessionKey=${messageOptions.sessionKey}`
+  },
+  CHECK_DETAILS_TERMINAL_PAGE_INJECTED: {
+    level: 'info',
+    messageFunc: (messageOptions) =>
+      `ensureUpdateDetailsPage: Check details terminal page for grantCode=${messageOptions.grantCode || 'unknown'} injected into model`
+  },
+  PAGES_NOT_INITIALISED: {
+    level: 'warn',
+    messageFunc: (messageOptions) =>
+      `ensureUpdateDetailsPage: model.pages is empty for grantCode=${messageOptions.grantCode || 'unknown'} — pages may not have been initialised yet. If the forms engine has changed to async page initialisation, the queueMicrotask timing assumption no longer holds.`
   }
 }

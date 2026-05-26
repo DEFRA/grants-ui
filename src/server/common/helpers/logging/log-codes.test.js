@@ -720,6 +720,49 @@ describe('LogCodes', () => {
     })
   })
 
+  describe('PERMISSIONS log codes', () => {
+    it.each([
+      [
+        'BYPASSED',
+        'info',
+        {
+          grantCode: TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH,
+          permission: 'submit',
+          userId: TEST_USER_IDS.DEFAULT,
+          authorised: true,
+          slug: 'test-slug'
+        },
+        `Permission enforcement bypassed for grantCode=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}, permission=submit, userId=${TEST_USER_IDS.DEFAULT}, authorised=true, slug=test-slug`
+      ],
+      [
+        'SUCCESS',
+        'info',
+        {
+          grantCode: TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH,
+          permission: 'submit',
+          userId: TEST_USER_IDS.DEFAULT,
+          authorised: true,
+          slug: 'test-slug'
+        },
+        `Permission check successful for grantCode=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}, permission=submit, userId=${TEST_USER_IDS.DEFAULT}, authorised=true, slug=test-slug`
+      ],
+      [
+        'FAILURE',
+        'warn',
+        {
+          grantCode: TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH,
+          permission: 'submit',
+          userId: TEST_USER_IDS.DEFAULT,
+          authorised: false,
+          slug: 'test-slug'
+        },
+        `Permission check failed for grantCode=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}, permission=submit, userId=${TEST_USER_IDS.DEFAULT}, authorised=false, slug=test-slug`
+      ]
+    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
+      assertLogCode('PERMISSIONS', logCodeName, expectedLevel, testParams, expectedMessage)
+    })
+  })
+
   describe('SYSTEM log codes', () => {
     it.each([
       [
@@ -1011,6 +1054,30 @@ describe('LogCodes', () => {
         'warn',
         { path: TEST_PATHS.EXAMPLE_GRANT },
         `Rate limit exceeded: path=${TEST_PATHS.EXAMPLE_GRANT}, ip=unknown, userId=anonymous, userAgent=unknown`
+      ],
+      [
+        'CHECK_DETAILS_TERMINAL_PAGE_INJECTED',
+        'info',
+        { grantCode: 'example-grant-with-auth' },
+        'ensureUpdateDetailsPage: Check details terminal page for grantCode=example-grant-with-auth injected into model'
+      ],
+      [
+        'CHECK_DETAILS_TERMINAL_PAGE_INJECTED with fallback',
+        'info',
+        {},
+        'ensureUpdateDetailsPage: Check details terminal page for grantCode=unknown injected into model'
+      ],
+      [
+        'PAGES_NOT_INITIALISED',
+        'warn',
+        { grantCode: 'example-grant-with-auth' },
+        'ensureUpdateDetailsPage: model.pages is empty for grantCode=example-grant-with-auth — pages may not have been initialised yet. If the forms engine has changed to async page initialisation, the queueMicrotask timing assumption no longer holds.'
+      ],
+      [
+        'PAGES_NOT_INITIALISED with fallback',
+        'warn',
+        {},
+        'ensureUpdateDetailsPage: model.pages is empty for grantCode=unknown — pages may not have been initialised yet. If the forms engine has changed to async page initialisation, the queueMicrotask timing assumption no longer holds.'
       ]
     ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
       assertLogCode('SYSTEM', logCodeName, expectedLevel, testParams, expectedMessage)

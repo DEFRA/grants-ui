@@ -6,6 +6,14 @@ import { debug, log, LogCodes } from '../logging/log.js'
 
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
 
+/**
+ * Sends a PATCH to the Grants UI backend to update the stored application status.
+ *
+ * @param {string} applicationStatus - The new application status to persist.
+ * @param {string} key - The session key in `sbi:grantCode` form.
+ * @param {{ lockToken?: string, grantVersion?: string }} [options] - Optional lock token and grant version.
+ * @returns {Promise<void>} Resolves once the update request completes.
+ */
 export async function updateApplicationStatus(
   applicationStatus,
   key,
@@ -52,7 +60,7 @@ export async function updateApplicationStatus(
       method: 'PATCH',
       endpoint: url.href,
       identity: key,
-      errorMessage: err.message
+      errorMessage: /** @type {Error} */ (err).message
     })
     // NOSONAR TODO: See TGC-873
     // throw err
