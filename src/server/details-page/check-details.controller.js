@@ -138,6 +138,12 @@ export default class CheckDetailsController extends QuestionPageController {
       return
     }
     const { model, confirmationFieldName } = this
+
+    if (!model.pages?.length) {
+      log(LogCodes.SYSTEM.PAGES_NOT_INITIALISED, { grantCode: model.def.metadata?.grantCode })
+      return
+    }
+
     if (!model.pages.some((p) => p.path === UPDATE_DETAILS_PATH)) {
       const conditionName = 'detailsNotConfirmed'
 
@@ -182,7 +188,9 @@ export default class CheckDetailsController extends QuestionPageController {
       model.pages.splice(insertAt, 0, updateDetailsController)
       model.pageMap?.set(UPDATE_DETAILS_PATH, updateDetailsController)
 
-      log(LogCodes.SYSTEM.CHECK_DETAILS_TERMINAL_PAGE_INJECTED, {})
+      const grantCode = model.def.metadata?.grantCode
+
+      log(LogCodes.SYSTEM.CHECK_DETAILS_TERMINAL_PAGE_INJECTED, { grantCode })
     }
   }
 
