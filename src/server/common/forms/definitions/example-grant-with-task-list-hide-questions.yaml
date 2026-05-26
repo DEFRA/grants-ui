@@ -69,6 +69,8 @@ metadata:
         gasStatus: default
         toGrantsStatus: SUBMITTED
         toPath: /confirmation
+  permissions:
+    enforce: false
   confirmationContent:
     panelTitle: 'Details submitted'
     panelText: 'Your reference number'

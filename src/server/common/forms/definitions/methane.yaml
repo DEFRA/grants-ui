@@ -4,6 +4,8 @@ metadata:
   toleratedFailurePaths:
     - countyParishHoldings
   grantRedirectRules: null
+  permissions:
+    enforce: false
   detailsPage:
     query:
       name: Business

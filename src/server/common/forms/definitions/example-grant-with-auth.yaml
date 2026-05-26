@@ -11,6 +11,8 @@ metadata:
     cookiePolicyUrl: /cookies
     expiryDays: 365
   grantRedirectRules: null
+  permissions:
+    enforce: false
   detailsPage:
     toleratedFailurePaths:
       - countyParishHoldings
