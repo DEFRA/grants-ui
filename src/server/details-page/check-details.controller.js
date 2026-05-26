@@ -113,14 +113,23 @@ export default class CheckDetailsController extends QuestionPageController {
     this.pageDef = patchedPageDef
     this.confirmationFieldName = confirmationFieldName
     this.isSfdEnabled = isSfdEnabled
+
+    // Schedule ensureUpdateDetailsPage() to run after the FormModel constructor
+    // finishes assigning model.pages and model.pageMap (both are set synchronously
+    // after all createPage() calls return, so a microtask fires at the right time).
+    // This ensures the update-details page is registered on every instance at startup,
+    // avoiding the multi-instance issue where lazy registration on first request meant
+    // other instances would 404 on /update-details.
+    queueMicrotask(() => this.ensureUpdateDetailsPage())
   }
 
   /**
    * Inject the update-details terminal page into the model if not already present.
    * Only used when externalLinks.sfd.enabled === false
-   * Must be called lazily (not in the constructor) because model.pages, model.pageMap,
-   * and model.componentMap are not yet assigned when page controllers are constructed
-   * (FormModel sets them after all pages are created via createPage()).
+   * Called via queueMicrotask() from the constructor so it runs on every instance at
+   * startup, once model.pages and model.pageMap have been assigned by FormModel.
+   * Also called defensively from makeGetRouteHandler/makePostRouteHandler in case the
+   * microtask has not yet fired (e.g. in tests or unusual execution environments).
    */
   ensureUpdateDetailsPage() {
     // When SFD external redirect is enabled, the user is sent directly to the external
@@ -172,6 +181,8 @@ export default class CheckDetailsController extends QuestionPageController {
       )
       model.pages.splice(insertAt, 0, updateDetailsController)
       model.pageMap?.set(UPDATE_DETAILS_PATH, updateDetailsController)
+
+      log(LogCodes.SYSTEM.CHECK_DETAILS_TERMINAL_PAGE_INJECTED, {})
     }
   }
 

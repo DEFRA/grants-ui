@@ -694,16 +694,26 @@ describe('CheckDetailsController', () => {
       expect(mockModel.def.pages.some((p) => p.path === '/update-details')).toBe(true)
     })
 
-    it('should insert update-details immediately after check-details in model.pages', () => {
+    it('should insert update-details immediately after check-details in model.pages', async () => {
+      // Use a fresh model so the constructor microtask hasn't injected yet
+      const freshModel = {
+        ...mockModel,
+        lists: [],
+        pages: [],
+        pageMap: new Map(),
+        conditions: {},
+        def: { ...mockModel.def, pages: [] }
+      }
+      const freshController = new CheckDetailsController(freshModel, mockPageDef)
       // Add a status page after check-details to simulate the engine's auto-added status page
       const statusPage = { path: '/status' }
-      mockModel.pages.push(controller)
-      mockModel.pages.push(statusPage)
+      freshModel.pages.push(freshController)
+      freshModel.pages.push(statusPage)
 
-      controller.ensureUpdateDetailsPage()
+      freshController.ensureUpdateDetailsPage()
 
-      const pages = mockModel.pages
-      const checkDetailsIndex = pages.indexOf(controller)
+      const pages = freshModel.pages
+      const checkDetailsIndex = pages.indexOf(freshController)
       const updateDetailsIndex = pages.findIndex((p) => p.path === '/update-details')
       expect(updateDetailsIndex).toBe(checkDetailsIndex + 1)
       // Status page should still be after update-details
@@ -756,6 +766,35 @@ describe('CheckDetailsController', () => {
       controller.ensureUpdateDetailsPage()
       const updateDetailsPageDef = mockModel.def.pages.find((p) => p.path === '/update-details')
       expect(updateDetailsPageDef.condition).toBe('detailsNotConfirmed')
+    })
+
+    it('should log CHECK_DETAILS_TERMINAL_PAGE_INJECTED when page is injected', () => {
+      controller.ensureUpdateDetailsPage()
+      expect(log).toHaveBeenCalledWith(LogCodes.SYSTEM.CHECK_DETAILS_TERMINAL_PAGE_INJECTED, {})
+    })
+
+    it('should not log CHECK_DETAILS_TERMINAL_PAGE_INJECTED when page is already present', () => {
+      controller.ensureUpdateDetailsPage()
+      vi.mocked(log).mockClear()
+      controller.ensureUpdateDetailsPage()
+      expect(log).not.toHaveBeenCalledWith(LogCodes.SYSTEM.CHECK_DETAILS_TERMINAL_PAGE_INJECTED, {})
+    })
+
+    it('should call ensureUpdateDetailsPage via queueMicrotask after construction', async () => {
+      const freshModel = {
+        ...mockModel,
+        lists: [],
+        pages: [],
+        pageMap: new Map(),
+        conditions: {},
+        def: { ...mockModel.def, pages: [] }
+      }
+      // Flush microtasks by awaiting a resolved promise
+      // eslint-disable-next-line no-unused-vars
+      const _controller = new CheckDetailsController(freshModel, mockPageDef)
+      expect(freshModel.pages.some((p) => p.path === '/update-details')).toBe(false)
+      await Promise.resolve()
+      expect(freshModel.pages.some((p) => p.path === '/update-details')).toBe(true)
     })
   })
 

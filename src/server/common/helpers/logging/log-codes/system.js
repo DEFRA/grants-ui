@@ -163,5 +163,9 @@ export const SYSTEM = {
     level: 'warn',
     messageFunc: (messageOptions) =>
       `State payload size ${messageOptions.size} bytes exceeds limit of ${messageOptions.limit} bytes for sessionKey=${messageOptions.sessionKey}`
+  },
+  CHECK_DETAILS_TERMINAL_PAGE_INJECTED: {
+    level: 'info',
+    messageFunc: (_messageOptions) => `Check details terminal page injected into model`
   }
 }
