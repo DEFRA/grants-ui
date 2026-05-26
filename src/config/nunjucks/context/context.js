@@ -121,10 +121,11 @@ const buildCommonConfig = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays
   // to the page they were on when they clicked the Cookies link
   const requestPath = /** @type {any} */ (request)?.url
   const returnUrl = requestPath ? requestPath.pathname + requestPath.search + requestPath.hash : null
-  const cookiePolicyUrlWithReturn =
-    returnUrl && !cookiePolicyUrl.includes('returnUrl')
-      ? `${cookiePolicyUrl}${cookiePolicyUrl.includes('?') ? '&' : '?'}returnUrl=${encodeURIComponent(returnUrl)}`
-      : cookiePolicyUrl
+  let cookiePolicyUrlWithReturn = cookiePolicyUrl
+  if (returnUrl && !cookiePolicyUrl.includes('returnUrl')) {
+    const separator = cookiePolicyUrl.includes('?') ? '&' : '?'
+    cookiePolicyUrlWithReturn = `${cookiePolicyUrl}${separator}returnUrl=${encodeURIComponent(returnUrl)}`
+  }
 
   return {
     assetPath: `${assetPath}/assets/rebrand`,
