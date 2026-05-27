@@ -191,7 +191,7 @@ Feature: Save and Continue
             | GeospatialField                | Added 1 location        |
             | Hidden field                   | Not provided            |
             | Project name                   | Test project            |
-            | Project description (optional) | Project description     |
+            | Project description            | Project description     |
             | Project budget                 | 50000                   |
             | Item                           | You have added 1 answer |
             | Select land parcels            | SD6351-8781             |

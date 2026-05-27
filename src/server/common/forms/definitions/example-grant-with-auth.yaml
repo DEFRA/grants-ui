@@ -704,11 +704,13 @@ pages:
       - type: MultilineTextField
         name: projectDescription
         title: Project description
-        hint: Optional. Describe your project in up to 200 words.
+        hint: Describe your project in up to 200 words.
         options:
-          required: false
+          required: true
           rows: 5
           maxWords: 200
+          customValidationMessages:
+            string.empty: Enter a project description
         shortDescription: Project description
         id: 2a3b4c5d-6e7f-4a9b-8c0d-1e2f3a4b5c7e
       - type: NumberField
