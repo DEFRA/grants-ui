@@ -33,6 +33,7 @@ export const HTTP_STATUS = {
  * Creates a standard boom error from status code and message
  * @param {number} statusCode
  * @param {string} message
+ * @returns {Boom}
  */
 export function createBoomError(statusCode, message) {
   switch (statusCode) {
@@ -59,6 +60,7 @@ export function createBoomError(statusCode, message) {
 
 /**
  * @param {number} statusCode
+ * @returns {string}
  */
 function statusCodeMessage(statusCode) {
   switch (statusCode) {
@@ -94,8 +96,9 @@ function getUpstreamStatus(response) {
 }
 
 /**
- * @param { AnyRequest } request
- * @param { ResponseToolkit } h
+ * @param {AnyRequest} request
+ * @param {ResponseToolkit} h
+ * @returns {import('@hapi/hapi').ResponseObject}
  */
 export function catchAll(request, h) {
   const { response } = request
@@ -114,7 +117,7 @@ export function catchAll(request, h) {
     for (const error of rootErrors) {
       error.log(request)
     }
-    statusCode = response.details.status || statusCodes.internalServerError
+    statusCode = /** @type {{ status?: number }} */ (response.details).status || statusCodes.internalServerError
   } else {
     statusCode = boomResponse.output.statusCode || statusCodes.internalServerError
     upstreamStatus = getUpstreamStatus(response)
@@ -142,6 +145,7 @@ function isBoom(response) {
  * @param {ErrorResponse} response
  * @param {number} statusCode
  * @param {number | null} [upstreamStatus]
+ * @returns {void}
  */
 function handleErrorLogging(request, response, statusCode, upstreamStatus = null) {
   if (statusCode >= statusCodes.internalServerError) {
@@ -158,6 +162,7 @@ function handleErrorLogging(request, response, statusCode, upstreamStatus = null
  * @param {ErrorResponse} response
  * @param {number} statusCode
  * @param {number | null} [upstreamStatus]
+ * @returns {void}
  */
 function handleServerErrors(request, response, statusCode, upstreamStatus = null) {
   const errorContext = analyzeError(request, response)
@@ -205,6 +210,7 @@ function isBellRelatedError(response) {
  * @param {AnyRequest} request
  * @param {ErrorResponse} response
  * @param {ErrorContext} errorContext
+ * @returns {void}
  */
 function logAuthError(request, response, errorContext) {
   log(
@@ -223,6 +229,7 @@ function logAuthError(request, response, errorContext) {
  * @param {AnyRequest} request
  * @param {ErrorResponse} response
  * @param {ErrorContext} errorContext
+ * @returns {void}
  */
 function logBellError(request, response, errorContext) {
   log(
@@ -267,6 +274,7 @@ function buildAuthContext(request, response, errorContext) {
  * @param {ErrorResponse} response
  * @param {number} statusCode
  * @param {number | null} [upstreamStatus]
+ * @returns {void}
  */
 function logSystemError(request, response, statusCode, upstreamStatus = null) {
   log(
@@ -288,6 +296,7 @@ function logSystemError(request, response, statusCode, upstreamStatus = null) {
  * @param {ErrorResponse} response
  * @param {number} statusCode
  * @param {ErrorContext} errorContext
+ * @returns {void}
  */
 function logDebugInformation(request, response, statusCode, errorContext) {
   const errorMessage = statusCodeMessage(statusCode)
@@ -326,6 +335,7 @@ function logDebugInformation(request, response, statusCode, errorContext) {
  * @param {AnyRequest} request
  * @param {ErrorResponse} response
  * @param {number} statusCode
+ * @returns {void}
  */
 function handleClientErrors(request, response, statusCode) {
   if (statusCode === statusCodes.locked) {
@@ -402,6 +412,7 @@ function parseResourcePath(path, response) {
  * Handle 404 errors with detailed context logging
  * @param {AnyRequest} request
  * @param {ErrorResponse} response
+ * @returns {void}
  */
 function handle404WithContext(request, response) {
   const path = request.path || 'unknown'
@@ -446,6 +457,7 @@ function handle404WithContext(request, response) {
 /**
  * @param {ResponseToolkit} h
  * @param {number} statusCode
+ * @returns {import('@hapi/hapi').ResponseObject}
  */
 function renderErrorView(h, statusCode) {
   // SonarQube does not like this being set as the default for the switch, it's apparently a critical issue.
