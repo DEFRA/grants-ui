@@ -47,6 +47,8 @@ metadata:
         gasStatus: default
         toGrantsStatus: SUBMITTED
         toPath: /confirmation
+  permissions:
+    enforce: false
   supportEmail: ruralpayments@defra.gov.uk
   detailsPage:
     confirmationFieldName: businessDetailsUpToDate
