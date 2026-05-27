@@ -51,6 +51,8 @@ import WoodlandHectaresPageController from '~/src/server/woodland/woodland-hecta
 import TerminalPageController from '~/src/server/task-list/terminal-page.controller.js'
 import CheckDetailsController from '~/src/server/details-page/check-details.controller.js'
 import CommonSelectLandParcelPageController from './land-grants/common/common-select-parcel/common-select-land-parcel-page.controller.js'
+import MapSelectPageController from '~/src/server/common/map/map-select-page.controller.js'
+import MapSubmissionPageController from '~/src/server/common/map/map-submission-page.controller.js'
 import permissions from '../plugins/permissions.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
@@ -144,7 +146,9 @@ const registerFormsPlugin = async (server, prefix = '') => {
         TaskPageController,
         TerminalPageController,
         CheckDetailsController,
-        WoodlandHectaresPageController
+        WoodlandHectaresPageController,
+        MapSelectPageController,
+        MapSubmissionPageController
       }
     }
   })

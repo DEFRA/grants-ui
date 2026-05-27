@@ -10,6 +10,7 @@ import {
   parcelsGroups,
   parcelsWithExtendedInfo,
   parcelsWithSize,
+  postToLandGrantsApi,
   validate
 } from '~/src/server/land-grants/services/land-grants.client.js'
 import { formatAreaUnit } from '~/src/server/land-grants/utils/format-area-unit.js'
@@ -179,6 +180,24 @@ export async function fetchParcels(request) {
 
   setCachedSbiParcels(sbi, hydratedParcels)
   return hydratedParcels
+}
+
+/**
+ * Fetches the bounding box covering a set of parcel IDs from the tile API.
+ * Used by the map controller to fit the viewport on load.
+ * Returns null on any error so callers can degrade gracefully.
+ * @param {string[]} parcelIds
+ * @returns {Promise<{minLng: number, minLat: number, maxLng: number, maxLat: number} | null>}
+ */
+export async function fetchParcelTileLocation(parcelIds) {
+  try {
+    const result = /** @type {{bbox: {minLng: number, minLat: number, maxLng: number, maxLat: number}}} */ (
+      await postToLandGrantsApi('/api/v1/parcel-tiles/locate', { parcelIds }, LAND_GRANTS_API_URL)
+    )
+    return result.bbox
+  } catch {
+    return null
+  }
 }
 
 /**

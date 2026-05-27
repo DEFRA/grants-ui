@@ -29,7 +29,9 @@ export const viewPaths = (() => {
     path.join(serverDir, 'task-list/views'),
     path.join(serverDir, 'print-submitted-application/views'),
     path.join(serverDir, 'woodland/views'),
-    path.join(serverDir, 'cannot-submit/views')
+    path.join(serverDir, 'cannot-submit/views'),
+    path.join(serverDir, 'common/map/views'),
+    path.join(serverDir, 'example-grant-with-map/views')
   ]
 })()
 

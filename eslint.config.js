@@ -28,6 +28,21 @@ export default [
     }
   },
   {
+    files: ['src/client/**/*.js'],
+    languageOptions: {
+      globals: {
+        window: 'readonly',
+        document: 'readonly',
+        navigator: 'readonly',
+        fetch: 'readonly',
+        URL: 'readonly',
+        HTMLElement: 'readonly',
+        CustomEvent: 'readonly',
+        customElements: 'readonly'
+      }
+    }
+  },
+  {
     files: ['acceptance/**/*.js'],
     languageOptions: {
       globals: {

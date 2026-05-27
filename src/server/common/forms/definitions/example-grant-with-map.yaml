@@ -1,0 +1,74 @@
+engine: V2
+name: Example grant with map
+metadata:
+  id: 3a7f1c2e-8b4d-4e9a-b5f6-c2d3e4f5a6b7
+  enabledInProd: false
+  referenceNumberPrefix: EGWM
+  supportEmail: support@defra.gov.uk
+  cookieConsent:
+    enabled: true
+    serviceName: Farm and land service
+    cookiePolicyUrl: /cookies
+    expiryDays: 365
+  grantRedirectRules: null
+  confirmationContent:
+    panelTitle: Application submitted
+    panelText: Your reference number
+    html: |
+      <h2 class="govuk-heading-m">What happens next</h2>
+      <p class="govuk-body">Defra will review your selected land parcel and contact you within 5 working days.</p>
+
+pages:
+  - title: Apply for Example Grant with Map
+    id: a1b2c3d4-0001-0001-0001-000000000001
+    path: /start
+    controller: StartPageController
+    components:
+      - name: introHtml
+        id: a1b2c3d4-0001-0001-0001-000000000002
+        type: Html
+        content: |
+          <p class="govuk-body">
+            This example grant demonstrates the Defra interactive map component.
+          </p>
+          <p class="govuk-body">You will:</p>
+          <ul class="govuk-list govuk-list--bullet">
+            <li>select a land parcel on an interactive map</li>
+            <li>check your answers</li>
+            <li>submit your application</li>
+          </ul>
+  - title: Select a land parcel
+    id: a1b2c3d4-0001-0001-0001-000000000003
+    path: /select-land-parcel
+    controller: MapSelectPageController
+    next: []
+    components:
+      - name: selectedParcelsDisplay
+        id: a1b2c3d4-0001-0001-0001-000000000010
+        type: HiddenField
+        title: Land parcel
+        shortDescription: Land parcel
+        options:
+          required: false
+
+  - title: Select actions for land parcel
+    id: a1b2c3d4-0001-0001-0001-000000000004
+    path: /select-actions-for-land-parcel
+    controller: SelectLandActionsPageController
+    next: []
+
+  - title: Check your answers
+    id: a1b2c3d4-0001-0001-0001-000000000011
+    path: /submit-your-application
+    controller: MapSubmissionPageController
+    next: []
+
+  - title: Confirmation
+    id: a1b2c3d4-0001-0001-0001-000000000006
+    path: /confirmation
+    controller: ConfirmationPageController
+    next: []
+
+sections: []
+lists: []
+conditions: []
