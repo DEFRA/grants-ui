@@ -78,7 +78,7 @@ services:
       NOTIFICATION_BANNER_EXCLUDED_PATH_SUFFIXES: ${NOTIFICATION_BANNER_EXCLUDED_PATH_SUFFIXES:-/confirmation,/print-submitted-application}
       SFD_UPDATE_URL: '${SFD_UPDATE_URL:-http://localhost:3000/sfd/mock}'
       SFD_UPDATE_ENABLED: ${SFD_UPDATE_ENABLED:-false}
-      ENTRA_ID_CONFIG_URL: ${ENTRA_ID_URL:-http://host.docker.internal:8000}
+      ENTRA_ID_CONFIG_URL: ${ENTRA_ID_URL}
       NODE_TLS_REJECT_UNAUTHORIZED: 0
       AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL:-http://localstack:4566}
       AWS_REGION: ${AWS_REGION:-eu-west-2}
