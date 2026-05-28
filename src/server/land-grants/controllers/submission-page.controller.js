@@ -27,8 +27,8 @@ export default class SubmissionPageController extends SummaryPageController {
   /**
    * Override back link to point to consent page when consents are required,
    * or directly to the payment check page otherwise.
-   * @param {object} _request
-   * @param {object} context
+   * @param {FormContextRequest} _request
+   * @param {FormContext} context
    */
   getBackLink(_request, context) {
     const { state } = context
@@ -39,12 +39,12 @@ export default class SubmissionPageController extends SummaryPageController {
 
   /**
    * Submits the land grant application
-   * @param {object} request - Request object
+   * @param {AnyFormRequest} request - Request object
    * @param {object} data
-   * @param {object} data.identifiers - User identifiers
-   * @param {object} data.state - Form application state
+   * @param {ApplicationIdentifiers} data.identifiers - User identifiers
+   * @param {FormSubmissionState} data.state - Form application state
    * @param {ValidateApplicationResponse} data.validationResult - Validation result response
-   * @returns {Promise<object>} - The result of the grant application submission
+   * @returns {Promise<Response>} - The result of the grant application submission
    */
   async submitGasApplication(request, data) {
     const { identifiers, state, validationResult } = data
@@ -64,8 +64,8 @@ export default class SubmissionPageController extends SummaryPageController {
 
   /**
    * Gets the confirmation page path for successful submission
-   * @param {object} [request] - Request object
-   * @param {object} [context] - Form context
+   * @param {AnyFormRequest} [request] - Request object
+   * @param {FormContext} [context] - Form context
    * @returns {string} - Confirmation page path
    */
   getStatusPath(request, context) {
@@ -75,11 +75,11 @@ export default class SubmissionPageController extends SummaryPageController {
   /**
    * Handles validation error response
    * @private
-   * @param {object} h - Response toolkit
-   * @param {object} request - Request object
-   * @param {object} context - Form context
+   * @param {Pick<ResponseToolkit, 'view'>} h - Response toolkit
+   * @param {AnyFormRequest} request - Request object
+   * @param {FormContext} context - Form context
    * @param {string} [validationId] - Validation ID
-   * @returns {object} - Error view response
+   * @returns {ResponseObject} - Error view response
    */
   renderSubmissionError(h, request, context, validationId) {
     const grantCode = getGrantCode(request)
@@ -104,11 +104,11 @@ export default class SubmissionPageController extends SummaryPageController {
   /**
    * Handles successful submission
    * @private
-   * @param {object} request - Request object
-   * @param {object} context - Form context
+   * @param {AnyFormRequest} request - Request object
+   * @param {FormContext & { grantVersion?: string | number }} context - Form context
+   * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h - Response toolkit
    * @param {number} submissionStatus - Submission status code
-   * @param {object} h - Response toolkit
-   * @returns {Promise<object>} - Redirect response
+   * @returns {Promise<ResponseObject>} - Redirect response
    */
   async handleSuccessfulSubmission(request, context, h, submissionStatus) {
     const { credentials: { sbi, crn } = {} } = request.auth ?? {}
@@ -181,11 +181,12 @@ export default class SubmissionPageController extends SummaryPageController {
       const additionalAnswers = /** @type {Record<string, any> | undefined} */ (state.additionalAnswers)
       const frn = additionalAnswers?.applicant ? additionalAnswers.applicant['business']?.reference : undefined
 
+      /** @type {ApplicationIdentifiers} */
       const identifiers = {
-        sbi,
-        crn,
+        sbi: /** @type {string} */ (sbi),
+        crn: /** @type {string} */ (crn),
         frn,
-        clientRef: referenceNumber?.toLowerCase()
+        clientRef: /** @type {string} */ (referenceNumber?.toLowerCase())
       }
 
       if (state.previousReferenceNumber) {
@@ -228,7 +229,7 @@ export default class SubmissionPageController extends SummaryPageController {
             referenceNumber: context.referenceNumber,
             sbi,
             crn,
-            errorMessage: error.message
+            errorMessage: /** @type {Error} */ (error).message
           },
           request
         )
@@ -241,7 +242,16 @@ export default class SubmissionPageController extends SummaryPageController {
 }
 
 /**
- * @import { FormContext, AnyFormRequest, FormSubmissionState } from '@defra/forms-engine-plugin/types'
+ * @typedef {object} ApplicationIdentifiers
+ * @property {string} sbi - Single Business Identifier
+ * @property {string} crn - Customer Reference Number
+ * @property {string} frn - Firm Reference Number
+ * @property {string} clientRef - Client reference sent to GAS to track applications
+ * @property {string} [previousClientRef] - Previous client reference for resubmissions
+ */
+
+/**
+ * @import { FormContext, FormContextRequest, AnyFormRequest, FormSubmissionState } from '@defra/forms-engine-plugin/types'
  * @import { ResponseObject, type ResponseToolkit } from '@hapi/hapi'
  * @import { ValidateApplicationResponse } from '../types/land-grants.client.d.js'
  * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'

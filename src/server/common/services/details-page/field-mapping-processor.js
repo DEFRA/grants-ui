@@ -12,7 +12,7 @@ import { resolvePath } from '~/src/server/common/helpers/path-utils.js'
  *
  * @param {Record<string, string>} responseMapping - Key-to-path mapping from YAML
  * @param {object} response - Raw API response
- * @returns {object} Mapped response object
+ * @returns {Record<string, unknown>} Mapped response object
  * @throws {Error} If responseMapping or response are null or undefined
  */
 export function mapResponse(responseMapping, response) {
@@ -20,6 +20,7 @@ export function mapResponse(responseMapping, response) {
     throw new Error('Response mapping and response object are required')
   }
 
+  /** @type {Record<string, unknown>} */
   const result = {}
 
   for (const [key, path] of Object.entries(responseMapping)) {

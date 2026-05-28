@@ -30,11 +30,12 @@ class GrantApplicationServiceApiError extends Error {
  * Builds HTTP request options for GAS API calls.
  *
  * @param {string} method - HTTP method (GET, POST, etc.)
- * @param {object} [payload] - Request payload for non-GET requests
+ * @param {Record<string, unknown>} [payload] - Request payload for non-GET requests
  * @returns {RequestInit} Fetch-compatible request options
  * @private
  */
 function buildRequestOptions(method, payload) {
+  /** @type {RequestInit} */
   const options = {
     method,
     headers: {
@@ -55,7 +56,7 @@ function buildRequestOptions(method, payload) {
  *
  * @param {string} url - Base API URL
  * @param {string} method - HTTP method
- * @param {object} [queryParams] - Optional query parameters
+ * @param {Record<string, unknown>} [queryParams] - Optional query parameters
  * @returns {string} Fully constructed URL
  * @private
  */
@@ -100,14 +101,20 @@ async function handleResponse(response, grantCode) {
   return response
 }
 
+/**
+ * @param {AnyRequest | undefined} request
+ * @param {string} url
+ * @param {unknown} error
+ */
 function logGasUpstreamError(request, url, error) {
+  const upstream = /** @type {{ status?: number, message?: string }} */ (error)
   log(
     LogCodes.SYSTEM.EXTERNAL_API_ERROR,
     {
       endpoint: url,
       service: 'grant-application-service',
-      upstreamStatus: error.status ?? null,
-      errorMessage: error.message
+      upstreamStatus: upstream.status ?? null,
+      errorMessage: upstream.message
     },
     request
   )
@@ -117,13 +124,13 @@ function logGasUpstreamError(request, url, error) {
  * Makes a request to the Grant Application Service (GAS) API
  * @param {string} url - API endpoint URL
  * @param {string} grantCode - Grant code for error context
- * @param {object} request - Request object
- * @param {object} options - Request options
+ * @param {AnyRequest | undefined} request - Request object
+ * @param {object} [options] - Request options
  * @param {string} [options.method] - HTTP method (GET, POST, etc.)
- * @param {object} [options.payload] - Request payload for POST requests
- * @param {object} [options.queryParams] - Query parameters for GET requests
- * @param {object} [options.retryConfig] - Configuration for the retry mechanism
- * @returns {Promise} - Promise that resolves to the response
+ * @param {Record<string, unknown>} [options.payload] - Request payload for POST requests
+ * @param {Record<string, unknown>} [options.queryParams] - Query parameters for GET requests
+ * @param {Record<string, unknown>} [options.retryConfig] - Configuration for the retry mechanism
+ * @returns {Promise<Response>} - Promise that resolves to the response
  * @throws {GrantApplicationServiceApiError} - If the API request fails
  */
 export async function makeGasApiRequest(url, grantCode, request, options = {}) {
@@ -153,12 +160,13 @@ export async function makeGasApiRequest(url, grantCode, request, options = {}) {
       throw error
     }
 
+    const err = /** @type {{ status?: number, message?: string }} */ (error)
     throw new GrantApplicationServiceApiError(
-      'Failed to process GAS API request: ' + error.message,
-      error.status,
-      error.message,
+      'Failed to process GAS API request: ' + err.message,
+      /** @type {number} */ (err.status),
+      /** @type {string} */ (err.message),
       grantCode,
-      error
+      /** @type {Error} */ (error)
     )
   }
 }
@@ -167,9 +175,9 @@ export async function makeGasApiRequest(url, grantCode, request, options = {}) {
  * Invokes a POST action on the Grant Application Service (GAS)
  * @param {string} code - Grant code
  * @param {string} name - Action name
- * @param {object} payload - Application payload
- * @param {object} request - Request
- * @returns {Promise} - Promise that resolves to the response
+ * @param {Record<string, unknown>} payload - Application payload
+ * @param {AnyRequest | undefined} request - Request
+ * @returns {Promise<any>} - Promise that resolves to the response JSON
  * @throws {GrantApplicationServiceApiError} - If the API request fails
  */
 export async function invokeGasPostAction(code, name, payload, request) {
@@ -185,9 +193,9 @@ export async function invokeGasPostAction(code, name, payload, request) {
  * Invokes a GET action on the Grant Application Service (GAS)
  * @param {string} code - Grant code
  * @param {string} name - Action name
- * @param {object} request - Request
- * @param {object} [queryParams] - Optional query parameters
- * @returns {Promise} - Promise that resolves to the response
+ * @param {AnyRequest | undefined} request - Request
+ * @param {Record<string, unknown>} [queryParams] - Optional query parameters
+ * @returns {Promise<any>} - Promise that resolves to the response JSON
  * @throws {GrantApplicationServiceApiError} - If the API request fails
  */
 export async function invokeGasGetAction(code, name, request, queryParams = {}) {
@@ -202,9 +210,9 @@ export async function invokeGasGetAction(code, name, request, queryParams = {}) 
 /**
  * Submits a grant application to the Grant Application Service (GAS)
  * @param {string} code - Grant code
- * @param {object} payload - Application payload
- * @param {object} request - Request object
- * @returns {Promise} - Promise that resolves to the submission response
+ * @param {Record<string, unknown>} payload - Application payload
+ * @param {AnyRequest | undefined} request - Request object
+ * @returns {Promise<Response>} - Promise that resolves to the submission response
  * @throws {GrantApplicationServiceApiError} - If the API request fails
  */
 export async function submitGrantApplication(code, payload, request) {
@@ -216,8 +224,8 @@ export async function submitGrantApplication(code, payload, request) {
  * Fetches the status of a specific application from GAS
  * @param {string} code - Grant code
  * @param {string} clientRef - Application client reference
- * @param {object} request - Request object
- * @returns {Promise<object|null>} - Status JSON from GAS, or null if not found
+ * @param {AnyRequest | undefined} request - Request object
+ * @returns {Promise<Response>} - Status response from GAS
  * @throws {GrantApplicationServiceApiError} - If the API request fails
  */
 export async function getApplicationStatus(code, clientRef, request) {
@@ -227,8 +235,8 @@ export async function getApplicationStatus(code, clientRef, request) {
 
 /**
  * Temporary function to map `farm-payments` grant code to `frps-private-beta` for GAS API calls
- * @param grantCode
- * @returns {*|string}
+ * @param {string} grantCode
+ * @returns {string}
  */
 function mapFarmPaymentsGrantCode(grantCode) {
   if (grantCode === 'farm-payments') {
@@ -236,3 +244,7 @@ function mapFarmPaymentsGrantCode(grantCode) {
   }
   return grantCode
 }
+
+/**
+ * @import { AnyRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ */

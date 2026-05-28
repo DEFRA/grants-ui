@@ -1,6 +1,14 @@
 /**
+ * @typedef {object} NameParts
+ * @property {string} [title]
+ * @property {string} [first]
+ * @property {string} [middle]
+ * @property {string} [last]
+ */
+
+/**
  * Full name formatter - joins name parts (title, first, middle, last) with spaces
- * @param {object} value - Name object with title, first, middle, last properties
+ * @param {NameParts | null | undefined} value - Name object with title, first, middle, last properties
  * @returns {{ text: string } | null} Formatted value object or null if empty
  */
 export function fullNameFormatter(value) {

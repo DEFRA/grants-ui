@@ -143,7 +143,7 @@ function resolveVariable(source, credentials) {
  * Builds a GraphQL query string from YAML configuration
  *
  * @param {QueryConfig} config - Query configuration from YAML
- * @param {object} request - Hapi request object for resolving variables
+ * @param {AnyRequest} request - Hapi request object for resolving variables
  * @returns {string} GraphQL query string
  */
 export function buildGraphQLQuery(config, request) {
@@ -176,3 +176,7 @@ export function buildGraphQLQuery(config, request) {
 
   return lines.join('\n')
 }
+
+/**
+ * @import { AnyRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ */
