@@ -53,7 +53,6 @@ describe('getEntraIdOptions', () => {
       location: 'https://example.com/callback'
     })
 
-    // Verify the behavior of the profile function
     const mockCredentials = { id: 'user-id', email: 'user@example.com' }
     const profileResult = result.provider.profile(mockCredentials)
     expect(profileResult).toEqual(mockCredentials)
