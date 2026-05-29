@@ -138,6 +138,7 @@ describe('buildAuditEventForGrantAccess', () => {
       const request = buildRequest({ info: { remoteAddress: LONG_IPV6 } })
 
       expect(buildAuditEventForGrantAccess(request).ip).toBe(LONG_IPV6.slice(0, 20))
+    })
   })
 
   describe('schema conformance', () => {
