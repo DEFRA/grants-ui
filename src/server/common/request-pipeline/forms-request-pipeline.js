@@ -2,19 +2,13 @@ import { formsStatusRedirect } from '~/src/server/common/request-pipeline/redire
 import { enforcePagePermission } from './permissions/enforce-page-permission.js'
 
 /**
- * @typedef {import('@hapi/hapi').Request & {
- *   can: (action: string, resource: string) => boolean
- * }} AuthorisedRequest
- */
-
-/**
  * Pipeline handler that enforces page permissions and delegates to forms status callback.
  *
  * If permission enforcement fails, the handler short-circuits and returns the response.
  * Otherwise, it continues to the forms status callback.
  *
  * @async
- * @param {AuthorisedRequest} request
+ * @param {import('./types.js').PipelineRequest} request
  * @param {ResponseToolkit} h
  * @param {FormContext} context - Request-specific context used across the pipeline.
  * @returns {Promise<*>} Hapi response or continuation result.

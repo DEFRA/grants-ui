@@ -3,12 +3,6 @@ import { ApplicationStatus } from '../../constants/application-status.js'
 import { getPermissionResource, getRequiredPermission } from '../../helpers/permissions/page-permissions.js'
 import { forbidden } from '@hapi/boom'
 
-/**
- * @typedef {import('@hapi/hapi').Request & {
- *   can: (action: string, resource: string) => boolean
- * }} AuthorisedRequest
- */
-
 const VIEW_ONLY_ALLOWED_PATHS = ['confirmation', 'print-submitted-application']
 
 /**
@@ -17,7 +11,7 @@ const VIEW_ONLY_ALLOWED_PATHS = ['confirmation', 'print-submitted-application']
  *
  * Used to redirect amend-only users away from submit actions
  * to the "cannot submit" page.
- * @param {AuthorisedRequest} request - The Hapi request object.
+ * @param {import('../types.js').AuthorisedRequest} request - The Hapi request object.
  * @param {string} requiredPermission - Required permission
  * @param {string} resource - The Hapi request object.
  * @returns {boolean} True if the user is view-only.
@@ -49,7 +43,7 @@ export function isSubmittedApplication(context) {
  * Determines whether a user has view-only access based on permissions.
  *
  * A view-only user can view applications but cannot amend or submit them.
- * @param {AuthorisedRequest} request - The Hapi request object.
+ * @param {import('../types.js').AuthorisedRequest} request - The Hapi request object.
  * @param {string} resource - The Hapi request object.
  * @returns {boolean} True if the user is view-only.
  */
@@ -104,7 +98,7 @@ export function isAllowedViewOnlyPath(path) {
  * This function must run after the DXT form model has been loaded onto
  * `request.app.model`.
  *
- * @param {AuthorisedRequest} request - The Hapi request object.
+ * @param {import('../types.js').AuthorisedRequest} request - The Hapi request object.
  * @param {import('@hapi/hapi').ResponseToolkit} h - The Hapi response toolkit.
  * @param {FormContext} context - The context object which may contain form state
  * @returns {import('@hapi/hapi').Lifecycle.ReturnValue} A lifecycle response,
