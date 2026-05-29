@@ -5,19 +5,13 @@
  */
 
 /**
- * @typedef {AuthorisedRequest & {
- *   app: {
- *     model?: {
- *       def?: {
- *         metadata?: {
- *           permissions?: {
- *             enforce?: boolean
- *           }
- *         }
- *       }
+ * @typedef {{
+ *   metadata?: {
+ *     permissions?: {
+ *       enforce?: boolean
  *     }
  *   }
- * }} PipelineRequest
+ * }} PermissionAwareDefinition
  */
 
 export {}

@@ -8,7 +8,7 @@ import { enforcePagePermission } from './permissions/enforce-page-permission.js'
  * Otherwise, it continues to the forms status callback.
  *
  * @async
- * @param {import('./types.js').PipelineRequest} request
+ * @param {import('./types.js').AuthorisedRequest} request
  * @param {ResponseToolkit} h
  * @param {FormContext} context - Request-specific context used across the pipeline.
  * @returns {Promise<*>} Hapi response or continuation result.

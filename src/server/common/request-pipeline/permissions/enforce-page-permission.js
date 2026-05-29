@@ -105,7 +105,8 @@ export function isAllowedViewOnlyPath(path) {
  * redirect, view response, or `h.continue`.
  */
 export function enforcePagePermission(request, h, context) {
-  const config = request.app.model.def.metadata.permissions
+  const definition = /** @type {import('../types.js').PermissionAwareDefinition | undefined} */ (request.app.model?.def)
+  const config = definition?.metadata?.permissions
 
   if (config?.enforce === false) {
     return h.continue
@@ -129,6 +130,9 @@ export function enforcePagePermission(request, h, context) {
   if (isCannotSubmitUser(request, requiredPermission, resource)) {
     const basePath = request.params.slug ? `/${request.params.slug}` : ''
     const model = request.app.model
+    if (!model) {
+      throw forbidden('Form model missing')
+    }
     const returnUrl = getReturnToApplicationPath(model, basePath)
     const redirectUrl = returnUrl ? `/cannot-submit?returnUrl=${encodeURIComponent(returnUrl)}` : '/cannot-submit'
     return h.redirect(redirectUrl).takeover()
