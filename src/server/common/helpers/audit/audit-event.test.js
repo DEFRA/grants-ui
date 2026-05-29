@@ -134,10 +134,10 @@ describe('buildAuditEventForGrantAccess', () => {
       expect(buildAuditEventForGrantAccess(request).ip).toBe(LINK_LOCAL_IPV6)
     })
 
-    test('returns empty string when the address exceeds the 20-char schema limit', () => {
+    test('truncates to the 20-char schema limit when the address is longer', () => {
       const request = buildRequest({ info: { remoteAddress: LONG_IPV6 } })
 
-      expect(buildAuditEventForGrantAccess(request).ip).toBe('')
+      expect(buildAuditEventForGrantAccess(request).ip).toBe(LONG_IPV6.slice(0, 20))
     })
   })
 

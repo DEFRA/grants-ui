@@ -1,13 +1,19 @@
 import { config } from '~/src/config/config.js'
 import { getClientIp } from '~/src/plugins/rate-limit.js'
 
-// The FCP Audit schema caps `ip` at 20 chars (covers IPv4 and short IPv6).
+// The FCP Audit schema caps `ip` at 20 chars and marks it required. IPv4 (max
+// 15 chars) always fits whole, but a real IPv6 address is usually longer (a
+// full address is 39 chars), so we truncate to the cap rather than blanking it.
+// Dropping the IP would mean an empty/absent `ip`, which the required field
+// rejects. That would silently lose the whole access event. Keeping the first
+// 20 chars preserves the network prefix (the useful part for an audit trail)
+// and lets the event publish.
 const MAX_IP_LENGTH = 20
 
 /**
  * Normalises a raw IP to a single schema-compliant address: keeps the first
  * entry, strips an IPv6 zone id (`fe80::1%eth0` -> `fe80::1`) and an IPv4
- * `:port`, and returns `''` if the result still exceeds the 20-char limit.
+ * `:port`, and truncates to the schema's 20-char limit (see note above).
  * @param {string | undefined | null} raw
  * @returns {string}
  */
@@ -19,7 +25,7 @@ const sanitiseIp = (raw) => {
   if ((ip.match(/:/g) ?? []).length === 1) {
     ip = ip.split(':')[0]
   }
-  return ip.length > MAX_IP_LENGTH ? '' : ip
+  return ip.slice(0, MAX_IP_LENGTH)
 }
 
 /**
