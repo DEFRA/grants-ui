@@ -14,7 +14,6 @@ import auth from '~/src/plugins/auth.js'
 import { rateLimitPlugin } from '~/src/plugins/rate-limit.js'
 import sso from '~/src/plugins/sso.js'
 import { contentSecurityPolicy } from '~/src/plugins/content-security-policy.js'
-import { formsStatusCallback } from '~/src/server/common/request-pipeline/redirects/status-helper.js'
 import CheckResponsesPageController from '~/src/server/check-responses/check-responses.controller.js'
 import { formsService } from '~/src/server/common/forms/services/form.js'
 import { outputService } from '~/src/server/common/forms/services/output.js'
@@ -52,6 +51,7 @@ import TerminalPageController from '~/src/server/task-list/terminal-page.control
 import CheckDetailsController from '~/src/server/details-page/check-details.controller.js'
 import CommonSelectLandParcelPageController from './land-grants/common/common-select-parcel/common-select-land-parcel-page.controller.js'
 import permissions from '../plugins/permissions.js'
+import { formsRequestPipeline } from './common/request-pipeline/forms-request-pipeline.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
 
@@ -110,7 +110,7 @@ const registerFormsPlugin = async (server, prefix = '') => {
       ...(prefix && { routes: { prefix } }),
       cache: new StatePersistenceService({ server }),
       baseUrl: config.get('baseUrl'),
-      onRequest: formsStatusCallback,
+      onRequest: formsRequestPipeline,
       services: {
         formsService: formService,
         outputService

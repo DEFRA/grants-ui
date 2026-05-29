@@ -1,0 +1,773 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { getApplicationStatus } from '../../services/grant-application/grant-application.service.js'
+import { updateApplicationStatus } from '../../helpers/status/update-application-status-helper.js'
+import { getFormsCacheService } from '../../helpers/forms-cache/forms-cache.js'
+import { ApplicationStatus } from '../../constants/application-status.js'
+import { formsStatusRedirect, resolveClientReference } from './forms-status-redirect.js'
+import { log, LogCodes } from '../../helpers/logging/log.js'
+import { mintLockToken } from '../../helpers/lock/lock-token.js'
+import { getCacheKey } from '../../helpers/state/get-cache-key-helper.js'
+
+vi.mock('../../../common/helpers/logging/log.js', async () => {
+  const { mockLogHelper } = await import('~/src/__mocks__')
+  return mockLogHelper()
+})
+vi.mock('../../../common/services/grant-application/grant-application.service.js', () => ({
+  getApplicationStatus: vi.fn()
+}))
+vi.mock('../../../common/helpers/status/update-application-status-helper.js', () => ({
+  updateApplicationStatus: vi.fn()
+}))
+vi.mock('../../../common/helpers/forms-cache/forms-cache.js', () => ({
+  getFormsCacheService: vi.fn()
+}))
+vi.mock('../../../common/helpers/lock/lock-token.js', () => ({
+  mintLockToken: vi.fn().mockReturnValue('mock-lock-token')
+}))
+vi.mock('../../../common/helpers/state/get-cache-key-helper.js', () => ({
+  getCacheKey: vi.fn().mockReturnValue({ sbi: '12345', grantCode: 'grant-a' })
+}))
+vi.mock('../../../../config/agreements.js', () => ({
+  default: {
+    get: vi.fn().mockReturnValue('/agreement')
+  }
+}))
+
+describe('formsStatusRedirect', () => {
+  let request
+  let h
+  let context
+  let mockCacheService
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+
+    mockCacheService = { setState: vi.fn() }
+    getFormsCacheService.mockReturnValue(mockCacheService)
+
+    request = {
+      params: { slug: 'grant-a' },
+      app: {
+        model: {
+          def: {
+            metadata: {
+              version: '1.0.0',
+              submission: { grantCode: 'grant-a-code' },
+              grantRedirectRules: {
+                preSubmission: [{ toPath: '/check-selected-land-actions' }],
+                postSubmission: [
+                  {
+                    fromGrantsStatus: 'SUBMITTED,REOPENED',
+                    gasStatus: 'APPLICATION_WITHDRAWN',
+                    toGrantsStatus: 'CLEARED',
+                    toPath: '/start'
+                  },
+
+                  // Awaiting amendments
+                  {
+                    fromGrantsStatus: 'SUBMITTED',
+                    gasStatus: 'APPLICATION_AMEND',
+                    toGrantsStatus: 'REOPENED',
+                    toPath: '/summary'
+                  },
+
+                  // Offer sent, withdrawn, accepted -> agreements service
+
+                  {
+                    fromGrantsStatus: 'SUBMITTED',
+                    gasStatus: 'OFFER_SENT,OFFER_WITHDRAWN,OFFER_ACCEPTED',
+                    toGrantsStatus: 'SUBMITTED',
+                    toPath: '/agreement'
+                  },
+
+                  // Reopened
+                  {
+                    fromGrantsStatus: 'REOPENED',
+                    gasStatus: 'default',
+                    toGrantsStatus: 'REOPENED',
+                    toPath: '/summary'
+                  },
+
+                  // Submitted -> confirmation (default for most GAS statuses)
+                  {
+                    fromGrantsStatus: 'SUBMITTED',
+                    gasStatus: 'default',
+                    toGrantsStatus: 'SUBMITTED',
+                    toPath: '/confirmation'
+                  },
+
+                  // Default fallback
+                  {
+                    fromGrantsStatus: 'default',
+                    gasStatus: 'default',
+                    toGrantsStatus: 'SUBMITTED',
+                    toPath: '/confirmation'
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      path: '/grant-a/start',
+      headers: {},
+      auth: { credentials: { sbi: '12345', crn: 'CRN123', contactId: 'contact-123' } },
+      server: { logger: { error: vi.fn() } }
+    }
+
+    h = {
+      continue: Symbol('continue'),
+      redirect: vi.fn().mockReturnValue({
+        takeover: vi.fn().mockReturnValue(Symbol('redirected'))
+      })
+    }
+
+    context = {
+      paths: ['/start', '/confirmation'],
+      referenceNumber: 'REF-001',
+      state: { applicationStatus: 'SUBMITTED' }
+    }
+  })
+
+  it('uses default when redirect rule has no fromGrantsStatus or gasStatus', async () => {
+    request.app.model.def.metadata.grantRedirectRules.postSubmission = [
+      { toGrantsStatus: 'SUBMITTED', toPath: '/confirmation' }
+    ]
+
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'RECEIVED' })
+    })
+
+    const result = await formsStatusRedirect(request, h, context)
+
+    expect(h.redirect).toHaveBeenCalledWith('/grant-a/confirmation')
+    expect(result).toEqual(expect.any(Symbol))
+  })
+
+  it('throws when no redirect rule matches the combination', async () => {
+    request.app.model.def.metadata.grantRedirectRules.postSubmission = [
+      { fromGrantsStatus: 'SUBMITTED', gasStatus: 'KNOWN_STATUS', toPath: '/known' }
+    ]
+
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'UNEXPECTED_STATUS' })
+    })
+
+    await expect(formsStatusRedirect(request, h, context)).rejects.toThrow(/No redirect rule found/)
+  })
+
+  it('returns false when slug is missing', async () => {
+    request.params.slug = undefined
+    const result = await formsStatusRedirect(request, h, context)
+    expect(result).toBe(h.continue)
+  })
+
+  it('returns false when startPath missing in context', async () => {
+    const badContext = { referenceNumber: 'REF-005', state: { someField: 'val' } }
+    const result = await formsStatusRedirect(request, h, badContext)
+    expect(result).toBe(h.continue)
+  })
+
+  it('continues when no slug is present', async () => {
+    request.params = {}
+    const result = await formsStatusRedirect(request, h, context)
+    expect(result).toBe(h.continue)
+  })
+
+  it.each([
+    { description: 'no previous status', state: { someFiled: 'someValue' } },
+    {
+      description: 'previous status is CLEARED',
+      state: { applicationStatus: ApplicationStatus.CLEARED, someFiled: 'someValue' }
+    }
+  ])(
+    'redirects to preSubmission path if $description and has meaningful state and is requesting forms startPage while not being a task list page',
+    async ({ state }) => {
+      const preSubmissionContext = {
+        referenceNumber: 'REF-002',
+        state,
+        paths: ['/start']
+      }
+
+      const result = await formsStatusRedirect(request, h, preSubmissionContext)
+
+      expect(h.redirect).toHaveBeenCalledWith('/grant-a/check-selected-land-actions')
+      expect(result).toEqual(expect.any(Symbol))
+    }
+  )
+
+  it('continues when state has no meaningful keys', async () => {
+    const noMeaningfulContext = {
+      referenceNumber: 'REF-003',
+      state: { $$__referenceNumber: 'REF-003', applicationStatus: 'CLEARED' },
+      paths: ['/start']
+    }
+
+    const result = await formsStatusRedirect(request, h, noMeaningfulContext)
+    expect(result).toBe(h.continue)
+    expect(h.redirect).not.toHaveBeenCalled()
+  })
+
+  it('redirects when state has landParcels with keys (meaningful state)', async () => {
+    const contextWithLandParcels = {
+      referenceNumber: 'REF-004',
+      state: { applicationStatus: 'CLEARED', landParcels: { parcel1: 'data' } },
+      paths: ['/start']
+    }
+
+    const result = await formsStatusRedirect(request, h, contextWithLandParcels)
+    expect(h.redirect).toHaveBeenCalled()
+    expect(result).toEqual(expect.any(Symbol))
+  })
+
+  it('continues when state has empty landParcels object (not meaningful)', async () => {
+    const contextWithEmptyLandParcels = {
+      referenceNumber: 'REF-005',
+      state: { applicationStatus: 'CLEARED', landParcels: {} },
+      paths: ['/start']
+    }
+
+    const result = await formsStatusRedirect(request, h, contextWithEmptyLandParcels)
+    expect(result).toBe(h.continue)
+    expect(h.redirect).not.toHaveBeenCalled()
+  })
+
+  it('continues when previousStatus is SUBMITTED and no redirect needed', async () => {
+    getApplicationStatus.mockResolvedValue({ json: async () => ({ status: 'RECEIVED' }) })
+    request.path = '/grant-a/confirmation'
+
+    const result = await formsStatusRedirect(request, h, context)
+    expect(result).toBe(h.continue)
+  })
+
+  it.each([undefined, 'CLEARED'])('continues without GAS call when status = %s and no saved state', async (status) => {
+    context.state = {
+      applicationStatus: status
+    }
+    const result = await formsStatusRedirect(request, h, context)
+    expect(result).toBe(h.continue)
+    expect(getApplicationStatus).not.toHaveBeenCalled()
+  })
+
+  it('redirects to preSubmission path when toPath does not start with slash', async () => {
+    request.app.model.def.metadata.grantRedirectRules.preSubmission = [{ toPath: 'check-selected-land-actions' }]
+    const preSubmissionContext = {
+      referenceNumber: 'REF-006',
+      state: { question: 'answer' },
+      paths: ['/start']
+    }
+
+    await formsStatusRedirect(request, h, preSubmissionContext)
+
+    expect(h.redirect).toHaveBeenCalledWith('/grant-a/check-selected-land-actions')
+  })
+
+  it.each([undefined, 'CLEARED'])('redirects to "check answers" page if some saved state', async (status) => {
+    context.state = {
+      applicationStatus: status,
+      question: 'answer'
+    }
+    await formsStatusRedirect(request, h, context)
+    expect(h.redirect).toBeCalled()
+    expect(getApplicationStatus).not.toHaveBeenCalled()
+  })
+
+  it('continues without GAS call when status is an unknown value', async () => {
+    context.state = {
+      applicationStatus: 'UNKNOWN_STATUS'
+    }
+    const result = await formsStatusRedirect(request, h, context)
+
+    expect(result).toBe(h.continue)
+    expect(getApplicationStatus).not.toHaveBeenCalled()
+  })
+
+  it('sets CLEARED state when GAS returns APPLICATION_WITHDRAWN from SUBMITTED grant status', async () => {
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'APPLICATION_WITHDRAWN' })
+    })
+
+    const result = await formsStatusRedirect(request, h, context)
+
+    expect(mockCacheService.setState).toHaveBeenCalledWith(
+      request,
+      expect.objectContaining({
+        applicationStatus: ApplicationStatus.CLEARED
+      })
+    )
+    expect(result).toEqual(expect.any(Symbol))
+  })
+
+  it('continues when GAS returns APPLICATION_WITHDRAWN but previousStatus is neither SUBMITTED nor REOPENED', async () => {
+    context.state.applicationStatus = ApplicationStatus.CLEARED
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'APPLICATION_WITHDRAWN' })
+    })
+    const result = await formsStatusRedirect(request, h, context)
+    expect(result).toBe(h.continue)
+  })
+
+  it('updates status to REOPENED and redirects to summary when awaiting amendments and previous is SUBMITTED', async () => {
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'APPLICATION_AMEND' })
+    })
+
+    const result = await formsStatusRedirect(request, h, context)
+
+    expect(getCacheKey).toHaveBeenCalledWith(request)
+    expect(mintLockToken).toHaveBeenCalledWith({
+      userId: 'contact-123',
+      sbi: '12345',
+      grantCode: 'grant-a',
+      grantVersion: '1.0.0'
+    })
+    expect(updateApplicationStatus).toHaveBeenCalledWith('REOPENED', '12345:grant-a', {
+      lockToken: 'mock-lock-token',
+      grantVersion: '1.0.0'
+    })
+    expect(h.redirect).toHaveBeenCalledWith('/grant-a/summary')
+    expect(result).toEqual(expect.any(Symbol))
+  })
+
+  it('uses integer 1 as grantVersion for non-config-broker grants (no version in model metadata)', async () => {
+    delete request.app.model.def.metadata.version
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'APPLICATION_AMEND' })
+    })
+
+    await formsStatusRedirect(request, h, context)
+
+    expect(mintLockToken).toHaveBeenCalledWith({
+      userId: 'contact-123',
+      sbi: '12345',
+      grantCode: 'grant-a',
+      grantVersion: 1
+    })
+    expect(updateApplicationStatus).toHaveBeenCalledWith('REOPENED', '12345:grant-a', {
+      lockToken: 'mock-lock-token',
+      grantVersion: 1
+    })
+  })
+
+  it('updates session cache when transitioning to REOPENED', async () => {
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'APPLICATION_AMEND' })
+    })
+
+    await formsStatusRedirect(request, h, context)
+
+    expect(mockCacheService.setState).toHaveBeenCalledWith(
+      request,
+      expect.objectContaining({
+        applicationStatus: ApplicationStatus.REOPENED
+      })
+    )
+  })
+
+  it('preserves existing form state when transitioning to REOPENED', async () => {
+    // Add form data to existing state
+    context.state = {
+      applicationStatus: 'SUBMITTED',
+      someFormField: 'form-value',
+      anotherField: { nested: 'data' }
+    }
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'APPLICATION_AMEND' })
+    })
+
+    await formsStatusRedirect(request, h, context)
+
+    expect(mockCacheService.setState).toHaveBeenCalledWith(request, {
+      applicationStatus: ApplicationStatus.REOPENED,
+      someFormField: 'form-value',
+      anotherField: { nested: 'data' }
+    })
+  })
+
+  it('does not preserve existing form state when transitioning to CLEARED (withdrawal)', async () => {
+    context.state = {
+      applicationStatus: 'SUBMITTED',
+      someFormField: 'form-value',
+      anotherField: { nested: 'data' }
+    }
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'APPLICATION_WITHDRAWN' })
+    })
+
+    await formsStatusRedirect(request, h, context)
+
+    expect(mockCacheService.setState).toHaveBeenCalledWith(request, {
+      applicationStatus: ApplicationStatus.CLEARED
+    })
+  })
+
+  it('allows normal navigation when gasStatus is APPLICATION_AMEND and previousStatus is REOPENED and request is same-origin', async () => {
+    context.state.applicationStatus = ApplicationStatus.REOPENED
+    request.path = '/grant-a/some-question-page'
+    request.headers = { 'sec-fetch-site': 'same-origin' }
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'APPLICATION_AMEND' })
+    })
+
+    const result = await formsStatusRedirect(request, h, context)
+    expect(h.redirect).not.toHaveBeenCalled()
+    expect(result).toBe(h.continue)
+  })
+
+  it('redirects to summary when gasStatus is APPLICATION_AMEND and previousStatus is REOPENED and request is not same-origin', async () => {
+    context.state.applicationStatus = ApplicationStatus.REOPENED
+    request.path = '/grant-a/some-question-page'
+    request.headers = { 'sec-fetch-site': 'none' }
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'APPLICATION_AMEND' })
+    })
+
+    const result = await formsStatusRedirect(request, h, context)
+    expect(h.redirect).toHaveBeenCalledWith('/grant-a/summary')
+    expect(result).toEqual(expect.any(Symbol))
+  })
+
+  it('redirects to start when REOPENED application is withdrawn by GAS', async () => {
+    context.state.applicationStatus = ApplicationStatus.REOPENED
+    request.path = '/grant-a/some-question-page'
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'APPLICATION_WITHDRAWN' })
+    })
+
+    await formsStatusRedirect(request, h, context)
+    expect(h.redirect).toHaveBeenCalledWith('/grant-a/start')
+    expect(mockCacheService.setState).toHaveBeenCalledWith(
+      request,
+      expect.objectContaining({ applicationStatus: ApplicationStatus.CLEARED })
+    )
+  })
+
+  it('uses previousReferenceNumber when status is REOPENED', async () => {
+    context.state = {
+      applicationStatus: ApplicationStatus.REOPENED,
+      previousReferenceNumber: 'OLD-REF-123'
+    }
+
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'APPLICATION_AMEND' })
+    })
+
+    await formsStatusRedirect(request, h, context)
+
+    expect(getApplicationStatus).toHaveBeenCalledWith('grant-a', 'old-ref-123', request)
+  })
+
+  it('falls back to current reference when REOPENED but previousReferenceNumber missing', async () => {
+    context.state = {
+      applicationStatus: ApplicationStatus.REOPENED
+    }
+
+    context.referenceNumber = 'REF-NEW-999'
+
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'APPLICATION_AMEND' })
+    })
+
+    await formsStatusRedirect(request, h, context)
+
+    expect(getApplicationStatus).toHaveBeenCalledWith('grant-a', 'ref-new-999', request)
+  })
+
+  describe('resolveClientReference', () => {
+    it('returns previous reference when status is REOPENED', () => {
+      const result = resolveClientReference(ApplicationStatus.REOPENED, {
+        referenceNumber: 'NEW',
+        state: { previousReferenceNumber: 'OLD' }
+      })
+
+      expect(result).toBe('OLD')
+    })
+
+    it('returns current reference when not reopened', () => {
+      const result = resolveClientReference(ApplicationStatus.SUBMITTED, {
+        referenceNumber: 'NEW',
+        state: { previousReferenceNumber: 'OLD' }
+      })
+
+      expect(result).toBe('NEW')
+    })
+  })
+
+  it('calls GAS with previous reference for reopened applications awaiting amendments', async () => {
+    context.state = {
+      applicationStatus: ApplicationStatus.REOPENED,
+      previousReferenceNumber: 'OLD-REF-1'
+    }
+
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'APPLICATION_AMEND' })
+    })
+
+    await formsStatusRedirect(request, h, context)
+
+    expect(getApplicationStatus).toHaveBeenCalledWith('grant-a', 'old-ref-1', request)
+  })
+
+  it('converts reference number to lowercase when calling getApplicationStatus', async () => {
+    context.referenceNumber = '89B-AEC-5A6'
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'RECEIVED' })
+    })
+
+    await formsStatusRedirect(request, h, context)
+
+    expect(getApplicationStatus).toHaveBeenCalledWith('grant-a', '89b-aec-5a6', request)
+  })
+
+  it('redirects when newStatus path differs from current path', async () => {
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'RECEIVED' })
+    })
+
+    const result = await formsStatusRedirect(request, h, context)
+
+    expect(h.redirect).toHaveBeenCalledWith('/grant-a/confirmation')
+    expect(result).toEqual(expect.any(Symbol))
+  })
+
+  it('continues when request path matches redirect path', async () => {
+    request.path = '/grant-a/confirmation'
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'RECEIVED' })
+    })
+
+    const result = await formsStatusRedirect(request, h, context)
+    expect(result).toBe(h.continue)
+  })
+
+  it('uses custom postSubmission redirect rule when available', async () => {
+    const customRules = [
+      { fromGrantsStatus: 'SUBMITTED', gasStatus: 'RECEIVED', toPath: '/custom-path' },
+      { fromGrantsStatus: 'default', gasStatus: 'default', toPath: '/fallback-path' }
+    ]
+
+    // Override grantRedirectRules in request
+    request.app.model.def.metadata.grantRedirectRules.postSubmission = customRules
+
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'RECEIVED' })
+    })
+
+    const result = await formsStatusRedirect(request, h, context)
+
+    // It should pick the custom path instead of default /confirmation
+    expect(h.redirect).toHaveBeenCalledWith('/grant-a/custom-path')
+    expect(result).toEqual(expect.any(Symbol))
+  })
+
+  it('continues when getApplicationStatus throws 404', async () => {
+    const error = new Error('not found')
+    error.status = 404
+    getApplicationStatus.mockRejectedValue(error)
+
+    const result = await formsStatusRedirect(request, h, context)
+    expect(result).toBe(h.continue)
+  })
+
+  it('redirects to fallback and logs on unexpected error', async () => {
+    const error = new Error('server error')
+    getApplicationStatus.mockRejectedValue(error)
+
+    const result = await formsStatusRedirect(request, h, context)
+
+    expect(log).toHaveBeenCalledWith(
+      LogCodes.SUBMISSION.SUBMISSION_REDIRECT_FAILURE,
+      expect.objectContaining({
+        grantType: 'grant-a',
+        referenceNumber: 'REF-001',
+        errorMessage: error.message
+      }),
+      request
+    )
+    expect(h.redirect).toHaveBeenCalledWith('/grant-a/confirmation')
+    expect(result).toEqual(expect.any(Symbol))
+  })
+
+  it('continues when non-404 error occurs but path equals fallback URL', async () => {
+    const error = new Error('server error')
+    getApplicationStatus.mockRejectedValue(error)
+    request.path = '/grant-a/confirmation'
+
+    const result = await formsStatusRedirect(request, h, context)
+
+    expect(log).toHaveBeenCalledWith(
+      LogCodes.SUBMISSION.SUBMISSION_REDIRECT_FAILURE,
+      expect.objectContaining({
+        grantType: 'grant-a',
+        referenceNumber: 'REF-001',
+        errorMessage: error.message
+      }),
+      request
+    )
+    expect(result).toBe(h.continue)
+    expect(h.redirect).not.toHaveBeenCalled()
+  })
+
+  it('uses default redirect when GAS status is unknown', async () => {
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'SOMETHING_NEW' })
+    })
+
+    const result = await formsStatusRedirect(request, h, context)
+    expect(h.redirect).toHaveBeenCalledWith('/grant-a/confirmation')
+    expect(result).toEqual(expect.any(Symbol))
+  })
+
+  it('continues when checkDetailsChangesPending is true and startPage is /check-details', async () => {
+    request.app.model.def.startPage = '/check-details'
+    context.state = { applicationStatus: 'SUBMITTED', checkDetailsChangesPending: true }
+
+    const result = await formsStatusRedirect(request, h, context)
+
+    expect(result).toBe(h.continue)
+    expect(h.redirect).not.toHaveBeenCalled()
+    expect(getApplicationStatus).not.toHaveBeenCalled()
+  })
+
+  it('does not short-circuit when checkDetailsChangesPending is true but startPage is not /check-details', async () => {
+    request.app.model.def.startPage = '/start'
+    context.state = { applicationStatus: 'SUBMITTED', checkDetailsChangesPending: true }
+
+    getApplicationStatus.mockResolvedValue({
+      json: async () => ({ status: 'RECEIVED' })
+    })
+
+    const result = await formsStatusRedirect(request, h, context)
+
+    expect(getApplicationStatus).toHaveBeenCalled()
+    expect(result).not.toBe(h.continue)
+  })
+
+  it('continues without redirect when current path is in excludedPaths', async () => {
+    request.app.model.def.metadata.grantRedirectRules.excludedPaths = ['excluded-path', 'other-excluded-path']
+    request.params.path = 'excluded-path'
+
+    context.state = { applicationStatus: 'SUBMITTED', someField: 'someValue' }
+
+    const result = await formsStatusRedirect(request, h, context)
+
+    expect(result).toBe(h.continue)
+    expect(h.redirect).not.toHaveBeenCalled()
+    expect(getApplicationStatus).not.toHaveBeenCalled()
+  })
+
+  describe('stateGuards', () => {
+    it('redirects to guard path when required state key is missing and path is not allowed', async () => {
+      request.app.model.def.metadata.grantRedirectRules.stateGuards = [
+        {
+          stateKey: 'additionalAnswers.applicant',
+          allowedPaths: ['confirm-farm-details'],
+          redirectTo: '/confirm-farm-details'
+        }
+      ]
+      request.params.path = 'confirm-you-will-be-eligible'
+      context.state = { applicationStatus: undefined }
+
+      const result = await formsStatusRedirect(request, h, context)
+
+      expect(h.redirect).toHaveBeenCalledWith('/grant-a/confirm-farm-details')
+      expect(result).toEqual(expect.any(Symbol))
+    })
+
+    it('continues when on an allowed path even if state key is missing', async () => {
+      request.app.model.def.metadata.grantRedirectRules.stateGuards = [
+        {
+          stateKey: 'additionalAnswers.applicant',
+          allowedPaths: ['confirm-farm-details'],
+          redirectTo: '/confirm-farm-details'
+        }
+      ]
+      request.params.path = 'confirm-farm-details'
+      context.state = { applicationStatus: undefined }
+
+      const result = await formsStatusRedirect(request, h, context)
+
+      expect(result).toBe(h.continue)
+    })
+
+    it('continues when required state key is present', async () => {
+      request.app.model.def.metadata.grantRedirectRules.stateGuards = [
+        {
+          stateKey: 'additionalAnswers.applicant',
+          allowedPaths: ['confirm-farm-details'],
+          redirectTo: '/confirm-farm-details'
+        }
+      ]
+      request.params.path = 'confirm-you-will-be-eligible'
+      context.state = { applicationStatus: undefined, additionalAnswers: { applicant: { name: 'Test' } } }
+
+      const result = await formsStatusRedirect(request, h, context)
+
+      expect(result).toBe(h.continue)
+    })
+
+    it('continues when no stateGuards are configured', async () => {
+      request.params.path = 'confirm-you-will-be-eligible'
+      context.state = { applicationStatus: undefined }
+
+      const result = await formsStatusRedirect(request, h, context)
+
+      expect(result).toBe(h.continue)
+    })
+
+    it('redirects to guard path when state key is null', async () => {
+      request.app.model.def.metadata.grantRedirectRules.stateGuards = [
+        {
+          stateKey: 'additionalAnswers.applicant',
+          allowedPaths: ['confirm-farm-details'],
+          redirectTo: '/confirm-farm-details'
+        }
+      ]
+      request.params.path = 'select-land-parcel'
+      context.state = { applicationStatus: ApplicationStatus.CLEARED, additionalAnswers: { applicant: null } }
+
+      const result = await formsStatusRedirect(request, h, context)
+
+      expect(h.redirect).toHaveBeenCalledWith('/grant-a/confirm-farm-details')
+      expect(result).toEqual(expect.any(Symbol))
+    })
+  })
+
+  describe('farm-payments agreements service redirect', () => {
+    it.each(['OFFER_SENT', 'OFFER_WITHDRAWN', 'OFFER_ACCEPTED'])(
+      'redirects farm-payments to /agreement when GAS status is %s',
+      async (gasStatus) => {
+        getApplicationStatus.mockResolvedValue({
+          json: async () => ({ status: gasStatus })
+        })
+
+        const result = await formsStatusRedirect(request, h, context)
+
+        expect(h.redirect).toHaveBeenCalledWith('/agreement')
+        expect(result).toEqual(expect.any(Symbol))
+      }
+    )
+
+    it('does not redirect farm-payments to /agreement when GAS status is RECEIVED', async () => {
+      getApplicationStatus.mockResolvedValue({
+        json: async () => ({ status: 'RECEIVED' })
+      })
+
+      const result = await formsStatusRedirect(request, h, context)
+
+      expect(h.redirect).toHaveBeenCalledWith('/grant-a/confirmation')
+      expect(result).toEqual(expect.any(Symbol))
+    })
+
+    it('continues when farm-payments request path is already /agreement', async () => {
+      request.path = '/agreement'
+      getApplicationStatus.mockResolvedValue({
+        json: async () => ({ status: 'OFFER_SENT' })
+      })
+
+      const result = await formsStatusRedirect(request, h, context)
+      expect(result).toBe(h.continue)
+      expect(h.redirect).not.toHaveBeenCalled()
+    })
+  })
+})

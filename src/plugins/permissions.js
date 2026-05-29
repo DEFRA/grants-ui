@@ -3,7 +3,7 @@ import { can } from '~/src/server/common/helpers/permissions/can.js'
 const EXCLUDED_PATHS = ['/health', '/assets', '/public', '/auth']
 
 function shouldSkip(request) {
-  return EXCLUDED_PATHS.some((path) => request.path.startsWith(path))
+  return EXCLUDED_PATHS.some((path) => request.path.includes(path))
 }
 
 export default {
@@ -20,7 +20,7 @@ export default {
 
         request.auth.credentials.permissions = permissionGroups
         request.can = (action, resource) => {
-          return can(permissionGroups, action, resource)
+          return can(request.auth.credentials?.permissions ?? [], action, resource)
         }
 
         return h.continue
