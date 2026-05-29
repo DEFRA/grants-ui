@@ -304,19 +304,9 @@ function handlePostSubmissionError(err, request, h, context, grantId, grantCode,
 }
 
 /**
- * @typedef {object} GrantModel
- * @property {{ submission: { grantCode: string }, grantRedirectRules?: object }} metadata
- * @property {string} [startPage]
- */
-
-/**
- * @typedef {import('@hapi/hapi').Request & { app: { model?: { def?: GrantModel } } }} ExtendedRequest
- */
-
-/**
  * Main redirect for handling form status transitions.
  *
- * @param {ExtendedRequest} request - Hapi request object (extended to include app.model)
+ * @param {import('../types.js').PipelineRequest} request - Hapi request object (extended to include app.model)
  * @param {import('@hapi/hapi').ResponseToolkit} h - Hapi response toolkit
  * @param {object} context - Current page context including form state and reference number
  * @returns {Promise<import('@hapi/hapi').ResponseObject | any>} Hapi response or continue symbol

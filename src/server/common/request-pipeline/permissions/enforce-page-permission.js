@@ -11,7 +11,7 @@ const VIEW_ONLY_ALLOWED_PATHS = ['confirmation', 'print-submitted-application']
  *
  * Used to redirect amend-only users away from submit actions
  * to the "cannot submit" page.
- * @param {import('../types.js').AuthorisedRequest} request - The Hapi request object.
+ * @param {import('../types.js').PipelineRequest} request - The Hapi request object.
  * @param {string} requiredPermission - Required permission
  * @param {string} resource - The Hapi request object.
  * @returns {boolean} True if the user is view-only.
@@ -43,7 +43,7 @@ export function isSubmittedApplication(context) {
  * Determines whether a user has view-only access based on permissions.
  *
  * A view-only user can view applications but cannot amend or submit them.
- * @param {import('../types.js').AuthorisedRequest} request - The Hapi request object.
+ * @param {import('../types.js').PipelineRequest} request - The Hapi request object.
  * @param {string} resource - The Hapi request object.
  * @returns {boolean} True if the user is view-only.
  */
@@ -98,15 +98,14 @@ export function isAllowedViewOnlyPath(path) {
  * This function must run after the DXT form model has been loaded onto
  * `request.app.model`.
  *
- * @param {import('../types.js').AuthorisedRequest} request - The Hapi request object.
+ * @param {import('../types.js').PipelineRequest} request - The Hapi request object.
  * @param {import('@hapi/hapi').ResponseToolkit} h - The Hapi response toolkit.
  * @param {FormContext} context - The context object which may contain form state
  * @returns {import('@hapi/hapi').Lifecycle.ReturnValue} A lifecycle response,
  * redirect, view response, or `h.continue`.
  */
 export function enforcePagePermission(request, h, context) {
-  const definition = /** @type {import('../types.js').PermissionAwareDefinition | undefined} */ (request.app.model?.def)
-  const config = definition?.metadata?.permissions
+  const config = request.app.model?.def?.metadata?.permissions
 
   if (config?.enforce === false) {
     return h.continue
