@@ -52,6 +52,7 @@ import CheckDetailsController from '~/src/server/details-page/check-details.cont
 import CommonSelectLandParcelPageController from './land-grants/common/common-select-parcel/common-select-land-parcel-page.controller.js'
 import permissions from '../plugins/permissions.js'
 import { formsRequestPipeline } from './common/request-pipeline/forms-request-pipeline.js'
+import { auditPublisher } from '~/src/server/common/helpers/audit/audit.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
 
@@ -168,7 +169,8 @@ const registerPlugins = async (server) => {
     sso,
     permissions,
     contentSecurityPolicy,
-    whitelist
+    whitelist,
+    auditPublisher
   ])
 
   await server.register([router])

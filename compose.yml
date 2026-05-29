@@ -78,6 +78,13 @@ services:
       FORMS_API_CACHE_TTL_SECONDS: ${FORMS_API_CACHE_TTL_SECONDS:-300}
       SFD_UPDATE_URL: '${SFD_UPDATE_URL:-http://localhost:3000/sfd/mock}'
       SFD_UPDATE_ENABLED: ${SFD_UPDATE_ENABLED:-false}
+      AWS_REGION: ${AWS_REGION:-eu-west-2}
+      AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL:-http://localstack:4566}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+      AUDIT_ENABLED: ${AUDIT_ENABLED:-false}
+      AUDIT_SNS_TOPIC_ARN: ${AUDIT_SNS_TOPIC_ARN:-arn:aws:sns:eu-west-2:000000000000:fcp_audit_events}
+      AUDIT_APPLICATION: ${AUDIT_APPLICATION:-Grants}
     volumes:
       - ./src:/home/node/src
       - /home/node/node_modules
