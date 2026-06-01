@@ -105,7 +105,15 @@ export function isAllowedViewOnlyPath(path) {
  * redirect, view response, or `h.continue`.
  */
 export function enforcePagePermission(request, h, context) {
-  const config = request.app.model?.def?.metadata?.permissions
+  const metadata =
+    /** @type {{
+     * permissions?: {
+     *   enforce?: boolean
+     * }
+     * }} */
+    (request.app.model?.def?.metadata)
+
+  const config = metadata?.permissions
 
   if (config?.enforce === false) {
     return h.continue
