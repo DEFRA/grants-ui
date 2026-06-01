@@ -320,7 +320,15 @@ export const formsStatusRedirect = async (request, h, context) => {
   const grantCode = getGrantCode(request)
 
   const previousStatus = context.state.applicationStatus
-  const grantRedirectRules = request.app.model?.def?.metadata?.grantRedirectRules
+  const metadata =
+    /** @type {{
+     * excludedPaths?: string[]
+     * grantRedirectRules?: {
+     *   excludedPaths?: string[]
+     * }
+     * }} */
+    (request.app.model?.def?.metadata)
+  const grantRedirectRules = metadata?.grantRedirectRules
   const isWithinGrantPages = request.headers['sec-fetch-site'] === 'same-origin'
 
   const checkDetailsChangesPending = context.state.checkDetailsChangesPending
