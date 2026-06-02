@@ -148,7 +148,7 @@ services:
       GRANTS_CONFIG_BROKER_URL: '${CONFIG_BROKER_URL:-http://grants-config-broker:3012}'
       GRANTS_CONFIG_BROKER_AUTH_TOKEN: '${CONFIG_BROKER_AUTH_TOKEN:-config-broker-auth-token}'
       GRANTS_CONFIG_BROKER_ENCRYPTION_KEY: '${CONFIG_BROKER_ENCRYPTION_KEY:-config-broker-encryption-key}'
-      FORMS_API_SLUGS: ${FORMS_API_SLUGS:-example-grant-with-auth}
+      FORMS_API_SLUGS: ${FORMS_API_SLUGS:-example-grant-with-auth,example-grant-with-map}
       DEFAULT_FORM_ORGANISATION: ${DEFAULT_FORM_ORGANISATION:-Defra}
       DEFAULT_FORM_TEAM_NAME: ${DEFAULT_FORM_TEAM_NAME:-Digital Delivery}
       DEFAULT_FORM_TEAM_EMAIL: '${DEFAULT_FORM_TEAM_EMAIL:-digitaldelivery@defra.gov.uk}'

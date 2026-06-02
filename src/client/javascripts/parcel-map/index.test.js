@@ -217,7 +217,7 @@ describe('parcel-map web component', () => {
       const el = await mountElement()
       await waitForEvent(el, 'parcel-map:ready')
       const [, sourceSpec] = ml.addSource.mock.calls[0]
-      expect(sourceSpec.tiles[0]).toBe(`${location.origin}/land-grants/parcel-tiles/{z}/{x}/{y}`)
+      expect(sourceSpec.tiles[0]).toBe(`${globalThis.location.origin}/land-grants/parcel-tiles/{z}/{x}/{y}`)
     })
   })
 
