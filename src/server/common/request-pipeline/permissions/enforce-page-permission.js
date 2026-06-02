@@ -5,7 +5,7 @@ import { forbidden } from '@hapi/boom'
 import { logPermissionEvent } from '../../helpers/permissions/permission-logger.js'
 import { getGrantCode } from '../../helpers/grant-code.js'
 
-const VIEW_ONLY_ALLOWED_PATHS = ['confirmation', 'print-submitted-application']
+const VIEW_ONLY_ALLOWED_PATHS = new Set(['confirmation', 'print-submitted-application'])
 
 /**
  * Determines whether the current user can amend an application
@@ -77,7 +77,7 @@ export function getReturnToApplicationPath(model, basePath) {
  * @returns {boolean} True if the path is allowed for view-only users.
  */
 export function isAllowedViewOnlyPath(path) {
-  return VIEW_ONLY_ALLOWED_PATHS.includes(path)
+  return VIEW_ONLY_ALLOWED_PATHS.has(path)
 }
 
 /**
