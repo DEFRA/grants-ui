@@ -7,6 +7,7 @@ import {
   fetchAvailableActionsForParcel,
   fetchParcels,
   fetchParcelsGroups,
+  fetchParcelTileLocation,
   validateApplication
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import {
@@ -14,6 +15,7 @@ import {
   parcelsGroups,
   parcelsWithSize,
   parcelsWithExtendedInfo,
+  postToLandGrantsApi,
   validate
 } from '~/src/server/land-grants/services/land-grants.client.js'
 import { clearParcelCache } from '~/src/server/land-grants/services/parcel-cache.js'
@@ -24,6 +26,7 @@ vi.mock('~/src/server/land-grants/services/land-grants.client.js', () => ({
   parcelsGroups: vi.fn(),
   parcelsWithSize: vi.fn(),
   parcelsWithExtendedInfo: vi.fn(),
+  postToLandGrantsApi: vi.fn(),
   validate: vi.fn()
 }))
 
@@ -1239,6 +1242,44 @@ describe('land-grants service', () => {
       const result = await validateApplication(validationInput)
 
       expect(result.errorMessages).toEqual([])
+    })
+  })
+
+  describe('fetchParcelTileLocation', () => {
+    const mockBbox = { minLng: -2.5, minLat: 51.4, maxLng: -2.3, maxLat: 51.6 }
+
+    it('returns the bbox from the API response', async () => {
+      postToLandGrantsApi.mockResolvedValueOnce({ bbox: mockBbox })
+
+      const result = await fetchParcelTileLocation(['SD7148-9160'])
+
+      expect(result).toEqual(mockBbox)
+      expect(postToLandGrantsApi).toHaveBeenCalledWith(
+        '/api/v1/parcel-tiles/locate',
+        { parcelIds: ['SD7148-9160'] },
+        mockApiEndpoint
+      )
+    })
+
+    it('returns null when the API throws', async () => {
+      postToLandGrantsApi.mockRejectedValueOnce(new Error('timeout'))
+
+      const result = await fetchParcelTileLocation(['SD7148-9160'])
+
+      expect(result).toBeNull()
+    })
+
+    it('passes an empty array when no parcel IDs given', async () => {
+      postToLandGrantsApi.mockResolvedValueOnce({ bbox: null })
+
+      const result = await fetchParcelTileLocation([])
+
+      expect(postToLandGrantsApi).toHaveBeenCalledWith(
+        '/api/v1/parcel-tiles/locate',
+        { parcelIds: [] },
+        mockApiEndpoint
+      )
+      expect(result).toBeNull()
     })
   })
 })

@@ -77,16 +77,18 @@ pages:
 
 #### Multi-select
 
-To allow selecting multiple parcels, set `multiSelect: true` in `metadata.pageConfig`:
+To allow selecting multiple parcels, set `multiSelect: true` in the page's `config` block:
 
 ```yaml
-metadata:
-  pageConfig:
-    /select-land-parcel:
+pages:
+  - title: Select land parcels
+    path: /select-land-parcel
+    controller: MapSelectPageController
+    config:
       multiSelect: true
 ```
 
-`MapSelectPageController` reads this key and passes it through to the template and to the component's `multi-select` attribute.
+`MapSelectPageController` reads `pageDef.config.multiSelect` in its constructor and passes it to the template and the component's `multi-select` attribute.
 
 ---
 
@@ -130,24 +132,30 @@ Height is set via CSS on the element itself — the component fills 100% of what
 | Event | Detail | When |
 |---|---|---|
 | `parcel-map:ready` | — | Map and parcels loaded successfully |
-| `parcel-map:error` | — | Map or parcels API failed |
+| `parcel-map:error` | `{ reason?: 'no-parcels' \| string }` | Map or parcels API failed |
 | `parcel-map:selection` | `{ selectedIds: string[] }` | User clicks a parcel |
 
 All events bubble. The inline script in `map-select-parcel.html` is the canonical example of how to consume them.
 
 ### Error behaviour
 
-When the parcels API returns a non-2xx response (e.g. 503 when the backend is down), `parcel-map:error` fires and the map area is removed. The Continue button in the template is disabled.
+When the map or parcels API fails, `parcel-map:error` fires with a `reason` in the detail (`'no-parcels'` when the API returned successfully but the user has no parcels; a generic error otherwise). The template's inline script renders an error summary and hides the Continue button.
 
 ### Asset loading
 
-The bundle is built by webpack and output to `public/javascripts/parcel-map.js`. The template loads it as an ES module in `{% block bodyEnd %}`:
+The JS bundle is built by webpack into `.public/javascripts/parcel-map.js`. The template loads it as an ES module in `{% block bodyEnd %}`:
 
 ```html
 <script type="module" nonce="{{ cspNonce }}" src="/public/javascripts/parcel-map.js"></script>
 ```
 
-No additional stylesheet is required — MapLibre bundles its own canvas styles and the component uses inline styles for everything else.
+The `@defra/interactive-map` CSS must also be loaded. It is copied by webpack's CopyPlugin to `.public/stylesheets/interactive-map.css` and served via an explicit route in `serve-static-files.js`. The template loads it in `{% block head %}`:
+
+```html
+<link rel="stylesheet" href="/public/stylesheets/interactive-map.css">
+```
+
+> **Note for Docker:** `webpack.config.js` is not volume-mounted. After changing it, run `npm run docker:rebuild && npm run docker:up` to rebuild the image.
 
 ---
 

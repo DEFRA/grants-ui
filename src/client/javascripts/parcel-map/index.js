@@ -36,7 +36,7 @@ function buildParcelLayers(colorExpr, sourceLayer) {
       ...src,
       paint: {
         'fill-color': colorExpr,
-        'fill-opacity': ['case', ['==', ['feature-state', 'selected'], true], 0.75, 0.3]
+        'fill-opacity': 0.2
       }
     },
     outline: {
@@ -46,7 +46,7 @@ function buildParcelLayers(colorExpr, sourceLayer) {
       ...src,
       paint: {
         'line-color': colorExpr,
-        'line-width': ['case', ['==', ['feature-state', 'selected'], true], 3, 1.5]
+        'line-width': 1.5
       }
     },
     label: {
@@ -141,9 +141,10 @@ class ParcelMap extends HTMLElement {
       return
     }
 
-    this._addParcelsToMap(ml, data)
-    this._attachTooltip(ml, data.metaIndex)
-    this._attachSelectionHandler(ml, multiSelect)
+    const colorExpr = buildColorExpr(data.parcelIds)
+    this._addParcelsToMap(ml, data, colorExpr)
+    const tooltip = this._attachTooltip(ml, data.metaIndex)
+    this._attachSelectionHandler(ml, multiSelect, tooltip, colorExpr)
 
     this._state = 'ready'
     this._skeleton?.remove()
@@ -236,8 +237,9 @@ class ParcelMap extends HTMLElement {
   /**
    * @param {MLMap} ml
    * @param {ParcelData} data
+   * @param {unknown[]} colorExpr
    */
-  _addParcelsToMap(ml, { parcelIds, tileUrl, bbox }) {
+  _addParcelsToMap(ml, { tileUrl, bbox }, colorExpr) {
     if (bbox) {
       const { minLng, minLat, maxLng, maxLat } = bbox
       ml.fitBounds(
@@ -259,7 +261,7 @@ class ParcelMap extends HTMLElement {
       /** @type {import('maplibre-gl').VectorSourceSpecification} */ ({ type: 'vector', tiles: [absoluteUrl] })
     )
 
-    const layers = buildParcelLayers(buildColorExpr(parcelIds), 'parcels')
+    const layers = buildParcelLayers(colorExpr, 'parcels')
     ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.fill))
     ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.outline))
     ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.label))
@@ -304,15 +306,25 @@ class ParcelMap extends HTMLElement {
     ml.on('mouseleave', 'parcels-fill', () => {
       ml.getCanvas().style.cursor = ''
     })
+
+    return tooltip
   }
 
   /**
    * @param {MLMap} ml
    * @param {boolean} multiSelect
+   * @param {HTMLElement | undefined} tooltip
+   * @param {unknown[]} colorExpr
    */
-  _attachSelectionHandler(ml, multiSelect) {
+  _attachSelectionHandler(ml, multiSelect, tooltip, colorExpr) {
     /** @type {Set<string>} */
     const selected = new Set()
+    const idExpr = ['concat', ['get', 'sheet_id'], '-', ['get', 'parcel_id']]
+
+    const applySelection = () => {
+      const matchList = selected.size > 0 ? [...selected] : ['__none__']
+      ml.setPaintProperty('parcels-fill', 'fill-opacity', ['match', idExpr, matchList, 0.5, 0.2])
+    }
 
     ml.on('click', 'parcels-fill', (e) => {
       const feature = e.features?.[0]
@@ -325,14 +337,20 @@ class ParcelMap extends HTMLElement {
       }
 
       if (multiSelect) {
-        selected.has(id) ? selected.delete(id) : selected.add(id)
+        const wasSelected = selected.has(id)
+        wasSelected ? selected.delete(id) : selected.add(id)
+        if (wasSelected && tooltip) { hideTooltip(tooltip) }
       } else {
         const alreadySelected = selected.has(id)
         selected.clear()
         if (!alreadySelected) {
           selected.add(id)
+        } else if (tooltip) {
+          hideTooltip(tooltip)
         }
       }
+
+      applySelection()
 
       this.dispatchEvent(
         new CustomEvent('parcel-map:selection', {
@@ -340,6 +358,19 @@ class ParcelMap extends HTMLElement {
           detail: { selectedIds: [...selected] }
         })
       )
+    })
+
+    ml.on('click', (e) => {
+      if (ml.getLayer('parcels-fill') && ml.queryRenderedFeatures(e.point, { layers: ['parcels-fill'] }).length === 0) {
+        selected.clear()
+        applySelection()
+        this.dispatchEvent(
+          new CustomEvent('parcel-map:selection', {
+            bubbles: true,
+            detail: { selectedIds: [] }
+          })
+        )
+      }
     })
   }
 }
