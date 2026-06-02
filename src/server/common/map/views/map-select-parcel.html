@@ -65,22 +65,23 @@
   <script type="module" nonce="{{ cspNonce }}" src="/public/javascripts/parcel-map.js"></script>
   <script nonce="{{ cspNonce }}">
     (function () {
-      var multiSelect = document.getElementById('parcel-map').getAttribute('multi-select') === 'true';
+      var mapEl = document.getElementById('parcel-map');
+      var multiSelect = mapEl.getAttribute('multi-select') === 'true';
 
       var hint = document.getElementById('map-hint');
       if (hint) { hint.hidden = false; }
 
-      document.getElementById('parcel-map').addEventListener('parcel-map:ready', function () {
+      mapEl.addEventListener('parcel-map:ready', function () {
         var summary = document.getElementById('parcel-selection-summary');
         if (summary) { summary.hidden = false; }
       });
 
-      document.getElementById('parcel-map').addEventListener('parcel-map:error', function () {
+      mapEl.addEventListener('parcel-map:error', function () {
         var btn = document.getElementById('map-select-continue');
         if (btn) { btn.disabled = true; }
       });
 
-      document.getElementById('parcel-map').addEventListener('parcel-map:selection', function (e) {
+      mapEl.addEventListener('parcel-map:selection', function (e) {
         var selectedIds = e.detail.selectedIds;
 
         // Write hidden inputs so the standard form POST carries the selection
