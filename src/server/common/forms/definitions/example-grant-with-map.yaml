@@ -11,6 +11,8 @@ metadata:
     cookiePolicyUrl: /cookies
     expiryDays: 365
   grantRedirectRules: null
+  permissions:
+    enforce: false
   confirmationContent:
     panelTitle: Application submitted
     panelText: Your reference number
