@@ -65,9 +65,18 @@ metadata:
         allowedPaths: ['confirm-farm-details']
         redirectTo: /confirm-farm-details
       - stateKey: landParcels
-        allowedPaths: ['confirm-farm-details','confirm-you-will-be-eligible','confirm-your-land-details-are-up-to-date','select-land-parcel','select-actions-for-land-parcel']
+        allowedPaths:
+          [
+            'confirm-farm-details',
+            'confirm-you-will-be-eligible',
+            'confirm-your-land-details-are-up-to-date',
+            'select-land-parcel',
+            'select-actions-for-land-parcel'
+          ]
         redirectTo: /confirm-farm-details
     excludedPaths: ['terms-and-conditions', 'fptt-information', 'fptt-actions']
+  permissions:
+    enforce: false
   supportEmail: farmpayments@rpa.gov.uk
   confirmationContent:
     html: |

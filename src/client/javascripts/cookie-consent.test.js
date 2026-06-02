@@ -264,13 +264,22 @@ describe('cookie-consent', () => {
   })
 
   describe('stale cookie cleanup', () => {
-    test('deletes GA cookies when banner is absent and no GTM script loaded', async () => {
+    test('deletes GA cookies when banner is absent and consent cookie is not set', async () => {
       mockDocument.querySelector.mockReturnValue(null)
       mockDocument.cookie = '_ga=GA1.2.123'
 
       await import('./cookie-consent.js')
 
       expect(mockDocument.cookie).not.toContain('_ga=GA1')
+    })
+
+    test('does not delete GA cookies when banner is absent but consent cookie is true', async () => {
+      mockDocument.querySelector.mockReturnValue(null)
+      mockDocument.cookie = '_ga=GA1.2.123; cookie_consent=true'
+
+      await import('./cookie-consent.js')
+
+      expect(mockDocument.cookie).toContain('_ga=GA1')
     })
 
     test('does not delete GA cookies when banner is present', async () => {

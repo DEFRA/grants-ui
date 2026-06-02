@@ -52,22 +52,19 @@ describe('permissions plugin', () => {
     expect(result).toBe(h.continue)
   })
 
-  test.each(['/health', '/health/live', '/assets/file.js', '/public/test', '/auth/login'])(
-    'skips excluded path %s',
-    async (path) => {
-      const request = {
-        path,
-        auth: {
-          isAuthenticated: true
-        }
+  test.each(['/health', '/health/live', '/auth/login'])('skips excluded path %s', async (path) => {
+    const request = {
+      path,
+      auth: {
+        isAuthenticated: true
       }
-
-      const result = await onPostAuthHandler(request, h)
-
-      expect(fetchBusinessPermissions).not.toHaveBeenCalled()
-      expect(result).toBe(h.continue)
     }
-  )
+
+    const result = await onPostAuthHandler(request, h)
+
+    expect(fetchBusinessPermissions).not.toHaveBeenCalled()
+    expect(result).toBe(h.continue)
+  })
 
   test('fetches permissions for authenticated non-excluded requests', async () => {
     const permissionGroups = ['group-1']

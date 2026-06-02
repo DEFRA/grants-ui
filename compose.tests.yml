@@ -48,7 +48,7 @@ services:
     image: defradigital/woodland-grant-journey-tests
     pull_policy: always
     environment:
-      MAX_INSTANCES: 1
+      MAX_INSTANCES: 3
       NODE_EXTRA_CA_CERTS: /etc/ssl/certs/nginx.crt
       BASE_URL: https://grants-ui-proxy:4000
       BASE_BACKEND_URL: https://grants-ui-proxy:4001

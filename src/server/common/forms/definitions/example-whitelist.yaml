@@ -6,6 +6,8 @@ metadata:
   whitelistCrnEnvVar: EXAMPLE_WHITELIST_CRNS
   whitelistSbiEnvVar: EXAMPLE_WHITELIST_SBIS
   grantRedirectRules: null
+  permissions:
+    enforce: false
 pages:
   - title: Example Whitelist
     path: /start
