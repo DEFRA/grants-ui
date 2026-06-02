@@ -66,10 +66,13 @@ describe('MapSelectPageController', () => {
 
       await controller.handleGet(request, context, h)
 
-      expect(h.view).toHaveBeenCalledWith('map-select-parcel', expect.objectContaining({
-        multiSelect: false,
-        formAction: '/my-path'
-      }))
+      expect(h.view).toHaveBeenCalledWith(
+        'map-select-parcel',
+        expect.objectContaining({
+          multiSelect: false,
+          formAction: '/my-path'
+        })
+      )
     })
 
     it('passes multiSelect: true when configured', async () => {
@@ -78,9 +81,12 @@ describe('MapSelectPageController', () => {
 
       await controller.handleGet(makeRequest(), makeContext(), h)
 
-      expect(h.view).toHaveBeenCalledWith('map-select-parcel', expect.objectContaining({
-        multiSelect: true
-      }))
+      expect(h.view).toHaveBeenCalledWith(
+        'map-select-parcel',
+        expect.objectContaining({
+          multiSelect: true
+        })
+      )
     })
   })
 
@@ -91,9 +97,12 @@ describe('MapSelectPageController', () => {
 
       await controller.handlePost(makeRequest({}), makeContext(), h)
 
-      expect(h.view).toHaveBeenCalledWith('map-select-parcel', expect.objectContaining({
-        errors: 'Select a land parcel on the map to continue'
-      }))
+      expect(h.view).toHaveBeenCalledWith(
+        'map-select-parcel',
+        expect.objectContaining({
+          errors: 'Select a land parcel on the map to continue'
+        })
+      )
       expect(controller.setState).not.toHaveBeenCalled()
     })
 
@@ -103,9 +112,12 @@ describe('MapSelectPageController', () => {
 
       await controller.handlePost(makeRequest({}), makeContext(), h)
 
-      expect(h.view).toHaveBeenCalledWith('map-select-parcel', expect.objectContaining({
-        errors: 'Select at least one land parcel on the map to continue'
-      }))
+      expect(h.view).toHaveBeenCalledWith(
+        'map-select-parcel',
+        expect.objectContaining({
+          errors: 'Select at least one land parcel on the map to continue'
+        })
+      )
     })
 
     it('re-renders when landParcels is empty string', async () => {
@@ -143,11 +155,7 @@ describe('MapSelectPageController', () => {
 
       await controller.handlePost(makeRequest({ landParcels: 'SD7148-9160' }), makeContext(), h)
 
-      expect(controller.proceed).toHaveBeenCalledWith(
-        expect.anything(),
-        h,
-        '/next?parcelId=SD7148-9160'
-      )
+      expect(controller.proceed).toHaveBeenCalledWith(expect.anything(), h, '/next?parcelId=SD7148-9160')
     })
 
     it('URL-encodes the parcel ID in the redirect', async () => {
@@ -157,11 +165,7 @@ describe('MapSelectPageController', () => {
 
       await controller.handlePost(makeRequest({ landParcels: 'SD 71/48' }), makeContext(), h)
 
-      expect(controller.proceed).toHaveBeenCalledWith(
-        expect.anything(),
-        h,
-        '/next?parcelId=SD%2071%2F48'
-      )
+      expect(controller.proceed).toHaveBeenCalledWith(expect.anything(), h, '/next?parcelId=SD%2071%2F48')
     })
 
     it('handles array payload with one item', async () => {
@@ -182,11 +186,7 @@ describe('MapSelectPageController', () => {
       const controller = makeController({ multiSelect: true })
       const h = makeH()
 
-      await controller.handlePost(
-        makeRequest({ landParcels: ['SD7148-9160', 'SD7148-9161'] }),
-        makeContext(),
-        h
-      )
+      await controller.handlePost(makeRequest({ landParcels: ['SD7148-9160', 'SD7148-9161'] }), makeContext(), h)
 
       expect(controller.setState).toHaveBeenCalledWith(
         expect.anything(),
@@ -206,11 +206,7 @@ describe('MapSelectPageController', () => {
       controller.getNextPath = vi.fn().mockReturnValue('/next')
       const h = makeH()
 
-      await controller.handlePost(
-        makeRequest({ landParcels: ['SD7148-9160', 'SD7148-9161'] }),
-        makeContext(),
-        h
-      )
+      await controller.handlePost(makeRequest({ landParcels: ['SD7148-9160', 'SD7148-9161'] }), makeContext(), h)
 
       expect(controller.proceed).toHaveBeenCalledWith(expect.anything(), h, '/next')
     })

@@ -13,7 +13,9 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
    */
   constructor(model, pageDef) {
     super(model, pageDef)
-    const pageConfig = /** @type {Record<string, unknown>} */ (/** @type {{ config?: Record<string, unknown> }} */ (/** @type {unknown} */ (pageDef)).config ?? {})
+    const pageConfig = /** @type {Record<string, unknown>} */ (
+      /** @type {{ config?: Record<string, unknown> }} */ (/** @type {unknown} */ (pageDef)).config ?? {}
+    )
     this.multiSelect = Boolean(pageConfig.multiSelect)
   }
 
@@ -71,9 +73,10 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
     await this.setState(request, /** @type {FormSubmissionState} */ (/** @type {unknown} */ (newState)))
 
     const nextPath = this.getNextPath(context)
-    const redirect = !this.multiSelect && selectedParcelIds[0] && nextPath
-      ? `${nextPath}?parcelId=${encodeURIComponent(selectedParcelIds[0])}`
-      : nextPath
+    const redirect =
+      !this.multiSelect && selectedParcelIds[0] && nextPath
+        ? `${nextPath}?parcelId=${encodeURIComponent(selectedParcelIds[0])}`
+        : nextPath
 
     return this.proceed(request, h, redirect)
   }

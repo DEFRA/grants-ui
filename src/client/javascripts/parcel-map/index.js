@@ -97,7 +97,9 @@ class ParcelMap extends HTMLElement {
   }
 
   attributeChangedCallback() {
-    if (!this._connected) { return }
+    if (!this._connected) {
+      return
+    }
     if (this._state !== 'idle') {
       this._teardown()
       this._init()
@@ -341,7 +343,9 @@ class ParcelMap extends HTMLElement {
       if (multiSelect) {
         const wasSelected = selected.has(id)
         wasSelected ? selected.delete(id) : selected.add(id)
-        if (wasSelected && tooltip) { hideTooltip(tooltip) }
+        if (wasSelected && tooltip) {
+          hideTooltip(tooltip)
+        }
       } else {
         const alreadySelected = selected.has(id)
         selected.clear()
@@ -399,7 +403,6 @@ function buildSkeleton() {
   el.appendChild(label)
   return el
 }
-
 
 /**
  * MapLibre `match` expression mapping compound parcel ID → colour.

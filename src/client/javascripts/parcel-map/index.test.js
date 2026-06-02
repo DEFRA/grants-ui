@@ -34,10 +34,10 @@ function makeMlMap(overrides = {}) {
       listeners[key].push(handler)
     }),
     _emit(event, eventObj) {
-      (listeners[event] ?? []).forEach((fn) => fn(eventObj))
+      ;(listeners[event] ?? []).forEach((fn) => fn(eventObj))
     },
     _emitLayer(event, layer, eventObj) {
-      (listeners[`${event}:${layer}`] ?? []).forEach((fn) => fn(eventObj))
+      ;(listeners[`${event}:${layer}`] ?? []).forEach((fn) => fn(eventObj))
     },
     ...overrides
   }
@@ -187,7 +187,10 @@ describe('parcel-map web component', () => {
       const el = await mountElement()
       await waitForEvent(el, 'parcel-map:ready')
       expect(ml.fitBounds).toHaveBeenCalledWith(
-        [[-2.5, 51.4], [-2.3, 51.6]],
+        [
+          [-2.5, 51.4],
+          [-2.3, 51.6]
+        ],
         expect.objectContaining({ padding: 40, animate: false })
       )
     })
@@ -225,7 +228,7 @@ describe('parcel-map web component', () => {
       await waitForEvent(el, 'parcel-map:ready')
 
       const selectionEvent = waitForEvent(el, 'parcel-map:selection')
-      ml._emitLayer('click', 'parcels-fill', { features: [makeFeature('SD7148', '9160')] , lngLat: { lng: 0, lat: 0 } })
+      ml._emitLayer('click', 'parcels-fill', { features: [makeFeature('SD7148', '9160')], lngLat: { lng: 0, lat: 0 } })
       const e = await selectionEvent
       expect(e.detail.selectedIds).toEqual(['SD7148-9160'])
     })
@@ -300,7 +303,9 @@ describe('parcel-map web component', () => {
       await waitForEvent(el, 'parcel-map:ready')
 
       let fired = false
-      el.addEventListener('parcel-map:selection', () => { fired = true })
+      el.addEventListener('parcel-map:selection', () => {
+        fired = true
+      })
       ml._emitLayer('click', 'parcels-fill', { features: [], lngLat: { lng: 0, lat: 0 } })
       await Promise.resolve()
       expect(fired).toBe(false)

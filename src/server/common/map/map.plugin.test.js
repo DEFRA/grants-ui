@@ -40,7 +40,9 @@ function makeRequest(yarData = {}) {
     auth: { credentials: { sbi: '123456789' } },
     yar: {
       get: vi.fn((key) => store[key]),
-      set: vi.fn((key, val) => { store[key] = val })
+      set: vi.fn((key, val) => {
+        store[key] = val
+      })
     },
     params: {}
   }
@@ -76,14 +78,16 @@ describe('mapPlugin', () => {
 
       await parcelsHandler(request, h)
 
-      expect(h.response).toHaveBeenCalledWith(expect.objectContaining({
-        features: expect.arrayContaining([
-          expect.objectContaining({ id: 'SD7148-9160' }),
-          expect.objectContaining({ id: 'SD7148-9161' })
-        ]),
-        bbox: { minLng: -2.5, minLat: 51.4, maxLng: -2.3, maxLat: 51.6 },
-        tileUrl: '/land-grants/parcel-tiles/{z}/{x}/{y}'
-      }))
+      expect(h.response).toHaveBeenCalledWith(
+        expect.objectContaining({
+          features: expect.arrayContaining([
+            expect.objectContaining({ id: 'SD7148-9160' }),
+            expect.objectContaining({ id: 'SD7148-9161' })
+          ]),
+          bbox: { minLng: -2.5, minLat: 51.4, maxLng: -2.3, maxLat: 51.6 },
+          tileUrl: '/land-grants/parcel-tiles/{z}/{x}/{y}'
+        })
+      )
     })
 
     it('maps areaHa to null when area value is null', async () => {

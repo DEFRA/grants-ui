@@ -9,7 +9,7 @@ export const PARCEL_COLORS = [
   '#4c2c92', // govuk-purple
   '#005a30', // govuk-green
   '#28a197', // govuk-turquoise
-  '#b58840'  // govuk-yellow (accessible variant)
+  '#b58840' // govuk-yellow (accessible variant)
 ]
 
 export const LAYER_TEXT_SIZE = 11

@@ -29,7 +29,11 @@ export const mapPlugin = {
           let features = []
           try {
             const parcels = /** @type {HydratedParcel[]} */ (
-              await fetchParcels(/** @type {import('@defra/forms-engine-plugin/engine/types.js').AnyFormRequest} */ (/** @type {unknown} */ (request)))
+              await fetchParcels(
+                /** @type {import('@defra/forms-engine-plugin/engine/types.js').AnyFormRequest} */ (
+                  /** @type {unknown} */ (request)
+                )
+              )
             )
             features = parcels.map((p) => {
               const id = stringifyParcel(p)

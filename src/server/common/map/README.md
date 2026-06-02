@@ -8,11 +8,11 @@ The interactive land parcel selection map is a self-contained browser component 
 
 The system has three layers:
 
-| Layer | Location |
-|---|---|
-| **`<parcel-map>` web component** | `src/client/javascripts/parcel-map/` |
+| Layer                                             | Location                              |
+| ------------------------------------------------- | ------------------------------------- |
+| **`<parcel-map>` web component**                  | `src/client/javascripts/parcel-map/`  |
 | **Server-side routes** (parcels API + tile proxy) | `src/server/common/map/map.plugin.js` |
-| **Page controllers** | `src/server/common/map/` |
+| **Page controllers**                              | `src/server/common/map/`              |
 
 The component fetches the authenticated user's parcels from `/api/map/parcels`, renders them on a MapLibre GL map, and emits DOM events. The surrounding page decides what to do with those events — the component itself never touches form state.
 
@@ -117,8 +117,8 @@ Extends `SummaryPageController` (GOV.UK check-your-answers page). Uses the engin
 
 ### Attributes
 
-| Attribute | Values | Default |
-|---|---|---|
+| Attribute      | Values               | Default   |
+| -------------- | -------------------- | --------- |
 | `multi-select` | `"true"` / `"false"` | `"false"` |
 
 Height is set via CSS on the element itself — the component fills 100% of whatever container it is given:
@@ -129,11 +129,11 @@ Height is set via CSS on the element itself — the component fills 100% of what
 
 ### Dispatched events
 
-| Event | Detail | When |
-|---|---|---|
-| `parcel-map:ready` | — | Map and parcels loaded successfully |
-| `parcel-map:error` | `{ reason?: 'no-parcels' \| string }` | Map or parcels API failed |
-| `parcel-map:selection` | `{ selectedIds: string[] }` | User clicks a parcel |
+| Event                  | Detail                                | When                                |
+| ---------------------- | ------------------------------------- | ----------------------------------- |
+| `parcel-map:ready`     | —                                     | Map and parcels loaded successfully |
+| `parcel-map:error`     | `{ reason?: 'no-parcels' \| string }` | Map or parcels API failed           |
+| `parcel-map:selection` | `{ selectedIds: string[] }`           | User clicks a parcel                |
 
 All events bubble. The inline script in `map-select-parcel.html` is the canonical example of how to consume them.
 
@@ -152,7 +152,7 @@ The JS bundle is built by webpack into `.public/javascripts/parcel-map.js`. The 
 The `@defra/interactive-map` CSS must also be loaded. It is copied by webpack's CopyPlugin to `.public/stylesheets/interactive-map.css` and served via an explicit route in `serve-static-files.js`. The template loads it in `{% block head %}`:
 
 ```html
-<link rel="stylesheet" href="/public/stylesheets/interactive-map.css">
+<link rel="stylesheet" href="/public/stylesheets/interactive-map.css" />
 ```
 
 > **Note for Docker:** `webpack.config.js` is not volume-mounted. After changing it, run `npm run docker:rebuild && npm run docker:up` to rebuild the image.
@@ -183,11 +183,11 @@ Proxies MapLibre vector tile requests to the Land Grants API. Parcel IDs are rea
 
 ## Session state written by `MapSelectPageController`
 
-| Key | Type | Description |
-|---|---|---|
-| `selectedParcelId` | `string` | First (or only) selected parcel ID (single-select mode only) |
-| `selectedParcelIds` | `string[]` | All selected parcel IDs |
-| `selectedParcelsDisplay` | `string` | Comma-separated IDs, used by the summary page |
+| Key                      | Type       | Description                                                  |
+| ------------------------ | ---------- | ------------------------------------------------------------ |
+| `selectedParcelId`       | `string`   | First (or only) selected parcel ID (single-select mode only) |
+| `selectedParcelIds`      | `string[]` | All selected parcel IDs                                      |
+| `selectedParcelsDisplay` | `string`   | Comma-separated IDs, used by the summary page                |
 
 ---
 
