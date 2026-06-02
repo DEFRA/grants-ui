@@ -4,7 +4,7 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 vi.mock('@defra/interactive-map', () => ({ default: vi.fn() }))
 vi.mock('@defra/interactive-map/providers/maplibre', () => ({ default: vi.fn(() => ({})) }))
 import InteractiveMap from '@defra/interactive-map'
-import { LAYER_ID_FILL, LAYER_ID_OUTLINE, LAYER_ID_LABEL } from './config.js'
+import { LAYER_ID_FILL, LAYER_ID_OUTLINE, LAYER_ID_LABEL, EVENT_READY, EVENT_ERROR, EVENT_SELECTION } from './config.js'
 
 const PARCELS_RESPONSE = {
   features: [
@@ -106,14 +106,14 @@ describe('parcel-map web component', () => {
     it('dispatches parcel-map:ready when map and data load successfully', async () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
       const el = await mountElement()
-      await waitForEvent(el, 'parcel-map:ready')
+      await waitForEvent(el, EVENT_READY)
       expect(el._state).toBe('ready')
     })
 
     it('dispatches parcel-map:error and tears down when fetch fails', async () => {
       global.fetch = vi.fn().mockResolvedValue({ ok: false })
       const el = await mountElement()
-      await waitForEvent(el, 'parcel-map:error')
+      await waitForEvent(el, EVENT_ERROR)
       expect(el._state).toBe('idle')
       expect(el._mapInstance).toBeNull()
     })
@@ -132,14 +132,14 @@ describe('parcel-map web component', () => {
         })
       })
       const el = await mountElement()
-      await waitForEvent(el, 'parcel-map:error')
+      await waitForEvent(el, EVENT_ERROR)
       expect(el._state).toBe('idle')
     })
 
     it('teardown removes skeleton and map elements', async () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
       const el = await mountElement()
-      await waitForEvent(el, 'parcel-map:ready')
+      await waitForEvent(el, EVENT_READY)
       el._teardown()
       expect(el._skeleton).toBeNull()
       expect(el._mapEl).toBeNull()
@@ -149,9 +149,9 @@ describe('parcel-map web component', () => {
     it('re-initialises when multi-select attribute changes after ready', async () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
       const el = await mountElement()
-      await waitForEvent(el, 'parcel-map:ready')
+      await waitForEvent(el, EVENT_READY)
 
-      const readyAgain = waitForEvent(el, 'parcel-map:ready')
+      const readyAgain = waitForEvent(el, EVENT_READY)
       el.setAttribute('multi-select', 'true')
       await readyAgain
       expect(el._state).toBe('ready')
@@ -162,7 +162,7 @@ describe('parcel-map web component', () => {
     it('extracts parcelIds and metaIndex from features', async () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
       const el = await mountElement()
-      await waitForEvent(el, 'parcel-map:ready')
+      await waitForEvent(el, EVENT_READY)
 
       expect(ml.addSource).toHaveBeenCalledWith('parcels', expect.objectContaining({ type: 'vector' }))
     })
@@ -170,14 +170,14 @@ describe('parcel-map web component', () => {
     it('returns null when fetch throws', async () => {
       global.fetch = vi.fn().mockRejectedValue(new Error('network'))
       const el = await mountElement()
-      await waitForEvent(el, 'parcel-map:error')
+      await waitForEvent(el, EVENT_ERROR)
       expect(el._state).toBe('idle')
     })
 
     it('handles missing tileUrl gracefully — skips addSource', async () => {
       global.fetch = fetchOk({ ...PARCELS_RESPONSE, tileUrl: null })
       const el = await mountElement()
-      await waitForEvent(el, 'parcel-map:ready')
+      await waitForEvent(el, EVENT_READY)
       expect(ml.addSource).not.toHaveBeenCalled()
     })
   })
@@ -186,7 +186,7 @@ describe('parcel-map web component', () => {
     it('calls fitBounds when bbox is present', async () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
       const el = await mountElement()
-      await waitForEvent(el, 'parcel-map:ready')
+      await waitForEvent(el, EVENT_READY)
       expect(ml.fitBounds).toHaveBeenCalledWith(
         [
           [-2.5, 51.4],
@@ -199,14 +199,14 @@ describe('parcel-map web component', () => {
     it('does not call fitBounds when bbox is null', async () => {
       global.fetch = fetchOk({ ...PARCELS_RESPONSE, bbox: null })
       const el = await mountElement()
-      await waitForEvent(el, 'parcel-map:ready')
+      await waitForEvent(el, EVENT_READY)
       expect(ml.fitBounds).not.toHaveBeenCalled()
     })
 
     it('adds fill, outline and label layers', async () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
       const el = await mountElement()
-      await waitForEvent(el, 'parcel-map:ready')
+      await waitForEvent(el, EVENT_READY)
       const layerIds = ml.addLayer.mock.calls.map((c) => c[0].id)
       expect(layerIds).toContain(LAYER_ID_FILL)
       expect(layerIds).toContain(LAYER_ID_OUTLINE)
@@ -216,7 +216,7 @@ describe('parcel-map web component', () => {
     it('resolves relative tileUrl against location.origin', async () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
       const el = await mountElement()
-      await waitForEvent(el, 'parcel-map:ready')
+      await waitForEvent(el, EVENT_READY)
       const [, sourceSpec] = ml.addSource.mock.calls[0]
       expect(sourceSpec.tiles[0]).toBe(`${globalThis.location.origin}/land-grants/parcel-tiles/{z}/{x}/{y}`)
     })
@@ -226,9 +226,9 @@ describe('parcel-map web component', () => {
     it('dispatches parcel-map:selection with clicked parcel ID', async () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
       const el = await mountElement()
-      await waitForEvent(el, 'parcel-map:ready')
+      await waitForEvent(el, EVENT_READY)
 
-      const selectionEvent = waitForEvent(el, 'parcel-map:selection')
+      const selectionEvent = waitForEvent(el, EVENT_SELECTION)
       ml._emitLayer('click', LAYER_ID_FILL, { features: [makeFeature('SD7148', '9160')], lngLat: { lng: 0, lat: 0 } })
       const e = await selectionEvent
       expect(e.detail.selectedIds).toEqual(['SD7148-9160'])
@@ -237,15 +237,15 @@ describe('parcel-map web component', () => {
     it('deselects when the same parcel is clicked twice', async () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
       const el = await mountElement()
-      await waitForEvent(el, 'parcel-map:ready')
+      await waitForEvent(el, EVENT_READY)
 
       const clickPayload = { features: [makeFeature('SD7148', '9160')], lngLat: { lng: 0, lat: 0 } }
 
-      const first = waitForEvent(el, 'parcel-map:selection')
+      const first = waitForEvent(el, EVENT_SELECTION)
       ml._emitLayer('click', LAYER_ID_FILL, clickPayload)
       await first
 
-      const second = waitForEvent(el, 'parcel-map:selection')
+      const second = waitForEvent(el, EVENT_SELECTION)
       ml._emitLayer('click', LAYER_ID_FILL, clickPayload)
       const e = await second
       expect(e.detail.selectedIds).toEqual([])
@@ -254,13 +254,13 @@ describe('parcel-map web component', () => {
     it('replaces selection when a different parcel is clicked', async () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
       const el = await mountElement()
-      await waitForEvent(el, 'parcel-map:ready')
+      await waitForEvent(el, EVENT_READY)
 
-      const first = waitForEvent(el, 'parcel-map:selection')
+      const first = waitForEvent(el, EVENT_SELECTION)
       ml._emitLayer('click', LAYER_ID_FILL, { features: [makeFeature('SD7148', '9160')], lngLat: { lng: 0, lat: 0 } })
       await first
 
-      const second = waitForEvent(el, 'parcel-map:selection')
+      const second = waitForEvent(el, EVENT_SELECTION)
       ml._emitLayer('click', LAYER_ID_FILL, { features: [makeFeature('SD7148', '9161')], lngLat: { lng: 0, lat: 0 } })
       const e = await second
       expect(e.detail.selectedIds).toEqual(['SD7148-9161'])
@@ -269,14 +269,14 @@ describe('parcel-map web component', () => {
     it('clears selection when clicking empty map area', async () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
       const el = await mountElement()
-      await waitForEvent(el, 'parcel-map:ready')
+      await waitForEvent(el, EVENT_READY)
 
-      const first = waitForEvent(el, 'parcel-map:selection')
+      const first = waitForEvent(el, EVENT_SELECTION)
       ml._emitLayer('click', LAYER_ID_FILL, { features: [makeFeature('SD7148', '9160')], lngLat: { lng: 0, lat: 0 } })
       await first
 
       ml.queryRenderedFeatures.mockReturnValue([])
-      const cleared = waitForEvent(el, 'parcel-map:selection')
+      const cleared = waitForEvent(el, EVENT_SELECTION)
       ml._emit('click', { point: { x: 0, y: 0 } })
       const e = await cleared
       expect(e.detail.selectedIds).toEqual([])
@@ -285,9 +285,9 @@ describe('parcel-map web component', () => {
     it('calls setPaintProperty to highlight selected parcel', async () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
       const el = await mountElement()
-      await waitForEvent(el, 'parcel-map:ready')
+      await waitForEvent(el, EVENT_READY)
 
-      const first = waitForEvent(el, 'parcel-map:selection')
+      const first = waitForEvent(el, EVENT_SELECTION)
       ml._emitLayer('click', LAYER_ID_FILL, { features: [makeFeature('SD7148', '9160')], lngLat: { lng: 0, lat: 0 } })
       await first
 
@@ -297,10 +297,10 @@ describe('parcel-map web component', () => {
     it('ignores clicks with no feature', async () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
       const el = await mountElement()
-      await waitForEvent(el, 'parcel-map:ready')
+      await waitForEvent(el, EVENT_READY)
 
       let fired = false
-      el.addEventListener('parcel-map:selection', () => {
+      el.addEventListener(EVENT_SELECTION, () => {
         fired = true
       })
       ml._emitLayer('click', LAYER_ID_FILL, { features: [], lngLat: { lng: 0, lat: 0 } })
@@ -313,13 +313,13 @@ describe('parcel-map web component', () => {
     it('accumulates multiple selections', async () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
       const el = await mountElement({ 'multi-select': 'true' })
-      await waitForEvent(el, 'parcel-map:ready')
+      await waitForEvent(el, EVENT_READY)
 
-      const first = waitForEvent(el, 'parcel-map:selection')
+      const first = waitForEvent(el, EVENT_SELECTION)
       ml._emitLayer('click', LAYER_ID_FILL, { features: [makeFeature('SD7148', '9160')], lngLat: { lng: 0, lat: 0 } })
       await first
 
-      const second = waitForEvent(el, 'parcel-map:selection')
+      const second = waitForEvent(el, EVENT_SELECTION)
       ml._emitLayer('click', LAYER_ID_FILL, { features: [makeFeature('SD7148', '9161')], lngLat: { lng: 0, lat: 0 } })
       const e = await second
       expect(e.detail.selectedIds).toEqual(['SD7148-9160', 'SD7148-9161'])
@@ -328,15 +328,15 @@ describe('parcel-map web component', () => {
     it('removes a parcel when clicked again in multi-select', async () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
       const el = await mountElement({ 'multi-select': 'true' })
-      await waitForEvent(el, 'parcel-map:ready')
+      await waitForEvent(el, EVENT_READY)
 
       const clickPayload = { features: [makeFeature('SD7148', '9160')], lngLat: { lng: 0, lat: 0 } }
 
-      const first = waitForEvent(el, 'parcel-map:selection')
+      const first = waitForEvent(el, EVENT_SELECTION)
       ml._emitLayer('click', LAYER_ID_FILL, clickPayload)
       await first
 
-      const second = waitForEvent(el, 'parcel-map:selection')
+      const second = waitForEvent(el, EVENT_SELECTION)
       ml._emitLayer('click', LAYER_ID_FILL, clickPayload)
       const e = await second
       expect(e.detail.selectedIds).toEqual([])
@@ -347,9 +347,9 @@ describe('parcel-map web component', () => {
     it('renders parcel ID and area in tooltip on click', async () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
       const el = await mountElement()
-      await waitForEvent(el, 'parcel-map:ready')
+      await waitForEvent(el, EVENT_READY)
 
-      const sel = waitForEvent(el, 'parcel-map:selection')
+      const sel = waitForEvent(el, EVENT_SELECTION)
       ml._emitLayer('click', LAYER_ID_FILL, {
         features: [makeFeature('SD7148', '9160')],
         lngLat: { lng: 0, lat: 0 }
@@ -365,9 +365,9 @@ describe('parcel-map web component', () => {
     it('shows "Unknown" area when areaHa is null', async () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
       const el = await mountElement()
-      await waitForEvent(el, 'parcel-map:ready')
+      await waitForEvent(el, EVENT_READY)
 
-      const sel = waitForEvent(el, 'parcel-map:selection')
+      const sel = waitForEvent(el, EVENT_SELECTION)
       ml._emitLayer('click', LAYER_ID_FILL, {
         features: [makeFeature('SD7148', '9161')],
         lngLat: { lng: 0, lat: 0 }

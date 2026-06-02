@@ -18,7 +18,10 @@ import {
   MAP_DEFAULT_HEIGHT,
   TOOLTIP_OFFSET_X,
   TOOLTIP_MAX_WIDTH,
-  TOOLTIP_FALLBACK_MAP_WIDTH
+  TOOLTIP_FALLBACK_MAP_WIDTH,
+  EVENT_READY,
+  EVENT_ERROR,
+  EVENT_SELECTION
 } from './config.js'
 
 /**
@@ -150,20 +153,20 @@ class ParcelMap extends HTMLElement {
     if (!ml || !data) {
       this._state = 'error'
       this._teardown()
-      this.dispatchEvent(new CustomEvent('parcel-map:error', { bubbles: true }))
+      this.dispatchEvent(new CustomEvent(EVENT_ERROR, { bubbles: true }))
       return
     }
 
     const colorExpr = buildColorExpr(data.parcelIds)
     this._addParcelsToMap(ml, data, colorExpr)
     const tooltip = this._attachTooltip(ml, data.metaIndex)
-    this._attachSelectionHandler(ml, multiSelect, tooltip, colorExpr)
+    this._attachSelectionHandler(ml, multiSelect, tooltip)
 
     this._state = 'ready'
     this._skeleton?.remove()
     this._skeleton = null
 
-    this.dispatchEvent(new CustomEvent('parcel-map:ready', { bubbles: true }))
+    this.dispatchEvent(new CustomEvent(EVENT_READY, { bubbles: true }))
   }
 
   /** @returns {Promise<MLMap | null>} */
@@ -327,9 +330,8 @@ class ParcelMap extends HTMLElement {
    * @param {MLMap} ml
    * @param {boolean} multiSelect
    * @param {HTMLElement | undefined} tooltip
-   * @param {unknown[]} colorExpr
    */
-  _attachSelectionHandler(ml, multiSelect, tooltip, colorExpr) {
+  _attachSelectionHandler(ml, multiSelect, tooltip) {
     /** @type {Set<string>} */
     const selected = new Set()
     const idExpr = ['concat', ['get', 'sheet_id'], '-', ['get', 'parcel_id']]
@@ -368,13 +370,15 @@ class ParcelMap extends HTMLElement {
           selected.add(id)
         } else if (tooltip) {
           hideTooltip(tooltip)
+        } else {
+          // parcel deselected but no tooltip to hide
         }
       }
 
       applySelection()
 
       this.dispatchEvent(
-        new CustomEvent('parcel-map:selection', {
+        new CustomEvent(EVENT_SELECTION, {
           bubbles: true,
           detail: { selectedIds: [...selected] }
         })
@@ -386,7 +390,7 @@ class ParcelMap extends HTMLElement {
         selected.clear()
         applySelection()
         this.dispatchEvent(
-          new CustomEvent('parcel-map:selection', {
+          new CustomEvent(EVENT_SELECTION, {
             bubbles: true,
             detail: { selectedIds: [] }
           })
@@ -440,8 +444,8 @@ function buildColorExpr(ids) {
  */
 function resolveFeatureId(feature) {
   const p = /** @type {ParcelProperties} */ (feature.properties ?? {})
-  const sheet = p.sheet_id == null ? '' : String(p.sheet_id)
-  const parcel = p.parcel_id == null ? '' : String(p.parcel_id)
+  const sheet = typeof p.sheet_id === 'string' || typeof p.sheet_id === 'number' ? String(p.sheet_id) : ''
+  const parcel = typeof p.parcel_id === 'string' || typeof p.parcel_id === 'number' ? String(p.parcel_id) : ''
   return sheet && parcel ? `${sheet}-${parcel}` : ''
 }
 

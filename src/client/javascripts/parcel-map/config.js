@@ -26,6 +26,10 @@ export const TOOLTIP_OFFSET_X = 12
 export const TOOLTIP_MAX_WIDTH = 248
 export const TOOLTIP_FALLBACK_MAP_WIDTH = 500
 
+export const EVENT_READY = 'parcel-map:ready'
+export const EVENT_ERROR = 'parcel-map:error'
+export const EVENT_SELECTION = 'parcel-map:selection'
+
 export const TOOLTIP_STYLES = [
   'position:absolute',
   'z-index:9999',

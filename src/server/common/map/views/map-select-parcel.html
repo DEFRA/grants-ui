@@ -65,7 +65,7 @@
   <script type="module" nonce="{{ cspNonce }}" src="/public/javascripts/parcel-map.js"></script>
   <script nonce="{{ cspNonce }}">
     (function () {
-      var multiSelect = {% if multiSelect %}true{% else %}false{% endif %};
+      var multiSelect = document.getElementById('parcel-map').getAttribute('multi-select') === 'true';
 
       var hint = document.getElementById('map-hint');
       if (hint) { hint.hidden = false; }

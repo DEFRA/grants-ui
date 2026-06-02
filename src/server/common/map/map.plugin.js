@@ -2,6 +2,7 @@ import { config } from '~/src/config/config.js'
 import { createApiHeadersForLandGrantsBackend } from '~/src/server/common/helpers/auth/backend-auth-helper.js'
 import { fetchParcels, fetchParcelTileLocation } from '~/src/server/land-grants/services/land-grants.service.js'
 import { stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
+import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
 
@@ -49,7 +50,7 @@ export const mapPlugin = {
               }
             })
           } catch {
-            return h.response({ error: 'unavailable' }).code(503)
+            return h.response({ error: 'unavailable' }).code(statusCodes.serviceUnavailable)
           }
 
           const parcelIds = features.map((f) => f.id)
@@ -58,7 +59,7 @@ export const mapPlugin = {
           request.yar.set('mapParcelIds', parcelIds)
           const tileUrl = parcelIds.length > 0 ? '/land-grants/parcel-tiles/{z}/{x}/{y}' : null
 
-          return h.response({ features, bbox, tileUrl }).code(200)
+          return h.response({ features, bbox, tileUrl }).code(statusCodes.ok)
         }
       })
 
@@ -86,7 +87,7 @@ export const mapPlugin = {
           }
 
           const buffer = await response.arrayBuffer()
-          return h.response(Buffer.from(buffer)).code(200).type('application/x-protobuf')
+          return h.response(Buffer.from(buffer)).code(statusCodes.ok).type('application/x-protobuf')
         }
       })
     }
