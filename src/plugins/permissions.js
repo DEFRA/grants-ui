@@ -1,9 +1,9 @@
 import { fetchBusinessPermissions } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import { can } from '~/src/server/common/helpers/permissions/can.js'
-const EXCLUDED_PATHS = ['/health', '/assets', '/public', '/auth']
+const EXCLUDED_PATHS = ['/health', '/auth']
 
 function shouldSkip(request) {
-  return EXCLUDED_PATHS.some((path) => request.path.includes(path))
+  return EXCLUDED_PATHS.some((path) => request.path === path || request.path.startsWith(`${path}/`))
 }
 
 export default {
