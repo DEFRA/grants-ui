@@ -67,17 +67,17 @@ const TEST_METHODS = {
   POST: 'POST'
 }
 
-function assertLogCode(category, logCodeName, expectedLevel, testParams, expectedMessage) {
-  const actualName = logCodeName.split(' ')[0]
-  const logCode = LogCodes[category][actualName]
-  expect(logCode.level).toBe(expectedLevel)
-  expect(typeof logCode.messageFunc).toBe('function')
-  expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
-}
+const testLogCodes = (category, cases) =>
+  it.each(cases)('should have valid %s log code', (name, expectedLevel, testParams, expectedMessage) => {
+    const logCode = LogCodes[category][name.split(' ')[0]]
+    expect(logCode.level).toBe(expectedLevel)
+    expect(typeof logCode.messageFunc).toBe('function')
+    expect(logCode.messageFunc(testParams)).toBe(expectedMessage)
+  })
 
 describe('LogCodes', () => {
   describe('AUTH log codes', () => {
-    it.each([
+    testLogCodes('AUTH', [
       [
         'SIGN_IN_ATTEMPT',
         'info',
@@ -150,9 +150,7 @@ describe('LogCodes', () => {
         { userId: TEST_USER_IDS.DEFAULT, errorMessage: TEST_ERRORS.INVALID_CREDENTIALS },
         `Authentication error for user=${TEST_USER_IDS.DEFAULT}: ${TEST_ERRORS.INVALID_CREDENTIALS}`
       ]
-    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      assertLogCode('AUTH', logCodeName, expectedLevel, testParams, expectedMessage)
-    })
+    ])
 
     it('should have valid AUTH_DEBUG log code', () => {
       const logCode = LogCodes.AUTH.AUTH_DEBUG
@@ -178,7 +176,7 @@ describe('LogCodes', () => {
       expect(result).toContain(`authError=${TEST_ERRORS.NO_TOKEN}`)
     })
 
-    it.each([
+    testLogCodes('AUTH', [
       [
         'WHITELIST_ACCESS_GRANTED',
         'info',
@@ -252,13 +250,11 @@ describe('LogCodes', () => {
         { path: TEST_PATHS.EXAMPLE_GRANT },
         `Whitelist access denied to path=${TEST_PATHS.EXAMPLE_GRANT}: SBI unknown passed but CRN unknown failed validation`
       ]
-    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      assertLogCode('AUTH', logCodeName, expectedLevel, testParams, expectedMessage)
-    })
+    ])
   })
 
   describe('FORMS log codes', () => {
-    it.each([
+    testLogCodes('FORMS', [
       [
         'FORM_LOAD',
         'info',
@@ -319,13 +315,11 @@ describe('LogCodes', () => {
         { controller: 'DeclarationController', message: 'Resolved slug from context' },
         'DeclarationController: Resolved slug from context'
       ]
-    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      assertLogCode('FORMS', logCodeName, expectedLevel, testParams, expectedMessage)
-    })
+    ])
   })
 
   describe('SUBMISSION log codes', () => {
-    it.each([
+    testLogCodes('SUBMISSION', [
       [
         'SUBMISSION_SUCCESS',
         'info',
@@ -411,9 +405,7 @@ describe('LogCodes', () => {
         { controller: 'DeclarationController', redirectPath: '/confirmation' },
         'DeclarationController: Redirecting to /confirmation'
       ]
-    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      assertLogCode('SUBMISSION', logCodeName, expectedLevel, testParams, expectedMessage)
-    })
+    ])
 
     it('should have valid SUBMISSION_PAYLOAD_LOG log code', () => {
       const logCode = LogCodes.SUBMISSION.SUBMISSION_PAYLOAD_LOG
@@ -427,7 +419,7 @@ describe('LogCodes', () => {
   })
 
   describe('DECLARATION log codes', () => {
-    it.each([
+    testLogCodes('DECLARATION', [
       [
         'DECLARATION_LOAD',
         'info',
@@ -446,13 +438,11 @@ describe('LogCodes', () => {
         { userId: TEST_USER_IDS.DEFAULT, errorMessage: TEST_ERRORS.PROCESSING_FAILED },
         `Declaration processing error for user=${TEST_USER_IDS.DEFAULT}: ${TEST_ERRORS.PROCESSING_FAILED}`
       ]
-    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      assertLogCode('DECLARATION', logCodeName, expectedLevel, testParams, expectedMessage)
-    })
+    ])
   })
 
   describe('CONFIRMATION log codes', () => {
-    it.each([
+    testLogCodes('CONFIRMATION', [
       [
         'CONFIRMATION_LOAD',
         'info',
@@ -477,13 +467,11 @@ describe('LogCodes', () => {
         { controller: 'ConfirmationController', referenceNumber: TEST_REFERENCE_NUMBERS.REF_123 },
         `ConfirmationController: Retrieved submitted status for referenceNumber=${TEST_REFERENCE_NUMBERS.REF_123}`
       ]
-    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      assertLogCode('CONFIRMATION', logCodeName, expectedLevel, testParams, expectedMessage)
-    })
+    ])
   })
 
   describe('LAND_GRANTS log codes', () => {
-    it.each([
+    testLogCodes('LAND_GRANTS', [
       [
         'LAND_GRANT_APPLICATION_STARTED',
         'info',
@@ -563,13 +551,11 @@ describe('LogCodes', () => {
         { sbi: TEST_SBI.DEFAULT, missingFields: ['email'] },
         `Missing farm contact details for sbi: ${TEST_SBI.DEFAULT} | fields: email`
       ]
-    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      assertLogCode('LAND_GRANTS', logCodeName, expectedLevel, testParams, expectedMessage)
-    })
+    ])
   })
 
   describe('AGREEMENTS log codes', () => {
-    it.each([
+    testLogCodes('AGREEMENTS', [
       [
         'AGREEMENT_LOAD',
         'info',
@@ -589,13 +575,11 @@ describe('LogCodes', () => {
         `Agreement processing error for user=${TEST_USER_IDS.DEFAULT}: ${TEST_ERRORS.PROCESSING_FAILED}`
       ],
       ['PROXY_RESPONSE_ERROR', 'error', {}, 'Proxy response is undefined. Possible upstream error or misconfiguration.']
-    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      assertLogCode('AGREEMENTS', logCodeName, expectedLevel, testParams, expectedMessage)
-    })
+    ])
   })
 
   describe('APPLICATION_LOCKS log codes', () => {
-    it.each([
+    testLogCodes('APPLICATION_LOCKS', [
       [
         'RELEASE_SKIPPED',
         'debug',
@@ -626,39 +610,33 @@ describe('LogCodes', () => {
         { ownerId: 'session-abc', errorName: 'TimeoutError', errorMessage: 'connection lost' },
         'Failed to release application locks | ownerId=session-abc | errorName=TimeoutError | errorMessage=connection lost'
       ]
-    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      assertLogCode('APPLICATION_LOCKS', logCodeName, expectedLevel, testParams, expectedMessage)
-    })
+    ])
   })
 
   describe('WOODLAND log codes', () => {
-    it.each([
+    testLogCodes('WOODLAND', [
       [
         'VALIDATE_ERROR',
         'error',
         { errorMessage: 'Invalid woodland data' },
         'Woodland validation error: Invalid woodland data'
       ]
-    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      assertLogCode('WOODLAND', logCodeName, expectedLevel, testParams, expectedMessage)
-    })
+    ])
   })
 
   describe('COOKIES log codes', () => {
-    it.each([
+    testLogCodes('COOKIES', [
       [
         'PAGE_LOAD',
         'info',
         { returnUrl: '/dashboard', referer: 'http://example.com' },
         'Cookies page loaded: returnUrl=/dashboard, referer=http://example.com'
       ]
-    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      assertLogCode('COOKIES', logCodeName, expectedLevel, testParams, expectedMessage)
-    })
+    ])
   })
 
   describe('RESOURCE_NOT_FOUND log codes', () => {
-    it.each([
+    testLogCodes('RESOURCE_NOT_FOUND', [
       [
         'FORM_NOT_FOUND',
         'info',
@@ -696,13 +674,11 @@ describe('LogCodes', () => {
         { path: TEST_PATHS.TEST_PATH },
         `Page not found: path=${TEST_PATHS.TEST_PATH}, userId=anonymous, sbi=unknown, referer=none, userAgent=unknown`
       ]
-    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      assertLogCode('RESOURCE_NOT_FOUND', logCodeName, expectedLevel, testParams, expectedMessage)
-    })
+    ])
   })
 
   describe('PRINT_APPLICATION log codes', () => {
-    it.each([
+    testLogCodes('PRINT_APPLICATION', [
       [
         'SUCCESS',
         'info',
@@ -715,13 +691,11 @@ describe('LogCodes', () => {
         { userId: TEST_USER_IDS.DEFAULT, slug: 'test-slug', errorMessage: TEST_ERRORS.PROCESSING_FAILED },
         `Print application error for user=${TEST_USER_IDS.DEFAULT}, slug=test-slug: ${TEST_ERRORS.PROCESSING_FAILED}`
       ]
-    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      assertLogCode('PRINT_APPLICATION', logCodeName, expectedLevel, testParams, expectedMessage)
-    })
+    ])
   })
 
   describe('PERMISSIONS log codes', () => {
-    it.each([
+    testLogCodes('PERMISSIONS', [
       [
         'BYPASSED',
         'info',
@@ -758,13 +732,11 @@ describe('LogCodes', () => {
         },
         `Permission check failed for grantCode=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}, permission=submit, userId=${TEST_USER_IDS.DEFAULT}, authorised=false, slug=test-slug`
       ]
-    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      assertLogCode('PERMISSIONS', logCodeName, expectedLevel, testParams, expectedMessage)
-    })
+    ])
   })
 
   describe('SYSTEM log codes', () => {
-    it.each([
+    testLogCodes('SYSTEM', [
       [
         'SERVER_ERROR',
         'error',
@@ -1079,9 +1051,7 @@ describe('LogCodes', () => {
         {},
         'ensureUpdateDetailsPage: model.pages is empty for grantCode=unknown — pages may not have been initialised yet. If the forms engine has changed to async page initialisation, the queueMicrotask timing assumption no longer holds.'
       ]
-    ])('should have valid %s log code', (logCodeName, expectedLevel, testParams, expectedMessage) => {
-      assertLogCode('SYSTEM', logCodeName, expectedLevel, testParams, expectedMessage)
-    })
+    ])
 
     it('should handle EXTERNAL_API_CALL_DEBUG with unknown identity', () => {
       const logCode = LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG
@@ -1110,6 +1080,28 @@ describe('LogCodes', () => {
       expect(result).toContain('isBuilt=true')
       expect(result).toContain('pathsResolved=2')
     })
+  })
+
+  describe('AUDIT log codes', () => {
+    testLogCodes('AUDIT', [
+      [
+        'EVENT_PUBLISHED',
+        'info',
+        {
+          messageId: 'mid-123',
+          entity: 'application',
+          action: 'read',
+          entityid: TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH
+        },
+        `Audit event published: messageId=mid-123, entity=application, action=read, entityid=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}`
+      ],
+      [
+        'EVENT_PUBLISH_FAILED',
+        'error',
+        { entityid: TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH, errorMessage: TEST_ERRORS.NETWORK_ERROR },
+        `Failed to publish audit event for entityid=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}: ${TEST_ERRORS.NETWORK_ERROR}`
+      ]
+    ])
   })
 
   describe('validateLogCodes', () => {

@@ -38,6 +38,22 @@ aws --endpoint-url=http://localhost:4566 s3 mb s3://configs-bucket
 #    }'
 
 #
+# FCP Audit Service
+#
+
+# FCP Audit events topic (matches AUDIT_SNS_TOPIC_ARN default in compose.yml)
+aws --endpoint-url=http://localhost:4566 sns create-topic --name fcp_audit_events
+
+# Local stand-in for the FCP Audit service's SQS queue, subscribed to our topic so
+# published audit events can be inspected locally. In deployed envs the real FCP
+# Audit service requests that its `fcp_audit` queue be subscribed to our topic.
+aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name fcp_audit
+aws --endpoint-url=http://localhost:4566 sns subscribe \
+  --topic-arn "arn:aws:sns:eu-west-2:000000000000:fcp_audit_events" \
+  --protocol sqs --attributes RawMessageDelivery=true \
+  --notification-endpoint "arn:aws:sqs:eu-west-2:000000000000:fcp_audit"
+
+#
 # Forms Audit Service
 #
 
