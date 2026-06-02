@@ -2,6 +2,8 @@ import { getTaskListPath } from '~/src/server/task-list/task-list.helper.js'
 import { ApplicationStatus } from '../../constants/application-status.js'
 import { getPermissionResource, getRequiredPermission } from '../../helpers/permissions/page-permissions.js'
 import { forbidden } from '@hapi/boom'
+import { logPermissionEvent } from '../../helpers/permissions/permission-logger.js'
+import { getGrantCode } from '../../helpers/grant-code.js'
 
 const VIEW_ONLY_ALLOWED_PATHS = ['confirmation', 'print-submitted-application']
 
@@ -114,8 +116,16 @@ export function enforcePagePermission(request, h, context) {
     (request.app.model?.def?.metadata)
 
   const config = metadata?.permissions
+  const grantCode = getGrantCode(request)
 
   if (config?.enforce === false) {
+    logPermissionEvent({
+      request,
+      grantCode,
+      permission: 'n/a',
+      enforcementEnabled: false,
+      authorised: true
+    })
     return h.continue
   }
 
@@ -123,18 +133,46 @@ export function enforcePagePermission(request, h, context) {
 
   if (isViewOnlyUser(request, resource)) {
     if (isSubmittedApplication(context) && isAllowedViewOnlyPath(request.params.path)) {
+      logPermissionEvent({
+        request,
+        grantCode,
+        permission: 'view',
+        enforcementEnabled: true,
+        authorised: true
+      })
       return h.continue
     }
+    logPermissionEvent({
+      request,
+      grantCode,
+      permission: 'view',
+      enforcementEnabled: true,
+      authorised: false
+    })
     throw forbidden('Insufficient permissions')
   }
 
   const requiredPermission = getRequiredPermission(request)
 
   if (request.can(requiredPermission, resource)) {
+    logPermissionEvent({
+      request,
+      grantCode,
+      permission: requiredPermission,
+      enforcementEnabled: true,
+      authorised: true
+    })
     return h.continue
   }
 
   if (isCannotSubmitUser(request, requiredPermission, resource)) {
+    logPermissionEvent({
+      request,
+      grantCode,
+      permission: requiredPermission,
+      enforcementEnabled: true,
+      authorised: false
+    })
     const basePath = request.params.slug ? `/${request.params.slug}` : ''
     const model = request.app.model
     if (!model) {
@@ -144,6 +182,14 @@ export function enforcePagePermission(request, h, context) {
     const redirectUrl = returnUrl ? `/cannot-submit?returnUrl=${encodeURIComponent(returnUrl)}` : '/cannot-submit'
     return h.redirect(redirectUrl).takeover()
   }
+
+  logPermissionEvent({
+    request,
+    grantCode,
+    permission: requiredPermission,
+    enforcementEnabled: true,
+    authorised: false
+  })
 
   throw forbidden('Insufficient permissions')
 }
