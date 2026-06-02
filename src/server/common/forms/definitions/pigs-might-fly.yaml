@@ -4,6 +4,8 @@ metadata:
   enabledInProd: false
   supportEmail: support@defra.gov.uk
   grantRedirectRules: null
+  permissions:
+    enforce: false
   confirmationContent:
     html: >
       <h2 class="govuk-heading-m">What happens next</h2>

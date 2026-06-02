@@ -31,10 +31,10 @@
 //    analytics, GA cookies were set, but then the consent cookie expired
 //    or was cleared. On the next page load, the banner would reappear
 //    (confirmed: false) but GA cookies would still exist. If the banner
-//    is showing and no GTM script is loaded, we proactively delete any
-//    leftover GA cookies.
+//    is absent and the consent cookie is not set to true, we proactively
+//    delete any leftover GA cookies.
 
-import { deleteGoogleAnalyticsCookies, loadGoogleAnalytics } from '../../shared/cookie-utils.js'
+import { deleteGoogleAnalyticsCookies, getConsent, loadGoogleAnalytics } from '../../shared/cookie-utils.js'
 
 const HTTP_2XX_RANGE_START = 200
 const HTTP_2XX_RANGE_END = 299
@@ -52,8 +52,8 @@ export const initCookieConsent = () => {
 }
 
 // Handle edge case: GA cookies exist but consent was lost.
-// If the banner is showing (no consent recorded) but no GTM script
-// is loaded, delete any orphaned GA cookies.
+// If no consent cookie is recorded and no banner is showing,
+// delete any orphaned GA cookies.
 const cleanupStaleCookies = () => {
   const cookieContainer = document.querySelector('.js-cookies-container')
 
@@ -63,12 +63,14 @@ const cleanupStaleCookies = () => {
     return
   }
 
-  // If GTM isn't loaded but GA cookies exist, they're stale — remove them
-  const gtmScript = document.querySelector('script[src*="googletagmanager.com/gtm.js"]')
-
-  if (!gtmScript) {
-    deleteGoogleAnalyticsCookies()
+  // If the user has consented, GA cookies are legitimate — don't delete them
+  const cookieName = 'cookie_consent'
+  if (getConsent(cookieName)) {
+    return
   }
+
+  // No consent recorded and no banner showing — GA cookies are stale, remove them
+  deleteGoogleAnalyticsCookies()
 }
 
 // Wire up event listeners for the cookie banner buttons.

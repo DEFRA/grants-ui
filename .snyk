@@ -21,3 +21,7 @@ ignore:
     - '*':
         reason: 'Fix version 4.18.0 is deprecated — no viable upgrade path available'
         expires: '2026-07-01'
+  'SNYK-JS-POSTCSSSELECTORPARSER-16873882':
+    - '*':
+        reason: 'No fix available — build-time only, not exposed at runtime. Monitor for upstream patch.'
+        expires: '2026-07-02'

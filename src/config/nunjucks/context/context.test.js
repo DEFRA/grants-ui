@@ -476,6 +476,22 @@ describe('context', () => {
       expect(contextResult.cookieBannerConfig.messages[0].actions).toHaveLength(3)
     })
 
+    test('includes returnUrl in cookieBannerConfig data-cookie-policy-url when request has a url', async () => {
+      setupManifestSuccess()
+
+      const requestWithUrl = {
+        ...mockSimpleRequest({ path: '/woodland/task-list' }),
+        url: { pathname: '/woodland/task-list', search: '', hash: '' }
+      }
+
+      const contextImport = await importContext()
+      const contextResult = await contextImport.context(requestWithUrl)
+
+      const expectedUrl = '/cookies?returnUrl=%2Fwoodland%2Ftask-list'
+      expect(contextResult.cookiePolicyUrl).toBe(expectedUrl)
+      expect(contextResult.cookieBannerConfig.attributes['data-cookie-policy-url']).toBe(expectedUrl)
+    })
+
     test('cookieBannerNoscriptConfig is no longer in context (unified banner)', async () => {
       setupManifestSuccess()
 
