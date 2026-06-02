@@ -34,7 +34,6 @@
     "docker:landgrants:journey-runner:up": "docker compose -f compose.yml -f compose.land-grants.yml -f compose.journey-runner.yml up -d",
     "docker:landgrants:journey-runner:down": "docker compose -f compose.yml -f compose.land-grants.yml -f compose.journey-runner.yml down --remove-orphans",
     "docker:rebuild": "docker compose build",
-    "audit:up": "npm run docker:up",
     "audit:logs": "docker compose logs grants-ui | grep -i audit",
     "audit:queue": "docker compose exec localstack awslocal sqs receive-message --queue-url http://localhost:4566/000000000000/fcp_audit",
     "audit:test": "vitest run src/server/common/helpers/audit",
