@@ -9,7 +9,16 @@ import {
   PARCEL_COLORS,
   LAYER_TEXT_SIZE,
   LAYER_TEXT_HALO_WIDTH,
-  TOOLTIP_STYLES
+  TOOLTIP_STYLES,
+  LAYER_ID_FILL,
+  LAYER_ID_OUTLINE,
+  LAYER_ID_LABEL,
+  FILL_OPACITY_DEFAULT,
+  FILL_OPACITY_SELECTED,
+  MAP_DEFAULT_HEIGHT,
+  TOOLTIP_OFFSET_X,
+  TOOLTIP_MAX_WIDTH,
+  TOOLTIP_FALLBACK_MAP_WIDTH
 } from './config.js'
 
 /**
@@ -32,17 +41,17 @@ function buildParcelLayers(colorExpr, sourceLayer) {
   const src = sourceLayer ? { 'source-layer': sourceLayer } : {}
   return {
     fill: {
-      id: 'parcels-fill',
+      id: LAYER_ID_FILL,
       type: 'fill',
       source: 'parcels',
       ...src,
       paint: {
         'fill-color': colorExpr,
-        'fill-opacity': 0.2
+        'fill-opacity': FILL_OPACITY_DEFAULT
       }
     },
     outline: {
-      id: 'parcels-outline',
+      id: LAYER_ID_OUTLINE,
       type: 'line',
       source: 'parcels',
       ...src,
@@ -52,7 +61,7 @@ function buildParcelLayers(colorExpr, sourceLayer) {
       }
     },
     label: {
-      id: 'parcels-label',
+      id: LAYER_ID_LABEL,
       type: 'symbol',
       source: 'parcels',
       ...src,
@@ -164,7 +173,7 @@ class ParcelMap extends HTMLElement {
       wrapper.style.cssText = 'position:relative;width:100%;height:100%'
 
       const mapEl = /** @type {HTMLDivElement} */ (document.createElement('div'))
-      mapEl.id = `parcel-map-${Math.random().toString(36).slice(2)}`
+      mapEl.id = `parcel-map-${crypto.randomUUID()}`
       mapEl.style.cssText = 'width:100%;height:100%'
       wrapper.appendChild(mapEl)
       this._mapEl = mapEl
@@ -183,7 +192,7 @@ class ParcelMap extends HTMLElement {
 
       const map = new InteractiveMap(mapEl.id, {
         behaviour: 'inline',
-        containerHeight: this.style.height || '500px',
+        containerHeight: this.style.height || MAP_DEFAULT_HEIGHT,
         mapProvider: maplibreProvider(),
         mapStyle: { url: MAP_STYLE_URL, attribution: MAP_STYLE_ATTRIBUTION }
       })
@@ -278,7 +287,7 @@ class ParcelMap extends HTMLElement {
   _attachTooltip(ml, metaIndex) {
     const wrapper = this._mapEl?.parentElement
     if (!wrapper) {
-      return
+      return undefined
     }
 
     const tooltip = document.createElement('div')
@@ -287,7 +296,7 @@ class ParcelMap extends HTMLElement {
     tooltip.style.cssText = TOOLTIP_STYLES
     wrapper.appendChild(tooltip)
 
-    ml.on('click', 'parcels-fill', (e) => {
+    ml.on('click', LAYER_ID_FILL, (e) => {
       const feature = e.features?.[0]
       if (!feature) {
         return
@@ -299,15 +308,15 @@ class ParcelMap extends HTMLElement {
     })
 
     ml.on('click', (e) => {
-      if (ml.getLayer('parcels-fill') && ml.queryRenderedFeatures(e.point, { layers: ['parcels-fill'] }).length === 0) {
+      if (ml.getLayer(LAYER_ID_FILL) && ml.queryRenderedFeatures(e.point, { layers: [LAYER_ID_FILL] }).length === 0) {
         hideTooltip(tooltip)
       }
     })
 
-    ml.on('mouseenter', 'parcels-fill', () => {
+    ml.on('mouseenter', LAYER_ID_FILL, () => {
       ml.getCanvas().style.cursor = 'pointer'
     })
-    ml.on('mouseleave', 'parcels-fill', () => {
+    ml.on('mouseleave', LAYER_ID_FILL, () => {
       ml.getCanvas().style.cursor = ''
     })
 
@@ -327,10 +336,10 @@ class ParcelMap extends HTMLElement {
 
     const applySelection = () => {
       const matchList = selected.size > 0 ? [...selected] : ['__none__']
-      ml.setPaintProperty('parcels-fill', 'fill-opacity', ['match', idExpr, matchList, 0.5, 0.2])
+      ml.setPaintProperty(LAYER_ID_FILL, 'fill-opacity', ['match', idExpr, matchList, FILL_OPACITY_SELECTED, FILL_OPACITY_DEFAULT])
     }
 
-    ml.on('click', 'parcels-fill', (e) => {
+    ml.on('click', LAYER_ID_FILL, (e) => {
       const feature = e.features?.[0]
       if (!feature) {
         return
@@ -367,7 +376,7 @@ class ParcelMap extends HTMLElement {
     })
 
     ml.on('click', (e) => {
-      if (ml.getLayer('parcels-fill') && ml.queryRenderedFeatures(e.point, { layers: ['parcels-fill'] }).length === 0) {
+      if (ml.getLayer(LAYER_ID_FILL) && ml.queryRenderedFeatures(e.point, { layers: [LAYER_ID_FILL] }).length === 0) {
         selected.clear()
         applySelection()
         this.dispatchEvent(
@@ -446,7 +455,7 @@ function showTooltip(tooltip, id, props, x, y, mapEl) {
       <tr><td style="color:#505a5f;padding:2px 12px 2px 0;white-space:nowrap">Total area</td>
           <td>${areaHa == null ? 'Unknown' : escapeHtml(areaHa.toFixed(2) + ' ha')}</td></tr>
     </table>`
-  tooltip.style.left = `${Math.min(x + 12, (mapEl?.offsetWidth ?? 500) - 248)}px`
+  tooltip.style.left = `${Math.min(x + TOOLTIP_OFFSET_X, (mapEl?.offsetWidth ?? TOOLTIP_FALLBACK_MAP_WIDTH) - TOOLTIP_MAX_WIDTH)}px`
   tooltip.style.top = `${y - 10}px`
   tooltip.style.display = 'block'
 }

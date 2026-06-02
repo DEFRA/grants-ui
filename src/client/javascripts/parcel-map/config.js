@@ -15,6 +15,17 @@ export const PARCEL_COLORS = [
 export const LAYER_TEXT_SIZE = 11
 export const LAYER_TEXT_HALO_WIDTH = 1.5
 
+export const LAYER_ID_FILL = 'parcels-fill'
+export const LAYER_ID_OUTLINE = 'parcels-outline'
+export const LAYER_ID_LABEL = 'parcels-label'
+
+export const FILL_OPACITY_DEFAULT = 0.2
+export const FILL_OPACITY_SELECTED = 0.5
+export const MAP_DEFAULT_HEIGHT = '500px'
+export const TOOLTIP_OFFSET_X = 12
+export const TOOLTIP_MAX_WIDTH = 248
+export const TOOLTIP_FALLBACK_MAP_WIDTH = 500
+
 export const TOOLTIP_STYLES = [
   'position:absolute',
   'z-index:9999',

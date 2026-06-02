@@ -4,6 +4,7 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 vi.mock('@defra/interactive-map', () => ({ default: vi.fn() }))
 vi.mock('@defra/interactive-map/providers/maplibre', () => ({ default: vi.fn(() => ({})) }))
 import InteractiveMap from '@defra/interactive-map'
+import { LAYER_ID_FILL, LAYER_ID_OUTLINE, LAYER_ID_LABEL } from './config.js'
 
 const PARCELS_RESPONSE = {
   features: [
@@ -207,9 +208,9 @@ describe('parcel-map web component', () => {
       const el = await mountElement()
       await waitForEvent(el, 'parcel-map:ready')
       const layerIds = ml.addLayer.mock.calls.map((c) => c[0].id)
-      expect(layerIds).toContain('parcels-fill')
-      expect(layerIds).toContain('parcels-outline')
-      expect(layerIds).toContain('parcels-label')
+      expect(layerIds).toContain(LAYER_ID_FILL)
+      expect(layerIds).toContain(LAYER_ID_OUTLINE)
+      expect(layerIds).toContain(LAYER_ID_LABEL)
     })
 
     it('resolves relative tileUrl against location.origin', async () => {
@@ -228,7 +229,7 @@ describe('parcel-map web component', () => {
       await waitForEvent(el, 'parcel-map:ready')
 
       const selectionEvent = waitForEvent(el, 'parcel-map:selection')
-      ml._emitLayer('click', 'parcels-fill', { features: [makeFeature('SD7148', '9160')], lngLat: { lng: 0, lat: 0 } })
+      ml._emitLayer('click', LAYER_ID_FILL, { features: [makeFeature('SD7148', '9160')], lngLat: { lng: 0, lat: 0 } })
       const e = await selectionEvent
       expect(e.detail.selectedIds).toEqual(['SD7148-9160'])
     })
@@ -241,11 +242,11 @@ describe('parcel-map web component', () => {
       const clickPayload = { features: [makeFeature('SD7148', '9160')], lngLat: { lng: 0, lat: 0 } }
 
       const first = waitForEvent(el, 'parcel-map:selection')
-      ml._emitLayer('click', 'parcels-fill', clickPayload)
+      ml._emitLayer('click', LAYER_ID_FILL, clickPayload)
       await first
 
       const second = waitForEvent(el, 'parcel-map:selection')
-      ml._emitLayer('click', 'parcels-fill', clickPayload)
+      ml._emitLayer('click', LAYER_ID_FILL, clickPayload)
       const e = await second
       expect(e.detail.selectedIds).toEqual([])
     })
@@ -256,11 +257,11 @@ describe('parcel-map web component', () => {
       await waitForEvent(el, 'parcel-map:ready')
 
       const first = waitForEvent(el, 'parcel-map:selection')
-      ml._emitLayer('click', 'parcels-fill', { features: [makeFeature('SD7148', '9160')], lngLat: { lng: 0, lat: 0 } })
+      ml._emitLayer('click', LAYER_ID_FILL, { features: [makeFeature('SD7148', '9160')], lngLat: { lng: 0, lat: 0 } })
       await first
 
       const second = waitForEvent(el, 'parcel-map:selection')
-      ml._emitLayer('click', 'parcels-fill', { features: [makeFeature('SD7148', '9161')], lngLat: { lng: 0, lat: 0 } })
+      ml._emitLayer('click', LAYER_ID_FILL, { features: [makeFeature('SD7148', '9161')], lngLat: { lng: 0, lat: 0 } })
       const e = await second
       expect(e.detail.selectedIds).toEqual(['SD7148-9161'])
     })
@@ -271,7 +272,7 @@ describe('parcel-map web component', () => {
       await waitForEvent(el, 'parcel-map:ready')
 
       const first = waitForEvent(el, 'parcel-map:selection')
-      ml._emitLayer('click', 'parcels-fill', { features: [makeFeature('SD7148', '9160')], lngLat: { lng: 0, lat: 0 } })
+      ml._emitLayer('click', LAYER_ID_FILL, { features: [makeFeature('SD7148', '9160')], lngLat: { lng: 0, lat: 0 } })
       await first
 
       ml.queryRenderedFeatures.mockReturnValue([])
@@ -287,11 +288,11 @@ describe('parcel-map web component', () => {
       await waitForEvent(el, 'parcel-map:ready')
 
       const first = waitForEvent(el, 'parcel-map:selection')
-      ml._emitLayer('click', 'parcels-fill', { features: [makeFeature('SD7148', '9160')], lngLat: { lng: 0, lat: 0 } })
+      ml._emitLayer('click', LAYER_ID_FILL, { features: [makeFeature('SD7148', '9160')], lngLat: { lng: 0, lat: 0 } })
       await first
 
       expect(ml.setPaintProperty).toHaveBeenCalledWith(
-        'parcels-fill',
+        LAYER_ID_FILL,
         'fill-opacity',
         expect.arrayContaining(['match'])
       )
@@ -306,7 +307,7 @@ describe('parcel-map web component', () => {
       el.addEventListener('parcel-map:selection', () => {
         fired = true
       })
-      ml._emitLayer('click', 'parcels-fill', { features: [], lngLat: { lng: 0, lat: 0 } })
+      ml._emitLayer('click', LAYER_ID_FILL, { features: [], lngLat: { lng: 0, lat: 0 } })
       await Promise.resolve()
       expect(fired).toBe(false)
     })
@@ -319,11 +320,11 @@ describe('parcel-map web component', () => {
       await waitForEvent(el, 'parcel-map:ready')
 
       const first = waitForEvent(el, 'parcel-map:selection')
-      ml._emitLayer('click', 'parcels-fill', { features: [makeFeature('SD7148', '9160')], lngLat: { lng: 0, lat: 0 } })
+      ml._emitLayer('click', LAYER_ID_FILL, { features: [makeFeature('SD7148', '9160')], lngLat: { lng: 0, lat: 0 } })
       await first
 
       const second = waitForEvent(el, 'parcel-map:selection')
-      ml._emitLayer('click', 'parcels-fill', { features: [makeFeature('SD7148', '9161')], lngLat: { lng: 0, lat: 0 } })
+      ml._emitLayer('click', LAYER_ID_FILL, { features: [makeFeature('SD7148', '9161')], lngLat: { lng: 0, lat: 0 } })
       const e = await second
       expect(e.detail.selectedIds).toEqual(['SD7148-9160', 'SD7148-9161'])
     })
@@ -336,11 +337,11 @@ describe('parcel-map web component', () => {
       const clickPayload = { features: [makeFeature('SD7148', '9160')], lngLat: { lng: 0, lat: 0 } }
 
       const first = waitForEvent(el, 'parcel-map:selection')
-      ml._emitLayer('click', 'parcels-fill', clickPayload)
+      ml._emitLayer('click', LAYER_ID_FILL, clickPayload)
       await first
 
       const second = waitForEvent(el, 'parcel-map:selection')
-      ml._emitLayer('click', 'parcels-fill', clickPayload)
+      ml._emitLayer('click', LAYER_ID_FILL, clickPayload)
       const e = await second
       expect(e.detail.selectedIds).toEqual([])
     })
@@ -353,7 +354,7 @@ describe('parcel-map web component', () => {
       await waitForEvent(el, 'parcel-map:ready')
 
       const sel = waitForEvent(el, 'parcel-map:selection')
-      ml._emitLayer('click', 'parcels-fill', {
+      ml._emitLayer('click', LAYER_ID_FILL, {
         features: [makeFeature('SD7148', '9160')],
         lngLat: { lng: 0, lat: 0 }
       })
@@ -371,7 +372,7 @@ describe('parcel-map web component', () => {
       await waitForEvent(el, 'parcel-map:ready')
 
       const sel = waitForEvent(el, 'parcel-map:selection')
-      ml._emitLayer('click', 'parcels-fill', {
+      ml._emitLayer('click', LAYER_ID_FILL, {
         features: [makeFeature('SD7148', '9161')],
         lngLat: { lng: 0, lat: 0 }
       })
