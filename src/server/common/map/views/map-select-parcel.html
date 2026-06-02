@@ -87,9 +87,14 @@
         // Write hidden inputs so the standard form POST carries the selection
         var container = document.getElementById('selected-parcels-inputs');
         if (container) {
-          container.innerHTML = selectedIds.map(function (id) {
-            return '<input type="hidden" name="landParcels" value="' + id.replace(/&/g,'&amp;').replace(/"/g,'&quot;') + '">';
-          }).join('');
+          container.replaceChildren();
+          selectedIds.forEach(function (id) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'landParcels';
+            input.value = id;
+            container.appendChild(input);
+          });
         }
 
         // Update the live summary label
