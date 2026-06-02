@@ -336,7 +336,13 @@ class ParcelMap extends HTMLElement {
 
     const applySelection = () => {
       const matchList = selected.size > 0 ? [...selected] : ['__none__']
-      ml.setPaintProperty(LAYER_ID_FILL, 'fill-opacity', ['match', idExpr, matchList, FILL_OPACITY_SELECTED, FILL_OPACITY_DEFAULT])
+      ml.setPaintProperty(LAYER_ID_FILL, 'fill-opacity', [
+        'match',
+        idExpr,
+        matchList,
+        FILL_OPACITY_SELECTED,
+        FILL_OPACITY_DEFAULT
+      ])
     }
 
     ml.on('click', LAYER_ID_FILL, (e) => {

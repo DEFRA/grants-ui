@@ -291,11 +291,7 @@ describe('parcel-map web component', () => {
       ml._emitLayer('click', LAYER_ID_FILL, { features: [makeFeature('SD7148', '9160')], lngLat: { lng: 0, lat: 0 } })
       await first
 
-      expect(ml.setPaintProperty).toHaveBeenCalledWith(
-        LAYER_ID_FILL,
-        'fill-opacity',
-        expect.arrayContaining(['match'])
-      )
+      expect(ml.setPaintProperty).toHaveBeenCalledWith(LAYER_ID_FILL, 'fill-opacity', expect.arrayContaining(['match']))
     })
 
     it('ignores clicks with no feature', async () => {
