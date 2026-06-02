@@ -1,4 +1,6 @@
+// @ts-ignore — no type declarations shipped with this package
 import InteractiveMap from '@defra/interactive-map'
+// @ts-ignore
 import maplibreProvider from '@defra/interactive-map/providers/maplibre'
 import {
   PARCELS_API_URL,
