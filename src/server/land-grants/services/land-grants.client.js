@@ -144,6 +144,17 @@ export async function validate(request, baseUrl) {
 }
 
 /**
+ * Returns the bounding box covering the given parcel IDs.
+ * @param {string[]} parcelIds
+ * @param {string} baseUrl
+ * @returns {Promise<{ bbox: { minLng: number, minLat: number, maxLng: number, maxLat: number } }>}
+ * @throws {Error}
+ */
+export async function locateParcelTiles(parcelIds, baseUrl) {
+  return postToLandGrantsApi('/api/v1/parcel-tiles/locate', { parcelIds }, baseUrl)
+}
+
+/**
  * @import { Parcel, LandActions, ValidateApplicationRequest, ParcelResponse, ValidateApplicationResponse } from '~/src/server/land-grants/types/land-grants.client.d.js'
  * @import {  PaymentCalculationResponse } from '~/src/server/land-grants/types/payment.d.js'
  */

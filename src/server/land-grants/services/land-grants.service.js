@@ -7,10 +7,10 @@ import { config } from '~/src/config/config.js'
 import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js'
 import {
   calculate,
+  locateParcelTiles,
   parcelsGroups,
   parcelsWithExtendedInfo,
   parcelsWithSize,
-  postToLandGrantsApi,
   validate
 } from '~/src/server/land-grants/services/land-grants.client.js'
 import { formatAreaUnit } from '~/src/server/land-grants/utils/format-area-unit.js'
@@ -191,9 +191,7 @@ export async function fetchParcels(request) {
  */
 export async function fetchParcelTileLocation(parcelIds) {
   try {
-    const result = /** @type {{bbox: {minLng: number, minLat: number, maxLng: number, maxLat: number}}} */ (
-      await postToLandGrantsApi('/api/v1/parcel-tiles/locate', { parcelIds }, LAND_GRANTS_API_URL)
-    )
+    const result = await locateParcelTiles(parcelIds, LAND_GRANTS_API_URL)
     return result.bbox
   } catch {
     return null
