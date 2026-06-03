@@ -35,6 +35,10 @@
       window.dataLayer = window.dataLayer || [];
       window.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
     </script>
+    {# Fallback for users with JavaScript disabled — GTM noscript iframe #}
+    <noscript>
+      <iframe src="https://www.googletagmanager.com/ns.html?id={{ gaTrackingId }}" height="0" width="0" style="display:none;visibility:hidden" title="Google Tag Manager"></iframe>
+    </noscript>
   {% endif %}
 {% endblock %}
 
