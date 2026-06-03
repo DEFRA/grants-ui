@@ -61,7 +61,7 @@ pages:
 
   - title: Check your answers
     id: a1b2c3d4-0001-0001-0001-000000000011
-    path: /submit-your-application
+    path: /summary
     controller: MapSubmissionPageController
     next: []
 
