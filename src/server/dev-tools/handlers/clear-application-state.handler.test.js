@@ -3,7 +3,7 @@ import { clearApplicationStateHandler } from './clear-application-state.handler.
 import { getFormsCacheService } from '../../common/helpers/forms-cache/forms-cache.js'
 import { SessionError } from '~/src/server/common/utils/errors/SessionError.js'
 import { findFormBySlug, loadFormDefinition } from '~/src/server/common/forms/services/find-form-by-slug.js'
-import { clearSavedStateFromApiByContext } from '~/src/server/common/helpers/state/fetch-saved-state-helper.js'
+import { clearSavedStateFromApi } from '~/src/server/common/helpers/state/fetch-saved-state-helper.js'
 
 vi.mock('../../common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: vi.fn()
@@ -15,7 +15,7 @@ vi.mock('~/src/server/common/forms/services/find-form-by-slug.js', () => ({
 }))
 
 vi.mock('~/src/server/common/helpers/state/fetch-saved-state-helper.js', () => ({
-  clearSavedStateFromApiByContext: vi.fn()
+  clearSavedStateFromApi: vi.fn()
 }))
 
 describe('clearApplicationStateHandler', () => {
@@ -156,40 +156,37 @@ describe('clearApplicationStateHandler', () => {
       mockRequest.params.slug = undefined
       mockRequest.auth = { credentials: { sbi: '123456789' } }
       mockRequest.yar = { get: vi.fn().mockReturnValue({ grantCode: 'farm-payments' }) }
-      clearSavedStateFromApiByContext.mockResolvedValue(undefined)
+      clearSavedStateFromApi.mockResolvedValue(undefined)
     })
 
-    it('should call clearSavedStateFromApiByContext with sbi and grantCode from yar', async () => {
+    it('should call clearSavedStateFromApi with sbi:grantCode key from yar', async () => {
       await clearApplicationStateHandler(mockRequest, mockH)
 
-      expect(clearSavedStateFromApiByContext).toHaveBeenCalledWith({
-        sbi: '123456789',
-        grantCode: 'farm-payments'
-      })
+      expect(clearSavedStateFromApi).toHaveBeenCalledWith('123456789:farm-payments', mockRequest)
     })
 
-    it('should not call clearSavedStateFromApiByContext when sbi is missing from credentials', async () => {
+    it('should not call clearSavedStateFromApi when sbi is missing from credentials', async () => {
       mockRequest.auth = { credentials: {} }
 
       await clearApplicationStateHandler(mockRequest, mockH)
 
-      expect(clearSavedStateFromApiByContext).not.toHaveBeenCalled()
+      expect(clearSavedStateFromApi).not.toHaveBeenCalled()
     })
 
-    it('should not call clearSavedStateFromApiByContext when auth is absent', async () => {
+    it('should not call clearSavedStateFromApi when auth is absent', async () => {
       mockRequest.auth = undefined
 
       await clearApplicationStateHandler(mockRequest, mockH)
 
-      expect(clearSavedStateFromApiByContext).not.toHaveBeenCalled()
+      expect(clearSavedStateFromApi).not.toHaveBeenCalled()
     })
 
-    it('should not call clearSavedStateFromApiByContext when grantApplicationContext is not in yar', async () => {
+    it('should not call clearSavedStateFromApi when grantApplicationContext is not in yar', async () => {
       mockRequest.yar = { get: vi.fn().mockReturnValue(null) }
 
       await clearApplicationStateHandler(mockRequest, mockH)
 
-      expect(clearSavedStateFromApiByContext).not.toHaveBeenCalled()
+      expect(clearSavedStateFromApi).not.toHaveBeenCalled()
     })
 
     it('should redirect to / by default', async () => {

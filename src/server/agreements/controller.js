@@ -65,8 +65,8 @@ function buildProxyHeaders(token, request) {
     const encryptedAuth = Jwt.token.generate(
       {
         sbi: /** @type {string | number} */ (sbi).toString(),
-        grantCode: grantApplicationContext?.grantCode || undefined,
-        clientRef: grantApplicationContext?.clientRef || undefined,
+        grantCode: grantApplicationContext?.grantCode,
+        clientRef: grantApplicationContext?.clientRef,
         source
       },
       jwtSecret

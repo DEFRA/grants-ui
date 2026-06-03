@@ -2,7 +2,7 @@ import { getFormsCacheService } from '../../common/helpers/forms-cache/forms-cac
 import { SessionError } from '~/src/server/common/utils/errors/SessionError.js'
 import { findFormBySlug, loadFormDefinition } from '~/src/server/common/forms/services/find-form-by-slug.js'
 import { clearParcelCache } from '~/src/server/land-grants/services/parcel-cache.js'
-import { clearSavedStateFromApiByContext } from '~/src/server/common/helpers/state/fetch-saved-state-helper.js'
+import { clearSavedStateFromApi } from '~/src/server/common/helpers/state/fetch-saved-state-helper.js'
 import { YarKeys } from '~/src/server/common/constants/session-keys.js'
 
 /**
@@ -50,7 +50,7 @@ export async function clearApplicationStateHandler(request, h) {
       request.yar?.get(YarKeys.GRANT_APPLICATION_CONTEXT) || {}
     )
     if (sbi && grantCode) {
-      await clearSavedStateFromApiByContext({ sbi, grantCode })
+      await clearSavedStateFromApi(`${sbi}:${grantCode}`, request)
     }
   }
 
