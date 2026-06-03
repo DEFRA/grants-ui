@@ -7,6 +7,17 @@ declare module '@hapi/hapi' {
     getFormService: () => object
   }
 
+  interface Request {
+    // Decorated by the audit-publisher plugin; a no-op when audit is disabled.
+    sendAuditEvent: (opts: {
+      action: string
+      entity?: string
+      entityid?: string
+      status?: string
+      details?: Record<string, unknown>
+    }) => Promise<void>
+  }
+
   interface ServerApplicationState {
     cache: {
       get: (key: string) => Promise<unknown>

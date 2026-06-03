@@ -3,7 +3,7 @@ import { publishAuditEvent } from '@defra/fcp-audit-publisher'
 import { getStartPath } from '@defra/forms-engine-plugin/engine/helpers.js'
 import { config } from '~/src/config/config.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
-import { buildAuditEventForGrantAccess, mapEnvironment } from './audit-event.js'
+import { buildAuditEvent, mapEnvironment } from './audit-event.js'
 
 const HTTP_OK_MIN = 200
 const HTTP_REDIRECT_MIN = 300
@@ -51,8 +51,37 @@ const isSuccessfulGrantAccess = (request) => {
 }
 
 /**
- * Hapi plugin that publishes one FCP Audit event whenever a signed-in user
- * successfully accesses a grant page. Gated behind `audit.enabled`.
+ * Builds the request-bound publish function. It constructs the FCP Audit event
+ * from the given options, publishes it, and centralises success/failure logging
+ * so every call site behaves consistently. Failures are logged, never thrown:
+ * auditing is best-effort and must not break the request it describes.
+ * @param {object} publisherConfig - Config passed to `publishAuditEvent`.
+ * @returns {(request: import('@hapi/hapi').Request, opts: import('./audit-event.js').AuditEventOptions) => Promise<void>}
+ */
+const makeSendAuditEvent = (publisherConfig) => (request, opts) => {
+  const entity = opts.entity ?? 'application'
+  const entityid = opts.entityid ?? request.params.slug
+  const event = buildAuditEvent(request, opts)
+
+  return publishAuditEvent(event, publisherConfig)
+    .then(({ messageId }) =>
+      log(LogCodes.AUDIT.EVENT_PUBLISHED, { messageId, entity, action: opts.action, entityid }, request)
+    )
+    .catch((err) =>
+      log(
+        { ...LogCodes.AUDIT.EVENT_PUBLISH_FAILED, error: /** @type {Error} */ (err) },
+        { entityid, action: opts.action, errorMessage: /** @type {Error} */ (err).message },
+        request
+      )
+    )
+}
+
+/**
+ * Hapi plugin that wires FCP Audit publishing. It decorates every request with
+ * `request.sendAuditEvent(opts)` so any call site can publish an event, and
+ * keeps the existing behaviour of auditing a signed-in user starting a grant.
+ * Gated behind `audit.enabled`; when disabled the decoration is a no-op so call
+ * sites stay unconditional.
  * @satisfies {import('@hapi/hapi').ServerRegisterPluginObject<void>}
  */
 export const auditPublisher = {
@@ -60,6 +89,7 @@ export const auditPublisher = {
     name: 'audit-publisher',
     register(server) {
       if (!config.get('audit.enabled')) {
+        server.decorate('request', 'sendAuditEvent', async () => {})
         return
       }
 
@@ -78,26 +108,14 @@ export const auditPublisher = {
         generateCorrelationId: true
       }
 
+      const sendAuditEvent = makeSendAuditEvent(publisherConfig)
+      server.decorate('request', 'sendAuditEvent', function (opts) {
+        return sendAuditEvent(this, opts)
+      })
+
       server.ext('onPreResponse', (request, h) => {
         if (isSuccessfulGrantAccess(request)) {
-          const slug = request.params.slug
-          const event = buildAuditEventForGrantAccess(request)
-
-          publishAuditEvent(event, publisherConfig)
-            .then(({ messageId }) =>
-              log(
-                LogCodes.AUDIT.EVENT_PUBLISHED,
-                { messageId, entity: 'application', action: 'read', entityid: slug },
-                request
-              )
-            )
-            .catch((err) =>
-              log(
-                { ...LogCodes.AUDIT.EVENT_PUBLISH_FAILED, error: /** @type {Error} */ (err) },
-                { entityid: slug, errorMessage: /** @type {Error} */ (err).message },
-                request
-              )
-            )
+          request.sendAuditEvent({ action: 'start' })
         }
         return h.continue
       })

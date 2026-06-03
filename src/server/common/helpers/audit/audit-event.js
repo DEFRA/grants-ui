@@ -43,13 +43,28 @@ export const mapEnvironment = (cdpEnvironment) => {
 }
 
 /**
- * Builds an FCP Audit event for a signed-in user successfully starting a grant
- * (loading its start page). Optional identity fields are only included when
- * known so the publisher doesn't receive `undefined` values.
+ * @typedef {object} AuditEventOptions
+ * @property {string} action - The verb describing what happened (e.g. `start`,
+ *   `submit`, `resubmit`, `navigate`, `unauthorised`). Lowercased, max 120 chars.
+ * @property {string} [entity] - The entity type. Defaults to `application`.
+ * @property {string} [entityid] - The entity identifier. Defaults to the grant
+ *   slug (`request.params.slug`).
+ * @property {string} [status] - The outcome. Defaults to `success`.
+ * @property {Record<string, unknown>} [details] - Free-form context for the
+ *   schema's `audit.details` object (e.g. grant code, page path, denial reason,
+ *   question/answer index).
+ */
+
+/**
+ * Builds an FCP Audit event for a signed-in user's action against a grant.
+ * The `action` (and optional `status`/`entityid`/`details`) describe what
+ * happened; optional identity fields are only included when known so the
+ * publisher doesn't receive `undefined` values.
  * @param {import('@hapi/hapi').Request} request
+ * @param {AuditEventOptions} opts
  * @returns {Record<string, unknown>}
  */
-export const buildAuditEventForGrantAccess = (request) => {
+export const buildAuditEvent = (request, { action, entity = 'application', entityid, status = 'success', details }) => {
   const credentials = request.auth.credentials
   const contactId = /** @type {string | undefined} */ (credentials.contactId)
   const sessionId = /** @type {string | undefined} */ (credentials.sessionId)
@@ -77,9 +92,10 @@ export const buildAuditEventForGrantAccess = (request) => {
     datetime: new Date().toISOString(),
     ip,
     audit: {
-      entities: [{ entity: 'application', action: 'read', entityid: request.params.slug }],
-      status: 'success',
-      ...(Object.keys(accounts).length > 0 && { accounts })
+      entities: [{ entity, action, entityid: entityid ?? request.params.slug }],
+      status,
+      ...(Object.keys(accounts).length > 0 && { accounts }),
+      ...(details && { details })
     }
   }
 
