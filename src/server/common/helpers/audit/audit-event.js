@@ -43,9 +43,9 @@ export const mapEnvironment = (cdpEnvironment) => {
 }
 
 /**
- * Builds an FCP Audit event for a signed-in user successfully accessing a grant
- * page. Optional identity fields are only included when known so the publisher
- * doesn't receive `undefined` values.
+ * Builds an FCP Audit event for a signed-in user successfully starting a grant
+ * (loading its start page). Optional identity fields are only included when
+ * known so the publisher doesn't receive `undefined` values.
  * @param {import('@hapi/hapi').Request} request
  * @returns {Record<string, unknown>}
  */

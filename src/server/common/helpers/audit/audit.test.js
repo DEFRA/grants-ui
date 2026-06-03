@@ -34,6 +34,8 @@ const successRequest = (overrides = {}) => ({
   method: 'get',
   auth: { isAuthenticated: true },
   params: { slug: 'my-grant' },
+  path: '/my-grant/start',
+  app: { model: { def: { startPage: '/start' } } },
   response: { statusCode: 200 },
   ...overrides
 })
@@ -141,6 +143,18 @@ describe('audit-publisher plugin', () => {
       )
     })
 
+    test('audits a form whose start page is not /start', () => {
+      publishAuditEvent.mockResolvedValue({ messageId: 'mid-1' })
+      const request = successRequest({
+        path: '/my-grant/check-details',
+        app: { model: { def: { startPage: '/check-details' } } }
+      })
+
+      handler(request, h)
+
+      expect(publishAuditEvent).toHaveBeenCalledTimes(1)
+    })
+
     test('logs a failure (without throwing) when publishing rejects', async () => {
       publishAuditEvent.mockRejectedValue(new Error('boom'))
       const request = successRequest()
@@ -163,7 +177,9 @@ describe('audit-publisher plugin', () => {
       ['there is no slug', { params: {} }],
       ['the response is a redirect', { response: { statusCode: 302 } }],
       ['the response is an error', { response: new Error('boom') }],
-      ['there is no response', { response: undefined }]
+      ['there is no response', { response: undefined }],
+      ['the page is not the start page', { path: '/my-grant/some-question' }],
+      ['the form model is not loaded', { app: {} }]
     ])('does not publish when %s', (_label, overrides) => {
       const request = successRequest(overrides)
 

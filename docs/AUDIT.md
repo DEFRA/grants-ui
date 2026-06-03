@@ -2,7 +2,7 @@
 
 ## Overview
 
-grants-ui publishes audit events to the **FCP Audit service** whenever a signed-in user successfully loads a grant page. Events are published to an AWS SNS topic using the [`@defra/fcp-audit-publisher`](https://www.npmjs.com/package/@defra/fcp-audit-publisher) library, which validates each event against the canonical FCP Audit schema before publishing.
+grants-ui publishes audit events to the **FCP Audit service** whenever a signed-in user successfully starts a grant (loads its start page). Events are published to an AWS SNS topic using the [`@defra/fcp-audit-publisher`](https://www.npmjs.com/package/@defra/fcp-audit-publisher) library, which validates each event against the canonical FCP Audit schema before publishing.
 
 Publishing is **fire-and-forget** and gated behind a feature flag, so it never adds latency to - or breaks - the user's request, and is off by default.
 
@@ -18,12 +18,13 @@ The plugin is registered in `src/server/index.js`.
 
 ## How it works
 
-The plugin adds an `onPreResponse` extension that fires for **every** request, but only publishes when the request is a signed-in user successfully loading a grant page - i.e. all of:
+The plugin adds an `onPreResponse` extension that fires for **every** request, but only publishes when the request is a signed-in user successfully loading a grant's **start page** - i.e. all of:
 
 - the method is `GET`
 - the request is authenticated
 - the route has a `{slug}` param
 - the response status is `2xx`
+- the request path is the form's start page (the engine's `getStartPath(model)`, e.g. `/start`), so a single grant _start_ is audited rather than every page in the journey
 
 When those hold, it builds the event, calls `publishAuditEvent(...)`, and logs the outcome (`AUDIT.EVENT_PUBLISHED` with the SNS `messageId`, or `AUDIT.EVENT_PUBLISH_FAILED`). A publish failure is logged but never surfaced to the user.
 
@@ -77,17 +78,17 @@ The whole flow runs locally against LocalStack and the Defra ID stub - no real A
 
    The other `AUDIT_*` and `AWS_*` vars already default correctly in `compose.yml` for local use.
 
-2. **Start the stack** (re-run after changing `.env` so the container picks up the new value). This runs the local config setup then `docker compose up -d`, booting LocalStack and auto-running `localstack/start-localstack.sh`, which creates the `fcp_audit_events` topic and an `fcp_audit` SQS queue subscribed to it.
+2. **Start docker compose** (re-run after changing `.env` so the container picks up the new value). This boots LocalStack and auto-runs `localstack/start-localstack.sh`, which creates the `fcp_audit_events` topic and an `fcp_audit` SQS queue subscribed to it.
 
    ```bash
-   npm run audit:up
+   docker compose up
    ```
 
    The app serves on http://localhost:3000 and LocalStack on http://localhost:4566.
 
 3. **Sign in** via the local Defra ID stub: open http://localhost:3000/auth/sign-in and choose a pre-seeded test user (no real credentials required).
 
-4. **Load a grant page** while signed in, e.g. http://localhost:3000/example-grant-with-auth. A successful (`2xx`) authenticated `GET` to a `/{slug}` page is what triggers an event.
+4. **Start a grant** while signed in, e.g. open http://localhost:3000/example-grant-with-auth, which lands on its start page (`/example-grant-with-auth/start`). A successful (`2xx`) authenticated `GET` to the form's start page is what triggers an event - navigating on through the journey does not.
 
 5. **Confirm it published**, either:
    - search the app logs for an `AUDIT.EVENT_PUBLISHED` entry with a `messageId`:

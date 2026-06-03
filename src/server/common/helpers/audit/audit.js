@@ -1,5 +1,6 @@
 import { SNSClient } from '@aws-sdk/client-sns'
 import { publishAuditEvent } from '@defra/fcp-audit-publisher'
+import { getStartPath } from '@defra/forms-engine-plugin/engine/helpers.js'
 import { config } from '~/src/config/config.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { buildAuditEventForGrantAccess, mapEnvironment } from './audit-event.js'
@@ -8,8 +9,29 @@ const HTTP_OK_MIN = 200
 const HTTP_REDIRECT_MIN = 300
 
 /**
- * True when the request represents a signed-in user successfully loading a grant
- * page: an authenticated GET to a `/{slug}/...` form route that returned 2xx.
+ * True when the request targets the grant's start page (the form's configured
+ * entry path), rather than any of the journey's subsequent pages. We compare
+ * the request path against the engine's own start path so it stays correct
+ * across forms whose start page differs (e.g. `/start` vs `/check-details`) and
+ * across the V1/V2 engines. Without the loaded model we can't know the start
+ * path, so we don't audit.
+ * @param {import('@hapi/hapi').Request} request
+ * @returns {boolean}
+ */
+const isGrantStartPage = (request) => {
+  const model = /** @type {{ model?: import('@defra/forms-engine-plugin/engine/models/index.js').FormModel }} */ (
+    request.app
+  ).model
+  if (!model) {
+    return false
+  }
+  return request.path === `/${request.params.slug}${getStartPath(model)}`
+}
+
+/**
+ * True when the request represents a signed-in user successfully loading a
+ * grant's start page: an authenticated GET to the form's start route that
+ * returned 2xx. Subsequent journey pages are deliberately not audited.
  * @param {import('@hapi/hapi').Request} request
  * @returns {boolean}
  */
@@ -23,7 +45,8 @@ const isSuccessfulGrantAccess = (request) => {
     request.auth.isAuthenticated &&
     Boolean(request.params.slug) &&
     response.statusCode >= HTTP_OK_MIN &&
-    response.statusCode < HTTP_REDIRECT_MIN
+    response.statusCode < HTTP_REDIRECT_MIN &&
+    isGrantStartPage(request)
   )
 }
 
