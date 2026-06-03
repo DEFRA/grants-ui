@@ -34,6 +34,9 @@
     "docker:landgrants:journey-runner:up": "docker compose -f compose.yml -f compose.land-grants.yml -f compose.journey-runner.yml up -d",
     "docker:landgrants:journey-runner:down": "docker compose -f compose.yml -f compose.land-grants.yml -f compose.journey-runner.yml down --remove-orphans",
     "docker:rebuild": "docker compose build",
+    "audit:logs": "docker compose logs grants-ui | grep -i audit",
+    "audit:queue": "docker compose exec localstack awslocal sqs receive-message --queue-url http://localhost:4566/000000000000/fcp_audit",
+    "audit:test": "vitest run src/server/common/helpers/audit",
     "format": "prettier --write \"src/**/*.js\" \"**/*.{js,cjs,md,json,config.js,test.js,contract.test.js}\" \"!.stryker-tmp/**\"",
     "json:format:single": "npx prettier --write",
     "format:check": "prettier --check \"src/**/*.js\" \"**/*.{js,cjs,md,json,config.js,test.js}\" \"!.stryker-tmp/**\"",
@@ -82,7 +85,9 @@
     "shell-quote": "1.8.4"
   },
   "dependencies": {
+    "@aws-sdk/client-sns": "3.1051.0",
     "@babel/runtime": "7.29.2",
+    "@defra/fcp-audit-publisher": "1.0.5",
     "@defra/forms-engine-plugin": "4.14.0",
     "@defra/hapi-tracing": "1.30.0",
     "@elastic/ecs-pino-format": "1.5.0",

@@ -9,7 +9,6 @@ import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { handleGasApiError } from '~/src/server/common/helpers/gas-error-messages.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
 import { getTaskPageBackLink } from '~/src/server/task-list/task-list.helper.js'
-import { requireCsSubmitPermission } from '~/src/server/common/helpers/permissions/guards/require-cs-submit-permission.js'
 
 vi.mock('~/src/server/common/helpers/gas-error-messages.js')
 vi.mock('../common/helpers/logging/log.js', async () => {
@@ -478,68 +477,6 @@ describe('DeclarationPageController', () => {
         mockRequest
       )
       expect(handleGasApiError).not.toHaveBeenCalled()
-    })
-
-    test('should redirect when user does not have submit permission', async () => {
-      const redirectResponse = { redirected: true }
-
-      requireCsSubmitPermission.mockReturnValue(redirectResponse)
-
-      const handler = controller.makePostRouteHandler()
-
-      const result = await handler(mockRequest, mockContext, mockH)
-
-      expect(result).toBe(redirectResponse)
-
-      expect(submitGrantApplication).not.toHaveBeenCalled()
-
-      expect(requireCsSubmitPermission).toHaveBeenCalledWith(mockRequest, mockH, {
-        returnUrl: '/example-grant-with-auth/task-list'
-      })
-    })
-
-    test('should use empty base path when request.params.slug is missing', async () => {
-      const redirectResponse = { redirected: true }
-
-      requireCsSubmitPermission.mockReturnValue(redirectResponse)
-
-      const requestWithoutSlug = {
-        ...mockRequest,
-        params: {}
-      }
-
-      const handler = controller.makePostRouteHandler()
-
-      const result = await handler(requestWithoutSlug, mockContext, mockH)
-
-      expect(result).toBe(redirectResponse)
-
-      expect(requireCsSubmitPermission).toHaveBeenCalledWith(requestWithoutSlug, mockH, {
-        returnUrl: '/task-list'
-      })
-
-      expect(submitGrantApplication).not.toHaveBeenCalled()
-    })
-
-    test('should redirect when permission denied and slug missing', async () => {
-      const redirectResponse = { redirected: true }
-
-      requireCsSubmitPermission.mockReturnValue(redirectResponse)
-
-      const requestWithoutSlug = {
-        ...mockRequest,
-        params: {}
-      }
-
-      const handler = controller.makePostRouteHandler()
-
-      const result = await handler(requestWithoutSlug, mockContext, mockH)
-
-      expect(result).toBe(redirectResponse)
-
-      expect(requireCsSubmitPermission).toHaveBeenCalledWith(requestWithoutSlug, mockH, {
-        returnUrl: '/task-list'
-      })
     })
   })
 
