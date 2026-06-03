@@ -3,6 +3,7 @@ import { clearApplicationStateHandler } from './clear-application-state.handler.
 import { getFormsCacheService } from '../../common/helpers/forms-cache/forms-cache.js'
 import { SessionError } from '~/src/server/common/utils/errors/SessionError.js'
 import { findFormBySlug, loadFormDefinition } from '~/src/server/common/forms/services/find-form-by-slug.js'
+import { clearSavedStateFromApiByContext } from '~/src/server/common/helpers/state/fetch-saved-state-helper.js'
 
 vi.mock('../../common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: vi.fn()
@@ -11,6 +12,10 @@ vi.mock('../../common/helpers/forms-cache/forms-cache.js', () => ({
 vi.mock('~/src/server/common/forms/services/find-form-by-slug.js', () => ({
   findFormBySlug: vi.fn(),
   loadFormDefinition: vi.fn()
+}))
+
+vi.mock('~/src/server/common/helpers/state/fetch-saved-state-helper.js', () => ({
+  clearSavedStateFromApiByContext: vi.fn()
 }))
 
 describe('clearApplicationStateHandler', () => {
@@ -141,6 +146,55 @@ describe('clearApplicationStateHandler', () => {
 
       expect(getFormsCacheService).not.toHaveBeenCalled()
       expect(mockCacheService.clearState).not.toHaveBeenCalled()
+      expect(mockH.redirect).toHaveBeenCalledWith('/')
+      expect(result).toEqual({ redirect: '/' })
+    })
+  })
+
+  describe('when no slug is provided', () => {
+    beforeEach(() => {
+      mockRequest.params.slug = undefined
+      mockRequest.auth = { credentials: { sbi: '123456789' } }
+      mockRequest.yar = { get: vi.fn().mockReturnValue({ grantCode: 'farm-payments' }) }
+      clearSavedStateFromApiByContext.mockResolvedValue(undefined)
+    })
+
+    it('should call clearSavedStateFromApiByContext with sbi and grantCode from yar', async () => {
+      await clearApplicationStateHandler(mockRequest, mockH)
+
+      expect(clearSavedStateFromApiByContext).toHaveBeenCalledWith({
+        sbi: '123456789',
+        grantCode: 'farm-payments'
+      })
+    })
+
+    it('should not call clearSavedStateFromApiByContext when sbi is missing from credentials', async () => {
+      mockRequest.auth = { credentials: {} }
+
+      await clearApplicationStateHandler(mockRequest, mockH)
+
+      expect(clearSavedStateFromApiByContext).not.toHaveBeenCalled()
+    })
+
+    it('should not call clearSavedStateFromApiByContext when auth is absent', async () => {
+      mockRequest.auth = undefined
+
+      await clearApplicationStateHandler(mockRequest, mockH)
+
+      expect(clearSavedStateFromApiByContext).not.toHaveBeenCalled()
+    })
+
+    it('should not call clearSavedStateFromApiByContext when grantApplicationContext is not in yar', async () => {
+      mockRequest.yar = { get: vi.fn().mockReturnValue(null) }
+
+      await clearApplicationStateHandler(mockRequest, mockH)
+
+      expect(clearSavedStateFromApiByContext).not.toHaveBeenCalled()
+    })
+
+    it('should redirect to / by default', async () => {
+      const result = await clearApplicationStateHandler(mockRequest, mockH)
+
       expect(mockH.redirect).toHaveBeenCalledWith('/')
       expect(result).toEqual({ redirect: '/' })
     })

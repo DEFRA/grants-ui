@@ -5,12 +5,13 @@ import {
   ERROR_MESSAGES,
   HTTP_STATUS,
   MOCK_STATE_DATA,
-  TEST_USER_IDS
+  TEST_USER_IDS,
+  TEST_BACKEND_URL
 } from './test-helpers/auth-test-helpers.js'
 import { mockSimpleRequest, createMockFetchResponse } from '~/src/__mocks__/hapi-mocks.js'
 import { createApiHeadersForGrantsUiBackend } from '../auth/backend-auth-helper.js'
 vi.mock('../auth/backend-auth-helper.js', () => ({
-  createApiHeadersForGrantsUiBackend: vi.fn(({ lockToken }) => ({
+  createApiHeadersForGrantsUiBackend: vi.fn(({ lockToken } = {}) => ({
     'Content-Type': 'application/json',
     Authorization: `Bearer ${Buffer.from('test').toString('base64')}`
   }))
@@ -367,6 +368,79 @@ describe('State API helpers', () => {
         const result = await clearSavedStateFromApi(key, mockRequest)
 
         expect(result).toBeNull()
+        expect(mockFetch).not.toHaveBeenCalled()
+      })
+    })
+  })
+
+  describe('clearSavedStateFromApiByContext', () => {
+    let clearSavedStateFromApiByContext
+
+    describe('With backend configured correctly', () => {
+      beforeAll(async () => {
+        vi.resetModules()
+        vi.doMock('~/src/config/config.js', createMockConfig)
+        const helper = await import('~/src/server/common/helpers/state/fetch-saved-state-helper.js?t=' + Date.now())
+        clearSavedStateFromApiByContext = helper.clearSavedStateFromApiByContext
+      })
+
+      beforeEach(() => {
+        vi.clearAllMocks()
+      })
+
+      afterAll(() => {
+        vi.doUnmock('~/src/config/config.js')
+      })
+
+      it('calls DELETE /state/ with sbi and grantCode', async () => {
+        mockFetch.mockResolvedValue(createMockFetchResponse({ ok: true, status: HTTP_STATUS.OK, data: {} }))
+
+        await clearSavedStateFromApiByContext({ sbi: '123456789', grantCode: 'farm-payments' })
+
+        expect(mockFetch).toHaveBeenCalledWith(
+          `${TEST_BACKEND_URL}/state/?sbi=123456789&grantCode=farm-payments`,
+          expect.objectContaining({ method: 'DELETE' })
+        )
+      })
+
+      it('resolves without throwing on 404', async () => {
+        mockFetch.mockResolvedValue(createMockFetchResponse({ ok: false, status: HTTP_STATUS.NOT_FOUND }))
+
+        await expect(
+          clearSavedStateFromApiByContext({ sbi: '123456789', grantCode: 'farm-payments' })
+        ).resolves.toBeUndefined()
+      })
+
+      it('throws on non-404 error response', async () => {
+        mockFetch.mockResolvedValue(createMockFetchResponse({ ok: false, status: HTTP_STATUS.INTERNAL_SERVER_ERROR }))
+
+        await expect(
+          clearSavedStateFromApiByContext({ sbi: '123456789', grantCode: 'farm-payments' })
+        ).rejects.toThrow()
+      })
+    })
+
+    describe('Without backend endpoint configured', () => {
+      beforeAll(async () => {
+        vi.resetModules()
+        vi.doMock('~/src/config/config.js', createMockConfigWithoutEndpoint)
+        const helper = await import('~/src/server/common/helpers/state/fetch-saved-state-helper.js?t=' + Date.now())
+        clearSavedStateFromApiByContext = helper.clearSavedStateFromApiByContext
+      })
+
+      beforeEach(() => {
+        vi.clearAllMocks()
+      })
+
+      afterAll(() => {
+        vi.doUnmock('~/src/config/config.js')
+      })
+
+      it('returns without calling fetch when endpoint is not configured', async () => {
+        await expect(
+          clearSavedStateFromApiByContext({ sbi: '123456789', grantCode: 'farm-payments' })
+        ).resolves.toBeUndefined()
+
         expect(mockFetch).not.toHaveBeenCalled()
       })
     })

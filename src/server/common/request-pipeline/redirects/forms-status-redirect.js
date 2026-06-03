@@ -8,6 +8,7 @@ import { mintLockToken } from '../../helpers/lock/lock-token.js'
 import { getCacheKey } from '../../helpers/state/get-cache-key-helper.js'
 import agreements from '~/src/config/agreements.js'
 import { getGrantCode } from '../../helpers/grant-code.js'
+import { YarKeys } from '../../constants/session-keys.js'
 
 /**
  * @typedef {Object} RedirectRule
@@ -264,7 +265,11 @@ async function handlePostSubmission(request, h, context, previousStatus, grantCo
 
   await persistStatus(request, rule.toGrantsStatus, previousStatus, grantId, context.state)
 
-  const redirectUrl = rule.toPath === agreements.get('baseUrl') ? rule.toPath : buildRedirectUrl(grantId, rule.toPath)
+  const isAgreementsRedirect = rule.toPath === agreements.get('baseUrl')
+  const redirectUrl = isAgreementsRedirect ? rule.toPath : buildRedirectUrl(grantId, rule.toPath)
+
+  const grantVersion = resolveClientGrantVersion(context, request)
+  request.yar.set(YarKeys.GRANT_APPLICATION_CONTEXT, { grantCode, clientRef: clientRef.toLowerCase(), grantVersion })
 
   return request.path === redirectUrl ? h.continue : h.redirect(redirectUrl).takeover()
 }
@@ -386,6 +391,22 @@ export const formsStatusRedirect = async (request, h, context) => {
  *
  * @returns {string} The client reference number that should be used when calling GAS.
  */
+/**
+ * Resolves the grant version to use when saving the grant application context.
+ *
+ * Prefers the version stored in the persisted state document (from grants-ui-backend),
+ * falling back to the current form definition metadata version, then to '1.0.0'.
+ *
+ * @param {object} context - The request context containing form state.
+ * @param {object} [context.state] - Session state stored in the forms cache.
+ * @param {string} [context.state.grantVersion] - The grant version stored in the persisted state document.
+ * @param {{ app: { model?: { def?: { metadata?: { version?: string } } } } }} request - Hapi request object.
+ * @returns {string} The grant version to use.
+ */
+export function resolveClientGrantVersion(context, request) {
+  return context.state?.grantVersion ?? request.app.model?.def?.metadata?.version ?? '1.0.0'
+}
+
 export function resolveClientReference(previousStatus, context) {
   if (previousStatus === ApplicationStatus.REOPENED && context.state?.previousReferenceNumber) {
     return context.state.previousReferenceNumber

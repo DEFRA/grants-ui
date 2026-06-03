@@ -2,6 +2,8 @@ import { getFormsCacheService } from '../../common/helpers/forms-cache/forms-cac
 import { SessionError } from '~/src/server/common/utils/errors/SessionError.js'
 import { findFormBySlug, loadFormDefinition } from '~/src/server/common/forms/services/find-form-by-slug.js'
 import { clearParcelCache } from '~/src/server/land-grants/services/parcel-cache.js'
+import { clearSavedStateFromApiByContext } from '~/src/server/common/helpers/state/fetch-saved-state-helper.js'
+import { YarKeys } from '~/src/server/common/constants/session-keys.js'
 
 /**
  * @typedef {import('@hapi/hapi').Request & {
@@ -19,7 +21,6 @@ import { clearParcelCache } from '~/src/server/land-grants/services/parcel-cache
 export async function clearApplicationStateHandler(request, h) {
   const slug = request.params?.slug || ''
 
-  // we need a slug to clear the persisted state
   if (slug) {
     if (!request.app.model) {
       const form = await findFormBySlug(slug)
@@ -42,6 +43,14 @@ export async function clearApplicationStateHandler(request, h) {
         sessionKey
       })
       throw sessionError.from(/** @type {Error} */ (error))
+    }
+  } else {
+    const sbi = /** @type {{ sbi?: string }} */ (request.auth?.credentials)?.sbi
+    const { grantCode } = /** @type {{ grantCode: string | undefined }} */ (
+      request.yar?.get(YarKeys.GRANT_APPLICATION_CONTEXT) || {}
+    )
+    if (sbi && grantCode) {
+      await clearSavedStateFromApiByContext({ sbi, grantCode })
     }
   }
 

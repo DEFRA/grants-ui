@@ -1,5 +1,6 @@
 import { config } from '~/src/config/config.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
+import { YarKeys } from '~/src/server/common/constants/session-keys.js'
 import Jwt from '@hapi/jwt'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
@@ -57,9 +58,17 @@ function buildProxyHeaders(token, request) {
   const sbi = request?.auth?.credentials?.sbi
   const source = 'defra'
   const jwtSecret = config.get('agreements.jwtSecret')
+  const grantApplicationContext = /** @type {{ grantCode?: string, clientRef?: string } | null} */ (
+    request.yar?.get(YarKeys.GRANT_APPLICATION_CONTEXT)
+  )
   try {
     const encryptedAuth = Jwt.token.generate(
-      { sbi: /** @type {string | number} */ (sbi).toString(), source },
+      {
+        sbi: /** @type {string | number} */ (sbi).toString(),
+        grantCode: grantApplicationContext?.grantCode || undefined,
+        clientRef: grantApplicationContext?.clientRef || undefined,
+        source
+      },
       jwtSecret
     )
     const contentTypeHeader = request.headers['content-type']

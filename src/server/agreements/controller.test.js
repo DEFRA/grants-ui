@@ -41,12 +41,14 @@ describe('Agreements Controller', () => {
       auth: {
         isAuthenticated: true,
         credentials: {
-          sbi: '106284736'
+          sbi: '106284736',
+          crn: 'CRN123'
         }
       },
       app: {
         cspNonce: 'test-nonce'
-      }
+      },
+      yar: { get: vi.fn().mockReturnValue(null) }
     })
 
     // Default config setup
@@ -220,7 +222,10 @@ describe('Agreements Controller', () => {
         'x-encrypted-auth': 'mocked-jwt-token',
         'x-csp-nonce': 'test-nonce'
       })
-      expect(Jwt.token.generate).toHaveBeenCalledWith({ sbi: '106284736', source: 'defra' }, 'test-jwt-secret')
+      expect(Jwt.token.generate).toHaveBeenCalledWith(
+        { sbi: '106284736', grantCode: undefined, clientRef: undefined, source: 'defra' },
+        'test-jwt-secret'
+      )
     })
 
     test('should build proxy headers for POST request with default content-type', async () => {
@@ -313,6 +318,17 @@ describe('Agreements Controller', () => {
         'content-type': 'application/json',
         'x-encrypted-auth': 'mocked-jwt-token'
       })
+    })
+
+    test('should include grantCode and clientRef in JWT when grantApplicationContext is in yar session', async () => {
+      mockRequest.yar.get.mockReturnValue({ grantCode: 'farm-payments', clientRef: 'sfi123456' })
+
+      await getAgreementController.handler(mockRequest, mockH)
+
+      expect(Jwt.token.generate).toHaveBeenCalledWith(
+        { sbi: '106284736', grantCode: 'farm-payments', clientRef: 'sfi123456', source: 'defra' },
+        'test-jwt-secret'
+      )
     })
 
     test('should handle JWT generation error and log failure', async () => {
