@@ -10,7 +10,7 @@ import {
 import { mockSimpleRequest, createMockFetchResponse } from '~/src/__mocks__/hapi-mocks.js'
 import { createApiHeadersForGrantsUiBackend } from '../auth/backend-auth-helper.js'
 vi.mock('../auth/backend-auth-helper.js', () => ({
-  createApiHeadersForGrantsUiBackend: vi.fn(({ lockToken } = {}) => ({
+  createApiHeadersForGrantsUiBackend: vi.fn(({ lockToken }) => ({
     'Content-Type': 'application/json',
     Authorization: `Bearer ${Buffer.from('test').toString('base64')}`
   }))
@@ -371,5 +371,4 @@ describe('State API helpers', () => {
       })
     })
   })
-
 })

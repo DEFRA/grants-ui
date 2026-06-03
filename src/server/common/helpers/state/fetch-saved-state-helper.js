@@ -112,7 +112,6 @@ export async function clearSavedStateFromApi(key, request, { lockToken } = {}) {
   return callStateApi(key, 'DELETE', request, { lockToken })
 }
 
-
 /**
  * @import { AnyRequest } from '@defra/forms-engine-plugin/engine/types.js'
  * @import { LogCodeEntry } from '../logging/log.js'

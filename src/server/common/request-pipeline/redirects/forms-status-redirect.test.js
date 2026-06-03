@@ -4,7 +4,7 @@ import { updateApplicationStatus } from '../../helpers/status/update-application
 import { getFormsCacheService } from '../../helpers/forms-cache/forms-cache.js'
 import { ApplicationStatus } from '../../constants/application-status.js'
 import { YarKeys } from '../../constants/session-keys.js'
-import { formsStatusRedirect, resolveClientReference, resolveClientGrantVersion } from './forms-status-redirect.js'
+import { formsStatusRedirect, resolveClientReference } from './forms-status-redirect.js'
 import { log, LogCodes } from '../../helpers/logging/log.js'
 import { mintLockToken } from '../../helpers/lock/lock-token.js'
 import { getCacheKey } from '../../helpers/state/get-cache-key-helper.js'
@@ -748,8 +748,7 @@ describe('formsStatusRedirect', () => {
         expect(h.redirect).toHaveBeenCalledWith('/agreement')
         expect(request.yar.set).toHaveBeenCalledWith(YarKeys.GRANT_APPLICATION_CONTEXT, {
           grantCode: 'grant-a',
-          clientRef: 'ref-001',
-          grantVersion: '1.0.0'
+          clientRef: 'ref-001'
         })
         expect(result).toEqual(expect.any(Symbol))
       }
@@ -766,36 +765,6 @@ describe('formsStatusRedirect', () => {
       expect(result).toEqual(expect.any(Symbol))
     })
 
-    it('uses grantVersion from context.state over model metadata', async () => {
-      context.state = { applicationStatus: 'SUBMITTED', grantVersion: '2.5.0' }
-      getApplicationStatus.mockResolvedValue({
-        json: async () => ({ status: 'OFFER_SENT' })
-      })
-
-      await formsStatusRedirect(request, h, context)
-
-      expect(request.yar.set).toHaveBeenCalledWith(YarKeys.GRANT_APPLICATION_CONTEXT, {
-        grantCode: 'grant-a',
-        clientRef: 'ref-001',
-        grantVersion: '2.5.0'
-      })
-    })
-
-    it('falls back to model metadata version when context.state.grantVersion is absent', async () => {
-      context.state = { applicationStatus: 'SUBMITTED' }
-      getApplicationStatus.mockResolvedValue({
-        json: async () => ({ status: 'OFFER_SENT' })
-      })
-
-      await formsStatusRedirect(request, h, context)
-
-      expect(request.yar.set).toHaveBeenCalledWith(YarKeys.GRANT_APPLICATION_CONTEXT, {
-        grantCode: 'grant-a',
-        clientRef: 'ref-001',
-        grantVersion: '1.0.0'
-      })
-    })
-
     it('continues when farm-payments request path is already /agreement', async () => {
       request.path = '/agreement'
       getApplicationStatus.mockResolvedValue({
@@ -806,21 +775,5 @@ describe('formsStatusRedirect', () => {
       expect(result).toBe(h.continue)
       expect(h.redirect).not.toHaveBeenCalled()
     })
-  })
-})
-
-describe('resolveClientGrantVersion', () => {
-  const mockRequest = (version) => ({ app: { model: { def: { metadata: { version } } } } })
-
-  it('returns grantVersion from context.state when present', () => {
-    expect(resolveClientGrantVersion({ state: { grantVersion: '2.5.0' } }, mockRequest('1.0.0'))).toBe('2.5.0')
-  })
-
-  it('falls back to model metadata version when context.state.grantVersion is absent', () => {
-    expect(resolveClientGrantVersion({ state: {} }, mockRequest('3.0.0'))).toBe('3.0.0')
-  })
-
-  it('falls back to "1.0.0" when neither state nor model has a version', () => {
-    expect(resolveClientGrantVersion({ state: {} }, { app: {} })).toBe('1.0.0')
   })
 })
