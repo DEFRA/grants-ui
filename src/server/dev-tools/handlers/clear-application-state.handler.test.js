@@ -45,7 +45,8 @@ describe('clearApplicationStateHandler', () => {
     mockRequest = {
       params: {},
       server: { methods: { getFormService: mockGetFormService } },
-      app: { model: {} }
+      app: { model: {} },
+      logger: { warn: vi.fn() }
     }
 
     mockH = {
