@@ -6,7 +6,7 @@ Feature: Defra ID Signout
 
         # login as user 1
         Given the user navigates to "/example-grant-with-auth"
-        And completes any login process as CRN "1101003693"
+        And logs in as CRN "1101003693"
         Then the user should see SBI "115722586" as the logged in organisation
 
         # start
@@ -35,7 +35,7 @@ Feature: Defra ID Signout
         # sign-out and sign in as user 2
         Given the user signs out of Defra ID
         And navigates to "/example-grant-with-auth"
-        And completes any login process as CRN "1100995056"
+        And logs in as CRN "1100995056"
         Then the user should see SBI "115680267" as the logged in organisation
 
         # start
@@ -64,7 +64,7 @@ Feature: Defra ID Signout
         # sign-out and sign in again as user 1
         Given the user signs out of Defra ID
         And navigates to "/example-grant-with-auth"
-        And completes any login process as CRN "1101003693"
+        And logs in as CRN "1101003693"
         Then the user should see SBI "115722586" as the logged in organisation
 
         # radios-field, first unanswered question
