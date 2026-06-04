@@ -4,15 +4,10 @@ import { auditPublisher } from './audit.js'
 vi.mock('@aws-sdk/client-sns', () => ({ SNSClient: vi.fn() }))
 vi.mock('@defra/fcp-audit-publisher', () => ({ publishAuditEvent: vi.fn() }))
 vi.mock('~/src/config/config.js', () => ({ config: { get: vi.fn() } }))
-vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  log: vi.fn(),
-  LogCodes: {
-    AUDIT: {
-      EVENT_PUBLISHED: { level: 'info', messageFunc: vi.fn() },
-      EVENT_PUBLISH_FAILED: { level: 'error', messageFunc: vi.fn() }
-    }
-  }
-}))
+vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
+  const { mockLogHelper } = await import('~/src/__mocks__/logger-mocks.js')
+  return mockLogHelper()
+})
 vi.mock('./audit-event.js', () => ({
   buildAuditEvent: vi.fn(() => ({ mock: 'event' })),
   mapEnvironment: vi.fn(() => 'cdp-test')
@@ -38,6 +33,7 @@ const successRequest = (overrides = {}) => ({
   app: { model: { def: { startPage: '/start' } } },
   response: { statusCode: 200 },
   sendAuditEvent: vi.fn(),
+  sendAuditEventInBackground: vi.fn(),
   ...overrides
 })
 
@@ -55,8 +51,9 @@ describe('audit-publisher plugin', () => {
     config.get.mockImplementation((key) => merged[key])
   }
 
-  // Pulls the function registered via server.decorate('request', 'sendAuditEvent', fn).
-  const getDecoratedSend = () => server.decorate.mock.calls.find((c) => c[1] === 'sendAuditEvent')[2]
+  // Pulls a function registered via server.decorate('request', name, fn).
+  const getDecorated = (name) => server.decorate.mock.calls.find((c) => c[1] === name)[2]
+  const getDecoratedSend = () => getDecorated('sendAuditEvent')
 
   beforeEach(async () => {
     vi.clearAllMocks()
@@ -73,7 +70,7 @@ describe('audit-publisher plugin', () => {
   })
 
   describe('registration gating', () => {
-    test('decorates a no-op sendAuditEvent and does nothing else when audit is disabled', async () => {
+    test('decorates no-op audit senders and does nothing else when audit is disabled', async () => {
       setupConfig({ 'audit.enabled': false })
 
       auditPublisher.plugin.register(server)
@@ -81,18 +78,21 @@ describe('audit-publisher plugin', () => {
       expect(server.ext).not.toHaveBeenCalled()
       expect(SNSClient).not.toHaveBeenCalled()
       expect(server.decorate).toHaveBeenCalledWith('request', 'sendAuditEvent', expect.any(Function))
+      expect(server.decorate).toHaveBeenCalledWith('request', 'sendAuditEventInBackground', expect.any(Function))
 
-      // The no-op resolves and never publishes.
-      await expect(getDecoratedSend()({ action: 'start' })).resolves.toBeUndefined()
+      // The no-ops resolve/return without publishing.
+      await expect(getDecorated('sendAuditEvent')({ action: 'start' })).resolves.toBeUndefined()
+      expect(getDecorated('sendAuditEventInBackground')({ action: 'start' })).toBeUndefined()
       expect(publishAuditEvent).not.toHaveBeenCalled()
     })
 
-    test('decorates sendAuditEvent and registers an onPreResponse extension when enabled', () => {
+    test('decorates both audit senders and registers an onPreResponse extension when enabled', () => {
       setupConfig()
 
       auditPublisher.plugin.register(server)
 
       expect(server.decorate).toHaveBeenCalledWith('request', 'sendAuditEvent', expect.any(Function))
+      expect(server.decorate).toHaveBeenCalledWith('request', 'sendAuditEventInBackground', expect.any(Function))
       expect(server.ext).toHaveBeenCalledWith('onPreResponse', expect.any(Function))
     })
 
@@ -179,6 +179,25 @@ describe('audit-publisher plugin', () => {
     })
   })
 
+  describe('request.sendAuditEventInBackground decoration', () => {
+    const request = { params: { slug: 'my-grant' } }
+
+    beforeEach(() => {
+      setupConfig()
+      auditPublisher.plugin.register(server)
+    })
+
+    test('publishes via the same path but returns undefined (fire-and-forget, no thenable)', () => {
+      publishAuditEvent.mockResolvedValue({ messageId: 'mid-bg' })
+
+      const result = getDecorated('sendAuditEventInBackground').call(request, { action: 'start' })
+
+      expect(result).toBeUndefined()
+      expect(buildAuditEvent).toHaveBeenCalledWith(request, { action: 'start' })
+      expect(publishAuditEvent).toHaveBeenCalledTimes(1)
+    })
+  })
+
   describe('onPreResponse handler', () => {
     let handler
     const h = { continue: Symbol('continue') }
@@ -189,7 +208,7 @@ describe('audit-publisher plugin', () => {
       handler = server.ext.mock.calls[0][1]
     })
 
-    test('sends a "start" event for an authenticated 2xx grant GET', async () => {
+    test('sends a "start" event in the background for an authenticated 2xx grant GET', async () => {
       const request = successRequest()
 
       const result = handler(request, h)
@@ -197,7 +216,8 @@ describe('audit-publisher plugin', () => {
 
       await flushPromises()
 
-      expect(request.sendAuditEvent).toHaveBeenCalledWith({ action: 'start' })
+      expect(request.sendAuditEventInBackground).toHaveBeenCalledWith({ action: 'start' })
+      expect(request.sendAuditEvent).not.toHaveBeenCalled()
     })
 
     test('sends a "start" event for a form whose start page is not /start', () => {
@@ -208,7 +228,7 @@ describe('audit-publisher plugin', () => {
 
       handler(request, h)
 
-      expect(request.sendAuditEvent).toHaveBeenCalledTimes(1)
+      expect(request.sendAuditEventInBackground).toHaveBeenCalledTimes(1)
     })
 
     test.each([
@@ -225,7 +245,59 @@ describe('audit-publisher plugin', () => {
 
       const result = handler(request, h)
 
-      expect(request.sendAuditEvent).not.toHaveBeenCalled()
+      expect(request.sendAuditEventInBackground).not.toHaveBeenCalled()
+      expect(result).toBe(h.continue)
+    })
+  })
+
+  describe('onPreResponse handler — page navigation', () => {
+    let handler
+    const h = { continue: Symbol('continue') }
+
+    const navRequest = (overrides = {}) => ({
+      method: 'post',
+      auth: { isAuthenticated: true },
+      params: { slug: 'my-grant', path: 'some-question' },
+      payload: { crumb: 'csrf-token', action: 'continue', favouriteColour: 'blue' },
+      response: { statusCode: 303 },
+      sendAuditEvent: vi.fn(),
+      sendAuditEventInBackground: vi.fn(),
+      ...overrides
+    })
+
+    beforeEach(() => {
+      setupConfig()
+      auditPublisher.plugin.register(server)
+      handler = server.ext.mock.calls[0][1]
+    })
+
+    test('sends a "navigate" event with the page name as entityid and answers (crumb/action stripped)', () => {
+      const request = navRequest()
+
+      const result = handler(request, h)
+      expect(result).toBe(h.continue)
+
+      expect(request.sendAuditEventInBackground).toHaveBeenCalledWith({
+        action: 'navigate',
+        entityid: 'some-question',
+        details: { grant: 'my-grant', answers: { favouriteColour: 'blue' } }
+      })
+    })
+
+    test.each([
+      ['method is not POST', { method: 'get' }],
+      ['request is unauthenticated', { auth: { isAuthenticated: false } }],
+      ['there is no slug', { params: { path: 'some-question' } }],
+      ['there is no page path', { params: { slug: 'my-grant' } }],
+      ['the response is a 302 submission redirect', { response: { statusCode: 302 } }],
+      ['the response is a 200 re-render', { response: { statusCode: 200 } }],
+      ['the response is an error', { response: new Error('boom') }]
+    ])('does not send a navigate event when %s', (_label, overrides) => {
+      const request = navRequest(overrides)
+
+      const result = handler(request, h)
+
+      expect(request.sendAuditEventInBackground).not.toHaveBeenCalled()
       expect(result).toBe(h.continue)
     })
   })

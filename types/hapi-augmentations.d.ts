@@ -2,20 +2,25 @@ import '@hapi/hapi'
 import type { CacheService } from '@defra/forms-engine-plugin/cache-service.js'
 import type { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
 
+interface AuditEventInput {
+  action: string
+  entity?: string
+  entityid?: string
+  status?: string
+  details?: Record<string, unknown>
+}
+
 declare module '@hapi/hapi' {
   interface ServerMethods {
     getFormService: () => object
   }
 
   interface Request {
-    // Decorated by the audit-publisher plugin; a no-op when audit is disabled.
-    sendAuditEvent: (opts: {
-      action: string
-      entity?: string
-      entityid?: string
-      status?: string
-      details?: Record<string, unknown>
-    }) => Promise<void>
+    // Decorated by the audit-publisher plugin; no-ops when audit is disabled.
+    // `sendAuditEvent` returns the publish Promise (await it); the
+    // `...InBackground` variant is fire-and-forget and returns void.
+    sendAuditEvent: (opts: AuditEventInput) => Promise<void>
+    sendAuditEventInBackground: (opts: AuditEventInput) => void
   }
 
   interface ServerApplicationState {

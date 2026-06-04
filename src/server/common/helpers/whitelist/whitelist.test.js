@@ -123,10 +123,12 @@ describe('whitelist plugin', () => {
     const mockService = buildMockService({ overallAccess: false, crnPassesValidation: false, hasCrnValidation: true })
     WhitelistServiceFactory.getService.mockReturnValue(mockService)
 
+    const sendAuditEvent = vi.fn().mockResolvedValue(undefined)
     const request = mockHapiRequest({
       path: `/forms/${testSlug}`,
       params: { slug: testSlug },
-      auth: { isAuthenticated: true, credentials: { crn: testCrn, sbi: testSbi } }
+      auth: { isAuthenticated: true, credentials: { crn: testCrn, sbi: testSbi } },
+      sendAuditEvent
     })
 
     const result = await handler(request, h)
@@ -134,9 +136,42 @@ describe('whitelist plugin', () => {
     expect(mockService.validateGrantAccess).toHaveBeenCalledWith(testCrn, testSbi)
     expect(mockService.logWhitelistValidation).toHaveBeenCalled()
 
+    expect(sendAuditEvent).toHaveBeenCalledWith({
+      action: 'unauthorised',
+      status: 'denied',
+      details: {
+        reason: 'whitelist',
+        crnPassesValidation: false,
+        sbiPassesValidation: true
+      }
+    })
+
     expect(h.redirect).toHaveBeenCalledWith('/auth/journey-unauthorised')
     expect(h.takeover).toHaveBeenCalled()
     expect(result).toBe(h)
+  })
+
+  it('should not send an audit event when access is allowed', async () => {
+    const handler = registerAndGetOnPostAuth(server)
+
+    const testSlug = 'test-form'
+    getAllForms.mockReturnValue([{ slug: testSlug, metadata: { whitelistCrnEnvVar: 1234567890 } }])
+
+    const mockService = buildMockService({ overallAccess: true })
+    WhitelistServiceFactory.getService.mockReturnValue(mockService)
+
+    const sendAuditEvent = vi.fn().mockResolvedValue(undefined)
+    const request = mockHapiRequest({
+      path: `/forms/${testSlug}`,
+      params: { slug: testSlug },
+      auth: { isAuthenticated: true, credentials: { crn: '1101009926', sbi: '105123456' } },
+      sendAuditEvent
+    })
+
+    const result = await handler(request, h)
+
+    expect(sendAuditEvent).not.toHaveBeenCalled()
+    expect(result).toBe(h.continue)
   })
 
   it('should handle missing form slug gracefully (metadata undefined)', async () => {

@@ -43,6 +43,25 @@ export const mapEnvironment = (cdpEnvironment) => {
 }
 
 /**
+ * Builds the schema's `accounts` block from whichever identity claims are
+ * present on the credentials, omitting any that are missing so the publisher
+ * never receives `undefined` values.
+ * @param {Record<string, unknown>} credentials
+ * @returns {Record<string, string>}
+ */
+const buildAccounts = (credentials) => {
+  /** @type {Record<string, string>} */
+  const accounts = {}
+  for (const key of ['crn', 'sbi', 'organisationId']) {
+    const value = credentials[key]
+    if (value) {
+      accounts[key] = /** @type {string} */ (value)
+    }
+  }
+  return accounts
+}
+
+/**
  * @typedef {object} AuditEventOptions
  * @property {string} action - The verb describing what happened (e.g. `start`,
  *   `submit`, `resubmit`, `navigate`, `unauthorised`). Lowercased, max 120 chars.
@@ -68,27 +87,13 @@ export const buildAuditEvent = (request, { action, entity = 'application', entit
   const credentials = request.auth.credentials
   const contactId = /** @type {string | undefined} */ (credentials.contactId)
   const sessionId = /** @type {string | undefined} */ (credentials.sessionId)
-  const crn = /** @type {string | undefined} */ (credentials.crn)
-  const sbi = /** @type {string | undefined} */ (credentials.sbi)
-  const organisationId = /** @type {string | undefined} */ (credentials.organisationId)
 
   const correlationid = request.headers[config.get('tracing.header')]
   const ip = sanitiseIp(getClientIp(request.headers['x-forwarded-for']) || request.info.remoteAddress)
 
-  /** @type {Record<string, string>} */
-  const accounts = {}
-  if (crn) {
-    accounts.crn = crn
-  }
-  if (sbi) {
-    accounts.sbi = sbi
-  }
-  if (organisationId) {
-    accounts.organisationId = organisationId
-  }
+  const accounts = buildAccounts(credentials)
 
-  /** @type {Record<string, unknown>} */
-  const event = {
+  return {
     datetime: new Date().toISOString(),
     ip,
     audit: {
@@ -96,18 +101,9 @@ export const buildAuditEvent = (request, { action, entity = 'application', entit
       status,
       ...(Object.keys(accounts).length > 0 && { accounts }),
       ...(details && { details })
-    }
+    },
+    ...(contactId && { user: `IDM/${contactId}` }),
+    ...(sessionId && { sessionid: sessionId }),
+    ...(correlationid && { correlationid })
   }
-
-  if (contactId) {
-    event.user = `IDM/${contactId}`
-  }
-  if (sessionId) {
-    event.sessionid = sessionId
-  }
-  if (correlationid) {
-    event.correlationid = correlationid
-  }
-
-  return event
 }
