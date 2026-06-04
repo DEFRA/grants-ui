@@ -3,6 +3,7 @@ import { SessionError } from '~/src/server/common/utils/errors/SessionError.js'
 import { findFormBySlug, loadFormDefinition } from '~/src/server/common/forms/services/find-form-by-slug.js'
 import { clearParcelCache } from '~/src/server/land-grants/services/parcel-cache.js'
 import { clearSavedStateFromApi } from '~/src/server/common/helpers/state/fetch-saved-state-helper.js'
+import { mintLockToken } from '~/src/server/common/helpers/lock/lock-token.js'
 import { YarKeys } from '~/src/server/common/constants/session-keys.js'
 
 /**
@@ -45,12 +46,22 @@ export async function clearApplicationStateHandler(request, h) {
       throw sessionError.from(/** @type {Error} */ (error))
     }
   } else {
-    const sbi = /** @type {{ sbi?: string }} */ (request.auth?.credentials)?.sbi
+    const credentials = /** @type {{ sbi?: string, contactId?: string, crn?: string }} */ (request.auth?.credentials)
+    const sbi = credentials?.sbi
+    const contactId = credentials?.contactId
     const { grantCode } = /** @type {{ grantCode: string | undefined }} */ (
       request.yar?.get(YarKeys.GRANT_APPLICATION_CONTEXT) || {}
     )
-    if (sbi && grantCode) {
-      await clearSavedStateFromApi(`${sbi}:${grantCode}`, request)
+    if (sbi && grantCode && contactId) {
+      const grantVersion =
+        /** @type {{ metadata?: { version?: string | number } }} */ (request.app.model?.def ?? {}).metadata?.version ??
+        1
+      const lockToken = mintLockToken({ userId: String(contactId), sbi, grantCode, grantVersion })
+      try {
+        await clearSavedStateFromApi(`${sbi}:${grantCode}`, request, { lockToken })
+      } catch (_err) {
+        // dev-tools best-effort: always redirect even if backend clear fails
+      }
     }
   }
 

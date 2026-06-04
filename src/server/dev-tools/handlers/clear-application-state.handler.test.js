@@ -4,6 +4,7 @@ import { getFormsCacheService } from '../../common/helpers/forms-cache/forms-cac
 import { SessionError } from '~/src/server/common/utils/errors/SessionError.js'
 import { findFormBySlug, loadFormDefinition } from '~/src/server/common/forms/services/find-form-by-slug.js'
 import { clearSavedStateFromApi } from '~/src/server/common/helpers/state/fetch-saved-state-helper.js'
+import { mintLockToken } from '~/src/server/common/helpers/lock/lock-token.js'
 
 vi.mock('../../common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: vi.fn()
@@ -16,6 +17,10 @@ vi.mock('~/src/server/common/forms/services/find-form-by-slug.js', () => ({
 
 vi.mock('~/src/server/common/helpers/state/fetch-saved-state-helper.js', () => ({
   clearSavedStateFromApi: vi.fn()
+}))
+
+vi.mock('~/src/server/common/helpers/lock/lock-token.js', () => ({
+  mintLockToken: vi.fn().mockReturnValue('mock-lock-token')
 }))
 
 describe('clearApplicationStateHandler', () => {
@@ -154,19 +159,27 @@ describe('clearApplicationStateHandler', () => {
   describe('when no slug is provided', () => {
     beforeEach(() => {
       mockRequest.params.slug = undefined
-      mockRequest.auth = { credentials: { sbi: '123456789' } }
+      mockRequest.auth = { credentials: { sbi: '123456789', contactId: 'contact-123' } }
       mockRequest.yar = { get: vi.fn().mockReturnValue({ grantCode: 'farm-payments' }) }
       clearSavedStateFromApi.mockResolvedValue(undefined)
     })
 
-    it('should call clearSavedStateFromApi with sbi:grantCode key from yar', async () => {
+    it('should call clearSavedStateFromApi with key and lock token', async () => {
       await clearApplicationStateHandler(mockRequest, mockH)
 
-      expect(clearSavedStateFromApi).toHaveBeenCalledWith('123456789:farm-payments', mockRequest)
+      expect(mintLockToken).toHaveBeenCalledWith({
+        userId: 'contact-123',
+        sbi: '123456789',
+        grantCode: 'farm-payments',
+        grantVersion: 1
+      })
+      expect(clearSavedStateFromApi).toHaveBeenCalledWith('123456789:farm-payments', mockRequest, {
+        lockToken: 'mock-lock-token'
+      })
     })
 
     it('should not call clearSavedStateFromApi when sbi is missing from credentials', async () => {
-      mockRequest.auth = { credentials: {} }
+      mockRequest.auth = { credentials: { contactId: 'contact-123' } }
 
       await clearApplicationStateHandler(mockRequest, mockH)
 
@@ -175,6 +188,14 @@ describe('clearApplicationStateHandler', () => {
 
     it('should not call clearSavedStateFromApi when auth is absent', async () => {
       mockRequest.auth = undefined
+
+      await clearApplicationStateHandler(mockRequest, mockH)
+
+      expect(clearSavedStateFromApi).not.toHaveBeenCalled()
+    })
+
+    it('should not call clearSavedStateFromApi when contactId is absent', async () => {
+      mockRequest.auth = { credentials: { sbi: '123456789' } }
 
       await clearApplicationStateHandler(mockRequest, mockH)
 
