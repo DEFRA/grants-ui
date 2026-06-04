@@ -5,7 +5,7 @@ Feature: Footer Links
 
         # start
         Given the user navigates to "/example-grant-with-auth"
-        And completes any login process as CRN "1100961682"
+        And logs in as CRN "1100961682"
         Then the user should see heading "Example Grant"
 
         # footer links

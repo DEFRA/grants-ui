@@ -1,11 +1,8 @@
 services:
   grants-ui-acceptance-tests:
     build: ./acceptance
-    depends_on:
-      selenium-chrome:
-        condition: service_healthy
     environment:
-      MAX_INSTANCES: ${SE_NODE_MAX_SESSIONS:-1}
+      MAX_INSTANCES: ${MAX_INSTANCES:-6}
       NODE_EXTRA_CA_CERTS: /etc/ssl/certs/nginx.crt
       BASE_URL: https://grants-ui-proxy:4000
       BASE_BACKEND_URL: https://grants-ui-proxy:4001
@@ -94,7 +91,7 @@ services:
       retries: 12
       start_period: 10s
     environment:
-      SE_NODE_MAX_SESSIONS: ${SE_NODE_MAX_SESSIONS:-1}
+      SE_NODE_MAX_SESSIONS: 1
     networks:
       - grants-ui-net
 

@@ -7,7 +7,7 @@ Feature: SBI-Driven Applications
 
         # login as applicant farmer
         Given the user navigates to "/example-grant-with-auth"
-        And completes any login process as CRN "1109990002"
+        And logs in as CRN "1109990002"
 
         # start
         Then the user should be at URL "start"
@@ -36,7 +36,7 @@ Feature: SBI-Driven Applications
         # reload the browser session and login again as the agent, selecting the same SBI
         Given the user starts a new browser session
         And navigates to "/example-grant-with-auth"
-        And completes any login process as CRN "1109990001"
+        And logs in as CRN "1109990001"
         And selects SBI "119000002"
         And continues
 
@@ -74,7 +74,7 @@ Feature: SBI-Driven Applications
         # first user logs back in
         Given the user starts a new browser session
         And navigates to "/example-grant-with-auth"
-        And completes any login process as CRN "1109990002"
+        And logs in as CRN "1109990002"
 
         # checkboxes-field, first user is at the first unanswered question
         Then the user should be at URL "checkboxes-field"
