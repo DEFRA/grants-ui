@@ -2,11 +2,11 @@
 
 echo "Executing: $@"
 "$@"
+EXIT_CODE=$?
 
-if [ -f FAILED ]; then
+if [ $EXIT_CODE -ne 0 ]; then
   echo "test suite failed"
-  cat ./FAILED
-  exit 1
+  exit $EXIT_CODE
 fi
 
 echo "test suite passed"

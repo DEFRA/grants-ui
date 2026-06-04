@@ -1,27 +1,35 @@
-import SummaryAnswer from '../dto/summary-answer'
+export default class SummaryPage {
+  constructor(page) {
+    this.page = page
+  }
 
-class SummaryPage {
   async answers() {
     const summaryAnswers = []
 
+    // wait for the summary table to be present before iterating
+    await this.page.locator('//h1/following-sibling::dl/div[1]').waitFor({ state: 'visible' })
+
     for (let i = 1; ; i++) {
-      if (!(await $(`//h1/following-sibling::dl/div[${i}]`).isExisting())) {
+      const row = this.page.locator(`//h1/following-sibling::dl/div[${i}]`)
+      if (!(await row.isVisible().catch(() => false))) {
         break
       }
 
-      const question = (await $(`//h1/following-sibling::dl/div[${i}]/dt`).getText()).trim()
-      const summaryAnswer = new SummaryAnswer(question)
+      const question = (await row.locator('dt').textContent()).trim()
+      const summaryAnswer = { question, answers: [] }
       summaryAnswers.push(summaryAnswer)
 
-      if (await $(`//h1/following-sibling::dl/div[${i}]/dd[1]/ul`).isExisting()) {
-        // answers are in LI elements
-        summaryAnswer.answers = await Promise.all(
-          await $$(`//h1/following-sibling::dl/div[${i}]/dd[1]/ul/li`).map(async (e) => (await e.getText()).trim())
-        )
+      const ul = row.locator('dd:nth-child(2) ul')
+      if (await ul.isVisible().catch(() => false)) {
+        const liItems = ul.locator('li')
+        const count = await liItems.count()
+        summaryAnswer.answers = []
+        for (let j = 0; j < count; j++) {
+          summaryAnswer.answers.push((await liItems.nth(j).textContent()).trim())
+        }
       } else {
-        summaryAnswer.answers = (await $(`//h1/following-sibling::dl/div[${i}]/dd[1]`).getText())
-          .split(/\r\n|\r|\n/)
-          .map((e) => e.trim())
+        const ddText = (await row.locator('dd:nth-child(2)').innerText()).trim()
+        summaryAnswer.answers = ddText.split(/\r\n|\r|\n/).map((e) => e.trim())
       }
     }
 
@@ -29,8 +37,6 @@ class SummaryPage {
   }
 
   async changeAnswerFor(question) {
-    await $(`//dt[contains(text(),'${question}')]/following-sibling::dd[2]/a`).click()
+    await this.page.locator(`//dt[contains(text(),'${question}')]/following-sibling::dd[2]/a`).click()
   }
 }
-
-export default new SummaryPage()

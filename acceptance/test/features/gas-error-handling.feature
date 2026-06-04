@@ -6,7 +6,7 @@ Feature: GAS Error-Handling
 
         # start
         Given the user navigates to "/example-grant-with-auth"
-        And completes any login process as CRN "1100988734"
+        And logs in as CRN "1100988734"
         Then the user should see heading "Example Grant"
         When the user clicks on "Start now"
 

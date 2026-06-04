@@ -5,7 +5,7 @@ Feature: Application Amendment
 
         # start
         Given the user navigates to "/example-grant-with-auth"
-        And completes any login process as CRN "1100964517"
+        And logs in as CRN "1100964517"
         Then the user should see heading "Example Grant"
         When the user clicks on "Start now"
 
@@ -196,7 +196,7 @@ Feature: Application Amendment
         # user revisits grants-ui
         And the user starts a new browser session
         And navigates to "/example-grant-with-auth/yes-no-field"
-        And completes any login process as CRN "1100964517"
+        And logs in as CRN "1100964517"
         Then the user should be at URL "summary"
         And the grants-ui application status for CRN "1100964517" and SBI "115482347" and grant "example-grant-with-auth" should be "REOPENED"
 
@@ -285,7 +285,7 @@ Feature: Application Amendment
         # user revisits grants-ui
         And the user starts a new browser session
         And navigates to "/example-grant-with-auth/yes-no-field"
-        And completes any login process as CRN "1100964517"
+        And logs in as CRN "1100964517"
         Then the user should be at URL "summary"
         And the grants-ui application status for CRN "1100964517" and SBI "115482347" and grant "example-grant-with-auth" should be "REOPENED"
 

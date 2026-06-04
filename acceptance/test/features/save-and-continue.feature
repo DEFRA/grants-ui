@@ -6,7 +6,7 @@ Feature: Save and Continue
 
         # start
         Given the user navigates to "/example-grant-with-auth"
-        And completes any login process as CRN "1100960953"
+        And logs in as CRN "1100960953"
         Then the user should see heading "Example Grant"
         When the user clicks on "Start now"
 
@@ -34,7 +34,7 @@ Feature: Save and Continue
         # reload the browser session and go to /start
         Given the user starts a new browser session
         And navigates to "/example-grant-with-auth"
-        And completes any login process as CRN "1100960953"
+        And logs in as CRN "1100960953"
 
         # radios-field, should return to first unanswered question on resumption of uncompleted journey
         Then the user should be at URL "radios-field"
@@ -161,7 +161,7 @@ Feature: Save and Continue
         # reload the browser session and go to /start
         Given the user starts a new browser session
         And navigates to "/example-grant-with-auth"
-        And completes any login process as CRN "1100960953"
+        And logs in as CRN "1100960953"
 
         # summary, should return to summary with all previous answers on resumption of completed but unsubmitted journey
         Then the user should be at URL "summary"

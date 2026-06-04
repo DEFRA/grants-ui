@@ -1,4 +1,4 @@
-import referenceNumbers from './reference-number-store'
+import referenceNumbers from './reference-number-store.js'
 
 export function transformStepArgument(value) {
   if (value === '{DATE IN A WEEK}') {

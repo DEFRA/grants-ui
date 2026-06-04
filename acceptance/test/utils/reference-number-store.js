@@ -1,32 +1,43 @@
-import { world } from '@wdio/cucumber-framework'
+import { Before } from '@cucumber/cucumber'
 
 class ReferenceNumberStore {
+  constructor() {
+    this._refs = []
+  }
+
+  reset() {
+    this._refs = []
+  }
+
   get current() {
-    const refs = world.referenceNumbers || []
-    return refs[refs.length - 1]
+    return this._refs[this._refs.length - 1]
   }
 
   get previous() {
-    const refs = world.referenceNumbers || []
-    return refs[refs.length - 2]
+    return this._refs[this._refs.length - 2]
   }
 
   get first() {
-    return world.referenceNumbers?.[0]
+    return this._refs[0]
   }
 
   get second() {
-    return world.referenceNumbers?.[1]
+    return this._refs[1]
   }
 
   get third() {
-    return world.referenceNumbers?.[2]
+    return this._refs[2]
   }
 
   push(referenceNumber) {
-    world.referenceNumbers = world.referenceNumbers || []
-    world.referenceNumbers.push(referenceNumber)
+    this._refs.push(referenceNumber)
   }
 }
 
-export default new ReferenceNumberStore()
+const referenceNumbers = new ReferenceNumberStore()
+
+Before(function () {
+  referenceNumbers.reset()
+})
+
+export default referenceNumbers
