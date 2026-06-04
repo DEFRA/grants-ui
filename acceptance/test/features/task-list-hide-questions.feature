@@ -5,7 +5,7 @@ Feature: Task Lists Hiding Questions
 
         # start
         Given the user navigates to "example-grant-with-task-list-hide-questions"
-        And completes any login process as CRN "1100946179"
+        And logs in as CRN "1100946179"
         Then the user should be at URL "start"
         Then the user should see heading "Apply for Example Grant with Task List"
         And the page is analyzed for accessibility

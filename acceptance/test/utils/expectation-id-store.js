@@ -1,14 +1,27 @@
-import { world } from '@wdio/cucumber-framework'
+import { Before } from '@cucumber/cucumber'
 
 class ExpectationIdStore {
+  constructor() {
+    this._ids = []
+  }
+
+  reset() {
+    this._ids = []
+  }
+
   get all() {
-    return world.expectationIds || []
+    return [...this._ids]
   }
 
   push(expectationId) {
-    world.expectationIds = world.expectationIds || []
-    world.expectationIds.push(expectationId)
+    this._ids.push(expectationId)
   }
 }
 
-export default new ExpectationIdStore()
+const expectationIds = new ExpectationIdStore()
+
+Before(function () {
+  expectationIds.reset()
+})
+
+export default expectationIds

@@ -5,7 +5,7 @@ Feature: Task Lists Showing Questions
 
         # start
         Given the user navigates to "example-grant-with-task-list"
-        And completes any login process as CRN "1100957579"
+        And logs in as CRN "1100957579"
         Then the user should be at URL "start"
         Then the user should see heading "Apply for Example Grant with Task List"
         And the page is analyzed for accessibility
