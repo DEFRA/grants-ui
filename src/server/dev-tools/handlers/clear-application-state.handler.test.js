@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { clearApplicationStateHandler } from './clear-application-state.handler.js'
 import { getFormsCacheService } from '../../common/helpers/forms-cache/forms-cache.js'
-import { SessionError } from '~/src/server/common/utils/errors/SessionError.js'
+
 import { findFormBySlug, loadFormDefinition } from '~/src/server/common/forms/services/find-form-by-slug.js'
-import { clearSavedStateFromApi } from '~/src/server/common/helpers/state/fetch-saved-state-helper.js'
+import { clearSavedStateFromApiByContext } from '~/src/server/common/helpers/state/fetch-saved-state-helper.js'
 import { mintLockToken } from '~/src/server/common/helpers/lock/lock-token.js'
+import { log } from '../../common/helpers/logging/log.js'
 
 vi.mock('../../common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: vi.fn()
@@ -16,11 +17,16 @@ vi.mock('~/src/server/common/forms/services/find-form-by-slug.js', () => ({
 }))
 
 vi.mock('~/src/server/common/helpers/state/fetch-saved-state-helper.js', () => ({
-  clearSavedStateFromApi: vi.fn()
+  clearSavedStateFromApiByContext: vi.fn()
 }))
 
 vi.mock('~/src/server/common/helpers/lock/lock-token.js', () => ({
   mintLockToken: vi.fn().mockReturnValue('mock-lock-token')
+}))
+
+vi.mock('../../common/helpers/logging/log.js', () => ({
+  log: vi.fn(),
+  LogCodes: { SYSTEM: { SERVER_ERROR: 'SERVER_ERROR' } }
 }))
 
 describe('clearApplicationStateHandler', () => {
@@ -89,25 +95,19 @@ describe('clearApplicationStateHandler', () => {
       expect(mockCacheService.clearState).toHaveBeenCalledWith(mockRequest, true)
     })
 
-    it('should handle clearState errors', async () => {
+    it('should log error and still redirect when clearState fails', async () => {
       mockRequest.params.slug = 'test-slug'
-      const error = new Error('Cache clear failed')
-      mockCacheService.clearState.mockRejectedValue(error)
+      mockCacheService.clearState.mockRejectedValue(new Error('Cache clear failed'))
 
-      let thrown
+      const result = await clearApplicationStateHandler(mockRequest, mockH)
 
-      try {
-        await clearApplicationStateHandler(mockRequest, mockH)
-      } catch (e) {
-        thrown = e
-      }
-
-      expect(thrown).toBeInstanceOf(SessionError)
-      expect(thrown.message).toBe('Session state clear failed')
-
-      const wrappedError = thrown.causeErrors.values().next().value
-
-      expect(wrappedError.message).toBe('Cache clear failed')
+      expect(log).toHaveBeenCalledWith(
+        'SERVER_ERROR',
+        expect.objectContaining({ errorMessage: expect.stringContaining('Session state clear failed') }),
+        mockRequest
+      )
+      expect(mockH.redirect).toHaveBeenCalledWith('/test-slug')
+      expect(result).toEqual({ redirect: '/test-slug' })
     })
   })
 
@@ -161,54 +161,66 @@ describe('clearApplicationStateHandler', () => {
     beforeEach(() => {
       mockRequest.params.slug = undefined
       mockRequest.auth = { credentials: { sbi: '123456789', contactId: 'contact-123' } }
-      mockRequest.yar = { get: vi.fn().mockReturnValue({ grantCode: 'farm-payments' }) }
-      clearSavedStateFromApi.mockResolvedValue(undefined)
+      mockRequest.app = { grantCode: 'farm-payments', grantVersion: '2.0.0' }
+      clearSavedStateFromApiByContext.mockResolvedValue(undefined)
     })
 
-    it('should call clearSavedStateFromApi with key and lock token', async () => {
+    it('should call clearSavedStateFromApiByContext with grantCode and grantVersion from request.app', async () => {
       await clearApplicationStateHandler(mockRequest, mockH)
 
       expect(mintLockToken).toHaveBeenCalledWith({
         userId: 'contact-123',
         sbi: '123456789',
         grantCode: 'farm-payments',
-        grantVersion: 1
+        grantVersion: '2.0.0'
       })
-      expect(clearSavedStateFromApi).toHaveBeenCalledWith('123456789:farm-payments', mockRequest, {
+      expect(clearSavedStateFromApiByContext).toHaveBeenCalledWith({
+        sbi: '123456789',
+        grantCode: 'farm-payments',
+        grantVersion: '2.0.0',
         lockToken: 'mock-lock-token'
       })
     })
 
-    it('should not call clearSavedStateFromApi when sbi is missing from credentials', async () => {
+    it('should default grantVersion to 1 when not set on request.app', async () => {
+      mockRequest.app = { grantCode: 'farm-payments' }
+
+      await clearApplicationStateHandler(mockRequest, mockH)
+
+      expect(mintLockToken).toHaveBeenCalledWith(expect.objectContaining({ grantVersion: 1 }))
+      expect(clearSavedStateFromApiByContext).toHaveBeenCalledWith(expect.objectContaining({ grantVersion: 1 }))
+    })
+
+    it('should not call clearSavedStateFromApiByContext when sbi is missing from credentials', async () => {
       mockRequest.auth = { credentials: { contactId: 'contact-123' } }
 
       await clearApplicationStateHandler(mockRequest, mockH)
 
-      expect(clearSavedStateFromApi).not.toHaveBeenCalled()
+      expect(clearSavedStateFromApiByContext).not.toHaveBeenCalled()
     })
 
-    it('should not call clearSavedStateFromApi when auth is absent', async () => {
+    it('should not call clearSavedStateFromApiByContext when auth is absent', async () => {
       mockRequest.auth = undefined
 
       await clearApplicationStateHandler(mockRequest, mockH)
 
-      expect(clearSavedStateFromApi).not.toHaveBeenCalled()
+      expect(clearSavedStateFromApiByContext).not.toHaveBeenCalled()
     })
 
-    it('should not call clearSavedStateFromApi when contactId is absent', async () => {
+    it('should not call clearSavedStateFromApiByContext when contactId is absent', async () => {
       mockRequest.auth = { credentials: { sbi: '123456789' } }
 
       await clearApplicationStateHandler(mockRequest, mockH)
 
-      expect(clearSavedStateFromApi).not.toHaveBeenCalled()
+      expect(clearSavedStateFromApiByContext).not.toHaveBeenCalled()
     })
 
-    it('should not call clearSavedStateFromApi when grantApplicationContext is not in yar', async () => {
-      mockRequest.yar = { get: vi.fn().mockReturnValue(null) }
+    it('should not call clearSavedStateFromApiByContext when grantCode is not set on request.app', async () => {
+      mockRequest.app = { grantVersion: '2.0.0' }
 
       await clearApplicationStateHandler(mockRequest, mockH)
 
-      expect(clearSavedStateFromApi).not.toHaveBeenCalled()
+      expect(clearSavedStateFromApiByContext).not.toHaveBeenCalled()
     })
 
     it('should redirect to / by default', async () => {

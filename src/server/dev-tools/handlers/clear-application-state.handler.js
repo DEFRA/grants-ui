@@ -2,9 +2,8 @@ import { getFormsCacheService } from '../../common/helpers/forms-cache/forms-cac
 import { SessionError } from '~/src/server/common/utils/errors/SessionError.js'
 import { findFormBySlug, loadFormDefinition } from '~/src/server/common/forms/services/find-form-by-slug.js'
 import { clearParcelCache } from '~/src/server/land-grants/services/parcel-cache.js'
-import { clearSavedStateFromApi } from '~/src/server/common/helpers/state/fetch-saved-state-helper.js'
+import { clearSavedStateFromApiByContext } from '~/src/server/common/helpers/state/fetch-saved-state-helper.js'
 import { mintLockToken } from '~/src/server/common/helpers/lock/lock-token.js'
-import { YarKeys } from '~/src/server/common/constants/session-keys.js'
 import { log, LogCodes } from '../../common/helpers/logging/log.js'
 
 /**
@@ -47,18 +46,22 @@ async function clearStateWithSlug(slug, request) {
   }
 
   const cacheService = getFormsCacheService(request.server)
+  let clearError
   try {
     await cacheService.clearState(request, true)
   } catch (error) {
     const sessionKey = cacheService._Key(request)
-    const sessionError = new SessionError({
+    clearError = new SessionError({
       message: 'Session state clear failed',
       source: 'clearApplicationStateHandler',
       reason: 'session_state_clear_failure',
       slug,
       sessionKey
-    })
-    throw sessionError.from(/** @type {Error} */ (error))
+    }).from(/** @type {Error} */ (error))
+  }
+
+  if (clearError) {
+    log(LogCodes.SYSTEM.SERVER_ERROR, { errorMessage: clearError.message }, request)
   }
 }
 
@@ -69,21 +72,19 @@ async function clearStateWithoutSlug(request) {
   const credentials = /** @type {{ sbi?: string, contactId?: string }} */ (request.auth?.credentials)
   const sbi = credentials?.sbi
   const contactId = credentials?.contactId
-  const { grantCode } = /** @type {{ grantCode: string | undefined }} */ (
-    request.yar?.get(YarKeys.GRANT_APPLICATION_CONTEXT) || {}
-  )
+  const app = /** @type {{ grantCode?: string | null, grantVersion?: string | number | null }} */ (request.app)
+  const grantCode = app.grantCode
+  const grantVersion = app.grantVersion ?? 1
 
   if (!sbi || !grantCode || !contactId) {
     return
   }
 
-  const grantVersion =
-    /** @type {{ metadata?: { version?: string | number } }} */ (request.app.model?.def)?.metadata?.version ?? 1
   const lockToken = mintLockToken({ userId: String(contactId), sbi, grantCode, grantVersion })
 
   let clearError
   try {
-    await clearSavedStateFromApi(`${sbi}:${grantCode}`, request, { lockToken })
+    await clearSavedStateFromApiByContext({ sbi, grantCode, grantVersion, lockToken })
   } catch (err) {
     clearError = new SessionError({
       message: 'Session state clear failed',

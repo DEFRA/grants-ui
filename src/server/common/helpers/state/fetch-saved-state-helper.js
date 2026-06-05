@@ -113,6 +113,33 @@ export async function clearSavedStateFromApi(key, request, { lockToken } = {}) {
 }
 
 /**
+ * Deletes the state document for a specific grant by sbi, grantCode and grantVersion.
+ * Used when the request has no form model (e.g. clearing state from the agreements proxy page).
+ *
+ * @param {{ sbi: string, grantCode: string, grantVersion: string, lockToken: string }} params
+ * @returns {Promise<void>}
+ */
+export async function clearSavedStateFromApiByContext({ sbi, grantCode, grantVersion, lockToken }) {
+  if (!GRANTS_UI_BACKEND_ENDPOINT?.length) {
+    return
+  }
+
+  const url = new URL('/state/', GRANTS_UI_BACKEND_ENDPOINT)
+  url.searchParams.set('sbi', sbi)
+  url.searchParams.set('grantCode', grantCode)
+  url.searchParams.set('grantVersion', String(grantVersion))
+
+  const response = await fetch(url.href, {
+    method: 'DELETE',
+    headers: createApiHeadersForGrantsUiBackend({ lockToken })
+  })
+
+  if (!response.ok && response.status !== statusCodes.notFound) {
+    throw createBoomError(response.status, `Failed to clear state: ${response.status}`)
+  }
+}
+
+/**
  * @import { AnyRequest } from '@defra/forms-engine-plugin/engine/types.js'
  * @import { LogCodeEntry } from '../logging/log.js'
  */
