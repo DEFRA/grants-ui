@@ -103,7 +103,7 @@ describe('clearApplicationStateHandler', () => {
 
       expect(log).toHaveBeenCalledWith(
         'SERVER_ERROR',
-        expect.objectContaining({ errorMessage: expect.stringContaining('Session state clear failed') }),
+        expect.objectContaining({ errorMessage: expect.stringContaining('Cache clear failed') }),
         mockRequest
       )
       expect(mockH.redirect).toHaveBeenCalledWith('/test-slug')
@@ -161,11 +161,11 @@ describe('clearApplicationStateHandler', () => {
     beforeEach(() => {
       mockRequest.params.slug = undefined
       mockRequest.auth = { credentials: { sbi: '123456789', contactId: 'contact-123' } }
-      mockRequest.app = { grantCode: 'farm-payments', grantVersion: '2.0.0' }
+      mockRequest.yar = { get: vi.fn().mockReturnValue({ grantCode: 'farm-payments', grantVersion: '2.0.0' }) }
       clearSavedStateFromApiByContext.mockResolvedValue(undefined)
     })
 
-    it('should call clearSavedStateFromApiByContext with grantCode and grantVersion from request.app', async () => {
+    it('should call clearSavedStateFromApiByContext with grantCode and grantVersion from yar', async () => {
       await clearApplicationStateHandler(mockRequest, mockH)
 
       expect(mintLockToken).toHaveBeenCalledWith({
@@ -182,8 +182,8 @@ describe('clearApplicationStateHandler', () => {
       })
     })
 
-    it('should default grantVersion to 1 when not set on request.app', async () => {
-      mockRequest.app = { grantCode: 'farm-payments' }
+    it('should default grantVersion to 1 when not set in yar', async () => {
+      mockRequest.yar = { get: vi.fn().mockReturnValue({ grantCode: 'farm-payments' }) }
 
       await clearApplicationStateHandler(mockRequest, mockH)
 
@@ -215,8 +215,8 @@ describe('clearApplicationStateHandler', () => {
       expect(clearSavedStateFromApiByContext).not.toHaveBeenCalled()
     })
 
-    it('should not call clearSavedStateFromApiByContext when grantCode is not set on request.app', async () => {
-      mockRequest.app = { grantVersion: '2.0.0' }
+    it('should not call clearSavedStateFromApiByContext when grantCode is not set in yar', async () => {
+      mockRequest.yar = { get: vi.fn().mockReturnValue({ grantVersion: '2.0.0' }) }
 
       await clearApplicationStateHandler(mockRequest, mockH)
 

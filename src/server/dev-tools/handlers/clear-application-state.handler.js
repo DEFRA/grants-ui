@@ -1,5 +1,4 @@
 import { getFormsCacheService } from '../../common/helpers/forms-cache/forms-cache.js'
-import { SessionError } from '~/src/server/common/utils/errors/SessionError.js'
 import { findFormBySlug, loadFormDefinition } from '~/src/server/common/forms/services/find-form-by-slug.js'
 import { clearParcelCache } from '~/src/server/land-grants/services/parcel-cache.js'
 import { clearSavedStateFromApiByContext } from '~/src/server/common/helpers/state/fetch-saved-state-helper.js'
@@ -51,14 +50,7 @@ async function clearStateWithSlug(slug, request) {
   try {
     await cacheService.clearState(request, true)
   } catch (error) {
-    const sessionKey = cacheService._Key(request)
-    clearError = new SessionError({
-      message: 'Session state clear failed',
-      source: 'clearApplicationStateHandler',
-      reason: 'session_state_clear_failure',
-      slug,
-      sessionKey
-    }).from(/** @type {Error} */ (error))
+    clearError = /** @type {Error} */ (error)
   }
 
   if (clearError) {
@@ -89,13 +81,7 @@ async function clearStateWithoutSlug(request) {
   try {
     await clearSavedStateFromApiByContext({ sbi, grantCode, grantVersion, lockToken })
   } catch (err) {
-    clearError = new SessionError({
-      message: 'Session state clear failed',
-      source: 'clearStateWithoutSlug',
-      reason: 'session_state_clear_failure',
-      sbi,
-      grantCode
-    }).from(/** @type {Error} */ (err))
+    clearError = /** @type {Error} */ (err)
   }
 
   if (clearError) {
