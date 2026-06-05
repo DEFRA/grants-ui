@@ -72,6 +72,7 @@ async function clearStateWithoutSlug(request) {
   const grantVersion = grantApplicationContext?.grantVersion ?? 1
 
   if (!sbi || !grantCode || !contactId) {
+    log(LogCodes.SYSTEM.SERVER_ERROR, { errorMessage: `clearStateWithoutSlug: missing required values — sbi=${sbi}, grantCode=${grantCode}, contactId=${contactId}` }, request)
     return
   }
 
