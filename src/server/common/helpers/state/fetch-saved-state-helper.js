@@ -119,7 +119,7 @@ export async function clearSavedStateFromApi(key, request, { lockToken } = {}) {
  * Deletes the state document for a specific grant by sbi, grantCode and grantVersion.
  * Used when the request has no form model (e.g. clearing state from the agreements proxy page).
  *
- * @param {{ sbi: string, grantCode: string, grantVersion: string, lockToken: string }} params
+ * @param {{ sbi: string, grantCode: string, grantVersion: string | number, lockToken: string }} params
  * @returns {Promise<void>}
  */
 export async function clearSavedStateFromApiByContext({ sbi, grantCode, grantVersion, lockToken }) {
