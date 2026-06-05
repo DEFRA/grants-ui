@@ -5,8 +5,6 @@ import { forbidden } from '@hapi/boom'
 import { logPermissionEvent } from '../../helpers/permissions/permission-logger.js'
 import { getGrantCode } from '../../helpers/grant-code.js'
 
-const VIEW_ONLY_ALLOWED_PATHS = new Set(['confirmation', 'print-submitted-application'])
-
 /**
  * Determines whether the current user can amend an application
  * but is not permitted to submit it.
@@ -71,16 +69,6 @@ export function getReturnToApplicationPath(model, basePath) {
 }
 
 /**
- * Checks whether a given path is allowed for view-only users.
- *
- * @param {string} path - The request path to check.
- * @returns {boolean} True if the path is allowed for view-only users.
- */
-export function isAllowedViewOnlyPath(path) {
-  return VIEW_ONLY_ALLOWED_PATHS.has(path)
-}
-
-/**
  * Enforces page-level application permissions for the current request.
  *
  * Permission enforcement is driven by the form definition metadata:
@@ -130,18 +118,10 @@ export function enforcePagePermission(request, h, context) {
   }
 
   const resource = getPermissionResource(request)
+  const requiredPermission = getRequiredPermission(request)
 
-  if (isViewOnlyUser(request, resource)) {
-    if (isSubmittedApplication(context) && isAllowedViewOnlyPath(request.params.path)) {
-      logPermissionEvent({
-        request,
-        grantCode,
-        permission: 'view',
-        enforcementEnabled: true,
-        authorised: true
-      })
-      return h.continue
-    }
+  // assuming all pages that require 'view' permission are post-submission pages
+  if (requiredPermission === 'view' && !isSubmittedApplication(context)) {
     logPermissionEvent({
       request,
       grantCode,
@@ -149,10 +129,9 @@ export function enforcePagePermission(request, h, context) {
       enforcementEnabled: true,
       authorised: false
     })
-    throw forbidden('Insufficient permissions')
-  }
 
-  const requiredPermission = getRequiredPermission(request)
+    throw forbidden('Application not submitted')
+  }
 
   if (request.can(requiredPermission, resource)) {
     logPermissionEvent({
@@ -162,6 +141,7 @@ export function enforcePagePermission(request, h, context) {
       enforcementEnabled: true,
       authorised: true
     })
+
     return h.continue
   }
 
