@@ -69,13 +69,13 @@ async function clearStateWithoutSlug(request) {
     request.yar?.get(YarKeys.GRANT_APPLICATION_CONTEXT)
   )
   const grantCode = grantApplicationContext?.grantCode
-  const grantVersion = grantApplicationContext?.grantVersion ?? 1
+  const grantVersion = grantApplicationContext?.grantVersion
 
-  if (!sbi || !grantCode || !contactId) {
+  if (!sbi || !grantCode || !grantVersion || !contactId) {
     log(
       LogCodes.SYSTEM.SERVER_ERROR,
       {
-        errorMessage: `clearStateWithoutSlug: missing required values — sbi=${sbi}, grantCode=${grantCode}, contactId=${contactId}`
+        errorMessage: `clearStateWithoutSlug: missing required values — sbi=${sbi}, grantCode=${grantCode}, grantVersion=${grantVersion}, contactId=${contactId}`
       },
       request
     )
@@ -93,7 +93,10 @@ async function clearStateWithoutSlug(request) {
 
   if (clearError) {
     log(LogCodes.SYSTEM.SERVER_ERROR, { errorMessage: clearError.message }, request)
+    return
   }
+
+  request.yar?.clear(YarKeys.GRANT_APPLICATION_CONTEXT)
 }
 
 const loadFormAndSetOnRequestModel = async (form, request) => {

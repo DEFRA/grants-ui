@@ -6,6 +6,7 @@ import { findFormBySlug, loadFormDefinition } from '~/src/server/common/forms/se
 import { clearSavedStateFromApiByContext } from '~/src/server/common/helpers/state/fetch-saved-state-helper.js'
 import { mintLockToken } from '~/src/server/common/helpers/lock/lock-token.js'
 import { log } from '../../common/helpers/logging/log.js'
+import { YarKeys } from '~/src/server/common/constants/session-keys.js'
 
 vi.mock('../../common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: vi.fn()
@@ -161,7 +162,10 @@ describe('clearApplicationStateHandler', () => {
     beforeEach(() => {
       mockRequest.params.slug = undefined
       mockRequest.auth = { credentials: { sbi: '123456789', contactId: 'contact-123' } }
-      mockRequest.yar = { get: vi.fn().mockReturnValue({ grantCode: 'farm-payments', grantVersion: '2.0.0' }) }
+      mockRequest.yar = {
+        get: vi.fn().mockReturnValue({ grantCode: 'farm-payments', grantVersion: '2.0.0' }),
+        clear: vi.fn()
+      }
       clearSavedStateFromApiByContext.mockResolvedValue(undefined)
     })
 
@@ -182,13 +186,26 @@ describe('clearApplicationStateHandler', () => {
       })
     })
 
-    it('should default grantVersion to 1 when not set in yar', async () => {
-      mockRequest.yar = { get: vi.fn().mockReturnValue({ grantCode: 'farm-payments' }) }
+    it('should clear GRANT_APPLICATION_CONTEXT from yar after successful clear', async () => {
+      await clearApplicationStateHandler(mockRequest, mockH)
+
+      expect(mockRequest.yar.clear).toHaveBeenCalledWith(YarKeys.GRANT_APPLICATION_CONTEXT)
+    })
+
+    it('should not clear yar when clearSavedStateFromApiByContext fails', async () => {
+      clearSavedStateFromApiByContext.mockRejectedValue(new Error('API error'))
 
       await clearApplicationStateHandler(mockRequest, mockH)
 
-      expect(mintLockToken).toHaveBeenCalledWith(expect.objectContaining({ grantVersion: 1 }))
-      expect(clearSavedStateFromApiByContext).toHaveBeenCalledWith(expect.objectContaining({ grantVersion: 1 }))
+      expect(mockRequest.yar.clear).not.toHaveBeenCalled()
+    })
+
+    it('should not call clearSavedStateFromApiByContext when grantVersion is not set in yar', async () => {
+      mockRequest.yar = { get: vi.fn().mockReturnValue({ grantCode: 'farm-payments' }), clear: vi.fn() }
+
+      await clearApplicationStateHandler(mockRequest, mockH)
+
+      expect(clearSavedStateFromApiByContext).not.toHaveBeenCalled()
     })
 
     it('should not call clearSavedStateFromApiByContext when sbi is missing from credentials', async () => {
@@ -216,7 +233,7 @@ describe('clearApplicationStateHandler', () => {
     })
 
     it('should not call clearSavedStateFromApiByContext when grantCode is not set in yar', async () => {
-      mockRequest.yar = { get: vi.fn().mockReturnValue({ grantVersion: '2.0.0' }) }
+      mockRequest.yar = { get: vi.fn().mockReturnValue({ grantVersion: '2.0.0' }), clear: vi.fn() }
 
       await clearApplicationStateHandler(mockRequest, mockH)
 
