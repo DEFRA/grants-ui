@@ -748,7 +748,7 @@ describe('formsStatusRedirect', () => {
         expect(h.redirect).toHaveBeenCalledWith('/agreement')
         expect(request.yar.set).toHaveBeenCalledWith(YarKeys.GRANT_APPLICATION_CONTEXT, {
           grantCode: 'grant-a',
-          clientRef: 'ref-001',
+          clientRef: 'ref-001'
         })
         expect(result).toEqual(expect.any(Symbol))
       }

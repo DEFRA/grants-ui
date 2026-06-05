@@ -56,10 +56,16 @@ describe('StatePersistenceService', () => {
 
   test('getState calls fetchSavedStateFromApi and returns result', async () => {
     getCacheKey.mockReturnValue({ sbi: 'biz-1', grantCode: 'grant-a' })
-    fetchModule.fetchSavedStateFromApi.mockResolvedValue({ foo: 'bar' })
+    fetchModule.fetchSavedStateFromApi.mockResolvedValue({
+      grantVersion: '2.0.0',
+      sbi: 'biz-1',
+      grantCode: 'grant-a',
+      state: { foo: 'bar' }
+    })
 
     const result = await service.getState(fakeRequest)
     expect(result).toEqual({ foo: 'bar' })
+    expect(fakeRequest.app.grantVersion).toBe('2.0.0')
     expect(fetchModule.fetchSavedStateFromApi).toHaveBeenCalledWith('biz-1:grant-a', fakeRequest, {
       lockToken: 'MOCK-LOCK-TOKEN'
     })

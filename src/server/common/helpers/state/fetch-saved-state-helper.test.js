@@ -94,7 +94,9 @@ describe('State API helpers', () => {
         expect(mockFetch).toHaveBeenCalledTimes(1)
         expect(mockFetch).toHaveBeenCalledWith(
           expect.stringMatching(
-            new RegExp(`/state/\\?sbi=${TEST_USER_IDS.ORGANISATION_ID}&grantCode=${TEST_USER_IDS.GRANT_ID}`)
+            new RegExp(
+              `/state/\\?sbi=${TEST_USER_IDS.ORGANISATION_ID}&grantCode=${TEST_USER_IDS.GRANT_ID}.*document=true`
+            )
           ),
           expect.objectContaining({
             method: 'GET',
@@ -395,7 +397,12 @@ describe('State API helpers', () => {
       it('calls DELETE /state/ with sbi, grantCode, grantVersion and lock token', async () => {
         mockFetch.mockResolvedValue(createMockFetchResponse({ ok: true, status: HTTP_STATUS.OK, data: {} }))
 
-        await clearSavedStateFromApiByContext({ sbi: '123456789', grantCode: 'farm-payments', grantVersion: '2.0.0', lockToken: 'test-lock-token' })
+        await clearSavedStateFromApiByContext({
+          sbi: '123456789',
+          grantCode: 'farm-payments',
+          grantVersion: '2.0.0',
+          lockToken: 'test-lock-token'
+        })
 
         expect(mockFetch).toHaveBeenCalledWith(
           `${TEST_BACKEND_URL}/state/?sbi=123456789&grantCode=farm-payments&grantVersion=2.0.0`,
@@ -408,7 +415,12 @@ describe('State API helpers', () => {
         mockFetch.mockResolvedValue(createMockFetchResponse({ ok: false, status: HTTP_STATUS.NOT_FOUND }))
 
         await expect(
-          clearSavedStateFromApiByContext({ sbi: '123456789', grantCode: 'farm-payments', grantVersion: '1.0.0', lockToken: 'tok' })
+          clearSavedStateFromApiByContext({
+            sbi: '123456789',
+            grantCode: 'farm-payments',
+            grantVersion: '1.0.0',
+            lockToken: 'tok'
+          })
         ).resolves.toBeUndefined()
       })
 
@@ -416,7 +428,12 @@ describe('State API helpers', () => {
         mockFetch.mockResolvedValue(createMockFetchResponse({ ok: false, status: HTTP_STATUS.INTERNAL_SERVER_ERROR }))
 
         await expect(
-          clearSavedStateFromApiByContext({ sbi: '123456789', grantCode: 'farm-payments', grantVersion: '1.0.0', lockToken: 'tok' })
+          clearSavedStateFromApiByContext({
+            sbi: '123456789',
+            grantCode: 'farm-payments',
+            grantVersion: '1.0.0',
+            lockToken: 'tok'
+          })
         ).rejects.toThrow()
       })
     })
@@ -439,7 +456,12 @@ describe('State API helpers', () => {
 
       it('returns without calling fetch when endpoint is not configured', async () => {
         await expect(
-          clearSavedStateFromApiByContext({ sbi: '123456789', grantCode: 'farm-payments', grantVersion: '1.0.0', lockToken: 'tok' })
+          clearSavedStateFromApiByContext({
+            sbi: '123456789',
+            grantCode: 'farm-payments',
+            grantVersion: '1.0.0',
+            lockToken: 'tok'
+          })
         ).resolves.toBeUndefined()
 
         expect(mockFetch).not.toHaveBeenCalled()

@@ -45,8 +45,10 @@ export class StatePersistenceService extends CacheService {
     })()
     const lockToken = this._buildLockToken(request)
     try {
-      const state = await fetchSavedStateFromApi(key, request, { lockToken })
-      return state ?? {}
+      const document = await fetchSavedStateFromApi(key, request, { lockToken })
+      const app = /** @type {{ grantVersion?: unknown }} */ (request.app)
+      app.grantVersion = document?.grantVersion
+      return /** @type {Record<string, unknown>} */ (document?.state) ?? {}
     } catch (err) {
       debug(
         LogCodes.SYSTEM.SESSION_STATE_FETCH_FAILED,

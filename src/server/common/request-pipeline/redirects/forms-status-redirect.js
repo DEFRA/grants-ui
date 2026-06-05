@@ -268,7 +268,8 @@ async function handlePostSubmission(request, h, context, previousStatus, grantCo
   const isAgreementsRedirect = rule.toPath === agreements.get('baseUrl')
   const redirectUrl = isAgreementsRedirect ? rule.toPath : buildRedirectUrl(grantId, rule.toPath)
 
-  request.yar.set(YarKeys.GRANT_APPLICATION_CONTEXT, { grantCode, clientRef: clientRef.toLowerCase() })
+  const grantVersion = /** @type {{ grantVersion?: string | number | null }} */ (request.app).grantVersion ?? '1.0.0'
+  request.yar.set(YarKeys.GRANT_APPLICATION_CONTEXT, { grantCode, grantVersion, clientRef: clientRef.toLowerCase() })
 
   return request.path === redirectUrl ? h.continue : h.redirect(redirectUrl).takeover()
 }

@@ -5,6 +5,7 @@ import { clearParcelCache } from '~/src/server/land-grants/services/parcel-cache
 import { clearSavedStateFromApiByContext } from '~/src/server/common/helpers/state/fetch-saved-state-helper.js'
 import { mintLockToken } from '~/src/server/common/helpers/lock/lock-token.js'
 import { log, LogCodes } from '../../common/helpers/logging/log.js'
+import { YarKeys } from '~/src/server/common/constants/session-keys.js'
 
 /**
  * @typedef {import('@hapi/hapi').Request & {
@@ -72,9 +73,11 @@ async function clearStateWithoutSlug(request) {
   const credentials = /** @type {{ sbi?: string, contactId?: string }} */ (request.auth?.credentials)
   const sbi = credentials?.sbi
   const contactId = credentials?.contactId
-  const app = /** @type {{ grantCode?: string | null, grantVersion?: string | number | null }} */ (request.app)
-  const grantCode = app.grantCode
-  const grantVersion = app.grantVersion ?? 1
+  const grantApplicationContext = /** @type {{ grantCode?: string, grantVersion?: string | number } | null} */ (
+    request.yar?.get(YarKeys.GRANT_APPLICATION_CONTEXT)
+  )
+  const grantCode = grantApplicationContext?.grantCode
+  const grantVersion = grantApplicationContext?.grantVersion ?? 1
 
   if (!sbi || !grantCode || !contactId) {
     return

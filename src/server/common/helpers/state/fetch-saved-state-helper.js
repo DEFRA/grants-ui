@@ -28,12 +28,15 @@ function logApiError(logCode = LogCodes.SYSTEM.EXTERNAL_API_ERROR) {
  * @param {string | number} grantVersion - The grant definition version
  * @returns {string}
  */
-function getEndpoint(key, grantVersion) {
+function getEndpoint(key, grantVersion, { fullDocument = false } = {}) {
   const { sbi, grantCode } = parseSessionKey(key)
   const url = new URL('/state/', GRANTS_UI_BACKEND_ENDPOINT)
   url.searchParams.set('sbi', sbi)
   url.searchParams.set('grantCode', grantCode)
   url.searchParams.set('grantVersion', /** @type {string} */ (grantVersion))
+  if (fullDocument) {
+    url.searchParams.set('document', 'true')
+  }
   return url.href
 }
 
@@ -42,10 +45,10 @@ function getEndpoint(key, grantVersion) {
  * @param {string} key - The session key
  * @param {string} method - HTTP method (GET or DELETE)
  * @param {AnyRequest} request - The request object
- * @param {{lockToken?: string}} [options]
+ * @param {{lockToken?: string, fullDocument?: boolean}} [options]
  * @returns {Promise<Record<string, unknown>|null>} The response JSON or null
  */
-async function callStateApi(key, method, request, { lockToken } = {}) {
+async function callStateApi(key, method, request, { lockToken, fullDocument = false } = {}) {
   const logDebug = logApiError(LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG)
   const logError = logApiError()
   const grantVersion = /** @type {string | number} */ (request.app.model?.def?.metadata?.version ?? 1) // Default to 1 to support non-config broker grants
@@ -54,7 +57,7 @@ async function callStateApi(key, method, request, { lockToken } = {}) {
   }
 
   let response
-  const endpoint = getEndpoint(key, grantVersion)
+  const endpoint = getEndpoint(key, grantVersion, { fullDocument })
 
   logDebug(request, {
     method,
@@ -100,7 +103,7 @@ async function callStateApi(key, method, request, { lockToken } = {}) {
  * @param {{lockToken?: string}} [options]
  */
 export async function fetchSavedStateFromApi(key, request, { lockToken } = {}) {
-  return callStateApi(key, 'GET', request, { lockToken })
+  return callStateApi(key, 'GET', request, { lockToken, fullDocument: true })
 }
 
 /**
