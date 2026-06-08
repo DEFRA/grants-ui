@@ -5614,10 +5614,10 @@ export function isMockData() {
 
 /** @returns {{ minLng: number, minLat: number, maxLng: number, maxLat: number }} */
 function mockBbox() {
-  let minLng = Infinity,
-    minLat = Infinity,
-    maxLng = -Infinity,
-    maxLat = -Infinity
+  let minLng = Infinity
+  let minLat = Infinity
+  let maxLng = -Infinity
+  let maxLat = -Infinity
   for (const geom of MOCK_GEOMETRIES) {
     for (const ring of geom.coordinates) {
       for (const [lng, lat] of ring) {
