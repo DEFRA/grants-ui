@@ -6,15 +6,29 @@ import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { ConsolidatedViewError } from '~/src/server/common/utils/errors/ConsolidatedViewError.js'
 import { statusCodes } from '../../constants/status-codes.js'
 
+/**
+ * @param {GraphQLError[]} errors
+ * @param {string[]} [toleratedPaths]
+ * @returns {boolean}
+ */
 export function hasOnlyToleratedFailures(errors, toleratedPaths) {
   const paths = toleratedPaths ?? config.get('consolidatedView.toleratedFailurePaths')
   const allowedPaths = new Set(paths)
-  return errors.every((error) => error.path?.some((segment) => allowedPaths.has(segment)))
+  return errors.every((/** @type {GraphQLError} */ error) =>
+    error.path?.some((/** @type {string} */ segment) => allowedPaths.has(segment))
+  )
 }
 
+/**
+ * @param {GraphQLResponse | undefined} parsed
+ * @param {number} statusCode
+ * @param {unknown} sbi
+ * @param {string[]} [toleratedPaths]
+ * @returns {GraphQLResponse | null}
+ */
 function extractToleratedPartialSuccess(parsed, statusCode, sbi, toleratedPaths) {
   if (parsed?.data && parsed?.errors?.length && hasOnlyToleratedFailures(parsed.errors, toleratedPaths)) {
-    const failedPaths = parsed.errors.map((e) => e.path?.join('.')).join(', ')
+    const failedPaths = parsed.errors.map((/** @type {GraphQLError} */ e) => e.path?.join('.')).join(', ')
     log(LogCodes.SYSTEM.CONSOLIDATED_VIEW_PARTIAL_SUCCESS, { sbi, failedPaths, statusCode }, undefined)
     return parsed
   }
@@ -23,8 +37,8 @@ function extractToleratedPartialSuccess(parsed, statusCode, sbi, toleratedPaths)
 
 /**
  * @typedef {object} LandParcel
- * @property {object} [parcelId] - The parcel identifier
- * @property {object} [sheetId] - The sheet identifier
+ * @property {string} [parcelId] - The parcel identifier
+ * @property {string} [sheetId] - The sheet identifier
  */
 
 /**
@@ -32,7 +46,7 @@ function extractToleratedPartialSuccess(parsed, statusCode, sbi, toleratedPaths)
  * @property {object} [data] - The response data object
  * @property {object} [data.business] - Business information
  * @property {object} [data.business.land] - Land information
- * @property {Array}  [data.business.land.parcels] - parcels information
+ * @property {LandParcel[]}  [data.business.land.parcels] - parcels information
  * @property {string} [data.business.sbi] - Standard Business Identifier
  * @property {string} [data.business.organisationId] - Organisation identifier
  * @property {object} [data.business.customer] - Customer details
@@ -80,7 +94,7 @@ async function getConsolidatedViewRequestOptions(request, { method = 'POST', que
  * @param {string} query - GraphQL query
  * @param {object} [options] - Options
  * @param {string[]} [options.toleratedPaths] - GraphQL paths tolerated as partial failures
- * @returns {Promise<object>} API response JSON
+ * @returns {Promise<GraphQLResponse>} API response JSON
  * @throws {ConsolidatedViewError} - If the API request fails
  */
 async function makeConsolidatedViewRequest(request, query, { toleratedPaths } = {}) {
@@ -155,29 +169,39 @@ async function fetchFromConsolidatedView(request, { query, formatResponse, toler
       throw error
     } else {
       throw new ConsolidatedViewError({
-        message: error.message,
+        message: /** @type {Error} */ (error).message,
         status: statusCodes.internalServerError,
-        responseBody: error.message,
+        responseBody: /** @type {Error} */ (error).message,
         sbi,
         source: 'fetchFromConsolidatedView',
         reason: 'api_error'
-      }).from(error)
+      }).from(/** @type {Error} */ (error))
     }
   }
 }
 
+/**
+ * @param {AnyFormRequest} request
+ * @param {unknown} sbi
+ * @param {unknown} error
+ */
 function logConsolidatedViewUpstreamError(request, sbi, error) {
+  const upstream = /** @type {UpstreamError} */ (error)
   log(
     LogCodes.SYSTEM.CONSOLIDATED_VIEW_API_ERROR,
     {
       sbi,
-      statusCode: error.status ?? error.statusCode ?? null,
-      errorMessage: error.message
+      statusCode: upstream.status ?? upstream.statusCode ?? null,
+      errorMessage: upstream.message
     },
     request
   )
 }
 
+/**
+ * @param {{ query: string, sbi?: unknown, crn?: unknown }} params
+ * @returns {Promise<GraphQLResponse>}
+ */
 async function makeStubRequest({ query, sbi, crn }) {
   const stubUrl = config.get('consolidatedView.stubUrl')
 
@@ -247,14 +271,14 @@ export const fetchBusinessPermissions = async (request) => {
       }
     }
   `
-  const formatResponse = (r) => r.data?.customer?.business?.permissionGroups || []
+  const formatResponse = (/** @type {GraphQLResponse} */ r) => r.data?.customer?.business?.permissionGroups || []
   return fetchFromConsolidatedView(request, { query, formatResponse })
 }
 
 /**
  * Fetches business parcels data from Consolidated View
  * @param {AnyFormRequest} request
- * @returns {Promise<Array>} - Promise that resolves to the parcels array
+ * @returns {Promise<any[]>} - Promise that resolves to the parcels array
  * @throws {ConsolidatedViewError} - If the API request fails
  * @throws {Error} - For other unexpected errors
  */
@@ -272,10 +296,22 @@ export async function fetchParcelsFromDal(request) {
       }
     }`
 
-  const formatResponse = (r) => r.data?.business?.land?.parcels || []
+  const formatResponse = (/** @type {GraphQLResponse} */ r) => r.data?.business?.land?.parcels || []
   return fetchFromConsolidatedView(request, { query, formatResponse })
 }
 
+/**
+ * @param {unknown} sbi
+ * @param {AddressLike} address
+ * @returns {{
+ *   city: string | null | undefined,
+ *   postalCode: string | null | undefined,
+ *   line1: string | null | undefined,
+ *   line2: string | null | undefined,
+ *   line3: string | null | undefined,
+ *   line4: string | null | undefined
+ * }}
+ */
 function formatAddress(sbi, address) {
   const commonFields = {
     city: address.city,
@@ -371,8 +407,8 @@ export async function fetchBusinessAndCustomerInformation(request) {
       }
     }`
 
-  const formatResponse = (r) => {
-    const { business, customer } = r.data
+  const formatResponse = (/** @type {GraphQLResponse} */ r) => {
+    const { business, customer } = r.data ?? {}
     const businessInfo = business?.info
     const customerInfo = customer?.info
     const formattedResponse = { business: {}, customer: customerInfo }
@@ -406,7 +442,7 @@ export async function fetchBusinessAndCustomerInformation(request) {
 export async function executeConfigDrivenQuery(request, query, { toleratedPaths } = {}) {
   return fetchFromConsolidatedView(request, {
     query,
-    formatResponse: (r) => r,
+    formatResponse: (/** @type {GraphQLResponse} */ r) => r,
     toleratedPaths
   })
 }
@@ -467,7 +503,7 @@ export async function fetchBusinessAndCPH(request, { toleratedPaths } = {}) {
       }
     }`
 
-  const formatResponse = (r) => ({
+  const formatResponse = (/** @type {GraphQLResponse} */ r) => ({
     business: r.data?.business?.info,
     countyParishHoldings: r.data?.business.countyParishHoldings[0].cphNumber, // just selecting the first cphNumber for demo purposes
     customer: r.data?.customer?.info
@@ -478,4 +514,41 @@ export async function fetchBusinessAndCPH(request, { toleratedPaths } = {}) {
 
 /**
  * @import { AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ */
+
+/**
+ * @typedef {object} GraphQLError
+ * @property {string} [message]
+ * @property {string[]} [path]
+ */
+
+/**
+ * @typedef {{ data?: Record<string, any>, errors?: GraphQLError[] } & Record<string, any>} GraphQLResponse
+ */
+
+/**
+ * @typedef {{
+ *   message?: string,
+ *   status?: number,
+ *   statusCode?: number
+ * } & Record<string, any>} UpstreamError
+ */
+
+/**
+ * @typedef {{
+ *   uprn?: string | number | null,
+ *   line1?: string | null,
+ *   line2?: string | null,
+ *   line3?: string | null,
+ *   line4?: string | null,
+ *   street?: string | null,
+ *   city?: string | null,
+ *   postalCode?: string | null,
+ *   flatName?: string | null,
+ *   buildingName?: string | null,
+ *   buildingNumberRange?: string | null,
+ *   dependentLocality?: string | null,
+ *   doubleDependentLocality?: string | null,
+ *   pafOrganisationName?: string | null
+ * }} AddressLike
  */

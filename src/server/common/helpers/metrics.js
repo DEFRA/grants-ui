@@ -21,6 +21,6 @@ export async function metricsCounter(metricName, value = 1) {
     metricsLogger.putMetric(metricName, value, Unit.Count, StorageResolution.Standard)
     await metricsLogger.flush()
   } catch (error) {
-    logger.error(error, error.message)
+    logger.error(error, /** @type {Error} */ (error).message)
   }
 }

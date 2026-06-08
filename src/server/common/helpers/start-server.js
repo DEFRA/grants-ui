@@ -4,7 +4,11 @@ import { createServer } from '~/src/server/index.js'
 import { logger } from '~/src/server/common/helpers/logging/log.js'
 import { closeFormsRedisClient } from '~/src/server/common/forms/services/forms-redis.js'
 
+/**
+ * @returns {Promise<import('@hapi/hapi').Server | undefined>}
+ */
 async function startServer() {
+  /** @type {import('@hapi/hapi').Server | undefined} */
   let server
 
   try {
@@ -18,7 +22,7 @@ async function startServer() {
     logger.error(error)
   }
 
-  const shutdown = async (signal) => {
+  const shutdown = async (/** @type {NodeJS.Signals} */ signal) => {
     logger.info(`Received ${signal}, shutting down`)
     try {
       if (server) {
