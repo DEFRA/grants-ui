@@ -18,12 +18,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0 # Depth 0 is required for branch-based versioning
 
       - name: Test code and Create Test Coverage Reports
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
           node-version-file: '.nvmrc'
           cache: npm
@@ -36,6 +36,6 @@ jobs:
           npm run test:contracts
 
       - name: Publish Hot Fix
-        uses: DEFRA/cdp-build-action/build-hotfix@main
+        uses: DEFRA/cdp-build-action/build-hotfix@368d7e268a25d11793e9041a992b00d4decf4809 # main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
