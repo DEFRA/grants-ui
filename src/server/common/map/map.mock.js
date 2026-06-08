@@ -13,7 +13,7 @@ const MOCK_AREAS = [
   1.344, 3.16, 0.5892
 ]
 
-/** @type {({type: string, coordinates: number[][][][]} | {type: string, coordinates: number[][][]})[]} */
+/** @type {{ type: 'Polygon' | 'MultiPolygon', coordinates: unknown }[]} */
 const MOCK_GEOMETRIES = [
   {
     type: 'Polygon',
@@ -5619,7 +5619,11 @@ function mockBbox() {
   let maxLng = -Infinity
   let maxLat = -Infinity
   for (const geom of MOCK_GEOMETRIES) {
-    for (const ring of geom.coordinates) {
+    const rings =
+      geom.type === 'MultiPolygon'
+        ? /** @type {number[][][][]} */ (geom.coordinates).flat(1)
+        : /** @type {number[][][]} */ (geom.coordinates)
+    for (const ring of rings) {
       for (const [lng, lat] of ring) {
         if (lng < minLng) {
           minLng = lng
