@@ -32,7 +32,7 @@ import {
  * @typedef {{ sheet_id?: unknown, parcel_id?: unknown, areaHa?: unknown, [key: string]: unknown }} ParcelProperties
  * @typedef {{ id: string } & ParcelProperties} ParcelMeta
  * @typedef {Record<string, ParcelMeta>} MetaIndex
- * @typedef {{ parcelIds: string[], metaIndex: MetaIndex, tileUrl: string | null, bbox: BBox | null }} ParcelData
+ * @typedef {{ parcelIds: string[], metaIndex: MetaIndex, tileUrl: string | null, geojsonUrl: string | null, bbox: BBox | null }} ParcelData
  * @typedef {{ minLng: number, minLat: number, maxLng: number, maxLat: number }} BBox
  */
 
@@ -244,7 +244,7 @@ class ParcelMap extends HTMLElement {
         })
       )
 
-      return { parcelIds, metaIndex, tileUrl: body.tileUrl ?? null, bbox: body.bbox ?? null }
+      return { parcelIds, metaIndex, tileUrl: body.tileUrl ?? null, geojsonUrl: body.geojsonUrl ?? null, bbox: body.bbox ?? null }
     } catch {
       return null
     }
@@ -255,7 +255,7 @@ class ParcelMap extends HTMLElement {
    * @param {ParcelData} data
    * @param {unknown[]} colorExpr
    */
-  _addParcelsToMap(ml, { tileUrl, bbox }, colorExpr) {
+  _addParcelsToMap(ml, { tileUrl, geojsonUrl, bbox }, colorExpr) {
     if (bbox) {
       const { minLng, minLat, maxLng, maxLat } = bbox
       ml.fitBounds(
@@ -267,17 +267,21 @@ class ParcelMap extends HTMLElement {
       )
     }
 
-    if (!tileUrl || ml.getSource('parcels')) {
+    if (ml.getSource('parcels')) {
       return
     }
 
-    const absoluteUrl = tileUrl.startsWith('http') ? tileUrl : `${globalThis.location.origin}${tileUrl}`
-    ml.addSource(
-      'parcels',
-      /** @type {import('maplibre-gl').VectorSourceSpecification} */ ({ type: 'vector', tiles: [absoluteUrl] })
-    )
-
-    const layers = buildParcelLayers(colorExpr, 'parcels')
+    const url = geojsonUrl ?? tileUrl
+    if (!url) {
+      return
+    }
+    const absoluteUrl = url.startsWith('http') ? url : `${globalThis.location.origin}${url}`
+    if (geojsonUrl) {
+      ml.addSource('parcels', /** @type {import('maplibre-gl').GeoJSONSourceSpecification} */ ({ type: 'geojson', data: absoluteUrl }))
+    } else {
+      ml.addSource('parcels', /** @type {import('maplibre-gl').VectorSourceSpecification} */ ({ type: 'vector', tiles: [absoluteUrl] }))
+    }
+    const layers = buildParcelLayers(colorExpr, geojsonUrl ? undefined : 'parcels')
     ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.fill))
     ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.outline))
     ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.label))

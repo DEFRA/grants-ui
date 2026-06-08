@@ -3,6 +3,7 @@ import { createApiHeadersForLandGrantsBackend } from '~/src/server/common/helper
 import { fetchParcels, fetchParcelTileLocation } from '~/src/server/land-grants/services/land-grants.service.js'
 import { stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
+import { isMockData, buildMockFeatures } from './map.mock.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
 
@@ -26,36 +27,40 @@ export const mapPlugin = {
         path: '/api/map/parcels',
         options: { auth: { mode: 'required', strategy: 'session' } },
         handler: async (request, h) => {
-          /** @type {ParcelFeature[]} */
-          let features = []
+          /** @type {HydratedParcel[]} */
+          let parcels = []
           try {
-            const parcels = /** @type {HydratedParcel[]} */ (
+            parcels = /** @type {HydratedParcel[]} */ (
               await fetchParcels(
                 /** @type {import('@defra/forms-engine-plugin/engine/types.js').AnyFormRequest} */ (
                   /** @type {unknown} */ (request)
                 )
               )
             )
-            features = parcels.map((p) => {
-              const id = stringifyParcel(p)
-              return {
-                type: 'Feature',
-                id,
-                properties: {
-                  id,
-                  sheetId: p.sheetId,
-                  parcelId: p.parcelId,
-                  areaHa: p.area?.value == null ? null : Number(p.area.value)
-                }
-              }
-            })
           } catch {
             return h.response({ error: 'unavailable' }).code(statusCodes.serviceUnavailable)
           }
 
-          const parcelIds = features.map((f) => f.id)
-          const bbox = await fetchParcelTileLocation(parcelIds).catch(() => null)
+          const parcelData = parcels.map((p) => ({
+            id: stringifyParcel(p),
+            sheetId: p.sheetId,
+            parcelId: p.parcelId,
+            areaHa: p.area?.value == null ? null : Number(p.area.value)
+          }))
 
+          if (isMockData()) {
+            const { features, bbox } = buildMockFeatures(parcelData)
+            request.yar.set('mapMockFeatures', features)
+            return h.response({ features, bbox, tileUrl: null, geojsonUrl: '/api/map/parcels/geojson' }).code(statusCodes.ok)
+          }
+
+          const features = parcelData.map((p) => ({
+            type: 'Feature',
+            id: p.id,
+            properties: { id: p.id, sheetId: p.sheetId, parcelId: p.parcelId, areaHa: p.areaHa }
+          }))
+          const parcelIds = parcelData.map((p) => p.id)
+          const bbox = await fetchParcelTileLocation(parcelIds).catch(() => null)
           request.yar.set('mapParcelIds', parcelIds)
           const tileUrl = parcelIds.length > 0 ? '/land-grants/parcel-tiles/{z}/{x}/{y}' : null
 
@@ -65,8 +70,24 @@ export const mapPlugin = {
 
       server.route({
         method: 'GET',
+        path: '/api/map/parcels/geojson',
+        options: { auth: false },
+        handler: (request, h) => {
+          if (!isMockData()) {
+            return h.response({ error: 'not found' }).code(statusCodes.notFound)
+          }
+          const features = /** @type {import('./map.plugin.js').ParcelFeature[] | null} */ (request.yar.get('mapMockFeatures'))
+          if (!features) {
+            return h.response({ error: 'not found' }).code(statusCodes.notFound)
+          }
+          return h.response({ type: 'FeatureCollection', features }).code(statusCodes.ok)
+        }
+      })
+
+      server.route({
+        method: 'GET',
         path: '/land-grants/parcel-tiles/{z}/{x}/{y}',
-        options: {},
+        options: { auth: false },
         handler: async (request, h) => {
           const { z, x, y } = request.params
           const parcelIds = /** @type {string[]} */ (request.yar.get('mapParcelIds') ?? [])
@@ -87,7 +108,11 @@ export const mapPlugin = {
           }
 
           const buffer = await response.arrayBuffer()
-          return h.response(Buffer.from(buffer)).code(statusCodes.ok).type('application/x-protobuf')
+          return h
+            .response(Buffer.from(buffer))
+            .code(statusCodes.ok)
+            .type('application/x-protobuf')
+            .header('Cache-Control', 'public, max-age=3600')
         }
       })
     }
