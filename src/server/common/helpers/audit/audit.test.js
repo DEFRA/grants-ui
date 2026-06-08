@@ -10,6 +10,10 @@ vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
 })
 vi.mock('./audit-event.js', () => ({
   buildAuditEvent: vi.fn(() => ({ mock: 'event' })),
+  resolveAuditEntityFields: vi.fn((opts, request) => ({
+    entity: opts.entity ?? 'application',
+    entityid: opts.entityid ?? request.params.slug
+  })),
   mapEnvironment: vi.fn(() => 'cdp-test')
 }))
 

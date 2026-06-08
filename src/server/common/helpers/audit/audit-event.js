@@ -75,6 +75,21 @@ const buildAccounts = (credentials) => {
  */
 
 /**
+ * Resolves the entity type and identifier from caller options, applying the
+ * same defaults that `buildAuditEvent` embeds in the published event. Export
+ * this so callers that need the resolved values for logging (e.g.
+ * `makeSendAuditEvent`) can derive them from a single source rather than
+ * duplicating the default logic.
+ * @param {AuditEventOptions} opts
+ * @param {import('@hapi/hapi').Request} request
+ * @returns {{ entity: string, entityid: string | undefined }}
+ */
+export const resolveAuditEntityFields = (opts, request) => ({
+  entity: opts.entity ?? 'application',
+  entityid: opts.entityid ?? request.params.slug
+})
+
+/**
  * Builds an FCP Audit event for a signed-in user's action against a grant.
  * The `action` (and optional `status`/`entityid`/`details`) describe what
  * happened; optional identity fields are only included when known so the
@@ -83,7 +98,9 @@ const buildAccounts = (credentials) => {
  * @param {AuditEventOptions} opts
  * @returns {Record<string, unknown>}
  */
-export const buildAuditEvent = (request, { action, entity = 'application', entityid, status = 'success', details }) => {
+export const buildAuditEvent = (request, opts) => {
+  const { action, status = 'success', details } = opts
+  const { entity, entityid } = resolveAuditEntityFields(opts, request)
   const credentials = request.auth.credentials
   const contactId = /** @type {string | undefined} */ (credentials.contactId)
   const sessionId = /** @type {string | undefined} */ (credentials.sessionId)
@@ -97,7 +114,7 @@ export const buildAuditEvent = (request, { action, entity = 'application', entit
     datetime: new Date().toISOString(),
     ip,
     audit: {
-      entities: [{ entity, action, entityid: entityid ?? request.params.slug }],
+      entities: [{ entity, action, entityid }],
       status,
       ...(Object.keys(accounts).length > 0 && { accounts }),
       ...(details && { details })

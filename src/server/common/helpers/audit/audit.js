@@ -3,7 +3,7 @@ import { publishAuditEvent } from '@defra/fcp-audit-publisher'
 import { getStartPath } from '@defra/forms-engine-plugin/engine/helpers.js'
 import { config } from '~/src/config/config.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
-import { buildAuditEvent, mapEnvironment } from './audit-event.js'
+import { buildAuditEvent, mapEnvironment, resolveAuditEntityFields } from './audit-event.js'
 
 const HTTP_OK_MIN = 200
 const HTTP_REDIRECT_MIN = 300
@@ -98,8 +98,7 @@ const answersFromPayload = (payload) => {
  * @returns {(request: import('@hapi/hapi').Request, opts: import('./audit-event.js').AuditEventOptions) => Promise<void>}
  */
 const makeSendAuditEvent = (publisherConfig) => (request, opts) => {
-  const entity = opts.entity ?? 'application'
-  const entityid = opts.entityid ?? request.params.slug
+  const { entity, entityid } = resolveAuditEntityFields(opts, request)
   const event = buildAuditEvent(request, opts)
 
   return publishAuditEvent(event, publisherConfig)
