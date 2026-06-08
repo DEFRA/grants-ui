@@ -244,7 +244,13 @@ class ParcelMap extends HTMLElement {
         })
       )
 
-      return { parcelIds, metaIndex, tileUrl: body.tileUrl ?? null, geojsonUrl: body.geojsonUrl ?? null, bbox: body.bbox ?? null }
+      return {
+        parcelIds,
+        metaIndex,
+        tileUrl: body.tileUrl ?? null,
+        geojsonUrl: body.geojsonUrl ?? null,
+        bbox: body.bbox ?? null
+      }
     } catch {
       return null
     }
@@ -277,9 +283,15 @@ class ParcelMap extends HTMLElement {
     }
     const absoluteUrl = url.startsWith('http') ? url : `${globalThis.location.origin}${url}`
     if (geojsonUrl) {
-      ml.addSource('parcels', /** @type {import('maplibre-gl').GeoJSONSourceSpecification} */ ({ type: 'geojson', data: absoluteUrl }))
+      ml.addSource(
+        'parcels',
+        /** @type {import('maplibre-gl').GeoJSONSourceSpecification} */ ({ type: 'geojson', data: absoluteUrl })
+      )
     } else {
-      ml.addSource('parcels', /** @type {import('maplibre-gl').VectorSourceSpecification} */ ({ type: 'vector', tiles: [absoluteUrl] }))
+      ml.addSource(
+        'parcels',
+        /** @type {import('maplibre-gl').VectorSourceSpecification} */ ({ type: 'vector', tiles: [absoluteUrl] })
+      )
     }
     const layers = buildParcelLayers(colorExpr, geojsonUrl ? undefined : 'parcels')
     ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.fill))

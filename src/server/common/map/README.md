@@ -117,29 +117,53 @@ Extends `SummaryPageController` (GOV.UK check-your-answers page). Uses the engin
 
 ### Attributes
 
-| Attribute      | Values               | Default   |
-| -------------- | -------------------- | --------- |
-| `multi-select` | `"true"` / `"false"` | `"false"` |
+| Attribute      | Values               | Default   | Description                                    |
+| -------------- | -------------------- | --------- | ---------------------------------------------- |
+| `multi-select` | `"true"` / `"false"` | `"false"` | Allow selecting more than one parcel at a time |
 
-Height is set via CSS on the element itself — the component fills 100% of whatever container it is given:
+**Single-select** — clicking a parcel selects it and deselects any previously selected one. Clicking the same parcel again deselects it.
+
+**Multi-select** — clicking toggles each parcel independently. Multiple parcels can be selected simultaneously.
+
+Changing `multi-select` after the component has connected triggers a full teardown and re-init.
+
+### Height
+
+Set height via CSS directly on the element. The component fills 100% of whatever dimensions it is given:
 
 ```html
 <parcel-map style="display:block;width:100%;height:500px;position:relative"></parcel-map>
 ```
 
+If no height is set via CSS the component falls back to `MAP_DEFAULT_HEIGHT` (defined in `config.js`).
+
 ### Dispatched events
 
-| Event                  | Detail                                | When                                |
-| ---------------------- | ------------------------------------- | ----------------------------------- |
-| `parcel-map:ready`     | —                                     | Map and parcels loaded successfully |
-| `parcel-map:error`     | `{ reason?: 'no-parcels' \| string }` | Map or parcels API failed           |
-| `parcel-map:selection` | `{ selectedIds: string[] }`           | User clicks a parcel                |
+All events bubble.
 
-All events bubble. The inline script in `map-select-parcel.html` is the canonical example of how to consume them.
+| Event                  | `detail`                              | When                                                       |
+| ---------------------- | ------------------------------------- | ---------------------------------------------------------- |
+| `parcel-map:ready`     | —                                     | Map initialised and parcels loaded successfully            |
+| `parcel-map:error`     | `{ reason?: 'no-parcels' \| string }` | Map or parcels API failed; `reason` describes the cause    |
+| `parcel-map:selection` | `{ selectedIds: string[] }`           | User clicks a parcel (empty array when all are deselected) |
 
-### Error behaviour
+`reason` values for `parcel-map:error`:
 
-When the map or parcels API fails, `parcel-map:error` fires with a `reason` in the detail (`'no-parcels'` when the API returned successfully but the user has no parcels; a generic error otherwise). The template's inline script renders an error summary and hides the Continue button.
+- `'no-parcels'` — API returned successfully but the user has no parcels
+- generic string / absent — map initialisation failed or API returned an error
+
+The inline script in `map-select-parcel.html` is the canonical example of how to consume these events.
+
+### Lifecycle states
+
+The component tracks an internal `_state`:
+
+| State       | Meaning                                    |
+| ----------- | ------------------------------------------ |
+| `'idle'`    | Not yet initialised or torn down           |
+| `'loading'` | Map and parcels fetch in progress          |
+| `'ready'`   | Fully initialised, map visible             |
+| `'error'`   | Initialisation failed, component torn down |
 
 ### Asset loading
 
@@ -163,21 +187,39 @@ The `@defra/interactive-map` CSS must also be loaded. It is copied by webpack's 
 
 ### `GET /api/map/parcels`
 
-Fetches the authenticated user's parcels from the Land Grants API, stores the parcel IDs in the session (`yar`), and returns:
+Fetches the authenticated user's parcels from the DAL, enriches them with size data from the land-grants API, stores parcel IDs in the session (`yar`), and returns one of two shapes depending on whether mock data mode is enabled:
+
+**Real mode** (`MAP_MOCK_DATA_ENABLED=false`):
 
 ```json
 {
   "features": [{ "type": "Feature", "id": "SD7148-9160", "properties": { ... } }],
   "bbox": { "minLng": -2.5, "minLat": 51.4, "maxLng": -2.3, "maxLat": 51.6 },
-  "tileUrl": "/land-grants/parcel-tiles/{z}/{x}/{y}"
+  "tileUrl": "/land-grants/parcel-tiles/{z}/{x}/{y}",
+  "geojsonUrl": null
 }
 ```
 
-Returns `503` if the Land Grants API is unavailable.
+**Mock mode** (`MAP_MOCK_DATA_ENABLED=true`):
+
+```json
+{
+  "features": [{ "type": "Feature", "id": "SD7148-9160", "geometry": { ... }, "properties": { ... } }],
+  "bbox": { "minLng": -2.5, "minLat": 51.4, "maxLng": -2.3, "maxLat": 51.6 },
+  "tileUrl": null,
+  "geojsonUrl": "/api/map/parcels/geojson"
+}
+```
+
+Returns `503` if the land-grants API is unavailable.
+
+### `GET /api/map/parcels/geojson`
+
+Returns the full GeoJSON `FeatureCollection` for mock mode. Reads features stored in the session by the parcels endpoint. Returns `404` if mock mode is disabled or the session has no features. Auth is not required — MapLibre fetches this directly from the browser.
 
 ### `GET /land-grants/parcel-tiles/{z}/{x}/{y}`
 
-Proxies MapLibre vector tile requests to the Land Grants API. Parcel IDs are read from the session (set by the parcels endpoint above) and sent in the POST body — they are never exposed in the tile URL.
+Proxies MapLibre vector tile requests to the land-grants API. Parcel IDs are read from the session (set by the parcels endpoint above) and sent in the POST body — they are never exposed in the tile URL.
 
 ---
 
@@ -199,3 +241,42 @@ A complete working example is at `src/server/common/forms/definitions/example-gr
 - Actions selection with `SelectLandActionsPageController` (receives `?parcelId=` from the redirect)
 - Check-your-answers with `MapSubmissionPageController`
 - Confirmation page
+
+---
+
+## Mock data mode
+
+When the real land-grants API is unavailable locally, mock mode serves embedded GeoJSON geometry directly — removing the dependency on a running tile server and avoiding vector tile clipping issues at zoom boundaries.
+
+### Enable / disable
+
+In `.env`:
+
+```
+MAP_MOCK_DATA_ENABLED=true   # mock geometry (default for local docker)
+MAP_MOCK_DATA_ENABLED=false  # real land-grants API + vector tiles
+```
+
+Then run `npm run docker:up` for the change to take effect.
+
+### What mock mode does
+
+- Assigns pre-loaded polygon geometry to real parcel IDs (round-robin across 48 embedded shapes)
+- Serves geometry as GeoJSON from `/api/map/parcels/geojson` instead of vector tiles
+- Uses pre-loaded area values instead of fetching from the API
+- Parcel IDs remain real (from the DAL), so downstream actions and "continue" still work
+
+### What mock mode does not affect
+
+- The parcel list — always fetched from the DAL stub
+- Actions and payment calculations — always call the real land-grants API
+
+### Removing mock support entirely
+
+Once the real API is available everywhere:
+
+1. Delete `map.mock.js`
+2. Remove `import { isMockData, buildMockFeatures }` from `map.plugin.js`
+3. Remove the `isMockData()` branch and the `/api/map/parcels/geojson` route from `map.plugin.js`
+4. Remove `mapMockDataEnabled` from `src/config/config.js`
+5. Remove `MAP_MOCK_DATA_ENABLED` from `compose.yml` and `.env`

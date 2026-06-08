@@ -51,7 +51,9 @@ export const mapPlugin = {
           if (isMockData()) {
             const { features, bbox } = buildMockFeatures(parcelData)
             request.yar.set('mapMockFeatures', features)
-            return h.response({ features, bbox, tileUrl: null, geojsonUrl: '/api/map/parcels/geojson' }).code(statusCodes.ok)
+            return h
+              .response({ features, bbox, tileUrl: null, geojsonUrl: '/api/map/parcels/geojson' })
+              .code(statusCodes.ok)
           }
 
           const features = parcelData.map((p) => ({
@@ -76,7 +78,9 @@ export const mapPlugin = {
           if (!isMockData()) {
             return h.response({ error: 'not found' }).code(statusCodes.notFound)
           }
-          const features = /** @type {import('./map.plugin.js').ParcelFeature[] | null} */ (request.yar.get('mapMockFeatures'))
+          const features = /** @type {import('./map.plugin.js').ParcelFeature[] | null} */ (
+            request.yar.get('mapMockFeatures')
+          )
           if (!features) {
             return h.response({ error: 'not found' }).code(statusCodes.notFound)
           }
