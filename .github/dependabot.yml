@@ -23,9 +23,8 @@ updates:
         update-types:
           - "minor"
           - "patch"
-          -
-          # Update GitHub Actions
-  - package-ecosystem: github-actions
+  # Update GitHub Actions
+  - package-ecosystem: "github-actions"
     directory: /
 
     # Schedule run every Monday, local time
