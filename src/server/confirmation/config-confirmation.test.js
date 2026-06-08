@@ -1,12 +1,13 @@
 import { vi } from 'vitest'
 import { configConfirmation } from './config-confirmation.js'
-import { findFormBySlug } from '~/src/server/common/forms/services/find-form-by-slug.js'
 import { ConfirmationService } from './services/confirmation.service.js'
 import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 import { MOCK_CONFIRMATION_CONTENT, MOCK_FORMS } from './__test-fixtures__/confirmation-test-fixtures.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
+import { enforcePagePermission } from '../common/request-pipeline/permissions/enforce-page-permission.js'
+import { forbidden } from '@hapi/boom'
 
 const mockFormsCacheService = {
   getState: vi.fn()
@@ -16,10 +17,12 @@ const mockYarSession = {
   get: vi.fn()
 }
 
-vi.mock('~/src/server/common/forms/services/find-form-by-slug.js')
 vi.mock('./services/confirmation.service.js')
 vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: () => mockFormsCacheService
+}))
+vi.mock('../common/request-pipeline/permissions/enforce-page-permission.js', () => ({
+  enforcePagePermission: vi.fn()
 }))
 describe('config-confirmation', () => {
   let mockRequest
@@ -35,6 +38,7 @@ describe('config-confirmation', () => {
 
     mockLogger = mockRequestLogger()
     mockRequest = mockHapiRequest({
+      path: '/test-slug/confirmation',
       params: { slug: 'test-slug' },
       pre: { validatedSlugAndForm: { slug: 'test-slug', form: mockForm } },
       logger: mockLogger,
@@ -56,6 +60,7 @@ describe('config-confirmation', () => {
     })
 
     vi.mocked(log).mockClear()
+    vi.mocked(enforcePagePermission).mockReturnValue(mockH.continue)
   })
 
   describe('confirmation flow', () => {
@@ -65,7 +70,6 @@ describe('config-confirmation', () => {
         .mockReturnValueOnce('Test Business')
         .mockReturnValueOnce('123456789')
         .mockReturnValueOnce('Test Contact')
-      findFormBySlug.mockResolvedValue(mockForm)
       ConfirmationService.loadConfirmationContent.mockResolvedValue({
         confirmationContent,
         formDefinition
@@ -99,6 +103,13 @@ describe('config-confirmation', () => {
         slug: 'test-slug'
       })
       expect(mockH.view).toHaveBeenCalledWith('config-confirmation-page', { test: 'viewModel' })
+      expect(enforcePagePermission).toHaveBeenCalledWith(
+        mockRequest,
+        mockH,
+        expect.objectContaining({
+          referenceNumber: 'REF123'
+        })
+      )
     })
 
     test('should return validation error from handler when pre-handler returns an error', async () => {
@@ -132,6 +143,13 @@ describe('config-confirmation', () => {
         slug: 'test-slug'
       })
       expect(mockH.view).toHaveBeenCalledWith('config-confirmation-page', { test: 'viewModel' })
+      expect(enforcePagePermission).toHaveBeenCalledWith(
+        mockRequest,
+        mockH,
+        expect.objectContaining({
+          referenceNumber: 'REF123'
+        })
+      )
     })
 
     test('should handle missing reference number', async () => {
@@ -141,7 +159,6 @@ describe('config-confirmation', () => {
       mockFormsCacheService.getState.mockResolvedValue({})
       mockYarSession.get.mockReturnValue(undefined)
 
-      findFormBySlug.mockResolvedValue(mockForm)
       ConfirmationService.loadConfirmationContent.mockResolvedValue({
         confirmationContent: mockConfirmationContent,
         formDefinition: mockFormDefinition
@@ -167,7 +184,6 @@ describe('config-confirmation', () => {
         applicationStatus: 'SUBMITTED'
       })
 
-      findFormBySlug.mockResolvedValue(mockForm)
       ConfirmationService.loadConfirmationContent.mockResolvedValue({
         confirmationContent: null,
         formDefinition: { metadata: {} }
@@ -184,12 +200,65 @@ describe('config-confirmation', () => {
     })
 
     test('should handle errors gracefully', async () => {
-      findFormBySlug.mockRejectedValue(new Error('Service error'))
+      ConfirmationService.loadConfirmationContent.mockRejectedValue(new Error('Service error'))
 
       await handler(mockRequest, mockH)
 
-      expect(vi.mocked(log)).toHaveBeenCalled()
+      expect(vi.mocked(log)).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          errorMessage: expect.stringContaining('Service error')
+        }),
+        mockRequest
+      )
       expect(mockH.code).toHaveBeenCalledWith(500)
+    })
+
+    test('sets request.params.path before enforcing permissions', async () => {
+      setupHappyPathMocks()
+
+      mockRequest.path = '/test-slug/confirmation'
+
+      await handler(mockRequest, mockH)
+
+      expect(mockRequest.params.path).toBe('confirmation')
+      expect(enforcePagePermission).toHaveBeenCalled()
+    })
+
+    test('returns permission redirect when permission check does not continue', async () => {
+      const redirectResponse = { takeover: true }
+
+      vi.mocked(enforcePagePermission).mockReturnValue(redirectResponse)
+
+      const result = await handler(mockRequest, mockH)
+
+      expect(result).toBe(redirectResponse)
+
+      expect(ConfirmationService.loadConfirmationContent).not.toHaveBeenCalled()
+    })
+
+    test('rethrows boom errors from permission enforcement', async () => {
+      const boomError = forbidden('Insufficient permissions')
+
+      vi.mocked(enforcePagePermission).mockImplementation(() => {
+        throw boomError
+      })
+
+      await expect(handler(mockRequest, mockH)).rejects.toThrow('Insufficient permissions')
+    })
+
+    test('does not continue processing when permission check returns redirect response', async () => {
+      const redirectResponse = { takeover: true }
+
+      vi.mocked(enforcePagePermission).mockReturnValue(redirectResponse)
+
+      const result = await handler(mockRequest, mockH)
+
+      expect(result).toBe(redirectResponse)
+
+      expect(ConfirmationService.loadConfirmationContent).not.toHaveBeenCalled()
+      expect(ConfirmationService.processConfirmationContent).not.toHaveBeenCalled()
+      expect(ConfirmationService.buildViewModel).not.toHaveBeenCalled()
     })
   })
 })

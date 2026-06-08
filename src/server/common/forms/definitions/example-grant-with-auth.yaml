@@ -19,12 +19,12 @@ metadata:
 
       rules:
         - paths:
-            - submit-your-application
             - declaration
           permission: submit
 
         - paths:
             - print-submitted-application
+            - confirmation
           permission: view
   detailsPage:
     toleratedFailurePaths:
