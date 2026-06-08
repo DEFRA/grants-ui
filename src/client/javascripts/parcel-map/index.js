@@ -226,7 +226,7 @@ class ParcelMap extends HTMLElement {
         return null
       }
 
-      /** @type {{ features: GeoJSON.Feature[], bbox: BBox | null, tileUrl: string | null }} */
+      /** @type {{ features: GeoJSON.Feature[], bbox: BBox | null, tileUrl: string | null, geojsonUrl: string | null }} */
       const body = await resp.json()
       const features = Array.isArray(body.features) ? body.features : []
 

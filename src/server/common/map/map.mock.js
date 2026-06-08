@@ -13,7 +13,7 @@ const MOCK_AREAS = [
   1.344, 3.16, 0.5892
 ]
 
-/** @type {Record<string, {type: string, coordinates: number[][][][]} | {type: string, coordinates: number[][][]}>} */
+/** @type {({type: string, coordinates: number[][][][]} | {type: string, coordinates: number[][][]})[]} */
 const MOCK_GEOMETRIES = [
   {
     type: 'Polygon',

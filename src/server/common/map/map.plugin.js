@@ -14,7 +14,7 @@ const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
  *
  * @typedef {object} ParcelFeature
  * @property {string} id
- * @property {{ id: string, sheetId: string, parcelId: string, areaHa: number|null }} properties
+ * @property {{ id: string, sheet_id: string, parcel_id: string, areaHa: number|null }} properties
  */
 
 /** @satisfies {import('@hapi/hapi').ServerRegisterPluginObject<void>} */
