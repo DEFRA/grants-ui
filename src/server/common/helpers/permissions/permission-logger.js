@@ -6,7 +6,7 @@ export function logPermissionEvent({ request, grantCode, permission, enforcement
     grantCode,
     permission,
     authorised,
-    slug: request.params?.slug
+    path: request.params?.path
   }
   if (!enforcementEnabled) {
     log(LogCodes.PERMISSIONS.BYPASSED, logData, request)
