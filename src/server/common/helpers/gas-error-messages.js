@@ -3,7 +3,7 @@ import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 /**
  * Maps GAS API error status codes to user-friendly error messages
  * @param {number} statusCode - HTTP status code
- * @returns {{heading: string, message: string}} - User-friendly error information
+ * @returns {{ heading: string, message: string }} - User-friendly error information
  */
 export function getGasErrorMessage(statusCode) {
   const serviceError = {
@@ -17,6 +17,7 @@ export function getGasErrorMessage(statusCode) {
     message: 'The service is currently unavailable. Please try again in a few minutes.'
   }
 
+  /** @type {Record<number, { heading: string, message: string }>} */
   const messages = {
     400: serviceError,
     401: serviceError,
@@ -39,10 +40,10 @@ export function getGasErrorMessage(statusCode) {
 
 /**
  * Handles GAS API error response and returns appropriate view
- * @param {object} h - Response toolkit
- * @param {object} context - Form context
- * @param {object} error - The error object (GrantApplicationServiceApiError)
- * @returns {object} - Error view response
+ * @param {ResponseToolkit} h - Response toolkit
+ * @param {{ referenceNumber?: string }} context - Form context
+ * @param {GasApiError} error - The error object (GrantApplicationServiceApiError)
+ * @returns {import('@hapi/hapi').ResponseObject} - Error view response
  */
 export function handleGasApiError(h, context, error) {
   const statusCode = error.status || statusCodes.internalServerError
@@ -60,3 +61,11 @@ export function handleGasApiError(h, context, error) {
     })
     .code(statusCode)
 }
+
+/**
+ * @typedef {Error & { status?: number, responseBody?: string, grantCode?: string }} GasApiError
+ *   Shape of `GrantApplicationServiceApiError` (see
+ *   `src/server/common/services/grant-application/grant-application.service.js`).
+ *
+ * @import { ResponseToolkit } from '@hapi/hapi'
+ */

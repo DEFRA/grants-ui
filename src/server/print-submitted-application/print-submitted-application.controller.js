@@ -10,6 +10,8 @@ import {
 } from '../common/helpers/print-application-service/print-application-service.js'
 import { createBusinessRows, createContactRows, createPersonRows } from '~/src/server/common/helpers/create-rows.js'
 import { validateRequestAndFindForm } from '~/src/server/common/helpers/form-verify-and-request-load.js'
+import { enforcePagePermission } from '../common/request-pipeline/permissions/enforce-page-permission.js'
+import { isBoom } from '@hapi/boom'
 
 /**
  * Loads the application state from the session cache and returns it only if submitted.
@@ -103,6 +105,9 @@ async function buildPrintResponse({ form, state, slug }, request, h) {
  * @param {ResponseToolkit} h
  */
 function handleError(error, request, h) {
+  if (isBoom(error)) {
+    throw error
+  }
   log(
     LogCodes.PRINT_APPLICATION.ERROR,
     {
@@ -140,6 +145,25 @@ export const printSubmittedApplication = {
             const state = await loadSubmittedApplication(request)
             if (!state) {
               return h.response('Application not submitted').code(statusCodes.forbidden)
+            }
+
+            const context = /** @type {import('@defra/forms-engine-plugin/engine/types.js').FormContext} */ (
+              /** @type {unknown} */ ({ state })
+            )
+            const path = request.path.split('/').pop()
+
+            if (!path) {
+              throw new Error('Unable to determine page path')
+            }
+
+            request.params.path = path
+            const pipelineRequest = /** @type {import('../common/request-pipeline/types.js').PipelineRequest} */ (
+              /** @type {unknown} */ (request)
+            )
+
+            const result = enforcePagePermission(pipelineRequest, h, context)
+            if (result !== h.continue) {
+              return result
             }
 
             log(

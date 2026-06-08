@@ -6,8 +6,8 @@ import { formatPhone } from '~/src/server/land-grants/utils/format-phone.js'
 
 /**
  * Create customer name row if available
- * @param {object} name - Name object with first, middle, last properties
- * @returns {object|null} Row object or null if no valid name
+ * @param {Name | null | undefined} name
+ * @returns {SummaryListRow | null}
  */
 export function createCustomerNameRow(name) {
   if (!name) {
@@ -29,8 +29,8 @@ export function createCustomerNameRow(name) {
 /**
  * Build summary list rows from field definitions.
  * Mandatory fields are always included. Optional fields are hidden when their value is empty.
- * @param {{ label: string, value: any, mandatory?: boolean }[]} fields
- * @returns {{ rows: object[] }}
+ * @param {RowField[]} fields
+ * @returns {{ rows: SummaryListRow[] }}
  */
 export function buildRows(fields) {
   return {
@@ -49,8 +49,8 @@ export function buildRows(fields) {
 
 /**
  * Create person detail rows for detailed view.
- * @param {object} name - Name object with title, first, middle, last properties
- * @returns {{ rows: object[] }} Rows object
+ * @param {Name | null | undefined} name
+ * @returns {{ rows: SummaryListRow[] }}
  */
 export function createPersonRows(name) {
   return buildRows([
@@ -63,22 +63,27 @@ export function createPersonRows(name) {
 
 /**
  * Create contact detail rows for detailed view.
- * @param {object} business - Business data with phone numbers and email
- * @returns {{ rows: object[] }} Rows object
+ * @param {Business | null | undefined} business
+ * @returns {{ rows: SummaryListRow[] }}
  */
 export function createContactRows(business) {
   return buildRows([
-    { label: 'Landline number', value: formatPhone(business?.landlinePhoneNumber) },
-    { label: 'Mobile number', value: formatPhone(business?.mobilePhoneNumber) },
-    { label: 'Email address', value: business?.email?.address ?? business?.email }
+    { label: 'Landline number', value: formatPhone(/** @type {string} */ (business?.landlinePhoneNumber)) },
+    { label: 'Mobile number', value: formatPhone(/** @type {string} */ (business?.mobilePhoneNumber)) },
+    {
+      label: 'Email address',
+      value:
+        /** @type {{ address?: string } | undefined} */ (business?.email)?.address ??
+        /** @type {string | undefined} */ (business?.email)
+    }
   ])
 }
 
 /**
  * Create business detail rows for detailed view.
  * @param {string} sbi - SBI number
- * @param {object} business - Business data
- * @returns {{ rows: object[] }} Rows object
+ * @param {Business | null | undefined} business
+ * @returns {{ rows: SummaryListRow[] }}
  */
 export function createBusinessRows(sbi, business) {
   const address = business?.address
@@ -96,8 +101,8 @@ export function createBusinessRows(sbi, business) {
 
 /**
  * Create business name row if available
- * @param {string} businessName - Business name
- * @returns {object|null} Row object or null if no business name
+ * @param {string | null | undefined} businessName
+ * @returns {SummaryListRow | null}
  */
 export function createBusinessNameRow(businessName) {
   if (!businessName) {
@@ -112,16 +117,17 @@ export function createBusinessNameRow(businessName) {
 
 /**
  * Create address row if available
- * @param {object} address - Address object
- * @returns {object|null} Row object or null if no valid address
+ * @param {Address | null | undefined} address
+ * @returns {SummaryListRow | null}
  */
 export function createAddressRow(address) {
   if (!address) {
     return null
   }
 
-  const addressParts = [address.line1, address.line2, address.line3, address.line4, address.city, address.postalCode]
-    .filter(Boolean)
+  const addressParts = /** @type {string[]} */ (
+    [address.line1, address.line2, address.line3, address.line4, address.city, address.postalCode].filter(Boolean)
+  )
     .map((part) => part.trim())
     .filter((part) => part.length > 0)
 
@@ -138,7 +144,7 @@ export function createAddressRow(address) {
 /**
  * Create SBI number row
  * @param {string} sbi - SBI number
- * @returns {object} Row object with SBI number
+ * @returns {SummaryListRow}
  */
 export function createSbiRow(sbi) {
   return {
@@ -152,7 +158,7 @@ export function createSbiRow(sbi) {
  * @param {string | null} landline - Landline phone number
  * @param {string | null} mobile - Mobile phone number
  * @param {string | null} emailAddress - Email address
- * @returns {object|null} Row object or null if no contact details
+ * @returns {SummaryListRow | null}
  */
 export function createContactDetailsRow(landline, mobile, emailAddress) {
   const contactParts = []
@@ -178,3 +184,11 @@ export function createContactDetailsRow(landline, mobile, emailAddress) {
     value: { html: contactParts.join('<br/>') }
   }
 }
+
+/**
+ * @typedef {{ title?: string, first?: string, middle?: string, last?: string }} Name
+ * @typedef {{ line1?: string, line2?: string, line3?: string, line4?: string, city?: string, postalCode?: string }} Address
+ * @typedef {{ name?: string, address?: Address, landlinePhoneNumber?: string, mobilePhoneNumber?: string, email?: string | { address?: string } }} Business
+ * @typedef {{ key: { text: string }, value: { text: string } | { html: string } }} SummaryListRow
+ * @typedef {{ label: string, value: string | null | undefined, mandatory?: boolean }} RowField
+ */

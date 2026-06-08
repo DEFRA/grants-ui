@@ -31,7 +31,7 @@ export class BaseError extends Error {
 
   /**
    * Additional details used for logging
-   * @type {Object}
+   * @type {Record<string, any>}
    * @private
    */
   _details = {
@@ -52,7 +52,7 @@ export class BaseError extends Error {
 
   /**
    * Map of error details to mutate
-   * @type {Object}
+   * @type {Record<string, string>}
    * @protected
    */
   detailsMap = {
@@ -240,9 +240,10 @@ export class BaseError extends Error {
 
   /**
    * Set additional details for this error, which can be used when logging the error
-   * @param {Object} details
+   * @param {Record<string, any>} details
    */
   set details(details) {
+    /** @type {Record<string, any>} */
     const detailsClone = structuredClone(details)
     for (const key in detailsClone) {
       if (this.detailsMap[key]) {
@@ -255,7 +256,7 @@ export class BaseError extends Error {
 
   /**
    *
-   * @returns {Object}
+   * @returns {Record<string, any>}
    */
   get details() {
     return this._details
