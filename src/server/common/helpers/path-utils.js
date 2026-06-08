@@ -1,5 +1,10 @@
 import { DANGEROUS_KEYS } from '~/src/server/common/utils/objects.js'
 
+/**
+ * @param {unknown} current
+ * @param {string} part
+ * @returns {unknown}
+ */
 function resolvePathPart(current, part) {
   const arrayMatch = /^(\w+)\[(\d+)\]$/.exec(part)
 
@@ -9,14 +14,14 @@ function resolvePathPart(current, part) {
       return undefined
     }
     const index = Number.parseInt(indexStr, 10)
-    return current?.[arrayName]?.[index]
+    return /** @type {Record<string, unknown[]> | null | undefined} */ (current)?.[arrayName]?.[index]
   }
 
   if (DANGEROUS_KEYS.has(part)) {
     return undefined
   }
-  if (typeof current === 'object' && part in current) {
-    return current[part]
+  if (current !== null && typeof current === 'object' && part in current) {
+    return /** @type {Record<string, unknown>} */ (current)[part]
   }
   return undefined
 }
@@ -37,9 +42,9 @@ export function normaliseResponseMappingPath(value) {
  * Resolves a value from an object using dot-notation path
  * Supports array index notation (e.g., 'items[0].name')
  *
- * @param {object} obj - Source object
+ * @param {unknown} obj - Source object
  * @param {string} path - Dot-notation path (e.g., 'foo.bar.baz' or 'items[0].name')
- * @returns {any} The resolved value, or undefined if not found
+ * @returns {unknown} The resolved value, or undefined if not found
  */
 export function resolvePath(obj, path) {
   if (!obj || !path) {
@@ -47,6 +52,7 @@ export function resolvePath(obj, path) {
   }
 
   const parts = path.split('.')
+  /** @type {unknown} */
   let current = obj
 
   for (const part of parts) {

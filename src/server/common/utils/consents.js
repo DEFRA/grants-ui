@@ -1,6 +1,12 @@
 /**
+ * @typedef {{ consents?: string[] } & Record<string, unknown>} ParcelAction
+ * @typedef {{ actionsObj?: Record<string, ParcelAction> } & Record<string, unknown>} StateLandParcel
+ * @typedef {{ landParcels?: Record<string, StateLandParcel> } & Record<string, unknown>} ConsentsState
+ */
+
+/**
  * Derive which consent types are required based on the actions selected across all land parcels.
- * @param {object} state
+ * @param {ConsentsState} state
  * @returns {string[]}
  */
 export function getRequiredConsents(state) {

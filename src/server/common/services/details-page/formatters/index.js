@@ -6,6 +6,7 @@ import { phoneNumbersFormatter } from './phone-numbers.formatter.js'
 
 /**
  * Registry of available formatters
+ * @type {Record<string, Function>}
  */
 const formatters = {
   text: textFormatter,

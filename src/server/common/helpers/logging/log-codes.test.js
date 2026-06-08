@@ -704,9 +704,9 @@ describe('LogCodes', () => {
           permission: 'submit',
           userId: TEST_USER_IDS.DEFAULT,
           authorised: true,
-          slug: 'test-slug'
+          path: 'test-start'
         },
-        `Permission enforcement bypassed for grantCode=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}, permission=submit, userId=${TEST_USER_IDS.DEFAULT}, authorised=true, slug=test-slug`
+        `Permission enforcement bypassed for grantCode=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}, permission=submit, userId=${TEST_USER_IDS.DEFAULT}, authorised=true, path=test-start`
       ],
       [
         'SUCCESS',
@@ -716,9 +716,9 @@ describe('LogCodes', () => {
           permission: 'submit',
           userId: TEST_USER_IDS.DEFAULT,
           authorised: true,
-          slug: 'test-slug'
+          path: 'test-start'
         },
-        `Permission check successful for grantCode=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}, permission=submit, userId=${TEST_USER_IDS.DEFAULT}, authorised=true, slug=test-slug`
+        `Permission check successful for grantCode=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}, permission=submit, userId=${TEST_USER_IDS.DEFAULT}, authorised=true, path=test-start`
       ],
       [
         'FAILURE',
@@ -728,9 +728,9 @@ describe('LogCodes', () => {
           permission: 'submit',
           userId: TEST_USER_IDS.DEFAULT,
           authorised: false,
-          slug: 'test-slug'
+          path: 'test-start'
         },
-        `Permission check failed for grantCode=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}, permission=submit, userId=${TEST_USER_IDS.DEFAULT}, authorised=false, slug=test-slug`
+        `Permission check failed for grantCode=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}, permission=submit, userId=${TEST_USER_IDS.DEFAULT}, authorised=false, path=test-start`
       ]
     ])
   })

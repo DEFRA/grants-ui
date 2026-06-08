@@ -3,7 +3,6 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import {
   enforcePagePermission,
   getReturnToApplicationPath,
-  isAllowedViewOnlyPath,
   isCannotSubmitUser,
   isSubmittedApplication,
   isViewOnlyUser
@@ -157,20 +156,6 @@ describe('getReturnToApplicationPath', () => {
   })
 })
 
-describe('isAllowedViewOnlyPath', () => {
-  it('returns true for confirmation path', () => {
-    expect(isAllowedViewOnlyPath('confirmation')).toBe(true)
-  })
-
-  it('returns true for print submitted application path', () => {
-    expect(isAllowedViewOnlyPath('print-submitted-application')).toBe(true)
-  })
-
-  it('returns false for other paths', () => {
-    expect(isAllowedViewOnlyPath('task-list')).toBe(false)
-  })
-})
-
 describe('enforcePagePermission', () => {
   let request
   let h
@@ -271,24 +256,48 @@ describe('enforcePagePermission', () => {
     expect(result).toBe(h.continue)
   })
 
-  it('throws forbidden for view-only users on non-allowed paths', () => {
-    request.params.path = 'task-list'
+  it('allows user with required view permission', () => {
+    vi.mocked(getRequiredPermission).mockReturnValue('view')
 
-    request.can.mockImplementation((action) => {
-      return action === 'view'
-    })
+    request.can.mockImplementation((action) => action === 'view')
 
-    expect(() => enforcePagePermission(request, h, context)).toThrow()
+    const result = enforcePagePermission(request, h, context)
+
+    expect(result).toBe(h.continue)
   })
 
-  it('throws forbidden for view-only users on unsubmitted applications', () => {
+  it('throws Application not submitted when view page accessed before submission', () => {
     context.state.applicationStatus = 'IN_PROGRESS'
 
+    request.can.mockImplementation((action) => action === 'view')
+
+    expect(() => enforcePagePermission(request, h, context)).toThrow('Application not submitted')
+  })
+
+  it('does not allow view pages before submission even when user has view permission', () => {
+    context.state.applicationStatus = 'IN_PROGRESS'
+
+    request.can.mockImplementation((action) => action === 'view')
+
+    expect(() => enforcePagePermission(request, h, context)).toThrow('Application not submitted')
+  })
+
+  it('throws when model missing during cannot-submit redirect', () => {
+    vi.mocked(getRequiredPermission).mockReturnValue('submit')
+
+    request.app.model = undefined
+
     request.can.mockImplementation((action) => {
-      return action === 'view'
+      if (action === 'amend') {
+        return true
+      }
+      if (action === 'submit') {
+        return false
+      }
+      return false
     })
 
-    expect(() => enforcePagePermission(request, h, context)).toThrow()
+    expect(() => enforcePagePermission(request, h, context)).toThrow('Form model missing')
   })
 
   it('throws forbidden when user has no permissions', () => {
