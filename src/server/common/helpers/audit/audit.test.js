@@ -283,6 +283,7 @@ describe('audit-publisher plugin', () => {
 
       expect(request.sendAuditEventInBackground).toHaveBeenCalledWith({
         action: 'navigate',
+        entity: 'page',
         entityid: 'some-question',
         details: { grant: 'my-grant', answers: { favouriteColour: 'blue' } }
       })

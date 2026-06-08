@@ -167,6 +167,7 @@ export const auditPublisher = {
         } else if (isSuccessfulPageNavigation(request)) {
           request.sendAuditEventInBackground({
             action: 'navigate',
+            entity: 'page',
             entityid: request.params.path,
             details: { grant: request.params.slug, answers: answersFromPayload(request.payload) }
           })
