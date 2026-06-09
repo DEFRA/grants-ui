@@ -1,7 +1,10 @@
 import { getFormsCacheService } from '../../common/helpers/forms-cache/forms-cache.js'
-import { SessionError } from '~/src/server/common/utils/errors/SessionError.js'
 import { findFormBySlug, loadFormDefinition } from '~/src/server/common/forms/services/find-form-by-slug.js'
 import { clearParcelCache } from '~/src/server/land-grants/services/parcel-cache.js'
+import { clearSavedStateFromApiByContext } from '~/src/server/common/helpers/state/fetch-saved-state-helper.js'
+import { mintLockToken } from '~/src/server/common/helpers/lock/lock-token.js'
+import { log, LogCodes } from '../../common/helpers/logging/log.js'
+import { YarKeys } from '~/src/server/common/constants/session-keys.js'
 
 /**
  * @typedef {import('@hapi/hapi').Request & {
@@ -19,35 +22,81 @@ import { clearParcelCache } from '~/src/server/land-grants/services/parcel-cache
 export async function clearApplicationStateHandler(request, h) {
   const slug = request.params?.slug || ''
 
-  // we need a slug to clear the persisted state
   if (slug) {
-    if (!request.app.model) {
-      const form = await findFormBySlug(slug)
-      if (form) {
-        await loadFormAndSetOnRequestModel(form, request)
-      }
-    }
-
-    const cacheService = getFormsCacheService(request.server)
-    let sessionKey = 'unknown'
-    try {
-      await cacheService.clearState(request, true)
-    } catch (error) {
-      sessionKey = cacheService._Key(request)
-      const sessionError = new SessionError({
-        message: 'Session state clear failed',
-        source: 'clearApplicationStateHandler',
-        reason: 'session_state_clear_failure',
-        slug,
-        sessionKey
-      })
-      throw sessionError.from(/** @type {Error} */ (error))
-    }
+    await clearStateWithSlug(slug, request)
+  } else {
+    await clearStateWithoutSlug(request)
   }
 
   clearParcelCache()
 
   return h.redirect(`/${slug}`)
+}
+
+/**
+ * @param {string} slug
+ * @param {ClearStateRequest} request
+ */
+async function clearStateWithSlug(slug, request) {
+  if (!request.app.model) {
+    const form = await findFormBySlug(slug)
+    if (form) {
+      await loadFormAndSetOnRequestModel(form, request)
+    }
+  }
+
+  const cacheService = getFormsCacheService(request.server)
+  let clearError
+  try {
+    await cacheService.clearState(request, true)
+  } catch (error) {
+    clearError = /** @type {Error} */ (error)
+  }
+
+  if (clearError) {
+    log(LogCodes.SYSTEM.SERVER_ERROR, { errorMessage: clearError.message }, request)
+  }
+}
+
+/**
+ * @param {ClearStateRequest} request
+ */
+async function clearStateWithoutSlug(request) {
+  const credentials = /** @type {{ sbi?: string, contactId?: string }} */ (request.auth?.credentials)
+  const sbi = credentials?.sbi
+  const contactId = credentials?.contactId
+  const grantApplicationContext = /** @type {{ grantCode?: string, grantVersion?: string | number } | null} */ (
+    request.yar?.get(YarKeys.GRANT_APPLICATION_CONTEXT)
+  )
+  const grantCode = grantApplicationContext?.grantCode
+  const grantVersion = grantApplicationContext?.grantVersion
+
+  if (!sbi || !grantCode || !grantVersion || !contactId) {
+    log(
+      LogCodes.SYSTEM.SERVER_ERROR,
+      {
+        errorMessage: `clearStateWithoutSlug: missing required values — sbi=${sbi}, grantCode=${grantCode}, grantVersion=${grantVersion}, contactId=${contactId}`
+      },
+      request
+    )
+    return
+  }
+
+  const lockToken = mintLockToken({ userId: String(contactId), sbi, grantCode, grantVersion })
+
+  let clearError
+  try {
+    await clearSavedStateFromApiByContext({ sbi, grantCode, grantVersion, lockToken })
+  } catch (err) {
+    clearError = /** @type {Error} */ (err)
+  }
+
+  if (clearError) {
+    log(LogCodes.SYSTEM.SERVER_ERROR, { errorMessage: clearError.message }, request)
+    return
+  }
+
+  request.yar?.clear(YarKeys.GRANT_APPLICATION_CONTEXT)
 }
 
 const loadFormAndSetOnRequestModel = async (form, request) => {

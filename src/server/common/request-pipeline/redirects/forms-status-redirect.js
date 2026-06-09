@@ -8,6 +8,7 @@ import { mintLockToken } from '../../helpers/lock/lock-token.js'
 import { getCacheKey } from '../../helpers/state/get-cache-key-helper.js'
 import agreements from '~/src/config/agreements.js'
 import { getGrantCode } from '../../helpers/grant-code.js'
+import { YarKeys } from '../../constants/session-keys.js'
 
 /**
  * @typedef {Object} RedirectRule
@@ -264,7 +265,11 @@ async function handlePostSubmission(request, h, context, previousStatus, grantCo
 
   await persistStatus(request, rule.toGrantsStatus, previousStatus, grantId, context.state)
 
-  const redirectUrl = rule.toPath === agreements.get('baseUrl') ? rule.toPath : buildRedirectUrl(grantId, rule.toPath)
+  const isAgreementsRedirect = rule.toPath === agreements.get('baseUrl')
+  const redirectUrl = isAgreementsRedirect ? rule.toPath : buildRedirectUrl(grantId, rule.toPath)
+
+  const grantVersion = /** @type {{ grantVersion?: string | number | null }} */ (request.app).grantVersion ?? '1.0.0'
+  request.yar.set(YarKeys.GRANT_APPLICATION_CONTEXT, { grantCode, grantVersion, clientRef: clientRef.toLowerCase() })
 
   return request.path === redirectUrl ? h.continue : h.redirect(redirectUrl).takeover()
 }
@@ -386,6 +391,7 @@ export const formsStatusRedirect = async (request, h, context) => {
  *
  * @returns {string} The client reference number that should be used when calling GAS.
  */
+
 export function resolveClientReference(previousStatus, context) {
   if (previousStatus === ApplicationStatus.REOPENED && context.state?.previousReferenceNumber) {
     return context.state.previousReferenceNumber

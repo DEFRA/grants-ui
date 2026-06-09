@@ -3,6 +3,7 @@ import { getApplicationStatus } from '../../services/grant-application/grant-app
 import { updateApplicationStatus } from '../../helpers/status/update-application-status-helper.js'
 import { getFormsCacheService } from '../../helpers/forms-cache/forms-cache.js'
 import { ApplicationStatus } from '../../constants/application-status.js'
+import { YarKeys } from '../../constants/session-keys.js'
 import { formsStatusRedirect, resolveClientReference } from './forms-status-redirect.js'
 import { log, LogCodes } from '../../helpers/logging/log.js'
 import { mintLockToken } from '../../helpers/lock/lock-token.js'
@@ -112,7 +113,8 @@ describe('formsStatusRedirect', () => {
       path: '/grant-a/start',
       headers: {},
       auth: { credentials: { sbi: '12345', crn: 'CRN123', contactId: 'contact-123' } },
-      server: { logger: { error: vi.fn() } }
+      server: { logger: { error: vi.fn() } },
+      yar: { set: vi.fn(), get: vi.fn() }
     }
 
     h = {
@@ -744,6 +746,11 @@ describe('formsStatusRedirect', () => {
         const result = await formsStatusRedirect(request, h, context)
 
         expect(h.redirect).toHaveBeenCalledWith('/agreement')
+        expect(request.yar.set).toHaveBeenCalledWith(YarKeys.GRANT_APPLICATION_CONTEXT, {
+          grantCode: 'grant-a',
+          grantVersion: '1.0.0',
+          clientRef: 'ref-001'
+        })
         expect(result).toEqual(expect.any(Symbol))
       }
     )
