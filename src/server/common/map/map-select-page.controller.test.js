@@ -229,4 +229,28 @@ describe('MapSelectPageController', () => {
       )
     })
   })
+
+  describe('route handler wrappers', () => {
+    it('makeGetRouteHandler delegates to handleGet', async () => {
+      const controller = makeController()
+      controller.handleGet = vi.fn().mockResolvedValue('get-response')
+      const handler = controller.makeGetRouteHandler()
+
+      const result = await handler('req', 'ctx', 'h')
+
+      expect(controller.handleGet).toHaveBeenCalledWith('req', 'ctx', 'h')
+      expect(result).toBe('get-response')
+    })
+
+    it('makePostRouteHandler delegates to handlePost', async () => {
+      const controller = makeController()
+      controller.handlePost = vi.fn().mockResolvedValue('post-response')
+      const handler = controller.makePostRouteHandler()
+
+      const result = await handler('req', 'ctx', 'h')
+
+      expect(controller.handlePost).toHaveBeenCalledWith('req', 'ctx', 'h')
+      expect(result).toBe('post-response')
+    })
+  })
 })

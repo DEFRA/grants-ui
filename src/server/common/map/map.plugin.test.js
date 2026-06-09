@@ -27,6 +27,7 @@ vi.mock('~/src/server/land-grants/utils/format-parcel.js', () => ({
 }))
 
 import { fetchParcels, fetchParcelTileLocation } from '~/src/server/land-grants/services/land-grants.service.js'
+import { isMockData, buildMockFeatures } from '~/src/server/common/map/map.mock.js'
 
 const mockParcels = [
   { sheetId: 'SD7148', parcelId: '9160', area: { value: 2.5 } },
@@ -70,12 +71,14 @@ function makeH() {
 describe('mapPlugin', () => {
   let server
   let parcelsHandler
+  let geojsonHandler
   let tilesHandler
 
   beforeEach(() => {
     server = makeServer()
     mapPlugin.plugin.register(server)
     parcelsHandler = server._routes[0].handler
+    geojsonHandler = server._routes[1].handler
     tilesHandler = server._routes[2].handler
     vi.clearAllMocks()
   })
@@ -157,6 +160,58 @@ describe('mapPlugin', () => {
 
       const [{ bbox }] = h.response.mock.calls[0]
       expect(bbox).toBeNull()
+    })
+
+    it('returns mock geojson response when mock mode is enabled', async () => {
+      isMockData.mockReturnValue(true)
+      buildMockFeatures.mockReturnValue({
+        features: [{ type: 'Feature', id: 'SD7148-9160', geometry: {}, properties: {} }],
+        bbox: { minLng: -2.5, minLat: 51.4, maxLng: -2.3, maxLat: 51.6 }
+      })
+      fetchParcels.mockResolvedValue(mockParcels)
+      const request = makeRequest()
+      const h = makeH()
+
+      await parcelsHandler(request, h)
+
+      expect(request.yar.set).toHaveBeenCalledWith('mapMockFeatures', expect.any(Array))
+      expect(h.response).toHaveBeenCalledWith(
+        expect.objectContaining({ tileUrl: null, geojsonUrl: '/api/map/parcels/geojson' })
+      )
+    })
+  })
+
+  describe('GET /api/map/parcels/geojson', () => {
+    it('returns 404 when mock mode is disabled', async () => {
+      isMockData.mockReturnValue(false)
+      const request = makeRequest()
+      const h = makeH()
+
+      geojsonHandler(request, h)
+
+      expect(h._responseObj.code).toHaveBeenCalledWith(404)
+    })
+
+    it('returns 404 when mock mode is enabled but no features in session', async () => {
+      isMockData.mockReturnValue(true)
+      const request = makeRequest({})
+      const h = makeH()
+
+      geojsonHandler(request, h)
+
+      expect(h._responseObj.code).toHaveBeenCalledWith(404)
+    })
+
+    it('returns GeoJSON feature collection from session', async () => {
+      isMockData.mockReturnValue(true)
+      const features = [{ type: 'Feature', id: 'SD7148-9160' }]
+      const request = makeRequest({ mapMockFeatures: features })
+      const h = makeH()
+
+      geojsonHandler(request, h)
+
+      expect(h.response).toHaveBeenCalledWith({ type: 'FeatureCollection', features })
+      expect(h._responseObj.code).toHaveBeenCalledWith(200)
     })
   })
 

@@ -44,9 +44,16 @@ async function parcelsHandler(request, h) {
   }))
 
   if (isMockData()) {
-    const { features, bbox } = buildMockFeatures(parcelData)
-    request.yar.set('mapMockFeatures', features)
-    return h.response({ features, bbox, tileUrl: null, geojsonUrl: '/api/map/parcels/geojson' }).code(statusCodes.ok)
+    const mockResult = buildMockFeatures(parcelData)
+    request.yar.set('mapMockFeatures', mockResult.features)
+    return h
+      .response({
+        features: mockResult.features,
+        bbox: mockResult.bbox,
+        tileUrl: null,
+        geojsonUrl: '/api/map/parcels/geojson'
+      })
+      .code(statusCodes.ok)
   }
 
   const features = parcelData.map((p) => ({
