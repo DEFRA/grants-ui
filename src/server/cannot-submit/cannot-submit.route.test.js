@@ -7,10 +7,11 @@ describe('cannotSubmitRoute', () => {
     expect(cannotSubmitRoute.path).toBe('/cannot-submit')
   })
 
-  test('renders cannot-submit view with returnUrl from query', () => {
+  test('renders cannot-submit view with returnUrl and returnText from query', () => {
     const request = {
       query: {
-        returnUrl: '/task-list'
+        returnUrl: '/task-list',
+        returnText: 'Return to task list'
       }
     }
 
@@ -21,13 +22,14 @@ describe('cannotSubmitRoute', () => {
     const result = cannotSubmitRoute.handler(request, h)
 
     expect(h.view).toHaveBeenCalledWith('cannot-submit', {
-      returnUrl: '/task-list'
+      returnUrl: '/task-list',
+      returnText: 'Return to task list'
     })
 
     expect(result).toBe('rendered-view')
   })
 
-  test('renders cannot-submit view with undefined returnUrl when absent', () => {
+  test('renders cannot-submit view with undefined values when query params are absent', () => {
     const request = {
       query: {}
     }
@@ -39,7 +41,8 @@ describe('cannotSubmitRoute', () => {
     const result = cannotSubmitRoute.handler(request, h)
 
     expect(h.view).toHaveBeenCalledWith('cannot-submit', {
-      returnUrl: undefined
+      returnUrl: undefined,
+      returnText: undefined
     })
 
     expect(result).toBe('rendered-view')
