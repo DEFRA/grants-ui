@@ -70,9 +70,7 @@ function geojsonHandler(request, h) {
   if (!isMockData()) {
     return h.response({ error: 'not found' }).code(statusCodes.notFound)
   }
-  const features = /** @type {import('./map.plugin.js').ParcelFeature[] | null} */ (
-    request.yar.get('mapMockFeatures')
-  )
+  const features = /** @type {import('./map.plugin.js').ParcelFeature[] | null} */ (request.yar.get('mapMockFeatures'))
   if (!features) {
     return h.response({ error: 'not found' }).code(statusCodes.notFound)
   }
@@ -115,9 +113,24 @@ export const mapPlugin = {
   plugin: {
     name: 'map',
     register(server) {
-      server.route({ method: 'GET', path: '/api/map/parcels', options: { auth: { mode: 'required', strategy: 'session' } }, handler: parcelsHandler })
-      server.route({ method: 'GET', path: '/api/map/parcels/geojson', options: { auth: false }, handler: geojsonHandler })
-      server.route({ method: 'GET', path: '/land-grants/parcel-tiles/{z}/{x}/{y}', options: { auth: false }, handler: tilesHandler })
+      server.route({
+        method: 'GET',
+        path: '/api/map/parcels',
+        options: { auth: { mode: 'required', strategy: 'session' } },
+        handler: parcelsHandler
+      })
+      server.route({
+        method: 'GET',
+        path: '/api/map/parcels/geojson',
+        options: { auth: false },
+        handler: geojsonHandler
+      })
+      server.route({
+        method: 'GET',
+        path: '/land-grants/parcel-tiles/{z}/{x}/{y}',
+        options: { auth: false },
+        handler: tilesHandler
+      })
     }
   }
 }

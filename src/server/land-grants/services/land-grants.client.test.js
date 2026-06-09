@@ -636,10 +636,13 @@ describe('Land Grants client', () => {
 
       const result = await locateParcelTiles(['SD7148-9160'], mockApiEndpoint)
 
-      expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v1/parcel-tiles/locate`, expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify({ parcelIds: ['SD7148-9160'] })
-      }))
+      expect(mockFetch).toHaveBeenCalledWith(
+        `${mockApiEndpoint}/api/v1/parcel-tiles/locate`,
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ parcelIds: ['SD7148-9160'] })
+        })
+      )
       expect(result).toEqual(mockResponse)
     })
   })
