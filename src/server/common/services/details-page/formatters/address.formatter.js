@@ -1,47 +1,13 @@
 import { escapeHtml } from '~/src/server/common/utils/escape-html.js'
 
-// Not keen on having to add `null` as a type to all these values, but to allow typechecking
-// with jsdoc it is necessary without using full-blown TypeScript
-
 /**
- * @typedef {object} AddressBase
+ * @typedef {object} Address
  * @property {string|null} line1
  * @property {string|null} [line2]
  * @property {string|null} [line3]
  * @property {string|null} [line4]
- * @property {string|null} [street]
  * @property {string|null} city
  * @property {string|null} postalCode
- */
-
-/**
- * @typedef {AddressBase & {
- *   uprn: string,
- *   county: string | null,
- *   buildingName: string | null,
- *   buildingNumberRange: string | null,
- *   dependentLocality: string | null,
- *   doubleDependentLocality: string | null,
- *   flatName: string | null,
- *   pafOrganisationName: string | null
- * }} AddressWithUprn
- */
-
-/**
- * @typedef {AddressBase & {
- *   uprn?: never,
- *   county?: never,
- *   buildingName?: never,
- *   buildingNumberRange?: never,
- *   dependentLocality?: never,
- *   doubleDependentLocality?: never,
- *   flatName?: never,
- *   pafOrganisationName?: never
- * }} AddressWithoutUprn
- */
-
-/**
- * @typedef {AddressWithUprn | AddressWithoutUprn} Address
  */
 
 /**
@@ -54,50 +20,14 @@ export function addressFormatter(value) {
     return null
   }
 
-  const address = evaluateValueToAddress(value)
-
-  if (address.length === 0) {
-    return null
-  }
-
-  return { html: address.join('<br/>') }
-}
-
-/**
- * Evaluates the input object and returns a standardized address object
- * @param {Address} value - The input address data
- * @returns {string[]} Standardized address object
- */
-function evaluateValueToAddress(value) {
-  const commonFields = {
-    city: value.city,
-    postalCode: value.postalCode
-  }
-
-  let address = {
-    ...commonFields,
-    line1: value.line1,
-    line2: value.line2,
-    line3: value.line3,
-    line4: value.street
-  }
-
-  if (value.uprn) {
-    const { flatName, buildingName, buildingNumberRange, street, dependentLocality, doubleDependentLocality } = value
-    const buildingParts = [flatName, buildingName, buildingNumberRange, street].filter(Boolean)
-    const buildingLine = buildingParts.length > 0 ? buildingParts.join(' ') : null
-
-    address = {
-      ...commonFields,
-      line1: value.pafOrganisationName,
-      line2: buildingLine,
-      line3: dependentLocality,
-      line4: doubleDependentLocality
-    }
-  }
-
-  return [address.line1, address.line2, address.line3, address.line4, address.city, address.postalCode]
+  const parts = [value.line1, value.line2, value.line3, value.line4, value.city, value.postalCode]
     .filter(Boolean)
     .map((part) => escapeHtml(String(part).trim()))
     .filter((part) => part.length > 0)
+
+  if (parts.length === 0) {
+    return null
+  }
+
+  return { html: parts.join('<br/>') }
 }

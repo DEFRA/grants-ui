@@ -633,6 +633,86 @@ describe('Consolidated View Service', () => {
       const [url] = mockFetchInstance.mock.calls[0]
       expect(url).toBe('http://stub/graphql')
     })
+
+    it('should format address fields in the response using UPRN logic when uprn is present', async () => {
+      const mockResponse = {
+        data: {
+          business: {
+            info: {
+              name: 'Test Farm',
+              address: {
+                line1: 'Brackenfold Farm',
+                line2: 'Littondale Road',
+                line3: null,
+                line4: null,
+                street: 'Littondale Road',
+                city: 'Skipton',
+                postalCode: 'BD23 5QH',
+                uprn: '981124620011',
+                buildingName: 'Brackenfold Farm',
+                buildingNumberRange: null,
+                county: 'North Yorkshire',
+                dependentLocality: null,
+                doubleDependentLocality: null,
+                flatName: null,
+                pafOrganisationName: 'Mellor & Sons'
+              }
+            }
+          }
+        }
+      }
+
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockResponse)
+      })
+
+      const result = await executeConfigDrivenQuery(mockRequest, 'query { business { info { address { line1 } } } }')
+
+      expect(result.data.business.info.address).toEqual({
+        line1: 'Mellor & Sons',
+        line2: 'Brackenfold Farm Littondale Road',
+        line3: undefined,
+        line4: undefined,
+        city: 'Skipton',
+        postalCode: 'BD23 5QH'
+      })
+    })
+
+    it('should leave customer address fields unformatted', async () => {
+      const mockResponse = {
+        data: {
+          customer: {
+            info: {
+              address: {
+                line1: '10 Downing Street',
+                line2: 'Westminster',
+                line3: null,
+                line4: null,
+                city: 'London',
+                postalCode: 'SW1A 2AA'
+              }
+            }
+          }
+        }
+      }
+
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockResponse)
+      })
+
+      const result = await executeConfigDrivenQuery(mockRequest, 'query { customer { info { address { line1 } } } }')
+
+      expect(result.data.customer.info.address).toEqual({
+        line1: '10 Downing Street',
+        line2: 'Westminster',
+        line3: null,
+        line4: null,
+        city: 'London',
+        postalCode: 'SW1A 2AA'
+      })
+    })
   })
 
   describe('Mock mode functionality', () => {
