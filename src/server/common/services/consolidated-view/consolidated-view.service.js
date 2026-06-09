@@ -431,18 +431,27 @@ export async function fetchBusinessAndCustomerInformation(request) {
 }
 
 /**
- * Executes a config-driven GraphQL query and returns the raw response
+ * Executes a config-driven GraphQL query and returns the response with address fields formatted.
  * @param {AnyFormRequest} request
  * @param {string} query - GraphQL query string
  * @param {object} [options] - Options
  * @param {string[]} [options.toleratedPaths] - GraphQL paths tolerated as partial failures
- * @returns {Promise<object>} Raw API response
+ * @returns {Promise<object>} API response with formatted address fields
  * @throws {ConsolidatedViewError} - If the API request fails
  */
 export async function executeConfigDrivenQuery(request, query, { toleratedPaths } = {}) {
+  const { credentials: { sbi } = {} } = request.auth ?? {}
   return fetchFromConsolidatedView(request, {
     query,
-    formatResponse: (/** @type {GraphQLResponse} */ r) => r,
+    formatResponse: (/** @type {GraphQLResponse} */ r) => {
+      const businessInfo = r.data?.business?.info
+      if (!businessInfo?.address) {
+        return r
+      }
+
+      const formattedBusinessInfo = { ...businessInfo, address: formatAddress(sbi, businessInfo.address) }
+      return { ...r, data: { ...r.data, business: { ...r.data?.business, info: formattedBusinessInfo } } }
+    },
     toleratedPaths
   })
 }
