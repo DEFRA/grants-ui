@@ -56,7 +56,11 @@ function makeRequest(yarData = {}) {
 }
 
 function makeH() {
-  const responseObj = { code: vi.fn().mockReturnThis(), type: vi.fn().mockReturnThis(), header: vi.fn().mockReturnThis() }
+  const responseObj = {
+    code: vi.fn().mockReturnThis(),
+    type: vi.fn().mockReturnThis(),
+    header: vi.fn().mockReturnThis()
+  }
   return {
     response: vi.fn().mockReturnValue(responseObj),
     _responseObj: responseObj
