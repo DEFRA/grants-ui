@@ -1,6 +1,5 @@
 // MOCK ONLY — delete this file and the mockFeatures import in map.plugin.js when real land-grants-api is wired up.
 // To disable: set MAP_MOCK_DATA_ENABLED=false in .env (or unset it).
-// NOSONAR
 
 import { config } from '~/src/config/config.js'
 
