@@ -1,5 +1,6 @@
 import {
   calculate,
+  locateParcelTiles,
   parcelsGroups,
   parcelsWithExtendedInfo,
   parcelsWithFields,
@@ -624,6 +625,21 @@ describe('Land Grants client', () => {
         },
         body: JSON.stringify({ parcelIds, fields })
       })
+      expect(result).toEqual(mockResponse)
+    })
+  })
+
+  describe('locateParcelTiles', () => {
+    it('should POST to /api/v1/parcel-tiles/locate with parcel IDs', async () => {
+      const mockResponse = { bbox: { minLng: -2.5, minLat: 51.4, maxLng: -2.3, maxLat: 51.6 } }
+      mockFetch.mockResolvedValueOnce({ ok: true, json: () => mockResponse })
+
+      const result = await locateParcelTiles(['SD7148-9160'], mockApiEndpoint)
+
+      expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v1/parcel-tiles/locate`, expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ parcelIds: ['SD7148-9160'] })
+      }))
       expect(result).toEqual(mockResponse)
     })
   })
