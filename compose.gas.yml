@@ -71,7 +71,7 @@ services:
       LOG_FORMAT: pino-pretty
       MONGO_URI: mongodb://mongodb:27017/?replicaSet=mongoRepl
       MONGO_DATABASE: fg-gas-backend
-      AWS_ENDPOINT_URL: http://localstack:4566
+      AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL:-http://localstack:4566}
       AWS_REGION: eu-west-2
       AWS_DEFAULT_REGION: eu-west-2
       AWS_ACCESS_KEY_ID: test

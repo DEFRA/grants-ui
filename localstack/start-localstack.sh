@@ -5,39 +5,6 @@ export AWS_ACCESS_KEY_ID=test
 export AWS_SECRET_ACCESS_KEY=test
 
 #
-# CDP uploader
-#
-
-# buckets
-#aws --endpoint-url=http://localhost:4566 s3 mb s3://cdp-uploader-quarantine
-#aws --endpoint-url=http://localhost:4566 s3 mb s3://my-bucket
-#aws --endpoint-url=http://localhost:4566 s3 mb s3://form-definition-storage
-#aws --endpoint-url=http://localhost:4566 s3api put-bucket-versioning \
-#  --bucket form-definition-storage \
-#  --versioning-configuration Status=Enabled
-
-# Config broker S3 bucket
-aws --endpoint-url=http://localhost:4566 s3 mb s3://configs-bucket
-
-# queues
-#aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name cdp-clamav-results
-#aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name cdp-uploader-scan-results-callback.fifo --attributes "{\"FifoQueue\":\"true\",\"ContentBasedDeduplication\": \"true\"}"
-
-# test harness
-#aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name mock-clamav
-#aws --endpoint-url=http://localhost:4566 s3api put-bucket-notification-configuration \
-#  --bucket cdp-uploader-quarantine \
-#  --notification-configuration '
-#    {
-#      "QueueConfigurations": [
-#        {
-#          "QueueArn": "arn:aws:sqs:eu-west-2:000000000000:mock-clamav",
-#          "Events": ["s3:ObjectCreated:*"]
-#        }
-#      ]
-#    }'
-
-#
 # FCP Audit Service
 #
 
@@ -54,33 +21,42 @@ aws --endpoint-url=http://localhost:4566 sns subscribe \
   --notification-endpoint "arn:aws:sqs:eu-west-2:000000000000:fcp_audit"
 
 #
-# Forms Audit Service
+# Grants UI Backend and Config Broker
 #
 
-# topics
-#aws --endpoint-url=http://localhost:4566 sns create-topic --name grants_ui_config_api_events
-#aws --endpoint-url=http://localhost:4566 sns create-topic --name forms_entitlement_events
-#aws --endpoint-url=http://localhost:4566 sns create-topic --name forms_designer_events
-aws --endpoint-url=http://localhost:4566 sns create-topic --name gfr__sns___config_update
+ENDPOINT="--endpoint-url=http://localhost:4566"
+ACCOUNT_ID=000000000000
 
-# queues
-#aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name forms_audit_events
-#aws --endpoint-url=http://localhost:4566 sqs create-queue --queue-name forms_audit_events-deadletter
-#aws --endpoint-url=http://localhost:4566 sqs set-queue-attributes \
-#    --queue-url http://sqs.eu-west-2.127.0.0.1:4566/000000000000/forms_audit_events \
-#    --attributes '{
-#      "RedrivePolicy": "{\"deadLetterTargetArn\":\"arn:aws:sqs:eu-west-2:000000000000:forms_audit_events-deadletter\",\"maxReceiveCount\":\"3\"}",
-#      "ReceiveMessageWaitTimeSeconds": "20",
-#      "VisibilityTimeout": "60"
-#    }'
+TOPIC_NAME=gfr__sns___config_update
+UPDATES_QUEUE_NAME=grants_ui_backend__sqs__config_updates
+INPUT_QUEUE_NAME=gfr__sqs___config_input
 
-# subscriptions
-#aws --endpoint-url=http://localhost:4566 sns subscribe --topic-arn "arn:aws:sns:eu-west-2:000000000000:grants_ui_config_api_events" \
-#  --protocol sqs --attributes RawMessageDelivery=true --notification-endpoint "arn:aws:sqs:eu-west-2:000000000000:forms_audit_events"
-#
-#aws --endpoint-url=http://localhost:4566 sns subscribe --topic-arn "arn:aws:sns:eu-west-2:000000000000:forms_entitlement_events" \
-#  --protocol sqs --attributes RawMessageDelivery=true --notification-endpoint "arn:aws:sqs:eu-west-2:000000000000:forms_audit_events"
-#
-#aws --endpoint-url=http://localhost:4566 sns subscribe --topic-arn "arn:aws:sns:eu-west-2:000000000000:forms_designer_events" \
-#  --protocol sqs --attributes RawMessageDelivery=true --notification-endpoint "arn:aws:sqs:eu-west-2:000000000000:forms_audit_events"
+# Config broker S3 bucket
+aws $ENDPOINT s3 mb s3://configs-bucket || true
+echo "Created S3 bucket"
 
+# Config broker input queue (polled by grants-config-broker)
+aws $ENDPOINT sqs create-queue --queue-name "$INPUT_QUEUE_NAME"
+echo "Created/located SQS queue: $INPUT_QUEUE_NAME"
+
+# SNS topic published to by grants-config-broker on form-definition changes
+TOPIC_ARN=$(aws $ENDPOINT sns create-topic --name "$TOPIC_NAME" --query TopicArn --output text)
+echo "Created/located SNS topic: $TOPIC_ARN"
+
+# SQS queue consumed by grants-ui-backend to ingest those changes
+QUEUE_URL=$(aws $ENDPOINT sqs create-queue --queue-name "$UPDATES_QUEUE_NAME" --query QueueUrl --output text)
+QUEUE_ARN="arn:aws:sqs:${AWS_REGION}:${ACCOUNT_ID}:${UPDATES_QUEUE_NAME}"
+echo "Created/located SQS queue: $QUEUE_URL ($QUEUE_ARN)"
+
+# Allow the SNS topic to deliver to the SQS queue
+aws $ENDPOINT sqs set-queue-attributes \
+  --queue-url "$QUEUE_URL" \
+  --attributes "{\"Policy\":\"{\\\"Version\\\":\\\"2012-10-17\\\",\\\"Statement\\\":[{\\\"Effect\\\":\\\"Allow\\\",\\\"Principal\\\":{\\\"Service\\\":\\\"sns.amazonaws.com\\\"},\\\"Action\\\":\\\"sqs:SendMessage\\\",\\\"Resource\\\":\\\"${QUEUE_ARN}\\\",\\\"Condition\\\":{\\\"ArnEquals\\\":{\\\"aws:SourceArn\\\":\\\"${TOPIC_ARN}\\\"}}}]}\"}"
+
+# Subscribe the queue to the topic.
+aws $ENDPOINT sns subscribe \
+  --topic-arn "$TOPIC_ARN" \
+  --protocol sqs \
+  --notification-endpoint "$QUEUE_ARN"
+
+echo "Subscribed $QUEUE_ARN to $TOPIC_ARN"
