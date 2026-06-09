@@ -22,6 +22,9 @@ vi.mock('../../helpers/permissions/page-permissions.js', () => ({
 import { getTaskListPath } from '~/src/server/task-list/task-list.helper.js'
 import { getPermissionResource, getRequiredPermission } from '../../helpers/permissions/page-permissions.js'
 
+/**
+ * isCannotSubmitUser
+ */
 describe('isCannotSubmitUser', () => {
   it('returns true when user can amend but cannot submit', () => {
     const request = {
@@ -29,11 +32,9 @@ describe('isCannotSubmitUser', () => {
         if (action === 'amend') {
           return true
         }
-
         if (action === 'submit') {
           return false
         }
-
         return false
       })
     }
@@ -64,52 +65,38 @@ describe('isCannotSubmitUser', () => {
   })
 })
 
+/**
+ * isSubmittedApplication
+ */
 describe('isSubmittedApplication', () => {
   it('returns true for SUBMITTED', () => {
-    const context = {
-      state: {
-        applicationStatus: ApplicationStatus.SUBMITTED
-      }
-    }
-
+    const context = { state: { applicationStatus: ApplicationStatus.SUBMITTED } }
     expect(isSubmittedApplication(context)).toBe(true)
   })
 
   it('returns true for REOPENED', () => {
-    const context = {
-      state: {
-        applicationStatus: ApplicationStatus.REOPENED
-      }
-    }
-
+    const context = { state: { applicationStatus: ApplicationStatus.REOPENED } }
     expect(isSubmittedApplication(context)).toBe(true)
   })
 
   it('returns false for undefined status', () => {
-    const context = {
-      state: {}
-    }
-
+    const context = { state: {} }
     expect(isSubmittedApplication(context)).toBe(false)
   })
 
   it('returns false for draft status', () => {
-    const context = {
-      state: {
-        applicationStatus: 'IN_PROGRESS'
-      }
-    }
-
+    const context = { state: { applicationStatus: 'IN_PROGRESS' } }
     expect(isSubmittedApplication(context)).toBe(false)
   })
 })
 
+/**
+ * isViewOnlyUser
+ */
 describe('isViewOnlyUser', () => {
   it('returns true when user can only view', () => {
     const request = {
-      can: vi.fn((action) => {
-        return action === 'view'
-      })
+      can: vi.fn((action) => action === 'view')
     }
 
     expect(isViewOnlyUser(request, 'csApplications')).toBe(true)
@@ -117,9 +104,7 @@ describe('isViewOnlyUser', () => {
 
   it('returns false when user can amend', () => {
     const request = {
-      can: vi.fn((action) => {
-        return ['view', 'amend'].includes(action)
-      })
+      can: vi.fn((action) => ['view', 'amend'].includes(action))
     }
 
     expect(isViewOnlyUser(request, 'csApplications')).toBe(false)
@@ -134,10 +119,11 @@ describe('isViewOnlyUser', () => {
   })
 })
 
+/**
+ * getReturnToApplicationPath
+ */
 describe('getReturnToApplicationPath', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
+  beforeEach(() => vi.clearAllMocks())
 
   it('returns task list path when available', () => {
     vi.mocked(getTaskListPath).mockReturnValue('/task-list')
@@ -156,6 +142,9 @@ describe('getReturnToApplicationPath', () => {
   })
 })
 
+/**
+ * enforcePagePermission
+ */
 describe('enforcePagePermission', () => {
   let request
   let h
@@ -165,17 +154,12 @@ describe('enforcePagePermission', () => {
     vi.clearAllMocks()
 
     request = {
-      params: {
-        slug: 'sfi',
-        path: 'confirmation'
-      },
+      params: { slug: 'sfi', path: 'confirmation' },
       app: {
         model: {
           def: {
             metadata: {
-              permissions: {
-                enforce: true
-              }
+              permissions: { enforce: true }
             }
           }
         }
@@ -200,7 +184,7 @@ describe('enforcePagePermission', () => {
     vi.mocked(getPermissionResource).mockReturnValue('csApplications')
   })
 
-  it('returns h.continue when permission enforcement disabled', () => {
+  it('returns h.continue when enforcement disabled', () => {
     request.app.model.def.metadata.permissions.enforce = false
 
     const result = enforcePagePermission(request, h, context)
@@ -209,7 +193,7 @@ describe('enforcePagePermission', () => {
   })
 
   it('returns h.continue when user has required permission', () => {
-    request.can.mockImplementation((action) => action === 'view')
+    request.can.mockImplementation((a) => a === 'view')
 
     const result = enforcePagePermission(request, h, context)
 
@@ -224,11 +208,40 @@ describe('enforcePagePermission', () => {
       if (action === 'amend') {
         return true
       }
-
       if (action === 'submit') {
         return false
       }
+      return false
+    })
 
+    const takeover = vi.fn(() => 'redirected')
+
+    h.redirect.mockReturnValue({ takeover })
+
+    const result = enforcePagePermission(request, h, context)
+
+    expect(h.redirect).toHaveBeenCalledWith(
+      '/cannot-submit?returnUrl=%2Fsfi%2Ftask-list&returnText=Return%20to%20application'
+    )
+
+    expect(takeover).toHaveBeenCalled()
+    expect(result).toBe('redirected')
+  })
+
+  it('redirects view-only submitted users to confirmation', () => {
+    vi.mocked(getRequiredPermission).mockReturnValue('amend')
+    vi.mocked(getPermissionResource).mockReturnValue('csApplications')
+
+    request.can.mockImplementation((action) => {
+      if (action === 'view') {
+        return true
+      }
+      if (action === 'amend') {
+        return false
+      }
+      if (action === 'submit') {
+        return false
+      }
       return false
     })
 
@@ -240,41 +253,12 @@ describe('enforcePagePermission', () => {
 
     const result = enforcePagePermission(request, h, context)
 
-    expect(h.redirect).toHaveBeenCalledWith('/cannot-submit?returnUrl=%2Fsfi%2Ftask-list')
-
+    expect(h.redirect).toHaveBeenCalledWith('/sfi/confirmation')
     expect(takeover).toHaveBeenCalled()
     expect(result).toBe('redirected')
   })
 
-  it('allows submitted view-only users to access confirmation page', () => {
-    request.can.mockImplementation((action) => {
-      return action === 'view'
-    })
-
-    const result = enforcePagePermission(request, h, context)
-
-    expect(result).toBe(h.continue)
-  })
-
-  it('allows user with required view permission', () => {
-    vi.mocked(getRequiredPermission).mockReturnValue('view')
-
-    request.can.mockImplementation((action) => action === 'view')
-
-    const result = enforcePagePermission(request, h, context)
-
-    expect(result).toBe(h.continue)
-  })
-
-  it('throws Application not submitted when view page accessed before submission', () => {
-    context.state.applicationStatus = 'IN_PROGRESS'
-
-    request.can.mockImplementation((action) => action === 'view')
-
-    expect(() => enforcePagePermission(request, h, context)).toThrow('Application not submitted')
-  })
-
-  it('does not allow view pages before submission even when user has view permission', () => {
+  it('throws when view page accessed before submission', () => {
     context.state.applicationStatus = 'IN_PROGRESS'
 
     request.can.mockImplementation((action) => action === 'view')
@@ -287,15 +271,7 @@ describe('enforcePagePermission', () => {
 
     request.app.model = undefined
 
-    request.can.mockImplementation((action) => {
-      if (action === 'amend') {
-        return true
-      }
-      if (action === 'submit') {
-        return false
-      }
-      return false
-    })
+    request.can.mockImplementation(() => false)
 
     expect(() => enforcePagePermission(request, h, context)).toThrow('Form model missing')
   })
@@ -306,7 +282,7 @@ describe('enforcePagePermission', () => {
     expect(() => enforcePagePermission(request, h, context)).toThrow()
   })
 
-  it('throws Boom forbidden error', () => {
+  it('throws Boom forbidden with correct message', () => {
     request.can.mockReturnValue(false)
 
     try {

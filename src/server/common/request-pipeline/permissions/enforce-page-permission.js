@@ -102,7 +102,6 @@ export function enforcePagePermission(request, h, context) {
      * }
      * }} */
     (request.app.model?.def?.metadata)
-
   const config = metadata?.permissions
   const grantCode = getGrantCode(request)
 
@@ -120,57 +119,53 @@ export function enforcePagePermission(request, h, context) {
   const resource = getPermissionResource(request)
   const requiredPermission = getRequiredPermission(request)
 
-  // assuming all pages that require 'view' permission are post-submission pages
-  if (requiredPermission === 'view' && !isSubmittedApplication(context)) {
+  const basePath = request.params.slug ? `/${request.params.slug}` : ''
+  const model = request.app.model
+
+  if (!model) {
+    throw forbidden('Form model missing')
+  }
+
+  const log = (permission, authorised) =>
     logPermissionEvent({
       request,
       grantCode,
-      permission: 'view',
+      permission,
       enforcementEnabled: true,
-      authorised: false
+      authorised
     })
 
+  // 1. view pages blocked before submission
+  if (requiredPermission === 'view' && !isSubmittedApplication(context)) {
+    log('view', false)
     throw forbidden('Application not submitted')
   }
 
+  // 2. full permission granted
   if (request.can(requiredPermission, resource)) {
-    logPermissionEvent({
-      request,
-      grantCode,
-      permission: requiredPermission,
-      enforcementEnabled: true,
-      authorised: true
-    })
-
+    log(requiredPermission, true)
     return h.continue
   }
 
+  // 3. amend-only users trying submit -> cannot submit page
   if (isCannotSubmitUser(request, requiredPermission, resource)) {
-    logPermissionEvent({
-      request,
-      grantCode,
-      permission: requiredPermission,
-      enforcementEnabled: true,
-      authorised: false
-    })
-    const basePath = request.params.slug ? `/${request.params.slug}` : ''
-    const model = request.app.model
-    if (!model) {
-      throw forbidden('Form model missing')
-    }
-    const returnUrl = getReturnToApplicationPath(model, basePath)
-    const redirectUrl = returnUrl ? `/cannot-submit?returnUrl=${encodeURIComponent(returnUrl)}` : '/cannot-submit'
+    log(requiredPermission, false)
+
+    const returnTo = getReturnToApplicationPath(model, basePath)
+
+    const redirectUrl = `/cannot-submit?returnUrl=${encodeURIComponent(returnTo)}&returnText=${encodeURIComponent('Return to application')}`
+
     return h.redirect(redirectUrl).takeover()
   }
 
-  logPermissionEvent({
-    request,
-    grantCode,
-    permission: requiredPermission,
-    enforcementEnabled: true,
-    authorised: false
-  })
+  // 4. view-only users post-submission -> go to confirmation
+  if (isViewOnlyUser(request, resource) && isSubmittedApplication(context)) {
+    log('view', false)
+    return h.redirect(`${basePath}/confirmation`).takeover()
+  }
 
+  // 5. everything else
+  log(requiredPermission, false)
   throw forbidden('Insufficient permissions')
 }
 
