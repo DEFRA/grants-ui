@@ -12,7 +12,14 @@ vi.mock('~/src/server/common/helpers/auth/backend-auth-helper.js', () => ({
 }))
 
 vi.mock('~/src/config/config.js', () => ({
-  config: { get: vi.fn().mockReturnValue('https://land-grants-api') }
+  config: {
+    get: vi.fn((key) => (key === 'mapMockDataEnabled' ? false : 'https://land-grants-api'))
+  }
+}))
+
+vi.mock('~/src/server/common/map/map.mock.js', () => ({
+  isMockData: vi.fn().mockReturnValue(false),
+  buildMockFeatures: vi.fn()
 }))
 
 vi.mock('~/src/server/land-grants/utils/format-parcel.js', () => ({
@@ -49,7 +56,7 @@ function makeRequest(yarData = {}) {
 }
 
 function makeH() {
-  const responseObj = { code: vi.fn().mockReturnThis(), type: vi.fn().mockReturnThis() }
+  const responseObj = { code: vi.fn().mockReturnThis(), type: vi.fn().mockReturnThis(), header: vi.fn().mockReturnThis() }
   return {
     response: vi.fn().mockReturnValue(responseObj),
     _responseObj: responseObj
@@ -65,7 +72,7 @@ describe('mapPlugin', () => {
     server = makeServer()
     mapPlugin.plugin.register(server)
     parcelsHandler = server._routes[0].handler
-    tilesHandler = server._routes[1].handler
+    tilesHandler = server._routes[2].handler
     vi.clearAllMocks()
   })
 
