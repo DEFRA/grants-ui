@@ -144,7 +144,7 @@ describe('getReturnToApplicationPath', () => {
 
     const result = getReturnToApplicationPath({}, '/sfi')
 
-    expect(result).toBe('/sfi/task-list')
+    expect(result).toEqual({ href: '/sfi/task-list', text: 'Return to task list' })
   })
 
   it('falls back to summary path when no task list exists', () => {
@@ -152,7 +152,7 @@ describe('getReturnToApplicationPath', () => {
 
     const result = getReturnToApplicationPath({}, '/sfi')
 
-    expect(result).toBe('/sfi/summary')
+    expect(result).toEqual({ href: '/sfi/summary', text: 'Return to summary' })
   })
 })
 
@@ -203,17 +203,29 @@ describe('enforcePagePermission', () => {
   it('returns h.continue when permission enforcement disabled', () => {
     request.app.model.def.metadata.permissions.enforce = false
 
-    const result = enforcePagePermission(request, h, context)
-
-    expect(result).toBe(h.continue)
+    expect(enforcePagePermission(request, h, context)).toBe(h.continue)
   })
 
-  it('returns h.continue when user has required permission', () => {
+  it('returns h.continue when user has required view permission', () => {
     request.can.mockImplementation((action) => action === 'view')
 
-    const result = enforcePagePermission(request, h, context)
+    expect(enforcePagePermission(request, h, context)).toBe(h.continue)
+  })
 
-    expect(result).toBe(h.continue)
+  it('returns h.continue when user has required submit permission', () => {
+    vi.mocked(getRequiredPermission).mockReturnValue('submit')
+
+    request.can.mockImplementation((action) => action === 'submit')
+
+    expect(enforcePagePermission(request, h, context)).toBe(h.continue)
+  })
+
+  it('throws Application not submitted when view page accessed before submission', () => {
+    context.state.applicationStatus = 'IN_PROGRESS'
+
+    request.can.mockImplementation((action) => action === 'view')
+
+    expect(() => enforcePagePermission(request, h, context)).toThrow('Application not submitted')
   })
 
   it('redirects amend-only users attempting submit', () => {
@@ -240,46 +252,12 @@ describe('enforcePagePermission', () => {
 
     const result = enforcePagePermission(request, h, context)
 
-    expect(h.redirect).toHaveBeenCalledWith('/cannot-submit?returnUrl=%2Fsfi%2Ftask-list')
+    expect(h.redirect).toHaveBeenCalledWith(
+      '/cannot-submit?returnUrl=%2Fsfi%2Ftask-list&returnText=Return%20to%20task%20list'
+    )
 
     expect(takeover).toHaveBeenCalled()
     expect(result).toBe('redirected')
-  })
-
-  it('allows submitted view-only users to access confirmation page', () => {
-    request.can.mockImplementation((action) => {
-      return action === 'view'
-    })
-
-    const result = enforcePagePermission(request, h, context)
-
-    expect(result).toBe(h.continue)
-  })
-
-  it('allows user with required view permission', () => {
-    vi.mocked(getRequiredPermission).mockReturnValue('view')
-
-    request.can.mockImplementation((action) => action === 'view')
-
-    const result = enforcePagePermission(request, h, context)
-
-    expect(result).toBe(h.continue)
-  })
-
-  it('throws Application not submitted when view page accessed before submission', () => {
-    context.state.applicationStatus = 'IN_PROGRESS'
-
-    request.can.mockImplementation((action) => action === 'view')
-
-    expect(() => enforcePagePermission(request, h, context)).toThrow('Application not submitted')
-  })
-
-  it('does not allow view pages before submission even when user has view permission', () => {
-    context.state.applicationStatus = 'IN_PROGRESS'
-
-    request.can.mockImplementation((action) => action === 'view')
-
-    expect(() => enforcePagePermission(request, h, context)).toThrow('Application not submitted')
   })
 
   it('throws when model missing during cannot-submit redirect', () => {
@@ -291,9 +269,11 @@ describe('enforcePagePermission', () => {
       if (action === 'amend') {
         return true
       }
+
       if (action === 'submit') {
         return false
       }
+
       return false
     })
 
@@ -303,10 +283,10 @@ describe('enforcePagePermission', () => {
   it('throws forbidden when user has no permissions', () => {
     request.can.mockReturnValue(false)
 
-    expect(() => enforcePagePermission(request, h, context)).toThrow()
+    expect(() => enforcePagePermission(request, h, context)).toThrow('Insufficient permissions')
   })
 
-  it('throws Boom forbidden error', () => {
+  it('throws Boom 403 error', () => {
     request.can.mockReturnValue(false)
 
     try {

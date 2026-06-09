@@ -56,16 +56,22 @@ export function isViewOnlyUser(request, resource) {
  * Falls back to check responses if no task list exists.
  * @param {object} model
  * @param {string} basePath
- * @returns {string}
+ * @returns {{ href: string, text: string }}
  */
 export function getReturnToApplicationPath(model, basePath) {
   const taskListPath = getTaskListPath(model)
 
   if (taskListPath) {
-    return `${basePath}${taskListPath}`
+    return {
+      href: `${basePath}${taskListPath}`,
+      text: 'Return to task list'
+    }
   }
 
-  return `${basePath}/summary`
+  return {
+    href: `${basePath}/summary`,
+    text: 'Return to summary'
+  }
 }
 
 /**
@@ -158,8 +164,9 @@ export function enforcePagePermission(request, h, context) {
     if (!model) {
       throw forbidden('Form model missing')
     }
-    const returnUrl = getReturnToApplicationPath(model, basePath)
-    const redirectUrl = returnUrl ? `/cannot-submit?returnUrl=${encodeURIComponent(returnUrl)}` : '/cannot-submit'
+    const returnTo = getReturnToApplicationPath(model, basePath)
+    const redirectUrl = `/cannot-submit?returnUrl=${encodeURIComponent(returnTo.href)}&returnText=${encodeURIComponent(returnTo.text)}`
+
     return h.redirect(redirectUrl).takeover()
   }
 
