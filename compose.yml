@@ -104,6 +104,8 @@ services:
     image: defradigital/grants-ui-backend
     pull_policy: always
     depends_on:
+      localstack:
+        condition: service_healthy
       mongodb:
         condition: service_healthy
     ports:
