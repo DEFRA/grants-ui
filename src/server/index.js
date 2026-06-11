@@ -48,6 +48,7 @@ import TaskListPageController from '~/src/server/task-list/task-list-page.contro
 import TaskPageController from '~/src/server/task-list/task-page.controller.js'
 import WoodlandHectaresPageController from '~/src/server/woodland/woodland-hectares-page.controller.js'
 import TerminalPageController from '~/src/server/task-list/terminal-page.controller.js'
+import LandingPageController from '~/src/server/task-list/landing-page.controller.js'
 import CheckDetailsController from '~/src/server/details-page/check-details.controller.js'
 import CommonSelectLandParcelPageController from './land-grants/common/common-select-parcel/common-select-land-parcel-page.controller.js'
 import MapSelectPageController from '~/src/server/common/map/map-select-page.controller.js'
@@ -146,6 +147,7 @@ const registerFormsPlugin = async (server, prefix = '') => {
         TaskListPageController,
         TaskPageController,
         TerminalPageController,
+        LandingPageController,
         CheckDetailsController,
         WoodlandHectaresPageController,
         MapSelectPageController,
