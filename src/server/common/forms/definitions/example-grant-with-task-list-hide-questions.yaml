@@ -351,9 +351,9 @@ pages:
         content: |
           <p class="govuk-body">Landing pages can be used as redirect targets for GAS/Grants statuses, to give users information about the status of their application before continuing to a journey page.</p>
           <p class="govuk-body">For example, if Grants Status becomes `REOPENED`:</p>
-          <p class="govuk-body">Your application has been reopened. Click continue to check your submitted answers and change them.</p>
+          <p class="govuk-body">Your application <strong>{{ context.referenceNumber }}</strong> has been reopened. Click continue to check your submitted answers and change them.</p>
     next:
-      - path: /summary
+      - path: /tasks
 
 conditions:
   - id: fe427aee-bb72-4fb6-99a0-8b2092605efd
