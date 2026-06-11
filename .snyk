@@ -25,3 +25,11 @@ ignore:
     - '*':
         reason: 'No fix available — build-time only, not exposed at runtime. Monitor for upstream patch.'
         expires: '2026-07-02'
+  'SNYK-JS-IMAGESIZE-17295814':
+    - '*':
+        reason: 'Build-time only — vulnerable path is docusaurus mdx-loader in @defra/interactive-map docs, never loaded by grants-ui runtime. No upstream fix available.'
+        expires: '2026-07-02'
+  'SNYK-JS-IMAGESIZE-17295816':
+    - '*':
+        reason: 'Build-time only — vulnerable path is docusaurus mdx-loader in @defra/interactive-map docs, never loaded by grants-ui runtime. No upstream fix available.'
+        expires: '2026-07-02'
