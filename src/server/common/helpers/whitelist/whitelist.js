@@ -42,6 +42,15 @@ const whitelistHandler = async (request, h) => {
   })
 
   if (!validation.overallAccess) {
+    await request.sendAuditEvent({
+      action: 'unauthorised',
+      status: 'denied',
+      details: {
+        reason: 'whitelist',
+        crnPassesValidation: validation.crnPassesValidation,
+        sbiPassesValidation: validation.sbiPassesValidation
+      }
+    })
     return h.redirect(`/auth/journey-unauthorised`).takeover()
   }
   return h.continue

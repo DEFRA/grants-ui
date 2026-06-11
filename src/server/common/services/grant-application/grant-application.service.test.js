@@ -16,6 +16,19 @@ global.fetch = mockFetch
 
 const gasApi = config.get('gas.apiEndpoint')
 const code = 'example-grant-code'
+const authHeaders = { 'Content-Type': 'application/json', Authorization: 'Bearer mock-auth-token' }
+
+// Stubs `retry` to race the operation against a timeout that always rejects,
+// reproducing the "Operation timed out after <ms>ms" failure path.
+const mockRetryTimeout = (timeout = 50) =>
+  retry.mockImplementation(async (operation) =>
+    Promise.race([
+      operation(),
+      new Promise((_resolve, reject) =>
+        setTimeout(() => reject(new Error(`Operation timed out after ${timeout}ms`)), timeout)
+      )
+    ])
+  )
 
 describe('Grant Application service (token present)', () => {
   let mockRequest
@@ -84,13 +97,66 @@ describe('Grant Application service (token present)', () => {
 
       expect(mockFetchInstance).toHaveBeenCalledWith(`${gasApi}/grants/${code}/applications`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer mock-auth-token'
-        },
+        headers: authHeaders,
         body: JSON.stringify(payload)
       })
       expect(result.ok).toBe(true)
+    })
+
+    test('sends a "submit" audit event with the full answers index on success', async () => {
+      mockFetchWithResponse(mockResponse)
+      const sendAuditEventInBackground = vi.fn()
+
+      await submitGrantApplication(code, payload, { ...mockRequest, sendAuditEventInBackground })
+
+      expect(sendAuditEventInBackground).toHaveBeenCalledWith({
+        action: 'submit',
+        entityid: 'abc123',
+        details: {
+          grantCode: code,
+          referenceNumber: 'abc123',
+          answers: payload.answers
+        }
+      })
+    })
+
+    test('sends a "resubmit" audit event with the previous reference when amended', async () => {
+      mockFetchWithResponse(mockResponse)
+      const sendAuditEventInBackground = vi.fn()
+      const resubmitPayload = {
+        ...payload,
+        metadata: { ...payload.metadata, previousClientRef: 'prev-001' }
+      }
+
+      await submitGrantApplication(code, resubmitPayload, { ...mockRequest, sendAuditEventInBackground })
+
+      expect(sendAuditEventInBackground).toHaveBeenCalledWith({
+        action: 'resubmit',
+        entityid: 'abc123',
+        details: {
+          grantCode: code,
+          referenceNumber: 'abc123',
+          previousReferenceNumber: 'prev-001',
+          answers: resubmitPayload.answers
+        }
+      })
+    })
+
+    test('does not audit when the submission fails', async () => {
+      const mockedFetch = mockFetch()
+      mockedFetch.mockResolvedValue({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        json: vi.fn().mockResolvedValueOnce({ message: 'Bad Request' })
+      })
+      const sendAuditEventInBackground = vi.fn()
+
+      await expect(
+        submitGrantApplication(code, payload, { ...mockRequest, sendAuditEventInBackground })
+      ).rejects.toThrow()
+
+      expect(sendAuditEventInBackground).not.toHaveBeenCalled()
     })
 
     test('should successfully submit a farm-payments grant application', async () => {
@@ -103,10 +169,7 @@ describe('Grant Application service (token present)', () => {
 
       expect(mockFetchInstance).toHaveBeenCalledWith(`${gasApi}/grants/${grantCode}/applications`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer mock-auth-token'
-        },
+        headers: authHeaders,
         body: JSON.stringify(payload)
       })
       expect(result.ok).toBe(true)
@@ -127,10 +190,7 @@ describe('Grant Application service (token present)', () => {
 
       expect(fetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/applications`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer mock-auth-token'
-        },
+        headers: authHeaders,
         body: JSON.stringify(payload)
       })
     })
@@ -167,10 +227,7 @@ describe('Grant Application service (token present)', () => {
 
       expect(mockedFetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/actions/${actionName}/invoke`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer mock-auth-token'
-        },
+        headers: authHeaders,
         body: JSON.stringify(payload)
       })
       expect(result).toEqual(mockResponse)
@@ -192,10 +249,7 @@ describe('Grant Application service (token present)', () => {
 
       expect(mockedFetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/actions/${actionName}/invoke`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer mock-auth-token'
-        },
+        headers: authHeaders,
         body: JSON.stringify(payload)
       })
     })
@@ -209,10 +263,7 @@ describe('Grant Application service (token present)', () => {
 
       expect(mockedFetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/actions/${actionName}/invoke`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer mock-auth-token'
-        },
+        headers: authHeaders,
         body: JSON.stringify(payload)
       })
     })
@@ -243,10 +294,7 @@ describe('Grant Application service (token present)', () => {
 
       expect(mockedFetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/actions/${actionName}/invoke`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer mock-auth-token'
-        },
+        headers: authHeaders,
         body: JSON.stringify(payload)
       })
     })
@@ -295,10 +343,7 @@ describe('Grant Application service (token present)', () => {
 
       expect(mockedFetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/actions/${actionName}/invoke`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer mock-auth-token'
-        }
+        headers: authHeaders
       })
       expect(result).toEqual(mockResponse)
       expect(mockRawResponse.json).toHaveBeenCalled()
@@ -320,10 +365,7 @@ describe('Grant Application service (token present)', () => {
         `${gasApi}/grants/${code}/actions/${actionName}/invoke?parcelId=9238&includeHistory=true`,
         {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: 'Bearer mock-auth-token'
-          }
+          headers: authHeaders
         }
       )
       expect(result).toEqual(mockResponse)
@@ -395,10 +437,7 @@ describe('Grant Application service (token present)', () => {
 
       expect(mockedFetch).toHaveBeenCalledWith(testUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer mock-auth-token'
-        },
+        headers: authHeaders,
         body: JSON.stringify(undefined)
       })
       expect(result).toEqual(mockRawResponse)
@@ -418,10 +457,7 @@ describe('Grant Application service (token present)', () => {
 
       expect(mockedFetch).toHaveBeenCalledWith(testUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer mock-auth-token'
-        },
+        headers: authHeaders,
         body: JSON.stringify(payload)
       })
       expect(result).toEqual(mockRawResponse)
@@ -444,10 +480,7 @@ describe('Grant Application service (token present)', () => {
 
       expect(mockedFetch).toHaveBeenCalledWith(`${testUrl}?param1=value1&param2=value2`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer mock-auth-token'
-        }
+        headers: authHeaders
       })
       expect(result).toEqual(mockRawResponse)
     })
@@ -475,10 +508,7 @@ describe('Grant Application service (token present)', () => {
 
       expect(mockedFetch).toHaveBeenCalledWith(`${testUrl}?valid=value&emptyString=&zero=0`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer mock-auth-token'
-        }
+        headers: authHeaders
       })
     })
 
@@ -559,10 +589,7 @@ describe('Grant Application service (token present)', () => {
 
       expect(mockedFetch).toHaveBeenCalledWith(`${gasApi}/grants/my-code/applications/client-ref/status`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer mock-auth-token'
-        }
+        headers: authHeaders
       })
       expect(result).toEqual(mockRawResponse)
     })
@@ -606,15 +633,7 @@ describe('Grant Application service (token present)', () => {
 
         mockedFetch.mockImplementation(() => new Promise(() => {}))
 
-        retry.mockImplementation(async (operation) => {
-          const testTimeout = 50
-
-          const timeoutPromise = new Promise((_resolve, reject) =>
-            setTimeout(() => reject(new Error(`Operation timed out after ${testTimeout}ms`)), testTimeout)
-          )
-
-          return Promise.race([operation(), timeoutPromise])
-        })
+        mockRetryTimeout()
 
         let thrownError
         try {
@@ -637,15 +656,7 @@ describe('Grant Application service (token present)', () => {
             new Promise((resolve) => setTimeout(() => resolve({ ok: true, json: () => ({ success: true }) }), 10000))
         )
 
-        retry.mockImplementation(async (operation) => {
-          const testTimeout = 50
-
-          const timeoutPromise = new Promise((_resolve, reject) =>
-            setTimeout(() => reject(new Error(`Operation timed out after ${testTimeout}ms`)), testTimeout)
-          )
-
-          return Promise.race([operation(), timeoutPromise])
-        })
+        mockRetryTimeout()
 
         await expect(submitGrantApplication(code, payload, mockRequest)).rejects.toThrow(
           'Failed to process GAS API request: Operation timed out after 50ms'
@@ -662,15 +673,7 @@ describe('Grant Application service (token present)', () => {
 
         mockedFetch.mockImplementation(() => new Promise(() => {}))
 
-        retry.mockImplementation(async (operation) => {
-          const testTimeout = 50
-
-          const timeoutPromise = new Promise((_resolve, reject) =>
-            setTimeout(() => reject(new Error(`Operation timed out after ${testTimeout}ms`)), testTimeout)
-          )
-
-          return Promise.race([operation(), timeoutPromise])
-        })
+        mockRetryTimeout()
 
         let thrownError
         try {
@@ -693,14 +696,7 @@ describe('Grant Application service (token present)', () => {
           () => new Promise((resolve) => setTimeout(() => resolve({ ok: true, json: () => ({ success: true }) }), 5000))
         )
 
-        retry.mockImplementation(async (operation) => {
-          const testTimeout = 50
-          const timeoutPromise = new Promise((_resolve, reject) =>
-            setTimeout(() => reject(new Error(`Operation timed out after ${testTimeout}ms`)), testTimeout)
-          )
-
-          return Promise.race([operation(), timeoutPromise])
-        })
+        mockRetryTimeout()
 
         await expect(invokeGasPostAction(code, actionName, payload, mockRequest)).rejects.toThrow(
           'Failed to process GAS API request: Operation timed out after 50ms'
@@ -717,15 +713,7 @@ describe('Grant Application service (token present)', () => {
 
         mockedFetch.mockImplementation(() => new Promise(() => {}))
 
-        retry.mockImplementation(async (operation) => {
-          const testTimeout = 50
-
-          const timeoutPromise = new Promise((_resolve, reject) =>
-            setTimeout(() => reject(new Error(`Operation timed out after ${testTimeout}ms`)), testTimeout)
-          )
-
-          return Promise.race([operation(), timeoutPromise])
-        })
+        mockRetryTimeout()
 
         let thrownError
         try {
@@ -748,15 +736,7 @@ describe('Grant Application service (token present)', () => {
             new Promise((resolve) => setTimeout(() => resolve({ ok: true, json: () => ({ status: 'active' }) }), 3000))
         )
 
-        retry.mockImplementation(async (operation) => {
-          const testTimeout = 50
-
-          const timeoutPromise = new Promise((_resolve, reject) =>
-            setTimeout(() => reject(new Error(`Operation timed out after ${testTimeout}ms`)), testTimeout)
-          )
-
-          return Promise.race([operation(), timeoutPromise])
-        })
+        mockRetryTimeout()
 
         await expect(invokeGasGetAction(code, actionName, mockRequest, queryParams)).rejects.toThrow(
           'Failed to process GAS API request: Operation timed out after 50ms'
@@ -773,15 +753,7 @@ describe('Grant Application service (token present)', () => {
 
         mockedFetch.mockImplementation(() => new Promise(() => {}))
 
-        retry.mockImplementation(async (operation) => {
-          const testTimeout = 50
-
-          const timeoutPromise = new Promise((_resolve, reject) =>
-            setTimeout(() => reject(new Error(`Operation timed out after ${testTimeout}ms`)), testTimeout)
-          )
-
-          return Promise.race([operation(), timeoutPromise])
-        })
+        mockRetryTimeout()
 
         let thrownError
         try {
@@ -804,15 +776,7 @@ describe('Grant Application service (token present)', () => {
             new Promise((resolve) => setTimeout(() => resolve({ ok: true, json: () => ({ success: true }) }), 20000))
         )
 
-        retry.mockImplementation(async (operation, options = {}) => {
-          const { timeout = 150 } = options
-
-          const timeoutPromise = new Promise((_resolve, reject) =>
-            setTimeout(() => reject(new Error(`Operation timed out after ${timeout}ms`)), timeout)
-          )
-
-          return Promise.race([operation(), timeoutPromise])
-        })
+        mockRetryTimeout(150)
 
         let thrownError
         try {
@@ -837,15 +801,7 @@ describe('Grant Application service (token present)', () => {
 
         mockedFetch.mockImplementation(() => new Promise(() => {}))
 
-        retry.mockImplementation(async (operation) => {
-          const testTimeout = 50
-
-          const timeoutPromise = new Promise((_resolve, reject) =>
-            setTimeout(() => reject(new Error(`Operation timed out after ${testTimeout}ms`)), testTimeout)
-          )
-
-          return Promise.race([operation(), timeoutPromise])
-        })
+        mockRetryTimeout()
 
         let thrownError
         try {

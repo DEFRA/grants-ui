@@ -1,6 +1,6 @@
 import { describe, test, expect, vi } from 'vitest'
 import { validateAuditEvent } from '@defra/fcp-audit-publisher'
-import { buildAuditEventForGrantAccess, mapEnvironment } from './audit-event.js'
+import { buildAuditEvent, mapEnvironment } from './audit-event.js'
 
 vi.mock('~/src/config/config.js', () => ({
   config: {
@@ -42,6 +42,8 @@ const buildRequest = (overrides = {}) => ({
   ...overrides
 })
 
+const START = { action: 'start' }
+
 describe('mapEnvironment', () => {
   test.each([
     ['local', 'local'],
@@ -55,7 +57,7 @@ describe('mapEnvironment', () => {
   })
 })
 
-describe('buildAuditEventForGrantAccess', () => {
+describe('buildAuditEvent', () => {
   test('builds a full event when all identity fields are present', () => {
     const request = buildRequest({
       headers: { 'x-cdp-request-id': 'corr-1', 'x-forwarded-for': CLIENT_IPV4 },
@@ -65,7 +67,7 @@ describe('buildAuditEventForGrantAccess', () => {
       }
     })
 
-    const event = buildAuditEventForGrantAccess(request)
+    const event = buildAuditEvent(request, START)
 
     expect(event).toMatchObject({
       ip: CLIENT_IPV4,
@@ -73,7 +75,7 @@ describe('buildAuditEventForGrantAccess', () => {
       sessionid: 's1',
       correlationid: 'corr-1',
       audit: {
-        entities: [{ entity: 'application', action: 'read', entityid: 'my-grant' }],
+        entities: [{ entity: 'application', action: 'start', entityid: 'my-grant' }],
         status: 'success',
         accounts: { crn: 'crn1', sbi: 'sbi1', organisationId: 'org1' }
       }
@@ -83,7 +85,7 @@ describe('buildAuditEventForGrantAccess', () => {
   })
 
   test('omits user, sessionid, correlationid and accounts when not known', () => {
-    const event = buildAuditEventForGrantAccess(buildRequest())
+    const event = buildAuditEvent(buildRequest(), START)
 
     expect(event).not.toHaveProperty('user')
     expect(event).not.toHaveProperty('sessionid')
@@ -97,15 +99,36 @@ describe('buildAuditEventForGrantAccess', () => {
       auth: { isAuthenticated: true, credentials: { crn: 'crn1' } }
     })
 
-    const event = buildAuditEventForGrantAccess(request)
+    const event = buildAuditEvent(request, START)
 
     expect(event.audit.accounts).toEqual({ crn: 'crn1' })
   })
 
-  test('uses the grant slug as the entityid', () => {
-    const event = buildAuditEventForGrantAccess(buildRequest({ params: { slug: 'another-grant' } }))
+  test('defaults entity to "application", status to "success" and entityid to the grant slug', () => {
+    const event = buildAuditEvent(buildRequest({ params: { slug: 'another-grant' } }), START)
 
-    expect(event.audit.entities[0].entityid).toBe('another-grant')
+    expect(event.audit.entities[0]).toEqual({ entity: 'application', action: 'start', entityid: 'another-grant' })
+    expect(event.audit.status).toBe('success')
+    expect(event.audit).not.toHaveProperty('details')
+  })
+
+  test('honours a custom action, entity, entityid and status', () => {
+    const event = buildAuditEvent(buildRequest(), {
+      action: 'unauthorised',
+      entity: 'page',
+      entityid: 'ref-123',
+      status: 'denied'
+    })
+
+    expect(event.audit.entities[0]).toEqual({ entity: 'page', action: 'unauthorised', entityid: 'ref-123' })
+    expect(event.audit.status).toBe('denied')
+  })
+
+  test("passes details through to the schema's free-form audit.details object", () => {
+    const details = { reason: 'whitelist', crnPassesValidation: false }
+    const event = buildAuditEvent(buildRequest(), { action: 'unauthorised', status: 'denied', details })
+
+    expect(event.audit.details).toEqual(details)
   })
 
   describe('ip handling', () => {
@@ -115,29 +138,29 @@ describe('buildAuditEventForGrantAccess', () => {
         info: { remoteAddress: SERVER_IPV4 }
       })
 
-      expect(buildAuditEventForGrantAccess(request).ip).toBe(FORWARDED_IPV4)
+      expect(buildAuditEvent(request, START).ip).toBe(FORWARDED_IPV4)
     })
 
     test('falls back to remoteAddress when x-forwarded-for is absent', () => {
-      expect(buildAuditEventForGrantAccess(buildRequest()).ip).toBe(REMOTE_IPV4)
+      expect(buildAuditEvent(buildRequest(), START).ip).toBe(REMOTE_IPV4)
     })
 
     test('strips an IPv4 :port', () => {
       const request = buildRequest({ headers: { 'x-forwarded-for': `${CLIENT_IPV4}:5678` } })
 
-      expect(buildAuditEventForGrantAccess(request).ip).toBe(CLIENT_IPV4)
+      expect(buildAuditEvent(request, START).ip).toBe(CLIENT_IPV4)
     })
 
     test('strips an IPv6 zone id', () => {
       const request = buildRequest({ info: { remoteAddress: `${LINK_LOCAL_IPV6}%eth0` } })
 
-      expect(buildAuditEventForGrantAccess(request).ip).toBe(LINK_LOCAL_IPV6)
+      expect(buildAuditEvent(request, START).ip).toBe(LINK_LOCAL_IPV6)
     })
 
     test('truncates to the 20-char schema limit when the address is longer', () => {
       const request = buildRequest({ info: { remoteAddress: LONG_IPV6 } })
 
-      expect(buildAuditEventForGrantAccess(request).ip).toBe(LONG_IPV6.slice(0, 20))
+      expect(buildAuditEvent(request, START).ip).toBe(LONG_IPV6.slice(0, 20))
     })
   })
 
@@ -157,7 +180,7 @@ describe('buildAuditEventForGrantAccess', () => {
         application: 'Grants',
         component: 'grants-ui',
         environment: 'cdp-test',
-        ...buildAuditEventForGrantAccess(request)
+        ...buildAuditEvent(request, { action: 'start', details: { grantCode: 'my-grant' } })
       }
 
       const result = validateAuditEvent(published)
