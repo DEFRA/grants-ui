@@ -208,6 +208,32 @@ export async function invokeGasGetAction(code, name, request, queryParams = {}) 
 }
 
 /**
+ * Emits an FCP Audit event for a successful application submission. A re-submission of a
+ * reopened application carries `previousClientRef`, which distinguishes
+ * `resubmit` from `submit`. The submitted `answers` are the full index of
+ * completed answers sent to GAS.
+ * @param {string} code - Grant code.
+ * @param {{ metadata?: object, answers?: object }} payload - The submitted GAS payload.
+ * @param {object} [request] - Hapi request decorated with `sendAuditEventInBackground`.
+ * @returns {void}
+ */
+function auditApplicationSubmission(code, payload, request) {
+  const metadata = /** @type {Record<string, string | undefined>} */ (payload?.metadata ?? {})
+  const isResubmit = Boolean(metadata.previousClientRef)
+
+  request?.sendAuditEventInBackground?.({
+    action: isResubmit ? 'resubmit' : 'submit',
+    entityid: metadata.clientRef,
+    details: {
+      grantCode: code,
+      referenceNumber: metadata.clientRef,
+      ...(isResubmit && { previousReferenceNumber: metadata.previousClientRef }),
+      answers: payload?.answers
+    }
+  })
+}
+
+/**
  * Submits a grant application to the Grant Application Service (GAS)
  * @param {string} code - Grant code
  * @param {Record<string, unknown>} payload - Application payload
@@ -217,7 +243,12 @@ export async function invokeGasGetAction(code, name, request, queryParams = {}) 
  */
 export async function submitGrantApplication(code, payload, request) {
   const url = `${GAS_API_ENDPOINT}/grants/${mapFarmPaymentsGrantCode(code)}/applications`
-  return makeGasApiRequest(url, code, request, { method: 'POST', payload })
+  const response = await makeGasApiRequest(url, code, request, { method: 'POST', payload })
+
+  // Submission succeeded (makeGasApiRequest throws on non-2xx), so audit it.
+  auditApplicationSubmission(code, payload, request)
+
+  return response
 }
 
 /**
