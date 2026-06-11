@@ -50,7 +50,6 @@ pages:
     id: <uuid>
     path: /select-land-parcel
     controller: MapSelectPageController
-    next: []
     components:
       # HiddenField gives the engine a state slot for the parcel ID.
       # shortDescription appears on the summary page.
@@ -66,13 +65,11 @@ pages:
     id: <uuid>
     path: /submit-your-application
     controller: MapSubmissionPageController
-    next: []
 
   - title: Confirmation
     id: <uuid>
     path: /confirmation
     controller: ConfirmationPageController
-    next: []
 ```
 
 #### Multi-select
