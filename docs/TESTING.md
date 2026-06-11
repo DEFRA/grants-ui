@@ -147,24 +147,19 @@ The core acceptance test source lives in `acceptance/`. To run tests locally aga
 ./acceptance/run-local.sh
 ```
 
-This installs dependencies, sets the required environment variables for the local docker compose environment, and runs all `@runme`-tagged scenarios using your local Chrome browser.
+This installs dependencies and runs all `@runme`-tagged scenarios. Playwright downloads and manages its own Chromium browser — no separate Chrome installation is required. The browser window is visible by default so you can watch the test run.
 
 Prerequisites:
 
 - The full stack running via `npm run docker:up`
-- Chrome installed locally
 
 ### Parallel Test Execution
 
-The acceptance tests support parallel execution through the `SE_NODE_MAX_SESSIONS` environment variable, which controls the Selenium node's maximum concurrent sessions. The default value is 1 session.
-
-The `SE_NODE_MAX_SESSIONS` variable can be set in your `.env` file or passed directly:
+The acceptance tests support parallel execution via the `MAX_INSTANCES` environment variable, which sets the number of parallel workers for the core acceptance tests.
 
 ```bash
-SE_NODE_MAX_SESSIONS=4 ./tools/run-acceptance-tests.sh
+MAX_INSTANCES=4 ./tools/run-acceptance-tests.sh
 ```
-
-**Note:** A higher value may not reduce test execution time beyond a certain point and can introduce more instability into your Selenium node. Beyond this approach a Selenium grid of hub and multiple nodes becomes necessary, but which testing shows uses much more resource for only small gains in our usage.
 
 ### Changes to Journey Test Repositories
 

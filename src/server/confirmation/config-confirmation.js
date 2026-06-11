@@ -4,6 +4,8 @@ import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { ApplicationStatus } from '~/src/server/common/constants/application-status.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { validateRequestAndFindForm } from '~/src/server/common/helpers/form-verify-and-request-load.js'
+import { enforcePagePermission } from '../common/request-pipeline/permissions/enforce-page-permission.js'
+import { isBoom } from '@hapi/boom'
 
 /**
  * Loads and validates confirmation content for the form
@@ -76,6 +78,9 @@ function buildConfirmationResponse(confirmationContent, sessionData, form, slug,
  * @returns {object} Error response
  */
 function handleError(error, request, h) {
+  if (isBoom(error)) {
+    throw error
+  }
   log(
     LogCodes.CONFIRMATION.CONFIRMATION_ERROR,
     {
@@ -130,6 +135,21 @@ export const configConfirmation = {
             }
 
             const sessionData = await getSessionDataAndState(request)
+            const path = request.path.split('/').pop()
+
+            if (!path) {
+              throw new Error('Unable to determine page path')
+            }
+
+            request.params.path = path
+            const pipelineRequest = /** @type {import('../common/request-pipeline/types.js').PipelineRequest} */ (
+              /** @type {unknown} */ (request)
+            )
+            const result = enforcePagePermission(pipelineRequest, h, sessionData)
+            if (result !== h.continue) {
+              return result
+            }
+
             const confirmationContent = await loadConfirmationContent(form, slug, sessionData.state)
 
             log(

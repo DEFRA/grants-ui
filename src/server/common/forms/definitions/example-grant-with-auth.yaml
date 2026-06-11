@@ -12,7 +12,20 @@ metadata:
     expiryDays: 365
   grantRedirectRules: null
   permissions:
-    enforce: false
+    enforce: true
+    resource: csApplications
+    pageAccess:
+      default: amend
+
+      rules:
+        - paths:
+            - declaration
+          permission: submit
+
+        - paths:
+            - print-submitted-application
+            - confirmation
+          permission: view
   detailsPage:
     toleratedFailurePaths:
       - countyParishHoldings

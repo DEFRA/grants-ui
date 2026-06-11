@@ -12,6 +12,8 @@ import { mockHapiRequest, mockHapiResponseToolkit, mockHapiServer } from '~/src/
 import { MOCK_FORM_WITH_PATH, MOCK_SINGLE_PAGE_DEFINITION } from '~/src/__test-fixtures__/mock-forms-cache.js'
 import { createPersonRows, createBusinessRows, createContactRows } from '~/src/server/common/helpers/create-rows.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
+import { enforcePagePermission } from '../common/request-pipeline/permissions/enforce-page-permission.js'
+import { forbidden } from '@hapi/boom'
 
 vi.mock('../common/forms/services/find-form-by-slug.js')
 vi.mock('../common/helpers/print-application-service/print-application-service.js')
@@ -21,6 +23,9 @@ vi.mock('../common/helpers/logging/log.js', async () => {
   const { mockLogHelper } = await import('~/src/__mocks__')
   return mockLogHelper()
 })
+vi.mock('../common/request-pipeline/permissions/enforce-page-permission.js', () => ({
+  enforcePagePermission: vi.fn()
+}))
 
 const mockForm = MOCK_FORM_WITH_PATH
 const mockDefinition = MOCK_SINGLE_PAGE_DEFINITION
@@ -59,6 +64,7 @@ describe('print-submitted-application.controller', () => {
     getFormsCacheService.mockReturnValue({ getState: mockGetState })
 
     mockRequest = mockHapiRequest({
+      path: '/test-form/print-submitted-application',
       params: { slug: 'test-form' },
       auth: { credentials: { sbi: '123456789' } },
       pre: { validatedSlugAndForm: { slug: 'test-form', form: mockForm } },
@@ -69,6 +75,8 @@ describe('print-submitted-application.controller', () => {
     findFormBySlug.mockResolvedValue(mockForm)
     loadFormDefinition.mockResolvedValue(mockDefinition)
     buildPrintViewModel.mockReturnValue({ test: 'viewModel' })
+
+    vi.mocked(enforcePagePermission).mockReturnValue(mockH.continue)
   })
 
   test('should register GET /{slug}/print-submitted-application route', () => {
@@ -131,6 +139,34 @@ describe('print-submitted-application.controller', () => {
     })
     expect(processConfigurablePrintContent).toHaveBeenCalledWith(undefined, 'test-form')
     expect(mockH.view).toHaveBeenCalledWith('print-submitted-application', { test: 'viewModel' })
+    expect(enforcePagePermission).toHaveBeenCalledWith(mockRequest, mockH, {
+      state: mockState
+    })
+
+    expect(mockRequest.params.path).toBe('print-submitted-application')
+  })
+
+  test('returns permission redirect when permission check does not continue', async () => {
+    const redirectResponse = { takeover: true }
+
+    vi.mocked(enforcePagePermission).mockReturnValue(redirectResponse)
+
+    const result = await handler(mockRequest, mockH)
+
+    expect(result).toBe(redirectResponse)
+
+    expect(loadFormDefinition).not.toHaveBeenCalled()
+    expect(buildPrintViewModel).not.toHaveBeenCalled()
+  })
+
+  test('rethrows boom errors from permission enforcement', async () => {
+    const boomError = forbidden('Insufficient permissions')
+
+    vi.mocked(enforcePagePermission).mockImplementation(() => {
+      throw boomError
+    })
+
+    await expect(handler(mockRequest, mockH)).rejects.toThrow('Insufficient permissions')
   })
 
   test.each([

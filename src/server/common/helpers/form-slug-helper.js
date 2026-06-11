@@ -6,10 +6,10 @@ import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 /**
  * Stores the form slug in the context state if it's available in request params
- * @param {object} request - The request object
- * @param {object} context - The context object containing state
+ * @param {AnyRequest | undefined} request - The request object
+ * @param {FormContextLike | undefined} context - The context object containing state
  * @param {string} controllerName - The name of the controller for logging
- * @returns {string|null} - The slug that was stored or null if none
+ * @returns {string | null} - The slug that was stored or null if none
  */
 export function storeSlugInContext(request, context, controllerName) {
   // Ensure context state exists
@@ -27,8 +27,8 @@ export function storeSlugInContext(request, context, controllerName) {
 
 /**
  * Gets the form slug using various methods in order of preference
- * @param {object} request - The request object
- * @param {object} context - The context object containing state
+ * @param {AnyRequest | undefined} request - The request object
+ * @param {FormContextLike | undefined} context - The context object containing state
  * @param {string} controllerName - The name of the controller for logging
  * @returns {string} - The determined slug or empty string if none found
  */
@@ -38,7 +38,7 @@ export function getFormSlug(request, context, controllerName) {
 
   // Next try to get it from context state (available during form submission)
   if (!slug && context?.state?.formSlug) {
-    slug = context.state.formSlug
+    slug = /** @type {string} */ (context.state.formSlug)
     log(
       LogCodes.FORMS.SLUG_RESOLVED,
       { controller: controllerName, message: `Using slug from context.state.formSlug: ${slug}` },
@@ -61,8 +61,8 @@ export function getFormSlug(request, context, controllerName) {
 
 /**
  * Gets the path to the confirmation page for the given form
- * @param {object} request - The request object
- * @param {object} context - The context object containing state
+ * @param {AnyRequest | undefined} request - The request object
+ * @param {FormContextLike | undefined} context - The context object containing state
  * @param {string} controllerName - The name of the controller for logging
  * @returns {string} - The confirmation page path
  */
@@ -70,3 +70,12 @@ export function getConfirmationPath(request, context, controllerName) {
   const slug = getFormSlug(request, context, controllerName)
   return slug ? `/${slug}/confirmation` : '/confirmation'
 }
+
+/**
+ * @typedef {{ state?: Record<string, unknown> }} FormContextLike
+ *   The forms-engine `FormContext` shape, narrowed to the fields this helper
+ *   reads/writes. `state` is a loose key bag so callers can stash arbitrary
+ *   per-form data (like `formSlug`) without touching the plugin's own typings.
+ *
+ * @import { AnyRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ */

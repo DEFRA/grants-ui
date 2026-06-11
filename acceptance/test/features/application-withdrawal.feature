@@ -5,7 +5,7 @@ Feature: Application Withdrawal
 
         # start
         Given the user navigates to "/example-grant-with-auth"
-        And completes any login process as CRN "1100954058"
+        And logs in as CRN "1100954058"
         Then the user should see heading "Example Grant"
         When the user clicks on "Start now"
 
@@ -166,7 +166,7 @@ Feature: Application Withdrawal
         # user revisits grants-ui
         And the user starts a new browser session
         And navigates to "/example-grant-with-auth/yes-no-field"
-        And completes any login process as CRN "1100954058"
+        And logs in as CRN "1100954058"
         Then the user should be at URL "start"
         And the grants-ui application status for CRN "1100954058" and SBI "106527272" and grant "example-grant-with-auth" should still be "CLEARED"
 

@@ -1,9 +1,10 @@
 import { createRequire } from 'module'
-import { Given, Then, Before, After } from '@wdio/cucumber-framework'
+import { Given, Then, Before, After } from '@cucumber/cucumber'
+import expect from '../support/expect.js'
 import Ajv from 'ajv/dist/2020.js'
-import Gas from '../utils/gas'
-import referenceNumbers from '../utils/reference-number-store'
-import expectationIds from '../utils/expectation-id-store'
+import Gas from '../utils/gas.js'
+import referenceNumbers from '../utils/reference-number-store.js'
+import expectationIds from '../utils/expectation-id-store.js'
 
 const require = createRequire(import.meta.url)
 
@@ -12,12 +13,12 @@ const schemas = {
 }
 
 if (process.env.MOCKSERVER_HOST) {
-  Before(async () => {
+  Before(async function () {
     const expectationId = await Gas.setDefaultStatusQuery404Response()
     expectationIds.push(expectationId)
   })
 
-  After(async () => {
+  After(async function () {
     for (const expectationId of expectationIds.all) {
       await Gas.clearExpectation(expectationId)
     }
@@ -26,13 +27,13 @@ if (process.env.MOCKSERVER_HOST) {
 
 Given(
   'the next application submitted to GAS for SBI {string} will return HTTP {int} {string} for {int} requests',
-  async (sbi, httpStatusCode, errorText, times) => {
+  async function (sbi, httpStatusCode, errorText, times) {
     const expectationId = await Gas.setApplicationSubmissionResponse(sbi, httpStatusCode, errorText, times)
     expectationIds.push(expectationId)
   }
 )
 
-Given('the application status in GAS is now {string}', async (gasStatus) => {
+Given('the application status in GAS is now {string}', async function (gasStatus) {
   if (!referenceNumbers.current) {
     throw new Error('No reference number stored by earlier step')
   }
@@ -43,25 +44,28 @@ Given('the application status in GAS is now {string}', async (gasStatus) => {
 
 Given(
   'the application status in GAS for reference number {string} is now {string}',
-  async (referenceNumber, gasStatus) => {
+  async function (referenceNumber, gasStatus) {
     await Gas.setStatusQueryResponse(referenceNumber, gasStatus)
   }
 )
 
-Then('the reference number along with SBI {string} and CRN {string} should be submitted to GAS', async (sbi, crn) => {
-  if (!referenceNumbers.current) {
-    throw new Error('No reference number stored by earlier step')
+Then(
+  'the reference number along with SBI {string} and CRN {string} should be submitted to GAS',
+  async function (sbi, crn) {
+    if (!referenceNumbers.current) {
+      throw new Error('No reference number stored by earlier step')
+    }
+
+    const request = await Gas.getApplicationSubmission(referenceNumbers.current)
+    expect(request).not.toBeNull()
+    expect(request.body.json.metadata.clientRef).toEqual(referenceNumbers.current.toLowerCase())
+    expect(request.body.json.metadata.sbi).toEqual(sbi)
+    expect(request.body.json.metadata.crn).toEqual(crn)
+    expect(request.body.json.answers.referenceNumber).toEqual(referenceNumbers.current)
   }
+)
 
-  const request = await Gas.getApplicationSubmission(referenceNumbers.current)
-  expect(request).not.toBeNull()
-  expect(request.body.json.metadata.clientRef).toEqual(referenceNumbers.current.toLowerCase())
-  expect(request.body.json.metadata.sbi).toEqual(sbi)
-  expect(request.body.json.metadata.crn).toEqual(crn)
-  expect(request.body.json.answers.referenceNumber).toEqual(referenceNumbers.current)
-})
-
-Then('the GAS submission should be valid against the {string} schema', async (schemaName) => {
+Then('the GAS submission should be valid against the {string} schema', async function (schemaName) {
   if (!referenceNumbers.current) {
     throw new Error('No reference number stored by earlier step')
   }
@@ -84,7 +88,7 @@ Then('the GAS submission should be valid against the {string} schema', async (sc
 
 Then(
   'the reference number and previous reference number along with SBI {string} and CRN {string} should be submitted to GAS',
-  async (sbi, crn) => {
+  async function (sbi, crn) {
     if (!referenceNumbers.current) {
       throw new Error('No reference number stored by earlier step')
     }

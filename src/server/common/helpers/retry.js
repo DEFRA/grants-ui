@@ -3,18 +3,10 @@ import { HTTP_STATUS } from '~/src/server/common/helpers/errors.js'
 
 /**
  * Retry an asynchronous operation with configurable options
- * @param {Function} operation - Async function to retry
- * @param {Object} options - Retry configuration
- * @param {number} [options.maxAttempts=3] - Maximum number of retry attempts
- * @param {number} [options.initialDelay=1000] - Initial delay in milliseconds
- * @param {number} [options.maxDelay=30000] - Maximum delay in milliseconds
- * @param {boolean} [options.exponential=true] - Whether to use exponential backoff
- * @param {Function} [options.shouldRetry] - Function to determine if a retry should be attempted
- * @param {number} [options.timeout=15000] - Operation timeout in milliseconds (default: 15 seconds)
- * @param {boolean} [options.checkFetchResponse] - Whether to check fetch response.ok from operation
- * @param {Function} [options.onRetry] - Called before each retry attempt
- * @param {string} [options.serviceName] - Name of the service for logging purposes
- * @returns {Promise<any>} - Result of the operation
+ * @template T
+ * @param {() => Promise<T>} operation - Async function to retry
+ * @param {RetryOptions} [options] - Retry configuration
+ * @returns {Promise<T>} - Result of the operation
  * @throws {Error} - Last error encountered after all retry attempts
  */
 export async function retry(operation, options = {}) {
@@ -33,6 +25,7 @@ export async function retry(operation, options = {}) {
     serviceName = 'RetryableOperation'
   } = options
 
+  /** @type {Error | undefined} */
   let lastError
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -43,24 +36,24 @@ export async function retry(operation, options = {}) {
         checkFetchResponse &&
         isFetchFailure(result) &&
         attempt < maxAttempts &&
-        result.status !== HTTP_STATUS.NOT_FOUND &&
-        shouldRetry(new Error(`HTTP ${result.status}`))
+        /** @type {{ status: number }} */ (result).status !== HTTP_STATUS.NOT_FOUND &&
+        shouldRetry(new Error(`HTTP ${/** @type {{ status: number }} */ (result).status}`))
       ) {
-        const errorMessage = `Request failed with status ${result.status}: ${result.statusText}`
+        const errorMessage = `Request failed with status ${/** @type {{ status: number }} */ (result).status}: ${/** @type {{ statusText: string }} */ (result).statusText}`
         throw new Error(errorMessage)
       }
 
       return result
     } catch (error) {
-      lastError = error
+      lastError = /** @type {Error} */ (error)
 
-      if (attempt === maxAttempts || !shouldRetry(error)) {
+      if (attempt === maxAttempts || !shouldRetry(/** @type {Error} */ (error))) {
         break
       }
 
       const delay = getDelay(exponential, initialDelay, attempt, maxDelay)
 
-      onRetry(error, attempt, delay)
+      onRetry(/** @type {Error} */ (error), attempt, delay)
 
       await new Promise((resolve) => setTimeout(resolve, delay))
     }
@@ -71,9 +64,10 @@ export async function retry(operation, options = {}) {
 
 /**
  * Race an operation against a timeout
- * @param operation {Function}
- * @param timeout {number}
- * @returns {Promise}
+ * @template T
+ * @param {() => Promise<T>} operation
+ * @param {number} [timeout]
+ * @returns {Promise<T>}
  */
 async function race(operation, timeout = 5000) {
   return await Promise.race([
@@ -86,11 +80,11 @@ async function race(operation, timeout = 5000) {
 
 /**
  * Calculate delay for a retry attempt
- * @param exponential {boolean}
- * @param initialDelay {number}
- * @param attempt {number}
- * @param maxDelay {number}
- * @returns {number|*}
+ * @param {boolean} exponential
+ * @param {number} initialDelay
+ * @param {number} attempt
+ * @param {number} maxDelay
+ * @returns {number}
  */
 function getDelay(exponential, initialDelay, attempt, maxDelay) {
   if (exponential) {
@@ -103,9 +97,22 @@ function getDelay(exponential, initialDelay, attempt, maxDelay) {
 
 /**
  * Check if a fetch result indicates a failure
- * @param result
- * @returns {boolean}
+ * @param {unknown} result
+ * @returns {unknown}
  */
 function isFetchFailure(result) {
-  return result && typeof result === 'object' && 'ok' in result && !result.ok
+  return result && typeof result === 'object' && 'ok' in result && !(/** @type {{ ok: boolean }} */ (result).ok)
 }
+
+/**
+ * @typedef {object} RetryOptions
+ * @property {number} [maxAttempts=3] - Maximum number of retry attempts
+ * @property {number} [initialDelay=1000] - Initial delay in milliseconds
+ * @property {number} [maxDelay=30000] - Maximum delay in milliseconds
+ * @property {boolean} [exponential=true] - Whether to use exponential backoff
+ * @property {(error: Error) => boolean} [shouldRetry] - Function to determine if a retry should be attempted
+ * @property {number} [timeout=15000] - Operation timeout in milliseconds (default: 15 seconds)
+ * @property {boolean} [checkFetchResponse] - Whether to check fetch response.ok from operation
+ * @property {(error: Error, attempt: number, delay: number) => void} [onRetry] - Called before each retry attempt
+ * @property {string} [serviceName] - Name of the service for logging purposes
+ */

@@ -26,7 +26,8 @@ describe('logPermissionEvent', () => {
         }
       },
       params: {
-        slug: 'woodland'
+        slug: 'woodland',
+        path: 'start'
       }
     }
   })
@@ -47,7 +48,7 @@ describe('logPermissionEvent', () => {
         grantCode: 'cs',
         permission: 'submit',
         authorised: true,
-        slug: 'woodland'
+        path: 'start'
       },
       request
     )
@@ -69,7 +70,7 @@ describe('logPermissionEvent', () => {
         grantCode: 'cs',
         permission: 'submit',
         authorised: true,
-        slug: 'woodland'
+        path: 'start'
       },
       request
     )
@@ -91,7 +92,7 @@ describe('logPermissionEvent', () => {
         grantCode: 'cs',
         permission: 'submit',
         authorised: false,
-        slug: 'woodland'
+        path: 'start'
       },
       request
     )
@@ -115,7 +116,7 @@ describe('logPermissionEvent', () => {
         grantCode: 'cs',
         permission: 'submit',
         authorised: true,
-        slug: 'woodland'
+        path: 'start'
       },
       request
     )
@@ -139,7 +140,7 @@ describe('logPermissionEvent', () => {
         grantCode: 'cs',
         permission: 'submit',
         authorised: true,
-        slug: 'woodland'
+        path: 'start'
       },
       request
     )

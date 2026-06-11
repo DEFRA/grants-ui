@@ -10,6 +10,8 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 10
     ignore:
       - dependency-name: "stylelint"
@@ -23,7 +25,12 @@ updates:
         update-types:
           - "minor"
           - "patch"
-  - package-ecosystem: "docker"
-    directory: "/"
+  # Update GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: /
+
+    # Schedule run every Monday, local time
     schedule:
-      interval: "weekly"
+      interval: weekly
+      time: '10:30'
+      timezone: 'Europe/London'

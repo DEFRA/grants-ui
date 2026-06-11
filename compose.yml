@@ -15,6 +15,8 @@ services:
     ports:
       - '3000:3000'
       - '9229:9229'
+    env_file:
+      - 'localstack/aws.env'
     environment:
       PORT: 3000
       NODE_ENV: ${NODE_ENV:-development}
@@ -45,6 +47,7 @@ services:
       ENTRA_INTERNAL_TENANT_ID: '${ENTRA_INTERNAL_TENANT_ID:-common}'
       ENTRA_INTERNAL_CLIENT_ID: '${ENTRA_INTERNAL_CLIENT_ID:-default_client_id}'
       ENTRA_INTERNAL_CLIENT_SECRET: '${ENTRA_INTERNAL_CLIENT_SECRET:-default_secret}'
+      ENTRA_INTERNAL_CONFIG_URL: ${ENTRA_ID_URL}
       DEFRA_ID_WELL_KNOWN_URL: '${DEFRA_ID_WELL_KNOWN_URL:-http://fcp-defra-id-stub:3007/idphub/b2c/b2c_1a_cui_cpdev_signupsigninsfi/.well-known/openid-configuration}'
       DEFRA_ID_CLIENT_ID: ${DEFRA_ID_CLIENT_ID:-client_id}
       DEFRA_ID_CLIENT_SECRET: ${DEFRA_ID_CLIENT_SECRET:-client_secret}
@@ -78,8 +81,14 @@ services:
       FORMS_API_CACHE_TTL_SECONDS: ${FORMS_API_CACHE_TTL_SECONDS:-300}
       SFD_UPDATE_URL: '${SFD_UPDATE_URL:-http://localhost:3000/sfd/mock}'
       SFD_UPDATE_ENABLED: ${SFD_UPDATE_ENABLED:-false}
-      ENTRA_INTERNAL_CONFIG_URL: ${ENTRA_ID_URL}
       NODE_TLS_REJECT_UNAUTHORIZED: 0
+      AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL:-http://localstack:4566}
+      AWS_REGION: ${AWS_REGION:-eu-west-2}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+      AUDIT_ENABLED: ${AUDIT_ENABLED:-false}
+      AUDIT_SNS_TOPIC_ARN: ${AUDIT_SNS_TOPIC_ARN:-arn:aws:sns:eu-west-2:000000000000:fcp_audit_events}
+      AUDIT_APPLICATION: ${AUDIT_APPLICATION:-Grants}
     volumes:
       - ./src:/home/node/src
       - /home/node/node_modules

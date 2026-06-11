@@ -24,4 +24,4 @@ ignore:
   'SNYK-JS-POSTCSSSELECTORPARSER-16873882':
     - '*':
         reason: 'No fix available — build-time only, not exposed at runtime. Monitor for upstream patch.'
-        expires: '2026-06-02'
+        expires: '2026-07-02'

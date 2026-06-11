@@ -1,23 +1,12 @@
 export default class DatePartsField {
-  constructor(id) {
+  constructor(page, id) {
+    this.page = page
     this.id = id
   }
 
   async setDateUTC(date) {
-    await this.#daySelector().setValue(date.getUTCDate())
-    await this.#monthSelector().setValue(date.getUTCMonth() + 1)
-    await this.#yearSelector().setValue(date.getUTCFullYear())
-  }
-
-  #daySelector() {
-    return $(`//input[@id='${this.id}__day']`)
-  }
-
-  #monthSelector() {
-    return $(`//input[@id='${this.id}__month']`)
-  }
-
-  #yearSelector() {
-    return $(`//input[@id='${this.id}__year']`)
+    await this.page.locator(`//input[@id='${this.id}__day']`).fill(String(date.getUTCDate()))
+    await this.page.locator(`//input[@id='${this.id}__month']`).fill(String(date.getUTCMonth() + 1))
+    await this.page.locator(`//input[@id='${this.id}__year']`).fill(String(date.getUTCFullYear()))
   }
 }

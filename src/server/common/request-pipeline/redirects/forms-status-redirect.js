@@ -1,13 +1,14 @@
-import { ApplicationStatus } from '../common/constants/application-status.js'
-import { statusCodes } from '../common/constants/status-codes.js'
-import { getFormsCacheService } from '../common/helpers/forms-cache/forms-cache.js'
-import { updateApplicationStatus } from '../common/helpers/status/update-application-status-helper.js'
-import { getApplicationStatus } from '../common/services/grant-application/grant-application.service.js'
-import { log, LogCodes } from '../common/helpers/logging/log.js'
-import { mintLockToken } from '../common/helpers/lock/lock-token.js'
-import { getCacheKey } from '../common/helpers/state/get-cache-key-helper.js'
+import { ApplicationStatus } from '../../constants/application-status.js'
+import { statusCodes } from '../../constants/status-codes.js'
+import { getFormsCacheService } from '../../helpers/forms-cache/forms-cache.js'
+import { updateApplicationStatus } from '../../helpers/status/update-application-status-helper.js'
+import { getApplicationStatus } from '../../services/grant-application/grant-application.service.js'
+import { log, LogCodes } from '../../helpers/logging/log.js'
+import { mintLockToken } from '../../helpers/lock/lock-token.js'
+import { getCacheKey } from '../../helpers/state/get-cache-key-helper.js'
 import agreements from '~/src/config/agreements.js'
-import { getGrantCode } from '../common/helpers/grant-code.js'
+import { getGrantCode } from '../../helpers/grant-code.js'
+import { YarKeys } from '../../constants/session-keys.js'
 
 /**
  * @typedef {Object} RedirectRule
@@ -264,7 +265,11 @@ async function handlePostSubmission(request, h, context, previousStatus, grantCo
 
   await persistStatus(request, rule.toGrantsStatus, previousStatus, grantId, context.state)
 
-  const redirectUrl = rule.toPath === agreements.get('baseUrl') ? rule.toPath : buildRedirectUrl(grantId, rule.toPath)
+  const isAgreementsRedirect = rule.toPath === agreements.get('baseUrl')
+  const redirectUrl = isAgreementsRedirect ? rule.toPath : buildRedirectUrl(grantId, rule.toPath)
+
+  const grantVersion = /** @type {{ grantVersion?: string | number | null }} */ (request.app).grantVersion ?? '1.0.0'
+  request.yar.set(YarKeys.GRANT_APPLICATION_CONTEXT, { grantCode, grantVersion, clientRef: clientRef.toLowerCase() })
 
   return request.path === redirectUrl ? h.continue : h.redirect(redirectUrl).takeover()
 }
@@ -304,24 +309,14 @@ function handlePostSubmissionError(err, request, h, context, grantId, grantCode,
 }
 
 /**
- * @typedef {object} GrantModel
- * @property {{ submission: { grantCode: string }, grantRedirectRules?: object }} metadata
- * @property {string} [startPage]
- */
-
-/**
- * @typedef {import('@hapi/hapi').Request & { app: { model?: { def?: GrantModel } } }} ExtendedRequest
- */
-
-/**
- * Main callback for handling form status transitions.
+ * Main redirect for handling form status transitions.
  *
- * @param {ExtendedRequest} request - Hapi request object (extended to include app.model)
+ * @param {import('../types.js').PipelineRequest} request - Hapi request object (extended to include app.model)
  * @param {import('@hapi/hapi').ResponseToolkit} h - Hapi response toolkit
  * @param {object} context - Current page context including form state and reference number
  * @returns {Promise<import('@hapi/hapi').ResponseObject | any>} Hapi response or continue symbol
  */
-export const formsStatusCallback = async (request, h, context) => {
+export const formsStatusRedirect = async (request, h, context) => {
   const grantId = request.params?.slug
   if (!grantId) {
     return h.continue
@@ -330,7 +325,15 @@ export const formsStatusCallback = async (request, h, context) => {
   const grantCode = getGrantCode(request)
 
   const previousStatus = context.state.applicationStatus
-  const grantRedirectRules = request.app.model?.def?.metadata?.grantRedirectRules
+  const metadata =
+    /** @type {{
+     * excludedPaths?: string[]
+     * grantRedirectRules?: {
+     *   excludedPaths?: string[]
+     * }
+     * }} */
+    (request.app.model?.def?.metadata)
+  const grantRedirectRules = metadata?.grantRedirectRules
   const isWithinGrantPages = request.headers['sec-fetch-site'] === 'same-origin'
 
   const checkDetailsChangesPending = context.state.checkDetailsChangesPending
@@ -388,6 +391,7 @@ export const formsStatusCallback = async (request, h, context) => {
  *
  * @returns {string} The client reference number that should be used when calling GAS.
  */
+
 export function resolveClientReference(previousStatus, context) {
   if (previousStatus === ApplicationStatus.REOPENED && context.state?.previousReferenceNumber) {
     return context.state.previousReferenceNumber

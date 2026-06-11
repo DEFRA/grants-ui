@@ -1,39 +1,40 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { getApplicationStatus } from '../common/services/grant-application/grant-application.service.js'
-import { updateApplicationStatus } from '../common/helpers/status/update-application-status-helper.js'
-import { getFormsCacheService } from '../common/helpers/forms-cache/forms-cache.js'
-import { ApplicationStatus } from '../common/constants/application-status.js'
-import { formsStatusCallback, resolveClientReference } from './status-helper.js'
-import { log, LogCodes } from '../common/helpers/logging/log.js'
-import { mintLockToken } from '../common/helpers/lock/lock-token.js'
-import { getCacheKey } from '../common/helpers/state/get-cache-key-helper.js'
+import { getApplicationStatus } from '../../services/grant-application/grant-application.service.js'
+import { updateApplicationStatus } from '../../helpers/status/update-application-status-helper.js'
+import { getFormsCacheService } from '../../helpers/forms-cache/forms-cache.js'
+import { ApplicationStatus } from '../../constants/application-status.js'
+import { YarKeys } from '../../constants/session-keys.js'
+import { formsStatusRedirect, resolveClientReference } from './forms-status-redirect.js'
+import { log, LogCodes } from '../../helpers/logging/log.js'
+import { mintLockToken } from '../../helpers/lock/lock-token.js'
+import { getCacheKey } from '../../helpers/state/get-cache-key-helper.js'
 
-vi.mock('../common/helpers/logging/log.js', async () => {
+vi.mock('../../../common/helpers/logging/log.js', async () => {
   const { mockLogHelper } = await import('~/src/__mocks__')
   return mockLogHelper()
 })
-vi.mock('../common/services/grant-application/grant-application.service.js', () => ({
+vi.mock('../../../common/services/grant-application/grant-application.service.js', () => ({
   getApplicationStatus: vi.fn()
 }))
-vi.mock('../common/helpers/status/update-application-status-helper.js', () => ({
+vi.mock('../../../common/helpers/status/update-application-status-helper.js', () => ({
   updateApplicationStatus: vi.fn()
 }))
-vi.mock('../common/helpers/forms-cache/forms-cache.js', () => ({
+vi.mock('../../../common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: vi.fn()
 }))
-vi.mock('../common/helpers/lock/lock-token.js', () => ({
+vi.mock('../../../common/helpers/lock/lock-token.js', () => ({
   mintLockToken: vi.fn().mockReturnValue('mock-lock-token')
 }))
-vi.mock('../common/helpers/state/get-cache-key-helper.js', () => ({
+vi.mock('../../../common/helpers/state/get-cache-key-helper.js', () => ({
   getCacheKey: vi.fn().mockReturnValue({ sbi: '12345', grantCode: 'grant-a' })
 }))
-vi.mock('../../config/agreements.js', () => ({
+vi.mock('../../../../config/agreements.js', () => ({
   default: {
     get: vi.fn().mockReturnValue('/agreement')
   }
 }))
 
-describe('formsStatusCallback', () => {
+describe('formsStatusRedirect', () => {
   let request
   let h
   let context
@@ -112,7 +113,8 @@ describe('formsStatusCallback', () => {
       path: '/grant-a/start',
       headers: {},
       auth: { credentials: { sbi: '12345', crn: 'CRN123', contactId: 'contact-123' } },
-      server: { logger: { error: vi.fn() } }
+      server: { logger: { error: vi.fn() } },
+      yar: { set: vi.fn(), get: vi.fn() }
     }
 
     h = {
@@ -138,7 +140,7 @@ describe('formsStatusCallback', () => {
       json: async () => ({ status: 'RECEIVED' })
     })
 
-    const result = await formsStatusCallback(request, h, context)
+    const result = await formsStatusRedirect(request, h, context)
 
     expect(h.redirect).toHaveBeenCalledWith('/grant-a/confirmation')
     expect(result).toEqual(expect.any(Symbol))
@@ -153,24 +155,24 @@ describe('formsStatusCallback', () => {
       json: async () => ({ status: 'UNEXPECTED_STATUS' })
     })
 
-    await expect(formsStatusCallback(request, h, context)).rejects.toThrow(/No redirect rule found/)
+    await expect(formsStatusRedirect(request, h, context)).rejects.toThrow(/No redirect rule found/)
   })
 
   it('returns false when slug is missing', async () => {
     request.params.slug = undefined
-    const result = await formsStatusCallback(request, h, context)
+    const result = await formsStatusRedirect(request, h, context)
     expect(result).toBe(h.continue)
   })
 
   it('returns false when startPath missing in context', async () => {
     const badContext = { referenceNumber: 'REF-005', state: { someField: 'val' } }
-    const result = await formsStatusCallback(request, h, badContext)
+    const result = await formsStatusRedirect(request, h, badContext)
     expect(result).toBe(h.continue)
   })
 
   it('continues when no slug is present', async () => {
     request.params = {}
-    const result = await formsStatusCallback(request, h, context)
+    const result = await formsStatusRedirect(request, h, context)
     expect(result).toBe(h.continue)
   })
 
@@ -189,7 +191,7 @@ describe('formsStatusCallback', () => {
         paths: ['/start']
       }
 
-      const result = await formsStatusCallback(request, h, preSubmissionContext)
+      const result = await formsStatusRedirect(request, h, preSubmissionContext)
 
       expect(h.redirect).toHaveBeenCalledWith('/grant-a/check-selected-land-actions')
       expect(result).toEqual(expect.any(Symbol))
@@ -203,7 +205,7 @@ describe('formsStatusCallback', () => {
       paths: ['/start']
     }
 
-    const result = await formsStatusCallback(request, h, noMeaningfulContext)
+    const result = await formsStatusRedirect(request, h, noMeaningfulContext)
     expect(result).toBe(h.continue)
     expect(h.redirect).not.toHaveBeenCalled()
   })
@@ -215,7 +217,7 @@ describe('formsStatusCallback', () => {
       paths: ['/start']
     }
 
-    const result = await formsStatusCallback(request, h, contextWithLandParcels)
+    const result = await formsStatusRedirect(request, h, contextWithLandParcels)
     expect(h.redirect).toHaveBeenCalled()
     expect(result).toEqual(expect.any(Symbol))
   })
@@ -227,7 +229,7 @@ describe('formsStatusCallback', () => {
       paths: ['/start']
     }
 
-    const result = await formsStatusCallback(request, h, contextWithEmptyLandParcels)
+    const result = await formsStatusRedirect(request, h, contextWithEmptyLandParcels)
     expect(result).toBe(h.continue)
     expect(h.redirect).not.toHaveBeenCalled()
   })
@@ -236,7 +238,7 @@ describe('formsStatusCallback', () => {
     getApplicationStatus.mockResolvedValue({ json: async () => ({ status: 'RECEIVED' }) })
     request.path = '/grant-a/confirmation'
 
-    const result = await formsStatusCallback(request, h, context)
+    const result = await formsStatusRedirect(request, h, context)
     expect(result).toBe(h.continue)
   })
 
@@ -244,7 +246,7 @@ describe('formsStatusCallback', () => {
     context.state = {
       applicationStatus: status
     }
-    const result = await formsStatusCallback(request, h, context)
+    const result = await formsStatusRedirect(request, h, context)
     expect(result).toBe(h.continue)
     expect(getApplicationStatus).not.toHaveBeenCalled()
   })
@@ -257,7 +259,7 @@ describe('formsStatusCallback', () => {
       paths: ['/start']
     }
 
-    await formsStatusCallback(request, h, preSubmissionContext)
+    await formsStatusRedirect(request, h, preSubmissionContext)
 
     expect(h.redirect).toHaveBeenCalledWith('/grant-a/check-selected-land-actions')
   })
@@ -267,7 +269,7 @@ describe('formsStatusCallback', () => {
       applicationStatus: status,
       question: 'answer'
     }
-    await formsStatusCallback(request, h, context)
+    await formsStatusRedirect(request, h, context)
     expect(h.redirect).toBeCalled()
     expect(getApplicationStatus).not.toHaveBeenCalled()
   })
@@ -276,7 +278,7 @@ describe('formsStatusCallback', () => {
     context.state = {
       applicationStatus: 'UNKNOWN_STATUS'
     }
-    const result = await formsStatusCallback(request, h, context)
+    const result = await formsStatusRedirect(request, h, context)
 
     expect(result).toBe(h.continue)
     expect(getApplicationStatus).not.toHaveBeenCalled()
@@ -287,7 +289,7 @@ describe('formsStatusCallback', () => {
       json: async () => ({ status: 'APPLICATION_WITHDRAWN' })
     })
 
-    const result = await formsStatusCallback(request, h, context)
+    const result = await formsStatusRedirect(request, h, context)
 
     expect(mockCacheService.setState).toHaveBeenCalledWith(
       request,
@@ -303,7 +305,7 @@ describe('formsStatusCallback', () => {
     getApplicationStatus.mockResolvedValue({
       json: async () => ({ status: 'APPLICATION_WITHDRAWN' })
     })
-    const result = await formsStatusCallback(request, h, context)
+    const result = await formsStatusRedirect(request, h, context)
     expect(result).toBe(h.continue)
   })
 
@@ -312,7 +314,7 @@ describe('formsStatusCallback', () => {
       json: async () => ({ status: 'APPLICATION_AMEND' })
     })
 
-    const result = await formsStatusCallback(request, h, context)
+    const result = await formsStatusRedirect(request, h, context)
 
     expect(getCacheKey).toHaveBeenCalledWith(request)
     expect(mintLockToken).toHaveBeenCalledWith({
@@ -335,7 +337,7 @@ describe('formsStatusCallback', () => {
       json: async () => ({ status: 'APPLICATION_AMEND' })
     })
 
-    await formsStatusCallback(request, h, context)
+    await formsStatusRedirect(request, h, context)
 
     expect(mintLockToken).toHaveBeenCalledWith({
       userId: 'contact-123',
@@ -354,7 +356,7 @@ describe('formsStatusCallback', () => {
       json: async () => ({ status: 'APPLICATION_AMEND' })
     })
 
-    await formsStatusCallback(request, h, context)
+    await formsStatusRedirect(request, h, context)
 
     expect(mockCacheService.setState).toHaveBeenCalledWith(
       request,
@@ -375,7 +377,7 @@ describe('formsStatusCallback', () => {
       json: async () => ({ status: 'APPLICATION_AMEND' })
     })
 
-    await formsStatusCallback(request, h, context)
+    await formsStatusRedirect(request, h, context)
 
     expect(mockCacheService.setState).toHaveBeenCalledWith(request, {
       applicationStatus: ApplicationStatus.REOPENED,
@@ -394,7 +396,7 @@ describe('formsStatusCallback', () => {
       json: async () => ({ status: 'APPLICATION_WITHDRAWN' })
     })
 
-    await formsStatusCallback(request, h, context)
+    await formsStatusRedirect(request, h, context)
 
     expect(mockCacheService.setState).toHaveBeenCalledWith(request, {
       applicationStatus: ApplicationStatus.CLEARED
@@ -409,7 +411,7 @@ describe('formsStatusCallback', () => {
       json: async () => ({ status: 'APPLICATION_AMEND' })
     })
 
-    const result = await formsStatusCallback(request, h, context)
+    const result = await formsStatusRedirect(request, h, context)
     expect(h.redirect).not.toHaveBeenCalled()
     expect(result).toBe(h.continue)
   })
@@ -422,7 +424,7 @@ describe('formsStatusCallback', () => {
       json: async () => ({ status: 'APPLICATION_AMEND' })
     })
 
-    const result = await formsStatusCallback(request, h, context)
+    const result = await formsStatusRedirect(request, h, context)
     expect(h.redirect).toHaveBeenCalledWith('/grant-a/summary')
     expect(result).toEqual(expect.any(Symbol))
   })
@@ -434,7 +436,7 @@ describe('formsStatusCallback', () => {
       json: async () => ({ status: 'APPLICATION_WITHDRAWN' })
     })
 
-    await formsStatusCallback(request, h, context)
+    await formsStatusRedirect(request, h, context)
     expect(h.redirect).toHaveBeenCalledWith('/grant-a/start')
     expect(mockCacheService.setState).toHaveBeenCalledWith(
       request,
@@ -452,7 +454,7 @@ describe('formsStatusCallback', () => {
       json: async () => ({ status: 'APPLICATION_AMEND' })
     })
 
-    await formsStatusCallback(request, h, context)
+    await formsStatusRedirect(request, h, context)
 
     expect(getApplicationStatus).toHaveBeenCalledWith('grant-a', 'old-ref-123', request)
   })
@@ -468,7 +470,7 @@ describe('formsStatusCallback', () => {
       json: async () => ({ status: 'APPLICATION_AMEND' })
     })
 
-    await formsStatusCallback(request, h, context)
+    await formsStatusRedirect(request, h, context)
 
     expect(getApplicationStatus).toHaveBeenCalledWith('grant-a', 'ref-new-999', request)
   })
@@ -503,7 +505,7 @@ describe('formsStatusCallback', () => {
       json: async () => ({ status: 'APPLICATION_AMEND' })
     })
 
-    await formsStatusCallback(request, h, context)
+    await formsStatusRedirect(request, h, context)
 
     expect(getApplicationStatus).toHaveBeenCalledWith('grant-a', 'old-ref-1', request)
   })
@@ -514,7 +516,7 @@ describe('formsStatusCallback', () => {
       json: async () => ({ status: 'RECEIVED' })
     })
 
-    await formsStatusCallback(request, h, context)
+    await formsStatusRedirect(request, h, context)
 
     expect(getApplicationStatus).toHaveBeenCalledWith('grant-a', '89b-aec-5a6', request)
   })
@@ -524,7 +526,7 @@ describe('formsStatusCallback', () => {
       json: async () => ({ status: 'RECEIVED' })
     })
 
-    const result = await formsStatusCallback(request, h, context)
+    const result = await formsStatusRedirect(request, h, context)
 
     expect(h.redirect).toHaveBeenCalledWith('/grant-a/confirmation')
     expect(result).toEqual(expect.any(Symbol))
@@ -536,7 +538,7 @@ describe('formsStatusCallback', () => {
       json: async () => ({ status: 'RECEIVED' })
     })
 
-    const result = await formsStatusCallback(request, h, context)
+    const result = await formsStatusRedirect(request, h, context)
     expect(result).toBe(h.continue)
   })
 
@@ -553,7 +555,7 @@ describe('formsStatusCallback', () => {
       json: async () => ({ status: 'RECEIVED' })
     })
 
-    const result = await formsStatusCallback(request, h, context)
+    const result = await formsStatusRedirect(request, h, context)
 
     // It should pick the custom path instead of default /confirmation
     expect(h.redirect).toHaveBeenCalledWith('/grant-a/custom-path')
@@ -565,7 +567,7 @@ describe('formsStatusCallback', () => {
     error.status = 404
     getApplicationStatus.mockRejectedValue(error)
 
-    const result = await formsStatusCallback(request, h, context)
+    const result = await formsStatusRedirect(request, h, context)
     expect(result).toBe(h.continue)
   })
 
@@ -573,7 +575,7 @@ describe('formsStatusCallback', () => {
     const error = new Error('server error')
     getApplicationStatus.mockRejectedValue(error)
 
-    const result = await formsStatusCallback(request, h, context)
+    const result = await formsStatusRedirect(request, h, context)
 
     expect(log).toHaveBeenCalledWith(
       LogCodes.SUBMISSION.SUBMISSION_REDIRECT_FAILURE,
@@ -593,7 +595,7 @@ describe('formsStatusCallback', () => {
     getApplicationStatus.mockRejectedValue(error)
     request.path = '/grant-a/confirmation'
 
-    const result = await formsStatusCallback(request, h, context)
+    const result = await formsStatusRedirect(request, h, context)
 
     expect(log).toHaveBeenCalledWith(
       LogCodes.SUBMISSION.SUBMISSION_REDIRECT_FAILURE,
@@ -613,7 +615,7 @@ describe('formsStatusCallback', () => {
       json: async () => ({ status: 'SOMETHING_NEW' })
     })
 
-    const result = await formsStatusCallback(request, h, context)
+    const result = await formsStatusRedirect(request, h, context)
     expect(h.redirect).toHaveBeenCalledWith('/grant-a/confirmation')
     expect(result).toEqual(expect.any(Symbol))
   })
@@ -622,7 +624,7 @@ describe('formsStatusCallback', () => {
     request.app.model.def.startPage = '/check-details'
     context.state = { applicationStatus: 'SUBMITTED', checkDetailsChangesPending: true }
 
-    const result = await formsStatusCallback(request, h, context)
+    const result = await formsStatusRedirect(request, h, context)
 
     expect(result).toBe(h.continue)
     expect(h.redirect).not.toHaveBeenCalled()
@@ -637,7 +639,7 @@ describe('formsStatusCallback', () => {
       json: async () => ({ status: 'RECEIVED' })
     })
 
-    const result = await formsStatusCallback(request, h, context)
+    const result = await formsStatusRedirect(request, h, context)
 
     expect(getApplicationStatus).toHaveBeenCalled()
     expect(result).not.toBe(h.continue)
@@ -649,7 +651,7 @@ describe('formsStatusCallback', () => {
 
     context.state = { applicationStatus: 'SUBMITTED', someField: 'someValue' }
 
-    const result = await formsStatusCallback(request, h, context)
+    const result = await formsStatusRedirect(request, h, context)
 
     expect(result).toBe(h.continue)
     expect(h.redirect).not.toHaveBeenCalled()
@@ -668,7 +670,7 @@ describe('formsStatusCallback', () => {
       request.params.path = 'confirm-you-will-be-eligible'
       context.state = { applicationStatus: undefined }
 
-      const result = await formsStatusCallback(request, h, context)
+      const result = await formsStatusRedirect(request, h, context)
 
       expect(h.redirect).toHaveBeenCalledWith('/grant-a/confirm-farm-details')
       expect(result).toEqual(expect.any(Symbol))
@@ -685,7 +687,7 @@ describe('formsStatusCallback', () => {
       request.params.path = 'confirm-farm-details'
       context.state = { applicationStatus: undefined }
 
-      const result = await formsStatusCallback(request, h, context)
+      const result = await formsStatusRedirect(request, h, context)
 
       expect(result).toBe(h.continue)
     })
@@ -701,7 +703,7 @@ describe('formsStatusCallback', () => {
       request.params.path = 'confirm-you-will-be-eligible'
       context.state = { applicationStatus: undefined, additionalAnswers: { applicant: { name: 'Test' } } }
 
-      const result = await formsStatusCallback(request, h, context)
+      const result = await formsStatusRedirect(request, h, context)
 
       expect(result).toBe(h.continue)
     })
@@ -710,7 +712,7 @@ describe('formsStatusCallback', () => {
       request.params.path = 'confirm-you-will-be-eligible'
       context.state = { applicationStatus: undefined }
 
-      const result = await formsStatusCallback(request, h, context)
+      const result = await formsStatusRedirect(request, h, context)
 
       expect(result).toBe(h.continue)
     })
@@ -726,7 +728,7 @@ describe('formsStatusCallback', () => {
       request.params.path = 'select-land-parcel'
       context.state = { applicationStatus: ApplicationStatus.CLEARED, additionalAnswers: { applicant: null } }
 
-      const result = await formsStatusCallback(request, h, context)
+      const result = await formsStatusRedirect(request, h, context)
 
       expect(h.redirect).toHaveBeenCalledWith('/grant-a/confirm-farm-details')
       expect(result).toEqual(expect.any(Symbol))
@@ -741,9 +743,14 @@ describe('formsStatusCallback', () => {
           json: async () => ({ status: gasStatus })
         })
 
-        const result = await formsStatusCallback(request, h, context)
+        const result = await formsStatusRedirect(request, h, context)
 
         expect(h.redirect).toHaveBeenCalledWith('/agreement')
+        expect(request.yar.set).toHaveBeenCalledWith(YarKeys.GRANT_APPLICATION_CONTEXT, {
+          grantCode: 'grant-a',
+          grantVersion: '1.0.0',
+          clientRef: 'ref-001'
+        })
         expect(result).toEqual(expect.any(Symbol))
       }
     )
@@ -753,7 +760,7 @@ describe('formsStatusCallback', () => {
         json: async () => ({ status: 'RECEIVED' })
       })
 
-      const result = await formsStatusCallback(request, h, context)
+      const result = await formsStatusRedirect(request, h, context)
 
       expect(h.redirect).toHaveBeenCalledWith('/grant-a/confirmation')
       expect(result).toEqual(expect.any(Symbol))
@@ -765,7 +772,7 @@ describe('formsStatusCallback', () => {
         json: async () => ({ status: 'OFFER_SENT' })
       })
 
-      const result = await formsStatusCallback(request, h, context)
+      const result = await formsStatusRedirect(request, h, context)
       expect(result).toBe(h.continue)
       expect(h.redirect).not.toHaveBeenCalled()
     })

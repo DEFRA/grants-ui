@@ -52,6 +52,7 @@ For complete documentation of all available features, see [FEATURES.md](docs/FEA
 | [Docker](docs/DOCKER.md)                               | Development/production images, Docker Compose, HA proxy, debugging         |
 | [Testing](docs/TESTING.md)                             | Unit, integration, contract, acceptance, performance, and mutation testing |
 | [Logging & Error Handling](docs/LOGGING-AND-ERRORS.md) | Structured logging system, error classes, log codes                        |
+| [FCP Audit Events](docs/AUDIT.md)                      | Publishing audit events to the FCP Audit service, config, local testing    |
 | [Analytics](docs/ANALYTICS.md)                         | Google Analytics 4 tracking configuration                                  |
 | [Consolidated View API](docs/CONSOLIDATED-VIEW.md)     | DAL GraphQL endpoint and configuration                                     |
 | [Development Tools](docs/DEV-TOOLS.md)                 | Dev routes, demo pages, journey runner                                     |

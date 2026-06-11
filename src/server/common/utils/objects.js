@@ -40,12 +40,14 @@ export const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
  * @param {Record<string, string>} mappings - Map of source keys to target keys
  */
 export function assignIfDefined(target, source, mappings) {
+  const src = /** @type {Record<string, unknown>} */ (source)
+  const tgt = /** @type {Record<string, unknown>} */ (target)
   for (const [sourceKey, targetKey] of Object.entries(mappings)) {
     if (DANGEROUS_KEYS.has(targetKey)) {
       continue
     }
-    if (source[sourceKey] !== undefined) {
-      target[targetKey] = source[sourceKey]
+    if (src[sourceKey] !== undefined) {
+      tgt[targetKey] = src[sourceKey]
     }
   }
 }

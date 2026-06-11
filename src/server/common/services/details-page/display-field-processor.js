@@ -38,8 +38,8 @@ import { getFormatter } from './formatters/index.js'
 /**
  * Resolves the value for a display field from the appropriate source
  * @param {DisplayFieldConfig} fieldConfig - The field configuration
- * @param {object} mappedData - The mapped API response data
- * @param {object} request - The Hapi request object
+ * @param {Record<string, unknown>} mappedData - The mapped API response data
+ * @param {AnyRequest} request - The Hapi request object
  * @returns {*} The resolved value
  */
 function resolveFieldValue(fieldConfig, mappedData, request) {
@@ -56,8 +56,8 @@ function resolveFieldValue(fieldConfig, mappedData, request) {
 /**
  * Processes a single display field config into a summary list row
  * @param {DisplayFieldConfig} fieldConfig - The field configuration
- * @param {object} mappedData - The mapped API response data
- * @param {object} request - The Hapi request object
+ * @param {Record<string, unknown>} mappedData - The mapped API response data
+ * @param {AnyRequest} request - The Hapi request object
  * @returns {SummaryListRow | null} The summary list row, or null if empty and hideIfEmpty is true
  */
 function processField(fieldConfig, mappedData, request) {
@@ -80,8 +80,8 @@ function processField(fieldConfig, mappedData, request) {
 /**
  * Processes display fields configuration to generate GOV.UK Summary List rows
  * @param {DisplayFieldConfig[]} displayFieldsConfig - Array of display field configurations
- * @param {object} mappedData - The mapped API response data
- * @param {object} request - The Hapi request object
+ * @param {Record<string, unknown>} mappedData - The mapped API response data
+ * @param {AnyRequest} request - The Hapi request object
  * @returns {{ rows: SummaryListRow[] }} Summary list object with rows array
  */
 export function processDisplayFields(displayFieldsConfig, mappedData, request) {
@@ -99,8 +99,8 @@ export function processDisplayFields(displayFieldsConfig, mappedData, request) {
 /**
  * Processes section configuration to generate array of sections with summary lists
  * @param {SectionConfig[]} sectionsConfig - Array of section configurations
- * @param {object} mappedData - The mapped API response data
- * @param {object} request - The Hapi request object
+ * @param {Record<string, unknown>} mappedData - The mapped API response data
+ * @param {AnyRequest} request - The Hapi request object
  * @returns {ProcessedSection[]} Array of processed sections
  */
 export function processSections(sectionsConfig, mappedData, request) {
@@ -126,3 +126,7 @@ export function processSections(sectionsConfig, mappedData, request) {
       .filter(Boolean)
   )
 }
+
+/**
+ * @import { AnyRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ */

@@ -302,6 +302,42 @@ const convictConfig = {
       default: 2000,
       env: 'APPLICATION_LOCK_RELEASE_TIMEOUT_MS'
     }
+  },
+  aws: {
+    region: {
+      doc: 'AWS region for SDK clients',
+      format: String,
+      default: 'eu-west-2',
+      env: 'AWS_REGION'
+    },
+    endpointUrl: /** @type {SchemaObj<string | null>} */ ({
+      doc: 'Custom AWS endpoint URL (e.g. LocalStack). Leave null to use real AWS.',
+      format: String,
+      nullable: true,
+      default: null,
+      env: 'AWS_ENDPOINT_URL'
+    })
+  },
+  audit: {
+    enabled: {
+      doc: 'Publish audit events to the FCP Audit service SNS topic',
+      format: Boolean,
+      default: false,
+      env: 'AUDIT_ENABLED'
+    },
+    snsTopicArn: {
+      doc: 'ARN of the FCP Audit service SNS topic',
+      format: String,
+      default: '',
+      env: 'AUDIT_SNS_TOPIC_ARN',
+      sensitive: true
+    },
+    application: {
+      doc: 'GIO application name identifying the source system in audit events (shared across the Grants services)',
+      format: String,
+      default: 'Grants',
+      env: 'AUDIT_APPLICATION'
+    }
   }
 }
 

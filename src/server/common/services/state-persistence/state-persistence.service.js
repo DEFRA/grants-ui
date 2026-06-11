@@ -33,8 +33,8 @@ export class StatePersistenceService extends CacheService {
         debug(
           LogCodes.SYSTEM.SESSION_STATE_KEY_PARSE_FAILED,
           {
-            errorMessage: err.message,
-            stack: err.stack,
+            errorMessage: /** @type {Error} */ (err).message,
+            stack: /** @type {Error} */ (err).stack,
             requestPath: request.path
           },
           request
@@ -45,14 +45,16 @@ export class StatePersistenceService extends CacheService {
     })()
     const lockToken = this._buildLockToken(request)
     try {
-      const state = await fetchSavedStateFromApi(key, request, { lockToken })
-      return state ?? {}
+      const document = await fetchSavedStateFromApi(key, request, { lockToken })
+      const app = /** @type {{ grantVersion?: unknown }} */ (request.app)
+      app.grantVersion = document?.grantVersion
+      return /** @type {Record<string, unknown>} */ (document?.state) ?? {}
     } catch (err) {
       debug(
         LogCodes.SYSTEM.SESSION_STATE_FETCH_FAILED,
         {
           sessionKey: key,
-          errorMessage: err.message,
+          errorMessage: /** @type {Error} */ (err).message,
           requestPath: request.path
         },
         request
@@ -65,8 +67,8 @@ export class StatePersistenceService extends CacheService {
   /**
    * Persist form state to backend.
    * @param {AnyFormRequest} request
-   * @param {object} state
-   * @returns {Promise<object>} the persisted state
+   * @param {FormSubmissionState} state
+   * @returns {Promise<FormSubmissionState>} the persisted state
    */
   async setState(request, state) {
     const key = this._Key(request)
@@ -152,6 +154,7 @@ export class StatePersistenceService extends CacheService {
    * - the SBI (organisation)
    * - the grant (code + version)
    *
+   * @param {AnyRequest} request
    * @returns {string} A signed JWT lock token
    */
   _buildLockToken(request) {
@@ -167,12 +170,12 @@ export class StatePersistenceService extends CacheService {
       userId: String(contactId),
       sbi,
       grantCode,
-      grantVersion
+      grantVersion: /** @type {string | number} */ (grantVersion)
     })
   }
 }
 
 /**
- * @import { AnyRequest, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { AnyRequest, AnyFormRequest, FormSubmissionState } from '@defra/forms-engine-plugin/engine/types.js'
  * @import { Request, Server } from '@hapi/hapi'
  */

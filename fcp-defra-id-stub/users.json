@@ -390,6 +390,42 @@
       ]
     },
     {
+      "crn": 1062311182,
+      "firstName": "JamesAmend",
+      "lastName": "Test-FarmerAmend",
+      "organisations": [
+        {
+          "organisationId": "32",
+          "sbi": 106238911,
+          "name": "Test Farm"
+        }
+      ]
+    },
+    {
+      "crn": 1062311183,
+      "firstName": "JamesView",
+      "lastName": "Test-FarmerView",
+      "organisations": [
+        {
+          "organisationId": "32",
+          "sbi": 106238911,
+          "name": "Test Farm"
+        }
+      ]
+    },
+    {
+      "crn": 1062311184,
+      "firstName": "JamesNoPerms",
+      "lastName": "Test-FarmerNoPerms",
+      "organisations": [
+        {
+          "organisationId": "32",
+          "sbi": 106238911,
+          "name": "Test Farm"
+        }
+      ]
+    },
+    {
       "crn": 1102838829,
       "firstName": "Edward",
       "lastName": "Jones",
