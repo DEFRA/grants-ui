@@ -27,9 +27,9 @@ ignore:
         expires: '2026-07-02'
   'SNYK-JS-IMAGESIZE-17295814':
     - '*':
-        reason: 'No patch available — DoS via image-size, build/docs-time only via @docusaurus/mdx-loader, not exposed to untrusted input at runtime. Monitor for upstream fix.'
-        expires: '2026-08-01'
+        reason: 'Build-time only — vulnerable path is docusaurus mdx-loader in @defra/interactive-map docs, never loaded by grants-ui runtime. No upstream fix available.'
+        expires: '2026-07-02'
   'SNYK-JS-IMAGESIZE-17295816':
     - '*':
-        reason: 'No patch available — DoS via image-size, build/docs-time only via @docusaurus/mdx-loader, not exposed to untrusted input at runtime. Monitor for upstream fix.'
-        expires: '2026-08-01'
+        reason: 'Build-time only — vulnerable path is docusaurus mdx-loader in @defra/interactive-map docs, never loaded by grants-ui runtime. No upstream fix available.'
+        expires: '2026-07-02'
