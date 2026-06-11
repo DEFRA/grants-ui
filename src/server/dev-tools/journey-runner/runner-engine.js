@@ -286,25 +286,28 @@
   }
 
   /**
-   * Find a step at-or-before `upToIndex` whose path matches the current URL.
-   * Used after the runner stalls - if the URL still matches an earlier step,
-   * that's where we got stuck.
-   * @param {number} upToIndex
+   * Decide whether the runner genuinely stalled on the step it last attempted.
+   *
+   * "Stuck" means the form we just submitted re-rendered on its own page
+   * instead of navigating forward - so the current URL must still match the
+   * last-attempted step. If the URL instead matches an *earlier*, already
+   * completed step (e.g. we finished a section and looped back to the
+   * task-list hub, whose `/{slug}/tasks` URL also matches an earlier
+   * `clickLink` step), the journey progressed and then completed - that is not
+   * stuck.
+   * @param {number} upToIndex index of the last-attempted step
    * @param {string | undefined} section
-   * @returns {number} step index, or -1 if no match
+   * @returns {number} the stuck step index, or -1 if not stuck
    */
   function findStuckStep(upToIndex, section) {
-    const path = globalThis.location.pathname
-    for (let i = 0; i <= upToIndex && i < steps.length; i++) {
-      const step = steps[i]
-      if (section && step.section !== section) {
-        continue
-      }
-      if (stepMatchesPath(step, path)) {
-        return i
-      }
+    if (upToIndex < 0 || upToIndex >= steps.length) {
+      return -1
     }
-    return -1
+    const step = steps[upToIndex]
+    if (section && step.section !== section) {
+      return -1
+    }
+    return stepMatchesPath(step, globalThis.location.pathname) ? upToIndex : -1
   }
 
   // ---------------------------------------------------------------------------
