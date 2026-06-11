@@ -25,3 +25,11 @@ ignore:
     - '*':
         reason: 'No fix available — build-time only, not exposed at runtime. Monitor for upstream patch.'
         expires: '2026-07-02'
+  'SNYK-JS-IMAGESIZE-17295814':
+    - '*':
+        reason: 'No patch available — DoS via image-size, build/docs-time only via @docusaurus/mdx-loader, not exposed to untrusted input at runtime. Monitor for upstream fix.'
+        expires: '2026-08-01'
+  'SNYK-JS-IMAGESIZE-17295816':
+    - '*':
+        reason: 'No patch available — DoS via image-size, build/docs-time only via @docusaurus/mdx-loader, not exposed to untrusted input at runtime. Monitor for upstream fix.'
+        expires: '2026-08-01'
