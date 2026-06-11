@@ -141,11 +141,11 @@ If no height is set via CSS the component falls back to `MAP_DEFAULT_HEIGHT` (de
 
 All events bubble.
 
-| Event                  | `detail`                              | When                                                       |
-| ---------------------- | ------------------------------------- | ---------------------------------------------------------- |
-| `parcel-map:ready`     | —                                     | Map initialised and parcels loaded successfully            |
+| Event                  | `detail`                                    | When                                                       |
+| ---------------------- | ------------------------------------------- | ---------------------------------------------------------- |
+| `parcel-map:ready`     | —                                           | Map initialised and parcels loaded successfully            |
 | `parcel-map:error`     | `{ reason: 'unavailable' \| 'no-parcels' }` | Map or parcels API failed; `reason` describes the cause    |
-| `parcel-map:selection` | `{ selectedIds: string[] }`           | User clicks a parcel (empty array when all are deselected) |
+| `parcel-map:selection` | `{ selectedIds: string[] }`                 | User clicks a parcel (empty array when all are deselected) |
 
 `reason` values for `parcel-map:error`:
 

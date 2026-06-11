@@ -89,7 +89,7 @@ describe('dev-tools index', () => {
       expect(server.route).toHaveBeenCalledWith(
         expect.objectContaining({
           method: 'GET',
-          path,
+          path
         })
       )
     })
