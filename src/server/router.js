@@ -12,6 +12,7 @@ import { clearApplicationState } from './dev-tools/clear-application-state.js'
 import { cookies } from '~/src/server/cookies/index.js'
 import { printSubmittedApplication } from '~/src/server/print-submitted-application/print-submitted-application.controller.js'
 import { cannotSubmit } from './cannot-submit/index.js'
+import { mapPlugin } from '~/src/server/common/map/map.plugin.js'
 
 const cdpEnvironment = config.get('cdpEnvironment')
 
@@ -32,6 +33,8 @@ export const router = {
 
       // Application specific routes, add your own routes here
       await server.register([home, agreements, configConfirmation, cookies, printSubmittedApplication, cannotSubmit])
+
+      await server.register([mapPlugin])
 
       // Development tools (only available in development mode)
       if (

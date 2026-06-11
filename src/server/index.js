@@ -51,6 +51,8 @@ import TerminalPageController from '~/src/server/task-list/terminal-page.control
 import LandingPageController from '~/src/server/task-list/landing-page.controller.js'
 import CheckDetailsController from '~/src/server/details-page/check-details.controller.js'
 import CommonSelectLandParcelPageController from './land-grants/common/common-select-parcel/common-select-land-parcel-page.controller.js'
+import MapSelectPageController from '~/src/server/common/map/map-select-page.controller.js'
+import MapSubmissionPageController from '~/src/server/common/map/map-submission-page.controller.js'
 import permissions from '../plugins/permissions.js'
 import { formsRequestPipeline } from './common/request-pipeline/forms-request-pipeline.js'
 import { auditPublisher } from '~/src/server/common/helpers/audit/audit.js'
@@ -147,7 +149,9 @@ const registerFormsPlugin = async (server, prefix = '') => {
         TerminalPageController,
         LandingPageController,
         CheckDetailsController,
-        WoodlandHectaresPageController
+        WoodlandHectaresPageController,
+        MapSelectPageController,
+        MapSubmissionPageController
       }
     }
   })
