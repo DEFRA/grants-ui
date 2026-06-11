@@ -1,3 +1,4 @@
+import Joi from 'joi'
 import { config } from '~/src/config/config.js'
 import { createApiHeadersForLandGrantsBackend } from '~/src/server/common/helpers/auth/backend-auth-helper.js'
 import { fetchParcels, fetchParcelTileLocation } from '~/src/server/land-grants/services/land-grants.service.js'
@@ -59,7 +60,7 @@ async function parcelsHandler(request, h) {
   const features = parcelData.map((p) => ({
     type: 'Feature',
     id: p.id,
-    properties: { id: p.id, sheetId: p.sheetId, parcelId: p.parcelId, areaHa: p.areaHa }
+    properties: { id: p.id, sheet_id: p.sheetId, parcel_id: p.parcelId, areaHa: p.areaHa }
   }))
   const parcelIds = parcelData.map((p) => p.id)
   const bbox = await fetchParcelTileLocation(parcelIds).catch(() => null)
@@ -94,14 +95,19 @@ async function tilesHandler(request, h) {
 
   const upstream = `${LAND_GRANTS_API_URL}/api/v1/parcel-tiles/${z}/${x}/${y}`
 
-  const response = await fetch(upstream, {
-    method: 'POST',
-    headers: {
-      .../** @type {Record<string,string>} */ (createApiHeadersForLandGrantsBackend()),
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ parcelIds })
-  })
+  let response
+  try {
+    response = await fetch(upstream, {
+      method: 'POST',
+      headers: {
+        .../** @type {Record<string,string>} */ (createApiHeadersForLandGrantsBackend()),
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ parcelIds })
+    })
+  } catch {
+    return h.response().code(statusCodes.serviceUnavailable)
+  }
 
   if (!response.ok) {
     return h.response().code(response.status)
@@ -129,13 +135,20 @@ export const mapPlugin = {
       server.route({
         method: 'GET',
         path: '/api/map/parcels/geojson',
-        options: { auth: false },
         handler: geojsonHandler
       })
       server.route({
         method: 'GET',
         path: '/land-grants/parcel-tiles/{z}/{x}/{y}',
-        options: { auth: false },
+        options: {
+          validate: {
+            params: Joi.object({
+              z: Joi.number().integer().min(0).required(),
+              x: Joi.number().integer().min(0).required(),
+              y: Joi.number().integer().min(0).required()
+            })
+          }
+        },
         handler: tilesHandler
       })
     }

@@ -216,6 +216,15 @@ describe('mapPlugin', () => {
   })
 
   describe('GET /land-grants/parcel-tiles/{z}/{x}/{y}', () => {
+    it('has Joi integer validation on z, x, y params', () => {
+      const tilesRoute = server._routes[2]
+      const schema = tilesRoute.options.validate.params
+      expect(schema.validate({ z: 12, x: 100, y: 200 }).error).toBeUndefined()
+      expect(schema.validate({ z: -1, x: 0, y: 0 }).error).toBeDefined()
+      expect(schema.validate({ z: 1.5, x: 0, y: 0 }).error).toBeDefined()
+      expect(schema.validate({ z: 'abc', x: 0, y: 0 }).error).toBeDefined()
+    })
+
     beforeEach(() => {
       global.fetch = vi.fn()
     })
@@ -251,6 +260,17 @@ describe('mapPlugin', () => {
       await tilesHandler(request, h)
 
       expect(h._responseObj.code).toHaveBeenCalledWith(404)
+    })
+
+    it('returns 503 when fetch throws', async () => {
+      global.fetch.mockRejectedValue(new Error('network error'))
+      const request = makeRequest({ mapParcelIds: ['SD7148-9160'] })
+      request.params = { z: '12', x: '100', y: '200' }
+      const h = makeH()
+
+      await tilesHandler(request, h)
+
+      expect(h._responseObj.code).toHaveBeenCalledWith(503)
     })
 
     it('uses empty parcel IDs when session has none', async () => {

@@ -153,7 +153,14 @@ class ParcelMap extends HTMLElement {
     if (!ml || !data) {
       this._state = 'error'
       this._teardown()
-      this.dispatchEvent(new CustomEvent(EVENT_ERROR, { bubbles: true }))
+      this.dispatchEvent(new CustomEvent(EVENT_ERROR, { bubbles: true, detail: { reason: 'unavailable' } }))
+      return
+    }
+
+    if (data.parcelIds.length === 0) {
+      this._state = 'error'
+      this._teardown()
+      this.dispatchEvent(new CustomEvent(EVENT_ERROR, { bubbles: true, detail: { reason: 'no-parcels' } }))
       return
     }
 

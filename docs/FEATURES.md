@@ -220,6 +220,18 @@ The service supports several specialized page types for different stages of the 
   - `continueText` – optional override for the continue-button label (defaults to `Continue`).
 - **Example**: [Woodland – `incorrectDetailsContent`](./src/server/common/forms/definitions/woodland.yaml#L173-L182)
 
+### Land Parcel Map Pages
+
+- **Purpose**: Interactive map for selecting land parcels from a user's registered holding
+- **Features**:
+  - Single or multi-parcel selection
+  - MapLibre GL vector tile rendering
+  - Parcel ID and area display via tooltip
+  - Selected parcel IDs written to session state for downstream pages
+- **Controllers**: `MapSelectPageController`
+- **Full developer guide**: [src/server/common/map/README.md](./src/server/common/map/README.md)
+- **Example**: [Example Grant with Map journey](./src/server/common/forms/definitions/example-grant-with-map.yaml)
+
 ### Conditional Pages
 
 - **Purpose**: Show content based on previous answers

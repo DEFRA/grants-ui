@@ -144,13 +144,13 @@ All events bubble.
 | Event                  | `detail`                              | When                                                       |
 | ---------------------- | ------------------------------------- | ---------------------------------------------------------- |
 | `parcel-map:ready`     | —                                     | Map initialised and parcels loaded successfully            |
-| `parcel-map:error`     | `{ reason?: 'no-parcels' \| string }` | Map or parcels API failed; `reason` describes the cause    |
+| `parcel-map:error`     | `{ reason: 'unavailable' \| 'no-parcels' }` | Map or parcels API failed; `reason` describes the cause    |
 | `parcel-map:selection` | `{ selectedIds: string[] }`           | User clicks a parcel (empty array when all are deselected) |
 
 `reason` values for `parcel-map:error`:
 
+- `'unavailable'` — map initialisation failed or the parcels API returned an error
 - `'no-parcels'` — API returned successfully but the user has no parcels
-- generic string / absent — map initialisation failed or API returned an error
 
 The inline script in `map-select-parcel.html` is the canonical example of how to consume these events.
 

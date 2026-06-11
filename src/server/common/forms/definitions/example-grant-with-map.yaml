@@ -43,7 +43,6 @@ pages:
     id: a1b2c3d4-0001-0001-0001-000000000003
     path: /select-land-parcel
     controller: MapSelectPageController
-    next: []
     components:
       - name: selectedParcelsDisplay
         id: a1b2c3d4-0001-0001-0001-000000000010
@@ -57,19 +56,16 @@ pages:
     id: a1b2c3d4-0001-0001-0001-000000000004
     path: /select-actions-for-land-parcel
     controller: SelectLandActionsPageController
-    next: []
 
   - title: Check your answers
     id: a1b2c3d4-0001-0001-0001-000000000011
     path: /summary
     controller: MapSubmissionPageController
-    next: []
 
   - title: Confirmation
     id: a1b2c3d4-0001-0001-0001-000000000006
     path: /confirmation
     controller: ConfirmationPageController
-    next: []
 
 sections: []
 lists: []

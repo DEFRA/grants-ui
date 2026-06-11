@@ -68,10 +68,9 @@
       var mapEl = document.getElementById('parcel-map');
       var multiSelect = mapEl.getAttribute('multi-select') === 'true';
 
-      var hint = document.getElementById('map-hint');
-      if (hint) { hint.hidden = false; }
-
       mapEl.addEventListener('parcel-map:ready', function () {
+        var hint = document.getElementById('map-hint');
+        if (hint) { hint.hidden = false; }
         var summary = document.getElementById('parcel-selection-summary');
         if (summary) { summary.hidden = false; }
       });
