@@ -171,13 +171,20 @@ metadata:
     completeInOrder: true
     returnAfterSection: true
     showCompletionStatus: false
+    showQuestions: false
     statuses:
       cannotStart:
         text: 'Cannot start yet'
         classes: 'govuk-tag--grey'
       notStarted:
         text: 'Not started'
+        classes: 'govuk-tag--yellow'
+      inProgress:
+        text: 'In progress'
         classes: 'govuk-tag--blue'
+      cannotContinue:
+        text: 'On hold'
+        classes: 'govuk-tag--purple'
       completed:
         text: 'Completed'
         classes: 'govuk-tag--green'
