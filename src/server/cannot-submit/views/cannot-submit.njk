@@ -1,6 +1,7 @@
 {% extends "layouts/page.njk" %}
 
 {% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/details/macro.njk" import govukDetails %}
 
 {% block content %}
 
@@ -24,21 +25,40 @@
     </p>
 
     {{ govukButton({
-      text: "Return to task list",
+      text: returnText,
       href: returnUrl
     }) }}
 
-    <details class="govuk-details" data-module="govuk-details">
-      <summary class="govuk-details__summary">
-        <span class="govuk-details__summary-text">
-          If you have a question
-        </span>
-      </summary>
+    {{ govukDetails({
+      summaryText: "If you need to change your permissions",
+      html: '
+        <p class="govuk-body">
+          You can
+          <a class="govuk-link" href="https://www.gov.uk/guidance/give-someone-access-to-your-rural-payments-service-account">
+            read the GOV.UK guidance on how to give or update permissions on the Rural Payments service
+          </a>.
+        </p>
 
-      <div class="govuk-details__text">
-        Contact the support team.
-      </div>
-    </details>
+        <p class="govuk-body">
+          You can contact the Rural Payments Agency (RPA).
+        </p>
+
+        <p class="govuk-body">
+          Email:
+          <a class="govuk-link" href="mailto:ruralpayments@defra.gov.uk">
+            ruralpayments@defra.gov.uk
+          </a>
+          <br>
+          Telephone: 03000 200 301
+          <br>
+          Service opening times: Monday to Friday, 8:30am to 5pm, except bank holidays
+          <br>
+          <a class="govuk-link" href="https://www.gov.uk/call-charges">
+            Find out about call charges
+          </a>
+        </p>
+      '
+    }) }}
 
   </div>
 </div>
