@@ -353,7 +353,7 @@ pages:
           <p class="govuk-body">For example, if Grants Status becomes `REOPENED`:</p>
           <p class="govuk-body">Your application <strong>{{ context.referenceNumber }}</strong> has been reopened. Click continue to check your submitted answers and change them.</p>
     next:
-      - path: /tasks
+      - path: /summary
 
 conditions:
   - id: fe427aee-bb72-4fb6-99a0-8b2092605efd
