@@ -3,6 +3,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import {
   enforcePagePermission,
   getReturnToApplicationPath,
+  isAllowedViewOnlyPath,
   isCannotSubmitUser,
   isSubmittedApplication,
   isViewOnlyUser
@@ -22,115 +23,44 @@ vi.mock('../../helpers/permissions/page-permissions.js', () => ({
 import { getTaskListPath } from '~/src/server/task-list/task-list.helper.js'
 import { getPermissionResource, getRequiredPermission } from '../../helpers/permissions/page-permissions.js'
 
+const canView = (action) => action === 'view'
+const canAmendNotSubmit = (action) => action === 'amend'
+
 describe('isCannotSubmitUser', () => {
   it('returns true when user can amend but cannot submit', () => {
-    const request = {
-      can: vi.fn((action) => {
-        if (action === 'amend') {
-          return true
-        }
+    const request = { can: vi.fn(canAmendNotSubmit) }
 
-        if (action === 'submit') {
-          return false
-        }
-
-        return false
-      })
-    }
-
-    const result = isCannotSubmitUser(request, 'submit', 'csApplications')
-
-    expect(result).toBe(true)
+    expect(isCannotSubmitUser(request, 'submit', 'csApplications')).toBe(true)
   })
 
-  it('returns false when required permission is not submit', () => {
-    const request = {
-      can: vi.fn(() => true)
-    }
+  it.each([
+    ['required permission is not submit', 'view'],
+    ['user can submit', 'submit']
+  ])('returns false when %s', (_label, requiredPermission) => {
+    const request = { can: vi.fn(() => true) }
 
-    const result = isCannotSubmitUser(request, 'view', 'csApplications')
-
-    expect(result).toBe(false)
-  })
-
-  it('returns false when user can submit', () => {
-    const request = {
-      can: vi.fn(() => true)
-    }
-
-    const result = isCannotSubmitUser(request, 'submit', 'csApplications')
-
-    expect(result).toBe(false)
+    expect(isCannotSubmitUser(request, requiredPermission, 'csApplications')).toBe(false)
   })
 })
 
 describe('isSubmittedApplication', () => {
-  it('returns true for SUBMITTED', () => {
-    const context = {
-      state: {
-        applicationStatus: ApplicationStatus.SUBMITTED
-      }
-    }
-
-    expect(isSubmittedApplication(context)).toBe(true)
-  })
-
-  it('returns true for REOPENED', () => {
-    const context = {
-      state: {
-        applicationStatus: ApplicationStatus.REOPENED
-      }
-    }
-
-    expect(isSubmittedApplication(context)).toBe(true)
-  })
-
-  it('returns false for undefined status', () => {
-    const context = {
-      state: {}
-    }
-
-    expect(isSubmittedApplication(context)).toBe(false)
-  })
-
-  it('returns false for draft status', () => {
-    const context = {
-      state: {
-        applicationStatus: 'IN_PROGRESS'
-      }
-    }
-
-    expect(isSubmittedApplication(context)).toBe(false)
+  it.each([
+    [ApplicationStatus.SUBMITTED, true],
+    [ApplicationStatus.REOPENED, true],
+    [undefined, false],
+    ['IN_PROGRESS', false]
+  ])('isSubmittedApplication(%s) === %s', (applicationStatus, expected) => {
+    expect(isSubmittedApplication({ state: { applicationStatus } })).toBe(expected)
   })
 })
 
 describe('isViewOnlyUser', () => {
-  it('returns true when user can only view', () => {
-    const request = {
-      can: vi.fn((action) => {
-        return action === 'view'
-      })
-    }
-
-    expect(isViewOnlyUser(request, 'csApplications')).toBe(true)
-  })
-
-  it('returns false when user can amend', () => {
-    const request = {
-      can: vi.fn((action) => {
-        return ['view', 'amend'].includes(action)
-      })
-    }
-
-    expect(isViewOnlyUser(request, 'csApplications')).toBe(false)
-  })
-
-  it('returns false when user cannot view', () => {
-    const request = {
-      can: vi.fn(() => false)
-    }
-
-    expect(isViewOnlyUser(request, 'csApplications')).toBe(false)
+  it.each([
+    ['can only view', canView, true],
+    ['can view and amend', (action) => ['view', 'amend'].includes(action), false],
+    ['cannot view', () => false, false]
+  ])('returns the right result when user %s', (_label, can, expected) => {
+    expect(isViewOnlyUser({ can: vi.fn(can) }, 'csApplications')).toBe(expected)
   })
 })
 
@@ -144,7 +74,7 @@ describe('getReturnToApplicationPath', () => {
 
     const result = getReturnToApplicationPath({}, '/sfi')
 
-    expect(result).toBe('/sfi/task-list')
+    expect(result).toEqual({ href: '/sfi/task-list', text: 'Return to task list' })
   })
 
   it('falls back to summary path when no task list exists', () => {
@@ -152,7 +82,17 @@ describe('getReturnToApplicationPath', () => {
 
     const result = getReturnToApplicationPath({}, '/sfi')
 
-    expect(result).toBe('/sfi/summary')
+    expect(result).toEqual({ href: '/sfi/summary', text: 'Return to summary' })
+  })
+})
+
+describe('isAllowedViewOnlyPath', () => {
+  it.each([
+    ['confirmation', true],
+    ['print-submitted-application', true],
+    ['task-list', false]
+  ])('isAllowedViewOnlyPath(%s) === %s', (path, expected) => {
+    expect(isAllowedViewOnlyPath(path)).toBe(expected)
   })
 })
 
@@ -180,7 +120,8 @@ describe('enforcePagePermission', () => {
           }
         }
       },
-      can: vi.fn()
+      can: vi.fn(),
+      sendAuditEventInBackground: vi.fn()
     }
 
     h = {
@@ -203,34 +144,28 @@ describe('enforcePagePermission', () => {
   it('returns h.continue when permission enforcement disabled', () => {
     request.app.model.def.metadata.permissions.enforce = false
 
-    const result = enforcePagePermission(request, h, context)
-
-    expect(result).toBe(h.continue)
+    expect(enforcePagePermission(request, h, context)).toBe(h.continue)
   })
 
   it('returns h.continue when user has required permission', () => {
-    request.can.mockImplementation((action) => action === 'view')
+    request.can.mockImplementation(canView)
 
-    const result = enforcePagePermission(request, h, context)
+    expect(enforcePagePermission(request, h, context)).toBe(h.continue)
+  })
 
-    expect(result).toBe(h.continue)
+  it('returns h.continue when user has required submit permission', () => {
+    vi.mocked(getRequiredPermission).mockReturnValue('submit')
+
+    request.can.mockImplementation((action) => action === 'submit')
+
+    expect(enforcePagePermission(request, h, context)).toBe(h.continue)
   })
 
   it('redirects amend-only users attempting submit', () => {
     vi.mocked(getRequiredPermission).mockReturnValue('submit')
     vi.mocked(getTaskListPath).mockReturnValue('/task-list')
 
-    request.can.mockImplementation((action) => {
-      if (action === 'amend') {
-        return true
-      }
-
-      if (action === 'submit') {
-        return false
-      }
-
-      return false
-    })
+    request.can.mockImplementation(canAmendNotSubmit)
 
     const takeover = vi.fn(() => 'redirected')
 
@@ -240,16 +175,16 @@ describe('enforcePagePermission', () => {
 
     const result = enforcePagePermission(request, h, context)
 
-    expect(h.redirect).toHaveBeenCalledWith('/cannot-submit?returnUrl=%2Fsfi%2Ftask-list')
+    expect(h.redirect).toHaveBeenCalledWith(
+      '/cannot-submit?returnUrl=%2Fsfi%2Ftask-list&returnText=Return%20to%20task%20list'
+    )
 
     expect(takeover).toHaveBeenCalled()
     expect(result).toBe('redirected')
   })
 
   it('allows submitted view-only users to access confirmation page', () => {
-    request.can.mockImplementation((action) => {
-      return action === 'view'
-    })
+    request.can.mockImplementation(canView)
 
     const result = enforcePagePermission(request, h, context)
 
@@ -266,20 +201,41 @@ describe('enforcePagePermission', () => {
     expect(result).toBe(h.continue)
   })
 
+  it('throws when view-only user accesses a non-allowed path', () => {
+    request.params.path = 'task-list'
+
+    request.can.mockImplementation(canView)
+
+    expect(() => enforcePagePermission(request, h, context)).toThrow()
+    expect(request.sendAuditEventInBackground).toHaveBeenCalledWith({
+      action: 'unauthorised',
+      status: 'denied',
+      details: { reason: 'view-only', permission: 'view', path: 'task-list', grantCode: 'sfi' }
+    })
+  })
+
   it('throws Application not submitted when view page accessed before submission', () => {
     context.state.applicationStatus = 'IN_PROGRESS'
 
-    request.can.mockImplementation((action) => action === 'view')
+    request.can.mockImplementation(canView)
 
-    expect(() => enforcePagePermission(request, h, context)).toThrow('Application not submitted')
+    expect(() => enforcePagePermission(request, h, context)).toThrow()
   })
 
-  it('does not allow view pages before submission even when user has view permission', () => {
-    context.state.applicationStatus = 'IN_PROGRESS'
+  it('throws a 403 Boom forbidden error and audits when the user has no permissions', () => {
+    request.can.mockReturnValue(false)
 
-    request.can.mockImplementation((action) => action === 'view')
-
-    expect(() => enforcePagePermission(request, h, context)).toThrow('Application not submitted')
+    expect(() => enforcePagePermission(request, h, context)).toThrow(
+      expect.objectContaining({
+        message: 'Insufficient permissions',
+        output: expect.objectContaining({ statusCode: 403 })
+      })
+    )
+    expect(request.sendAuditEventInBackground).toHaveBeenCalledWith({
+      action: 'unauthorised',
+      status: 'denied',
+      details: { reason: 'insufficient-permission', permission: 'view', path: 'confirmation', grantCode: 'sfi' }
+    })
   })
 
   it('throws when model missing during cannot-submit redirect', () => {
@@ -291,29 +247,22 @@ describe('enforcePagePermission', () => {
       if (action === 'amend') {
         return true
       }
+
       if (action === 'submit') {
         return false
       }
+
       return false
     })
 
     expect(() => enforcePagePermission(request, h, context)).toThrow('Form model missing')
   })
 
-  it('throws forbidden when user has no permissions', () => {
-    request.can.mockReturnValue(false)
+  it('does not send an audit event when the user is authorised', () => {
+    request.can.mockImplementation(canView)
 
-    expect(() => enforcePagePermission(request, h, context)).toThrow()
-  })
+    enforcePagePermission(request, h, context)
 
-  it('throws Boom forbidden error', () => {
-    request.can.mockReturnValue(false)
-
-    try {
-      enforcePagePermission(request, h, context)
-    } catch (err) {
-      expect(err.output.statusCode).toBe(403)
-      expect(err.message).toBe('Insufficient permissions')
-    }
+    expect(request.sendAuditEventInBackground).not.toHaveBeenCalled()
   })
 })

@@ -5,6 +5,19 @@ import { forbidden } from '@hapi/boom'
 import { logPermissionEvent } from '../../helpers/permissions/permission-logger.js'
 import { getGrantCode } from '../../helpers/grant-code.js'
 
+const VIEW_ONLY_ALLOWED_PATHS = new Set(['confirmation', 'print-submitted-application'])
+
+/**
+ * Publishes an FCP Audit event recording an unauthorised attempt to access a
+ * restricted page.
+ * @param {import('../types.js').PipelineRequest} request
+ * @param {Record<string, unknown>} details - Context for `audit.details`.
+ * @returns {void}
+ */
+function auditUnauthorisedAccess(request, details) {
+  request.sendAuditEventInBackground({ action: 'unauthorised', status: 'denied', details })
+}
+
 /**
  * Determines whether the current user can amend an application
  * but is not permitted to submit it.
@@ -56,16 +69,81 @@ export function isViewOnlyUser(request, resource) {
  * Falls back to check responses if no task list exists.
  * @param {object} model
  * @param {string} basePath
- * @returns {string}
+ * @returns {{ href: string, text: string }}
  */
 export function getReturnToApplicationPath(model, basePath) {
   const taskListPath = getTaskListPath(model)
 
   if (taskListPath) {
-    return `${basePath}${taskListPath}`
+    return {
+      href: `${basePath}${taskListPath}`,
+      text: 'Return to task list'
+    }
   }
 
-  return `${basePath}/summary`
+  return {
+    href: `${basePath}/summary`,
+    text: 'Return to summary'
+  }
+}
+
+/**
+ * Checks whether a given path is allowed for view-only users.
+ *
+ * @param {string} path - The request path to check.
+ * @returns {boolean} True if the path is allowed for view-only users.
+ */
+export function isAllowedViewOnlyPath(path) {
+  return VIEW_ONLY_ALLOWED_PATHS.has(path)
+}
+
+/**
+ * Handles a view-only user: allows the confirmation/print pages of a submitted
+ * application through, otherwise logs the denial, audits it and throws 403.
+ * @param {import('../types.js').PipelineRequest} request - The Hapi request object.
+ * @param {import('@hapi/hapi').ResponseToolkit} h - The Hapi response toolkit.
+ * @param {FormContext} context - The context object which may contain form state.
+ * @param {string} grantCode - The grant code for logging/audit.
+ * @returns {import('@hapi/hapi').Lifecycle.ReturnValue} `h.continue` when allowed.
+ */
+function handleViewOnlyUser(request, h, context, grantCode) {
+  if (isSubmittedApplication(context) && isAllowedViewOnlyPath(request.params.path)) {
+    logPermissionEvent({
+      request,
+      grantCode,
+      permission: 'view',
+      enforcementEnabled: true,
+      authorised: true
+    })
+    return h.continue
+  }
+  logPermissionEvent({
+    request,
+    grantCode,
+    permission: 'view',
+    enforcementEnabled: true,
+    authorised: false
+  })
+  auditUnauthorisedAccess(request, { reason: 'view-only', permission: 'view', path: request.params.path, grantCode })
+  throw forbidden('Insufficient permissions')
+}
+
+/**
+ * Builds the redirect that sends an amend-only user away from a submit action
+ * to the "cannot submit" page, returning them to the application afterwards.
+ * @param {import('../types.js').PipelineRequest} request - The Hapi request object.
+ * @param {import('@hapi/hapi').ResponseToolkit} h - The Hapi response toolkit.
+ * @returns {import('@hapi/hapi').Lifecycle.ReturnValue} A takeover redirect.
+ */
+function redirectCannotSubmitUser(request, h) {
+  const basePath = request.params.slug ? `/${request.params.slug}` : ''
+  const model = request.app.model
+  if (!model) {
+    throw forbidden('Form model missing')
+  }
+  const returnTo = getReturnToApplicationPath(model, basePath)
+  const redirectUrl = `/cannot-submit?returnUrl=${encodeURIComponent(returnTo.href)}&returnText=${encodeURIComponent(returnTo.text)}`
+  return h.redirect(redirectUrl).takeover()
 }
 
 /**
@@ -120,17 +198,8 @@ export function enforcePagePermission(request, h, context) {
   const resource = getPermissionResource(request)
   const requiredPermission = getRequiredPermission(request)
 
-  // assuming all pages that require 'view' permission are post-submission pages
-  if (requiredPermission === 'view' && !isSubmittedApplication(context)) {
-    logPermissionEvent({
-      request,
-      grantCode,
-      permission: 'view',
-      enforcementEnabled: true,
-      authorised: false
-    })
-
-    throw forbidden('Application not submitted')
+  if (isViewOnlyUser(request, resource)) {
+    return handleViewOnlyUser(request, h, context, grantCode)
   }
 
   if (request.can(requiredPermission, resource)) {
@@ -153,14 +222,7 @@ export function enforcePagePermission(request, h, context) {
       enforcementEnabled: true,
       authorised: false
     })
-    const basePath = request.params.slug ? `/${request.params.slug}` : ''
-    const model = request.app.model
-    if (!model) {
-      throw forbidden('Form model missing')
-    }
-    const returnUrl = getReturnToApplicationPath(model, basePath)
-    const redirectUrl = returnUrl ? `/cannot-submit?returnUrl=${encodeURIComponent(returnUrl)}` : '/cannot-submit'
-    return h.redirect(redirectUrl).takeover()
+    return redirectCannotSubmitUser(request, h)
   }
 
   logPermissionEvent({
@@ -171,6 +233,12 @@ export function enforcePagePermission(request, h, context) {
     authorised: false
   })
 
+  auditUnauthorisedAccess(request, {
+    reason: 'insufficient-permission',
+    permission: requiredPermission,
+    path: request.params.path,
+    grantCode
+  })
   throw forbidden('Insufficient permissions')
 }
 

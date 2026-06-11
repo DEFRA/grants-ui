@@ -43,55 +43,84 @@ export const mapEnvironment = (cdpEnvironment) => {
 }
 
 /**
- * Builds an FCP Audit event for a signed-in user successfully starting a grant
- * (loading its start page). Optional identity fields are only included when
- * known so the publisher doesn't receive `undefined` values.
+ * Builds the schema's `accounts` block from whichever identity claims are
+ * present on the credentials, omitting any that are missing so the publisher
+ * never receives `undefined` values.
+ * @param {Record<string, unknown>} credentials
+ * @returns {Record<string, string>}
+ */
+const buildAccounts = (credentials) => {
+  /** @type {Record<string, string>} */
+  const accounts = {}
+  for (const key of ['crn', 'sbi', 'organisationId']) {
+    const value = credentials[key]
+    if (value) {
+      accounts[key] = /** @type {string} */ (value)
+    }
+  }
+  return accounts
+}
+
+/**
+ * @typedef {object} AuditEventOptions
+ * @property {string} action - The verb describing what happened (e.g. `start`,
+ *   `submit`, `resubmit`, `navigate`, `unauthorised`). Lowercased, max 120 chars.
+ * @property {string} [entity] - The entity type. Defaults to `application`.
+ * @property {string} [entityid] - The entity identifier. Defaults to the grant
+ *   slug (`request.params.slug`).
+ * @property {string} [status] - The outcome. Defaults to `success`.
+ * @property {Record<string, unknown>} [details] - Free-form context for the
+ *   schema's `audit.details` object (e.g. grant code, page path, denial reason,
+ *   question/answer index).
+ */
+
+/**
+ * Resolves the entity type and identifier from caller options, applying the
+ * same defaults that `buildAuditEvent` embeds in the published event. Export
+ * this so callers that need the resolved values for logging (e.g.
+ * `makeSendAuditEvent`) can derive them from a single source rather than
+ * duplicating the default logic.
+ * @param {AuditEventOptions} opts
  * @param {import('@hapi/hapi').Request} request
+ * @returns {{ entity: string, entityid: string | undefined }}
+ */
+export const resolveAuditEntityFields = (opts, request) => ({
+  entity: opts.entity ?? 'application',
+  entityid: opts.entityid ?? request.params.slug
+})
+
+/**
+ * Builds an FCP Audit event for a signed-in user's action against a grant.
+ * The `action` (and optional `status`/`entityid`/`details`) describe what
+ * happened; optional identity fields are only included when known so the
+ * publisher doesn't receive `undefined` values.
+ * @param {import('@hapi/hapi').Request} request
+ * @param {AuditEventOptions} opts
  * @returns {Record<string, unknown>}
  */
-export const buildAuditEventForGrantAccess = (request) => {
+export const buildAuditEvent = (request, opts) => {
+  const { action, status = 'success', details } = opts
+  const { entity, entityid } = resolveAuditEntityFields(opts, request)
   const credentials = request.auth.credentials
   const contactId = /** @type {string | undefined} */ (credentials.contactId)
   const sessionId = /** @type {string | undefined} */ (credentials.sessionId)
-  const crn = /** @type {string | undefined} */ (credentials.crn)
-  const sbi = /** @type {string | undefined} */ (credentials.sbi)
-  const organisationId = /** @type {string | undefined} */ (credentials.organisationId)
 
   const correlationid = request.headers[config.get('tracing.header')]
   const ip = sanitiseIp(getClientIp(request.headers['x-forwarded-for']) || request.info.remoteAddress)
 
-  /** @type {Record<string, string>} */
-  const accounts = {}
-  if (crn) {
-    accounts.crn = crn
-  }
-  if (sbi) {
-    accounts.sbi = sbi
-  }
-  if (organisationId) {
-    accounts.organisationId = organisationId
-  }
+  const accounts = buildAccounts(credentials)
 
-  /** @type {Record<string, unknown>} */
-  const event = {
+  return {
     datetime: new Date().toISOString(),
     ip,
     audit: {
-      entities: [{ entity: 'application', action: 'read', entityid: request.params.slug }],
-      status: 'success',
-      ...(Object.keys(accounts).length > 0 && { accounts })
-    }
+      entities: [{ entity, action, entityid }],
+      status,
+      ...(Object.keys(accounts).length > 0 && { accounts }),
+      ...(details && { details })
+    },
+    ...(contactId && { user: `IDM/${contactId}` }),
+    ...(sessionId && { sessionid: sessionId }),
+    ...(correlationid && { correlationid })
   }
-
-  if (contactId) {
-    event.user = `IDM/${contactId}`
-  }
-  if (sessionId) {
-    event.sessionid = sessionId
-  }
-  if (correlationid) {
-    event.correlationid = correlationid
-  }
-
-  return event
 }
