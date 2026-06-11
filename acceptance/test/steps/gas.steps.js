@@ -65,6 +65,22 @@ Then(
   }
 )
 
+Then('the GAS submission should contain applicant business address', async function (dataTable) {
+  if (!referenceNumbers.current) {
+    throw new Error('No reference number stored by earlier step')
+  }
+
+  const request = await Gas.getApplicationSubmission(referenceNumbers.current)
+  expect(request).not.toBeNull()
+
+  const actualAddress = request.body.json.answers.applicant?.business?.address
+  expect(actualAddress).not.toBeNull()
+
+  for (const [field, expectedValue] of dataTable.raw()) {
+    expect(actualAddress[field]).toEqual(expectedValue)
+  }
+})
+
 Then('the GAS submission should be valid against the {string} schema', async function (schemaName) {
   if (!referenceNumbers.current) {
     throw new Error('No reference number stored by earlier step')
