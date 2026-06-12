@@ -109,6 +109,8 @@ services:
         condition: service_healthy
       mongodb:
         condition: service_healthy
+      mongo-ready:
+        condition: service_healthy
     ports:
       - '3001:3001'
     env_file:
@@ -132,16 +134,18 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:3001/health']
-      interval: 30s
+      interval: 10s
       timeout: 10s
-      retries: 3
-      start_period: 40s
+      retries: 10
+      start_period: 60s
 
   grants-ui-config-api:
     image: defradigital/grants-ui-config-api
     pull_policy: always
     depends_on:
       mongodb:
+        condition: service_healthy
+      mongo-ready:
         condition: service_healthy
       localstack:
         condition: service_healthy
@@ -297,12 +301,25 @@ services:
   mongo-ready:
     image: mongo:7.0
     networks: [grants-ui-net]
+    depends_on:
+      mongodb:
+        condition: service_healthy
     environment:
       PRIMARY: 'mongodb:27017'
       REPLSET: 'mongoRepl'
     volumes:
       - ./scripts/wait-for-replicaset.sh:/wait-for-replicaset.sh:ro
     entrypoint: ['/bin/bash', '/wait-for-replicaset.sh']
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'mongosh "mongodb://mongodb:27017/?directConnection=true" --quiet --eval "db.hello().isWritablePrimary" | grep -q true'
+        ]
+      interval: 5s
+      timeout: 10s
+      retries: 30
+      start_period: 5s
 
   localstack:
     image: localstack/localstack:4.14.0
