@@ -63,8 +63,9 @@ const buildAccounts = (credentials) => {
 
 /**
  * @typedef {object} AuditEventOptions
- * @property {string} action - The verb describing what happened (e.g. `start`,
- *   `submit`, `resubmit`, `navigate`, `unauthorised`). Lowercased, max 120 chars.
+ * @property {string} action - The verb describing what happened (e.g.
+ *   `authorised`, `submit`, `resubmit`, `navigate`, `unauthorised`). Lowercased,
+ *   max 120 chars.
  * @property {string} [entity] - The entity type. Defaults to `application`.
  * @property {string} [entityid] - The entity identifier. Defaults to the grant
  *   slug (`request.params.slug`).
@@ -101,7 +102,7 @@ export const resolveAuditEntityFields = (opts, request) => ({
 export const buildAuditEvent = (request, opts) => {
   const { action, status = 'success', details } = opts
   const { entity, entityid } = resolveAuditEntityFields(opts, request)
-  const credentials = request.auth.credentials
+  const credentials = request.auth.credentials ?? {}
   const contactId = /** @type {string | undefined} */ (credentials.contactId)
   const sessionId = /** @type {string | undefined} */ (credentials.sessionId)
 

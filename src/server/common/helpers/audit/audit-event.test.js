@@ -42,7 +42,17 @@ const buildRequest = (overrides = {}) => ({
   ...overrides
 })
 
-const START = { action: 'start' }
+const fullIdentityRequest = () =>
+  buildRequest({
+    headers: { 'x-cdp-request-id': 'corr-1', 'x-forwarded-for': CLIENT_IPV4 },
+    auth: {
+      isAuthenticated: true,
+      credentials: { contactId: 'c1', sessionId: 's1', crn: 'crn1', sbi: 'sbi1', organisationId: 'org1' }
+    }
+  })
+
+const START = { action: 'authorised' }
+const UNAUTHORISED = { action: 'unauthorised', status: 'denied', details: { reason: 'not-authenticated' } }
 
 describe('mapEnvironment', () => {
   test.each([
@@ -59,13 +69,7 @@ describe('mapEnvironment', () => {
 
 describe('buildAuditEvent', () => {
   test('builds a full event when all identity fields are present', () => {
-    const request = buildRequest({
-      headers: { 'x-cdp-request-id': 'corr-1', 'x-forwarded-for': CLIENT_IPV4 },
-      auth: {
-        isAuthenticated: true,
-        credentials: { contactId: 'c1', sessionId: 's1', crn: 'crn1', sbi: 'sbi1', organisationId: 'org1' }
-      }
-    })
+    const request = fullIdentityRequest()
 
     const event = buildAuditEvent(request, START)
 
@@ -75,7 +79,7 @@ describe('buildAuditEvent', () => {
       sessionid: 's1',
       correlationid: 'corr-1',
       audit: {
-        entities: [{ entity: 'application', action: 'start', entityid: 'my-grant' }],
+        entities: [{ entity: 'application', action: 'authorised', entityid: 'my-grant' }],
         status: 'success',
         accounts: { crn: 'crn1', sbi: 'sbi1', organisationId: 'org1' }
       }
@@ -94,6 +98,22 @@ describe('buildAuditEvent', () => {
     expect(event.ip).toBe(REMOTE_IPV4)
   })
 
+  test('tolerates absent credentials (unauthenticated arrival) and omits identity fields', () => {
+    const request = buildRequest({ auth: { isAuthenticated: false, credentials: null } })
+
+    const event = buildAuditEvent(request, UNAUTHORISED)
+
+    expect(event).not.toHaveProperty('user')
+    expect(event).not.toHaveProperty('sessionid')
+    expect(event.audit).not.toHaveProperty('accounts')
+    expect(event.ip).toBe(REMOTE_IPV4)
+    expect(event.audit).toMatchObject({
+      entities: [{ entity: 'application', action: 'unauthorised', entityid: 'my-grant' }],
+      status: 'denied',
+      details: { reason: 'not-authenticated' }
+    })
+  })
+
   test('includes only the account identifiers that are present', () => {
     const request = buildRequest({
       auth: { isAuthenticated: true, credentials: { crn: 'crn1' } }
@@ -107,7 +127,7 @@ describe('buildAuditEvent', () => {
   test('defaults entity to "application", status to "success" and entityid to the grant slug', () => {
     const event = buildAuditEvent(buildRequest({ params: { slug: 'another-grant' } }), START)
 
-    expect(event.audit.entities[0]).toEqual({ entity: 'application', action: 'start', entityid: 'another-grant' })
+    expect(event.audit.entities[0]).toEqual({ entity: 'application', action: 'authorised', entityid: 'another-grant' })
     expect(event.audit.status).toBe('success')
     expect(event.audit).not.toHaveProperty('details')
   })
@@ -145,6 +165,12 @@ describe('buildAuditEvent', () => {
       expect(buildAuditEvent(buildRequest(), START).ip).toBe(REMOTE_IPV4)
     })
 
+    test('yields an empty string when neither x-forwarded-for nor remoteAddress is present', () => {
+      const request = buildRequest({ info: { remoteAddress: undefined } })
+
+      expect(buildAuditEvent(request, START).ip).toBe('')
+    })
+
     test('strips an IPv4 :port', () => {
       const request = buildRequest({ headers: { 'x-forwarded-for': `${CLIENT_IPV4}:5678` } })
 
@@ -166,13 +192,7 @@ describe('buildAuditEvent', () => {
 
   describe('schema conformance', () => {
     test('with publisher defaults applied, the event passes the real validateAuditEvent', () => {
-      const request = buildRequest({
-        headers: { 'x-cdp-request-id': 'corr-1', 'x-forwarded-for': CLIENT_IPV4 },
-        auth: {
-          isAuthenticated: true,
-          credentials: { contactId: 'c1', sessionId: 's1', crn: 'crn1', sbi: 'sbi1', organisationId: 'org1' }
-        }
-      })
+      const request = fullIdentityRequest()
 
       // Mirror the defaults publishAuditEvent injects from publisherConfig.
       const published = {
@@ -180,7 +200,7 @@ describe('buildAuditEvent', () => {
         application: 'Grants',
         component: 'grants-ui',
         environment: 'cdp-test',
-        ...buildAuditEvent(request, { action: 'start', details: { grantCode: 'my-grant' } })
+        ...buildAuditEvent(request, { action: 'authorised', details: { grantCode: 'my-grant' } })
       }
 
       const result = validateAuditEvent(published)

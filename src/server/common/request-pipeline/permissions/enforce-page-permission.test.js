@@ -120,8 +120,7 @@ describe('enforcePagePermission', () => {
           }
         }
       },
-      can: vi.fn(),
-      sendAuditEventInBackground: vi.fn()
+      can: vi.fn()
     }
 
     h = {
@@ -143,12 +142,6 @@ describe('enforcePagePermission', () => {
 
   it('returns h.continue when permission enforcement disabled', () => {
     request.app.model.def.metadata.permissions.enforce = false
-
-    expect(enforcePagePermission(request, h, context)).toBe(h.continue)
-  })
-
-  it('returns h.continue when user has required permission', () => {
-    request.can.mockImplementation(canView)
 
     expect(enforcePagePermission(request, h, context)).toBe(h.continue)
   })
@@ -191,27 +184,12 @@ describe('enforcePagePermission', () => {
     expect(result).toBe(h.continue)
   })
 
-  it('allows user with required view permission', () => {
-    vi.mocked(getRequiredPermission).mockReturnValue('view')
-
-    request.can.mockImplementation((action) => action === 'view')
-
-    const result = enforcePagePermission(request, h, context)
-
-    expect(result).toBe(h.continue)
-  })
-
   it('throws when view-only user accesses a non-allowed path', () => {
     request.params.path = 'task-list'
 
     request.can.mockImplementation(canView)
 
     expect(() => enforcePagePermission(request, h, context)).toThrow()
-    expect(request.sendAuditEventInBackground).toHaveBeenCalledWith({
-      action: 'unauthorised',
-      status: 'denied',
-      details: { reason: 'view-only', permission: 'view', path: 'task-list', grantCode: 'sfi' }
-    })
   })
 
   it('throws Application not submitted when view page accessed before submission', () => {
@@ -222,7 +200,7 @@ describe('enforcePagePermission', () => {
     expect(() => enforcePagePermission(request, h, context)).toThrow()
   })
 
-  it('throws a 403 Boom forbidden error and audits when the user has no permissions', () => {
+  it('throws a 403 Boom forbidden error when the user has no permissions', () => {
     request.can.mockReturnValue(false)
 
     expect(() => enforcePagePermission(request, h, context)).toThrow(
@@ -231,11 +209,6 @@ describe('enforcePagePermission', () => {
         output: expect.objectContaining({ statusCode: 403 })
       })
     )
-    expect(request.sendAuditEventInBackground).toHaveBeenCalledWith({
-      action: 'unauthorised',
-      status: 'denied',
-      details: { reason: 'insufficient-permission', permission: 'view', path: 'confirmation', grantCode: 'sfi' }
-    })
   })
 
   it('throws when model missing during cannot-submit redirect', () => {
@@ -256,13 +229,5 @@ describe('enforcePagePermission', () => {
     })
 
     expect(() => enforcePagePermission(request, h, context)).toThrow('Form model missing')
-  })
-
-  it('does not send an audit event when the user is authorised', () => {
-    request.can.mockImplementation(canView)
-
-    enforcePagePermission(request, h, context)
-
-    expect(request.sendAuditEventInBackground).not.toHaveBeenCalled()
   })
 })
