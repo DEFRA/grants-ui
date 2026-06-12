@@ -167,13 +167,15 @@ The component tracks an internal `_state`:
 The JS bundle is built by webpack into `.public/javascripts/parcel-map.js`. The template loads it as an ES module in `{% block bodyEnd %}`:
 
 ```html
-<script type="module" nonce="{{ cspNonce }}" src="/public/javascripts/parcel-map.js"></script>
+<script type="module" nonce="{{ cspNonce }}" src="{{ getAssetPath('parcel-map.js') }}"></script>
 ```
 
-The `@defra/interactive-map` CSS must also be loaded. It is copied by webpack's CopyPlugin to `.public/stylesheets/interactive-map.css` and served via an explicit route in `serve-static-files.js`. The template loads it in `{% block head %}`:
+In production webpack outputs a content-hashed filename (`parcel-map.[contenthash:7].min.js`). `getAssetPath` resolves the correct path via `assets-manifest.json`, so the reference stays valid across deployments.
+
+The `@defra/interactive-map` CSS must also be loaded. It is copied by webpack's CopyPlugin and served via an explicit route in `serve-static-files.js`. The template loads it in `{% block head %}`:
 
 ```html
-<link rel="stylesheet" href="/public/stylesheets/interactive-map.css" />
+<link rel="stylesheet" href="{{ getAssetPath('stylesheets/interactive-map.css') }}" />
 ```
 
 > **Note for Docker:** `webpack.config.js` is not volume-mounted. After changing it, run `npm run docker:rebuild && npm run docker:up` to rebuild the image.
