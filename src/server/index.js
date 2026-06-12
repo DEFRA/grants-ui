@@ -247,6 +247,12 @@ export async function createServer() {
     expiresIn: config.get('session.cookie.cache.ttl')
   })
 
+  server.app['userSessionIndex'] = server.cache({
+    cache: config.get(SESSION_CACHE_NAME),
+    segment: 'user-session-index',
+    expiresIn: config.get('session.cookie.cache.ttl')
+  })
+
   server.ext('onPreResponse', catchAll)
 
   return server

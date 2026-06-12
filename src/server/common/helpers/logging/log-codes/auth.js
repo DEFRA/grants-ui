@@ -83,5 +83,10 @@ export const AUTH = {
     level: 'error',
     messageFunc: (messageOptions) =>
       `Invalid OAuth state provided | reason=${messageOptions.reason} | storedStatePresent=${messageOptions.storedStatePresent}`
+  },
+  SESSION_INVALIDATED: {
+    level: 'info',
+    messageFunc: (messageOptions) =>
+      `Previous session invalidated for user=${messageOptions.userId}, previousSessionId=${messageOptions.previousSessionId}, newSessionId=${messageOptions.newSessionId}`
   }
 }

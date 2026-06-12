@@ -29,6 +29,11 @@ declare module '@hapi/hapi' {
       set: (key: string, value: unknown, ttl?: number) => Promise<void>
       drop: (key: string) => Promise<void>
     }
+    userSessionIndex: {
+      get: (key: string) => Promise<string | null>
+      set: (key: string, value: string, ttl?: number) => Promise<void>
+      drop: (key: string) => Promise<void>
+    }
   }
 
   // Mirrors @defra/forms-engine-plugin's augmentation, which our tsc can't
