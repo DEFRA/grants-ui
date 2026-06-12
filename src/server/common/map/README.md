@@ -175,7 +175,7 @@ In production webpack outputs a content-hashed filename (`parcel-map.[contenthas
 The `@defra/interactive-map` CSS must also be loaded. It is copied by webpack's CopyPlugin and served via an explicit route in `serve-static-files.js`. The template loads it in `{% block head %}`:
 
 ```html
-<link rel="stylesheet" href="{{ getAssetPath('stylesheets/interactive-map.css') }}">
+<link rel="stylesheet" href="{{ getAssetPath('stylesheets/interactive-map.css') }}" />
 ```
 
 > **Note for Docker:** `webpack.config.js` is not volume-mounted. After changing it, run `npm run docker:rebuild && npm run docker:up` to rebuild the image.
