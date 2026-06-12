@@ -220,6 +220,18 @@ The service supports several specialized page types for different stages of the 
   - `continueText` – optional override for the continue-button label (defaults to `Continue`).
 - **Example**: [Woodland – `incorrectDetailsContent`](./src/server/common/forms/definitions/woodland.yaml#L173-L182)
 
+### Land Parcel Map Pages
+
+- **Purpose**: Interactive map for selecting land parcels from a user's registered holding
+- **Features**:
+  - Single or multi-parcel selection
+  - MapLibre GL vector tile rendering
+  - Parcel ID and area display via tooltip
+  - Selected parcel IDs written to session state for downstream pages
+- **Controllers**: `MapSelectPageController`
+- **Full developer guide**: [src/server/common/map/README.md](./src/server/common/map/README.md)
+- **Example**: [Example Grant with Map journey](./src/server/common/forms/definitions/example-grant-with-map.yaml)
+
 ### Conditional Pages
 
 - **Purpose**: Show content based on previous answers
@@ -227,6 +239,25 @@ The service supports several specialized page types for different stages of the 
   - Conditional logic
   - Dynamic content display
 - **Example**: [Example Grant – Conditional page (/conditional-page)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L194-L207)
+
+### Landing Pages
+
+- **Purpose**: "Off-journey" interstitial pages that sit outside the normal page walk and are reached only via a status redirect (a `grantRedirectRule`) or a direct link — for example an "Application reopened" page shown before sending the user into their existing answers.
+- **Why use them**: They let you surface contextual information about the state of an application (e.g. its GAS/Grants status) before the user continues into a journey page, without inserting an extra step into the standard forward navigation. Because they are positioned after the final journey page, the default V2 page walk never reaches them, so they only appear when a redirect rule or link points at them.
+- **Features**:
+  - Onward navigation resolved from the page's own `next:` links (with conditions honoured), instead of the default page-order walk; falls back to the form start page when no link matches.
+  - Back link suppressed (there is no meaningful previous page).
+  - Submit button label pinned to "Continue", overriding any form-wide `submitButtonText`.
+  - Save and exit disabled.
+- **Controller**: `LandingPageController`
+- **Configuration**:
+  - Add a page near the end of the form definition (after the final journey page) with `controller: LandingPageController`.
+  - Give the page a `path` (e.g. `/reopened`) and any guidance components you want to show.
+  - Add `next:` links pointing at where "Continue" should take the user (e.g. `- path: /summary`); add a `condition` on a link to route differently based on state.
+  - Point a `grantRedirectRule` at the page's path (e.g. `toGrantsStatus: REOPENED`, `toPath: /reopened`) so the page is entered when the application reaches that status. See [Authentication & Security / Architecture docs](./ARCHITECTURE.md) and the `grantRedirectRules` blocks in the example grants for redirect configuration.
+- **Examples**:
+  - [Example Grant with Task List (hide questions) – `/reopened` landing page](./src/server/common/forms/definitions/example-grant-with-task-list-hide-questions.yaml#L339-L356) plus its [`postSubmission` redirect rule](./src/server/common/forms/definitions/example-grant-with-task-list-hide-questions.yaml#L44-L59)
+  - [Example Grant with Auth – `/reopened` landing page](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L899-L916) plus its [`postSubmission` redirect rule](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L26-L41)
 
 ## Guidance Components
 

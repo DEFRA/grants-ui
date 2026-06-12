@@ -30,7 +30,7 @@ fi
 
 rm -fr localstack/config-broker-local
 
-EXAMPLE_TAG=$(curl -s https://api.github.com/repos/DEFRA/grant-config-example-grants/tags | jq -r '.[0].name')
+EXAMPLE_TAG=$(curl -s https://api.github.com/repos/DEFRA/grants-config-example-grants/tags | jq -r '.[0].name')
 
 if [ -z "$EXAMPLE_TAG" ]; then
   echo "Error: Could not fetch example-grant-with-auth tag"
@@ -44,15 +44,15 @@ else
   echo "Using version $EXAMPLE_TAG of the config for example-grant-with-auth"
 
   mkdir -p localstack/config-broker-local/example-grant-with-auth@$EXAMPLE_TAG
-  curl -L https://raw.githubusercontent.com/DEFRA/grant-config-example-grants/$EXAMPLE_TAG/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml -o localstack/config-broker-local/example-grant-with-auth@$EXAMPLE_TAG/example-grant-with-auth.yaml
+  curl -L https://raw.githubusercontent.com/DEFRA/grants-config-example-grants/$EXAMPLE_TAG/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml -o localstack/config-broker-local/example-grant-with-auth@$EXAMPLE_TAG/example-grant-with-auth.yaml
   sed "s/^version:.*/version: $EXAMPLE_TAG/" localstack/config-broker/release.yml > localstack/config-broker-local/release.yml
 fi
 
 echo "Fetching example-grant-with-auth submission schema at version $EXAMPLE_TAG"
 mkdir -p acceptance/schemas
-curl -fL "https://raw.githubusercontent.com/DEFRA/grant-config-example-grants/$EXAMPLE_TAG/example-grant-with-auth/grants-ui/example-grant-with-auth-submission.schema.json" -o acceptance/schemas/example-grant-with-auth-submission.schema.json
+curl -fL "https://raw.githubusercontent.com/DEFRA/grants-config-example-grants/$EXAMPLE_TAG/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth-submission.schema.json" -o acceptance/schemas/example-grant-with-auth-submission.schema.json
 
-WOODLAND_TAG=$(curl -s https://api.github.com/repos/DEFRA/grant-config-woodland/tags | jq -r '.[0].name')
+WOODLAND_TAG=$(curl -s https://api.github.com/repos/DEFRA/grants-config-woodland/tags | jq -r '.[0].name')
 
 if [ -z "$WOODLAND_TAG" ]; then
   echo "Error: Could not fetch woodland tag"
@@ -61,7 +61,7 @@ fi
 
 echo "Fetching woodland GAS schema at version $WOODLAND_TAG"
 mkdir -p woodland-grant-journey-tests-schemas
-curl -fL "https://raw.githubusercontent.com/DEFRA/grant-config-woodland/$WOODLAND_TAG/woodland/gas/gas.json" -o woodland-grant-journey-tests-schemas/gas.schema.json
+curl -fL "https://raw.githubusercontent.com/DEFRA/grants-config-woodland/$WOODLAND_TAG/configurations/woodland/gas/gas.json" -o woodland-grant-journey-tests-schemas/gas.schema.json
 
 COMPOSE_COMMAND='docker compose -f compose.yml -f compose.ha.yml -f compose.land-grants.yml -f compose.ci.yml'
 echo "Running pre-emptive volume cleanse..."

@@ -33,6 +33,15 @@ When('(the user )selects the following', async function (dataTable) {
   }
 })
 
+When('(the user )selects the first item', async function () {
+  const checked = this.page.locator("//input[@type='checkbox'][@checked]")
+  const count = await checked.count()
+  for (let i = 0; i < count; i++) {
+    await checked.nth(i).click()
+  }
+  await this.page.locator("//input[@type='checkbox']").first().click()
+})
+
 When('(the user )continues', async function () {
   await this.page.getByRole('button', { name: 'Continue' }).click()
 })

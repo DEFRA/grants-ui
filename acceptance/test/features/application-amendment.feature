@@ -197,6 +197,12 @@ Feature: Application Amendment
         And the user starts a new browser session
         And navigates to "/example-grant-with-auth/yes-no-field"
         And logs in as CRN "1100964517"
+
+        # reopened landing page
+        Then the user should be at URL "reopened"
+        When the user continues
+
+        # summary
         Then the user should be at URL "summary"
         And the grants-ui application status for CRN "1100964517" and SBI "115482347" and grant "example-grant-with-auth" should be "REOPENED"
 
@@ -286,6 +292,12 @@ Feature: Application Amendment
         And the user starts a new browser session
         And navigates to "/example-grant-with-auth/yes-no-field"
         And logs in as CRN "1100964517"
+
+        # reopened landing page
+        Then the user should be at URL "reopened"
+        When the user continues
+
+        # summary
         Then the user should be at URL "summary"
         And the grants-ui application status for CRN "1100964517" and SBI "115482347" and grant "example-grant-with-auth" should be "REOPENED"
 
