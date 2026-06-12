@@ -255,7 +255,9 @@ The service supports several specialized page types for different stages of the 
   - Give the page a `path` (e.g. `/reopened`) and any guidance components you want to show.
   - Add `next:` links pointing at where "Continue" should take the user (e.g. `- path: /summary`); add a `condition` on a link to route differently based on state.
   - Point a `grantRedirectRule` at the page's path (e.g. `toGrantsStatus: REOPENED`, `toPath: /reopened`) so the page is entered when the application reaches that status. See [Authentication & Security / Architecture docs](./ARCHITECTURE.md) and the `grantRedirectRules` blocks in the example grants for redirect configuration.
-- **Example**: [Example Grant with Task List (hide questions) – `/reopened` landing page](./src/server/common/forms/definitions/example-grant-with-task-list-hide-questions.yaml#L339-L356) plus its [`postSubmission` redirect rule](./src/server/common/forms/definitions/example-grant-with-task-list-hide-questions.yaml#L44-L59)
+- **Examples**:
+  - [Example Grant with Task List (hide questions) – `/reopened` landing page](./src/server/common/forms/definitions/example-grant-with-task-list-hide-questions.yaml#L339-L356) plus its [`postSubmission` redirect rule](./src/server/common/forms/definitions/example-grant-with-task-list-hide-questions.yaml#L44-L59)
+  - [Example Grant with Auth – `/reopened` landing page](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L899-L916) plus its [`postSubmission` redirect rule](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L26-L41)
 
 ## Guidance Components
 
