@@ -8,17 +8,6 @@ import { getGrantCode } from '../../helpers/grant-code.js'
 const VIEW_ONLY_ALLOWED_PATHS = new Set(['confirmation', 'print-submitted-application'])
 
 /**
- * Publishes an FCP Audit event recording an unauthorised attempt to access a
- * restricted page.
- * @param {import('../types.js').PipelineRequest} request
- * @param {Record<string, unknown>} details - Context for `audit.details`.
- * @returns {void}
- */
-function auditUnauthorisedAccess(request, details) {
-  request.sendAuditEventInBackground({ action: 'unauthorised', status: 'denied', details })
-}
-
-/**
  * Determines whether the current user can amend an application
  * but is not permitted to submit it.
  *
@@ -99,7 +88,7 @@ export function isAllowedViewOnlyPath(path) {
 
 /**
  * Handles a view-only user: allows the confirmation/print pages of a submitted
- * application through, otherwise logs the denial, audits it and throws 403.
+ * application through, otherwise logs the denial and throws 403.
  * @param {import('../types.js').PipelineRequest} request - The Hapi request object.
  * @param {import('@hapi/hapi').ResponseToolkit} h - The Hapi response toolkit.
  * @param {FormContext} context - The context object which may contain form state.
@@ -124,7 +113,6 @@ function handleViewOnlyUser(request, h, context, grantCode) {
     enforcementEnabled: true,
     authorised: false
   })
-  auditUnauthorisedAccess(request, { reason: 'view-only', permission: 'view', path: request.params.path, grantCode })
   throw forbidden('Insufficient permissions')
 }
 
@@ -233,12 +221,6 @@ export function enforcePagePermission(request, h, context) {
     authorised: false
   })
 
-  auditUnauthorisedAccess(request, {
-    reason: 'insufficient-permission',
-    permission: requiredPermission,
-    path: request.params.path,
-    grantCode
-  })
   throw forbidden('Insufficient permissions')
 }
 
