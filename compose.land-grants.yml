@@ -5,6 +5,10 @@ x-common-postgres: &common-postgres
   POSTGRES_USER: ${POSTGRES_USER:-land_grants_api}
 
 services:
+  localstack:
+    volumes:
+      - ./localstack/start-localstack-land-grants.sh:/etc/localstack/init/ready.d/start-localstack-land-grants.sh
+
   grants-ui:
     environment:
       LAND_GRANTS_API_URL: http://land-grants-backend:3009
@@ -31,6 +35,8 @@ services:
     platform: linux/amd64
     image: defradigital/land-grants-api:latest
     pull_policy: always
+    env_file:
+      - 'localstack/aws.env'
     environment:
       <<: *common-postgres
       PORT: 3009
@@ -39,10 +45,17 @@ services:
       POSTGRES_HOST: land-grants-backend-postgres
       LAND_GRANTS_AUTH_TOKEN: ${LAND_GRANTS_API_AUTH_TOKEN:-auth_token}
       LAND_GRANTS_ENCRYPTION_KEY: ${LAND_GRANTS_API_ENCRYPTION_KEY:-encryption_key}
+      AWS_ENDPOINT_URL: http://localstack:4566
+      GRANTS_CONFIG_QUEUE_URL: http://localstack:4566/000000000000/grants_config_broker_update
+      GRANTS_CONFIG_BUCKET: configs-bucket
+      SQS_ENDPOINT: http://localstack:4566
+      S3_ENDPOINT: http://localstack:4566
     ports:
       - 3009:3009
     depends_on:
       land-grants-backend-postgres:
+        condition: service_healthy
+      localstack:
         condition: service_healthy
     networks:
       - grants-ui-net

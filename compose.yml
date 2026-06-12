@@ -73,6 +73,7 @@ services:
       ENABLE_LAND_GRANT_SSSI_20260122: ${ENABLE_LAND_GRANT_SSSI_20260122:-true}
       ENABLE_LAND_GRANT_HEFER_20260219: ${ENABLE_LAND_GRANT_HEFER_20260219:-true}
       LAND_GRANTS_ENABLED_ACTIONS: ${LAND_GRANTS_ENABLED_ACTIONS:-CMOR1,UPL1,UPL2,UPL3,UPL8,UPL10,CLIG3}
+      MAP_MOCK_DATA_ENABLED: ${MAP_MOCK_DATA_ENABLED:-true}
       CONFIG_API_URL: '${CONFIG_API_URL:-http://grants-ui-config-api:3011}'
       CONFIG_API_JWT_SECRET: ${CONFIG_API_JWT_SECRET:-forms-config-jwt-secret}
       CONFIG_API_JWT_EXPIRY: ${CONFIG_API_JWT_EXPIRY:-1h}
@@ -104,10 +105,14 @@ services:
     image: defradigital/grants-ui-backend
     pull_policy: always
     depends_on:
+      localstack:
+        condition: service_healthy
       mongodb:
         condition: service_healthy
     ports:
       - '3001:3001'
+    env_file:
+      - 'localstack/aws.env'
     environment:
       PORT: 3001
       HOST: 0.0.0.0
@@ -117,6 +122,11 @@ services:
       GRANTS_UI_BACKEND_ENCRYPTION_KEY: ${GRANTS_UI_BACKEND_ENCRYPTION_KEY:-encryption_key}
       APPLICATION_LOCK_TOKEN_SECRET: ${APPLICATION_LOCK_TOKEN_SECRET:-dev-lock-secret}
       APPLICATION_LOCK_TTL_MS: ${APPLICATION_LOCK_TTL_MS:-14400000}
+      AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL:-http://localstack:4566}
+      CONFIG_BROKER_BASE_URL: http://grants-config-broker:3012
+      GRANTS_CONFIG_BROKER_AUTH_TOKEN: '${GRANTS_CONFIG_BROKER_AUTH_TOKEN:-config-broker-auth-token}'
+      GRANTS_CONFIG_BROKER_ENCRYPTION_KEY: '${GRANTS_CONFIG_BROKER_ENCRYPTION_KEY:-config-broker-encryption-key}'
+      CONFIG_INGEST_SQS_QUEUE_URL: http://localstack:4566/000000000000/grants_ui_backend__sqs__config_updates
     networks:
       - grants-ui-net
     restart: unless-stopped
@@ -151,7 +161,7 @@ services:
       GRANTS_CONFIG_BROKER_URL: '${CONFIG_BROKER_URL:-http://grants-config-broker:3012}'
       GRANTS_CONFIG_BROKER_AUTH_TOKEN: '${CONFIG_BROKER_AUTH_TOKEN:-config-broker-auth-token}'
       GRANTS_CONFIG_BROKER_ENCRYPTION_KEY: '${CONFIG_BROKER_ENCRYPTION_KEY:-config-broker-encryption-key}'
-      FORMS_API_SLUGS: ${FORMS_API_SLUGS:-example-grant-with-auth}
+      FORMS_API_SLUGS: ${FORMS_API_SLUGS:-example-grant-with-auth,example-grant-with-map}
       DEFAULT_FORM_ORGANISATION: ${DEFAULT_FORM_ORGANISATION:-Defra}
       DEFAULT_FORM_TEAM_NAME: ${DEFAULT_FORM_TEAM_NAME:-Digital Delivery}
       DEFAULT_FORM_TEAM_EMAIL: '${DEFAULT_FORM_TEAM_EMAIL:-digitaldelivery@defra.gov.uk}'
@@ -181,12 +191,13 @@ services:
     environment:
       PORT: 3012
       NODE_ENV: development
-      AWS_ENDPOINT_URL: http://localstack:4566
+      AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL:-http://localstack:4566}
       CONFIG_BUCKET_NAME: configs-bucket
       GRANTS_CONFIG_BROKER_AUTH_TOKEN: '${GRANTS_CONFIG_BROKER_AUTH_TOKEN:-config-broker-auth-token}'
       GRANTS_CONFIG_BROKER_ENCRYPTION_KEY: '${GRANTS_CONFIG_BROKER_ENCRYPTION_KEY:-config-broker-encryption-key}'
       MONGO_URI: mongodb://mongodb:27017/
       SERVICE_VERSION: 1.0.0
+      CONFIG_INPUT_QUEUE_URL: http://localstack:4566/000000000000/gfr__sqs___config_input
     networks:
       - grants-ui-net
     volumes:
