@@ -11,6 +11,11 @@ const HTTP_REDIRECT_MIN = 300
 // page with 303 (See Other); GET redirects and submission `h.redirect`s are 302.
 // So 303 uniquely identifies a "next page" navigation.
 const HTTP_SEE_OTHER = 303
+// An unauthenticated request to a grant route is bounced to sign-in with a 302
+// (Found) by the `@hapi/cookie` strategy's `redirectTo`. The location prefix
+// distinguishes it from an authenticated user's submission `h.redirect` (also 302).
+const HTTP_FOUND = 302
+const SIGN_IN_PATH = '/auth/sign-in'
 
 /**
  * True when the request targets the grant's start page (the form's configured
@@ -33,9 +38,9 @@ const isGrantStartPage = (request) => {
 }
 
 /**
- * True when the request represents a signed-in user successfully loading a
- * grant's start page: an authenticated GET to the form's start route that
- * returned 2xx. Subsequent journey pages are deliberately not audited.
+ * True when the request represents a signed-in (authorised) user successfully
+ * loading a grant's start page: an authenticated GET to the form's start route
+ * that returned 2xx. Subsequent journey pages are deliberately not audited.
  * @param {import('@hapi/hapi').Request} request
  * @returns {boolean}
  */
@@ -71,6 +76,30 @@ const isSuccessfulPageNavigation = (request) => {
     Boolean(request.params.slug) &&
     Boolean(request.params.path) &&
     response.statusCode === HTTP_SEE_OTHER
+  )
+}
+
+/**
+ * True when an unauthenticated user has come to a grant route and been bounced
+ * to sign-in: no authenticated session, a `{slug}` route, and a 302 redirect to
+ * the sign-in path. The form model is never loaded here (auth fails before the
+ * handler runs), so unlike `isSuccessfulGrantAccess` we can't single out the
+ * start page — any grant route counts as an arrival.
+ * @param {import('@hapi/hapi').Request} request
+ * @returns {boolean}
+ */
+const isUnauthenticatedGrantAccess = (request) => {
+  const { response } = request
+  if (!response || response instanceof Error) {
+    return false
+  }
+  const location = response.headers?.location
+  return (
+    !request.auth.isAuthenticated &&
+    Boolean(request.params.slug) &&
+    response.statusCode === HTTP_FOUND &&
+    typeof location === 'string' &&
+    location.startsWith(SIGN_IN_PATH)
   )
 }
 
@@ -121,7 +150,8 @@ const makeSendAuditEvent = (publisherConfig) => (request, opts) => {
  *   handler is async and wants the event delivered before responding).
  * - `sendAuditEventInBackground(opts)` is fire-and-forget: it returns `void`,
  *   never throws, and leaves no floating promise (for sync handlers and hooks).
- * Keeps the existing behaviour of auditing a signed-in user starting a grant.
+ * Audits arrival at a grant: an authorised (signed-in) user reaching a grant's
+ * start page, and an unauthorised (not-signed-in) user bounced to sign-in.
  * Gated behind `audit.enabled`; when disabled both decorations are no-ops so
  * call sites stay unconditional.
  * @satisfies {import('@hapi/hapi').ServerRegisterPluginObject<void>}
@@ -163,13 +193,19 @@ export const auditPublisher = {
 
       server.ext('onPreResponse', (request, h) => {
         if (isSuccessfulGrantAccess(request)) {
-          request.sendAuditEventInBackground({ action: 'start' })
+          request.sendAuditEventInBackground({ action: 'authorised' })
         } else if (isSuccessfulPageNavigation(request)) {
           request.sendAuditEventInBackground({
             action: 'navigate',
             entity: 'page',
             entityid: request.params.path,
             details: { grant: request.params.slug, answers: answersFromPayload(request.payload) }
+          })
+        } else if (isUnauthenticatedGrantAccess(request)) {
+          request.sendAuditEventInBackground({
+            action: 'unauthorised',
+            status: 'denied',
+            details: { reason: 'not-authenticated', grant: request.params.slug }
           })
         } else {
           // Any other request (errors, non-grant routes, intermediate redirects)
