@@ -3,8 +3,6 @@
 
 import { config } from '~/src/config/config.js'
 
-const MOCK_DATA = /** @type {boolean} */ (config.get('mapMockDataEnabled'))
-
 /** @type {number[]} */
 const MOCK_AREAS = [
   1.3308, 7.5713, 4.6925, 4.5341, 2.9859, 6.7943, 0.1638, 3.3189, 4.9762, 2.964, 3.0535, 2.7838, 3.1023, 3.0124, 0.5824,
@@ -5609,7 +5607,7 @@ const MOCK_GEOMETRIES = [
 ]
 
 export function isMockData() {
-  return MOCK_DATA
+  return /** @type {boolean} */ (config.get('mapMockDataEnabled'))
 }
 
 /** @returns {{ minLng: number, minLat: number, maxLng: number, maxLat: number }} */
