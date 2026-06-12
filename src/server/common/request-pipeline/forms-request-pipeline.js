@@ -2,10 +2,10 @@ import { formsStatusRedirect } from '~/src/server/common/request-pipeline/redire
 import { enforcePagePermission } from './permissions/enforce-page-permission.js'
 
 /**
- * Pipeline handler that enforces page permissions and delegates to forms status callback.
+ * Pipeline handler that delegates to forms status redirect, then enforces page permissions.
  *
- * If permission enforcement fails, the handler short-circuits and returns the response.
- * Otherwise, it continues to the forms status callback.
+ * If a status redirect is required, the handler short-circuits and returns the redirect.
+ * Otherwise, it continues to permission enforcement on the resolved destination page.
  *
  * @async
  * @param {import('./types.js').PipelineRequest} request
@@ -14,13 +14,13 @@ import { enforcePagePermission } from './permissions/enforce-page-permission.js'
  * @returns {Promise<*>} Hapi response or continuation result.
  */
 export async function formsRequestPipeline(request, h, context) {
-  const permissionResult = await enforcePagePermission(request, h, context)
+  const redirectResult = await formsStatusRedirect(request, h, context)
 
-  if (permissionResult !== h.continue) {
-    return permissionResult
+  if (redirectResult !== h.continue) {
+    return redirectResult
   }
 
-  return formsStatusRedirect(request, h, context)
+  return enforcePagePermission(request, h, context)
 }
 
 /**
