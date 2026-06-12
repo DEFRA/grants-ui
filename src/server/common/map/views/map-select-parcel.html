@@ -57,12 +57,12 @@
 
 {% block head %}
   {{ super() }}
-  <link rel="stylesheet" href="/public/stylesheets/interactive-map.css">
+  <link rel="stylesheet" href="{{ getAssetPath('stylesheets/interactive-map.css') }}">
 {% endblock %}
 
 {% block bodyEnd %}
   {{ super() }}
-  <script type="module" nonce="{{ cspNonce }}" src="/public/javascripts/parcel-map.js"></script>
+  <script type="module" nonce="{{ cspNonce }}" src="{{ getAssetPath('parcel-map.js') }}"></script>
   <script nonce="{{ cspNonce }}">
     (function () {
       var mapEl = document.getElementById('parcel-map');
