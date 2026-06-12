@@ -212,98 +212,149 @@ describe('audit-publisher plugin', () => {
       handler = server.ext.mock.calls[0][1]
     })
 
-    test('sends a "start" event in the background for an authenticated 2xx grant GET', async () => {
-      const request = successRequest()
+    describe('start-page access', () => {
+      test('sends an "authorised" event in the background for an authenticated 2xx grant GET', async () => {
+        const request = successRequest()
 
-      const result = handler(request, h)
-      expect(result).toBe(h.continue)
+        const result = handler(request, h)
+        expect(result).toBe(h.continue)
 
-      await flushPromises()
+        await flushPromises()
 
-      expect(request.sendAuditEventInBackground).toHaveBeenCalledWith({ action: 'start' })
-      expect(request.sendAuditEvent).not.toHaveBeenCalled()
-    })
-
-    test('sends a "start" event for a form whose start page is not /start', () => {
-      const request = successRequest({
-        path: '/my-grant/check-details',
-        app: { model: { def: { startPage: '/check-details' } } }
+        expect(request.sendAuditEventInBackground).toHaveBeenCalledWith({ action: 'authorised' })
+        expect(request.sendAuditEvent).not.toHaveBeenCalled()
       })
 
-      handler(request, h)
+      test('sends an "authorised" event for a form whose start page is not /start', () => {
+        const request = successRequest({
+          path: '/my-grant/check-details',
+          app: { model: { def: { startPage: '/check-details' } } }
+        })
 
-      expect(request.sendAuditEventInBackground).toHaveBeenCalledTimes(1)
-    })
+        handler(request, h)
 
-    test.each([
-      ['method is not GET', { method: 'post' }],
-      ['request is unauthenticated', { auth: { isAuthenticated: false } }],
-      ['there is no slug', { params: {} }],
-      ['the response is a redirect', { response: { statusCode: 302 } }],
-      ['the response is an error', { response: new Error('boom') }],
-      ['there is no response', { response: undefined }],
-      ['the page is not the start page', { path: '/my-grant/some-question' }],
-      ['the form model is not loaded', { app: {} }]
-    ])('does not send an event when %s', (_label, overrides) => {
-      const request = successRequest(overrides)
+        expect(request.sendAuditEventInBackground).toHaveBeenCalledTimes(1)
+      })
 
-      const result = handler(request, h)
+      test.each([
+        ['method is not GET', { method: 'post' }],
+        ['request is unauthenticated', { auth: { isAuthenticated: false } }],
+        ['there is no slug', { params: {} }],
+        ['the response is a redirect', { response: { statusCode: 302 } }],
+        ['the response is an error', { response: new Error('boom') }],
+        ['there is no response', { response: undefined }],
+        ['the page is not the start page', { path: '/my-grant/some-question' }],
+        ['the form model is not loaded', { app: {} }]
+      ])('does not send an event when %s', (_label, overrides) => {
+        const request = successRequest(overrides)
 
-      expect(request.sendAuditEventInBackground).not.toHaveBeenCalled()
-      expect(result).toBe(h.continue)
-    })
-  })
+        const result = handler(request, h)
 
-  describe('onPreResponse handler — page navigation', () => {
-    let handler
-    const h = { continue: Symbol('continue') }
-
-    const navRequest = (overrides = {}) => ({
-      method: 'post',
-      auth: { isAuthenticated: true },
-      params: { slug: 'my-grant', path: 'some-question' },
-      payload: { crumb: 'csrf-token', action: 'continue', favouriteColour: 'blue' },
-      response: { statusCode: 303 },
-      sendAuditEvent: vi.fn(),
-      sendAuditEventInBackground: vi.fn(),
-      ...overrides
-    })
-
-    beforeEach(() => {
-      setupConfig()
-      auditPublisher.plugin.register(server)
-      handler = server.ext.mock.calls[0][1]
-    })
-
-    test('sends a "navigate" event with the page name as entityid and answers (crumb/action stripped)', () => {
-      const request = navRequest()
-
-      const result = handler(request, h)
-      expect(result).toBe(h.continue)
-
-      expect(request.sendAuditEventInBackground).toHaveBeenCalledWith({
-        action: 'navigate',
-        entity: 'page',
-        entityid: 'some-question',
-        details: { grant: 'my-grant', answers: { favouriteColour: 'blue' } }
+        expect(request.sendAuditEventInBackground).not.toHaveBeenCalled()
+        expect(result).toBe(h.continue)
       })
     })
 
-    test.each([
-      ['method is not POST', { method: 'get' }],
-      ['request is unauthenticated', { auth: { isAuthenticated: false } }],
-      ['there is no slug', { params: { path: 'some-question' } }],
-      ['there is no page path', { params: { slug: 'my-grant' } }],
-      ['the response is a 302 submission redirect', { response: { statusCode: 302 } }],
-      ['the response is a 200 re-render', { response: { statusCode: 200 } }],
-      ['the response is an error', { response: new Error('boom') }]
-    ])('does not send a navigate event when %s', (_label, overrides) => {
-      const request = navRequest(overrides)
+    describe('page navigation', () => {
+      const navRequest = (overrides = {}) => ({
+        method: 'post',
+        auth: { isAuthenticated: true },
+        params: { slug: 'my-grant', path: 'some-question' },
+        payload: { crumb: 'csrf-token', action: 'continue', favouriteColour: 'blue' },
+        response: { statusCode: 303 },
+        sendAuditEvent: vi.fn(),
+        sendAuditEventInBackground: vi.fn(),
+        ...overrides
+      })
 
-      const result = handler(request, h)
+      test('sends a "navigate" event with the page name as entityid and answers (crumb/action stripped)', () => {
+        const request = navRequest()
 
-      expect(request.sendAuditEventInBackground).not.toHaveBeenCalled()
-      expect(result).toBe(h.continue)
+        const result = handler(request, h)
+        expect(result).toBe(h.continue)
+
+        expect(request.sendAuditEventInBackground).toHaveBeenCalledWith({
+          action: 'navigate',
+          entity: 'page',
+          entityid: 'some-question',
+          details: { grant: 'my-grant', answers: { favouriteColour: 'blue' } }
+        })
+      })
+
+      test('sends the payload through unchanged as answers when it is not an object', () => {
+        const request = navRequest({ payload: undefined })
+
+        handler(request, h)
+
+        expect(request.sendAuditEventInBackground).toHaveBeenCalledWith(
+          expect.objectContaining({ details: { grant: 'my-grant', answers: undefined } })
+        )
+      })
+
+      test.each([
+        ['method is not POST', { method: 'get' }],
+        ['request is unauthenticated', { auth: { isAuthenticated: false } }],
+        ['there is no slug', { params: { path: 'some-question' } }],
+        ['there is no page path', { params: { slug: 'my-grant' } }],
+        ['the response is a 302 submission redirect', { response: { statusCode: 302 } }],
+        ['the response is a 200 re-render', { response: { statusCode: 200 } }],
+        ['the response is an error', { response: new Error('boom') }]
+      ])('does not send a navigate event when %s', (_label, overrides) => {
+        const request = navRequest(overrides)
+
+        const result = handler(request, h)
+
+        expect(request.sendAuditEventInBackground).not.toHaveBeenCalled()
+        expect(result).toBe(h.continue)
+      })
+    })
+
+    describe('unauthenticated access', () => {
+      // An unauthenticated GET to a grant route is bounced to sign-in with a 302
+      // by the cookie auth strategy; the form model is never loaded.
+      const unauthRequest = (overrides = {}) => ({
+        method: 'get',
+        auth: { isAuthenticated: false },
+        params: { slug: 'my-grant' },
+        response: { statusCode: 302, headers: { location: '/auth/sign-in?redirect=/my-grant/start' } },
+        sendAuditEvent: vi.fn(),
+        sendAuditEventInBackground: vi.fn(),
+        ...overrides
+      })
+
+      test('sends an "unauthorised" event when an unauthenticated user is bounced to sign-in', () => {
+        const request = unauthRequest()
+
+        const result = handler(request, h)
+        expect(result).toBe(h.continue)
+
+        expect(request.sendAuditEventInBackground).toHaveBeenCalledWith({
+          action: 'unauthorised',
+          status: 'denied',
+          details: { reason: 'not-authenticated', grant: 'my-grant' }
+        })
+        expect(request.sendAuditEvent).not.toHaveBeenCalled()
+      })
+
+      test.each([
+        ['the request is authenticated', { auth: { isAuthenticated: true } }],
+        ['there is no slug', { params: {} }],
+        ['the status is not 302', { response: { statusCode: 401, headers: { location: '/auth/sign-in' } } }],
+        [
+          'the redirect is not to sign-in',
+          { response: { statusCode: 302, headers: { location: '/my-grant/next-page' } } }
+        ],
+        ['the response has no location header', { response: { statusCode: 302, headers: {} } }],
+        ['the response is an error', { response: new Error('boom') }],
+        ['there is no response', { response: undefined }]
+      ])('does not send an unauthorised event when %s', (_label, overrides) => {
+        const request = unauthRequest(overrides)
+
+        const result = handler(request, h)
+
+        expect(request.sendAuditEventInBackground).not.toHaveBeenCalled()
+        expect(result).toBe(h.continue)
+      })
     })
   })
 })
