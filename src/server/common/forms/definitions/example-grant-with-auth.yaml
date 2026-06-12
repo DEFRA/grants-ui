@@ -10,7 +10,47 @@ metadata:
     serviceName: Farm and land service
     cookiePolicyUrl: /cookies
     expiryDays: 365
-  grantRedirectRules: null
+  grantRedirectRules:
+    preSubmission:
+      # Typically rules for unsubmitted applications
+      - toPath: /summary
+
+    postSubmission:
+      # Cleared
+      - fromGrantsStatus: SUBMITTED,REOPENED
+        gasStatus: APPLICATION_WITHDRAWN
+        toGrantsStatus: CLEARED
+        toPath: /start
+
+      # Awaiting amendments
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: APPLICATION_AMEND
+        toGrantsStatus: REOPENED
+        toPath: /reopened
+
+      # Offer sent, withdrawn, accepted -> agreements service
+      - fromGrantsStatus: 'SUBMITTED'
+        gasStatus: 'OFFER_SENT,OFFER_WITHDRAWN,OFFER_ACCEPTED'
+        toGrantsStatus: 'SUBMITTED'
+        toPath: /agreement
+
+      # Reopened
+      - fromGrantsStatus: REOPENED
+        gasStatus: default
+        toGrantsStatus: REOPENED
+        toPath: /reopened
+
+      # Submitted -> confirmation (default for most GAS statuses)
+      - fromGrantsStatus: SUBMITTED
+        gasStatus: default
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
+
+      # Default fallback
+      - fromGrantsStatus: default
+        gasStatus: default
+        toGrantsStatus: SUBMITTED
+        toPath: /confirmation
   permissions:
     enforce: true
     resource: csApplications
@@ -855,6 +895,26 @@ pages:
     controller: DeclarationPageController
     view: declaration-page.html
     id: 8ee401e7-76c5-456b-a1f4-d84fca115e01
+
+  # Off-journey page: never reached by the default V2 page walk because it is
+  # positioned after the final journey page. It is only entered via a direct
+  # link or a grantRedirectRule. Its custom controller reads the `next.path`
+  # below to decide where "Continue" goes.
+  - title: Landing page example
+    id: 56b69d36-e1f0-486c-bc31-5c07b183c1bf
+    path: /reopened
+    controller: LandingPageController
+    components:
+      - name: reopenedHtml
+        id: d1333e11-cc50-4cd0-9f5a-c63a0ec5ec92
+        type: Html
+        content: |
+          <p class="govuk-body">Landing pages can be used as redirect targets for GAS/Grants statuses, to give users information about the status of their application before continuing to a journey page.</p>
+          <p class="govuk-body">For example, if Grants Status becomes `REOPENED`:</p>
+          <p class="govuk-body">Your application <strong>{{ context.referenceNumber }}</strong> has been reopened. Click continue to check your submitted answers and change them.</p>
+    next:
+      - path: /summary
+
 lists:
   - title: RadiosField List
     name: radiosFieldList
