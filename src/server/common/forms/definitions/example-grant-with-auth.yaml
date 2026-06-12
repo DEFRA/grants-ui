@@ -896,10 +896,10 @@ pages:
     view: declaration-page.html
     id: 8ee401e7-76c5-456b-a1f4-d84fca115e01
 
-# Off-journey page: never reached by the default V2 page walk because it is
-# positioned after the final journey page. It is only entered via a direct
-# link or a grantRedirectRule. Its custom controller reads the `next.path`
-# below to decide where "Continue" goes.
+  # Off-journey page: never reached by the default V2 page walk because it is
+  # positioned after the final journey page. It is only entered via a direct
+  # link or a grantRedirectRule. Its custom controller reads the `next.path`
+  # below to decide where "Continue" goes.
   - title: Landing page example
     id: 56b69d36-e1f0-486c-bc31-5c07b183c1bf
     path: /reopened
