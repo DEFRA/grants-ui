@@ -14,6 +14,7 @@ import {
 import { releaseAllApplicationLocksForOwnerFromApi } from '../common/helpers/lock/application-lock.js'
 import { ViewError } from '~/src/server/common/utils/errors/ViewError.js'
 import { AuthError } from '~/src/server/common/utils/errors/AuthError.js'
+import { invalidatePreviousSession } from '~/src/server/auth/single-session.js'
 
 const UNKNOWN_USER = 'unknown'
 const USER_AGENT = 'user-agent'
@@ -385,6 +386,13 @@ function getPermissionsOrDefaults(profile, token) {
  */
 async function storeSessionData(request, profile, role, scope, token, refreshToken) {
   try {
+    await invalidatePreviousSession(
+      request.server.app.cache,
+      request.server.app.userSessionIndex,
+      profile.contactId,
+      profile.sessionId
+    )
+
     await request.server.app.cache.set(profile.sessionId, {
       isAuthenticated: true,
       ...profile,
@@ -542,8 +550,10 @@ async function handleOidcSignOut(request, h) {
     })
 
     if (request.auth.credentials?.sessionId) {
-      // Clear the session cache
       await request.server.app.cache.drop(request.auth.credentials.sessionId)
+    }
+    if (request.auth.credentials?.contactId) {
+      await request.server.app.userSessionIndex.drop(request.auth.credentials.contactId)
     }
     request.cookieAuth.clear()
   }
