@@ -241,6 +241,37 @@ function buildRedirectUrl(grantId, path) {
 /**
  * Handles post-submission redirects and status updates after a form has been submitted.
  *
+ * ARCHITECTURAL NOTE
+ *
+ * This function currently performs both:
+ *
+ * 1. Redirect/state transition resolution
+ *    - calls GAS
+ *    - evaluates redirect rules
+ *    - determines destination
+ *
+ * 2. Side effects
+ *    - persists Grants UI application status
+ *    - updates session (YAR) context
+ *
+ * As a result, state changes may occur before downstream
+ * permission enforcement executes.
+ *
+ * This behaviour is currently accepted as a tactical compromise.
+ *
+ * Future work (https://eaflood.atlassian.net/browse/TGC-1412)
+ * is expected to move application state transitions
+ * to an event-driven model (SNS/SQS) where transition decisions
+ * are separated from side-effect execution.
+ *
+ * Until that work is completed:
+ * - avoid adding additional state mutations here
+ * - avoid introducing new external side effects
+ * - keep this function limited to existing persistence behaviour
+ *
+ * Any new state-changing behaviour should be considered carefully
+ * and discussed with the team before being added.
+ *
  * @async
  * @param {import('@hapi/hapi').Request} request - The Hapi request object.
  * @param {import('@hapi/hapi').ResponseToolkit} h - The Hapi response toolkit.

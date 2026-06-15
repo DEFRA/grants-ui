@@ -7,6 +7,7 @@ import {
   fetchAvailableActionsForParcel,
   fetchParcels,
   fetchParcelsGroups,
+  fetchParcelTileLocation,
   validateApplication
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import {
@@ -14,6 +15,7 @@ import {
   parcelsGroups,
   parcelsWithSize,
   parcelsWithExtendedInfo,
+  locateParcelTiles,
   validate
 } from '~/src/server/land-grants/services/land-grants.client.js'
 import { clearParcelCache } from '~/src/server/land-grants/services/parcel-cache.js'
@@ -24,6 +26,7 @@ vi.mock('~/src/server/land-grants/services/land-grants.client.js', () => ({
   parcelsGroups: vi.fn(),
   parcelsWithSize: vi.fn(),
   parcelsWithExtendedInfo: vi.fn(),
+  locateParcelTiles: vi.fn(),
   validate: vi.fn()
 }))
 
@@ -1239,6 +1242,36 @@ describe('land-grants service', () => {
       const result = await validateApplication(validationInput)
 
       expect(result.errorMessages).toEqual([])
+    })
+  })
+
+  describe('fetchParcelTileLocation', () => {
+    const mockBbox = { minLng: -2.5, minLat: 51.4, maxLng: -2.3, maxLat: 51.6 }
+
+    it('returns the bbox from the API response', async () => {
+      locateParcelTiles.mockResolvedValueOnce({ bbox: mockBbox })
+
+      const result = await fetchParcelTileLocation(['SD7148-9160'])
+
+      expect(result).toEqual(mockBbox)
+      expect(locateParcelTiles).toHaveBeenCalledWith(['SD7148-9160'], mockApiEndpoint)
+    })
+
+    it('returns null when the API throws', async () => {
+      locateParcelTiles.mockRejectedValueOnce(new Error('timeout'))
+
+      const result = await fetchParcelTileLocation(['SD7148-9160'])
+
+      expect(result).toBeNull()
+    })
+
+    it('passes an empty array when no parcel IDs given', async () => {
+      locateParcelTiles.mockResolvedValueOnce({ bbox: null })
+
+      const result = await fetchParcelTileLocation([])
+
+      expect(locateParcelTiles).toHaveBeenCalledWith([], mockApiEndpoint)
+      expect(result).toBeNull()
     })
   })
 })

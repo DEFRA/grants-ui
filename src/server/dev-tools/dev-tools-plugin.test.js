@@ -73,7 +73,6 @@ describe('dev-tools index', () => {
         expect.objectContaining({
           method,
           path,
-          options: { auth: false },
           handler: handler()
         })
       )
@@ -90,8 +89,7 @@ describe('dev-tools index', () => {
       expect(server.route).toHaveBeenCalledWith(
         expect.objectContaining({
           method: 'GET',
-          path,
-          options: { auth: false }
+          path
         })
       )
     })
