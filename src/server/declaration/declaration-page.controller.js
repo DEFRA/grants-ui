@@ -2,7 +2,10 @@ import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/Su
 import { getConfirmationPath, storeSlugInContext } from '~/src/server/common/helpers/form-slug-helper.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
-import { transformStateObjectToGasApplication } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
+import {
+  resolveGasConfigVersion,
+  transformStateObjectToGasApplication
+} from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { persistSubmissionToApi } from '~/src/server/common/helpers/state/persist-submission-helper.js'
 import { ApplicationStatus } from '~/src/server/common/constants/application-status.js'
@@ -123,8 +126,14 @@ export default class DeclarationPageController extends SummaryPageController {
 
     const grantCode = getGrantCode(request)
     const transformAnswers = answerTransformers[grantCode] ?? ((s) => s)
+    const configVersion = resolveGasConfigVersion(request)
 
-    return transformStateObjectToGasApplication(identifiers, submissionState, (s) => transformAnswers(s, state))
+    return transformStateObjectToGasApplication(
+      identifiers,
+      submissionState,
+      (s) => transformAnswers(s, state),
+      configVersion
+    )
   }
 
   async handleSuccessfulSubmission({ request, context, cacheService, applicationData, sbi, crn, grantCode }) {

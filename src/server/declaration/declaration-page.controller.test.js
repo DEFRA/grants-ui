@@ -1,7 +1,10 @@
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 import * as formSlugHelper from '~/src/server/common/helpers/form-slug-helper.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
-import { transformStateObjectToGasApplication } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
+import {
+  resolveGasConfigVersion,
+  transformStateObjectToGasApplication
+} from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import DeclarationPageController from './declaration-page.controller.js'
 import { vi } from 'vitest'
 import { mockHapiRequest } from '~/src/__mocks__'
@@ -73,6 +76,7 @@ describe('DeclarationPageController', () => {
     mockModel = {
       def: {
         metadata: {
+          version: '1.1.1',
           submission: {
             grantCode: 'example-grant-with-auth'
           }
@@ -137,6 +141,7 @@ describe('DeclarationPageController', () => {
         submittedAt: '2025-01-01T00:00:00.000Z'
       }
     })
+    resolveGasConfigVersion.mockReturnValue('1.1.1')
     submitGrantApplication.mockResolvedValue({
       status: statusCodes.noContent
     })
@@ -330,8 +335,10 @@ describe('DeclarationPageController', () => {
           crn: '1234567890'
         },
         { referenceNumber: 'REF123', field1: 'value1', declaration: true },
-        expect.any(Function)
+        expect.any(Function),
+        '1.1.1'
       )
+      expect(resolveGasConfigVersion).toHaveBeenCalledWith(mockRequest)
 
       expect(submitGrantApplication).toHaveBeenCalledWith(
         'example-grant-with-auth',
@@ -364,7 +371,8 @@ describe('DeclarationPageController', () => {
           crn: '1234567890'
         },
         { referenceNumber: 'REF123', field1: 'value1', declaration: true },
-        expect.any(Function)
+        expect.any(Function),
+        '1.1.1'
       )
     })
 
@@ -501,7 +509,8 @@ describe('DeclarationPageController', () => {
       expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
         expect.objectContaining({ frn: 'FRN123456' }),
         expect.anything(),
-        expect.any(Function)
+        expect.any(Function),
+        '1.1.1'
       )
     })
 
@@ -519,7 +528,8 @@ describe('DeclarationPageController', () => {
       expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
         expect.objectContaining({ frn: 'undefined' }),
         expect.anything(),
-        expect.any(Function)
+        expect.any(Function),
+        '1.1.1'
       )
     })
 
@@ -539,7 +549,8 @@ describe('DeclarationPageController', () => {
       expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
         expect.objectContaining({ frn: 'undefined' }),
         expect.anything(),
-        expect.any(Function)
+        expect.any(Function),
+        '1.1.1'
       )
     })
 
@@ -561,7 +572,8 @@ describe('DeclarationPageController', () => {
       expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
         expect.objectContaining({ frn: 'undefined' }),
         expect.anything(),
-        expect.any(Function)
+        expect.any(Function),
+        '1.1.1'
       )
     })
 
@@ -585,7 +597,8 @@ describe('DeclarationPageController', () => {
       expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
         expect.objectContaining({ frn: 'undefined' }),
         expect.anything(),
-        expect.any(Function)
+        expect.any(Function),
+        '1.1.1'
       )
     })
 

@@ -1,6 +1,9 @@
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 
-import { transformStateObjectToGasApplication } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
+import {
+  resolveGasConfigVersion,
+  transformStateObjectToGasApplication
+} from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { stateToPigsMightFlyGasAnswers } from '~/src/server/non-land-grants/pigs-might-fly/mappers/state-to-gas-pigs-mapper.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
 import { getConfirmationPath } from '~/src/server/common/helpers/form-slug-helper.js'
@@ -15,6 +18,7 @@ export default class FlyingPigsSubmissionPageController extends SummaryPageContr
    */
   constructor(model, pageDef) {
     super(model, pageDef)
+    this.model = model
     this.viewName = 'submission'
   }
 
@@ -35,10 +39,12 @@ export default class FlyingPigsSubmissionPageController extends SummaryPageContr
       identifiers.previousClientRef = String(context.previousReferenceNumber).toLowerCase()
     }
 
+    const configVersion = resolveGasConfigVersion(request)
     const applicationData = transformStateObjectToGasApplication(
       identifiers,
       context.state,
-      stateToPigsMightFlyGasAnswers
+      stateToPigsMightFlyGasAnswers,
+      configVersion
     )
     const grantCode = getGrantCode(request)
 

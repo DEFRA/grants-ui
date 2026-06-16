@@ -60,7 +60,8 @@ export default [
     },
     languageOptions: {
       globals: {
-        ...vitestPlugin.environments.env.globals
+        ...vitestPlugin.environments.env.globals,
+        Semver: 'readonly'
       }
     },
     rules: {

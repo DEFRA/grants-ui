@@ -1,7 +1,10 @@
 import { vi } from 'vitest'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
-import { transformStateObjectToGasApplication } from '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
+import {
+  resolveGasConfigVersion,
+  transformStateObjectToGasApplication
+} from '../../common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { stateToLandGrantsGasAnswers } from '../mappers/state-to-gas-answers-mapper.js'
 import { validateApplication } from '../services/land-grants.service.js'
 import SubmissionPageController from './submission-page.controller.js'
@@ -41,6 +44,7 @@ describe('SubmissionPageController', () => {
     mockModel = {
       def: {
         metadata: {
+          version: '2.3.4',
           submission: {
             grantCode
           }
@@ -60,6 +64,7 @@ describe('SubmissionPageController', () => {
 
     validateApplication.mockReturnValue(() => ({ valid: true }))
     getFormsCacheService.mockReturnValue(mockCacheService)
+    resolveGasConfigVersion.mockReturnValue('2.3.4')
 
     controller = new SubmissionPageController(mockModel, mockPageDef)
   })
@@ -98,8 +103,10 @@ describe('SubmissionPageController', () => {
           ...mockState,
           validationResult: mockValidationResult
         }),
-        stateToLandGrantsGasAnswers
+        stateToLandGrantsGasAnswers,
+        '2.3.4'
       )
+      expect(resolveGasConfigVersion).toHaveBeenCalledWith(mockRequest)
       expect(submitGrantApplication).toHaveBeenCalledWith(grantCode, mockApplicationData, mockRequest)
       expect(result).toEqual(mockResult)
     })
