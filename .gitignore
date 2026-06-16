@@ -26,4 +26,3 @@ localstack/config-broker-local
 /.grants-ui-cli-state.json
 /acceptance/schemas/
 /woodland-grant-journey-tests-schemas/
-/docs

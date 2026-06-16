@@ -29,7 +29,7 @@ const assertSemverConfigVersion = (configVersion) => {
  * @returns {string}
  */
 export const resolveGasConfigVersion = (request) => {
-  const configVersion = request?.app?.model?.def?.metadata?.version ?? 1
+  const configVersion = request?.app?.model?.def?.metadata?.version ?? '1.0.0'
 
   assertSemverConfigVersion(configVersion)
 

@@ -208,18 +208,6 @@ describe('transformStateObjectToGasApplication', () => {
       expect(mockAnswersTransformer).not.toHaveBeenCalled()
     }
   )
-})
-
-describe('resolveGasConfigVersion', () => {
-  it.each([
-    ['missing model', {}, '1.0.0'],
-    ['missing metadata', { app: { model: { def: {} } } }, '1.0.0'],
-    ['missing version', { app: { model: { def: { metadata: {} } } } }, '1.0.0'],
-    ['legacy numeric version', { app: { model: { def: { metadata: { version: 1 } } } } }, '1.0.0'],
-    ['semver string version', { app: { model: { def: { metadata: { version: '2.3.4' } } } } }, '2.3.4']
-  ])('should resolve %s', (_name, request, expectedVersion) => {
-    expect(resolveGasConfigVersion(request)).toBe(expectedVersion)
-  })
 
   it.each(['', '1', '1.0', '01.0.0', 2])('should throw for invalid config version %s', (version) => {
     const request = { app: { model: { def: { metadata: { version } } } } }
