@@ -37,3 +37,7 @@ ignore:
     - '*':
         reason: 'Transitive via @defra/fcp-audit-publisher (bundles joi@18.1.2); its schema uses no recursive Joi.link/self-reference, so the vulnerable code path is not reachable. Direct joi pinned to ^17 due to consumer constraint — awaiting fcp-audit-publisher release pinning joi >= 18.2.1.'
         expires: '2026-07-12'
+  'SNYK-JS-JSYAML-17342520':
+    - '*':
+        reason: 'Fix version is incoming from Defra forms team - Inefficient Algorithmic Complexity [Medium Severity][https://security.snyk.io/vuln/SNYK-JS-JSYAML-17342520] in js-yaml@4.1.1'
+        expires: '2026-07-16'
