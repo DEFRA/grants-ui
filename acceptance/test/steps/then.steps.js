@@ -236,3 +236,16 @@ Then('(the user )should see SBI {string} as the logged in organisation', async f
   const actualSbi = await accountBar.sbi()
   expect(actualSbi).toEqual(expectedSbi)
 })
+
+Then('(the user )should see the following organisation address', async function (dataTable) {
+  const label = 'Organisation address'
+  const expectedLines = dataTable.raw().map((row) => row[0].trim())
+  const valueCell = this.page.locator(`//dt[normalize-space()='${label}']/following-sibling::dd[1]`)
+  await expect(valueCell).toBeVisible()
+  const actualText = (await valueCell.innerText()).trim()
+  const actualLines = actualText
+    .split(/\r\n|\r|\n/)
+    .map((l) => l.trim())
+    .filter(Boolean)
+  expect(actualLines).toEqual(expectedLines)
+})

@@ -29,6 +29,14 @@ export const serveStaticFiles = {
         },
         {
           method: 'GET',
+          path: `${config.get('assetPath')}/stylesheets/interactive-map.css`,
+          handler: {
+            file: './stylesheets/interactive-map.css'
+          },
+          options
+        },
+        {
+          method: 'GET',
           path: '/assets/{path*}',
           handler: {
             directory: {

@@ -5,7 +5,8 @@
     "checkJs": true,
     "module": "NodeNext",
     "noEmit": true,
-    "baseUrl": ".",
+    "noImplicitAny": false,
+    "useUnknownInCatchVariables": false,
     "paths": {
       "~/*": ["./*"]
     },

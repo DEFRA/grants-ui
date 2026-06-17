@@ -1,0 +1,110 @@
+{% extends baseLayoutPath %}
+
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
+
+{% block content %}
+<div class="govuk-body">
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-full">
+
+      {% if errors %}
+        {{ govukErrorSummary({
+          titleText: "There is a problem",
+          errorList: [{
+            text: errors,
+            href: "#parcel-map"
+          }]
+        }) }}
+      {% endif %}
+
+      <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
+      <p id="map-hint" class="govuk-body" hidden>Click on a parcel to select it and see its details.</p>
+      <noscript>
+        <p class="govuk-body">The interactive map requires JavaScript to be enabled in your browser.</p>
+      </noscript>
+
+      <form method="post" action="{{ formAction }}" id="parcel-select-form">
+        <input type="hidden" name="crumb" value="{{ crumb }}">
+
+        <parcel-map
+          id="parcel-map"
+          multi-select="{{ 'true' if multiSelect else 'false' }}"
+          aria-label="Land parcel selection map"
+          style="display:block;width:100%;height:500px;position:relative"
+        >
+        </parcel-map>
+
+        {# Hidden inputs written by the parcel-map:selection listener; also used by no-JS fallback #}
+        <div id="selected-parcels-inputs" aria-hidden="true"></div>
+
+        <p id="parcel-selection-summary" class="govuk-body govuk-!-margin-top-2" aria-live="polite" hidden>
+          {{ "No parcels selected." if multiSelect else "No parcel selected." }}
+        </p>
+
+        {{ govukButton({
+          text: "Continue",
+          classes: "govuk-!-margin-top-4",
+          preventDoubleClick: true,
+          attributes: { id: "map-select-continue" }
+        }) }}
+      </form>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block head %}
+  {{ super() }}
+  <link rel="stylesheet" href="{{ getAssetPath('stylesheets/interactive-map.css') }}">
+{% endblock %}
+
+{% block bodyEnd %}
+  {{ super() }}
+  <script type="module" nonce="{{ cspNonce }}" src="{{ getAssetPath('parcel-map.js') }}"></script>
+  <script nonce="{{ cspNonce }}">
+    (function () {
+      var mapEl = document.getElementById('parcel-map');
+      var multiSelect = mapEl.getAttribute('multi-select') === 'true';
+
+      mapEl.addEventListener('parcel-map:ready', function () {
+        var hint = document.getElementById('map-hint');
+        if (hint) { hint.hidden = false; }
+        var summary = document.getElementById('parcel-selection-summary');
+        if (summary) { summary.hidden = false; }
+      });
+
+      mapEl.addEventListener('parcel-map:error', function () {
+        var btn = document.getElementById('map-select-continue');
+        if (btn) { btn.disabled = true; }
+      });
+
+      mapEl.addEventListener('parcel-map:selection', function (e) {
+        var selectedIds = e.detail.selectedIds;
+
+        // Write hidden inputs so the standard form POST carries the selection
+        var container = document.getElementById('selected-parcels-inputs');
+        if (container) {
+          container.replaceChildren();
+          selectedIds.forEach(function (id) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'landParcels';
+            input.value = id;
+            container.appendChild(input);
+          });
+        }
+
+        // Update the live summary label
+        var summary = document.getElementById('parcel-selection-summary');
+        if (!summary) { return; }
+        if (selectedIds.length === 0) {
+          summary.textContent = multiSelect ? 'No parcels selected.' : 'No parcel selected.';
+          return;
+        }
+        summary.textContent = 'Selected: ' + selectedIds.join(', ');
+      });
+    }());
+  </script>
+{% endblock %}

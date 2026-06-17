@@ -286,6 +286,12 @@ const convictConfig = {
       env: 'COOKIE_CONSENT_EXPIRY_DAYS'
     }
   },
+  mapMockDataEnabled: {
+    doc: 'Enable map mock data mode — uses embedded parcel geometry instead of tile URL.',
+    format: Boolean,
+    default: false,
+    env: 'MAP_MOCK_DATA_ENABLED'
+  },
   devTools: devToolsSchema,
   configApi: configApiSchema,
   applicationLock: {

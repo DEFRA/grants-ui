@@ -28,6 +28,15 @@ vi.mock('./dev-tools/clear-application-state.js', () => ({
 vi.mock('~/src/server/cookies/index.js', () => ({
   cookies: { plugin: { name: 'cookies', register: vi.fn() } }
 }))
+vi.mock('~/src/server/print-submitted-application/print-submitted-application.controller.js', () => ({
+  printSubmittedApplication: { plugin: { name: 'print-submitted-application', register: vi.fn() } }
+}))
+vi.mock('./cannot-submit/index.js', () => ({
+  cannotSubmit: { plugin: { name: 'cannot-submit', register: vi.fn() } }
+}))
+vi.mock('~/src/server/common/map/map.plugin.js', () => ({
+  mapPlugin: { plugin: { name: 'map', register: vi.fn() } }
+}))
 
 function mockConfig(overrides = {}) {
   const values = { 'devTools.enabled': false, cdpEnvironment: 'dev', ...overrides }
