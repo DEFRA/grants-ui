@@ -13,6 +13,21 @@ updates:
     cooldown:
       default-days: 7
     open-pull-requests-limit: 10
+    ignore:
+      # eslint 10 is blocked by neostandard, which peers eslint ^9.0.0 on every published
+      # version. Remove this rule when neostandard widens its eslint peer to include ^10.
+      # (Verified the rules DO run under eslint 10 — this is purely a packaging block.)
+      - dependency-name: "eslint"
+        versions: [">=10.0.0"]
+      # joi 18 is blocked by @defra/forms-engine-plugin, which deps joi ^17.13.3 (all versions,
+      # incl. the 8.x major). Remove when forms-engine-plugin supports joi 18.
+      - dependency-name: "joi"
+        versions: [">=18.0.0"]
+      # govuk-frontend 6 is blocked by @defra/forms-engine-plugin, which deps govuk-frontend ^5.x.
+      # The repo's Sass-module migration for v6 is already done; remove when forms-engine-plugin
+      # supports govuk-frontend 6.
+      - dependency-name: "govuk-frontend"
+        versions: [">=6.0.0"]
     groups:
       weekly-dependencies:
         patterns:
