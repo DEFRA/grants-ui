@@ -48,20 +48,7 @@ metadata:
         toGrantsStatus: SUBMITTED
         toPath: /confirmation
   permissions:
-    enforce: true
-    resource: csApplications
-    pageAccess:
-      default: amend
-
-      rules:
-        - paths:
-            - declaration
-          permission: submit
-
-        - paths:
-            - print-submitted-application
-            - confirmation
-          permission: view
+    enforce: false
   supportEmail: ruralpayments@defra.gov.uk
   detailsPage:
     confirmationFieldName: businessDetailsUpToDate
