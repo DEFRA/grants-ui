@@ -76,20 +76,7 @@ metadata:
         redirectTo: /confirm-farm-details
     excludedPaths: ['terms-and-conditions', 'fptt-information', 'fptt-actions']
   permissions:
-    enforce: true
-    resource: csApplications
-    pageAccess:
-      default: amend
-
-      rules:
-        - paths:
-            - submit-your-application
-          permission: submit
-
-        - paths:
-            - print-submitted-application
-            - confirmation
-          permission: view
+    enforce: false
   supportEmail: farmpayments@rpa.gov.uk
   confirmationContent:
     html: |
