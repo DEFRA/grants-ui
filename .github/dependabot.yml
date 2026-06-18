@@ -13,9 +13,6 @@ updates:
     cooldown:
       default-days: 7
     open-pull-requests-limit: 10
-    ignore:
-      - dependency-name: "@pact-foundation/pact"
-        versions: [">=16.0.0"]
     groups:
       weekly-dependencies:
         patterns:
