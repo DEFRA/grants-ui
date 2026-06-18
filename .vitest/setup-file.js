@@ -1,7 +1,9 @@
 import { vi } from 'vitest'
+import { Semver } from './semver.js'
 import { mockLogHelper } from '../src/__mocks__/logger-mocks.js'
 
 process.env.DEFRA_ID_CLIENT_ID = process.env.DEFRA_ID_CLIENT_ID || 'test-client-id'
+globalThis.Semver = Semver
 
 vi.mock('~/src/server/common/helpers/logging/log.js', () => mockLogHelper())
 

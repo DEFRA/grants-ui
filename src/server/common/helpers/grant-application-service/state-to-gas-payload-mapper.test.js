@@ -1,5 +1,8 @@
 import { vi } from 'vitest'
-import { transformStateObjectToGasApplication } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
+import {
+  resolveGasConfigVersion,
+  transformStateObjectToGasApplication
+} from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 
 const mockDate = new Date('2025-04-22T12:00:00Z')
 const originalDate = global.Date
@@ -39,7 +42,7 @@ describe('transformStateObjectToGasApplication', () => {
       year: 2025
     })
 
-    const result = transformStateObjectToGasApplication(identifiers, state, mockAnswersTransformer)
+    const result = transformStateObjectToGasApplication(identifiers, state, mockAnswersTransformer, '1.1.1')
 
     expect(result).toEqual({
       metadata: {
@@ -47,6 +50,7 @@ describe('transformStateObjectToGasApplication', () => {
         frn: 'FRN123456',
         crn: 'CRN789012',
         clientRef: 'CLIENT-REF-456',
+        configVersion: expect.any(Semver),
         submittedAt: mockDate.toISOString()
       },
       answers: {
@@ -69,11 +73,12 @@ describe('transformStateObjectToGasApplication', () => {
       scheme: 'Test Scheme'
     })
 
-    const result = transformStateObjectToGasApplication(identifiers, state, mockAnswersTransformer)
+    const result = transformStateObjectToGasApplication(identifiers, state, mockAnswersTransformer, '1.0.0')
 
     expect(result).toEqual({
       metadata: {
         sbi: '12345678',
+        configVersion: expect.any(Semver),
         submittedAt: mockDate.toISOString()
       },
       answers: {
@@ -117,7 +122,7 @@ describe('transformStateObjectToGasApplication', () => {
       actionApplications: state.actionApplications
     }))
 
-    const result = transformStateObjectToGasApplication(identifiers, state, mockAnswersTransformer)
+    const result = transformStateObjectToGasApplication(identifiers, state, mockAnswersTransformer, '2.0.0')
 
     expect(result).toEqual({
       metadata: {
@@ -125,6 +130,7 @@ describe('transformStateObjectToGasApplication', () => {
         frn: 'FRN123456',
         crn: 'CRN789012',
         clientRef: 'CLIENT-REF-456',
+        configVersion: expect.any(Semver),
         submittedAt: mockDate.toISOString()
       },
       answers: {
@@ -163,9 +169,49 @@ describe('transformStateObjectToGasApplication', () => {
     const state = { sbi: '12345678' }
     const mockAnswersTransformer = vi.fn().mockReturnValue({})
 
-    transformStateObjectToGasApplication(identifiers, state, mockAnswersTransformer)
+    transformStateObjectToGasApplication(identifiers, state, mockAnswersTransformer, '1.1.1')
 
     expect(mockAnswersTransformer).toHaveBeenCalledTimes(1)
     expect(mockAnswersTransformer).toHaveBeenCalledWith(state)
+  })
+
+  it('should preserve the configured semver string', () => {
+    const identifiers = {
+      sbi: '12345678'
+    }
+    const state = {}
+    const mockAnswersTransformer = vi.fn().mockReturnValue({})
+
+    const result = transformStateObjectToGasApplication(
+      identifiers,
+      state,
+      mockAnswersTransformer,
+      '3.2.1-beta.2+build.4'
+    )
+
+    expect(result.metadata?.configVersion).toBe('3.2.1-beta.2+build.4')
+  })
+
+  it.each([undefined, null, '', 1, '1', '1.0', '01.0.0'])(
+    'should throw when configVersion is not a semver string: %s',
+    (configVersion) => {
+      const identifiers = {
+        sbi: '12345678',
+        clientRef: 'CLIENT-REF-456'
+      }
+      const state = {}
+      const mockAnswersTransformer = vi.fn().mockReturnValue({})
+
+      expect(() =>
+        transformStateObjectToGasApplication(identifiers, state, mockAnswersTransformer, configVersion)
+      ).toThrow('Invalid grant config version')
+      expect(mockAnswersTransformer).not.toHaveBeenCalled()
+    }
+  )
+
+  it.each(['', '1', '1.0', '01.0.0', 2])('should throw for invalid config version %s', (version) => {
+    const request = { app: { model: { def: { metadata: { version } } } } }
+
+    expect(() => resolveGasConfigVersion(request)).toThrow('Invalid grant config version')
   })
 })

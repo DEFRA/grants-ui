@@ -4,10 +4,12 @@
 .idea
 .public
 .server
+.junie
 node_modules
 npm-debug.log
 coverage
 .cache
+AGENTS.md
 .env
 .env.*
 !.env.example

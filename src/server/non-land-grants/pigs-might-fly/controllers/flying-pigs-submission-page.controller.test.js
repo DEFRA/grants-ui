@@ -1,7 +1,10 @@
 import { vi } from 'vitest'
 import FlyingPigsSubmissionPageController from '~/src/server/non-land-grants/pigs-might-fly/controllers/flying-pigs-submission-page.controller.js'
 import { stateToPigsMightFlyGasAnswers } from '~/src/server/non-land-grants/pigs-might-fly/mappers/state-to-gas-pigs-mapper.js'
-import { transformStateObjectToGasApplication } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
+import {
+  resolveGasConfigVersion,
+  transformStateObjectToGasApplication
+} from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
@@ -20,7 +23,13 @@ describe('FlyingPigsSubmissionPageController', () => {
   let mockRequest
 
   beforeEach(() => {
-    mockModel = {}
+    mockModel = {
+      def: {
+        metadata: {
+          version: '3.4.5'
+        }
+      }
+    }
 
     mockPageDef = { title: 'Test Page', path: '/test-path' }
     controller = new FlyingPigsSubmissionPageController(mockModel, mockPageDef)
@@ -41,6 +50,7 @@ describe('FlyingPigsSubmissionPageController', () => {
     }
 
     mockRequest = mockSimpleRequest({ params: { slug: 'pigs-might-fly' } })
+    resolveGasConfigVersion.mockReturnValue('3.4.5')
   })
 
   it('should initialize with the correct grant code and view name', () => {
@@ -63,8 +73,10 @@ describe('FlyingPigsSubmissionPageController', () => {
         previousClientRef: '654321'
       },
       mockContext.state,
-      stateToPigsMightFlyGasAnswers
+      stateToPigsMightFlyGasAnswers,
+      '3.4.5'
     )
+    expect(resolveGasConfigVersion).toHaveBeenCalledWith(mockRequest)
     expect(submitGrantApplication).toHaveBeenCalledWith('pigs-might-fly', mockApplicationData, mockRequest)
   })
 
@@ -84,7 +96,8 @@ describe('FlyingPigsSubmissionPageController', () => {
         clientRef: '123456'
       },
       mockContext.state,
-      stateToPigsMightFlyGasAnswers
+      stateToPigsMightFlyGasAnswers,
+      '3.4.5'
     )
     expect(submitGrantApplication).toHaveBeenCalledWith('pigs-might-fly', mockApplicationData, mockRequest)
   })
