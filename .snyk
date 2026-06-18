@@ -33,6 +33,10 @@ ignore:
     - '*':
         reason: 'Build-time only — vulnerable path is docusaurus mdx-loader in @defra/interactive-map docs, never loaded by grants-ui runtime. No upstream fix available.'
         expires: '2026-07-02'
+  'SNYK-JS-WEBPACKDEVSERVER-17353649':
+    - '*':
+        reason: 'Build-time only — webpack-dev-server via the docusaurus toolchain in @defra/interactive-map docs, never loaded by grants-ui runtime. Fixed in 5.2.5; interim ignore while the override is blocked by .npmrc min-release-age=7 (5.2.5 published 2026-06-12, installable from 2026-06-19). Replace with an overrides pin and remove this entry once it clears the cooldown.'
+        expires: '2026-06-26'
   'SNYK-JS-JOI-17317897':
     - '*':
         reason: 'Transitive via @defra/fcp-audit-publisher (bundles joi@18.1.2); its schema uses no recursive Joi.link/self-reference, so the vulnerable code path is not reachable. Direct joi pinned to ^17 due to consumer constraint — awaiting fcp-audit-publisher release pinning joi >= 18.2.1.'

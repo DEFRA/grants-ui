@@ -164,11 +164,16 @@ const registerPlugins = async (server) => {
     Bell,
     Cookie,
     h2o2,
+    // requestLogger (hapi-pino) decorates `server.logger`, which secureContext uses.
+    requestLogger,
+    // secureContext patches tls.createSecureContext to load CDP TRUSTSTORE_ CAs.
+    // It must register before `auth`, whose registration performs the OIDC well-known
+    // fetch over the egress proxy — global-agent v4 validates that TLS connection
+    // (rejectUnauthorized: true), so the CDP CAs must be trusted before the fetch runs.
+    secureContext,
     auth,
     rateLimitPlugin,
-    requestLogger,
     requestTracing,
-    secureContext,
     pulse,
     sessionCache,
     nunjucksConfig,
