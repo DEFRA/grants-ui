@@ -1,7 +1,10 @@
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 import { getRequiredConsents } from '~/src/server/common/utils/consents.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
-import { transformStateObjectToGasApplication } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
+import {
+  resolveGasConfigVersion,
+  transformStateObjectToGasApplication
+} from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
 import { stateToLandGrantsGasAnswers } from '~/src/server/land-grants/mappers/state-to-gas-answers-mapper.js'
 import { validateApplication } from '~/src/server/land-grants/services/land-grants.service.js'
@@ -50,6 +53,7 @@ export default class SubmissionPageController extends SummaryPageController {
     const { identifiers, state, validationResult } = data
     const grantCode = getGrantCode(request)
     const additionalAnswers = /** @type {Record<string, any> | undefined} */ (state.additionalAnswers)
+    const configVersion = resolveGasConfigVersion(request)
     const applicationData = transformStateObjectToGasApplication(
       identifiers,
       {
@@ -57,7 +61,8 @@ export default class SubmissionPageController extends SummaryPageController {
         ...additionalAnswers,
         validationResult
       },
-      stateToLandGrantsGasAnswers
+      stateToLandGrantsGasAnswers,
+      configVersion
     )
     return submitGrantApplication(grantCode, applicationData, request)
   }

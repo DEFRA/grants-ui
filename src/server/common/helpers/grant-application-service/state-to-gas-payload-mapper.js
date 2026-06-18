@@ -4,6 +4,7 @@
  * @property {string} [frn] - FRN
  * @property {string} [crn] - Customer Reference Number
  * @property {string} [clientRef] - Client Reference
+ * @property {string} [configVersion] - Grant configuration version
  * @property {string} [submittedAt] - Submission date
  */
 
@@ -12,6 +13,28 @@
  * @property {GASMetadata} [metadata] - GAS Metadata
  * @property {object} [answers] - GAS Answers
  */
+
+const SEMVER_PATTERN =
+  /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-(?:(?:0|[1-9]\d*|\d*[A-Za-z-][\dA-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][\dA-Za-z-]*))*))?(?:\+(?:[\dA-Za-z-]+(?:\.[\dA-Za-z-]+)*))?$/
+
+const assertSemverConfigVersion = (configVersion) => {
+  if (typeof configVersion !== 'string' || !SEMVER_PATTERN.test(configVersion)) {
+    throw new Error('Invalid grant config version, it must be a valid semver string')
+  }
+}
+
+/**
+ * Resolves the grant configuration version to send to GAS.
+ * @param {object} request - Hapi request
+ * @returns {string}
+ */
+export const resolveGasConfigVersion = (request) => {
+  const configVersion = request?.app?.model?.def?.metadata?.version ?? '1.0.0'
+
+  assertSemverConfigVersion(configVersion)
+
+  return configVersion
+}
 
 /**
  * Transforms FormContext object into a GAS Application payload for Land Grants.
@@ -22,12 +45,19 @@
  * @param {string} identifiers.clientRef - Client reference to be sent to GAS to track applications
  * @param {object} state - the DXT state object containing application details
  * @param {Function} transformAnswers - a function to transform the state object into the desired answers format
+ * @param {unknown} configVersion - the grant configuration version
  * @returns {GASPayload}
  */
-export const transformStateObjectToGasApplication = (identifiers, state, transformAnswers) => ({
-  metadata: {
-    ...identifiers,
-    submittedAt: new Date().toISOString()
-  },
-  answers: transformAnswers(state)
-})
+export const transformStateObjectToGasApplication = (identifiers, state, transformAnswers, configVersion) => {
+  assertSemverConfigVersion(configVersion)
+  const semverConfigVersion = /** @type {string} */ (configVersion)
+
+  return {
+    metadata: {
+      ...identifiers,
+      configVersion: semverConfigVersion,
+      submittedAt: new Date().toISOString()
+    },
+    answers: transformAnswers(state)
+  }
+}
