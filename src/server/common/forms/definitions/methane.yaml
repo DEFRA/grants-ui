@@ -384,6 +384,10 @@ pages:
     controller: DeclarationPageController
     view: declaration-page.html
     id: bc087fb8-e499-4344-a0bf-d427ded069b8
+  - title: Confirmation
+    path: /confirmation
+    controller: ConfirmationPageController
+    id: 9817cd3a-c9ae-49f1-8a95-076a82504d29
 lists:
   - title: MFSP Selection List
     name: mfspSelection

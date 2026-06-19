@@ -667,6 +667,10 @@ pages:
     view: woodland-declaration-page.html
     section: 52a9d09a-a977-4993-aa40-8eb77a4cd200
     controller: DeclarationPageController
+  - title: Confirmation
+    path: /confirmation
+    controller: ConfirmationPageController
+    id: 9817cd3a-c9ae-49f1-8a95-076a82504d45
 
 lists:
   - title: Forestry commission team list

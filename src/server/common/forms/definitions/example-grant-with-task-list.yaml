@@ -334,6 +334,11 @@ pages:
     section: 31370d87-fb56-4fb3-aa2b-f35781073300
     controller: DeclarationPageController
 
+  - title: Confirmation
+    path: /confirmation
+    controller: ConfirmationPageController
+    id: 9817cd3a-c9ae-49f1-8a95-076a82504d27
+
 conditions:
   - id: fe427aee-bb72-4fb6-99a0-8b2092605efd
     displayName: continueNo

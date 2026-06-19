@@ -895,7 +895,10 @@ pages:
     controller: DeclarationPageController
     view: declaration-page.html
     id: 8ee401e7-76c5-456b-a1f4-d84fca115e01
-
+  - title: Confirmation
+    path: /confirmation
+    controller: ConfirmationPageController
+    id: 9817cd3a-c9ae-49f1-8a95-076a82504d30
   # Off-journey page: never reached by the default V2 page walk because it is
   # positioned after the final journey page. It is only entered via a direct
   # link or a grantRedirectRule. Its custom controller reads the `next.path`

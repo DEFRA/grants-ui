@@ -7,7 +7,6 @@ import { home } from '~/src/server/home/index.js'
 import { agreements } from '~/src/server/agreements/index.js'
 import { devTools } from '~/src/server/dev-tools/index.js'
 import { journeyRunnerPlugin } from '~/src/server/dev-tools/journey-runner/journey-runner-plugin.js'
-import { configConfirmation } from '~/src/server/confirmation/config-confirmation.js'
 import { clearApplicationState } from './dev-tools/clear-application-state.js'
 import { cookies } from '~/src/server/cookies/index.js'
 import { printSubmittedApplication } from '~/src/server/print-submitted-application/print-submitted-application.controller.js'
@@ -32,7 +31,7 @@ export const router = {
       await server.register([auth])
 
       // Application specific routes, add your own routes here
-      await server.register([home, agreements, configConfirmation, cookies, printSubmittedApplication, cannotSubmit])
+      await server.register([home, agreements, cookies, printSubmittedApplication, cannotSubmit])
 
       await server.register([mapPlugin])
 

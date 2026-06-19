@@ -173,6 +173,10 @@ pages:
     controller: LandGrantsGenericPageController
     next: []
     id: 4b7a4340-0a8d-4c8a-b1fd-87858ebf212f
+  - title: Confirmation
+    path: /confirmation
+    controller: ConfirmationPageController
+    id: 9817cd3a-c9ae-49f1-8a95-076a82504d28
 lists: []
 sections: []
 conditions: []
