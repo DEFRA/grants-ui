@@ -26,6 +26,12 @@ async function setupOidcConfig() {
 
     return oidcConfig
   } catch (error) {
+    // AuthError.from() stores the cause in a Set that pino can't serialize, so
+    // log the underlying error's code/message here before it's swallowed.
+    const err = /** @type {Error & { code?: string }} */ (error)
+    logger.error(
+      `OIDC config fetch failed after ${Date.now() - startTime}ms: code=${err.code ?? 'n/a'} message=${err.message}`
+    )
     const authError = new AuthError({
       message: 'OIDC config fetch failed',
       source: 'setupOidcConfig',

@@ -8,10 +8,21 @@ vi.mock('~/src/config/config.js', () => ({
     get: vi.fn()
   }
 }))
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  logger: {
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn()
+  }
+}))
 
 describe('getOidcConfig', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   test('fetches OIDC configuration from well-known URL', async () => {
@@ -33,21 +44,44 @@ describe('getOidcConfig', () => {
 
     expect(mockConfig.config.get).toHaveBeenCalledWith('defraId.wellKnownUrl')
     expect(Wreck.get).toHaveBeenCalledWith('https://example.com/.well-known/openid_configuration', {
-      json: true
+      json: true,
+      timeout: 10000
     })
     expect(result).toEqual(mockPayload)
   })
 
-  test('handles network errors when fetching OIDC config', async () => {
+  test('retries then succeeds when an early attempt fails', async () => {
+    const mockConfig = await import('~/src/config/config.js')
+    mockConfig.config.get.mockReturnValue('https://example.com/.well-known/openid_configuration')
+
+    const mockPayload = { authorization_endpoint: 'https://example.com/auth' }
+    Wreck.get.mockRejectedValueOnce(new Error('Transient blip')).mockResolvedValueOnce({ payload: mockPayload })
+
+    vi.useFakeTimers()
+    const promise = getOidcConfig()
+    await vi.runAllTimersAsync()
+
+    await expect(promise).resolves.toEqual(mockPayload)
+    expect(Wreck.get).toHaveBeenCalledTimes(2)
+  })
+
+  test('retries the configured number of times then throws the last error', async () => {
     const mockConfig = await import('~/src/config/config.js')
     mockConfig.config.get.mockReturnValue('https://example.com/.well-known/openid_configuration')
 
     const networkError = new Error('Network request failed')
     Wreck.get.mockRejectedValue(networkError)
 
-    await expect(getOidcConfig()).rejects.toThrow('Network request failed')
+    vi.useFakeTimers()
+    const promise = getOidcConfig()
+    promise.catch(() => {})
+    await vi.runAllTimersAsync()
+
+    await expect(promise).rejects.toThrow('Network request failed')
+    expect(Wreck.get).toHaveBeenCalledTimes(3)
     expect(Wreck.get).toHaveBeenCalledWith('https://example.com/.well-known/openid_configuration', {
-      json: true
+      json: true,
+      timeout: 10000
     })
   })
 
@@ -58,6 +92,11 @@ describe('getOidcConfig', () => {
     const jsonError = new Error('Invalid JSON')
     Wreck.get.mockRejectedValue(jsonError)
 
-    await expect(getOidcConfig()).rejects.toThrow('Invalid JSON')
+    vi.useFakeTimers()
+    const promise = getOidcConfig()
+    promise.catch(() => {})
+    await vi.runAllTimersAsync()
+
+    await expect(promise).rejects.toThrow('Invalid JSON')
   })
 })
