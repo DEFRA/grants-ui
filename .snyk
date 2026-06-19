@@ -45,6 +45,38 @@ ignore:
     - '*':
         reason: 'Fix version is incoming from Defra forms team - Inefficient Algorithmic Complexity [Medium Severity][https://security.snyk.io/vuln/SNYK-JS-JSYAML-17342520] in js-yaml@4.1.1'
         expires: '2026-07-16'
+  'SNYK-JS-UNDICI-17372611':
+    - '*':
+        reason: 'Direct runtime dependency (undici@8.4.1, used by setupProxy ProxyAgent and native fetch). Fixed in undici@8.5.0 (published 2026-06-15); install blocked by .npmrc min-release-age=7 until 2026-06-22. Bump undici 8.4.1 -> 8.5.0 and remove this entry once the cooldown clears.'
+        expires: '2026-06-30'
+  'SNYK-JS-UNDICI-17372609':
+    - '*':
+        reason: 'Build-time/dev only — undici@7.25.0 via cheerio (docusaurus search in @defra/interactive-map docs) and devDependency jsdom; never loaded by grants-ui runtime. Fixed in undici@7.28.0; overrides pin blocked by .npmrc min-release-age=7 until 2026-06-22. Add the override and remove this entry once it clears.'
+        expires: '2026-07-02'
+  'SNYK-JS-UNDICI-17372752':
+    - '*':
+        reason: 'Build-time/dev only — undici@7.25.0 via cheerio (docusaurus search in @defra/interactive-map docs) and devDependency jsdom; never loaded by grants-ui runtime. Fixed in undici@7.28.0; overrides pin blocked by .npmrc min-release-age=7 until 2026-06-22. Add the override and remove this entry once it clears.'
+        expires: '2026-07-02'
+  'SNYK-JS-UNDICI-17372697':
+    - '*':
+        reason: 'Build-time/dev only — undici@7.25.0 via cheerio (docusaurus search in @defra/interactive-map docs) and devDependency jsdom; never loaded by grants-ui runtime. Fixed in undici@7.28.0; overrides pin blocked by .npmrc min-release-age=7 until 2026-06-22. Add the override and remove this entry once it clears.'
+        expires: '2026-07-02'
+  'SNYK-JS-UNDICI-17372754':
+    - '*':
+        reason: 'Build-time/dev only — undici@7.25.0 via cheerio (docusaurus search in @defra/interactive-map docs) and devDependency jsdom; never loaded by grants-ui runtime. Fixed in undici@7.28.0; overrides pin blocked by .npmrc min-release-age=7 until 2026-06-22. Add the override and remove this entry once it clears.'
+        expires: '2026-07-02'
+  'SNYK-JS-UNDICI-17372758':
+    - '*':
+        reason: 'Build-time/dev only — undici@7.25.0 via cheerio (docusaurus search in @defra/interactive-map docs) and devDependency jsdom; never loaded by grants-ui runtime. Fixed in undici@7.28.0; overrides pin blocked by .npmrc min-release-age=7 until 2026-06-22. Add the override and remove this entry once it clears.'
+        expires: '2026-07-02'
+  'SNYK-JS-UNDICI-17372658':
+    - '*':
+        reason: 'Build-time/dev only — undici@7.25.0 via cheerio (docusaurus search in @defra/interactive-map docs) and devDependency jsdom; never loaded by grants-ui runtime. Fixed in undici@7.28.0; overrides pin blocked by .npmrc min-release-age=7 until 2026-06-22. Add the override and remove this entry once it clears.'
+        expires: '2026-07-02'
+  'SNYK-JS-UNDICI-17372667':
+    - '*':
+        reason: 'Build-time/dev only — undici@7.25.0 via cheerio (docusaurus search in @defra/interactive-map docs) and devDependency jsdom; never loaded by grants-ui runtime. Fixed in undici@7.28.0/8.2.0; overrides pin blocked by .npmrc min-release-age=7 until 2026-06-22. Add the override and remove this entry once it clears.'
+        expires: '2026-07-02'
   'SNYK-JS-HTTPPROXYMIDDLEWARE-17375053':
     - '*':
         reason: 'Build-time only — http-proxy-middleware via webpack-dev-server in the docusaurus toolchain of @defra/interactive-map docs, never loaded by grants-ui runtime. Fixed only in 3.0.6/4.1.0, but webpack-dev-server@5.2.5 pins http-proxy-middleware ^2.0.9, so no in-range upgrade or override is viable. Remove once webpack-dev-server bumps to an http-proxy-middleware 3.x/4.x line.'
