@@ -64,6 +64,21 @@ mkdir -p woodland-grant-journey-tests-schemas
 curl -fL "https://raw.githubusercontent.com/DEFRA/grants-config-woodland/$WOODLAND_TAG/configurations/woodland/gas/gas.json" -o woodland-grant-journey-tests-schemas/gas.schema.json
 
 COMPOSE_COMMAND='docker compose -f compose.yml -f compose.ha.yml -f compose.land-grants.yml -f compose.ci.yml'
+
+# Guarantee teardown of both the main stack and the ephemeral test stack on
+# any exit (success, failure, or interrupt). This ensures that even if a test
+# suite hook exits non-zero under `set -e`, containers, networks and volumes
+# are still cleaned up instead of being left running locally.
+cleanup() {
+  echo ""
+  echo "Cleaning up docker compose stacks..."
+  if [ -n "${COMPOSE_COMMAND:-}" ]; then
+    eval "${COMPOSE_COMMAND} down -v" || true
+  fi
+  docker compose -f compose.tests.yml down -v || true
+}
+trap cleanup EXIT
+
 echo "Running pre-emptive volume cleanse..."
 docker volume prune -f
 echo "Building docker compose containers..."
@@ -123,6 +138,6 @@ if [ -n "${PERFORMANCE_TESTS_HOOK:-}" ]; then
   eval "${PERFORMANCE_TESTS_HOOK}"
 fi
 
-eval "${COMPOSE_COMMAND} down -v"
+# Teardown is handled by the cleanup() trap registered above.
 echo ""
 echo "Tests complete."
