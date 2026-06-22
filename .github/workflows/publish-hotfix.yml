@@ -36,6 +36,6 @@ jobs:
           npm run test:contracts
 
       - name: Publish Hot Fix
-        uses: DEFRA/cdp-build-action/build-hotfix@9d9b624a3f6c2f14763700d38561f9a32fd9ff3f # main
+        uses: DEFRA/cdp-build-action/build-hotfix@e96983a427efc87dee7923f4ffdb5b9867259239 # main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
