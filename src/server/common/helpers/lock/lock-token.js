@@ -29,7 +29,7 @@ export function mintLockToken({ userId, sbi, grantCode, grantVersion }) {
     typ: 'lock'
   }
 
-  if (grantVersion !== undefined && grantVersion !== null) {
+  if (grantVersion != null) {
     payload.grantVersion = grantVersion
   }
 
