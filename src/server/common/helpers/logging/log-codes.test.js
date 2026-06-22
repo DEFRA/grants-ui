@@ -149,6 +149,41 @@ describe('LogCodes', () => {
         'error',
         { userId: TEST_USER_IDS.DEFAULT, errorMessage: TEST_ERRORS.INVALID_CREDENTIALS },
         `Authentication error for user=${TEST_USER_IDS.DEFAULT}: ${TEST_ERRORS.INVALID_CREDENTIALS}`
+      ],
+      [
+        'OIDC_CONFIG_FETCH_RETRY',
+        'warn',
+        {
+          attempt: 1,
+          maxAttempts: 3,
+          wellKnownUrl: 'https://example.com/.well-known/openid_configuration',
+          code: 'ECONNRESET',
+          errorMessage: 'Transient blip'
+        },
+        'OIDC well-known fetch attempt 1/3 failed for https://example.com/.well-known/openid_configuration: code=ECONNRESET message=Transient blip'
+      ],
+      [
+        'OIDC_CONFIG_FETCH_RETRY with missing code',
+        'warn',
+        {
+          attempt: 2,
+          maxAttempts: 3,
+          wellKnownUrl: 'https://example.com/.well-known/openid_configuration',
+          errorMessage: 'Transient blip'
+        },
+        'OIDC well-known fetch attempt 2/3 failed for https://example.com/.well-known/openid_configuration: code=n/a message=Transient blip'
+      ],
+      [
+        'OIDC_CONFIG_FETCH_FAILURE',
+        'error',
+        { durationMs: 1234, code: 'ETIMEDOUT', errorMessage: 'Network timeout' },
+        'OIDC config fetch failed after 1234ms: code=ETIMEDOUT message=Network timeout'
+      ],
+      [
+        'OIDC_CONFIG_FETCH_FAILURE with missing code',
+        'error',
+        { durationMs: 1234, errorMessage: 'Network timeout' },
+        'OIDC config fetch failed after 1234ms: code=n/a message=Network timeout'
       ]
     ])
 
