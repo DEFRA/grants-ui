@@ -313,11 +313,20 @@ describe('Auth Plugin', () => {
 
   test('logs detailed error information when OIDC config fetch fails', async () => {
     const error = createMockError('Network timeout', 'Error', 'Error: Network timeout\n    at test')
+    error.code = 'ETIMEDOUT'
     getOidcConfig.mockRejectedValue(error)
 
     config.get.mockImplementation(createMockConfigWithOverrides())
 
     await expect(AuthPlugin.plugin.register(server)).rejects.toThrow(AuthError)
+    expect(log).toHaveBeenCalledWith(
+      LogCodes.AUTH.OIDC_CONFIG_FETCH_FAILURE,
+      expect.objectContaining({
+        durationMs: expect.any(Number),
+        code: 'ETIMEDOUT',
+        errorMessage: 'Network timeout'
+      })
+    )
   })
 
   describe('getBellOptions', () => {
