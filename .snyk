@@ -45,3 +45,7 @@ ignore:
     - '*':
         reason: 'Fix version is incoming from Defra forms team - Inefficient Algorithmic Complexity [Medium Severity][https://security.snyk.io/vuln/SNYK-JS-JSYAML-17342520] in js-yaml@4.1.1'
         expires: '2026-07-16'
+  'SNYK-JS-HTTPPROXYMIDDLEWARE-17375053':
+    - '*':
+        reason: 'Build-time only — http-proxy-middleware via webpack-dev-server in the docusaurus toolchain of @defra/interactive-map docs, never loaded by grants-ui runtime. Fixed only in 3.0.6/4.1.0, but webpack-dev-server@5.2.5 pins http-proxy-middleware ^2.0.9, so no in-range upgrade or override is viable. Remove once webpack-dev-server bumps to an http-proxy-middleware 3.x/4.x line.'
+        expires: '2026-07-16'
