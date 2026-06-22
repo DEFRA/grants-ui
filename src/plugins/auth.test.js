@@ -867,6 +867,7 @@ describe('Auth Plugin', () => {
           // Manually simulate an authenticated request
           request.auth = {
             isAuthenticated: true,
+            strategy: 'session',
             credentials: {
               profile: {
                 contactId: '12345',
