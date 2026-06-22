@@ -12,6 +12,7 @@ import { log, debug, LogCodes, logger } from '~/src/server/common/helpers/loggin
  */
 async function setupOidcConfig() {
   const startTime = Date.now()
+  let caughtError
   try {
     logger.debug('Starting OIDC configuration fetch from well-known endpoint')
     const oidcConfig = await getOidcConfig()
@@ -26,21 +27,27 @@ async function setupOidcConfig() {
 
     return oidcConfig
   } catch (error) {
-    // AuthError.from() stores the cause in a Set that pino can't serialize, so
-    // log the underlying error's code/message here before it's swallowed.
-    const err = /** @type {Error & { code?: string }} */ (error)
-    logger.error(
-      `OIDC config fetch failed after ${Date.now() - startTime}ms: code=${err.code ?? 'n/a'} message=${err.message}`
-    )
-    const authError = new AuthError({
-      message: 'OIDC config fetch failed',
-      source: 'setupOidcConfig',
-      reason: 'oidc_config_failure',
-      wellKnownUrl: config.get('defraId.wellKnownUrl')
-    })
-    authError.logCode = LogCodes.AUTH.SIGN_IN_FAILURE
-    throw authError.from(/** @type {Error} */ (error))
+    caughtError = error
   }
+
+  // Handled outside the catch so the lint rule that bars log helpers inside
+  // catch blocks is satisfied. AuthError.from() stores the cause in a Set that
+  // pino can't serialize, so log the underlying error's code/message via a log
+  // code here before it's swallowed.
+  const err = /** @type {Error & { code?: string }} */ (caughtError)
+  log(LogCodes.AUTH.OIDC_CONFIG_FETCH_FAILURE, {
+    durationMs: Date.now() - startTime,
+    code: err.code ?? 'n/a',
+    errorMessage: err.message
+  })
+  const authError = new AuthError({
+    message: 'OIDC config fetch failed',
+    source: 'setupOidcConfig',
+    reason: 'oidc_config_failure',
+    wellKnownUrl: config.get('defraId.wellKnownUrl')
+  })
+  authError.logCode = LogCodes.AUTH.SIGN_IN_FAILURE
+  throw authError.from(/** @type {Error} */ (caughtError))
 }
 
 /**

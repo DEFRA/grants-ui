@@ -1,18 +1,12 @@
 import { vi } from 'vitest'
 import Wreck from '@hapi/wreck'
 import { getOidcConfig } from './get-oidc-config.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 vi.mock('@hapi/wreck')
 vi.mock('~/src/config/config.js', () => ({
   config: {
     get: vi.fn()
-  }
-}))
-vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  logger: {
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn()
   }
 }))
 
@@ -55,7 +49,9 @@ describe('getOidcConfig', () => {
     mockConfig.config.get.mockReturnValue('https://example.com/.well-known/openid_configuration')
 
     const mockPayload = { authorization_endpoint: 'https://example.com/auth' }
-    Wreck.get.mockRejectedValueOnce(new Error('Transient blip')).mockResolvedValueOnce({ payload: mockPayload })
+    const blip = /** @type {Error & { code?: string }} */ (new Error('Transient blip'))
+    blip.code = 'ECONNRESET'
+    Wreck.get.mockRejectedValueOnce(blip).mockResolvedValueOnce({ payload: mockPayload })
 
     vi.useFakeTimers()
     const promise = getOidcConfig()
@@ -63,6 +59,13 @@ describe('getOidcConfig', () => {
 
     await expect(promise).resolves.toEqual(mockPayload)
     expect(Wreck.get).toHaveBeenCalledTimes(2)
+    expect(log).toHaveBeenCalledWith(LogCodes.AUTH.OIDC_CONFIG_FETCH_RETRY, {
+      attempt: 1,
+      maxAttempts: 3,
+      wellKnownUrl: 'https://example.com/.well-known/openid_configuration',
+      code: 'ECONNRESET',
+      errorMessage: 'Transient blip'
+    })
   })
 
   test('retries the configured number of times then throws the last error', async () => {
