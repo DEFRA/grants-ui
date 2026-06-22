@@ -29,7 +29,6 @@ export async function closeFormsRedisClient() {
 
 const KEYS = {
   meta: (/** @type {string} */ slug) => `forms:meta:${slug}`,
-  def: (/** @type {string} */ slug) => `forms:def:${slug}`,
   reverse: (/** @type {string} */ id) => `forms:reverse:${id}`,
   slugs: 'forms:slugs'
 }
@@ -50,31 +49,6 @@ export async function setFormMeta(redis, slug, entry) {
  */
 export async function getFormMeta(redis, slug) {
   const raw = await redis.get(KEYS.meta(slug))
-  return raw ? JSON.parse(raw) : null
-}
-
-/**
- * @param {Redis | Cluster} redis
- * @param {string} slug
- * @param {FormDefinition} definition
- * @param {number} [ttlSeconds] - omit for no TTL (YAML forms)
- */
-export async function setFormDef(redis, slug, definition, ttlSeconds) {
-  const serialised = JSON.stringify(definition)
-  if (ttlSeconds) {
-    await redis.set(KEYS.def(slug), serialised, 'EX', ttlSeconds)
-  } else {
-    await redis.set(KEYS.def(slug), serialised)
-  }
-}
-
-/**
- * @param {Redis | Cluster} redis
- * @param {string} slug
- * @returns {Promise<FormDefinition | null>}
- */
-export async function getFormDef(redis, slug) {
-  const raw = await redis.get(KEYS.def(slug))
   return raw ? JSON.parse(raw) : null
 }
 
@@ -125,7 +99,6 @@ export async function getAllFormMetas(redis) {
 
 /**
  * @import { Redis, Cluster } from 'ioredis'
- * @import { FormDefinition } from '@defra/forms-model'
  */
 
 /**
@@ -133,7 +106,7 @@ export async function getAllFormMetas(redis) {
  * @property {string} id
  * @property {string} slug
  * @property {string} title
- * @property {'yaml' | 'api'} source
+ * @property {'yaml' | 'backend'} source
  * @property {string} [path] - Absolute path to the YAML file; only present for source='yaml' forms
  * @property {Record<string, unknown>} [metadata] - Custom metadata from the form definition
  */

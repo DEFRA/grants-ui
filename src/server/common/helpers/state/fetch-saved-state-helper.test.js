@@ -31,7 +31,7 @@ vi.mock('./get-cache-key-helper.js', () => ({
   parseSessionKey: mockParseSessionKey
 }))
 
-let fetchSavedStateFromApi
+let fetchStateWithDefinitionFromApi
 let clearSavedStateFromApi
 let log
 let LogCodes
@@ -49,12 +49,12 @@ describe('State API helpers', () => {
     })
   })
 
-  describe('fetchSavedStateFromApi', () => {
+  describe('fetchStateWithDefinitionFromApi', () => {
     describe('With backend configured correctly', () => {
       beforeAll(async () => {
         vi.doMock('~/src/config/config.js', createMockConfig)
         const helper = await import('~/src/server/common/helpers/state/fetch-saved-state-helper.js?t=' + Date.now())
-        fetchSavedStateFromApi = helper.fetchSavedStateFromApi
+        fetchStateWithDefinitionFromApi = helper.fetchStateWithDefinitionFromApi
         clearSavedStateFromApi = helper.clearSavedStateFromApi
         log = (await import('../logging/log.js')).log
         LogCodes = (await import('../logging/log.js')).LogCodes
@@ -68,41 +68,51 @@ describe('State API helpers', () => {
         vi.unmock('~/src/config/config.js')
       })
 
-      it('returns state when response is valid', async () => {
-        mockFetch.mockResolvedValue(createMockFetchResponse({ data: MOCK_STATE_DATA.DEFAULT }))
+      it('POSTs to /state/with-definition and returns the envelope', async () => {
+        const envelope = { definition: { major: 1, minor: 0, patch: 0 }, state: { foo: 'bar' }, upgraded: false }
+        mockFetch.mockResolvedValue(createMockFetchResponse({ data: envelope }))
 
-        const result = await fetchSavedStateFromApi(key, mockRequest)
+        const result = await fetchStateWithDefinitionFromApi(key, mockRequest, { lockToken: 'tok' })
 
-        expect(result).toHaveProperty('state')
+        expect(result).toEqual(envelope)
         expect(mockFetch).toHaveBeenCalledTimes(1)
+        expect(mockFetch).toHaveBeenCalledWith(
+          expect.stringContaining('/state/with-definition'),
+          expect.objectContaining({
+            method: 'POST',
+            headers: expect.objectContaining({
+              'Content-Type': 'application/json',
+              Authorization: expect.any(String)
+            }),
+            body: JSON.stringify({
+              sbi: TEST_USER_IDS.ORGANISATION_ID,
+              grantCode: TEST_USER_IDS.GRANT_ID,
+              includeDefinition: true
+            })
+          })
+        )
         expect(log).toHaveBeenCalledWith(
           LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG,
           expect.objectContaining({
-            method: 'GET',
-            endpoint: expect.stringContaining('/state/'),
-            identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`
+            method: 'POST',
+            endpoint: expect.stringContaining('/state/with-definition')
           }),
           mockRequest
         )
       })
 
-      it('includes authorization header in fetch request', async () => {
-        mockFetch.mockResolvedValue(createMockFetchResponse({ data: MOCK_STATE_DATA.DEFAULT }))
+      it('sends includeDefinition: false when requested (state-only)', async () => {
+        mockFetch.mockResolvedValue(createMockFetchResponse({ data: { state: null, upgraded: false } }))
 
-        await fetchSavedStateFromApi(key, mockRequest)
+        await fetchStateWithDefinitionFromApi(key, mockRequest, { lockToken: 'tok', includeDefinition: false })
 
-        expect(mockFetch).toHaveBeenCalledTimes(1)
         expect(mockFetch).toHaveBeenCalledWith(
-          expect.stringMatching(
-            new RegExp(
-              `/state/\\?sbi=${TEST_USER_IDS.ORGANISATION_ID}&grantCode=${TEST_USER_IDS.GRANT_ID}.*document=true`
-            )
-          ),
+          expect.stringContaining('/state/with-definition'),
           expect.objectContaining({
-            method: 'GET',
-            headers: expect.objectContaining({
-              'Content-Type': 'application/json',
-              Authorization: expect.any(String)
+            body: JSON.stringify({
+              sbi: TEST_USER_IDS.ORGANISATION_ID,
+              grantCode: TEST_USER_IDS.GRANT_ID,
+              includeDefinition: false
             })
           })
         )
@@ -111,50 +121,56 @@ describe('State API helpers', () => {
       it('returns null on 404', async () => {
         mockFetch.mockResolvedValue(createMockFetchResponse({ ok: false, status: HTTP_STATUS.NOT_FOUND }))
 
-        const result = await fetchSavedStateFromApi(key, mockRequest)
+        const result = await fetchStateWithDefinitionFromApi(key, mockRequest)
 
         expect(result).toBeNull()
         expect(log).toHaveBeenCalledWith(
           LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG,
           expect.objectContaining({
-            method: 'GET',
-            endpoint: expect.stringContaining('/state/'),
-            identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`,
-            summary: 'No state found in backend'
+            method: 'POST',
+            endpoint: expect.stringContaining('/state/with-definition'),
+            summary: 'No form definition found'
           }),
           mockRequest
         )
+      })
+
+      it('throws a Boom error on 423 Locked', async () => {
+        mockFetch.mockResolvedValue(createMockFetchResponse({ ok: false, status: 423 }))
+
+        const error = await fetchStateWithDefinitionFromApi(key, mockRequest).catch((e) => e)
+
+        expect(error.isBoom).toBe(true)
+        expect(error.output.statusCode).toBe(423)
       })
 
       it('throws error on non-200 (not 404)', async () => {
         mockFetch.mockResolvedValue(createMockFetchResponse({ ok: false, status: HTTP_STATUS.INTERNAL_SERVER_ERROR }))
 
-        await expect(fetchSavedStateFromApi(key, mockRequest)).rejects.toThrow()
+        await expect(fetchStateWithDefinitionFromApi(key, mockRequest)).rejects.toThrow()
 
         expect(log).toHaveBeenCalledWith(
           LogCodes.SYSTEM.EXTERNAL_API_ERROR,
           expect.objectContaining({
-            method: 'GET',
-            endpoint: expect.stringContaining('/state/'),
-            identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`,
-            error: 'Failed to fetch saved state: 500'
+            method: 'POST',
+            endpoint: expect.stringContaining('/state/with-definition'),
+            error: 'Failed to fetch state with definition: 500'
           }),
           mockRequest
         )
       })
 
-      it('throws error when response JSON is invalid or missing state', async () => {
+      it('throws error when response JSON is invalid', async () => {
         mockFetch.mockResolvedValue(createMockFetchResponse({ data: 123 }))
 
-        await expect(fetchSavedStateFromApi(key, mockRequest)).rejects.toThrow()
+        await expect(fetchStateWithDefinitionFromApi(key, mockRequest)).rejects.toThrow()
 
         expect(log).toHaveBeenCalledWith(
           LogCodes.SYSTEM.EXTERNAL_API_ERROR,
           expect.objectContaining({
-            method: 'GET',
-            endpoint: expect.stringContaining('/state/'),
-            identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`,
-            error: 'Unexpected or empty state format: 123'
+            method: 'POST',
+            endpoint: expect.stringContaining('/state/with-definition'),
+            error: 'Unexpected or empty state-with-definition format: 123'
           }),
           mockRequest
         )
@@ -164,14 +180,13 @@ describe('State API helpers', () => {
         const networkError = new Error(ERROR_MESSAGES.NETWORK_ERROR)
         mockFetch.mockRejectedValue(networkError)
 
-        await expect(fetchSavedStateFromApi(key, mockRequest)).rejects.toThrow()
+        await expect(fetchStateWithDefinitionFromApi(key, mockRequest)).rejects.toThrow()
 
         expect(log).toHaveBeenCalledWith(
           LogCodes.SYSTEM.EXTERNAL_API_ERROR,
           expect.objectContaining({
-            method: 'GET',
-            endpoint: expect.stringContaining('/state/'),
-            identity: `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`,
+            method: 'POST',
+            endpoint: expect.stringContaining('/state/with-definition'),
             errorMessage: 'Network error'
           }),
           mockRequest
@@ -180,9 +195,9 @@ describe('State API helpers', () => {
 
       it('passes the lockToken to createApiHeadersForGrantsUiBackend', async () => {
         const lockToken = 'LOCK-TOKEN-123'
-        mockFetch.mockResolvedValue(createMockFetchResponse({ data: MOCK_STATE_DATA.DEFAULT }))
+        mockFetch.mockResolvedValue(createMockFetchResponse({ data: { state: null, upgraded: false } }))
 
-        await fetchSavedStateFromApi(key, mockRequest, { lockToken })
+        await fetchStateWithDefinitionFromApi(key, mockRequest, { lockToken })
 
         expect(createApiHeadersForGrantsUiBackend).toHaveBeenCalledWith({ lockToken })
       })
@@ -193,7 +208,7 @@ describe('State API helpers', () => {
         vi.resetModules()
         vi.doMock('~/src/config/config.js', createMockConfigWithoutEndpoint)
         const helper = await import('~/src/server/common/helpers/state/fetch-saved-state-helper.js?t=' + Date.now())
-        fetchSavedStateFromApi = helper.fetchSavedStateFromApi
+        fetchStateWithDefinitionFromApi = helper.fetchStateWithDefinitionFromApi
       })
 
       beforeEach(() => {
@@ -205,7 +220,7 @@ describe('State API helpers', () => {
       })
 
       it('returns null when GRANTS_UI_BACKEND_ENDPOINT is not configured', async () => {
-        const result = await fetchSavedStateFromApi(key, mockRequest)
+        const result = await fetchStateWithDefinitionFromApi(key, mockRequest)
 
         expect(result).toBeNull()
         expect(mockFetch).not.toHaveBeenCalled()

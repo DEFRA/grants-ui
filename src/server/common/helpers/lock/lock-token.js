@@ -8,28 +8,35 @@ import jwt from 'jsonwebtoken'
  * - Identify the user/session attempting to own a lock
  * - Prove the token was minted by grants-ui
  *
+ * The `grantVersion` claim is optional: read lock tokens (e.g. the combined
+ * `POST /state/with-definition` call) are minted before the active grant
+ * version is known, so the backend validates them with `requireGrantVersion: false`.
+ * When omitted, the claim is left out of the token entirely.
+ *
  * @param {object} params
  * @param {string} params.userId - DEFRA ID of the authenticated user
  * @param {string} params.sbi - Single Business Identifier defining the lock scope
  * @param {string} params.grantCode - Identifier of the grant code being locked
- * @param {string | number} params.grantVersion - Version of the grant being locked
+ * @param {string | number} [params.grantVersion] - Version of the grant being locked (optional)
  * @returns {string} Signed JWT lock token
  */
 export function mintLockToken({ userId, sbi, grantCode, grantVersion }) {
-  return jwt.sign(
-    {
-      sub: userId,
-      sbi,
-      grantCode,
-      grantVersion,
-      typ: 'lock'
-    },
-    config.get('applicationLock.secret'),
-    {
-      audience: 'grants-backend',
-      issuer: 'grants-ui'
-    }
-  )
+  /** @type {Record<string, unknown>} */
+  const payload = {
+    sub: userId,
+    sbi,
+    grantCode,
+    typ: 'lock'
+  }
+
+  if (grantVersion !== undefined && grantVersion !== null) {
+    payload.grantVersion = grantVersion
+  }
+
+  return jwt.sign(payload, config.get('applicationLock.secret'), {
+    audience: 'grants-backend',
+    issuer: 'grants-ui'
+  })
 }
 
 /**
