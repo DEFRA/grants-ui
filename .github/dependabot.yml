@@ -30,11 +30,16 @@ updates:
         versions: [">=6.0.0"]
     groups:
       weekly-dependencies:
+        applies-to: version-updates
         patterns:
           - "*"
         update-types:
           - "minor"
           - "patch"
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
   # Update GitHub Actions
   - package-ecosystem: "github-actions"
     directory: /
