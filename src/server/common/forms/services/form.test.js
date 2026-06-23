@@ -30,7 +30,8 @@ const DEFAULT_CONFIG_MOCK = {
   'configApi.url': '',
   'configApi.jwtSecret': '',
   'configApi.jwtExpiry': '1h',
-  'configApi.cacheTtlSeconds': 300
+  'configApi.cacheTtlSeconds': 300,
+  enableAllowlistGrantCodes: ''
 }
 
 const TEST_FORMS_ARRAY = [
@@ -495,14 +496,30 @@ describe('form', () => {
   describe('validateWhitelistConfiguration', () => {
     const testForm = { title: 'Test Form' }
 
-    it('skips all validation when enableAllowlistEndpoint is true', () => {
-      config.get.mockImplementation((key) => (key === 'enableAllowlistEndpoint' ? true : DEFAULT_CONFIG_MOCK[key]))
+    it('skips validation when the grant code is in enableAllowlistGrantCodes', () => {
+      config.get.mockImplementation((key) =>
+        key === 'enableAllowlistGrantCodes' ? 'woodland,farm-payments' : DEFAULT_CONFIG_MOCK[key]
+      )
 
       expect(() =>
-        validateWhitelistConfiguration(testForm, {
-          metadata: { whitelistCrnEnvVar: 'MISSING_CRN_VAR' }
-        })
+        validateWhitelistConfiguration(
+          { slug: 'woodland' },
+          { metadata: { whitelistCrnEnvVar: 'MISSING_CRN_VAR' } }
+        )
       ).not.toThrow()
+    })
+
+    it('runs validation when the grant code is not in enableAllowlistGrantCodes', () => {
+      config.get.mockImplementation((key) =>
+        key === 'enableAllowlistGrantCodes' ? 'farm-payments' : DEFAULT_CONFIG_MOCK[key]
+      )
+
+      expect(() =>
+        validateWhitelistConfiguration(
+          { slug: 'woodland' },
+          { metadata: { whitelistCrnEnvVar: 'MISSING_CRN_VAR' } }
+        )
+      ).toThrow()
     })
 
     test.each([

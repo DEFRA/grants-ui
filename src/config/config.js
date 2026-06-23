@@ -284,11 +284,11 @@ const convictConfig = {
     default: false,
     env: 'MAP_MOCK_DATA_ENABLED'
   },
-  enableAllowlistEndpoint: {
-    doc: 'Use the grants-ui-backend allowlist endpoint for grant access control instead of env var whitelists',
-    format: Boolean,
-    default: false,
-    env: 'ENABLE_ALLOWLIST_ENDPOINT'
+  enableAllowlistGrantCodes: {
+    doc: 'Comma-separated grant codes that should use the grants-ui-backend allowlist endpoint instead of env var whitelists. Empty means use whitelist for all grants.',
+    format: String,
+    default: '',
+    env: 'ENABLE_ALLOWLIST_GRANT_CODES'
   },
   devTools: devToolsSchema,
   configApi: configApiSchema,

@@ -181,7 +181,8 @@ const registerPlugins = async (server) => {
     sso,
     permissions,
     contentSecurityPolicy,
-    config.get('enableAllowlistEndpoint') ? allowlist : whitelist,
+    allowlist,
+    whitelist,
     auditPublisher
   ])
 

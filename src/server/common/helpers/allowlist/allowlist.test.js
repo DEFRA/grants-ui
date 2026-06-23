@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import allowlist from './allowlist.js'
+import { config } from '~/src/config/config.js'
 import { mockHapiRequest, mockHapiResponseToolkit, mockHapiServer } from '~/src/__mocks__/hapi-mocks.js'
 import { getAllForms } from '~/src/server/dev-tools/utils/index.js'
 import { fetchAllowedGrants } from '~/src/server/auth/services/allowlist.client.js'
 
+vi.mock('~/src/config/config.js', () => ({ config: { get: vi.fn() } }))
 vi.mock('~/src/server/dev-tools/utils/index.js', () => ({ getAllForms: vi.fn() }))
 vi.mock('~/src/server/auth/services/allowlist.client.js', () => ({ fetchAllowedGrants: vi.fn() }))
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({ log: vi.fn() }))
@@ -29,6 +31,7 @@ describe('allowlist plugin', () => {
     vi.clearAllMocks()
     server = mockHapiServer()
     h = mockHapiResponseToolkit()
+    config.get.mockReturnValue('woodland')
   })
 
   afterEach(() => {
@@ -61,6 +64,22 @@ describe('allowlist plugin', () => {
 
     expect(result).toBe(h.continue)
     expect(getAllForms).not.toHaveBeenCalled()
+  })
+
+  it('continues when the grant code is not in enableAllowlistGrantCodes (falls back to whitelist)', async () => {
+    const handler = registerAndGetHandler(server)
+    config.get.mockReturnValue('farm-payments')
+    getAllForms.mockReturnValue([{ slug: SLUG, metadata: { submission: { grantCode: 'woodland' } } }])
+
+    const request = mockHapiRequest({
+      params: { slug: SLUG },
+      auth: { isAuthenticated: true, credentials: { crn: CRN, sbi: SBI } }
+    })
+
+    const result = await handler(request, h)
+
+    expect(fetchAllowedGrants).not.toHaveBeenCalled()
+    expect(result).toBe(h.continue)
   })
 
   it('falls back to slug when the form has no grantCode in metadata', async () => {

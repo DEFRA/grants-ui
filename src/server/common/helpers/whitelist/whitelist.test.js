@@ -1,8 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import whitelist from './whitelist.js'
+import { config } from '~/src/config/config.js'
 import { mockHapiRequest, mockHapiResponseToolkit, mockHapiServer } from '~/src/__mocks__/hapi-mocks.js'
 import { getAllForms } from '~/src/server/dev-tools/utils/index.js'
 import { WhitelistServiceFactory } from '~/src/server/auth/services/whitelist.service.js'
+
+vi.mock('~/src/config/config.js', () => ({ config: { get: vi.fn() } }))
 
 vi.mock('~/src/server/dev-tools/utils/index.js', () => ({
   getAllForms: vi.fn()
@@ -44,6 +47,7 @@ describe('whitelist plugin', () => {
     vi.clearAllMocks()
     server = mockHapiServer()
     h = mockHapiResponseToolkit()
+    config.get.mockReturnValue('')
   })
 
   afterEach(() => {
@@ -171,6 +175,24 @@ describe('whitelist plugin', () => {
     const result = await handler(request, h)
 
     expect(sendAuditEvent).not.toHaveBeenCalled()
+    expect(result).toBe(h.continue)
+  })
+
+  it('should skip whitelist and continue when grant code is in enableAllowlistGrantCodes', async () => {
+    const handler = registerAndGetOnPostAuth(server)
+    config.get.mockReturnValue('woodland')
+
+    getAllForms.mockReturnValue([{ slug: 'woodland', metadata: { submission: { grantCode: 'woodland' } } }])
+
+    const request = mockHapiRequest({
+      path: '/woodland/tasks',
+      params: { slug: 'woodland' },
+      auth: { isAuthenticated: true, credentials: { crn: '1100946179', sbi: '115371673' } }
+    })
+
+    const result = await handler(request, h)
+
+    expect(WhitelistServiceFactory.getService).not.toHaveBeenCalled()
     expect(result).toBe(h.continue)
   })
 

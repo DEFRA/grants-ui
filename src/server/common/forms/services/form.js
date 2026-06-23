@@ -236,7 +236,17 @@ export function validateDetailsPageConfiguration(form, definition) {
  * @returns {void}
  */
 export function validateWhitelistConfiguration(form, definition) {
-  if (config.get('enableAllowlistEndpoint')) {
+  const enabledCodes = config
+    .get('enableAllowlistGrantCodes')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+
+  const grantCode =
+    /** @type {{ submission?: { grantCode?: string } } | undefined} */ (definition.metadata)?.submission
+      ?.grantCode ?? form.slug
+
+  if (enabledCodes.includes(grantCode)) {
     return
   }
 

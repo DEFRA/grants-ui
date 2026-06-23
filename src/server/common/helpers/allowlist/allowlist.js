@@ -1,3 +1,4 @@
+import { config } from '~/src/config/config.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 import { fetchAllowedGrants } from '~/src/server/auth/services/allowlist.client.js'
@@ -41,6 +42,16 @@ const allowlistHandler = async (request, h) => {
 
   const metadata = /** @type {{ submission?: { grantCode?: string } } | undefined} */ (form?.metadata)
   const grantCode = metadata?.submission?.grantCode ?? form?.slug
+
+  const enabledCodes = config
+    .get('enableAllowlistGrantCodes')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+
+  if (!enabledCodes.includes(grantCode)) {
+    return h.continue
+  }
 
   const allowedGrants = await fetchAllowedGrants(crn, sbi)
   const hasAccess = allowedGrants.includes(grantCode)
