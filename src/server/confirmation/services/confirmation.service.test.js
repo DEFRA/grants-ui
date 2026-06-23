@@ -51,7 +51,7 @@ describe('ConfirmationService', () => {
       sbi: '123456789',
       contactName: 'John Doe',
       confirmationContent: { html: '<h2>Test content</h2>' },
-      form: { title: 'Test Form' },
+      form: { name: 'Test Form' },
       slug: 'test-form'
     }
 

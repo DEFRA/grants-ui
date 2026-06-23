@@ -68,7 +68,7 @@ export class ConfirmationService {
     form = null,
     slug = null
   }) {
-    const title = form.title
+    const title = form.name
     const url = `/${slug}`
 
     const baseModel = {
