@@ -40,8 +40,8 @@ export async function fetchAllowedGrants(crn, sbi) {
   if (!response.ok) {
     let message = response.statusText
     try {
-      const body = await response.json()
-      message = body?.message ?? message
+      const errorBody = await response.json()
+      message = errorBody?.message ?? message
     } catch {
       // no json body
     }

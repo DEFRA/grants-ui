@@ -56,6 +56,8 @@ services:
       GRANTS_UI_BACKEND_URL: '${GRANTS_UI_BACKEND_URL:-http://grants-ui-backend:3001}'
       GRANTS_UI_BACKEND_AUTH_TOKEN: ${GRANTS_UI_BACKEND_AUTH_TOKEN:-auth_token}
       GRANTS_UI_BACKEND_ENCRYPTION_KEY: ${GRANTS_UI_BACKEND_ENCRYPTION_KEY:-encryption_key}
+      GRANTS_UI_BACKEND_AUTH_JWT_SECRET: ${GRANTS_UI_BACKEND_AUTH_JWT_SECRET:-allowlist-jwt-secret}
+      ENABLE_ALLOWLIST_ENDPOINT: ${ENABLE_ALLOWLIST_ENDPOINT:-false}
       APP_BASE_URL: '${APP_BASE_URL:-http://localhost:3000}'
       HOST: 0.0.0.0
       GAS_API_URL: '${GAS_API_URL:-http://mockserver:1080}'
@@ -129,6 +131,7 @@ services:
       GRANTS_CONFIG_BROKER_AUTH_TOKEN: '${GRANTS_CONFIG_BROKER_AUTH_TOKEN:-config-broker-auth-token}'
       GRANTS_CONFIG_BROKER_ENCRYPTION_KEY: '${GRANTS_CONFIG_BROKER_ENCRYPTION_KEY:-config-broker-encryption-key}'
       CONFIG_INGEST_SQS_QUEUE_URL: http://localstack:4566/000000000000/grants_ui_backend__sqs__config_updates
+      ENCRYPTED_AUTH_JWT_SECRET: ${GRANTS_UI_BACKEND_AUTH_JWT_SECRET:-default-grants-ui-backend-jwt-secret}
     networks:
       - grants-ui-net
     restart: unless-stopped

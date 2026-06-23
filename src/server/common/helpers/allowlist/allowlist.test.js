@@ -50,6 +50,19 @@ describe('allowlist plugin', () => {
     expect(getAllForms).not.toHaveBeenCalled()
   })
 
+  it('continues when authenticated but request has no slug (non-journey route)', async () => {
+    const handler = registerAndGetHandler(server)
+    const request = mockHapiRequest({
+      params: {},
+      auth: { isAuthenticated: true, credentials: { crn: CRN, sbi: SBI } }
+    })
+
+    const result = await handler(request, h)
+
+    expect(result).toBe(h.continue)
+    expect(getAllForms).not.toHaveBeenCalled()
+  })
+
   it('falls back to slug when the form has no grantCode in metadata', async () => {
     const handler = registerAndGetHandler(server)
     getAllForms.mockReturnValue([{ slug: SLUG, metadata: {} }])

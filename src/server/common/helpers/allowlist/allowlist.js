@@ -25,6 +25,10 @@ const allowlistHandler = async (request, h) => {
     return h.continue
   }
 
+  if (!request.params.slug) {
+    return h.continue
+  }
+
   const crn = /** @type {string} */ (request.auth.credentials.crn)
   const sbi = /** @type {string} */ (request.auth.credentials.sbi)
 
