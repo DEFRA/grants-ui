@@ -6,6 +6,10 @@ import AutocompleteField from '../page-objects/auto-complete.field.js'
 import DatePartsField from '../page-objects/date-parts.field.js'
 import MonthYearField from '../page-objects/month-year.field.js'
 
+When('the user pauses', async function () {
+  await this.page.pause()
+})
+
 When('(the user )clicks on {string}', async function (text) {
   await this.page.locator(`//*[contains(text(),'${text}')]`).click()
 })
@@ -122,7 +126,3 @@ When(
     await monthYearField.set(month, year)
   }
 )
-
-When('(the user )waits for {int} seconds', async function (waitSeconds) {
-  await new Promise((resolve) => setTimeout(resolve, waitSeconds * 1000))
-})

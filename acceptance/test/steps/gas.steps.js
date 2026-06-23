@@ -61,6 +61,7 @@ Then(
     expect(request.body.json.metadata.clientRef).toEqual(referenceNumbers.current.toLowerCase())
     expect(request.body.json.metadata.sbi).toEqual(sbi)
     expect(request.body.json.metadata.crn).toEqual(crn)
+    expect(request.body.json.metadata.configVersion).toMatch(/^\d+\.\d+\.\d+$/)
     expect(request.body.json.answers.referenceNumber).toEqual(referenceNumbers.current)
   }
 )
@@ -119,6 +120,7 @@ Then(
     expect(request.body.json.metadata.previousClientRef).toEqual(referenceNumbers.previous.toLowerCase())
     expect(request.body.json.metadata.sbi).toEqual(sbi)
     expect(request.body.json.metadata.crn).toEqual(crn)
+    expect(request.body.json.metadata.configVersion).toMatch(/^\d+\.\d+\.\d+$/)
     expect(request.body.json.answers.referenceNumber).toEqual(referenceNumbers.current)
   }
 )
