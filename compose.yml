@@ -8,8 +8,6 @@ services:
         condition: service_healthy
       grants-ui-backend:
         condition: service_healthy
-      grants-ui-config-api:
-        condition: service_healthy
       fcp-defra-id-stub:
         condition: service_healthy
     ports:
@@ -74,11 +72,7 @@ services:
       ENABLE_LAND_GRANT_HEFER_20260219: ${ENABLE_LAND_GRANT_HEFER_20260219:-true}
       LAND_GRANTS_ENABLED_ACTIONS: ${LAND_GRANTS_ENABLED_ACTIONS:-CMOR1,UPL1,UPL2,UPL3,UPL8,UPL10,CLIG3}
       MAP_MOCK_DATA_ENABLED: ${MAP_MOCK_DATA_ENABLED:-true}
-      CONFIG_API_URL: '${CONFIG_API_URL:-http://grants-ui-config-api:3011}'
-      CONFIG_API_JWT_SECRET: ${CONFIG_API_JWT_SECRET:-forms-config-jwt-secret}
-      CONFIG_API_JWT_EXPIRY: ${CONFIG_API_JWT_EXPIRY:-1h}
-      FORMS_API_SLUGS: ${FORMS_API_SLUGS:-}
-      FORMS_API_CACHE_TTL_SECONDS: ${FORMS_API_CACHE_TTL_SECONDS:-300}
+      BACKEND_FORM_DEF_ENABLED_SLUGS: ${BACKEND_FORM_DEF_ENABLED_SLUGS:-}
       SFD_UPDATE_URL: '${SFD_UPDATE_URL:-http://localhost:3000/sfd/mock}'
       SFD_UPDATE_ENABLED: ${SFD_UPDATE_ENABLED:-false}
       AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL:-http://localstack:4566}
@@ -138,47 +132,6 @@ services:
       timeout: 10s
       retries: 10
       start_period: 60s
-
-  grants-ui-config-api:
-    image: defradigital/grants-ui-config-api
-    pull_policy: always
-    depends_on:
-      mongodb:
-        condition: service_healthy
-      mongo-ready:
-        condition: service_healthy
-      localstack:
-        condition: service_healthy
-      grants-config-broker:
-        condition: service_healthy
-    ports:
-      - '3011:3011'
-    env_file:
-      - 'localstack/aws.env'
-    environment:
-      PORT: 3011
-      HOST: 0.0.0.0
-      NODE_ENV: development
-      MONGO_URI: mongodb://mongodb:27017/
-      LOCALSTACK_ENDPOINT: http://localstack:4566
-      JWT_SECRET: ${CONFIG_API_JWT_SECRET:-forms-config-jwt-secret}
-      GRANTS_CONFIG_BROKER_URL: '${CONFIG_BROKER_URL:-http://grants-config-broker:3012}'
-      GRANTS_CONFIG_BROKER_AUTH_TOKEN: '${CONFIG_BROKER_AUTH_TOKEN:-config-broker-auth-token}'
-      GRANTS_CONFIG_BROKER_ENCRYPTION_KEY: '${CONFIG_BROKER_ENCRYPTION_KEY:-config-broker-encryption-key}'
-      FORMS_API_SLUGS: ${FORMS_API_SLUGS:-example-grant-with-auth,example-grant-with-map}
-      DEFAULT_FORM_ORGANISATION: ${DEFAULT_FORM_ORGANISATION:-Defra}
-      DEFAULT_FORM_TEAM_NAME: ${DEFAULT_FORM_TEAM_NAME:-Digital Delivery}
-      DEFAULT_FORM_TEAM_EMAIL: '${DEFAULT_FORM_TEAM_EMAIL:-digitaldelivery@defra.gov.uk}'
-      DEFAULT_FORM_NOTIFICATION_EMAIL: '${DEFAULT_FORM_NOTIFICATION_EMAIL:-digitaldelivery@defra.gov.uk}'
-    networks:
-      - grants-ui-net
-    restart: unless-stopped
-    healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:3011/health']
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
   grants-config-broker:
     image: defradigital/grants-config-broker:latest

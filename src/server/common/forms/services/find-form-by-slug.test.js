@@ -99,21 +99,21 @@ describe('loadFormDefinition', () => {
     expect(second.name).toBe('Test Form')
   })
 
-  test('delegates to formsService.getFormDefinitionBySlug for api-sourced forms', async () => {
-    const def = { name: 'API Form', pages: [] }
+  test('delegates to formsService.getFormDefinitionBySlug for backend-sourced forms', async () => {
+    const def = { name: 'Backend Form', pages: [] }
     mockFormsService.getFormDefinitionBySlug.mockResolvedValue(def)
 
-    const result = await loadFormDefinition({ source: 'api', slug: 'api-form' }, mockFormsService)
+    const result = await loadFormDefinition({ source: 'backend', slug: 'backend-form' }, mockFormsService)
 
-    expect(mockFormsService.getFormDefinitionBySlug).toHaveBeenCalledWith('api-form')
+    expect(mockFormsService.getFormDefinitionBySlug).toHaveBeenCalledWith('backend-form')
     expect(result).toEqual(def)
   })
 
-  test('propagates errors from formsService.getFormDefinitionBySlug for api-sourced forms', async () => {
-    mockFormsService.getFormDefinitionBySlug.mockRejectedValue(new Error('API fetch failed'))
+  test('propagates errors from formsService.getFormDefinitionBySlug for backend-sourced forms', async () => {
+    mockFormsService.getFormDefinitionBySlug.mockRejectedValue(new Error('Backend fetch failed'))
 
-    await expect(loadFormDefinition({ source: 'api', slug: 'api-form' }, mockFormsService)).rejects.toThrow(
-      'API fetch failed'
+    await expect(loadFormDefinition({ source: 'backend', slug: 'backend-form' }, mockFormsService)).rejects.toThrow(
+      'Backend fetch failed'
     )
   })
 })

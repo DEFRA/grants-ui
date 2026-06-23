@@ -13,7 +13,6 @@ import { redisSchema } from './redis.js'
 import { rateLimitSchema } from './rate-limit.js'
 import { devToolsSchema } from './dev-tools.js'
 import { validateBackendAuthConfig } from './validate-backend-auth.js'
-import { configApiSchema } from './config-api.js'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -285,7 +284,14 @@ const convictConfig = {
     env: 'MAP_MOCK_DATA_ENABLED'
   },
   devTools: devToolsSchema,
-  configApi: configApiSchema,
+  forms: {
+    backendFormDefEnabledSlugs: {
+      doc: 'Comma-separated list of form slugs whose definition is served from grants-ui-backend (combined /state/with-definition endpoint). All other forms load their definition from local YAML.',
+      format: Array,
+      default: [],
+      env: 'BACKEND_FORM_DEF_ENABLED_SLUGS'
+    }
+  },
   applicationLock: {
     secret: {
       doc: 'Secret used to sign application lock tokens',

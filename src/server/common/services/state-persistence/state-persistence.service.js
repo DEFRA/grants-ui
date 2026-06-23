@@ -1,5 +1,6 @@
 import { getCacheKey } from '~/src/server/common/helpers/state/get-cache-key-helper.js'
-import { clearSavedStateFromApi, fetchSavedStateFromApi } from '../../helpers/state/fetch-saved-state-helper.js'
+import { clearSavedStateFromApi } from '../../helpers/state/fetch-saved-state-helper.js'
+import { getStateWithDefinition, resolveVersion } from '../../helpers/state/state-with-definition-context.js'
 import { persistStateToApi } from '../../helpers/state/persist-state-helper.js'
 import { ADDITIONAL_IDENTIFIER, CacheService } from '@defra/forms-engine-plugin/cache-service.js'
 import { debug, LogCodes } from '../../helpers/logging/log.js'
@@ -11,7 +12,8 @@ import { mintLockToken } from '../../helpers/lock/lock-token.js'
  */
 export class StatePersistenceService extends CacheService {
   /**
-   * @param {{server: Server}} options.server - Hapi server (used for logging)
+   * @param {object} options
+   * @param {Server} options.server - Hapi server (used for logging)
    */
   constructor({ server }) {
     super({ server })
@@ -22,6 +24,13 @@ export class StatePersistenceService extends CacheService {
 
   /**
    * Get form state from backend persistence.
+   *
+   * Reads the combined `{ definition, state, upgraded, ... }` envelope from the
+   * per-request stash (priming it via the single-flight accessor if absent), so
+   * the form-definition path and this read share a single backend call. The
+   * backend resolves the active grant version, which is recorded on
+   * `request.app.grantVersion` for downstream save/clear flows.
+   *
    * @param {AnyRequest} request
    * @returns {Promise<object>} resolved state or empty object
    */
@@ -43,12 +52,11 @@ export class StatePersistenceService extends CacheService {
         throw err // rethrow — controller will fail cleanly
       }
     })()
-    const lockToken = this._buildLockToken(request)
     try {
-      const document = await fetchSavedStateFromApi(key, request, { lockToken })
+      const body = await getStateWithDefinition(request)
       const app = /** @type {{ grantVersion?: unknown }} */ (request.app)
-      app.grantVersion = document?.grantVersion
-      return /** @type {Record<string, unknown>} */ (document?.state) ?? {}
+      app.grantVersion = resolveVersion(body)
+      return /** @type {Record<string, unknown>} */ (body?.state?.state) ?? {}
     } catch (err) {
       debug(
         LogCodes.SYSTEM.SESSION_STATE_FETCH_FAILED,
@@ -66,16 +74,45 @@ export class StatePersistenceService extends CacheService {
 
   /**
    * Persist form state to backend.
+   *
+   * The state MUST be saved under the same grant version the backend resolved
+   * for the read (`getState` records it on `request.app.grantVersion`). After a
+   * backend version migration (e.g. 1.0.0 → 1.0.1) the form definition's
+   * authored `metadata.version` can lag behind the active version, so writing
+   * under it would persist to the *old* version document and the migrated read
+   * would return the answer blanked. Prefer the resolved active version.
+   *
    * @param {AnyFormRequest} request
    * @param {FormSubmissionState} state
    * @returns {Promise<FormSubmissionState>} the persisted state
    */
   async setState(request, state) {
     const key = this._Key(request)
-    const lockToken = this._buildLockToken(request)
-    const grantVersion = request.app.model?.def?.metadata?.version ?? 1 // Default to 1 to support non-config broker grants
+    const grantVersion = await this._resolveActiveGrantVersion(request)
+    const lockToken = this._buildLockToken(request, grantVersion)
     await persistStateToApi(state, key, { lockToken, grantVersion })
     return state
+  }
+
+  /**
+   * Resolves the grant version state should be persisted under, matching the
+   * version the backend resolved for the read:
+   * 1. `request.app.grantVersion` recorded by {@link getState}
+   * 2. otherwise re-resolved from the combined envelope
+   * 3. otherwise the form definition's authored version (defaulting to 1 to
+   *    support non-config broker grants)
+   *
+   * @param {AnyRequest} request
+   * @returns {Promise<string | number>}
+   */
+  async _resolveActiveGrantVersion(request) {
+    const fromContext = /** @type {{ grantVersion?: string | number }} */ (request.app).grantVersion
+    if (fromContext) {
+      return fromContext
+    }
+
+    const resolved = resolveVersion(await getStateWithDefinition(request))
+    return resolved ?? /** @type {string | number} */ (request.app.model?.def?.metadata?.version) ?? 1
   }
 
   /**
@@ -118,8 +155,15 @@ export class StatePersistenceService extends CacheService {
     this.logger?.debug(`clearState called for ${key || this.UNKNOWN_SESSION}, but no action taken.`)
 
     if (force) {
-      const lockToken = this._buildLockToken(request)
-      await clearSavedStateFromApi(key, request, { lockToken })
+      // State is persisted under the backend-resolved active version (see
+      // setState), which for config-broker grants is a semver (e.g. 1.0.1) that
+      // can differ from the form definition's authored metadata version. Resolve
+      // the same active version here so the DELETE targets the correct version
+      // document and the lock token matches; otherwise the backend 404s, the
+      // clear is silently treated as "no state found", and nothing is removed.
+      const grantVersion = await this._resolveActiveGrantVersion(request)
+      const lockToken = this._buildLockToken(request, grantVersion)
+      await clearSavedStateFromApi(key, request, { lockToken, grantVersion })
     }
   }
 
@@ -155,11 +199,18 @@ export class StatePersistenceService extends CacheService {
    * - the grant (code + version)
    *
    * @param {AnyRequest} request
+   * @param {string | number} [grantVersion] - The grant version to scope the
+   * lock to. Defaults to the form definition's authored version (1 for
+   * non-config broker grants). Callers that have resolved the active backend
+   * version (e.g. {@link setState}) should pass it so the lock matches the
+   * version the state is written under.
    * @returns {string} A signed JWT lock token
    */
-  _buildLockToken(request) {
+  _buildLockToken(
+    request,
+    grantVersion = /** @type {string | number} */ (request.app.model?.def?.metadata?.version) ?? 1
+  ) {
     const { sbi, grantCode } = getCacheKey(request)
-    const grantVersion = request.app.model?.def?.metadata?.version ?? 1 // Default to 1 to support non-config broker grants
     const contactId = request.auth?.credentials?.contactId
 
     if (!contactId) {

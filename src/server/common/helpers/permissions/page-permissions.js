@@ -1,5 +1,5 @@
 export function getPermissionConfig(request) {
-  return request.app.model.def.metadata.permissions
+  return request.app.model?.def?.metadata?.permissions
 }
 
 export function getRequiredPermission(request) {

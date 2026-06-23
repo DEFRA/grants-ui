@@ -17,7 +17,11 @@ import {
   setSlugReverse
 } from './forms-redis.js'
 import { waitForRedisReady } from '~/src/server/common/helpers/redis-client.js'
-import { ApiFormService } from './api-form-service.js'
+import {
+  currentRequest,
+  getStateWithDefinition,
+  resolveVersion
+} from '~/src/server/common/helpers/state/state-with-definition-context.js'
 import { validateDetailsPageConfig } from '~/src/server/common/services/details-page/validate-details-page-config.js'
 
 /**
@@ -339,16 +343,16 @@ export function validateGrantRedirectRules(form, definition) {
 }
 
 /**
- * @param {string[]} apiSlugs
+ * @param {string[]} backendSlugs
  * @param {string} [baseDir]
  * @returns {Promise<YamlForm[]>}
  */
 async function discoverFormsFromYaml(
-  apiSlugs,
+  backendSlugs,
   baseDir = path.resolve(process.cwd(), 'src/server/common/forms/definitions')
 ) {
   const isProduction = config.get('cdpEnvironment')?.toLowerCase() === 'prod'
-  const apiSlugSet = new Set(apiSlugs)
+  const backendSlugSet = new Set(backendSlugs)
   /** @type {string[]} */
   let files = []
   try {
@@ -368,9 +372,9 @@ async function discoverFormsFromYaml(
       // Use file name as slug
       const fileName = path.basename(filePath, path.extname(filePath))
 
-      // Skip forms that are provided by the Config API
-      if (apiSlugSet.has(fileName)) {
-        logger.info(`Skipping YAML file for "${fileName}" — will be loaded from Config API`)
+      // Skip forms whose definition is served from grants-ui-backend
+      if (backendSlugSet.has(fileName)) {
+        logger.info(`Skipping YAML file for "${fileName}" — will be loaded from grants-ui-backend`)
         continue
       }
 
@@ -395,12 +399,12 @@ async function discoverFormsFromYaml(
 }
 
 /**
- * @param {string[]} apiSlugs
+ * @param {string[]} backendSlugs
  * @returns {Promise<{ loader: GrantsFormLoader, yamlForms: YamlForm[] }>}
  */
-async function initialiseLoader(apiSlugs) {
+async function initialiseLoader(backendSlugs) {
   const loader = new GrantsFormLoader()
-  const yamlForms = await discoverFormsFromYaml(apiSlugs)
+  const yamlForms = await discoverFormsFromYaml(backendSlugs)
   await addAllForms(loader, yamlForms)
   return { loader, yamlForms }
 }
@@ -449,11 +453,60 @@ async function registerYamlForms(loader, redis, yamlForms, sharedRules) {
 }
 
 /**
+ * Registers backend-sourced forms in Redis. Their definitions are resolved per
+ * request from the combined `POST /state/with-definition` endpoint, so only a
+ * lightweight slug/meta registration is needed at startup (no definition fetch).
+ *
+ * @param {FormsRedisClient} redis
+ * @param {string[]} backendSlugs
+ * @returns {Promise<void>}
+ */
+async function registerBackendForms(redis, backendSlugs) {
+  for (const slug of backendSlugs) {
+    await Promise.all([
+      setFormMeta(redis, slug, {
+        id: slug,
+        slug,
+        title: slug,
+        source: 'backend'
+      }),
+      setSlugReverse(redis, slug, slug)
+    ])
+  }
+}
+
+/**
+ * Resolves a backend-sourced form definition from the per-request combined
+ * response (stashed on `request.app` and recovered here via AsyncLocalStorage).
+ * Throws clearly if there is no active request context, so a background or
+ * unscoped call fails fast rather than fetching without a user.
+ *
+ * @param {string} slug
+ * @returns {Promise<FormDefinition>}
+ */
+async function resolveBackendDefinition(slug) {
+  const request = currentRequest()
+  if (!request) {
+    throw new Error(`No request context available to resolve backend form definition for '${slug}'`)
+  }
+
+  const body = await getStateWithDefinition(request)
+  // `body.definition` is the full definition document; the DXT form definition
+  // is the nested `definition.definition`.
+  const definition = body?.definition?.definition
+  if (!definition) {
+    throw notFound(`Form definition for '${slug}' not found`)
+  }
+
+  hoistPageConfig(definition)
+  return configureFormDefinition(definition)
+}
+
+/**
  * @param {BaseFormsService} baseService
- * @param {ApiFormService} apiFormService
  * @param {FormsRedisClient} redis
  */
-function buildServiceInterface(baseService, apiFormService, redis) {
+function buildServiceInterface(baseService, redis) {
   return {
     /**
      * @param {string} slug
@@ -463,16 +516,39 @@ function buildServiceInterface(baseService, apiFormService, redis) {
       if (!entry) {
         throw notFound(`Form '${slug}' not found`)
       }
-      if (entry.source === 'api') {
-        // Return metadata in the shape the forms-engine-plugin expects
+      // ── backend source (default going forward) ──
+      if (entry.source === 'backend') {
+        const definition = await resolveBackendDefinition(slug)
+
+        // The backend definition document carries its own `updatedAt` (which
+        // changes when a new version is published) and a `status`
+        // (`active`/`draft`). Stamp the real `updatedAt` onto the metadata so
+        // the forms-engine model cache (keyed by `id + state + isPreview`, and
+        // invalidated only when `metadata[state].updatedAt` changes) rebuilds
+        // the model whenever the version changes. Map `status` to the form
+        // state the engine resolves (`active` → live, `draft` → draft) so
+        // applicants are never served a draft on the live route, and clear the
+        // unused slot.
+        const request = currentRequest()
+        const body = request ? await getStateWithDefinition(request) : null
+        const version = resolveVersion(body)
+        const definitionDoc = body?.definition
+        const updatedAt = new Date(/** @type {string} */ (definitionDoc?.updatedAt))
+        const isActive = definitionDoc?.status !== 'draft'
+        const stamped = { ...(metadata.live ?? {}), updatedAt }
+
         return {
           ...metadata,
           id: entry.id,
           slug: entry.slug,
-          title: entry.title,
-          metadata: entry.metadata
+          title: definition.name ?? entry.title,
+          metadata: { ...definition.metadata, version },
+          updatedAt,
+          live: isActive ? stamped : undefined,
+          draft: isActive ? undefined : stamped
         }
       }
+      // ── legacy YAML branch (removal-ready) ──
       try {
         return await baseService.getFormMetadata(slug)
       } catch (error) {
@@ -490,9 +566,11 @@ function buildServiceInterface(baseService, apiFormService, redis) {
         throw notFound(`Form definition '${id}' not found`)
       }
       const entry = await getFormMeta(redis, slug)
-      if (entry?.source === 'api') {
-        return apiFormService.getFormDefinition(redis, slug, configureFormDefinition)
+      // ── backend source (default going forward) ──
+      if (entry?.source === 'backend') {
+        return resolveBackendDefinition(slug)
       }
+      // ── legacy YAML branch (removal-ready) ──
       try {
         return await baseService.getFormDefinition(id, state)
       } catch (error) {
@@ -501,10 +579,12 @@ function buildServiceInterface(baseService, apiFormService, redis) {
     },
 
     /**
+     * Used by the slug-lookup helpers (`find-form-by-slug.js`) for forms that are
+     * not YAML-sourced, i.e. backend-sourced forms only.
      * @param {string} slug
      */
     getFormDefinitionBySlug: async (slug) => {
-      return await apiFormService.getFormDefinition(redis, slug, configureFormDefinition)
+      return resolveBackendDefinition(slug)
     }
   }
 }
@@ -513,36 +593,21 @@ export const formsService = async () => {
   const redis = getFormsRedisClient()
   await waitForRedisReady(redis)
 
-  const apiSlugs = /** @type {string[]} */ (config.get('configApi.formSlugs')).filter(Boolean)
-  const apiUrl = config.get('configApi.url')
-  const jwtSecret = config.get('configApi.jwtSecret')
-  const jwtExpiry = config.get('configApi.jwtExpiry')
-  const cacheTtlSeconds = config.get('configApi.cacheTtlSeconds')
+  const backendSlugs = /** @type {string[]} */ (config.get('forms.backendFormDefEnabledSlugs')).filter(Boolean)
 
-  const { loader, yamlForms } = await initialiseLoader(apiSlugs)
+  const { loader, yamlForms } = await initialiseLoader(backendSlugs)
   const sharedRules = await loadSharedRedirectRules()
 
   await registerYamlForms(loader, redis, yamlForms, sharedRules)
 
-  // ── API forms ─────────────────────────────────────────────────────────────
-  const apiFormService = new ApiFormService(apiUrl, jwtSecret, jwtExpiry, cacheTtlSeconds)
-
-  if (apiSlugs.length > 0) {
-    await apiFormService.loadAll(
-      redis,
-      apiSlugs,
-      sharedRules,
-      configureFormDefinition,
-      validateWhitelistConfiguration,
-      validateGrantRedirectRules,
-      validateDetailsPageConfiguration
-    )
-  }
+  // ── Backend-sourced forms ───────────────────────────────────────────────────
+  // Definitions are resolved per request from the combined backend endpoint.
+  await registerBackendForms(redis, backendSlugs)
 
   // ── Slug index ────────────────────────────────────────────────────────────
-  await setAllSlugs(redis, [...yamlForms.map((f) => f.slug), ...apiSlugs])
+  await setAllSlugs(redis, [...yamlForms.map((f) => f.slug), ...backendSlugs])
 
-  return buildServiceInterface(loader.toFormsService(), apiFormService, redis)
+  return buildServiceInterface(loader.toFormsService(), redis)
 }
 
 /**
