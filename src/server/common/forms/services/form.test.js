@@ -160,6 +160,21 @@ Object.defineProperty(process, 'env', {
   })
 })
 
+const BACKEND_FORM_META = { id: 'backend-form', slug: 'backend-form', title: 'backend-form', source: 'backend' }
+
+// Registers a backend-sourced form in the in-memory meta store.
+const registerBackendForm = () => _metaStore.set('backend-form', { ...BACKEND_FORM_META })
+
+// Activates a request context and returns the request used as the backend stash key.
+const mockBackendRequest = () => {
+  const request = { app: {} }
+  vi.mocked(currentRequest).mockReturnValue(request)
+  return request
+}
+
+// Stubs the backend state-with-definition fetch with the given envelope.
+const mockBackendStateWithDefinition = (envelope) => vi.mocked(getStateWithDefinition).mockResolvedValue(envelope)
+
 describe('form', () => {
   let mockWarn, mockError
 
@@ -213,15 +228,9 @@ describe('form', () => {
     })
 
     test('getFormMetadata returns backend definition metadata for backend-sourced form', async () => {
-      _metaStore.set('backend-form', {
-        id: 'backend-form',
-        slug: 'backend-form',
-        title: 'backend-form',
-        source: 'backend'
-      })
-      const request = { app: {} }
-      vi.mocked(currentRequest).mockReturnValue(request)
-      vi.mocked(getStateWithDefinition).mockResolvedValue({
+      registerBackendForm()
+      mockBackendRequest()
+      mockBackendStateWithDefinition({
         definition: { definition: { name: 'Backend Form', metadata: { foo: 'bar' }, pages: [] } }
       })
 
@@ -236,18 +245,12 @@ describe('form', () => {
     })
 
     test('getFormMetadata stamps the backend updatedAt so the model cache invalidates across versions', async () => {
-      _metaStore.set('backend-form', {
-        id: 'backend-form',
-        slug: 'backend-form',
-        title: 'backend-form',
-        source: 'backend'
-      })
-      const request = { app: {} }
-      vi.mocked(currentRequest).mockReturnValue(request)
+      registerBackendForm()
+      mockBackendRequest()
 
       const service = await formsService()
 
-      vi.mocked(getStateWithDefinition).mockResolvedValue({
+      mockBackendStateWithDefinition({
         definition: {
           major: 1,
           minor: 0,
@@ -259,7 +262,7 @@ describe('form', () => {
       })
       const v101 = await service.getFormMetadata('backend-form')
 
-      vi.mocked(getStateWithDefinition).mockResolvedValue({
+      mockBackendStateWithDefinition({
         definition: {
           major: 2,
           minor: 1,
@@ -281,18 +284,12 @@ describe('form', () => {
     })
 
     test('getFormMetadata maps a draft backend status to the draft state and clears live', async () => {
-      _metaStore.set('backend-form', {
-        id: 'backend-form',
-        slug: 'backend-form',
-        title: 'backend-form',
-        source: 'backend'
-      })
-      const request = { app: {} }
-      vi.mocked(currentRequest).mockReturnValue(request)
+      registerBackendForm()
+      mockBackendRequest()
 
       const service = await formsService()
 
-      vi.mocked(getStateWithDefinition).mockResolvedValue({
+      mockBackendStateWithDefinition({
         definition: {
           major: 1,
           minor: 0,
@@ -310,16 +307,10 @@ describe('form', () => {
     })
 
     test('getFormDefinition returns the stashed definition for backend-sourced form', async () => {
-      _metaStore.set('backend-form', {
-        id: 'backend-form',
-        slug: 'backend-form',
-        title: 'backend-form',
-        source: 'backend'
-      })
+      registerBackendForm()
       _reverseStore.set('backend-form', 'backend-form')
-      const request = { app: {} }
-      vi.mocked(currentRequest).mockReturnValue(request)
-      vi.mocked(getStateWithDefinition).mockResolvedValue({
+      const request = mockBackendRequest()
+      mockBackendStateWithDefinition({
         definition: { definition: { name: 'Backend Form', pages: [] } }
       })
 
@@ -331,9 +322,8 @@ describe('form', () => {
     })
 
     test('getFormDefinitionBySlug resolves the stashed definition for backend forms', async () => {
-      const request = { app: {} }
-      vi.mocked(currentRequest).mockReturnValue(request)
-      vi.mocked(getStateWithDefinition).mockResolvedValue({
+      mockBackendRequest()
+      mockBackendStateWithDefinition({
         definition: { definition: { name: 'Backend Form', pages: [] } }
       })
 
