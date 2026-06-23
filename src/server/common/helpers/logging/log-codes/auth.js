@@ -93,5 +93,15 @@ export const AUTH = {
     level: 'error',
     messageFunc: (messageOptions) =>
       `Invalid OAuth state provided | reason=${messageOptions.reason} | storedStatePresent=${messageOptions.storedStatePresent}`
+  },
+  OIDC_CONFIG_FETCH_RETRY: {
+    level: 'warn',
+    messageFunc: (messageOptions) =>
+      `OIDC well-known fetch attempt ${messageOptions.attempt}/${messageOptions.maxAttempts} failed for ${messageOptions.wellKnownUrl}: code=${messageOptions.code ?? 'n/a'} message=${messageOptions.errorMessage}`
+  },
+  OIDC_CONFIG_FETCH_FAILURE: {
+    level: 'error',
+    messageFunc: (messageOptions) =>
+      `OIDC config fetch failed after ${messageOptions.durationMs}ms: code=${messageOptions.code ?? 'n/a'} message=${messageOptions.errorMessage}`
   }
 }

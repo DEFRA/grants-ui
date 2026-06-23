@@ -1,0 +1,89 @@
+name: Check Blocked Dependencies
+
+# Periodically checks whether the upstream packages that block certain major-version
+# bumps (see the `ignore` rules in .github/dependabot.yml) have caught up. When one
+# becomes unblockable, opens a PR that removes the matching ignore rule so Dependabot
+# can re-open the version bump.
+
+on:
+  schedule:
+    # 09:00 UTC every Monday
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check:
+    name: Check blocked dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check upstream constraints
+        id: check
+        run: |
+          set +e
+          OUTPUT=$(node scripts/check-blocked-deps.mjs)
+          CODE=$?
+          echo "$OUTPUT"
+          NAMES=$(printf '%s\n' "$OUTPUT" | grep '^UNBLOCKABLE=' | cut -d= -f2-)
+          {
+            echo "report<<EOF"
+            echo "$OUTPUT"
+            echo "EOF"
+            echo "unblockable=$([ "$CODE" -eq 10 ] && echo true || echo false)"
+            echo "names=$NAMES"
+          } >> "$GITHUB_OUTPUT"
+          # Only a non-zero other than 10 should fail the job
+          [ "$CODE" -eq 10 ] && exit 0
+          exit $CODE
+
+      - name: Open pull request
+        if: steps.check.outputs.unblockable == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NAMES: ${{ steps.check.outputs.names }}
+          REPORT: ${{ steps.check.outputs.report }}
+        run: |
+          set -euo pipefail
+          # Must satisfy the repo branch-name ruleset; the `dependabot/*` prefix is allowed.
+          BRANCH="dependabot/unblock-$(echo "$NAMES" | tr ',' '-')"
+
+          # Skip if a PR for this branch is already open.
+          EXISTING=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')
+          if [ -n "$EXISTING" ]; then
+            echo "PR #$EXISTING for $BRANCH is already open — nothing to do."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+
+          node scripts/remove-dependabot-ignore.mjs $(echo "$NAMES" | tr ',' ' ')
+
+          # If the rules were already gone, there's nothing to open a PR for.
+          if git diff --quiet -- .github/dependabot.yml; then
+            echo "No matching ignore rules left to remove — skipping PR."
+            exit 0
+          fi
+
+          git add .github/dependabot.yml
+          git commit -m "chore(deps): remove dependabot ignore rule(s) for $NAMES"
+          git push --force-with-lease origin "$BRANCH"
+
+          BODY=$(printf '%s\n\n---\nOne or more upstream blockers have lifted, so the matching `ignore` rule(s) in `.github/dependabot.yml` have been removed in this PR. Merge it to let Dependabot re-open the version bump(s).\n\nDetected by `.github/workflows/check-blocked-deps.yml`.' "$REPORT")
+          gh pr create --base main --head "$BRANCH" --title "chore(deps): unblock $NAMES" --body "$BODY"
