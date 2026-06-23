@@ -79,7 +79,7 @@ describe('allowlist plugin', () => {
     expect(result).toBe(h.continue)
   })
 
-  it('redirects to unauthorised when the slug is not found in any form', async () => {
+  it('continues when the slug is not found in any form (preserves old whitelist behavior for non-grant routes)', async () => {
     const handler = registerAndGetHandler(server)
     getAllForms.mockReturnValue([{ slug: 'other-form', metadata: { submission: { grantCode: 'other' } } }])
 
@@ -91,8 +91,8 @@ describe('allowlist plugin', () => {
     const result = await handler(request, h)
 
     expect(fetchAllowedGrants).not.toHaveBeenCalled()
-    expect(h.redirect).toHaveBeenCalledWith('/auth/journey-unauthorised')
-    expect(result).toBe(h)
+    expect(h.redirect).not.toHaveBeenCalled()
+    expect(result).toBe(h.continue)
   })
 
   it('continues when grantCode from metadata is in the allowed grants list', async () => {

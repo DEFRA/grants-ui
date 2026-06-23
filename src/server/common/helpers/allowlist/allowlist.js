@@ -34,12 +34,13 @@ const allowlistHandler = async (request, h) => {
 
   const allForms = await getAllForms()
   const form = allForms.find((f) => f.slug === request.params.slug)
+
+  if (!form) {
+    return h.continue
+  }
+
   const metadata = /** @type {{ submission?: { grantCode?: string } } | undefined} */ (form?.metadata)
   const grantCode = metadata?.submission?.grantCode ?? form?.slug
-
-  if (!grantCode) {
-    return h.redirect('/auth/journey-unauthorised').takeover()
-  }
 
   const allowedGrants = await fetchAllowedGrants(crn, sbi)
   const hasAccess = allowedGrants.includes(grantCode)
