@@ -496,9 +496,7 @@ describe('form', () => {
     const testForm = { title: 'Test Form' }
 
     it('skips all validation when enableAllowlistEndpoint is true', () => {
-      config.get.mockImplementation((key) =>
-        key === 'enableAllowlistEndpoint' ? true : DEFAULT_CONFIG_MOCK[key]
-      )
+      config.get.mockImplementation((key) => (key === 'enableAllowlistEndpoint' ? true : DEFAULT_CONFIG_MOCK[key]))
 
       expect(() =>
         validateWhitelistConfiguration(testForm, {
