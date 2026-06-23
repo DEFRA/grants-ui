@@ -28,11 +28,6 @@ const DEFAULT_CONFIG_MOCK = {
   },
   serviceName: 'test-service',
   serviceVersion: '1.0.0',
-  'configApi.formSlugs': [],
-  'configApi.url': '',
-  'configApi.jwtSecret': '',
-  'configApi.jwtExpiry': '1h',
-  'configApi.cacheTtlSeconds': 300,
   enableAllowlistGrantCodes: '',
   'forms.backendFormDefEnabledSlugs': []
 }
