@@ -502,10 +502,7 @@ describe('form', () => {
       )
 
       expect(() =>
-        validateWhitelistConfiguration(
-          { slug: 'woodland' },
-          { metadata: { whitelistCrnEnvVar: 'MISSING_CRN_VAR' } }
-        )
+        validateWhitelistConfiguration({ slug: 'woodland' }, { metadata: { whitelistCrnEnvVar: 'MISSING_CRN_VAR' } })
       ).not.toThrow()
     })
 
@@ -515,10 +512,7 @@ describe('form', () => {
       )
 
       expect(() =>
-        validateWhitelistConfiguration(
-          { slug: 'woodland' },
-          { metadata: { whitelistCrnEnvVar: 'MISSING_CRN_VAR' } }
-        )
+        validateWhitelistConfiguration({ slug: 'woodland' }, { metadata: { whitelistCrnEnvVar: 'MISSING_CRN_VAR' } })
       ).toThrow()
     })
 

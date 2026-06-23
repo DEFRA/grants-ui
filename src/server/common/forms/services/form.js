@@ -243,8 +243,8 @@ export function validateWhitelistConfiguration(form, definition) {
     .filter(Boolean)
 
   const grantCode =
-    /** @type {{ submission?: { grantCode?: string } } | undefined} */ (definition.metadata)?.submission
-      ?.grantCode ?? form.slug
+    /** @type {{ submission?: { grantCode?: string } } | undefined} */ (definition.metadata)?.submission?.grantCode ??
+    form.slug
 
   if (enabledCodes.includes(grantCode)) {
     return
@@ -611,7 +611,7 @@ export const formsService = async () => {
  */
 
 /**
- * @typedef {{ title?: string }} FormSummary
+ * @typedef {{ title?: string, slug?: string }} FormSummary
  */
 
 /**
