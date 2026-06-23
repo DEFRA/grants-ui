@@ -3,6 +3,8 @@ import { StatusPageController } from '@defra/forms-engine-plugin/controllers/Sta
 import ConfirmationPageController from './confirmation-page.controller.js'
 import * as formSlugHelper from '~/src/server/common/helpers/form-slug-helper.js'
 import { ConfirmationService } from './services/confirmation.service.js'
+import Boom from '@hapi/boom'
+import { log } from '../common/helpers/logging/log.js'
 
 const mockFormsCacheServiceMethods = {
   getState: vi.fn()
@@ -15,6 +17,15 @@ vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
 }))
 
 vi.mock('~/src/server/common/helpers/form-slug-helper.js')
+
+vi.mock('../common/helpers/logging/log.js', () => ({
+  log: vi.fn(),
+  LogCodes: {
+    CONFIRMATION: {
+      CONFIRMATION_ERROR: 'CONFIRMATION_ERROR'
+    }
+  }
+}))
 
 describe('ConfirmationPageController', () => {
   let controller
@@ -213,6 +224,76 @@ describe('ConfirmationPageController', () => {
       controller.model = {}
 
       expect(controller.getStartPath()).toBe('/default-start')
+    })
+  })
+
+  describe('loadConfirmationContent', () => {
+    test('loads confirmation content from service and processes it', async () => {
+      const confirmationContent = {
+        html: '<p>hello</p>'
+      }
+
+      vi.spyOn(ConfirmationService, 'loadConfirmationContent').mockResolvedValue({
+        confirmationContent
+      })
+
+      vi.spyOn(ConfirmationService, 'processConfirmationContent').mockReturnValue({
+        html: '<p>processed</p>'
+      })
+
+      const state = { foo: 'bar' }
+
+      const result = await controller.loadConfirmationContent(mockRequest, state)
+
+      expect(ConfirmationService.loadConfirmationContent).toHaveBeenCalledWith(controller.model.def)
+
+      expect(ConfirmationService.processConfirmationContent).toHaveBeenCalledWith(
+        confirmationContent,
+        'test-form',
+        state
+      )
+
+      expect(result).toEqual({
+        html: '<p>processed</p>'
+      })
+    })
+
+    test('returns null when no confirmation content exists', async () => {
+      vi.spyOn(ConfirmationService, 'loadConfirmationContent').mockResolvedValue({
+        confirmationContent: null
+      })
+
+      const processSpy = vi.spyOn(ConfirmationService, 'processConfirmationContent')
+
+      const result = await controller.loadConfirmationContent(mockRequest, {})
+
+      expect(processSpy).not.toHaveBeenCalled()
+      expect(result).toBeNull()
+    })
+  })
+
+  describe('handleError', () => {
+    test('rethrows boom errors', () => {
+      const error = Boom.badRequest('bad request')
+
+      expect(() => controller.handleError(error, mockRequest, mockH)).toThrow(error)
+    })
+
+    test('logs and returns 500 response for non-boom errors', () => {
+      const codeMock = vi.fn()
+
+      mockH.response.mockReturnValue({
+        code: codeMock
+      })
+
+      const error = new Error('oops')
+
+      controller.handleError(error, mockRequest, mockH)
+
+      expect(log).toHaveBeenCalled()
+
+      expect(mockH.response).toHaveBeenCalledWith('Server error')
+      expect(codeMock).toHaveBeenCalledWith(500)
     })
   })
 })
