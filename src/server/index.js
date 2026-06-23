@@ -57,6 +57,7 @@ import MapSubmissionPageController from '~/src/server/common/map/map-submission-
 import permissions from '../plugins/permissions.js'
 import { formsRequestPipeline } from './common/request-pipeline/forms-request-pipeline.js'
 import { auditPublisher } from '~/src/server/common/helpers/audit/audit.js'
+import { bindRequestContext, getStateWithDefinition } from './common/helpers/state/state-with-definition-context.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
 
@@ -235,6 +236,32 @@ export async function createServer() {
   log(LogCodes.SYSTEM.STARTUP_PHASE, {
     phase: 'schema_validators',
     status: 'loaded'
+  })
+
+  // Bind the live request to an AsyncLocalStorage context for the WHOLE request
+  // lifecycle (route prerequisites, handler and onPreResponse). The
+  // forms-engine-plugin resolves backend-sourced form definitions through a
+  // request-less `getFormDefinition(id, state)` call, so it can only reach
+  // `request.app` by recovering the request from this context.
+  server.ext('onRequest', (request, h) => {
+    bindRequestContext(request)
+    return h.continue
+  })
+
+  // Prime the combined form-definition + state response once per request, before
+  // the forms-engine-plugin resolves the form model. Runs after auth (so sbi/owner
+  // are known) so the request-less form-definition path and getState can both
+  // reuse the single backend call.
+  server.ext('onPostAuth', async (request, h) => {
+    const slug = request.params?.slug
+    if (slug && request.auth?.isAuthenticated && request.auth?.credentials?.contactId) {
+      try {
+        await getStateWithDefinition(request)
+      } catch {
+        // Surfaced later by getState / the definition loader with full context.
+      }
+    }
+    return h.continue
   })
 
   server.ext('onPreHandler', (request, h) => {

@@ -5,8 +5,6 @@ import {
   getFormsRedisClient,
   setFormMeta,
   getFormMeta,
-  setFormDef,
-  getFormDef,
   setSlugReverse,
   getSlugByFormId,
   setAllSlugs,
@@ -78,42 +76,6 @@ describe('forms-redis', () => {
       mockRedis.get.mockResolvedValue(null)
 
       expect(await getFormMeta(mockRedis, 'missing')).toBeNull()
-    })
-  })
-
-  describe('setFormDef / getFormDef', () => {
-    test('stores definition with EX TTL when ttlSeconds is provided', async () => {
-      const def = { name: 'my-form', pages: [] }
-      mockRedis.set.mockResolvedValue('OK')
-
-      await setFormDef(mockRedis, 'my-form', def, 300)
-
-      expect(mockRedis.set).toHaveBeenCalledWith('forms:def:my-form', JSON.stringify(def), 'EX', 300)
-    })
-
-    test('stores definition without TTL when ttlSeconds is omitted', async () => {
-      const def = { name: 'my-form', pages: [] }
-      mockRedis.set.mockResolvedValue('OK')
-
-      await setFormDef(mockRedis, 'my-form', def)
-
-      expect(mockRedis.set).toHaveBeenCalledWith('forms:def:my-form', JSON.stringify(def))
-    })
-
-    test('retrieves and parses cached definition', async () => {
-      const def = { name: 'my-form', pages: [] }
-      mockRedis.get.mockResolvedValue(JSON.stringify(def))
-
-      const result = await getFormDef(mockRedis, 'my-form')
-
-      expect(mockRedis.get).toHaveBeenCalledWith('forms:def:my-form')
-      expect(result).toEqual(def)
-    })
-
-    test('returns null when definition is not cached', async () => {
-      mockRedis.get.mockResolvedValue(null)
-
-      expect(await getFormDef(mockRedis, 'missing')).toBeNull()
     })
   })
 
@@ -201,7 +163,7 @@ describe('forms-redis', () => {
     test('returns metas for all stored slugs', async () => {
       const slugs = ['form-a', 'form-b']
       const metaA = { id: 'id-a', slug: 'form-a', title: 'Form A', metadata: {}, source: 'yaml' }
-      const metaB = { id: 'id-b', slug: 'form-b', title: 'Form B', metadata: {}, source: 'api' }
+      const metaB = { id: 'id-b', slug: 'form-b', title: 'Form B', metadata: {}, source: 'backend' }
       mockRedis.get
         .mockResolvedValueOnce(JSON.stringify(slugs))
         .mockResolvedValueOnce(JSON.stringify(metaA))

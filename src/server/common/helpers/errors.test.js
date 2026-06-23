@@ -49,24 +49,12 @@ vi.mock('@defra/forms-engine-plugin/controllers/TerminalPageController.js', () =
   }
 }))
 
-vi.mock('~/src/server/common/forms/services/api-form-service.js', () => ({
-  ApiFormService: vi.fn().mockImplementation(function () {
-    return {
-      loadAll: vi.fn(async () => {}),
-      getFormDefinition: vi.fn(async () => null),
-      fetchAndCacheDefinition: vi.fn(async () => null)
-    }
-  })
-}))
-
 vi.mock('~/src/server/common/forms/services/forms-redis.js', () => ({
   getFormsRedisClient: vi.fn(() => ({ status: 'ready' })),
   setFormMeta: vi.fn(async () => {}),
-  setFormDef: vi.fn(async () => {}),
   setSlugReverse: vi.fn(async () => {}),
   setAllSlugs: vi.fn(async () => {}),
   getFormMeta: vi.fn(async () => null),
-  getFormDef: vi.fn(async () => null),
   getSlugByFormId: vi.fn(async () => null),
   getAllSlugs: vi.fn(async () => []),
   getAllFormMetas: vi.fn(async () => [])
