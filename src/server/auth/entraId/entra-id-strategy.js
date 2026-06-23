@@ -2,8 +2,14 @@ import { config } from '~/src/config/config.js'
 import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 
 async function getEntraIdOptions() {
-  const oidcConfig = await getOidcConfig(config.get('entraId.wellKnownUrl'))
+  // Always derive from tenantId so ENTRA_INTERNAL_TENANT_ID is the single value to set.
+  // ENTRA_INTERNAL_CONFIG_URL overrides only when explicitly provided (differs from the config default).
+  const tenantId = config.get('entraId.tenantId')
+  const configuredUrl = config.get('entraId.wellKnownUrl')
+  const derivedUrl = `https://login.microsoftonline.com/${tenantId}/v2.0/.well-known/openid-configuration`
+  const wellKnownUrl = configuredUrl !== config.default('entraId.wellKnownUrl') ? configuredUrl : derivedUrl
 
+  const oidcConfig = await getOidcConfig(wellKnownUrl)
   return {
     provider: {
       name: 'entra-id',

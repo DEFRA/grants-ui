@@ -2,7 +2,7 @@ import convict from 'convict'
 
 const config = convict({
   wellKnownUrl: {
-    doc: 'The Microsoft Entra ID well known URL.',
+    doc: 'The Microsoft Entra ID well known URL. Overrides the URL derived from tenantId when set.',
     format: String,
     default: 'https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration',
     env: 'ENTRA_INTERNAL_CONFIG_URL'
