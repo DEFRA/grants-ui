@@ -4,12 +4,14 @@ import {
   addAllForms,
   configureFormDefinition,
   formsService,
-  validateDetailsPageConfiguration,
   validateGrantRedirectRules,
   validateWhitelistConfiguration
 } from './form.js'
-import { ApiFormService } from './api-form-service.js'
 import { logger } from '~/src/server/common/helpers/logging/log.js'
+import {
+  currentRequest,
+  getStateWithDefinition
+} from '~/src/server/common/helpers/state/state-with-definition-context.js'
 import fs from 'node:fs/promises'
 
 const mockUrl = { pathname: '/mock/path' }
@@ -26,11 +28,7 @@ const DEFAULT_CONFIG_MOCK = {
   },
   serviceName: 'test-service',
   serviceVersion: '1.0.0',
-  'configApi.formSlugs': [],
-  'configApi.url': '',
-  'configApi.jwtSecret': '',
-  'configApi.jwtExpiry': '1h',
-  'configApi.cacheTtlSeconds': 300
+  'forms.backendFormDefEnabledSlugs': []
 }
 
 const TEST_FORMS_ARRAY = [
@@ -70,8 +68,21 @@ const UNIQUE_FORMS_ARRAY = TEST_FORMS_ARRAY.slice(0, 2)
 const _metaStore = new Map()
 const _reverseStore = new Map()
 
-vi.mock('./api-form-service.js', () => ({
-  ApiFormService: vi.fn()
+vi.mock('~/src/server/common/helpers/state/state-with-definition-context.js', () => ({
+  currentRequest: vi.fn(),
+  getStateWithDefinition: vi.fn(),
+  resolveVersion: vi.fn((body) => {
+    if (body?.upgraded && body.toVersion) {
+      return body.toVersion
+    }
+    if (body?.state?.grantVersion) {
+      return body.state.grantVersion
+    }
+    const definition = body?.definition
+    return definition && definition.major != null
+      ? `${definition.major}.${definition.minor}.${definition.patch}`
+      : undefined
+  })
 }))
 
 vi.mock('./forms-redis.js', () => ({
@@ -79,13 +90,11 @@ vi.mock('./forms-redis.js', () => ({
   setFormMeta: vi.fn(async (_r, slug, entry) => {
     _metaStore.set(slug, entry)
   }),
-  setFormDef: vi.fn().mockResolvedValue(undefined),
   setSlugReverse: vi.fn(async (_r, id, slug) => {
     _reverseStore.set(id, slug)
   }),
   setAllSlugs: vi.fn().mockResolvedValue(undefined),
   getFormMeta: vi.fn(async (_r, slug) => _metaStore.get(slug) ?? null),
-  getFormDef: vi.fn().mockResolvedValue(null),
   getSlugByFormId: vi.fn(async (_r, id) => _reverseStore.get(id) ?? null)
 }))
 
@@ -151,8 +160,23 @@ Object.defineProperty(process, 'env', {
   })
 })
 
+const BACKEND_FORM_META = { id: 'backend-form', slug: 'backend-form', title: 'backend-form', source: 'backend' }
+
+// Registers a backend-sourced form in the in-memory meta store.
+const registerBackendForm = () => _metaStore.set('backend-form', { ...BACKEND_FORM_META })
+
+// Activates a request context and returns the request used as the backend stash key.
+const mockBackendRequest = () => {
+  const request = { app: {} }
+  vi.mocked(currentRequest).mockReturnValue(request)
+  return request
+}
+
+// Stubs the backend state-with-definition fetch with the given envelope.
+const mockBackendStateWithDefinition = (envelope) => vi.mocked(getStateWithDefinition).mockResolvedValue(envelope)
+
 describe('form', () => {
-  let mockWarn, mockError, mockApiFormServiceInstance
+  let mockWarn, mockError
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -171,14 +195,6 @@ describe('form', () => {
     mockEnv.FARMING_PAYMENTS_WHITELIST_SBIS = '106284736, 121428499, 106238988'
     mockEnv.WOODLAND_WHITELIST_CRNS = '1102838829, 1102760349, 1100495932'
     mockEnv.WOODLAND_WHITELIST_SBIS = '106284736, 121428499, 106238988'
-
-    mockApiFormServiceInstance = {
-      loadAll: vi.fn().mockResolvedValue(undefined),
-      getFormDefinition: vi.fn().mockResolvedValue({ name: 'api-form-def', pages: [] })
-    }
-    vi.mocked(ApiFormService).mockImplementation(function () {
-      return mockApiFormServiceInstance
-    })
   })
 
   afterEach(() => {})
@@ -211,64 +227,128 @@ describe('form', () => {
       expect(error.message).toContain("Form definition 'unknown-id' not found")
     })
 
-    test('getFormMetadata returns api-shaped metadata for api-sourced form', async () => {
-      _metaStore.set('api-form', {
-        id: 'api-id',
-        slug: 'api-form',
-        title: 'API Form',
-        metadata: { foo: 'bar' },
-        source: 'api'
+    test('getFormMetadata returns backend definition metadata for backend-sourced form', async () => {
+      registerBackendForm()
+      mockBackendRequest()
+      mockBackendStateWithDefinition({
+        definition: { definition: { name: 'Backend Form', metadata: { foo: 'bar' }, pages: [] } }
       })
 
       const service = await formsService()
-      const result = await service.getFormMetadata('api-form')
+      const result = await service.getFormMetadata('backend-form')
 
       expect(result).toMatchObject({
-        id: 'api-id',
-        slug: 'api-form',
-        title: 'API Form'
+        id: 'backend-form',
+        slug: 'backend-form',
+        title: 'Backend Form'
       })
     })
 
-    test('getFormDefinition delegates to apiFormService for api-sourced form', async () => {
-      _metaStore.set('api-form', { id: 'api-id', slug: 'api-form', title: 'API Form', metadata: {}, source: 'api' })
-      _reverseStore.set('api-id', 'api-form')
+    test('getFormMetadata stamps the backend updatedAt so the model cache invalidates across versions', async () => {
+      registerBackendForm()
+      mockBackendRequest()
 
       const service = await formsService()
-      const result = await service.getFormDefinition('api-id')
 
-      expect(mockApiFormServiceInstance.getFormDefinition).toHaveBeenCalledWith(
-        expect.anything(),
-        'api-form',
-        configureFormDefinition
-      )
-      expect(result).toEqual({ name: 'api-form-def', pages: [] })
+      mockBackendStateWithDefinition({
+        definition: {
+          major: 1,
+          minor: 0,
+          patch: 1,
+          status: 'active',
+          updatedAt: '2024-01-01T00:00:00.000Z',
+          definition: { name: 'Backend Form', metadata: {}, pages: [] }
+        }
+      })
+      const v101 = await service.getFormMetadata('backend-form')
+
+      mockBackendStateWithDefinition({
+        definition: {
+          major: 2,
+          minor: 1,
+          patch: 0,
+          status: 'active',
+          updatedAt: '2024-06-01T00:00:00.000Z',
+          definition: { name: 'Backend Form', metadata: {}, pages: [] }
+        }
+      })
+      const v210 = await service.getFormMetadata('backend-form')
+
+      // `updatedAt` is the real backend timestamp, distinct across versions.
+      expect(v101.live.updatedAt).toBeInstanceOf(Date)
+      expect(v101.live.updatedAt.getTime()).toBe(new Date('2024-01-01T00:00:00.000Z').getTime())
+      expect(v101.live.updatedAt.getTime()).not.toBe(v210.live.updatedAt.getTime())
+      expect(v210.metadata.version).toBe('2.1.0')
+      // An active form populates `live` and clears `draft`.
+      expect(v210.draft).toBeUndefined()
     })
 
-    test('calls apiFormService.loadAll when apiSlugs is non-empty', async () => {
-      config.get.mockImplementation((key) => {
-        if (key === 'configApi.formSlugs') {
-          return ['api-slug']
+    test('getFormMetadata maps a draft backend status to the draft state and clears live', async () => {
+      registerBackendForm()
+      mockBackendRequest()
+
+      const service = await formsService()
+
+      mockBackendStateWithDefinition({
+        definition: {
+          major: 1,
+          minor: 0,
+          patch: 0,
+          status: 'draft',
+          updatedAt: '2024-02-02T00:00:00.000Z',
+          definition: { name: 'Backend Form', metadata: {}, pages: [] }
         }
-        return DEFAULT_CONFIG_MOCK[key]
+      })
+      const result = await service.getFormMetadata('backend-form')
+
+      expect(result.live).toBeUndefined()
+      expect(result.draft.updatedAt).toBeInstanceOf(Date)
+      expect(result.draft.updatedAt.getTime()).toBe(new Date('2024-02-02T00:00:00.000Z').getTime())
+    })
+
+    test('getFormDefinition returns the stashed definition for backend-sourced form', async () => {
+      registerBackendForm()
+      _reverseStore.set('backend-form', 'backend-form')
+      const request = mockBackendRequest()
+      mockBackendStateWithDefinition({
+        definition: { definition: { name: 'Backend Form', pages: [] } }
       })
 
-      await formsService()
+      const service = await formsService()
+      const result = await service.getFormDefinition('backend-form')
 
-      expect(mockApiFormServiceInstance.loadAll).toHaveBeenCalledWith(
-        expect.anything(),
-        ['api-slug'],
-        expect.anything(),
-        configureFormDefinition,
-        validateWhitelistConfiguration,
-        validateGrantRedirectRules,
-        validateDetailsPageConfiguration
-      )
+      expect(getStateWithDefinition).toHaveBeenCalledWith(request)
+      expect(result).toMatchObject({ name: 'Backend Form' })
     })
 
-    test('does not call apiFormService.loadAll when apiSlugs is empty', async () => {
+    test('getFormDefinitionBySlug resolves the stashed definition for backend forms', async () => {
+      mockBackendRequest()
+      mockBackendStateWithDefinition({
+        definition: { definition: { name: 'Backend Form', pages: [] } }
+      })
+
+      const service = await formsService()
+      const result = await service.getFormDefinitionBySlug('backend-form')
+
+      expect(result).toMatchObject({ name: 'Backend Form' })
+    })
+
+    test('getFormDefinitionBySlug throws clearly when no request context is active', async () => {
+      vi.mocked(currentRequest).mockReturnValue(undefined)
+
+      const service = await formsService()
+
+      await expect(service.getFormDefinitionBySlug('backend-form')).rejects.toThrow(/No request context/)
+    })
+
+    test('registers backend slugs with source "backend" when configured', async () => {
+      config.get.mockImplementation((key) =>
+        key === 'forms.backendFormDefEnabledSlugs' ? ['backend-slug'] : DEFAULT_CONFIG_MOCK[key]
+      )
+
       await formsService()
-      expect(mockApiFormServiceInstance.loadAll).not.toHaveBeenCalled()
+
+      expect(_metaStore.get('backend-slug')).toMatchObject({ slug: 'backend-slug', source: 'backend' })
     })
   })
 

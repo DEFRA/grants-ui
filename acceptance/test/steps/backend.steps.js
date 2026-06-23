@@ -27,7 +27,7 @@ Then(
 Then(
   'the following application state should be stored for CRN {string} and SBI {string} and grant {string}',
   async function (crn, sbi, grantCode, dataTable) {
-    const state = await Backend.getState(crn, sbi, grantCode)
+    const state = (await Backend.getState(crn, sbi, grantCode)).state
     for (const row of dataTable.hashes()) {
       expect(state[row.FIELD]).toEqual(transformStepArgument(row.VALUE))
     }
@@ -51,7 +51,7 @@ Then(
 Then(
   'the grants-ui application status for CRN {string} and SBI {string} and grant {string} should (still )be {string}',
   async function (crn, sbi, grantCode, status) {
-    const application = await Backend.getState(crn, sbi, grantCode)
+    const application = (await Backend.getState(crn, sbi, grantCode)).state
     expect(application.applicationStatus).toEqual(status)
   }
 )

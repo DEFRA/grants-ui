@@ -58,4 +58,20 @@ describe('mintLockToken', () => {
 
     expect(config.get).toHaveBeenCalledWith('applicationLock.secret')
   })
+
+  it('includes grantVersion when provided', () => {
+    const token = mintLockToken({ ...baseParams, grantVersion: '2.0.0' })
+
+    const decoded = jwt.verify(token, SECRET)
+
+    expect(decoded).toMatchObject({ grantVersion: '2.0.0' })
+  })
+
+  it('omits grantVersion claim when not provided (read lock token)', () => {
+    const token = mintLockToken(baseParams)
+
+    const decoded = jwt.verify(token, SECRET)
+
+    expect(decoded).not.toHaveProperty('grantVersion')
+  })
 })
