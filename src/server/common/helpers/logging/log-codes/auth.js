@@ -71,6 +71,16 @@ export const AUTH = {
     messageFunc: (messageOptions) =>
       `Whitelist access denied to path=${messageOptions.path}: SBI ${messageOptions.sbi || 'unknown'} passed but CRN ${messageOptions.userId || 'unknown'} failed validation`
   },
+  ALLOWLIST_ACCESS_GRANTED: {
+    level: 'info',
+    messageFunc: (messageOptions) =>
+      `Allowlist access granted to path=${messageOptions.path} for user=${messageOptions.userId || 'unknown'}, sbi=${messageOptions.sbi || 'N/A'}, grantCode=${messageOptions.grantCode}`
+  },
+  ALLOWLIST_ACCESS_DENIED: {
+    level: 'info',
+    messageFunc: (messageOptions) =>
+      `Allowlist access denied to path=${messageOptions.path} for user=${messageOptions.userId || 'unknown'}, sbi=${messageOptions.sbi || 'N/A'}, grantCode=${messageOptions.grantCode}`
+  },
   CREDENTIALS_MISSING: {
     level: 'error',
     messageFunc: () => 'No credentials received from Bell OAuth provider'

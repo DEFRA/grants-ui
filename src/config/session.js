@@ -51,6 +51,13 @@ export const sessionSchema = {
       format: 'nat',
       default: 51200,
       env: 'MAX_DB_STATE_SIZE_BYTES'
+    },
+    jwtSecret: {
+      doc: 'JWT secret shared with grants-ui-backend for signing x-encrypted-auth tokens',
+      format: String,
+      default: 'default-grants-ui-backend-jwt-secret',
+      env: 'GRANTS_UI_BACKEND_AUTH_JWT_SECRET',
+      sensitive: true
     }
   },
   cookie: {
@@ -103,6 +110,7 @@ export const sessionSchema = {
  * @property {string} cache.authToken
  * @property {string} cache.encryptionKey
  * @property {number} cache.maxDbStateSizeBytes
+ * @property {string} cache.jwtSecret
  * @property {object} cookie
  * @property {string} cookie.name
  * @property {object} cookie.cache

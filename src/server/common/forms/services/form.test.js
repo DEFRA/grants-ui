@@ -495,6 +495,18 @@ describe('form', () => {
   describe('validateWhitelistConfiguration', () => {
     const testForm = { title: 'Test Form' }
 
+    it('skips all validation when enableAllowlistEndpoint is true', () => {
+      config.get.mockImplementation((key) =>
+        key === 'enableAllowlistEndpoint' ? true : DEFAULT_CONFIG_MOCK[key]
+      )
+
+      expect(() =>
+        validateWhitelistConfiguration(testForm, {
+          metadata: { whitelistCrnEnvVar: 'MISSING_CRN_VAR' }
+        })
+      ).not.toThrow()
+    })
+
     test.each([
       [
         'only CRN variable is provided',

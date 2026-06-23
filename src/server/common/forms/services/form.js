@@ -236,6 +236,10 @@ export function validateDetailsPageConfiguration(form, definition) {
  * @returns {void}
  */
 export function validateWhitelistConfiguration(form, definition) {
+  if (config.get('enableAllowlistEndpoint')) {
+    return
+  }
+
   if (definition.metadata) {
     const whitelistCrnEnvVar = /** @type {string | undefined} */ (definition.metadata.whitelistCrnEnvVar)
     const whitelistSbiEnvVar = /** @type {string | undefined} */ (definition.metadata.whitelistSbiEnvVar)
