@@ -58,15 +58,24 @@ export function isViewOnlyUser(request, resource) {
  * Falls back to check responses if no task list exists.
  * @param {object} model
  * @param {string} basePath
+ * @param {string} [slug]
  * @returns {{ href: string, text: string }}
  */
-export function getReturnToApplicationPath(model, basePath) {
+export function getReturnToApplicationPath(model, basePath, slug) {
   const taskListPath = getTaskListPath(model)
 
   if (taskListPath) {
     return {
       href: `${basePath}${taskListPath}`,
       text: 'Return to task list'
+    }
+  }
+
+  // Temporary exception for Farm Payments
+  if (slug === 'farm-payments') {
+    return {
+      href: `${basePath}/check-selected-land-actions`,
+      text: 'Return to summary'
     }
   }
 
@@ -129,7 +138,7 @@ function redirectCannotSubmitUser(request, h) {
   if (!model) {
     throw forbidden('Form model missing')
   }
-  const returnTo = getReturnToApplicationPath(model, basePath)
+  const returnTo = getReturnToApplicationPath(model, basePath, request.params.slug)
   const redirectUrl = `/cannot-submit?returnUrl=${encodeURIComponent(returnTo.href)}&returnText=${encodeURIComponent(returnTo.text)}`
   return h.redirect(redirectUrl).takeover()
 }
