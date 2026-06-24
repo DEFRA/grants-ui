@@ -240,6 +240,12 @@ export function validateDetailsPageConfiguration(form, definition) {
  * @returns {void}
  */
 export function validateWhitelistConfiguration(form, definition) {
+  const enabledCodes = /** @type {string[]} */ (config.get('forms.backendAllowlistEnabledSlugs'))
+
+  if (form.slug && enabledCodes.includes(form.slug)) {
+    return
+  }
+
   if (definition.metadata) {
     const whitelistCrnEnvVar = /** @type {string | undefined} */ (definition.metadata.whitelistCrnEnvVar)
     const whitelistSbiEnvVar = /** @type {string | undefined} */ (definition.metadata.whitelistSbiEnvVar)
@@ -662,7 +668,7 @@ export const formsService = async () => {
  */
 
 /**
- * @typedef {{ title?: string }} FormSummary
+ * @typedef {{ title?: string, slug?: string }} FormSummary
  */
 
 /**

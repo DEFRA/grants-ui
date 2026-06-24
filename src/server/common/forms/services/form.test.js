@@ -28,6 +28,7 @@ const DEFAULT_CONFIG_MOCK = {
   },
   serviceName: 'test-service',
   serviceVersion: '1.0.0',
+  'forms.backendAllowlistEnabledSlugs': [],
   'forms.backendFormDefEnabledSlugs': []
 }
 
@@ -574,6 +575,26 @@ describe('form', () => {
 
   describe('validateWhitelistConfiguration', () => {
     const testForm = { title: 'Test Form' }
+
+    it('skips validation when the grant code is in forms.backendAllowlistEnabledSlugs', () => {
+      config.get.mockImplementation((key) =>
+        key === 'forms.backendAllowlistEnabledSlugs' ? ['woodland', 'farm-payments'] : DEFAULT_CONFIG_MOCK[key]
+      )
+
+      expect(() =>
+        validateWhitelistConfiguration({ slug: 'woodland' }, { metadata: { whitelistCrnEnvVar: 'MISSING_CRN_VAR' } })
+      ).not.toThrow()
+    })
+
+    it('runs validation when the grant code is not in forms.backendAllowlistEnabledSlugs', () => {
+      config.get.mockImplementation((key) =>
+        key === 'forms.backendAllowlistEnabledSlugs' ? ['farm-payments'] : DEFAULT_CONFIG_MOCK[key]
+      )
+
+      expect(() =>
+        validateWhitelistConfiguration({ slug: 'woodland' }, { metadata: { whitelistCrnEnvVar: 'MISSING_CRN_VAR' } })
+      ).toThrow()
+    })
 
     test.each([
       [

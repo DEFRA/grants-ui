@@ -253,6 +253,30 @@ describe('LogCodes', () => {
         },
         `Whitelist access denied to path=${TEST_PATHS.EXAMPLE_GRANT}: SBI ${TEST_SBI.DEFAULT} passed but CRN test123 failed validation`
       ],
+      [
+        'ALLOWLIST_ACCESS_GRANTED',
+        'info',
+        { path: TEST_PATHS.EXAMPLE_GRANT, userId: 'test123', sbi: TEST_SBI.DEFAULT, grantCode: 'woodland' },
+        `Allowlist access granted to path=${TEST_PATHS.EXAMPLE_GRANT} for user=test123, sbi=${TEST_SBI.DEFAULT}, grantCode=woodland`
+      ],
+      [
+        'ALLOWLIST_ACCESS_DENIED',
+        'info',
+        { path: TEST_PATHS.EXAMPLE_GRANT, userId: 'test123', sbi: TEST_SBI.DEFAULT, grantCode: 'woodland' },
+        `Allowlist access denied to path=${TEST_PATHS.EXAMPLE_GRANT} for user=test123, sbi=${TEST_SBI.DEFAULT}, grantCode=woodland`
+      ],
+      [
+        'ALLOWLIST_ACCESS_GRANTED with fallbacks',
+        'info',
+        { path: TEST_PATHS.EXAMPLE_GRANT, grantCode: 'woodland' },
+        `Allowlist access granted to path=${TEST_PATHS.EXAMPLE_GRANT} for user=unknown, sbi=N/A, grantCode=woodland`
+      ],
+      [
+        'ALLOWLIST_ACCESS_DENIED with fallbacks',
+        'info',
+        { path: TEST_PATHS.EXAMPLE_GRANT, grantCode: 'woodland' },
+        `Allowlist access denied to path=${TEST_PATHS.EXAMPLE_GRANT} for user=unknown, sbi=N/A, grantCode=woodland`
+      ],
       ['CREDENTIALS_MISSING', 'error', {}, `No credentials received from Bell OAuth provider`],
       ['TOKEN_MISSING', 'error', {}, `No token received from Defra Identity`],
       [
