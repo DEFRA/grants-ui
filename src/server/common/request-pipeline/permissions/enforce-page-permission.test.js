@@ -84,6 +84,28 @@ describe('getReturnToApplicationPath', () => {
 
     expect(result).toEqual({ href: '/sfi/summary', text: 'Return to summary' })
   })
+
+  it('returns check-selected-land-actions for farm-payments when no task list exists', () => {
+    vi.mocked(getTaskListPath).mockReturnValue(undefined)
+
+    const result = getReturnToApplicationPath({}, '/farm-payments', 'farm-payments')
+
+    expect(result).toEqual({
+      href: '/farm-payments/check-selected-land-actions',
+      text: 'Return to summary'
+    })
+  })
+
+  it('still prefers task list over farm-payments exception when task list exists', () => {
+    vi.mocked(getTaskListPath).mockReturnValue('/task-list')
+
+    const result = getReturnToApplicationPath({}, '/farm-payments', 'farm-payments')
+
+    expect(result).toEqual({
+      href: '/farm-payments/task-list',
+      text: 'Return to task list'
+    })
+  })
 })
 
 describe('isAllowedViewOnlyPath', () => {
@@ -229,5 +251,25 @@ describe('enforcePagePermission', () => {
     })
 
     expect(() => enforcePagePermission(request, h, context)).toThrow('Form model missing')
+  })
+
+  it('redirects amend-only farm-payments users to check-selected-land-actions', () => {
+    vi.mocked(getRequiredPermission).mockReturnValue('submit')
+    vi.mocked(getTaskListPath).mockReturnValue(undefined)
+
+    request.params.slug = 'farm-payments'
+    request.can.mockImplementation(canAmendNotSubmit)
+
+    const takeover = vi.fn(() => 'redirected')
+
+    h.redirect.mockReturnValue({
+      takeover
+    })
+
+    enforcePagePermission(request, h, context)
+
+    expect(h.redirect).toHaveBeenCalledWith(
+      '/cannot-submit?returnUrl=%2Ffarm-payments%2Fcheck-selected-land-actions&returnText=Return%20to%20summary'
+    )
   })
 })
