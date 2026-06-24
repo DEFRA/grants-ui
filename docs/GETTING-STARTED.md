@@ -186,18 +186,19 @@ which is formatted as a GUID string.
 
 #### Additional Configuration
 
-| Variable                     | Description                                    | Default                 |
-| ---------------------------- | ---------------------------------------------- | ----------------------- |
-| `SERVICE_VERSION`            | Service version (injected in CDP environments) | null                    |
-| `ENVIRONMENT`                | CDP environment name                           | `local`                 |
-| `SERVICE_NAME`               | Application service name                       | `Farm and land service` |
-| `STATIC_CACHE_TIMEOUT`       | Static asset cache timeout in milliseconds     | `604800000` (1 week)    |
-| `ASSET_PATH`                 | Path to static assets                          | `/public`               |
-| `TRACING_HEADER`             | HTTP header for distributed tracing            | `x-cdp-request-id`      |
-| `GA_TRACKING_ID`             | Google Analytics tracking ID (optional)        | undefined               |
-| `COOKIE_POLICY_URL`          | URL for cookie policy page                     | `/cookies`              |
-| `COOKIE_CONSENT_EXPIRY_DAYS` | Days before cookie consent expires             | `365`                   |
-| `DEV_TOOLS_ENABLED`          | Enable development tools and routes            | `true` (dev only)       |
+| Variable                                     | Description                                                                                                     | Default                                      |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `SERVICE_VERSION`                            | Service version (injected in CDP environments)                                                                  | null                                         |
+| `ENVIRONMENT`                                | CDP environment name                                                                                            | `local`                                      |
+| `SERVICE_NAME`                               | Application service name                                                                                        | `Farm and land service`                      |
+| `STATIC_CACHE_TIMEOUT`                       | Static asset cache timeout in milliseconds                                                                      | `604800000` (1 week)                         |
+| `ASSET_PATH`                                 | Path to static assets                                                                                           | `/public`                                    |
+| `TRACING_HEADER`                             | HTTP header for distributed tracing                                                                             | `x-cdp-request-id`                           |
+| `GA_TRACKING_ID`                             | Google Analytics tracking ID (optional)                                                                         | undefined                                    |
+| `COOKIE_POLICY_URL`                          | URL for cookie policy page                                                                                      | `/cookies`                                   |
+| `COOKIE_CONSENT_EXPIRY_DAYS`                 | Days before cookie consent expires                                                                              | `365`                                        |
+| `DEV_TOOLS_ENABLED`                          | Enable development tools and routes                                                                             | `true` (dev only)                            |
+| `NOTIFICATION_BANNER_EXCLUDED_PATH_SUFFIXES` | Comma-separated page path suffixes where the [notification banner](./FEATURES.md#notification-banner) is hidden | `/confirmation,/print-submitted-application` |
 
 #### Defra ID Additional Settings
 

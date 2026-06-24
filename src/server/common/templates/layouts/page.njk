@@ -6,6 +6,7 @@
 {% from "govuk/components/breadcrumbs/macro.njk" import govukBreadcrumbs %}
 {% from "govuk/components/phase-banner/macro.njk" import govukPhaseBanner %}
 {% from "govuk/components/service-navigation/macro.njk" import govukServiceNavigation %}
+{% from "govuk/components/notification-banner/macro.njk" import govukNotificationBanner %}
 
 {# Import custom components globally #}
 {% from "heading/macro.njk" import appHeading %}
@@ -77,6 +78,13 @@
     {{ govukBreadcrumbs({
       items: breadcrumbs
     }) }}
+  {% endif %}
+  {% if notificationBanner %}
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-two-thirds">
+        {{ govukNotificationBanner(notificationBanner) }}
+      </div>
+    </div>
   {% endif %}
 {% endblock %}
 

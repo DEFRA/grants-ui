@@ -277,6 +277,14 @@ const convictConfig = {
       env: 'COOKIE_CONSENT_EXPIRY_DAYS'
     }
   },
+  notificationBanner: {
+    excludedPathSuffixes: {
+      doc: 'Comma-separated list of path suffixes on which the per-grant notification banner is never shown (e.g. the confirmation and print pages)',
+      format: Array,
+      default: ['/confirmation', '/print-submitted-application'],
+      env: 'NOTIFICATION_BANNER_EXCLUDED_PATH_SUFFIXES'
+    }
+  },
   mapMockDataEnabled: {
     doc: 'Enable map mock data mode — uses embedded parcel geometry instead of tile URL.',
     format: Boolean,
