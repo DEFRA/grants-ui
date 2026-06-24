@@ -9,6 +9,15 @@ async function getEntraIdOptions() {
   const derivedUrl = `https://login.microsoftonline.com/${tenantId}/v2.0/.well-known/openid-configuration`
   const wellKnownUrl = configuredUrl !== config.default('entraId.wellKnownUrl') ? configuredUrl : derivedUrl
 
+  // Derive the redirect base URL from CDP environment name.
+  // Bell appends the route path (/auth/entra-id-poc) to produce the full redirect URI sent to Azure.
+  // ENTRA_INTERNAL_REDIRECT_URL overrides this for prod vanity URLs or local dev.
+  const cdpEnvironment = config.get('cdpEnvironment')
+  const configuredRedirectUrl = config.get('entraId.redirectUrl')
+  const derivedRedirectUrl = `https://grants-ui.${cdpEnvironment}.cdp-int.defra.cloud`
+  const location =
+    configuredRedirectUrl !== config.default('entraId.redirectUrl') ? configuredRedirectUrl : derivedRedirectUrl
+
   const oidcConfig = await getOidcConfig(wellKnownUrl)
   return {
     provider: {
@@ -27,7 +36,7 @@ async function getEntraIdOptions() {
     clientId: config.get('entraId.clientId'),
     clientSecret: config.get('entraId.clientSecret'),
     isSecure: config.get('session.cookie.secure'),
-    location: config.get('entraId.redirectUrl')
+    location
   }
 }
 
