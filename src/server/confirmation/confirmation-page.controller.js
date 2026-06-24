@@ -1,6 +1,10 @@
 import { StatusPageController } from '@defra/forms-engine-plugin/controllers/StatusPageController.js'
 import { getConfirmationPath, storeSlugInContext } from '~/src/server/common/helpers/form-slug-helper.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
+import { ConfirmationService } from './services/confirmation.service.js'
+import { isBoom } from '@hapi/boom'
+import { log, LogCodes } from '../common/helpers/logging/log.js'
+import { statusCodes } from '../common/constants/status-codes.js'
 
 export default class ConfirmationPageController extends StatusPageController {
   viewName = 'confirmation-page.html'
@@ -12,6 +16,45 @@ export default class ConfirmationPageController extends StatusPageController {
   constructor(model, pageDef) {
     super(model, pageDef)
     this.model = model
+  }
+
+  /**
+   * Loads and validates confirmation content for the form
+   * @param {AnyFormRequest} request - The request object
+   * @param {object} state - the DXT state object containing application details
+   * @returns {Promise<object|null>} Content result with confirmationContent and formDefinition
+   */
+  async loadConfirmationContent(request, state) {
+    const form = this.model.def
+
+    const { slug } = request.params
+
+    const { confirmationContent } = await ConfirmationService.loadConfirmationContent(form)
+
+    return confirmationContent ? ConfirmationService.processConfirmationContent(confirmationContent, slug, state) : null
+  }
+
+  /**
+   * Builds view model and returns confirmation page response
+   * @param {object} confirmationContent - Confirmation content configuration
+   * @param {object} sessionData - Session data including reference number
+   * @param {object} form - Form object
+   * @param {string} slug - Form slug
+   * @param {object} h - Hapi response toolkit
+   * @returns {object} Hapi response
+   */
+  buildAndRenderConfirmationResponse(confirmationContent, sessionData, form, slug, h) {
+    const viewModel = ConfirmationService.buildViewModel({
+      referenceNumber: sessionData.referenceNumber,
+      businessName: sessionData.businessName,
+      sbi: sessionData.sbi,
+      contactName: sessionData.contactName,
+      confirmationContent,
+      form,
+      slug
+    })
+
+    return h.view('confirmation-page', viewModel)
   }
 
   /**
@@ -27,39 +70,32 @@ export default class ConfirmationPageController extends StatusPageController {
      * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h
      */
     return async (request, context, h) => {
-      storeSlugInContext(request, context, 'ConfirmationController')
+      try {
+        storeSlugInContext(request, context, 'ConfirmationController')
 
-      const cacheService = getFormsCacheService(request.server)
-      const state = await cacheService.getState(request)
-      const referenceNumber = state.$$__referenceNumber
+        const cacheService = getFormsCacheService(request.server)
+        const state = await cacheService.getState(request)
+        const referenceNumber = state.$$__referenceNumber
 
-      return this.renderConfirmationPage(request, context, h, /** @type {string} */ (referenceNumber))
+        const confirmationContent = await this.loadConfirmationContent(request, state)
+        const sessionData = {
+          state,
+          referenceNumber: referenceNumber || 'Not available',
+          businessName: request.yar?.get('businessName'),
+          sbi: request.yar?.get('sbi'),
+          contactName: request.yar?.get('contactName')
+        }
+        return this.buildAndRenderConfirmationResponse(
+          confirmationContent,
+          sessionData,
+          this.model.def,
+          request.params.slug,
+          h
+        )
+      } catch (error) {
+        return this.handleError(error, request, h)
+      }
     }
-  }
-
-  /**
-   * Render the confirmation page
-   * @param {AnyFormRequest} request - The request object
-   * @param {FormContext} context - The context object
-   * @param {Pick<ResponseToolkit, 'redirect' | 'view'>} h - Response toolkit
-   * @param {string} referenceNumber - The reference number
-   * @returns {ResponseObject} View response
-   */
-  renderConfirmationPage(request, context, h, referenceNumber) {
-    /** @type {object} */
-    const { collection } = this
-    // @ts-ignore - super not being recognised as QuestionPageController as it is two levels above and it's on a node module
-    const baseViewModel = super.getViewModel(request, context)
-    const viewModel = {
-      ...baseViewModel,
-      errors: collection.getErrors(collection.getErrors()),
-      referenceNumber,
-      businessName: request.yar?.get('businessName'),
-      sbi: request.yar?.get('sbi'),
-      contactName: request.yar?.get('contactName')
-    }
-
-    return h.view(this.viewName, viewModel)
   }
 
   /**
@@ -87,6 +123,28 @@ export default class ConfirmationPageController extends StatusPageController {
     }
 
     return defaultPath
+  }
+
+  /**
+   * Handles errors and returns appropriate error response
+   * @param {Error} error - Error object
+   * @param {object} request - Hapi request object
+   * @param {object} h - Hapi response toolkit
+   * @returns {object} Error response
+   */
+  handleError(error, request, h) {
+    if (isBoom(error)) {
+      throw error
+    }
+    log(
+      LogCodes.CONFIRMATION.CONFIRMATION_ERROR,
+      {
+        userId: request.auth?.credentials?.userId || 'unknown',
+        errorMessage: `Config-driven confirmation route error for slug: ${request.params?.slug || 'unknown'}. ${error.message}`
+      },
+      request
+    )
+    return h.response('Server error').code(statusCodes.internalServerError)
   }
 }
 
