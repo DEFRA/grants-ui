@@ -4,7 +4,8 @@ export const cannotSubmitRoute = {
   handler: (request, h) => {
     return h.view('cannot-submit', {
       returnText: request.query.returnText,
-      returnUrl: request.query.returnUrl
+      returnUrl: request.query.returnUrl,
+      pageTitle: 'You cannot submit this application'
     })
   }
 }
