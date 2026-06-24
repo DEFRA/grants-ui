@@ -43,11 +43,7 @@ const allowlistHandler = async (request, h) => {
   const metadata = /** @type {{ submission?: { grantCode?: string } } | undefined} */ (form?.metadata)
   const grantCode = metadata?.submission?.grantCode ?? form?.slug
 
-  const enabledCodes = config
-    .get('enableAllowlistGrantCodes')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
+  const enabledCodes = /** @type {string[]} */ (config.get('forms.backendAllowlistEnabledSlugs'))
 
   if (!enabledCodes.includes(grantCode)) {
     return h.continue

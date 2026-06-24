@@ -34,11 +34,7 @@ const whitelistHandler = async (request, h) => {
     /** @type {{ submission?: { grantCode?: string } } | undefined} */ (grantMetadata)?.submission?.grantCode ??
     form?.slug
 
-  const enabledCodes = config
-    .get('enableAllowlistGrantCodes')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
+  const enabledCodes = /** @type {string[]} */ (config.get('forms.backendAllowlistEnabledSlugs'))
 
   if (grantCode && enabledCodes.includes(grantCode)) {
     return h.continue

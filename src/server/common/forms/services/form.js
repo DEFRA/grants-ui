@@ -240,17 +240,13 @@ export function validateDetailsPageConfiguration(form, definition) {
  * @returns {void}
  */
 export function validateWhitelistConfiguration(form, definition) {
-  const enabledCodes = config
-    .get('enableAllowlistGrantCodes')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
+  const enabledCodes = /** @type {string[]} */ (config.get('forms.backendAllowlistEnabledSlugs'))
 
   const grantCode =
     /** @type {{ submission?: { grantCode?: string } } | undefined} */ (definition.metadata)?.submission?.grantCode ??
     form.slug
 
-  if (enabledCodes.includes(grantCode)) {
+  if (grantCode && enabledCodes.includes(grantCode)) {
     return
   }
 

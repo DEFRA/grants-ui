@@ -283,12 +283,6 @@ const convictConfig = {
     default: false,
     env: 'MAP_MOCK_DATA_ENABLED'
   },
-  enableAllowlistGrantCodes: {
-    doc: 'Comma-separated grant codes that should use the grants-ui-backend allowlist endpoint instead of env var whitelists. Empty means use whitelist for all grants.',
-    format: String,
-    default: '',
-    env: 'ENABLE_ALLOWLIST_GRANT_CODES'
-  },
   devTools: devToolsSchema,
   forms: {
     backendFormDefEnabledSlugs: {
@@ -296,6 +290,12 @@ const convictConfig = {
       format: Array,
       default: [],
       env: 'BACKEND_FORM_DEF_ENABLED_SLUGS'
+    },
+    backendAllowlistEnabledSlugs: {
+      doc: 'Comma-separated slugs that should use the grants-ui-backend allowlist endpoint instead of env var whitelists. Empty means use whitelist for all grants.',
+      format: Array,
+      default: [],
+      env: 'BACKEND_ALLOWLIST_ENABLED_SLUGS'
     }
   },
   applicationLock: {

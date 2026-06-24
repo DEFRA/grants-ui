@@ -47,7 +47,7 @@ describe('whitelist plugin', () => {
     vi.clearAllMocks()
     server = mockHapiServer()
     h = mockHapiResponseToolkit()
-    config.get.mockReturnValue('')
+    config.get.mockReturnValue([])
   })
 
   afterEach(() => {
@@ -178,9 +178,9 @@ describe('whitelist plugin', () => {
     expect(result).toBe(h.continue)
   })
 
-  it('should skip whitelist and continue when grant code is in enableAllowlistGrantCodes', async () => {
+  it('should skip whitelist and continue when grant code is in backendAllowlistEnabledSlugs', async () => {
     const handler = registerAndGetOnPostAuth(server)
-    config.get.mockReturnValue('woodland')
+    config.get.mockReturnValue(['woodland'])
 
     getAllForms.mockReturnValue([{ slug: 'woodland', metadata: { submission: { grantCode: 'woodland' } } }])
 

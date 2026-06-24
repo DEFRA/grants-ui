@@ -28,7 +28,7 @@ const DEFAULT_CONFIG_MOCK = {
   },
   serviceName: 'test-service',
   serviceVersion: '1.0.0',
-  enableAllowlistGrantCodes: '',
+  'forms.backendAllowlistEnabledSlugs': [],
   'forms.backendFormDefEnabledSlugs': []
 }
 
@@ -576,9 +576,9 @@ describe('form', () => {
   describe('validateWhitelistConfiguration', () => {
     const testForm = { title: 'Test Form' }
 
-    it('skips validation when the grant code is in enableAllowlistGrantCodes', () => {
+    it('skips validation when the grant code is in forms.backendAllowlistEnabledSlugs', () => {
       config.get.mockImplementation((key) =>
-        key === 'enableAllowlistGrantCodes' ? 'woodland,farm-payments' : DEFAULT_CONFIG_MOCK[key]
+        key === 'forms.backendAllowlistEnabledSlugs' ? ['woodland', 'farm-payments'] : DEFAULT_CONFIG_MOCK[key]
       )
 
       expect(() =>
@@ -586,9 +586,9 @@ describe('form', () => {
       ).not.toThrow()
     })
 
-    it('runs validation when the grant code is not in enableAllowlistGrantCodes', () => {
+    it('runs validation when the grant code is not in forms.backendAllowlistEnabledSlugs', () => {
       config.get.mockImplementation((key) =>
-        key === 'enableAllowlistGrantCodes' ? 'farm-payments' : DEFAULT_CONFIG_MOCK[key]
+        key === 'forms.backendAllowlistEnabledSlugs' ? ['farm-payments'] : DEFAULT_CONFIG_MOCK[key]
       )
 
       expect(() =>
