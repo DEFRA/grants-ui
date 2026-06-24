@@ -23,7 +23,8 @@ describe('cannotSubmitRoute', () => {
 
     expect(h.view).toHaveBeenCalledWith('cannot-submit', {
       returnUrl: '/task-list',
-      returnText: 'Return to task list'
+      returnText: 'Return to task list',
+      pageTitle: 'You cannot submit this application'
     })
 
     expect(result).toBe('rendered-view')
@@ -42,7 +43,8 @@ describe('cannotSubmitRoute', () => {
 
     expect(h.view).toHaveBeenCalledWith('cannot-submit', {
       returnUrl: undefined,
-      returnText: undefined
+      returnText: undefined,
+      pageTitle: 'You cannot submit this application'
     })
 
     expect(result).toBe('rendered-view')
