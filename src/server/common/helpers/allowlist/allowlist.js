@@ -2,7 +2,6 @@ import { config } from '~/src/config/config.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 import { fetchAllowedGrants } from '~/src/server/auth/services/allowlist.client.js'
-import { getAllForms } from '~/src/server/dev-tools/utils/index.js'
 
 export default {
   plugin: {
@@ -33,15 +32,7 @@ const allowlistHandler = async (request, h) => {
   const crn = /** @type {string} */ (request.auth.credentials.crn)
   const sbi = /** @type {string} */ (request.auth.credentials.sbi)
 
-  const allForms = await getAllForms()
-  const form = allForms.find((f) => f.slug === request.params.slug)
-
-  if (!form) {
-    return h.continue
-  }
-
-  const metadata = /** @type {{ submission?: { grantCode?: string } } | undefined} */ (form?.metadata)
-  const grantCode = metadata?.submission?.grantCode ?? form?.slug
+  const grantCode = request.params.slug
 
   const enabledCodes = /** @type {string[]} */ (config.get('forms.backendAllowlistEnabledSlugs'))
 

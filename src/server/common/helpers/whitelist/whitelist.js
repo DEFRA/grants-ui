@@ -26,19 +26,14 @@ const whitelistHandler = async (request, h) => {
   const crn = /** @type {string} */ (request.auth.credentials.crn)
   const sbi = /** @type {string} */ (request.auth.credentials.sbi)
 
-  const allForms = await getAllForms()
-  const form = allForms.find((f) => f.slug === request.params.slug)
-  const grantMetadata = form?.metadata
-
-  const grantCode =
-    /** @type {{ submission?: { grantCode?: string } } | undefined} */ (grantMetadata)?.submission?.grantCode ??
-    form?.slug
-
   const enabledCodes = /** @type {string[]} */ (config.get('forms.backendAllowlistEnabledSlugs'))
 
-  if (grantCode && enabledCodes.includes(grantCode)) {
+  if (request.params.slug && enabledCodes.includes(request.params.slug)) {
     return h.continue
   }
+
+  const allForms = await getAllForms()
+  const grantMetadata = allForms.find((f) => f.slug === request.params.slug)?.metadata
 
   const whitelistService = WhitelistServiceFactory.getService(grantMetadata)
   const validation = whitelistService.validateGrantAccess(crn, sbi)

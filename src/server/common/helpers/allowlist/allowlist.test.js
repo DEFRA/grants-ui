@@ -2,11 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import allowlist from './allowlist.js'
 import { config } from '~/src/config/config.js'
 import { mockHapiRequest, mockHapiResponseToolkit, mockHapiServer } from '~/src/__mocks__/hapi-mocks.js'
-import { getAllForms } from '~/src/server/dev-tools/utils/index.js'
 import { fetchAllowedGrants } from '~/src/server/auth/services/allowlist.client.js'
 
 vi.mock('~/src/config/config.js', () => ({ config: { get: vi.fn() } }))
-vi.mock('~/src/server/dev-tools/utils/index.js', () => ({ getAllForms: vi.fn() }))
 vi.mock('~/src/server/auth/services/allowlist.client.js', () => ({ fetchAllowedGrants: vi.fn() }))
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({ log: vi.fn() }))
 vi.mock('~/src/server/common/helpers/logging/log-codes.js', async () => {
@@ -50,7 +48,7 @@ describe('allowlist plugin', () => {
     const result = await handler(request, h)
 
     expect(result).toBe(h.continue)
-    expect(getAllForms).not.toHaveBeenCalled()
+    expect(fetchAllowedGrants).not.toHaveBeenCalled()
   })
 
   it('continues when authenticated but request has no slug (non-journey route)', async () => {
@@ -63,13 +61,12 @@ describe('allowlist plugin', () => {
     const result = await handler(request, h)
 
     expect(result).toBe(h.continue)
-    expect(getAllForms).not.toHaveBeenCalled()
+    expect(fetchAllowedGrants).not.toHaveBeenCalled()
   })
 
-  it('continues when the grant code is not in backendAllowlistEnabledSlugs (falls back to whitelist)', async () => {
+  it('continues when the slug is not in backendAllowlistEnabledSlugs (falls back to whitelist)', async () => {
     const handler = registerAndGetHandler(server)
     config.get.mockReturnValue(['farm-payments'])
-    getAllForms.mockReturnValue([{ slug: SLUG, metadata: { submission: { grantCode: 'woodland' } } }])
 
     const request = mockHapiRequest({
       params: { slug: SLUG },
@@ -82,41 +79,8 @@ describe('allowlist plugin', () => {
     expect(result).toBe(h.continue)
   })
 
-  it('falls back to slug when the form has no grantCode in metadata', async () => {
+  it('continues when slug is in the allowed grants list', async () => {
     const handler = registerAndGetHandler(server)
-    getAllForms.mockReturnValue([{ slug: SLUG, metadata: {} }])
-    fetchAllowedGrants.mockResolvedValue(['woodland'])
-
-    const request = mockHapiRequest({
-      params: { slug: SLUG },
-      auth: { isAuthenticated: true, credentials: { crn: CRN, sbi: SBI } }
-    })
-
-    const result = await handler(request, h)
-
-    expect(fetchAllowedGrants).toHaveBeenCalledWith(CRN, SBI)
-    expect(result).toBe(h.continue)
-  })
-
-  it('continues when the slug is not found in any form (preserves old whitelist behavior for non-grant routes)', async () => {
-    const handler = registerAndGetHandler(server)
-    getAllForms.mockReturnValue([{ slug: 'other-form', metadata: { submission: { grantCode: 'other' } } }])
-
-    const request = mockHapiRequest({
-      params: { slug: 'missing-form' },
-      auth: { isAuthenticated: true, credentials: { crn: CRN, sbi: SBI } }
-    })
-
-    const result = await handler(request, h)
-
-    expect(fetchAllowedGrants).not.toHaveBeenCalled()
-    expect(h.redirect).not.toHaveBeenCalled()
-    expect(result).toBe(h.continue)
-  })
-
-  it('continues when grantCode from metadata is in the allowed grants list', async () => {
-    const handler = registerAndGetHandler(server)
-    getAllForms.mockReturnValue([{ slug: SLUG, metadata: { submission: { grantCode: 'woodland' } } }])
     fetchAllowedGrants.mockResolvedValue(['woodland', 'farm-payments'])
 
     const request = mockHapiRequest({
@@ -130,9 +94,8 @@ describe('allowlist plugin', () => {
     expect(result).toBe(h.continue)
   })
 
-  it('redirects to unauthorised when grantCode is not in the allowed grants list', async () => {
+  it('redirects to unauthorised when slug is not in the allowed grants list', async () => {
     const handler = registerAndGetHandler(server)
-    getAllForms.mockReturnValue([{ slug: SLUG, metadata: { submission: { grantCode: 'woodland' } } }])
     fetchAllowedGrants.mockResolvedValue([])
 
     const sendAuditEvent = vi.fn().mockResolvedValue(undefined)
@@ -148,7 +111,7 @@ describe('allowlist plugin', () => {
       expect.objectContaining({
         action: 'unauthorised',
         status: 'denied',
-        details: expect.objectContaining({ reason: 'whitelist', grantCode: 'woodland' })
+        details: expect.objectContaining({ reason: 'whitelist', grantCode: SLUG })
       })
     )
     expect(h.redirect).toHaveBeenCalledWith('/auth/journey-unauthorised')
@@ -157,7 +120,6 @@ describe('allowlist plugin', () => {
 
   it('does not send an audit event when access is granted', async () => {
     const handler = registerAndGetHandler(server)
-    getAllForms.mockReturnValue([{ slug: SLUG, metadata: { submission: { grantCode: 'woodland' } } }])
     fetchAllowedGrants.mockResolvedValue(['woodland'])
 
     const sendAuditEvent = vi.fn()
