@@ -1,4 +1,5 @@
 import { config } from '~/src/config/config.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 
 async function getEntraIdOptions() {
@@ -17,6 +18,11 @@ async function getEntraIdOptions() {
   const derivedRedirectUrl = `https://grants-ui.${cdpEnvironment}.cdp-int.defra.cloud`
   const location =
     configuredRedirectUrl !== config.default('entraId.redirectUrl') ? configuredRedirectUrl : derivedRedirectUrl
+
+  log(LogCodes.AUTH.ENTRA_ID_CONFIG, {
+    redirectUri: `${location}/auth/entra-id-poc`,
+    wellKnownUrl
+  })
 
   const oidcConfig = await getOidcConfig(wellKnownUrl)
   return {
