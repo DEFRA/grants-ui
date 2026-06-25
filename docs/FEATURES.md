@@ -320,6 +320,19 @@ Guidance components provide contextual help and information without requiring us
 - **Custom HTML**: Full HTML content for confirmation page
 - **Template Components**: Reusable components like `{{DEFRASUPPORTDETAILS}}`
 
+### Notification Banner
+
+- **Purpose**: Display an important, non-dismissible message to users on every page of a grant journey - for example warning of an upcoming submission deadline or a planned purge of draft applications. Implemented with the GOV.UK [notification banner](https://design-system.service.gov.uk/components/notification-banner/) component.
+- **Scope**: Configured per grant via the `metadata.notificationBanner` block, so one scheme can show a banner while others do not. The banner appears on every page **except** those declared in the Excluded Pages (see below).
+- **Configuration** (`metadata.notificationBanner`):
+  - `enabled` – set `true` to show the banner. When omitted or `false`, no banner renders (this is how a grant opts out).
+  - `titleText` – banner heading (e.g. `Important`). **Required** when `enabled` is `true`; a missing `titleText` is a configuration error and throws at render time.
+  - `text` – the banner message.
+  - `link` – optional call-to-action link. If declared it must include **both** `text` and `href` (an incomplete link is a configuration error and throws). The `href` must be an `http(s)` URL or a same-origin relative path; other schemes (e.g. `javascript:`) are rejected and the banner falls back to text only.
+- **Excluded pages**: The list of excluded page path suffixes defaults to `/confirmation` and `/print-submitted-application` and is configurable via the `NOTIFICATION_BANNER_EXCLUDED_PATH_SUFFIXES` environment variable (see [config.js](./src/config/config.js#L280-L287)).
+- **Implementation**: The banner params are built in [build-notification-banner-config.js](./src/config/nunjucks/context/build-notification-banner-config.js) and injected into every page via the shared Nunjucks context, then rendered in the base layout [page.njk](./src/server/common/templates/layouts/page.njk).
+- **Example**: [Example Grant with Auth – `notificationBanner`](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L8-L15)
+
 ### Page Configuration
 
 - **Title**: Page heading
