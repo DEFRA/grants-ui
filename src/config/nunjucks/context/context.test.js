@@ -33,7 +33,8 @@ vi.mock('~/src/config/config.js', async () => {
     'cookieConsent.cookieName': 'cookie_consent',
     'cookieConsent.expiryDays': 365,
     'googleAnalytics.trackingId': undefined,
-    'session.cookie.ttl': 14400000 // 4 hours in milliseconds
+    'session.cookie.ttl': 14400000, // 4 hours in milliseconds
+    'notificationBanner.excludedPathSuffixes': ['/confirmation', '/print-submitted-application']
   })
 })
 
@@ -69,6 +70,7 @@ const getExpectedContext = () => ({
   cookieBannerConfig: expect.any(Object),
   crumb: undefined,
   currentPath: '/',
+  notificationBanner: null,
   cookiesPolicy: { confirmed: false, analytics: false },
   auth: {
     isAuthenticated: false,
@@ -110,6 +112,11 @@ const createAuthRequest = (credentials, cacheValue = null) => ({
       }
     }
   }
+})
+
+const requestWithMetadata = (metadata, path = '/') => ({
+  ...mockSimpleRequest({ path }),
+  app: { model: { def: { metadata } } }
 })
 
 describe('context', () => {
@@ -541,25 +548,16 @@ describe('context', () => {
     test('Should use cookieConsent metadata from request when available', async () => {
       setupManifestSuccess()
 
-      const requestWithMetadata = {
-        ...mockSimpleRequest({ path: '/' }),
-        app: {
-          model: {
-            def: {
-              metadata: {
-                cookieConsent: {
-                  serviceName: 'Custom Service',
-                  cookiePolicyUrl: '/custom-cookies',
-                  expiryDays: 90
-                }
-              }
-            }
-          }
+      const request = requestWithMetadata({
+        cookieConsent: {
+          serviceName: 'Custom Service',
+          cookiePolicyUrl: '/custom-cookies',
+          expiryDays: 90
         }
-      }
+      })
 
       const contextImport = await importContext()
-      const contextResult = await contextImport.context(requestWithMetadata)
+      const contextResult = await contextImport.context(request)
 
       expect(contextResult.serviceName).toBe('Custom Service')
       expect(contextResult.cookiePolicyUrl).toBe('/custom-cookies')
@@ -582,23 +580,10 @@ describe('context', () => {
     test('Should include submitButtonText when present in request metadata', async () => {
       setupManifestSuccess()
 
-      const requestWithSubmitText = {
-        ...mockSimpleRequest({ path: '/' }),
-        app: {
-          model: {
-            def: {
-              metadata: {
-                options: {
-                  submitButtonText: 'Save and continue'
-                }
-              }
-            }
-          }
-        }
-      }
+      const request = requestWithMetadata({ options: { submitButtonText: 'Save and continue' } })
 
       const contextImport = await importContext()
-      const contextResult = await contextImport.context(requestWithSubmitText)
+      const contextResult = await contextImport.context(request)
 
       expect(contextResult.submitButtonText).toBe('Save and continue')
     })
@@ -610,6 +595,35 @@ describe('context', () => {
       const contextResult = await contextImport.context(mockSimpleRequest({ path: '/' }))
 
       expect(contextResult).not.toHaveProperty('submitButtonText')
+    })
+  })
+
+  describe('notificationBanner in context', () => {
+    test('Should include notification banner params when enabled in request metadata', async () => {
+      setupManifestSuccess()
+
+      const request = requestWithMetadata(
+        { notificationBanner: { enabled: true, titleText: 'Important', text: 'Deadline approaching' } },
+        '/example/page-one'
+      )
+
+      const contextImport = await importContext()
+      const contextResult = await contextImport.context(request)
+
+      expect(contextResult.notificationBanner).toEqual({
+        titleText: 'Important',
+        classes: 'govuk-!-margin-top-4 govuk-!-margin-bottom-0',
+        text: 'Deadline approaching'
+      })
+    })
+
+    test('Should be null when no notification banner metadata is present', async () => {
+      setupManifestSuccess()
+
+      const contextImport = await importContext()
+      const contextResult = await contextImport.context(mockSimpleRequest({ path: '/example/page-one' }))
+
+      expect(contextResult.notificationBanner).toBeNull()
     })
   })
 
