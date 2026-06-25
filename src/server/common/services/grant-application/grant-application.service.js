@@ -214,7 +214,7 @@ export async function invokeGasGetAction(code, name, request, queryParams = {}) 
  * completed answers sent to GAS.
  * @param {string} code - Grant code.
  * @param {{ metadata?: object, answers?: object }} payload - The submitted GAS payload.
- * @param {object} [request] - Hapi request decorated with `sendAuditEventInBackground`.
+ * @param {AuditableRequest} [request] - Hapi request decorated with `sendAuditEventInBackground`.
  * @returns {void}
  */
 function auditApplicationSubmission(code, payload, request) {
@@ -278,4 +278,5 @@ function mapFarmPaymentsGrantCode(grantCode) {
 
 /**
  * @import { AnyRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ * @typedef {AnyRequest & { sendAuditEventInBackground: Function }} AuditableRequest
  */

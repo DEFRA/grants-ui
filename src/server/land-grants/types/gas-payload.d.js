@@ -1,11 +1,14 @@
 /**
- * @typedef {Object} Metadata
+ * @typedef {Object} ApplicantIdentifiers
  * @property {string} sbi - Single Business Identifier
  * @property {string} frn - Firm Reference Number
  * @property {string} crn - Customer Reference Number
  * @property {string} clientRef - Client Reference
- * @property {string} configVersion - Grant configuration version
- * @property {string} submittedAt - ISO 8601 timestamp of submission
+ */
+
+/**
+ * GAS application metadata: the applicant identifiers plus grant config version and submission timestamp.
+ * @typedef {ApplicantIdentifiers & { configVersion: string, submittedAt: string }} Metadata
  */
 
 /**

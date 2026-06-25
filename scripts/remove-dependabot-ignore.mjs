@@ -17,7 +17,9 @@ const CONFIG_PATH = '.github/dependabot.yml'
 const print = (line = '') => process.stdout.write(`${line}\n`)
 const printErr = (line = '') => process.stderr.write(`${line}\n`)
 
+/** @param {string} str - Text to escape for use inside a RegExp. */
 const escapeRegExp = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)
+/** @param {string} line - A single source line. */
 const indentOf = (line) => line.length - line.trimStart().length
 
 /**

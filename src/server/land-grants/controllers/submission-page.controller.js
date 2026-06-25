@@ -247,18 +247,15 @@ export default class SubmissionPageController extends SummaryPageController {
 }
 
 /**
- * @typedef {object} ApplicationIdentifiers
- * @property {string} sbi - Single Business Identifier
- * @property {string} crn - Customer Reference Number
- * @property {string} frn - Firm Reference Number
- * @property {string} clientRef - Client reference sent to GAS to track applications
- * @property {string} [previousClientRef] - Previous client reference for resubmissions
+ * Applicant identifiers, plus the previous client reference used for resubmissions.
+ * @typedef {ApplicantIdentifiers & { previousClientRef?: string }} ApplicationIdentifiers
  */
 
 /**
  * @import { FormContext, FormContextRequest, AnyFormRequest, FormSubmissionState } from '@defra/forms-engine-plugin/types'
  * @import { ResponseObject, type ResponseToolkit } from '@hapi/hapi'
  * @import { ValidateApplicationResponse } from '../types/land-grants.client.d.js'
+ * @import { ApplicantIdentifiers } from '../types/gas-payload.d.js'
  * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
  * @import { PageSummary } from '@defra/forms-model'
  */
