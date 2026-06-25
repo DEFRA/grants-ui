@@ -78,6 +78,7 @@
   "license": "OGL-UK-3.0",
   "overrides": {
     "serialize-javascript": "7.0.5",
+    "shell-quote": "1.9.0",
     "sirv": "3.0.2",
     "qs": "6.15.2",
     "underscore": "1.13.8",
