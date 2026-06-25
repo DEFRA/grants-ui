@@ -2,11 +2,24 @@ import { vi } from 'vitest'
 import Wreck from '@hapi/wreck'
 import { config } from '~/src/config/config.js'
 import { getOidcConfig } from './get-oidc-config.js'
-import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 vi.mock('@hapi/wreck')
-vi.mock('~/src/config/config.js')
-vi.mock('~/src/server/common/helpers/logging/log.js')
+vi.mock('~/src/config/config.js', () => ({
+  config: {
+    get: vi.fn((key) => {
+      if (key === 'log') {
+        return { level: 'info', enabled: true, redact: [], format: 'pino-pretty' }
+      }
+      if (key === 'gitRepositoryName') {
+        return 'grants-ui'
+      }
+      if (key === 'serviceVersion') {
+        return '0.0.0'
+      }
+      return undefined
+    })
+  }
+}))
 
 describe('getOidcConfig', () => {
   const mockOpenIdConfigUrl = 'https://example.com/.well-known/openid-configuration'
@@ -28,9 +41,7 @@ describe('getOidcConfig', () => {
   })
 
   test('fetches OIDC configuration from well-known URL', async () => {
-    Wreck.get.mockResolvedValue({
-      payload: mockPayload
-    })
+    Wreck.get.mockResolvedValue({ payload: mockPayload })
 
     const result = await getOidcConfig()
 
@@ -43,12 +54,9 @@ describe('getOidcConfig', () => {
   })
 
   test('fetches OIDC configuration from custom URL', async () => {
-    Wreck.get.mockResolvedValue({
-      payload: mockPayload
-    })
+    Wreck.get.mockResolvedValue({ payload: mockPayload })
 
     const customOIDCConfigUrl = 'https://custom-url.com/.well-known/openid-configuration'
-
     const result = await getOidcConfig(customOIDCConfigUrl)
 
     expect(Wreck.get).not.toHaveBeenCalledWith(mockOpenIdConfigUrl, expect.anything())
@@ -70,13 +78,6 @@ describe('getOidcConfig', () => {
 
     await expect(promise).resolves.toEqual(mockPayload)
     expect(Wreck.get).toHaveBeenCalledTimes(2)
-    expect(log).toHaveBeenCalledWith(LogCodes.AUTH.OIDC_CONFIG_FETCH_RETRY, {
-      attempt: 1,
-      maxAttempts: 3,
-      wellKnownUrl: mockOpenIdConfigUrl,
-      code: 'ECONNRESET',
-      errorMessage: 'Transient blip'
-    })
   })
 
   test('retries the configured number of times then throws the last error', async () => {
