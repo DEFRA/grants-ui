@@ -1,9 +1,8 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
-
 import PrintSubmittedApplicationController from './print-submitted-application.controller.js'
-
 import { getFormsCacheService } from '../common/helpers/forms-cache/forms-cache.js'
-
+import { log, LogCodes } from '../common/helpers/logging/log.js'
+import { forbidden } from '@hapi/boom'
 import {
   buildPrintViewModel,
   enrichDefinitionWithListItems,
@@ -19,6 +18,14 @@ vi.mock('../common/helpers/forms-cache/forms-cache.js')
 vi.mock('../common/helpers/print-application-service/print-application-service.js')
 vi.mock('../common/helpers/create-rows.js')
 vi.mock('../common/helpers/form-slug-helper.js')
+vi.mock('../common/helpers/logging/log.js', () => ({
+  log: vi.fn(),
+  LogCodes: {
+    PRINT_APPLICATION: {
+      ERROR: 'PRINT_APPLICATION.ERROR'
+    }
+  }
+}))
 
 const mockDefinition = {
   metadata: {}
@@ -182,6 +189,94 @@ describe('PrintSubmittedApplicationController', () => {
       expect(buildPrintViewModel).toHaveBeenCalled()
 
       expect(h.view).toHaveBeenCalledWith('print-submitted-application', { test: 'viewModel' })
+    })
+  })
+
+  describe('error handling', () => {
+    test('returns 500 and logs unexpected errors', async () => {
+      const error = new Error('Something exploded')
+
+      getFormsCacheService.mockReturnValue({
+        getState: vi.fn().mockRejectedValue(error)
+      })
+
+      const code = vi.fn()
+
+      h.response.mockReturnValue({
+        code
+      })
+
+      const handler = controller.makeGetRouteHandler()
+
+      await handler(request, {}, h)
+
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.PRINT_APPLICATION.ERROR,
+        {
+          userId: 'unknown',
+          errorMessage: 'Config-driven confirmation route error for slug: test-form. Something exploded'
+        },
+        request
+      )
+
+      expect(h.response).toHaveBeenCalledWith('Server error')
+      expect(code).toHaveBeenCalledWith(500)
+    })
+
+    test('uses unknown userId when auth credentials are missing', async () => {
+      request.auth = {}
+
+      getFormsCacheService.mockReturnValue({
+        getState: vi.fn().mockRejectedValue(new Error('Boom'))
+      })
+
+      const handler = controller.makeGetRouteHandler()
+
+      await handler(request, {}, h)
+
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.PRINT_APPLICATION.ERROR,
+        expect.objectContaining({
+          userId: 'unknown'
+        }),
+        request
+      )
+    })
+
+    test('rethrows Boom errors', async () => {
+      const boomError = forbidden('Insufficient permissions')
+
+      vi.spyOn(controller, 'buildPrintResponse').mockRejectedValue(boomError)
+
+      const handler = controller.makeGetRouteHandler()
+
+      try {
+        await handler(request, {}, h)
+        throw new Error('Expected handler to throw')
+      } catch (err) {
+        expect(err).toBe(boomError)
+      }
+    })
+  })
+
+  describe('handleError', () => {
+    test('returns 500 response for non-boom errors', () => {
+      const code = vi.fn()
+
+      h.response.mockReturnValue({
+        code
+      })
+
+      controller.handleError(new Error('Test error'), request, h)
+
+      expect(h.response).toHaveBeenCalledWith('Server error')
+      expect(code).toHaveBeenCalledWith(500)
+    })
+
+    test('rethrows boom errors', () => {
+      const boomError = forbidden('Forbidden')
+
+      expect(() => controller.handleError(boomError, request, h)).toThrow('Forbidden')
     })
   })
 })

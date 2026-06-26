@@ -9,6 +9,8 @@ import { createBusinessRows, createContactRows, createPersonRows } from '../comm
 import { statusCodes } from '../common/constants/status-codes.js'
 import { getPrintSubmittedApplicationPath } from '../common/helpers/form-slug-helper.js'
 import { ApplicationStatus } from '../common/constants/application-status.js'
+import { isBoom } from '@hapi/boom'
+import { log, LogCodes } from '../common/helpers/logging/log.js'
 
 export default class PrintSubmittedApplicationController extends StatusPageController {
   viewName = 'print-submitted-application.html'
@@ -104,25 +106,29 @@ export default class PrintSubmittedApplicationController extends StatusPageContr
      * @param {object} h - Hapi response toolkit
      */
     return async (request, _context, h) => {
-      const cacheService = getFormsCacheService(request.server)
-      const state = await cacheService.getState(request)
+      try {
+        const cacheService = getFormsCacheService(request.server)
+        const state = await cacheService.getState(request)
 
-      if (!state || state?.applicationStatus !== ApplicationStatus.SUBMITTED) {
-        return h.response('Application not submitted').code(statusCodes.forbidden)
+        if (!state || state?.applicationStatus !== ApplicationStatus.SUBMITTED) {
+          return h.response('Application not submitted').code(statusCodes.forbidden)
+        }
+
+        const form = this.model.def
+        const slug = request.params.slug
+
+        return this.buildPrintResponse(
+          {
+            form,
+            state,
+            slug
+          },
+          request,
+          h
+        )
+      } catch (error) {
+        return this.handleError(error, request, h)
       }
-
-      const form = this.model.def
-      const slug = request.params.slug
-
-      return this.buildPrintResponse(
-        {
-          form,
-          state,
-          slug
-        },
-        request,
-        h
-      )
     }
   }
 
@@ -134,6 +140,28 @@ export default class PrintSubmittedApplicationController extends StatusPageContr
    */
   getStatusPath(request, context) {
     return getPrintSubmittedApplicationPath(request, context, 'PrintSubmittedApplicationController')
+  }
+
+  /**
+   * Handles errors and returns appropriate error response
+   * @param {Error} error - Error object
+   * @param {object} request - Hapi request object
+   * @param {object} h - Hapi response toolkit
+   * @returns {object} Error response
+   */
+  handleError(error, request, h) {
+    if (isBoom(error)) {
+      throw error
+    }
+    log(
+      LogCodes.PRINT_APPLICATION.ERROR,
+      {
+        userId: request.auth?.credentials?.userId || 'unknown',
+        errorMessage: `Config-driven confirmation route error for slug: ${request.params?.slug || 'unknown'}. ${error.message}`
+      },
+      request
+    )
+    return h.response('Server error').code(statusCodes.internalServerError)
   }
 }
 
