@@ -10,6 +10,9 @@ services:
       - ./localstack/start-localstack-land-grants.sh:/etc/localstack/init/ready.d/start-localstack-land-grants.sh
 
   grants-ui:
+    depends_on:
+      land-grants-backend:
+        condition: service_started
     environment:
       LAND_GRANTS_API_URL: http://land-grants-backend:3009
 
@@ -23,9 +26,11 @@ services:
       - 5432:5432
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
-      interval: 5s
+      interval: 30s
+      start_interval: 1s
       timeout: 3s
-      retries: 10
+      retries: 5
+      start_period: 10s
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
