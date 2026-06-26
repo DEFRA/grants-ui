@@ -52,7 +52,7 @@ const allowlistHandler = async (request, h) => {
   await request.sendAuditEvent({
     action: 'unauthorised',
     status: 'denied',
-    details: { reason: 'whitelist', grantCode }
+    details: { reason: 'allowlist', grantCode }
   })
   return h.redirect('/auth/journey-unauthorised').takeover()
 }

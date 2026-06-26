@@ -49,3 +49,7 @@ ignore:
     - '*':
         reason: 'Build-time only — http-proxy-middleware via webpack-dev-server in the docusaurus toolchain of @defra/interactive-map docs, never loaded by grants-ui runtime. Fixed only in 3.0.6/4.1.0, but webpack-dev-server@5.2.5 pins http-proxy-middleware ^2.0.9, so no in-range upgrade or override is viable. Remove once webpack-dev-server bumps to an http-proxy-middleware 3.x/4.x line.'
         expires: '2026-07-16'
+  'SNYK-JS-SHELLQUOTE-17457810':
+    - '*':
+        reason: 'Build-time only — shell-quote via npm-run-all and webpack-dev-server/launch-editor in the dev toolchain, never loaded by grants-ui runtime. Fixed in 1.9.0; interim ignore while the override is blocked by .npmrc min-release-age=7 (1.9.0 published 2026-06-25, installable from 2026-07-02). Replace with an overrides pin and remove this entry once it clears the cooldown.'
+        expires: '2026-07-09'
