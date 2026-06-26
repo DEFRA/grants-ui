@@ -15,6 +15,8 @@ describe('permissions plugin', () => {
   let onPostAuthHandler
   let server
   let h
+  let yarStore
+  let yar
 
   beforeEach(async () => {
     server = {
@@ -25,6 +27,12 @@ describe('permissions plugin', () => {
 
     h = {
       continue: Symbol('continue')
+    }
+
+    yarStore = new Map()
+    yar = {
+      get: vi.fn((key) => yarStore.get(key)),
+      set: vi.fn((key, value) => yarStore.set(key, value))
     }
 
     await permissionsPlugin.plugin.register(server)
@@ -73,9 +81,10 @@ describe('permissions plugin', () => {
 
     const request = {
       path: '/apply',
+      yar,
       auth: {
         isAuthenticated: true,
-        credentials: {}
+        credentials: { crn: 'crn-1', sbi: 'sbi-1' }
       }
     }
 
@@ -88,6 +97,78 @@ describe('permissions plugin', () => {
     expect(result).toBe(h.continue)
   })
 
+  test('caches permissions in yar keyed by crn+sbi on first call', async () => {
+    const permissionGroups = ['group-1']
+
+    fetchBusinessPermissions.mockResolvedValue(permissionGroups)
+
+    const request = {
+      path: '/apply',
+      yar,
+      auth: {
+        isAuthenticated: true,
+        credentials: { crn: 'crn-1', sbi: 'sbi-1' }
+      }
+    }
+
+    await onPostAuthHandler(request, h)
+
+    expect(fetchBusinessPermissions).toHaveBeenCalledTimes(1)
+    expect(yar.set).toHaveBeenCalledWith('permissions:crn-1:sbi-1', permissionGroups)
+  })
+
+  test('reuses cached permissions on subsequent requests in same session', async () => {
+    const permissionGroups = ['group-1']
+
+    fetchBusinessPermissions.mockResolvedValue(permissionGroups)
+
+    const makeRequest = () => ({
+      path: '/apply',
+      yar,
+      auth: {
+        isAuthenticated: true,
+        credentials: { crn: 'crn-1', sbi: 'sbi-1' }
+      }
+    })
+
+    const firstRequest = makeRequest()
+    await onPostAuthHandler(firstRequest, h)
+
+    const secondRequest = makeRequest()
+    await onPostAuthHandler(secondRequest, h)
+
+    expect(fetchBusinessPermissions).toHaveBeenCalledTimes(1)
+    expect(secondRequest.auth.credentials.permissions).toEqual(permissionGroups)
+  })
+
+  test('fetches separately for a different crn+sbi', async () => {
+    fetchBusinessPermissions.mockResolvedValueOnce(['group-1']).mockResolvedValueOnce(['group-2'])
+
+    const firstRequest = {
+      path: '/apply',
+      yar,
+      auth: {
+        isAuthenticated: true,
+        credentials: { crn: 'crn-1', sbi: 'sbi-1' }
+      }
+    }
+    await onPostAuthHandler(firstRequest, h)
+
+    const secondRequest = {
+      path: '/apply',
+      yar,
+      auth: {
+        isAuthenticated: true,
+        credentials: { crn: 'crn-2', sbi: 'sbi-2' }
+      }
+    }
+    await onPostAuthHandler(secondRequest, h)
+
+    expect(fetchBusinessPermissions).toHaveBeenCalledTimes(2)
+    expect(firstRequest.auth.credentials.permissions).toEqual(['group-1'])
+    expect(secondRequest.auth.credentials.permissions).toEqual(['group-2'])
+  })
+
   test('adds request.can helper', async () => {
     const permissionGroups = ['group-1']
 
@@ -97,9 +178,10 @@ describe('permissions plugin', () => {
 
     const request = {
       path: '/apply',
+      yar,
       auth: {
         isAuthenticated: true,
-        credentials: {}
+        credentials: { crn: 'crn-1', sbi: 'sbi-1' }
       }
     }
 
@@ -119,9 +201,10 @@ describe('permissions plugin', () => {
 
     const request = {
       path: '/apply',
+      yar,
       auth: {
         isAuthenticated: true,
-        credentials: {}
+        credentials: { crn: 'crn-1', sbi: 'sbi-1' }
       }
     }
 
