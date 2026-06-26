@@ -216,6 +216,10 @@ describe('mapPlugin', () => {
   })
 
   describe('GET /land-grants/parcel-tiles/{z}/{x}/{y}', () => {
+    beforeEach(() => {
+      globalThis.fetch = vi.fn()
+    })
+
     it('has Joi integer validation on z, x, y params', () => {
       const tilesRoute = server._routes[2]
       const schema = tilesRoute.options.validate.params
@@ -223,10 +227,6 @@ describe('mapPlugin', () => {
       expect(schema.validate({ z: -1, x: 0, y: 0 }).error).toBeDefined()
       expect(schema.validate({ z: 1.5, x: 0, y: 0 }).error).toBeDefined()
       expect(schema.validate({ z: 'abc', x: 0, y: 0 }).error).toBeDefined()
-    })
-
-    beforeEach(() => {
-      global.fetch = vi.fn()
     })
 
     it('proxies the tile request with parcel IDs from session', async () => {
