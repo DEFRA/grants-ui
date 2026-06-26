@@ -1,7 +1,6 @@
 import nunjucks from 'nunjucks'
 
 import { ComponentsRegistry } from './components.registry.js'
-import { logger } from '~/src/server/common/helpers/logging/log.js'
 
 export class ConfirmationService {
   /**
@@ -10,11 +9,6 @@ export class ConfirmationService {
    * @returns {Promise<{confirmationContent: object|null}>} Confirmation content
    */
   static async loadConfirmationContent(form) {
-    if (!form?.id) {
-      logger.warn({ form }, 'Invalid form object provided to loadConfirmationContent')
-      return { confirmationContent: null }
-    }
-
     return {
       confirmationContent: form?.metadata?.confirmationContent || null
     }
@@ -74,7 +68,7 @@ export class ConfirmationService {
     form = null,
     slug = null
   }) {
-    const title = form.title
+    const title = form.name
     const url = `/${slug}`
 
     const baseModel = {

@@ -315,6 +315,10 @@ pages:
     controller: FlyingPigsSubmissionPageController
     title: Check your answers
     id: e18e2a8f-4dcf-4f70-ae75-235752260c51
+  - title: Confirmation
+    path: /confirmation
+    controller: ConfirmationPageController
+    id: 9817cd3a-c9ae-49f1-8a95-076a82504d31
 lists:
   - title: What type of pigs do you have?
     name: pigBreedsList

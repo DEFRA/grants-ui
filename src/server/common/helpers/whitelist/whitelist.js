@@ -1,3 +1,4 @@
+import { config } from '~/src/config/config.js'
 import { WhitelistServiceFactory } from '~/src/server/auth/services/whitelist.service.js'
 import { getAllForms } from '~/src/server/dev-tools/utils/index.js'
 
@@ -25,8 +26,14 @@ const whitelistHandler = async (request, h) => {
   const crn = /** @type {string} */ (request.auth.credentials.crn)
   const sbi = /** @type {string} */ (request.auth.credentials.sbi)
 
+  const enabledCodes = /** @type {string[]} */ (config.get('forms.backendAllowlistEnabledSlugs'))
+
+  if (request.params.slug && enabledCodes.includes(request.params.slug)) {
+    return h.continue
+  }
+
   const allForms = await getAllForms()
-  const grantMetadata = allForms.find((form) => form.slug === request.params.slug)?.metadata
+  const grantMetadata = allForms.find((f) => f.slug === request.params.slug)?.metadata
 
   const whitelistService = WhitelistServiceFactory.getService(grantMetadata)
   const validation = whitelistService.validateGrantAccess(crn, sbi)

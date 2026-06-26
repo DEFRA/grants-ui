@@ -277,6 +277,14 @@ const convictConfig = {
       env: 'COOKIE_CONSENT_EXPIRY_DAYS'
     }
   },
+  notificationBanner: {
+    excludedPathSuffixes: {
+      doc: 'Comma-separated list of path suffixes on which the per-grant notification banner is never shown (e.g. the confirmation and print pages)',
+      format: Array,
+      default: ['/confirmation', '/print-submitted-application'],
+      env: 'NOTIFICATION_BANNER_EXCLUDED_PATH_SUFFIXES'
+    }
+  },
   mapMockDataEnabled: {
     doc: 'Enable map mock data mode — uses embedded parcel geometry instead of tile URL.',
     format: Boolean,
@@ -290,6 +298,12 @@ const convictConfig = {
       format: Array,
       default: [],
       env: 'BACKEND_FORM_DEF_ENABLED_SLUGS'
+    },
+    backendAllowlistEnabledSlugs: {
+      doc: 'Comma-separated slugs that should use the grants-ui-backend allowlist endpoint instead of env var whitelists. Empty means use whitelist for all grants.',
+      format: Array,
+      default: [],
+      env: 'BACKEND_ALLOWLIST_ENABLED_SLUGS'
     }
   },
   applicationLock: {

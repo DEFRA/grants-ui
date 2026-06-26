@@ -4,6 +4,7 @@ import path from 'node:path'
 import { config } from '~/src/config/config.js'
 import { buildNavigation } from '~/src/config/nunjucks/context/build-navigation.js'
 import { buildCookieBannerConfig } from '~/src/config/nunjucks/context/build-cookie-banner-config.js'
+import { buildNotificationBannerConfig } from '~/src/config/nunjucks/context/build-notification-banner-config.js'
 import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 const assetPath = config.get('assetPath')
@@ -147,6 +148,10 @@ const buildCommonConfig = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays
     ),
     crumb: /** @type {any} */ (request)?.plugins?.crumb,
     currentPath: request?.path ?? '/',
+    notificationBanner: buildNotificationBannerConfig(
+      request?.app?.model?.def?.metadata?.notificationBanner,
+      request?.path
+    ),
     cookiesPolicy: {
       confirmed: Boolean(consentCookieValue),
       analytics: consentCookieValue === 'true'
@@ -232,6 +237,7 @@ export async function context(request) {
  * @typedef {object} FormMetadata
  * @property {{ serviceName?: string, cookiePolicyUrl?: string, expiryDays?: number }} [cookieConsent]
  * @property {{ submitButtonText?: string }} [options]
+ * @property {import('~/src/config/nunjucks/context/build-notification-banner-config.js').NotificationBannerMetadata} [notificationBanner]
  */
 
 /**
