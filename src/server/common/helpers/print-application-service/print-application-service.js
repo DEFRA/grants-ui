@@ -20,7 +20,7 @@ export const COMPOSITE_FIELD_PARTS = {
  * @typedef {{ type: string, name: string, title: string, shortDescription?: string, list?: string, items?: ListItem[] }} FormComponent
  * @typedef {{ title: string, components?: FormComponent[] }} FormPage
  * @typedef {{ pages?: FormPage[] }} FormDefinition
- * @typedef {{ title: string, path?: string, slug: string, id: string }} FormMeta
+ * @typedef {{ title: string, path?: string, slug: string, id: string, name?: string }} FormMeta
  * @typedef {Record<string, unknown>} Answers
  */
 
@@ -173,8 +173,8 @@ export function buildPrintViewModel({
   applicantDetailsSections
 }) {
   return {
-    pageTitle: `${form.title} application`,
-    serviceName: form.title,
+    pageTitle: `${form.name} application`,
+    serviceName: form.name,
     serviceUrl: `/${slug}`,
     referenceNumber: referenceNumber || 'Not available',
     submittedAt,

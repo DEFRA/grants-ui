@@ -150,7 +150,7 @@ export default class ConfirmationPageController extends StatusPageController {
 
 /**
  * @import { type FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
- * @import { ResponseObject, type ResponseToolkit } from '@hapi/hapi'
+ * @import { type ResponseToolkit } from '@hapi/hapi'
  * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
  * @import { PageStatus } from '@defra/forms-model'
  */

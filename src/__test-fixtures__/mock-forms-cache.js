@@ -7,10 +7,10 @@ export const MOCK_DISPLAY_ONLY_COMPONENTS = [...DISPLAY_ONLY_TYPES].map((type) =
 }))
 
 export const MOCK_FORM_ENTRIES = {
-  testForm: { id: 'form1', slug: 'test-form', title: 'Test Form' },
-  anotherForm: { id: 'form2', slug: 'another-form', title: 'Another Form' },
-  exampleGrant: { id: 'form3', slug: 'example-grant', title: 'Example Grant' },
-  flyingPigs: { id: 'form4', slug: 'pigs-might-fly', title: 'Flying Pigs Grant' }
+  testForm: { id: 'form1', slug: 'test-form', title: 'Test Form', name: 'Test Form' },
+  anotherForm: { id: 'form2', slug: 'another-form', title: 'Another Form', name: 'Another Form' },
+  exampleGrant: { id: 'form3', slug: 'example-grant', title: 'Example Grant', name: 'Example Grant' },
+  flyingPigs: { id: 'form4', slug: 'pigs-might-fly', title: 'Flying Pigs Grant', name: 'Flying Pigs Grant' }
 }
 
 export const MOCK_FORM_CACHE = Object.values(MOCK_FORM_ENTRIES)
