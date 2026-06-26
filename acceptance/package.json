@@ -13,6 +13,7 @@
     "test:local": "cucumber-js --config cucumber.local.js"
   },
   "devDependencies": {
+    "@aws-sdk/client-sqs": "^3.1075.0",
     "@axe-core/playwright": "4.11.3",
     "@cucumber/cucumber": "^13.0.0",
     "@playwright/test": "^1.49.0",
