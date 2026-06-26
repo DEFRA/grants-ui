@@ -100,10 +100,10 @@ export default class PrintSubmittedApplicationController extends StatusPageContr
     /**
      * Handle GET requests to the score page.
      * @param {object} request - Hapi request object
-     * @param {FormContext} context
+     * @param {FormContext} _context
      * @param {object} h - Hapi response toolkit
      */
-    return async (request, context, h) => {
+    return async (request, _context, h) => {
       const cacheService = getFormsCacheService(request.server)
       const state = await cacheService.getState(request)
 
