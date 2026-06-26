@@ -10,6 +10,16 @@ When('the user pauses', async function () {
   await this.page.pause()
 })
 
+When('the user selects parcel {string} on the map', async function (parcelId) {
+  await this.page.waitForLoadState('domcontentloaded')
+  // mimic the CustomEvent the parcel-map web component fires when a user clicks a parcel
+  await this.page.evaluate((id) => {
+    document
+      .getElementById('parcel-map')
+      .dispatchEvent(new CustomEvent('parcel-map:selection', { bubbles: true, detail: { selectedIds: [id] } }))
+  }, parcelId)
+})
+
 When('(the user )clicks on {string}', async function (text) {
   await this.page.locator(`//*[contains(text(),'${text}')]`).click()
 })
