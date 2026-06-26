@@ -20,15 +20,14 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-async function getOidcConfig() {
+async function getOidcConfig(url) {
+  const fetchUrl = url || config.get('defraId.wellKnownUrl')
   // Fetch the OpenID Connect configuration from the well-known endpoint
   // Contains the URLs for authorisation, sign out, token and public keys in JSON format
-  const wellKnownUrl = config.get('defraId.wellKnownUrl')
-
   let lastError
   for (let attempt = 1; attempt <= OIDC_FETCH_MAX_ATTEMPTS; attempt++) {
     try {
-      const { payload } = await Wreck.get(wellKnownUrl, {
+      const { payload } = await Wreck.get(fetchUrl, {
         json: true,
         timeout: OIDC_FETCH_TIMEOUT_MS
       })
@@ -44,7 +43,7 @@ async function getOidcConfig() {
     log(LogCodes.AUTH.OIDC_CONFIG_FETCH_RETRY, {
       attempt,
       maxAttempts: OIDC_FETCH_MAX_ATTEMPTS,
-      wellKnownUrl,
+      wellKnownUrl: fetchUrl,
       code: err.code ?? 'n/a',
       errorMessage: err.message
     })
