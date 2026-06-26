@@ -133,7 +133,7 @@ export default class PrintSubmittedApplicationController extends StatusPageContr
    * @returns {string} path to the status page
    */
   getStatusPath(request, context) {
-    return getPrintSubmittedApplicationPath(request, context, 'ConfirmationController')
+    return getPrintSubmittedApplicationPath(request, context, 'PrintSubmittedApplicationController')
   }
 }
 

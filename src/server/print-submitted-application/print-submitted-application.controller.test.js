@@ -95,7 +95,7 @@ describe('PrintSubmittedApplicationController', () => {
 
       expect(result).toBe('/test-form/print-submitted-application')
 
-      expect(getPrintSubmittedApplicationPath).toHaveBeenCalledWith(request, {}, 'ConfirmationController')
+      expect(getPrintSubmittedApplicationPath).toHaveBeenCalledWith(request, {}, 'PrintSubmittedApplicationController')
     })
   })
 
