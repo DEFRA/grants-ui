@@ -3,7 +3,8 @@ metadata:
   id: 95e92559-968d-44ae-8666-2b1ad3dffd33
   enabledInProd: false
   supportEmail: support@defra.gov.uk
-  grantRedirectRules: null
+  grantRedirectRules:
+    excludedPaths: ['print-submitted-application']
   permissions:
     enforce: false
   confirmationContent:
@@ -319,6 +320,10 @@ pages:
     path: /confirmation
     controller: ConfirmationPageController
     id: 9817cd3a-c9ae-49f1-8a95-076a82504d31
+  - title: PrintSubmittedApplication
+    path: /print-submitted-application
+    controller: PrintSubmittedApplicationController
+    id: 9817cd3a-c9ae-49f1-8a95-076a82504d44
 lists:
   - title: What type of pigs do you have?
     name: pigBreedsList
