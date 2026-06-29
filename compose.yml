@@ -5,11 +5,11 @@ services:
       target: ${BUILD_TARGET:-development}
     depends_on:
       redis:
-        condition: service_started
+        condition: service_healthy
       grants-ui-backend:
-        condition: service_started
+        condition: service_healthy
       fcp-defra-id-stub:
-        condition: service_started
+        condition: service_healthy
     ports:
       - '3000:3000'
       - '9229:9229'
@@ -107,7 +107,7 @@ services:
 
   grants-ui-backend:
     image: defradigital/grants-ui-backend
-    pull_policy: missing
+    pull_policy: always
     depends_on:
       localstack:
         condition: service_healthy
@@ -147,7 +147,7 @@ services:
 
   grants-config-broker:
     image: defradigital/grants-config-broker:latest
-    pull_policy: missing
+    pull_policy: always
     ports:
       - '3012:3012'
     depends_on:
@@ -205,7 +205,7 @@ services:
 
   grants-ui-dal-stub:
     image: defradigital/grants-ui-dal-stub:latest
-    pull_policy: missing
+    pull_policy: always
     ports:
       - '3008:3008'
     environment:

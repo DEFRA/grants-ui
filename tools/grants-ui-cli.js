@@ -554,10 +554,17 @@ function cmdRestart(services, dryRun) {
     const state = loadState()
     if (state) addonKeys = state.addons
   }
-  const fileArgs = composeFileArgs(addonKeys)
+  // Include any saved local image overrides so the recreate picks up :local images
+  const localImages = getLocalImages()
+  const savedState = loadState()
+  const localServiceKeys = savedState
+    ? (savedState.localServices ?? []).filter((k) => localImages.has(k + ':local'))
+    : []
+  const fileArgs = composeFileArgs(addonKeys, localServiceKeys)
 
   console.log(`\n  ${DIM}Restarting ${services.length} container(s): ${services.join(', ')}…${RESET_COLOR}\n`)
-  const status = runCompose([...fileArgs, 'restart', '--no-deps', ...services], dryRun)
+  // Recreate (not plain restart) so freshly built local images and the override mapping take effect
+  const status = runCompose([...fileArgs, 'up', '-d', '--no-deps', '--force-recreate', ...services], dryRun)
   if (status === 0 && !dryRun) {
     console.log(`  ${GREEN}✔${RESET_COLOR}  Restarted: ${services.join(', ')}.\n`)
   }
