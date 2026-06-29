@@ -82,26 +82,32 @@ export default class CheckResponsesPageController extends SummaryPageController 
 
   /**
    * Builds the view model for the page
-   * @param {AnyFormRequest} request
+   * @param {FormContextRequest} request
    * @param {FormContext} context
-   * @returns {object} The view model
+   * @returns {SummaryViewModel} The view model
    */
   getSummaryViewModel(request, context) {
     const viewModel = super.getSummaryViewModel(request, context)
 
     const { pageDef } = this
 
-    const backLink = getTaskPageBackLink(viewModel, pageDef)
+    const backLink = /** @type {BackLink | null} */ (getTaskPageBackLink(viewModel, pageDef))
     const sectionTitle = this.section?.hideTitle !== true ? this.section?.title : ''
 
     this.#excludeCheckDetailsEntries(viewModel)
     this.#applyLandParcels(viewModel, context?.state?.landParcels)
 
-    return {
-      ...viewModel,
-      sectionTitle,
-      ...(backLink ? { backLink } : {})
-    }
+    // SummaryViewModel is a class with a private `summaryDetails` member and does not
+    // permit extra properties (`sectionTitle`), so a structural spread cannot satisfy
+    // the class type even though the runtime shape is a correct superset. Cast through
+    // `unknown` to keep this purely type-only with no runtime change.
+    return /** @type {SummaryViewModel} */ (
+      /** @type {unknown} */ ({
+        ...viewModel,
+        sectionTitle,
+        ...(backLink ? { backLink } : {})
+      })
+    )
   }
 
   /**
@@ -124,9 +130,9 @@ export default class CheckResponsesPageController extends SummaryPageController 
 }
 
 /**
- * @import { FormContext, AnyFormRequest, FormResponseToolkit } from '@defra/forms-engine-plugin/types'
+ * @import { FormContext, FormContextRequest, AnyFormRequest, FormResponseToolkit, BackLink } from '@defra/forms-engine-plugin/types'
  * @import { ResponseObject } from '@hapi/hapi'
- * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
+ * @import { FormModel, SummaryViewModel } from '@defra/forms-engine-plugin/engine/models/index.js'
  * @import { PageSummary } from '@defra/forms-model'
  * @import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
  */

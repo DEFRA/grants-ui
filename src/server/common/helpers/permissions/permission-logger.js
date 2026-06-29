@@ -1,5 +1,14 @@
 import { log, LogCodes } from '../logging/log.js'
 
+/**
+ * @param {{
+ *   request: PipelineRequest,
+ *   grantCode: string,
+ *   permission: string,
+ *   enforcementEnabled: boolean,
+ *   authorised: boolean
+ * }} options
+ */
 export function logPermissionEvent({ request, grantCode, permission, enforcementEnabled, authorised }) {
   const logData = {
     userId: request.auth?.credentials?.contactId || 'unknown',
@@ -20,3 +29,7 @@ export function logPermissionEvent({ request, grantCode, permission, enforcement
 
   log(LogCodes.PERMISSIONS.FAILURE, logData, request)
 }
+
+/**
+ * @import { PipelineRequest } from '~/src/server/common/request-pipeline/types.js'
+ */

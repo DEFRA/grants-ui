@@ -1,19 +1,9 @@
 import { normaliseResponseMappingPath } from '~/src/server/common/helpers/path-utils.js'
 
 /**
- * @typedef {object} QueryFieldConfig
- * @property {string} path
- * @property {QueryFieldConfig[]} [fields]
- */
-/**
- * @typedef {object} QueryEntityConfig
- * @property {string} name
- * @property {QueryFieldConfig[]} fields
- */
-/**
- * @typedef {object} DisplayFieldConfig
- * @property {string} [sourcePath]
- * @property {string} [sourceType]
+ * @typedef {import('./types.js').QueryFieldConfig} QueryFieldConfig
+ * @typedef {import('./types.js').QueryEntityConfig} QueryEntityConfig
+ * @typedef {import('./types.js').DisplayFieldConfig} DisplayFieldConfig
  */
 /**
  * @typedef {object} DisplaySectionConfig

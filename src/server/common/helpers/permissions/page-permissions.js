@@ -1,15 +1,29 @@
+/**
+ * @param {PipelineRequest} request
+ * @returns {PermissionConfig | undefined}
+ */
 export function getPermissionConfig(request) {
-  return request.app.model?.def?.metadata?.permissions
+  return /** @type {PermissionConfig | undefined} */ (request.app.model?.def?.metadata?.permissions)
 }
 
+/**
+ * @param {PipelineRequest} request
+ * @returns {string | undefined}
+ */
 export function getRequiredPermission(request) {
   const permissionConfig = getPermissionConfig(request)
 
-  const matchedRule = permissionConfig?.pageAccess?.rules?.find((rule) => rule.paths.includes(request.params.path))
+  const matchedRule = permissionConfig?.pageAccess?.rules?.find((/** @type {PageAccessRule} */ rule) =>
+    rule.paths.includes(request.params.path)
+  )
 
   return matchedRule?.permission ?? permissionConfig?.pageAccess?.default
 }
 
+/**
+ * @param {PipelineRequest} request
+ * @returns {string}
+ */
 export function getPermissionResource(request) {
   const permissionConfig = getPermissionConfig(request)
 
@@ -23,3 +37,25 @@ export function getPermissionResource(request) {
 
   return permissionConfig.resource
 }
+
+/**
+ * @typedef {object} PageAccessRule
+ * @property {string[]} paths
+ * @property {string} permission
+ */
+
+/**
+ * @typedef {object} PageAccess
+ * @property {PageAccessRule[]} [rules]
+ * @property {string} [default]
+ */
+
+/**
+ * @typedef {object} PermissionConfig
+ * @property {PageAccess} [pageAccess]
+ * @property {string} [resource]
+ */
+
+/**
+ * @import { PipelineRequest } from '~/src/server/common/request-pipeline/types.js'
+ */

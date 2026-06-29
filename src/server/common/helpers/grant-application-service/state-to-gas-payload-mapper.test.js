@@ -175,43 +175,53 @@ describe('transformStateObjectToGasApplication', () => {
     expect(mockAnswersTransformer).toHaveBeenCalledWith(state)
   })
 
-  it('should preserve the configured semver string', () => {
+  it('should preserve a strict major.minor.patch semver string', () => {
     const identifiers = {
       sbi: '12345678'
     }
     const state = {}
     const mockAnswersTransformer = vi.fn().mockReturnValue({})
 
-    const result = transformStateObjectToGasApplication(
-      identifiers,
-      state,
-      mockAnswersTransformer,
-      '3.2.1-beta.2+build.4'
-    )
+    const result = transformStateObjectToGasApplication(identifiers, state, mockAnswersTransformer, '3.2.1')
 
-    expect(result.metadata?.configVersion).toBe('3.2.1-beta.2+build.4')
+    expect(result.metadata?.configVersion).toBe('3.2.1')
   })
 
-  it.each([undefined, null, '', 1, '1', '1.0', '01.0.0'])(
-    'should throw when configVersion is not a semver string: %s',
-    (configVersion) => {
-      const identifiers = {
-        sbi: '12345678',
-        clientRef: 'CLIENT-REF-456'
-      }
-      const state = {}
-      const mockAnswersTransformer = vi.fn().mockReturnValue({})
+  // Config broker only supports strict major.minor.patch, so a `v` prefix,
+  // prerelease tags and build metadata must all be rejected even though the
+  // semver package itself tolerates them.
+  it.each([
+    undefined,
+    null,
+    '',
+    1,
+    '1',
+    '1.0',
+    '01.0.0',
+    'v1.0.0',
+    '1.0.0-beta.1',
+    '1.0.0+build.4',
+    '3.2.1-beta.2+build.4'
+  ])('should throw when configVersion is not a strict semver string: %s', (configVersion) => {
+    const identifiers = {
+      sbi: '12345678',
+      clientRef: 'CLIENT-REF-456'
+    }
+    const state = {}
+    const mockAnswersTransformer = vi.fn().mockReturnValue({})
 
-      expect(() =>
-        transformStateObjectToGasApplication(identifiers, state, mockAnswersTransformer, configVersion)
-      ).toThrow('Invalid grant config version')
-      expect(mockAnswersTransformer).not.toHaveBeenCalled()
+    expect(() =>
+      transformStateObjectToGasApplication(identifiers, state, mockAnswersTransformer, configVersion)
+    ).toThrow('Invalid grant config version')
+    expect(mockAnswersTransformer).not.toHaveBeenCalled()
+  })
+
+  it.each(['', '1', '1.0', '01.0.0', 2, 'v1.0.0', '1.0.0-beta.1', '1.0.0+build.4'])(
+    'should throw for invalid config version %s',
+    (version) => {
+      const request = { app: { model: { def: { metadata: { version } } } } }
+
+      expect(() => resolveGasConfigVersion(request)).toThrow('Invalid grant config version')
     }
   )
-
-  it.each(['', '1', '1.0', '01.0.0', 2])('should throw for invalid config version %s', (version) => {
-    const request = { app: { model: { def: { metadata: { version } } } } }
-
-    expect(() => resolveGasConfigVersion(request)).toThrow('Invalid grant config version')
-  })
 })
