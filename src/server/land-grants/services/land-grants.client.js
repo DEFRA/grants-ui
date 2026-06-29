@@ -60,7 +60,11 @@ export async function postToLandGrantsApi(endpoint, body, baseUrl) {
 
   const result = await retry(apiOperation, {
     timeout: 30000,
-    serviceName: `LandGrantsApi.postTo ${endpoint}`
+    serviceName: `LandGrantsApi.postTo ${endpoint}`,
+    shouldRetry: (error) => {
+      const status = /** @type {{ code?: number, status?: number }} */ (error)?.code ?? /** @type {{ code?: number, status?: number }} */ (error)?.status
+      return typeof status !== 'number' || status >= 500
+    }
   }).catch((error) => {
     logUpstreamError({
       endpoint,

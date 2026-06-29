@@ -139,15 +139,51 @@ describe('mapPlugin', () => {
       expect(tileUrl).toBeNull()
     })
 
-    it('returns 503 when fetchParcels throws', async () => {
+    it('returns 503 with error message when fetchParcels throws without a status code', async () => {
       fetchParcels.mockRejectedValue(new Error('backend down'))
       const request = makeRequest()
       const h = makeH()
 
       await parcelsHandler(request, h)
 
-      expect(h.response).toHaveBeenCalledWith({ error: 'unavailable' })
+      expect(h.response).toHaveBeenCalledWith({ error: 'backend down' })
       expect(h._responseObj.code).toHaveBeenCalledWith(503)
+    })
+
+    it('passes through upstream 5xx status when fetchParcels throws with one', async () => {
+      const error = Object.assign(new Error('internal server error'), { code: 500 })
+      fetchParcels.mockRejectedValue(error)
+      const request = makeRequest()
+      const h = makeH()
+
+      await parcelsHandler(request, h)
+
+      expect(h.response).toHaveBeenCalledWith({ error: 'internal server error' })
+      expect(h._responseObj.code).toHaveBeenCalledWith(500)
+    })
+
+    it('passes through upstream 4xx status when fetchParcels throws with one', async () => {
+      const error = Object.assign(new Error('Land parcels not found'), { code: 404 })
+      fetchParcels.mockRejectedValue(error)
+      const request = makeRequest()
+      const h = makeH()
+
+      await parcelsHandler(request, h)
+
+      expect(h.response).toHaveBeenCalledWith({ error: 'Land parcels not found' })
+      expect(h._responseObj.code).toHaveBeenCalledWith(404)
+    })
+
+    it('passes through upstream 403 status when fetchParcels throws with one', async () => {
+      const error = Object.assign(new Error('Forbidden'), { status: 403 })
+      fetchParcels.mockRejectedValue(error)
+      const request = makeRequest()
+      const h = makeH()
+
+      await parcelsHandler(request, h)
+
+      expect(h.response).toHaveBeenCalledWith({ error: 'Forbidden' })
+      expect(h._responseObj.code).toHaveBeenCalledWith(403)
     })
 
     it('continues with null bbox when fetchParcelTileLocation fails', async () => {
