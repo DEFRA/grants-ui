@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import Wreck from '@hapi/wreck'
-import { getOidcConfig } from './get-oidc-config.js'
+import { getOidcConfig, resetOidcConfigCache } from './get-oidc-config.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 vi.mock('@hapi/wreck')
@@ -10,9 +10,14 @@ vi.mock('~/src/config/config.js', () => ({
   }
 }))
 
+const WELL_KNOWN_URL = 'https://example.com/.well-known/openid_configuration'
+
 describe('getOidcConfig', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks()
+    resetOidcConfigCache()
+    const { config } = await import('~/src/config/config.js')
+    config.get.mockReturnValue(WELL_KNOWN_URL)
   })
 
   afterEach(() => {
@@ -27,17 +32,15 @@ describe('getOidcConfig', () => {
       end_session_endpoint: 'https://example.com/logout'
     }
 
-    const mockConfig = await import('~/src/config/config.js')
-    mockConfig.config.get.mockReturnValue('https://example.com/.well-known/openid_configuration')
-
+    const { config } = await import('~/src/config/config.js')
     Wreck.get.mockResolvedValue({
       payload: mockPayload
     })
 
     const result = await getOidcConfig()
 
-    expect(mockConfig.config.get).toHaveBeenCalledWith('defraId.wellKnownUrl')
-    expect(Wreck.get).toHaveBeenCalledWith('https://example.com/.well-known/openid_configuration', {
+    expect(config.get).toHaveBeenCalledWith('defraId.wellKnownUrl')
+    expect(Wreck.get).toHaveBeenCalledWith(WELL_KNOWN_URL, {
       json: true,
       timeout: 10000
     })
@@ -45,9 +48,6 @@ describe('getOidcConfig', () => {
   })
 
   test('retries then succeeds when an early attempt fails', async () => {
-    const mockConfig = await import('~/src/config/config.js')
-    mockConfig.config.get.mockReturnValue('https://example.com/.well-known/openid_configuration')
-
     const mockPayload = { authorization_endpoint: 'https://example.com/auth' }
     const blip = /** @type {Error & { code?: string }} */ (new Error('Transient blip'))
     blip.code = 'ECONNRESET'
@@ -62,16 +62,13 @@ describe('getOidcConfig', () => {
     expect(log).toHaveBeenCalledWith(LogCodes.AUTH.OIDC_CONFIG_FETCH_RETRY, {
       attempt: 1,
       maxAttempts: 3,
-      wellKnownUrl: 'https://example.com/.well-known/openid_configuration',
+      wellKnownUrl: WELL_KNOWN_URL,
       code: 'ECONNRESET',
       errorMessage: 'Transient blip'
     })
   })
 
   test('retries the configured number of times then throws the last error', async () => {
-    const mockConfig = await import('~/src/config/config.js')
-    mockConfig.config.get.mockReturnValue('https://example.com/.well-known/openid_configuration')
-
     const networkError = new Error('Network request failed')
     Wreck.get.mockRejectedValue(networkError)
 
@@ -82,24 +79,40 @@ describe('getOidcConfig', () => {
 
     await expect(promise).rejects.toThrow('Network request failed')
     expect(Wreck.get).toHaveBeenCalledTimes(3)
-    expect(Wreck.get).toHaveBeenCalledWith('https://example.com/.well-known/openid_configuration', {
+    expect(Wreck.get).toHaveBeenCalledWith(WELL_KNOWN_URL, {
       json: true,
       timeout: 10000
     })
   })
 
-  test('handles invalid JSON responses', async () => {
-    const mockConfig = await import('~/src/config/config.js')
-    mockConfig.config.get.mockReturnValue('https://example.com/.well-known/openid_configuration')
+  test('caches the discovery document and does not re-fetch on subsequent calls', async () => {
+    const mockPayload = { end_session_endpoint: 'https://example.com/logout' }
+    Wreck.get.mockResolvedValue({ payload: mockPayload })
 
-    const jsonError = new Error('Invalid JSON')
-    Wreck.get.mockRejectedValue(jsonError)
+    const first = await getOidcConfig()
+    const second = await getOidcConfig()
+
+    expect(first).toEqual(mockPayload)
+    expect(second).toEqual(mockPayload)
+    // The well-known endpoint is only hit once across both calls.
+    expect(Wreck.get).toHaveBeenCalledTimes(1)
+  })
+
+  test('clears the cache after a failed fetch so a later call re-fetches', async () => {
+    const mockPayload = { end_session_endpoint: 'https://example.com/logout' }
+    Wreck.get.mockRejectedValue(new Error('Network request failed'))
 
     vi.useFakeTimers()
-    const promise = getOidcConfig()
-    promise.catch(() => {})
+    const failing = getOidcConfig()
+    failing.catch(() => {})
     await vi.runAllTimersAsync()
+    await expect(failing).rejects.toThrow('Network request failed')
+    expect(Wreck.get).toHaveBeenCalledTimes(3)
 
-    await expect(promise).rejects.toThrow('Invalid JSON')
+    Wreck.get.mockReset()
+    Wreck.get.mockResolvedValue({ payload: mockPayload })
+
+    await expect(getOidcConfig()).resolves.toEqual(mockPayload)
+    expect(Wreck.get).toHaveBeenCalledTimes(1)
   })
 })
