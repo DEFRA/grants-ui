@@ -59,6 +59,7 @@ metadata:
         gasStatus: default
         toGrantsStatus: SUBMITTED
         toPath: /confirmation
+    excludedPaths: ['print-submitted-application']
   permissions:
     enforce: true
     resource: csApplications
@@ -907,6 +908,10 @@ pages:
     path: /confirmation
     controller: ConfirmationPageController
     id: 9817cd3a-c9ae-49f1-8a95-076a82504d30
+  - title: PrintSubmittedApplication
+    path: /print-submitted-application
+    controller: PrintSubmittedApplicationController
+    id: 9817cd3a-c9ae-49f1-8a95-076a82504d40
   # Off-journey page: never reached by the default V2 page walk because it is
   # positioned after the final journey page. It is only entered via a direct
   # link or a grantRedirectRule. Its custom controller reads the `next.path`

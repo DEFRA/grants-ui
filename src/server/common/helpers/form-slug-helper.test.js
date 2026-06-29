@@ -1,6 +1,11 @@
 import { vi } from 'vitest'
 import { mockHapiRequest } from '~/src/__mocks__'
-import { storeSlugInContext, getFormSlug, getConfirmationPath } from './form-slug-helper.js'
+import {
+  storeSlugInContext,
+  getFormSlug,
+  getConfirmationPath,
+  getPrintSubmittedApplicationPath
+} from './form-slug-helper.js'
 import { log, LogCodes } from './logging/log.js'
 
 vi.mock('./logging/log.js', async () => {
@@ -200,6 +205,37 @@ describe('form-slug-helper', () => {
       const result = getConfirmationPath(mockRequest, mockContext, controllerName)
 
       expect(result).toBe('/confirmation')
+    })
+  })
+
+  describe('getPrintSubmittedApplicationPath', () => {
+    const controllerName = 'TestController'
+
+    afterEach(() => {
+      vi.clearAllMocks()
+    })
+
+    test('should return correct path with slug', () => {
+      const mockSlug = 'test-slug'
+      const mockRequest = {
+        params: { slug: mockSlug }
+      }
+      const mockContext = { state: {} }
+
+      const result = getPrintSubmittedApplicationPath(mockRequest, mockContext, controllerName)
+
+      expect(result).toBe(`/${mockSlug}/print-submitted-application`)
+    })
+
+    test('should return default path when no slug is found', () => {
+      const mockRequest = {
+        params: {}
+      }
+      const mockContext = { state: {} }
+
+      const result = getPrintSubmittedApplicationPath(mockRequest, mockContext, controllerName)
+
+      expect(result).toBe('/print-submitted-application')
     })
   })
 })

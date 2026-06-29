@@ -74,7 +74,7 @@ metadata:
             'select-actions-for-land-parcel'
           ]
         redirectTo: /confirm-farm-details
-    excludedPaths: ['terms-and-conditions', 'fptt-information', 'fptt-actions']
+    excludedPaths: ['terms-and-conditions', 'fptt-information', 'fptt-actions', 'print-submitted-application']
   permissions:
     enforce: true
     resource: csApplications
@@ -177,6 +177,10 @@ pages:
     path: /confirmation
     controller: ConfirmationPageController
     id: 9817cd3a-c9ae-49f1-8a95-076a82504d28
+  - title: PrintSubmittedApplication
+    path: /print-submitted-application
+    controller: PrintSubmittedApplicationController
+    id: 9817cd3a-c9ae-49f1-8a95-076a82504d42
 lists: []
 sections: []
 conditions: []
