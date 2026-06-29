@@ -8,12 +8,14 @@ Feature: Reusable Components
         And logs in as CRN "1100957269"
         Then the user should see heading "Example Grant"
         And the page is analyzed for accessibility
+        And the user should see a notification banner
         When the user clicks on "Start now"
 
         # check-details
         Then the user should be at URL "check-details"
         And should see heading "Check your details"
         And the page is analyzed for accessibility
+        And the user should see a notification banner
         When the user selects "No"
         And continues
 
@@ -294,6 +296,7 @@ Feature: Reusable Components
         And should see heading "Details submitted"
         And the page is analyzed for accessibility
         And should see an "EGWA" reference number for their application
+        And the user should not see a notification banner
         When the user clicks on "View / Print submitted application (opens in new tab)"
         Then a new tab should be opened at URL "print-submitted-application" and closed by the user
 
@@ -301,6 +304,7 @@ Feature: Reusable Components
         Given the user navigates to "/example-grant-with-auth/print-submitted-application"
         Then the user should see heading "Example grant with auth application"
         And the page is analyzed for accessibility
+        And the user should not see a notification banner
         Then the user should see the following submitted application details
             | Application number         | {REFERENCE NUMBER}                              |
             | Applicant details          |                                                 |

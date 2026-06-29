@@ -235,6 +235,14 @@ Then('(the user )should see button {string}', async function (text) {
   await expect(this.page.locator(`//button[contains(text(),'${text}')]`)).toBeVisible()
 })
 
+Then('(the user )should see a notification banner', async function () {
+  await expect(this.page.locator('div.govuk-notification-banner')).toBeVisible()
+})
+
+Then('(the user )should not see a notification banner', async function () {
+  await expect(this.page.locator('div.govuk-notification-banner')).not.toBeVisible()
+})
+
 Then('(the user )should see SBI {string} as the logged in organisation', async function (expectedSbi) {
   const accountBar = new DefraAccountBar(this.page)
   const actualSbi = await accountBar.sbi()
