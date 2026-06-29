@@ -28,6 +28,7 @@ import { secureContext } from '~/src/server/common/helpers/secure-context/index.
 import { getCacheEngine } from '~/src/server/common/helpers/session-cache/cache-engine.js'
 import { sessionCache } from '~/src/server/common/helpers/session-cache/session-cache.js'
 import ConfirmationPageController from '~/src/server/confirmation/confirmation-page.controller.js'
+import PrintSubmittedApplicationController from '~/src/server/print-submitted-application/print-submitted-application.controller.js'
 import DeclarationPageController from '~/src/server/declaration/declaration-page.controller.js'
 import ConfirmFarmDetailsController from '~/src/server/land-grants/controllers/confirm-farm-details.controller.js'
 import PaymentPageController from '~/src/server/payment/controllers/payment-page.controller.js'
@@ -131,6 +132,7 @@ const registerFormsPlugin = async (server, prefix = '') => {
       viewContext: context,
       controllers: {
         ConfirmationPageController,
+        PrintSubmittedApplicationController,
         DeclarationPageController,
         SubmissionPageController,
         LandGrantsGenericPageController,

@@ -3,7 +3,8 @@ metadata:
   id: 95e92559-968d-44ae-8666-2b1ad3dffd34
   toleratedFailurePaths:
     - countyParishHoldings
-  grantRedirectRules: null
+  grantRedirectRules:
+    excludedPaths: ['print-submitted-application']
   permissions:
     enforce: false
   detailsPage:
@@ -388,6 +389,10 @@ pages:
     path: /confirmation
     controller: ConfirmationPageController
     id: 9817cd3a-c9ae-49f1-8a95-076a82504d29
+  - title: PrintSubmittedApplication
+    path: /print-submitted-application
+    controller: PrintSubmittedApplicationController
+    id: 9817cd3a-c9ae-49f1-8a95-076a82504d43
 lists:
   - title: MFSP Selection List
     name: mfspSelection

@@ -72,6 +72,18 @@ export function getConfirmationPath(request, context, controllerName) {
 }
 
 /**
+ * Gets the path to the print submitted application page for the given form
+ * @param {AnyRequest | undefined} request - The request object
+ * @param {FormContextLike | undefined} context - The context object containing state
+ * @param {string} controllerName - The name of the controller for logging
+ * @returns {string} - The confirmation page path
+ */
+export function getPrintSubmittedApplicationPath(request, context, controllerName) {
+  const slug = getFormSlug(request, context, controllerName)
+  return slug ? `/${slug}/print-submitted-application` : '/print-submitted-application'
+}
+
+/**
  * @typedef {{ state?: Record<string, unknown> }} FormContextLike
  *   The forms-engine `FormContext` shape, narrowed to the fields this helper
  *   reads/writes. `state` is a loose key bag so callers can stash arbitrary

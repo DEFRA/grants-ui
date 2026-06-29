@@ -33,8 +33,12 @@ async function parcelsHandler(request, h) {
         )
       )
     )
-  } catch {
-    return h.response({ error: 'unavailable' }).code(statusCodes.serviceUnavailable)
+  } catch (error) {
+    const message = /** @type {Error} */ (error).message
+    const upstreamStatus =
+      /** @type {{ code?: number, status?: number }} */ (error)?.code ??
+      /** @type {{ code?: number, status?: number }} */ (error)?.status
+    return h.response({ error: message }).code(upstreamStatus ?? statusCodes.serviceUnavailable)
   }
 
   const parcelData = parcels.map((p) => ({
