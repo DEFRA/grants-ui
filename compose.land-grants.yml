@@ -12,7 +12,7 @@ services:
   grants-ui:
     depends_on:
       land-grants-backend:
-        condition: service_started
+        condition: service_healthy
     environment:
       LAND_GRANTS_API_URL: http://land-grants-backend:3009
 
