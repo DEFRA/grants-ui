@@ -53,3 +53,7 @@ ignore:
     - '*':
         reason: 'Build-time only — shell-quote via npm-run-all and webpack-dev-server/launch-editor in the dev toolchain, never loaded by grants-ui runtime. Fixed in 1.9.0; interim ignore while the override is blocked by .npmrc min-release-age=7 (1.9.0 published 2026-06-25, installable from 2026-07-02). Replace with an overrides pin and remove this entry once it clears the cooldown.'
         expires: '2026-07-09'
+  'SNYK-JS-FASTURI-17675102':
+    - '*':
+        reason: 'Low risk — transitive via ajv@8.20.0 (fast-uri ^3.0.1), used only for JSON-Schema $id/$ref URI resolution, not for host allowlisting or redirect checks, so the interpretation-conflict path is not reachable at runtime. Fixed in 3.1.3, but both 3.1.3 and 4.0.1 were published 2026-06-29 and are blocked by .npmrc min-release-age=7 (installable from ~2026-07-06). Replace with an overrides pin to fast-uri@3.1.3 and remove this entry once it clears the cooldown.'
+        expires: '2026-07-09'
