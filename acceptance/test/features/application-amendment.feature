@@ -2,22 +2,27 @@ Feature: Application Amendment
 
     Scenario: A submitted application can be amended and re-submitted as a new application multiple times
         Given there is no application state stored for CRN "1100964517" and SBI "115482347" and grant "example-grant-with-auth"
+        And the audit queue is empty
 
         # start
         Given the user navigates to "/example-grant-with-auth"
-        And logs in as CRN "1100964517"
-        Then the user should see heading "Example Grant"
+        Then an unauthorised audit event should be published for grant "example-grant-with-auth"
+        Given the user logs in as CRN "1100964517"
+        Then an authorised audit event should be published for grant "example-grant-with-auth" with CRN "1100964517" and SBI "115482347"
+        And the user should see heading "Example Grant"
         When the user clicks on "Start now"
 
         # check-details
         Then the user should be at URL "check-details"
         When the user selects "Yes"
         And continues
+        Then a navigate audit event should be published for page "check-details" with CRN "1100964517" and SBI "115482347"
 
         # yes-no-field
         Then the user should be at URL "yes-no-field"
         When the user selects "Yes"
         And continues
+        Then a navigate audit event should be published for page "yes-no-field" with CRN "1100964517" and SBI "115482347"
 
         # autocomplete-field
         Then the user should be at URL "autocomplete-field"
@@ -169,6 +174,7 @@ Feature: Application Amendment
         Then the user should be at URL "confirmation"
         And should see heading "Details submitted"
         And should see an "EGWA" reference number for their application
+        And a submit audit event should be published for entity "{FIRST REFERENCE NUMBER}" with CRN "1100964517" and SBI "115482347"
 
         # validate Mongo state storage
         And the following application state should be stored for CRN "1100964517" and SBI "115482347" and grant "example-grant-with-auth"
@@ -262,6 +268,7 @@ Feature: Application Amendment
         Then the user should be at URL "confirmation"
         And should see heading "Details submitted"
         And should see an "EGWA" reference number for their application
+        And a resubmit audit event should be published for entity "{SECOND REFERENCE NUMBER}" with CRN "1100964517" and SBI "115482347"
 
         # validate Mongo state storage
         And the following application state should be stored for CRN "1100964517" and SBI "115482347" and grant "example-grant-with-auth"
@@ -357,6 +364,7 @@ Feature: Application Amendment
         Then the user should be at URL "confirmation"
         And should see heading "Details submitted"
         And should see an "EGWA" reference number for their application
+        And a resubmit audit event should be published for entity "{THIRD REFERENCE NUMBER}" with CRN "1100964517" and SBI "115482347"
 
         # validate Mongo state storage
         And the following application state should be stored for CRN "1100964517" and SBI "115482347" and grant "example-grant-with-auth"

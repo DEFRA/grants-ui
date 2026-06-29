@@ -6,6 +6,26 @@ function shouldSkip(request) {
   return EXCLUDED_PATHS.some((path) => request.path === path || request.path.startsWith(`${path}/`))
 }
 
+function getPermissionsCacheKey(request) {
+  const { credentials: { crn, sbi } = {} } = request.auth ?? {}
+  return `permissions:${crn}:${sbi}`
+}
+
+async function getBusinessPermissions(request) {
+  const cacheKey = getPermissionsCacheKey(request)
+  const cached = request.yar?.get(cacheKey)
+
+  if (cached) {
+    return cached
+  }
+
+  const permissionGroups = await fetchBusinessPermissions(request)
+
+  request.yar?.set(cacheKey, permissionGroups)
+
+  return permissionGroups
+}
+
 export default {
   plugin: {
     name: 'permissions',
@@ -16,7 +36,7 @@ export default {
           return h.continue
         }
 
-        const permissionGroups = await fetchBusinessPermissions(request)
+        const permissionGroups = await getBusinessPermissions(request)
 
         request.auth.credentials.permissions = permissionGroups
         request.can = (action, resource) => {

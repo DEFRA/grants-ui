@@ -47,6 +47,7 @@ metadata:
         gasStatus: default
         toGrantsStatus: SUBMITTED
         toPath: /confirmation
+    excludedPaths: ['print-submitted-application']
   permissions:
     enforce: true
     resource: csApplications
@@ -671,6 +672,10 @@ pages:
     path: /confirmation
     controller: ConfirmationPageController
     id: 9817cd3a-c9ae-49f1-8a95-076a82504d45
+  - title: PrintSubmittedApplication
+    path: /print-submitted-application
+    controller: PrintSubmittedApplicationController
+    id: 9817cd3a-c9ae-49f1-8a95-076a82504d41
 
 lists:
   - title: Forestry commission team list

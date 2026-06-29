@@ -18,7 +18,9 @@ export async function demoPrintApplicationHandler(request, h) {
   try {
     const { slug } = request.params
 
-    const form = await findFormBySlug(slug)
+    const form = /** @type {import('../../common/forms/services/forms-redis.js').FormCacheEntry & {name: string}} */ (
+      await findFormBySlug(slug)
+    )
 
     if (!form) {
       return generateFormNotFoundResponse(slug, h)
