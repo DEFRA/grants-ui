@@ -119,7 +119,7 @@
     "global-agent": "3.0.0",
     "govuk-frontend": "5.14.0",
     "hapi-pino": "13.0.0",
-    "hapi-pulse": "3.0.1",
+    "hapi-pulse": "4.0.0",
     "hapi-rate-limit": "8.0.0",
     "ioredis": "5.11.1",
     "joi": "17.13.4",
