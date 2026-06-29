@@ -2,6 +2,7 @@ import { createApiHeadersForLandGrantsBackend } from '~/src/server/common/helper
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { logUpstreamError } from '~/src/server/common/helpers/logging/upstream-error.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
+import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js'
 
 const LAND_GRANTS_SERVICE = 'grants-ui-backend'
@@ -65,7 +66,7 @@ export async function postToLandGrantsApi(endpoint, body, baseUrl) {
       const status =
         /** @type {{ code?: number, status?: number }} */ (error)?.code ??
         /** @type {{ code?: number, status?: number }} */ (error)?.status
-      return typeof status !== 'number' || status >= 500
+      return typeof status !== 'number' || status >= statusCodes.internalServerError
     }
   }).catch((error) => {
     logUpstreamError({
