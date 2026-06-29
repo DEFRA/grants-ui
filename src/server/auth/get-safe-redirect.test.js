@@ -19,6 +19,12 @@ describe('getSafeRedirect', () => {
     expect(getSafeRedirect('')).toBe('/home')
   })
 
+  it('should return /home for protocol-relative URLs (open redirect via //)', () => {
+    expect(getSafeRedirect('//example.com')).toBe('/home')
+    expect(getSafeRedirect('//attacker.com/phish')).toBe('/home')
+    expect(getSafeRedirect('//www.resillion.com')).toBe('/home')
+  })
+
   it('should handle empty strings correctly', () => {
     // Empty strings
     expect(getSafeRedirect('')).toBe('/home')
@@ -29,10 +35,10 @@ describe('getSafeRedirect', () => {
     expect(() => getSafeRedirect(false)).toThrow()
   })
 
-  it('should handle objects with startsWith property', () => {
-    const objectWithStartsWith = {
-      startsWith: () => true
-    }
-    expect(getSafeRedirect(objectWithStartsWith)).toBe(objectWithStartsWith)
+  it('should return /home for non-string values outside the typed contract', () => {
+    // Objects are not valid inputs per the string | null | undefined signature;
+    // the function should not pass them through as redirect destinations.
+    const objectWithStartsWith = { startsWith: () => true }
+    expect(getSafeRedirect(objectWithStartsWith)).toBe('/home')
   })
 })
