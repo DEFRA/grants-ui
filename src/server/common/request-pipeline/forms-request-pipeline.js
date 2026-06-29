@@ -8,7 +8,7 @@ import { enforcePagePermission } from './permissions/enforce-page-permission.js'
  * Otherwise, it continues to permission enforcement on the resolved destination page.
  *
  * @async
- * @param {import('./types.js').PipelineRequest} request
+ * @param {import('./types.js').PipelineRequest & AnyFormRequest} request
  * @param {ResponseToolkit} h
  * @param {FormContext} context - Request-specific context used across the pipeline.
  * @returns {Promise<*>} Hapi response or continuation result.
@@ -25,5 +25,5 @@ export async function formsRequestPipeline(request, h, context) {
 
 /**
  * @import { ResponseToolkit } from '@hapi/hapi'
- * @import { FormContext } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
  */

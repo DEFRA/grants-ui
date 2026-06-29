@@ -1,3 +1,5 @@
+import semver from 'semver'
+
 /**
  * @typedef {object} GASMetadata
  * @property {string} [sbi] - Standard Business Identifier
@@ -14,18 +16,24 @@
  * @property {object} [answers] - GAS Answers
  */
 
-const SEMVER_PATTERN =
-  /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-(?:(?:0|[1-9]\d*|\d*[A-Za-z-][\dA-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][\dA-Za-z-]*))*))?(?:\+(?:[\dA-Za-z-]+(?:\.[\dA-Za-z-]+)*))?$/
-
+/**
+ * @param {unknown} configVersion - the grant configuration version to validate
+ * @returns {void}
+ */
 const assertSemverConfigVersion = (configVersion) => {
-  if (typeof configVersion !== 'string' || !SEMVER_PATTERN.test(configVersion)) {
-    throw new Error('Invalid grant config version, it must be a valid semver string')
+  const parsed = typeof configVersion === 'string' ? semver.parse(configVersion) : null
+
+  const isStrict =
+    parsed !== null && parsed.prerelease.length === 0 && parsed.build.length === 0 && parsed.version === configVersion
+
+  if (!isStrict) {
+    throw new Error('Invalid grant config version, it must be a strict semver string (major.minor.patch)')
   }
 }
 
 /**
  * Resolves the grant configuration version to send to GAS.
- * @param {object} request - Hapi request
+ * @param {AnyRequest} request - Hapi request
  * @returns {string}
  */
 export const resolveGasConfigVersion = (request) => {
@@ -33,7 +41,7 @@ export const resolveGasConfigVersion = (request) => {
 
   assertSemverConfigVersion(configVersion)
 
-  return configVersion
+  return /** @type {string} */ (configVersion)
 }
 
 /**
@@ -61,3 +69,7 @@ export const transformStateObjectToGasApplication = (identifiers, state, transfo
     answers: transformAnswers(state)
   }
 }
+
+/**
+ * @import { AnyRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ */

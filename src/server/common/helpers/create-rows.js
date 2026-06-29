@@ -186,7 +186,7 @@ export function createContactDetailsRow(landline, mobile, emailAddress) {
 }
 
 /**
- * @typedef {{ title?: string, first?: string, middle?: string, last?: string }} Name
+ * @typedef {import('../services/details-page/formatters/full-name.formatter.js').NameParts} Name
  * @typedef {{ line1?: string, line2?: string, line3?: string, line4?: string, city?: string, postalCode?: string }} Address
  * @typedef {{ name?: string, address?: Address, landlinePhoneNumber?: string, mobilePhoneNumber?: string, email?: string | { address?: string } }} Business
  * @typedef {{ key: { text: string }, value: { text: string } | { html: string } }} SummaryListRow
