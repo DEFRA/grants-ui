@@ -39,7 +39,7 @@ Then('the page is analyzed for accessibility', async function () {
 
 Then('(the user )should see heading {string}', async function (text) {
   const truncated = text.indexOf("'") > -1 ? text.substring(0, text.indexOf("'")) : text
-  await expect(this.page.locator(`//h1[contains(text(),'${truncated}')]`)).toBeVisible()
+  await expect(this.page.locator(`//h1[contains(normalize-space(.),'${truncated}')]`)).toBeVisible()
 })
 
 Then('(the user )should see label heading {string}', async function (text) {
@@ -134,6 +134,10 @@ Then('(the user )should see the following configurable content', async function 
     const hasContent = await printPage.hasConfigurableContent(text)
     expect(hasContent).toBe(true)
   }
+})
+
+Then('(the user )should see {string} in the selected parcel summary', async function (parcelId) {
+  await expect(this.page.locator('#parcel-selection-summary')).toHaveText(`Selected: ${parcelId}`)
 })
 
 Then('(the user )should see error {string}', async function (text) {
