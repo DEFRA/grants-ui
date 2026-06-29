@@ -20,7 +20,35 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+// The endpoint URLs never change, so fetch once and reuse.
+/** @type {Promise<any> | null} */
+let oidcConfigPromise = null
+
+/**
+ * Clear the cache. Test-only.
+ * @returns {void}
+ */
+function resetOidcConfigCache() {
+  oidcConfigPromise = null
+}
+
 async function getOidcConfig() {
+  if (oidcConfigPromise) {
+    return oidcConfigPromise
+  }
+
+  oidcConfigPromise = fetchOidcConfig()
+
+  try {
+    return await oidcConfigPromise
+  } catch (error) {
+    // Don't cache failures, so the next call retries.
+    oidcConfigPromise = null
+    throw error
+  }
+}
+
+async function fetchOidcConfig() {
   // Fetch the OpenID Connect configuration from the well-known endpoint
   // Contains the URLs for authorisation, sign out, token and public keys in JSON format
   const wellKnownUrl = config.get('defraId.wellKnownUrl')
@@ -60,4 +88,4 @@ async function getOidcConfig() {
   throw lastError
 }
 
-export { getOidcConfig }
+export { getOidcConfig, resetOidcConfigCache }
