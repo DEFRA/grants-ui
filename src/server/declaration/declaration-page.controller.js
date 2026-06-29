@@ -43,9 +43,9 @@ export default class DeclarationPageController extends SummaryPageController {
 
   /**
    * Builds the view model for the declaration page
-   * @param {AnyFormRequest} request
+   * @param {FormContextRequest} request
    * @param {FormContext} context
-   * @returns {object} The view model
+   * @returns {SummaryViewModel} The view model
    */
   getSummaryViewModel(request, context) {
     const viewModel = super.getSummaryViewModel(request, context)
@@ -55,11 +55,13 @@ export default class DeclarationPageController extends SummaryPageController {
     const backLink = getTaskPageBackLink(viewModel, pageDef)
     const sectionTitle = this.section?.hideTitle !== true ? this.section?.title : ''
 
-    return {
-      ...viewModel,
-      sectionTitle,
-      ...(backLink ? { backLink } : {})
-    }
+    return /** @type {SummaryViewModel} */ (
+      /** @type {unknown} */ ({
+        ...viewModel,
+        sectionTitle,
+        ...(backLink ? { backLink } : {})
+      })
+    )
   }
 
   /**
@@ -80,6 +82,11 @@ export default class DeclarationPageController extends SummaryPageController {
     const parentHandler = super.makeGetRouteHandler()
 
     // Return a wrapped version that stores the slug
+    /**
+     * @param {FormRequest} request
+     * @param {FormContext} context
+     * @param {FormResponseToolkit} h
+     */
     return (request, context, h) => {
       // Store the slug in context if it's available in request.params
       storeSlugInContext(request, context, 'DeclarationController')
@@ -88,11 +95,17 @@ export default class DeclarationPageController extends SummaryPageController {
     }
   }
 
+  /**
+   * @param {AnyFormRequest} request
+   * @param {FormContext} context
+   * @returns {Record<string, unknown>} The GAS application payload
+   */
   buildApplicationData(request, context) {
     const { state, relevantState, referenceNumber, payload } = context
 
     // Include form fields from declaration page and convert to booleans as appropriate
     const { action, ...rest } = payload
+    /** @param {unknown} value */
     const toBoolean = (value) => {
       if (value === 'true') {
         return true
@@ -104,23 +117,26 @@ export default class DeclarationPageController extends SummaryPageController {
     }
     const declarationPayload = Object.fromEntries(Object.entries(rest).map(([key, value]) => [key, toBoolean(value)]))
 
-    const frn = state.additionalAnswers?.applicant?.['business']?.reference ?? 'undefined'
+    const frn =
+      /** @type {Record<string, any> | undefined} */ (state.additionalAnswers)?.applicant?.['business']?.reference ??
+      'undefined'
 
+    /** @type {{ clientRef: string, sbi: string, crn: string, frn: string, previousClientRef?: string }} */
     const identifiers = {
       clientRef: referenceNumber.toLowerCase(),
-      sbi: request.auth?.credentials?.sbi,
-      crn: request.auth?.credentials?.crn,
+      sbi: /** @type {string} */ (request.auth?.credentials?.sbi),
+      crn: /** @type {string} */ (request.auth?.credentials?.crn),
       frn
     }
 
     if (state.previousReferenceNumber) {
-      identifiers.previousClientRef = state.previousReferenceNumber.toLowerCase()
+      identifiers.previousClientRef = /** @type {string} */ (state.previousReferenceNumber).toLowerCase()
     }
 
     const submissionState = {
       referenceNumber,
       ...relevantState,
-      ...state.additionalAnswers,
+      .../** @type {Record<string, unknown> | undefined} */ (state.additionalAnswers),
       ...declarationPayload
     }
 
@@ -131,11 +147,14 @@ export default class DeclarationPageController extends SummaryPageController {
     return transformStateObjectToGasApplication(
       identifiers,
       submissionState,
-      (s) => transformAnswers(s, state),
+      (/** @type {Record<string, unknown>} */ s) => transformAnswers(s, state),
       configVersion
     )
   }
 
+  /**
+   * @param {{ request: AnyFormRequest, context: FormContext & { grantVersion?: string | number }, cacheService: StatePersistenceService, applicationData: Record<string, any>, sbi: unknown, crn: unknown, grantCode: string }} options
+   */
   async handleSuccessfulSubmission({ request, context, cacheService, applicationData, sbi, crn, grantCode }) {
     log(
       LogCodes.SUBMISSION.SUBMISSION_COMPLETED,
@@ -154,7 +173,7 @@ export default class DeclarationPageController extends SummaryPageController {
       ...currentState,
       applicationStatus: ApplicationStatus.SUBMITTED,
       submittedAt: applicationData.metadata?.submittedAt,
-      submittedBy: crn
+      submittedBy: /** @type {string | undefined} */ (crn)
     })
 
     log(
@@ -177,6 +196,9 @@ export default class DeclarationPageController extends SummaryPageController {
     )
   }
 
+  /**
+   * @param {{ h: FormResponseToolkit, error: Error, request: AnyFormRequest, context: FormContext, sbi: unknown, crn: unknown }} options
+   */
   handlePostError({ h, error, request, context, sbi, crn }) {
     log(
       LogCodes.SUBMISSION.SUBMISSION_FAILURE,
@@ -191,13 +213,18 @@ export default class DeclarationPageController extends SummaryPageController {
     )
 
     if (error.name === 'GrantApplicationServiceApiError') {
-      return handleGasApiError(h, context, error)
+      return handleGasApiError(/** @type {ResponseToolkit} */ (h), context, error)
     }
 
     throw error
   }
 
   makePostRouteHandler() {
+    /**
+     * @param {FormRequestPayload} request
+     * @param {FormContext} context
+     * @param {FormResponseToolkit} h
+     */
     return async (request, context, h) => {
       const { sbi, crn } = request.auth.credentials
       storeSlugInContext(request, context, 'DeclarationController')
@@ -239,7 +266,9 @@ export default class DeclarationPageController extends SummaryPageController {
 }
 
 /**
- * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
- * @import { AnyFormRequest, FormContext } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { FormModel, SummaryViewModel } from '@defra/forms-engine-plugin/engine/models/index.js'
+ * @import { AnyFormRequest, FormContext, FormContextRequest, FormRequest, FormRequestPayload, FormResponseToolkit } from '@defra/forms-engine-plugin/types'
  * @import { PageSummary } from '@defra/forms-model'
+ * @import { ResponseToolkit } from '@hapi/hapi'
+ * @import { StatePersistenceService } from '~/src/server/common/services/state-persistence/state-persistence.service.js'
  */

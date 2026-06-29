@@ -193,7 +193,9 @@ export function enforcePagePermission(request, h, context) {
   }
 
   const resource = getPermissionResource(request)
-  const requiredPermission = getRequiredPermission(request)
+  // Enforcement only runs once permission config is present (see getPermissionResource,
+  // which throws otherwise), so a required permission is always configured here.
+  const requiredPermission = /** @type {string} */ (getRequiredPermission(request))
 
   if (isViewOnlyUser(request, resource)) {
     return handleViewOnlyUser(request, h, context, grantCode)

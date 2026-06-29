@@ -1,3 +1,4 @@
+// @ts-ignore // no bundled type declarations
 import { JSDOM, VirtualConsole } from 'jsdom'
 
 /**
@@ -97,10 +98,15 @@ export const setupLoadingDocument = async (html, importCallback) => {
 
   let listenerAdded = false
   const originalAddEventListener = globalThis.document.addEventListener
+  /**
+   * @param {string} event - The event type being registered.
+   * @param {EventListenerOrEventListenerObject} handler - The listener callback.
+   */
   globalThis.document.addEventListener = function (event, handler) {
     if (event === 'DOMContentLoaded') {
       listenerAdded = true
-      handler()
+      const listener = /** @type {Function} */ (handler)
+      listener()
     }
     return originalAddEventListener.call(globalThis.document, event, handler)
   }

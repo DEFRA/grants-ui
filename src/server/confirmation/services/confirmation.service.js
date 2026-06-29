@@ -5,8 +5,8 @@ import { ComponentsRegistry } from './components.registry.js'
 export class ConfirmationService {
   /**
    * Load confirmation content
-   * @param {object} form - Form object
-   * @returns {Promise<{confirmationContent: object|null}>} Confirmation content
+   * @param {FormLike} form - Form object
+   * @returns {Promise<{confirmationContent: ConfirmationContent|null}>} Confirmation content
    */
   static async loadConfirmationContent(form) {
     return {
@@ -17,10 +17,10 @@ export class ConfirmationService {
   /**
    * Process confirmation content - replace component placeholders, slug tokens,
    * and render Nunjucks template syntax with provided context
-   * @param {object} confirmationContent - Raw confirmation content from YAML
+   * @param {ConfirmationContent} confirmationContent - Raw confirmation content from YAML
    * @param {string} [slug] - Form slug for replacing {{SLUG}} placeholders
    * @param {object} [context] - Context object for Nunjucks template rendering
-   * @returns {object} Processed confirmation content
+   * @returns {ConfirmationContent | null} Processed confirmation content
    */
   static processConfirmationContent(confirmationContent, slug, context = {}) {
     if (!confirmationContent) {
@@ -49,12 +49,12 @@ export class ConfirmationService {
    * Build view model for confirmation page
    * @param {object} options - Configuration options
    * @param {string} options.referenceNumber - Application reference number
-   * @param {string} options.businessName - Business name
-   * @param {string} options.sbi - SBI number
-   * @param {string} options.contactName - Contact name
-   * @param {object} options.confirmationContent - Confirmation content from config
+   * @param {string} [options.businessName] - Business name
+   * @param {string} [options.sbi] - SBI number
+   * @param {string} [options.contactName] - Contact name
+   * @param {ConfirmationContent | null} options.confirmationContent - Confirmation content from config
    * @param {boolean} [options.isDevelopmentMode] - Whether in development mode
-   * @param {object} [options.form] - Form object (optional)
+   * @param {FormLike | null} [options.form] - Form object (optional)
    * @param {string | null} [options.slug] - Form slug (optional)
    * @returns {object} View model for template
    */
@@ -68,7 +68,7 @@ export class ConfirmationService {
     form = null,
     slug = null
   }) {
-    const title = form.name
+    const title = /** @type {FormLike} */ (form).name
     const url = `/${slug}`
 
     const baseModel = {
@@ -105,7 +105,7 @@ export class ConfirmationService {
 
   /**
    * Check if form has configuration-driven confirmation content
-   * @param {object} form - Form object
+   * @param {FormLike} form - Form object
    * @returns {Promise<boolean>} True if form has config-driven confirmation
    */
   static async hasConfigDrivenConfirmation(form) {
@@ -113,3 +113,17 @@ export class ConfirmationService {
     return !!confirmationContent
   }
 }
+
+/**
+ * @typedef {object} ConfirmationContent
+ * @property {string} [html] - HTML body of the confirmation content
+ */
+
+/**
+ * @typedef {object} FormLike
+ * @property {string} [name] - Form/service name
+ * @property {object} [metadata] - Form metadata
+ * @property {ConfirmationContent} [metadata.confirmationContent] - Confirmation content config
+ * @property {string} [metadata.slug] - Form slug
+ * @property {string | null} [metadata.supportEmail] - Support email address
+ */

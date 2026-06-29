@@ -1,3 +1,6 @@
+/**
+ * @satisfies {ServerRoute}
+ */
 export const cannotSubmitRoute = {
   method: 'GET',
   path: '/cannot-submit',
@@ -9,3 +12,7 @@ export const cannotSubmitRoute = {
     })
   }
 }
+
+/**
+ * @import { ServerRoute } from '@hapi/hapi'
+ */
