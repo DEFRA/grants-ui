@@ -142,7 +142,8 @@ describe('enforcePagePermission', () => {
           }
         }
       },
-      can: vi.fn()
+      can: vi.fn(),
+      sendAuditEventInBackground: vi.fn()
     }
 
     h = {
@@ -176,26 +177,30 @@ describe('enforcePagePermission', () => {
     expect(enforcePagePermission(request, h, context)).toBe(h.continue)
   })
 
-  it('redirects amend-only users attempting submit', () => {
+  it.each([
+    [
+      'task list',
+      '/task-list',
+      'sfi',
+      '/cannot-submit?returnUrl=%2Fsfi%2Ftask-list&returnText=Return%20to%20task%20list'
+    ],
+    [
+      'farm-payments fallback',
+      undefined,
+      'farm-payments',
+      '/cannot-submit?returnUrl=%2Ffarm-payments%2Fcheck-selected-land-actions&returnText=Return%20to%20summary'
+    ]
+  ])('redirects amend-only users to cannot-submit via %s', (_label, taskListPath, slug, expectedUrl) => {
     vi.mocked(getRequiredPermission).mockReturnValue('submit')
-    vi.mocked(getTaskListPath).mockReturnValue('/task-list')
-
+    vi.mocked(getTaskListPath).mockReturnValue(taskListPath)
+    request.params.slug = slug
     request.can.mockImplementation(canAmendNotSubmit)
-
-    const takeover = vi.fn(() => 'redirected')
-
-    h.redirect.mockReturnValue({
-      takeover
-    })
 
     const result = enforcePagePermission(request, h, context)
 
-    expect(h.redirect).toHaveBeenCalledWith(
-      '/cannot-submit?returnUrl=%2Fsfi%2Ftask-list&returnText=Return%20to%20task%20list'
-    )
-
-    expect(takeover).toHaveBeenCalled()
+    expect(h.redirect).toHaveBeenCalledWith(expectedUrl)
     expect(result).toBe('redirected')
+    expect(request.sendAuditEventInBackground).not.toHaveBeenCalled()
   })
 
   it('allows submitted view-only users to access confirmation page', () => {
@@ -204,14 +209,20 @@ describe('enforcePagePermission', () => {
     const result = enforcePagePermission(request, h, context)
 
     expect(result).toBe(h.continue)
+    expect(request.sendAuditEventInBackground).not.toHaveBeenCalled()
   })
 
-  it('throws when view-only user accesses a non-allowed path', () => {
+  it('throws and audits an unauthorised event when a view-only user is denied a non-allowed path', () => {
     request.params.path = 'task-list'
 
     request.can.mockImplementation(canView)
 
     expect(() => enforcePagePermission(request, h, context)).toThrow()
+    expect(request.sendAuditEventInBackground).toHaveBeenCalledWith({
+      action: 'unauthorised',
+      status: 'denied',
+      details: { reason: 'permission', grantCode: 'sfi', permission: 'view' }
+    })
   })
 
   it('throws Application not submitted when view page accessed before submission', () => {
@@ -222,7 +233,8 @@ describe('enforcePagePermission', () => {
     expect(() => enforcePagePermission(request, h, context)).toThrow()
   })
 
-  it('throws a 403 Boom forbidden error when the user has no permissions', () => {
+  it('throws a 403 and audits an unauthorised event when the user has no permissions', () => {
+    vi.mocked(getRequiredPermission).mockReturnValue('submit')
     request.can.mockReturnValue(false)
 
     expect(() => enforcePagePermission(request, h, context)).toThrow(
@@ -231,6 +243,11 @@ describe('enforcePagePermission', () => {
         output: expect.objectContaining({ statusCode: 403 })
       })
     )
+    expect(request.sendAuditEventInBackground).toHaveBeenCalledWith({
+      action: 'unauthorised',
+      status: 'denied',
+      details: { reason: 'permission', grantCode: 'sfi', permission: 'submit' }
+    })
   })
 
   it('throws when model missing during cannot-submit redirect', () => {
@@ -251,25 +268,5 @@ describe('enforcePagePermission', () => {
     })
 
     expect(() => enforcePagePermission(request, h, context)).toThrow('Form model missing')
-  })
-
-  it('redirects amend-only farm-payments users to check-selected-land-actions', () => {
-    vi.mocked(getRequiredPermission).mockReturnValue('submit')
-    vi.mocked(getTaskListPath).mockReturnValue(undefined)
-
-    request.params.slug = 'farm-payments'
-    request.can.mockImplementation(canAmendNotSubmit)
-
-    const takeover = vi.fn(() => 'redirected')
-
-    h.redirect.mockReturnValue({
-      takeover
-    })
-
-    enforcePagePermission(request, h, context)
-
-    expect(h.redirect).toHaveBeenCalledWith(
-      '/cannot-submit?returnUrl=%2Ffarm-payments%2Fcheck-selected-land-actions&returnText=Return%20to%20summary'
-    )
   })
 })
