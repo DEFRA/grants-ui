@@ -1,3 +1,4 @@
+import { forbidden } from '@hapi/boom'
 import { ApplicationStatus } from '../../constants/application-status.js'
 import { statusCodes } from '../../constants/status-codes.js'
 import { getFormsCacheService } from '../../helpers/forms-cache/forms-cache.js'
@@ -9,6 +10,20 @@ import { getCacheKey } from '../../helpers/state/get-cache-key-helper.js'
 import agreements from '~/src/config/agreements.js'
 import { getGrantCode } from '../../helpers/grant-code.js'
 import { YarKeys } from '../../constants/session-keys.js'
+
+const APPLICATION_NOT_SUBMITTED_MESSAGE = 'Application not submitted'
+
+/** @type {StateGuard[]} */
+const POST_SUBMISSION_PAGE_STATE_GUARDS = [
+  {
+    stateKey: 'applicationStatus',
+    expectedValue: ApplicationStatus.SUBMITTED,
+    paths: ['confirmation', 'print-submitted-application'],
+    redirectTo: '/start',
+    failure: 'forbidden',
+    message: APPLICATION_NOT_SUBMITTED_MESSAGE
+  }
+]
 
 /**
  * @typedef {Object} RedirectRule
@@ -194,17 +209,89 @@ function preSubmissionRedirect(request, h, context) {
 }
 
 /**
+ * Reads a dot-delimited value from form state.
+ *
+ * @param {FormSubmissionState} state
+ * @param {string} stateKey
+ * @returns {unknown}
+ */
+function getStateValue(state, stateKey) {
+  return stateKey.split('.').reduce((value, key) => {
+    if (value === undefined || value === null || typeof value !== 'object') {
+      return undefined
+    }
+
+    return /** @type {Record<string, unknown>} */ (value)[key]
+  }, /** @type {unknown} */ (state))
+}
+
+/**
+ * Determines whether a guard applies to the current request path.
+ *
+ * @param {StateGuard} guard
+ * @param {string | undefined} currentPath
+ * @returns {boolean}
+ */
+function doesGuardApplyToPath(guard, currentPath) {
+  if (!guard.paths?.length) {
+    return true
+  }
+
+  return typeof currentPath === 'string' && guard.paths.includes(currentPath)
+}
+
+/**
+ * Determines whether the current state satisfies a guard.
+ *
+ * @param {unknown} value
+ * @param {StateGuard} guard
+ * @returns {boolean}
+ */
+function doesStateMatchGuard(value, guard) {
+  const hasRequiredState = value !== undefined && value !== null
+
+  if (!hasRequiredState) {
+    return false
+  }
+
+  if ('expectedValue' in guard) {
+    return value === guard.expectedValue
+  }
+
+  return true
+}
+
+/**
+ * Produces the configured state guard failure response.
+ *
+ * @param {AnyRequest} request
+ * @param {ResponseToolkit} h
+ * @param {StateGuard} guard
+ * @returns {import('@hapi/hapi').ResponseObject}
+ */
+function failStateGuard(request, h, guard) {
+  if (guard.failure === 'forbidden') {
+    throw forbidden(guard.message ?? APPLICATION_NOT_SUBMITTED_MESSAGE)
+  }
+
+  const grantId = request.params?.slug
+  const redirectUrl = buildRedirectUrl(grantId, guard.redirectTo)
+  return h.redirect(redirectUrl).takeover()
+}
+
+/**
  * Checks state guards defined in grantRedirectRules.stateGuards.
- * If a required state key is missing and the current path is not in
- * the guard's allowedPaths, redirects to the guard's redirectTo path.
+ * If a guard's required state is missing or does not match the expected value
+ * and the current path is not in the guard's allowedPaths, it applies the guard failure response.
  *
  * @param {AnyRequest} request
  * @param {ResponseToolkit} h
  * @param {FormContext} context
  * @param {GrantRedirectRules} [grantRedirectRules]
+ * @param {StateGuardOptions} [options]
  * @returns {symbol|import('@hapi/hapi').ResponseObject} h.continue or a redirect
  */
-function checkStateGuards(request, h, context, grantRedirectRules) {
+function checkStateGuards(request, h, context, grantRedirectRules, options = {}) {
   const stateGuards = grantRedirectRules?.stateGuards
   if (!stateGuards?.length) {
     return h.continue
@@ -213,22 +300,19 @@ function checkStateGuards(request, h, context, grantRedirectRules) {
   const currentPath = request.params?.path
 
   for (const guard of stateGuards) {
-    const rawValue = guard.stateKey
-      .split('.')
-      .reduce(
-        (/** @type {Record<string, unknown> | undefined} */ obj, /** @type {string} */ key) =>
-          /** @type {Record<string, unknown> | undefined} */ (obj?.[key]),
-        /** @type {Record<string, unknown> | undefined} */ (context.state)
-      )
-    // The traversed leaf is an arbitrary state value (string/number/null/object/undefined), so widen to unknown
-    const value = /** @type {unknown} */ (rawValue)
-    const hasRequiredState = value !== undefined && value !== null
-    const isAllowedPath = guard.allowedPaths?.includes(currentPath)
+    if (options.pathScopedOnly && !guard.paths?.length) {
+      continue
+    }
 
-    if (!hasRequiredState && !isAllowedPath) {
-      const grantId = request.params?.slug
-      const redirectUrl = buildRedirectUrl(grantId, guard.redirectTo)
-      return h.redirect(redirectUrl).takeover()
+    if (!doesGuardApplyToPath(guard, currentPath)) {
+      continue
+    }
+
+    const value = getStateValue(context.state, guard.stateKey)
+    const isAllowedPath = typeof currentPath === 'string' && guard.allowedPaths?.includes(currentPath)
+
+    if (!doesStateMatchGuard(value, guard) && !isAllowedPath) {
+      return failStateGuard(request, h, guard)
     }
   }
 
@@ -387,6 +471,18 @@ export const formsStatusRedirect = async (request, h, context) => {
      * }} */
     (request.app.model?.def?.metadata)
   const grantRedirectRules = metadata?.grantRedirectRules
+  const protectedPageGuard = checkStateGuards(
+    request,
+    h,
+    context,
+    { stateGuards: POST_SUBMISSION_PAGE_STATE_GUARDS },
+    { pathScopedOnly: true }
+  )
+  const protectedPageGuardProducedResponse = protectedPageGuard !== h.continue // NOSONAR S2159
+  if (protectedPageGuardProducedResponse) {
+    return protectedPageGuard
+  }
+
   const isWithinGrantPages = request.headers['sec-fetch-site'] === 'same-origin'
 
   const checkDetailsChangesPending = context.state.checkDetailsChangesPending
@@ -454,7 +550,16 @@ export function resolveClientReference(previousStatus, context) {
  * @typedef {object} StateGuard
  * @property {string} stateKey - Dot-delimited path into form state that must be present.
  * @property {string[]} [allowedPaths] - Paths exempt from the guard when the state key is missing.
+ * @property {string[]} [paths] - Paths where the guard applies. If omitted, the guard applies to every path.
+ * @property {unknown} [expectedValue] - Exact state value required when the key is present.
  * @property {string} redirectTo - Path to redirect to when the required state is missing.
+ * @property {'redirect' | 'forbidden'} [failure] - Failure response type. Defaults to redirect.
+ * @property {string} [message] - Error message for forbidden failures.
+ */
+
+/**
+ * @typedef {object} StateGuardOptions
+ * @property {boolean} [pathScopedOnly] - When true, skip guards without explicit paths.
  */
 
 /**

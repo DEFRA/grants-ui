@@ -735,6 +735,58 @@ describe('formsStatusRedirect', () => {
     })
   })
 
+  describe('post-submission protected routes', () => {
+    it.each([
+      ['confirmation', undefined],
+      ['confirmation', ApplicationStatus.CLEARED],
+      ['confirmation', ApplicationStatus.REOPENED],
+      ['print-submitted-application', undefined],
+      ['print-submitted-application', ApplicationStatus.CLEARED],
+      ['print-submitted-application', ApplicationStatus.REOPENED]
+    ])('rejects direct access to %s when application status is %s', async (path, applicationStatus) => {
+      request.params.path = path
+      request.path = `/grant-a/${path}`
+      request.headers = { 'sec-fetch-site': 'same-origin' }
+      request.app.model.def.metadata.grantRedirectRules.excludedPaths = [path]
+      context.state = { applicationStatus }
+
+      await expect(formsStatusRedirect(request, h, context)).rejects.toHaveProperty('output.statusCode', 403)
+
+      expect(h.redirect).not.toHaveBeenCalled()
+      expect(getApplicationStatus).not.toHaveBeenCalled()
+      expect(updateApplicationStatus).not.toHaveBeenCalled()
+      expect(mockCacheService.setState).not.toHaveBeenCalled()
+      expect(request.yar.set).not.toHaveBeenCalled()
+    })
+
+    it('allows direct access to confirmation when the application is submitted', async () => {
+      request.params.path = 'confirmation'
+      request.path = '/grant-a/confirmation'
+
+      getApplicationStatus.mockResolvedValue({
+        json: async () => ({ status: 'RECEIVED' })
+      })
+
+      const result = await formsStatusRedirect(request, h, context)
+
+      expect(result).toBe(h.continue)
+      expect(h.redirect).not.toHaveBeenCalled()
+    })
+
+    it('allows direct access to print submitted application when the application is submitted', async () => {
+      request.params.path = 'print-submitted-application'
+      request.path = '/grant-a/print-submitted-application'
+      request.app.model.def.metadata.grantRedirectRules.excludedPaths = ['print-submitted-application']
+      context.state = { applicationStatus: ApplicationStatus.SUBMITTED }
+
+      const result = await formsStatusRedirect(request, h, context)
+
+      expect(result).toBe(h.continue)
+      expect(getApplicationStatus).not.toHaveBeenCalled()
+      expect(h.redirect).not.toHaveBeenCalled()
+    })
+  })
+
   describe('farm-payments agreements service redirect', () => {
     it.each(['OFFER_SENT', 'OFFER_WITHDRAWN', 'OFFER_ACCEPTED'])(
       'redirects farm-payments to /agreement when GAS status is %s',
