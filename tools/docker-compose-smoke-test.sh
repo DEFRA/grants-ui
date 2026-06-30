@@ -125,6 +125,21 @@ until curl -skf https://localhost:4000/health >/dev/null 2>&1; do
 done
 
 echo "All services are healthy!"
+
+echo "Waiting for example-grant-with-auth form to be loaded into Redis..."
+ATTEMPTS=0
+until curl -skf https://localhost:4000/dev 2>/dev/null | grep -q "example-grant-with-auth"; do
+    if [ ${ATTEMPTS} -eq ${MAX_ATTEMPTS} ]; then
+        echo "Error: Timed out waiting for example-grant-with-auth to be seeded."
+        docker compose logs grants-ui-backend grants-config-broker
+        eval "${COMPOSE_COMMAND} down"
+        exit 1
+    fi
+    printf 'f'
+    ATTEMPTS=$(($ATTEMPTS+1))
+    sleep 3
+done
+
 echo "Service Status:"
 docker compose ps
 

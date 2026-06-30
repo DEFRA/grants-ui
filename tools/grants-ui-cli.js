@@ -13,8 +13,8 @@
  *   npx gae up --local-<service-key>  # use locally-built image for a defradigital service
  *   npx gae down [--dry-run]          # uses saved state automatically
  *   npx gae debug                     # restart grants-ui in debug mode (detached, port 9229)
+ *   npx gae restart [--dry-run]       # restart running containers (with --no-deps)
  *   npx gae reset [--dry-run]         # full teardown incl. volumes
- *   npx gae status                    # show running compose containers
  *   npx gae --help                    # show help
  *   npx gae --version                 # show version number
  *
@@ -51,7 +51,7 @@ import { fileURLToPath } from 'url'
 // ---------------------------------------------------------------------------
 // Version
 // ---------------------------------------------------------------------------
-const VERSION = '1.0.0'
+const VERSION = '1.1.0'
 
 // ---------------------------------------------------------------------------
 // Cross-platform: detect ANSI support
@@ -65,6 +65,9 @@ const STATE_FILE = resolve(ROOT, '.grants-ui-cli-state.json')
 
 // Service name used by the debug command
 const DEBUG_SERVICE = 'grants-ui'
+
+// Compose service never shown in the restart sub-menu (one-shot readiness helper)
+const RESTART_HIDDEN_SERVICE = 'mongo-ready'
 
 // ---------------------------------------------------------------------------
 // Pre-up script — runs before `docker compose up` every time.
@@ -91,7 +94,6 @@ process.on('exit', () => {
 // ---------------------------------------------------------------------------
 const LOCAL_SERVICES = [
   { key: 'grants-ui-backend', composeService: 'grants-ui-backend', image: 'defradigital/grants-ui-backend' },
-  { key: 'grants-ui-config-api', composeService: 'grants-ui-config-api', image: 'defradigital/grants-ui-config-api' },
   { key: 'grants-config-broker', composeService: 'grants-config-broker', image: 'defradigital/grants-config-broker' },
   { key: 'grants-ui-dal-stub', composeService: 'grants-ui-dal-stub', image: 'defradigital/grants-ui-dal-stub' },
   { key: 'fg-gas-backend', composeService: 'fg-gas-backend', image: 'defradigital/fg-gas-backend' },
@@ -259,6 +261,9 @@ function runCompose(args, dryRun = false) {
 /** True when running inside the interactive TUI loop */
 let _interactive = false
 
+/** Elapsed seconds of the most recent successful `up`, used by the interactive status line */
+let _lastUpElapsedSeconds = null
+
 function buildStatusLine(runningFiles) {
   if (!runningFiles || !runningFiles.length) {
     return `${DIM}No containers running${RESET_COLOR}`
@@ -307,6 +312,41 @@ function getRunningComposeFiles() {
     .map((f) => f.trim())
 }
 
+/** Returns the list of running compose service names for the grants-ui project */
+function getRunningServices() {
+  const ps = spawnSync(
+    'docker',
+    [
+      'ps',
+      '--filter',
+      'label=com.docker.compose.project=grants-ui',
+      '--format',
+      '{{.Label "com.docker.compose.service"}}'
+    ],
+    { encoding: 'utf8' }
+  )
+  if (ps.status !== 0) return []
+  return (ps.stdout ?? '').trim().split('\n').filter(Boolean)
+}
+
+/** Returns all compose service names (running or stopped) for the grants-ui project */
+function getAllServices() {
+  const ps = spawnSync(
+    'docker',
+    [
+      'ps',
+      '-a',
+      '--filter',
+      'label=com.docker.compose.project=grants-ui',
+      '--format',
+      '{{.Label "com.docker.compose.service"}}'
+    ],
+    { encoding: 'utf8' }
+  )
+  if (ps.status !== 0) return []
+  return [...new Set((ps.stdout ?? '').trim().split('\n').filter(Boolean))]
+}
+
 // ---------------------------------------------------------------------------
 // Commands
 // ---------------------------------------------------------------------------
@@ -339,7 +379,7 @@ function runPreUpScript(dryRun) {
 
 function cmdUp(selectedAddons, scale, dryRun, localServices = []) {
   const fileArgs = composeFileArgs(selectedAddons, localServices)
-  const extraArgs = ['-d']
+  const extraArgs = ['-d', '--wait']
   if (scale && selectedAddons.includes('ha')) {
     extraArgs.push('--scale', `grants-ui=${scale}`, '--scale', `grants-ui-backend=${scale}`)
   }
@@ -356,10 +396,16 @@ function cmdUp(selectedAddons, scale, dryRun, localServices = []) {
     if (!_interactive) process.exit(preStatus)
     return preStatus
   }
+  const startTime = Date.now()
+  _lastUpElapsedSeconds = null
   const status = runCompose([...fileArgs, 'up', ...extraArgs], dryRun)
   if (status === 0 && !dryRun) {
+    const elapsedSeconds = ((Date.now() - startTime) / 1000).toFixed(1)
+    _lastUpElapsedSeconds = elapsedSeconds
     saveState(selectedAddons, scale, localServices)
-    console.log(`  ${GREEN}✔${RESET_COLOR}  Containers started — run ${CYAN}npx gae down${RESET_COLOR} to stop.\n`)
+    console.log(
+      `  ${GREEN}✔${RESET_COLOR}  Containers started — run ${CYAN}npx gae down${RESET_COLOR} to stop. ${DIM}Started in ${elapsedSeconds}s${RESET_COLOR}\n`
+    )
   }
   if (status !== 0 && !_interactive) process.exit(status)
   return status
@@ -382,7 +428,7 @@ function cmdDown(dryRun) {
     fileArgs = composeFileArgs([])
   }
 
-  const status = runCompose([...fileArgs, 'down', '--remove-orphans'], dryRun)
+  const status = runCompose([...fileArgs, 'down', '--remove-orphans', '--rmi', 'local'], dryRun)
   if (status === 0 && !dryRun) {
     // Keep state so next `up` can pre-select the same addons
     console.log(`  ${GREEN}✔${RESET_COLOR}  Containers stopped.\n`)
@@ -492,30 +538,38 @@ function cmdReset(dryRun) {
   return 0
 }
 
-function cmdStatus() {
-  console.log(`\n  ${BOLD}Running containers${RESET_COLOR}\n`)
-  spawnSync(
-    'docker',
-    [
-      'ps',
-      '--filter',
-      'label=com.docker.compose.project=grants-ui',
-      '--format',
-      'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
-    ],
-    { cwd: ROOT, stdio: 'inherit' }
-  )
-
-  const state = loadState()
-  if (state) {
-    const addonSummary = state.addons.length ? ` + ${state.addons.join(', ')}` : ''
-    const scaleSuffix = state.scale ? `  ${DIM}(scale=${state.scale})${RESET_COLOR}` : ''
-    const localKeys = state.localServices && state.localServices.length ? state.localServices : []
-    const localSuffix = localKeys.length ? `\n  ${PURPLE}Local images:${RESET_COLOR}     ${localKeys.join(', ')}` : ''
-    console.log(`\n  ${DIM}Last started with:${RESET_COLOR} core${addonSummary}${scaleSuffix}${localSuffix}\n`)
-  } else {
-    console.log(`\n  ${DIM}No saved state (containers may have been started outside this CLI).${RESET_COLOR}\n`)
+function cmdRestart(services, dryRun) {
+  if (!services || !services.length) {
+    console.log(`\n  ${YELLOW}⚠${RESET_COLOR}  No running containers to restart.\n`)
+    if (!_interactive) process.exit(0)
+    return 0
   }
+
+  // Derive compose file args from the running stack (fall back to saved state)
+  const composeFilesFromLabels = getRunningComposeFiles()
+  let addonKeys = []
+  if (composeFilesFromLabels) {
+    addonKeys = ADDONS.filter((a) => composeFilesFromLabels.some((f) => f.endsWith(a.composeFile))).map((a) => a.key)
+  } else {
+    const state = loadState()
+    if (state) addonKeys = state.addons
+  }
+  // Include any saved local image overrides so the recreate picks up :local images
+  const localImages = getLocalImages()
+  const savedState = loadState()
+  const localServiceKeys = savedState
+    ? (savedState.localServices ?? []).filter((k) => localImages.has(k + ':local'))
+    : []
+  const fileArgs = composeFileArgs(addonKeys, localServiceKeys)
+
+  console.log(`\n  ${DIM}Restarting ${services.length} container(s): ${services.join(', ')}…${RESET_COLOR}\n`)
+  // Recreate (not plain restart) so freshly built local images and the override mapping take effect
+  const status = runCompose([...fileArgs, 'up', '-d', '--no-deps', '--force-recreate', ...services], dryRun)
+  if (status === 0 && !dryRun) {
+    console.log(`  ${GREEN}✔${RESET_COLOR}  Restarted: ${services.join(', ')}.\n`)
+  }
+  if (status !== 0 && !_interactive) process.exit(status)
+  return status
 }
 
 // Use ASCII fallbacks on Windows where some fonts lack these glyphs
@@ -755,8 +809,8 @@ ${BOLD}Commands:${RESET_COLOR}
   up      Start containers
   down    Stop containers (uses saved state — no need to re-select)
   debug   Restart grants-ui in debug mode (detached, port 9229)
+  restart Restart running containers (selectable; uses --no-deps)
   reset   Full teardown: containers + volumes + local images
-  status  Show running containers and last saved state
 
 ${BOLD}Addon flags (for 'up'):${RESET_COLOR}
 ${ADDONS.map((a) => `  --${a.key.padEnd(16)} ${a.description}`).join('\n')}
@@ -774,6 +828,7 @@ ${BOLD}Examples:${RESET_COLOR}
   npx gae up --ha --scale 3
   npx gae down                       # stops whatever was started
   npx gae debug
+  npx gae restart
   npx gae reset
 `)
 }
@@ -832,7 +887,7 @@ async function main() {
 
   // Validate args before doing anything else — catch unrecognised flags/commands early
   {
-    const knownCmds = ['up', 'down', 'debug', 'reset', 'status']
+    const knownCmds = ['up', 'down', 'debug', 'restart', 'reset']
     const knownFlags = [
       '--dry-run',
       '--help',
@@ -882,14 +937,14 @@ async function main() {
     cmdDebug()
     return
   }
+  if (argv.includes('restart')) {
+    releaseStdin()
+    cmdRestart(getRunningServices(), dryRun)
+    return
+  }
   if (argv.includes('reset')) {
     releaseStdin()
     cmdReset(dryRun)
-    return
-  }
-  if (argv.includes('status')) {
-    releaseStdin()
-    cmdStatus()
     return
   }
   if (argv.includes('up')) {
@@ -939,12 +994,22 @@ async function main() {
       ? `${PURPLE}${localCount} service${localCount > 1 ? 's' : ''} using local image${localCount > 1 ? 's' : ''}${RESET_COLOR}`
       : 'Override services with locally-built images'
     const menuItems = [
-      { key: 'up', label: 'up', description: 'Start containers' },
+      {
+        key: 'up',
+        label: 'up ⇢',
+        description: containersRunning ? 'Already running — use restart, or reset first' : 'Start containers',
+        disabled: containersRunning
+      },
       { key: 'down', label: 'down', description: 'Stop containers (uses saved state)', disabled: !containersRunning },
       { key: 'debug', label: 'debug', description: 'Attach debugger to grants-ui', disabled: !containersRunning },
-      { key: 'local', label: 'local', description: localDesc },
-      { key: 'reset', label: 'reset', description: 'Full teardown — removes volumes & images' },
-      { key: 'status', label: 'status', description: 'Show running containers & saved state' }
+      {
+        key: 'restart',
+        label: 'restart ⇢',
+        description: 'Restart selected running containers (--no-deps)',
+        disabled: !containersRunning
+      },
+      { key: 'local', label: 'local ⇢', description: localDesc },
+      { key: 'reset', label: 'reset ⇢', description: 'Full teardown — removes volumes & images' }
     ]
 
     const command = await radioMenu(menuItems, 'What do you want to do?', { statusLine })
@@ -956,9 +1021,44 @@ async function main() {
       process.exit(0)
     }
 
-    if (command === 'status') {
-      // Show inline status summary and loop back to main menu
-      statusLine = buildStatusLine(getRunningComposeFiles())
+    if (command === 'restart') {
+      // Let the user pick which containers to restart (none selected by default; non-running are disabled)
+      // `mongo-ready` is a one-shot readiness helper, never a restartable container — always hide it
+      const runningServices = getRunningServices().filter((s) => s !== RESTART_HIDDEN_SERVICE)
+      if (!runningServices.length) {
+        statusLine = `${DIM}No running containers to restart${RESET_COLOR}`
+        continue
+      }
+      const runningSet = new Set(runningServices)
+      const allServices = getAllServices().filter((s) => s !== RESTART_HIDDEN_SERVICE)
+      const serviceNames = allServices.length ? allServices : runningServices
+      const serviceItems = serviceNames.map((s) => ({
+        key: s,
+        label: s,
+        description: runningSet.has(s) ? '' : `${DIM}not running${RESET_COLOR}`,
+        disabled: !runningSet.has(s),
+        selected: false
+      }))
+      const restartToggled = await toggleMenu(serviceItems, 'Select containers to restart  (restarts with --no-deps)')
+      if (restartToggled === null) {
+        // ESC — back to main menu
+        continue
+      }
+      const selectedServices = restartToggled.filter((i) => i.selected).map((i) => i.key)
+      if (!selectedServices.length) {
+        statusLine = `${DIM}No containers selected — restart cancelled${RESET_COLOR}`
+        continue
+      }
+
+      pauseStdin()
+      const restartStatus = cmdRestart(selectedServices, dryRun)
+      resumeStdin()
+
+      const postRestartFiles = getRunningComposeFiles()
+      statusLine =
+        restartStatus !== 0
+          ? `${RED}✖${RESET_COLOR}  Docker exited with code ${restartStatus} — check output above`
+          : buildStatusLine(postRestartFiles)
       continue
     }
 
@@ -997,16 +1097,19 @@ async function main() {
       resumeStdin()
 
       const postUpFiles = getRunningComposeFiles()
-      statusLine =
-        upStatus !== 0
-          ? `${RED}✖${RESET_COLOR}  Docker exited with code ${upStatus} — check docker logs`
-          : buildStatusLine(postUpFiles)
+      if (upStatus !== 0) {
+        statusLine = `${RED}✖${RESET_COLOR}  Docker exited with code ${upStatus} — check docker logs`
+      } else {
+        const startedSuffix = _lastUpElapsedSeconds ? `  ${DIM}Started in ${_lastUpElapsedSeconds}s${RESET_COLOR}` : ''
+        statusLine = `${buildStatusLine(postUpFiles)}${startedSuffix}`
+      }
       continue
     }
 
     if (command === 'local') {
       // Dedicated local image override selection — only visited when user wants to change
       const localImages = getLocalImages()
+      const previousLocalServices = (savedState && savedState.localServices) ?? []
       const localServiceItems = LOCAL_SERVICES.map((s) => ({
         ...s,
         label: s.key,
@@ -1017,7 +1120,10 @@ async function main() {
           : false
       }))
 
-      const localToggled = await toggleMenu(localServiceItems, "Local image overrides  (applied on next 'up')")
+      const localTitle = containersRunning
+        ? 'Local image overrides  (changes restart the service now)'
+        : "Local image overrides  (applied on next 'up')"
+      const localToggled = await toggleMenu(localServiceItems, localTitle)
       if (localToggled === null) {
         // ESC — back to main menu
         continue
@@ -1026,6 +1132,31 @@ async function main() {
       // Persist local service selection into saved state (create state if none exists)
       const currentState = loadState() || { addons: [], scale: null, localServices: [] }
       saveState(currentState.addons, currentState.scale, newLocalServices)
+
+      // When containers are already running, restart any service whose local setting
+      // changed (set or unset) so the change takes effect immediately (--no-deps).
+      if (containersRunning) {
+        const changedKeys = LOCAL_SERVICES.map((s) => s.key).filter(
+          (k) => previousLocalServices.includes(k) !== newLocalServices.includes(k)
+        )
+        const runningSet = new Set(getRunningServices())
+        const servicesToRestart = changedKeys
+          .map((k) => LOCAL_SERVICES.find((s) => s.key === k)?.composeService)
+          .filter((name) => name && runningSet.has(name))
+
+        if (servicesToRestart.length) {
+          pauseStdin()
+          const restartStatus = cmdRestart(servicesToRestart, dryRun)
+          resumeStdin()
+
+          statusLine =
+            restartStatus !== 0
+              ? `${RED}✖${RESET_COLOR}  Docker exited with code ${restartStatus} — check output above`
+              : `${PURPLE}✔  Restarted: ${servicesToRestart.join(', ')}${RESET_COLOR}`
+          continue
+        }
+      }
+
       const n = newLocalServices.length
       statusLine = n
         ? `${PURPLE}✔  ${n} service${n > 1 ? 's' : ''} set to use local image${n > 1 ? 's' : ''}${RESET_COLOR}`
