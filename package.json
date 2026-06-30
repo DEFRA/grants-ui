@@ -93,7 +93,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-sns": "3.1069.0",
-    "@babel/runtime": "7.29.7",
+    "@babel/runtime": "8.0.0",
     "@defra/fcp-audit-publisher": "1.0.6",
     "@defra/forms-engine-plugin": "4.17.1",
     "@defra/hapi-tracing": "1.30.0",
@@ -120,7 +120,7 @@
     "global-agent": "3.0.0",
     "govuk-frontend": "5.14.0",
     "hapi-pino": "13.0.0",
-    "hapi-pulse": "3.0.1",
+    "hapi-pulse": "4.0.0",
     "hapi-rate-limit": "8.0.0",
     "ioredis": "5.11.1",
     "joi": "17.13.4",
