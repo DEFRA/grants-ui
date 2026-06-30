@@ -78,6 +78,7 @@
   "license": "OGL-UK-3.0",
   "overrides": {
     "serialize-javascript": "7.0.5",
+    "shell-quote": "1.9.0",
     "sirv": "3.0.2",
     "qs": "6.15.2",
     "underscore": "1.13.8",
@@ -92,7 +93,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-sns": "3.1069.0",
-    "@babel/runtime": "7.29.7",
+    "@babel/runtime": "8.0.0",
     "@defra/fcp-audit-publisher": "1.0.6",
     "@defra/forms-engine-plugin": "4.17.1",
     "@defra/hapi-tracing": "1.30.0",

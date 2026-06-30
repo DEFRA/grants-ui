@@ -19,20 +19,23 @@ describe('getSafeRedirect', () => {
     expect(getSafeRedirect('')).toBe('/home')
   })
 
+  it('should return /home for protocol-relative URLs (open redirect variants)', () => {
+    expect(getSafeRedirect('//example.com')).toBe('/home')
+    expect(getSafeRedirect('//attacker.com/phish')).toBe('/home')
+    expect(getSafeRedirect('//www.resillion.com')).toBe('/home')
+    expect(getSafeRedirect('/\\example.com')).toBe('/home')
+    expect(getSafeRedirect('/\\evil.test')).toBe('/home')
+    expect(getSafeRedirect('///example.com')).toBe('/home')
+  })
+
   it('should handle empty strings correctly', () => {
     // Empty strings
     expect(getSafeRedirect('')).toBe('/home')
   })
 
-  it('should throw error for non-string primitives without startsWith method', () => {
-    expect(() => getSafeRedirect(0)).toThrow()
-    expect(() => getSafeRedirect(false)).toThrow()
-  })
-
-  it('should handle objects with startsWith property', () => {
-    const objectWithStartsWith = {
-      startsWith: () => true
-    }
-    expect(getSafeRedirect(objectWithStartsWith)).toBe(objectWithStartsWith)
+  it('should throw for non-null non-string values outside the typed contract', () => {
+    expect(() => getSafeRedirect(0)).toThrow(TypeError)
+    expect(() => getSafeRedirect(false)).toThrow(TypeError)
+    expect(() => getSafeRedirect({ startsWith: () => true })).toThrow(TypeError)
   })
 })
