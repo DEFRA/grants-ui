@@ -143,7 +143,7 @@
     "@types/convict": "6.1.6",
     "@types/jsonwebtoken": "9.0.10",
     "@types/lodash": "4.17.24",
-    "@types/node": "25.9.3",
+    "@types/node": "26.0.0",
     "@types/nunjucks": "3.2.6",
     "@types/semver": "7.7.1",
     "@types/webpack-assets-manifest": "5.1.4",
