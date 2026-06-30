@@ -3,7 +3,7 @@
 FORMS_DIR="src/server/common/forms/definitions"
 CONFIG_BROKER_LOCAL="localstack/config-broker-local"
 RELEASE_TEMPLATE="localstack/config-broker/release.yml"
-SLUG_LIST=example-grant-with-auth,pigs-might-fly,woodland
+SLUG_LIST=example-grant-with-auth,example-whitelist,woodland,farm-payments,pigs-might-fly
 
 for file in "$FORMS_DIR"/*.yaml; do
   [ -e "$file" ] || continue
@@ -14,7 +14,7 @@ for file in "$FORMS_DIR"/*.yaml; do
     continue
   fi
 
-  target_dir="$CONFIG_BROKER_LOCAL/$grant_name@1.0.1"
+  target_dir="$CONFIG_BROKER_LOCAL/$grant_name@1.0.1/grants-ui"
 
   echo "Setting up config for $grant_name..."
   mkdir -p "$target_dir"

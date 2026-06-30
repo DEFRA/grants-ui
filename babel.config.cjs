@@ -32,5 +32,9 @@ module.exports = {
 }
 
 /**
- * @import { TransformOptions } from '@babel/core'
+ * `@babel/core` ships no bundled type declarations and `@types/babel__core`
+ * is not installed, so `@import { TransformOptions } from '@babel/core'`
+ * raises TS7016. Fall back to the loosely-typed transform options shape this
+ * config actually uses rather than installing types here.
+ * @typedef {Record<string, any>} TransformOptions
  */

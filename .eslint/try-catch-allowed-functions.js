@@ -30,6 +30,10 @@ export default {
   create: tryCatchAllowedFunctions
 }
 
+/**
+ * @param {import('eslint').Rule.RuleContext} context
+ * @returns {import('eslint').Rule.RuleListener}
+ */
 function tryCatchAllowedFunctions(context) {
   const { options } = context
   const { include = [], exclude = [] } = options[0] || {}
@@ -74,7 +78,7 @@ function tryCatchAllowedFunctions(context) {
 
   /**
    * Extract the function name from a CallExpression node
-   * @param node
+   * @param {EsNode} node
    * @returns {string|null}
    */
   function getFunctionName(node) {
@@ -103,6 +107,7 @@ function tryCatchAllowedFunctions(context) {
   return {
     CatchClause(node) {
       const blockStatements = node.body.body || []
+      /** @param {EsNode} statement */
       const processNode = (statement) => {
         if (statement.type === 'ExpressionStatement' && statement.expression.type === 'CallExpression') {
           const functionName = getFunctionName(statement.expression)
@@ -141,3 +146,11 @@ function tryCatchAllowedFunctions(context) {
     }
   }
 }
+
+/**
+ * Minimal ESLint/ESTree AST node shape covering only the properties this rule
+ * reads. The traversal narrows on `type` before accessing branch-specific
+ * fields; the loose record keeps dynamic member access well typed without
+ * pulling in the full ESTree discriminated union.
+ * @typedef {{ type: string, name?: string } & Record<string, any>} EsNode
+ */

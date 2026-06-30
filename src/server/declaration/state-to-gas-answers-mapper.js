@@ -19,13 +19,20 @@
  */
 
 /**
+ * @typedef {object} ListItem
+ * @property {string} value - The stored answer value
+ * @property {string} text - The display text for the value
+ */
+
+/**
  * Transforms answer keys in a FormContext object to their corresponding text values
- * @param {object} state - FormContext object
- * @param {object} componentDefMap - Component definitions map
- * @param {object} listDefIdMap - List definitions map by id
- * @returns {object} - FormContext object with answer keys replaced with text values
+ * @param {Record<string, unknown>} state - FormContext object
+ * @param {Map<string, { list?: string }>} componentDefMap - Component definitions map
+ * @param {Map<string, { items: ListItem[] }>} listDefIdMap - List definitions map by id
+ * @returns {Record<string, unknown>} - FormContext object with answer keys replaced with text values
  */
 export function transformAnswerKeysToText(state, componentDefMap, listDefIdMap) {
+  /** @type {Record<string, unknown>} */
   const transformedState = {}
 
   for (const [key, value] of Object.entries(state)) {
@@ -33,17 +40,17 @@ export function transformAnswerKeysToText(state, componentDefMap, listDefIdMap) 
 
     if (componentDef?.list) {
       const listId = componentDef.list
-      const listEntries = listDefIdMap.get(listId).items
+      const listEntries = /** @type {{ items: ListItem[] }} */ (listDefIdMap.get(listId)).items
 
       if (Array.isArray(value)) {
         // Handle array values (like checkboxes)
         transformedState[key] = value.map((itemValue) => {
-          const entry = listEntries.find((e) => e.value === itemValue)
+          const entry = listEntries.find((/** @type {ListItem} */ e) => e.value === itemValue)
           return entry ? entry.text : itemValue
         })
       } else {
         // Handle single value (like radios, dropdowns)
-        const entry = listEntries.find((e) => e.value === value)
+        const entry = listEntries.find((/** @type {ListItem} */ e) => e.value === value)
         transformedState[key] = entry ? entry.text : value
       }
     } else {

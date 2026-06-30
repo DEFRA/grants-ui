@@ -17,4 +17,15 @@ releases:
     environments:
       - name: local
         status: active
-
+  - name: example-whitelist
+    version: 1.0.1
+    notes: Example for local usage
+    environments:
+      - name: local
+        status: active
+  - name: farm-payments
+    version: 1.0.1
+    notes: Example for local usage
+    environments:
+      - name: local
+        status: active

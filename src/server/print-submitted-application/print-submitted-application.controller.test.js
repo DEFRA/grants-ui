@@ -1,338 +1,282 @@
-import { vi } from 'vitest'
-import { printSubmittedApplication } from './print-submitted-application.controller.js'
-import { findFormBySlug, loadFormDefinition } from '../common/forms/services/find-form-by-slug.js'
+import { describe, test, expect, beforeEach, vi } from 'vitest'
+import PrintSubmittedApplicationController from './print-submitted-application.controller.js'
+import { getFormsCacheService } from '../common/helpers/forms-cache/forms-cache.js'
+import { log, LogCodes } from '../common/helpers/logging/log.js'
+import { forbidden } from '@hapi/boom'
 import {
   buildPrintViewModel,
+  enrichDefinitionWithListItems,
   processConfigurablePrintContent
 } from '../common/helpers/print-application-service/print-application-service.js'
-import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
-import { ApplicationStatus } from '~/src/server/common/constants/application-status.js'
-import { log, LogCodes } from '../common/helpers/logging/log.js'
-import { mockHapiRequest, mockHapiResponseToolkit, mockHapiServer } from '~/src/__mocks__/hapi-mocks.js'
-import { MOCK_FORM_WITH_PATH, MOCK_SINGLE_PAGE_DEFINITION } from '~/src/__test-fixtures__/mock-forms-cache.js'
-import { createPersonRows, createBusinessRows, createContactRows } from '~/src/server/common/helpers/create-rows.js'
-import { statusCodes } from '~/src/server/common/constants/status-codes.js'
-import { enforcePagePermission } from '../common/request-pipeline/permissions/enforce-page-permission.js'
-import { forbidden } from '@hapi/boom'
 
-vi.mock('../common/forms/services/find-form-by-slug.js')
+import { createBusinessRows, createContactRows, createPersonRows } from '../common/helpers/create-rows.js'
+
+import { getPrintSubmittedApplicationPath } from '../common/helpers/form-slug-helper.js'
+import { ApplicationStatus } from '../common/constants/application-status.js'
+
+vi.mock('../common/helpers/forms-cache/forms-cache.js')
 vi.mock('../common/helpers/print-application-service/print-application-service.js')
-vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js')
-vi.mock('~/src/server/common/helpers/create-rows.js')
-vi.mock('../common/helpers/logging/log.js', async () => {
-  const { mockLogHelper } = await import('~/src/__mocks__')
-  return mockLogHelper()
-})
-vi.mock('../common/request-pipeline/permissions/enforce-page-permission.js', () => ({
-  enforcePagePermission: vi.fn()
+vi.mock('../common/helpers/create-rows.js')
+vi.mock('../common/helpers/form-slug-helper.js')
+vi.mock('../common/helpers/logging/log.js', () => ({
+  log: vi.fn(),
+  LogCodes: {
+    PRINT_APPLICATION: {
+      ERROR: 'PRINT_APPLICATION.ERROR'
+    }
+  }
 }))
 
-const mockForm = MOCK_FORM_WITH_PATH
-const mockDefinition = MOCK_SINGLE_PAGE_DEFINITION
+const mockDefinition = {
+  metadata: {}
+}
+
+const mockModel = {
+  def: mockDefinition
+}
 
 const mockState = {
-  applicationStatus: ApplicationStatus.SUBMITTED,
-  field1: 'Some answer',
+  applicationStatus: 'SUBMITTED',
   $$__referenceNumber: 'REF-123',
   submittedAt: '2025-01-15T10:00:00.000Z',
   additionalAnswers: {
     applicant: {
-      business: { name: 'Test Business' },
-      customer: { name: { first: 'Test', last: 'User' } }
+      business: {
+        name: 'Test Business'
+      },
+      customer: {
+        name: {
+          first: 'Test',
+          last: 'User'
+        }
+      }
     }
   }
 }
 
-describe('print-submitted-application.controller', () => {
-  let handler
-  let mockRequest
-  let mockGetFormService
-  let mockFormService
-  let mockH
-  let mockGetState
+describe('PrintSubmittedApplicationController', () => {
+  let controller
+  let request
+  let h
 
   beforeEach(() => {
     vi.clearAllMocks()
 
-    const server = mockHapiServer()
-    printSubmittedApplication.plugin.register(server)
-    handler = server.route.mock.calls[0][0].handler
+    controller = new PrintSubmittedApplicationController(mockModel, {})
 
-    mockGetState = vi.fn().mockResolvedValue(mockState)
-    mockFormService = vi.fn()
-    mockGetFormService = vi.fn().mockReturnValue(mockFormService)
-    getFormsCacheService.mockReturnValue({ getState: mockGetState })
-
-    mockRequest = mockHapiRequest({
-      path: '/test-form/print-submitted-application',
-      params: { slug: 'test-form' },
-      auth: { credentials: { sbi: '123456789' } },
-      pre: { validatedSlugAndForm: { slug: 'test-form', form: mockForm } },
-      server: { methods: { getFormService: mockGetFormService } }
-    })
-    mockH = mockHapiResponseToolkit()
-
-    findFormBySlug.mockResolvedValue(mockForm)
-    loadFormDefinition.mockResolvedValue(mockDefinition)
-    buildPrintViewModel.mockReturnValue({ test: 'viewModel' })
-
-    vi.mocked(enforcePagePermission).mockReturnValue(mockH.continue)
-  })
-
-  test('should register GET /{slug}/print-submitted-application route', () => {
-    const server = mockHapiServer()
-    printSubmittedApplication.plugin.register(server)
-
-    expect(server.route).toHaveBeenCalledWith(
-      expect.objectContaining({
-        method: 'GET',
-        path: '/{slug}/print-submitted-application'
-      })
-    )
-  })
-
-  test('should return validation error when pre-handler returns it', async () => {
-    mockRequest = mockHapiRequest({
-      params: {},
-      pre: {
-        validatedSlugAndForm: { error: mockH.response('Bad request - missing slug').code(statusCodes.badRequest) }
-      }
-    })
-
-    await handler(mockRequest, mockH)
-
-    expect(mockH.response).toHaveBeenCalledWith('Bad request - missing slug')
-    expect(mockH.code).toHaveBeenCalledWith(400)
-  })
-
-  test.each([
-    ['application is not submitted', { applicationStatus: 'DRAFT' }],
-    ['state is null', null]
-  ])('should return 403 when %s', async (_desc, state) => {
-    mockGetState.mockResolvedValue(state)
-
-    await handler(mockRequest, mockH)
-
-    expect(mockH.response).toHaveBeenCalledWith('Application not submitted')
-    expect(mockH.code).toHaveBeenCalledWith(403)
-  })
-
-  test('should render print view for a submitted application', async () => {
-    await handler(mockRequest, mockH)
-
-    expect(mockGetState).toHaveBeenCalledWith(mockRequest)
-    expect(loadFormDefinition).toHaveBeenCalledWith(mockForm, mockFormService)
-    expect(buildPrintViewModel).toHaveBeenCalledWith({
-      definition: mockDefinition,
-      form: mockForm,
-      answers: mockState,
-      referenceNumber: 'REF-123',
-      submittedAt: '2025-01-15T10:00:00.000Z',
-      slug: 'test-form',
-      sessionData: {
-        contactName: 'Test User',
-        businessName: 'Test Business',
-        sbi: '123456789'
-      },
-      configurablePrintContent: undefined,
-      applicantDetailsSections: null
-    })
-    expect(processConfigurablePrintContent).toHaveBeenCalledWith(undefined, 'test-form')
-    expect(mockH.view).toHaveBeenCalledWith('print-submitted-application', { test: 'viewModel' })
-    expect(enforcePagePermission).toHaveBeenCalledWith(mockRequest, mockH, {
-      state: mockState
-    })
-
-    expect(mockRequest.params.path).toBe('print-submitted-application')
-  })
-
-  test('returns permission redirect when permission check does not continue', async () => {
-    const redirectResponse = { takeover: true }
-
-    vi.mocked(enforcePagePermission).mockReturnValue(redirectResponse)
-
-    const result = await handler(mockRequest, mockH)
-
-    expect(result).toBe(redirectResponse)
-
-    expect(loadFormDefinition).not.toHaveBeenCalled()
-    expect(buildPrintViewModel).not.toHaveBeenCalled()
-  })
-
-  test('rethrows boom errors from permission enforcement', async () => {
-    const boomError = forbidden('Insufficient permissions')
-
-    vi.mocked(enforcePagePermission).mockImplementation(() => {
-      throw boomError
-    })
-
-    await expect(handler(mockRequest, mockH)).rejects.toThrow('Insufficient permissions')
-  })
-
-  test.each([
-    ['REF-123', mockState],
-    ['unknown', { ...mockState, $$__referenceNumber: undefined }]
-  ])('should log success with referenceNumber "%s"', async (expectedRef, state) => {
-    mockGetState.mockResolvedValue(state)
-
-    await handler(mockRequest, mockH)
-
-    expect(vi.mocked(log)).toHaveBeenCalledWith(
-      LogCodes.PRINT_APPLICATION.SUCCESS,
-      { referenceNumber: expectedRef },
-      mockRequest
-    )
-  })
-
-  test('should return 500 and log error when an exception occurs', async () => {
-    loadFormDefinition.mockRejectedValue(new Error('File read failed'))
-    mockRequest.auth = { credentials: { userId: 'user-42' } }
-
-    await handler(mockRequest, mockH)
-
-    expect(vi.mocked(log)).toHaveBeenCalledWith(
-      LogCodes.PRINT_APPLICATION.ERROR,
-      {
-        userId: 'user-42',
-        errorMessage: 'File read failed',
+    request = {
+      params: {
         slug: 'test-form'
       },
-      mockRequest
-    )
-    expect(mockH.response).toHaveBeenCalledWith('Server error')
-    expect(mockH.code).toHaveBeenCalledWith(500)
-  })
-
-  test('should use "unknown" userId when auth credentials are absent', async () => {
-    loadFormDefinition.mockRejectedValue(new Error('Oops'))
-    mockRequest.auth = {}
-
-    await handler(mockRequest, mockH)
-
-    expect(vi.mocked(log)).toHaveBeenCalledWith(
-      LogCodes.PRINT_APPLICATION.ERROR,
-      expect.objectContaining({ userId: 'unknown' }),
-      mockRequest
-    )
-  })
-
-  test('should pass payment data through to buildPrintViewModel via answers', async () => {
-    const stateWithPayment = {
-      ...mockState,
-      payment: {
-        annualTotalPence: 100000,
-        parcelItems: {
-          item1: {
-            sheetId: 'AB',
-            parcelId: '001',
-            code: 'X1',
-            description: 'Test',
-            quantity: '5',
-            annualPaymentPence: 100000
-          }
-        }
-      }
-    }
-    mockGetState.mockResolvedValue(stateWithPayment)
-
-    await handler(mockRequest, mockH)
-
-    expect(buildPrintViewModel).toHaveBeenCalledWith(
-      expect.objectContaining({
-        answers: stateWithPayment
-      })
-    )
-  })
-
-  test('should handle missing applicant in state gracefully', async () => {
-    const { additionalAnswers, ...stateWithoutAdditionalAnswers } = mockState
-    mockGetState.mockResolvedValue(stateWithoutAdditionalAnswers)
-
-    await handler(mockRequest, mockH)
-
-    expect(buildPrintViewModel).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sessionData: {
-          contactName: undefined,
-          businessName: undefined,
+      auth: {
+        credentials: {
           sbi: '123456789'
         }
+      },
+      server: {}
+    }
+
+    h = {
+      view: vi.fn(),
+      response: vi.fn(() => ({
+        code: vi.fn()
+      }))
+    }
+
+    buildPrintViewModel.mockReturnValue({
+      test: 'viewModel'
+    })
+
+    processConfigurablePrintContent.mockReturnValue(undefined)
+
+    getFormsCacheService.mockReturnValue({
+      getState: vi.fn().mockResolvedValue(mockState)
+    })
+  })
+
+  describe('getStatusPath', () => {
+    test('returns print submitted application path', () => {
+      getPrintSubmittedApplicationPath.mockReturnValue('/test-form/print-submitted-application')
+
+      const result = controller.getStatusPath(request, {})
+
+      expect(result).toBe('/test-form/print-submitted-application')
+
+      expect(getPrintSubmittedApplicationPath).toHaveBeenCalledWith(request, {}, 'PrintSubmittedApplicationController')
+    })
+  })
+
+  describe('makeGetRouteHandler', () => {
+    test('renders print application page', async () => {
+      const handler = controller.makeGetRouteHandler()
+
+      await handler(request, {}, h)
+
+      expect(buildPrintViewModel).toHaveBeenCalled()
+
+      expect(h.view).toHaveBeenCalledWith('print-submitted-application', { test: 'viewModel' })
+    })
+
+    test('returns 403 when application status is not SUBMITTED', async () => {
+      getFormsCacheService.mockReturnValue({
+        getState: vi.fn().mockResolvedValue({ applicationStatus: ApplicationStatus.REOPENED })
       })
-    )
+
+      const code = vi.fn()
+
+      h.response.mockReturnValue({
+        code
+      })
+
+      const handler = controller.makeGetRouteHandler()
+
+      await handler(request, {}, h)
+
+      expect(h.response).toHaveBeenCalledWith('Application not submitted')
+
+      expect(code).toHaveBeenCalledWith(403)
+    })
   })
 
-  describe('applicant details sections', () => {
-    const mockPersonRows = { rows: [{ key: { text: 'First name' }, value: { text: 'Test' } }] }
-    const mockBusinessRows = { rows: [{ key: { text: 'Business name' }, value: { text: 'Test Business' } }] }
-    const mockContactRows = { rows: [{ key: { text: 'Email address' }, value: { text: 'test@example.com' } }] }
-    const definitionWithApplicantDetails = JSON.stringify({
-      ...mockDefinition,
-      metadata: { printPage: { showApplicantDetails: true } }
+  describe('resolveApplicantDetailsSections', () => {
+    test('returns null when feature disabled', () => {
+      const result = controller.resolveApplicantDetailsSections(request, mockState, { metadata: {} })
+
+      expect(result).toBeNull()
     })
 
-    beforeEach(() => {
-      vi.mocked(createPersonRows).mockReturnValue(mockPersonRows)
-      vi.mocked(createBusinessRows).mockReturnValue(mockBusinessRows)
-      vi.mocked(createContactRows).mockReturnValue(mockContactRows)
-    })
+    test('returns applicant sections when enabled', () => {
+      const personRows = { rows: [] }
+      const businessRows = { rows: [] }
+      const contactRows = { rows: [] }
 
-    test('should resolve applicant details from state', async () => {
-      mockGetState.mockResolvedValue(mockState)
-      loadFormDefinition.mockResolvedValue(JSON.parse(definitionWithApplicantDetails))
+      createPersonRows.mockReturnValue(personRows)
+      createBusinessRows.mockReturnValue(businessRows)
+      createContactRows.mockReturnValue(contactRows)
 
-      await handler(mockRequest, mockH)
-
-      expect(createPersonRows).toHaveBeenCalledWith(mockState.additionalAnswers.applicant.customer.name)
-      expect(createBusinessRows).toHaveBeenCalledWith('123456789', mockState.additionalAnswers.applicant.business)
-      expect(createContactRows).toHaveBeenCalledWith(mockState.additionalAnswers.applicant.business)
-      expect(buildPrintViewModel).toHaveBeenCalledWith(
-        expect.objectContaining({
-          applicantDetailsSections: {
-            person: mockPersonRows,
-            business: mockBusinessRows,
-            contact: mockContactRows
+      const result = controller.resolveApplicantDetailsSections(request, mockState, {
+        metadata: {
+          printPage: {
+            showApplicantDetails: true
           }
-        })
-      )
-    })
+        }
+      })
 
-    test('should return null applicantDetailsSections when state has no applicant data', async () => {
-      mockGetState.mockResolvedValue({ ...mockState, additionalAnswers: { applicant: {} } })
-      loadFormDefinition.mockResolvedValue(JSON.parse(definitionWithApplicantDetails))
-
-      await handler(mockRequest, mockH)
-
-      expect(buildPrintViewModel).toHaveBeenCalledWith(
-        expect.objectContaining({
-          applicantDetailsSections: null
-        })
-      )
-    })
-
-    test('should pass null applicantDetailsSections when showApplicantDetails is not set', async () => {
-      await handler(mockRequest, mockH)
-
-      expect(createPersonRows).not.toHaveBeenCalled()
-      expect(buildPrintViewModel).toHaveBeenCalledWith(
-        expect.objectContaining({
-          applicantDetailsSections: null
-        })
-      )
+      expect(result).toEqual({
+        person: personRows,
+        business: businessRows,
+        contact: contactRows
+      })
     })
   })
 
-  test('should process configurablePrintContent when metadata is present', async () => {
-    processConfigurablePrintContent.mockReturnValue({ html: '<p>Processed</p>' })
-    loadFormDefinition.mockResolvedValue({
-      ...mockDefinition,
-      metadata: { printPage: { configurablePrintContent: { html: '<p>Raw</p>' } } }
+  describe('buildPrintResponse', () => {
+    test('builds print view model and renders view', async () => {
+      await controller.buildPrintResponse(
+        {
+          form: mockDefinition,
+          state: mockState,
+          slug: 'test-form'
+        },
+        request,
+        h
+      )
+
+      expect(enrichDefinitionWithListItems).toHaveBeenCalled()
+
+      expect(processConfigurablePrintContent).toHaveBeenCalled()
+
+      expect(buildPrintViewModel).toHaveBeenCalled()
+
+      expect(h.view).toHaveBeenCalledWith('print-submitted-application', { test: 'viewModel' })
+    })
+  })
+
+  describe('error handling', () => {
+    test('returns 500 and logs unexpected errors', async () => {
+      const error = new Error('Something exploded')
+
+      getFormsCacheService.mockReturnValue({
+        getState: vi.fn().mockRejectedValue(error)
+      })
+
+      const code = vi.fn()
+
+      h.response.mockReturnValue({
+        code
+      })
+
+      const handler = controller.makeGetRouteHandler()
+
+      await handler(request, {}, h)
+
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.PRINT_APPLICATION.ERROR,
+        {
+          userId: 'unknown',
+          errorMessage: 'Config-driven confirmation route error for slug: test-form. Something exploded'
+        },
+        request
+      )
+
+      expect(h.response).toHaveBeenCalledWith('Server error')
+      expect(code).toHaveBeenCalledWith(500)
     })
 
-    await handler(mockRequest, mockH)
+    test('uses unknown userId when auth credentials are missing', async () => {
+      request.auth = {}
 
-    expect(processConfigurablePrintContent).toHaveBeenCalledWith({ html: '<p>Raw</p>' }, 'test-form')
-    expect(buildPrintViewModel).toHaveBeenCalledWith(
-      expect.objectContaining({ configurablePrintContent: { html: '<p>Processed</p>' } })
-    )
+      getFormsCacheService.mockReturnValue({
+        getState: vi.fn().mockRejectedValue(new Error('Boom'))
+      })
+
+      const handler = controller.makeGetRouteHandler()
+
+      await handler(request, {}, h)
+
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.PRINT_APPLICATION.ERROR,
+        expect.objectContaining({
+          userId: 'unknown'
+        }),
+        request
+      )
+    })
+
+    test('rethrows Boom errors', async () => {
+      const boomError = forbidden('Insufficient permissions')
+
+      vi.spyOn(controller, 'buildPrintResponse').mockRejectedValue(boomError)
+
+      const handler = controller.makeGetRouteHandler()
+
+      try {
+        await handler(request, {}, h)
+        throw new Error('Expected handler to throw')
+      } catch (err) {
+        expect(err).toBe(boomError)
+      }
+    })
+  })
+
+  describe('handleError', () => {
+    test('returns 500 response for non-boom errors', () => {
+      const code = vi.fn()
+
+      h.response.mockReturnValue({
+        code
+      })
+
+      controller.handleError(new Error('Test error'), request, h)
+
+      expect(h.response).toHaveBeenCalledWith('Server error')
+      expect(code).toHaveBeenCalledWith(500)
+    })
+
+    test('rethrows boom errors', () => {
+      const boomError = forbidden('Forbidden')
+
+      expect(() => controller.handleError(boomError, request, h)).toThrow('Forbidden')
+    })
   })
 })

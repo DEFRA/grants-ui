@@ -85,8 +85,8 @@ const setupCookieComponentListeners = () => {
 
   const acceptButton = document.querySelector('.js-cookies-button-accept')
   const rejectButton = document.querySelector('.js-cookies-button-reject')
-  const acceptedBanner = document.querySelector('.js-cookies-accepted')
-  const rejectedBanner = document.querySelector('.js-cookies-rejected')
+  const acceptedBanner = /** @type {HTMLElement} */ (document.querySelector('.js-cookies-accepted'))
+  const rejectedBanner = /** @type {HTMLElement} */ (document.querySelector('.js-cookies-rejected'))
   const cookieBanner = document.querySelector('.js-cookies-banner')
 
   // Read server-generated values from data attributes
@@ -102,6 +102,11 @@ const setupCookieComponentListeners = () => {
   // as a fallback so the consent is never silently lost.
   const formElement = cookieContainer.closest('form')
 
+  /**
+   * @param {boolean} accepted - Whether the user accepted analytics cookies.
+   * @param {() => void} onSuccess - Called on a 2xx server response.
+   * @returns {void}
+   */
   const submitPreference = (accepted, onSuccess) => {
     const xhr = new XMLHttpRequest() // eslint-disable-line no-undef
 
@@ -134,6 +139,10 @@ const setupCookieComponentListeners = () => {
 
   // Transition from the question banner to the accepted/rejected
   // confirmation banner. Uses ARIA attributes for screen readers.
+  /**
+   * @param {HTMLElement} banner - The confirmation banner to reveal and focus.
+   * @returns {void}
+   */
   const showBanner = (banner) => {
     const questionBanner = document.querySelector('.js-question-banner')
     questionBanner?.setAttribute('hidden', 'hidden')

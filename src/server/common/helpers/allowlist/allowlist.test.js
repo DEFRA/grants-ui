@@ -111,11 +111,23 @@ describe('allowlist plugin', () => {
       expect.objectContaining({
         action: 'unauthorised',
         status: 'denied',
-        details: expect.objectContaining({ reason: 'whitelist', grantCode: SLUG })
+        details: expect.objectContaining({ reason: 'allowlist', grantCode: SLUG })
       })
     )
     expect(h.redirect).toHaveBeenCalledWith('/auth/journey-unauthorised')
     expect(result).toBe(h)
+  })
+
+  it('throws when the backend allowlist call fails (fail-closed)', async () => {
+    const handler = registerAndGetHandler(server)
+    fetchAllowedGrants.mockRejectedValue(new Error('backend down'))
+
+    const request = mockHapiRequest({
+      params: { slug: SLUG },
+      auth: { isAuthenticated: true, credentials: { crn: CRN, sbi: SBI } }
+    })
+
+    await expect(handler(request, h)).rejects.toThrow('backend down')
   })
 
   it('does not send an audit event when access is granted', async () => {

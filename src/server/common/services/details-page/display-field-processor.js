@@ -6,13 +6,7 @@ import { resolvePath } from '~/src/server/common/helpers/path-utils.js'
 import { getFormatter } from './formatters/index.js'
 
 /**
- * @typedef {object} DisplayFieldConfig
- * @property {string} label - The label shown in the summary list key
- * @property {string} [sourcePath] - Dot-notation path to the value in mapped data
- * @property {string[]} [sourcePaths] - Multiple paths for multi-value fields
- * @property {string} [sourceType] - "data" (default) or "credentials"
- * @property {string} [format] - Formatter name: "text", "fullName", "address", "contactDetails"
- * @property {boolean} [hideIfEmpty] - If true (default), row is hidden when value is empty
+ * @typedef {import('./types.js').DisplayFieldConfig} DisplayFieldConfig
  */
 
 /**

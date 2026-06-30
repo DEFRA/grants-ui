@@ -39,7 +39,7 @@ Then('the page is analyzed for accessibility', async function () {
 
 Then('(the user )should see heading {string}', async function (text) {
   const truncated = text.indexOf("'") > -1 ? text.substring(0, text.indexOf("'")) : text
-  await expect(this.page.locator(`//h1[contains(text(),'${truncated}')]`)).toBeVisible()
+  await expect(this.page.locator(`//h1[contains(normalize-space(.),'${truncated}')]`)).toBeVisible()
 })
 
 Then('(the user )should see label heading {string}', async function (text) {
@@ -136,6 +136,10 @@ Then('(the user )should see the following configurable content', async function 
   }
 })
 
+Then('(the user )should see {string} in the selected parcel summary', async function (parcelId) {
+  await expect(this.page.locator('#parcel-selection-summary')).toHaveText(`Selected: ${parcelId}`)
+})
+
 Then('(the user )should see error {string}', async function (text) {
   await expect(this.page.locator(`//div[@class="govuk-error-summary"]//a[contains(text(),'${text}')]`)).toBeVisible()
 })
@@ -229,6 +233,14 @@ Then('(the user )should see {string} selected for AutocompleteField {string}', a
 
 Then('(the user )should see button {string}', async function (text) {
   await expect(this.page.locator(`//button[contains(text(),'${text}')]`)).toBeVisible()
+})
+
+Then('(the user )should see a notification banner', async function () {
+  await expect(this.page.locator('div.govuk-notification-banner')).toBeVisible()
+})
+
+Then('(the user )should not see a notification banner', async function () {
+  await expect(this.page.locator('div.govuk-notification-banner')).not.toBeVisible()
 })
 
 Then('(the user )should see SBI {string} as the logged in organisation', async function (expectedSbi) {

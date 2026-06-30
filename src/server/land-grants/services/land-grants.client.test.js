@@ -247,6 +247,31 @@ describe('Land Grants client', () => {
       )
     })
 
+    it.each([
+      { status: 400, expected: false },
+      { status: 404, expected: false },
+      { status: 422, expected: false },
+      { status: 499, expected: false },
+      { status: 500, expected: true },
+      { status: 502, expected: true },
+      { status: 503, expected: true }
+    ])('shouldRetry returns $expected for status $status', async ({ status, expected }) => {
+      mockFetch.mockResolvedValueOnce({ ok: true, json: () => ({}) })
+      await postToLandGrantsApi('/test', {}, mockApiEndpoint)
+
+      const { shouldRetry } = retry.mock.calls[0][1]
+      const error = Object.assign(new Error('error'), { code: status })
+      expect(shouldRetry(error)).toBe(expected)
+    })
+
+    it('shouldRetry returns true when error has no status code', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, json: () => ({}) })
+      await postToLandGrantsApi('/test', {}, mockApiEndpoint)
+
+      const { shouldRetry } = retry.mock.calls[0][1]
+      expect(shouldRetry(new Error('network failure'))).toBe(true)
+    })
+
     it.each([400, 401, 403, 500, 502, 503])(
       'propagates upstream status %i as both error.code and error.status',
       async (status) => {
