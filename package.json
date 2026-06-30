@@ -134,7 +134,7 @@
     "yaml": "2.9.0"
   },
   "devDependencies": {
-    "@babel/cli": "7.29.7",
+    "@babel/cli": "8.0.1",
     "@babel/core": "7.29.7",
     "@babel/preset-env": "7.29.7",
     "@pact-foundation/pact": "16.5.0",
