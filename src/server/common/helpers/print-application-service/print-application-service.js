@@ -172,8 +172,14 @@ export function buildPrintViewModel({
   configurablePrintContent,
   applicantDetailsSections
 }) {
+  let pageTitle =`${form.name} application`
+
+  if (definition.metadata?.printPage?.includeApplicationInTitle === false) {
+    pageTitle = form.name
+  }
+
   return {
-    pageTitle: `${form.name} application`,
+    pageTitle,
     serviceName: form.name,
     serviceUrl: `/${slug}`,
     referenceNumber: referenceNumber || 'Not available',
