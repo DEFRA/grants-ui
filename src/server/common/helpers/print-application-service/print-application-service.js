@@ -172,7 +172,7 @@ export function buildPrintViewModel({
   configurablePrintContent,
   applicantDetailsSections
 }) {
-  let pageTitle =`${form.name} application`
+  let pageTitle = `${form.name} application`
 
   if (definition.metadata?.printPage?.includeApplicationInTitle === false) {
     pageTitle = form.name
