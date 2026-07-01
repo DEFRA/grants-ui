@@ -86,7 +86,7 @@ The event conforms to the canonical FCP Audit schema. grants-ui populates:
 | `datetime`       | ISO 8601 timestamp                                                                                           |
 | `audit.entities` | `[{ entity: 'application', action: <action>, entityid: <slug> }]` (e.g. `action: 'authorised'`)              |
 | `audit.status`   | `success` (`denied` for `unauthorised`)                                                                      |
-| `audit.accounts` | `crn` / `sbi` / `organisationId`, when known                                                                 |
+| `audit.accounts` | `crn` / `sbi`, when known                                                                                    |
 
 Events carry an `audit` block only (persisted for analysis); they are **not** currently forwarded to the SOC, which would require a `security` block with a `pmccode` agreed with the security team.
 
@@ -157,7 +157,7 @@ INFO: Audit event published: messageId=4577b478-dcf9-46ba-b40f-22f9051c3798, ent
   "audit": {
     "entities": [{ "entity": "application", "action": "authorised", "entityid": "example-grant-with-auth" }],
     "status": "success",
-    "accounts": { "crn": "1102838829", "sbi": "106284736", "organisationId": "106284736" }
+    "accounts": { "crn": "1102838829", "sbi": "106284736" }
   },
   "user": "IDM/1102838829",
   "sessionid": "06d67b48-8b36-45c8-86c5-83d28b7cec73"

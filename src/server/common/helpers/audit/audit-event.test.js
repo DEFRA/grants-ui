@@ -47,7 +47,7 @@ const fullIdentityRequest = () =>
     headers: { 'x-cdp-request-id': 'corr-1', 'x-forwarded-for': CLIENT_IPV4 },
     auth: {
       isAuthenticated: true,
-      credentials: { contactId: 'c1', sessionId: 's1', crn: 'crn1', sbi: 'sbi1', organisationId: 'org1' }
+      credentials: { contactId: 'c1', sessionId: 's1', crn: 'crn1', sbi: 'sbi1' }
     }
   })
 
@@ -81,7 +81,7 @@ describe('buildAuditEvent', () => {
       audit: {
         entities: [{ entity: 'application', action: 'authorised', entityid: 'my-grant' }],
         status: 'success',
-        accounts: { crn: 'crn1', sbi: 'sbi1', organisationId: 'org1' }
+        accounts: { crn: 'crn1', sbi: 'sbi1' }
       }
     })
     expect(typeof event.datetime).toBe('string')

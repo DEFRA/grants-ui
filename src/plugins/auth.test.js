@@ -898,30 +898,6 @@ describe('Auth Plugin', () => {
       }
     }
 
-    test('should transform credentials through manual mapPayloadToProfile call', async () => {
-      const relationships = ['123456:987654:Farm 1:1234567890:relationship:relationshipLoa']
-      const currentRelationshipId = '123456'
-      server.route(createTestRoute(currentRelationshipId, relationships))
-
-      const response = await server.inject({
-        method: 'GET',
-        url: '/test-auth'
-      })
-
-      expect(response.statusCode).toBe(200)
-      const payload = JSON.parse(response.payload)
-
-      expect(payload.credentials).toEqual({
-        profile: expect.any(Object),
-        sbi: '987654',
-        crn: '12345',
-        name: 'John Doe',
-        organisationId: '987654',
-        organisationName: 'Farm 1',
-        relationshipId: '123456'
-      })
-    })
-
     test('should handle multiple relationships and find correct current one', async () => {
       const relationships = [
         '123456-farm-1:987654:Farm 1:1234567890:relationship:relationshipLoa',
@@ -943,7 +919,6 @@ describe('Auth Plugin', () => {
         sbi: '987654',
         crn: '12345',
         name: 'John Doe',
-        organisationId: '987654',
         organisationName: 'Farm 1',
         relationshipId: '123456-farm-1'
       })
@@ -960,30 +935,6 @@ describe('Auth Plugin', () => {
       })
 
       expect(response.statusCode).toBe(500)
-    })
-
-    test('should handle different organisation details', async () => {
-      const relationships = ['123456-farm1:111222:Test Organisation:5555555555:relationship:relationshipLoa']
-      const currentRelationshipId = '123456-farm1'
-      server.route(createTestRoute(currentRelationshipId, relationships))
-
-      const response = await server.inject({
-        method: 'GET',
-        url: '/test-auth'
-      })
-
-      expect(response.statusCode).toBe(200)
-      const payload = JSON.parse(response.payload)
-
-      expect(payload.credentials).toEqual({
-        profile: expect.any(Object),
-        sbi: '111222',
-        crn: '12345',
-        name: 'John Doe',
-        organisationId: '111222',
-        organisationName: 'Test Organisation',
-        relationshipId: '123456-farm1'
-      })
     })
 
     // You can also create a parameterized test using test.each for multiple scenarios
@@ -1054,9 +1005,14 @@ describe('Auth Plugin', () => {
       expect(response.statusCode).toBe(200)
       const payload = JSON.parse(response.payload)
 
-      expect(payload.credentials.sbi).toBe(expectedSbi)
-      expect(payload.credentials.organisationId).toBe(expectedSbi)
-      expect(payload.credentials.organisationName).toBe(expectedOrgName)
+      expect(payload.credentials).toEqual({
+        profile: expect.any(Object),
+        sbi: expectedSbi,
+        crn: '12345',
+        name: 'John Doe',
+        organisationName: expectedOrgName,
+        relationshipId: currentRelationshipId
+      })
     })
   })
 })

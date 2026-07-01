@@ -123,7 +123,7 @@ function logTokenExchangeFailure(request, hasCredentials) {
 function logSuccessfulSignIn(profile, role, scope) {
   log(LogCodes.AUTH.SIGN_IN_SUCCESS, {
     userId: profile.contactId,
-    organisationId: profile.currentRelationshipId,
+    currentRelationshipId: profile.currentRelationshipId,
     role,
     scope: scope.join(', '),
     sessionId: profile.sessionId

@@ -315,17 +315,16 @@ export function mapPayloadToProfile(request, h) {
       (/** @type {string} */ relationship) => relationship.split(':')[0] === userData.currentRelationshipId
     )
     // eslint-disable-next-line no-unused-vars
-    const [relationshipId, organisationId, organisationName, _organisationLoa, _relationship, _relationshipLoa] =
+    const [relationshipId, sbi, organisationName, _organisationLoa, _relationship, _relationshipLoa] =
       extractFarmDetails(currentRelationship)
 
     const existingCreds = request.auth.credentials
 
     request.auth.credentials = {
       ...existingCreds,
-      sbi: String(organisationId),
+      sbi: String(sbi),
       crn: String(userData.contactId),
       name: `${userData.firstName} ${userData.lastName}`,
-      organisationId: String(organisationId),
       organisationName,
       relationshipId: String(relationshipId)
     }

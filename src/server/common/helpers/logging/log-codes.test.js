@@ -87,8 +87,8 @@ describe('LogCodes', () => {
       [
         'SIGN_IN_SUCCESS',
         'info',
-        { userId: TEST_USER_IDS.DEFAULT, organisationId: TEST_ORGANIZATIONS.DEFAULT },
-        `User sign-in successful for user=${TEST_USER_IDS.DEFAULT}, organisation=${TEST_ORGANIZATIONS.DEFAULT}`
+        { userId: TEST_USER_IDS.DEFAULT, currentRelationshipId: TEST_ORGANIZATIONS.DEFAULT },
+        `User sign-in successful for user=${TEST_USER_IDS.DEFAULT}, relationshipId=${TEST_ORGANIZATIONS.DEFAULT}`
       ],
       [
         'SIGN_IN_FAILURE',

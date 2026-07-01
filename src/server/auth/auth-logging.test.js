@@ -164,7 +164,7 @@ describe('auth-logging', () => {
       expect.objectContaining({ level: expect.any(String), messageFunc: expect.any(Function) }),
       expect.objectContaining({
         userId: 'user123',
-        organisationId: 'org456',
+        currentRelationshipId: 'org456',
         role: 'admin',
         scope: 'read, write',
         sessionId: 'session789'
