@@ -3,8 +3,8 @@ version: v1.25.0
 ignore:
   'SNYK-JS-INFLIGHT-6095116':
     - '*':
-        reason: 'No upgrade or patch available'
-        expires: '2026-07-01'
+        reason: 'Not reachable in application runtime — inflight is only present via glob from @defra/interactive-map/polygon-splitter package metadata and dev/build tooling; grants-ui and the shipped map bundles do not import glob or inflight. No upstream fix available; reassess for interactive-map/polygon-splitter dependency removal.'
+        expires: '2026-07-30'
   'SNYK-JS-CONVICT-15182994':
     - '*':
         reason: 'No upgrade or patch available — persists in 6.2.5'
