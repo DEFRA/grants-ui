@@ -27,11 +27,13 @@ export class UpdateDetailsPageController extends TerminalPageController {
       const { slug } = request.params
 
       const form = await findFormBySlug(slug)
-      const metadata = /** @type {Record<string, unknown>} */ (form?.metadata ?? {})
+      const formMetadata = /** @type {Record<string, unknown>} */ (form?.metadata ?? {})
+      const modelMetadata = /** @type {Record<string, unknown>} */ (this.model.def.metadata ?? {})
+      const metadata = { ...formMetadata, ...modelMetadata }
 
       return h.view('incorrect-details', {
         pageTitle: 'Update your details',
-        serviceName: form?.title,
+        serviceName: this.model.def.name ?? form?.title,
         serviceUrl: `/${slug}`,
         backLink: { href: `/${slug}/check-details` },
         incorrectDetailsContent: metadata.incorrectDetailsContent ?? null,
