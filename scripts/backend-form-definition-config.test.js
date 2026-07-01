@@ -26,4 +26,10 @@ describe('backend-sourced form deployment config', () => {
     expect(activeFarmPaymentsRelease).toBeDefined()
     expect(getDefaultSlugs(backendFormDefEnv)).toContain('farm-payments')
   })
+
+  it('waits for grants-config-broker before starting grants-ui-backend', () => {
+    expect(composeConfig.services['grants-ui-backend'].depends_on['grants-config-broker']).toEqual({
+      condition: 'service_healthy'
+    })
+  })
 })

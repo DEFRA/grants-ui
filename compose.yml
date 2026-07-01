@@ -116,6 +116,8 @@ services:
         condition: service_healthy
       mongo-ready:
         condition: service_completed_successfully
+      grants-config-broker:
+        condition: service_healthy
     ports:
       - '3001:3001'
     env_file:
