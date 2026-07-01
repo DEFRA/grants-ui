@@ -330,6 +330,39 @@ function shouldHandlePreSubmission(previousStatus) {
 }
 
 /**
+ * Determines whether a submitted or reopened application should be checked against GAS.
+ *
+ * @param {string | undefined} previousStatus - The previous application status stored in the session or state.
+ * @returns {previousStatus is string} `true` when post-submission redirect handling should run.
+ */
+function shouldHandlePostSubmission(previousStatus) {
+  return previousStatus === ApplicationStatus.SUBMITTED || previousStatus === ApplicationStatus.REOPENED
+}
+
+/**
+ * Determines whether redirect handling should be skipped for the current request.
+ *
+ * @param {AnyFormRequest} request - The Hapi forms request object.
+ * @param {FormContext} context - The request context containing state and reference data.
+ * @param {GrantRedirectRules} [grantRedirectRules] - The redirect rules configuration from metadata.
+ * @returns {boolean} `true` when the pipeline should continue without redirect handling.
+ */
+function shouldSkipFormsStatusRedirect(request, context, grantRedirectRules) {
+  const isPostSubmission = context.state.applicationStatus === ApplicationStatus.SUBMITTED
+  const isWithinGrantPages = request.headers['sec-fetch-site'] === 'same-origin'
+  const isCheckDetailsStartPage = request.app.model?.def?.startPage === '/check-details'
+  const currentPath = request.params?.path
+  const currentPathIsExcluded = Boolean(currentPath && grantRedirectRules?.excludedPaths?.includes(currentPath))
+  const hasCheckDetailsChangesPending = context.state.checkDetailsChangesPending === true
+
+  return (
+    currentPathIsExcluded ||
+    (isWithinGrantPages && !isPostSubmission) ||
+    (hasCheckDetailsChangesPending && isCheckDetailsStartPage)
+  )
+}
+
+/**
  * Builds a redirect URL for a given grant ID and path.
  *
  * @param {string} grantId - The unique identifier (slug) of the grant.
@@ -446,48 +479,101 @@ function handlePostSubmissionError(err, request, h, context, grantId, grantCode,
 }
 
 /**
- * Main redirect for handling form status transitions.
+ * Builds the values needed for forms status redirect handling.
  *
- * @param {import('../types.js').PipelineRequest & AnyFormRequest} request - Hapi request object (extended to include app.model)
- * @param {ResponseToolkit} h - Hapi response toolkit
- * @param {FormContext} context - Current page context including form state and reference number
- * @returns {Promise<import('@hapi/hapi').ResponseObject | any>} Hapi response or continue symbol
+ * @param {AnyFormRequest} request - The Hapi forms request object.
+ * @param {FormContext} context - The request context containing state and reference data.
+ * @returns {FormsStatusRedirectContext | undefined} Redirect context when a grant slug is present.
  */
-export const formsStatusRedirect = async (request, h, context) => {
+function getFormsStatusRedirectContext(request, context) {
   const grantId = request.params?.slug
   if (!grantId) {
-    return h.continue
+    return undefined
   }
 
-  const grantCode = getGrantCode(request)
+  const metadata = /** @type {{ grantRedirectRules?: GrantRedirectRules } | undefined} */ (
+    request.app.model?.def?.metadata
+  )
 
-  const previousStatus = /** @type {string | undefined} */ (context.state.applicationStatus)
-  const metadata =
-    /** @type {{
-     * excludedPaths?: string[]
-     * grantRedirectRules?: {
-     *   excludedPaths?: string[]
-     * }
-     * }} */
-    (request.app.model?.def?.metadata)
-  const grantRedirectRules = metadata?.grantRedirectRules
-  const protectedPageGuard = checkStateGuards(
+  return {
+    grantId,
+    grantCode: getGrantCode(request),
+    previousStatus: /** @type {string | undefined} */ (context.state.applicationStatus),
+    grantRedirectRules: metadata?.grantRedirectRules
+  }
+}
+
+/**
+ * Applies guards for routes that should only be reachable after submission.
+ *
+ * @param {AnyFormRequest} request - The Hapi forms request object.
+ * @param {ResponseToolkit} h - The Hapi response toolkit.
+ * @param {FormContext} context - The request context containing state and reference data.
+ * @returns {symbol|import('@hapi/hapi').ResponseObject} h.continue or a guard failure response.
+ */
+function checkProtectedPageGuard(request, h, context) {
+  return checkStateGuards(
     request,
     h,
     context,
     { stateGuards: POST_SUBMISSION_PAGE_STATE_GUARDS },
     { pathScopedOnly: true }
   )
+}
+
+/**
+ * Handles post-submission redirects and converts failures into the configured fallback redirect.
+ *
+ * @param {AnyFormRequest} request - The Hapi forms request object.
+ * @param {ResponseToolkit} h - The Hapi response toolkit.
+ * @param {FormContext} context - The request context containing state and reference data.
+ * @param {FormsStatusRedirectContext & { previousStatus: string }} redirectContext - Redirect context with a submitted or reopened status.
+ * @returns {Promise<import('@hapi/hapi').ResponseObject | symbol>} A redirect or `h.continue`.
+ */
+async function handlePostSubmissionWithFallback(request, h, context, redirectContext) {
+  try {
+    return await handlePostSubmission(
+      request,
+      h,
+      context,
+      redirectContext.previousStatus,
+      redirectContext.grantCode,
+      redirectContext.grantRedirectRules
+    )
+  } catch (err) {
+    return handlePostSubmissionError(
+      err,
+      request,
+      h,
+      context,
+      redirectContext.grantId,
+      redirectContext.grantCode,
+      redirectContext.grantRedirectRules
+    )
+  }
+}
+
+/**
+ * Runs the forms status redirect decision tree once request context is available.
+ *
+ * @param {AnyFormRequest} request - The Hapi forms request object.
+ * @param {ResponseToolkit} h - The Hapi response toolkit.
+ * @param {FormContext} context - The request context containing state and reference data.
+ * @param {FormsStatusRedirectContext | undefined} redirectContext - Redirect context when a grant slug is present.
+ * @returns {Promise<import('@hapi/hapi').ResponseObject | symbol>} A redirect or `h.continue`.
+ */
+async function handleFormsStatusRedirect(request, h, context, redirectContext) {
+  if (!redirectContext) {
+    return h.continue
+  }
+
+  const protectedPageGuard = checkProtectedPageGuard(request, h, context)
   const protectedPageGuardProducedResponse = protectedPageGuard !== h.continue // NOSONAR S2159
   if (protectedPageGuardProducedResponse) {
     return protectedPageGuard
   }
 
-  const isWithinGrantPages = request.headers['sec-fetch-site'] === 'same-origin'
-
-  const checkDetailsChangesPending = context.state.checkDetailsChangesPending
-  const isCheckDetailsStartPage = request.app.model?.def?.startPage === '/check-details'
-  const isPostSubmission = previousStatus === ApplicationStatus.SUBMITTED
+  const { previousStatus, grantRedirectRules } = redirectContext
 
   /** Don't redirect if page is listed in the grant config excludedPaths
    * or if the request is from within the grant pages (e.g. user refreshing the page or navigating using the back button)
@@ -498,12 +584,7 @@ export const formsStatusRedirect = async (request, h, context) => {
    * isWithinGrantPages is intentionally NOT applied when the application is already submitted: there is no
    * in-progress journey to protect from redirect loops, so the post-submission redirect must always run.
    */
-
-  if (
-    grantRedirectRules?.excludedPaths?.includes(request.params?.path) ||
-    (isWithinGrantPages && !isPostSubmission) ||
-    (checkDetailsChangesPending && isCheckDetailsStartPage)
-  ) {
+  if (shouldSkipFormsStatusRedirect(request, context, grantRedirectRules)) {
     return h.continue
   }
 
@@ -511,16 +592,26 @@ export const formsStatusRedirect = async (request, h, context) => {
     return preSubmissionRedirect(request, h, context)
   }
 
-  if (!isPostSubmission && previousStatus !== ApplicationStatus.REOPENED) {
+  if (!shouldHandlePostSubmission(previousStatus)) {
     return h.continue
   }
 
-  try {
-    return await handlePostSubmission(request, h, context, previousStatus, grantCode, grantRedirectRules)
-  } catch (err) {
-    return handlePostSubmissionError(err, request, h, context, grantId, grantCode, grantRedirectRules)
-  }
+  return handlePostSubmissionWithFallback(request, h, context, {
+    ...redirectContext,
+    previousStatus
+  })
 }
+
+/**
+ * Main redirect for handling form status transitions.
+ *
+ * @param {import('../types.js').PipelineRequest & AnyFormRequest} request - Hapi request object (extended to include app.model)
+ * @param {ResponseToolkit} h - Hapi response toolkit
+ * @param {FormContext} context - Current page context including form state and reference number
+ * @returns {Promise<import('@hapi/hapi').ResponseObject | any>} Hapi response or continue symbol
+ */
+export const formsStatusRedirect = async (request, h, context) =>
+  handleFormsStatusRedirect(request, h, context, getFormsStatusRedirectContext(request, context))
 
 /**
  * Resolves which client reference number should be used when calling GAS.
@@ -568,6 +659,14 @@ export function resolveClientReference(previousStatus, context) {
  * @property {RedirectRule[]} [preSubmission] - Redirect rules applied before submission.
  * @property {RedirectRule[]} [postSubmission] - Redirect rules applied after submission.
  * @property {StateGuard[]} [stateGuards] - State guard rules enforced before redirects.
+ */
+
+/**
+ * @typedef {object} FormsStatusRedirectContext
+ * @property {string} grantId - The grant slug identifying the grant type.
+ * @property {string} grantCode - The grant code used in GAS lookups.
+ * @property {string | undefined} previousStatus - The previous application status stored in state.
+ * @property {GrantRedirectRules | undefined} grantRedirectRules - Redirect rules from the form metadata.
  */
 
 /**
