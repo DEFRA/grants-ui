@@ -93,11 +93,18 @@ services:
       - grants-ui-net
     restart: unless-stopped
     healthcheck:
-      test: ['CMD-SHELL', "ps aux | grep 'node .' | grep -v grep || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 6
-      start_period: 60s
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('http').get('http://localhost:3000/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
+        ]
+      interval: 30s
+      start_interval: 1s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
 
   grants-ui-backend:
     image: defradigital/grants-ui-backend
@@ -108,7 +115,7 @@ services:
       mongodb:
         condition: service_healthy
       mongo-ready:
-        condition: service_healthy
+        condition: service_completed_successfully
     ports:
       - '3001:3001'
     env_file:
@@ -133,10 +140,11 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:3001/health']
-      interval: 10s
-      timeout: 10s
-      retries: 10
-      start_period: 60s
+      interval: 30s
+      start_interval: 1s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
 
   grants-config-broker:
     image: defradigital/grants-config-broker:latest
@@ -146,8 +154,8 @@ services:
     depends_on:
       localstack:
         condition: service_healthy
-      mongodb:
-        condition: service_started
+      mongo-ready:
+        condition: service_completed_successfully
     env_file:
       - 'localstack/aws.env'
     environment:
@@ -167,9 +175,10 @@ services:
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:3012/health']
       interval: 30s
-      timeout: 10s
+      start_interval: 1s
+      timeout: 3s
       retries: 3
-      start_period: 40s
+      start_period: 30s
 
   fcp-defra-id-stub:
     image: defradigital/fcp-defra-id-stub:0.47.0
@@ -189,10 +198,11 @@ services:
       - '3007:3007'
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:3007/health']
-      interval: 15s
-      timeout: 10s
-      retries: 5
-      start_period: 3s
+      interval: 30s
+      start_interval: 1s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
 
   grants-ui-dal-stub:
     image: defradigital/grants-ui-dal-stub:latest
@@ -206,10 +216,11 @@ services:
       - grants-ui-net
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:3008/health']
-      interval: 15s
-      timeout: 10s
-      retries: 5
-      start_period: 3s
+      interval: 30s
+      start_interval: 1s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
 
   mockserver:
     image: mockserver/mockserver:5.15.0
@@ -233,9 +244,11 @@ services:
     restart: always
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
-      interval: 10s
-      timeout: 5s
+      interval: 30s
+      start_interval: 1s
+      timeout: 3s
       retries: 3
+      start_period: 5s
     networks:
       - grants-ui-net
 
@@ -249,10 +262,12 @@ services:
       - mongodb-data:/data/db
       - mongodb-config:/data/configdb
     healthcheck:
-      test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+      test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
+      interval: 30s
+      start_interval: 1s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
     command: ['mongod', '--replSet', 'mongoRepl', '--bind_ip', 'localhost,mongodb']
     restart: always
 
@@ -287,18 +302,21 @@ services:
     env_file:
       - 'localstack/aws.env'
     environment:
-      DEBUG: ${DEBUG:-1}
+      DEBUG: ${DEBUG:-0}
       LS_LOG: WARN
-      SERVICES: s3,sqs,sns,firehose
+      SERVICES: s3,sqs,sns
       LOCALSTACK_HOST: 127.0.0.1
+      SKIP_SSL_CERT_DOWNLOAD: 1
+      DISABLE_EVENTS: 1
+      DISABLE_USAGE_COLLECTION: 1
     volumes:
       - localstack-data:/var/lib/localstack
       - ./localstack/start-localstack.sh:/etc/localstack/init/ready.d/start-localstack.sh
       - ./localstack/forms:/etc/localstack/forms:ro
     healthcheck:
-      test: ['CMD', 'curl', 'localhost:4566']
-      interval: 5s
-      start_period: 5s
+      test: ['CMD', 'curl', '-f', 'http://localhost:4566/_localstack/health']
+      interval: 2s
+      start_period: 2s
       retries: 3
     networks:
       - grants-ui-net

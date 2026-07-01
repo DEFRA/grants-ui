@@ -914,6 +914,38 @@ describe('UpdateDetailsPageController', () => {
       expect(result).toBe('mocked-view')
     })
 
+    it('should render incorrect-details view with model metadata for backend-sourced forms', async () => {
+      mockModel.def.name = 'Woodland management plan'
+      mockModel.def.metadata = {
+        incorrectDetailsContent: {
+          heading: 'Update your details',
+          paragraphs: ['Make sure your details are correct before you apply.'],
+          showRpaSupport: false
+        },
+        supportEmail: 'woodland@example.com'
+      }
+      vi.mocked(findFormBySlug).mockResolvedValue({
+        title: 'woodland',
+        source: 'backend'
+      })
+
+      const handler = updateController.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith('incorrect-details', {
+        pageTitle: 'Update your details',
+        serviceName: 'Woodland management plan',
+        serviceUrl: '/test-form',
+        backLink: { href: '/test-form/check-details' },
+        incorrectDetailsContent: {
+          heading: 'Update your details',
+          paragraphs: ['Make sure your details are correct before you apply.'],
+          showRpaSupport: false
+        },
+        supportEmail: 'woodland@example.com'
+      })
+    })
+
     it('should pass null for missing metadata fields', async () => {
       vi.mocked(findFormBySlug).mockResolvedValue({ title: 'Test Form', metadata: {} })
 

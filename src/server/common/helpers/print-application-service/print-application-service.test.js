@@ -356,6 +356,46 @@ describe('print-application-service', () => {
       expect(result.paymentInfo.parcelItems).toHaveLength(2)
       expect(result.paymentInfo.parcelItems[0].cardTitle).toBe('Land parcel ID AB1234 0001')
     })
+
+    test.each([
+      {
+        includeApplicationInTitle: true,
+        expectedPageTitle: `${MOCK_FORM_ENTRIES.exampleGrant.title} application`
+      },
+      {
+        includeApplicationInTitle: undefined,
+        expectedPageTitle: `${MOCK_FORM_ENTRIES.exampleGrant.title} application`
+      },
+      {
+        includeApplicationInTitle: null,
+        expectedPageTitle: `${MOCK_FORM_ENTRIES.exampleGrant.title} application`
+      },
+      {
+        includeApplicationInTitle: 0,
+        expectedPageTitle: `${MOCK_FORM_ENTRIES.exampleGrant.title} application`
+      },
+      {
+        includeApplicationInTitle: false,
+        expectedPageTitle: MOCK_FORM_ENTRIES.exampleGrant.title
+      }
+    ])(
+      'sets page title to $expectedPageTitle when includeApplicationInTitle is $includeApplicationInTitle',
+      ({ includeApplicationInTitle, expectedPageTitle }) => {
+        const result = buildPrintViewModel({
+          ...baseParams,
+          definition: {
+            ...baseParams.definition,
+            metadata: {
+              printPage: {
+                includeApplicationInTitle
+              }
+            }
+          }
+        })
+
+        expect(result.pageTitle).toBe(expectedPageTitle)
+      }
+    )
   })
 
   describe('enrichDefinitionWithListItems', () => {
