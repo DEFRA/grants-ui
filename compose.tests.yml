@@ -36,6 +36,7 @@ services:
       DEFRA_ID_USER_PASSWORD: x
       MOCKSERVER_HOST: mockserver
       MOCKSERVER_PORT: 1080
+      ENABLE_UPL_8_AND_10_20260303: ${ENABLE_UPL_8_AND_10_20260303:-true}
     volumes:
       - ./nginx/certs:/etc/ssl/certs:ro
     command: ["npm", "run", "test:ci"]
