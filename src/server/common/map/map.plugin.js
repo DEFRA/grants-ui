@@ -11,32 +11,20 @@ const OS_MAPS_BASE_URL = 'https://api.os.uk/maps/vector/v1/vts'
 const OS_MAPS_MAX_ZOOM = 15
 // Web Mercator — required by MapLibre; OS defaults to EPSG:27700 (British National Grid) without this
 const OS_MAPS_SRS = '3857'
+const TILE_CACHE_MAX_AGE_SECONDS = 3600
+// Matches OS Maps URLs so they can be rewritten to our proxy — derived from OS_MAPS_BASE_URL so the two can't drift
+const OS_URL_RE = new RegExp(`^${OS_MAPS_BASE_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`)
+const OS_QS_RE = /\?.*$/
 
 /**
- * @typedef {import('~/src/server/land-grants/types/land-grants.client.d.js').Parcel & {
- *   area?: { value?: number | null, unit?: string }
- * }} HydratedParcel
- *
- * @typedef {object} ParcelFeature
- * @property {string} id
- * @property {{ id: string, sheet_id: string, parcel_id: string, areaHa: number|null }} properties
- */
-
-/**
- * @param {import('@hapi/hapi').Request} request
- * @param {import('@hapi/hapi').ResponseToolkit} h
+ * @param {Request} request
+ * @param {ResponseToolkit} h
  */
 async function parcelsHandler(request, h) {
   /** @type {HydratedParcel[]} */
   let parcels = []
   try {
-    parcels = /** @type {HydratedParcel[]} */ (
-      await fetchParcels(
-        /** @type {import('@defra/forms-engine-plugin/engine/types.js').AnyFormRequest} */ (
-          /** @type {unknown} */ (request)
-        )
-      )
-    )
+    parcels = await fetchParcels(/** @type {AnyFormRequest} */ (/** @type {unknown} */ (request)))
   } catch (error) {
     const message = /** @type {Error} */ (error).message
     const upstreamStatus =
@@ -78,14 +66,14 @@ async function parcelsHandler(request, h) {
 }
 
 /**
- * @param {import('@hapi/hapi').Request} request
- * @param {import('@hapi/hapi').ResponseToolkit} h
+ * @param {Request} request
+ * @param {ResponseToolkit} h
  */
-function geojsonHandler(request, h) {
+function mockGeojsonHandler(request, h) {
   if (!isMockData()) {
     return h.response({ error: 'not found' }).code(statusCodes.notFound)
   }
-  const features = /** @type {import('./map.plugin.js').ParcelFeature[] | null} */ (request.yar.get('mapMockFeatures'))
+  const features = /** @type {ParcelFeature[] | null} */ (request.yar.get('mapMockFeatures'))
   if (!features) {
     return h.response({ error: 'not found' }).code(statusCodes.notFound)
   }
@@ -93,19 +81,15 @@ function geojsonHandler(request, h) {
 }
 
 /**
- * @param {import('@hapi/hapi').Request} request
- * @param {import('@hapi/hapi').ResponseToolkit} h
+ * @param {Request} request
+ * @param {ResponseToolkit} h
  */
 async function tilesHandler(request, h) {
   const { z, x, y } = request.params
   let parcels = []
   try {
-    parcels = /** @type {import('./map.plugin.js').HydratedParcel[]} */ (
-      await fetchParcels(
-        /** @type {import('@defra/forms-engine-plugin/engine/types.js').AnyFormRequest} */ (
-          /** @type {unknown} */ (request)
-        )
-      )
+    parcels = /** @type {HydratedParcel[]} */ (
+      await fetchParcels(/** @type {AnyFormRequest} */ (/** @type {unknown} */ (request)))
     )
   } catch {
     return h.response().code(statusCodes.serviceUnavailable)
@@ -119,7 +103,7 @@ async function tilesHandler(request, h) {
     response = await fetch(upstream, {
       method: 'POST',
       headers: {
-        .../** @type {Record<string,string>} */ (createApiHeadersForLandGrantsBackend()),
+        ...createApiHeadersForLandGrantsBackend(),
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ parcelIds })
@@ -137,11 +121,8 @@ async function tilesHandler(request, h) {
     .response(Buffer.from(buffer))
     .code(statusCodes.ok)
     .type('application/x-protobuf')
-    .header('Cache-Control', 'public, max-age=3600')
+    .header('Cache-Control', `public, max-age=${TILE_CACHE_MAX_AGE_SECONDS}`)
 }
-
-const OS_URL_RE = /^https:\/\/api\.os\.uk\/maps\/vector\/v1\/vts/
-const OS_QS_RE = /\?.*$/
 
 /**
  * Rewrite an OS Maps URL to our absolute proxy path, stripping query params
@@ -185,12 +166,7 @@ function rewriteOsSource(source, origin) {
 function withProxiedOsUrls(style, origin) {
   const sources =
     style.sources && typeof style.sources === 'object'
-      ? Object.fromEntries(
-          Object.entries(/** @type {Record<string, Record<string, unknown>>} */ (style.sources)).map(([k, v]) => [
-            k,
-            rewriteOsSource(v, origin)
-          ])
-        )
+      ? Object.fromEntries(Object.entries(style.sources).map(([k, v]) => [k, rewriteOsSource(v, origin)]))
       : style.sources
 
   return {
@@ -209,8 +185,8 @@ function withProxiedOsUrls(style, origin) {
  * Fetches the OS Maps vector tile style JSON and rewrites all OS URLs to go
  * through our tile proxy, so the API key is injected server-side and never
  * exposed to the browser. MapLibre uses this style to render the basemap.
- * @param {import('@hapi/hapi').Request} request
- * @param {import('@hapi/hapi').ResponseToolkit} h
+ * @param {Request} request
+ * @param {ResponseToolkit} h
  */
 async function osBasemapHandler(request, h) {
   const apiKey = config.get('osMapsApiKey')
@@ -233,8 +209,8 @@ async function osBasemapHandler(request, h) {
 /**
  * Proxy OS Maps requests (tilejson, tiles, glyphs, sprites) — appends the API key server-side.
  * Handles both the root tilejson endpoint (empty path) and all sub-paths.
- * @param {import('@hapi/hapi').Request} request
- * @param {import('@hapi/hapi').ResponseToolkit} h
+ * @param {Request} request
+ * @param {ResponseToolkit} h
  */
 async function osTileProxyHandler(request, h) {
   const apiKey = config.get('osMapsApiKey')
@@ -262,10 +238,9 @@ async function osTileProxyHandler(request, h) {
     .response(Buffer.from(buffer))
     .code(statusCodes.ok)
     .type(contentType)
-    .header('Cache-Control', 'public, max-age=3600')
+    .header('Cache-Control', `public, max-age=${TILE_CACHE_MAX_AGE_SECONDS}`)
 }
 
-/** @satisfies {import('@hapi/hapi').ServerRegisterPluginObject<void>} */
 export const mapPlugin = {
   plugin: {
     name: 'map',
@@ -279,7 +254,7 @@ export const mapPlugin = {
       server.route({
         method: 'GET',
         path: '/api/map/parcels/geojson',
-        handler: geojsonHandler
+        handler: mockGeojsonHandler
       })
       server.route({
         method: 'GET',
@@ -314,3 +289,9 @@ export const mapPlugin = {
     }
   }
 }
+
+/**
+ * @import { Request, ResponseToolkit } from '@hapi/hapi'
+ * @import { AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { HydratedParcel, ParcelFeature } from './types.js'
+ */
