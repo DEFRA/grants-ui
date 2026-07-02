@@ -10,7 +10,9 @@ metadata:
     serviceName: Farm and land service
     cookiePolicyUrl: /cookies
     expiryDays: 365
-  grantRedirectRules: null
+  grantRedirectRules:
+    preSubmission:
+      - toPath: /summary
   permissions:
     enforce: false
   confirmationContent:
