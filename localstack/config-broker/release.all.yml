@@ -23,6 +23,24 @@ releases:
     environments:
       - name: local
         status: active
+  - name: example-grant-with-map
+    version: 1.0.1
+    notes: Example for local usage
+    environments:
+      - name: local
+        status: active
+  - name: example-grant-with-task-list
+    version: 1.0.1
+    notes: Example for local usage
+    environments:
+      - name: local
+        status: active
+  - name: example-grant-with-task-list-hide-questions
+    version: 1.0.1
+    notes: Example for local usage
+    environments:
+      - name: local
+        status: active
   - name: farm-payments
     version: 1.0.1
     notes: Example for local usage
