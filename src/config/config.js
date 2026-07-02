@@ -291,6 +291,13 @@ const convictConfig = {
     default: false,
     env: 'MAP_MOCK_DATA_ENABLED'
   },
+  osMapsApiKey: {
+    doc: 'Ordnance Survey Maps API key.',
+    format: String,
+    default: '',
+    env: 'OS_MAPS_API_KEY',
+    sensitive: true
+  },
   devTools: devToolsSchema,
   forms: {
     backendFormDefEnabledSlugs: {
