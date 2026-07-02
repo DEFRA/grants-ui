@@ -6,6 +6,10 @@ x-common-postgres: &common-postgres
 
 services:
   localstack:
+    environment:
+      LOCALSTACK_REQUIRED_S3_BUCKETS: configs-bucket,land-data
+      LOCALSTACK_REQUIRED_SQS_QUEUES: fcp_audit,gfr__sqs___config_input,grants_ui_backend__sqs__config_updates,grants_config_broker_update
+      LOCALSTACK_REQUIRED_SNS_TOPICS: fcp_audit_events,gfr__sns___config_update
     volumes:
       - ./localstack/start-localstack-land-grants.sh:/etc/localstack/init/ready.d/start-localstack-land-grants.sh
 
