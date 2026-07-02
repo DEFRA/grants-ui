@@ -1,5 +1,5 @@
 export const PARCELS_API_URL = '/api/map/parcels'
-export const MAP_STYLE_URL = '/api/map/os-style'
+export const MAP_STYLE_URL = '/api/map/os-basemap'
 export const MAP_STYLE_ATTRIBUTION = `© Crown copyright and database rights ${new Date().getFullYear()} OS`
 
 export const PARCEL_COLORS = [

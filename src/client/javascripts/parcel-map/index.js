@@ -151,7 +151,9 @@ class ParcelMap extends HTMLElement {
 
   _teardown() {
     this._state = STATE_IDLE
-    for (const off of this._mlCleanup) { off() }
+    for (const off of this._mlCleanup) {
+      off()
+    }
     this._mlCleanup = []
     this._ml = null
     try {
@@ -288,7 +290,9 @@ class ParcelMap extends HTMLElement {
         }
         const resp = await fetch(PARCELS_API_URL)
         if (!resp.ok) {
-          if (attempt < FETCH_MAX_ATTEMPTS - 1) { continue }
+          if (attempt < FETCH_MAX_ATTEMPTS - 1) {
+            continue
+          }
           return null
         }
 
@@ -318,7 +322,9 @@ class ParcelMap extends HTMLElement {
           bbox: body.bbox ?? null
         }
       } catch {
-        if (attempt < FETCH_MAX_ATTEMPTS - 1) { continue }
+        if (attempt < FETCH_MAX_ATTEMPTS - 1) {
+          continue
+        }
         return null
       }
     }
@@ -384,9 +390,13 @@ class ParcelMap extends HTMLElement {
     tooltip.style.cssText = TOOLTIP_STYLES
     wrapper.appendChild(tooltip)
 
-    const onTooltipClick = (/** @type {import('maplibre-gl').MapMouseEvent & { features?: import('maplibre-gl').MapGeoJSONFeature[] }} */ e) => {
+    const onTooltipClick = (
+      /** @type {import('maplibre-gl').MapMouseEvent & { features?: import('maplibre-gl').MapGeoJSONFeature[] }} */ e
+    ) => {
       const feature = e.features?.[0]
-      if (!feature) { return }
+      if (!feature) {
+        return
+      }
       const id = resolveFeatureId(feature)
       const props = /** @type {ParcelProperties} */ ({ ...feature.properties, ...metaIndex[id] })
       const point = ml.project(e.lngLat)
@@ -397,8 +407,12 @@ class ParcelMap extends HTMLElement {
         hideTooltip(tooltip)
       }
     }
-    const onMouseEnter = () => { ml.getCanvas().style.cursor = 'pointer' }
-    const onMouseLeave = () => { ml.getCanvas().style.cursor = '' }
+    const onMouseEnter = () => {
+      ml.getCanvas().style.cursor = 'pointer'
+    }
+    const onMouseLeave = () => {
+      ml.getCanvas().style.cursor = ''
+    }
 
     ml.on('click', LAYER_ID_FILL, onTooltipClick)
     ml.on('click', onMapClick)
@@ -436,16 +450,24 @@ class ParcelMap extends HTMLElement {
       ])
     }
 
-    const onParcelClick = (/** @type {import('maplibre-gl').MapMouseEvent & { features?: import('maplibre-gl').MapGeoJSONFeature[] }} */ e) => {
+    const onParcelClick = (
+      /** @type {import('maplibre-gl').MapMouseEvent & { features?: import('maplibre-gl').MapGeoJSONFeature[] }} */ e
+    ) => {
       const feature = e.features?.[0]
-      if (!feature) { return }
+      if (!feature) {
+        return
+      }
       const id = resolveFeatureId(feature)
-      if (!id) { return }
+      if (!id) {
+        return
+      }
 
       if (multiSelect) {
         const wasSelected = selected.has(id)
         wasSelected ? selected.delete(id) : selected.add(id)
-        if (wasSelected && tooltip) { hideTooltip(tooltip) }
+        if (wasSelected && tooltip) {
+          hideTooltip(tooltip)
+        }
       } else {
         const alreadySelected = selected.has(id)
         selected.clear()

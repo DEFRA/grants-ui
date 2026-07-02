@@ -9,6 +9,8 @@ import { isMockData, buildMockFeatures } from './map.mock.js'
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
 const OS_MAPS_BASE_URL = 'https://api.os.uk/maps/vector/v1/vts'
 const OS_MAPS_MAX_ZOOM = 15
+// Web Mercator — required by MapLibre; OS defaults to EPSG:27700 (British National Grid) without this
+const OS_MAPS_SRS = '3857'
 
 /**
  * @typedef {import('~/src/server/land-grants/types/land-grants.client.d.js').Parcel & {
@@ -70,7 +72,6 @@ async function parcelsHandler(request, h) {
   }))
   const parcelIds = parcelData.map((p) => p.id)
   const bbox = await fetchParcelTileLocation(parcelIds).catch(() => null)
-  request.yar.set('mapParcelIds', parcelIds)
   const tileUrl = parcelIds.length > 0 ? '/land-grants/parcel-tiles/{z}/{x}/{y}' : null
 
   return h.response({ features, bbox, tileUrl }).code(statusCodes.ok)
@@ -97,7 +98,19 @@ function geojsonHandler(request, h) {
  */
 async function tilesHandler(request, h) {
   const { z, x, y } = request.params
-  const parcelIds = /** @type {string[]} */ (request.yar.get('mapParcelIds') ?? [])
+  let parcels = []
+  try {
+    parcels = /** @type {import('./map.plugin.js').HydratedParcel[]} */ (
+      await fetchParcels(
+        /** @type {import('@defra/forms-engine-plugin/engine/types.js').AnyFormRequest} */ (
+          /** @type {unknown} */ (request)
+        )
+      )
+    )
+  } catch {
+    return h.response().code(statusCodes.serviceUnavailable)
+  }
+  const parcelIds = parcels.map((p) => stringifyParcel(p))
 
   const upstream = `${LAND_GRANTS_API_URL}/api/v1/parcel-tiles/${z}/${x}/${y}`
 
@@ -137,8 +150,7 @@ const OS_QS_RE = /\?.*$/
  * @param {string} url
  * @param {string} origin  e.g. "http://localhost:3000"
  */
-const proxyOsUrl = (url, origin) =>
-  `${origin}/api/map/os-tiles${url.replace(OS_URL_RE, '').replace(OS_QS_RE, '')}`
+const proxyOsUrl = (url, origin) => `${origin}/api/map/os-tiles${url.replace(OS_URL_RE, '').replace(OS_QS_RE, '')}`
 
 /**
  * Rewrite a single OS Maps source entry to go through our proxy.
@@ -184,18 +196,25 @@ function withProxiedOsUrls(style, origin) {
   return {
     ...style,
     sources,
-    ...(typeof style.glyphs === 'string' && OS_URL_RE.test(style.glyphs) ? { glyphs: proxyOsUrl(style.glyphs, origin) } : {}),
-    ...(typeof style.sprite === 'string' && OS_URL_RE.test(style.sprite) ? { sprite: proxyOsUrl(style.sprite, origin) } : {})
+    ...(typeof style.glyphs === 'string' && OS_URL_RE.test(style.glyphs)
+      ? { glyphs: proxyOsUrl(style.glyphs, origin) }
+      : {}),
+    ...(typeof style.sprite === 'string' && OS_URL_RE.test(style.sprite)
+      ? { sprite: proxyOsUrl(style.sprite, origin) }
+      : {})
   }
 }
 
 /**
+ * Fetches the OS Maps vector tile style JSON and rewrites all OS URLs to go
+ * through our tile proxy, so the API key is injected server-side and never
+ * exposed to the browser. MapLibre uses this style to render the basemap.
  * @param {import('@hapi/hapi').Request} request
  * @param {import('@hapi/hapi').ResponseToolkit} h
  */
-async function osStyleHandler(request, h) {
+async function osBasemapHandler(request, h) {
   const apiKey = config.get('osMapsApiKey')
-  const upstream = `${OS_MAPS_BASE_URL}/resources/styles?key=${apiKey}&srs=3857`
+  const upstream = `${OS_MAPS_BASE_URL}/resources/styles?key=${apiKey}&srs=${OS_MAPS_SRS}`
   let response
   try {
     response = await fetch(upstream)
@@ -224,7 +243,7 @@ async function osTileProxyHandler(request, h) {
   // but always inject key and srs.
   const qs = new URLSearchParams(/** @type {Record<string,string>} */ (/** @type {unknown} */ (request.query)))
   qs.set('key', apiKey)
-  qs.set('srs', '3857')
+  qs.set('srs', OS_MAPS_SRS)
   const upstream = `${OS_MAPS_BASE_URL}${suffix}?${qs.toString()}`
 
   let response
@@ -266,6 +285,7 @@ export const mapPlugin = {
         method: 'GET',
         path: '/land-grants/parcel-tiles/{z}/{x}/{y}',
         options: {
+          auth: { mode: 'required', strategy: 'session' },
           validate: {
             params: Joi.object({
               z: Joi.number().integer().min(0).required(),
@@ -278,8 +298,8 @@ export const mapPlugin = {
       })
       server.route({
         method: 'GET',
-        path: '/api/map/os-style',
-        handler: osStyleHandler
+        path: '/api/map/os-basemap',
+        handler: osBasemapHandler
       })
       server.route({
         method: 'GET',
