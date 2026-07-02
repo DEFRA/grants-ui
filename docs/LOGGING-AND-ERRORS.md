@@ -207,7 +207,7 @@ import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 // Log successful authentication
 log(LogCodes.AUTH.SIGN_IN_SUCCESS, {
   userId: 'user123',
-  organisationId: 'org456'
+  currentRelationshipId: 'org456'
 })
 
 // Log form submission
@@ -251,7 +251,7 @@ AUTH: {
   SIGN_IN_SUCCESS: {
     level: 'info',
     messageFunc: (messageOptions) =>
-      `User sign-in successful for user=${messageOptions.userId}, organisation=${messageOptions.organisationId}`
+      `User sign-in successful for user=${messageOptions.userId}, relationshipId=${messageOptions.currentRelationshipId}`
   }
 }
 ```

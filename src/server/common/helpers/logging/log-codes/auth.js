@@ -14,7 +14,7 @@ export const AUTH = {
   SIGN_IN_SUCCESS: {
     level: 'info',
     messageFunc: (messageOptions) =>
-      `User sign-in successful for user=${messageOptions.userId}, organisation=${messageOptions.organisationId}`
+      `User sign-in successful for user=${messageOptions.userId}, relationshipId=${messageOptions.currentRelationshipId}`
   },
   SIGN_IN_FAILURE: {
     level: 'error',

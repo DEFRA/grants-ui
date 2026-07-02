@@ -14,14 +14,14 @@ export const getCacheKey = (request) => {
   if (!credentials) {
     throw BaseError.wrap(new Error('Missing auth credentials'))
   }
-  const { crn, organisationId: sbi } = /** @type {{ crn?: string, organisationId?: string }} */ (credentials)
+  const { crn, sbi } = /** @type {{ crn?: string, sbi?: string }} */ (credentials)
 
   if (!crn) {
     throw BaseError.wrap(new Error('Missing CRN in credentials'))
   }
 
   if (!sbi) {
-    throw BaseError.wrap(new Error('Missing SBI (organisationId) in credentials'))
+    throw BaseError.wrap(new Error('Missing SBI in credentials'))
   }
 
   const grantCode = getGrantCode(request)

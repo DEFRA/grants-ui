@@ -18,30 +18,17 @@ describe('Logger Functionality', () => {
     vi.clearAllMocks()
   })
 
-  it('should call the info logger with the correct interpolated message', () => {
-    log(mockLogCode, messageOptions)
+  it.each([
+    ['info', 'info'],
+    ['error', 'error'],
+    ['debug', 'debug']
+  ])('routes a %s-level code to logger.%s only with the interpolated message', (level, method) => {
+    log({ ...mockLogCode, level }, messageOptions)
 
-    expect(logger.info).toHaveBeenCalledWith({}, 'Mock log. test')
-    expect(logger.error).not.toHaveBeenCalled()
-    expect(logger.debug).not.toHaveBeenCalled()
-  })
-
-  it('should call the error logger with the correct interpolated message', () => {
-    mockLogCode.level = 'error'
-    log(mockLogCode, messageOptions)
-
-    expect(logger.error).toHaveBeenCalledWith({}, 'Mock log. test')
-    expect(logger.info).not.toHaveBeenCalled()
-    expect(logger.debug).not.toHaveBeenCalled()
-  })
-
-  it('should call the debug logger with the correct interpolated message', () => {
-    mockLogCode.level = 'debug'
-    log(mockLogCode, messageOptions)
-
-    expect(logger.debug).toHaveBeenCalledWith({}, 'Mock log. test')
-    expect(logger.info).not.toHaveBeenCalled()
-    expect(logger.error).not.toHaveBeenCalled()
+    expect(logger[method]).toHaveBeenCalledWith({}, 'Mock log. test')
+    for (const other of ['info', 'error', 'debug'].filter((m) => m !== method)) {
+      expect(logger[other]).not.toHaveBeenCalled()
+    }
   })
 
   it('should call the logger with multiple interpolated values', () => {
@@ -59,12 +46,12 @@ describe('Logger Functionality', () => {
   it('should work with real LogCodes', () => {
     const testOptions = {
       userId: 'test-user',
-      organisationId: 'test-org'
+      currentRelationshipId: 'test-org'
     }
 
     log(LogCodes.AUTH.SIGN_IN_SUCCESS, testOptions)
 
-    expect(logger.info).toHaveBeenCalledWith({}, 'User sign-in successful for user=test-user, organisation=test-org')
+    expect(logger.info).toHaveBeenCalledWith({}, 'User sign-in successful for user=test-user, relationshipId=test-org')
   })
 
   it('should work with error log codes', () => {
@@ -151,9 +138,9 @@ describe('Logger Functionality', () => {
 
   it('should always log at error level when using the dedicated error logger', () => {
     const logCode = LogCodes.AUTH.SIGN_IN_SUCCESS
-    error(logCode, { userId: '123', organisationId: 'org-456' })
+    error(logCode, { userId: '123', currentRelationshipId: 'org-456' })
 
-    expect(logger.error).toHaveBeenCalledWith({}, 'User sign-in successful for user=123, organisation=org-456')
+    expect(logger.error).toHaveBeenCalledWith({}, 'User sign-in successful for user=123, relationshipId=org-456')
     expect(logger.info).not.toHaveBeenCalled()
     expect(logger.debug).not.toHaveBeenCalled()
   })

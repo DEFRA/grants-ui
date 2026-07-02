@@ -8,6 +8,21 @@ import { getGrantCode } from '../../helpers/grant-code.js'
 const VIEW_ONLY_ALLOWED_PATHS = new Set(['confirmation', 'print-submitted-application'])
 
 /**
+ * Publishes an `unauthorised` audit event for an insufficient-permissions denial.
+ * @param {import('../types.js').PipelineRequest} request - The Hapi request object.
+ * @param {string} grantCode - The grant code for the denied page.
+ * @param {string} permission - The permission the user lacked.
+ * @returns {void}
+ */
+function auditPermissionDenied(request, grantCode, permission) {
+  request.sendAuditEventInBackground({
+    action: 'unauthorised',
+    status: 'denied',
+    details: { reason: 'permission', grantCode, permission }
+  })
+}
+
+/**
  * Determines whether the current user can amend an application
  * but is not permitted to submit it.
  *
@@ -122,6 +137,7 @@ function handleViewOnlyUser(request, h, context, grantCode) {
     enforcementEnabled: true,
     authorised: false
   })
+  auditPermissionDenied(request, grantCode, 'view')
   throw forbidden('Insufficient permissions')
 }
 
@@ -232,6 +248,7 @@ export function enforcePagePermission(request, h, context) {
     authorised: false
   })
 
+  auditPermissionDenied(request, grantCode, requiredPermission)
   throw forbidden('Insufficient permissions')
 }
 
