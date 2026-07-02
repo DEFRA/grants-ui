@@ -88,8 +88,7 @@
     },
     "jsdom": {
       "undici": "7.28.0"
-    },
-    "shell-quote": "1.9.0"
+    }
   },
   "dependencies": {
     "@aws-sdk/client-sns": "3.1075.0",
@@ -97,7 +96,7 @@
     "@defra/fcp-audit-publisher": "1.0.7",
     "@defra/forms-engine-plugin": "4.20.0",
     "@defra/hapi-tracing": "1.30.0",
-    "@defra/interactive-map": "0.0.31-alpha",
+    "@defra/interactive-map": "0.0.32-alpha",
     "@elastic/ecs-pino-format": "1.5.0",
     "@hapi/bell": "13.1.0",
     "@hapi/catbox-memory": "6.0.2",

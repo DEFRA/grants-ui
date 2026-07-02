@@ -7,6 +7,8 @@ import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { isMockData, buildMockFeatures } from './map.mock.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
+const OS_MAPS_BASE_URL = 'https://api.os.uk/maps/vector/v1/vts'
+const OS_MAPS_MAX_ZOOM = 15
 
 /**
  * @typedef {import('~/src/server/land-grants/types/land-grants.client.d.js').Parcel & {
@@ -125,6 +127,125 @@ async function tilesHandler(request, h) {
     .header('Cache-Control', 'public, max-age=3600')
 }
 
+const OS_URL_RE = /^https:\/\/api\.os\.uk\/maps\/vector\/v1\/vts/
+const OS_QS_RE = /\?.*$/
+
+/**
+ * Rewrite an OS Maps URL to our absolute proxy path, stripping query params
+ * (the proxy re-adds key+srs itself). Uses string ops to preserve template
+ * tokens like {fontstack}/{range} that new URL() would percent-encode.
+ * @param {string} url
+ * @param {string} origin  e.g. "http://localhost:3000"
+ */
+const proxyOsUrl = (url, origin) =>
+  `${origin}/api/map/os-tiles${url.replace(OS_URL_RE, '').replace(OS_QS_RE, '')}`
+
+/**
+ * Rewrite a single OS Maps source entry to go through our proxy.
+ * If the source uses a tilejson `url`, expands it to inline `tiles` so MapLibre
+ * never fetches the tilejson directly (which would return unproxied tile URLs).
+ * Cap at z15 — the free OS Vector Tile API returns 403 for z16+.
+ * @param {Record<string, unknown>} source
+ * @param {string} origin
+ * @returns {Record<string, unknown>}
+ */
+function rewriteOsSource(source, origin) {
+  if (typeof source.url === 'string' && OS_URL_RE.test(source.url)) {
+    const { url: _url, ...rest } = source
+    return { ...rest, tiles: [`${origin}/api/map/os-tiles/tile/{z}/{y}/{x}.pbf`], maxzoom: OS_MAPS_MAX_ZOOM }
+  }
+  if (Array.isArray(source.tiles)) {
+    return {
+      ...source,
+      tiles: source.tiles.map((t) => (typeof t === 'string' && OS_URL_RE.test(t) ? proxyOsUrl(t, origin) : t))
+    }
+  }
+  return source
+}
+
+/**
+ * Returns a new style object with all OS Maps URLs rewritten to go through our
+ * proxy, so the API key is never exposed to the browser.
+ * @param {Record<string, unknown>} style
+ * @param {string} origin
+ * @returns {Record<string, unknown>}
+ */
+function withProxiedOsUrls(style, origin) {
+  const sources =
+    style.sources && typeof style.sources === 'object'
+      ? Object.fromEntries(
+          Object.entries(/** @type {Record<string, Record<string, unknown>>} */ (style.sources)).map(([k, v]) => [
+            k,
+            rewriteOsSource(v, origin)
+          ])
+        )
+      : style.sources
+
+  return {
+    ...style,
+    sources,
+    ...(typeof style.glyphs === 'string' && OS_URL_RE.test(style.glyphs) ? { glyphs: proxyOsUrl(style.glyphs, origin) } : {}),
+    ...(typeof style.sprite === 'string' && OS_URL_RE.test(style.sprite) ? { sprite: proxyOsUrl(style.sprite, origin) } : {})
+  }
+}
+
+/**
+ * @param {import('@hapi/hapi').Request} request
+ * @param {import('@hapi/hapi').ResponseToolkit} h
+ */
+async function osStyleHandler(request, h) {
+  const apiKey = config.get('osMapsApiKey')
+  const upstream = `${OS_MAPS_BASE_URL}/resources/styles?key=${apiKey}&srs=3857`
+  let response
+  try {
+    response = await fetch(upstream)
+  } catch {
+    return h.response().code(statusCodes.serviceUnavailable)
+  }
+  if (!response.ok) {
+    return h.response().code(response.status)
+  }
+
+  const origin = `${request.server.info.protocol}://${request.info.host}`
+  const styleJson = /** @type {Record<string, unknown>} */ (await response.json())
+  return h.response(withProxiedOsUrls(styleJson, origin)).code(statusCodes.ok).type('application/json')
+}
+
+/**
+ * Proxy OS Maps requests (tilejson, tiles, glyphs, sprites) — appends the API key server-side.
+ * Handles both the root tilejson endpoint (empty path) and all sub-paths.
+ * @param {import('@hapi/hapi').Request} request
+ * @param {import('@hapi/hapi').ResponseToolkit} h
+ */
+async function osTileProxyHandler(request, h) {
+  const apiKey = config.get('osMapsApiKey')
+  const suffix = request.params.path ? `/${request.params.path}` : ''
+  // Pass through any query params the client sent (e.g. {fontstack}/{range} expansion)
+  // but always inject key and srs.
+  const qs = new URLSearchParams(/** @type {Record<string,string>} */ (/** @type {unknown} */ (request.query)))
+  qs.set('key', apiKey)
+  qs.set('srs', '3857')
+  const upstream = `${OS_MAPS_BASE_URL}${suffix}?${qs.toString()}`
+
+  let response
+  try {
+    response = await fetch(upstream)
+  } catch {
+    return h.response().code(statusCodes.serviceUnavailable)
+  }
+  if (!response.ok) {
+    return h.response().code(response.status)
+  }
+
+  const contentType = response.headers.get('content-type') ?? 'application/octet-stream'
+  const buffer = await response.arrayBuffer()
+  return h
+    .response(Buffer.from(buffer))
+    .code(statusCodes.ok)
+    .type(contentType)
+    .header('Cache-Control', 'public, max-age=3600')
+}
+
 /** @satisfies {import('@hapi/hapi').ServerRegisterPluginObject<void>} */
 export const mapPlugin = {
   plugin: {
@@ -154,6 +275,21 @@ export const mapPlugin = {
           }
         },
         handler: tilesHandler
+      })
+      server.route({
+        method: 'GET',
+        path: '/api/map/os-style',
+        handler: osStyleHandler
+      })
+      server.route({
+        method: 'GET',
+        path: '/api/map/os-tiles/{path*}',
+        options: {
+          validate: {
+            params: Joi.object({ path: Joi.string().allow('').default('') })
+          }
+        },
+        handler: osTileProxyHandler
       })
     }
   }
