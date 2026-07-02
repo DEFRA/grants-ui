@@ -3,8 +3,8 @@ version: v1.25.0
 ignore:
   'SNYK-JS-INFLIGHT-6095116':
     - '*':
-        reason: 'No upgrade or patch available'
-        expires: '2026-07-01'
+        reason: 'Not reachable in application runtime — inflight is only present via glob from @defra/interactive-map/polygon-splitter package metadata and dev/build tooling; grants-ui and the shipped map bundles do not import glob or inflight. No upstream fix available; reassess for interactive-map/polygon-splitter dependency removal.'
+        expires: '2026-07-30'
   'SNYK-JS-CONVICT-15182994':
     - '*':
         reason: 'No upgrade or patch available — persists in 6.2.5'
@@ -24,15 +24,15 @@ ignore:
   'SNYK-JS-POSTCSSSELECTORPARSER-16873882':
     - '*':
         reason: 'No fix available — build-time only, not exposed at runtime. Monitor for upstream patch.'
-        expires: '2026-07-02'
+        expires: '2026-08-01'
   'SNYK-JS-IMAGESIZE-17295814':
     - '*':
         reason: 'Build-time only — vulnerable path is docusaurus mdx-loader in @defra/interactive-map docs, never loaded by grants-ui runtime. No upstream fix available.'
-        expires: '2026-07-02'
+        expires: '2026-08-01'
   'SNYK-JS-IMAGESIZE-17295816':
     - '*':
         reason: 'Build-time only — vulnerable path is docusaurus mdx-loader in @defra/interactive-map docs, never loaded by grants-ui runtime. No upstream fix available.'
-        expires: '2026-07-02'
+        expires: '2026-08-01'
   'SNYK-JS-WEBPACKDEVSERVER-17353649':
     - '*':
         reason: 'Build-time only — webpack-dev-server via the docusaurus toolchain in @defra/interactive-map docs, never loaded by grants-ui runtime. Fixed in 5.2.5; interim ignore while the override is blocked by .npmrc min-release-age=7 (5.2.5 published 2026-06-12, installable from 2026-06-19). Replace with an overrides pin and remove this entry once it clears the cooldown.'
@@ -57,3 +57,8 @@ ignore:
     - '*':
         reason: 'Low risk — transitive via ajv@8.20.0 (fast-uri ^3.0.1), used only for JSON-Schema $id/$ref URI resolution, not for host allowlisting or redirect checks, so the interpretation-conflict path is not reachable at runtime. Fixed in 3.1.3, but both 3.1.3 and 4.0.1 were published 2026-06-29 and are blocked by .npmrc min-release-age=7 (installable from ~2026-07-06). Replace with an overrides pin to fast-uri@3.1.3 and remove this entry once it clears the cooldown.'
         expires: '2026-07-09'
+  'SNYK-JS-BRACEEXPANSION-17706650':
+    - '*':
+        reason: 'Fix version is incoming from Defra forms team - Inefficient Algorithmic Complexity [High Severity][https://security.snyk.io/vuln/SNYK-JS-BRACEEXPANSION-17706650]'
+        expires: '2026-07-30'
+

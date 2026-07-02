@@ -64,18 +64,55 @@ mkdir -p woodland-grant-journey-tests-schemas
 curl -fL "https://raw.githubusercontent.com/DEFRA/grants-config-woodland/$WOODLAND_TAG/configurations/woodland/gas/gas.json" -o woodland-grant-journey-tests-schemas/gas.schema.json
 
 COMPOSE_COMMAND='docker compose -f compose.yml -f compose.ha.yml -f compose.land-grants.yml -f compose.ci.yml'
+DIAGNOSTICS_DUMPED=false
+
+dump_diagnostics() {
+  if [ "${DIAGNOSTICS_DUMPED}" = "true" ]; then
+    return
+  fi
+
+  DIAGNOSTICS_DUMPED=true
+
+  echo ""
+  echo "--- Current Service Status ---"
+  eval "${COMPOSE_COMMAND} ps" || true
+  docker compose -f compose.tests.yml ps || true
+
+  for service in grants-ui grants-ui-backend grants-config-broker localstack fcp-defra-id-stub; do
+    echo ""
+    echo "--- ${service} Service Logs ---"
+    eval "${COMPOSE_COMMAND} logs --no-color --tail=300 ${service}" || true
+  done
+
+  echo ""
+  echo "--- LocalStack Resources ---"
+  eval "${COMPOSE_COMMAND} exec -T localstack aws --endpoint-url=http://localhost:4566 s3 ls" || true
+  eval "${COMPOSE_COMMAND} exec -T localstack aws --endpoint-url=http://localhost:4566 sqs list-queues" || true
+  eval "${COMPOSE_COMMAND} exec -T localstack aws --endpoint-url=http://localhost:4566 sns list-topics" || true
+}
 
 # Guarantee teardown of both the main stack and the ephemeral test stack on
 # any exit (success, failure, or interrupt). This ensures that even if a test
 # suite hook exits non-zero under `set -e`, containers, networks and volumes
 # are still cleaned up instead of being left running locally.
 cleanup() {
+  status=$?
+  trap - EXIT
+
+  if [ "${status}" -ne 0 ]; then
+    echo ""
+    echo "Failure detected; dumping docker compose diagnostics before cleanup..."
+    dump_diagnostics
+  fi
+
   echo ""
   echo "Cleaning up docker compose stacks..."
   if [ -n "${COMPOSE_COMMAND:-}" ]; then
     eval "${COMPOSE_COMMAND} down -v" || true
   fi
   docker compose -f compose.tests.yml down -v || true
+
+  exit "${status}"
 }
 trap cleanup EXIT
 
@@ -94,8 +131,6 @@ echo "Waiting for grants-ui service to start..."
 until docker compose ps grants-ui | grep -q "Up"; do
     if [ ${ATTEMPTS} -eq ${MAX_ATTEMPTS} ]; then
         echo "Error: Timed out waiting for grants-ui service to start."
-        docker compose ps
-        eval "${COMPOSE_COMMAND} down"
         exit 1
     fi
     printf '.'
@@ -110,13 +145,6 @@ ATTEMPTS=0
 until curl -skf https://localhost:4000/health >/dev/null 2>&1; do
     if [ ${ATTEMPTS} -eq ${MAX_ATTEMPTS} ]; then
         echo "Error: Timed out waiting for grants-ui service to be accessible."
-        echo "--- Current Service Status ---"
-        docker compose ps
-        echo "--- grants-ui Service Logs ---"
-        docker compose logs grants-ui
-        echo "--- Redis Service Logs ---"
-        docker compose logs redis
-        eval "${COMPOSE_COMMAND} down"
         exit 1
     fi
     printf 'h'
@@ -125,6 +153,22 @@ until curl -skf https://localhost:4000/health >/dev/null 2>&1; do
 done
 
 echo "All services are healthy!"
+
+echo "Waiting for example-grant-with-auth backend definition to be available..."
+ATTEMPTS=0
+READINESS_OUTPUT=""
+until READINESS_OUTPUT=$(node ./tools/check-backend-form-definition-ready.js 2>&1); do
+    if [ ${ATTEMPTS} -eq ${MAX_ATTEMPTS} ]; then
+        echo "Error: Timed out waiting for example-grant-with-auth backend definition to be available."
+        echo "${READINESS_OUTPUT}"
+        exit 1
+    fi
+    printf 'f'
+    ATTEMPTS=$(($ATTEMPTS+1))
+    sleep 3
+done
+echo "${READINESS_OUTPUT}"
+
 echo "Service Status:"
 docker compose ps
 
