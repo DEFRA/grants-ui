@@ -487,10 +487,16 @@ async function registerBackendForms(redis, backendSlugs) {
  * Throws clearly if there is no active request context, so a background or
  * unscoped call fails fast rather than fetching without a user.
  *
+ * Mirrors the merge `registerYamlForms` applies to YAML-sourced forms: a form's
+ * own `grantRedirectRules` (e.g. `null`, or a partial override) is layered over
+ * `sharedRules` so backend-sourced forms inherit the same defaults instead of
+ * being served whatever the backend stored verbatim.
+ *
  * @param {string} slug
+ * @param {SharedRedirectRules} sharedRules
  * @returns {Promise<FormDefinition>}
  */
-async function resolveBackendDefinition(slug) {
+async function resolveBackendDefinition(slug, sharedRules) {
   const request = currentRequest()
   if (!request) {
     throw new Error(`No request context available to resolve backend form definition for '${slug}'`)
@@ -505,14 +511,23 @@ async function resolveBackendDefinition(slug) {
   }
 
   hoistPageConfig(definition)
-  return configureFormDefinition(definition)
+  configureFormDefinition(definition)
+
+  const meta = /** @type {Record<string, unknown>} */ (definition.metadata ??= {})
+  meta.grantRedirectRules = {
+    ...sharedRules,
+    .../** @type {Record<string, unknown> | undefined} */ (meta.grantRedirectRules)
+  }
+
+  return definition
 }
 
 /**
  * @param {BaseFormsService} baseService
  * @param {FormsRedisClient} redis
+ * @param {SharedRedirectRules} sharedRules
  */
-function buildServiceInterface(baseService, redis) {
+function buildServiceInterface(baseService, redis, sharedRules) {
   return {
     /**
      * @param {string} slug
@@ -524,7 +539,7 @@ function buildServiceInterface(baseService, redis) {
       }
       // ── backend source (default going forward) ──
       if (entry.source === 'backend') {
-        const definition = await resolveBackendDefinition(slug)
+        const definition = await resolveBackendDefinition(slug, sharedRules)
 
         // The backend definition document carries its own `updatedAt` (which
         // changes when a new version is published) and a `status`
@@ -574,7 +589,7 @@ function buildServiceInterface(baseService, redis) {
       const entry = await getFormMeta(redis, slug)
       // ── backend source (default going forward) ──
       if (entry?.source === 'backend') {
-        return resolveBackendDefinition(slug)
+        return resolveBackendDefinition(slug, sharedRules)
       }
       // ── legacy YAML branch (removal-ready) ──
       try {
@@ -590,7 +605,7 @@ function buildServiceInterface(baseService, redis) {
      * @param {string} slug
      */
     getFormDefinitionBySlug: async (slug) => {
-      return resolveBackendDefinition(slug)
+      return resolveBackendDefinition(slug, sharedRules)
     }
   }
 }
@@ -613,7 +628,7 @@ export const formsService = async () => {
   // ── Slug index ────────────────────────────────────────────────────────────
   await setAllSlugs(redis, [...yamlForms.map((f) => f.slug), ...backendSlugs])
 
-  return buildServiceInterface(loader.toFormsService(), redis)
+  return buildServiceInterface(loader.toFormsService(), redis, sharedRules)
 }
 
 /**
