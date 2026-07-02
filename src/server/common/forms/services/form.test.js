@@ -322,6 +322,24 @@ describe('form', () => {
       expect(result).toMatchObject({ name: 'Backend Form' })
     })
 
+    test('getFormDefinition merges shared redirect rules into a backend-sourced form with grantRedirectRules: null', async () => {
+      registerBackendForm()
+      _reverseStore.set('backend-form', 'backend-form')
+      mockBackendRequest()
+      mockBackendStateWithDefinition({
+        definition: {
+          definition: { name: 'Backend Form', metadata: { grantRedirectRules: null }, pages: [] }
+        }
+      })
+
+      const service = await formsService()
+      const result = await service.getFormDefinition('backend-form')
+
+      expect(result.metadata.grantRedirectRules).not.toBeNull()
+      expect(result.metadata.grantRedirectRules.preSubmission).toEqual([{ toPath: '/summary' }])
+      expect(result.metadata.grantRedirectRules.postSubmission.length).toBeGreaterThan(0)
+    })
+
     test('getFormDefinitionBySlug resolves the stashed definition for backend forms', async () => {
       mockBackendRequest()
       mockBackendStateWithDefinition({

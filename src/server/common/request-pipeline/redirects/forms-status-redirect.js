@@ -181,10 +181,8 @@ function preSubmissionRedirect(request, h, context) {
     return guardRedirect
   }
 
-  const preSubmissionRedirectRule = grantRedirectRules?.preSubmission?.[0]
-  if (!preSubmissionRedirectRule) {
-    return h.continue
-  }
+  const preSubmissionRedirectRule = /** @type {{ preSubmission: RedirectRule[] }} */ (grantRedirectRules)
+    .preSubmission[0]
   const preSubmissionRedirectUrl = preSubmissionRedirectRule.toPath.startsWith('/')
     ? `/${grantId}${preSubmissionRedirectRule.toPath}`
     : `/${grantId}/${preSubmissionRedirectRule.toPath}`
