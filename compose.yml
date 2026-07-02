@@ -311,15 +311,19 @@ services:
       SKIP_SSL_CERT_DOWNLOAD: 1
       DISABLE_EVENTS: 1
       DISABLE_USAGE_COLLECTION: 1
+      LOCALSTACK_REQUIRED_S3_BUCKETS: configs-bucket
+      LOCALSTACK_REQUIRED_SQS_QUEUES: fcp_audit,gfr__sqs___config_input,grants_ui_backend__sqs__config_updates
+      LOCALSTACK_REQUIRED_SNS_TOPICS: fcp_audit_events,gfr__sns___config_update
     volumes:
       - localstack-data:/var/lib/localstack
       - ./localstack/start-localstack.sh:/etc/localstack/init/ready.d/start-localstack.sh
+      - ./localstack/check-localstack-resources.sh:/usr/local/bin/check-localstack-resources.sh:ro
       - ./localstack/forms:/etc/localstack/forms:ro
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:4566/_localstack/health']
+      test: ['CMD-SHELL', '/usr/local/bin/check-localstack-resources.sh']
       interval: 2s
       start_period: 2s
-      retries: 3
+      retries: 30
     networks:
       - grants-ui-net
 
