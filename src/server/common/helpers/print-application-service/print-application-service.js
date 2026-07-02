@@ -19,7 +19,14 @@ export const COMPOSITE_FIELD_PARTS = {
  * @typedef {{ text: string, value: string | number | boolean }} ListItem
  * @typedef {{ type: string, name: string, title: string, shortDescription?: string, list?: string, items?: ListItem[] }} FormComponent
  * @typedef {{ title: string, components?: FormComponent[] }} FormPage
- * @typedef {{ pages?: FormPage[] }} FormDefinition
+ * @typedef {{
+ *   pages?: FormPage[],
+ *   metadata?: {
+ *     printPage?: {
+ *       includeApplicationInTitle?: boolean
+ *     }
+ *   }
+ * }} FormDefinition
  * @typedef {{ title: string, path?: string, slug: string, id: string}} FormMeta
  * @typedef {Record<string, unknown>} Answers
  */
@@ -172,8 +179,14 @@ export function buildPrintViewModel({
   configurablePrintContent,
   applicantDetailsSections
 }) {
+  let pageTitle = `${form.name} application`
+
+  if (definition.metadata?.printPage?.includeApplicationInTitle === false) {
+    pageTitle = form.name
+  }
+
   return {
-    pageTitle: `${form.name} application`,
+    pageTitle,
     serviceName: form.name,
     serviceUrl: `/${slug}`,
     referenceNumber: referenceNumber || 'Not available',

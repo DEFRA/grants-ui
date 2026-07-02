@@ -1,5 +1,5 @@
 engine: V2
-name: Woodland Management Plan
+name: Apply for a woodland management plan (WMP)
 metadata:
   id: 95e92559-968d-44ae-8666-2b1ad3dffd38
   enabledInProd: true
@@ -210,6 +210,7 @@ metadata:
       <p class="govuk-body"><a class="govuk-link" href="/{{SLUG}}/print-submitted-application" target="_blank">View / Print submitted application (opens in new tab)</a></p>
   printPage:
     showApplicantDetails: true
+    includeApplicationInTitle: false
   incorrectDetailsContent:
     heading: Update your details
     paragraphs:
@@ -248,7 +249,7 @@ pages:
     id: a24cb35f-a359-4934-b8c8-56ff92cb3df1
 
   # Task list page
-  - title: Woodland Management Plan
+  - title: Apply for a woodland management plan (WMP)
     id: fd1c8e7c-9b0a-4c3b-9c5a-2f8e5a9f8b6d
     path: /tasks
     controller: TaskListPageController

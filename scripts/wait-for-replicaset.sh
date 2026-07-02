@@ -5,13 +5,7 @@ PRIMARY="${PRIMARY:-127.0.0.1:27017}"
 REPLSET="${REPLSET:-mongoRepl}"
 AFTER_REPLICA_SET_READY_COMMAND="${AFTER_REPLICA_SET_READY_COMMAND:-}"
 
-echo "Waiting for mongod to respond on $PRIMARY..."
-for i in {1..60}; do
-  if mongosh "mongodb://$PRIMARY/?directConnection=true" --quiet --eval "db.runCommand({ping:1}).ok" | grep -q 1; then
-    break
-  fi
-  sleep 2
-done
+echo "Mongodb is healthy, initiating replicaset on $PRIMARY..."
 
 mongosh "mongodb://$PRIMARY/?directConnection=true" --quiet <<EOF
 try { rs.status() } catch(e) {
@@ -25,15 +19,15 @@ try { rs.status() } catch(e) {
 EOF
 
 echo "Waiting for PRIMARY election..."
-for i in {1..90}; do
+for i in {1..180}; do
   if mongosh "mongodb://$PRIMARY/?directConnection=true" --quiet --eval "db.hello().isWritablePrimary" | grep -q true; then
     echo "Replica set ready."
     if [ -n "$AFTER_REPLICA_SET_READY_COMMAND" ]; then
-      bash -c "$AFTER_REPLICA_SET_READY_COMMAND" &
+      bash -c "$AFTER_REPLICA_SET_READY_COMMAND"
     fi
-    exec tail -f /dev/null
+    exit 0
   fi
-  sleep 2
+  sleep 0.5
 done
 
 echo "Timed out waiting for PRIMARY"
