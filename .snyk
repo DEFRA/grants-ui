@@ -24,15 +24,15 @@ ignore:
   'SNYK-JS-POSTCSSSELECTORPARSER-16873882':
     - '*':
         reason: 'No fix available — build-time only, not exposed at runtime. Monitor for upstream patch.'
-        expires: '2026-07-02'
+        expires: '2026-08-01'
   'SNYK-JS-IMAGESIZE-17295814':
     - '*':
         reason: 'Build-time only — vulnerable path is docusaurus mdx-loader in @defra/interactive-map docs, never loaded by grants-ui runtime. No upstream fix available.'
-        expires: '2026-07-02'
+        expires: '2026-08-01'
   'SNYK-JS-IMAGESIZE-17295816':
     - '*':
         reason: 'Build-time only — vulnerable path is docusaurus mdx-loader in @defra/interactive-map docs, never loaded by grants-ui runtime. No upstream fix available.'
-        expires: '2026-07-02'
+        expires: '2026-08-01'
   'SNYK-JS-WEBPACKDEVSERVER-17353649':
     - '*':
         reason: 'Build-time only — webpack-dev-server via the docusaurus toolchain in @defra/interactive-map docs, never loaded by grants-ui runtime. Fixed in 5.2.5; interim ignore while the override is blocked by .npmrc min-release-age=7 (5.2.5 published 2026-06-12, installable from 2026-06-19). Replace with an overrides pin and remove this entry once it clears the cooldown.'
@@ -61,3 +61,4 @@ ignore:
     - '*':
         reason: 'Fix version is incoming from Defra forms team - Inefficient Algorithmic Complexity [High Severity][https://security.snyk.io/vuln/SNYK-JS-BRACEEXPANSION-17706650]'
         expires: '2026-07-30'
+
