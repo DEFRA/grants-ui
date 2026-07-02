@@ -322,6 +322,90 @@ describe('form', () => {
       expect(result).toMatchObject({ name: 'Backend Form' })
     })
 
+    test('getFormDefinition merges shared redirect rules into a backend-sourced form with grantRedirectRules: null', async () => {
+      registerBackendForm()
+      _reverseStore.set('backend-form', 'backend-form')
+      mockBackendRequest()
+      mockBackendStateWithDefinition({
+        definition: {
+          definition: { name: 'Backend Form', metadata: { grantRedirectRules: null }, pages: [] }
+        }
+      })
+
+      const service = await formsService()
+      const result = await service.getFormDefinition('backend-form')
+
+      expect(result.metadata.grantRedirectRules).not.toBeNull()
+      expect(result.metadata.grantRedirectRules.preSubmission).toEqual([{ toPath: '/summary' }])
+      expect(result.metadata.grantRedirectRules.postSubmission.length).toBeGreaterThan(0)
+    })
+
+    test('getFormDefinition merges shared redirect rules into a backend-sourced form with no metadata at all', async () => {
+      registerBackendForm()
+      _reverseStore.set('backend-form', 'backend-form')
+      mockBackendRequest()
+      mockBackendStateWithDefinition({
+        definition: {
+          definition: { name: 'Backend Form', pages: [] }
+        }
+      })
+
+      const service = await formsService()
+      const result = await service.getFormDefinition('backend-form')
+
+      expect(result.metadata.grantRedirectRules.preSubmission).toEqual([{ toPath: '/summary' }])
+    })
+
+    test('getFormDefinition lets a backend-sourced form override preSubmission while keeping shared postSubmission', async () => {
+      registerBackendForm()
+      _reverseStore.set('backend-form', 'backend-form')
+      mockBackendRequest()
+      mockBackendStateWithDefinition({
+        definition: {
+          definition: {
+            name: 'Backend Form',
+            metadata: { grantRedirectRules: { preSubmission: [{ toPath: '/custom' }] } },
+            pages: []
+          }
+        }
+      })
+
+      const service = await formsService()
+      const result = await service.getFormDefinition('backend-form')
+
+      expect(result.metadata.grantRedirectRules.preSubmission).toEqual([{ toPath: '/custom' }])
+      expect(result.metadata.grantRedirectRules.postSubmission.length).toBeGreaterThan(0)
+    })
+
+    test('getFormMetadata merges shared redirect rules for backend-sourced forms', async () => {
+      registerBackendForm()
+      mockBackendRequest()
+      mockBackendStateWithDefinition({
+        definition: {
+          definition: { name: 'Backend Form', metadata: { grantRedirectRules: null }, pages: [] }
+        }
+      })
+
+      const service = await formsService()
+      const result = await service.getFormMetadata('backend-form')
+
+      expect(result.metadata.grantRedirectRules.preSubmission).toEqual([{ toPath: '/summary' }])
+    })
+
+    test('getFormDefinitionBySlug merges shared redirect rules for backend-sourced forms', async () => {
+      mockBackendRequest()
+      mockBackendStateWithDefinition({
+        definition: {
+          definition: { name: 'Backend Form', metadata: { grantRedirectRules: null }, pages: [] }
+        }
+      })
+
+      const service = await formsService()
+      const result = await service.getFormDefinitionBySlug('backend-form')
+
+      expect(result.metadata.grantRedirectRules.preSubmission).toEqual([{ toPath: '/summary' }])
+    })
+
     test('getFormDefinitionBySlug resolves the stashed definition for backend forms', async () => {
       mockBackendRequest()
       mockBackendStateWithDefinition({

@@ -264,6 +264,16 @@ describe('formsStatusRedirect', () => {
     expect(h.redirect).toHaveBeenCalledWith('/grant-a/check-selected-land-actions')
   })
 
+  it('continues without redirecting when there is no preSubmission rule configured', async () => {
+    request.app.model.def.metadata.grantRedirectRules.preSubmission = []
+    context.state = { question: 'answer' }
+
+    const result = await formsStatusRedirect(request, h, context)
+
+    expect(result).toBe(h.continue)
+    expect(h.redirect).not.toHaveBeenCalled()
+  })
+
   it.each([undefined, 'CLEARED'])('redirects to "check answers" page if some saved state', async (status) => {
     context.state = {
       applicationStatus: status,
