@@ -16,6 +16,9 @@ const TILE_CACHE_MAX_AGE_SECONDS = 3600
 const OS_URL_RE = new RegExp(`^${OS_MAPS_BASE_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`)
 const OS_QS_RE = /\?.*$/
 
+/** @type {{ styleJson: Record<string, unknown>, tileUrlTemplate: string } | null} */
+let osBasemapCache = null
+
 /**
  * @param {Request} request
  * @param {ResponseToolkit} h
@@ -135,17 +138,18 @@ const proxyOsUrl = (url, origin) => `${origin}/api/map/os-tiles${url.replace(OS_
 
 /**
  * Rewrite a single OS Maps source entry to go through our proxy.
- * If the source uses a tilejson `url`, expands it to inline `tiles` so MapLibre
- * never fetches the tilejson directly (which would return unproxied tile URLs).
+ * If the source uses a tilejson `url`, expands it to inline `tiles` using the
+ * real tile URL template fetched from the tilejson — no hardcoded paths.
  * Cap at z15 — the free OS Vector Tile API returns 403 for z16+.
  * @param {Record<string, unknown>} source
  * @param {string} origin
+ * @param {string} tileUrlTemplate  proxied tile URL template from the tilejson
  * @returns {Record<string, unknown>}
  */
-function rewriteOsSource(source, origin) {
+function rewriteOsSource(source, origin, tileUrlTemplate) {
   if (typeof source.url === 'string' && OS_URL_RE.test(source.url)) {
     const { url: _url, ...rest } = source
-    return { ...rest, tiles: [`${origin}/api/map/os-tiles/tile/{z}/{y}/{x}.pbf`], maxzoom: OS_MAPS_MAX_ZOOM }
+    return { ...rest, tiles: [tileUrlTemplate], maxzoom: OS_MAPS_MAX_ZOOM }
   }
   if (Array.isArray(source.tiles)) {
     return {
@@ -161,12 +165,15 @@ function rewriteOsSource(source, origin) {
  * proxy, so the API key is never exposed to the browser.
  * @param {Record<string, unknown>} style
  * @param {string} origin
+ * @param {string} tileUrlTemplate  proxied tile URL template from the tilejson
  * @returns {Record<string, unknown>}
  */
-function withProxiedOsUrls(style, origin) {
+function withProxiedOsUrls(style, origin, tileUrlTemplate) {
   const sources =
     style.sources && typeof style.sources === 'object'
-      ? Object.fromEntries(Object.entries(style.sources).map(([k, v]) => [k, rewriteOsSource(v, origin)]))
+      ? Object.fromEntries(
+          Object.entries(style.sources).map(([k, v]) => [k, rewriteOsSource(v, origin, tileUrlTemplate)])
+        )
       : style.sources
 
   return {
@@ -182,28 +189,48 @@ function withProxiedOsUrls(style, origin) {
 }
 
 /**
- * Fetches the OS Maps vector tile style JSON and rewrites all OS URLs to go
- * through our tile proxy, so the API key is injected server-side and never
- * exposed to the browser. MapLibre uses this style to render the basemap.
+ * Fetches the OS Maps style JSON and tilejson in parallel, rewrites all OS URLs
+ * to go through our proxy so the API key is never exposed to the browser.
+ * Results are cached in memory — the style and tile URL template are stable for
+ * the lifetime of the process.
  * @param {Request} request
  * @param {ResponseToolkit} h
  */
 async function osBasemapHandler(request, h) {
   const apiKey = config.get('osMapsApiKey')
-  const upstream = `${OS_MAPS_BASE_URL}/resources/styles?key=${apiKey}&srs=${OS_MAPS_SRS}`
-  let response
-  try {
-    response = await fetch(upstream)
-  } catch {
-    return h.response().code(statusCodes.serviceUnavailable)
-  }
-  if (!response.ok) {
-    return h.response().code(response.status)
+  const origin = `${request.server.info.protocol}://${request.info.host}`
+
+  if (!osBasemapCache) {
+    let styleRes, tilejsonRes
+    try {
+      ;[styleRes, tilejsonRes] = await Promise.all([
+        fetch(`${OS_MAPS_BASE_URL}/resources/styles?key=${apiKey}&srs=${OS_MAPS_SRS}`),
+        fetch(`${OS_MAPS_BASE_URL}?key=${apiKey}&srs=${OS_MAPS_SRS}`)
+      ])
+    } catch {
+      return h.response().code(statusCodes.serviceUnavailable)
+    }
+    if (!styleRes.ok) {
+      return h.response().code(styleRes.status)
+    }
+    if (!tilejsonRes.ok) {
+      return h.response().code(tilejsonRes.status)
+    }
+
+    const styleJson = /** @type {Record<string, unknown>} */ (await styleRes.json())
+    const tilejson = /** @type {{ tiles?: string[] }} */ (await tilejsonRes.json())
+    const rawTileUrl = tilejson.tiles?.[0]
+    if (!rawTileUrl) {
+      return h.response().code(statusCodes.serviceUnavailable)
+    }
+
+    osBasemapCache = { styleJson, tileUrlTemplate: proxyOsUrl(rawTileUrl, origin) }
   }
 
-  const origin = `${request.server.info.protocol}://${request.info.host}`
-  const styleJson = /** @type {Record<string, unknown>} */ (await response.json())
-  return h.response(withProxiedOsUrls(styleJson, origin)).code(statusCodes.ok).type('application/json')
+  return h
+    .response(withProxiedOsUrls(osBasemapCache.styleJson, origin, osBasemapCache.tileUrlTemplate))
+    .code(statusCodes.ok)
+    .type('application/json')
 }
 
 /**
