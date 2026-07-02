@@ -61,3 +61,20 @@ ignore:
     - '*':
         reason: 'Fix version is incoming from Defra forms team - Inefficient Algorithmic Complexity [High Severity][https://security.snyk.io/vuln/SNYK-JS-BRACEEXPANSION-17706650]'
         expires: '2026-07-30'
+  'SNYK-JS-IMAGESIZE-17295814':
+    - '*':
+        reason: 'Fix version is incoming from Defra forms team - Infinite loop [High Severity]'
+        expires: '2026-08-01'
+  'SNYK-JS-IMAGESIZE-17295814':
+    - '*':
+        reason: 'Fix version is incoming from Defra forms team - Infinite loop [High Severity]'
+        expires: '2026-08-01'
+  'SNYK-JS-IMAGESIZE-17295816':
+    - '*':
+        reason: 'Fix version is incoming from Defra forms team - Infinite loop [High Severity]'
+        expires: '2026-08-01'
+  'SNYK-JS-POSTCSSSELECTORPARSER-16873882':
+    - '*':
+        reason: 'Fix version is incoming from Defra forms team - Uncontrolled Recursion [Medium Severity]'
+        expires: '2026-08-01'
+
