@@ -1,5 +1,8 @@
 services:
   grants-ui:
+    depends_on:
+      fg-gas-backend:
+        condition: service_healthy
     environment:
       GAS_API_URL: http://fg-gas-backend:3102
       GAS_API_AUTH_TOKEN: 3e4a1b2c-5d6e-7f8a-9b0c-1d2e3f4a5b6c # This local dev token has been pre-hashed and inserted into mongo
@@ -41,9 +44,10 @@ services:
         "
     healthcheck:
       test: ['CMD-SHELL', 'mongosh mongodb://mongodb:27017/?directConnection=true --quiet --eval "db.hello().isWritablePrimary" | grep -q true']
-      interval: 5s
-      timeout: 5s
-      retries: 20
+      interval: 30s
+      start_interval: 1s
+      timeout: 3s
+      retries: 5
       start_period: 10s
 
   fg-gas-backend:
@@ -96,9 +100,10 @@ services:
       GAS__SQS__UPDATE_AGREEMENT_STATUS_QUEUE_URL: http://sqs.eu-west-2.localstack:4566/000000000000/gas__sqs__update_agreement_status_fifo.fifo
     healthcheck:
       test: ['CMD-SHELL', 'node -e "require(''http'').get(''http://localhost:3102/health'', r => process.exit(r.statusCode === 200 ? 0 : 1)).on(''error'', () => process.exit(1))"']
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 30s
+      start_interval: 1s
+      timeout: 3s
+      retries: 3
       start_period: 30s
     networks:
       - grants-ui-net
