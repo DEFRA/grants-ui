@@ -8,7 +8,6 @@ import { isMockData, buildMockFeatures } from './map.mock.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
 const OS_MAPS_BASE_URL = 'https://api.os.uk/maps/vector/v1/vts'
-const OS_MAPS_MAX_ZOOM = 15
 // Web Mercator — required by MapLibre; OS defaults to EPSG:27700 (British National Grid) without this
 const OS_MAPS_SRS = '3857'
 const TILE_CACHE_MAX_AGE_SECONDS = 3600
@@ -63,7 +62,7 @@ async function parcelsHandler(request, h) {
   }))
   const parcelIds = parcelData.map((p) => p.id)
   const bbox = await fetchParcelTileLocation(parcelIds).catch(() => null)
-  const tileUrl = parcelIds.length > 0 ? '/land-grants/parcel-tiles/{z}/{x}/{y}' : null
+  const tileUrl = parcelIds.length > 0 ? ROUTES.parcelTiles : null
 
   return h.response({ features, bbox, tileUrl }).code(statusCodes.ok)
 }
@@ -140,22 +139,14 @@ const proxyOsUrl = (url, origin) => `${origin}/api/map/os-tiles${url.replace(OS_
  * Rewrite a single OS Maps source entry to go through our proxy.
  * If the source uses a tilejson `url`, expands it to inline `tiles` using the
  * real tile URL template fetched from the tilejson — no hardcoded paths.
- * Cap at z15 — the free OS Vector Tile API returns 403 for z16+.
  * @param {Record<string, unknown>} source
- * @param {string} origin
  * @param {string} tileUrlTemplate  proxied tile URL template from the tilejson
  * @returns {Record<string, unknown>}
  */
-function rewriteOsSource(source, origin, tileUrlTemplate) {
+function rewriteOsSource(source, tileUrlTemplate) {
   if (typeof source.url === 'string' && OS_URL_RE.test(source.url)) {
     const { url: _url, ...rest } = source
-    return { ...rest, tiles: [tileUrlTemplate], maxzoom: OS_MAPS_MAX_ZOOM }
-  }
-  if (Array.isArray(source.tiles)) {
-    return {
-      ...source,
-      tiles: source.tiles.map((t) => (typeof t === 'string' && OS_URL_RE.test(t) ? proxyOsUrl(t, origin) : t))
-    }
+    return { ...rest, tiles: [tileUrlTemplate] }
   }
   return source
 }
@@ -171,9 +162,7 @@ function rewriteOsSource(source, origin, tileUrlTemplate) {
 function withProxiedOsUrls(style, origin, tileUrlTemplate) {
   const sources =
     style.sources && typeof style.sources === 'object'
-      ? Object.fromEntries(
-          Object.entries(style.sources).map(([k, v]) => [k, rewriteOsSource(v, origin, tileUrlTemplate)])
-        )
+      ? Object.fromEntries(Object.entries(style.sources).map(([k, v]) => [k, rewriteOsSource(v, tileUrlTemplate)]))
       : style.sources
 
   return {
@@ -268,24 +257,32 @@ async function osTileProxyHandler(request, h) {
     .header('Cache-Control', `public, max-age=${TILE_CACHE_MAX_AGE_SECONDS}`)
 }
 
+const ROUTES = {
+  parcels: '/api/map/parcels',
+  parcelsMockGeojson: '/api/map/parcels/geojson',
+  parcelTiles: '/api/map/parcel-tiles/{z}/{x}/{y}',
+  osBasemap: '/api/map/os-basemap',
+  osTiles: '/api/map/os-tiles/{path*}'
+}
+
 export const mapPlugin = {
   plugin: {
     name: 'map',
     register(server) {
       server.route({
         method: 'GET',
-        path: '/api/map/parcels',
+        path: ROUTES.parcels,
         options: { auth: { mode: 'required', strategy: 'session' } },
         handler: parcelsHandler
       })
       server.route({
         method: 'GET',
-        path: '/api/map/parcels/geojson',
+        path: ROUTES.parcelsMockGeojson,
         handler: mockGeojsonHandler
       })
       server.route({
         method: 'GET',
-        path: '/land-grants/parcel-tiles/{z}/{x}/{y}',
+        path: ROUTES.parcelTiles,
         options: {
           auth: { mode: 'required', strategy: 'session' },
           validate: {
@@ -300,12 +297,12 @@ export const mapPlugin = {
       })
       server.route({
         method: 'GET',
-        path: '/api/map/os-basemap',
+        path: ROUTES.osBasemap,
         handler: osBasemapHandler
       })
       server.route({
         method: 'GET',
-        path: '/api/map/os-tiles/{path*}',
+        path: ROUTES.osTiles,
         options: {
           validate: {
             params: Joi.object({ path: Joi.string().allow('').default('') })

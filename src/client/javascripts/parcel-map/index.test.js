@@ -12,7 +12,7 @@ const PARCELS_RESPONSE = {
     { id: 'SD7148-9161', properties: { sheet_id: 'SD7148', parcel_id: '9161', areaHa: null } }
   ],
   bbox: { minLng: -2.5, minLat: 51.4, maxLng: -2.3, maxLat: 51.6 },
-  tileUrl: '/land-grants/parcel-tiles/{z}/{x}/{y}'
+  tileUrl: '/api/map/parcel-tiles/{z}/{x}/{y}'
 }
 
 function makeMlMap(overrides = {}) {
@@ -218,7 +218,7 @@ describe('parcel-map web component', () => {
       const el = await mountElement()
       await waitForEvent(el, EVENT_READY)
       const [, sourceSpec] = ml.addSource.mock.calls[0]
-      expect(sourceSpec.tiles[0]).toBe(`${globalThis.location.origin}/land-grants/parcel-tiles/{z}/{x}/{y}`)
+      expect(sourceSpec.tiles[0]).toBe(`${globalThis.location.origin}/api/map/parcel-tiles/{z}/{x}/{y}`)
     })
   })
 

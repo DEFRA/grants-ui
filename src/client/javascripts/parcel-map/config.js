@@ -22,6 +22,8 @@ export const LAYER_ID_LABEL = 'parcels-label'
 export const FILL_OPACITY_DEFAULT = 0.2
 export const FILL_OPACITY_SELECTED = 0.5
 export const MAP_DEFAULT_HEIGHT = '500px'
+export const MAP_DEFAULT_CENTER = /** @type {[number, number]} */ ([-1.5, 52.5])
+export const MAP_DEFAULT_ZOOM = 12
 export const MAP_LOAD_TIMEOUT_MS = 10000
 export const FETCH_MAX_ATTEMPTS = 2
 export const FETCH_RETRY_DELAY_MS = 1000
@@ -36,7 +38,6 @@ export const SELECTION_NONE_SENTINEL = '__none__'
 
 export const MSG_LOADING = 'Loading map…'
 export const MSG_ERROR_UNAVAILABLE = 'There was a problem loading the map.'
-export const MSG_ERROR_NO_PARCELS = 'No land parcels were found for your account.'
 export const MSG_UNKNOWN_PARCEL = 'Unknown parcel'
 export const MSG_UNKNOWN_AREA = 'Unknown'
 

@@ -16,6 +16,8 @@ import {
   FILL_OPACITY_DEFAULT,
   FILL_OPACITY_SELECTED,
   MAP_DEFAULT_HEIGHT,
+  MAP_DEFAULT_CENTER,
+  MAP_DEFAULT_ZOOM,
   MAP_LOAD_TIMEOUT_MS,
   FETCH_MAX_ATTEMPTS,
   FETCH_RETRY_DELAY_MS,
@@ -36,7 +38,6 @@ import {
   SELECTION_NONE_SENTINEL,
   MSG_LOADING,
   MSG_ERROR_UNAVAILABLE,
-  MSG_ERROR_NO_PARCELS,
   MSG_UNKNOWN_PARCEL,
   MSG_UNKNOWN_AREA,
   TOOLTIP_VERTICAL_OFFSET
@@ -191,9 +192,10 @@ class ParcelMap extends HTMLElement {
     }
 
     if (data.parcelIds.length === 0) {
-      this._state = STATE_ERROR
-      this._teardown()
-      this._showError(MSG_ERROR_NO_PARCELS)
+      this._ml = ml
+      this._state = STATE_READY
+      this._skeleton?.remove()
+      this._skeleton = null
       this.dispatchEvent(new CustomEvent(EVENT_ERROR, { bubbles: true, detail: { reason: 'no-parcels' } }))
       return
     }
@@ -251,7 +253,9 @@ class ParcelMap extends HTMLElement {
         behaviour: 'inline',
         containerHeight: this.style.height || MAP_DEFAULT_HEIGHT,
         mapProvider: maplibreProvider(),
-        mapStyle: { url: MAP_STYLE_URL, attribution: MAP_STYLE_ATTRIBUTION }
+        mapStyle: { url: MAP_STYLE_URL, attribution: MAP_STYLE_ATTRIBUTION },
+        center: MAP_DEFAULT_CENTER,
+        zoom: MAP_DEFAULT_ZOOM
       })
       this._mapInstance = map
 

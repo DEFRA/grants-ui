@@ -99,7 +99,7 @@ describe('mapPlugin', () => {
             expect.objectContaining({ id: 'SD7148-9161' })
           ]),
           bbox: { minLng: -2.5, minLat: 51.4, maxLng: -2.3, maxLat: 51.6 },
-          tileUrl: '/land-grants/parcel-tiles/{z}/{x}/{y}'
+          tileUrl: '/api/map/parcel-tiles/{z}/{x}/{y}'
         })
       )
     })
@@ -116,7 +116,7 @@ describe('mapPlugin', () => {
       expect(features[0].properties.areaHa).toBeNull()
     })
 
-    it('stores parcel IDs in session', async () => {
+    it('does not store parcel IDs in session', async () => {
       fetchParcels.mockResolvedValue(mockParcels)
       fetchParcelTileLocation.mockResolvedValue(null)
       const request = makeRequest()
@@ -124,7 +124,7 @@ describe('mapPlugin', () => {
 
       await parcelsHandler(request, h)
 
-      expect(request.yar.set).toHaveBeenCalledWith('mapParcelIds', ['SD7148-9160', 'SD7148-9161'])
+      expect(request.yar.set).not.toHaveBeenCalledWith('mapParcelIds', expect.anything())
     })
 
     it('sets tileUrl to null when no parcels returned', async () => {
@@ -251,7 +251,7 @@ describe('mapPlugin', () => {
     })
   })
 
-  describe('GET /land-grants/parcel-tiles/{z}/{x}/{y}', () => {
+  describe('GET /api/map/parcel-tiles/{z}/{x}/{y}', () => {
     beforeEach(() => {
       globalThis.fetch = vi.fn()
     })
@@ -265,13 +265,13 @@ describe('mapPlugin', () => {
       expect(schema.validate({ z: 'abc', x: 0, y: 0 }).error).toBeDefined()
     })
 
-    it('proxies the tile request with parcel IDs from session', async () => {
-      const mockResponse = {
+    it('proxies the tile request with parcel IDs from fetchParcels', async () => {
+      fetchParcels.mockResolvedValue([{ sheetId: 'SD7148', parcelId: '9160' }])
+      global.fetch.mockResolvedValue({
         ok: true,
         arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8))
-      }
-      global.fetch.mockResolvedValue(mockResponse)
-      const request = makeRequest({ mapParcelIds: ['SD7148-9160'] })
+      })
+      const request = makeRequest()
       request.params = { z: '12', x: '100', y: '200' }
       const h = makeH()
 
@@ -288,8 +288,9 @@ describe('mapPlugin', () => {
     })
 
     it('returns upstream status code when tile fetch fails', async () => {
+      fetchParcels.mockResolvedValue([{ sheetId: 'SD7148', parcelId: '9160' }])
       global.fetch.mockResolvedValue({ ok: false, status: 404 })
-      const request = makeRequest({ mapParcelIds: [] })
+      const request = makeRequest()
       request.params = { z: '12', x: '100', y: '200' }
       const h = makeH()
 
@@ -298,9 +299,9 @@ describe('mapPlugin', () => {
       expect(h._responseObj.code).toHaveBeenCalledWith(404)
     })
 
-    it('returns 503 when fetch throws', async () => {
-      global.fetch.mockRejectedValue(new Error('network error'))
-      const request = makeRequest({ mapParcelIds: ['SD7148-9160'] })
+    it('returns 503 when fetchParcels throws', async () => {
+      fetchParcels.mockRejectedValue(new Error('network error'))
+      const request = makeRequest()
       request.params = { z: '12', x: '100', y: '200' }
       const h = makeH()
 
@@ -309,12 +310,25 @@ describe('mapPlugin', () => {
       expect(h._responseObj.code).toHaveBeenCalledWith(503)
     })
 
-    it('uses empty parcel IDs when session has none', async () => {
+    it('returns 503 when tile fetch throws', async () => {
+      fetchParcels.mockResolvedValue([])
+      global.fetch.mockRejectedValue(new Error('network error'))
+      const request = makeRequest()
+      request.params = { z: '10', x: '50', y: '60' }
+      const h = makeH()
+
+      await tilesHandler(request, h)
+
+      expect(h._responseObj.code).toHaveBeenCalledWith(503)
+    })
+
+    it('uses empty parcel IDs when fetchParcels returns none', async () => {
+      fetchParcels.mockResolvedValue([])
       global.fetch.mockResolvedValue({
         ok: true,
         arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0))
       })
-      const request = makeRequest({})
+      const request = makeRequest()
       request.params = { z: '10', x: '50', y: '60' }
       const h = makeH()
 
