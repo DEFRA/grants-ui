@@ -26,19 +26,15 @@ export function isCannotSubmitUser(request, requiredPermission, resource) {
 }
 
 /**
- * Determines whether the current application has been submitted or reopened.
+ * Determines whether the current application has been submitted.
  *
  * @param {FormContext} context - Request/context object containing application state.
- * @returns {boolean} True if the application is submitted or reopened.
+ * @returns {boolean} True if the application is submitted.
  */
 export function isSubmittedApplication(context) {
   const status = /** @type {{ applicationStatus?: string }} */ (context.state).applicationStatus
 
-  if (!status) {
-    return false
-  }
-
-  return [ApplicationStatus.SUBMITTED, ApplicationStatus.REOPENED].includes(status)
+  return status === ApplicationStatus.SUBMITTED
 }
 
 /**
