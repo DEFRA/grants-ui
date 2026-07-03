@@ -5,6 +5,7 @@ import { fetchParcels, fetchParcelTileLocation } from '~/src/server/land-grants/
 import { stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { isMockData, buildMockFeatures } from './map.mock.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
 const OS_MAPS_BASE_URL = 'https://api.os.uk/maps/vector/v1/vts'
@@ -25,14 +26,22 @@ let osBasemapCache = null
 async function parcelsHandler(request, h) {
   /** @type {HydratedParcel[]} */
   let parcels = []
+  /** @type {unknown} */
+  let parcelsError
   try {
     parcels = await fetchParcels(/** @type {AnyFormRequest} */ (/** @type {unknown} */ (request)))
   } catch (error) {
-    const message = /** @type {Error} */ (error).message
-    const upstreamStatus =
-      /** @type {{ code?: number, status?: number }} */ (error)?.code ??
-      /** @type {{ code?: number, status?: number }} */ (error)?.status
-    return h.response({ error: message }).code(upstreamStatus ?? statusCodes.serviceUnavailable)
+    parcelsError = error
+  }
+  if (parcelsError !== undefined) {
+    const err = /** @type {Error & { code?: number, status?: number }} */ (parcelsError)
+    const upstreamStatus = err?.code ?? err?.status
+    log(
+      LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+      { endpoint: ROUTES.parcels, service: 'land-grants-api', upstreamStatus, errorMessage: err.message },
+      request
+    )
+    return h.response({ error: err.message }).code(upstreamStatus ?? statusCodes.serviceUnavailable)
   }
 
   const parcelData = parcels.map((p) => ({
@@ -89,11 +98,26 @@ function mockGeojsonHandler(request, h) {
 async function tilesHandler(request, h) {
   const { z, x, y } = request.params
   let parcels = []
+  /** @type {unknown} */
+  let fetchParcelsError
   try {
     parcels = /** @type {HydratedParcel[]} */ (
       await fetchParcels(/** @type {AnyFormRequest} */ (/** @type {unknown} */ (request)))
     )
-  } catch {
+  } catch (error) {
+    fetchParcelsError = error
+  }
+  if (fetchParcelsError !== undefined) {
+    log(
+      LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+      {
+        endpoint: ROUTES.parcelTiles,
+        service: 'land-grants-api',
+        upstreamStatus: null,
+        errorMessage: /** @type {Error} */ (fetchParcelsError).message
+      },
+      request
+    )
     return h.response().code(statusCodes.serviceUnavailable)
   }
   const parcelIds = parcels.map((p) => stringifyParcel(p))
@@ -101,6 +125,8 @@ async function tilesHandler(request, h) {
   const upstream = `${LAND_GRANTS_API_URL}/api/v1/parcel-tiles/${z}/${x}/${y}`
 
   let response
+  /** @type {unknown} */
+  let tilesFetchError
   try {
     response = await fetch(upstream, {
       method: 'POST',
@@ -110,7 +136,22 @@ async function tilesHandler(request, h) {
       },
       body: JSON.stringify({ parcelIds })
     })
-  } catch {
+  } catch (error) {
+    tilesFetchError = error
+  }
+  if (tilesFetchError !== undefined || !response) {
+    if (tilesFetchError !== undefined) {
+      log(
+        LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+        {
+          endpoint: upstream,
+          service: 'land-grants-api',
+          upstreamStatus: null,
+          errorMessage: /** @type {Error} */ (tilesFetchError).message
+        },
+        request
+      )
+    }
     return h.response().code(statusCodes.serviceUnavailable)
   }
 
@@ -191,12 +232,29 @@ async function osBasemapHandler(request, h) {
 
   if (!osBasemapCache) {
     let styleRes, tilejsonRes
+    /** @type {unknown} */
+    let basemapFetchError
     try {
       ;[styleRes, tilejsonRes] = await Promise.all([
         fetch(`${OS_MAPS_BASE_URL}/resources/styles?key=${apiKey}&srs=${OS_MAPS_SRS}`),
         fetch(`${OS_MAPS_BASE_URL}?key=${apiKey}&srs=${OS_MAPS_SRS}`)
       ])
-    } catch {
+    } catch (error) {
+      basemapFetchError = error
+    }
+    if (basemapFetchError !== undefined || !styleRes || !tilejsonRes) {
+      if (basemapFetchError !== undefined) {
+        log(
+          LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+          {
+            endpoint: OS_MAPS_BASE_URL,
+            service: 'os-maps',
+            upstreamStatus: null,
+            errorMessage: /** @type {Error} */ (basemapFetchError).message
+          },
+          request
+        )
+      }
       return h.response().code(statusCodes.serviceUnavailable)
     }
     if (!styleRes.ok) {
@@ -239,9 +297,26 @@ async function osTileProxyHandler(request, h) {
   const upstream = `${OS_MAPS_BASE_URL}${suffix}?${qs.toString()}`
 
   let response
+  /** @type {unknown} */
+  let osFetchError
   try {
     response = await fetch(upstream)
-  } catch {
+  } catch (error) {
+    osFetchError = error
+  }
+  if (osFetchError !== undefined || !response) {
+    if (osFetchError !== undefined) {
+      log(
+        LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+        {
+          endpoint: upstream,
+          service: 'os-maps',
+          upstreamStatus: null,
+          errorMessage: /** @type {Error} */ (osFetchError).message
+        },
+        request
+      )
+    }
     return h.response().code(statusCodes.serviceUnavailable)
   }
   if (!response.ok) {

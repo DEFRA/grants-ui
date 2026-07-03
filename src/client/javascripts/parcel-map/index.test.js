@@ -34,6 +34,11 @@ function makeMlMap(overrides = {}) {
       listeners[key] = listeners[key] ?? []
       listeners[key].push(handler)
     }),
+    off: vi.fn((event, layerOrCb, cb) => {
+      const key = cb ? `${event}:${layerOrCb}` : event
+      const handler = cb ?? layerOrCb
+      listeners[key] = (listeners[key] ?? []).filter((fn) => fn !== handler)
+    }),
     _emit(event, eventObj) {
       ;(listeners[event] ?? []).forEach((fn) => fn(eventObj))
     },

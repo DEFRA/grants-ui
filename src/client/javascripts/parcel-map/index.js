@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 // @ts-ignore — no type declarations shipped with this package
 import InteractiveMap from '@defra/interactive-map'
 // @ts-ignore — no type declarations shipped with this package
@@ -259,7 +260,10 @@ class ParcelMap extends HTMLElement {
       })
       this._mapInstance = map
 
-      map.on('map:error', () => resolve(null))
+      map.on('map:error', (/** @type {unknown} */ err) => {
+        console.error('[parcel-map] map failed to load', err)
+        resolve(null)
+      })
 
       const timeout = globalThis.setTimeout(() => resolve(null), MAP_LOAD_TIMEOUT_MS)
 
@@ -271,7 +275,8 @@ class ParcelMap extends HTMLElement {
         mlInstance = m
         // Also catch native MapLibre errors (e.g. style fetch failure) which
         // @defra/interactive-map does not surface as map:error.
-        m.on('error', () => {
+        m.on('error', (/** @type {unknown} */ err) => {
+          console.error('[parcel-map] maplibre error', err)
           globalThis.clearTimeout(timeout)
           resolve(null)
         })
@@ -297,6 +302,7 @@ class ParcelMap extends HTMLElement {
           if (attempt < FETCH_MAX_ATTEMPTS - 1) {
             continue
           }
+          console.error(`[parcel-map] parcels fetch failed with status ${resp.status}`)
           return null
         }
 
@@ -325,10 +331,11 @@ class ParcelMap extends HTMLElement {
           geojsonUrl: body.geojsonUrl ?? null,
           bbox: body.bbox ?? null
         }
-      } catch {
+      } catch (err) {
         if (attempt < FETCH_MAX_ATTEMPTS - 1) {
           continue
         }
+        console.error('[parcel-map] parcels fetch error', err)
         return null
       }
     }
