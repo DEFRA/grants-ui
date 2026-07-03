@@ -55,7 +55,7 @@ services:
       GRANTS_UI_BACKEND_AUTH_TOKEN: ${GRANTS_UI_BACKEND_AUTH_TOKEN:-auth_token}
       GRANTS_UI_BACKEND_ENCRYPTION_KEY: ${GRANTS_UI_BACKEND_ENCRYPTION_KEY:-encryption_key}
       GRANTS_UI_BACKEND_AUTH_JWT_SECRET: ${GRANTS_UI_BACKEND_AUTH_JWT_SECRET:-allowlist-jwt-secret}
-      BACKEND_ALLOWLIST_ENABLED_SLUGS: ${BACKEND_ALLOWLIST_ENABLED_SLUGS:-}
+      BACKEND_ALLOWLIST_ENABLED_SLUGS: ${BACKEND_ALLOWLIST_ENABLED_SLUGS:-example-whitelist,woodland}
       APP_BASE_URL: '${APP_BASE_URL:-http://localhost:3000}'
       HOST: 0.0.0.0
       GAS_API_URL: '${GAS_API_URL:-http://mockserver:1080}'
@@ -74,7 +74,7 @@ services:
       ENABLE_LAND_GRANT_HEFER_20260219: ${ENABLE_LAND_GRANT_HEFER_20260219:-true}
       LAND_GRANTS_ENABLED_ACTIONS: ${LAND_GRANTS_ENABLED_ACTIONS:-CMOR1,UPL1,UPL2,UPL3,UPL8,UPL10,CLIG3}
       MAP_MOCK_DATA_ENABLED: ${MAP_MOCK_DATA_ENABLED:-true}
-      BACKEND_FORM_DEF_ENABLED_SLUGS: ${BACKEND_FORM_DEF_ENABLED_SLUGS:-example-grant-with-auth,farm-payments}
+      BACKEND_FORM_DEF_ENABLED_SLUGS: ${BACKEND_FORM_DEF_ENABLED_SLUGS:-woodland,farm-payments,example-grant-with-auth,example-grant-with-map,example-grant-with-task-list,example-grant-with-task-list-hide-questions,example-whitelist,pigs-might-fly}
       NOTIFICATION_BANNER_EXCLUDED_PATH_SUFFIXES: ${NOTIFICATION_BANNER_EXCLUDED_PATH_SUFFIXES:-/confirmation,/print-submitted-application}
       SFD_UPDATE_URL: '${SFD_UPDATE_URL:-http://localhost:3000/sfd/mock}'
       SFD_UPDATE_ENABLED: ${SFD_UPDATE_ENABLED:-false}
