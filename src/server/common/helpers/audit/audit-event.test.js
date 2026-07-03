@@ -145,48 +145,34 @@ describe('buildAuditEvent', () => {
   })
 
   test("passes details through to the schema's free-form audit.details object", () => {
-    const details = { reason: 'whitelist', crnPassesValidation: false }
+    const details = { reason: 'allowlist', crnPassesValidation: false }
     const event = buildAuditEvent(buildRequest(), { action: 'unauthorised', status: 'denied', details })
 
     expect(event.audit.details).toEqual(details)
   })
 
   describe('ip handling', () => {
-    test('prefers the first x-forwarded-for entry over remoteAddress', () => {
-      const request = buildRequest({
-        headers: { 'x-forwarded-for': `${FORWARDED_IPV4}, ${PROXY_IPV4}` },
-        info: { remoteAddress: SERVER_IPV4 }
-      })
-
-      expect(buildAuditEvent(request, START).ip).toBe(FORWARDED_IPV4)
-    })
-
-    test('falls back to remoteAddress when x-forwarded-for is absent', () => {
-      expect(buildAuditEvent(buildRequest(), START).ip).toBe(REMOTE_IPV4)
-    })
-
-    test('yields an empty string when neither x-forwarded-for nor remoteAddress is present', () => {
-      const request = buildRequest({ info: { remoteAddress: undefined } })
-
-      expect(buildAuditEvent(request, START).ip).toBe('')
-    })
-
-    test('strips an IPv4 :port', () => {
-      const request = buildRequest({ headers: { 'x-forwarded-for': `${CLIENT_IPV4}:5678` } })
-
-      expect(buildAuditEvent(request, START).ip).toBe(CLIENT_IPV4)
-    })
-
-    test('strips an IPv6 zone id', () => {
-      const request = buildRequest({ info: { remoteAddress: `${LINK_LOCAL_IPV6}%eth0` } })
-
-      expect(buildAuditEvent(request, START).ip).toBe(LINK_LOCAL_IPV6)
-    })
-
-    test('truncates to the 20-char schema limit when the address is longer', () => {
-      const request = buildRequest({ info: { remoteAddress: LONG_IPV6 } })
-
-      expect(buildAuditEvent(request, START).ip).toBe(LONG_IPV6.slice(0, 20))
+    test.each([
+      [
+        'prefers the first x-forwarded-for entry over remoteAddress',
+        { headers: { 'x-forwarded-for': `${FORWARDED_IPV4}, ${PROXY_IPV4}` }, info: { remoteAddress: SERVER_IPV4 } },
+        FORWARDED_IPV4
+      ],
+      ['falls back to remoteAddress when x-forwarded-for is absent', {}, REMOTE_IPV4],
+      [
+        'yields an empty string when neither x-forwarded-for nor remoteAddress is present',
+        { info: { remoteAddress: undefined } },
+        ''
+      ],
+      ['strips an IPv4 :port', { headers: { 'x-forwarded-for': `${CLIENT_IPV4}:5678` } }, CLIENT_IPV4],
+      ['strips an IPv6 zone id', { info: { remoteAddress: `${LINK_LOCAL_IPV6}%eth0` } }, LINK_LOCAL_IPV6],
+      [
+        'truncates to the 20-char schema limit when the address is longer',
+        { info: { remoteAddress: LONG_IPV6 } },
+        LONG_IPV6.slice(0, 20)
+      ]
+    ])('%s', (_name, overrides, expected) => {
+      expect(buildAuditEvent(buildRequest(overrides), START).ip).toBe(expected)
     })
   })
 
