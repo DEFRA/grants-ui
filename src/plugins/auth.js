@@ -500,6 +500,17 @@ async function handleTokenVerificationError(userSession, sessionId, request, tok
   }
 }
 
+// Routes where the cookie strategy must not attempt a token refresh (see validate).
+const SIGN_OUT_PATHS = new Set(['/auth/sign-out', '/auth/sign-out-oidc'])
+
+/**
+ * @param {string} path
+ * @returns {boolean}
+ */
+function isSignOutPath(path) {
+  return SIGN_OUT_PATHS.has(path)
+}
+
 function getCookieOptions() {
   return {
     cookie: {
@@ -519,6 +530,10 @@ function getCookieOptions() {
       const sessionValidation = validateUserSession(userSession, session.sessionId, request)
       if (!sessionValidation.isValid) {
         return sessionValidation
+      }
+
+      if (isSignOutPath(request.path)) {
+        return { isValid: true, credentials: userSession }
       }
 
       if (/** @type {UserSession} */ (userSession).token) {
