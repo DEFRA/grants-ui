@@ -1,5 +1,6 @@
 import { setWorldConstructor, Before, After, setDefaultTimeout } from '@cucumber/cucumber'
 import { chromium } from '@playwright/test'
+import { createScenarioAuditQueue, deleteScenarioAuditQueue } from '../utils/audit.js'
 
 export const CUCUMBER_STEP_TIMEOUT_MS = 30000
 export const PLAYWRIGHT_PAGE_TIMEOUT_MS = 25000
@@ -39,8 +40,12 @@ setWorldConstructor(GrantsUiWorld)
 
 Before(async function () {
   await this.init()
+  this.auditQueue = await createScenarioAuditQueue()
 })
 
 After(async function () {
   await this.cleanup()
+  if (this.auditQueue) {
+    await deleteScenarioAuditQueue(this.auditQueue)
+  }
 })
