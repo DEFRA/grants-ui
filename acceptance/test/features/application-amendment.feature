@@ -2,11 +2,9 @@ Feature: Application Amendment
 
     Scenario: A submitted application can be amended and re-submitted as a new application multiple times
         Given there is no application state stored for CRN "1100964517" and SBI "115482347" and grant "example-grant-with-auth"
-        And the audit queue is empty
 
         # start
         Given the user navigates to "/example-grant-with-auth"
-        Then an unauthorised audit event should be published for grant "example-grant-with-auth"
         Given the user logs in as CRN "1100964517"
         Then an authorised audit event should be published for grant "example-grant-with-auth" with CRN "1100964517" and SBI "115482347"
         And the user should see heading "Example Grant"
@@ -16,13 +14,17 @@ Feature: Application Amendment
         Then the user should be at URL "check-details"
         When the user selects "Yes"
         And continues
-        Then a navigate audit event should be published for page "check-details" with CRN "1100964517" and SBI "115482347"
+        Then a navigate audit event should be published for grant "example-grant-with-auth" and page "check-details" with CRN "1100964517" and SBI "115482347" with the following answers
+            | FIELD             | VALUE |
+            | detailsConfirmed  | true  |
 
         # yes-no-field
         Then the user should be at URL "yes-no-field"
         When the user selects "Yes"
         And continues
-        Then a navigate audit event should be published for page "yes-no-field" with CRN "1100964517" and SBI "115482347"
+        Then a navigate audit event should be published for grant "example-grant-with-auth" and page "yes-no-field" with CRN "1100964517" and SBI "115482347" with the following answers
+            | FIELD      | VALUE |
+            | yesNoField | true  |
 
         # autocomplete-field
         Then the user should be at URL "autocomplete-field"
