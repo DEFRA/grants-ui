@@ -144,7 +144,7 @@ describe('whitelist plugin', () => {
       action: 'unauthorised',
       status: 'denied',
       details: {
-        reason: 'whitelist',
+        reason: 'allowlist',
         crnPassesValidation: false,
         sbiPassesValidation: true
       }

@@ -4,6 +4,8 @@ import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 import { AuthError } from '~/src/server/common/utils/errors/AuthError.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
+const TOKEN_REFRESH_TIMEOUT_MS = 10000
+
 /**
  * Exchange a refresh token at the Defra Identity token endpoint.
  * @param {string} refreshToken
@@ -27,7 +29,8 @@ async function refreshTokens(refreshToken, request) {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       },
-      json: true
+      json: true,
+      timeout: TOKEN_REFRESH_TIMEOUT_MS
     })
 
     // Payload will include both a new access token and a new refresh token
