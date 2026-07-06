@@ -71,12 +71,9 @@ jobs:
           name: coverage
           path: coverage
 
-  docker:
-    name: Docker Build, Acceptance, and Performance Tests
+  docker-build:
+    name: Docker Build
     runs-on: ubuntu-latest
-    env:
-      COMPOSE_FILE_OVERRIDE: compose.cached-build.yml
-      COMPOSE_TESTS_FILE_OVERRIDE: compose.cached-tests-build.yml
     steps:
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -89,8 +86,8 @@ jobs:
         with:
           context: .
           target: development
-          load: true
           tags: grants-ui:ci
+          outputs: type=docker,dest=/tmp/grants-ui.tar
           cache-from: type=gha,scope=grants-ui
           cache-to: type=gha,mode=max,scope=grants-ui
 
@@ -98,10 +95,52 @@ jobs:
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: ./acceptance
-          load: true
           tags: grants-ui-acceptance-tests:ci
+          outputs: type=docker,dest=/tmp/grants-ui-acceptance-tests.tar
           cache-from: type=gha,scope=grants-ui-acceptance-tests
           cache-to: type=gha,mode=max,scope=grants-ui-acceptance-tests
+
+      - name: Upload grants-ui image
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: grants-ui-image
+          path: /tmp/grants-ui.tar
+          retention-days: 1
+
+      - name: Upload acceptance test image
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: grants-ui-acceptance-tests-image
+          path: /tmp/grants-ui-acceptance-tests.tar
+          retention-days: 1
+
+  acceptance-tests:
+    name: Acceptance Tests
+    runs-on: ubuntu-latest
+    needs: docker-build
+    env:
+      COMPOSE_FILE_OVERRIDE: compose.cached-build.yml
+      COMPOSE_TESTS_FILE_OVERRIDE: compose.cached-tests-build.yml
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Download grants-ui image
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: grants-ui-image
+          path: /tmp
+
+      - name: Download acceptance test image
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: grants-ui-acceptance-tests-image
+          path: /tmp
+
+      - name: Load Docker images
+        run: |
+          docker load --input /tmp/grants-ui.tar
+          docker load --input /tmp/grants-ui-acceptance-tests.tar
 
       - name: Build and start Docker test environment
         run: |
@@ -112,6 +151,44 @@ jobs:
         run: |
           chmod +x ./tools/run-acceptance-test-containers.sh
           ./tools/run-acceptance-test-containers.sh
+
+      - name: Dump Docker test diagnostics
+        if: failure()
+        run: |
+          chmod +x ./tools/dump-test-stack-diagnostics.sh
+          ./tools/dump-test-stack-diagnostics.sh
+
+      - name: Clean up Docker test environment
+        if: always()
+        run: |
+          chmod +x ./tools/cleanup-test-stack.sh
+          ./tools/cleanup-test-stack.sh
+
+  performance-tests:
+    name: K6 Performance Tests
+    runs-on: ubuntu-latest
+    needs: acceptance-tests
+    env:
+      COMPOSE_FILE_OVERRIDE: compose.cached-build.yml
+      COMPOSE_TESTS_FILE_OVERRIDE: compose.cached-tests-build.yml
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Download grants-ui image
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: grants-ui-image
+          path: /tmp
+
+      - name: Load Docker images
+        run: |
+          docker load --input /tmp/grants-ui.tar
+
+      - name: Build and start Docker test environment
+        run: |
+          chmod +x ./tools/prepare-docker-test-stack.sh
+          RUN_TEST_HOOKS=false CLEANUP_ON_EXIT=false ./tools/prepare-docker-test-stack.sh
 
       - name: Run K6 performance tests
         run: |
