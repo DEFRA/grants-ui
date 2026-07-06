@@ -50,7 +50,8 @@ describe('refreshTokens', () => {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       },
-      json: true
+      json: true,
+      timeout: 10000
     }
     expect(Wreck.post).toHaveBeenCalledWith(expectedUrl, expectedOptions)
 

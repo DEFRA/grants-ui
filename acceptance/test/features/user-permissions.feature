@@ -23,6 +23,7 @@ Feature: User Permissions
         Given the user navigates to "/example-grant-with-auth"
         And logs in as CRN "1062311183"
         Then the user should see heading "You do not have permission to view this page"
+        And an unauthorised audit event should be published for grant "example-grant-with-auth" with CRN "1062311183" and SBI "106238911" and reason "permission"
 
         # unlock from CRN 1062311183
         Given there is no application lock for CRN "1062311183" and SBI "106238911" and grant "example-grant-with-auth"
@@ -33,6 +34,7 @@ Feature: User Permissions
         And logs in as CRN "1062311182"
         Then the user should see SBI "106238911" as the logged in organisation
         And the user should see heading "Example Grant"
+        And an authorised audit event should be published for grant "example-grant-with-auth" with CRN "1062311182" and SBI "106238911"
         When the user clicks on "Start now"
 
         # check-details
@@ -202,6 +204,7 @@ Feature: User Permissions
         And navigates to "/example-grant-with-auth"
         And logs in as CRN "1062311183"
         Then the user should see heading "You do not have permission to view this page"
+        And an unauthorised audit event should be published for grant "example-grant-with-auth" with CRN "1062311183" and SBI "106238911" and reason "permission"
 
         # unlock from CRN 1062311183
         Given there is no application lock for CRN "1062311183" and SBI "106238911" and grant "example-grant-with-auth"
@@ -251,6 +254,7 @@ Feature: User Permissions
         And navigates to "/example-grant-with-auth"
         And logs in as CRN "1062311184"
         Then the user should see heading "You do not have permission to view this page"
+        And an unauthorised audit event should be published for grant "example-grant-with-auth" with CRN "1062311184" and SBI "106238911" and reason "permission"
 
         # unlock from CRN 1062311184
         Given there is no application lock for CRN "1062311184" and SBI "106238911" and grant "example-grant-with-auth"

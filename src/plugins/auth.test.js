@@ -659,6 +659,33 @@ describe('Auth Plugin', () => {
       expect(userSession.refreshToken).toBe('new-refresh-token')
     })
 
+    test.each(['/auth/sign-out', '/auth/sign-out-oidc'])(
+      'validate function skips token refresh on sign-out path %s',
+      async (path) => {
+        const options = getCookieOptions()
+
+        const userSession = {
+          token: 'expired-token',
+          refreshToken: 'refresh-token'
+        }
+
+        server.app.cache.get.mockResolvedValue(userSession)
+        Jwt.token.verifyTime.mockImplementation(() => {
+          throw new Error('Token expired')
+        })
+
+        const mockRequest = { server, path }
+        const result = await options.validate(mockRequest, {
+          sessionId: 'test-session'
+        })
+
+        // Sign-out must not depend on refreshing the (expired) access token.
+        expect(refreshTokens).not.toHaveBeenCalled()
+        expect(Jwt.token.verifyTime).not.toHaveBeenCalled()
+        expect(result).toEqual({ isValid: true, credentials: userSession })
+      }
+    )
+
     test('validate function returns valid session when token is valid', async () => {
       const options = getCookieOptions()
 
