@@ -53,7 +53,7 @@ const whitelistHandler = async (request, h) => {
       action: 'unauthorised',
       status: 'denied',
       details: {
-        reason: 'whitelist',
+        reason: 'allowlist',
         crnPassesValidation: validation.crnPassesValidation,
         sbiPassesValidation: validation.sbiPassesValidation
       }
