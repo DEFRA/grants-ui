@@ -14,6 +14,9 @@ export const PARCEL_COLORS = [
 
 export const LAYER_TEXT_SIZE = 11
 export const LAYER_TEXT_HALO_WIDTH = 1.5
+export const LAYER_LINE_WIDTH = 1.5
+export const FIT_BOUNDS_PADDING = 40
+export const AREA_DECIMAL_PLACES = 2
 
 export const LAYER_ID_FILL = 'parcels-fill'
 export const LAYER_ID_OUTLINE = 'parcels-outline'

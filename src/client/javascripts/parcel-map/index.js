@@ -10,6 +10,9 @@ import {
   PARCEL_COLORS,
   LAYER_TEXT_SIZE,
   LAYER_TEXT_HALO_WIDTH,
+  LAYER_LINE_WIDTH,
+  FIT_BOUNDS_PADDING,
+  AREA_DECIMAL_PLACES,
   TOOLTIP_STYLES,
   LAYER_ID_FILL,
   LAYER_ID_OUTLINE,
@@ -80,7 +83,7 @@ function buildParcelLayers(colorExpr, sourceLayer) {
       ...src,
       paint: {
         'line-color': colorExpr,
-        'line-width': 1.5
+        'line-width': LAYER_LINE_WIDTH
       }
     },
     label: {
@@ -292,54 +295,56 @@ class ParcelMap extends HTMLElement {
 
   /** @returns {Promise<ParcelData | null>} */
   async _fetchData() {
+    /** @type {unknown} */
+    let lastError
     for (let attempt = 0; attempt < FETCH_MAX_ATTEMPTS; attempt++) {
+      if (attempt > 0) {
+        await new Promise((resolve) => globalThis.setTimeout(resolve, FETCH_RETRY_DELAY_MS))
+      }
       try {
-        if (attempt > 0) {
-          await new Promise((resolve) => globalThis.setTimeout(resolve, FETCH_RETRY_DELAY_MS))
-        }
         const resp = await fetch(PARCELS_API_URL)
-        if (!resp.ok) {
-          if (attempt < FETCH_MAX_ATTEMPTS - 1) {
-            continue
-          }
-          console.error(`[parcel-map] parcels fetch failed with status ${resp.status}`)
-          return null
+        if (resp.ok) {
+          return this._parseParcelResponse(resp)
         }
-
-        /** @type {{ features: GeoJSON.Feature[], bbox: BBox | null, tileUrl: string | null, geojsonUrl: string | null }} */
-        const body = await resp.json()
-        const features = Array.isArray(body.features) ? body.features : []
-
-        /** @type {string[]} */
-        const parcelIds = features.flatMap((f) => {
-          const id = f.id ?? f.properties?.id
-          return typeof id === 'string' || typeof id === 'number' ? [String(id)] : []
-        })
-
-        const metaIndex = Object.fromEntries(
-          features.flatMap((f) => {
-            const id = f.id ?? f.properties?.id
-            const key = typeof id === 'string' || typeof id === 'number' ? String(id) : null
-            return key ? [[key, { ...f.properties, id: key }]] : []
-          })
-        )
-
-        return {
-          parcelIds,
-          metaIndex,
-          tileUrl: body.tileUrl ?? null,
-          geojsonUrl: body.geojsonUrl ?? null,
-          bbox: body.bbox ?? null
-        }
+        lastError = new Error(`HTTP ${resp.status}`)
       } catch (err) {
-        if (attempt < FETCH_MAX_ATTEMPTS - 1) {
-          continue
-        }
-        console.error('[parcel-map] parcels fetch error', err)
-        return null
+        lastError = err
       }
     }
+    console.error('[parcel-map] parcels fetch failed', lastError)
     return null
+  }
+
+  /**
+   * @param {Response} resp
+   * @returns {Promise<ParcelData>}
+   */
+  async _parseParcelResponse(resp) {
+    /** @type {{ features: GeoJSON.Feature[], bbox: BBox | null, tileUrl: string | null, geojsonUrl: string | null }} */
+    const body = await resp.json()
+    const features = Array.isArray(body.features) ? body.features : []
+
+    /** @type {string[]} */
+    const parcelIds = features.flatMap((f) => {
+      const id = f.id ?? f.properties?.id
+      return typeof id === 'string' || typeof id === 'number' ? [String(id)] : []
+    })
+
+    const metaIndex = Object.fromEntries(
+      features.flatMap((f) => {
+        const id = f.id ?? f.properties?.id
+        const key = typeof id === 'string' || typeof id === 'number' ? String(id) : null
+        return key ? [[key, { ...f.properties, id: key }]] : []
+      })
+    )
+
+    return {
+      parcelIds,
+      metaIndex,
+      tileUrl: body.tileUrl ?? null,
+      geojsonUrl: body.geojsonUrl ?? null,
+      bbox: body.bbox ?? null
+    }
   }
 
   /**
@@ -355,7 +360,7 @@ class ParcelMap extends HTMLElement {
           [Number(minLng), Number(minLat)],
           [Number(maxLng), Number(maxLat)]
         ],
-        { padding: 40, animate: false }
+        { padding: FIT_BOUNDS_PADDING, animate: false }
       )
     }
 
@@ -564,7 +569,7 @@ function showTooltip(tooltip, id, props, x, y, mapEl) {
     <strong style="display:block;margin-bottom:8px;font-size:15px">${htmlEncode(id || MSG_UNKNOWN_PARCEL)}</strong>
     <table style="border-collapse:collapse;width:100%">
       <tr><td style="color:#505a5f;padding:2px 12px 2px 0;white-space:nowrap">Total area</td>
-          <td>${areaHa == null ? MSG_UNKNOWN_AREA : htmlEncode(areaHa.toFixed(2) + ' ha')}</td></tr>
+          <td>${areaHa == null ? MSG_UNKNOWN_AREA : htmlEncode(areaHa.toFixed(AREA_DECIMAL_PLACES) + ' ha')}</td></tr>
     </table>`
   tooltip.style.left = `${Math.min(x + TOOLTIP_OFFSET_X, (mapEl?.offsetWidth ?? TOOLTIP_FALLBACK_MAP_WIDTH) - TOOLTIP_MAX_WIDTH)}px`
   tooltip.style.top = `${y - TOOLTIP_VERTICAL_OFFSET}px`

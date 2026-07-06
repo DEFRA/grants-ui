@@ -12,9 +12,11 @@ const OS_MAPS_BASE_URL = 'https://api.os.uk/maps/vector/v1/vts'
 // Web Mercator — required by MapLibre; OS defaults to EPSG:27700 (British National Grid) without this
 const OS_MAPS_SRS = '3857'
 const TILE_CACHE_MAX_AGE_SECONDS = 3600
+const SERVICE_LAND_GRANTS = 'land-grants-api'
+const SERVICE_OS_MAPS = 'os-maps'
 // Matches OS Maps URLs so they can be rewritten to our proxy — derived from OS_MAPS_BASE_URL so the two can't drift
-const OS_URL_RE = new RegExp(`^${OS_MAPS_BASE_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`)
-const OS_QS_RE = /\?.*$/
+const OS_URL_RE = new RegExp(String.raw`^${OS_MAPS_BASE_URL.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')}`)
+const OS_QS_RE = /\?.*$/u
 
 /** @type {{ styleJson: Record<string, unknown>, tileUrlTemplate: string } | null} */
 let osBasemapCache = null
@@ -38,7 +40,7 @@ async function parcelsHandler(request, h) {
     const upstreamStatus = err?.code ?? err?.status
     log(
       LogCodes.SYSTEM.EXTERNAL_API_ERROR,
-      { endpoint: ROUTES.parcels, service: 'land-grants-api', upstreamStatus, errorMessage: err.message },
+      { endpoint: ROUTES.parcels, service: SERVICE_LAND_GRANTS, upstreamStatus, errorMessage: err.message },
       request
     )
     return h.response({ error: err.message }).code(upstreamStatus ?? statusCodes.serviceUnavailable)
@@ -112,7 +114,7 @@ async function tilesHandler(request, h) {
       LogCodes.SYSTEM.EXTERNAL_API_ERROR,
       {
         endpoint: ROUTES.parcelTiles,
-        service: 'land-grants-api',
+        service: SERVICE_LAND_GRANTS,
         upstreamStatus: null,
         errorMessage: /** @type {Error} */ (fetchParcelsError).message
       },
@@ -145,7 +147,7 @@ async function tilesHandler(request, h) {
         LogCodes.SYSTEM.EXTERNAL_API_ERROR,
         {
           endpoint: upstream,
-          service: 'land-grants-api',
+          service: SERVICE_LAND_GRANTS,
           upstreamStatus: null,
           errorMessage: /** @type {Error} */ (tilesFetchError).message
         },
@@ -186,8 +188,7 @@ const proxyOsUrl = (url, origin) => `${origin}/api/map/os-tiles${url.replace(OS_
  */
 function rewriteOsSource(source, tileUrlTemplate) {
   if (typeof source.url === 'string' && OS_URL_RE.test(source.url)) {
-    const { url: _url, ...rest } = source
-    return { ...rest, tiles: [tileUrlTemplate] }
+    return Object.fromEntries([['tiles', [tileUrlTemplate]], ...Object.entries(source).filter(([k]) => k !== 'url')])
   }
   return source
 }
@@ -248,7 +249,7 @@ async function osBasemapHandler(request, h) {
           LogCodes.SYSTEM.EXTERNAL_API_ERROR,
           {
             endpoint: OS_MAPS_BASE_URL,
-            service: 'os-maps',
+            service: SERVICE_OS_MAPS,
             upstreamStatus: null,
             errorMessage: /** @type {Error} */ (basemapFetchError).message
           },
@@ -310,7 +311,7 @@ async function osTileProxyHandler(request, h) {
         LogCodes.SYSTEM.EXTERNAL_API_ERROR,
         {
           endpoint: upstream,
-          service: 'os-maps',
+          service: SERVICE_OS_MAPS,
           upstreamStatus: null,
           errorMessage: /** @type {Error} */ (osFetchError).message
         },
