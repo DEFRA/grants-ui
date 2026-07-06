@@ -1,0 +1,5 @@
+services:
+  grants-ui-acceptance-tests:
+    image: grants-ui-acceptance-tests:ci
+    pull_policy: never
+    build: !reset null

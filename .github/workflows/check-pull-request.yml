@@ -74,14 +74,39 @@ jobs:
   docker:
     name: Docker Build, Acceptance, and Performance Tests
     runs-on: ubuntu-latest
+    env:
+      COMPOSE_FILE_OVERRIDE: compose.cached-build.yml
+      COMPOSE_TESTS_FILE_OVERRIDE: compose.cached-tests-build.yml
     steps:
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Build grants-ui image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          target: development
+          load: true
+          tags: grants-ui:ci
+          cache-from: type=gha,scope=grants-ui
+          cache-to: type=gha,mode=max,scope=grants-ui
+
+      - name: Build acceptance test image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: ./acceptance
+          load: true
+          tags: grants-ui-acceptance-tests:ci
+          cache-from: type=gha,scope=grants-ui-acceptance-tests
+          cache-to: type=gha,mode=max,scope=grants-ui-acceptance-tests
+
       - name: Build and start Docker test environment
         run: |
-          chmod +x ./tools/docker-compose-smoke-test.sh
-          RUN_TEST_HOOKS=false CLEANUP_ON_EXIT=false ./tools/docker-compose-smoke-test.sh
+          chmod +x ./tools/prepare-docker-test-stack.sh
+          RUN_TEST_HOOKS=false CLEANUP_ON_EXIT=false ./tools/prepare-docker-test-stack.sh
 
       - name: Run acceptance tests
         run: |

@@ -19,6 +19,6 @@ cleanup() {
 }
 trap cleanup EXIT
 
-RUN_TEST_HOOKS=false CLEANUP_ON_EXIT=false "$(dirname "$0")/docker-compose-smoke-test.sh"
+RUN_TEST_HOOKS=false CLEANUP_ON_EXIT=false "$(dirname "$0")/prepare-docker-test-stack.sh"
 "$(dirname "$0")/run-acceptance-test-containers.sh"
 "$(dirname "$0")/run-performance-test-containers.sh"

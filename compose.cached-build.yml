@@ -1,0 +1,5 @@
+services:
+  grants-ui:
+    image: grants-ui:ci
+    pull_policy: never
+    build: !reset null
