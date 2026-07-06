@@ -15,8 +15,8 @@ const TILE_CACHE_MAX_AGE_SECONDS = 3600
 const SERVICE_LAND_GRANTS = 'land-grants-api'
 const SERVICE_OS_MAPS = 'os-maps'
 // Matches OS Maps URLs so they can be rewritten to our proxy — derived from OS_MAPS_BASE_URL so the two can't drift
-const OS_URL_RE = new RegExp(String.raw`^${OS_MAPS_BASE_URL.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')}`)
-const OS_QS_RE = /\?.*$/u
+const OS_URL_RE = new RegExp(`^${OS_MAPS_BASE_URL.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')}`)
+const OS_QS_RE = /\?[^]*$/u
 
 /** @type {{ styleJson: Record<string, unknown>, osRelativeTileUrl: string } | null} */
 let osBasemapCache = null
@@ -41,8 +41,12 @@ async function parcelsHandler(request, h) {
   }
   if (parcelsError !== undefined) {
     const err = /** @type {Error & { code?: unknown, status?: unknown }} */ (parcelsError)
-    const upstreamStatus =
-      typeof err?.code === 'number' ? err.code : typeof err?.status === 'number' ? err.status : undefined
+    let upstreamStatus
+    if (typeof err?.code === 'number') {
+      upstreamStatus = err.code
+    } else if (typeof err?.status === 'number') {
+      upstreamStatus = err.status
+    }
     log(
       LogCodes.SYSTEM.EXTERNAL_API_ERROR,
       { endpoint: ROUTES.parcels, service: SERVICE_LAND_GRANTS, upstreamStatus, errorMessage: err.message },

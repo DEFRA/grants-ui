@@ -127,9 +127,6 @@ class ParcelMap extends HTMLElement {
   /** @type {HTMLDivElement | null} */
   #errorOverlay = null
 
-  /** @type {MLMap | null} */
-  #ml = null
-
   /** @type {Array<() => void>} */
   #mlCleanup = []
 
@@ -154,6 +151,8 @@ class ParcelMap extends HTMLElement {
       this.#errorOverlay = null
     } else if (this.#state !== STATE_IDLE) {
       this.#teardown()
+    } else {
+      // STATE_IDLE — no cleanup needed
     }
     this.#init()
   }
@@ -168,7 +167,6 @@ class ParcelMap extends HTMLElement {
       off()
     }
     this.#mlCleanup = []
-    this.#ml = null
     try {
       this.#mapInstance?.destroy?.()
     } catch {
@@ -202,27 +200,22 @@ class ParcelMap extends HTMLElement {
       this.#state = STATE_ERROR
       this.#showError(MSG_ERROR_UNAVAILABLE)
       this.dispatchEvent(new CustomEvent(EVENT_ERROR, { bubbles: true, detail: { reason: 'unavailable' } }))
-      return
-    }
-
-    if (data.parcelIds.length === 0) {
+    } else if (data.parcelIds.length === 0) {
       this.#teardown()
       this.#state = STATE_ERROR
       this.dispatchEvent(new CustomEvent(EVENT_ERROR, { bubbles: true, detail: { reason: 'no-parcels' } }))
-      return
+    } else {
+      const colorExpr = buildColorExpr(data.parcelIds)
+      this.#addParcelsToMap(ml, data, colorExpr)
+      const tooltip = this.#attachTooltip(ml, data.metaIndex)
+      this.#attachSelectionHandler(ml, multiSelect, tooltip)
+
+      this.#state = STATE_READY
+      this.#skeleton?.remove()
+      this.#skeleton = null
+
+      this.dispatchEvent(new CustomEvent(EVENT_READY, { bubbles: true }))
     }
-
-    this.#ml = ml
-    const colorExpr = buildColorExpr(data.parcelIds)
-    this.#addParcelsToMap(ml, data, colorExpr)
-    const tooltip = this.#attachTooltip(ml, data.metaIndex)
-    this.#attachSelectionHandler(ml, multiSelect, tooltip)
-
-    this.#state = STATE_READY
-    this.#skeleton?.remove()
-    this.#skeleton = null
-
-    this.dispatchEvent(new CustomEvent(EVENT_READY, { bubbles: true }))
   }
 
   /** @param {string} message */

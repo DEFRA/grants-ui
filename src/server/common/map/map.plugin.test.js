@@ -69,11 +69,39 @@ function makeH() {
   }
 }
 
+function makeOsRequest(path = '') {
+  return {
+    auth: { credentials: { sbi: '123456789' } },
+    server: { info: { protocol: 'http' } },
+    info: { host: 'localhost:3000' },
+    params: { path },
+    query: {}
+  }
+}
+
+const OS_STYLE_JSON = {
+  sources: {
+    esri: {
+      url: 'https://api.os.uk/maps/vector/v1/vts/resources/styles/root.json',
+      type: 'vector'
+    }
+  },
+  glyphs: 'https://api.os.uk/maps/vector/v1/vts/resources/fonts/{fontstack}/{range}.pbf',
+  sprite: 'https://api.os.uk/maps/vector/v1/vts/resources/sprites/sprite',
+  layers: []
+}
+
+const OS_TILEJSON = {
+  tiles: ['https://api.os.uk/maps/vector/v1/vts/{z}/{x}/{y}.pbf']
+}
+
 describe('mapPlugin', () => {
   let server
   let parcelsHandler
   let geojsonHandler
   let tilesHandler
+  let osBasemapHandler
+  let osTilesHandler
 
   beforeEach(() => {
     resetOsBasemapCache()
@@ -82,6 +110,8 @@ describe('mapPlugin', () => {
     parcelsHandler = server._routes[0].handler
     geojsonHandler = server._routes[1].handler
     tilesHandler = server._routes[2].handler
+    osBasemapHandler = server._routes[3].handler
+    osTilesHandler = server._routes[4].handler
     vi.clearAllMocks()
   })
 
@@ -339,6 +369,185 @@ describe('mapPlugin', () => {
         expect.any(String),
         expect.objectContaining({ body: JSON.stringify({ parcelIds: [] }) })
       )
+    })
+  })
+
+  describe('GET /api/map/os-basemap', () => {
+    beforeEach(() => {
+      globalThis.fetch = vi.fn()
+    })
+
+    it('returns proxied style JSON on success', async () => {
+      global.fetch
+        .mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue(OS_STYLE_JSON) })
+        .mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue(OS_TILEJSON) })
+      const request = makeOsRequest()
+      const h = makeH()
+
+      await osBasemapHandler(request, h)
+
+      expect(h.response).toHaveBeenCalledWith(expect.objectContaining({ layers: [] }))
+      expect(h._responseObj.code).toHaveBeenCalledWith(200)
+      expect(h._responseObj.type).toHaveBeenCalledWith('application/json')
+    })
+
+    it('rewrites OS tile URL to proxy path in returned style', async () => {
+      global.fetch
+        .mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue(OS_STYLE_JSON) })
+        .mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue(OS_TILEJSON) })
+      const request = makeOsRequest()
+      const h = makeH()
+
+      await osBasemapHandler(request, h)
+
+      const [style] = h.response.mock.calls[0]
+      expect(style.glyphs).toMatch(/^http:\/\/localhost:3000\/api\/map\/os-tiles/)
+      expect(style.sprite).toMatch(/^http:\/\/localhost:3000\/api\/map\/os-tiles/)
+    })
+
+    it('uses per-request origin when cache already populated', async () => {
+      global.fetch
+        .mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue(OS_STYLE_JSON) })
+        .mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue(OS_TILEJSON) })
+
+      // First request populates cache
+      await osBasemapHandler(makeOsRequest(), makeH())
+
+      // Second request — different host — should use its own origin in tile URL
+      const h2 = makeH()
+      const req2 = { ...makeOsRequest(), info: { host: 'other-host:9000' } }
+      await osBasemapHandler(req2, h2)
+
+      const [style] = h2.response.mock.calls[0]
+      expect(style.glyphs).toMatch(/^http:\/\/other-host:9000\/api\/map\/os-tiles/)
+      // Only one pair of upstream fetches total (cache hit on second call)
+      expect(global.fetch).toHaveBeenCalledTimes(2)
+    })
+
+    it('returns 503 when OS fetch throws', async () => {
+      global.fetch.mockRejectedValue(new Error('network'))
+      const request = makeOsRequest()
+      const h = makeH()
+
+      await osBasemapHandler(request, h)
+
+      expect(h._responseObj.code).toHaveBeenCalledWith(503)
+    })
+
+    it('returns upstream status when style fetch is not ok', async () => {
+      global.fetch
+        .mockResolvedValueOnce({ ok: false, status: 401 })
+        .mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue(OS_TILEJSON) })
+      const request = makeOsRequest()
+      const h = makeH()
+
+      await osBasemapHandler(request, h)
+
+      expect(h._responseObj.code).toHaveBeenCalledWith(401)
+    })
+
+    it('returns upstream status when tilejson fetch is not ok', async () => {
+      global.fetch
+        .mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue(OS_STYLE_JSON) })
+        .mockResolvedValueOnce({ ok: false, status: 403 })
+      const request = makeOsRequest()
+      const h = makeH()
+
+      await osBasemapHandler(request, h)
+
+      expect(h._responseObj.code).toHaveBeenCalledWith(403)
+    })
+
+    it('leaves non-OS sources unchanged in returned style', async () => {
+      const styleWithNonOsSource = {
+        ...OS_STYLE_JSON,
+        sources: {
+          esri: { url: 'https://api.os.uk/maps/vector/v1/vts/root.json', type: 'vector' },
+          other: { url: 'https://example.com/tiles.json', type: 'vector' }
+        }
+      }
+      global.fetch
+        .mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue(styleWithNonOsSource) })
+        .mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue(OS_TILEJSON) })
+      const request = makeOsRequest()
+      const h = makeH()
+
+      await osBasemapHandler(request, h)
+
+      const [style] = h.response.mock.calls[0]
+      expect(style.sources.other.url).toBe('https://example.com/tiles.json')
+    })
+
+    it('returns 503 when tilejson has no tiles array', async () => {
+      global.fetch
+        .mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue(OS_STYLE_JSON) })
+        .mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue({}) })
+      const request = makeOsRequest()
+      const h = makeH()
+
+      await osBasemapHandler(request, h)
+
+      expect(h._responseObj.code).toHaveBeenCalledWith(503)
+    })
+  })
+
+  describe('GET /api/map/os-tiles/{path*}', () => {
+    beforeEach(() => {
+      globalThis.fetch = vi.fn()
+    })
+
+    it('proxies request and returns buffer with content-type', async () => {
+      global.fetch.mockResolvedValue({
+        ok: true,
+        headers: { get: vi.fn().mockReturnValue('application/x-protobuf') },
+        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(4))
+      })
+      const request = makeOsRequest('12/100/200.pbf')
+      const h = makeH()
+
+      await osTilesHandler(request, h)
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('https://api.os.uk/maps/vector/v1/vts/12/100/200.pbf')
+      )
+      expect(h._responseObj.type).toHaveBeenCalledWith('application/x-protobuf')
+      expect(h._responseObj.code).toHaveBeenCalledWith(200)
+    })
+
+    it('injects API key and srs into upstream URL', async () => {
+      global.fetch.mockResolvedValue({
+        ok: true,
+        headers: { get: vi.fn().mockReturnValue('application/json') },
+        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0))
+      })
+      const request = makeOsRequest('')
+      const h = makeH()
+
+      await osTilesHandler(request, h)
+
+      const [url] = global.fetch.mock.calls[0]
+      expect(url).toContain('key=')
+      expect(url).toContain('srs=3857')
+    })
+
+    it('returns upstream status when not ok', async () => {
+      global.fetch.mockResolvedValue({ ok: false, status: 404 })
+      const request = makeOsRequest('missing/path')
+      const h = makeH()
+
+      await osTilesHandler(request, h)
+
+      expect(h._responseObj.code).toHaveBeenCalledWith(404)
+    })
+
+    it('returns 503 when fetch throws', async () => {
+      global.fetch.mockRejectedValue(new Error('network'))
+      const request = makeOsRequest('12/100/200.pbf')
+      const h = makeH()
+
+      await osTilesHandler(request, h)
+
+      expect(h._responseObj.code).toHaveBeenCalledWith(503)
     })
   })
 })
