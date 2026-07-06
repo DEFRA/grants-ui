@@ -302,19 +302,16 @@ function checkStateGuards(request, h, context, grantRedirectRules, options = {})
   const currentPath = request.params?.path
 
   for (const guard of stateGuards) {
-    if (options.pathScopedOnly && !guard.paths?.length) {
-      continue
-    }
+    const appliesToCurrentRequest =
+      (!options.pathScopedOnly || Boolean(guard.paths?.length)) && doesGuardApplyToPath(guard, currentPath)
 
-    if (!doesGuardApplyToPath(guard, currentPath)) {
-      continue
-    }
+    if (appliesToCurrentRequest) {
+      const value = getStateValue(context.state, guard.stateKey)
+      const isAllowedPath = typeof currentPath === 'string' && guard.allowedPaths?.includes(currentPath)
 
-    const value = getStateValue(context.state, guard.stateKey)
-    const isAllowedPath = typeof currentPath === 'string' && guard.allowedPaths?.includes(currentPath)
-
-    if (!doesStateMatchGuard(value, guard) && !isAllowedPath) {
-      return failStateGuard(request, h, guard)
+      if (!doesStateMatchGuard(value, guard) && !isAllowedPath) {
+        return failStateGuard(request, h, guard)
+      }
     }
   }
 
