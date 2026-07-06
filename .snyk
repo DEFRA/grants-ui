@@ -5,22 +5,6 @@ ignore:
     - '*':
         reason: 'Not reachable in application runtime — inflight is only present via glob from @defra/interactive-map/polygon-splitter package metadata and dev/build tooling; grants-ui and the shipped map bundles do not import glob or inflight. No upstream fix available; reassess for interactive-map/polygon-splitter dependency removal.'
         expires: '2026-07-30'
-  'SNYK-JS-CONVICT-15182994':
-    - '*':
-        reason: 'No upgrade or patch available — persists in 6.2.5'
-        expires: '2026-06-27'
-  'SNYK-JS-BRACEEXPANSION-15789759':
-    - '*':
-        reason: 'Deep transitive dependency via polygon-splitter — awaiting upstream fix'
-        expires: '2026-06-27'
-  'SNYK-JS-LODASH-15869619':
-    - '*':
-        reason: 'Fix version 4.18.0 is deprecated — no viable upgrade path available'
-        expires: '2026-07-01'
-  'SNYK-JS-LODASH-15869625':
-    - '*':
-        reason: 'Fix version 4.18.0 is deprecated — no viable upgrade path available'
-        expires: '2026-07-01'
   'SNYK-JS-POSTCSSSELECTORPARSER-16873882':
     - '*':
         reason: 'No fix available — build-time only, not exposed at runtime. Monitor for upstream patch.'
@@ -33,10 +17,14 @@ ignore:
     - '*':
         reason: 'Build-time only — vulnerable path is docusaurus mdx-loader in @defra/interactive-map docs, never loaded by grants-ui runtime. No upstream fix available.'
         expires: '2026-08-01'
-  'SNYK-JS-WEBPACKDEVSERVER-17353649':
+  'SNYK-JS-WEBPACKDEVSERVER-17812733':
     - '*':
-        reason: 'Build-time only — webpack-dev-server via the docusaurus toolchain in @defra/interactive-map docs, never loaded by grants-ui runtime. Fixed in 5.2.5; interim ignore while the override is blocked by .npmrc min-release-age=7 (5.2.5 published 2026-06-12, installable from 2026-06-19). Replace with an overrides pin and remove this entry once it clears the cooldown.'
-        expires: '2026-06-26'
+        reason: 'Build-time only — webpack-dev-server via the docusaurus toolchain in @defra/interactive-map docs, never loaded by grants-ui runtime. Fixed in 5.2.6; interim ignore while the override is blocked by .npmrc min-release-age=7 (5.2.6 published 2026-07-02, installable from 2026-07-09). Replace with an overrides pin and remove this entry once it clears the cooldown.'
+        expires: '2026-07-16'
+  'SNYK-JS-WEBPACKDEVSERVER-17812743':
+    - '*':
+        reason: 'Build-time only — webpack-dev-server via the docusaurus toolchain in @defra/interactive-map docs, never loaded by grants-ui runtime. Fixed in 5.2.6; interim ignore while the override is blocked by .npmrc min-release-age=7 (5.2.6 published 2026-07-02, installable from 2026-07-09). Replace with an overrides pin and remove this entry once it clears the cooldown.'
+        expires: '2026-07-16'
   'SNYK-JS-JOI-17317897':
     - '*':
         reason: 'Transitive via @defra/fcp-audit-publisher (bundles joi@18.1.2); its schema uses no recursive Joi.link/self-reference, so the vulnerable code path is not reachable. Direct joi pinned to ^17 due to consumer constraint — awaiting fcp-audit-publisher release pinning joi >= 18.2.1.'
