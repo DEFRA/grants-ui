@@ -5,26 +5,14 @@ import {
 } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 
 const mockDate = new Date('2025-04-22T12:00:00Z')
-const originalDate = global.Date
 
 beforeAll(() => {
-  global.Date = class extends Date {
-    constructor() {
-      return mockDate
-    }
-
-    static now() {
-      return mockDate.getTime()
-    }
-
-    toISOString() {
-      return mockDate.toISOString()
-    }
-  }
+  vi.useFakeTimers()
+  vi.setSystemTime(mockDate)
 })
 
 afterAll(() => {
-  global.Date = originalDate
+  vi.useRealTimers()
 })
 
 describe('transformStateObjectToGasApplication', () => {
