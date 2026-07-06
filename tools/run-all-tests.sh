@@ -5,18 +5,20 @@ set -e
 #   Run all acceptance and performance tests:
 #     ./tools/run-all-tests.sh
 
-TEST_COMMAND='npm run test:ci'
+cleanup() {
+  status=$?
+  trap - EXIT
 
-export ACCEPTANCE_TESTS_HOOK="
-  docker compose -f compose.tests.yml run --quiet-pull --rm grants-ui-acceptance-tests $TEST_COMMAND &&
-  docker compose -f compose.tests.yml run --quiet-pull --rm land-grants-journey-tests $TEST_COMMAND &&
-  docker compose -f compose.tests.yml run --quiet-pull --rm woodland-grant-journey-tests $TEST_COMMAND &&
-  docker compose -f compose.tests.yml down
-"
+  if [ "${status}" -ne 0 ]; then
+    "$(dirname "$0")/dump-test-stack-diagnostics.sh"
+  fi
 
-export PERFORMANCE_TESTS_HOOK="
-  docker compose -f compose.tests.yml run --quiet-pull --rm grants-ui-performance-tests &&
-  docker compose -f compose.tests.yml down
-"
+  "$(dirname "$0")/cleanup-test-stack.sh"
 
-"$(dirname "$0")/docker-compose-smoke-test.sh"
+  exit "${status}"
+}
+trap cleanup EXIT
+
+RUN_TEST_HOOKS=false CLEANUP_ON_EXIT=false "$(dirname "$0")/docker-compose-smoke-test.sh"
+"$(dirname "$0")/run-acceptance-test-containers.sh"
+"$(dirname "$0")/run-performance-test-containers.sh"

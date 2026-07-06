@@ -72,16 +72,38 @@ jobs:
           path: coverage
 
   docker:
-    name: Docker Build and Acceptance and Performance Tests
+    name: Docker Build, Acceptance, and Performance Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
-      - name: Build grants-ui and run acceptance and performance tests
+      - name: Build and start Docker test environment
         run: |
-          chmod +x ./tools/run-all-tests.sh
-          ./tools/run-all-tests.sh
+          chmod +x ./tools/docker-compose-smoke-test.sh
+          RUN_TEST_HOOKS=false CLEANUP_ON_EXIT=false ./tools/docker-compose-smoke-test.sh
+
+      - name: Run acceptance tests
+        run: |
+          chmod +x ./tools/run-acceptance-test-containers.sh
+          ./tools/run-acceptance-test-containers.sh
+
+      - name: Run K6 performance tests
+        run: |
+          chmod +x ./tools/run-performance-test-containers.sh
+          ./tools/run-performance-test-containers.sh
+
+      - name: Dump Docker test diagnostics
+        if: failure()
+        run: |
+          chmod +x ./tools/dump-test-stack-diagnostics.sh
+          ./tools/dump-test-stack-diagnostics.sh
+
+      - name: Clean up Docker test environment
+        if: always()
+        run: |
+          chmod +x ./tools/cleanup-test-stack.sh
+          ./tools/cleanup-test-stack.sh
 
   security:
     name: Snyk Security Scan

@@ -99,6 +99,16 @@ cleanup() {
   status=$?
   trap - EXIT
 
+  if [ "${CLEANUP_ON_EXIT:-true}" != "true" ]; then
+    if [ "${status}" -ne 0 ]; then
+      echo ""
+      echo "Failure detected; dumping docker compose diagnostics before deferred cleanup..."
+      dump_diagnostics
+    fi
+
+    exit "${status}"
+  fi
+
   if [ "${status}" -ne 0 ]; then
     echo ""
     echo "Failure detected; dumping docker compose diagnostics before cleanup..."
@@ -172,16 +182,18 @@ echo "${READINESS_OUTPUT}"
 echo "Service Status:"
 docker compose ps
 
-if [ -n "${ACCEPTANCE_TESTS_HOOK:-}" ]; then
-  echo "Running Acceptance Tests..."
-  eval "${ACCEPTANCE_TESTS_HOOK}"
-fi
+if [ "${RUN_TEST_HOOKS:-true}" = "true" ]; then
+  if [ -n "${ACCEPTANCE_TESTS_HOOK:-}" ]; then
+    echo "Running Acceptance Tests..."
+    eval "${ACCEPTANCE_TESTS_HOOK}"
+  fi
 
-if [ -n "${PERFORMANCE_TESTS_HOOK:-}" ]; then
-  echo "Running Performance Tests..."
-  eval "${PERFORMANCE_TESTS_HOOK}"
+  if [ -n "${PERFORMANCE_TESTS_HOOK:-}" ]; then
+    echo "Running Performance Tests..."
+    eval "${PERFORMANCE_TESTS_HOOK}"
+  fi
 fi
 
 # Teardown is handled by the cleanup() trap registered above.
 echo ""
-echo "Tests complete."
+echo "Smoke test complete."
