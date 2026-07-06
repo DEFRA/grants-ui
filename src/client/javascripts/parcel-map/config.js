@@ -1,6 +1,10 @@
 export const PARCELS_API_URL = '/api/map/parcels'
+export const PARCEL_TILES_URL = '/api/map/parcel-tiles/{z}/{x}/{y}'
+export const PARCELS_GEOJSON_URL = '/api/map/parcels/geojson'
 export const MAP_STYLE_URL = '/api/map/os-basemap'
-export const MAP_STYLE_ATTRIBUTION = `© Crown copyright and database rights ${new Date().getFullYear()} OS`
+export function getMapStyleAttribution() {
+  return `© Crown copyright and database rights ${new Date().getFullYear()} OS`
+}
 
 export const PARCEL_COLORS = [
   '#1d70b8', // govuk-blue

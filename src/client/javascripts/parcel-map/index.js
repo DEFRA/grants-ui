@@ -5,8 +5,10 @@ import InteractiveMap from '@defra/interactive-map'
 import maplibreProvider from '@defra/interactive-map/providers/maplibre'
 import {
   PARCELS_API_URL,
+  PARCEL_TILES_URL,
+  PARCELS_GEOJSON_URL,
   MAP_STYLE_URL,
-  MAP_STYLE_ATTRIBUTION,
+  getMapStyleAttribution,
   PARCEL_COLORS,
   LAYER_TEXT_SIZE,
   LAYER_TEXT_HALO_WIDTH,
@@ -55,7 +57,7 @@ import {
  * @typedef {{ sheet_id?: unknown, parcel_id?: unknown, areaHa?: unknown, [key: string]: unknown }} ParcelProperties
  * @typedef {{ id: string } & ParcelProperties} ParcelMeta
  * @typedef {Record<string, ParcelMeta>} MetaIndex
- * @typedef {{ parcelIds: string[], metaIndex: MetaIndex, tileUrl: string | null, geojsonUrl: string | null, bbox: BBox | null }} ParcelData
+ * @typedef {{ parcelIds: string[], metaIndex: MetaIndex, geojsonUrl: string | null, bbox: BBox | null }} ParcelData
  * @typedef {{ minLng: number, minLat: number, maxLng: number, maxLat: number }} BBox
  */
 
@@ -111,115 +113,121 @@ function buildParcelLayers(colorExpr, sourceLayer) {
 //   parcel-map:ready, parcel-map:error, parcel-map:selection → { selectedIds: string[] }
 class ParcelMap extends HTMLElement {
   /** @type {typeof STATE_IDLE | typeof STATE_LOADING | typeof STATE_READY | typeof STATE_ERROR} */
-  _state = STATE_IDLE
+  #state = STATE_IDLE
 
   /** @type {InstanceType<typeof InteractiveMap> | null} */
-  _mapInstance = null
+  #mapInstance = null
 
   /** @type {HTMLDivElement | null} */
-  _mapEl = null
+  #mapEl = null
 
   /** @type {HTMLDivElement | null} */
-  _skeleton = null
+  #skeleton = null
+
+  /** @type {HTMLDivElement | null} */
+  #errorOverlay = null
 
   /** @type {MLMap | null} */
-  _ml = null
+  #ml = null
 
   /** @type {Array<() => void>} */
-  _mlCleanup = []
+  #mlCleanup = []
 
-  _connected = false
+  #connected = false
 
   static get observedAttributes() {
     return ['multi-select']
   }
 
   connectedCallback() {
-    this._connected = true
-    this._state = STATE_IDLE
-    this._init()
+    this.#connected = true
+    this.#state = STATE_IDLE
+    this.#init()
   }
 
   attributeChangedCallback() {
-    if (!this._connected) {
+    if (!this.#connected) {
       return
     }
-    if (this._state !== STATE_IDLE) {
-      this._teardown()
-      this._init()
+    if (this.#state === STATE_ERROR) {
+      this.#errorOverlay?.remove()
+      this.#errorOverlay = null
+    } else if (this.#state !== STATE_IDLE) {
+      this.#teardown()
     }
+    this.#init()
   }
 
   disconnectedCallback() {
-    this._teardown()
+    this.#teardown()
   }
 
-  _teardown() {
-    this._state = STATE_IDLE
-    for (const off of this._mlCleanup) {
+  #teardown() {
+    this.#state = STATE_IDLE
+    for (const off of this.#mlCleanup) {
       off()
     }
-    this._mlCleanup = []
-    this._ml = null
+    this.#mlCleanup = []
+    this.#ml = null
     try {
-      this._mapInstance?.destroy?.()
+      this.#mapInstance?.destroy?.()
     } catch {
       /* ignore */
     }
-    this._mapInstance = null
-    this._mapEl?.parentElement?.remove()
-    this._mapEl = null
-    this._skeleton?.remove()
-    this._skeleton = null
+    this.#mapInstance = null
+    this.#mapEl?.parentElement?.remove()
+    this.#mapEl = null
+    this.#skeleton?.remove()
+    this.#skeleton = null
+    this.#errorOverlay?.remove()
+    this.#errorOverlay = null
   }
 
-  async _init() {
-    this._state = STATE_LOADING
+  async #init() {
+    this.#state = STATE_LOADING
 
     const multiSelect = this.getAttribute('multi-select') === 'true'
 
-    this._skeleton = buildSkeleton()
-    this.appendChild(this._skeleton)
+    this.#skeleton = buildSkeleton()
+    this.appendChild(this.#skeleton)
 
-    const [ml, data] = await Promise.all([this._initMap(), this._fetchData()])
+    const [ml, data] = await Promise.all([this.#initMap(), this.#fetchData()])
 
-    if (this._state !== STATE_LOADING) {
+    if (this.#state !== STATE_LOADING) {
       return
     }
 
     if (!ml || !data) {
-      this._state = STATE_ERROR
-      this._teardown()
-      this._showError(MSG_ERROR_UNAVAILABLE)
+      this.#teardown()
+      this.#state = STATE_ERROR
+      this.#showError(MSG_ERROR_UNAVAILABLE)
       this.dispatchEvent(new CustomEvent(EVENT_ERROR, { bubbles: true, detail: { reason: 'unavailable' } }))
       return
     }
 
     if (data.parcelIds.length === 0) {
-      this._ml = ml
-      this._state = STATE_READY
-      this._skeleton?.remove()
-      this._skeleton = null
+      this.#teardown()
+      this.#state = STATE_ERROR
       this.dispatchEvent(new CustomEvent(EVENT_ERROR, { bubbles: true, detail: { reason: 'no-parcels' } }))
       return
     }
 
-    this._ml = ml
+    this.#ml = ml
     const colorExpr = buildColorExpr(data.parcelIds)
-    this._addParcelsToMap(ml, data, colorExpr)
-    const tooltip = this._attachTooltip(ml, data.metaIndex)
-    this._attachSelectionHandler(ml, multiSelect, tooltip)
+    this.#addParcelsToMap(ml, data, colorExpr)
+    const tooltip = this.#attachTooltip(ml, data.metaIndex)
+    this.#attachSelectionHandler(ml, multiSelect, tooltip)
 
-    this._state = STATE_READY
-    this._skeleton?.remove()
-    this._skeleton = null
+    this.#state = STATE_READY
+    this.#skeleton?.remove()
+    this.#skeleton = null
 
     this.dispatchEvent(new CustomEvent(EVENT_READY, { bubbles: true }))
   }
 
   /** @param {string} message */
-  _showError(message) {
-    const el = document.createElement('div')
+  #showError(message) {
+    const el = /** @type {HTMLDivElement} */ (document.createElement('div'))
     el.setAttribute('role', 'alert')
     el.style.cssText = ERROR_OVERLAY_STYLES
     const label = document.createElement('span')
@@ -227,10 +235,11 @@ class ParcelMap extends HTMLElement {
     label.textContent = message
     el.appendChild(label)
     this.appendChild(el)
+    this.#errorOverlay = el
   }
 
   /** @returns {Promise<MLMap | null>} */
-  _initMap() {
+  #initMap() {
     return new Promise((resolve) => {
       const wrapper = document.createElement('div')
       wrapper.style.cssText = 'position:relative;width:100%;height:100%'
@@ -239,10 +248,10 @@ class ParcelMap extends HTMLElement {
       mapEl.id = `parcel-map-${crypto.randomUUID()}`
       mapEl.style.cssText = 'width:100%;height:100%'
       wrapper.appendChild(mapEl)
-      this._mapEl = mapEl
+      this.#mapEl = mapEl
 
-      if (this._skeleton) {
-        this.insertBefore(wrapper, this._skeleton)
+      if (this.#skeleton) {
+        this.insertBefore(wrapper, this.#skeleton)
       } else {
         this.appendChild(wrapper)
       }
@@ -257,11 +266,11 @@ class ParcelMap extends HTMLElement {
         behaviour: 'inline',
         containerHeight: this.style.height || MAP_DEFAULT_HEIGHT,
         mapProvider: maplibreProvider(),
-        mapStyle: { url: MAP_STYLE_URL, attribution: MAP_STYLE_ATTRIBUTION },
+        mapStyle: { url: MAP_STYLE_URL, attribution: getMapStyleAttribution() },
         center: MAP_DEFAULT_CENTER,
         zoom: MAP_DEFAULT_ZOOM
       })
-      this._mapInstance = map
+      this.#mapInstance = map
 
       map.on('map:error', (/** @type {unknown} */ err) => {
         console.error('[parcel-map] map failed to load', err)
@@ -285,7 +294,7 @@ class ParcelMap extends HTMLElement {
         })
       })
       map.on('map:stylechange', () => {
-        if (mlInstance && this._state === STATE_LOADING) {
+        if (mlInstance && this.#state === STATE_LOADING) {
           globalThis.clearTimeout(timeout)
           resolve(mlInstance)
         }
@@ -294,7 +303,7 @@ class ParcelMap extends HTMLElement {
   }
 
   /** @returns {Promise<ParcelData | null>} */
-  async _fetchData() {
+  async #fetchData() {
     /** @type {unknown} */
     let lastError
     for (let attempt = 0; attempt < FETCH_MAX_ATTEMPTS; attempt++) {
@@ -304,7 +313,7 @@ class ParcelMap extends HTMLElement {
       try {
         const resp = await fetch(PARCELS_API_URL)
         if (resp.ok) {
-          return this._parseParcelResponse(resp)
+          return this.#parseParcelResponse(resp)
         }
         lastError = new Error(`HTTP ${resp.status}`)
       } catch (err) {
@@ -319,8 +328,8 @@ class ParcelMap extends HTMLElement {
    * @param {Response} resp
    * @returns {Promise<ParcelData>}
    */
-  async _parseParcelResponse(resp) {
-    /** @type {{ features: GeoJSON.Feature[], bbox: BBox | null, tileUrl: string | null, geojsonUrl: string | null }} */
+  async #parseParcelResponse(resp) {
+    /** @type {{ features: GeoJSON.Feature[], bbox: BBox | null, mock?: boolean }} */
     const body = await resp.json()
     const features = Array.isArray(body.features) ? body.features : []
 
@@ -341,8 +350,7 @@ class ParcelMap extends HTMLElement {
     return {
       parcelIds,
       metaIndex,
-      tileUrl: body.tileUrl ?? null,
-      geojsonUrl: body.geojsonUrl ?? null,
+      geojsonUrl: body.mock ? PARCELS_GEOJSON_URL : null,
       bbox: body.bbox ?? null
     }
   }
@@ -352,7 +360,7 @@ class ParcelMap extends HTMLElement {
    * @param {ParcelData} data
    * @param {unknown[]} colorExpr
    */
-  _addParcelsToMap(ml, { tileUrl, geojsonUrl, bbox }, colorExpr) {
+  #addParcelsToMap(ml, { geojsonUrl, bbox }, colorExpr) {
     if (bbox) {
       const { minLng, minLat, maxLng, maxLat } = bbox
       ml.fitBounds(
@@ -368,22 +376,17 @@ class ParcelMap extends HTMLElement {
       return
     }
 
-    const url = geojsonUrl ?? tileUrl
-    if (!url) {
-      return
-    }
-    const absoluteUrl = url.startsWith('http') ? url : `${globalThis.location.origin}${url}`
-    if (geojsonUrl) {
-      ml.addSource(
-        'parcels',
-        /** @type {import('maplibre-gl').GeoJSONSourceSpecification} */ ({ type: 'geojson', data: absoluteUrl })
-      )
-    } else {
-      ml.addSource(
-        'parcels',
-        /** @type {import('maplibre-gl').VectorSourceSpecification} */ ({ type: 'vector', tiles: [absoluteUrl] })
-      )
-    }
+    const origin = globalThis.location.origin
+    const source = geojsonUrl
+      ? /** @type {import('maplibre-gl').GeoJSONSourceSpecification} */ ({
+          type: 'geojson',
+          data: geojsonUrl.startsWith('http') ? geojsonUrl : `${origin}${geojsonUrl}`
+        })
+      : /** @type {import('maplibre-gl').VectorSourceSpecification} */ ({
+          type: 'vector',
+          tiles: [`${origin}${PARCEL_TILES_URL}`]
+        })
+    ml.addSource('parcels', source)
     const layers = buildParcelLayers(colorExpr, geojsonUrl ? undefined : 'parcels')
     ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.fill))
     ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.outline))
@@ -394,8 +397,8 @@ class ParcelMap extends HTMLElement {
    * @param {MLMap} ml
    * @param {MetaIndex} metaIndex
    */
-  _attachTooltip(ml, metaIndex) {
-    const wrapper = this._mapEl?.parentElement
+  #attachTooltip(ml, metaIndex) {
+    const wrapper = this.#mapEl?.parentElement
     if (!wrapper) {
       return undefined
     }
@@ -416,7 +419,7 @@ class ParcelMap extends HTMLElement {
       const id = resolveFeatureId(feature)
       const props = /** @type {ParcelProperties} */ ({ ...feature.properties, ...metaIndex[id] })
       const point = ml.project(e.lngLat)
-      showTooltip(tooltip, id, props, point.x, point.y, this._mapEl)
+      showTooltip(tooltip, id, props, point.x, point.y, this.#mapEl)
     }
     const onMapClick = (/** @type {import('maplibre-gl').MapMouseEvent} */ e) => {
       if (ml.getLayer(LAYER_ID_FILL) && ml.queryRenderedFeatures(e.point, { layers: [LAYER_ID_FILL] }).length === 0) {
@@ -435,7 +438,7 @@ class ParcelMap extends HTMLElement {
     ml.on('mouseenter', LAYER_ID_FILL, onMouseEnter)
     ml.on('mouseleave', LAYER_ID_FILL, onMouseLeave)
 
-    this._mlCleanup.push(
+    this.#mlCleanup.push(
       () => ml.off('click', LAYER_ID_FILL, onTooltipClick),
       () => ml.off('click', onMapClick),
       () => ml.off('mouseenter', LAYER_ID_FILL, onMouseEnter),
@@ -450,7 +453,7 @@ class ParcelMap extends HTMLElement {
    * @param {boolean} multiSelect
    * @param {HTMLElement | undefined} tooltip
    */
-  _attachSelectionHandler(ml, multiSelect, tooltip) {
+  #attachSelectionHandler(ml, multiSelect, tooltip) {
     /** @type {Set<string>} */
     const selected = new Set()
     const idExpr = ['concat', ['get', 'sheet_id'], '-', ['get', 'parcel_id']]
@@ -509,7 +512,7 @@ class ParcelMap extends HTMLElement {
     ml.on('click', LAYER_ID_FILL, onParcelClick)
     ml.on('click', onDeselect)
 
-    this._mlCleanup.push(
+    this.#mlCleanup.push(
       () => ml.off('click', LAYER_ID_FILL, onParcelClick),
       () => ml.off('click', onDeselect)
     )

@@ -18,8 +18,12 @@ const SERVICE_OS_MAPS = 'os-maps'
 const OS_URL_RE = new RegExp(String.raw`^${OS_MAPS_BASE_URL.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')}`)
 const OS_QS_RE = /\?.*$/u
 
-/** @type {{ styleJson: Record<string, unknown>, tileUrlTemplate: string } | null} */
+/** @type {{ styleJson: Record<string, unknown>, osRelativeTileUrl: string } | null} */
 let osBasemapCache = null
+
+export function resetOsBasemapCache() {
+  osBasemapCache = null
+}
 
 /**
  * @param {Request} request
@@ -36,8 +40,9 @@ async function parcelsHandler(request, h) {
     parcelsError = error
   }
   if (parcelsError !== undefined) {
-    const err = /** @type {Error & { code?: number, status?: number }} */ (parcelsError)
-    const upstreamStatus = err?.code ?? err?.status
+    const err = /** @type {Error & { code?: unknown, status?: unknown }} */ (parcelsError)
+    const upstreamStatus =
+      typeof err?.code === 'number' ? err.code : typeof err?.status === 'number' ? err.status : undefined
     log(
       LogCodes.SYSTEM.EXTERNAL_API_ERROR,
       { endpoint: ROUTES.parcels, service: SERVICE_LAND_GRANTS, upstreamStatus, errorMessage: err.message },
@@ -60,8 +65,7 @@ async function parcelsHandler(request, h) {
       .response({
         features: mockResult.features,
         bbox: mockResult.bbox,
-        tileUrl: null,
-        geojsonUrl: '/api/map/parcels/geojson'
+        mock: true
       })
       .code(statusCodes.ok)
   }
@@ -72,10 +76,9 @@ async function parcelsHandler(request, h) {
     properties: { id: p.id, sheet_id: p.sheetId, parcel_id: p.parcelId, areaHa: p.areaHa }
   }))
   const parcelIds = parcelData.map((p) => p.id)
-  const bbox = await fetchParcelTileLocation(parcelIds).catch(() => null)
-  const tileUrl = parcelIds.length > 0 ? ROUTES.parcelTiles : null
+  const bbox = await fetchParcelTileLocation(parcelIds)
 
-  return h.response({ features, bbox, tileUrl }).code(statusCodes.ok)
+  return h.response({ features, bbox }).code(statusCodes.ok)
 }
 
 /**
@@ -162,11 +165,7 @@ async function tilesHandler(request, h) {
   }
 
   const buffer = await response.arrayBuffer()
-  return h
-    .response(Buffer.from(buffer))
-    .code(statusCodes.ok)
-    .type('application/x-protobuf')
-    .header('Cache-Control', `public, max-age=${TILE_CACHE_MAX_AGE_SECONDS}`)
+  return h.response(Buffer.from(buffer)).code(statusCodes.ok).type('application/x-protobuf')
 }
 
 /**
@@ -272,11 +271,12 @@ async function osBasemapHandler(request, h) {
       return h.response().code(statusCodes.serviceUnavailable)
     }
 
-    osBasemapCache = { styleJson, tileUrlTemplate: proxyOsUrl(rawTileUrl, origin) }
+    osBasemapCache = { styleJson, osRelativeTileUrl: rawTileUrl.replace(OS_URL_RE, '').replace(OS_QS_RE, '') }
   }
 
+  const tileUrlTemplate = `${origin}/api/map/os-tiles${osBasemapCache.osRelativeTileUrl}`
   return h
-    .response(withProxiedOsUrls(osBasemapCache.styleJson, origin, osBasemapCache.tileUrlTemplate))
+    .response(withProxiedOsUrls(osBasemapCache.styleJson, origin, tileUrlTemplate))
     .code(statusCodes.ok)
     .type('application/json')
 }
@@ -354,6 +354,7 @@ export const mapPlugin = {
       server.route({
         method: 'GET',
         path: ROUTES.parcelsMockGeojson,
+        options: { auth: { mode: 'required', strategy: 'session' } },
         handler: mockGeojsonHandler
       })
       server.route({
@@ -374,12 +375,14 @@ export const mapPlugin = {
       server.route({
         method: 'GET',
         path: ROUTES.osBasemap,
+        options: { auth: { mode: 'required', strategy: 'session' } },
         handler: osBasemapHandler
       })
       server.route({
         method: 'GET',
         path: ROUTES.osTiles,
         options: {
+          auth: { mode: 'required', strategy: 'session' },
           validate: {
             params: Joi.object({ path: Joi.string().allow('').default('') })
           }

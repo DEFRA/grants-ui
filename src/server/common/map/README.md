@@ -151,17 +151,6 @@ All events bubble.
 
 The inline script in `map-select-parcel.html` is the canonical example of how to consume these events.
 
-### Lifecycle states
-
-The component tracks an internal `_state`:
-
-| State       | Meaning                                    |
-| ----------- | ------------------------------------------ |
-| `'idle'`    | Not yet initialised or torn down           |
-| `'loading'` | Map and parcels fetch in progress          |
-| `'ready'`   | Fully initialised, map visible             |
-| `'error'`   | Initialisation failed, component torn down |
-
 ### Asset loading
 
 The JS bundle is built by webpack into `.public/javascripts/parcel-map.js`. The template loads it as an ES module in `{% block bodyEnd %}`:
@@ -186,18 +175,24 @@ The `@defra/interactive-map` CSS must also be loaded. It is copied by webpack's 
 
 ### `GET /api/map/parcels`
 
-Fetches the authenticated user's parcels from the DAL, enriches them with size data from the land-grants API, stores parcel IDs in the session (`yar`), and returns one of two shapes depending on whether mock data mode is enabled:
+Fetches the authenticated user's parcels from the DAL, enriches them with area data from the land-grants API, and returns one of two shapes depending on whether mock data mode is enabled:
 
 **Real mode** (`MAP_MOCK_DATA_ENABLED=false`):
 
 ```json
 {
-  "features": [{ "type": "Feature", "id": "SD7148-9160", "properties": { ... } }],
-  "bbox": { "minLng": -2.5, "minLat": 51.4, "maxLng": -2.3, "maxLat": 51.6 },
-  "tileUrl": "/land-grants/parcel-tiles/{z}/{x}/{y}",
-  "geojsonUrl": null
+  "features": [
+    {
+      "type": "Feature",
+      "id": "SD7148-9160",
+      "properties": { "sheet_id": "SD7148", "parcel_id": "9160", "areaHa": 2.5 }
+    }
+  ],
+  "bbox": { "minLng": -2.5, "minLat": 51.4, "maxLng": -2.3, "maxLat": 51.6 }
 }
 ```
+
+The component uses `PARCEL_TILES_URL` (a client-side constant in `config.js`) as the vector tile source.
 
 **Mock mode** (`MAP_MOCK_DATA_ENABLED=true`):
 
@@ -205,20 +200,27 @@ Fetches the authenticated user's parcels from the DAL, enriches them with size d
 {
   "features": [{ "type": "Feature", "id": "SD7148-9160", "geometry": { ... }, "properties": { ... } }],
   "bbox": { "minLng": -2.5, "minLat": 51.4, "maxLng": -2.3, "maxLat": 51.6 },
-  "tileUrl": null,
-  "geojsonUrl": "/api/map/parcels/geojson"
+  "mock": true
 }
 ```
 
-Returns `503` if the land-grants API is unavailable.
+When `mock: true` is present the component uses `PARCELS_GEOJSON_URL` (another client-side constant) as a GeoJSON source instead of the vector tile source. Returns `503` if the land-grants API is unavailable.
 
 ### `GET /api/map/parcels/geojson`
 
 Returns the full GeoJSON `FeatureCollection` for mock mode. Reads features stored in the session by the parcels endpoint. Returns `404` if mock mode is disabled or the session has no features. Auth is not required — MapLibre fetches this directly from the browser.
 
-### `GET /land-grants/parcel-tiles/{z}/{x}/{y}`
+### `GET /api/map/parcel-tiles/{z}/{x}/{y}`
 
-Proxies MapLibre vector tile requests to the land-grants API. Parcel IDs are read from the session (set by the parcels endpoint above) and sent in the POST body — they are never exposed in the tile URL.
+Proxies MapLibre vector tile requests to the land-grants API. Fetches the current user's parcel IDs from `fetchParcels` and sends them in the POST body so they are never exposed in the tile URL. Returns the protobuf tile buffer with `Cache-Control: public, max-age=3600`.
+
+### `GET /api/map/os-basemap`
+
+Fetches the OS Maps style JSON and tilejson in parallel, rewrites all OS URLs (tiles, glyphs, sprites) to go through the `/api/map/os-tiles` proxy so the API key is never sent to the browser. The result is cached in memory for the lifetime of the process — the style and tile URL template are stable.
+
+### `GET /api/map/os-tiles/{path*}`
+
+Proxies all OS Maps requests (tiles, glyphs, sprites, tilejson) to `api.os.uk`, injecting the API key and `srs=3857` server-side. The browser never sees the key.
 
 ---
 

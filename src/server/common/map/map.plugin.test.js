@@ -28,6 +28,7 @@ vi.mock('~/src/server/land-grants/utils/format-parcel.js', () => ({
 
 import { fetchParcels, fetchParcelTileLocation } from '~/src/server/land-grants/services/land-grants.service.js'
 import { isMockData, buildMockFeatures } from '~/src/server/common/map/map.mock.js'
+import { resetOsBasemapCache } from './map.plugin.js'
 
 const mockParcels = [
   { sheetId: 'SD7148', parcelId: '9160', area: { value: 2.5 } },
@@ -75,6 +76,7 @@ describe('mapPlugin', () => {
   let tilesHandler
 
   beforeEach(() => {
+    resetOsBasemapCache()
     server = makeServer()
     mapPlugin.plugin.register(server)
     parcelsHandler = server._routes[0].handler
@@ -84,7 +86,7 @@ describe('mapPlugin', () => {
   })
 
   describe('GET /api/map/parcels', () => {
-    it('returns features, bbox and tileUrl on success', async () => {
+    it('returns features and bbox on success', async () => {
       fetchParcels.mockResolvedValue(mockParcels)
       fetchParcelTileLocation.mockResolvedValue({ minLng: -2.5, minLat: 51.4, maxLng: -2.3, maxLat: 51.6 })
       const request = makeRequest()
@@ -98,10 +100,11 @@ describe('mapPlugin', () => {
             expect.objectContaining({ id: 'SD7148-9160' }),
             expect.objectContaining({ id: 'SD7148-9161' })
           ]),
-          bbox: { minLng: -2.5, minLat: 51.4, maxLng: -2.3, maxLat: 51.6 },
-          tileUrl: '/api/map/parcel-tiles/{z}/{x}/{y}'
+          bbox: { minLng: -2.5, minLat: 51.4, maxLng: -2.3, maxLat: 51.6 }
         })
       )
+      const [payload] = h.response.mock.calls[0]
+      expect(payload).not.toHaveProperty('tileUrl')
     })
 
     it('maps areaHa to null when area value is null', async () => {
@@ -127,7 +130,7 @@ describe('mapPlugin', () => {
       expect(request.yar.set).not.toHaveBeenCalledWith('mapParcelIds', expect.anything())
     })
 
-    it('sets tileUrl to null when no parcels returned', async () => {
+    it('does not include tileUrl when no parcels returned', async () => {
       fetchParcels.mockResolvedValue([])
       fetchParcelTileLocation.mockResolvedValue(null)
       const request = makeRequest()
@@ -135,8 +138,8 @@ describe('mapPlugin', () => {
 
       await parcelsHandler(request, h)
 
-      const [{ tileUrl }] = h.response.mock.calls[0]
-      expect(tileUrl).toBeNull()
+      const [payload] = h.response.mock.calls[0]
+      expect(payload).not.toHaveProperty('tileUrl')
     })
 
     it('returns 503 with error message when fetchParcels throws without a status code', async () => {
@@ -186,9 +189,9 @@ describe('mapPlugin', () => {
       expect(h._responseObj.code).toHaveBeenCalledWith(403)
     })
 
-    it('continues with null bbox when fetchParcelTileLocation fails', async () => {
+    it('continues with null bbox when fetchParcelTileLocation returns null', async () => {
       fetchParcels.mockResolvedValue(mockParcels)
-      fetchParcelTileLocation.mockRejectedValue(new Error('timeout'))
+      fetchParcelTileLocation.mockResolvedValue(null)
       const request = makeRequest()
       const h = makeH()
 
@@ -211,9 +214,7 @@ describe('mapPlugin', () => {
       await parcelsHandler(request, h)
 
       expect(request.yar.set).toHaveBeenCalledWith('mapMockFeatures', expect.any(Array))
-      expect(h.response).toHaveBeenCalledWith(
-        expect.objectContaining({ tileUrl: null, geojsonUrl: '/api/map/parcels/geojson' })
-      )
+      expect(h.response).toHaveBeenCalledWith(expect.objectContaining({ mock: true }))
     })
   })
 
