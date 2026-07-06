@@ -46,7 +46,7 @@ describe('isCannotSubmitUser', () => {
 describe('isSubmittedApplication', () => {
   it.each([
     [ApplicationStatus.SUBMITTED, true],
-    [ApplicationStatus.REOPENED, true],
+    [ApplicationStatus.REOPENED, false],
     [undefined, false],
     ['IN_PROGRESS', false]
   ])('isSubmittedApplication(%s) === %s', (applicationStatus, expected) => {
@@ -203,7 +203,8 @@ describe('enforcePagePermission', () => {
     expect(request.sendAuditEventInBackground).not.toHaveBeenCalled()
   })
 
-  it('allows submitted view-only users to access confirmation page', () => {
+  it.each(['confirmation', 'print-submitted-application'])('allows submitted view-only users to access %s', (path) => {
+    request.params.path = path
     request.can.mockImplementation(canView)
 
     const result = enforcePagePermission(request, h, context)
@@ -225,12 +226,25 @@ describe('enforcePagePermission', () => {
     })
   })
 
-  it('throws Application not submitted when view page accessed before submission', () => {
-    context.state.applicationStatus = 'IN_PROGRESS'
+  it.each([
+    ['confirmation', 'IN_PROGRESS'],
+    ['confirmation', ApplicationStatus.REOPENED],
+    ['print-submitted-application', undefined],
+    ['print-submitted-application', ApplicationStatus.REOPENED]
+  ])('throws a 403 when a view-only user accesses %s while application is %s', (path, applicationStatus) => {
+    context.state.applicationStatus = applicationStatus
+    request.params.path = path
 
     request.can.mockImplementation(canView)
 
-    expect(() => enforcePagePermission(request, h, context)).toThrow()
+    let error
+    try {
+      enforcePagePermission(request, h, context)
+    } catch (err) {
+      error = err
+    }
+
+    expect(error.output.statusCode).toBe(403)
   })
 
   it('throws a 403 and audits an unauthorised event when the user has no permissions', () => {
