@@ -33,11 +33,11 @@ const assertSemverConfigVersion = (configVersion) => {
 
 /**
  * Resolves the grant configuration version to send to GAS.
- * @param {AnyRequest} request - Hapi request
+ * @param {AnyRequest & { app: { grantVersion?: string } } } request - Hapi request
  * @returns {string}
  */
 export const resolveGasConfigVersion = (request) => {
-  const configVersion = request?.app?.model?.def?.metadata?.version ?? '1.0.0'
+  const configVersion = request.app?.grantVersion ?? request?.app?.model?.def?.metadata?.version ?? '1.0.0'
 
   assertSemverConfigVersion(configVersion)
 
