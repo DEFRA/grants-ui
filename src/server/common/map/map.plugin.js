@@ -27,20 +27,31 @@ const OS_TILE_SIZE_PX = 256
 const TILE_CACHE_MAX_AGE_SECONDS = 3600
 const SERVICE_LAND_GRANTS = 'land-grants-api'
 const SERVICE_OS_MAPS = 'os-maps'
+const CACHE_CONTROL_HEADER = 'Cache-Control'
 
 /** Everything before the first `?` — OS Maps query strings carry the API key. */
 const stripQueryString = (/** @type {string} */ url) => url.split('?')[0]
 
 /**
- * Absolute origin for URLs the browser will fetch. Prefers the configured
- * base URL: behind the platform's TLS-terminating proxy `server.info.protocol`
- * is 'http', which would produce mixed-content URLs the browser blocks on the
- * https page. Falls back to request info for bare local dev where baseUrl is ''.
+ * Absolute URL base for URLs the browser will fetch. Prefers the configured
+ * base URL because behind the platform's TLS-terminating proxy
+ * `server.info.protocol` may be 'http', which would produce mixed-content URLs
+ * that the browser blocks on an https page. Falls back to request info for
+ * local development where baseUrl is empty.
  * @param {Request} request
  */
 function publicOrigin(request) {
-  const baseUrl = /** @type {string} */ (config.get('baseUrl'))
-  return baseUrl ? baseUrl.replace(/\/+$/u, '') : `${request.server.info.protocol}://${request.info.host}`
+  let baseUrl = /** @type {string} */ (config.get('baseUrl'))
+
+  if (!baseUrl) {
+    return `${request.server.info.protocol}://${request.info.host}`
+  }
+
+  while (baseUrl.endsWith('/')) {
+    baseUrl = baseUrl.slice(0, -1)
+  }
+
+  return baseUrl
 }
 
 /**
@@ -217,7 +228,7 @@ async function tilesHandler(request, h) {
       .code(statusCodes.ok)
       .type('application/x-protobuf')
       // private — tiles are per-user (session-authed), so only the browser may cache them
-      .header('Cache-Control', `private, max-age=${TILE_CACHE_MAX_AGE_SECONDS}`)
+      .header(CACHE_CONTROL_HEADER, `private, max-age=${TILE_CACHE_MAX_AGE_SECONDS}`)
   )
 }
 
@@ -254,7 +265,7 @@ function osBasemapHandler(request, h) {
     .response(style)
     .code(statusCodes.ok)
     .type('application/json')
-    .header('Cache-Control', `private, max-age=${TILE_CACHE_MAX_AGE_SECONDS}`)
+    .header(CACHE_CONTROL_HEADER, `private, max-age=${TILE_CACHE_MAX_AGE_SECONDS}`)
 }
 
 /**
@@ -295,7 +306,7 @@ async function osTileProxyHandler(request, h) {
       .code(statusCodes.ok)
       .type(response.headers.get('content-type') ?? 'image/png')
       // public — OS basemap tiles are identical for every user
-      .header('Cache-Control', `public, max-age=${TILE_CACHE_MAX_AGE_SECONDS}`)
+      .header(CACHE_CONTROL_HEADER, `public, max-age=${TILE_CACHE_MAX_AGE_SECONDS}`)
   )
 }
 
