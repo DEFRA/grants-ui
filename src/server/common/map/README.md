@@ -122,7 +122,7 @@ Extends `SummaryPageController` (GOV.UK check-your-answers page). Uses the engin
 
 **Multi-select** — clicking toggles each parcel independently. Multiple parcels can be selected simultaneously.
 
-Changing `multi-select` after the component has connected triggers a full teardown and re-init.
+`multi-select` is read once when the component connects — changing it afterwards has no effect (re-create the element to reconfigure).
 
 ### Height
 
@@ -150,6 +150,14 @@ All events bubble.
 - `'no-parcels'` — API returned successfully but the user has no parcels
 
 The inline script in `map-select-parcel.html` is the canonical example of how to consume these events.
+
+### Loading and error behaviour
+
+- While initialising, the component shows a grey "Loading map…" skeleton (`role="status"`).
+- The parcels fetch is retried once (after 1 s) on failure; the map load itself has a 10 s timeout. The relevant constants (`FETCH_MAX_ATTEMPTS`, `FETCH_RETRY_DELAY_MS`, `MAP_LOAD_TIMEOUT_MS`) live in `config.js`.
+- On an `'unavailable'` error the component replaces the map with an inline "There was a problem loading the map." overlay (`role="alert"`).
+- On a `'no-parcels'` error it renders nothing — messaging is left to the page (`map-select-parcel.html` un-hides a GOV.UK error summary and disables the continue button).
+- The viewport is fitted to the parcels' bounding box on load; the map does not persist its viewport in the URL (`urlPosition: 'none'`).
 
 ### Asset loading
 
@@ -208,19 +216,19 @@ When `mock: true` is present the component uses `PARCELS_GEOJSON_URL` (another c
 
 ### `GET /api/map/parcels/geojson`
 
-Returns the full GeoJSON `FeatureCollection` for mock mode. Reads features stored in the session by the parcels endpoint. Returns `404` if mock mode is disabled or the session has no features. Auth is not required — MapLibre fetches this directly from the browser.
+Returns the full GeoJSON `FeatureCollection` for mock mode. Reads features stored in the session by the parcels endpoint. Returns `404` if mock mode is disabled or the session has no features. Requires session auth — MapLibre fetches this from the browser, which sends the session cookie automatically (same-origin).
 
 ### `GET /api/map/parcel-tiles/{z}/{x}/{y}`
 
-Proxies MapLibre vector tile requests to the land-grants API. Fetches the current user's parcel IDs from `fetchParcels` and sends them in the POST body so they are never exposed in the tile URL. Returns the protobuf tile buffer with `Cache-Control: public, max-age=3600`.
+Proxies MapLibre vector tile requests to the land-grants API. Fetches the current user's parcel IDs from `fetchParcels` (concurrent tile requests share one in-flight lookup per SBI) and sends them in the POST body so they are never exposed in the tile URL. Returns the protobuf tile buffer with `Cache-Control: private, max-age=3600` — `private` because tiles are per-user.
 
 ### `GET /api/map/os-basemap`
 
-Fetches the OS Maps style JSON and tilejson in parallel, rewrites all OS URLs (tiles, glyphs, sprites) to go through the `/api/map/os-tiles` proxy so the API key is never sent to the browser. The result is cached in memory for the lifetime of the process — the style and tile URL template are stable.
+Fetches the OS Maps style JSON and tilejson in parallel, rewrites all OS URLs (tiles, glyphs, sprites) to go through the `/api/map/os-tiles` proxy so the API key is never sent to the browser. The upstream fetch is shared across concurrent requests and cached in memory on the server instance; failures are not cached, so the next request retries (a non-OK upstream status — e.g. `401` from a missing key — is logged and passed through). Absolute URLs in the style are built from the configured `APP_BASE_URL` (falling back to the request origin for bare local dev). Served with `Cache-Control: private, max-age=3600`.
 
 ### `GET /api/map/os-tiles/{path*}`
 
-Proxies all OS Maps requests (tiles, glyphs, sprites, tilejson) to `api.os.uk`, injecting the API key and `srs=3857` server-side. The browser never sees the key.
+Proxies all OS Maps requests (tiles, glyphs, sprites, tilejson) to `api.os.uk`, injecting the API key and `srs=3857` server-side, so the browser never sees the key. Paths containing dot segments (`..`, including `%2e`-encoded forms) are rejected with `400`, so the key can only ever be sent to the OS vector-tile service. Responses are served with `Cache-Control: public, max-age=3600` — basemap tiles are identical for every user.
 
 ---
 
@@ -242,6 +250,26 @@ A complete working example is at `src/server/common/forms/definitions/example-gr
 - Actions selection with `SelectLandActionsPageController` (receives `?parcelId=` from the redirect)
 - Check-your-answers with `MapSubmissionPageController`
 - Confirmation page
+
+---
+
+## OS Maps API key
+
+The basemap is Ordnance Survey's Vector Tile Service, which requires an API key. The key is read from config as `osMapsApiKey` (env var `OS_MAPS_API_KEY`, marked sensitive) and is only ever used server-side by the `/api/map/os-basemap` and `/api/map/os-tiles/*` proxies — it must never be shipped to the browser.
+
+### Local setup
+
+Get a key from the [OS Data Hub](https://osdatahub.os.uk/) (the free OS OpenData plan covers the Vector Tile Service), then add it to `.env`:
+
+```
+OS_MAPS_API_KEY=your-key-here
+```
+
+`compose.yml` passes it through to the container. Without a key the basemap requests return `401` and the component shows its error overlay.
+
+### Deployed environments
+
+The key is a secret, so it is **not** set in `cdp-app-config` — it must be configured as a CDP secret per environment. Check it exists before enabling map journeys in a new environment.
 
 ---
 

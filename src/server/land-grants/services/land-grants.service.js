@@ -157,7 +157,17 @@ async function fetchParcelsSize(parcelIds) {
 }
 
 /**
- * Fetches parcels with area data for a given SBI.
+ * In-flight parcel loads keyed by SBI. Map tile requests arrive in parallel
+ * bursts; without this, every request that misses the value cache would fire
+ * its own DAL + size-API round trip. Entries remove themselves on settle, so
+ * failures are never cached and the next call retries.
+ * @type {Map<unknown, Promise<Parcel[]>>}
+ */
+const inflightParcelsBySbi = new Map()
+
+/**
+ * Fetches parcels with area data for a given SBI. Concurrent calls for the
+ * same SBI share a single upstream load.
  * @param {AnyFormRequest} request
  * @returns {Promise<Parcel[]>}
  * @throws {Error}
@@ -170,6 +180,20 @@ export async function fetchParcels(request) {
     return cached
   }
 
+  let inflight = inflightParcelsBySbi.get(sbi)
+  if (!inflight) {
+    inflight = loadParcelsForSbi(request, sbi).finally(() => inflightParcelsBySbi.delete(sbi))
+    inflightParcelsBySbi.set(sbi, inflight)
+  }
+  return inflight
+}
+
+/**
+ * @param {AnyFormRequest} request
+ * @param {unknown} sbi
+ * @returns {Promise<Parcel[]>}
+ */
+async function loadParcelsForSbi(request, sbi) {
   const parcels = await fetchParcelsFromDal(request)
   const parcelKeys = parcels.map(stringifyParcel)
   const sizes = await fetchParcelsSize(parcelKeys)

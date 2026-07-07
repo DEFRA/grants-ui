@@ -130,30 +130,8 @@ class ParcelMap extends HTMLElement {
   /** @type {Array<() => void>} */
   #mlCleanup = []
 
-  #connected = false
-
-  static get observedAttributes() {
-    return ['multi-select']
-  }
-
   connectedCallback() {
-    this.#connected = true
     this.#state = STATE_IDLE
-    this.#init()
-  }
-
-  attributeChangedCallback() {
-    if (!this.#connected) {
-      return
-    }
-    if (this.#state === STATE_ERROR) {
-      this.#errorOverlay?.remove()
-      this.#errorOverlay = null
-    } else if (this.#state !== STATE_IDLE) {
-      this.#teardown()
-    } else {
-      // STATE_IDLE — no cleanup needed
-    }
     this.#init()
   }
 
@@ -184,6 +162,7 @@ class ParcelMap extends HTMLElement {
   async #init() {
     this.#state = STATE_LOADING
 
+    // Read once at connect, runtime changes to the attribute are not supported.
     const multiSelect = this.getAttribute('multi-select') === 'true'
 
     this.#skeleton = buildSkeleton()
@@ -191,6 +170,7 @@ class ParcelMap extends HTMLElement {
 
     const [ml, data] = await Promise.all([this.#initMap(), this.#fetchData()])
 
+    // Torn down (disconnected) while we were loading, nothing to wire up.
     if (this.#state !== STATE_LOADING) {
       return
     }
@@ -249,19 +229,15 @@ class ParcelMap extends HTMLElement {
         this.appendChild(wrapper)
       }
 
-      // Clear stale viewport params so InteractiveMap doesn't restore an old view
-      const url = new URL(globalThis.location.href)
-      url.searchParams.delete(`${mapEl.id}:center`)
-      url.searchParams.delete(`${mapEl.id}:zoom`)
-      globalThis.history.replaceState(null, '', url)
-
       const map = new InteractiveMap(mapEl.id, {
         behaviour: 'inline',
         containerHeight: this.style.height || MAP_DEFAULT_HEIGHT,
         mapProvider: maplibreProvider(),
         mapStyle: { url: MAP_STYLE_URL, attribution: getMapStyleAttribution() },
         center: MAP_DEFAULT_CENTER,
-        zoom: MAP_DEFAULT_ZOOM
+        zoom: MAP_DEFAULT_ZOOM,
+        // Don't persist the viewport in URL params.
+        urlPosition: 'none'
       })
       this.#mapInstance = map
 

@@ -158,22 +158,22 @@ describe('parcel-map web component', () => {
       expect(el.querySelector('[role="status"]')).toBeNull()
     })
 
-    it('re-initialises when multi-select attribute changes after ready', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement()
-      await waitForEvent(el, EVENT_READY)
-
-      const readyAgain = waitForEvent(el, EVENT_READY)
-      el.setAttribute('multi-select', 'true')
-      await readyAgain
-      expect(el.querySelector('[role="alert"]')).toBeNull()
-    })
-
     it('dispatches parcel-map:error with reason no-parcels when API returns empty features', async () => {
       global.fetch = fetchOk({ features: [], bbox: null })
       const el = await mountElement()
       const e = await waitForEvent(el, EVENT_ERROR)
       expect(e.detail.reason).toBe('no-parcels')
+    })
+  })
+
+  describe('viewport URL persistence', () => {
+    it('disables InteractiveMap URL viewport sync', async () => {
+      global.fetch = fetchOk(PARCELS_RESPONSE)
+      const el = await mountElement()
+      await waitForEvent(el, EVENT_READY)
+
+      const [, options] = InteractiveMap.mock.calls[0]
+      expect(options.urlPosition).toBe('none')
     })
   })
 

@@ -13,7 +13,18 @@ vi.mock('~/src/server/common/helpers/auth/backend-auth-helper.js', () => ({
 
 vi.mock('~/src/config/config.js', () => ({
   config: {
-    get: vi.fn((key) => (key === 'mapMockDataEnabled' ? false : 'https://land-grants-api'))
+    get: vi.fn((key) => {
+      if (key === 'mapMockDataEnabled') {
+        return false
+      }
+      if (key === 'baseUrl') {
+        return ''
+      }
+      if (key === 'osMapsApiKey') {
+        return 'test-os-key'
+      }
+      return 'https://land-grants-api'
+    })
   }
 }))
 
@@ -26,9 +37,9 @@ vi.mock('~/src/server/land-grants/utils/format-parcel.js', () => ({
   stringifyParcel: vi.fn((p) => `${p.sheetId}-${p.parcelId}`)
 }))
 
+import { config } from '~/src/config/config.js'
 import { fetchParcels, fetchParcelTileLocation } from '~/src/server/land-grants/services/land-grants.service.js'
 import { isMockData, buildMockFeatures } from '~/src/server/common/map/map.mock.js'
-import { resetOsBasemapCache } from './map.plugin.js'
 
 const mockParcels = [
   { sheetId: 'SD7148', parcelId: '9160', area: { value: 2.5 } },
@@ -69,10 +80,14 @@ function makeH() {
   }
 }
 
+// Shared server.app state for OS requests within a test — the basemap cache
+// lives there, scoped to the server instance. Reset per test in beforeEach.
+let osServerApp = {}
+
 function makeOsRequest(path = '') {
   return {
     auth: { credentials: { sbi: '123456789' } },
-    server: { info: { protocol: 'http' } },
+    server: { info: { protocol: 'http' }, app: osServerApp },
     info: { host: 'localhost:3000' },
     params: { path },
     query: {}
@@ -104,7 +119,7 @@ describe('mapPlugin', () => {
   let osTilesHandler
 
   beforeEach(() => {
-    resetOsBasemapCache()
+    osServerApp = {}
     server = makeServer()
     mapPlugin.plugin.register(server)
     parcelsHandler = server._routes[0].handler
@@ -370,6 +385,21 @@ describe('mapPlugin', () => {
         expect.objectContaining({ body: JSON.stringify({ parcelIds: [] }) })
       )
     })
+
+    it('marks tiles as privately cacheable', async () => {
+      fetchParcels.mockResolvedValue([])
+      global.fetch.mockResolvedValue({
+        ok: true,
+        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0))
+      })
+      const request = makeRequest()
+      request.params = { z: '10', x: '50', y: '60' }
+      const h = makeH()
+
+      await tilesHandler(request, h)
+
+      expect(h._responseObj.header).toHaveBeenCalledWith('Cache-Control', 'private, max-age=3600')
+    })
   })
 
   describe('GET /api/map/os-basemap', () => {
@@ -489,6 +519,53 @@ describe('mapPlugin', () => {
 
       expect(h._responseObj.code).toHaveBeenCalledWith(503)
     })
+
+    it('prefers the configured baseUrl over the request origin', async () => {
+      const defaultImpl = config.get.getMockImplementation()
+      config.get.mockImplementation((key) => (key === 'baseUrl' ? 'https://grants-ui.prod.example/' : defaultImpl(key)))
+      global.fetch
+        .mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue(OS_STYLE_JSON) })
+        .mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue(OS_TILEJSON) })
+      const h = makeH()
+
+      try {
+        await osBasemapHandler(makeOsRequest(), h)
+      } finally {
+        config.get.mockImplementation(defaultImpl)
+      }
+
+      const [style] = h.response.mock.calls[0]
+      expect(style.glyphs).toMatch(/^https:\/\/grants-ui\.prod\.example\/api\/map\/os-tiles/)
+      expect(style.sprite).toMatch(/^https:\/\/grants-ui\.prod\.example\/api\/map\/os-tiles/)
+    })
+
+    it('shares one upstream load across concurrent cold-start requests', async () => {
+      global.fetch
+        .mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue(OS_STYLE_JSON) })
+        .mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue(OS_TILEJSON) })
+      const h1 = makeH()
+      const h2 = makeH()
+
+      await Promise.all([osBasemapHandler(makeOsRequest(), h1), osBasemapHandler(makeOsRequest(), h2)])
+
+      expect(global.fetch).toHaveBeenCalledTimes(2)
+      expect(h1._responseObj.code).toHaveBeenCalledWith(200)
+      expect(h2._responseObj.code).toHaveBeenCalledWith(200)
+    })
+
+    it('does not cache failures — retries on the next request', async () => {
+      global.fetch.mockRejectedValueOnce(new Error('network')).mockRejectedValueOnce(new Error('network'))
+      const h1 = makeH()
+      await osBasemapHandler(makeOsRequest(), h1)
+      expect(h1._responseObj.code).toHaveBeenCalledWith(503)
+
+      global.fetch
+        .mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue(OS_STYLE_JSON) })
+        .mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValue(OS_TILEJSON) })
+      const h2 = makeH()
+      await osBasemapHandler(makeOsRequest(), h2)
+      expect(h2._responseObj.code).toHaveBeenCalledWith(200)
+    })
   })
 
   describe('GET /api/map/os-tiles/{path*}', () => {
@@ -508,7 +585,8 @@ describe('mapPlugin', () => {
       await osTilesHandler(request, h)
 
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('https://api.os.uk/maps/vector/v1/vts/12/100/200.pbf')
+        expect.stringContaining('https://api.os.uk/maps/vector/v1/vts/12/100/200.pbf'),
+        undefined
       )
       expect(h._responseObj.type).toHaveBeenCalledWith('application/x-protobuf')
       expect(h._responseObj.code).toHaveBeenCalledWith(200)
@@ -548,6 +626,28 @@ describe('mapPlugin', () => {
       await osTilesHandler(request, h)
 
       expect(h._responseObj.code).toHaveBeenCalledWith(503)
+    })
+
+    it('rejects dot-segment path traversal without calling upstream', async () => {
+      const request = makeOsRequest('../../../../search/places/v1/find')
+      const h = makeH()
+
+      await osTilesHandler(request, h)
+
+      expect(h._responseObj.code).toHaveBeenCalledWith(400)
+      expect(global.fetch).not.toHaveBeenCalled()
+    })
+
+    it('rejects percent-encoded dot-segment traversal without calling upstream', async () => {
+      // %2e%2e survives Hapi's decode of %252e%252e but is still a dot
+      // segment to WHATWG URL normalisation, which fetch() applies.
+      const request = makeOsRequest('%2e%2e/%2e%2e/secret')
+      const h = makeH()
+
+      await osTilesHandler(request, h)
+
+      expect(h._responseObj.code).toHaveBeenCalledWith(400)
+      expect(global.fetch).not.toHaveBeenCalled()
     })
   })
 })
