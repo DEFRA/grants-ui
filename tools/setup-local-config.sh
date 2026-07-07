@@ -16,6 +16,7 @@ CONFIG_REPOS=(
   grants-config-example-grants
   grants-config-woodland
   grants-config-farm-payments
+  grants-config-grasslands
 )
 
 github_api_get() {
