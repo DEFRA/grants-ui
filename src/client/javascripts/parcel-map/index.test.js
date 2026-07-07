@@ -11,8 +11,7 @@ const PARCELS_RESPONSE = {
     { id: 'SD7148-9160', properties: { sheet_id: 'SD7148', parcel_id: '9160', areaHa: 2.5 } },
     { id: 'SD7148-9161', properties: { sheet_id: 'SD7148', parcel_id: '9161', areaHa: null } }
   ],
-  bbox: { minLng: -2.5, minLat: 51.4, maxLng: -2.3, maxLat: 51.6 },
-  tileUrl: '/land-grants/parcel-tiles/{z}/{x}/{y}'
+  bbox: { minLng: -2.5, minLat: 51.4, maxLng: -2.3, maxLat: 51.6 }
 }
 
 function makeMlMap(overrides = {}) {
@@ -33,6 +32,11 @@ function makeMlMap(overrides = {}) {
       const handler = cb ?? layerOrCb
       listeners[key] = listeners[key] ?? []
       listeners[key].push(handler)
+    }),
+    off: vi.fn((event, layerOrCb, cb) => {
+      const key = cb ? `${event}:${layerOrCb}` : event
+      const handler = cb ?? layerOrCb
+      listeners[key] = (listeners[key] ?? []).filter((fn) => fn !== handler)
     }),
     _emit(event, eventObj) {
       ;(listeners[event] ?? []).forEach((fn) => fn(eventObj))
@@ -107,15 +111,15 @@ describe('parcel-map web component', () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
       const el = await mountElement()
       await waitForEvent(el, EVENT_READY)
-      expect(el._state).toBe('ready')
+      expect(el.querySelector('[role="alert"]')).toBeNull()
     })
 
-    it('dispatches parcel-map:error and tears down when fetch fails', async () => {
+    it('dispatches parcel-map:error and shows error overlay when fetch fails', async () => {
       global.fetch = vi.fn().mockResolvedValue({ ok: false })
       const el = await mountElement()
-      await waitForEvent(el, EVENT_ERROR)
-      expect(el._state).toBe('idle')
-      expect(el._mapInstance).toBeNull()
+      const e = await waitForEvent(el, EVENT_ERROR)
+      expect(e.detail.reason).toBe('unavailable')
+      expect(el.querySelector('[role="alert"]')).not.toBeNull()
     })
 
     it('dispatches parcel-map:error when InteractiveMap emits map:error', async () => {
@@ -132,53 +136,74 @@ describe('parcel-map web component', () => {
         })
       })
       const el = await mountElement()
+      const e = await waitForEvent(el, EVENT_ERROR)
+      expect(e.detail.reason).toBe('unavailable')
+    })
+
+    it('removes skeleton and map elements after error', async () => {
+      global.fetch = vi.fn().mockResolvedValue({ ok: false })
+      const el = await mountElement()
       await waitForEvent(el, EVENT_ERROR)
-      expect(el._state).toBe('idle')
+      expect(el.querySelector('[role="status"]')).toBeNull()
+      // Map wrapper (the div wrapping the canvas) should be gone too
+      expect(el.querySelectorAll('div').length).toBeLessThanOrEqual(1) // only the error overlay
     })
 
-    it('teardown removes skeleton and map elements', async () => {
+    it('removes skeleton once ready', async () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
       const el = await mountElement()
       await waitForEvent(el, EVENT_READY)
-      el._teardown()
-      expect(el._skeleton).toBeNull()
-      expect(el._mapEl).toBeNull()
-      expect(el._mapInstance).toBeNull()
+      expect(el.querySelector('[role="status"]')).toBeNull()
     })
 
-    it('re-initialises when multi-select attribute changes after ready', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
+    it('dispatches parcel-map:error with reason no-parcels when API returns empty features', async () => {
+      global.fetch = fetchOk({ features: [], bbox: null })
       const el = await mountElement()
-      await waitForEvent(el, EVENT_READY)
-
-      const readyAgain = waitForEvent(el, EVENT_READY)
-      el.setAttribute('multi-select', 'true')
-      await readyAgain
-      expect(el._state).toBe('ready')
+      const e = await waitForEvent(el, EVENT_ERROR)
+      expect(e.detail.reason).toBe('no-parcels')
     })
   })
 
-  describe('_fetchData', () => {
-    it('extracts parcelIds and metaIndex from features', async () => {
+  describe('viewport options', () => {
+    it('disables InteractiveMap URL viewport sync', async () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
       const el = await mountElement()
       await waitForEvent(el, EVENT_READY)
 
+      const [, options] = InteractiveMap.mock.calls[0]
+      expect(options.urlPosition).toBe('none')
+    })
+
+    it('constrains zoom-out to the OS basemap coverage (min zoom 7)', async () => {
+      global.fetch = fetchOk(PARCELS_RESPONSE)
+      const el = await mountElement()
+      await waitForEvent(el, EVENT_READY)
+
+      const [, options] = InteractiveMap.mock.calls[0]
+      expect(options.minZoom).toBe(7)
+    })
+  })
+
+  describe('data fetching', () => {
+    it('adds vector tile source when parcels are returned', async () => {
+      global.fetch = fetchOk(PARCELS_RESPONSE)
+      const el = await mountElement()
+      await waitForEvent(el, EVENT_READY)
       expect(ml.addSource).toHaveBeenCalledWith('parcels', expect.objectContaining({ type: 'vector' }))
     })
 
-    it('returns null when fetch throws', async () => {
+    it('dispatches parcel-map:error when fetch throws', async () => {
       global.fetch = vi.fn().mockRejectedValue(new Error('network'))
       const el = await mountElement()
-      await waitForEvent(el, EVENT_ERROR)
-      expect(el._state).toBe('idle')
+      const e = await waitForEvent(el, EVENT_ERROR)
+      expect(e.detail.reason).toBe('unavailable')
     })
 
-    it('handles missing tileUrl gracefully — skips addSource', async () => {
-      global.fetch = fetchOk({ ...PARCELS_RESPONSE, tileUrl: null })
+    it('adds geojson source when mock mode is indicated in response', async () => {
+      global.fetch = fetchOk({ ...PARCELS_RESPONSE, mock: true })
       const el = await mountElement()
       await waitForEvent(el, EVENT_READY)
-      expect(ml.addSource).not.toHaveBeenCalled()
+      expect(ml.addSource).toHaveBeenCalledWith('parcels', expect.objectContaining({ type: 'geojson' }))
     })
   })
 
@@ -213,12 +238,12 @@ describe('parcel-map web component', () => {
       expect(layerIds).toContain(LAYER_ID_LABEL)
     })
 
-    it('resolves relative tileUrl against location.origin', async () => {
+    it('resolves PARCEL_TILES_URL against location.origin when no geojsonUrl', async () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
       const el = await mountElement()
       await waitForEvent(el, EVENT_READY)
       const [, sourceSpec] = ml.addSource.mock.calls[0]
-      expect(sourceSpec.tiles[0]).toBe(`${globalThis.location.origin}/land-grants/parcel-tiles/{z}/{x}/{y}`)
+      expect(sourceSpec.tiles[0]).toBe(`${globalThis.location.origin}/api/map/parcel-tiles/{z}/{x}/{y}`)
     })
   })
 

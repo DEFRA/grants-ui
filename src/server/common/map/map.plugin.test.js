@@ -13,7 +13,18 @@ vi.mock('~/src/server/common/helpers/auth/backend-auth-helper.js', () => ({
 
 vi.mock('~/src/config/config.js', () => ({
   config: {
-    get: vi.fn((key) => (key === 'mapMockDataEnabled' ? false : 'https://land-grants-api'))
+    get: vi.fn((key) => {
+      if (key === 'mapMockDataEnabled') {
+        return false
+      }
+      if (key === 'baseUrl') {
+        return ''
+      }
+      if (key === 'osMapsApiKey') {
+        return 'test-os-key'
+      }
+      return 'https://land-grants-api'
+    })
   }
 }))
 
@@ -26,6 +37,7 @@ vi.mock('~/src/server/land-grants/utils/format-parcel.js', () => ({
   stringifyParcel: vi.fn((p) => `${p.sheetId}-${p.parcelId}`)
 }))
 
+import { config } from '~/src/config/config.js'
 import { fetchParcels, fetchParcelTileLocation } from '~/src/server/land-grants/services/land-grants.service.js'
 import { isMockData, buildMockFeatures } from '~/src/server/common/map/map.mock.js'
 
@@ -68,11 +80,23 @@ function makeH() {
   }
 }
 
+function makeOsRequest(params = {}) {
+  return {
+    auth: { credentials: { sbi: '123456789' } },
+    server: { info: { protocol: 'http' } },
+    info: { host: 'localhost:3000' },
+    params,
+    query: {}
+  }
+}
+
 describe('mapPlugin', () => {
   let server
   let parcelsHandler
   let geojsonHandler
   let tilesHandler
+  let osBasemapHandler
+  let osTilesHandler
 
   beforeEach(() => {
     server = makeServer()
@@ -80,11 +104,13 @@ describe('mapPlugin', () => {
     parcelsHandler = server._routes[0].handler
     geojsonHandler = server._routes[1].handler
     tilesHandler = server._routes[2].handler
+    osBasemapHandler = server._routes[3].handler
+    osTilesHandler = server._routes[4].handler
     vi.clearAllMocks()
   })
 
   describe('GET /api/map/parcels', () => {
-    it('returns features, bbox and tileUrl on success', async () => {
+    it('returns features and bbox on success', async () => {
       fetchParcels.mockResolvedValue(mockParcels)
       fetchParcelTileLocation.mockResolvedValue({ minLng: -2.5, minLat: 51.4, maxLng: -2.3, maxLat: 51.6 })
       const request = makeRequest()
@@ -98,10 +124,11 @@ describe('mapPlugin', () => {
             expect.objectContaining({ id: 'SD7148-9160' }),
             expect.objectContaining({ id: 'SD7148-9161' })
           ]),
-          bbox: { minLng: -2.5, minLat: 51.4, maxLng: -2.3, maxLat: 51.6 },
-          tileUrl: '/land-grants/parcel-tiles/{z}/{x}/{y}'
+          bbox: { minLng: -2.5, minLat: 51.4, maxLng: -2.3, maxLat: 51.6 }
         })
       )
+      const [payload] = h.response.mock.calls[0]
+      expect(payload).not.toHaveProperty('tileUrl')
     })
 
     it('maps areaHa to null when area value is null', async () => {
@@ -116,7 +143,7 @@ describe('mapPlugin', () => {
       expect(features[0].properties.areaHa).toBeNull()
     })
 
-    it('stores parcel IDs in session', async () => {
+    it('does not store parcel IDs in session', async () => {
       fetchParcels.mockResolvedValue(mockParcels)
       fetchParcelTileLocation.mockResolvedValue(null)
       const request = makeRequest()
@@ -124,10 +151,10 @@ describe('mapPlugin', () => {
 
       await parcelsHandler(request, h)
 
-      expect(request.yar.set).toHaveBeenCalledWith('mapParcelIds', ['SD7148-9160', 'SD7148-9161'])
+      expect(request.yar.set).not.toHaveBeenCalledWith('mapParcelIds', expect.anything())
     })
 
-    it('sets tileUrl to null when no parcels returned', async () => {
+    it('does not include tileUrl when no parcels returned', async () => {
       fetchParcels.mockResolvedValue([])
       fetchParcelTileLocation.mockResolvedValue(null)
       const request = makeRequest()
@@ -135,8 +162,8 @@ describe('mapPlugin', () => {
 
       await parcelsHandler(request, h)
 
-      const [{ tileUrl }] = h.response.mock.calls[0]
-      expect(tileUrl).toBeNull()
+      const [payload] = h.response.mock.calls[0]
+      expect(payload).not.toHaveProperty('tileUrl')
     })
 
     it('returns 503 with error message when fetchParcels throws without a status code', async () => {
@@ -186,9 +213,9 @@ describe('mapPlugin', () => {
       expect(h._responseObj.code).toHaveBeenCalledWith(403)
     })
 
-    it('continues with null bbox when fetchParcelTileLocation fails', async () => {
+    it('continues with null bbox when fetchParcelTileLocation returns null', async () => {
       fetchParcels.mockResolvedValue(mockParcels)
-      fetchParcelTileLocation.mockRejectedValue(new Error('timeout'))
+      fetchParcelTileLocation.mockResolvedValue(null)
       const request = makeRequest()
       const h = makeH()
 
@@ -211,9 +238,7 @@ describe('mapPlugin', () => {
       await parcelsHandler(request, h)
 
       expect(request.yar.set).toHaveBeenCalledWith('mapMockFeatures', expect.any(Array))
-      expect(h.response).toHaveBeenCalledWith(
-        expect.objectContaining({ tileUrl: null, geojsonUrl: '/api/map/parcels/geojson' })
-      )
+      expect(h.response).toHaveBeenCalledWith(expect.objectContaining({ mock: true }))
     })
   })
 
@@ -251,7 +276,7 @@ describe('mapPlugin', () => {
     })
   })
 
-  describe('GET /land-grants/parcel-tiles/{z}/{x}/{y}', () => {
+  describe('GET /api/map/parcel-tiles/{z}/{x}/{y}', () => {
     beforeEach(() => {
       globalThis.fetch = vi.fn()
     })
@@ -265,13 +290,13 @@ describe('mapPlugin', () => {
       expect(schema.validate({ z: 'abc', x: 0, y: 0 }).error).toBeDefined()
     })
 
-    it('proxies the tile request with parcel IDs from session', async () => {
-      const mockResponse = {
+    it('proxies the tile request with parcel IDs from fetchParcels', async () => {
+      fetchParcels.mockResolvedValue([{ sheetId: 'SD7148', parcelId: '9160' }])
+      global.fetch.mockResolvedValue({
         ok: true,
         arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8))
-      }
-      global.fetch.mockResolvedValue(mockResponse)
-      const request = makeRequest({ mapParcelIds: ['SD7148-9160'] })
+      })
+      const request = makeRequest()
       request.params = { z: '12', x: '100', y: '200' }
       const h = makeH()
 
@@ -288,8 +313,9 @@ describe('mapPlugin', () => {
     })
 
     it('returns upstream status code when tile fetch fails', async () => {
+      fetchParcels.mockResolvedValue([{ sheetId: 'SD7148', parcelId: '9160' }])
       global.fetch.mockResolvedValue({ ok: false, status: 404 })
-      const request = makeRequest({ mapParcelIds: [] })
+      const request = makeRequest()
       request.params = { z: '12', x: '100', y: '200' }
       const h = makeH()
 
@@ -298,9 +324,9 @@ describe('mapPlugin', () => {
       expect(h._responseObj.code).toHaveBeenCalledWith(404)
     })
 
-    it('returns 503 when fetch throws', async () => {
-      global.fetch.mockRejectedValue(new Error('network error'))
-      const request = makeRequest({ mapParcelIds: ['SD7148-9160'] })
+    it('returns 503 when fetchParcels throws', async () => {
+      fetchParcels.mockRejectedValue(new Error('network error'))
+      const request = makeRequest()
       request.params = { z: '12', x: '100', y: '200' }
       const h = makeH()
 
@@ -309,12 +335,25 @@ describe('mapPlugin', () => {
       expect(h._responseObj.code).toHaveBeenCalledWith(503)
     })
 
-    it('uses empty parcel IDs when session has none', async () => {
+    it('returns 503 when tile fetch throws', async () => {
+      fetchParcels.mockResolvedValue([])
+      global.fetch.mockRejectedValue(new Error('network error'))
+      const request = makeRequest()
+      request.params = { z: '10', x: '50', y: '60' }
+      const h = makeH()
+
+      await tilesHandler(request, h)
+
+      expect(h._responseObj.code).toHaveBeenCalledWith(503)
+    })
+
+    it('uses empty parcel IDs when fetchParcels returns none', async () => {
+      fetchParcels.mockResolvedValue([])
       global.fetch.mockResolvedValue({
         ok: true,
         arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0))
       })
-      const request = makeRequest({})
+      const request = makeRequest()
       request.params = { z: '10', x: '50', y: '60' }
       const h = makeH()
 
@@ -324,6 +363,142 @@ describe('mapPlugin', () => {
         expect.any(String),
         expect.objectContaining({ body: JSON.stringify({ parcelIds: [] }) })
       )
+    })
+
+    it('marks tiles as privately cacheable', async () => {
+      fetchParcels.mockResolvedValue([])
+      global.fetch.mockResolvedValue({
+        ok: true,
+        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0))
+      })
+      const request = makeRequest()
+      request.params = { z: '10', x: '50', y: '60' }
+      const h = makeH()
+
+      await tilesHandler(request, h)
+
+      expect(h._responseObj.header).toHaveBeenCalledWith('Cache-Control', 'private, max-age=3600')
+    })
+  })
+
+  describe('GET /api/map/os-basemap', () => {
+    beforeEach(() => {
+      globalThis.fetch = vi.fn()
+    })
+
+    it('returns a locally built raster style without calling any upstream', async () => {
+      const h = makeH()
+
+      await osBasemapHandler(makeOsRequest(), h)
+
+      expect(global.fetch).not.toHaveBeenCalled()
+      expect(h._responseObj.code).toHaveBeenCalledWith(200)
+      expect(h._responseObj.type).toHaveBeenCalledWith('application/json')
+
+      const [style] = h.response.mock.calls[0]
+      expect(style.version).toBe(8)
+      expect(style.sources['os-raster'].type).toBe('raster')
+      expect(style.sources['os-raster'].tiles).toEqual(['http://localhost:3000/api/map/os-tiles/{z}/{x}/{y}'])
+      expect(style.layers).toEqual([{ id: 'os-basemap', type: 'raster', source: 'os-raster' }])
+    })
+
+    it('includes OS attribution with the current year', async () => {
+      const h = makeH()
+
+      await osBasemapHandler(makeOsRequest(), h)
+
+      const [style] = h.response.mock.calls[0]
+      expect(style.sources['os-raster'].attribution).toContain('Crown copyright')
+      expect(style.sources['os-raster'].attribution).toContain(String(new Date().getFullYear()))
+    })
+
+    it('prefers the configured baseUrl over the request origin', async () => {
+      const defaultImpl = config.get.getMockImplementation()
+      config.get.mockImplementation((key) => (key === 'baseUrl' ? 'https://grants-ui.prod.example/' : defaultImpl(key)))
+      const h = makeH()
+
+      try {
+        await osBasemapHandler(makeOsRequest(), h)
+      } finally {
+        config.get.mockImplementation(defaultImpl)
+      }
+
+      const [style] = h.response.mock.calls[0]
+      expect(style.sources['os-raster'].tiles[0]).toMatch(/^https:\/\/grants-ui\.prod\.example\/api\/map\/os-tiles/)
+    })
+
+    it('marks the style as privately cacheable', async () => {
+      const h = makeH()
+
+      await osBasemapHandler(makeOsRequest(), h)
+
+      expect(h._responseObj.header).toHaveBeenCalledWith('Cache-Control', 'private, max-age=3600')
+    })
+  })
+
+  describe('GET /api/map/os-tiles/{z}/{x}/{y}', () => {
+    beforeEach(() => {
+      globalThis.fetch = vi.fn()
+    })
+
+    it('validates z, x and y as non-negative integers', () => {
+      const schema = server._routes[4].options.validate.params
+      expect(schema.validate({ z: 12, x: 100, y: 200 }).error).toBeUndefined()
+      expect(schema.validate({ z: -1, x: 0, y: 0 }).error).toBeDefined()
+      expect(schema.validate({ z: 'abc', x: 0, y: 0 }).error).toBeDefined()
+    })
+
+    it('proxies to the OS raster endpoint with the server-side layer and key', async () => {
+      global.fetch.mockResolvedValue({
+        ok: true,
+        headers: { get: vi.fn().mockReturnValue('image/png') },
+        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(4))
+      })
+      const request = makeOsRequest({ z: '12', x: '100', y: '200' })
+      const h = makeH()
+
+      await osTilesHandler(request, h)
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://api.os.uk/maps/raster/v1/zxy/Outdoor_3857/12/100/200.png?key=test-os-key',
+        undefined
+      )
+      expect(h._responseObj.type).toHaveBeenCalledWith('image/png')
+      expect(h._responseObj.code).toHaveBeenCalledWith(200)
+    })
+
+    it('marks tiles as publicly cacheable (same for every user)', async () => {
+      global.fetch.mockResolvedValue({
+        ok: true,
+        headers: { get: vi.fn().mockReturnValue('image/png') },
+        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0))
+      })
+      const request = makeOsRequest({ z: '7', x: '62', y: '40' })
+      const h = makeH()
+
+      await osTilesHandler(request, h)
+
+      expect(h._responseObj.header).toHaveBeenCalledWith('Cache-Control', 'public, max-age=3600')
+    })
+
+    it('passes through the upstream status when not ok', async () => {
+      global.fetch.mockResolvedValue({ ok: false, status: 401 })
+      const request = makeOsRequest({ z: '12', x: '100', y: '200' })
+      const h = makeH()
+
+      await osTilesHandler(request, h)
+
+      expect(h._responseObj.code).toHaveBeenCalledWith(401)
+    })
+
+    it('returns 503 when fetch throws', async () => {
+      global.fetch.mockRejectedValue(new Error('network'))
+      const request = makeOsRequest({ z: '12', x: '100', y: '200' })
+      const h = makeH()
+
+      await osTilesHandler(request, h)
+
+      expect(h._responseObj.code).toHaveBeenCalledWith(503)
     })
   })
 })

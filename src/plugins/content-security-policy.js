@@ -13,13 +13,10 @@ const defaultContentPolicy = (/** @type {string} */ nonce) => {
   // See: https://frontend.design-system.service.gov.uk/import-javascript/
   const govukFrontendHash = "'sha256-GUQ5ad8JK5KmEWmROf3LZd9ge94daqNvd8xy9YS1iDw='"
 
-  const cartoCdn = 'https://basemaps.cartocdn.com'
-  const cartoTiles = 'https://*.basemaps.cartocdn.com'
-
   const scriptSrc = [self, "'strict-dynamic'", `'nonce-${nonce}'`, govukFrontendHash, gtmWildCard, ga4].join(' ')
-  const connectSrc = [self, ga4, statsDblClick, ga4WildCard, gtmWildCard, cartoCdn, cartoTiles].join(' ')
+  const connectSrc = [self, ga4, statsDblClick, ga4WildCard, gtmWildCard].join(' ')
   const fontSrc = [self, 'data:', 'https://fonts.gstatic.com'].join(' ')
-  const imgSrc = [self, 'data:', 'blob:', ga4, statsDblClick, ga4WildCard, cartoCdn, cartoTiles].join(' ')
+  const imgSrc = [self, 'data:', 'blob:', ga4, statsDblClick, ga4WildCard].join(' ')
   const workerSrc = [self, 'blob:'].join(' ')
 
   return [

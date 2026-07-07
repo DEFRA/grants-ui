@@ -1,14 +1,20 @@
+/* eslint-disable no-console */
 // @ts-ignore — no type declarations shipped with this package
 import InteractiveMap from '@defra/interactive-map'
-// @ts-ignore
+// @ts-ignore — no type declarations shipped with this package
 import maplibreProvider from '@defra/interactive-map/providers/maplibre'
 import {
   PARCELS_API_URL,
+  PARCEL_TILES_URL,
+  PARCELS_GEOJSON_URL,
   MAP_STYLE_URL,
-  MAP_STYLE_ATTRIBUTION,
+  getMapStyleAttribution,
   PARCEL_COLORS,
   LAYER_TEXT_SIZE,
   LAYER_TEXT_HALO_WIDTH,
+  LAYER_LINE_WIDTH,
+  FIT_BOUNDS_PADDING,
+  AREA_DECIMAL_PLACES,
   TOOLTIP_STYLES,
   LAYER_ID_FILL,
   LAYER_ID_OUTLINE,
@@ -16,12 +22,32 @@ import {
   FILL_OPACITY_DEFAULT,
   FILL_OPACITY_SELECTED,
   MAP_DEFAULT_HEIGHT,
+  MAP_DEFAULT_CENTER,
+  MAP_DEFAULT_ZOOM,
+  MAP_MIN_ZOOM,
+  MAP_LOAD_TIMEOUT_MS,
+  FETCH_MAX_ATTEMPTS,
+  FETCH_RETRY_DELAY_MS,
   TOOLTIP_OFFSET_X,
   TOOLTIP_MAX_WIDTH,
   TOOLTIP_FALLBACK_MAP_WIDTH,
   EVENT_READY,
   EVENT_ERROR,
-  EVENT_SELECTION
+  EVENT_SELECTION,
+  STATE_IDLE,
+  STATE_LOADING,
+  STATE_READY,
+  STATE_ERROR,
+  ERROR_OVERLAY_STYLES,
+  ERROR_LABEL_STYLES,
+  LABEL_TEXT_COLOR,
+  LABEL_HALO_COLOR,
+  SELECTION_NONE_SENTINEL,
+  MSG_LOADING,
+  MSG_ERROR_UNAVAILABLE,
+  MSG_UNKNOWN_PARCEL,
+  MSG_UNKNOWN_AREA,
+  TOOLTIP_VERTICAL_OFFSET
 } from './config.js'
 
 /**
@@ -32,7 +58,7 @@ import {
  * @typedef {{ sheet_id?: unknown, parcel_id?: unknown, areaHa?: unknown, [key: string]: unknown }} ParcelProperties
  * @typedef {{ id: string } & ParcelProperties} ParcelMeta
  * @typedef {Record<string, ParcelMeta>} MetaIndex
- * @typedef {{ parcelIds: string[], metaIndex: MetaIndex, tileUrl: string | null, geojsonUrl: string | null, bbox: BBox | null }} ParcelData
+ * @typedef {{ parcelIds: string[], metaIndex: MetaIndex, geojsonUrl: string | null, bbox: BBox | null }} ParcelData
  * @typedef {{ minLng: number, minLat: number, maxLng: number, maxLat: number }} BBox
  */
 
@@ -60,7 +86,7 @@ function buildParcelLayers(colorExpr, sourceLayer) {
       ...src,
       paint: {
         'line-color': colorExpr,
-        'line-width': 1.5
+        'line-width': LAYER_LINE_WIDTH
       }
     },
     label: {
@@ -70,12 +96,13 @@ function buildParcelLayers(colorExpr, sourceLayer) {
       ...src,
       layout: {
         'text-field': ['concat', ['get', 'sheet_id'], '-', ['get', 'parcel_id']],
+        'text-font': ['Arial Regular'],
         'text-size': LAYER_TEXT_SIZE,
         'text-anchor': 'center'
       },
       paint: {
-        'text-color': '#0b0c0c',
-        'text-halo-color': '#ffffff',
+        'text-color': LABEL_TEXT_COLOR,
+        'text-halo-color': LABEL_HALO_COLOR,
         'text-halo-width': LAYER_TEXT_HALO_WIDTH
       }
     }
@@ -86,98 +113,107 @@ function buildParcelLayers(colorExpr, sourceLayer) {
 // Height via CSS on the element. Dispatches:
 //   parcel-map:ready, parcel-map:error, parcel-map:selection → { selectedIds: string[] }
 class ParcelMap extends HTMLElement {
-  /** @type {'idle' | 'loading' | 'ready' | 'error'} */
-  _state = 'idle'
+  /** @type {typeof STATE_IDLE | typeof STATE_LOADING | typeof STATE_READY | typeof STATE_ERROR} */
+  #state = STATE_IDLE
 
   /** @type {InstanceType<typeof InteractiveMap> | null} */
-  _mapInstance = null
+  #mapInstance = null
 
   /** @type {HTMLDivElement | null} */
-  _mapEl = null
+  #mapEl = null
 
   /** @type {HTMLDivElement | null} */
-  _skeleton = null
+  #skeleton = null
 
-  static get observedAttributes() {
-    return ['multi-select']
-  }
+  /** @type {HTMLDivElement | null} */
+  #errorOverlay = null
+
+  /** @type {Array<() => void>} */
+  #mlCleanup = []
 
   connectedCallback() {
-    this._connected = true
-    this._state = 'idle'
-    this._init()
-  }
-
-  attributeChangedCallback() {
-    if (!this._connected) {
-      return
-    }
-    if (this._state !== 'idle') {
-      this._teardown()
-      this._init()
-    }
+    this.#state = STATE_IDLE
+    this.#init()
   }
 
   disconnectedCallback() {
-    this._teardown()
+    this.#teardown()
   }
 
-  _teardown() {
-    this._state = 'idle'
+  #teardown() {
+    this.#state = STATE_IDLE
+    for (const off of this.#mlCleanup) {
+      off()
+    }
+    this.#mlCleanup = []
     try {
-      this._mapInstance?.destroy?.()
+      this.#mapInstance?.destroy?.()
     } catch {
       /* ignore */
     }
-    this._mapInstance = null
-    this._mapEl?.parentElement?.remove()
-    this._mapEl = null
-    this._skeleton?.remove()
-    this._skeleton = null
+    this.#mapInstance = null
+    this.#mapEl?.parentElement?.remove()
+    this.#mapEl = null
+    this.#skeleton?.remove()
+    this.#skeleton = null
+    this.#errorOverlay?.remove()
+    this.#errorOverlay = null
   }
 
-  async _init() {
-    this._state = 'loading'
+  async #init() {
+    this.#state = STATE_LOADING
 
+    // Read once at connect, runtime changes to the attribute are not supported.
     const multiSelect = this.getAttribute('multi-select') === 'true'
 
-    this._skeleton = buildSkeleton()
-    this.appendChild(this._skeleton)
+    this.#skeleton = buildSkeleton()
+    this.appendChild(this.#skeleton)
 
-    const [ml, data] = await Promise.all([this._initMap(), this._fetchData()])
+    const [ml, data] = await Promise.all([this.#initMap(), this.#fetchData()])
 
-    if (this._state !== 'loading') {
+    // Torn down (disconnected) while we were loading, nothing to wire up.
+    if (this.#state !== STATE_LOADING) {
       return
     }
 
     if (!ml || !data) {
-      this._state = 'error'
-      this._teardown()
+      this.#teardown()
+      this.#state = STATE_ERROR
+      this.#showError(MSG_ERROR_UNAVAILABLE)
       this.dispatchEvent(new CustomEvent(EVENT_ERROR, { bubbles: true, detail: { reason: 'unavailable' } }))
-      return
-    }
-
-    if (data.parcelIds.length === 0) {
-      this._state = 'error'
-      this._teardown()
+    } else if (data.parcelIds.length === 0) {
+      this.#teardown()
+      this.#state = STATE_ERROR
       this.dispatchEvent(new CustomEvent(EVENT_ERROR, { bubbles: true, detail: { reason: 'no-parcels' } }))
-      return
+    } else {
+      const colorExpr = buildColorExpr(data.parcelIds)
+      this.#addParcelsToMap(ml, data, colorExpr)
+      const tooltip = this.#attachTooltip(ml, data.metaIndex)
+      this.#attachSelectionHandler(ml, multiSelect, tooltip)
+
+      this.#state = STATE_READY
+      this.#skeleton?.remove()
+      this.#skeleton = null
+
+      this.dispatchEvent(new CustomEvent(EVENT_READY, { bubbles: true }))
     }
+  }
 
-    const colorExpr = buildColorExpr(data.parcelIds)
-    this._addParcelsToMap(ml, data, colorExpr)
-    const tooltip = this._attachTooltip(ml, data.metaIndex)
-    this._attachSelectionHandler(ml, multiSelect, tooltip)
-
-    this._state = 'ready'
-    this._skeleton?.remove()
-    this._skeleton = null
-
-    this.dispatchEvent(new CustomEvent(EVENT_READY, { bubbles: true }))
+  /** @param {string} message */
+  #showError(message) {
+    const el = /** @type {HTMLDivElement} */ (document.createElement('div'))
+    el.setAttribute('role', 'alert')
+    el.style.cssText = ERROR_OVERLAY_STYLES
+    const label = document.createElement('span')
+    label.style.cssText = ERROR_LABEL_STYLES
+    label.textContent = message
+    el.appendChild(label)
+    this.appendChild(el)
+    this.#errorOverlay = el
   }
 
   /** @returns {Promise<MLMap | null>} */
-  _initMap() {
+  #initMap() {
     return new Promise((resolve) => {
       const wrapper = document.createElement('div')
       wrapper.style.cssText = 'position:relative;width:100%;height:100%'
@@ -186,29 +222,35 @@ class ParcelMap extends HTMLElement {
       mapEl.id = `parcel-map-${crypto.randomUUID()}`
       mapEl.style.cssText = 'width:100%;height:100%'
       wrapper.appendChild(mapEl)
-      this._mapEl = mapEl
+      this.#mapEl = mapEl
 
-      if (this._skeleton) {
-        this.insertBefore(wrapper, this._skeleton)
+      if (this.#skeleton) {
+        this.insertBefore(wrapper, this.#skeleton)
       } else {
         this.appendChild(wrapper)
       }
-
-      // Clear stale viewport params so InteractiveMap doesn't restore an old view
-      const url = new URL(globalThis.location.href)
-      url.searchParams.delete(`${mapEl.id}:center`)
-      url.searchParams.delete(`${mapEl.id}:zoom`)
-      globalThis.history.replaceState(null, '', url)
 
       const map = new InteractiveMap(mapEl.id, {
         behaviour: 'inline',
         containerHeight: this.style.height || MAP_DEFAULT_HEIGHT,
         mapProvider: maplibreProvider(),
-        mapStyle: { url: MAP_STYLE_URL, attribution: MAP_STYLE_ATTRIBUTION }
+        mapStyle: { url: MAP_STYLE_URL, attribution: getMapStyleAttribution() },
+        center: MAP_DEFAULT_CENTER,
+        zoom: MAP_DEFAULT_ZOOM,
+        // The OS basemap has no tiles below z7 — stop users zooming out into
+        // blank void. Passed through to the MapLibre Map constructor.
+        minZoom: MAP_MIN_ZOOM,
+        // Don't persist the viewport in URL params.
+        urlPosition: 'none'
       })
-      this._mapInstance = map
+      this.#mapInstance = map
 
-      map.on('map:error', () => resolve(null))
+      map.on('map:error', (/** @type {unknown} */ err) => {
+        console.error('[parcel-map] map failed to load', err)
+        resolve(null)
+      })
+
+      const timeout = globalThis.setTimeout(() => resolve(null), MAP_LOAD_TIMEOUT_MS)
 
       // map:ready gives us the raw MapLibre instance; map:stylechange is the
       // earliest point addSource/addLayer can safely be called.
@@ -216,9 +258,17 @@ class ParcelMap extends HTMLElement {
       let mlInstance = null
       map.on('map:ready', (/** @type {{ map: MLMap }} */ { map: m }) => {
         mlInstance = m
+        // Also catch native MapLibre errors (e.g. style fetch failure) which
+        // @defra/interactive-map does not surface as map:error.
+        m.on('error', (/** @type {unknown} */ err) => {
+          console.error('[parcel-map] maplibre error', err)
+          globalThis.clearTimeout(timeout)
+          resolve(null)
+        })
       })
       map.on('map:stylechange', () => {
-        if (mlInstance && this._state === 'loading') {
+        if (mlInstance && this.#state === STATE_LOADING) {
+          globalThis.clearTimeout(timeout)
           resolve(mlInstance)
         }
       })
@@ -226,40 +276,55 @@ class ParcelMap extends HTMLElement {
   }
 
   /** @returns {Promise<ParcelData | null>} */
-  async _fetchData() {
-    try {
-      const resp = await fetch(PARCELS_API_URL)
-      if (!resp.ok) {
-        return null
+  async #fetchData() {
+    /** @type {unknown} */
+    let lastError
+    for (let attempt = 0; attempt < FETCH_MAX_ATTEMPTS; attempt++) {
+      if (attempt > 0) {
+        await new Promise((resolve) => globalThis.setTimeout(resolve, FETCH_RETRY_DELAY_MS))
       }
+      try {
+        const resp = await fetch(PARCELS_API_URL)
+        if (resp.ok) {
+          return this.#parseParcelResponse(resp)
+        }
+        lastError = new Error(`HTTP ${resp.status}`)
+      } catch (err) {
+        lastError = err
+      }
+    }
+    console.error('[parcel-map] parcels fetch failed', lastError)
+    return null
+  }
 
-      /** @type {{ features: GeoJSON.Feature[], bbox: BBox | null, tileUrl: string | null, geojsonUrl: string | null }} */
-      const body = await resp.json()
-      const features = Array.isArray(body.features) ? body.features : []
+  /**
+   * @param {Response} resp
+   * @returns {Promise<ParcelData>}
+   */
+  async #parseParcelResponse(resp) {
+    /** @type {{ features: GeoJSON.Feature[], bbox: BBox | null, mock?: boolean }} */
+    const body = await resp.json()
+    const features = Array.isArray(body.features) ? body.features : []
 
-      /** @type {string[]} */
-      const parcelIds = features.flatMap((f) => {
+    /** @type {string[]} */
+    const parcelIds = features.flatMap((f) => {
+      const id = f.id ?? f.properties?.id
+      return typeof id === 'string' || typeof id === 'number' ? [String(id)] : []
+    })
+
+    const metaIndex = Object.fromEntries(
+      features.flatMap((f) => {
         const id = f.id ?? f.properties?.id
-        return typeof id === 'string' || typeof id === 'number' ? [String(id)] : []
+        const key = typeof id === 'string' || typeof id === 'number' ? String(id) : null
+        return key ? [[key, { ...f.properties, id: key }]] : []
       })
+    )
 
-      const metaIndex = Object.fromEntries(
-        features.flatMap((f) => {
-          const id = f.id ?? f.properties?.id
-          const key = typeof id === 'string' || typeof id === 'number' ? String(id) : null
-          return key ? [[key, { ...f.properties, id: key }]] : []
-        })
-      )
-
-      return {
-        parcelIds,
-        metaIndex,
-        tileUrl: body.tileUrl ?? null,
-        geojsonUrl: body.geojsonUrl ?? null,
-        bbox: body.bbox ?? null
-      }
-    } catch {
-      return null
+    return {
+      parcelIds,
+      metaIndex,
+      geojsonUrl: body.mock ? PARCELS_GEOJSON_URL : null,
+      bbox: body.bbox ?? null
     }
   }
 
@@ -268,7 +333,7 @@ class ParcelMap extends HTMLElement {
    * @param {ParcelData} data
    * @param {unknown[]} colorExpr
    */
-  _addParcelsToMap(ml, { tileUrl, geojsonUrl, bbox }, colorExpr) {
+  #addParcelsToMap(ml, { geojsonUrl, bbox }, colorExpr) {
     if (bbox) {
       const { minLng, minLat, maxLng, maxLat } = bbox
       ml.fitBounds(
@@ -276,7 +341,7 @@ class ParcelMap extends HTMLElement {
           [Number(minLng), Number(minLat)],
           [Number(maxLng), Number(maxLat)]
         ],
-        { padding: 40, animate: false }
+        { padding: FIT_BOUNDS_PADDING, animate: false }
       )
     }
 
@@ -284,22 +349,17 @@ class ParcelMap extends HTMLElement {
       return
     }
 
-    const url = geojsonUrl ?? tileUrl
-    if (!url) {
-      return
-    }
-    const absoluteUrl = url.startsWith('http') ? url : `${globalThis.location.origin}${url}`
-    if (geojsonUrl) {
-      ml.addSource(
-        'parcels',
-        /** @type {import('maplibre-gl').GeoJSONSourceSpecification} */ ({ type: 'geojson', data: absoluteUrl })
-      )
-    } else {
-      ml.addSource(
-        'parcels',
-        /** @type {import('maplibre-gl').VectorSourceSpecification} */ ({ type: 'vector', tiles: [absoluteUrl] })
-      )
-    }
+    const origin = globalThis.location.origin
+    const source = geojsonUrl
+      ? /** @type {import('maplibre-gl').GeoJSONSourceSpecification} */ ({
+          type: 'geojson',
+          data: geojsonUrl.startsWith('http') ? geojsonUrl : `${origin}${geojsonUrl}`
+        })
+      : /** @type {import('maplibre-gl').VectorSourceSpecification} */ ({
+          type: 'vector',
+          tiles: [`${origin}${PARCEL_TILES_URL}`]
+        })
+    ml.addSource('parcels', source)
     const layers = buildParcelLayers(colorExpr, geojsonUrl ? undefined : 'parcels')
     ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.fill))
     ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.outline))
@@ -310,8 +370,8 @@ class ParcelMap extends HTMLElement {
    * @param {MLMap} ml
    * @param {MetaIndex} metaIndex
    */
-  _attachTooltip(ml, metaIndex) {
-    const wrapper = this._mapEl?.parentElement
+  #attachTooltip(ml, metaIndex) {
+    const wrapper = this.#mapEl?.parentElement
     if (!wrapper) {
       return undefined
     }
@@ -322,7 +382,9 @@ class ParcelMap extends HTMLElement {
     tooltip.style.cssText = TOOLTIP_STYLES
     wrapper.appendChild(tooltip)
 
-    ml.on('click', LAYER_ID_FILL, (e) => {
+    const onTooltipClick = (
+      /** @type {import('maplibre-gl').MapMouseEvent & { features?: import('maplibre-gl').MapGeoJSONFeature[] }} */ e
+    ) => {
       const feature = e.features?.[0]
       if (!feature) {
         return
@@ -330,21 +392,31 @@ class ParcelMap extends HTMLElement {
       const id = resolveFeatureId(feature)
       const props = /** @type {ParcelProperties} */ ({ ...feature.properties, ...metaIndex[id] })
       const point = ml.project(e.lngLat)
-      showTooltip(tooltip, id, props, point.x, point.y, this._mapEl)
-    })
-
-    ml.on('click', (e) => {
+      showTooltip(tooltip, id, props, point.x, point.y, this.#mapEl)
+    }
+    const onMapClick = (/** @type {import('maplibre-gl').MapMouseEvent} */ e) => {
       if (ml.getLayer(LAYER_ID_FILL) && ml.queryRenderedFeatures(e.point, { layers: [LAYER_ID_FILL] }).length === 0) {
         hideTooltip(tooltip)
       }
-    })
-
-    ml.on('mouseenter', LAYER_ID_FILL, () => {
+    }
+    const onMouseEnter = () => {
       ml.getCanvas().style.cursor = 'pointer'
-    })
-    ml.on('mouseleave', LAYER_ID_FILL, () => {
+    }
+    const onMouseLeave = () => {
       ml.getCanvas().style.cursor = ''
-    })
+    }
+
+    ml.on('click', LAYER_ID_FILL, onTooltipClick)
+    ml.on('click', onMapClick)
+    ml.on('mouseenter', LAYER_ID_FILL, onMouseEnter)
+    ml.on('mouseleave', LAYER_ID_FILL, onMouseLeave)
+
+    this.#mlCleanup.push(
+      () => ml.off('click', LAYER_ID_FILL, onTooltipClick),
+      () => ml.off('click', onMapClick),
+      () => ml.off('mouseenter', LAYER_ID_FILL, onMouseEnter),
+      () => ml.off('mouseleave', LAYER_ID_FILL, onMouseLeave)
+    )
 
     return tooltip
   }
@@ -354,13 +426,13 @@ class ParcelMap extends HTMLElement {
    * @param {boolean} multiSelect
    * @param {HTMLElement | undefined} tooltip
    */
-  _attachSelectionHandler(ml, multiSelect, tooltip) {
+  #attachSelectionHandler(ml, multiSelect, tooltip) {
     /** @type {Set<string>} */
     const selected = new Set()
     const idExpr = ['concat', ['get', 'sheet_id'], '-', ['get', 'parcel_id']]
 
     const applySelection = () => {
-      const matchList = selected.size > 0 ? [...selected] : ['__none__']
+      const matchList = selected.size > 0 ? [...selected] : [SELECTION_NONE_SENTINEL]
       ml.setPaintProperty(LAYER_ID_FILL, 'fill-opacity', [
         'match',
         idExpr,
@@ -370,7 +442,9 @@ class ParcelMap extends HTMLElement {
       ])
     }
 
-    ml.on('click', LAYER_ID_FILL, (e) => {
+    const onParcelClick = (
+      /** @type {import('maplibre-gl').MapMouseEvent & { features?: import('maplibre-gl').MapGeoJSONFeature[] }} */ e
+    ) => {
       const feature = e.features?.[0]
       if (!feature) {
         return
@@ -394,54 +468,41 @@ class ParcelMap extends HTMLElement {
         } else if (tooltip) {
           hideTooltip(tooltip)
         } else {
-          // parcel deselected but no tooltip to hide
+          // parcel deselected and no tooltip to hide
         }
       }
 
       applySelection()
+      this.dispatchEvent(new CustomEvent(EVENT_SELECTION, { bubbles: true, detail: { selectedIds: [...selected] } }))
+    }
 
-      this.dispatchEvent(
-        new CustomEvent(EVENT_SELECTION, {
-          bubbles: true,
-          detail: { selectedIds: [...selected] }
-        })
-      )
-    })
-
-    ml.on('click', (e) => {
+    const onDeselect = (/** @type {import('maplibre-gl').MapMouseEvent} */ e) => {
       if (ml.getLayer(LAYER_ID_FILL) && ml.queryRenderedFeatures(e.point, { layers: [LAYER_ID_FILL] }).length === 0) {
         selected.clear()
         applySelection()
-        this.dispatchEvent(
-          new CustomEvent(EVENT_SELECTION, {
-            bubbles: true,
-            detail: { selectedIds: [] }
-          })
-        )
+        this.dispatchEvent(new CustomEvent(EVENT_SELECTION, { bubbles: true, detail: { selectedIds: [] } }))
       }
-    })
+    }
+
+    ml.on('click', LAYER_ID_FILL, onParcelClick)
+    ml.on('click', onDeselect)
+
+    this.#mlCleanup.push(
+      () => ml.off('click', LAYER_ID_FILL, onParcelClick),
+      () => ml.off('click', onDeselect)
+    )
   }
 }
 
 /** @returns {HTMLDivElement} */
 function buildSkeleton() {
   const el = /** @type {HTMLDivElement} */ (document.createElement('div'))
-  el.setAttribute('aria-label', 'Loading map…')
+  el.setAttribute('aria-label', MSG_LOADING)
   el.setAttribute('role', 'status')
-  el.style.cssText = [
-    'position:absolute',
-    'inset:0',
-    'background:#f3f2f1',
-    'border:2px solid #b1b4b6',
-    'border-radius:4px',
-    'display:flex',
-    'align-items:center',
-    'justify-content:center',
-    'z-index:1'
-  ].join(';')
+  el.style.cssText = ERROR_OVERLAY_STYLES
   const label = document.createElement('span')
-  label.style.cssText = 'font-family:GDS Transport,arial,sans-serif;font-size:16px;color:#505a5f'
-  label.textContent = 'Loading map…'
+  label.style.cssText = ERROR_LABEL_STYLES
+  label.textContent = MSG_LOADING
   el.appendChild(label)
   return el
 }
@@ -483,13 +544,13 @@ function resolveFeatureId(feature) {
 function showTooltip(tooltip, id, props, x, y, mapEl) {
   const areaHa = props.areaHa == null ? null : Number(props.areaHa)
   tooltip.innerHTML = `
-    <strong style="display:block;margin-bottom:8px;font-size:15px">${escapeHtml(id || 'Unknown parcel')}</strong>
+    <strong style="display:block;margin-bottom:8px;font-size:15px">${htmlEncode(id || MSG_UNKNOWN_PARCEL)}</strong>
     <table style="border-collapse:collapse;width:100%">
       <tr><td style="color:#505a5f;padding:2px 12px 2px 0;white-space:nowrap">Total area</td>
-          <td>${areaHa == null ? 'Unknown' : escapeHtml(areaHa.toFixed(2) + ' ha')}</td></tr>
+          <td>${areaHa == null ? MSG_UNKNOWN_AREA : htmlEncode(areaHa.toFixed(AREA_DECIMAL_PLACES) + ' ha')}</td></tr>
     </table>`
   tooltip.style.left = `${Math.min(x + TOOLTIP_OFFSET_X, (mapEl?.offsetWidth ?? TOOLTIP_FALLBACK_MAP_WIDTH) - TOOLTIP_MAX_WIDTH)}px`
-  tooltip.style.top = `${y - 10}px`
+  tooltip.style.top = `${y - TOOLTIP_VERTICAL_OFFSET}px`
   tooltip.style.display = 'block'
 }
 
@@ -499,8 +560,11 @@ function hideTooltip(tooltip) {
 }
 
 /** @param {string} value @returns {string} */
-function escapeHtml(value) {
-  return value.replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+function htmlEncode(value) {
+  const text = document.createTextNode(value)
+  const div = document.createElement('div')
+  div.appendChild(text)
+  return div.innerHTML
 }
 
 if (!customElements.get('parcel-map')) {

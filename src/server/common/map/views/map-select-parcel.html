@@ -18,6 +18,18 @@
         }) }}
       {% endif %}
 
+      {# role="alert" announces the reveal to screen readers without moving focus.
+         No href on the error item — there is nothing on the page to jump to
+         (the map tears itself down when the account has no parcels). #}
+      <div id="map-no-parcels-error" role="alert" hidden>
+        {{ govukErrorSummary({
+          titleText: "There is a problem",
+          errorList: [{
+            text: "No land parcels were found for your account."
+          }]
+        }) }}
+      </div>
+
       <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
       <p id="map-hint" class="govuk-body" hidden>Click on a parcel to select it and see its details.</p>
       <noscript>
@@ -75,9 +87,13 @@
         if (summary) { summary.hidden = false; }
       });
 
-      mapEl.addEventListener('parcel-map:error', function () {
+      mapEl.addEventListener('parcel-map:error', function (e) {
         var btn = document.getElementById('map-select-continue');
         if (btn) { btn.disabled = true; }
+        if (e.detail.reason === 'no-parcels') {
+          var msg = document.getElementById('map-no-parcels-error');
+          if (msg) { msg.hidden = false; }
+        }
       });
 
       mapEl.addEventListener('parcel-map:selection', function (e) {

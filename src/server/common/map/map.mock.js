@@ -5643,12 +5643,12 @@ function mockBbox() {
 
 /**
  * @param {{ id: string, sheetId: string, parcelId: string, areaHa: number | null }[]} parcels
- * @returns {{ features: import('./map.plugin.js').ParcelFeature[], bbox: { minLng: number, minLat: number, maxLng: number, maxLat: number } }}
+ * @returns {{ features: import('./types.js').ParcelFeature[], bbox: { minLng: number, minLat: number, maxLng: number, maxLat: number } }}
  */
 export function buildMockFeatures(parcels) {
   const features = parcels.map((p, i) => {
     const idx = i % MOCK_GEOMETRIES.length
-    return /** @type {import('./map.plugin.js').ParcelFeature} */ ({
+    return /** @type {import('./types.js').ParcelFeature} */ ({
       type: 'Feature',
       id: p.id,
       geometry: MOCK_GEOMETRIES[idx],
