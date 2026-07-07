@@ -52,7 +52,7 @@ export const mapEnvironment = (cdpEnvironment) => {
 const buildAccounts = (credentials) => {
   /** @type {Record<string, string>} */
   const accounts = {}
-  for (const key of ['crn', 'sbi', 'organisationId']) {
+  for (const key of ['crn', 'sbi']) {
     const value = credentials[key]
     if (value) {
       accounts[key] = /** @type {string} */ (value)
