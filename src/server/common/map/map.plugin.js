@@ -15,8 +15,10 @@ const TILE_CACHE_MAX_AGE_SECONDS = 3600
 const SERVICE_LAND_GRANTS = 'land-grants-api'
 const SERVICE_OS_MAPS = 'os-maps'
 // Matches OS Maps URLs so they can be rewritten to our proxy — derived from OS_MAPS_BASE_URL so the two can't drift
-const OS_URL_RE = new RegExp(`^${OS_MAPS_BASE_URL.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')}`)
-const OS_QS_RE = /\?[^]*$/u
+const OS_URL_RE = new RegExp(`^${OS_MAPS_BASE_URL.replace(/[.*+?^${}()|[\]\\]/gu, String.raw`\$&`)}`)
+
+/** Everything before the first `?` — OS Maps query strings carry the API key. */
+const stripQueryString = (/** @type {string} */ url) => url.split('?')[0]
 
 /**
  * Server-scoped map state, stored on `server.app` rather than at module level
@@ -63,7 +65,7 @@ async function fetchUpstream(url, service, request, init) {
   logUpstreamError(
     {
       // Strip the query string — OS Maps URLs carry the API key in it
-      endpoint: url.replace(OS_QS_RE, ''),
+      endpoint: stripQueryString(url),
       service,
       upstreamStatus: null,
       errorMessage: /** @type {Error} */ (fetchError).message
@@ -74,6 +76,11 @@ async function fetchUpstream(url, service, request, init) {
 }
 
 /**
+ * Returns the signed-in user's parcels as GeoJSON features (id, sheet_id,
+ * parcel_id, areaHa) plus the bounding box the map fits its viewport to.
+ * Mock mode embeds real polygon geometry and flags `mock: true` so the client
+ * reads geometry from the geojson route; real mode returns no geometry — the
+ * client streams it via the parcel-tiles route instead.
  * @param {Request} request
  * @param {ResponseToolkit} h
  */
@@ -94,6 +101,8 @@ async function parcelsHandler(request, h) {
       upstreamStatus = err.code
     } else if (typeof err.status === 'number') {
       upstreamStatus = err.status
+    } else {
+      // error carries no numeric upstream status: fall through to statusCodes.serviceUnavailable below
     }
     logUpstreamError(
       { endpoint: ROUTES.parcels, service: SERVICE_LAND_GRANTS, upstreamStatus, errorMessage: err.message },
@@ -133,6 +142,9 @@ async function parcelsHandler(request, h) {
 }
 
 /**
+ * Mock mode only: serves the full GeoJSON FeatureCollection (with polygon
+ * geometry) that parcelsHandler stashed in the session, so local dev works
+ * without a running tile server. 404 when mock mode is disabled.
  * @param {Request} request
  * @param {ResponseToolkit} h
  */
@@ -148,6 +160,9 @@ function mockGeojsonHandler(request, h) {
 }
 
 /**
+ * Proxies MapLibre vector-tile requests ({z}/{x}/{y}) to the land-grants API.
+ * Looks up the user's parcel IDs server-side and sends them in the POST body,
+ * so which parcels a user has never appears in a URL.
  * @param {Request} request
  * @param {ResponseToolkit} h
  */
@@ -212,7 +227,7 @@ async function tilesHandler(request, h) {
  * @param {string} url
  * @param {string} origin  e.g. "http://localhost:3000"
  */
-const proxyOsUrl = (url, origin) => `${origin}/api/map/os-tiles${url.replace(OS_URL_RE, '').replace(OS_QS_RE, '')}`
+const proxyOsUrl = (url, origin) => `${origin}/api/map/os-tiles${stripQueryString(url.replace(OS_URL_RE, ''))}`
 
 /**
  * Rewrite a single OS Maps source entry to go through our proxy.
@@ -286,7 +301,7 @@ async function loadOsBasemap(request) {
     return { errorCode: statusCodes.serviceUnavailable }
   }
 
-  return { styleJson, osRelativeTileUrl: rawTileUrl.replace(OS_URL_RE, '').replace(OS_QS_RE, '') }
+  return { styleJson, osRelativeTileUrl: stripQueryString(rawTileUrl.replace(OS_URL_RE, '')) }
 }
 
 /**

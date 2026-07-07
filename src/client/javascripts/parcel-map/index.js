@@ -463,6 +463,8 @@ class ParcelMap extends HTMLElement {
           selected.add(id)
         } else if (tooltip) {
           hideTooltip(tooltip)
+        } else {
+          // parcel deselected and no tooltip to hide
         }
       }
 

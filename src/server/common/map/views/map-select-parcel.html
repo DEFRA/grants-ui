@@ -18,12 +18,14 @@
         }) }}
       {% endif %}
 
-      <div id="map-no-parcels-error" hidden>
+      {# role="alert" announces the reveal to screen readers without moving focus.
+         No href on the error item — there is nothing on the page to jump to
+         (the map tears itself down when the account has no parcels). #}
+      <div id="map-no-parcels-error" role="alert" hidden>
         {{ govukErrorSummary({
           titleText: "There is a problem",
           errorList: [{
-            text: "No land parcels were found for your account.",
-            href: "#parcel-map"
+            text: "No land parcels were found for your account."
           }]
         }) }}
       </div>

@@ -111,8 +111,6 @@ describe('parcel-map web component', () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
       const el = await mountElement()
       await waitForEvent(el, EVENT_READY)
-      // State is observable via the presence of the map canvas, not private fields.
-      // The ready event itself is the public signal; confirm no error overlay was rendered.
       expect(el.querySelector('[role="alert"]')).toBeNull()
     })
 

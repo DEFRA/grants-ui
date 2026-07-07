@@ -228,7 +228,7 @@ Fetches the OS Maps style JSON and tilejson in parallel, rewrites all OS URLs (t
 
 ### `GET /api/map/os-tiles/{path*}`
 
-Proxies all OS Maps requests (tiles, glyphs, sprites, tilejson) to `api.os.uk`, injecting the API key and `srs=3857` server-side, so the browser never sees the key. Paths containing dot segments (`..`, including `%2e`-encoded forms) are rejected with `400`, so the key can only ever be sent to the OS vector-tile service. Responses are served with `Cache-Control: public, max-age=3600` — basemap tiles are identical for every user.
+Proxies all OS Maps requests (tiles, glyphs, sprites, tilejson) to `api.os.uk`, injecting the API key server-side, so the browser never sees the key. Responses are served with `Cache-Control: public, max-age=3600` — basemap tiles are identical for every user.
 
 ---
 
