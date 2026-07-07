@@ -125,9 +125,7 @@ describe('land-grants service', () => {
     })
 
     it('should handle missing payment data with error message', async () => {
-      const mockCalculateResponse = {
-        /* no payment property */
-      }
+      const mockCalculateResponse = {/* no payment property */}
       calculate.mockResolvedValueOnce(mockCalculateResponse)
 
       formatCurrency.mockReturnValue(null)
