@@ -81,11 +81,12 @@ describe('buildAuditEvent', () => {
       audit: {
         entities: [{ entity: 'application', action: 'authorised', entityid: 'my-grant' }],
         status: 'success',
-        accounts: { crn: 'crn1', sbi: 'sbi1', organisationId: 'org1' }
+        accounts: { crn: 'crn1', sbi: 'sbi1' }
       }
     })
     expect(typeof event.datetime).toBe('string')
     expect(event.datetime).toBe(new Date(/** @type {string} */ (event.datetime)).toISOString())
+    expect(/** @type {any} */ (event.audit).accounts).toEqual({ crn: 'crn1', sbi: 'sbi1' })
   })
 
   test('omits user, sessionid, correlationid and accounts when not known', () => {
