@@ -14,9 +14,11 @@ import { log, LogCodes } from '../common/helpers/logging/log.js'
 import { getTaskPageBackLink } from '~/src/server/task-list/task-list.helper.js'
 import { getGrantCode } from '../common/helpers/grant-code.js'
 import { transformWoodlandAnswers } from '~/src/server/woodland/mappers/state-to-gas-answers-mapper.js'
+import { transformGrasslandsAnswers } from '~/src/server/schemes/grasslands/mappers/state-to-gas-answers-mapper.js'
 
 /** @type {Record<string, (submissionState: Record<string, unknown>, rawState: Record<string, unknown>) => object>} */
 const answerTransformers = {
+  grasslands: transformGrasslandsAnswers,
   woodland: transformWoodlandAnswers
 }
 

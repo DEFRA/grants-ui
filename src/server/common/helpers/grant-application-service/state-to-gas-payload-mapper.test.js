@@ -5,26 +5,14 @@ import {
 } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
 
 const mockDate = new Date('2025-04-22T12:00:00Z')
-const originalDate = global.Date
 
 beforeAll(() => {
-  global.Date = class extends Date {
-    constructor() {
-      return mockDate
-    }
-
-    static now() {
-      return mockDate.getTime()
-    }
-
-    toISOString() {
-      return mockDate.toISOString()
-    }
-  }
+  vi.useFakeTimers()
+  vi.setSystemTime(mockDate)
 })
 
 afterAll(() => {
-  global.Date = originalDate
+  vi.useRealTimers()
 })
 
 describe('transformStateObjectToGasApplication', () => {
@@ -224,4 +212,28 @@ describe('transformStateObjectToGasApplication', () => {
       expect(() => resolveGasConfigVersion(request)).toThrow('Invalid grant config version')
     }
   )
+
+  it('should use the request grant version when model metadata version is missing', () => {
+    const request = { app: { grantVersion: '4.5.6', model: { def: { metadata: {} } } } }
+
+    expect(resolveGasConfigVersion(request)).toBe('4.5.6')
+  })
+
+  it('should prefer the request grant version over model metadata version', () => {
+    const request = { app: { grantVersion: '4.5.6', model: { def: { metadata: { version: '1.0.0' } } } } }
+
+    expect(resolveGasConfigVersion(request)).toBe('4.5.6')
+  })
+
+  it('should fall back to the model metadata version when request grant version is missing', () => {
+    const request = { app: { model: { def: { metadata: { version: '2.3.4' } } } } }
+
+    expect(resolveGasConfigVersion(request)).toBe('2.3.4')
+  })
+
+  it('should default the config version when request and model versions are missing', () => {
+    const request = { app: { model: { def: { metadata: {} } } } }
+
+    expect(resolveGasConfigVersion(request)).toBe('1.0.0')
+  })
 })
