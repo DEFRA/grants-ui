@@ -286,7 +286,7 @@ class ParcelMap extends HTMLElement {
       try {
         const resp = await fetch(PARCELS_API_URL)
         if (resp.ok) {
-          return this.#parseParcelResponse(resp)
+          return await this.#parseParcelResponse(resp)
         }
         lastError = new Error(`HTTP ${resp.status}`)
       } catch (err) {
