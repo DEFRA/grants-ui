@@ -24,6 +24,7 @@ import {
   MAP_DEFAULT_HEIGHT,
   MAP_DEFAULT_CENTER,
   MAP_DEFAULT_ZOOM,
+  MAP_MIN_ZOOM,
   MAP_LOAD_TIMEOUT_MS,
   FETCH_MAX_ATTEMPTS,
   FETCH_RETRY_DELAY_MS,
@@ -236,6 +237,9 @@ class ParcelMap extends HTMLElement {
         mapStyle: { url: MAP_STYLE_URL, attribution: getMapStyleAttribution() },
         center: MAP_DEFAULT_CENTER,
         zoom: MAP_DEFAULT_ZOOM,
+        // The OS basemap has no tiles below z7 — stop users zooming out into
+        // blank void. Passed through to the MapLibre Map constructor.
+        minZoom: MAP_MIN_ZOOM,
         // Don't persist the viewport in URL params.
         urlPosition: 'none'
       })

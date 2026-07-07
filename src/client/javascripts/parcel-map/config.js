@@ -33,6 +33,9 @@ export const MAP_DEFAULT_LNG = -1.5
 export const MAP_DEFAULT_LAT = 52.5
 export const MAP_DEFAULT_CENTER = /** @type {[number, number]} */ ([MAP_DEFAULT_LNG, MAP_DEFAULT_LAT])
 export const MAP_DEFAULT_ZOOM = 12
+// The OS raster basemap only exists for zooms 7–20 (mirrors OS_MIN_ZOOM in
+// map.plugin.js). Constrain the map so users can't zoom out into blank void.
+export const MAP_MIN_ZOOM = 7
 export const MAP_LOAD_TIMEOUT_MS = 10000
 export const FETCH_MAX_ATTEMPTS = 2
 export const FETCH_RETRY_DELAY_MS = 1000

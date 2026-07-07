@@ -164,7 +164,7 @@ describe('parcel-map web component', () => {
     })
   })
 
-  describe('viewport URL persistence', () => {
+  describe('viewport options', () => {
     it('disables InteractiveMap URL viewport sync', async () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
       const el = await mountElement()
@@ -172,6 +172,15 @@ describe('parcel-map web component', () => {
 
       const [, options] = InteractiveMap.mock.calls[0]
       expect(options.urlPosition).toBe('none')
+    })
+
+    it('constrains zoom-out to the OS basemap coverage (min zoom 7)', async () => {
+      global.fetch = fetchOk(PARCELS_RESPONSE)
+      const el = await mountElement()
+      await waitForEvent(el, EVENT_READY)
+
+      const [, options] = InteractiveMap.mock.calls[0]
+      expect(options.minZoom).toBe(7)
     })
   })
 

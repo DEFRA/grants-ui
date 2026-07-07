@@ -8,27 +8,28 @@ import { isMockData, buildMockFeatures } from './map.mock.js'
 import { logUpstreamError } from '~/src/server/common/helpers/logging/upstream-error.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
-const OS_MAPS_BASE_URL = 'https://api.os.uk/maps/vector/v1/vts'
-// Web Mercator — required by MapLibre; OS defaults to EPSG:27700 (British National Grid) without this
-const OS_MAPS_SRS = '3857'
+// OS Maps API (raster ZXY). Deliberately not the OS Vector Tile API, which is
+// due to retire in 2028 and is not included in the API keys we are issued.
+const OS_MAPS_BASE_URL = 'https://api.os.uk/maps/raster/v1/zxy'
+// Basemap style — one of Road_3857 | Outdoor_3857 | Light_3857. The _3857
+// suffix is Web Mercator, which MapLibre requires.
+const OS_MAPS_LAYER = 'Outdoor_3857'
+// The OS raster ZXY service only exists for zooms 7–20; MapLibre overzooms
+// beyond maxzoom by stretching the deepest tiles.
+const OS_MIN_ZOOM = 7
+const OS_MAX_ZOOM = 20
+// MapLibre/Mapbox style specification version. This is a protocol constant,
+// not a library version — 8 is the only value current MapLibre accepts.
+const MAP_STYLE_SPEC_VERSION = 8
+// OS ZXY serves 256px tiles. Must be declared: MapLibre's default for raster
+// sources is 512, which would render the basemap at the wrong scale.
+const OS_TILE_SIZE_PX = 256
 const TILE_CACHE_MAX_AGE_SECONDS = 3600
 const SERVICE_LAND_GRANTS = 'land-grants-api'
 const SERVICE_OS_MAPS = 'os-maps'
-// Matches OS Maps URLs so they can be rewritten to our proxy — derived from OS_MAPS_BASE_URL so the two can't drift
-const OS_URL_RE = new RegExp(`^${OS_MAPS_BASE_URL.replace(/[.*+?^${}()|[\]\\]/gu, String.raw`\$&`)}`)
 
 /** Everything before the first `?` — OS Maps query strings carry the API key. */
 const stripQueryString = (/** @type {string} */ url) => url.split('?')[0]
-
-/**
- * Server-scoped map state, stored on `server.app` rather than at module level
- * so its lifetime is tied to the server instance (tests get a fresh cache with
- * each server they build — no reset hook needed). `osBasemapPromise` is the
- * in-flight/settled basemap load, shared across concurrent requests so a cold
- * start fires exactly one pair of upstream fetches; it is reset to undefined
- * on failure so the next request retries.
- * @typedef {{ osBasemapPromise?: ReturnType<typeof loadOsBasemap> }} MapServerState
- */
 
 /**
  * Absolute origin for URLs the browser will fetch. Prefers the configured
@@ -221,182 +222,78 @@ async function tilesHandler(request, h) {
 }
 
 /**
- * Rewrite an OS Maps URL to our absolute proxy path, stripping query params
- * (the proxy re-adds key+srs itself). Uses string ops to preserve template
- * tokens like {fontstack}/{range} that new URL() would percent-encode.
- * @param {string} url
- * @param {string} origin  e.g. "http://localhost:3000"
- */
-const proxyOsUrl = (url, origin) => `${origin}/api/map/os-tiles${stripQueryString(url.replace(OS_URL_RE, ''))}`
-
-/**
- * Rewrite a single OS Maps source entry to go through our proxy.
- * If the source uses a tilejson `url`, expands it to inline `tiles` using the
- * real tile URL template fetched from the tilejson — no hardcoded paths.
- * @param {Record<string, unknown>} source
- * @param {string} tileUrlTemplate  proxied tile URL template from the tilejson
- * @returns {Record<string, unknown>}
- */
-function rewriteOsSource(source, tileUrlTemplate) {
-  if (typeof source.url === 'string' && OS_URL_RE.test(source.url)) {
-    return Object.fromEntries([['tiles', [tileUrlTemplate]], ...Object.entries(source).filter(([k]) => k !== 'url')])
-  }
-  return source
-}
-
-/**
- * Returns a new style object with all OS Maps URLs rewritten to go through our
- * proxy, so the API key is never exposed to the browser.
- * @param {Record<string, unknown>} style
- * @param {string} origin
- * @param {string} tileUrlTemplate  proxied tile URL template from the tilejson
- * @returns {Record<string, unknown>}
- */
-function withProxiedOsUrls(style, origin, tileUrlTemplate) {
-  const sources =
-    style.sources && typeof style.sources === 'object'
-      ? Object.fromEntries(Object.entries(style.sources).map(([k, v]) => [k, rewriteOsSource(v, tileUrlTemplate)]))
-      : style.sources
-
-  return {
-    ...style,
-    sources,
-    ...(typeof style.glyphs === 'string' && OS_URL_RE.test(style.glyphs)
-      ? { glyphs: proxyOsUrl(style.glyphs, origin) }
-      : {}),
-    ...(typeof style.sprite === 'string' && OS_URL_RE.test(style.sprite)
-      ? { sprite: proxyOsUrl(style.sprite, origin) }
-      : {})
-  }
-}
-
-/**
- * Fetches the OS Maps style JSON and tilejson in parallel. Returns an
- * `{ errorCode }` result instead of throwing so upstream failures map cleanly
- * to a response status. The tile URL is stored relative to the OS base so the
- * absolute proxy URL can be rebuilt per request from the caller's origin.
- * @param {Request} request
- * @returns {Promise<{ errorCode: number } | { styleJson: Record<string, unknown>, osRelativeTileUrl: string }>}
- */
-async function loadOsBasemap(request) {
-  const apiKey = config.get('osMapsApiKey')
-  const [styleRes, tilejsonRes] = await Promise.all([
-    fetchUpstream(`${OS_MAPS_BASE_URL}/resources/styles?key=${apiKey}&srs=${OS_MAPS_SRS}`, SERVICE_OS_MAPS, request),
-    fetchUpstream(`${OS_MAPS_BASE_URL}?key=${apiKey}&srs=${OS_MAPS_SRS}`, SERVICE_OS_MAPS, request)
-  ])
-  if (!styleRes || !tilejsonRes) {
-    return { errorCode: statusCodes.serviceUnavailable }
-  }
-  if (!styleRes.ok) {
-    return { errorCode: styleRes.status }
-  }
-  if (!tilejsonRes.ok) {
-    return { errorCode: tilejsonRes.status }
-  }
-
-  const styleJson = /** @type {Record<string, unknown>} */ (await styleRes.json())
-  const tilejson = /** @type {{ tiles?: string[] }} */ (await tilejsonRes.json())
-  const rawTileUrl = tilejson.tiles?.[0]
-  if (!rawTileUrl) {
-    return { errorCode: statusCodes.serviceUnavailable }
-  }
-
-  return { styleJson, osRelativeTileUrl: stripQueryString(rawTileUrl.replace(OS_URL_RE, '')) }
-}
-
-/**
- * Serves the OS Maps style with all OS URLs rewritten to our proxy so the API
- * key is never sent to the browser. The upstream load is shared across
- * concurrent requests and cached on the server instance; failures are not
- * cached, so the next request retries.
+ * Serves a locally built MapLibre style for the OS Maps raster basemap: one
+ * raster source pointing at our key-injecting tile proxy and one raster layer.
+ * No `glyphs` URL is set — parcel-label text is generated locally in the
+ * browser by MapLibre (TinySDF), so no font files need hosting. No upstream
+ * call is involved — the style is static apart from the origin, so there is
+ * nothing to cache or fail.
  * @param {Request} request
  * @param {ResponseToolkit} h
  */
-async function osBasemapHandler(request, h) {
-  const app = /** @type {MapServerState} */ (request.server.app)
-  app.osBasemapPromise = app.osBasemapPromise ?? loadOsBasemap(request)
-  let result
-  /** @type {unknown} */
-  let basemapError
-  try {
-    result = await app.osBasemapPromise
-  } catch (error) {
-    basemapError = error
-  }
-  if (basemapError !== undefined || !result) {
-    app.osBasemapPromise = undefined
-    logUpstreamError(
-      {
-        endpoint: OS_MAPS_BASE_URL,
-        service: SERVICE_OS_MAPS,
-        upstreamStatus: null,
-        errorMessage: basemapError instanceof Error ? basemapError.message : 'OS basemap load failed'
-      },
-      request
-    )
-    return h.response().code(statusCodes.serviceUnavailable)
-  }
-  if ('errorCode' in result) {
-    app.osBasemapPromise = undefined
-    // Surface non-OK upstream statuses — a 401 here is the signature of a
-    // missing/invalid OS_MAPS_API_KEY and would otherwise be invisible in logs.
-    logUpstreamError(
-      {
-        endpoint: OS_MAPS_BASE_URL,
-        service: SERVICE_OS_MAPS,
-        upstreamStatus: result.errorCode,
-        errorMessage: 'OS basemap load failed'
-      },
-      request
-    )
-    return h.response().code(result.errorCode)
+function osBasemapHandler(request, h) {
+  const origin = publicOrigin(request)
+  const style = {
+    version: MAP_STYLE_SPEC_VERSION,
+    sources: {
+      'os-raster': {
+        type: 'raster',
+        // The route path doubles as the MapLibre tile URL template — {z}/{x}/{y}
+        // are filled in by MapLibre, and the layer is fixed server-side.
+        tiles: [`${origin}${ROUTES.osTiles}`],
+        tileSize: OS_TILE_SIZE_PX,
+        minzoom: OS_MIN_ZOOM,
+        maxzoom: OS_MAX_ZOOM,
+        attribution: `© Crown copyright and database rights ${new Date().getFullYear()} OS`
+      }
+    },
+    layers: [{ id: 'os-basemap', type: 'raster', source: 'os-raster' }]
   }
 
-  const origin = publicOrigin(request)
-  const tileUrlTemplate = `${origin}/api/map/os-tiles${result.osRelativeTileUrl}`
   return h
-    .response(withProxiedOsUrls(result.styleJson, origin, tileUrlTemplate))
+    .response(style)
     .code(statusCodes.ok)
     .type('application/json')
     .header('Cache-Control', `private, max-age=${TILE_CACHE_MAX_AGE_SECONDS}`)
 }
 
 /**
- * Proxy OS Maps requests (tilejson, tiles, glyphs, sprites) — appends the API key server-side.
- * Handles both the root tilejson endpoint (empty path) and all sub-paths.
+ * Proxies OS Maps raster tile requests ({z}/{x}/{y}) to api.os.uk, appending
+ * the API key server-side so it never reaches the browser. The basemap layer
+ * is fixed by OS_MAPS_LAYER — clients cannot request anything else with our key.
  * @param {Request} request
  * @param {ResponseToolkit} h
  */
 async function osTileProxyHandler(request, h) {
+  const { z, x, y } = request.params
   const apiKey = config.get('osMapsApiKey')
-  const suffix = request.params.path ? `/${request.params.path}` : ''
-  const upstream = new URL(`${OS_MAPS_BASE_URL}${suffix}`)
-  if (upstream.href !== OS_MAPS_BASE_URL && !upstream.href.startsWith(`${OS_MAPS_BASE_URL}/`)) {
-    return h.response().code(statusCodes.badRequest)
-  }
-  // Pass through any query params the client sent (e.g. {fontstack}/{range}
-  // expansion) but always inject key and srs.
-  for (const [k, v] of Object.entries(request.query)) {
-    upstream.searchParams.set(k, String(v))
-  }
-  upstream.searchParams.set('key', apiKey)
-  upstream.searchParams.set('srs', OS_MAPS_SRS)
+  const upstream = `${OS_MAPS_BASE_URL}/${OS_MAPS_LAYER}/${z}/${x}/${y}.png?key=${apiKey}`
 
-  const response = await fetchUpstream(upstream.href, SERVICE_OS_MAPS, request)
+  const response = await fetchUpstream(upstream, SERVICE_OS_MAPS, request)
   if (!response) {
     return h.response().code(statusCodes.serviceUnavailable)
   }
   if (!response.ok) {
+    // Surface non-OK upstream statuses — a 401 here is the signature of a key
+    // without the "OS Maps API" product added to its Data Hub project.
+    logUpstreamError(
+      {
+        endpoint: stripQueryString(upstream),
+        service: SERVICE_OS_MAPS,
+        upstreamStatus: response.status,
+        errorMessage: 'OS basemap tile request failed'
+      },
+      request
+    )
     return h.response().code(response.status)
   }
 
-  const contentType = response.headers.get('content-type') ?? 'application/octet-stream'
   const buffer = await response.arrayBuffer()
   return (
     h
       .response(Buffer.from(buffer))
       .code(statusCodes.ok)
-      .type(contentType)
+      .type(response.headers.get('content-type') ?? 'image/png')
       // public — OS basemap tiles are identical for every user
       .header('Cache-Control', `public, max-age=${TILE_CACHE_MAX_AGE_SECONDS}`)
   )
@@ -407,7 +304,15 @@ const ROUTES = {
   parcelsMockGeojson: '/api/map/parcels/geojson',
   parcelTiles: '/api/map/parcel-tiles/{z}/{x}/{y}',
   osBasemap: '/api/map/os-basemap',
-  osTiles: '/api/map/os-tiles/{path*}'
+  osTiles: '/api/map/os-tiles/{z}/{x}/{y}'
+}
+
+const tileParamsValidation = {
+  params: Joi.object({
+    z: Joi.number().integer().min(0).required(),
+    x: Joi.number().integer().min(0).required(),
+    y: Joi.number().integer().min(0).required()
+  })
 }
 
 export const mapPlugin = {
@@ -431,13 +336,7 @@ export const mapPlugin = {
         path: ROUTES.parcelTiles,
         options: {
           auth: { mode: 'required', strategy: 'session' },
-          validate: {
-            params: Joi.object({
-              z: Joi.number().integer().min(0).required(),
-              x: Joi.number().integer().min(0).required(),
-              y: Joi.number().integer().min(0).required()
-            })
-          }
+          validate: tileParamsValidation
         },
         handler: tilesHandler
       })
@@ -452,9 +351,7 @@ export const mapPlugin = {
         path: ROUTES.osTiles,
         options: {
           auth: { mode: 'required', strategy: 'session' },
-          validate: {
-            params: Joi.object({ path: Joi.string().allow('').default('') })
-          }
+          validate: tileParamsValidation
         },
         handler: osTileProxyHandler
       })

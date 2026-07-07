@@ -1,6 +1,6 @@
 # Parcel Map — developer guide
 
-The interactive land parcel selection map is a self-contained browser component backed by a small set of server-side routes. This document describes how to wire it into a new grant journey.
+The interactive land parcel selection map is a self-contained browser component backed by a small set of server-side routes. This document describes how it works and how to wire it into a new grant journey.
 
 ---
 
@@ -31,13 +31,12 @@ import { mapPlugin } from '~/src/server/common/map/map.plugin.js'
 await server.register(mapPlugin)
 ```
 
-### 2. Register the controllers
+### 2. Register the controller
 
-`MapSelectPageController` and `MapSubmissionPageController` must be importable by the form engine. Add them to the controller registry if they are not already there.
+`MapSelectPageController` must be importable by the form engine. Add them to the controller registry if they are not already there.
 
 ```js
 import MapSelectPageController from '~/src/server/common/map/map-select-page.controller.js'
-import MapSubmissionPageController from '~/src/server/common/map/map-submission-page.controller.js'
 ```
 
 ### 3. Define the pages in your YAML
@@ -89,7 +88,7 @@ pages:
 
 ---
 
-## What the page controllers do
+## What the page controller do
 
 ### `MapSelectPageController`
 
@@ -101,12 +100,6 @@ Extends `QuestionPageController`. Renders `map-select-parcel.html`.
 
 - Writes `selectedParcelId` (first parcel), `selectedParcelIds` (full array), and `selectedParcelsDisplay` (comma-separated string) to session state.
 - In single-select mode, appends `?parcelId=<id>` to the redirect URL so downstream controllers (e.g. `SelectLandActionsPageController`) receive the parcel ID via query string.
-
-### `MapSubmissionPageController`
-
-Extends `SummaryPageController` (GOV.UK check-your-answers page). Uses the engine's default `summary` view — no custom template needed.
-
-**POST** — redirects to the confirmation page, bypassing the engine's default submission flow.
 
 ---
 
@@ -158,6 +151,7 @@ The inline script in `map-select-parcel.html` is the canonical example of how to
 - On an `'unavailable'` error the component replaces the map with an inline "There was a problem loading the map." overlay (`role="alert"`).
 - On a `'no-parcels'` error it renders nothing — messaging is left to the page (`map-select-parcel.html` un-hides a GOV.UK error summary and disables the continue button).
 - The viewport is fitted to the parcels' bounding box on load; the map does not persist its viewport in the URL (`urlPosition: 'none'`).
+- Zoom-out is capped at `MAP_MIN_ZOOM` (7) — the OS basemap has no tiles below z7, so without the cap users could zoom out into a blank void.
 
 ### Asset loading
 
@@ -224,11 +218,11 @@ Proxies MapLibre vector tile requests to the land-grants API. Fetches the curren
 
 ### `GET /api/map/os-basemap`
 
-Fetches the OS Maps style JSON and tilejson in parallel, rewrites all OS URLs (tiles, glyphs, sprites) to go through the `/api/map/os-tiles` proxy so the API key is never sent to the browser. The upstream fetch is shared across concurrent requests and cached in memory on the server instance; failures are not cached, so the next request retries (a non-OK upstream status — e.g. `401` from a missing key — is logged and passed through). Absolute URLs in the style are built from the configured `APP_BASE_URL` (falling back to the request origin for bare local dev). Served with `Cache-Control: private, max-age=3600`.
+Serves a locally built MapLibre style for the OS Maps **raster** basemap — no upstream call is involved. The style contains one raster source pointing at the `/api/map/os-tiles` proxy (layer fixed server-side by `OS_MAPS_LAYER`, zooms 7–20) and one raster layer. No `glyphs` URL is set: parcel-label text is generated locally in the browser by MapLibre (TinySDF), so no font files are hosted or fetched. Absolute URLs are built from the configured `APP_BASE_URL` (falling back to the request origin for bare local dev). Served with `Cache-Control: private, max-age=3600`.
 
-### `GET /api/map/os-tiles/{path*}`
+### `GET /api/map/os-tiles/{z}/{x}/{y}`
 
-Proxies all OS Maps requests (tiles, glyphs, sprites, tilejson) to `api.os.uk`, injecting the API key server-side, so the browser never sees the key. Responses are served with `Cache-Control: public, max-age=3600` — basemap tiles are identical for every user.
+Proxies OS Maps raster tile requests to `api.os.uk/maps/raster/v1/zxy`, injecting the API key server-side so the browser never sees it. The basemap layer is fixed server-side — clients cannot spend our key on anything else. A non-OK upstream status (e.g. `401` from a key without the right product) is logged and passed through. Responses are served with `Cache-Control: public, max-age=3600` — basemap tiles are identical for every user.
 
 ---
 
@@ -255,11 +249,13 @@ A complete working example is at `src/server/common/forms/definitions/example-gr
 
 ## OS Maps API key
 
-The basemap is Ordnance Survey's Vector Tile Service, which requires an API key. The key is read from config as `osMapsApiKey` (env var `OS_MAPS_API_KEY`, marked sensitive) and is only ever used server-side by the `/api/map/os-basemap` and `/api/map/os-tiles/*` proxies — it must never be shipped to the browser.
+The basemap is Ordnance Survey's **OS Maps API** (raster ZXY tiles), which requires an API key. The key is read from config as `osMapsApiKey` (env var `OS_MAPS_API_KEY`, marked sensitive) and is only ever used server-side by the `/api/map/os-tiles` proxy — it must never be shipped to the browser.
+
+> **Which OS product?** The key's OS Data Hub project must have the **"OS Maps API"** product added — a key without it gets `401` from the tile endpoint. We deliberately do **not** use the OS Vector Tile API: it is due to retire in 2028 and is not included in the keys we are issued. (If vector basemaps are ever needed, the successor is the OS NGD API – Tiles.)
 
 ### Local setup
 
-Get a key from the [OS Data Hub](https://osdatahub.os.uk/) (the free OS OpenData plan covers the Vector Tile Service), then add it to `.env`:
+Get a key from the [OS Data Hub](https://osdatahub.os.uk/) with the OS Maps API product added, then add it to `.env`:
 
 ```
 OS_MAPS_API_KEY=your-key-here
