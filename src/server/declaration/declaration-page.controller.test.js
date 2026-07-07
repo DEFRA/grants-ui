@@ -376,6 +376,49 @@ describe('DeclarationPageController', () => {
       )
     })
 
+    test('should use the grasslands answer transformer for grasslands submissions', async () => {
+      const handler = controller.makePostRouteHandler()
+      const grasslandsRequest = {
+        ...mockRequest,
+        params: { slug: 'grasslands' },
+        path: '/grasslands/declaration'
+      }
+      const landParcels = {
+        'SD6364-6615': {
+          size: {
+            unitFullName: 'hectares',
+            unit: 'ha',
+            value: 24.7964
+          },
+          actionsObj: {
+            UPL1: {
+              description: 'Moderate livestock grazing on moorland: UPL1',
+              version: '3.1.0',
+              consents: [],
+              value: 24.7964,
+              unit: 'ha'
+            }
+          }
+        }
+      }
+      const grasslandsContext = {
+        ...mockContext,
+        state: {
+          ...mockContext.state,
+          selectedParcelId: 'SD6364-6615',
+          landParcels
+        }
+      }
+
+      await handler(grasslandsRequest, grasslandsContext, mockH)
+
+      const transformAnswers = transformStateObjectToGasApplication.mock.calls[0][2]
+      const transformedAnswers = transformAnswers({ ...mockContext.relevantState, landParcels })
+
+      expect(transformedAnswers).toMatchObject({ actionCode: 'UPL1' })
+      expect(transformedAnswers).not.toHaveProperty('landParcels')
+    })
+
     test('should log debug information during processing', async () => {
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
