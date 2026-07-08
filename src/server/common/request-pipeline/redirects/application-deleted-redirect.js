@@ -1,5 +1,7 @@
+import { ApplicationStatus } from '../../constants/application-status.js'
+
 export function applicationDeletedRedirect(request, h, context) {
-  if (context.state?.applicationStatus !== 'PURGED') {
+  if (context.state?.applicationStatus !== ApplicationStatus.PURGED) {
     return h.continue
   }
 
