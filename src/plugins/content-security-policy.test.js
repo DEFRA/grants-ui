@@ -1,9 +1,21 @@
 import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest'
 import { contentSecurityPolicy as plugin } from '~/src/plugins/content-security-policy.js'
 
+const mockError = vi.fn()
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
   log: vi.fn(),
-  debug: vi.fn()
+  debug: vi.fn(),
+  error: (...args) => mockError(...args),
+  LogCodes: {
+    SYSTEM: {
+      CSP_SFD_UPDATE_URL_INVALID: { level: 'error', messageFunc: () => 'invalid sfd url' }
+    }
+  }
+}))
+
+const mockConfigGet = vi.fn()
+vi.mock('~/src/config/config.js', () => ({
+  config: { get: (/** @type {string} */ key) => mockConfigGet(key) }
 }))
 
 describe('contentSecurityPolicy plugin', () => {
@@ -14,6 +26,19 @@ describe('contentSecurityPolicy plugin', () => {
   let onPreResponse
 
   beforeEach(async () => {
+    mockConfigGet.mockImplementation((key) => {
+      switch (key) {
+        case 'isProduction':
+          return false
+        case 'externalLinks.sfd.enabled':
+          return false
+        case 'externalLinks.sfd.updateUrl':
+          return ''
+        default:
+          return undefined
+      }
+    })
+
     onRequest = null
     onPreResponse = null
     fakeServer = {
@@ -36,6 +61,24 @@ describe('contentSecurityPolicy plugin', () => {
     vi.resetModules()
     vi.clearAllMocks()
   })
+
+  const enableSfd = (/** @type {string} */ updateUrl) =>
+    mockConfigGet.mockImplementation((key) => {
+      if (key === 'externalLinks.sfd.enabled') {
+        return true
+      }
+      if (key === 'externalLinks.sfd.updateUrl') {
+        return updateUrl
+      }
+      return false
+    })
+
+  async function getCspHeader() {
+    const request = { response: { isBoom: false, header: mockHeader, variety: '' }, app: {} }
+    await onRequest(request, h)
+    await onPreResponse(request, h)
+    return mockHeader.mock.calls.find(([name]) => name === 'Content-Security-Policy')?.[1]
+  }
 
   describe('onRequest handler', () => {
     test('registers an onRequest handler', () => {
@@ -131,29 +174,44 @@ describe('contentSecurityPolicy plugin', () => {
     })
 
     it('should include GOV.UK Frontend SHA-256 hash in script-src', async () => {
-      const request = { response: { isBoom: false, header: mockHeader, variety: '' }, app: {} }
-      await onRequest(request, h)
-      await onPreResponse(request, h)
-
-      const cspHeader = mockHeader.mock.calls.find(([name]) => name === 'Content-Security-Policy')?.[1]
+      const cspHeader = await getCspHeader()
       expect(cspHeader).toContain("'sha256-GUQ5ad8JK5KmEWmROf3LZd9ge94daqNvd8xy9YS1iDw='")
     })
 
     it('should include form-action self directive', async () => {
-      const request = { response: { isBoom: false, header: mockHeader, variety: '' }, app: {} }
-      await onRequest(request, h)
-      await onPreResponse(request, h)
-
-      const cspHeader = mockHeader.mock.calls.find(([name]) => name === 'Content-Security-Policy')?.[1]
+      const cspHeader = await getCspHeader()
       expect(cspHeader).toContain("form-action 'self'")
     })
 
-    it('should include GTM wildcard in script-src', async () => {
-      const request = { response: { isBoom: false, header: mockHeader, variety: '' }, app: {} }
-      await onRequest(request, h)
-      await onPreResponse(request, h)
+    it('should allowlist the SFD origin in form-action when SFD is enabled', async () => {
+      enableSfd('https://sfd.example.com/update-sbi')
 
-      const cspHeader = mockHeader.mock.calls.find(([name]) => name === 'Content-Security-Policy')?.[1]
+      const cspHeader = await getCspHeader()
+      expect(cspHeader).toContain("form-action 'self' https://sfd.example.com")
+      // origin only — query/path stripped so ?ssoOrgId=... redirects still match
+      expect(cspHeader).not.toContain('update-sbi')
+    })
+
+    it('should keep form-action self when SFD is enabled but URL is malformed', async () => {
+      enableSfd('not a url')
+
+      const cspHeader = await getCspHeader()
+      expect(cspHeader).toContain("form-action 'self';")
+      expect(mockError).toHaveBeenCalledWith(
+        expect.objectContaining({ level: 'error' }),
+        expect.objectContaining({ sfdUpdateUrl: 'not a url' })
+      )
+    })
+
+    it('should keep form-action self when SFD is enabled but no URL is set', async () => {
+      enableSfd('')
+
+      const cspHeader = await getCspHeader()
+      expect(cspHeader).toContain("form-action 'self';")
+    })
+
+    it('should include GTM wildcard in script-src', async () => {
+      const cspHeader = await getCspHeader()
       expect(cspHeader).toContain('https://*.googletagmanager.com')
     })
   })
