@@ -327,7 +327,7 @@ describe('context', () => {
         sbi: '106284736',
         crn: 'crn123',
         name: 'John Doe',
-        organisationName: ' Farm 1',
+        organisationName: 'Farm 1',
         relationshipId: 'rel456',
         sessionId: 'valid-session-id'
       }
@@ -343,7 +343,7 @@ describe('context', () => {
         sbi: '106284736',
         crn: 'crn123',
         name: 'John Doe',
-        organisationName: ' Farm 1',
+        organisationName: 'Farm 1',
         relationshipId: 'rel456',
         role: 'admin'
       })

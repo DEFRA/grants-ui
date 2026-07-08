@@ -90,7 +90,7 @@ describe('buildAuditEvent', () => {
     expect(/** @type {any} */ (event.audit).accounts).not.toHaveProperty('organisationId')
   })
 
-  test('does not publish organisationId from credentials as an audit account without the customer database id', () => {
+  test('does not publish an audit event including organisationId without accounts present', () => {
     const request = buildRequest({
       auth: { isAuthenticated: true, credentials: { organisationId: 'not-the-sbi' } }
     })
