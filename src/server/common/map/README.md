@@ -117,6 +117,20 @@ Extends `QuestionPageController`. Renders `map-select-parcel.html`.
 
 `multi-select` is read once when the component connects — changing it afterwards has no effect (re-create the element to reconfigure).
 
+### Accessible selection (interact plugin)
+
+Selection is handled by the `@defra/interactive-map` **interact plugin**, not raw MapLibre click handlers. This gives every input method a route to select a parcel:
+
+- **Pointer** — click a parcel
+- **Touch** — a crosshair with a "Select" action button
+- **Keyboard** — <kbd>Enter</kbd> selects at the crosshair target; <kbd>Tab</kbd> opens a listbox of parcels (labelled by compound parcel ID) navigable with arrow keys
+
+The plugin only matches polygons when the click is geometrically inside them, which makes small zoomed-out parcels effectively unselectable. The component wraps the MapLibre provider (`withParcelHitTolerance` in `index.js`) so that when the strict query misses, it falls back to a rendered-pixel query on the fill layer within `PARCEL_CLICK_TOLERANCE_PX` (10px) of the point — parcels stay selectable by pointer and keyboard crosshair at any zoom. The keyboard listbox is fully zoom-independent.
+
+The component listens to the plugin's `interact:selectionchange` event and re-dispatches it as `parcel-map:selection`, so page-level consumers are unaffected by the plugin internals. The fill-opacity highlight is applied by the component on top of the plugin's own selection stroke.
+
+The plugin identifies and labels features via the `id` feature property (`SHEET-PARCEL`). The land-grants API tiles only carry `sheet_id` and `parcel_id` (`parcel_id` alone is not unique across sheets), so the grants-ui tile proxy stamps the compound `id` onto every feature — `withCompoundParcelIds` in `mvt-compound-id.js` decodes each proxied tile, adds the property, and re-encodes it. Mock GeoJSON features already carry `id`. The plugin's UI styles (crosshair, listbox, action buttons) are bundled in the core `interactive-map.css` — no extra stylesheet is needed.
+
 ### Height
 
 Set height via CSS directly on the element. The component fills 100% of whatever dimensions it is given:
@@ -214,7 +228,7 @@ Returns the full GeoJSON `FeatureCollection` for mock mode. Reads features store
 
 ### `GET /api/map/parcel-tiles/{z}/{x}/{y}`
 
-Proxies MapLibre vector tile requests to the land-grants API. Fetches the current user's parcel IDs from `fetchParcels` (concurrent tile requests share one in-flight lookup per SBI) and sends them in the POST body so they are never exposed in the tile URL. Returns the protobuf tile buffer with `Cache-Control: private, max-age=3600` — `private` because tiles are per-user.
+Proxies MapLibre vector tile requests to the land-grants API. Fetches the current user's parcel IDs from `fetchParcels` (concurrent tile requests share one in-flight lookup per SBI) and sends them in the POST body so they are never exposed in the tile URL. Each tile is re-encoded on the way through (`withCompoundParcelIds`) to stamp the compound `id` property onto every feature — see the interact plugin section above. Returns the protobuf tile buffer with `Cache-Control: private, max-age=3600` — `private` because tiles are per-user.
 
 ### `GET /api/map/os-basemap`
 
@@ -255,7 +269,14 @@ The basemap is Ordnance Survey's **OS Maps API** (raster ZXY tiles), which requi
 
 ### Local setup
 
-Get a key from the [OS Data Hub](https://osdatahub.os.uk/) with the OS Maps API product added, then add it to `.env`:
+#### Generating a key on the OS Data Hub
+
+1. Go to [osdatahub.os.uk](https://osdatahub.os.uk/) and sign up (the free **OS OpenData plan** is enough — the OS Maps API is included in it).
+2. Once logged in, open **API Dashboard → API Projects** and click **Create a new project** (any name, e.g. `grants-ui-local`).
+3. In the project, click **Add API** and select **OS Maps API**.
+4. Copy the **Project API Key** shown on the project page.
+
+Then add it to `.env`:
 
 ```
 OS_MAPS_API_KEY=your-key-here

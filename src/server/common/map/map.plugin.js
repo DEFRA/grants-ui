@@ -5,6 +5,7 @@ import { fetchParcels, fetchParcelTileLocation } from '~/src/server/land-grants/
 import { stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { isMockData, buildMockFeatures } from './map.mock.js'
+import { withCompoundParcelIds } from './mvt-compound-id.js'
 import { logUpstreamError } from '~/src/server/common/helpers/logging/upstream-error.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
@@ -224,7 +225,7 @@ async function tilesHandler(request, h) {
   const buffer = await response.arrayBuffer()
   return (
     h
-      .response(Buffer.from(buffer))
+      .response(withCompoundParcelIds(Buffer.from(buffer)))
       .code(statusCodes.ok)
       .type('application/x-protobuf')
       // private — tiles are per-user (session-authed), so only the browser may cache them

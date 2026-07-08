@@ -22,6 +22,18 @@ export const LAYER_LINE_WIDTH = 1.5
 export const FIT_BOUNDS_PADDING = 40
 export const AREA_DECIMAL_PLACES = 2
 
+// Feature property carrying the compound "SHEET-PARCEL" ID. Present in both the
+// vector tiles (stamped on by the grants-ui tile proxy) and the mock GeoJSON.
+// The interact plugin uses it to identify features and label them in the
+// keyboard-accessible listbox.
+export const PARCEL_ID_PROPERTY = 'id'
+
+// Pixel radius for parcel hit-testing. The interact plugin only matches
+// polygons on exact geometric containment, so the provider falls back to a
+// rendered-pixel query within this radius — otherwise small (zoomed-out)
+// parcels are practically unclickable.
+export const PARCEL_CLICK_TOLERANCE_PX = 10
+
 export const LAYER_ID_FILL = 'parcels-fill'
 export const LAYER_ID_OUTLINE = 'parcels-outline'
 export const LAYER_ID_LABEL = 'parcels-label'

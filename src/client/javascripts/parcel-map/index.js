@@ -3,6 +3,8 @@
 import InteractiveMap from '@defra/interactive-map'
 // @ts-ignore — no type declarations shipped with this package
 import maplibreProvider from '@defra/interactive-map/providers/maplibre'
+// @ts-ignore — no type declarations shipped with this package
+import createInteractPlugin from '@defra/interactive-map/plugins/interact'
 import {
   PARCELS_API_URL,
   PARCEL_TILES_URL,
@@ -17,6 +19,8 @@ import {
   FIT_BOUNDS_PADDING,
   AREA_DECIMAL_PLACES,
   TOOLTIP_STYLES,
+  PARCEL_ID_PROPERTY,
+  PARCEL_CLICK_TOLERANCE_PX,
   LAYER_ID_FILL,
   LAYER_ID_OUTLINE,
   LAYER_ID_LABEL,
@@ -120,6 +124,9 @@ class ParcelMap extends HTMLElement {
   /** @type {InstanceType<typeof InteractiveMap> | null} */
   #mapInstance = null
 
+  /** @type {ReturnType<typeof createInteractPlugin> | null} */
+  #interactPlugin = null
+
   /** @type {HTMLDivElement | null} */
   #mapEl = null
 
@@ -153,6 +160,7 @@ class ParcelMap extends HTMLElement {
       /* ignore */
     }
     this.#mapInstance = null
+    this.#interactPlugin = null
     this.#mapEl?.parentElement?.remove()
     this.#mapEl = null
     this.#skeleton?.remove()
@@ -170,7 +178,7 @@ class ParcelMap extends HTMLElement {
     this.#skeleton = buildSkeleton()
     this.appendChild(this.#skeleton)
 
-    const [ml, data] = await Promise.all([this.#initMap(), this.#fetchData()])
+    const [ml, data] = await Promise.all([this.#initMap(multiSelect), this.#fetchData()])
 
     // Torn down (disconnected) while we were loading, nothing to wire up.
     if (this.#state !== STATE_LOADING) {
@@ -190,7 +198,8 @@ class ParcelMap extends HTMLElement {
       const colorExpr = buildColorExpr(data.parcelIds)
       this.#addParcelsToMap(ml, data, colorExpr)
       const tooltip = this.#attachTooltip(ml, data.metaIndex)
-      this.#attachSelectionHandler(ml, multiSelect, tooltip)
+      this.#attachSelectionBridge(ml, tooltip)
+      this.#interactPlugin?.enable()
 
       this.#state = STATE_READY
       this.#skeleton?.remove()
@@ -213,8 +222,11 @@ class ParcelMap extends HTMLElement {
     this.#errorOverlay = el
   }
 
-  /** @returns {Promise<MLMap | null>} */
-  #initMap() {
+  /**
+   * @param {boolean} multiSelect
+   * @returns {Promise<MLMap | null>}
+   */
+  #initMap(multiSelect) {
     return new Promise((resolve) => {
       const wrapper = document.createElement('div')
       wrapper.style.cssText = 'position:relative;width:100%;height:100%'
@@ -231,12 +243,29 @@ class ParcelMap extends HTMLElement {
         this.appendChild(wrapper)
       }
 
+      // Handles feature selection accessibly: pointer clicks, a touch
+      // crosshair + Select button, and a keyboard-navigable feature listbox.
+      const interactPlugin = createInteractPlugin({
+        interactionModes: ['selectFeature'],
+        multiSelect,
+        deselectOnClickOutside: true,
+        layers: [
+          {
+            layerId: LAYER_ID_FILL,
+            idProperty: PARCEL_ID_PROPERTY,
+            labelProperty: PARCEL_ID_PROPERTY
+          }
+        ]
+      })
+      this.#interactPlugin = interactPlugin
+
       const map = new InteractiveMap(mapEl.id, {
         behaviour: 'inline',
         mapLabel: MAP_LABEL,
         containerHeight: this.style.height || MAP_DEFAULT_HEIGHT,
-        mapProvider: maplibreProvider(),
+        mapProvider: withParcelHitTolerance(maplibreProvider()),
         mapStyle: { url: MAP_STYLE_URL, attribution: getMapStyleAttribution() },
+        plugins: [interactPlugin],
         center: MAP_DEFAULT_CENTER,
         zoom: MAP_DEFAULT_ZOOM,
         // The OS basemap has no tiles below z7 — stop users zooming out into
@@ -424,17 +453,19 @@ class ParcelMap extends HTMLElement {
   }
 
   /**
+   * Bridges the interact plugin's selection state to this component's public
+   * API: re-applies the fill-opacity highlight and re-dispatches selection
+   * changes as `parcel-map:selection` events. Selection input handling
+   * (click, touch crosshair, keyboard listbox) lives in the plugin.
    * @param {MLMap} ml
-   * @param {boolean} multiSelect
    * @param {HTMLElement | undefined} tooltip
    */
-  #attachSelectionHandler(ml, multiSelect, tooltip) {
-    /** @type {Set<string>} */
-    const selected = new Set()
+  #attachSelectionBridge(ml, tooltip) {
     const idExpr = ['concat', ['get', 'sheet_id'], '-', ['get', 'parcel_id']]
 
-    const applySelection = () => {
-      const matchList = selected.size > 0 ? [...selected] : [SELECTION_NONE_SENTINEL]
+    /** @param {string[]} selectedIds */
+    const applyHighlight = (selectedIds) => {
+      const matchList = selectedIds.length > 0 ? selectedIds : [SELECTION_NONE_SENTINEL]
       ml.setPaintProperty(LAYER_ID_FILL, 'fill-opacity', [
         'match',
         idExpr,
@@ -444,56 +475,69 @@ class ParcelMap extends HTMLElement {
       ])
     }
 
-    const onParcelClick = (
-      /** @type {import('maplibre-gl').MapMouseEvent & { features?: import('maplibre-gl').MapGeoJSONFeature[] }} */ e
-    ) => {
-      const feature = e.features?.[0]
-      if (!feature) {
-        return
-      }
-      const id = resolveFeatureId(feature)
-      if (!id) {
-        return
-      }
-
-      if (multiSelect) {
-        const wasSelected = selected.has(id)
-        wasSelected ? selected.delete(id) : selected.add(id)
-        if (wasSelected && tooltip) {
+    this.#mapInstance?.on(
+      'interact:selectionchange',
+      (/** @type {{ selectedFeatures: Array<{ featureId: string | number }> }} */ { selectedFeatures }) => {
+        const selectedIds = selectedFeatures.map((f) => String(f.featureId))
+        applyHighlight(selectedIds)
+        if (selectedIds.length === 0 && tooltip) {
           hideTooltip(tooltip)
         }
-      } else {
-        const alreadySelected = selected.has(id)
-        selected.clear()
-        if (!alreadySelected) {
-          selected.add(id)
-        } else if (tooltip) {
-          hideTooltip(tooltip)
-        } else {
-          // parcel deselected and no tooltip to hide
-        }
+        this.dispatchEvent(new CustomEvent(EVENT_SELECTION, { bubbles: true, detail: { selectedIds } }))
       }
-
-      applySelection()
-      this.dispatchEvent(new CustomEvent(EVENT_SELECTION, { bubbles: true, detail: { selectedIds: [...selected] } }))
-    }
-
-    const onDeselect = (/** @type {import('maplibre-gl').MapMouseEvent} */ e) => {
-      if (ml.getLayer(LAYER_ID_FILL) && ml.queryRenderedFeatures(e.point, { layers: [LAYER_ID_FILL] }).length === 0) {
-        selected.clear()
-        applySelection()
-        this.dispatchEvent(new CustomEvent(EVENT_SELECTION, { bubbles: true, detail: { selectedIds: [] } }))
-      }
-    }
-
-    ml.on('click', LAYER_ID_FILL, onParcelClick)
-    ml.on('click', onDeselect)
-
-    this.#mlCleanup.push(
-      () => ml.off('click', LAYER_ID_FILL, onParcelClick),
-      () => ml.off('click', onDeselect)
     )
   }
+}
+
+/**
+ * Makes parcels easier to click when they're small on screen.
+ *
+ * The problem: when the interact plugin decides "did this click land on a
+ * parcel?", it checks whether the clicked point is mathematically inside the
+ * parcel's polygon. That's fine zoomed in, when a parcel fills half the
+ * screen. But zoomed out, a parcel might be 4-5 pixels wide — you'd have to
+ * click exactly inside those few pixels, so selection feels broken.
+ *
+ * The fix: if the plugin's strict check finds nothing, we ask MapLibre a more
+ * forgiving question instead — "is there a parcel *drawn on screen* within
+ * 10px of where the user clicked?" (PARCEL_CLICK_TOLERANCE_PX). If yes, we
+ * return that parcel, and the click selects it. This applies to mouse clicks
+ * and to the keyboard crosshair alike, at every zoom level.
+ *
+ * The wrapping is awkward because of how the map library is built: we don't
+ * get the provider object directly — we get a *descriptor* whose `load()` the
+ * library calls later to create the provider. So we intercept `load()` and
+ * hand back a subclass whose `getFeaturesAtPoint` adds our fallback.
+ * @param {{ load: () => Promise<{ MapProvider: new (...args: never[]) => { map?: import('maplibre-gl').Map } }> }} descriptor
+ */
+function withParcelHitTolerance(descriptor) {
+  const originalLoad = descriptor.load
+  descriptor.load = async () => {
+    const result = await originalLoad()
+    class ParcelHitToleranceProvider extends result.MapProvider {
+      /**
+       * @param {{ x: number, y: number }} point
+       * @param {{ radius?: number }} [options]
+       */
+      getFeaturesAtPoint(point, options) {
+        // @ts-ignore — base method exists on the runtime provider
+        const hits = super.getFeaturesAtPoint(point, options)
+        if (hits.length > 0 || !this.map?.getLayer(LAYER_ID_FILL)) {
+          return hits
+        }
+        const r = PARCEL_CLICK_TOLERANCE_PX
+        return this.map.queryRenderedFeatures(
+          [
+            [point.x - r, point.y - r],
+            [point.x + r, point.y + r]
+          ],
+          { layers: [LAYER_ID_FILL] }
+        )
+      }
+    }
+    return { ...result, MapProvider: ParcelHitToleranceProvider }
+  }
+  return descriptor
 }
 
 /** @returns {HTMLDivElement} */
