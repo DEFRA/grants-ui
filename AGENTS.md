@@ -24,6 +24,34 @@ Use ES modules and 2-space indentation. Prettier uses single quotes, no semicolo
 
 Use `CONTEXT.md` as the source of truth for grant-domain terms and avoided synonyms. When adding user-facing copy, tests, docs, or AI-generated changes, prefer the glossary terms there, especially around grants, journeys, statuses, identities, and integrations.
 
+## System Overview
+
+The request path is:
+
+```text
+User -> Grants UI -> Grants UI Backend
+                  -> GAS
+                  -> Config API
+```
+
+Grants UI renders journeys, handles authentication/session flow, maps form state into submission payloads, and decides user navigation. Grants UI Backend owns persisted application state and application status for save-and-return journeys. GAS owns submitted grant applications, grant definitions used for submission, and post-submission GAS statuses. Config API owns externally supplied form definitions; local YAML definitions remain the fallback/source for non-API-loaded slugs.
+
+## Architectural Constraints
+
+Redirect logic must remain deterministic and side-effect-light: given the same Grants UI status, GAS status, request path, and configured redirect rules, it should choose the same destination. Status transitions for submitted applications must be driven through configured `grantRedirectRules` and the status helper path, not scattered across page controllers.
+
+Keep Grants UI application status separate from GAS status. Grants UI application status is the local journey lifecycle (`CLEARED`, `SUBMITTED`, `REOPENED`); GAS status is the downstream submitted-application state used as an input to redirect rules. When adding new status behaviour, update the configuration and focused redirect/status tests together.
+
+Persist form state only through the forms engine state helpers or the existing persistence services. Use `context.relevantState` for data submitted to GAS and `context.state` for auxiliary UI state. Do not mutate `context.state` in place.
+
+## Never Do This
+
+- Never treat GAS status and Grants UI application status as equivalent or interchangeable.
+- Never query GAS for draft applications; drafts live in Grants UI Backend state.
+- Never bypass `grantRedirectRules` with ad hoc post-submission redirects in individual controllers.
+- Never update application status in local state only when the transition must be persisted through Grants UI Backend.
+- Never put secrets, service tokens, private HTTP client files, or real user identifiers into fixtures, docs, snapshots, or committed config.
+
 ## Developer Addenda
 
 Developers can add their own `AGENTS.local.md` and should be read as an addendum to this file. Keep that file local to your machine and do not commit it.
