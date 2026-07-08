@@ -20,16 +20,8 @@ describe('mockRequestWithIdentity', () => {
   })
 
   it.each([
-    [
-      'crn',
-      { credentials: { crn: 'custom_user' } },
-      { crn: 'custom_user', sbi: 'biz_test', grantId: 'grant_test' }
-    ],
-    [
-      'multiple credentials',
-      { credentials: { crn: 'x', sbi: 'y' } },
-      { crn: 'x', sbi: 'y', grantId: 'grant_test' }
-    ],
+    ['crn', { credentials: { crn: 'custom_user' } }, { crn: 'custom_user', sbi: 'biz_test', grantId: 'grant_test' }],
+    ['multiple credentials', { credentials: { crn: 'x', sbi: 'y' } }, { crn: 'x', sbi: 'y', grantId: 'grant_test' }],
     [
       'new credential property',
       { credentials: { extra: 'value' } },
