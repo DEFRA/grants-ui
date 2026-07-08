@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto'
 import { config } from '~/src/config/config.js'
+import { error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 const defaultContentPolicy = (/** @type {string} */ nonce) => {
   const gtm = 'https://www.googletagmanager.com'
@@ -19,12 +20,25 @@ const defaultContentPolicy = (/** @type {string} */ nonce) => {
   const imgSrc = [self, 'data:', 'blob:', ga4, statsDblClick, ga4WildCard].join(' ')
   const workerSrc = [self, 'blob:'].join(' ')
 
+  const formActionSrc = [self]
+  if (config.get('externalLinks.sfd.enabled')) {
+    const sfdUpdateUrl = config.get('externalLinks.sfd.updateUrl')
+    if (sfdUpdateUrl) {
+      if (URL.canParse(sfdUpdateUrl)) {
+        formActionSrc.push(new URL(sfdUpdateUrl).origin)
+      } else {
+        // malformed URL — leave form-action as 'self'; the SFD redirect will be blocked
+        error(LogCodes.SYSTEM.CSP_SFD_UPDATE_URL_INVALID, { sfdUpdateUrl })
+      }
+    }
+  }
+
   return [
     "default-src 'self'",
     "base-uri 'self'",
     "object-src 'none'",
     "frame-ancestors 'self'",
-    "form-action 'self'",
+    `form-action ${formActionSrc.join(' ')}`,
     `script-src ${scriptSrc}`,
     `connect-src ${connectSrc}`,
     `img-src ${imgSrc}`,
