@@ -87,6 +87,17 @@ describe('buildAuditEvent', () => {
     expect(typeof event.datetime).toBe('string')
     expect(event.datetime).toBe(new Date(/** @type {string} */ (event.datetime)).toISOString())
     expect(/** @type {any} */ (event.audit).accounts).toEqual({ crn: 'crn1', sbi: 'sbi1' })
+    expect(/** @type {any} */ (event.audit).accounts).not.toHaveProperty('organisationId')
+  })
+
+  test('does not publish an audit event including organisationId without accounts present', () => {
+    const request = buildRequest({
+      auth: { isAuthenticated: true, credentials: { organisationId: 'not-the-sbi' } }
+    })
+
+    const event = buildAuditEvent(request, START)
+
+    expect(event.audit).not.toHaveProperty('accounts')
   })
 
   test('omits user, sessionid, correlationid and accounts when not known', () => {

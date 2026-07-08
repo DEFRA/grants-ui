@@ -6,7 +6,7 @@ describe('getCacheKey', () => {
       auth: {
         credentials: {
           crn: 'user123',
-          organisationId: 'business456'
+          sbi: 'business456'
         }
       },
       params: {
@@ -26,7 +26,7 @@ describe('getCacheKey', () => {
     const request = {
       auth: {
         credentials: {
-          organisationId: 'business456'
+          sbi: 'business456'
         }
       },
       params: {
@@ -37,7 +37,7 @@ describe('getCacheKey', () => {
     expect(() => getCacheKey(request)).toThrow('Missing CRN in credentials')
   })
 
-  it('throws error if organisationId is missing', () => {
+  it('throws error if SBI is missing', () => {
     const request = {
       auth: {
         credentials: {
@@ -49,7 +49,23 @@ describe('getCacheKey', () => {
       }
     }
 
-    expect(() => getCacheKey(request)).toThrow('Missing SBI (organisationId) in credentials')
+    expect(() => getCacheKey(request)).toThrow('Missing SBI in credentials')
+  })
+
+  it('does not use organisationId as an SBI fallback', () => {
+    const request = {
+      auth: {
+        credentials: {
+          crn: 'user123',
+          organisationId: 'customer-database-primary-key'
+        }
+      },
+      params: {
+        slug: 'grant789'
+      }
+    }
+
+    expect(() => getCacheKey(request)).toThrow('Missing SBI in credentials')
   })
 
   it('throws error if auth.credentials is missing', () => {
@@ -68,7 +84,7 @@ describe('getCacheKey', () => {
       auth: {
         credentials: {
           crn: 'user123',
-          organisationId: 'business456'
+          sbi: 'business456'
         }
       },
       params: {}
@@ -82,7 +98,7 @@ describe('getCacheKey', () => {
       auth: {
         credentials: {
           crn: 'user123',
-          organisationId: 'business456'
+          sbi: 'business456'
         }
       }
       // no params property

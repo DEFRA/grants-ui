@@ -129,7 +129,6 @@ describe('SelectLandActionsPageController', () => {
           sbi: '106284736',
           crn: 'CRN123',
           name: 'John Doe',
-          organisationId: 'org123',
           organisationName: 'Farm 1',
           role: 'admin',
           sessionId: 'valid-session-id'

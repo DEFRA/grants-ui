@@ -27,7 +27,7 @@
 
     {{ defraAccountBar({
       organisationName: auth.organisationName,
-      organisationId: auth.organisationId | default(""),
+      sbi: auth.sbi | default(""),
       name: auth.name
     }) }}
 
