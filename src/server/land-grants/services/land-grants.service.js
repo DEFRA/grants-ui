@@ -24,6 +24,26 @@ import {
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
 
 /**
+ * @param {unknown} enabledLandActions
+ * @returns {string[]}
+ */
+const normaliseEnabledLandActions = (enabledLandActions = []) =>
+  Array.isArray(enabledLandActions)
+    ? enabledLandActions
+        .filter((action) => typeof action === 'string')
+        .map((action) => action.trim())
+        .filter(Boolean)
+    : []
+
+/**
+ * @param {string} parcelKey
+ * @param {string[]} enabledLandActions
+ * @returns {string}
+ */
+const buildParcelActionsCacheKey = (parcelKey, enabledLandActions) =>
+  `${parcelKey}:${[...enabledLandActions].sort().join(',')}`
+
+/**
  * Calculates grant payment for land actions.
  * @param {object} state
  * @returns {Promise<{payment: PaymentCalculation, errorMessage?: string, paymentTotal: string}>} - Payment calculation result
@@ -64,12 +84,14 @@ const createGroup = (name, groupActions) => ({
 
 /**
  * Fetches available actions for a given parcel.
- * @param {{ parcelId: string, sheetId: string }} parcel
+ * @param {{ parcelId?: string, sheetId?: string, enabledLandActions?: string[] }} parcel
  * @returns {Promise<{actions: ActionGroup[], parcel: {parcelId: string, sheetId: string, size: Size}}>}- Parcel data with actions
  * @throws {Error}
  */
-export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = '' }) {
-  const cacheKey = stringifyParcel({ sheetId, parcelId })
+export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = '', enabledLandActions = [] }) {
+  const parcelKey = stringifyParcel({ sheetId, parcelId })
+  const enabledActions = normaliseEnabledLandActions(enabledLandActions)
+  const cacheKey = buildParcelActionsCacheKey(parcelKey, enabledActions)
   const cached = getCachedParcel(cacheKey)
 
   if (cached) {
@@ -78,15 +100,14 @@ export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = 
 
   /** @type {ActionGroup[]} */
   const actions = []
-  const parcelIds = [cacheKey]
+  const parcelIds = [parcelKey]
   const { parcels, groups: groupDefinitions = [] } = await parcelsWithExtendedInfo(parcelIds, LAND_GRANTS_API_URL)
   const foundParcel = parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)
   const actionsForParcel = foundParcel?.actions?.map(mapAction) || []
 
-  const enabledActions = /** @type {string[]} */ (config.get('landGrants.enabledActions') ?? []).map((a) => a.trim())
   groupDefinitions.forEach((group) => {
     const groupActions = actionsForParcel.filter((a) => {
-      if (enabledActions.length > 0 && !enabledActions.includes(a.code)) {
+      if (!enabledActions.includes(a.code)) {
         return false
       }
       return group.actions.includes(a.code)

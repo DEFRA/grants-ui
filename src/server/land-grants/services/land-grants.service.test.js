@@ -20,6 +20,7 @@ import {
 } from '~/src/server/land-grants/services/land-grants.client.js'
 import { clearParcelCache } from '~/src/server/land-grants/services/parcel-cache.js'
 const mockApiEndpoint = 'https://land-grants-api'
+const enabledLandActions = ['CMOR1', 'UPL1', 'UPL2', 'UPL3', 'UPL8', 'UPL10', 'CLIG3']
 
 vi.mock('~/src/server/land-grants/services/land-grants.client.js', () => ({
   calculate: vi.fn(),
@@ -125,7 +126,9 @@ describe('land-grants service', () => {
     })
 
     it('should handle missing payment data with error message', async () => {
-      const mockCalculateResponse = {/* no payment property */}
+      const mockCalculateResponse = {
+        /* no payment property */
+      }
       calculate.mockResolvedValueOnce(mockCalculateResponse)
 
       formatCurrency.mockReturnValue(null)
@@ -195,7 +198,8 @@ describe('land-grants service', () => {
 
       const result = await fetchAvailableActionsForParcel({
         parcelId: 'PARCEL456',
-        sheetId: 'SHEET123'
+        sheetId: 'SHEET123',
+        enabledLandActions
       })
 
       expect(parcelsWithExtendedInfo).toHaveBeenCalledWith(['SHEET123-PARCEL456'], mockApiEndpoint)
@@ -248,6 +252,63 @@ describe('land-grants service', () => {
       })
     })
 
+    it('should return no actions when enabledLandActions is not present', async () => {
+      const mockApiResponse = {
+        parcels: [
+          {
+            parcelId: 'PARCEL456',
+            sheetId: 'SHEET123',
+            size: { value: 50.5, unit: 'ha' },
+            actions: [
+              {
+                code: 'CMOR1',
+                availableArea: { value: 10.5, unit: 'ha' },
+                description: 'Assess moorland and produce a written record'
+              }
+            ]
+          }
+        ],
+        groups: [{ name: 'Assess moorland', actions: ['CMOR1'] }]
+      }
+      parcelsWithExtendedInfo.mockResolvedValueOnce(mockApiResponse)
+
+      const result = await fetchAvailableActionsForParcel({
+        parcelId: 'PARCEL456',
+        sheetId: 'SHEET123'
+      })
+
+      expect(result.actions).toEqual([])
+    })
+
+    it('should return no actions when enabledLandActions is empty', async () => {
+      const mockApiResponse = {
+        parcels: [
+          {
+            parcelId: 'PARCEL456',
+            sheetId: 'SHEET123',
+            size: { value: 50.5, unit: 'ha' },
+            actions: [
+              {
+                code: 'CMOR1',
+                availableArea: { value: 10.5, unit: 'ha' },
+                description: 'Assess moorland and produce a written record'
+              }
+            ]
+          }
+        ],
+        groups: [{ name: 'Assess moorland', actions: ['CMOR1'] }]
+      }
+      parcelsWithExtendedInfo.mockResolvedValueOnce(mockApiResponse)
+
+      const result = await fetchAvailableActionsForParcel({
+        parcelId: 'PARCEL456',
+        sheetId: 'SHEET123',
+        enabledLandActions: []
+      })
+
+      expect(result.actions).toEqual([])
+    })
+
     it('should exclude actions not in any backend group', async () => {
       const mockApiResponse = {
         parcels: [
@@ -284,7 +345,8 @@ describe('land-grants service', () => {
 
       const result = await fetchAvailableActionsForParcel({
         parcelId: 'PARCEL456',
-        sheetId: 'SHEET123'
+        sheetId: 'SHEET123',
+        enabledLandActions
       })
 
       expect(result).toEqual({
@@ -348,7 +410,8 @@ describe('land-grants service', () => {
 
       const result = await fetchAvailableActionsForParcel({
         parcelId: 'PARCEL456',
-        sheetId: 'SHEET123'
+        sheetId: 'SHEET123',
+        enabledLandActions
       })
 
       expect(result).toEqual({
@@ -378,7 +441,8 @@ describe('land-grants service', () => {
 
       const result = await fetchAvailableActionsForParcel({
         parcelId: 'PARCEL456',
-        sheetId: 'SHEET123'
+        sheetId: 'SHEET123',
+        enabledLandActions
       })
 
       expect(result).toEqual({
@@ -424,7 +488,8 @@ describe('land-grants service', () => {
 
       const result = await fetchAvailableActionsForParcel({
         parcelId: 'PARCEL456',
-        sheetId: 'SHEET123'
+        sheetId: 'SHEET123',
+        enabledLandActions
       })
 
       expect(result).toEqual({
@@ -475,12 +540,7 @@ describe('land-grants service', () => {
       ).rejects.toThrow('API error')
     })
 
-    describe('when enabledActions entries have surrounding spaces', () => {
-      beforeEach(() => {
-        configState.reset()
-        configState.set('landGrants.enabledActions', [' CMOR1 ', ' UPL8 ', ' UPL10 '])
-      })
-
+    describe('when enabledLandActions entries have surrounding spaces', () => {
       it('should trim spaces and still match action codes correctly', async () => {
         const mockApiResponse = {
           parcels: [
@@ -509,7 +569,11 @@ describe('land-grants service', () => {
         }
         parcelsWithExtendedInfo.mockResolvedValueOnce(mockApiResponse)
 
-        const result = await fetchAvailableActionsForParcel({ parcelId: 'PARCEL456', sheetId: 'SHEET123' })
+        const result = await fetchAvailableActionsForParcel({
+          parcelId: 'PARCEL456',
+          sheetId: 'SHEET123',
+          enabledLandActions: [' CMOR1 ', ' UPL8 ', ' UPL10 ']
+        })
 
         expect(result.actions).toHaveLength(2)
         expect(result.actions[0].name).toBe('Assess moorland')
@@ -517,13 +581,8 @@ describe('land-grants service', () => {
       })
     })
 
-    describe('when enabledActions does not include UPL8 and UPL10', () => {
-      beforeEach(() => {
-        configState.reset()
-        configState.set('landGrants.enabledActions', ['CMOR1'])
-      })
-
-      it('should exclude UPL8 and UPL10 actions when they are not in enabledActions', async () => {
+    describe('when enabledLandActions does not include UPL8 and UPL10', () => {
+      it('should exclude UPL8 and UPL10 actions when they are not in enabledLandActions', async () => {
         const mockApiResponse = {
           parcels: [
             {
@@ -558,7 +617,8 @@ describe('land-grants service', () => {
 
         const result = await fetchAvailableActionsForParcel({
           parcelId: 'PARCEL456',
-          sheetId: 'SHEET123'
+          sheetId: 'SHEET123',
+          enabledLandActions: ['CMOR1']
         })
 
         expect(result.actions).toEqual([
@@ -578,12 +638,7 @@ describe('land-grants service', () => {
       })
     })
 
-    describe('when enabledActions includes UPL8 and UPL10', () => {
-      beforeEach(() => {
-        configState.reset()
-        configState.set('landGrants.enabledActions', ['CMOR1', 'UPL8', 'UPL10'])
-      })
-
+    describe('when enabledLandActions includes UPL8 and UPL10', () => {
       it('should group UPL8 and UPL10 actions under Shepherding livestock on moorland', async () => {
         const mockApiResponse = {
           parcels: [
@@ -619,7 +674,8 @@ describe('land-grants service', () => {
 
         const result = await fetchAvailableActionsForParcel({
           parcelId: 'PARCEL456',
-          sheetId: 'SHEET123'
+          sheetId: 'SHEET123',
+          enabledLandActions: ['CMOR1', 'UPL8', 'UPL10']
         })
 
         expect(result.actions).toEqual([
@@ -700,7 +756,8 @@ describe('land-grants service', () => {
 
         const result = await fetchAvailableActionsForParcel({
           parcelId: 'PARCEL456',
-          sheetId: 'SHEET123'
+          sheetId: 'SHEET123',
+          enabledLandActions
         })
 
         expect(parcelsWithExtendedInfo).toHaveBeenCalledWith(['SHEET123-PARCEL456'], mockApiEndpoint)
@@ -777,7 +834,7 @@ describe('land-grants service', () => {
       groups: [{ name: 'Assess moorland', actions: ['CMOR1'] }]
     }
 
-    const parcelArgs = { parcelId: 'PARCEL456', sheetId: 'SHEET123' }
+    const parcelArgs = { parcelId: 'PARCEL456', sheetId: 'SHEET123', enabledLandActions: ['CMOR1'] }
 
     beforeEach(() => {
       clearParcelCache()
@@ -809,7 +866,20 @@ describe('land-grants service', () => {
       parcelsWithExtendedInfo.mockResolvedValueOnce(mockApiResponse).mockResolvedValueOnce(otherResponse)
 
       await fetchAvailableActionsForParcel(parcelArgs)
-      await fetchAvailableActionsForParcel({ parcelId: 'OTHER', sheetId: 'OTHER_SHEET' })
+      await fetchAvailableActionsForParcel({ parcelId: 'OTHER', sheetId: 'OTHER_SHEET', enabledLandActions: ['CMOR1'] })
+
+      expect(parcelsWithExtendedInfo).toHaveBeenCalledTimes(2)
+    })
+
+    it('should fetch separately for the same parcel with different enabledLandActions', async () => {
+      parcelsWithExtendedInfo.mockResolvedValue(mockApiResponse)
+
+      await fetchAvailableActionsForParcel(parcelArgs)
+      await fetchAvailableActionsForParcel({
+        parcelId: 'PARCEL456',
+        sheetId: 'SHEET123',
+        enabledLandActions: ['UPL1']
+      })
 
       expect(parcelsWithExtendedInfo).toHaveBeenCalledTimes(2)
     })

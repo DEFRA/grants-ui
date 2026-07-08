@@ -19,6 +19,17 @@ import { getParcelIdFromQuery } from '../utils/parcel-request.utils.js'
 export default class SelectLandActionsPageController extends QuestionPageWithParcelCheckController {
   viewName = 'select-actions-for-land-parcel'
   actionFieldPrefix = 'landAction_'
+  enabledLandActions = []
+
+  /**
+   * @param {FormModel} model
+   * @param {PageQuestion} pageDef
+   */
+  constructor(model, pageDef) {
+    super(model, pageDef)
+    const { enabledLandActions } = model.def.metadata ?? {}
+    this.enabledLandActions = Array.isArray(enabledLandActions) ? enabledLandActions : []
+  }
 
   resolveParcelIds(request) {
     return getParcelIdFromQuery(request)
@@ -89,7 +100,7 @@ export default class SelectLandActionsPageController extends QuestionPageWithPar
    */
   async fetchActions(request, sheetId, parcelId) {
     try {
-      return await fetchAvailableActionsForParcel({ parcelId, sheetId })
+      return await fetchAvailableActionsForParcel({ parcelId, sheetId, enabledLandActions: this.enabledLandActions })
     } catch (err) {
       const { sbi } = request.auth.credentials
       const { message: errorMessage, status: statusCode } = /** @type {Error & {status?: number}} */ (err)
@@ -306,4 +317,6 @@ export default class SelectLandActionsPageController extends QuestionPageWithPar
 
 /**
  * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
+ * @import { PageQuestion } from '@defra/forms-model'
  */

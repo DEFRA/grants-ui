@@ -64,6 +64,8 @@ describe('SelectLandActionsPageController', () => {
   let mockH
   let mockResponseWithCode
 
+  const enabledLandActions = ['CMOR1', 'UPL1', 'UPL2']
+
   const mockGroupedActions = [
     {
       name: 'Assess moorland',
@@ -107,7 +109,7 @@ describe('SelectLandActionsPageController', () => {
       }
     })
 
-    const mockModel = { def: { metadata: { tasklist: {} } }, getSection: vi.fn(), pages: [] }
+    const mockModel = { def: { metadata: { tasklist: {}, enabledLandActions } }, getSection: vi.fn(), pages: [] }
     controller = new SelectLandActionsPageController(mockModel, {})
     controller.collection = {
       getErrors: vi.fn().mockReturnValue([])
@@ -191,7 +193,23 @@ describe('SelectLandActionsPageController', () => {
       expect(parseLandParcel).toHaveBeenCalledWith('sheet2-parcel2')
       expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith({
         parcelId: 'parcel2',
-        sheetId: 'sheet2'
+        sheetId: 'sheet2',
+        enabledLandActions
+      })
+    })
+
+    test('should pass an empty action list when metadata does not include enabledLandActions', async () => {
+      const mockModel = { def: { metadata: { tasklist: {} } }, getSection: vi.fn(), pages: [] }
+      controller = new SelectLandActionsPageController(mockModel, {})
+      controller.performAuthCheck = vi.fn().mockResolvedValue(null)
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith({
+        parcelId: 'parcel1',
+        sheetId: 'sheet1',
+        enabledLandActions: []
       })
     })
 
