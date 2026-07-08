@@ -23,11 +23,13 @@ const defaultContentPolicy = (/** @type {string} */ nonce) => {
   const formActionSrc = [self]
   if (config.get('externalLinks.sfd.enabled')) {
     const sfdUpdateUrl = config.get('externalLinks.sfd.updateUrl')
-    if (sfdUpdateUrl && URL.canParse(sfdUpdateUrl)) {
-      formActionSrc.push(new URL(sfdUpdateUrl).origin)
-    } else if (sfdUpdateUrl) {
-      // malformed URL — leave form-action as 'self'; the SFD redirect will be blocked
-      error(LogCodes.SYSTEM.CSP_SFD_UPDATE_URL_INVALID, { sfdUpdateUrl })
+    if (sfdUpdateUrl) {
+      if (URL.canParse(sfdUpdateUrl)) {
+        formActionSrc.push(new URL(sfdUpdateUrl).origin)
+      } else {
+        // malformed URL — leave form-action as 'self'; the SFD redirect will be blocked
+        error(LogCodes.SYSTEM.CSP_SFD_UPDATE_URL_INVALID, { sfdUpdateUrl })
+      }
     }
   }
 
