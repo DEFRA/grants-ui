@@ -1,6 +1,17 @@
 import { getFormsCacheService } from '../common/helpers/forms-cache/forms-cache.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
 
+function logStateClearFailure(request, err) {
+  log(
+    LogCodes.PURGE.STATE_CLEAR_FAILURE,
+    {
+      slug: request.params.slug,
+      errorMessage: err instanceof Error ? err.message : String(err)
+    },
+    request
+  )
+}
+
 /**
  * @satisfies {ServerRoute}
  */
@@ -29,14 +40,7 @@ export const applicationDeletedRoute = {
         )
       }
     } catch (err) {
-      log(
-        LogCodes.PURGE.STATE_CLEAR_FAILURE,
-        {
-          slug: request.params.slug,
-          errorMessage: err instanceof Error ? err.message : String(err)
-        },
-        request
-      )
+      logStateClearFailure(request, err)
     }
 
     return h.view('application-deleted', {
