@@ -182,6 +182,15 @@ describe('parcel-map web component', () => {
       const [, options] = InteractiveMap.mock.calls[0]
       expect(options.minZoom).toBe(7)
     })
+
+    it('sets an accessible mapLabel for screen readers', async () => {
+      global.fetch = fetchOk(PARCELS_RESPONSE)
+      const el = await mountElement()
+      await waitForEvent(el, EVENT_READY)
+
+      const [, options] = InteractiveMap.mock.calls[0]
+      expect(options.mapLabel).toEqual(expect.stringContaining('land parcels'))
+    })
   })
 
   describe('data fetching', () => {

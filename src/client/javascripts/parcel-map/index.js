@@ -8,6 +8,7 @@ import {
   PARCEL_TILES_URL,
   PARCELS_GEOJSON_URL,
   MAP_STYLE_URL,
+  MAP_LABEL,
   getMapStyleAttribution,
   PARCEL_COLORS,
   LAYER_TEXT_SIZE,
@@ -232,6 +233,7 @@ class ParcelMap extends HTMLElement {
 
       const map = new InteractiveMap(mapEl.id, {
         behaviour: 'inline',
+        mapLabel: MAP_LABEL,
         containerHeight: this.style.height || MAP_DEFAULT_HEIGHT,
         mapProvider: maplibreProvider(),
         mapStyle: { url: MAP_STYLE_URL, attribution: getMapStyleAttribution() },

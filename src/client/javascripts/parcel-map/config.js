@@ -48,6 +48,9 @@ export const LABEL_HALO_COLOR = '#ffffff'
 
 export const SELECTION_NONE_SENTINEL = '__none__'
 
+// Accessible name for the map viewport (role="application"), announced by screen readers on focus
+export const MAP_LABEL = 'Map of your land parcels. Select a parcel to apply for actions on it.'
+
 export const MSG_LOADING = 'Loading map…'
 export const MSG_ERROR_UNAVAILABLE = 'There was a problem loading the map.'
 export const MSG_UNKNOWN_PARCEL = 'Unknown parcel'
