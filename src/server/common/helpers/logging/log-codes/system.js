@@ -173,5 +173,10 @@ export const SYSTEM = {
     level: 'warn',
     messageFunc: (messageOptions) =>
       `ensureUpdateDetailsPage: model.pages is empty for grantCode=${messageOptions.grantCode || 'unknown'} — pages may not have been initialised yet. If the forms engine has changed to async page initialisation, the queueMicrotask timing assumption no longer holds.`
+  },
+  CSP_SFD_UPDATE_URL_INVALID: {
+    level: 'error',
+    messageFunc: (messageOptions) =>
+      `Content-Security-Policy: SFD is enabled but externalLinks.sfd.updateUrl is not a valid URL (value=${messageOptions.sfdUpdateUrl}); form-action left as 'self' so the SFD redirect will be blocked by the browser`
   }
 }
