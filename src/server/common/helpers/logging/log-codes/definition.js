@@ -13,6 +13,7 @@ import { PERMISSIONS } from './permissions.js'
 import { PRINT_APPLICATION } from './print-application.js'
 import { SYSTEM } from './system.js'
 import { AUDIT } from './audit.js'
+import { PURGE } from './purge.js'
 
 /**
  * @namespace LogTypes
@@ -40,6 +41,7 @@ export const LogCodes = {
   APPLICATION_LOCKS,
   PERMISSIONS,
   PRINT_APPLICATION,
+  PURGE,
   SYSTEM,
   AUDIT
 }

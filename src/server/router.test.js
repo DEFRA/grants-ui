@@ -34,6 +34,9 @@ vi.mock('~/src/server/print-submitted-application/print-submitted-application.co
 vi.mock('./cannot-submit/index.js', () => ({
   cannotSubmit: { plugin: { name: 'cannot-submit', register: vi.fn() } }
 }))
+vi.mock('./application-deleted/index.js', () => ({
+  applicationDeleted: { plugin: { name: 'application-deleted', register: vi.fn() } }
+}))
 vi.mock('~/src/server/common/map/map.plugin.js', () => ({
   mapPlugin: { plugin: { name: 'map', register: vi.fn() } }
 }))
@@ -78,6 +81,18 @@ describe('router', () => {
 
     expect(registeredPlugins).toContain('devTools')
     expect(registeredPlugins).toContain('journey-runner')
+  })
+
+  it('should register application-deleted routes', async () => {
+    process.env.NODE_ENV = 'production'
+    process.env.ENVIRONMENT = 'local'
+
+    mockConfig()
+
+    const { router } = await import('./router.js')
+    await router.plugin.register(mockServer)
+
+    expect(registeredPlugins).toContain('application-deleted')
   })
 
   it('should not register devTools or journeyRunnerPlugin in production', async () => {
