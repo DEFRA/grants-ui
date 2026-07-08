@@ -266,7 +266,7 @@ function extractFarmDetails(relationships) {
 
   // Define indices for relationship parts
   const RELATIONSHIP_ID_INDEX = 0
-  const ORGANISATION_ID_INDEX = 1
+  const SBI_INDEX = 1
   const ORGANISATION_LOA_INDEX = parts.length - INDEX_OF_LAST_KNOWN_PARTS_IN_COLLECTION
   const RELATIONSHIP_INDEX = parts.length - 2
   const RELATIONSHIP_LOA_INDEX = parts.length - 1
@@ -293,7 +293,7 @@ function extractFarmDetails(relationships) {
 
   return [
     parts[RELATIONSHIP_ID_INDEX],
-    parts[ORGANISATION_ID_INDEX],
+    parts[SBI_INDEX],
     orgName,
     parts[ORGANISATION_LOA_INDEX],
     parts[RELATIONSHIP_INDEX],
@@ -315,17 +315,16 @@ export function mapPayloadToProfile(request, h) {
       (/** @type {string} */ relationship) => relationship.split(':')[0] === userData.currentRelationshipId
     )
     // eslint-disable-next-line no-unused-vars
-    const [relationshipId, organisationId, organisationName, _organisationLoa, _relationship, _relationshipLoa] =
+    const [relationshipId, sbi, organisationName, _organisationLoa, _relationship, _relationshipLoa] =
       extractFarmDetails(currentRelationship)
 
     const existingCreds = request.auth.credentials
 
     request.auth.credentials = {
       ...existingCreds,
-      sbi: String(organisationId),
+      sbi: String(sbi),
       crn: String(userData.contactId),
       name: `${userData.firstName} ${userData.lastName}`,
-      organisationId: String(organisationId),
       organisationName,
       relationshipId: String(relationshipId)
     }

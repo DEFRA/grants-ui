@@ -82,8 +82,6 @@ async function persistStatus(request, newStatus, previousStatus, grantId, existi
     return
   }
 
-  const organisationId = request.auth.credentials?.sbi
-
   const cacheService = getFormsCacheService(request.server)
 
   if (newStatus === ApplicationStatus.CLEARED) {
@@ -127,7 +125,7 @@ async function persistStatus(request, newStatus, previousStatus, grantId, existi
 
     await updateApplicationStatus(
       newStatus,
-      `${organisationId}:${grantId}`,
+      `${sbi}:${grantId}`,
       /** @type {{ lockToken?: string, grantVersion?: string }} */ ({ lockToken, grantVersion })
     )
   }

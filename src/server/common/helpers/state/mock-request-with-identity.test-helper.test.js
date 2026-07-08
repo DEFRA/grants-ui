@@ -6,7 +6,7 @@ describe('mockRequestWithIdentity', () => {
 
     expect(request.auth.credentials).toEqual({
       crn: 'user_test',
-      organisationId: 'biz_test',
+      sbi: 'biz_test',
       grantId: 'grant_test'
     })
 
@@ -23,17 +23,17 @@ describe('mockRequestWithIdentity', () => {
     [
       'crn',
       { credentials: { crn: 'custom_user' } },
-      { crn: 'custom_user', organisationId: 'biz_test', grantId: 'grant_test' }
+      { crn: 'custom_user', sbi: 'biz_test', grantId: 'grant_test' }
     ],
     [
       'multiple credentials',
-      { credentials: { crn: 'x', organisationId: 'y' } },
-      { crn: 'x', organisationId: 'y', grantId: 'grant_test' }
+      { credentials: { crn: 'x', sbi: 'y' } },
+      { crn: 'x', sbi: 'y', grantId: 'grant_test' }
     ],
     [
       'new credential property',
       { credentials: { extra: 'value' } },
-      { crn: 'user_test', organisationId: 'biz_test', grantId: 'grant_test', extra: 'value' }
+      { crn: 'user_test', sbi: 'biz_test', grantId: 'grant_test', extra: 'value' }
     ]
   ])('merges %s override into credentials', (_name, overrides, expectedCredentials) => {
     const request = mockRequestWithIdentity(overrides)

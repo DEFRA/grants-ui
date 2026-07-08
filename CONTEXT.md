@@ -76,6 +76,18 @@ _Avoid_: SBI, User ID, Contact ID, Account number
 Single Business Identifier: the identifier for the farm business or organisation represented by the signed-in user.
 _Avoid_: CRN, Business name, Holding number, Parcel ID
 
+**Organisation ID**
+An external Defra ID, Siti Agri, or audit-schema contract term for an organisation identifier. Inside Grants UI, use SBI for the signed-in business identifier; do not treat `organisationId` as an SBI alias. In `audit.accounts`, `organisationId` means the primary key from the customer database.
+_Avoid_: SBI when naming internal state keys or view variables, CRN, Relationship ID
+
+**Relationship ID**
+The Defra ID relationship selector value that identifies which user-to-business relationship is active for the current sign-in.
+_Avoid_: SBI, Organisation ID, CRN
+
+**SSO organisation ID**
+The `ssoOrgId` query hint passed between services so Defra ID can preselect an organisation relationship during sign-in.
+_Avoid_: SBI, Organisation ID, Relationship ID once the user is authenticated
+
 **Whitelist**
 A grant-specific access list of allowed CRNs or SBIs that determines whether a signed-in user can enter a journey.
 _Avoid_: Allowlist unless renaming the feature, Permission, Role, Feature flag

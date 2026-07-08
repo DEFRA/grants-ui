@@ -83,7 +83,7 @@ describe('ConfirmationService', () => {
       expect(result.formSlug).toBe('/test-form')
       expect(result.auth.name).toBe('Dev Mode User')
       expect(result.auth.organisationName).toBe('Dev Mode Organisation')
-      expect(result.auth.organisationId).toBe('999999999')
+      expect(result.auth.sbi).toBe('999999999')
     })
   })
 

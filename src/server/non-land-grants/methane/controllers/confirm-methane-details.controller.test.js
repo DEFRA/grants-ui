@@ -74,8 +74,7 @@ describe('ConfirmMethaneDetailsController', () => {
           relationships: ['1101629797:SBI123456'],
           sbi: 'SBI123456',
           crn: '1100014934',
-          name: 'John Doe',
-          organisationId: 'SBI123456'
+          name: 'John Doe'
         }
       }
     }

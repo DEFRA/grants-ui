@@ -11,7 +11,7 @@ export function mockRequestWithIdentity(overrides = {}) {
     auth: {
       credentials: {
         crn: 'user_test',
-        organisationId: 'biz_test',
+        sbi: 'biz_test',
         grantId: 'grant_test',
         ...overrides.credentials
       }

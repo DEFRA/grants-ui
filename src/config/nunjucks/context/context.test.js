@@ -76,7 +76,6 @@ const getExpectedContext = () => ({
     isAuthenticated: false,
     name: undefined,
     role: undefined,
-    organisationId: undefined,
     organisationName: undefined,
     crn: undefined,
     relationshipId: undefined,
@@ -317,7 +316,6 @@ describe('context', () => {
         sbi: undefined,
         crn: undefined,
         name: undefined,
-        organisationId: undefined,
         organisationName: undefined,
         relationshipId: undefined,
         role: undefined
@@ -329,7 +327,6 @@ describe('context', () => {
         sbi: '106284736',
         crn: 'crn123',
         name: 'John Doe',
-        organisationId: 'org123',
         organisationName: ' Farm 1',
         relationshipId: 'rel456',
         sessionId: 'valid-session-id'
@@ -346,7 +343,6 @@ describe('context', () => {
         sbi: '106284736',
         crn: 'crn123',
         name: 'John Doe',
-        organisationId: 'org123',
         organisationName: ' Farm 1',
         relationshipId: 'rel456',
         role: 'admin'
@@ -364,7 +360,6 @@ describe('context', () => {
         sbi: undefined,
         crn: undefined,
         name: undefined,
-        organisationId: undefined,
         organisationName: undefined,
         relationshipId: undefined,
         role: undefined
@@ -386,7 +381,6 @@ describe('context', () => {
         sbi: undefined,
         crn: undefined,
         name: undefined,
-        organisationId: undefined,
         organisationName: undefined,
         relationshipId: undefined,
         role: undefined
@@ -434,7 +428,6 @@ describe('context', () => {
         sbi: undefined,
         crn: undefined,
         name: undefined,
-        organisationId: undefined,
         organisationName: undefined,
         relationshipId: undefined,
         role: undefined
@@ -680,7 +673,6 @@ describe('context', () => {
           sbi: null,
           crn: null,
           name: null,
-          organisationId: null,
           organisationName: null,
           relationshipId: null,
           role: null

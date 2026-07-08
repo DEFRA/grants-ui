@@ -48,7 +48,6 @@ describe('ConfirmFarmDetailsController', () => {
           sbi: 'SBI123456',
           crn: '1100014934',
           name: 'John Doe',
-          organisationId: 'SBI123456',
           organisationName: ' Farm 1',
           role: 'admin',
           sessionId: 'valid-session-id'
