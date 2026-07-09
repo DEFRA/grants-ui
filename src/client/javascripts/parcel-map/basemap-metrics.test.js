@@ -189,9 +189,6 @@ describe('trackBasemapMetrics', () => {
     })
 
     it('ignores entries that started before this tracker began (previous provider load)', () => {
-      // Regression test: PerformanceObserver's `buffered: true` replays every
-      // resource-timing entry since navigation start, so switching provider
-      // mid-session must not re-sum the previous provider's tile bytes.
       const ml = makeMl()
       const { target, events } = makeTarget()
       let observerCallback
@@ -206,10 +203,7 @@ describe('trackBasemapMetrics', () => {
 
       observerCallback({
         getEntries: () => [
-          // Recorded before this tracker started (e.g. OS Maps' own tiles from
-          // before the provider switch) — must be excluded.
           { name: 'http://localhost/api/map/os-tiles/1/2/3', transferSize: 1500, startTime: 200 },
-          // Recorded after this tracker started — the real OSM request.
           { name: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json', transferSize: 4200, startTime: 1100 }
         ]
       })

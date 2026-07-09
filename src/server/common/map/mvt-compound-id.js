@@ -35,9 +35,6 @@ export function withCompoundParcelIds(buffer, layerName = 'parcels') {
       return buffer
     }
 
-    // Parse each feature once and cache it — vt-pbf reads `properties` and
-    // `loadGeometry()` from whatever `feature(i)` returns, so mutations on
-    // cached instances survive serialisation.
     const features = []
     for (let i = 0; i < layer.length; i++) {
       const feature = layer.feature(i)

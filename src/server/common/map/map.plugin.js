@@ -67,9 +67,6 @@ function publicOrigin(request) {
  * @returns {Promise<Response | null>}
  */
 async function fetchUpstream(url, service, request, init) {
-  // Logging happens outside the catch — the grants-ui/try-catch-allowed-functions
-  // lint rule forbids log calls inside catch blocks.
-  /** @type {unknown} */
   let fetchError
   try {
     return await fetch(url, init)
@@ -78,7 +75,6 @@ async function fetchUpstream(url, service, request, init) {
   }
   logUpstreamError(
     {
-      // Strip the query string — OS Maps URLs carry the API key in it
       endpoint: stripQueryString(url),
       service,
       upstreamStatus: null,
@@ -182,10 +178,9 @@ function mockGeojsonHandler(request, h) {
  */
 async function tilesHandler(request, h) {
   const { z, x, y } = request.params
-  /** @type {HydratedParcel[]} */
   let parcels = []
-  /** @type {unknown} */
   let parcelsError
+
   try {
     parcels = /** @type {HydratedParcel[]} */ (
       await fetchParcels(/** @type {AnyFormRequest} */ (/** @type {unknown} */ (request)))
@@ -251,8 +246,6 @@ function osBasemapHandler(request, h) {
     sources: {
       'os-raster': {
         type: 'raster',
-        // The route path doubles as the MapLibre tile URL template — {z}/{x}/{y}
-        // are filled in by MapLibre, and the layer is fixed server-side.
         tiles: [`${origin}${ROUTES.osTiles}`],
         tileSize: OS_TILE_SIZE_PX,
         minzoom: OS_MIN_ZOOM,
@@ -287,8 +280,6 @@ async function osTileProxyHandler(request, h) {
     return h.response().code(statusCodes.serviceUnavailable)
   }
   if (!response.ok) {
-    // Surface non-OK upstream statuses — a 401 here is the signature of a key
-    // without the "OS Maps API" product added to its Data Hub project.
     logUpstreamError(
       {
         endpoint: stripQueryString(upstream),

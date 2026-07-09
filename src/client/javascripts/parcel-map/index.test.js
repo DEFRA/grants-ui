@@ -97,8 +97,6 @@ function waitForEvent(el, eventName) {
   return new Promise((resolve) => el.addEventListener(eventName, resolve, { once: true }))
 }
 
-// Latest InteractiveMap mock instance — used to emit plugin events (e.g.
-// interact:selectionchange) the way the real event bus would.
 function lastMapInstance() {
   return InteractiveMap.mock.instances.at(-1)
 }
@@ -172,9 +170,9 @@ describe('parcel-map web component', () => {
       global.fetch = vi.fn().mockResolvedValue({ ok: false })
       const el = await mountElement()
       await waitForEvent(el, EVENT_ERROR)
+
       expect(el.querySelector('[role="status"]')).toBeNull()
-      // Map wrapper (the div wrapping the canvas) should be gone too
-      expect(el.querySelectorAll('div').length).toBeLessThanOrEqual(1) // only the error overlay
+      expect(el.querySelectorAll('div').length).toBeLessThanOrEqual(1) 
     })
 
     it('removes skeleton once ready', async () => {
@@ -241,8 +239,6 @@ describe('parcel-map web component', () => {
       expect(options.mapStyle.url).toBe('/api/map/os-basemap')
     })
 
-    // TEMPORARY: OS Maps vs OpenStreetMap comparison (TGC-1418 follow-up) —
-    // delete this describe block once the comparison is complete.
     describe('OpenStreetMap comparison (temporary)', () => {
       it('switches to the OpenStreetMap style when basemap-provider="openstreetmap"', async () => {
         global.fetch = fetchOk(PARCELS_RESPONSE)
@@ -438,9 +434,6 @@ describe('parcel-map web component', () => {
       const { MapProvider } = await options.mapProvider.load()
       const provider = new MapProvider()
 
-      // Both are single-point "polygons" (only the corner matters for the
-      // bounding-box centre this test exercises) — `near` projects to a
-      // screen point right at the click, `far` projects well outside it.
       const near = {
         layer: { id: LAYER_ID_FILL },
         properties: { id: 'SD7148-9160' },
