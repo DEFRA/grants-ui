@@ -85,8 +85,7 @@ describe('SelectLandParcelPageController', () => {
         sbi: '106284736',
         crn: '1102838829',
         name: 'John Doe',
-        organisationId: 'org123',
-        organisationName: ' Farm 1',
+        organisationName: 'Farm 1',
         role: 'admin',
         sessionId: 'valid-session-id'
       }

@@ -1,5 +1,6 @@
 import { getGrantCode } from '../grant-code.js'
 import { BaseError } from '../../utils/errors/BaseError.js'
+import { getAuthenticatedCrn, getAuthenticatedSbi } from '../auth/get-auth-identifiers.js'
 
 /**
  * Generates a cache key from a Hapi request by extracting user, business, and grant identifiers.
@@ -9,20 +10,8 @@ import { BaseError } from '../../utils/errors/BaseError.js'
  * @throws {Error} If authentication credentials, user ID, business relationship, or grant ID are missing or malformed.
  */
 export const getCacheKey = (request) => {
-  const credentials = request.auth?.credentials
-
-  if (!credentials) {
-    throw BaseError.wrap(new Error('Missing auth credentials'))
-  }
-  const { crn, organisationId: sbi } = /** @type {{ crn?: string, organisationId?: string }} */ (credentials)
-
-  if (!crn) {
-    throw BaseError.wrap(new Error('Missing CRN in credentials'))
-  }
-
-  if (!sbi) {
-    throw BaseError.wrap(new Error('Missing SBI (organisationId) in credentials'))
-  }
+  getAuthenticatedCrn(request)
+  const sbi = getAuthenticatedSbi(request)
 
   const grantCode = getGrantCode(request)
 

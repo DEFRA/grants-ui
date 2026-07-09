@@ -178,5 +178,10 @@ export const SYSTEM = {
     level: 'error',
     messageFunc: (messageOptions) =>
       `Content-Security-Policy: SFD is enabled but externalLinks.sfd.updateUrl is not a valid URL (value=${messageOptions.sfdUpdateUrl}); form-action left as 'self' so the SFD redirect will be blocked by the browser`
+  },
+  SFD_UPDATE_URL_MISSING_ON_REDIRECT: {
+    level: 'warn',
+    messageFunc: (messageOptions) =>
+      `check-details: SFD is enabled but externalLinks.sfd.updateUrl is missing or invalid (value=${messageOptions.updateUrl}); falling through to the update-details page instead of redirecting to SFD`
   }
 }

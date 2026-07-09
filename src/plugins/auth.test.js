@@ -424,6 +424,29 @@ describe('Auth Plugin', () => {
       })
     })
 
+    test('providerParams function includes organisationId when changing organisation through SSO', () => {
+      const options = getBellOptions(mockOidcConfig)
+
+      const params = options.providerParams({ query: { organisationId: '5447505' } })
+      expect(params).toEqual({
+        serviceId: DEFAULT_CONFIG['defraId.serviceId'],
+        organisationId: '5447505'
+      })
+    })
+
+    test.each([
+      ['no organisationId is present', { query: {} }],
+      ['organisationId is not a string', { query: { organisationId: ['5447505'] } }],
+      ['organisationId is empty', { query: { organisationId: '' } }]
+    ])('providerParams function excludes organisationId when %s', (_label, request) => {
+      const options = getBellOptions(mockOidcConfig)
+
+      const params = options.providerParams(request)
+      expect(params).toEqual({
+        serviceId: DEFAULT_CONFIG['defraId.serviceId']
+      })
+    })
+
     test('throws error if credentials are undefined after retrieving from Bell OAuth provider', () => {
       const options = getBellOptions(mockOidcConfig)
       const credentials = undefined
@@ -943,7 +966,6 @@ describe('Auth Plugin', () => {
         sbi: '987654',
         crn: '12345',
         name: 'John Doe',
-        organisationId: '987654',
         organisationName: 'Farm 1',
         relationshipId: '123456'
       })
@@ -970,7 +992,6 @@ describe('Auth Plugin', () => {
         sbi: '987654',
         crn: '12345',
         name: 'John Doe',
-        organisationId: '987654',
         organisationName: 'Farm 1',
         relationshipId: '123456-farm-1'
       })
@@ -1007,7 +1028,6 @@ describe('Auth Plugin', () => {
         sbi: '111222',
         crn: '12345',
         name: 'John Doe',
-        organisationId: '111222',
         organisationName: 'Test Organisation',
         relationshipId: '123456-farm1'
       })
@@ -1082,7 +1102,7 @@ describe('Auth Plugin', () => {
       const payload = JSON.parse(response.payload)
 
       expect(payload.credentials.sbi).toBe(expectedSbi)
-      expect(payload.credentials.organisationId).toBe(expectedSbi)
+      expect(payload.credentials.organisationId).toBeUndefined()
       expect(payload.credentials.organisationName).toBe(expectedOrgName)
     })
   })

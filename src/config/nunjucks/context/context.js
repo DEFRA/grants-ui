@@ -24,7 +24,6 @@ const usersDetails = (request, role) => {
     sbi: request?.auth?.credentials?.sbi,
     crn: request?.auth?.credentials?.crn,
     name: request?.auth?.credentials?.name,
-    organisationId: request?.auth?.credentials?.organisationId,
     organisationName: request?.auth?.credentials?.organisationName,
     relationshipId: request?.auth?.credentials?.relationshipId,
     role
@@ -194,7 +193,6 @@ const buildFallbackContext = (serviceName, cookiePolicyUrl, cookieConsentExpiryD
       sbi: null,
       crn: null,
       name: null,
-      organisationId: null,
       organisationName: null,
       relationshipId: null,
       role: null
@@ -250,7 +248,6 @@ export async function context(request) {
  * @property {unknown} sbi
  * @property {unknown} crn
  * @property {unknown} name
- * @property {unknown} organisationId
  * @property {unknown} organisationName
  * @property {unknown} relationshipId
  * @property {string | null | undefined} role
