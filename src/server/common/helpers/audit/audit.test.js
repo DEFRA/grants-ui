@@ -240,6 +240,7 @@ describe('audit-publisher plugin', () => {
         ['method is not GET', { method: 'post' }],
         ['request is unauthenticated', { auth: { isAuthenticated: false } }],
         ['there is no slug', { params: {} }],
+        ['route params are null', { params: null }],
         ['the response is a redirect', { response: { statusCode: 302 } }],
         ['the response is an error', { response: new Error('boom') }],
         ['there is no response', { response: undefined }],
@@ -296,6 +297,7 @@ describe('audit-publisher plugin', () => {
         ['request is unauthenticated', { auth: { isAuthenticated: false } }],
         ['there is no slug', { params: { path: 'some-question' } }],
         ['there is no page path', { params: { slug: 'my-grant' } }],
+        ['route params are null', { params: null }],
         ['the response is a 302 submission redirect', { response: { statusCode: 302 } }],
         ['the response is a 200 re-render', { response: { statusCode: 200 } }],
         ['the response is an error', { response: new Error('boom') }]
@@ -339,6 +341,16 @@ describe('audit-publisher plugin', () => {
       test.each([
         ['the request is authenticated', { auth: { isAuthenticated: true } }],
         ['there is no slug', { params: {} }],
+        [
+          'route params are not available yet during an SSO organisation redirect',
+          {
+            params: null,
+            response: {
+              statusCode: 302,
+              headers: { location: '/auth/organisation?organisationId=5447505&redirect=/woodland' }
+            }
+          }
+        ],
         ['the status is not 302', { response: { statusCode: 401, headers: { location: '/auth/sign-in' } } }],
         [
           'the redirect is not to sign-in',

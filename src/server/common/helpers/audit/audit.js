@@ -28,13 +28,14 @@ const SIGN_IN_PATH = '/auth/sign-in'
  * @returns {boolean}
  */
 const isGrantStartPage = (request) => {
+  const slug = request.params?.slug
   const model = /** @type {{ model?: import('@defra/forms-engine-plugin/engine/models/index.js').FormModel }} */ (
     request.app
   ).model
-  if (!model) {
+  if (!slug || !model) {
     return false
   }
-  return request.path === `/${request.params.slug}${getStartPath(model)}`
+  return request.path === `/${slug}${getStartPath(model)}`
 }
 
 /**
@@ -52,7 +53,6 @@ const isSuccessfulGrantAccess = (request) => {
   return (
     request.method === 'get' &&
     request.auth.isAuthenticated &&
-    Boolean(request.params.slug) &&
     response.statusCode >= HTTP_OK_MIN &&
     response.statusCode < HTTP_REDIRECT_MIN &&
     isGrantStartPage(request)
@@ -73,8 +73,8 @@ const isSuccessfulPageNavigation = (request) => {
   return (
     request.method === 'post' &&
     request.auth.isAuthenticated &&
-    Boolean(request.params.slug) &&
-    Boolean(request.params.path) &&
+    Boolean(request.params?.slug) &&
+    Boolean(request.params?.path) &&
     response.statusCode === HTTP_SEE_OTHER
   )
 }
@@ -96,7 +96,7 @@ const isUnauthenticatedGrantAccess = (request) => {
   const location = response.headers?.location
   return (
     !request.auth.isAuthenticated &&
-    Boolean(request.params.slug) &&
+    Boolean(request.params?.slug) &&
     response.statusCode === HTTP_FOUND &&
     typeof location === 'string' &&
     location.startsWith(SIGN_IN_PATH)
@@ -198,14 +198,14 @@ export const auditPublisher = {
           request.sendAuditEventInBackground({
             action: 'navigate',
             entity: 'page',
-            entityid: request.params.path,
-            details: { grant: request.params.slug, answers: answersFromPayload(request.payload) }
+            entityid: request.params?.path,
+            details: { grant: request.params?.slug, answers: answersFromPayload(request.payload) }
           })
         } else if (isUnauthenticatedGrantAccess(request)) {
           request.sendAuditEventInBackground({
             action: 'unauthorised',
             status: 'denied',
-            details: { reason: 'not-authenticated', grant: request.params.slug }
+            details: { reason: 'not-authenticated', grant: request.params?.slug }
           })
         } else {
           // Any other request (errors, non-grant routes, intermediate redirects)

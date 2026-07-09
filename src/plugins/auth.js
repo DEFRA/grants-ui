@@ -391,9 +391,13 @@ function getBellOptions(oidcConfig) {
         throw authError.from(/** @type {Error} */ (error))
       }
     },
-    providerParams: function () {
+    providerParams: function (/** @type {Request | undefined} */ request) {
+      const organisationId =
+        typeof request?.query?.organisationId === 'string' ? request.query.organisationId : undefined
+
       return {
-        serviceId: config.get('defraId.serviceId')
+        serviceId: config.get('defraId.serviceId'),
+        ...(organisationId && { organisationId })
       }
     }
   }
