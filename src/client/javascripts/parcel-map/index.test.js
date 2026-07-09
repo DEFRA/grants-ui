@@ -172,7 +172,7 @@ describe('parcel-map web component', () => {
       await waitForEvent(el, EVENT_ERROR)
 
       expect(el.querySelector('[role="status"]')).toBeNull()
-      expect(el.querySelectorAll('div').length).toBeLessThanOrEqual(1) 
+      expect(el.querySelectorAll('div').length).toBeLessThanOrEqual(1)
     })
 
     it('removes skeleton once ready', async () => {

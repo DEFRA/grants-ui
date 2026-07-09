@@ -53,7 +53,15 @@ describe('getMapStyle', () => {
 describe('buildColorExpr', () => {
   it('assigns each distinct parcel ID a colour', () => {
     const expr = buildColorExpr(['A-1', 'A-2'])
-    expect(expr).toEqual(['match', COMPOUND_ID_EXPR, 'A-1', expect.any(String), 'A-2', expect.any(String), expect.any(String)])
+    expect(expr).toEqual([
+      'match',
+      COMPOUND_ID_EXPR,
+      'A-1',
+      expect.any(String),
+      'A-2',
+      expect.any(String),
+      expect.any(String)
+    ])
   })
 
   it('de-duplicates repeated IDs', () => {
@@ -81,8 +89,32 @@ describe('nearestFeatureToPoint', () => {
 
   it('picks the polygon feature whose bounding box centre is closest to the point', () => {
     const map = { project: ([lng, lat]) => ({ x: lng, y: lat }) }
-    const near = { geometry: { type: 'Polygon', coordinates: [[[0, 0], [2, 0], [2, 2], [0, 2]]] } }
-    const far = { geometry: { type: 'Polygon', coordinates: [[[100, 100], [102, 100], [102, 102], [100, 102]]] } }
+    const near = {
+      geometry: {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [0, 0],
+            [2, 0],
+            [2, 2],
+            [0, 2]
+          ]
+        ]
+      }
+    }
+    const far = {
+      geometry: {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [100, 100],
+            [102, 100],
+            [102, 102],
+            [100, 102]
+          ]
+        ]
+      }
+    }
 
     expect(nearestFeatureToPoint(map, { x: 1, y: 1 }, [far, near])).toEqual([near])
   })
@@ -91,7 +123,19 @@ describe('nearestFeatureToPoint', () => {
 describe('getScreenBounds', () => {
   it('computes the pixel bounding box of a Polygon', () => {
     const map = { project: ([lng, lat]) => ({ x: lng, y: lat }) }
-    const feature = { geometry: { type: 'Polygon', coordinates: [[[0, 0], [4, 0], [4, 4], [0, 4]]] } }
+    const feature = {
+      geometry: {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [0, 0],
+            [4, 0],
+            [4, 4],
+            [0, 4]
+          ]
+        ]
+      }
+    }
 
     expect(getScreenBounds(map, feature)).toEqual({ minX: 0, minY: 0, maxX: 4, maxY: 4 })
   })
@@ -101,7 +145,20 @@ describe('getScreenBounds', () => {
     const feature = {
       geometry: {
         type: 'MultiPolygon',
-        coordinates: [[[[0, 0], [1, 1]]], [[[5, 5], [6, 6]]]]
+        coordinates: [
+          [
+            [
+              [0, 0],
+              [1, 1]
+            ]
+          ],
+          [
+            [
+              [5, 5],
+              [6, 6]
+            ]
+          ]
+        ]
       }
     }
 
@@ -141,7 +198,19 @@ describe('withParcelHitTolerance', () => {
     const descriptor = makeDescriptor(() => [])
     const { MapProvider } = await withParcelHitTolerance(descriptor).load()
     const provider = new MapProvider()
-    const nearby = { geometry: { type: 'Polygon', coordinates: [[[0, 0], [2, 0], [2, 2], [0, 2]]] } }
+    const nearby = {
+      geometry: {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [0, 0],
+            [2, 0],
+            [2, 2],
+            [0, 2]
+          ]
+        ]
+      }
+    }
     provider.map = {
       getLayer: () => true,
       queryRenderedFeatures: vi.fn().mockReturnValue([nearby]),
