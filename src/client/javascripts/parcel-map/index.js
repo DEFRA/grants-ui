@@ -75,11 +75,8 @@ import {
  * @typedef {{ minLng: number, minLat: number, maxLng: number, maxLat: number }} BBox
  */
 
-// MapLibre expression reading the compound "SHEET-PARCEL" ID. This is the
-// same `id` property the interact plugin matches selections against
-// (PARCEL_ID_PROPERTY) — reading it here too means the component's label,
-// colour, and highlight logic can never disagree with what the plugin
-// selected.
+// Same PARCEL_ID_PROPERTY the interact plugin matches on, so label/colour/
+// highlight logic can't disagree with what's selected.
 const COMPOUND_ID_EXPR = ['get', PARCEL_ID_PROPERTY]
 
 /**
@@ -545,11 +542,9 @@ class ParcelMap extends HTMLElement {
 }
 
 /**
- * Resolves the MapLibre style URL/attribution for the chosen basemap
- * provider.
- * TEMPORARY (TGC-1418 follow-up): once the OpenStreetMap comparison is
- * removed, this collapses to always returning the OS Maps style — delete
- * the ternary and this function's `provider` param.
+ * Resolves the MapLibre style URL/attribution for the chosen basemap provider.
+ * TEMPORARY (TGC-1418 follow-up): delete the ternary + provider param once
+ * the OpenStreetMap comparison ends.
  * @param {string} provider  BASEMAP_PROVIDER_ORDNANCE_SURVEY | BASEMAP_PROVIDER_OPENSTREETMAP
  * @returns {{ url: string, attribution: string }}
  */
@@ -562,21 +557,13 @@ function getMapStyle(provider) {
 }
 
 /**
- * Makes parcels easier to click when they're small on screen.
+ * Falls back to the nearest rendered parcel within PARCEL_CLICK_TOLERANCE_PX
+ * when the interact plugin's strict inside-the-shape hit test finds nothing —
+ * which is common for small parcels at low zoom.
  *
- * The interact plugin already searches a PARCEL_CLICK_TOLERANCE_PX box around
- * the click, but for polygons it only counts a hit if the click lands exactly
- * inside the shape — near-misses are dropped. That's nearly guaranteed for a
- * parcel that's only a few pixels wide when zoomed out. When the strict check
- * finds nothing, this falls back to whatever parcel is *drawn* closest to the
- * click within that same box. Adjacent (not overlapping) small parcels can
- * both land in that box at low zoom, so this picks whichever one is nearest
- * to the click rather than an arbitrary one. Covers both mouse clicks and the
- * keyboard crosshair, at any zoom.
- *
- * The odd wrapping is because the map library hands us a *descriptor*, not
- * the provider itself — its `load()` creates the provider later — so we
- * intercept `load()` to subclass the provider once it exists.
+ * Wrapped via `load()` because the map library hands us a provider
+ * *descriptor*, not the provider itself — the real class only exists once
+ * `load()` resolves.
  * @param {{ load: () => Promise<{ MapProvider: new (...args: never[]) => { map?: import('maplibre-gl').Map } }> }} descriptor
  */
 function withParcelHitTolerance(descriptor) {
@@ -689,9 +676,7 @@ function buildColorExpr(ids) {
 }
 
 /**
- * Read the compound parcel ID (e.g. "SD7148-9160") off a MapLibre feature's
- * `id` property — the same property the interact plugin matches selections
- * against (PARCEL_ID_PROPERTY).
+ * Compound parcel ID (e.g. "SD7148-9160") from a feature's PARCEL_ID_PROPERTY.
  * @param {MapGeoJSONFeature} feature
  * @returns {string}
  */
