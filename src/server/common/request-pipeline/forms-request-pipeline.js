@@ -1,5 +1,6 @@
 import { formsStatusRedirect } from '~/src/server/common/request-pipeline/redirects/forms-status-redirect.js'
 import { enforcePagePermission } from './permissions/enforce-page-permission.js'
+import { applicationDeletedRedirect } from './redirects/application-deleted-redirect.js'
 
 /**
  * Pipeline handler that delegates to forms status redirect, then enforces page permissions.
@@ -14,6 +15,12 @@ import { enforcePagePermission } from './permissions/enforce-page-permission.js'
  * @returns {Promise<*>} Hapi response or continuation result.
  */
 export async function formsRequestPipeline(request, h, context) {
+  const deletedResult = await applicationDeletedRedirect(request, h, context)
+
+  if (deletedResult !== h.continue) {
+    return deletedResult
+  }
+
   const redirectResult = await formsStatusRedirect(request, h, context)
 
   if (redirectResult !== h.continue) {

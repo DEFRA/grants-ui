@@ -943,7 +943,6 @@ describe('Auth Plugin', () => {
         sbi: '987654',
         crn: '12345',
         name: 'John Doe',
-        organisationId: '987654',
         organisationName: 'Farm 1',
         relationshipId: '123456'
       })
@@ -970,7 +969,6 @@ describe('Auth Plugin', () => {
         sbi: '987654',
         crn: '12345',
         name: 'John Doe',
-        organisationId: '987654',
         organisationName: 'Farm 1',
         relationshipId: '123456-farm-1'
       })
@@ -1007,7 +1005,6 @@ describe('Auth Plugin', () => {
         sbi: '111222',
         crn: '12345',
         name: 'John Doe',
-        organisationId: '111222',
         organisationName: 'Test Organisation',
         relationshipId: '123456-farm1'
       })
@@ -1082,7 +1079,7 @@ describe('Auth Plugin', () => {
       const payload = JSON.parse(response.payload)
 
       expect(payload.credentials.sbi).toBe(expectedSbi)
-      expect(payload.credentials.organisationId).toBe(expectedSbi)
+      expect(payload.credentials.organisationId).toBeUndefined()
       expect(payload.credentials.organisationName).toBe(expectedOrgName)
     })
   })

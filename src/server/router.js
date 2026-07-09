@@ -10,6 +10,7 @@ import { journeyRunnerPlugin } from '~/src/server/dev-tools/journey-runner/journ
 import { clearApplicationState } from './dev-tools/clear-application-state.js'
 import { cookies } from '~/src/server/cookies/index.js'
 import { cannotSubmit } from './cannot-submit/index.js'
+import { applicationDeleted } from './application-deleted/index.js'
 import { mapPlugin } from '~/src/server/common/map/map.plugin.js'
 
 const cdpEnvironment = config.get('cdpEnvironment')
@@ -30,7 +31,7 @@ export const router = {
       await server.register([auth])
 
       // Application specific routes, add your own routes here
-      await server.register([home, agreements, cookies, cannotSubmit])
+      await server.register([home, agreements, cookies, cannotSubmit, applicationDeleted])
 
       await server.register([mapPlugin])
 

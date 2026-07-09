@@ -104,7 +104,7 @@ describe('demo-details.handler', () => {
         auth: {
           name: 'Dev Mode User',
           organisationName: 'Dev Mode Organisation',
-          organisationId: '999999999'
+          sbi: '999999999'
         }
       })
     })

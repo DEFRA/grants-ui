@@ -794,6 +794,28 @@ describe('LogCodes', () => {
     ])
   })
 
+  describe('PURGE log codes', () => {
+    testLogCodes('PURGE', [
+      [
+        'STATE_CLEAR_SUCCESS',
+        'info',
+        {
+          slug: 'test-grant'
+        },
+        'Purged application state cleared successfully for grant=test-grant'
+      ],
+      [
+        'STATE_CLEAR_FAILURE',
+        'warn',
+        {
+          slug: 'test-grant',
+          errorMessage: 'Redis unavailable'
+        },
+        'Failed to clear purged application state for grant=test-grant, error=Redis unavailable'
+      ]
+    ])
+  })
+
   describe('SYSTEM log codes', () => {
     testLogCodes('SYSTEM', [
       [
