@@ -15,6 +15,7 @@ import {
   MAP_LABEL,
   MAP_STYLE_URL,
   getMapStyleAttribution,
+  BASEMAP_PROVIDER_ATTRIBUTE,
   DEFAULT_BASEMAP_PROVIDER,
   // TEMPORARY: OS Maps vs OpenStreetMap comparison (TGC-1418 follow-up) — see config.js
   OSM_STYLE_URL,
@@ -51,6 +52,7 @@ import {
   STATE_LOADING,
   STATE_READY,
   STATE_ERROR,
+  MULTI_SELECT_ATTRIBUTE,
   ERROR_OVERLAY_STYLES,
   ERROR_LABEL_STYLES,
   LABEL_TEXT_COLOR,
@@ -163,7 +165,7 @@ class ParcelMap extends HTMLElement {
   #connected = false
 
   static get observedAttributes() {
-    return ['basemap-provider']
+    return [BASEMAP_PROVIDER_ATTRIBUTE]
   }
 
   connectedCallback() {
@@ -181,7 +183,7 @@ class ParcelMap extends HTMLElement {
     // Ignore the attribute's own initial set before the element is connected,
     // and any change while a load is already in flight (that in-flight load
     // will pick up the new value once it settles into an idle/error state).
-    if (name !== 'basemap-provider' || !this.#connected || this.#state === STATE_LOADING) {
+    if (name !== BASEMAP_PROVIDER_ATTRIBUTE || !this.#connected || this.#state === STATE_LOADING) {
       return
     }
     this.#teardown()
@@ -215,8 +217,8 @@ class ParcelMap extends HTMLElement {
 
     // Read once per init — basemap-provider changes trigger a fresh #init via
     // attributeChangedCallback, so this always reflects the current value.
-    const multiSelect = this.getAttribute('multi-select') === 'true'
-    const basemapProvider = this.getAttribute('basemap-provider') || DEFAULT_BASEMAP_PROVIDER
+    const multiSelect = this.getAttribute(MULTI_SELECT_ATTRIBUTE) === 'true'
+    const basemapProvider = this.getAttribute(BASEMAP_PROVIDER_ATTRIBUTE) || DEFAULT_BASEMAP_PROVIDER
 
     this.#skeleton = buildSkeleton()
     this.appendChild(this.#skeleton)

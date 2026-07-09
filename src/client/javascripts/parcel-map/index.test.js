@@ -273,7 +273,7 @@ describe('parcel-map web component', () => {
         el.setAttribute('basemap-provider', 'openstreetmap')
         await readyAgain
 
-        expect(InteractiveMap.mock.calls.length).toBe(callsBeforeToggle + 1)
+        expect(InteractiveMap.mock.calls).toHaveLength(callsBeforeToggle + 1)
         const [, options] = InteractiveMap.mock.calls.at(-1)
         expect(options.mapStyle.url).toBe('https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json')
       })
@@ -282,8 +282,8 @@ describe('parcel-map web component', () => {
         const el = document.createElement('parcel-map')
         const callsBefore = InteractiveMap.mock.calls.length
         el.setAttribute('basemap-provider', 'openstreetmap')
-        // No mountElement/appendChild here — attributeChangedCallback should no-op
-        expect(InteractiveMap.mock.calls.length).toBe(callsBefore)
+
+        expect(InteractiveMap.mock.calls).toHaveLength(callsBefore)
       })
 
       it('uses a label font the CartoCDN style actually serves glyphs for', async () => {
