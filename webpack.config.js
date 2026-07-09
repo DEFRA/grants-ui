@@ -71,35 +71,16 @@ export default {
           browserslistEnv: 'javascripts',
           cacheDirectory: true,
           extends: path.join(dirname, 'babel.config.cjs'),
-          // Babel 8 removed preset-env's `loose` shorthand; replicate the
-          // smaller browser transforms it produced via granular assumptions.
-          // (`bugfixes` was also removed — bugfix plugins are now always on.)
-          assumptions: {
-            arrayLikeIsIterable: true,
-            constantReexports: true,
-            constantSuper: true,
-            enumerableModuleMeta: true,
-            ignoreFunctionLength: true,
-            ignoreToPrimitiveHint: true,
-            iterableIsArray: true,
-            mutableTemplateObject: true,
-            noClassCalls: true,
-            noDocumentAll: true,
-            noIncompleteNsImportDetection: true,
-            noNewArrows: true,
-            objectRestNoSymbols: true,
-            privateFieldsAsProperties: true,
-            setClassMethods: true,
-            setComputedProperties: true,
-            setPublicClassFields: true,
-            setSpreadProperties: true,
-            skipForOfIteratorClosing: true,
-            superIsCallableConstructor: true
-          },
           presets: [
             [
               '@babel/preset-env',
               {
+                // Apply bug fixes to avoid transforms
+                bugfixes: true,
+
+                // Apply smaller "loose" transforms for browsers
+                loose: true,
+
                 // Skip CommonJS modules transform
                 modules: false
               }
