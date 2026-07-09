@@ -424,6 +424,29 @@ describe('Auth Plugin', () => {
       })
     })
 
+    test('providerParams function includes organisationId when changing organisation through SSO', () => {
+      const options = getBellOptions(mockOidcConfig)
+
+      const params = options.providerParams({ query: { organisationId: '5447505' } })
+      expect(params).toEqual({
+        serviceId: DEFAULT_CONFIG['defraId.serviceId'],
+        organisationId: '5447505'
+      })
+    })
+
+    test.each([
+      ['no organisationId is present', { query: {} }],
+      ['organisationId is not a string', { query: { organisationId: ['5447505'] } }],
+      ['organisationId is empty', { query: { organisationId: '' } }]
+    ])('providerParams function excludes organisationId when %s', (_label, request) => {
+      const options = getBellOptions(mockOidcConfig)
+
+      const params = options.providerParams(request)
+      expect(params).toEqual({
+        serviceId: DEFAULT_CONFIG['defraId.serviceId']
+      })
+    })
+
     test('throws error if credentials are undefined after retrieving from Bell OAuth provider', () => {
       const options = getBellOptions(mockOidcConfig)
       const credentials = undefined
