@@ -12,6 +12,9 @@ const PARCEL_FETCH_ERROR_MESSAGE =
 export default class CommonSelectLandParcelPageController extends LandGrantsQuestionWithAuthCheckController {
   viewName = 'common-select-land-parcel'
 
+  /** @type {string[]} */
+  invalidates = []
+
   /**
    * @param {FormModel} model
    * @param {PageQuestion} pageDef
@@ -21,6 +24,21 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
     const config = model.def.metadata?.pageConfig?.[pageDef.path] ?? {}
     // Grant-level config: when only a single land parcel is allowed in state, multiple selection is always disabled.
     const singleParcelSubmission = model.def.metadata?.singleParcelSubmission === true
+
+    this.applyPageConfig(config, singleParcelSubmission)
+
+    // Resolve section
+    if (pageDef.section) {
+      this.section = model.getSection(pageDef.section)
+    }
+  }
+
+  /**
+   * Applies grant/page-level configuration to this controller instance.
+   * @param {Record<string, any>} config
+   * @param {boolean} singleParcelSubmission
+   */
+  applyPageConfig(config, singleParcelSubmission) {
     this.enableMultipleParcelSelect = !singleParcelSubmission && config.enableMultipleParcelSelect === true
     this.topSection = config.topSection || ''
     this.bottomSection = config.bottomSection || ''
@@ -30,11 +48,6 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
     this.showSupportDetails = config.showSupportDetails !== false
     this.minimumAreaHa = config.minimumAreaHa ?? null
     this.invalidates = Array.isArray(config.invalidates) ? config.invalidates : []
-
-    // Resolve section
-    if (pageDef.section) {
-      this.section = model.getSection(pageDef.section)
-    }
   }
 
   /**

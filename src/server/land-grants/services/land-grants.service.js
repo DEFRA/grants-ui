@@ -41,7 +41,7 @@ const normaliseEnabledLandActions = (enabledLandActions = []) =>
  * @returns {string}
  */
 const buildParcelActionsCacheKey = (parcelKey, enabledLandActions) =>
-  `${parcelKey}:${[...enabledLandActions].sort().join(',')}`
+  `${parcelKey}:${[...enabledLandActions].sort((a, b) => a.localeCompare(b)).join(',')}`
 
 /**
  * Calculates grant payment for land actions.
