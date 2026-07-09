@@ -31,7 +31,7 @@ const defaultContentPolicy = (/** @type {string} */ nonce) => {
 
   const formActionSrc = [self]
   if (config.get('externalLinks.sfd.enabled')) {
-    const sfdUpdateUrl = config.get('externalLinks.sfd.updateUrl')
+    const sfdUpdateUrl = config.get('externalLinks.sfd.updateUrl')?.trim()
     if (sfdUpdateUrl) {
       if (URL.canParse(sfdUpdateUrl)) {
         formActionSrc.push(new URL(sfdUpdateUrl).origin)

@@ -253,17 +253,16 @@ export default class CheckDetailsController extends QuestionPageController {
         // We DO set checkDetailsChangesPending: true so the forms-engine-plugin and the
         // status-helper both behave correctly and we show the check-details page.
         const { currentRelationshipId } = request.auth.credentials
-        const updateUrl = config.get('externalLinks.sfd.updateUrl')
-        if (updateUrl) {
-          try {
-            const url = new URL(updateUrl)
-            url.searchParams.set('ssoOrgId', currentRelationshipId)
-            const { [this.confirmationFieldName]: _removed, ...stateWithoutConfirmation } = state
-            await this.setState(request, { ...stateWithoutConfirmation, checkDetailsChangesPending: true })
-            return h.redirect(url.toString())
-          } catch {
-            // fall through to save state and proceed if URL is malformed
-          }
+        const updateUrl = config.get('externalLinks.sfd.updateUrl')?.trim()
+        if (updateUrl && URL.canParse(updateUrl)) {
+          const url = new URL(updateUrl)
+          url.searchParams.set('ssoOrgId', currentRelationshipId)
+          const { [this.confirmationFieldName]: _removed, ...stateWithoutConfirmation } = state
+          await this.setState(request, { ...stateWithoutConfirmation, checkDetailsChangesPending: true })
+          return h.redirect(url.toString())
+        } else {
+          // missing or malformed URL — log and fall through to the update-details page
+          log(LogCodes.SYSTEM.SFD_UPDATE_URL_MISSING_ON_REDIRECT, { updateUrl: updateUrl ?? '' }, request)
         }
       }
 

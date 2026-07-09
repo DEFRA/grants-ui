@@ -473,7 +473,7 @@ describe('mapPlugin', () => {
       expect(h._responseObj.code).toHaveBeenCalledWith(200)
     })
 
-    it('forwards Content-Length so streamed tiles are not chunked (needed for Resource Timing transferSize)', async () => {
+    it('forwards the upstream Content-Length', async () => {
       global.fetch.mockResolvedValue({
         ok: true,
         headers: mockOsTileHeaders({ 'content-length': '2048' }),
