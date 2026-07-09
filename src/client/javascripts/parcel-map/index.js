@@ -629,7 +629,7 @@ function buildColorExpr(ids) {
  * @returns {string}
  */
 function resolveFeatureId(feature) {
-  const id = /** @type {ParcelProperties} */ (feature.properties ?? {})[PARCEL_ID_PROPERTY]
+  const id = /** @type {ParcelProperties | undefined} */ (feature.properties)?.[PARCEL_ID_PROPERTY]
   return typeof id === 'string' || typeof id === 'number' ? String(id) : ''
 }
 
