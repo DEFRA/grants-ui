@@ -285,6 +285,15 @@ describe('parcel-map web component', () => {
         // No mountElement/appendChild here — attributeChangedCallback should no-op
         expect(InteractiveMap.mock.calls.length).toBe(callsBefore)
       })
+
+      it('uses a label font the CartoCDN style actually serves glyphs for', async () => {
+        global.fetch = fetchOk(PARCELS_RESPONSE)
+        const el = await mountElement({ 'basemap-provider': 'openstreetmap' })
+        await waitForEvent(el, EVENT_READY)
+
+        const labelLayer = ml.addLayer.mock.calls.map((c) => c[0]).find((l) => l.id === LAYER_ID_LABEL)
+        expect(labelLayer.layout['text-font']).not.toEqual(['Arial Regular'])
+      })
     })
   })
 
