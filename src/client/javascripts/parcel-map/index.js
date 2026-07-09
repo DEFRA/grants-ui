@@ -9,9 +9,14 @@ import {
   PARCELS_API_URL,
   PARCEL_TILES_URL,
   PARCELS_GEOJSON_URL,
-  MAP_STYLE_URL,
   MAP_LABEL,
+  MAP_STYLE_URL,
   getMapStyleAttribution,
+  DEFAULT_BASEMAP_PROVIDER,
+  // TEMPORARY: OS Maps vs OpenStreetMap comparison (TGC-1418 follow-up) — see config.js
+  OSM_STYLE_URL,
+  OSM_STYLE_ATTRIBUTION,
+  BASEMAP_PROVIDER_OPENSTREETMAP,
   PARCEL_COLORS,
   LAYER_TEXT_SIZE,
   LAYER_TEXT_HALO_WIDTH,
@@ -77,9 +82,16 @@ const COMPOUND_ID_EXPR = ['get', PARCEL_ID_PROPERTY]
 /**
  * @param {unknown[]} colorExpr  MapLibre `match` expression
  * @param {string}   [sourceLayer]
+ * @param {string}   [basemapProvider]  BASEMAP_PROVIDER_ORDNANCE_SURVEY | BASEMAP_PROVIDER_OPENSTREETMAP
  */
-function buildParcelLayers(colorExpr, sourceLayer) {
+function buildParcelLayers(colorExpr, sourceLayer, basemapProvider) {
   const src = sourceLayer ? { 'source-layer': sourceLayer } : {}
+  // OS Maps sets no `glyphs` URL, so any font renders locally via MapLibre's
+  // TinySDF fallback. TEMPORARY (TGC-1418 follow-up): CartoCDN's OpenStreetMap
+  // style DOES set a glyphs URL, and only serves the fonts it declares in its
+  // own layers ('Open Sans Regular' etc) — 'Arial Regular' 404s against it.
+  // Delete this branch (keep 'Arial Regular') once OSM support is removed.
+  const labelFont = basemapProvider === BASEMAP_PROVIDER_OPENSTREETMAP ? 'Open Sans Regular' : 'Arial Regular'
   return {
     fill: {
       id: LAYER_ID_FILL,
@@ -108,7 +120,7 @@ function buildParcelLayers(colorExpr, sourceLayer) {
       ...src,
       layout: {
         'text-field': COMPOUND_ID_EXPR,
-        'text-font': ['Arial Regular'],
+        'text-font': [labelFont],
         'text-size': LAYER_TEXT_SIZE,
         'text-anchor': 'center'
       },
@@ -121,7 +133,8 @@ function buildParcelLayers(colorExpr, sourceLayer) {
   }
 }
 
-// <parcel-map multi-select="true|false">
+// <parcel-map multi-select="true|false" basemap-provider="ordnance-survey|openstreetmap">
+// basemap-provider's "openstreetmap" value is TEMPORARY (TGC-1418 follow-up).
 // Height via CSS on the element. Dispatches:
 //   parcel-map:ready, parcel-map:error, parcel-map:selection → { selectedIds: string[] }
 class ParcelMap extends HTMLElement {
@@ -146,13 +159,33 @@ class ParcelMap extends HTMLElement {
   /** @type {Array<() => void>} */
   #mlCleanup = []
 
+  #connected = false
+
+  static get observedAttributes() {
+    return ['basemap-provider']
+  }
+
   connectedCallback() {
+    this.#connected = true
     this.#state = STATE_IDLE
     this.#init()
   }
 
   disconnectedCallback() {
+    this.#connected = false
     this.#teardown()
+  }
+
+  attributeChangedCallback(name) {
+    // Ignore the attribute's own initial set before the element is connected,
+    // and any change while a load is already in flight (that in-flight load
+    // will pick up the new value once it settles into an idle/error state).
+    if (name !== 'basemap-provider' || !this.#connected || this.#state === STATE_LOADING) {
+      return
+    }
+    this.#teardown()
+    this.#state = STATE_IDLE
+    this.#init()
   }
 
   #teardown() {
@@ -179,13 +212,15 @@ class ParcelMap extends HTMLElement {
   async #init() {
     this.#state = STATE_LOADING
 
-    // Read once at connect, runtime changes to the attribute are not supported.
+    // Read once per init — basemap-provider changes trigger a fresh #init via
+    // attributeChangedCallback, so this always reflects the current value.
     const multiSelect = this.getAttribute('multi-select') === 'true'
+    const basemapProvider = this.getAttribute('basemap-provider') || DEFAULT_BASEMAP_PROVIDER
 
     this.#skeleton = buildSkeleton()
     this.appendChild(this.#skeleton)
 
-    const [ml, data] = await Promise.all([this.#initMap(multiSelect), this.#fetchData()])
+    const [ml, data] = await Promise.all([this.#initMap(multiSelect, basemapProvider), this.#fetchData()])
 
     // Torn down (disconnected) while we were loading, nothing to wire up.
     if (this.#state !== STATE_LOADING) {
@@ -203,7 +238,7 @@ class ParcelMap extends HTMLElement {
       this.dispatchEvent(new CustomEvent(EVENT_ERROR, { bubbles: true, detail: { reason: 'no-parcels' } }))
     } else {
       const colorExpr = buildColorExpr(data.parcelIds)
-      this.#addParcelsToMap(ml, data, colorExpr)
+      this.#addParcelsToMap(ml, data, colorExpr, basemapProvider)
       const tooltip = this.#attachTooltip(ml, data.metaIndex)
       this.#attachSelectionRelay(ml, tooltip)
       this.#interactPlugin?.enable()
@@ -231,9 +266,10 @@ class ParcelMap extends HTMLElement {
 
   /**
    * @param {boolean} multiSelect
+   * @param {string} basemapProvider  BASEMAP_PROVIDER_OS | BASEMAP_PROVIDER_OSM
    * @returns {Promise<MLMap | null>}
    */
-  #initMap(multiSelect) {
+  #initMap(multiSelect, basemapProvider) {
     return new Promise((resolve) => {
       const wrapper = document.createElement('div')
       wrapper.style.cssText = 'position:relative;width:100%;height:100%'
@@ -271,13 +307,16 @@ class ParcelMap extends HTMLElement {
         mapLabel: MAP_LABEL,
         containerHeight: this.style.height || MAP_DEFAULT_HEIGHT,
         mapProvider: withParcelHitTolerance(maplibreProvider()),
-        mapStyle: { url: MAP_STYLE_URL, attribution: getMapStyleAttribution() },
+        mapStyle: getMapStyle(basemapProvider),
         plugins: [interactPlugin],
         center: MAP_DEFAULT_CENTER,
         zoom: MAP_DEFAULT_ZOOM,
-        // The OS basemap has no tiles below z7 — stop users zooming out into
-        // blank void. Passed through to the MapLibre Map constructor.
-        minZoom: MAP_MIN_ZOOM,
+        // The OS raster basemap has no tiles below z7 — stop users zooming
+        // out into blank void.
+        // TEMPORARY (TGC-1418 follow-up): the OSM/CartoCDN vector style
+        // covers the full zoom range, so it's exempted from the cap below.
+        // When OSM is removed, replace this with a plain `MAP_MIN_ZOOM`.
+        minZoom: basemapProvider === BASEMAP_PROVIDER_OPENSTREETMAP ? undefined : MAP_MIN_ZOOM,
         // Don't persist the viewport in URL params.
         urlPosition: 'none'
       })
@@ -370,8 +409,9 @@ class ParcelMap extends HTMLElement {
    * @param {MLMap} ml
    * @param {ParcelData} data
    * @param {unknown[]} colorExpr
+   * @param {string} basemapProvider  BASEMAP_PROVIDER_ORDNANCE_SURVEY | BASEMAP_PROVIDER_OPENSTREETMAP
    */
-  #addParcelsToMap(ml, { geojsonUrl, bbox }, colorExpr) {
+  #addParcelsToMap(ml, { geojsonUrl, bbox }, colorExpr, basemapProvider) {
     if (bbox) {
       const { minLng, minLat, maxLng, maxLat } = bbox
       ml.fitBounds(
@@ -398,7 +438,7 @@ class ParcelMap extends HTMLElement {
           tiles: [`${origin}${PARCEL_TILES_URL}`]
         })
     ml.addSource('parcels', source)
-    const layers = buildParcelLayers(colorExpr, geojsonUrl ? undefined : 'parcels')
+    const layers = buildParcelLayers(colorExpr, geojsonUrl ? undefined : 'parcels', basemapProvider)
     ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.fill))
     ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.outline))
     ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.label))
@@ -492,6 +532,23 @@ class ParcelMap extends HTMLElement {
       }
     )
   }
+}
+
+/**
+ * Resolves the MapLibre style URL/attribution for the chosen basemap
+ * provider.
+ * TEMPORARY (TGC-1418 follow-up): once the OpenStreetMap comparison is
+ * removed, this collapses to always returning the OS Maps style — delete
+ * the ternary and this function's `provider` param.
+ * @param {string} provider  BASEMAP_PROVIDER_ORDNANCE_SURVEY | BASEMAP_PROVIDER_OPENSTREETMAP
+ * @returns {{ url: string, attribution: string }}
+ */
+function getMapStyle(provider) {
+  // OSM's style/tiles are public (no key to protect), so its URL points
+  // straight at CartoCDN; OS Maps stays server-proxied.
+  return provider === BASEMAP_PROVIDER_OPENSTREETMAP
+    ? { url: OSM_STYLE_URL, attribution: OSM_STYLE_ATTRIBUTION }
+    : { url: MAP_STYLE_URL, attribution: getMapStyleAttribution() }
 }
 
 /**

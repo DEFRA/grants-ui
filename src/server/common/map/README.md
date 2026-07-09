@@ -107,15 +107,31 @@ Extends `QuestionPageController`. Renders `map-select-parcel.html`.
 
 ### Attributes
 
-| Attribute      | Values               | Default   | Description                                    |
-| -------------- | -------------------- | --------- | ---------------------------------------------- |
-| `multi-select` | `"true"` / `"false"` | `"false"` | Allow selecting more than one parcel at a time |
+| Attribute          | Values                                    | Default             | Description                                    |
+| ------------------ | ----------------------------------------- | ------------------- | ---------------------------------------------- |
+| `multi-select`     | `"true"` / `"false"`                      | `"false"`           | Allow selecting more than one parcel at a time |
+| `basemap-provider` | `"ordnance-survey"` / `"openstreetmap"` † | `"ordnance-survey"` | Which basemap to render — see below            |
+
+† `"openstreetmap"` is temporary, see below.
 
 **Single-select** — clicking a parcel selects it and deselects any previously selected one. Clicking the same parcel again deselects it.
 
 **Multi-select** — clicking toggles each parcel independently. Multiple parcels can be selected simultaneously.
 
 `multi-select` is read once when the component connects — changing it afterwards has no effect (re-create the element to reconfigure).
+
+`basemap-provider` **does** support runtime changes: setting it after the component has connected tears the map down and re-initialises it with the new basemap, keeping the same parcel data (no re-fetch). Any in-progress parcel selection is lost on switch — this attribute exists for comparing the two basemaps, not as a saved user preference, and always starts on `"ordnance-survey"` regardless of what was previously selected.
+
+### Basemap providers
+
+> **TEMPORARY (TGC-1418 follow-up):** OpenStreetMap support exists only for a side-by-side comparison and is expected to be removed within weeks. Everything OpenStreetMap-specific is wrapped in a `TEMPORARY … END TEMPORARY` comment block — grep the repo for `TGC-1418` to find every piece to delete: the constants and `getMapStyle` branch in `config.js`/`index.js`, the CartoCDN CSP allowances in `content-security-policy.js`, and the toggle control + listener in `map-select-parcel.html`. See the OS Maps vs OpenStreetMap comparison report for why OS Maps is the recommended (and, after removal, only) provider.
+
+Two basemap sources are currently supported, selected via the `basemap-provider` attribute (`getMapStyle` in `index.js` resolves the actual style/attribution for each):
+
+- **`"ordnance-survey"` (default)** — Ordnance Survey's raster basemap, served through the server-side proxy described below. Authoritative UK survey data, including farmland/parcel boundary detail that the alternative lacks.
+- **`"openstreetmap"`** — OpenStreetMap, via CartoCDN's hosted vector style (`https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json`). No server proxy — CartoCDN's tiles are public, so the browser fetches them directly. Requires the CartoCDN CSP allowances in `content-security-policy.js` (`connect-src`/`img-src`).
+
+The [`map-select-parcel.html`](views/map-select-parcel.html) template wires a small GOV.UK radios control (`#basemap-provider-toggle`) to the attribute, for side-by-side comparison during development.
 
 ### Accessible selection (interact plugin)
 

@@ -2,6 +2,7 @@
 
 {% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
+{% from "govuk/components/radios/macro.njk" import govukRadios %}
 
 {% block content %}
 <div class="govuk-body">
@@ -36,12 +37,35 @@
         <p class="govuk-body">The interactive map requires JavaScript to be enabled in your browser.</p>
       </noscript>
 
+      {# TEMPORARY: OS Maps vs OpenStreetMap comparison (TGC-1418 follow-up).
+         Delete this block and the "change" listener + basemap-provider
+         attribute below once the comparison is complete. #}
+      <div id="basemap-provider-toggle">
+        {{ govukRadios({
+          idPrefix: "basemap-provider",
+          name: "basemapProviderDisplay",
+          classes: "govuk-radios--inline govuk-radios--medium",
+          fieldset: {
+            legend: {
+              text: "Basemap",
+              classes: "govuk-fieldset__legend--m"
+            }
+          },
+          items: [
+            { value: "ordnance-survey", text: "OS Maps", checked: true },
+            { value: "openstreetmap", text: "OpenStreetMap" }
+          ]
+        }) }}
+      </div>
+      {# END TEMPORARY #}
+
       <form method="post" action="{{ formAction }}" id="parcel-select-form">
         <input type="hidden" name="crumb" value="{{ crumb }}">
 
         <parcel-map
           id="parcel-map"
           multi-select="{{ 'true' if multiSelect else 'false' }}"
+          basemap-provider="ordnance-survey"
           aria-label="Land parcel selection map"
           style="display:block;width:100%;height:500px;position:relative"
         >
@@ -79,6 +103,18 @@
     (function () {
       var mapEl = document.getElementById('parcel-map');
       var multiSelect = mapEl.getAttribute('multi-select') === 'true';
+
+      // TEMPORARY: OS Maps vs OpenStreetMap comparison (TGC-1418 follow-up).
+      // Delete this block once the comparison is complete.
+      var toggle = document.getElementById('basemap-provider-toggle');
+      if (toggle) {
+        toggle.addEventListener('change', function (e) {
+          if (e.target && e.target.name === 'basemapProviderDisplay') {
+            mapEl.setAttribute('basemap-provider', e.target.value);
+          }
+        });
+      }
+      // END TEMPORARY
 
       mapEl.addEventListener('parcel-map:ready', function () {
         var hint = document.getElementById('map-hint');

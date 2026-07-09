@@ -202,7 +202,7 @@ describe('parcel-map web component', () => {
       expect(options.urlPosition).toBe('none')
     })
 
-    it('constrains zoom-out to the OS basemap coverage (min zoom 7)', async () => {
+    it('constrains zoom-out to the OS basemap coverage (min zoom 7) by default', async () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
       const el = await mountElement()
       await waitForEvent(el, EVENT_READY)
@@ -218,6 +218,73 @@ describe('parcel-map web component', () => {
 
       const [, options] = InteractiveMap.mock.calls[0]
       expect(options.mapLabel).toEqual(expect.stringContaining('land parcels'))
+    })
+  })
+
+  describe('basemap provider', () => {
+    it('defaults to the OS Maps style when no attribute is set', async () => {
+      global.fetch = fetchOk(PARCELS_RESPONSE)
+      const el = await mountElement()
+      await waitForEvent(el, EVENT_READY)
+
+      const [, options] = InteractiveMap.mock.calls.at(-1)
+      expect(options.mapStyle.url).toBe('/api/map/os-basemap')
+      expect(options.minZoom).toBe(7)
+    })
+
+    it('defaults to OS Maps even when the attribute is explicitly "ordnance-survey"', async () => {
+      global.fetch = fetchOk(PARCELS_RESPONSE)
+      const el = await mountElement({ 'basemap-provider': 'ordnance-survey' })
+      await waitForEvent(el, EVENT_READY)
+
+      const [, options] = InteractiveMap.mock.calls.at(-1)
+      expect(options.mapStyle.url).toBe('/api/map/os-basemap')
+    })
+
+    // TEMPORARY: OS Maps vs OpenStreetMap comparison (TGC-1418 follow-up) —
+    // delete this describe block once the comparison is complete.
+    describe('OpenStreetMap comparison (temporary)', () => {
+      it('switches to the OpenStreetMap style when basemap-provider="openstreetmap"', async () => {
+        global.fetch = fetchOk(PARCELS_RESPONSE)
+        const el = await mountElement({ 'basemap-provider': 'openstreetmap' })
+        await waitForEvent(el, EVENT_READY)
+
+        const [, options] = InteractiveMap.mock.calls.at(-1)
+        expect(options.mapStyle.url).toBe('https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json')
+        expect(options.mapStyle.attribution).toContain('OpenStreetMap')
+      })
+
+      it('does not constrain minZoom for the OpenStreetMap style', async () => {
+        global.fetch = fetchOk(PARCELS_RESPONSE)
+        const el = await mountElement({ 'basemap-provider': 'openstreetmap' })
+        await waitForEvent(el, EVENT_READY)
+
+        const [, options] = InteractiveMap.mock.calls.at(-1)
+        expect(options.minZoom).toBeUndefined()
+      })
+
+      it('re-initialises the map when basemap-provider changes at runtime', async () => {
+        global.fetch = fetchOk(PARCELS_RESPONSE)
+        const el = await mountElement()
+        await waitForEvent(el, EVENT_READY)
+        const callsBeforeToggle = InteractiveMap.mock.calls.length
+
+        const readyAgain = waitForEvent(el, EVENT_READY)
+        el.setAttribute('basemap-provider', 'openstreetmap')
+        await readyAgain
+
+        expect(InteractiveMap.mock.calls.length).toBe(callsBeforeToggle + 1)
+        const [, options] = InteractiveMap.mock.calls.at(-1)
+        expect(options.mapStyle.url).toBe('https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json')
+      })
+
+      it('ignores attribute changes before the element is connected', async () => {
+        const el = document.createElement('parcel-map')
+        const callsBefore = InteractiveMap.mock.calls.length
+        el.setAttribute('basemap-provider', 'openstreetmap')
+        // No mountElement/appendChild here — attributeChangedCallback should no-op
+        expect(InteractiveMap.mock.calls.length).toBe(callsBefore)
+      })
     })
   })
 
