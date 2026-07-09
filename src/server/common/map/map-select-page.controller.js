@@ -7,6 +7,9 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
   /** @type {boolean} */
   multiSelect = false
 
+  /** @type {boolean} */
+  singleParcelSubmission = false
+
   /**
    * @param {FormModel} model
    * @param {PageDef} pageDef
@@ -16,7 +19,10 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
     const pageConfig = /** @type {Record<string, unknown>} */ (
       /** @type {{ config?: Record<string, unknown> }} */ (/** @type {unknown} */ (pageDef)).config ?? {}
     )
-    this.multiSelect = Boolean(pageConfig.multiSelect)
+    // Grant-level config: when only a single land parcel is allowed in state, multiple selection is always disabled.
+    const metadata = /** @type {{ def?: { metadata?: Record<string, unknown> } }} */ (model).def?.metadata ?? {}
+    this.singleParcelSubmission = metadata.singleParcelSubmission === true
+    this.multiSelect = !this.singleParcelSubmission && Boolean(pageConfig.multiSelect)
   }
 
   makeGetRouteHandler() {
@@ -66,9 +72,18 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
 
     const selectedParcelsDisplay = selectedParcelIds.join(', ')
 
+    // In single-parcel-submission mode, selecting a parcel clears any previously selected parcel and its actions.
+    const clearedParcels = this.singleParcelSubmission ? { landParcels: {} } : {}
+
     const newState = this.multiSelect
-      ? { ...state, selectedParcelIds, selectedParcelsDisplay }
-      : { ...state, selectedParcelId: selectedParcelIds[0], selectedParcelIds, selectedParcelsDisplay }
+      ? { ...state, selectedParcelIds, selectedParcelsDisplay, ...clearedParcels }
+      : {
+          ...state,
+          selectedParcelId: selectedParcelIds[0],
+          selectedParcelIds,
+          selectedParcelsDisplay,
+          ...clearedParcels
+        }
 
     await this.setState(request, /** @type {FormSubmissionState} */ (/** @type {unknown} */ (newState)))
 

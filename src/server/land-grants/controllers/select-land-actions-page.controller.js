@@ -21,14 +21,18 @@ export default class SelectLandActionsPageController extends QuestionPageWithPar
   actionFieldPrefix = 'landAction_'
   enabledLandActions = []
 
+  /** @type {boolean} */
+  singleParcelSubmission = false
+
   /**
    * @param {FormModel} model
    * @param {PageQuestion} pageDef
    */
   constructor(model, pageDef) {
     super(model, pageDef)
-    const { enabledLandActions } = model.def.metadata ?? {}
+    const { enabledLandActions, singleParcelSubmission } = model.def.metadata ?? {}
     this.enabledLandActions = Array.isArray(enabledLandActions) ? enabledLandActions : []
+    this.singleParcelSubmission = singleParcelSubmission === true
   }
 
   resolveParcelIds(request) {
@@ -91,6 +95,7 @@ export default class SelectLandActionsPageController extends QuestionPageWithPar
       parcelName: `${sheetId} ${parcelId}`,
       errors,
       existingLandParcels,
+      singleParcelSubmission: this.singleParcelSubmission,
       pageTitle: `Select actions for land parcel ${sheetId} ${parcelId}`
     })
   }
@@ -139,6 +144,7 @@ export default class SelectLandActionsPageController extends QuestionPageWithPar
       ...state,
       parcelName: `${sheetId} ${parcelId}`,
       existingLandParcels: Object.keys(state.landParcels || {}).length > 0,
+      singleParcelSubmission: this.singleParcelSubmission,
       errors: [],
       pageTitle: `Select actions for land parcel ${sheetId} ${parcelId}`
     })

@@ -166,6 +166,52 @@ describe('SelectLandActionsPageController', () => {
     vi.clearAllMocks()
   })
 
+  describe('singleParcelSubmission (grant-level config)', () => {
+    const buildController = (metadata) => {
+      const model = { def: { metadata }, getSection: vi.fn(), pages: [] }
+      const singleController = new SelectLandActionsPageController(model, {})
+      singleController.collection = { getErrors: vi.fn().mockReturnValue([]) }
+      singleController.setState = vi.fn().mockResolvedValue(true)
+      singleController.proceed = vi.fn().mockReturnValue('redirected')
+      singleController.getNextPath = vi.fn().mockReturnValue('/next-path')
+      singleController.performAuthCheck = vi.fn().mockResolvedValue(null)
+      return singleController
+    }
+
+    test('defaults to false when metadata does not include the flag', () => {
+      expect(controller.singleParcelSubmission).toBe(false)
+    })
+
+    test('reads the flag from grant metadata', () => {
+      const singleController = buildController({ tasklist: {}, enabledLandActions, singleParcelSubmission: true })
+      expect(singleController.singleParcelSubmission).toBe(true)
+    })
+
+    test('passes singleParcelSubmission to the view on GET', async () => {
+      mockRequest.query = { parcelId: 'sheet1-parcel1' }
+      const singleController = buildController({ tasklist: {}, enabledLandActions, singleParcelSubmission: true })
+
+      await singleController.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'select-actions-for-land-parcel',
+        expect.objectContaining({ singleParcelSubmission: true })
+      )
+    })
+
+    test('always merges the selected parcel into existing state on POST (clearing happens at parcel selection)', async () => {
+      mockRequest.query = { parcelId: 'sheet1-parcel1' }
+      mockRequest.payload = { landAction_1: 'CMOR1', action: 'continue' }
+      mockContext.state = { landParcels: { 'existing-9999': { size: {}, actionsObj: {} } } }
+      const singleController = buildController({ tasklist: {}, enabledLandActions, singleParcelSubmission: true })
+
+      await singleController.makePostRouteHandler()(mockRequest, mockContext, mockH)
+
+      const savedState = singleController.setState.mock.calls[0][1]
+      expect(Object.keys(savedState.landParcels).sort()).toEqual(['existing-9999', 'sheet1-parcel1'])
+    })
+  })
+
   describe('GET route handler', () => {
     beforeEach(() => {
       mockRequest.query = { parcelId: 'sheet1-parcel1' }

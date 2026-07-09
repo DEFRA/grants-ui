@@ -19,7 +19,9 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
   constructor(model, pageDef) {
     super(model, pageDef)
     const config = model.def.metadata?.pageConfig?.[pageDef.path] ?? {}
-    this.enableMultipleParcelSelect = config.enableMultipleParcelSelect === true
+    // Grant-level config: when only a single land parcel is allowed in state, multiple selection is always disabled.
+    const singleParcelSubmission = model.def.metadata?.singleParcelSubmission === true
+    this.enableMultipleParcelSelect = !singleParcelSubmission && config.enableMultipleParcelSelect === true
     this.topSection = config.topSection || ''
     this.bottomSection = config.bottomSection || ''
     this.selectionHint = config.selectionHint || ''

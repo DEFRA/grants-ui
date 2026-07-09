@@ -79,6 +79,28 @@ describe('CommonSelectLandParcelPageController', () => {
     vi.clearAllMocks()
   })
 
+  describe('constructor', () => {
+    it('enables multiple parcel select from page config', () => {
+      const controller = createController({ enableMultipleParcelSelect: true })
+      expect(controller.enableMultipleParcelSelect).toBe(true)
+    })
+
+    it('forces enableMultipleParcelSelect false when grant-level singleParcelSubmission is true', () => {
+      const model = {
+        def: {
+          metadata: {
+            singleParcelSubmission: true,
+            pageConfig: {
+              '/test': { enableMultipleParcelSelect: true }
+            }
+          }
+        }
+      }
+      const controller = new CommonSelectLandParcelPageController(model, { path: '/test' })
+      expect(controller.enableMultipleParcelSelect).toBe(false)
+    })
+  })
+
   describe('resolveParcelIds', () => {
     it('returns payload values for POST', () => {
       const controller = createController()

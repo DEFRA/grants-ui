@@ -55,6 +55,18 @@ describe('MapSelectPageController', () => {
       const controller = new MapSelectPageController(mockModel, makePageDef({ multiSelect: false }))
       expect(controller.multiSelect).toBe(false)
     })
+
+    it('forces multiSelect false when grant-level singleParcelSubmission is true', () => {
+      const singleParcelModel = { def: { metadata: { singleParcelSubmission: true } } }
+      const controller = new MapSelectPageController(singleParcelModel, makePageDef({ multiSelect: true }))
+      expect(controller.multiSelect).toBe(false)
+    })
+
+    it('keeps multiSelect true when singleParcelSubmission is not set', () => {
+      const model = { def: { metadata: {} } }
+      const controller = new MapSelectPageController(model, makePageDef({ multiSelect: true }))
+      expect(controller.multiSelect).toBe(true)
+    })
   })
 
   describe('handleGet', () => {
@@ -177,6 +189,47 @@ describe('MapSelectPageController', () => {
       expect(controller.setState).toHaveBeenCalledWith(
         expect.anything(),
         expect.objectContaining({ selectedParcelId: 'SD7148-9160' })
+      )
+    })
+  })
+
+  describe('handlePost — single-parcel-submission', () => {
+    function makeSingleParcelController() {
+      const model = { def: { metadata: { singleParcelSubmission: true } } }
+      const controller = new MapSelectPageController(model, makePageDef())
+      setupControllerMocks(controller)
+      controller.getViewModel = vi.fn().mockReturnValue({ pageTitle: 'Select a land parcel' })
+      return controller
+    }
+
+    it('clears existing landParcels object when a parcel is selected', async () => {
+      const controller = makeSingleParcelController()
+      const h = makeH()
+      const context = makeContext({ landParcels: { 'SD0000-0001': { size: {}, actionsObj: {} } } })
+
+      await controller.handlePost(makeRequest({ landParcels: 'SD7148-9160' }), context, h)
+
+      expect(controller.setState).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          selectedParcelId: 'SD7148-9160',
+          landParcels: {}
+        })
+      )
+    })
+
+    it('does not clear landParcels when singleParcelSubmission is not set', async () => {
+      const controller = makeController()
+      const h = makeH()
+      const context = makeContext({ landParcels: { 'SD0000-0001': { size: {}, actionsObj: {} } } })
+
+      await controller.handlePost(makeRequest({ landParcels: 'SD7148-9160' }), context, h)
+
+      expect(controller.setState).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          landParcels: { 'SD0000-0001': { size: {}, actionsObj: {} } }
+        })
       )
     })
   })
