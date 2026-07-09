@@ -123,13 +123,13 @@ Selection is handled by the `@defra/interactive-map` **interact plugin**, not ra
 
 - **Pointer** — click a parcel
 - **Touch** — a crosshair with a "Select" action button
-- **Keyboard** — <kbd>Enter</kbd> selects at the crosshair target; <kbd>Tab</kbd> opens a listbox of parcels (labelled by compound parcel ID) navigable with arrow keys
+- **Keyboard** — <kbd>Enter</kbd> selects at the crosshair target; <kbd>Tab</kbd> opens a listbox of parcels navigable with arrow keys
 
-The plugin only matches polygons when the click is geometrically inside them, which makes small zoomed-out parcels effectively unselectable. The component wraps the MapLibre provider (`withParcelHitTolerance` in `index.js`) so that when the strict query misses, it falls back to a rendered-pixel query on the fill layer within `PARCEL_CLICK_TOLERANCE_PX` (10px) of the point — parcels stay selectable by pointer and keyboard crosshair at any zoom. The keyboard listbox is fully zoom-independent.
+The plugin only selects a polygon on an exact geometric hit, which is impractical for small zoomed-out parcels — the component adds a rendered-pixel fallback (see `withParcelHitTolerance` in `index.js`) so parcels stay selectable at any zoom, by pointer and by keyboard.
 
-The component listens to the plugin's `interact:selectionchange` event and re-dispatches it as `parcel-map:selection`, so page-level consumers are unaffected by the plugin internals. The fill-opacity highlight is applied by the component on top of the plugin's own selection stroke.
+The component listens to the plugin's selection events and re-dispatches them as `parcel-map:selection`, so page-level consumers are unaffected by the plugin internals.
 
-The plugin identifies and labels features via the `id` feature property (`SHEET-PARCEL`). The land-grants API tiles only carry `sheet_id` and `parcel_id` (`parcel_id` alone is not unique across sheets), so the grants-ui tile proxy stamps the compound `id` onto every feature — `withCompoundParcelIds` in `mvt-compound-id.js` decodes each proxied tile, adds the property, and re-encodes it. Mock GeoJSON features already carry `id`. The plugin's UI styles (crosshair, listbox, action buttons) are bundled in the core `interactive-map.css` — no extra stylesheet is needed.
+The plugin needs a single property that uniquely identifies each parcel feature. The land-grants API tiles don't provide one directly, so the grants-ui tile proxy adds it — see `withCompoundParcelIds` in `mvt-compound-id.js` for why and how.
 
 ### Height
 

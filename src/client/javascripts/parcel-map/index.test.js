@@ -66,7 +66,7 @@ function makeMlMap(overrides = {}) {
 function makeFeature(sheetId, parcelId, numericId) {
   return {
     id: numericId ?? 1,
-    properties: { sheet_id: sheetId, parcel_id: parcelId },
+    properties: { sheet_id: sheetId, parcel_id: parcelId, id: `${sheetId}-${parcelId}` },
     geometry: { type: 'Point', coordinates: [0, 0] }
   }
 }
@@ -324,6 +324,39 @@ describe('parcel-map web component', () => {
         { layers: [LAYER_ID_FILL] }
       )
       expect(hits).toBe(fallbackFeatures)
+    })
+
+    it('picks the closest feature when the fallback finds several overlapping the tolerance box', async () => {
+      global.fetch = fetchOk(PARCELS_RESPONSE)
+      const el = await mountElement()
+      await waitForEvent(el, EVENT_READY)
+
+      const [, options] = InteractiveMap.mock.calls.at(-1)
+      const { MapProvider } = await options.mapProvider.load()
+      const provider = new MapProvider()
+
+      // Both are single-point "polygons" (only the corner matters for the
+      // bounding-box centre this test exercises) — `near` projects to a
+      // screen point right at the click, `far` projects well outside it.
+      const near = {
+        layer: { id: LAYER_ID_FILL },
+        properties: { id: 'SD7148-9160' },
+        geometry: { type: 'Polygon', coordinates: [[[0, 0]]] }
+      }
+      const far = {
+        layer: { id: LAYER_ID_FILL },
+        properties: { id: 'SD7148-9161' },
+        geometry: { type: 'Polygon', coordinates: [[[1, 1]]] }
+      }
+      provider.map = {
+        getLayer: vi.fn().mockReturnValue(true),
+        queryRenderedFeatures: vi.fn().mockReturnValue([far, near]),
+        project: vi.fn(([lng]) => (lng === 0 ? { x: 50, y: 60 } : { x: 500, y: 500 }))
+      }
+
+      const hits = provider.getFeaturesAtPoint({ x: 50, y: 60 }, { radius: 10 })
+
+      expect(hits).toEqual([near])
     })
 
     it('does not run the fallback when the strict query already has hits', async () => {

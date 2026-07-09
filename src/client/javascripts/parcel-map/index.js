@@ -67,6 +67,13 @@ import {
  * @typedef {{ minLng: number, minLat: number, maxLng: number, maxLat: number }} BBox
  */
 
+// MapLibre expression reading the compound "SHEET-PARCEL" ID. This is the
+// same `id` property the interact plugin matches selections against
+// (PARCEL_ID_PROPERTY) — reading it here too means the component's label,
+// colour, and highlight logic can never disagree with what the plugin
+// selected.
+const COMPOUND_ID_EXPR = ['get', PARCEL_ID_PROPERTY]
+
 /**
  * @param {unknown[]} colorExpr  MapLibre `match` expression
  * @param {string}   [sourceLayer]
@@ -100,7 +107,7 @@ function buildParcelLayers(colorExpr, sourceLayer) {
       source: 'parcels',
       ...src,
       layout: {
-        'text-field': ['concat', ['get', 'sheet_id'], '-', ['get', 'parcel_id']],
+        'text-field': COMPOUND_ID_EXPR,
         'text-font': ['Arial Regular'],
         'text-size': LAYER_TEXT_SIZE,
         'text-anchor': 'center'
@@ -198,7 +205,7 @@ class ParcelMap extends HTMLElement {
       const colorExpr = buildColorExpr(data.parcelIds)
       this.#addParcelsToMap(ml, data, colorExpr)
       const tooltip = this.#attachTooltip(ml, data.metaIndex)
-      this.#attachSelectionBridge(ml, tooltip)
+      this.#attachSelectionRelay(ml, tooltip)
       this.#interactPlugin?.enable()
 
       this.#state = STATE_READY
@@ -460,15 +467,13 @@ class ParcelMap extends HTMLElement {
    * @param {MLMap} ml
    * @param {HTMLElement | undefined} tooltip
    */
-  #attachSelectionBridge(ml, tooltip) {
-    const idExpr = ['concat', ['get', 'sheet_id'], '-', ['get', 'parcel_id']]
-
+  #attachSelectionRelay(ml, tooltip) {
     /** @param {string[]} selectedIds */
     const applyHighlight = (selectedIds) => {
       const matchList = selectedIds.length > 0 ? selectedIds : [SELECTION_NONE_SENTINEL]
       ml.setPaintProperty(LAYER_ID_FILL, 'fill-opacity', [
         'match',
-        idExpr,
+        COMPOUND_ID_EXPR,
         matchList,
         FILL_OPACITY_SELECTED,
         FILL_OPACITY_DEFAULT
@@ -492,22 +497,19 @@ class ParcelMap extends HTMLElement {
 /**
  * Makes parcels easier to click when they're small on screen.
  *
- * The problem: when the interact plugin decides "did this click land on a
- * parcel?", it checks whether the clicked point is mathematically inside the
- * parcel's polygon. That's fine zoomed in, when a parcel fills half the
- * screen. But zoomed out, a parcel might be 4-5 pixels wide — you'd have to
- * click exactly inside those few pixels, so selection feels broken.
+ * The interact plugin already searches a PARCEL_CLICK_TOLERANCE_PX box around
+ * the click, but for polygons it only counts a hit if the click lands exactly
+ * inside the shape — near-misses are dropped. That's nearly guaranteed for a
+ * parcel that's only a few pixels wide when zoomed out. When the strict check
+ * finds nothing, this falls back to whatever parcel is *drawn* closest to the
+ * click within that same box. Adjacent (not overlapping) small parcels can
+ * both land in that box at low zoom, so this picks whichever one is nearest
+ * to the click rather than an arbitrary one. Covers both mouse clicks and the
+ * keyboard crosshair, at any zoom.
  *
- * The fix: if the plugin's strict check finds nothing, we ask MapLibre a more
- * forgiving question instead — "is there a parcel *drawn on screen* within
- * 10px of where the user clicked?" (PARCEL_CLICK_TOLERANCE_PX). If yes, we
- * return that parcel, and the click selects it. This applies to mouse clicks
- * and to the keyboard crosshair alike, at every zoom level.
- *
- * The wrapping is awkward because of how the map library is built: we don't
- * get the provider object directly — we get a *descriptor* whose `load()` the
- * library calls later to create the provider. So we intercept `load()` and
- * hand back a subclass whose `getFeaturesAtPoint` adds our fallback.
+ * The odd wrapping is because the map library hands us a *descriptor*, not
+ * the provider itself — its `load()` creates the provider later — so we
+ * intercept `load()` to subclass the provider once it exists.
  * @param {{ load: () => Promise<{ MapProvider: new (...args: never[]) => { map?: import('maplibre-gl').Map } }> }} descriptor
  */
 function withParcelHitTolerance(descriptor) {
@@ -526,18 +528,70 @@ function withParcelHitTolerance(descriptor) {
           return hits
         }
         const r = PARCEL_CLICK_TOLERANCE_PX
-        return this.map.queryRenderedFeatures(
+        const rendered = this.map.queryRenderedFeatures(
           [
             [point.x - r, point.y - r],
             [point.x + r, point.y + r]
           ],
           { layers: [LAYER_ID_FILL] }
         )
+        return nearestFeatureToPoint(this.map, point, rendered)
       }
     }
     return { ...result, MapProvider: ParcelHitToleranceProvider }
   }
   return descriptor
+}
+
+/**
+ * Picks the rendered feature whose on-screen bounding-box centre is closest
+ * to the click point. Used when two or more adjacent parcels both land in
+ * the tolerance box — without this, `queryRenderedFeatures` order (not
+ * proximity) would decide which one gets selected.
+ * @param {import('maplibre-gl').Map} map
+ * @param {{ x: number, y: number }} point
+ * @param {import('maplibre-gl').MapGeoJSONFeature[]} features
+ * @returns {import('maplibre-gl').MapGeoJSONFeature[]}
+ */
+function nearestFeatureToPoint(map, point, features) {
+  if (features.length <= 1) {
+    return features
+  }
+  const distSq = (/** @type {import('maplibre-gl').MapGeoJSONFeature} */ f) => {
+    const box = f.geometry.type.includes('Polygon') ? getScreenBounds(map, f) : null
+    if (!box) {
+      return Infinity
+    }
+    const cx = (box.minX + box.maxX) / 2
+    const cy = (box.minY + box.maxY) / 2
+    return (point.x - cx) ** 2 + (point.y - cy) ** 2
+  }
+  return [[...features].sort((a, b) => distSq(a) - distSq(b))[0]]
+}
+
+/**
+ * On-screen pixel bounding box of a polygon/multipolygon feature.
+ * @param {import('maplibre-gl').Map} map
+ * @param {import('maplibre-gl').MapGeoJSONFeature} feature
+ */
+function getScreenBounds(map, feature) {
+  const geometry = /** @type {import('geojson').Polygon | import('geojson').MultiPolygon} */ (feature.geometry)
+  const { type, coordinates } = geometry
+  const rings = type === 'Polygon' ? coordinates : coordinates.flat()
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  for (const ring of rings) {
+    for (const [lng, lat] of ring) {
+      const { x, y } = map.project([lng, lat])
+      minX = Math.min(minX, x)
+      minY = Math.min(minY, y)
+      maxX = Math.max(maxX, x)
+      maxY = Math.max(maxY, y)
+    }
+  }
+  return minX === Infinity ? null : { minX, minY, maxX, maxY }
 }
 
 /** @returns {HTMLDivElement} */
@@ -559,7 +613,7 @@ function buildSkeleton() {
  * @returns {unknown[]}
  */
 function buildColorExpr(ids) {
-  const expr = /** @type {unknown[]} */ (['match', ['concat', ['get', 'sheet_id'], '-', ['get', 'parcel_id']]])
+  const expr = /** @type {unknown[]} */ (['match', COMPOUND_ID_EXPR])
   ;[...new Set(ids)].forEach((id, i) => {
     expr.push(id, PARCEL_COLORS[i % PARCEL_COLORS.length])
   })
@@ -568,15 +622,15 @@ function buildColorExpr(ids) {
 }
 
 /**
- * Derive the compound parcel ID (e.g. "SD7148-9160") from a MapLibre vector tile feature.
+ * Read the compound parcel ID (e.g. "SD7148-9160") off a MapLibre feature's
+ * `id` property — the same property the interact plugin matches selections
+ * against (PARCEL_ID_PROPERTY).
  * @param {MapGeoJSONFeature} feature
  * @returns {string}
  */
 function resolveFeatureId(feature) {
-  const p = /** @type {ParcelProperties} */ (feature.properties ?? {})
-  const sheet = typeof p.sheet_id === 'string' || typeof p.sheet_id === 'number' ? String(p.sheet_id) : ''
-  const parcel = typeof p.parcel_id === 'string' || typeof p.parcel_id === 'number' ? String(p.parcel_id) : ''
-  return sheet && parcel ? `${sheet}-${parcel}` : ''
+  const id = /** @type {ParcelProperties} */ (feature.properties ?? {})[PARCEL_ID_PROPERTY]
+  return typeof id === 'string' || typeof id === 'number' ? String(id) : ''
 }
 
 /**
