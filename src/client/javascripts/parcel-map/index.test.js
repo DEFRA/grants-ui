@@ -294,6 +294,33 @@ describe('parcel-map web component', () => {
         const labelLayer = ml.addLayer.mock.calls.map((c) => c[0]).find((l) => l.id === LAYER_ID_LABEL)
         expect(labelLayer.layout['text-font']).not.toEqual(['Arial Regular'])
       })
+
+      it('dispatches parcel-map:basemap-metrics when basemap-metrics="true"', async () => {
+        global.fetch = fetchOk(PARCELS_RESPONSE)
+        const el = await mountElement({ 'basemap-metrics': 'true' })
+        await waitForEvent(el, EVENT_READY)
+
+        const metricsEvent = new Promise((resolve) =>
+          el.addEventListener('parcel-map:basemap-metrics', resolve, { once: true })
+        )
+        ml._emit('idle')
+        const e = await metricsEvent
+        expect(e.detail.loadMs).toEqual(expect.any(Number))
+      })
+
+      it('does not track metrics when basemap-metrics is absent', async () => {
+        global.fetch = fetchOk(PARCELS_RESPONSE)
+        const el = await mountElement()
+        await waitForEvent(el, EVENT_READY)
+
+        let fired = false
+        el.addEventListener('parcel-map:basemap-metrics', () => {
+          fired = true
+        })
+        ml._emit('idle')
+        await Promise.resolve()
+        expect(fired).toBe(false)
+      })
     })
   })
 

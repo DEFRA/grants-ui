@@ -5,6 +5,9 @@ import InteractiveMap from '@defra/interactive-map'
 import maplibreProvider from '@defra/interactive-map/providers/maplibre'
 // @ts-ignore — no type declarations shipped with this package
 import createInteractPlugin from '@defra/interactive-map/plugins/interact'
+// TEMPORARY (TGC-1418 follow-up): delete this import and its one call site
+// (marked "metrics:" below) along with basemap-metrics.js.
+import { trackBasemapMetrics } from './basemap-metrics.js'
 import {
   PARCELS_API_URL,
   PARCEL_TILES_URL,
@@ -133,8 +136,9 @@ function buildParcelLayers(colorExpr, sourceLayer, basemapProvider) {
   }
 }
 
-// <parcel-map multi-select="true|false" basemap-provider="ordnance-survey|openstreetmap">
-// basemap-provider's "openstreetmap" value is TEMPORARY (TGC-1418 follow-up).
+// <parcel-map multi-select="true|false" basemap-provider="ordnance-survey|openstreetmap" basemap-metrics="true|false">
+// basemap-provider's "openstreetmap" value and basemap-metrics are both
+// TEMPORARY (TGC-1418 follow-up).
 // Height via CSS on the element. Dispatches:
 //   parcel-map:ready, parcel-map:error, parcel-map:selection → { selectedIds: string[] }
 class ParcelMap extends HTMLElement {
@@ -342,6 +346,12 @@ class ParcelMap extends HTMLElement {
           globalThis.clearTimeout(timeout)
           resolve(null)
         })
+        // metrics: TEMPORARY (TGC-1418 follow-up) — see basemap-metrics.js.
+        // Only runs when the page opts in via basemap-metrics="true", so
+        // journeys that don't show the comparison toggle pay no extra cost.
+        if (this.getAttribute('basemap-metrics') === 'true') {
+          this.#mlCleanup.push(trackBasemapMetrics(m, basemapProvider, this))
+        }
       })
       map.on('map:stylechange', () => {
         if (mlInstance && this.#state === STATE_LOADING) {

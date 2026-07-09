@@ -7,16 +7,22 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
   /** @type {boolean} */
   multiSelect = false
 
+  // TEMPORARY (TGC-1418 follow-up): OS Maps vs OpenStreetMap comparison —
+  // delete this field and its usages once the comparison is complete.
+  /** @type {boolean} */
+  devMode = false
+
   /**
    * @param {FormModel} model
    * @param {PageDef} pageDef
    */
   constructor(model, pageDef) {
     super(model, pageDef)
-    const pageConfig = /** @type {Record<string, unknown>} */ (
-      /** @type {{ config?: Record<string, unknown> }} */ (/** @type {unknown} */ (pageDef)).config ?? {}
-    )
-    this.multiSelect = Boolean(pageConfig.multiSelect)
+
+    const config = model.def.metadata?.pageConfig?.[pageDef.path] ?? {}
+
+    this.multiSelect = Boolean(config.multiSelect)
+    this.devMode = Boolean(config.devMode)
   }
 
   makeGetRouteHandler() {
@@ -38,6 +44,7 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
     return h.view(this.viewName, {
       ...super.getViewModel(request, context),
       multiSelect: this.multiSelect,
+      devMode: this.devMode,
       formAction: request.path
     })
   }
@@ -56,6 +63,7 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
       return h.view(this.viewName, {
         ...super.getViewModel(request, context),
         multiSelect: this.multiSelect,
+        devMode: this.devMode,
         selectedParcelIds: [],
         formAction: request.path,
         errors: this.multiSelect
