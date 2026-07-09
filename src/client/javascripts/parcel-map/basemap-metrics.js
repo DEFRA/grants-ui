@@ -76,7 +76,8 @@ export function trackBasemapMetrics(ml, basemapProvider, target) {
         }
         if (BASEMAP_URL_PATTERNS.some((pattern) => entry.name.includes(pattern))) {
           seenEntries.add(entry)
-          metrics.bytesTransferred += /** @type {PerformanceResourceTiming} */ (entry).transferSize ?? 0
+          const resourceEntry = /** @type {PerformanceResourceTiming} */ (entry)
+          metrics.bytesTransferred += resourceEntry.transferSize ?? 0
           added = true
         }
       }

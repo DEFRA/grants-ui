@@ -43,7 +43,7 @@ describe('trackBasemapMetrics', () => {
       tileErrors: 0,
       loadMs: null,
       firstTileMs: null,
-      bytesTransferred: 0
+      bytesTransferred: 0,
     })
   })
 
