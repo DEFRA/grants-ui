@@ -185,7 +185,7 @@ describe('trackBasemapMetrics', () => {
         getEntries: () => [{ name: 'http://localhost/unrelated.js', transferSize: 100, startTime: 10 }]
       })
 
-      expect(events.length).toHaveLength(countBefore)
+      expect(events).toHaveLength(countBefore)
     })
 
     it('ignores entries that started before this tracker began (previous provider load)', () => {
