@@ -1,3 +1,4 @@
+import { Readable } from 'node:stream'
 import Joi from 'joi'
 import { config } from '~/src/config/config.js'
 import { createApiHeadersForLandGrantsBackend } from '~/src/server/common/helpers/auth/backend-auth-helper.js'
@@ -300,15 +301,18 @@ async function osTileProxyHandler(request, h) {
     return h.response().code(response.status)
   }
 
-  const buffer = await response.arrayBuffer()
-  return (
-    h
-      .response(Buffer.from(buffer))
-      .code(statusCodes.ok)
-      .type(response.headers.get('content-type') ?? 'image/png')
-      // public — OS basemap tiles are identical for every user
-      .header(CACHE_CONTROL_HEADER, `public, max-age=${TILE_CACHE_MAX_AGE_SECONDS}`)
-  )
+  // Stream the tile straight through instead of buffering it whole first.
+  const contentLength = response.headers.get('content-length')
+  let tileResponse = h
+    .response(Readable.fromWeb(/** @type {import('stream/web').ReadableStream} */ (response.body)))
+    .code(statusCodes.ok)
+    .type(response.headers.get('content-type') ?? 'image/png')
+    // public — OS basemap tiles are identical for every user
+    .header(CACHE_CONTROL_HEADER, `public, max-age=${TILE_CACHE_MAX_AGE_SECONDS}`)
+  if (contentLength) {
+    tileResponse = tileResponse.bytes(Number(contentLength))
+  }
+  return tileResponse
 }
 
 const ROUTES = {
