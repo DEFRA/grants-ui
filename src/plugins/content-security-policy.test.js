@@ -2,13 +2,20 @@ import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest'
 import { contentSecurityPolicy as plugin } from '~/src/plugins/content-security-policy.js'
 
 const mockError = vi.fn()
+const mockGetIdentityProviderOrigin = vi.fn()
+
+vi.mock('~/src/server/auth/get-identity-provider-origin.js', () => ({
+  getIdentityProviderOrigin: (...args) => mockGetIdentityProviderOrigin(...args)
+}))
+
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
   log: vi.fn(),
   debug: vi.fn(),
   error: (...args) => mockError(...args),
   LogCodes: {
     SYSTEM: {
-      CSP_SFD_UPDATE_URL_INVALID: { level: 'error', messageFunc: () => 'invalid sfd url' }
+      CSP_SFD_UPDATE_URL_INVALID: { level: 'error', messageFunc: () => 'invalid sfd url' },
+      CSP_IDENTITY_PROVIDER_ORIGIN_INVALID: { level: 'error', messageFunc: () => 'invalid identity provider origin' }
     }
   }
 }))
@@ -26,6 +33,7 @@ describe('contentSecurityPolicy plugin', () => {
   let onPreResponse
 
   beforeEach(async () => {
+    mockGetIdentityProviderOrigin.mockResolvedValue('https://identity.example.com')
     mockConfigGet.mockImplementation((key) => {
       switch (key) {
         case 'isProduction':
@@ -205,9 +213,23 @@ describe('contentSecurityPolicy plugin', () => {
       enableSfd('https://sfd.example.com/update-sbi')
 
       const cspHeader = await getCspHeader()
-      expect(cspHeader).toContain("form-action 'self' https://sfd.example.com")
+      expect(cspHeader).toContain("form-action 'self' https://sfd.example.com https://identity.example.com")
       // origin only — query/path stripped so ?ssoOrgId=... redirects still match
       expect(cspHeader).not.toContain('update-sbi')
+    })
+
+    it('omits and logs an unavailable identity provider origin when SFD is enabled', async () => {
+      mockGetIdentityProviderOrigin.mockResolvedValueOnce(null)
+      await plugin.register(fakeServer)
+      enableSfd('https://sfd.example.com/update-sbi')
+
+      const cspHeader = await getCspHeader()
+
+      expect(cspHeader).toContain("form-action 'self' https://sfd.example.com;")
+      expect(mockError).toHaveBeenCalledWith(
+        expect.objectContaining({ level: 'error' }),
+        expect.objectContaining({ identityProviderOrigin: null })
+      )
     })
 
     it('should keep form-action self when SFD is enabled but URL is malformed', async () => {
