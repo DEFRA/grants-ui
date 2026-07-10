@@ -72,7 +72,8 @@ function makeH() {
   const responseObj = {
     code: vi.fn().mockReturnThis(),
     type: vi.fn().mockReturnThis(),
-    header: vi.fn().mockReturnThis()
+    header: vi.fn().mockReturnThis(),
+    bytes: vi.fn().mockReturnThis()
   }
   return {
     response: vi.fn().mockReturnValue(responseObj),
@@ -448,11 +449,16 @@ describe('mapPlugin', () => {
       expect(schema.validate({ z: 'abc', x: 0, y: 0 }).error).toBeDefined()
     })
 
+    function mockOsTileHeaders(overrides = {}) {
+      const values = { 'content-type': 'image/png', 'content-length': '1024', ...overrides }
+      return { get: vi.fn((key) => values[key] ?? null) }
+    }
+
     it('proxies to the OS raster endpoint with the server-side layer and key', async () => {
       global.fetch.mockResolvedValue({
         ok: true,
-        headers: { get: vi.fn().mockReturnValue('image/png') },
-        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(4))
+        headers: mockOsTileHeaders(),
+        body: new ReadableStream()
       })
       const request = makeOsRequest({ z: '12', x: '100', y: '200' })
       const h = makeH()
@@ -467,11 +473,39 @@ describe('mapPlugin', () => {
       expect(h._responseObj.code).toHaveBeenCalledWith(200)
     })
 
+    it('forwards the upstream Content-Length', async () => {
+      global.fetch.mockResolvedValue({
+        ok: true,
+        headers: mockOsTileHeaders({ 'content-length': '2048' }),
+        body: new ReadableStream()
+      })
+      const request = makeOsRequest({ z: '12', x: '100', y: '200' })
+      const h = makeH()
+
+      await osTilesHandler(request, h)
+
+      expect(h._responseObj.bytes).toHaveBeenCalledWith(2048)
+    })
+
+    it('does not call bytes() when upstream sends no Content-Length', async () => {
+      global.fetch.mockResolvedValue({
+        ok: true,
+        headers: mockOsTileHeaders({ 'content-length': undefined }),
+        body: new ReadableStream()
+      })
+      const request = makeOsRequest({ z: '12', x: '100', y: '200' })
+      const h = makeH()
+
+      await osTilesHandler(request, h)
+
+      expect(h._responseObj.bytes).not.toHaveBeenCalled()
+    })
+
     it('marks tiles as publicly cacheable (same for every user)', async () => {
       global.fetch.mockResolvedValue({
         ok: true,
-        headers: { get: vi.fn().mockReturnValue('image/png') },
-        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0))
+        headers: mockOsTileHeaders(),
+        body: new ReadableStream()
       })
       const request = makeOsRequest({ z: '7', x: '62', y: '40' })
       const h = makeH()
