@@ -47,8 +47,9 @@ describe('applicationDeletedRoute', () => {
     await applicationDeletedRoute.handler(/** @type {any} */ (request), /** @type {any} */ (h))
 
     expect(view).toHaveBeenCalledWith('application-deleted', {
-      slug: 'test-grant',
-      pageTitle: 'Your draft application has been deleted'
+      href: '/test-grant',
+      pageTitle: 'Your draft application has been deleted',
+      text: 'Return to summary'
     })
 
     expect(clearState).not.toHaveBeenCalled()
@@ -78,8 +79,9 @@ describe('applicationDeletedRoute', () => {
     expect(clearState).toHaveBeenCalledWith(request, true)
 
     expect(view).toHaveBeenCalledWith('application-deleted', {
-      slug: 'test-grant',
-      pageTitle: 'Your draft application has been deleted'
+      href: '/test-grant',
+      pageTitle: 'Your draft application has been deleted',
+      text: 'Return to summary'
     })
     expect(log).toHaveBeenCalledWith(
       'STATE_CLEAR_SUCCESS',
@@ -154,8 +156,9 @@ describe('applicationDeletedRoute', () => {
     await applicationDeletedRoute.handler(request, h)
 
     expect(view).toHaveBeenCalledWith('application-deleted', {
-      slug: 'test-grant',
-      pageTitle: 'Your draft application has been deleted'
+      href: '/test-grant',
+      pageTitle: 'Your draft application has been deleted',
+      text: 'Return to summary'
     })
   })
 

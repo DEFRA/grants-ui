@@ -45,8 +45,9 @@ export const applicationDeletedRoute = {
     }
 
     return h.view('application-deleted', {
-      slug: request.params.slug,
-      pageTitle: 'Your draft application has been deleted'
+      text: 'Return to summary',
+      pageTitle: 'Your draft application has been deleted',
+      href: `/${request.params.slug}`
     })
   }
 }
