@@ -115,16 +115,17 @@
       // TEMPORARY: OS Maps vs OpenStreetMap comparison (TGC-1418 follow-up).
       // Delete this block once the comparison is complete.
       var toggle = document.getElementById('basemap-provider-toggle');
+      var metricsEl = document.getElementById('basemap-metrics');
       if (toggle) {
         toggle.addEventListener('change', function (e) {
           if (e.target && e.target.name === 'basemapProviderDisplay') {
+            if (metricsEl) { metricsEl.textContent = ''; }
             mapEl.setAttribute('basemap-provider', e.target.value);
           }
         });
       }
 
       var metricsLabel = { 'ordnance-survey': 'OS Maps', openstreetmap: 'OpenStreetMap' };
-      var metricsEl = document.getElementById('basemap-metrics');
       mapEl.addEventListener('parcel-map:basemap-metrics', function (e) {
         if (!metricsEl) { return; }
         var m = e.detail;
@@ -132,7 +133,11 @@
         if (m.firstTileMs !== null) { parts.push(m.firstTileMs + 'ms to first tile'); }
         parts.push(m.loadMs === null ? 'loading…' : m.loadMs + 'ms to idle');
         parts.push(m.tileRequests + ' tile' + (m.tileRequests === 1 ? '' : 's'));
-        if (m.bytesTransferred > 0) { parts.push(Math.round(m.bytesTransferred / 1024) + 'KB'); }
+        if (m.bytesTransferred > 0) {
+          parts.push(Math.round(m.bytesTransferred / 1024) + 'KB');
+        } else if (m.loadMs !== null) {
+          parts.push('size not measurable');
+        }
         if (m.tileErrors > 0) { parts.push(m.tileErrors + ' error' + (m.tileErrors === 1 ? '' : 's')); }
         metricsEl.textContent = parts.join(' · ');
       });
