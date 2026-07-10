@@ -313,7 +313,8 @@ pages:
     controller: PotentialFundingController
     id: 0ca92c0d-1318-491f-a461-bad92554dae3
   - path: /check-answers
-    controller: FlyingPigsSubmissionPageController
+    controller: DeclarationPageController
+    view: submission.html
     title: Check your answers
     id: e18e2a8f-4dcf-4f70-ae75-235752260c51
   - title: Confirmation

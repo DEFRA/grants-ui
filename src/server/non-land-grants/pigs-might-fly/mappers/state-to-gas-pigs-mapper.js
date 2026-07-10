@@ -10,12 +10,12 @@
  */
 
 /**
- * Transforms FormContext object into a GAS Application answers object for Land Grants.
+ * Transforms FormContext object into a GAS Application answers object for Pigs Might Fly.
  * @param {object} state
  * @returns {GASAnswers}
  */
 
-export function stateToPigsMightFlyGasAnswers(state = {}) {
+export function transformPigsMightFlyAnswers(state = {}) {
   if (!state) {
     return {
       isPigFarmer: false,

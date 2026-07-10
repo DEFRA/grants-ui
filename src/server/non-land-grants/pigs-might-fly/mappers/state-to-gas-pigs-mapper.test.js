@@ -1,10 +1,10 @@
-import { stateToPigsMightFlyGasAnswers } from './state-to-gas-pigs-mapper.js'
+import { transformPigsMightFlyAnswers } from './state-to-gas-pigs-mapper.js'
 
-describe('stateToPigsMightFlyGasAnswers', () => {
+describe('transformPigsMightFlyAnswers', () => {
   describe('Default values', () => {
     test('should return default values when state is empty', () => {
       const state = {}
-      const result = stateToPigsMightFlyGasAnswers(state)
+      const result = transformPigsMightFlyAnswers(state)
 
       expect(result).toEqual({
         isPigFarmer: false,
@@ -13,8 +13,8 @@ describe('stateToPigsMightFlyGasAnswers', () => {
     })
 
     test('should return default values when state is null or undefined', () => {
-      const resultNull = stateToPigsMightFlyGasAnswers(null)
-      const resultUndefined = stateToPigsMightFlyGasAnswers(undefined)
+      const resultNull = transformPigsMightFlyAnswers(null)
+      const resultUndefined = transformPigsMightFlyAnswers(undefined)
 
       const expected = {
         isPigFarmer: false,
@@ -29,21 +29,21 @@ describe('stateToPigsMightFlyGasAnswers', () => {
   describe('Basic properties handling', () => {
     test('should correctly map isPigFarmer when true', () => {
       const state = { isPigFarmer: true }
-      const result = stateToPigsMightFlyGasAnswers(state)
+      const result = transformPigsMightFlyAnswers(state)
 
       expect(result.isPigFarmer).toBe(true)
     })
 
     test('should correctly map isPigFarmer when false', () => {
       const state = { isPigFarmer: false }
-      const result = stateToPigsMightFlyGasAnswers(state)
+      const result = transformPigsMightFlyAnswers(state)
 
       expect(result.isPigFarmer).toBe(false)
     })
 
     test('should correctly map totalPigs', () => {
       const state = { totalPigs: 100 }
-      const result = stateToPigsMightFlyGasAnswers(state)
+      const result = transformPigsMightFlyAnswers(state)
 
       expect(result.totalPigs).toBe(100)
     })
@@ -52,84 +52,84 @@ describe('stateToPigsMightFlyGasAnswers', () => {
   describe('Pig count properties handling', () => {
     test('should include whitePigsCount when defined', () => {
       const state = { whitePigsCount: 25 }
-      const result = stateToPigsMightFlyGasAnswers(state)
+      const result = transformPigsMightFlyAnswers(state)
 
       expect(result.whitePigsCount).toBe(25)
     })
 
     test('should include whitePigsCount when zero', () => {
       const state = { whitePigsCount: 0 }
-      const result = stateToPigsMightFlyGasAnswers(state)
+      const result = transformPigsMightFlyAnswers(state)
 
       expect(result.whitePigsCount).toBe(0)
     })
 
     test('should not include whitePigsCount when undefined', () => {
       const state = { whitePigsCount: undefined }
-      const result = stateToPigsMightFlyGasAnswers(state)
+      const result = transformPigsMightFlyAnswers(state)
 
       expect(result).not.toHaveProperty('whitePigsCount')
     })
 
     test('should include britishLandracePigsCount when defined', () => {
       const state = { britishLandracePigsCount: 15 }
-      const result = stateToPigsMightFlyGasAnswers(state)
+      const result = transformPigsMightFlyAnswers(state)
 
       expect(result.britishLandracePigsCount).toBe(15)
     })
 
     test('should include britishLandracePigsCount when zero', () => {
       const state = { britishLandracePigsCount: 0 }
-      const result = stateToPigsMightFlyGasAnswers(state)
+      const result = transformPigsMightFlyAnswers(state)
 
       expect(result.britishLandracePigsCount).toBe(0)
     })
 
     test('should not include britishLandracePigsCount when undefined', () => {
       const state = { britishLandracePigsCount: undefined }
-      const result = stateToPigsMightFlyGasAnswers(state)
+      const result = transformPigsMightFlyAnswers(state)
 
       expect(result).not.toHaveProperty('britishLandracePigsCount')
     })
 
     test('should include berkshirePigsCount when defined', () => {
       const state = { berkshirePigsCount: 10 }
-      const result = stateToPigsMightFlyGasAnswers(state)
+      const result = transformPigsMightFlyAnswers(state)
 
       expect(result.berkshirePigsCount).toBe(10)
     })
 
     test('should include berkshirePigsCount when zero', () => {
       const state = { berkshirePigsCount: 0 }
-      const result = stateToPigsMightFlyGasAnswers(state)
+      const result = transformPigsMightFlyAnswers(state)
 
       expect(result.berkshirePigsCount).toBe(0)
     })
 
     test('should not include berkshirePigsCount when undefined', () => {
       const state = { berkshirePigsCount: undefined }
-      const result = stateToPigsMightFlyGasAnswers(state)
+      const result = transformPigsMightFlyAnswers(state)
 
       expect(result).not.toHaveProperty('berkshirePigsCount')
     })
 
     test('should include otherPigsCount when defined', () => {
       const state = { otherPigsCount: 5 }
-      const result = stateToPigsMightFlyGasAnswers(state)
+      const result = transformPigsMightFlyAnswers(state)
 
       expect(result.otherPigsCount).toBe(5)
     })
 
     test('should include otherPigsCount when zero', () => {
       const state = { otherPigsCount: 0 }
-      const result = stateToPigsMightFlyGasAnswers(state)
+      const result = transformPigsMightFlyAnswers(state)
 
       expect(result.otherPigsCount).toBe(0)
     })
 
     test('should not include otherPigsCount when undefined', () => {
       const state = { otherPigsCount: undefined }
-      const result = stateToPigsMightFlyGasAnswers(state)
+      const result = transformPigsMightFlyAnswers(state)
 
       expect(result).not.toHaveProperty('otherPigsCount')
     })
@@ -147,7 +147,7 @@ describe('stateToPigsMightFlyGasAnswers', () => {
         otherPigsCount: 10
       }
 
-      const result = stateToPigsMightFlyGasAnswers(state)
+      const result = transformPigsMightFlyAnswers(state)
 
       expect(result).toEqual({
         isPigFarmer: true,
@@ -167,7 +167,7 @@ describe('stateToPigsMightFlyGasAnswers', () => {
         berkshirePigsCount: 20
       }
 
-      const result = stateToPigsMightFlyGasAnswers(state)
+      const result = transformPigsMightFlyAnswers(state)
 
       expect(result).toEqual({
         isPigFarmer: true,
@@ -188,7 +188,7 @@ describe('stateToPigsMightFlyGasAnswers', () => {
         britishLandracePigsCount: -3
       }
 
-      const result = stateToPigsMightFlyGasAnswers(state)
+      const result = transformPigsMightFlyAnswers(state)
 
       expect(result.totalPigs).toBe(-5)
       expect(result.whitePigsCount).toBe(-10)
@@ -201,7 +201,7 @@ describe('stateToPigsMightFlyGasAnswers', () => {
         whitePigsCount: '25'
       }
 
-      const result = stateToPigsMightFlyGasAnswers(state)
+      const result = transformPigsMightFlyAnswers(state)
 
       expect(result.totalPigs).toBe('50')
       expect(result.whitePigsCount).toBe('25')
@@ -211,7 +211,7 @@ describe('stateToPigsMightFlyGasAnswers', () => {
       const testCases = [{ isPigFarmer: '' }, { isPigFarmer: 0 }, { isPigFarmer: null }]
 
       testCases.forEach((state) => {
-        const result = stateToPigsMightFlyGasAnswers(state)
+        const result = transformPigsMightFlyAnswers(state)
         expect(result.isPigFarmer).toBe(false)
       })
     })
@@ -221,7 +221,7 @@ describe('stateToPigsMightFlyGasAnswers', () => {
         totalPigs: 0
       }
 
-      const result = stateToPigsMightFlyGasAnswers(state)
+      const result = transformPigsMightFlyAnswers(state)
 
       expect(result.totalPigs).toBe(0)
     })
@@ -236,7 +236,7 @@ describe('stateToPigsMightFlyGasAnswers', () => {
         whitePigsCount: 25.7
       }
 
-      const result = stateToPigsMightFlyGasAnswers(state)
+      const result = transformPigsMightFlyAnswers(state)
 
       expect(result.isPigFarmer).toBe('yes')
       expect(result.totalPigs).toBe(100.5)
