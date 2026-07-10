@@ -12,6 +12,7 @@ import { cookies } from '~/src/server/cookies/index.js'
 import { cannotSubmit } from './cannot-submit/index.js'
 import { applicationDeleted } from './application-deleted/index.js'
 import { mapPlugin } from '~/src/server/common/map/map.plugin.js'
+import { sfdRedirect } from '~/src/server/sfd-redirect/index.js'
 
 const cdpEnvironment = config.get('cdpEnvironment')
 
@@ -31,7 +32,7 @@ export const router = {
       await server.register([auth])
 
       // Application specific routes, add your own routes here
-      await server.register([home, agreements, cookies, cannotSubmit, applicationDeleted])
+      await server.register([home, agreements, cookies, cannotSubmit, applicationDeleted, sfdRedirect])
 
       await server.register([mapPlugin])
 
