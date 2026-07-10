@@ -84,7 +84,12 @@ pages:
       multiSelect: true
 ```
 
-`MapSelectPageController` reads `pageDef.config.multiSelect` in its constructor and passes it to the template and the component's `multi-select` attribute.
+#### Page `config` flags
+
+| Flag          | Type      | Default | Effect                                                                                                                                                                                                                                                                                                                        |
+| ------------- | --------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `multiSelect` | `boolean` | `false` | Allow selecting more than one parcel — see above.                                                                                                                                                                                                                                                                             |
+| `devMode`     | `boolean` | `false` | TEMPORARY (TGC-1418 follow-up). Shows the OS Maps / OpenStreetMap comparison toggle and the performance metrics readout on this page. Leave unset (or `false`) on real user-facing journeys — it's a developer/stakeholder-comparison aid, not a feature for end users. Currently only `example-grant-with-map.yaml` sets it. |
 
 ---
 
@@ -107,15 +112,74 @@ Extends `QuestionPageController`. Renders `map-select-parcel.html`.
 
 ### Attributes
 
-| Attribute      | Values               | Default   | Description                                    |
-| -------------- | -------------------- | --------- | ---------------------------------------------- |
-| `multi-select` | `"true"` / `"false"` | `"false"` | Allow selecting more than one parcel at a time |
+| Attribute          | Values                                    | Default             | Description                                    |
+| ------------------ | ----------------------------------------- | ------------------- | ---------------------------------------------- |
+| `multi-select`     | `"true"` / `"false"`                      | `"false"`           | Allow selecting more than one parcel at a time |
+| `basemap-provider` | `"ordnance-survey"` / `"openstreetmap"` † | `"ordnance-survey"` | Which basemap to render — see below            |
+| `basemap-metrics`  | `"true"` / `"false"` †                    | `"false"`           | Emit `parcel-map:basemap-metrics` — see below  |
+
+† Both temporary, see below.
 
 **Single-select** — clicking a parcel selects it and deselects any previously selected one. Clicking the same parcel again deselects it.
 
 **Multi-select** — clicking toggles each parcel independently. Multiple parcels can be selected simultaneously.
 
 `multi-select` is read once when the component connects — changing it afterwards has no effect (re-create the element to reconfigure).
+
+`basemap-provider` **does** support runtime changes: setting it after the component has connected tears the map down and re-initialises it with the new basemap, keeping the same parcel data (no re-fetch). Any in-progress parcel selection is lost on switch — this attribute exists for comparing the two basemaps, not as a saved user preference, and always starts on `"ordnance-survey"` regardless of what was previously selected.
+
+### Basemap providers
+
+> **TEMPORARY (TGC-1418 follow-up):** OpenStreetMap support exists only for a side-by-side comparison and is expected to be removed within weeks. It is **opt-in per journey** via `devMode` in the page's YAML `config` block (same pattern as `multiSelect`) — journeys that don't set it get the toggle-free, metrics-free OS-only experience, so this only reaches real users on journeys that explicitly ask for it (currently just `example-grant-with-map.yaml`).
+>
+> Everything OpenStreetMap-specific is wrapped in a `TEMPORARY … END TEMPORARY` comment block — grep the repo for `TGC-1418` to find every piece to delete:
+>
+> - the `devMode` field in `map-select-page.controller.js` (and its tests)
+> - the `config: { devMode: true }` block in `example-grant-with-map.yaml`
+> - the constants and `getMapStyle`/label-font branches in `config.js`/`index.js`
+> - the CartoCDN CSP allowances in `content-security-policy.js`
+> - the toggle control, metrics panel, and their `{% if devMode %}`-gated listeners in `map-select-parcel.html`
+> - `basemap-metrics.js` and `basemap-metrics.test.js` in full, plus their one import/call site in `index.js`
+>
+> See the OS Maps vs OpenStreetMap comparison report for why OS Maps is the recommended (and, after removal, only) provider.
+
+Two basemap sources are currently supported, selected via the `basemap-provider` attribute (`getMapStyle` in `index.js` resolves the actual style/attribution for each):
+
+- **`"ordnance-survey"` (default)** — Ordnance Survey's raster basemap, served through the server-side proxy described below. Authoritative UK survey data, including farmland/parcel boundary detail that the alternative lacks.
+- **`"openstreetmap"`** — OpenStreetMap, via CartoCDN's hosted vector style (`https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json`). No server proxy — CartoCDN's tiles are public, so the browser fetches them directly. Requires the CartoCDN CSP allowances in `content-security-policy.js` (`connect-src`/`img-src`). Its style also sets its own `glyphs` URL, so the parcel label layer switches to a font (`Open Sans Regular`) that CartoCDN's font server actually serves — `Arial Regular`, used for OS Maps, 404s against it.
+
+The [`map-select-parcel.html`](views/map-select-parcel.html) template wires a small GOV.UK radios control (`#basemap-provider-toggle`) to the attribute, for side-by-side comparison during development.
+
+#### Performance metrics (temporary)
+
+`basemap-metrics.js` times each basemap load and dispatches a `parcel-map:basemap-metrics` event that `map-select-parcel.html` renders as a small text readout next to the toggle:
+
+```js
+{
+  ;(provider, tileRequests, tileErrors, loadMs, firstTileMs, bytesTransferred)
+}
+```
+
+- **`loadMs`** — anchored on MapLibre's own `idle` event, fired once every pending tile/source has settled. A fairer finish line than first paint alone, since OS (raster, many small tiles) and OSM (vector, fewer larger tiles) have different loading shapes.
+- **`firstTileMs`** — time to the first `sourcedata` event carrying a tile, i.e. perceived speed — users see something on screen well before every last tile settles.
+- **`bytesTransferred`** — summed via `PerformanceObserver` on Resource Timing entries whose URL matches `/api/map/os-tiles`, `/api/map/os-basemap`, or `basemaps.cartocdn.com`, so only basemap-related requests count (not unrelated page assets). `transferSize` is `0` for cross-origin responses without `Timing-Allow-Origin` — CartoCDN doesn't send that header, so this reads as `0` for OSM rather than being silently wrong. Known limitation, not a bug.
+- **`tileRequests`/`tileErrors`** — counted from `sourcedata`/`error` events on the raw MapLibre instance.
+
+Both metrics tracking and the display panel only run when the page opts in — see `basemap-metrics` attribute below.
+
+### Accessible selection (interact plugin)
+
+Selection is handled by the `@defra/interactive-map` **interact plugin**, not raw MapLibre click handlers. This gives every input method a route to select a parcel:
+
+- **Pointer** — click a parcel
+- **Touch** — a crosshair with a "Select" action button
+- **Keyboard** — <kbd>Enter</kbd> selects at the crosshair target; <kbd>Tab</kbd> opens a listbox of parcels navigable with arrow keys
+
+The plugin only selects a polygon on an exact geometric hit, which is impractical for small zoomed-out parcels — the component adds a rendered-pixel fallback (see `withParcelHitTolerance` in `index.js`) so parcels stay selectable at any zoom, by pointer and by keyboard.
+
+The component listens to the plugin's selection events and re-dispatches them as `parcel-map:selection`, so page-level consumers are unaffected by the plugin internals.
+
+The plugin needs a single property that uniquely identifies each parcel feature. The land-grants API tiles don't provide one directly, so the grants-ui tile proxy adds it — see `withCompoundParcelIds` in `mvt-compound-id.js` for why and how.
 
 ### Height
 
@@ -151,7 +215,7 @@ The inline script in `map-select-parcel.html` is the canonical example of how to
 - On an `'unavailable'` error the component replaces the map with an inline "There was a problem loading the map." overlay (`role="alert"`).
 - On a `'no-parcels'` error it renders nothing — messaging is left to the page (`map-select-parcel.html` un-hides a GOV.UK error summary and disables the continue button).
 - The viewport is fitted to the parcels' bounding box on load; the map does not persist its viewport in the URL (`urlPosition: 'none'`).
-- Zoom-out is capped at `MAP_MIN_ZOOM` (7) — the OS basemap has no tiles below z7, so without the cap users could zoom out into a blank void.
+- Zoom-out is capped at `MAP_MIN_ZOOM` (7) — the OS raster basemap has no tiles below z7, so without the cap users could zoom out into a blank void. TEMPORARY (TGC-1418 follow-up): this cap is skipped when `basemap-provider="openstreetmap"`, since CartoCDN's vector style covers the full zoom range.
 
 ### Asset loading
 
@@ -214,7 +278,7 @@ Returns the full GeoJSON `FeatureCollection` for mock mode. Reads features store
 
 ### `GET /api/map/parcel-tiles/{z}/{x}/{y}`
 
-Proxies MapLibre vector tile requests to the land-grants API. Fetches the current user's parcel IDs from `fetchParcels` (concurrent tile requests share one in-flight lookup per SBI) and sends them in the POST body so they are never exposed in the tile URL. Returns the protobuf tile buffer with `Cache-Control: private, max-age=3600` — `private` because tiles are per-user.
+Proxies MapLibre vector tile requests to the land-grants API. Fetches the current user's parcel IDs from `fetchParcels` (concurrent tile requests share one in-flight lookup per SBI) and sends them in the POST body so they are never exposed in the tile URL. Each tile is re-encoded on the way through (`withCompoundParcelIds`) to stamp the compound `id` property onto every feature — see the interact plugin section above. Returns the protobuf tile buffer with `Cache-Control: private, max-age=3600` — `private` because tiles are per-user.
 
 ### `GET /api/map/os-basemap`
 
@@ -255,7 +319,14 @@ The basemap is Ordnance Survey's **OS Maps API** (raster ZXY tiles), which requi
 
 ### Local setup
 
-Get a key from the [OS Data Hub](https://osdatahub.os.uk/) with the OS Maps API product added, then add it to `.env`:
+#### Generating a key on the OS Data Hub
+
+1. Go to [osdatahub.os.uk](https://osdatahub.os.uk/) and sign up (the free **OS OpenData plan** is enough — the OS Maps API is included in it).
+2. Once logged in, open **API Dashboard → API Projects** and click **Create a new project** (any name, e.g. `grants-ui-local`).
+3. In the project, click **Add API** and select **OS Maps API**.
+4. Copy the **Project API Key** shown on the project page.
+
+Then add it to `.env`:
 
 ```
 OS_MAPS_API_KEY=your-key-here

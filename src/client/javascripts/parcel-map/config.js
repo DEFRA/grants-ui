@@ -1,10 +1,26 @@
 export const PARCELS_API_URL = '/api/map/parcels'
 export const PARCEL_TILES_URL = '/api/map/parcel-tiles/{z}/{x}/{y}'
 export const PARCELS_GEOJSON_URL = '/api/map/parcels/geojson'
+
+export const BASEMAP_PROVIDER_ORDNANCE_SURVEY = 'ordnance-survey'
+export const DEFAULT_BASEMAP_PROVIDER = BASEMAP_PROVIDER_ORDNANCE_SURVEY
+
 export const MAP_STYLE_URL = '/api/map/os-basemap'
+
 export function getMapStyleAttribution() {
   return `© Crown copyright and database rights ${new Date().getFullYear()} OS`
 }
+
+export const MULTI_SELECT_ATTRIBUTE = 'multi-select'
+
+// --- TEMPORARY: OS Maps vs OpenStreetMap comparison (TGC-1418 follow-up) ---
+// Delete this block, BASEMAP_PROVIDER_OPENSTREETMAP's usages in index.js, and
+// the toggle in map-select-parcel.html once the comparison is complete.
+export const BASEMAP_PROVIDER_OPENSTREETMAP = 'openstreetmap'
+export const OSM_STYLE_URL = 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json'
+export const OSM_STYLE_ATTRIBUTION = '© OpenStreetMap contributors © CARTO'
+export const BASEMAP_PROVIDER_ATTRIBUTE = 'basemap-provider'
+// --- END TEMPORARY ---
 
 export const PARCEL_COLORS = [
   '#1d70b8', // govuk-blue
@@ -21,6 +37,18 @@ export const LAYER_TEXT_HALO_WIDTH = 1.5
 export const LAYER_LINE_WIDTH = 1.5
 export const FIT_BOUNDS_PADDING = 40
 export const AREA_DECIMAL_PLACES = 2
+
+// Feature property carrying the compound "SHEET-PARCEL" ID. Present in both the
+// vector tiles (stamped on by the grants-ui tile proxy) and the mock GeoJSON.
+// The interact plugin uses it to identify features and label them in the
+// keyboard-accessible listbox.
+export const PARCEL_ID_PROPERTY = 'id'
+
+// Pixel radius for parcel hit-testing. The interact plugin only matches
+// polygons on exact geometric containment, so the provider falls back to a
+// rendered-pixel query within this radius — otherwise small (zoomed-out)
+// parcels are practically unclickable.
+export const PARCEL_CLICK_TOLERANCE_PX = 10
 
 export const LAYER_ID_FILL = 'parcels-fill'
 export const LAYER_ID_OUTLINE = 'parcels-outline'
@@ -47,6 +75,9 @@ export const LABEL_TEXT_COLOR = '#0b0c0c'
 export const LABEL_HALO_COLOR = '#ffffff'
 
 export const SELECTION_NONE_SENTINEL = '__none__'
+
+// Accessible name for the map viewport (role="application"), announced by screen readers on focus
+export const MAP_LABEL = 'Map of your land parcels. Select a parcel to apply for actions on it.'
 
 export const MSG_LOADING = 'Loading map…'
 export const MSG_ERROR_UNAVAILABLE = 'There was a problem loading the map.'

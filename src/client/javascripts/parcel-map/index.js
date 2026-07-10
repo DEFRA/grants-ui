@@ -3,24 +3,35 @@
 import InteractiveMap from '@defra/interactive-map'
 // @ts-ignore — no type declarations shipped with this package
 import maplibreProvider from '@defra/interactive-map/providers/maplibre'
+// @ts-ignore — no type declarations shipped with this package
+import createInteractPlugin from '@defra/interactive-map/plugins/interact'
+// TEMPORARY (TGC-1418 follow-up): delete this import and its one call site
+// (marked "metrics:" below) along with basemap-metrics.js.
+import { trackBasemapMetrics } from './basemap-metrics.js'
+import {
+  COMPOUND_ID_EXPR,
+  buildParcelLayers,
+  getMapStyle,
+  withParcelHitTolerance,
+  buildSkeleton,
+  buildColorExpr,
+  resolveFeatureId,
+  showTooltip,
+  hideTooltip
+} from './map-helpers.js'
 import {
   PARCELS_API_URL,
   PARCEL_TILES_URL,
   PARCELS_GEOJSON_URL,
-  MAP_STYLE_URL,
-  getMapStyleAttribution,
-  PARCEL_COLORS,
-  LAYER_TEXT_SIZE,
-  LAYER_TEXT_HALO_WIDTH,
-  LAYER_LINE_WIDTH,
-  FIT_BOUNDS_PADDING,
-  AREA_DECIMAL_PLACES,
-  TOOLTIP_STYLES,
+  MAP_LABEL,
+  BASEMAP_PROVIDER_ATTRIBUTE,
+  DEFAULT_BASEMAP_PROVIDER,
+  // TEMPORARY: OS Maps vs OpenStreetMap comparison (TGC-1418 follow-up) — see config.js
+  BASEMAP_PROVIDER_OPENSTREETMAP,
+  PARCEL_ID_PROPERTY,
   LAYER_ID_FILL,
-  LAYER_ID_OUTLINE,
-  LAYER_ID_LABEL,
-  FILL_OPACITY_DEFAULT,
-  FILL_OPACITY_SELECTED,
+  FIT_BOUNDS_PADDING,
+  TOOLTIP_STYLES,
   MAP_DEFAULT_HEIGHT,
   MAP_DEFAULT_CENTER,
   MAP_DEFAULT_ZOOM,
@@ -28,9 +39,6 @@ import {
   MAP_LOAD_TIMEOUT_MS,
   FETCH_MAX_ATTEMPTS,
   FETCH_RETRY_DELAY_MS,
-  TOOLTIP_OFFSET_X,
-  TOOLTIP_MAX_WIDTH,
-  TOOLTIP_FALLBACK_MAP_WIDTH,
   EVENT_READY,
   EVENT_ERROR,
   EVENT_SELECTION,
@@ -38,86 +46,35 @@ import {
   STATE_LOADING,
   STATE_READY,
   STATE_ERROR,
+  MULTI_SELECT_ATTRIBUTE,
   ERROR_OVERLAY_STYLES,
   ERROR_LABEL_STYLES,
-  LABEL_TEXT_COLOR,
-  LABEL_HALO_COLOR,
+  FILL_OPACITY_DEFAULT,
+  FILL_OPACITY_SELECTED,
   SELECTION_NONE_SENTINEL,
-  MSG_LOADING,
-  MSG_ERROR_UNAVAILABLE,
-  MSG_UNKNOWN_PARCEL,
-  MSG_UNKNOWN_AREA,
-  TOOLTIP_VERTICAL_OFFSET
+  MSG_ERROR_UNAVAILABLE
 } from './config.js'
 
 /**
- * @import { Map as MLMap, MapGeoJSONFeature } from 'maplibre-gl'
+ * @import { Map as MLMap } from 'maplibre-gl'
+ * @import { ParcelProperties, MetaIndex } from './map-helpers.js'
  */
 
 /**
- * @typedef {{ sheet_id?: unknown, parcel_id?: unknown, areaHa?: unknown, [key: string]: unknown }} ParcelProperties
- * @typedef {{ id: string } & ParcelProperties} ParcelMeta
- * @typedef {Record<string, ParcelMeta>} MetaIndex
  * @typedef {{ parcelIds: string[], metaIndex: MetaIndex, geojsonUrl: string | null, bbox: BBox | null }} ParcelData
  * @typedef {{ minLng: number, minLat: number, maxLng: number, maxLat: number }} BBox
  */
 
-/**
- * @param {unknown[]} colorExpr  MapLibre `match` expression
- * @param {string}   [sourceLayer]
- */
-function buildParcelLayers(colorExpr, sourceLayer) {
-  const src = sourceLayer ? { 'source-layer': sourceLayer } : {}
-  return {
-    fill: {
-      id: LAYER_ID_FILL,
-      type: 'fill',
-      source: 'parcels',
-      ...src,
-      paint: {
-        'fill-color': colorExpr,
-        'fill-opacity': FILL_OPACITY_DEFAULT
-      }
-    },
-    outline: {
-      id: LAYER_ID_OUTLINE,
-      type: 'line',
-      source: 'parcels',
-      ...src,
-      paint: {
-        'line-color': colorExpr,
-        'line-width': LAYER_LINE_WIDTH
-      }
-    },
-    label: {
-      id: LAYER_ID_LABEL,
-      type: 'symbol',
-      source: 'parcels',
-      ...src,
-      layout: {
-        'text-field': ['concat', ['get', 'sheet_id'], '-', ['get', 'parcel_id']],
-        'text-font': ['Arial Regular'],
-        'text-size': LAYER_TEXT_SIZE,
-        'text-anchor': 'center'
-      },
-      paint: {
-        'text-color': LABEL_TEXT_COLOR,
-        'text-halo-color': LABEL_HALO_COLOR,
-        'text-halo-width': LAYER_TEXT_HALO_WIDTH
-      }
-    }
-  }
-}
-
-// <parcel-map multi-select="true|false">
-// Height via CSS on the element. Dispatches:
-//   parcel-map:ready, parcel-map:error, parcel-map:selection → { selectedIds: string[] }
+// <parcel-map multi-select="true|false" basemap-provider="ordnance-survey|openstreetmap" basemap-metrics="true|false">
 class ParcelMap extends HTMLElement {
   /** @type {typeof STATE_IDLE | typeof STATE_LOADING | typeof STATE_READY | typeof STATE_ERROR} */
   #state = STATE_IDLE
 
   /** @type {InstanceType<typeof InteractiveMap> | null} */
   #mapInstance = null
+
+  /** @type {ReturnType<typeof createInteractPlugin> | null} */
+  #interactPlugin = null
 
   /** @type {HTMLDivElement | null} */
   #mapEl = null
@@ -131,13 +88,41 @@ class ParcelMap extends HTMLElement {
   /** @type {Array<() => void>} */
   #mlCleanup = []
 
+  #connected = false
+
+  // Set when basemap-provider changes while a load is already in flight —
+  // the in-flight #init() already captured the old value in a local const,
+  // so it can't pick up the new one itself. #init() checks this once it
+  // settles and restarts itself if needed.
+  #pendingReinit = false
+
+  static get observedAttributes() {
+    return [BASEMAP_PROVIDER_ATTRIBUTE]
+  }
+
   connectedCallback() {
+    this.#connected = true
     this.#state = STATE_IDLE
     this.#init()
   }
 
   disconnectedCallback() {
+    this.#connected = false
     this.#teardown()
+  }
+
+  attributeChangedCallback(name) {
+    // Ignore the attribute's own initial set before the element is connected.
+    if (name !== BASEMAP_PROVIDER_ATTRIBUTE || !this.#connected) {
+      return
+    }
+    if (this.#state === STATE_LOADING) {
+      this.#pendingReinit = true
+      return
+    }
+    this.#teardown()
+    this.#state = STATE_IDLE
+    this.#init()
   }
 
   #teardown() {
@@ -152,6 +137,7 @@ class ParcelMap extends HTMLElement {
       /* ignore */
     }
     this.#mapInstance = null
+    this.#interactPlugin = null
     this.#mapEl?.parentElement?.remove()
     this.#mapEl = null
     this.#skeleton?.remove()
@@ -163,13 +149,15 @@ class ParcelMap extends HTMLElement {
   async #init() {
     this.#state = STATE_LOADING
 
-    // Read once at connect, runtime changes to the attribute are not supported.
-    const multiSelect = this.getAttribute('multi-select') === 'true'
+    // Read once per init — basemap-provider changes trigger a fresh #init via
+    // attributeChangedCallback, so this always reflects the current value.
+    const multiSelect = this.getAttribute(MULTI_SELECT_ATTRIBUTE) === 'true'
+    const basemapProvider = this.getAttribute(BASEMAP_PROVIDER_ATTRIBUTE) || DEFAULT_BASEMAP_PROVIDER
 
     this.#skeleton = buildSkeleton()
     this.appendChild(this.#skeleton)
 
-    const [ml, data] = await Promise.all([this.#initMap(), this.#fetchData()])
+    const [ml, data] = await Promise.all([this.#initMap(multiSelect, basemapProvider), this.#fetchData()])
 
     // Torn down (disconnected) while we were loading, nothing to wire up.
     if (this.#state !== STATE_LOADING) {
@@ -187,15 +175,26 @@ class ParcelMap extends HTMLElement {
       this.dispatchEvent(new CustomEvent(EVENT_ERROR, { bubbles: true, detail: { reason: 'no-parcels' } }))
     } else {
       const colorExpr = buildColorExpr(data.parcelIds)
-      this.#addParcelsToMap(ml, data, colorExpr)
+      this.#addParcelsToMap(ml, data, colorExpr, basemapProvider)
       const tooltip = this.#attachTooltip(ml, data.metaIndex)
-      this.#attachSelectionHandler(ml, multiSelect, tooltip)
+      this.#attachSelectionRelay(ml, tooltip)
+      this.#interactPlugin?.enable()
 
       this.#state = STATE_READY
       this.#skeleton?.remove()
       this.#skeleton = null
 
       this.dispatchEvent(new CustomEvent(EVENT_READY, { bubbles: true }))
+    }
+
+    // basemap-provider changed while the load above was in flight — restart
+    // now that we've settled, so the map ends up on the current attribute
+    // value instead of the one captured at the top of this #init() call.
+    if (this.#pendingReinit) {
+      this.#pendingReinit = false
+      this.#teardown()
+      this.#state = STATE_IDLE
+      this.#init()
     }
   }
 
@@ -212,8 +211,12 @@ class ParcelMap extends HTMLElement {
     this.#errorOverlay = el
   }
 
-  /** @returns {Promise<MLMap | null>} */
-  #initMap() {
+  /**
+   * @param {boolean} multiSelect
+   * @param {string} basemapProvider  BASEMAP_PROVIDER_OS | BASEMAP_PROVIDER_OSM
+   * @returns {Promise<MLMap | null>}
+   */
+  #initMap(multiSelect, basemapProvider) {
     return new Promise((resolve) => {
       const wrapper = document.createElement('div')
       wrapper.style.cssText = 'position:relative;width:100%;height:100%'
@@ -230,17 +233,32 @@ class ParcelMap extends HTMLElement {
         this.appendChild(wrapper)
       }
 
+      // Handles feature selection accessibly: pointer clicks, a touch
+      // crosshair + Select button, and a keyboard-navigable feature listbox.
+      const interactPlugin = createInteractPlugin({
+        interactionModes: ['selectFeature'],
+        multiSelect,
+        deselectOnClickOutside: true,
+        layers: [
+          {
+            layerId: LAYER_ID_FILL,
+            idProperty: PARCEL_ID_PROPERTY,
+            labelProperty: PARCEL_ID_PROPERTY
+          }
+        ]
+      })
+      this.#interactPlugin = interactPlugin
+
       const map = new InteractiveMap(mapEl.id, {
         behaviour: 'inline',
+        mapLabel: MAP_LABEL,
         containerHeight: this.style.height || MAP_DEFAULT_HEIGHT,
-        mapProvider: maplibreProvider(),
-        mapStyle: { url: MAP_STYLE_URL, attribution: getMapStyleAttribution() },
+        mapProvider: withParcelHitTolerance(maplibreProvider()),
+        mapStyle: getMapStyle(basemapProvider),
+        plugins: [interactPlugin],
         center: MAP_DEFAULT_CENTER,
         zoom: MAP_DEFAULT_ZOOM,
-        // The OS basemap has no tiles below z7 — stop users zooming out into
-        // blank void. Passed through to the MapLibre Map constructor.
-        minZoom: MAP_MIN_ZOOM,
-        // Don't persist the viewport in URL params.
+        minZoom: basemapProvider === BASEMAP_PROVIDER_OPENSTREETMAP ? undefined : MAP_MIN_ZOOM,
         urlPosition: 'none'
       })
       this.#mapInstance = map
@@ -265,6 +283,10 @@ class ParcelMap extends HTMLElement {
           globalThis.clearTimeout(timeout)
           resolve(null)
         })
+
+        if (this.getAttribute('basemap-metrics') === 'true') {
+          this.#mlCleanup.push(trackBasemapMetrics(m, basemapProvider, this))
+        }
       })
       map.on('map:stylechange', () => {
         if (mlInstance && this.#state === STATE_LOADING) {
@@ -332,8 +354,9 @@ class ParcelMap extends HTMLElement {
    * @param {MLMap} ml
    * @param {ParcelData} data
    * @param {unknown[]} colorExpr
+   * @param {string} basemapProvider  BASEMAP_PROVIDER_ORDNANCE_SURVEY | BASEMAP_PROVIDER_OPENSTREETMAP
    */
-  #addParcelsToMap(ml, { geojsonUrl, bbox }, colorExpr) {
+  #addParcelsToMap(ml, { geojsonUrl, bbox }, colorExpr, basemapProvider) {
     if (bbox) {
       const { minLng, minLat, maxLng, maxLat } = bbox
       ml.fitBounds(
@@ -360,7 +383,7 @@ class ParcelMap extends HTMLElement {
           tiles: [`${origin}${PARCEL_TILES_URL}`]
         })
     ml.addSource('parcels', source)
-    const layers = buildParcelLayers(colorExpr, geojsonUrl ? undefined : 'parcels')
+    const layers = buildParcelLayers(colorExpr, geojsonUrl ? undefined : 'parcels', basemapProvider)
     ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.fill))
     ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.outline))
     ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.label))
@@ -422,149 +445,38 @@ class ParcelMap extends HTMLElement {
   }
 
   /**
+   * Bridges the interact plugin's selection state to this component's public
+   * API: re-applies the fill-opacity highlight and re-dispatches selection
+   * changes as `parcel-map:selection` events. Selection input handling
+   * (click, touch crosshair, keyboard listbox) lives in the plugin.
    * @param {MLMap} ml
-   * @param {boolean} multiSelect
    * @param {HTMLElement | undefined} tooltip
    */
-  #attachSelectionHandler(ml, multiSelect, tooltip) {
-    /** @type {Set<string>} */
-    const selected = new Set()
-    const idExpr = ['concat', ['get', 'sheet_id'], '-', ['get', 'parcel_id']]
-
-    const applySelection = () => {
-      const matchList = selected.size > 0 ? [...selected] : [SELECTION_NONE_SENTINEL]
+  #attachSelectionRelay(ml, tooltip) {
+    /** @param {string[]} selectedIds */
+    const applyHighlight = (selectedIds) => {
+      const matchList = selectedIds.length > 0 ? selectedIds : [SELECTION_NONE_SENTINEL]
       ml.setPaintProperty(LAYER_ID_FILL, 'fill-opacity', [
         'match',
-        idExpr,
+        COMPOUND_ID_EXPR,
         matchList,
         FILL_OPACITY_SELECTED,
         FILL_OPACITY_DEFAULT
       ])
     }
 
-    const onParcelClick = (
-      /** @type {import('maplibre-gl').MapMouseEvent & { features?: import('maplibre-gl').MapGeoJSONFeature[] }} */ e
-    ) => {
-      const feature = e.features?.[0]
-      if (!feature) {
-        return
-      }
-      const id = resolveFeatureId(feature)
-      if (!id) {
-        return
-      }
-
-      if (multiSelect) {
-        const wasSelected = selected.has(id)
-        wasSelected ? selected.delete(id) : selected.add(id)
-        if (wasSelected && tooltip) {
+    this.#mapInstance?.on(
+      'interact:selectionchange',
+      (/** @type {{ selectedFeatures: Array<{ featureId: string | number }> }} */ { selectedFeatures }) => {
+        const selectedIds = selectedFeatures.map((f) => String(f.featureId))
+        applyHighlight(selectedIds)
+        if (selectedIds.length === 0 && tooltip) {
           hideTooltip(tooltip)
         }
-      } else {
-        const alreadySelected = selected.has(id)
-        selected.clear()
-        if (!alreadySelected) {
-          selected.add(id)
-        } else if (tooltip) {
-          hideTooltip(tooltip)
-        } else {
-          // parcel deselected and no tooltip to hide
-        }
+        this.dispatchEvent(new CustomEvent(EVENT_SELECTION, { bubbles: true, detail: { selectedIds } }))
       }
-
-      applySelection()
-      this.dispatchEvent(new CustomEvent(EVENT_SELECTION, { bubbles: true, detail: { selectedIds: [...selected] } }))
-    }
-
-    const onDeselect = (/** @type {import('maplibre-gl').MapMouseEvent} */ e) => {
-      if (ml.getLayer(LAYER_ID_FILL) && ml.queryRenderedFeatures(e.point, { layers: [LAYER_ID_FILL] }).length === 0) {
-        selected.clear()
-        applySelection()
-        this.dispatchEvent(new CustomEvent(EVENT_SELECTION, { bubbles: true, detail: { selectedIds: [] } }))
-      }
-    }
-
-    ml.on('click', LAYER_ID_FILL, onParcelClick)
-    ml.on('click', onDeselect)
-
-    this.#mlCleanup.push(
-      () => ml.off('click', LAYER_ID_FILL, onParcelClick),
-      () => ml.off('click', onDeselect)
     )
   }
-}
-
-/** @returns {HTMLDivElement} */
-function buildSkeleton() {
-  const el = /** @type {HTMLDivElement} */ (document.createElement('div'))
-  el.setAttribute('aria-label', MSG_LOADING)
-  el.setAttribute('role', 'status')
-  el.style.cssText = ERROR_OVERLAY_STYLES
-  const label = document.createElement('span')
-  label.style.cssText = ERROR_LABEL_STYLES
-  label.textContent = MSG_LOADING
-  el.appendChild(label)
-  return el
-}
-
-/**
- * MapLibre `match` expression mapping compound parcel ID → colour.
- * @param {string[]} ids
- * @returns {unknown[]}
- */
-function buildColorExpr(ids) {
-  const expr = /** @type {unknown[]} */ (['match', ['concat', ['get', 'sheet_id'], '-', ['get', 'parcel_id']]])
-  ;[...new Set(ids)].forEach((id, i) => {
-    expr.push(id, PARCEL_COLORS[i % PARCEL_COLORS.length])
-  })
-  expr.push(PARCEL_COLORS[0])
-  return expr
-}
-
-/**
- * Derive the compound parcel ID (e.g. "SD7148-9160") from a MapLibre vector tile feature.
- * @param {MapGeoJSONFeature} feature
- * @returns {string}
- */
-function resolveFeatureId(feature) {
-  const p = /** @type {ParcelProperties} */ (feature.properties ?? {})
-  const sheet = typeof p.sheet_id === 'string' || typeof p.sheet_id === 'number' ? String(p.sheet_id) : ''
-  const parcel = typeof p.parcel_id === 'string' || typeof p.parcel_id === 'number' ? String(p.parcel_id) : ''
-  return sheet && parcel ? `${sheet}-${parcel}` : ''
-}
-
-/**
- * @param {HTMLElement} tooltip
- * @param {string} id
- * @param {ParcelProperties} props
- * @param {number} x
- * @param {number} y
- * @param {HTMLDivElement | null} mapEl
- */
-function showTooltip(tooltip, id, props, x, y, mapEl) {
-  const areaHa = props.areaHa == null ? null : Number(props.areaHa)
-  tooltip.innerHTML = `
-    <strong style="display:block;margin-bottom:8px;font-size:15px">${htmlEncode(id || MSG_UNKNOWN_PARCEL)}</strong>
-    <table style="border-collapse:collapse;width:100%">
-      <tr><td style="color:#505a5f;padding:2px 12px 2px 0;white-space:nowrap">Total area</td>
-          <td>${areaHa == null ? MSG_UNKNOWN_AREA : htmlEncode(areaHa.toFixed(AREA_DECIMAL_PLACES) + ' ha')}</td></tr>
-    </table>`
-  tooltip.style.left = `${Math.min(x + TOOLTIP_OFFSET_X, (mapEl?.offsetWidth ?? TOOLTIP_FALLBACK_MAP_WIDTH) - TOOLTIP_MAX_WIDTH)}px`
-  tooltip.style.top = `${y - TOOLTIP_VERTICAL_OFFSET}px`
-  tooltip.style.display = 'block'
-}
-
-/** @param {HTMLElement} tooltip */
-function hideTooltip(tooltip) {
-  tooltip.style.display = 'none'
-}
-
-/** @param {string} value @returns {string} */
-function htmlEncode(value) {
-  const text = document.createTextNode(value)
-  const div = document.createElement('div')
-  div.appendChild(text)
-  return div.innerHTML
 }
 
 if (!customElements.get('parcel-map')) {
