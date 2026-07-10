@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { SFD_REDIRECT_PATH, SFD_REDIRECT_SESSION_KEY, sfdRedirect } from './index.js'
 
 describe('sfdRedirect plugin', () => {
-  it('redirects to the stored SFD URL and consumes it', () => {
+  it('redirects to the stored SFD URL', () => {
     const redirectUrl = 'https://sfd.example.com/?ssoOrgId=REL123'
     const yar = {
       get: vi.fn().mockReturnValue({ redirectUrl, returnPath: '/woodland/check-details' }),
@@ -22,7 +22,7 @@ describe('sfdRedirect plugin', () => {
     expect(result).toEqual({ url: redirectUrl })
   })
 
-  it('returns to the originating path when no SFD URL is stored', () => {
+  it('returns to the original path when no SFD URL is available', () => {
     const yar = {
       get: vi.fn().mockReturnValue({ returnPath: '/woodland/check-details' }),
       clear: vi.fn()
