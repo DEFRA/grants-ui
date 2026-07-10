@@ -3,10 +3,7 @@ import { config } from '~/src/config/config.js'
 import { getIdentityProviderOrigin } from '~/src/server/auth/get-identity-provider-origin.js'
 import { error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
-const defaultContentPolicy = (
-  /** @type {string} */ nonce,
-  /** @type {string | null} */ identityProviderOrigin
-) => {
+const defaultContentPolicy = (/** @type {string} */ nonce, /** @type {string | null} */ identityProviderOrigin) => {
   const gtm = 'https://www.googletagmanager.com'
   const gtmWildCard = 'https://*.googletagmanager.com'
   const ga4 = 'https://www.google-analytics.com'

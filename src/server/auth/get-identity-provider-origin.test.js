@@ -20,11 +20,11 @@ describe('getIdentityProviderOrigin', () => {
   })
 
   it.each([
-    { authorization_endpoint: undefined, description: 'missing' },
-    { authorization_endpoint: 'not a URL', description: 'malformed' },
-    { authorization_endpoint: 'http://identity.example.com/authorize', description: 'not HTTPS' }
-  ])('returns null when the authorization endpoint is $description', async ({ authorization_endpoint }) => {
-    vi.mocked(getOidcConfig).mockResolvedValue({ authorization_endpoint })
+    { endpoint: undefined, description: 'missing' },
+    { endpoint: 'not a URL', description: 'malformed' },
+    { endpoint: 'http://identity.example.com/authorize', description: 'not HTTPS' }
+  ])('returns null when the authorization endpoint is $description', async ({ endpoint }) => {
+    vi.mocked(getOidcConfig).mockResolvedValue({ authorization_endpoint: endpoint })
 
     await expect(getIdentityProviderOrigin()).resolves.toBeNull()
   })
