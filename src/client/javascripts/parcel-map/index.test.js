@@ -2,8 +2,22 @@
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 
 vi.mock('@defra/interactive-map', () => ({ default: vi.fn() }))
-vi.mock('@defra/interactive-map/providers/maplibre', () => ({ default: vi.fn(() => ({})) }))
+vi.mock('@defra/interactive-map/providers/maplibre', () => ({
+  default: vi.fn(() => ({
+    load: async () => ({
+      MapProvider: class {
+        getFeaturesAtPoint() {
+          return []
+        }
+      }
+    })
+  }))
+}))
+vi.mock('@defra/interactive-map/plugins/interact', () => ({
+  default: vi.fn(() => ({ enable: vi.fn(), disable: vi.fn(), clear: vi.fn() }))
+}))
 import InteractiveMap from '@defra/interactive-map'
+import createInteractPlugin from '@defra/interactive-map/plugins/interact'
 import { LAYER_ID_FILL, LAYER_ID_OUTLINE, LAYER_ID_LABEL, EVENT_READY, EVENT_ERROR, EVENT_SELECTION } from './config.js'
 
 const PARCELS_RESPONSE = {
@@ -52,7 +66,7 @@ function makeMlMap(overrides = {}) {
 function makeFeature(sheetId, parcelId, numericId) {
   return {
     id: numericId ?? 1,
-    properties: { sheet_id: sheetId, parcel_id: parcelId },
+    properties: { sheet_id: sheetId, parcel_id: parcelId, id: `${sheetId}-${parcelId}` },
     geometry: { type: 'Point', coordinates: [0, 0] }
   }
 }
@@ -81,6 +95,18 @@ function fetchOk(body) {
 
 function waitForEvent(el, eventName) {
   return new Promise((resolve) => el.addEventListener(eventName, resolve, { once: true }))
+}
+
+function lastMapInstance() {
+  return InteractiveMap.mock.instances.at(-1)
+}
+
+function emitSelectionChange(selectedFeatures) {
+  lastMapInstance()._emit('interact:selectionchange', {
+    selectedFeatures,
+    selectedMarkers: [],
+    contiguous: false
+  })
 }
 
 async function mountElement(attrs = {}) {
@@ -144,9 +170,9 @@ describe('parcel-map web component', () => {
       global.fetch = vi.fn().mockResolvedValue({ ok: false })
       const el = await mountElement()
       await waitForEvent(el, EVENT_ERROR)
+
       expect(el.querySelector('[role="status"]')).toBeNull()
-      // Map wrapper (the div wrapping the canvas) should be gone too
-      expect(el.querySelectorAll('div').length).toBeLessThanOrEqual(1) // only the error overlay
+      expect(el.querySelectorAll('div').length).toBeLessThanOrEqual(1)
     })
 
     it('removes skeleton once ready', async () => {
@@ -174,13 +200,156 @@ describe('parcel-map web component', () => {
       expect(options.urlPosition).toBe('none')
     })
 
-    it('constrains zoom-out to the OS basemap coverage (min zoom 7)', async () => {
+    it('constrains zoom-out to the OS basemap coverage (min zoom 7) by default', async () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
       const el = await mountElement()
       await waitForEvent(el, EVENT_READY)
 
       const [, options] = InteractiveMap.mock.calls[0]
       expect(options.minZoom).toBe(7)
+    })
+
+    it('sets an accessible mapLabel for screen readers', async () => {
+      global.fetch = fetchOk(PARCELS_RESPONSE)
+      const el = await mountElement()
+      await waitForEvent(el, EVENT_READY)
+
+      const [, options] = InteractiveMap.mock.calls[0]
+      expect(options.mapLabel).toEqual(expect.stringContaining('land parcels'))
+    })
+  })
+
+  describe('basemap provider', () => {
+    it('defaults to the OS Maps style when no attribute is set', async () => {
+      global.fetch = fetchOk(PARCELS_RESPONSE)
+      const el = await mountElement()
+      await waitForEvent(el, EVENT_READY)
+
+      const [, options] = InteractiveMap.mock.calls.at(-1)
+      expect(options.mapStyle.url).toBe('/api/map/os-basemap')
+      expect(options.minZoom).toBe(7)
+    })
+
+    it('defaults to OS Maps even when the attribute is explicitly "ordnance-survey"', async () => {
+      global.fetch = fetchOk(PARCELS_RESPONSE)
+      const el = await mountElement({ 'basemap-provider': 'ordnance-survey' })
+      await waitForEvent(el, EVENT_READY)
+
+      const [, options] = InteractiveMap.mock.calls.at(-1)
+      expect(options.mapStyle.url).toBe('/api/map/os-basemap')
+    })
+
+    describe('OpenStreetMap comparison (temporary)', () => {
+      it('switches to the OpenStreetMap style when basemap-provider="openstreetmap"', async () => {
+        global.fetch = fetchOk(PARCELS_RESPONSE)
+        const el = await mountElement({ 'basemap-provider': 'openstreetmap' })
+        await waitForEvent(el, EVENT_READY)
+
+        const [, options] = InteractiveMap.mock.calls.at(-1)
+        expect(options.mapStyle.url).toBe('https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json')
+        expect(options.mapStyle.attribution).toContain('OpenStreetMap')
+      })
+
+      it('does not constrain minZoom for the OpenStreetMap style', async () => {
+        global.fetch = fetchOk(PARCELS_RESPONSE)
+        const el = await mountElement({ 'basemap-provider': 'openstreetmap' })
+        await waitForEvent(el, EVENT_READY)
+
+        const [, options] = InteractiveMap.mock.calls.at(-1)
+        expect(options.minZoom).toBeUndefined()
+      })
+
+      it('re-initialises the map when basemap-provider changes at runtime', async () => {
+        global.fetch = fetchOk(PARCELS_RESPONSE)
+        const el = await mountElement()
+        await waitForEvent(el, EVENT_READY)
+        const callsBeforeToggle = InteractiveMap.mock.calls.length
+
+        const readyAgain = waitForEvent(el, EVENT_READY)
+        el.setAttribute('basemap-provider', 'openstreetmap')
+        await readyAgain
+
+        expect(InteractiveMap.mock.calls).toHaveLength(callsBeforeToggle + 1)
+        const [, options] = InteractiveMap.mock.calls.at(-1)
+        expect(options.mapStyle.url).toBe('https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json')
+      })
+
+      it('re-initialises with the latest provider when the attribute changes mid-load', async () => {
+        global.fetch = fetchOk(PARCELS_RESPONSE)
+
+        // First InteractiveMap instance never signals map:ready on its own —
+        // lets the test control exactly when the in-flight load settles.
+        let firstInstance
+        InteractiveMap.mockImplementationOnce(function () {
+          this._handlers = {}
+          this.on = vi.fn((event, cb) => {
+            this._handlers[event] = this._handlers[event] ?? []
+            this._handlers[event].push(cb)
+          })
+          this.destroy = vi.fn()
+          this._emit = (event, payload) => {
+            ;(this._handlers[event] ?? []).forEach((fn) => fn(payload))
+          }
+          firstInstance = this
+        })
+        setupInteractiveMapMock(ml) // second (and any later) instance auto-readies
+
+        const el = await mountElement()
+        // basemap-provider changes while the first load is still in flight
+        el.setAttribute('basemap-provider', 'openstreetmap')
+
+        const readyEvent = waitForEvent(el, EVENT_READY)
+        firstInstance._emit('map:ready', { map: ml })
+        firstInstance._emit('map:stylechange')
+        await readyEvent
+
+        const [, options] = InteractiveMap.mock.calls.at(-1)
+        expect(options.mapStyle.url).toBe('https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json')
+      })
+
+      it('ignores attribute changes before the element is connected', async () => {
+        const el = document.createElement('parcel-map')
+        const callsBefore = InteractiveMap.mock.calls.length
+        el.setAttribute('basemap-provider', 'openstreetmap')
+
+        expect(InteractiveMap.mock.calls).toHaveLength(callsBefore)
+      })
+
+      it('uses a label font the CartoCDN style actually serves glyphs for', async () => {
+        global.fetch = fetchOk(PARCELS_RESPONSE)
+        const el = await mountElement({ 'basemap-provider': 'openstreetmap' })
+        await waitForEvent(el, EVENT_READY)
+
+        const labelLayer = ml.addLayer.mock.calls.map((c) => c[0]).find((l) => l.id === LAYER_ID_LABEL)
+        expect(labelLayer.layout['text-font']).not.toEqual(['Arial Regular'])
+      })
+
+      it('dispatches parcel-map:basemap-metrics when basemap-metrics="true"', async () => {
+        global.fetch = fetchOk(PARCELS_RESPONSE)
+        const el = await mountElement({ 'basemap-metrics': 'true' })
+        await waitForEvent(el, EVENT_READY)
+
+        const metricsEvent = new Promise((resolve) =>
+          el.addEventListener('parcel-map:basemap-metrics', resolve, { once: true })
+        )
+        ml._emit('idle')
+        const e = await metricsEvent
+        expect(e.detail.loadMs).toEqual(expect.any(Number))
+      })
+
+      it('does not track metrics when basemap-metrics is absent', async () => {
+        global.fetch = fetchOk(PARCELS_RESPONSE)
+        const el = await mountElement()
+        await waitForEvent(el, EVENT_READY)
+
+        let fired = false
+        el.addEventListener('parcel-map:basemap-metrics', () => {
+          fired = true
+        })
+        ml._emit('idle')
+        await Promise.resolve()
+        expect(fired).toBe(false)
+      })
     })
   })
 
@@ -247,124 +416,200 @@ describe('parcel-map web component', () => {
     })
   })
 
-  describe('selection — single-select (default)', () => {
-    it('dispatches parcel-map:selection with clicked parcel ID', async () => {
+  describe('interact plugin configuration', () => {
+    it('creates the plugin for feature selection on the fill layer with compound id property', async () => {
+      global.fetch = fetchOk(PARCELS_RESPONSE)
+      const el = await mountElement()
+      await waitForEvent(el, EVENT_READY)
+
+      expect(createInteractPlugin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          interactionModes: ['selectFeature'],
+          multiSelect: false,
+          deselectOnClickOutside: true,
+          layers: [expect.objectContaining({ layerId: LAYER_ID_FILL, idProperty: 'id', labelProperty: 'id' })]
+        })
+      )
+    })
+
+    it('falls back to a rendered-pixel radius query when the strict provider query misses', async () => {
+      global.fetch = fetchOk(PARCELS_RESPONSE)
+      const el = await mountElement()
+      await waitForEvent(el, EVENT_READY)
+
+      const [, options] = InteractiveMap.mock.calls.at(-1)
+      const { MapProvider } = await options.mapProvider.load()
+      const provider = new MapProvider()
+      const fallbackFeatures = [{ layer: { id: LAYER_ID_FILL }, properties: { id: 'SD7148-9160' } }]
+      provider.map = {
+        getLayer: vi.fn().mockReturnValue(true),
+        queryRenderedFeatures: vi.fn().mockReturnValue(fallbackFeatures)
+      }
+
+      const hits = provider.getFeaturesAtPoint({ x: 50, y: 60 }, { radius: 10 })
+
+      expect(provider.map.queryRenderedFeatures).toHaveBeenCalledWith(
+        [
+          [40, 50],
+          [60, 70]
+        ],
+        { layers: [LAYER_ID_FILL] }
+      )
+      expect(hits).toBe(fallbackFeatures)
+    })
+
+    it('picks the closest feature when the fallback finds several overlapping the tolerance box', async () => {
+      global.fetch = fetchOk(PARCELS_RESPONSE)
+      const el = await mountElement()
+      await waitForEvent(el, EVENT_READY)
+
+      const [, options] = InteractiveMap.mock.calls.at(-1)
+      const { MapProvider } = await options.mapProvider.load()
+      const provider = new MapProvider()
+
+      const near = {
+        layer: { id: LAYER_ID_FILL },
+        properties: { id: 'SD7148-9160' },
+        geometry: { type: 'Polygon', coordinates: [[[0, 0]]] }
+      }
+      const far = {
+        layer: { id: LAYER_ID_FILL },
+        properties: { id: 'SD7148-9161' },
+        geometry: { type: 'Polygon', coordinates: [[[1, 1]]] }
+      }
+      provider.map = {
+        getLayer: vi.fn().mockReturnValue(true),
+        queryRenderedFeatures: vi.fn().mockReturnValue([far, near]),
+        project: vi.fn(([lng]) => (lng === 0 ? { x: 50, y: 60 } : { x: 500, y: 500 }))
+      }
+
+      const hits = provider.getFeaturesAtPoint({ x: 50, y: 60 }, { radius: 10 })
+
+      expect(hits).toEqual([near])
+    })
+
+    it('does not run the fallback when the strict query already has hits', async () => {
+      global.fetch = fetchOk(PARCELS_RESPONSE)
+      const el = await mountElement()
+      await waitForEvent(el, EVENT_READY)
+
+      const [, options] = InteractiveMap.mock.calls.at(-1)
+      const loaded = await options.mapProvider.load()
+      const strictHits = [{ layer: { id: LAYER_ID_FILL } }]
+      // Re-wrap a base that returns hits to prove the fallback is skipped
+      const provider = new loaded.MapProvider()
+      provider.map = { getLayer: vi.fn(), queryRenderedFeatures: vi.fn() }
+      Object.getPrototypeOf(Object.getPrototypeOf(provider)).getFeaturesAtPoint = () => strictHits
+
+      const hits = provider.getFeaturesAtPoint({ x: 0, y: 0 })
+
+      expect(hits).toBe(strictHits)
+      expect(provider.map.queryRenderedFeatures).not.toHaveBeenCalled()
+    })
+
+    it('passes the plugin to the InteractiveMap constructor', async () => {
+      global.fetch = fetchOk(PARCELS_RESPONSE)
+      const el = await mountElement()
+      await waitForEvent(el, EVENT_READY)
+
+      const pluginInstance = createInteractPlugin.mock.results.at(-1).value
+      const [, options] = InteractiveMap.mock.calls.at(-1)
+      expect(options.plugins).toContain(pluginInstance)
+    })
+
+    it('enables the plugin once parcels are on the map', async () => {
+      global.fetch = fetchOk(PARCELS_RESPONSE)
+      const el = await mountElement()
+      await waitForEvent(el, EVENT_READY)
+
+      const pluginInstance = createInteractPlugin.mock.results.at(-1).value
+      expect(pluginInstance.enable).toHaveBeenCalled()
+    })
+
+    it('does not enable the plugin when the user has no parcels', async () => {
+      global.fetch = fetchOk({ features: [], bbox: null })
+      const el = await mountElement()
+      await waitForEvent(el, EVENT_ERROR)
+
+      const pluginInstance = createInteractPlugin.mock.results.at(-1).value
+      expect(pluginInstance.enable).not.toHaveBeenCalled()
+    })
+
+    it('creates the plugin with multiSelect when the attribute is set', async () => {
+      global.fetch = fetchOk(PARCELS_RESPONSE)
+      const el = await mountElement({ 'multi-select': 'true' })
+      await waitForEvent(el, EVENT_READY)
+
+      expect(createInteractPlugin).toHaveBeenCalledWith(expect.objectContaining({ multiSelect: true }))
+    })
+  })
+
+  describe('selection bridge', () => {
+    it('dispatches parcel-map:selection with the plugin-selected parcel IDs', async () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
       const el = await mountElement()
       await waitForEvent(el, EVENT_READY)
 
       const selectionEvent = waitForEvent(el, EVENT_SELECTION)
-      ml._emitLayer('click', LAYER_ID_FILL, { features: [makeFeature('SD7148', '9160')], lngLat: { lng: 0, lat: 0 } })
+      emitSelectionChange([{ featureId: 'SD7148-9160' }])
       const e = await selectionEvent
       expect(e.detail.selectedIds).toEqual(['SD7148-9160'])
     })
 
-    it('deselects when the same parcel is clicked twice', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement()
-      await waitForEvent(el, EVENT_READY)
-
-      const clickPayload = { features: [makeFeature('SD7148', '9160')], lngLat: { lng: 0, lat: 0 } }
-
-      const first = waitForEvent(el, EVENT_SELECTION)
-      ml._emitLayer('click', LAYER_ID_FILL, clickPayload)
-      await first
-
-      const second = waitForEvent(el, EVENT_SELECTION)
-      ml._emitLayer('click', LAYER_ID_FILL, clickPayload)
-      const e = await second
-      expect(e.detail.selectedIds).toEqual([])
-    })
-
-    it('replaces selection when a different parcel is clicked', async () => {
+    it('dispatches an empty selection when the plugin clears it', async () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
       const el = await mountElement()
       await waitForEvent(el, EVENT_READY)
 
       const first = waitForEvent(el, EVENT_SELECTION)
-      ml._emitLayer('click', LAYER_ID_FILL, { features: [makeFeature('SD7148', '9160')], lngLat: { lng: 0, lat: 0 } })
+      emitSelectionChange([{ featureId: 'SD7148-9160' }])
       await first
 
-      const second = waitForEvent(el, EVENT_SELECTION)
-      ml._emitLayer('click', LAYER_ID_FILL, { features: [makeFeature('SD7148', '9161')], lngLat: { lng: 0, lat: 0 } })
-      const e = await second
-      expect(e.detail.selectedIds).toEqual(['SD7148-9161'])
-    })
-
-    it('clears selection when clicking empty map area', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement()
-      await waitForEvent(el, EVENT_READY)
-
-      const first = waitForEvent(el, EVENT_SELECTION)
-      ml._emitLayer('click', LAYER_ID_FILL, { features: [makeFeature('SD7148', '9160')], lngLat: { lng: 0, lat: 0 } })
-      await first
-
-      ml.queryRenderedFeatures.mockReturnValue([])
       const cleared = waitForEvent(el, EVENT_SELECTION)
-      ml._emit('click', { point: { x: 0, y: 0 } })
+      emitSelectionChange([])
       const e = await cleared
       expect(e.detail.selectedIds).toEqual([])
     })
 
-    it('calls setPaintProperty to highlight selected parcel', async () => {
+    it('dispatches all selected IDs in multi-select', async () => {
+      global.fetch = fetchOk(PARCELS_RESPONSE)
+      const el = await mountElement({ 'multi-select': 'true' })
+      await waitForEvent(el, EVENT_READY)
+
+      const selectionEvent = waitForEvent(el, EVENT_SELECTION)
+      emitSelectionChange([{ featureId: 'SD7148-9160' }, { featureId: 'SD7148-9161' }])
+      const e = await selectionEvent
+      expect(e.detail.selectedIds).toEqual(['SD7148-9160', 'SD7148-9161'])
+    })
+
+    it('calls setPaintProperty to highlight selected parcels', async () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
       const el = await mountElement()
       await waitForEvent(el, EVENT_READY)
 
       const first = waitForEvent(el, EVENT_SELECTION)
-      ml._emitLayer('click', LAYER_ID_FILL, { features: [makeFeature('SD7148', '9160')], lngLat: { lng: 0, lat: 0 } })
+      emitSelectionChange([{ featureId: 'SD7148-9160' }])
       await first
 
       expect(ml.setPaintProperty).toHaveBeenCalledWith(LAYER_ID_FILL, 'fill-opacity', expect.arrayContaining(['match']))
     })
 
-    it('ignores clicks with no feature', async () => {
+    it('hides the tooltip when the selection is cleared', async () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
       const el = await mountElement()
       await waitForEvent(el, EVENT_READY)
 
-      let fired = false
-      el.addEventListener(EVENT_SELECTION, () => {
-        fired = true
-      })
-      ml._emitLayer('click', LAYER_ID_FILL, { features: [], lngLat: { lng: 0, lat: 0 } })
-      await Promise.resolve()
-      expect(fired).toBe(false)
-    })
-  })
-
-  describe('selection — multi-select', () => {
-    it('accumulates multiple selections', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement({ 'multi-select': 'true' })
-      await waitForEvent(el, EVENT_READY)
-
-      const first = waitForEvent(el, EVENT_SELECTION)
+      // Show the tooltip via a parcel click first
       ml._emitLayer('click', LAYER_ID_FILL, { features: [makeFeature('SD7148', '9160')], lngLat: { lng: 0, lat: 0 } })
-      await first
+      const tooltip = el.querySelector('[role="tooltip"]')
+      expect(tooltip.style.display).toBe('block')
 
-      const second = waitForEvent(el, EVENT_SELECTION)
-      ml._emitLayer('click', LAYER_ID_FILL, { features: [makeFeature('SD7148', '9161')], lngLat: { lng: 0, lat: 0 } })
-      const e = await second
-      expect(e.detail.selectedIds).toEqual(['SD7148-9160', 'SD7148-9161'])
-    })
+      const cleared = waitForEvent(el, EVENT_SELECTION)
+      emitSelectionChange([{ featureId: 'SD7148-9160' }])
+      emitSelectionChange([])
+      await cleared
 
-    it('removes a parcel when clicked again in multi-select', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement({ 'multi-select': 'true' })
-      await waitForEvent(el, EVENT_READY)
-
-      const clickPayload = { features: [makeFeature('SD7148', '9160')], lngLat: { lng: 0, lat: 0 } }
-
-      const first = waitForEvent(el, EVENT_SELECTION)
-      ml._emitLayer('click', LAYER_ID_FILL, clickPayload)
-      await first
-
-      const second = waitForEvent(el, EVENT_SELECTION)
-      ml._emitLayer('click', LAYER_ID_FILL, clickPayload)
-      const e = await second
-      expect(e.detail.selectedIds).toEqual([])
+      expect(tooltip.style.display).toBe('none')
     })
   })
 
@@ -374,12 +619,10 @@ describe('parcel-map web component', () => {
       const el = await mountElement()
       await waitForEvent(el, EVENT_READY)
 
-      const sel = waitForEvent(el, EVENT_SELECTION)
       ml._emitLayer('click', LAYER_ID_FILL, {
         features: [makeFeature('SD7148', '9160')],
         lngLat: { lng: 0, lat: 0 }
       })
-      await sel
 
       const tooltip = el.querySelector('[role="tooltip"]')
       expect(tooltip).not.toBeNull()
@@ -392,12 +635,10 @@ describe('parcel-map web component', () => {
       const el = await mountElement()
       await waitForEvent(el, EVENT_READY)
 
-      const sel = waitForEvent(el, EVENT_SELECTION)
       ml._emitLayer('click', LAYER_ID_FILL, {
         features: [makeFeature('SD7148', '9161')],
         lngLat: { lng: 0, lat: 0 }
       })
-      await sel
 
       const tooltip = el.querySelector('[role="tooltip"]')
       expect(tooltip.innerHTML).toContain('Unknown')

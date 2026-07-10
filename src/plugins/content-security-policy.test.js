@@ -147,6 +147,24 @@ describe('contentSecurityPolicy plugin', () => {
       expect(mockHeader).toHaveBeenNthCalledWith(3, 'X-CSP-Nonce', request.app.cspNonce)
     })
 
+    it('allows CartoCDN for the parcel map basemap-provider toggle', async () => {
+      const request = {
+        response: {
+          isBoom: false,
+          header: mockHeader,
+          variety: ''
+        },
+        app: {}
+      }
+
+      await onRequest(request, h)
+      await onPreResponse(request, h)
+
+      const [, policy] = mockHeader.mock.calls.find(([name]) => name === 'Content-Security-Policy')
+      expect(policy).toContain('https://basemaps.cartocdn.com')
+      expect(policy).toContain('https://*.basemaps.cartocdn.com')
+    })
+
     it.each([
       { initialContext: {}, description: 'empty context object' },
       { initialContext: undefined, description: 'undefined context' },
