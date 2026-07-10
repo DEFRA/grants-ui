@@ -136,7 +136,7 @@ async function persistStatus(request, newStatus, previousStatus, grantId, existi
  * @param {FormSubmissionState} state - The state object to check
  * @returns {boolean} - True if state contains meaningful values, otherwise false
  */
-function hasMeaningfulState(state) {
+export function hasMeaningfulState(state) {
   const baseStateKeys = new Set(['$$__referenceNumber', 'applicationStatus', 'additionalAnswers'])
 
   // TODO remove workaround for state clearing bug when SFIR-647 are complete
@@ -322,7 +322,7 @@ function checkStateGuards(request, h, context, grantRedirectRules, options = {})
  * @param {string | undefined} previousStatus - The previous application status stored in the session or state.
  * @returns {boolean} `true` if the application has no previous status or was cleared/reopened, otherwise `false`.
  */
-function shouldHandlePreSubmission(previousStatus) {
+export function shouldHandlePreSubmission(previousStatus) {
   return !previousStatus || previousStatus === ApplicationStatus.CLEARED
 }
 
@@ -370,7 +370,7 @@ function shouldSkipFormsStatusRedirect(request, context, grantRedirectRules) {
  * buildRedirectUrl('grant-a', '/summary') // "/grant-a/summary"
  * buildRedirectUrl('grant-a', 'summary')  // "/grant-a/summary"
  */
-function buildRedirectUrl(grantId, path) {
+export function buildRedirectUrl(grantId, path) {
   return path.startsWith('/') ? `/${grantId}${path}` : `/${grantId}/${path}`
 }
 
