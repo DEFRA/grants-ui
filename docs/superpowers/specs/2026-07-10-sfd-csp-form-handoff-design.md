@@ -12,8 +12,8 @@ When the authenticated check-details POST selects the SFD path, the controller
 will build the validated SFD URL as it does today, store it in the existing
 session (`request.yar`), and redirect to a same-origin Grants UI handoff path.
 The handoff GET will read and remove the stored URL, then issue the external
-redirect. If no URL is present, it will return the user to the originating
-same-origin path rather than accepting a URL from the request.
+redirect. If no URL is present, it will fail safely rather than accepting a URL
+from the request.
 
 The browser therefore submits the form and follows only a same-origin redirect
 until the handoff GET. The external SFD and identity-provider redirects begin
@@ -25,7 +25,7 @@ after the form submission has completed.
   no caller-supplied destination is trusted.
 - The handoff is authenticated and single-use by deleting the session value
   before redirecting.
-- Missing session state returns the user to the originating check-details path.
+- Missing session state falls back to the existing update-details path.
 - Existing URL validation and SFD feature gating remain unchanged.
 
 ## Testing
