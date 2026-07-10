@@ -25,7 +25,7 @@ after the form submission has completed.
   no caller-supplied destination is trusted.
 - The handoff is authenticated and single-use by deleting the session value
   before redirecting.
-- Missing session state falls back to the existing update-details path.
+- Missing session state redirects to the home page.
 - Existing URL validation and SFD feature gating remain unchanged.
 
 ## Testing

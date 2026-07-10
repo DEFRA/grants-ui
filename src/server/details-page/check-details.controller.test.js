@@ -197,6 +197,9 @@ describe('CheckDetailsController', () => {
 
     mockRequest = {
       app: {},
+      yar: {
+        set: vi.fn()
+      },
       path: '/test-form/check-details',
       params: { slug: 'test-form' },
       auth: {
@@ -435,7 +438,11 @@ describe('CheckDetailsController', () => {
           mockRequest,
           expect.not.objectContaining({ detailsConfirmed: expect.anything() })
         )
-        expect(mockH.redirect).toHaveBeenCalledWith('http://localhost:3000/sfd/update-sbi?ssoOrgId=REL123')
+        expect(mockRequest.yar.set).toHaveBeenCalledWith(
+          'sfdRedirectUrl',
+          'http://localhost:3000/sfd/update-sbi?ssoOrgId=REL123'
+        )
+        expect(mockH.redirect).toHaveBeenCalledWith('/sfd-redirect')
         expect(sfdController.proceed).not.toHaveBeenCalled()
         expect(result).toBe('mocked-redirect')
       })

@@ -9,6 +9,7 @@ import { debug, log, LogCodes } from '../common/helpers/logging/log.js'
 import { mergeAdditionalAnswers } from '../common/helpers/state/additional-answers-helper.js'
 import { ComponentType, ControllerType } from '@defra/forms-model'
 import { config } from '~/src/config/config.js'
+import { SFD_REDIRECT_PATH, SFD_REDIRECT_SESSION_KEY } from '~/src/server/sfd-redirect/index.js'
 import { findFormBySlug } from '~/src/server/common/forms/services/find-form-by-slug.js'
 
 const ERROR_TITLE = 'There is a problem'
@@ -259,7 +260,8 @@ export default class CheckDetailsController extends QuestionPageController {
           url.searchParams.set('ssoOrgId', currentRelationshipId)
           const { [this.confirmationFieldName]: _removed, ...stateWithoutConfirmation } = state
           await this.setState(request, { ...stateWithoutConfirmation, checkDetailsChangesPending: true })
-          return h.redirect(url.toString())
+          request.yar.set(SFD_REDIRECT_SESSION_KEY, url.toString())
+          return h.redirect(SFD_REDIRECT_PATH)
         } else {
           // missing or malformed URL — log and fall through to the update-details page
           log(LogCodes.SYSTEM.SFD_UPDATE_URL_MISSING_ON_REDIRECT, { updateUrl: updateUrl ?? '' }, request)
