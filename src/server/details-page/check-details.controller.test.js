@@ -197,9 +197,6 @@ describe('CheckDetailsController', () => {
 
     mockRequest = {
       app: {},
-      yar: {
-        set: vi.fn()
-      },
       path: '/test-form/check-details',
       params: { slug: 'test-form' },
       auth: {
@@ -410,7 +407,7 @@ describe('CheckDetailsController', () => {
         expect(result).toBe('redirected')
       })
 
-      it('should hand off the SFD redirect without building its URL when sfd.enabled is true', async () => {
+      it('should redirect directly to SFD URL without saving state when sfd.enabled is true', async () => {
         vi.mocked(config.get).mockImplementation((key) => {
           if (key === 'externalLinks.sfd.enabled') {
             return true
@@ -438,18 +435,64 @@ describe('CheckDetailsController', () => {
           mockRequest,
           expect.not.objectContaining({ detailsConfirmed: expect.anything() })
         )
-        expect(mockRequest.yar.set).toHaveBeenCalledWith('sfdRedirectUrl', {
-          returnPath: '/test-form/check-details'
-        })
-        expect(config.get).not.toHaveBeenCalledWith('externalLinks.sfd.updateUrl')
-        expect(mockH.redirect).toHaveBeenCalledWith('/sfd-redirect')
+        expect(mockH.redirect).toHaveBeenCalledWith('http://localhost:3000/sfd/update-sbi?ssoOrgId=REL123')
         expect(sfdController.proceed).not.toHaveBeenCalled()
         expect(result).toBe('mocked-redirect')
       })
+
+      it('should fall through to save state and proceed when sfd.enabled is true but updateUrl is falsy', async () => {
+        vi.mocked(config.get).mockImplementation((key) => {
+          if (key === 'externalLinks.sfd.enabled') {
+            return true
+          }
+          if (key === 'externalLinks.sfd.updateUrl') {
+            return ''
+          }
+          return undefined
+        })
+        // isSfdEnabled is captured at construction time, so create a new controller with sfd enabled
+        const sfdModel = { ...mockModel, lists: [], pages: [], def: { ...mockModel.def, pages: [] } }
+        const sfdController = new CheckDetailsController(sfdModel, mockPageDef)
+        setupControllerMocks(sfdController)
+        mockContext.payload = { detailsConfirmed: false }
+        mockRequest.auth = { credentials: { currentRelationshipId: 'REL123' } }
+
+        const handler = sfdController.makePostRouteHandler()
+        const result = await handler(mockRequest, mockContext, mockH)
+
+        expect(mockH.redirect).not.toHaveBeenCalled()
+        expect(sfdController.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
+        expect(result).toBe('redirected')
+      })
+
+      it('should fall through to save state and proceed when sfd.enabled is true but updateUrl is malformed', async () => {
+        vi.mocked(config.get).mockImplementation((key) => {
+          if (key === 'externalLinks.sfd.enabled') {
+            return true
+          }
+          if (key === 'externalLinks.sfd.updateUrl') {
+            return 'not-a-valid-url'
+          }
+          return undefined
+        })
+        // isSfdEnabled is captured at construction time, so create a new controller with sfd enabled
+        const sfdModel = { ...mockModel, lists: [], pages: [], def: { ...mockModel.def, pages: [] } }
+        const sfdController = new CheckDetailsController(sfdModel, mockPageDef)
+        setupControllerMocks(sfdController)
+        mockContext.payload = { detailsConfirmed: false }
+        mockRequest.auth = { credentials: { currentRelationshipId: 'REL123' } }
+
+        const handler = sfdController.makePostRouteHandler()
+        const result = await handler(mockRequest, mockContext, mockH)
+
+        expect(mockH.redirect).not.toHaveBeenCalled()
+        expect(sfdController.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
+        expect(result).toBe('redirected')
+      })
     })
 
-    describe('confirmationValue is truthy', () => {
-      it('should call handleDetailsConfirmed', async () => {
+    describe('confirmationValue is truthy (user confirms details)', () => {
+      it('should call handleDetailsConfirmed and proceed', async () => {
         mockContext.payload = { detailsConfirmed: true }
         const mockDate = new Date('2024-01-15T10:00:00.000Z')
         vi.setSystemTime(mockDate)
