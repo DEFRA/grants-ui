@@ -5,7 +5,7 @@ describe('sfdRedirect plugin', () => {
   it('redirects to the stored SFD URL and consumes it', () => {
     const redirectUrl = 'https://sfd.example.com/?ssoOrgId=REL123'
     const yar = {
-      get: vi.fn().mockReturnValue(redirectUrl),
+      get: vi.fn().mockReturnValue({ redirectUrl, returnPath: '/woodland/check-details' }),
       clear: vi.fn()
     }
     const h = { redirect: vi.fn((url) => ({ url })) }
@@ -22,9 +22,9 @@ describe('sfdRedirect plugin', () => {
     expect(result).toEqual({ url: redirectUrl })
   })
 
-  it('redirects home when no SFD URL is stored', () => {
+  it('returns to the originating path when no SFD URL is stored', () => {
     const yar = {
-      get: vi.fn().mockReturnValue(undefined),
+      get: vi.fn().mockReturnValue({ returnPath: '/woodland/check-details' }),
       clear: vi.fn()
     }
     const h = { redirect: vi.fn() }
@@ -34,7 +34,7 @@ describe('sfdRedirect plugin', () => {
     const route = server.route.mock.calls[0][0]
     route.handler({ yar }, h)
 
-    expect(h.redirect).toHaveBeenCalledWith('/')
+    expect(h.redirect).toHaveBeenCalledWith('/woodland/check-details')
     expect(yar.clear).toHaveBeenCalledWith(SFD_REDIRECT_SESSION_KEY)
   })
 })

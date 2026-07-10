@@ -260,7 +260,10 @@ export default class CheckDetailsController extends QuestionPageController {
           url.searchParams.set('ssoOrgId', currentRelationshipId)
           const { [this.confirmationFieldName]: _removed, ...stateWithoutConfirmation } = state
           await this.setState(request, { ...stateWithoutConfirmation, checkDetailsChangesPending: true })
-          request.yar.set(SFD_REDIRECT_SESSION_KEY, url.toString())
+          request.yar.set(SFD_REDIRECT_SESSION_KEY, {
+            redirectUrl: url.toString(),
+            returnPath: request.path
+          })
           return h.redirect(SFD_REDIRECT_PATH)
         } else {
           // missing or malformed URL — log and fall through to the update-details page
