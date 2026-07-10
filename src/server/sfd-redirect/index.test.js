@@ -14,7 +14,7 @@ describe('sfdRedirect plugin', () => {
       clear: vi.fn()
     }
     const h = {
-      redirect: vi.fn(),
+      redirect: vi.fn((url) => ({ url })),
       view: vi.fn((view, context) => ({ view, context }))
     }
     const server = { route: vi.fn() }
@@ -26,14 +26,9 @@ describe('sfdRedirect plugin', () => {
     expect(route).toMatchObject({ method: 'GET', path: SFD_REDIRECT_PATH })
     expect(yar.get).toHaveBeenCalledWith(SFD_REDIRECT_SESSION_KEY)
     expect(yar.clear).toHaveBeenCalledWith(SFD_REDIRECT_SESSION_KEY)
-    expect(h.view).toHaveBeenCalledWith('sfd-redirect', {
-      redirectUrl: 'https://sfd.example.com/update-sbi?ssoOrgId=REL123'
-    })
-    expect(h.redirect).not.toHaveBeenCalled()
-    expect(result).toEqual({
-      view: 'sfd-redirect',
-      context: { redirectUrl: 'https://sfd.example.com/update-sbi?ssoOrgId=REL123' }
-    })
+    expect(h.redirect).toHaveBeenCalledWith('https://sfd.example.com/update-sbi?ssoOrgId=REL123')
+    expect(h.view).not.toHaveBeenCalled()
+    expect(result).toEqual({ url: 'https://sfd.example.com/update-sbi?ssoOrgId=REL123' })
   })
 
   it('returns to the original path when the configured SFD URL is invalid', () => {

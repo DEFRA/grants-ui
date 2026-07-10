@@ -21,7 +21,7 @@ export const sfdRedirect = {
 
           const url = new URL(updateUrl)
           url.searchParams.set('ssoOrgId', request.auth.credentials.currentRelationshipId)
-          return h.view('sfd-redirect', { redirectUrl: url.toString() })
+          return h.redirect(url.toString())
         }
       })
     }
