@@ -1,9 +1,8 @@
 import { randomBytes } from 'node:crypto'
 import { config } from '~/src/config/config.js'
-import { getSfdFormActionSources } from '~/src/plugins/content-security-policy/get-sfd-form-action-sources.js'
-import { getIdentityProviderOrigin } from '~/src/server/auth/get-identity-provider-origin.js'
+import { error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
-const defaultContentPolicy = (/** @type {string} */ nonce, /** @type {string | null} */ identityProviderOrigin) => {
+const defaultContentPolicy = (/** @type {string} */ nonce) => {
   const gtm = 'https://www.googletagmanager.com'
   const gtmWildCard = 'https://*.googletagmanager.com'
   const ga4 = 'https://www.google-analytics.com'
@@ -30,14 +29,18 @@ const defaultContentPolicy = (/** @type {string} */ nonce, /** @type {string | n
   const imgSrc = [self, 'data:', 'blob:', ga4, statsDblClick, ga4WildCard, cartoCdn, cartoTiles].join(' ')
   const workerSrc = [self, 'blob:'].join(' ')
 
-  const formActionSrc = [
-    self,
-    ...getSfdFormActionSources({
-      isSfdEnabled: config.get('externalLinks.sfd.enabled'),
-      sfdUpdateUrl: config.get('externalLinks.sfd.updateUrl'),
-      identityProviderOrigin
-    })
-  ]
+  const formActionSrc = [self]
+  if (config.get('externalLinks.sfd.enabled')) {
+    const sfdUpdateUrl = config.get('externalLinks.sfd.updateUrl')?.trim()
+    if (sfdUpdateUrl) {
+      if (URL.canParse(sfdUpdateUrl)) {
+        formActionSrc.push(new URL(sfdUpdateUrl).origin)
+      } else {
+        // malformed URL — leave form-action as 'self'; the SFD redirect will be blocked
+        error(LogCodes.SYSTEM.CSP_SFD_UPDATE_URL_INVALID, { sfdUpdateUrl })
+      }
+    }
+  }
 
   return [
     "default-src 'self'",
@@ -65,9 +68,7 @@ function generateNewNonce() {
 
 export const contentSecurityPolicy = {
   name: 'content-security-policy',
-  register: async (/** @type {Server} */ server) => {
-    const identityProviderOrigin = await getIdentityProviderOrigin()
-
+  register: (/** @type {Server} */ server) => {
     server.ext('onRequest', (/** @type {Request} */ request, /** @type {ResponseToolkit} */ h) => {
       request.app.cspNonce = generateNewNonce()
       return h.continue
@@ -85,10 +86,7 @@ export const contentSecurityPolicy = {
       }
 
       if (typeof response.header === 'function') {
-        response.header(
-          'Content-Security-Policy',
-          defaultContentPolicy(/** @type {string} */ (nonce), identityProviderOrigin)
-        )
+        response.header('Content-Security-Policy', defaultContentPolicy(/** @type {string} */ (nonce)))
         response.header('Referrer-Policy', 'no-referrer')
 
         // Only set this header in non-production environments for debugging
