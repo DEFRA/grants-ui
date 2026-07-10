@@ -90,6 +90,12 @@ class ParcelMap extends HTMLElement {
 
   #connected = false
 
+  // Set when basemap-provider changes while a load is already in flight —
+  // the in-flight #init() already captured the old value in a local const,
+  // so it can't pick up the new one itself. #init() checks this once it
+  // settles and restarts itself if needed.
+  #pendingReinit = false
+
   static get observedAttributes() {
     return [BASEMAP_PROVIDER_ATTRIBUTE]
   }
@@ -106,10 +112,12 @@ class ParcelMap extends HTMLElement {
   }
 
   attributeChangedCallback(name) {
-    // Ignore the attribute's own initial set before the element is connected,
-    // and any change while a load is already in flight (that in-flight load
-    // will pick up the new value once it settles into an idle/error state).
-    if (name !== BASEMAP_PROVIDER_ATTRIBUTE || !this.#connected || this.#state === STATE_LOADING) {
+    // Ignore the attribute's own initial set before the element is connected.
+    if (name !== BASEMAP_PROVIDER_ATTRIBUTE || !this.#connected) {
+      return
+    }
+    if (this.#state === STATE_LOADING) {
+      this.#pendingReinit = true
       return
     }
     this.#teardown()
@@ -177,6 +185,16 @@ class ParcelMap extends HTMLElement {
       this.#skeleton = null
 
       this.dispatchEvent(new CustomEvent(EVENT_READY, { bubbles: true }))
+    }
+
+    // basemap-provider changed while the load above was in flight — restart
+    // now that we've settled, so the map ends up on the current attribute
+    // value instead of the one captured at the top of this #init() call.
+    if (this.#pendingReinit) {
+      this.#pendingReinit = false
+      this.#teardown()
+      this.#state = STATE_IDLE
+      this.#init()
     }
   }
 

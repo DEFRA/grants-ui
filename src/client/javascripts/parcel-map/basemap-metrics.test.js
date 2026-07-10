@@ -57,6 +57,63 @@ describe('trackBasemapMetrics', () => {
     expect(events.at(-1).tileRequests).toBe(1)
   })
 
+  it('does not double-count sourcedata firing twice for the same tile', () => {
+    const ml = makeMl()
+    const { target, events } = makeTarget()
+    trackBasemapMetrics(ml, 'ordnance-survey', target)
+
+    ml._emit('sourcedata', { tile: { tileID: { key: '0/0/0' } } })
+    ml._emit('sourcedata', { tile: { tileID: { key: '0/0/0' } } })
+
+    expect(events.at(-1).tileRequests).toBe(1)
+  })
+
+  it('counts distinct tile IDs separately', () => {
+    const ml = makeMl()
+    const { target, events } = makeTarget()
+    trackBasemapMetrics(ml, 'ordnance-survey', target)
+
+    ml._emit('sourcedata', { tile: { tileID: { key: '0/0/0' } } })
+    ml._emit('sourcedata', { tile: { tileID: { key: '0/0/1' } } })
+
+    expect(events.at(-1).tileRequests).toBe(2)
+  })
+
+  it('falls back to counting every event when tiles carry no tileID (e.g. mocked/geojson tiles)', () => {
+    const ml = makeMl()
+    const { target, events } = makeTarget()
+    trackBasemapMetrics(ml, 'ordnance-survey', target)
+
+    ml._emit('sourcedata', { tile: {} })
+    ml._emit('sourcedata', { tile: {} })
+
+    expect(events.at(-1).tileRequests).toBe(2)
+  })
+
+  it('ignores tile events from the parcels source', () => {
+    const ml = makeMl()
+    const { target, events } = makeTarget()
+    trackBasemapMetrics(ml, 'ordnance-survey', target)
+
+    ml._emit('sourcedata', { tile: { tileID: { key: '0/0/0' } }, sourceId: 'parcels' })
+
+    expect(events.at(-1).tileRequests).toBe(0)
+  })
+
+  it('does not let a parcels tile set firstTileMs ahead of the real basemap tile', () => {
+    const ml = makeMl()
+    const { target, events } = makeTarget()
+    trackBasemapMetrics(ml, 'ordnance-survey', target)
+
+    performance.now.mockReturnValue(50)
+    ml._emit('sourcedata', { tile: { tileID: { key: 'p/0/0' } }, sourceId: 'parcels' })
+
+    performance.now.mockReturnValue(200)
+    ml._emit('sourcedata', { tile: { tileID: { key: 'b/0/0' } }, sourceId: 'os-raster' })
+
+    expect(events.at(-1).firstTileMs).toBe(200)
+  })
+
   it('records firstTileMs on the first tile only', () => {
     const ml = makeMl()
     const { target, events } = makeTarget()

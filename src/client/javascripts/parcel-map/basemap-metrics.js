@@ -36,8 +36,22 @@ export function trackBasemapMetrics(ml, basemapProvider, target) {
     target.dispatchEvent(new CustomEvent(EVENT_METRICS_UPDATE, { bubbles: true, detail: { ...metrics } }))
   }
 
-  const onSourceData = (/** @type {{ tile?: unknown }} */ e) => {
-    if (e.tile) {
+  // TEMPORARY (TGC-1418 follow-up): dedup by tile ID. `sourcedata` can fire
+  // more than once for the same tile (re-renders, style changes), so without
+  // this tileRequests over-counts — delete this Set + the `if` guard below
+  // (keep the `metrics.tileRequests += 1` line) when the comparison ends.
+  const seenTileIds = new Set()
+  const onSourceData = (/** @type {{ tile?: { tileID?: { key?: string } }, sourceId?: string }} */ e) => {
+    // The map also has a 'parcels' source (vector tiles/geojson) — exclude it
+    // so its tile events don't get counted as basemap activity.
+    if (e.tile && e.sourceId !== 'parcels') {
+      const tileId = e.tile.tileID?.key
+      if (tileId !== undefined) {
+        if (seenTileIds.has(tileId)) {
+          return
+        }
+        seenTileIds.add(tileId)
+      }
       metrics.tileRequests += 1
       if (metrics.firstTileMs === null) {
         metrics.firstTileMs = Math.round(performance.now() - startedAt)

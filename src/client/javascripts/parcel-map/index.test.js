@@ -274,6 +274,39 @@ describe('parcel-map web component', () => {
         expect(options.mapStyle.url).toBe('https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json')
       })
 
+      it('re-initialises with the latest provider when the attribute changes mid-load', async () => {
+        global.fetch = fetchOk(PARCELS_RESPONSE)
+
+        // First InteractiveMap instance never signals map:ready on its own —
+        // lets the test control exactly when the in-flight load settles.
+        let firstInstance
+        InteractiveMap.mockImplementationOnce(function () {
+          this._handlers = {}
+          this.on = vi.fn((event, cb) => {
+            this._handlers[event] = this._handlers[event] ?? []
+            this._handlers[event].push(cb)
+          })
+          this.destroy = vi.fn()
+          this._emit = (event, payload) => {
+            ;(this._handlers[event] ?? []).forEach((fn) => fn(payload))
+          }
+          firstInstance = this
+        })
+        setupInteractiveMapMock(ml) // second (and any later) instance auto-readies
+
+        const el = await mountElement()
+        // basemap-provider changes while the first load is still in flight
+        el.setAttribute('basemap-provider', 'openstreetmap')
+
+        const readyEvent = waitForEvent(el, EVENT_READY)
+        firstInstance._emit('map:ready', { map: ml })
+        firstInstance._emit('map:stylechange')
+        await readyEvent
+
+        const [, options] = InteractiveMap.mock.calls.at(-1)
+        expect(options.mapStyle.url).toBe('https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json')
+      })
+
       it('ignores attribute changes before the element is connected', async () => {
         const el = document.createElement('parcel-map')
         const callsBefore = InteractiveMap.mock.calls.length
