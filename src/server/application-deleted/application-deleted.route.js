@@ -1,3 +1,4 @@
+import { ApplicationStatus } from '../common/constants/application-status.js'
 import { getFormsCacheService } from '../common/helpers/forms-cache/forms-cache.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
 
@@ -23,7 +24,7 @@ export const applicationDeletedRoute = {
       const cacheService = getFormsCacheService(request.server)
       const state = await cacheService.getState(request)
 
-      if (state?.applicationStatus === 'PURGED') {
+      if (state?.applicationStatus === ApplicationStatus.PURGED) {
         await cacheService.clearState(
           /** @type {import('@defra/forms-engine-plugin/engine/types.js').AnyFormRequest} */ (
             /** @type {unknown} */ (request)
@@ -44,8 +45,9 @@ export const applicationDeletedRoute = {
     }
 
     return h.view('application-deleted', {
-      slug: request.params.slug,
-      pageTitle: 'Your draft application has been deleted'
+      text: 'Return to summary',
+      pageTitle: 'Your draft application has been deleted',
+      href: `/${request.params.slug}`
     })
   }
 }
