@@ -13,10 +13,7 @@ describe('sfdRedirect plugin', () => {
       get: vi.fn().mockReturnValue({ returnPath: '/woodland/check-details' }),
       clear: vi.fn()
     }
-    const h = {
-      redirect: vi.fn((url) => ({ url })),
-      view: vi.fn((view, context) => ({ view, context }))
-    }
+    const h = { redirect: vi.fn((url) => ({ url })) }
     const server = { route: vi.fn() }
 
     sfdRedirect.plugin.register(server)
@@ -27,7 +24,6 @@ describe('sfdRedirect plugin', () => {
     expect(yar.get).toHaveBeenCalledWith(SFD_REDIRECT_SESSION_KEY)
     expect(yar.clear).toHaveBeenCalledWith(SFD_REDIRECT_SESSION_KEY)
     expect(h.redirect).toHaveBeenCalledWith('https://sfd.example.com/update-sbi?ssoOrgId=REL123')
-    expect(h.view).not.toHaveBeenCalled()
     expect(result).toEqual({ url: 'https://sfd.example.com/update-sbi?ssoOrgId=REL123' })
   })
 

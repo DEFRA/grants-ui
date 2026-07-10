@@ -177,12 +177,7 @@ export const SYSTEM = {
   CSP_SFD_UPDATE_URL_INVALID: {
     level: 'error',
     messageFunc: (messageOptions) =>
-      `Content-Security-Policy: SFD is enabled but externalLinks.sfd.updateUrl is not a valid URL (value=${messageOptions.sfdUpdateUrl}); the SFD origin was omitted from form-action so the redirect will be blocked by the browser`
-  },
-  CSP_IDENTITY_PROVIDER_ORIGIN_INVALID: {
-    level: 'error',
-    messageFunc: (messageOptions) =>
-      `Content-Security-Policy: SFD is enabled but the identity provider origin is unavailable (value=${messageOptions.identityProviderOrigin}); the identity provider was omitted from form-action so the redirect will be blocked by the browser`
+      `Content-Security-Policy: SFD is enabled but externalLinks.sfd.updateUrl is not a valid URL (value=${messageOptions.sfdUpdateUrl}); form-action left as 'self' so the SFD redirect will be blocked by the browser`
   },
   SFD_UPDATE_URL_MISSING_ON_REDIRECT: {
     level: 'warn',
