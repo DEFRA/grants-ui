@@ -1,8 +1,12 @@
 import { randomBytes } from 'node:crypto'
 import { config } from '~/src/config/config.js'
+import { getIdentityProviderOrigin } from '~/src/server/auth/get-identity-provider-origin.js'
 import { error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
-const defaultContentPolicy = (/** @type {string} */ nonce) => {
+const defaultContentPolicy = (
+  /** @type {string} */ nonce,
+  /** @type {string | null} */ identityProviderOrigin
+) => {
   const gtm = 'https://www.googletagmanager.com'
   const gtmWildCard = 'https://*.googletagmanager.com'
   const ga4 = 'https://www.google-analytics.com'
@@ -35,8 +39,13 @@ const defaultContentPolicy = (/** @type {string} */ nonce) => {
     if (sfdUpdateUrl) {
       if (URL.canParse(sfdUpdateUrl)) {
         formActionSrc.push(new URL(sfdUpdateUrl).origin)
+
+        if (identityProviderOrigin) {
+          formActionSrc.push(identityProviderOrigin)
+        } else {
+          error(LogCodes.SYSTEM.CSP_IDENTITY_PROVIDER_ORIGIN_INVALID, { identityProviderOrigin })
+        }
       } else {
-        // malformed URL — leave form-action as 'self'; the SFD redirect will be blocked
         error(LogCodes.SYSTEM.CSP_SFD_UPDATE_URL_INVALID, { sfdUpdateUrl })
       }
     }
@@ -68,7 +77,9 @@ function generateNewNonce() {
 
 export const contentSecurityPolicy = {
   name: 'content-security-policy',
-  register: (/** @type {Server} */ server) => {
+  register: async (/** @type {Server} */ server) => {
+    const identityProviderOrigin = await getIdentityProviderOrigin()
+
     server.ext('onRequest', (/** @type {Request} */ request, /** @type {ResponseToolkit} */ h) => {
       request.app.cspNonce = generateNewNonce()
       return h.continue
@@ -86,7 +97,10 @@ export const contentSecurityPolicy = {
       }
 
       if (typeof response.header === 'function') {
-        response.header('Content-Security-Policy', defaultContentPolicy(/** @type {string} */ (nonce)))
+        response.header(
+          'Content-Security-Policy',
+          defaultContentPolicy(/** @type {string} */ (nonce), identityProviderOrigin)
+        )
         response.header('Referrer-Policy', 'no-referrer')
 
         // Only set this header in non-production environments for debugging
