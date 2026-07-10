@@ -255,6 +255,8 @@ export default class CheckDetailsController extends QuestionPageController {
         // status-helper both behave correctly and we show the check-details page.
         const { [this.confirmationFieldName]: _removed, ...stateWithoutConfirmation } = state
         await this.setState(request, { ...stateWithoutConfirmation, checkDetailsChangesPending: true })
+        // TGC-1472 - SFD redirects can't occur directly from the form submission or grants-ui hijacks
+        //            SFD's own CSP preventing SFD from redirecting to DefraID
         request.yar.set(SFD_REDIRECT_SESSION_KEY, { returnPath: request.path })
         return h.redirect(SFD_REDIRECT_PATH)
       }

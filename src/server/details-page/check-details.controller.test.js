@@ -448,8 +448,8 @@ describe('CheckDetailsController', () => {
       })
     })
 
-    describe('confirmationValue is truthy (user confirms details)', () => {
-      it('should call handleDetailsConfirmed and proceed', async () => {
+    describe('confirmationValue is truthy', () => {
+      it('should call handleDetailsConfirmed', async () => {
         mockContext.payload = { detailsConfirmed: true }
         const mockDate = new Date('2024-01-15T10:00:00.000Z')
         vi.setSystemTime(mockDate)
