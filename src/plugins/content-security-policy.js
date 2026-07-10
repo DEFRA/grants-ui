@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import { config } from '~/src/config/config.js'
+import { getSfdFormActionSources } from '~/src/plugins/content-security-policy/get-sfd-form-action-sources.js'
 import { getIdentityProviderOrigin } from '~/src/server/auth/get-identity-provider-origin.js'
-import { error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 const defaultContentPolicy = (/** @type {string} */ nonce, /** @type {string | null} */ identityProviderOrigin) => {
   const gtm = 'https://www.googletagmanager.com'
@@ -30,23 +30,14 @@ const defaultContentPolicy = (/** @type {string} */ nonce, /** @type {string | n
   const imgSrc = [self, 'data:', 'blob:', ga4, statsDblClick, ga4WildCard, cartoCdn, cartoTiles].join(' ')
   const workerSrc = [self, 'blob:'].join(' ')
 
-  const formActionSrc = [self]
-  if (config.get('externalLinks.sfd.enabled')) {
-    const sfdUpdateUrl = config.get('externalLinks.sfd.updateUrl')?.trim()
-    if (sfdUpdateUrl) {
-      if (URL.canParse(sfdUpdateUrl)) {
-        formActionSrc.push(new URL(sfdUpdateUrl).origin)
-
-        if (identityProviderOrigin) {
-          formActionSrc.push(identityProviderOrigin)
-        } else {
-          error(LogCodes.SYSTEM.CSP_IDENTITY_PROVIDER_ORIGIN_INVALID, { identityProviderOrigin })
-        }
-      } else {
-        error(LogCodes.SYSTEM.CSP_SFD_UPDATE_URL_INVALID, { sfdUpdateUrl })
-      }
-    }
-  }
+  const formActionSrc = [
+    self,
+    ...getSfdFormActionSources({
+      isSfdEnabled: config.get('externalLinks.sfd.enabled'),
+      sfdUpdateUrl: config.get('externalLinks.sfd.updateUrl'),
+      identityProviderOrigin
+    })
+  ]
 
   return [
     "default-src 'self'",
