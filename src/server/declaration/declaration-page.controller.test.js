@@ -419,6 +419,30 @@ describe('DeclarationPageController', () => {
       expect(transformedAnswers).not.toHaveProperty('landParcels')
     })
 
+    test('should use the pigs-might-fly answer transformer for pigs-might-fly submissions', async () => {
+      const handler = controller.makePostRouteHandler()
+      const pigsRequest = {
+        ...mockRequest,
+        params: { slug: 'pigs-might-fly' },
+        path: '/pigs-might-fly/check-answers'
+      }
+
+      await handler(pigsRequest, mockContext, mockH)
+
+      const transformAnswers = transformStateObjectToGasApplication.mock.calls[0][2]
+      const transformedAnswers = transformAnswers({
+        isPigFarmer: true,
+        totalPigs: 42,
+        whitePigsCount: 10
+      })
+
+      expect(transformedAnswers).toMatchObject({
+        isPigFarmer: true,
+        totalPigs: 42,
+        whitePigsCount: 10
+      })
+    })
+
     test('should log debug information during processing', async () => {
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)

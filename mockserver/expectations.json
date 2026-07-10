@@ -11,6 +11,26 @@
     }
   },
   {
+    "id": "gas-pigs-calculate-pig-totals-200",
+    "priority": 0,
+    "httpRequest": {
+      "method": "POST",
+      "path": "/grants/pigs-might-fly/actions/calculate-pig-totals/invoke"
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "body": {
+        "items": [
+          { "type": "largeWhite", "description": "Large White", "quantity": 2, "value": 10, "total": 20 },
+          { "type": "britishLandrace", "description": "British Landrace", "quantity": 2, "value": 15, "total": 30 },
+          { "type": "berkshire", "description": "Berkshire", "quantity": 2, "value": 18, "total": 36 },
+          { "type": "other", "description": "Other", "quantity": 2, "value": 10, "total": 20 }
+        ],
+        "pigsData": { "totalPigs": 8 }
+      }
+    }
+  },
+  {
     "id": "gas-application-status-200",
     "priority": 0,
     "httpRequest": {
