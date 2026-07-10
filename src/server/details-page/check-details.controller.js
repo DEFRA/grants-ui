@@ -253,22 +253,10 @@ export default class CheckDetailsController extends QuestionPageController {
         // "answered" when walking from start/summary, routing past it instead of back to it.
         // We DO set checkDetailsChangesPending: true so the forms-engine-plugin and the
         // status-helper both behave correctly and we show the check-details page.
-        const { currentRelationshipId } = request.auth.credentials
-        const updateUrl = config.get('externalLinks.sfd.updateUrl')?.trim()
-        if (updateUrl && URL.canParse(updateUrl)) {
-          const url = new URL(updateUrl)
-          url.searchParams.set('ssoOrgId', currentRelationshipId)
-          const { [this.confirmationFieldName]: _removed, ...stateWithoutConfirmation } = state
-          await this.setState(request, { ...stateWithoutConfirmation, checkDetailsChangesPending: true })
-          request.yar.set(SFD_REDIRECT_SESSION_KEY, {
-            redirectUrl: url.toString(),
-            returnPath: request.path
-          })
-          return h.redirect(SFD_REDIRECT_PATH)
-        } else {
-          // missing or malformed URL — log and fall through to the update-details page
-          log(LogCodes.SYSTEM.SFD_UPDATE_URL_MISSING_ON_REDIRECT, { updateUrl: updateUrl ?? '' }, request)
-        }
+        const { [this.confirmationFieldName]: _removed, ...stateWithoutConfirmation } = state
+        await this.setState(request, { ...stateWithoutConfirmation, checkDetailsChangesPending: true })
+        request.yar.set(SFD_REDIRECT_SESSION_KEY, { returnPath: request.path })
+        return h.redirect(SFD_REDIRECT_PATH)
       }
 
       // Clear checkDetailsChangesPending once user has selected Yes
