@@ -36,7 +36,6 @@ import SelectLandParcelPageController from '~/src/server/land-grants/controllers
 import SelectLandActionsPageController from '~/src/server/land-grants/controllers/select-land-actions-page.controller.js'
 import SubmissionPageController from '~/src/server/land-grants/controllers/submission-page.controller.js'
 import LandGrantsGenericPageController from '~/src/server/land-grants/controllers/land-grants-generic-page.controller.js'
-import FlyingPigsSubmissionPageController from '~/src/server/non-land-grants/pigs-might-fly/controllers/flying-pigs-submission-page.controller.js'
 import ConsentPageController from '~/src/server/land-grants/controllers/consent-page.controller.js'
 import RemoveActionPageController from '~/src/server/land-grants/controllers/remove-action-page.controller.js'
 import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-might-fly/controllers/potential-funding.controller.js'
@@ -143,7 +142,6 @@ const registerFormsPlugin = async (server, prefix = '') => {
         PaymentPageController,
         RemoveActionPageController,
         ConsentPageController,
-        FlyingPigsSubmissionPageController,
         PotentialFundingController,
         SummaryPageController,
         CheckResponsesPageController,
