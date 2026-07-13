@@ -193,6 +193,7 @@
     "webpack-cli": "7.1.0"
   },
   "bin": {
-    "gae": "./tools/grants-ui-cli.js"
+    "gt": "./tools/grants-tui.js",
+    "gtx": "./tools/grants-tui.js"
   }
 }

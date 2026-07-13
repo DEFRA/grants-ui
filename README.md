@@ -14,11 +14,11 @@ npm ci
 npm run dev
 ```
 
-Or with GAE CLI / Docker (interactive):
+Or with Grants TUI / Docker (interactive):
 
 ```bash
-npm link   # once — makes `gae` available globally
-gae
+npm link   # once — makes `gt` available globally
+gt
 ```
 
 Or with Docker (non-interactive):
@@ -57,7 +57,7 @@ For complete documentation of all available features, see [FEATURES.md](docs/FEA
 | [Consolidated View API](docs/CONSOLIDATED-VIEW.md)     | DAL GraphQL endpoint and configuration                                     |
 | [Development Tools](docs/DEV-TOOLS.md)                 | Dev routes, demo pages, journey runner                                     |
 | [Utility Scripts](tools/README.md)                     | Form upload tool, cookie unsealing utility                                 |
-| [GAE CLI](docs/DOCKER.md#gae-cli)                      | Interactive GAE CLI (`gae` / `npx gae`)                                    |
+| [Grants TUI](docs/DOCKER.md#grants-tui)                | Interactive Grants TUI (`gt`, or `gtx` fallback)                           |
 | [Payment Architecture](src/server/payment/README.md)   | Payment page controllers, strategies, and configuration                    |
 
 ## Licence
