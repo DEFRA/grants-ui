@@ -206,7 +206,17 @@ function versionParts(version) {
 }
 
 /**
- * Append a ` (local override active)` suffix to the form definition's
+ * Marker appended to a form definition's `name` while a local override is
+ * active. Besides making an overridden definition obviously distinguishable in
+ * the UI, it doubles as a file-independent, queryable record of which
+ * definition documents were written by `enable`, so `disable` can purge them
+ * even after the source override files have been deleted or moved.
+ * @type {string}
+ */
+export const LOCAL_OVERRIDE_NAME_SUFFIX = ' (local override active)'
+
+/**
+ * Append the ` (local override active)` suffix to the form definition's
  * `name`, so a locally-overridden definition is obviously distinguishable from
  * the real repo version wherever the name is surfaced (frontend, backend docs).
  * Idempotent: re-applying does not stack the suffix. The definition is mutated
@@ -216,7 +226,7 @@ function versionParts(version) {
  * @returns {T}
  */
 export function applyLocalOverrideNameSuffix(definition) {
-  const suffix = ` (local override active)`
+  const suffix = LOCAL_OVERRIDE_NAME_SUFFIX
   if (typeof definition.name === 'string' && !definition.name.endsWith(suffix)) {
     definition.name = `${definition.name}${suffix}`
   }
@@ -358,8 +368,19 @@ for (const e of CONFIG.entries) { print('RESULT:' + e.grant + ':' + results[e.gr
 }
 
 /**
- * Build the mongosh script that, for every override, deletes the bumped-version
- * definition and purges dependent state/locks/submissions for that grant version.
+ * Build the mongosh script that removes local overrides in two passes:
+ *  1. for every override discovered from the file system, delete the
+ *     bumped-version definition and purge dependent state/locks/submissions;
+ *  2. sweep any remaining definition documents still stamped with the
+ *     `LOCAL_OVERRIDE_NAME_SUFFIX` marker and purge them the same way.
+ *
+ * The second pass is the file-independent safety net: if the source override
+ * YAML (or its `config-broker-local` folder) was deleted or moved before
+ * disable ran, that override can no longer be discovered from the file system,
+ * so pass 1 would leave the bumped document behind as the highest active
+ * version. The name-suffix marker written by `enable` is a queryable record of
+ * exactly which documents were applied, so disable can always find and purge
+ * them — even when zero override files remain.
  * @param {Array<Pick<OverrideEntry, 'grant' | 'bumpedVersion'>>} overrides
  * @returns {string}
  */
@@ -374,11 +395,13 @@ export function buildDisableScript(overrides) {
     defs: FORM_DEFS_COLLECTION,
     state: STATE_COLLECTION,
     locks: LOCKS_COLLECTION,
-    submissions: SUBMISSION_COLLECTIONS
+    submissions: SUBMISSION_COLLECTIONS,
+    marker: LOCAL_OVERRIDE_NAME_SUFFIX
   }
 
   return `
 const CONFIG = ${JSON.stringify(config)};
+const defs = db.getCollection(CONFIG.defs);
 const grantMatch = (g) => ([
   { grantCode: g }, { grant: g }, { code: g }, { slug: g }, { name: g },
   { 'definition.submission.grantCode': g }, { 'definition.metadata.slug': g }
@@ -390,18 +413,54 @@ const purge = (name, g, version) => {
     return 0;
   }
 };
+const purgeDependents = (g, version) => {
+  const stateRemoved = purge(CONFIG.state, g, version);
+  const locksRemoved = purge(CONFIG.locks, g, version);
+  let submissionsRemoved = 0;
+  for (const c of CONFIG.submissions) { submissionsRemoved += purge(c, g, version); }
+  return 'state=' + stateRemoved + ' locks=' + locksRemoved + ' submissions=' + submissionsRemoved;
+};
+const grantOf = (doc) =>
+  doc.grantCode || doc.grant || doc.code || doc.slug ||
+  (doc.definition && doc.definition.submission && doc.definition.submission.grantCode) ||
+  (doc.definition && doc.definition.metadata && doc.definition.metadata.slug) ||
+  doc.name || 'unknown';
+
+// Pass 1: remove overrides discovered from the file system (grant + bumped version).
 for (const e of CONFIG.entries) {
   try {
-    const defsRemoved = db.getCollection(CONFIG.defs).deleteMany({
+    const defsRemoved = defs.deleteMany({
       major: e.major, minor: e.minor, patch: e.patch, $or: grantMatch(e.grant)
     }).deletedCount;
-    const stateRemoved = purge(CONFIG.state, e.grant, e.version);
-    const locksRemoved = purge(CONFIG.locks, e.grant, e.version);
-    let submissionsRemoved = 0;
-    for (const c of CONFIG.submissions) { submissionsRemoved += purge(c, e.grant, e.version); }
-    print('RESULT:' + e.grant + ':OK:defs=' + defsRemoved + ' state=' + stateRemoved + ' locks=' + locksRemoved + ' submissions=' + submissionsRemoved);
+    const dependents = purgeDependents(e.grant, e.version);
+    print('RESULT:' + e.grant + ':OK:defs=' + defsRemoved + ' ' + dependents);
   } catch (err) {
     print('RESULT:' + e.grant + ':ERR:' + (err && err.message ? err.message : err));
+  }
+}
+
+// Pass 2: sweep any documents still stamped as a local override. These are
+// orphans whose source files were deleted or moved before disable ran, so they
+// can no longer be discovered from the file system — the name-suffix marker is
+// the file-independent record used to purge them.
+let orphans = [];
+try {
+  orphans = defs
+    .find({ 'definition.name': { $exists: true } })
+    .toArray()
+    .filter((d) => typeof d.definition.name === 'string' && d.definition.name.endsWith(CONFIG.marker));
+} catch (e) {
+  orphans = [];
+}
+for (const doc of orphans) {
+  const g = grantOf(doc);
+  try {
+    const version = [doc.major, doc.minor, doc.patch].join('.');
+    const defsRemoved = defs.deleteOne({ _id: doc._id }).deletedCount;
+    const dependents = purgeDependents(g, version);
+    print('RESULT:' + g + ':OK:swept orphaned override ' + version + ' defs=' + defsRemoved + ' ' + dependents);
+  } catch (err) {
+    print('RESULT:' + g + ':ERR:' + (err && err.message ? err.message : err));
   }
 }
 `
@@ -535,7 +594,11 @@ function disableAll(overrides) {
   const parsed = parseResults(result.stdout)
   /** @type {{ ok: boolean, message: string }[]} */
   const messages = []
+  /** @type {Set<string>} */
+  const reported = new Set()
+
   for (const entry of overrides) {
+    reported.add(entry.grant)
     const r = parsed[entry.grant]
     if (r && r.status === 'OK') {
       messages.push({ ok: true, message: `${entry.grant}: removed override ${entry.bumpedVersion} (${r.detail})` })
@@ -546,6 +609,30 @@ function disableAll(overrides) {
       messages.push({ ok: false, message: `${entry.grant}: ${reason}` })
     }
   }
+
+  // Report orphaned overrides swept from Mongo whose source files were deleted
+  // or moved before disable ran, so they are absent from `overrides`.
+  for (const [grant, r] of Object.entries(parsed)) {
+    if (reported.has(grant)) {
+      continue
+    }
+    if (r.status === 'OK') {
+      messages.push({ ok: true, message: `${grant}: ${r.detail}` })
+    } else {
+      messages.push({ ok: false, message: `${grant}: mongosh error — ${r.detail}` })
+    }
+  }
+
+  if (!messages.length) {
+    // No files discovered and nothing left in Mongo — a clean no-op.
+    if (result.error || result.stderr.trim()) {
+      const reason = result.error?.message || result.stderr.trim()
+      messages.push({ ok: false, message: `disable failed — ${reason}` })
+    } else {
+      messages.push({ ok: true, message: 'No local form-definition overrides found in Mongo — nothing to do.' })
+    }
+  }
+
   return { ok: messages.every((m) => m.ok), messages }
 }
 
@@ -564,7 +651,11 @@ export function run(mode) {
     console.warn(`  ⚠  ${warning}`)
   }
 
-  if (!overrides.length) {
+  // For enable, no discovered overrides means there is nothing to apply. For
+  // disable we must NOT exit early: previously-applied overrides whose source
+  // files were deleted or moved still live in Mongo as the highest active
+  // version, and only the marker-based sweep in disableAll can purge them.
+  if (mode === 'enable' && !overrides.length) {
     console.log('  No local form-definition overrides found — nothing to do.')
     return 0
   }

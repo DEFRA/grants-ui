@@ -220,4 +220,30 @@ describe('buildDisableScript', () => {
     expect(script).toContain('"grant":"woodland"')
     expect(script).toContain('"grant":"grasslands"')
   })
+
+  it('sweeps orphaned docs by the ` (local override active)` marker even with no files', () => {
+    // Empty overrides simulates disabling after the source YAML was deleted/moved.
+    const script = buildDisableScript([])
+
+    // The marker is embedded so the sweep can find previously-applied overrides
+    // that are no longer discoverable from the file system.
+    expect(script).toContain(' (local override active)')
+    expect(script).toContain('definition.name')
+    expect(script).toContain('endsWith(CONFIG.marker)')
+    // The orphan still gets its definition doc and dependent state purged.
+    expect(script).toContain('deleteOne')
+    expect(script).toContain('purgeDependents')
+    expect(script).toContain('swept orphaned override')
+  })
+
+  it('purges discovered overrides and sweeps orphans in the same script', () => {
+    const script = buildDisableScript([{ grant: 'woodland', bumpedVersion: '1.2.4' }])
+
+    // Pass 1 (file-discovered) still removes the bumped version by grant match.
+    expect(script).toContain('deleteMany')
+    expect(script).toContain('"version":"1.2.4"')
+    // Pass 2 (marker sweep) always runs alongside it.
+    expect(script).toContain(' (local override active)')
+    expect(script).toContain('endsWith(CONFIG.marker)')
+  })
 })
