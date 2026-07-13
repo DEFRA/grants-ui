@@ -44,6 +44,8 @@ Keep Grants UI application status separate from GAS status. Grants UI applicatio
 
 Persist form state only through the forms engine state helpers or the existing persistence services. Use `context.relevantState` for data submitted to GAS and `context.state` for auxiliary UI state. Do not mutate `context.state` in place.
 
+Defra Forms content must not introduce dedicated Hapi routes. The forms engine registers generic parameterised GET and POST routes such as `/{slug}/{path}/{itemId?}` and resolves the form page and controller at request time. Route-level configuration, extensions, or lifecycle hooks applied to these routes can therefore affect all matching grant journey pages, not only the page named by `path`. Page-specific behaviour must be scoped using the resolved request, form page, or controller context within the generic route lifecycle. Pay particular attention to whether behaviour applies to the GET document, the POST response, or both.
+
 ## Never Do This
 
 - Never treat GAS status and Grants UI application status as equivalent or interchangeable.
