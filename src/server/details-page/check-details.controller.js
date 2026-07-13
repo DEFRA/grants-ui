@@ -9,7 +9,6 @@ import { debug, log, LogCodes } from '../common/helpers/logging/log.js'
 import { mergeAdditionalAnswers } from '../common/helpers/state/additional-answers-helper.js'
 import { ComponentType, ControllerType } from '@defra/forms-model'
 import { config } from '~/src/config/config.js'
-import { SFD_REDIRECT_PATH, SFD_REDIRECT_SESSION_KEY } from '~/src/server/sfd-redirect/index.js'
 import { findFormBySlug } from '~/src/server/common/forms/services/find-form-by-slug.js'
 
 const ERROR_TITLE = 'There is a problem'
@@ -253,12 +252,18 @@ export default class CheckDetailsController extends QuestionPageController {
         // "answered" when walking from start/summary, routing past it instead of back to it.
         // We DO set checkDetailsChangesPending: true so the forms-engine-plugin and the
         // status-helper both behave correctly and we show the check-details page.
-        const { [this.confirmationFieldName]: _removed, ...stateWithoutConfirmation } = state
-        await this.setState(request, { ...stateWithoutConfirmation, checkDetailsChangesPending: true })
-        // TGC-1472 - SFD redirects can't occur directly from the form submission or grants-ui hijacks
-        //            SFD's own CSP preventing SFD from redirecting to DefraID
-        request.yar.set(SFD_REDIRECT_SESSION_KEY, { returnPath: request.path })
-        return h.redirect(SFD_REDIRECT_PATH)
+        const { currentRelationshipId } = request.auth.credentials
+        const updateUrl = config.get('externalLinks.sfd.updateUrl')?.trim()
+        if (updateUrl && URL.canParse(updateUrl)) {
+          const url = new URL(updateUrl)
+          url.searchParams.set('ssoOrgId', currentRelationshipId)
+          const { [this.confirmationFieldName]: _removed, ...stateWithoutConfirmation } = state
+          await this.setState(request, { ...stateWithoutConfirmation, checkDetailsChangesPending: true })
+          return h.redirect(url.toString())
+        } else {
+          // missing or malformed URL — log and fall through to the update-details page
+          log(LogCodes.SYSTEM.SFD_UPDATE_URL_MISSING_ON_REDIRECT, { updateUrl: updateUrl ?? '' }, request)
+        }
       }
 
       // Clear checkDetailsChangesPending once user has selected Yes
