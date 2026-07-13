@@ -22,6 +22,8 @@ reports/mutation/mutation.html
 /http-client.private.env.json
 /performance-test-users.csv
 localstack/config-broker-local
+localstack/config-broker/local-form-definitions/*
+!localstack/config-broker/local-form-definitions/README.md
 /.grants-ui-cli-state.json
 /acceptance/schemas/
 /woodland-grant-journey-tests-schemas/
