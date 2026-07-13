@@ -92,7 +92,8 @@
     },
     "jsdom": {
       "undici": "7.28.0"
-    }
+    },
+    "joi": "17.13.4"
   },
   "dependencies": {
     "@aws-sdk/client-sns": "3.1076.0",
