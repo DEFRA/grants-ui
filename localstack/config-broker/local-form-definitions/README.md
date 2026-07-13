@@ -1,7 +1,7 @@
 # Local form-definition overrides
 
 Drop work-in-progress **form definitions** here to test them locally **before**
-pushing them to the config repo. A single toggle in the `gae` CLI (the `local`
+pushing them to the config repo. A single toggle in the `gt` TUI (the `local`
 menu) enables or disables **all** overrides in this folder at once.
 
 ## Folder layout
@@ -27,12 +27,12 @@ Each file is the same shape as the config repo's
 - Enabling applies every override in this folder; disabling removes them and
   purges the dependent local application state/locks/submissions for the bumped
   version so the frontend cleanly reverts to the repo version.
-- The toggle works both before `gae up` (applied once the stack is healthy) and
+- The toggle works both before `gt up` (applied once the stack is healthy) and
   while the stack is already running (applied/removed immediately).
 - The injected definition's `name` gets a ` (local override active)` suffix
   so an overridden form is easy to tell apart from the real repo version.
 - While the override is active, a `↳ refresh overrides` item appears directly below
-  `local` in the `gae` main menu. Selecting it re-publishes the YAML in this folder
+  `local` in the `gt` main menu. Selecting it re-publishes the YAML in this folder
   into Mongo on demand, so you can edit a definition and pull in your latest changes
   without toggling the override off and on again (containers must be running).
 

@@ -2,23 +2,24 @@
 /* eslint-disable */
 
 /**
- * GAE CLI — Interactive Docker Compose launcher
+ * Grants TUI — Interactive Docker Compose launcher
  *
  * Usage (interactive — no args):
- *   npx gae
- *   node tools/grants-ui-cli.js   (direct)
+ *   gt
+ *   node tools/grants-tui.js   (direct)
  *
  * Usage (non-interactive):
- *   npx gae up [--land-grants] [--gas] [--ha] [--scale <n>] [--dry-run]
- *   npx gae up --local-<service-key>  # use locally-built image for a defradigital service
- *   npx gae down [--dry-run]          # uses saved state automatically
- *   npx gae debug                     # restart grants-ui in debug mode (detached, port 9229)
- *   npx gae restart [--dry-run]       # restart running containers (with --no-deps)
- *   npx gae reset [--dry-run]         # full teardown incl. volumes
- *   npx gae --help                    # show help
- *   npx gae --version                 # show version number
+ *   gt up [--land-grants] [--gas] [--ha] [--scale <n>] [--dry-run]
+ *   gt up --local-<service-key>  # use locally-built image for a defradigital service
+ *   gt down [--dry-run]          # uses saved state automatically
+ *   gt debug                     # restart grants-ui in debug mode (detached, port 9229)
+ *   gt restart [--dry-run]       # restart running containers (with --no-deps)
+ *   gt reset [--dry-run]         # full teardown incl. volumes
+ *   gt --help                    # show help
+ *   gt --version                 # show version number
  *
- * Tip: run `npm link` once to use `gae` directly (without `npx`).
+ * Tip: run `npm link` once to use `gt` directly. If `gt` collides with another
+ * tool on your machine, the `gtx` alias runs the exact same command.
  *
  * Interactive mode keys:
  *   ↑ ↓       navigate
@@ -51,7 +52,7 @@ import { fileURLToPath } from 'url'
 // ---------------------------------------------------------------------------
 // Version
 // ---------------------------------------------------------------------------
-const VERSION = '1.2.0'
+const VERSION = '1.3.0'
 
 // ---------------------------------------------------------------------------
 // Cross-platform: detect ANSI support
@@ -466,7 +467,7 @@ function cmdUp(selectedAddons, scale, dryRun, localServices = []) {
     const formDefsEnabled = loadState()?.localFormDefs ?? false
     saveState(selectedAddons, scale, localServices, formDefsEnabled)
     console.log(
-      `  ${GREEN}✔${RESET_COLOR}  Containers started — run ${CYAN}npx gae down${RESET_COLOR} to stop. ${DIM}Started in ${elapsedSeconds}s${RESET_COLOR}\n`
+      `  ${GREEN}✔${RESET_COLOR}  Containers started — run ${CYAN}gt down${RESET_COLOR} to stop. ${DIM}Started in ${elapsedSeconds}s${RESET_COLOR}\n`
     )
     // The stack is healthy (up --wait), so the repo definitions are ingested.
     // Reconcile the persisted Mongo volume to match the toggle: when enabled,
@@ -675,12 +676,31 @@ function padVisible(str, width) {
 // Shared screen renderer
 // ---------------------------------------------------------------------------
 
-const HEADER = [
-  '',
-  `  ${BOLD}${CYAN}🚜  GAE CLI${RESET_COLOR}  ${DIM}v${VERSION}${RESET_COLOR}`,
-  `  ${DIM}${'─'.repeat(40)}${RESET_COLOR}`,
-  ''
+// "Grants TUI" drawn with Unicode half-block glyphs so the name renders three
+// terminal rows tall while staying legible, with cyan "go faster" stripes down
+// the left gutter. Generated once and kept as literals (no runtime font engine).
+const STRIPES = '╱╱╱'
+const WORDMARK = [
+  '▄▀▀▀  █▀▀▀▄ ▄▀▀▀▄ █▄  █ ▀▀█▀▀ ▄▀▀▀▀    ▀▀█▀▀ █   █ ▀█▀',
+  '█  ▄▄ ██▀▀  █▄▄▄█ █ ▀▄█   █    ▀▀▀▄      █   █   █  █',
+  '▀▄▄▄▀ █ ▀▀▄ █   █ █   █   █   ▄▄▄▄▀      █   ▀▄▄▄▀ ▄█▄'
 ]
+
+// Half-block glyphs are unreliable on legacy Windows consoles, so fall back to a
+// plain single-line title there.
+const HEADER = IS_WINDOWS
+  ? [
+      '',
+      `  ${BOLD}${GREEN}Grants TUI${RESET_COLOR}  ${DIM}v${VERSION}${RESET_COLOR}`,
+      `  ${DIM}${'─'.repeat(40)}${RESET_COLOR}`,
+      ''
+    ]
+  : [
+      '',
+      ...WORDMARK.map((line) => `  ${PURPLE}${STRIPES}${RESET_COLOR}  ${BOLD}${GREEN}${line}${RESET_COLOR}`),
+      `  ${DIM}docker compose launcher · v${VERSION}${RESET_COLOR}`,
+      ''
+    ]
 
 function renderScreen(bodyLines) {
   const lines = [...HEADER, ...bodyLines, '']
@@ -876,14 +896,15 @@ async function promptScale() {
 
 function printHelp() {
   console.log(`
-${BOLD}${CYAN}GAE CLI${RESET_COLOR}  ${DIM}v${VERSION}${RESET_COLOR}
+${BOLD}${CYAN}Grants TUI${RESET_COLOR}  ${DIM}v${VERSION}${RESET_COLOR}
 
 ${BOLD}Usage:${RESET_COLOR}
-  npx gae                             interactive mode
-  npx gae <command> [options]
+  gt                                  interactive mode
+  gt <command> [options]
 
-  Tip: run ${CYAN}npm link${RESET_COLOR} once to use ${CYAN}gae${RESET_COLOR} directly (without npx).
-  Alternative: ${DIM}node tools/grants-ui-cli.js${RESET_COLOR}
+  Tip: run ${CYAN}npm link${RESET_COLOR} once to use ${CYAN}gt${RESET_COLOR} directly.
+  If ${CYAN}gt${RESET_COLOR} collides with another tool, the ${CYAN}gtx${RESET_COLOR} alias runs the same command.
+  Alternative: ${DIM}node tools/grants-tui.js${RESET_COLOR}
 
 ${BOLD}Commands:${RESET_COLOR}
   up      Start containers
@@ -902,14 +923,14 @@ ${BOLD}Other flags:${RESET_COLOR}
   --version      Show version number
 
 ${BOLD}Examples:${RESET_COLOR}
-  npx gae                             # interactive
-  npx gae up                         # core only
-  npx gae up --land-grants --gas
-  npx gae up --ha --scale 3
-  npx gae down                       # stops whatever was started
-  npx gae debug
-  npx gae restart
-  npx gae reset
+  gt                                 # interactive
+  gt up                              # core only
+  gt up --land-grants --gas
+  gt up --ha --scale 3
+  gt down                            # stops whatever was started
+  gt debug
+  gt restart
+  gt reset
 `)
 }
 
@@ -959,7 +980,7 @@ async function main() {
   }
 
   if (argv.includes('--version') || argv.includes('-v')) {
-    console.log(`GAE CLI v${VERSION}`)
+    console.log(`Grants TUI v${VERSION}`)
     process.exit(0)
   }
 

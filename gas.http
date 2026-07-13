@@ -14,6 +14,7 @@ x-api-key: {{x-api-key}}
     "startDate": "2026-03-16T15:52:14.999Z"
   },
   "actions": [],
+  "amendablePositions": [],
   "phases": [
     {
       "code": "PRE_AWARD",
@@ -404,7 +405,8 @@ Authorization: Bearer {{serviceToken}}
     "crn": "1234567890",
     "frn": "1234567890",
     "sbi": "1234567890",
-    "submittedAt": "{{$isoTimestamp}}"
+    "submittedAt": "{{$isoTimestamp}}",
+    "configVersion": "2.1.0"
   }
 }
 

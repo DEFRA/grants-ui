@@ -661,7 +661,7 @@ export function run(mode) {
   }
 
   if (!pingMongo()) {
-    console.error('  ✖  Cannot reach the mongodb service — is the stack running (`gae up`)?')
+    console.error('  ✖  Cannot reach the mongodb service — is the stack running (`gt up`)?')
     return 1
   }
 
