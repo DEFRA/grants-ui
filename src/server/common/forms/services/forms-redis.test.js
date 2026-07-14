@@ -5,9 +5,7 @@ import {
   getFormsRedisClient,
   setFormMeta,
   getFormMeta,
-  setSlugReverse,
-  getSlugByFormId,
-  setAllSlugs,
+  registerSlug,
   getAllSlugs,
   getAllFormMetas
 } from './forms-redis.js'
@@ -26,7 +24,7 @@ describe('forms-redis', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockRedis = { get: vi.fn(), set: vi.fn() }
+    mockRedis = { get: vi.fn(), set: vi.fn(), sadd: vi.fn(), smembers: vi.fn() }
     _setFormsRedisClient(mockRedis)
   })
 
@@ -79,53 +77,37 @@ describe('forms-redis', () => {
     })
   })
 
-  describe('setSlugReverse / getSlugByFormId', () => {
-    test('stores slug under the reverse key for the given id', async () => {
-      mockRedis.set.mockResolvedValue('OK')
+  describe('registerSlug / getAllSlugs', () => {
+    test('adds the slug to the slug-index set', async () => {
+      mockRedis.sadd.mockResolvedValue(1)
 
-      await setSlugReverse(mockRedis, 'form-id-1', 'my-form')
+      await registerSlug(mockRedis, 'my-form')
 
-      expect(mockRedis.set).toHaveBeenCalledWith('forms:reverse:form-id-1', 'my-form')
+      expect(mockRedis.sadd).toHaveBeenCalledWith('forms:slug-index', 'my-form')
     })
 
-    test('retrieves the slug for a given form id', async () => {
-      mockRedis.get.mockResolvedValue('my-form')
+    test('is idempotent: re-registering an existing slug is a plain SADD (no read-modify-write)', async () => {
+      mockRedis.sadd.mockResolvedValue(0)
 
-      const result = await getSlugByFormId(mockRedis, 'form-id-1')
+      await registerSlug(mockRedis, 'my-form')
+      await registerSlug(mockRedis, 'my-form')
 
-      expect(mockRedis.get).toHaveBeenCalledWith('forms:reverse:form-id-1')
-      expect(result).toBe('my-form')
+      expect(mockRedis.sadd).toHaveBeenCalledTimes(2)
+      expect(mockRedis.get).not.toHaveBeenCalled()
+      expect(mockRedis.set).not.toHaveBeenCalled()
     })
 
-    test('returns null when form id has no reverse mapping', async () => {
-      mockRedis.get.mockResolvedValue(null)
-
-      expect(await getSlugByFormId(mockRedis, 'unknown-id')).toBeNull()
-    })
-  })
-
-  describe('setAllSlugs / getAllSlugs', () => {
-    test('stores slug list as JSON', async () => {
-      const slugs = ['form-a', 'form-b', 'form-c']
-      mockRedis.set.mockResolvedValue('OK')
-
-      await setAllSlugs(mockRedis, slugs)
-
-      expect(mockRedis.set).toHaveBeenCalledWith('forms:slugs', JSON.stringify(slugs))
-    })
-
-    test('retrieves and parses slug list', async () => {
-      const slugs = ['form-a', 'form-b']
-      mockRedis.get.mockResolvedValue(JSON.stringify(slugs))
+    test('retrieves the slug set sorted', async () => {
+      mockRedis.smembers.mockResolvedValue(['form-b', 'form-a'])
 
       const result = await getAllSlugs(mockRedis)
 
-      expect(mockRedis.get).toHaveBeenCalledWith('forms:slugs')
-      expect(result).toEqual(slugs)
+      expect(mockRedis.smembers).toHaveBeenCalledWith('forms:slug-index')
+      expect(result).toEqual(['form-a', 'form-b'])
     })
 
-    test('returns empty array when no slugs have been stored', async () => {
-      mockRedis.get.mockResolvedValue(null)
+    test('returns empty array when no slugs have been registered', async () => {
+      mockRedis.smembers.mockResolvedValue([])
 
       expect(await getAllSlugs(mockRedis)).toEqual([])
     })
@@ -160,14 +142,11 @@ describe('forms-redis', () => {
   })
 
   describe('getAllFormMetas', () => {
-    test('returns metas for all stored slugs', async () => {
-      const slugs = ['form-a', 'form-b']
-      const metaA = { id: 'id-a', slug: 'form-a', title: 'Form A', metadata: {}, source: 'yaml' }
-      const metaB = { id: 'id-b', slug: 'form-b', title: 'Form B', metadata: {}, source: 'backend' }
-      mockRedis.get
-        .mockResolvedValueOnce(JSON.stringify(slugs))
-        .mockResolvedValueOnce(JSON.stringify(metaA))
-        .mockResolvedValueOnce(JSON.stringify(metaB))
+    test('returns metas for all registered slugs', async () => {
+      const metaA = { id: 'form-a', slug: 'form-a', title: 'Form A', metadata: {}, source: 'backend' }
+      const metaB = { id: 'form-b', slug: 'form-b', title: 'Form B', metadata: {}, source: 'backend' }
+      mockRedis.smembers.mockResolvedValue(['form-a', 'form-b'])
+      mockRedis.get.mockResolvedValueOnce(JSON.stringify(metaA)).mockResolvedValueOnce(JSON.stringify(metaB))
 
       const result = await getAllFormMetas(mockRedis)
 
@@ -175,10 +154,10 @@ describe('forms-redis', () => {
     })
 
     test('filters out null entries for slugs with no metadata', async () => {
+      mockRedis.smembers.mockResolvedValue(['form-a', 'missing'])
       mockRedis.get
-        .mockResolvedValueOnce(JSON.stringify(['form-a', 'missing']))
         .mockResolvedValueOnce(
-          JSON.stringify({ id: 'id-a', slug: 'form-a', title: 'Form A', metadata: {}, source: 'yaml' })
+          JSON.stringify({ id: 'form-a', slug: 'form-a', title: 'Form A', metadata: {}, source: 'backend' })
         )
         .mockResolvedValueOnce(null)
 
@@ -188,8 +167,8 @@ describe('forms-redis', () => {
       expect(result[0].slug).toBe('form-a')
     })
 
-    test('returns empty array when no slugs are stored', async () => {
-      mockRedis.get.mockResolvedValue(null)
+    test('returns empty array when no slugs are registered', async () => {
+      mockRedis.smembers.mockResolvedValue([])
 
       expect(await getAllFormMetas(mockRedis)).toEqual([])
     })

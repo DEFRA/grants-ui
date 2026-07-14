@@ -29,8 +29,10 @@ export async function closeFormsRedisClient() {
 
 const KEYS = {
   meta: (/** @type {string} */ slug) => `forms:meta:${slug}`,
-  reverse: (/** @type {string} */ id) => `forms:reverse:${id}`,
-  slugs: 'forms:slugs'
+  // A Redis SET (deliberately a new key: the legacy `forms:slugs` key holds a
+  // JSON-array string, so reusing it would fail with WRONGTYPE — and starting
+  // clean drops slugs left over from the removed startup registration).
+  slugIndex: 'forms:slug-index'
 }
 
 /**
@@ -53,38 +55,23 @@ export async function getFormMeta(redis, slug) {
 }
 
 /**
+ * Adds a slug to the set of known form slugs. SADD is atomic and idempotent,
+ * so concurrent registrations across instances cannot lose entries.
  * @param {Redis | Cluster} redis
- * @param {string} id
  * @param {string} slug
  */
-export async function setSlugReverse(redis, id, slug) {
-  await redis.set(KEYS.reverse(id), slug)
+export async function registerSlug(redis, slug) {
+  await redis.sadd(KEYS.slugIndex, slug)
 }
 
 /**
- * @param {Redis | Cluster} redis
- * @param {string} id
- * @returns {Promise<string | null>}
- */
-export async function getSlugByFormId(redis, id) {
-  return redis.get(KEYS.reverse(id))
-}
-
-/**
- * @param {Redis | Cluster} redis
- * @param {string[]} slugs
- */
-export async function setAllSlugs(redis, slugs) {
-  await redis.set(KEYS.slugs, JSON.stringify(slugs))
-}
-
-/**
+ * All known form slugs, sorted for stable listings.
  * @param {Redis | Cluster} redis
  * @returns {Promise<string[]>}
  */
 export async function getAllSlugs(redis) {
-  const raw = await redis.get(KEYS.slugs)
-  return raw ? JSON.parse(raw) : []
+  const slugs = await redis.smembers(KEYS.slugIndex)
+  return slugs.sort()
 }
 
 /**
@@ -106,7 +93,6 @@ export async function getAllFormMetas(redis) {
  * @property {string} id
  * @property {string} slug
  * @property {string} title
- * @property {'yaml' | 'backend'} source
- * @property {string} [path] - Absolute path to the YAML file; only present for source='yaml' forms
+ * @property {'backend'} source
  * @property {Record<string, unknown>} [metadata] - Custom metadata from the form definition
  */

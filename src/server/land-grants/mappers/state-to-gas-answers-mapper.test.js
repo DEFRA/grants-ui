@@ -1,7 +1,4 @@
-import {
-  loadSubmissionSchemaValidators,
-  validateSubmissionAnswers
-} from '~/src/server/common/forms/services/submission.js'
+import { validateSubmissionAnswers } from '~/src/server/common/forms/services/submission.js'
 import { stateToLandGrantsGasAnswers } from '~/src/server/land-grants/mappers/state-to-gas-answers-mapper.js'
 
 const configState = vi.hoisted(() => {
@@ -1321,10 +1318,6 @@ describe('stateToLandGrantsGasAnswers - rulesCalculations from validationResult'
 })
 
 describe('schema validation', () => {
-  beforeAll(() => {
-    loadSubmissionSchemaValidators()
-  })
-
   it('output always conforms to GASPayload schema structure', () => {
     const stateObjectTestCases = [
       {
@@ -1375,7 +1368,7 @@ describe('schema validation', () => {
 
     stateObjectTestCases.forEach((testCase) => {
       const result = stateToLandGrantsGasAnswers(testCase)
-      const { valid } = validateSubmissionAnswers(result, 'farm-payments')
+      const { valid } = validateSubmissionAnswers(result, 'farm-payments', 'farm-payments.schema.json')
 
       expect(valid).toBe(true)
     })

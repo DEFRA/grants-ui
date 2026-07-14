@@ -10,7 +10,7 @@ TMPDIR=$(mktemp -d)
 trap 'rm -rf "$TMPDIR"' EXIT
 
 FILE_PATH="configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml"
-LOCAL_FILE="src/server/common/forms/definitions/example-grant-with-auth.yaml"
+LOCAL_FILE="localstack/config-broker-local/example-grant-with-auth@1.0.1/grants-ui/example-grant-with-auth.yaml"
 
 echo "example-grant-with-auth config has changed - checking grants-config-example-grants repo to see if local config change is reflected there..."
 REMOTE_CONFIG_UPDATED_TO_MATCH=false

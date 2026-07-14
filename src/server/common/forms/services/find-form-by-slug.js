@@ -1,16 +1,4 @@
-import { readFile } from 'node:fs/promises'
-import { parse as parseYaml } from 'yaml'
 import { getFormMeta, getFormsRedisClient } from './forms-redis.js'
-
-/** @type {Map<string, import('@defra/forms-model').FormDefinition>} */
-const yamlCache = new Map()
-
-/**
- * Clears the in-memory YAML definition cache. Exposed for testing.
- */
-export function clearYamlCache() {
-  yamlCache.clear()
-}
 
 /**
  * Finds a cached form entry by its slug.
@@ -23,27 +11,13 @@ export async function findFormBySlug(slug) {
 }
 
 /**
- * Loads a form's full definition — from the YAML file for file-sourced forms, or
- * from the request-scoped combined backend response for backend-sourced forms
- * (resolved via the formsService layer).
+ * Loads a form's full definition from the request-scoped combined backend
+ * response (resolved via the formsService layer).
  * @param {import('./forms-redis.js').FormCacheEntry} form
  * @param {FormsServiceWithSlugLookup} formsService
  * @returns {Promise<import('@defra/forms-model').FormDefinition>}
  */
 export async function loadFormDefinition(form, formsService) {
-  if (form.source === 'yaml') {
-    const filePath = /** @type {string} */ (form.path)
-    const cached = yamlCache.get(filePath)
-    if (cached) {
-      return structuredClone(cached)
-    }
-
-    const raw = await readFile(filePath, 'utf8')
-    const parsed = /** @type {import('@defra/forms-model').FormDefinition} */ (parseYaml(raw))
-    yamlCache.set(filePath, parsed)
-    return structuredClone(parsed)
-  }
-
   return formsService.getFormDefinitionBySlug(form.slug)
 }
 

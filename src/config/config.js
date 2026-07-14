@@ -300,12 +300,6 @@ const convictConfig = {
   },
   devTools: devToolsSchema,
   forms: {
-    backendFormDefEnabledSlugs: {
-      doc: 'Comma-separated list of form slugs whose definition is served from grants-ui-backend (combined /state/with-definition endpoint). All other forms load their definition from local YAML.',
-      format: Array,
-      default: [],
-      env: 'BACKEND_FORM_DEF_ENABLED_SLUGS'
-    },
     backendAllowlistEnabledSlugs: {
       doc: 'Comma-separated slugs that should use the grants-ui-backend allowlist endpoint instead of env var whitelists. Empty means use whitelist for all grants.',
       format: Array,

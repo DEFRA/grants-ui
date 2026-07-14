@@ -52,10 +52,8 @@ vi.mock('@defra/forms-engine-plugin/controllers/TerminalPageController.js', () =
 vi.mock('~/src/server/common/forms/services/forms-redis.js', () => ({
   getFormsRedisClient: vi.fn(() => ({ status: 'ready' })),
   setFormMeta: vi.fn(async () => {}),
-  setSlugReverse: vi.fn(async () => {}),
-  setAllSlugs: vi.fn(async () => {}),
+  registerSlug: vi.fn(async () => {}),
   getFormMeta: vi.fn(async () => null),
-  getSlugByFormId: vi.fn(async () => null),
   getAllSlugs: vi.fn(async () => []),
   getAllFormMetas: vi.fn(async () => [])
 }))

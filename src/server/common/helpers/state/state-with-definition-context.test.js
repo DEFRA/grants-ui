@@ -4,18 +4,12 @@ import {
   currentRequest,
   enterRequestContext,
   getStateWithDefinition,
-  isBackendSourcedSlug,
   resolveVersion,
   runWithRequest
 } from './state-with-definition-context.js'
-import { config } from '~/src/config/config.js'
 import { fetchStateWithDefinitionFromApi } from './fetch-saved-state-helper.js'
 import { mintLockToken } from '../lock/lock-token.js'
 import { getCacheKey } from './get-cache-key-helper.js'
-
-vi.mock('~/src/config/config.js', () => ({
-  config: { get: vi.fn() }
-}))
 
 vi.mock('./fetch-saved-state-helper.js', () => ({
   fetchStateWithDefinitionFromApi: vi.fn()
@@ -32,7 +26,6 @@ vi.mock('./get-cache-key-helper.js', () => ({
 describe('state-with-definition-context', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    config.get.mockReturnValue([])
     getCacheKey.mockReturnValue({ sbi: 'biz-1', grantCode: 'grant-a' })
   })
 
@@ -52,8 +45,7 @@ describe('state-with-definition-context', () => {
       expect(fetchStateWithDefinitionFromApi).toHaveBeenCalledTimes(1)
     })
 
-    it('builds a read lock token without grantVersion and requests definition for backend slugs', async () => {
-      config.get.mockReturnValue(['grant-a'])
+    it('builds a read lock token without grantVersion and requests the definition', async () => {
       const request = makeRequest()
       fetchStateWithDefinitionFromApi.mockResolvedValue({})
 
@@ -63,19 +55,6 @@ describe('state-with-definition-context', () => {
       expect(fetchStateWithDefinitionFromApi).toHaveBeenCalledWith('biz-1:grant-a', request, {
         lockToken: 'READ-LOCK',
         includeDefinition: true
-      })
-    })
-
-    it('requests state only (includeDefinition: false) for non-backend slugs', async () => {
-      config.get.mockReturnValue([])
-      const request = makeRequest()
-      fetchStateWithDefinitionFromApi.mockResolvedValue({})
-
-      await getStateWithDefinition(request)
-
-      expect(fetchStateWithDefinitionFromApi).toHaveBeenCalledWith('biz-1:grant-a', request, {
-        lockToken: 'READ-LOCK',
-        includeDefinition: false
       })
     })
 
@@ -104,18 +83,6 @@ describe('state-with-definition-context', () => {
     it('returns undefined when nothing is resolvable', () => {
       expect(resolveVersion({ upgraded: false, state: null })).toBeUndefined()
       expect(resolveVersion(null)).toBeUndefined()
-    })
-  })
-
-  describe('isBackendSourcedSlug', () => {
-    it('returns true when the slug is configured', () => {
-      config.get.mockReturnValue(['grant-a', 'grant-b'])
-      expect(isBackendSourcedSlug('grant-a')).toBe(true)
-    })
-
-    it('returns false when the slug is not configured', () => {
-      config.get.mockReturnValue(['grant-b'])
-      expect(isBackendSourcedSlug('grant-a')).toBe(false)
     })
   })
 

@@ -237,7 +237,7 @@ metadata:
 
 ### Example Complete Configuration
 
-See `src/server/common/forms/definitions/example-grant-with-task-list.yaml` for a complete working example that demonstrates:
+See `localstack/config-broker-local/example-grant-with-task-list@1.0.1/grants-ui/example-grant-with-task-list.yaml` for a complete working example that demonstrates:
 
 - Multiple sections with different types of tasks
 - Above and below positioned guidance components
@@ -272,21 +272,38 @@ For complete service configuration and setup, see [Docker Compose](./DOCKER.md#d
 
 ## Grant Form Definitions
 
-Grant form definitions can be sourced in two ways:
+All grant form definitions are sourced from `grants-ui-backend`. There is no
+local YAML fallback — the `src/server/common/forms/definitions` directory and
+the config flag that used to enable a per-grant backend source
+(`BACKEND_FORM_DEF_ENABLED_SLUGS`) have been removed.
 
-### 1. Local YAML files (default)
+A form's slug is not known to grants-ui ahead of time; there is no startup-time
+list of valid grants to register. Instead, `formsService()`
+(`src/server/common/forms/services/form.js`) records each slug in Redis
+_after_ its definition has been successfully resolved from the backend — a
+meta entry (`id`, `slug`, `title`, `source: 'backend'`, plus the definition's
+`metadata`) refreshed on every resolution so it can't go stale, and a
+membership in the `forms:slug-index` Redis set (atomic `SADD`, so concurrent
+registrations across instances can't lose entries). Because registration only
+happens after a successful resolution, mistyped or unknown slugs never write
+anything. The full form definition itself is never cached locally — it is
+resolved fresh per request from the backend's combined
+`POST /state/with-definition` endpoint (see
+[Forms Engine State Model](#forms-engine-state-model)), via
+`state-with-definition-context.js`'s `AsyncLocalStorage`-backed request
+context. Whitelist enforcement (`whitelist.js` `onPostAuth`) reads the grant's
+`whitelistCrnEnvVar`/`whitelistSbiEnvVar` from that same per-request envelope,
+not from the Redis entry, so it holds even on a fresh Redis or the first
+request after a publish.
 
-Form definitions are stored in `src/server/common/forms/definitions` as YAML files and read at startup. Any changes to these files require a restart of the application.
+In production (`cdpEnvironment: prod`) a definition is only served when its
+metadata sets `enabledInProd: true` — the same gate the YAML discovery used to
+apply at startup. Gated forms return 404 and are never registered.
 
-Forms will not be enabled in production unless the YAML file contains the `enabledInProd: true` property.
-
-### 2. Config API
-
-When `CONFIG_API_URL` and `FORMS_API_SLUGS` are set, the application fetches the specified form definitions from the `grants-ui-config-api` at startup and caches them in Redis for `FORMS_API_CACHE_TTL_SECONDS` seconds. This allows form definitions to be updated without redeploying the application.
-
-Slugs listed in `FORMS_API_SLUGS` are loaded from the API; all other forms continue to be loaded from local YAML files. The two sources can be used together.
-
-To upload local YAML definitions to the Config API, see [tools/README.md](../tools/README.md).
+One consequence of resolving everything per-request: the dev-tools form
+picker (`getAvailableFormSlugs`/`getAllForms`) only lists slugs that have
+actually been visited at least once, not every grant that exists in the
+backend.
 
 ## GAS Integration
 
@@ -330,26 +347,32 @@ Example response:
 
 ### Submission Schema Validators
 
-Each GAS grant may define a JSON Schema stored locally in:
+A grant may define a JSON Schema describing the shape of its expected
+application payload, stored locally in:
 
 `src/server/common/forms/schemas/`
 
-Each schema file is named after the grant code
-(e.g. example-grant-with-auth.json) and describes the shape of the expected application payload for that grant.
+Form definitions themselves are now resolved from grants-ui-backend rather
+than local YAML (see [Grant Form Definitions](#grant-form-definitions)), so there is no
+local file to scan for the grantCode → schema mapping at startup. Instead,
+`src/server/common/forms/services/submission.js` compiles and caches each
+schema lazily, the first time it's needed:
 
-At application startup, the app scans the schemas directory and compiles each schema into a JSON Schema validator using Ajv. These compiled validators are stored in-memory in a map of the form:
+`validateSubmissionAnswers(payload, grantCode, schemaPath)`
 
-`Map<string, ValidateFunction>`
+`schemaPath` is the resolved form definition's own
+`metadata.submission.submissionSchemaPath` (the caller is responsible for
+having already resolved the definition, e.g. via `formsService`); only the
+schema file itself lives locally in this repo. Compiled validators are cached
+in-memory in a `Map<string, ValidateFunction>` keyed by grant code so a given
+grant's schema is only read and compiled from disk once per process.
 
 #### Current Runtime Behaviour
 
-Although the validators are compiled at startup, they are not currently used at runtime to validate submissions within the grants-ui submission pipeline.
-
-The helper:
-
-`validateSubmissionAnswers(payload, grantCode)`
-
-is currently used only in tests to ensure that the mapping logic produces payloads that conform to the expected schema format.
+`validateSubmissionAnswers` is not currently wired into the grants-ui
+submission pipeline at runtime — it is used only in tests (e.g.
+`state-to-gas-answers-mapper.test.js`) to ensure that mapper output conforms
+to the expected schema format.
 
 ### Using the `gas.http` helper and HTTP client environments
 

@@ -2,13 +2,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import whitelist from './whitelist.js'
 import { config } from '~/src/config/config.js'
 import { mockHapiRequest, mockHapiResponseToolkit, mockHapiServer } from '~/src/__mocks__/hapi-mocks.js'
-import { getAllForms } from '~/src/server/dev-tools/utils/index.js'
+import { getStateWithDefinition } from '~/src/server/common/helpers/state/state-with-definition-context.js'
 import { WhitelistServiceFactory } from '~/src/server/auth/services/whitelist.service.js'
+import { log } from '~/src/server/common/helpers/logging/log.js'
 
 vi.mock('~/src/config/config.js', () => ({ config: { get: vi.fn() } }))
 
-vi.mock('~/src/server/dev-tools/utils/index.js', () => ({
-  getAllForms: vi.fn()
+vi.mock('~/src/server/common/helpers/state/state-with-definition-context.js', () => ({
+  getStateWithDefinition: vi.fn()
 }))
 
 vi.mock('~/src/server/auth/services/whitelist.service.js', () => ({
@@ -16,6 +17,23 @@ vi.mock('~/src/server/auth/services/whitelist.service.js', () => ({
     getService: vi.fn()
   }
 }))
+
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  log: vi.fn(),
+  LogCodes: {
+    SYSTEM: {
+      SERVER_ERROR: { level: 'error', messageFunc: vi.fn() },
+      WHITELIST_CONFIG_INCOMPLETE: { level: 'error', messageFunc: vi.fn() },
+      CRN_ENV_VAR_MISSING: { level: 'error', messageFunc: vi.fn() },
+      SBI_ENV_VAR_MISSING: { level: 'error', messageFunc: vi.fn() }
+    }
+  }
+}))
+
+const TEST_WHITELIST_METADATA = {
+  whitelistCrnEnvVar: 'TEST_WHITELIST_CRNS',
+  whitelistSbiEnvVar: 'TEST_WHITELIST_SBIS'
+}
 
 const buildMockService = (validationResultOverrides = {}) => {
   const defaultValidation = {
@@ -33,6 +51,10 @@ const buildMockService = (validationResultOverrides = {}) => {
   }
 }
 
+const mockEnvelope = (metadata) => {
+  getStateWithDefinition.mockResolvedValue({ definition: { definition: { metadata } } })
+}
+
 const registerAndGetOnPostAuth = (server) => {
   whitelist.plugin.register(server)
   expect(server.ext).toHaveBeenCalledWith('onPostAuth', expect.any(Function))
@@ -48,9 +70,13 @@ describe('whitelist plugin', () => {
     server = mockHapiServer()
     h = mockHapiResponseToolkit()
     config.get.mockReturnValue([])
+    process.env.TEST_WHITELIST_CRNS = '1101009926,1101010029'
+    process.env.TEST_WHITELIST_SBIS = '105123456,105654321'
   })
 
   afterEach(() => {
+    delete process.env.TEST_WHITELIST_CRNS
+    delete process.env.TEST_WHITELIST_SBIS
     vi.resetModules()
   })
 
@@ -69,7 +95,23 @@ describe('whitelist plugin', () => {
     const result = await handler(request, h)
 
     expect(result).toBe(h.continue)
-    expect(getAllForms).not.toHaveBeenCalled()
+    expect(getStateWithDefinition).not.toHaveBeenCalled()
+    expect(WhitelistServiceFactory.getService).not.toHaveBeenCalled()
+  })
+
+  it('should continue without resolving metadata when the route has no form slug', async () => {
+    const handler = registerAndGetOnPostAuth(server)
+
+    const request = mockHapiRequest({
+      path: '/home',
+      params: {},
+      auth: { isAuthenticated: true, credentials: { crn: '1101009926', sbi: '105123456' } }
+    })
+
+    const result = await handler(request, h)
+
+    expect(result).toBe(h.continue)
+    expect(getStateWithDefinition).not.toHaveBeenCalled()
     expect(WhitelistServiceFactory.getService).not.toHaveBeenCalled()
   })
 
@@ -79,12 +121,9 @@ describe('whitelist plugin', () => {
     const testSlug = 'test-form'
     const testCrn = '1101009926'
     const testSbi = '105123456'
-    const metadata = { whitelistCrnEnvVar: 1234567890 }
+    const metadata = { ...TEST_WHITELIST_METADATA }
 
-    getAllForms.mockReturnValue([
-      { slug: testSlug, metadata },
-      { slug: 'other-form', metadata: { whitelistCrnEnvVar: 9876543210 } }
-    ])
+    mockEnvelope(metadata)
 
     const mockService = buildMockService({ overallAccess: true, hasCrnValidation: true, hasSbiValidation: true })
     WhitelistServiceFactory.getService.mockReturnValue(mockService)
@@ -97,7 +136,8 @@ describe('whitelist plugin', () => {
 
     const result = await handler(request, h)
 
-    expect(getAllForms).toHaveBeenCalledTimes(1)
+    expect(getStateWithDefinition).toHaveBeenCalledTimes(1)
+    expect(getStateWithDefinition).toHaveBeenCalledWith(request)
     expect(WhitelistServiceFactory.getService).toHaveBeenCalledWith(metadata)
     expect(mockService.validateGrantAccess).toHaveBeenCalledWith(testCrn, testSbi)
 
@@ -122,7 +162,7 @@ describe('whitelist plugin', () => {
     const testCrn = '1101010029'
     const testSbi = '105654321'
 
-    getAllForms.mockReturnValue([{ slug: testSlug, metadata: { whitelistCrnEnvVar: 0 } }])
+    mockEnvelope({ ...TEST_WHITELIST_METADATA })
 
     const mockService = buildMockService({ overallAccess: false, crnPassesValidation: false, hasCrnValidation: true })
     WhitelistServiceFactory.getService.mockReturnValue(mockService)
@@ -159,7 +199,7 @@ describe('whitelist plugin', () => {
     const handler = registerAndGetOnPostAuth(server)
 
     const testSlug = 'test-form'
-    getAllForms.mockReturnValue([{ slug: testSlug, metadata: { whitelistCrnEnvVar: 1234567890 } }])
+    mockEnvelope({ ...TEST_WHITELIST_METADATA })
 
     const mockService = buildMockService({ overallAccess: true })
     WhitelistServiceFactory.getService.mockReturnValue(mockService)
@@ -182,8 +222,6 @@ describe('whitelist plugin', () => {
     const handler = registerAndGetOnPostAuth(server)
     config.get.mockReturnValue(['woodland'])
 
-    getAllForms.mockReturnValue([{ slug: 'woodland', metadata: { submission: { grantCode: 'woodland' } } }])
-
     const request = mockHapiRequest({
       path: '/woodland/tasks',
       params: { slug: 'woodland' },
@@ -192,17 +230,20 @@ describe('whitelist plugin', () => {
 
     const result = await handler(request, h)
 
+    expect(getStateWithDefinition).not.toHaveBeenCalled()
     expect(WhitelistServiceFactory.getService).not.toHaveBeenCalled()
     expect(result).toBe(h.continue)
   })
 
-  it('should handle missing form slug gracefully (metadata undefined)', async () => {
+  it('should handle an unknown form slug gracefully (metadata undefined)', async () => {
     const handler = registerAndGetOnPostAuth(server)
 
     const testCrn = '1101009926'
     const testSbi = '105123456'
 
-    getAllForms.mockReturnValue([{ slug: 'different-form', metadata: { whitelistCrnEnvVar: 1234567890 } }])
+    // Backend has no definition for this slug: the combined endpoint 404s and
+    // the fetch helper resolves to null.
+    getStateWithDefinition.mockResolvedValue(null)
 
     const mockService = buildMockService({ overallAccess: true })
     WhitelistServiceFactory.getService.mockReturnValue(mockService)
@@ -217,6 +258,78 @@ describe('whitelist plugin', () => {
 
     expect(WhitelistServiceFactory.getService).toHaveBeenCalledWith(undefined)
     expect(mockService.validateGrantAccess).toHaveBeenCalledWith(testCrn, testSbi)
+    expect(result).toBe(h.continue)
+  })
+
+  it('should fail closed when only one whitelist env var is declared', async () => {
+    const handler = registerAndGetOnPostAuth(server)
+
+    mockEnvelope({ whitelistCrnEnvVar: 'TEST_WHITELIST_CRNS' })
+
+    const request = mockHapiRequest({
+      path: '/forms/test-form',
+      params: { slug: 'test-form' },
+      auth: { isAuthenticated: true, credentials: { crn: '1101009926', sbi: '105123456' } }
+    })
+
+    await expect(handler(request, h)).rejects.toThrow(/Incomplete whitelist configuration/)
+    expect(WhitelistServiceFactory.getService).not.toHaveBeenCalled()
+  })
+
+  it('should fail closed when the declared CRN env var is not set in the environment', async () => {
+    const handler = registerAndGetOnPostAuth(server)
+
+    delete process.env.TEST_WHITELIST_CRNS
+    mockEnvelope({ ...TEST_WHITELIST_METADATA })
+
+    const request = mockHapiRequest({
+      path: '/forms/test-form',
+      params: { slug: 'test-form' },
+      auth: { isAuthenticated: true, credentials: { crn: '1101009926', sbi: '105123456' } }
+    })
+
+    await expect(handler(request, h)).rejects.toThrow(
+      'CRN whitelist environment variable TEST_WHITELIST_CRNS is defined in form test-form but not configured in environment'
+    )
+    expect(WhitelistServiceFactory.getService).not.toHaveBeenCalled()
+  })
+
+  it('should fail closed when the declared SBI env var is not set in the environment', async () => {
+    const handler = registerAndGetOnPostAuth(server)
+
+    delete process.env.TEST_WHITELIST_SBIS
+    mockEnvelope({ ...TEST_WHITELIST_METADATA })
+
+    const request = mockHapiRequest({
+      path: '/forms/test-form',
+      params: { slug: 'test-form' },
+      auth: { isAuthenticated: true, credentials: { crn: '1101009926', sbi: '105123456' } }
+    })
+
+    await expect(handler(request, h)).rejects.toThrow(
+      'SBI whitelist environment variable TEST_WHITELIST_SBIS is defined in form test-form but not configured in environment'
+    )
+    expect(WhitelistServiceFactory.getService).not.toHaveBeenCalled()
+  })
+
+  it('should continue with no metadata when the backend envelope cannot be resolved', async () => {
+    const handler = registerAndGetOnPostAuth(server)
+
+    getStateWithDefinition.mockRejectedValue(new Error('backend unavailable'))
+
+    const mockService = buildMockService({ overallAccess: true })
+    WhitelistServiceFactory.getService.mockReturnValue(mockService)
+
+    const request = mockHapiRequest({
+      path: '/forms/test-form',
+      params: { slug: 'test-form' },
+      auth: { isAuthenticated: true, credentials: { crn: '1101009926', sbi: '105123456' } }
+    })
+
+    const result = await handler(request, h)
+
+    expect(WhitelistServiceFactory.getService).toHaveBeenCalledWith(undefined)
+    expect(log).toHaveBeenCalled()
     expect(result).toBe(h.continue)
   })
 })

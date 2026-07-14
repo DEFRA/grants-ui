@@ -35,7 +35,7 @@ jobs:
         with:
           filters: |
             src:
-              - 'src/server/common/forms/definitions/example-grant-with-auth.yaml'
+              - 'localstack/config-broker-local/example-grant-with-auth@1.0.1/grants-ui/example-grant-with-auth.yaml'
 
       # run only if example grant config updated
       - if: steps.changes.outputs.src == 'true'

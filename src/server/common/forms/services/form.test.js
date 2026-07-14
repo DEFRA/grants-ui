@@ -1,18 +1,11 @@
 import { vi } from 'vitest'
 import { config } from '~/src/config/config.js'
-import {
-  addAllForms,
-  configureFormDefinition,
-  formsService,
-  validateGrantRedirectRules,
-  validateWhitelistConfiguration
-} from './form.js'
+import { configureFormDefinition, formsService } from './form.js'
 import { logger } from '~/src/server/common/helpers/logging/log.js'
 import {
   currentRequest,
   getStateWithDefinition
 } from '~/src/server/common/helpers/state/state-with-definition-context.js'
-import fs from 'node:fs/promises'
 
 const mockUrl = { pathname: '/mock/path' }
 global.URL = vi.fn(() => mockUrl)
@@ -28,46 +21,12 @@ const DEFAULT_CONFIG_MOCK = {
   },
   serviceName: 'test-service',
   serviceVersion: '1.0.0',
-  'forms.backendAllowlistEnabledSlugs': [],
-  'forms.backendFormDefEnabledSlugs': []
+  'forms.backendAllowlistEnabledSlugs': []
 }
 
-const TEST_FORMS_ARRAY = [
-  {
-    path: 'path/to/form1.yaml',
-    id: 'form-id-1',
-    slug: 'form-slug-1',
-    title: 'Form 1'
-  },
-  {
-    path: 'path/to/form2.yaml',
-    id: 'form-id-2',
-    slug: 'form-slug-2',
-    title: 'Form 2'
-  },
-  {
-    path: 'path/to/form1-duplicate.yaml',
-    id: 'form-id-1',
-    slug: 'form-slug-1',
-    title: 'Form 1 Duplicate'
-  },
-  {
-    path: 'path/to/form3.yaml',
-    id: 'form-id-3',
-    slug: 'form-slug-3',
-    title: 'Form 3',
-    metadata: {
-      whitelistCrnEnvVar: 'TEST_WHITELIST_CRNS',
-      whitelistSbiEnvVar: 'TEST_WHITELIST_SBIS'
-    }
-  }
-]
-
-const UNIQUE_FORMS_ARRAY = TEST_FORMS_ARRAY.slice(0, 2)
-
-// Stateful in-memory stores so formsService() startup writes are visible to later reads
+// Stateful in-memory stores so registration writes are visible to later reads
 const _metaStore = new Map()
-const _reverseStore = new Map()
+const _slugsIndex = new Set()
 
 vi.mock('~/src/server/common/helpers/state/state-with-definition-context.js', () => ({
   currentRequest: vi.fn(),
@@ -91,12 +50,9 @@ vi.mock('./forms-redis.js', () => ({
   setFormMeta: vi.fn(async (_r, slug, entry) => {
     _metaStore.set(slug, entry)
   }),
-  setSlugReverse: vi.fn(async (_r, id, slug) => {
-    _reverseStore.set(id, slug)
-  }),
-  setAllSlugs: vi.fn().mockResolvedValue(undefined),
-  getFormMeta: vi.fn(async (_r, slug) => _metaStore.get(slug) ?? null),
-  getSlugByFormId: vi.fn(async (_r, id) => _reverseStore.get(id) ?? null)
+  registerSlug: vi.fn(async (_r, slug) => {
+    _slugsIndex.add(slug)
+  })
 }))
 
 vi.mock('~/src/config/config.js', async () => {
@@ -123,49 +79,6 @@ vi.mock('../config.js', () => ({
   }
 }))
 
-const mockEnv = {
-  EXAMPLE_WHITELIST_CRNS: '1101009926,1101010029',
-  EXAMPLE_WHITELIST_SBIS: '123456789,987654321'
-}
-
-const deletedEnvVars = new Set()
-
-const originalEnv = process.env
-
-Object.defineProperty(process, 'env', {
-  configurable: true,
-  value: new Proxy(originalEnv, {
-    get(target, prop) {
-      // If explicitly deleted, return undefined
-      if (deletedEnvVars.has(prop)) {
-        return undefined
-      }
-      if (prop in mockEnv) {
-        return mockEnv[prop]
-      }
-      return target[prop]
-    },
-    has(target, prop) {
-      if (deletedEnvVars.has(prop)) {
-        return false
-      }
-      return prop in mockEnv || prop in target
-    },
-    deleteProperty(target, prop) {
-      if (prop in mockEnv) {
-        delete mockEnv[prop]
-      }
-      deletedEnvVars.add(prop)
-      return true
-    }
-  })
-})
-
-const BACKEND_FORM_META = { id: 'backend-form', slug: 'backend-form', title: 'backend-form', source: 'backend' }
-
-// Registers a backend-sourced form in the in-memory meta store.
-const registerBackendForm = () => _metaStore.set('backend-form', { ...BACKEND_FORM_META })
-
 // Activates a request context and returns the request used as the backend stash key.
 const mockBackendRequest = () => {
   const request = { app: {} }
@@ -177,59 +90,67 @@ const mockBackendRequest = () => {
 const mockBackendStateWithDefinition = (envelope) => vi.mocked(getStateWithDefinition).mockResolvedValue(envelope)
 
 describe('form', () => {
-  let mockWarn, mockError
+  let mockWarn
 
   beforeEach(() => {
     vi.clearAllMocks()
     _metaStore.clear()
-    _reverseStore.clear()
+    _slugsIndex.clear()
     config.get.mockImplementation((key) => DEFAULT_CONFIG_MOCK[key])
-    // Get the warn function from the mocked logger
     mockWarn = logger.warn
-    mockError = logger.error
-
-    // Restore mock env variables and clear deleted set
-    deletedEnvVars.clear()
-    mockEnv.EXAMPLE_WHITELIST_CRNS = '1101009926,1101010029'
-    mockEnv.EXAMPLE_WHITELIST_SBIS = '123456789,987654321'
-    mockEnv.FARMING_PAYMENTS_WHITELIST_CRNS = '1102838829, 1102760349, 1100495932'
-    mockEnv.FARMING_PAYMENTS_WHITELIST_SBIS = '106284736, 121428499, 106238988'
-    mockEnv.WOODLAND_WHITELIST_CRNS = '1102838829, 1102760349, 1100495932'
-    mockEnv.WOODLAND_WHITELIST_SBIS = '106284736, 121428499, 106238988'
   })
 
-  afterEach(() => {})
-
   describe('formsService', () => {
-    test('returns landGrantsDefinition for matching id', async () => {
+    test('getFormDefinition returns the backend-sourced definition for a registered id', async () => {
+      mockBackendRequest()
+      mockBackendStateWithDefinition({
+        definition: { definition: { name: 'Backend Form', pages: [] } }
+      })
+
       const service = await formsService()
-      const result = service.getFormDefinition('5c67688f-3c61-4839-a6e1-d48b598257f1')
+      const result = service.getFormDefinition('backend-form')
       await expect(result).resolves.toBeDefined()
     })
 
-    test('throws error for unknown id', async () => {
+    test('throws error for unknown id when no request context is active', async () => {
+      vi.mocked(currentRequest).mockReturnValue(undefined)
+
       const service = await formsService()
-      await expect(service.getFormDefinition('unknown-id')).rejects.toThrow()
+      await expect(service.getFormDefinition('unknown-id')).rejects.toThrow(/No request context/)
     })
 
-    test('getFormMetadata throws notFound boom error for unknown slug', async () => {
+    test('getFormMetadata registers and resolves a previously unseen slug', async () => {
+      mockBackendRequest()
+      mockBackendStateWithDefinition({
+        definition: { definition: { name: 'Backend Form', pages: [] } }
+      })
+
       const service = await formsService()
-      const error = await service.getFormMetadata('unknown-slug').catch((e) => e)
-      expect(error.isBoom).toBe(true)
-      expect(error.output.statusCode).toBe(404)
-      expect(error.message).toContain("Form 'unknown-slug' not found")
+      const result = await service.getFormMetadata('new-slug')
+
+      expect(result).toMatchObject({ id: 'new-slug', slug: 'new-slug' })
     })
 
-    test('getFormDefinition throws notFound boom error for unknown id', async () => {
+    test('getFormMetadata throws when the backend has no request context to resolve against', async () => {
+      vi.mocked(currentRequest).mockReturnValue(undefined)
+
+      const service = await formsService()
+
+      await expect(service.getFormMetadata('unknown-slug')).rejects.toThrow(/No request context/)
+    })
+
+    test('getFormDefinition throws notFound boom error when the backend has no definition for the id', async () => {
+      mockBackendRequest()
+      mockBackendStateWithDefinition({ definition: undefined })
+
       const service = await formsService()
       const error = await service.getFormDefinition('unknown-id').catch((e) => e)
       expect(error.isBoom).toBe(true)
       expect(error.output.statusCode).toBe(404)
-      expect(error.message).toContain("Form definition 'unknown-id' not found")
+      expect(error.message).toContain("Form definition for 'unknown-id' not found")
     })
 
     test('getFormMetadata returns backend definition metadata for backend-sourced form', async () => {
-      registerBackendForm()
       mockBackendRequest()
       mockBackendStateWithDefinition({
         definition: { definition: { name: 'Backend Form', metadata: { foo: 'bar' }, pages: [] } }
@@ -246,7 +167,6 @@ describe('form', () => {
     })
 
     test('getFormMetadata stamps the backend updatedAt so the model cache invalidates across versions', async () => {
-      registerBackendForm()
       mockBackendRequest()
 
       const service = await formsService()
@@ -285,7 +205,6 @@ describe('form', () => {
     })
 
     test('getFormMetadata maps a draft backend status to the draft state and clears live', async () => {
-      registerBackendForm()
       mockBackendRequest()
 
       const service = await formsService()
@@ -308,8 +227,6 @@ describe('form', () => {
     })
 
     test('getFormDefinition returns the stashed definition for backend-sourced form', async () => {
-      registerBackendForm()
-      _reverseStore.set('backend-form', 'backend-form')
       const request = mockBackendRequest()
       mockBackendStateWithDefinition({
         definition: { definition: { name: 'Backend Form', pages: [] } }
@@ -323,8 +240,6 @@ describe('form', () => {
     })
 
     test('getFormDefinition merges shared redirect rules into a backend-sourced form with grantRedirectRules: null', async () => {
-      registerBackendForm()
-      _reverseStore.set('backend-form', 'backend-form')
       mockBackendRequest()
       mockBackendStateWithDefinition({
         definition: {
@@ -340,9 +255,7 @@ describe('form', () => {
       expect(result.metadata.grantRedirectRules.postSubmission.length).toBeGreaterThan(0)
     })
 
-    test('getFormDefinition merges shared redirect rules into a backend-sourced form with no metadata at all', async () => {
-      registerBackendForm()
-      _reverseStore.set('backend-form', 'backend-form')
+    test('getFormDefinition merges shared redirect rules into a backend sourced form with no metadata at all', async () => {
       mockBackendRequest()
       mockBackendStateWithDefinition({
         definition: {
@@ -357,8 +270,6 @@ describe('form', () => {
     })
 
     test('getFormDefinition lets a backend-sourced form override preSubmission while keeping shared postSubmission', async () => {
-      registerBackendForm()
-      _reverseStore.set('backend-form', 'backend-form')
       mockBackendRequest()
       mockBackendStateWithDefinition({
         definition: {
@@ -378,7 +289,6 @@ describe('form', () => {
     })
 
     test('getFormMetadata merges shared redirect rules for backend-sourced forms', async () => {
-      registerBackendForm()
       mockBackendRequest()
       mockBackendStateWithDefinition({
         definition: {
@@ -426,14 +336,117 @@ describe('form', () => {
       await expect(service.getFormDefinitionBySlug('backend-form')).rejects.toThrow(/No request context/)
     })
 
-    test('registers backend slugs with source "backend" when configured', async () => {
-      config.get.mockImplementation((key) =>
-        key === 'forms.backendFormDefEnabledSlugs' ? ['backend-slug'] : DEFAULT_CONFIG_MOCK[key]
-      )
+    test('registers a resolved slug with the definition title and metadata', async () => {
+      mockBackendRequest()
+      mockBackendStateWithDefinition({
+        definition: {
+          definition: { name: 'Backend Form', metadata: { whitelistCrnEnvVar: 'TEST_CRNS' }, pages: [] }
+        }
+      })
 
-      await formsService()
+      const service = await formsService()
+      await service.getFormMetadata('backend-slug')
 
-      expect(_metaStore.get('backend-slug')).toMatchObject({ slug: 'backend-slug', source: 'backend' })
+      expect(_metaStore.get('backend-slug')).toMatchObject({
+        id: 'backend-slug',
+        slug: 'backend-slug',
+        title: 'Backend Form',
+        source: 'backend',
+        metadata: expect.objectContaining({ whitelistCrnEnvVar: 'TEST_CRNS' })
+      })
+      expect(_slugsIndex.has('backend-slug')).toBe(true)
+    })
+
+    test('does not register anything when the backend has no definition for the slug', async () => {
+      mockBackendRequest()
+      mockBackendStateWithDefinition(null)
+
+      const service = await formsService()
+
+      await expect(service.getFormMetadata('mistyped-slug')).rejects.toThrow(/not found/)
+      expect(_metaStore.size).toBe(0)
+      expect(_slugsIndex.size).toBe(0)
+    })
+
+    test('does not register anything when there is no request context', async () => {
+      vi.mocked(currentRequest).mockReturnValue(undefined)
+
+      const service = await formsService()
+
+      await expect(service.getFormMetadata('some-slug')).rejects.toThrow(/No request context/)
+      expect(_metaStore.size).toBe(0)
+      expect(_slugsIndex.size).toBe(0)
+    })
+
+    test.each([
+      ['false', false],
+      ['missing', undefined]
+    ])('returns notFound in production when enabledInProd is %s', async (_name, enabledInProd) => {
+      config.get.mockImplementation((key) => (key === 'cdpEnvironment' ? 'prod' : DEFAULT_CONFIG_MOCK[key]))
+      mockBackendRequest()
+      mockBackendStateWithDefinition({
+        definition: {
+          definition: { name: 'Demo Form', metadata: enabledInProd === undefined ? {} : { enabledInProd }, pages: [] }
+        }
+      })
+
+      const service = await formsService()
+
+      const error = await service.getFormMetadata('demo-form').catch((e) => e)
+      expect(error.isBoom).toBe(true)
+      expect(error.output.statusCode).toBe(404)
+      // Gated forms are never registered.
+      expect(_metaStore.size).toBe(0)
+      expect(_slugsIndex.size).toBe(0)
+    })
+
+    test('serves a form in production when enabledInProd is true', async () => {
+      config.get.mockImplementation((key) => (key === 'cdpEnvironment' ? 'prod' : DEFAULT_CONFIG_MOCK[key]))
+      mockBackendRequest()
+      mockBackendStateWithDefinition({
+        definition: {
+          definition: { name: 'Live Form', metadata: { enabledInProd: true }, pages: [] }
+        }
+      })
+
+      const service = await formsService()
+      const result = await service.getFormMetadata('live-form')
+
+      expect(result).toMatchObject({ slug: 'live-form', title: 'Live Form' })
+    })
+
+    test('serves a form outside production regardless of enabledInProd', async () => {
+      mockBackendRequest()
+      mockBackendStateWithDefinition({
+        definition: {
+          definition: { name: 'Demo Form', metadata: { enabledInProd: false }, pages: [] }
+        }
+      })
+
+      const service = await formsService()
+      const result = await service.getFormMetadata('demo-form')
+
+      expect(result).toMatchObject({ slug: 'demo-form', title: 'Demo Form' })
+    })
+
+    test('refreshes the meta entry on every resolution so it cannot go stale', async () => {
+      mockBackendRequest()
+      const service = await formsService()
+
+      mockBackendStateWithDefinition({
+        definition: { definition: { name: 'Old Title', metadata: { supportEmail: 'old@example.com' }, pages: [] } }
+      })
+      await service.getFormMetadata('backend-slug')
+      expect(_metaStore.get('backend-slug')).toMatchObject({ title: 'Old Title' })
+
+      mockBackendStateWithDefinition({
+        definition: { definition: { name: 'New Title', metadata: { supportEmail: 'new@example.com' }, pages: [] } }
+      })
+      await service.getFormMetadata('backend-slug')
+      expect(_metaStore.get('backend-slug')).toMatchObject({
+        title: 'New Title',
+        metadata: expect.objectContaining({ supportEmail: 'new@example.com' })
+      })
     })
   })
 
@@ -551,240 +564,6 @@ describe('form', () => {
 
       expect(mockWarn).not.toHaveBeenCalled()
       expect(result).toEqual(definition)
-    })
-  })
-
-  describe('addAllForms', () => {
-    const createMockLoader = () => ({
-      addForm: vi.fn().mockResolvedValue(undefined)
-    })
-
-    test('handles duplicate forms and logs warning', async () => {
-      const mockLoader = createMockLoader()
-      const result = await addAllForms(mockLoader, TEST_FORMS_ARRAY)
-
-      expect(mockWarn).toHaveBeenCalledWith('Skipping duplicate form: form-slug-1 with id form-id-1')
-      expect(result).toBe(3)
-      expect(mockLoader.addForm).toHaveBeenCalledTimes(3)
-      expect(mockLoader.addForm).not.toHaveBeenCalledWith('path/to/form1-duplicate.yaml', expect.any(Object))
-
-      expect(mockLoader.addForm).toHaveBeenCalledWith(
-        'path/to/form1.yaml',
-        expect.objectContaining({
-          id: 'form-id-1',
-          slug: 'form-slug-1',
-          title: 'Form 1'
-        })
-      )
-      expect(mockLoader.addForm).toHaveBeenCalledWith(
-        'path/to/form2.yaml',
-        expect.objectContaining({
-          id: 'form-id-2',
-          slug: 'form-slug-2',
-          title: 'Form 2'
-        })
-      )
-      expect(mockLoader.addForm).toHaveBeenCalledWith(
-        'path/to/form3.yaml',
-        expect.objectContaining({
-          id: 'form-id-3',
-          slug: 'form-slug-3',
-          title: 'Form 3',
-          metadata: {
-            whitelistCrnEnvVar: 'TEST_WHITELIST_CRNS',
-            whitelistSbiEnvVar: 'TEST_WHITELIST_SBIS'
-          }
-        })
-      )
-    })
-
-    test('handles empty forms array', async () => {
-      const mockLoader = { addForm: vi.fn() }
-      const result = await addAllForms(mockLoader, [])
-
-      expect(result).toBe(0)
-      expect(mockLoader.addForm).not.toHaveBeenCalled()
-      expect(mockWarn).not.toHaveBeenCalled()
-    })
-
-    test('handles all unique forms', async () => {
-      const mockLoader = createMockLoader()
-      const result = await addAllForms(mockLoader, UNIQUE_FORMS_ARRAY)
-
-      expect(result).toBe(2)
-      expect(mockLoader.addForm).toHaveBeenCalledTimes(2)
-      expect(mockWarn).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('discoverFormsFromYaml', () => {
-    test('ignores non-YAML files', async () => {
-      const readdirSpy = vi
-        .spyOn(fs, 'readdir')
-        .mockResolvedValueOnce([{ name: 'notes.txt', isDirectory: () => false, isFile: () => true }])
-
-      await expect(formsService()).resolves.toBeDefined()
-
-      expect(mockError).not.toHaveBeenCalled()
-
-      readdirSpy.mockRestore()
-    })
-
-    test('logs error when reading forms directory fails', async () => {
-      const readdirSpy = vi.spyOn(fs, 'readdir').mockRejectedValueOnce(new Error('read error'))
-
-      await expect(formsService()).resolves.toBeDefined()
-
-      expect(mockError).toHaveBeenCalled()
-      expect(mockError.mock.calls[0][0]).toContain('Failed to read forms directory')
-
-      readdirSpy.mockRestore()
-    })
-
-    test('logs error when YAML parsing fails', async () => {
-      const readdirSpy = vi
-        .spyOn(fs, 'readdir')
-        .mockResolvedValueOnce([{ name: 'bad.yaml', isDirectory: () => false, isFile: () => true }])
-      const readFileSpy = vi.spyOn(fs, 'readFile').mockRejectedValueOnce(new Error('YAML read error'))
-
-      await expect(formsService()).resolves.toBeDefined()
-
-      expect(mockError).toHaveBeenCalled()
-      expect(mockError.mock.calls[0][0]).toContain('Failed to parse YAML form')
-
-      readFileSpy.mockRestore()
-      readdirSpy.mockRestore()
-    })
-  })
-
-  describe('validateWhitelistConfiguration', () => {
-    const testForm = { title: 'Test Form' }
-
-    it('skips validation when the grant code is in forms.backendAllowlistEnabledSlugs', () => {
-      config.get.mockImplementation((key) =>
-        key === 'forms.backendAllowlistEnabledSlugs' ? ['woodland', 'farm-payments'] : DEFAULT_CONFIG_MOCK[key]
-      )
-
-      expect(() =>
-        validateWhitelistConfiguration({ slug: 'woodland' }, { metadata: { whitelistCrnEnvVar: 'MISSING_CRN_VAR' } })
-      ).not.toThrow()
-    })
-
-    it('runs validation when the grant code is not in forms.backendAllowlistEnabledSlugs', () => {
-      config.get.mockImplementation((key) =>
-        key === 'forms.backendAllowlistEnabledSlugs' ? ['farm-payments'] : DEFAULT_CONFIG_MOCK[key]
-      )
-
-      expect(() =>
-        validateWhitelistConfiguration({ slug: 'woodland' }, { metadata: { whitelistCrnEnvVar: 'MISSING_CRN_VAR' } })
-      ).toThrow()
-    })
-
-    test.each([
-      [
-        'only CRN variable is provided',
-        { whitelistCrnEnvVar: 'EXAMPLE_WHITELIST_CRNS' },
-        'Incomplete whitelist configuration in form Test Form: whitelistCrnEnvVar is defined but whitelistSbiEnvVar is missing. Both CRN and SBI whitelist variables must be configured together.'
-      ],
-      [
-        'only SBI variable is provided',
-        { whitelistSbiEnvVar: 'EXAMPLE_WHITELIST_SBIS' },
-        'Incomplete whitelist configuration in form Test Form: whitelistSbiEnvVar is defined but whitelistCrnEnvVar is missing. Both CRN and SBI whitelist variables must be configured together.'
-      ],
-      [
-        'CRN env variable is missing from environment',
-        { whitelistCrnEnvVar: 'MISSING_CRN_VAR', whitelistSbiEnvVar: 'EXAMPLE_WHITELIST_SBIS' },
-        'CRN whitelist environment variable MISSING_CRN_VAR is defined in form Test Form but not configured in environment'
-      ],
-      [
-        'SBI env variable is missing from environment',
-        { whitelistCrnEnvVar: 'EXAMPLE_WHITELIST_CRNS', whitelistSbiEnvVar: 'MISSING_SBI_VAR' },
-        'SBI whitelist environment variable MISSING_SBI_VAR is defined in form Test Form but not configured in environment'
-      ]
-    ])('throws when %s', (_name, metadata, expectedError) => {
-      expect(() => validateWhitelistConfiguration(testForm, { metadata })).toThrow(expectedError)
-    })
-  })
-
-  describe('startup configuration validation', () => {
-    const testForm = { title: 'Test Form' }
-    const validPostRule = {
-      fromGrantsStatus: 'SUBMITTED',
-      gasStatus: 'RECEIVED',
-      toGrantsStatus: 'SUBMITTED',
-      toPath: '/confirmation'
-    }
-    const defaultFallbackRule = {
-      fromGrantsStatus: 'default',
-      gasStatus: 'default',
-      toGrantsStatus: 'default',
-      toPath: '/default-redirect'
-    }
-
-    test.each([
-      [
-        'preSubmission rule is missing toPath',
-        { preSubmission: [{}], postSubmission: [validPostRule] },
-        'Invalid redirect rules in form Test Form: "[0].toPath" is required'
-      ],
-      [
-        'postSubmission rule is missing toPath',
-        {
-          preSubmission: [{ toPath: '/summary' }],
-          postSubmission: [{ fromGrantsStatus: 'SUBMITTED', gasStatus: 'RECEIVED', toGrantsStatus: 'SUBMITTED' }]
-        },
-        'Invalid redirect rules in form Test Form: "[0].toPath" is required'
-      ],
-      [
-        'postSubmission is missing the default/default fallback rule',
-        { preSubmission: [{ toPath: '/start' }], postSubmission: [validPostRule] },
-        'Invalid redirect configuration in form Test Form: missing default/default fallback rule in postSubmission'
-      ],
-      [
-        'postSubmission array is empty',
-        { preSubmission: [{ toPath: '/start' }], postSubmission: [] },
-        'Invalid redirect configuration in form Test Form: no postSubmission redirect rules defined'
-      ]
-    ])('throws when %s', (_name, grantRedirectRules, expectedError) => {
-      expect(() => validateGrantRedirectRules(testForm, { metadata: { grantRedirectRules } })).toThrow(expectedError)
-    })
-
-    test('does not throw when all redirect rules are valid', () => {
-      const goodDefinition = {
-        metadata: {
-          grantRedirectRules: {
-            preSubmission: [{ toPath: '/start' }],
-            postSubmission: [validPostRule, defaultFallbackRule]
-          }
-        }
-      }
-
-      expect(() => validateGrantRedirectRules(testForm, goodDefinition)).not.toThrow()
-    })
-  })
-
-  describe('formsService error handling', () => {
-    test('throws error during startup when whitelist validation fails', async () => {
-      // Store the original value from the real environment
-      const originalValue = originalEnv.EXAMPLE_WHITELIST_CRNS
-
-      // Delete from real env and mock env
-      delete originalEnv.EXAMPLE_WHITELIST_CRNS
-      delete mockEnv.EXAMPLE_WHITELIST_CRNS
-      deletedEnvVars.add('EXAMPLE_WHITELIST_CRNS')
-
-      try {
-        await expect(formsService()).rejects.toThrow(
-          'CRN whitelist environment variable EXAMPLE_WHITELIST_CRNS is defined in form Example Whitelist but not configured in environment'
-        )
-      } finally {
-        // Restore the original value
-        if (originalValue !== undefined) {
-          originalEnv.EXAMPLE_WHITELIST_CRNS = originalValue
-        }
-        mockEnv.EXAMPLE_WHITELIST_CRNS = '1101009926,1101010029'
-        deletedEnvVars.delete('EXAMPLE_WHITELIST_CRNS')
-      }
     })
   })
 })
