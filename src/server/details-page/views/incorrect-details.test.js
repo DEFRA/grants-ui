@@ -20,10 +20,12 @@ const environment = nunjucks.configure(
 
 Object.entries(globals).forEach(([name, global]) => environment.addGlobal(name, global))
 Object.entries(filters).forEach(([name, filter]) => environment.addFilter(name, filter))
+environment.addFilter('evaluate', (value) => value)
 
-const renderPage = (viewModel) =>
+const renderPage = (template, viewModel) =>
   load(
-    environment.render('incorrect-details.njk', {
+    environment.render(template, {
+      baseLayoutPath: 'layouts/dxt-form.njk',
       pageTitle: 'Update your details',
       serviceName: 'Test grant',
       serviceUrl: '/test-grant',
@@ -35,10 +37,10 @@ const renderPage = (viewModel) =>
     })
   )
 
-describe('incorrect-details view', () => {
+describe.each(['incorrect-details.njk', 'incorrect-details.html'])('%s view', (template) => {
   it('should use meta refresh as the primary SFD redirect and an anchor as fallback', () => {
     const sfdUpdateUrl = 'https://sfd.example/update?source=grants&ssoOrgId=REL123'
-    const $ = renderPage({
+    const $ = renderPage(template, {
       sfdUpdateUrl,
       incorrectDetailsContent: {
         heading: 'Incorrect details content',
@@ -60,7 +62,7 @@ describe('incorrect-details view', () => {
   })
 
   it('should preserve the existing incorrect-details content when no SFD URL is provided', () => {
-    const $ = renderPage({
+    const $ = renderPage(template, {
       sfdUpdateUrl: null,
       incorrectDetailsContent: {
         heading: 'Update needed',

@@ -2,43 +2,54 @@
 
 {% from "support-details/macro.njk" import defraSupportDetails %}
 
+{% block head %}
+  {{ super() }}
+  {% if sfdUpdateUrl %}
+    <meta http-equiv="refresh" content="0; url={{ sfdUpdateUrl }}">
+  {% endif %}
+{% endblock %}
+
 {% block content %}
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds-from-desktop">
-      {% if previewMode %}
-        {% include "partials/preview-banner.html" %}
-      {% endif %}
-
-      {% if incorrectDetailsContent %}
-        <h1 class="govuk-heading-l">{{ incorrectDetailsContent.heading }}</h1>
-
-        {% for p in incorrectDetailsContent.paragraphs %}
-          {% if p is string %}
-            <p class="govuk-body">{{ p }}</p>
-          {% else %}
-            <p class="govuk-body">{{ p.textBefore }}<a class="govuk-link" href="{{ p.link.href }}">{{ p.link.text }}</a>{{ p.textAfter }}</p>
-          {% endif %}
-        {% endfor %}
-
-        {% if incorrectDetailsContent.showRpaSupport %}
-          {{ defraSupportDetails({ typeOfSupport: 'update', email: supportEmail }) }}
-        {% endif %}
+      {% if sfdUpdateUrl %}
+        <a class="govuk-link" href="{{ sfdUpdateUrl }}">Update details</a>
       {% else %}
-        <h1 class="govuk-heading-l">Contact the RPA to update your details</h1>
+        {% if previewMode %}
+          {% include "partials/preview-banner.html" %}
+        {% endif %}
 
-        <p class="govuk-body">
-          You have indicated that your details are not correct.
-        </p>
+        {% if incorrectDetailsContent %}
+          <h1 class="govuk-heading-l">{{ incorrectDetailsContent.heading }}</h1>
 
-        <p class="govuk-body">
-          You will need to contact the Rural Payments Agency (RPA) to let them know of any changes to your details before you can continue with your application.
-        </p>
+          {% for p in incorrectDetailsContent.paragraphs %}
+            {% if p is string %}
+              <p class="govuk-body">{{ p }}</p>
+            {% else %}
+              <p class="govuk-body">{{ p.textBefore }}<a class="govuk-link" href="{{ p.link.href }}">{{ p.link.text }}</a>{{ p.textAfter }}</p>
+            {% endif %}
+          {% endfor %}
 
-        {{ defraSupportDetails({ typeOfSupport: 'update', email: supportEmail }) }}
+          {% if incorrectDetailsContent.showRpaSupport %}
+            {{ defraSupportDetails({ typeOfSupport: 'update', email: supportEmail }) }}
+          {% endif %}
+        {% else %}
+          <h1 class="govuk-heading-l">Contact the RPA to update your details</h1>
 
-        <p class="govuk-body govuk-!-margin-top-6">
-          Once your details have been updated, you can return to this service and continue with your application.
-        </p>
+          <p class="govuk-body">
+            You have indicated that your details are not correct.
+          </p>
+
+          <p class="govuk-body">
+            You will need to contact the Rural Payments Agency (RPA) to let them know of any changes to your details before you can continue with your application.
+          </p>
+
+          {{ defraSupportDetails({ typeOfSupport: 'update', email: supportEmail }) }}
+
+          <p class="govuk-body govuk-!-margin-top-6">
+            Once your details have been updated, you can return to this service and continue with your application.
+          </p>
+        {% endif %}
       {% endif %}
 
     </div>
