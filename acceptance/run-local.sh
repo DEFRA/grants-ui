@@ -19,6 +19,7 @@ export LOCALSTACK_ENDPOINT="${LOCALSTACK_ENDPOINT:-http://localhost:4566}"
 export AUDIT_SNS_TOPIC_ARN="${AUDIT_SNS_TOPIC_ARN:-arn:aws:sns:eu-west-2:000000000000:fcp_audit_events}"
 export BASE_URL="${BASE_URL:-http://localhost:3000}"
 export BASE_BACKEND_URL="${BASE_BACKEND_URL:-http://localhost:3001}"
+export MONGO_URI="${MONGO_URI:-mongodb://127.0.0.1:27017/?directConnection=true}"
 
 mkdir -p schemas
 TAGS_JSON=$(curl -sf --ssl-no-revoke https://api.github.com/repos/DEFRA/grants-config-example-grants/tags)
