@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
+import { TerminalPageController } from '@defra/forms-engine-plugin/controllers/TerminalPageController.js'
 import CheckDetailsController, { UpdateDetailsPageController } from './check-details.controller.js'
 import { buildGraphQLQuery, mapResponse, processSections } from '../common/services/details-page/index.js'
 import {
@@ -49,6 +50,10 @@ vi.mock('@defra/forms-engine-plugin/controllers/TerminalPageController.js', () =
 
     makeGetRouteHandler() {
       return async () => 'terminal-get'
+    }
+
+    getRelevantPath(_request, context) {
+      return context.paths.at(-1) ?? '/start'
     }
 
     makePostRouteHandler() {
@@ -842,6 +847,51 @@ describe('UpdateDetailsPageController', () => {
     }
   })
 
+  describe('getRelevantPath', () => {
+    it('should keep the pending update-details GET relevant when the ordinary journey stops at check-details', () => {
+      const context = {
+        state: { checkDetailsChangesPending: true },
+        paths: ['/start', '/check-details']
+      }
+
+      expect(updateController.getRelevantPath(mockRequest, context)).toBe('/update-details')
+    })
+
+    it.each([undefined, false])(
+      'should delegate to the inherited relevance result when pending state is %s',
+      (pending) => {
+        const context = {
+          state: { checkDetailsChangesPending: pending },
+          paths: ['/start', '/check-details']
+        }
+        const inheritedGetRelevantPath = vi.spyOn(TerminalPageController.prototype, 'getRelevantPath')
+
+        expect(updateController.getRelevantPath(mockRequest, context)).toBe('/check-details')
+        expect(inheritedGetRelevantPath).toHaveBeenCalledWith(mockRequest, context)
+        inheritedGetRelevantPath.mockRestore()
+      }
+    )
+  })
+
+  describe('getSfdUpdateUrl', () => {
+    it.each([
+      ['HTTP', 'http://localhost:3000/sfd/update-sbi'],
+      ['HTTPS', 'https://sfd.example/update']
+    ])('should accept an %s update URL', (_protocol, updateUrl) => {
+      vi.mocked(config.get).mockImplementation((key) => {
+        if (key === 'externalLinks.sfd.enabled') {
+          return true
+        }
+        if (key === 'externalLinks.sfd.updateUrl') {
+          return updateUrl
+        }
+        return undefined
+      })
+
+      expect(updateController.getSfdUpdateUrl(mockRequest)).toBe(`${updateUrl}?ssoOrgId=REL123`)
+    })
+  })
+
   describe('makeGetRouteHandler', () => {
     it('should render incorrect-details view with form metadata', async () => {
       vi.mocked(findFormBySlug).mockResolvedValue({
@@ -922,7 +972,7 @@ describe('UpdateDetailsPageController', () => {
           return true
         }
         if (key === 'externalLinks.sfd.updateUrl') {
-          return 'https://sfd.example/update?source=grants'
+          return 'https://sfd.example/update?ssoOrgId=OLD&source=grants'
         }
         return undefined
       })
@@ -936,6 +986,9 @@ describe('UpdateDetailsPageController', () => {
 
       await updateController.makeGetRouteHandler()(mockRequest, mockContext, mockH)
 
+      const viewModel = mockH.view.mock.calls[0][1]
+      const sfdUpdateUrl = new URL(viewModel.sfdUpdateUrl)
+
       expect(mockH.view).toHaveBeenCalledWith('incorrect-details', {
         pageTitle: 'Update your details',
         serviceName: 'Test Form',
@@ -943,13 +996,19 @@ describe('UpdateDetailsPageController', () => {
         backLink: null,
         incorrectDetailsContent: { heading: 'This content must not be rendered' },
         supportEmail: 'support@example.com',
-        sfdUpdateUrl: 'https://sfd.example/update?source=grants&ssoOrgId=REL123'
+        sfdUpdateUrl: 'https://sfd.example/update?ssoOrgId=REL123&source=grants'
       })
+      expect(sfdUpdateUrl.searchParams.get('source')).toBe('grants')
+      expect(sfdUpdateUrl.searchParams.getAll('ssoOrgId')).toEqual(['REL123'])
     })
 
     it.each([
       ['missing', ''],
-      ['malformed', 'not-a-valid-url']
+      ['malformed', 'not-a-valid-url'],
+      ['JavaScript', 'javascript:alert(1)'],
+      ['data', 'data:text/plain,not-allowed'],
+      ['FTP', 'ftp://sfd.example/update'],
+      ['mailto', 'mailto:support@example.com']
     ])('should omit the SFD redirect when the update URL is %s', async (_description, updateUrl) => {
       vi.mocked(config.get).mockImplementation((key) => {
         if (key === 'externalLinks.sfd.enabled') {

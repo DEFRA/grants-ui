@@ -22,6 +22,14 @@ const UPDATE_DETAILS_PATH = '/update-details'
  * that users cannot navigate past this point in the journey.
  */
 export class UpdateDetailsPageController extends TerminalPageController {
+  getRelevantPath(request, context) {
+    if (context.state.checkDetailsChangesPending === true) {
+      return this.path
+    }
+
+    return super.getRelevantPath(request, context)
+  }
+
   getSfdUpdateUrl(request) {
     if (!config.get('externalLinks.sfd.enabled')) {
       return null
@@ -35,6 +43,12 @@ export class UpdateDetailsPageController extends TerminalPageController {
     }
 
     const url = new URL(updateUrl)
+
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      log(LogCodes.SYSTEM.SFD_UPDATE_URL_MISSING_ON_REDIRECT, { updateUrl }, request)
+      return null
+    }
+
     url.searchParams.set('ssoOrgId', request.auth.credentials.currentRelationshipId)
     return url.toString()
   }
