@@ -56,6 +56,7 @@ import MapSelectPageController from '~/src/server/common/map/map-select-page.con
 import MapSubmissionPageController from '~/src/server/common/map/map-submission-page.controller.js'
 import permissions from '../plugins/permissions.js'
 import { formsRequestPipeline } from './common/request-pipeline/forms-request-pipeline.js'
+import { serviceRootRedirect } from './common/request-pipeline/redirects/service-root-redirect.js'
 import { auditPublisher } from '~/src/server/common/helpers/audit/audit.js'
 import { bindRequestContext, getStateWithDefinition } from './common/helpers/state/state-with-definition-context.js'
 
@@ -231,6 +232,8 @@ export async function createServer() {
     phase: 'forms_plugin',
     status: 'registered'
   })
+
+  server.ext('onPreResponse', serviceRootRedirect)
 
   loadSubmissionSchemaValidators()
   log(LogCodes.SYSTEM.STARTUP_PHASE, {
