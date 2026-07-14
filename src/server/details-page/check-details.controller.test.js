@@ -407,86 +407,27 @@ describe('CheckDetailsController', () => {
         expect(result).toBe('redirected')
       })
 
-      it('should redirect directly to SFD URL without saving state when sfd.enabled is true', async () => {
+      it('should save pending state and proceed to update-details when sfd.enabled is true', async () => {
         vi.mocked(config.get).mockImplementation((key) => {
           if (key === 'externalLinks.sfd.enabled') {
             return true
           }
-          if (key === 'externalLinks.sfd.updateUrl') {
-            return 'http://localhost:3000/sfd/update-sbi'
-          }
           return undefined
         })
-        // isSfdEnabled is captured at construction time, so create a new controller with sfd enabled
         const sfdModel = { ...mockModel, lists: [], pages: [], def: { ...mockModel.def, pages: [] } }
         const sfdController = new CheckDetailsController(sfdModel, mockPageDef)
         setupControllerMocks(sfdController)
+        mockContext.state = { someState: 'value', detailsConfirmed: true }
         mockContext.payload = { detailsConfirmed: false }
-        mockRequest.auth = { credentials: { currentRelationshipId: 'REL123' } }
 
-        const handler = sfdController.makePostRouteHandler()
-        const result = await handler(mockRequest, mockContext, mockH)
+        const result = await sfdController.makePostRouteHandler()(mockRequest, mockContext, mockH)
 
-        expect(sfdController.setState).toHaveBeenCalledWith(
-          mockRequest,
-          expect.objectContaining({ checkDetailsChangesPending: true })
-        )
-        expect(sfdController.setState).toHaveBeenCalledWith(
-          mockRequest,
-          expect.not.objectContaining({ detailsConfirmed: expect.anything() })
-        )
-        expect(mockH.redirect).toHaveBeenCalledWith('http://localhost:3000/sfd/update-sbi?ssoOrgId=REL123')
-        expect(sfdController.proceed).not.toHaveBeenCalled()
-        expect(result).toBe('mocked-redirect')
-      })
-
-      it('should fall through to save state and proceed when sfd.enabled is true but updateUrl is falsy', async () => {
-        vi.mocked(config.get).mockImplementation((key) => {
-          if (key === 'externalLinks.sfd.enabled') {
-            return true
-          }
-          if (key === 'externalLinks.sfd.updateUrl') {
-            return ''
-          }
-          return undefined
+        expect(sfdController.setState).toHaveBeenCalledWith(mockRequest, {
+          someState: 'value',
+          checkDetailsChangesPending: true
         })
-        // isSfdEnabled is captured at construction time, so create a new controller with sfd enabled
-        const sfdModel = { ...mockModel, lists: [], pages: [], def: { ...mockModel.def, pages: [] } }
-        const sfdController = new CheckDetailsController(sfdModel, mockPageDef)
-        setupControllerMocks(sfdController)
-        mockContext.payload = { detailsConfirmed: false }
-        mockRequest.auth = { credentials: { currentRelationshipId: 'REL123' } }
-
-        const handler = sfdController.makePostRouteHandler()
-        const result = await handler(mockRequest, mockContext, mockH)
-
-        expect(mockH.redirect).not.toHaveBeenCalled()
         expect(sfdController.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
-        expect(result).toBe('redirected')
-      })
-
-      it('should fall through to save state and proceed when sfd.enabled is true but updateUrl is malformed', async () => {
-        vi.mocked(config.get).mockImplementation((key) => {
-          if (key === 'externalLinks.sfd.enabled') {
-            return true
-          }
-          if (key === 'externalLinks.sfd.updateUrl') {
-            return 'not-a-valid-url'
-          }
-          return undefined
-        })
-        // isSfdEnabled is captured at construction time, so create a new controller with sfd enabled
-        const sfdModel = { ...mockModel, lists: [], pages: [], def: { ...mockModel.def, pages: [] } }
-        const sfdController = new CheckDetailsController(sfdModel, mockPageDef)
-        setupControllerMocks(sfdController)
-        mockContext.payload = { detailsConfirmed: false }
-        mockRequest.auth = { credentials: { currentRelationshipId: 'REL123' } }
-
-        const handler = sfdController.makePostRouteHandler()
-        const result = await handler(mockRequest, mockContext, mockH)
-
         expect(mockH.redirect).not.toHaveBeenCalled()
-        expect(sfdController.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-path')
         expect(result).toBe('redirected')
       })
     })
@@ -723,7 +664,7 @@ describe('CheckDetailsController', () => {
       expect(pages.indexOf(statusPage)).toBe(updateDetailsIndex + 1)
     })
 
-    it('should not inject update-details when sfd.enabled is true', () => {
+    it('should inject update-details when sfd.enabled is true', () => {
       vi.mocked(config.get).mockImplementation((key) => {
         if (key === 'externalLinks.sfd.enabled') {
           return true
@@ -731,18 +672,21 @@ describe('CheckDetailsController', () => {
         return undefined
       })
 
-      // isSfdEnabled is captured at construction time, so create a new controller with sfd enabled
       const sfdModel = {
         ...mockModel,
         lists: [],
         pages: [],
+        pageMap: new Map(),
+        conditions: {},
         def: { ...mockModel.def, pages: [] }
       }
       const sfdController = new CheckDetailsController(sfdModel, mockPageDef)
+      sfdModel.pages.push(sfdController)
+
       sfdController.ensureUpdateDetailsPage()
 
-      expect(sfdModel.pages.some((p) => p.path === '/update-details')).toBe(false)
-      expect(sfdModel.def.pages.some((p) => p.path === '/update-details')).toBe(false)
+      expect(sfdModel.pages.some((page) => page.path === '/update-details')).toBe(true)
+      expect(sfdModel.def.pages.some((page) => page.path === '/update-details')).toBe(true)
     })
 
     it('should not inject update-details twice if called multiple times', () => {
