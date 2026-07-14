@@ -3,6 +3,13 @@
 {% from "support-details/macro.njk" import defraSupportDetails %}
 {% from "two-thirds-column/macro.njk" import appTwoThirdsColumn %}
 
+{% block head %}
+  {{ super() }}
+  {% if sfdUpdateUrl %}
+    <meta http-equiv="refresh" content="0; url={{ sfdUpdateUrl }}">
+  {% endif %}
+{% endblock %}
+
 {% block beforeContent %}
   {{ super() }}
   {% if backLink %}
@@ -12,7 +19,9 @@
 
 {% block content %}
   {% call appTwoThirdsColumn() %}
-    {% if incorrectDetailsContent %}
+    {% if sfdUpdateUrl %}
+      <a class="govuk-link" href="{{ sfdUpdateUrl }}">Update details</a>
+    {% elif incorrectDetailsContent %}
       <h1 class="govuk-heading-l">{{ incorrectDetailsContent.heading }}</h1>
 
       {% for p in incorrectDetailsContent.paragraphs %}
@@ -43,6 +52,5 @@
         Once your details have been updated, you can return to this service and continue with your application.
       </p>
     {% endif %}
-
   {% endcall %}
 {% endblock %}
