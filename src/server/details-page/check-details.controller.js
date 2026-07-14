@@ -16,12 +16,29 @@ const UPDATE_DETAILS_PATH = '/update-details'
 
 /**
  * Terminal page controller for the update-details page.
- * Shown when the user indicates their details are incorrect.
- * Both SFD feature-flag states use this page as the forms-engine destination.
+ * Builds the SFD redirect document when enabled and configured, or renders
+ * the existing incorrect-details terminal content when SFD is unavailable.
  * Extends TerminalPageController so the forms-engine-plugin enforces
  * that users cannot navigate past this point in the journey.
  */
 export class UpdateDetailsPageController extends TerminalPageController {
+  getSfdUpdateUrl(request) {
+    if (!config.get('externalLinks.sfd.enabled')) {
+      return null
+    }
+
+    const updateUrl = config.get('externalLinks.sfd.updateUrl')?.trim()
+
+    if (!updateUrl || !URL.canParse(updateUrl)) {
+      log(LogCodes.SYSTEM.SFD_UPDATE_URL_MISSING_ON_REDIRECT, { updateUrl: updateUrl ?? '' }, request)
+      return null
+    }
+
+    const url = new URL(updateUrl)
+    url.searchParams.set('ssoOrgId', request.auth.credentials.currentRelationshipId)
+    return url.toString()
+  }
+
   makeGetRouteHandler() {
     return async (request, _context, h) => {
       const { slug } = request.params
@@ -30,14 +47,16 @@ export class UpdateDetailsPageController extends TerminalPageController {
       const formMetadata = /** @type {Record<string, unknown>} */ (form?.metadata ?? {})
       const modelMetadata = /** @type {Record<string, unknown>} */ (this.model.def.metadata ?? {})
       const metadata = { ...formMetadata, ...modelMetadata }
+      const sfdUpdateUrl = this.getSfdUpdateUrl(request)
 
       return h.view('incorrect-details', {
         pageTitle: 'Update your details',
         serviceName: this.model.def.name ?? form?.title,
         serviceUrl: `/${slug}`,
-        backLink: { href: `/${slug}/check-details` },
+        backLink: sfdUpdateUrl ? null : { href: `/${slug}/check-details` },
         incorrectDetailsContent: metadata.incorrectDetailsContent ?? null,
-        supportEmail: metadata.supportEmail ?? null
+        supportEmail: metadata.supportEmail ?? null,
+        sfdUpdateUrl
       })
     }
   }

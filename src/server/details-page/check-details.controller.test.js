@@ -797,6 +797,15 @@ describe('UpdateDetailsPageController', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(config.get).mockImplementation((key) => {
+      if (key === 'externalLinks.sfd.enabled') {
+        return false
+      }
+      if (key === 'externalLinks.sfd.updateUrl') {
+        return 'http://localhost:3000/sfd/update-sbi'
+      }
+      return undefined
+    })
 
     mockModel = {
       basePath: '/test-form',
@@ -853,7 +862,8 @@ describe('UpdateDetailsPageController', () => {
         serviceUrl: '/test-form',
         backLink: { href: '/test-form/check-details' },
         incorrectDetailsContent: { heading: 'Update needed' },
-        supportEmail: 'support@example.com'
+        supportEmail: 'support@example.com',
+        sfdUpdateUrl: null
       })
       expect(result).toBe('mocked-view')
     })
@@ -886,7 +896,8 @@ describe('UpdateDetailsPageController', () => {
           paragraphs: ['Make sure your details are correct before you apply.'],
           showRpaSupport: false
         },
-        supportEmail: 'woodland@example.com'
+        supportEmail: 'woodland@example.com',
+        sfdUpdateUrl: null
       })
     })
 
@@ -903,6 +914,64 @@ describe('UpdateDetailsPageController', () => {
           supportEmail: null
         })
       )
+    })
+
+    it('should provide the SFD URL with ssoOrgId and suppress the back link when enabled', async () => {
+      vi.mocked(config.get).mockImplementation((key) => {
+        if (key === 'externalLinks.sfd.enabled') {
+          return true
+        }
+        if (key === 'externalLinks.sfd.updateUrl') {
+          return 'https://sfd.example/update?source=grants'
+        }
+        return undefined
+      })
+      vi.mocked(findFormBySlug).mockResolvedValue({
+        title: 'Test Form',
+        metadata: {
+          incorrectDetailsContent: { heading: 'This content must not be rendered' },
+          supportEmail: 'support@example.com'
+        }
+      })
+
+      await updateController.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith('incorrect-details', {
+        pageTitle: 'Update your details',
+        serviceName: 'Test Form',
+        serviceUrl: '/test-form',
+        backLink: null,
+        incorrectDetailsContent: { heading: 'This content must not be rendered' },
+        supportEmail: 'support@example.com',
+        sfdUpdateUrl: 'https://sfd.example/update?source=grants&ssoOrgId=REL123'
+      })
+    })
+
+    it.each([
+      ['missing', ''],
+      ['malformed', 'not-a-valid-url']
+    ])('should omit the SFD redirect when the update URL is %s', async (_description, updateUrl) => {
+      vi.mocked(config.get).mockImplementation((key) => {
+        if (key === 'externalLinks.sfd.enabled') {
+          return true
+        }
+        if (key === 'externalLinks.sfd.updateUrl') {
+          return updateUrl
+        }
+        return undefined
+      })
+      vi.mocked(findFormBySlug).mockResolvedValue({ title: 'Test Form', metadata: {} })
+
+      await updateController.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'incorrect-details',
+        expect.objectContaining({
+          backLink: { href: '/test-form/check-details' },
+          sfdUpdateUrl: null
+        })
+      )
+      expect(log).toHaveBeenCalledWith(LogCodes.SYSTEM.SFD_UPDATE_URL_MISSING_ON_REDIRECT, { updateUrl }, mockRequest)
     })
   })
 })
