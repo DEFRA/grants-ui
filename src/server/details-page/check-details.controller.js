@@ -160,7 +160,6 @@ export default class CheckDetailsController extends QuestionPageController {
 
   /**
    * Inject the update-details terminal page into the model if not already present.
-   * Both SFD feature-flag states use the terminal page.
    * Called via queueMicrotask() from the constructor so it runs on every instance at
    * startup, once model.pages and model.pageMap have been assigned by FormModel.
    * Also called defensively from makeGetRouteHandler/makePostRouteHandler in case the
