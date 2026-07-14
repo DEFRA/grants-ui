@@ -182,7 +182,7 @@ async function fetchParcelsSize(parcelIds) {
  * bursts; without this, every request that misses the value cache would fire
  * its own DAL + size-API round trip. Entries remove themselves on settle, so
  * failures are never cached and the next call retries.
- * @type {Map<unknown, Promise<Parcel[]>>}
+ * @type {Map<unknown, Promise<HydratedParcel[]>>}
  */
 const inflightParcelsBySbi = new Map()
 
@@ -190,7 +190,7 @@ const inflightParcelsBySbi = new Map()
  * Fetches parcels with area data for a given SBI. Concurrent calls for the
  * same SBI share a single upstream load.
  * @param {AnyFormRequest} request
- * @returns {Promise<Parcel[]>}
+ * @returns {Promise<HydratedParcel[]>}
  * @throws {Error}
  */
 export async function fetchParcels(request) {
@@ -212,7 +212,7 @@ export async function fetchParcels(request) {
 /**
  * @param {AnyFormRequest} request
  * @param {unknown} sbi
- * @returns {Promise<Parcel[]>}
+ * @returns {Promise<HydratedParcel[]>}
  */
 async function loadParcelsForSbi(request, sbi) {
   const parcels = await fetchParcelsFromDal(request)
@@ -297,7 +297,7 @@ function buildErrorMessagesFromResponse(actions = []) {
 }
 
 /**
- * @import { ActionOption, ActionGroup, ActionGroupDefinition, Parcel, ValidateApplicationResponse, ValidationAction, ErrorItem, Size } from '~/src/server/land-grants/types/land-grants.client.d.js'
+ * @import { ActionOption, ActionGroup, ActionGroupDefinition, Parcel, HydratedParcel, ValidateApplicationResponse, ValidationAction, ErrorItem, Size } from '~/src/server/land-grants/types/land-grants.client.d.js'
  * @import { PaymentCalculation } from '~/src/server/land-grants/types/payment.d.js'
  * @import { LandParcels } from '~/src/server/land-grants/types/form-state.d.js'
  * @import { AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'

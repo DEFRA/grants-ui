@@ -11,6 +11,8 @@ export function getMapStyleAttribution() {
   return `© Crown copyright and database rights ${new Date().getFullYear()} OS`
 }
 
+export const TAG_NAME = 'parcel-map'
+
 export const MULTI_SELECT_ATTRIBUTE = 'multi-select'
 
 // --- TEMPORARY: OS Maps vs OpenStreetMap comparison (TGC-1418 follow-up) ---
@@ -20,6 +22,7 @@ export const BASEMAP_PROVIDER_OPENSTREETMAP = 'openstreetmap'
 export const OSM_STYLE_URL = 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json'
 export const OSM_STYLE_ATTRIBUTION = '© OpenStreetMap contributors © CARTO'
 export const BASEMAP_PROVIDER_ATTRIBUTE = 'basemap-provider'
+export const BASEMAP_METRICS_ATTRIBUTE = 'basemap-metrics'
 // --- END TEMPORARY ---
 
 export const PARCEL_COLORS = [
@@ -49,6 +52,7 @@ export const PARCEL_ID_PROPERTY = 'id'
 // rendered-pixel query within this radius — otherwise small (zoomed-out)
 // parcels are practically unclickable.
 export const PARCEL_CLICK_TOLERANCE_PX = 10
+export const SOURCE_ID_PARCELS = 'parcels'
 
 export const LAYER_ID_FILL = 'parcels-fill'
 export const LAYER_ID_OUTLINE = 'parcels-outline'
@@ -94,6 +98,9 @@ export const STATE_ERROR = 'error'
 export const EVENT_READY = 'parcel-map:ready'
 export const EVENT_ERROR = 'parcel-map:error'
 export const EVENT_SELECTION = 'parcel-map:selection'
+
+export const ERROR_REASON_UNAVAILABLE = 'unavailable'
+export const ERROR_REASON_NO_PARCELS = 'no-parcels'
 
 export const ERROR_OVERLAY_STYLES = [
   'position:absolute',

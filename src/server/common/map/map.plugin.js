@@ -5,6 +5,7 @@ import { createApiHeadersForLandGrantsBackend } from '~/src/server/common/helper
 import { fetchParcels, fetchParcelTileLocation } from '~/src/server/land-grants/services/land-grants.service.js'
 import { stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
+import { attempt } from '~/src/server/common/helpers/attempt.js'
 import { isMockData, buildMockFeatures } from './map.mock.js'
 import { withCompoundParcelIds } from './mvt-compound-id.js'
 import { logUpstreamError } from '~/src/server/common/helpers/logging/upstream-error.js'
@@ -12,12 +13,17 @@ import { logUpstreamError } from '~/src/server/common/helpers/logging/upstream-e
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
 // OS Maps API (raster ZXY). Deliberately not the OS Vector Tile API, which is
 // due to retire in 2028 and is not included in the API keys we are issued.
-const OS_MAPS_BASE_URL = 'https://api.os.uk/maps/raster/v1/zxy'
+const OS_MAPS_BASE_URL = config.get('osMapsBaseUrl')
 // Basemap style — one of Road_3857 | Outdoor_3857 | Light_3857. The _3857
-// suffix is Web Mercator, which MapLibre requires.
+// suffix is Web Mercator, which MapLibre requires. Pinned server-side: the
+// browser cannot ask for a different layer, so it cannot spend our API key on
+// products the key isn't scoped for.
 const OS_MAPS_LAYER = 'Outdoor_3857'
 // The OS raster ZXY service only exists for zooms 7–20; MapLibre overzooms
-// beyond maxzoom by stretching the deepest tiles.
+// beyond maxzoom by stretching the deepest tiles. Deliberately NOT config:
+// these are facts about what OS publishes, and they become the validation
+// bound on the key-spending tile proxy — an env var could widen that bound
+// with no code review on the path.
 const OS_MIN_ZOOM = 7
 const OS_MAX_ZOOM = 20
 // MapLibre/Mapbox style specification version. This is a protocol constant,
@@ -26,7 +32,7 @@ const MAP_STYLE_SPEC_VERSION = 8
 // OS ZXY serves 256px tiles. Must be declared: MapLibre's default for raster
 // sources is 512, which would render the basemap at the wrong scale.
 const OS_TILE_SIZE_PX = 256
-const TILE_CACHE_MAX_AGE_SECONDS = 3600
+const TILE_CACHE_MAX_AGE_SECONDS = config.get('mapTileCacheMaxAgeSeconds')
 const SERVICE_LAND_GRANTS = 'land-grants-api'
 const SERVICE_OS_MAPS = 'os-maps'
 const CACHE_CONTROL_HEADER = 'Cache-Control'
@@ -67,22 +73,37 @@ function publicOrigin(request) {
  * @returns {Promise<Response | null>}
  */
 async function fetchUpstream(url, service, request, init) {
-  let fetchError
-  try {
-    return await fetch(url, init)
-  } catch (error) {
-    fetchError = error
+  const result = await attempt(() => fetch(url, init))
+  if (result.ok) {
+    return result.value
   }
   logUpstreamError(
     {
       endpoint: stripQueryString(url),
       service,
       upstreamStatus: null,
-      errorMessage: /** @type {Error} */ (fetchError).message
+      errorMessage: result.error.message
     },
     request
   )
   return null
+}
+
+/**
+ * The land-grants client reports the upstream status as `code` or `status`
+ * depending on where the call failed, and neither is guaranteed to be numeric
+ * (a network error carries no status at all). Callers fall back to 503.
+ * @param {Error & { code?: unknown, status?: unknown }} error
+ * @returns {number | undefined}
+ */
+function numericUpstreamStatus(error) {
+  if (typeof error.code === 'number') {
+    return error.code
+  }
+  if (typeof error.status === 'number') {
+    return error.status
+  }
+  return undefined
 }
 
 /**
@@ -95,25 +116,11 @@ async function fetchUpstream(url, service, request, init) {
  * @param {ResponseToolkit} h
  */
 async function parcelsHandler(request, h) {
-  /** @type {HydratedParcel[]} */
-  let parcels = []
-  /** @type {unknown} */
-  let parcelsError
-  try {
-    parcels = await fetchParcels(/** @type {AnyFormRequest} */ (/** @type {unknown} */ (request)))
-  } catch (error) {
-    parcelsError = error
-  }
-  if (parcelsError !== undefined) {
-    const err = /** @type {Error & { code?: unknown, status?: unknown }} */ (parcelsError)
-    let upstreamStatus
-    if (typeof err.code === 'number') {
-      upstreamStatus = err.code
-    } else if (typeof err.status === 'number') {
-      upstreamStatus = err.status
-    } else {
-      // error carries no numeric upstream status: fall through to statusCodes.serviceUnavailable below
-    }
+  const result = await attempt(() => fetchParcels(/** @type {AnyFormRequest} */ (/** @type {unknown} */ (request))))
+
+  if (!result.ok) {
+    const err = /** @type {Error & { code?: unknown, status?: unknown }} */ (result.error)
+    const upstreamStatus = numericUpstreamStatus(err)
     logUpstreamError(
       { endpoint: ROUTES.parcels, service: SERVICE_LAND_GRANTS, upstreamStatus, errorMessage: err.message },
       request
@@ -121,7 +128,7 @@ async function parcelsHandler(request, h) {
     return h.response({ error: err.message }).code(upstreamStatus ?? statusCodes.serviceUnavailable)
   }
 
-  const parcelData = parcels.map((p) => ({
+  const parcelData = result.value.map((p) => ({
     id: stringifyParcel(p),
     sheetId: p.sheetId,
     parcelId: p.parcelId,
@@ -178,29 +185,21 @@ function mockGeojsonHandler(request, h) {
  */
 async function tilesHandler(request, h) {
   const { z, x, y } = request.params
-  let parcels = []
-  let parcelsError
+  const result = await attempt(() => fetchParcels(/** @type {AnyFormRequest} */ (/** @type {unknown} */ (request))))
 
-  try {
-    parcels = /** @type {HydratedParcel[]} */ (
-      await fetchParcels(/** @type {AnyFormRequest} */ (/** @type {unknown} */ (request)))
-    )
-  } catch (error) {
-    parcelsError = error
-  }
-  if (parcelsError !== undefined) {
+  if (!result.ok) {
     logUpstreamError(
       {
         endpoint: ROUTES.parcelTiles,
         service: SERVICE_LAND_GRANTS,
         upstreamStatus: null,
-        errorMessage: /** @type {Error} */ (parcelsError).message
+        errorMessage: result.error.message
       },
       request
     )
     return h.response().code(statusCodes.serviceUnavailable)
   }
-  const parcelIds = parcels.map((p) => stringifyParcel(p))
+  const parcelIds = result.value.map((p) => stringifyParcel(p))
 
   const upstream = `${LAND_GRANTS_API_URL}/api/v1/parcel-tiles/${z}/${x}/${y}`
   const response = await fetchUpstream(upstream, SERVICE_LAND_GRANTS, request, {
