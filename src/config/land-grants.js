@@ -12,7 +12,6 @@ import 'dotenv/config'
  * @property {boolean} enableSSSIFeature
  * @property {boolean} enableHeferFeature
  * @property {boolean} enablePrintApplication
- * @property {string[]} enabledActions
  */
 
 const landGrants = convict({
@@ -46,12 +45,6 @@ const landGrants = convict({
     format: Boolean,
     default: false,
     env: 'ENABLE_LAND_GRANT_HEFER_20260219'
-  },
-  enabledActions: {
-    doc: 'Comma-separated list of action codes to show in the UI',
-    format: Array,
-    default: ['CMOR1', 'UPL1', 'UPL2', 'UPL3'],
-    env: 'LAND_GRANTS_ENABLED_ACTIONS'
   }
 })
 

@@ -2,23 +2,24 @@
 /* eslint-disable */
 
 /**
- * GAE CLI — Interactive Docker Compose launcher
+ * Grants TUI — Interactive Docker Compose launcher
  *
  * Usage (interactive — no args):
- *   npx gae
- *   node tools/grants-ui-cli.js   (direct)
+ *   gt
+ *   node tools/grants-tui.js   (direct)
  *
  * Usage (non-interactive):
- *   npx gae up [--land-grants] [--gas] [--ha] [--scale <n>] [--dry-run]
- *   npx gae up --local-<service-key>  # use locally-built image for a defradigital service
- *   npx gae down [--dry-run]          # uses saved state automatically
- *   npx gae debug                     # restart grants-ui in debug mode (detached, port 9229)
- *   npx gae restart [--dry-run]       # restart running containers (with --no-deps)
- *   npx gae reset [--dry-run]         # full teardown incl. volumes
- *   npx gae --help                    # show help
- *   npx gae --version                 # show version number
+ *   gt up [--land-grants] [--gas] [--ha] [--scale <n>] [--dry-run]
+ *   gt up --local-<service-key>  # use locally-built image for a defradigital service
+ *   gt down [--dry-run]          # uses saved state automatically
+ *   gt debug                     # restart grants-ui in debug mode (detached, port 9229)
+ *   gt restart [--dry-run]       # restart running containers (with --no-deps)
+ *   gt reset [--dry-run]         # full teardown incl. volumes
+ *   gt --help                    # show help
+ *   gt --version                 # show version number
  *
- * Tip: run `npm link` once to use `gae` directly (without `npx`).
+ * Tip: run `npm link` once to use `gt` directly. If `gt` collides with another
+ * tool on your machine, the `gtx` alias runs the exact same command.
  *
  * Interactive mode keys:
  *   ↑ ↓       navigate
@@ -51,7 +52,7 @@ import { fileURLToPath } from 'url'
 // ---------------------------------------------------------------------------
 // Version
 // ---------------------------------------------------------------------------
-const VERSION = '1.1.0'
+const VERSION = '1.3.0'
 
 // ---------------------------------------------------------------------------
 // Cross-platform: detect ANSI support
@@ -62,6 +63,15 @@ const ANSI = process.stdout.isTTY && process.env.TERM !== 'dumb' && !process.env
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(__dirname, '..')
 const STATE_FILE = resolve(ROOT, '.grants-ui-cli-state.json')
+
+// Folder holding developer-private form-definition overrides, mirroring the
+// config repo layout `<grant>/<service>/<file>`. A single toggle enables/disables
+// all overrides found here.
+const LOCAL_FORM_DEFS_DIR = resolve(ROOT, 'localstack/config-broker/local-form-definitions')
+// Applier that (un)publishes the overrides against the running backend Mongo.
+const APPLY_FORM_DEFS_SCRIPT = resolve(ROOT, 'tools/apply-local-form-defs.mjs')
+// Menu key used for the single all-grants form-definition override toggle.
+const FORM_DEFS_TOGGLE_KEY = '__local-form-defs__'
 
 // Service name used by the debug command
 const DEBUG_SERVICE = 'grants-ui'
@@ -143,6 +153,9 @@ const GREEN = ANSI ? '\x1b[32m' : ''
 const YELLOW = ANSI ? '\x1b[33m' : ''
 const RED = ANSI ? '\x1b[31m' : ''
 const PURPLE = ANSI ? '\x1b[35m' : ''
+// Dimmed purple for the resting state of purple sub-items, so the highlighted
+// (full-purple) state is easier to distinguish at a glance.
+const FADED_PURPLE = ANSI ? '\x1b[2;35m' : ''
 
 // Cursor / screen control — no-ops when ANSI unsupported
 const HIDE_CURSOR = ANSI ? '\x1b[?25l' : ''
@@ -156,6 +169,31 @@ const ALT_SCREEN_EXIT = ANSI ? '\x1b[?1049l' : ''
 // ---------------------------------------------------------------------------
 // Local image helpers
 // ---------------------------------------------------------------------------
+
+/** Recursively collect override definition files (*.yaml/*.yml) under the local-form-definitions folder */
+function listLocalFormDefFiles(dir = LOCAL_FORM_DEFS_DIR) {
+  const files = []
+  let entries
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true })
+  } catch {
+    return files
+  }
+  for (const entry of entries) {
+    const full = resolve(dir, entry.name)
+    if (entry.isDirectory()) {
+      files.push(...listLocalFormDefFiles(full))
+    } else if (/\.ya?ml$/i.test(entry.name)) {
+      files.push(full)
+    }
+  }
+  return files
+}
+
+/** True when at least one form-definition override file is present */
+function hasLocalFormDefs() {
+  return listLocalFormDefFiles().length > 0
+}
 
 /** Returns the set of `<name>:local` image refs that exist in the local Docker daemon */
 function getLocalImages() {
@@ -203,9 +241,9 @@ function writeTempOverride(localServiceKeys) {
 // State persistence
 // ---------------------------------------------------------------------------
 
-function saveState(addons, scale, localServices = []) {
+function saveState(addons, scale, localServices = [], localFormDefs = false) {
   try {
-    fs.writeFileSync(STATE_FILE, JSON.stringify({ addons, scale, localServices }, null, 2))
+    fs.writeFileSync(STATE_FILE, JSON.stringify({ addons, scale, localServices, localFormDefs }, null, 2))
   } catch {
     // non-fatal
   }
@@ -293,7 +331,11 @@ function buildStatusLine(runningFiles) {
   }
   const state = loadState()
   const localKeys = state && state.localServices && state.localServices.length ? state.localServices : []
-  const localSuffix = localKeys.length ? `  ${PURPLE}(local: ${localKeys.join(', ')})${RESET_COLOR}` : ''
+  const formDefsOn = !!(state && state.localFormDefs)
+  const localBits = []
+  if (localKeys.length) localBits.push(`images: ${localKeys.join(', ')}`)
+  if (formDefsOn) localBits.push('form-def overrides')
+  const localSuffix = localBits.length ? `  ${PURPLE}(local: ${localBits.join('; ')})${RESET_COLOR}` : ''
   const runningWord = isDebugging ? `${RED}Debugging${RESET_COLOR}` : 'Running'
   const tick = isDebugging ? '🐛' : `${GREEN}✔${RESET_COLOR}`
   return `${tick}  ${runningWord}: ${BOLD}${labels.join(', ')}${RESET_COLOR}${localSuffix}`
@@ -385,6 +427,26 @@ function runPreUpScript(dryRun) {
   return result.status ?? 0
 }
 
+/**
+ * Run the local form-definition override applier (`enable`/`disable`) against the
+ * running stack. Returns the child process exit code (0 = success).
+ * @param {'enable'|'disable'} mode
+ * @param {boolean} [dryRun]
+ * @returns {number}
+ */
+function runApplyFormDefs(mode, dryRun = false) {
+  console.log(
+    `\n  ${DIM}▶${RESET_COLOR}  ${mode === 'enable' ? 'Applying' : 'Removing'} local form-definition overrides…\n`
+  )
+  if (dryRun) return 0
+  const result = spawnSync(process.execPath, [APPLY_FORM_DEFS_SCRIPT, mode], {
+    cwd: ROOT,
+    stdio: 'inherit',
+    encoding: 'utf8'
+  })
+  return result.status ?? 1
+}
+
 function cmdUp(selectedAddons, scale, dryRun, localServices = []) {
   const fileArgs = composeFileArgs(selectedAddons, localServices)
   const extraArgs = ['-d', '--wait']
@@ -410,10 +472,22 @@ function cmdUp(selectedAddons, scale, dryRun, localServices = []) {
   if (status === 0 && !dryRun) {
     const elapsedSeconds = ((Date.now() - startTime) / 1000).toFixed(1)
     _lastUpElapsedSeconds = elapsedSeconds
-    saveState(selectedAddons, scale, localServices)
+    const formDefsEnabled = loadState()?.localFormDefs ?? false
+    saveState(selectedAddons, scale, localServices, formDefsEnabled)
     console.log(
-      `  ${GREEN}✔${RESET_COLOR}  Containers started — run ${CYAN}npx gae down${RESET_COLOR} to stop. ${DIM}Started in ${elapsedSeconds}s${RESET_COLOR}\n`
+      `  ${GREEN}✔${RESET_COLOR}  Containers started — run ${CYAN}gt down${RESET_COLOR} to stop. ${DIM}Started in ${elapsedSeconds}s${RESET_COLOR}\n`
     )
+    // The stack is healthy (up --wait), so the repo definitions are ingested.
+    // Reconcile the persisted Mongo volume to match the toggle: when enabled,
+    // publish the overrides on top; when disabled, purge any override that
+    // survived in the volume from a previous enabled session (a plain `down`
+    // keeps the volume, so a stale bumped doc would otherwise keep being served
+    // after disabling the toggle while the stack was stopped).
+    if (formDefsEnabled) {
+      runApplyFormDefs('enable', dryRun)
+    } else if (hasLocalFormDefs()) {
+      runApplyFormDefs('disable', dryRun)
+    }
   }
   if (status !== 0 && !_interactive) process.exit(status)
   return status
@@ -610,12 +684,31 @@ function padVisible(str, width) {
 // Shared screen renderer
 // ---------------------------------------------------------------------------
 
-const HEADER = [
-  '',
-  `  ${BOLD}${CYAN}🚜  GAE CLI${RESET_COLOR}  ${DIM}v${VERSION}${RESET_COLOR}`,
-  `  ${DIM}${'─'.repeat(40)}${RESET_COLOR}`,
-  ''
+// "Grants TUI" drawn with Unicode half-block glyphs so the name renders three
+// terminal rows tall while staying legible, with cyan "go faster" stripes down
+// the left gutter. Generated once and kept as literals (no runtime font engine).
+const STRIPES = '╱╱╱'
+const WORDMARK = [
+  '▄▀▀▀  █▀▀▀▄ ▄▀▀▀▄ █▄  █ ▀▀█▀▀ ▄▀▀▀▀    ▀▀█▀▀ █   █ ▀█▀',
+  '█  ▄▄ ██▀▀  █▄▄▄█ █ ▀▄█   █    ▀▀▀▄      █   █   █  █',
+  '▀▄▄▄▀ █ ▀▀▄ █   █ █   █   █   ▄▄▄▄▀      █   ▀▄▄▄▀ ▄█▄'
 ]
+
+// Half-block glyphs are unreliable on legacy Windows consoles, so fall back to a
+// plain single-line title there.
+const HEADER = IS_WINDOWS
+  ? [
+      '',
+      `  ${BOLD}${GREEN}Grants TUI${RESET_COLOR}  ${DIM}v${VERSION}${RESET_COLOR}`,
+      `  ${DIM}${'─'.repeat(40)}${RESET_COLOR}`,
+      ''
+    ]
+  : [
+      '',
+      ...WORDMARK.map((line) => `  ${PURPLE}${STRIPES}${RESET_COLOR}  ${BOLD}${GREEN}${line}${RESET_COLOR}`),
+      `  ${DIM}docker compose launcher · v${VERSION}${RESET_COLOR}`,
+      ''
+    ]
 
 function renderScreen(bodyLines) {
   const lines = [...HEADER, ...bodyLines, '']
@@ -640,10 +733,17 @@ async function radioMenu(items, title, { hint = '', statusLine = '' } = {}) {
       items.forEach((item, i) => {
         const active = i === cursor
         const disabled = !!item.disabled
-        const arrow = active ? `${CYAN}${ARROW}${RESET_COLOR}` : ' '
+        const arrow = active ? `${item.key === 'refresh-overrides' ? PURPLE : CYAN}${ARROW}${RESET_COLOR}` : ' '
         let rawLabel, desc
         if (disabled) {
           rawLabel = `${DIM}${item.label}${RESET_COLOR}`
+          desc = `${DIM}${item.description}${RESET_COLOR}`
+        } else if (item.key === 'refresh-overrides') {
+          // Faded purple at rest, full bold purple when highlighted, so it's
+          // obvious when this sub-item is the current selection.
+          rawLabel = active
+            ? `${BOLD}${PURPLE}${item.label}${RESET_COLOR}`
+            : `${FADED_PURPLE}${item.label}${RESET_COLOR}`
           desc = `${DIM}${item.description}${RESET_COLOR}`
         } else {
           rawLabel = active ? `${CYAN}${BOLD}${item.label}${RESET_COLOR}` : item.label
@@ -804,14 +904,15 @@ async function promptScale() {
 
 function printHelp() {
   console.log(`
-${BOLD}${CYAN}GAE CLI${RESET_COLOR}  ${DIM}v${VERSION}${RESET_COLOR}
+${BOLD}${CYAN}Grants TUI${RESET_COLOR}  ${DIM}v${VERSION}${RESET_COLOR}
 
 ${BOLD}Usage:${RESET_COLOR}
-  npx gae                             interactive mode
-  npx gae <command> [options]
+  gt                                  interactive mode
+  gt <command> [options]
 
-  Tip: run ${CYAN}npm link${RESET_COLOR} once to use ${CYAN}gae${RESET_COLOR} directly (without npx).
-  Alternative: ${DIM}node tools/grants-ui-cli.js${RESET_COLOR}
+  Tip: run ${CYAN}npm link${RESET_COLOR} once to use ${CYAN}gt${RESET_COLOR} directly.
+  If ${CYAN}gt${RESET_COLOR} collides with another tool, the ${CYAN}gtx${RESET_COLOR} alias runs the same command.
+  Alternative: ${DIM}node tools/grants-tui.js${RESET_COLOR}
 
 ${BOLD}Commands:${RESET_COLOR}
   up      Start containers
@@ -830,14 +931,14 @@ ${BOLD}Other flags:${RESET_COLOR}
   --version      Show version number
 
 ${BOLD}Examples:${RESET_COLOR}
-  npx gae                             # interactive
-  npx gae up                         # core only
-  npx gae up --land-grants --gas
-  npx gae up --ha --scale 3
-  npx gae down                       # stops whatever was started
-  npx gae debug
-  npx gae restart
-  npx gae reset
+  gt                                 # interactive
+  gt up                              # core only
+  gt up --land-grants --gas
+  gt up --ha --scale 3
+  gt down                            # stops whatever was started
+  gt debug
+  gt restart
+  gt reset
 `)
 }
 
@@ -887,7 +988,7 @@ async function main() {
   }
 
   if (argv.includes('--version') || argv.includes('-v')) {
-    console.log(`GAE CLI v${VERSION}`)
+    console.log(`Grants TUI v${VERSION}`)
     process.exit(0)
   }
 
@@ -998,9 +1099,13 @@ async function main() {
     const containersRunning = !!getRunningComposeFiles()
 
     const localCount = (savedState && savedState.localServices && savedState.localServices.length) || 0
-    const localDesc = localCount
-      ? `${PURPLE}${localCount} service${localCount > 1 ? 's' : ''} using local image${localCount > 1 ? 's' : ''}${RESET_COLOR}`
-      : 'Override services with locally-built images'
+    const localFormDefsOn = !!(savedState && savedState.localFormDefs)
+    const localActiveParts = []
+    if (localCount) localActiveParts.push(`${localCount} local image${localCount > 1 ? 's' : ''}`)
+    if (localFormDefsOn) localActiveParts.push('form-def overrides')
+    const localDesc = localActiveParts.length
+      ? `${PURPLE}${localActiveParts.join(' + ')}${RESET_COLOR}`
+      : 'Override services & form definitions locally'
     const menuItems = [
       {
         key: 'up',
@@ -1017,6 +1122,25 @@ async function main() {
         disabled: !containersRunning
       },
       { key: 'local', label: 'local ⇢', description: localDesc },
+      // Only while form-def overrides are active, surface a direct action right
+      // below `local` to re-publish the YAML overrides into Mongo, so devs can
+      // iterate on the definition and refresh without toggling the override
+      // off and on again. Rendered in the same purple as the override status.
+      ...(localFormDefsOn
+        ? [
+            {
+              key: 'refresh-overrides',
+              // Thin space before the glyph nudges it into alignment with the
+              // other menu labels. Colour is applied in radioMenu's draw loop so
+              // it can be faded at rest and full purple when highlighted.
+              label: '\u2009↳ refresh overrides',
+              description: containersRunning
+                ? 'Re-apply local form-def overrides'
+                : 'Start containers first to refresh overrides',
+              disabled: !containersRunning
+            }
+          ]
+        : []),
       { key: 'reset', label: 'reset ⇢', description: 'Full teardown — removes volumes & images' }
     ]
 
@@ -1118,6 +1242,7 @@ async function main() {
       // Dedicated local image override selection — only visited when user wants to change
       const localImages = getLocalImages()
       const previousLocalServices = (savedState && savedState.localServices) ?? []
+      const previousLocalFormDefs = !!(savedState && savedState.localFormDefs)
       const localServiceItems = LOCAL_SERVICES.map((s) => ({
         ...s,
         label: s.key,
@@ -1128,21 +1253,35 @@ async function main() {
           : false
       }))
 
+      // Single all-grants toggle for local form-definition overrides.
+      const formDefsAvailable = hasLocalFormDefs()
+      const formDefsItem = {
+        key: FORM_DEFS_TOGGLE_KEY,
+        label: 'Local form-definition overrides (all grants)',
+        description: formDefsAvailable ? 'override files present' : 'no override files found',
+        disabled: !formDefsAvailable,
+        selected: !!(savedState && savedState.localFormDefs) && formDefsAvailable
+      }
+
       const localTitle = containersRunning
-        ? 'Local image overrides  (changes restart the service now)'
-        : "Local image overrides  (applied on next 'up')"
-      const localToggled = await toggleMenu(localServiceItems, localTitle)
+        ? 'Local overrides  (changes apply now)'
+        : "Local overrides  (applied on next 'up')"
+      const localToggled = await toggleMenu([formDefsItem, ...localServiceItems], localTitle)
       if (localToggled === null) {
         // ESC — back to main menu
         continue
       }
-      const newLocalServices = localToggled.filter((i) => i.selected && !i.disabled).map((i) => i.key)
-      // Persist local service selection into saved state (create state if none exists)
-      const currentState = loadState() || { addons: [], scale: null, localServices: [] }
-      saveState(currentState.addons, currentState.scale, newLocalServices)
+      const newLocalServices = localToggled
+        .filter((i) => i.selected && !i.disabled && i.key !== FORM_DEFS_TOGGLE_KEY)
+        .map((i) => i.key)
+      const newLocalFormDefs = !!localToggled.find((i) => i.key === FORM_DEFS_TOGGLE_KEY && i.selected && !i.disabled)
+      // Persist local selections into saved state (create state if none exists)
+      const currentState = loadState() || { addons: [], scale: null, localServices: [], localFormDefs: false }
+      saveState(currentState.addons, currentState.scale, newLocalServices, newLocalFormDefs)
 
-      // When containers are already running, restart any service whose local setting
-      // changed (set or unset) so the change takes effect immediately (--no-deps).
+      // When containers are already running, apply changes immediately: restart
+      // any service whose local-image setting changed (--no-deps) and (un)publish
+      // the form-definition overrides if that toggle changed.
       if (containersRunning) {
         const changedKeys = LOCAL_SERVICES.map((s) => s.key).filter(
           (k) => previousLocalServices.includes(k) !== newLocalServices.includes(k)
@@ -1152,23 +1291,63 @@ async function main() {
           .map((k) => LOCAL_SERVICES.find((s) => s.key === k)?.composeService)
           .filter((name) => name && runningSet.has(name))
 
+        const formDefsChanged = previousLocalFormDefs !== newLocalFormDefs
+        const messages = []
+        let hadError = false
+
         if (servicesToRestart.length) {
           pauseStdin()
           const restartStatus = cmdRestart(servicesToRestart, dryRun)
           resumeStdin()
+          if (restartStatus !== 0) {
+            hadError = true
+            statusLine = `${RED}✖${RESET_COLOR}  Docker exited with code ${restartStatus} — check output above`
+          } else {
+            messages.push(`Restarted: ${servicesToRestart.join(', ')}`)
+          }
+        }
 
-          statusLine =
-            restartStatus !== 0
-              ? `${RED}✖${RESET_COLOR}  Docker exited with code ${restartStatus} — check output above`
-              : `${PURPLE}✔  Restarted: ${servicesToRestart.join(', ')}${RESET_COLOR}`
+        if (!hadError && formDefsChanged) {
+          pauseStdin()
+          const applyStatus = runApplyFormDefs(newLocalFormDefs ? 'enable' : 'disable', dryRun)
+          resumeStdin()
+          if (applyStatus !== 0) {
+            hadError = true
+            statusLine = `${RED}✖${RESET_COLOR}  Form-definition overrides ${newLocalFormDefs ? 'enable' : 'disable'} failed — check output above`
+          } else {
+            messages.push(newLocalFormDefs ? 'Form-def overrides enabled' : 'Form-def overrides disabled')
+          }
+        }
+
+        if (hadError) {
+          continue
+        }
+        if (messages.length) {
+          statusLine = `${PURPLE}✔  ${messages.join('  ·  ')}${RESET_COLOR}`
           continue
         }
       }
 
       const n = newLocalServices.length
-      statusLine = n
-        ? `${PURPLE}✔  ${n} service${n > 1 ? 's' : ''} set to use local image${n > 1 ? 's' : ''}${RESET_COLOR}`
-        : `${DIM}Local image overrides cleared${RESET_COLOR}`
+      const summaryParts = []
+      if (n) summaryParts.push(`${n} service${n > 1 ? 's' : ''} using local image${n > 1 ? 's' : ''}`)
+      if (newLocalFormDefs) summaryParts.push('form-def overrides enabled')
+      statusLine = summaryParts.length
+        ? `${PURPLE}✔  ${summaryParts.join('  ·  ')}${RESET_COLOR}`
+        : `${DIM}Local overrides updated${RESET_COLOR}`
+      continue
+    }
+
+    if (command === 'refresh-overrides') {
+      // Re-publish the local YAML overrides into Mongo so freshly-edited
+      // definitions are served without toggling the override off and on.
+      pauseStdin()
+      const applyStatus = runApplyFormDefs('enable', dryRun)
+      resumeStdin()
+      statusLine =
+        applyStatus !== 0
+          ? `${RED}✖${RESET_COLOR}  Form-def overrides refresh failed — check output above`
+          : `${PURPLE}✔  Form-def overrides refreshed${RESET_COLOR}`
       continue
     }
 

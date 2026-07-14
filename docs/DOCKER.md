@@ -1,10 +1,11 @@
 # Docker
 
-- [GAE CLI](#gae-cli)
+- [Grants TUI](#grants-tui)
   - [Interactive mode](#interactive-mode)
   - [Non-interactive mode](#non-interactive-mode)
   - [Adding new addon services](#adding-new-addon-services)
   - [Adding new local-image overrides](#adding-new-local-image-overrides)
+  - [Local form-definition overrides](#local-form-definition-overrides)
 - [Development Image](#development-image)
 - [Production Image](#production-image)
 - [Docker Compose](#docker-compose)
@@ -12,13 +13,17 @@
 - [High-Availability (HA) Local Proxy](#high-availability-ha-local-proxy)
 - [Debugging with Docker](#debugging-with-docker)
 
-## GAE CLI
+## Grants TUI
 
-`tools/grants-ui-cli.js` is an interactive Docker Compose launcher registered as the `gae` bin entry in `package.json`. Run `npm link` once to make `gae` available globally; after that you can use `gae` or `npx gae` from anywhere inside the repo.
+`tools/grants-tui.js` is an interactive Docker Compose launcher TUI for the Grants platform. It's registered as the `gt` bin entry in `package.json`. Run `npm link` once to make `gt` available globally; after that you can run `gt` from anywhere inside the repo.
+
+`package.json` also registers a second `gtx` bin entry pointing at the same script. It's a fallback alias: `gt` is a common command name (notably the [Graphite](https://graphite.dev/) `gt` CLI), so if `gt` clashes with another tool already on your `PATH`, run `gtx` instead — it's the exact same command.
 
 ### Interactive mode
 
-Running `gae` with no arguments opens a menu-driven interface where you can toggle addon services (Land Grants, GAS, HA proxy), set a replica scale, and choose which `defradigital/*` images to replace with a locally-built `<service>:local` image. Selections are persisted in `.grants-ui-cli-state.json` (git-ignored) so the next run pre-selects the same options.
+Running `gt` with no arguments opens a menu-driven interface where you can toggle addon services (Land Grants, GAS, HA proxy), set a replica scale, choose which `defradigital/*` images to replace with a locally-built `<service>:local` image, and toggle [local form-definition overrides](#local-form-definition-overrides). Selections are persisted in `.grants-ui-cli-state.json` (git-ignored) so the next run pre-selects the same options.
+
+The `local` menu holds both the per-service local-image toggles and the local form definitions override toggle. When the stack is already running, changes apply immediately (services restart with `--no-deps`, overrides are (un)published in place); otherwise they take effect on the next `up`.
 
 ```
 ↑ ↓     navigate
@@ -32,36 +37,53 @@ esc     go back / quit
 
 ```bash
 # Start the stack (optionally with addons)
-npx gae up
-npx gae up --gas                        # include GAS (fg-gas-backend + localstack)
-npx gae up --land-grants                # include Land Grants API + Postgres
-npx gae up --gas --land-grants --ha     # all addons + HA proxy
-npx gae up --scale 2                    # run 2 replicas of grants-ui / grants-ui-backend
-npx gae up --local-grants-ui-backend    # use locally-built grants-ui-backend:local
+gt up
+gt up --gas                        # include GAS (fg-gas-backend + localstack)
+gt up --land-grants                # include Land Grants API + Postgres
+gt up --gas --land-grants --ha     # all addons + HA proxy
+gt up --scale 2                    # run 2 replicas of grants-ui / grants-ui-backend
+gt up --local-grants-ui-backend    # use locally-built grants-ui-backend:local
 
 # Stop the stack (uses saved state automatically)
-npx gae down
+gt down
 
 # Restart grants-ui in debug mode (detached, inspector on port 9229)
-npx gae debug
+gt debug
 
 # Full teardown including volumes
-npx gae reset
+gt reset
 
 # Show running compose containers
-npx gae status
+gt status
 
-npx gae --help
-npx gae --version
+gt --help
+gt --version
 ```
 
 ### Adding new addon services
 
-Append an entry to the `ADDONS` array in `tools/grants-ui-cli.js`. Each entry needs a `key`, `label`, `description`, and `composeFile`.
+Append an entry to the `ADDONS` array in `tools/grants-tui.js`. Each entry needs a `key`, `label`, `description`, and `composeFile`.
 
 ### Adding new local-image overrides
 
-Append an entry to the `LOCAL_SERVICES` array in `tools/grants-ui-cli.js` with `key`, `composeService`, and `image`.
+Append an entry to the `LOCAL_SERVICES` array in `tools/grants-tui.js` with `key`, `composeService`, and `image`.
+
+### Local form-definition overrides
+
+Edit and test a grant's **form definition** locally before pushing it to the config repo by dropping the definition into `localstack/config-broker/local-form-definitions/`, mirroring the config-repo layout `<grant>/<service>/<file>` (e.g. `woodland/grants-ui/woodland.yaml`), then flip the **Local form-definition overrides (all grants)** toggle in the `local` menu.
+
+- **Version bump** — each override is published to grants-ui-backend as one patch above the repo version (e.g. repo `1.2.3` -> override `1.2.4`), so it becomes the highest/active version the frontend serves.
+- **Enable** — clones the current active `config__form_definitions` document for the grant, overlays your definition, bumps the version and upserts it. Works both before `up` (applied automatically once the stack is healthy) and while the stack is running (applied immediately). The injected definition's `name` is stamped with a ` (local override active)` suffix so an overridden form is obviously distinguishable from the real repo version wherever the name is surfaced.
+- **Disable** — deletes the bumped document and purges the dependent `state__grant_application_state`, `state__grant_application_locks` and submissions for that version, so the frontend cleanly reverts to the repo version with no orphaned drafts.
+- **Refresh** — while the override toggle is active, a `↳ refresh overrides` item appears directly below `local` in the main menu (styled in purple, matching the override status messages). Selecting it re-publishes the local YAML overrides into Mongo on demand, so while you're actively editing the YAML you can pull in the latest changes without toggling the override off and on again. It's disabled with a hint when the containers aren't running (Mongo must be up to refresh), and reports a purple success or red failure status line. It runs the same applier as **Enable** (`runApplyFormDefs('enable')`).
+- The toggle is a single all-or-nothing switch for **every** override in the folder, shown as available only when at least one override file is present. The folder contents are git-ignored (only its `README.md` is committed).
+
+The applier (`tools/apply-local-form-defs.mjs`) talks to Mongo through `docker compose exec -T mongodb mongosh`, so it needs no extra dependencies. It can also be run directly:
+
+```bash
+node tools/apply-local-form-defs.mjs enable
+node tools/apply-local-form-defs.mjs disable
+```
 
 ## Development Image
 
@@ -102,7 +124,7 @@ A local environment with:
 - Grants UI Backend
 - MockServer, providing a stub for [fg-gas-backend](http://github.com/DEFRA/fg-gas-backend)
 
-The recommended way to start the stack is via the [GAE CLI](#gae-cli), which handles addon selection and local-image overrides interactively. For a plain start without the CLI:
+The recommended way to start the stack is via the [Grants TUI](#grants-tui), which handles addon selection and local-image overrides interactively. For a plain start without the TUI:
 
 ```bash
 npm run docker:up
@@ -141,7 +163,7 @@ npm run docker:migrate:ext:down
 
 ## GAS Compose (`compose.gas.yml`)
 
-`compose.gas.yml` is an overlay that adds the **Grants Application Service** to the local stack. It is applied automatically when you select the GAS addon via `gae` (or pass `--gas`).
+`compose.gas.yml` is an overlay that adds the **Grants Application Service** to the local stack. It is applied automatically when you select the GAS addon via `gt` (or pass `--gas`).
 
 What it provides:
 
@@ -150,7 +172,7 @@ What it provides:
 - **Automatic token seeding** — the `mongo-ready` service waits for `fg-gas-backend` to become healthy, then upserts a pre-hashed access token into MongoDB so `grants-ui` can authenticate against GAS immediately.
 - **`grants-ui` environment** — sets `GAS_API_URL` and `GAS_API_AUTH_TOKEN` on the `grants-ui` container so no manual `.env` changes are needed.
 
-To start the stack with GAS manually (without the CLI):
+To start the stack with GAS manually (without the TUI):
 
 ```bash
 docker compose -f compose.yml -f compose.gas.yml up -d
@@ -222,14 +244,14 @@ Notes:
 - The underlying script (`tools/docker-debug.js`) detects the compose files used by the running stack and re-uses them, so addon overlays (GAS, Land Grants, etc.) remain active.
 - The server is started with `--inspect=0.0.0.0:9229 --inspect-wait` so execution will pause until your debugger attaches.
 
-Alternatively, use the GAE CLI to restart `grants-ui` in debug mode without leaving the rest of the stack:
+Alternatively, use the Grants TUI to restart `grants-ui` in debug mode without leaving the rest of the stack:
 
 ```bash
-npx gae debug
+gt debug
 ```
 
 - This restarts only the `grants-ui` container **detached** (returns immediately) with the inspector on port `9229`.
-- Use `npx gae down` to stop the stack when finished.
+- Use `gt down` to stop the stack when finished.
 
 Attach your IDE debugger:
 

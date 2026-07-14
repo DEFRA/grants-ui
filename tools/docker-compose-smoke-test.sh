@@ -177,11 +177,6 @@ if [ -n "${ACCEPTANCE_TESTS_HOOK:-}" ]; then
   eval "${ACCEPTANCE_TESTS_HOOK}"
 fi
 
-if [ -n "${PERFORMANCE_TESTS_HOOK:-}" ]; then
-  echo "Running Performance Tests..."
-  eval "${PERFORMANCE_TESTS_HOOK}"
-fi
-
 # Teardown is handled by the cleanup() trap registered above.
 echo ""
 echo "Tests complete."

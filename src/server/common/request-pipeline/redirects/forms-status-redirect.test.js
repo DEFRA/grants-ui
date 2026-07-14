@@ -8,6 +8,7 @@ import { formsStatusRedirect, resolveClientReference } from './forms-status-redi
 import { log, LogCodes } from '../../helpers/logging/log.js'
 import { mintLockToken } from '../../helpers/lock/lock-token.js'
 import { getCacheKey } from '../../helpers/state/get-cache-key-helper.js'
+import { mockHapiResponseToolkit } from '~/src/__mocks__'
 
 vi.mock('../../../common/helpers/logging/log.js', async () => {
   const { mockLogHelper } = await import('~/src/__mocks__')
@@ -117,12 +118,7 @@ describe('formsStatusRedirect', () => {
       yar: { set: vi.fn(), get: vi.fn() }
     }
 
-    h = {
-      continue: Symbol('continue'),
-      redirect: vi.fn().mockReturnValue({
-        takeover: vi.fn().mockReturnValue(Symbol('redirected'))
-      })
-    }
+    h = mockHapiResponseToolkit()
 
     context = {
       paths: ['/start', '/confirmation'],
@@ -140,10 +136,9 @@ describe('formsStatusRedirect', () => {
       json: async () => ({ status: 'RECEIVED' })
     })
 
-    const result = await formsStatusRedirect(request, h, context)
+    await formsStatusRedirect(request, h, context)
 
     expect(h.redirect).toHaveBeenCalledWith('/grant-a/confirmation')
-    expect(result).toEqual(expect.any(Symbol))
   })
 
   it('throws when no redirect rule matches the combination', async () => {
@@ -191,10 +186,9 @@ describe('formsStatusRedirect', () => {
         paths: ['/start']
       }
 
-      const result = await formsStatusRedirect(request, h, preSubmissionContext)
+      await formsStatusRedirect(request, h, preSubmissionContext)
 
       expect(h.redirect).toHaveBeenCalledWith('/grant-a/check-selected-land-actions')
-      expect(result).toEqual(expect.any(Symbol))
     }
   )
 
@@ -217,9 +211,8 @@ describe('formsStatusRedirect', () => {
       paths: ['/start']
     }
 
-    const result = await formsStatusRedirect(request, h, contextWithLandParcels)
+    await formsStatusRedirect(request, h, contextWithLandParcels)
     expect(h.redirect).toHaveBeenCalled()
-    expect(result).toEqual(expect.any(Symbol))
   })
 
   it('continues when state has empty landParcels object (not meaningful)', async () => {
@@ -307,7 +300,9 @@ describe('formsStatusRedirect', () => {
         applicationStatus: ApplicationStatus.CLEARED
       })
     )
-    expect(result).toEqual(expect.any(Symbol))
+    // The user is already on the rule's target path (/grant-a/start), so no redirect is issued.
+    expect(result).toBe(h.continue)
+    expect(h.redirect).not.toHaveBeenCalled()
   })
 
   it('continues when GAS returns APPLICATION_WITHDRAWN but previousStatus is neither SUBMITTED nor REOPENED', async () => {
@@ -324,7 +319,7 @@ describe('formsStatusRedirect', () => {
       json: async () => ({ status: 'APPLICATION_AMEND' })
     })
 
-    const result = await formsStatusRedirect(request, h, context)
+    await formsStatusRedirect(request, h, context)
 
     expect(getCacheKey).toHaveBeenCalledWith(request)
     expect(mintLockToken).toHaveBeenCalledWith({
@@ -338,7 +333,6 @@ describe('formsStatusRedirect', () => {
       grantVersion: '1.0.0'
     })
     expect(h.redirect).toHaveBeenCalledWith('/grant-a/summary')
-    expect(result).toEqual(expect.any(Symbol))
   })
 
   it('uses integer 1 as grantVersion for non-config-broker grants (no version in model metadata)', async () => {
@@ -434,9 +428,8 @@ describe('formsStatusRedirect', () => {
       json: async () => ({ status: 'APPLICATION_AMEND' })
     })
 
-    const result = await formsStatusRedirect(request, h, context)
+    await formsStatusRedirect(request, h, context)
     expect(h.redirect).toHaveBeenCalledWith('/grant-a/summary')
-    expect(result).toEqual(expect.any(Symbol))
   })
 
   it('redirects to start when REOPENED application is withdrawn by GAS', async () => {
@@ -536,10 +529,9 @@ describe('formsStatusRedirect', () => {
       json: async () => ({ status: 'RECEIVED' })
     })
 
-    const result = await formsStatusRedirect(request, h, context)
+    await formsStatusRedirect(request, h, context)
 
     expect(h.redirect).toHaveBeenCalledWith('/grant-a/confirmation')
-    expect(result).toEqual(expect.any(Symbol))
   })
 
   it('continues when request path matches redirect path', async () => {
@@ -565,11 +557,10 @@ describe('formsStatusRedirect', () => {
       json: async () => ({ status: 'RECEIVED' })
     })
 
-    const result = await formsStatusRedirect(request, h, context)
+    await formsStatusRedirect(request, h, context)
 
     // It should pick the custom path instead of default /confirmation
     expect(h.redirect).toHaveBeenCalledWith('/grant-a/custom-path')
-    expect(result).toEqual(expect.any(Symbol))
   })
 
   it('continues when getApplicationStatus throws 404', async () => {
@@ -585,7 +576,7 @@ describe('formsStatusRedirect', () => {
     const error = new Error('server error')
     getApplicationStatus.mockRejectedValue(error)
 
-    const result = await formsStatusRedirect(request, h, context)
+    await formsStatusRedirect(request, h, context)
 
     expect(log).toHaveBeenCalledWith(
       LogCodes.SUBMISSION.SUBMISSION_REDIRECT_FAILURE,
@@ -597,7 +588,6 @@ describe('formsStatusRedirect', () => {
       request
     )
     expect(h.redirect).toHaveBeenCalledWith('/grant-a/confirmation')
-    expect(result).toEqual(expect.any(Symbol))
   })
 
   it('continues when non-404 error occurs but path equals fallback URL', async () => {
@@ -625,9 +615,8 @@ describe('formsStatusRedirect', () => {
       json: async () => ({ status: 'SOMETHING_NEW' })
     })
 
-    const result = await formsStatusRedirect(request, h, context)
+    await formsStatusRedirect(request, h, context)
     expect(h.redirect).toHaveBeenCalledWith('/grant-a/confirmation')
-    expect(result).toEqual(expect.any(Symbol))
   })
 
   it('continues when checkDetailsChangesPending is true and startPage is /check-details', async () => {
@@ -655,6 +644,26 @@ describe('formsStatusRedirect', () => {
     expect(result).not.toBe(h.continue)
   })
 
+  // Back links on /tasks and /update-details both point at /check-details. Redirecting a
+  // same-origin GET there would trap the user on the terminal page they came from (TGC-1484).
+  it('continues on a same-origin GET to a check-details start page mid-journey', async () => {
+    request.app.model.def.startPage = '/check-details'
+    request.app.model.def.metadata.grantRedirectRules.preSubmission = [{ toPath: '/tasks' }]
+    request.path = '/grant-a/check-details'
+    request.method = 'get'
+    request.headers = { 'sec-fetch-site': 'same-origin' }
+    context = {
+      referenceNumber: 'REF-006',
+      paths: ['/check-details'],
+      state: { businessDetailsUpToDate: false }
+    }
+
+    const result = await formsStatusRedirect(request, h, context)
+
+    expect(result).toBe(h.continue)
+    expect(h.redirect).not.toHaveBeenCalled()
+  })
+
   it('continues without redirect when current path is in excludedPaths', async () => {
     request.app.model.def.metadata.grantRedirectRules.excludedPaths = ['excluded-path', 'other-excluded-path']
     request.params.path = 'excluded-path'
@@ -680,10 +689,9 @@ describe('formsStatusRedirect', () => {
       request.params.path = 'confirm-you-will-be-eligible'
       context.state = { applicationStatus: undefined }
 
-      const result = await formsStatusRedirect(request, h, context)
+      await formsStatusRedirect(request, h, context)
 
       expect(h.redirect).toHaveBeenCalledWith('/grant-a/confirm-farm-details')
-      expect(result).toEqual(expect.any(Symbol))
     })
 
     it('continues when on an allowed path even if state key is missing', async () => {
@@ -738,10 +746,9 @@ describe('formsStatusRedirect', () => {
       request.params.path = 'select-land-parcel'
       context.state = { applicationStatus: ApplicationStatus.CLEARED, additionalAnswers: { applicant: null } }
 
-      const result = await formsStatusRedirect(request, h, context)
+      await formsStatusRedirect(request, h, context)
 
       expect(h.redirect).toHaveBeenCalledWith('/grant-a/confirm-farm-details')
-      expect(result).toEqual(expect.any(Symbol))
     })
   })
 
@@ -805,7 +812,7 @@ describe('formsStatusRedirect', () => {
           json: async () => ({ status: gasStatus })
         })
 
-        const result = await formsStatusRedirect(request, h, context)
+        await formsStatusRedirect(request, h, context)
 
         expect(h.redirect).toHaveBeenCalledWith('/agreement')
         expect(request.yar.set).toHaveBeenCalledWith(YarKeys.GRANT_APPLICATION_CONTEXT, {
@@ -813,7 +820,6 @@ describe('formsStatusRedirect', () => {
           grantVersion: '1.0.0',
           clientRef: 'ref-001'
         })
-        expect(result).toEqual(expect.any(Symbol))
       }
     )
 
@@ -822,10 +828,9 @@ describe('formsStatusRedirect', () => {
         json: async () => ({ status: 'RECEIVED' })
       })
 
-      const result = await formsStatusRedirect(request, h, context)
+      await formsStatusRedirect(request, h, context)
 
       expect(h.redirect).toHaveBeenCalledWith('/grant-a/confirmation')
-      expect(result).toEqual(expect.any(Symbol))
     })
 
     it('continues when farm-payments request path is already /agreement', async () => {
