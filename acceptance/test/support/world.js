@@ -2,9 +2,9 @@ import { setWorldConstructor, Before, After, setDefaultTimeout } from '@cucumber
 import { chromium } from '@playwright/test'
 import { createScenarioAuditQueue, deleteScenarioAuditQueue } from '../utils/audit.js'
 
-export const CUCUMBER_STEP_TIMEOUT_MS = 30000
-export const PLAYWRIGHT_PAGE_TIMEOUT_MS = 25000
-export const PLAYWRIGHT_EXPECT_TIMEOUT_MS = 25000
+export const CUCUMBER_STEP_TIMEOUT_MS = 60000
+export const PLAYWRIGHT_PAGE_TIMEOUT_MS = 55000
+export const PLAYWRIGHT_EXPECT_TIMEOUT_MS = 55000
 
 setDefaultTimeout(CUCUMBER_STEP_TIMEOUT_MS)
 

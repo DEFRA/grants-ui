@@ -20,7 +20,6 @@ compose.override.yml
 reports/mutation/mutation.html
 .stryker-tmp
 /http-client.private.env.json
-/performance-test-users.csv
 localstack/config-broker-local
 localstack/config-broker/local-form-definitions/*
 !localstack/config-broker/local-form-definitions/README.md

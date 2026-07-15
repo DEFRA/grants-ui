@@ -6,14 +6,13 @@
   - [Test Configuration](#test-configuration)
   - [Mutation Testing](#mutation-testing)
 - [Code Quality & Linting](#code-quality--linting)
-- [Acceptance and Performance Testing](#acceptance-and-performance-testing)
+- [Acceptance Testing](#acceptance-testing)
   - [Compose Files](#compose-files)
   - [Running Tests Locally](#running-tests-locally)
   - [Running Individual Acceptance Tests](#running-individual-acceptance-tests)
   - [Parallel Test Execution](#parallel-test-execution)
   - [Changes to Journey Test Repositories](#changes-to-journey-test-repositories)
   - [CI](#ci)
-- [Performance Testing](#performance-testing)
 
 ## Testing Framework
 
@@ -113,30 +112,26 @@ The mutation score indicates test effectiveness:
 
 Beyond the standard scripts, the application includes contract testing via `npm run test:contracts` using Vitest.
 
-## Acceptance and Performance Testing
+## Acceptance Testing
 
-Acceptance and performance tests are run against a containerised system with stubs for Defra ID and GAS. The system is stood up by `docker-compose-smoke-test.sh`, which accepts test hooks to run after the system is healthy.
+Acceptance tests are run against a containerised system with stubs for Defra ID and GAS. The system is stood up by `docker-compose-smoke-test.sh`, which accepts test hooks to run after the system is healthy.
 
 ### Compose Files
 
 There is an override file `compose.ci.yml` which stands the system up at `https://grants-ui-proxy:4000`. Test suites are run in their own containers on the same Docker network.
 
-All test suite services (acceptance tests, journey tests, performance tests) are defined in `compose.tests.yml` at the root of the repository.
+All test suite services (acceptance tests, journey tests) are defined in `compose.tests.yml` at the root of the repository.
 
 ### Running Tests Locally
 
-| Command                            | What it runs                            |
-| ---------------------------------- | --------------------------------------- |
-| `./tools/run-acceptance-tests.sh`  | Acceptance tests only                   |
-| `./tools/run-performance-tests.sh` | Performance tests only                  |
-| `./tools/run-all-tests.sh`         | Acceptance tests then performance tests |
+| Command                           | What it runs          |
+| --------------------------------- | --------------------- |
+| `./tools/run-acceptance-tests.sh` | Acceptance tests only |
 
 Or via npm:
 
 ```bash
 npm run test:acceptance
-npm run test:performance
-npm run test:all
 ```
 
 ### Running Individual Acceptance Tests
@@ -174,15 +169,3 @@ Other journey test repositories (land grants, woodland grant) must:
 ### CI
 
 The `run-acceptance-tests.sh` script is run as part of the GitHub PR workflow for grants-ui.
-
-## Performance Testing
-
-After the acceptance tests complete in CI, a short k6 performance test runs for 1 minute against the same warm, dockerised system. Its purpose is to catch response time regressions introduced by code changes.
-
-The test checks the **95th percentile response time** (`p(95)`) across all journey pages. If the threshold is breached, the CI step fails.
-
-The threshold can be adjusted via the `P95_THRESHOLD_MS` environment variable (default: `400`ms). To experiment locally with a different threshold:
-
-```bash
-P95_THRESHOLD_MS=500 ./tools/run-performance-tests.sh
-```

@@ -50,7 +50,7 @@ For complete documentation of all available features, see [FEATURES.md](docs/FEA
 | [Features](docs/FEATURES.md)                           | Form components, page types, guidance, conditional logic, validation       |
 | [Authentication & Security](docs/AUTH-AND-SECURITY.md) | Defra ID, whitelist, cookies, sessions, S2S auth, rate limiting            |
 | [Docker](docs/DOCKER.md)                               | Development/production images, Docker Compose, HA proxy, debugging         |
-| [Testing](docs/TESTING.md)                             | Unit, integration, contract, acceptance, performance, and mutation testing |
+| [Testing](docs/TESTING.md)                             | Unit, integration, contract, acceptance, and mutation testing              |
 | [Logging & Error Handling](docs/LOGGING-AND-ERRORS.md) | Structured logging system, error classes, log codes                        |
 | [FCP Audit Events](docs/AUDIT.md)                      | Publishing audit events to the FCP Audit service, config, local testing    |
 | [Analytics](docs/ANALYTICS.md)                         | Google Analytics 4 tracking configuration                                  |
