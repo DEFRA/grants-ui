@@ -1,4 +1,5 @@
 import { formatAreaUnit } from '~/src/server/land-grants/utils/format-area-unit.js'
+import { stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 
 /**
  * Maps land parcel data to view models for rendering in forms.
@@ -16,7 +17,7 @@ export function formatParcelForView(parcel, actionsForParcel) {
 
   return {
     text: `${parcel.sheetId} ${parcel.parcelId}`,
-    value: `${parcel.sheetId}-${parcel.parcelId}`,
+    value: stringifyParcel(parcel),
     hint: hint ? { text: hint } : undefined
   }
 }
@@ -53,7 +54,7 @@ export function buildParcelHint(parcel, actionsForParcel) {
  */
 export function mapParcelsToViewModel(parcels, landParcels = {}) {
   return parcels.map((parcel) => {
-    const parcelKey = `${parcel.sheetId}-${parcel.parcelId}`
+    const parcelKey = stringifyParcel(parcel)
     const parcelData = landParcels?.[parcelKey]
     const actionsForParcel = parcelData?.actionsObj ? Object.keys(parcelData.actionsObj).length : 0
     return formatParcelForView(parcel, actionsForParcel)
@@ -67,8 +68,8 @@ export function mapParcelsToViewModel(parcels, landParcels = {}) {
  * @property {object|null} [size] - Size information (primary, can be null from API)
  * @property {string|number} [size.value] - Size value
  * @property {string} [size.unit] - Size unit
- * @property {object} [area] - Area information (fallback for backwards compatibility)
- * @property {string} [area.value] - Area value
+ * @property {object} [area] - Area information, hydrated from the sizes lookup (see HydratedParcel)
+ * @property {number} [area.value] - Area value
  * @property {string} [area.unit] - Area unit
  */
 

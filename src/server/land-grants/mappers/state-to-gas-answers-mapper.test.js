@@ -1034,29 +1034,6 @@ describe('stateToLandGrantsGasAnswers', () => {
     expect(result.payments.agreement).toEqual([])
   })
 
-  it.each([null, undefined])('should handle split returning %s (covers lines 101, 129)', (splitReturnValue) => {
-    const originalSplit = String.prototype.split
-    // eslint-disable-next-line no-extend-native
-    String.prototype.split = function () {
-      return splitReturnValue
-    }
-
-    try {
-      const input = {
-        payment: { annualTotalPence: 5000, parcelItems: {} },
-        landParcels: { 'SX0679-9238': { size: { value: 10, unit: 'ha' }, actionsObj: {} } }
-      }
-
-      const result = stateToLandGrantsGasAnswers(input)
-
-      expect(result.application.parcel[0].sheetId).toBeUndefined()
-      expect(result.application.parcel[0].parcelId).toBeUndefined()
-    } finally {
-      // eslint-disable-next-line no-extend-native
-      String.prototype.split = originalSplit
-    }
-  })
-
   it('should only include actions in agreement arrays that exist in agreementLevelItems', () => {
     const input = {
       payment: {

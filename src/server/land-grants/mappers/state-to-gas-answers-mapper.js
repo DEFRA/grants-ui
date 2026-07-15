@@ -1,4 +1,5 @@
 import { config } from '~/src/config/config.js'
+import { parseLandParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 
 const shouldSendCaveatsToGas = () => {
   return config.get('landGrants.enableSSSIFeature') || config.get('landGrants.enableHeferFeature')
@@ -105,7 +106,7 @@ function createPaymentParcelAction(actionCode, actionData, paymentItem) {
  * @returns {ApplicationParcel} The application parcel object
  */
 function createApplicationParcel(parcelKey, data, paymentData) {
-  const [sheetId, parcelId] = parcelKey.split('-') ?? []
+  const [sheetId, parcelId] = parseLandParcel(parcelKey)
   /** @type {ApplicationParcel} */
   const parcel = {
     sheetId,
@@ -133,7 +134,7 @@ function createApplicationParcel(parcelKey, data, paymentData) {
  * @returns {PaymentParcel} The payment parcel object
  */
 function createPaymentParcel(parcelKey, data, paymentData) {
-  const [sheetId, parcelId] = parcelKey.split('-') ?? []
+  const [sheetId, parcelId] = parseLandParcel(parcelKey)
   /** @type {PaymentParcel} */
   const parcel = {
     sheetId,
