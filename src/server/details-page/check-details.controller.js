@@ -16,12 +16,43 @@ const UPDATE_DETAILS_PATH = '/update-details'
 
 /**
  * Terminal page controller for the update-details page.
- * Only used when externalLinks.sfd.enabled === false
- * Shown when the user indicates their details are incorrect.
+ * Builds the SFD redirect document when enabled and configured, or renders
+ * the existing incorrect-details terminal content when SFD is unavailable.
  * Extends TerminalPageController so the forms-engine-plugin enforces
  * that users cannot navigate past this point in the journey.
  */
 export class UpdateDetailsPageController extends TerminalPageController {
+  getRelevantPath(request, context) {
+    if (context.state.checkDetailsChangesPending === true) {
+      return this.path
+    }
+
+    return super.getRelevantPath(request, context)
+  }
+
+  getSfdUpdateUrl(request) {
+    if (!config.get('externalLinks.sfd.enabled')) {
+      return null
+    }
+
+    const updateUrl = config.get('externalLinks.sfd.updateUrl')?.trim()
+
+    if (!updateUrl || !URL.canParse(updateUrl)) {
+      log(LogCodes.SYSTEM.SFD_UPDATE_URL_MISSING_ON_REDIRECT, { updateUrl: updateUrl ?? '' }, request)
+      return null
+    }
+
+    const url = new URL(updateUrl)
+
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      log(LogCodes.SYSTEM.SFD_UPDATE_URL_MISSING_ON_REDIRECT, { updateUrl }, request)
+      return null
+    }
+
+    url.searchParams.set('ssoOrgId', request.auth.credentials.currentRelationshipId)
+    return url.toString()
+  }
+
   makeGetRouteHandler() {
     return async (request, _context, h) => {
       const { slug } = request.params
@@ -30,14 +61,16 @@ export class UpdateDetailsPageController extends TerminalPageController {
       const formMetadata = /** @type {Record<string, unknown>} */ (form?.metadata ?? {})
       const modelMetadata = /** @type {Record<string, unknown>} */ (this.model.def.metadata ?? {})
       const metadata = { ...formMetadata, ...modelMetadata }
+      const sfdUpdateUrl = this.getSfdUpdateUrl(request)
 
       return h.view('incorrect-details', {
         pageTitle: 'Update your details',
         serviceName: this.model.def.name ?? form?.title,
         serviceUrl: `/${slug}`,
-        backLink: { href: `/${slug}/check-details` },
+        backLink: sfdUpdateUrl ? null : { href: `/${slug}/check-details` },
         incorrectDetailsContent: metadata.incorrectDetailsContent ?? null,
-        supportEmail: metadata.supportEmail ?? null
+        supportEmail: metadata.supportEmail ?? null,
+        sfdUpdateUrl
       })
     }
   }
@@ -127,18 +160,12 @@ export default class CheckDetailsController extends QuestionPageController {
 
   /**
    * Inject the update-details terminal page into the model if not already present.
-   * Only used when externalLinks.sfd.enabled === false
    * Called via queueMicrotask() from the constructor so it runs on every instance at
    * startup, once model.pages and model.pageMap have been assigned by FormModel.
    * Also called defensively from makeGetRouteHandler/makePostRouteHandler in case the
    * microtask has not yet fired (e.g. in tests or unusual execution environments).
    */
   ensureUpdateDetailsPage() {
-    // When SFD external redirect is enabled, the user is sent directly to the external
-    // service on clicking No — the update-details page is never needed or shown.
-    if (this.isSfdEnabled) {
-      return
-    }
     const { model, confirmationFieldName } = this
 
     if (!model.pages?.length) {
@@ -247,23 +274,11 @@ export default class CheckDetailsController extends QuestionPageController {
       }
 
       if (confirmationValue === false && this.isSfdEnabled) {
-        // When SFD external redirect is enabled, do NOT persist the confirmation answer.
-        // Saving detailsConfirmed: false would cause the engine to treat check-details as
-        // "answered" when walking from start/summary, routing past it instead of back to it.
-        // We DO set checkDetailsChangesPending: true so the forms-engine-plugin and the
-        // status-helper both behave correctly and we show the check-details page.
-        const { currentRelationshipId } = request.auth.credentials
-        const updateUrl = config.get('externalLinks.sfd.updateUrl')?.trim()
-        if (updateUrl && URL.canParse(updateUrl)) {
-          const url = new URL(updateUrl)
-          url.searchParams.set('ssoOrgId', currentRelationshipId)
-          const { [this.confirmationFieldName]: _removed, ...stateWithoutConfirmation } = state
-          await this.setState(request, { ...stateWithoutConfirmation, checkDetailsChangesPending: true })
-          return h.redirect(url.toString())
-        } else {
-          // missing or malformed URL — log and fall through to the update-details page
-          log(LogCodes.SYSTEM.SFD_UPDATE_URL_MISSING_ON_REDIRECT, { updateUrl: updateUrl ?? '' }, request)
-        }
+        // Do not persist detailsConfirmed: false. The forms engine must show check-details
+        // again when the user returns from SFD.
+        const { [this.confirmationFieldName]: _removed, ...stateWithoutConfirmation } = state
+        await this.setState(request, { ...stateWithoutConfirmation, checkDetailsChangesPending: true })
+        return this.proceed(request, h, this.getNextPath(context))
       }
 
       // Clear checkDetailsChangesPending once user has selected Yes

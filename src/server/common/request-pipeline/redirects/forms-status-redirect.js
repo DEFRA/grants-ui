@@ -438,7 +438,22 @@ async function handlePostSubmission(request, h, context, previousStatus, grantCo
   const grantVersion = /** @type {{ grantVersion?: string | number | null }} */ (request.app).grantVersion ?? '1.0.0'
   request.yar.set(YarKeys.GRANT_APPLICATION_CONTEXT, { grantCode, grantVersion, clientRef: clientRef.toLowerCase() })
 
-  return request.path === redirectUrl ? h.continue : h.redirect(redirectUrl).takeover()
+  if (request.path === redirectUrl) {
+    return h.continue
+  }
+
+  // A grants-side status change (e.g. SUBMITTED -> REOPENED when GAS is APPLICATION_AMEND) redirects
+  // the user to the transition's destination (e.g. /summary). Record this one-shot navigation so the
+  // immediately-following request does not re-evaluate the now-current status against the steady-state
+  // rules (e.g. REOPENED -> REOPENED) and bounce the user off the page the status change sent them to.
+  // The marker is consumed on the next request; a later return to the service (a fresh evaluation with
+  // no marker) then correctly applies the steady-state rule.
+  const isStatusChange = rule.toGrantsStatus !== previousStatus
+  if (isStatusChange) {
+    request.yar.set(YarKeys.STATUS_CHANGE_REDIRECT, redirectUrl)
+  }
+
+  return h.redirect(redirectUrl).takeover()
 }
 
 /**
@@ -551,6 +566,30 @@ async function handlePostSubmissionWithFallback(request, h, context, redirectCon
 }
 
 /**
+ * Consumes the one-shot status-change redirect marker.
+ *
+ * When a grants-side status change redirects the user to a destination page, a session marker
+ * records that destination. On the immediately-following request the marker is cleared; if the user
+ * has landed on the recorded destination the pipeline continues without re-evaluating the redirect
+ * rules, preventing the newly-current status from bouncing the user off the page the status change
+ * sent them to. Any other request simply clears the stale marker and proceeds normally.
+ *
+ * @param {AnyFormRequest} request - The Hapi forms request object.
+ * @param {ResponseToolkit} h - The Hapi response toolkit.
+ * @returns {symbol | undefined} `h.continue` when the marker matches the current path, otherwise undefined.
+ */
+function consumeStatusChangeRedirect(request, h) {
+  const statusChangeRedirect = /** @type {string | undefined} */ (request.yar?.get(YarKeys.STATUS_CHANGE_REDIRECT))
+  if (!statusChangeRedirect) {
+    return undefined
+  }
+
+  request.yar.clear(YarKeys.STATUS_CHANGE_REDIRECT)
+
+  return request.path === statusChangeRedirect ? h.continue : undefined
+}
+
+/**
  * Runs the forms status redirect decision tree once request context is available.
  *
  * @param {AnyFormRequest} request - The Hapi forms request object.
@@ -568,6 +607,11 @@ async function handleFormsStatusRedirect(request, h, context, redirectContext) {
   const protectedPageGuardProducedResponse = protectedPageGuard !== h.continue // NOSONAR S2159
   if (protectedPageGuardProducedResponse) {
     return protectedPageGuard
+  }
+
+  const statusChangeRedirect = consumeStatusChangeRedirect(request, h)
+  if (statusChangeRedirect) {
+    return statusChangeRedirect
   }
 
   const { previousStatus, grantRedirectRules } = redirectContext
