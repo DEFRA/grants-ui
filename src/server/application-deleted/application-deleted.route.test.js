@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { applicationDeletedRoute } from './application-deleted.route.js'
+import { applicationDeletedGetRoute } from './application-deleted.route.js'
 
 const getState = vi.fn()
+const setState = vi.fn()
 const clearState = vi.fn()
 
 vi.mock('../common/helpers/logging/log.js', () => ({
@@ -19,6 +20,7 @@ import { log } from '../common/helpers/logging/log.js'
 vi.mock('../common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: vi.fn(() => ({
     getState,
+    setState,
     clearState
   }))
 }))
@@ -29,7 +31,7 @@ describe('applicationDeletedRoute', () => {
   })
 
   it('renders the application deleted page', async () => {
-    const { applicationDeletedRoute } = await import('./application-deleted.route.js')
+    const { applicationDeletedGetRoute } = await import('./application-deleted.route.js')
 
     const request = {
       params: {
@@ -44,7 +46,7 @@ describe('applicationDeletedRoute', () => {
 
     getState.mockResolvedValue({})
 
-    await applicationDeletedRoute.handler(/** @type {any} */ (request), /** @type {any} */ (h))
+    await applicationDeletedGetRoute.handler(/** @type {any} */ (request), /** @type {any} */ (h))
 
     expect(view).toHaveBeenCalledWith('application-deleted', {
       href: '/test-grant',
@@ -52,11 +54,11 @@ describe('applicationDeletedRoute', () => {
       text: 'Return to summary'
     })
 
-    expect(clearState).not.toHaveBeenCalled()
+    expect(setState).not.toHaveBeenCalled()
   })
 
   it('clears state when application status is PURGED', async () => {
-    const { applicationDeletedRoute } = await import('./application-deleted.route.js')
+    const { applicationDeletedGetRoute } = await import('./application-deleted.route.js')
 
     const request = {
       params: {
@@ -73,10 +75,10 @@ describe('applicationDeletedRoute', () => {
       applicationStatus: 'PURGED'
     })
 
-    await applicationDeletedRoute.handler(/** @type {any} */ (request), /** @type {any} */ (h))
+    await applicationDeletedGetRoute.handler(/** @type {any} */ (request), /** @type {any} */ (h))
 
-    expect(clearState).toHaveBeenCalledTimes(1)
-    expect(clearState).toHaveBeenCalledWith(request, true)
+    expect(setState).toHaveBeenCalledTimes(1)
+    expect(setState).toHaveBeenCalledWith(request, { applicationStatus: 'PURGED' })
 
     expect(view).toHaveBeenCalledWith('application-deleted', {
       href: '/test-grant',
@@ -93,7 +95,7 @@ describe('applicationDeletedRoute', () => {
   })
 
   it('does not clear state when application status is not PURGED', async () => {
-    const { applicationDeletedRoute } = await import('./application-deleted.route.js')
+    const { applicationDeletedGetRoute } = await import('./application-deleted.route.js')
 
     const request = {
       params: {
@@ -110,13 +112,13 @@ describe('applicationDeletedRoute', () => {
       applicationStatus: 'IN_PROGRESS'
     })
 
-    await applicationDeletedRoute.handler(/** @type {any} */ (request), /** @type {any} */ (h))
+    await applicationDeletedGetRoute.handler(/** @type {any} */ (request), /** @type {any} */ (h))
 
-    expect(clearState).not.toHaveBeenCalled()
+    expect(setState).not.toHaveBeenCalled()
   })
 
   it('logs and handles errors when state retrieval fails', async () => {
-    const { applicationDeletedRoute } = await import('./application-deleted.route.js')
+    const { applicationDeletedGetRoute } = await import('./application-deleted.route.js')
 
     const request = {
       params: {
@@ -130,7 +132,7 @@ describe('applicationDeletedRoute', () => {
 
     getState.mockRejectedValue(new Error('Redis unavailable'))
 
-    await applicationDeletedRoute.handler(/** @type {any} */ (request), /** @type {any} */ (h))
+    await applicationDeletedGetRoute.handler(/** @type {any} */ (request), /** @type {any} */ (h))
 
     expect(log).toHaveBeenCalledWith(
       'STATE_CLEAR_FAILURE',
@@ -153,7 +155,7 @@ describe('applicationDeletedRoute', () => {
     const h = { view }
     getState.mockRejectedValue(new Error('Redis unavailable'))
 
-    await applicationDeletedRoute.handler(request, h)
+    await applicationDeletedGetRoute.handler(request, h)
 
     expect(view).toHaveBeenCalledWith('application-deleted', {
       href: '/test-grant',
@@ -163,7 +165,7 @@ describe('applicationDeletedRoute', () => {
   })
 
   it('does not clear state when no state exists', async () => {
-    const { applicationDeletedRoute } = await import('./application-deleted.route.js')
+    const { applicationDeletedGetRoute } = await import('./application-deleted.route.js')
 
     const request = {
       params: {
@@ -178,8 +180,63 @@ describe('applicationDeletedRoute', () => {
 
     getState.mockResolvedValue(undefined)
 
-    await applicationDeletedRoute.handler(/** @type {any} */ (request), /** @type {any} */ (h))
+    await applicationDeletedGetRoute.handler(/** @type {any} */ (request), /** @type {any} */ (h))
 
-    expect(clearState).not.toHaveBeenCalled()
+    expect(setState).not.toHaveBeenCalled()
+  })
+})
+
+describe('applicationDeletedPostRoute', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('clears state and redirects to grant root', async () => {
+    const { applicationDeletedPostRoute } = await import('./application-deleted.route.js')
+
+    const redirect = vi.fn()
+
+    const request = {
+      params: {
+        slug: 'test-grant'
+      },
+      server: {}
+    }
+
+    const h = {
+      redirect
+    }
+
+    await applicationDeletedPostRoute.handler(/** @type {any} */ (request), /** @type {any} */ (h))
+
+    expect(clearState).toHaveBeenCalledTimes(1)
+    expect(clearState).toHaveBeenCalledWith(request, true)
+
+    expect(redirect).toHaveBeenCalledWith('/test-grant')
+  })
+
+  it('propagates errors from clearState', async () => {
+    const { applicationDeletedPostRoute } = await import('./application-deleted.route.js')
+
+    const error = new Error('Redis unavailable')
+
+    clearState.mockRejectedValue(error)
+
+    const request = {
+      params: {
+        slug: 'test-grant'
+      },
+      server: {}
+    }
+
+    const h = {
+      redirect: vi.fn()
+    }
+
+    await expect(
+      applicationDeletedPostRoute.handler(/** @type {any} */ (request), /** @type {any} */ (h))
+    ).rejects.toThrow('Redis unavailable')
+
+    expect(h.redirect).not.toHaveBeenCalled()
   })
 })

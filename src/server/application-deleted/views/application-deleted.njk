@@ -13,11 +13,14 @@
       A change has been made to the service requiring all draft applications to be removed.
     </p>
 
-    {{ govukButton({
-      text: "Start a new application",
-      href: href,
-      isStartButton: true
-    }) }}
+    <form method="post" novalidate>
+      <input type="hidden" name="crumb" value="{{ crumb }}">
+
+      {{ govukButton({
+        text: "Start a new application",
+        isStartButton: true
+      }) }}
+    </form>
 
   </div>
 </div>
