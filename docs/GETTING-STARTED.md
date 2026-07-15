@@ -240,17 +240,13 @@ When `DEV_TOOLS_ENABLED=true`, the following demo data can be configured. See [D
 | `DEV_DEMO_SBI`           | Demo SBI number       | `999888777`          |
 | `DEV_DEMO_CONTACT_NAME`  | Demo contact name     | `Demo Test User`     |
 
-#### Config API (Form Definitions)
+#### Backend Form Definitions
 
-Form definitions can optionally be loaded from the `grants-ui-config-api` instead of (or in addition to) local YAML files. See [Architecture - Grant Form Definitions](./ARCHITECTURE.md#grant-form-definitions) for details on how these two sources work together.
+Form definitions are loaded from `grants-ui-backend`. See [Architecture - Grant Form Definitions](./ARCHITECTURE.md#grant-form-definitions) for details.
 
-| Variable                      | Description                                                           | Default               |
-| ----------------------------- | --------------------------------------------------------------------- | --------------------- |
-| `CONFIG_API_URL`              | Base URL of the `grants-ui-config-api`                                | (empty — YAML only)   |
-| `CONFIG_API_JWT_SECRET`       | Shared secret used to sign JWT bearer tokens sent to the Config API   | (required if URL set) |
-| `CONFIG_API_JWT_EXPIRY`       | Expiry duration for the signed JWT (e.g. `"1h"`, `"30m"`)             | `1h`                  |
-| `FORMS_API_SLUGS`             | Comma-separated list of form slugs to load from the Config API        | (empty)               |
-| `FORMS_API_CACHE_TTL_SECONDS` | Redis TTL in seconds for form definitions fetched from the Config API | `300`                 |
+| Variable                         | Description                                                                          |
+| -------------------------------- | ------------------------------------------------------------------------------------ |
+| `BACKEND_FORM_DEF_ENABLED_SLUGS` | Comma-separated list of form slugs whose definition is served from grants-ui-backend |
 
 ### Npm Scripts
 
