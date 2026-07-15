@@ -277,8 +277,6 @@ npm run
 - **`test:unit`** - Run unit tests only (isolated from integration/contracts)
 - **`test:contracts`** - Run Pact contract tests
 - **`test:acceptance`** - Execute end-to-end journey tests via shell script
-- **`test:performance`** - Execute performance tests via shell script
-- **`test:all`** - Execute both acceptance and performance tests via shell script
 - **`test:watch`** - Run Vitest in interactive watch mode
 - **`test:stryker`** - Run Vitest specifically for Stryker mutation testing
 - **`start`** - Start the production server (requires `npm run build` first)
