@@ -302,7 +302,7 @@ Proxies OS Maps raster tile requests to `api.os.uk/maps/raster/v1/zxy`, injectin
 
 ## Example journey YAML
 
-A complete working example is at `localstack/config-broker-local/example-grant-with-map@1.0.1/grants-ui/example-grant-with-map.yaml` (served from `grants-ui-backend` at runtime). It demonstrates:
+A complete working example is [`example-grant-with-map.yaml`](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-map/grants-ui/example-grant-with-map.yaml) in the grants config repo (served from `grants-ui-backend` at runtime). It demonstrates:
 
 - Single parcel selection with `MapSelectPageController`
 - Actions selection with `SelectLandActionsPageController` (receives `?parcelId=` from the redirect)

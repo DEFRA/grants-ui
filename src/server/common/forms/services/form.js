@@ -145,14 +145,6 @@ async function resolveBackendDefinition(slug, sharedRules) {
     throw notFound(`Form definition for '${slug}' not found`)
   }
 
-  // Only serve forms in production if they have enabledInProd set to true —
-  // the same gate the YAML discovery used to apply at startup. Gated forms
-  // are indistinguishable from nonexistent ones (and are never registered).
-  const isProduction = config.get('cdpEnvironment')?.toLowerCase() === 'prod'
-  if (isProduction && definition.metadata?.enabledInProd !== true) {
-    throw notFound(`Form definition for '${slug}' not found`)
-  }
-
   hoistPageConfig(definition)
   configureFormDefinition(definition)
 

@@ -237,7 +237,7 @@ metadata:
 
 ### Example Complete Configuration
 
-See `localstack/config-broker-local/example-grant-with-task-list@1.0.1/grants-ui/example-grant-with-task-list.yaml` for a complete working example that demonstrates:
+See [`example-grant-with-task-list.yaml`](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-task-list/grants-ui/example-grant-with-task-list.yaml) in the grants config repo for a complete working example that demonstrates:
 
 - Multiple sections with different types of tasks
 - Above and below positioned guidance components
@@ -296,9 +296,10 @@ context. Whitelist enforcement (`whitelist.js` `onPostAuth`) reads the grant's
 not from the Redis entry, so it holds even on a fresh Redis or the first
 request after a publish.
 
-In production (`cdpEnvironment: prod`) a definition is only served when its
-metadata sets `enabledInProd: true` — the same gate the YAML discovery used to
-apply at startup. Gated forms return 404 and are never registered.
+The legacy `enabledInProd` metadata gate has been removed along with the YAML
+loading: whether a grant is available in an environment is controlled by
+publishing its definition to that environment's `grants-ui-backend` (via the
+config broker), and access is restricted through the allowlist.
 
 One consequence of resolving everything per-request: the dev-tools form
 picker (`getAvailableFormSlugs`/`getAllForms`) only lists slugs that have

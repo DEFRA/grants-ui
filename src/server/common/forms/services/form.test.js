@@ -378,57 +378,6 @@ describe('form', () => {
       expect(_slugsIndex.size).toBe(0)
     })
 
-    test.each([
-      ['false', false],
-      ['missing', undefined]
-    ])('returns notFound in production when enabledInProd is %s', async (_name, enabledInProd) => {
-      config.get.mockImplementation((key) => (key === 'cdpEnvironment' ? 'prod' : DEFAULT_CONFIG_MOCK[key]))
-      mockBackendRequest()
-      mockBackendStateWithDefinition({
-        definition: {
-          definition: { name: 'Demo Form', metadata: enabledInProd === undefined ? {} : { enabledInProd }, pages: [] }
-        }
-      })
-
-      const service = await formsService()
-
-      const error = await service.getFormMetadata('demo-form').catch((e) => e)
-      expect(error.isBoom).toBe(true)
-      expect(error.output.statusCode).toBe(404)
-      // Gated forms are never registered.
-      expect(_metaStore.size).toBe(0)
-      expect(_slugsIndex.size).toBe(0)
-    })
-
-    test('serves a form in production when enabledInProd is true', async () => {
-      config.get.mockImplementation((key) => (key === 'cdpEnvironment' ? 'prod' : DEFAULT_CONFIG_MOCK[key]))
-      mockBackendRequest()
-      mockBackendStateWithDefinition({
-        definition: {
-          definition: { name: 'Live Form', metadata: { enabledInProd: true }, pages: [] }
-        }
-      })
-
-      const service = await formsService()
-      const result = await service.getFormMetadata('live-form')
-
-      expect(result).toMatchObject({ slug: 'live-form', title: 'Live Form' })
-    })
-
-    test('serves a form outside production regardless of enabledInProd', async () => {
-      mockBackendRequest()
-      mockBackendStateWithDefinition({
-        definition: {
-          definition: { name: 'Demo Form', metadata: { enabledInProd: false }, pages: [] }
-        }
-      })
-
-      const service = await formsService()
-      const result = await service.getFormMetadata('demo-form')
-
-      expect(result).toMatchObject({ slug: 'demo-form', title: 'Demo Form' })
-    })
-
     test('refreshes the meta entry on every resolution so it cannot go stale', async () => {
       mockBackendRequest()
       const service = await formsService()
