@@ -54,6 +54,26 @@ describe('getParcelIdsFromPayload', () => {
 
     expect(result).toEqual([])
   })
+
+  test('filters non-string values out of an array payload', () => {
+    const request = {
+      payload: { landParcels: ['SD7148-9160', 123, null, undefined, {}, 'SD7148-9161'] }
+    }
+
+    const result = getParcelIdsFromPayload(request)
+
+    expect(result).toEqual(['SD7148-9160', 'SD7148-9161'])
+  })
+
+  test('returns empty array when a non-string, non-array value is provided', () => {
+    const request = {
+      payload: { landParcels: 42 }
+    }
+
+    const result = getParcelIdsFromPayload(request)
+
+    expect(result).toEqual([])
+  })
 })
 
 describe('getParcelIdFromQuery', () => {

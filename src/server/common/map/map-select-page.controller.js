@@ -1,5 +1,6 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { withTaskContext } from '~/src/server/task-list/task-list.helper.js'
+import { getParcelIdsFromPayload } from '~/src/server/land-grants/utils/parcel-request.utils.js'
 
 export default class MapSelectPageController extends withTaskContext(QuestionPageController) {
   viewName = 'map-select-parcel'
@@ -22,10 +23,12 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
   constructor(model, pageDef) {
     super(model, pageDef)
 
-    const config = model.def.metadata?.pageConfig?.[pageDef.path] ?? {}
+    const metadata = /** @type {Record<string, unknown>} */ (model.def.metadata ?? {})
+    const config = /** @type {Record<string, unknown>} */ (
+      /** @type {Record<string, Record<string, unknown>>} */ (metadata.pageConfig)?.[pageDef.path] ?? {}
+    )
 
     // Grant-level config: when only a single land parcel is allowed in state, multiple selection is always disabled.
-    const metadata = /** @type {{ def?: { metadata?: Record<string, unknown> } }} */ (model).def?.metadata ?? {}
     this.singleParcelSubmission = metadata.singleParcelSubmission === true
     this.multiSelect = !this.singleParcelSubmission && Boolean(config.multiSelect)
     this.devMode = Boolean(config.devMode)
@@ -42,17 +45,28 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
   }
 
   /**
+   * The view model shared by the GET render and the POST validation re-render.
+   * @param {FormRequest | FormRequestPayload} request
+   * @param {FormContext} context
+   * @param {Record<string, unknown>} [extra]
+   */
+  buildViewModel(request, context, extra = {}) {
+    return {
+      ...super.getViewModel(request, context),
+      multiSelect: this.multiSelect,
+      devMode: this.devMode,
+      formAction: request.path,
+      ...extra
+    }
+  }
+
+  /**
    * @param {FormRequest} request
    * @param {FormContext} context
    * @param {FormResponseToolkit} h
    */
-  async handleGet(request, context, h) {
-    return h.view(this.viewName, {
-      ...super.getViewModel(request, context),
-      multiSelect: this.multiSelect,
-      devMode: this.devMode,
-      formAction: request.path
-    })
+  handleGet(request, context, h) {
+    return h.view(this.viewName, this.buildViewModel(request, context))
   }
 
   /**
@@ -62,20 +76,19 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
    */
   async handlePost(request, context, h) {
     const { state } = context
-    const payload = /** @type {Record<string, unknown>} */ (request.payload ?? {})
-    const selectedParcelIds = parseParcelIdsFromPayload(payload)
+    const selectedParcelIds = getParcelIdsFromPayload(request)
 
     if (selectedParcelIds.length === 0) {
-      return h.view(this.viewName, {
-        ...super.getViewModel(request, context),
-        multiSelect: this.multiSelect,
-        devMode: this.devMode,
-        selectedParcelIds: [],
-        formAction: request.path,
-        errors: this.multiSelect
-          ? 'Select at least one land parcel on the map to continue'
-          : 'Select a land parcel on the map to continue'
-      })
+      const errorText = this.multiSelect
+        ? 'Select at least one land parcel on the map to continue'
+        : 'Select a land parcel on the map to continue'
+      return h.view(
+        this.viewName,
+        this.buildViewModel(request, context, {
+          selectedParcelIds: [],
+          errors: [{ text: errorText, href: '#parcel-map' }]
+        })
+      )
     }
 
     const selectedParcelsDisplay = selectedParcelIds.join(', ')
@@ -103,23 +116,6 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
 
     return this.proceed(request, h, redirect)
   }
-}
-
-/**
- * Extract parcel IDs submitted from the hidden inputs (map path) or
- * radio/checkbox inputs (no-JS fallback path).
- * @param {Record<string, unknown>} payload
- * @returns {string[]}
- */
-function parseParcelIdsFromPayload(payload) {
-  const raw = payload.landParcels
-  if (Array.isArray(raw)) {
-    return raw.filter((v) => typeof v === 'string')
-  }
-  if (typeof raw === 'string' && raw) {
-    return [raw]
-  }
-  return []
 }
 
 /**
