@@ -298,6 +298,18 @@ const convictConfig = {
     env: 'OS_MAPS_API_KEY',
     sensitive: true
   },
+  osMapsBaseUrl: {
+    doc: 'Base URL of the OS Maps API raster ZXY tile service, proxied by /api/map/os-tiles. Configurable for the same reasons every other upstream is: pointing at a stub or sandbox, or routing through an egress proxy, without a code change. Note the layer and zoom range stay pinned in code — they are properties of the OS product, not deployment choices.',
+    format: String,
+    default: 'https://api.os.uk/maps/raster/v1/zxy',
+    env: 'OS_MAPS_BASE_URL'
+  },
+  mapTileCacheMaxAgeSeconds: {
+    doc: 'Cache-Control max-age (seconds) served with map tiles and the basemap style. Exposed so a stale-tile problem can be investigated in a deployed environment by lowering the TTL, without cutting a release.',
+    format: Number,
+    default: 3600,
+    env: 'MAP_TILE_CACHE_MAX_AGE_SECONDS'
+  },
   devTools: devToolsSchema,
   forms: {
     backendAllowlistEnabledSlugs: {

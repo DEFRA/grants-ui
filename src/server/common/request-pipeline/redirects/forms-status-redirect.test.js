@@ -115,7 +115,7 @@ describe('formsStatusRedirect', () => {
       headers: {},
       auth: { credentials: { sbi: '12345', crn: 'CRN123', contactId: 'contact-123' } },
       server: { logger: { error: vi.fn() } },
-      yar: { set: vi.fn(), get: vi.fn() }
+      yar: { set: vi.fn(), get: vi.fn(), clear: vi.fn() }
     }
 
     h = mockHapiResponseToolkit()
@@ -842,6 +842,87 @@ describe('formsStatusRedirect', () => {
       const result = await formsStatusRedirect(request, h, context)
       expect(result).toBe(h.continue)
       expect(h.redirect).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('status change one-shot redirect', () => {
+    beforeEach(() => {
+      // A transition from SUBMITTED to REOPENED should go to /reopened, and the
+      // steady-state REOPENED -> REOPENED rule goes to /summary.
+      request.app.model.def.metadata.grantRedirectRules.postSubmission = [
+        {
+          fromGrantsStatus: 'SUBMITTED,REOPENED',
+          gasStatus: 'APPLICATION_WITHDRAWN',
+          toGrantsStatus: 'CLEARED',
+          toPath: '/start'
+        },
+        {
+          fromGrantsStatus: 'SUBMITTED',
+          gasStatus: 'APPLICATION_AMEND',
+          toGrantsStatus: 'REOPENED',
+          toPath: '/reopened'
+        },
+        {
+          fromGrantsStatus: 'REOPENED',
+          gasStatus: 'default',
+          toGrantsStatus: 'REOPENED',
+          toPath: '/summary'
+        },
+        {
+          fromGrantsStatus: 'default',
+          gasStatus: 'default',
+          toGrantsStatus: 'SUBMITTED',
+          toPath: '/confirmation'
+        }
+      ]
+    })
+
+    it('records a one-shot marker and redirects to /reopened when the status changes to REOPENED', async () => {
+      getApplicationStatus.mockResolvedValue({ json: async () => ({ status: 'APPLICATION_AMEND' }) })
+
+      await formsStatusRedirect(request, h, context)
+
+      expect(h.redirect).toHaveBeenCalledWith('/grant-a/reopened')
+      expect(request.yar.set).toHaveBeenCalledWith(YarKeys.STATUS_CHANGE_REDIRECT, '/grant-a/reopened')
+    })
+
+    it('stays on /reopened on the request immediately after the status change (does not bounce to /summary)', async () => {
+      context.state = { applicationStatus: ApplicationStatus.REOPENED, previousReferenceNumber: 'OLD-REF' }
+      request.path = '/grant-a/reopened'
+      request.yar.get.mockReturnValue('/grant-a/reopened')
+      getApplicationStatus.mockResolvedValue({ json: async () => ({ status: 'APPLICATION_AMEND' }) })
+
+      const result = await formsStatusRedirect(request, h, context)
+
+      expect(request.yar.clear).toHaveBeenCalledWith(YarKeys.STATUS_CHANGE_REDIRECT)
+      expect(result).toBe(h.continue)
+      expect(h.redirect).not.toHaveBeenCalled()
+      expect(getApplicationStatus).not.toHaveBeenCalled()
+    })
+
+    it('redirects a returning reopened user to /summary once the marker has been consumed', async () => {
+      context.state = { applicationStatus: ApplicationStatus.REOPENED, previousReferenceNumber: 'OLD-REF' }
+      request.path = '/grant-a/some-question-page'
+      request.headers = { 'sec-fetch-site': 'none' }
+      request.yar.get.mockReturnValue(undefined)
+      getApplicationStatus.mockResolvedValue({ json: async () => ({ status: 'APPLICATION_AMEND' }) })
+
+      await formsStatusRedirect(request, h, context)
+
+      expect(h.redirect).toHaveBeenCalledWith('/grant-a/summary')
+    })
+
+    it('clears a stale marker and applies the steady-state rule when the current path differs', async () => {
+      context.state = { applicationStatus: ApplicationStatus.REOPENED, previousReferenceNumber: 'OLD-REF' }
+      request.path = '/grant-a/some-question-page'
+      request.headers = { 'sec-fetch-site': 'none' }
+      request.yar.get.mockReturnValue('/grant-a/reopened')
+      getApplicationStatus.mockResolvedValue({ json: async () => ({ status: 'APPLICATION_AMEND' }) })
+
+      await formsStatusRedirect(request, h, context)
+
+      expect(request.yar.clear).toHaveBeenCalledWith(YarKeys.STATUS_CHANGE_REDIRECT)
+      expect(h.redirect).toHaveBeenCalledWith('/grant-a/summary')
     })
   })
 })

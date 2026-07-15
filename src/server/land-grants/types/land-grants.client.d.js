@@ -53,6 +53,13 @@
  */
 
 /**
+ * A Parcel with its area filled in from the land-grants sizes lookup.
+ * The lookup yields a full Size, or `{}` when it has nothing for that parcel —
+ * hence Partial rather than Size.
+ * @typedef {Parcel & { area?: Partial<Size> }} HydratedParcel
+ */
+
+/**
  * @typedef {object} ParcelResponse
  * @property {Parcel[]} parcels - Array of parcel details
  * @property {string} message - Indicates if the retrieval was successful

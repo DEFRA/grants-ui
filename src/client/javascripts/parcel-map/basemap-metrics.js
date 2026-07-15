@@ -2,6 +2,8 @@
 // comparison. Delete this whole file, its one import, and the four call
 // sites marked "metrics:" in index.js once the comparison is complete.
 
+import { SOURCE_ID_PARCELS } from './config.js'
+
 const EVENT_METRICS_UPDATE = 'parcel-map:basemap-metrics'
 
 // URL fragments identifying a network request as part of the basemap load,
@@ -42,9 +44,9 @@ export function trackBasemapMetrics(ml, basemapProvider, target) {
   // (keep the `metrics.tileRequests += 1` line) when the comparison ends.
   const seenTileIds = new Set()
   const onSourceData = (/** @type {{ tile?: { tileID?: { key?: string } }, sourceId?: string }} */ e) => {
-    // The map also has a 'parcels' source (vector tiles/geojson) — exclude it
+    // The map also has a parcels source (vector tiles/geojson) — exclude it
     // so its tile events don't get counted as basemap activity.
-    if (e.tile && e.sourceId !== 'parcels') {
+    if (e.tile && e.sourceId !== SOURCE_ID_PARCELS) {
       const tileId = e.tile.tileID?.key
       if (tileId !== undefined) {
         if (seenTileIds.has(tileId)) {
