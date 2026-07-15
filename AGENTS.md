@@ -31,10 +31,9 @@ The request path is:
 ```text
 User -> Grants UI -> Grants UI Backend
                   -> GAS
-                  -> Config API
 ```
 
-Grants UI renders journeys, handles authentication/session flow, maps form state into submission payloads, and decides user navigation. Grants UI Backend owns persisted application state and application status for save-and-return journeys. GAS owns submitted grant applications, grant definitions used for submission, and post-submission GAS statuses. Config API owns externally supplied form definitions; local YAML definitions remain the fallback/source for non-API-loaded slugs.
+Grants UI renders journeys, handles authentication/session flow, maps form state into submission payloads, and decides user navigation. Grants UI Backend owns persisted application state and application status for save-and-return journeys, and serves form definitions for the slugs configured to load from it. GAS owns submitted grant applications, grant definitions used for submission, and post-submission GAS statuses.
 
 ## Architectural Constraints
 

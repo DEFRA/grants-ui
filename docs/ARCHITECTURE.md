@@ -280,13 +280,9 @@ Form definitions are stored in `src/server/common/forms/definitions` as YAML fil
 
 Forms will not be enabled in production unless the YAML file contains the `enabledInProd: true` property.
 
-### 2. Config API
+### 2. Grants UI Backend
 
-When `CONFIG_API_URL` and `FORMS_API_SLUGS` are set, the application fetches the specified form definitions from the `grants-ui-config-api` at startup and caches them in Redis for `FORMS_API_CACHE_TTL_SECONDS` seconds. This allows form definitions to be updated without redeploying the application.
-
-Slugs listed in `FORMS_API_SLUGS` are loaded from the API; all other forms continue to be loaded from local YAML files. The two sources can be used together.
-
-To upload local YAML definitions to the Config API, see [tools/README.md](../tools/README.md).
+Slugs listed in `BACKEND_FORM_DEF_ENABLED_SLUGS` have their definition served from `grants-ui-backend`, which returns the form definition alongside the saved application state from its combined state-with-definition endpoint. This allows form definitions to be updated without redeploying the application.
 
 ## GAS Integration
 
