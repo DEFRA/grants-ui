@@ -12,10 +12,7 @@
       {% if errors %}
         {{ govukErrorSummary({
           titleText: "There is a problem",
-          errorList: [{
-            text: errors,
-            href: "#parcel-map"
-          }]
+          errorList: errors
         }) }}
       {% endif %}
 
