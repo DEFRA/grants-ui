@@ -25,13 +25,16 @@ import {
   PARCELS_GEOJSON_URL,
   MAP_LABEL,
   BASEMAP_PROVIDER_ATTRIBUTE,
+  BASEMAP_METRICS_ATTRIBUTE,
   DEFAULT_BASEMAP_PROVIDER,
   // TEMPORARY: OS Maps vs OpenStreetMap comparison (TGC-1418 follow-up) — see config.js
   BASEMAP_PROVIDER_OPENSTREETMAP,
   PARCEL_ID_PROPERTY,
+  SOURCE_ID_PARCELS,
   LAYER_ID_FILL,
   FIT_BOUNDS_PADDING,
   TOOLTIP_STYLES,
+  TAG_NAME,
   MAP_DEFAULT_HEIGHT,
   MAP_DEFAULT_CENTER,
   MAP_DEFAULT_ZOOM,
@@ -42,6 +45,8 @@ import {
   EVENT_READY,
   EVENT_ERROR,
   EVENT_SELECTION,
+  ERROR_REASON_UNAVAILABLE,
+  ERROR_REASON_NO_PARCELS,
   STATE_IDLE,
   STATE_LOADING,
   STATE_READY,
@@ -168,11 +173,11 @@ class ParcelMap extends HTMLElement {
       this.#teardown()
       this.#state = STATE_ERROR
       this.#showError(MSG_ERROR_UNAVAILABLE)
-      this.dispatchEvent(new CustomEvent(EVENT_ERROR, { bubbles: true, detail: { reason: 'unavailable' } }))
+      this.dispatchEvent(new CustomEvent(EVENT_ERROR, { bubbles: true, detail: { reason: ERROR_REASON_UNAVAILABLE } }))
     } else if (data.parcelIds.length === 0) {
       this.#teardown()
       this.#state = STATE_ERROR
-      this.dispatchEvent(new CustomEvent(EVENT_ERROR, { bubbles: true, detail: { reason: 'no-parcels' } }))
+      this.dispatchEvent(new CustomEvent(EVENT_ERROR, { bubbles: true, detail: { reason: ERROR_REASON_NO_PARCELS } }))
     } else {
       const colorExpr = buildColorExpr(data.parcelIds)
       this.#addParcelsToMap(ml, data, colorExpr, basemapProvider)
@@ -284,7 +289,7 @@ class ParcelMap extends HTMLElement {
           resolve(null)
         })
 
-        if (this.getAttribute('basemap-metrics') === 'true') {
+        if (this.getAttribute(BASEMAP_METRICS_ATTRIBUTE) === 'true') {
           this.#mlCleanup.push(trackBasemapMetrics(m, basemapProvider, this))
         }
       })
@@ -368,7 +373,7 @@ class ParcelMap extends HTMLElement {
       )
     }
 
-    if (ml.getSource('parcels')) {
+    if (ml.getSource(SOURCE_ID_PARCELS)) {
       return
     }
 
@@ -382,8 +387,8 @@ class ParcelMap extends HTMLElement {
           type: 'vector',
           tiles: [`${origin}${PARCEL_TILES_URL}`]
         })
-    ml.addSource('parcels', source)
-    const layers = buildParcelLayers(colorExpr, geojsonUrl ? undefined : 'parcels', basemapProvider)
+    ml.addSource(SOURCE_ID_PARCELS, source)
+    const layers = buildParcelLayers(colorExpr, geojsonUrl ? undefined : SOURCE_ID_PARCELS, basemapProvider)
     ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.fill))
     ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.outline))
     ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.label))
@@ -479,6 +484,6 @@ class ParcelMap extends HTMLElement {
   }
 }
 
-if (!customElements.get('parcel-map')) {
-  customElements.define('parcel-map', ParcelMap)
+if (!customElements.get(TAG_NAME)) {
+  customElements.define(TAG_NAME, ParcelMap)
 }

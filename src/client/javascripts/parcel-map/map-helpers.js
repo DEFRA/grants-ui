@@ -11,6 +11,7 @@ import {
   AREA_DECIMAL_PLACES,
   PARCEL_ID_PROPERTY,
   PARCEL_CLICK_TOLERANCE_PX,
+  SOURCE_ID_PARCELS,
   LAYER_ID_FILL,
   LAYER_ID_OUTLINE,
   LAYER_ID_LABEL,
@@ -59,7 +60,7 @@ export function buildParcelLayers(colorExpr, sourceLayer, basemapProvider) {
     fill: {
       id: LAYER_ID_FILL,
       type: 'fill',
-      source: 'parcels',
+      source: SOURCE_ID_PARCELS,
       ...src,
       paint: {
         'fill-color': colorExpr,
@@ -69,7 +70,7 @@ export function buildParcelLayers(colorExpr, sourceLayer, basemapProvider) {
     outline: {
       id: LAYER_ID_OUTLINE,
       type: 'line',
-      source: 'parcels',
+      source: SOURCE_ID_PARCELS,
       ...src,
       paint: {
         'line-color': colorExpr,
@@ -79,7 +80,7 @@ export function buildParcelLayers(colorExpr, sourceLayer, basemapProvider) {
     label: {
       id: LAYER_ID_LABEL,
       type: 'symbol',
-      source: 'parcels',
+      source: SOURCE_ID_PARCELS,
       ...src,
       layout: {
         'text-field': COMPOUND_ID_EXPR,

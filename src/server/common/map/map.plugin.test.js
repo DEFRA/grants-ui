@@ -23,6 +23,12 @@ vi.mock('~/src/config/config.js', () => ({
       if (key === 'osMapsApiKey') {
         return 'test-os-key'
       }
+      if (key === 'osMapsBaseUrl') {
+        return 'https://api.os.uk/maps/raster/v1/zxy'
+      }
+      if (key === 'mapTileCacheMaxAgeSeconds') {
+        return 3600
+      }
       return 'https://land-grants-api'
     })
   }

@@ -55,7 +55,7 @@ export function createParcelItemRow(data) {
 export function buildLandParcelHeaderActions(sheetId, parcelId) {
   return {
     text: 'Remove',
-    href: `remove-parcel?parcelId=${sheetId}-${parcelId}`,
+    href: `remove-parcel?parcelId=${stringifyParcel({ sheetId, parcelId })}`,
     hiddenTextValue: `all actions for Land Parcel ${sheetId} ${parcelId}`
   }
 }
@@ -84,7 +84,7 @@ export function buildLandParcelFooterActions(paymentItems, sheetId, parcelId, ac
 
   return {
     text: 'Add another action',
-    href: `select-actions-for-land-parcel?parcelId=${sheetId}-${parcelId}`,
+    href: `select-actions-for-land-parcel?parcelId=${stringifyParcel({ sheetId, parcelId })}`,
     hiddenTextValue: `to Land Parcel ${sheetId} ${parcelId}`
   }
 }
