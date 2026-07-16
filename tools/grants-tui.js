@@ -14,6 +14,9 @@
  *   gt down [--dry-run]          # uses saved state automatically
  *   gt debug                     # restart grants-ui in debug mode (detached, port 9229)
  *   gt restart [--dry-run]       # restart running containers (with --no-deps)
+ *   gt test [unit|contracts|acceptance]  # run tests (default: unit)
+ *   gt sonar [--skip-tests]      # local SonarQube scan (server left up for the dashboard)
+ *   gt sonar --down              # force-stop a leftover SonarQube server
  *   gt reset [--dry-run]         # full teardown incl. volumes
  *   gt --help                    # show help
  *   gt --version                 # show version number
@@ -43,6 +46,7 @@
  */
 
 import { spawnSync } from 'child_process'
+import { randomUUID } from 'crypto'
 import * as fs from 'fs'
 import * as os from 'os'
 import * as readline from 'readline'
@@ -52,7 +56,7 @@ import { fileURLToPath } from 'url'
 // ---------------------------------------------------------------------------
 // Version
 // ---------------------------------------------------------------------------
-const VERSION = '1.3.0'
+const VERSION = '1.4.0'
 
 // ---------------------------------------------------------------------------
 // Cross-platform: detect ANSI support
@@ -78,6 +82,46 @@ const DEBUG_SERVICE = 'grants-ui'
 
 // Compose service never shown in the restart sub-menu (one-shot readiness helper)
 const RESTART_HIDDEN_SERVICE = 'mongo-ready'
+
+const TEST_TARGETS = [
+  {
+    key: 'unit',
+    label: 'unit',
+    script: 'test',
+    description: 'Full unit suite with coverage (vitest run --coverage)',
+    needsDocker: false
+  },
+  {
+    key: 'contracts',
+    label: 'contracts',
+    script: 'test:contracts',
+    description: 'Contract tests (vitest run --config vitest.contracts.config.js)',
+    needsDocker: false
+  },
+  {
+    key: 'acceptance',
+    label: 'acceptance',
+    script: 'test:acceptance',
+    description: 'Docker-based grants-ui acceptance journeys (./tools/run-acceptance-tests.sh)',
+    needsDocker: true,
+    note: 'grants-ui suite only; spins up & tears down its own stack',
+    env: { ACCEPTANCE_SUITES: 'grants-ui-acceptance-tests' }
+  }
+]
+
+const SONAR = {
+  composeFile: 'compose.sonar.yml',
+  serverService: 'sonarqube',
+  scannerService: 'sonar-scanner',
+  hostUrl: 'http://localhost:9000',
+  internalUrl: 'http://sonarqube:9000',
+  projectKey: 'grants-ui-local',
+  stateFile: resolve(ROOT, '.grants-ui-cli-sonar.json'), // git-ignored; holds minted token
+  logFile: resolve(os.tmpdir(), 'grants-tui-sonar.log'),
+  readyTimeoutMs: 150000
+}
+
+const SONAR_EXIT = { OK: 0, GATE_FAILED: 1, ERROR: 2 }
 
 // ---------------------------------------------------------------------------
 // Pre-up script — runs before `docker compose up` every time.
@@ -447,6 +491,372 @@ function runApplyFormDefs(mode, dryRun = false) {
   return result.status ?? 1
 }
 
+/**
+ * Run a test target (`npm run <script>`) with inherited stdio so vitest output
+ * streams straight to the terminal. Returns the child exit code (0 = pass).
+ * @param {string} targetKey  one of TEST_TARGETS[].key
+ * @param {boolean} [dryRun]
+ * @returns {number}
+ */
+/**
+ * Where a test suite's combined output is tee'd. The interactive menu runs inside
+ * the alternate screen buffer and clears it on return, so streamed output is lost
+ * from scroll-back
+ * @param {string} targetKey
+ * @returns {string}
+ */
+function testLogPath(targetKey) {
+  return resolve(os.tmpdir(), `grants-tui-test-${targetKey}.log`)
+}
+
+function cmdTest(targetKey, dryRun = false) {
+  const target = TEST_TARGETS.find((t) => t.key === targetKey)
+  if (!target) {
+    console.error(`\n  ${RED}✖${RESET_COLOR}  Unknown test target: '${targetKey}'\n`)
+    return 1
+  }
+  console.log(`\n  ${DIM}▶${RESET_COLOR}  npm run ${target.script}  ${DIM}(${target.description})${RESET_COLOR}\n`)
+  if (dryRun) return 0
+  const env = { ...process.env, ...(target.env ?? {}) }
+
+  if (process.platform === 'win32') {
+    const result = spawnSync('npm.cmd', ['run', target.script], { cwd: ROOT, stdio: 'inherit', encoding: 'utf8', env })
+    return result.status ?? 1
+  }
+  const logFile = testLogPath(targetKey)
+  const result = spawnSync('bash', ['-c', `set -o pipefail; npm run ${target.script} 2>&1 | tee "${logFile}"`], {
+    cwd: ROOT,
+    stdio: 'inherit',
+    encoding: 'utf8',
+    env
+  })
+
+  console.log(`\n  ${DIM}output: ${logFile}${RESET_COLOR}`)
+  return result.status ?? 1
+}
+
+// ---------------------------------------------------------------------------
+// Local SonarQube helpers (see SONAR const above)
+// ---------------------------------------------------------------------------
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
+function readSonarState() {
+  try {
+    return JSON.parse(fs.readFileSync(SONAR.stateFile, 'utf8'))
+  } catch {
+    return {}
+  }
+}
+
+function writeSonarState(state) {
+  fs.writeFileSync(SONAR.stateFile, JSON.stringify(state, null, 2))
+  try {
+    fs.chmodSync(SONAR.stateFile, 0o600)
+  } catch {
+    /* best-effort on platforms without POSIX perms */
+  }
+}
+
+/**
+ * Call the SonarQube web API. `auth` is a raw `user:pass` (or `token:`) string.
+ * @param {string} path  API path beginning with `/`
+ * @param {SonarApiOptions} [opts]
+ * @returns {Promise<Response>}
+ */
+function sonarApi(path, { method = 'GET', auth, body } = {}) {
+  /** @type {Record<string, string>} */
+  const headers = {}
+  if (auth) headers.Authorization = `Basic ${Buffer.from(auth).toString('base64')}`
+  if (body) headers['Content-Type'] = 'application/x-www-form-urlencoded'
+  return fetch(`${SONAR.hostUrl}${path}`, { method, headers, body })
+}
+
+/** Poll GET /api/system/status until the server reports UP or we time out. */
+async function waitForSonarUp() {
+  const deadline = Date.now() + SONAR.readyTimeoutMs
+  process.stdout.write(`  ${DIM}Waiting for SonarQube to come up (first boot ~60-90s)…${RESET_COLOR}`)
+  while (Date.now() < deadline) {
+    try {
+      const res = await fetch(`${SONAR.hostUrl}/api/system/status`)
+      if (res.ok) {
+        const { status } = await res.json()
+        if (status === 'UP') {
+          process.stdout.write(` ${GREEN}up${RESET_COLOR}\n`)
+          return true
+        }
+      }
+    } catch {
+      /* server not listening yet */
+    }
+    process.stdout.write('.')
+    await sleep(3000)
+  }
+  process.stdout.write('\n')
+  return false
+}
+
+/**
+ * Return a scanner token for the local server, bootstrapping a fresh container
+ * on first run (change the forced admin/admin password, then mint a token) and
+ * caching the credentials in SONAR.stateFile so later runs reuse them.
+ * @returns {Promise<string>}
+ */
+async function ensureSonarToken() {
+  const state = readSonarState()
+
+  // Reuse a still-valid cached token.
+  if (state.token) {
+    const res = await sonarApi('/api/authentication/validate', { auth: `${state.token}:` })
+    if (res.ok && (await res.json()).valid) return state.token
+  }
+
+  // Establish the admin password. A fresh container still has admin/admin and
+  // forces a change on first use; a bootstrapped one needs the cached password.
+  let adminPassword = state.adminPassword
+  if (!adminPassword) {
+    const newPassword = `Gu-${randomUUID()}`
+    const res = await sonarApi('/api/users/change_password', {
+      method: 'POST',
+      auth: 'admin:admin',
+      body: new URLSearchParams({ login: 'admin', previousPassword: 'admin', password: newPassword })
+    })
+    if (res.ok) {
+      adminPassword = newPassword
+      // Persist the rotated password now — the server has already accepted it,
+      // so if the token mint below fails we can still authenticate on the next
+      // run instead of dead-ending on admin/admin (401 → forced volume reset).
+      writeSonarState({ ...state, adminPassword })
+    } else if (res.status === 401) {
+      throw new Error(
+        "SonarQube is already bootstrapped but its saved credentials are gone. Reset it with 'gt sonar --down' + remove the sonarqube volume, or 'gt reset'."
+      )
+    } else {
+      throw new Error(`Could not set the SonarQube admin password (HTTP ${res.status}).`)
+    }
+  }
+
+  // Mint a uniquely-named token (Sonar rejects duplicate names).
+  const tokenSeq = (state.tokenSeq ?? 0) + 1
+  const res = await sonarApi('/api/user_tokens/generate', {
+    method: 'POST',
+    auth: `admin:${adminPassword}`,
+    body: new URLSearchParams({ name: `${SONAR.projectKey}-${tokenSeq}` })
+  })
+  if (!res.ok) throw new Error(`Could not mint a SonarQube token (HTTP ${res.status}).`)
+  const { token } = await res.json()
+  writeSonarState({ adminPassword, token, tokenSeq })
+  return token
+}
+
+/** Create the local project if it doesn't already exist (HTTP 400 = exists). */
+async function ensureSonarProject(token) {
+  const res = await sonarApi('/api/projects/create', {
+    method: 'POST',
+    auth: `${token}:`,
+    body: new URLSearchParams({ project: SONAR.projectKey, name: 'grants-ui (local)' })
+  })
+  if (!res.ok && res.status !== 400) {
+    throw new Error(`Could not create the SonarQube project (HTTP ${res.status}).`)
+  }
+}
+
+/**
+ * Turn off forced authentication so the dashboard link opens the real project
+ * anonymously — otherwise it redirects to a login the user has no password for
+ * (admin's password is a random UUID in the state file). Best-effort; non-fatal.
+ */
+async function disableForcedAuth(token) {
+  try {
+    await sonarApi('/api/settings/set', {
+      method: 'POST',
+      auth: `${token}:`,
+      body: new URLSearchParams({ key: 'sonar.forceAuthentication', value: 'false' })
+    })
+  } catch {
+    /* leave auth as-is; the run still works, the link just needs a login */
+  }
+}
+
+/**
+ * Find the Compute Engine task id the scanner just queued. The scanner writes
+ * `.scannerwork/report-task.txt`, but that doesn't reliably surface on the bind
+ * mount, so we primarily scrape the id from the tee'd scanner output (which
+ * always logs `…/api/ce/task?id=<id>`), falling back to the file when present.
+ */
+function readCeTaskId() {
+  try {
+    const m = fs.readFileSync(SONAR.logFile, 'utf8').match(/\/api\/ce\/task\?id=([0-9a-f-]+)/)
+    if (m) return m[1]
+  } catch {
+    /* no tee log (e.g. win32) — try the report file */
+  }
+  try {
+    const m = fs.readFileSync(resolve(ROOT, '.scannerwork', 'report-task.txt'), 'utf8').match(/ceTaskId=(.+)/)
+    if (m) return m[1].trim()
+  } catch {
+    /* nothing to parse */
+  }
+  return null
+}
+
+/**
+ * Poll the Compute Engine task the scanner queued until the server finishes
+ * processing the report. Returns the analysisId on SUCCESS, or null otherwise.
+ */
+async function waitForCeTask(taskId, token) {
+  const deadline = Date.now() + 90000
+  while (Date.now() < deadline) {
+    const res = await sonarApi(`/api/ce/task?id=${encodeURIComponent(taskId)}`, { auth: `${token}:` })
+    if (res.ok) {
+      const { task } = await res.json()
+      if (task.status === 'SUCCESS') return task.analysisId
+      if (task.status === 'FAILED' || task.status === 'CANCELED') return null
+    }
+    await sleep(2000)
+  }
+  return null
+}
+
+/** Fetch the quality-gate outcome for a completed analysis. */
+async function fetchQualityGate(analysisId, token) {
+  const res = await sonarApi(`/api/qualitygates/project_status?analysisId=${encodeURIComponent(analysisId)}`, {
+    auth: `${token}:`
+  })
+  return res.ok ? (await res.json()).projectStatus : null
+}
+
+/** Print the quality gate result; returns true when it passed. */
+function printQualityGate(qg) {
+  if (qg.status === 'OK') {
+    console.log(`\n  ${GREEN}✔  Quality Gate: PASSED${RESET_COLOR}`)
+    return true
+  }
+  console.log(`\n  ${RED}✖  Quality Gate: FAILED${RESET_COLOR}`)
+  for (const c of (qg.conditions ?? []).filter((x) => x.status === 'ERROR')) {
+    console.log(
+      `    ${RED}•${RESET_COLOR} ${c.metricKey}: ${c.actualValue} (fails ${c.comparator} ${c.errorThreshold})`
+    )
+  }
+  return false
+}
+
+/**
+ * Run a SonarQube analysis against the local server. Boots the container,
+ * bootstraps a token, ensures coverage exists, then runs the scanner with -D
+ * flags that retarget the CI `sonar-project.properties` at the local instance.
+ * @param {{dryRun?:boolean, down?:boolean, skipTests?:boolean}} [opts]
+ * @returns {Promise<number>} child exit code (0 = pass)
+ */
+async function cmdSonar({ dryRun = false, down = false, skipTests = false } = {}) {
+  const composeArgs = ['compose', '-f', SONAR.composeFile]
+
+  if (down) {
+    console.log(`\n  ${DIM}▶${RESET_COLOR}  docker ${composeArgs.join(' ')} down\n`)
+    if (dryRun) return 0
+    const r = spawnSync('docker', [...composeArgs, 'down'], { cwd: ROOT, stdio: 'inherit', encoding: 'utf8' })
+    return r.status ?? 1
+  }
+
+  // 1. Start the server and wait for readiness.
+  console.log(`\n  ${DIM}▶${RESET_COLOR}  docker ${composeArgs.join(' ')} up -d ${SONAR.serverService}\n`)
+  if (!dryRun) {
+    const up = spawnSync('docker', [...composeArgs, 'up', '-d', SONAR.serverService], {
+      cwd: ROOT,
+      stdio: 'inherit',
+      encoding: 'utf8'
+    })
+    if ((up.status ?? 1) !== 0) return SONAR_EXIT.ERROR
+    if (!(await waitForSonarUp())) {
+      console.error(`\n  ${RED}✖${RESET_COLOR}  SonarQube did not come up within ${SONAR.readyTimeoutMs / 1000}s.\n`)
+      return SONAR_EXIT.ERROR
+    }
+  }
+
+  // 2. Bootstrap credentials + project.
+  let token = '<token>'
+  if (!dryRun) {
+    try {
+      token = await ensureSonarToken()
+      await ensureSonarProject(token)
+      await disableForcedAuth(token)
+    } catch (err) {
+      console.error(`\n  ${RED}✖${RESET_COLOR}  ${/** @type {Error} */ (err).message}\n`)
+      return SONAR_EXIT.ERROR
+    }
+  }
+
+  // 3. Ensure coverage/lcov.info exists (the scanner reads it for coverage).
+  const haveCoverage = fs.existsSync(resolve(ROOT, 'coverage', 'lcov.info'))
+  if (!haveCoverage && !skipTests) {
+    console.log(`\n  ${DIM}coverage/lcov.info not found — running unit tests first${RESET_COLOR}`)
+    const code = cmdTest('unit', dryRun)
+    if (code !== 0) return SONAR_EXIT.ERROR
+  } else if (!haveCoverage) {
+    console.log(
+      `\n  ${YELLOW}⚠${RESET_COLOR}  coverage/lcov.info missing (--skip-tests) — scan will show no coverage.\n`
+    )
+  }
+
+  // 4. Run the scanner. Flags after the service name override the image
+  // entrypoint's args, retargeting sonar-project.properties at the local server.
+  const flags = [
+    `-Dsonar.host.url=${SONAR.internalUrl}`,
+    `-Dsonar.token=${token}`,
+    `-Dsonar.projectKey=${SONAR.projectKey}`
+  ]
+  const runCmd = `docker ${composeArgs.join(' ')} run --rm ${SONAR.scannerService} ${flags.join(' ')}`
+  console.log(`\n  ${DIM}▶${RESET_COLOR}  ${runCmd.replace(token, '***')}\n`)
+  if (dryRun) return 0
+
+  let status
+  if (process.platform === 'win32') {
+    const r = spawnSync('docker', [...composeArgs, 'run', '--rm', SONAR.scannerService, ...flags], {
+      cwd: ROOT,
+      stdio: 'inherit',
+      encoding: 'utf8'
+    })
+    status = r.status ?? 1
+  } else {
+    const r = spawnSync('bash', ['-c', `set -o pipefail; ${runCmd} 2>&1 | tee "${SONAR.logFile}"`], {
+      cwd: ROOT,
+      stdio: 'inherit',
+      encoding: 'utf8'
+    })
+    status = r.status ?? 1
+    console.log(`\n  ${DIM}output: ${SONAR.logFile}${RESET_COLOR}`)
+  }
+
+  // A non-zero scanner exit means the upload itself failed — infra error.
+  // Leave the server up so the failure can be inspected.
+  if (status !== 0) return SONAR_EXIT.ERROR
+
+  // The scanner exits 0 once the report is uploaded; the server then processes
+  // it asynchronously. Poll that task, then report the actual quality gate.
+  const ceTaskId = readCeTaskId()
+  /** @type {boolean | null} */
+  let gatePassed = null
+  if (ceTaskId) {
+    process.stdout.write(`\n  ${DIM}Processing analysis on the server…${RESET_COLOR}`)
+    const analysisId = await waitForCeTask(ceTaskId, token)
+    process.stdout.write('\n')
+    if (analysisId) {
+      const qg = await fetchQualityGate(analysisId, token)
+      if (qg) gatePassed = printQualityGate(qg)
+    } else {
+      console.log(`  ${YELLOW}⚠${RESET_COLOR}  Server didn't finish processing in time.`)
+    }
+  }
+
+  // Leave the server running so the results dashboard stays browsable. Stop it
+  // with `gt sonar --down` (keeps volumes → next run skips bootstrap) or `gt reset`.
+  console.log(
+    `\n  ${DIM}SonarQube left running — results at ${SONAR.hostUrl}  (stop with 'gt sonar --down')${RESET_COLOR}`
+  )
+
+  return gatePassed === false ? SONAR_EXIT.GATE_FAILED : SONAR_EXIT.OK
+}
+
 function cmdUp(selectedAddons, scale, dryRun, localServices = []) {
   const fileArgs = composeFileArgs(selectedAddons, localServices)
   const extraArgs = ['-d', '--wait']
@@ -611,6 +1021,18 @@ function cmdReset(dryRun) {
     spawnSync('docker', ['volume', 'rm', '-f', postgresVolume], { cwd: ROOT, stdio: 'inherit' })
   } else {
     console.log(`  ${DIM}▶${RESET_COLOR}  docker volume rm -f ${postgresVolume}\n`)
+  }
+
+  console.log(`  ${DIM}Removing local SonarQube stack…${RESET_COLOR}\n`)
+  if (!dryRun) {
+    spawnSync('docker', ['compose', '-f', SONAR.composeFile, 'down', '--volumes'], { cwd: ROOT, stdio: 'inherit' })
+    try {
+      fs.unlinkSync(SONAR.stateFile)
+    } catch {
+      /* not bootstrapped — nothing to clean */
+    }
+  } else {
+    console.log(`  ${DIM}▶${RESET_COLOR}  docker compose -f ${SONAR.composeFile} down --volumes\n`)
   }
 
   if (!dryRun) {
@@ -919,6 +1341,8 @@ ${BOLD}Commands:${RESET_COLOR}
   down    Stop containers (uses saved state — no need to re-select)
   debug   Restart grants-ui in debug mode (detached, port 9229)
   restart Restart running containers (selectable; uses --no-deps)
+  test    Run tests: ${TEST_TARGETS.map((t) => t.key).join(' | ')} (default: ${TEST_TARGETS[0].key})
+  sonar   Run SonarQube analysis against a local server (--down stops it)
   reset   Full teardown: containers + volumes + local images
 
 ${BOLD}Addon flags (for 'up'):${RESET_COLOR}
@@ -938,6 +1362,10 @@ ${BOLD}Examples:${RESET_COLOR}
   gt down                            # stops whatever was started
   gt debug
   gt restart
+  gt test                            # unit tests (default)
+  gt test acceptance                 # docker-based acceptance journeys
+  gt sonar                           # local SonarQube scan of src/
+  gt sonar --down                    # stop the local SonarQube server
   gt reset
 `)
 }
@@ -996,7 +1424,9 @@ async function main() {
 
   // Validate args before doing anything else — catch unrecognised flags/commands early
   {
-    const knownCmds = ['up', 'down', 'debug', 'restart', 'reset']
+    const knownCmds = ['up', 'down', 'debug', 'restart', 'reset', 'test', 'sonar']
+    // Test targets are valid positionals only after the `test` command
+    const testTargetKeys = argv.includes('test') ? TEST_TARGETS.map((t) => t.key) : []
     const knownFlags = [
       '--dry-run',
       '--help',
@@ -1007,11 +1437,17 @@ async function main() {
       '--land-grants',
       '--gas',
       '--ha',
+      '--down',
+      '--skip-tests',
       ...LOCAL_SERVICES.map((s) => `--local-${s.key}`)
     ]
     const scaleValIdx = argv.indexOf('--scale')
     const unknownCmd = argv.find(
-      (a, i) => !a.startsWith('-') && !knownCmds.includes(a) && !(scaleValIdx !== -1 && i === scaleValIdx + 1)
+      (a, i) =>
+        !a.startsWith('-') &&
+        !knownCmds.includes(a) &&
+        !testTargetKeys.includes(a) &&
+        !(scaleValIdx !== -1 && i === scaleValIdx + 1)
     )
     const unknownFlag = argv.filter((a) => a.startsWith('-')).find((a) => !knownFlags.includes(a))
     if (unknownCmd) {
@@ -1024,8 +1460,19 @@ async function main() {
     }
   }
 
-  // Preflight: ensure Docker is available and running (skipped for --dry-run so offline/CI usage works)
-  if (!dryRun) {
+  const testInvoked = argv.includes('test')
+
+  const testTargets = testInvoked
+    ? (() => {
+        const picked = TEST_TARGETS.filter((t) => argv.includes(t.key)).map((t) => t.key)
+        return picked.length ? picked : [TEST_TARGETS[0].key]
+      })()
+    : []
+  const testNeedsDocker = testTargets.some((k) => TEST_TARGETS.find((t) => t.key === k)?.needsDocker)
+
+  // Preflight: ensure Docker is available and running (skipped for --dry-run so
+  // offline/CI usage works, and for pure test targets that don't drive containers)
+  if (!dryRun && !(testInvoked && !testNeedsDocker)) {
     const dockerCheck = spawnSync('docker', ['info'], { encoding: 'utf8', stdio: 'pipe' })
     if (dockerCheck.status !== 0 || dockerCheck.error) {
       console.error(
@@ -1055,6 +1502,24 @@ async function main() {
     releaseStdin()
     cmdReset(dryRun)
     return
+  }
+  if (testInvoked) {
+    releaseStdin()
+    let status = 0
+    for (const key of testTargets) {
+      status = cmdTest(key, dryRun)
+      if (status !== 0) break
+    }
+    process.exit(status)
+  }
+  if (argv.includes('sonar')) {
+    releaseStdin()
+    const code = await cmdSonar({
+      dryRun,
+      down: argv.includes('--down'),
+      skipTests: argv.includes('--skip-tests')
+    })
+    process.exit(code)
   }
   if (argv.includes('up')) {
     const flaggedAddons = ADDONS.filter((a) => argv.includes(`--${a.key}`)).map((a) => a.key)
@@ -1141,6 +1606,12 @@ async function main() {
             }
           ]
         : []),
+      { key: 'test', label: 'test ⇢', description: 'Run unit / contract / acceptance tests' },
+      {
+        key: 'sonar',
+        label: 'sonar',
+        description: 'Scan src/ on a local SonarQube server (left up for the dashboard)'
+      },
       { key: 'reset', label: 'reset ⇢', description: 'Full teardown — removes volumes & images' }
     ]
 
@@ -1351,6 +1822,65 @@ async function main() {
       continue
     }
 
+    if (command === 'test') {
+      const testItems = TEST_TARGETS.map((t) => ({
+        key: t.key,
+        label: t.label,
+        description: t.note ? `${t.description}  ${DIM}(${t.note})${RESET_COLOR}` : t.description,
+        selected: false
+      }))
+      const toggled = await toggleMenu(testItems, 'Select test suites to run')
+      if (toggled === null) {
+        continue
+      }
+      const selected = toggled.filter((i) => i.selected).map((i) => i.key)
+      if (!selected.length) {
+        statusLine = `${DIM}No suites selected — test run cancelled${RESET_COLOR}`
+        continue
+      }
+
+      pauseStdin()
+      const passed = []
+      let failure = null
+      for (const key of selected) {
+        const code = cmdTest(key, dryRun)
+        if (code !== 0) {
+          failure = { key, code }
+          break
+        }
+        passed.push(key)
+      }
+      resumeStdin()
+
+      if (failure) {
+        const skipped = selected.length - passed.length - 1
+        const skippedNote = skipped > 0 ? ` — skipped ${skipped} remaining` : ''
+        statusLine = `${RED}✖${RESET_COLOR}  ${failure.key} failed (exit ${failure.code})${skippedNote} — output: ${testLogPath(failure.key)}`
+      } else {
+        const outputs = !dryRun && passed.length ? ` — output: ${passed.map((k) => testLogPath(k)).join(', ')}` : ''
+        statusLine = `${PURPLE}✔  Passed: ${passed.join(', ')}${RESET_COLOR}${outputs}`
+      }
+      continue
+    }
+
+    if (command === 'sonar') {
+      pauseStdin()
+      const code = await cmdSonar({ dryRun })
+      resumeStdin()
+
+      const sonarLink = `${DIM}results: ${SONAR.hostUrl}${RESET_COLOR}`
+      if (dryRun) {
+        statusLine = `${DIM}Sonar dry-run complete${RESET_COLOR}`
+      } else if (code === SONAR_EXIT.OK) {
+        statusLine = `${PURPLE}✔  Quality gate passed${RESET_COLOR} — ${sonarLink}`
+      } else if (code === SONAR_EXIT.GATE_FAILED) {
+        statusLine = `${RED}✖  Quality gate FAILED${RESET_COLOR} — ${sonarLink}`
+      } else {
+        statusLine = `${RED}✖${RESET_COLOR}  Sonar run error — output: ${SONAR.logFile}`
+      }
+      continue
+    }
+
     // down / debug / reset — these hand off to docker (blocking) then return
     // Cache running files once per iteration to avoid redundant docker calls
     if (command === 'reset') {
@@ -1386,3 +1916,10 @@ main().catch((err) => {
   console.error(err)
   process.exit(1)
 })
+
+/**
+ * @typedef {object} SonarApiOptions
+ * @property {string} [method]  HTTP method (defaults to GET)
+ * @property {string} [auth]  raw `user:pass` (or `token:`) string for Basic auth
+ * @property {URLSearchParams} [body]  form-encoded request body
+ */
