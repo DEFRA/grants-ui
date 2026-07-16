@@ -17,6 +17,7 @@
  *   gt test [unit|contracts|acceptance]  # run tests (default: unit)
  *   gt sonar [--skip-tests]      # local SonarQube scan (server left up for the dashboard)
  *   gt sonar --down              # force-stop a leftover SonarQube server
+ *   gt snyk                      # Snyk dependency vulnerability scan (run `snyk auth` once — free account)
  *   gt reset [--dry-run]         # full teardown incl. volumes
  *   gt --help                    # show help
  *   gt --version                 # show version number
@@ -56,7 +57,7 @@ import { fileURLToPath } from 'url'
 // ---------------------------------------------------------------------------
 // Version
 // ---------------------------------------------------------------------------
-const VERSION = '1.4.0'
+const VERSION = '1.5.0'
 
 // ---------------------------------------------------------------------------
 // Cross-platform: detect ANSI support
@@ -122,6 +123,13 @@ const SONAR = {
 }
 
 const SONAR_EXIT = { OK: 0, GATE_FAILED: 1, ERROR: 2 }
+
+// Snyk `test` exit codes: 0 = no vulns, 1 = vulns found, 2 = error, 3 = unsupported.
+const SNYK = {
+  logFile: resolve(os.tmpdir(), 'grants-tui-snyk.log'),
+  bin: resolve(ROOT, 'node_modules', '.bin', process.platform === 'win32' ? 'snyk.cmd' : 'snyk')
+}
+const SNYK_EXIT = { OK: 0, VULNS: 1, ERROR: 2 }
 
 // ---------------------------------------------------------------------------
 // Pre-up script — runs before `docker compose up` every time.
@@ -533,6 +541,76 @@ function cmdTest(targetKey, dryRun = false) {
 
   console.log(`\n  ${DIM}output: ${logFile}${RESET_COLOR}`)
   return result.status ?? 1
+}
+
+/**
+ * Whether Snyk has a usable credential: a SNYK_TOKEN env var, or a saved token in
+ * the CLI's configstore. Checks for an actual token key rather than mere file
+ * existence — `snyk config clear` leaves an empty `snyk.json` behind, which would
+ * otherwise read as "logged in" and swallow the sign-up guidance.
+ * @returns {boolean}
+ */
+function snykLoggedIn() {
+  if (process.env.SNYK_TOKEN) return true
+  try {
+    const cfg = JSON.parse(fs.readFileSync(resolve(os.homedir(), '.config', 'configstore', 'snyk.json'), 'utf8'))
+    return Boolean(cfg.api || cfg.INTERNAL_OAUTH_TOKEN_STORAGE)
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Run `snyk test` — the same dependency vulnerability scan CI runs, honouring the
+ * repo's `.snyk` ignore policy. Needs a Snyk login: a FREE personal account is
+ * enough (run `snyk auth` once — it stores a local token), no org/paid token
+ * required. Streams output and tees it to a log so the interactive menu's
+ * screen-clear on return doesn't lose it.
+ * @param {boolean} [dryRun]
+ * @returns {number} 0 = clean, 1 = vulnerabilities found, 2 = error
+ */
+function cmdSnyk(dryRun = false) {
+  console.log(`\n  ${DIM}▶${RESET_COLOR}  snyk test  ${DIM}(dependency vulnerability scan)${RESET_COLOR}\n`)
+  if (dryRun) return 0
+
+  if (!fs.existsSync(SNYK.bin)) {
+    console.error(`\n  ${RED}✖${RESET_COLOR}  snyk not installed — run 'npm ci' first.\n`)
+    return SNYK_EXIT.ERROR
+  }
+  if (!snykLoggedIn()) {
+    console.log(
+      `  ${YELLOW}⚠${RESET_COLOR}  Not logged in to Snyk — the scan will fail until you authenticate.\n` +
+        `     No org/paid token needed: create a FREE account at ${CYAN}https://snyk.io${RESET_COLOR}, then run ${CYAN}snyk auth${RESET_COLOR} once\n` +
+        `     (opens a browser, stores a local token). Alternatively ${CYAN}export SNYK_TOKEN=<api-token>${RESET_COLOR}.\n`
+    )
+  }
+
+  let status
+  if (process.platform === 'win32') {
+    const r = spawnSync(SNYK.bin, ['test'], { cwd: ROOT, stdio: 'inherit', encoding: 'utf8' })
+    status = r.status ?? SNYK_EXIT.ERROR
+  } else {
+    // pipefail keeps snyk's exit code (1 = vulns, 2 = error) rather than tee's 0.
+    const r = spawnSync('bash', ['-c', `set -o pipefail; "${SNYK.bin}" test 2>&1 | tee "${SNYK.logFile}"`], {
+      cwd: ROOT,
+      stdio: 'inherit',
+      encoding: 'utf8'
+    })
+    status = r.status ?? SNYK_EXIT.ERROR
+    console.log(`\n  ${DIM}output: ${SNYK.logFile}${RESET_COLOR}`)
+  }
+
+  // Exit 1 = vulnerabilities found (a real scan result). Any other non-zero is a
+  // tool/config error — most often stale local auth: the CLI's OAuth token
+  // refresh 400s (SNYK-0003) before it can resolve the org or scan. Point at re-auth.
+  if (status !== SNYK_EXIT.OK && status !== SNYK_EXIT.VULNS) {
+    console.log(
+      `\n  ${YELLOW}⚠${RESET_COLOR}  Snyk errored before scanning. If it mentions auth/org or SNYK-0003, you're not` +
+        ` logged in (or a saved login has gone stale). Run 'snyk auth' — a FREE personal account works, no org token` +
+        ` needed (or export SNYK_TOKEN).\n`
+    )
+  }
+  return status
 }
 
 // ---------------------------------------------------------------------------
@@ -1343,6 +1421,7 @@ ${BOLD}Commands:${RESET_COLOR}
   restart Restart running containers (selectable; uses --no-deps)
   test    Run tests: ${TEST_TARGETS.map((t) => t.key).join(' | ')} (default: ${TEST_TARGETS[0].key})
   sonar   Run SonarQube analysis against a local server (--down stops it)
+  snyk    Run Snyk dependency vulnerability scan (same as CI; needs a Snyk login — see below)
   reset   Full teardown: containers + volumes + local images
 
 ${BOLD}Addon flags (for 'up'):${RESET_COLOR}
@@ -1353,6 +1432,15 @@ ${BOLD}Other flags:${RESET_COLOR}
   --dry-run      Print commands without running them
   --help         Show this help
   --version      Show version number
+
+${BOLD}Snyk auth (for 'snyk'):${RESET_COLOR}
+  One-time login — no org/paid token needed, a FREE personal Snyk account works:
+    1. create a free account at https://snyk.io
+    2. snyk auth                     # opens a browser, links that account, stores a local token
+  Or set a token instead (what CI uses):
+    export SNYK_TOKEN=<api-token>    # from https://app.snyk.io/account
+  If a previous login stopped working (SNYK-0003 / 400), it's a stale token:
+    snyk config clear && snyk auth   # reset then log in again
 
 ${BOLD}Examples:${RESET_COLOR}
   gt                                 # interactive
@@ -1366,6 +1454,7 @@ ${BOLD}Examples:${RESET_COLOR}
   gt test acceptance                 # docker-based acceptance journeys
   gt sonar                           # local SonarQube scan of src/
   gt sonar --down                    # stop the local SonarQube server
+  gt snyk                            # Snyk dependency vulnerability scan
   gt reset
 `)
 }
@@ -1424,7 +1513,7 @@ async function main() {
 
   // Validate args before doing anything else — catch unrecognised flags/commands early
   {
-    const knownCmds = ['up', 'down', 'debug', 'restart', 'reset', 'test', 'sonar']
+    const knownCmds = ['up', 'down', 'debug', 'restart', 'reset', 'test', 'sonar', 'snyk']
     // Test targets are valid positionals only after the `test` command
     const testTargetKeys = argv.includes('test') ? TEST_TARGETS.map((t) => t.key) : []
     const knownFlags = [
@@ -1469,10 +1558,11 @@ async function main() {
       })()
     : []
   const testNeedsDocker = testTargets.some((k) => TEST_TARGETS.find((t) => t.key === k)?.needsDocker)
+  const snykInvoked = argv.includes('snyk')
 
   // Preflight: ensure Docker is available and running (skipped for --dry-run so
-  // offline/CI usage works, and for pure test targets that don't drive containers)
-  if (!dryRun && !(testInvoked && !testNeedsDocker)) {
+  // offline/CI usage works, and for test/snyk runs that don't drive containers)
+  if (!dryRun && !(testInvoked && !testNeedsDocker) && !snykInvoked) {
     const dockerCheck = spawnSync('docker', ['info'], { encoding: 'utf8', stdio: 'pipe' })
     if (dockerCheck.status !== 0 || dockerCheck.error) {
       console.error(
@@ -1520,6 +1610,10 @@ async function main() {
       skipTests: argv.includes('--skip-tests')
     })
     process.exit(code)
+  }
+  if (snykInvoked) {
+    releaseStdin()
+    process.exit(cmdSnyk(dryRun))
   }
   if (argv.includes('up')) {
     const flaggedAddons = ADDONS.filter((a) => argv.includes(`--${a.key}`)).map((a) => a.key)
@@ -1612,6 +1706,7 @@ async function main() {
         label: 'sonar',
         description: 'Scan src/ on a local SonarQube server (left up for the dashboard)'
       },
+      { key: 'snyk', label: 'snyk', description: 'Snyk dependency vulnerability scan (same as CI)' },
       { key: 'reset', label: 'reset ⇢', description: 'Full teardown — removes volumes & images' }
     ]
 
@@ -1877,6 +1972,23 @@ async function main() {
         statusLine = `${RED}✖  Quality gate FAILED${RESET_COLOR} — ${sonarLink}`
       } else {
         statusLine = `${RED}✖${RESET_COLOR}  Sonar run error — output: ${SONAR.logFile}`
+      }
+      continue
+    }
+
+    if (command === 'snyk') {
+      pauseStdin()
+      const code = cmdSnyk(dryRun)
+      resumeStdin()
+
+      if (dryRun) {
+        statusLine = `${DIM}Snyk dry-run complete${RESET_COLOR}`
+      } else if (code === SNYK_EXIT.OK) {
+        statusLine = `${PURPLE}✔  Snyk: no vulnerabilities found${RESET_COLOR}`
+      } else if (code === SNYK_EXIT.VULNS) {
+        statusLine = `${RED}✖  Snyk: vulnerabilities found${RESET_COLOR} — output: ${SNYK.logFile}`
+      } else {
+        statusLine = `${RED}✖${RESET_COLOR}  Snyk run error — not logged in? run 'snyk auth' (free account works) — output: ${SNYK.logFile}`
       }
       continue
     }
