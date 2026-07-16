@@ -5642,44 +5642,23 @@ function mockBbox() {
 }
 
 /**
- * Returns a copy of a geometry translated east by `dLng` degrees.
- * @param {{ type: 'Polygon' | 'MultiPolygon', coordinates: unknown }} geometry
- * @param {number} dLng
- * @returns {{ type: 'Polygon' | 'MultiPolygon', coordinates: unknown }}
- */
-function shiftGeometry(geometry, dLng) {
-  /** @param {unknown} coords @returns {unknown} */
-  const shift = (coords) => {
-    const arr = /** @type {unknown[]} */ (coords)
-    return typeof arr[0] === 'number' ? [/** @type {number} */ (arr[0]) + dLng, arr[1]] : arr.map(shift)
-  }
-  return { type: geometry.type, coordinates: shift(geometry.coordinates) }
-}
-
-/**
  * @param {{ id: string, sheetId: string, parcelId: string, areaHa: number | null }[]} parcels
  * @returns {{ features: import('./types.js').ParcelFeature[], bbox: { minLng: number, minLat: number, maxLng: number, maxLat: number } }}
  */
 export function buildMockFeatures(parcels) {
-  const bbox = mockBbox()
-  // An account can hold more parcels than there are embedded shapes. Each
-  // repeat of the round-robin ("lap") is shifted east by a full bbox width so
-  // no two parcels ever share a footprint — stacked identical shapes made the
-  // rendered label and the clicked feature disagree on which parcel it was.
-  const lapWidth = (bbox.maxLng - bbox.minLng) * 1.05
-  const features = parcels.map((p, i) => {
-    const idx = i % MOCK_GEOMETRIES.length
-    const lap = Math.floor(i / MOCK_GEOMETRIES.length)
-    const geometry = lap === 0 ? MOCK_GEOMETRIES[idx] : shiftGeometry(MOCK_GEOMETRIES[idx], lap * lapWidth)
+  // An account can hold more parcels than there are embedded shapes (some
+  // local test accounts have 50+). Parcels beyond the limit are not rendered:
+  // reusing a shape stacked two parcels on one footprint, so the rendered
+  // label and the clicked feature disagreed on which parcel it was.
+  const features = parcels.slice(0, MOCK_GEOMETRIES.length).map((p, i) => {
     return /** @type {import('./types.js').ParcelFeature} */ ({
       type: 'Feature',
       id: p.id,
-      geometry,
-      // Real area when the size API supplied one; the shape's own area only
-      // as a fallback, so the tooltip matches what the rest of the journey shows.
-      properties: { id: p.id, sheet_id: p.sheetId, parcel_id: p.parcelId, areaHa: p.areaHa ?? MOCK_AREAS[idx] }
+      geometry: MOCK_GEOMETRIES[i],
+      // Real area when the size API supplied one, so the tooltip matches what
+      // the rest of the journey shows; the shape's own area only as a fallback.
+      properties: { id: p.id, sheet_id: p.sheetId, parcel_id: p.parcelId, areaHa: p.areaHa ?? MOCK_AREAS[i] }
     })
   })
-  const laps = Math.max(1, Math.ceil(parcels.length / MOCK_GEOMETRIES.length))
-  return { features, bbox: { ...bbox, maxLng: bbox.maxLng + (laps - 1) * lapWidth } }
+  return { features, bbox: mockBbox() }
 }
