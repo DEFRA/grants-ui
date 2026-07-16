@@ -1,12 +1,6 @@
 import { vi } from 'vitest'
 import { config } from '~/src/config/config.js'
-import {
-  addAllForms,
-  configureFormDefinition,
-  formsService,
-  validateGrantRedirectRules,
-  validateWhitelistConfiguration
-} from './form.js'
+import { addAllForms, configureFormDefinition, formsService, validateGrantRedirectRules } from './form.js'
 import { logger } from '~/src/server/common/helpers/logging/log.js'
 import {
   currentRequest,
@@ -55,11 +49,7 @@ const TEST_FORMS_ARRAY = [
     path: 'path/to/form3.yaml',
     id: 'form-id-3',
     slug: 'form-slug-3',
-    title: 'Form 3',
-    metadata: {
-      whitelistCrnEnvVar: 'TEST_WHITELIST_CRNS',
-      whitelistSbiEnvVar: 'TEST_WHITELIST_SBIS'
-    }
+    title: 'Form 3'
   }
 ]
 
@@ -123,44 +113,6 @@ vi.mock('../config.js', () => ({
   }
 }))
 
-const mockEnv = {
-  EXAMPLE_WHITELIST_CRNS: '1101009926,1101010029',
-  EXAMPLE_WHITELIST_SBIS: '123456789,987654321'
-}
-
-const deletedEnvVars = new Set()
-
-const originalEnv = process.env
-
-Object.defineProperty(process, 'env', {
-  configurable: true,
-  value: new Proxy(originalEnv, {
-    get(target, prop) {
-      // If explicitly deleted, return undefined
-      if (deletedEnvVars.has(prop)) {
-        return undefined
-      }
-      if (prop in mockEnv) {
-        return mockEnv[prop]
-      }
-      return target[prop]
-    },
-    has(target, prop) {
-      if (deletedEnvVars.has(prop)) {
-        return false
-      }
-      return prop in mockEnv || prop in target
-    },
-    deleteProperty(target, prop) {
-      if (prop in mockEnv) {
-        delete mockEnv[prop]
-      }
-      deletedEnvVars.add(prop)
-      return true
-    }
-  })
-})
-
 const BACKEND_FORM_META = { id: 'backend-form', slug: 'backend-form', title: 'backend-form', source: 'backend' }
 
 // Registers a backend-sourced form in the in-memory meta store.
@@ -187,15 +139,6 @@ describe('form', () => {
     // Get the warn function from the mocked logger
     mockWarn = logger.warn
     mockError = logger.error
-
-    // Restore mock env variables and clear deleted set
-    deletedEnvVars.clear()
-    mockEnv.EXAMPLE_WHITELIST_CRNS = '1101009926,1101010029'
-    mockEnv.EXAMPLE_WHITELIST_SBIS = '123456789,987654321'
-    mockEnv.FARMING_PAYMENTS_WHITELIST_CRNS = '1102838829, 1102760349, 1100495932'
-    mockEnv.FARMING_PAYMENTS_WHITELIST_SBIS = '106284736, 121428499, 106238988'
-    mockEnv.WOODLAND_WHITELIST_CRNS = '1102838829, 1102760349, 1100495932'
-    mockEnv.WOODLAND_WHITELIST_SBIS = '106284736, 121428499, 106238988'
   })
 
   afterEach(() => {})
@@ -589,11 +532,7 @@ describe('form', () => {
         expect.objectContaining({
           id: 'form-id-3',
           slug: 'form-slug-3',
-          title: 'Form 3',
-          metadata: {
-            whitelistCrnEnvVar: 'TEST_WHITELIST_CRNS',
-            whitelistSbiEnvVar: 'TEST_WHITELIST_SBIS'
-          }
+          title: 'Form 3'
         })
       )
     })
@@ -657,55 +596,6 @@ describe('form', () => {
     })
   })
 
-  describe('validateWhitelistConfiguration', () => {
-    const testForm = { title: 'Test Form' }
-
-    it('skips validation when the grant code is in forms.backendAllowlistEnabledSlugs', () => {
-      config.get.mockImplementation((key) =>
-        key === 'forms.backendAllowlistEnabledSlugs' ? ['woodland', 'farm-payments'] : DEFAULT_CONFIG_MOCK[key]
-      )
-
-      expect(() =>
-        validateWhitelistConfiguration({ slug: 'woodland' }, { metadata: { whitelistCrnEnvVar: 'MISSING_CRN_VAR' } })
-      ).not.toThrow()
-    })
-
-    it('runs validation when the grant code is not in forms.backendAllowlistEnabledSlugs', () => {
-      config.get.mockImplementation((key) =>
-        key === 'forms.backendAllowlistEnabledSlugs' ? ['farm-payments'] : DEFAULT_CONFIG_MOCK[key]
-      )
-
-      expect(() =>
-        validateWhitelistConfiguration({ slug: 'woodland' }, { metadata: { whitelistCrnEnvVar: 'MISSING_CRN_VAR' } })
-      ).toThrow()
-    })
-
-    test.each([
-      [
-        'only CRN variable is provided',
-        { whitelistCrnEnvVar: 'EXAMPLE_WHITELIST_CRNS' },
-        'Incomplete whitelist configuration in form Test Form: whitelistCrnEnvVar is defined but whitelistSbiEnvVar is missing. Both CRN and SBI whitelist variables must be configured together.'
-      ],
-      [
-        'only SBI variable is provided',
-        { whitelistSbiEnvVar: 'EXAMPLE_WHITELIST_SBIS' },
-        'Incomplete whitelist configuration in form Test Form: whitelistSbiEnvVar is defined but whitelistCrnEnvVar is missing. Both CRN and SBI whitelist variables must be configured together.'
-      ],
-      [
-        'CRN env variable is missing from environment',
-        { whitelistCrnEnvVar: 'MISSING_CRN_VAR', whitelistSbiEnvVar: 'EXAMPLE_WHITELIST_SBIS' },
-        'CRN whitelist environment variable MISSING_CRN_VAR is defined in form Test Form but not configured in environment'
-      ],
-      [
-        'SBI env variable is missing from environment',
-        { whitelistCrnEnvVar: 'EXAMPLE_WHITELIST_CRNS', whitelistSbiEnvVar: 'MISSING_SBI_VAR' },
-        'SBI whitelist environment variable MISSING_SBI_VAR is defined in form Test Form but not configured in environment'
-      ]
-    ])('throws when %s', (_name, metadata, expectedError) => {
-      expect(() => validateWhitelistConfiguration(testForm, { metadata })).toThrow(expectedError)
-    })
-  })
-
   describe('startup configuration validation', () => {
     const testForm = { title: 'Test Form' }
     const validPostRule = {
@@ -760,31 +650,6 @@ describe('form', () => {
       }
 
       expect(() => validateGrantRedirectRules(testForm, goodDefinition)).not.toThrow()
-    })
-  })
-
-  describe('formsService error handling', () => {
-    test('throws error during startup when whitelist validation fails', async () => {
-      // Store the original value from the real environment
-      const originalValue = originalEnv.EXAMPLE_WHITELIST_CRNS
-
-      // Delete from real env and mock env
-      delete originalEnv.EXAMPLE_WHITELIST_CRNS
-      delete mockEnv.EXAMPLE_WHITELIST_CRNS
-      deletedEnvVars.add('EXAMPLE_WHITELIST_CRNS')
-
-      try {
-        await expect(formsService()).rejects.toThrow(
-          'CRN whitelist environment variable EXAMPLE_WHITELIST_CRNS is defined in form Example Whitelist but not configured in environment'
-        )
-      } finally {
-        // Restore the original value
-        if (originalValue !== undefined) {
-          originalEnv.EXAMPLE_WHITELIST_CRNS = originalValue
-        }
-        mockEnv.EXAMPLE_WHITELIST_CRNS = '1101009926,1101010029'
-        deletedEnvVars.delete('EXAMPLE_WHITELIST_CRNS')
-      }
     })
   })
 })

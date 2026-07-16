@@ -3,8 +3,6 @@ name: Apply for a woodland management plan (WMP)
 metadata:
   id: 95e92559-968d-44ae-8666-2b1ad3dffd38
   enabledInProd: true
-  whitelistCrnEnvVar: WOODLAND_WHITELIST_CRNS
-  whitelistSbiEnvVar: WOODLAND_WHITELIST_SBIS
   referenceNumberPrefix: WMP
   submission:
     grantCode: woodland

@@ -64,7 +64,7 @@ describe('allowlist plugin', () => {
     expect(fetchAllowedGrants).not.toHaveBeenCalled()
   })
 
-  it('continues when the slug is not in backendAllowlistEnabledSlugs (falls back to whitelist)', async () => {
+  it('continues when the slug is not in backendAllowlistEnabledSlugs (no allowlist enforcement)', async () => {
     const handler = registerAndGetHandler(server)
     config.get.mockReturnValue(['farm-payments'])
 

@@ -5,8 +5,6 @@ metadata:
     showApplicantDetails: true
   id: 5c67688f-3c61-4839-a6e1-d48b598257f1
   enabledInProd: true
-  whitelistCrnEnvVar: FARMING_PAYMENTS_WHITELIST_CRNS
-  whitelistSbiEnvVar: FARMING_PAYMENTS_WHITELIST_SBIS
   submission:
     submissionSchemaPath: ./schemas/farm-payments.schema.json
   grantRedirectRules:
