@@ -16,8 +16,10 @@ export const TAG_NAME = 'parcel-map'
 export const MULTI_SELECT_ATTRIBUTE = 'multi-select'
 
 // --- TEMPORARY: OS Maps vs OpenStreetMap comparison (TGC-1418 follow-up) ---
-// Delete this block, BASEMAP_PROVIDER_OPENSTREETMAP's usages in index.js, and
-// the toggle in map-select-parcel.html once the comparison is complete.
+// Delete this block and its consumers (usages in index.js and
+// basemap-comparison.js, the toggle markup in map-select-parcel.html) once the
+// comparison is complete. See docs/MAPS.md "Basemap providers" for the full
+// TGC-1418 deletion checklist.
 export const BASEMAP_PROVIDER_OPENSTREETMAP = 'openstreetmap'
 export const OSM_STYLE_URL = 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json'
 export const OSM_STYLE_ATTRIBUTION = '© OpenStreetMap contributors © CARTO'

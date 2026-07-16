@@ -243,7 +243,7 @@ All events bubble.
 - `'unavailable'`: map initialisation failed or the parcels API returned an error
 - `'no-parcels'`: API returned successfully but the user has no parcels
 
-The inline script in `map-select-parcel.html` is the canonical example of how to consume these events.
+The page wiring in `parcel-select-page.js` is the canonical example of how to consume these events.
 
 ### Accessible selection (interact plugin)
 
@@ -281,10 +281,14 @@ The plugin needs a single property that uniquely identifies each parcel feature.
 
 ### Asset loading
 
-The JS bundle is built by webpack into `.public/javascripts/parcel-map.js`. The template loads it as an ES module in `{% block bodyEnd %}`:
+Webpack builds three JS bundles (entries in `webpack.config.js`): `parcel-map.js` (the component), `parcel-select-page.js` (the page wiring — see [Dispatched events](#dispatched-events)), and — TEMPORARY (TGC-1418) — `basemap-comparison.js` (the devMode basemap toggle + metrics readout). The template loads them as ES modules in `{% block bodyEnd %}`; the comparison bundle is `{% if devMode %}`-gated so it never ships on normal journeys:
 
 ```html
 <script type="module" nonce="{{ cspNonce }}" src="{{ getAssetPath('parcel-map.js') }}"></script>
+<script type="module" nonce="{{ cspNonce }}" src="{{ getAssetPath('parcel-select-page.js') }}"></script>
+{% if devMode %}
+<script type="module" nonce="{{ cspNonce }}" src="{{ getAssetPath('basemap-comparison.js') }}"></script>
+{% endif %}
 ```
 
 In production webpack outputs a content-hashed filename (`parcel-map.[contenthash:7].min.js`). `getAssetPath` resolves the correct path via `assets-manifest.json`, so the reference stays valid across deployments.
@@ -307,8 +311,9 @@ The `@defra/interactive-map` CSS must also be loaded. It is copied by webpack's 
 > - the `config: { devMode: true }` block in `example-grant-with-map.yaml`
 > - the constants and `getMapStyle`/label-font branches in `config.js`/`index.js`
 > - the CartoCDN CSP allowances in `content-security-policy.js`
-> - the toggle control, metrics panel, and their `{% if devMode %}`-gated listeners in `map-select-parcel.html`
-> - `basemap-metrics.js` and `basemap-metrics.test.js` in full, plus their one import/call site in `index.js`
+> - the `{% if devMode %}`-gated toggle/metrics markup and the `basemap-comparison.js` `<script>` tag in `map-select-parcel.html`
+> - `basemap-comparison.js` and `basemap-comparison.test.js` in full, plus their webpack entry in `webpack.config.js`
+> - `basemap-metrics.js` and `basemap-metrics.test.js` in full, plus their import/call sites in `index.js` and `basemap-comparison.js`
 >
 > See the OS Maps vs OpenStreetMap comparison report for why OS Maps is the recommended (and, after removal, only) provider.
 
@@ -321,13 +326,11 @@ The [`map-select-parcel.html`](views/map-select-parcel.html) template wires a sm
 
 #### Performance metrics (temporary)
 
-`basemap-metrics.js` times each basemap load and dispatches a `parcel-map:basemap-metrics` event that `map-select-parcel.html` renders as a small text readout next to the toggle:
+`basemap-metrics.js` times each basemap load and dispatches a `parcel-map:basemap-metrics` event; `basemap-comparison.js` (`formatMetrics`) renders it as a small text readout next to the toggle:
 
 ```js
 // parcel-map:basemap-metrics event detail
-{
-  ;(provider, tileRequests, tileErrors, loadMs, firstTileMs, bytesTransferred)
-}
+const detail = { provider, tileRequests, tileErrors, loadMs, firstTileMs, bytesTransferred }
 ```
 
 - **`loadMs`:** anchored on MapLibre's own `idle` event, fired once every pending tile/source has settled. A fairer finish line than first paint alone, since OS (raster, many small tiles) and OSM (vector, fewer larger tiles) have different loading shapes.
