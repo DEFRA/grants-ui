@@ -17,7 +17,7 @@ The end-to-end user flow for one grant, from start page through questions, revie
 _Avoid_: Wizard, Survey, Questionnaire, Funnel
 
 **Form definition**
-A YAML or Config API supplied description of a grant journey, including pages, components, validation, task lists, redirects, and metadata.
+A grants-ui-backend supplied description of a grant journey, including pages, components, validation, task lists, redirects, and metadata.
 _Avoid_: Template, Schema, Form code, Screen config
 
 **Grant code**
@@ -30,15 +30,11 @@ _Avoid_: Grant code, Route ID, Form name
 
 **GAS**
 The Grants Application Service, the external service that stores grant definitions, accepts submitted application payloads, and returns administration statuses.
-_Avoid_: Grants UI Backend, Config API, Casework, Payment service
+_Avoid_: Grants UI Backend, Casework, Payment service
 
 **Grants UI Backend**
-The persistence API used by Grants UI to save and fetch form state so users can refresh, leave, and return to an application.
-_Avoid_: GAS, Redis, Config API, DAL
-
-**Config API**
-The service that can provide form definitions at startup as an alternative or supplement to local YAML files.
-_Avoid_: GAS, Grants UI Backend, Feature flags
+The persistence API used by Grants UI to save and fetch form state so users can refresh, leave, and return to an application, and to serve grant form definitions for configured slugs.
+_Avoid_: GAS, Redis, DAL
 
 **Application status**
 The Grants UI status that represents where an application is in its lifecycle, such as `CLEARED`, `SUBMITTED`, or `REOPENED`.

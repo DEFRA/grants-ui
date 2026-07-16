@@ -272,10 +272,9 @@ For complete service configuration and setup, see [Docker Compose](./DOCKER.md#d
 
 ## Grant Form Definitions
 
-All grant form definitions are sourced from `grants-ui-backend`. There is no
-local YAML fallback — the `src/server/common/forms/definitions` directory and
-the config flag that used to enable a per-grant backend source
-(`BACKEND_FORM_DEF_ENABLED_SLUGS`) have been removed.
+All grant form definitions are sourced from `grants-ui-backend`. Definitions
+are authored as YAML in the grants config repos and published per environment
+by the config broker; grants-ui itself holds no local form definitions.
 
 A form's slug is not known to grants-ui ahead of time; there is no startup-time
 list of valid grants to register. Instead, `formsService()`
@@ -296,15 +295,7 @@ context. Whitelist enforcement (`whitelist.js` `onPostAuth`) reads the grant's
 not from the Redis entry, so it holds even on a fresh Redis or the first
 request after a publish.
 
-The legacy `enabledInProd` metadata gate has been removed along with the YAML
-loading: whether a grant is available in an environment is controlled by
-publishing its definition to that environment's `grants-ui-backend` (via the
-config broker), and access is restricted through the allowlist.
-
-One consequence of resolving everything per-request: the dev-tools form
-picker (`getAvailableFormSlugs`/`getAllForms`) only lists slugs that have
-actually been visited at least once, not every grant that exists in the
-backend.
+One consequence of resolving everything per-request: the dev-tools form picker (`getAvailableFormSlugs`/`getAllForms`) only lists slugs that have actually been visited at least once, not every grant that exists in the backend.
 
 ## GAS Integration
 

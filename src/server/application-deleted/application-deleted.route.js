@@ -16,7 +16,7 @@ function logStateClearFailure(request, err) {
 /**
  * @satisfies {ServerRoute}
  */
-export const applicationDeletedRoute = {
+export const applicationDeletedGetRoute = {
   method: 'GET',
   path: '/{slug}/application-deleted',
   handler: async (request, h) => {
@@ -25,11 +25,13 @@ export const applicationDeletedRoute = {
       const state = await cacheService.getState(request)
 
       if (state?.applicationStatus === ApplicationStatus.PURGED) {
-        await cacheService.clearState(
+        await cacheService.setState(
           /** @type {import('@defra/forms-engine-plugin/engine/types.js').AnyFormRequest} */ (
             /** @type {unknown} */ (request)
           ),
-          true
+          {
+            applicationStatus: ApplicationStatus.PURGED
+          }
         )
 
         log(
@@ -49,6 +51,24 @@ export const applicationDeletedRoute = {
       pageTitle: 'Your draft application has been deleted',
       href: `/${request.params.slug}`
     })
+  }
+}
+
+/**
+ * @satisfies {ServerRoute}
+ */
+export const applicationDeletedPostRoute = {
+  method: 'POST',
+  path: '/{slug}/application-deleted',
+  handler: async (request, h) => {
+    const cacheService = getFormsCacheService(request.server)
+
+    await cacheService.clearState(
+      /** @type {import('@defra/forms-engine-plugin/types').AnyFormRequest} */ (/** @type {unknown} */ (request)),
+      true
+    )
+
+    return h.redirect(`/${request.params.slug}`)
   }
 }
 

@@ -1,4 +1,4 @@
-import { applicationDeletedRoute } from './application-deleted.route.js'
+import { applicationDeletedGetRoute, applicationDeletedPostRoute } from './application-deleted.route.js'
 
 export const applicationDeleted = {
   plugin: {
@@ -7,8 +7,8 @@ export const applicationDeleted = {
     /**
      * @param {Server} server
      */
-    register: async (server) => {
-      server.route([applicationDeletedRoute])
+    register: (server) => {
+      server.route([applicationDeletedGetRoute, applicationDeletedPostRoute])
     }
   }
 }
