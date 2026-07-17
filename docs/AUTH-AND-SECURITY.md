@@ -17,11 +17,11 @@
 - **Defra ID Integration**: Primary authentication service using OpenID Connect (OIDC) protocol
   - For detailed environment variable configuration, see [Getting Started - DEFRA ID Integration](./GETTING-STARTED.md#defra-id-integration)
 - **Allowlist System**: Per-grant access control that restricts which signed-in users can enter a journey, based on their CRN (Customer Reference Number) and SBI (Single Business Identifier):
-  - `BACKEND_ALLOWLIST_ENABLED_SLUGS`: Comma-separated grant slugs whose access is gated by the grants-ui-backend allowlist endpoint
+  - Allow lists come from the grants-ui-backend allowlist endpoint
 
 ### Allowlist Functionality
 
-Allowlisting restricts access to specific grant journeys based on the signed-in user's Customer Reference Number (CRN) and Single Business Identifier (SBI). The grant slugs to enforce are configured via `BACKEND_ALLOWLIST_ENABLED_SLUGS`. At runtime, the allowlist plugin ([`src/server/common/helpers/allowlist/allowlist.js`](../src/server/common/helpers/allowlist/allowlist.js)) runs on `onPostAuth`: for an authenticated request to an enabled slug, it asks grants-ui-backend which grants the user's CRN/SBI may access (`src/server/auth/services/allowlist.client.js`). If the requested grant is not in the allowed set, access is denied — the user is redirected to `/auth/journey-unauthorised` and an `unauthorised` audit event (reason `allowlist`) is published. The check fails closed: if the backend call errors, access is refused. Slugs not listed in `BACKEND_ALLOWLIST_ENABLED_SLUGS` are not access-controlled.
+Allowlisting restricts access to specific grant journeys based on the signed-in user's Customer Reference Number (CRN) and Single Business Identifier (SBI). At runtime, the allowlist plugin ([`src/server/common/helpers/allowlist/allowlist.js`](../src/server/common/helpers/allowlist/allowlist.js)) runs on `onPostAuth`: for an authenticated request to a grant journey, it asks grants-ui-backend which grants the user's CRN/SBI may access (`src/server/auth/services/allowlist.client.js`). If the requested grant has no allowlist.yaml or the allowlist is empty, access is denied — the user is redirected to `/auth/journey-unauthorised` and an `unauthorised` audit event (reason `allowlist`) is published. The check fails closed: if the backend call errors, access is refused.
 
 ## Rate Limiting
 

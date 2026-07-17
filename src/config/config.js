@@ -317,12 +317,6 @@ const convictConfig = {
       format: Array,
       default: [],
       env: 'BACKEND_FORM_DEF_ENABLED_SLUGS'
-    },
-    backendAllowlistEnabledSlugs: {
-      doc: 'Comma-separated slugs whose access is gated by the grants-ui-backend allowlist endpoint. Empty means no allowlist enforcement (all grants are open).',
-      format: Array,
-      default: [],
-      env: 'BACKEND_ALLOWLIST_ENABLED_SLUGS'
     }
   },
   applicationLock: {

@@ -357,7 +357,6 @@ Guidance components provide contextual help and information without requiring us
 
 - **Backend allowlist**: Per-grant access control driven by the grants-ui-backend allowlist endpoint
 - **CRN/SBI based**: Access is decided from the signed-in user's Customer Reference Number and Single Business Identifier
-- **Configurable slugs**: Enabled per grant via the `BACKEND_ALLOWLIST_ENABLED_SLUGS` environment variable
 - **Access Control**: Users who are not allowlisted for the grant are redirected to `/auth/journey-unauthorised`
 - **Example**: [Allowlist plugin](./src/server/common/helpers/allowlist/allowlist.js)
 

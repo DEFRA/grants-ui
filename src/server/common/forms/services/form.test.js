@@ -22,7 +22,6 @@ const DEFAULT_CONFIG_MOCK = {
   },
   serviceName: 'test-service',
   serviceVersion: '1.0.0',
-  'forms.backendAllowlistEnabledSlugs': [],
   'forms.backendFormDefEnabledSlugs': []
 }
 
