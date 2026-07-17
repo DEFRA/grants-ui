@@ -305,7 +305,6 @@ Guidance components provide contextual help and information without requiring us
 - **Form ID**: Unique identifier for the form
 - **Production Enablement**: `enabledInProd` flag
 - **Reference Number Prefix**: Custom prefix for application references
-- **Whitelist Configuration**: CRN and SBI environment variables
 - **Submission Configuration**: Grant code and schema path
 - **Options**: Grant-scoped configuration options
 
@@ -354,13 +353,12 @@ Guidance components provide contextual help and information without requiring us
   - Automatic redirect handling
 - **Example**: [Auth plugin registration with Defra ID support](./src/plugins/auth.js#L91-L114)
 
-### Whitelist System
+### Allowlist System
 
-- **CRN Whitelisting**: Customer Reference Number validation
-- **SBI Whitelisting**: Single Business Identifier validation
-- **Environment Variables**: Configurable whitelist management
-- **Access Control**: Grant-specific access restrictions
-- **Example**: [Example Whitelist definition and metadata](./src/server/common/forms/definitions/example-whitelist.yaml#L1-L18)
+- **Backend allowlist**: Per-grant access control driven by the grants-ui-backend allowlist endpoint
+- **CRN/SBI based**: Access is decided from the signed-in user's Customer Reference Number and Single Business Identifier
+- **Access Control**: Users who are not allowlisted for the grant are redirected to `/auth/journey-unauthorised`
+- **Example**: [Allowlist plugin](./src/server/common/helpers/allowlist/allowlist.js)
 
 ### Session Management
 
@@ -512,7 +510,7 @@ Guidance components provide contextual help and information without requiring us
 ### Security
 
 - Implement proper authentication
-- Use whitelist restrictions
+- Use allowlist restrictions
 - Validate all user input
 - Protect sensitive data
 

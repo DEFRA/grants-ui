@@ -3,8 +3,6 @@ name: Example Whitelist
 metadata:
   id: 7bcafdd6-f8a7-4a31-8f98-8cd71e2c0f16
   referenceNumberPrefix: EW
-  whitelistCrnEnvVar: EXAMPLE_WHITELIST_CRNS
-  whitelistSbiEnvVar: EXAMPLE_WHITELIST_SBIS
   grantRedirectRules: null
   permissions:
     enforce: false

@@ -150,75 +150,6 @@ export async function addAllForms(loader, forms) {
 }
 
 /**
- * @param {unknown} a
- * @param {unknown} b
- * @returns {boolean}
- */
-function exactlyOneDefined(a, b) {
-  return Boolean(a) !== Boolean(b) // XOR
-}
-
-/**
- * @param {string | undefined} whitelistCrnEnvVar
- * @param {string | undefined} whitelistSbiEnvVar
- * @param {FormSummary} form
- * @param {FormDefinition} definition
- * @returns {void}
- */
-export function validateWhitelistVariableCompleteness(whitelistCrnEnvVar, whitelistSbiEnvVar, form, definition) {
-  if (!exactlyOneDefined(whitelistCrnEnvVar, whitelistSbiEnvVar)) {
-    return
-  }
-
-  const formName = definition.name || form.title || 'unnamed'
-  const missingVar = whitelistCrnEnvVar ? 'whitelistSbiEnvVar' : 'whitelistCrnEnvVar'
-  const presentVar = whitelistCrnEnvVar ? 'whitelistCrnEnvVar' : 'whitelistSbiEnvVar'
-
-  log(LogCodes.SYSTEM.WHITELIST_CONFIG_INCOMPLETE, { formName, missingVar, presentVar })
-
-  throw new Error(
-    `Incomplete whitelist configuration in form ${formName}: ${presentVar} is defined but ${missingVar} is missing. Both CRN and SBI whitelist variables must be configured together.`
-  )
-}
-
-/**
- * @param {string | undefined} whitelistCrnEnvVar
- * @param {FormSummary} form
- * @param {FormDefinition} definition
- * @returns {void}
- */
-function validateCrnEnvironmentVariable(whitelistCrnEnvVar, form, definition) {
-  if (whitelistCrnEnvVar && !process.env[whitelistCrnEnvVar]) {
-    const formName = definition.name || form.title || 'unnamed'
-    log(LogCodes.SYSTEM.CRN_ENV_VAR_MISSING, {
-      envVar: whitelistCrnEnvVar,
-      formName
-    })
-    const error = `CRN whitelist environment variable ${whitelistCrnEnvVar} is defined in form ${definition.name || form.title || 'unnamed'} but not configured in environment`
-    throw new Error(error)
-  }
-}
-
-/**
- * @param {string | undefined} whitelistSbiEnvVar
- * @param {FormSummary} form
- * @param {FormDefinition} definition
- * @returns {void}
- */
-function validateSbiEnvironmentVariable(whitelistSbiEnvVar, form, definition) {
-  if (whitelistSbiEnvVar && !process.env[whitelistSbiEnvVar]) {
-    const formName = definition.name || form.title || 'unnamed'
-
-    log(LogCodes.SYSTEM.SBI_ENV_VAR_MISSING, {
-      envVar: whitelistSbiEnvVar,
-      formName
-    })
-    const error = `SBI whitelist environment variable ${whitelistSbiEnvVar} is defined in form ${definition.name || form.title || 'unnamed'} but not configured in environment`
-    throw new Error(error)
-  }
-}
-
-/**
  * @param {FormSummary} form
  * @param {FormDefinition} definition
  * @returns {void}
@@ -232,28 +163,6 @@ export function validateDetailsPageConfiguration(form, definition) {
     /** @type {Parameters<typeof validateDetailsPageConfig>[0]} */ (definition.metadata.detailsPage),
     formName
   )
-}
-
-/**
- * @param {FormSummary} form
- * @param {FormDefinition} definition
- * @returns {void}
- */
-export function validateWhitelistConfiguration(form, definition) {
-  const enabledCodes = /** @type {string[]} */ (config.get('forms.backendAllowlistEnabledSlugs'))
-
-  if (form.slug && enabledCodes.includes(form.slug)) {
-    return
-  }
-
-  if (definition.metadata) {
-    const whitelistCrnEnvVar = /** @type {string | undefined} */ (definition.metadata.whitelistCrnEnvVar)
-    const whitelistSbiEnvVar = /** @type {string | undefined} */ (definition.metadata.whitelistSbiEnvVar)
-
-    validateWhitelistVariableCompleteness(whitelistCrnEnvVar, whitelistSbiEnvVar, form, definition)
-    validateCrnEnvironmentVariable(whitelistCrnEnvVar, form, definition)
-    validateSbiEnvironmentVariable(whitelistSbiEnvVar, form, definition)
-  }
 }
 
 /**
@@ -431,9 +340,6 @@ async function registerYamlForms(loader, redis, yamlForms, sharedRules) {
         ...sharedRules,
         .../** @type {Record<string, unknown> | undefined} */ (meta.grantRedirectRules)
       }
-
-      validateWhitelistConfiguration(form, definition)
-      logger.info(`Whitelist configuration validated for form: ${form.title}`)
 
       validateGrantRedirectRules(form, definition)
       logger.info(`Grant redirect rules validated for form: ${form.title}`)

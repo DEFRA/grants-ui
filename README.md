@@ -34,7 +34,7 @@ The Grants UI service provides a comprehensive set of features for building gran
 - **Form Components**: 13 different input components (TextField, RadiosField, CheckboxesField, etc.)
 - **Page Types**: Summary, Declaration, Confirmation, Terminal, and Conditional pages
 - **Guidance Components**: Html, Details, InsetText, Markdown, and List components
-- **Authentication**: Defra ID integration with whitelist support
+- **Authentication**: Defra ID integration with allowlist support
 - **Conditional Logic**: Dynamic page routing and content display
 - **Validation**: Custom validation messages and schema validation
 - **Configuration**: YAML-based form definitions with confirmation content
@@ -48,7 +48,7 @@ For complete documentation of all available features, see [FEATURES.md](docs/FEA
 | [Getting Started](docs/GETTING-STARTED.md)             | Requirements, setup, environment variables, project structure, npm scripts |
 | [Architecture](docs/ARCHITECTURE.md)                   | Forms engine, state model, task lists, GAS integration, confirmation pages |
 | [Features](docs/FEATURES.md)                           | Form components, page types, guidance, conditional logic, validation       |
-| [Authentication & Security](docs/AUTH-AND-SECURITY.md) | Defra ID, whitelist, cookies, sessions, S2S auth, rate limiting            |
+| [Authentication & Security](docs/AUTH-AND-SECURITY.md) | Defra ID, allowlist, cookies, sessions, S2S auth, rate limiting            |
 | [Docker](docs/DOCKER.md)                               | Development/production images, Docker Compose, HA proxy, debugging         |
 | [Testing](docs/TESTING.md)                             | Unit, integration, contract, acceptance, and mutation testing              |
 | [Logging & Error Handling](docs/LOGGING-AND-ERRORS.md) | Structured logging system, error classes, log codes                        |

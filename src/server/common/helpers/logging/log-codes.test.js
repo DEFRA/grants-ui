@@ -213,47 +213,6 @@ describe('LogCodes', () => {
 
     testLogCodes('AUTH', [
       [
-        'WHITELIST_ACCESS_GRANTED',
-        'info',
-        {
-          path: TEST_PATHS.EXAMPLE_GRANT,
-          userId: 'test123',
-          sbi: TEST_SBI.DEFAULT,
-          validationType: 'CRN and SBI validation passed'
-        },
-        `Whitelist access granted to path=${TEST_PATHS.EXAMPLE_GRANT} for user=test123, sbi=${TEST_SBI.DEFAULT}: CRN and SBI validation passed`
-      ],
-      [
-        'WHITELIST_ACCESS_DENIED_BOTH',
-        'info',
-        {
-          path: TEST_PATHS.EXAMPLE_GRANT,
-          userId: 'test123',
-          sbi: TEST_SBI.DEFAULT
-        },
-        `Whitelist access denied to path=${TEST_PATHS.EXAMPLE_GRANT}: Both CRN test123 and SBI ${TEST_SBI.DEFAULT} failed validation`
-      ],
-      [
-        'WHITELIST_ACCESS_DENIED_CRN_PASSED',
-        'info',
-        {
-          path: TEST_PATHS.EXAMPLE_GRANT,
-          userId: 'test123',
-          sbi: TEST_SBI.DEFAULT
-        },
-        `Whitelist access denied to path=${TEST_PATHS.EXAMPLE_GRANT}: CRN test123 passed but SBI ${TEST_SBI.DEFAULT} failed validation`
-      ],
-      [
-        'WHITELIST_ACCESS_DENIED_SBI_PASSED',
-        'info',
-        {
-          path: TEST_PATHS.EXAMPLE_GRANT,
-          userId: 'test123',
-          sbi: TEST_SBI.DEFAULT
-        },
-        `Whitelist access denied to path=${TEST_PATHS.EXAMPLE_GRANT}: SBI ${TEST_SBI.DEFAULT} passed but CRN test123 failed validation`
-      ],
-      [
         'ALLOWLIST_ACCESS_GRANTED',
         'info',
         { path: TEST_PATHS.EXAMPLE_GRANT, userId: 'test123', sbi: TEST_SBI.DEFAULT, grantCode: 'woodland' },
@@ -284,30 +243,6 @@ describe('LogCodes', () => {
         'error',
         { reason: 'someReason', storedStatePresent: true },
         `Invalid OAuth state provided | reason=someReason | storedStatePresent=true`
-      ],
-      [
-        'WHITELIST_ACCESS_GRANTED with fallbacks',
-        'info',
-        { path: TEST_PATHS.EXAMPLE_GRANT },
-        `Whitelist access granted to path=${TEST_PATHS.EXAMPLE_GRANT} for user=unknown, sbi=N/A: validation passed`
-      ],
-      [
-        'WHITELIST_ACCESS_DENIED_BOTH with fallbacks',
-        'info',
-        { path: TEST_PATHS.EXAMPLE_GRANT },
-        `Whitelist access denied to path=${TEST_PATHS.EXAMPLE_GRANT}: Both CRN unknown and SBI unknown failed validation`
-      ],
-      [
-        'WHITELIST_ACCESS_DENIED_CRN_PASSED with fallbacks',
-        'info',
-        { path: TEST_PATHS.EXAMPLE_GRANT },
-        `Whitelist access denied to path=${TEST_PATHS.EXAMPLE_GRANT}: CRN unknown passed but SBI unknown failed validation`
-      ],
-      [
-        'WHITELIST_ACCESS_DENIED_SBI_PASSED with fallbacks',
-        'info',
-        { path: TEST_PATHS.EXAMPLE_GRANT },
-        `Whitelist access denied to path=${TEST_PATHS.EXAMPLE_GRANT}: SBI unknown passed but CRN unknown failed validation`
       ]
     ])
   })
@@ -936,34 +871,6 @@ describe('LogCodes', () => {
           missing: ['agreements.uiUrl', 'agreements.uiToken']
         },
         'Missing required configuration: agreements.uiUrl, agreements.uiToken'
-      ],
-      [
-        'WHITELIST_CONFIG_INCOMPLETE',
-        'error',
-        {
-          formName: 'testFormName',
-          presentVar: 'whitelistSbiEnvVar',
-          missingVar: 'whitelistCrnEnvVar'
-        },
-        'Incomplete whitelist configuration in form "testFormName" | present=whitelistSbiEnvVar | missing=whitelistCrnEnvVar'
-      ],
-      [
-        'CRN_ENV_VAR_MISSING',
-        'error',
-        {
-          envVar: 'whitelistCrnEnvVar',
-          formName: 'testFormName'
-        },
-        'CRN whitelist environment variable "whitelistCrnEnvVar" missing for form "testFormName"'
-      ],
-      [
-        'SBI_ENV_VAR_MISSING',
-        'error',
-        {
-          envVar: 'whitelistSBIEnvVar',
-          formName: 'testFormName'
-        },
-        'SBI whitelist environment variable "whitelistSBIEnvVar" missing for form "testFormName"'
       ],
       [
         'INVALID_REDIRECT_RULES',

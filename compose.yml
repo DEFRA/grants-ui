@@ -55,7 +55,6 @@ services:
       GRANTS_UI_BACKEND_AUTH_TOKEN: ${GRANTS_UI_BACKEND_AUTH_TOKEN:-auth_token}
       GRANTS_UI_BACKEND_ENCRYPTION_KEY: ${GRANTS_UI_BACKEND_ENCRYPTION_KEY:-encryption_key}
       GRANTS_UI_BACKEND_AUTH_JWT_SECRET: ${GRANTS_UI_BACKEND_AUTH_JWT_SECRET:-allowlist-jwt-secret}
-      BACKEND_ALLOWLIST_ENABLED_SLUGS: ${BACKEND_ALLOWLIST_ENABLED_SLUGS:-example-whitelist,woodland,farm-payments,grasslands}
       APP_BASE_URL: '${APP_BASE_URL:-http://localhost:3000}'
       HOST: 0.0.0.0
       GAS_API_URL: '${GAS_API_URL:-http://mockserver:1080}'
@@ -166,6 +165,8 @@ services:
       MONGO_URI: mongodb://mongodb:27017/
       SERVICE_VERSION: 1.0.0
       CONFIG_INPUT_QUEUE_URL: http://localstack:4566/000000000000/gfr__sqs___config_input
+      SERVICE_AUTH_ENABLED: false
+      AUDIT_ENABLED: false
     networks:
       - grants-ui-net
     volumes:
