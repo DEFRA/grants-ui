@@ -1292,4 +1292,3 @@ describe('stateToLandGrantsGasAnswers - rulesCalculations from validationResult'
     expect(result.rulesCalculations).toBeUndefined()
   })
 })
-

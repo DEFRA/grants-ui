@@ -122,7 +122,7 @@ export function getStateWithDefinition(request) {
     const { sbi, grantCode } = getCacheKey(request)
     const key = `${sbi}:${grantCode}`
 
-    app.stateWithDefinition = fetchStateWithDefinitionFromApi(key, request, { 
+    app.stateWithDefinition = fetchStateWithDefinitionFromApi(key, request, {
       lockToken: buildReadLockToken(request)
     })
   }
