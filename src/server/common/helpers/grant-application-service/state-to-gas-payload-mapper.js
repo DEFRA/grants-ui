@@ -1,4 +1,5 @@
 import semver from 'semver'
+import { getGrantVersion } from '../grant-version.js'
 
 /**
  * @typedef {object} GASMetadata
@@ -37,7 +38,7 @@ const assertSemverConfigVersion = (configVersion) => {
  * @returns {string}
  */
 export const resolveGasConfigVersion = (request) => {
-  const configVersion = request.app?.grantVersion ?? request?.app?.model?.def?.metadata?.version ?? '1.0.0'
+  const configVersion = getGrantVersion(request)
 
   assertSemverConfigVersion(configVersion)
 

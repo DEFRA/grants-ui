@@ -1,5 +1,5 @@
 import { getFormsCacheService } from '../../common/helpers/forms-cache/forms-cache.js'
-import { findFormBySlug, loadFormDefinition } from '~/src/server/common/forms/services/find-form-by-slug.js'
+import { resolveFormDefinition } from '../utils/index.js'
 import { clearParcelCache } from '~/src/server/land-grants/services/parcel-cache.js'
 import { clearSavedStateFromApiByContext } from '~/src/server/common/helpers/state/fetch-saved-state-helper.js'
 import { mintLockToken } from '~/src/server/common/helpers/lock/lock-token.js'
@@ -23,7 +23,7 @@ export async function clearApplicationStateHandler(request, h) {
   const slug = request.params?.slug || ''
 
   if (slug) {
-    await clearStateWithSlug(slug, request)
+    await clearStateWithSlug(request)
   } else {
     await clearStateWithoutSlug(request)
   }
@@ -34,14 +34,13 @@ export async function clearApplicationStateHandler(request, h) {
 }
 
 /**
- * @param {string} slug
  * @param {ClearStateRequest} request
  */
-async function clearStateWithSlug(slug, request) {
+async function clearStateWithSlug(request) {
   if (!request.app.model) {
-    const form = await findFormBySlug(slug)
-    if (form) {
-      await loadFormAndSetOnRequestModel(form, request)
+    const definition = await resolveFormDefinition(request)
+    if (definition) {
+      request.app.model = /** @type {any} */ ({ def: definition })
     }
   }
 
@@ -97,9 +96,4 @@ async function clearStateWithoutSlug(request) {
   }
 
   request.yar?.clear(YarKeys.GRANT_APPLICATION_CONTEXT)
-}
-
-const loadFormAndSetOnRequestModel = async (form, request) => {
-  const definition = await loadFormDefinition(form, request.server.methods.getFormService())
-  request.app.model = { def: definition }
 }

@@ -7,10 +7,9 @@ import {
   generateFallbackViewModel,
   loadDisplaySectionsConfig
 } from './demo-details.handler.js'
-import { findFormBySlug } from '../../common/forms/services/find-form-by-slug.js'
 import { processSections } from '../../common/services/details-page/index.js'
 import { buildDemoMappedData, buildDemoRequest } from '../helpers/index.js'
-import { generateFormNotFoundResponse } from '../utils/index.js'
+import { generateFormNotFoundResponse, resolveFormDefinition } from '../utils/index.js'
 import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 import { debug } from '../../common/helpers/logging/log.js'
 
@@ -43,10 +42,8 @@ const mockDisplaySections = [
   }
 ]
 
-const mockForm = {
-  id: 'test-form-id',
-  slug: 'test-form',
-  title: 'Test Form',
+const mockDefinition = {
+  name: 'Test Form',
   metadata: {
     detailsPage: {
       displaySections: mockDisplaySections
@@ -54,13 +51,16 @@ const mockForm = {
   }
 }
 
-const mockFormWithoutConfig = {
-  id: 'test-form-no-config',
-  slug: 'test-form-no-config',
-  title: 'Test Form Without Config'
+const mockForm = {
+  slug: 'test-form',
+  title: 'Test Form',
+  metadata: mockDefinition.metadata
 }
 
-vi.mock('../../common/forms/services/find-form-by-slug.js')
+const mockDefinitionWithoutConfig = {
+  name: 'Test Form Without Config'
+}
+
 vi.mock('../../common/services/details-page/index.js')
 vi.mock('../helpers/index.js')
 vi.mock('../utils/index.js')
@@ -77,13 +77,14 @@ describe('demo-details.handler', () => {
     vi.clearAllMocks()
 
     mockRequest = mockHapiRequest({
+      server: { methods: { getFormService: () => ({}) } },
       params: { slug: 'test-form' }
     })
     mockH = mockHapiResponseToolkit()
 
     buildDemoMappedData.mockReturnValue(mockDemoMappedData)
     buildDemoRequest.mockReturnValue(mockDemoRequest)
-    findFormBySlug.mockResolvedValue(mockForm)
+    resolveFormDefinition.mockResolvedValue(mockDefinition)
   })
 
   describe('buildViewModel', () => {
@@ -146,8 +147,8 @@ describe('demo-details.handler', () => {
     })
 
     const nullConfigCases = [
-      { name: 'form has no metadata', form: mockFormWithoutConfig },
-      { name: 'form has no detailsPage config', form: { ...mockFormWithoutConfig, metadata: {} } },
+      { name: 'form has no metadata', form: { slug: 'no-config', title: 'Test Form Without Config' } },
+      { name: 'form has no detailsPage config', form: { slug: 'no-config', metadata: {} } },
       { name: 'form is undefined', form: undefined }
     ]
 
@@ -168,7 +169,7 @@ describe('demo-details.handler', () => {
 
       await demoDetailsHandler(mockRequest, mockH)
 
-      expect(findFormBySlug).toHaveBeenCalledWith('test-form')
+      expect(resolveFormDefinition).toHaveBeenCalledWith(mockRequest)
       expect(processSections).toHaveBeenCalledWith(mockDisplaySections, mockDemoMappedData, mockDemoRequest)
       expect(mockH.view).toHaveBeenCalledWith(
         'check-details',
@@ -180,8 +181,9 @@ describe('demo-details.handler', () => {
     })
 
     test('should return no config message when form has no displaySections', async () => {
-      findFormBySlug.mockResolvedValue(mockFormWithoutConfig)
+      resolveFormDefinition.mockResolvedValue(mockDefinitionWithoutConfig)
       mockRequest = mockHapiRequest({
+        server: { methods: { getFormService: () => ({}) } },
         params: { slug: 'test-form-no-config' }
       })
 
@@ -202,7 +204,7 @@ describe('demo-details.handler', () => {
     })
 
     test('should return form not found response when form does not exist', async () => {
-      findFormBySlug.mockResolvedValue(null)
+      resolveFormDefinition.mockResolvedValue(null)
       generateFormNotFoundResponse.mockResolvedValue('not-found-response')
 
       const result = await demoDetailsHandler(mockRequest, mockH)
@@ -212,7 +214,7 @@ describe('demo-details.handler', () => {
     })
 
     test('should handle errors gracefully with fallback content', async () => {
-      findFormBySlug.mockRejectedValue(new Error('Handler error'))
+      resolveFormDefinition.mockRejectedValue(new Error('Handler error'))
 
       await demoDetailsHandler(mockRequest, mockH)
 
@@ -263,6 +265,7 @@ describe('demo-details.handler', () => {
   describe('demoDetailsPostHandler', () => {
     test('should continue with journey when user selects "Yes"', async () => {
       mockRequest = mockHapiRequest({
+        server: { methods: { getFormService: () => ({}) } },
         params: { slug: 'test-form' },
         payload: { detailsCorrect: 'true' }
       })
@@ -274,6 +277,7 @@ describe('demo-details.handler', () => {
 
     test('should show incorrect details page when user selects "No"', async () => {
       mockRequest = mockHapiRequest({
+        server: { methods: { getFormService: () => ({}) } },
         params: { slug: 'test-form' },
         payload: { detailsCorrect: 'false' }
       })
@@ -295,6 +299,7 @@ describe('demo-details.handler', () => {
       ['null payload', null]
     ])('should show validation error when %s is submitted', async (_desc, payload) => {
       mockRequest = mockHapiRequest({
+        server: { methods: { getFormService: () => ({}) } },
         params: { slug: 'test-form' },
         payload
       })
@@ -316,7 +321,7 @@ describe('demo-details.handler', () => {
     })
 
     test('should return form not found response when form does not exist', async () => {
-      findFormBySlug.mockResolvedValue(null)
+      resolveFormDefinition.mockResolvedValue(null)
       generateFormNotFoundResponse.mockResolvedValue('not-found-response')
 
       const result = await demoDetailsPostHandler(mockRequest, mockH)
@@ -326,8 +331,9 @@ describe('demo-details.handler', () => {
     })
 
     test('should use empty sections array when form has no displaySections config during validation', async () => {
-      findFormBySlug.mockResolvedValue(mockFormWithoutConfig)
+      resolveFormDefinition.mockResolvedValue(mockDefinitionWithoutConfig)
       mockRequest = mockHapiRequest({
+        server: { methods: { getFormService: () => ({}) } },
         params: { slug: 'test-form-no-config' },
         payload: {}
       })

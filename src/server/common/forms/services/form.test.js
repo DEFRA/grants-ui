@@ -24,10 +24,6 @@ const DEFAULT_CONFIG_MOCK = {
   'forms.backendAllowlistEnabledSlugs': []
 }
 
-// Stateful in-memory stores so registration writes are visible to later reads
-const _metaStore = new Map()
-const _slugsIndex = new Set()
-
 vi.mock('~/src/server/common/helpers/state/state-with-definition-context.js', () => ({
   currentRequest: vi.fn(),
   getStateWithDefinition: vi.fn(),
@@ -42,16 +38,6 @@ vi.mock('~/src/server/common/helpers/state/state-with-definition-context.js', ()
     return definition && definition.major != null
       ? `${definition.major}.${definition.minor}.${definition.patch}`
       : undefined
-  })
-}))
-
-vi.mock('./forms-redis.js', () => ({
-  getFormsRedisClient: vi.fn(() => ({ status: 'ready' })),
-  setFormMeta: vi.fn(async (_r, slug, entry) => {
-    _metaStore.set(slug, entry)
-  }),
-  registerSlug: vi.fn(async (_r, slug) => {
-    _slugsIndex.add(slug)
   })
 }))
 
@@ -94,8 +80,6 @@ describe('form', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    _metaStore.clear()
-    _slugsIndex.clear()
     config.get.mockImplementation((key) => DEFAULT_CONFIG_MOCK[key])
     mockWarn = logger.warn
   })
@@ -336,66 +320,31 @@ describe('form', () => {
       await expect(service.getFormDefinitionBySlug('backend-form')).rejects.toThrow(/No request context/)
     })
 
-    test('registers a resolved slug with the definition title and metadata', async () => {
-      mockBackendRequest()
-      mockBackendStateWithDefinition({
-        definition: {
-          definition: { name: 'Backend Form', metadata: { whitelistCrnEnvVar: 'TEST_CRNS' }, pages: [] }
-        }
-      })
-
-      const service = await formsService()
-      await service.getFormMetadata('backend-slug')
-
-      expect(_metaStore.get('backend-slug')).toMatchObject({
-        id: 'backend-slug',
-        slug: 'backend-slug',
-        title: 'Backend Form',
-        source: 'backend',
-        metadata: expect.objectContaining({ whitelistCrnEnvVar: 'TEST_CRNS' })
-      })
-      expect(_slugsIndex.has('backend-slug')).toBe(true)
-    })
-
-    test('does not register anything when the backend has no definition for the slug', async () => {
+    test('getFormMetadata throws notFound when the backend has no definition for the slug', async () => {
       mockBackendRequest()
       mockBackendStateWithDefinition(null)
 
       const service = await formsService()
 
       await expect(service.getFormMetadata('mistyped-slug')).rejects.toThrow(/not found/)
-      expect(_metaStore.size).toBe(0)
-      expect(_slugsIndex.size).toBe(0)
     })
 
-    test('does not register anything when there is no request context', async () => {
-      vi.mocked(currentRequest).mockReturnValue(undefined)
-
-      const service = await formsService()
-
-      await expect(service.getFormMetadata('some-slug')).rejects.toThrow(/No request context/)
-      expect(_metaStore.size).toBe(0)
-      expect(_slugsIndex.size).toBe(0)
-    })
-
-    test('refreshes the meta entry on every resolution so it cannot go stale', async () => {
+    test('getFormMetadata tracks the latest published definition across resolutions', async () => {
       mockBackendRequest()
       const service = await formsService()
 
       mockBackendStateWithDefinition({
         definition: { definition: { name: 'Old Title', metadata: { supportEmail: 'old@example.com' }, pages: [] } }
       })
-      await service.getFormMetadata('backend-slug')
-      expect(_metaStore.get('backend-slug')).toMatchObject({ title: 'Old Title' })
+      const first = await service.getFormMetadata('backend-slug')
+      expect(first.title).toBe('Old Title')
 
       mockBackendStateWithDefinition({
         definition: { definition: { name: 'New Title', metadata: { supportEmail: 'new@example.com' }, pages: [] } }
       })
-      await service.getFormMetadata('backend-slug')
-      expect(_metaStore.get('backend-slug')).toMatchObject({
-        title: 'New Title',
-        metadata: expect.objectContaining({ supportEmail: 'new@example.com' })
-      })
+      const second = await service.getFormMetadata('backend-slug')
+      expect(second.title).toBe('New Title')
+      expect(second.metadata).toMatchObject({ supportEmail: 'new@example.com' })
     })
   })
 

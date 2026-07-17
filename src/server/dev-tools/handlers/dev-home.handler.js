@@ -1,63 +1,33 @@
-import { getAllForms } from '../utils/index.js'
 import { errorRoutes } from '../index.js'
 
 /**
- * Get forms that have confirmationContent configured
- * @returns {Promise<Array>} Array of form objects with confirmationContent
- */
-export async function getFormsWithConfirmationContent() {
-  const allForms = await getAllForms()
-  return allForms.filter((form) => form.metadata?.confirmationContent)
-}
-
-/**
- * Get forms that have detailsPage configured
- * @returns {Promise<Array>} Array of form objects with detailsPage
- */
-export async function getFormsWithDetailsPage() {
-  const allForms = await getAllForms()
-  return allForms.filter((form) => form.metadata?.detailsPage)
-}
-
-/**
- * Build tools configuration for the dev home page
- * @param {object} options - Configuration options
- * @param {Array} options.confirmationForms - Forms with confirmationContent configured
- * @param {Array} options.detailsForms - Forms with detailsPage configured
- * @param {Array} options.printApplicationForms - All forms for print application demo
+ * Build tools configuration for the dev home page.
+ *
+ * Form definitions are resolved per request from grants-ui-backend, so there
+ * is no list of known grants to offer as example links — the demo tools are
+ * opened by slug URL instead.
+ *
  * @returns {Array} Array of tool configurations
  */
-export function buildToolsConfig({ confirmationForms, detailsForms, printApplicationForms }) {
+export function buildToolsConfig() {
   return [
     {
       name: 'Demo Confirmation Pages',
-      description: 'Test the config-driven confirmation page with different form configurations',
-      pattern: '/dev/demo-confirmation/{slug}',
-      examples: confirmationForms.map((form) => ({
-        name: form.title,
-        path: `/dev/demo-confirmation/${form.slug}`,
-        slug: form.slug
-      }))
+      description:
+        'Test the config-driven confirmation page: open /dev/demo-confirmation/{slug} for a grant whose definition configures confirmationContent',
+      pattern: '/dev/demo-confirmation/{slug}'
     },
     {
       name: 'Demo Details Pages',
-      description: 'Test the config-driven details page (check-details) with different form configurations',
-      pattern: '/dev/demo-details/{slug}',
-      examples: detailsForms.map((form) => ({
-        name: form.title,
-        path: `/dev/demo-details/${form.slug}`,
-        slug: form.slug
-      }))
+      description:
+        'Test the config-driven details page (check-details): open /dev/demo-details/{slug} for a grant whose definition configures detailsPage',
+      pattern: '/dev/demo-details/{slug}'
     },
     {
       name: 'Demo Print Application',
-      description: 'Preview the print submitted application page with demo data',
-      pattern: '/dev/demo-print-application/{slug}',
-      examples: printApplicationForms.map((form) => ({
-        name: form.title,
-        path: `/dev/demo-print-application/${form.slug}`,
-        slug: form.slug
-      }))
+      description:
+        'Preview the print submitted application page with demo data: open /dev/demo-print-application/{slug}',
+      pattern: '/dev/demo-print-application/{slug}'
     },
     {
       name: 'Test Error Pages',
@@ -124,7 +94,7 @@ function generatePatternHtml(pattern) {
  */
 function generateExamplesHtml(examples, pattern) {
   if (!examples) {
-    return ''
+    return generatePatternHtml(pattern)
   }
   const exampleItems = examples
     .map(
@@ -206,12 +176,7 @@ export function generateDevHomePage(tools) {
  * @returns {Promise<object>} Hapi response
  */
 export async function devHomeHandler(_request, h) {
-  const [confirmationForms, detailsForms, printApplicationForms] = await Promise.all([
-    getFormsWithConfirmationContent(),
-    getFormsWithDetailsPage(),
-    getAllForms()
-  ])
-  const tools = buildToolsConfig({ confirmationForms, detailsForms, printApplicationForms })
+  const tools = buildToolsConfig()
   const htmlContent = generateDevHomePage(tools)
 
   return h.response(htmlContent).type('text/html')

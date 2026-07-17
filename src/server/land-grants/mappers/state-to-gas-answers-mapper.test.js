@@ -1,4 +1,3 @@
-import { validateSubmissionAnswers } from '~/src/server/common/forms/services/submission.js'
 import { stateToLandGrantsGasAnswers } from '~/src/server/land-grants/mappers/state-to-gas-answers-mapper.js'
 
 const configState = vi.hoisted(() => {
@@ -1294,60 +1293,3 @@ describe('stateToLandGrantsGasAnswers - rulesCalculations from validationResult'
   })
 })
 
-describe('schema validation', () => {
-  it('output always conforms to GASPayload schema structure', () => {
-    const stateObjectTestCases = [
-      {
-        applicant,
-        payment,
-        landParcels: {
-          'SX0679-9238': {
-            size: {
-              value: 10,
-              unit: 'ha'
-            },
-            actionsObj: {
-              CSAM1: {
-                value: '44',
-                unit: 'ha',
-                version: '1.0.0'
-              }
-            }
-          }
-        },
-        validationResult: {
-          id: 355,
-          message: 'success',
-          valid: true
-        }
-      },
-      {
-        applicant,
-        payment,
-        landParcels: {
-          'SX0679-9238': {
-            actionsObj: {
-              CSAM1: {
-                value: '44',
-                unit: 'ha',
-                version: '1.0.0'
-              }
-            }
-          }
-        },
-        validationResult: {
-          id: 355,
-          message: 'success',
-          valid: true
-        }
-      }
-    ]
-
-    stateObjectTestCases.forEach((testCase) => {
-      const result = stateToLandGrantsGasAnswers(testCase)
-      const { valid } = validateSubmissionAnswers(result, 'farm-payments', 'farm-payments.schema.json')
-
-      expect(valid).toBe(true)
-    })
-  })
-})

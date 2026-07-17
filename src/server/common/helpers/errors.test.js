@@ -49,15 +49,6 @@ vi.mock('@defra/forms-engine-plugin/controllers/TerminalPageController.js', () =
   }
 }))
 
-vi.mock('~/src/server/common/forms/services/forms-redis.js', () => ({
-  getFormsRedisClient: vi.fn(() => ({ status: 'ready' })),
-  setFormMeta: vi.fn(async () => {}),
-  registerSlug: vi.fn(async () => {}),
-  getFormMeta: vi.fn(async () => null),
-  getAllSlugs: vi.fn(async () => []),
-  getAllFormMetas: vi.fn(async () => [])
-}))
-
 process.env.EXAMPLE_WHITELIST_CRNS = '1104734543,1103521484'
 process.env.EXAMPLE_WHITELIST_SBIS = '123456789,987654321'
 process.env.FARMING_PAYMENTS_WHITELIST_CRNS = '1102838829, 1102760349, 1100495932'

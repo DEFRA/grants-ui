@@ -335,7 +335,7 @@ describe('formsStatusRedirect', () => {
     expect(h.redirect).toHaveBeenCalledWith('/grant-a/summary')
   })
 
-  it('uses integer 1 as grantVersion for non-config-broker grants (no version in model metadata)', async () => {
+  it('throws when no grant version can be resolved for the status update', async () => {
     delete request.app.model.def.metadata.version
     getApplicationStatus.mockResolvedValue({
       json: async () => ({ status: 'APPLICATION_AMEND' })
@@ -343,16 +343,9 @@ describe('formsStatusRedirect', () => {
 
     await formsStatusRedirect(request, h, context)
 
-    expect(mintLockToken).toHaveBeenCalledWith({
-      userId: 'contact-123',
-      sbi: '12345',
-      grantCode: 'grant-a',
-      grantVersion: 1
-    })
-    expect(updateApplicationStatus).toHaveBeenCalledWith('REOPENED', '12345:grant-a', {
-      lockToken: 'mock-lock-token',
-      grantVersion: 1
-    })
+    // handlePostSubmission fails on the unresolvable version and the error
+    // handler falls back to the default redirect rule instead of persisting.
+    expect(updateApplicationStatus).not.toHaveBeenCalled()
   })
 
   it('updates session cache when transitioning to REOPENED', async () => {

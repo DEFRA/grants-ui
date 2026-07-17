@@ -1,18 +1,16 @@
 import { vi } from 'vitest'
 import { demoPrintApplicationHandler } from './demo-print-application.handler.js'
-import { findFormBySlug, loadFormDefinition } from '../../common/forms/services/find-form-by-slug.js'
 import {
   buildPrintViewModel,
   enrichDefinitionWithListItems
 } from '../../common/helpers/print-application-service/print-application-service.js'
 import { buildDemoData, buildDemoPayment, buildDemoPrintAnswers } from '../helpers/index.js'
-import { generateFormNotFoundResponse } from '../utils/index.js'
+import { generateFormNotFoundResponse, resolveFormDefinition } from '../utils/index.js'
 import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 import { debug, LogCodes } from '../../common/helpers/logging/log.js'
-import { MOCK_FORM_WITH_PATH, MOCK_SINGLE_PAGE_DEFINITION } from '~/src/__test-fixtures__/mock-forms-cache.js'
+import { MOCK_SINGLE_PAGE_DEFINITION } from '~/src/__test-fixtures__/mock-forms-cache.js'
 import { MOCK_DEMO_DATA } from '../__test-fixtures__/mock-demo-data.js'
 
-vi.mock('../../common/forms/services/find-form-by-slug.js')
 vi.mock('../../common/helpers/print-application-service/print-application-service.js')
 vi.mock('../helpers/index.js')
 vi.mock('../utils/index.js')
@@ -22,7 +20,7 @@ vi.mock('../../common/helpers/logging/log.js', async () => {
 })
 
 const mockDefinition = { ...MOCK_SINGLE_PAGE_DEFINITION, lists: [] }
-const mockForm = MOCK_FORM_WITH_PATH
+const mockForm = { slug: 'test-form', title: mockDefinition.name ?? 'test-form', metadata: mockDefinition.metadata }
 
 describe('demo-print-application.handler', () => {
   let mockRequest
@@ -45,17 +43,15 @@ describe('demo-print-application.handler', () => {
     buildDemoPrintAnswers.mockReturnValue({ field1: 'Demo text' })
     buildDemoPayment.mockReturnValue({ annualTotalPence: 100000, parcelItems: {} })
     enrichDefinitionWithListItems.mockImplementation((def) => def)
-    loadFormDefinition.mockResolvedValue(mockDefinition)
   })
 
   test('should render print page for valid form', async () => {
-    findFormBySlug.mockResolvedValue(mockForm)
+    resolveFormDefinition.mockResolvedValue(mockDefinition)
     buildPrintViewModel.mockReturnValue({ test: 'viewModel' })
 
     await demoPrintApplicationHandler(mockRequest, mockH)
 
-    expect(findFormBySlug).toHaveBeenCalledWith('test-form')
-    expect(loadFormDefinition).toHaveBeenCalledWith(mockForm, mockFormService)
+    expect(resolveFormDefinition).toHaveBeenCalledWith(mockRequest)
     expect(enrichDefinitionWithListItems).toHaveBeenCalledWith(mockDefinition)
     expect(buildDemoPrintAnswers).toHaveBeenCalledWith(mockDefinition)
     expect(buildPrintViewModel).toHaveBeenCalledWith(
@@ -80,7 +76,7 @@ describe('demo-print-application.handler', () => {
       params: { slug: 'farm-payments' },
       server: { methods: { getFormService: mockGetFormService } }
     })
-    findFormBySlug.mockResolvedValue(mockForm)
+    resolveFormDefinition.mockResolvedValue(mockDefinition)
     buildPrintViewModel.mockReturnValue({ test: 'viewModel' })
 
     await demoPrintApplicationHandler(mockRequest, mockH)
@@ -93,7 +89,7 @@ describe('demo-print-application.handler', () => {
   })
 
   test('should not include demo payment data for non-land-grant forms', async () => {
-    findFormBySlug.mockResolvedValue(mockForm)
+    resolveFormDefinition.mockResolvedValue(mockDefinition)
     buildPrintViewModel.mockReturnValue({ test: 'viewModel' })
 
     await demoPrintApplicationHandler(mockRequest, mockH)
@@ -106,7 +102,7 @@ describe('demo-print-application.handler', () => {
   })
 
   test('should return form not found response when form does not exist', async () => {
-    findFormBySlug.mockResolvedValue(null)
+    resolveFormDefinition.mockResolvedValue(null)
     generateFormNotFoundResponse.mockResolvedValue('not-found-response')
 
     const result = await demoPrintApplicationHandler(mockRequest, mockH)
@@ -116,7 +112,7 @@ describe('demo-print-application.handler', () => {
   })
 
   test('should handle errors with fallback HTML response', async () => {
-    findFormBySlug.mockRejectedValue(new Error('Something broke'))
+    resolveFormDefinition.mockRejectedValue(new Error('Something broke'))
 
     await demoPrintApplicationHandler(mockRequest, mockH)
 
@@ -129,7 +125,7 @@ describe('demo-print-application.handler', () => {
   })
 
   test('should pass submittedAt as ISO string', async () => {
-    findFormBySlug.mockResolvedValue(mockForm)
+    resolveFormDefinition.mockResolvedValue(mockDefinition)
     buildPrintViewModel.mockReturnValue({})
 
     await demoPrintApplicationHandler(mockRequest, mockH)

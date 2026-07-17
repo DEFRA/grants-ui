@@ -12,7 +12,6 @@
 - [Development Services Integration](#development-services-integration)
 - [Grant Form Definitions](#grant-form-definitions)
 - [GAS Integration](#gas-integration)
-  - [Submission Schema Validators](#submission-schema-validators)
   - [Using the gas.http Helper](#using-the-gashttp-helper-and-http-client-environments)
   - [Grant Schema Updates](#grant-schema-updates)
 - [Config-Driven Confirmation Pages](#config-driven-confirmation-pages)
@@ -276,26 +275,21 @@ All grant form definitions are sourced from `grants-ui-backend`. Definitions
 are authored as YAML in the grants config repos and published per environment
 by the config broker; grants-ui itself holds no local form definitions.
 
-A form's slug is not known to grants-ui ahead of time; there is no startup-time
-list of valid grants to register. Instead, `formsService()`
-(`src/server/common/forms/services/form.js`) records each slug in Redis
-_after_ its definition has been successfully resolved from the backend — a
-meta entry (`id`, `slug`, `title`, `source: 'backend'`, plus the definition's
-`metadata`) refreshed on every resolution so it can't go stale, and a
-membership in the `forms:slug-index` Redis set (atomic `SADD`, so concurrent
-registrations across instances can't lose entries). Because registration only
-happens after a successful resolution, mistyped or unknown slugs never write
-anything. The full form definition itself is never cached locally — it is
-resolved fresh per request from the backend's combined
-`POST /state/with-definition` endpoint (see
-[Forms Engine State Model](#forms-engine-state-model)), via
+A form's slug is not known to grants-ui ahead of time; there is no list of
+valid grants to register and nothing is cached or registered anywhere —
+Redis plays no part in form definitions. The definition is resolved fresh per
+request from the backend's combined `POST /state/with-definition` endpoint
+(see [Forms Engine State Model](#forms-engine-state-model)), via
 `state-with-definition-context.js`'s `AsyncLocalStorage`-backed request
-context. Whitelist enforcement (`whitelist.js` `onPostAuth`) reads the grant's
-`whitelistCrnEnvVar`/`whitelistSbiEnvVar` from that same per-request envelope,
-not from the Redis entry, so it holds even on a fresh Redis or the first
-request after a publish.
+context, and `formsService()` (`src/server/common/forms/services/form.js`)
+derives everything else (`id`, `title`, `metadata`) from the slug and that
+resolved definition. Whitelist enforcement (`whitelist.js` `onPostAuth`)
+reads the grant's `whitelistCrnEnvVar`/`whitelistSbiEnvVar` from that same
+per-request envelope.
 
-One consequence of resolving everything per-request: the dev-tools form picker (`getAvailableFormSlugs`/`getAllForms`) only lists slugs that have actually been visited at least once, not every grant that exists in the backend.
+One consequence of resolving everything per-request: there is no enumerable
+list of grants in grants-ui, so the dev-tools demo pages are opened by slug
+URL (e.g. `/dev/demo-confirmation/{slug}`) rather than picked from a list.
 
 ## GAS Integration
 
@@ -336,35 +330,6 @@ Example response:
     "code": "example-grant-with-auth"
 }
 ```
-
-### Submission Schema Validators
-
-A grant may define a JSON Schema describing the shape of its expected
-application payload, stored locally in:
-
-`src/server/common/forms/schemas/`
-
-Form definitions themselves are now resolved from grants-ui-backend rather
-than local YAML (see [Grant Form Definitions](#grant-form-definitions)), so there is no
-local file to scan for the grantCode → schema mapping at startup. Instead,
-`src/server/common/forms/services/submission.js` compiles and caches each
-schema lazily, the first time it's needed:
-
-`validateSubmissionAnswers(payload, grantCode, schemaPath)`
-
-`schemaPath` is the resolved form definition's own
-`metadata.submission.submissionSchemaPath` (the caller is responsible for
-having already resolved the definition, e.g. via `formsService`); only the
-schema file itself lives locally in this repo. Compiled validators are cached
-in-memory in a `Map<string, ValidateFunction>` keyed by grant code so a given
-grant's schema is only read and compiled from disk once per process.
-
-#### Current Runtime Behaviour
-
-`validateSubmissionAnswers` is not currently wired into the grants-ui
-submission pipeline at runtime — it is used only in tests (e.g.
-`state-to-gas-answers-mapper.test.js`) to ensure that mapper output conforms
-to the expected schema format.
 
 ### Using the `gas.http` helper and HTTP client environments
 

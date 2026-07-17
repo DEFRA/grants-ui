@@ -113,8 +113,6 @@
     "@hapi/yar": "11.0.3",
     "@mapbox/vector-tile": "3.0.0",
     "accessible-autocomplete": "3.0.1",
-    "ajv": "8.20.0",
-    "ajv-formats": "3.0.1",
     "aws-embedded-metrics": "4.2.1",
     "convict": "6.2.5",
     "date-fns": "4.4.0",

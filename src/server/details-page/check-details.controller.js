@@ -9,7 +9,6 @@ import { debug, log, LogCodes } from '../common/helpers/logging/log.js'
 import { mergeAdditionalAnswers } from '../common/helpers/state/additional-answers-helper.js'
 import { ComponentType, ControllerType } from '@defra/forms-model'
 import { config } from '~/src/config/config.js'
-import { findFormBySlug } from '~/src/server/common/forms/services/find-form-by-slug.js'
 
 const ERROR_TITLE = 'There is a problem'
 const UPDATE_DETAILS_PATH = '/update-details'
@@ -57,15 +56,12 @@ export class UpdateDetailsPageController extends TerminalPageController {
     return async (request, _context, h) => {
       const { slug } = request.params
 
-      const form = await findFormBySlug(slug)
-      const formMetadata = /** @type {Record<string, unknown>} */ (form?.metadata ?? {})
-      const modelMetadata = /** @type {Record<string, unknown>} */ (this.model.def.metadata ?? {})
-      const metadata = { ...formMetadata, ...modelMetadata }
+      const metadata = /** @type {Record<string, unknown>} */ (this.model.def.metadata ?? {})
       const sfdUpdateUrl = this.getSfdUpdateUrl(request)
 
       return h.view('incorrect-details', {
         pageTitle: 'Update your details',
-        serviceName: this.model.def.name ?? form?.title,
+        serviceName: this.model.def.name,
         serviceUrl: `/${slug}`,
         backLink: sfdUpdateUrl ? null : { href: `/${slug}/check-details` },
         incorrectDetailsContent: metadata.incorrectDetailsContent ?? null,

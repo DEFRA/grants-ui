@@ -53,8 +53,7 @@ describe('state-with-definition-context', () => {
 
       expect(mintLockToken).toHaveBeenCalledWith({ userId: 'c1', sbi: 'biz-1', grantCode: 'grant-a' })
       expect(fetchStateWithDefinitionFromApi).toHaveBeenCalledWith('biz-1:grant-a', request, {
-        lockToken: 'READ-LOCK',
-        includeDefinition: true
+        lockToken: 'READ-LOCK'
       })
     })
 

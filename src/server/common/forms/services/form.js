@@ -6,8 +6,6 @@ import { readFile } from 'node:fs/promises'
 import { parse as parseYaml } from 'yaml'
 import { notFound } from '@hapi/boom'
 import agreements from '~/src/config/agreements.js'
-import { getFormsRedisClient, registerSlug, setFormMeta } from './forms-redis.js'
-import { waitForRedisReady } from '~/src/server/common/helpers/redis-client.js'
 import {
   currentRequest,
   getStateWithDefinition,
@@ -91,33 +89,6 @@ export function hoistPageConfig(definition) {
 }
 
 /**
- * Records a successfully resolved form in Redis: adds the slug to the
- * known-slug set and refreshes the meta entry (title + definition metadata)
- * that `findFormBySlug` and the dev-tools listings read.
- *
- * Runs only *after* the backend has returned a definition, so unknown or
- * mistyped slugs never pollute the registry, and runs on every resolution so
- * the entry tracks the latest published definition instead of going stale.
- *
- * @param {FormsRedisClient} redis
- * @param {string} slug
- * @param {FormDefinition} definition
- * @returns {Promise<void>}
- */
-async function registerResolvedForm(redis, slug, definition) {
-  await Promise.all([
-    setFormMeta(redis, slug, {
-      id: slug,
-      slug,
-      title: definition.name ?? slug,
-      source: 'backend',
-      metadata: /** @type {Record<string, unknown>} */ (definition.metadata)
-    }),
-    registerSlug(redis, slug)
-  ])
-}
-
-/**
  * Resolves a backend-sourced form definition from the per-request combined
  * response (stashed on `request.app` and recovered here via AsyncLocalStorage).
  * Throws clearly if there is no active request context, so a background or
@@ -158,17 +129,15 @@ async function resolveBackendDefinition(slug, sharedRules) {
 }
 
 /**
- * @param {FormsRedisClient} redis
  * @param {SharedRedirectRules} sharedRules
  */
-function buildServiceInterface(redis, sharedRules) {
+function buildServiceInterface(sharedRules) {
   return {
     /**
      * @param {string} slug
      */
     getFormMetadata: async (slug) => {
       const definition = await resolveBackendDefinition(slug, sharedRules)
-      await registerResolvedForm(redis, slug, definition)
 
       // The backend definition document carries its own `updatedAt` (which
       // changes when a new version is published) and a `status`
@@ -211,7 +180,7 @@ function buildServiceInterface(redis, sharedRules) {
     },
 
     /**
-     * Used by the slug-lookup helpers (`find-form-by-slug.js`).
+     * Used by the dev-tools helpers (`resolve-form-definition.js`).
      * @param {string} slug
      */
     getFormDefinitionBySlug: async (slug) => {
@@ -221,21 +190,13 @@ function buildServiceInterface(redis, sharedRules) {
 }
 
 export const formsService = async () => {
-  const redis = getFormsRedisClient()
-  await waitForRedisReady(redis)
-
   const sharedRules = await loadSharedRedirectRules()
 
-  return buildServiceInterface(redis, sharedRules)
+  return buildServiceInterface(sharedRules)
 }
 
 /**
  * @import { FormDefinition } from '@defra/forms-model'
- * @import { Redis, Cluster } from 'ioredis'
- */
-
-/**
- * @typedef {Redis | Cluster} FormsRedisClient
  */
 
 /**

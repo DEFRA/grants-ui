@@ -73,10 +73,17 @@ describe('updateApplicationStatus', () => {
       vi.unmock('~/src/config/config.js')
     })
 
+    it('throws when no grantVersion is provided', async () => {
+      await expect(updateApplicationStatus(APPLICATION_STATUS, KEY)).rejects.toThrow(
+        'Missing grantVersion for application status update'
+      )
+      expect(fetch).not.toHaveBeenCalled()
+    })
+
     it('updates application status successfully when response is ok', async () => {
       fetch.mockResolvedValue(createMockFetchResponse())
 
-      await updateApplicationStatus(APPLICATION_STATUS, KEY)
+      await updateApplicationStatus(APPLICATION_STATUS, KEY, { grantVersion: '1.0.0' })
 
       const expectedBody = JSON.stringify({
         state: {
@@ -122,7 +129,7 @@ describe('updateApplicationStatus', () => {
       fetch.mockResolvedValue(createMockFetchResponse())
       const lockToken = 'test-lock-token-123'
 
-      await updateApplicationStatus(APPLICATION_STATUS, KEY, { lockToken })
+      await updateApplicationStatus(APPLICATION_STATUS, KEY, { lockToken, grantVersion: '1.0.0' })
 
       expect(mockCreateApiHeaders).toHaveBeenCalledTimes(1)
       expect(mockCreateApiHeaders).toHaveBeenCalledWith({ lockToken })
@@ -132,7 +139,7 @@ describe('updateApplicationStatus', () => {
       const failedResponse = createMockFetchResponse({ ok: false, status: 500, statusText: 'Internal Server Error' })
       fetch.mockResolvedValue(failedResponse)
 
-      await updateApplicationStatus(APPLICATION_STATUS, KEY)
+      await updateApplicationStatus(APPLICATION_STATUS, KEY, { grantVersion: '1.0.0' })
 
       expect(fetch).toHaveBeenCalledTimes(1)
       expect(log).toHaveBeenCalledWith(
@@ -150,7 +157,7 @@ describe('updateApplicationStatus', () => {
       const networkError = new Error('Network error')
       fetch.mockRejectedValue(networkError)
 
-      await updateApplicationStatus(APPLICATION_STATUS, KEY)
+      await updateApplicationStatus(APPLICATION_STATUS, KEY, { grantVersion: '1.0.0' })
 
       expect(fetch).toHaveBeenCalledTimes(1)
       expect(debug).toHaveBeenCalledWith(

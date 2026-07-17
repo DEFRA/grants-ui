@@ -1,4 +1,5 @@
 import { getCacheKey } from '~/src/server/common/helpers/state/get-cache-key-helper.js'
+import { getGrantVersion } from '~/src/server/common/helpers/grant-version.js'
 import { clearSavedStateFromApi } from '../../helpers/state/fetch-saved-state-helper.js'
 import { getStateWithDefinition, resolveVersion } from '../../helpers/state/state-with-definition-context.js'
 import { persistStateToApi } from '../../helpers/state/persist-state-helper.js'
@@ -99,8 +100,11 @@ export class StatePersistenceService extends CacheService {
    * version the backend resolved for the read:
    * 1. `request.app.grantVersion` recorded by {@link getState}
    * 2. otherwise re-resolved from the combined envelope
-   * 3. otherwise the form definition's authored version (defaulting to 1 to
-   *    support non-config broker grants)
+   * 3. otherwise the version stamped on the form model's metadata
+   *
+   * Throws when no version can be resolved: every definition is served by
+   * grants-ui-backend with a version, so a missing version is a bug, not a
+   * legacy grant.
    *
    * @param {AnyRequest} request
    * @returns {Promise<string | number>}
@@ -112,7 +116,7 @@ export class StatePersistenceService extends CacheService {
     }
 
     const resolved = resolveVersion(await getStateWithDefinition(request))
-    return resolved ?? /** @type {string | number} */ (request.app.model?.def?.metadata?.version) ?? 1
+    return resolved ?? getGrantVersion(request)
   }
 
   /**
@@ -200,16 +204,13 @@ export class StatePersistenceService extends CacheService {
    *
    * @param {AnyRequest} request
    * @param {string | number} [grantVersion] - The grant version to scope the
-   * lock to. Defaults to the form definition's authored version (1 for
-   * non-config broker grants). Callers that have resolved the active backend
-   * version (e.g. {@link setState}) should pass it so the lock matches the
-   * version the state is written under.
+   * lock to. Defaults to the version resolved for the current request.
+   * Callers that have resolved the active backend version (e.g.
+   * {@link setState}) should pass it so the lock matches the version the
+   * state is written under.
    * @returns {string} A signed JWT lock token
    */
-  _buildLockToken(
-    request,
-    grantVersion = /** @type {string | number} */ (request.app.model?.def?.metadata?.version) ?? 1
-  ) {
+  _buildLockToken(request, grantVersion = getGrantVersion(request)) {
     const { sbi, grantCode } = getCacheKey(request)
     const contactId = request.auth?.credentials?.contactId
 

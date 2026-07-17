@@ -11,16 +11,20 @@ const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
  *
  * @param {string} applicationStatus - The new application status to persist.
  * @param {string} key - The session key in `sbi:grantCode` form.
- * @param {{ lockToken?: string, grantVersion?: string }} [options] - Optional lock token and grant version.
+ * @param {{ lockToken?: string, grantVersion?: string | number }} options - Lock token and grant version.
  * @returns {Promise<void>} Resolves once the update request completes.
  */
 export async function updateApplicationStatus(
   applicationStatus,
   key,
-  { lockToken, grantVersion = '1.0.0' } = /** @type {{ lockToken?: string, grantVersion?: string }} */ ({})
+  { lockToken, grantVersion } = /** @type {{ lockToken?: string, grantVersion?: string | number }} */ ({})
 ) {
   if (!GRANTS_UI_BACKEND_ENDPOINT?.length) {
     return
+  }
+
+  if (!grantVersion) {
+    throw new Error('Missing grantVersion for application status update')
   }
 
   const { sbi, grantCode } = parseSessionKey(key)
