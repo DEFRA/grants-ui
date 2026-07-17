@@ -16,6 +16,7 @@
  *   gt restart [--dry-run]       # restart running containers (with --no-deps)
  *   gt test [unit|contracts|acceptance]  # run tests (default: unit)
  *   gt sonar [--skip-tests]      # local SonarQube scan (server left up for the dashboard)
+ *   gt sonar --changed           # scope scan to src files changed vs main (approx. CI PR view)
  *   gt sonar --down              # force-stop a leftover SonarQube server
  *   gt snyk                      # Snyk dependency vulnerability scan (run `snyk auth` once — free account)
  *   gt reset [--dry-run]         # full teardown incl. volumes
@@ -131,11 +132,33 @@ const SNYK = {
 }
 const SNYK_EXIT = { OK: 0, VULNS: 1, ERROR: 2 }
 
+const LOG_RETENTION_MS = 7 * 24 * 60 * 60 * 1000 // sweep grants-tui-*.log older than this
+
 // ---------------------------------------------------------------------------
 // Pre-up script — runs before `docker compose up` every time.
 // Set to null or '' to disable.
 // ---------------------------------------------------------------------------
 const PRE_UP_SCRIPT = resolve(ROOT, 'tools/setup-local-config.sh')
+
+// Sweep of stale tool logs from tmpdir. macOS auto-clears windows tmpdir
+// after ~3 days
+function sweepOldLogs() {
+  const dir = os.tmpdir()
+  const now = Date.now()
+  let entries
+  try {
+    entries = fs.readdirSync(dir)
+  } catch (err) {
+    console.error(`  ${DIM}log sweep skipped: ${err.message}${RESET_COLOR}`)
+    return
+  }
+  for (const name of entries) {
+    if (!name.startsWith('grants-tui-') || !name.endsWith('.log')) continue
+    const full = resolve(dir, name)
+    const stat = fs.statSync(full, { throwIfNoEntry: false })
+    if (stat && now - stat.mtimeMs > LOG_RETENTION_MS) fs.rmSync(full, { force: true })
+  }
+}
 
 // Temp files created this session — cleaned up on exit
 const _tempFiles = []
@@ -643,8 +666,11 @@ function writeSonarState(state) {
  * @returns {Promise<Response>}
  */
 function sonarApi(path, { method = 'GET', auth, body } = {}) {
+  // `Connection: close` forces a fresh socket per call. Otherwise undici pools
+  // keep-alive sockets, and the long (~70s) scanner gap lets SonarQube close a
+  // pooled socket — the next poll would reuse the dead one (UND_ERR_SOCKET).
   /** @type {Record<string, string>} */
-  const headers = {}
+  const headers = { Connection: 'close' }
   if (auth) headers.Authorization = `Basic ${Buffer.from(auth).toString('base64')}`
   if (body) headers['Content-Type'] = 'application/x-www-form-urlencoded'
   return fetch(`${SONAR.hostUrl}${path}`, { method, headers, body })
@@ -727,6 +753,22 @@ async function ensureSonarToken() {
   return token
 }
 
+/**
+ * Delete the local project so each scan starts from a clean slate — otherwise the
+ * project accumulates prior analyses and "new code" keeps flagging untested files
+ * from earlier runs.
+ */
+async function resetSonarProject(token) {
+  const res = await sonarApi('/api/projects/delete', {
+    method: 'POST',
+    auth: `${token}:`,
+    body: new URLSearchParams({ project: SONAR.projectKey })
+  })
+  if (!res.ok && res.status !== 404) {
+    console.log(`  ${YELLOW}⚠${RESET_COLOR}  Could not reset the local project (HTTP ${res.status}) — continuing.`)
+  }
+}
+
 /** Create the local project if it doesn't already exist (HTTP 400 = exists). */
 async function ensureSonarProject(token) {
   const res = await sonarApi('/api/projects/create', {
@@ -785,11 +827,17 @@ function readCeTaskId() {
 async function waitForCeTask(taskId, token) {
   const deadline = Date.now() + 90000
   while (Date.now() < deadline) {
-    const res = await sonarApi(`/api/ce/task?id=${encodeURIComponent(taskId)}`, { auth: `${token}:` })
-    if (res.ok) {
-      const { task } = await res.json()
-      if (task.status === 'SUCCESS') return task.analysisId
-      if (task.status === 'FAILED' || task.status === 'CANCELED') return null
+    try {
+      const res = await sonarApi(`/api/ce/task?id=${encodeURIComponent(taskId)}`, { auth: `${token}:` })
+      if (res.ok) {
+        const { task } = await res.json()
+        if (task.status === 'SUCCESS') return task.analysisId
+        if (task.status === 'FAILED' || task.status === 'CANCELED') return null
+      }
+    } catch {
+      // Transient socket drop while the server is busy processing the report
+      // (e.g. UND_ERR_SOCKET) — show progress and keep polling until the deadline.
+      process.stdout.write('.')
     }
     await sleep(2000)
   }
@@ -798,10 +846,39 @@ async function waitForCeTask(taskId, token) {
 
 /** Fetch the quality-gate outcome for a completed analysis. */
 async function fetchQualityGate(analysisId, token) {
-  const res = await sonarApi(`/api/qualitygates/project_status?analysisId=${encodeURIComponent(analysisId)}`, {
-    auth: `${token}:`
-  })
-  return res.ok ? (await res.json()).projectStatus : null
+  try {
+    const res = await sonarApi(`/api/qualitygates/project_status?analysisId=${encodeURIComponent(analysisId)}`, {
+      auth: `${token}:`
+    })
+    return res.ok ? (await res.json()).projectStatus : null
+  } catch (err) {
+    console.log(`\n  ${YELLOW}⚠${RESET_COLOR}  Could not read the quality gate: ${err.message}`)
+    return null
+  }
+}
+
+/**
+ * Files changed on this branch vs main (committed + working tree), src/ only.
+ * Used by `gt sonar --changed` to approximate CI's PR-scoped analysis, since the
+ * local Community Edition server has no branch/PR analysis. Returns null when git
+ * is unavailable or this isn't a repo (caller falls back to a full scan).
+ * @returns {string[] | null}
+ */
+function changedSrcFiles() {
+  const run = (args) => {
+    const r = spawnSync('git', args, { cwd: ROOT, encoding: 'utf8' })
+    return r.status === 0
+      ? r.stdout
+          .split('\n')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : null
+  }
+  const committed = run(['diff', '--name-only', 'main...HEAD']) // merge-base = PR commits
+  const working = run(['diff', '--name-only', 'HEAD']) // staged + unstaged WIP
+  if (committed === null || working === null) return null
+  const set = new Set([...committed, ...working])
+  return [...set].filter((f) => f.startsWith('src/') && fs.existsSync(resolve(ROOT, f)))
 }
 
 /** Print the quality gate result; returns true when it passed. */
@@ -823,10 +900,10 @@ function printQualityGate(qg) {
  * Run a SonarQube analysis against the local server. Boots the container,
  * bootstraps a token, ensures coverage exists, then runs the scanner with -D
  * flags that retarget the CI `sonar-project.properties` at the local instance.
- * @param {{dryRun?:boolean, down?:boolean, skipTests?:boolean}} [opts]
+ * @param {{dryRun?:boolean, down?:boolean, skipTests?:boolean, changed?:boolean}} [opts]
  * @returns {Promise<number>} child exit code (0 = pass)
  */
-async function cmdSonar({ dryRun = false, down = false, skipTests = false } = {}) {
+async function cmdSonar({ dryRun = false, down = false, skipTests = false, changed = false } = {}) {
   const composeArgs = ['compose', '-f', SONAR.composeFile]
 
   if (down) {
@@ -834,6 +911,24 @@ async function cmdSonar({ dryRun = false, down = false, skipTests = false } = {}
     if (dryRun) return 0
     const r = spawnSync('docker', [...composeArgs, 'down'], { cwd: ROOT, stdio: 'inherit', encoding: 'utf8' })
     return r.status ?? 1
+  }
+
+  // --changed: scope the scan to src files this branch changed vs main (approximates
+  // CI's PR view). No changed src files → nothing to check, so skip before booting the
+  // server rather than full-scanning, which would re-flag untested code already on main.
+  let inclusions = null
+  if (changed) {
+    const files = changedSrcFiles()
+    if (!files || !files.length) {
+      console.log(
+        `\n  ${YELLOW}⚠${RESET_COLOR}  --changed: no src files changed vs main — nothing to scan.` +
+          ` ${DIM}(Use plain 'gt sonar' for a full scan.)${RESET_COLOR}\n`
+      )
+      return SONAR_EXIT.OK
+    }
+    inclusions = files
+    console.log(`\n  ${DIM}Scoping to ${files.length} changed src file(s) vs main:${RESET_COLOR}`)
+    for (const f of files) console.log(`    ${DIM}• ${f}${RESET_COLOR}`)
   }
 
   // 1. Start the server and wait for readiness.
@@ -856,6 +951,7 @@ async function cmdSonar({ dryRun = false, down = false, skipTests = false } = {}
   if (!dryRun) {
     try {
       token = await ensureSonarToken()
+      await resetSonarProject(token) // clean slate each run — no stale "new code"
       await ensureSonarProject(token)
       await disableForcedAuth(token)
     } catch (err) {
@@ -883,6 +979,7 @@ async function cmdSonar({ dryRun = false, down = false, skipTests = false } = {}
     `-Dsonar.token=${token}`,
     `-Dsonar.projectKey=${SONAR.projectKey}`
   ]
+  if (inclusions) flags.push(`-Dsonar.inclusions=${inclusions.join(',')}`)
   const runCmd = `docker ${composeArgs.join(' ')} run --rm ${SONAR.scannerService} ${flags.join(' ')}`
   console.log(`\n  ${DIM}▶${RESET_COLOR}  ${runCmd.replace(token, '***')}\n`)
   if (dryRun) return 0
@@ -1420,7 +1517,7 @@ ${BOLD}Commands:${RESET_COLOR}
   debug   Restart grants-ui in debug mode (detached, port 9229)
   restart Restart running containers (selectable; uses --no-deps)
   test    Run tests: ${TEST_TARGETS.map((t) => t.key).join(' | ')} (default: ${TEST_TARGETS[0].key})
-  sonar   Run SonarQube analysis against a local server (--down stops it)
+  sonar   Run SonarQube analysis against a local server (--changed scopes to PR files; --down stops it)
   snyk    Run Snyk dependency vulnerability scan (same as CI; needs a Snyk login — see below)
   reset   Full teardown: containers + volumes + local images
 
@@ -1453,6 +1550,7 @@ ${BOLD}Examples:${RESET_COLOR}
   gt test                            # unit tests (default)
   gt test acceptance                 # docker-based acceptance journeys
   gt sonar                           # local SonarQube scan of src/
+  gt sonar --changed                 # scope scan to src files changed vs main (approx. CI PR view)
   gt sonar --down                    # stop the local SonarQube server
   gt snyk                            # Snyk dependency vulnerability scan
   gt reset
@@ -1499,6 +1597,8 @@ function resumeStdin() {
 async function main() {
   const argv = process.argv.slice(2)
 
+  sweepOldLogs()
+
   if (argv.includes('--help') || argv.includes('-h')) {
     printHelp()
     process.exit(0)
@@ -1528,6 +1628,7 @@ async function main() {
       '--ha',
       '--down',
       '--skip-tests',
+      '--changed',
       ...LOCAL_SERVICES.map((s) => `--local-${s.key}`)
     ]
     const scaleValIdx = argv.indexOf('--scale')
@@ -1607,7 +1708,8 @@ async function main() {
     const code = await cmdSonar({
       dryRun,
       down: argv.includes('--down'),
-      skipTests: argv.includes('--skip-tests')
+      skipTests: argv.includes('--skip-tests'),
+      changed: argv.includes('--changed')
     })
     process.exit(code)
   }
