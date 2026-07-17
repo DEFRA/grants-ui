@@ -2,6 +2,7 @@ import { Given, Then } from '@cucumber/cucumber'
 import expect from '../support/expect.js'
 import { transformStepArgument } from '../utils/step-argument-transformation.js'
 import Backend from '../utils/backend.js'
+import Mongo from '../utils/mongo.js'
 
 Given(
   'there is no application lock for CRN {string} and SBI {string} and grant {string}',
@@ -53,5 +54,20 @@ Then(
   async function (crn, sbi, grantCode, status) {
     const application = (await Backend.getState(crn, sbi, grantCode)).state
     expect(application.applicationStatus).toEqual(status)
+  }
+)
+
+Given(
+  'the application status in the backend for CRN {string} and SBI {string} and grant {string} is now {string}',
+  async function (crn, sbi, grantCode, applicationStatus) {
+    await Mongo.setApplicationStatus(crn, sbi, grantCode, applicationStatus)
+  }
+)
+
+Then(
+  'there should be no application state in the backend for CRN {string} and SBI {string} and grant {string}',
+  async function (crn, sbi, grantCode) {
+    const state = await Mongo.getApplicationState(crn, sbi, grantCode)
+    expect(state).toBeNull()
   }
 )

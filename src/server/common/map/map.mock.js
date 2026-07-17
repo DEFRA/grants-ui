@@ -5646,13 +5646,18 @@ function mockBbox() {
  * @returns {{ features: import('./types.js').ParcelFeature[], bbox: { minLng: number, minLat: number, maxLng: number, maxLat: number } }}
  */
 export function buildMockFeatures(parcels) {
-  const features = parcels.map((p, i) => {
-    const idx = i % MOCK_GEOMETRIES.length
+  // An account can hold more parcels than there are embedded shapes (some
+  // local test accounts have 50+). Parcels beyond the limit are not rendered:
+  // reusing a shape stacked two parcels on one footprint, so the rendered
+  // label and the clicked feature disagreed on which parcel it was.
+  const features = parcels.slice(0, MOCK_GEOMETRIES.length).map((p, i) => {
     return /** @type {import('./types.js').ParcelFeature} */ ({
       type: 'Feature',
       id: p.id,
-      geometry: MOCK_GEOMETRIES[idx],
-      properties: { id: p.id, sheet_id: p.sheetId, parcel_id: p.parcelId, areaHa: MOCK_AREAS[idx] }
+      geometry: MOCK_GEOMETRIES[i],
+      // Real area when the size API supplied one, so the tooltip matches what
+      // the rest of the journey shows; the shape's own area only as a fallback.
+      properties: { id: p.id, sheet_id: p.sheetId, parcel_id: p.parcelId, areaHa: p.areaHa ?? MOCK_AREAS[i] }
     })
   })
   return { features, bbox: mockBbox() }
