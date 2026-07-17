@@ -19,6 +19,7 @@
  *   gt sonar --changed           # scope scan to src files changed vs main (approx. CI PR view)
  *   gt sonar --down              # force-stop a leftover SonarQube server
  *   gt snyk                      # Snyk dependency vulnerability scan (run `snyk auth` once — free account)
+ *   gt check                     # pre-PR full check: all tests + snyk + PR-scoped sonar (CI gates)
  *   gt reset [--dry-run]         # full teardown incl. volumes
  *   gt --help                    # show help
  *   gt --version                 # show version number
@@ -131,6 +132,10 @@ const SNYK = {
   bin: resolve(ROOT, 'node_modules', '.bin', process.platform === 'win32' ? 'snyk.cmd' : 'snyk')
 }
 const SNYK_EXIT = { OK: 0, VULNS: 1, ERROR: 2 }
+
+// `gt check` writes its pass/fail summary here — the interactive TUI clears the
+// alternate screen on return, so console output alone is lost from scroll-back.
+const CHECK = { logFile: resolve(os.tmpdir(), 'grants-tui-check.log') }
 
 const LOG_RETENTION_MS = 7 * 24 * 60 * 60 * 1000 // sweep grants-tui-*.log older than this
 
@@ -1032,6 +1037,51 @@ async function cmdSonar({ dryRun = false, down = false, skipTests = false, chang
   return gatePassed === false ? SONAR_EXIT.GATE_FAILED : SONAR_EXIT.OK
 }
 
+/**
+ * Pre-PR full check: run every test suite, then Snyk, then a PR-scoped SonarQube
+ * scan — the same gates CI enforces. Runs every step even when an earlier one
+ * fails, so a single pass surfaces all problems, then prints a summary.
+ * @param {boolean} [dryRun]
+ * @returns {Promise<number>} 0 only when every step passes
+ */
+async function cmdCheck(dryRun = false) {
+  /** @type {{name: string, ok: boolean, log: string}[]} */
+  const results = []
+  for (const t of TEST_TARGETS) {
+    results.push({ name: `test:${t.key}`, ok: cmdTest(t.key, dryRun) === 0, log: testLogPath(t.key) })
+  }
+  results.push({ name: 'snyk', ok: cmdSnyk(dryRun) === SNYK_EXIT.OK, log: SNYK.logFile })
+  results.push({ name: 'sonar', ok: (await cmdSonar({ dryRun, changed: true })) === SONAR_EXIT.OK, log: SONAR.logFile })
+
+  const failed = results.filter((r) => !r.ok)
+  const allOk = failed.length === 0
+  const pad = Math.max(...results.map((r) => r.name.length))
+
+  // Plain-text summary to a log — the interactive TUI clears the screen on return,
+  // so console output alone is lost. Failed steps point at their own output log.
+  const summary =
+    `pre-pr check — ${allOk ? 'all passed' : `${failed.length} failed`}\n` +
+    results.map((r) => `  ${r.ok ? '✔' : '✖'} ${r.name.padEnd(pad)}${r.ok ? '' : `   → ${r.log}`}`).join('\n') +
+    '\n'
+  try {
+    fs.writeFileSync(CHECK.logFile, summary)
+  } catch (err) {
+    console.error(`  ${DIM}could not write check summary: ${err.message}${RESET_COLOR}`)
+  }
+
+  console.log(`\n  ${BOLD}pre-pr check summary${RESET_COLOR}`)
+  for (const r of results) {
+    const tail = r.ok ? '' : `  ${DIM}→ ${r.log}${RESET_COLOR}`
+    console.log(`    ${r.ok ? `${GREEN}✔${RESET_COLOR}` : `${RED}✖${RESET_COLOR}`}  ${r.name}${tail}`)
+  }
+  console.log(
+    allOk
+      ? `\n  ${GREEN}✔  All checks passed${RESET_COLOR}  ${DIM}(${CHECK.logFile})${RESET_COLOR}\n`
+      : `\n  ${RED}✖  ${failed.length} failed${RESET_COLOR}  ${DIM}(${CHECK.logFile})${RESET_COLOR}\n`
+  )
+  return allOk ? 0 : 1
+}
+
 function cmdUp(selectedAddons, scale, dryRun, localServices = []) {
   const fileArgs = composeFileArgs(selectedAddons, localServices)
   const extraArgs = ['-d', '--wait']
@@ -1519,6 +1569,7 @@ ${BOLD}Commands:${RESET_COLOR}
   test    Run tests: ${TEST_TARGETS.map((t) => t.key).join(' | ')} (default: ${TEST_TARGETS[0].key})
   sonar   Run SonarQube analysis against a local server (--changed scopes to PR files; --down stops it)
   snyk    Run Snyk dependency vulnerability scan (same as CI; needs a Snyk login — see below)
+  check   Pre-PR full check: all test suites + snyk + PR-scoped sonar (runs every step, summarises)
   reset   Full teardown: containers + volumes + local images
 
 ${BOLD}Addon flags (for 'up'):${RESET_COLOR}
@@ -1553,6 +1604,7 @@ ${BOLD}Examples:${RESET_COLOR}
   gt sonar --changed                 # scope scan to src files changed vs main (approx. CI PR view)
   gt sonar --down                    # stop the local SonarQube server
   gt snyk                            # Snyk dependency vulnerability scan
+  gt check                           # pre-PR full check: all tests + snyk + PR-scoped sonar
   gt reset
 `)
 }
@@ -1613,7 +1665,7 @@ async function main() {
 
   // Validate args before doing anything else — catch unrecognised flags/commands early
   {
-    const knownCmds = ['up', 'down', 'debug', 'restart', 'reset', 'test', 'sonar', 'snyk']
+    const knownCmds = ['up', 'down', 'debug', 'restart', 'reset', 'test', 'sonar', 'snyk', 'check']
     // Test targets are valid positionals only after the `test` command
     const testTargetKeys = argv.includes('test') ? TEST_TARGETS.map((t) => t.key) : []
     const knownFlags = [
@@ -1717,6 +1769,10 @@ async function main() {
     releaseStdin()
     process.exit(cmdSnyk(dryRun))
   }
+  if (argv.includes('check')) {
+    releaseStdin()
+    process.exit(await cmdCheck(dryRun))
+  }
   if (argv.includes('up')) {
     const flaggedAddons = ADDONS.filter((a) => argv.includes(`--${a.key}`)).map((a) => a.key)
     const scaleIdx = argv.indexOf('--scale')
@@ -1809,6 +1865,7 @@ async function main() {
         description: 'Scan src/ on a local SonarQube server (left up for the dashboard)'
       },
       { key: 'snyk', label: 'snyk', description: 'Snyk dependency vulnerability scan (same as CI)' },
+      { key: 'check', label: 'pre-pr check', description: 'Run all tests, Snyk and a PR-scoped Sonar scan (CI gates)' },
       { key: 'reset', label: 'reset ⇢', description: 'Full teardown — removes volumes & images' }
     ]
 
@@ -2075,6 +2132,18 @@ async function main() {
       } else {
         statusLine = `${RED}✖${RESET_COLOR}  Sonar run error — output: ${SONAR.logFile}`
       }
+      continue
+    }
+
+    if (command === 'check') {
+      pauseStdin()
+      const code = await cmdCheck(dryRun)
+      resumeStdin()
+      statusLine = dryRun
+        ? `${DIM}pre-pr check dry-run complete${RESET_COLOR}`
+        : code === 0
+          ? `${PURPLE}✔  pre-pr check passed${RESET_COLOR} — ${DIM}${CHECK.logFile}${RESET_COLOR}`
+          : `${RED}✖  pre-pr check failed${RESET_COLOR} — summary: ${CHECK.logFile}`
       continue
     }
 
