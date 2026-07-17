@@ -20,7 +20,12 @@ vi.mock('../../common/helpers/logging/log.js', async () => {
 })
 
 const mockDefinition = { ...MOCK_SINGLE_PAGE_DEFINITION, lists: [] }
-const mockForm = { slug: 'test-form', title: mockDefinition.name ?? 'test-form', metadata: mockDefinition.metadata }
+const mockForm = {
+  id: 'test-form',
+  slug: 'test-form',
+  title: mockDefinition.name ?? 'test-form',
+  name: mockDefinition.name ?? 'test-form'
+}
 
 describe('demo-print-application.handler', () => {
   let mockRequest

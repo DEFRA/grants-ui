@@ -36,14 +36,24 @@ export const viewPaths = (() => {
   ]
 })()
 
-const nunjucksEnvironment = nunjucks.configure(['node_modules/govuk-frontend/dist/', ...viewPaths], {
-  autoescape: true,
-  throwOnUndefined: false,
-  trimBlocks: true,
-  lstripBlocks: true,
-  watch: config.get('nunjucks.watch'),
-  noCache: config.get('nunjucks.noCache')
-})
+// The engine views path makes the plugin's partials (e.g. partials/components.html,
+// imported by check-details) resolvable when app routes render engine-styled views
+// outside the plugin's own nunjucks environment (e.g. the /dev demo pages).
+const nunjucksEnvironment = nunjucks.configure(
+  [
+    'node_modules/govuk-frontend/dist/',
+    'node_modules/@defra/forms-engine-plugin/.server/server/plugins/engine/views/',
+    ...viewPaths
+  ],
+  {
+    autoescape: true,
+    throwOnUndefined: false,
+    trimBlocks: true,
+    lstripBlocks: true,
+    watch: config.get('nunjucks.watch'),
+    noCache: config.get('nunjucks.noCache')
+  }
+)
 
 /**
  * @satisfies {ServerRegisterPluginObject<ServerViewsConfiguration>}

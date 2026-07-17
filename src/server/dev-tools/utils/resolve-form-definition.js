@@ -7,8 +7,12 @@
  * @returns {Promise<import('@defra/forms-model').FormDefinition | null>}
  */
 export async function resolveFormDefinition(request) {
+  const { slug } = request.params
+  if (!slug) {
+    return null
+  }
   try {
-    return await request.server.methods.getFormService().getFormDefinitionBySlug(request.params.slug)
+    return await request.server.methods.getFormService().getFormDefinitionBySlug(slug)
   } catch (err) {
     const boom = /** @type {{ isBoom?: boolean, output?: { statusCode?: number } }} */ (err)
     if (boom?.isBoom && boom.output?.statusCode === 404) {

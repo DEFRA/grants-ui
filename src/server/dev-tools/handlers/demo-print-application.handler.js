@@ -23,7 +23,7 @@ export async function demoPrintApplicationHandler(request, h) {
       return generateFormNotFoundResponse(slug, h)
     }
 
-    const form = { slug, title: definition.name ?? slug, metadata: definition.metadata }
+    const form = { id: slug, slug, title: definition.name ?? slug, name: definition.name ?? slug }
 
     enrichDefinitionWithListItems(definition)
 

@@ -25,7 +25,12 @@ describe('demo-confirmation.handler', () => {
   let mockLogger
 
   const mockDefinition = { name: MOCK_FORMS.basic.title, metadata: { confirmationContent: {} } }
-  const mockForm = { slug: 'test-form', title: MOCK_FORMS.basic.title, metadata: { confirmationContent: {} } }
+  const mockForm = {
+    slug: 'test-form',
+    title: MOCK_FORMS.basic.title,
+    name: MOCK_FORMS.basic.title,
+    metadata: { confirmationContent: {} }
+  }
   const mockConfirmationContent = MOCK_CONFIRMATION_CONTENT.basic
 
   beforeEach(() => {
@@ -121,6 +126,7 @@ describe('demo-confirmation.handler', () => {
       expect(ConfirmationService.buildViewModel).toHaveBeenCalledWith({
         ...MOCK_DEMO_DATA,
         isDevelopmentMode: true,
+        form: { name: 'Demo form' },
         confirmationContent: expect.objectContaining({
           html: expect.stringContaining('Development Error')
         })
