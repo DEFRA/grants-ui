@@ -21,7 +21,6 @@ const DEFAULT_CONFIG_MOCK = {
   },
   serviceName: 'test-service',
   serviceVersion: '1.0.0',
-  'forms.backendAllowlistEnabledSlugs': []
 }
 
 vi.mock('~/src/server/common/helpers/state/state-with-definition-context.js', () => ({

@@ -49,12 +49,16 @@ vi.mock('@defra/forms-engine-plugin/controllers/TerminalPageController.js', () =
   }
 }))
 
-process.env.EXAMPLE_WHITELIST_CRNS = '1104734543,1103521484'
-process.env.EXAMPLE_WHITELIST_SBIS = '123456789,987654321'
-process.env.FARMING_PAYMENTS_WHITELIST_CRNS = '1102838829, 1102760349, 1100495932'
-process.env.FARMING_PAYMENTS_WHITELIST_SBIS = '106284736, 121428499, 106238988'
-process.env.WOODLAND_WHITELIST_CRNS = '1102838829, 1102760349, 1100495932'
-process.env.WOODLAND_WHITELIST_SBIS = '106284736, 121428499, 106238988'
+vi.mock('~/src/server/common/forms/services/forms-redis.js', () => ({
+  getFormsRedisClient: vi.fn(() => ({ status: 'ready' })),
+  setFormMeta: vi.fn(async () => {}),
+  setSlugReverse: vi.fn(async () => {}),
+  setAllSlugs: vi.fn(async () => {}),
+  getFormMeta: vi.fn(async () => null),
+  getSlugByFormId: vi.fn(async () => null),
+  getAllSlugs: vi.fn(async () => []),
+  getAllFormMetas: vi.fn(async () => [])
+}))
 
 describe('#errors', () => {
   /** @type {Server} */

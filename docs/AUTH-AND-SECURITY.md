@@ -1,7 +1,7 @@
 # Authentication & Security
 
 - [Authentication & Security](#authentication--security-1)
-  - [Whitelist Functionality](#whitelist-functionality)
+  - [Allowlist Functionality](#allowlist-functionality)
 - [Rate Limiting](#rate-limiting)
 - [Agreements System](#agreements-system)
 - [Cookies](#cookies)
@@ -16,13 +16,12 @@
 
 - **Defra ID Integration**: Primary authentication service using OpenID Connect (OIDC) protocol
   - For detailed environment variable configuration, see [Getting Started - DEFRA ID Integration](./GETTING-STARTED.md#defra-id-integration)
-- **Whitelist System**: CRN (Customer Reference Number) and SBI (Single Business Identifier) whitelisting for specific grants:
-  - `EXAMPLE_WHITELIST_CRNS`: Authorized CRNs for Example Grant journeys (used by the Example Whitelist form definition)
-  - `EXAMPLE_WHITELIST_SBIS`: Authorized SBIs for Example Grant journeys (used by the Example Whitelist form definition)
+- **Allowlist System**: Per-grant access control that restricts which signed-in users can enter a journey, based on their CRN (Customer Reference Number) and SBI (Single Business Identifier):
+  - Allow lists come from the grants-ui-backend allowlist endpoint
 
-### Whitelist Functionality
+### Allowlist Functionality
 
-Whitelisting restricts access to specific grant journeys based on Customer Reference Numbers (CRNs) and Single Business Identifiers (SBIs). Forms that require whitelisting declare the relevant environment variables in their form definition metadata, served from `grants-ui-backend` (see the example in the grants config repo: [`example-whitelist.yaml`](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-whitelist/grants-ui/example-whitelist.yaml)). At runtime, the whitelist service (`src/server/auth/services/whitelist.service.js`) reads the configured environment variables, normalises the values, and validates incoming CRN/SBI credentials. If a user's identifiers are not present in the configured whitelist, the journey is terminated and the user is shown a terminal page.
+Allowlisting restricts access to specific grant journeys based on the signed-in user's Customer Reference Number (CRN) and Single Business Identifier (SBI). At runtime, the allowlist plugin ([`src/server/common/helpers/allowlist/allowlist.js`](../src/server/common/helpers/allowlist/allowlist.js)) runs on `onPostAuth`: for an authenticated request to a grant journey, it asks grants-ui-backend which grants the user's CRN/SBI may access (`src/server/auth/services/allowlist.client.js`). If the requested grant has no allowlist.yaml or the allowlist is empty, access is denied — the user is redirected to `/auth/journey-unauthorised` and an `unauthorised` audit event (reason `allowlist`) is published. The check fails closed: if the backend call errors, access is refused.
 
 ## Rate Limiting
 

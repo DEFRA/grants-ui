@@ -14,21 +14,21 @@ The events, identified by their `action`, are:
 
 An **`unauthorised`** event (always `status: 'denied'`) distinguishes the denial case via `details.reason`:
 
-| `details.reason`    | Signed in? | Meaning                                                    | Emitted from                                       |
-| ------------------- | ---------- | ---------------------------------------------------------- | -------------------------------------------------- |
-| `not-authenticated` | No         | Not signed in - came to a grant and was bounced to sign-in | `audit.js` (the `onPreResponse` hook)              |
-| `whitelist`         | Yes        | Signed in, but CRN/SBI fails whitelist validation          | `src/server/common/helpers/whitelist/whitelist.js` |
+| `details.reason`    | Signed in? | Meaning                                                         | Emitted from                                       |
+| ------------------- | ---------- | --------------------------------------------------------------- | -------------------------------------------------- |
+| `not-authenticated` | No         | Not signed in - came to a grant and was bounced to sign-in      | `audit.js` (the `onPreResponse` hook)              |
+| `allowlist`         | Yes        | Signed in, but the grant is not in the user's backend allowlist | `src/server/common/helpers/allowlist/allowlist.js` |
 
 Publishing is **fire-and-forget** and gated behind a feature flag, so it never adds latency to - or breaks - the user's request, and is off by default.
 
 The implementation lives in:
 
-| File                                                   | Role                                                                                        |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
-| `src/server/common/helpers/audit/audit.js`             | Hapi plugin (`auditPublisher`) - registers the `onPreResponse` hook and owns the SNS client |
-| `src/server/common/helpers/audit/audit-event.js`       | Builds the event payload; maps the environment; sanitises the client IP                     |
-| `src/server/common/helpers/logging/log-codes/audit.js` | `AUDIT.EVENT_PUBLISHED` / `AUDIT.EVENT_PUBLISH_FAILED` log codes                            |
-| `src/server/common/helpers/whitelist/whitelist.js`     | Emits `unauthorised` (`reason: 'whitelist'`) when a signed-in user fails whitelist checks   |
+| File                                                   | Role                                                                                                |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| `src/server/common/helpers/audit/audit.js`             | Hapi plugin (`auditPublisher`) - registers the `onPreResponse` hook and owns the SNS client         |
+| `src/server/common/helpers/audit/audit-event.js`       | Builds the event payload; maps the environment; sanitises the client IP                             |
+| `src/server/common/helpers/logging/log-codes/audit.js` | `AUDIT.EVENT_PUBLISHED` / `AUDIT.EVENT_PUBLISH_FAILED` log codes                                    |
+| `src/server/common/helpers/allowlist/allowlist.js`     | Emits `unauthorised` (`reason: 'allowlist'`) when a signed-in user is not allowlisted for the grant |
 
 The plugin is registered in `src/server/index.js`.
 
@@ -50,7 +50,7 @@ The plugin adds an `onPreResponse` extension that fires for **every** request an
 
   The form model is never loaded for these (auth fails before the handler runs), so the start page can't be singled out - any grant route counts as an arrival. The event carries `status: 'denied'` and `details.reason: 'not-authenticated'`, and no `user`/`accounts` (there is no session).
 
-  The `whitelist` reason (see the table above) is **not** emitted by this hook: it describes a _signed-in_ user being denied, and is published from the whitelist check (via the same `request.sendAuditEvent` decoration).
+  The `allowlist` reason (see the table above) is **not** emitted by this hook: it describes a _signed-in_ user being denied, and is published from the allowlist check (via the same `request.sendAuditEvent` decoration).
 
 - **`navigate`** - a signed-in user advancing to the next page (an authenticated `POST` to `/{slug}/{path}` that returns `303`).
 

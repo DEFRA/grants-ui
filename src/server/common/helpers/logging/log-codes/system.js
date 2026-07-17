@@ -98,21 +98,6 @@ export const SYSTEM = {
     messageFunc: (messageOptions) =>
       `Invalid configuration, key "${messageOptions.key}" is missing or invalid: ${messageOptions.value}`
   },
-  WHITELIST_CONFIG_INCOMPLETE: {
-    level: 'error',
-    messageFunc: (messageOptions) =>
-      `Incomplete whitelist configuration in form "${messageOptions.formName}" | present=${messageOptions.presentVar} | missing=${messageOptions.missingVar}`
-  },
-  CRN_ENV_VAR_MISSING: {
-    level: 'error',
-    messageFunc: (messageOptions) =>
-      `CRN whitelist environment variable "${messageOptions.envVar}" missing for form "${messageOptions.formName}"`
-  },
-  SBI_ENV_VAR_MISSING: {
-    level: 'error',
-    messageFunc: (messageOptions) =>
-      `SBI whitelist environment variable "${messageOptions.envVar}" missing for form "${messageOptions.formName}"`
-  },
   INVALID_REDIRECT_RULES: {
     level: 'error',
     messageFunc: (messageOptions) =>

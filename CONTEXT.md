@@ -84,9 +84,9 @@ _Avoid_: SBI, Organisation ID, CRN
 The `ssoOrgId` query hint passed between services so Defra ID can preselect an organisation relationship during sign-in.
 _Avoid_: SBI, Organisation ID, Relationship ID once the user is authenticated
 
-**Whitelist**
-A grant-specific access list of allowed CRNs or SBIs that determines whether a signed-in user can enter a journey.
-_Avoid_: Allowlist unless renaming the feature, Permission, Role, Feature flag
+**Allowlist**
+A per-grant access list, resolved from grants-ui-backend, that determines whether a signed-in user's CRN/SBI can enter a journey.
+_Avoid_: Whitelist, Permission, Role, Feature flag
 
 **Task list**
 A structured progress page that groups a grant journey into sections and tasks, showing whether work is not started, unavailable, or completed.

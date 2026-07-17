@@ -311,14 +311,6 @@ const convictConfig = {
     env: 'MAP_TILE_CACHE_MAX_AGE_SECONDS'
   },
   devTools: devToolsSchema,
-  forms: {
-    backendAllowlistEnabledSlugs: {
-      doc: 'Comma-separated slugs that should use the grants-ui-backend allowlist endpoint instead of env var whitelists. Empty means use whitelist for all grants.',
-      format: Array,
-      default: [],
-      env: 'BACKEND_ALLOWLIST_ENABLED_SLUGS'
-    }
-  },
   applicationLock: {
     secret: {
       doc: 'Secret used to sign application lock tokens',
