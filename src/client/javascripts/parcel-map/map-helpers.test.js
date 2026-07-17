@@ -7,6 +7,7 @@ import {
   nearestFeatureToPoint,
   getScreenBounds,
   buildSkeleton,
+  buildOverlay,
   buildColorExpr,
   resolveFeatureId,
   showTooltip,
@@ -235,6 +236,20 @@ describe('buildSkeleton', () => {
     const el = buildSkeleton()
     expect(el.getAttribute('role')).toBe('status')
     expect(el.textContent).toBe('Loading map…')
+  })
+})
+
+describe('buildOverlay', () => {
+  it('applies the given role and message, with no aria-label by default', () => {
+    const el = buildOverlay('There was a problem loading the map.', { role: 'alert' })
+    expect(el.getAttribute('role')).toBe('alert')
+    expect(el.getAttribute('aria-label')).toBeNull()
+    expect(el.textContent).toBe('There was a problem loading the map.')
+  })
+
+  it('sets aria-label when provided', () => {
+    const el = buildOverlay('Loading map…', { role: 'status', ariaLabel: 'Loading map…' })
+    expect(el.getAttribute('aria-label')).toBe('Loading map…')
   })
 })
 
