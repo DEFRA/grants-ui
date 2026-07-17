@@ -1,3 +1,5 @@
+import { statusCodes } from '../../common/constants/status-codes.js'
+
 /**
  * Resolves the requested slug's form definition via the forms service (the
  * per-request combined backend response). Returns `null` when the backend has
@@ -15,7 +17,7 @@ export async function resolveFormDefinition(request) {
     return await request.server.methods.getFormService().getFormDefinitionBySlug(slug)
   } catch (err) {
     const boom = /** @type {{ isBoom?: boolean, output?: { statusCode?: number } }} */ (err)
-    if (boom?.isBoom && boom.output?.statusCode === 404) {
+    if (boom?.isBoom && boom.output?.statusCode === statusCodes.notFound) {
       return null
     }
     throw err
