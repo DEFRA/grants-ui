@@ -48,102 +48,57 @@
  * `up` pre-selects the same addons and local image overrides as last time.
  */
 
-import { spawnSync } from 'child_process'
-import { randomUUID } from 'crypto'
-import * as fs from 'fs'
-import * as os from 'os'
-import * as readline from 'readline'
-import { dirname, resolve } from 'path'
-import { fileURLToPath } from 'url'
+import { spawnSync } from 'node:child_process'
+import * as fs from 'node:fs'
+import * as os from 'node:os'
+import { resolve } from 'node:path'
 
-// ---------------------------------------------------------------------------
-// Version
-// ---------------------------------------------------------------------------
-const VERSION = '1.5.0'
-
-// ---------------------------------------------------------------------------
-// Cross-platform: detect ANSI support
-// Windows CI / non-TTY pipes don't support ANSI; fall back to plain text.
-// ---------------------------------------------------------------------------
-const ANSI = process.stdout.isTTY && process.env.TERM !== 'dumb' && !process.env.NO_COLOR
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const ROOT = resolve(__dirname, '..')
-const STATE_FILE = resolve(ROOT, '.grants-ui-cli-state.json')
-
-// Folder holding developer-private form-definition overrides, mirroring the
-// config repo layout `<grant>/<service>/<file>`. A single toggle enables/disables
-// all overrides found here.
-const LOCAL_FORM_DEFS_DIR = resolve(ROOT, 'localstack/config-broker/local-form-definitions')
-// Applier that (un)publishes the overrides against the running backend Mongo.
-const APPLY_FORM_DEFS_SCRIPT = resolve(ROOT, 'tools/apply-local-form-defs.mjs')
-// Menu key used for the single all-grants form-definition override toggle.
-const FORM_DEFS_TOGGLE_KEY = '__local-form-defs__'
-
-// Service name used by the debug command
-const DEBUG_SERVICE = 'grants-ui'
-
-// Compose service never shown in the restart sub-menu (one-shot readiness helper)
-const RESTART_HIDDEN_SERVICE = 'mongo-ready'
-
-const TEST_TARGETS = [
-  {
-    key: 'unit',
-    label: 'unit',
-    script: 'test',
-    description: 'Full unit suite with coverage (vitest run --coverage)',
-    needsDocker: false
-  },
-  {
-    key: 'contracts',
-    label: 'contracts',
-    script: 'test:contracts',
-    description: 'Contract tests (vitest run --config vitest.contracts.config.js)',
-    needsDocker: false
-  },
-  {
-    key: 'acceptance',
-    label: 'acceptance',
-    script: 'test:acceptance',
-    description: 'Docker-based grants-ui acceptance journeys (./tools/run-acceptance-tests.sh)',
-    needsDocker: true,
-    note: 'grants-ui suite only; spins up & tears down its own stack',
-    env: { ACCEPTANCE_SUITES: 'grants-ui-acceptance-tests' }
-  }
-]
-
-const SONAR = {
-  composeFile: 'compose.sonar.yml',
-  serverService: 'sonarqube',
-  scannerService: 'sonar-scanner',
-  hostUrl: 'http://localhost:9000',
-  internalUrl: 'http://sonarqube:9000',
-  projectKey: 'grants-ui-local',
-  stateFile: resolve(ROOT, '.grants-ui-cli-sonar.json'), // git-ignored; holds minted token
-  logFile: resolve(os.tmpdir(), 'grants-tui-sonar.log'),
-  readyTimeoutMs: 150000
-}
-
-const SONAR_EXIT = { OK: 0, GATE_FAILED: 1, ERROR: 2 }
-
-// Snyk `test` exit codes: 0 = no vulns, 1 = vulns found, 2 = error, 3 = unsupported.
-const SNYK = {
-  logFile: resolve(os.tmpdir(), 'grants-tui-snyk.log'),
-  bin: resolve(ROOT, 'node_modules', '.bin', process.platform === 'win32' ? 'snyk.cmd' : 'snyk')
-}
-const SNYK_EXIT = { OK: 0, VULNS: 1, ERROR: 2 }
-
-// `gt check` writes its pass/fail summary here — the interactive TUI clears the
-// alternate screen on return, so console output alone is lost from scroll-back.
-const CHECK = { logFile: resolve(os.tmpdir(), 'grants-tui-check.log') }
-
-const LOG_RETENTION_MS = 7 * 24 * 60 * 60 * 1000 // sweep grants-tui-*.log older than this
-
-// ---------------------------------------------------------------------------
-// Pre-up script — runs before `docker compose up` every time.
-// Set to null or '' to disable.
-// ---------------------------------------------------------------------------
-const PRE_UP_SCRIPT = resolve(ROOT, 'tools/setup-local-config.sh')
+import {
+  ADDONS,
+  ALT_SCREEN_ENTER,
+  ALT_SCREEN_EXIT,
+  APPLY_FORM_DEFS_SCRIPT,
+  BOLD,
+  CHECK,
+  CYAN,
+  DEBUG_SERVICE,
+  DIM,
+  FORM_DEFS_TOGGLE_KEY,
+  GREEN,
+  HIDE_CURSOR,
+  LOCAL_FORM_DEFS_DIR,
+  LOCAL_SERVICES,
+  LOG_RETENTION_MS,
+  PRE_UP_SCRIPT,
+  PURPLE,
+  RED,
+  RESET_COLOR,
+  RESTART_HIDDEN_SERVICE,
+  ROOT,
+  SHOW_CURSOR,
+  SNYK,
+  SNYK_EXIT,
+  SONAR,
+  SONAR_EXIT,
+  STATE_FILE,
+  TEST_TARGETS,
+  VERSION,
+  YELLOW
+} from './grants-tui/constants.js'
+import {
+  HEADER,
+  padVisible,
+  pauseStdin,
+  promptScale,
+  radioMenu,
+  releaseStdin,
+  renderScreen,
+  resumeStdin,
+  toggleMenu,
+  visibleLen
+} from './grants-tui/tui.js'
+import { cmdTest, testLogPath } from './grants-tui/tests.js'
+import { cmdSonar } from './grants-tui/sonar.js'
 
 // Sweep of stale tool logs from tmpdir. macOS auto-clears windows tmpdir
 // after ~3 days
@@ -176,75 +131,6 @@ process.on('exit', () => {
     }
   }
 })
-
-// ---------------------------------------------------------------------------
-// defradigital services that can be overridden with a locally-built image.
-// The local image name is always `<serviceName>:local`.
-// Add new entries here when new defradigital services are introduced.
-// ---------------------------------------------------------------------------
-const LOCAL_SERVICES = [
-  { key: 'grants-ui-backend', composeService: 'grants-ui-backend', image: 'defradigital/grants-ui-backend' },
-  { key: 'grants-config-broker', composeService: 'grants-config-broker', image: 'defradigital/grants-config-broker' },
-  { key: 'grants-ui-dal-stub', composeService: 'grants-ui-dal-stub', image: 'defradigital/grants-ui-dal-stub' },
-  { key: 'fg-gas-backend', composeService: 'fg-gas-backend', image: 'defradigital/fg-gas-backend' },
-  { key: 'land-grants-api', composeService: 'land-grants-backend', image: 'defradigital/land-grants-api' },
-  {
-    key: 'land-grants-postgres-seeded',
-    composeService: 'land-grants-backend-postgres',
-    image: 'defradigital/land-grants-postgres-seeded'
-  },
-  { key: 'fcp-defra-id-stub', composeService: 'fcp-defra-id-stub', image: 'defradigital/fcp-defra-id-stub' }
-]
-
-// ---------------------------------------------------------------------------
-// Addon definitions — add new services here
-// ---------------------------------------------------------------------------
-const ADDONS = [
-  {
-    key: 'land-grants',
-    label: 'Land Grants',
-    description: 'Land grants backend + postgres',
-    composeFile: 'compose.land-grants.yml'
-  },
-  {
-    key: 'gas',
-    label: 'GAS',
-    description: 'Grants Application Service (fg-gas-backend + localstack)',
-    composeFile: 'compose.gas.yml'
-  },
-  {
-    key: 'ha',
-    label: 'High Availability',
-    description: 'Nginx proxy + scaled grants-ui / grants-ui-backend',
-    composeFile: 'compose.ha.yml'
-  }
-]
-
-// ---------------------------------------------------------------------------
-// ANSI helpers
-// ---------------------------------------------------------------------------
-
-// Named colour/style helpers — degrade gracefully when ANSI is unsupported
-const CYAN = ANSI ? '\x1b[36m' : ''
-const BOLD = ANSI ? '\x1b[1m' : ''
-const DIM = ANSI ? '\x1b[2m' : ''
-const RESET_COLOR = ANSI ? '\x1b[0m' : ''
-const GREEN = ANSI ? '\x1b[32m' : ''
-const YELLOW = ANSI ? '\x1b[33m' : ''
-const RED = ANSI ? '\x1b[31m' : ''
-const PURPLE = ANSI ? '\x1b[35m' : ''
-// Dimmed purple for the resting state of purple sub-items, so the highlighted
-// (full-purple) state is easier to distinguish at a glance.
-const FADED_PURPLE = ANSI ? '\x1b[2;35m' : ''
-
-// Cursor / screen control — no-ops when ANSI unsupported
-const HIDE_CURSOR = ANSI ? '\x1b[?25l' : ''
-const SHOW_CURSOR = ANSI ? '\x1b[?25h' : ''
-const CLEAR_SCREEN = ANSI ? '\x1b[2J\x1b[H' : ''
-// Alternate screen buffer — enter on interactive start, exit on quit so the
-// TUI leaves no residue in the terminal scroll-back history (same as vim/less/ncu)
-const ALT_SCREEN_ENTER = ANSI ? '\x1b[?1049h' : ''
-const ALT_SCREEN_EXIT = ANSI ? '\x1b[?1049l' : ''
 
 // ---------------------------------------------------------------------------
 // Local image helpers
@@ -289,26 +175,18 @@ function getLocalImages() {
  */
 function writeTempOverride(localServiceKeys) {
   if (!localServiceKeys.length) return null
-  // Locally-built images are native-arch (e.g. linux/arm64 on Apple Silicon),
-  // whereas some compose services pin `platform: linux/amd64` to match the
-  // pulled production image. Override with the host's actual platform so a
-  // local image isn't rejected for an architecture mismatch.
-  const hostPlatform = `linux/${os.arch() === 'x64' ? 'amd64' : os.arch()}`
   const services = {}
   for (const key of localServiceKeys) {
     const svc = LOCAL_SERVICES.find((s) => s.key === key)
     if (!svc) continue
     const localImage = svc.key + ':local'
-    services[svc.composeService] = { image: localImage, pull_policy: 'never', platform: hostPlatform }
+    services[svc.composeService] = { image: localImage, pull_policy: 'never' }
   }
   if (!Object.keys(services).length) return null
   const content =
     'services:\n' +
     Object.entries(services)
-      .map(
-        ([name, cfg]) =>
-          `  ${name}:\n    image: ${cfg.image}\n    pull_policy: ${cfg.pull_policy}\n    platform: ${cfg.platform}`
-      )
+      .map(([name, cfg]) => `  ${name}:\n    image: ${cfg.image}\n    pull_policy: ${cfg.pull_policy}`)
       .join('\n') +
     '\n'
   const tmpPath = resolve(os.tmpdir(), `grants-ui-cli-local-override-${process.pid}.yml`)
@@ -528,50 +406,6 @@ function runApplyFormDefs(mode, dryRun = false) {
 }
 
 /**
- * Run a test target (`npm run <script>`) with inherited stdio so vitest output
- * streams straight to the terminal. Returns the child exit code (0 = pass).
- * @param {string} targetKey  one of TEST_TARGETS[].key
- * @param {boolean} [dryRun]
- * @returns {number}
- */
-/**
- * Where a test suite's combined output is tee'd. The interactive menu runs inside
- * the alternate screen buffer and clears it on return, so streamed output is lost
- * from scroll-back
- * @param {string} targetKey
- * @returns {string}
- */
-function testLogPath(targetKey) {
-  return resolve(os.tmpdir(), `grants-tui-test-${targetKey}.log`)
-}
-
-function cmdTest(targetKey, dryRun = false) {
-  const target = TEST_TARGETS.find((t) => t.key === targetKey)
-  if (!target) {
-    console.error(`\n  ${RED}✖${RESET_COLOR}  Unknown test target: '${targetKey}'\n`)
-    return 1
-  }
-  console.log(`\n  ${DIM}▶${RESET_COLOR}  npm run ${target.script}  ${DIM}(${target.description})${RESET_COLOR}\n`)
-  if (dryRun) return 0
-  const env = { ...process.env, ...(target.env ?? {}) }
-
-  if (process.platform === 'win32') {
-    const result = spawnSync('npm.cmd', ['run', target.script], { cwd: ROOT, stdio: 'inherit', encoding: 'utf8', env })
-    return result.status ?? 1
-  }
-  const logFile = testLogPath(targetKey)
-  const result = spawnSync('bash', ['-c', `set -o pipefail; npm run ${target.script} 2>&1 | tee "${logFile}"`], {
-    cwd: ROOT,
-    stdio: 'inherit',
-    encoding: 'utf8',
-    env
-  })
-
-  console.log(`\n  ${DIM}output: ${logFile}${RESET_COLOR}`)
-  return result.status ?? 1
-}
-
-/**
  * Whether Snyk has a usable credential: a SNYK_TOKEN env var, or a saved token in
  * the CLI's configstore. Checks for an actual token key rather than mere file
  * existence — `snyk config clear` leaves an empty `snyk.json` behind, which would
@@ -639,402 +473,6 @@ function cmdSnyk(dryRun = false) {
     )
   }
   return status
-}
-
-// ---------------------------------------------------------------------------
-// Local SonarQube helpers (see SONAR const above)
-// ---------------------------------------------------------------------------
-
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
-
-function readSonarState() {
-  try {
-    return JSON.parse(fs.readFileSync(SONAR.stateFile, 'utf8'))
-  } catch {
-    return {}
-  }
-}
-
-function writeSonarState(state) {
-  fs.writeFileSync(SONAR.stateFile, JSON.stringify(state, null, 2))
-  try {
-    fs.chmodSync(SONAR.stateFile, 0o600)
-  } catch {
-    /* best-effort on platforms without POSIX perms */
-  }
-}
-
-/**
- * Call the SonarQube web API. `auth` is a raw `user:pass` (or `token:`) string.
- * @param {string} path  API path beginning with `/`
- * @param {SonarApiOptions} [opts]
- * @returns {Promise<Response>}
- */
-function sonarApi(path, { method = 'GET', auth, body } = {}) {
-  // `Connection: close` forces a fresh socket per call. Otherwise undici pools
-  // keep-alive sockets, and the long (~70s) scanner gap lets SonarQube close a
-  // pooled socket — the next poll would reuse the dead one (UND_ERR_SOCKET).
-  /** @type {Record<string, string>} */
-  const headers = { Connection: 'close' }
-  if (auth) headers.Authorization = `Basic ${Buffer.from(auth).toString('base64')}`
-  if (body) headers['Content-Type'] = 'application/x-www-form-urlencoded'
-  return fetch(`${SONAR.hostUrl}${path}`, { method, headers, body })
-}
-
-/** Poll GET /api/system/status until the server reports UP or we time out. */
-async function waitForSonarUp() {
-  const deadline = Date.now() + SONAR.readyTimeoutMs
-  process.stdout.write(`  ${DIM}Waiting for SonarQube to come up (first boot ~60-90s)…${RESET_COLOR}`)
-  while (Date.now() < deadline) {
-    try {
-      const res = await fetch(`${SONAR.hostUrl}/api/system/status`)
-      if (res.ok) {
-        const { status } = await res.json()
-        if (status === 'UP') {
-          process.stdout.write(` ${GREEN}up${RESET_COLOR}\n`)
-          return true
-        }
-      }
-    } catch {
-      /* server not listening yet */
-    }
-    process.stdout.write('.')
-    await sleep(3000)
-  }
-  process.stdout.write('\n')
-  return false
-}
-
-/**
- * Return a scanner token for the local server, bootstrapping a fresh container
- * on first run (change the forced admin/admin password, then mint a token) and
- * caching the credentials in SONAR.stateFile so later runs reuse them.
- * @returns {Promise<string>}
- */
-async function ensureSonarToken() {
-  const state = readSonarState()
-
-  // Reuse a still-valid cached token.
-  if (state.token) {
-    const res = await sonarApi('/api/authentication/validate', { auth: `${state.token}:` })
-    if (res.ok && (await res.json()).valid) return state.token
-  }
-
-  // Establish the admin password. A fresh container still has admin/admin and
-  // forces a change on first use; a bootstrapped one needs the cached password.
-  let adminPassword = state.adminPassword
-  if (!adminPassword) {
-    const newPassword = `Gu-${randomUUID()}`
-    const res = await sonarApi('/api/users/change_password', {
-      method: 'POST',
-      auth: 'admin:admin',
-      body: new URLSearchParams({ login: 'admin', previousPassword: 'admin', password: newPassword })
-    })
-    if (res.ok) {
-      adminPassword = newPassword
-      // Persist the rotated password now — the server has already accepted it,
-      // so if the token mint below fails we can still authenticate on the next
-      // run instead of dead-ending on admin/admin (401 → forced volume reset).
-      writeSonarState({ ...state, adminPassword })
-    } else if (res.status === 401) {
-      throw new Error(
-        "SonarQube is already bootstrapped but its saved credentials are gone. Reset it with 'gt sonar --down' + remove the sonarqube volume, or 'gt reset'."
-      )
-    } else {
-      throw new Error(`Could not set the SonarQube admin password (HTTP ${res.status}).`)
-    }
-  }
-
-  // Mint a uniquely-named token (Sonar rejects duplicate names).
-  const tokenSeq = (state.tokenSeq ?? 0) + 1
-  const res = await sonarApi('/api/user_tokens/generate', {
-    method: 'POST',
-    auth: `admin:${adminPassword}`,
-    body: new URLSearchParams({ name: `${SONAR.projectKey}-${tokenSeq}` })
-  })
-  if (!res.ok) throw new Error(`Could not mint a SonarQube token (HTTP ${res.status}).`)
-  const { token } = await res.json()
-  writeSonarState({ adminPassword, token, tokenSeq })
-  return token
-}
-
-/**
- * Delete the local project so each scan starts from a clean slate — otherwise the
- * project accumulates prior analyses and "new code" keeps flagging untested files
- * from earlier runs.
- */
-async function resetSonarProject(token) {
-  const res = await sonarApi('/api/projects/delete', {
-    method: 'POST',
-    auth: `${token}:`,
-    body: new URLSearchParams({ project: SONAR.projectKey })
-  })
-  if (!res.ok && res.status !== 404) {
-    console.log(`  ${YELLOW}⚠${RESET_COLOR}  Could not reset the local project (HTTP ${res.status}) — continuing.`)
-  }
-}
-
-/** Create the local project if it doesn't already exist (HTTP 400 = exists). */
-async function ensureSonarProject(token) {
-  const res = await sonarApi('/api/projects/create', {
-    method: 'POST',
-    auth: `${token}:`,
-    body: new URLSearchParams({ project: SONAR.projectKey, name: 'grants-ui (local)' })
-  })
-  if (!res.ok && res.status !== 400) {
-    throw new Error(`Could not create the SonarQube project (HTTP ${res.status}).`)
-  }
-}
-
-/**
- * Turn off forced authentication so the dashboard link opens the real project
- * anonymously — otherwise it redirects to a login the user has no password for
- * (admin's password is a random UUID in the state file). Best-effort; non-fatal.
- */
-async function disableForcedAuth(token) {
-  try {
-    await sonarApi('/api/settings/set', {
-      method: 'POST',
-      auth: `${token}:`,
-      body: new URLSearchParams({ key: 'sonar.forceAuthentication', value: 'false' })
-    })
-  } catch {
-    /* leave auth as-is; the run still works, the link just needs a login */
-  }
-}
-
-/**
- * Find the Compute Engine task id the scanner just queued. The scanner writes
- * `.scannerwork/report-task.txt`, but that doesn't reliably surface on the bind
- * mount, so we primarily scrape the id from the tee'd scanner output (which
- * always logs `…/api/ce/task?id=<id>`), falling back to the file when present.
- */
-function readCeTaskId() {
-  try {
-    const m = fs.readFileSync(SONAR.logFile, 'utf8').match(/\/api\/ce\/task\?id=([0-9a-f-]+)/)
-    if (m) return m[1]
-  } catch {
-    /* no tee log (e.g. win32) — try the report file */
-  }
-  try {
-    const m = fs.readFileSync(resolve(ROOT, '.scannerwork', 'report-task.txt'), 'utf8').match(/ceTaskId=(.+)/)
-    if (m) return m[1].trim()
-  } catch {
-    /* nothing to parse */
-  }
-  return null
-}
-
-/**
- * Poll the Compute Engine task the scanner queued until the server finishes
- * processing the report. Returns the analysisId on SUCCESS, or null otherwise.
- */
-async function waitForCeTask(taskId, token) {
-  const deadline = Date.now() + 90000
-  while (Date.now() < deadline) {
-    try {
-      const res = await sonarApi(`/api/ce/task?id=${encodeURIComponent(taskId)}`, { auth: `${token}:` })
-      if (res.ok) {
-        const { task } = await res.json()
-        if (task.status === 'SUCCESS') return task.analysisId
-        if (task.status === 'FAILED' || task.status === 'CANCELED') return null
-      }
-    } catch {
-      // Transient socket drop while the server is busy processing the report
-      // (e.g. UND_ERR_SOCKET) — show progress and keep polling until the deadline.
-      process.stdout.write('.')
-    }
-    await sleep(2000)
-  }
-  return null
-}
-
-/** Fetch the quality-gate outcome for a completed analysis. */
-async function fetchQualityGate(analysisId, token) {
-  try {
-    const res = await sonarApi(`/api/qualitygates/project_status?analysisId=${encodeURIComponent(analysisId)}`, {
-      auth: `${token}:`
-    })
-    return res.ok ? (await res.json()).projectStatus : null
-  } catch (err) {
-    console.log(`\n  ${YELLOW}⚠${RESET_COLOR}  Could not read the quality gate: ${err.message}`)
-    return null
-  }
-}
-
-/**
- * Files changed on this branch vs main (committed + working tree), src/ only.
- * Used by `gt sonar --changed` to approximate CI's PR-scoped analysis, since the
- * local Community Edition server has no branch/PR analysis. Returns null when git
- * is unavailable or this isn't a repo (caller falls back to a full scan).
- * @returns {string[] | null}
- */
-function changedSrcFiles() {
-  const run = (args) => {
-    const r = spawnSync('git', args, { cwd: ROOT, encoding: 'utf8' })
-    return r.status === 0
-      ? r.stdout
-          .split('\n')
-          .map((s) => s.trim())
-          .filter(Boolean)
-      : null
-  }
-  const committed = run(['diff', '--name-only', 'main...HEAD']) // merge-base = PR commits
-  const working = run(['diff', '--name-only', 'HEAD']) // staged + unstaged WIP
-  if (committed === null || working === null) return null
-  const set = new Set([...committed, ...working])
-  return [...set].filter((f) => f.startsWith('src/') && fs.existsSync(resolve(ROOT, f)))
-}
-
-/** Print the quality gate result; returns true when it passed. */
-function printQualityGate(qg) {
-  if (qg.status === 'OK') {
-    console.log(`\n  ${GREEN}✔  Quality Gate: PASSED${RESET_COLOR}`)
-    return true
-  }
-  console.log(`\n  ${RED}✖  Quality Gate: FAILED${RESET_COLOR}`)
-  for (const c of (qg.conditions ?? []).filter((x) => x.status === 'ERROR')) {
-    console.log(
-      `    ${RED}•${RESET_COLOR} ${c.metricKey}: ${c.actualValue} (fails ${c.comparator} ${c.errorThreshold})`
-    )
-  }
-  return false
-}
-
-/**
- * Run a SonarQube analysis against the local server. Boots the container,
- * bootstraps a token, ensures coverage exists, then runs the scanner with -D
- * flags that retarget the CI `sonar-project.properties` at the local instance.
- * @param {{dryRun?:boolean, down?:boolean, skipTests?:boolean, changed?:boolean}} [opts]
- * @returns {Promise<number>} child exit code (0 = pass)
- */
-async function cmdSonar({ dryRun = false, down = false, skipTests = false, changed = false } = {}) {
-  const composeArgs = ['compose', '-f', SONAR.composeFile]
-
-  if (down) {
-    console.log(`\n  ${DIM}▶${RESET_COLOR}  docker ${composeArgs.join(' ')} down\n`)
-    if (dryRun) return 0
-    const r = spawnSync('docker', [...composeArgs, 'down'], { cwd: ROOT, stdio: 'inherit', encoding: 'utf8' })
-    return r.status ?? 1
-  }
-
-  // --changed: scope the scan to src files this branch changed vs main (approximates
-  // CI's PR view). No changed src files → nothing to check, so skip before booting the
-  // server rather than full-scanning, which would re-flag untested code already on main.
-  let inclusions = null
-  if (changed) {
-    const files = changedSrcFiles()
-    if (!files || !files.length) {
-      console.log(
-        `\n  ${YELLOW}⚠${RESET_COLOR}  --changed: no src files changed vs main — nothing to scan.` +
-          ` ${DIM}(Use plain 'gt sonar' for a full scan.)${RESET_COLOR}\n`
-      )
-      return SONAR_EXIT.OK
-    }
-    inclusions = files
-    console.log(`\n  ${DIM}Scoping to ${files.length} changed src file(s) vs main:${RESET_COLOR}`)
-    for (const f of files) console.log(`    ${DIM}• ${f}${RESET_COLOR}`)
-  }
-
-  // 1. Start the server and wait for readiness.
-  console.log(`\n  ${DIM}▶${RESET_COLOR}  docker ${composeArgs.join(' ')} up -d ${SONAR.serverService}\n`)
-  if (!dryRun) {
-    const up = spawnSync('docker', [...composeArgs, 'up', '-d', SONAR.serverService], {
-      cwd: ROOT,
-      stdio: 'inherit',
-      encoding: 'utf8'
-    })
-    if ((up.status ?? 1) !== 0) return SONAR_EXIT.ERROR
-    if (!(await waitForSonarUp())) {
-      console.error(`\n  ${RED}✖${RESET_COLOR}  SonarQube did not come up within ${SONAR.readyTimeoutMs / 1000}s.\n`)
-      return SONAR_EXIT.ERROR
-    }
-  }
-
-  // 2. Bootstrap credentials + project.
-  let token = '<token>'
-  if (!dryRun) {
-    try {
-      token = await ensureSonarToken()
-      await resetSonarProject(token) // clean slate each run — no stale "new code"
-      await ensureSonarProject(token)
-      await disableForcedAuth(token)
-    } catch (err) {
-      console.error(`\n  ${RED}✖${RESET_COLOR}  ${/** @type {Error} */ (err).message}\n`)
-      return SONAR_EXIT.ERROR
-    }
-  }
-
-  // 3. Ensure coverage/lcov.info exists (the scanner reads it for coverage).
-  const haveCoverage = fs.existsSync(resolve(ROOT, 'coverage', 'lcov.info'))
-  if (!haveCoverage && !skipTests) {
-    console.log(`\n  ${DIM}coverage/lcov.info not found — running unit tests first${RESET_COLOR}`)
-    const code = cmdTest('unit', dryRun)
-    if (code !== 0) return SONAR_EXIT.ERROR
-  } else if (!haveCoverage) {
-    console.log(
-      `\n  ${YELLOW}⚠${RESET_COLOR}  coverage/lcov.info missing (--skip-tests) — scan will show no coverage.\n`
-    )
-  }
-
-  // 4. Run the scanner. Flags after the service name override the image
-  // entrypoint's args, retargeting sonar-project.properties at the local server.
-  const flags = [
-    `-Dsonar.host.url=${SONAR.internalUrl}`,
-    `-Dsonar.token=${token}`,
-    `-Dsonar.projectKey=${SONAR.projectKey}`
-  ]
-  if (inclusions) flags.push(`-Dsonar.inclusions=${inclusions.join(',')}`)
-  const runCmd = `docker ${composeArgs.join(' ')} run --rm ${SONAR.scannerService} ${flags.join(' ')}`
-  console.log(`\n  ${DIM}▶${RESET_COLOR}  ${runCmd.replace(token, '***')}\n`)
-  if (dryRun) return 0
-
-  let status
-  if (process.platform === 'win32') {
-    const r = spawnSync('docker', [...composeArgs, 'run', '--rm', SONAR.scannerService, ...flags], {
-      cwd: ROOT,
-      stdio: 'inherit',
-      encoding: 'utf8'
-    })
-    status = r.status ?? 1
-  } else {
-    const r = spawnSync('bash', ['-c', `set -o pipefail; ${runCmd} 2>&1 | tee "${SONAR.logFile}"`], {
-      cwd: ROOT,
-      stdio: 'inherit',
-      encoding: 'utf8'
-    })
-    status = r.status ?? 1
-    console.log(`\n  ${DIM}output: ${SONAR.logFile}${RESET_COLOR}`)
-  }
-
-  // A non-zero scanner exit means the upload itself failed — infra error.
-  // Leave the server up so the failure can be inspected.
-  if (status !== 0) return SONAR_EXIT.ERROR
-
-  // The scanner exits 0 once the report is uploaded; the server then processes
-  // it asynchronously. Poll that task, then report the actual quality gate.
-  const ceTaskId = readCeTaskId()
-  /** @type {boolean | null} */
-  let gatePassed = null
-  if (ceTaskId) {
-    process.stdout.write(`\n  ${DIM}Processing analysis on the server…${RESET_COLOR}`)
-    const analysisId = await waitForCeTask(ceTaskId, token)
-    process.stdout.write('\n')
-    if (analysisId) {
-      const qg = await fetchQualityGate(analysisId, token)
-      if (qg) gatePassed = printQualityGate(qg)
-    } else {
-      console.log(`  ${YELLOW}⚠${RESET_COLOR}  Server didn't finish processing in time.`)
-    }
-  }
-
-  // Leave the server running so the results dashboard stays browsable. Stop it
-  // with `gt sonar --down` (keeps volumes → next run skips bootstrap) or `gt reset`.
-  console.log(
-    `\n  ${DIM}SonarQube left running — results at ${SONAR.hostUrl}  (stop with 'gt sonar --down')${RESET_COLOR}`
-  )
-
-  return gatePassed === false ? SONAR_EXIT.GATE_FAILED : SONAR_EXIT.OK
 }
 
 /**
@@ -1301,250 +739,6 @@ function cmdRestart(services, dryRun) {
   return status
 }
 
-// Use ASCII fallbacks on Windows where some fonts lack these glyphs
-const IS_WINDOWS = process.platform === 'win32'
-const TICK = IS_WINDOWS ? '[x]' : '◉'
-const CIRCLE = IS_WINDOWS ? '[ ]' : '○'
-const ARROW = IS_WINDOWS ? '>' : '❯'
-
-const KEYS = {
-  UP: '\u001b[A',
-  DOWN: '\u001b[B',
-  SPACE: ' ',
-  ENTER: '\r',
-  ENTER2: '\n',
-  CTRL_C: '\u0003',
-  ESC: '\u001b',
-  A: 'a'
-}
-
-function visibleLen(str) {
-  return str.replace(/\x1b\[[0-9;]*m/g, '').length
-}
-
-function padVisible(str, width) {
-  const pad = width - visibleLen(str)
-  return pad > 0 ? str + ' '.repeat(pad) : str
-}
-
-// ---------------------------------------------------------------------------
-// Shared screen renderer
-// ---------------------------------------------------------------------------
-
-// "Grants TUI" drawn with Unicode half-block glyphs so the name renders three
-// terminal rows tall while staying legible, with cyan "go faster" stripes down
-// the left gutter. Generated once and kept as literals (no runtime font engine).
-const STRIPES = '╱╱╱'
-const WORDMARK = [
-  '▄▀▀▀  █▀▀▀▄ ▄▀▀▀▄ █▄  █ ▀▀█▀▀ ▄▀▀▀▀    ▀▀█▀▀ █   █ ▀█▀',
-  '█  ▄▄ ██▀▀  █▄▄▄█ █ ▀▄█   █    ▀▀▀▄      █   █   █  █',
-  '▀▄▄▄▀ █ ▀▀▄ █   █ █   █   █   ▄▄▄▄▀      █   ▀▄▄▄▀ ▄█▄'
-]
-
-// Half-block glyphs are unreliable on legacy Windows consoles, so fall back to a
-// plain single-line title there.
-const HEADER = IS_WINDOWS
-  ? [
-      '',
-      `  ${BOLD}${GREEN}Grants TUI${RESET_COLOR}  ${DIM}v${VERSION}${RESET_COLOR}`,
-      `  ${DIM}${'─'.repeat(40)}${RESET_COLOR}`,
-      ''
-    ]
-  : [
-      '',
-      ...WORDMARK.map((line) => `  ${PURPLE}${STRIPES}${RESET_COLOR}  ${BOLD}${GREEN}${line}${RESET_COLOR}`),
-      `  ${DIM}docker compose launcher · v${VERSION}${RESET_COLOR}`,
-      ''
-    ]
-
-function renderScreen(bodyLines) {
-  const lines = [...HEADER, ...bodyLines, '']
-  process.stdout.write(HIDE_CURSOR + CLEAR_SCREEN + lines.join('\n'))
-}
-
-// ---------------------------------------------------------------------------
-// Radio menu (command selection)
-// ---------------------------------------------------------------------------
-
-async function radioMenu(items, title, { hint = '', statusLine = '' } = {}) {
-  return new Promise((resolve) => {
-    // Start cursor on first non-disabled item
-    let cursor = items.findIndex((i) => !i.disabled)
-    if (cursor === -1) cursor = 0
-
-    const LABEL_WIDTH = Math.max(...items.map((i) => visibleLen(i.label))) + 2
-    const hintText = hint || '↑ ↓  navigate    enter → select    esc → quit'
-
-    function draw() {
-      const body = [`  ${BOLD}${title}${RESET_COLOR}`, `  ${DIM}${hintText}${RESET_COLOR}`, '']
-      items.forEach((item, i) => {
-        const active = i === cursor
-        const disabled = !!item.disabled
-        const arrow = active ? `${item.key === 'refresh-overrides' ? PURPLE : CYAN}${ARROW}${RESET_COLOR}` : ' '
-        let rawLabel, desc
-        if (disabled) {
-          rawLabel = `${DIM}${item.label}${RESET_COLOR}`
-          desc = `${DIM}${item.description}${RESET_COLOR}`
-        } else if (item.key === 'refresh-overrides') {
-          // Faded purple at rest, full bold purple when highlighted, so it's
-          // obvious when this sub-item is the current selection.
-          rawLabel = active
-            ? `${BOLD}${PURPLE}${item.label}${RESET_COLOR}`
-            : `${FADED_PURPLE}${item.label}${RESET_COLOR}`
-          desc = `${DIM}${item.description}${RESET_COLOR}`
-        } else {
-          rawLabel = active ? `${CYAN}${BOLD}${item.label}${RESET_COLOR}` : item.label
-          desc = `${DIM}${item.description}${RESET_COLOR}`
-        }
-        const label = padVisible(rawLabel, LABEL_WIDTH)
-        body.push(`  ${arrow}  ${label}  ${desc}`)
-      })
-      if (statusLine) {
-        body.push('')
-        body.push(`  ${statusLine}`)
-      }
-      renderScreen(body)
-    }
-
-    draw()
-    readline.emitKeypressEvents(process.stdin)
-    if (process.stdin.isTTY) process.stdin.setRawMode(true)
-
-    function onKey(_, key) {
-      if (!key) return
-      const seq = key.sequence ?? ''
-      if (seq === KEYS.CTRL_C || (seq === KEYS.ESC && key.name === 'escape')) {
-        cleanup()
-        resolve('__quit__')
-      } else if (seq === KEYS.UP) {
-        let next = (cursor - 1 + items.length) % items.length
-        while (items[next].disabled && next !== cursor) next = (next - 1 + items.length) % items.length
-        cursor = next
-        draw()
-      } else if (seq === KEYS.DOWN) {
-        let next = (cursor + 1) % items.length
-        while (items[next].disabled && next !== cursor) next = (next + 1) % items.length
-        cursor = next
-        draw()
-      } else if (seq === KEYS.ENTER || seq === KEYS.ENTER2) {
-        if (items[cursor].disabled) return
-        cleanup()
-        resolve(items[cursor].key)
-      }
-    }
-
-    function cleanup() {
-      process.stdin.removeListener('keypress', onKey)
-      if (process.stdin.isTTY) process.stdin.setRawMode(false)
-      process.stdout.write(SHOW_CURSOR)
-    }
-
-    process.stdin.on('keypress', onKey)
-  })
-}
-
-// ---------------------------------------------------------------------------
-// Toggle menu (addon selection)
-// ---------------------------------------------------------------------------
-
-async function toggleMenu(items, title) {
-  return new Promise((resolve) => {
-    // Start cursor on first non-disabled item
-    let cursor = items.findIndex((i) => !i.disabled)
-    if (cursor === -1) cursor = 0
-
-    const LABEL_WIDTH = Math.max(...items.map((i) => visibleLen(i.label))) + 2
-
-    function draw() {
-      const body = [
-        `  ${BOLD}${title}${RESET_COLOR}`,
-        `  ${DIM}↑ ↓  navigate    space → toggle    a → select all    enter → confirm    esc → back${RESET_COLOR}`,
-        ''
-      ]
-      items.forEach((item, i) => {
-        const active = i === cursor
-        const disabled = !!item.disabled
-        const selected = item.selected
-        const arrow = active ? `${CYAN}${ARROW}${RESET_COLOR}` : ' '
-        let marker, rawLabel, desc
-        if (disabled) {
-          marker = `${DIM}${CIRCLE}${RESET_COLOR}`
-          rawLabel = `${DIM}${item.label}${RESET_COLOR}`
-          desc = `${DIM}${item.description}${RESET_COLOR}`
-        } else {
-          marker = selected ? `${GREEN}${TICK}${RESET_COLOR}` : `${DIM}${CIRCLE}${RESET_COLOR}`
-          rawLabel = selected ? `${GREEN}${item.label}${RESET_COLOR}` : item.label
-          desc = `${DIM}${item.description}${RESET_COLOR}`
-        }
-        const label = padVisible(rawLabel, LABEL_WIDTH)
-        body.push(`  ${arrow}  ${marker}  ${label}  ${desc}`)
-      })
-      renderScreen(body)
-    }
-
-    draw()
-    readline.emitKeypressEvents(process.stdin)
-    if (process.stdin.isTTY) process.stdin.setRawMode(true)
-
-    function onKey(_, key) {
-      if (!key) return
-      const seq = key.sequence ?? ''
-      if (seq === KEYS.CTRL_C || (seq === KEYS.ESC && key.name === 'escape')) {
-        cleanup()
-        resolve(null)
-      } else if (seq === KEYS.UP) {
-        let next = (cursor - 1 + items.length) % items.length
-        while (items[next].disabled && next !== cursor) next = (next - 1 + items.length) % items.length
-        cursor = next
-        draw()
-      } else if (seq === KEYS.DOWN) {
-        let next = (cursor + 1) % items.length
-        while (items[next].disabled && next !== cursor) next = (next + 1) % items.length
-        cursor = next
-        draw()
-      } else if (seq === KEYS.SPACE) {
-        if (!items[cursor].disabled) items[cursor].selected = !items[cursor].selected
-        draw()
-      } else if (seq === KEYS.A) {
-        const allSelected = items.filter((i) => !i.disabled).every((i) => i.selected)
-        items.forEach((i) => {
-          if (!i.disabled) i.selected = !allSelected
-        })
-        draw()
-      } else if (seq === KEYS.ENTER || seq === KEYS.ENTER2) {
-        cleanup()
-        resolve(items)
-      }
-    }
-
-    function cleanup() {
-      process.stdin.removeListener('keypress', onKey)
-      if (process.stdin.isTTY) process.stdin.setRawMode(false)
-      process.stdout.write(SHOW_CURSOR)
-    }
-
-    process.stdin.on('keypress', onKey)
-  })
-}
-
-// ---------------------------------------------------------------------------
-// Scale prompt
-// ---------------------------------------------------------------------------
-
-async function promptScale() {
-  const scaleItems = [
-    { key: '2', label: '2 replicas', description: 'default' },
-    { key: '3', label: '3 replicas', description: '' },
-    { key: '4', label: '4 replicas', description: '' },
-    { key: '6', label: '6 replicas', description: '' }
-  ]
-  const chosen = await radioMenu(scaleItems, 'Scale factor for grants-ui / grants-ui-backend', {
-    hint: '↑ ↓  navigate    enter → select    esc → back'
-  })
-  if (!chosen || chosen === '__quit__') return null
-  return parseInt(chosen, 10)
-}
-
 // ---------------------------------------------------------------------------
 // Help
 // ---------------------------------------------------------------------------
@@ -1607,39 +801,6 @@ ${BOLD}Examples:${RESET_COLOR}
   gt check                           # pre-PR full check: all tests + snyk + PR-scoped sonar
   gt reset
 `)
-}
-
-// ---------------------------------------------------------------------------
-// Stdin teardown helper — must be called before any blocking command
-// ---------------------------------------------------------------------------
-
-// Full teardown — used when handing off to a non-returning command (non-interactive paths)
-function releaseStdin() {
-  try {
-    if (process.stdin.isTTY) process.stdin.setRawMode(false)
-  } catch {
-    // ignore
-  }
-  process.stdout.write(SHOW_CURSOR)
-  process.stdin.destroy()
-}
-
-// Soft pause — disables raw mode and shows cursor while docker runs.
-// Stays in the alternate screen buffer so docker output is discarded on exit.
-function pauseStdin() {
-  try {
-    if (process.stdin.isTTY) process.stdin.setRawMode(false)
-  } catch {
-    // ignore
-  }
-  process.stdout.write(CLEAR_SCREEN + SHOW_CURSOR)
-}
-
-// Re-enable raw mode and hide cursor after a blocking docker command returns
-function resumeStdin() {
-  process.stdout.write(HIDE_CURSOR)
-  readline.emitKeypressEvents(process.stdin)
-  if (process.stdin.isTTY) process.stdin.setRawMode(true)
 }
 
 // ---------------------------------------------------------------------------
@@ -2199,10 +1360,3 @@ main().catch((err) => {
   console.error(err)
   process.exit(1)
 })
-
-/**
- * @typedef {object} SonarApiOptions
- * @property {string} [method]  HTTP method (defaults to GET)
- * @property {string} [auth]  raw `user:pass` (or `token:`) string for Basic auth
- * @property {URLSearchParams} [body]  form-encoded request body
- */
