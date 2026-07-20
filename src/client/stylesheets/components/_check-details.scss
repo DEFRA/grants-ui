@@ -1,0 +1,13 @@
+.check-details-form__sfd-link {
+  display: none;
+}
+
+.check-details-form--sfd:has(input[type='radio'][value='false']:checked) {
+  .check-details-form__submit {
+    display: none;
+  }
+
+  .check-details-form__sfd-link {
+    display: inline-block;
+  }
+}
