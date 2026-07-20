@@ -325,16 +325,22 @@ export async function cmdSonar({ dryRun = false, down = false, skipTests = false
   let inclusions = null
   if (changed) {
     const files = changedSrcFiles()
-    if (!files?.length) {
+    if (files === null) {
+      console.log(
+        `\n  ${YELLOW}⚠${RESET_COLOR}  --changed: couldn't diff vs main (git error or no local 'main' ref) —` +
+          ` ${DIM}running a full scan instead.${RESET_COLOR}\n`
+      )
+    } else if (files.length === 0) {
       console.log(
         `\n  ${YELLOW}⚠${RESET_COLOR}  --changed: no src files changed vs main — nothing to scan.` +
           ` ${DIM}(Use plain 'gt sonar' for a full scan.)${RESET_COLOR}\n`
       )
       return SONAR_EXIT.OK
+    } else {
+      inclusions = files
+      console.log(`\n  ${DIM}Scoping to ${files.length} changed src file(s) vs main:${RESET_COLOR}`)
+      for (const f of files) console.log(`    ${DIM}• ${f}${RESET_COLOR}`)
     }
-    inclusions = files
-    console.log(`\n  ${DIM}Scoping to ${files.length} changed src file(s) vs main:${RESET_COLOR}`)
-    for (const f of files) console.log(`    ${DIM}• ${f}${RESET_COLOR}`)
   }
 
   // 1. Start the server and wait for readiness.

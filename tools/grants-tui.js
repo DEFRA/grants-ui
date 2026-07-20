@@ -937,7 +937,14 @@ async function main() {
   if (argv.includes('up')) {
     const flaggedAddons = ADDONS.filter((a) => argv.includes(`--${a.key}`)).map((a) => a.key)
     const scaleIdx = argv.indexOf('--scale')
-    const scale = scaleIdx !== -1 ? parseInt(argv[scaleIdx + 1], 10) : null
+    let scale = null
+    if (scaleIdx !== -1) {
+      scale = parseInt(argv[scaleIdx + 1], 10)
+      if (!Number.isInteger(scale) || scale < 1) {
+        console.error(`\n  ${RED}✖${RESET_COLOR}  --scale needs a positive integer (e.g. --scale 2).\n`)
+        process.exit(1)
+      }
+    }
     const localServices = LOCAL_SERVICES.filter((s) => argv.includes(`--local-${s.key}`)).map((s) => s.key)
     releaseStdin()
     cmdUp(flaggedAddons, scale, dryRun, localServices)
