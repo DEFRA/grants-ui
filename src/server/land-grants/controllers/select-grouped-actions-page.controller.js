@@ -55,7 +55,7 @@ export default class SelectGroupedActionsPageController extends SelectActionsBas
    */
   extractSelectedActionCodes(payload) {
     return extractLandActionFields(payload, this.actionFieldPrefix).map(
-      (field) => /** @type {Record<string, unknown>} */ (payload)[field]
+      (field) => /** @type {string} */ (/** @type {Record<string, unknown>} */ (payload)[field])
     )
   }
 
