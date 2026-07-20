@@ -1,0 +1,23 @@
+{% from "govuk/components/input/macro.njk" import govukInput %}
+
+{{ govukInput({
+  id: fieldId,
+  name: fieldId,
+  classes: "govuk-input--width-5",
+  label: {
+    text: "Quantity"
+  },
+  hint: {
+    text: maxQuantity + " " + unitFullName + " available"
+  } if maxQuantity != undefined else undefined,
+  suffix: {
+    text: unit
+  } if unit else undefined,
+  attributes: {
+    max: maxQuantity
+  } if maxQuantity != undefined else undefined,
+  errorMessage: {
+    text: errorText
+  } if errorText else undefined,
+  value: quantityValue
+}) }}

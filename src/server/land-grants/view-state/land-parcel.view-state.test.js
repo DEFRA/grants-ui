@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import {
   buildNewState,
   addActionsToExistingState,
+  addSelectedActionsToState,
   getAddedActionsForStateParcel,
   deleteParcelFromState,
   deleteActionFromState,
@@ -222,6 +223,177 @@ describe('land-parcel-state.manager', () => {
 
       expect(Object.keys(result.landParcels['AB1234-5678'].actionsObj)).toEqual(['SAM1'])
     })
+
+    describe('quantity override for actions with requiresMaxQuantity', () => {
+      const groupedActionsWithQuantity = [
+        {
+          name: 'Group 1',
+          actions: [
+            {
+              code: 'CSAM3',
+              description: 'Herbal leys: CSAM3',
+              requiresMaxQuantity: 18.5673,
+              availableArea: { value: 18.5673, unit: 'ha' }
+            }
+          ]
+        }
+      ]
+
+      it('should store the submitted quantity override instead of the full available area', () => {
+        const state = {}
+        const payload = { landAction_1: 'CSAM3', landActionQuantity_CSAM3: '3.25' }
+        const parcel = { sheetId: 'AB1234', parcelId: '5678' }
+
+        const result = addActionsToExistingState(state, payload, 'landAction_', groupedActionsWithQuantity, parcel)
+
+        expect(result.landParcels['AB1234-5678'].actionsObj.CSAM3.value).toBe('3.25')
+      })
+
+      it('should fall back to the full available area when no quantity override is submitted', () => {
+        const state = {}
+        const payload = { landAction_1: 'CSAM3' }
+        const parcel = { sheetId: 'AB1234', parcelId: '5678' }
+
+        const result = addActionsToExistingState(state, payload, 'landAction_', groupedActionsWithQuantity, parcel)
+
+        expect(result.landParcels['AB1234-5678'].actionsObj.CSAM3.value).toBe(18.5673)
+      })
+
+      it('should fall back to the full available area when the quantity override is an empty string', () => {
+        const state = {}
+        const payload = { landAction_1: 'CSAM3', landActionQuantity_CSAM3: '' }
+        const parcel = { sheetId: 'AB1234', parcelId: '5678' }
+
+        const result = addActionsToExistingState(state, payload, 'landAction_', groupedActionsWithQuantity, parcel)
+
+        expect(result.landParcels['AB1234-5678'].actionsObj.CSAM3.value).toBe(18.5673)
+      })
+
+      it('should ignore a quantity field for an action that does not require one', () => {
+        const state = {}
+        const payload = { landAction_1: 'SAM1', landActionQuantity_SAM1: '2' }
+        const parcel = { sheetId: 'AB1234', parcelId: '5678' }
+
+        const result = addActionsToExistingState(state, payload, 'landAction_', groupedActions, parcel)
+
+        expect(result.landParcels['AB1234-5678'].actionsObj.SAM1.value).toBe('10')
+      })
+
+      // Regression: 0 is a valid, real available area and must be preserved in state rather
+      // than being coerced to '' by a falsy check (0 || fallback would silently drop it).
+      it('should preserve a genuinely zero available area when no override is submitted', () => {
+        const groupedActionsWithZeroArea = [
+          {
+            name: 'Group 1',
+            actions: [
+              {
+                code: 'CSAM3',
+                description: 'Herbal leys: CSAM3',
+                requiresMaxQuantity: 0,
+                availableArea: { value: 0, unit: 'ha' }
+              }
+            ]
+          }
+        ]
+        const state = {}
+        const payload = { landAction_1: 'CSAM3' }
+        const parcel = { sheetId: 'AB1234', parcelId: '5678' }
+
+        const result = addActionsToExistingState(state, payload, 'landAction_', groupedActionsWithZeroArea, parcel)
+
+        expect(result.landParcels['AB1234-5678'].actionsObj.CSAM3.value).toBe(0)
+      })
+
+      it('should preserve a genuinely zero quantity override submitted by the user', () => {
+        const state = {}
+        const payload = { landAction_1: 'CSAM3', landActionQuantity_CSAM3: '0' }
+        const parcel = { sheetId: 'AB1234', parcelId: '5678' }
+
+        const result = addActionsToExistingState(state, payload, 'landAction_', groupedActionsWithQuantity, parcel)
+
+        expect(result.landParcels['AB1234-5678'].actionsObj.CSAM3.value).toBe('0')
+      })
+    })
+  })
+
+  describe('addSelectedActionsToState', () => {
+    const groupedActions = [
+      {
+        name: 'Group 1',
+        actions: [
+          { code: 'SAM1', description: 'Action 1', availableArea: { value: '10', unit: 'ha' } },
+          { code: 'SAM2', description: 'Action 2', availableArea: { value: '5', unit: 'ha' } }
+        ]
+      }
+    ]
+
+    it('should create state from a single selected action (payload value is a string)', () => {
+      const state = {}
+      const payload = { landAction: 'SAM1' }
+      const parcel = { sheetId: 'AB1234', parcelId: '5678' }
+
+      const result = addSelectedActionsToState(state, payload, groupedActions, parcel)
+
+      expect(result.landParcels['AB1234-5678'].actionsObj).toEqual({
+        SAM1: { description: 'Action 1', consents: [], value: '10', unit: 'ha' }
+      })
+    })
+
+    it('should create state from multiple selected actions (payload value is an array)', () => {
+      const state = {}
+      const payload = { landAction: ['SAM1', 'SAM2'] }
+      const parcel = { sheetId: 'AB1234', parcelId: '5678' }
+
+      const result = addSelectedActionsToState(state, payload, groupedActions, parcel)
+
+      expect(result.landParcels['AB1234-5678'].actionsObj).toEqual({
+        SAM1: { description: 'Action 1', consents: [], value: '10', unit: 'ha' },
+        SAM2: { description: 'Action 2', consents: [], value: '5', unit: 'ha' }
+      })
+    })
+
+    it('should return an empty object when no action is selected', () => {
+      const state = {}
+      const payload = {}
+      const parcel = { sheetId: 'AB1234', parcelId: '5678' }
+
+      const result = addSelectedActionsToState(state, payload, groupedActions, parcel)
+
+      expect(result).toEqual({})
+    })
+
+    it('should ignore an invalid action code', () => {
+      const state = {}
+      const payload = { landAction: ['INVALID_CODE', 'SAM1'] }
+      const parcel = { sheetId: 'AB1234', parcelId: '5678' }
+
+      const result = addSelectedActionsToState(state, payload, groupedActions, parcel)
+
+      expect(Object.keys(result.landParcels['AB1234-5678'].actionsObj)).toEqual(['SAM1'])
+    })
+
+    it('should store the submitted quantity override for an action that requires one', () => {
+      const groupedActionsWithQuantity = [
+        {
+          name: 'Group 1',
+          actions: [
+            {
+              code: 'CSAM3',
+              description: 'Herbal leys: CSAM3',
+              requiresMaxQuantity: 18.5673,
+              availableArea: { value: 18.5673, unit: 'ha' }
+            }
+          ]
+        }
+      ]
+      const state = {}
+      const payload = { landAction: 'CSAM3', landActionQuantity_CSAM3: '3.25' }
+      const parcel = { sheetId: 'AB1234', parcelId: '5678' }
+
+      const result = addSelectedActionsToState(state, payload, groupedActionsWithQuantity, parcel)
+
+      expect(result.landParcels['AB1234-5678'].actionsObj.CSAM3.value).toBe('3.25')
+    })
   })
 
   describe('getAddedActionsForStateParcel', () => {
@@ -230,8 +402,8 @@ describe('land-parcel-state.manager', () => {
         landParcels: {
           'AB1234-5678': {
             actionsObj: {
-              SAM1: { description: 'Action 1' },
-              SAM2: { description: 'Action 2' }
+              SAM1: { description: 'Action 1', value: '10' },
+              SAM2: { description: 'Action 2', value: '5' }
             }
           }
         }
@@ -240,9 +412,28 @@ describe('land-parcel-state.manager', () => {
       const result = getAddedActionsForStateParcel(state, 'AB1234-5678')
 
       expect(result).toEqual([
-        { code: 'SAM1', description: 'Action 1' },
-        { code: 'SAM2', description: 'Action 2' }
+        { code: 'SAM1', description: 'Action 1', value: '10' },
+        { code: 'SAM2', description: 'Action 2', value: '5' }
       ])
+    })
+
+    // Regression: the quantity input on the select-actions page must pre-populate with the
+    // previously submitted value when the page is revisited/refreshed - it reads this from
+    // the `value` returned here, so it has to survive the round-trip through state.
+    it('should include the saved quantity value so the input can pre-populate on refresh', () => {
+      const state = {
+        landParcels: {
+          'AB1234-5678': {
+            actionsObj: {
+              CSAM3: { description: 'Herbal leys: CSAM3', value: '3.25' }
+            }
+          }
+        }
+      }
+
+      const result = getAddedActionsForStateParcel(state, 'AB1234-5678')
+
+      expect(result).toEqual([{ code: 'CSAM3', description: 'Herbal leys: CSAM3', value: '3.25' }])
     })
 
     it('should return empty array when parcel has no actions', () => {

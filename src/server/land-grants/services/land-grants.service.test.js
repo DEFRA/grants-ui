@@ -35,9 +35,11 @@ vi.mock('~/src/config/nunjucks/filters/format-currency.js')
 
 // Hoisted shared state + helpers that the mock will use
 const configState = vi.hoisted(() => {
-  const values = new Map([
-    ['landGrants.grantsServiceApiEndpoint', 'https://land-grants-api'] // set once
+  const defaults = new Map([
+    ['landGrants.grantsServiceApiEndpoint', 'https://land-grants-api'],
+    ['landGrants.quantityRequiredActionCodes', []]
   ])
+  const values = new Map(defaults)
 
   return {
     set(key, value) {
@@ -45,7 +47,7 @@ const configState = vi.hoisted(() => {
     },
     reset() {
       values.clear()
-      values.set('landGrants.grantsServiceApiEndpoint', 'https://land-grants-api')
+      defaults.forEach((value, key) => values.set(key, value))
     },
     get(key) {
       return values.get(key)

@@ -7,7 +7,7 @@ import {
   validateApplication
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import { parseLandParcel, stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
-import SelectLandActionsPageController from './select-land-actions-page.controller.js'
+import SelectGroupedActionsPageController from './select-grouped-actions-page.controller.js'
 import { error, log } from '~/src/server/common/helpers/logging/log.js'
 
 vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () => ({
@@ -57,7 +57,7 @@ const mockParcelsResponse = [
   }
 ]
 
-describe('SelectLandActionsPageController', () => {
+describe('SelectGroupedActionsPageController', () => {
   let controller
   let mockRequest
   let mockContext
@@ -110,7 +110,7 @@ describe('SelectLandActionsPageController', () => {
     })
 
     const mockModel = { def: { metadata: { tasklist: {}, enabledLandActions } }, getSection: vi.fn(), pages: [] }
-    controller = new SelectLandActionsPageController(mockModel, {})
+    controller = new SelectGroupedActionsPageController(mockModel, {})
     controller.collection = {
       getErrors: vi.fn().mockReturnValue([])
     }
@@ -169,7 +169,7 @@ describe('SelectLandActionsPageController', () => {
   describe('singleParcelSubmission (grant-level config)', () => {
     const buildController = (metadata) => {
       const model = { def: { metadata }, getSection: vi.fn(), pages: [] }
-      const singleController = new SelectLandActionsPageController(model, {})
+      const singleController = new SelectGroupedActionsPageController(model, {})
       singleController.collection = { getErrors: vi.fn().mockReturnValue([]) }
       singleController.setState = vi.fn().mockResolvedValue(true)
       singleController.proceed = vi.fn().mockReturnValue('redirected')
@@ -194,7 +194,7 @@ describe('SelectLandActionsPageController', () => {
       await singleController.makeGetRouteHandler()(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'select-actions-for-land-parcel',
+        'select-grouped-actions',
         expect.objectContaining({ singleParcelSubmission: true })
       )
     })
@@ -246,7 +246,7 @@ describe('SelectLandActionsPageController', () => {
 
     test('should pass an empty action list when metadata does not include enabledLandActions', async () => {
       const mockModel = { def: { metadata: { tasklist: {} } }, getSection: vi.fn(), pages: [] }
-      controller = new SelectLandActionsPageController(mockModel, {})
+      controller = new SelectGroupedActionsPageController(mockModel, {})
       controller.performAuthCheck = vi.fn().mockResolvedValue(null)
 
       const handler = controller.makeGetRouteHandler()
@@ -264,7 +264,7 @@ describe('SelectLandActionsPageController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'select-actions-for-land-parcel',
+        'select-grouped-actions',
         expect.objectContaining({
           parcelName: 'sheet1 parcel1',
           addedActions: expect.any(Array)
@@ -285,7 +285,7 @@ describe('SelectLandActionsPageController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'select-actions-for-land-parcel',
+        'select-grouped-actions',
         expect.objectContaining({
           addedActions: [{ code: 'CMOR1', description: 'Action 1' }]
         })
@@ -299,7 +299,7 @@ describe('SelectLandActionsPageController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'select-actions-for-land-parcel',
+        'select-grouped-actions',
         expect.objectContaining({
           errors: expect.arrayContaining([
             expect.objectContaining({
@@ -371,7 +371,7 @@ describe('SelectLandActionsPageController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'select-actions-for-land-parcel',
+        'select-grouped-actions',
         expect.objectContaining({
           errors: [{ text: 'Select an action to do on this land parcel', href: '#landAction_1' }]
         })
@@ -397,7 +397,7 @@ describe('SelectLandActionsPageController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'select-actions-for-land-parcel',
+        'select-grouped-actions',
         expect.objectContaining({
           errors: [
             {
@@ -464,7 +464,7 @@ describe('SelectLandActionsPageController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'select-actions-for-land-parcel',
+        'select-grouped-actions',
         expect.objectContaining({
           errors: [{ text: 'Error without code', href: undefined }]
         })
@@ -529,7 +529,7 @@ describe('SelectLandActionsPageController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'select-actions-for-land-parcel',
+        'select-grouped-actions',
         expect.objectContaining({
           errors: [{ text: 'Select an action to do on this land parcel', href: '#landAction_1' }]
         })
@@ -567,7 +567,7 @@ describe('SelectLandActionsPageController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'select-actions-for-land-parcel',
+        'select-grouped-actions',
         expect.objectContaining({
           errors: [{ text: 'Invalid area: CMOR1', href: '#landAction_1' }]
         })
@@ -592,7 +592,7 @@ describe('SelectLandActionsPageController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'select-actions-for-land-parcel',
+        'select-grouped-actions',
         expect.objectContaining({
           errors: [expect.objectContaining({ text: 'Failed check: UPL1' })]
         })
@@ -697,7 +697,7 @@ describe('SelectLandActionsPageController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'select-actions-for-land-parcel',
+        'select-grouped-actions',
         expect.objectContaining({
           errors: [{ text: 'Error for UPL1: UPL1', href: '#landAction_2' }]
         })
@@ -748,7 +748,7 @@ describe('SelectLandActionsPageController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'select-actions-for-land-parcel',
+        'select-grouped-actions',
         expect.objectContaining({
           errors: expect.arrayContaining([
             expect.objectContaining({ text: 'Error 1: CMOR1', href: '#landAction_1' }),
@@ -773,7 +773,7 @@ describe('SelectLandActionsPageController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'select-actions-for-land-parcel',
+        'select-grouped-actions',
         expect.objectContaining({
           errors: expect.arrayContaining([
             {
@@ -792,7 +792,7 @@ describe('SelectLandActionsPageController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(mockH.view).toHaveBeenCalledWith(
-        'select-actions-for-land-parcel',
+        'select-grouped-actions',
         expect.objectContaining({
           errors: [
             {

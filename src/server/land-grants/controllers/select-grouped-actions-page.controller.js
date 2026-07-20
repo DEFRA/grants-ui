@@ -16,8 +16,8 @@ import {
 } from '~/src/server/land-grants/validators/land-actions.validator.js'
 import { getParcelIdFromQuery } from '../utils/parcel-request.utils.js'
 
-export default class SelectLandActionsPageController extends QuestionPageWithParcelCheckController {
-  viewName = 'select-actions-for-land-parcel'
+export default class SelectGroupedActionsPageController extends QuestionPageWithParcelCheckController {
+  viewName = 'select-grouped-actions'
   actionFieldPrefix = 'landAction_'
   enabledLandActions = []
 
@@ -320,6 +320,10 @@ export default class SelectLandActionsPageController extends QuestionPageWithPar
     return this.proceed(request, h, this.getNextPath(context))
   }
 }
+
+// Retained so existing form definitions that reference the previous class name
+// by this export still resolve correctly.
+export { SelectGroupedActionsPageController as SelectLandActionsPageController }
 
 /**
  * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
