@@ -68,7 +68,7 @@ export class ConfirmationService {
     form = null,
     slug = null
   }) {
-    const title = /** @type {FormLike} */ (form).name
+    const title = /** @type {FormLike} */ (form)?.name
     const url = `/${slug}`
 
     const baseModel = {

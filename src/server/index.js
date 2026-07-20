@@ -17,7 +17,6 @@ import { contentSecurityPolicy } from '~/src/plugins/content-security-policy.js'
 import CheckResponsesPageController from '~/src/server/check-responses/check-responses.controller.js'
 import { formsService } from '~/src/server/common/forms/services/form.js'
 import { outputService } from '~/src/server/common/forms/services/output.js'
-import { loadSubmissionSchemaValidators } from '~/src/server/common/forms/services/submission.js'
 import { catchAll } from '~/src/server/common/helpers/errors.js'
 import { requestLogger } from '~/src/server/common/helpers/logging/request-logger.js'
 import { setupProxy } from '~/src/server/common/helpers/proxy/setup-proxy.js'
@@ -232,12 +231,6 @@ export async function createServer() {
   })
 
   server.ext('onPreResponse', serviceRootRedirect)
-
-  loadSubmissionSchemaValidators()
-  log(LogCodes.SYSTEM.STARTUP_PHASE, {
-    phase: 'schema_validators',
-    status: 'loaded'
-  })
 
   // Bind the live request to an AsyncLocalStorage context for the WHOLE request
   // lifecycle (route prerequisites, handler and onPreResponse). The

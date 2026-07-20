@@ -1,6 +1,5 @@
 import { buildDemoMappedData, buildDemoRequest } from '../helpers/index.js'
-import { generateFormNotFoundResponse } from '../utils/index.js'
-import { findFormBySlug } from '../../common/forms/services/find-form-by-slug.js'
+import { generateFormNotFoundResponse, resolveFormDefinition } from '../utils/index.js'
 import { processSections } from '../../common/services/details-page/index.js'
 import { debug, LogCodes } from '../../common/helpers/logging/log.js'
 
@@ -109,11 +108,13 @@ export async function demoDetailsHandler(request, h) {
   try {
     const { slug } = request.params
 
-    const form = await findFormBySlug(slug)
+    const definition = await resolveFormDefinition(request)
 
-    if (!form) {
+    if (!definition) {
       return generateFormNotFoundResponse(slug, h)
     }
+
+    const form = { slug, title: definition.name ?? slug, metadata: definition.metadata }
 
     const { displaySections } = loadDisplaySectionsConfig(form)
 
@@ -170,11 +171,13 @@ export async function demoDetailsPostHandler(request, h) {
   const { slug } = request.params
   const { detailsCorrect } = request.payload || {}
 
-  const form = await findFormBySlug(slug)
+  const definition = await resolveFormDefinition(request)
 
-  if (!form) {
+  if (!definition) {
     return generateFormNotFoundResponse(slug, h)
   }
+
+  const form = { slug, title: definition.name ?? slug, metadata: definition.metadata }
 
   if (detailsCorrect === undefined || detailsCorrect === null) {
     const { displaySections } = loadDisplaySectionsConfig(form)

@@ -5,6 +5,7 @@ import { parseSessionKey } from './get-cache-key-helper.js'
 import { createApiHeadersForGrantsUiBackend } from '../auth/backend-auth-helper.js'
 import { log, LogCodes } from '../logging/log.js'
 import { createBoomError } from '../errors.js'
+import { getGrantVersion } from '../grant-version.js'
 
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
 
@@ -49,11 +50,8 @@ async function callStateApi(key, method, request, { lockToken, grantVersion } = 
   const logDebug = logApiError(LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG)
   const logError = logApiError()
   // Prefer an explicitly resolved version (e.g. the backend-resolved active
-  // version used to clear state); fall back to the authored model version, then
-  // 1 to support non-config broker grants.
-  const resolvedVersion = /** @type {string | number} */ (
-    grantVersion ?? request.app.model?.def?.metadata?.version ?? 1
-  )
+  // version used to clear state); otherwise resolve from the current request.
+  const resolvedVersion = /** @type {string | number} */ (grantVersion ?? getGrantVersion(request))
   if (!GRANTS_UI_BACKEND_ENDPOINT?.length) {
     return null
   }
@@ -104,16 +102,14 @@ async function callStateApi(key, method, request, { lockToken, grantVersion } = 
  * via `POST /state/with-definition`.
  *
  * The backend resolves the active grant version itself, so this read does not
- * need a `grantVersion` (the lock token is minted without one). For legacy
- * YAML-sourced forms pass `includeDefinition: false` so the backend skips
- * definition resolution and returns state + version only.
+ * need a `grantVersion` (the lock token is minted without one).
  *
  * @param {string} key - The session key (`sbi:grantCode`)
  * @param {AnyRequest} request - The request object
- * @param {{lockToken?: string, includeDefinition?: boolean}} [options]
+ * @param {{lockToken?: string}} [options]
  * @returns {Promise<StateWithDefinitionEnvelope | null>} The envelope, or `null` on 404 / unconfigured backend
  */
-export async function fetchStateWithDefinitionFromApi(key, request, { lockToken, includeDefinition = true } = {}) {
+export async function fetchStateWithDefinitionFromApi(key, request, { lockToken } = {}) {
   if (!GRANTS_UI_BACKEND_ENDPOINT?.length) {
     return null
   }
@@ -124,14 +120,14 @@ export async function fetchStateWithDefinitionFromApi(key, request, { lockToken,
   const method = 'POST'
   const endpoint = new URL('/state/with-definition', GRANTS_UI_BACKEND_ENDPOINT).href
 
-  logDebug(request, { method, endpoint, identity: key, summary: { includeDefinition } })
+  logDebug(request, { method, endpoint, identity: key })
 
   let response
   try {
     response = await fetch(endpoint, {
       method,
       headers: createApiHeadersForGrantsUiBackend({ lockToken }),
-      body: JSON.stringify({ sbi, grantCode, includeDefinition })
+      body: JSON.stringify({ sbi, grantCode, includeDefinition: true })
     })
   } catch (err) {
     logError(request, { method, endpoint, identity: key, errorMessage: /** @type {Error} */ (err).message })

@@ -129,13 +129,18 @@ describe('StatePersistenceService', () => {
   })
 
   test('setState calls persistStateToApi and returns state', async () => {
-    // No version on the request/envelope/model: falls back to the default of 1.
-    contextModule.getStateWithDefinition.mockResolvedValue(undefined)
-    contextModule.resolveVersion.mockReturnValue(undefined)
     const state = { foo: 'bar' }
-    await service.setState({ ...fakeRequest, app: {} }, state)
+    await service.setState({ ...fakeRequest, app: { grantVersion: 1 } }, state)
     expect(persistModule.persistStateToApi).toHaveBeenCalledWith(state, SESSION_KEY, persistOptions(1))
     expect(lockModule.mintLockToken).toHaveBeenCalledWith(lockTokenArgs(1))
+  })
+
+  test('setState throws when no grant version can be resolved', async () => {
+    contextModule.getStateWithDefinition.mockResolvedValue(undefined)
+    contextModule.resolveVersion.mockReturnValue(undefined)
+
+    await expect(service.setState({ ...fakeRequest, app: {} }, { foo: 'bar' })).rejects.toThrow('Missing grantVersion')
+    expect(persistModule.persistStateToApi).not.toHaveBeenCalled()
   })
 
   test('setState persists under the active grant version resolved by getState (post-migration)', async () => {
@@ -186,13 +191,11 @@ describe('StatePersistenceService', () => {
   })
 
   test('clearState(force=true) calls clearSavedStateFromApi', async () => {
-    // No resolvable version (non-config broker grant) → falls back to 1.
-    contextModule.getStateWithDefinition.mockResolvedValue(undefined)
-    contextModule.resolveVersion.mockReturnValue(undefined)
+    const request = { ...fakeRequest, app: { grantVersion: 1 } }
 
-    await service.clearState(fakeRequest, true)
+    await service.clearState(request, true)
 
-    expect(fetchModule.clearSavedStateFromApi).toHaveBeenCalledWith(SESSION_KEY, fakeRequest, persistOptions(1))
+    expect(fetchModule.clearSavedStateFromApi).toHaveBeenCalledWith(SESSION_KEY, request, persistOptions(1))
     expect(lockModule.mintLockToken).toHaveBeenCalledWith(lockTokenArgs(1))
   })
 
@@ -200,7 +203,7 @@ describe('StatePersistenceService', () => {
     const err = new Error('clear failed')
     fetchModule.clearSavedStateFromApi.mockRejectedValue(err)
 
-    await expect(service.clearState(fakeRequest, true)).rejects.toThrow('clear failed')
+    await expect(service.clearState({ ...fakeRequest, app: { grantVersion: 1 } }, true)).rejects.toThrow('clear failed')
   })
 
   describe('with config-broker model (semver grantVersion)', () => {

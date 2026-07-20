@@ -311,14 +311,6 @@ const convictConfig = {
     env: 'MAP_TILE_CACHE_MAX_AGE_SECONDS'
   },
   devTools: devToolsSchema,
-  forms: {
-    backendFormDefEnabledSlugs: {
-      doc: 'Comma-separated list of form slugs whose definition is served from grants-ui-backend (combined /state/with-definition endpoint). All other forms load their definition from local YAML.',
-      format: Array,
-      default: [],
-      env: 'BACKEND_FORM_DEF_ENABLED_SLUGS'
-    }
-  },
   applicationLock: {
     secret: {
       doc: 'Secret used to sign application lock tokens',

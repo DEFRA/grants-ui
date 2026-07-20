@@ -107,10 +107,10 @@ const LOCAL_SERVICES = [
   { key: 'grants-config-broker', composeService: 'grants-config-broker', image: 'defradigital/grants-config-broker' },
   { key: 'grants-ui-dal-stub', composeService: 'grants-ui-dal-stub', image: 'defradigital/grants-ui-dal-stub' },
   { key: 'fg-gas-backend', composeService: 'fg-gas-backend', image: 'defradigital/fg-gas-backend' },
-  { key: 'land-grants-api', composeService: 'land-grants-api', image: 'defradigital/land-grants-api' },
+  { key: 'land-grants-api', composeService: 'land-grants-backend', image: 'defradigital/land-grants-api' },
   {
     key: 'land-grants-postgres-seeded',
-    composeService: 'land-grants-postgres-seeded',
+    composeService: 'land-grants-backend-postgres',
     image: 'defradigital/land-grants-postgres-seeded'
   },
   { key: 'fcp-defra-id-stub', composeService: 'fcp-defra-id-stub', image: 'defradigital/fcp-defra-id-stub' }
@@ -209,18 +209,26 @@ function getLocalImages() {
  */
 function writeTempOverride(localServiceKeys) {
   if (!localServiceKeys.length) return null
+  // Locally-built images are native-arch (e.g. linux/arm64 on Apple Silicon),
+  // whereas some compose services pin `platform: linux/amd64` to match the
+  // pulled production image. Override with the host's actual platform so a
+  // local image isn't rejected for an architecture mismatch.
+  const hostPlatform = `linux/${os.arch() === 'x64' ? 'amd64' : os.arch()}`
   const services = {}
   for (const key of localServiceKeys) {
     const svc = LOCAL_SERVICES.find((s) => s.key === key)
     if (!svc) continue
     const localImage = svc.key + ':local'
-    services[svc.composeService] = { image: localImage, pull_policy: 'never' }
+    services[svc.composeService] = { image: localImage, pull_policy: 'never', platform: hostPlatform }
   }
   if (!Object.keys(services).length) return null
   const content =
     'services:\n' +
     Object.entries(services)
-      .map(([name, cfg]) => `  ${name}:\n    image: ${cfg.image}\n    pull_policy: ${cfg.pull_policy}`)
+      .map(
+        ([name, cfg]) =>
+          `  ${name}:\n    image: ${cfg.image}\n    pull_policy: ${cfg.pull_policy}\n    platform: ${cfg.platform}`
+      )
       .join('\n') +
     '\n'
   const tmpPath = resolve(os.tmpdir(), `grants-ui-cli-local-override-${process.pid}.yml`)

@@ -204,7 +204,7 @@ describe('transformStateObjectToGasApplication', () => {
     expect(mockAnswersTransformer).not.toHaveBeenCalled()
   })
 
-  it.each(['', '1', '1.0', '01.0.0', 2, 'v1.0.0', '1.0.0-beta.1', '1.0.0+build.4'])(
+  it.each(['1', '1.0', '01.0.0', 2, 'v1.0.0', '1.0.0-beta.1', '1.0.0+build.4'])(
     'should throw for invalid config version %s',
     (version) => {
       const request = { app: { model: { def: { metadata: { version } } } } }
@@ -231,9 +231,9 @@ describe('transformStateObjectToGasApplication', () => {
     expect(resolveGasConfigVersion(request)).toBe('2.3.4')
   })
 
-  it('should default the config version when request and model versions are missing', () => {
-    const request = { app: { model: { def: { metadata: {} } } } }
+  it.each([undefined, ''])('should throw when no grant version can be resolved (version: %s)', (version) => {
+    const request = { app: { model: { def: { metadata: { version } } } } }
 
-    expect(resolveGasConfigVersion(request)).toBe('1.0.0')
+    expect(() => resolveGasConfigVersion(request)).toThrow('Missing grantVersion')
   })
 })

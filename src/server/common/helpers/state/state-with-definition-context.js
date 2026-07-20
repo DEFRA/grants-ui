@@ -1,5 +1,4 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
-import { config } from '~/src/config/config.js'
 import { getCacheKey } from './get-cache-key-helper.js'
 import { fetchStateWithDefinitionFromApi } from './fetch-saved-state-helper.js'
 import { mintLockToken } from '../lock/lock-token.js'
@@ -88,18 +87,6 @@ export function currentRequest() {
 }
 
 /**
- * Whether the given form slug should have its definition served from
- * grants-ui-backend (the combined endpoint) rather than from local YAML.
- *
- * @param {string} slug
- * @returns {boolean}
- */
-export function isBackendSourcedSlug(slug) {
-  const slugs = /** @type {string[]} */ (config.get('forms.backendFormDefEnabledSlugs')) ?? []
-  return slugs.includes(slug)
-}
-
-/**
  * Builds the read lock token for the combined endpoint. Unlike save/clear
  * tokens it omits `grantVersion` (the backend resolves the active version and
  * validates the token with `requireGrantVersion: false`), so the cold first
@@ -136,8 +123,7 @@ export function getStateWithDefinition(request) {
     const key = `${sbi}:${grantCode}`
 
     app.stateWithDefinition = fetchStateWithDefinitionFromApi(key, request, {
-      lockToken: buildReadLockToken(request),
-      includeDefinition: isBackendSourcedSlug(grantCode)
+      lockToken: buildReadLockToken(request)
     })
   }
 

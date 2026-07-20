@@ -10,7 +10,6 @@ import {
 import { debug, log, LogCodes } from '../common/helpers/logging/log.js'
 import { setupControllerMocks } from '~/src/__mocks__/controller-mocks.js'
 import { config } from '~/src/config/config.js'
-import { findFormBySlug } from '~/src/server/common/forms/services/find-form-by-slug.js'
 import { mockContext } from '~/src/__mocks__/index.js'
 
 vi.mock('~/src/config/config.js', () => ({
@@ -36,8 +35,6 @@ vi.mock('@defra/forms-model', () => ({
     Terminal: 'SomeTerminalController'
   }
 }))
-
-vi.mock('~/src/server/common/forms/services/find-form-by-slug.js')
 
 vi.mock('@defra/forms-engine-plugin/controllers/TerminalPageController.js', () => ({
   TerminalPageController: class {
@@ -893,19 +890,15 @@ describe('UpdateDetailsPageController', () => {
   })
 
   describe('makeGetRouteHandler', () => {
-    it('should render incorrect-details view with form metadata', async () => {
-      vi.mocked(findFormBySlug).mockResolvedValue({
-        title: 'Test Form',
-        metadata: {
-          incorrectDetailsContent: { heading: 'Update needed' },
-          supportEmail: 'support@example.com'
-        }
-      })
+    it('should render incorrect-details view with the model definition metadata', async () => {
+      mockModel.def.name = 'Test Form'
+      mockModel.def.metadata = {
+        incorrectDetailsContent: { heading: 'Update needed' },
+        supportEmail: 'support@example.com'
+      }
 
       const handler = updateController.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
-
-      expect(findFormBySlug).toHaveBeenCalledWith('test-form')
       expect(mockH.view).toHaveBeenCalledWith('incorrect-details', {
         pageTitle: 'Update your details',
         serviceName: 'Test Form',
@@ -928,11 +921,6 @@ describe('UpdateDetailsPageController', () => {
         },
         supportEmail: 'woodland@example.com'
       }
-      vi.mocked(findFormBySlug).mockResolvedValue({
-        title: 'woodland',
-        source: 'backend'
-      })
-
       const handler = updateController.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
@@ -952,7 +940,7 @@ describe('UpdateDetailsPageController', () => {
     })
 
     it('should pass null for missing metadata fields', async () => {
-      vi.mocked(findFormBySlug).mockResolvedValue({ title: 'Test Form', metadata: {} })
+      mockModel.def.name = 'Test Form'
 
       const handler = updateController.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
@@ -976,13 +964,11 @@ describe('UpdateDetailsPageController', () => {
         }
         return undefined
       })
-      vi.mocked(findFormBySlug).mockResolvedValue({
-        title: 'Test Form',
-        metadata: {
-          incorrectDetailsContent: { heading: 'This content must not be rendered' },
-          supportEmail: 'support@example.com'
-        }
-      })
+      mockModel.def.name = 'Test Form'
+      mockModel.def.metadata = {
+        incorrectDetailsContent: { heading: 'This content must not be rendered' },
+        supportEmail: 'support@example.com'
+      }
 
       await updateController.makeGetRouteHandler()(mockRequest, mockContext, mockH)
 
@@ -1019,7 +1005,7 @@ describe('UpdateDetailsPageController', () => {
         }
         return undefined
       })
-      vi.mocked(findFormBySlug).mockResolvedValue({ title: 'Test Form', metadata: {} })
+      mockModel.def.name = 'Test Form'
 
       await updateController.makeGetRouteHandler()(mockRequest, mockContext, mockH)
 

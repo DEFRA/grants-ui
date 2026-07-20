@@ -4,6 +4,7 @@ import { createApiHeadersForGrantsUiBackend } from '../auth/backend-auth-helper.
 import { debug, log, LogCodes } from '../logging/log.js'
 import { mintLockToken } from '../lock/lock-token.js'
 import { getGrantCode } from '../grant-code.js'
+import { getGrantVersion } from '../grant-version.js'
 
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
 
@@ -35,7 +36,7 @@ export async function persistSubmissionToApi(submission, request) {
   )
 
   const grantCode = getGrantCode(request)
-  const grantVersion = /** @type {string | number} */ (request.app.model?.def?.metadata?.version ?? 1) // Default to 1 to support non-config broker grants
+  const grantVersion = getGrantVersion(request)
   const lockToken = mintLockToken({
     userId: /** @type {string} */ (request.auth?.credentials?.contactId),
     sbi: /** @type {string} */ (request.auth?.credentials?.sbi),
