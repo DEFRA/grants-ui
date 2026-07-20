@@ -19,6 +19,7 @@ vi.mock('@defra/interactive-map/plugins/interact', () => ({
 import InteractiveMap from '@defra/interactive-map'
 import createInteractPlugin from '@defra/interactive-map/plugins/interact'
 import { LAYER_ID_FILL, LAYER_ID_OUTLINE, LAYER_ID_LABEL, EVENT_READY, EVENT_ERROR, EVENT_SELECTION } from './config.js'
+import { makeMlMap } from './test-helpers.js'
 
 const PARCELS_RESPONSE = {
   features: [
@@ -26,41 +27,6 @@ const PARCELS_RESPONSE = {
     { id: 'SD7148-9161', properties: { sheet_id: 'SD7148', parcel_id: '9161', areaHa: null } }
   ],
   bbox: { minLng: -2.5, minLat: 51.4, maxLng: -2.3, maxLat: 51.6 }
-}
-
-function makeMlMap(overrides = {}) {
-  const listeners = {}
-  const ml = {
-    fitBounds: vi.fn(),
-    getSource: vi.fn().mockReturnValue(null),
-    addSource: vi.fn(),
-    addLayer: vi.fn(),
-    getLayer: vi.fn().mockReturnValue(true),
-    queryRenderedFeatures: vi.fn().mockReturnValue([]),
-    querySourceFeatures: vi.fn().mockReturnValue([]),
-    setPaintProperty: vi.fn(),
-    project: vi.fn().mockReturnValue({ x: 100, y: 200 }),
-    getCanvas: vi.fn().mockReturnValue({ style: {} }),
-    on: vi.fn((event, layerOrCb, cb) => {
-      const key = cb ? `${event}:${layerOrCb}` : event
-      const handler = cb ?? layerOrCb
-      listeners[key] = listeners[key] ?? []
-      listeners[key].push(handler)
-    }),
-    off: vi.fn((event, layerOrCb, cb) => {
-      const key = cb ? `${event}:${layerOrCb}` : event
-      const handler = cb ?? layerOrCb
-      listeners[key] = (listeners[key] ?? []).filter((fn) => fn !== handler)
-    }),
-    _emit(event, eventObj) {
-      ;(listeners[event] ?? []).forEach((fn) => fn(eventObj))
-    },
-    _emitLayer(event, layer, eventObj) {
-      ;(listeners[`${event}:${layer}`] ?? []).forEach((fn) => fn(eventObj))
-    },
-    ...overrides
-  }
-  return ml
 }
 
 function makeFeature(sheetId, parcelId, numericId) {
@@ -71,8 +37,8 @@ function makeFeature(sheetId, parcelId, numericId) {
   }
 }
 
-function setupInteractiveMapMock(ml) {
-  InteractiveMap.mockImplementation(function () {
+function stubInteractiveMap({ mode = 'ready', ml, capture, once = false } = {}) {
+  const impl = function () {
     this._handlers = {}
     this.on = vi.fn((event, cb) => {
       this._handlers[event] = this._handlers[event] ?? []
@@ -82,11 +48,21 @@ function setupInteractiveMapMock(ml) {
     this._emit = (event, payload) => {
       ;(this._handlers[event] ?? []).forEach((fn) => fn(payload))
     }
-    Promise.resolve().then(() => {
-      this._emit('map:ready', { map: ml })
-      this._emit('map:stylechange')
-    })
-  })
+    capture?.(this)
+    if (mode === 'ready') {
+      Promise.resolve().then(() => {
+        this._emit('map:ready', { map: ml })
+        this._emit('map:stylechange')
+      })
+    } else if (mode === 'error') {
+      Promise.resolve().then(() => this._emit('map:error'))
+    }
+  }
+  if (once) {
+    InteractiveMap.mockImplementationOnce(impl)
+  } else {
+    InteractiveMap.mockImplementation(impl)
+  }
 }
 
 function fetchOk(body) {
@@ -124,7 +100,7 @@ describe('parcel-map web component', () => {
   beforeEach(async () => {
     await import('./index.js')
     ml = makeMlMap()
-    setupInteractiveMapMock(ml)
+    stubInteractiveMap({ ml })
   })
 
   afterEach(() => {
@@ -150,17 +126,7 @@ describe('parcel-map web component', () => {
 
     it('dispatches parcel-map:error when InteractiveMap emits map:error', async () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
-      InteractiveMap.mockImplementation(function () {
-        this._handlers = {}
-        this.on = vi.fn((event, cb) => {
-          this._handlers[event] = this._handlers[event] ?? []
-          this._handlers[event].push(cb)
-        })
-        this.destroy = vi.fn()
-        Promise.resolve().then(() => {
-          ;(this._handlers['map:error'] ?? []).forEach((fn) => fn())
-        })
-      })
+      stubInteractiveMap({ mode: 'error' })
       const el = await mountElement()
       const e = await waitForEvent(el, EVENT_ERROR)
       expect(e.detail.reason).toBe('unavailable')
@@ -188,33 +154,96 @@ describe('parcel-map web component', () => {
       const e = await waitForEvent(el, EVENT_ERROR)
       expect(e.detail.reason).toBe('no-parcels')
     })
+
+    it('dispatches parcel-map:ready exactly once after a disconnect-while-loading then reconnect', async () => {
+      global.fetch = fetchOk(PARCELS_RESPONSE)
+      stubInteractiveMap({ mode: 'none', once: true })
+
+      const el = await mountElement()
+      el.setAttribute('basemap-provider', 'openstreetmap') // pending-reinit = true (mid-load)
+      el.remove() // disconnect must clear the flag, or the reconnect double-inits
+
+      let readyCount = 0
+      el.addEventListener(EVENT_READY, () => {
+        readyCount++
+      })
+      document.body.appendChild(el) // reconnect → fresh load, second instance auto-readies
+
+      await waitForEvent(el, EVENT_READY)
+      await Promise.resolve()
+      await Promise.resolve()
+      expect(readyCount).toBe(1)
+    })
+
+    it('does not show the error overlay when maplibre emits an error after ready', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      global.fetch = fetchOk(PARCELS_RESPONSE)
+      const el = await mountElement()
+      await waitForEvent(el, EVENT_READY)
+
+      ml._emit('error', new Error('basemap tile 404'))
+      await Promise.resolve()
+
+      expect(el.querySelector('[role="alert"]')).toBeNull()
+      errorSpy.mockRestore()
+    })
+
+    it('removes every maplibre listener it added on teardown', async () => {
+      global.fetch = fetchOk(PARCELS_RESPONSE)
+      const el = await mountElement()
+      await waitForEvent(el, EVENT_READY)
+
+      expect(ml.on.mock.calls.length).toBeGreaterThan(0)
+      el.remove() // disconnect → teardown
+      expect(ml.off).toHaveBeenCalledTimes(ml.on.mock.calls.length)
+    })
+
+    it('dispatches an unavailable error when the map load times out', async () => {
+      vi.useFakeTimers()
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      try {
+        global.fetch = fetchOk(PARCELS_RESPONSE)
+        stubInteractiveMap({ mode: 'none', once: true })
+
+        const el = await mountElement()
+        const errorEvent = waitForEvent(el, EVENT_ERROR)
+        await vi.advanceTimersByTimeAsync(10000)
+        const e = await errorEvent
+
+        expect(e.detail.reason).toBe('unavailable')
+      } finally {
+        vi.useRealTimers()
+        errorSpy.mockRestore()
+      }
+    })
+
+    it('clears the load timeout when InteractiveMap emits map:error', async () => {
+      vi.useFakeTimers()
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      try {
+        global.fetch = fetchOk(PARCELS_RESPONSE)
+        stubInteractiveMap({ mode: 'error' })
+
+        const el = await mountElement()
+        await waitForEvent(el, EVENT_ERROR)
+
+        expect(vi.getTimerCount()).toBe(0)
+      } finally {
+        vi.useRealTimers()
+        errorSpy.mockRestore()
+      }
+    })
   })
 
   describe('viewport options', () => {
-    it('disables InteractiveMap URL viewport sync', async () => {
+    it('disables URL sync, constrains zoom-out to OS min zoom 7, and sets an accessible mapLabel', async () => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
       const el = await mountElement()
       await waitForEvent(el, EVENT_READY)
 
       const [, options] = InteractiveMap.mock.calls[0]
       expect(options.urlPosition).toBe('none')
-    })
-
-    it('constrains zoom-out to the OS basemap coverage (min zoom 7) by default', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement()
-      await waitForEvent(el, EVENT_READY)
-
-      const [, options] = InteractiveMap.mock.calls[0]
       expect(options.minZoom).toBe(7)
-    })
-
-    it('sets an accessible mapLabel for screen readers', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement()
-      await waitForEvent(el, EVENT_READY)
-
-      const [, options] = InteractiveMap.mock.calls[0]
       expect(options.mapLabel).toEqual(expect.stringContaining('land parcels'))
     })
   })
@@ -240,7 +269,7 @@ describe('parcel-map web component', () => {
     })
 
     describe('OpenStreetMap comparison (temporary)', () => {
-      it('switches to the OpenStreetMap style when basemap-provider="openstreetmap"', async () => {
+      it('uses the OpenStreetMap style and drops the min-zoom constraint when basemap-provider="openstreetmap"', async () => {
         global.fetch = fetchOk(PARCELS_RESPONSE)
         const el = await mountElement({ 'basemap-provider': 'openstreetmap' })
         await waitForEvent(el, EVENT_READY)
@@ -248,14 +277,6 @@ describe('parcel-map web component', () => {
         const [, options] = InteractiveMap.mock.calls.at(-1)
         expect(options.mapStyle.url).toBe('https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json')
         expect(options.mapStyle.attribution).toContain('OpenStreetMap')
-      })
-
-      it('does not constrain minZoom for the OpenStreetMap style', async () => {
-        global.fetch = fetchOk(PARCELS_RESPONSE)
-        const el = await mountElement({ 'basemap-provider': 'openstreetmap' })
-        await waitForEvent(el, EVENT_READY)
-
-        const [, options] = InteractiveMap.mock.calls.at(-1)
         expect(options.minZoom).toBeUndefined()
       })
 
@@ -280,19 +301,8 @@ describe('parcel-map web component', () => {
         // First InteractiveMap instance never signals map:ready on its own —
         // lets the test control exactly when the in-flight load settles.
         let firstInstance
-        InteractiveMap.mockImplementationOnce(function () {
-          this._handlers = {}
-          this.on = vi.fn((event, cb) => {
-            this._handlers[event] = this._handlers[event] ?? []
-            this._handlers[event].push(cb)
-          })
-          this.destroy = vi.fn()
-          this._emit = (event, payload) => {
-            ;(this._handlers[event] ?? []).forEach((fn) => fn(payload))
-          }
-          firstInstance = this
-        })
-        setupInteractiveMapMock(ml) // second (and any later) instance auto-readies
+        stubInteractiveMap({ mode: 'none', once: true, capture: (i) => (firstInstance = i) })
+        stubInteractiveMap({ ml }) // second (and any later) instance auto-readies
 
         const el = await mountElement()
         // basemap-provider changes while the first load is still in flight
