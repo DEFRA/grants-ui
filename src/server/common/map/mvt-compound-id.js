@@ -13,9 +13,9 @@ import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
  * parcel, but the land-grants API tiles only carry `sheet_id` and `parcel_id`
  * separately — and `parcel_id` alone repeats across sheets. We don't own that
  * API, so we stamp the combined ID on here as the tile passes through our proxy.
- *
  * Any unexpected tile (empty, unparseable, no parcels layer) is returned
- * unchanged — the map still draws, only selection is affected.
+ * unchanged — the map still draws, only selection is affected. All other layers
+ * pass through untouched.
  * @param {Buffer} buffer  raw tile bytes from the land-grants API
  * @param {string} [layerName]
  * @returns {Buffer} the same tile with `id` stamped on every parcel
@@ -45,11 +45,32 @@ export function withCompoundParcelIds(buffer, layerName = 'parcels') {
  */
 function stampCompoundIds(buffer, layerName) {
   const tile = new VectorTile(new PbfReader(buffer))
-  const layer = tile.layers[layerName]
-  if (!layer || layer.length === 0) {
+  const parcelsLayer = tile.layers[layerName]
+  if (!parcelsLayer || parcelsLayer.length === 0) {
     return null
   }
 
+  // Re-emit every layer. Only the parcels layer is transformed; the rest pass
+  // through unchanged.
+  const layers = /** @type {Record<string, unknown>} */ ({})
+  for (const name of Object.keys(tile.layers)) {
+    const layer = tile.layers[name]
+    if (name !== layerName) {
+      layers[name] = layer
+      continue
+    }
+    layers[name] = stampLayer(layer)
+  }
+
+  return Buffer.from(vtpbf.fromVectorTileJs({ layers }))
+}
+
+/**
+ * Returns a vt-pbf-compatible layer with the compound `id` stamped on every
+ * feature that carries both `sheet_id` and `parcel_id`.
+ * @param {import('@mapbox/vector-tile').VectorTileLayer} layer
+ */
+function stampLayer(layer) {
   const features = []
   for (let i = 0; i < layer.length; i++) {
     const feature = layer.feature(i)
@@ -60,13 +81,11 @@ function stampCompoundIds(buffer, layerName) {
     features.push(feature)
   }
 
-  const cachedLayer = {
+  return {
     version: layer.version,
     name: layer.name,
     extent: layer.extent,
     length: features.length,
     feature: (/** @type {number} */ i) => features[i]
   }
-
-  return Buffer.from(vtpbf.fromVectorTileJs({ layers: { [layerName]: cachedLayer } }))
 }
