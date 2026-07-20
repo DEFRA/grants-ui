@@ -5,20 +5,16 @@ import {
 import QuestionPageWithParcelCheckController from '~/src/server/common/controllers/question-page-with-parcel-check.controller.js'
 import { parseLandParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 import { log, error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
-import { mapGroupedActionsToViewModel } from '~/src/server/land-grants/view-models/action.view-model.js'
-import {
-  addActionsToExistingState,
-  getAddedActionsForStateParcel
-} from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
-import {
-  extractLandActionFields,
-  validateLandActionsSelection
-} from '~/src/server/land-grants/validators/land-actions.validator.js'
+import { getAddedActionsForStateParcel } from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
 import { getParcelIdFromQuery } from '../utils/parcel-request.utils.js'
 
-export default class SelectLandActionsPageController extends QuestionPageWithParcelCheckController {
-  viewName = 'select-actions-for-land-parcel'
-  actionFieldPrefix = 'landAction_'
+/**
+ * Shared GET/POST flow for the grouped-radio and flat-checkbox select-actions pages.
+ * Subclasses provide the parts that differ between the two payload/view shapes:
+ * `validateUserInput`, `getViewModelWithActions`, `buildValidationErrors` and
+ * `writeActionsToState`.
+ */
+export default class SelectActionsBasePageController extends QuestionPageWithParcelCheckController {
   enabledLandActions = []
 
   /** @type {boolean} */
@@ -51,29 +47,58 @@ export default class SelectLandActionsPageController extends QuestionPageWithPar
   }
 
   /**
-   * Get view model for the page with actions
-   * @param {AnyFormRequest} request
-   * @param {FormContext} context
-   * @param {Array} groupedActions
-   * @param {Array} addedActions
+   * Build the view model for the page with actions. Overridden per page since the
+   * grouped page renders `groupedActions` and the flat page renders `actionItems`.
+   * @param {AnyFormRequest} _request
+   * @param {FormContext} _context
+   * @param {Array} _groupedActions
+   * @param {Array} _addedActions
+   * @param {Record<string, string>} [_quantityErrorsByCode]
    * @returns {object}
    */
-  getViewModelWithActions(request, context, groupedActions, addedActions) {
-    return {
-      ...super.getViewModel(request, context),
-      actionFieldPrefix: this.actionFieldPrefix,
-      addedActions,
-      groupedActions: mapGroupedActionsToViewModel(groupedActions, addedActions)
-    }
+  getViewModelWithActions(_request, _context, _groupedActions, _addedActions, _quantityErrorsByCode) {
+    throw new Error(`${this.constructor.name} must implement getViewModelWithActions()`)
   }
 
   /**
    * Validate the user input submitted from the page
-   * @param {object} payload
+   * @param {object} _payload
    * @returns {object}
    */
-  validateUserInput(payload) {
-    return validateLandActionsSelection(payload, this.actionFieldPrefix)
+  validateUserInput(_payload) {
+    throw new Error(`${this.constructor.name} must implement validateUserInput()`)
+  }
+
+  /**
+   * Persist the submitted action selections (and any per-action overrides) into state.
+   * @param {object} _prevState
+   * @param {object} _payload
+   * @param {Array} _actions
+   * @param {object} _fetchedParcel
+   * @returns {object}
+   */
+  writeActionsToState(_prevState, _payload, _actions, _fetchedParcel) {
+    throw new Error(`${this.constructor.name} must implement writeActionsToState()`)
+  }
+
+  /**
+   * Map failed application-validation messages to error-summary entries.
+   * @param {object} _payload
+   * @param {Array} _failedMessages
+   * @returns {Array<{ text: string, href?: string }>}
+   */
+  buildValidationErrors(_payload, _failedMessages) {
+    throw new Error(`${this.constructor.name} must implement buildValidationErrors()`)
+  }
+
+  /**
+   * Codes to log when application validation throws. Overridden per page since the
+   * grouped and flat pages read selections from the payload differently.
+   * @param {object} _payload
+   * @returns {Array<string>}
+   */
+  extractSelectedActionCodes(_payload) {
+    throw new Error(`${this.constructor.name} must implement extractSelectedActionCodes()`)
   }
 
   /**
@@ -86,11 +111,12 @@ export default class SelectLandActionsPageController extends QuestionPageWithPar
       actions = [],
       addedActions = [],
       additionalState,
-      existingLandParcels = {}
+      existingLandParcels = {},
+      quantityErrorsByCode = {}
     } = options
     const [sheetId = '', parcelId = ''] = parseLandParcel(selectedLandParcel)
     return h.view(this.viewName, {
-      ...this.getViewModelWithActions(request, context, actions, addedActions),
+      ...this.getViewModelWithActions(request, context, actions, addedActions, quantityErrorsByCode),
       ...additionalState,
       parcelName: `${sheetId} ${parcelId}`,
       errors,
@@ -211,9 +237,8 @@ export default class SelectLandActionsPageController extends QuestionPageWithPar
    * @param {Array} options.actions
    * @param {{ selectedLandParcel: string, sheetId: string, parcelId: string }} options.parcel
    * @param {object} options.state
-   * @param {object} options.prevState
    */
-  async handleApplicationValidation(h, request, context, { payload, actions, parcel, state, prevState }) {
+  async handleApplicationValidation(h, request, context, { payload, actions, parcel, state }) {
     const { selectedLandParcel, sheetId, parcelId } = parcel
     const { referenceNumber } = context
     const { sbi, crn } = request.auth.credentials
@@ -228,34 +253,32 @@ export default class SelectLandActionsPageController extends QuestionPageWithPar
       const { valid, errorMessages = [] } = validationResult
 
       if (!valid) {
-        const landActionFields = extractLandActionFields(payload, this.actionFieldPrefix)
-        const validationErrors = errorMessages
-          .filter((e) => !e.passed)
-          .map((e) => ({
-            text: `${e.description}${e.code ? ': ' + e.code : ''}`,
-            href: e.code ? `#${landActionFields.find((field) => payload[field] === e.code)}` : undefined
-          }))
+        const failedMessages = errorMessages.filter((e) => !e.passed)
+        const validationErrors = this.buildValidationErrors(payload, failedMessages)
+        const quantityErrorsByCode = Object.fromEntries(
+          failedMessages.filter((e) => e.code).map((e) => [e.code, e.description])
+        )
 
-        const addedActions = getAddedActionsForStateParcel(prevState, selectedLandParcel)
+        // state, not prevState, so submitted selections/quantities survive the reload
+        const addedActions = getAddedActionsForStateParcel(state, selectedLandParcel)
         return this.renderErrorView(h, request, context, {
           errors: validationErrors,
           selectedLandParcel,
           actions,
           addedActions,
-          additionalState: state
+          additionalState: state,
+          quantityErrorsByCode
         })
       }
     } catch (e) {
       const { message: errorMessage, status: statusCode } = /** @type {Error & {status?: number}} */ (e)
-      const selectedActions = extractLandActionFields(payload, this.actionFieldPrefix).map(
-        (field) => /** @type {Record<string, unknown>} */ (payload)[field]
-      )
+      const selectedActions = this.extractSelectedActionCodes(payload)
       error(
         LogCodes.LAND_GRANTS.VALIDATE_APPLICATION_ERROR,
         { sbi, parcelId, sheetId, errorMessage, statusCode, selectedActions },
         request
       )
-      const addedActions = getAddedActionsForStateParcel(prevState, selectedLandParcel)
+      const addedActions = getAddedActionsForStateParcel(state, selectedLandParcel)
       return this.renderErrorView(h, request, context, {
         errors: [
           {
@@ -273,7 +296,7 @@ export default class SelectLandActionsPageController extends QuestionPageWithPar
   }
 
   /**
-   * Handle POST requests to the select land actions page
+   * Handle POST requests to the select actions page
    */
   async handlePost(request, context, h) {
     const { state: prevState } = context
@@ -301,15 +324,14 @@ export default class SelectLandActionsPageController extends QuestionPageWithPar
     }
 
     const { actions, parcel: fetchedParcel } = result
-    const state = addActionsToExistingState(prevState, payload, this.actionFieldPrefix, actions, fetchedParcel)
+    const state = this.writeActionsToState(prevState, payload, actions, fetchedParcel)
 
     if (payload.action === 'validate') {
       const validationResult = await this.handleApplicationValidation(h, request, context, {
         payload,
         actions,
         parcel,
-        state,
-        prevState
+        state
       })
       if (validationResult) {
         return validationResult

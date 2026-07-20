@@ -22,6 +22,7 @@ import {
 } from '~/src/server/land-grants/services/parcel-cache.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
+const QUANTITY_REQUIRED_ACTION_CODES = config.get('landGrants.quantityRequiredActionCodes')
 
 /**
  * @param {unknown} enabledLandActions
@@ -139,9 +140,14 @@ export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = 
  * @param {ActionOption} action
  */
 function mapAction(action) {
+  const requiresQuantity = QUANTITY_REQUIRED_ACTION_CODES.includes(action.code)
   return {
     ...action,
-    description: landActionWithCode(action.description, action.code)
+    description: landActionWithCode(action.description, action.code),
+    // Once land-grants-api is ready we need to replace this with their actual max quantity field.
+    // Falls back to 0 (not undefined) when availableArea is missing so a configured code always
+    // still gets a quantity input - undefined here is read downstream as "not required at all".
+    requiresMaxQuantity: requiresQuantity ? (action.availableArea?.value ?? 0) : undefined
   }
 }
 

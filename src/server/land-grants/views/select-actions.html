@@ -1,0 +1,54 @@
+{% extends baseLayoutPath %}
+
+{% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
+{% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
+{% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+
+{% block content %}
+  <div class="govuk-body">
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-two-thirds-from-desktop">
+
+        {% if errors.length > 0 %}
+          {{ govukErrorSummary({
+          titleText: "There is a problem",
+          errorList: errors
+        }) }}
+        {% endif %}
+
+        <h1 class="govuk-heading-l">
+          Select actions for this land parcel
+        </h1>
+
+        <p>Only actions that can be used together on this parcel are available.</p>
+        <p>Incompatible actions are shown but cannot be selected.</p>
+
+        {% if actionItems.length %}
+          <form method="post" novalidate="novalidate">
+            <input type="hidden" name="crumb" value="{{ crumb }}">
+
+            <h2 class="govuk-heading-m">Available actions</h2>
+
+            {{ govukCheckboxes({
+                name: actionFieldName,
+                items: actionItems
+              }) }}
+
+            <div class="govuk-button-group">
+              {{ govukButton({
+                text: "Continue",
+                preventDoubleClick: true
+              }) }}
+            </div>
+          </form>
+        {% elif ((not errors) or (errors.length == 0)) %}
+          {{ govukWarningText({
+            text: "No actions available to select.",
+            iconFallbackText: "Warning"
+          }) }}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endblock %}

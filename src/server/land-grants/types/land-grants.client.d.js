@@ -39,6 +39,7 @@
  * @property {string} version - The action version
  * @property {boolean} [sssiConsentRequired] - If action needs SSSI consent
  * @property {boolean} [heferRequired] - If action needs HEFER report
+ * @property {number} [requiresMaxQuantity] - If set, the user must enter a quantity for this action, capped at this value
  * @property {Size} availableArea - The available area for the action
  * @property {number} ratePerUnitGbp - The rate per unit in GBP
  * @property {number} ratePerAgreementPerYearGbp - The rate per agreement per year in GBP

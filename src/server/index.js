@@ -32,7 +32,10 @@ import DeclarationPageController from '~/src/server/declaration/declaration-page
 import ConfirmFarmDetailsController from '~/src/server/land-grants/controllers/confirm-farm-details.controller.js'
 import PaymentPageController from '~/src/server/payment/controllers/payment-page.controller.js'
 import SelectLandParcelPageController from '~/src/server/land-grants/controllers/select-land-parcel-page.controller.js'
-import SelectLandActionsPageController from '~/src/server/land-grants/controllers/select-land-actions-page.controller.js'
+import SelectGroupedActionsPageController, {
+  SelectLandActionsPageController
+} from '~/src/server/land-grants/controllers/select-grouped-actions-page.controller.js'
+import SelectActionsPageController from '~/src/server/land-grants/controllers/select-actions-page.controller.js'
 import SubmissionPageController from '~/src/server/land-grants/controllers/submission-page.controller.js'
 import LandGrantsGenericPageController from '~/src/server/land-grants/controllers/land-grants-generic-page.controller.js'
 import ConsentPageController from '~/src/server/land-grants/controllers/consent-page.controller.js'
@@ -137,7 +140,9 @@ const registerFormsPlugin = async (server, prefix = '') => {
         ConfirmFarmDetailsController,
         SelectLandParcelPageController,
         CommonSelectLandParcelPageController,
+        SelectGroupedActionsPageController,
         SelectLandActionsPageController,
+        SelectActionsPageController,
         PaymentPageController,
         RemoveActionPageController,
         ConsentPageController,
