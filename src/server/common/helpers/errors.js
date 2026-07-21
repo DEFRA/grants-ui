@@ -78,6 +78,22 @@ function statusCodeMessage(statusCode) {
 }
 
 /**
+ * Reads the raw numeric upstream status a downstream call attached to a thrown
+ * error, checking `code` then `status`. No range filtering.
+ * @param {{ code?: unknown, status?: unknown } | null | undefined} error
+ * @returns {number | undefined}
+ */
+export function readUpstreamStatus(error) {
+  if (typeof error?.code === 'number') {
+    return error.code
+  }
+  if (typeof error?.status === 'number') {
+    return error.status
+  }
+  return undefined
+}
+
+/**
  * Reads the upstream HTTP status from a thrown error wrapped by Boom, so it can
  * be attached to the SERVER_ERROR log payload. When a downstream service
  * (e.g. grants-ui-backend) responds with 5xx, the call site throws an Error
@@ -87,7 +103,7 @@ function statusCodeMessage(statusCode) {
  * @returns {number | null}
  */
 function getUpstreamStatus(response) {
-  const candidate = response?.code ?? response?.status ?? null
+  const candidate = readUpstreamStatus(response)
   return typeof candidate === 'number' &&
     candidate >= statusCodes.internalServerError &&
     candidate < SERVER_ERROR_RANGE_END
