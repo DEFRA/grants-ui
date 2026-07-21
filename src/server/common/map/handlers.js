@@ -2,6 +2,7 @@ import { Readable } from 'node:stream'
 import { config } from '~/src/config/config.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { attempt } from '~/src/server/common/helpers/attempt.js'
+import { readUpstreamStatus } from '~/src/server/common/helpers/errors.js'
 import { logUpstreamError } from '~/src/server/common/helpers/logging/upstream-error.js'
 import { fetchParcels, fetchParcelTileLocation } from '~/src/server/land-grants/services/land-grants.service.js'
 import { fetchParcelTile } from '~/src/server/land-grants/services/land-grants.client.js'
@@ -19,22 +20,6 @@ const SERVICE_LAND_GRANTS = 'land-grants-api'
 const CACHE_CONTROL_HEADER = 'Cache-Control'
 
 /**
- * The land-grants client reports the upstream status as `code` or `status`
- * depending on where the call failed.
- * @param {Error & { code?: unknown, status?: unknown }} error
- * @returns {number | undefined}
- */
-function numericUpstreamStatus(error) {
-  if (typeof error.code === 'number') {
-    return error.code
-  }
-  if (typeof error.status === 'number') {
-    return error.status
-  }
-  return undefined
-}
-
-/**
  * Returns the signed-in user's parcels as GeoJSON features (id, sheet_id,
  * parcel_id, areaHa) plus the bounding box the map fits its viewport to.
  * @param {Request} request
@@ -45,7 +30,7 @@ export async function parcelsHandler(request, h) {
 
   if (!result.ok) {
     const err = /** @type {Error & { code?: unknown, status?: unknown }} */ (result.error)
-    const upstreamStatus = numericUpstreamStatus(err)
+    const upstreamStatus = readUpstreamStatus(err)
     logUpstreamError(
       { endpoint: ROUTES.parcels, service: SERVICE_LAND_GRANTS, upstreamStatus, errorMessage: err.message },
       request
@@ -80,16 +65,18 @@ export async function tilesHandler(request, h) {
   )
 
   if (!parcelsResult.ok) {
+    const err = /** @type {Error & { code?: unknown, status?: unknown }} */ (parcelsResult.error)
+    const upstreamStatus = readUpstreamStatus(err)
     logUpstreamError(
       {
         endpoint: ROUTES.parcelTiles,
         service: SERVICE_LAND_GRANTS,
-        upstreamStatus: null,
-        errorMessage: parcelsResult.error.message
+        upstreamStatus,
+        errorMessage: err.message
       },
       request
     )
-    return h.response().code(statusCodes.serviceUnavailable)
+    return h.response().code(upstreamStatus ?? statusCodes.serviceUnavailable)
   }
   const parcelIds = parcelsResult.value.map((p) => stringifyParcel(p))
 
@@ -97,7 +84,7 @@ export async function tilesHandler(request, h) {
   // status on `.code`/`.status`; a 404 tile is not retried, a 5xx is.
   const tileResult = await attempt(() => fetchParcelTile(parcelIds, z, x, y, LAND_GRANTS_API_URL))
   if (!tileResult.ok) {
-    const status = numericUpstreamStatus(/** @type {Error & { code?: unknown, status?: unknown }} */ (tileResult.error))
+    const status = readUpstreamStatus(/** @type {Error & { code?: unknown, status?: unknown }} */ (tileResult.error))
     return h.response().code(status ?? statusCodes.serviceUnavailable)
   }
 

@@ -212,34 +212,30 @@ describe('tilesHandler', () => {
     expect(fetchParcelTile).toHaveBeenCalledWith([], '10', '50', '60', expect.any(String))
   })
 
-  it('returns 503 when fetchParcels throws', async () => {
-    fetchParcels.mockRejectedValue(new Error('network error'))
+  it.each([
+    ['503 without an upstream status', new Error('network error'), 503],
+    ['the upstream status when present', Object.assign(new Error('upstream down'), { code: 500 }), 500]
+  ])('returns %s when fetchParcels throws', async (_name, error, status) => {
+    fetchParcels.mockRejectedValue(error)
     const h = makeH()
 
     await tilesHandler(makeRequest({ z: '12', x: '100', y: '200' }), h)
 
-    expect(h.code).toHaveBeenCalledWith(503)
+    expect(h.code).toHaveBeenCalledWith(status)
     expect(fetchParcelTile).not.toHaveBeenCalled()
   })
 
-  it('passes through the upstream status when the tile fetch throws with one', async () => {
+  it.each([
+    ['the upstream status when present', Object.assign(new Error('not found'), { code: 404 }), 404],
+    ['503 without an upstream status', new Error('network error'), 503]
+  ])('returns %s when the tile fetch throws', async (_name, error, status) => {
     fetchParcels.mockResolvedValue([{ sheetId: 'SD7148', parcelId: '9160' }])
-    fetchParcelTile.mockRejectedValue(Object.assign(new Error('not found'), { code: 404 }))
+    fetchParcelTile.mockRejectedValue(error)
     const h = makeH()
 
     await tilesHandler(makeRequest({ z: '12', x: '100', y: '200' }), h)
 
-    expect(h.code).toHaveBeenCalledWith(404)
-  })
-
-  it('returns 503 when the tile fetch throws without a status', async () => {
-    fetchParcels.mockResolvedValue([])
-    fetchParcelTile.mockRejectedValue(new Error('network error'))
-    const h = makeH()
-
-    await tilesHandler(makeRequest({ z: '10', x: '50', y: '60' }), h)
-
-    expect(h.code).toHaveBeenCalledWith(503)
+    expect(h.code).toHaveBeenCalledWith(status)
   })
 })
 
