@@ -149,27 +149,20 @@ describe('parcelsHandler', () => {
     expect(result).toBe(sentinel)
   })
 
-  it('returns 503 with error message when fetchParcels throws without a status', async () => {
-    fetchParcels.mockRejectedValue(new Error('backend down'))
-    const h = makeH()
-
-    await parcelsHandler(makeRequest(), h)
-
-    expect(h.response).toHaveBeenCalledWith({ error: 'backend down' })
-    expect(h.code).toHaveBeenCalledWith(503)
-  })
-
+  // Every failure returns the generic body — the raw upstream message must
+  // never reach the browser — with the upstream status passed through, or 503.
   it.each([
-    ['code', 500],
-    ['code', 404],
-    ['status', 403]
-  ])('passes through upstream %s status %d', async (field, status) => {
-    fetchParcels.mockRejectedValue(Object.assign(new Error('upstream'), { [field]: status }))
+    ['503 without an upstream status', new Error('backend down'), 503],
+    ['upstream code 500', Object.assign(new Error('upstream'), { code: 500 }), 500],
+    ['upstream code 404', Object.assign(new Error('upstream'), { code: 404 }), 404],
+    ['upstream status 403', Object.assign(new Error('upstream'), { status: 403 }), 403]
+  ])('returns a generic error and %s when fetchParcels throws', async (_name, error, status) => {
+    fetchParcels.mockRejectedValue(error)
     const h = makeH()
 
     await parcelsHandler(makeRequest(), h)
 
-    expect(h.response).toHaveBeenCalledWith({ error: 'upstream' })
+    expect(h.response).toHaveBeenCalledWith({ error: 'Unable to load your land parcels' })
     expect(h.code).toHaveBeenCalledWith(status)
   })
 })
@@ -355,5 +348,15 @@ describe('osTileProxyHandler', () => {
     await osTileProxyHandler(makeOsRequest({ z: '12', x: '100', y: '200' }), h)
 
     expect(h.code).toHaveBeenCalledWith(503)
+  })
+
+  it('returns 502 when an ok upstream response has a null body', async () => {
+    global.fetch.mockResolvedValue({ ok: true, headers: mockOsTileHeaders(), body: null })
+    const h = makeH()
+
+    await osTileProxyHandler(makeOsRequest({ z: '12', x: '100', y: '200' }), h)
+
+    expect(h.code).toHaveBeenCalledWith(502)
+    expect(h.type).not.toHaveBeenCalled()
   })
 })

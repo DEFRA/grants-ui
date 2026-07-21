@@ -18,6 +18,9 @@ const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
 const TILE_CACHE_MAX_AGE_SECONDS = config.get('mapTileCacheMaxAgeSeconds')
 const SERVICE_LAND_GRANTS = 'land-grants-api'
 const CACHE_CONTROL_HEADER = 'Cache-Control'
+// Generic, so the upstream land-grants response body never reaches the browser;
+// the real message is preserved in logUpstreamError.
+const PARCELS_ERROR_MESSAGE = 'Unable to load your land parcels'
 
 /**
  * Returns the signed-in user's parcels as GeoJSON features (id, sheet_id,
@@ -35,7 +38,7 @@ export async function parcelsHandler(request, h) {
       { endpoint: ROUTES.parcels, service: SERVICE_LAND_GRANTS, upstreamStatus, errorMessage: err.message },
       request
     )
-    return h.response({ error: err.message }).code(upstreamStatus ?? statusCodes.serviceUnavailable)
+    return h.response({ error: PARCELS_ERROR_MESSAGE }).code(upstreamStatus ?? statusCodes.serviceUnavailable)
   }
 
   const parcelData = toParcelData(result.value)
@@ -123,6 +126,11 @@ export async function osTileProxyHandler(request, h) {
   }
   if (!response.ok) {
     return h.response().code(response.status)
+  }
+  // An ok-but-empty upstream (204/null body) would throw in Readable.fromWeb and
+  // surface as a 500; degrade to a clean 502 instead.
+  if (!response.body) {
+    return h.response().code(statusCodes.badGateway)
   }
 
   const contentLength = response.headers.get('content-length')

@@ -81,15 +81,6 @@ describe('contentSecurityPolicy plugin', () => {
   }
 
   describe('onRequest handler', () => {
-    test('registers an onRequest handler', () => {
-      // ensure ext was called with onRequest
-      expect(fakeServer.ext).toHaveBeenCalled()
-      const call = fakeServer.ext.mock.calls.find(([ev]) => ev === 'onRequest')
-      expect(call).toBeTruthy()
-      const [, handler] = call
-      expect(typeof handler).toBe('function')
-    })
-
     test('sets a base64 nonce on request.app.cspNonce and continues', async () => {
       const request = { app: {} }
 
@@ -147,12 +138,23 @@ describe('contentSecurityPolicy plugin', () => {
       expect(mockHeader).toHaveBeenNthCalledWith(3, 'X-CSP-Nonce', request.app.cspNonce)
     })
 
-    it('allows CartoCDN for the parcel map basemap-provider toggle', async () => {
+    it('omits CartoCDN from the CSP on a normal (non-devMode) response', async () => {
+      const request = { response: { isBoom: false, header: mockHeader, variety: '' }, app: {} }
+
+      await onRequest(request, h)
+      await onPreResponse(request, h)
+
+      const [, policy] = mockHeader.mock.calls.find(([name]) => name === 'Content-Security-Policy')
+      expect(policy).not.toContain('cartocdn.com')
+    })
+
+    it('allows CartoCDN only on a devMode map view', async () => {
       const request = {
         response: {
           isBoom: false,
           header: mockHeader,
-          variety: ''
+          variety: 'view',
+          source: { context: { devMode: true } }
         },
         app: {}
       }
@@ -163,6 +165,24 @@ describe('contentSecurityPolicy plugin', () => {
       const [, policy] = mockHeader.mock.calls.find(([name]) => name === 'Content-Security-Policy')
       expect(policy).toContain('https://basemaps.cartocdn.com')
       expect(policy).toContain('https://*.basemaps.cartocdn.com')
+    })
+
+    it('omits CartoCDN on a normal (non-devMode) view render', async () => {
+      const request = {
+        response: {
+          isBoom: false,
+          header: mockHeader,
+          variety: 'view',
+          source: { context: { devMode: false } }
+        },
+        app: {}
+      }
+
+      await onRequest(request, h)
+      await onPreResponse(request, h)
+
+      const [, policy] = mockHeader.mock.calls.find(([name]) => name === 'Content-Security-Policy')
+      expect(policy).not.toContain('cartocdn.com')
     })
 
     it.each([
@@ -191,14 +211,12 @@ describe('contentSecurityPolicy plugin', () => {
       }
     })
 
-    it('should include GOV.UK Frontend SHA-256 hash in script-src', async () => {
-      const cspHeader = await getCspHeader()
-      expect(cspHeader).toContain("'sha256-GUQ5ad8JK5KmEWmROf3LZd9ge94daqNvd8xy9YS1iDw='")
-    })
-
-    it('should include form-action self directive', async () => {
-      const cspHeader = await getCspHeader()
-      expect(cspHeader).toContain("form-action 'self'")
+    it.each([
+      "'sha256-GUQ5ad8JK5KmEWmROf3LZd9ge94daqNvd8xy9YS1iDw='",
+      "form-action 'self'",
+      'https://*.googletagmanager.com'
+    ])('includes %s in the CSP', async (fragment) => {
+      expect(await getCspHeader()).toContain(fragment)
     })
 
     it('should allowlist the SFD origin in form-action when SFD is enabled', async () => {
@@ -226,11 +244,6 @@ describe('contentSecurityPolicy plugin', () => {
 
       const cspHeader = await getCspHeader()
       expect(cspHeader).toContain("form-action 'self';")
-    })
-
-    it('should include GTM wildcard in script-src', async () => {
-      const cspHeader = await getCspHeader()
-      expect(cspHeader).toContain('https://*.googletagmanager.com')
     })
   })
 
