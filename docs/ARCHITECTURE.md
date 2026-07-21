@@ -12,7 +12,6 @@
 - [Development Services Integration](#development-services-integration)
 - [Grant Form Definitions](#grant-form-definitions)
 - [GAS Integration](#gas-integration)
-  - [Submission Schema Validators](#submission-schema-validators)
   - [Using the gas.http Helper](#using-the-gashttp-helper-and-http-client-environments)
   - [Grant Schema Updates](#grant-schema-updates)
 - [Config-Driven Confirmation Pages](#config-driven-confirmation-pages)
@@ -237,7 +236,7 @@ metadata:
 
 ### Example Complete Configuration
 
-See `src/server/common/forms/definitions/example-grant-with-task-list.yaml` for a complete working example that demonstrates:
+See [`example-grant-with-task-list.yaml`](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-task-list/grants-ui/example-grant-with-task-list.yaml) in the grants config repo for a complete working example that demonstrates:
 
 - Multiple sections with different types of tasks
 - Above and below positioned guidance components
@@ -272,17 +271,25 @@ For complete service configuration and setup, see [Docker Compose](./DOCKER.md#d
 
 ## Grant Form Definitions
 
-Grant form definitions can be sourced in two ways:
+All grant form definitions are sourced from `grants-ui-backend`. Definitions
+are authored as YAML in the grants config repos and published per environment
+by the config broker; grants-ui itself holds no local form definitions.
 
-### 1. Local YAML files (default)
+A form's slug is not known to grants-ui ahead of time; there is no list of
+valid grants to register and nothing is cached or registered anywhere —
+Redis plays no part in form definitions. The definition is resolved fresh per
+request from the backend's combined `POST /state/with-definition` endpoint
+(see [Forms Engine State Model](#forms-engine-state-model)), via
+`state-with-definition-context.js`'s `AsyncLocalStorage`-backed request
+context, and `formsService()` (`src/server/common/forms/services/form.js`)
+derives everything else (`id`, `title`, `metadata`) from the slug and that
+resolved definition. Whitelist enforcement (`whitelist.js` `onPostAuth`)
+reads the grant's `whitelistCrnEnvVar`/`whitelistSbiEnvVar` from that same
+per-request envelope.
 
-Form definitions are stored in `src/server/common/forms/definitions` as YAML files and read at startup. Any changes to these files require a restart of the application.
-
-Forms will not be enabled in production unless the YAML file contains the `enabledInProd: true` property.
-
-### 2. Grants UI Backend
-
-Slugs listed in `BACKEND_FORM_DEF_ENABLED_SLUGS` have their definition served from `grants-ui-backend`, which returns the form definition alongside the saved application state from its combined state-with-definition endpoint. This allows form definitions to be updated without redeploying the application.
+One consequence of resolving everything per-request: there is no enumerable
+list of grants in grants-ui, so the dev-tools demo pages are opened by slug
+URL (e.g. `/dev/demo-confirmation/{slug}`) rather than picked from a list.
 
 ## GAS Integration
 
@@ -323,29 +330,6 @@ Example response:
     "code": "example-grant-with-auth"
 }
 ```
-
-### Submission Schema Validators
-
-Each GAS grant may define a JSON Schema stored locally in:
-
-`src/server/common/forms/schemas/`
-
-Each schema file is named after the grant code
-(e.g. example-grant-with-auth.json) and describes the shape of the expected application payload for that grant.
-
-At application startup, the app scans the schemas directory and compiles each schema into a JSON Schema validator using Ajv. These compiled validators are stored in-memory in a map of the form:
-
-`Map<string, ValidateFunction>`
-
-#### Current Runtime Behaviour
-
-Although the validators are compiled at startup, they are not currently used at runtime to validate submissions within the grants-ui submission pipeline.
-
-The helper:
-
-`validateSubmissionAnswers(payload, grantCode)`
-
-is currently used only in tests to ensure that the mapping logic produces payloads that conform to the expected schema format.
 
 ### Using the `gas.http` helper and HTTP client environments
 

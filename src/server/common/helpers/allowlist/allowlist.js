@@ -1,4 +1,3 @@
-import { config } from '~/src/config/config.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 import { fetchAllowedGrants } from '~/src/server/auth/services/allowlist.client.js'
@@ -33,12 +32,6 @@ const allowlistHandler = async (request, h) => {
   const sbi = /** @type {string} */ (request.auth.credentials.sbi)
 
   const grantCode = request.params.slug
-
-  const enabledCodes = /** @type {string[]} */ (config.get('forms.backendAllowlistEnabledSlugs'))
-
-  if (!enabledCodes.includes(grantCode)) {
-    return h.continue
-  }
 
   const allowedGrants = await fetchAllowedGrants(crn, sbi)
   const hasAccess = allowedGrants.includes(grantCode)

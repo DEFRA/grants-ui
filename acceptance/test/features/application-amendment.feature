@@ -228,6 +228,15 @@ Feature: Application Amendment
         When the user selects "Wales" for AutocompleteField "Country"
         And continues
 
+        # user revisits grants-ui
+        And the user starts a new browser session
+        And navigates to "/example-grant-with-auth/yes-no-field"
+        And logs in as CRN "1100964517"
+
+        # should still get redirected to reopened landing page until application resubmitted
+        Then the user should be at URL "reopened"
+        When the user continues
+
         # summary
         Then the user should be at URL "summary"
         And should see the following answers

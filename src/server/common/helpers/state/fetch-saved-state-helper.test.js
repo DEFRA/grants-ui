@@ -88,7 +88,7 @@ describe('State API helpers', () => {
   const key = `${TEST_USER_IDS.DEFAULT}:${TEST_USER_IDS.ORGANISATION_ID}:${TEST_USER_IDS.GRANT_ID}`
 
   beforeEach(() => {
-    mockRequest = mockSimpleRequest()
+    mockRequest = mockSimpleRequest({ app: { grantVersion: '1.0.0' } })
 
     mockParseSessionKey.mockReturnValue({
       sbi: TEST_USER_IDS.ORGANISATION_ID,
@@ -126,17 +126,6 @@ describe('State API helpers', () => {
           method: 'POST',
           endpoint: expect.stringContaining('/state/with-definition')
         })
-      })
-
-      it('sends includeDefinition: false when requested (state-only)', async () => {
-        mockFetch.mockResolvedValue(createMockFetchResponse({ data: { state: null, upgraded: false } }))
-
-        await fetchStateWithDefinitionFromApi(key, mockRequest, { lockToken: 'tok', includeDefinition: false })
-
-        expect(mockFetch).toHaveBeenCalledWith(
-          expect.stringContaining('/state/with-definition'),
-          expect.objectContaining({ body: withDefinitionBody(false) })
-        )
       })
 
       it('returns null on 404', async () => {

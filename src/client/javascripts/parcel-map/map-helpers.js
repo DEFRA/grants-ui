@@ -11,6 +11,8 @@ import {
   AREA_DECIMAL_PLACES,
   PARCEL_ID_PROPERTY,
   PARCEL_CLICK_TOLERANCE_PX,
+  PARCEL_TILES_URL,
+  FIT_BOUNDS_PADDING,
   SOURCE_ID_PARCELS,
   LAYER_ID_FILL,
   LAYER_ID_OUTLINE,
@@ -204,17 +206,71 @@ export function getScreenBounds(map, feature) {
   return minX === Infinity ? null : { minX, minY, maxX, maxY }
 }
 
-/** @returns {HTMLDivElement} */
-export function buildSkeleton() {
+/**
+ * A full-bleed overlay panel with a centred label. Backs both the loading
+ * skeleton (`role="status"`) and the error overlay (`role="alert"`) — same box,
+ * different role and message.
+ * @param {string} message
+ * @param {{ role: string, ariaLabel?: string }} options
+ * @returns {HTMLDivElement}
+ */
+export function buildOverlay(message, { role, ariaLabel }) {
   const el = /** @type {HTMLDivElement} */ (document.createElement('div'))
-  el.setAttribute('aria-label', MSG_LOADING)
-  el.setAttribute('role', 'status')
+  el.setAttribute('role', role)
+  if (ariaLabel) {
+    el.setAttribute('aria-label', ariaLabel)
+  }
   el.style.cssText = ERROR_OVERLAY_STYLES
   const label = document.createElement('span')
   label.style.cssText = ERROR_LABEL_STYLES
-  label.textContent = MSG_LOADING
+  label.textContent = message
   el.appendChild(label)
   return el
+}
+
+/** @returns {HTMLDivElement} */
+export function buildSkeleton() {
+  return buildOverlay(MSG_LOADING, { role: 'status', ariaLabel: MSG_LOADING })
+}
+
+/**
+ * Fits the viewport to the parcels' bounding box, then adds the parcel source.
+ * @param {import('maplibre-gl').Map} ml
+ * @param {{ geojsonUrl: string | null, bbox: { minLng: number, minLat: number, maxLng: number, maxLat: number } | null }} data
+ * @param {unknown[]} colorExpr  MapLibre `match` expression
+ * @param {string} basemapProvider  BASEMAP_PROVIDER_ORDNANCE_SURVEY | BASEMAP_PROVIDER_OPENSTREETMAP
+ */
+export function addParcelsToMap(ml, { geojsonUrl, bbox }, colorExpr, basemapProvider) {
+  if (bbox) {
+    const { minLng, minLat, maxLng, maxLat } = bbox
+    ml.fitBounds(
+      [
+        [Number(minLng), Number(minLat)],
+        [Number(maxLng), Number(maxLat)]
+      ],
+      { padding: FIT_BOUNDS_PADDING, animate: false }
+    )
+  }
+
+  if (ml.getSource(SOURCE_ID_PARCELS)) {
+    return
+  }
+
+  const origin = globalThis.location.origin
+  const source = geojsonUrl
+    ? /** @type {import('maplibre-gl').GeoJSONSourceSpecification} */ ({
+        type: 'geojson',
+        data: geojsonUrl.startsWith('http') ? geojsonUrl : `${origin}${geojsonUrl}`
+      })
+    : /** @type {import('maplibre-gl').VectorSourceSpecification} */ ({
+        type: 'vector',
+        tiles: [`${origin}${PARCEL_TILES_URL}`]
+      })
+  ml.addSource(SOURCE_ID_PARCELS, source)
+  const layers = buildParcelLayers(colorExpr, geojsonUrl ? undefined : SOURCE_ID_PARCELS, basemapProvider)
+  ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.fill))
+  ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.outline))
+  ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.label))
 }
 
 /**

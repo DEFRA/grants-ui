@@ -59,7 +59,8 @@ describe('persistSubmissionToApi', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockRequest = mockSimpleRequest({
-      params: { slug: grantCode.toLowerCase() }
+      params: { slug: grantCode.toLowerCase() },
+      app: { grantVersion: 1 }
     })
   })
 
@@ -82,7 +83,7 @@ describe('persistSubmissionToApi', () => {
       vi.unmock('~/src/config/config.js')
     })
 
-    it('persists submission successfully when response is ok (legacy grant, grantVersion=1)', async () => {
+    it('persists submission successfully when response is ok', async () => {
       fetch.mockResolvedValue(createMockFetchResponse())
 
       await persistSubmissionToApi(TEST_SUBMISSION, mockRequest)

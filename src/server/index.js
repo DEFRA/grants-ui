@@ -17,7 +17,6 @@ import { contentSecurityPolicy } from '~/src/plugins/content-security-policy.js'
 import CheckResponsesPageController from '~/src/server/check-responses/check-responses.controller.js'
 import { formsService } from '~/src/server/common/forms/services/form.js'
 import { outputService } from '~/src/server/common/forms/services/output.js'
-import { loadSubmissionSchemaValidators } from '~/src/server/common/forms/services/submission.js'
 import { catchAll } from '~/src/server/common/helpers/errors.js'
 import { requestLogger } from '~/src/server/common/helpers/logging/request-logger.js'
 import { setupProxy } from '~/src/server/common/helpers/proxy/setup-proxy.js'
@@ -33,7 +32,10 @@ import DeclarationPageController from '~/src/server/declaration/declaration-page
 import ConfirmFarmDetailsController from '~/src/server/land-grants/controllers/confirm-farm-details.controller.js'
 import PaymentPageController from '~/src/server/payment/controllers/payment-page.controller.js'
 import SelectLandParcelPageController from '~/src/server/land-grants/controllers/select-land-parcel-page.controller.js'
-import SelectLandActionsPageController from '~/src/server/land-grants/controllers/select-land-actions-page.controller.js'
+import SelectGroupedActionsPageController, {
+  SelectLandActionsPageController
+} from '~/src/server/land-grants/controllers/select-grouped-actions-page.controller.js'
+import SelectActionsPageController from '~/src/server/land-grants/controllers/select-actions-page.controller.js'
 import SubmissionPageController from '~/src/server/land-grants/controllers/submission-page.controller.js'
 import LandGrantsGenericPageController from '~/src/server/land-grants/controllers/land-grants-generic-page.controller.js'
 import ConsentPageController from '~/src/server/land-grants/controllers/consent-page.controller.js'
@@ -43,7 +45,6 @@ import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
 import { StatePersistenceService } from './common/services/state-persistence/state-persistence.service.js'
 import { router } from './router.js'
 import allowlist from '~/src/server/common/helpers/allowlist/allowlist.js'
-import whitelist from '~/src/server/common/helpers/whitelist/whitelist.js'
 import ConfirmMethaneDetailsController from '~/src/server/non-land-grants/methane/controllers/confirm-methane-details.controller.js'
 import TaskListPageController from '~/src/server/task-list/task-list-page.controller.js'
 import TaskPageController from '~/src/server/task-list/task-page.controller.js'
@@ -139,7 +140,9 @@ const registerFormsPlugin = async (server, prefix = '') => {
         ConfirmFarmDetailsController,
         SelectLandParcelPageController,
         CommonSelectLandParcelPageController,
+        SelectGroupedActionsPageController,
         SelectLandActionsPageController,
+        SelectActionsPageController,
         PaymentPageController,
         RemoveActionPageController,
         ConsentPageController,
@@ -184,7 +187,6 @@ const registerPlugins = async (server) => {
     permissions,
     contentSecurityPolicy,
     allowlist,
-    whitelist,
     auditPublisher
   ])
 
@@ -234,12 +236,6 @@ export async function createServer() {
   })
 
   server.ext('onPreResponse', serviceRootRedirect)
-
-  loadSubmissionSchemaValidators()
-  log(LogCodes.SYSTEM.STARTUP_PHASE, {
-    phase: 'schema_validators',
-    status: 'loaded'
-  })
 
   // Bind the live request to an AsyncLocalStorage context for the WHOLE request
   // lifecycle (route prerequisites, handler and onPreResponse). The

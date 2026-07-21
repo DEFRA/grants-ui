@@ -1,9 +1,8 @@
 import { vi } from 'vitest'
 import { demoConfirmationHandler } from './demo-confirmation.handler.js'
-import { findFormBySlug } from '../../common/forms/services/find-form-by-slug.js'
 import { ConfirmationService } from '../../confirmation/services/confirmation.service.js'
 import { buildDemoData } from '../helpers/index.js'
-import { generateFormNotFoundResponse } from '../utils/index.js'
+import { generateFormNotFoundResponse, resolveFormDefinition } from '../utils/index.js'
 import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 import {
@@ -12,7 +11,6 @@ import {
 } from '../../confirmation/__test-fixtures__/confirmation-test-fixtures.js'
 import { MOCK_DEMO_DATA } from '../__test-fixtures__/mock-demo-data.js'
 
-vi.mock('../../common/forms/services/find-form-by-slug.js')
 vi.mock('../../confirmation/services/confirmation.service.js')
 vi.mock('../helpers/index.js')
 vi.mock('../utils/index.js')
@@ -26,7 +24,13 @@ describe('demo-confirmation.handler', () => {
   let mockH
   let mockLogger
 
-  const mockForm = MOCK_FORMS.basic
+  const mockDefinition = { name: MOCK_FORMS.basic.title, metadata: { confirmationContent: {} } }
+  const mockForm = {
+    slug: 'test-form',
+    title: MOCK_FORMS.basic.title,
+    name: MOCK_FORMS.basic.title,
+    metadata: { confirmationContent: {} }
+  }
   const mockConfirmationContent = MOCK_CONFIRMATION_CONTENT.basic
 
   beforeEach(() => {
@@ -35,7 +39,8 @@ describe('demo-confirmation.handler', () => {
     mockLogger = mockRequestLogger()
     mockRequest = mockHapiRequest({
       params: { slug: 'test-form' },
-      logger: mockLogger
+      logger: mockLogger,
+      server: { methods: { getFormService: () => ({}) } }
     })
     mockH = mockHapiResponseToolkit()
 
@@ -47,7 +52,7 @@ describe('demo-confirmation.handler', () => {
     test('should render demo confirmation page for valid form', async () => {
       const processedConfirmationContent = { html: '<h2>Processed demo content</h2>' }
 
-      findFormBySlug.mockResolvedValue(mockForm)
+      resolveFormDefinition.mockResolvedValue(mockDefinition)
       ConfirmationService.loadConfirmationContent.mockResolvedValue({
         confirmationContent: mockConfirmationContent
       })
@@ -56,9 +61,9 @@ describe('demo-confirmation.handler', () => {
 
       await demoConfirmationHandler(mockRequest, mockH)
 
-      expect(findFormBySlug).toHaveBeenCalledWith('test-form')
+      expect(resolveFormDefinition).toHaveBeenCalledWith(mockRequest)
       expect(ConfirmationService.loadConfirmationContent).toHaveBeenCalledWith(mockForm)
-      expect(ConfirmationService.processConfirmationContent).toHaveBeenCalledWith(mockConfirmationContent, 'test-slug')
+      expect(ConfirmationService.processConfirmationContent).toHaveBeenCalledWith(mockConfirmationContent, 'test-form')
       expect(ConfirmationService.buildViewModel).toHaveBeenCalledWith({
         ...MOCK_DEMO_DATA,
         confirmationContent: processedConfirmationContent,
@@ -70,7 +75,7 @@ describe('demo-confirmation.handler', () => {
     })
 
     test('should return form not found response when form does not exist', async () => {
-      findFormBySlug.mockResolvedValue(null)
+      resolveFormDefinition.mockResolvedValue(null)
       generateFormNotFoundResponse.mockResolvedValue('not-found-response')
 
       const result = await demoConfirmationHandler(mockRequest, mockH)
@@ -84,7 +89,7 @@ describe('demo-confirmation.handler', () => {
         html: '<h2>What happens next (Development Mode)</h2><p><strong>⚠️ This is demo content - no configuration found.</strong></p>'
       }
 
-      findFormBySlug.mockResolvedValue(mockForm)
+      resolveFormDefinition.mockResolvedValue(mockDefinition)
       ConfirmationService.loadConfirmationContent.mockResolvedValue({
         confirmationContent: null,
         formDefinition: null
@@ -111,7 +116,7 @@ describe('demo-confirmation.handler', () => {
         html: '<h2>Development Error</h2><p>Failed to load confirmation content for test-form</p>'
       }
 
-      findFormBySlug.mockRejectedValue(new Error('Handler error'))
+      resolveFormDefinition.mockRejectedValue(new Error('Handler error'))
       ConfirmationService.processConfirmationContent.mockReturnValue(fallbackConfirmationContent)
       ConfirmationService.buildViewModel.mockReturnValue({ fallback: 'viewModel' })
 
@@ -121,6 +126,7 @@ describe('demo-confirmation.handler', () => {
       expect(ConfirmationService.buildViewModel).toHaveBeenCalledWith({
         ...MOCK_DEMO_DATA,
         isDevelopmentMode: true,
+        form: { name: 'Demo form' },
         confirmationContent: expect.objectContaining({
           html: expect.stringContaining('Development Error')
         })

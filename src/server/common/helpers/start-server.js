@@ -2,7 +2,6 @@ import { config } from '~/src/config/config.js'
 
 import { createServer } from '~/src/server/index.js'
 import { logger } from '~/src/server/common/helpers/logging/log.js'
-import { closeFormsRedisClient } from '~/src/server/common/forms/services/forms-redis.js'
 
 /**
  * @returns {Promise<import('@hapi/hapi').Server | undefined>}
@@ -28,7 +27,6 @@ async function startServer() {
       if (server) {
         await server.stop({ timeout: 10000 })
       }
-      await closeFormsRedisClient()
     } catch (error) {
       logger.error(`Error during shutdown: ${error}`)
       process.exitCode = 1
