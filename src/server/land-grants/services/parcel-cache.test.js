@@ -132,7 +132,7 @@ describe('parcel-cache', () => {
       expect(debug).toHaveBeenCalledWith(
         'EXTERNAL_API_ERROR',
         {
-          endpoint: 'Consolidated view',
+          endpoint: 'fetchAuthorisedParcelIds (consolidated view)',
           errorMessage: 'fetch parcel data for auth check: API connection failed'
         },
         mockRequest

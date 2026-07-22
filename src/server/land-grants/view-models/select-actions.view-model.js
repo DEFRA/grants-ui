@@ -6,8 +6,8 @@
 
 import nunjucks from 'nunjucks'
 import { govukFrontendPath, viewPaths } from '~/src/config/nunjucks/view-paths.js'
-import { getActionQuantityFieldName } from '~/src/server/land-grants/utils/action-quantity-field.js'
-import { formatAreaUnit } from '~/src/server/land-grants/utils/format-area-unit.js'
+import { getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
+import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
 import { SELECTED_ACTIONS_FIELD_NAME } from '~/src/server/land-grants/utils/selected-actions-field.js'
 
 // Built in JS, not the template: Nunjucks can't mutate array items across a loop

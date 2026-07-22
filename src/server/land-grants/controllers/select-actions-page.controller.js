@@ -9,7 +9,7 @@ import {
   SELECTED_ACTIONS_FIELD_NAME,
   getSelectedActionCodes
 } from '~/src/server/land-grants/utils/selected-actions-field.js'
-import { getActionQuantityFieldName } from '~/src/server/land-grants/utils/action-quantity-field.js'
+import { getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
 
 export default class SelectActionsPageController extends SelectActionsBasePageController {
   viewName = 'select-actions'

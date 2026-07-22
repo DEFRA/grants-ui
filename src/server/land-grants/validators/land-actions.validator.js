@@ -1,5 +1,5 @@
 import { getSelectedActionCodes, SELECTED_ACTIONS_FIELD_NAME } from '../utils/selected-actions-field.js'
-import { getActionQuantityFieldName } from '../utils/action-quantity-field.js'
+import { getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
 import { hasSubmittedNonZeroQuantity } from '../view-state/land-parcel.view-state.js'
 
 /**

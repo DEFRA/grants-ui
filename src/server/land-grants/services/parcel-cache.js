@@ -95,7 +95,7 @@ export async function fetchAuthorisedParcelIds(request) {
     debug(
       LogCodes.SYSTEM.EXTERNAL_API_ERROR,
       {
-        endpoint: 'Consolidated view',
+        endpoint: 'fetchAuthorisedParcelIds (consolidated view)',
         errorMessage: `fetch parcel data for auth check: ${/** @type {Error} */ (error).message}`
       },
       request

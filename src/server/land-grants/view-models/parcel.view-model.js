@@ -1,4 +1,4 @@
-import { formatAreaUnit } from '~/src/server/land-grants/utils/format-area-unit.js'
+import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
 import { stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 
 /**

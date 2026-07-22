@@ -3,7 +3,7 @@
  * (renders the input) and the view-state (reads the submitted value back).
  */
 
-const ACTION_QUANTITY_FIELD_PREFIX = 'landActionQuantity_'
+export const ACTION_QUANTITY_FIELD_PREFIX = 'landActionQuantity_'
 
 /**
  * Builds the form field name for an action's quantity input

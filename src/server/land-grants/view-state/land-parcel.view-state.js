@@ -1,6 +1,6 @@
 import { stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 import { getConsentTypes } from '../utils/consent-types.js'
-import { getActionQuantityFieldName } from '../utils/action-quantity-field.js'
+import { getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
 import { getSelectedActionCodes } from '../utils/selected-actions-field.js'
 
 /**

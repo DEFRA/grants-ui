@@ -2,37 +2,15 @@
 // checks/unchecks actions or edits a quantity, sends the in-progress
 // selection to the server, then greys out any other action no longer
 // available. A selected action is never disabled by its own response.
-const QUANTITY_FIELD_PREFIX = 'landActionQuantity_'
+import { ACTION_QUANTITY_FIELD_PREFIX, getActionQuantityFieldName } from '../../../shared/action-quantity-field.js'
+import { formatAreaUnit } from '../../../shared/format-area-unit.js'
+
 const CHECKBOX_NAME = 'landAction'
 const QUANTITY_DEBOUNCE_MS = 500
 const UNAVAILABLE_MESSAGE = 'Not compatible with other selected actions.'
 const UNAVAILABLE_CLASS = 'select-actions-unavailable-message'
 const AVAILABLE_UNIT_ATTR = 'data-available-unit'
 const TOTAL_AVAILABLE_AREA_ATTR = 'data-total-available-area'
-
-// Mirrors ~/src/server/land-grants/utils/format-area-unit.js - client JS is
-// bundled separately and can't import from src/server/.
-const AREA_UNIT_FULL_NAMES = {
-  sqm: 'square metres',
-  m2: 'square metres',
-  sqkm: 'square kilometres',
-  km2: 'square kilometres',
-  sqft: 'square feet',
-  ft2: 'square feet',
-  sqyd: 'square yards',
-  yd2: 'square yards',
-  sqmi: 'square miles',
-  mi2: 'square miles',
-  ha: 'hectares',
-  are: 'ares',
-  ac: 'acres'
-}
-
-/** @param {string} actionCode */
-const quantityFieldId = (actionCode) => `${QUANTITY_FIELD_PREFIX}${actionCode}`
-
-/** @param {string} [abbrev] */
-const formatAreaUnit = (abbrev = '') => AREA_UNIT_FULL_NAMES[abbrev.trim().toLowerCase()] ?? abbrev
 
 /**
  * @param {number} value
@@ -64,7 +42,7 @@ function getCheckboxes(form) {
 
 /** @param {HTMLInputElement} checkbox */
 function getQuantityInput(checkbox) {
-  return /** @type {HTMLInputElement | null} */ (document.getElementById(quantityFieldId(checkbox.value)))
+  return /** @type {HTMLInputElement | null} */ (document.getElementById(getActionQuantityFieldName(checkbox.value)))
 }
 
 /**
@@ -233,6 +211,7 @@ function createAvailabilityRefresher(form, parcelId) {
   }
 }
 
+/** @param {HTMLElement | null} form */
 export function initSelectActionsPage(form) {
   if (!form) {
     return
@@ -267,11 +246,11 @@ export function initSelectActionsPage(form) {
 
   form.addEventListener('input', (event) => {
     const target = /** @type {HTMLElement} */ (event.target)
-    if (!(target instanceof HTMLInputElement) || !target.name.startsWith(QUANTITY_FIELD_PREFIX)) {
+    if (!(target instanceof HTMLInputElement) || !target.name.startsWith(ACTION_QUANTITY_FIELD_PREFIX)) {
       return
     }
     const checkbox = form.querySelector(
-      `input[name="${CHECKBOX_NAME}"][value="${target.name.slice(QUANTITY_FIELD_PREFIX.length)}"]`
+      `input[name="${CHECKBOX_NAME}"][value="${target.name.slice(ACTION_QUANTITY_FIELD_PREFIX.length)}"]`
     )
     if (!(checkbox instanceof HTMLInputElement)) {
       return
@@ -289,6 +268,6 @@ export function initSelectActionsPage(form) {
   }
 }
 
-// This module is assuming that it renders one
+// This module is only bundled on select-actions.html, which renders one
 // <form> - no marker attribute needed to find it.
 initSelectActionsPage(document.querySelector('form'))
