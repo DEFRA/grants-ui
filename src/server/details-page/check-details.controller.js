@@ -13,6 +13,19 @@ import { config } from '~/src/config/config.js'
 const ERROR_TITLE = 'There is a problem'
 const UPDATE_DETAILS_PATH = '/update-details'
 const SFD_UPDATE_ACTION = 'updateDetailsOnSfd'
+const sfdUpdateUrlCache = new WeakMap()
+
+/**
+ * @param {object} controller
+ * @returns {string | undefined}
+ */
+const getConfiguredSfdUpdateUrl = (controller) => {
+  if (!sfdUpdateUrlCache.has(controller)) {
+    sfdUpdateUrlCache.set(controller, config.get('externalLinks.sfd.updateUrl')?.trim())
+  }
+
+  return sfdUpdateUrlCache.get(controller)
+}
 
 /**
  * Terminal page controller for the update-details page.
@@ -35,7 +48,7 @@ export class UpdateDetailsPageController extends TerminalPageController {
       return null
     }
 
-    const updateUrl = config.get('externalLinks.sfd.updateUrl')?.trim()
+    const updateUrl = getConfiguredSfdUpdateUrl(this)
 
     if (!updateUrl || !URL.canParse(updateUrl)) {
       log(LogCodes.SYSTEM.SFD_UPDATE_URL_MISSING_ON_REDIRECT, { updateUrl: updateUrl ?? '' }, request)
@@ -292,7 +305,7 @@ export default class CheckDetailsController extends QuestionPageController {
           return redirect
         } else {
           // missing or malformed URL — log and fall through to the update-details page
-          const updateUrl = config.get('externalLinks.sfd.updateUrl')?.trim()
+          const updateUrl = getConfiguredSfdUpdateUrl(this)
           log(LogCodes.SYSTEM.SFD_UPDATE_URL_MISSING_ON_REDIRECT, { updateUrl: updateUrl ?? '' }, request)
           const { [this.confirmationFieldName]: _removed, ...stateWithoutConfirmation } = state
           await this.setState(request, { ...stateWithoutConfirmation, checkDetailsChangesPending: true })
@@ -323,7 +336,7 @@ export default class CheckDetailsController extends QuestionPageController {
    * @returns {string | undefined}
    */
   getSfdUpdateDetailsActionUrl(request) {
-    const updateUrl = config.get('externalLinks.sfd.updateUrl')?.trim()
+    const updateUrl = getConfiguredSfdUpdateUrl(this)
     if (!this.isSfdEnabled || !updateUrl || !URL.canParse(updateUrl)) {
       return undefined
     }
@@ -341,7 +354,7 @@ export default class CheckDetailsController extends QuestionPageController {
    * @returns {Promise<ResponseObject | undefined>}
    */
   async redirectToSfdForDetailsUpdate(request, state, h) {
-    const updateUrl = config.get('externalLinks.sfd.updateUrl')?.trim()
+    const updateUrl = getConfiguredSfdUpdateUrl(this)
     if (!updateUrl || !URL.canParse(updateUrl)) {
       return undefined
     }
