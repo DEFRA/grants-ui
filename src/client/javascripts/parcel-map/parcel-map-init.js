@@ -5,14 +5,9 @@ import InteractiveMap from '@defra/interactive-map'
 import maplibreProvider from '@defra/interactive-map/providers/maplibre'
 // @ts-ignore — no type declarations shipped with this package
 import createInteractPlugin from '@defra/interactive-map/plugins/interact'
-// TEMPORARY (TGC-1418 follow-up): delete this import and its one call site
-// (marked "metrics:" below) along with basemap-metrics.js.
-import { trackBasemapMetrics } from './basemap-metrics.js'
 import { getMapStyle, withParcelHitTolerance } from './map-helpers.js'
 import {
   MAP_LABEL,
-  // TEMPORARY: OS Maps vs OpenStreetMap comparison (TGC-1418 follow-up) — see config.js
-  BASEMAP_PROVIDER_OPENSTREETMAP,
   PARCEL_ID_PROPERTY,
   LAYER_ID_FILL,
   MAP_DEFAULT_HEIGHT,
@@ -30,12 +25,10 @@ import {
  * Builds the map DOM, boots InteractiveMap + the interact plugin, and resolves
  * the raw MapLibre instance once the style is ready — or null on load failure
  * or the load timeout.
- * @param {HTMLElement} host  the <parcel-map> element (DOM parent + metrics target)
+ * @param {HTMLElement} host  the <parcel-map> element (DOM parent)
  * @param {{
  *   multiSelect: boolean,
- *   basemapProvider: string,
  *   skeleton: HTMLElement | null,
- *   wantMetrics: boolean,
  *   isLoading: () => boolean,
  *   cleanups: Array<() => void>
  * }} options
@@ -46,7 +39,7 @@ import {
  *   ready: Promise<MLMap | null>
  * }}
  */
-export function initMap(host, { multiSelect, basemapProvider, skeleton, wantMetrics, isLoading, cleanups }) {
+export function initMap(host, { multiSelect, skeleton, isLoading, cleanups }) {
   const wrapper = document.createElement('div')
   wrapper.style.cssText = 'position:relative;width:100%;height:100%'
 
@@ -81,11 +74,11 @@ export function initMap(host, { multiSelect, basemapProvider, skeleton, wantMetr
     mapLabel: MAP_LABEL,
     containerHeight: host.style.height || MAP_DEFAULT_HEIGHT,
     mapProvider: withParcelHitTolerance(maplibreProvider()),
-    mapStyle: getMapStyle(basemapProvider),
+    mapStyle: getMapStyle(),
     plugins: [interactPlugin],
     center: MAP_DEFAULT_CENTER,
     zoom: MAP_DEFAULT_ZOOM,
-    minZoom: basemapProvider === BASEMAP_PROVIDER_OPENSTREETMAP ? undefined : MAP_MIN_ZOOM,
+    minZoom: MAP_MIN_ZOOM,
     urlPosition: 'none'
   })
 
@@ -114,11 +107,6 @@ export function initMap(host, { multiSelect, basemapProvider, skeleton, wantMetr
         }
         m.on('error', onError)
         cleanups.push(() => m.off('error', onError))
-
-        if (wantMetrics) {
-          // metrics: TEMPORARY (TGC-1418 follow-up) — delete with basemap-metrics.js.
-          cleanups.push(trackBasemapMetrics(m, basemapProvider, host))
-        }
       })
       mapInstance.on('map:stylechange', () => {
         if (mlInstance && isLoading()) {

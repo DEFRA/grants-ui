@@ -2,7 +2,6 @@
 
 {% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
-{% from "govuk/components/radios/macro.njk" import govukRadios %}
 
 {% block content %}
 <div class="govuk-body">
@@ -34,43 +33,12 @@
         <p class="govuk-body">The interactive map requires JavaScript to be enabled in your browser.</p>
       </noscript>
 
-      {# TEMPORARY: OS Maps vs OpenStreetMap comparison (TGC-1418 follow-up).
-         Gated on devMode (page config in the journey YAML) so
-         it only appears on journeys explicitly opted in for the comparison.
-         Delete this block, the basemap-provider attribute default below, and
-         the basemap-comparison.js script tag in {% block bodyEnd %} (the
-         toggle/metrics behaviour lives in that module) once the comparison
-         is complete. #}
-      {% if devMode %}
-      <div id="basemap-provider-toggle">
-        {{ govukRadios({
-          idPrefix: "basemap-provider",
-          name: "basemapProviderDisplay",
-          classes: "govuk-radios--inline govuk-radios--medium",
-          fieldset: {
-            legend: {
-              text: "Basemap",
-              classes: "govuk-fieldset__legend--m"
-            }
-          },
-          items: [
-            { value: "ordnance-survey", text: "OS Maps", checked: true },
-            { value: "openstreetmap", text: "OpenStreetMap" }
-          ]
-        }) }}
-        <p id="basemap-metrics" class="govuk-body-s" aria-live="polite" style="margin-top:-10px;color:#505a5f"></p>
-      </div>
-      {% endif %}
-      {# END TEMPORARY #}
-
       <form method="post" action="{{ formAction }}" id="parcel-select-form">
         <input type="hidden" name="crumb" value="{{ crumb }}">
 
         <parcel-map
           id="parcel-map"
           multi-select="{{ 'true' if multiSelect else 'false' }}"
-          basemap-provider="ordnance-survey"
-          basemap-metrics="{{ 'true' if devMode else 'false' }}"
           aria-label="Land parcel selection map"
           style="display:block;width:100%;height:500px;position:relative"
         >
@@ -105,8 +73,4 @@
   {{ super() }}
   <script type="module" nonce="{{ cspNonce }}" src="{{ getAssetPath('parcel-map.js') }}"></script>
   <script type="module" nonce="{{ cspNonce }}" src="{{ getAssetPath('parcel-select-page.js') }}"></script>
-  {# TEMPORARY (TGC-1418): delete this script tag with basemap-comparison.js once the OS/OSM comparison is complete. #}
-  {% if devMode %}
-  <script type="module" nonce="{{ cspNonce }}" src="{{ getAssetPath('basemap-comparison.js') }}"></script>
-  {% endif %}
 {% endblock %}
