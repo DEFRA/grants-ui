@@ -1,22 +1,23 @@
 // @ts-nocheck
 import { vi } from 'vitest'
 
-vi.mock('~/src/config/config.js', () => ({
-  config: {
-    get: vi.fn((key) => {
-      if (key === 'mapTileCacheMaxAgeSeconds') {
-        return 3600
-      }
-      if (key === 'baseUrl') {
-        return ''
-      }
-      return 'https://land-grants-api'
-    })
-  }
+const { defaultConfigGet } = vi.hoisted(() => ({
+  defaultConfigGet: (/** @type {string} */ key) =>
+    key === 'mapTileCacheMaxAgeSeconds' ? 3600 : key === 'baseUrl' ? '' : 'https://land-grants-api'
+}))
+vi.mock('~/src/config/config.js', () => ({ config: { get: vi.fn(defaultConfigGet) } }))
+
+const mockError = vi.fn()
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  error: (...args) => mockError(...args),
+  LogCodes: { SYSTEM: { OS_MAPS_API_KEY_MISSING: { level: 'error', messageFunc: () => 'missing key' } } }
 }))
 
+import { config } from '~/src/config/config.js'
 import { mapPlugin } from './map.plugin.js'
 import { ROUTES } from './map-routes.js'
+import { osTileParams, parcelTileParams } from './tile-params.js'
+import { LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 function makeServer() {
   const routes = []
@@ -30,6 +31,8 @@ describe('mapPlugin route registration', () => {
   let server
 
   beforeEach(() => {
+    mockError.mockClear()
+    config.get.mockImplementation(defaultConfigGet)
     server = makeServer()
     mapPlugin.plugin.register(server)
   })
@@ -53,19 +56,23 @@ describe('mapPlugin route registration', () => {
     }
   })
 
-  it('validates tile params on both tile routes and nowhere else', () => {
+  it('wires the matching tile-param schema onto each tile route and nowhere else', () => {
     const byPath = Object.fromEntries(server._routes.map((r) => [r.path, r]))
-    expect(byPath[ROUTES.parcelTiles].options.validate).toBeDefined()
-    expect(byPath[ROUTES.osTiles].options.validate).toBeDefined()
+    expect(byPath[ROUTES.osTiles].options.validate).toBe(osTileParams)
+    expect(byPath[ROUTES.parcelTiles].options.validate).toBe(parcelTileParams)
     expect(byPath[ROUTES.parcels].options.validate).toBeUndefined()
     expect(byPath[ROUTES.osBasemap].options.validate).toBeUndefined()
   })
 
-  it('applies integer tile-param validation on the tile routes', () => {
-    const schema = server._routes.find((r) => r.path === ROUTES.osTiles).options.validate.params
-    expect(schema.validate({ z: 12, x: 100, y: 200 }).error).toBeUndefined()
-    expect(schema.validate({ z: -1, x: 0, y: 0 }).error).toBeDefined()
-    expect(schema.validate({ z: 1.5, x: 0, y: 0 }).error).toBeDefined()
-    expect(schema.validate({ z: 'abc', x: 0, y: 0 }).error).toBeDefined()
+  it('logs a startup error when the OS Maps API key is not set', () => {
+    config.get.mockImplementation((key) => (key === 'osMapsApiKey' ? '' : 'x'))
+
+    mapPlugin.plugin.register(makeServer())
+
+    expect(mockError).toHaveBeenCalledWith(LogCodes.SYSTEM.OS_MAPS_API_KEY_MISSING, {})
+  })
+
+  it('does not log when the OS Maps API key is present', () => {
+    expect(mockError).not.toHaveBeenCalled()
   })
 })

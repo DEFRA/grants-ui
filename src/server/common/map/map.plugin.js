@@ -1,4 +1,7 @@
-import { ROUTES, tileParamsValidation } from './map-routes.js'
+import { config } from '~/src/config/config.js'
+import { error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { ROUTES } from './map-routes.js'
+import { osTileParams, parcelTileParams } from './tile-params.js'
 import { parcelsHandler, tilesHandler, osBasemapHandler, osTileProxyHandler } from './handlers.js'
 
 const sessionAuth = { auth: { mode: 'required', strategy: 'session' } }
@@ -12,6 +15,11 @@ export const mapPlugin = {
   plugin: {
     name: 'map',
     register(server) {
+      // Surface a missing OS key at startup
+      if (!config.get('osMapsApiKey')) {
+        error(LogCodes.SYSTEM.OS_MAPS_API_KEY_MISSING, {})
+      }
+
       server.route({
         method: 'GET',
         path: ROUTES.parcels,
@@ -21,7 +29,7 @@ export const mapPlugin = {
       server.route({
         method: 'GET',
         path: ROUTES.parcelTiles,
-        options: { ...sessionAuth, validate: tileParamsValidation },
+        options: { ...sessionAuth, validate: parcelTileParams },
         handler: tilesHandler
       })
       server.route({
@@ -33,7 +41,7 @@ export const mapPlugin = {
       server.route({
         method: 'GET',
         path: ROUTES.osTiles,
-        options: { ...sessionAuth, validate: tileParamsValidation },
+        options: { ...sessionAuth, validate: osTileParams },
         handler: osTileProxyHandler
       })
     }
