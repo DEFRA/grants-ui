@@ -328,9 +328,7 @@ export default class CheckDetailsController extends QuestionPageController {
       return undefined
     }
 
-    const url = new URL(request.path, 'http://grants-ui.local')
-    url.searchParams.set(SFD_UPDATE_ACTION, 'true')
-    return `${url.pathname}${url.search}`
+    return `${request.path}?${SFD_UPDATE_ACTION}=true`
   }
 
   /**
