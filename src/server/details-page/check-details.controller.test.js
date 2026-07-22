@@ -316,9 +316,7 @@ describe('CheckDetailsController', () => {
         someState: 'value',
         checkDetailsChangesPending: true
       })
-      expect(mockH.redirect).toHaveBeenCalledWith(
-        'http://localhost:3000/sfd/update-sbi?source=grants&ssoOrgId=REL123'
-      )
+      expect(mockH.redirect).toHaveBeenCalledWith('http://localhost:3000/sfd/update-sbi?source=grants&ssoOrgId=REL123')
       expect(mockH.view).not.toHaveBeenCalled()
       expect(result).toBe('mocked-redirect')
     })

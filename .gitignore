@@ -29,3 +29,4 @@ localstack/config-broker/local-form-definitions/*
 /acceptance/schemas/
 /woodland-grant-journey-tests-schemas/
 AGENTS.local.md
+/.codex
