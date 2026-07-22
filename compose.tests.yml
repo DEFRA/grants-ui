@@ -12,7 +12,7 @@ services:
       DEFRA_ID_USER_PASSWORD: x
       MOCKSERVER_HOST: mockserver
       MOCKSERVER_PORT: 1080
-      LOCALSTACK_ENDPOINT: http://localstack:4566
+      FLOCI_ENDPOINT: http://floci:4566
       AUDIT_SNS_TOPIC_ARN: ${AUDIT_SNS_TOPIC_ARN:-arn:aws:sns:eu-west-2:000000000000:fcp_audit_events}
       MONGO_URI: mongodb://mongodb:27017/
     volumes:

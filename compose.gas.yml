@@ -7,9 +7,9 @@ services:
       GAS_API_URL: http://fg-gas-backend:3102
       GAS_API_AUTH_TOKEN: 3e4a1b2c-5d6e-7f8a-9b0c-1d2e3f4a5b6c # This local dev token has been pre-hashed and inserted into mongo
 
-  localstack:
+  floci:
     volumes:
-      - ./localstack/start-localstack-gas.sh:/etc/localstack/init/ready.d/start-localstack-gas.sh
+      - ./compose/floci/gas/start-floci-gas.sh:/etc/floci/init/start.d/20-gas.sh:ro
 
   mongo-ready:
     environment:
@@ -58,7 +58,7 @@ services:
     depends_on:
       mongodb:
         condition: service_healthy
-      localstack:
+      floci:
         condition: service_healthy
       mongo-ready:
         condition: service_healthy
@@ -75,7 +75,7 @@ services:
       LOG_FORMAT: pino-pretty
       MONGO_URI: mongodb://mongodb:27017/?replicaSet=mongoRepl
       MONGO_DATABASE: fg-gas-backend
-      AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL:-http://localstack:4566}
+      AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL:-http://floci:4566}
       AWS_REGION: eu-west-2
       AWS_DEFAULT_REGION: eu-west-2
       AWS_ACCESS_KEY_ID: test
@@ -96,8 +96,8 @@ services:
       GAS__SNS__CREATE_NEW_CASE_TOPIC_ARN: arn:aws:sns:eu-west-2:000000000000:gas__sns__create_new_case_fifo.fifo
       GAS__SNS__UPDATE_CASE_STATUS_TOPIC_ARN: arn:aws:sns:eu-west-2:000000000000:gas__sns__update_case_status_fifo.fifo
       GAS__SNS__UPDATE_AGREEMENT_STATUS_TOPIC_ARN: arn:aws:sns:eu-west-2:000000000000:gas__sns__update_agreement_status_fifo.fifo
-      GAS__SQS__UPDATE_STATUS_QUEUE_URL: http://sqs.eu-west-2.localstack:4566/000000000000/gas__sqs__update_status_fifo.fifo
-      GAS__SQS__UPDATE_AGREEMENT_STATUS_QUEUE_URL: http://sqs.eu-west-2.localstack:4566/000000000000/gas__sqs__update_agreement_status_fifo.fifo
+      GAS__SQS__UPDATE_STATUS_QUEUE_URL: http://floci:4566/000000000000/gas__sqs__update_status_fifo.fifo
+      GAS__SQS__UPDATE_AGREEMENT_STATUS_QUEUE_URL: http://floci:4566/000000000000/gas__sqs__update_agreement_status_fifo.fifo
       GRANT_FUNDING_CALCULATOR_URL: http://mockserver:1080
     healthcheck:
       test: ['CMD-SHELL', 'node -e "require(''http'').get(''http://localhost:3102/health'', r => process.exit(r.statusCode === 200 ? 0 : 1)).on(''error'', () => process.exit(1))"']

@@ -20,9 +20,9 @@ compose.override.yml
 reports/mutation/mutation.html
 .stryker-tmp
 /http-client.private.env.json
-localstack/config-broker-local
-localstack/config-broker/local-form-definitions/*
-!localstack/config-broker/local-form-definitions/README.md
+compose/config-broker-local
+compose/config-broker/local-form-definitions/*
+!compose/config-broker/local-form-definitions/README.md
 /.grants-ui-cli-state.json
 /.grants-ui-cli-sonar.json
 /.scannerwork/

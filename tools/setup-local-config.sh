@@ -3,12 +3,12 @@
 set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CONFIG_BROKER_LOCAL="$PROJECT_ROOT/localstack/config-broker-local"
+CONFIG_BROKER_LOCAL="$PROJECT_ROOT/compose/config-broker-local"
 # The config tree is built into a staging folder first so that a failed pull
 # (e.g. when the developer is offline) leaves the existing config-broker-local
 # folder intact as a working "cached" copy. It is only swapped in on full success.
 CONFIG_BROKER_LOCAL_STAGING="$CONFIG_BROKER_LOCAL.staging.$$"
-LOCAL_ALLOWLISTS_DIR="$PROJECT_ROOT/localstack/config-broker/local-allowlists"
+LOCAL_ALLOWLISTS_DIR="$PROJECT_ROOT/compose/config-broker/local-allowlists"
 CONFIG_REPO_OWNER="DEFRA"
 CONFIG_REPO_URL_ROOT="https://github.com/$CONFIG_REPO_OWNER"
 CONFIG_REPO_API_URL_ROOT="https://api.github.com/repos/$CONFIG_REPO_OWNER"

@@ -2,12 +2,12 @@ import { randomUUID } from 'node:crypto'
 import { SNSClient, SubscribeCommand, UnsubscribeCommand } from '@aws-sdk/client-sns'
 import { SQSClient, CreateQueueCommand, DeleteQueueCommand, ReceiveMessageCommand } from '@aws-sdk/client-sqs'
 
-const LOCALSTACK_ENDPOINT = process.env.LOCALSTACK_ENDPOINT
+const FLOCI_ENDPOINT = process.env.FLOCI_ENDPOINT
 const AUDIT_TOPIC_ARN = process.env.AUDIT_SNS_TOPIC_ARN || 'arn:aws:sns:eu-west-2:000000000000:fcp_audit_events'
 const POLL_INTERVAL_MS = 500
 const POLL_TIMEOUT_MS = 20_000
 
-const endpoint = () => Promise.resolve({ url: new URL(LOCALSTACK_ENDPOINT) })
+const endpoint = () => Promise.resolve({ url: new URL(FLOCI_ENDPOINT) })
 
 const sqsClient = new SQSClient({
   region: 'eu-west-2',

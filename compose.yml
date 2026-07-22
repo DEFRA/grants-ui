@@ -14,7 +14,7 @@ services:
       - '3000:3000'
       - '9229:9229'
     env_file:
-      - 'localstack/aws.env'
+      - 'compose/aws.env'
     environment:
       PORT: 3000
       NODE_ENV: ${NODE_ENV:-development}
@@ -73,7 +73,7 @@ services:
       QUANTITY_REQUIRED_ACTION_CODES: ${QUANTITY_REQUIRED_ACTION_CODES:-CSAM3}
       SFD_UPDATE_URL: '${SFD_UPDATE_URL:-http://localhost:3000/sfd/mock}'
       SFD_UPDATE_ENABLED: ${SFD_UPDATE_ENABLED:-false}
-      AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL:-http://localstack:4566}
+      AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL:-http://floci:4566}
       AWS_REGION: ${AWS_REGION:-eu-west-2}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
@@ -105,7 +105,7 @@ services:
     image: defradigital/grants-ui-backend
     pull_policy: always
     depends_on:
-      localstack:
+      floci:
         condition: service_healthy
       mongodb:
         condition: service_healthy
@@ -116,7 +116,7 @@ services:
     ports:
       - '3001:3001'
     env_file:
-      - 'localstack/aws.env'
+      - 'compose/aws.env'
     environment:
       PORT: 3001
       HOST: 0.0.0.0
@@ -127,11 +127,11 @@ services:
       ENCRYPTED_AUTH_JWT_SECRET: ${GRANTS_UI_BACKEND_AUTH_JWT_SECRET:-allowlist-jwt-secret}
       APPLICATION_LOCK_TOKEN_SECRET: ${APPLICATION_LOCK_TOKEN_SECRET:-dev-lock-secret}
       APPLICATION_LOCK_TTL_MS: ${APPLICATION_LOCK_TTL_MS:-14400000}
-      AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL:-http://localstack:4566}
+      AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL:-http://floci:4566}
       CONFIG_BROKER_BASE_URL: http://grants-config-broker:3012
       GRANTS_CONFIG_BROKER_AUTH_TOKEN: '${GRANTS_CONFIG_BROKER_AUTH_TOKEN:-config-broker-auth-token}'
       GRANTS_CONFIG_BROKER_ENCRYPTION_KEY: '${GRANTS_CONFIG_BROKER_ENCRYPTION_KEY:-config-broker-encryption-key}'
-      CONFIG_INGEST_SQS_QUEUE_URL: http://localstack:4566/000000000000/grants_ui_backend__sqs__config_updates
+      CONFIG_INGEST_SQS_QUEUE_URL: http://floci:4566/000000000000/grants_ui_backend__sqs__config_updates
     networks:
       - grants-ui-net
     restart: unless-stopped
@@ -149,28 +149,28 @@ services:
     ports:
       - '3012:3012'
     depends_on:
-      localstack:
+      floci:
         condition: service_healthy
       mongo-ready:
         condition: service_completed_successfully
     env_file:
-      - 'localstack/aws.env'
+      - 'compose/aws.env'
     environment:
       PORT: 3012
       NODE_ENV: development
-      AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL:-http://localstack:4566}
+      AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL:-http://floci:4566}
       CONFIG_BUCKET_NAME: configs-bucket
       GRANTS_CONFIG_BROKER_AUTH_TOKEN: '${GRANTS_CONFIG_BROKER_AUTH_TOKEN:-config-broker-auth-token}'
       GRANTS_CONFIG_BROKER_ENCRYPTION_KEY: '${GRANTS_CONFIG_BROKER_ENCRYPTION_KEY:-config-broker-encryption-key}'
       MONGO_URI: mongodb://mongodb:27017/
       SERVICE_VERSION: 1.0.0
-      CONFIG_INPUT_QUEUE_URL: http://localstack:4566/000000000000/gfr__sqs___config_input
+      CONFIG_INPUT_QUEUE_URL: http://floci:4566/000000000000/gfr__sqs___config_input
       SERVICE_AUTH_ENABLED: false
       AUDIT_ENABLED: false
     networks:
       - grants-ui-net
     volumes:
-      - ./localstack/config-broker-local:/home/node/config
+      - ./compose/config-broker-local:/home/node/config
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:3012/health']
       interval: 30s
@@ -293,34 +293,26 @@ services:
       retries: 30
       start_period: 5s
 
-  localstack:
-    image: localstack/localstack:4.14.0
+  floci:
+    image: floci/floci:latest-compat
     ports:
       - '4566:4566'
-      - '4510-4559:4510-4559'
     env_file:
-      - 'localstack/aws.env'
+      - 'compose/aws.env'
     environment:
-      DEBUG: ${DEBUG:-0}
-      LS_LOG: WARN
-      SERVICES: s3,sqs,sns
-      LOCALSTACK_HOST: 127.0.0.1
-      SKIP_SSL_CERT_DOWNLOAD: 1
-      DISABLE_EVENTS: 1
-      DISABLE_USAGE_COLLECTION: 1
-      LOCALSTACK_REQUIRED_S3_BUCKETS: configs-bucket
-      LOCALSTACK_REQUIRED_SQS_QUEUES: fcp_audit,gfr__sqs___config_input,grants_ui_backend__sqs__config_updates
-      LOCALSTACK_REQUIRED_SNS_TOPICS: fcp_audit_events,gfr__sns___config_update
+      FLOCI_DEFAULT_REGION: eu-west-2
+      FLOCI_REQUIRED_S3_BUCKETS: configs-bucket
+      FLOCI_REQUIRED_SQS_QUEUES: fcp_audit,gfr__sqs___config_input,grants_ui_backend__sqs__config_updates
+      FLOCI_REQUIRED_SNS_TOPICS: fcp_audit_events,gfr__sns___config_update  
     volumes:
-      - localstack-data:/var/lib/localstack
-      - ./localstack/start-localstack.sh:/etc/localstack/init/ready.d/start-localstack.sh
-      - ./localstack/check-localstack-resources.sh:/usr/local/bin/check-localstack-resources.sh:ro
-      - ./localstack/forms:/etc/localstack/forms:ro
+      - ./compose/floci/start.d:/etc/floci/init/start.d:ro
+      - ./compose/check-floci-resources.sh:/usr/local/bin/check-floci-resources.sh:ro
+      - ./compose/forms:/etc/forms:ro
     healthcheck:
-      test: ['CMD-SHELL', '/usr/local/bin/check-localstack-resources.sh']
-      interval: 2s
-      start_period: 2s
-      retries: 30
+      test: ['CMD-SHELL', '/usr/local/bin/check-floci-resources.sh']
+      interval: 3s
+      start_period: 5s
+      retries: 20
     networks:
       - grants-ui-net
 
@@ -328,7 +320,6 @@ volumes:
   redis-data:
   mongodb-data:
   mongodb-config:
-  localstack-data:
 
 networks:
   grants-ui-net:
