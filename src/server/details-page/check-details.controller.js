@@ -294,6 +294,9 @@ export default class CheckDetailsController extends QuestionPageController {
           // missing or malformed URL — log and fall through to the update-details page
           const updateUrl = config.get('externalLinks.sfd.updateUrl')?.trim()
           log(LogCodes.SYSTEM.SFD_UPDATE_URL_MISSING_ON_REDIRECT, { updateUrl: updateUrl ?? '' }, request)
+          const { [this.confirmationFieldName]: _removed, ...stateWithoutConfirmation } = state
+          await this.setState(request, { ...stateWithoutConfirmation, checkDetailsChangesPending: true })
+          return this.proceed(request, h, this.getNextPath(context))
         }
       }
 
