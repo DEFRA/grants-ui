@@ -1,7 +1,7 @@
 Feature: Task Lists Hiding Questions
 
     Scenario: Complete a task list based grant application hiding all questions
-        Given there is no application state stored for CRN "1100946179" and SBI "115371673" and grant "example-grant-with-task-list-hide-questions"
+        Given there is no application data for SBI "115371673" and grant "example-grant-with-task-list-hide-questions"
 
         # start
         Given the user navigates to "example-grant-with-task-list-hide-questions"

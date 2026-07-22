@@ -1,7 +1,7 @@
 Feature: Purging
 
     Scenario: A user whose application has been purged sees the application deleted page
-        Given there is no application state stored for CRN "1300000002" and SBI "300000002" and grant "example-grant-with-auth"
+        Given there is no application data for SBI "300000002" and grant "example-grant-with-auth"
 
         # start
         Given the user navigates to "/example-grant-with-auth"

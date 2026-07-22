@@ -7,17 +7,7 @@ Feature: User Permissions
         CRN 1062311184 - No permissions
 
     Scenario: Complete a grant application with multiple users with different permissions
-        # attempt to unlock the application in the order it could have been left by the test
-        Given there is no application lock for CRN "1062311184" and SBI "106238911" and grant "example-grant-with-auth"
-        And there is no application lock for CRN "1062311183" and SBI "106238911" and grant "example-grant-with-auth"
-        And there is no application lock for CRN "1062311181" and SBI "106238911" and grant "example-grant-with-auth"
-        And there is no application lock for CRN "1062311182" and SBI "106238911" and grant "example-grant-with-auth"
-
-        # delete any state
-        And there is no application state stored for CRN "1062311181" and SBI "106238911" and grant "example-grant-with-auth"
-
-        # unlock from CRN 1062311181 (deleting state above acquires a lock as a side effect)
-        Given there is no application lock for CRN "1062311181" and SBI "106238911" and grant "example-grant-with-auth"
+        Given there is no application data for SBI "106238911" and grant "example-grant-with-auth"
 
         # attempt to start as CRN 1062311183 with VIEW permission only, before any application exists
         Given the user navigates to "/example-grant-with-auth"
