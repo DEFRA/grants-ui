@@ -22,8 +22,13 @@ function makeTileParams({ minZoom, maxZoom }) {
   }
 }
 
-// Two named schemas so each route validates its own range. They share the OS
-// zoom window today (same viewport), but the seam lets the parcel range diverge
-// without touching the OS route.
+// Parcel vector tiles zoom deeper than the OS basemap. Max zoom mirrors the
+// Land Grants API parcelTiles schema:
+// https://github.com/DEFRA/land-grants-api/blob/vector-tile-spike/src/features/vector-tiles/schema/parcelTiles.schema.js
+const PARCEL_MAX_ZOOM = 22
+
+// Two named schemas so each route validates its own range. They share a min
+// zoom but the parcel route accepts a deeper max, matching the vector-tile
+// source.
 export const osTileParams = makeTileParams({ minZoom: OS_MIN_ZOOM, maxZoom: OS_MAX_ZOOM })
-export const parcelTileParams = makeTileParams({ minZoom: OS_MIN_ZOOM, maxZoom: OS_MAX_ZOOM })
+export const parcelTileParams = makeTileParams({ minZoom: OS_MIN_ZOOM, maxZoom: PARCEL_MAX_ZOOM })

@@ -21,8 +21,8 @@ vi.mock('~/src/server/task-list/task-list.helper.js', async (importOriginal) => 
   }
 })
 
-function makeController(config = {}) {
-  const controller = new MapSelectPageController(makeModel(config), makePageDef())
+function makeController(config = {}, metadata = {}) {
+  const controller = new MapSelectPageController(makeModel(config, metadata), makePageDef())
   setupControllerMocks(controller)
   controller.getViewModel = vi.fn().mockReturnValue({ pageTitle: 'Select a land parcel' })
   return controller
@@ -58,23 +58,6 @@ describe('MapSelectPageController', () => {
     it('sets multiSelect false when config.multiSelect is falsy', () => {
       const controller = new MapSelectPageController(makeModel({ multiSelect: false }), makePageDef())
       expect(controller.multiSelect).toBe(false)
-    })
-
-    // TEMPORARY (TGC-1418 follow-up): remove these three tests along with
-    // devMode once the OS Maps vs OpenStreetMap comparison is complete.
-    it('defaults devMode to false', () => {
-      const controller = new MapSelectPageController(makeModel(), makePageDef())
-      expect(controller.devMode).toBe(false)
-    })
-
-    it('sets devMode true from model.def.metadata.pageConfig', () => {
-      const controller = new MapSelectPageController(makeModel({ devMode: true }), makePageDef())
-      expect(controller.devMode).toBe(true)
-    })
-
-    it('sets devMode false when config.devMode is falsy', () => {
-      const controller = new MapSelectPageController(makeModel({ devMode: false }), makePageDef())
-      expect(controller.devMode).toBe(false)
     })
 
     it('forces multiSelect false when grant-level singleParcelSubmission is true', () => {
@@ -120,35 +103,6 @@ describe('MapSelectPageController', () => {
         })
       )
     })
-
-    // TEMPORARY (TGC-1418 follow-up): remove once the comparison is complete.
-    it('passes devMode: false by default', async () => {
-      const controller = makeController()
-      const h = makeH()
-
-      await controller.handleGet(makeRequest(), makeContext(), h)
-
-      expect(h.view).toHaveBeenCalledWith(
-        'map-select-parcel',
-        expect.objectContaining({
-          devMode: false
-        })
-      )
-    })
-
-    it('passes devMode: true when configured', async () => {
-      const controller = makeController({ devMode: true })
-      const h = makeH()
-
-      await controller.handleGet(makeRequest(), makeContext(), h)
-
-      expect(h.view).toHaveBeenCalledWith(
-        'map-select-parcel',
-        expect.objectContaining({
-          devMode: true
-        })
-      )
-    })
   })
 
   describe('handlePost — validation', () => {
@@ -189,21 +143,6 @@ describe('MapSelectPageController', () => {
 
       expect(h.view).toHaveBeenCalled()
       expect(controller.setState).not.toHaveBeenCalled()
-    })
-
-    // TEMPORARY (TGC-1418 follow-up): remove once the comparison is complete.
-    it('re-renders with devMode carried through on validation error', async () => {
-      const controller = makeController({ devMode: true })
-      const h = makeH()
-
-      await controller.handlePost(makeRequest({}), makeContext(), h)
-
-      expect(h.view).toHaveBeenCalledWith(
-        'map-select-parcel',
-        expect.objectContaining({
-          devMode: true
-        })
-      )
     })
   })
 
@@ -258,16 +197,8 @@ describe('MapSelectPageController', () => {
   })
 
   describe('handlePost — single-parcel-submission', () => {
-    function makeSingleParcelController() {
-      const model = makeModel({}, { singleParcelSubmission: true })
-      const controller = new MapSelectPageController(model, makePageDef())
-      setupControllerMocks(controller)
-      controller.getViewModel = vi.fn().mockReturnValue({ pageTitle: 'Select a land parcel' })
-      return controller
-    }
-
     it('clears existing landParcels object when a parcel is selected', async () => {
-      const controller = makeSingleParcelController()
+      const controller = makeController({}, { singleParcelSubmission: true })
       const h = makeH()
       const context = makeContext({ landParcels: { 'SD0000-0001': { size: {}, actionsObj: {} } } })
 

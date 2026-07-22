@@ -4,9 +4,6 @@ import { initMap } from './parcel-map-init.js'
 import { attachTooltip } from './parcel-map-tooltip.js'
 import { attachSelectionRelay } from './parcel-map-selection.js'
 import {
-  DEFAULT_BASEMAP_PROVIDER,
-  BASEMAP_PROVIDER_ATTRIBUTE,
-  BASEMAP_METRICS_ATTRIBUTE,
   MULTI_SELECT_ATTRIBUTE,
   MSG_ERROR_UNAVAILABLE,
   EVENT_READY,
@@ -23,7 +20,7 @@ import {
  * @import { Map as MLMap } from 'maplibre-gl'
  */
 
-// <parcel-map multi-select="true|false" basemap-provider="ordnance-survey|openstreetmap" basemap-metrics="true|false">
+// <parcel-map multi-select="true|false">
 // Lifecycle shell: owns the state machine and event dispatch, and delegates map
 // bootstrap, data loading, tooltip and selection wiring to focused modules.
 export class ParcelMap extends HTMLElement {
@@ -48,43 +45,17 @@ export class ParcelMap extends HTMLElement {
   /** @type {Array<() => void>} */
   #mlCleanup = []
 
-  #connected = false
-
-  #pendingReinit = false
-
-  static get observedAttributes() {
-    return [BASEMAP_PROVIDER_ATTRIBUTE]
-  }
-
   connectedCallback() {
-    this.#connected = true
     this.#state = STATE_IDLE
     this.#init()
   }
 
   disconnectedCallback() {
-    this.#connected = false
     this.#teardown()
-  }
-
-  /** @param {string} name */
-  attributeChangedCallback(name) {
-    // Ignore the attribute's own initial set before the element is connected.
-    if (name !== BASEMAP_PROVIDER_ATTRIBUTE || !this.#connected) {
-      return
-    }
-    if (this.#state === STATE_LOADING) {
-      this.#pendingReinit = true
-      return
-    }
-    this.#teardown()
-    this.#state = STATE_IDLE
-    this.#init()
   }
 
   #teardown() {
     this.#state = STATE_IDLE
-    this.#pendingReinit = false
     for (const off of this.#mlCleanup) {
       off()
     }
@@ -107,19 +78,14 @@ export class ParcelMap extends HTMLElement {
   async #init() {
     this.#state = STATE_LOADING
 
-    // Read once per init — basemap-provider changes trigger a fresh #init via
-    // attributeChangedCallback, so this always reflects the current value.
     const multiSelect = this.getAttribute(MULTI_SELECT_ATTRIBUTE) === 'true'
-    const basemapProvider = this.getAttribute(BASEMAP_PROVIDER_ATTRIBUTE) || DEFAULT_BASEMAP_PROVIDER
 
     this.#skeleton = buildSkeleton()
     this.appendChild(this.#skeleton)
 
     const { mapEl, mapInstance, interactPlugin, ready } = initMap(this, {
       multiSelect,
-      basemapProvider,
       skeleton: this.#skeleton,
-      wantMetrics: this.getAttribute(BASEMAP_METRICS_ATTRIBUTE) === 'true',
       isLoading: () => this.#state === STATE_LOADING,
       cleanups: this.#mlCleanup
     })
@@ -145,7 +111,7 @@ export class ParcelMap extends HTMLElement {
       this.dispatchEvent(new CustomEvent(EVENT_ERROR, { bubbles: true, detail: { reason: ERROR_REASON_NO_PARCELS } }))
     } else {
       const colorExpr = buildColorExpr(data.parcelIds)
-      addParcelsToMap(ml, data, colorExpr, basemapProvider)
+      addParcelsToMap(ml, data, colorExpr)
       const tooltip = attachTooltip(ml, data.metaIndex, this.#mapEl, this.#mlCleanup)
       attachSelectionRelay({ host: this, mapInstance: this.#mapInstance, ml, tooltip, cleanups: this.#mlCleanup })
       this.#interactPlugin?.enable()
@@ -155,13 +121,6 @@ export class ParcelMap extends HTMLElement {
       this.#skeleton = null
 
       this.dispatchEvent(new CustomEvent(EVENT_READY, { bubbles: true }))
-    }
-
-    if (this.#pendingReinit) {
-      this.#pendingReinit = false
-      this.#teardown()
-      this.#state = STATE_IDLE
-      this.#init()
     }
   }
 

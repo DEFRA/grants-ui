@@ -94,6 +94,13 @@ async function mountElement(attrs = {}) {
   return el
 }
 
+async function mountReady(attrs = {}) {
+  global.fetch = fetchOk(PARCELS_RESPONSE)
+  const el = await mountElement(attrs)
+  await waitForEvent(el, EVENT_READY)
+  return el
+}
+
 describe('parcel-map web component', () => {
   let ml
 
@@ -110,9 +117,7 @@ describe('parcel-map web component', () => {
 
   describe('lifecycle', () => {
     it('dispatches parcel-map:ready when map and data load successfully', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement()
-      await waitForEvent(el, EVENT_READY)
+      const el = await mountReady()
       expect(el.querySelector('[role="alert"]')).toBeNull()
     })
 
@@ -142,9 +147,7 @@ describe('parcel-map web component', () => {
     })
 
     it('removes skeleton once ready', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement()
-      await waitForEvent(el, EVENT_READY)
+      const el = await mountReady()
       expect(el.querySelector('[role="status"]')).toBeNull()
     })
 
@@ -160,8 +163,7 @@ describe('parcel-map web component', () => {
       stubInteractiveMap({ mode: 'none', once: true })
 
       const el = await mountElement()
-      el.setAttribute('basemap-provider', 'openstreetmap') // pending-reinit = true (mid-load)
-      el.remove() // disconnect must clear the flag, or the reconnect double-inits
+      el.remove() // disconnect mid-load must not leave a load in flight
 
       let readyCount = 0
       el.addEventListener(EVENT_READY, () => {
@@ -177,9 +179,7 @@ describe('parcel-map web component', () => {
 
     it('does not show the error overlay when maplibre emits an error after ready', async () => {
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement()
-      await waitForEvent(el, EVENT_READY)
+      const el = await mountReady()
 
       ml._emit('error', new Error('basemap tile 404'))
       await Promise.resolve()
@@ -189,9 +189,7 @@ describe('parcel-map web component', () => {
     })
 
     it('removes every maplibre listener it added on teardown', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement()
-      await waitForEvent(el, EVENT_READY)
+      const el = await mountReady()
 
       expect(ml.on.mock.calls.length).toBeGreaterThan(0)
       el.remove() // disconnect → teardown
@@ -237,9 +235,7 @@ describe('parcel-map web component', () => {
 
   describe('viewport options', () => {
     it('disables URL sync, constrains zoom-out to OS min zoom 7, and sets an accessible mapLabel', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement()
-      await waitForEvent(el, EVENT_READY)
+      await mountReady()
 
       const [, options] = InteractiveMap.mock.calls[0]
       expect(options.urlPosition).toBe('none')
@@ -248,126 +244,19 @@ describe('parcel-map web component', () => {
     })
   })
 
-  describe('basemap provider', () => {
-    it('defaults to the OS Maps style when no attribute is set', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement()
-      await waitForEvent(el, EVENT_READY)
+  describe('basemap', () => {
+    it('uses the OS Maps style and constrains zoom-out to OS min zoom 7', async () => {
+      await mountReady()
 
       const [, options] = InteractiveMap.mock.calls.at(-1)
       expect(options.mapStyle.url).toBe('/api/map/os-basemap')
       expect(options.minZoom).toBe(7)
     })
-
-    it('defaults to OS Maps even when the attribute is explicitly "ordnance-survey"', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement({ 'basemap-provider': 'ordnance-survey' })
-      await waitForEvent(el, EVENT_READY)
-
-      const [, options] = InteractiveMap.mock.calls.at(-1)
-      expect(options.mapStyle.url).toBe('/api/map/os-basemap')
-    })
-
-    describe('OpenStreetMap comparison (temporary)', () => {
-      it('uses the OpenStreetMap style and drops the min-zoom constraint when basemap-provider="openstreetmap"', async () => {
-        global.fetch = fetchOk(PARCELS_RESPONSE)
-        const el = await mountElement({ 'basemap-provider': 'openstreetmap' })
-        await waitForEvent(el, EVENT_READY)
-
-        const [, options] = InteractiveMap.mock.calls.at(-1)
-        expect(options.mapStyle.url).toBe('https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json')
-        expect(options.mapStyle.attribution).toContain('OpenStreetMap')
-        expect(options.minZoom).toBeUndefined()
-      })
-
-      it('re-initialises the map when basemap-provider changes at runtime', async () => {
-        global.fetch = fetchOk(PARCELS_RESPONSE)
-        const el = await mountElement()
-        await waitForEvent(el, EVENT_READY)
-        const callsBeforeToggle = InteractiveMap.mock.calls.length
-
-        const readyAgain = waitForEvent(el, EVENT_READY)
-        el.setAttribute('basemap-provider', 'openstreetmap')
-        await readyAgain
-
-        expect(InteractiveMap.mock.calls).toHaveLength(callsBeforeToggle + 1)
-        const [, options] = InteractiveMap.mock.calls.at(-1)
-        expect(options.mapStyle.url).toBe('https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json')
-      })
-
-      it('re-initialises with the latest provider when the attribute changes mid-load', async () => {
-        global.fetch = fetchOk(PARCELS_RESPONSE)
-
-        // First InteractiveMap instance never signals map:ready on its own —
-        // lets the test control exactly when the in-flight load settles.
-        let firstInstance
-        stubInteractiveMap({ mode: 'none', once: true, capture: (i) => (firstInstance = i) })
-        stubInteractiveMap({ ml }) // second (and any later) instance auto-readies
-
-        const el = await mountElement()
-        // basemap-provider changes while the first load is still in flight
-        el.setAttribute('basemap-provider', 'openstreetmap')
-
-        const readyEvent = waitForEvent(el, EVENT_READY)
-        firstInstance._emit('map:ready', { map: ml })
-        firstInstance._emit('map:stylechange')
-        await readyEvent
-
-        const [, options] = InteractiveMap.mock.calls.at(-1)
-        expect(options.mapStyle.url).toBe('https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json')
-      })
-
-      it('ignores attribute changes before the element is connected', async () => {
-        const el = document.createElement('parcel-map')
-        const callsBefore = InteractiveMap.mock.calls.length
-        el.setAttribute('basemap-provider', 'openstreetmap')
-
-        expect(InteractiveMap.mock.calls).toHaveLength(callsBefore)
-      })
-
-      it('uses a label font the CartoCDN style actually serves glyphs for', async () => {
-        global.fetch = fetchOk(PARCELS_RESPONSE)
-        const el = await mountElement({ 'basemap-provider': 'openstreetmap' })
-        await waitForEvent(el, EVENT_READY)
-
-        const labelLayer = ml.addLayer.mock.calls.map((c) => c[0]).find((l) => l.id === LAYER_ID_LABEL)
-        expect(labelLayer.layout['text-font']).not.toEqual(['Arial Regular'])
-      })
-
-      it('dispatches parcel-map:basemap-metrics when basemap-metrics="true"', async () => {
-        global.fetch = fetchOk(PARCELS_RESPONSE)
-        const el = await mountElement({ 'basemap-metrics': 'true' })
-        await waitForEvent(el, EVENT_READY)
-
-        const metricsEvent = new Promise((resolve) =>
-          el.addEventListener('parcel-map:basemap-metrics', resolve, { once: true })
-        )
-        ml._emit('idle')
-        const e = await metricsEvent
-        expect(e.detail.loadMs).toEqual(expect.any(Number))
-      })
-
-      it('does not track metrics when basemap-metrics is absent', async () => {
-        global.fetch = fetchOk(PARCELS_RESPONSE)
-        const el = await mountElement()
-        await waitForEvent(el, EVENT_READY)
-
-        let fired = false
-        el.addEventListener('parcel-map:basemap-metrics', () => {
-          fired = true
-        })
-        ml._emit('idle')
-        await Promise.resolve()
-        expect(fired).toBe(false)
-      })
-    })
   })
 
   describe('data fetching', () => {
     it('adds vector tile source when parcels are returned', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement()
-      await waitForEvent(el, EVENT_READY)
+      await mountReady()
       expect(ml.addSource).toHaveBeenCalledWith('parcels', expect.objectContaining({ type: 'vector' }))
     })
 
@@ -388,9 +277,7 @@ describe('parcel-map web component', () => {
 
   describe('_addParcelsToMap', () => {
     it('calls fitBounds when bbox is present', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement()
-      await waitForEvent(el, EVENT_READY)
+      await mountReady()
       expect(ml.fitBounds).toHaveBeenCalledWith(
         [
           [-2.5, 51.4],
@@ -408,9 +295,7 @@ describe('parcel-map web component', () => {
     })
 
     it('adds fill, outline and label layers', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement()
-      await waitForEvent(el, EVENT_READY)
+      await mountReady()
       const layerIds = ml.addLayer.mock.calls.map((c) => c[0].id)
       expect(layerIds).toContain(LAYER_ID_FILL)
       expect(layerIds).toContain(LAYER_ID_OUTLINE)
@@ -418,9 +303,7 @@ describe('parcel-map web component', () => {
     })
 
     it('resolves PARCEL_TILES_URL against location.origin when no geojsonUrl', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement()
-      await waitForEvent(el, EVENT_READY)
+      await mountReady()
       const [, sourceSpec] = ml.addSource.mock.calls[0]
       expect(sourceSpec.tiles[0]).toBe(`${globalThis.location.origin}/api/map/parcel-tiles/{z}/{x}/{y}`)
     })
@@ -428,9 +311,7 @@ describe('parcel-map web component', () => {
 
   describe('interact plugin configuration', () => {
     it('creates the plugin for feature selection on the fill layer with compound id property', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement()
-      await waitForEvent(el, EVENT_READY)
+      await mountReady()
 
       expect(createInteractPlugin).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -442,85 +323,8 @@ describe('parcel-map web component', () => {
       )
     })
 
-    it('falls back to a rendered-pixel radius query when the strict provider query misses', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement()
-      await waitForEvent(el, EVENT_READY)
-
-      const [, options] = InteractiveMap.mock.calls.at(-1)
-      const { MapProvider } = await options.mapProvider.load()
-      const provider = new MapProvider()
-      const fallbackFeatures = [{ layer: { id: LAYER_ID_FILL }, properties: { id: 'SD7148-9160' } }]
-      provider.map = {
-        getLayer: vi.fn().mockReturnValue(true),
-        queryRenderedFeatures: vi.fn().mockReturnValue(fallbackFeatures)
-      }
-
-      const hits = provider.getFeaturesAtPoint({ x: 50, y: 60 }, { radius: 10 })
-
-      expect(provider.map.queryRenderedFeatures).toHaveBeenCalledWith(
-        [
-          [40, 50],
-          [60, 70]
-        ],
-        { layers: [LAYER_ID_FILL] }
-      )
-      expect(hits).toBe(fallbackFeatures)
-    })
-
-    it('picks the closest feature when the fallback finds several overlapping the tolerance box', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement()
-      await waitForEvent(el, EVENT_READY)
-
-      const [, options] = InteractiveMap.mock.calls.at(-1)
-      const { MapProvider } = await options.mapProvider.load()
-      const provider = new MapProvider()
-
-      const near = {
-        layer: { id: LAYER_ID_FILL },
-        properties: { id: 'SD7148-9160' },
-        geometry: { type: 'Polygon', coordinates: [[[0, 0]]] }
-      }
-      const far = {
-        layer: { id: LAYER_ID_FILL },
-        properties: { id: 'SD7148-9161' },
-        geometry: { type: 'Polygon', coordinates: [[[1, 1]]] }
-      }
-      provider.map = {
-        getLayer: vi.fn().mockReturnValue(true),
-        queryRenderedFeatures: vi.fn().mockReturnValue([far, near]),
-        project: vi.fn(([lng]) => (lng === 0 ? { x: 50, y: 60 } : { x: 500, y: 500 }))
-      }
-
-      const hits = provider.getFeaturesAtPoint({ x: 50, y: 60 }, { radius: 10 })
-
-      expect(hits).toEqual([near])
-    })
-
-    it('does not run the fallback when the strict query already has hits', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement()
-      await waitForEvent(el, EVENT_READY)
-
-      const [, options] = InteractiveMap.mock.calls.at(-1)
-      const loaded = await options.mapProvider.load()
-      const strictHits = [{ layer: { id: LAYER_ID_FILL } }]
-      // Re-wrap a base that returns hits to prove the fallback is skipped
-      const provider = new loaded.MapProvider()
-      provider.map = { getLayer: vi.fn(), queryRenderedFeatures: vi.fn() }
-      Object.getPrototypeOf(Object.getPrototypeOf(provider)).getFeaturesAtPoint = () => strictHits
-
-      const hits = provider.getFeaturesAtPoint({ x: 0, y: 0 })
-
-      expect(hits).toBe(strictHits)
-      expect(provider.map.queryRenderedFeatures).not.toHaveBeenCalled()
-    })
-
     it('passes the plugin to the InteractiveMap constructor', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement()
-      await waitForEvent(el, EVENT_READY)
+      await mountReady()
 
       const pluginInstance = createInteractPlugin.mock.results.at(-1).value
       const [, options] = InteractiveMap.mock.calls.at(-1)
@@ -528,9 +332,7 @@ describe('parcel-map web component', () => {
     })
 
     it('enables the plugin once parcels are on the map', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement()
-      await waitForEvent(el, EVENT_READY)
+      await mountReady()
 
       const pluginInstance = createInteractPlugin.mock.results.at(-1).value
       expect(pluginInstance.enable).toHaveBeenCalled()
@@ -546,9 +348,7 @@ describe('parcel-map web component', () => {
     })
 
     it('creates the plugin with multiSelect when the attribute is set', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement({ 'multi-select': 'true' })
-      await waitForEvent(el, EVENT_READY)
+      await mountReady({ 'multi-select': 'true' })
 
       expect(createInteractPlugin).toHaveBeenCalledWith(expect.objectContaining({ multiSelect: true }))
     })
@@ -556,9 +356,7 @@ describe('parcel-map web component', () => {
 
   describe('selection bridge', () => {
     it('dispatches parcel-map:selection with the plugin-selected parcel IDs', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement()
-      await waitForEvent(el, EVENT_READY)
+      const el = await mountReady()
 
       const selectionEvent = waitForEvent(el, EVENT_SELECTION)
       emitSelectionChange([{ featureId: 'SD7148-9160' }])
@@ -567,9 +365,7 @@ describe('parcel-map web component', () => {
     })
 
     it('dispatches an empty selection when the plugin clears it', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement()
-      await waitForEvent(el, EVENT_READY)
+      const el = await mountReady()
 
       const first = waitForEvent(el, EVENT_SELECTION)
       emitSelectionChange([{ featureId: 'SD7148-9160' }])
@@ -582,9 +378,7 @@ describe('parcel-map web component', () => {
     })
 
     it('dispatches all selected IDs in multi-select', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement({ 'multi-select': 'true' })
-      await waitForEvent(el, EVENT_READY)
+      const el = await mountReady({ 'multi-select': 'true' })
 
       const selectionEvent = waitForEvent(el, EVENT_SELECTION)
       emitSelectionChange([{ featureId: 'SD7148-9160' }, { featureId: 'SD7148-9161' }])
@@ -593,9 +387,7 @@ describe('parcel-map web component', () => {
     })
 
     it('calls setPaintProperty to highlight selected parcels', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement()
-      await waitForEvent(el, EVENT_READY)
+      const el = await mountReady()
 
       const first = waitForEvent(el, EVENT_SELECTION)
       emitSelectionChange([{ featureId: 'SD7148-9160' }])
@@ -605,9 +397,7 @@ describe('parcel-map web component', () => {
     })
 
     it('hides the tooltip when the selection is cleared', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement()
-      await waitForEvent(el, EVENT_READY)
+      const el = await mountReady()
 
       // Show the tooltip via a parcel click first
       ml._emitLayer('click', LAYER_ID_FILL, { features: [makeFeature('SD7148', '9160')], lngLat: { lng: 0, lat: 0 } })
@@ -625,9 +415,7 @@ describe('parcel-map web component', () => {
 
   describe('tooltip', () => {
     it('renders parcel ID and area in tooltip on click', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement()
-      await waitForEvent(el, EVENT_READY)
+      const el = await mountReady()
 
       ml._emitLayer('click', LAYER_ID_FILL, {
         features: [makeFeature('SD7148', '9160')],
@@ -641,9 +429,7 @@ describe('parcel-map web component', () => {
     })
 
     it('shows "Unknown" area when areaHa is null', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement()
-      await waitForEvent(el, EVENT_READY)
+      const el = await mountReady()
 
       ml._emitLayer('click', LAYER_ID_FILL, {
         features: [makeFeature('SD7148', '9161')],
