@@ -328,7 +328,9 @@ export default class CheckDetailsController extends QuestionPageController {
       return undefined
     }
 
-    return `${request.path}?${SFD_UPDATE_ACTION}=true`
+    const url = new URL(request.url)
+    url.searchParams.set(SFD_UPDATE_ACTION, 'true')
+    return `${url.pathname}${url.search}`
   }
 
   /**

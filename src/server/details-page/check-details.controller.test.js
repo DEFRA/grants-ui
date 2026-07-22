@@ -200,6 +200,7 @@ describe('CheckDetailsController', () => {
     mockRequest = {
       app: {},
       path: '/test-form/check-details',
+      url: new URL('http://localhost/test-form/check-details'),
       params: { slug: 'test-form' },
       auth: {
         isAuthenticated: true,
@@ -340,6 +341,31 @@ describe('CheckDetailsController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'check-details',
         expect.objectContaining({ sfdUpdateDetailsUrl: '/test-form/check-details?updateDetailsOnSfd=true' })
+      )
+    })
+
+    it('preserves existing query parameters in the SFD update action URL', async () => {
+      vi.mocked(config.get).mockImplementation((key) => {
+        if (key === 'externalLinks.sfd.enabled') {
+          return true
+        }
+        if (key === 'externalLinks.sfd.updateUrl') {
+          return 'http://localhost:3000/sfd/update-sbi'
+        }
+        return undefined
+      })
+      const sfdModel = { ...mockModel, lists: [], pages: [], def: { ...mockModel.def, pages: [] } }
+      const sfdController = new CheckDetailsController(sfdModel, mockPageDef)
+      setupControllerMocks(sfdController)
+      mockRequest.url = new URL('http://localhost/test-form/check-details?source=summary')
+
+      await sfdController.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'check-details',
+        expect.objectContaining({
+          sfdUpdateDetailsUrl: '/test-form/check-details?source=summary&updateDetailsOnSfd=true'
+        })
       )
     })
 
