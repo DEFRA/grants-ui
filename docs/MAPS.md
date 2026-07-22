@@ -157,10 +157,9 @@ pages:
 
 #### Page `config` flags
 
-| Flag          | Type      | Default | Effect                                                                                                                                                                                                                                                                                                                       |
-| ------------- | --------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `multiSelect` | `boolean` | `false` | Allow selecting more than one parcel. See above.                                                                                                                                                                                                                                                                             |
-| `devMode`     | `boolean` | `false` | TEMPORARY (TGC-1418 follow-up). Shows the OS Maps / OpenStreetMap comparison toggle and the performance metrics readout on this page. Leave unset (or `false`) on real user-facing journeys: it's a developer/stakeholder-comparison aid, not a feature for end users. Currently only `example-grant-with-map.yaml` sets it. |
+| Flag          | Type      | Default | Effect                                           |
+| ------------- | --------- | ------- | ------------------------------------------------ |
+| `multiSelect` | `boolean` | `false` | Allow selecting more than one parcel. See above. |
 
 ### What the page controllers do
 
@@ -202,21 +201,15 @@ A complete working example is [`example-grant-with-map.yaml`](https://github.com
 
 ### Attributes
 
-| Attribute          | Values                                    | Default             | Description                                    |
-| ------------------ | ----------------------------------------- | ------------------- | ---------------------------------------------- |
-| `multi-select`     | `"true"` / `"false"`                      | `"false"`           | Allow selecting more than one parcel at a time |
-| `basemap-provider` | `"ordnance-survey"` / `"openstreetmap"` † | `"ordnance-survey"` | Which basemap to render. See below.            |
-| `basemap-metrics`  | `"true"` / `"false"` †                    | `"false"`           | Emit `parcel-map:basemap-metrics`. See below.  |
-
-† Both temporary, see [Basemap providers](#basemap-providers) below.
+| Attribute      | Values               | Default   | Description                                    |
+| -------------- | -------------------- | --------- | ---------------------------------------------- |
+| `multi-select` | `"true"` / `"false"` | `"false"` | Allow selecting more than one parcel at a time |
 
 **Single-select:** clicking a parcel selects it and deselects any previously selected one. Clicking the same parcel again deselects it.
 
 **Multi-select:** clicking toggles each parcel independently. Multiple parcels can be selected simultaneously.
 
 `multi-select` is read once when the component connects. Changing it afterwards has no effect (re-create the element to reconfigure).
-
-`basemap-provider` **does** support runtime changes: setting it after the component has connected tears the map down and re-initialises it with the new basemap, keeping the same parcel data (no re-fetch). Any in-progress parcel selection is lost on switch. This attribute exists for comparing the two basemaps, not as a saved user preference, and always starts on `"ordnance-survey"` regardless of what was previously selected.
 
 ### Height
 
@@ -277,18 +270,15 @@ The plugin needs a single property that uniquely identifies each parcel feature.
 - On an `'unavailable'` error the component replaces the map with an inline "There was a problem loading the map." overlay (`role="alert"`).
 - On a `'no-parcels'` error it renders nothing. Messaging is left to the page (`map-select-parcel.html` un-hides a GOV.UK error summary and disables the continue button).
 - The viewport is fitted to the parcels' bounding box on load; the map does not persist its viewport in the URL (`urlPosition: 'none'`).
-- Zoom-out is capped at `MAP_MIN_ZOOM` (7), because the OS raster basemap has no tiles below z7, so without the cap users could zoom out into a blank void. TEMPORARY (TGC-1418 follow-up): this cap is skipped when `basemap-provider="openstreetmap"`, since CartoCDN's vector style covers the full zoom range.
+- Zoom-out is capped at `MAP_MIN_ZOOM` (7), because the OS raster basemap has no tiles below z7, so without the cap users could zoom out into a blank void.
 
 ### Asset loading
 
-Webpack builds three JS bundles (entries in `webpack.config.js`): `parcel-map.js` (the component), `parcel-select-page.js` (the page wiring — see [Dispatched events](#dispatched-events)), and — TEMPORARY (TGC-1418) — `basemap-comparison.js` (the devMode basemap toggle + metrics readout). The template loads them as ES modules in `{% block bodyEnd %}`; the comparison bundle is `{% if devMode %}`-gated so it never ships on normal journeys:
+Webpack builds two JS bundles (entries in `webpack.config.js`): `parcel-map.js` (the component) and `parcel-select-page.js` (the page wiring — see [Dispatched events](#dispatched-events)). The template loads them as ES modules in `{% block bodyEnd %}`:
 
 ```html
 <script type="module" nonce="{{ cspNonce }}" src="{{ getAssetPath('parcel-map.js') }}"></script>
 <script type="module" nonce="{{ cspNonce }}" src="{{ getAssetPath('parcel-select-page.js') }}"></script>
-{% if devMode %}
-<script type="module" nonce="{{ cspNonce }}" src="{{ getAssetPath('basemap-comparison.js') }}"></script>
-{% endif %}
 ```
 
 In production webpack outputs a content-hashed filename (`parcel-map.[contenthash:7].min.js`). `getAssetPath` resolves the correct path via `assets-manifest.json`, so the reference stays valid across deployments.
@@ -301,44 +291,9 @@ The `@defra/interactive-map` CSS must also be loaded. It is copied by webpack's 
 
 > **Note for Docker:** `webpack.config.js` is not volume-mounted. After changing it, run `npm run docker:rebuild && npm run docker:up` to rebuild the image.
 
-### Basemap providers
+### Basemap provider
 
-> **TEMPORARY (TGC-1418 follow-up):** OpenStreetMap support exists only for a side-by-side comparison and is expected to be removed within weeks. It is **opt-in per journey** via `devMode` in the page's YAML `config` block (same pattern as `multiSelect`), so journeys that don't set it get the toggle-free, metrics-free OS-only experience. This only reaches real users on journeys that explicitly ask for it (currently just `example-grant-with-map.yaml`).
->
-> Everything OpenStreetMap-specific is wrapped in a `TEMPORARY … END TEMPORARY` comment block. Grep the repo for `TGC-1418` to find every piece to delete:
->
-> - the `devMode` field in `map-select-page.controller.js` (and its tests)
-> - the `config: { devMode: true }` block in `example-grant-with-map.yaml`
-> - the constants and `getMapStyle`/label-font branches in `config.js`/`index.js`
-> - the CartoCDN CSP allowances in `content-security-policy.js`
-> - the `{% if devMode %}`-gated toggle/metrics markup and the `basemap-comparison.js` `<script>` tag in `map-select-parcel.html`
-> - `basemap-comparison.js` and `basemap-comparison.test.js` in full, plus their webpack entry in `webpack.config.js`
-> - `basemap-metrics.js` and `basemap-metrics.test.js` in full, plus their import/call sites in `index.js` and `basemap-comparison.js`
->
-> See the OS Maps vs OpenStreetMap comparison report for why OS Maps is the recommended (and, after removal, only) provider.
-
-Two basemap sources are currently supported, selected via the `basemap-provider` attribute (`getMapStyle` in `index.js` resolves the actual style/attribution for each):
-
-- **`"ordnance-survey"` (default):** Ordnance Survey's raster basemap, served through the server-side proxy described below. Authoritative UK survey data, including farmland/parcel boundary detail that the alternative lacks.
-- **`"openstreetmap"`:** OpenStreetMap, via CartoCDN's hosted vector style (`https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json`). No server proxy is involved, because CartoCDN's tiles are public, so the browser fetches them directly. Requires the CartoCDN CSP allowances in `content-security-policy.js` (`connect-src`/`img-src`). Its style also sets its own `glyphs` URL, so the parcel label layer switches to a font (`Open Sans Regular`) that CartoCDN's font server actually serves. `Arial Regular`, used for OS Maps, 404s against it.
-
-The [`map-select-parcel.html`](views/map-select-parcel.html) template wires a small GOV.UK radios control (`#basemap-provider-toggle`) to the attribute, for side-by-side comparison during development.
-
-#### Performance metrics (temporary)
-
-`basemap-metrics.js` times each basemap load and dispatches a `parcel-map:basemap-metrics` event; `basemap-comparison.js` (`formatMetrics`) renders it as a small text readout next to the toggle:
-
-```js
-// parcel-map:basemap-metrics event detail
-const detail = { provider, tileRequests, tileErrors, loadMs, firstTileMs, bytesTransferred }
-```
-
-- **`loadMs`:** anchored on MapLibre's own `idle` event, fired once every pending tile/source has settled. A fairer finish line than first paint alone, since OS (raster, many small tiles) and OSM (vector, fewer larger tiles) have different loading shapes.
-- **`firstTileMs`:** time to the first `sourcedata` event carrying a tile, i.e. perceived speed. Users see something on screen well before every last tile settles.
-- **`bytesTransferred`:** summed via `PerformanceObserver` on Resource Timing entries whose URL matches `/api/map/os-tiles`, `/api/map/os-basemap`, or `basemaps.cartocdn.com`, so only basemap-related requests count (not unrelated page assets). `transferSize` is `0` for cross-origin responses without `Timing-Allow-Origin`. CartoCDN doesn't send that header, so this reads as `0` for OSM rather than being silently wrong. Known limitation, not a bug.
-- **`tileRequests`/`tileErrors`:** counted from `sourcedata`/`error` events on the raw MapLibre instance.
-
-Both metrics tracking and the display panel only run when the page opts in. See the `basemap-metrics` attribute above.
+The basemap is Ordnance Survey's raster basemap, served through the server-side proxy described below. `getMapStyle` in `map-helpers.js` resolves its style/attribution. It is authoritative UK survey data, including the farmland/parcel boundary detail the journey depends on.
 
 ---
 

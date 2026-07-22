@@ -73,8 +73,13 @@ describe('contentSecurityPolicy plugin', () => {
       return false
     })
 
+  const makeRequest = (response = {}) => ({
+    response: { isBoom: false, header: mockHeader, variety: '', ...response },
+    app: {}
+  })
+
   async function getCspHeader() {
-    const request = { response: { isBoom: false, header: mockHeader, variety: '' }, app: {} }
+    const request = makeRequest()
     await onRequest(request, h)
     await onPreResponse(request, h)
     return mockHeader.mock.calls.find(([name]) => name === 'Content-Security-Policy')?.[1]
@@ -108,7 +113,7 @@ describe('contentSecurityPolicy plugin', () => {
 
   describe('onPreResponse handler', () => {
     it('should skip processing if the response is Boom', async () => {
-      const request = { response: { isBoom: true, header: mockHeader }, app: {} }
+      const request = makeRequest({ isBoom: true })
       await onRequest(request, h)
       const result = await onPreResponse(request, h)
 
@@ -117,14 +122,7 @@ describe('contentSecurityPolicy plugin', () => {
     })
 
     it('should set CSP headers and add nonce to response object', async () => {
-      const request = {
-        response: {
-          isBoom: false,
-          header: mockHeader,
-          variety: ''
-        },
-        app: {}
-      }
+      const request = makeRequest()
 
       await onRequest(request, h)
       const result = await onPreResponse(request, h)
@@ -138,45 +136,8 @@ describe('contentSecurityPolicy plugin', () => {
       expect(mockHeader).toHaveBeenNthCalledWith(3, 'X-CSP-Nonce', request.app.cspNonce)
     })
 
-    it('omits CartoCDN from the CSP on a normal (non-devMode) response', async () => {
-      const request = { response: { isBoom: false, header: mockHeader, variety: '' }, app: {} }
-
-      await onRequest(request, h)
-      await onPreResponse(request, h)
-
-      const [, policy] = mockHeader.mock.calls.find(([name]) => name === 'Content-Security-Policy')
-      expect(policy).not.toContain('cartocdn.com')
-    })
-
-    it('allows CartoCDN only on a devMode map view', async () => {
-      const request = {
-        response: {
-          isBoom: false,
-          header: mockHeader,
-          variety: 'view',
-          source: { context: { devMode: true } }
-        },
-        app: {}
-      }
-
-      await onRequest(request, h)
-      await onPreResponse(request, h)
-
-      const [, policy] = mockHeader.mock.calls.find(([name]) => name === 'Content-Security-Policy')
-      expect(policy).toContain('https://basemaps.cartocdn.com')
-      expect(policy).toContain('https://*.basemaps.cartocdn.com')
-    })
-
-    it('omits CartoCDN on a normal (non-devMode) view render', async () => {
-      const request = {
-        response: {
-          isBoom: false,
-          header: mockHeader,
-          variety: 'view',
-          source: { context: { devMode: false } }
-        },
-        app: {}
-      }
+    it('never allows CartoCDN in the CSP', async () => {
+      const request = makeRequest({ variety: 'view', source: { context: {} } })
 
       await onRequest(request, h)
       await onPreResponse(request, h)
@@ -190,17 +151,7 @@ describe('contentSecurityPolicy plugin', () => {
       { initialContext: undefined, description: 'undefined context' },
       { initialContext: { existingProp: 'value' }, description: 'context with existing properties' }
     ])('should add cspNonce to view response with $description', async ({ initialContext }) => {
-      const request = {
-        response: {
-          isBoom: false,
-          header: mockHeader,
-          variety: 'view',
-          source: {
-            context: initialContext
-          }
-        },
-        app: {}
-      }
+      const request = makeRequest({ variety: 'view', source: { context: initialContext } })
 
       await onRequest(request, h)
       await onPreResponse(request, h)
@@ -249,13 +200,7 @@ describe('contentSecurityPolicy plugin', () => {
 
   describe('Nonce integrity', () => {
     it('should ensure nonce is consistent between onRequest and onPreResponse', async () => {
-      const request = {
-        response: {
-          isBoom: false,
-          header: mockHeader
-        },
-        app: {}
-      }
+      const request = makeRequest()
 
       await onRequest(request, h)
       const onRequestNonce = `${request.app.cspNonce}`

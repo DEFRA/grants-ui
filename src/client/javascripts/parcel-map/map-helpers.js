@@ -1,9 +1,6 @@
 import {
   MAP_STYLE_URL,
   getMapStyleAttribution,
-  OSM_STYLE_URL,
-  OSM_STYLE_ATTRIBUTION,
-  BASEMAP_PROVIDER_OPENSTREETMAP,
   PARCEL_COLORS,
   LAYER_TEXT_SIZE,
   LAYER_TEXT_HALO_WIDTH,
@@ -48,16 +45,12 @@ export const COMPOUND_ID_EXPR = ['get', PARCEL_ID_PROPERTY]
 /**
  * @param {unknown[]} colorExpr  MapLibre `match` expression
  * @param {string}   [sourceLayer]
- * @param {string}   [basemapProvider]  BASEMAP_PROVIDER_ORDNANCE_SURVEY | BASEMAP_PROVIDER_OPENSTREETMAP
  */
-export function buildParcelLayers(colorExpr, sourceLayer, basemapProvider) {
+export function buildParcelLayers(colorExpr, sourceLayer) {
   const src = sourceLayer ? { 'source-layer': sourceLayer } : {}
   // OS Maps sets no `glyphs` URL, so any font renders locally via MapLibre's
-  // TinySDF fallback. TEMPORARY (TGC-1418 follow-up): CartoCDN's OpenStreetMap
-  // style DOES set a glyphs URL, and only serves the fonts it declares in its
-  // own layers ('Open Sans Regular' etc) — 'Arial Regular' 404s against it.
-  // Delete this branch (keep 'Arial Regular') once OSM support is removed.
-  const labelFont = basemapProvider === BASEMAP_PROVIDER_OPENSTREETMAP ? 'Open Sans Regular' : 'Arial Regular'
+  // TinySDF fallback.
+  const labelFont = 'Arial Regular'
   return {
     fill: {
       id: LAYER_ID_FILL,
@@ -100,18 +93,12 @@ export function buildParcelLayers(colorExpr, sourceLayer, basemapProvider) {
 }
 
 /**
- * Resolves the MapLibre style URL/attribution for the chosen basemap provider.
- * TEMPORARY (TGC-1418 follow-up): delete the ternary + provider param once
- * the OpenStreetMap comparison ends.
- * @param {string} provider  BASEMAP_PROVIDER_ORDNANCE_SURVEY | BASEMAP_PROVIDER_OPENSTREETMAP
+ * Resolves the MapLibre style URL/attribution for the OS Maps basemap, which is
+ * served through the server-side proxy.
  * @returns {{ url: string, attribution: string }}
  */
-export function getMapStyle(provider) {
-  // OSM's style/tiles are public (no key to protect), so its URL points
-  // straight at CartoCDN; OS Maps stays server-proxied.
-  return provider === BASEMAP_PROVIDER_OPENSTREETMAP
-    ? { url: OSM_STYLE_URL, attribution: OSM_STYLE_ATTRIBUTION }
-    : { url: MAP_STYLE_URL, attribution: getMapStyleAttribution() }
+export function getMapStyle() {
+  return { url: MAP_STYLE_URL, attribution: getMapStyleAttribution() }
 }
 
 /**
@@ -238,9 +225,8 @@ export function buildSkeleton() {
  * @param {import('maplibre-gl').Map} ml
  * @param {{ geojsonUrl: string | null, bbox: { minLng: number, minLat: number, maxLng: number, maxLat: number } | null }} data
  * @param {unknown[]} colorExpr  MapLibre `match` expression
- * @param {string} basemapProvider  BASEMAP_PROVIDER_ORDNANCE_SURVEY | BASEMAP_PROVIDER_OPENSTREETMAP
  */
-export function addParcelsToMap(ml, { geojsonUrl, bbox }, colorExpr, basemapProvider) {
+export function addParcelsToMap(ml, { geojsonUrl, bbox }, colorExpr) {
   if (bbox) {
     const { minLng, minLat, maxLng, maxLat } = bbox
     ml.fitBounds(
@@ -267,7 +253,7 @@ export function addParcelsToMap(ml, { geojsonUrl, bbox }, colorExpr, basemapProv
         tiles: [`${origin}${PARCEL_TILES_URL}`]
       })
   ml.addSource(SOURCE_ID_PARCELS, source)
-  const layers = buildParcelLayers(colorExpr, geojsonUrl ? undefined : SOURCE_ID_PARCELS, basemapProvider)
+  const layers = buildParcelLayers(colorExpr, geojsonUrl ? undefined : SOURCE_ID_PARCELS)
   ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.fill))
   ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.outline))
   ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.label))

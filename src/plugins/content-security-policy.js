@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto'
 import { config } from '~/src/config/config.js'
 import { error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
-const defaultContentPolicy = (/** @type {string} */ nonce, { devMode = false } = {}) => {
+const defaultContentPolicy = (/** @type {string} */ nonce) => {
   const gtm = 'https://www.googletagmanager.com'
   const gtmWildCard = 'https://*.googletagmanager.com'
   const ga4 = 'https://www.google-analytics.com'
@@ -13,19 +13,11 @@ const defaultContentPolicy = (/** @type {string} */ nonce, { devMode = false } =
   // This is a known hash published by the Design System team.
   // See: https://frontend.design-system.service.gov.uk/import-javascript/
   const govukFrontendHash = "'sha256-GUQ5ad8JK5KmEWmROf3LZd9ge94daqNvd8xy9YS1iDw='"
-  // --- TEMPORARY: OS Maps vs OpenStreetMap comparison (TGC-1418 follow-up) ---
-  // The parcel map's OpenStreetMap basemap option loads its style/tiles
-  // directly from CartoCDN (unlike OS Maps, which is proxied server-side).
-  // Gated on devMode: the basemap-provider toggle only renders on devMode map
-  // pages, so carto is never needed on a normal journey. Delete cartoHosts and
-  // their two usages below once the comparison is complete.
-  const cartoHosts = devMode ? ['https://basemaps.cartocdn.com', 'https://*.basemaps.cartocdn.com'] : []
-  // --- END TEMPORARY ---
 
   const scriptSrc = [self, "'strict-dynamic'", `'nonce-${nonce}'`, govukFrontendHash, gtmWildCard, ga4].join(' ')
-  const connectSrc = [self, ga4, statsDblClick, ga4WildCard, gtmWildCard, ...cartoHosts].join(' ')
+  const connectSrc = [self, ga4, statsDblClick, ga4WildCard, gtmWildCard].join(' ')
   const fontSrc = [self, 'data:', 'https://fonts.gstatic.com'].join(' ')
-  const imgSrc = [self, 'data:', 'blob:', ga4, statsDblClick, ga4WildCard, ...cartoHosts].join(' ')
+  const imgSrc = [self, 'data:', 'blob:', ga4, statsDblClick, ga4WildCard].join(' ')
   const workerSrc = [self, 'blob:'].join(' ')
 
   const formActionSrc = [self]
@@ -84,12 +76,8 @@ export const contentSecurityPolicy = {
         return h.continue
       }
 
-      // Only the map-select page puts devMode on its view context; everywhere
-      // else this is undefined/falsy, so carto stays out of the CSP.
-      const devMode = Boolean(response.variety === 'view' && response.source?.context?.devMode)
-
       if (typeof response.header === 'function') {
-        response.header('Content-Security-Policy', defaultContentPolicy(/** @type {string} */ (nonce), { devMode }))
+        response.header('Content-Security-Policy', defaultContentPolicy(/** @type {string} */ (nonce)))
         response.header('Referrer-Policy', 'no-referrer')
 
         // Only set this header in non-production environments for debugging
