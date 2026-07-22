@@ -307,7 +307,7 @@ export default class CheckDetailsController extends QuestionPageController {
           // missing or malformed URL — log and fall through to the update-details page
           const updateUrl = getConfiguredSfdUpdateUrl(this)
           log(LogCodes.SYSTEM.SFD_UPDATE_URL_MISSING_ON_REDIRECT, { updateUrl: updateUrl ?? '' }, request)
-          const { [this.confirmationFieldName]: _removed, ...stateWithoutConfirmation } = state
+          const { [this.confirmationFieldName]: _, ...stateWithoutConfirmation } = state
           await this.setState(request, { ...stateWithoutConfirmation, checkDetailsChangesPending: true })
           return this.proceed(request, h, this.getNextPath(context))
         }
@@ -362,7 +362,7 @@ export default class CheckDetailsController extends QuestionPageController {
     const currentRelationshipId = /** @type {string} */ (request.auth.credentials.currentRelationshipId)
     const url = new URL(updateUrl)
     url.searchParams.set('ssoOrgId', currentRelationshipId)
-    const { [this.confirmationFieldName]: _removed, ...stateWithoutConfirmation } = state
+    const { [this.confirmationFieldName]: _, ...stateWithoutConfirmation } = state
     await this.setState(request, { ...stateWithoutConfirmation, checkDetailsChangesPending: true })
     return h.redirect(url.toString())
   }
