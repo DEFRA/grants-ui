@@ -13,6 +13,8 @@ import { cannotSubmit } from './cannot-submit/index.js'
 import { applicationDeleted } from './application-deleted/index.js'
 import { mapPlugin } from '~/src/server/common/map/map.plugin.js'
 import { landGrantsActionsPlugin } from '~/src/server/land-grants/land-grants-actions.plugin.js'
+import { mapMockPlugin } from '~/src/server/common/map/map.mock.plugin.js'
+import { isMockData } from '~/src/server/common/map/map.mock.js'
 
 const cdpEnvironment = config.get('cdpEnvironment')
 
@@ -35,6 +37,10 @@ export const router = {
       await server.register([home, agreements, cookies, cannotSubmit, applicationDeleted])
 
       await server.register([mapPlugin, landGrantsActionsPlugin])
+
+      if (isMockData()) {
+        await server.register([mapMockPlugin])
+      }
 
       // Development tools (only available in development mode)
       if (

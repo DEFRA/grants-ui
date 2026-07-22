@@ -1,0 +1,43 @@
+# Local SonarQube analysis stack — driven by `gt sonar` (tools/grants-tui.js).
+# Reproduces CI's SonarCloud scan against a throwaway local server so it never
+# touches the shared DEFRA_grants-ui dashboard. Not part of the app stack.
+#
+#   gt sonar           # boot server (first run), bootstrap token, scan src/
+#   gt sonar --down    # stop the server (keeps data volume)
+#   gt reset           # remove the server + volumes + cached credentials
+#
+# The scanner reaches the server by service name on the shared default network,
+# which avoids Docker-Desktop-for-Mac networking quirks (--network host / host.docker.internal).
+#
+# Its own project name isolates this stack from the app stack (compose.yml), so
+# `down` only ever removes SonarQube's own containers/network, never the app's.
+name: grants-ui-sonar
+services:
+  sonarqube:
+    image: sonarqube:community
+    container_name: grants-ui-sonarqube
+    ports:
+      - '9000:9000' # host-published so the CLI can poll & bootstrap it
+    environment:
+      # Docker Desktop can't raise vm.max_map_count; skip the ES bootstrap check.
+      SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: 'true'
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+
+  sonar-scanner:
+    image: sonarsource/sonar-scanner-cli
+    profiles: ['scan'] # only started explicitly via `docker compose run`, never `up`
+    depends_on:
+      - sonarqube
+    working_dir: /usr/src
+    volumes:
+      - .:/usr/src # repo mount: src/, sonar-project.properties, coverage/lcov.info
+    # No command here — `gt sonar` appends -D flags at run time (they override the
+    # sonar-scanner-cli entrypoint args) to retarget the CI properties file locally.
+
+volumes:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:

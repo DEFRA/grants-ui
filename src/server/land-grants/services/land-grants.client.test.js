@@ -1,5 +1,6 @@
 import {
   calculate,
+  fetchParcelTile,
   locateParcelTiles,
   parcelsGroups,
   parcelsWithExtendedInfo,
@@ -753,6 +754,36 @@ describe('Land Grants client', () => {
       expect(callBody.fields).toContain('size')
       expect(callBody.fields).toContain('groups')
       expect(result).toEqual(mockResponse)
+    })
+  })
+
+  describe('fetchParcelTile', () => {
+    it('POSTs parcel IDs to the ZXY tile endpoint and returns the body as a Buffer', async () => {
+      const bytes = new Uint8Array([1, 2, 3, 4])
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        arrayBuffer: () => Promise.resolve(bytes.buffer)
+      })
+
+      const result = await fetchParcelTile(['SD7148-9160'], 12, 100, 200, mockApiEndpoint)
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        `${mockApiEndpoint}/api/v1/parcel-tiles/12/100/200`,
+        expect.objectContaining({ method: 'POST', body: JSON.stringify({ parcelIds: ['SD7148-9160'] }) })
+      )
+      expect(Buffer.isBuffer(result)).toBe(true)
+      expect([...result]).toEqual([1, 2, 3, 4])
+    })
+
+    it('throws with the upstream status when the tile request fails', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        statusText: 'Not Found',
+        json: () => Promise.resolve({ message: 'tile not found' })
+      })
+
+      await expect(fetchParcelTile([], 12, 100, 200, mockApiEndpoint)).rejects.toMatchObject({ code: 404, status: 404 })
     })
   })
 })

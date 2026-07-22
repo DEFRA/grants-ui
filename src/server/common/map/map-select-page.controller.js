@@ -8,11 +8,6 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
   /** @type {boolean} */
   multiSelect = false
 
-  // TEMPORARY (TGC-1418 follow-up): OS Maps vs OpenStreetMap comparison —
-  // delete this field and its usages once the comparison is complete.
-  /** @type {boolean} */
-  devMode = false
-
   /** @type {boolean} */
   singleParcelSubmission = false
 
@@ -31,7 +26,6 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
     // Grant-level config: when only a single land parcel is allowed in state, multiple selection is always disabled.
     this.singleParcelSubmission = metadata.singleParcelSubmission === true
     this.multiSelect = !this.singleParcelSubmission && Boolean(config.multiSelect)
-    this.devMode = Boolean(config.devMode)
   }
 
   makeGetRouteHandler() {
@@ -54,7 +48,6 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
     return {
       ...super.getViewModel(request, context),
       multiSelect: this.multiSelect,
-      devMode: this.devMode,
       formAction: request.path,
       ...extra
     }

@@ -8,15 +8,17 @@ import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js
 const LAND_GRANTS_SERVICE = 'grants-ui-backend'
 
 /**
- * Performs a POST request to the Land Grants API.
- * @template T
+ * Performs a POST request to the Land Grants API and returns the raw Response
+ * (with its body unread) after retry, error mapping and structured logging.
+ * Callers that want JSON use `postToLandGrantsApi`; callers that want binary
+ * (e.g. vector tiles) read the body themselves.
  * @param {string} endpoint
  * @param {Record<string, unknown>} body
  * @param {string} baseUrl
- * @returns {Promise<T>}
- * @throws {Error}
+ * @returns {Promise<Response>}
+ * @throws {Error & {code?: number, status?: number}}
  */
-export async function postToLandGrantsApi(endpoint, body, baseUrl) {
+export async function postToLandGrantsApiRaw(endpoint, body, baseUrl) {
   const url = `${baseUrl}${endpoint}`
   log(LogCodes.LAND_GRANTS.API_REQUEST, { endpoint, url })
 
@@ -56,10 +58,10 @@ export async function postToLandGrantsApi(endpoint, body, baseUrl) {
       throw error
     }
 
-    return response.json()
+    return response
   }
 
-  const result = await retry(apiOperation, {
+  return retry(apiOperation, {
     timeout: 30000,
     serviceName: `LandGrantsApi.postTo ${endpoint}`,
     shouldRetry: (error) => {
@@ -78,8 +80,37 @@ export async function postToLandGrantsApi(endpoint, body, baseUrl) {
     })
     throw error
   })
+}
 
-  return result
+/**
+ * Performs a POST request to the Land Grants API and parses the JSON body.
+ * @template T
+ * @param {string} endpoint
+ * @param {Record<string, unknown>} body
+ * @param {string} baseUrl
+ * @returns {Promise<T>}
+ * @throws {Error}
+ */
+export async function postToLandGrantsApi(endpoint, body, baseUrl) {
+  const response = await postToLandGrantsApiRaw(endpoint, body, baseUrl)
+  return response.json()
+}
+
+/**
+ * Fetches one MapLibre vector tile ({z}/{x}/{y}) for the given parcels.
+ * @param {string[]} parcelIds
+ * @param {string | number} z
+ * @param {string | number} x
+ * @param {string | number} y
+ * @param {string} baseUrl
+ * @returns {Promise<Buffer>}
+ * @throws {Error & {code?: number, status?: number}}
+ */
+export async function fetchParcelTile(parcelIds, z, x, y, baseUrl) {
+  const endpoint = `/api/v1/parcel-tiles/${z}/${x}/${y}`
+  const response = await postToLandGrantsApiRaw(endpoint, { parcelIds }, baseUrl)
+  const buffer = await response.arrayBuffer()
+  return Buffer.from(buffer)
 }
 
 /**

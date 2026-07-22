@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
-import { catchAll, createBoomError } from '~/src/server/common/helpers/errors.js'
+import { catchAll, createBoomError, readUpstreamStatus } from '~/src/server/common/helpers/errors.js'
 import Wreck from '@hapi/wreck'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { createServer } from '~/src/server/index.js'
@@ -183,14 +183,6 @@ describe('#catchAll', () => {
     expect(mockToolkitCode).toHaveBeenCalledWith(statusCode)
   })
 
-  test('Should provide expected default page', () => {
-    catchAll(mockRequest(statusCodes.imATeapot), mockToolkit)
-
-    expect(mockErrorLogger).not.toHaveBeenCalledWith(mockStack)
-    expect(mockToolkitView).toHaveBeenCalledWith('errors/500', { supportEmail: null })
-    expect(mockToolkitCode).toHaveBeenCalledWith(statusCodes.imATeapot)
-  })
-
   test('Should include upstreamStatus in the SERVER_ERROR log payload when the response carries an upstream 5xx', () => {
     const request = mockRequest(statusCodes.internalServerError)
     request.response.code = statusCodes.badGateway
@@ -209,6 +201,15 @@ describe('#catchAll', () => {
     // Response status is unchanged — 500 stays 500 user-facing.
     expect(mockToolkitView).toHaveBeenCalledWith('errors/500', { supportEmail: null })
     expect(mockToolkitCode).toHaveBeenCalledWith(statusCodes.internalServerError)
+  })
+
+  test('readUpstreamStatus reads code first, then status, any numeric value, else undefined', () => {
+    expect(readUpstreamStatus({ code: 404 })).toBe(404)
+    expect(readUpstreamStatus({ status: 429 })).toBe(429)
+    expect(readUpstreamStatus({ code: 500, status: 502 })).toBe(500)
+    expect(readUpstreamStatus({ message: 'boom' })).toBeUndefined()
+    expect(readUpstreamStatus(null)).toBeUndefined()
+    expect(readUpstreamStatus(undefined)).toBeUndefined()
   })
 
   test('Should provide expected "Something went wrong" page and log error for internalServerError', () => {

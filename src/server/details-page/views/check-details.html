@@ -33,15 +33,23 @@
 
       {{ appSectionList({ sections: sections }) }}
 
-      <form method="post" novalidate>
+      <form class="check-details-form{% if sfdUpdateDetailsUrl %} check-details-form--sfd{% endif %}" method="post" novalidate>
         <input type="hidden" name="crumb" value="{{ crumb }}">
 
         {{ componentList(components) }}
 
-        {{ govukButton({
-          text: "Continue",
-          preventDoubleClick: true
-        }) }}
+        <div class="check-details-form__submit">
+          {{ govukButton({
+            text: "Continue",
+            preventDoubleClick: true
+          }) }}
+        </div>
+
+        {% if sfdUpdateDetailsUrl %}
+          <a class="govuk-button check-details-form__sfd-link" href="{{ sfdUpdateDetailsUrl }}">
+            Continue
+          </a>
+        {% endif %}
       </form>
 
       {{ defraSupportDetails({typeOfSupport: 'help', email: page.def.metadata.supportEmail}) }}

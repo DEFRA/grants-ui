@@ -200,6 +200,7 @@ describe('CheckDetailsController', () => {
     mockRequest = {
       app: {},
       path: '/test-form/check-details',
+      url: new URL('http://localhost/test-form/check-details'),
       params: { slug: 'test-form' },
       auth: {
         isAuthenticated: true,
@@ -293,6 +294,103 @@ describe('CheckDetailsController', () => {
   })
 
   describe('makeGetRouteHandler', () => {
+    it('persists pending detail changes then redirects to SFD for the update-details action', async () => {
+      vi.mocked(config.get).mockImplementation((key) => {
+        if (key === 'externalLinks.sfd.enabled') {
+          return true
+        }
+        if (key === 'externalLinks.sfd.updateUrl') {
+          return 'http://localhost:3000/sfd/update-sbi?source=grants'
+        }
+        return undefined
+      })
+      const sfdModel = { ...mockModel, lists: [], pages: [], def: { ...mockModel.def, pages: [] } }
+      const sfdController = new CheckDetailsController(sfdModel, mockPageDef)
+      setupControllerMocks(sfdController)
+      mockRequest.query = { updateDetailsOnSfd: 'true' }
+      mockRequest.auth.credentials.currentRelationshipId = 'REL123'
+      mockContext.state = { someState: 'value', detailsConfirmed: false }
+
+      const result = await sfdController.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+
+      expect(sfdController.setState).toHaveBeenCalledWith(mockRequest, {
+        someState: 'value',
+        checkDetailsChangesPending: true
+      })
+      expect(mockH.redirect).toHaveBeenCalledWith('http://localhost:3000/sfd/update-sbi?source=grants&ssoOrgId=REL123')
+      expect(mockH.view).not.toHaveBeenCalled()
+      expect(result).toBe('mocked-redirect')
+    })
+
+    it('provides the scoped SFD update action URL to the view', async () => {
+      vi.mocked(config.get).mockImplementation((key) => {
+        if (key === 'externalLinks.sfd.enabled') {
+          return true
+        }
+        if (key === 'externalLinks.sfd.updateUrl') {
+          return 'http://localhost:3000/sfd/update-sbi'
+        }
+        return undefined
+      })
+      const sfdModel = { ...mockModel, lists: [], pages: [], def: { ...mockModel.def, pages: [] } }
+      const sfdController = new CheckDetailsController(sfdModel, mockPageDef)
+      setupControllerMocks(sfdController)
+
+      await sfdController.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'check-details',
+        expect.objectContaining({ sfdUpdateDetailsUrl: '/test-form/check-details?updateDetailsOnSfd=true' })
+      )
+    })
+
+    it('preserves existing query parameters in the SFD update action URL', async () => {
+      vi.mocked(config.get).mockImplementation((key) => {
+        if (key === 'externalLinks.sfd.enabled') {
+          return true
+        }
+        if (key === 'externalLinks.sfd.updateUrl') {
+          return 'http://localhost:3000/sfd/update-sbi'
+        }
+        return undefined
+      })
+      const sfdModel = { ...mockModel, lists: [], pages: [], def: { ...mockModel.def, pages: [] } }
+      const sfdController = new CheckDetailsController(sfdModel, mockPageDef)
+      setupControllerMocks(sfdController)
+      mockRequest.url = new URL('http://localhost/test-form/check-details?source=summary')
+
+      await sfdController.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'check-details',
+        expect.objectContaining({
+          sfdUpdateDetailsUrl: '/test-form/check-details?source=summary&updateDetailsOnSfd=true'
+        })
+      )
+    })
+
+    it('caches the configured SFD update URL for subsequent action URL calls', () => {
+      vi.mocked(config.get).mockImplementation((key) => {
+        if (key === 'externalLinks.sfd.enabled') {
+          return true
+        }
+        if (key === 'externalLinks.sfd.updateUrl') {
+          return ' http://localhost:3000/sfd/update-sbi '
+        }
+        return undefined
+      })
+      const sfdModel = { ...mockModel, lists: [], pages: [], def: { ...mockModel.def, pages: [] } }
+      const sfdController = new CheckDetailsController(sfdModel, mockPageDef)
+
+      expect(sfdController.getSfdUpdateDetailsActionUrl(mockRequest)).toBe(
+        '/test-form/check-details?updateDetailsOnSfd=true'
+      )
+      expect(sfdController.getSfdUpdateDetailsActionUrl(mockRequest)).toBe(
+        '/test-form/check-details?updateDetailsOnSfd=true'
+      )
+      expect(vi.mocked(config.get).mock.calls.filter(([key]) => key === 'externalLinks.sfd.updateUrl')).toHaveLength(1)
+    })
+
     it('should fetch and render view with sections on success', async () => {
       const handler = controller.makeGetRouteHandler()
 
@@ -886,6 +984,22 @@ describe('UpdateDetailsPageController', () => {
       })
 
       expect(updateController.getSfdUpdateUrl(mockRequest)).toBe(`${updateUrl}?ssoOrgId=REL123`)
+    })
+
+    it('caches the configured update URL for subsequent calls', () => {
+      vi.mocked(config.get).mockImplementation((key) => {
+        if (key === 'externalLinks.sfd.enabled') {
+          return true
+        }
+        if (key === 'externalLinks.sfd.updateUrl') {
+          return ' http://localhost:3000/sfd/update-sbi '
+        }
+        return undefined
+      })
+
+      expect(updateController.getSfdUpdateUrl(mockRequest)).toBe('http://localhost:3000/sfd/update-sbi?ssoOrgId=REL123')
+      expect(updateController.getSfdUpdateUrl(mockRequest)).toBe('http://localhost:3000/sfd/update-sbi?ssoOrgId=REL123')
+      expect(vi.mocked(config.get).mock.calls.filter(([key]) => key === 'externalLinks.sfd.updateUrl')).toHaveLength(1)
     })
   })
 

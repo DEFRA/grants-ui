@@ -73,23 +73,19 @@ describe('contentSecurityPolicy plugin', () => {
       return false
     })
 
+  const makeRequest = (response = {}) => ({
+    response: { isBoom: false, header: mockHeader, variety: '', ...response },
+    app: {}
+  })
+
   async function getCspHeader() {
-    const request = { response: { isBoom: false, header: mockHeader, variety: '' }, app: {} }
+    const request = makeRequest()
     await onRequest(request, h)
     await onPreResponse(request, h)
     return mockHeader.mock.calls.find(([name]) => name === 'Content-Security-Policy')?.[1]
   }
 
   describe('onRequest handler', () => {
-    test('registers an onRequest handler', () => {
-      // ensure ext was called with onRequest
-      expect(fakeServer.ext).toHaveBeenCalled()
-      const call = fakeServer.ext.mock.calls.find(([ev]) => ev === 'onRequest')
-      expect(call).toBeTruthy()
-      const [, handler] = call
-      expect(typeof handler).toBe('function')
-    })
-
     test('sets a base64 nonce on request.app.cspNonce and continues', async () => {
       const request = { app: {} }
 
@@ -117,7 +113,7 @@ describe('contentSecurityPolicy plugin', () => {
 
   describe('onPreResponse handler', () => {
     it('should skip processing if the response is Boom', async () => {
-      const request = { response: { isBoom: true, header: mockHeader }, app: {} }
+      const request = makeRequest({ isBoom: true })
       await onRequest(request, h)
       const result = await onPreResponse(request, h)
 
@@ -126,14 +122,7 @@ describe('contentSecurityPolicy plugin', () => {
     })
 
     it('should set CSP headers and add nonce to response object', async () => {
-      const request = {
-        response: {
-          isBoom: false,
-          header: mockHeader,
-          variety: ''
-        },
-        app: {}
-      }
+      const request = makeRequest()
 
       await onRequest(request, h)
       const result = await onPreResponse(request, h)
@@ -147,22 +136,14 @@ describe('contentSecurityPolicy plugin', () => {
       expect(mockHeader).toHaveBeenNthCalledWith(3, 'X-CSP-Nonce', request.app.cspNonce)
     })
 
-    it('allows CartoCDN for the parcel map basemap-provider toggle', async () => {
-      const request = {
-        response: {
-          isBoom: false,
-          header: mockHeader,
-          variety: ''
-        },
-        app: {}
-      }
+    it('never allows CartoCDN in the CSP', async () => {
+      const request = makeRequest({ variety: 'view', source: { context: {} } })
 
       await onRequest(request, h)
       await onPreResponse(request, h)
 
       const [, policy] = mockHeader.mock.calls.find(([name]) => name === 'Content-Security-Policy')
-      expect(policy).toContain('https://basemaps.cartocdn.com')
-      expect(policy).toContain('https://*.basemaps.cartocdn.com')
+      expect(policy).not.toContain('cartocdn.com')
     })
 
     it.each([
@@ -170,17 +151,7 @@ describe('contentSecurityPolicy plugin', () => {
       { initialContext: undefined, description: 'undefined context' },
       { initialContext: { existingProp: 'value' }, description: 'context with existing properties' }
     ])('should add cspNonce to view response with $description', async ({ initialContext }) => {
-      const request = {
-        response: {
-          isBoom: false,
-          header: mockHeader,
-          variety: 'view',
-          source: {
-            context: initialContext
-          }
-        },
-        app: {}
-      }
+      const request = makeRequest({ variety: 'view', source: { context: initialContext } })
 
       await onRequest(request, h)
       await onPreResponse(request, h)
@@ -191,14 +162,12 @@ describe('contentSecurityPolicy plugin', () => {
       }
     })
 
-    it('should include GOV.UK Frontend SHA-256 hash in script-src', async () => {
-      const cspHeader = await getCspHeader()
-      expect(cspHeader).toContain("'sha256-GUQ5ad8JK5KmEWmROf3LZd9ge94daqNvd8xy9YS1iDw='")
-    })
-
-    it('should include form-action self directive', async () => {
-      const cspHeader = await getCspHeader()
-      expect(cspHeader).toContain("form-action 'self'")
+    it.each([
+      "'sha256-GUQ5ad8JK5KmEWmROf3LZd9ge94daqNvd8xy9YS1iDw='",
+      "form-action 'self'",
+      'https://*.googletagmanager.com'
+    ])('includes %s in the CSP', async (fragment) => {
+      expect(await getCspHeader()).toContain(fragment)
     })
 
     it('should allowlist the SFD origin in form-action when SFD is enabled', async () => {
@@ -227,22 +196,11 @@ describe('contentSecurityPolicy plugin', () => {
       const cspHeader = await getCspHeader()
       expect(cspHeader).toContain("form-action 'self';")
     })
-
-    it('should include GTM wildcard in script-src', async () => {
-      const cspHeader = await getCspHeader()
-      expect(cspHeader).toContain('https://*.googletagmanager.com')
-    })
   })
 
   describe('Nonce integrity', () => {
     it('should ensure nonce is consistent between onRequest and onPreResponse', async () => {
-      const request = {
-        response: {
-          isBoom: false,
-          header: mockHeader
-        },
-        app: {}
-      }
+      const request = makeRequest()
 
       await onRequest(request, h)
       const onRequestNonce = `${request.app.cspNonce}`

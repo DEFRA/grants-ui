@@ -157,6 +157,12 @@ Then('(the user )should see a/an {string} reference number for their application
   referenceNumbers.push(await selector.textContent())
 })
 
+Then('(the user )should see a reference number for their application', async function () {
+  const selector = this.page.locator('//h1/following-sibling::div[1]/strong')
+  await expect(selector).toBeVisible()
+  referenceNumbers.push(await selector.textContent())
+})
+
 Then('(the user )should see body {string}', async function (text) {
   await expect(this.page.locator(`//p[@class='govuk-body' and contains(text(),'${text}')]`)).toBeVisible()
 })

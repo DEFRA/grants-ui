@@ -35,10 +35,6 @@ export default {
     },
     'select-actions-page': {
       import: ['./javascripts/land-grants/select-actions-page.js']
-    },
-    // TEMPORARY (TGC-1418): delete this entry with basemap-comparison.js.
-    'basemap-comparison': {
-      import: ['./javascripts/parcel-map/basemap-comparison.js']
     }
   },
   experiments: {
