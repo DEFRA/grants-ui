@@ -388,9 +388,7 @@ describe('CheckDetailsController', () => {
       expect(sfdController.getSfdUpdateDetailsActionUrl(mockRequest)).toBe(
         '/test-form/check-details?updateDetailsOnSfd=true'
       )
-      expect(
-        vi.mocked(config.get).mock.calls.filter(([key]) => key === 'externalLinks.sfd.updateUrl')
-      ).toHaveLength(1)
+      expect(vi.mocked(config.get).mock.calls.filter(([key]) => key === 'externalLinks.sfd.updateUrl')).toHaveLength(1)
     })
 
     it('should fetch and render view with sections on success', async () => {
@@ -999,15 +997,9 @@ describe('UpdateDetailsPageController', () => {
         return undefined
       })
 
-      expect(updateController.getSfdUpdateUrl(mockRequest)).toBe(
-        'http://localhost:3000/sfd/update-sbi?ssoOrgId=REL123'
-      )
-      expect(updateController.getSfdUpdateUrl(mockRequest)).toBe(
-        'http://localhost:3000/sfd/update-sbi?ssoOrgId=REL123'
-      )
-      expect(
-        vi.mocked(config.get).mock.calls.filter(([key]) => key === 'externalLinks.sfd.updateUrl')
-      ).toHaveLength(1)
+      expect(updateController.getSfdUpdateUrl(mockRequest)).toBe('http://localhost:3000/sfd/update-sbi?ssoOrgId=REL123')
+      expect(updateController.getSfdUpdateUrl(mockRequest)).toBe('http://localhost:3000/sfd/update-sbi?ssoOrgId=REL123')
+      expect(vi.mocked(config.get).mock.calls.filter(([key]) => key === 'externalLinks.sfd.updateUrl')).toHaveLength(1)
     })
   })
 
