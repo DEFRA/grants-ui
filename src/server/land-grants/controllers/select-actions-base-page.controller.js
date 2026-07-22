@@ -70,6 +70,19 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
   }
 
   /**
+   * Validate submitted quantities against the fetched action metadata. Runs
+   * after fetchActions, unlike validateUserInput. No-op by default; only the
+   * flat-checkbox page overrides it (the grouped page surfaces quantity
+   * errors via handleApplicationValidation instead).
+   * @param {object} _payload
+   * @param {Array} _actions
+   * @returns {Array<{ text: string, href?: string }>}
+   */
+  validateActionQuantities(_payload, _actions) {
+    return []
+  }
+
+  /**
    * Persist the submitted action selections (and any per-action overrides) into state.
    * @param {object} _prevState
    * @param {object} _payload
@@ -324,6 +337,12 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
     }
 
     const { actions, parcel: fetchedParcel } = result
+
+    const quantityErrors = this.validateActionQuantities(payload, actions)
+    if (quantityErrors.length > 0) {
+      return this.handleValidationErrors(h, request, context, { errors: quantityErrors, parcel, prevState })
+    }
+
     const state = this.writeActionsToState(prevState, payload, actions, fetchedParcel)
 
     if (payload.action === 'validate') {

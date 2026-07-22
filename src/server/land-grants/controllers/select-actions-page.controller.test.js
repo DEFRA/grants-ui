@@ -366,6 +366,47 @@ describe('SelectActionsPageController', () => {
       )
     })
 
+    test('should show an error and not save state when a quantity-required action has no submitted quantity', async () => {
+      mockRequest.payload = { landAction: 'UPL2' }
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'select-actions',
+        expect.objectContaining({
+          errors: [
+            {
+              text: 'Enter a quantity for Heavy livestock grazing on moorland: UPL2',
+              href: '#landActionQuantity_UPL2'
+            }
+          ]
+        })
+      )
+      expect(controller.setState).not.toHaveBeenCalled()
+      expect(controller.proceed).not.toHaveBeenCalled()
+    })
+
+    test('should show an error when a quantity-required action has a submitted quantity of 0', async () => {
+      mockRequest.payload = { landAction: 'UPL2', landActionQuantity_UPL2: '0' }
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'select-actions',
+        expect.objectContaining({
+          errors: [
+            {
+              text: 'Enter a quantity for Heavy livestock grazing on moorland: UPL2',
+              href: '#landActionQuantity_UPL2'
+            }
+          ]
+        })
+      )
+      expect(controller.setState).not.toHaveBeenCalled()
+    })
+
     test('should store the submitted quantity override for an action that requires one', async () => {
       mockRequest.payload = {
         landAction: 'UPL2',

@@ -394,6 +394,82 @@ describe('land-parcel-state.manager', () => {
 
       expect(result.landParcels['AB1234-5678'].actionsObj.CSAM3.value).toBe('3.25')
     })
+
+    // Checking a quantity-required action's box alone (no quantity typed yet)
+    // is not a confirmed selection - it must not be saved to state on submit,
+    // matching the live-refresh page behaviour of treating it as unselected.
+    it('should not save a quantity-required action that was checked but never given a quantity', () => {
+      const groupedActionsWithQuantity = [
+        {
+          name: 'Group 1',
+          actions: [
+            {
+              code: 'CSAM3',
+              description: 'Herbal leys: CSAM3',
+              requiresMaxQuantity: 18.5673,
+              availableArea: { value: 18.5673, unit: 'ha' }
+            }
+          ]
+        }
+      ]
+      const state = {}
+      const payload = { landAction: 'CSAM3', landActionQuantity_CSAM3: '' }
+      const parcel = { sheetId: 'AB1234', parcelId: '5678' }
+
+      const result = addSelectedActionsToState(state, payload, groupedActionsWithQuantity, parcel)
+
+      expect(result.landParcels['AB1234-5678'].actionsObj).toEqual({})
+    })
+
+    // A submitted 0 isn't a real claim on any land, so it's treated the same
+    // as never having been submitted - matching the client-side live-refresh
+    // treatment of a typed 0 on this same page.
+    it('should not save a quantity-required action whose submitted quantity is 0', () => {
+      const groupedActionsWithQuantity = [
+        {
+          name: 'Group 1',
+          actions: [
+            {
+              code: 'CSAM3',
+              description: 'Herbal leys: CSAM3',
+              requiresMaxQuantity: 18.5673,
+              availableArea: { value: 18.5673, unit: 'ha' }
+            }
+          ]
+        }
+      ]
+      const state = {}
+      const payload = { landAction: 'CSAM3', landActionQuantity_CSAM3: '0' }
+      const parcel = { sheetId: 'AB1234', parcelId: '5678' }
+
+      const result = addSelectedActionsToState(state, payload, groupedActionsWithQuantity, parcel)
+
+      expect(result.landParcels['AB1234-5678'].actionsObj).toEqual({})
+    })
+
+    it('should still save a non-quantity action alongside a skipped quantity-required one', () => {
+      const groupedActionsWithQuantity = [
+        {
+          name: 'Group 1',
+          actions: [
+            { code: 'SAM1', description: 'Action 1', availableArea: { value: '10', unit: 'ha' } },
+            {
+              code: 'CSAM3',
+              description: 'Herbal leys: CSAM3',
+              requiresMaxQuantity: 18.5673,
+              availableArea: { value: 18.5673, unit: 'ha' }
+            }
+          ]
+        }
+      ]
+      const state = {}
+      const payload = { landAction: ['SAM1', 'CSAM3'] }
+      const parcel = { sheetId: 'AB1234', parcelId: '5678' }
+
+      const result = addSelectedActionsToState(state, payload, groupedActionsWithQuantity, parcel)
+
+      expect(Object.keys(result.landParcels['AB1234-5678'].actionsObj)).toEqual(['SAM1'])
+    })
   })
 
   describe('getAddedActionsForStateParcel', () => {

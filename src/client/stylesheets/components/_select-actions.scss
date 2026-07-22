@@ -1,0 +1,6 @@
+@use 'govuk-frontend' as *;
+
+.select-actions-unavailable-message {
+  margin-top: govuk-spacing(1);
+  margin-bottom: 0;
+}

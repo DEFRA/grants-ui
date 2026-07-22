@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
+import { debug } from '~/src/server/common/helpers/logging/log.js'
 import {
   clearParcelCache,
+  fetchAuthorisedParcelIds,
   getCachedAuthParcels,
   getCachedParcel,
   getCachedSbiParcels,
@@ -8,6 +11,15 @@ import {
   setCachedParcel,
   setCachedSbiParcels
 } from './parcel-cache.js'
+
+vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.service.js', () => ({
+  fetchParcelsFromDal: vi.fn()
+}))
+
+vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  debug: vi.fn(),
+  LogCodes: { SYSTEM: { EXTERNAL_API_ERROR: 'EXTERNAL_API_ERROR' } }
+}))
 
 const SECONDS_PER_MINUTE = 60
 const MS_PER_SECOND = 1000
@@ -84,6 +96,47 @@ describe('parcel-cache', () => {
       setCachedAuthParcels('106284736', ['SD5649-9215'])
       vi.advanceTimersByTime(TTL + 1)
       expect(getCachedAuthParcels('106284736')).toBeNull()
+    })
+  })
+
+  describe('fetchAuthorisedParcelIds', () => {
+    const mockRequest = { auth: { credentials: { sbi: '106284736' } } }
+
+    it('uses cached parcels instead of fetching when cache hit', async () => {
+      setCachedAuthParcels('106284736', ['sheet1-parcel1', 'sheet2-parcel2'])
+
+      const result = await fetchAuthorisedParcelIds(mockRequest)
+
+      expect(fetchParcelsFromDal).not.toHaveBeenCalled()
+      expect(result).toEqual(['sheet1-parcel1', 'sheet2-parcel2'])
+    })
+
+    it('fetches and caches parcels on cache miss', async () => {
+      fetchParcelsFromDal.mockResolvedValue([{ sheetId: 'sheet1', parcelId: 'parcel1' }])
+
+      const result = await fetchAuthorisedParcelIds(mockRequest)
+
+      expect(fetchParcelsFromDal).toHaveBeenCalledWith(mockRequest)
+      expect(result).toEqual(['sheet1-parcel1'])
+      expect(getCachedAuthParcels('106284736')).toEqual(['sheet1-parcel1'])
+    })
+
+    it('logs and returns null without caching when fetchParcelsFromDal throws', async () => {
+      const mockError = new Error('API connection failed')
+      fetchParcelsFromDal.mockRejectedValue(mockError)
+
+      const result = await fetchAuthorisedParcelIds(mockRequest)
+
+      expect(result).toBeNull()
+      expect(getCachedAuthParcels('106284736')).toBeNull()
+      expect(debug).toHaveBeenCalledWith(
+        'EXTERNAL_API_ERROR',
+        {
+          endpoint: 'Consolidated view',
+          errorMessage: 'fetch parcel data for auth check: API connection failed'
+        },
+        mockRequest
+      )
     })
   })
 

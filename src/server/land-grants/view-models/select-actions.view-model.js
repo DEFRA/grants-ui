@@ -80,6 +80,13 @@ export function mapActionToViewModel(action, addedActions, quantityErrorsByCode 
     value: action.code,
     text: action.description,
     checked: Boolean(existingAction),
+    attributes: {
+      'data-available-unit': action.availableArea?.unit,
+      // Set once here, never touched by the client - the full amount this
+      // action needs to remain usable at all (a non-quantity action can't
+      // take a partial amount, so this is its pass/fail threshold).
+      'data-total-available-area': action.availableArea?.value
+    },
     hint: {
       html:
         `Payment rate per year: £${action.ratePerUnitGbp?.toFixed(2)}/ha` +
@@ -101,6 +108,23 @@ export function mapActionToViewModel(action, addedActions, quantityErrorsByCode 
 }
 
 /**
+ * An action with 0 available area can't be selected, so it's dropped from the
+ * initial render entirely - unless the user already selected and saved it in
+ * an earlier session, in which case it must keep rendering (the API result may
+ * have changed since, e.g. another action consumed the remaining area) so the
+ * saved selection isn't silently dropped from the page.
+ * @param {Action} action
+ * @param {Array<{code: string}>} addedActions
+ * @returns {boolean}
+ */
+function isVisibleOnInitialLoad(action, addedActions) {
+  if (action.availableArea?.value !== 0) {
+    return true
+  }
+  return addedActions.some((a) => a.code === action.code)
+}
+
+/**
  * Maps grouped actions to a flat list of view models for rendering
  * @param {Array<ActionGroup>} groupedActions - Array of action groups
  * @param {Array<{code: string, description: string}>} addedActions - Actions already added to the parcel
@@ -108,8 +132,10 @@ export function mapActionToViewModel(action, addedActions, quantityErrorsByCode 
  * @returns {Array<CheckboxItem>} Flat array of mapped action checkboxes
  */
 export function mapGroupedActionsToViewModel(groupedActions, addedActions, quantityErrorsByCode = {}) {
-  const allActions = groupedActions.flatMap((group) => group.actions)
-  return allActions.map((action, index) =>
+  const visibleActions = groupedActions
+    .flatMap((group) => group.actions)
+    .filter((action) => isVisibleOnInitialLoad(action, addedActions))
+  return visibleActions.map((action, index) =>
     mapActionToViewModel(action, addedActions, quantityErrorsByCode, index === 0)
   )
 }
@@ -125,7 +151,7 @@ export function mapGroupedActionsToViewModel(groupedActions, addedActions, quant
  * @property {number} [requiresMaxQuantity] - If set, the user must enter a quantity for this action, capped at this value
  * @property {number} [ratePerAgreementPerYearGbp] - Additional payment per agreement per year
  * @property {object} [availableArea] - Available area for the action
- * @property {string} [availableArea.value] - Area value
+ * @property {number} [availableArea.value] - Area value
  * @property {string} [availableArea.unit] - Area unit
  */
 
@@ -144,6 +170,9 @@ export function mapGroupedActionsToViewModel(groupedActions, addedActions, quant
  * @property {string} value - Checkbox value
  * @property {string} text - Checkbox label
  * @property {boolean} checked - Whether checkbox is checked
+ * @property {{ 'data-available-unit': string|undefined, 'data-total-available-area': number|undefined }} attributes -
+ *   Rendered onto the checkbox <input>. `data-total-available-area` is set once and never
+ *   touched client-side, so it stays the original full amount.
  * @property {object} hint - Hint text configuration
  * @property {string} hint.html - HTML content for hint
  * @property {{ html: string }} [conditional] - Conditional reveal markup shown when checked/selected

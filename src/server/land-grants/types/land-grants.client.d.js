@@ -12,6 +12,15 @@
  */
 
 /**
+ * An in-progress action selection sent to the parcels endpoint so it can recompute
+ * availableArea against this planned combination merged with existing agreements.
+ * @typedef {object} PlannedAction
+ * @property {string} actionCode
+ * @property {number} quantity
+ * @property {'ha'|'sqm'} unit
+ */
+
+/**
  * @typedef ActionGroup
  * @property {string} name
  * @property {Size} totalAvailableArea

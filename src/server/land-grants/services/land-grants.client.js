@@ -118,24 +118,28 @@ export async function parcelsGroups(parcelIds, baseUrl) {
  * @param {string[]} fields
  * @param {string[]} parcelIds
  * @param {string} baseUrl
+ * @param {PlannedAction[]} [plannedActions] - When given, the API recomputes each
+ *   action's availableArea against these in-progress selections merged with existing
+ *   agreements, rather than existing agreements alone.
  * @returns {Promise<ParcelResponse>}
  */
-export async function parcelsWithFields(fields, parcelIds, baseUrl) {
+export async function parcelsWithFields(fields, parcelIds, baseUrl, plannedActions = []) {
   const endpoint = '/api/v2/parcels'
-  return postToLandGrantsApi(endpoint, { parcelIds, fields }, baseUrl)
+  return postToLandGrantsApi(endpoint, { parcelIds, fields, plannedActions }, baseUrl)
 }
 
 /**
  *
  * @param {string[]} parcelIds
  * @param {string} baseUrl
+ * @param {PlannedAction[]} [plannedActions] - See parcelsWithFields
  * @returns {Promise<ParcelResponse>}
  */
-export async function parcelsWithExtendedInfo(parcelIds, baseUrl) {
+export async function parcelsWithExtendedInfo(parcelIds, baseUrl, plannedActions) {
   const consentTypes = getConsentTypes()
   const fields = ['actions', 'size', 'groups', ...consentTypes.map((ct) => `actions.${ct.apiField}`)]
 
-  return parcelsWithFields(fields, parcelIds, baseUrl)
+  return parcelsWithFields(fields, parcelIds, baseUrl, plannedActions)
 }
 
 /**
@@ -162,6 +166,6 @@ export async function locateParcelTiles(parcelIds, baseUrl) {
 }
 
 /**
- * @import { Parcel, LandActions, ValidateApplicationRequest, ParcelResponse, ValidateApplicationResponse } from '~/src/server/land-grants/types/land-grants.client.d.js'
+ * @import { Parcel, LandActions, PlannedAction, ValidateApplicationRequest, ParcelResponse, ValidateApplicationResponse } from '~/src/server/land-grants/types/land-grants.client.d.js'
  * @import {  PaymentCalculationResponse } from '~/src/server/land-grants/types/payment.d.js'
  */

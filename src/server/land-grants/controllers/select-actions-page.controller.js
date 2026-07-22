@@ -1,7 +1,10 @@
 import SelectActionsBasePageController from '~/src/server/land-grants/controllers/select-actions-base-page.controller.js'
 import { mapGroupedActionsToViewModel } from '~/src/server/land-grants/view-models/select-actions.view-model.js'
 import { addSelectedActionsToState } from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
-import { validateSelectedActions } from '~/src/server/land-grants/validators/land-actions.validator.js'
+import {
+  validateSelectedActions,
+  validateSelectedActionQuantities
+} from '~/src/server/land-grants/validators/land-actions.validator.js'
 import {
   SELECTED_ACTIONS_FIELD_NAME,
   getSelectedActionCodes
@@ -37,6 +40,18 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
    */
   validateUserInput(payload) {
     return validateSelectedActions(payload)
+  }
+
+  /**
+   * @param {object} payload
+   * @param {Array<{ actions: Array }>} groupedActions
+   * @returns {Array<{ text: string, href?: string }>}
+   */
+  validateActionQuantities(payload, groupedActions) {
+    return validateSelectedActionQuantities(
+      payload,
+      groupedActions.flatMap((g) => g.actions)
+    )
   }
 
   /**

@@ -166,7 +166,14 @@ const registerFormsPlugin = async (server, prefix = '') => {
 
 const registerPlugins = async (server) => {
   await server.register([
-    crumb,
+    {
+      plugin: crumb,
+      options: {
+        cookieOptions: {
+          isSecure: config.get('session.cookie.secure')
+        }
+      }
+    },
     Bell,
     Cookie,
     h2o2,

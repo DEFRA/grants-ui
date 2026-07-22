@@ -136,6 +136,28 @@ export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = 
 }
 
 /**
+ * Recomputes availableArea for a parcel's actions against an in-progress
+ * selection, for the select-actions page's live availability refresh.
+ * Deliberately bypasses fetchAvailableActionsForParcel's cache, which isn't
+ * keyed on plannedActions and would risk serving a stale combination.
+ * @param {{ parcelId: string, sheetId: string, plannedActions: PlannedAction[] }} params
+ * @returns {Promise<{ actions: Array<{ code: string, availableArea?: Size, requiresMaxQuantity?: number }> }>}
+ * @throws {Error}
+ */
+export async function fetchActionsWithPlannedActions({ parcelId, sheetId, plannedActions }) {
+  const parcelKey = stringifyParcel({ sheetId, parcelId })
+  const { parcels } = await parcelsWithExtendedInfo([parcelKey], LAND_GRANTS_API_URL, plannedActions)
+  const foundParcel = parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)
+  const actions = (foundParcel?.actions || []).map(mapAction).map((action) => ({
+    code: action.code,
+    availableArea: action.availableArea,
+    requiresMaxQuantity: action.requiresMaxQuantity
+  }))
+
+  return { actions }
+}
+
+/**
  *
  * @param {ActionOption} action
  */
@@ -303,7 +325,7 @@ function buildErrorMessagesFromResponse(actions = []) {
 }
 
 /**
- * @import { ActionOption, ActionGroup, ActionGroupDefinition, Parcel, HydratedParcel, ValidateApplicationResponse, ValidationAction, ErrorItem, Size } from '~/src/server/land-grants/types/land-grants.client.d.js'
+ * @import { ActionOption, ActionGroup, ActionGroupDefinition, Parcel, HydratedParcel, PlannedAction, ValidateApplicationResponse, ValidationAction, ErrorItem, Size } from '~/src/server/land-grants/types/land-grants.client.d.js'
  * @import { PaymentCalculation } from '~/src/server/land-grants/types/payment.d.js'
  * @import { LandParcels } from '~/src/server/land-grants/types/form-state.d.js'
  * @import { AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'

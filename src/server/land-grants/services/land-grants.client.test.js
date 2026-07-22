@@ -600,9 +600,48 @@ describe('Land Grants client', () => {
           Authorization: expect.any(String),
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ parcelIds, fields })
+        body: JSON.stringify({ parcelIds, fields, plannedActions: [] })
       })
       expect(result).toEqual(mockResponse)
+    })
+
+    it('should include plannedActions in the request body when given', async () => {
+      const mockResponse = { id: 1, status: 'success' }
+      const fields = ['actions']
+      const parcelIds = ['parcel1']
+      const plannedActions = [{ actionCode: 'CSAM3', quantity: 1.5, unit: 'ha' }]
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockResponse
+      })
+
+      await parcelsWithFields(fields, parcelIds, mockApiEndpoint, plannedActions)
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        `${mockApiEndpoint}/api/v2/parcels`,
+        expect.objectContaining({
+          body: JSON.stringify({ parcelIds, fields, plannedActions })
+        })
+      )
+    })
+
+    it('should default plannedActions to an empty array when not given', async () => {
+      const mockResponse = { id: 1, status: 'success' }
+      const fields = ['actions']
+      const parcelIds = ['parcel1']
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockResponse
+      })
+
+      await parcelsWithFields(fields, parcelIds, mockApiEndpoint)
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        `${mockApiEndpoint}/api/v2/parcels`,
+        expect.objectContaining({
+          body: JSON.stringify({ parcelIds, fields, plannedActions: [] })
+        })
+      )
     })
   })
 
@@ -624,7 +663,7 @@ describe('Land Grants client', () => {
           Authorization: expect.any(String),
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ parcelIds, fields })
+        body: JSON.stringify({ parcelIds, fields, plannedActions: [] })
       })
       expect(result).toEqual(mockResponse)
     })
@@ -648,7 +687,7 @@ describe('Land Grants client', () => {
           Authorization: expect.any(String),
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ parcelIds, fields })
+        body: JSON.stringify({ parcelIds, fields, plannedActions: [] })
       })
       expect(result).toEqual(mockResponse)
     })
@@ -691,7 +730,7 @@ describe('Land Grants client', () => {
           Authorization: expect.any(String),
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ parcelIds, fields })
+        body: JSON.stringify({ parcelIds, fields, plannedActions: [] })
       })
       expect(result).toEqual(mockResponse)
     })
