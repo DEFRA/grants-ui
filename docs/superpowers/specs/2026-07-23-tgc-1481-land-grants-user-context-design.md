@@ -31,10 +31,7 @@ Request-facing code will extract a small, explicit Land Grants user-context obje
 Hapi request:
 
 ```js
-{
-  defraIdToken,
-  sbi
-}
+const userContext = { defraIdToken, sbi }
 ```
 
 The extractor will fail before an outbound request if either value is absent or empty. Land Grants calls must
