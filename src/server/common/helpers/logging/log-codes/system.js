@@ -168,5 +168,10 @@ export const SYSTEM = {
     level: 'warn',
     messageFunc: (messageOptions) =>
       `check-details: SFD is enabled but externalLinks.sfd.updateUrl is missing or invalid (value=${messageOptions.updateUrl}); falling through to the update-details page instead of redirecting to SFD`
+  },
+  OS_MAPS_API_KEY_MISSING: {
+    level: 'error',
+    messageFunc: () =>
+      `map: osMapsApiKey (OS_MAPS_API_KEY) is not set; every /api/map/os-tiles request will fail as a 401 from OS with no diagnostic`
   }
 }

@@ -21,15 +21,26 @@ function makeFeature(properties) {
   }
 }
 
-function makeTileBuffer(features, layerName = 'parcels') {
-  const layer = {
+function makeLayer(features, layerName) {
+  return {
     version: 2,
     name: layerName,
     extent: 4096,
     length: features.length,
     feature: (i) => features[i]
   }
-  return Buffer.from(vtpbf.fromVectorTileJs({ layers: { [layerName]: layer } }))
+}
+
+function makeTileBuffer(features, layerName = 'parcels') {
+  return Buffer.from(vtpbf.fromVectorTileJs({ layers: { [layerName]: makeLayer(features, layerName) } }))
+}
+
+function makeMultiLayerTileBuffer(layerSpecs) {
+  const layers = {}
+  for (const { name, features } of layerSpecs) {
+    layers[name] = makeLayer(features, name)
+  }
+  return Buffer.from(vtpbf.fromVectorTileJs({ layers }))
 }
 
 function decode(buffer) {
@@ -74,6 +85,22 @@ describe('withCompoundParcelIds', () => {
     const feature = decode(withCompoundParcelIds(buffer)).layers.parcels.feature(0)
 
     expect(feature.properties.id).toBeUndefined()
+  })
+
+  it('preserves other layers alongside the transformed parcels layer', () => {
+    const buffer = makeMultiLayerTileBuffer([
+      { name: 'parcels', features: [makeFeature({ sheet_id: 'SD7148', parcel_id: '9160' })] },
+      { name: 'boundaries', features: [makeFeature({ ref: 'B1' }), makeFeature({ ref: 'B2' })] }
+    ])
+
+    const tile = decode(withCompoundParcelIds(buffer))
+
+    expect(Object.keys(tile.layers).sort()).toEqual(['boundaries', 'parcels'])
+    expect(tile.layers.parcels.feature(0).properties.id).toBe('SD7148-9160')
+    expect(tile.layers.boundaries.length).toBe(2)
+    expect(tile.layers.boundaries.feature(0).properties.ref).toBe('B1')
+    expect(tile.layers.boundaries.feature(1).properties.ref).toBe('B2')
+    expect(tile.layers.boundaries.feature(0).properties.id).toBeUndefined()
   })
 
   it('returns the buffer unchanged when the parcels layer is absent', () => {

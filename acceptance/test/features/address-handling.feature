@@ -3,7 +3,7 @@ Feature: Address Handling
     addresses by preference and ensuring the address shown to the user is sent to GAS.
 
     Scenario: Applicant with a structured (UPRN) address sees it formatted correctly and it is sent to GAS
-        Given there is no application state stored for CRN "1103823647" and SBI "106700730" and grant "example-grant-with-auth"
+        Given there is no application data for SBI "106700730" and grant "example-grant-with-auth"
 
         # start
         Given the user navigates to "/example-grant-with-auth"
@@ -156,7 +156,7 @@ Feature: Address Handling
             | postalCode | BB7 4LQ                       |
 
     Scenario: Applicant with an unstructured (no UPRN) address sees it formatted correctly and it is sent to GAS
-        Given there is no application state stored for CRN "1102821879" and SBI "106450896" and grant "example-grant-with-auth"
+        Given there is no application data for SBI "106450896" and grant "example-grant-with-auth"
 
         # start
         Given the user navigates to "/example-grant-with-auth"
