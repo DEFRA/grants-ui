@@ -35,7 +35,6 @@ export async function postToLandGrantsApiRaw(endpoint, body, baseUrl, userContex
       method: 'POST',
       headers: /** @type {HeadersInit} */ ({
         ...createApiHeadersForLandGrantsBackend(),
-        'gateway-type': 'external',
         'x-forwarded-authorization': defraIdToken
       }),
       body: JSON.stringify({

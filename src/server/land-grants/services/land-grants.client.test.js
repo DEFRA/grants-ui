@@ -35,7 +35,6 @@ const mockUserContext = {
 const expectedHeaders = {
   Authorization: 'Bearer token',
   'Content-Type': 'application/json',
-  'gateway-type': 'external',
   'x-forwarded-authorization': mockUserContext.defraIdToken
 }
 
@@ -72,6 +71,7 @@ describe('Land Grants client', () => {
         headers: expectedHeaders,
         body: JSON.stringify({ data: 'test', sbi: mockUserContext.sbi })
       })
+      expect(mockFetch.mock.calls[0][1].headers).not.toHaveProperty('gateway-type')
       expect(result).toEqual(mockResponse)
     })
 

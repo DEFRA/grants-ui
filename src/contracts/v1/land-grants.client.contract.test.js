@@ -16,7 +16,6 @@ const { like, eachLike, string } = MatchersV3
 const userContext = { defraIdToken: 'defra-id-access-token', sbi: '123456789' }
 const makeLandGrantsHeaders = () => ({
   'Content-Type': 'application/json',
-  'gateway-type': 'external',
   'x-forwarded-authorization': userContext.defraIdToken
 })
 const withAuthenticatedSbi = (body) => ({ ...body, sbi: userContext.sbi })
