@@ -1,7 +1,3 @@
-// Live action-availability refresh for the select-actions page. As the user
-// checks/unchecks actions or edits a quantity, sends the in-progress
-// selection to the server, then greys out any other action no longer
-// available. A selected action is never disabled by its own response.
 import { ACTION_QUANTITY_FIELD_PREFIX, getActionQuantityFieldName } from '../../../shared/action-quantity-field.js'
 import { formatAreaUnit } from '../../../shared/format-area-unit.js'
 import { isValidCompoundParcelId } from '../../../shared/format-parcel.js'
@@ -46,10 +42,7 @@ function getQuantityInput(checkbox) {
   return /** @type {HTMLInputElement | null} */ (document.getElementById(getActionQuantityFieldName(checkbox.value)))
 }
 
-/**
- * The action's original, full available area - set once at page render and
- * never overwritten client-side.
- * @param {HTMLInputElement} checkbox
+/** @param {HTMLInputElement} checkbox
  * @returns {number | undefined}
  */
 function getTotalAvailableArea(checkbox) {
@@ -57,11 +50,7 @@ function getTotalAvailableArea(checkbox) {
   return Number.isFinite(value) ? value : undefined
 }
 
-/**
- * Whatever's validly typed into an action's own quantity field right now -
- * undefined if there's no quantity input, nothing typed, or the typed value
- * isn't a positive number within the action's total available area.
- * @param {HTMLInputElement} checkbox
+/** @param {HTMLInputElement} checkbox
  * @returns {number | undefined}
  */
 function getValidTypedQuantity(checkbox) {
@@ -70,12 +59,7 @@ function getValidTypedQuantity(checkbox) {
   return typed > 0 && (total == null || typed <= total) ? typed : undefined
 }
 
-/**
- * Instantly updates a quantity input's own hint to total-minus-typed, so the
- * user isn't left wondering what the total was after typing 0 - overwritten
- * again once the debounced API refresh responds (see applyAvailability).
- * @param {HTMLInputElement} checkbox
- */
+/** @param {HTMLInputElement} checkbox */
 function updateHintLive(checkbox) {
   const quantityInput = getQuantityInput(checkbox)
   const total = getTotalAvailableArea(checkbox)
@@ -85,16 +69,12 @@ function updateHintLive(checkbox) {
     return
   }
   const typed = Number(quantityInput.value.trim())
-  // Round to 4dp to absorb float noise (e.g. 0.3271 - 0.2 !== 0.1271 in JS)
-  // without truncating genuine precision the API's area values carry.
+  // Round to 4dp to absorb float noise (e.g. 0.3271 - 0.2 !== 0.1271 in JS).
   const remaining = typed > 0 ? Math.max(0, Math.round((total - typed) * 10000) / 10000) : total
   hint.textContent = availabilityHintText(remaining, unit)
 }
 
-/**
- * Builds the plannedActions payload from the current DOM state: every
- * checked action, with its quantity.
- * @param {HTMLElement} form
+/** @param {HTMLElement} form
  * @returns {Array<{ actionCode: string, quantity: number, unit: string }>}
  */
 function buildPlannedActions(form) {
@@ -114,9 +94,7 @@ function buildPlannedActions(form) {
 }
 
 /**
- * Whether a checkbox should grey out given its refreshed availableArea. A
- * checked action is never marked unavailable by its own (self-competing)
- * response - only unchecked actions grey out.
+ * A checked action is never disabled by its own (self-competing) response.
  * @param {HTMLInputElement} checkbox
  * @param {{ value: number, unit: string } | undefined} availableArea
  * @returns {boolean}
@@ -126,15 +104,11 @@ function computeIsUnavailable(checkbox, availableArea) {
     return false
   }
   const quantityInput = getQuantityInput(checkbox)
-  // A quantity action needs whatever's validly typed (nothing typed = needs
-  // nothing); a non-quantity action always needs its full original area.
   const needs = (quantityInput ? getValidTypedQuantity(checkbox) : getTotalAvailableArea(checkbox)) ?? 0
   return availableArea.value === 0 || availableArea.value < needs
 }
 
-/**
- * Shows/hides the "not compatible" message alongside a checkbox.
- * @param {HTMLInputElement} checkbox
+/** @param {HTMLInputElement} checkbox
  * @param {boolean} isUnavailable
  */
 function toggleUnavailableMessage(checkbox, isUnavailable) {
@@ -152,10 +126,7 @@ function toggleUnavailableMessage(checkbox, isUnavailable) {
   }
 }
 
-/**
- * Syncs a quantity-required action's own input (disabled state, max, hint)
- * to its refreshed availableArea.
- * @param {HTMLInputElement} checkbox
+/** @param {HTMLInputElement} checkbox
  * @param {{ availableArea?: { value: number, unit: string }, requiresMaxQuantity?: number }} action
  * @param {boolean} isUnavailable
  */
@@ -172,9 +143,7 @@ function syncQuantityInput(checkbox, action, isUnavailable) {
   }
 }
 
-/**
- * Applies one action's availableArea from the refresh response.
- * @param {HTMLInputElement} checkbox
+/** @param {HTMLInputElement} checkbox
  * @param {{ availableArea?: { value: number, unit: string }, requiresMaxQuantity?: number }} action
  */
 function applyAvailability(checkbox, action) {
@@ -260,9 +229,7 @@ export function initSelectActionsPage(form) {
   const refreshAvailability = createAvailabilityRefresher(form, parcelId)
   const debouncedRefresh = debounce(refreshAvailability, QUANTITY_DEBOUNCE_MS)
 
-  // A saved selection from a previous visit is already checked on render -
-  // run one refresh immediately so any now-incompatible action greys out
-  // without waiting for the user to touch anything.
+  // Grey out any already-checked (saved) selection that's now incompatible.
   if (buildPlannedActions(form).length > 0) {
     refreshAvailability()
   }
@@ -274,12 +241,9 @@ export function initSelectActionsPage(form) {
     }
     const quantityInput = getQuantityInput(target)
     if (!target.checked && quantityInput) {
-      // Clear any typed quantity on uncheck, so a stale value can't linger
-      // and confuse a future read or the user re-checking the box.
+      // Clear a stale typed quantity on uncheck.
       quantityInput.value = ''
     }
-    // Nothing valid typed yet - checking the box alone doesn't claim
-    // anything, so there's nothing new to ask the backend about.
     if (target.checked && quantityInput && getValidTypedQuantity(target) == null) {
       return
     }
@@ -304,6 +268,4 @@ export function initSelectActionsPage(form) {
   })
 }
 
-// This module is only bundled on select-actions.html, which renders one
-// <form> - no marker attribute needed to find it.
 initSelectActionsPage(document.querySelector('form'))
