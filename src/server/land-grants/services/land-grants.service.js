@@ -84,13 +84,9 @@ const createGroup = (name, groupActions) => ({
 })
 
 /**
- * Fetches available actions for a given parcel. When plannedActions is
- * given (e.g. the parcel's already-saved selection), each action's
- * availableArea is recomputed against that combination - used to render
- * the select-actions page with incompatible actions already greyed out on
- * initial load, without a separate client-side round-trip. Bypasses the
- * cache in that case, since the cache key isn't keyed on plannedActions and
- * would risk serving a stale combination.
+ * Fetches available actions for a given parcel. When plannedActions is given,
+ * each action's availableArea is recomputed against that combination and the
+ * cache is bypassed (the cache key isn't keyed on plannedActions).
  * @param {{ parcelId?: string, sheetId?: string, enabledLandActions?: string[], plannedActions?: PlannedAction[] }} parcel
  * @returns {Promise<{actions: ActionGroup[], parcel: {parcelId: string, sheetId: string, size: Size}}>}- Parcel data with actions
  * @throws {Error}
@@ -155,8 +151,6 @@ export async function fetchAvailableActionsForParcel({
 /**
  * Recomputes availableArea for a parcel's actions against an in-progress
  * selection, for the select-actions page's live availability refresh.
- * Deliberately bypasses fetchAvailableActionsForParcel's cache, which isn't
- * keyed on plannedActions and would risk serving a stale combination.
  * @param {{ parcelId: string, sheetId: string, plannedActions: PlannedAction[] }} params
  * @returns {Promise<{ actions: Array<{ code: string, availableArea?: Size, requiresMaxQuantity?: number }> }>}
  * @throws {Error}

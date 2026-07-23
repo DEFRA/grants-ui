@@ -10,13 +10,9 @@ import { getActionQuantityFieldName } from '~/src/shared/action-quantity-field.j
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
 import { SELECTED_ACTIONS_FIELD_NAME } from '~/src/server/land-grants/utils/selected-actions-field.js'
 
-// Built in JS, not the template: Nunjucks can't mutate array items across a loop
-// (no namespace(), no {% set item.prop = x %}), and govukCheckboxes needs the full
-// conditional.html per item up front.
-//
-// Own Environment instead of the app-wide one in nunjucks.js: that module's
-// nunjucks.configure() runs config.get('root') at import time, which this page's
-// controller test doesn't mock.
+// Built in JS, not the template: Nunjucks can't mutate array items in a loop.
+// Own Environment (not the app-wide one) since that one's config.get('root')
+// call at import time isn't mocked in this page's controller test.
 const QUANTITY_INPUT_TEMPLATE = 'quantity-input/template.njk'
 const quantityInputEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader([govukFrontendPath, ...viewPaths]), {
   autoescape: true
@@ -51,10 +47,8 @@ function getQuantityConditional(actionCode, actionName, quantityValue, maxQuanti
 }
 
 /**
- * Builds the stable, addressable checkbox id for an action. The first item in the
- * rendered list must be exactly SELECTED_ACTIONS_FIELD_NAME (with no suffix) to match
- * govuk-frontend's own default idPrefix behaviour - that's what "no action selected"
- * error-summary links (see validateSelectedActions) anchor to.
+ * First item must be exactly SELECTED_ACTIONS_FIELD_NAME (no suffix) - that's
+ * what "no action selected" error-summary links anchor to.
  * @param {string} actionCode
  * @param {boolean} isFirst
  * @returns {string}
@@ -109,11 +103,9 @@ export function mapActionToViewModel(action, addedActions, quantityErrorsByCode 
 }
 
 /**
- * An action with 0 available area can't be selected, so it's dropped from the
- * initial render entirely - unless the user already selected and saved it in
- * an earlier session, in which case it must keep rendering (the API result may
- * have changed since, e.g. another action consumed the remaining area) so the
- * saved selection isn't silently dropped from the page.
+ * A 0-available action is dropped from the initial render, unless it was
+ * already saved to a previous selection - a saved choice must never silently
+ * disappear from the page.
  * @param {Action} action
  * @param {Array<{code: string}>} addedActions
  * @returns {boolean}

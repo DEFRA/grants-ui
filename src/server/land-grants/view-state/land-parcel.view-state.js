@@ -41,10 +41,8 @@ function hasSubmittedQuantity(payload, actionInfo) {
 }
 
 /**
- * Whether a quantity-required action has a submitted, non-zero quantity -
- * used only by the flat-checkbox select-actions page, where a submitted 0
- * means "not confirmed". Not shared with addActionsToExistingState (the
- * grouped page), which treats a genuine 0 as a valid value.
+ * Flat-checkbox page only: a submitted 0 means "not confirmed" here, unlike
+ * the grouped page where 0 is a valid value.
  * @param {object} payload - Form payload
  * @param {Action} actionInfo - The action's data from the API
  * @returns {boolean}
@@ -133,9 +131,6 @@ export function addSelectedActionsToState(state, payload, groupedActions, parcel
 
   for (const actionCode of selectedCodes) {
     const actionInfo = allActions.find((a) => a.code === actionCode)
-    // Skip actions that don't exist, or quantity-required actions with no
-    // confirmed (non-zero) quantity - matching the page's live-refresh
-    // behaviour, an unconfirmed quantity means "not chosen".
     const isConfirmedSelection =
       actionInfo && (actionInfo.requiresMaxQuantity == null || hasSubmittedNonZeroQuantity(payload, actionInfo))
     if (isConfirmedSelection) {
