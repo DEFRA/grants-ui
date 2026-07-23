@@ -56,6 +56,7 @@ const mockParcelsResponse = [
     area: { unit: 'sqm', value: 0.0633 }
   }
 ]
+const userContext = { defraIdToken: 'defra-id-access-token', sbi: '106284736' }
 
 describe('SelectGroupedActionsPageController', () => {
   let controller
@@ -128,7 +129,8 @@ describe('SelectGroupedActionsPageController', () => {
       auth: {
         isAuthenticated: true,
         credentials: {
-          sbi: '106284736',
+          token: userContext.defraIdToken,
+          sbi: userContext.sbi,
           crn: 'CRN123',
           name: 'John Doe',
           organisationName: 'Farm 1',
@@ -237,11 +239,14 @@ describe('SelectGroupedActionsPageController', () => {
       expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, ['sheet2-parcel2'])
 
       expect(parseLandParcel).toHaveBeenCalledWith('sheet2-parcel2')
-      expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith({
-        parcelId: 'parcel2',
-        sheetId: 'sheet2',
-        enabledLandActions
-      })
+      expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith(
+        {
+          parcelId: 'parcel2',
+          sheetId: 'sheet2',
+          enabledLandActions
+        },
+        userContext
+      )
     })
 
     test('should pass an empty action list when metadata does not include enabledLandActions', async () => {
@@ -252,11 +257,14 @@ describe('SelectGroupedActionsPageController', () => {
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith({
-        parcelId: 'parcel1',
-        sheetId: 'sheet1',
-        enabledLandActions: []
-      })
+      expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith(
+        {
+          parcelId: 'parcel1',
+          sheetId: 'sheet1',
+          enabledLandActions: []
+        },
+        userContext
+      )
     })
 
     test('should render view with correct data', async () => {
@@ -545,12 +553,14 @@ describe('SelectGroupedActionsPageController', () => {
       const handler = controller.makePostRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(validateApplication).toHaveBeenCalledWith({
-        applicationId: 'REF123',
-        sbi: '106284736',
-        crn: 'CRN123',
-        state: expect.any(Object)
-      })
+      expect(validateApplication).toHaveBeenCalledWith(
+        {
+          applicationId: 'REF123',
+          crn: 'CRN123',
+          state: expect.any(Object)
+        },
+        userContext
+      )
     })
 
     test('should show validation errors from API', async () => {
