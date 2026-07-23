@@ -4,6 +4,7 @@ import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 import PaymentPageController from './payment-page.controller.js'
 
 const mockStrategyFetch = vi.hoisted(() => vi.fn())
+const userContext = { defraIdToken: 'defra-id-token', sbi: '123456789' }
 
 vi.mock('~/src/server/payment/payment-strategies.js', () => ({
   paymentStrategies: {
@@ -91,6 +92,12 @@ describe('PaymentPageController', () => {
     mockStrategyFetch.mockResolvedValue(mockStrategyResult)
 
     mockRequest = {
+      auth: {
+        credentials: {
+          token: userContext.defraIdToken,
+          sbi: userContext.sbi
+        }
+      },
       payload: {},
       logger: mockRequestLogger()
     }
@@ -119,7 +126,7 @@ describe('PaymentPageController', () => {
 
       await handler(mockRequest, mockContext, mockH)
 
-      expect(mockStrategyFetch).toHaveBeenCalled()
+      expect(mockStrategyFetch).toHaveBeenCalledWith(mockContext.state, userContext)
       expect(controller.setState).toHaveBeenCalledWith(
         mockRequest,
         expect.objectContaining({
@@ -163,6 +170,7 @@ describe('PaymentPageController', () => {
       const handler = controller.makeGetRouteHandler()
       await handler(requestWithoutAuth, mockContext, mockH)
 
+      expect(mockStrategyFetch).not.toHaveBeenCalled()
       expect(mockH.view).toHaveBeenCalledWith(
         'payment-page',
         expect.objectContaining({
@@ -182,6 +190,7 @@ describe('PaymentPageController', () => {
       const handler = controller.makeGetRouteHandler()
       await handler(requestWithoutCredentials, mockContext, mockH)
 
+      expect(mockStrategyFetch).not.toHaveBeenCalled()
       expect(mockH.view).toHaveBeenCalledWith(
         'payment-page',
         expect.objectContaining({
@@ -257,6 +266,7 @@ describe('PaymentPageController', () => {
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
+      expect(mockStrategyFetch).toHaveBeenCalledWith(mockContext.state, userContext)
       expect(mockH.view).toHaveBeenCalledWith(
         'payment-page',
         expect.objectContaining({

@@ -8,9 +8,14 @@ import { postToLandGrantsApi } from '~/src/server/land-grants/services/land-gran
  * Calls the woodland management plan validate endpoint.
  * @param {{ parcelIds: string[], hectaresTenOrOverYearsOld: number, hectaresUnderTenYearsOld: number }} payload
  * @param {string} baseUrl
+ * @param {LandGrantsUserContext} userContext
  * @returns {Promise<object>}
  */
-export async function validateWoodland({ parcelIds, hectaresTenOrOverYearsOld, hectaresUnderTenYearsOld }, baseUrl) {
+export async function validateWoodland(
+  { parcelIds, hectaresTenOrOverYearsOld, hectaresUnderTenYearsOld },
+  baseUrl,
+  userContext
+) {
   return postToLandGrantsApi(
     '/api/v1/wmp/validate',
     {
@@ -18,7 +23,8 @@ export async function validateWoodland({ parcelIds, hectaresTenOrOverYearsOld, h
       oldWoodlandAreaHa: hectaresTenOrOverYearsOld,
       newWoodlandAreaHa: hectaresUnderTenYearsOld
     },
-    baseUrl
+    baseUrl,
+    userContext
   )
 }
 
@@ -26,10 +32,15 @@ export async function validateWoodland({ parcelIds, hectaresTenOrOverYearsOld, h
  * Calls the Land Grants API calculate-wmp endpoint.
  * @param {{ parcelIds: string[], hectaresTenOrOverYearsOld: number, hectaresUnderTenYearsOld: number }} payload
  * @param {string} baseUrl
+ * @param {LandGrantsUserContext} userContext
  * @returns {Promise<{ message: string, payment: PaymentCalculation }>}
  * @throws {Error}
  */
-export async function calculateWmp({ parcelIds, hectaresTenOrOverYearsOld, hectaresUnderTenYearsOld }, baseUrl) {
+export async function calculateWmp(
+  { parcelIds, hectaresTenOrOverYearsOld, hectaresUnderTenYearsOld },
+  baseUrl,
+  userContext
+) {
   return postToLandGrantsApi(
     '/api/v1/wmp/payments/calculate',
     {
@@ -37,6 +48,11 @@ export async function calculateWmp({ parcelIds, hectaresTenOrOverYearsOld, hecta
       oldWoodlandAreaHa: hectaresTenOrOverYearsOld,
       newWoodlandAreaHa: hectaresUnderTenYearsOld
     },
-    baseUrl
+    baseUrl,
+    userContext
   )
 }
+
+/**
+ * @import { LandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
+ */

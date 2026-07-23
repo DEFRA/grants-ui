@@ -29,11 +29,19 @@ const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
  * @param {string[]} options.parcelIds
  * @param {number} options.hectaresTenOrOverYearsOld
  * @param {number} options.hectaresUnderTenYearsOld
+ * @param {LandGrantsUserContext} userContext
  * @returns {Promise<string[]>}
  */
-export async function validateWoodlandHectares({ parcelIds, hectaresTenOrOverYearsOld, hectaresUnderTenYearsOld }) {
+export async function validateWoodlandHectares(
+  { parcelIds, hectaresTenOrOverYearsOld, hectaresUnderTenYearsOld },
+  userContext
+) {
   const response = /** @type {WoodlandValidationResponse} */ (
-    await validateWoodland({ parcelIds, hectaresTenOrOverYearsOld, hectaresUnderTenYearsOld }, LAND_GRANTS_API_URL)
+    await validateWoodland(
+      { parcelIds, hectaresTenOrOverYearsOld, hectaresUnderTenYearsOld },
+      LAND_GRANTS_API_URL,
+      userContext
+    )
   )
 
   if (response.result?.hasPassed) {
@@ -46,13 +54,18 @@ export async function validateWoodlandHectares({ parcelIds, hectaresTenOrOverYea
 /**
  * Calculates a one-off WMP payment.
  * @param {{ parcelIds: string[], hectaresUnderTenYearsOld: number, hectaresTenOrOverYearsOld: number }} params
+ * @param {LandGrantsUserContext} userContext
  * @returns {Promise<{ payment: PaymentCalculation, totalPence: number }>}
  * @throws {Error}
  */
-export async function calculateWmpPayment({ parcelIds, hectaresUnderTenYearsOld, hectaresTenOrOverYearsOld }) {
+export async function calculateWmpPayment(
+  { parcelIds, hectaresUnderTenYearsOld, hectaresTenOrOverYearsOld },
+  userContext
+) {
   const { payment } = await calculateWmp(
     { parcelIds, hectaresUnderTenYearsOld, hectaresTenOrOverYearsOld },
-    LAND_GRANTS_API_URL
+    LAND_GRANTS_API_URL,
+    userContext
   )
   const totalPence = payment?.agreementTotalPence ?? 0
   return { payment, totalPence }
@@ -60,4 +73,5 @@ export async function calculateWmpPayment({ parcelIds, hectaresUnderTenYearsOld,
 
 /**
  * @import { PaymentCalculation } from '~/src/server/land-grants/types/payment.d.js'
+ * @import { LandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
  */

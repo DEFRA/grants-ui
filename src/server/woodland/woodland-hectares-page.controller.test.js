@@ -78,6 +78,16 @@ vi.mock('~/src/server/task-list/task-page.controller.js', async () => {
 })
 
 const mockH = { view: vi.fn().mockReturnValue('error view') }
+const userContext = { defraIdToken: 'defra-id-token', sbi: '123456789' }
+const makeAuthenticatedRequest = (payload) => ({
+  auth: {
+    credentials: {
+      token: userContext.defraIdToken,
+      sbi: userContext.sbi
+    }
+  },
+  payload
+})
 
 describe('WoodlandHectaresPageController', () => {
   let controller
@@ -176,7 +186,11 @@ describe('WoodlandHectaresPageController', () => {
       const handler = controller.makePostRouteHandler()
       const context = { state: { totalHectaresForSelectedParcels: 50 } }
 
-      await handler({ payload: { hectaresTenOrOverYearsOld: '1', hectaresUnderTenYearsOld: 'abc' } }, context, mockH)
+      await handler(
+        makeAuthenticatedRequest({ hectaresTenOrOverYearsOld: '1', hectaresUnderTenYearsOld: 'abc' }),
+        context,
+        mockH
+      )
 
       expect(context.errors).toBeUndefined()
     })
@@ -207,7 +221,7 @@ describe('WoodlandHectaresPageController', () => {
       const context = { state: { totalHectaresForSelectedParcels: 50 }, evaluationState: {} }
 
       await handler(
-        { payload: { hectaresTenOrOverYearsOld: overTen, hectaresUnderTenYearsOld: underTen } },
+        makeAuthenticatedRequest({ hectaresTenOrOverYearsOld: overTen, hectaresUnderTenYearsOld: underTen }),
         context,
         mockH
       )
@@ -236,7 +250,7 @@ describe('WoodlandHectaresPageController', () => {
       const context = { state: { totalHectaresForSelectedParcels: 50 } }
 
       await handler(
-        { payload: { hectaresTenOrOverYearsOld: overTen, hectaresUnderTenYearsOld: underTen } },
+        makeAuthenticatedRequest({ hectaresTenOrOverYearsOld: overTen, hectaresUnderTenYearsOld: underTen }),
         context,
         mockH
       )
@@ -300,13 +314,16 @@ describe('WoodlandHectaresPageController', () => {
       const handler = controller.makePostRouteHandler()
       const context = { state: validState }
 
-      await handler({ payload: validPayload }, context, mockH)
+      await handler(makeAuthenticatedRequest(validPayload), context, mockH)
 
-      expect(woodlandService.validateWoodlandHectares).toHaveBeenCalledWith({
-        parcelIds: ['SD6346-3387'],
-        hectaresTenOrOverYearsOld: 10,
-        hectaresUnderTenYearsOld: 5
-      })
+      expect(woodlandService.validateWoodlandHectares).toHaveBeenCalledWith(
+        {
+          parcelIds: ['SD6346-3387'],
+          hectaresTenOrOverYearsOld: 10,
+          hectaresUnderTenYearsOld: 5
+        },
+        userContext
+      )
     })
 
     it('highlights the over-10 field with the backend reason when the service returns failures', async () => {
@@ -314,7 +331,7 @@ describe('WoodlandHectaresPageController', () => {
       const handler = controller.makePostRouteHandler()
       const context = { state: validState, evaluationState: {} }
 
-      await handler({ payload: validPayload }, context, mockH)
+      await handler(makeAuthenticatedRequest(validPayload), context, mockH)
 
       expect(context.errors).toEqual([
         {
@@ -331,7 +348,7 @@ describe('WoodlandHectaresPageController', () => {
       const handler = controller.makePostRouteHandler()
       const context = { state: validState, evaluationState: {} }
 
-      await handler({ payload: validPayload }, context, mockH)
+      await handler(makeAuthenticatedRequest(validPayload), context, mockH)
 
       expect(context.errors).toBeUndefined()
       expect(mockH.view).toHaveBeenCalled()
@@ -350,7 +367,7 @@ describe('WoodlandHectaresPageController', () => {
       const handler = controller.makePostRouteHandler()
       const context = { state: validState }
 
-      await handler({ payload: validPayload }, context, mockH)
+      await handler(makeAuthenticatedRequest(validPayload), context, mockH)
 
       expect(context.errors).toBeUndefined()
     })
