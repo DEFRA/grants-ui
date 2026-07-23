@@ -3,12 +3,12 @@ import { vi } from 'vitest'
 import { formatCurrency } from '~/src/config/nunjucks/filters/format-currency.js'
 import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import {
-  calculateLandActionsPayment,
-  fetchAvailableActionsForParcel,
-  fetchParcels,
-  fetchParcelsGroups,
-  fetchParcelTileLocation,
-  validateApplication
+  calculateLandActionsPayment as calculateLandActionsPaymentService,
+  fetchAvailableActionsForParcel as fetchAvailableActionsForParcelService,
+  fetchParcels as fetchParcelsService,
+  fetchParcelsGroups as fetchParcelsGroupsService,
+  fetchParcelTileLocation as fetchParcelTileLocationService,
+  validateApplication as validateApplicationService
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import {
   calculate,
@@ -21,6 +21,20 @@ import {
 import { clearParcelCache } from '~/src/server/land-grants/services/parcel-cache.js'
 const mockApiEndpoint = 'https://land-grants-api'
 const enabledLandActions = ['CMOR1', 'UPL1', 'UPL2', 'UPL3', 'UPL8', 'UPL10', 'CLIG3']
+const mockUserContext = {
+  defraIdToken: 'defra-id-access-token',
+  sbi: '123456789'
+}
+const withUserContext =
+  (fn) =>
+  (...args) =>
+    fn(...args, mockUserContext)
+const calculateLandActionsPayment = withUserContext(calculateLandActionsPaymentService)
+const fetchAvailableActionsForParcel = withUserContext(fetchAvailableActionsForParcelService)
+const fetchParcels = withUserContext(fetchParcelsService)
+const fetchParcelsGroups = withUserContext(fetchParcelsGroupsService)
+const fetchParcelTileLocation = withUserContext(fetchParcelTileLocationService)
+const validateApplication = withUserContext(validateApplicationService)
 
 vi.mock('~/src/server/land-grants/services/land-grants.client.js', () => ({
   calculate: vi.fn(),
@@ -100,7 +114,8 @@ describe('land-grants service', () => {
             }
           ]
         }),
-        mockApiEndpoint
+        mockApiEndpoint,
+        mockUserContext
       )
       expect(formatCurrency).toHaveBeenCalledWith(1234.56)
       expect(result).toEqual({
@@ -202,7 +217,7 @@ describe('land-grants service', () => {
         enabledLandActions
       })
 
-      expect(parcelsWithExtendedInfo).toHaveBeenCalledWith(['SHEET123-PARCEL456'], mockApiEndpoint)
+      expect(parcelsWithExtendedInfo).toHaveBeenCalledWith(['SHEET123-PARCEL456'], mockApiEndpoint, mockUserContext)
 
       expect(result).toEqual({
         parcel: {
@@ -383,7 +398,7 @@ describe('land-grants service', () => {
 
       const result = await fetchAvailableActionsForParcel({})
 
-      expect(parcelsWithExtendedInfo).toHaveBeenCalledWith(['-'], mockApiEndpoint)
+      expect(parcelsWithExtendedInfo).toHaveBeenCalledWith(['-'], mockApiEndpoint, mockUserContext)
       expect(result).toEqual({
         parcel: {
           sheetId: '',
@@ -760,7 +775,7 @@ describe('land-grants service', () => {
           enabledLandActions
         })
 
-        expect(parcelsWithExtendedInfo).toHaveBeenCalledWith(['SHEET123-PARCEL456'], mockApiEndpoint)
+        expect(parcelsWithExtendedInfo).toHaveBeenCalledWith(['SHEET123-PARCEL456'], mockApiEndpoint, mockUserContext)
 
         expect(result).toEqual({
           parcel: {
@@ -944,7 +959,11 @@ describe('land-grants service', () => {
       const result = await fetchParcels(mockRequest)
 
       expect(fetchParcelsFromDal).toHaveBeenCalledWith(mockRequest)
-      expect(parcelsWithSize).toHaveBeenCalledWith(['SHEET1-PARCEL1', 'SHEET2-PARCEL2'], mockApiEndpoint)
+      expect(parcelsWithSize).toHaveBeenCalledWith(
+        ['SHEET1-PARCEL1', 'SHEET2-PARCEL2'],
+        mockApiEndpoint,
+        mockUserContext
+      )
       expect(result).toEqual([
         {
           parcelId: 'PARCEL1',
@@ -1105,7 +1124,7 @@ describe('land-grants service', () => {
 
       const result = await fetchParcelsGroups(state)
 
-      expect(parcelsGroups).toHaveBeenCalledWith(['SHEET1-PARCEL1', 'SHEET2-PARCEL2'], mockApiEndpoint)
+      expect(parcelsGroups).toHaveBeenCalledWith(['SHEET1-PARCEL1', 'SHEET2-PARCEL2'], mockApiEndpoint, mockUserContext)
       expect(result).toEqual(mockGroups)
     })
 
@@ -1135,8 +1154,7 @@ describe('land-grants service', () => {
       crn: '123456',
       state: {
         landParcels: { 'SHEET1-PARCEL1': { actionsObj: { CMOR1: { value: 10 } } } }
-      },
-      sbi: '106284736'
+      }
     }
 
     it('should call the validation application API', async () => {
@@ -1150,10 +1168,10 @@ describe('land-grants service', () => {
           applicationId: '123456',
           requester: 'grants-ui',
           applicantCrn: '123456',
-          sbi: '106284736',
           landActions: [{ sheetId: 'SHEET1', parcelId: 'PARCEL1', actions: [{ code: 'CMOR1', quantity: 10 }] }]
         },
-        mockApiEndpoint
+        mockApiEndpoint,
+        mockUserContext
       )
       expect(result).toEqual(mockApiResponse)
     })
@@ -1322,7 +1340,7 @@ describe('land-grants service', () => {
       const result = await fetchParcelTileLocation(['SD7148-9160'])
 
       expect(result).toEqual(mockBbox)
-      expect(locateParcelTiles).toHaveBeenCalledWith(['SD7148-9160'], mockApiEndpoint)
+      expect(locateParcelTiles).toHaveBeenCalledWith(['SD7148-9160'], mockApiEndpoint, mockUserContext)
     })
 
     it('returns null when the API throws', async () => {
@@ -1338,7 +1356,7 @@ describe('land-grants service', () => {
 
       const result = await fetchParcelTileLocation([])
 
-      expect(locateParcelTiles).toHaveBeenCalledWith([], mockApiEndpoint)
+      expect(locateParcelTiles).toHaveBeenCalledWith([], mockApiEndpoint, mockUserContext)
       expect(result).toBeNull()
     })
   })
