@@ -180,9 +180,9 @@ which is formatted as a GUID string.
 
 #### Feature Flags & Misc
 
-| Variable        | Description                                 |
-| --------------- | ------------------------------------------- |
-| `FEEDBACK_LINK` | URL to feedback (e.g., GitHub issue, form). |
+| Variable              | Description                                                                                             |
+| --------------------- | ------------------------------------------------------------------------------------------------------- |
+| `FEEDBACK_SURVEY_URL` | Base Qualtrics survey URL for the feedback CTA (confirmation page + phase banner). Empty hides the CTA. |
 
 #### Additional Configuration
 
