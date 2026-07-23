@@ -3,10 +3,11 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { paymentStrategies } from '~/src/server/payment/payment-strategies.js'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
+import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
 
 /**
  * @param {string | undefined} paymentStrategy
- * @returns {{ calculatePayment: (state: object) => Promise<PaymentStrategyResult> }}
+ * @returns {{ calculatePayment: (state: object, userContext: LandGrantsUserContext) => Promise<PaymentStrategyResult> }}
  */
 function resolveStrategy(paymentStrategy) {
   const strategy = paymentStrategy ? paymentStrategies[paymentStrategy] : undefined
@@ -211,7 +212,8 @@ export default class PaymentPageController extends QuestionPageController {
       let totalPence, totalPayment, payment, parcelItems, additionalYearlyPayments
 
       try {
-        const result = await this.strategy.calculatePayment(state)
+        const userContext = getLandGrantsUserContext(request)
+        const result = await this.strategy.calculatePayment(state, userContext)
         totalPence = result.totalPence
         totalPayment = result.totalPayment
         payment = result.payment
@@ -264,7 +266,8 @@ export default class PaymentPageController extends QuestionPageController {
         /** @type {AdditionalPaymentViewModel[]} */
         let additionalYearlyPayments = []
         try {
-          const result = await this.strategy.calculatePayment(state)
+          const userContext = getLandGrantsUserContext(request)
+          const result = await this.strategy.calculatePayment(state, userContext)
           parcelItems = result.parcelItems ?? []
           additionalYearlyPayments = result.additionalYearlyPayments ?? []
         } catch (error) {
@@ -293,4 +296,5 @@ export default class PaymentPageController extends QuestionPageController {
  * @import { ResponseObject, ResponseToolkit } from '@hapi/hapi'
  * @import { PaymentStrategyResult } from '../payment-strategies.d.js'
  * @import { ParcelCardViewModel, AdditionalPaymentViewModel } from '~/src/server/land-grants/view-models/payment.view-model.js'
+ * @import { LandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
  */

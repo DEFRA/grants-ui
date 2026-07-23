@@ -3,6 +3,7 @@ import { fetchParcels } from '../services/land-grants.service.js'
 import QuestionPageWithParcelCheckController from '~/src/server/common/controllers/question-page-with-parcel-check.controller.js'
 import { mapParcelsToViewModel } from '~/src/server/land-grants/view-models/parcel.view-model.js'
 import { getParcelIdsFromPayload } from '../utils/parcel-request.utils.js'
+import { getLandGrantsUserContext } from '../services/land-grants-user-context.js'
 
 export default class SelectLandParcelPageController extends QuestionPageWithParcelCheckController {
   viewName = 'select-land-parcel'
@@ -27,7 +28,8 @@ export default class SelectLandParcelPageController extends QuestionPageWithParc
     if (action === 'validate' && !selectedParcelId) {
       let parcels = []
       try {
-        const fetchedParcels = await fetchParcels(request)
+        const userContext = getLandGrantsUserContext(request)
+        const fetchedParcels = await fetchParcels(request, userContext)
         const { landParcels } = state || {}
         parcels = mapParcelsToViewModel(fetchedParcels, landParcels)
       } catch (error) {
@@ -69,7 +71,8 @@ export default class SelectLandParcelPageController extends QuestionPageWithParc
     const existingLandParcels = Object.keys(landParcels || {}).length > 0
 
     try {
-      const fetchedParcels = await fetchParcels(request)
+      const userContext = getLandGrantsUserContext(request)
+      const fetchedParcels = await fetchParcels(request, userContext)
       const parcels = mapParcelsToViewModel(fetchedParcels, landParcels)
 
       if (!parcels?.length) {

@@ -7,6 +7,7 @@ import { parseLandParcel } from '~/src/server/land-grants/utils/format-parcel.js
 import { log, error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { getAddedActionsForStateParcel } from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
 import { getParcelIdFromQuery } from '../utils/parcel-request.utils.js'
+import { getLandGrantsUserContext } from '../services/land-grants-user-context.js'
 
 /**
  * Shared GET/POST flow for the grouped-radio and flat-checkbox select-actions pages.
@@ -131,7 +132,11 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
    */
   async fetchActions(request, sheetId, parcelId) {
     try {
-      return await fetchAvailableActionsForParcel({ parcelId, sheetId, enabledLandActions: this.enabledLandActions })
+      const userContext = getLandGrantsUserContext(request)
+      return await fetchAvailableActionsForParcel(
+        { parcelId, sheetId, enabledLandActions: this.enabledLandActions },
+        userContext
+      )
     } catch (err) {
       const { sbi } = request.auth.credentials
       const { message: errorMessage, status: statusCode } = /** @type {Error & {status?: number}} */ (err)
@@ -244,12 +249,15 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
     const { sbi, crn } = request.auth.credentials
 
     try {
-      const validationResult = await validateApplication({
-        applicationId: /** @type {string} */ (referenceNumber),
-        sbi: /** @type {string} */ (sbi),
-        crn: /** @type {string} */ (crn),
-        state
-      })
+      const userContext = getLandGrantsUserContext(request)
+      const validationResult = await validateApplication(
+        {
+          applicationId: /** @type {string} */ (referenceNumber),
+          crn: /** @type {string} */ (crn),
+          state
+        },
+        userContext
+      )
       const { valid, errorMessages = [] } = validationResult
 
       if (!valid) {

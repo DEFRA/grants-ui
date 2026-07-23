@@ -28,6 +28,15 @@ vi.mock('~/src/server/common/helpers/auth/backend-auth-helper.js', () => ({
 global.fetch = mockFetch
 
 const mockApiEndpoint = 'http://mock-land-grants-api'
+const mockUserContext = {
+  defraIdToken: 'defra-id-access-token',
+  sbi: '123456789'
+}
+const expectedHeaders = {
+  Authorization: 'Bearer token',
+  'Content-Type': 'application/json',
+  'x-forwarded-authorization': mockUserContext.defraIdToken
+}
 
 describe('Land Grants client', () => {
   beforeEach(() => {
@@ -55,17 +64,32 @@ describe('Land Grants client', () => {
         json: () => mockResponse
       })
 
-      const result = await postToLandGrantsApi('/submit', { data: 'test' }, mockApiEndpoint)
+      const result = await postToLandGrantsApi('/submit', { data: 'test' }, mockApiEndpoint, mockUserContext)
 
       expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/submit`, {
         method: 'POST',
-        headers: {
-          Authorization: expect.any(String),
-          'Content-Type': 'application/json'
-        },
+        headers: expectedHeaders,
         body: JSON.stringify({ data: 'test' })
       })
+      expect(mockFetch.mock.calls[0][1].headers).not.toHaveProperty('gateway-type')
       expect(result).toEqual(mockResponse)
+    })
+
+    it('does not call fetch when user context is missing', async () => {
+      await expect(postToLandGrantsApi('/submit', {}, mockApiEndpoint)).rejects.toThrow(
+        'Missing Defra ID token in Land Grants user context'
+      )
+
+      expect(mockFetch).not.toHaveBeenCalled()
+    })
+
+    it('preserves an endpoint-owned SBI', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, json: () => ({ ok: true }) })
+
+      await postToLandGrantsApi('/submit', { sbi: 987654321 }, mockApiEndpoint, mockUserContext)
+
+      const [, options] = mockFetch.mock.calls[0]
+      expect(JSON.parse(options.body)).toEqual({ sbi: 987654321 })
     })
 
     it('should handle 404 error', async () => {
@@ -76,11 +100,13 @@ describe('Land Grants client', () => {
         json: vi.fn().mockResolvedValue({ message: 'Resource not found' })
       })
 
-      await expect(postToLandGrantsApi('/invalid', {}, mockApiEndpoint)).rejects.toThrow('Resource not found')
+      await expect(postToLandGrantsApi('/invalid', {}, mockApiEndpoint, mockUserContext)).rejects.toThrow(
+        'Resource not found'
+      )
 
       let code, message
       try {
-        await postToLandGrantsApi('/invalid', {}, mockApiEndpoint)
+        await postToLandGrantsApi('/invalid', {}, mockApiEndpoint, mockUserContext)
       } catch (error) {
         code = error.code
         message = error.message
@@ -96,7 +122,7 @@ describe('Land Grants client', () => {
         json: () => mockResponse
       })
 
-      await postToLandGrantsApi('', { test: 'data' }, mockApiEndpoint)
+      await postToLandGrantsApi('', { test: 'data' }, mockApiEndpoint, mockUserContext)
 
       expect(mockFetch).toHaveBeenCalledWith(mockApiEndpoint, expect.any(Object))
     })
@@ -110,7 +136,7 @@ describe('Land Grants client', () => {
       })
 
       try {
-        await postToLandGrantsApi('/error', {}, mockApiEndpoint)
+        await postToLandGrantsApi('/error', {}, mockApiEndpoint, mockUserContext)
         expect.fail('Should have thrown an error')
       } catch (error) {
         expect(error.code).toBe(500)
@@ -126,7 +152,7 @@ describe('Land Grants client', () => {
         json: mockJson
       })
 
-      await postToLandGrantsApi('/test', {}, mockApiEndpoint)
+      await postToLandGrantsApi('/test', {}, mockApiEndpoint, mockUserContext)
 
       expect(mockJson).toHaveBeenCalledTimes(1)
     })
@@ -141,7 +167,7 @@ describe('Land Grants client', () => {
       })
 
       try {
-        await postToLandGrantsApi('/test', {}, mockApiEndpoint)
+        await postToLandGrantsApi('/test', {}, mockApiEndpoint, mockUserContext)
         expect.fail('Should have thrown an error')
       } catch (error) {
         expect(error.status).toBe(422)
@@ -158,7 +184,7 @@ describe('Land Grants client', () => {
       })
 
       try {
-        await postToLandGrantsApi('/test', {}, mockApiEndpoint)
+        await postToLandGrantsApi('/test', {}, mockApiEndpoint, mockUserContext)
         expect.fail('Should have thrown an error')
       } catch (error) {
         expect(error.status).toBe(500)
@@ -175,7 +201,7 @@ describe('Land Grants client', () => {
       })
 
       try {
-        await postToLandGrantsApi('/test', {}, mockApiEndpoint)
+        await postToLandGrantsApi('/test', {}, mockApiEndpoint, mockUserContext)
         expect.fail('Should have thrown an error')
       } catch (error) {
         expect(error.status).toBe(400)
@@ -190,7 +216,7 @@ describe('Land Grants client', () => {
         json: () => mockResponse
       })
 
-      await postToLandGrantsApi('/api/test', {}, 'http://example.com')
+      await postToLandGrantsApi('/api/test', {}, 'http://example.com', mockUserContext)
 
       expect(mockFetch).toHaveBeenCalledWith('http://example.com/api/test', expect.any(Object))
     })
@@ -203,7 +229,7 @@ describe('Land Grants client', () => {
         json: () => mockResponse
       })
 
-      await postToLandGrantsApi('/test', testBody, mockApiEndpoint)
+      await postToLandGrantsApi('/test', testBody, mockApiEndpoint, mockUserContext)
 
       expect(mockFetch).toHaveBeenCalledWith(
         expect.any(String),
@@ -220,7 +246,7 @@ describe('Land Grants client', () => {
         json: () => mockResponse
       })
 
-      await postToLandGrantsApi('/test', {}, mockApiEndpoint)
+      await postToLandGrantsApi('/test', {}, mockApiEndpoint, mockUserContext)
 
       expect(mockFetch).toHaveBeenCalledWith(
         expect.any(String),
@@ -237,7 +263,7 @@ describe('Land Grants client', () => {
         json: () => mockResponse
       })
 
-      await postToLandGrantsApi('/test', {}, mockApiEndpoint)
+      await postToLandGrantsApi('/test', {}, mockApiEndpoint, mockUserContext)
 
       expect(retry).toHaveBeenCalledWith(
         expect.any(Function),
@@ -258,7 +284,7 @@ describe('Land Grants client', () => {
       { status: 503, expected: true }
     ])('shouldRetry returns $expected for status $status', async ({ status, expected }) => {
       mockFetch.mockResolvedValueOnce({ ok: true, json: () => ({}) })
-      await postToLandGrantsApi('/test', {}, mockApiEndpoint)
+      await postToLandGrantsApi('/test', {}, mockApiEndpoint, mockUserContext)
 
       const { shouldRetry } = retry.mock.calls[0][1]
       const error = Object.assign(new Error('error'), { code: status })
@@ -267,7 +293,7 @@ describe('Land Grants client', () => {
 
     it('shouldRetry returns true when error has no status code', async () => {
       mockFetch.mockResolvedValueOnce({ ok: true, json: () => ({}) })
-      await postToLandGrantsApi('/test', {}, mockApiEndpoint)
+      await postToLandGrantsApi('/test', {}, mockApiEndpoint, mockUserContext)
 
       const { shouldRetry } = retry.mock.calls[0][1]
       expect(shouldRetry(new Error('network failure'))).toBe(true)
@@ -283,7 +309,7 @@ describe('Land Grants client', () => {
           json: vi.fn().mockResolvedValue({ message: `Error message for ${status}` })
         })
 
-        await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint)).rejects.toMatchObject({
+        await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint, mockUserContext)).rejects.toMatchObject({
           code: status,
           status
         })
@@ -298,7 +324,7 @@ describe('Land Grants client', () => {
         arrayBuffer: vi.fn().mockResolvedValue(undefined)
       })
 
-      await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint)).rejects.toThrow('Bad Gateway')
+      await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint, mockUserContext)).rejects.toThrow('Bad Gateway')
 
       // Call-site log: fired before the error is rethrown, capturing upstream status
       expect(log).toHaveBeenCalledWith(
@@ -327,7 +353,7 @@ describe('Land Grants client', () => {
         arrayBuffer: vi.fn().mockResolvedValue(undefined)
       })
 
-      await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint)).rejects.toThrow('Bad Gateway')
+      await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint, mockUserContext)).rejects.toThrow('Bad Gateway')
 
       const exhaustionLogCall = log.mock.calls.find(
         ([code, opts]) => code?.level === 'error' && opts?.attempts !== undefined
@@ -342,6 +368,11 @@ describe('Land Grants client', () => {
           errorMessage: 'Bad Gateway'
         })
       )
+      for (const [, options] of mockFetch.mock.calls) {
+        expect(options.headers['x-forwarded-authorization']).toBe(mockUserContext.defraIdToken)
+        expect(JSON.parse(options.body)).not.toHaveProperty('sbi')
+      }
+      expect(JSON.stringify(log.mock.calls)).not.toContain(mockUserContext.defraIdToken)
     })
 
     it('should fall back to lastUpstreamStatus when retry error has no status or code', async () => {
@@ -359,7 +390,9 @@ describe('Land Grants client', () => {
         arrayBuffer: vi.fn().mockResolvedValue(undefined)
       })
 
-      await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint)).rejects.toThrow('Operation timed out')
+      await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint, mockUserContext)).rejects.toThrow(
+        'Operation timed out'
+      )
 
       const exhaustionLogCall = log.mock.calls.find(
         ([code, opts]) => code?.level === 'error' && opts?.errorMessage === 'Operation timed out'
@@ -381,7 +414,7 @@ describe('Land Grants client', () => {
         throw new Error('Network down')
       })
 
-      await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint)).rejects.toThrow('Network down')
+      await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint, mockUserContext)).rejects.toThrow('Network down')
 
       const exhaustionLogCall = log.mock.calls.find(
         ([code, opts]) => code?.level === 'error' && opts?.errorMessage === 'Network down'
@@ -404,7 +437,7 @@ describe('Land Grants client', () => {
         throw err
       })
 
-      await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint)).rejects.toThrow('Forbidden')
+      await expect(postToLandGrantsApi('/test', {}, mockApiEndpoint, mockUserContext)).rejects.toThrow('Forbidden')
 
       const exhaustionLogCall = log.mock.calls.find(
         ([code, opts]) => code?.level === 'error' && opts?.errorMessage === 'Forbidden'
@@ -432,7 +465,7 @@ describe('Land Grants client', () => {
         json: () => expectedResponse
       })
 
-      const result = await postToLandGrantsApi('/test', {}, mockApiEndpoint)
+      const result = await postToLandGrantsApi('/test', {}, mockApiEndpoint, mockUserContext)
 
       expect(result).toEqual(expectedResponse)
       expect(result).toBe(expectedResponse)
@@ -448,9 +481,9 @@ describe('Land Grants client', () => {
           setTimeout(() => reject(new Error('Operation timed out after 100ms')), 100)
         )
 
-        await expect(Promise.race([postToLandGrantsApi('/test', {}, mockApiEndpoint), timeoutPromise])).rejects.toThrow(
-          'Operation timed out'
-        )
+        await expect(
+          Promise.race([postToLandGrantsApi('/test', {}, mockApiEndpoint, mockUserContext), timeoutPromise])
+        ).rejects.toThrow('Operation timed out')
       }, 10000)
 
       it('should timeout when fetch is slow', async () => {
@@ -462,9 +495,9 @@ describe('Land Grants client', () => {
           setTimeout(() => reject(new Error('Operation timed out after 50ms')), 50)
         )
 
-        await expect(Promise.race([postToLandGrantsApi('/test', {}, mockApiEndpoint), timeoutPromise])).rejects.toThrow(
-          'Operation timed out after 50ms'
-        )
+        await expect(
+          Promise.race([postToLandGrantsApi('/test', {}, mockApiEndpoint, mockUserContext), timeoutPromise])
+        ).rejects.toThrow('Operation timed out after 50ms')
       }, 10000)
     })
 
@@ -476,9 +509,9 @@ describe('Land Grants client', () => {
           setTimeout(() => reject(new Error('Operation timed out after 100ms')), 100)
         )
 
-        await expect(Promise.race([calculate({ data: 'test' }, mockApiEndpoint), timeoutPromise])).rejects.toThrow(
-          'Operation timed out'
-        )
+        await expect(
+          Promise.race([calculate({ data: 'test' }, mockApiEndpoint, mockUserContext), timeoutPromise])
+        ).rejects.toThrow('Operation timed out')
       }, 10000)
     })
 
@@ -490,9 +523,9 @@ describe('Land Grants client', () => {
           setTimeout(() => reject(new Error('Operation timed out after 100ms')), 100)
         )
 
-        await expect(Promise.race([validate({ data: 'test' }, mockApiEndpoint), timeoutPromise])).rejects.toThrow(
-          'Operation timed out'
-        )
+        await expect(
+          Promise.race([validate({ data: 'test' }, mockApiEndpoint, mockUserContext), timeoutPromise])
+        ).rejects.toThrow('Operation timed out')
       }, 10000)
     })
 
@@ -505,7 +538,7 @@ describe('Land Grants client', () => {
         )
 
         await expect(
-          Promise.race([parcelsWithFields(['field'], ['parcel1'], mockApiEndpoint), timeoutPromise])
+          Promise.race([parcelsWithFields(['field'], ['parcel1'], mockApiEndpoint, mockUserContext), timeoutPromise])
         ).rejects.toThrow('Operation timed out')
       }, 10000)
     })
@@ -518,9 +551,9 @@ describe('Land Grants client', () => {
           setTimeout(() => reject(new Error('Operation timed out after 100ms')), 100)
         )
 
-        await expect(Promise.race([parcelsWithSize(['parcel1'], mockApiEndpoint), timeoutPromise])).rejects.toThrow(
-          'Operation timed out'
-        )
+        await expect(
+          Promise.race([parcelsWithSize(['parcel1'], mockApiEndpoint, mockUserContext), timeoutPromise])
+        ).rejects.toThrow('Operation timed out')
       }, 10000)
     })
 
@@ -533,7 +566,7 @@ describe('Land Grants client', () => {
         )
 
         await expect(
-          Promise.race([parcelsWithExtendedInfo(['parcel1'], mockApiEndpoint), timeoutPromise])
+          Promise.race([parcelsWithExtendedInfo(['parcel1'], mockApiEndpoint, mockUserContext), timeoutPromise])
         ).rejects.toThrow('Operation timed out')
       }, 10000)
     })
@@ -547,14 +580,11 @@ describe('Land Grants client', () => {
         json: () => mockResponse
       })
 
-      const result = await calculate({ data: 'test' }, mockApiEndpoint)
+      const result = await calculate({ data: 'test' }, mockApiEndpoint, mockUserContext)
 
       expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/payments/calculate`, {
         method: 'POST',
-        headers: {
-          Authorization: expect.any(String),
-          'Content-Type': 'application/json'
-        },
+        headers: expectedHeaders,
         body: JSON.stringify({ data: 'test' })
       })
       expect(result).toEqual(mockResponse)
@@ -569,15 +599,12 @@ describe('Land Grants client', () => {
         json: () => mockResponse
       })
 
-      const result = await validate({ data: 'test' }, mockApiEndpoint)
+      const result = await validate({ data: 'test' }, mockApiEndpoint, mockUserContext)
 
       expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/application/validate`, {
         method: 'POST',
-        headers: {
-          Authorization: expect.any(String),
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ data: 'test' })
+        headers: expectedHeaders,
+        body: JSON.stringify({ data: 'test', sbi: Number(mockUserContext.sbi) })
       })
       expect(result).toEqual(mockResponse)
     })
@@ -593,15 +620,12 @@ describe('Land Grants client', () => {
         json: () => mockResponse
       })
 
-      const result = await parcelsWithFields(fields, parcelIds, mockApiEndpoint)
+      const result = await parcelsWithFields(fields, parcelIds, mockApiEndpoint, mockUserContext)
 
       expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/parcels`, {
         method: 'POST',
-        headers: {
-          Authorization: expect.any(String),
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ parcelIds, fields })
+        headers: expectedHeaders,
+        body: JSON.stringify({ parcelIds, fields, sbi: mockUserContext.sbi })
       })
       expect(result).toEqual(mockResponse)
     })
@@ -617,15 +641,12 @@ describe('Land Grants client', () => {
         json: () => mockResponse
       })
 
-      const result = await parcelsWithSize(parcelIds, mockApiEndpoint)
+      const result = await parcelsWithSize(parcelIds, mockApiEndpoint, mockUserContext)
 
       expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/parcels`, {
         method: 'POST',
-        headers: {
-          Authorization: expect.any(String),
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ parcelIds, fields })
+        headers: expectedHeaders,
+        body: JSON.stringify({ parcelIds, fields, sbi: mockUserContext.sbi })
       })
       expect(result).toEqual(mockResponse)
     })
@@ -641,15 +662,12 @@ describe('Land Grants client', () => {
         json: () => mockResponse
       })
 
-      const result = await parcelsGroups(parcelIds, mockApiEndpoint)
+      const result = await parcelsGroups(parcelIds, mockApiEndpoint, mockUserContext)
 
       expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/parcels`, {
         method: 'POST',
-        headers: {
-          Authorization: expect.any(String),
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ parcelIds, fields })
+        headers: expectedHeaders,
+        body: JSON.stringify({ parcelIds, fields, sbi: mockUserContext.sbi })
       })
       expect(result).toEqual(mockResponse)
     })
@@ -660,7 +678,7 @@ describe('Land Grants client', () => {
       const mockResponse = { bbox: { minLng: -2.5, minLat: 51.4, maxLng: -2.3, maxLat: 51.6 } }
       mockFetch.mockResolvedValueOnce({ ok: true, json: () => mockResponse })
 
-      const result = await locateParcelTiles(['SD7148-9160'], mockApiEndpoint)
+      const result = await locateParcelTiles(['SD7148-9160'], mockApiEndpoint, mockUserContext)
 
       expect(mockFetch).toHaveBeenCalledWith(
         `${mockApiEndpoint}/api/v1/parcel-tiles/locate`,
@@ -684,15 +702,12 @@ describe('Land Grants client', () => {
         json: () => mockResponse
       })
 
-      const result = await parcelsWithExtendedInfo(parcelIds, mockApiEndpoint)
+      const result = await parcelsWithExtendedInfo(parcelIds, mockApiEndpoint, mockUserContext)
 
       expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/parcels`, {
         method: 'POST',
-        headers: {
-          Authorization: expect.any(String),
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ parcelIds, fields })
+        headers: expectedHeaders,
+        body: JSON.stringify({ parcelIds, fields, sbi: mockUserContext.sbi })
       })
       expect(result).toEqual(mockResponse)
     })
@@ -706,7 +721,7 @@ describe('Land Grants client', () => {
         json: () => mockResponse
       })
 
-      const result = await parcelsWithExtendedInfo(parcelIds, mockApiEndpoint)
+      const result = await parcelsWithExtendedInfo(parcelIds, mockApiEndpoint, mockUserContext)
 
       // The actual fields depend on what getConsentTypes returns
       const callBody = JSON.parse(mockFetch.mock.calls[0][1].body)
@@ -726,11 +741,14 @@ describe('Land Grants client', () => {
         arrayBuffer: () => Promise.resolve(bytes.buffer)
       })
 
-      const result = await fetchParcelTile(['SD7148-9160'], 12, 100, 200, mockApiEndpoint)
+      const result = await fetchParcelTile(['SD7148-9160'], 12, 100, 200, mockApiEndpoint, mockUserContext)
 
       expect(mockFetch).toHaveBeenCalledWith(
         `${mockApiEndpoint}/api/v1/parcel-tiles/12/100/200`,
-        expect.objectContaining({ method: 'POST', body: JSON.stringify({ parcelIds: ['SD7148-9160'] }) })
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ parcelIds: ['SD7148-9160'] })
+        })
       )
       expect(Buffer.isBuffer(result)).toBe(true)
       expect([...result]).toEqual([1, 2, 3, 4])
@@ -744,7 +762,10 @@ describe('Land Grants client', () => {
         json: () => Promise.resolve({ message: 'tile not found' })
       })
 
-      await expect(fetchParcelTile([], 12, 100, 200, mockApiEndpoint)).rejects.toMatchObject({ code: 404, status: 404 })
+      await expect(fetchParcelTile([], 12, 100, 200, mockApiEndpoint, mockUserContext)).rejects.toMatchObject({
+        code: 404,
+        status: 404
+      })
     })
   })
 })

@@ -4,6 +4,7 @@ import { logUpstreamError } from '~/src/server/common/helpers/logging/upstream-e
 import { retry } from '~/src/server/common/helpers/retry.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js'
+import { validateLandGrantsUserContext } from './land-grants-user-context.js'
 
 const LAND_GRANTS_SERVICE = 'grants-ui-backend'
 
@@ -15,10 +16,12 @@ const LAND_GRANTS_SERVICE = 'grants-ui-backend'
  * @param {string} endpoint
  * @param {Record<string, unknown>} body
  * @param {string} baseUrl
+ * @param {LandGrantsUserContext} userContext
  * @returns {Promise<Response>}
  * @throws {Error & {code?: number, status?: number}}
  */
-export async function postToLandGrantsApiRaw(endpoint, body, baseUrl) {
+export async function postToLandGrantsApiRaw(endpoint, body, baseUrl, userContext) {
+  const { defraIdToken } = validateLandGrantsUserContext(userContext)
   const url = `${baseUrl}${endpoint}`
   log(LogCodes.LAND_GRANTS.API_REQUEST, { endpoint, url })
 
@@ -30,7 +33,10 @@ export async function postToLandGrantsApiRaw(endpoint, body, baseUrl) {
     attempts += 1
     const response = await fetch(url, {
       method: 'POST',
-      headers: /** @type {HeadersInit} */ (createApiHeadersForLandGrantsBackend()),
+      headers: /** @type {HeadersInit} */ ({
+        ...createApiHeadersForLandGrantsBackend(),
+        'x-forwarded-authorization': defraIdToken
+      }),
       body: JSON.stringify(body)
     })
 
@@ -88,11 +94,12 @@ export async function postToLandGrantsApiRaw(endpoint, body, baseUrl) {
  * @param {string} endpoint
  * @param {Record<string, unknown>} body
  * @param {string} baseUrl
+ * @param {LandGrantsUserContext} userContext
  * @returns {Promise<T>}
  * @throws {Error}
  */
-export async function postToLandGrantsApi(endpoint, body, baseUrl) {
-  const response = await postToLandGrantsApiRaw(endpoint, body, baseUrl)
+export async function postToLandGrantsApi(endpoint, body, baseUrl, userContext) {
+  const response = await postToLandGrantsApiRaw(endpoint, body, baseUrl, userContext)
   return response.json()
 }
 
@@ -103,12 +110,13 @@ export async function postToLandGrantsApi(endpoint, body, baseUrl) {
  * @param {string | number} x
  * @param {string | number} y
  * @param {string} baseUrl
+ * @param {LandGrantsUserContext} userContext
  * @returns {Promise<Buffer>}
  * @throws {Error & {code?: number, status?: number}}
  */
-export async function fetchParcelTile(parcelIds, z, x, y, baseUrl) {
+export async function fetchParcelTile(parcelIds, z, x, y, baseUrl, userContext) {
   const endpoint = `/api/v1/parcel-tiles/${z}/${x}/${y}`
-  const response = await postToLandGrantsApiRaw(endpoint, { parcelIds }, baseUrl)
+  const response = await postToLandGrantsApiRaw(endpoint, { parcelIds }, baseUrl, userContext)
   const buffer = await response.arrayBuffer()
   return Buffer.from(buffer)
 }
@@ -117,31 +125,34 @@ export async function fetchParcelTile(parcelIds, z, x, y, baseUrl) {
  * Calls the Land Grants API calculate endpoint.
  * @param {{parcel: LandActions[], startDate?: string}} payload
  * @param {string} baseUrl
+ * @param {LandGrantsUserContext} userContext
  * @returns {Promise<PaymentCalculationResponse>} - Payment calculation result
  * @throws {Error}
  */
-export async function calculate(payload, baseUrl) {
-  return postToLandGrantsApi('/api/v2/payments/calculate', payload, baseUrl)
+export async function calculate(payload, baseUrl, userContext) {
+  return postToLandGrantsApi('/api/v2/payments/calculate', payload, baseUrl, userContext)
 }
 
 /**
  *
  * @param {string[]} parcelIds
  * @param {string} baseUrl
+ * @param {LandGrantsUserContext} userContext
  * @returns {Promise<ParcelResponse>}
  */
-export async function parcelsWithSize(parcelIds, baseUrl) {
-  return parcelsWithFields(['size'], parcelIds, baseUrl)
+export async function parcelsWithSize(parcelIds, baseUrl, userContext) {
+  return parcelsWithFields(['size'], parcelIds, baseUrl, userContext)
 }
 
 /**
  *
  * @param {string[]} parcelIds
  * @param {string} baseUrl
+ * @param {LandGrantsUserContext} userContext
  * @returns {Promise<ParcelResponse>}
  */
-export async function parcelsGroups(parcelIds, baseUrl) {
-  return parcelsWithFields(['groups'], parcelIds, baseUrl)
+export async function parcelsGroups(parcelIds, baseUrl, userContext) {
+  return parcelsWithFields(['groups'], parcelIds, baseUrl, userContext)
 }
 
 /**
@@ -149,50 +160,57 @@ export async function parcelsGroups(parcelIds, baseUrl) {
  * @param {string[]} fields
  * @param {string[]} parcelIds
  * @param {string} baseUrl
+ * @param {LandGrantsUserContext} userContext
  * @returns {Promise<ParcelResponse>}
  */
-export async function parcelsWithFields(fields, parcelIds, baseUrl) {
+export async function parcelsWithFields(fields, parcelIds, baseUrl, userContext) {
+  const { sbi } = validateLandGrantsUserContext(userContext)
   const endpoint = '/api/v2/parcels'
-  return postToLandGrantsApi(endpoint, { parcelIds, fields }, baseUrl)
+  return postToLandGrantsApi(endpoint, { parcelIds, fields, sbi }, baseUrl, userContext)
 }
 
 /**
  *
  * @param {string[]} parcelIds
  * @param {string} baseUrl
+ * @param {LandGrantsUserContext} userContext
  * @returns {Promise<ParcelResponse>}
  */
-export async function parcelsWithExtendedInfo(parcelIds, baseUrl) {
+export async function parcelsWithExtendedInfo(parcelIds, baseUrl, userContext) {
   const consentTypes = getConsentTypes()
   const fields = ['actions', 'size', 'groups', ...consentTypes.map((ct) => `actions.${ct.apiField}`)]
 
-  return parcelsWithFields(fields, parcelIds, baseUrl)
+  return parcelsWithFields(fields, parcelIds, baseUrl, userContext)
 }
 
 /**
  * Calls the Land Grants API validate application endpoint.
- * @param {ValidateApplicationRequest} request
+ * @param {Omit<ValidateApplicationRequest, 'sbi'>} request
  * @param {string} baseUrl
+ * @param {LandGrantsUserContext} userContext
  * @returns {Promise<ValidateApplicationResponse>} - Validation result
  * @throws {Error}
  */
-export async function validate(request, baseUrl) {
+export async function validate(request, baseUrl, userContext) {
+  const { sbi } = validateLandGrantsUserContext(userContext)
   const endpoint = '/api/v2/application/validate'
-  return postToLandGrantsApi(endpoint, request, baseUrl)
+  return postToLandGrantsApi(endpoint, { ...request, sbi: Number(sbi) }, baseUrl, userContext)
 }
 
 /**
  * Returns the bounding box covering the given parcel IDs.
  * @param {string[]} parcelIds
  * @param {string} baseUrl
+ * @param {LandGrantsUserContext} userContext
  * @returns {Promise<{ bbox: { minLng: number, minLat: number, maxLng: number, maxLat: number } }>}
  * @throws {Error}
  */
-export async function locateParcelTiles(parcelIds, baseUrl) {
-  return postToLandGrantsApi('/api/v1/parcel-tiles/locate', { parcelIds }, baseUrl)
+export async function locateParcelTiles(parcelIds, baseUrl, userContext) {
+  return postToLandGrantsApi('/api/v1/parcel-tiles/locate', { parcelIds }, baseUrl, userContext)
 }
 
 /**
  * @import { Parcel, LandActions, ValidateApplicationRequest, ParcelResponse, ValidateApplicationResponse } from '~/src/server/land-grants/types/land-grants.client.d.js'
  * @import {  PaymentCalculationResponse } from '~/src/server/land-grants/types/payment.d.js'
+ * @import { LandGrantsUserContext } from './land-grants-user-context.js'
  */
