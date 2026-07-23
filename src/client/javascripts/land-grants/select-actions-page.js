@@ -59,6 +59,23 @@ function getValidTypedQuantity(checkbox) {
   return typed > 0 && (total == null || typed <= total) ? typed : undefined
 }
 
+/**
+ * Anything typed but invalid (over max, negative, zero, non-numeric) is
+ * assumed to need the full available area, the worst case - only an
+ * untouched, empty field counts as no claim at all.
+ * @param {HTMLInputElement} checkbox
+ * @returns {number | undefined}
+ */
+function getEffectiveQuantity(checkbox) {
+  const valid = getValidTypedQuantity(checkbox)
+  if (valid != null) {
+    return valid
+  }
+  const raw = getQuantityInput(checkbox)?.value.trim()
+  const total = getTotalAvailableArea(checkbox)
+  return raw ? total : undefined
+}
+
 /** @param {HTMLInputElement} checkbox */
 function updateHintLive(checkbox) {
   const quantityInput = getQuantityInput(checkbox)
@@ -84,7 +101,7 @@ function buildPlannedActions(form) {
       continue
     }
     const quantityInput = getQuantityInput(checkbox)
-    const quantity = quantityInput ? getValidTypedQuantity(checkbox) : getTotalAvailableArea(checkbox)
+    const quantity = quantityInput ? getEffectiveQuantity(checkbox) : getTotalAvailableArea(checkbox)
     const unit = checkbox.getAttribute(AVAILABLE_UNIT_ATTR)
     if (typeof quantity === 'number' && unit) {
       plannedActions.push({ actionCode: checkbox.value, quantity, unit })
@@ -244,7 +261,7 @@ export function initSelectActionsPage(form) {
       // Clear a stale typed quantity on uncheck.
       quantityInput.value = ''
     }
-    if (target.checked && quantityInput && getValidTypedQuantity(target) == null) {
+    if (target.checked && quantityInput && getEffectiveQuantity(target) == null) {
       return
     }
     refreshAvailability()
@@ -262,7 +279,7 @@ export function initSelectActionsPage(form) {
       return
     }
     updateHintLive(checkbox)
-    if (getValidTypedQuantity(checkbox) != null) {
+    if (getEffectiveQuantity(checkbox) != null) {
       debouncedRefresh()
     }
   })
