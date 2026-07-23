@@ -9,10 +9,23 @@ import { debug, log, LogCodes } from '../common/helpers/logging/log.js'
 import { mergeAdditionalAnswers } from '../common/helpers/state/additional-answers-helper.js'
 import { ComponentType, ControllerType } from '@defra/forms-model'
 import { config } from '~/src/config/config.js'
-import { findFormBySlug } from '~/src/server/common/forms/services/find-form-by-slug.js'
 
 const ERROR_TITLE = 'There is a problem'
 const UPDATE_DETAILS_PATH = '/update-details'
+const SFD_UPDATE_ACTION = 'updateDetailsOnSfd'
+const sfdUpdateUrlCache = new WeakMap()
+
+/**
+ * @param {object} controller
+ * @returns {string | undefined}
+ */
+const getConfiguredSfdUpdateUrl = (controller) => {
+  if (!sfdUpdateUrlCache.has(controller)) {
+    sfdUpdateUrlCache.set(controller, config.get('externalLinks.sfd.updateUrl')?.trim())
+  }
+
+  return sfdUpdateUrlCache.get(controller)
+}
 
 /**
  * Terminal page controller for the update-details page.
@@ -35,7 +48,7 @@ export class UpdateDetailsPageController extends TerminalPageController {
       return null
     }
 
-    const updateUrl = config.get('externalLinks.sfd.updateUrl')?.trim()
+    const updateUrl = getConfiguredSfdUpdateUrl(this)
 
     if (!updateUrl || !URL.canParse(updateUrl)) {
       log(LogCodes.SYSTEM.SFD_UPDATE_URL_MISSING_ON_REDIRECT, { updateUrl: updateUrl ?? '' }, request)
@@ -57,15 +70,12 @@ export class UpdateDetailsPageController extends TerminalPageController {
     return async (request, _context, h) => {
       const { slug } = request.params
 
-      const form = await findFormBySlug(slug)
-      const formMetadata = /** @type {Record<string, unknown>} */ (form?.metadata ?? {})
-      const modelMetadata = /** @type {Record<string, unknown>} */ (this.model.def.metadata ?? {})
-      const metadata = { ...formMetadata, ...modelMetadata }
+      const metadata = /** @type {Record<string, unknown>} */ (this.model.def.metadata ?? {})
       const sfdUpdateUrl = this.getSfdUpdateUrl(request)
 
       return h.view('incorrect-details', {
         pageTitle: 'Update your details',
-        serviceName: this.model.def.name ?? form?.title,
+        serviceName: this.model.def.name,
         serviceUrl: `/${slug}`,
         backLink: sfdUpdateUrl ? null : { href: `/${slug}/check-details` },
         incorrectDetailsContent: metadata.incorrectDetailsContent ?? null,
@@ -227,6 +237,13 @@ export default class CheckDetailsController extends QuestionPageController {
     return async (request, context, h) => {
       this.ensureUpdateDetailsPage()
 
+      if (request.query?.[SFD_UPDATE_ACTION] === 'true' && this.isSfdEnabled) {
+        const redirect = await this.redirectToSfdForDetailsUpdate(request, context.state, h)
+        if (redirect) {
+          return redirect
+        }
+      }
+
       const baseViewModel = super.getViewModel(request, context)
       const detailsPageConfig = this.model.def.metadata?.detailsPage
 
@@ -237,7 +254,11 @@ export default class CheckDetailsController extends QuestionPageController {
       try {
         const { sections, mappedData } = await this.fetchAndProcessData(request, detailsPageConfig)
         request.app.detailsPageData = mappedData
-        return h.view(this.viewName, { ...baseViewModel, sections })
+        return h.view(this.viewName, {
+          ...baseViewModel,
+          sections,
+          sfdUpdateDetailsUrl: this.getSfdUpdateDetailsActionUrl(request)
+        })
       } catch (error) {
         return this.handleError(error, baseViewModel, h, request)
       }
@@ -274,11 +295,22 @@ export default class CheckDetailsController extends QuestionPageController {
       }
 
       if (confirmationValue === false && this.isSfdEnabled) {
-        // Do not persist detailsConfirmed: false. The forms engine must show check-details
-        // again when the user returns from SFD.
-        const { [this.confirmationFieldName]: _removed, ...stateWithoutConfirmation } = state
-        await this.setState(request, { ...stateWithoutConfirmation, checkDetailsChangesPending: true })
-        return this.proceed(request, h, this.getNextPath(context))
+        // When SFD external redirect is enabled, do NOT persist the confirmation answer.
+        // Saving detailsConfirmed: false would cause the engine to treat check-details as
+        // "answered" when walking from start/summary, routing past it instead of back to it.
+        // We DO set checkDetailsChangesPending: true so the forms-engine-plugin and the
+        // status-helper both behave correctly and we show the check-details page.
+        const redirect = await this.redirectToSfdForDetailsUpdate(request, state, h)
+        if (redirect) {
+          return redirect
+        } else {
+          // missing or malformed URL — log and fall through to the update-details page
+          const updateUrl = getConfiguredSfdUpdateUrl(this)
+          log(LogCodes.SYSTEM.SFD_UPDATE_URL_MISSING_ON_REDIRECT, { updateUrl: updateUrl ?? '' }, request)
+          const { [this.confirmationFieldName]: _, ...stateWithoutConfirmation } = state
+          await this.setState(request, { ...stateWithoutConfirmation, checkDetailsChangesPending: true })
+          return this.proceed(request, h, this.getNextPath(context))
+        }
       }
 
       // Clear checkDetailsChangesPending once user has selected Yes
@@ -296,6 +328,43 @@ export default class CheckDetailsController extends QuestionPageController {
 
       return this.handleDetailsConfirmed(request, context, detailsPageConfig, h)
     }
+  }
+
+  /**
+   * Builds the internal, controller-scoped link used when CSS reveals the SFD action.
+   * @param {AnyFormRequest} request
+   * @returns {string | undefined}
+   */
+  getSfdUpdateDetailsActionUrl(request) {
+    const updateUrl = getConfiguredSfdUpdateUrl(this)
+    if (!this.isSfdEnabled || !updateUrl || !URL.canParse(updateUrl)) {
+      return undefined
+    }
+
+    const url = new URL(request.url)
+    url.searchParams.set(SFD_UPDATE_ACTION, 'true')
+    return `${url.pathname}${url.search}`
+  }
+
+  /**
+   * Persists the state required to return to check-details after SFD updates, then redirects to SFD.
+   * @param {AnyFormRequest} request
+   * @param {Partial<Record<string, unknown>>} state
+   * @param {ResponseToolkit} h
+   * @returns {Promise<ResponseObject | undefined>}
+   */
+  async redirectToSfdForDetailsUpdate(request, state, h) {
+    const updateUrl = getConfiguredSfdUpdateUrl(this)
+    if (!updateUrl || !URL.canParse(updateUrl)) {
+      return undefined
+    }
+
+    const currentRelationshipId = /** @type {string} */ (request.auth.credentials.currentRelationshipId)
+    const url = new URL(updateUrl)
+    url.searchParams.set('ssoOrgId', currentRelationshipId)
+    const { [this.confirmationFieldName]: _, ...stateWithoutConfirmation } = state
+    await this.setState(request, { ...stateWithoutConfirmation, checkDetailsChangesPending: true })
+    return h.redirect(url.toString())
   }
 
   /**

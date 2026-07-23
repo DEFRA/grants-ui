@@ -1,3 +1,5 @@
+import { getSelectedActionCodes, SELECTED_ACTIONS_FIELD_NAME } from '../utils/selected-actions-field.js'
+
 /**
  * Validators for land actions selection
  */
@@ -25,6 +27,25 @@ export function validateLandActionsSelection(payload, actionFieldPrefix) {
   if (landActionFields.length === 0) {
     const firstActionInput = actionFieldPrefix + '1'
     errors.push({ text: 'Select an action to do on this land parcel', href: `#${firstActionInput}` })
+  }
+
+  return errors
+}
+
+/**
+ * Validate the select-actions page's selection, where every action shares one
+ * checkbox field name rather than a field per action.
+ * @param {object} payload - Form payload
+ * @returns {Array<{text: string, href: string}>} - Array of validation errors
+ */
+export function validateSelectedActions(payload) {
+  const errors = []
+
+  if (getSelectedActionCodes(payload).length === 0) {
+    errors.push({
+      text: 'Select an action to do on this land parcel',
+      href: `#${SELECTED_ACTIONS_FIELD_NAME}`
+    })
   }
 
   return errors

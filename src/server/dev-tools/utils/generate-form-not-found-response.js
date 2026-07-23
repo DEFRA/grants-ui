@@ -1,5 +1,3 @@
-import { getAllForms } from './get-all-forms.js'
-
 const HTTP_STATUS = {
   NOT_FOUND: 404
 }
@@ -17,9 +15,6 @@ const HTTP_STATUS = {
 export async function generateFormNotFoundResponse(slug, h, options = {}) {
   const { backLink = '/dev', title = 'Invalid Form Slug', errorMessage = 'Local Mode Error' } = options
 
-  const allForms = await getAllForms()
-  const availableSlugs = allForms.map((f) => `• ${f.slug} (${f.title})`).join('\n')
-
   return h
     .response(
       `
@@ -28,10 +23,8 @@ export async function generateFormNotFoundResponse(slug, h, options = {}) {
       <body style="font-family: system-ui, sans-serif; margin: 40px;">
         <div style="background: #ffe6cc; padding: 15px; border-left: 4px solid #f47738; margin-bottom: 30px;">
           <strong>⚠️ ${errorMessage}</strong><br>
-          Form slug "${slug}" not found.
+          Form slug "${slug}" not found in grants-ui-backend.
         </div>
-        <h1>Available Forms</h1>
-        <pre>${availableSlugs}</pre>
         <p><a href="${backLink}">← Back to Dev Tools</a></p>
       </body>
     </html>

@@ -98,21 +98,6 @@ export const SYSTEM = {
     messageFunc: (messageOptions) =>
       `Invalid configuration, key "${messageOptions.key}" is missing or invalid: ${messageOptions.value}`
   },
-  WHITELIST_CONFIG_INCOMPLETE: {
-    level: 'error',
-    messageFunc: (messageOptions) =>
-      `Incomplete whitelist configuration in form "${messageOptions.formName}" | present=${messageOptions.presentVar} | missing=${messageOptions.missingVar}`
-  },
-  CRN_ENV_VAR_MISSING: {
-    level: 'error',
-    messageFunc: (messageOptions) =>
-      `CRN whitelist environment variable "${messageOptions.envVar}" missing for form "${messageOptions.formName}"`
-  },
-  SBI_ENV_VAR_MISSING: {
-    level: 'error',
-    messageFunc: (messageOptions) =>
-      `SBI whitelist environment variable "${messageOptions.envVar}" missing for form "${messageOptions.formName}"`
-  },
   INVALID_REDIRECT_RULES: {
     level: 'error',
     messageFunc: (messageOptions) =>
@@ -183,5 +168,10 @@ export const SYSTEM = {
     level: 'warn',
     messageFunc: (messageOptions) =>
       `check-details: SFD is enabled but externalLinks.sfd.updateUrl is missing or invalid (value=${messageOptions.updateUrl}); falling through to the update-details page instead of redirecting to SFD`
+  },
+  OS_MAPS_API_KEY_MISSING: {
+    level: 'error',
+    messageFunc: () =>
+      `map: osMapsApiKey (OS_MAPS_API_KEY) is not set; every /api/map/os-tiles request will fail as a 401 from OS with no diagnostic`
   }
 }

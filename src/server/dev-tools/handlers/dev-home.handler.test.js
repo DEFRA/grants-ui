@@ -1,108 +1,49 @@
 import { vi } from 'vitest'
-import {
-  devHomeHandler,
-  getFormsWithConfirmationContent,
-  getFormsWithDetailsPage,
-  buildToolsConfig,
-  generateToolsSection
-} from './dev-home.handler.js'
-import { getAllForms } from '../utils/index.js'
+import { devHomeHandler, buildToolsConfig, generateToolsSection } from './dev-home.handler.js'
 import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 
-vi.mock('../utils/index.js')
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
   log: vi.fn(),
   debug: vi.fn()
 }))
 
 describe('dev-home.handler', () => {
-  const mockAllForms = [
-    { slug: 'form-with-both', title: 'Form With Both', metadata: { confirmationContent: {}, detailsPage: {} } },
-    {
-      slug: 'form-with-confirmation-only',
-      title: 'Form With Confirmation Only',
-      metadata: { confirmationContent: {} }
-    },
-    { slug: 'form-with-details-only', title: 'Form With Details Only', metadata: { detailsPage: {} } },
-    { slug: 'form-with-neither', title: 'Form With Neither', metadata: {} }
-  ]
-
   let mockRequest
   let mockH
 
   beforeEach(() => {
     vi.clearAllMocks()
-    getAllForms.mockResolvedValue(mockAllForms)
 
     mockRequest = mockHapiRequest()
     mockH = mockHapiResponseToolkit()
   })
 
-  describe('getFormsWithConfirmationContent', () => {
-    test('should return only forms with confirmationContent in metadata', async () => {
-      const result = await getFormsWithConfirmationContent()
-
-      expect(result).toHaveLength(2)
-      expect(result.map((f) => f.slug)).toEqual(['form-with-both', 'form-with-confirmation-only'])
-    })
-
-    test('should return empty array when no forms have confirmationContent', async () => {
-      getAllForms.mockResolvedValue([{ slug: 'no-config', title: 'No Config', metadata: {} }])
-
-      const result = await getFormsWithConfirmationContent()
-
-      expect(result).toHaveLength(0)
-    })
-  })
-
-  describe('getFormsWithDetailsPage', () => {
-    test('should return only forms with detailsPage in metadata', async () => {
-      const result = await getFormsWithDetailsPage()
-
-      expect(result).toHaveLength(2)
-      expect(result.map((f) => f.slug)).toEqual(['form-with-both', 'form-with-details-only'])
-    })
-  })
-
   describe('buildToolsConfig', () => {
-    test('should build config with separate form arrays for each section', () => {
-      const confirmationForms = [{ slug: 'conf-form', title: 'Conf Form' }]
-      const detailsForms = [{ slug: 'details-form', title: 'Details Form' }]
-      const printApplicationForms = [{ slug: 'print-form', title: 'Print Form' }]
-
-      const result = buildToolsConfig({ confirmationForms, detailsForms, printApplicationForms })
+    test('should describe the slug-driven demo tools and the error pages tool', () => {
+      const result = buildToolsConfig()
 
       expect(result).toHaveLength(4)
       expect(result[0].name).toBe('Demo Confirmation Pages')
-      expect(result[0].examples).toHaveLength(1)
-      expect(result[0].examples[0].slug).toBe('conf-form')
+      expect(result[0].pattern).toBe('/dev/demo-confirmation/{slug}')
+      expect(result[0].examples).toBeUndefined()
       expect(result[1].name).toBe('Demo Details Pages')
-      expect(result[1].examples).toHaveLength(1)
-      expect(result[1].examples[0].slug).toBe('details-form')
+      expect(result[1].pattern).toBe('/dev/demo-details/{slug}')
       expect(result[2].name).toBe('Demo Print Application')
-      expect(result[2].examples).toHaveLength(1)
-      expect(result[2].examples[0].slug).toBe('print-form')
-      expect(result[2].examples[0].path).toBe('/dev/demo-print-application/print-form')
+      expect(result[2].pattern).toBe('/dev/demo-print-application/{slug}')
       expect(result[3].name).toBe('Test Error Pages')
-    })
-
-    test('should handle empty form arrays', () => {
-      const result = buildToolsConfig({ confirmationForms: [], detailsForms: [], printApplicationForms: [] })
-
-      expect(result[0].examples).toHaveLength(0)
-      expect(result[1].examples).toHaveLength(0)
-      expect(result[2].examples).toHaveLength(0)
+      expect(result[3].examples.length).toBeGreaterThan(0)
     })
   })
 
   describe('generateToolsSection', () => {
-    test('should render tool without examples section when examples is falsy', () => {
-      const tools = [{ name: 'Test Tool', description: 'Test description' }]
+    test('should render tool without examples but keep its pattern hint', () => {
+      const tools = [{ name: 'Test Tool', description: 'Test description', pattern: '/dev/test/{slug}' }]
 
       const result = generateToolsSection(tools)
 
       expect(result).toContain('Test Tool')
       expect(result).toContain('Test description')
+      expect(result).toContain('/dev/test/{slug}')
       expect(result).not.toContain('Example forms:')
     })
   })
@@ -111,48 +52,18 @@ describe('dev-home.handler', () => {
     test('should return HTML response with development tools page', async () => {
       await devHomeHandler(mockRequest, mockH)
 
-      expect(getAllForms).toHaveBeenCalled()
       expect(mockH.response).toHaveBeenCalledWith(expect.stringContaining('<html>'))
       expect(mockH.type).toHaveBeenCalledWith('text/html')
     })
 
-    it.each([
-      [
-        'confirmation',
-        '/dev/demo-confirmation',
-        ['form-with-both', 'form-with-confirmation-only'],
-        ['form-with-details-only', 'form-with-neither']
-      ],
-      [
-        'details',
-        '/dev/demo-details',
-        ['form-with-both', 'form-with-details-only'],
-        ['form-with-confirmation-only', 'form-with-neither']
-      ]
-    ])('should only show forms with %s config in %s section', async (_name, basePath, included, excluded) => {
+    test('should include the demo tool patterns', async () => {
       await devHomeHandler(mockRequest, mockH)
 
       const htmlContent = mockH.response.mock.calls[0][0]
-      included.forEach((slug) => expect(htmlContent).toContain(`${basePath}/${slug}`))
-      excluded.forEach((slug) => expect(htmlContent).not.toContain(`${basePath}/${slug}`))
-    })
-
-    test('should handle empty forms list gracefully', async () => {
-      getAllForms.mockResolvedValue([])
-
-      await devHomeHandler(mockRequest, mockH)
-
-      expect(mockH.response).toHaveBeenCalledWith(expect.stringContaining('Available Tools'))
-    })
-  })
-
-  test('should include print application section with all forms', async () => {
-    await devHomeHandler(mockRequest, mockH)
-
-    const htmlContent = mockH.response.mock.calls[0][0]
-    expect(htmlContent).toContain('Demo Print Application')
-    mockAllForms.forEach((form) => {
-      expect(htmlContent).toContain(`/dev/demo-print-application/${form.slug}`)
+      expect(htmlContent).toContain('Available Tools')
+      expect(htmlContent).toContain('/dev/demo-confirmation/{slug}')
+      expect(htmlContent).toContain('/dev/demo-details/{slug}')
+      expect(htmlContent).toContain('/dev/demo-print-application/{slug}')
     })
   })
 

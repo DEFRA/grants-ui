@@ -1,5 +1,7 @@
 import { stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
 import { getConsentTypes } from '../utils/consent-types.js'
+import { getActionQuantityFieldName } from '../utils/action-quantity-field.js'
+import { getSelectedActionCodes } from '../utils/selected-actions-field.js'
 
 /**
  * Manages state operations for land parcels and their actions.
@@ -27,6 +29,30 @@ export function buildNewState(state, actionsObj, parcel) {
 }
 
 /**
+ * Builds the state entry for a single selected action, applying its submitted
+ * quantity override when it requires one and one was submitted, otherwise
+ * falling back to its full available area.
+ * @param {object} payload - Form payload
+ * @param {Action} actionInfo - The action's data from the API
+ * @returns {{ description: string, version: string, consents: string[], value: string|number, unit: string }}
+ */
+function buildActionStateEntry(payload, actionInfo) {
+  const quantityOverride =
+    actionInfo.requiresMaxQuantity != null ? payload[getActionQuantityFieldName(actionInfo.code)] : null
+  const hasQuantityOverride = quantityOverride !== null && quantityOverride !== undefined && quantityOverride !== ''
+
+  return {
+    description: actionInfo.description,
+    version: actionInfo.version,
+    consents: getConsentTypes()
+      .filter((ct) => actionInfo[ct.apiField])
+      .map((ct) => ct.key),
+    value: hasQuantityOverride ? quantityOverride : (actionInfo?.availableArea?.value ?? ''),
+    unit: actionInfo?.availableArea?.unit ?? ''
+  }
+}
+
+/**
  * Adds parcel actions to an existing state based on payload
  * @param {object} state - Current state
  * @param {object} payload - Form payload containing action selections
@@ -50,15 +76,37 @@ export function addActionsToExistingState(state, payload, actionFieldPrefix, gro
     const actionCode = payload[fieldName]
     const actionInfo = allActions.find((a) => a.code === actionCode)
     if (actionCode && actionInfo) {
-      actionsObj[actionCode] = {
-        description: actionInfo.description,
-        version: actionInfo.version,
-        consents: getConsentTypes()
-          .filter((ct) => actionInfo[ct.apiField])
-          .map((ct) => ct.key),
-        value: actionInfo?.availableArea?.value ?? '',
-        unit: actionInfo?.availableArea?.unit ?? ''
-      }
+      actionsObj[actionCode] = buildActionStateEntry(payload, actionInfo)
+    }
+  }
+
+  return buildNewState(state, actionsObj, parcel)
+}
+
+/**
+ * Adds selected actions to an existing state, for the select-actions page's flat
+ * checkbox layout where every action shares one field name rather than a field
+ * per action (see getSelectedActionCodes).
+ * @param {object} state - Current state
+ * @param {object} payload - Form payload containing action selections
+ * @param {Array<ActionGroup>} groupedActions - Available actions grouped
+ * @param {Parcel} parcel - The selected land parcel
+ * @returns {object} - Updated state or empty object if no actions selected
+ */
+export function addSelectedActionsToState(state, payload, groupedActions, parcel) {
+  const selectedCodes = getSelectedActionCodes(payload)
+
+  if (selectedCodes.length === 0) {
+    return {}
+  }
+
+  const actionsObj = {}
+  const allActions = groupedActions.flatMap((g) => g.actions)
+
+  for (const actionCode of selectedCodes) {
+    const actionInfo = allActions.find((a) => a.code === actionCode)
+    if (actionInfo) {
+      actionsObj[actionCode] = buildActionStateEntry(payload, actionInfo)
     }
   }
 
@@ -69,7 +117,7 @@ export function addActionsToExistingState(state, payload, actionFieldPrefix, gro
  * Extract added actions from state for a specific parcel
  * @param {object} state - Current state
  * @param {string} selectedLandParcel - The selected land parcel ID (format: "sheetId-parcelId")
- * @returns {Array<{code: string, description: string}>} - Array of added actions
+ * @returns {Array<{code: string, description: string, value?: string|number}>} - Array of added actions
  */
 export function getAddedActionsForStateParcel(state, selectedLandParcel) {
   const addedActions = []
@@ -79,7 +127,8 @@ export function getAddedActionsForStateParcel(state, selectedLandParcel) {
     Object.keys(parcelData).forEach((code) => {
       addedActions.push({
         code,
-        description: parcelData[code].description
+        description: parcelData[code].description,
+        value: parcelData[code].value
       })
     })
   }
@@ -180,6 +229,7 @@ export function findActionInfoFromState(landParcels, parcelKey, action) {
  * @property {string} description - Action description
  * @property {string} version - Action version
  * @property {string[]} [consents] - Array of consent type keys required (e.g., ['sssi', 'hefer'])
+ * @property {number} [requiresMaxQuantity] - If set, the user must enter a quantity for this action, capped at this value
  * @property {object} [availableArea] - Available area for the action
  * @property {string|number} [availableArea.value] - Area value (number from API, converted to string in state)
  * @property {string} [availableArea.unit] - Area unit

@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
-import { catchAll, createBoomError } from '~/src/server/common/helpers/errors.js'
+import { catchAll, createBoomError, readUpstreamStatus } from '~/src/server/common/helpers/errors.js'
 import Wreck from '@hapi/wreck'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { createServer } from '~/src/server/index.js'
@@ -59,13 +59,6 @@ vi.mock('~/src/server/common/forms/services/forms-redis.js', () => ({
   getAllSlugs: vi.fn(async () => []),
   getAllFormMetas: vi.fn(async () => [])
 }))
-
-process.env.EXAMPLE_WHITELIST_CRNS = '1104734543,1103521484'
-process.env.EXAMPLE_WHITELIST_SBIS = '123456789,987654321'
-process.env.FARMING_PAYMENTS_WHITELIST_CRNS = '1102838829, 1102760349, 1100495932'
-process.env.FARMING_PAYMENTS_WHITELIST_SBIS = '106284736, 121428499, 106238988'
-process.env.WOODLAND_WHITELIST_CRNS = '1102838829, 1102760349, 1100495932'
-process.env.WOODLAND_WHITELIST_SBIS = '106284736, 121428499, 106238988'
 
 describe('#errors', () => {
   /** @type {Server} */
@@ -190,14 +183,6 @@ describe('#catchAll', () => {
     expect(mockToolkitCode).toHaveBeenCalledWith(statusCode)
   })
 
-  test('Should provide expected default page', () => {
-    catchAll(mockRequest(statusCodes.imATeapot), mockToolkit)
-
-    expect(mockErrorLogger).not.toHaveBeenCalledWith(mockStack)
-    expect(mockToolkitView).toHaveBeenCalledWith('errors/500', { supportEmail: null })
-    expect(mockToolkitCode).toHaveBeenCalledWith(statusCodes.imATeapot)
-  })
-
   test('Should include upstreamStatus in the SERVER_ERROR log payload when the response carries an upstream 5xx', () => {
     const request = mockRequest(statusCodes.internalServerError)
     request.response.code = statusCodes.badGateway
@@ -216,6 +201,15 @@ describe('#catchAll', () => {
     // Response status is unchanged — 500 stays 500 user-facing.
     expect(mockToolkitView).toHaveBeenCalledWith('errors/500', { supportEmail: null })
     expect(mockToolkitCode).toHaveBeenCalledWith(statusCodes.internalServerError)
+  })
+
+  test('readUpstreamStatus reads code first, then status, any numeric value, else undefined', () => {
+    expect(readUpstreamStatus({ code: 404 })).toBe(404)
+    expect(readUpstreamStatus({ status: 429 })).toBe(429)
+    expect(readUpstreamStatus({ code: 500, status: 502 })).toBe(500)
+    expect(readUpstreamStatus({ message: 'boom' })).toBeUndefined()
+    expect(readUpstreamStatus(null)).toBeUndefined()
+    expect(readUpstreamStatus(undefined)).toBeUndefined()
   })
 
   test('Should provide expected "Something went wrong" page and log error for internalServerError', () => {

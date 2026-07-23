@@ -1,7 +1,7 @@
 Feature: Footer Links
 
     Scenario: Footer should contain expected links
-        Given there is no application state stored for CRN "1100961682" and SBI "106281016" and grant "example-grant-with-auth"
+        Given there is no application data for SBI "106281016" and grant "example-grant-with-auth"
 
         # start
         Given the user navigates to "/example-grant-with-auth"

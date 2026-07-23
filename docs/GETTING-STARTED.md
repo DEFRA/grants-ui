@@ -240,13 +240,13 @@ When `DEV_TOOLS_ENABLED=true`, the following demo data can be configured. See [D
 | `DEV_DEMO_SBI`           | Demo SBI number       | `999888777`          |
 | `DEV_DEMO_CONTACT_NAME`  | Demo contact name     | `Demo Test User`     |
 
-#### Backend Form Definitions
+#### Form Definitions
 
-Form definitions are loaded from `grants-ui-backend`. See [Architecture - Grant Form Definitions](./ARCHITECTURE.md#grant-form-definitions) for details.
-
-| Variable                         | Description                                                                          |
-| -------------------------------- | ------------------------------------------------------------------------------------ |
-| `BACKEND_FORM_DEF_ENABLED_SLUGS` | Comma-separated list of form slugs whose definition is served from grants-ui-backend |
+All form definitions are served from `grants-ui-backend` (locally seeded via the
+config broker from `localstack/config-broker-local/`). There are no local YAML
+form definitions and no extra environment variables to configure. See
+[Architecture - Grant Form Definitions](./ARCHITECTURE.md#grant-form-definitions)
+for details.
 
 ### Npm Scripts
 

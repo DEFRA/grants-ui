@@ -29,6 +29,9 @@ export default {
     },
     'parcel-map': {
       import: ['./javascripts/parcel-map/index.js']
+    },
+    'parcel-select-page': {
+      import: ['./javascripts/parcel-map/parcel-select-page.js']
     }
   },
   experiments: {

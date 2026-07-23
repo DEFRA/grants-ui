@@ -4,7 +4,6 @@ import { parse } from 'yaml'
 
 const composeConfig = parse(readFileSync('compose.yml', 'utf8'))
 const landGrantsComposeConfig = parse(readFileSync('compose.land-grants.yml', 'utf8'))
-const backendFormDefEnv = composeConfig.services['grants-ui'].environment.BACKEND_FORM_DEF_ENABLED_SLUGS
 
 const csv = (value = '') =>
   value
@@ -12,19 +11,7 @@ const csv = (value = '') =>
     .map((item) => item.trim())
     .filter(Boolean)
 
-const getDefaultSlugs = (environmentValue) =>
-  environmentValue
-    .replace(/^\$\{[^:]+:-/, '')
-    .replace(/}$/, '')
-    .split(',')
-    .map((slug) => slug.trim())
-    .filter(Boolean)
-
 describe('backend-sourced form deployment config', () => {
-  it('enables farm-payments as backend-sourced', () => {
-    expect(getDefaultSlugs(backendFormDefEnv)).toContain('farm-payments')
-  })
-
   it('waits for grants-config-broker before starting grants-ui-backend', () => {
     expect(composeConfig.services['grants-ui-backend'].depends_on['grants-config-broker']).toEqual({
       condition: 'service_healthy'

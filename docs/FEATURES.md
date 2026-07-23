@@ -1,6 +1,6 @@
 # Grants UI Features
 
-This document provides a comprehensive overview of all the features available in the Grants UI service, as demonstrated by the Example Grant with Auth journey. Each feature is configurable through YAML files and can be used to build custom grant application forms.
+This document provides a comprehensive overview of all the features available in the Grants UI service, as demonstrated by the Example Grant with Auth journey. Each feature is configured through the grant's form definition (authored as YAML and served from `grants-ui-backend`; local copies for development live under `localstack/config-broker-local/`) and can be used to build custom grant application forms.
 
 ## Table of Contents
 
@@ -29,7 +29,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Pattern matching with regex
   - Character limits
   - Required/optional configuration
-- **Example**: [Example Grant – Multi Field Form (/multi-field-form)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L320-L352) – applicant name field with pattern validation for letters, hyphens, and apostrophes
+- **Example**: [Example Grant – Multi Field Form (/multi-field-form)](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – applicant name field with pattern validation for letters, hyphens, and apostrophes
 
 #### MultilineTextField
 
@@ -39,7 +39,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Configurable number of rows
   - Word count limits
   - Custom validation messages
-- **Example**: [Example Grant – Multiline Text page (/multiline-text-field)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L304-L319) – description prompt with a 400-word limit
+- **Example**: [Example Grant – Multiline Text page (/multiline-text-field)](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – description prompt with a 400-word limit
 
 #### EmailAddressField
 
@@ -49,7 +49,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Email format validation
   - Custom validation messages
   - Required/optional configuration
-- **Example**: [Example Grant – Multi Field Form (/multi-field-form)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L320-L364) – applicant email with format validation
+- **Example**: [Example Grant – Multi Field Form (/multi-field-form)](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – applicant email with format validation
 
 #### TelephoneNumberField
 
@@ -59,7 +59,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Pattern matching for various phone formats
   - Autocomplete support
   - Custom validation messages
-- **Example**: [Example Grant – Multi Field Form (/multi-field-form)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L320-L378) – mobile number with regex pattern validation
+- **Example**: [Example Grant – Multi Field Form (/multi-field-form)](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – mobile number with regex pattern validation
 
 ### Selection Components
 
@@ -71,7 +71,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Custom validation messages
   - Option descriptions/hints
   - Conditional navigation
-- **Example**: [Example Grant – Radios page (/radios-field)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L169-L193) – business type selection with conditional routing
+- **Example**: [Example Grant – Radios page (/radios-field)](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – business type selection with conditional routing
 
 #### CheckboxesField
 
@@ -81,7 +81,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Required/optional configuration
   - Option descriptions
   - Custom validation messages
-- **Example**: [Example Grant – Checkboxes page (/checkboxes-field)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L208-L220) – multi-select list requiring at least one choice
+- **Example**: [Example Grant – Checkboxes page (/checkboxes-field)](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – multi-select list requiring at least one choice
 
 #### SelectField
 
@@ -90,7 +90,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
 - **Features**:
   - Required/optional configuration
   - Custom validation messages
-- **Example**: [Example Grant – Select page (/select-field)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L288-L303) – dropdown populated from a predefined list
+- **Example**: [Example Grant – Select page (/select-field)](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – dropdown populated from a predefined list
 
 #### AutocompleteField
 
@@ -100,7 +100,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Real-time filtering
   - Custom validation messages
   - Hint text for user guidance
-- **Example**: [Example Grant – Autocomplete page (/autocomplete-field)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L139-L168) – country selection with type-ahead filtering
+- **Example**: [Example Grant – Autocomplete page (/autocomplete-field)](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – country selection with type-ahead filtering
 
 #### YesNoField
 
@@ -109,7 +109,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
 - **Features**:
   - Custom validation messages
   - Conditional navigation to terminal pages
-- **Example**: [Example Grant – Yes/No page (/yes-no-field)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L109-L123) – eligibility confirmation that can route to a terminal page
+- **Example**: [Example Grant – Yes/No page (/yes-no-field)](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – eligibility confirmation that can route to a terminal page
 
 ### Numeric Components
 
@@ -122,7 +122,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Precision control
   - Currency prefix support
   - Custom validation messages
-- **Example**: [Example Grant – Number field page (/number-field)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L226-L254) – project cost entry with £ prefix and range validation
+- **Example**: [Example Grant – Number field page (/number-field)](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – project cost entry with £ prefix and range validation
 
 ### Date Components
 
@@ -134,7 +134,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Past/future date restrictions
   - Custom validation messages
   - Autocomplete control
-- **Example**: [Example Grant – Date parts page (/date-parts-field)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L255-L269) – project start date constrained to the next 90 days
+- **Example**: [Example Grant – Date parts page (/date-parts-field)](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – project start date constrained to the next 90 days
 
 #### MonthYearField
 
@@ -143,7 +143,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
 - **Features**:
   - Required/optional configuration
   - Custom validation messages
-- **Example**: [Example Grant – Month & year page (/month-year-field)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L271-L280) – planning permission month/year selector
+- **Example**: [Example Grant – Month & year page (/month-year-field)](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – planning permission month/year selector
 
 ### Address Components
 
@@ -156,7 +156,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Optional fields (address line 2, county)
   - Postcode validation
   - Automatic field grouping
-- **Example**: [Example Grant – Multi Field Form (/multi-field-form)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L320-L392) – business address entry with optional lines and postcode validation
+- **Example**: [Example Grant – Multi Field Form (/multi-field-form)](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – business address entry with optional lines and postcode validation
 
 ## Page Types
 
@@ -166,7 +166,7 @@ The service supports several specialized page types for different stages of the 
 
 - **Purpose**: Regular form pages with input components
 - **Features**: Component rendering, validation, navigation
-- **Example**: [Example Grant – Radios page (/radios-field)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L169-L193)
+- **Example**: [Example Grant – Radios page (/radios-field)](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml)
 
 ### Summary Pages
 
@@ -176,7 +176,7 @@ The service supports several specialized page types for different stages of the 
   - Edit functionality
   - Change links for each section
 - **Controller**: `CheckResponsesPageController`
-- **Example**: [Example Grant – Summary page (/summary)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L394-L397)
+- **Example**: [Example Grant – Summary page (/summary)](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml)
 
 ### Declaration Pages
 
@@ -186,7 +186,7 @@ The service supports several specialized page types for different stages of the 
   - Form submission to GAS
   - Application status management
 - **Controller**: `DeclarationPageController`
-- **Example**: [Example Grant – Declaration page (/declaration)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L398-L401)
+- **Example**: [Example Grant – Declaration page (/declaration)](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml)
 
 ### Confirmation Pages
 
@@ -197,7 +197,7 @@ The service supports several specialized page types for different stages of the 
   - Next steps information
   - Support contact details
 - **Controller**: `ConfirmationPageController`
-- **Example**: [Example Grant – Confirmation content](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L1-L37)
+- **Example**: [Example Grant – Confirmation content](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml)
 
 ### Terminal Pages
 
@@ -207,7 +207,7 @@ The service supports several specialized page types for different stages of the 
   - Eligibility messaging
   - Alternative options
 - **Controller**: `TerminalPageController`
-- **Example**: [Example Grant – Terminal page (/terminal-page)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L124-L138)
+- **Example**: [Example Grant – Terminal page (/terminal-page)](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml)
 
 ### Update Details Exit Page
 
@@ -218,7 +218,7 @@ The service supports several specialized page types for different stages of the 
   - `paragraphs` – ordered list of body paragraphs. Each entry is either a plain string or an object with `textBefore`, `link: { text, href }`, and `textAfter` to embed a single inline link.
   - `showRpaSupport` – when `true`, renders the shared `{{DEFRASUPPORTDETAILS}}` RPA contact block beneath the paragraphs.
   - `continueText` – optional override for the continue-button label (defaults to `Continue`).
-- **Example**: [Woodland – `incorrectDetailsContent`](./src/server/common/forms/definitions/woodland.yaml#L173-L182)
+- **Example**: the Woodland form definition sets `incorrectDetailsContent` in its metadata (Woodland lives in the internal grants config repo, not the example-grants repo)
 
 ### Land Parcel Map Pages
 
@@ -230,7 +230,7 @@ The service supports several specialized page types for different stages of the 
   - Selected parcel IDs written to session state for downstream pages
 - **Controllers**: `MapSelectPageController`
 - **Full developer guide**: [src/server/common/map/README.md](./src/server/common/map/README.md)
-- **Example**: [Example Grant with Map journey](./src/server/common/forms/definitions/example-grant-with-map.yaml)
+- **Example**: [Example Grant with Map journey](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-map/grants-ui/example-grant-with-map.yaml)
 
 ### Conditional Pages
 
@@ -238,7 +238,7 @@ The service supports several specialized page types for different stages of the 
 - **Features**:
   - Conditional logic
   - Dynamic content display
-- **Example**: [Example Grant – Conditional page (/conditional-page)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L194-L207)
+- **Example**: [Example Grant – Conditional page (/conditional-page)](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml)
 
 ### Landing Pages
 
@@ -256,8 +256,8 @@ The service supports several specialized page types for different stages of the 
   - Add `next:` links pointing at where "Continue" should take the user (e.g. `- path: /summary`); add a `condition` on a link to route differently based on state.
   - Point a `grantRedirectRule` at the page's path (e.g. `toGrantsStatus: REOPENED`, `toPath: /reopened`) so the page is entered when the application reaches that status. See [Authentication & Security / Architecture docs](./ARCHITECTURE.md) and the `grantRedirectRules` blocks in the example grants for redirect configuration.
 - **Examples**:
-  - [Example Grant with Task List (hide questions) – `/reopened` landing page](./src/server/common/forms/definitions/example-grant-with-task-list-hide-questions.yaml#L339-L356) plus its [`postSubmission` redirect rule](./src/server/common/forms/definitions/example-grant-with-task-list-hide-questions.yaml#L44-L59)
-  - [Example Grant with Auth – `/reopened` landing page](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L899-L916) plus its [`postSubmission` redirect rule](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L26-L41)
+  - [Example Grant with Task List (hide questions) – `/reopened` landing page](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-task-list-hide-questions/grants-ui/example-grant-with-task-list-hide-questions.yaml) plus its [`postSubmission` redirect rule](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-task-list-hide-questions/grants-ui/example-grant-with-task-list-hide-questions.yaml)
+  - [Example Grant with Auth – `/reopened` landing page](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) plus its [`postSubmission` redirect rule](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml)
 
 ## Guidance Components
 
@@ -268,44 +268,42 @@ Guidance components provide contextual help and information without requiring us
 - **Purpose**: Custom HTML content
 - **Use Cases**: Instructions, information, warnings
 - **Features**: Full HTML support with GOV.UK Design System classes
-- **Example**: [Example Grant – Start page HTML (/start)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L39-L51)
+- **Example**: [Example Grant – Start page HTML (/start)](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml)
 
 ### Details Component
 
 - **Purpose**: Collapsible content sections
 - **Use Cases**: Additional information, help text
 - **Features**: Expandable/collapsible sections
-- **Example**: [Example Grant – Start page details components (/start)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L52-L88)
+- **Example**: [Example Grant – Start page details components (/start)](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml)
 
 ### InsetText Component
 
 - **Purpose**: Highlighted information boxes
 - **Use Cases**: Important notices, warnings
 - **Features**: Styled information boxes
-- **Example**: [Example Grant – Start page inset text (/start)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L89-L98)
+- **Example**: [Example Grant – Start page inset text (/start)](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml)
 
 ### Markdown Component
 
 - **Purpose**: Markdown-formatted content
 - **Use Cases**: Rich text formatting
 - **Features**: Markdown syntax support
-- **Example**: [Example Grant – Start page markdown (/start)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L99-L106)
+- **Example**: [Example Grant – Start page markdown (/start)](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml)
 
 ### List Component
 
 - **Purpose**: Display predefined lists
 - **Use Cases**: Reference data, options
 - **Features**: Linked to list definitions
-- **Example**: [Example Grant – Autocomplete page list component (/autocomplete-field)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L139-L156)
+- **Example**: [Example Grant – Autocomplete page list component (/autocomplete-field)](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml)
 
 ## Form Configuration
 
 ### Metadata Configuration
 
 - **Form ID**: Unique identifier for the form
-- **Production Enablement**: `enabledInProd` flag
 - **Reference Number Prefix**: Custom prefix for application references
-- **Whitelist Configuration**: CRN and SBI environment variables
 - **Submission Configuration**: Grant code and schema path
 - **Options**: Grant-scoped configuration options
 
@@ -331,7 +329,7 @@ Guidance components provide contextual help and information without requiring us
   - `link` – optional call-to-action link. If declared it must include **both** `text` and `href` (an incomplete link is a configuration error and throws). The `href` must be an `http(s)` URL or a same-origin relative path; other schemes (e.g. `javascript:`) are rejected and the banner falls back to text only.
 - **Excluded pages**: The list of excluded page path suffixes defaults to `/confirmation` and `/print-submitted-application` and is configurable via the `NOTIFICATION_BANNER_EXCLUDED_PATH_SUFFIXES` environment variable (see [config.js](./src/config/config.js#L280-L287)).
 - **Implementation**: The banner params are built in [build-notification-banner-config.js](./src/config/nunjucks/context/build-notification-banner-config.js) and injected into every page via the shared Nunjucks context, then rendered in the base layout [page.njk](./src/server/common/templates/layouts/page.njk).
-- **Example**: [Example Grant with Auth – `notificationBanner`](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L8-L15)
+- **Example**: [Example Grant with Auth – `notificationBanner`](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml)
 
 ### Page Configuration
 
@@ -354,13 +352,12 @@ Guidance components provide contextual help and information without requiring us
   - Automatic redirect handling
 - **Example**: [Auth plugin registration with Defra ID support](./src/plugins/auth.js#L91-L114)
 
-### Whitelist System
+### Allowlist System
 
-- **CRN Whitelisting**: Customer Reference Number validation
-- **SBI Whitelisting**: Single Business Identifier validation
-- **Environment Variables**: Configurable whitelist management
-- **Access Control**: Grant-specific access restrictions
-- **Example**: [Example Whitelist definition and metadata](./src/server/common/forms/definitions/example-whitelist.yaml#L1-L18)
+- **Backend allowlist**: Per-grant access control driven by the grants-ui-backend allowlist endpoint
+- **CRN/SBI based**: Access is decided from the signed-in user's Customer Reference Number and Single Business Identifier
+- **Access Control**: Users who are not allowlisted for the grant are redirected to `/auth/journey-unauthorised`
+- **Example**: [Allowlist plugin](./src/server/common/helpers/allowlist/allowlist.js)
 
 ### Session Management
 
@@ -378,7 +375,7 @@ Guidance components provide contextual help and information without requiring us
   - Boolean value conditions
   - List item reference conditions
   - Complex logical operators
-- **Example**: [Example Grant – Yes/No branch to terminal (/yes-no-field)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L109-L138) when the user selects "No"
+- **Example**: [Example Grant – Yes/No branch to terminal (/yes-no-field)](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) when the user selects "No"
 
 ### Conditional Navigation
 
@@ -387,7 +384,7 @@ Guidance components provide contextual help and information without requiring us
   - Multiple navigation paths
   - Conditional page display
   - Dynamic form flow
-- **Example**: [Example Grant – Radios page (/radios-field)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L169-L207) with different paths per option
+- **Example**: [Example Grant – Radios page (/radios-field)](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) with different paths per option
 
 ## Lists & Data Sources
 
@@ -399,7 +396,7 @@ Guidance components provide contextual help and information without requiring us
   - Item descriptions
   - Unique identifiers
   - Hierarchical organization
-- **Example**: [Example Grant – Country list definition](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L404-L456)
+- **Example**: [Example Grant – Country list definition](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml)
 
 ### Dynamic Lists
 
@@ -415,7 +412,7 @@ Guidance components provide contextual help and information without requiring us
   - Field-specific messages
   - Validation type-specific messages
   - Contextual guidance
-- **Example**: ["Enter a country" validation message on the Autocomplete page](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L157-L165)
+- **Example**: ["Enter a country" validation message on the Autocomplete page](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml)
 
 ### Schema Validation
 
@@ -425,7 +422,7 @@ Guidance components provide contextual help and information without requiring us
   - Type checking
   - Range validation
   - Pattern matching
-- **Example**: [Email format validation on the Multi Field Form](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L352-L364)
+- **Example**: [Email format validation on the Multi Field Form](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml)
 
 ### Error Display
 
@@ -434,7 +431,7 @@ Guidance components provide contextual help and information without requiring us
   - Inline error messages
   - Error summary
   - Accessibility support
-- **Example**: [Example Grant – Yes/No page (/yes-no-field)](./src/server/common/forms/definitions/example-grant-with-auth.yaml#L109-L123) uses inline errors and summaries when validation fails
+- **Example**: [Example Grant – Yes/No page (/yes-no-field)](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) uses inline errors and summaries when validation fails
 
 ## Submission & Confirmation
 
@@ -457,7 +454,7 @@ Guidance components provide contextual help and information without requiring us
   - Reference number display
   - Next steps guidance
   - Support information
-- **Configuration**: YAML-based confirmation content
+- **Configuration**: Confirmation content defined in the form definition metadata
 - **Example**: [ConfirmationPageController renders confirmation view](./src/server/confirmation/confirmation-page.controller.js#L17-L63)
 
 ### State Management
@@ -512,7 +509,7 @@ Guidance components provide contextual help and information without requiring us
 ### Security
 
 - Implement proper authentication
-- Use whitelist restrictions
+- Use allowlist restrictions
 - Validate all user input
 - Protect sensitive data
 

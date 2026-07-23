@@ -6,44 +6,24 @@ import { config } from '~/src/config/config.js'
 import { context } from './context/context.js'
 import * as filters from './filters/filters.js'
 import * as globals from './globals.js'
+import { govukFrontendPath, viewPaths } from './view-paths.js'
 
-export const viewPaths = (() => {
-  const serverDir = path.resolve(path.join(process.cwd(), 'src/server'))
-  return [
-    path.join(serverDir, 'views'),
-    path.join(serverDir, 'auth/views'),
-    path.join(serverDir, 'check-responses/views'),
-    path.join(serverDir, 'details-page/views'),
-    path.join(serverDir, 'common/components'),
-    path.join(serverDir, 'common/templates'),
-    path.join(serverDir, 'confirmation/views'),
-    path.join(serverDir, 'cookies/views'),
-    path.join(serverDir, 'declaration/views'),
-    path.join(serverDir, 'home/views'),
-    path.join(serverDir, 'land-grants/views'),
-    path.join(serverDir, 'payment/views'),
-    path.join(serverDir, 'land-grants/components'),
-    path.join(serverDir, 'non-land-grants/pigs-might-fly/views'),
-    path.join(serverDir, 'non-land-grants/methane/views'),
-    path.join(serverDir, 'score-results/views'),
-    path.join(serverDir, 'task-list/views'),
-    path.join(serverDir, 'print-submitted-application/views'),
-    path.join(serverDir, 'woodland/views'),
-    path.join(serverDir, 'cannot-submit/views'),
-    path.join(serverDir, 'common/map/views'),
-    path.join(serverDir, 'schemes/grasslands/views'),
-    path.join(serverDir, 'application-deleted/views')
-  ]
-})()
+export { viewPaths }
 
-const nunjucksEnvironment = nunjucks.configure(['node_modules/govuk-frontend/dist/', ...viewPaths], {
-  autoescape: true,
-  throwOnUndefined: false,
-  trimBlocks: true,
-  lstripBlocks: true,
-  watch: config.get('nunjucks.watch'),
-  noCache: config.get('nunjucks.noCache')
-})
+// The engine views path makes the plugin's partials (e.g. partials/components.html,
+// imported by check-details) resolvable when app routes render engine-styled views
+// outside the plugin's own nunjucks environment (e.g. the /dev demo pages).
+const nunjucksEnvironment = nunjucks.configure(
+  [govukFrontendPath, 'node_modules/@defra/forms-engine-plugin/.server/server/plugins/engine/views/', ...viewPaths],
+  {
+    autoescape: true,
+    throwOnUndefined: false,
+    trimBlocks: true,
+    lstripBlocks: true,
+    watch: config.get('nunjucks.watch'),
+    noCache: config.get('nunjucks.noCache')
+  }
+)
 
 /**
  * @satisfies {ServerRegisterPluginObject<ServerViewsConfiguration>}

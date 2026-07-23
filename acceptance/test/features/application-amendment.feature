@@ -1,7 +1,7 @@
 Feature: Application Amendment
 
     Scenario: A submitted application can be amended and re-submitted as a new application multiple times
-        Given there is no application state stored for CRN "1100964517" and SBI "115482347" and grant "example-grant-with-auth"
+        Given there is no application data for SBI "115482347" and grant "example-grant-with-auth"
 
         # start
         Given the user navigates to "/example-grant-with-auth"
@@ -227,6 +227,15 @@ Feature: Application Amendment
         Then the user should be at URL "autocomplete-field"
         When the user selects "Wales" for AutocompleteField "Country"
         And continues
+
+        # user revisits grants-ui
+        And the user starts a new browser session
+        And navigates to "/example-grant-with-auth/yes-no-field"
+        And logs in as CRN "1100964517"
+
+        # should still get redirected to reopened landing page until application resubmitted
+        Then the user should be at URL "reopened"
+        When the user continues
 
         # summary
         Then the user should be at URL "summary"

@@ -2,9 +2,6 @@ export const PARCELS_API_URL = '/api/map/parcels'
 export const PARCEL_TILES_URL = '/api/map/parcel-tiles/{z}/{x}/{y}'
 export const PARCELS_GEOJSON_URL = '/api/map/parcels/geojson'
 
-export const BASEMAP_PROVIDER_ORDNANCE_SURVEY = 'ordnance-survey'
-export const DEFAULT_BASEMAP_PROVIDER = BASEMAP_PROVIDER_ORDNANCE_SURVEY
-
 export const MAP_STYLE_URL = '/api/map/os-basemap'
 
 export function getMapStyleAttribution() {
@@ -14,16 +11,6 @@ export function getMapStyleAttribution() {
 export const TAG_NAME = 'parcel-map'
 
 export const MULTI_SELECT_ATTRIBUTE = 'multi-select'
-
-// --- TEMPORARY: OS Maps vs OpenStreetMap comparison (TGC-1418 follow-up) ---
-// Delete this block, BASEMAP_PROVIDER_OPENSTREETMAP's usages in index.js, and
-// the toggle in map-select-parcel.html once the comparison is complete.
-export const BASEMAP_PROVIDER_OPENSTREETMAP = 'openstreetmap'
-export const OSM_STYLE_URL = 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json'
-export const OSM_STYLE_ATTRIBUTION = '© OpenStreetMap contributors © CARTO'
-export const BASEMAP_PROVIDER_ATTRIBUTE = 'basemap-provider'
-export const BASEMAP_METRICS_ATTRIBUTE = 'basemap-metrics'
-// --- END TEMPORARY ---
 
 export const PARCEL_COLORS = [
   '#1d70b8', // govuk-blue

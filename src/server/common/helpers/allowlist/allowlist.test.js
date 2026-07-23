@@ -64,21 +64,6 @@ describe('allowlist plugin', () => {
     expect(fetchAllowedGrants).not.toHaveBeenCalled()
   })
 
-  it('continues when the slug is not in backendAllowlistEnabledSlugs (falls back to whitelist)', async () => {
-    const handler = registerAndGetHandler(server)
-    config.get.mockReturnValue(['farm-payments'])
-
-    const request = mockHapiRequest({
-      params: { slug: SLUG },
-      auth: { isAuthenticated: true, credentials: { crn: CRN, sbi: SBI } }
-    })
-
-    const result = await handler(request, h)
-
-    expect(fetchAllowedGrants).not.toHaveBeenCalled()
-    expect(result).toBe(h.continue)
-  })
-
   it('continues when slug is in the allowed grants list', async () => {
     const handler = registerAndGetHandler(server)
     fetchAllowedGrants.mockResolvedValue(['woodland', 'farm-payments'])

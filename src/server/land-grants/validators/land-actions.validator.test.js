@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { extractLandActionFields, validateLandActionsSelection } from './land-actions.validator.js'
+import {
+  extractLandActionFields,
+  validateLandActionsSelection,
+  validateSelectedActions
+} from './land-actions.validator.js'
 
 describe('land-actions.validator', () => {
   describe('extractLandActionFields', () => {
@@ -111,6 +115,32 @@ describe('land-actions.validator', () => {
       const result = validateLandActionsSelection(payload, 'landAction_')
 
       expect(result).toEqual([{ text: 'Select an action to do on this land parcel', href: '#landAction_1' }])
+    })
+  })
+
+  describe('validateSelectedActions', () => {
+    it('should return an error when no action is selected', () => {
+      const result = validateSelectedActions({})
+
+      expect(result).toEqual([{ text: 'Select an action to do on this land parcel', href: '#landAction' }])
+    })
+
+    it('should return no errors when a single action is selected (payload value is a string)', () => {
+      const result = validateSelectedActions({ landAction: 'CMOR1' })
+
+      expect(result).toEqual([])
+    })
+
+    it('should return no errors when multiple actions are selected (payload value is an array)', () => {
+      const result = validateSelectedActions({ landAction: ['CMOR1', 'UPL1'] })
+
+      expect(result).toEqual([])
+    })
+
+    it('should return an error when the field is present but empty', () => {
+      const result = validateSelectedActions({ landAction: '' })
+
+      expect(result).toEqual([{ text: 'Select an action to do on this land parcel', href: '#landAction' }])
     })
   })
 })

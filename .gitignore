@@ -24,6 +24,9 @@ localstack/config-broker-local
 localstack/config-broker/local-form-definitions/*
 !localstack/config-broker/local-form-definitions/README.md
 /.grants-ui-cli-state.json
+/.grants-ui-cli-sonar.json
+/.scannerwork/
 /acceptance/schemas/
 /woodland-grant-journey-tests-schemas/
 AGENTS.local.md
+/.codex

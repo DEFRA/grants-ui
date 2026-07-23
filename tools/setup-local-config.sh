@@ -355,9 +355,9 @@ if ! generate_release_file "$CONFIG_BROKER_LOCAL_STAGING/release.yml"; then
   fall_back_to_cache_or_fail "Failed to generate release.yml."
 fi
 
-# Full rebuild succeeded: atomically swap the freshly-built staging folder in
-# for the live folder. Only now is the previous cached copy removed.
-rm -rf "$CONFIG_BROKER_LOCAL"
-mv "$CONFIG_BROKER_LOCAL_STAGING" "$CONFIG_BROKER_LOCAL"
+# Full rebuild succeeded: refresh the live folder's contents without replacing
+# the folder itself. Docker Desktop binds the folder identity into existing WSL
+# containers, so replacing it leaves those containers with a stale mount source.
+node "$PROJECT_ROOT/tools/replace-directory-contents.js" "$CONFIG_BROKER_LOCAL_STAGING" "$CONFIG_BROKER_LOCAL"
 
 echo "Config broker local folder rebuilt at $CONFIG_BROKER_LOCAL."

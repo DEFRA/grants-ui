@@ -30,18 +30,6 @@ jobs:
           npm install --package-lock-only && git diff --exit-code package-lock.json || \
           (echo "ERROR: You need to run npm install and commit package-lock.json" && exit 1)
 
-      - uses: dorny/paths-filter@7b450fff21473bca461d4b92ce414b9d0420d706 # v4.0.2
-        id: changes
-        with:
-          filters: |
-            src:
-              - 'src/server/common/forms/definitions/example-grant-with-auth.yaml'
-
-      # run only if example grant config updated
-      - if: steps.changes.outputs.src == 'true'
-        run: |
-          ./tools/compare-remote-config.sh
-
   test:
     name: Test and Lint
     runs-on: ubuntu-latest
@@ -124,7 +112,7 @@ jobs:
           path: coverage
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@713881670b6b3676cda39549040e2d88c70d582e # v8.2.0
+        uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Needed to get PR information
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

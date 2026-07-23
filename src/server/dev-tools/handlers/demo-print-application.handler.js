@@ -1,11 +1,10 @@
 import { buildDemoData, buildDemoPayment, buildDemoPrintAnswers } from '../helpers/index.js'
-import { findFormBySlug, loadFormDefinition } from '../../common/forms/services/find-form-by-slug.js'
 import {
   buildPrintViewModel,
   enrichDefinitionWithListItems,
   processConfigurablePrintContent
 } from '../../common/helpers/print-application-service/print-application-service.js'
-import { generateFormNotFoundResponse } from '../utils/index.js'
+import { generateFormNotFoundResponse, resolveFormDefinition } from '../utils/index.js'
 import { debug, LogCodes } from '../../common/helpers/logging/log.js'
 
 /**
@@ -18,15 +17,13 @@ export async function demoPrintApplicationHandler(request, h) {
   try {
     const { slug } = request.params
 
-    const form = /** @type {import('../../common/forms/services/forms-redis.js').FormCacheEntry & {name: string}} */ (
-      await findFormBySlug(slug)
-    )
+    const definition = await resolveFormDefinition(request)
 
-    if (!form) {
+    if (!definition) {
       return generateFormNotFoundResponse(slug, h)
     }
 
-    const definition = await loadFormDefinition(form, request.server.methods.getFormService())
+    const form = { id: slug, slug, title: definition.name ?? slug, name: definition.name ?? slug }
 
     enrichDefinitionWithListItems(definition)
 

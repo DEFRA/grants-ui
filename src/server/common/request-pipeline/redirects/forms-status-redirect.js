@@ -9,6 +9,7 @@ import { mintLockToken } from '../../helpers/lock/lock-token.js'
 import { getCacheKey } from '../../helpers/state/get-cache-key-helper.js'
 import agreements from '~/src/config/agreements.js'
 import { getGrantCode } from '../../helpers/grant-code.js'
+import { getGrantVersion } from '../../helpers/grant-version.js'
 import { YarKeys } from '../../constants/session-keys.js'
 
 const APPLICATION_NOT_SUBMITTED_MESSAGE = 'Application not submitted'
@@ -109,7 +110,7 @@ async function persistStatus(request, newStatus, previousStatus, grantId, existi
 
   if (newStatus !== ApplicationStatus.CLEARED) {
     const { sbi, grantCode } = getCacheKey(request)
-    const grantVersion = /** @type {string | number | undefined} */ (request.app.model?.def?.metadata?.version) ?? 1 // Default to 1 to support non-config broker grants
+    const grantVersion = getGrantVersion(request)
     const contactId = request.auth?.credentials?.contactId || request.auth?.credentials?.crn
 
     if (!contactId) {
@@ -435,7 +436,7 @@ async function handlePostSubmission(request, h, context, previousStatus, grantCo
   const isAgreementsRedirect = rule.toPath === agreements.get('baseUrl')
   const redirectUrl = isAgreementsRedirect ? rule.toPath : buildRedirectUrl(grantId, rule.toPath)
 
-  const grantVersion = /** @type {{ grantVersion?: string | number | null }} */ (request.app).grantVersion ?? '1.0.0'
+  const grantVersion = getGrantVersion(request)
   request.yar.set(YarKeys.GRANT_APPLICATION_CONTEXT, { grantCode, grantVersion, clientRef: clientRef.toLowerCase() })
 
   if (request.path === redirectUrl) {

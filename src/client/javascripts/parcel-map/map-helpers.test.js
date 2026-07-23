@@ -7,6 +7,7 @@ import {
   nearestFeatureToPoint,
   getScreenBounds,
   buildSkeleton,
+  buildOverlay,
   buildColorExpr,
   resolveFeatureId,
   showTooltip,
@@ -15,38 +16,28 @@ import {
 } from './map-helpers.js'
 
 describe('buildParcelLayers', () => {
-  it('labels with Arial Regular for the OS provider', () => {
-    const layers = buildParcelLayers(['match', COMPOUND_ID_EXPR], undefined, 'ordnance-survey')
+  it('labels with Arial Regular', () => {
+    const layers = buildParcelLayers(['match', COMPOUND_ID_EXPR], undefined)
     expect(layers.label.layout['text-font']).toEqual(['Arial Regular'])
   })
 
-  it('labels with Open Sans Regular for the OpenStreetMap provider', () => {
-    const layers = buildParcelLayers(['match', COMPOUND_ID_EXPR], undefined, 'openstreetmap')
-    expect(layers.label.layout['text-font']).toEqual(['Open Sans Regular'])
-  })
-
   it('sets source-layer on every layer when provided (vector tiles)', () => {
-    const layers = buildParcelLayers(['match', COMPOUND_ID_EXPR], 'parcels', 'ordnance-survey')
+    const layers = buildParcelLayers(['match', COMPOUND_ID_EXPR], 'parcels')
     expect(layers.fill['source-layer']).toBe('parcels')
     expect(layers.outline['source-layer']).toBe('parcels')
     expect(layers.label['source-layer']).toBe('parcels')
   })
 
   it('omits source-layer when not provided (geojson source)', () => {
-    const layers = buildParcelLayers(['match', COMPOUND_ID_EXPR], undefined, 'ordnance-survey')
+    const layers = buildParcelLayers(['match', COMPOUND_ID_EXPR], undefined)
     expect(layers.fill).not.toHaveProperty('source-layer')
   })
 })
 
 describe('getMapStyle', () => {
-  it('returns the OS Maps style by default', () => {
-    const style = getMapStyle('ordnance-survey')
+  it('returns the OS Maps style', () => {
+    const style = getMapStyle()
     expect(style.url).toBe('/api/map/os-basemap')
-  })
-
-  it('returns the CartoCDN style for openstreetmap', () => {
-    const style = getMapStyle('openstreetmap')
-    expect(style.url).toBe('https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json')
   })
 })
 
@@ -235,6 +226,20 @@ describe('buildSkeleton', () => {
     const el = buildSkeleton()
     expect(el.getAttribute('role')).toBe('status')
     expect(el.textContent).toBe('Loading map…')
+  })
+})
+
+describe('buildOverlay', () => {
+  it('applies the given role and message, with no aria-label by default', () => {
+    const el = buildOverlay('There was a problem loading the map.', { role: 'alert' })
+    expect(el.getAttribute('role')).toBe('alert')
+    expect(el.getAttribute('aria-label')).toBeNull()
+    expect(el.textContent).toBe('There was a problem loading the map.')
+  })
+
+  it('sets aria-label when provided', () => {
+    const el = buildOverlay('Loading map…', { role: 'status', ariaLabel: 'Loading map…' })
+    expect(el.getAttribute('aria-label')).toBe('Loading map…')
   })
 })
 

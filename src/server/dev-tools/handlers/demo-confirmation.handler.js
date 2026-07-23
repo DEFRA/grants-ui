@@ -1,6 +1,5 @@
 import { buildDemoData } from '../helpers/index.js'
-import { generateFormNotFoundResponse } from '../utils/index.js'
-import { findFormBySlug } from '../../common/forms/services/find-form-by-slug.js'
+import { generateFormNotFoundResponse, resolveFormDefinition } from '../utils/index.js'
 import { ConfirmationService } from '../../confirmation/services/confirmation.service.js'
 import { debug, LogCodes } from '../../common/helpers/logging/log.js'
 
@@ -65,6 +64,9 @@ export function generateFallbackViewModel(error) {
   return ConfirmationService.buildViewModel({
     ...demoData,
     isDevelopmentMode: true,
+    // buildViewModel reads form.name unconditionally — omitting form crashes
+    // the fallback render and turns the original error into an opaque 500.
+    form: { name: 'Demo form' },
     confirmationContent: {
       html: `<h2 class="govuk-heading-m">Development Error</h2>
              <p class="govuk-body"><strong>⚠️ Development mode error occurred.</strong></p>
@@ -84,11 +86,13 @@ export async function demoConfirmationHandler(request, h) {
   try {
     const { slug } = request.params
 
-    const form = await findFormBySlug(slug)
+    const definition = await resolveFormDefinition(request)
 
-    if (!form) {
+    if (!definition) {
       return generateFormNotFoundResponse(slug, h)
     }
+
+    const form = { slug, title: definition.name ?? slug, name: definition.name ?? slug, metadata: definition.metadata }
 
     const { confirmationContent } = await loadConfirmationContent(form)
     const demoData = buildDemoData()
