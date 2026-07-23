@@ -1,7 +1,7 @@
 Feature: Mapping
 
     Scenario: User selects a land parcel from an interactive map
-        Given there is no application state stored for CRN "1100945520" and SBI "106842593" and grant "example-grant-with-map"
+        Given there is no application data for SBI "106842593" and grant "example-grant-with-map"
 
         # start
         Given the user navigates to "/example-grant-with-map"

@@ -4,17 +4,14 @@ import { transformStepArgument } from '../utils/step-argument-transformation.js'
 import Backend from '../utils/backend.js'
 import Mongo from '../utils/mongo.js'
 
+Given('there is no application data for SBI {string} and grant {string}', async function (sbi, grantCode) {
+  await Backend.clearTestData(sbi, grantCode)
+})
+
 Given(
   'there is no application lock for CRN {string} and SBI {string} and grant {string}',
   async function (crn, sbi, grantCode) {
     await Backend.deleteLock(crn, sbi, grantCode)
-  }
-)
-
-Given(
-  'there is no application state stored for CRN {string} and SBI {string} and grant {string}',
-  async function (crn, sbi, grantCode) {
-    await Backend.deleteState(crn, sbi, grantCode)
   }
 )
 
