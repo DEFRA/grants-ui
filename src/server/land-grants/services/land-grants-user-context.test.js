@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { BaseError } from '~/src/server/common/utils/errors/BaseError.js'
 import { getLandGrantsUserContext, validateLandGrantsUserContext } from './land-grants-user-context.js'
 
 const validContext = {
@@ -36,5 +37,13 @@ describe('validateLandGrantsUserContext', () => {
 
   it('returns a validated context without changing the token', () => {
     expect(validateLandGrantsUserContext(validContext)).toEqual(validContext)
+  })
+
+  it.each([
+    [{ ...validContext, defraIdToken: undefined }, 'Missing Defra ID token in Land Grants user context'],
+    [{ ...validContext, sbi: undefined }, 'Missing SBI in Land Grants user context']
+  ])('wraps validation failures in a BaseError', (context, message) => {
+    expect(() => validateLandGrantsUserContext(context)).toThrow(BaseError)
+    expect(() => validateLandGrantsUserContext(context)).toThrow(message)
   })
 })

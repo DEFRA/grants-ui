@@ -1,3 +1,5 @@
+import { BaseError } from '~/src/server/common/utils/errors/BaseError.js'
+
 /**
  * @param {AnyFormRequest | import('@hapi/hapi').Request} request
  * @returns {LandGrantsUserContext}
@@ -18,11 +20,11 @@ export function validateLandGrantsUserContext(userContext) {
   const sbi = userContext?.sbi
 
   if (typeof defraIdToken !== 'string' || !defraIdToken.trim()) {
-    throw new Error('Missing Defra ID token in Land Grants user context')
+    throw BaseError.wrap(new Error('Missing Defra ID token in Land Grants user context'))
   }
 
   if (typeof sbi !== 'string' || !sbi.trim()) {
-    throw new Error('Missing SBI in Land Grants user context')
+    throw BaseError.wrap(new Error('Missing SBI in Land Grants user context'))
   }
 
   return { defraIdToken, sbi }
