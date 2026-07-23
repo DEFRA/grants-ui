@@ -10,7 +10,7 @@ export function getLandGrantsUserContext(request) {
 }
 
 /**
- * @param {Partial<LandGrantsUserContext> | null | undefined} userContext
+ * @param {{ defraIdToken?: unknown, sbi?: unknown } | null | undefined} userContext
  * @returns {LandGrantsUserContext}
  */
 export function validateLandGrantsUserContext(userContext) {
