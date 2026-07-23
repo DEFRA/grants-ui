@@ -1,4 +1,4 @@
-import { stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
+import { stringifyParcel } from '~/src/shared/format-parcel.js'
 
 /**
  * Normalises hydrated parcels into the flat shape the map response is built

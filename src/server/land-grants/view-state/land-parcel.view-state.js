@@ -1,4 +1,4 @@
-import { stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
+import { stringifyParcel } from '~/src/shared/format-parcel.js'
 import { getConsentTypes } from '../utils/consent-types.js'
 import { getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
 import { getSelectedActionCodes } from '../utils/selected-actions-field.js'
@@ -133,15 +133,14 @@ export function addSelectedActionsToState(state, payload, groupedActions, parcel
 
   for (const actionCode of selectedCodes) {
     const actionInfo = allActions.find((a) => a.code === actionCode)
-    if (!actionInfo) {
-      continue
+    // Skip actions that don't exist, or quantity-required actions with no
+    // confirmed (non-zero) quantity - matching the page's live-refresh
+    // behaviour, an unconfirmed quantity means "not chosen".
+    const isConfirmedSelection =
+      actionInfo && (actionInfo.requiresMaxQuantity == null || hasSubmittedNonZeroQuantity(payload, actionInfo))
+    if (isConfirmedSelection) {
+      actionsObj[actionCode] = buildActionStateEntry(payload, actionInfo)
     }
-    // A quantity-required action with no confirmed (non-zero) quantity is
-    // treated as not chosen, matching the page's live-refresh behaviour.
-    if (actionInfo.requiresMaxQuantity != null && !hasSubmittedNonZeroQuantity(payload, actionInfo)) {
-      continue
-    }
-    actionsObj[actionCode] = buildActionStateEntry(payload, actionInfo)
   }
 
   return buildNewState(state, actionsObj, parcel)

@@ -6,7 +6,7 @@ import {
   fetchParcels,
   validateApplication
 } from '~/src/server/land-grants/services/land-grants.service.js'
-import { parseLandParcel, stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
+import { parseLandParcel, stringifyParcel } from '~/src/shared/format-parcel.js'
 import SelectGroupedActionsPageController from './select-grouped-actions-page.controller.js'
 import { error, log } from '~/src/server/common/helpers/logging/log.js'
 
@@ -42,7 +42,7 @@ vi.mock('~/src/config/config.js', async () => {
   return mockLandGrantsConfig()
 })
 vi.mock('~/src/server/land-grants/services/land-grants.service.js')
-vi.mock('~/src/server/land-grants/utils/format-parcel.js')
+vi.mock('~/src/shared/format-parcel.js')
 
 const mockParcelsResponse = [
   {
@@ -240,7 +240,8 @@ describe('SelectGroupedActionsPageController', () => {
       expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith({
         parcelId: 'parcel2',
         sheetId: 'sheet2',
-        enabledLandActions
+        enabledLandActions,
+        plannedActions: []
       })
     })
 
@@ -255,7 +256,8 @@ describe('SelectGroupedActionsPageController', () => {
       expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith({
         parcelId: 'parcel1',
         sheetId: 'sheet1',
-        enabledLandActions: []
+        enabledLandActions: [],
+        plannedActions: []
       })
     })
 

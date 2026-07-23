@@ -13,7 +13,7 @@ vi.mock('~/src/server/payment/payment-strategies.js', () => ({
   }
 }))
 
-vi.mock('~/src/server/land-grants/utils/format-parcel.js', () => ({
+vi.mock('~/src/shared/format-parcel.js', () => ({
   stringifyParcel: ({ parcelId, sheetId }) => `${sheetId}-${parcelId}`
 }))
 

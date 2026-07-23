@@ -74,12 +74,13 @@ function getCheckboxItemId(actionCode, isFirst) {
 export function mapActionToViewModel(action, addedActions, quantityErrorsByCode = {}, isFirst = false) {
   const existingAction = addedActions.find((a) => a.code === action.code)
   const quantityValue = existingAction?.value ?? ''
+  const checked = Boolean(existingAction)
 
   return {
     id: getCheckboxItemId(action.code, isFirst),
     value: action.code,
     text: action.description,
-    checked: Boolean(existingAction),
+    checked,
     attributes: {
       'data-available-unit': action.availableArea?.unit,
       // Set once here, never touched by the client - the full amount this

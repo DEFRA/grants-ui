@@ -3,13 +3,11 @@ import { error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { fetchAuthorisedParcelIds } from '~/src/server/land-grants/services/parcel-cache.js'
 import { fetchActionsWithPlannedActions } from '~/src/server/land-grants/services/land-grants.service.js'
-import { parseLandParcel } from '~/src/server/land-grants/utils/format-parcel.js'
+import { COMPOUND_PARCEL_ID_PATTERN, parseLandParcel } from '~/src/shared/format-parcel.js'
 
 const plannedActionsValidation = {
   params: Joi.object({
-    parcelId: Joi.string()
-      .pattern(/^[A-Za-z0-9]{6}-[0-9]{4}$/)
-      .required()
+    parcelId: Joi.string().pattern(COMPOUND_PARCEL_ID_PATTERN).required()
   }),
   payload: Joi.object({
     plannedActions: Joi.array()
@@ -39,7 +37,7 @@ async function actionsHandler(request, h) {
   const authorisedParcelIds = await fetchAuthorisedParcelIds(
     /** @type {AnyFormRequest} */ (/** @type {unknown} */ (request))
   )
-  if (!authorisedParcelIds || !authorisedParcelIds.includes(compoundParcelId)) {
+  if (!authorisedParcelIds?.includes(compoundParcelId)) {
     return h.response().code(statusCodes.forbidden)
   }
 

@@ -3,7 +3,7 @@ import {
   validateApplication
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import QuestionPageWithParcelCheckController from '~/src/server/common/controllers/question-page-with-parcel-check.controller.js'
-import { parseLandParcel } from '~/src/server/land-grants/utils/format-parcel.js'
+import { parseLandParcel } from '~/src/shared/format-parcel.js'
 import { log, error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { getAddedActionsForStateParcel } from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
 import { getParcelIdFromQuery } from '../utils/parcel-request.utils.js'
@@ -140,11 +140,21 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
   }
 
   /**
-   * Fetch actions with error handling
+   * Fetch actions with error handling.
+   * @param {AnyFormRequest} request
+   * @param {string} sheetId
+   * @param {string} parcelId
+   * @param {PlannedAction[]} [plannedActions] - When given, recomputes each
+   *   action's availableArea against this combination.
    */
-  async fetchActions(request, sheetId, parcelId) {
+  async fetchActions(request, sheetId, parcelId, plannedActions = []) {
     try {
-      return await fetchAvailableActionsForParcel({ parcelId, sheetId, enabledLandActions: this.enabledLandActions })
+      return await fetchAvailableActionsForParcel({
+        parcelId,
+        sheetId,
+        enabledLandActions: this.enabledLandActions,
+        plannedActions
+      })
     } catch (err) {
       const { sbi } = request.auth.credentials
       const { message: errorMessage, status: statusCode } = /** @type {Error & {status?: number}} */ (err)
@@ -366,4 +376,5 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
  * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
  * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
  * @import { PageQuestion } from '@defra/forms-model'
+ * @import { PlannedAction } from '~/src/server/land-grants/types/land-grants.client.d.js'
  */

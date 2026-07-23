@@ -4,6 +4,7 @@
 // available. A selected action is never disabled by its own response.
 import { ACTION_QUANTITY_FIELD_PREFIX, getActionQuantityFieldName } from '../../../shared/action-quantity-field.js'
 import { formatAreaUnit } from '../../../shared/format-area-unit.js'
+import { isValidCompoundParcelId } from '../../../shared/format-parcel.js'
 
 const CHECKBOX_NAME = 'landAction'
 const QUANTITY_DEBOUNCE_MS = 500
@@ -113,9 +114,66 @@ function buildPlannedActions(form) {
 }
 
 /**
- * Applies one action's availableArea from the refresh response. A checked
- * action's hint/max still update from its own (self-competing) response,
- * but it's never disabled by it - only unchecked actions grey out.
+ * Whether a checkbox should grey out given its refreshed availableArea. A
+ * checked action is never marked unavailable by its own (self-competing)
+ * response - only unchecked actions grey out.
+ * @param {HTMLInputElement} checkbox
+ * @param {{ value: number, unit: string } | undefined} availableArea
+ * @returns {boolean}
+ */
+function computeIsUnavailable(checkbox, availableArea) {
+  if (checkbox.checked || availableArea == null) {
+    return false
+  }
+  const quantityInput = getQuantityInput(checkbox)
+  // A quantity action needs whatever's validly typed (nothing typed = needs
+  // nothing); a non-quantity action always needs its full original area.
+  const needs = (quantityInput ? getValidTypedQuantity(checkbox) : getTotalAvailableArea(checkbox)) ?? 0
+  return availableArea.value === 0 || availableArea.value < needs
+}
+
+/**
+ * Shows/hides the "not compatible" message alongside a checkbox.
+ * @param {HTMLInputElement} checkbox
+ * @param {boolean} isUnavailable
+ */
+function toggleUnavailableMessage(checkbox, isUnavailable) {
+  const item = /** @type {HTMLElement | null} */ (checkbox.closest('.govuk-checkboxes__item'))
+  const message = item?.querySelector(`.${UNAVAILABLE_CLASS}`)
+  if (!isUnavailable) {
+    message?.remove()
+    return
+  }
+  if (!message && item) {
+    const p = document.createElement('p')
+    p.className = `${UNAVAILABLE_CLASS} govuk-hint govuk-checkboxes__hint`
+    p.textContent = UNAVAILABLE_MESSAGE
+    item.appendChild(p)
+  }
+}
+
+/**
+ * Syncs a quantity-required action's own input (disabled state, max, hint)
+ * to its refreshed availableArea.
+ * @param {HTMLInputElement} checkbox
+ * @param {{ availableArea?: { value: number, unit: string }, requiresMaxQuantity?: number }} action
+ * @param {boolean} isUnavailable
+ */
+function syncQuantityInput(checkbox, action, isUnavailable) {
+  const quantityInput = getQuantityInput(checkbox)
+  if (action.requiresMaxQuantity == null || !quantityInput || !action.availableArea) {
+    return
+  }
+  quantityInput.disabled = isUnavailable
+  quantityInput.max = String(action.availableArea.value)
+  const hint = document.getElementById(`${quantityInput.id}-hint`)
+  if (hint) {
+    hint.textContent = availabilityHintText(action.availableArea.value, action.availableArea.unit)
+  }
+}
+
+/**
+ * Applies one action's availableArea from the refresh response.
  * @param {HTMLInputElement} checkbox
  * @param {{ availableArea?: { value: number, unit: string }, requiresMaxQuantity?: number }} action
  */
@@ -125,34 +183,11 @@ function applyAvailability(checkbox, action) {
     checkbox.setAttribute(AVAILABLE_UNIT_ATTR, availableArea.unit)
   }
 
-  const quantityInput = getQuantityInput(checkbox)
-  // A quantity action needs whatever's validly typed (nothing typed = needs
-  // nothing); a non-quantity action always needs its full original area.
-  const needs = quantityInput ? (getValidTypedQuantity(checkbox) ?? 0) : getTotalAvailableArea(checkbox)
-  const isUnavailable =
-    !checkbox.checked && availableArea != null && (availableArea.value === 0 || availableArea.value < (needs ?? 0))
+  const isUnavailable = computeIsUnavailable(checkbox, availableArea)
   checkbox.disabled = isUnavailable
 
-  const item = /** @type {HTMLElement | null} */ (checkbox.closest('.govuk-checkboxes__item'))
-  const message = item?.querySelector(`.${UNAVAILABLE_CLASS}`)
-  if (isUnavailable && !message && item) {
-    const p = document.createElement('p')
-    p.className = `${UNAVAILABLE_CLASS} govuk-hint govuk-checkboxes__hint`
-    p.textContent = UNAVAILABLE_MESSAGE
-    item.appendChild(p)
-  } else if (!isUnavailable) {
-    message?.remove()
-  }
-
-  if (action.requiresMaxQuantity == null || !quantityInput || !availableArea) {
-    return
-  }
-  quantityInput.disabled = isUnavailable
-  quantityInput.max = String(availableArea.value)
-  const hint = document.getElementById(`${quantityInput.id}-hint`)
-  if (hint) {
-    hint.textContent = availabilityHintText(availableArea.value, availableArea.unit)
-  }
+  toggleUnavailableMessage(checkbox, isUnavailable)
+  syncQuantityInput(checkbox, action, isUnavailable)
 }
 
 /**
@@ -193,7 +228,8 @@ function createAvailabilityRefresher(form, parcelId) {
   let requestId = 0
 
   return async function refreshAvailability() {
-    const thisRequestId = ++requestId
+    requestId += 1
+    const thisRequestId = requestId
     const plannedActions = buildPlannedActions(form)
     const actions = await postPlannedActions(parcelId, plannedActions)
 
@@ -217,12 +253,19 @@ export function initSelectActionsPage(form) {
     return
   }
   const parcelId = new URLSearchParams(window.location.search).get('parcelId')
-  if (!parcelId) {
+  if (!parcelId || !isValidCompoundParcelId(parcelId)) {
     return
   }
 
   const refreshAvailability = createAvailabilityRefresher(form, parcelId)
   const debouncedRefresh = debounce(refreshAvailability, QUANTITY_DEBOUNCE_MS)
+
+  // A saved selection from a previous visit is already checked on render -
+  // run one refresh immediately so any now-incompatible action greys out
+  // without waiting for the user to touch anything.
+  if (buildPlannedActions(form).length > 0) {
+    refreshAvailability()
+  }
 
   form.addEventListener('change', (event) => {
     const target = /** @type {HTMLElement} */ (event.target)
@@ -230,15 +273,14 @@ export function initSelectActionsPage(form) {
       return
     }
     const quantityInput = getQuantityInput(target)
-    if (!target.checked) {
+    if (!target.checked && quantityInput) {
       // Clear any typed quantity on uncheck, so a stale value can't linger
       // and confuse a future read or the user re-checking the box.
-      if (quantityInput) {
-        quantityInput.value = ''
-      }
-    } else if (quantityInput && getValidTypedQuantity(target) == null) {
-      // Nothing valid typed yet - checking the box alone doesn't claim
-      // anything, so there's nothing new to ask the backend about.
+      quantityInput.value = ''
+    }
+    // Nothing valid typed yet - checking the box alone doesn't claim
+    // anything, so there's nothing new to ask the backend about.
+    if (target.checked && quantityInput && getValidTypedQuantity(target) == null) {
       return
     }
     refreshAvailability()
@@ -260,12 +302,6 @@ export function initSelectActionsPage(form) {
       debouncedRefresh()
     }
   })
-
-  // The page can render with actions already checked (a saved selection) -
-  // their competing effect on other actions must show up immediately.
-  if (buildPlannedActions(form).length > 0) {
-    refreshAvailability()
-  }
 }
 
 // This module is only bundled on select-actions.html, which renders one

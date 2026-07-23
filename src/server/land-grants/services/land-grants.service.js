@@ -1,7 +1,7 @@
 import { formatCurrency } from '~/src/config/nunjucks/filters/format-currency.js'
 import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
-import { stringifyParcel } from '../utils/format-parcel.js'
+import { stringifyParcel } from '~/src/shared/format-parcel.js'
 import { stateToLandActionsMapper } from '../mappers/state-to-land-grants-mapper.js'
 import { config } from '~/src/config/config.js'
 import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js'
@@ -84,16 +84,27 @@ const createGroup = (name, groupActions) => ({
 })
 
 /**
- * Fetches available actions for a given parcel.
- * @param {{ parcelId?: string, sheetId?: string, enabledLandActions?: string[] }} parcel
+ * Fetches available actions for a given parcel. When plannedActions is
+ * given (e.g. the parcel's already-saved selection), each action's
+ * availableArea is recomputed against that combination - used to render
+ * the select-actions page with incompatible actions already greyed out on
+ * initial load, without a separate client-side round-trip. Bypasses the
+ * cache in that case, since the cache key isn't keyed on plannedActions and
+ * would risk serving a stale combination.
+ * @param {{ parcelId?: string, sheetId?: string, enabledLandActions?: string[], plannedActions?: PlannedAction[] }} parcel
  * @returns {Promise<{actions: ActionGroup[], parcel: {parcelId: string, sheetId: string, size: Size}}>}- Parcel data with actions
  * @throws {Error}
  */
-export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = '', enabledLandActions = [] }) {
+export async function fetchAvailableActionsForParcel({
+  parcelId = '',
+  sheetId = '',
+  enabledLandActions = [],
+  plannedActions = []
+}) {
   const parcelKey = stringifyParcel({ sheetId, parcelId })
   const enabledActions = normaliseEnabledLandActions(enabledLandActions)
   const cacheKey = buildParcelActionsCacheKey(parcelKey, enabledActions)
-  const cached = getCachedParcel(cacheKey)
+  const cached = plannedActions.length === 0 ? getCachedParcel(cacheKey) : null
 
   if (cached) {
     return cached
@@ -102,7 +113,11 @@ export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = 
   /** @type {ActionGroup[]} */
   const actions = []
   const parcelIds = [parcelKey]
-  const { parcels, groups: groupDefinitions = [] } = await parcelsWithExtendedInfo(parcelIds, LAND_GRANTS_API_URL)
+  const { parcels, groups: groupDefinitions = [] } = await parcelsWithExtendedInfo(
+    parcelIds,
+    LAND_GRANTS_API_URL,
+    plannedActions
+  )
   const foundParcel = parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)
   const actionsForParcel = foundParcel?.actions?.map(mapAction) || []
 
@@ -131,7 +146,9 @@ export async function fetchAvailableActionsForParcel({ parcelId = '', sheetId = 
     actions
   }
 
-  setCachedParcel(cacheKey, result)
+  if (plannedActions.length === 0) {
+    setCachedParcel(cacheKey, result)
+  }
   return result
 }
 

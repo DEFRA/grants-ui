@@ -96,6 +96,20 @@ describe('initSelectActionsPage', () => {
     expect(global.fetch).not.toHaveBeenCalled()
   })
 
+  // The plugin route validates parcelId server-side too, but rejecting a
+  // malformed value before it's ever used to build a URL closes off the
+  // taint path at the source rather than relying solely on encodeURIComponent.
+  it('is a no-op when the URL parcelId does not match the expected shape', () => {
+    window.history.pushState(null, '', '/select-actions?parcelId=<script>alert(1)</script>')
+    const form = setupDom([{ code: 'CMOR1', availableArea: { value: 10, unit: 'ha' } }])
+    global.fetch = vi.fn()
+
+    initSelectActionsPage(form)
+    form.querySelector('input[type="checkbox"]').dispatchEvent(new Event('change', { bubbles: true }))
+
+    expect(global.fetch).not.toHaveBeenCalled()
+  })
+
   it('always sends one request with the full, unfiltered plannedActions list', async () => {
     const form = setupDom([
       { code: 'CMOR1', checked: true, availableArea: { value: 10, unit: 'ha' } },
@@ -136,10 +150,7 @@ describe('initSelectActionsPage', () => {
       },
       { code: 'CLIG3', availableArea: { value: 45.2, unit: 'ha' } }
     ])
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ actions: [{ code: 'CLIG3', availableArea: { value: 0, unit: 'ha' } }] })
-    })
+    global.fetch = fetchOk({ actions: [] })
 
     initSelectActionsPage(form)
     await flushPromises()
@@ -148,14 +159,15 @@ describe('initSelectActionsPage', () => {
     expect(global.fetch).toHaveBeenCalledWith(
       '/api/land-grants/actions/SD7946-0155',
       expect.objectContaining({
-        body: JSON.stringify({ plannedActions: [{ actionCode: 'CSAM3', quantity: 3.25, unit: 'ha' }] })
+        body: JSON.stringify({
+          plannedActions: [{ actionCode: 'CSAM3', quantity: 3.25, unit: 'ha' }]
+        })
       })
     )
-    expect(form.querySelector('input[value="CLIG3"]').disabled).toBe(true)
   })
 
   it('does not run an initial refresh on load when nothing is checked', () => {
-    const form = setupDom([{ code: 'CMOR1', availableArea: { value: 10, unit: 'ha' } }])
+    const form = setupDom([{ code: 'CLIG3', availableArea: { value: 45.2, unit: 'ha' } }])
     global.fetch = vi.fn()
 
     initSelectActionsPage(form)
@@ -766,6 +778,8 @@ describe('initSelectActionsPage', () => {
       actions: [{ code: 'CLIG3', availableArea: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
     })
     initSelectActionsPage(form)
+
+    form.querySelector('input[value="CLIG3"]').dispatchEvent(new Event('change', { bubbles: true }))
     await flushPromises()
 
     const clig3 = form.querySelector('input[value="CLIG3"]')

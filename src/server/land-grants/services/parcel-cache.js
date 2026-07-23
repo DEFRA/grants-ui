@@ -1,6 +1,6 @@
 import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
-import { stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
+import { stringifyParcel } from '~/src/shared/format-parcel.js'
 
 const SECONDS_PER_MINUTE = 60
 const MS_PER_SECOND = 1000

@@ -203,7 +203,7 @@ describe('land-grants service', () => {
         enabledLandActions
       })
 
-      expect(parcelsWithExtendedInfo).toHaveBeenCalledWith(['SHEET123-PARCEL456'], mockApiEndpoint)
+      expect(parcelsWithExtendedInfo).toHaveBeenCalledWith(['SHEET123-PARCEL456'], mockApiEndpoint, [])
 
       expect(result).toEqual({
         parcel: {
@@ -384,7 +384,7 @@ describe('land-grants service', () => {
 
       const result = await fetchAvailableActionsForParcel({})
 
-      expect(parcelsWithExtendedInfo).toHaveBeenCalledWith(['-'], mockApiEndpoint)
+      expect(parcelsWithExtendedInfo).toHaveBeenCalledWith(['-'], mockApiEndpoint, [])
       expect(result).toEqual({
         parcel: {
           sheetId: '',
@@ -761,7 +761,7 @@ describe('land-grants service', () => {
           enabledLandActions
         })
 
-        expect(parcelsWithExtendedInfo).toHaveBeenCalledWith(['SHEET123-PARCEL456'], mockApiEndpoint)
+        expect(parcelsWithExtendedInfo).toHaveBeenCalledWith(['SHEET123-PARCEL456'], mockApiEndpoint, [])
 
         expect(result).toEqual({
           parcel: {

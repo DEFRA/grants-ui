@@ -42,7 +42,7 @@ vi.mock('~/src/server/common/map/map.mock.plugin.js', () => ({
   buildMockParcelsResponse: vi.fn()
 }))
 
-vi.mock('~/src/server/land-grants/utils/format-parcel.js', () => ({
+vi.mock('~/src/shared/format-parcel.js', () => ({
   stringifyParcel: vi.fn((p) => `${p.sheetId}-${p.parcelId}`)
 }))
 

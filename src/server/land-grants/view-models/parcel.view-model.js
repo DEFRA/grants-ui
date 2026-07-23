@@ -1,5 +1,5 @@
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
-import { stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
+import { stringifyParcel } from '~/src/shared/format-parcel.js'
 
 /**
  * Maps land parcel data to view models for rendering in forms.
