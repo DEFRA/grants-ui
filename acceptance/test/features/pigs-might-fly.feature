@@ -1,7 +1,7 @@
 Feature: Pigs Might Fly
 
     Scenario: Application is successfully submitted through the pigs-might-fly journey
-        Given there is no application state stored for CRN "1100946268" and SBI "106498131" and grant "pigs-might-fly"
+        Given there is no application data for SBI "106498131" and grant "pigs-might-fly"
 
         # start
         Given the user navigates to "/pigs-might-fly"
