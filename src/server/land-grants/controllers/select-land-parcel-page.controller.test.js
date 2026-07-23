@@ -82,6 +82,7 @@ describe('SelectLandParcelPageController', () => {
     auth: {
       isAuthenticated: true,
       credentials: {
+        token: 'defra-id-access-token',
         sbi: '106284736',
         crn: '1102838829',
         name: 'John Doe',
@@ -159,7 +160,10 @@ describe('SelectLandParcelPageController', () => {
     it('gets parcels info and renders view', async () => {
       const result = await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
 
-      expect(fetchParcels).toHaveBeenCalledWith(mockRequest)
+      expect(fetchParcels).toHaveBeenCalledWith(mockRequest, {
+        defraIdToken: 'defra-id-access-token',
+        sbi: '106284736'
+      })
       expect(mockH.view).toHaveBeenCalledWith(
         'select-land-parcel',
         expect.objectContaining({

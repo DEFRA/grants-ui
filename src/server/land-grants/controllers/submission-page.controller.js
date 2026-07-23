@@ -8,6 +8,7 @@ import {
 import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
 import { stateToLandGrantsGasAnswers } from '~/src/server/land-grants/mappers/state-to-gas-answers-mapper.js'
 import { validateApplication } from '~/src/server/land-grants/services/land-grants.service.js'
+import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { ApplicationStatus } from '~/src/server/common/constants/application-status.js'
 import { persistSubmissionToApi } from '~/src/server/common/helpers/state/persist-submission-helper.js'
@@ -199,12 +200,15 @@ export default class SubmissionPageController extends SummaryPageController {
       }
 
       try {
-        const validationResult = await validateApplication({
-          applicationId: /** @type {string} */ (referenceNumber),
-          crn: /** @type {string} */ (crn),
-          sbi: /** @type {string} */ (sbi),
-          state
-        })
+        const userContext = getLandGrantsUserContext(request)
+        const validationResult = await validateApplication(
+          {
+            applicationId: /** @type {string} */ (referenceNumber),
+            crn: /** @type {string} */ (crn),
+            state
+          },
+          userContext
+        )
         const { valid } = validationResult
         if (!valid) {
           return this.renderSubmissionError(h, request, context, validationResult.id)

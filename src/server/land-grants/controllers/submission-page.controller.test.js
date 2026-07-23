@@ -312,7 +312,7 @@ describe('SubmissionPageController', () => {
 
     beforeEach(() => {
       postRequest = {
-        auth: { credentials: { sbi: '123456789', crn: 'crn123' } },
+        auth: { credentials: { token: 'defra-id-access-token', sbi: '123456789', crn: 'crn123' } },
         server: {},
         params: { slug: 'test-grant' }
       }
@@ -331,12 +331,14 @@ describe('SubmissionPageController', () => {
       const handler = controller.makePostRouteHandler()
       const result = await handler(postRequest, postContext, postH)
 
-      expect(validateApplication).toHaveBeenCalledWith({
-        applicationId: 'REF123',
-        crn: 'crn123',
-        sbi: '123456789',
-        state: postContext.state
-      })
+      expect(validateApplication).toHaveBeenCalledWith(
+        {
+          applicationId: 'REF123',
+          crn: 'crn123',
+          state: postContext.state
+        },
+        { defraIdToken: 'defra-id-access-token', sbi: '123456789' }
+      )
       expect(controller.submitGasApplication).toHaveBeenCalledWith(postRequest, {
         identifiers: {
           clientRef: 'ref123',
@@ -372,28 +374,15 @@ describe('SubmissionPageController', () => {
       expect(identifiers).not.toHaveProperty('previousClientRef')
     })
 
-    it('should handle undefined auth', async () => {
+    it('should fail before validation when auth is undefined', async () => {
       postRequest = { server: {}, params: { slug: 'test-grant' } }
       postContext.state = { previousReferenceNumber: 'REF345' }
-      const mockValidationResult = { id: 'val-123', valid: true }
-      validateApplication.mockResolvedValue(mockValidationResult)
-      vi.spyOn(controller, 'submitGasApplication').mockResolvedValue({ status: 204 })
-      vi.spyOn(controller, 'handleSuccessfulSubmission').mockResolvedValue('proceeded')
 
       const handler = controller.makePostRouteHandler()
       await handler(postRequest, postContext, postH)
 
-      expect(controller.submitGasApplication).toHaveBeenCalledWith(postRequest, {
-        identifiers: {
-          clientRef: 'ref123',
-          previousClientRef: 'ref345',
-          crn: undefined,
-          frn: undefined,
-          sbi: undefined
-        },
-        state: postContext.state,
-        validationResult: mockValidationResult
-      })
+      expect(validateApplication).not.toHaveBeenCalled()
+      expect(postH.view).toHaveBeenCalledWith('submission-error', expect.any(Object))
     })
 
     it('should extract frn from applicant business reference', async () => {
@@ -498,7 +487,6 @@ describe('SubmissionPageController', () => {
     })
 
     it('should handle validation error gracefully', async () => {
-      postRequest = { auth: undefined, server: {}, params: { slug: 'test-grant' } }
       validateApplication.mockRejectedValue(new Error('Validation failed'))
 
       const handler = controller.makePostRouteHandler()
@@ -509,8 +497,8 @@ describe('SubmissionPageController', () => {
         expect.objectContaining({
           grantType: 'test-grant',
           referenceNumber: 'REF123',
-          sbi: undefined,
-          crn: undefined,
+          sbi: '123456789',
+          crn: 'crn123',
           errorMessage: 'Validation failed'
         }),
         postRequest
