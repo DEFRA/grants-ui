@@ -21,7 +21,7 @@ const LAND_GRANTS_SERVICE = 'grants-ui-backend'
  * @throws {Error & {code?: number, status?: number}}
  */
 export async function postToLandGrantsApiRaw(endpoint, body, baseUrl, userContext) {
-  const { defraIdToken, sbi } = validateLandGrantsUserContext(userContext)
+  const { defraIdToken } = validateLandGrantsUserContext(userContext)
   const url = `${baseUrl}${endpoint}`
   log(LogCodes.LAND_GRANTS.API_REQUEST, { endpoint, url })
 
@@ -37,10 +37,7 @@ export async function postToLandGrantsApiRaw(endpoint, body, baseUrl, userContex
         ...createApiHeadersForLandGrantsBackend(),
         'x-forwarded-authorization': defraIdToken
       }),
-      body: JSON.stringify({
-        ...body,
-        sbi
-      })
+      body: JSON.stringify(body)
     })
 
     if (!response.ok) {
@@ -167,8 +164,9 @@ export async function parcelsGroups(parcelIds, baseUrl, userContext) {
  * @returns {Promise<ParcelResponse>}
  */
 export async function parcelsWithFields(fields, parcelIds, baseUrl, userContext) {
+  const { sbi } = validateLandGrantsUserContext(userContext)
   const endpoint = '/api/v2/parcels'
-  return postToLandGrantsApi(endpoint, { parcelIds, fields }, baseUrl, userContext)
+  return postToLandGrantsApi(endpoint, { parcelIds, fields, sbi }, baseUrl, userContext)
 }
 
 /**
@@ -187,15 +185,16 @@ export async function parcelsWithExtendedInfo(parcelIds, baseUrl, userContext) {
 
 /**
  * Calls the Land Grants API validate application endpoint.
- * @param {Omit<ValidateApplicationRequest, 'sbi'> & { sbi?: string }} request
+ * @param {Omit<ValidateApplicationRequest, 'sbi'>} request
  * @param {string} baseUrl
  * @param {LandGrantsUserContext} userContext
  * @returns {Promise<ValidateApplicationResponse>} - Validation result
  * @throws {Error}
  */
 export async function validate(request, baseUrl, userContext) {
+  const { sbi } = validateLandGrantsUserContext(userContext)
   const endpoint = '/api/v2/application/validate'
-  return postToLandGrantsApi(endpoint, request, baseUrl, userContext)
+  return postToLandGrantsApi(endpoint, { ...request, sbi: Number(sbi) }, baseUrl, userContext)
 }
 
 /**

@@ -18,7 +18,6 @@ const makeLandGrantsHeaders = () => ({
   'Content-Type': 'application/json',
   'x-forwarded-authorization': userContext.defraIdToken
 })
-const withAuthenticatedSbi = (body) => ({ ...body, sbi: userContext.sbi })
 const postToLandGrantsApi = (endpoint, body, baseUrl) => postToLandGrantsApiClient(endpoint, body, baseUrl, userContext)
 
 function createProvider() {
@@ -111,7 +110,7 @@ describe('wmp/payments/calculate', () => {
         method: 'POST',
         path: '/api/v1/wmp/payments/calculate',
         headers: makeLandGrantsHeaders(),
-        body: withAuthenticatedSbi(payload)
+        body: payload
       })
       .willRespondWith({
         status: 200,
@@ -149,7 +148,7 @@ describe('wmp/payments/calculate', () => {
         method: 'POST',
         path: '/api/v1/wmp/payments/calculate',
         headers: makeLandGrantsHeaders(),
-        body: withAuthenticatedSbi(invalidPayload)
+        body: invalidPayload
       })
       .willRespondWith({
         status: 400,
@@ -221,7 +220,7 @@ describe('wmp/validate', () => {
         method: 'POST',
         path: '/api/v1/wmp/validate',
         headers: makeLandGrantsHeaders(),
-        body: withAuthenticatedSbi(payload)
+        body: payload
       })
       .willRespondWith({
         status: 200,
@@ -274,7 +273,7 @@ describe('wmp/validate', () => {
         method: 'POST',
         path: '/api/v1/wmp/validate',
         headers: makeLandGrantsHeaders(),
-        body: withAuthenticatedSbi(payload)
+        body: payload
       })
       .willRespondWith({
         status: 200,
@@ -315,7 +314,7 @@ describe('wmp/validate', () => {
         method: 'POST',
         path: '/api/v1/wmp/validate',
         headers: makeLandGrantsHeaders(),
-        body: withAuthenticatedSbi(invalidPayload)
+        body: invalidPayload
       })
       .willRespondWith({
         status: 400,

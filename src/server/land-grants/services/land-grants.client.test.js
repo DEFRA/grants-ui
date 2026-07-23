@@ -69,7 +69,7 @@ describe('Land Grants client', () => {
       expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/submit`, {
         method: 'POST',
         headers: expectedHeaders,
-        body: JSON.stringify({ data: 'test', sbi: mockUserContext.sbi })
+        body: JSON.stringify({ data: 'test' })
       })
       expect(mockFetch.mock.calls[0][1].headers).not.toHaveProperty('gateway-type')
       expect(result).toEqual(mockResponse)
@@ -83,13 +83,13 @@ describe('Land Grants client', () => {
       expect(mockFetch).not.toHaveBeenCalled()
     })
 
-    it('overrides a payload SBI with the authenticated SBI', async () => {
+    it('preserves an endpoint-owned SBI', async () => {
       mockFetch.mockResolvedValueOnce({ ok: true, json: () => ({ ok: true }) })
 
-      await postToLandGrantsApi('/submit', { sbi: 'spoofed-sbi' }, mockApiEndpoint, mockUserContext)
+      await postToLandGrantsApi('/submit', { sbi: 987654321 }, mockApiEndpoint, mockUserContext)
 
       const [, options] = mockFetch.mock.calls[0]
-      expect(JSON.parse(options.body)).toEqual({ sbi: mockUserContext.sbi })
+      expect(JSON.parse(options.body)).toEqual({ sbi: 987654321 })
     })
 
     it('should handle 404 error', async () => {
@@ -234,7 +234,7 @@ describe('Land Grants client', () => {
       expect(mockFetch).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
-          body: JSON.stringify({ ...testBody, sbi: mockUserContext.sbi })
+          body: JSON.stringify(testBody)
         })
       )
     })
@@ -370,7 +370,7 @@ describe('Land Grants client', () => {
       )
       for (const [, options] of mockFetch.mock.calls) {
         expect(options.headers['x-forwarded-authorization']).toBe(mockUserContext.defraIdToken)
-        expect(JSON.parse(options.body).sbi).toBe(mockUserContext.sbi)
+        expect(JSON.parse(options.body)).not.toHaveProperty('sbi')
       }
       expect(JSON.stringify(log.mock.calls)).not.toContain(mockUserContext.defraIdToken)
     })
@@ -585,7 +585,7 @@ describe('Land Grants client', () => {
       expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/payments/calculate`, {
         method: 'POST',
         headers: expectedHeaders,
-        body: JSON.stringify({ data: 'test', sbi: mockUserContext.sbi })
+        body: JSON.stringify({ data: 'test' })
       })
       expect(result).toEqual(mockResponse)
     })
@@ -604,7 +604,7 @@ describe('Land Grants client', () => {
       expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/application/validate`, {
         method: 'POST',
         headers: expectedHeaders,
-        body: JSON.stringify({ data: 'test', sbi: mockUserContext.sbi })
+        body: JSON.stringify({ data: 'test', sbi: Number(mockUserContext.sbi) })
       })
       expect(result).toEqual(mockResponse)
     })
@@ -684,7 +684,7 @@ describe('Land Grants client', () => {
         `${mockApiEndpoint}/api/v1/parcel-tiles/locate`,
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify({ parcelIds: ['SD7148-9160'], sbi: mockUserContext.sbi })
+          body: JSON.stringify({ parcelIds: ['SD7148-9160'] })
         })
       )
       expect(result).toEqual(mockResponse)
@@ -747,7 +747,7 @@ describe('Land Grants client', () => {
         `${mockApiEndpoint}/api/v1/parcel-tiles/12/100/200`,
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify({ parcelIds: ['SD7148-9160'], sbi: mockUserContext.sbi })
+          body: JSON.stringify({ parcelIds: ['SD7148-9160'] })
         })
       )
       expect(Buffer.isBuffer(result)).toBe(true)
