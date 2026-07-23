@@ -2,13 +2,9 @@ import { expect } from '@playwright/test'
 import { getBackendAuthorizationToken } from './backend-auth-helper.js'
 import { mintLockToken } from './lock-token.js'
 
-const BASE_BACKEND_URL = () => process.env.BASE_BACKEND_URL || 'http://localhost:3001'
+const BASE_BACKEND_URL = () => process.env.BASE_BACKEND_URL
 
 const LOCKED = Symbol('locked')
-
-// The resolved grant version is a grant-level property, so cache it per grant
-// code to avoid re-probing the backend on every state/lock operation.
-const grantVersionCache = new Map()
 
 class Backend {
   /**
@@ -54,16 +50,12 @@ class Backend {
    * mirroring the grants-ui app. Backend-sourced (config-broker) grants are
    * served at their released version (e.g. "1.0.1"); legacy YAML-only grants
    * have no backend definition and resolve to undefined (the backend default
-   * applies). The version is grant-level, so when the requested application is
-   * locked by another applicant it is resolved from an unlocked probe instead.
+   * applies). When the requested application is locked by another applicant
+   * it is resolved from an unlocked probe instead.
    *
    * @returns {Promise<string | undefined>} the resolved version, or undefined
    */
   async resolveGrantVersion(crn, sbi, grantCode) {
-    if (grantVersionCache.has(grantCode)) {
-      return grantVersionCache.get(grantCode)
-    }
-
     let version = await this.probeGrantVersion(crn, sbi, grantCode)
     if (version === LOCKED) {
       const unlockedSbi = String(Math.floor(900000000 + Math.random() * 99999999))
@@ -73,10 +65,14 @@ class Backend {
       version = undefined
     }
 
-    grantVersionCache.set(grantCode, version)
     return version
   }
 
+  /**
+   * Releases the application lock held by a specific owner (crn), leaving
+   * any other user's lock on the same (sbi, grantCode) untouched. Used
+   * mid-scenario to unlock one user's session without disturbing another's.
+   */
   async deleteLock(crn, sbi, grantCode) {
     const grantVersion = (await this.resolveGrantVersion(crn, sbi, grantCode)) ?? 1
     const response = await fetch(
@@ -91,17 +87,21 @@ class Backend {
     expect(response.status === 200 || response.status === 404).toBe(true)
   }
 
-  async deleteState(crn, sbi, grantCode) {
-    const grantVersion = await this.resolveGrantVersion(crn, sbi, grantCode)
-    const versionQuery = grantVersion ? `&grantVersion=${grantVersion}` : ''
-    const response = await fetch(`${BASE_BACKEND_URL()}/state?sbi=${sbi}&grantCode=${grantCode}${versionQuery}`, {
+  /**
+   * Clears all test data (application state, submissions, and locks) for an
+   * (sbi, grantCode) pair, across every grantVersion, via the backend's
+   * /admin/test-data endpoint. Used as pre-test teardown in place of the
+   * older per-resource deleteState/deleteLock calls.
+   */
+  async clearTestData(sbi, grantCode) {
+    const response = await fetch(`${BASE_BACKEND_URL()}/admin/test-data?sbi=${sbi}&grantCode=${grantCode}`, {
       method: 'DELETE',
       headers: {
-        Authorization: `Bearer ${getBackendAuthorizationToken()}`,
-        'x-application-lock-owner': mintLockToken(crn, sbi, grantCode, grantVersion)
+        Authorization: `Bearer ${getBackendAuthorizationToken()}`
       }
     })
-    expect(response.status === 200 || response.status === 404).toBe(true)
+    expect(response.status).toBe(200)
+    return await response.json()
   }
 
   async getState(crn, sbi, grantCode) {
