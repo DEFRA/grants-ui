@@ -611,16 +611,55 @@ describe('parcels', () => {
         method: 'POST',
         path: '/api/v2/parcels',
         headers: { 'Content-Type': 'application/json' },
-        body: { parcelIds: ['SD6743-8083'], fields: ['actions', 'size'] }
+        body: { parcelIds: ['SD6743-8083'], fields: ['actions', 'size'], plannedActions: [] }
       })
       .willRespondWith({ status: 200, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
       .executeTest(async (mockserver) => {
         const response = await postToLandGrantsApi(
           '/api/v2/parcels',
-          { parcelIds: ['SD6743-8083'], fields: ['actions', 'size'] },
+          { parcelIds: ['SD6743-8083'], fields: ['actions', 'size'], plannedActions: [] },
           mockserver.url
         )
         expect(response.parcels[0]).toEqual(parcelWithActionsAndSizeExample)
+      })
+  })
+
+  it('returns HTTP 200 with availableArea recomputed against a non-empty plannedActions selection', async () => {
+    const parcelWithRecomputedAreaExample = {
+      parcelId: 'SD6743',
+      sheetId: '8083',
+      size: { value: 23.3424, unit: 'ha' },
+      actions: [
+        {
+          code: 'CMOR1',
+          availableArea: { value: 0, unit: 'ha' },
+          description: 'Assess moorland and produce a written record',
+          ratePerUnitGbp: 10.6,
+          ratePerAgreementPerYearGbp: 272
+        }
+      ]
+    }
+    const EXPECTED_BODY = like({ message: 'success', parcels: eachLike(parcelWithRecomputedAreaExample) })
+    const plannedActions = [{ actionCode: 'UPL1', quantity: 20.75, unit: 'ha' }]
+
+    const provider = createProvider()
+    await provider
+      .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
+      .uponReceiving('a v2 request for a single parcel with actions and size, competing against a planned selection')
+      .withRequest({
+        method: 'POST',
+        path: '/api/v2/parcels',
+        headers: { 'Content-Type': 'application/json' },
+        body: { parcelIds: ['SD6743-8083'], fields: ['actions', 'size'], plannedActions }
+      })
+      .willRespondWith({ status: 200, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
+      .executeTest(async (mockserver) => {
+        const response = await postToLandGrantsApi(
+          '/api/v2/parcels',
+          { parcelIds: ['SD6743-8083'], fields: ['actions', 'size'], plannedActions },
+          mockserver.url
+        )
+        expect(response.parcels[0]).toEqual(parcelWithRecomputedAreaExample)
       })
   })
 
@@ -640,14 +679,14 @@ describe('parcels', () => {
         method: 'POST',
         path: '/api/v2/parcels',
         headers: { 'Content-Type': 'application/json' },
-        body: { parcelIds: ['MALFORMED-PARCEL'], fields: ['actions', 'size'] }
+        body: { parcelIds: ['MALFORMED-PARCEL'], fields: ['actions', 'size'], plannedActions: [] }
       })
       .willRespondWith({ status: 400, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
       .executeTest(async (mockserver) => {
         await expect(
           postToLandGrantsApi(
             '/api/v2/parcels',
-            { parcelIds: ['MALFORMED-PARCEL'], fields: ['actions', 'size'] },
+            { parcelIds: ['MALFORMED-PARCEL'], fields: ['actions', 'size'], plannedActions: [] },
             mockserver.url
           )
         ).rejects.toMatchObject({ code: 400, status: 400 })
@@ -670,14 +709,14 @@ describe('parcels', () => {
         method: 'POST',
         path: '/api/v2/parcels',
         headers: { 'Content-Type': 'application/json' },
-        body: { parcelIds: ['SD1234-5678'], fields: ['actions', 'size'] }
+        body: { parcelIds: ['SD1234-5678'], fields: ['actions', 'size'], plannedActions: [] }
       })
       .willRespondWith({ status: 404, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
       .executeTest(async (mockserver) => {
         await expect(
           postToLandGrantsApi(
             '/api/v2/parcels',
-            { parcelIds: ['SD1234-5678'], fields: ['actions', 'size'] },
+            { parcelIds: ['SD1234-5678'], fields: ['actions', 'size'], plannedActions: [] },
             mockserver.url
           )
         ).rejects.toMatchObject({ code: 404, status: 404 })
