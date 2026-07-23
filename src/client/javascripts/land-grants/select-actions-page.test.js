@@ -586,26 +586,23 @@ describe('initSelectActionsPage', () => {
     expect(JSON.parse(options.body).plannedActions).toEqual([{ actionCode: 'CSAM3', quantity: 3, unit: 'ha' }])
   })
 
-  it.each([[''], ['  ']])(
-    'does not fire a request when the quantity field is left empty (%j)',
-    async (typedValue) => {
-      const form = setupDom([
-        { code: 'CSAM3', checked: true, availableArea: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 }
-      ])
-      global.fetch = fetchOk({ actions: [] })
-      initSelectActionsPage(form)
-      await flushPromises()
-      global.fetch.mockClear()
-      vi.useFakeTimers()
+  it.each([[''], ['  ']])('does not fire a request when the quantity field is left empty (%j)', async (typedValue) => {
+    const form = setupDom([
+      { code: 'CSAM3', checked: true, availableArea: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 }
+    ])
+    global.fetch = fetchOk({ actions: [] })
+    initSelectActionsPage(form)
+    await flushPromises()
+    global.fetch.mockClear()
+    vi.useFakeTimers()
 
-      const quantityInput = form.querySelector('#landActionQuantity_CSAM3')
-      quantityInput.value = typedValue
-      quantityInput.dispatchEvent(new Event('input', { bubbles: true }))
-      await vi.advanceTimersByTimeAsync(500)
+    const quantityInput = form.querySelector('#landActionQuantity_CSAM3')
+    quantityInput.value = typedValue
+    quantityInput.dispatchEvent(new Event('input', { bubbles: true }))
+    await vi.advanceTimersByTimeAsync(500)
 
-      expect(global.fetch).not.toHaveBeenCalled()
-    }
-  )
+    expect(global.fetch).not.toHaveBeenCalled()
+  })
 
   // Regression: "0", "abc", "-1" are typed-but-invalid, not "nothing typed" -
   // an invalid claim must still be treated as needing the full available
