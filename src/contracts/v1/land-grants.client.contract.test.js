@@ -1,7 +1,7 @@
 import { PactV3, MatchersV3, SpecificationVersion } from '@pact-foundation/pact'
 import path from 'path'
 import { vi } from 'vitest'
-import { postToLandGrantsApi } from '~/src/server/land-grants/services/land-grants.client'
+import { postToLandGrantsApi as postToLandGrantsApiClient } from '~/src/server/land-grants/services/land-grants.client'
 
 vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
   const { mockLogHelper } = await import('~/src/__mocks__/logger-mocks.js')
@@ -13,6 +13,14 @@ vi.mock('~/src/server/common/helpers/retry.js', () => ({
 }))
 
 const { like, eachLike, string } = MatchersV3
+const userContext = { defraIdToken: 'defra-id-access-token', sbi: '123456789' }
+const makeLandGrantsHeaders = () => ({
+  'Content-Type': 'application/json',
+  'gateway-type': 'external',
+  'x-forwarded-authorization': userContext.defraIdToken
+})
+const withAuthenticatedSbi = (body) => ({ ...body, sbi: userContext.sbi })
+const postToLandGrantsApi = (endpoint, body, baseUrl) => postToLandGrantsApiClient(endpoint, body, baseUrl, userContext)
 
 function createProvider() {
   return new PactV3({
@@ -103,8 +111,8 @@ describe('wmp/payments/calculate', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v1/wmp/payments/calculate',
-        headers: { 'Content-Type': 'application/json' },
-        body: payload
+        headers: makeLandGrantsHeaders(),
+        body: withAuthenticatedSbi(payload)
       })
       .willRespondWith({
         status: 200,
@@ -141,8 +149,8 @@ describe('wmp/payments/calculate', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v1/wmp/payments/calculate',
-        headers: { 'Content-Type': 'application/json' },
-        body: invalidPayload
+        headers: makeLandGrantsHeaders(),
+        body: withAuthenticatedSbi(invalidPayload)
       })
       .willRespondWith({
         status: 400,
@@ -213,8 +221,8 @@ describe('wmp/validate', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v1/wmp/validate',
-        headers: { 'Content-Type': 'application/json' },
-        body: payload
+        headers: makeLandGrantsHeaders(),
+        body: withAuthenticatedSbi(payload)
       })
       .willRespondWith({
         status: 200,
@@ -266,8 +274,8 @@ describe('wmp/validate', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v1/wmp/validate',
-        headers: { 'Content-Type': 'application/json' },
-        body: payload
+        headers: makeLandGrantsHeaders(),
+        body: withAuthenticatedSbi(payload)
       })
       .willRespondWith({
         status: 200,
@@ -307,8 +315,8 @@ describe('wmp/validate', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v1/wmp/validate',
-        headers: { 'Content-Type': 'application/json' },
-        body: invalidPayload
+        headers: makeLandGrantsHeaders(),
+        body: withAuthenticatedSbi(invalidPayload)
       })
       .willRespondWith({
         status: 400,
