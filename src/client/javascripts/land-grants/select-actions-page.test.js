@@ -5,9 +5,14 @@ import { initSelectActionsPage } from './select-actions-page.js'
 function checkboxItemHtml({ code, checked = false, availableArea, requiresMaxQuantity, quantityValue = '' }) {
   const unitAttr = availableArea ? ` data-available-unit="${availableArea.unit}"` : ''
   const totalAreaAttr = availableArea ? ` data-total-available-area="${availableArea.value}"` : ''
+  const conditionalId = `conditional-landAction-${code}`
+  const ariaControlsAttr = requiresMaxQuantity ? ` aria-controls="${conditionalId}"` : ''
+  // Matches govuk-frontend's real markup: the conditional reveal is a SIBLING
+  // of .govuk-checkboxes__item, not nested inside it, and is only visible
+  // (no --hidden class) when the checkbox starts out checked.
   const quantityInput = requiresMaxQuantity
     ? `
-      <div class="govuk-checkboxes__conditional">
+    <div class="govuk-checkboxes__conditional${checked ? '' : ' govuk-checkboxes__conditional--hidden'}" id="${conditionalId}">
         <div class="govuk-form-group">
           <input id="landActionQuantity_${code}" name="landActionQuantity_${code}" type="text" value="${quantityValue}" max="${requiresMaxQuantity}">
           <div id="landActionQuantity_${code}-hint">${requiresMaxQuantity} ha available</div>
@@ -17,10 +22,10 @@ function checkboxItemHtml({ code, checked = false, availableArea, requiresMaxQua
     : ''
   return `
     <div class="govuk-checkboxes__item">
-      <input class="govuk-checkboxes__input" id="landAction-${code}" name="landAction" type="checkbox" value="${code}"${checked ? ' checked' : ''}${unitAttr}${totalAreaAttr}>
+      <input class="govuk-checkboxes__input" id="landAction-${code}" name="landAction" type="checkbox" value="${code}"${checked ? ' checked' : ''}${unitAttr}${totalAreaAttr}${ariaControlsAttr}>
       <label for="landAction-${code}">${code}</label>
-      ${quantityInput}
-    </div>`
+    </div>
+    ${quantityInput}`
 }
 
 function setupDom(items) {
@@ -32,6 +37,12 @@ function setupDom(items) {
       </div>
     </form>`
   return document.querySelector('form')
+}
+
+/** @param {HTMLInputElement} checkbox */
+function isConditionalHidden(checkbox) {
+  const conditionalId = checkbox.getAttribute('aria-controls')
+  return document.getElementById(conditionalId).classList.contains('govuk-checkboxes__conditional--hidden')
 }
 
 /**
@@ -175,6 +186,27 @@ describe('initSelectActionsPage', () => {
     expect(global.fetch).not.toHaveBeenCalled()
   })
 
+  // Regression: the server renders a checked action's hint against its full
+  // total, not what's left after its own saved quantity - that must be
+  // recomputed on load the same way typing does, not left stale until the
+  // user edits the field.
+  it('updates a pre-selected quantity input hint on load to reflect what remains after its own saved value', () => {
+    const form = setupDom([
+      {
+        code: 'CSAM3',
+        checked: true,
+        availableArea: { value: 18.5, unit: 'ha' },
+        requiresMaxQuantity: 18.5,
+        quantityValue: '3.25'
+      }
+    ])
+    global.fetch = vi.fn()
+
+    initSelectActionsPage(form)
+
+    expect(document.getElementById('landActionQuantity_CSAM3-hint').textContent).toBe('15.25 hectares available')
+  })
+
   // The route validates crumb in restful mode (X-CSRF-Token header) rather
   // than the default payload-field mode, so a fetch() call never trips
   // @hapi/crumb's autoGenerate into silently rotating the cookie and
@@ -250,12 +282,11 @@ describe('initSelectActionsPage', () => {
     expect(csam3.disabled).toBe(true)
   })
 
-  // Regression: a non-zero but reduced availableArea must still disable an
-  // action with no quantity input, since it always needs its FULL original
-  // area - there's no partial-amount option for it to fall back to. Only
-  // checking for a hard 0 missed this: 0.2271 remaining is still "some"
-  // area, but CLIG3 originally needed all 0.3271, so it's no longer usable.
-  it('greys out a non-quantity action whose reduced (but non-zero) availableArea no longer covers what it needs', async () => {
+  // Regression: a non-quantity action only needs SOME area left (> 0), not
+  // its full original total - it has no partial-amount concept of its own,
+  // so a reduced-but-nonzero availableArea (e.g. after a competing action
+  // takes a partial claim) must not grey it out.
+  it('does not grey out a non-quantity action whose availableArea is reduced but still non-zero', async () => {
     const form = setupDom([
       {
         code: 'CSAM3',
@@ -280,7 +311,7 @@ describe('initSelectActionsPage', () => {
     form.querySelector('input[value="CSAM3"]').dispatchEvent(new Event('change', { bubbles: true }))
     await flushPromises()
 
-    expect(form.querySelector('input[value="CLIG3"]').disabled).toBe(true)
+    expect(form.querySelector('input[value="CLIG3"]').disabled).toBe(false)
   })
 
   // Regression: a quantity-required action that's checked but hasn't had a
@@ -288,7 +319,10 @@ describe('initSelectActionsPage', () => {
   // original total - unlike a non-quantity action, it hasn't committed to
   // needing the whole thing. A competing claim reducing its available area
   // to a smaller but still non-zero number must not disable it.
-  it('does not grey out a checked-but-unconfirmed quantity-required action whose availableArea is reduced but still non-zero', async () => {
+  // A checked, quantity-required action with nothing typed isn't a real
+  // selection - it's force-unchecked and disabled rather than left as a
+  // silent no-op, so it can't masquerade as a confirmed choice.
+  it('unchecks and disables a checked quantity-required action that has no confirmed quantity', async () => {
     const form = setupDom([
       {
         code: 'CLIG3',
@@ -309,7 +343,13 @@ describe('initSelectActionsPage', () => {
     initSelectActionsPage(form)
     await flushPromises()
 
-    expect(form.querySelector('input[value="CSAM3"]').disabled).toBe(false)
+    const csam3 = form.querySelector('input[value="CSAM3"]')
+    expect(csam3.checked).toBe(false)
+    expect(csam3.disabled).toBe(true)
+    expect(isConditionalHidden(csam3)).toBe(true)
+    expect(csam3.closest('.govuk-checkboxes__item').textContent).toContain(
+      'Not compatible with other selected actions.'
+    )
   })
 
   // Two genuinely competing, both-checked actions: mockApi zeroes an action's
@@ -759,7 +799,7 @@ describe('initSelectActionsPage', () => {
     expect(form.querySelector('#landActionQuantity_CSAM3').value).toBe('')
   })
 
-  it('updates the data-available-unit attribute and disables the checkbox when its area drops below what it needs, for actions without a quantity input', async () => {
+  it('updates the data-available-unit attribute but does not disable a non-quantity action whose area is reduced but still non-zero', async () => {
     const form = setupDom([
       { code: 'CMOR1', checked: true, availableArea: { value: 10, unit: 'ha' } },
       { code: 'UPL1', availableArea: { value: 5, unit: 'ha' } }
@@ -772,7 +812,7 @@ describe('initSelectActionsPage', () => {
 
     const upl1 = form.querySelector('input[value="UPL1"]')
     expect(upl1.getAttribute('data-available-unit')).toBe('ha')
-    expect(upl1.disabled).toBe(true)
+    expect(upl1.disabled).toBe(false)
   })
 
   it('updates the quantity input max and hint from the response for an UNCHECKED quantity-required action', async () => {
@@ -809,6 +849,85 @@ describe('initSelectActionsPage', () => {
     const quantityInput = form.querySelector('#landActionQuantity_CSAM3')
     expect(quantityInput.max).toBe('18.5')
     expect(document.getElementById('landActionQuantity_CSAM3-hint').textContent).toBe('18.5 ha available')
+  })
+
+  // Regression: disabling a quantity-required action's checkbox must also
+  // hide its conditional reveal panel - otherwise an empty, disabled input
+  // is left visibly open on the page.
+  it('hides the conditional reveal panel when a quantity-required action is disabled', async () => {
+    const form = setupDom([
+      { code: 'CMOR1', checked: true, availableArea: { value: 10, unit: 'ha' } },
+      { code: 'CSAM3', availableArea: { value: 5, unit: 'ha' }, requiresMaxQuantity: 5 }
+    ])
+    global.fetch = fetchOk({
+      actions: [{ code: 'CSAM3', availableArea: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
+    })
+    initSelectActionsPage(form)
+
+    form.querySelector('input[value="CMOR1"]').dispatchEvent(new Event('change', { bubbles: true }))
+    await flushPromises()
+
+    const csam3 = form.querySelector('input[value="CSAM3"]')
+    expect(csam3.disabled).toBe(true)
+    expect(isConditionalHidden(csam3)).toBe(true)
+  })
+
+  // Regression: re-enabling must also unhide the panel again.
+  // Regression: our own code must never force a conditional panel open -
+  // that's the browser's job on checked state, driven by a user click. Only
+  // forcing it shut (never open) means an uncheck's native close is never
+  // fought and reopened by a slightly-later availability response.
+  it('does not force an unchecked action back open when it becomes available again', async () => {
+    const form = setupDom([
+      { code: 'CMOR1', checked: true, availableArea: { value: 10, unit: 'ha' } },
+      { code: 'CSAM3', availableArea: { value: 5, unit: 'ha' }, requiresMaxQuantity: 5 }
+    ])
+    const csam3 = form.querySelector('input[value="CSAM3"]')
+    const conditionalId = csam3.getAttribute('aria-controls')
+    document.getElementById(conditionalId).classList.add('govuk-checkboxes__conditional--hidden')
+    csam3.disabled = true
+
+    global.fetch = fetchOk({
+      actions: [{ code: 'CSAM3', availableArea: { value: 5, unit: 'ha' }, requiresMaxQuantity: 5 }]
+    })
+    initSelectActionsPage(form)
+
+    form.querySelector('input[value="CMOR1"]').dispatchEvent(new Event('change', { bubbles: true }))
+    await flushPromises()
+
+    expect(csam3.disabled).toBe(false)
+    expect(isConditionalHidden(csam3)).toBe(true)
+  })
+
+  // Regression: unchecking a quantity-required action closes its panel via
+  // the browser's native click handling - our own async availability
+  // refresh landing afterwards must not force it back open.
+  it('does not re-open the conditional panel after unchecking an action while a refresh is in flight', async () => {
+    const form = setupDom([
+      {
+        code: 'CSAM3',
+        checked: true,
+        availableArea: { value: 5, unit: 'ha' },
+        requiresMaxQuantity: 5,
+        quantityValue: '2'
+      }
+    ])
+    global.fetch = fetchOk({
+      actions: [{ code: 'CSAM3', availableArea: { value: 5, unit: 'ha' }, requiresMaxQuantity: 5 }]
+    })
+    initSelectActionsPage(form)
+    await flushPromises()
+
+    const csam3 = form.querySelector('input[value="CSAM3"]')
+    const conditionalId = csam3.getAttribute('aria-controls')
+    csam3.checked = false
+    // Simulate the browser's native click handling closing the panel
+    // synchronously, before our async change handler's refresh resolves.
+    document.getElementById(conditionalId).classList.add('govuk-checkboxes__conditional--hidden')
+    csam3.dispatchEvent(new Event('change', { bubbles: true }))
+    await flushPromises()
+
+    expect(isConditionalHidden(csam3)).toBe(true)
   })
 
   // Regression: a selected (checked) action must never be disabled by its

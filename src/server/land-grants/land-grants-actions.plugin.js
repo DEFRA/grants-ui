@@ -32,12 +32,11 @@ const plannedActionsValidation = {
  * @param {ResponseToolkit} h
  */
 async function actionsHandler(request, h) {
+  const formRequest = /** @type {AnyFormRequest} */ (/** @type {unknown} */ (request))
   const { parcelId: compoundParcelId } = request.params
   const { plannedActions } = /** @type {{ plannedActions: PlannedAction[] }} */ (request.payload)
 
-  const authorisedParcelIds = await fetchAuthorisedParcelIds(
-    /** @type {AnyFormRequest} */ (/** @type {unknown} */ (request))
-  )
+  const authorisedParcelIds = await fetchAuthorisedParcelIds(formRequest)
   if (!authorisedParcelIds?.includes(compoundParcelId)) {
     return h.response().code(statusCodes.forbidden)
   }
@@ -45,7 +44,7 @@ async function actionsHandler(request, h) {
   const [sheetId, parcelId] = parseLandParcel(compoundParcelId)
 
   try {
-    const userContext = getLandGrantsUserContext(/** @type {AnyFormRequest} */ (/** @type {unknown} */ (request)))
+    const userContext = getLandGrantsUserContext(formRequest)
     const result = await fetchActionsWithPlannedActions({ parcelId, sheetId, plannedActions }, userContext)
     return h.response(result).code(statusCodes.ok)
   } catch (err) {

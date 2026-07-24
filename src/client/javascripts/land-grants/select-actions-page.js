@@ -91,6 +91,29 @@ function updateHintLive(checkbox) {
   hint.textContent = availabilityHintText(remaining, unit)
 }
 
+/**
+ * A checked, quantity-required action with nothing typed isn't a real
+ * selection yet - unchecking and disabling it (rather than leaving it
+ * checked-but-empty) stops it from silently vanishing from state on submit
+ * while still looking selected on the page. An action that already has a
+ * quantity is left alone; the user has committed to it.
+ * @param {HTMLElement} form
+ * @returns {Set<HTMLInputElement>} Checkboxes just force-unchecked, so the
+ *   availability response for this same refresh doesn't re-enable them.
+ */
+function uncheckUnconfirmedQuantityActions(form) {
+  const forced = new Set()
+  for (const checkbox of getCheckboxes(form)) {
+    const quantityInput = getQuantityInput(checkbox)
+    if (checkbox.checked && quantityInput && getEffectiveQuantity(checkbox) == null) {
+      checkbox.checked = false
+      markUnavailable(checkbox, quantityInput)
+      forced.add(checkbox)
+    }
+  }
+  return forced
+}
+
 /** @param {HTMLElement} form
  * @returns {Array<{ actionCode: string, quantity: number, unit: string }>}
  */
@@ -111,7 +134,10 @@ function buildPlannedActions(form) {
 }
 
 /**
- * A checked action is never disabled by its own (self-competing) response.
+ * A checked action is never disabled by its own (self-competing) response. A
+ * non-quantity action just needs some area left (> 0), not its full original
+ * total - unlike a quantity-required action, it hasn't committed to a
+ * specific amount, so a reduced-but-nonzero area doesn't make it unusable.
  * @param {HTMLInputElement} checkbox
  * @param {{ value: number, unit: string } | undefined} availableArea
  * @returns {boolean}
@@ -121,7 +147,10 @@ function computeIsUnavailable(checkbox, availableArea) {
     return false
   }
   const quantityInput = getQuantityInput(checkbox)
-  const needs = (quantityInput ? getValidTypedQuantity(checkbox) : getTotalAvailableArea(checkbox)) ?? 0
+  if (!quantityInput) {
+    return availableArea.value === 0
+  }
+  const needs = getValidTypedQuantity(checkbox) ?? 0
   return availableArea.value === 0 || availableArea.value < needs
 }
 
@@ -143,21 +172,72 @@ function toggleUnavailableMessage(checkbox, isUnavailable) {
   }
 }
 
-/** @param {HTMLInputElement} checkbox
- * @param {{ availableArea?: { value: number, unit: string }, requiresMaxQuantity?: number }} action
- * @param {boolean} isUnavailable
+/**
+ * Hides a checkbox's conditional reveal panel (its quantity input) - GOV.UK's
+ * own JS only toggles this in response to a user click, so a panel left open
+ * by an earlier check would otherwise sit there empty and disabled instead
+ * of being hidden along with the checkbox. Only ever force-hides; never
+ * force-shows, since that's the browser's own job on checked state and doing
+ * it here would re-open a panel the user (or an uncheck) already closed.
+ * @param {HTMLInputElement} checkbox
  */
-function syncQuantityInput(checkbox, action, isUnavailable) {
+function hideConditionalReveal(checkbox) {
+  const conditionalId = checkbox.getAttribute('aria-controls')
+  const reveal = conditionalId ? document.getElementById(conditionalId) : null
+  reveal?.classList.add('govuk-checkboxes__conditional--hidden')
+}
+
+/**
+ * Marks a checkbox as unavailable: disables it (and its quantity input, if
+ * any), hides the quantity panel, and shows the "not compatible" message.
+ * The single place all three visual aspects of "not a valid selection" stay
+ * in sync, whether driven by an availability response or a client-side rule
+ * like an unconfirmed quantity.
+ * @param {HTMLInputElement} checkbox
+ * @param {HTMLInputElement | null} [quantityInput]
+ */
+function markUnavailable(checkbox, quantityInput = getQuantityInput(checkbox)) {
+  checkbox.disabled = true
+  if (quantityInput) {
+    quantityInput.disabled = true
+  }
+  hideConditionalReveal(checkbox)
+  toggleUnavailableMessage(checkbox, true)
+}
+
+/**
+ * Refreshes a quantity input's max/hint from the latest availableArea.
+ * Availability (disabled state, panel, message) is handled separately by
+ * the caller via markUnavailable / clearUnavailable.
+ * @param {HTMLInputElement} checkbox
+ * @param {{ availableArea?: { value: number, unit: string }, requiresMaxQuantity?: number }} action
+ */
+function syncQuantityInputBounds(checkbox, action) {
   const quantityInput = getQuantityInput(checkbox)
   if (action.requiresMaxQuantity == null || !quantityInput || !action.availableArea) {
     return
   }
-  quantityInput.disabled = isUnavailable
   quantityInput.max = String(action.availableArea.value)
   const hint = document.getElementById(`${quantityInput.id}-hint`)
   if (hint) {
     hint.textContent = availabilityHintText(action.availableArea.value, action.availableArea.unit)
   }
+}
+
+/**
+ * Marks a checkbox (and its quantity input, if any) as available: clears
+ * disabled state and the "not compatible" message. The panel's own open/
+ * closed state is left alone - only the browser (via a checked-state click)
+ * ever opens it.
+ * @param {HTMLInputElement} checkbox
+ */
+function clearUnavailable(checkbox) {
+  checkbox.disabled = false
+  const quantityInput = getQuantityInput(checkbox)
+  if (quantityInput) {
+    quantityInput.disabled = false
+  }
+  toggleUnavailableMessage(checkbox, false)
 }
 
 /** @param {HTMLInputElement} checkbox
@@ -169,11 +249,13 @@ function applyAvailability(checkbox, action) {
     checkbox.setAttribute(AVAILABLE_UNIT_ATTR, availableArea.unit)
   }
 
-  const isUnavailable = computeIsUnavailable(checkbox, availableArea)
-  checkbox.disabled = isUnavailable
+  syncQuantityInputBounds(checkbox, action)
 
-  toggleUnavailableMessage(checkbox, isUnavailable)
-  syncQuantityInput(checkbox, action, isUnavailable)
+  if (computeIsUnavailable(checkbox, availableArea)) {
+    markUnavailable(checkbox)
+  } else {
+    clearUnavailable(checkbox)
+  }
 }
 
 /**
@@ -214,6 +296,7 @@ function createAvailabilityRefresher(form, parcelId) {
   let requestId = 0
 
   return async function refreshAvailability() {
+    const forcedUnchecked = uncheckUnconfirmedQuantityActions(form)
     requestId += 1
     const thisRequestId = requestId
     const plannedActions = buildPlannedActions(form)
@@ -225,6 +308,9 @@ function createAvailabilityRefresher(form, parcelId) {
     }
 
     for (const checkbox of getCheckboxes(form)) {
+      if (forcedUnchecked.has(checkbox)) {
+        continue
+      }
       const action = actions?.find((a) => a.code === checkbox.value)
       if (action) {
         applyAvailability(checkbox, action)
@@ -249,6 +335,13 @@ export function initSelectActionsPage(form) {
   // Grey out any already-checked (saved) selection that's now incompatible.
   if (buildPlannedActions(form).length > 0) {
     refreshAvailability()
+  }
+
+  // Recompute a pre-selected action's hint against its own saved quantity.
+  for (const checkbox of getCheckboxes(form)) {
+    if (getQuantityInput(checkbox)?.value.trim()) {
+      updateHintLive(checkbox)
+    }
   }
 
   form.addEventListener('change', (event) => {
