@@ -43,5 +43,10 @@
 
         {{ defraSupportDetails({ typeOfSupport: 'question', email: supportEmail }) }}
       {% endif %}
+
+      {% if feedbackSurveyUrl %}
+        <h2 class="govuk-heading-m">Give feedback</h2>
+        <p class="govuk-body"><a class="govuk-link" href="{{ feedbackSurveyUrl }}" target="_blank" rel="noopener noreferrer">Give feedback on this service (opens in new tab)</a></p>
+      {% endif %}
   {% endcall %}
 {% endblock %}

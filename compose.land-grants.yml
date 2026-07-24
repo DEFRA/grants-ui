@@ -59,7 +59,7 @@ services:
       GRANTS_CONFIG_BUCKET: configs-bucket
       SQS_ENDPOINT: http://localstack:4566
       S3_ENDPOINT: http://localstack:4566
-      FEATURE_USE_DAL: false
+      FEATURE_USE_DAL: ${FEATURE_USE_DAL:-false}
     healthcheck:
       test: ['CMD-SHELL', 'node -e "require(''http'').get(''http://localhost:3009/health'', r => process.exit(r.statusCode === 200 ? 0 : 1)).on(''error'', () => process.exit(1))"']
       interval: 30s
