@@ -392,7 +392,7 @@ describe('SelectGroupedActionsPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'select-grouped-actions',
         expect.objectContaining({
-          errors: [{ text: 'Select an action to do on this land parcel', href: '#landAction_1' }]
+          errors: [{ text: 'Select at least one action', href: '#landAction_1' }]
         })
       )
     })
@@ -550,7 +550,7 @@ describe('SelectGroupedActionsPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'select-grouped-actions',
         expect.objectContaining({
-          errors: [{ text: 'Select an action to do on this land parcel', href: '#landAction_1' }]
+          errors: [{ text: 'Select at least one action', href: '#landAction_1' }]
         })
       )
     })

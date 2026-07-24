@@ -191,7 +191,7 @@ export async function demoDetailsPostHandler(request, h) {
       ...buildViewModel(sections, form, slug),
       errors: [
         {
-          text: 'Select yes if your details are correct',
+          text: 'Select if these details are correct',
           href: '#detailsCorrect'
         }
       ]

@@ -1,0 +1,47 @@
+{% extends baseLayoutPath %}
+
+{% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
+{% from "govuk/components/notification-banner/macro.njk" import govukNotificationBanner %}
+{% from "partials/components.html" import componentList with context %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="{{ gridColumnClass(page) }}">
+      {% if previewMode %}
+        {% include "partials/preview-banner.html" %}
+      {% endif %}
+
+      {% if showPaymentExpiredNotification %}
+        {{ govukNotificationBanner({
+          titleText: "Important",
+          html: '<h3 class="govuk-notification-banner__heading">Your payment has been cancelled</h3><p class="govuk-body">Your payment details were deleted because the form was inactive for 5 days.</p><p class="govuk-body">Add your payment details again.</p>'
+        }) }}
+      {% endif %}
+
+      {% if errors | length and not showPaymentExpiredNotification %}
+        {{ govukErrorSummary({
+          titleText: "There is a problem",
+          errorList: checkErrorTemplates(errors)
+        }) }}
+      {% endif %}
+
+      {% if hasMissingNotificationEmail %}
+        {% include "partials/warn-missing-notification-email.html" %}
+      {% endif %}
+
+      {% include "partials/heading.html" %}
+
+      {% block form %}
+        {% if page.allowContinue %}
+          {% include "partials/form.html" %}
+        {% else %}
+          {{ componentList(components) }}
+        {% endif %}
+      {% endblock %}
+    </div>
+  </div>
+
+  {% if config.cdpEnvironment == 'local' and context | length and not context.isForceAccess %}
+    {% include "partials/debug.html" %}
+  {% endif %}
+{% endblock %}

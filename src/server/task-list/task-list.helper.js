@@ -20,34 +20,6 @@
 import TaskListPageController from '~/src/server/task-list/task-list-page.controller.js'
 
 /**
- * Component types that store a user answer in state (question types), as opposed
- * to display-only guidance components. Used to decide which pages count as tasks
- * and which component drives a task's title.
- */
-const QUESTION_COMPONENT_TYPES = new Set([
-  'TextField',
-  'EmailAddressField',
-  'TelephoneNumberField',
-  'NumberField',
-  'MultilineTextField',
-  'DatePartsField',
-  'MonthYearField',
-  'RadiosField',
-  'CheckboxesField',
-  'SelectField',
-  'AutocompleteField',
-  'YesNoField',
-  'UkAddressField',
-  'FileUploadField',
-  'EastingNorthingField',
-  'LatLongField',
-  'OsGridRefField',
-  'NationalGridFieldNumberField',
-  'GeospatialField',
-  'HiddenField'
-])
-
-/**
  * Status key constants for task status comparisons.
  */
 export const TASK_STATUS = Object.freeze({
@@ -102,17 +74,14 @@ function evaluateCondition(formModel, conditionName, state) {
 /**
  * Gets the names of all required question components on a page
  * @param {object} pageDef - The page definition from YAML
+ * @param {object} formModel - The form model
  * @returns {string[]} Array of required component names that hold state
  */
-function getPageComponentNames(pageDef) {
-  if (!pageDef.components) {
-    return []
-  }
-
-  return pageDef.components
-    .filter((component) => QUESTION_COMPONENT_TYPES.has(component.type) && component.options?.required !== false)
-    .map((component) => component.name)
-    .filter(Boolean)
+function getPageComponentNames(pageDef, formModel) {
+  return formModel.pageMap
+    .get(pageDef.path)
+    .collection.fields.filter((field) => field.options?.required !== false)
+    .map((field) => field.name)
 }
 
 /**
@@ -123,7 +92,7 @@ function getPageComponentNames(pageDef) {
  * @returns {boolean | null} True if all question components on the page have values in state, null if not applicable
  */
 function isTaskPageCompleted(pageDef, state, formModel) {
-  const componentNames = getPageComponentNames(pageDef)
+  const componentNames = getPageComponentNames(pageDef, formModel)
 
   // If no question components, consider it not applicable (shouldn't appear as task)
   if (componentNames.length === 0) {
@@ -185,14 +154,16 @@ function triggersExitPage(pageDef, state, formModel) {
 
 /**
  * Gets the display title for a task in the task list.
- * Uses the first question component's shortDescription if available, otherwise the page title.
+ * Uses the first field's label if there is exactly one, otherwise the page title.
  * @param {object} pageDef - The page definition
+ * @param {object} formModel - The form model
  * @returns {string} The title to display in the task list
  */
-function getTaskTitle(pageDef) {
-  const questionComponents = pageDef.components?.filter((c) => QUESTION_COMPONENT_TYPES.has(c.type)) ?? []
-  if (questionComponents.length === 1) {
-    return questionComponents[0].shortDescription ?? pageDef.title
+function getTaskTitle(pageDef, formModel) {
+  const fields = formModel.pageMap.get(pageDef.path).collection.fields
+
+  if (fields.length === 1) {
+    return fields[0].label ?? pageDef.title
   }
   return pageDef.title
 }
@@ -263,7 +234,7 @@ function createTaskItem(pageDef, state, pages, metadata, basePath, formModel) {
   const href = `${basePath}${pageDef.path}`
   const completeInOrder = true // TODO force to true for now until completeInOrder=false logic implemented
 
-  const taskItem = createTaskItemBase(getTaskTitle(pageDef))
+  const taskItem = createTaskItemBase(getTaskTitle(pageDef, formModel))
 
   // If task is not applicable, hide it
   if (completed === null) {
@@ -308,7 +279,12 @@ export function getTaskListPath(model) {
  * @returns {object[]} Array of page definitions that have a section property
  */
 function getTaskPages(model) {
-  const excludedControllers = new Set(['CheckDetailsController', 'TerminalPageController'])
+  // Some controllers (i.e. pages) should not show in the task list as they should not be directly accessible
+  const excludedControllers = new Set([
+    'TerminalPageController',
+    'SelectActionsPageController',
+    'ConsentPageController'
+  ])
   return model.page.def.pages.filter((page) => page.section && !excludedControllers.has(page.controller))
 }
 
@@ -617,7 +593,7 @@ export function withTaskContext(Base) {
      */
     getViewModel(request, context) {
       const viewModel = super.getViewModel(request, context)
-      return applyTaskPageViewModel(viewModel, this.pageDef, !!request.query.returnUrl)
+      return applyTaskPageViewModel(viewModel, this.pageDef, !!request.query?.returnUrl)
     }
 
     /**
@@ -625,7 +601,7 @@ export function withTaskContext(Base) {
      */
     buildViewModel(request, context, overrides) {
       const viewModel = super.buildViewModel(request, context, overrides)
-      return applyTaskPageViewModel(viewModel, this.pageDef, !!request.query.returnUrl)
+      return applyTaskPageViewModel(viewModel, this.pageDef, !!request.query?.returnUrl)
     }
 
     /**
@@ -638,7 +614,9 @@ export function withTaskContext(Base) {
       if (pageDef.section && returnAfterSection) {
         // Check if the default next page belongs to a different section.
         // If so, the current section is complete — return to the task list.
-        const nextPage = nextPath && model.pages.find((p) => p.path === nextPath)
+        // Ignore any query params on nextPath when matching against page paths.
+        const nextPagePath = nextPath && nextPath.split('?')[0]
+        const nextPage = nextPagePath && model.pages.find((p) => p.path === nextPagePath)
 
         if (!nextPage || (nextPage.section && nextPage.section !== this.section)) {
           return super.proceed(request, h, getTaskListPath(model) ?? nextPath)

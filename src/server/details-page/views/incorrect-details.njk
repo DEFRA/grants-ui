@@ -22,6 +22,11 @@
     {% if sfdUpdateUrl %}
       <a class="govuk-link" href="{{ sfdUpdateUrl }}">Update details</a>
     {% elif incorrectDetailsContent %}
+      {% if sectionTitle and sectionTitle.length and (sectionTitle !== pageTitle) %}
+        <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">
+          {{- sectionTitle -}}
+        </h2>
+      {% endif %}
       <h1 class="govuk-heading-l">{{ incorrectDetailsContent.heading }}</h1>
 
       {% for p in incorrectDetailsContent.paragraphs %}
@@ -36,6 +41,11 @@
         {{ defraSupportDetails({ typeOfSupport: 'update', email: supportEmail }) }}
       {% endif %}
     {% else %}
+      {% if sectionTitle and sectionTitle.length and (sectionTitle !== pageTitle) %}
+        <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">
+          {{- sectionTitle -}}
+        </h2>
+      {% endif %}
       <h1 class="govuk-heading-l">Contact the RPA to update your details</h1>
 
       <p class="govuk-body">

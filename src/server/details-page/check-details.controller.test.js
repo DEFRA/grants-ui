@@ -61,6 +61,9 @@ vi.mock('@defra/forms-engine-plugin/controllers/TerminalPageController.js', () =
 
 vi.mock('../common/services/details-page/index.js')
 vi.mock('../common/services/consolidated-view/consolidated-view.service.js')
+vi.mock('~/src/server/task-list/task-list.helper.js', () => ({
+  withTaskContext: (Base) => Base
+}))
 vi.mock('../common/helpers/logging/log.js', async () => {
   const { mockLogHelper } = await import('~/src/__mocks__')
   return mockLogHelper()
@@ -202,6 +205,7 @@ describe('CheckDetailsController', () => {
       path: '/test-form/check-details',
       url: new URL('http://localhost/test-form/check-details'),
       params: { slug: 'test-form' },
+      query: {},
       auth: {
         isAuthenticated: true,
         credentials: {
@@ -469,13 +473,13 @@ describe('CheckDetailsController', () => {
   describe('makePostRouteHandler', () => {
     describe('with context.errors (validation errors from framework)', () => {
       it('should render view with sections and filtered components on validation errors', async () => {
-        mockContext.errors = [{ text: 'Select yes if your details are correct' }]
+        mockContext.errors = [{ text: 'Select if these details are correct' }]
         mockContext.payload = {}
 
         const getViewModelSpy = vi.spyOn(controller, 'getViewModel').mockReturnValue({
           serviceName: 'Test Service',
           serviceUrl: TEST_FORM_ENDPOINT,
-          errors: [{ text: 'Select yes if your details are correct' }],
+          errors: [{ text: 'Select if these details are correct' }],
           components: []
         })
         controller.collection = { getViewErrors: vi.fn((e) => e) }

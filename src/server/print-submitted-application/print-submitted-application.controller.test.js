@@ -190,6 +190,20 @@ describe('PrintSubmittedApplicationController', () => {
 
       expect(h.view).toHaveBeenCalledWith('print-submitted-application', { test: 'viewModel' })
     })
+
+    test('passes the controller as page so the template can resolve the configured width', async () => {
+      await controller.buildPrintResponse(
+        {
+          form: mockDefinition,
+          state: mockState,
+          slug: 'test-form'
+        },
+        request,
+        h
+      )
+
+      expect(buildPrintViewModel).toHaveBeenCalledWith(expect.objectContaining({ page: controller }))
+    })
   })
 
   describe('error handling', () => {

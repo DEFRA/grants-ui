@@ -10,7 +10,7 @@
 
 {% block content %}
 <div class="govuk-grid-row">
-  <div class="govuk-grid-column-two-thirds">
+  <div class="{{ gridColumnClass(page) }}">
     {% if sectionTitle and sectionTitle.length and (sectionTitle !== pageTitle) %}
     <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">
       {{- sectionTitle -}}
@@ -18,15 +18,21 @@
     {% endif %}
     <h1 class="govuk-heading-l">Submit your application</h1>
 
-    <p class="govuk-body">By submitting your application, you confirm that:</p>
+    <p class="govuk-body">
+      By selecting ‘I agree – submit my application’ you confirm that:
+    </p>
 
     <ul class="govuk-list govuk-list--bullet">
-      <li>the information you have provided is correct to the best of your knowledge</li>
-      <li>you have read and understand the information in the <a href="#" class="govuk-link" target="_blank">Grasslands 2026 guidance (opens in new tab)</a> about this application</li>
-      <li>you are capable of fulfilling the obligations which will be required of you if your application is successful</li>
-      <li>you agree to let any authorised person access the land and relevant records related to this application so they can inspect or audit them to verify the information you’ve provided to the Rural Payments Agency (RPA) and to check that you are complying with this agreement</li>
-      <li>you agree to disclose all information relevant to this application, provide any additional information as may be required by the RPA, field officers or auditors and co-operate with or take part in any economic, environmental or other monitoring and evaluation of the scheme (including any research and development studies) conducted by RPA or by anyone appointed by them for that purpose</li>
+      <li>the information you've given in your application is correct</li>
+      <li>you will complete the SFI actions you’ve applied for</li>
+      <li>you will have management control of the land parcels in your application for the duration of the SFI actions you select for that land</li>
+      <li>if you've applied for SFI actions on land that has a conditional exemption from Inheritance Tax, you will not be paid for activities which duplicate, or conflict with, your undertakings under that exemption</li>
+      <li>if you've applied for SFI actions on land owned by a public body, you will not be paid for activities which conflict with, or duplicate, the public body's statutory duties</li>
     </ul>
+
+    <p class="govuk-body">
+      It’s your responsibility to check that land (including landscape features) is eligible for your selected SFI actions. When we process your SFI application, the annual payment value may be reduced. For example, if you've applied for ineligible land or features, such as hedgerows, or incompatible SFI actions.
+    </p>
 
     {% block form %}
     <form method="post" novalidate>
@@ -35,13 +41,13 @@
       {{ componentList(components) }}
 
       {{ govukButton({
-      text: "Confirm and submit",
+      text: "I agree - submit my application",
       preventDoubleClick: true
       }) }}
     </form>
     {% endblock %}
 
-    {{ defraSupportDetails({typeOfSupport: 'question', email: page.def.metadata.supportEmail}) }}
+<!--    {{ defraSupportDetails({typeOfSupport: 'question', email: page.def.metadata.supportEmail}) }}-->
   </div>
 </div>
 {% endblock %}

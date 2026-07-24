@@ -52,6 +52,7 @@
  * @property {Size} availableArea - The available area for the action
  * @property {number} ratePerUnitGbp - The rate per unit in GBP
  * @property {number} ratePerAgreementPerYearGbp - The rate per agreement per year in GBP
+ * @property {string} [guidanceUrl] - URL to external guidance documentation for this action
  */
 
 /**

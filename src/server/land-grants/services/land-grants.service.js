@@ -17,13 +17,21 @@ import {
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
 import {
   getCachedParcel,
-  setCachedParcel,
   getCachedSbiParcels,
+  setCachedParcel,
   setCachedSbiParcels
 } from '~/src/server/land-grants/services/parcel-cache.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
 const QUANTITY_REQUIRED_ACTION_CODES = config.get('landGrants.quantityRequiredActionCodes')
+
+// TODO - Hard-coded guidance URLs, keyed by action code, until land-grants-api
+// returns a guidanceUrl per action. Add a line per code that needs guidance, and
+// remove this map (and the guidanceUrl mapping in mapAction) once the API provides it.
+const GUIDANCE_URLS_BY_CODE = {
+  CLIG3: 'https://www.gov.uk/find-funding-for-land-or-farms/clig3-manage-grassland-with-very-low-nutrient-inputs',
+  CSAM3: 'https://www.gov.uk/find-funding-for-land-or-farms/csam3-herbal-leys'
+}
 
 /**
  * @param {unknown} enabledLandActions
@@ -220,7 +228,12 @@ function mapAction(action) {
   return {
     ...action,
     description: landActionWithCode(action.description, action.code),
-    requiresMaxQuantity: requiresQuantity ? (action.availableArea?.value ?? 0) : undefined
+    // Once land-grants-api is ready we need to replace this with their actual max quantity field.
+    // Falls back to 0 (not undefined) when availableArea is missing so a configured code always
+    // still gets a quantity input - undefined here is read downstream as "not required at all".
+    requiresMaxQuantity: requiresQuantity ? (action.availableArea?.value ?? 0) : undefined,
+    // Prefer the API's own guidanceUrl once it provides one; fall back to the temporary lookup above.
+    guidanceUrl: action.guidanceUrl ?? GUIDANCE_URLS_BY_CODE[action.code]
   }
 }
 

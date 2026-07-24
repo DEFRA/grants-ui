@@ -167,6 +167,7 @@ function resolveComponentLists(components, listsById) {
  * @param {FormMeta & {name: string}} params.form
  * @param {{ html: string }} [params.configurablePrintContent]
  * @param {{ person: { rows: object[] }, business: { rows: object[] }, contact: { rows: object[] } } | null} [params.applicantDetailsSections]
+ * @param {{ path?: string, def?: { metadata?: { pageConfig?: Record<string, { width?: string }> } } }} [params.page]
  */
 export function buildPrintViewModel({
   definition,
@@ -177,7 +178,8 @@ export function buildPrintViewModel({
   sessionData,
   form,
   configurablePrintContent,
-  applicantDetailsSections
+  applicantDetailsSections,
+  page
 }) {
   let pageTitle = `${form.name} application`
 
@@ -186,6 +188,7 @@ export function buildPrintViewModel({
   }
 
   return {
+    page,
     pageTitle,
     serviceName: form.name,
     serviceUrl: `/${slug}`,
