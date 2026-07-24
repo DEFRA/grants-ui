@@ -1,4 +1,5 @@
 import { getEntraIdOptions } from './entra-id-strategy.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 export default {
   plugin: {
@@ -17,7 +18,13 @@ export default {
           },
           handler: (request, h) => {
             if (!request.auth.isAuthenticated) {
-              return `Authentication failed: ${request.auth.error.message}`
+              const error = request.auth.error
+              log(LogCodes.AUTH.ENTRA_ID_AUTH_FAILURE, {
+                errorMessage: error?.message,
+                statusCode: error?.output?.statusCode,
+                payload: error?.output?.payload ?? error?.data
+              })
+              return `Authentication failed: ${error.message}`
             }
             return h.response(request.auth.credentials).type('application/json')
           }

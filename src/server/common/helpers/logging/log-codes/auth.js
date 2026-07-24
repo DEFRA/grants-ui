@@ -88,5 +88,10 @@ export const AUTH = {
     level: 'info',
     messageFunc: (messageOptions) =>
       `Entra ID strategy configured: redirectUri=${messageOptions.redirectUri} wellKnownUrl=${messageOptions.wellKnownUrl}`
+  },
+  ENTRA_ID_AUTH_FAILURE: {
+    level: 'error',
+    messageFunc: (messageOptions) =>
+      `Entra ID authentication failed: ${messageOptions.errorMessage} | statusCode=${messageOptions.statusCode ?? 'n/a'} | payload=${JSON.stringify(messageOptions.payload ?? null)}`
   }
 }
