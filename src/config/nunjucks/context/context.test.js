@@ -34,7 +34,8 @@ vi.mock('~/src/config/config.js', async () => {
     'cookieConsent.expiryDays': 365,
     'googleAnalytics.trackingId': undefined,
     'session.cookie.ttl': 14400000, // 4 hours in milliseconds
-    'notificationBanner.excludedPathSuffixes': ['/confirmation', '/print-submitted-application']
+    'notificationBanner.excludedPathSuffixes': ['/confirmation', '/print-submitted-application'],
+    'feedback.surveyUrl': 'https://qualtrics.example/jfe/form/SV_test'
   })
 })
 
@@ -72,6 +73,7 @@ const getExpectedContext = () => ({
   currentPath: '/',
   notificationBanner: null,
   cookiesPolicy: { confirmed: false, analytics: false },
+  feedbackSurveyUrl: null,
   auth: {
     isAuthenticated: false,
     name: undefined,
@@ -617,6 +619,41 @@ describe('context', () => {
       const contextResult = await contextImport.context(mockSimpleRequest({ path: '/example/page-one' }))
 
       expect(contextResult.notificationBanner).toBeNull()
+    })
+  })
+
+  describe('feedbackSurveyUrl in context', () => {
+    test('injects a survey URL for an in-scope grant', async () => {
+      setupManifestSuccess()
+
+      const request = {
+        ...mockSimpleRequest({ path: '/woodland/summary' }),
+        params: { slug: 'woodland' },
+        url: { href: 'https://grants.example/woodland/summary' },
+        info: { host: 'grants.example' }
+      }
+
+      const contextImport = await importContext()
+      const contextResult = await contextImport.context(request)
+      const url = new URL(contextResult.feedbackSurveyUrl)
+
+      expect(url.searchParams.get('grant')).toBe('Woodland Management Plan')
+      expect(url.searchParams.get('journey')).toBe('application-inprogress')
+      expect(url.searchParams.get('url')).toBe('https://grants.example/woodland/summary')
+    })
+
+    test('is null for an out-of-scope grant', async () => {
+      setupManifestSuccess()
+
+      const request = {
+        ...mockSimpleRequest({ path: '/some-other-grant/summary' }),
+        params: { slug: 'some-other-grant' }
+      }
+
+      const contextImport = await importContext()
+      const contextResult = await contextImport.context(request)
+
+      expect(contextResult.feedbackSurveyUrl).toBeNull()
     })
   })
 
