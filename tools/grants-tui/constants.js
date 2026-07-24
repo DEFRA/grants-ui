@@ -106,10 +106,10 @@ export const LOCAL_SERVICES = [
   { key: 'grants-config-broker', composeService: 'grants-config-broker', image: 'defradigital/grants-config-broker' },
   { key: 'grants-ui-dal-stub', composeService: 'grants-ui-dal-stub', image: 'defradigital/grants-ui-dal-stub' },
   { key: 'fg-gas-backend', composeService: 'fg-gas-backend', image: 'defradigital/fg-gas-backend' },
-  { key: 'land-grants-api', composeService: 'land-grants-api', image: 'defradigital/land-grants-api' },
+  { key: 'land-grants-api', composeService: 'land-grants-backend', image: 'defradigital/land-grants-api' },
   {
     key: 'land-grants-postgres-seeded',
-    composeService: 'land-grants-postgres-seeded',
+    composeService: 'land-grants-backend-postgres',
     image: 'defradigital/land-grants-postgres-seeded'
   },
   { key: 'fcp-defra-id-stub', composeService: 'fcp-defra-id-stub', image: 'defradigital/fcp-defra-id-stub' }

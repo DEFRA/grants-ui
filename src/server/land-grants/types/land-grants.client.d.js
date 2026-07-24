@@ -81,7 +81,7 @@
  * @property {string} applicationId
  * @property {string} requester
  * @property {string} applicantCrn
- * @property {string} sbi - The SBI (Single Business Identifier) for the application
+ * @property {number} sbi - The SBI (Single Business Identifier) for the application
  * @property {LandActions[]} landActions
  */
 

@@ -11,6 +11,8 @@ vi.mock('~/src/server/land-grants/view-models/payment.view-model.js')
 vi.mock('~/src/server/common/utils/payment.js')
 
 describe('paymentStrategies', () => {
+  const userContext = { defraIdToken: 'defra-id-token', sbi: '123456789' }
+
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(paymentUtils.formatPrice).mockImplementation((pence) => `£${(pence / 100).toFixed(2)}`)
@@ -33,14 +35,14 @@ describe('paymentStrategies', () => {
     })
 
     it('fetches payment and parcel groups in parallel', async () => {
-      await paymentStrategies.multiAction.calculatePayment(mockState)
+      await paymentStrategies.multiAction.calculatePayment(mockState, userContext)
 
-      expect(landGrantsService.calculateLandActionsPayment).toHaveBeenCalledWith(mockState)
-      expect(landGrantsService.fetchParcelsGroups).toHaveBeenCalledWith(mockState)
+      expect(landGrantsService.calculateLandActionsPayment).toHaveBeenCalledWith(mockState, userContext)
+      expect(landGrantsService.fetchParcelsGroups).toHaveBeenCalledWith(mockState, userContext)
     })
 
     it('returns mapped result with totalPence, totalPayment, parcelItems and additionalYearlyPayments', async () => {
-      const result = await paymentStrategies.multiAction.calculatePayment(mockState)
+      const result = await paymentStrategies.multiAction.calculatePayment(mockState, userContext)
 
       expect(result).toEqual({
         totalPence: 5000,
@@ -52,13 +54,13 @@ describe('paymentStrategies', () => {
     })
 
     it('maps parcel items using payment and actionGroups', async () => {
-      await paymentStrategies.multiAction.calculatePayment(mockState)
+      await paymentStrategies.multiAction.calculatePayment(mockState, userContext)
 
       expect(paymentViewModel.mapPaymentInfoToParcelItems).toHaveBeenCalledWith(mockPayment, mockActionGroups)
     })
 
     it('maps additional yearly payments using payment', async () => {
-      await paymentStrategies.multiAction.calculatePayment(mockState)
+      await paymentStrategies.multiAction.calculatePayment(mockState, userContext)
 
       expect(paymentViewModel.mapAdditionalYearlyPayments).toHaveBeenCalledWith(mockPayment)
     })
@@ -66,7 +68,7 @@ describe('paymentStrategies', () => {
     it('defaults totalPence to 0 when annualTotalPence is missing', async () => {
       vi.mocked(landGrantsService.calculateLandActionsPayment).mockResolvedValue({ payment: {} })
 
-      const result = await paymentStrategies.multiAction.calculatePayment(mockState)
+      const result = await paymentStrategies.multiAction.calculatePayment(mockState, userContext)
 
       expect(result.totalPence).toBe(0)
     })
@@ -74,7 +76,7 @@ describe('paymentStrategies', () => {
     it('defaults totalPence to 0 when payment is null', async () => {
       vi.mocked(landGrantsService.calculateLandActionsPayment).mockResolvedValue({ payment: null })
 
-      const result = await paymentStrategies.multiAction.calculatePayment(mockState)
+      const result = await paymentStrategies.multiAction.calculatePayment(mockState, userContext)
 
       expect(result.totalPence).toBe(0)
     })
@@ -96,17 +98,20 @@ describe('paymentStrategies', () => {
     })
 
     it('calls calculateWmpPayment with parcelIds and area values from state', async () => {
-      await paymentStrategies.wmp.calculatePayment(mockState)
+      await paymentStrategies.wmp.calculatePayment(mockState, userContext)
 
-      expect(woodlandService.calculateWmpPayment).toHaveBeenCalledWith({
-        parcelIds: ['parcel1', 'parcel2'],
-        hectaresUnderTenYearsOld: 5.5,
-        hectaresTenOrOverYearsOld: 2.0
-      })
+      expect(woodlandService.calculateWmpPayment).toHaveBeenCalledWith(
+        {
+          parcelIds: ['parcel1', 'parcel2'],
+          hectaresUnderTenYearsOld: 5.5,
+          hectaresTenOrOverYearsOld: 2.0
+        },
+        userContext
+      )
     })
 
     it('returns totalPence, totalPayment and payment', async () => {
-      const result = await paymentStrategies.wmp.calculatePayment(mockState)
+      const result = await paymentStrategies.wmp.calculatePayment(mockState, userContext)
 
       expect(result).toEqual({
         totalPence: 12000,
@@ -116,24 +121,32 @@ describe('paymentStrategies', () => {
     })
 
     it('defaults landParcels to empty array when not in state', async () => {
-      await paymentStrategies.wmp.calculatePayment({ hectaresUnderTenYearsOld: 1, hectaresTenOrOverYearsOld: 0 })
+      await paymentStrategies.wmp.calculatePayment(
+        { hectaresUnderTenYearsOld: 1, hectaresTenOrOverYearsOld: 0 },
+        userContext
+      )
 
-      expect(woodlandService.calculateWmpPayment).toHaveBeenCalledWith(expect.objectContaining({ parcelIds: [] }))
+      expect(woodlandService.calculateWmpPayment).toHaveBeenCalledWith(
+        expect.objectContaining({ parcelIds: [] }),
+        userContext
+      )
     })
 
     it('defaults hectaresUnderTenYearsOld to 0 when not in state', async () => {
-      await paymentStrategies.wmp.calculatePayment({ landParcels: [] })
+      await paymentStrategies.wmp.calculatePayment({ landParcels: [] }, userContext)
 
       expect(woodlandService.calculateWmpPayment).toHaveBeenCalledWith(
-        expect.objectContaining({ hectaresUnderTenYearsOld: 0 })
+        expect.objectContaining({ hectaresUnderTenYearsOld: 0 }),
+        userContext
       )
     })
 
     it('defaults hectaresTenOrOverYearsOld to 0 when not in state', async () => {
-      await paymentStrategies.wmp.calculatePayment({ landParcels: [] })
+      await paymentStrategies.wmp.calculatePayment({ landParcels: [] }, userContext)
 
       expect(woodlandService.calculateWmpPayment).toHaveBeenCalledWith(
-        expect.objectContaining({ hectaresTenOrOverYearsOld: 0 })
+        expect.objectContaining({ hectaresTenOrOverYearsOld: 0 }),
+        userContext
       )
     })
   })

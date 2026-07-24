@@ -4,6 +4,7 @@ import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { fetchAuthorisedParcelIds } from '~/src/server/land-grants/services/parcel-cache.js'
 import { fetchActionsWithPlannedActions } from '~/src/server/land-grants/services/land-grants.service.js'
 import { COMPOUND_PARCEL_ID_PATTERN, parseLandParcel } from '~/src/shared/format-parcel.js'
+import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
 
 const plannedActionsValidation = {
   params: Joi.object({
@@ -44,7 +45,8 @@ async function actionsHandler(request, h) {
   const [sheetId, parcelId] = parseLandParcel(compoundParcelId)
 
   try {
-    const result = await fetchActionsWithPlannedActions({ parcelId, sheetId, plannedActions })
+    const userContext = getLandGrantsUserContext(/** @type {AnyFormRequest} */ (/** @type {unknown} */ (request)))
+    const result = await fetchActionsWithPlannedActions({ parcelId, sheetId, plannedActions }, userContext)
     return h.response(result).code(statusCodes.ok)
   } catch (err) {
     const { sbi } = request.auth.credentials

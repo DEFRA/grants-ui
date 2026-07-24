@@ -26,11 +26,16 @@ function makeServer() {
   }
 }
 
-function makeRequest({ parcelId = 'SD7946-0155', plannedActions = [], sbi = '106284736' } = {}) {
+function makeRequest({
+  parcelId = 'SD7946-0155',
+  plannedActions = [],
+  sbi = '106284736',
+  token = 'defra-id-access-token'
+} = {}) {
   return {
     params: { parcelId },
     payload: { plannedActions },
-    auth: { credentials: { sbi } }
+    auth: { credentials: { sbi, token } }
   }
 }
 
@@ -96,11 +101,14 @@ describe('landGrantsActionsPlugin', () => {
 
     await handler(request, h)
 
-    expect(fetchActionsWithPlannedActions).toHaveBeenCalledWith({
-      parcelId: '0155',
-      sheetId: 'SD7946',
-      plannedActions
-    })
+    expect(fetchActionsWithPlannedActions).toHaveBeenCalledWith(
+      {
+        parcelId: '0155',
+        sheetId: 'SD7946',
+        plannedActions
+      },
+      { defraIdToken: 'defra-id-access-token', sbi: '106284736' }
+    )
     expect(h.response).toHaveBeenCalledWith(apiResult)
     expect(h._responseObj.code).toHaveBeenCalledWith(200)
   })

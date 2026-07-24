@@ -19,6 +19,7 @@ const makeResponse = (rules) => ({
     rules
   }
 })
+const userContext = { defraIdToken: 'defra-id-token', sbi: '123456789' }
 
 describe('validateWoodlandHectares', () => {
   const args = { parcelIds: ['SD6346-3387'], hectaresTenOrOverYearsOld: 2, hectaresUnderTenYearsOld: 1 }
@@ -28,7 +29,7 @@ describe('validateWoodlandHectares', () => {
       makeResponse([{ name: 'rule-1', passed: true, reason: 'All good' }])
     )
 
-    const result = await validateWoodlandHectares(args)
+    const result = await validateWoodlandHectares(args, userContext)
 
     expect(result).toEqual([])
   })
@@ -42,7 +43,7 @@ describe('validateWoodlandHectares', () => {
       ])
     )
 
-    const result = await validateWoodlandHectares(args)
+    const result = await validateWoodlandHectares(args, userContext)
 
     expect(result).toEqual(['Area too large', 'Parcel ineligible'])
   })
@@ -50,7 +51,7 @@ describe('validateWoodlandHectares', () => {
   it('returns an empty array when result is missing', async () => {
     woodlandClient.validateWoodland.mockResolvedValue({ message: 'success' })
 
-    const result = await validateWoodlandHectares(args)
+    const result = await validateWoodlandHectares(args, userContext)
 
     expect(result).toEqual([])
   })
@@ -58,11 +59,12 @@ describe('validateWoodlandHectares', () => {
   it('passes parcel IDs and hectare values to the client', async () => {
     woodlandClient.validateWoodland.mockResolvedValue(makeResponse([]))
 
-    await validateWoodlandHectares(args)
+    await validateWoodlandHectares(args, userContext)
 
     expect(woodlandClient.validateWoodland).toHaveBeenCalledWith(
       { parcelIds: ['SD6346-3387'], hectaresTenOrOverYearsOld: 2, hectaresUnderTenYearsOld: 1 },
-      'http://api'
+      'http://api',
+      userContext
     )
   })
 })
@@ -82,15 +84,19 @@ describe('calculateWmpPayment', () => {
   it('calls calculateWmp with correct args and returns payment and totalPence', async () => {
     woodlandClient.calculateWmp.mockResolvedValueOnce({ message: 'success', payment: mockPayment })
 
-    const result = await calculateWmpPayment({
-      parcelIds: ['SD6346-3387'],
-      hectaresUnderTenYearsOld: 1.5,
-      hectaresTenOrOverYearsOld: 0.5
-    })
+    const result = await calculateWmpPayment(
+      {
+        parcelIds: ['SD6346-3387'],
+        hectaresUnderTenYearsOld: 1.5,
+        hectaresTenOrOverYearsOld: 0.5
+      },
+      userContext
+    )
 
     expect(woodlandClient.calculateWmp).toHaveBeenCalledWith(
       { parcelIds: ['SD6346-3387'], hectaresUnderTenYearsOld: 1.5, hectaresTenOrOverYearsOld: 0.5 },
-      'http://api'
+      'http://api',
+      userContext
     )
     expect(result).toEqual({ payment: mockPayment, totalPence: 375000 })
   })
@@ -98,11 +104,14 @@ describe('calculateWmpPayment', () => {
   it('returns zero totalPence when agreementTotalPence is missing', async () => {
     woodlandClient.calculateWmp.mockResolvedValueOnce({ message: 'success', payment: {} })
 
-    const result = await calculateWmpPayment({
-      parcelIds: ['SD6346-3387'],
-      hectaresUnderTenYearsOld: 0,
-      hectaresTenOrOverYearsOld: 0
-    })
+    const result = await calculateWmpPayment(
+      {
+        parcelIds: ['SD6346-3387'],
+        hectaresUnderTenYearsOld: 0,
+        hectaresTenOrOverYearsOld: 0
+      },
+      userContext
+    )
 
     expect(result).toEqual({ payment: {}, totalPence: 0 })
   })
@@ -111,7 +120,10 @@ describe('calculateWmpPayment', () => {
     woodlandClient.calculateWmp.mockRejectedValueOnce(new Error('API error'))
 
     await expect(
-      calculateWmpPayment({ parcelIds: ['SD6346-3387'], hectaresUnderTenYearsOld: 0, hectaresTenOrOverYearsOld: 0 })
+      calculateWmpPayment(
+        { parcelIds: ['SD6346-3387'], hectaresUnderTenYearsOld: 0, hectaresTenOrOverYearsOld: 0 },
+        userContext
+      )
     ).rejects.toThrow('API error')
   })
 })

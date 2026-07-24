@@ -29,7 +29,7 @@ const setupRequest = (method = 'get') => ({
   query: {},
   logger: mockRequestLogger(),
   auth: {
-    credentials: { sbi: '123' }
+    credentials: { token: 'defra-id-access-token', sbi: '123' }
   }
 })
 
@@ -252,7 +252,10 @@ describe('CommonSelectLandParcelPageController', () => {
 
       await controller.handlePost(request, context, h)
 
-      expect(fetchParcels).toHaveBeenCalled()
+      expect(fetchParcels).toHaveBeenCalledWith(request, {
+        defraIdToken: 'defra-id-access-token',
+        sbi: '123'
+      })
 
       expect(controller.mergeState).toHaveBeenCalledWith(request, context.state, {
         landParcels: ['S1-P1', 'S2-P2'],

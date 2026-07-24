@@ -1,7 +1,7 @@
 import { PactV3, MatchersV3, SpecificationVersion } from '@pact-foundation/pact'
 import path from 'path'
 import { vi } from 'vitest'
-import { postToLandGrantsApi } from '~/src/server/land-grants/services/land-grants.client'
+import { postToLandGrantsApi as postToLandGrantsApiClient } from '~/src/server/land-grants/services/land-grants.client'
 
 vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
   const { mockLogHelper } = await import('~/src/__mocks__/logger-mocks.js')
@@ -13,6 +13,12 @@ vi.mock('~/src/server/common/helpers/retry.js', () => ({
 }))
 
 const { like, eachLike, string } = MatchersV3
+const userContext = { defraIdToken: 'defra-id-access-token', sbi: '123456789' }
+const makeLandGrantsHeaders = () => ({
+  'Content-Type': 'application/json',
+  'x-forwarded-authorization': userContext.defraIdToken
+})
+const postToLandGrantsApi = (endpoint, body, baseUrl) => postToLandGrantsApiClient(endpoint, body, baseUrl, userContext)
 
 function createProvider() {
   return new PactV3({
@@ -103,7 +109,7 @@ describe('wmp/payments/calculate', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v1/wmp/payments/calculate',
-        headers: { 'Content-Type': 'application/json' },
+        headers: makeLandGrantsHeaders(),
         body: payload
       })
       .willRespondWith({
@@ -141,7 +147,7 @@ describe('wmp/payments/calculate', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v1/wmp/payments/calculate',
-        headers: { 'Content-Type': 'application/json' },
+        headers: makeLandGrantsHeaders(),
         body: invalidPayload
       })
       .willRespondWith({
@@ -213,7 +219,7 @@ describe('wmp/validate', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v1/wmp/validate',
-        headers: { 'Content-Type': 'application/json' },
+        headers: makeLandGrantsHeaders(),
         body: payload
       })
       .willRespondWith({
@@ -266,7 +272,7 @@ describe('wmp/validate', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v1/wmp/validate',
-        headers: { 'Content-Type': 'application/json' },
+        headers: makeLandGrantsHeaders(),
         body: payload
       })
       .willRespondWith({
@@ -307,7 +313,7 @@ describe('wmp/validate', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v1/wmp/validate',
-        headers: { 'Content-Type': 'application/json' },
+        headers: makeLandGrantsHeaders(),
         body: invalidPayload
       })
       .willRespondWith({

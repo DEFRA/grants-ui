@@ -51,6 +51,7 @@ const mockParcelsResponse = [
     area: { unit: 'ha', value: 4.0383 }
   }
 ]
+const userContext = { defraIdToken: 'defra-id-access-token', sbi: '106284736' }
 
 describe('SelectActionsPageController', () => {
   let controller
@@ -124,7 +125,8 @@ describe('SelectActionsPageController', () => {
       auth: {
         isAuthenticated: true,
         credentials: {
-          sbi: '106284736',
+          token: userContext.defraIdToken,
+          sbi: userContext.sbi,
           crn: 'CRN123',
           name: 'John Doe',
           organisationName: 'Farm 1',
@@ -188,12 +190,15 @@ describe('SelectActionsPageController', () => {
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith({
-        parcelId: 'parcel2',
-        sheetId: 'sheet2',
-        enabledLandActions,
-        plannedActions: []
-      })
+      expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith(
+        {
+          parcelId: 'parcel2',
+          sheetId: 'sheet2',
+          enabledLandActions,
+          plannedActions: []
+        },
+        userContext
+      )
     })
 
     test('should render the view with a flat actionItems list rather than grouped actions', async () => {

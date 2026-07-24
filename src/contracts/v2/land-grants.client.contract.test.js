@@ -2,7 +2,7 @@ import { PactV3, MatchersV3, SpecificationVersion } from '@pact-foundation/pact'
 import { arrayContaining, integer } from '@pact-foundation/pact/src/v3/matchers'
 import path from 'path'
 import { vi } from 'vitest'
-import { postToLandGrantsApi } from '~/src/server/land-grants/services/land-grants.client'
+import { postToLandGrantsApi as postToLandGrantsApiClient } from '~/src/server/land-grants/services/land-grants.client'
 
 vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
   const { mockLogHelper } = await import('~/src/__mocks__/logger-mocks.js')
@@ -14,6 +14,12 @@ vi.mock('~/src/server/common/helpers/retry.js', () => ({
 }))
 
 const { like, eachLike, string } = MatchersV3
+const userContext = { defraIdToken: 'defra-id-access-token', sbi: '123456789' }
+const makeLandGrantsHeaders = () => ({
+  'Content-Type': 'application/json',
+  'x-forwarded-authorization': userContext.defraIdToken
+})
+const postToLandGrantsApi = (endpoint, body, baseUrl) => postToLandGrantsApiClient(endpoint, body, baseUrl, userContext)
 
 function createProvider() {
   return new PactV3({
@@ -168,7 +174,7 @@ describe('calculate', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v2/payments/calculate',
-        headers: { 'Content-Type': 'application/json' },
+        headers: makeLandGrantsHeaders(),
         body: payload
       })
       .willRespondWith({
@@ -210,7 +216,7 @@ describe('calculate', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v2/payments/calculate',
-        headers: { 'Content-Type': 'application/json' },
+        headers: makeLandGrantsHeaders(),
         body: badRequestPayload
       })
       .willRespondWith({
@@ -253,7 +259,7 @@ describe('calculate', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v2/payments/calculate',
-        headers: { 'Content-Type': 'application/json' },
+        headers: makeLandGrantsHeaders(),
         body: badRequestPayload
       })
       .willRespondWith({
@@ -296,7 +302,7 @@ describe('calculate', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v2/payments/calculate',
-        headers: { 'Content-Type': 'application/json' },
+        headers: makeLandGrantsHeaders(),
         body: invalidQuantityPayload
       })
       .willRespondWith({
@@ -339,7 +345,7 @@ describe('calculate', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v2/payments/calculate',
-        headers: { 'Content-Type': 'application/json' },
+        headers: makeLandGrantsHeaders(),
         body: invalidQuantityPayload
       })
       .willRespondWith({
@@ -371,13 +377,17 @@ describe('parcels', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v2/parcels',
-        headers: { 'Content-Type': 'application/json' },
-        body: { parcelIds: ['SD6743-8083'], fields: ['WRONG'] }
+        headers: makeLandGrantsHeaders(),
+        body: { parcelIds: ['SD6743-8083'], fields: ['WRONG'], sbi: userContext.sbi }
       })
       .willRespondWith({ status: 400, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
       .executeTest(async (mockserver) => {
         await expect(
-          postToLandGrantsApi('/api/v2/parcels', { parcelIds: ['SD6743-8083'], fields: ['WRONG'] }, mockserver.url)
+          postToLandGrantsApi(
+            '/api/v2/parcels',
+            { parcelIds: ['SD6743-8083'], fields: ['WRONG'], sbi: userContext.sbi },
+            mockserver.url
+          )
         ).rejects.toMatchObject({ code: 400, status: 400 })
       })
   })
@@ -393,14 +403,14 @@ describe('parcels', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v2/parcels',
-        headers: { 'Content-Type': 'application/json' },
-        body: { parcelIds: ['SD6743-8083'], fields: ['size'] }
+        headers: makeLandGrantsHeaders(),
+        body: { parcelIds: ['SD6743-8083'], fields: ['size'], sbi: userContext.sbi }
       })
       .willRespondWith({ status: 200, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
       .executeTest(async (mockserver) => {
         const response = await postToLandGrantsApi(
           '/api/v2/parcels',
-          { parcelIds: ['SD6743-8083'], fields: ['size'] },
+          { parcelIds: ['SD6743-8083'], fields: ['size'], sbi: userContext.sbi },
           mockserver.url
         )
         expect(response.parcels[0]).toEqual(parcelWithSizeExample)
@@ -422,13 +432,17 @@ describe('parcels', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v2/parcels',
-        headers: { 'Content-Type': 'application/json' },
-        body: { parcelIds: ['BADFORMAT-91977'], fields: ['size'] }
+        headers: makeLandGrantsHeaders(),
+        body: { parcelIds: ['BADFORMAT-91977'], fields: ['size'], sbi: userContext.sbi }
       })
       .willRespondWith({ status: 400, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
       .executeTest(async (mockserver) => {
         await expect(
-          postToLandGrantsApi('/api/v2/parcels', { parcelIds: ['BADFORMAT-91977'], fields: ['size'] }, mockserver.url)
+          postToLandGrantsApi(
+            '/api/v2/parcels',
+            { parcelIds: ['BADFORMAT-91977'], fields: ['size'], sbi: userContext.sbi },
+            mockserver.url
+          )
         ).rejects.toMatchObject({ code: 400, status: 400 })
       })
   })
@@ -448,13 +462,17 @@ describe('parcels', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v2/parcels',
-        headers: { 'Content-Type': 'application/json' },
-        body: { parcelIds: ['SD6843-1234'], fields: ['size'] }
+        headers: makeLandGrantsHeaders(),
+        body: { parcelIds: ['SD6843-1234'], fields: ['size'], sbi: userContext.sbi }
       })
       .willRespondWith({ status: 404, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
       .executeTest(async (mockserver) => {
         await expect(
-          postToLandGrantsApi('/api/v2/parcels', { parcelIds: ['SD6843-1234'], fields: ['size'] }, mockserver.url)
+          postToLandGrantsApi(
+            '/api/v2/parcels',
+            { parcelIds: ['SD6843-1234'], fields: ['size'], sbi: userContext.sbi },
+            mockserver.url
+          )
         ).rejects.toMatchObject({ code: 404, status: 404 })
       })
   })
@@ -501,10 +519,11 @@ describe('parcels', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v2/parcels',
-        headers: { 'Content-Type': 'application/json' },
+        headers: makeLandGrantsHeaders(),
         body: {
           parcelIds: ['SD6743-8083'],
-          fields: ['actions', 'size', 'actions.sssiConsentRequired', 'actions.heferRequired']
+          fields: ['actions', 'size', 'actions.sssiConsentRequired', 'actions.heferRequired'],
+          sbi: userContext.sbi
         }
       })
       .willRespondWith({ status: 200, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
@@ -513,7 +532,8 @@ describe('parcels', () => {
           '/api/v2/parcels',
           {
             parcelIds: ['SD6743-8083'],
-            fields: ['actions', 'size', 'actions.sssiConsentRequired', 'actions.heferRequired']
+            fields: ['actions', 'size', 'actions.sssiConsentRequired', 'actions.heferRequired'],
+            sbi: userContext.sbi
           },
           mockserver.url
         )
@@ -551,11 +571,12 @@ describe('parcels', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v2/parcels',
-        headers: { 'Content-Type': 'application/json' },
+        headers: makeLandGrantsHeaders(),
         body: {
           parcelIds: ['SD6743-8083', 'SD6743-8084'],
           fields: ['actions', 'size', 'actions.sssiConsentRequired'],
-          plannedActions: []
+          plannedActions: [],
+          sbi: userContext.sbi
         }
       })
       .willRespondWith({ status: 400, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
@@ -566,7 +587,8 @@ describe('parcels', () => {
             {
               parcelIds: ['SD6743-8083', 'SD6743-8084'],
               fields: ['actions', 'size', 'actions.sssiConsentRequired'],
-              plannedActions: []
+              plannedActions: [],
+              sbi: userContext.sbi
             },
             mockserver.url
           )
@@ -610,14 +632,14 @@ describe('parcels', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v2/parcels',
-        headers: { 'Content-Type': 'application/json' },
-        body: { parcelIds: ['SD6743-8083'], fields: ['actions', 'size'], plannedActions: [] }
+        headers: makeLandGrantsHeaders(),
+        body: { parcelIds: ['SD6743-8083'], fields: ['actions', 'size'], plannedActions: [], sbi: userContext.sbi }
       })
       .willRespondWith({ status: 200, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
       .executeTest(async (mockserver) => {
         const response = await postToLandGrantsApi(
           '/api/v2/parcels',
-          { parcelIds: ['SD6743-8083'], fields: ['actions', 'size'], plannedActions: [] },
+          { parcelIds: ['SD6743-8083'], fields: ['actions', 'size'], plannedActions: [], sbi: userContext.sbi },
           mockserver.url
         )
         expect(response.parcels[0]).toEqual(parcelWithActionsAndSizeExample)
@@ -678,15 +700,15 @@ describe('parcels', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v2/parcels',
-        headers: { 'Content-Type': 'application/json' },
-        body: { parcelIds: ['MALFORMED-PARCEL'], fields: ['actions', 'size'], plannedActions: [] }
+        headers: makeLandGrantsHeaders(),
+        body: { parcelIds: ['MALFORMED-PARCEL'], fields: ['actions', 'size'], plannedActions: [], sbi: userContext.sbi }
       })
       .willRespondWith({ status: 400, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
       .executeTest(async (mockserver) => {
         await expect(
           postToLandGrantsApi(
             '/api/v2/parcels',
-            { parcelIds: ['MALFORMED-PARCEL'], fields: ['actions', 'size'], plannedActions: [] },
+            { parcelIds: ['MALFORMED-PARCEL'], fields: ['actions', 'size'], plannedActions: [], sbi: userContext.sbi },
             mockserver.url
           )
         ).rejects.toMatchObject({ code: 400, status: 400 })
@@ -708,15 +730,15 @@ describe('parcels', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v2/parcels',
-        headers: { 'Content-Type': 'application/json' },
-        body: { parcelIds: ['SD1234-5678'], fields: ['actions', 'size'], plannedActions: [] }
+        headers: makeLandGrantsHeaders(),
+        body: { parcelIds: ['SD1234-5678'], fields: ['actions', 'size'], plannedActions: [], sbi: userContext.sbi }
       })
       .willRespondWith({ status: 404, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
       .executeTest(async (mockserver) => {
         await expect(
           postToLandGrantsApi(
             '/api/v2/parcels',
-            { parcelIds: ['SD1234-5678'], fields: ['actions', 'size'], plannedActions: [] },
+            { parcelIds: ['SD1234-5678'], fields: ['actions', 'size'], plannedActions: [], sbi: userContext.sbi },
             mockserver.url
           )
         ).rejects.toMatchObject({ code: 404, status: 404 })
@@ -778,7 +800,7 @@ describe('validate', () => {
     const payload = {
       applicationId: '123',
       requester: 'local',
-      sbi: '123456789',
+      sbi: 123456789,
       applicantCrn: 'crn',
       landActions: [
         {
@@ -800,7 +822,7 @@ describe('validate', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v2/application/validate',
-        headers: { 'Content-Type': 'application/json' },
+        headers: makeLandGrantsHeaders(),
         body: payload
       })
       .willRespondWith({
@@ -863,7 +885,7 @@ describe('validate', () => {
     const payload = {
       applicationId: '123',
       requester: 'local',
-      sbi: '123456789',
+      sbi: 123456789,
       applicantCrn: 'crn',
       landActions: [
         {
@@ -882,7 +904,7 @@ describe('validate', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v2/application/validate',
-        headers: { 'Content-Type': 'application/json' },
+        headers: makeLandGrantsHeaders(),
         body: payload
       })
       .willRespondWith({
@@ -942,7 +964,7 @@ describe('validate', () => {
     const payload = {
       applicationId: '123',
       requester: 'local',
-      sbi: '123456789',
+      sbi: 123456789,
       applicantCrn: 'crn',
       landActions: [
         {
@@ -961,7 +983,7 @@ describe('validate', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v2/application/validate',
-        headers: { 'Content-Type': 'application/json' },
+        headers: makeLandGrantsHeaders(),
         body: payload
       })
       .willRespondWith({
@@ -985,7 +1007,7 @@ describe('validate', () => {
     const negativeQuantityPayload = {
       applicationId: '34E-8CA-45D',
       requester: 'grants-ui',
-      sbi: '106284736',
+      sbi: 106284736,
       applicantCrn: '1100014934',
       landActions: [
         {
@@ -1009,7 +1031,7 @@ describe('validate', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v2/application/validate',
-        headers: { 'Content-Type': 'application/json' },
+        headers: makeLandGrantsHeaders(),
         body: negativeQuantityPayload
       })
       .willRespondWith({
@@ -1028,7 +1050,7 @@ describe('validate', () => {
     const negativeQuantityPayload = {
       applicationId: '34E-8CA-45D',
       requester: 'grants-ui',
-      sbi: '106284736',
+      sbi: 106284736,
       applicantCrn: '1100014934',
       landActions: [
         {
@@ -1052,7 +1074,7 @@ describe('validate', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v2/application/validate',
-        headers: { 'Content-Type': 'application/json' },
+        headers: makeLandGrantsHeaders(),
         body: negativeQuantityPayload
       })
       .willRespondWith({
@@ -1070,14 +1092,15 @@ describe('validate', () => {
   it('returns HTTP 400 when required fields are missing', async () => {
     const incompletePayload = {
       applicationId: '34E-8CA-45D',
-      requester: 'grants-ui'
-      // Missing sbi, applicantCrn, and landActions
+      requester: 'grants-ui',
+      sbi: Number(userContext.sbi)
+      // Missing applicantCrn and landActions
     }
 
     const badRequestResponseExample = {
       statusCode: 400,
       error: 'Bad Request',
-      message: '"sbi" is required'
+      message: '"applicantCrn" is required'
     }
     const EXPECTED_BODY = like(badRequestResponseExample)
 
@@ -1088,7 +1111,7 @@ describe('validate', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v2/application/validate',
-        headers: { 'Content-Type': 'application/json' },
+        headers: makeLandGrantsHeaders(),
         body: incompletePayload
       })
       .willRespondWith({
@@ -1107,7 +1130,7 @@ describe('validate', () => {
     const notFoundPayload = {
       applicationId: '34E-8CA-45D',
       requester: 'grants-ui',
-      sbi: '106284736',
+      sbi: 106284736,
       applicantCrn: '1100014934',
       landActions: [
         {
@@ -1133,7 +1156,7 @@ describe('validate', () => {
       .withRequest({
         method: 'POST',
         path: '/api/v2/application/validate',
-        headers: { 'Content-Type': 'application/json' },
+        headers: makeLandGrantsHeaders(),
         body: notFoundPayload
       })
       .willRespondWith({

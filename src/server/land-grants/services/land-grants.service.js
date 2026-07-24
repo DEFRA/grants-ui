@@ -47,14 +47,15 @@ const buildParcelActionsCacheKey = (parcelKey, enabledLandActions) =>
 /**
  * Calculates grant payment for land actions.
  * @param {object} state
+ * @param {LandGrantsUserContext} userContext
  * @returns {Promise<{payment: PaymentCalculation, errorMessage?: string, paymentTotal: string}>} - Payment calculation result
  * @throws {Error}
  */
-export async function calculateLandActionsPayment(state) {
+export async function calculateLandActionsPayment(state, userContext) {
   const payload = {
     parcel: stateToLandActionsMapper(state)
   }
-  const { payment } = await calculate(payload, LAND_GRANTS_API_URL)
+  const { payment } = await calculate(payload, LAND_GRANTS_API_URL, userContext)
   const paymentTotal = formatCurrency(payment?.annualTotalPence / 100)
 
   return {
@@ -88,15 +89,14 @@ const createGroup = (name, groupActions) => ({
  * each action's availableArea is recomputed against that combination and the
  * cache is bypassed (the cache key isn't keyed on plannedActions).
  * @param {{ parcelId?: string, sheetId?: string, enabledLandActions?: string[], plannedActions?: PlannedAction[] }} parcel
+ * @param {LandGrantsUserContext} userContext
  * @returns {Promise<{actions: ActionGroup[], parcel: {parcelId: string, sheetId: string, size: Size}}>}- Parcel data with actions
  * @throws {Error}
  */
-export async function fetchAvailableActionsForParcel({
-  parcelId = '',
-  sheetId = '',
-  enabledLandActions = [],
-  plannedActions = []
-}) {
+export async function fetchAvailableActionsForParcel(
+  { parcelId = '', sheetId = '', enabledLandActions = [], plannedActions = [] },
+  userContext
+) {
   const parcelKey = stringifyParcel({ sheetId, parcelId })
   const enabledActions = normaliseEnabledLandActions(enabledLandActions)
   const cacheKey = buildParcelActionsCacheKey(parcelKey, enabledActions)
@@ -112,6 +112,7 @@ export async function fetchAvailableActionsForParcel({
   const { parcels, groups: groupDefinitions = [] } = await parcelsWithExtendedInfo(
     parcelIds,
     LAND_GRANTS_API_URL,
+    userContext,
     plannedActions
   )
   const foundParcel = parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)
@@ -152,12 +153,13 @@ export async function fetchAvailableActionsForParcel({
  * Recomputes availableArea for a parcel's actions against an in-progress
  * selection, for the select-actions page's live availability refresh.
  * @param {{ parcelId: string, sheetId: string, plannedActions: PlannedAction[] }} params
+ * @param {LandGrantsUserContext} userContext
  * @returns {Promise<{ actions: Array<{ code: string, availableArea?: Size, requiresMaxQuantity?: number }> }>}
  * @throws {Error}
  */
-export async function fetchActionsWithPlannedActions({ parcelId, sheetId, plannedActions }) {
+export async function fetchActionsWithPlannedActions({ parcelId, sheetId, plannedActions }, userContext) {
   const parcelKey = stringifyParcel({ sheetId, parcelId })
-  const { parcels } = await parcelsWithExtendedInfo([parcelKey], LAND_GRANTS_API_URL, plannedActions)
+  const { parcels } = await parcelsWithExtendedInfo([parcelKey], LAND_GRANTS_API_URL, userContext, plannedActions)
   const foundParcel = parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)
   const actions = (foundParcel?.actions || []).map(mapAction).map((action) => ({
     code: action.code,
@@ -187,28 +189,30 @@ function mapAction(action) {
 /**
  * Fetches parcel groups for a list of parcel IDs.
  * @param {object} state
+ * @param {LandGrantsUserContext} userContext
  * @returns {Promise<ActionGroupDefinition[]>}
  * @throws {Error}
  */
-export async function fetchParcelsGroups(state) {
+export async function fetchParcelsGroups(state, userContext) {
   const { landParcels = {} } = /** @type {{ landParcels?: LandParcels }} */ (state)
   const parcelIds = Object.keys(landParcels) || []
   if (!parcelIds.length) {
     return []
   }
 
-  const { groups = [] } = await parcelsGroups(parcelIds, LAND_GRANTS_API_URL)
+  const { groups = [] } = await parcelsGroups(parcelIds, LAND_GRANTS_API_URL, userContext)
   return groups
 }
 
 /**
  * Fetches parcel size for a list of parcel IDs.
  * @param {string[]} parcelIds
+ * @param {LandGrantsUserContext} userContext
  * @returns {Promise<Record<string, Size | null>>}
  * @throws {Error}
  */
-async function fetchParcelsSize(parcelIds) {
-  const { parcels } = await parcelsWithSize(parcelIds, LAND_GRANTS_API_URL)
+async function fetchParcelsSize(parcelIds, userContext) {
+  const { parcels } = await parcelsWithSize(parcelIds, LAND_GRANTS_API_URL, userContext)
 
   return parcels.reduce((acc, p) => {
     acc[stringifyParcel(p)] = p.size
@@ -229,10 +233,11 @@ const inflightParcelsBySbi = new Map()
  * Fetches parcels with area data for a given SBI. Concurrent calls for the
  * same SBI share a single upstream load.
  * @param {AnyFormRequest} request
+ * @param {LandGrantsUserContext} userContext
  * @returns {Promise<HydratedParcel[]>}
  * @throws {Error}
  */
-export async function fetchParcels(request) {
+export async function fetchParcels(request, userContext) {
   const sbi = request.auth?.credentials?.sbi
   const cached = getCachedSbiParcels(sbi)
 
@@ -242,7 +247,7 @@ export async function fetchParcels(request) {
 
   let inflight = inflightParcelsBySbi.get(sbi)
   if (!inflight) {
-    inflight = loadParcelsForSbi(request, sbi).finally(() => inflightParcelsBySbi.delete(sbi))
+    inflight = loadParcelsForSbi(request, sbi, userContext).finally(() => inflightParcelsBySbi.delete(sbi))
     inflightParcelsBySbi.set(sbi, inflight)
   }
   return inflight
@@ -251,12 +256,13 @@ export async function fetchParcels(request) {
 /**
  * @param {AnyFormRequest} request
  * @param {unknown} sbi
+ * @param {LandGrantsUserContext} userContext
  * @returns {Promise<HydratedParcel[]>}
  */
-async function loadParcelsForSbi(request, sbi) {
+async function loadParcelsForSbi(request, sbi, userContext) {
   const parcels = await fetchParcelsFromDal(request)
   const parcelKeys = parcels.map(stringifyParcel)
-  const sizes = await fetchParcelsSize(parcelKeys)
+  const sizes = await fetchParcelsSize(parcelKeys, userContext)
   const hydratedParcels = parcels.map((p) => ({
     ...p,
     area: sizes[stringifyParcel(p)] || {}
@@ -271,11 +277,12 @@ async function loadParcelsForSbi(request, sbi) {
  * Used by the map controller to fit the viewport on load.
  * Returns null on any error so callers can degrade gracefully.
  * @param {string[]} parcelIds
+ * @param {LandGrantsUserContext} userContext
  * @returns {Promise<{minLng: number, minLat: number, maxLng: number, maxLat: number} | null>}
  */
-export async function fetchParcelTileLocation(parcelIds) {
+export async function fetchParcelTileLocation(parcelIds, userContext) {
   try {
-    const result = await locateParcelTiles(parcelIds, LAND_GRANTS_API_URL)
+    const result = await locateParcelTiles(parcelIds, LAND_GRANTS_API_URL, userContext)
     return result.bbox
   } catch {
     return null
@@ -287,23 +294,22 @@ export async function fetchParcelTileLocation(parcelIds) {
  * @param {object} data
  * @param {string} data.applicationId
  * @param {string} data.crn
- * @param {string} data.sbi
  * @param {object} data.state
+ * @param {LandGrantsUserContext} userContext
  * @returns {Promise<ValidateApplicationResponse>}
  * @throws {Error}
  */
-export async function validateApplication(data) {
-  const { applicationId, crn, state, sbi } = data
+export async function validateApplication(data, userContext) {
+  const { applicationId, crn, state } = data
 
   const payload = {
     applicationId: applicationId?.toLowerCase(),
     requester: 'grants-ui',
-    sbi,
     applicantCrn: crn,
     landActions: stateToLandActionsMapper(state)
   }
 
-  const result = await validate(payload, LAND_GRANTS_API_URL)
+  const result = await validate(payload, LAND_GRANTS_API_URL, userContext)
   result.errorMessages = buildErrorMessagesFromResponse(result.actions)
 
   return result
@@ -340,4 +346,5 @@ function buildErrorMessagesFromResponse(actions = []) {
  * @import { PaymentCalculation } from '~/src/server/land-grants/types/payment.d.js'
  * @import { LandParcels } from '~/src/server/land-grants/types/form-state.d.js'
  * @import { AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { LandGrantsUserContext } from './land-grants-user-context.js'
  */
