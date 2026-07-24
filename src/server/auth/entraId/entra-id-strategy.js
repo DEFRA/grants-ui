@@ -11,7 +11,7 @@ async function getEntraIdOptions() {
   const wellKnownUrl = configuredUrl !== config.default('entraId.wellKnownUrl') ? configuredUrl : derivedUrl
 
   // Derive the redirect base URL from CDP environment name.
-  // Bell appends the route path (/auth/entra-id-poc) to produce the full redirect URI sent to Azure.
+  // Bell appends the route path (/auth) to produce the full redirect URI sent to Azure.
   // ENTRA_INTERNAL_REDIRECT_URL overrides this for prod vanity URLs or local dev.
   const cdpEnvironment = config.get('cdpEnvironment')
   const configuredRedirectUrl = config.get('entraId.redirectUrl')
@@ -20,7 +20,7 @@ async function getEntraIdOptions() {
     configuredRedirectUrl !== config.default('entraId.redirectUrl') ? configuredRedirectUrl : derivedRedirectUrl
 
   log(LogCodes.AUTH.ENTRA_ID_CONFIG, {
-    redirectUri: `${location}/auth/entra-id-poc`,
+    redirectUri: `${location}/auth`,
     wellKnownUrl
   })
 

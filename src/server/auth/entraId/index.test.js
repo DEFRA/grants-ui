@@ -32,7 +32,7 @@ describe('entra-id-auth plugin', () => {
     expect(server.route).toHaveBeenCalledWith(
       expect.objectContaining({
         method: ['GET', 'POST'],
-        path: '/auth/entra-id-poc'
+        path: '/auth'
       })
     )
   })
