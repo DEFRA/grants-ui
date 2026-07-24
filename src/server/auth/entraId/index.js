@@ -9,7 +9,7 @@ export default {
 
       server.route({
         method: ['GET', 'POST'],
-        path: '/auth/entra-id-poc',
+        path: '/auth',
         options: {
           auth: {
             strategy: 'entra-id',
