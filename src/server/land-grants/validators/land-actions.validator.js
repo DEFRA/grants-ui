@@ -53,25 +53,42 @@ export function validateSelectedActions(payload) {
   return errors
 }
 
+const QUANTITY_PRECISION = 4
+// Stricter than Number(value): rejects "14.211.442121", "1e5", etc. rather
+// than letting them slip through as NaN or unbounded-precision numbers.
+const QUANTITY_FORMAT = new RegExp(`^\\d+(\\.\\d{1,${QUANTITY_PRECISION}})?$`)
+
 /**
  * Validate that every selected, quantity-required action has a confirmed
- * (submitted, non-zero) quantity. Requires the fetched action metadata, so
- * this runs separately from validateSelectedActions, after actions are
- * fetched in handlePost.
+ * (submitted, non-zero) quantity, in plain decimal form with no more than 4
+ * decimal places.
  * @param {object} payload - Form payload
  * @param {Action[]} actions
  * @returns {Array<{text: string, href: string}>} - Array of validation errors
  */
 export function validateSelectedActionQuantities(payload, actions) {
   const selectedCodes = new Set(getSelectedActionCodes(payload))
+  const errors = []
 
-  return actions
-    .filter((action) => selectedCodes.has(action.code) && action.requiresMaxQuantity != null)
-    .filter((action) => !hasSubmittedNonZeroQuantity(payload, action))
-    .map((action) => ({
-      text: `Enter a quantity for ${action.description}`,
-      href: `#${getActionQuantityFieldName(action.code)}`
-    }))
+  for (const action of actions) {
+    if (!selectedCodes.has(action.code) || action.requiresMaxQuantity == null) {
+      continue
+    }
+    const href = `#${getActionQuantityFieldName(action.code)}`
+    if (!hasSubmittedNonZeroQuantity(payload, action)) {
+      errors.push({ text: `Enter a quantity for ${action.description}`, href })
+      continue
+    }
+    const rawValue = String(payload[getActionQuantityFieldName(action.code)]).trim()
+    if (!QUANTITY_FORMAT.test(rawValue)) {
+      errors.push({
+        text: `Quantity for ${action.description} must be ${QUANTITY_PRECISION} decimal places or fewer`,
+        href
+      })
+    }
+  }
+
+  return errors
 }
 
 /**

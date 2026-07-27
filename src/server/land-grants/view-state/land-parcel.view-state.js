@@ -142,6 +142,30 @@ export function addSelectedActionsToState(state, payload, groupedActions, parcel
 }
 
 /**
+ * Builds addedActions-shaped entries from a just-submitted payload rather
+ * than state, so a validation error re-renders with what the user actually
+ * typed. Echoes the raw value as-is (including empty) - no fallback to the
+ * available area like buildActionStateEntry, or a blank field would
+ * repopulate with a value the user never entered.
+ * @param {object} payload - Form payload containing action selections
+ * @param {Array<ActionGroup>} groupedActions - Available actions grouped
+ * @returns {Array<{code: string, description: string, value?: string|number}>}
+ */
+export function getAddedActionsFromPayload(payload, groupedActions) {
+  const selectedCodes = getSelectedActionCodes(payload)
+  const allActions = groupedActions.flatMap((g) => g.actions)
+
+  return selectedCodes
+    .map((actionCode) => allActions.find((a) => a.code === actionCode))
+    .filter((actionInfo) => actionInfo != null)
+    .map((actionInfo) => ({
+      code: actionInfo.code,
+      description: actionInfo.description,
+      value: actionInfo.requiresMaxQuantity != null ? (payload[getActionQuantityFieldName(actionInfo.code)] ?? '') : ''
+    }))
+}
+
+/**
  * Extract added actions from state for a specific parcel
  * @param {object} state - Current state
  * @param {string} selectedLandParcel - The selected land parcel ID (format: "sheetId-parcelId")

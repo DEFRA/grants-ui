@@ -5,7 +5,10 @@ import {
 import QuestionPageWithParcelCheckController from '~/src/server/common/controllers/question-page-with-parcel-check.controller.js'
 import { parseLandParcel } from '~/src/shared/format-parcel.js'
 import { log, error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
-import { getAddedActionsForStateParcel } from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
+import {
+  getAddedActionsForStateParcel,
+  getAddedActionsFromPayload
+} from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
 import { getParcelIdFromQuery } from '../utils/parcel-request.utils.js'
 import { getLandGrantsUserContext } from '../services/land-grants-user-context.js'
 
@@ -240,11 +243,15 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
    * @param {Array} options.errors
    * @param {{ selectedLandParcel: string, sheetId: string, parcelId: string }} options.parcel
    * @param {object} options.prevState
+   * @param {object} [options.payload] - When given, re-renders with what was just
+   *   submitted instead of prevState, so an invalid quantity stays visible to correct.
    */
-  async handleValidationErrors(h, request, context, { errors, parcel, prevState }) {
+  async handleValidationErrors(h, request, context, { errors, parcel, prevState, payload }) {
     const { selectedLandParcel, sheetId, parcelId } = parcel
     const result = await this.fetchActions(request, sheetId, parcelId)
-    const addedActions = getAddedActionsForStateParcel(prevState, selectedLandParcel)
+    const addedActions = payload
+      ? getAddedActionsFromPayload(payload, result?.actions || [])
+      : getAddedActionsForStateParcel(prevState, selectedLandParcel)
     return this.renderErrorView(h, request, context, {
       errors,
       selectedLandParcel,
@@ -358,7 +365,7 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
 
     const quantityErrors = this.validateActionQuantities(payload, actions)
     if (quantityErrors.length > 0) {
-      return this.handleValidationErrors(h, request, context, { errors: quantityErrors, parcel, prevState })
+      return this.handleValidationErrors(h, request, context, { errors: quantityErrors, parcel, prevState, payload })
     }
 
     const state = this.writeActionsToState(prevState, payload, actions, fetchedParcel)

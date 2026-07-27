@@ -31,11 +31,8 @@ function getQuantityInput(checkbox) {
 }
 
 /**
- * Shows/hides a non-quantity checkbox's own "Updating..." banner. Unlike a
- * quantity action, there's no conditional panel to host a server-rendered
- * one, so it's lazily created inside the checkbox's own item on first use and
- * removed once loading ends - same lazy-DOM pattern as
- * toggleUnavailableMessage's "not compatible" message.
+ * A non-quantity checkbox has no conditional panel to host a server-rendered
+ * banner, so it's lazily created/removed here instead.
  * @param {HTMLInputElement} checkbox
  * @param {boolean} isLoading
  */
@@ -55,10 +52,8 @@ function toggleCheckboxRefreshBanner(checkbox, isLoading) {
 }
 
 /**
- * Shows/hides the "Updating available land for this action..." banner for the
- * action whose blur (if it has a quantity input) or check/uncheck triggered
- * this refresh - only that one action's number is actually changing from the
- * user's point of view, so other actions' banners are left alone.
+ * Shows/hides the "Updating..." banner for the action that triggered this
+ * refresh - other actions' banners are left alone.
  * @param {HTMLInputElement} checkbox
  * @param {boolean} isLoading
  */
@@ -73,14 +68,10 @@ function toggleRefreshBanner(checkbox, isLoading) {
 }
 
 /**
- * Disables every OTHER action's checkbox (and quantity input, if any) while
- * one action's refresh is in flight, since its response could change any of
- * them - the one actually being touched (typed into or just checked/
- * unchecked) stays interactive throughout, since the user is mid-interaction
- * with it and disabling it under the pointer/keyboard would be jarring.
- * Only ever disables: the caller's own post-response applyAvailability pass
- * (run for every checkbox once the response lands) re-establishes each one's
- * correct disabled state from scratch, so there's nothing to undo here.
+ * Disables every OTHER checkbox/quantity input while one action's refresh is
+ * in flight, since the response could change any of them. Only ever
+ * disables - the post-response applyAvailability pass re-establishes each
+ * one's correct state once the response lands.
  * @param {HTMLElement} form
  * @param {HTMLInputElement} triggeringCheckbox
  */
@@ -107,11 +98,9 @@ function getTotalAvailableArea(checkbox) {
 
 /**
  * The most recently fetched availableArea for a non-quantity action, or its
- * original total if no fetch has happened yet. A non-quantity action has no
- * input of its own to reveal how much of its area other checked actions have
- * already used - only the server's own recompute (see applyAvailability)
- * knows that, so this MUST be sourced from the last response, never
- * re-derived from the static original total.
+ * original total if no fetch has happened yet - must come from the last
+ * response, not the static total, since other checked actions may have
+ * already used up part of it.
  * @param {HTMLInputElement} checkbox
  * @returns {number | undefined}
  */
@@ -149,12 +138,9 @@ function updateHintLive(checkbox) {
 }
 
 /**
- * A checked, quantity-required action with no currently-valid typed quantity
- * (empty, or invalid) isn't a real selection yet - unchecking and disabling
- * it (rather than leaving it checked-but-unconfirmed) stops it from silently
- * vanishing from state on submit while still looking selected on the page.
- * An action with a genuinely valid quantity is left alone; the user has
- * committed to it.
+ * A checked, quantity-required action with no valid typed quantity isn't a
+ * real selection yet - uncheck and disable it rather than leave it looking
+ * selected while silently absent from submitted state.
  * @param {HTMLElement} form
  * @returns {Set<HTMLInputElement>} Checkboxes just force-unchecked, so the
  *   availability response for this same refresh doesn't re-enable them.
@@ -193,9 +179,7 @@ function buildPlannedActions(form) {
 
 /**
  * A checked action is never disabled by its own (self-competing) response. A
- * non-quantity action just needs some area left (> 0), not its full original
- * total - unlike a quantity-required action, it hasn't committed to a
- * specific amount, so a reduced-but-nonzero area doesn't make it unusable.
+ * non-quantity action just needs some area left (> 0), not its full total.
  * @param {HTMLInputElement} checkbox
  * @param {{ value: number, unit: string } | undefined} availableArea
  * @returns {boolean}
@@ -231,12 +215,8 @@ function toggleUnavailableMessage(checkbox, isUnavailable) {
 }
 
 /**
- * Hides a checkbox's conditional reveal panel (its quantity input) - GOV.UK's
- * own JS only toggles this in response to a user click, so a panel left open
- * by an earlier check would otherwise sit there empty and disabled instead
- * of being hidden along with the checkbox. Only ever force-hides; never
- * force-shows, since that's the browser's own job on checked state and doing
- * it here would re-open a panel the user (or an uncheck) already closed.
+ * Force-hides a checkbox's conditional reveal panel - GOV.UK's own JS only
+ * toggles this on user click. Never force-shows; that stays the browser's job.
  * @param {HTMLInputElement} checkbox
  */
 function hideConditionalReveal(checkbox) {
@@ -246,11 +226,8 @@ function hideConditionalReveal(checkbox) {
 }
 
 /**
- * Marks a checkbox as unavailable: disables it (and its quantity input, if
- * any), hides the quantity panel, and shows the "not compatible" message.
- * The single place all three visual aspects of "not a valid selection" stay
- * in sync, whether driven by an availability response or a client-side rule
- * like an unconfirmed quantity.
+ * Marks a checkbox as unavailable: disables it and its quantity input, hides
+ * the panel, and shows the "not compatible" message.
  * @param {HTMLInputElement} checkbox
  * @param {HTMLInputElement | null} [quantityInput]
  */
@@ -283,10 +260,8 @@ function syncQuantityInputBounds(checkbox, action) {
 }
 
 /**
- * Marks a checkbox (and its quantity input, if any) as available: clears
- * disabled state and the "not compatible" message. The panel's own open/
- * closed state is left alone - only the browser (via a checked-state click)
- * ever opens it.
+ * Marks a checkbox as available: clears disabled state and the "not
+ * compatible" message. Leaves the panel's open/closed state alone.
  * @param {HTMLInputElement} checkbox
  */
 function clearUnavailable(checkbox) {
@@ -354,11 +329,6 @@ async function postPlannedActions(parcelId, plannedActions) {
 function createAvailabilityRefresher(form, parcelId) {
   let requestId = 0
 
-  // triggeringCheckbox: the action whose quantity input was just blurred, if
-  // that's what triggered this refresh - its own conditional panel shows the
-  // "updating" banner, since that's the one number the user is waiting on.
-  // Omitted for a checkbox-triggered refresh, where no single action's
-  // number is what the user is mid-edit on.
   return async function refreshAvailability(triggeringCheckbox) {
     const forcedUnchecked = uncheckUnconfirmedQuantityActions(form)
     requestId += 1

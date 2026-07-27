@@ -205,5 +205,79 @@ describe('land-actions.validator', () => {
         { text: 'Enter a quantity for Low input', href: '#landActionQuantity_UPL8' }
       ])
     })
+
+    it('should return an error when the submitted quantity has more than 4 decimal places', () => {
+      const payload = { landAction: 'CSAM3', landActionQuantity_CSAM3: '3.14159' }
+
+      const result = validateSelectedActionQuantities(payload, actions)
+
+      expect(result).toEqual([
+        { text: 'Quantity for Herbal leys must be 4 decimal places or fewer', href: '#landActionQuantity_CSAM3' }
+      ])
+    })
+
+    it('should return an error when the submitted quantity has more than one decimal point', () => {
+      const payload = { landAction: 'CSAM3', landActionQuantity_CSAM3: '14.211.442121' }
+
+      const result = validateSelectedActionQuantities(payload, actions)
+
+      expect(result).toEqual([
+        { text: 'Quantity for Herbal leys must be 4 decimal places or fewer', href: '#landActionQuantity_CSAM3' }
+      ])
+    })
+
+    it('should return an error when the submitted quantity is not numeric', () => {
+      const payload = { landAction: 'CSAM3', landActionQuantity_CSAM3: 'abc' }
+
+      const result = validateSelectedActionQuantities(payload, actions)
+
+      expect(result).toEqual([
+        { text: 'Quantity for Herbal leys must be 4 decimal places or fewer', href: '#landActionQuantity_CSAM3' }
+      ])
+    })
+
+    it('should return an error when the submitted quantity is negative', () => {
+      const payload = { landAction: 'CSAM3', landActionQuantity_CSAM3: '-3.25' }
+
+      const result = validateSelectedActionQuantities(payload, actions)
+
+      expect(result).toEqual([
+        { text: 'Quantity for Herbal leys must be 4 decimal places or fewer', href: '#landActionQuantity_CSAM3' }
+      ])
+    })
+
+    it('should return an error when the submitted quantity uses scientific notation', () => {
+      const payload = { landAction: 'CSAM3', landActionQuantity_CSAM3: '1e5' }
+
+      const result = validateSelectedActionQuantities(payload, actions)
+
+      expect(result).toEqual([
+        { text: 'Quantity for Herbal leys must be 4 decimal places or fewer', href: '#landActionQuantity_CSAM3' }
+      ])
+    })
+
+    it('should return no errors when the submitted quantity has exactly 4 decimal places', () => {
+      const payload = { landAction: 'CSAM3', landActionQuantity_CSAM3: '3.1415' }
+
+      const result = validateSelectedActionQuantities(payload, actions)
+
+      expect(result).toEqual([])
+    })
+
+    it('should return no errors when the submitted quantity has fewer than 4 decimal places', () => {
+      const payload = { landAction: 'CSAM3', landActionQuantity_CSAM3: '3.1' }
+
+      const result = validateSelectedActionQuantities(payload, actions)
+
+      expect(result).toEqual([])
+    })
+
+    it('should return no errors when the submitted quantity is a whole number', () => {
+      const payload = { landAction: 'CSAM3', landActionQuantity_CSAM3: '3' }
+
+      const result = validateSelectedActionQuantities(payload, actions)
+
+      expect(result).toEqual([])
+    })
   })
 })
