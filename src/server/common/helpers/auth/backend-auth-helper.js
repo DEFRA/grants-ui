@@ -1,5 +1,6 @@
 import { config } from '~/src/config/config.js'
 import crypto from 'node:crypto'
+import { withTraceId } from '@defra/hapi-tracing'
 
 const IV_LENGTH_BYTES = 12
 const KEY_LENGTH_BYTES = 32
@@ -76,7 +77,10 @@ export function createApiHeadersForGrantsUiBackend({ lockToken } = {}) {
  * @returns {Record<string, string>} Headers with Content-Type and authentication
  */
 export function createApiHeadersForLandGrantsBackend() {
-  return createAuthenticatedHeaders(LAND_GRANTS_AUTH_TOKEN, LAND_GRANTS_ENCRYPTION_KEY, {
-    'Content-Type': CONTENT_TYPE_JSON
-  })
+  return withTraceId(
+    config.get('tracing.header'),
+    createAuthenticatedHeaders(LAND_GRANTS_AUTH_TOKEN, LAND_GRANTS_ENCRYPTION_KEY, {
+      'Content-Type': CONTENT_TYPE_JSON
+    })
+  )
 }
