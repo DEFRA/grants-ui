@@ -625,9 +625,48 @@ describe('Land Grants client', () => {
       expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/parcels`, {
         method: 'POST',
         headers: expectedHeaders,
-        body: JSON.stringify({ parcelIds, fields, sbi: mockUserContext.sbi })
+        body: JSON.stringify({ parcelIds, fields, sbi: mockUserContext.sbi, plannedActions: [] })
       })
       expect(result).toEqual(mockResponse)
+    })
+
+    it('should include plannedActions in the request body when given', async () => {
+      const mockResponse = { id: 1, status: 'success' }
+      const fields = ['actions']
+      const parcelIds = ['parcel1']
+      const plannedActions = [{ actionCode: 'CSAM3', quantity: 1.5, unit: 'ha' }]
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockResponse
+      })
+
+      await parcelsWithFields(fields, parcelIds, mockApiEndpoint, mockUserContext, plannedActions)
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        `${mockApiEndpoint}/api/v2/parcels`,
+        expect.objectContaining({
+          body: JSON.stringify({ parcelIds, fields, sbi: mockUserContext.sbi, plannedActions })
+        })
+      )
+    })
+
+    it('should default plannedActions to an empty array when not given', async () => {
+      const mockResponse = { id: 1, status: 'success' }
+      const fields = ['actions']
+      const parcelIds = ['parcel1']
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockResponse
+      })
+
+      await parcelsWithFields(fields, parcelIds, mockApiEndpoint, mockUserContext)
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        `${mockApiEndpoint}/api/v2/parcels`,
+        expect.objectContaining({
+          body: JSON.stringify({ parcelIds, fields, sbi: mockUserContext.sbi, plannedActions: [] })
+        })
+      )
     })
   })
 
@@ -646,7 +685,7 @@ describe('Land Grants client', () => {
       expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/parcels`, {
         method: 'POST',
         headers: expectedHeaders,
-        body: JSON.stringify({ parcelIds, fields, sbi: mockUserContext.sbi })
+        body: JSON.stringify({ parcelIds, fields, sbi: mockUserContext.sbi, plannedActions: [] })
       })
       expect(result).toEqual(mockResponse)
     })
@@ -667,7 +706,7 @@ describe('Land Grants client', () => {
       expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/parcels`, {
         method: 'POST',
         headers: expectedHeaders,
-        body: JSON.stringify({ parcelIds, fields, sbi: mockUserContext.sbi })
+        body: JSON.stringify({ parcelIds, fields, sbi: mockUserContext.sbi, plannedActions: [] })
       })
       expect(result).toEqual(mockResponse)
     })
@@ -707,7 +746,7 @@ describe('Land Grants client', () => {
       expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/parcels`, {
         method: 'POST',
         headers: expectedHeaders,
-        body: JSON.stringify({ parcelIds, fields, sbi: mockUserContext.sbi })
+        body: JSON.stringify({ parcelIds, fields, sbi: mockUserContext.sbi, plannedActions: [] })
       })
       expect(result).toEqual(mockResponse)
     })

@@ -161,12 +161,15 @@ export async function parcelsGroups(parcelIds, baseUrl, userContext) {
  * @param {string[]} parcelIds
  * @param {string} baseUrl
  * @param {LandGrantsUserContext} userContext
+ * @param {PlannedAction[]} [plannedActions] - When given, the API recomputes each
+ *   action's availableArea against these in-progress selections merged with existing
+ *   agreements, rather than existing agreements alone.
  * @returns {Promise<ParcelResponse>}
  */
-export async function parcelsWithFields(fields, parcelIds, baseUrl, userContext) {
+export async function parcelsWithFields(fields, parcelIds, baseUrl, userContext, plannedActions = []) {
   const { sbi } = validateLandGrantsUserContext(userContext)
   const endpoint = '/api/v2/parcels'
-  return postToLandGrantsApi(endpoint, { parcelIds, fields, sbi }, baseUrl, userContext)
+  return postToLandGrantsApi(endpoint, { parcelIds, fields, sbi, plannedActions }, baseUrl, userContext)
 }
 
 /**
@@ -174,13 +177,14 @@ export async function parcelsWithFields(fields, parcelIds, baseUrl, userContext)
  * @param {string[]} parcelIds
  * @param {string} baseUrl
  * @param {LandGrantsUserContext} userContext
+ * @param {PlannedAction[]} [plannedActions] - See parcelsWithFields
  * @returns {Promise<ParcelResponse>}
  */
-export async function parcelsWithExtendedInfo(parcelIds, baseUrl, userContext) {
+export async function parcelsWithExtendedInfo(parcelIds, baseUrl, userContext, plannedActions) {
   const consentTypes = getConsentTypes()
   const fields = ['actions', 'size', 'groups', ...consentTypes.map((ct) => `actions.${ct.apiField}`)]
 
-  return parcelsWithFields(fields, parcelIds, baseUrl, userContext)
+  return parcelsWithFields(fields, parcelIds, baseUrl, userContext, plannedActions)
 }
 
 /**
@@ -210,7 +214,7 @@ export async function locateParcelTiles(parcelIds, baseUrl, userContext) {
 }
 
 /**
- * @import { Parcel, LandActions, ValidateApplicationRequest, ParcelResponse, ValidateApplicationResponse } from '~/src/server/land-grants/types/land-grants.client.d.js'
+ * @import { Parcel, LandActions, PlannedAction, ValidateApplicationRequest, ParcelResponse, ValidateApplicationResponse } from '~/src/server/land-grants/types/land-grants.client.d.js'
  * @import {  PaymentCalculationResponse } from '~/src/server/land-grants/types/payment.d.js'
  * @import { LandGrantsUserContext } from './land-grants-user-context.js'
  */

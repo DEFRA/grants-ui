@@ -1,4 +1,6 @@
 import { getSelectedActionCodes, SELECTED_ACTIONS_FIELD_NAME } from '../utils/selected-actions-field.js'
+import { getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
+import { hasSubmittedNonZeroQuantity } from '../view-state/land-parcel.view-state.js'
 
 /**
  * Validators for land actions selection
@@ -50,3 +52,28 @@ export function validateSelectedActions(payload) {
 
   return errors
 }
+
+/**
+ * Validate that every selected, quantity-required action has a confirmed
+ * (submitted, non-zero) quantity. Requires the fetched action metadata, so
+ * this runs separately from validateSelectedActions, after actions are
+ * fetched in handlePost.
+ * @param {object} payload - Form payload
+ * @param {Action[]} actions
+ * @returns {Array<{text: string, href: string}>} - Array of validation errors
+ */
+export function validateSelectedActionQuantities(payload, actions) {
+  const selectedCodes = new Set(getSelectedActionCodes(payload))
+
+  return actions
+    .filter((action) => selectedCodes.has(action.code) && action.requiresMaxQuantity != null)
+    .filter((action) => !hasSubmittedNonZeroQuantity(payload, action))
+    .map((action) => ({
+      text: `Enter a quantity for ${action.description}`,
+      href: `#${getActionQuantityFieldName(action.code)}`
+    }))
+}
+
+/**
+ * @import { Action } from '../view-state/land-parcel.view-state.js'
+ */

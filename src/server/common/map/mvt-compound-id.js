@@ -2,7 +2,7 @@ import { PbfReader } from 'pbf'
 import { VectorTile } from '@mapbox/vector-tile'
 // @ts-ignore — no type declarations shipped with this package
 import vtpbf from 'vt-pbf'
-import { stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
+import { stringifyParcel } from '~/src/shared/format-parcel.js'
 import { attemptSync } from '~/src/server/common/helpers/attempt.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 

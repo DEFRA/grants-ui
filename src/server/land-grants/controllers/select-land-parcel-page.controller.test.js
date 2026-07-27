@@ -36,7 +36,7 @@ vi.mock('~/src/server/land-grants/services/land-grants.service.js', () => ({
   fetchParcels: vi.fn()
 }))
 
-vi.mock('~/src/server/land-grants/utils/format-parcel.js', () => ({
+vi.mock('~/src/shared/format-parcel.js', () => ({
   stringifyParcel: ({ parcelId, sheetId }) => `${sheetId}-${parcelId}`
 }))
 

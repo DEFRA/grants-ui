@@ -1,8 +1,6 @@
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
-import { debug, log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
-import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
-import { getCachedAuthParcels, setCachedAuthParcels } from '~/src/server/land-grants/services/parcel-cache.js'
-import { stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { fetchAuthorisedParcelIds } from '~/src/server/land-grants/services/parcel-cache.js'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
 import { withTaskContext } from '~/src/server/task-list/task-list.helper.js'
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
@@ -95,36 +93,26 @@ export default class QuestionPageWithParcelCheckController extends withTaskConte
     }
 
     const sbi = request.auth?.credentials?.sbi
+    const landParcelsForSbi = await fetchAuthorisedParcelIds(request)
 
-    try {
-      let landParcelsForSbi = getCachedAuthParcels(sbi)
+    if (!landParcelsForSbi) {
+      log(
+        LogCodes.LAND_GRANTS.PARCEL_AUTH_CHECK_FAILED,
+        { sbi, method: request.method, path: request.path, requestedParcelIds: parcelIds },
+        request
+      )
+      return this.renderUnauthorisedView(h)
+    }
 
-      if (!landParcelsForSbi) {
-        const landParcels = (await fetchParcelsFromDal(request)) || []
-        landParcelsForSbi = landParcels.map((parcel) => stringifyParcel(parcel))
-        setCachedAuthParcels(sbi, landParcelsForSbi)
-      }
+    const unauthorisedParcel = parcelIds.find((id) => !landParcelsForSbi.includes(id))
 
-      const unauthorisedParcel = parcelIds.find((id) => !landParcelsForSbi.includes(id))
-
-      if (unauthorisedParcel) {
-        log(
-          LogCodes.LAND_GRANTS.UNAUTHORISED_PARCEL,
-          {
-            sbi,
-            selectedLandParcel: unauthorisedParcel,
-            landParcelsForSbi
-          },
-          request
-        )
-        return this.renderUnauthorisedView(h)
-      }
-    } catch (error) {
-      debug(
-        LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+    if (unauthorisedParcel) {
+      log(
+        LogCodes.LAND_GRANTS.UNAUTHORISED_PARCEL,
         {
-          endpoint: `Consolidated view`,
-          errorMessage: `fetch parcel data for auth check: ${/** @type {Error} */ (error).message}`
+          sbi,
+          selectedLandParcel: unauthorisedParcel,
+          landParcelsForSbi
         },
         request
       )
