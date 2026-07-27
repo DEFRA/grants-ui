@@ -3,11 +3,13 @@ import { formatAreaUnit } from '../../../shared/format-area-unit.js'
 import { isValidCompoundParcelId } from '../../../shared/format-parcel.js'
 
 const CHECKBOX_NAME = 'landAction'
-const QUANTITY_DEBOUNCE_MS = 500
 const UNAVAILABLE_MESSAGE = 'Not compatible with other selected actions.'
 const UNAVAILABLE_CLASS = 'select-actions-unavailable-message'
 const AVAILABLE_UNIT_ATTR = 'data-available-unit'
 const TOTAL_AVAILABLE_AREA_ATTR = 'data-total-available-area'
+const LIVE_AVAILABLE_AREA_ATTR = 'data-live-available-area'
+const CHECKBOXES_WRAPPER_SELECTOR = '.govuk-checkboxes'
+const LOADING_CLASS = 'select-actions-checkboxes--loading'
 
 /**
  * @param {number} value
@@ -15,26 +17,24 @@ const TOTAL_AVAILABLE_AREA_ATTR = 'data-total-available-area'
  */
 const availabilityHintText = (value, unit) => `${value} ${formatAreaUnit(unit)} available`
 
-/**
- * @template {unknown[]} T
- * @param {(...args: T) => void} fn
- * @param {number} delayMs
- * @returns {(...args: T) => void}
- */
-function debounce(fn, delayMs) {
-  /** @type {ReturnType<typeof setTimeout> | undefined} */
-  let timer
-  return (...args) => {
-    clearTimeout(timer)
-    timer = setTimeout(() => fn(...args), delayMs)
-  }
-}
-
 /** @param {HTMLElement} form */
 function getCheckboxes(form) {
   return /** @type {HTMLInputElement[]} */ (
     Array.from(form.querySelectorAll(`input[type="checkbox"][name="${CHECKBOX_NAME}"]`))
   )
+}
+
+/**
+ * Greys out the whole checkbox list and shows a spinner while a request is
+ * in flight - the per-checkbox disabled state changes an instant later are
+ * otherwise invisible until the response lands, which reads as unresponsive.
+ * @param {HTMLElement} form
+ * @param {boolean} isLoading
+ */
+function toggleLoading(form, isLoading) {
+  const wrapper = form.querySelector(CHECKBOXES_WRAPPER_SELECTOR)
+  wrapper?.classList.toggle(LOADING_CLASS, isLoading)
+  wrapper?.setAttribute('aria-busy', String(isLoading))
 }
 
 /** @param {HTMLInputElement} checkbox */
@@ -50,6 +50,25 @@ function getTotalAvailableArea(checkbox) {
   return Number.isFinite(value) ? value : undefined
 }
 
+/**
+ * The most recently fetched availableArea for a non-quantity action, or its
+ * original total if no fetch has happened yet. A non-quantity action has no
+ * input of its own to reveal how much of its area other checked actions have
+ * already used - only the server's own recompute (see applyAvailability)
+ * knows that, so this MUST be sourced from the last response, never
+ * re-derived from the static original total.
+ * @param {HTMLInputElement} checkbox
+ * @returns {number | undefined}
+ */
+function getLiveAvailableArea(checkbox) {
+  const raw = checkbox.getAttribute(LIVE_AVAILABLE_AREA_ATTR)
+  if (raw == null) {
+    return getTotalAvailableArea(checkbox)
+  }
+  const value = Number(raw)
+  return Number.isFinite(value) ? value : undefined
+}
+
 /** @param {HTMLInputElement} checkbox
  * @returns {number | undefined}
  */
@@ -57,23 +76,6 @@ function getValidTypedQuantity(checkbox) {
   const typed = Number(getQuantityInput(checkbox)?.value.trim())
   const total = getTotalAvailableArea(checkbox)
   return typed > 0 && (total == null || typed <= total) ? typed : undefined
-}
-
-/**
- * Anything typed but invalid (over max, negative, zero, non-numeric) is
- * assumed to need the full available area, the worst case - only an
- * untouched, empty field counts as no claim at all.
- * @param {HTMLInputElement} checkbox
- * @returns {number | undefined}
- */
-function getEffectiveQuantity(checkbox) {
-  const valid = getValidTypedQuantity(checkbox)
-  if (valid != null) {
-    return valid
-  }
-  const raw = getQuantityInput(checkbox)?.value.trim()
-  const total = getTotalAvailableArea(checkbox)
-  return raw ? total : undefined
 }
 
 /** @param {HTMLInputElement} checkbox */
@@ -92,11 +94,12 @@ function updateHintLive(checkbox) {
 }
 
 /**
- * A checked, quantity-required action with nothing typed isn't a real
- * selection yet - unchecking and disabling it (rather than leaving it
- * checked-but-empty) stops it from silently vanishing from state on submit
- * while still looking selected on the page. An action that already has a
- * quantity is left alone; the user has committed to it.
+ * A checked, quantity-required action with no currently-valid typed quantity
+ * (empty, or invalid) isn't a real selection yet - unchecking and disabling
+ * it (rather than leaving it checked-but-unconfirmed) stops it from silently
+ * vanishing from state on submit while still looking selected on the page.
+ * An action with a genuinely valid quantity is left alone; the user has
+ * committed to it.
  * @param {HTMLElement} form
  * @returns {Set<HTMLInputElement>} Checkboxes just force-unchecked, so the
  *   availability response for this same refresh doesn't re-enable them.
@@ -105,7 +108,7 @@ function uncheckUnconfirmedQuantityActions(form) {
   const forced = new Set()
   for (const checkbox of getCheckboxes(form)) {
     const quantityInput = getQuantityInput(checkbox)
-    if (checkbox.checked && quantityInput && getEffectiveQuantity(checkbox) == null) {
+    if (checkbox.checked && quantityInput && getValidTypedQuantity(checkbox) == null) {
       checkbox.checked = false
       markUnavailable(checkbox, quantityInput)
       forced.add(checkbox)
@@ -124,7 +127,7 @@ function buildPlannedActions(form) {
       continue
     }
     const quantityInput = getQuantityInput(checkbox)
-    const quantity = quantityInput ? getEffectiveQuantity(checkbox) : getTotalAvailableArea(checkbox)
+    const quantity = quantityInput ? getValidTypedQuantity(checkbox) : getLiveAvailableArea(checkbox)
     const unit = checkbox.getAttribute(AVAILABLE_UNIT_ATTR)
     if (typeof quantity === 'number' && unit) {
       plannedActions.push({ actionCode: checkbox.value, quantity, unit })
@@ -247,6 +250,7 @@ function applyAvailability(checkbox, action) {
   const { availableArea } = action
   if (availableArea) {
     checkbox.setAttribute(AVAILABLE_UNIT_ATTR, availableArea.unit)
+    checkbox.setAttribute(LIVE_AVAILABLE_AREA_ATTR, String(availableArea.value))
   }
 
   syncQuantityInputBounds(checkbox, action)
@@ -299,13 +303,16 @@ function createAvailabilityRefresher(form, parcelId) {
     const forcedUnchecked = uncheckUnconfirmedQuantityActions(form)
     requestId += 1
     const thisRequestId = requestId
+    toggleLoading(form, true)
     const plannedActions = buildPlannedActions(form)
     const actions = await postPlannedActions(parcelId, plannedActions)
 
     if (thisRequestId !== requestId) {
-      // A newer refresh has already taken over - ignore this stale response.
+      // A newer refresh has already taken over - ignore this stale response,
+      // and leave loading alone (the newer refresh owns it).
       return
     }
+    toggleLoading(form, false)
 
     for (const checkbox of getCheckboxes(form)) {
       if (forcedUnchecked.has(checkbox)) {
@@ -330,7 +337,6 @@ export function initSelectActionsPage(form) {
   }
 
   const refreshAvailability = createAvailabilityRefresher(form, parcelId)
-  const debouncedRefresh = debounce(refreshAvailability, QUANTITY_DEBOUNCE_MS)
 
   // Grey out any already-checked (saved) selection that's now incompatible.
   if (buildPlannedActions(form).length > 0) {
@@ -354,28 +360,45 @@ export function initSelectActionsPage(form) {
       // Clear a stale typed quantity on uncheck.
       quantityInput.value = ''
     }
-    if (target.checked && quantityInput && getEffectiveQuantity(target) == null) {
+    if (target.checked && quantityInput && getValidTypedQuantity(target) == null) {
       return
     }
     refreshAvailability()
   })
 
-  form.addEventListener('input', (event) => {
-    const target = /** @type {HTMLElement} */ (event.target)
+  /**
+   * @param {EventTarget | null} target
+   * @returns {HTMLInputElement | null}
+   */
+  const getCheckboxForQuantityTarget = (target) => {
     if (!(target instanceof HTMLInputElement) || !target.name.startsWith(ACTION_QUANTITY_FIELD_PREFIX)) {
-      return
+      return null
     }
     const checkbox = form.querySelector(
       `input[name="${CHECKBOX_NAME}"][value="${target.name.slice(ACTION_QUANTITY_FIELD_PREFIX.length)}"]`
     )
-    if (!(checkbox instanceof HTMLInputElement)) {
-      return
-    }
-    updateHintLive(checkbox)
-    if (getEffectiveQuantity(checkbox) != null) {
-      debouncedRefresh()
+    return checkbox instanceof HTMLInputElement ? checkbox : null
+  }
+
+  form.addEventListener('input', (event) => {
+    const checkbox = getCheckboxForQuantityTarget(event.target)
+    if (checkbox) {
+      updateHintLive(checkbox)
     }
   })
+
+  // Refresh once the user leaves the quantity field, rather than on every
+  // keystroke - avoids firing a request for a value that's still being typed.
+  form.addEventListener(
+    'blur',
+    (event) => {
+      const checkbox = getCheckboxForQuantityTarget(event.target)
+      if (checkbox && getValidTypedQuantity(checkbox) != null) {
+        refreshAvailability()
+      }
+    },
+    true
+  )
 }
 
 initSelectActionsPage(document.querySelector('form'))

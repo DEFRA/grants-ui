@@ -451,9 +451,9 @@ describe('initSelectActionsPage', () => {
 
     const quantityInput = form.querySelector('#landActionQuantity_CSAM3')
     quantityInput.value = '3.25'
-    vi.useFakeTimers()
     quantityInput.dispatchEvent(new Event('input', { bubbles: true }))
-    await vi.advanceTimersByTimeAsync(500)
+    quantityInput.dispatchEvent(new Event('blur'))
+    await flushPromises()
 
     const [, options] = global.fetch.mock.calls[0]
     expect(JSON.parse(options.body).plannedActions).toEqual([{ actionCode: 'CSAM3', quantity: 3.25, unit: 'ha' }])
@@ -509,10 +509,10 @@ describe('initSelectActionsPage', () => {
 
   // A checkbox-triggered refresh (elsewhere on the form) reads the DOM as-is,
   // bypassing the input-event guard - a stale over-limit value already
-  // sitting in CSAM3's field is a confirmed over-claim, so it's sent as
-  // needing its full available area (the worst case), not dropped - dropping
-  // it would hide the conflict from UPL1's availability check.
-  it('sends the full available area for a quantity-required action whose typed quantity exceeds it, on a checkbox-triggered refresh', async () => {
+  // sitting in CSAM3's field is not a confirmed quantity, so CSAM3 is
+  // force-unchecked (see uncheckUnconfirmedQuantityActions) and contributes
+  // nothing to the request, rather than being sent as a worst-case claim.
+  it('excludes a checked action from plannedActions on a checkbox-triggered refresh when its typed quantity exceeds the max', async () => {
     const form = setupDom([
       {
         code: 'CSAM3',
@@ -528,15 +528,13 @@ describe('initSelectActionsPage', () => {
     await flushPromises()
     global.fetch.mockClear()
 
-    form.querySelector('input[value="UPL1"]').dispatchEvent(new Event('change', { bubbles: true }))
+    const upl1 = form.querySelector('input[value="UPL1"]')
+    upl1.checked = true
+    upl1.dispatchEvent(new Event('change', { bubbles: true }))
     await flushPromises()
 
     const [, options] = global.fetch.mock.calls[0]
-    expect(JSON.parse(options.body).plannedActions).toContainEqual({
-      actionCode: 'CSAM3',
-      quantity: 18.5,
-      unit: 'ha'
-    })
+    expect(JSON.parse(options.body).plannedActions).toEqual([{ actionCode: 'UPL1', quantity: 5, unit: 'ha' }])
   })
 
   // Regression: after typing the full max (so the response's own
@@ -552,19 +550,20 @@ describe('initSelectActionsPage', () => {
       actions: [{ code: 'CLIG3', availableArea: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
     })
     initSelectActionsPage(form)
-    vi.useFakeTimers()
 
     const quantityInput = form.querySelector('#landActionQuantity_CLIG3')
     quantityInput.value = '0.3271'
     quantityInput.dispatchEvent(new Event('input', { bubbles: true }))
-    await vi.advanceTimersByTimeAsync(500)
+    quantityInput.dispatchEvent(new Event('blur'))
+    await flushPromises()
 
     expect(quantityInput.max).toBe('0')
     global.fetch.mockClear()
 
     quantityInput.value = '0.25'
     quantityInput.dispatchEvent(new Event('input', { bubbles: true }))
-    await vi.advanceTimersByTimeAsync(500)
+    quantityInput.dispatchEvent(new Event('blur'))
+    await flushPromises()
 
     expect(global.fetch).toHaveBeenCalledTimes(1)
   })
@@ -591,15 +590,47 @@ describe('initSelectActionsPage', () => {
 
     const csam3QuantityInput = form.querySelector('#landActionQuantity_CSAM3')
     csam3QuantityInput.value = '0.0771'
-    vi.useFakeTimers()
     csam3QuantityInput.dispatchEvent(new Event('input', { bubbles: true }))
-    await vi.advanceTimersByTimeAsync(500)
+    csam3QuantityInput.dispatchEvent(new Event('blur'))
+    await flushPromises()
 
     const [, options] = global.fetch.mock.calls[0]
     expect(JSON.parse(options.body).plannedActions).toContainEqual({ actionCode: 'CLIG3', quantity: 0.25, unit: 'ha' })
   })
 
-  it('debounces quantity input changes', async () => {
+  // Typing doesn't fire a request at all - only leaving the field does, so
+  // rapid successive keystrokes never trigger more than the one refresh
+  // that happens on blur.
+  it('sends a non-quantity action its live availableArea from the previous response, not its original total', async () => {
+    const form = setupDom([
+      { code: 'CSAM3', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 },
+      { code: 'CLIG3', availableArea: { value: 0.3271, unit: 'ha' } }
+    ])
+    initSelectActionsPage(form)
+
+    const csam3QuantityInput = form.querySelector('#landActionQuantity_CSAM3')
+    csam3QuantityInput.value = '0.1'
+    csam3QuantityInput.dispatchEvent(new Event('input', { bubbles: true }))
+    global.fetch = fetchOk({
+      actions: [
+        { code: 'CSAM3', availableArea: { value: 0.2271, unit: 'ha' } },
+        { code: 'CLIG3', availableArea: { value: 0.2271, unit: 'ha' } }
+      ]
+    })
+    csam3QuantityInput.dispatchEvent(new Event('blur'))
+    await flushPromises()
+
+    global.fetch = mockApi({ CSAM3: 0.2271, CLIG3: 0.2271 })
+    const clig3Checkbox = form.querySelector('#landAction-CLIG3')
+    clig3Checkbox.checked = true
+    clig3Checkbox.dispatchEvent(new Event('change', { bubbles: true }))
+    await flushPromises()
+
+    const [, options] = global.fetch.mock.calls[0]
+    expect(JSON.parse(options.body).plannedActions).toContainEqual({ actionCode: 'CLIG3', quantity: 0.2271, unit: 'ha' })
+  })
+
+  it('does not fire a request while typing, only once the field is blurred', async () => {
     const form = setupDom([
       { code: 'CSAM3', checked: true, availableArea: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 },
       { code: 'UPL1', availableArea: { value: 5, unit: 'ha' } }
@@ -608,22 +639,49 @@ describe('initSelectActionsPage', () => {
     initSelectActionsPage(form)
     await flushPromises()
     global.fetch.mockClear()
-    vi.useFakeTimers()
 
     const quantityInput = form.querySelector('#landActionQuantity_CSAM3')
     quantityInput.value = '1'
     quantityInput.dispatchEvent(new Event('input', { bubbles: true }))
-    await vi.advanceTimersByTimeAsync(200)
     quantityInput.value = '2'
     quantityInput.dispatchEvent(new Event('input', { bubbles: true }))
-    await vi.advanceTimersByTimeAsync(200)
     quantityInput.value = '3'
     quantityInput.dispatchEvent(new Event('input', { bubbles: true }))
-    await vi.advanceTimersByTimeAsync(500)
+    await flushPromises()
+
+    expect(global.fetch).not.toHaveBeenCalled()
+
+    quantityInput.dispatchEvent(new Event('blur'))
+    await flushPromises()
 
     expect(global.fetch).toHaveBeenCalledTimes(1)
     const [, options] = global.fetch.mock.calls[0]
     expect(JSON.parse(options.body).plannedActions).toEqual([{ actionCode: 'CSAM3', quantity: 3, unit: 'ha' }])
+  })
+
+  it('greys out the checkbox list and shows a spinner while a refresh is in flight, clearing it once it resolves', async () => {
+    const form = setupDom([
+      { code: 'CMOR1', checked: true, availableArea: { value: 10, unit: 'ha' } },
+      { code: 'UPL1', availableArea: { value: 5, unit: 'ha' } }
+    ])
+    let resolveFetch
+    global.fetch = vi.fn().mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = () => resolve({ ok: true, json: () => Promise.resolve({ actions: [] }) })
+        })
+    )
+    initSelectActionsPage(form)
+
+    const wrapper = form.querySelector('.govuk-checkboxes')
+    expect(wrapper.classList.contains('select-actions-checkboxes--loading')).toBe(true)
+    expect(wrapper.getAttribute('aria-busy')).toBe('true')
+
+    resolveFetch()
+    await flushPromises()
+
+    expect(wrapper.classList.contains('select-actions-checkboxes--loading')).toBe(false)
+    expect(wrapper.getAttribute('aria-busy')).toBe('false')
   })
 
   it.each([[''], ['  ']])('does not fire a request when the quantity field is left empty (%j)', async (typedValue) => {
@@ -634,22 +692,20 @@ describe('initSelectActionsPage', () => {
     initSelectActionsPage(form)
     await flushPromises()
     global.fetch.mockClear()
-    vi.useFakeTimers()
 
     const quantityInput = form.querySelector('#landActionQuantity_CSAM3')
     quantityInput.value = typedValue
     quantityInput.dispatchEvent(new Event('input', { bubbles: true }))
-    await vi.advanceTimersByTimeAsync(500)
+    quantityInput.dispatchEvent(new Event('blur'))
+    await flushPromises()
 
     expect(global.fetch).not.toHaveBeenCalled()
   })
 
-  // Regression: "0", "abc", "-1" are typed-but-invalid, not "nothing typed" -
-  // an invalid claim must still be treated as needing the full available
-  // area, otherwise it silently drops out of other actions' conflict checks
-  // (see the over-max case above).
+  // Regression: "0", "abc", "-1" are typed-but-invalid - no different from
+  // nothing typed, so no request fires at all for these values.
   it.each([['0'], ['abc'], ['-1']])(
-    'sends the full available area when the typed quantity is invalid but not empty (%j)',
+    'does not fire a request when the typed quantity is invalid but not empty (%j)',
     async (typedValue) => {
       const form = setupDom([
         { code: 'CSAM3', checked: true, availableArea: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 }
@@ -658,22 +714,20 @@ describe('initSelectActionsPage', () => {
       initSelectActionsPage(form)
       await flushPromises()
       global.fetch.mockClear()
-      vi.useFakeTimers()
 
       const quantityInput = form.querySelector('#landActionQuantity_CSAM3')
       quantityInput.value = typedValue
       quantityInput.dispatchEvent(new Event('input', { bubbles: true }))
-      await vi.advanceTimersByTimeAsync(500)
+      quantityInput.dispatchEvent(new Event('blur'))
+      await flushPromises()
 
-      expect(global.fetch).toHaveBeenCalledTimes(1)
-      const [, options] = global.fetch.mock.calls[0]
-      expect(JSON.parse(options.body).plannedActions).toEqual([{ actionCode: 'CSAM3', quantity: 18.5, unit: 'ha' }])
+      expect(global.fetch).not.toHaveBeenCalled()
     }
   )
 
-  // A quantity over the max is a confirmed over-claim, not "nothing typed" -
-  // it must still fire so other actions see CSAM3 competing for its full area.
-  it('fires a request with the full available area when the typed quantity exceeds the input max', async () => {
+  // An over-max quantity is invalid, same as any other invalid value - no
+  // request fires until the user types something within range.
+  it('does not fire a request when the typed quantity exceeds the input max', async () => {
     const form = setupDom([
       { code: 'CSAM3', checked: true, availableArea: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 }
     ])
@@ -681,23 +735,21 @@ describe('initSelectActionsPage', () => {
     initSelectActionsPage(form)
     await flushPromises()
     global.fetch.mockClear()
-    vi.useFakeTimers()
 
     const quantityInput = form.querySelector('#landActionQuantity_CSAM3')
     quantityInput.value = '25'
     quantityInput.dispatchEvent(new Event('input', { bubbles: true }))
-    await vi.advanceTimersByTimeAsync(500)
+    quantityInput.dispatchEvent(new Event('blur'))
+    await flushPromises()
 
-    expect(global.fetch).toHaveBeenCalledTimes(1)
-    const [, options] = global.fetch.mock.calls[0]
-    expect(JSON.parse(options.body).plannedActions).toEqual([{ actionCode: 'CSAM3', quantity: 18.5, unit: 'ha' }])
+    expect(global.fetch).not.toHaveBeenCalled()
   })
 
-  // Regression: typing an over-max quantity into a checked action must grey
-  // out a genuinely competing, unchecked action straight away - the over-claim
-  // is treated as needing the full area, so the conflict is never hidden by
-  // waiting for the user to check the other box first.
-  it('greys out a different, unchecked action as soon as a checked action is given an over-max quantity', async () => {
+  // Regression: typing an over-max quantity into a checked action must not
+  // grey out a different, genuinely available action - an invalid quantity
+  // contributes nothing to the request (it isn't sent at all), so it can't
+  // be treated as competing for anything.
+  it('does not grey out a different, unchecked action when a checked action is given an over-max quantity', async () => {
     const form = setupDom([
       { code: 'CSAM3', checked: true, availableArea: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 },
       { code: 'CLIG3', availableArea: { value: 45.2, unit: 'ha' } }
@@ -706,14 +758,15 @@ describe('initSelectActionsPage', () => {
     initSelectActionsPage(form)
     await flushPromises()
     global.fetch.mockClear()
-    vi.useFakeTimers()
 
     const quantityInput = form.querySelector('#landActionQuantity_CSAM3')
     quantityInput.value = '25'
     quantityInput.dispatchEvent(new Event('input', { bubbles: true }))
-    await vi.advanceTimersByTimeAsync(500)
+    quantityInput.dispatchEvent(new Event('blur'))
+    await flushPromises()
 
-    expect(form.querySelector('input[value="CLIG3"]').disabled).toBe(true)
+    expect(global.fetch).not.toHaveBeenCalled()
+    expect(form.querySelector('input[value="CLIG3"]').disabled).toBe(false)
   })
 
   it('disables and shows a message for an action with 0 available area in the response', async () => {
