@@ -14,6 +14,7 @@ function checkboxItemHtml({ code, checked = false, availableArea, requiresMaxQua
     ? `
     <div class="govuk-checkboxes__conditional${checked ? '' : ' govuk-checkboxes__conditional--hidden'}" id="${conditionalId}">
         <div class="govuk-form-group">
+          <div id="landActionQuantity_${code}-refresh-banner" class="select-actions-refresh-banner select-actions-refresh-banner--hidden">Updating available land for this action&hellip;</div>
           <input id="landActionQuantity_${code}" name="landActionQuantity_${code}" type="text" value="${quantityValue}" max="${requiresMaxQuantity}">
           <div id="landActionQuantity_${code}-hint">${requiresMaxQuantity} ha available</div>
           <div class="govuk-input__suffix">ha</div>
@@ -627,7 +628,11 @@ describe('initSelectActionsPage', () => {
     await flushPromises()
 
     const [, options] = global.fetch.mock.calls[0]
-    expect(JSON.parse(options.body).plannedActions).toContainEqual({ actionCode: 'CLIG3', quantity: 0.2271, unit: 'ha' })
+    expect(JSON.parse(options.body).plannedActions).toContainEqual({
+      actionCode: 'CLIG3',
+      quantity: 0.2271,
+      unit: 'ha'
+    })
   })
 
   it('does not fire a request while typing, only once the field is blurred', async () => {
@@ -659,11 +664,15 @@ describe('initSelectActionsPage', () => {
     expect(JSON.parse(options.body).plannedActions).toEqual([{ actionCode: 'CSAM3', quantity: 3, unit: 'ha' }])
   })
 
-  it('greys out the checkbox list and shows a spinner while a refresh is in flight, clearing it once it resolves', async () => {
+  it("shows the triggering action's own refresh banner while a blur-triggered refresh is in flight, hiding it once it resolves, and never shows another action's banner", async () => {
     const form = setupDom([
-      { code: 'CMOR1', checked: true, availableArea: { value: 10, unit: 'ha' } },
-      { code: 'UPL1', availableArea: { value: 5, unit: 'ha' } }
+      { code: 'CSAM3', checked: true, availableArea: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 },
+      { code: 'UPL1', checked: true, availableArea: { value: 5, unit: 'ha' }, requiresMaxQuantity: 5 }
     ])
+    global.fetch = fetchOk({ actions: [] })
+    initSelectActionsPage(form)
+    await flushPromises()
+
     let resolveFetch
     global.fetch = vi.fn().mockImplementation(
       () =>
@@ -671,17 +680,73 @@ describe('initSelectActionsPage', () => {
           resolveFetch = () => resolve({ ok: true, json: () => Promise.resolve({ actions: [] }) })
         })
     )
-    initSelectActionsPage(form)
+    const quantityInput = form.querySelector('#landActionQuantity_CSAM3')
+    quantityInput.value = '5'
+    quantityInput.dispatchEvent(new Event('input', { bubbles: true }))
+    quantityInput.dispatchEvent(new Event('blur'))
+    await flushPromises()
 
-    const wrapper = form.querySelector('.govuk-checkboxes')
-    expect(wrapper.classList.contains('select-actions-checkboxes--loading')).toBe(true)
-    expect(wrapper.getAttribute('aria-busy')).toBe('true')
+    const csam3Banner = document.getElementById('landActionQuantity_CSAM3-refresh-banner')
+    const upl1Banner = document.getElementById('landActionQuantity_UPL1-refresh-banner')
+    expect(csam3Banner.classList.contains('select-actions-refresh-banner--hidden')).toBe(false)
+    expect(upl1Banner.classList.contains('select-actions-refresh-banner--hidden')).toBe(true)
+
+    const upl1Checkbox = form.querySelector('#landAction-UPL1')
+    expect(quantityInput.disabled).toBe(false)
+    expect(upl1Checkbox.disabled).toBe(true)
+    expect(form.querySelector('#landActionQuantity_UPL1').disabled).toBe(true)
 
     resolveFetch()
     await flushPromises()
 
-    expect(wrapper.classList.contains('select-actions-checkboxes--loading')).toBe(false)
-    expect(wrapper.getAttribute('aria-busy')).toBe('false')
+    expect(csam3Banner.classList.contains('select-actions-refresh-banner--hidden')).toBe(true)
+  })
+
+  it('shows a lazily-created refresh banner on the checked/unchecked non-quantity action, removing it once the refresh resolves, and never on a different action', async () => {
+    const form = setupDom([
+      { code: 'CMOR1', availableArea: { value: 10, unit: 'ha' } },
+      { code: 'UPL1', availableArea: { value: 5, unit: 'ha' }, requiresMaxQuantity: 5 }
+    ])
+    let resolveFetch
+    global.fetch = vi.fn().mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = () =>
+            resolve({
+              ok: true,
+              json: () =>
+                Promise.resolve({
+                  actions: [
+                    { code: 'CMOR1', availableArea: { value: 10, unit: 'ha' } },
+                    { code: 'UPL1', availableArea: { value: 5, unit: 'ha' }, requiresMaxQuantity: 5 }
+                  ]
+                })
+            })
+        })
+    )
+    initSelectActionsPage(form)
+
+    const cmor1Checkbox = form.querySelector('#landAction-CMOR1')
+    cmor1Checkbox.checked = true
+    cmor1Checkbox.dispatchEvent(new Event('change', { bubbles: true }))
+    await flushPromises()
+
+    const cmor1Item = cmor1Checkbox.closest('.govuk-checkboxes__item')
+    expect(cmor1Item.querySelector('.select-actions-refresh-banner')).not.toBeNull()
+
+    const upl1Banner = document.getElementById('landActionQuantity_UPL1-refresh-banner')
+    expect(upl1Banner.classList.contains('select-actions-refresh-banner--hidden')).toBe(true)
+
+    const upl1Checkbox = form.querySelector('#landAction-UPL1')
+    expect(cmor1Checkbox.disabled).toBe(false)
+    expect(upl1Checkbox.disabled).toBe(true)
+    expect(form.querySelector('#landActionQuantity_UPL1').disabled).toBe(true)
+
+    resolveFetch()
+    await flushPromises()
+
+    expect(cmor1Item.querySelector('.select-actions-refresh-banner')).toBeNull()
+    expect(upl1Checkbox.disabled).toBe(false)
   })
 
   it.each([[''], ['  ']])('does not fire a request when the quantity field is left empty (%j)', async (typedValue) => {

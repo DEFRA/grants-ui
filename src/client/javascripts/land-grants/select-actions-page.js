@@ -8,8 +8,9 @@ const UNAVAILABLE_CLASS = 'select-actions-unavailable-message'
 const AVAILABLE_UNIT_ATTR = 'data-available-unit'
 const TOTAL_AVAILABLE_AREA_ATTR = 'data-total-available-area'
 const LIVE_AVAILABLE_AREA_ATTR = 'data-live-available-area'
-const CHECKBOXES_WRAPPER_SELECTOR = '.govuk-checkboxes'
-const LOADING_CLASS = 'select-actions-checkboxes--loading'
+const REFRESH_BANNER_MESSAGE = 'Updating available land for this action…'
+const REFRESH_BANNER_CLASS = 'select-actions-refresh-banner'
+const REFRESH_BANNER_HIDDEN_CLASS = 'select-actions-refresh-banner--hidden'
 
 /**
  * @param {number} value
@@ -24,22 +25,76 @@ function getCheckboxes(form) {
   )
 }
 
-/**
- * Greys out the whole checkbox list and shows a spinner while a request is
- * in flight - the per-checkbox disabled state changes an instant later are
- * otherwise invisible until the response lands, which reads as unresponsive.
- * @param {HTMLElement} form
- * @param {boolean} isLoading
- */
-function toggleLoading(form, isLoading) {
-  const wrapper = form.querySelector(CHECKBOXES_WRAPPER_SELECTOR)
-  wrapper?.classList.toggle(LOADING_CLASS, isLoading)
-  wrapper?.setAttribute('aria-busy', String(isLoading))
-}
-
 /** @param {HTMLInputElement} checkbox */
 function getQuantityInput(checkbox) {
   return /** @type {HTMLInputElement | null} */ (document.getElementById(getActionQuantityFieldName(checkbox.value)))
+}
+
+/**
+ * Shows/hides a non-quantity checkbox's own "Updating..." banner. Unlike a
+ * quantity action, there's no conditional panel to host a server-rendered
+ * one, so it's lazily created inside the checkbox's own item on first use and
+ * removed once loading ends - same lazy-DOM pattern as
+ * toggleUnavailableMessage's "not compatible" message.
+ * @param {HTMLInputElement} checkbox
+ * @param {boolean} isLoading
+ */
+function toggleCheckboxRefreshBanner(checkbox, isLoading) {
+  const item = /** @type {HTMLElement | null} */ (checkbox.closest('.govuk-checkboxes__item'))
+  const existing = item?.querySelector(`.${REFRESH_BANNER_CLASS}`)
+  if (!isLoading) {
+    existing?.remove()
+    return
+  }
+  if (!existing && item) {
+    const div = document.createElement('div')
+    div.className = REFRESH_BANNER_CLASS
+    div.textContent = REFRESH_BANNER_MESSAGE
+    item.appendChild(div)
+  }
+}
+
+/**
+ * Shows/hides the "Updating available land for this action..." banner for the
+ * action whose blur (if it has a quantity input) or check/uncheck triggered
+ * this refresh - only that one action's number is actually changing from the
+ * user's point of view, so other actions' banners are left alone.
+ * @param {HTMLInputElement} checkbox
+ * @param {boolean} isLoading
+ */
+function toggleRefreshBanner(checkbox, isLoading) {
+  const quantityInput = getQuantityInput(checkbox)
+  if (!quantityInput) {
+    toggleCheckboxRefreshBanner(checkbox, isLoading)
+    return
+  }
+  const banner = document.getElementById(`${quantityInput.id}-refresh-banner`)
+  banner?.classList.toggle(REFRESH_BANNER_HIDDEN_CLASS, !isLoading)
+}
+
+/**
+ * Disables every OTHER action's checkbox (and quantity input, if any) while
+ * one action's refresh is in flight, since its response could change any of
+ * them - the one actually being touched (typed into or just checked/
+ * unchecked) stays interactive throughout, since the user is mid-interaction
+ * with it and disabling it under the pointer/keyboard would be jarring.
+ * Only ever disables: the caller's own post-response applyAvailability pass
+ * (run for every checkbox once the response lands) re-establishes each one's
+ * correct disabled state from scratch, so there's nothing to undo here.
+ * @param {HTMLElement} form
+ * @param {HTMLInputElement} triggeringCheckbox
+ */
+function disableOtherActions(form, triggeringCheckbox) {
+  for (const checkbox of getCheckboxes(form)) {
+    if (checkbox === triggeringCheckbox) {
+      continue
+    }
+    checkbox.disabled = true
+    const quantityInput = getQuantityInput(checkbox)
+    if (quantityInput) {
+      quantityInput.disabled = true
+    }
+  }
 }
 
 /** @param {HTMLInputElement} checkbox
@@ -294,25 +349,35 @@ async function postPlannedActions(parcelId, plannedActions) {
 /**
  * @param {HTMLElement} form
  * @param {string} parcelId
- * @returns {() => Promise<void>}
+ * @returns {(triggeringCheckbox?: HTMLInputElement) => Promise<void>}
  */
 function createAvailabilityRefresher(form, parcelId) {
   let requestId = 0
 
-  return async function refreshAvailability() {
+  // triggeringCheckbox: the action whose quantity input was just blurred, if
+  // that's what triggered this refresh - its own conditional panel shows the
+  // "updating" banner, since that's the one number the user is waiting on.
+  // Omitted for a checkbox-triggered refresh, where no single action's
+  // number is what the user is mid-edit on.
+  return async function refreshAvailability(triggeringCheckbox) {
     const forcedUnchecked = uncheckUnconfirmedQuantityActions(form)
     requestId += 1
     const thisRequestId = requestId
-    toggleLoading(form, true)
+    if (triggeringCheckbox) {
+      toggleRefreshBanner(triggeringCheckbox, true)
+      disableOtherActions(form, triggeringCheckbox)
+    }
     const plannedActions = buildPlannedActions(form)
     const actions = await postPlannedActions(parcelId, plannedActions)
 
     if (thisRequestId !== requestId) {
       // A newer refresh has already taken over - ignore this stale response,
-      // and leave loading alone (the newer refresh owns it).
+      // and leave the banner alone (the newer refresh owns it).
       return
     }
-    toggleLoading(form, false)
+    if (triggeringCheckbox) {
+      toggleRefreshBanner(triggeringCheckbox, false)
+    }
 
     for (const checkbox of getCheckboxes(form)) {
       if (forcedUnchecked.has(checkbox)) {
@@ -363,7 +428,7 @@ export function initSelectActionsPage(form) {
     if (target.checked && quantityInput && getValidTypedQuantity(target) == null) {
       return
     }
-    refreshAvailability()
+    refreshAvailability(target)
   })
 
   /**
@@ -394,7 +459,7 @@ export function initSelectActionsPage(form) {
     (event) => {
       const checkbox = getCheckboxForQuantityTarget(event.target)
       if (checkbox && getValidTypedQuantity(checkbox) != null) {
-        refreshAvailability()
+        refreshAvailability(checkbox)
       }
     },
     true
