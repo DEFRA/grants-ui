@@ -672,13 +672,13 @@ describe('parcels', () => {
         method: 'POST',
         path: '/api/v2/parcels',
         headers: { 'Content-Type': 'application/json' },
-        body: { parcelIds: ['SD6743-8083'], fields: ['actions', 'size'], plannedActions }
+        body: { parcelIds: ['SD6743-8083'], fields: ['actions', 'size'], plannedActions, sbi: userContext.sbi }
       })
       .willRespondWith({ status: 200, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
       .executeTest(async (mockserver) => {
         const response = await postToLandGrantsApi(
           '/api/v2/parcels',
-          { parcelIds: ['SD6743-8083'], fields: ['actions', 'size'], plannedActions },
+          { parcelIds: ['SD6743-8083'], fields: ['actions', 'size'], plannedActions, sbi: userContext.sbi },
           mockserver.url
         )
         expect(response.parcels[0]).toEqual(parcelWithRecomputedAreaExample)
