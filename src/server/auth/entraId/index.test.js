@@ -68,13 +68,30 @@ describe('entra-id-auth plugin', () => {
       expect(result).toBe('Authentication failed: Some error')
     })
 
-    it('should log the underlying error detail when authentication fails', () => {
+    it('should unwrap the nested Wreck "Response Error" Boom to reach the real Azure error body', () => {
+      // This is the actual shape Bell/Wreck produce for any non-2xx token endpoint response:
+      // Wreck's `_shortcut` throws its own Boom (`Response Error: <status> <statusText>`) with
+      // the real upstream status/body nested at .data.res/.data.payload (an unparsed Buffer);
+      // Bell then wraps that again in `Boom.internal('Failed obtaining entra-id access token', err)`.
+      const azureErrorBody = Buffer.from(
+        JSON.stringify({ error: 'invalid_grant', error_description: 'AADSTS9002313: Invalid request.' }),
+        'utf8'
+      )
+      const wreckResponseError = Object.assign(new Error('Response Error: 400 Bad Request'), {
+        isBoom: true,
+        data: {
+          isResponseError: true,
+          res: { statusCode: 400 },
+          payload: azureErrorBody
+        }
+      })
       const request = {
         auth: {
           isAuthenticated: false,
           error: {
             message: 'Failed obtaining entra-id access token',
-            output: { statusCode: 400, payload: { error: 'invalid_client' } }
+            output: { statusCode: 500, payload: { statusCode: 500, message: 'An internal server error occurred' } },
+            data: wreckResponseError
           }
         }
       }
@@ -83,9 +100,95 @@ describe('entra-id-auth plugin', () => {
 
       expect(log).toHaveBeenCalledWith(LogCodes.AUTH.ENTRA_ID_AUTH_FAILURE, {
         errorMessage: 'Failed obtaining entra-id access token',
-        statusCode: 400,
-        payload: { error: 'invalid_client' }
+        statusCode: 500,
+        payload: {
+          upstreamStatusCode: 400,
+          body: { error: 'invalid_grant', error_description: 'AADSTS9002313: Invalid request.' }
+        }
       })
+    })
+
+    it('should pass an already-plain-object error body through unchanged', () => {
+      const request = {
+        auth: {
+          isAuthenticated: false,
+          error: {
+            message: 'Failed obtaining entra-id access token',
+            output: { statusCode: 500 },
+            data: { error: 'invalid_client', error_description: 'AADSTS7000215: Invalid client secret' }
+          }
+        }
+      }
+
+      handler(request, h)
+
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.AUTH.ENTRA_ID_AUTH_FAILURE,
+        expect.objectContaining({
+          payload: { error: 'invalid_client', error_description: 'AADSTS7000215: Invalid client secret' }
+        })
+      )
+    })
+
+    it('should decode and parse a raw JSON Buffer response body from the token endpoint', () => {
+      const request = {
+        auth: {
+          isAuthenticated: false,
+          error: {
+            message: 'Failed obtaining entra-id access token',
+            output: { statusCode: 500 },
+            data: Buffer.from('{"error":"invalid_grant"}', 'utf8')
+          }
+        }
+      }
+
+      handler(request, h)
+
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.AUTH.ENTRA_ID_AUTH_FAILURE,
+        expect.objectContaining({ payload: { error: 'invalid_grant' } })
+      )
+    })
+
+    it('should fall back to raw text for a non-JSON Buffer response body', () => {
+      const request = {
+        auth: {
+          isAuthenticated: false,
+          error: {
+            message: 'Failed obtaining entra-id access token',
+            output: { statusCode: 500 },
+            data: Buffer.from('Bad Gateway', 'utf8')
+          }
+        }
+      }
+
+      handler(request, h)
+
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.AUTH.ENTRA_ID_AUTH_FAILURE,
+        expect.objectContaining({ payload: 'Bad Gateway' })
+      )
+    })
+
+    it('should surface message/code from a raw network exception', () => {
+      const networkError = Object.assign(new Error('connect ETIMEDOUT'), { code: 'ETIMEDOUT' })
+      const request = {
+        auth: {
+          isAuthenticated: false,
+          error: {
+            message: 'Failed obtaining entra-id access token',
+            output: { statusCode: 500 },
+            data: networkError
+          }
+        }
+      }
+
+      handler(request, h)
+
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.AUTH.ENTRA_ID_AUTH_FAILURE,
+        expect.objectContaining({ payload: { message: 'connect ETIMEDOUT', code: 'ETIMEDOUT' } })
+      )
     })
 
     it('should return credentials if authenticated', () => {
