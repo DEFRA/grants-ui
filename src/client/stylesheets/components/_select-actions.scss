@@ -1,18 +1,20 @@
 @use 'govuk-frontend' as *;
 
-.select-actions-unavailable-message {
-  margin-top: govuk-spacing(1);
-}
+.select-actions-checkboxes {
+  .select-actions-unavailable-message {
+    margin-top: govuk-spacing(1);
+  }
 
-.govuk-hint {
-  @include govuk-font-size(16);
-}
+  .govuk-hint {
+    @include govuk-font-size(16);
+  }
 
-.govuk-checkboxes__conditional {
-  @include govuk-font-size(16);
-  margin-bottom: 0;
+  .govuk-checkboxes__conditional {
+    @include govuk-font-size(16);
+    margin-bottom: 0;
 
-  .govuk-label {
+    .govuk-label {
       @include govuk-font-size(16);
+    }
   }
 }
