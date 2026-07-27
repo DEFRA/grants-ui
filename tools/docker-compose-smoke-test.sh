@@ -60,8 +60,8 @@ if [ -z "$WOODLAND_TAG" ]; then
 fi
 
 echo "Fetching woodland GAS schema at version $WOODLAND_TAG"
-mkdir -p woodland-grant-journey-tests-schemas
-curl -fL "https://raw.githubusercontent.com/DEFRA/grants-config-woodland/$WOODLAND_TAG/configurations/woodland/gas/gas.json" -o woodland-grant-journey-tests-schemas/gas.schema.json
+mkdir -p grants-ui-woodland-tests-schemas
+curl -fL "https://raw.githubusercontent.com/DEFRA/grants-config-woodland/$WOODLAND_TAG/configurations/woodland/gas/gas.json" -o grants-ui-woodland-tests-schemas/gas.schema.json
 
 COMPOSE_COMMAND='docker compose -f compose.yml -f compose.ha.yml -f compose.land-grants.yml -f compose.ci.yml'
 DIAGNOSTICS_DUMPED=false
