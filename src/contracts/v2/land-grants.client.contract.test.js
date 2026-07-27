@@ -678,7 +678,7 @@ describe('parcels', () => {
       .executeTest(async (mockserver) => {
         const response = await postToLandGrantsApi(
           '/api/v2/parcels',
-          { parcelIds: ['SD6743-8083'], fields: ['actions', 'size'], plannedActions },
+          { parcelIds: ['SD6743-8083'], fields: ['actions', 'size'], plannedActions, sbi: userContext.sbi },
           mockserver.url
         )
         expect(response.parcels[0]).toEqual(parcelWithRecomputedAreaExample)
