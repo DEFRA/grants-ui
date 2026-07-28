@@ -674,7 +674,7 @@ describe('parcels', () => {
       ]
     }
     const EXPECTED_BODY = like({ message: 'success', parcels: eachLike(parcelWithRecomputedAreaExample) })
-    const plannedActions = [{ actionCode: 'UPL1', quantity: 1.00, unit: 'ha' }]
+    const plannedActions = [{ actionCode: 'UPL1', quantity: 1.0, unit: 'ha' }]
 
     const provider = createProvider()
     await provider
