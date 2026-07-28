@@ -9,6 +9,7 @@ import { govukFrontendPath, viewPaths } from '~/src/config/nunjucks/view-paths.j
 import { getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
 import { SELECTED_ACTIONS_FIELD_NAME } from '~/src/server/land-grants/utils/selected-actions-field.js'
+import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js'
 
 // Built in JS, not the template: Nunjucks can't mutate array items in a loop.
 // Own Environment (not the app-wide one) since that one's config.get('root')
@@ -58,6 +59,34 @@ function getCheckboxItemId(actionCode, isFirst) {
 }
 
 /**
+ * Consent type keys (from the feature-flagged getConsentTypes registry) that
+ * apply to this action - same membership check buildActionStateEntry and
+ * createGroup already use, so a disabled consent feature flag hides this
+ * action's requirement text too, not just the persisted state/group hint.
+ * @param {Action} action
+ * @returns {string[]}
+ */
+function getActionConsentKeys(action) {
+  return getConsentTypes()
+    .filter((ct) => action[ct.apiField])
+    .map((ct) => ct.key)
+}
+
+const CONSENT_LABELS = { sssi: 'SSSI consent', hefer: 'an SFI HEFER' }
+
+/**
+ * @param {string[]} consentKeys
+ * @returns {string}
+ */
+function getRequirementText(consentKeys) {
+  if (!consentKeys.length) {
+    return ''
+  }
+  const labels = consentKeys.map((key) => CONSENT_LABELS[key])
+  return `Requires ${labels.join(' and ')}`
+}
+
+/**
  * Maps a single action to a checkbox item view model
  * @param {Action} action - The action to map
  * @param {Array<{code: string, description: string, value?: string}>} addedActions - Actions already added to the parcel
@@ -69,12 +98,15 @@ export function mapActionToViewModel(action, addedActions, quantityErrorsByCode 
   const existingAction = addedActions.find((a) => a.code === action.code)
   const quantityValue = existingAction?.value ?? ''
   const checked = Boolean(existingAction)
+  const consents = getActionConsentKeys(action)
+  const requirementText = getRequirementText(consents)
 
   return {
     id: getCheckboxItemId(action.code, isFirst),
     value: action.code,
     text: action.description,
     checked,
+    consents,
     attributes: {
       'data-available-unit': action.availableArea?.unit,
       // Set once here, never touched by the client - the full amount this
@@ -87,7 +119,8 @@ export function mapActionToViewModel(action, addedActions, quantityErrorsByCode 
         `Payment rate per year: £${action.ratePerUnitGbp?.toFixed(2)}/ha` +
         (action.ratePerAgreementPerYearGbp
           ? ` and <strong>£${action.ratePerAgreementPerYearGbp}</strong> per agreement`
-          : '')
+          : '') +
+        (requirementText ? `<br>${requirementText}` : '')
     },
     ...(action.requiresMaxQuantity != null && {
       conditional: getQuantityConditional(
@@ -100,6 +133,17 @@ export function mapActionToViewModel(action, addedActions, quantityErrorsByCode 
       )
     })
   }
+}
+
+/**
+ * The union of consent type keys required by at least one action on the
+ * page, e.g. ['sssi', 'hefer'] - drives the shared intro banner. Same
+ * key format as ActionGroup.consents/Action.consents elsewhere.
+ * @param {Array<Action>} actions
+ * @returns {string[]}
+ */
+export function getPageConsents(actions) {
+  return [...new Set(actions.flatMap((action) => getActionConsentKeys(action)))]
 }
 
 /**
@@ -163,6 +207,7 @@ export function mapGroupedActionsToViewModel(groupedActions, addedActions, quant
  * @property {string} value - Checkbox value
  * @property {string} text - Checkbox label
  * @property {boolean} checked - Whether checkbox is checked
+ * @property {string[]} consents - Consent type keys this action requires, e.g. ['sssi', 'hefer']
  * @property {{ 'data-available-unit': string|undefined, 'data-total-available-area': number|undefined }} attributes -
  *   Rendered onto the checkbox <input>. `data-total-available-area` is set once and never
  *   touched client-side, so it stays the original full amount.

@@ -252,13 +252,15 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
     const addedActions = payload
       ? getAddedActionsFromPayload(payload, result?.actions || [])
       : getAddedActionsForStateParcel(prevState, selectedLandParcel)
+    const quantityErrorsByCode = Object.fromEntries(errors.filter((e) => e.code).map((e) => [e.code, e.text]))
     return this.renderErrorView(h, request, context, {
       errors,
       selectedLandParcel,
       actions: result?.actions || [],
       addedActions,
       additionalState: prevState,
-      existingLandParcels: Object.keys(prevState.landParcels || {}).length > 0
+      existingLandParcels: Object.keys(prevState.landParcels || {}).length > 0,
+      quantityErrorsByCode
     })
   }
 

@@ -9,6 +9,7 @@ import {
 import { parseLandParcel, stringifyParcel } from '~/src/shared/format-parcel.js'
 import SelectActionsPageController from './select-actions-page.controller.js'
 import { error, log } from '~/src/server/common/helpers/logging/log.js'
+import { config } from '~/src/config/config.js'
 
 vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () => ({
   QuestionPageController: class {
@@ -232,6 +233,73 @@ describe('SelectActionsPageController', () => {
       expect(cmor1.conditional).toBeUndefined()
     })
 
+    test('should return an empty pageConsents array when no action requires SSSI consent or HEFER', async () => {
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      const [, viewModel] = mockH.view.mock.calls[0]
+      expect(viewModel.pageConsents).toEqual([])
+    })
+
+    test('should include hefer in pageConsents when an action requires a HEFER and the feature flag is on', async () => {
+      config.get.mockImplementation((key) => key === 'landGrants.enableHeferFeature')
+      fetchAvailableActionsForParcel.mockResolvedValue({
+        actions: [
+          {
+            name: 'Assess moorland',
+            actions: [{ ...mockGroupedActions[0].actions[0], heferRequired: true }]
+          },
+          mockGroupedActions[1]
+        ],
+        parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
+      })
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      const [, viewModel] = mockH.view.mock.calls[0]
+      expect(viewModel.pageConsents).toEqual(['hefer'])
+    })
+
+    test('should include sssi in pageConsents when an action requires SSSI consent and the feature flag is on', async () => {
+      config.get.mockImplementation((key) => key === 'landGrants.enableSSSIFeature')
+      fetchAvailableActionsForParcel.mockResolvedValue({
+        actions: [
+          {
+            name: 'Assess moorland',
+            actions: [{ ...mockGroupedActions[0].actions[0], sssiConsentRequired: true }]
+          },
+          mockGroupedActions[1]
+        ],
+        parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
+      })
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      const [, viewModel] = mockH.view.mock.calls[0]
+      expect(viewModel.pageConsents).toEqual(['sssi'])
+    })
+
+    test('should not include hefer in pageConsents when an action requires a HEFER but the feature flag is off', async () => {
+      fetchAvailableActionsForParcel.mockResolvedValue({
+        actions: [
+          {
+            name: 'Assess moorland',
+            actions: [{ ...mockGroupedActions[0].actions[0], heferRequired: true }]
+          },
+          mockGroupedActions[1]
+        ],
+        parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
+      })
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      const [, viewModel] = mockH.view.mock.calls[0]
+      expect(viewModel.pageConsents).toEqual([])
+    })
+
     test('should pre-populate the quantity input with the value previously saved to state, on refresh', async () => {
       mockContext.state.landParcels = {
         'sheet1-parcel1': {
@@ -384,7 +452,8 @@ describe('SelectActionsPageController', () => {
           errors: [
             {
               text: 'Enter a quantity for Heavy livestock grazing on moorland: UPL2',
-              href: '#landActionQuantity_UPL2'
+              href: '#landActionQuantity_UPL2',
+              code: 'UPL2'
             }
           ]
         })
@@ -405,7 +474,8 @@ describe('SelectActionsPageController', () => {
           errors: [
             {
               text: 'Enter a quantity for Heavy livestock grazing on moorland: UPL2',
-              href: '#landActionQuantity_UPL2'
+              href: '#landActionQuantity_UPL2',
+              code: 'UPL2'
             }
           ]
         })

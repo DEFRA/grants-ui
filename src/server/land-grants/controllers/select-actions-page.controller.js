@@ -1,5 +1,8 @@
 import SelectActionsBasePageController from '~/src/server/land-grants/controllers/select-actions-base-page.controller.js'
-import { mapGroupedActionsToViewModel } from '~/src/server/land-grants/view-models/select-actions.view-model.js'
+import {
+  mapGroupedActionsToViewModel,
+  getPageConsents
+} from '~/src/server/land-grants/view-models/select-actions.view-model.js'
 import { addSelectedActionsToState } from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
 import {
   validateSelectedActions,
@@ -29,7 +32,8 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
       ...super.getViewModel(request, context),
       actionFieldName: this.actionFieldName,
       addedActions,
-      actionItems: mapGroupedActionsToViewModel(groupedActions, addedActions, quantityErrorsByCode)
+      actionItems: mapGroupedActionsToViewModel(groupedActions, addedActions, quantityErrorsByCode),
+      pageConsents: getPageConsents(groupedActions.flatMap((g) => g.actions))
     }
   }
 

@@ -1,5 +1,26 @@
-import { describe, it, expect } from 'vitest'
-import { mapActionToViewModel, mapGroupedActionsToViewModel } from './select-actions.view-model.js'
+import { describe, it, expect, vi } from 'vitest'
+import { mapActionToViewModel, mapGroupedActionsToViewModel, getPageConsents } from './select-actions.view-model.js'
+
+const configState = vi.hoisted(() => {
+  const values = new Map()
+  return {
+    set(key, value) {
+      values.set(key, value)
+    },
+    reset() {
+      values.clear()
+    },
+    get(key) {
+      return values.get(key) ?? false
+    }
+  }
+})
+
+vi.mock('~/src/config/config.js', () => ({
+  config: {
+    get: (key) => configState.get(key)
+  }
+}))
 
 describe('select-actions.view-model', () => {
   describe('mapActionToViewModel', () => {
@@ -18,6 +39,7 @@ describe('select-actions.view-model', () => {
         value: 'SAM1',
         text: 'Test Action 1',
         checked: false,
+        consents: [],
         attributes: {
           'data-available-unit': undefined,
           'data-total-available-area': undefined
@@ -62,6 +84,74 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, addedActions)
 
       expect(result.hint.html).toBe('Payment rate per year: £75.25/ha and <strong>£50</strong> per agreement')
+    })
+
+    it('should show the HEFER requirement text below the payment rate when heferRequired is set', () => {
+      configState.set('landGrants.enableHeferFeature', true)
+      const action = {
+        code: 'GRH12',
+        description: 'Manage rough grassland for upland breeding waders',
+        ratePerUnitGbp: 203,
+        heferRequired: true
+      }
+
+      const result = mapActionToViewModel(action, [])
+      configState.reset()
+
+      expect(result.hint.html).toBe('Payment rate per year: £203.00/ha<br>Requires an SFI HEFER')
+    })
+
+    it('should not show the HEFER requirement text when the HEFER feature flag is off', () => {
+      const action = {
+        code: 'GRH12',
+        description: 'Manage rough grassland for upland breeding waders',
+        ratePerUnitGbp: 203,
+        heferRequired: true
+      }
+
+      const result = mapActionToViewModel(action, [])
+
+      expect(result.hint.html).toBe('Payment rate per year: £203.00/ha')
+    })
+
+    it('should show the SSSI requirement text below the payment rate when sssiConsentRequired is set', () => {
+      configState.set('landGrants.enableSSSIFeature', true)
+      const action = {
+        code: 'SCR2',
+        description: 'Manage scrub and open habitat mosaics',
+        ratePerUnitGbp: 350,
+        sssiConsentRequired: true
+      }
+
+      const result = mapActionToViewModel(action, [])
+      configState.reset()
+
+      expect(result.hint.html).toBe('Payment rate per year: £350.00/ha<br>Requires SSSI consent')
+    })
+
+    it('should show both requirements when sssiConsentRequired and heferRequired are both set', () => {
+      configState.set('landGrants.enableSSSIFeature', true)
+      configState.set('landGrants.enableHeferFeature', true)
+      const action = {
+        code: 'SCR2',
+        description: 'Manage scrub and open habitat mosaics',
+        ratePerUnitGbp: 350,
+        sssiConsentRequired: true,
+        heferRequired: true
+      }
+
+      const result = mapActionToViewModel(action, [])
+      configState.reset()
+
+      expect(result.hint.html).toBe('Payment rate per year: £350.00/ha<br>Requires SSSI consent and an SFI HEFER')
+    })
+
+    it('should not show any requirement text when neither flag is set', () => {
+      const action = { code: 'SAM1', description: 'Test Action 1', ratePerUnitGbp: 100.5 }
+
+      const result = mapActionToViewModel(action, [])
+
+      expect(result.hint.html).toBe('Payment rate per year: £100.50/ha')
     })
 
     it('should mark action as checked when already added', () => {
@@ -406,6 +496,59 @@ describe('select-actions.view-model', () => {
       const result = mapGroupedActionsToViewModel(groupedActions, [])
 
       expect(result[0].id).toBe('landAction')
+    })
+  })
+
+  describe('getPageConsents', () => {
+    it('should return an empty array when no action requires SSSI consent or HEFER', () => {
+      const actions = [{ code: 'SAM1', description: 'Action 1' }]
+
+      expect(getPageConsents(actions)).toEqual([])
+    })
+
+    it('should include sssi when at least one action requires SSSI consent', () => {
+      configState.set('landGrants.enableSSSIFeature', true)
+      const actions = [{ code: 'SAM1', description: 'Action 1' }, { code: 'SCR2', sssiConsentRequired: true }]
+
+      const result = getPageConsents(actions)
+      configState.reset()
+
+      expect(result).toEqual(['sssi'])
+    })
+
+    it('should include hefer when at least one action requires a HEFER', () => {
+      configState.set('landGrants.enableHeferFeature', true)
+      const actions = [{ code: 'SAM1', description: 'Action 1' }, { code: 'GRH12', heferRequired: true }]
+
+      const result = getPageConsents(actions)
+      configState.reset()
+
+      expect(result).toEqual(['hefer'])
+    })
+
+    it('should include both keys, without duplicates, when multiple actions require different consents', () => {
+      configState.set('landGrants.enableSSSIFeature', true)
+      configState.set('landGrants.enableHeferFeature', true)
+      const actions = [
+        { code: 'SCR2', sssiConsentRequired: true },
+        { code: 'GRH12', heferRequired: true },
+        { code: 'SCR3', sssiConsentRequired: true }
+      ]
+
+      const result = getPageConsents(actions)
+      configState.reset()
+
+      expect(result).toEqual(['sssi', 'hefer'])
+    })
+
+    it('should return an empty array when the relevant feature flag is off, even if the action has the flag set', () => {
+      const actions = [{ code: 'GRH12', heferRequired: true }]
+
+      expect(getPageConsents(actions)).toEqual([])
+    })
+
+    it('should return an empty array for an empty actions list', () => {
+      expect(getPageConsents([])).toEqual([])
     })
   })
 })

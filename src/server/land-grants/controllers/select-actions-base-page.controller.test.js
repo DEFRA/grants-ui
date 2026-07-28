@@ -184,6 +184,20 @@ describe('SelectActionsBasePageController', () => {
       expect(controller.setState).not.toHaveBeenCalled()
     })
 
+    test('derives quantityErrorsByCode from quantity-validation errors so the offending input is highlighted', async () => {
+      controller.validateActionQuantities = () => [
+        { text: 'Quantity for Assess moorland must be 4 decimal places or fewer', href: '#CMOR1', code: 'CMOR1' }
+      ]
+
+      await controller.handlePost(mockRequest, mockContext, mockH)
+
+      const [, viewModel] = mockH.view.mock.calls[0]
+      expect(viewModel.quantityErrorsByCode).toEqual({
+        CMOR1: 'Quantity for Assess moorland must be 4 decimal places or fewer'
+      })
+      expect(controller.setState).not.toHaveBeenCalled()
+    })
+
     test('delegates state writing to writeActionsToState and proceeds on success', async () => {
       await controller.handlePost(mockRequest, mockContext, mockH)
 

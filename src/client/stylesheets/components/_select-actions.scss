@@ -3,6 +3,11 @@
 .select-actions-checkboxes {
   position: relative;
 
+  .govuk-checkboxes__label {
+    align-self: flex-start;
+    padding-top: 2px;
+  }
+
   .select-actions-unavailable-message {
     margin-top: govuk-spacing(1);
   }
@@ -24,8 +29,12 @@
     }
   }
 
-  .govuk-checkboxes__item .select-actions-refresh-banner {
-    margin-left: govuk-spacing(9);
+  .govuk-checkboxes__item {
+    margin-bottom:  govuk-spacing(2);
+
+    .select-actions-refresh-banner {
+      margin-left: govuk-spacing(9);
+    }
   }
 }
 

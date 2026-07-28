@@ -61,10 +61,11 @@ const QUANTITY_FORMAT = new RegExp(`^\\d+(\\.\\d{1,${QUANTITY_PRECISION}})?$`)
 /**
  * Validate that every selected, quantity-required action has a confirmed
  * (submitted, non-zero) quantity, in plain decimal form with no more than 4
- * decimal places.
+ * decimal places. Each error carries the action's code so the caller can
+ * also highlight its specific input, not just list the error in the summary.
  * @param {object} payload - Form payload
  * @param {Action[]} actions
- * @returns {Array<{text: string, href: string}>} - Array of validation errors
+ * @returns {Array<{text: string, href: string, code: string}>} - Array of validation errors
  */
 export function validateSelectedActionQuantities(payload, actions) {
   const selectedCodes = new Set(getSelectedActionCodes(payload))
@@ -76,14 +77,15 @@ export function validateSelectedActionQuantities(payload, actions) {
     }
     const href = `#${getActionQuantityFieldName(action.code)}`
     if (!hasSubmittedNonZeroQuantity(payload, action)) {
-      errors.push({ text: `Enter a quantity for ${action.description}`, href })
+      errors.push({ text: `Enter a quantity for ${action.description}`, href, code: action.code })
       continue
     }
     const rawValue = String(payload[getActionQuantityFieldName(action.code)]).trim()
     if (!QUANTITY_FORMAT.test(rawValue)) {
       errors.push({
         text: `Quantity for ${action.description} must be ${QUANTITY_PRECISION} decimal places or fewer`,
-        href
+        href,
+        code: action.code
       })
     }
   }
