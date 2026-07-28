@@ -650,19 +650,31 @@ describe('parcels', () => {
     const parcelWithRecomputedAreaExample = {
       parcelId: 'SD6743',
       sheetId: '8083',
-      size: { value: 23.3424, unit: 'ha' },
+      size: { value: 4.5341, unit: 'ha' },
       actions: [
         {
           code: 'CMOR1',
-          availableArea: { value: 0, unit: 'ha' },
+          availableArea: { value: 4.5341, unit: 'ha' },
           description: 'Assess moorland and produce a written record',
           ratePerUnitGbp: 10.6,
           ratePerAgreementPerYearGbp: 272
+        },
+        {
+          code: 'UPL1',
+          availableArea: { value: 4.5341, unit: 'ha' },
+          description: 'Moderate livestock grazing on moorland',
+          ratePerUnitGbp: 20
+        },
+        {
+          code: 'UPL2',
+          availableArea: { value: 4.5341, unit: 'ha' },
+          description: 'Moderate livestock grazing on moorland',
+          ratePerUnitGbp: 53
         }
       ]
     }
     const EXPECTED_BODY = like({ message: 'success', parcels: eachLike(parcelWithRecomputedAreaExample) })
-    const plannedActions = [{ actionCode: 'UPL1', quantity: 20.75, unit: 'ha' }]
+    const plannedActions = [{ actionCode: 'UPL1', quantity: 1.0, unit: 'ha' }]
 
     const provider = createProvider()
     await provider

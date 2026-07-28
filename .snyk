@@ -49,4 +49,8 @@ ignore:
     - '*':
         reason: 'Fix version is incoming from Defra forms team - Incomplete List of Disallowed Inputs'
         expires: '2026-09-01'
+  'SNYK-JS-IPADDRESS-18343249':
+    - '*':
+        reason: 'SSRF via socks@2.8.9 > ip-address@10.2.0 (@defra/forms-engine-plugin proxy-agent chain). Fixed in 10.2.1, which is in-range for socks (^10.1.1) but blocked by .npmrc min-release-age=7 (10.2.1 published 2026-07-25, installable from 2026-08-01). Replace with an overrides pin "ip-address": "10.2.1" once it clears the cooldown.'
+        expires: '2026-08-02'
 
