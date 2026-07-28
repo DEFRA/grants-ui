@@ -2,7 +2,7 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 import {
-  fetchAvailableActionsForParcel,
+  fetchGroupedActionsForParcel,
   fetchParcels,
   validateApplication
 } from '~/src/server/land-grants/services/land-grants.service.js'
@@ -115,7 +115,7 @@ describe('SelectActionsBasePageController', () => {
     mockH = { view: vi.fn().mockReturnValue('rendered view'), redirect: vi.fn() }
 
     parseLandParcel.mockReturnValue(['sheet1', 'parcel1'])
-    fetchAvailableActionsForParcel.mockResolvedValue({
+    fetchGroupedActionsForParcel.mockResolvedValue({
       actions: mockGroupedActions,
       parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
     })
@@ -151,7 +151,7 @@ describe('SelectActionsBasePageController', () => {
     })
 
     test('renders an error view when fetching actions fails', async () => {
-      fetchAvailableActionsForParcel.mockRejectedValue(Object.assign(new Error('boom'), { status: 500 }))
+      fetchGroupedActionsForParcel.mockRejectedValue(Object.assign(new Error('boom'), { status: 500 }))
 
       await controller.handleGet(mockRequest, mockContext, mockH)
 
@@ -162,7 +162,7 @@ describe('SelectActionsBasePageController', () => {
     test('renders the success view with actions fetched for the parcel', async () => {
       await controller.handleGet(mockRequest, mockContext, mockH)
 
-      expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith(
+      expect(fetchGroupedActionsForParcel).toHaveBeenCalledWith(
         { parcelId: 'parcel1', sheetId: 'sheet1', enabledLandActions: [], plannedActions: [] },
         { defraIdToken: 'defra-id-access-token', sbi: '106284736' }
       )

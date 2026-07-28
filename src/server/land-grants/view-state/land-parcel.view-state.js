@@ -57,10 +57,14 @@ export function hasSubmittedNonZeroQuantity(payload, actionInfo) {
 /**
  * Builds the state entry for a single selected action, applying its submitted
  * quantity override when it requires one and one was submitted, otherwise
- * falling back to its full available area.
+ * falling back to its full available area. actionInfo must already reflect
+ * any other actions planned alongside this one (see
+ * buildPlannedActionsFromPayload) - otherwise a non-quantity action's
+ * availableArea here is its original, uncompeted total, not what's actually
+ * left once a sibling action's own claim is accounted for.
  * @param {object} payload - Form payload
  * @param {Action} actionInfo - The action's data from the API
- * @returns {{ description: string, version: string, consents: string[], value: string|number, unit: string }}
+ * @returns {{ description: string, version: string, consents: string[], value: number, unit: string }}
  */
 function buildActionStateEntry(payload, actionInfo) {
   const hasQuantityOverride = hasSubmittedQuantity(payload, actionInfo)
@@ -71,11 +75,63 @@ function buildActionStateEntry(payload, actionInfo) {
     consents: getConsentTypes()
       .filter((ct) => actionInfo[ct.apiField])
       .map((ct) => ct.key),
-    value: hasQuantityOverride
-      ? payload[getActionQuantityFieldName(actionInfo.code)]
-      : (actionInfo?.availableArea?.value ?? ''),
+    value: Number(
+      hasQuantityOverride
+        ? payload[getActionQuantityFieldName(actionInfo.code)]
+        : (actionInfo?.availableArea?.value ?? 0)
+    ),
     unit: actionInfo?.availableArea?.unit ?? ''
   }
+}
+
+/**
+ * Builds the plannedActions list to recompute availableArea against, from
+ * the just-submitted payload - only quantity-required, confirmed selections
+ * are real claims on land; a non-quantity action doesn't claim a specific
+ * amount, so it's never included here (matching the client-side live-refresh
+ * behaviour in select-actions-page.js's buildPlannedActions).
+ * @param {object} payload - Form payload
+ * @param {Array<Action>} actions - Flat list of the parcel's available actions
+ * @returns {Array<PlannedAction>}
+ */
+export function buildPlannedActionsFromPayload(payload, actions) {
+  const selectedCodes = new Set(getSelectedActionCodes(payload))
+
+  return actions
+    .filter(
+      (action) =>
+        selectedCodes.has(action.code) &&
+        action.requiresMaxQuantity != null &&
+        hasSubmittedNonZeroQuantity(payload, action)
+    )
+    .map((action) => ({
+      actionCode: action.code,
+      quantity: Number(payload[getActionQuantityFieldName(action.code)]),
+      unit: /** @type {'ha'|'sqm'} */ (action.availableArea?.unit)
+    }))
+}
+
+/**
+ * Overlays freshly recomputed availableArea/requiresMaxQuantity (keyed by
+ * code, from fetchActionsWithPlannedActions) onto the full action list from
+ * the initial fetch - the recompute only returns those two fields, so
+ * everything else (description, version, consents, etc.) still comes from
+ * the original fetch. An action missing from the recompute (an upstream gap,
+ * not expected in practice) keeps its original, uncompeted values rather
+ * than losing the field entirely.
+ * @param {Array<Action>} actions - Flat list from the initial fetch
+ * @param {Array<{ code: string, availableArea?: object, requiresMaxQuantity?: number }>} recomputed
+ * @returns {Array<Action>}
+ */
+export function mergeRecomputedAvailability(actions, recomputed) {
+  const recomputedByCode = new Map(recomputed.map((action) => [action.code, action]))
+
+  return actions.map((action) => {
+    const match = recomputedByCode.get(action.code)
+    return match
+      ? { ...action, availableArea: match.availableArea, requiresMaxQuantity: match.requiresMaxQuantity }
+      : action
+  })
 }
 
 /**
@@ -115,11 +171,11 @@ export function addActionsToExistingState(state, payload, actionFieldPrefix, gro
  * per action (see getSelectedActionCodes).
  * @param {object} state - Current state
  * @param {object} payload - Form payload containing action selections
- * @param {Array<ActionGroup>} groupedActions - Available actions grouped
+ * @param {Array<Action>} actions - Available actions, flat
  * @param {Parcel} parcel - The selected land parcel
  * @returns {object} - Updated state or empty object if no actions selected
  */
-export function addSelectedActionsToState(state, payload, groupedActions, parcel) {
+export function addSelectedActionsToState(state, payload, actions, parcel) {
   const selectedCodes = getSelectedActionCodes(payload)
 
   if (selectedCodes.length === 0) {
@@ -127,10 +183,9 @@ export function addSelectedActionsToState(state, payload, groupedActions, parcel
   }
 
   const actionsObj = {}
-  const allActions = groupedActions.flatMap((g) => g.actions)
 
   for (const actionCode of selectedCodes) {
-    const actionInfo = allActions.find((a) => a.code === actionCode)
+    const actionInfo = actions.find((a) => a.code === actionCode)
     const isConfirmedSelection =
       actionInfo && (actionInfo.requiresMaxQuantity == null || hasSubmittedNonZeroQuantity(payload, actionInfo))
     if (isConfirmedSelection) {
@@ -148,15 +203,14 @@ export function addSelectedActionsToState(state, payload, groupedActions, parcel
  * available area like buildActionStateEntry, or a blank field would
  * repopulate with a value the user never entered.
  * @param {object} payload - Form payload containing action selections
- * @param {Array<ActionGroup>} groupedActions - Available actions grouped
+ * @param {Array<Action>} actions - Available actions, flat
  * @returns {Array<{code: string, description: string, value?: string|number}>}
  */
-export function getAddedActionsFromPayload(payload, groupedActions) {
+export function getAddedActionsFromPayload(payload, actions) {
   const selectedCodes = getSelectedActionCodes(payload)
-  const allActions = groupedActions.flatMap((g) => g.actions)
 
   return selectedCodes
-    .map((actionCode) => allActions.find((a) => a.code === actionCode))
+    .map((actionCode) => actions.find((a) => a.code === actionCode))
     .filter((actionInfo) => actionInfo != null)
     .map((actionInfo) => ({
       code: actionInfo.code,
@@ -283,6 +337,10 @@ export function findActionInfoFromState(landParcels, parcelKey, action) {
  * @property {string[]} [consents] - Array of consent type keys required (e.g., ['sssi', 'hefer'])
  * @property {number} [requiresMaxQuantity] - If set, the user must enter a quantity for this action, capped at this value
  * @property {object} [availableArea] - Available area for the action
- * @property {string|number} [availableArea.value] - Area value (number from API, converted to string in state)
+ * @property {number} [availableArea.value] - Area value
  * @property {string} [availableArea.unit] - Area unit
+ */
+
+/**
+ * @import { PlannedAction } from '~/src/server/land-grants/types/land-grants.client.d.js'
  */

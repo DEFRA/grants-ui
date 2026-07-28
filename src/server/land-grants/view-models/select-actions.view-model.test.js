@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { mapActionToViewModel, mapGroupedActionsToViewModel, getPageConsents } from './select-actions.view-model.js'
+import { mapActionToViewModel, mapActionsToViewModel, getPageConsents } from './select-actions.view-model.js'
 
 const configState = vi.hoisted(() => {
   const values = new Map()
@@ -37,15 +37,12 @@ describe('select-actions.view-model', () => {
       expect(result).toEqual({
         id: 'landAction-SAM1',
         value: 'SAM1',
-        text: 'Test Action 1',
+        html: 'Test Action 1<span class="select-actions-hint">Payment rate per year: £100.50/ha</span>',
         checked: false,
         consents: [],
         attributes: {
           'data-available-unit': undefined,
           'data-total-available-area': undefined
-        },
-        hint: {
-          html: 'Payment rate per year: £100.50/ha'
         }
       })
     })
@@ -83,7 +80,9 @@ describe('select-actions.view-model', () => {
 
       const result = mapActionToViewModel(action, addedActions)
 
-      expect(result.hint.html).toBe('Payment rate per year: £75.25/ha and <strong>£50</strong> per agreement')
+      expect(result.html).toBe(
+        'Test Action 2<span class="select-actions-hint">Payment rate per year: £75.25/ha and <strong>£50</strong> per agreement</span>'
+      )
     })
 
     it('should show the HEFER requirement text below the payment rate when heferRequired is set', () => {
@@ -98,7 +97,9 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, [])
       configState.reset()
 
-      expect(result.hint.html).toBe('Payment rate per year: £203.00/ha<br>Requires an SFI HEFER')
+      expect(result.html).toBe(
+        'Manage rough grassland for upland breeding waders<span class="select-actions-hint">Payment rate per year: £203.00/ha<br>Requires an SFI HEFER</span>'
+      )
     })
 
     it('should not show the HEFER requirement text when the HEFER feature flag is off', () => {
@@ -111,7 +112,9 @@ describe('select-actions.view-model', () => {
 
       const result = mapActionToViewModel(action, [])
 
-      expect(result.hint.html).toBe('Payment rate per year: £203.00/ha')
+      expect(result.html).toBe(
+        'Manage rough grassland for upland breeding waders<span class="select-actions-hint">Payment rate per year: £203.00/ha</span>'
+      )
     })
 
     it('should show the SSSI requirement text below the payment rate when sssiConsentRequired is set', () => {
@@ -126,7 +129,9 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, [])
       configState.reset()
 
-      expect(result.hint.html).toBe('Payment rate per year: £350.00/ha<br>Requires SSSI consent')
+      expect(result.html).toBe(
+        'Manage scrub and open habitat mosaics<span class="select-actions-hint">Payment rate per year: £350.00/ha<br>Requires SSSI consent</span>'
+      )
     })
 
     it('should show both requirements when sssiConsentRequired and heferRequired are both set', () => {
@@ -143,7 +148,9 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, [])
       configState.reset()
 
-      expect(result.hint.html).toBe('Payment rate per year: £350.00/ha<br>Requires SSSI consent and an SFI HEFER')
+      expect(result.html).toBe(
+        'Manage scrub and open habitat mosaics<span class="select-actions-hint">Payment rate per year: £350.00/ha<br>Requires SSSI consent and an SFI HEFER</span>'
+      )
     })
 
     it('should not show any requirement text when neither flag is set', () => {
@@ -151,7 +158,9 @@ describe('select-actions.view-model', () => {
 
       const result = mapActionToViewModel(action, [])
 
-      expect(result.hint.html).toBe('Payment rate per year: £100.50/ha')
+      expect(result.html).toBe(
+        'Test Action 1<span class="select-actions-hint">Payment rate per year: £100.50/ha</span>'
+      )
     })
 
     it('should mark action as checked when already added', () => {
@@ -350,150 +359,103 @@ describe('select-actions.view-model', () => {
     })
   })
 
-  describe('mapGroupedActionsToViewModel', () => {
-    it('should flatten grouped actions into a single list', () => {
-      const groupedActions = [
-        {
-          name: 'Group 1',
-          actions: [
-            { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100 },
-            { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200 }
-          ]
-        },
-        {
-          name: 'Group 2',
-          actions: [{ code: 'SAM3', description: 'Action 3', ratePerUnitGbp: 150 }]
-        }
+  describe('mapActionsToViewModel', () => {
+    it('should map a flat list of actions', () => {
+      const actions = [
+        { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100 },
+        { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200 },
+        { code: 'SAM3', description: 'Action 3', ratePerUnitGbp: 150 }
       ]
 
-      const result = mapGroupedActionsToViewModel(groupedActions, [])
+      const result = mapActionsToViewModel(actions, [])
 
       expect(result).toHaveLength(3)
       expect(result.map((item) => item.value)).toEqual(['SAM1', 'SAM2', 'SAM3'])
     })
 
-    it('should give only the first item across all groups the bare field name as its id', () => {
-      const groupedActions = [
-        {
-          name: 'Group 1',
-          actions: [{ code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100 }]
-        },
-        {
-          name: 'Group 2',
-          actions: [
-            { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200 },
-            { code: 'SAM3', description: 'Action 3', ratePerUnitGbp: 150 }
-          ]
-        }
+    it('should give only the first item the bare field name as its id', () => {
+      const actions = [
+        { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100 },
+        { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200 },
+        { code: 'SAM3', description: 'Action 3', ratePerUnitGbp: 150 }
       ]
 
-      const result = mapGroupedActionsToViewModel(groupedActions, [])
+      const result = mapActionsToViewModel(actions, [])
 
       expect(result.map((item) => item.id)).toEqual(['landAction', 'landAction-SAM2', 'landAction-SAM3'])
     })
 
-    it('should handle empty grouped actions', () => {
-      expect(mapGroupedActionsToViewModel([], [])).toEqual([])
+    it('should handle an empty actions list', () => {
+      expect(mapActionsToViewModel([], [])).toEqual([])
     })
 
-    it('should mark actions from any group as checked when previously added', () => {
-      const groupedActions = [
-        {
-          name: 'Group 1',
-          actions: [{ code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100 }]
-        },
-        {
-          name: 'Group 2',
-          actions: [{ code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200 }]
-        }
+    it('should mark a previously added action as checked', () => {
+      const actions = [
+        { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100 },
+        { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200 }
       ]
       const addedActions = [{ code: 'SAM2', description: 'Action 2' }]
 
-      const result = mapGroupedActionsToViewModel(groupedActions, addedActions)
+      const result = mapActionsToViewModel(actions, addedActions)
 
       expect(result.find((item) => item.value === 'SAM1').checked).toBe(false)
       expect(result.find((item) => item.value === 'SAM2').checked).toBe(true)
     })
 
-    it('should thread quantityErrorsByCode through to the matching action across groups', () => {
-      const groupedActions = [
+    it('should thread quantityErrorsByCode through to the matching action', () => {
+      const actions = [
         {
-          name: 'Group 1',
-          actions: [
-            {
-              code: 'CSAM3',
-              description: 'Herbal leys: CSAM3',
-              requiresMaxQuantity: 5,
-              availableArea: { value: 5, unit: 'ha' }
-            }
-          ]
+          code: 'CSAM3',
+          description: 'Herbal leys: CSAM3',
+          requiresMaxQuantity: 5,
+          availableArea: { value: 5, unit: 'ha' }
         },
-        {
-          name: 'Group 2',
-          actions: [{ code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200 }]
-        }
+        { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200 }
       ]
 
-      const result = mapGroupedActionsToViewModel(groupedActions, [], { CSAM3: 'Too much land' })
+      const result = mapActionsToViewModel(actions, [], { CSAM3: 'Too much land' })
 
       expect(result.find((item) => item.value === 'CSAM3').conditional.html).toContain('govuk-input--error')
     })
 
     it('should omit an action with 0 available area from the initial render', () => {
-      const groupedActions = [
-        {
-          name: 'Group 1',
-          actions: [
-            { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100, availableArea: { value: 0, unit: 'ha' } },
-            { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200, availableArea: { value: 5, unit: 'ha' } }
-          ]
-        }
+      const actions = [
+        { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100, availableArea: { value: 0, unit: 'ha' } },
+        { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200, availableArea: { value: 5, unit: 'ha' } }
       ]
 
-      const result = mapGroupedActionsToViewModel(groupedActions, [])
+      const result = mapActionsToViewModel(actions, [])
 
       expect(result.map((item) => item.value)).toEqual(['SAM2'])
     })
 
     it('should still render an action with 0 available area when it was already added', () => {
-      const groupedActions = [
-        {
-          name: 'Group 1',
-          actions: [
-            { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100, availableArea: { value: 0, unit: 'ha' } }
-          ]
-        }
+      const actions = [
+        { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100, availableArea: { value: 0, unit: 'ha' } }
       ]
       const addedActions = [{ code: 'SAM1', description: 'Action 1' }]
 
-      const result = mapGroupedActionsToViewModel(groupedActions, addedActions)
+      const result = mapActionsToViewModel(actions, addedActions)
 
       expect(result.map((item) => item.value)).toEqual(['SAM1'])
       expect(result[0].checked).toBe(true)
     })
 
     it('should not omit an action with no availableArea at all', () => {
-      const groupedActions = [
-        { name: 'Group 1', actions: [{ code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100 }] }
-      ]
+      const actions = [{ code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100 }]
 
-      const result = mapGroupedActionsToViewModel(groupedActions, [])
+      const result = mapActionsToViewModel(actions, [])
 
       expect(result.map((item) => item.value)).toEqual(['SAM1'])
     })
 
     it('should assign the bare field name id to the first visible item, skipping omitted actions', () => {
-      const groupedActions = [
-        {
-          name: 'Group 1',
-          actions: [
-            { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100, availableArea: { value: 0, unit: 'ha' } },
-            { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200, availableArea: { value: 5, unit: 'ha' } }
-          ]
-        }
+      const actions = [
+        { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100, availableArea: { value: 0, unit: 'ha' } },
+        { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200, availableArea: { value: 5, unit: 'ha' } }
       ]
 
-      const result = mapGroupedActionsToViewModel(groupedActions, [])
+      const result = mapActionsToViewModel(actions, [])
 
       expect(result[0].id).toBe('landAction')
     })
@@ -508,7 +470,10 @@ describe('select-actions.view-model', () => {
 
     it('should include sssi when at least one action requires SSSI consent', () => {
       configState.set('landGrants.enableSSSIFeature', true)
-      const actions = [{ code: 'SAM1', description: 'Action 1' }, { code: 'SCR2', sssiConsentRequired: true }]
+      const actions = [
+        { code: 'SAM1', description: 'Action 1' },
+        { code: 'SCR2', sssiConsentRequired: true }
+      ]
 
       const result = getPageConsents(actions)
       configState.reset()
@@ -518,7 +483,10 @@ describe('select-actions.view-model', () => {
 
     it('should include hefer when at least one action requires a HEFER', () => {
       configState.set('landGrants.enableHeferFeature', true)
-      const actions = [{ code: 'SAM1', description: 'Action 1' }, { code: 'GRH12', heferRequired: true }]
+      const actions = [
+        { code: 'SAM1', description: 'Action 1' },
+        { code: 'GRH12', heferRequired: true }
+      ]
 
       const result = getPageConsents(actions)
       configState.reset()

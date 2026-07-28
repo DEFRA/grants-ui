@@ -2,7 +2,8 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 import {
-  fetchAvailableActionsForParcel,
+  fetchActionsForParcel,
+  fetchActionsWithPlannedActions,
   fetchParcels,
   validateApplication
 } from '~/src/server/land-grants/services/land-grants.service.js'
@@ -63,38 +64,26 @@ describe('SelectActionsPageController', () => {
 
   const enabledLandActions = ['CMOR1', 'UPL1', 'UPL2']
 
-  const mockGroupedActions = [
+  const mockActions = [
     {
-      name: 'Assess moorland',
-      totalAvailableArea: { unit: 'ha', value: 10 },
-      actions: [
-        {
-          code: 'CMOR1',
-          description: 'Assess moorland and produce a written record: CMOR1',
-          availableArea: { unit: 'ha', value: 10 },
-          ratePerUnitGbp: 16,
-          ratePerAgreementPerYearGbp: 272
-        }
-      ]
+      code: 'CMOR1',
+      description: 'Assess moorland and produce a written record: CMOR1',
+      availableArea: { unit: 'ha', value: 10 },
+      ratePerUnitGbp: 16,
+      ratePerAgreementPerYearGbp: 272
     },
     {
-      name: 'Livestock grazing on moorland',
-      totalAvailableArea: { unit: 'ha', value: 5 },
-      actions: [
-        {
-          code: 'UPL1',
-          description: 'Moderate livestock grazing on moorland: UPL1',
-          availableArea: { unit: 'ha', value: 5 },
-          ratePerUnitGbp: 33
-        },
-        {
-          code: 'UPL2',
-          description: 'Heavy livestock grazing on moorland: UPL2',
-          availableArea: { unit: 'ha', value: 3 },
-          ratePerUnitGbp: 45,
-          requiresMaxQuantity: 3
-        }
-      ]
+      code: 'UPL1',
+      description: 'Moderate livestock grazing on moorland: UPL1',
+      availableArea: { unit: 'ha', value: 5 },
+      ratePerUnitGbp: 33
+    },
+    {
+      code: 'UPL2',
+      description: 'Heavy livestock grazing on moorland: UPL2',
+      availableArea: { unit: 'ha', value: 3 },
+      ratePerUnitGbp: 45,
+      requiresMaxQuantity: 3
     }
   ]
 
@@ -154,8 +143,8 @@ describe('SelectActionsPageController', () => {
 
     parseLandParcel.mockReturnValue(['sheet1', 'parcel1'])
     stringifyParcel.mockImplementation(({ sheetId, parcelId }) => `${sheetId}-${parcelId}`)
-    fetchAvailableActionsForParcel.mockResolvedValue({
-      actions: mockGroupedActions,
+    fetchActionsForParcel.mockResolvedValue({
+      actions: mockActions,
       parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
     })
     validateApplication.mockResolvedValue({ valid: true, errorMessages: [] })
@@ -191,7 +180,7 @@ describe('SelectActionsPageController', () => {
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith(
+      expect(fetchActionsForParcel).toHaveBeenCalledWith(
         {
           parcelId: 'parcel2',
           sheetId: 'sheet2',
@@ -243,14 +232,8 @@ describe('SelectActionsPageController', () => {
 
     test('should include hefer in pageConsents when an action requires a HEFER and the feature flag is on', async () => {
       config.get.mockImplementation((key) => key === 'landGrants.enableHeferFeature')
-      fetchAvailableActionsForParcel.mockResolvedValue({
-        actions: [
-          {
-            name: 'Assess moorland',
-            actions: [{ ...mockGroupedActions[0].actions[0], heferRequired: true }]
-          },
-          mockGroupedActions[1]
-        ],
+      fetchActionsForParcel.mockResolvedValue({
+        actions: [{ ...mockActions[0], heferRequired: true }, mockActions[1], mockActions[2]],
         parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
       })
 
@@ -263,14 +246,8 @@ describe('SelectActionsPageController', () => {
 
     test('should include sssi in pageConsents when an action requires SSSI consent and the feature flag is on', async () => {
       config.get.mockImplementation((key) => key === 'landGrants.enableSSSIFeature')
-      fetchAvailableActionsForParcel.mockResolvedValue({
-        actions: [
-          {
-            name: 'Assess moorland',
-            actions: [{ ...mockGroupedActions[0].actions[0], sssiConsentRequired: true }]
-          },
-          mockGroupedActions[1]
-        ],
+      fetchActionsForParcel.mockResolvedValue({
+        actions: [{ ...mockActions[0], sssiConsentRequired: true }, mockActions[1], mockActions[2]],
         parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
       })
 
@@ -282,14 +259,8 @@ describe('SelectActionsPageController', () => {
     })
 
     test('should not include hefer in pageConsents when an action requires a HEFER but the feature flag is off', async () => {
-      fetchAvailableActionsForParcel.mockResolvedValue({
-        actions: [
-          {
-            name: 'Assess moorland',
-            actions: [{ ...mockGroupedActions[0].actions[0], heferRequired: true }]
-          },
-          mockGroupedActions[1]
-        ],
+      fetchActionsForParcel.mockResolvedValue({
+        actions: [{ ...mockActions[0], heferRequired: true }, mockActions[1], mockActions[2]],
         parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
       })
 
@@ -320,7 +291,7 @@ describe('SelectActionsPageController', () => {
     })
 
     test('should handle fetch errors gracefully', async () => {
-      fetchAvailableActionsForParcel.mockRejectedValue(new Error('API Error'))
+      fetchActionsForParcel.mockRejectedValue(new Error('API Error'))
 
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
@@ -344,7 +315,7 @@ describe('SelectActionsPageController', () => {
     })
 
     test('should log when no actions found', async () => {
-      fetchAvailableActionsForParcel.mockResolvedValue({
+      fetchActionsForParcel.mockResolvedValue({
         actions: [],
         parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
       })
@@ -440,6 +411,46 @@ describe('SelectActionsPageController', () => {
       )
     })
 
+    test('should save the recomputed availableArea for a non-quantity action competing with a quantity claim from the same submission', async () => {
+      mockRequest.payload = {
+        landAction: ['UPL1', 'UPL2'],
+        landActionQuantity_UPL2: '1'
+      }
+      fetchActionsWithPlannedActions.mockResolvedValue({
+        actions: [
+          { code: 'UPL1', availableArea: { unit: 'ha', value: 4 } },
+          { code: 'UPL2', availableArea: { unit: 'ha', value: 2 }, requiresMaxQuantity: 2 }
+        ]
+      })
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(fetchActionsForParcel).toHaveBeenCalledTimes(1)
+      expect(fetchActionsWithPlannedActions).toHaveBeenCalledWith(
+        expect.objectContaining({
+          plannedActions: [{ actionCode: 'UPL2', quantity: 1, unit: 'ha' }]
+        }),
+        expect.anything()
+      )
+      const stateArg = controller.setState.mock.calls[0][1]
+      expect(stateArg.landParcels['sheet1-parcel1'].actionsObj.UPL1.value).toBe(4)
+    })
+
+    test('should keep the original uncompeted actions when the recompute fetch fails', async () => {
+      mockRequest.payload = {
+        landAction: ['UPL1', 'UPL2'],
+        landActionQuantity_UPL2: '1'
+      }
+      fetchActionsWithPlannedActions.mockRejectedValue(Object.assign(new Error('boom'), { status: 503 }))
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      const stateArg = controller.setState.mock.calls[0][1]
+      expect(stateArg.landParcels['sheet1-parcel1'].actionsObj.UPL1.value).toBe(5)
+    })
+
     test('should show an error and not save state when a quantity-required action has no submitted quantity', async () => {
       mockRequest.payload = { landAction: 'UPL2' }
 
@@ -493,7 +504,7 @@ describe('SelectActionsPageController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       const stateArg = controller.setState.mock.calls[0][1]
-      expect(stateArg.landParcels['sheet1-parcel1'].actionsObj.UPL2.value).toBe('1.5')
+      expect(stateArg.landParcels['sheet1-parcel1'].actionsObj.UPL2.value).toBe(1.5)
     })
 
     test('should not persist a quantity for an action that does not require one, even if submitted', async () => {
@@ -550,6 +561,34 @@ describe('SelectActionsPageController', () => {
         })
       )
       expect(controller.proceed).not.toHaveBeenCalled()
+    })
+
+    // Regression: the quantity hint must show the recomputed available area, not the stale total.
+    test('should show the recomputed available area in the quantity hint when application validation fails', async () => {
+      mockRequest.payload = {
+        landAction: ['UPL1', 'UPL2'],
+        landActionQuantity_UPL2: '1',
+        action: 'validate'
+      }
+      fetchActionsWithPlannedActions.mockResolvedValue({
+        actions: [
+          { code: 'UPL1', availableArea: { unit: 'ha', value: 4 } },
+          { code: 'UPL2', availableArea: { unit: 'ha', value: 2 }, requiresMaxQuantity: 2 }
+        ]
+      })
+      validateApplication.mockResolvedValue({
+        valid: false,
+        errorMessages: [{ code: 'UPL2', description: 'Not enough available area', passed: false }]
+      })
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      const { actionItems } = mockH.view.mock.calls[0][1]
+      const upl2 = actionItems.find((item) => item.value === 'UPL2')
+
+      expect(upl2.conditional.html).toContain('2 hectares available')
+      expect(upl2.conditional.html).not.toContain('3 hectares available')
     })
 
     test('should link a validation error to the specific action quantity input by code, not position', async () => {

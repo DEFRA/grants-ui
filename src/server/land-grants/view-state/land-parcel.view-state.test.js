@@ -115,8 +115,8 @@ describe('land-parcel-state.manager', () => {
       const result = addActionsToExistingState(state, payload, 'landAction_', groupedActions, parcel)
 
       expect(result.landParcels['AB1234-5678'].actionsObj).toEqual({
-        SAM1: { description: 'Action 1', consents: [], value: '10', unit: 'ha' },
-        SAM2: { description: 'Action 2', consents: [], value: '5', unit: 'ha' }
+        SAM1: { description: 'Action 1', consents: [], value: 10, unit: 'ha' },
+        SAM2: { description: 'Action 2', consents: [], value: 5, unit: 'ha' }
       })
     })
 
@@ -145,7 +145,7 @@ describe('land-parcel-state.manager', () => {
       expect(result.landParcels['AB1234-5678'].actionsObj.CMOR1).toEqual({
         description: 'Moorland Assessment',
         consents: ['sssi'],
-        value: '10',
+        value: 10,
         unit: 'ha'
       })
 
@@ -175,7 +175,7 @@ describe('land-parcel-state.manager', () => {
       expect(result.landParcels['AB1234-5678'].actionsObj.SAM1).toEqual({
         description: 'Action 1',
         consents: [],
-        value: '10',
+        value: 10,
         unit: 'ha'
       })
     })
@@ -206,7 +206,7 @@ describe('land-parcel-state.manager', () => {
       expect(result.landParcels['AB1234-5678'].actionsObj.SAM3).toEqual({
         description: 'Action 3',
         consents: [],
-        value: '',
+        value: 0,
         unit: ''
       })
     })
@@ -246,7 +246,7 @@ describe('land-parcel-state.manager', () => {
 
         const result = addActionsToExistingState(state, payload, 'landAction_', groupedActionsWithQuantity, parcel)
 
-        expect(result.landParcels['AB1234-5678'].actionsObj.CSAM3.value).toBe('3.25')
+        expect(result.landParcels['AB1234-5678'].actionsObj.CSAM3.value).toBe(3.25)
       })
 
       it('should fall back to the full available area when no quantity override is submitted', () => {
@@ -276,7 +276,7 @@ describe('land-parcel-state.manager', () => {
 
         const result = addActionsToExistingState(state, payload, 'landAction_', groupedActions, parcel)
 
-        expect(result.landParcels['AB1234-5678'].actionsObj.SAM1.value).toBe('10')
+        expect(result.landParcels['AB1234-5678'].actionsObj.SAM1.value).toBe(10)
       })
 
       // Regression: 0 is a valid, real available area and must be preserved in state rather
@@ -311,20 +311,15 @@ describe('land-parcel-state.manager', () => {
 
         const result = addActionsToExistingState(state, payload, 'landAction_', groupedActionsWithQuantity, parcel)
 
-        expect(result.landParcels['AB1234-5678'].actionsObj.CSAM3.value).toBe('0')
+        expect(result.landParcels['AB1234-5678'].actionsObj.CSAM3.value).toBe(0)
       })
     })
   })
 
   describe('addSelectedActionsToState', () => {
-    const groupedActions = [
-      {
-        name: 'Group 1',
-        actions: [
-          { code: 'SAM1', description: 'Action 1', availableArea: { value: '10', unit: 'ha' } },
-          { code: 'SAM2', description: 'Action 2', availableArea: { value: '5', unit: 'ha' } }
-        ]
-      }
+    const actions = [
+      { code: 'SAM1', description: 'Action 1', availableArea: { value: '10', unit: 'ha' } },
+      { code: 'SAM2', description: 'Action 2', availableArea: { value: '5', unit: 'ha' } }
     ]
 
     it('should create state from a single selected action (payload value is a string)', () => {
@@ -332,10 +327,10 @@ describe('land-parcel-state.manager', () => {
       const payload = { landAction: 'SAM1' }
       const parcel = { sheetId: 'AB1234', parcelId: '5678' }
 
-      const result = addSelectedActionsToState(state, payload, groupedActions, parcel)
+      const result = addSelectedActionsToState(state, payload, actions, parcel)
 
       expect(result.landParcels['AB1234-5678'].actionsObj).toEqual({
-        SAM1: { description: 'Action 1', consents: [], value: '10', unit: 'ha' }
+        SAM1: { description: 'Action 1', consents: [], value: 10, unit: 'ha' }
       })
     })
 
@@ -344,11 +339,11 @@ describe('land-parcel-state.manager', () => {
       const payload = { landAction: ['SAM1', 'SAM2'] }
       const parcel = { sheetId: 'AB1234', parcelId: '5678' }
 
-      const result = addSelectedActionsToState(state, payload, groupedActions, parcel)
+      const result = addSelectedActionsToState(state, payload, actions, parcel)
 
       expect(result.landParcels['AB1234-5678'].actionsObj).toEqual({
-        SAM1: { description: 'Action 1', consents: [], value: '10', unit: 'ha' },
-        SAM2: { description: 'Action 2', consents: [], value: '5', unit: 'ha' }
+        SAM1: { description: 'Action 1', consents: [], value: 10, unit: 'ha' },
+        SAM2: { description: 'Action 2', consents: [], value: 5, unit: 'ha' }
       })
     })
 
@@ -357,7 +352,7 @@ describe('land-parcel-state.manager', () => {
       const payload = {}
       const parcel = { sheetId: 'AB1234', parcelId: '5678' }
 
-      const result = addSelectedActionsToState(state, payload, groupedActions, parcel)
+      const result = addSelectedActionsToState(state, payload, actions, parcel)
 
       expect(result).toEqual({})
     })
@@ -367,56 +362,46 @@ describe('land-parcel-state.manager', () => {
       const payload = { landAction: ['INVALID_CODE', 'SAM1'] }
       const parcel = { sheetId: 'AB1234', parcelId: '5678' }
 
-      const result = addSelectedActionsToState(state, payload, groupedActions, parcel)
+      const result = addSelectedActionsToState(state, payload, actions, parcel)
 
       expect(Object.keys(result.landParcels['AB1234-5678'].actionsObj)).toEqual(['SAM1'])
     })
 
     it('should store the submitted quantity override for an action that requires one', () => {
-      const groupedActionsWithQuantity = [
+      const actionsWithQuantity = [
         {
-          name: 'Group 1',
-          actions: [
-            {
-              code: 'CSAM3',
-              description: 'Herbal leys: CSAM3',
-              requiresMaxQuantity: 18.5673,
-              availableArea: { value: 18.5673, unit: 'ha' }
-            }
-          ]
+          code: 'CSAM3',
+          description: 'Herbal leys: CSAM3',
+          requiresMaxQuantity: 18.5673,
+          availableArea: { value: 18.5673, unit: 'ha' }
         }
       ]
       const state = {}
       const payload = { landAction: 'CSAM3', landActionQuantity_CSAM3: '3.25' }
       const parcel = { sheetId: 'AB1234', parcelId: '5678' }
 
-      const result = addSelectedActionsToState(state, payload, groupedActionsWithQuantity, parcel)
+      const result = addSelectedActionsToState(state, payload, actionsWithQuantity, parcel)
 
-      expect(result.landParcels['AB1234-5678'].actionsObj.CSAM3.value).toBe('3.25')
+      expect(result.landParcels['AB1234-5678'].actionsObj.CSAM3.value).toBe(3.25)
     })
 
     // Checking a quantity-required action's box alone (no quantity typed yet)
     // is not a confirmed selection - it must not be saved to state on submit,
     // matching the live-refresh page behaviour of treating it as unselected.
     it('should not save a quantity-required action that was checked but never given a quantity', () => {
-      const groupedActionsWithQuantity = [
+      const actionsWithQuantity = [
         {
-          name: 'Group 1',
-          actions: [
-            {
-              code: 'CSAM3',
-              description: 'Herbal leys: CSAM3',
-              requiresMaxQuantity: 18.5673,
-              availableArea: { value: 18.5673, unit: 'ha' }
-            }
-          ]
+          code: 'CSAM3',
+          description: 'Herbal leys: CSAM3',
+          requiresMaxQuantity: 18.5673,
+          availableArea: { value: 18.5673, unit: 'ha' }
         }
       ]
       const state = {}
       const payload = { landAction: 'CSAM3', landActionQuantity_CSAM3: '' }
       const parcel = { sheetId: 'AB1234', parcelId: '5678' }
 
-      const result = addSelectedActionsToState(state, payload, groupedActionsWithQuantity, parcel)
+      const result = addSelectedActionsToState(state, payload, actionsWithQuantity, parcel)
 
       expect(result.landParcels['AB1234-5678'].actionsObj).toEqual({})
     })
@@ -425,48 +410,38 @@ describe('land-parcel-state.manager', () => {
     // as never having been submitted - matching the client-side live-refresh
     // treatment of a typed 0 on this same page.
     it('should not save a quantity-required action whose submitted quantity is 0', () => {
-      const groupedActionsWithQuantity = [
+      const actionsWithQuantity = [
         {
-          name: 'Group 1',
-          actions: [
-            {
-              code: 'CSAM3',
-              description: 'Herbal leys: CSAM3',
-              requiresMaxQuantity: 18.5673,
-              availableArea: { value: 18.5673, unit: 'ha' }
-            }
-          ]
+          code: 'CSAM3',
+          description: 'Herbal leys: CSAM3',
+          requiresMaxQuantity: 18.5673,
+          availableArea: { value: 18.5673, unit: 'ha' }
         }
       ]
       const state = {}
       const payload = { landAction: 'CSAM3', landActionQuantity_CSAM3: '0' }
       const parcel = { sheetId: 'AB1234', parcelId: '5678' }
 
-      const result = addSelectedActionsToState(state, payload, groupedActionsWithQuantity, parcel)
+      const result = addSelectedActionsToState(state, payload, actionsWithQuantity, parcel)
 
       expect(result.landParcels['AB1234-5678'].actionsObj).toEqual({})
     })
 
     it('should still save a non-quantity action alongside a skipped quantity-required one', () => {
-      const groupedActionsWithQuantity = [
+      const actionsWithQuantity = [
+        { code: 'SAM1', description: 'Action 1', availableArea: { value: '10', unit: 'ha' } },
         {
-          name: 'Group 1',
-          actions: [
-            { code: 'SAM1', description: 'Action 1', availableArea: { value: '10', unit: 'ha' } },
-            {
-              code: 'CSAM3',
-              description: 'Herbal leys: CSAM3',
-              requiresMaxQuantity: 18.5673,
-              availableArea: { value: 18.5673, unit: 'ha' }
-            }
-          ]
+          code: 'CSAM3',
+          description: 'Herbal leys: CSAM3',
+          requiresMaxQuantity: 18.5673,
+          availableArea: { value: 18.5673, unit: 'ha' }
         }
       ]
       const state = {}
       const payload = { landAction: ['SAM1', 'CSAM3'] }
       const parcel = { sheetId: 'AB1234', parcelId: '5678' }
 
-      const result = addSelectedActionsToState(state, payload, groupedActionsWithQuantity, parcel)
+      const result = addSelectedActionsToState(state, payload, actionsWithQuantity, parcel)
 
       expect(Object.keys(result.landParcels['AB1234-5678'].actionsObj)).toEqual(['SAM1'])
     })

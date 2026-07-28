@@ -4,7 +4,7 @@ import { formatCurrency } from '~/src/config/nunjucks/filters/format-currency.js
 import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import {
   calculateLandActionsPayment as calculateLandActionsPaymentService,
-  fetchAvailableActionsForParcel as fetchAvailableActionsForParcelService,
+  fetchGroupedActionsForParcel as fetchGroupedActionsForParcelService,
   fetchActionsWithPlannedActions as fetchActionsWithPlannedActionsService,
   fetchParcels as fetchParcelsService,
   fetchParcelsGroups as fetchParcelsGroupsService,
@@ -15,7 +15,7 @@ import {
   calculate,
   parcelsGroups,
   parcelsWithSize,
-  parcelsWithExtendedInfo,
+  parcelsWithGroups,
   locateParcelTiles,
   validate
 } from '~/src/server/land-grants/services/land-grants.client.js'
@@ -31,7 +31,7 @@ const withUserContext =
   (...args) =>
     fn(...args, mockUserContext)
 const calculateLandActionsPayment = withUserContext(calculateLandActionsPaymentService)
-const fetchAvailableActionsForParcel = withUserContext(fetchAvailableActionsForParcelService)
+const fetchGroupedActionsForParcel = withUserContext(fetchGroupedActionsForParcelService)
 const fetchActionsWithPlannedActions = withUserContext(fetchActionsWithPlannedActionsService)
 const fetchParcels = withUserContext(fetchParcelsService)
 const fetchParcelsGroups = withUserContext(fetchParcelsGroupsService)
@@ -42,7 +42,7 @@ vi.mock('~/src/server/land-grants/services/land-grants.client.js', () => ({
   calculate: vi.fn(),
   parcelsGroups: vi.fn(),
   parcelsWithSize: vi.fn(),
-  parcelsWithExtendedInfo: vi.fn(),
+  parcelsWithGroups: vi.fn(),
   locateParcelTiles: vi.fn(),
   validate: vi.fn()
 }))
@@ -173,7 +173,7 @@ describe('land-grants service', () => {
     })
   })
 
-  describe('fetchAvailableActionsForParcel', () => {
+  describe('fetchGroupedActionsForParcel', () => {
     beforeEach(() => {
       clearParcelCache()
       configState.reset()
@@ -211,15 +211,15 @@ describe('land-grants service', () => {
           { name: 'Livestock grazing on moorland', actions: ['UPL1', 'UPL2', 'UPL3'] }
         ]
       }
-      parcelsWithExtendedInfo.mockResolvedValueOnce(mockApiResponse)
+      parcelsWithGroups.mockResolvedValueOnce(mockApiResponse)
 
-      const result = await fetchAvailableActionsForParcel({
+      const result = await fetchGroupedActionsForParcel({
         parcelId: 'PARCEL456',
         sheetId: 'SHEET123',
         enabledLandActions
       })
 
-      expect(parcelsWithExtendedInfo).toHaveBeenCalledWith(['SHEET123-PARCEL456'], mockApiEndpoint, mockUserContext, [])
+      expect(parcelsWithGroups).toHaveBeenCalledWith(['SHEET123-PARCEL456'], mockApiEndpoint, mockUserContext, [])
 
       expect(result).toEqual({
         parcel: {
@@ -287,9 +287,9 @@ describe('land-grants service', () => {
         ],
         groups: [{ name: 'Assess moorland', actions: ['CMOR1'] }]
       }
-      parcelsWithExtendedInfo.mockResolvedValueOnce(mockApiResponse)
+      parcelsWithGroups.mockResolvedValueOnce(mockApiResponse)
 
-      const result = await fetchAvailableActionsForParcel({
+      const result = await fetchGroupedActionsForParcel({
         parcelId: 'PARCEL456',
         sheetId: 'SHEET123'
       })
@@ -315,9 +315,9 @@ describe('land-grants service', () => {
         ],
         groups: [{ name: 'Assess moorland', actions: ['CMOR1'] }]
       }
-      parcelsWithExtendedInfo.mockResolvedValueOnce(mockApiResponse)
+      parcelsWithGroups.mockResolvedValueOnce(mockApiResponse)
 
-      const result = await fetchAvailableActionsForParcel({
+      const result = await fetchGroupedActionsForParcel({
         parcelId: 'PARCEL456',
         sheetId: 'SHEET123',
         enabledLandActions: []
@@ -358,9 +358,9 @@ describe('land-grants service', () => {
         ]
       }
 
-      parcelsWithExtendedInfo.mockResolvedValueOnce(mockApiResponse)
+      parcelsWithGroups.mockResolvedValueOnce(mockApiResponse)
 
-      const result = await fetchAvailableActionsForParcel({
+      const result = await fetchGroupedActionsForParcel({
         parcelId: 'PARCEL456',
         sheetId: 'SHEET123',
         enabledLandActions
@@ -396,11 +396,11 @@ describe('land-grants service', () => {
     it('should handle empty parcel parameters', async () => {
       const mockApiResponse = { parcels: [], groups: [] }
 
-      parcelsWithExtendedInfo.mockResolvedValueOnce(mockApiResponse)
+      parcelsWithGroups.mockResolvedValueOnce(mockApiResponse)
 
-      const result = await fetchAvailableActionsForParcel({})
+      const result = await fetchGroupedActionsForParcel({})
 
-      expect(parcelsWithExtendedInfo).toHaveBeenCalledWith(['-'], mockApiEndpoint, mockUserContext, [])
+      expect(parcelsWithGroups).toHaveBeenCalledWith(['-'], mockApiEndpoint, mockUserContext, [])
       expect(result).toEqual({
         parcel: {
           sheetId: '',
@@ -423,9 +423,9 @@ describe('land-grants service', () => {
         groups: [{ name: 'Assess moorland', actions: ['CMOR1'] }]
       }
 
-      parcelsWithExtendedInfo.mockResolvedValueOnce(mockApiResponse)
+      parcelsWithGroups.mockResolvedValueOnce(mockApiResponse)
 
-      const result = await fetchAvailableActionsForParcel({
+      const result = await fetchGroupedActionsForParcel({
         parcelId: 'PARCEL456',
         sheetId: 'SHEET123',
         enabledLandActions
@@ -454,9 +454,9 @@ describe('land-grants service', () => {
         groups: [{ name: 'Assess moorland', actions: ['CMOR1'] }]
       }
 
-      parcelsWithExtendedInfo.mockResolvedValueOnce(mockApiResponse)
+      parcelsWithGroups.mockResolvedValueOnce(mockApiResponse)
 
-      const result = await fetchAvailableActionsForParcel({
+      const result = await fetchGroupedActionsForParcel({
         parcelId: 'PARCEL456',
         sheetId: 'SHEET123',
         enabledLandActions
@@ -501,9 +501,9 @@ describe('land-grants service', () => {
         groups: [{ name: 'Livestock grazing on moorland', actions: ['UPL1', 'UPL2', 'UPL3'] }]
       }
 
-      parcelsWithExtendedInfo.mockResolvedValueOnce(mockApiResponse)
+      parcelsWithGroups.mockResolvedValueOnce(mockApiResponse)
 
-      const result = await fetchAvailableActionsForParcel({
+      const result = await fetchGroupedActionsForParcel({
         parcelId: 'PARCEL456',
         sheetId: 'SHEET123',
         enabledLandActions
@@ -547,10 +547,10 @@ describe('land-grants service', () => {
     })
 
     it('should handle API errors', async () => {
-      parcelsWithExtendedInfo.mockRejectedValueOnce(new Error('API error'))
+      parcelsWithGroups.mockRejectedValueOnce(new Error('API error'))
 
       await expect(
-        fetchAvailableActionsForParcel({
+        fetchGroupedActionsForParcel({
           parcelId: 'PARCEL456',
           sheetId: 'SHEET123'
         })
@@ -584,9 +584,9 @@ describe('land-grants service', () => {
             { name: 'Shepherding livestock on moorland', actions: ['UPL8', 'UPL10'] }
           ]
         }
-        parcelsWithExtendedInfo.mockResolvedValueOnce(mockApiResponse)
+        parcelsWithGroups.mockResolvedValueOnce(mockApiResponse)
 
-        const result = await fetchAvailableActionsForParcel({
+        const result = await fetchGroupedActionsForParcel({
           parcelId: 'PARCEL456',
           sheetId: 'SHEET123',
           enabledLandActions: [' CMOR1 ', ' UPL8 ', ' UPL10 ']
@@ -630,9 +630,9 @@ describe('land-grants service', () => {
             { name: 'Shepherding livestock on moorland', actions: ['UPL8', 'UPL10'] }
           ]
         }
-        parcelsWithExtendedInfo.mockResolvedValueOnce(mockApiResponse)
+        parcelsWithGroups.mockResolvedValueOnce(mockApiResponse)
 
-        const result = await fetchAvailableActionsForParcel({
+        const result = await fetchGroupedActionsForParcel({
           parcelId: 'PARCEL456',
           sheetId: 'SHEET123',
           enabledLandActions: ['CMOR1']
@@ -687,9 +687,9 @@ describe('land-grants service', () => {
             { name: 'Shepherding livestock on moorland', actions: ['UPL8', 'UPL10'] }
           ]
         }
-        parcelsWithExtendedInfo.mockResolvedValueOnce(mockApiResponse)
+        parcelsWithGroups.mockResolvedValueOnce(mockApiResponse)
 
-        const result = await fetchAvailableActionsForParcel({
+        const result = await fetchGroupedActionsForParcel({
           parcelId: 'PARCEL456',
           sheetId: 'SHEET123',
           enabledLandActions: ['CMOR1', 'UPL8', 'UPL10']
@@ -769,20 +769,15 @@ describe('land-grants service', () => {
             { name: 'Livestock grazing on moorland', actions: ['UPL1', 'UPL2', 'UPL3'] }
           ]
         }
-        parcelsWithExtendedInfo.mockResolvedValueOnce(mockApiResponse)
+        parcelsWithGroups.mockResolvedValueOnce(mockApiResponse)
 
-        const result = await fetchAvailableActionsForParcel({
+        const result = await fetchGroupedActionsForParcel({
           parcelId: 'PARCEL456',
           sheetId: 'SHEET123',
           enabledLandActions
         })
 
-        expect(parcelsWithExtendedInfo).toHaveBeenCalledWith(
-          ['SHEET123-PARCEL456'],
-          mockApiEndpoint,
-          mockUserContext,
-          []
-        )
+        expect(parcelsWithGroups).toHaveBeenCalledWith(['SHEET123-PARCEL456'], mockApiEndpoint, mockUserContext, [])
 
         expect(result).toEqual({
           parcel: {
@@ -856,7 +851,7 @@ describe('land-grants service', () => {
           }
         ]
       }
-      parcelsWithExtendedInfo.mockResolvedValueOnce(mockApiResponse)
+      parcelsWithGroups.mockResolvedValueOnce(mockApiResponse)
 
       const plannedActions = [{ actionCode: 'CMOR1', quantity: 2, unit: 'ha' }]
       const result = await fetchActionsWithPlannedActions({
@@ -865,7 +860,7 @@ describe('land-grants service', () => {
         plannedActions
       })
 
-      expect(parcelsWithExtendedInfo).toHaveBeenCalledWith(
+      expect(parcelsWithGroups).toHaveBeenCalledWith(
         ['SHEET123-PARCEL456'],
         mockApiEndpoint,
         mockUserContext,
@@ -883,17 +878,17 @@ describe('land-grants service', () => {
       const mockApiResponse = {
         parcels: [{ parcelId: 'PARCEL456', sheetId: 'SHEET123', actions: [] }]
       }
-      parcelsWithExtendedInfo.mockResolvedValue(mockApiResponse)
+      parcelsWithGroups.mockResolvedValue(mockApiResponse)
       const plannedActions = [{ actionCode: 'CMOR1', quantity: 2, unit: 'ha' }]
 
       await fetchActionsWithPlannedActions({ parcelId: 'PARCEL456', sheetId: 'SHEET123', plannedActions })
       await fetchActionsWithPlannedActions({ parcelId: 'PARCEL456', sheetId: 'SHEET123', plannedActions })
 
-      expect(parcelsWithExtendedInfo).toHaveBeenCalledTimes(2)
+      expect(parcelsWithGroups).toHaveBeenCalledTimes(2)
     })
 
     it('should return an empty actions array when the parcel is not found', async () => {
-      parcelsWithExtendedInfo.mockResolvedValueOnce({ parcels: [] })
+      parcelsWithGroups.mockResolvedValueOnce({ parcels: [] })
 
       const result = await fetchActionsWithPlannedActions({
         parcelId: 'PARCEL456',
@@ -905,7 +900,7 @@ describe('land-grants service', () => {
     })
   })
 
-  describe('fetchAvailableActionsForParcel caching', () => {
+  describe('fetchGroupedActionsForParcel caching', () => {
     const mockApiResponse = {
       parcels: [
         {
@@ -932,12 +927,12 @@ describe('land-grants service', () => {
     })
 
     it('should return cached result on second call with same parcel', async () => {
-      parcelsWithExtendedInfo.mockResolvedValue(mockApiResponse)
+      parcelsWithGroups.mockResolvedValue(mockApiResponse)
 
-      await fetchAvailableActionsForParcel(parcelArgs)
-      const secondResult = await fetchAvailableActionsForParcel(parcelArgs)
+      await fetchGroupedActionsForParcel(parcelArgs)
+      const secondResult = await fetchGroupedActionsForParcel(parcelArgs)
 
-      expect(parcelsWithExtendedInfo).toHaveBeenCalledTimes(1)
+      expect(parcelsWithGroups).toHaveBeenCalledTimes(1)
       expect(secondResult.parcel.parcelId).toBe('PARCEL456')
     })
 
@@ -953,50 +948,50 @@ describe('land-grants service', () => {
         ],
         groups: []
       }
-      parcelsWithExtendedInfo.mockResolvedValueOnce(mockApiResponse).mockResolvedValueOnce(otherResponse)
+      parcelsWithGroups.mockResolvedValueOnce(mockApiResponse).mockResolvedValueOnce(otherResponse)
 
-      await fetchAvailableActionsForParcel(parcelArgs)
-      await fetchAvailableActionsForParcel({ parcelId: 'OTHER', sheetId: 'OTHER_SHEET', enabledLandActions: ['CMOR1'] })
+      await fetchGroupedActionsForParcel(parcelArgs)
+      await fetchGroupedActionsForParcel({ parcelId: 'OTHER', sheetId: 'OTHER_SHEET', enabledLandActions: ['CMOR1'] })
 
-      expect(parcelsWithExtendedInfo).toHaveBeenCalledTimes(2)
+      expect(parcelsWithGroups).toHaveBeenCalledTimes(2)
     })
 
     it('should fetch separately for the same parcel with different enabledLandActions', async () => {
-      parcelsWithExtendedInfo.mockResolvedValue(mockApiResponse)
+      parcelsWithGroups.mockResolvedValue(mockApiResponse)
 
-      await fetchAvailableActionsForParcel(parcelArgs)
-      await fetchAvailableActionsForParcel({
+      await fetchGroupedActionsForParcel(parcelArgs)
+      await fetchGroupedActionsForParcel({
         parcelId: 'PARCEL456',
         sheetId: 'SHEET123',
         enabledLandActions: ['UPL1']
       })
 
-      expect(parcelsWithExtendedInfo).toHaveBeenCalledTimes(2)
+      expect(parcelsWithGroups).toHaveBeenCalledTimes(2)
     })
 
     it('should re-fetch after cache TTL expires', async () => {
       vi.useFakeTimers()
-      parcelsWithExtendedInfo.mockResolvedValue(mockApiResponse)
+      parcelsWithGroups.mockResolvedValue(mockApiResponse)
 
-      await fetchAvailableActionsForParcel(parcelArgs)
-      expect(parcelsWithExtendedInfo).toHaveBeenCalledTimes(1)
+      await fetchGroupedActionsForParcel(parcelArgs)
+      expect(parcelsWithGroups).toHaveBeenCalledTimes(1)
 
       vi.advanceTimersByTime(5 * 60 * 1000 + 1) // just past TTL
 
-      await fetchAvailableActionsForParcel(parcelArgs)
-      expect(parcelsWithExtendedInfo).toHaveBeenCalledTimes(2)
+      await fetchGroupedActionsForParcel(parcelArgs)
+      expect(parcelsWithGroups).toHaveBeenCalledTimes(2)
 
       vi.useRealTimers()
     })
 
     it('should not cache failed API calls', async () => {
-      parcelsWithExtendedInfo.mockRejectedValueOnce(new Error('API error'))
-      parcelsWithExtendedInfo.mockResolvedValueOnce(mockApiResponse)
+      parcelsWithGroups.mockRejectedValueOnce(new Error('API error'))
+      parcelsWithGroups.mockResolvedValueOnce(mockApiResponse)
 
-      await expect(fetchAvailableActionsForParcel(parcelArgs)).rejects.toThrow('API error')
+      await expect(fetchGroupedActionsForParcel(parcelArgs)).rejects.toThrow('API error')
 
-      const result = await fetchAvailableActionsForParcel(parcelArgs)
-      expect(parcelsWithExtendedInfo).toHaveBeenCalledTimes(2)
+      const result = await fetchGroupedActionsForParcel(parcelArgs)
+      expect(parcelsWithGroups).toHaveBeenCalledTimes(2)
       expect(result.parcel.parcelId).toBe('PARCEL456')
     })
   })
