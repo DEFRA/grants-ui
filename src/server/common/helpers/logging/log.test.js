@@ -64,7 +64,7 @@ describe('Logger Functionality', () => {
 
     log(LogCodes.AUTH.SIGN_IN_SUCCESS, testOptions)
 
-    expect(logger.info).toHaveBeenCalledWith({}, 'User sign-in successful for user=test-user, organisation=test-org')
+    expect(logger.info).toHaveBeenCalledWith({}, 'User sign-in successful for CRN=test-user, organisation=test-org')
   })
 
   it('should work with error log codes', () => {
@@ -146,14 +146,14 @@ describe('Logger Functionality', () => {
       userId: '123',
       error: undefined
     })
-    expect(logger.debug).toHaveBeenCalledWith({}, 'Authentication error for user=123: undefined')
+    expect(logger.debug).toHaveBeenCalledWith({}, 'Authentication error for CRN=123: undefined')
   })
 
   it('should always log at error level when using the dedicated error logger', () => {
     const logCode = LogCodes.AUTH.SIGN_IN_SUCCESS
     error(logCode, { userId: '123', organisationId: 'org-456' })
 
-    expect(logger.error).toHaveBeenCalledWith({}, 'User sign-in successful for user=123, organisation=org-456')
+    expect(logger.error).toHaveBeenCalledWith({}, 'User sign-in successful for CRN=123, organisation=org-456')
     expect(logger.info).not.toHaveBeenCalled()
     expect(logger.debug).not.toHaveBeenCalled()
   })

@@ -82,73 +82,73 @@ describe('LogCodes', () => {
         'SIGN_IN_ATTEMPT',
         'info',
         { userId: TEST_USER_IDS.DEFAULT },
-        `User sign-in attempt for user=${TEST_USER_IDS.DEFAULT}`
+        `User sign-in attempt for CRN=${TEST_USER_IDS.DEFAULT}`
       ],
       [
         'SIGN_IN_SUCCESS',
         'info',
         { userId: TEST_USER_IDS.DEFAULT, organisationId: TEST_ORGANIZATIONS.DEFAULT },
-        `User sign-in successful for user=${TEST_USER_IDS.DEFAULT}, organisation=${TEST_ORGANIZATIONS.DEFAULT}`
+        `User sign-in successful for CRN=${TEST_USER_IDS.DEFAULT}, organisation=${TEST_ORGANIZATIONS.DEFAULT}`
       ],
       [
         'SIGN_IN_FAILURE',
         'error',
         { userId: TEST_USER_IDS.DEFAULT, errorMessage: TEST_ERRORS.INVALID_CREDENTIALS },
-        `User sign-in failed for user=${TEST_USER_IDS.DEFAULT}. Error: ${TEST_ERRORS.INVALID_CREDENTIALS}`
+        `User sign-in failed for CRN=${TEST_USER_IDS.DEFAULT}. Error: ${TEST_ERRORS.INVALID_CREDENTIALS}`
       ],
       [
         'SIGN_OUT',
         'info',
         { userId: TEST_USER_IDS.DEFAULT, sessionId: TEST_SESSIONS.SESSION_123 },
-        `User sign-out for user=${TEST_USER_IDS.DEFAULT}, session=${TEST_SESSIONS.SESSION_123}`
+        `User sign-out for CRN=${TEST_USER_IDS.DEFAULT}, session=${TEST_SESSIONS.SESSION_123}`
       ],
       [
         'TOKEN_VERIFICATION_SUCCESS',
         'info',
         { userId: TEST_USER_IDS.DEFAULT, organisationId: TEST_ORGANIZATIONS.DEFAULT },
-        `Token verification successful for userCRN=${TEST_USER_IDS.DEFAULT}, userSBI=${TEST_ORGANIZATIONS.DEFAULT}`
+        `Token verification successful for CRN=${TEST_USER_IDS.DEFAULT}, userSBI=${TEST_ORGANIZATIONS.DEFAULT}`
       ],
       [
         'TOKEN_VERIFICATION_FAILURE',
         'error',
         { userId: TEST_USER_IDS.DEFAULT, errorMessage: TEST_ERRORS.INVALID_TOKEN },
-        `Token verification failed for user=${TEST_USER_IDS.DEFAULT}. Error: ${TEST_ERRORS.INVALID_TOKEN}`
+        `Token verification failed for CRN=${TEST_USER_IDS.DEFAULT}. Error: ${TEST_ERRORS.INVALID_TOKEN}`
       ],
       [
         'SESSION_EXPIRED',
         'info',
         { userId: TEST_USER_IDS.DEFAULT, sessionId: TEST_SESSIONS.SESSION_123 },
-        `Session expired for user=${TEST_USER_IDS.DEFAULT}, session=${TEST_SESSIONS.SESSION_123}`
+        `Session expired for CRN=${TEST_USER_IDS.DEFAULT}, session=${TEST_SESSIONS.SESSION_123}`
       ],
       [
         'UNAUTHORIZED_ACCESS',
         'error',
         { path: TEST_PATHS.ADMIN, userId: TEST_USER_IDS.DEFAULT },
-        `Unauthorized access attempt to path=${TEST_PATHS.ADMIN} from user=${TEST_USER_IDS.DEFAULT}`
+        `Unauthorized access attempt to path=${TEST_PATHS.ADMIN} from CRN=${TEST_USER_IDS.DEFAULT}`
       ],
       [
         'UNAUTHORIZED_ACCESS with missing userId',
         'error',
         { path: TEST_PATHS.ADMIN },
-        `Unauthorized access attempt to path=${TEST_PATHS.ADMIN} from user=unknown`
+        `Unauthorized access attempt to path=${TEST_PATHS.ADMIN} from CRN=unknown`
       ],
       [
         'SIGN_IN_FAILURE with missing userId',
         'error',
         { errorMessage: TEST_ERRORS.INVALID_CREDENTIALS },
-        `User sign-in failed for user=unknown. Error: ${TEST_ERRORS.INVALID_CREDENTIALS}`
+        `User sign-in failed for CRN=unknown. Error: ${TEST_ERRORS.INVALID_CREDENTIALS}`
       ],
       [
         'TOKEN_VERIFICATION_FAILURE with missing userId',
         'error',
         { errorMessage: TEST_ERRORS.INVALID_TOKEN },
-        `Token verification failed for user=unknown. Error: ${TEST_ERRORS.INVALID_TOKEN}`
+        `Token verification failed for CRN=unknown. Error: ${TEST_ERRORS.INVALID_TOKEN}`
       ],
       [
         'GENERIC_ERROR',
         'error',
         { userId: TEST_USER_IDS.DEFAULT, errorMessage: TEST_ERRORS.INVALID_CREDENTIALS },
-        `Authentication error for user=${TEST_USER_IDS.DEFAULT}: ${TEST_ERRORS.INVALID_CREDENTIALS}`
+        `Authentication error for CRN=${TEST_USER_IDS.DEFAULT}: ${TEST_ERRORS.INVALID_CREDENTIALS}`
       ],
       [
         'OIDC_CONFIG_FETCH_RETRY',
@@ -215,26 +215,26 @@ describe('LogCodes', () => {
       [
         'ALLOWLIST_ACCESS_GRANTED',
         'info',
-        { path: TEST_PATHS.EXAMPLE_GRANT, userId: 'test123', sbi: TEST_SBI.DEFAULT, grantCode: 'woodland' },
-        `Allowlist access granted to path=${TEST_PATHS.EXAMPLE_GRANT} for user=test123, sbi=${TEST_SBI.DEFAULT}, grantCode=woodland`
+        { path: TEST_PATHS.EXAMPLE_GRANT, userId: '1100943757', sbi: TEST_SBI.DEFAULT, grantCode: 'woodland' },
+        `Allowlist access granted to path=${TEST_PATHS.EXAMPLE_GRANT} for CRN=******3757, sbi=${TEST_SBI.DEFAULT}, grantCode=woodland`
       ],
       [
         'ALLOWLIST_ACCESS_DENIED',
         'info',
-        { path: TEST_PATHS.EXAMPLE_GRANT, userId: 'test123', sbi: TEST_SBI.DEFAULT, grantCode: 'woodland' },
-        `Allowlist access denied to path=${TEST_PATHS.EXAMPLE_GRANT} for user=test123, sbi=${TEST_SBI.DEFAULT}, grantCode=woodland`
+        { path: TEST_PATHS.EXAMPLE_GRANT, userId: '1100943757', sbi: TEST_SBI.DEFAULT, grantCode: 'woodland' },
+        `Allowlist access denied to path=${TEST_PATHS.EXAMPLE_GRANT} for CRN=******3757, sbi=${TEST_SBI.DEFAULT}, grantCode=woodland`
       ],
       [
         'ALLOWLIST_ACCESS_GRANTED with fallbacks',
         'info',
         { path: TEST_PATHS.EXAMPLE_GRANT, grantCode: 'woodland' },
-        `Allowlist access granted to path=${TEST_PATHS.EXAMPLE_GRANT} for user=unknown, sbi=N/A, grantCode=woodland`
+        `Allowlist access granted to path=${TEST_PATHS.EXAMPLE_GRANT} for CRN=unknown, sbi=N/A, grantCode=woodland`
       ],
       [
         'ALLOWLIST_ACCESS_DENIED with fallbacks',
         'info',
         { path: TEST_PATHS.EXAMPLE_GRANT, grantCode: 'woodland' },
-        `Allowlist access denied to path=${TEST_PATHS.EXAMPLE_GRANT} for user=unknown, sbi=N/A, grantCode=woodland`
+        `Allowlist access denied to path=${TEST_PATHS.EXAMPLE_GRANT} for CRN=unknown, sbi=N/A, grantCode=woodland`
       ],
       ['CREDENTIALS_MISSING', 'error', {}, `No credentials received from Bell OAuth provider`],
       ['TOKEN_MISSING', 'error', {}, `No token received from Defra Identity`],
@@ -1205,7 +1205,7 @@ describe('LogCodes', () => {
 
   describe('Unknown user handling', () => {
     it.each([
-      ['AUTH log codes', LogCodes.AUTH.SIGN_IN_ATTEMPT, {}, 'User sign-in attempt for user=unknown'],
+      ['AUTH log codes', LogCodes.AUTH.SIGN_IN_ATTEMPT, {}, 'User sign-in attempt for CRN=unknown'],
       ['FORMS log codes', LogCodes.FORMS.FORM_LOAD, { formName: 'test' }, 'Form loaded: test for user=unknown'],
       [
         'SYSTEM log codes',
