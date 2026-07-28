@@ -1,9 +1,10 @@
 [
   { "slug": "start", "name": "Start", "type": "submitOnly" },
   { "slug": "eligibility-check", "name": "Eligibility check", "type": "yesNo", "fieldName": "eligibilityCheck" },
+
   {
     "slug": "tasks",
-    "name": "Task list — section one task one",
+    "name": "Task list — task one",
     "type": "clickLink",
     "linkSlug": "multiple-components-task-page"
   },
@@ -17,11 +18,12 @@
       "lastName": "User"
     }
   },
+  { "slug": "optional-choice-task-page", "name": "Optional choice", "type": "yesNo", "fieldName": "choice" },
   {
-    "slug": "tasks",
-    "name": "Task list — section one task two",
-    "type": "clickLink",
-    "linkSlug": "single-component-task-page"
+    "slug": "conditional-question",
+    "name": "Conditional question",
+    "type": "yesNo",
+    "fieldName": "conditionalQuestion"
   },
   {
     "slug": "single-component-task-page",
@@ -31,9 +33,10 @@
       "exampleEmailField": "test@example.com"
     }
   },
+
   {
     "slug": "tasks",
-    "name": "Task list — section two task one",
+    "name": "Task list — task two",
     "type": "clickLink",
     "linkSlug": "compound-component-task-page"
   },
@@ -48,10 +51,11 @@
     }
   },
   {
-    "slug": "tasks",
-    "name": "Task list — section two task two",
-    "type": "clickLink",
-    "linkSlug": "example-task-with-guidance"
+    "slug": "select-land-parcel",
+    "name": "Select land parcel",
+    "type": "checkboxes",
+    "fieldName": "landParcels",
+    "selectAll": true
   },
   {
     "slug": "example-task-with-guidance",
@@ -60,7 +64,8 @@
     "fieldName": "exampleNumberField",
     "value": "42"
   },
-  { "slug": "tasks", "name": "Task list — declaration", "type": "clickLink", "linkSlug": "declaration" },
-  { "slug": "declaration", "name": "Confirm and send", "type": "submitOnly" },
-  { "slug": "confirmation", "name": "Confirmation", "type": "submitOnly" }
+
+  { "slug": "tasks", "name": "Task list — submit", "type": "clickLink", "linkSlug": "summary" },
+  { "slug": "summary", "name": "Check your answers", "type": "submitOnly" },
+  { "slug": "declaration", "name": "Confirm and send", "type": "submitOnly" }
 ]

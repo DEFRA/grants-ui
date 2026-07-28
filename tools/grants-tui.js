@@ -88,6 +88,7 @@ import {
 import { pauseStdin, promptScale, radioMenu, releaseStdin, resumeStdin, toggleMenu } from './grants-tui/tui.js'
 import { cmdTest, testLogPath } from './grants-tui/tests.js'
 import { cmdSonar } from './grants-tui/sonar.js'
+import { cmdJourney, journeyCrnOptions, journeySteps, listJourneys, wontCompleteReason } from './grants-tui/journey.js'
 
 // Sweep of stale tool logs from tmpdir. macOS auto-clears windows tmpdir
 // after ~3 days
@@ -311,6 +312,17 @@ function getRunningComposeFiles() {
     .trim()
     .split(',')
     .map((f) => f.trim())
+}
+
+/**
+ * Base URL for the running app: the HA addon fronts it with an HTTPS nginx proxy
+ * on 4000, every other stack serves plain HTTP on 3000. Used to default
+ * `gt journey`'s target so it works without a manual --base-url.
+ * @returns {string}
+ */
+function journeyBaseUrl() {
+  const runningFiles = getRunningComposeFiles()
+  return runningFiles?.some((f) => f.endsWith('compose.ha.yml')) ? 'https://localhost:4000' : 'http://localhost:3000'
 }
 
 /** Returns the list of running compose service names for the grants-ui project */
@@ -754,6 +766,7 @@ ${BOLD}Commands:${RESET_COLOR}
   debug   Restart grants-ui in debug mode (detached, port 9229)
   restart Restart running containers (selectable; uses --no-deps)
   test    Run tests: ${TEST_TARGETS.map((t) => t.key).join(' | ')} (default: ${TEST_TARGETS[0].key})
+  journey Run a Journey Runner journey headlessly (${listJourneys().join(' | ')})
   sonar   Run SonarQube analysis against a local server (--changed scopes to PR files; --down stops it)
   snyk    Run Snyk dependency vulnerability scan (same as CI; needs a Snyk login — see below)
   check   Pre-PR full check: all test suites + snyk + PR-scoped sonar (runs every step, summarises)
@@ -767,6 +780,15 @@ ${BOLD}Other flags:${RESET_COLOR}
   --dry-run      Print commands without running them
   --help         Show this help
   --version      Show version number
+
+${BOLD}Journey flags (for 'journey'):${RESET_COLOR}
+  --crn <crn>      DefraID CRN to sign in as (default: the journey's allowlisted CRN, e.g. woodland → 1100943757)
+  --stop <n|sect>  Stop before step <n> (1-indexed) or run only section <sect>
+  --headed         Watch it run in your installed Google Chrome (headless uses bundled Chromium)
+  --clear          Flush saved application state first (so --stop starts at step 1)
+  --base-url <url> App base URL (auto: https://localhost:4000 on --ha, else http://localhost:3000)
+  --skip-install   Skip 'playwright install chromium'
+  ${DIM}Full journey/section reference: docs/DEV-TOOLS.md ("Run from the CLI")${RESET_COLOR}
 
 ${BOLD}Snyk auth (for 'snyk'):${RESET_COLOR}
   One-time login — no org/paid token needed, a FREE personal Snyk account works:
@@ -787,6 +809,8 @@ ${BOLD}Examples:${RESET_COLOR}
   gt restart
   gt test                            # unit tests (default)
   gt test acceptance                 # docker-based acceptance journeys
+  gt journey woodland                # walk the woodland journey headlessly
+  gt journey example-grant-with-auth --stop 8 --headed   # watch it, stop before step 8
   gt sonar                           # local SonarQube scan of src/
   gt sonar --changed                 # scope scan to src files changed vs main (approx. CI PR view)
   gt sonar --down                    # stop the local SonarQube server
@@ -819,9 +843,11 @@ async function main() {
 
   // Validate args before doing anything else — catch unrecognised flags/commands early
   {
-    const knownCmds = ['up', 'down', 'debug', 'restart', 'reset', 'test', 'sonar', 'snyk', 'check']
+    const knownCmds = ['up', 'down', 'debug', 'restart', 'reset', 'test', 'sonar', 'snyk', 'check', 'journey']
     // Test targets are valid positionals only after the `test` command
     const testTargetKeys = argv.includes('test') ? TEST_TARGETS.map((t) => t.key) : []
+    // The journey slug is a free positional straight after the `journey` command.
+    const journeyIdx = argv.indexOf('journey')
     const knownFlags = [
       '--dry-run',
       '--help',
@@ -835,15 +861,28 @@ async function main() {
       '--down',
       '--skip-tests',
       '--changed',
+      '--crn',
+      '--stop',
+      '--headed',
+      '--clear',
+      '--base-url',
+      '--skip-install',
       ...LOCAL_SERVICES.map((s) => `--local-${s.key}`)
     ]
-    const scaleValIdx = argv.indexOf('--scale')
+    // Flags that consume the following positional as their value — so it isn't
+    // mistaken for an unknown command.
+    const valueFlagIdxs = ['--scale', '--crn', '--stop', '--base-url']
+      .map((f) => argv.indexOf(f))
+      .filter((i) => i !== -1)
+      .map((i) => i + 1)
     const unknownCmd = argv.find(
       (a, i) =>
         !a.startsWith('-') &&
         !knownCmds.includes(a) &&
         !testTargetKeys.includes(a) &&
-        !(scaleValIdx !== -1 && i === scaleValIdx + 1)
+        !valueFlagIdxs.includes(i) &&
+        // the journey slug positional (immediately after `journey`) is allowed
+        !(journeyIdx !== -1 && i === journeyIdx + 1)
     )
     const unknownFlag = argv.filter((a) => a.startsWith('-')).find((a) => !knownFlags.includes(a))
     if (unknownCmd) {
@@ -866,10 +905,13 @@ async function main() {
     : []
   const testNeedsDocker = testTargets.some((k) => TEST_TARGETS.find((t) => t.key === k)?.needsDocker)
   const snykInvoked = argv.includes('snyk')
+  // `journey` drives a browser against localhost:3000, which may be a plain
+  // `npm run dev` rather than the Docker stack — don't force a Docker check.
+  const journeyInvoked = argv.includes('journey')
 
   // Preflight: ensure Docker is available and running (skipped for --dry-run so
-  // offline/CI usage works, and for test/snyk runs that don't drive containers)
-  if (!dryRun && !(testInvoked && !testNeedsDocker) && !snykInvoked) {
+  // offline/CI usage works, and for test/snyk/journey runs that don't drive containers)
+  if (!dryRun && !(testInvoked && !testNeedsDocker) && !snykInvoked && !journeyInvoked) {
     const dockerCheck = spawnSync('docker', ['info'], { encoding: 'utf8', stdio: 'pipe' })
     if (dockerCheck.status !== 0 || dockerCheck.error) {
       console.error(
@@ -926,6 +968,28 @@ async function main() {
   if (argv.includes('check')) {
     releaseStdin()
     process.exit(await cmdCheck(dryRun))
+  }
+  if (argv.includes('journey')) {
+    releaseStdin()
+    const journeyIdx = argv.indexOf('journey')
+    const slug = argv[journeyIdx + 1] && !argv[journeyIdx + 1].startsWith('-') ? argv[journeyIdx + 1] : ''
+    const valueOf = (flag) => {
+      const i = argv.indexOf(flag)
+      return i !== -1 ? argv[i + 1] : undefined
+    }
+    // Default the base URL to match the running stack: the HA addon fronts the
+    // app with an HTTPS nginx proxy on 4000, everything else serves plain HTTP on
+    // 3000. An explicit --base-url always wins.
+    const baseUrl = valueOf('--base-url') ?? journeyBaseUrl()
+    const opts = {
+      crn: valueOf('--crn'),
+      stop: valueOf('--stop'),
+      baseUrl,
+      headed: argv.includes('--headed'),
+      clear: argv.includes('--clear'),
+      skipInstall: argv.includes('--skip-install')
+    }
+    process.exit(cmdJourney(slug, opts, dryRun))
   }
   if (argv.includes('up')) {
     const flaggedAddons = ADDONS.filter((a) => argv.includes(`--${a.key}`)).map((a) => a.key)
@@ -1020,6 +1084,12 @@ async function main() {
           ]
         : []),
       { key: 'test', label: 'test ⇢', description: 'Run unit / contract / acceptance tests' },
+      {
+        key: 'journey',
+        label: 'journey ⇢',
+        description: 'Walk a Journey Runner journey headlessly',
+        disabled: !containersRunning
+      },
       {
         key: 'sonar',
         label: 'sonar',
@@ -1275,6 +1345,141 @@ async function main() {
         const outputs = !dryRun && passed.length ? ` — output: ${passed.map((k) => testLogPath(k)).join(', ')}` : ''
         statusLine = `${PURPLE}✔  Passed: ${passed.join(', ')}${RESET_COLOR}${outputs}`
       }
+      continue
+    }
+
+    if (command === 'journey') {
+      const journeys = listJourneys()
+      if (!journeys.length) {
+        statusLine = `${DIM}No journey definitions found${RESET_COLOR}`
+        continue
+      }
+      const SELECT_HINT = '↑ ↓  navigate    enter → select    esc → cancel'
+      // Annotate each journey with the CRN it needs (or a warning if it can't complete).
+      const journeyItems = journeys.map((slug) => {
+        const crns = journeyCrnOptions(slug)
+        const description = wontCompleteReason(slug)
+          ? `${YELLOW}⚠ may not complete${RESET_COLOR}`
+          : `${DIM}CRN ${crns[0]?.crn ?? '—'}${RESET_COLOR}`
+        return { key: slug, label: slug, description }
+      })
+      const chosen = await radioMenu(journeyItems, 'Select a journey to run', { hint: SELECT_HINT })
+      if (chosen === '__quit__') {
+        statusLine = ''
+        continue
+      }
+
+      // Pick the CRN to sign in as. Journeys with more than one known-good CRN
+      // prompt; a single option is used automatically (methane has none — the
+      // won't-complete acknowledgement below covers it).
+      const crnOptions = journeyCrnOptions(chosen)
+      let crn = crnOptions[0]?.crn
+      if (crnOptions.length > 1) {
+        const crnItems = crnOptions.map((o) => ({ key: o.crn, label: o.crn, description: o.note }))
+        const pickedCrn = await radioMenu(crnItems, `Select a CRN for '${chosen}'`, { hint: SELECT_HINT })
+        if (pickedCrn === '__quit__') {
+          statusLine = ''
+          continue
+        }
+        crn = pickedCrn
+      }
+
+      // Then pick how to run it — headless (bundled Chromium) or headed (your Chrome).
+      const modeItems = [
+        { key: 'headless', label: 'headless', description: 'Run in the background (bundled Chromium)' },
+        { key: 'headed', label: 'headed', description: 'Watch it in your installed Google Chrome' }
+      ]
+      const mode = await radioMenu(modeItems, `Run '${chosen}' — headed or headless?`, { hint: SELECT_HINT })
+      if (mode === '__quit__') {
+        statusLine = ''
+        continue
+      }
+
+      // Then choose whether to flush saved application state first — the same
+      // reset the "Clear application state" footer link performs — so the run
+      // starts from step 1 rather than resuming the furthest-reached page.
+      const clearItems = [
+        { key: 'keep', label: 'keep state', description: 'Resume from where this application left off' },
+        {
+          key: 'clear',
+          label: 'clear state',
+          description: 'Reset to step 1 (like the footer "Clear application state" link)'
+        }
+      ]
+      const clearChoice = await radioMenu(clearItems, `Clear application state for '${chosen}' before running?`, {
+        hint: '↑ ↓  navigate    enter → run    esc → cancel'
+      })
+      if (clearChoice === '__quit__') {
+        statusLine = ''
+        continue
+      }
+
+      // For journeys known not to complete (e.g. farm-payments), make the user
+      // acknowledge why before running — a selectable confirm, not just a keypress.
+      const wontComplete = wontCompleteReason(chosen)
+      if (wontComplete) {
+        const ackItems = [
+          {
+            key: 'cancel',
+            label: 'Cancel',
+            description: 'Back to the menu'
+          },
+          {
+            key: 'run',
+            label: 'Run anyway',
+            description: wontComplete.join(' ')
+          }
+        ]
+        const ack = await radioMenu(ackItems, `${YELLOW}⚠  '${chosen}' will NOT complete — run anyway?${RESET_COLOR}`, {
+          hint: SELECT_HINT
+        })
+        if (ack !== 'run') {
+          statusLine = ack === '__quit__' ? '' : `${DIM}Journey '${chosen}' cancelled${RESET_COLOR}`
+          continue
+        }
+      }
+
+      // Headed only: let the user stop the browser on a chosen page. Lists every
+      // page in the journey; picking one passes it as --stop so the run halts
+      // there (on the page, before filling it) for inspection.
+      let stop
+      if (mode === 'headed') {
+        const steps = journeySteps(chosen)
+        const stopItems = [
+          { key: '__end__', label: 'Run to the end', description: 'Complete the whole journey' },
+          ...steps.map((s, i) => ({
+            key: String(i + 1),
+            label: `${i + 1}. ${s.slug}`,
+            description: s.name === s.slug ? '' : s.name
+          }))
+        ]
+        const pickedStop = await radioMenu(stopItems, `Stop '${chosen}' on which page?`, { hint: SELECT_HINT })
+        if (pickedStop === '__quit__') {
+          statusLine = ''
+          continue
+        }
+        if (pickedStop !== '__end__') stop = pickedStop
+      }
+
+      pauseStdin()
+      const code = cmdJourney(
+        chosen,
+        {
+          crn,
+          stop,
+          baseUrl: journeyBaseUrl(),
+          headed: mode === 'headed',
+          clear: clearChoice === 'clear',
+          acknowledged: true
+        },
+        dryRun
+      )
+      resumeStdin()
+
+      statusLine =
+        code === 0
+          ? `${PURPLE}✔  Journey '${chosen}' completed${RESET_COLOR}`
+          : `${RED}✖${RESET_COLOR}  Journey '${chosen}' did not complete (exit ${code}) — check output above`
       continue
     }
 
