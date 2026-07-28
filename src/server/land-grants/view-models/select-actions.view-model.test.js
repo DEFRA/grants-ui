@@ -18,6 +18,10 @@ describe('select-actions.view-model', () => {
         value: 'SAM1',
         text: 'Test Action 1',
         checked: false,
+        attributes: {
+          'data-available-unit': undefined,
+          'data-total-available-area': undefined
+        },
         hint: {
           html: 'Payment rate per year: £100.50/ha'
         }
@@ -84,6 +88,36 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, [])
 
       expect(result.conditional).toBeUndefined()
+    })
+
+    // The client-side availability refresh needs the full available area for every
+    // action, not just ones with a quantity input - this is the only place it's
+    // rendered into the DOM for actions without one.
+    it('should render availableArea as data attributes even when the action has no quantity input', () => {
+      const action = {
+        code: 'SAM1',
+        description: 'Test Action 1',
+        ratePerUnitGbp: 100.5,
+        availableArea: { value: 12.5, unit: 'ha' }
+      }
+
+      const result = mapActionToViewModel(action, [])
+
+      expect(result.attributes).toEqual({
+        'data-available-unit': 'ha',
+        'data-total-available-area': 12.5
+      })
+    })
+
+    it('should leave the availableArea data attributes undefined when availableArea is missing', () => {
+      const action = { code: 'SAM1', description: 'Test Action 1', ratePerUnitGbp: 100.5 }
+
+      const result = mapActionToViewModel(action, [])
+
+      expect(result.attributes).toEqual({
+        'data-available-unit': undefined,
+        'data-total-available-area': undefined
+      })
     })
 
     it('should set a conditional reveal when action requires a max quantity', () => {
@@ -313,6 +347,65 @@ describe('select-actions.view-model', () => {
       const result = mapGroupedActionsToViewModel(groupedActions, [], { CSAM3: 'Too much land' })
 
       expect(result.find((item) => item.value === 'CSAM3').conditional.html).toContain('govuk-input--error')
+    })
+
+    it('should omit an action with 0 available area from the initial render', () => {
+      const groupedActions = [
+        {
+          name: 'Group 1',
+          actions: [
+            { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100, availableArea: { value: 0, unit: 'ha' } },
+            { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200, availableArea: { value: 5, unit: 'ha' } }
+          ]
+        }
+      ]
+
+      const result = mapGroupedActionsToViewModel(groupedActions, [])
+
+      expect(result.map((item) => item.value)).toEqual(['SAM2'])
+    })
+
+    it('should still render an action with 0 available area when it was already added', () => {
+      const groupedActions = [
+        {
+          name: 'Group 1',
+          actions: [
+            { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100, availableArea: { value: 0, unit: 'ha' } }
+          ]
+        }
+      ]
+      const addedActions = [{ code: 'SAM1', description: 'Action 1' }]
+
+      const result = mapGroupedActionsToViewModel(groupedActions, addedActions)
+
+      expect(result.map((item) => item.value)).toEqual(['SAM1'])
+      expect(result[0].checked).toBe(true)
+    })
+
+    it('should not omit an action with no availableArea at all', () => {
+      const groupedActions = [
+        { name: 'Group 1', actions: [{ code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100 }] }
+      ]
+
+      const result = mapGroupedActionsToViewModel(groupedActions, [])
+
+      expect(result.map((item) => item.value)).toEqual(['SAM1'])
+    })
+
+    it('should assign the bare field name id to the first visible item, skipping omitted actions', () => {
+      const groupedActions = [
+        {
+          name: 'Group 1',
+          actions: [
+            { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100, availableArea: { value: 0, unit: 'ha' } },
+            { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200, availableArea: { value: 5, unit: 'ha' } }
+          ]
+        }
+      ]
+
+      const result = mapGroupedActionsToViewModel(groupedActions, [])
+
+      expect(result[0].id).toBe('landAction')
     })
   })
 })

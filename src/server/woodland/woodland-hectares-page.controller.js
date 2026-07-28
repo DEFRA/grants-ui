@@ -4,6 +4,7 @@ import { validateWoodlandHectares } from '~/src/server/woodland/woodland.service
 import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { withTaskContext } from '~/src/server/task-list/task-list.helper.js'
+import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
 
 /**
  * @import { AnyFormRequest, FormContext, FormSubmissionError } from '@defra/forms-engine-plugin/types'
@@ -120,11 +121,15 @@ export default class WoodlandHectaresPageController extends withTaskContext(Ques
    */
   async renderBackendErrors(request, context, h, parcelIds, hectaresTenOrOverYearsOld, hectaresUnderTenYearsOld) {
     try {
-      const failedReasons = await validateWoodlandHectares({
-        parcelIds,
-        hectaresTenOrOverYearsOld,
-        hectaresUnderTenYearsOld
-      })
+      const userContext = getLandGrantsUserContext(request)
+      const failedReasons = await validateWoodlandHectares(
+        {
+          parcelIds,
+          hectaresTenOrOverYearsOld,
+          hectaresUnderTenYearsOld
+        },
+        userContext
+      )
       if (!failedReasons.length) {
         return null
       }

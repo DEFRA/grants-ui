@@ -1,5 +1,5 @@
 import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
-import { stringifyParcel } from '../utils/format-parcel.js'
+import { stringifyParcel } from '~/src/shared/format-parcel.js'
 import { formatPrice } from '~/src/server/common/utils/payment.js'
 
 /**

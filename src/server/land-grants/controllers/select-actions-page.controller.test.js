@@ -6,7 +6,7 @@ import {
   fetchParcels,
   validateApplication
 } from '~/src/server/land-grants/services/land-grants.service.js'
-import { parseLandParcel, stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
+import { parseLandParcel, stringifyParcel } from '~/src/shared/format-parcel.js'
 import SelectActionsPageController from './select-actions-page.controller.js'
 import { error, log } from '~/src/server/common/helpers/logging/log.js'
 
@@ -42,7 +42,7 @@ vi.mock('~/src/config/config.js', async () => {
   return mockLandGrantsConfig()
 })
 vi.mock('~/src/server/land-grants/services/land-grants.service.js')
-vi.mock('~/src/server/land-grants/utils/format-parcel.js')
+vi.mock('~/src/shared/format-parcel.js')
 
 const mockParcelsResponse = [
   {
@@ -51,6 +51,7 @@ const mockParcelsResponse = [
     area: { unit: 'ha', value: 4.0383 }
   }
 ]
+const userContext = { defraIdToken: 'defra-id-access-token', sbi: '106284736' }
 
 describe('SelectActionsPageController', () => {
   let controller
@@ -124,7 +125,8 @@ describe('SelectActionsPageController', () => {
       auth: {
         isAuthenticated: true,
         credentials: {
-          sbi: '106284736',
+          token: userContext.defraIdToken,
+          sbi: userContext.sbi,
           crn: 'CRN123',
           name: 'John Doe',
           organisationName: 'Farm 1',
@@ -188,11 +190,15 @@ describe('SelectActionsPageController', () => {
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith({
-        parcelId: 'parcel2',
-        sheetId: 'sheet2',
-        enabledLandActions
-      })
+      expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith(
+        {
+          parcelId: 'parcel2',
+          sheetId: 'sheet2',
+          enabledLandActions,
+          plannedActions: []
+        },
+        userContext
+      )
     })
 
     test('should render the view with a flat actionItems list rather than grouped actions', async () => {
@@ -364,6 +370,47 @@ describe('SelectActionsPageController', () => {
           }
         })
       )
+    })
+
+    test('should show an error and not save state when a quantity-required action has no submitted quantity', async () => {
+      mockRequest.payload = { landAction: 'UPL2' }
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'select-actions',
+        expect.objectContaining({
+          errors: [
+            {
+              text: 'Enter a quantity for Heavy livestock grazing on moorland: UPL2',
+              href: '#landActionQuantity_UPL2'
+            }
+          ]
+        })
+      )
+      expect(controller.setState).not.toHaveBeenCalled()
+      expect(controller.proceed).not.toHaveBeenCalled()
+    })
+
+    test('should show an error when a quantity-required action has a submitted quantity of 0', async () => {
+      mockRequest.payload = { landAction: 'UPL2', landActionQuantity_UPL2: '0' }
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'select-actions',
+        expect.objectContaining({
+          errors: [
+            {
+              text: 'Enter a quantity for Heavy livestock grazing on moorland: UPL2',
+              href: '#landActionQuantity_UPL2'
+            }
+          ]
+        })
+      )
+      expect(controller.setState).not.toHaveBeenCalled()
     })
 
     test('should store the submitted quantity override for an action that requires one', async () => {

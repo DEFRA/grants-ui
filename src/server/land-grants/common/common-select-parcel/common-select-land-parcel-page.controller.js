@@ -4,7 +4,8 @@ import LandGrantsQuestionWithAuthCheckController from '../../controllers/auth/la
 import { fetchParcels } from '../../services/land-grants.service.js'
 import { mapParcelsToViewModel } from '../../view-models/parcel.view-model.js'
 import { getParcelIdFromQuery, getParcelIdsFromPayload } from '../../utils/parcel-request.utils.js'
-import { stringifyParcel } from '../../utils/format-parcel.js'
+import { stringifyParcel } from '~/src/shared/format-parcel.js'
+import { getLandGrantsUserContext } from '../../services/land-grants-user-context.js'
 
 const PARCEL_FETCH_ERROR_MESSAGE =
   'Unable to find parcel information, please try again later or contact the Rural Payments Agency.'
@@ -120,7 +121,8 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
     const { viewName } = this
 
     try {
-      const fetchedParcels = await fetchParcels(request)
+      const userContext = getLandGrantsUserContext(request)
+      const fetchedParcels = await fetchParcels(request, userContext)
       const parcels = mapParcelsToViewModel(fetchedParcels)
 
       if (!parcels.length) {
@@ -164,7 +166,8 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
     /** @type {Parcel[]} */
     let fetchedParcels = []
     try {
-      fetchedParcels = await fetchParcels(request)
+      const userContext = getLandGrantsUserContext(request)
+      fetchedParcels = await fetchParcels(request, userContext)
     } catch (error) {
       debug(
         {

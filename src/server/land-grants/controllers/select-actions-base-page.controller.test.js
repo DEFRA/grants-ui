@@ -6,7 +6,7 @@ import {
   fetchParcels,
   validateApplication
 } from '~/src/server/land-grants/services/land-grants.service.js'
-import { parseLandParcel } from '~/src/server/land-grants/utils/format-parcel.js'
+import { parseLandParcel } from '~/src/shared/format-parcel.js'
 import SelectActionsBasePageController from './select-actions-base-page.controller.js'
 
 vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () => ({
@@ -41,7 +41,7 @@ vi.mock('~/src/config/config.js', async () => {
   return mockLandGrantsConfig()
 })
 vi.mock('~/src/server/land-grants/services/land-grants.service.js')
-vi.mock('~/src/server/land-grants/utils/format-parcel.js')
+vi.mock('~/src/shared/format-parcel.js')
 
 /**
  * Minimal concrete subclass exercising only the base class's shared orchestration.
@@ -106,7 +106,10 @@ describe('SelectActionsBasePageController', () => {
       payload: { CMOR1: 'CMOR1' },
       query: { parcelId: 'sheet1-parcel1' },
       logger: mockRequestLogger(),
-      auth: { isAuthenticated: true, credentials: { sbi: '106284736', crn: 'CRN123' } }
+      auth: {
+        isAuthenticated: true,
+        credentials: { token: 'defra-id-access-token', sbi: '106284736', crn: 'CRN123' }
+      }
     }
     mockContext = { state: {}, referenceNumber: 'REF123' }
     mockH = { view: vi.fn().mockReturnValue('rendered view'), redirect: vi.fn() }
@@ -159,6 +162,10 @@ describe('SelectActionsBasePageController', () => {
     test('renders the success view with actions fetched for the parcel', async () => {
       await controller.handleGet(mockRequest, mockContext, mockH)
 
+      expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith(
+        { parcelId: 'parcel1', sheetId: 'sheet1', enabledLandActions: [], plannedActions: [] },
+        { defraIdToken: 'defra-id-access-token', sbi: '106284736' }
+      )
       const [viewName, viewModel] = mockH.view.mock.calls[0]
       expect(viewName).toBe('stub-view')
       expect(viewModel.groupedActions).toEqual(mockGroupedActions)
@@ -193,6 +200,13 @@ describe('SelectActionsBasePageController', () => {
 
       await controller.handlePost(mockRequest, mockContext, mockH)
 
+      expect(validateApplication).toHaveBeenCalledWith(
+        expect.objectContaining({
+          applicationId: 'REF123',
+          crn: 'CRN123'
+        }),
+        { defraIdToken: 'defra-id-access-token', sbi: '106284736' }
+      )
       const [, viewModel] = mockH.view.mock.calls[0]
       expect(viewModel.errors).toEqual([{ text: 'Too much land', href: '#CMOR1' }])
       expect(controller.setState).not.toHaveBeenCalled()

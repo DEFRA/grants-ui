@@ -146,11 +146,13 @@ const convictConfig = {
       sensitive: true
     }
   },
-  feedbackLink: {
-    doc: 'Used in your phase banner. Can be a URL or more commonly mailto mailto:feedback@department.gov.uk',
-    format: String,
-    default: '',
-    env: 'FEEDBACK_LINK'
+  feedback: {
+    surveyUrl: {
+      doc: 'Base Qualtrics survey URL for the feedback CTA (confirmation page + phase banner). Empty hides the CTA. e.g. https://defragroup.eu.qualtrics.com/jfe/form/SV_ba2ii3qywHVFytM',
+      format: String,
+      default: '',
+      env: 'FEEDBACK_SURVEY_URL'
+    }
   },
   entra: {
     tokenEndpoint: {

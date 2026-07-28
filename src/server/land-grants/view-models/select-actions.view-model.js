@@ -6,17 +6,13 @@
 
 import nunjucks from 'nunjucks'
 import { govukFrontendPath, viewPaths } from '~/src/config/nunjucks/view-paths.js'
-import { getActionQuantityFieldName } from '~/src/server/land-grants/utils/action-quantity-field.js'
-import { formatAreaUnit } from '~/src/server/land-grants/utils/format-area-unit.js'
+import { getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
+import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
 import { SELECTED_ACTIONS_FIELD_NAME } from '~/src/server/land-grants/utils/selected-actions-field.js'
 
-// Built in JS, not the template: Nunjucks can't mutate array items across a loop
-// (no namespace(), no {% set item.prop = x %}), and govukCheckboxes needs the full
-// conditional.html per item up front.
-//
-// Own Environment instead of the app-wide one in nunjucks.js: that module's
-// nunjucks.configure() runs config.get('root') at import time, which this page's
-// controller test doesn't mock.
+// Built in JS, not the template: Nunjucks can't mutate array items in a loop.
+// Own Environment (not the app-wide one) since that one's config.get('root')
+// call at import time isn't mocked in this page's controller test.
 const QUANTITY_INPUT_TEMPLATE = 'quantity-input/template.njk'
 const quantityInputEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader([govukFrontendPath, ...viewPaths]), {
   autoescape: true
@@ -51,10 +47,8 @@ function getQuantityConditional(actionCode, actionName, quantityValue, maxQuanti
 }
 
 /**
- * Builds the stable, addressable checkbox id for an action. The first item in the
- * rendered list must be exactly SELECTED_ACTIONS_FIELD_NAME (with no suffix) to match
- * govuk-frontend's own default idPrefix behaviour - that's what "no action selected"
- * error-summary links (see validateSelectedActions) anchor to.
+ * First item must be exactly SELECTED_ACTIONS_FIELD_NAME (no suffix) - that's
+ * what "no action selected" error-summary links anchor to.
  * @param {string} actionCode
  * @param {boolean} isFirst
  * @returns {string}
@@ -74,12 +68,20 @@ function getCheckboxItemId(actionCode, isFirst) {
 export function mapActionToViewModel(action, addedActions, quantityErrorsByCode = {}, isFirst = false) {
   const existingAction = addedActions.find((a) => a.code === action.code)
   const quantityValue = existingAction?.value ?? ''
+  const checked = Boolean(existingAction)
 
   return {
     id: getCheckboxItemId(action.code, isFirst),
     value: action.code,
     text: action.description,
-    checked: Boolean(existingAction),
+    checked,
+    attributes: {
+      'data-available-unit': action.availableArea?.unit,
+      // Set once here, never touched by the client - the full amount this
+      // action needs to remain usable at all (a non-quantity action can't
+      // take a partial amount, so this is its pass/fail threshold).
+      'data-total-available-area': action.availableArea?.value
+    },
     hint: {
       html:
         `Payment rate per year: £${action.ratePerUnitGbp?.toFixed(2)}/ha` +
@@ -101,6 +103,21 @@ export function mapActionToViewModel(action, addedActions, quantityErrorsByCode 
 }
 
 /**
+ * A 0-available action is dropped from the initial render, unless it was
+ * already saved to a previous selection - a saved choice must never silently
+ * disappear from the page.
+ * @param {Action} action
+ * @param {Array<{code: string}>} addedActions
+ * @returns {boolean}
+ */
+function isVisibleOnInitialLoad(action, addedActions) {
+  if (action.availableArea?.value !== 0) {
+    return true
+  }
+  return addedActions.some((a) => a.code === action.code)
+}
+
+/**
  * Maps grouped actions to a flat list of view models for rendering
  * @param {Array<ActionGroup>} groupedActions - Array of action groups
  * @param {Array<{code: string, description: string}>} addedActions - Actions already added to the parcel
@@ -108,8 +125,10 @@ export function mapActionToViewModel(action, addedActions, quantityErrorsByCode 
  * @returns {Array<CheckboxItem>} Flat array of mapped action checkboxes
  */
 export function mapGroupedActionsToViewModel(groupedActions, addedActions, quantityErrorsByCode = {}) {
-  const allActions = groupedActions.flatMap((group) => group.actions)
-  return allActions.map((action, index) =>
+  const visibleActions = groupedActions
+    .flatMap((group) => group.actions)
+    .filter((action) => isVisibleOnInitialLoad(action, addedActions))
+  return visibleActions.map((action, index) =>
     mapActionToViewModel(action, addedActions, quantityErrorsByCode, index === 0)
   )
 }
@@ -125,7 +144,7 @@ export function mapGroupedActionsToViewModel(groupedActions, addedActions, quant
  * @property {number} [requiresMaxQuantity] - If set, the user must enter a quantity for this action, capped at this value
  * @property {number} [ratePerAgreementPerYearGbp] - Additional payment per agreement per year
  * @property {object} [availableArea] - Available area for the action
- * @property {string} [availableArea.value] - Area value
+ * @property {number} [availableArea.value] - Area value
  * @property {string} [availableArea.unit] - Area unit
  */
 
@@ -144,6 +163,9 @@ export function mapGroupedActionsToViewModel(groupedActions, addedActions, quant
  * @property {string} value - Checkbox value
  * @property {string} text - Checkbox label
  * @property {boolean} checked - Whether checkbox is checked
+ * @property {{ 'data-available-unit': string|undefined, 'data-total-available-area': number|undefined }} attributes -
+ *   Rendered onto the checkbox <input>. `data-total-available-area` is set once and never
+ *   touched client-side, so it stays the original full amount.
  * @property {object} hint - Hint text configuration
  * @property {string} hint.html - HTML content for hint
  * @property {{ html: string }} [conditional] - Conditional reveal markup shown when checked/selected

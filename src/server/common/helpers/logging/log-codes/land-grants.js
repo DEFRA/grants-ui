@@ -49,5 +49,10 @@ export const LAND_GRANTS = {
     level: 'info',
     messageFunc: (messageOptions) =>
       `Land Grants API request | endpoint: ${messageOptions.endpoint} | url: ${messageOptions.url}`
+  },
+  PARCEL_AUTH_CHECK_FAILED: {
+    level: 'error',
+    messageFunc: (messageOptions) =>
+      `Parcel auth check could not resolve an authorised parcel list | sbi: ${messageOptions.sbi} | method: ${messageOptions.method} | path: ${messageOptions.path} | requestedParcelIds: ${JSON.stringify(messageOptions.requestedParcelIds)}`
   }
 }

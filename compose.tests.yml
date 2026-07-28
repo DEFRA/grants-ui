@@ -34,7 +34,6 @@ services:
       BASE_BACKEND_URL: https://grants-ui-proxy:4001
       GRANTS_UI_BACKEND_AUTH_TOKEN: ${GRANTS_UI_BACKEND_AUTH_TOKEN:-auth_token}
       GRANTS_UI_BACKEND_ENCRYPTION_KEY: ${GRANTS_UI_BACKEND_ENCRYPTION_KEY:-encryption_key}
-      APPLICATION_LOCK_TOKEN_SECRET: ${APPLICATION_LOCK_TOKEN_SECRET:-dev-lock-secret}
       DEFRA_ID_USER_PASSWORD: x
       MOCKSERVER_HOST: mockserver
       MOCKSERVER_PORT: 1080
@@ -44,8 +43,8 @@ services:
     networks:
       - grants-ui-net
 
-  woodland-grant-journey-tests:
-    image: defradigital/woodland-grant-journey-tests
+  grants-ui-woodland-tests:
+    image: defradigital/grants-ui-woodland-tests
     pull_policy: always
     environment:
       MAX_INSTANCES: 3
@@ -54,13 +53,11 @@ services:
       BASE_BACKEND_URL: https://grants-ui-proxy:4001
       GRANTS_UI_BACKEND_AUTH_TOKEN: ${GRANTS_UI_BACKEND_AUTH_TOKEN:-auth_token}
       GRANTS_UI_BACKEND_ENCRYPTION_KEY: ${GRANTS_UI_BACKEND_ENCRYPTION_KEY:-encryption_key}
-      APPLICATION_LOCK_TOKEN_SECRET: ${APPLICATION_LOCK_TOKEN_SECRET:-dev-lock-secret}
-      DEFRA_ID_USER_PASSWORD: x
       MOCKSERVER_HOST: mockserver
       MOCKSERVER_PORT: 1080
     volumes:
       - ./nginx/certs:/etc/ssl/certs:ro
-      - ./woodland-grant-journey-tests-schemas:/app/test/schemas:ro
+      - ./grants-ui-woodland-tests-schemas:/app/test/schemas:ro
     command: ["npm", "run", "test:ci"]
     networks:
       - grants-ui-net

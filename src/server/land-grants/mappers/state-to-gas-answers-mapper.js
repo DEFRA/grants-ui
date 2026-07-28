@@ -1,5 +1,5 @@
 import { config } from '~/src/config/config.js'
-import { parseLandParcel } from '~/src/server/land-grants/utils/format-parcel.js'
+import { parseLandParcel } from '~/src/shared/format-parcel.js'
 
 const shouldSendCaveatsToGas = () => {
   return config.get('landGrants.enableSSSIFeature') || config.get('landGrants.enableHeferFeature')

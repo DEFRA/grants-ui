@@ -85,18 +85,7 @@ import {
   VERSION,
   YELLOW
 } from './grants-tui/constants.js'
-import {
-  HEADER,
-  padVisible,
-  pauseStdin,
-  promptScale,
-  radioMenu,
-  releaseStdin,
-  renderScreen,
-  resumeStdin,
-  toggleMenu,
-  visibleLen
-} from './grants-tui/tui.js'
+import { pauseStdin, promptScale, radioMenu, releaseStdin, resumeStdin, toggleMenu } from './grants-tui/tui.js'
 import { cmdTest, testLogPath } from './grants-tui/tests.js'
 import { cmdSonar } from './grants-tui/sonar.js'
 
@@ -175,18 +164,22 @@ function getLocalImages() {
  */
 function writeTempOverride(localServiceKeys) {
   if (!localServiceKeys.length) return null
+  const hostPlatform = `linux/${os.arch() === 'x64' ? 'amd64' : os.arch()}`
   const services = {}
   for (const key of localServiceKeys) {
     const svc = LOCAL_SERVICES.find((s) => s.key === key)
     if (!svc) continue
     const localImage = svc.key + ':local'
-    services[svc.composeService] = { image: localImage, pull_policy: 'never' }
+    services[svc.composeService] = { image: localImage, pull_policy: 'never', platform: hostPlatform }
   }
   if (!Object.keys(services).length) return null
   const content =
     'services:\n' +
     Object.entries(services)
-      .map(([name, cfg]) => `  ${name}:\n    image: ${cfg.image}\n    pull_policy: ${cfg.pull_policy}`)
+      .map(
+        ([name, cfg]) =>
+          `  ${name}:\n    image: ${cfg.image}\n    pull_policy: ${cfg.pull_policy}\n    platform: ${cfg.platform}`
+      )
       .join('\n') +
     '\n'
   const tmpPath = resolve(os.tmpdir(), `grants-ui-cli-local-override-${process.pid}.yml`)

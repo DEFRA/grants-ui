@@ -37,6 +37,7 @@ export default [
         fetch: 'readonly',
         URL: 'readonly',
         HTMLElement: 'readonly',
+        HTMLInputElement: 'readonly',
         CustomEvent: 'readonly',
         customElements: 'readonly'
       }

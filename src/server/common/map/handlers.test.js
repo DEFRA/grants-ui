@@ -42,7 +42,7 @@ vi.mock('~/src/server/common/map/map.mock.plugin.js', () => ({
   buildMockParcelsResponse: vi.fn()
 }))
 
-vi.mock('~/src/server/land-grants/utils/format-parcel.js', () => ({
+vi.mock('~/src/shared/format-parcel.js', () => ({
   stringifyParcel: vi.fn((p) => `${p.sheetId}-${p.parcelId}`)
 }))
 
@@ -58,7 +58,11 @@ import { mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 const makeH = () => mockHapiResponseToolkit({ bytes: vi.fn().mockReturnThis() })
 
 function makeRequest(params = {}) {
-  return { auth: { credentials: { sbi: '123456789' } }, params, yar: { get: vi.fn(), set: vi.fn() } }
+  return {
+    auth: { credentials: { token: 'defra-id-access-token', sbi: '123456789' } },
+    params,
+    yar: { get: vi.fn(), set: vi.fn() }
+  }
 }
 
 function makeOsRequest(params = {}) {
@@ -74,6 +78,10 @@ const mockParcels = [
   { sheetId: 'SD7148', parcelId: '9160', area: { value: 2.5 } },
   { sheetId: 'SD7148', parcelId: '9161', area: { value: null } }
 ]
+const expectedUserContext = {
+  defraIdToken: 'defra-id-access-token',
+  sbi: '123456789'
+}
 
 describe('parcelsHandler', () => {
   beforeEach(() => {
@@ -86,8 +94,11 @@ describe('parcelsHandler', () => {
     fetchParcelTileLocation.mockResolvedValue({ minLng: -2.5, minLat: 51.4, maxLng: -2.3, maxLat: 51.6 })
     const h = makeH()
 
-    await parcelsHandler(makeRequest(), h)
+    const request = makeRequest()
+    await parcelsHandler(request, h)
 
+    expect(fetchParcels).toHaveBeenCalledWith(request, expectedUserContext)
+    expect(fetchParcelTileLocation).toHaveBeenCalledWith(['SD7148-9160', 'SD7148-9161'], expectedUserContext)
     const [payload] = h.response.mock.calls[0]
     expect(payload.features).toEqual([
       expect.objectContaining({ id: 'SD7148-9160' }),
@@ -180,7 +191,14 @@ describe('tilesHandler', () => {
 
     await tilesHandler(makeRequest({ z: '12', x: '100', y: '200' }), h)
 
-    expect(fetchParcelTile).toHaveBeenCalledWith(['SD7148-9160'], '12', '100', '200', 'https://land-grants-api')
+    expect(fetchParcelTile).toHaveBeenCalledWith(
+      ['SD7148-9160'],
+      '12',
+      '100',
+      '200',
+      'https://land-grants-api',
+      expectedUserContext
+    )
     expect(withCompoundParcelIds).toHaveBeenCalledWith(buffer)
     expect(h.type).toHaveBeenCalledWith('application/x-protobuf')
   })
@@ -202,7 +220,7 @@ describe('tilesHandler', () => {
 
     await tilesHandler(makeRequest({ z: '10', x: '50', y: '60' }), h)
 
-    expect(fetchParcelTile).toHaveBeenCalledWith([], '10', '50', '60', expect.any(String))
+    expect(fetchParcelTile).toHaveBeenCalledWith([], '10', '50', '60', expect.any(String), expectedUserContext)
   })
 
   it.each([

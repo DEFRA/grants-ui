@@ -13,7 +13,7 @@ import { formatPrice } from '~/src/server/common/utils/payment.js'
  * Registry of payment strategies keyed by name.
  * Referenced from the form definition YAML via `config.paymentStrategy`.
  *
- * Each strategy exposes a single `calculatePayment(state)` method that returns:
+ * Each strategy exposes a single `calculatePayment(state, userContext)` method that returns:
  *   { totalPence, totalPayment, payment, parcelItems?, additionalYearlyPayments? }
  *
  * - `totalPence`              — raw amount in pence, stored in state for re-render on validation errors
@@ -26,17 +26,18 @@ import { formatPrice } from '~/src/server/common/utils/payment.js'
  *   1. Add an entry below with a `calculatePayment` method
  *   2. Set `paymentStrategy: <key>` in the YAML page config
  */
-/** @type {Record<string, { calculatePayment: (state: object) => Promise<PaymentStrategyResult> }>} */
+/** @type {Record<string, { calculatePayment: (state: object, userContext: LandGrantsUserContext) => Promise<PaymentStrategyResult> }>} */
 export const paymentStrategies = {
   multiAction: {
     /**
      * @param {MultiActionState} state
+     * @param {LandGrantsUserContext} userContext
      * @returns {Promise<PaymentStrategyResult>}
      */
-    async calculatePayment(state) {
+    async calculatePayment(state, userContext) {
       const [paymentResult, actionGroups] = await Promise.all([
-        calculateLandActionsPayment(state),
-        fetchParcelsGroups(state)
+        calculateLandActionsPayment(state, userContext),
+        fetchParcelsGroups(state, userContext)
       ])
       const { payment } = paymentResult
       const totalPence = payment?.annualTotalPence ?? 0
@@ -53,15 +54,19 @@ export const paymentStrategies = {
   wmp: {
     /**
      * @param {WmpState} state
+     * @param {LandGrantsUserContext} userContext
      * @returns {Promise<PaymentStrategyResult>}
      */
-    async calculatePayment(state) {
+    async calculatePayment(state, userContext) {
       const { landParcels = [], hectaresUnderTenYearsOld = 0, hectaresTenOrOverYearsOld = 0 } = state
-      const { payment, totalPence } = await calculateWmpPayment({
-        parcelIds: landParcels,
-        hectaresUnderTenYearsOld,
-        hectaresTenOrOverYearsOld
-      })
+      const { payment, totalPence } = await calculateWmpPayment(
+        {
+          parcelIds: landParcels,
+          hectaresUnderTenYearsOld,
+          hectaresTenOrOverYearsOld
+        },
+        userContext
+      )
       return {
         totalPence,
         totalPayment: formatPrice(totalPence),
@@ -73,4 +78,5 @@ export const paymentStrategies = {
 
 /**
  * @import { PaymentStrategyResult, MultiActionState, WmpState } from './payment-strategies.d.js'
+ * @import { LandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
  */

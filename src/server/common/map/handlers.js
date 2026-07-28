@@ -6,13 +6,14 @@ import { readUpstreamStatus } from '~/src/server/common/helpers/errors.js'
 import { logUpstreamError } from '~/src/server/common/helpers/logging/upstream-error.js'
 import { fetchParcels, fetchParcelTileLocation } from '~/src/server/land-grants/services/land-grants.service.js'
 import { fetchParcelTile } from '~/src/server/land-grants/services/land-grants.client.js'
-import { stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
+import { stringifyParcel } from '~/src/shared/format-parcel.js'
 import { ROUTES } from './map-routes.js'
 import { toParcelData, toGeoJsonFeatures } from './parcel-features.js'
 import { withCompoundParcelIds } from './mvt-compound-id.js'
 import { buildOsBasemapStyle, fetchOsTile } from './os-maps.js'
 import { isMockData } from './map.mock.js'
 import { buildMockParcelsResponse } from './map.mock.plugin.js'
+import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
 const TILE_CACHE_MAX_AGE_SECONDS = config.get('mapTileCacheMaxAgeSeconds')
@@ -29,7 +30,9 @@ const PARCELS_ERROR_MESSAGE = 'Unable to load your land parcels'
  * @param {ResponseToolkit} h
  */
 export async function parcelsHandler(request, h) {
-  const result = await attempt(() => fetchParcels(/** @type {AnyFormRequest} */ (/** @type {unknown} */ (request))))
+  const formRequest = /** @type {AnyFormRequest} */ (/** @type {unknown} */ (request))
+  const userContext = getLandGrantsUserContext(formRequest)
+  const result = await attempt(() => fetchParcels(formRequest, userContext))
 
   if (!result.ok) {
     const err = /** @type {Error & { code?: unknown, status?: unknown }} */ (result.error)
@@ -48,7 +51,10 @@ export async function parcelsHandler(request, h) {
   }
 
   const features = toGeoJsonFeatures(parcelData)
-  const bbox = await fetchParcelTileLocation(parcelData.map((p) => p.id))
+  const bbox = await fetchParcelTileLocation(
+    parcelData.map((p) => p.id),
+    userContext
+  )
 
   return h.response({ features, bbox }).code(statusCodes.ok)
 }
@@ -63,9 +69,9 @@ export async function parcelsHandler(request, h) {
  */
 export async function tilesHandler(request, h) {
   const { z, x, y } = request.params
-  const parcelsResult = await attempt(() =>
-    fetchParcels(/** @type {AnyFormRequest} */ (/** @type {unknown} */ (request)))
-  )
+  const formRequest = /** @type {AnyFormRequest} */ (/** @type {unknown} */ (request))
+  const userContext = getLandGrantsUserContext(formRequest)
+  const parcelsResult = await attempt(() => fetchParcels(formRequest, userContext))
 
   if (!parcelsResult.ok) {
     const err = /** @type {Error & { code?: unknown, status?: unknown }} */ (parcelsResult.error)
@@ -85,7 +91,7 @@ export async function tilesHandler(request, h) {
 
   // fetchParcelTile logs its own upstream failures and throws with the upstream
   // status on `.code`/`.status`; a 404 tile is not retried, a 5xx is.
-  const tileResult = await attempt(() => fetchParcelTile(parcelIds, z, x, y, LAND_GRANTS_API_URL))
+  const tileResult = await attempt(() => fetchParcelTile(parcelIds, z, x, y, LAND_GRANTS_API_URL, userContext))
   if (!tileResult.ok) {
     const status = readUpstreamStatus(/** @type {Error & { code?: unknown, status?: unknown }} */ (tileResult.error))
     return h.response().code(status ?? statusCodes.serviceUnavailable)
