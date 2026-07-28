@@ -100,12 +100,11 @@ export function mapActionToViewModel(action, addedActions, quantityErrorsByCode 
   const checked = Boolean(existingAction)
   const consents = getActionConsentKeys(action)
   const requirementText = getRequirementText(consents)
-  const hintText =
-    `Payment rate per year: £${action.ratePerUnitGbp?.toFixed(2)}/ha` +
-    (action.ratePerAgreementPerYearGbp
-      ? ` and <strong>£${action.ratePerAgreementPerYearGbp}</strong> per agreement`
-      : '') +
-    (requirementText ? `<br>${requirementText}` : '')
+  const agreementRateText = action.ratePerAgreementPerYearGbp
+    ? ` and <strong>£${action.ratePerAgreementPerYearGbp}</strong> per agreement`
+    : ''
+  const requirementLineText = requirementText ? `<br>${requirementText}` : ''
+  const hintText = `Payment rate per year: £${action.ratePerUnitGbp?.toFixed(2)}/ha${agreementRateText}${requirementLineText}`
 
   return {
     id: getCheckboxItemId(action.code, isFirst),

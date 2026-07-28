@@ -249,19 +249,11 @@ describe('land-parcel-state.manager', () => {
         expect(result.landParcels['AB1234-5678'].actionsObj.CSAM3.value).toBe(3.25)
       })
 
-      it('should fall back to the full available area when no quantity override is submitted', () => {
+      it.each([
+        ['no quantity override is submitted', { landAction_1: 'CSAM3' }],
+        ['the quantity override is an empty string', { landAction_1: 'CSAM3', landActionQuantity_CSAM3: '' }]
+      ])('should fall back to the full available area when %s', (_description, payload) => {
         const state = {}
-        const payload = { landAction_1: 'CSAM3' }
-        const parcel = { sheetId: 'AB1234', parcelId: '5678' }
-
-        const result = addActionsToExistingState(state, payload, 'landAction_', groupedActionsWithQuantity, parcel)
-
-        expect(result.landParcels['AB1234-5678'].actionsObj.CSAM3.value).toBe(18.5673)
-      })
-
-      it('should fall back to the full available area when the quantity override is an empty string', () => {
-        const state = {}
-        const payload = { landAction_1: 'CSAM3', landActionQuantity_CSAM3: '' }
         const parcel = { sheetId: 'AB1234', parcelId: '5678' }
 
         const result = addActionsToExistingState(state, payload, 'landAction_', groupedActionsWithQuantity, parcel)

@@ -69,19 +69,19 @@ export async function calculateLandActionsPayment(state, userContext) {
 /**
  * Creates a group with passed name and actions
  * @param {string} name
- * @param {ActionOption[]} groupActions
+ * @param {ActionOption[]} actionsInGroup
  * @returns {ActionGroup}- Parcel data with actions
  */
-const createGroup = (name, groupActions) => ({
+const createGroup = (name, actionsInGroup) => ({
   name,
   totalAvailableArea: {
-    unitFullName: formatAreaUnit(groupActions[0]?.availableArea.unit),
-    unit: groupActions[0]?.availableArea.unit,
-    value: Math.max(...groupActions.map((item) => item.availableArea.value))
+    unitFullName: formatAreaUnit(actionsInGroup[0]?.availableArea.unit),
+    unit: actionsInGroup[0]?.availableArea.unit,
+    value: Math.max(...actionsInGroup.map((item) => item.availableArea.value))
   },
-  actions: groupActions,
+  actions: actionsInGroup,
   consents: getConsentTypes()
-    .filter((ct) => groupActions.some((a) => /** @type {Record<string, unknown>} */ (a)[ct.apiField]))
+    .filter((ct) => actionsInGroup.some((a) => /** @type {Record<string, unknown>} */ (a)[ct.apiField]))
     .map((ct) => ct.key)
 })
 
@@ -93,7 +93,7 @@ const createGroup = (name, groupActions) => ({
  * @param {{ parcelId?: string, sheetId?: string, enabledLandActions?: string[], plannedActions?: PlannedAction[] }} parcel
  * @param {LandGrantsUserContext} userContext
  * @param {string} cacheKeyPrefix
- * @param {(parcelIds: string[], baseUrl: string, userContext: LandGrantsUserContext, plannedActions: PlannedAction[]) => Promise<ParcelResponse>} fetchParcels
+ * @param {(parcelIds: string[], baseUrl: string, userContext: LandGrantsUserContext, plannedActions: PlannedAction[]) => Promise<ParcelResponse>} fetchParcelsWithFields
  * @param {(actionsForParcel: ActionOption[], enabledActions: string[], groupDefinitions: ActionGroupDefinition[]) => T} transformActions
  * @returns {Promise<{actions: T, parcel: {parcelId: string, sheetId: string, size: Size}}>}
  * @throws {Error}
@@ -102,7 +102,7 @@ async function fetchParcelActions(
   { parcelId = '', sheetId = '', enabledLandActions = [], plannedActions = [] },
   userContext,
   cacheKeyPrefix,
-  fetchParcels,
+  fetchParcelsWithFields,
   transformActions
 ) {
   const parcelKey = stringifyParcel({ sheetId, parcelId })
@@ -115,7 +115,7 @@ async function fetchParcelActions(
   }
 
   const parcelIds = [parcelKey]
-  const { parcels, groups: groupDefinitions = [] } = await fetchParcels(
+  const { parcels, groups: groupDefinitions = [] } = await fetchParcelsWithFields(
     parcelIds,
     LAND_GRANTS_API_URL,
     userContext,
@@ -153,11 +153,11 @@ function groupActions(actionsForParcel, enabledActions, groupDefinitions) {
   /** @type {ActionGroup[]} */
   const groups = []
   groupDefinitions.forEach((group) => {
-    const groupActions = actionsForParcel.filter(
+    const actionsInGroup = actionsForParcel.filter(
       (a) => enabledActions.includes(a.code) && group.actions.includes(a.code)
     )
-    if (groupActions.length > 0) {
-      groups.push(createGroup(group.name, groupActions))
+    if (actionsInGroup.length > 0) {
+      groups.push(createGroup(group.name, actionsInGroup))
     }
   })
   return groups

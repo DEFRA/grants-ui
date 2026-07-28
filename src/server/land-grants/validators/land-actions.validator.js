@@ -56,7 +56,7 @@ export function validateSelectedActions(payload) {
 const QUANTITY_PRECISION = 4
 // Stricter than Number(value): rejects "14.211.442121", "1e5", etc. rather
 // than letting them slip through as NaN or unbounded-precision numbers.
-const QUANTITY_FORMAT = new RegExp(`^\\d+(\\.\\d{1,${QUANTITY_PRECISION}})?$`)
+const QUANTITY_FORMAT = new RegExp(String.raw`^\d+(\.\d{1,${QUANTITY_PRECISION}})?$`)
 
 /**
  * Validate that every selected, quantity-required action has a confirmed
@@ -71,10 +71,11 @@ export function validateSelectedActionQuantities(payload, actions) {
   const selectedCodes = new Set(getSelectedActionCodes(payload))
   const errors = []
 
-  for (const action of actions) {
-    if (!selectedCodes.has(action.code) || action.requiresMaxQuantity == null) {
-      continue
-    }
+  const applicableActions = actions.filter(
+    (action) => selectedCodes.has(action.code) && action.requiresMaxQuantity != null
+  )
+
+  for (const action of applicableActions) {
     const href = `#${getActionQuantityFieldName(action.code)}`
     if (!hasSubmittedNonZeroQuantity(payload, action)) {
       errors.push({ text: `Enter a quantity for ${action.description}`, href, code: action.code })
