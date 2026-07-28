@@ -17,6 +17,13 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 export const ROOT = resolve(__dirname, '..', '..')
 export const STATE_FILE = resolve(ROOT, '.grants-ui-cli-state.json')
 
+// The acceptance suite owns the Playwright install + chromium binary; the
+// `gt journey` CLI driver (acceptance/journey-cli.js) reuses them.
+export const ACCEPTANCE_DIR = resolve(ROOT, 'acceptance')
+export const JOURNEY_CLI_SCRIPT = resolve(ACCEPTANCE_DIR, 'journey-cli.js')
+// Journey definitions the runner steps through — one JSON per grant slug.
+export const JOURNEYS_DIR = resolve(ROOT, 'src/server/dev-tools/journey-runner/journeys')
+
 // Folder holding developer-private form-definition overrides, mirroring the
 // config repo layout `<grant>/<service>/<file>`. A single toggle enables/disables
 // all overrides found here.

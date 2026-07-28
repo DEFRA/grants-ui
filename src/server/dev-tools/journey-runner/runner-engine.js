@@ -130,9 +130,15 @@
     },
 
     radios(step) {
-      const radio = document.querySelector(inputSelector(step.fieldName))
+      // With `value`, pick that specific option (e.g. a particular land parcel);
+      // otherwise take the first radio in the group.
+      const selector = step.value
+        ? `input[name="${step.fieldName}"][value="${step.value}"]`
+        : inputSelector(step.fieldName)
+      const radio = document.querySelector(selector)
       if (!radio) {
-        throw new Error(`${step.fieldName} radio not found`)
+        const valueSuffix = step.value ? ` with value "${step.value}"` : ''
+        throw new Error(`${step.fieldName} radio${valueSuffix} not found`)
       }
       radio.click()
       submitForm()
@@ -145,6 +151,23 @@
       }
       const toClick = step.selectAll ? Array.from(all) : [all[0]]
       toClick.forEach((cb) => cb.click())
+      submitForm()
+    },
+
+    landActions(step) {
+      // Land-grants "select actions" pages tick an action checkbox, which reveals
+      // a required quantity input named `landActionQuantity_<actionCode>` where the
+      // action code is the checkbox's value. Tick the first action, then fill its
+      // revealed quantity before submitting.
+      const checkbox = document.querySelector(inputSelector(step.fieldName))
+      if (!checkbox) {
+        throw new Error(`${step.fieldName} action checkbox not found`)
+      }
+      checkbox.click()
+      const quantityField = document.querySelector(`input[name="landActionQuantity_${checkbox.value}"]`)
+      if (quantityField) {
+        setInputValue(quantityField, step.value ?? '1')
+      }
       submitForm()
     },
 
@@ -369,6 +392,15 @@
     const stuckIdx = findStuckStep(state.lastCompleted ?? -1, state.section)
     if (stuckIdx !== -1) {
       console.error(`${LOG_PREFIX} ${buildStuckErrorReport(steps[stuckIdx], stuckIdx)}`)
+      return
+    }
+    // A section run that completed no steps never started: the current page is
+    // not one of the section's pages (e.g. a cold run entered on the grant's
+    // first page, before the section is reachable). Report failure rather than a
+    // spurious "journey complete", whose wording would otherwise be picked up as
+    // a success by the CLI driver's SUCCESS_MARKERS.
+    if (state.section && (state.lastCompleted ?? -1) < 0) {
+      console.error(`${LOG_PREFIX} No steps found for section "${state.section}" on ${globalThis.location.pathname}`)
       return
     }
     console.log(`${LOG_PREFIX} Reached ${globalThis.location.pathname} - not a known step, journey complete`)

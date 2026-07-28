@@ -28,6 +28,31 @@ updates:
       # supports govuk-frontend 6.
       - dependency-name: "govuk-frontend"
         versions: [">=6.0.0"]
+      # pino 10 is blocked by hapi-pino (latest 13.0.0 still deps pino ^9.9.0) and by the logging
+      # stack bundled in @defra/forms-engine-plugin (deps pino ^9.14.0 + hapi-pino ^13.0.0).
+      # Remove when hapi-pino ships a pino 10 release and forms-engine-plugin follows.
+      - dependency-name: "pino"
+        versions: [">=10.0.0"]
+      # typescript 7 is blocked by @typescript-eslint, whose latest parser/plugin still peer
+      # typescript ">=4.8.4 <6.1.0". tsx (esbuild) is unaffected. Remove when @typescript-eslint
+      # widens its typescript peer to include 7.
+      - dependency-name: "typescript"
+        versions: [">=7.0.0"]
+      # babel 8 is NOT blocked by any upstream peer (engines are fine, babel-loader allows ^8),
+      # so it is intentionally held rather than auto-tracked in scripts/check-blocked-deps.mjs.
+      # Local dev/watch runs via tsx and never exercises babel — only build:server (CI + deploy)
+      # transpiles through babel, so a bump can look green locally yet break the built artifact.
+      # Upgrade @babel/core, @babel/cli, @babel/preset-env and babel-plugin-transform-import-meta
+      # together (transform-import-meta@3 peers @babel/core ^8.0.1) behind a full `npm run build`
+      # plus a deployed-runtime smoke test, then remove these four rules.
+      - dependency-name: "@babel/core"
+        versions: [">=8.0.0"]
+      - dependency-name: "@babel/cli"
+        versions: [">=8.0.0"]
+      - dependency-name: "@babel/preset-env"
+        versions: [">=8.0.0"]
+      - dependency-name: "babel-plugin-transform-import-meta"
+        versions: [">=3.0.0"]
     groups:
       weekly-dependencies:
         applies-to: version-updates
