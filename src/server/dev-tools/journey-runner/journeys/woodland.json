@@ -1,12 +1,10 @@
 [
-  { "slug": "start", "name": "Start", "type": "submitOnly", "section": "start" },
   {
     "slug": "check-details",
     "name": "Check details — Yes",
     "type": "yesNo",
     "fieldName": "businessDetailsUpToDate",
-    "value": "true",
-    "section": "start"
+    "value": "true"
   },
 
   {
@@ -110,5 +108,16 @@
     "type": "radios",
     "fieldName": "fcTeamCode",
     "section": "about-woodland"
-  }
+  },
+
+  {
+    "slug": "tasks",
+    "name": "Task list — check and submit",
+    "type": "clickLink",
+    "linkSlug": "summary",
+    "section": "check-and-submit"
+  },
+  { "slug": "summary", "name": "Check your answers", "type": "submitOnly", "section": "check-and-submit" },
+  { "slug": "potential-funding", "name": "Potential funding", "type": "submitOnly", "section": "check-and-submit" },
+  { "slug": "declaration", "name": "Confirm and send", "type": "submitOnly", "section": "check-and-submit" }
 ]
