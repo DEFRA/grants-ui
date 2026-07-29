@@ -97,7 +97,8 @@
     "joi": "17.13.4",
     "body-parser": "1.20.6",
     "brace-expansion": "2.1.2",
-    "postcss": "8.5.19"
+    "postcss": "8.5.19",
+    "ip-address": "10.2.1"
   },
   "dependencies": {
     "@aws-sdk/client-sns": "3.1091.0",

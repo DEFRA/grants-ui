@@ -1,3 +1,5 @@
+import { maskCrn } from '~/src/server/common/helpers/logging/mask-crn.js'
+
 /**
  * @type {Object<string, import('./definition.js').LogCodesDefinition>}
  */
@@ -50,12 +52,12 @@ export const SYSTEM = {
   EXTERNAL_API_CALL: {
     level: 'info',
     messageFunc: (messageOptions) =>
-      `External API call to ${messageOptions.endpoint} for user=${messageOptions.userId || 'unknown'}`
+      `External API call to ${messageOptions.endpoint} for CRN=${maskCrn(messageOptions.userId)}`
   },
   EXTERNAL_API_CALL_DEBUG: {
     level: 'debug',
     messageFunc: (messageOptions) =>
-      `External ${messageOptions.method} to ${new URL(messageOptions.endpoint).pathname} (${messageOptions.identity || 'unknown'})`
+      `External ${messageOptions.method} to ${new URL(messageOptions.endpoint).pathname} (${maskCrn(messageOptions.identity)})`
   },
   EXTERNAL_API_ERROR: {
     level: 'error',
@@ -142,7 +144,7 @@ export const SYSTEM = {
   RATE_LIMIT_EXCEEDED: {
     level: 'warn',
     messageFunc: (messageOptions) =>
-      `Rate limit exceeded: path=${messageOptions.path}, ip=${messageOptions.ip || 'unknown'}, userId=${messageOptions.userId || 'anonymous'}, userAgent=${messageOptions.userAgent || 'unknown'}`
+      `Rate limit exceeded: path=${messageOptions.path}, ip=${messageOptions.ip || 'unknown'}, CRN=${maskCrn(messageOptions.userId)}, userAgent=${messageOptions.userAgent || 'unknown'}`
   },
   STATE_SIZE_EXCEEDED: {
     level: 'warn',
