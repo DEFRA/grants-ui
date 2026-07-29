@@ -1,20 +1,22 @@
+import { maskCrn } from '~/src/server/common/helpers/logging/mask-crn.js'
+
 /**
  * @type {Object<string, import('./definition.js').LogCodesDefinition>}
  */
 export const LAND_GRANTS = {
   LAND_GRANT_APPLICATION_STARTED: {
     level: 'info',
-    messageFunc: (messageOptions) => `Land grant application started for user=${messageOptions.userId}`
+    messageFunc: (messageOptions) => `Land grant application started for CRN=${maskCrn(messageOptions.userId)}`
   },
   LAND_GRANT_APPLICATION_SUBMITTED: {
     level: 'info',
     messageFunc: (messageOptions) =>
-      `Land grant application submitted for user=${messageOptions.userId}, referenceNumber=${messageOptions.referenceNumber}`
+      `Land grant application submitted for CRN=${maskCrn(messageOptions.userId)}, referenceNumber=${messageOptions.referenceNumber}`
   },
   LAND_GRANT_ERROR: {
     level: 'error',
     messageFunc: (messageOptions) =>
-      `Land grant processing error for user=${messageOptions.userId}: ${messageOptions.errorMessage}`
+      `Land grant processing error for CRN=${maskCrn(messageOptions.userId)}: ${messageOptions.errorMessage}`
   },
   NO_LAND_PARCELS_FOUND: {
     level: 'warn',

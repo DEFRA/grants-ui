@@ -58,13 +58,13 @@ describe('Logger Functionality', () => {
 
   it('should work with real LogCodes', () => {
     const testOptions = {
-      userId: 'test-user',
+      userId: '1100943757',
       organisationId: 'test-org'
     }
 
     log(LogCodes.AUTH.SIGN_IN_SUCCESS, testOptions)
 
-    expect(logger.info).toHaveBeenCalledWith({}, 'User sign-in successful for CRN=test-user, organisation=test-org')
+    expect(logger.info).toHaveBeenCalledWith({}, 'User sign-in successful for CRN=******3757, organisation=test-org')
   })
 
   it('should work with error log codes', () => {
@@ -94,12 +94,12 @@ describe('Logger Functionality', () => {
   it('should work with FORMS log codes', () => {
     const formOptions = {
       formName: 'declaration',
-      userId: 'test-user'
+      userId: '1100943757'
     }
 
     log(LogCodes.FORMS.FORM_LOAD, formOptions)
 
-    expect(logger.info).toHaveBeenCalledWith({}, 'Form loaded: declaration for user=test-user')
+    expect(logger.info).toHaveBeenCalledWith({}, 'Form loaded: declaration for CRN=******3757')
   })
 
   it('should work with SUBMISSION log codes', () => {
@@ -143,17 +143,17 @@ describe('Logger Functionality', () => {
   it('should bypass logcodes defined level when using the dedicated debug logger', () => {
     const logCode = LogCodes.AUTH.GENERIC_ERROR
     debug(logCode, {
-      userId: '123',
+      userId: '1100943757',
       error: undefined
     })
-    expect(logger.debug).toHaveBeenCalledWith({}, 'Authentication error for CRN=123: undefined')
+    expect(logger.debug).toHaveBeenCalledWith({}, 'Authentication error for CRN=******3757: undefined')
   })
 
   it('should always log at error level when using the dedicated error logger', () => {
     const logCode = LogCodes.AUTH.SIGN_IN_SUCCESS
-    error(logCode, { userId: '123', organisationId: 'org-456' })
+    error(logCode, { userId: '1100943757', organisationId: 'org-456' })
 
-    expect(logger.error).toHaveBeenCalledWith({}, 'User sign-in successful for CRN=123, organisation=org-456')
+    expect(logger.error).toHaveBeenCalledWith({}, 'User sign-in successful for CRN=******3757, organisation=org-456')
     expect(logger.info).not.toHaveBeenCalled()
     expect(logger.debug).not.toHaveBeenCalled()
   })
