@@ -148,6 +148,19 @@ export const mockSimpleRequest = (customProps = {}) => ({
 })
 
 /**
+ * Creates a request scoped to a grant journey: the `params.slug`, absolute `url`
+ * and `info.host` that grant-aware helpers read.
+ * @param {{ slug?: string, path?: string, href?: string }} [options]
+ */
+export const mockGrantRequest = ({ slug = 'woodland', path = `/${slug}/summary`, href } = {}) => ({
+  ...mockSimpleRequest({ path }),
+  params: { slug },
+  url: { href: href ?? `https://grants.example${path}` },
+  info: { host: 'grants.example' },
+  server: { info: { protocol: 'https' } }
+})
+
+/**
  * Creates a minimal form-context-style object with a payload bag.
  * @param {Record<string, unknown>} [customProps] Properties to merge over the defaults.
  */
