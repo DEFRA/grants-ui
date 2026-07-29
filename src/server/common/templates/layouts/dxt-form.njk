@@ -7,12 +7,16 @@
 {% endblock %}
 
 {% block header %}
-  {{ govukHeader({
-    homepageUrl: "https://www.gov.uk/",
-    classes: "govuk-header--full-width-border",
-    containerClasses: "govuk-width-container",
-    rebrand: true
-  }) }}
+  {% if govukBranding %}
+    {{ govukHeader({
+      homepageUrl: "https://www.gov.uk/",
+      classes: "govuk-header--full-width-border",
+      containerClasses: "govuk-width-container",
+      rebrand: true
+    }) }}
+  {% else %}
+    {{ defraBrandBar() }}
+  {% endif %}
 
   {{ govukServiceNavigation({ serviceName: name | default(serviceName) , serviceUrl: serviceUrl }) }}
 

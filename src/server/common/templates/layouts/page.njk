@@ -1,4 +1,5 @@
-{% set govukRebrand = true %}
+{% set govukRebrand = govukBranding %}
+{% set bodyClasses = "" if govukBranding else "app-brand-restricted" %}
 
 {% extends "govuk/template.njk" %}
 
@@ -11,9 +12,18 @@
 {# Import custom components globally #}
 {% from "heading/macro.njk" import appHeading %}
 {% from "account-bar/macro.njk" import defraAccountBar %}
+{% from "brand-bar/macro.njk" import defraBrandBar %}
 {% from "cookie-banner/macro.njk" import defraCookieBanner %}
 
 {% set mainClasses = "" %}
+
+{% block headIcons %}
+  {% if govukBranding %}
+    {{ super() }}
+  {% else %}
+    <link rel="icon" sizes="48x48" href="{{ defraAssetPath }}/images/defra-favicon.ico">
+  {% endif %}
+{% endblock %}
 
 {% block head %}
   <link href="{{ getAssetPath('stylesheets/application.scss') }}" rel="stylesheet">
@@ -44,12 +54,16 @@
 {% endblock %}
 
 {% block header %}
-  {{ govukHeader({
-    homepageUrl: "https://www.gov.uk/",
-    classes: "govuk-header--full-width-border",
-    containerClasses: "govuk-width-container",
-    rebrand: true
-  }) }}
+  {% if govukBranding %}
+    {{ govukHeader({
+      homepageUrl: "https://www.gov.uk/",
+      classes: "govuk-header--full-width-border",
+      containerClasses: "govuk-width-container",
+      rebrand: true
+    }) }}
+  {% else %}
+    {{ defraBrandBar() }}
+  {% endif %}
 
   {{ govukServiceNavigation({ serviceName: serviceName, serviceUrl: serviceUrl }) }}
 
@@ -128,7 +142,7 @@
     meta: {
       items: footerItems
     },
-    rebrand: true
+    rebrand: govukBranding
   }) }}
 {% endblock %}
 

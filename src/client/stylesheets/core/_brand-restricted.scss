@@ -1,0 +1,30 @@
+// Restricted branding for grants still in Private Beta (not yet passed a
+// public GDS assessment). Applied via a body class from the page layout.
+//
+// Strips the proprietary GDS Transport typeface in favour of a web-safe
+// sans-serif stack. Because no rendered element references "GDS Transport",
+// browsers never download the font files.
+.app-brand-restricted,
+.app-brand-restricted * {
+  // !important is deliberate: it must beat every govuk-frontend font-family
+  // declaration so the GDS Transport @font-face is never referenced or downloaded.
+  // stylelint-disable-next-line declaration-no-important
+  font-family: Arial, Helvetica, sans-serif !important;
+}
+
+// Re-exempt intentionally monospace content (and third-party map UI) from the
+// universal override above — only GDS Transport must be suppressed.
+.app-brand-restricted code,
+.app-brand-restricted kbd,
+.app-brand-restricted pre,
+.app-brand-restricted samp {
+  // stylelint-disable-next-line declaration-no-important
+  font-family: monospace !important;
+}
+
+// The classic footer renders the Royal Arms as a background image next to the
+// Crown copyright statement; unassessed services must not show the Crown.
+.app-brand-restricted .govuk-footer__copyright-logo {
+  padding-top: 0;
+  background-image: none;
+}
