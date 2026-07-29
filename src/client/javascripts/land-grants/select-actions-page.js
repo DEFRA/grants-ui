@@ -386,9 +386,10 @@ function applyAvailability(checkbox, action, sentQuantity, allowGrowth) {
     // Not selected: unavailable when there's genuinely nothing (or not
     // enough, for a quantity action's typed amount) left to claim.
     const quantityInput = getQuantityInput(checkbox)
-    const isUnavailable = availableArea != null && quantityInput
-      ? availableArea.value === 0 || availableArea.value < (getValidTypedQuantity(checkbox) ?? 0)
-      : availableArea?.value === 0
+    const isUnavailable =
+      availableArea != null && quantityInput
+        ? availableArea.value === 0 || availableArea.value < (getValidTypedQuantity(checkbox) ?? 0)
+        : availableArea?.value === 0
     if (isUnavailable) {
       markUnavailable(checkbox)
     } else {

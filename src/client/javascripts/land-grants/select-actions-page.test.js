@@ -1194,7 +1194,7 @@ describe('initSelectActionsPage', () => {
   // Full sequence from the algorithm this page implements: CSAM3=0.10, then
   // CLIG3 checked, then CMOR1 checked - each non-quantity action's chosen
   // area is established from what it actually claimed, not the response.
-  it('establishes each non-quantity action\'s chosen area from its own claim as it is checked', async () => {
+  it("establishes each non-quantity action's chosen area from its own claim as it is checked", async () => {
     const form = setupDom([
       {
         code: 'CSAM3',
@@ -1249,7 +1249,7 @@ describe('initSelectActionsPage', () => {
   // already-established checked non-quantity action's chosen area, even
   // when the same response reports surplus for it - that combined growth
   // was never verified against the API (see resolveChosenArea).
-  it('does not grow an established non-quantity action\'s chosen area from a response triggered by unchecking a different action', async () => {
+  it("does not grow an established non-quantity action's chosen area from a response triggered by unchecking a different action", async () => {
     const form = setupDom([
       {
         code: 'CSAM3',
@@ -1286,7 +1286,7 @@ describe('initSelectActionsPage', () => {
   // Regression: after that same uncheck, later unchecking CLIG3 must send
   // CMOR1's own unchanged chosen area (0.0301), not a value inflated by
   // growth CMOR1 never actually had confirmed.
-  it('sends an unaffected non-quantity action\'s own chosen area when a different action is unchecked next', async () => {
+  it("sends an unaffected non-quantity action's own chosen area when a different action is unchecked next", async () => {
     const form = setupDom([
       {
         code: 'CSAM3',
