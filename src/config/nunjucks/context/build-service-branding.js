@@ -8,7 +8,7 @@ const LIVE = 'live'
  * GDS assessment it must not appear "fully live", so anything else — including
  * a missing or unrecognised phase — falls back to the restricted layout.
  */
-const GOVUK_BRANDED_PHASES = [PUBLIC_BETA, LIVE]
+const GOVUK_BRANDED_PHASES = new Set([PUBLIC_BETA, LIVE])
 
 /**
  * Resolves the branding configuration for the current request from the grant
@@ -18,12 +18,11 @@ const GOVUK_BRANDED_PHASES = [PUBLIC_BETA, LIVE]
  */
 export function buildServiceBranding(request) {
   const phase = request?.app?.model?.def?.metadata?.phase
-  const grantPhase =
-    typeof phase === 'string' && [PRIVATE_BETA, ...GOVUK_BRANDED_PHASES].includes(phase) ? phase : PRIVATE_BETA
+  const grantPhase = phase === PRIVATE_BETA || GOVUK_BRANDED_PHASES.has(phase) ? phase : PRIVATE_BETA
 
   return {
     grantPhase,
-    govukBranding: GOVUK_BRANDED_PHASES.includes(grantPhase)
+    govukBranding: GOVUK_BRANDED_PHASES.has(grantPhase)
   }
 }
 
