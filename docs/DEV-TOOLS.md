@@ -117,6 +117,46 @@ stopJourney() // Cancel a running journey
 
 Sections allow you to complete one task list section at a time. The section name must match the `section` property in the journey JSON steps.
 
+### Run from the CLI
+
+The same journeys can be driven headlessly from the terminal with `gt journey <slug>`, without opening a browser or the devtools console:
+
+```sh
+gt journey woodland                                   # walk the whole journey headlessly
+gt journey example-grant-with-auth --stop 8           # stop before step 8
+gt journey woodland --stop eligibility                # run only the "eligibility" section
+gt journey example-grant-with-auth --headed           # watch a real browser drive it
+```
+
+#### Or pick from the interactive menu
+
+Prefer not to remember slugs and flags? Run `gt` with no arguments to open the interactive TUI, then choose **`journey ⇢`** from the main menu. It walks you through the same options as prompts — no flags needed:
+
+1. **Journey** — pick from the discovered journey definitions (each annotated with the CRN it uses, or a ⚠ warning if it can't complete on a standard local stack).
+2. **CRN** — only asked when a journey has more than one known-good CRN (e.g. woodland); otherwise the right CRN is chosen automatically.
+3. **Headed or headless** — headless runs in the background (bundled Chromium); headed watches it in your installed Google Chrome.
+4. **Clear state?** — keep the saved application state (resume where it left off) or reset to step 1, matching the footer "Clear application state" link.
+5. **Stop on which page?** — headed runs only: halt the browser on a chosen page for inspection, or run to the end.
+
+Journeys flagged as won't-complete (e.g. **farm-payments**, **methane**) make you acknowledge why before running. The `journey ⇢` item is disabled until the Docker stack is up; for a plain `npm run dev` server use the `gt journey <slug>` form above instead.
+
+Under the hood this launches a Chromium browser (reusing the acceptance suite's Playwright install in `acceptance/`), signs in through the DefraID stub, then calls `runJourney()` on the page and streams the `[journey-runner]` console output to your terminal. It exits non-zero if the journey gets stuck, and prints the final page heading and any error summary to help diagnose the stall.
+
+| Flag               | Default                   | Purpose                                                                                                                                                                                                                                                                                              |
+| ------------------ | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--crn <crn>`      | journey's allowlisted CRN | DefraID CRN to sign in as. Defaults per journey to a CRN on that grant's allowlist — most grants are `allowAll` (uses `1102838829`), but **woodland** needs `1100943757`/`1100943838`, and **farm-payments** uses `1102838829`. The interactive menu lets you pick when a journey has more than one. |
+| `--stop <n\|sect>` | run to the end            | Stop before step `n` (1-indexed), or run only section `sect`                                                                                                                                                                                                                                         |
+| `--headed`         | headless                  | Watch the run in your installed Google Chrome (headless uses bundled Chromium)                                                                                                                                                                                                                       |
+| `--clear`          | keeps state               | Flush saved application state first, so `--stop` starts from step 1                                                                                                                                                                                                                                  |
+| `--base-url <url>` | auto-detected             | App base URL — defaults to `https://localhost:4000` when the HA addon is running, otherwise `http://localhost:3000`                                                                                                                                                                                  |
+| `--skip-install`   | installs chromium         | Skip `playwright install chromium`                                                                                                                                                                                                                                                                   |
+
+The app must already be running (`gt up` or `npm run dev`), and the same land-grants/mockserver setup described below is needed for journeys that reach `/select-land-parcel` or `/total-area-of-woodland`. The stub password comes from `DEFRA_ID_USER_PASSWORD` (defaults to `x`, matching `acceptance/run-local.sh`).
+
+The base URL is auto-detected from the running stack: `http://localhost:3000` normally, or `https://localhost:4000` when the **High Availability** addon (`gt up --ha`) fronts the app with its HTTPS nginx proxy (the self-signed cert is accepted automatically). Override with `--base-url` for a non-standard setup.
+
+The journey must be allowlisted for the signed-in user, or the app redirects to `/auth/journey-unauthorised` and the run reports as stuck. Locally the allowlist lives in the `config__allowlist_entries` collection in the `grants-ui-backend` Mongo database; `example-grant-with-auth` is seeded `allowAll`, so it's the most reliable journey to smoke-test with.
+
 ### Adding a new journey
 
 Create a JSON file in `journey-runner/journeys/` named after the grant's URL slug (e.g. `methane.json`).
@@ -142,19 +182,20 @@ Each step requires:
 
 ### Step types
 
-| Type            | Description                            | Extra fields                                                                   |
-| --------------- | -------------------------------------- | ------------------------------------------------------------------------------ |
-| `submitOnly`    | Clicks the submit button               | None                                                                           |
-| `yesNo`         | Selects a radio button and submits     | `fieldName`, `value` (default `"true"`)                                        |
-| `radios`        | Selects the first radio option         | `fieldName`                                                                    |
-| `checkboxes`    | Selects the first checkbox             | `fieldName`, `selectAll` (optional; `true` ticks every checkbox for the field) |
-| `numberField`   | Fills a number/text input              | `fieldName`, `value`                                                           |
-| `selectField`   | Selects the first non-empty option     | `fieldName`                                                                    |
-| `multilineText` | Fills a textarea                       | `fieldName`, `value`                                                           |
-| `dateParts`     | Fills day/month/year inputs with today | `fieldName`, `offsetDays` (optional, shifts date)                              |
-| `monthYear`     | Fills month/year inputs with current   | `fieldName`                                                                    |
-| `textFields`    | Fills multiple text inputs at once     | `fields` (object of `{ name: value }` pairs)                                   |
-| `clickLink`     | Clicks a link by its href suffix       | `linkSlug`                                                                     |
+| Type            | Description                                                                                             | Extra fields                                                                                            |
+| --------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `submitOnly`    | Clicks the submit button                                                                                | None                                                                                                    |
+| `yesNo`         | Selects a radio button and submits                                                                      | `fieldName`, `value` (default `"true"`)                                                                 |
+| `radios`        | Selects a radio option                                                                                  | `fieldName`, `value` (optional; selects that specific option, e.g. a land parcel, instead of the first) |
+| `checkboxes`    | Selects the first checkbox                                                                              | `fieldName`, `selectAll` (optional; `true` ticks every checkbox for the field)                          |
+| `landActions`   | Ticks a land-grants action checkbox and fills its revealed quantity input (`landActionQuantity_<code>`) | `fieldName`, `value` (optional quantity, default `1`)                                                   |
+| `numberField`   | Fills a number/text input                                                                               | `fieldName`, `value`                                                                                    |
+| `selectField`   | Selects the first non-empty option                                                                      | `fieldName`                                                                                             |
+| `multilineText` | Fills a textarea                                                                                        | `fieldName`, `value`                                                                                    |
+| `dateParts`     | Fills day/month/year inputs with today                                                                  | `fieldName`, `offsetDays` (optional, shifts date)                                                       |
+| `monthYear`     | Fills month/year inputs with current                                                                    | `fieldName`                                                                                             |
+| `textFields`    | Fills multiple text inputs at once                                                                      | `fields` (object of `{ name: value }` pairs)                                                            |
+| `clickLink`     | Clicks a link by its href suffix                                                                        | `linkSlug`                                                                                              |
 
 ### Existing journeys
 
@@ -162,10 +203,12 @@ Each step requires:
 | ----------------------------------- | ------------------------- |
 | `example-grant-with-auth.json`      | Example grant (with auth) |
 | `example-grant-with-task-list.json` | Example grant (task list) |
-| `farm-payments.json`                | Farm payments             |
+| `farm-payments.json`                | Farm payments (see note)  |
 | `pigs-might-fly.json`               | Flying pigs               |
 | `methane.json`                      | Methane                   |
 | `woodland.json`                     | Woodland Management Plan  |
+
+> **farm-payments note:** the journey enters at `/confirm-farm-details` (this grant has no `/start` page) and runs cleanly up to `/select-actions-for-land-parcel`. Completing `select-actions` needs a land parcel that the land-grants backend accepts for the offered actions — the seeded actions are moorland-only (`CMOR1`, `UPL1`–`UPL3`), so a **majority-moorland parcel** is required. If the local land-grants seed has no moorland parcel, every parcel is rejected with _"This parcel is not majority on the moorland"_ and the runner stops there. That is a backend seed-data condition, not a journey-spec problem. Once such a parcel exists, add its ID as the `value` on the `select-land-parcel` step to target it.
 
 ### Example grant with auth
 
@@ -234,9 +277,9 @@ If `runJourney()` reports `Stuck on "SelectLandParcel"`, the most likely cause i
 
 ### Woodland Management Plan
 
-Navigate to `http://localhost:3000/woodland/start` and open the browser console.
+Navigate to `http://localhost:3000/woodland/check-details` (woodland's first page — it has no `/start`) and open the browser console.
 
-Sign in with CRN `1102838829` — this CRN has selectable land parcels, which the woodland journey requires.
+Sign in with CRN `1100943757` (or `1100943838`) — woodland's allowlist only admits these CRNs, **not** `1102838829`. (`gt journey woodland` picks the right CRN automatically.)
 
 The `total-area-of-woodland` page POSTs to the land-grants-api `/api/v1/wmp/validate` endpoint. To keep the journey runner reliable regardless of which compose stack is running, point `LAND_GRANTS_API_URL` at mockserver — which has a mock success response in `mockserver/expectations.json`. If you're running with `compose.land-grants.yml` (real backend), layer in `compose.journey-runner.yml` to override the URL back to mockserver:
 
@@ -251,46 +294,47 @@ If you change `mockserver/expectations.json` mid-session and the journey still s
 
 1. `docker compose restart mockserver` — reload expectations
 2. Visit `http://localhost:3000/woodland/clear-application-state` — flushes Redis session state and the in-memory parcel cache in one hit
-3. Re-run `runJourney()` from `/woodland/start`
+3. Re-run `runJourney()` from `/woodland/check-details`
 
 A full grants-ui restart is _not_ needed thanks to step 2.
 
 ```js
-// Run from /woodland/start or /woodland/tasks
+// Run from /woodland/check-details or /woodland/tasks
 runJourney() // Run all remaining sections from the current page
-
-// Run from /woodland/start
-runJourney('start') // Submit start and check details pages to reach task list
 
 // Run from /woodland/tasks
 runJourney('eligibility') // Complete the eligibility section
 runJourney('about-woodland') // Complete the about your woodland section
+runJourney('check-and-submit') // Summary, potential funding and declaration
 ```
 
 Available sections:
 
-| Section          | Description                                       |
-| ---------------- | ------------------------------------------------- |
-| `start`          | Start and check details pages (reaches task list) |
-| `eligibility`    | Eligibility questions (land, tenancy, WMP, etc.)  |
-| `about-woodland` | Woodland details (area, grid ref, FC team)        |
+| Section            | Description                                      |
+| ------------------ | ------------------------------------------------ |
+| `eligibility`      | Eligibility questions (land, tenancy, WMP, etc.) |
+| `about-woodland`   | Woodland details (area, grid ref, FC team)       |
+| `check-and-submit` | Summary, potential funding and declaration       |
 
 Steps (use with `runJourney(N)` to stop before step `N`):
 
-| Step | Page slug                        | Section          | Purpose                                                      |
-| ---- | -------------------------------- | ---------------- | ------------------------------------------------------------ |
-| 1    | `start`                          | `start`          | Start page (submit only)                                     |
-| 2    | `check-details`                  | `start`          | Confirm business details (DefraID) — answers "Yes"           |
-| 3    | `tasks`                          | `eligibility`    | Task list — clicks the "eligibility-land-registered" link    |
-| 4    | `eligibility-land-registered`    | `eligibility`    | Land registered with RPA — "Yes"                             |
-| 5    | `eligibility-management-control` | `eligibility`    | Management control of the land — "Yes"                       |
-| 6    | `eligibility-tenant`             | `eligibility`    | Public body tenant — "No"                                    |
-| 7    | `eligibility-grazing-rights`     | `eligibility`    | Land has grazing rights — "No"                               |
-| 8    | `eligibility-valid-wmp`          | `eligibility`    | Existing valid WMP — "No"                                    |
-| 9    | `eligibility-higher-tier`        | `eligibility`    | Intent to apply for Higher Tier — "No"                       |
-| 10   | `tasks`                          | `about-woodland` | Task list — clicks the "land-parcels" link                   |
-| 11   | `land-parcels`                   | `about-woodland` | Select land parcels (`selectAll: true` ticks every checkbox) |
-| 12   | `total-area-of-woodland`         | `about-woodland` | Hectares ≥10 years old (30) and <10 years old (20)           |
-| 13   | `centre-of-woodland`             | `about-woodland` | Centre-of-woodland OS grid reference (`SP 4178 2432`)        |
-| 14   | `woodland-name`                  | `about-woodland` | Woodland name (`Test Woodland`)                              |
-| 15   | `which-forestry-commission-team` | `about-woodland` | Forestry Commission team — selects the first radio option    |
+| Step | Page slug                        | Section            | Purpose                                                         |
+| ---- | -------------------------------- | ------------------ | --------------------------------------------------------------- |
+| 1    | `check-details`                  | —                  | Confirm business details (DefraID) — answers "Yes" (entry page) |
+| 2    | `tasks`                          | `eligibility`      | Task list — clicks the "eligibility-land-registered" link       |
+| 3    | `eligibility-land-registered`    | `eligibility`      | Land registered with RPA — "Yes"                                |
+| 4    | `eligibility-management-control` | `eligibility`      | Management control of the land — "Yes"                          |
+| 5    | `eligibility-tenant`             | `eligibility`      | Public body tenant — "No"                                       |
+| 6    | `eligibility-grazing-rights`     | `eligibility`      | Land has grazing rights — "No"                                  |
+| 7    | `eligibility-valid-wmp`          | `eligibility`      | Existing valid WMP — "No"                                       |
+| 8    | `eligibility-higher-tier`        | `eligibility`      | Intent to apply for Higher Tier — "No"                          |
+| 9    | `tasks`                          | `about-woodland`   | Task list — clicks the "land-parcels" link                      |
+| 10   | `land-parcels`                   | `about-woodland`   | Select land parcels (`selectAll: true` ticks every checkbox)    |
+| 11   | `total-area-of-woodland`         | `about-woodland`   | Hectares ≥10 years old (30) and <10 years old (20)              |
+| 12   | `centre-of-woodland`             | `about-woodland`   | Centre-of-woodland OS grid reference (`SP 4178 2432`)           |
+| 13   | `woodland-name`                  | `about-woodland`   | Woodland name (`Test Woodland`)                                 |
+| 14   | `which-forestry-commission-team` | `about-woodland`   | Forestry Commission team — selects the first radio option       |
+| 15   | `tasks`                          | `check-and-submit` | Task list — clicks the "summary" link                           |
+| 16   | `summary`                        | `check-and-submit` | Check your answers — submit                                     |
+| 17   | `potential-funding`              | `check-and-submit` | Potential funding — submit                                      |
+| 18   | `declaration`                    | `check-and-submit` | Confirm and send — submits the application                      |

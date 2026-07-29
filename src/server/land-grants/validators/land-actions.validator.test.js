@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest'
 import {
   extractLandActionFields,
   validateLandActionsSelection,
-  validateSelectedActions
+  validateSelectedActions,
+  validateSelectedActionQuantities
 } from './land-actions.validator.js'
 
 describe('land-actions.validator', () => {
@@ -141,6 +142,68 @@ describe('land-actions.validator', () => {
       const result = validateSelectedActions({ landAction: '' })
 
       expect(result).toEqual([{ text: 'Select an action to do on this land parcel', href: '#landAction' }])
+    })
+  })
+
+  describe('validateSelectedActionQuantities', () => {
+    const actions = [
+      { code: 'CSAM3', description: 'Herbal leys', version: '1', requiresMaxQuantity: 18.5 },
+      { code: 'CLIG3', description: 'Manage grassland', version: '1' }
+    ]
+
+    it('should return an error when a selected quantity-required action has no submitted quantity', () => {
+      const payload = { landAction: 'CSAM3' }
+
+      const result = validateSelectedActionQuantities(payload, actions)
+
+      expect(result).toEqual([{ text: 'Enter a quantity for Herbal leys', href: '#landActionQuantity_CSAM3' }])
+    })
+
+    it('should return an error when the submitted quantity is 0', () => {
+      const payload = { landAction: 'CSAM3', landActionQuantity_CSAM3: '0' }
+
+      const result = validateSelectedActionQuantities(payload, actions)
+
+      expect(result).toEqual([{ text: 'Enter a quantity for Herbal leys', href: '#landActionQuantity_CSAM3' }])
+    })
+
+    it('should return no errors when a valid quantity is submitted', () => {
+      const payload = { landAction: 'CSAM3', landActionQuantity_CSAM3: '3.25' }
+
+      const result = validateSelectedActionQuantities(payload, actions)
+
+      expect(result).toEqual([])
+    })
+
+    it('should not require a quantity for an action with no requiresMaxQuantity', () => {
+      const payload = { landAction: 'CLIG3' }
+
+      const result = validateSelectedActionQuantities(payload, actions)
+
+      expect(result).toEqual([])
+    })
+
+    it('should ignore quantity-required actions that were not selected', () => {
+      const payload = { landAction: 'CLIG3' }
+
+      const result = validateSelectedActionQuantities(payload, actions)
+
+      expect(result).toEqual([])
+    })
+
+    it('should return multiple errors for multiple unconfirmed quantity-required actions', () => {
+      const withSecondQuantity = [
+        ...actions,
+        { code: 'UPL8', description: 'Low input', version: '1', requiresMaxQuantity: 5 }
+      ]
+      const payload = { landAction: ['CSAM3', 'UPL8'] }
+
+      const result = validateSelectedActionQuantities(payload, withSecondQuantity)
+
+      expect(result).toEqual([
+        { text: 'Enter a quantity for Herbal leys', href: '#landActionQuantity_CSAM3' },
+        { text: 'Enter a quantity for Low input', href: '#landActionQuantity_UPL8' }
+      ])
     })
   })
 })

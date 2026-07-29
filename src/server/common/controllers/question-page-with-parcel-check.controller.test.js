@@ -1,8 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import QuestionPageWithParcelCheckController from './question-page-with-parcel-check.controller'
-import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
-import { getCachedAuthParcels, setCachedAuthParcels } from '~/src/server/land-grants/services/parcel-cache.js'
-import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { fetchAuthorisedParcelIds } from '~/src/server/land-grants/services/parcel-cache.js'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
 
 vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () => ({
@@ -26,13 +24,8 @@ vi.mock('~/src/server/task-list/task-list.helper.js', () => ({
   withTaskContext: (Base) => Base
 }))
 
-vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.service.js', () => ({
-  fetchParcelsFromDal: vi.fn()
-}))
-
 vi.mock('~/src/server/land-grants/services/parcel-cache.js', () => ({
-  getCachedAuthParcels: vi.fn(),
-  setCachedAuthParcels: vi.fn()
+  fetchAuthorisedParcelIds: vi.fn()
 }))
 
 describe('QuestionPageWithParcelCheckController', () => {
@@ -59,12 +52,7 @@ describe('QuestionPageWithParcelCheckController', () => {
       code: vi.fn()
     }
 
-    getCachedAuthParcels.mockReturnValue(null)
-
-    fetchParcelsFromDal.mockResolvedValue([
-      { sheetId: 'SD7946', parcelId: '0155' },
-      { sheetId: 'SD7846', parcelId: '4509' }
-    ])
+    fetchAuthorisedParcelIds.mockResolvedValue(['SD7946-0155', 'SD7846-4509'])
   })
 
   afterEach(() => {
@@ -82,75 +70,37 @@ describe('QuestionPageWithParcelCheckController', () => {
     test('returns null if landParcel is not provided', async () => {
       const result = await controller.performAuthCheck(mockRequest, mockH, null)
 
-      expect(fetchParcelsFromDal).not.toHaveBeenCalled()
+      expect(fetchAuthorisedParcelIds).not.toHaveBeenCalled()
       expect(result).toBeNull()
     })
 
     test('fetches parcels and calls renderUnauthorisedView if parcel does not belong to SBI', async () => {
-      fetchParcelsFromDal.mockResolvedValue([{ sheetId: 'sheet1', parcelId: 'parcel1' }])
+      fetchAuthorisedParcelIds.mockResolvedValue(['sheet1-parcel1'])
       vi.spyOn(controller, 'renderUnauthorisedView')
 
       await controller.performAuthCheck(mockRequest, mockH, ['sheet3-parcel3'])
 
-      expect(fetchParcelsFromDal).toHaveBeenCalledWith(mockRequest)
+      expect(fetchAuthorisedParcelIds).toHaveBeenCalledWith(mockRequest)
       expect(controller.renderUnauthorisedView).toHaveBeenCalledWith(mockH)
     })
 
     test('returns null if parcel belongs to SBI', async () => {
-      fetchParcelsFromDal.mockResolvedValue([{ sheetId: 'sheet1', parcelId: 'parcel1' }])
+      fetchAuthorisedParcelIds.mockResolvedValue(['sheet1-parcel1'])
 
       const result = await controller.performAuthCheck(mockRequest, mockH, ['sheet1-parcel1'])
 
-      expect(fetchParcelsFromDal).toHaveBeenCalledWith(mockRequest)
+      expect(fetchAuthorisedParcelIds).toHaveBeenCalledWith(mockRequest)
       expect(result).toBeNull()
     })
 
-    test('logs error and calls renderUnauthorisedView when fetchParcelsFromDal throws an error', async () => {
-      const mockError = new Error('API connection failed')
-      fetchParcelsFromDal.mockRejectedValue(mockError)
+    test('calls renderUnauthorisedView when fetchAuthorisedParcelIds fails (returns null)', async () => {
+      fetchAuthorisedParcelIds.mockResolvedValue(null)
       vi.spyOn(controller, 'renderUnauthorisedView')
 
       await controller.performAuthCheck(mockRequest, mockH, ['sheet1-parcel1'])
 
-      expect(fetchParcelsFromDal).toHaveBeenCalledWith(mockRequest)
-      expect(debug).toHaveBeenCalledWith(
-        LogCodes.SYSTEM.EXTERNAL_API_ERROR,
-        {
-          endpoint: 'Consolidated view',
-          errorMessage: 'fetch parcel data for auth check: API connection failed'
-        },
-        mockRequest
-      )
+      expect(fetchAuthorisedParcelIds).toHaveBeenCalledWith(mockRequest)
       expect(controller.renderUnauthorisedView).toHaveBeenCalledWith(mockH)
-    })
-
-    test('uses cached parcels instead of fetching when cache hit', async () => {
-      getCachedAuthParcels.mockReturnValue(['sheet1-parcel1', 'sheet2-parcel2'])
-
-      const result = await controller.performAuthCheck(mockRequest, mockH, ['sheet1-parcel1'])
-
-      expect(getCachedAuthParcels).toHaveBeenCalledWith('987654321')
-      expect(fetchParcelsFromDal).not.toHaveBeenCalled()
-      expect(result).toBeNull()
-    })
-
-    test('fetches and caches parcels on cache miss', async () => {
-      fetchParcelsFromDal.mockResolvedValue([{ sheetId: 'sheet1', parcelId: 'parcel1' }])
-
-      const result = await controller.performAuthCheck(mockRequest, mockH, ['sheet1-parcel1'])
-
-      expect(getCachedAuthParcels).toHaveBeenCalledWith('987654321')
-      expect(fetchParcelsFromDal).toHaveBeenCalledWith(mockRequest)
-      expect(setCachedAuthParcels).toHaveBeenCalledWith('987654321', ['sheet1-parcel1'])
-      expect(result).toBeNull()
-    })
-
-    test('does not cache when fetchParcelsFromDal throws', async () => {
-      fetchParcelsFromDal.mockRejectedValue(new Error('API error'))
-
-      await controller.performAuthCheck(mockRequest, mockH, ['sheet1-parcel1'])
-
-      expect(setCachedAuthParcels).not.toHaveBeenCalled()
     })
   })
 

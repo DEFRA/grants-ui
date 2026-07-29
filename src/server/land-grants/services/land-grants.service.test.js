@@ -5,6 +5,7 @@ import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-v
 import {
   calculateLandActionsPayment as calculateLandActionsPaymentService,
   fetchAvailableActionsForParcel as fetchAvailableActionsForParcelService,
+  fetchActionsWithPlannedActions as fetchActionsWithPlannedActionsService,
   fetchParcels as fetchParcelsService,
   fetchParcelsGroups as fetchParcelsGroupsService,
   fetchParcelTileLocation as fetchParcelTileLocationService,
@@ -31,6 +32,7 @@ const withUserContext =
     fn(...args, mockUserContext)
 const calculateLandActionsPayment = withUserContext(calculateLandActionsPaymentService)
 const fetchAvailableActionsForParcel = withUserContext(fetchAvailableActionsForParcelService)
+const fetchActionsWithPlannedActions = withUserContext(fetchActionsWithPlannedActionsService)
 const fetchParcels = withUserContext(fetchParcelsService)
 const fetchParcelsGroups = withUserContext(fetchParcelsGroupsService)
 const fetchParcelTileLocation = withUserContext(fetchParcelTileLocationService)
@@ -217,7 +219,7 @@ describe('land-grants service', () => {
         enabledLandActions
       })
 
-      expect(parcelsWithExtendedInfo).toHaveBeenCalledWith(['SHEET123-PARCEL456'], mockApiEndpoint, mockUserContext)
+      expect(parcelsWithExtendedInfo).toHaveBeenCalledWith(['SHEET123-PARCEL456'], mockApiEndpoint, mockUserContext, [])
 
       expect(result).toEqual({
         parcel: {
@@ -398,7 +400,7 @@ describe('land-grants service', () => {
 
       const result = await fetchAvailableActionsForParcel({})
 
-      expect(parcelsWithExtendedInfo).toHaveBeenCalledWith(['-'], mockApiEndpoint, mockUserContext)
+      expect(parcelsWithExtendedInfo).toHaveBeenCalledWith(['-'], mockApiEndpoint, mockUserContext, [])
       expect(result).toEqual({
         parcel: {
           sheetId: '',
@@ -775,7 +777,12 @@ describe('land-grants service', () => {
           enabledLandActions
         })
 
-        expect(parcelsWithExtendedInfo).toHaveBeenCalledWith(['SHEET123-PARCEL456'], mockApiEndpoint, mockUserContext)
+        expect(parcelsWithExtendedInfo).toHaveBeenCalledWith(
+          ['SHEET123-PARCEL456'],
+          mockApiEndpoint,
+          mockUserContext,
+          []
+        )
 
         expect(result).toEqual({
           parcel: {
@@ -827,6 +834,74 @@ describe('land-grants service', () => {
           ]
         })
       })
+    })
+  })
+
+  describe('fetchActionsWithPlannedActions', () => {
+    beforeEach(() => {
+      clearParcelCache()
+      configState.reset()
+    })
+
+    it('should recompute availableArea against plannedActions and return a flat action list', async () => {
+      const mockApiResponse = {
+        parcels: [
+          {
+            parcelId: 'PARCEL456',
+            sheetId: 'SHEET123',
+            actions: [
+              { code: 'CMOR1', availableArea: { value: 8, unit: 'ha' }, description: 'Assess moorland' },
+              { code: 'UPL1', availableArea: { value: 0, unit: 'ha' }, description: 'Moderate grazing' }
+            ]
+          }
+        ]
+      }
+      parcelsWithExtendedInfo.mockResolvedValueOnce(mockApiResponse)
+
+      const plannedActions = [{ actionCode: 'CMOR1', quantity: 2, unit: 'ha' }]
+      const result = await fetchActionsWithPlannedActions({
+        parcelId: 'PARCEL456',
+        sheetId: 'SHEET123',
+        plannedActions
+      })
+
+      expect(parcelsWithExtendedInfo).toHaveBeenCalledWith(
+        ['SHEET123-PARCEL456'],
+        mockApiEndpoint,
+        mockUserContext,
+        plannedActions
+      )
+      expect(result).toEqual({
+        actions: [
+          { code: 'CMOR1', availableArea: { value: 8, unit: 'ha' }, requiresMaxQuantity: undefined },
+          { code: 'UPL1', availableArea: { value: 0, unit: 'ha' }, requiresMaxQuantity: undefined }
+        ]
+      })
+    })
+
+    it('should not read from or write to the parcel-actions cache', async () => {
+      const mockApiResponse = {
+        parcels: [{ parcelId: 'PARCEL456', sheetId: 'SHEET123', actions: [] }]
+      }
+      parcelsWithExtendedInfo.mockResolvedValue(mockApiResponse)
+      const plannedActions = [{ actionCode: 'CMOR1', quantity: 2, unit: 'ha' }]
+
+      await fetchActionsWithPlannedActions({ parcelId: 'PARCEL456', sheetId: 'SHEET123', plannedActions })
+      await fetchActionsWithPlannedActions({ parcelId: 'PARCEL456', sheetId: 'SHEET123', plannedActions })
+
+      expect(parcelsWithExtendedInfo).toHaveBeenCalledTimes(2)
+    })
+
+    it('should return an empty actions array when the parcel is not found', async () => {
+      parcelsWithExtendedInfo.mockResolvedValueOnce({ parcels: [] })
+
+      const result = await fetchActionsWithPlannedActions({
+        parcelId: 'PARCEL456',
+        sheetId: 'SHEET123',
+        plannedActions: []
+      })
+
+      expect(result).toEqual({ actions: [] })
     })
   })
 

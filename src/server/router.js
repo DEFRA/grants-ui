@@ -12,6 +12,7 @@ import { cookies } from '~/src/server/cookies/index.js'
 import { cannotSubmit } from './cannot-submit/index.js'
 import { applicationDeleted } from './application-deleted/index.js'
 import { mapPlugin } from '~/src/server/common/map/map.plugin.js'
+import { landGrantsActionsPlugin } from '~/src/server/land-grants/land-grants-actions.plugin.js'
 import { mapMockPlugin } from '~/src/server/common/map/map.mock.plugin.js'
 import { isMockData } from '~/src/server/common/map/map.mock.js'
 
@@ -35,7 +36,7 @@ export const router = {
       // Application specific routes, add your own routes here
       await server.register([home, agreements, cookies, cannotSubmit, applicationDeleted])
 
-      await server.register([mapPlugin])
+      await server.register([mapPlugin, landGrantsActionsPlugin])
 
       if (isMockData()) {
         await server.register([mapMockPlugin])

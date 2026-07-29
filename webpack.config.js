@@ -32,6 +32,9 @@ export default {
     },
     'parcel-select-page': {
       import: ['./javascripts/parcel-map/parcel-select-page.js']
+    },
+    'select-actions-page': {
+      import: ['./javascripts/land-grants/select-actions-page.js']
     }
   },
   experiments: {

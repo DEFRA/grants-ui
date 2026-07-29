@@ -1,6 +1,6 @@
-import { stringifyParcel } from '~/src/server/land-grants/utils/format-parcel.js'
+import { stringifyParcel } from '~/src/shared/format-parcel.js'
 import { getConsentTypes } from '../utils/consent-types.js'
-import { getActionQuantityFieldName } from '../utils/action-quantity-field.js'
+import { getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
 import { getSelectedActionCodes } from '../utils/selected-actions-field.js'
 
 /**
@@ -29,6 +29,32 @@ export function buildNewState(state, actionsObj, parcel) {
 }
 
 /**
+ * Whether a quantity-required action has a submitted quantity value.
+ * @param {object} payload - Form payload
+ * @param {Action} actionInfo - The action's data from the API
+ * @returns {boolean}
+ */
+function hasSubmittedQuantity(payload, actionInfo) {
+  const quantityOverride =
+    actionInfo.requiresMaxQuantity != null ? payload[getActionQuantityFieldName(actionInfo.code)] : null
+  return quantityOverride !== null && quantityOverride !== undefined && quantityOverride !== ''
+}
+
+/**
+ * Flat-checkbox page only: a submitted 0 means "not confirmed" here, unlike
+ * the grouped page where 0 is a valid value.
+ * @param {object} payload - Form payload
+ * @param {Action} actionInfo - The action's data from the API
+ * @returns {boolean}
+ */
+export function hasSubmittedNonZeroQuantity(payload, actionInfo) {
+  if (!hasSubmittedQuantity(payload, actionInfo)) {
+    return false
+  }
+  return Number(payload[getActionQuantityFieldName(actionInfo.code)]) !== 0
+}
+
+/**
  * Builds the state entry for a single selected action, applying its submitted
  * quantity override when it requires one and one was submitted, otherwise
  * falling back to its full available area.
@@ -37,9 +63,7 @@ export function buildNewState(state, actionsObj, parcel) {
  * @returns {{ description: string, version: string, consents: string[], value: string|number, unit: string }}
  */
 function buildActionStateEntry(payload, actionInfo) {
-  const quantityOverride =
-    actionInfo.requiresMaxQuantity != null ? payload[getActionQuantityFieldName(actionInfo.code)] : null
-  const hasQuantityOverride = quantityOverride !== null && quantityOverride !== undefined && quantityOverride !== ''
+  const hasQuantityOverride = hasSubmittedQuantity(payload, actionInfo)
 
   return {
     description: actionInfo.description,
@@ -47,7 +71,9 @@ function buildActionStateEntry(payload, actionInfo) {
     consents: getConsentTypes()
       .filter((ct) => actionInfo[ct.apiField])
       .map((ct) => ct.key),
-    value: hasQuantityOverride ? quantityOverride : (actionInfo?.availableArea?.value ?? ''),
+    value: hasQuantityOverride
+      ? payload[getActionQuantityFieldName(actionInfo.code)]
+      : (actionInfo?.availableArea?.value ?? ''),
     unit: actionInfo?.availableArea?.unit ?? ''
   }
 }
@@ -105,7 +131,9 @@ export function addSelectedActionsToState(state, payload, groupedActions, parcel
 
   for (const actionCode of selectedCodes) {
     const actionInfo = allActions.find((a) => a.code === actionCode)
-    if (actionInfo) {
+    const isConfirmedSelection =
+      actionInfo && (actionInfo.requiresMaxQuantity == null || hasSubmittedNonZeroQuantity(payload, actionInfo))
+    if (isConfirmedSelection) {
       actionsObj[actionCode] = buildActionStateEntry(payload, actionInfo)
     }
   }

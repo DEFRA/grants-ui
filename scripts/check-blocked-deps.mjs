@@ -25,7 +25,15 @@ const BLOCKED = [
     target: '6.0.0',
     upstream: '@defra/forms-engine-plugin',
     field: 'dependencies.govuk-frontend'
-  }
+  },
+  // pino 10 is blocked by hapi-pino, whose latest (13.0.0) still deps pino ^9.9.0. The bundled
+  // logging stack in @defra/forms-engine-plugin (deps pino ^9.14.0 + hapi-pino ^13.0.0) gates it
+  // too, so hapi-pino widening is necessary but not on its own sufficient — review manually when
+  // this flips. Remove when hapi-pino ships a pino 10 compatible release.
+  { name: 'pino', target: '10.0.0', upstream: 'hapi-pino', field: 'dependencies.pino' },
+  // typescript 7 is blocked by @typescript-eslint, whose latest parser still peers
+  // typescript ">=4.8.4 <6.1.0". Remove when @typescript-eslint widens its typescript peer to 7.
+  { name: 'typescript', target: '7.0.0', upstream: '@typescript-eslint/parser', field: 'peerDependencies.typescript' }
 ]
 
 /** Read `field` from the latest published manifest of `pkg` via `npm view`. */

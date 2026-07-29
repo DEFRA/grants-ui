@@ -29,6 +29,10 @@ ignore:
     - '*':
         reason: 'Build-time only — remaining vulnerable copy is js-yaml@3.15.0 under gray-matter via the docusaurus mdx-loader toolchain in @defra/interactive-map docs, never loaded by grants-ui runtime. Fix exists only in the 4.x line (4.2.0+; 4.x copies already pinned to 4.3.0 via overrides) and gray-matter cannot take js-yaml 4.x — it calls the removed safeLoad API. Remove once @defra/interactive-map drops the docusaurus toolchain from its runtime dependencies or gray-matter supports js-yaml 4.'
         expires: '2026-08-13'
+  'SNYK-JS-JSYAML-18313070':
+    - '*':
+        reason: 'Build-time only — js-yaml@4.3.0 via @docusaurus/plugin-content-docs in the docusaurus toolchain of @defra/interactive-map docs, never loaded by grants-ui runtime. Fix is only in the 5.x line, but @docusaurus/plugin-content-docs@3.10.1 itself pins js-yaml to ^4.1.0 (and gray-matter elsewhere in the same tree cannot take 4.x+ at all, per SNYK-JS-JSYAML-17342520) — no viable override without breaking the consumer. Remove once @defra/interactive-map drops the docusaurus toolchain or docusaurus bumps its own js-yaml range to 5.x.'
+        expires: '2026-08-24'
   'SNYK-JS-HTTPPROXYMIDDLEWARE-17375053':
     - '*':
         reason: 'Build-time only — http-proxy-middleware via webpack-dev-server in the docusaurus toolchain of @defra/interactive-map docs, never loaded by grants-ui runtime. Fixed only in 3.0.6/4.1.0, but webpack-dev-server@5.2.5 pins http-proxy-middleware ^2.0.9, so no in-range upgrade or override is viable. Remove once webpack-dev-server bumps to an http-proxy-middleware 3.x/4.x line.'
@@ -37,14 +41,6 @@ ignore:
     - '*':
         reason: 'Build-time only — shell-quote via npm-run-all and webpack-dev-server/launch-editor in the dev toolchain, never loaded by grants-ui runtime. Fixed in 1.9.0; interim ignore while the override is blocked by .npmrc min-release-age=7 (1.9.0 published 2026-06-25, installable from 2026-07-02). Replace with an overrides pin and remove this entry once it clears the cooldown.'
         expires: '2026-07-09'
-  'SNYK-JS-BODYPARSER-17906397':
-    - '*':
-        reason: 'Build-time only — body-parser via express@4 in webpack-dev-server (webpack-cli dev toolchain), never loaded by grants-ui runtime. Fixed in 1.20.6; interim ignore while the override is blocked by .npmrc min-release-age=7 (1.20.6 published 2026-07-09, installable from 2026-07-16). Replace with an overrides pin to body-parser@1.20.6 and remove this entry once it clears the cooldown.'
-        expires: '2026-07-23'
-  'SNYK-JS-BRACEEXPANSION-17706650':
-    - '*':
-        reason: 'Fix version is incoming from Defra forms team - Inefficient Algorithmic Complexity [High Severity][https://security.snyk.io/vuln/SNYK-JS-BRACEEXPANSION-17706650]'
-        expires: '2026-07-30'
   'SNYK-JS-WS-17988732':
     - '*':
         reason: 'Build-time only — ws via the docusaurus toolchain (webpack-bundle-analyzer / docusaurus-search-local) in @defra/interactive-map docs, never loaded by grants-ui runtime. Fixed in 8.21.1; interim ignore while the override is blocked by .npmrc min-release-age=7 (8.21.1 published 2026-07-14, installable from 2026-07-21). Replace with an overrides pin to ws@8.21.0 -> 8.21.1 and remove this entry once it clears the cooldown.'
@@ -53,4 +49,8 @@ ignore:
     - '*':
         reason: 'Fix version is incoming from Defra forms team - Incomplete List of Disallowed Inputs'
         expires: '2026-09-01'
+  'SNYK-JS-IPADDRESS-18343249':
+    - '*':
+        reason: 'SSRF via socks@2.8.9 > ip-address@10.2.0 (@defra/forms-engine-plugin proxy-agent chain). Fixed in 10.2.1, which is in-range for socks (^10.1.1) but blocked by .npmrc min-release-age=7 (10.2.1 published 2026-07-25, installable from 2026-08-01). Replace with an overrides pin "ip-address": "10.2.1" once it clears the cooldown.'
+        expires: '2026-08-02'
 

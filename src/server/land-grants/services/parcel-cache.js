@@ -1,3 +1,7 @@
+import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
+import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { stringifyParcel } from '~/src/shared/format-parcel.js'
+
 const SECONDS_PER_MINUTE = 60
 const MS_PER_SECOND = 1000
 const CACHE_TTL_MINUTES = 5
@@ -65,6 +69,39 @@ export function getCachedAuthParcels(sbi) {
 
 export function setCachedAuthParcels(sbi, data) {
   authParcelsCache.set(sbi, data)
+}
+
+/**
+ * The SBI's authorised parcel ids (as `sheetId-parcelId` strings), served from
+ * cache when available. On a cache miss, fetches from the consolidated view
+ * and populates the cache; on fetch failure, returns null without caching so
+ * the next call retries.
+ * @param {import('@defra/forms-engine-plugin/engine/types.js').AnyFormRequest} request
+ * @returns {Promise<string[] | null>}
+ */
+export async function fetchAuthorisedParcelIds(request) {
+  const sbi = request.auth?.credentials?.sbi
+  const cached = getCachedAuthParcels(sbi)
+  if (cached) {
+    return cached
+  }
+
+  try {
+    const landParcels = (await fetchParcelsFromDal(request)) || []
+    const parcelIds = landParcels.map((parcel) => stringifyParcel(parcel))
+    setCachedAuthParcels(sbi, parcelIds)
+    return parcelIds
+  } catch (error) {
+    debug(
+      LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+      {
+        endpoint: 'fetchAuthorisedParcelIds (consolidated view)',
+        errorMessage: `fetch parcel data for auth check: ${/** @type {Error} */ (error).message}`
+      },
+      request
+    )
+    return null
+  }
 }
 
 export function clearParcelCache() {

@@ -3,7 +3,7 @@ import {
   validateApplication
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import QuestionPageWithParcelCheckController from '~/src/server/common/controllers/question-page-with-parcel-check.controller.js'
-import { parseLandParcel } from '~/src/server/land-grants/utils/format-parcel.js'
+import { parseLandParcel } from '~/src/shared/format-parcel.js'
 import { log, error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { getAddedActionsForStateParcel } from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
 import { getParcelIdFromQuery } from '../utils/parcel-request.utils.js'
@@ -71,6 +71,19 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
   }
 
   /**
+   * Validate submitted quantities against the fetched action metadata. Runs
+   * after fetchActions, unlike validateUserInput. No-op by default; only the
+   * flat-checkbox page overrides it (the grouped page surfaces quantity
+   * errors via handleApplicationValidation instead).
+   * @param {object} _payload
+   * @param {Array} _actions
+   * @returns {Array<{ text: string, href?: string }>}
+   */
+  validateActionQuantities(_payload, _actions) {
+    return []
+  }
+
+  /**
    * Persist the submitted action selections (and any per-action overrides) into state.
    * @param {object} _prevState
    * @param {object} _payload
@@ -128,13 +141,23 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
   }
 
   /**
-   * Fetch actions with error handling
+   * Fetch actions with error handling.
+   * @param {AnyFormRequest} request
+   * @param {string} sheetId
+   * @param {string} parcelId
+   * @param {PlannedAction[]} [plannedActions] - When given, recomputes each
+   *   action's availableArea against this combination.
    */
-  async fetchActions(request, sheetId, parcelId) {
+  async fetchActions(request, sheetId, parcelId, plannedActions = []) {
     try {
       const userContext = getLandGrantsUserContext(request)
       return await fetchAvailableActionsForParcel(
-        { parcelId, sheetId, enabledLandActions: this.enabledLandActions },
+        {
+          parcelId,
+          sheetId,
+          enabledLandActions: this.enabledLandActions,
+          plannedActions
+        },
         userContext
       )
     } catch (err) {
@@ -332,6 +355,12 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
     }
 
     const { actions, parcel: fetchedParcel } = result
+
+    const quantityErrors = this.validateActionQuantities(payload, actions)
+    if (quantityErrors.length > 0) {
+      return this.handleValidationErrors(h, request, context, { errors: quantityErrors, parcel, prevState })
+    }
+
     const state = this.writeActionsToState(prevState, payload, actions, fetchedParcel)
 
     if (payload.action === 'validate') {
@@ -355,4 +384,5 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
  * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
  * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
  * @import { PageQuestion } from '@defra/forms-model'
+ * @import { PlannedAction } from '~/src/server/land-grants/types/land-grants.client.d.js'
  */

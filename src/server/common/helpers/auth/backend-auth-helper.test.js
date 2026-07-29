@@ -4,6 +4,7 @@ const TEST_ENCRYPTION_KEY = 'test-encryption-key-for-unit-tests-32-chars'
 const CONTENT_TYPE_JSON = 'application/json'
 
 const HEADER_OBJECTS = {
+  'x-cdp-request-id': 'trace-123',
   CONTENT_TYPE_JSON: { 'Content-Type': CONTENT_TYPE_JSON },
   EMPTY: {}
 }
@@ -12,6 +13,7 @@ const CONFIG_SESSION_CACHE_AUTH_TOKEN = 'session.cache.authToken'
 const CONFIG_SESSION_CACHE_ENCRYPTION_KEY = 'session.cache.encryptionKey'
 const CONFIG_LAND_GRANTS_AUTH_TOKEN = 'landGrants.authToken'
 const CONFIG_LAND_GRANTS_ENCRYPTION_KEY = 'landGrants.encryptionKey'
+const CONFIG_TRACING_HEADER = 'tracing.header'
 
 const MOCK_TOKENS = {
   DEFAULT: 'test-token-123',
@@ -40,13 +42,25 @@ const mockConfigGet = vi.fn((key) => {
   if (key === 'landGrants.encryptionKey') {
     return TEST_ENCRYPTION_KEY
   }
+  if (key === 'tracing.header') {
+    return 'x-cdp-request-id'
+  }
   return null
 })
+
+const mockWithTraceId = vi.fn((headerName, headers) => ({
+  ...headers,
+  [headerName]: 'trace-123'
+}))
 
 vi.mock('~/src/config/config.js', () => ({
   config: {
     get: mockConfigGet
   }
+}))
+
+vi.mock('@defra/hapi-tracing', () => ({
+  withTraceId: mockWithTraceId
 }))
 
 async function importBackendAuthHelper() {
@@ -65,7 +79,8 @@ function setupMockConfig(value, encryptionKey = TEST_ENCRYPTION_KEY) {
 function setupLandGrantsMockConfig(value, encryptionKey = TEST_ENCRYPTION_KEY) {
   const configValues = {
     [CONFIG_LAND_GRANTS_AUTH_TOKEN]: value,
-    [CONFIG_LAND_GRANTS_ENCRYPTION_KEY]: encryptionKey
+    [CONFIG_LAND_GRANTS_ENCRYPTION_KEY]: encryptionKey,
+    [CONFIG_TRACING_HEADER]: 'x-cdp-request-id'
   }
 
   mockConfigGet.mockImplementation((key) => configValues[key] || null)
@@ -276,7 +291,10 @@ describe('Backend Auth Helper', () => {
       const headers = createApiHeadersForLandGrantsBackend()
 
       expect(mockConfigGet).toHaveBeenCalledWith(CONFIG_LAND_GRANTS_AUTH_TOKEN)
-      expect(headers).toEqual(HEADER_OBJECTS.CONTENT_TYPE_JSON)
+      expect(headers).toEqual({
+        'Content-Type': 'application/json',
+        'x-cdp-request-id': 'trace-123'
+      })
       expect(headers.Authorization).toBeUndefined()
     })
 
@@ -286,8 +304,29 @@ describe('Backend Auth Helper', () => {
       const { createApiHeadersForLandGrantsBackend } = await importBackendAuthHelper()
       const headers = createApiHeadersForLandGrantsBackend()
 
-      expect(headers).toEqual(HEADER_OBJECTS.CONTENT_TYPE_JSON)
+      expect(headers).toEqual({
+        'Content-Type': 'application/json',
+        'x-cdp-request-id': 'trace-123'
+      })
       expect(headers.Authorization).toBeUndefined()
+    })
+
+    it('should add tracing header to land grants requests', async () => {
+      setupLandGrantsMockConfig(MOCK_TOKENS.API)
+
+      const { createApiHeadersForLandGrantsBackend } = await importBackendAuthHelper()
+
+      const headers = createApiHeadersForLandGrantsBackend()
+
+      expect(mockWithTraceId).toHaveBeenCalledWith(
+        'x-cdp-request-id',
+        expect.objectContaining({
+          'Content-Type': 'application/json',
+          Authorization: expect.stringMatching(/^Bearer /)
+        })
+      )
+
+      expect(headers['x-cdp-request-id']).toBe('trace-123')
     })
   })
 })

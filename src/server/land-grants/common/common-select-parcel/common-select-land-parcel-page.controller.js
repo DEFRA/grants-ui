@@ -4,7 +4,7 @@ import LandGrantsQuestionWithAuthCheckController from '../../controllers/auth/la
 import { fetchParcels } from '../../services/land-grants.service.js'
 import { mapParcelsToViewModel } from '../../view-models/parcel.view-model.js'
 import { getParcelIdFromQuery, getParcelIdsFromPayload } from '../../utils/parcel-request.utils.js'
-import { stringifyParcel } from '../../utils/format-parcel.js'
+import { stringifyParcel } from '~/src/shared/format-parcel.js'
 import { getLandGrantsUserContext } from '../../services/land-grants-user-context.js'
 
 const PARCEL_FETCH_ERROR_MESSAGE =

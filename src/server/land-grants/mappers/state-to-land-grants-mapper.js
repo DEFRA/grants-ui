@@ -1,4 +1,4 @@
-import { parseLandParcel } from '../utils/format-parcel.js'
+import { parseLandParcel } from '~/src/shared/format-parcel.js'
 
 /**
  * Maps state actions into the expected payload structure for the API.
