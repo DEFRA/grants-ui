@@ -135,29 +135,27 @@ export function mergeRecomputedAvailability(actions, recomputed) {
 }
 
 /**
- * Adds parcel actions to an existing state based on payload
+ * Shared write path behind addActionsToExistingState (grouped) and
+ * addSelectedActionsToState (flat): resolve each selected code's actionInfo,
+ * keep only confirmed selections, build state entries, and write to state.
  * @param {object} state - Current state
  * @param {object} payload - Form payload containing action selections
- * @param {string} actionFieldPrefix - Prefix for action field names
- * @param {Array<ActionGroup>} groupedActions - Available actions grouped
+ * @param {string[]} selectedCodes - Action codes the user selected
+ * @param {Array<Action>} actions - Available actions, flat
  * @param {Parcel} parcel - The selected land parcel
+ * @param {(actionInfo: Action, payload: object) => boolean} isConfirmedSelection
  * @returns {object} - Updated state or empty object if no actions selected
  */
-export function addActionsToExistingState(state, payload, actionFieldPrefix, groupedActions, parcel) {
-  // Extract action fields from payload
-  const landActionFields = Object.keys(payload).filter((key) => key.startsWith(actionFieldPrefix))
-
-  if (landActionFields.length === 0) {
+function writeSelectedActionsToState(state, payload, selectedCodes, actions, parcel, isConfirmedSelection) {
+  if (selectedCodes.length === 0) {
     return {}
   }
 
   const actionsObj = {}
-  const allActions = groupedActions.flatMap((g) => g.actions)
 
-  for (const fieldName of landActionFields) {
-    const actionCode = payload[fieldName]
-    const actionInfo = allActions.find((a) => a.code === actionCode)
-    if (actionCode && actionInfo) {
+  for (const actionCode of selectedCodes) {
+    const actionInfo = actions.find((a) => a.code === actionCode)
+    if (actionInfo && isConfirmedSelection(actionInfo, payload)) {
       actionsObj[actionCode] = buildActionStateEntry(payload, actionInfo)
     }
   }
@@ -166,9 +164,29 @@ export function addActionsToExistingState(state, payload, actionFieldPrefix, gro
 }
 
 /**
+ * Adds parcel actions to an existing state based on payload. Every selection
+ * with matching actionInfo is confirmed - a grouped radio has no separate
+ * "unconfirmed" state, unlike the flat page's 0-quantity case.
+ * @param {object} state - Current state
+ * @param {object} payload - Form payload containing action selections
+ * @param {string} actionFieldPrefix - Prefix for action field names
+ * @param {Array<ActionGroup>} groupedActions - Available actions grouped
+ * @param {Parcel} parcel - The selected land parcel
+ * @returns {object} - Updated state or empty object if no actions selected
+ */
+export function addActionsToExistingState(state, payload, actionFieldPrefix, groupedActions, parcel) {
+  const landActionFields = Object.keys(payload).filter((key) => key.startsWith(actionFieldPrefix))
+  const selectedCodes = landActionFields.map((fieldName) => payload[fieldName]).filter(Boolean)
+  const actions = groupedActions.flatMap((g) => g.actions)
+
+  return writeSelectedActionsToState(state, payload, selectedCodes, actions, parcel, () => true)
+}
+
+/**
  * Adds selected actions to an existing state, for the select-actions page's flat
  * checkbox layout where every action shares one field name rather than a field
- * per action (see getSelectedActionCodes).
+ * per action (see getSelectedActionCodes). A quantity-required action needs a
+ * submitted non-zero quantity to count as confirmed; a 0 or missing value doesn't.
  * @param {object} state - Current state
  * @param {object} payload - Form payload containing action selections
  * @param {Array<Action>} actions - Available actions, flat
@@ -178,22 +196,15 @@ export function addActionsToExistingState(state, payload, actionFieldPrefix, gro
 export function addSelectedActionsToState(state, payload, actions, parcel) {
   const selectedCodes = getSelectedActionCodes(payload)
 
-  if (selectedCodes.length === 0) {
-    return {}
-  }
-
-  const actionsObj = {}
-
-  for (const actionCode of selectedCodes) {
-    const actionInfo = actions.find((a) => a.code === actionCode)
-    const isConfirmedSelection =
-      actionInfo && (actionInfo.requiresMaxQuantity == null || hasSubmittedNonZeroQuantity(payload, actionInfo))
-    if (isConfirmedSelection) {
-      actionsObj[actionCode] = buildActionStateEntry(payload, actionInfo)
-    }
-  }
-
-  return buildNewState(state, actionsObj, parcel)
+  return writeSelectedActionsToState(
+    state,
+    payload,
+    selectedCodes,
+    actions,
+    parcel,
+    (actionInfo, formPayload) =>
+      actionInfo.requiresMaxQuantity == null || hasSubmittedNonZeroQuantity(formPayload, actionInfo)
+  )
 }
 
 /**

@@ -564,7 +564,14 @@ describe('SelectActionsPageController', () => {
     })
 
     // Regression: the quantity hint must show the recomputed available area, not the stale total.
-    test('should show the recomputed available area in the quantity hint when application validation fails', async () => {
+    // Regression: fetchActionsWithPlannedActions recomputes requiresMaxQuantity
+    // against this submission's OWN planned quantity - it's headroom BEYOND
+    // that claim (the self-competing contract also used client-side, see
+    // syncQuantityInputBounds), not a standalone ceiling. The rendered hint/max
+    // must add the submitted quantity back, or a same-page reload renders a max
+    // lower than what's already typed - which the client-side JS then reads as
+    // "no longer a valid quantity" and force-unchecks the action on load.
+    test('should show the submitted quantity plus the recomputed headroom in the quantity hint when application validation fails', async () => {
       mockRequest.payload = {
         landAction: ['UPL1', 'UPL2'],
         landActionQuantity_UPL2: '1',
@@ -587,8 +594,8 @@ describe('SelectActionsPageController', () => {
       const { actionItems } = mockH.view.mock.calls[0][1]
       const upl2 = actionItems.find((item) => item.value === 'UPL2')
 
-      expect(upl2.conditional.html).toContain('2 hectares available')
-      expect(upl2.conditional.html).not.toContain('3 hectares available')
+      expect(upl2.conditional.html).toContain('3 hectares available')
+      expect(upl2.conditional.html).toContain('max="3"')
     })
 
     test('should link a validation error to the specific action quantity input by code, not position', async () => {

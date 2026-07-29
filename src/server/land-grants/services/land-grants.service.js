@@ -200,7 +200,7 @@ export async function fetchActionsForParcel(parcel, userContext) {
  */
 export async function fetchActionsWithPlannedActions({ parcelId, sheetId, plannedActions }, userContext) {
   const parcelKey = stringifyParcel({ sheetId, parcelId })
-  const { parcels } = await parcelsWithGroups([parcelKey], LAND_GRANTS_API_URL, userContext, plannedActions)
+  const { parcels } = await parcelsWithActions([parcelKey], LAND_GRANTS_API_URL, userContext, plannedActions)
   const foundParcel = parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)
   const actions = (foundParcel?.actions || []).map(mapAction).map((action) => ({
     code: action.code,

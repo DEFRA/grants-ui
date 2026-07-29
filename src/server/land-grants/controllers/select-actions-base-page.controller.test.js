@@ -50,6 +50,7 @@ vi.mock('~/src/shared/format-parcel.js')
  */
 class StubSelectActionsController extends SelectActionsBasePageController {
   viewName = 'stub-view'
+  fetchActionsService = fetchGroupedActionsForParcel
   validateUserInputResult = []
   writeActionsToStateResult = { landParcels: { 'sheet1-parcel1': { actionsObj: {} } } }
 

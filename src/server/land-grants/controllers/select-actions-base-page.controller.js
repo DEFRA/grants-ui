@@ -1,7 +1,4 @@
-import {
-  fetchGroupedActionsForParcel,
-  validateApplication
-} from '~/src/server/land-grants/services/land-grants.service.js'
+import { validateApplication } from '~/src/server/land-grants/services/land-grants.service.js'
 import QuestionPageWithParcelCheckController from '~/src/server/common/controllers/question-page-with-parcel-check.controller.js'
 import { parseLandParcel } from '~/src/shared/format-parcel.js'
 import { log, error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
@@ -25,11 +22,13 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
   singleParcelSubmission = false
 
   /**
-   * Service function fetchActions calls to get the parcel's actions. Defaults
-   * to the grouped fetch; the flat-checkbox page overrides this.
+   * Service function fetchActions calls to get the parcel's actions. Every
+   * subclass must set its own - there is no shared default.
    * @type {(parcel: { parcelId?: string, sheetId?: string, enabledLandActions?: string[], plannedActions?: PlannedAction[] }, userContext: LandGrantsUserContext) => Promise<{actions: ActionGroup[] | ActionOption[], parcel: {parcelId: string, sheetId: string, size: Size}}>}
    */
-  fetchActionsService = fetchGroupedActionsForParcel
+  fetchActionsService = () => {
+    throw new Error(`${this.constructor.name} must set fetchActionsService`)
+  }
 
   /**
    * @param {FormModel} model

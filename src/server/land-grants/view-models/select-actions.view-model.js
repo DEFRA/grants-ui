@@ -98,6 +98,8 @@ export function mapActionToViewModel(action, addedActions, quantityErrorsByCode 
   const existingAction = addedActions.find((a) => a.code === action.code)
   const quantityValue = existingAction?.value ?? ''
   const checked = Boolean(existingAction)
+  const chosenArea = Number(existingAction?.value)
+  const hasChosenArea = Number.isFinite(chosenArea) && chosenArea > 0
   const consents = getActionConsentKeys(action)
   const requirementText = getRequirementText(consents)
   const agreementRateText = action.ratePerAgreementPerYearGbp
@@ -105,6 +107,21 @@ export function mapActionToViewModel(action, addedActions, quantityErrorsByCode 
     : ''
   const requirementLineText = requirementText ? `<br>${requirementText}` : ''
   const hintText = `Payment rate per year: £${action.ratePerUnitGbp?.toFixed(2)}/ha${agreementRateText}${requirementLineText}`
+
+  // requiresMaxQuantity, when this action is checked with a submitted
+  // quantity, has already been recomputed against that same submission (see
+  // recomputeActionsForState) - it reports headroom BEYOND this action's own
+  // claim, not a standalone ceiling (the same self-competing contract the
+  // live client-side refresh uses, see syncQuantityInputBounds). The
+  // rendered max/hint must add that claim back, or a same-page reload after
+  // a failed validateApplication call renders a max lower than what's
+  // already typed - which the client-side JS then reads as "no longer a
+  // valid quantity" and force-unchecks the action on load.
+  const submittedQuantity = checked ? Number(quantityValue) : NaN
+  const maxQuantity =
+    action.requiresMaxQuantity != null && Number.isFinite(submittedQuantity) && submittedQuantity > 0
+      ? submittedQuantity + action.requiresMaxQuantity
+      : action.requiresMaxQuantity
 
   return {
     id: getCheckboxItemId(action.code, isFirst),
@@ -117,14 +134,19 @@ export function mapActionToViewModel(action, addedActions, quantityErrorsByCode 
       // Set once here, never touched by the client - the full amount this
       // action needs to remain usable at all (a non-quantity action can't
       // take a partial amount, so this is its pass/fail threshold).
-      'data-total-available-area': action.availableArea?.value
+      'data-total-available-area': action.availableArea?.value,
+      // Non-quantity actions have no input field to carry their saved
+      // quantity, so the client needs it rendered here directly - without
+      // it, a saved non-quantity selection has no known chosen area on page
+      // load and the client would have to guess (see select-actions-page.js).
+      ...(action.requiresMaxQuantity == null && hasChosenArea && { 'data-total-chosen-area': chosenArea })
     },
-    ...(action.requiresMaxQuantity != null && {
+    ...(maxQuantity != null && {
       conditional: getQuantityConditional(
         action.code,
         action.description,
         quantityValue,
-        action.requiresMaxQuantity,
+        maxQuantity,
         action.availableArea?.unit,
         quantityErrorsByCode[action.code]
       )
