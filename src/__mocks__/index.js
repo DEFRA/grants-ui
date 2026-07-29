@@ -18,6 +18,7 @@ export {
   mockSsoRequest,
   mockAuthRequest,
   mockSimpleRequest,
+  mockGrantRequest,
   mockContext,
   createMockFetchResponse
 } from './hapi-mocks.js'

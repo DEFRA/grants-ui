@@ -1,4 +1,5 @@
 import { config } from '~/src/config/config.js'
+import { mockGrantRequest } from '~/src/__mocks__/hapi-mocks.js'
 import {
   buildFeedbackSurveyUrl,
   resolveJourney,
@@ -9,18 +10,16 @@ import {
 const BASE_URL = 'https://defragroup.eu.qualtrics.com/jfe/form/SV_test'
 
 /**
- * @param {object} [overrides]
- * @returns {any}
+ * Literal — deliberately not derived from SCHEME_LABELS, so the allowlist
+ * assertion below still catches a slug added to the source by mistake.
+ * @type {Array<[string, string]>}
  */
-function mockRequest({ slug = 'woodland', path = '/woodland/summary', href } = {}) {
-  return {
-    params: { slug },
-    path,
-    url: { href: href ?? `https://grants.example${path}` },
-    info: { host: 'grants.example' },
-    server: { info: { protocol: 'https' } }
-  }
-}
+const SLUG_LABELS = [
+  ['farm-payments', 'Farm Payments'],
+  ['woodland', 'Woodland Management Plan'],
+  ['grasslands', 'Grasslands'],
+  ['example-grant-with-auth', 'Example Grant with Auth']
+]
 
 describe('#resolveJourney', () => {
   test.each([
@@ -43,7 +42,7 @@ describe('#buildFeedbackSurveyUrl', () => {
   })
 
   test('builds URL with grant, journey and url params for an in-scope grant', () => {
-    const result = buildFeedbackSurveyUrl(mockRequest({ slug: 'woodland', path: '/woodland/summary' }))
+    const result = buildFeedbackSurveyUrl(mockGrantRequest({ slug: 'woodland', path: '/woodland/summary' }))
     const url = new URL(/** @type {string} */ (result))
 
     expect(url.origin + url.pathname).toBe(BASE_URL)
@@ -62,19 +61,20 @@ describe('#buildFeedbackSurveyUrl', () => {
   })
 
   test('uses submitted journey on the confirmation page', () => {
-    const result = buildFeedbackSurveyUrl(mockRequest({ slug: 'woodland', path: '/woodland/confirmation' }))
+    const result = buildFeedbackSurveyUrl(mockGrantRequest({ slug: 'woodland', path: '/woodland/confirmation' }))
     const url = new URL(/** @type {string} */ (result))
     expect(url.searchParams.get('journey')).toBe(JOURNEY.submitted)
   })
 
-  test('sends the Farm Payments label for the farm-payments slug', () => {
-    const result = buildFeedbackSurveyUrl(mockRequest({ slug: 'farm-payments', path: '/farm-payments/start' }))
-    const url = new URL(/** @type {string} */ (result))
-    expect(url.searchParams.get('grant')).toBe('Farm Payments')
+  test.each(SLUG_LABELS)('sends the grant label for slug %s as %s', (slug, label) => {
+    const result = buildFeedbackSurveyUrl(mockGrantRequest({ slug, path: `/${slug}/start` }))
+    expect(new URL(/** @type {string} */ (result)).searchParams.get('grant')).toBe(label)
   })
 
   test('returns null for an out-of-scope grant (gating)', () => {
-    expect(buildFeedbackSurveyUrl(mockRequest({ slug: 'some-other-grant' }))).toBeNull()
+    expect(
+      buildFeedbackSurveyUrl(mockGrantRequest({ slug: 'some-other-grant', path: '/some-other-grant/summary' }))
+    ).toBeNull()
   })
 
   test('returns null when no slug is present', () => {
@@ -83,7 +83,7 @@ describe('#buildFeedbackSurveyUrl', () => {
 
   test('returns null when survey URL is not configured', () => {
     config.set('feedback.surveyUrl', '')
-    expect(buildFeedbackSurveyUrl(mockRequest())).toBeNull()
+    expect(buildFeedbackSurveyUrl(mockGrantRequest())).toBeNull()
   })
 
   test('returns null for an undefined request', () => {
@@ -92,7 +92,7 @@ describe('#buildFeedbackSurveyUrl', () => {
 
   test('appends params with & when base URL already has a query string', () => {
     config.set('feedback.surveyUrl', `${BASE_URL}?existing=1`)
-    const result = /** @type {string} */ (buildFeedbackSurveyUrl(mockRequest()))
+    const result = /** @type {string} */ (buildFeedbackSurveyUrl(mockGrantRequest()))
     expect(result.startsWith(`${BASE_URL}?existing=1&`)).toBe(true)
     const url = new URL(result)
     expect(url.searchParams.get('existing')).toBe('1')
@@ -100,9 +100,6 @@ describe('#buildFeedbackSurveyUrl', () => {
   })
 
   test('scope allowlist keys map to their exact labels', () => {
-    expect(SCHEME_LABELS).toEqual({
-      'farm-payments': 'Farm Payments',
-      woodland: 'Woodland Management Plan'
-    })
+    expect(SCHEME_LABELS).toEqual(Object.fromEntries(SLUG_LABELS))
   })
 })

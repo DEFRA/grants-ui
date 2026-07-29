@@ -8,7 +8,9 @@ import { config } from '~/src/config/config.js'
  */
 export const SCHEME_LABELS = {
   'farm-payments': 'Farm Payments',
-  woodland: 'Woodland Management Plan'
+  woodland: 'Woodland Management Plan',
+  grasslands: 'Grasslands',
+  'example-grant-with-auth': 'Example Grant with Auth'
 }
 
 /**

@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { mockSimpleRequest } from '~/src/__mocks__/hapi-mocks.js'
+import { mockGrantRequest, mockSimpleRequest } from '~/src/__mocks__/hapi-mocks.js'
 
 const mockReadFileSync = vi.fn()
 const mockLog = vi.fn()
@@ -626,12 +626,7 @@ describe('context', () => {
     test('injects a survey URL for an in-scope grant', async () => {
       setupManifestSuccess()
 
-      const request = {
-        ...mockSimpleRequest({ path: '/woodland/summary' }),
-        params: { slug: 'woodland' },
-        url: { href: 'https://grants.example/woodland/summary' },
-        info: { host: 'grants.example' }
-      }
+      const request = mockGrantRequest({ slug: 'woodland' })
 
       const contextImport = await importContext()
       const contextResult = await contextImport.context(request)
@@ -645,10 +640,7 @@ describe('context', () => {
     test('is null for an out-of-scope grant', async () => {
       setupManifestSuccess()
 
-      const request = {
-        ...mockSimpleRequest({ path: '/some-other-grant/summary' }),
-        params: { slug: 'some-other-grant' }
-      }
+      const request = mockGrantRequest({ slug: 'some-other-grant' })
 
       const contextImport = await importContext()
       const contextResult = await contextImport.context(request)
