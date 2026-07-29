@@ -18,7 +18,8 @@ const GOVUK_BRANDED_PHASES = new Set([PUBLIC_BETA, LIVE])
  */
 export function buildServiceBranding(request) {
   const phase = request?.app?.model?.def?.metadata?.phase
-  const grantPhase = phase === PRIVATE_BETA || GOVUK_BRANDED_PHASES.has(phase) ? phase : PRIVATE_BETA
+  const grantPhase =
+    typeof phase === 'string' && (phase === PRIVATE_BETA || GOVUK_BRANDED_PHASES.has(phase)) ? phase : PRIVATE_BETA
 
   return {
     grantPhase,
