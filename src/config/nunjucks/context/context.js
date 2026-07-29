@@ -5,6 +5,7 @@ import { config } from '~/src/config/config.js'
 import { buildNavigation } from '~/src/config/nunjucks/context/build-navigation.js'
 import { buildCookieBannerConfig } from '~/src/config/nunjucks/context/build-cookie-banner-config.js'
 import { buildNotificationBannerConfig } from '~/src/config/nunjucks/context/build-notification-banner-config.js'
+import { buildServiceBranding } from '~/src/config/nunjucks/context/build-service-branding.js'
 import { buildFeedbackSurveyUrl } from '~/src/server/common/helpers/feedback-survey.js'
 import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
@@ -130,6 +131,8 @@ const buildCommonConfig = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays
 
   return {
     assetPath: `${assetPath}/assets/rebrand`,
+    defraAssetPath: `${assetPath}/assets/defra`,
+    ...buildServiceBranding(request),
     serviceName,
     serviceUrl: '/',
     cdpEnvironment: config.get('cdpEnvironment'),
@@ -238,6 +241,7 @@ export async function context(request) {
  * @property {{ serviceName?: string, cookiePolicyUrl?: string, expiryDays?: number }} [cookieConsent]
  * @property {{ submitButtonText?: string }} [options]
  * @property {import('~/src/config/nunjucks/context/build-notification-banner-config.js').NotificationBannerMetadata} [notificationBanner]
+ * @property {string} [phase]
  */
 
 /**

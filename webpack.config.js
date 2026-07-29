@@ -187,6 +187,10 @@ export default {
           to: 'dxt-assets'
         },
         {
+          from: path.join(dirname, 'src/client/assets'),
+          to: 'assets/defra'
+        },
+        {
           from: interactiveMapCss,
           to: 'stylesheets/interactive-map.css'
         }

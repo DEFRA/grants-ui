@@ -51,6 +51,9 @@ vi.mock('~/src/config/nunjucks/context/build-navigation.js', () => ({
 
 const getExpectedContext = () => ({
   assetPath: '/public/assets/rebrand',
+  defraAssetPath: '/public/assets/defra',
+  grantPhase: 'private-beta',
+  govukBranding: false,
   breadcrumbs: [],
   getAssetPath: expect.any(Function),
   navigation: [
