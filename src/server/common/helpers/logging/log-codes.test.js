@@ -2,7 +2,8 @@ import { LogCodes, validateLogCodes } from './log-codes.js'
 
 // Test constants
 const TEST_USER_IDS = {
-  DEFAULT: 'test',
+  DEFAULT: '1100943757',
+  MASKED: '******3757',
   CONTACT_ID: '12345'
 }
 
@@ -82,73 +83,73 @@ describe('LogCodes', () => {
         'SIGN_IN_ATTEMPT',
         'info',
         { userId: TEST_USER_IDS.DEFAULT },
-        `User sign-in attempt for user=${TEST_USER_IDS.DEFAULT}`
+        `User sign-in attempt for CRN=${TEST_USER_IDS.MASKED}`
       ],
       [
         'SIGN_IN_SUCCESS',
         'info',
         { userId: TEST_USER_IDS.DEFAULT, organisationId: TEST_ORGANIZATIONS.DEFAULT },
-        `User sign-in successful for user=${TEST_USER_IDS.DEFAULT}, organisation=${TEST_ORGANIZATIONS.DEFAULT}`
+        `User sign-in successful for CRN=${TEST_USER_IDS.MASKED}, organisation=${TEST_ORGANIZATIONS.DEFAULT}`
       ],
       [
         'SIGN_IN_FAILURE',
         'error',
         { userId: TEST_USER_IDS.DEFAULT, errorMessage: TEST_ERRORS.INVALID_CREDENTIALS },
-        `User sign-in failed for user=${TEST_USER_IDS.DEFAULT}. Error: ${TEST_ERRORS.INVALID_CREDENTIALS}`
+        `User sign-in failed for CRN=${TEST_USER_IDS.MASKED}. Error: ${TEST_ERRORS.INVALID_CREDENTIALS}`
       ],
       [
         'SIGN_OUT',
         'info',
         { userId: TEST_USER_IDS.DEFAULT, sessionId: TEST_SESSIONS.SESSION_123 },
-        `User sign-out for user=${TEST_USER_IDS.DEFAULT}, session=${TEST_SESSIONS.SESSION_123}`
+        `User sign-out for CRN=${TEST_USER_IDS.MASKED}, session=${TEST_SESSIONS.SESSION_123}`
       ],
       [
         'TOKEN_VERIFICATION_SUCCESS',
         'info',
         { userId: TEST_USER_IDS.DEFAULT, organisationId: TEST_ORGANIZATIONS.DEFAULT },
-        `Token verification successful for userCRN=${TEST_USER_IDS.DEFAULT}, userSBI=${TEST_ORGANIZATIONS.DEFAULT}`
+        `Token verification successful for CRN=${TEST_USER_IDS.MASKED}, userSBI=${TEST_ORGANIZATIONS.DEFAULT}`
       ],
       [
         'TOKEN_VERIFICATION_FAILURE',
         'error',
         { userId: TEST_USER_IDS.DEFAULT, errorMessage: TEST_ERRORS.INVALID_TOKEN },
-        `Token verification failed for user=${TEST_USER_IDS.DEFAULT}. Error: ${TEST_ERRORS.INVALID_TOKEN}`
+        `Token verification failed for CRN=${TEST_USER_IDS.MASKED}. Error: ${TEST_ERRORS.INVALID_TOKEN}`
       ],
       [
         'SESSION_EXPIRED',
         'info',
         { userId: TEST_USER_IDS.DEFAULT, sessionId: TEST_SESSIONS.SESSION_123 },
-        `Session expired for user=${TEST_USER_IDS.DEFAULT}, session=${TEST_SESSIONS.SESSION_123}`
+        `Session expired for CRN=${TEST_USER_IDS.MASKED}, session=${TEST_SESSIONS.SESSION_123}`
       ],
       [
         'UNAUTHORIZED_ACCESS',
         'error',
         { path: TEST_PATHS.ADMIN, userId: TEST_USER_IDS.DEFAULT },
-        `Unauthorized access attempt to path=${TEST_PATHS.ADMIN} from user=${TEST_USER_IDS.DEFAULT}`
+        `Unauthorized access attempt to path=${TEST_PATHS.ADMIN} from CRN=${TEST_USER_IDS.MASKED}`
       ],
       [
         'UNAUTHORIZED_ACCESS with missing userId',
         'error',
         { path: TEST_PATHS.ADMIN },
-        `Unauthorized access attempt to path=${TEST_PATHS.ADMIN} from user=unknown`
+        `Unauthorized access attempt to path=${TEST_PATHS.ADMIN} from CRN=unknown`
       ],
       [
         'SIGN_IN_FAILURE with missing userId',
         'error',
         { errorMessage: TEST_ERRORS.INVALID_CREDENTIALS },
-        `User sign-in failed for user=unknown. Error: ${TEST_ERRORS.INVALID_CREDENTIALS}`
+        `User sign-in failed for CRN=unknown. Error: ${TEST_ERRORS.INVALID_CREDENTIALS}`
       ],
       [
         'TOKEN_VERIFICATION_FAILURE with missing userId',
         'error',
         { errorMessage: TEST_ERRORS.INVALID_TOKEN },
-        `Token verification failed for user=unknown. Error: ${TEST_ERRORS.INVALID_TOKEN}`
+        `Token verification failed for CRN=unknown. Error: ${TEST_ERRORS.INVALID_TOKEN}`
       ],
       [
         'GENERIC_ERROR',
         'error',
         { userId: TEST_USER_IDS.DEFAULT, errorMessage: TEST_ERRORS.INVALID_CREDENTIALS },
-        `Authentication error for user=${TEST_USER_IDS.DEFAULT}: ${TEST_ERRORS.INVALID_CREDENTIALS}`
+        `Authentication error for CRN=${TEST_USER_IDS.MASKED}: ${TEST_ERRORS.INVALID_CREDENTIALS}`
       ],
       [
         'OIDC_CONFIG_FETCH_RETRY',
@@ -215,26 +216,26 @@ describe('LogCodes', () => {
       [
         'ALLOWLIST_ACCESS_GRANTED',
         'info',
-        { path: TEST_PATHS.EXAMPLE_GRANT, userId: 'test123', sbi: TEST_SBI.DEFAULT, grantCode: 'woodland' },
-        `Allowlist access granted to path=${TEST_PATHS.EXAMPLE_GRANT} for user=test123, sbi=${TEST_SBI.DEFAULT}, grantCode=woodland`
+        { path: TEST_PATHS.EXAMPLE_GRANT, userId: '1100943757', sbi: TEST_SBI.DEFAULT, grantCode: 'woodland' },
+        `Allowlist access granted to path=${TEST_PATHS.EXAMPLE_GRANT} for CRN=******3757, sbi=${TEST_SBI.DEFAULT}, grantCode=woodland`
       ],
       [
         'ALLOWLIST_ACCESS_DENIED',
         'info',
-        { path: TEST_PATHS.EXAMPLE_GRANT, userId: 'test123', sbi: TEST_SBI.DEFAULT, grantCode: 'woodland' },
-        `Allowlist access denied to path=${TEST_PATHS.EXAMPLE_GRANT} for user=test123, sbi=${TEST_SBI.DEFAULT}, grantCode=woodland`
+        { path: TEST_PATHS.EXAMPLE_GRANT, userId: '1100943757', sbi: TEST_SBI.DEFAULT, grantCode: 'woodland' },
+        `Allowlist access denied to path=${TEST_PATHS.EXAMPLE_GRANT} for CRN=******3757, sbi=${TEST_SBI.DEFAULT}, grantCode=woodland`
       ],
       [
         'ALLOWLIST_ACCESS_GRANTED with fallbacks',
         'info',
         { path: TEST_PATHS.EXAMPLE_GRANT, grantCode: 'woodland' },
-        `Allowlist access granted to path=${TEST_PATHS.EXAMPLE_GRANT} for user=unknown, sbi=N/A, grantCode=woodland`
+        `Allowlist access granted to path=${TEST_PATHS.EXAMPLE_GRANT} for CRN=unknown, sbi=N/A, grantCode=woodland`
       ],
       [
         'ALLOWLIST_ACCESS_DENIED with fallbacks',
         'info',
         { path: TEST_PATHS.EXAMPLE_GRANT, grantCode: 'woodland' },
-        `Allowlist access denied to path=${TEST_PATHS.EXAMPLE_GRANT} for user=unknown, sbi=N/A, grantCode=woodland`
+        `Allowlist access denied to path=${TEST_PATHS.EXAMPLE_GRANT} for CRN=unknown, sbi=N/A, grantCode=woodland`
       ],
       ['CREDENTIALS_MISSING', 'error', {}, `No credentials received from Bell OAuth provider`],
       ['TOKEN_MISSING', 'error', {}, `No token received from Defra Identity`],
@@ -253,7 +254,7 @@ describe('LogCodes', () => {
         'FORM_LOAD',
         'info',
         { formName: TEST_FORM_NAMES.DECLARATION, userId: TEST_USER_IDS.DEFAULT },
-        `Form loaded: ${TEST_FORM_NAMES.DECLARATION} for user=${TEST_USER_IDS.DEFAULT}`
+        `Form loaded: ${TEST_FORM_NAMES.DECLARATION} for CRN=${TEST_USER_IDS.MASKED}`
       ],
       [
         'FORM_VALIDATION_ERROR',
@@ -265,7 +266,7 @@ describe('LogCodes', () => {
         'FORM_SUBMIT',
         'info',
         { formName: TEST_FORM_NAMES.DECLARATION, userId: TEST_USER_IDS.DEFAULT },
-        `Form submitted: ${TEST_FORM_NAMES.DECLARATION} by user=${TEST_USER_IDS.DEFAULT}`
+        `Form submitted: ${TEST_FORM_NAMES.DECLARATION} by CRN=${TEST_USER_IDS.MASKED}`
       ],
       [
         'FORM_VALIDATION_SUCCESS',
@@ -283,19 +284,19 @@ describe('LogCodes', () => {
         'FORM_SAVE',
         'info',
         { formName: TEST_FORM_NAMES.DECLARATION, userId: TEST_USER_IDS.DEFAULT },
-        `Form saved: ${TEST_FORM_NAMES.DECLARATION} for user=${TEST_USER_IDS.DEFAULT}`
+        `Form saved: ${TEST_FORM_NAMES.DECLARATION} for CRN=${TEST_USER_IDS.MASKED}`
       ],
       [
         'FORM_SUBMIT with missing userId',
         'info',
         { formName: TEST_FORM_NAMES.DECLARATION },
-        `Form submitted: ${TEST_FORM_NAMES.DECLARATION} by user=unknown`
+        `Form submitted: ${TEST_FORM_NAMES.DECLARATION} by CRN=unknown`
       ],
       [
         'FORM_SAVE with missing userId',
         'info',
         { formName: TEST_FORM_NAMES.DECLARATION },
-        `Form saved: ${TEST_FORM_NAMES.DECLARATION} for user=unknown`
+        `Form saved: ${TEST_FORM_NAMES.DECLARATION} for CRN=unknown`
       ],
       [
         'SLUG_STORED',
@@ -330,7 +331,7 @@ describe('LogCodes', () => {
           errorMessage: TEST_ERRORS.NETWORK_ERROR,
           stack: 'Error stack trace'
         },
-        `Grant submission failed for grantType=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}, userCrn=${TEST_USER_IDS.DEFAULT}, userSbi=${TEST_SBI.DEFAULT}, error=${TEST_ERRORS.NETWORK_ERROR}`
+        `Grant submission failed for grantType=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}, CRN=${TEST_USER_IDS.MASKED}, userSbi=${TEST_SBI.DEFAULT}, error=${TEST_ERRORS.NETWORK_ERROR}`
       ],
       [
         'SUBMISSION_VALIDATION_ERROR',
@@ -418,19 +419,19 @@ describe('LogCodes', () => {
         'DECLARATION_LOAD',
         'info',
         { userId: TEST_USER_IDS.DEFAULT, grantType: TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH },
-        `Declaration page loaded for user=${TEST_USER_IDS.DEFAULT}, grantType=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}`
+        `Declaration page loaded for CRN=${TEST_USER_IDS.MASKED}, grantType=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}`
       ],
       [
         'DECLARATION_ACCEPTED',
         'info',
         { userId: TEST_USER_IDS.DEFAULT, grantType: TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH },
-        `Declaration accepted by user=${TEST_USER_IDS.DEFAULT}, grantType=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}`
+        `Declaration accepted by CRN=${TEST_USER_IDS.MASKED}, grantType=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}`
       ],
       [
         'DECLARATION_ERROR',
         'error',
         { userId: TEST_USER_IDS.DEFAULT, errorMessage: TEST_ERRORS.PROCESSING_FAILED },
-        `Declaration processing error for user=${TEST_USER_IDS.DEFAULT}: ${TEST_ERRORS.PROCESSING_FAILED}`
+        `Declaration processing error for CRN=${TEST_USER_IDS.MASKED}: ${TEST_ERRORS.PROCESSING_FAILED}`
       ]
     ])
   })
@@ -441,19 +442,19 @@ describe('LogCodes', () => {
         'CONFIRMATION_LOAD',
         'info',
         { userId: TEST_USER_IDS.DEFAULT, grantType: TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH },
-        `Confirmation page loaded for user=${TEST_USER_IDS.DEFAULT}, grantType=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}`
+        `Confirmation page loaded for CRN=${TEST_USER_IDS.MASKED}, grantType=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}`
       ],
       [
         'CONFIRMATION_SUCCESS',
         'info',
         { userId: TEST_USER_IDS.DEFAULT, referenceNumber: TEST_REFERENCE_NUMBERS.REF_123 },
-        `Confirmation processed successfully for user=${TEST_USER_IDS.DEFAULT}, referenceNumber=${TEST_REFERENCE_NUMBERS.REF_123}`
+        `Confirmation processed successfully for CRN=${TEST_USER_IDS.MASKED}, referenceNumber=${TEST_REFERENCE_NUMBERS.REF_123}`
       ],
       [
         'CONFIRMATION_ERROR',
         'error',
         { userId: TEST_USER_IDS.DEFAULT, errorMessage: TEST_ERRORS.PROCESSING_FAILED },
-        `Confirmation processing error for user=${TEST_USER_IDS.DEFAULT}: ${TEST_ERRORS.PROCESSING_FAILED}`
+        `Confirmation processing error for CRN=${TEST_USER_IDS.MASKED}: ${TEST_ERRORS.PROCESSING_FAILED}`
       ],
       [
         'SUBMITTED_STATUS_RETRIEVED',
@@ -470,19 +471,19 @@ describe('LogCodes', () => {
         'LAND_GRANT_APPLICATION_STARTED',
         'info',
         { userId: TEST_USER_IDS.DEFAULT },
-        `Land grant application started for user=${TEST_USER_IDS.DEFAULT}`
+        `Land grant application started for CRN=${TEST_USER_IDS.MASKED}`
       ],
       [
         'LAND_GRANT_APPLICATION_SUBMITTED',
         'info',
         { userId: TEST_USER_IDS.DEFAULT, referenceNumber: TEST_REFERENCE_NUMBERS.REF_123 },
-        `Land grant application submitted for user=${TEST_USER_IDS.DEFAULT}, referenceNumber=${TEST_REFERENCE_NUMBERS.REF_123}`
+        `Land grant application submitted for CRN=${TEST_USER_IDS.MASKED}, referenceNumber=${TEST_REFERENCE_NUMBERS.REF_123}`
       ],
       [
         'LAND_GRANT_ERROR',
         'error',
         { userId: TEST_USER_IDS.DEFAULT, errorMessage: TEST_ERRORS.PROCESSING_FAILED },
-        `Land grant processing error for user=${TEST_USER_IDS.DEFAULT}: ${TEST_ERRORS.PROCESSING_FAILED}`
+        `Land grant processing error for CRN=${TEST_USER_IDS.MASKED}: ${TEST_ERRORS.PROCESSING_FAILED}`
       ],
       ['NO_LAND_PARCELS_FOUND', 'warn', { sbi: TEST_SBI.DEFAULT }, `No land parcels found for sbi=${TEST_SBI.DEFAULT}`],
       [
@@ -554,19 +555,19 @@ describe('LogCodes', () => {
         'AGREEMENT_LOAD',
         'info',
         { userId: TEST_USER_IDS.DEFAULT, agreementType: TEST_AGREEMENT_TYPES.TERMS },
-        `Agreement loaded for user=${TEST_USER_IDS.DEFAULT}, agreementType=${TEST_AGREEMENT_TYPES.TERMS}`
+        `Agreement loaded for CRN=${TEST_USER_IDS.MASKED}, agreementType=${TEST_AGREEMENT_TYPES.TERMS}`
       ],
       [
         'AGREEMENT_ACCEPTED',
         'info',
         { userId: TEST_USER_IDS.DEFAULT, agreementType: TEST_AGREEMENT_TYPES.TERMS },
-        `Agreement accepted by user=${TEST_USER_IDS.DEFAULT}, agreementType=${TEST_AGREEMENT_TYPES.TERMS}`
+        `Agreement accepted by CRN=${TEST_USER_IDS.MASKED}, agreementType=${TEST_AGREEMENT_TYPES.TERMS}`
       ],
       [
         'AGREEMENT_ERROR',
         'error',
         { userId: TEST_USER_IDS.DEFAULT, errorMessage: TEST_ERRORS.PROCESSING_FAILED },
-        `Agreement processing error for user=${TEST_USER_IDS.DEFAULT}: ${TEST_ERRORS.PROCESSING_FAILED}`
+        `Agreement processing error for CRN=${TEST_USER_IDS.MASKED}: ${TEST_ERRORS.PROCESSING_FAILED}`
       ],
       ['PROXY_RESPONSE_ERROR', 'error', {}, 'Proxy response is undefined. Possible upstream error or misconfiguration.']
     ])
@@ -577,32 +578,32 @@ describe('LogCodes', () => {
       [
         'RELEASE_SKIPPED',
         'debug',
-        { ownerId: 'session-abc', reason: 'no-owner' },
-        'Application locks release skipped | ownerId=session-abc | reason=no-owner'
+        { ownerId: '1100943757', reason: 'no-owner' },
+        'Application locks release skipped | CRN=******3757 | reason=no-owner'
       ],
       [
         'RELEASE_ATTEMPTED',
         'debug',
-        { ownerId: 'session-abc' },
-        'Attempting application locks release | ownerId=session-abc'
+        { ownerId: '1100943757' },
+        'Attempting application locks release | CRN=******3757'
       ],
       [
         'RELEASE_SUCCEEDED',
         'debug',
-        { ownerId: 'session-abc', releasedCount: 3 },
-        'Application locks released | ownerId=session-abc | releasedCount=3'
+        { ownerId: '1100943757', releasedCount: 3 },
+        'Application locks released | CRN=******3757 | releasedCount=3'
       ],
       [
         'RELEASE_TIMEOUT',
         'warn',
-        { ownerId: 'session-abc', timeoutMs: 5000 },
-        'Application locks release timed out | ownerId=session-abc | timeoutMs=5000'
+        { ownerId: '1100943757', timeoutMs: 5000 },
+        'Application locks release timed out | CRN=******3757 | timeoutMs=5000'
       ],
       [
         'RELEASE_FAILED',
         'error',
-        { ownerId: 'session-abc', errorName: 'TimeoutError', errorMessage: 'connection lost' },
-        'Failed to release application locks | ownerId=session-abc | errorName=TimeoutError | errorMessage=connection lost'
+        { ownerId: '1100943757', errorName: 'TimeoutError', errorMessage: 'connection lost' },
+        'Failed to release application locks | CRN=******3757 | errorName=TimeoutError | errorMessage=connection lost'
       ]
     ])
   })
@@ -642,7 +643,7 @@ describe('LogCodes', () => {
           environment: 'production',
           referer: 'http://example.com'
         },
-        `Form not found: slug=test-form, userId=${TEST_USER_IDS.DEFAULT}, sbi=${TEST_SBI.DEFAULT}, reason=not_found, environment=production, referer=http://example.com`
+        `Form not found: slug=test-form, CRN=${TEST_USER_IDS.MASKED}, sbi=${TEST_SBI.DEFAULT}, reason=not_found, environment=production, referer=http://example.com`
       ],
       [
         'PAGE_NOT_FOUND',
@@ -654,19 +655,19 @@ describe('LogCodes', () => {
           referer: 'http://example.com',
           userAgent: 'Mozilla/5.0'
         },
-        `Page not found: path=${TEST_PATHS.TEST_PATH}, userId=${TEST_USER_IDS.DEFAULT}, sbi=${TEST_SBI.DEFAULT}, referer=http://example.com, userAgent=Mozilla/5.0`
+        `Page not found: path=${TEST_PATHS.TEST_PATH}, CRN=${TEST_USER_IDS.MASKED}, sbi=${TEST_SBI.DEFAULT}, referer=http://example.com, userAgent=Mozilla/5.0`
       ],
       [
         'FORM_NOT_FOUND with fallbacks',
         'info',
         { slug: 'test-form' },
-        'Form not found: slug=test-form, userId=anonymous, sbi=unknown, reason=not_found, environment=unknown, referer=none'
+        'Form not found: slug=test-form, CRN=unknown, sbi=unknown, reason=not_found, environment=unknown, referer=none'
       ],
       [
         'PAGE_NOT_FOUND with fallbacks',
         'info',
         { path: TEST_PATHS.TEST_PATH },
-        `Page not found: path=${TEST_PATHS.TEST_PATH}, userId=anonymous, sbi=unknown, referer=none, userAgent=unknown`
+        `Page not found: path=${TEST_PATHS.TEST_PATH}, CRN=unknown, sbi=unknown, referer=none, userAgent=unknown`
       ]
     ])
   })
@@ -683,7 +684,7 @@ describe('LogCodes', () => {
         'ERROR',
         'error',
         { userId: TEST_USER_IDS.DEFAULT, slug: 'test-slug', errorMessage: TEST_ERRORS.PROCESSING_FAILED },
-        `Print application error for user=${TEST_USER_IDS.DEFAULT}, slug=test-slug: ${TEST_ERRORS.PROCESSING_FAILED}`
+        `Print application error for CRN=${TEST_USER_IDS.MASKED}, slug=test-slug: ${TEST_ERRORS.PROCESSING_FAILED}`
       ]
     ])
   })
@@ -700,7 +701,7 @@ describe('LogCodes', () => {
           authorised: true,
           path: 'test-start'
         },
-        `Permission enforcement bypassed for grantCode=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}, permission=submit, userId=${TEST_USER_IDS.DEFAULT}, authorised=true, path=test-start`
+        `Permission enforcement bypassed for grantCode=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}, permission=submit, CRN=${TEST_USER_IDS.MASKED}, authorised=true, path=test-start`
       ],
       [
         'SUCCESS',
@@ -712,7 +713,7 @@ describe('LogCodes', () => {
           authorised: true,
           path: 'test-start'
         },
-        `Permission check successful for grantCode=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}, permission=submit, userId=${TEST_USER_IDS.DEFAULT}, authorised=true, path=test-start`
+        `Permission check successful for grantCode=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}, permission=submit, CRN=${TEST_USER_IDS.MASKED}, authorised=true, path=test-start`
       ],
       [
         'FAILURE',
@@ -724,7 +725,7 @@ describe('LogCodes', () => {
           authorised: false,
           path: 'test-start'
         },
-        `Permission check failed for grantCode=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}, permission=submit, userId=${TEST_USER_IDS.DEFAULT}, authorised=false, path=test-start`
+        `Permission check failed for grantCode=${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}, permission=submit, CRN=${TEST_USER_IDS.MASKED}, authorised=false, path=test-start`
       ]
     ])
   })
@@ -781,7 +782,7 @@ describe('LogCodes', () => {
         'EXTERNAL_API_CALL',
         'info',
         { endpoint: TEST_ENDPOINTS.API_GRANTS, userId: TEST_USER_IDS.DEFAULT },
-        `External API call to ${TEST_ENDPOINTS.API_GRANTS} for user=${TEST_USER_IDS.DEFAULT}`
+        `External API call to ${TEST_ENDPOINTS.API_GRANTS} for CRN=${TEST_USER_IDS.MASKED}`
       ],
       [
         'EXTERNAL_API_CALL_DEBUG',
@@ -792,7 +793,7 @@ describe('LogCodes', () => {
           method: TEST_METHODS.GET,
           identity: TEST_USER_IDS.DEFAULT
         },
-        `External ${TEST_METHODS.GET} to /api/grants (${TEST_USER_IDS.DEFAULT})`
+        `External ${TEST_METHODS.GET} to /api/grants (${TEST_USER_IDS.MASKED})`
       ],
       ['SYSTEM_SHUTDOWN', 'info', {}, 'System shutdown initiated'],
       [
@@ -1007,13 +1008,13 @@ describe('LogCodes', () => {
           userId: TEST_USER_IDS.DEFAULT,
           userAgent: 'Mozilla/5.0'
         },
-        `Rate limit exceeded: path=${TEST_PATHS.EXAMPLE_GRANT}, ip=127.0.0.1, userId=${TEST_USER_IDS.DEFAULT}, userAgent=Mozilla/5.0`
+        `Rate limit exceeded: path=${TEST_PATHS.EXAMPLE_GRANT}, ip=127.0.0.1, CRN=${TEST_USER_IDS.MASKED}, userAgent=Mozilla/5.0`
       ],
       [
         'RATE_LIMIT_EXCEEDED with fallbacks',
         'warn',
         { path: TEST_PATHS.EXAMPLE_GRANT },
-        `Rate limit exceeded: path=${TEST_PATHS.EXAMPLE_GRANT}, ip=unknown, userId=anonymous, userAgent=unknown`
+        `Rate limit exceeded: path=${TEST_PATHS.EXAMPLE_GRANT}, ip=unknown, CRN=unknown, userAgent=unknown`
       ],
       [
         'CHECK_DETAILS_TERMINAL_PAGE_INJECTED',
@@ -1205,13 +1206,13 @@ describe('LogCodes', () => {
 
   describe('Unknown user handling', () => {
     it.each([
-      ['AUTH log codes', LogCodes.AUTH.SIGN_IN_ATTEMPT, {}, 'User sign-in attempt for user=unknown'],
-      ['FORMS log codes', LogCodes.FORMS.FORM_LOAD, { formName: 'test' }, 'Form loaded: test for user=unknown'],
+      ['AUTH log codes', LogCodes.AUTH.SIGN_IN_ATTEMPT, {}, 'User sign-in attempt for CRN=unknown'],
+      ['FORMS log codes', LogCodes.FORMS.FORM_LOAD, { formName: 'test' }, 'Form loaded: test for CRN=unknown'],
       [
         'SYSTEM log codes',
         LogCodes.SYSTEM.EXTERNAL_API_CALL,
         { endpoint: TEST_ENDPOINTS.API_TEST },
-        `External API call to ${TEST_ENDPOINTS.API_TEST} for user=unknown`
+        `External API call to ${TEST_ENDPOINTS.API_TEST} for CRN=unknown`
       ]
     ])('should handle unknown users in %s', (_description, logCode, testParams, expectedMessage) => {
       expect(logCode.messageFunc(testParams)).toBe(expectedMessage)

@@ -1,3 +1,5 @@
+import { maskCrn } from '~/src/server/common/helpers/logging/mask-crn.js'
+
 /**
  * @type {Object<string, import('./definition.js').LogCodesDefinition>}
  */
@@ -5,46 +7,46 @@ export const AUTH = {
   GENERIC_ERROR: {
     level: 'error',
     messageFunc: (messageOptions) =>
-      `Authentication error for user=${messageOptions.userId}: ${messageOptions.errorMessage}`
+      `Authentication error for CRN=${maskCrn(messageOptions.userId)}: ${messageOptions.errorMessage}`
   },
   SIGN_IN_ATTEMPT: {
     level: 'info',
-    messageFunc: (messageOptions) => `User sign-in attempt for user=${messageOptions.userId || 'unknown'}`
+    messageFunc: (messageOptions) => `User sign-in attempt for CRN=${maskCrn(messageOptions.userId)}`
   },
   SIGN_IN_SUCCESS: {
     level: 'info',
     messageFunc: (messageOptions) =>
-      `User sign-in successful for user=${messageOptions.userId}, organisation=${messageOptions.organisationId}`
+      `User sign-in successful for CRN=${maskCrn(messageOptions.userId)}, organisation=${messageOptions.organisationId}`
   },
   SIGN_IN_FAILURE: {
     level: 'error',
     messageFunc: (messageOptions) =>
-      `User sign-in failed for user=${messageOptions.userId || 'unknown'}. Error: ${messageOptions.errorMessage}`
+      `User sign-in failed for CRN=${maskCrn(messageOptions.userId)}. Error: ${messageOptions.errorMessage}`
   },
   SIGN_OUT: {
     level: 'info',
     messageFunc: (messageOptions) =>
-      `User sign-out for user=${messageOptions.userId}, session=${messageOptions.sessionId}`
+      `User sign-out for CRN=${maskCrn(messageOptions.userId)}, session=${messageOptions.sessionId}`
   },
   TOKEN_VERIFICATION_SUCCESS: {
     level: 'info',
     messageFunc: (messageOptions) =>
-      `Token verification successful for userCRN=${messageOptions.userId}, userSBI=${messageOptions.organisationId}`
+      `Token verification successful for CRN=${maskCrn(messageOptions.userId)}, userSBI=${messageOptions.organisationId}`
   },
   TOKEN_VERIFICATION_FAILURE: {
     level: 'error',
     messageFunc: (messageOptions) =>
-      `Token verification failed for user=${messageOptions.userId || 'unknown'}. Error: ${messageOptions.errorMessage}`
+      `Token verification failed for CRN=${maskCrn(messageOptions.userId)}. Error: ${messageOptions.errorMessage}`
   },
   SESSION_EXPIRED: {
     level: 'info',
     messageFunc: (messageOptions) =>
-      `Session expired for user=${messageOptions.userId}, session=${messageOptions.sessionId}`
+      `Session expired for CRN=${maskCrn(messageOptions.userId)}, session=${messageOptions.sessionId}`
   },
   UNAUTHORIZED_ACCESS: {
     level: 'error',
     messageFunc: (messageOptions) =>
-      `Unauthorized access attempt to path=${messageOptions.path} from user=${messageOptions.userId || 'unknown'}`
+      `Unauthorized access attempt to path=${messageOptions.path} from CRN=${maskCrn(messageOptions.userId)}`
   },
   AUTH_DEBUG: {
     level: 'debug',
@@ -54,12 +56,12 @@ export const AUTH = {
   ALLOWLIST_ACCESS_GRANTED: {
     level: 'info',
     messageFunc: (messageOptions) =>
-      `Allowlist access granted to path=${messageOptions.path} for user=${messageOptions.userId || 'unknown'}, sbi=${messageOptions.sbi || 'N/A'}, grantCode=${messageOptions.grantCode}`
+      `Allowlist access granted to path=${messageOptions.path} for CRN=${maskCrn(messageOptions.userId)}, sbi=${messageOptions.sbi || 'N/A'}, grantCode=${messageOptions.grantCode}`
   },
   ALLOWLIST_ACCESS_DENIED: {
     level: 'info',
     messageFunc: (messageOptions) =>
-      `Allowlist access denied to path=${messageOptions.path} for user=${messageOptions.userId || 'unknown'}, sbi=${messageOptions.sbi || 'N/A'}, grantCode=${messageOptions.grantCode}`
+      `Allowlist access denied to path=${messageOptions.path} for CRN=${maskCrn(messageOptions.userId)}, sbi=${messageOptions.sbi || 'N/A'}, grantCode=${messageOptions.grantCode}`
   },
   CREDENTIALS_MISSING: {
     level: 'error',
