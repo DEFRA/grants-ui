@@ -2,7 +2,7 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 import {
-  fetchAvailableActionsForParcel,
+  fetchGroupedActionsForParcel,
   fetchParcels,
   validateApplication
 } from '~/src/server/land-grants/services/land-grants.service.js'
@@ -157,7 +157,7 @@ describe('SelectGroupedActionsPageController', () => {
 
     parseLandParcel.mockReturnValue(['sheet1', 'parcel1'])
     stringifyParcel.mockImplementation(({ sheetId, parcelId }) => `${sheetId}-${parcelId}`)
-    fetchAvailableActionsForParcel.mockResolvedValue({
+    fetchGroupedActionsForParcel.mockResolvedValue({
       actions: mockGroupedActions,
       parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
     })
@@ -239,7 +239,7 @@ describe('SelectGroupedActionsPageController', () => {
       expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, ['sheet2-parcel2'])
 
       expect(parseLandParcel).toHaveBeenCalledWith('sheet2-parcel2')
-      expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith(
+      expect(fetchGroupedActionsForParcel).toHaveBeenCalledWith(
         {
           parcelId: 'parcel2',
           sheetId: 'sheet2',
@@ -258,7 +258,7 @@ describe('SelectGroupedActionsPageController', () => {
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
 
-      expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith(
+      expect(fetchGroupedActionsForParcel).toHaveBeenCalledWith(
         {
           parcelId: 'parcel1',
           sheetId: 'sheet1',
@@ -303,7 +303,7 @@ describe('SelectGroupedActionsPageController', () => {
     })
 
     test('should handle fetch errors gracefully', async () => {
-      fetchAvailableActionsForParcel.mockRejectedValue(new Error('API Error'))
+      fetchGroupedActionsForParcel.mockRejectedValue(new Error('API Error'))
 
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)
@@ -334,7 +334,7 @@ describe('SelectGroupedActionsPageController', () => {
     })
 
     test('should log when no actions found', async () => {
-      fetchAvailableActionsForParcel.mockResolvedValue({
+      fetchGroupedActionsForParcel.mockResolvedValue({
         actions: [],
         parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
       })
@@ -400,7 +400,7 @@ describe('SelectGroupedActionsPageController', () => {
     })
 
     test('should handle result with actions but empty array', async () => {
-      fetchAvailableActionsForParcel.mockResolvedValue({ actions: [], parcel: {} })
+      fetchGroupedActionsForParcel.mockResolvedValue({ actions: [], parcel: {} })
       mockRequest.payload = { landAction_1: 'CMOR1' }
 
       const handler = controller.makePostRouteHandler()
@@ -488,7 +488,7 @@ describe('SelectGroupedActionsPageController', () => {
           actions: [{ code: 'TEST1', description: 'Test Action', availableArea: { value: 5, unit: 'ha' } }]
         }
       ]
-      fetchAvailableActionsForParcel.mockResolvedValue({
+      fetchGroupedActionsForParcel.mockResolvedValue({
         actions: groupedActions,
         parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
       })
@@ -798,7 +798,7 @@ describe('SelectGroupedActionsPageController', () => {
     })
 
     test('should handle timeout when fetching available actions gracefully', async () => {
-      fetchAvailableActionsForParcel.mockRejectedValue(new Error('Operation timed out after 30000ms'))
+      fetchGroupedActionsForParcel.mockRejectedValue(new Error('Operation timed out after 30000ms'))
 
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)

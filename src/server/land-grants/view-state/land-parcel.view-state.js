@@ -56,11 +56,13 @@ export function hasSubmittedNonZeroQuantity(payload, actionInfo) {
 
 /**
  * Builds the state entry for a single selected action, applying its submitted
- * quantity override when it requires one and one was submitted, otherwise
- * falling back to its full available area.
+ * quantity override when it requires one, otherwise falling back to its
+ * available area. actionInfo must already be recomputed against the full
+ * submission, or a non-quantity action's availableArea here is its
+ * uncompeted total, not what's left once a sibling's claim is accounted for.
  * @param {object} payload - Form payload
  * @param {Action} actionInfo - The action's data from the API
- * @returns {{ description: string, version: string, consents: string[], value: string|number, unit: string }}
+ * @returns {{ description: string, version: string, consents: string[], value: number, unit: string }}
  */
 function buildActionStateEntry(payload, actionInfo) {
   const hasQuantityOverride = hasSubmittedQuantity(payload, actionInfo)
@@ -71,15 +73,76 @@ function buildActionStateEntry(payload, actionInfo) {
     consents: getConsentTypes()
       .filter((ct) => actionInfo[ct.apiField])
       .map((ct) => ct.key),
-    value: hasQuantityOverride
-      ? payload[getActionQuantityFieldName(actionInfo.code)]
-      : (actionInfo?.availableArea?.value ?? ''),
+    value: Number(
+      hasQuantityOverride
+        ? payload[getActionQuantityFieldName(actionInfo.code)]
+        : (actionInfo?.availableArea?.value ?? 0)
+    ),
     unit: actionInfo?.availableArea?.unit ?? ''
   }
 }
 
 /**
- * Adds parcel actions to an existing state based on payload
+ * Overlays freshly recomputed availableArea/requiresMaxQuantity (keyed by
+ * code, from fetchActionsWithPlannedActions) onto the full action list from
+ * the initial fetch - everything else (description, version, consents, etc.)
+ * still comes from the original fetch, and an action missing from the
+ * recompute keeps its original values. The action's first-seen availableArea
+ * is preserved as staticAvailableArea, since the recomputed value competes
+ * against whatever else is in this submission (see mapActionToViewModel).
+ * @param {Array<Action>} actions - Flat list from the initial fetch
+ * @param {Array<{ code: string, availableArea?: object, requiresMaxQuantity?: number }>} recomputed
+ * @returns {Array<Action>}
+ */
+export function mergeRecomputedAvailability(actions, recomputed) {
+  const recomputedByCode = new Map(recomputed.map((action) => [action.code, action]))
+
+  return actions.map((action) => {
+    const match = recomputedByCode.get(action.code)
+    return match
+      ? {
+          ...action,
+          availableArea: match.availableArea,
+          requiresMaxQuantity: match.requiresMaxQuantity,
+          staticAvailableArea: action.staticAvailableArea ?? action.availableArea
+        }
+      : action
+  })
+}
+
+/**
+ * Shared write path behind addActionsToExistingState (grouped) and
+ * addSelectedActionsToState (flat): resolve each selected code's actionInfo,
+ * keep only confirmed selections, build state entries, and write to state.
+ * @param {object} state - Current state
+ * @param {object} payload - Form payload containing action selections
+ * @param {string[]} selectedCodes - Action codes the user selected
+ * @param {Array<Action>} actions - Available actions, flat
+ * @param {Parcel} parcel - The selected land parcel
+ * @param {(actionInfo: Action, payload: object) => boolean} isConfirmedSelection
+ * @returns {object} - Updated state or empty object if no actions selected
+ */
+function writeSelectedActionsToState(state, payload, selectedCodes, actions, parcel, isConfirmedSelection) {
+  if (selectedCodes.length === 0) {
+    return {}
+  }
+
+  const actionsObj = {}
+
+  for (const actionCode of selectedCodes) {
+    const actionInfo = actions.find((a) => a.code === actionCode)
+    if (actionInfo && isConfirmedSelection(actionInfo, payload)) {
+      actionsObj[actionCode] = buildActionStateEntry(payload, actionInfo)
+    }
+  }
+
+  return buildNewState(state, actionsObj, parcel)
+}
+
+/**
+ * Adds parcel actions to an existing state based on payload. Every selection
+ * with matching actionInfo is confirmed - a grouped radio has no separate
+ * "unconfirmed" state, unlike the flat page's 0-quantity case.
  * @param {object} state - Current state
  * @param {object} payload - Form payload containing action selections
  * @param {string} actionFieldPrefix - Prefix for action field names
@@ -88,57 +151,62 @@ function buildActionStateEntry(payload, actionInfo) {
  * @returns {object} - Updated state or empty object if no actions selected
  */
 export function addActionsToExistingState(state, payload, actionFieldPrefix, groupedActions, parcel) {
-  // Extract action fields from payload
   const landActionFields = Object.keys(payload).filter((key) => key.startsWith(actionFieldPrefix))
+  const selectedCodes = landActionFields.map((fieldName) => payload[fieldName]).filter(Boolean)
+  const actions = groupedActions.flatMap((g) => g.actions)
 
-  if (landActionFields.length === 0) {
-    return {}
-  }
-
-  const actionsObj = {}
-  const allActions = groupedActions.flatMap((g) => g.actions)
-
-  for (const fieldName of landActionFields) {
-    const actionCode = payload[fieldName]
-    const actionInfo = allActions.find((a) => a.code === actionCode)
-    if (actionCode && actionInfo) {
-      actionsObj[actionCode] = buildActionStateEntry(payload, actionInfo)
-    }
-  }
-
-  return buildNewState(state, actionsObj, parcel)
+  return writeSelectedActionsToState(state, payload, selectedCodes, actions, parcel, () => true)
 }
 
 /**
  * Adds selected actions to an existing state, for the select-actions page's flat
  * checkbox layout where every action shares one field name rather than a field
- * per action (see getSelectedActionCodes).
+ * per action (see getSelectedActionCodes). A quantity-required action needs a
+ * submitted non-zero quantity to count as confirmed; a 0 or missing value doesn't.
  * @param {object} state - Current state
  * @param {object} payload - Form payload containing action selections
- * @param {Array<ActionGroup>} groupedActions - Available actions grouped
+ * @param {Array<Action>} actions - Available actions, flat
  * @param {Parcel} parcel - The selected land parcel
  * @returns {object} - Updated state or empty object if no actions selected
  */
-export function addSelectedActionsToState(state, payload, groupedActions, parcel) {
+export function addSelectedActionsToState(state, payload, actions, parcel) {
   const selectedCodes = getSelectedActionCodes(payload)
 
-  if (selectedCodes.length === 0) {
-    return {}
-  }
+  return writeSelectedActionsToState(
+    state,
+    payload,
+    selectedCodes,
+    actions,
+    parcel,
+    (actionInfo, formPayload) =>
+      actionInfo.requiresMaxQuantity == null || hasSubmittedNonZeroQuantity(formPayload, actionInfo)
+  )
+}
 
-  const actionsObj = {}
-  const allActions = groupedActions.flatMap((g) => g.actions)
+/**
+ * Builds addedActions-shaped entries from a just-submitted payload, so a
+ * validation error re-renders with what the user typed. A non-quantity
+ * action has no payload field to carry its chosen area, so it falls back to
+ * its previous state value instead of an empty amount.
+ * @param {object} payload - Form payload containing action selections
+ * @param {Array<Action>} actions - Available actions, flat
+ * @param {Array<{code: string, value?: string|number}>} [prevAddedActions] - Previously confirmed added actions, from state
+ * @returns {Array<{code: string, description: string, value?: string|number}>}
+ */
+export function getAddedActionsFromPayload(payload, actions, prevAddedActions = []) {
+  const selectedCodes = getSelectedActionCodes(payload)
 
-  for (const actionCode of selectedCodes) {
-    const actionInfo = allActions.find((a) => a.code === actionCode)
-    const isConfirmedSelection =
-      actionInfo && (actionInfo.requiresMaxQuantity == null || hasSubmittedNonZeroQuantity(payload, actionInfo))
-    if (isConfirmedSelection) {
-      actionsObj[actionCode] = buildActionStateEntry(payload, actionInfo)
-    }
-  }
-
-  return buildNewState(state, actionsObj, parcel)
+  return selectedCodes
+    .map((actionCode) => actions.find((a) => a.code === actionCode))
+    .filter((actionInfo) => actionInfo != null)
+    .map((actionInfo) => ({
+      code: actionInfo.code,
+      description: actionInfo.description,
+      value:
+        actionInfo.requiresMaxQuantity != null
+          ? (payload[getActionQuantityFieldName(actionInfo.code)] ?? '')
+          : (prevAddedActions.find((a) => a.code === actionInfo.code)?.value ?? '')
+    }))
 }
 
 /**
@@ -259,6 +327,9 @@ export function findActionInfoFromState(landParcels, parcelKey, action) {
  * @property {string[]} [consents] - Array of consent type keys required (e.g., ['sssi', 'hefer'])
  * @property {number} [requiresMaxQuantity] - If set, the user must enter a quantity for this action, capped at this value
  * @property {object} [availableArea] - Available area for the action
- * @property {string|number} [availableArea.value] - Area value (number from API, converted to string in state)
+ * @property {number} [availableArea.value] - Area value
  * @property {string} [availableArea.unit] - Area unit
+ * @property {object} [staticAvailableArea] - The action's original, uncompeted available area (see mergeRecomputedAvailability)
+ * @property {number} [staticAvailableArea.value] - Area value
+ * @property {string} [staticAvailableArea.unit] - Area unit
  */

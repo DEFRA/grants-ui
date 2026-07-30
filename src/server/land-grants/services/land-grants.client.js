@@ -173,16 +173,34 @@ export async function parcelsWithFields(fields, parcelIds, baseUrl, userContext,
 }
 
 /**
- *
+ * Fetches parcels with their actions plus the API's own action groupings -
+ * for callers that render a grouped view. See parcelsWithActions for the
+ * flat-only sibling.
  * @param {string[]} parcelIds
  * @param {string} baseUrl
  * @param {LandGrantsUserContext} userContext
  * @param {PlannedAction[]} [plannedActions] - See parcelsWithFields
  * @returns {Promise<ParcelResponse>}
  */
-export async function parcelsWithExtendedInfo(parcelIds, baseUrl, userContext, plannedActions) {
+export async function parcelsWithGroups(parcelIds, baseUrl, userContext, plannedActions) {
   const consentTypes = getConsentTypes()
   const fields = ['actions', 'size', 'groups', ...consentTypes.map((ct) => `actions.${ct.apiField}`)]
+
+  return parcelsWithFields(fields, parcelIds, baseUrl, userContext, plannedActions)
+}
+
+/**
+ * Fetches parcels with their actions, with no group-membership data - for
+ * callers that only ever want a flat action list and never group them.
+ * @param {string[]} parcelIds
+ * @param {string} baseUrl
+ * @param {LandGrantsUserContext} userContext
+ * @param {PlannedAction[]} [plannedActions] - See parcelsWithFields
+ * @returns {Promise<ParcelResponse>}
+ */
+export async function parcelsWithActions(parcelIds, baseUrl, userContext, plannedActions) {
+  const consentTypes = getConsentTypes()
+  const fields = ['actions', 'size', ...consentTypes.map((ct) => `actions.${ct.apiField}`)]
 
   return parcelsWithFields(fields, parcelIds, baseUrl, userContext, plannedActions)
 }
@@ -214,7 +232,7 @@ export async function locateParcelTiles(parcelIds, baseUrl, userContext) {
 }
 
 /**
- * @import { Parcel, LandActions, PlannedAction, ValidateApplicationRequest, ParcelResponse, ValidateApplicationResponse } from '~/src/server/land-grants/types/land-grants.client.d.js'
+ * @import { LandActions, PlannedAction, ValidateApplicationRequest, ParcelResponse, ValidateApplicationResponse } from '~/src/server/land-grants/types/land-grants.client.d.js'
  * @import {  PaymentCalculationResponse } from '~/src/server/land-grants/types/payment.d.js'
  * @import { LandGrantsUserContext } from './land-grants-user-context.js'
  */

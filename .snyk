@@ -49,4 +49,20 @@ ignore:
     - '*':
         reason: 'Fix version is incoming from Defra forms team - Incomplete List of Disallowed Inputs'
         expires: '2026-09-01'
+  'SNYK-JS-UNDICI-18426067':
+    - '*':
+        reason: 'Build-time/test-only — undici@7.28.0 via cheerio (docusaurus-search-local in @defra/interactive-map docs, never loaded by grants-ui runtime) and jsdom (vitest test runner, not shipped). Fixed in 7.29.0; interim ignore while the override is blocked by .npmrc min-release-age=7 (7.29.0 published 2026-07-24, installable from 2026-07-31). Replace with an overrides pin and remove this entry once it clears the cooldown.'
+        expires: '2026-08-06'
+  'SNYK-JS-UNDICI-18426061':
+    - '*':
+        reason: 'Build-time/test-only — undici@7.28.0 via cheerio (docusaurus-search-local in @defra/interactive-map docs, never loaded by grants-ui runtime) and jsdom (vitest test runner, not shipped). Fixed in 7.29.0; interim ignore while the override is blocked by .npmrc min-release-age=7 (7.29.0 published 2026-07-24, installable from 2026-07-31). Replace with an overrides pin and remove this entry once it clears the cooldown.'
+        expires: '2026-08-06'
+  'SNYK-JS-UNDICI-18426063':
+    - '*':
+        reason: 'Build-time/test-only — undici@7.28.0 via cheerio (docusaurus-search-local in @defra/interactive-map docs, never loaded by grants-ui runtime) and jsdom (vitest test runner, not shipped). Fixed in 7.29.0; interim ignore while the override is blocked by .npmrc min-release-age=7 (7.29.0 published 2026-07-24, installable from 2026-07-31). Replace with an overrides pin and remove this entry once it clears the cooldown.'
+        expires: '2026-08-06'
+  'SNYK-JS-UNDICI-18426065':
+    - '*':
+        reason: 'Build-time/test-only — undici@7.28.0 via cheerio (docusaurus-search-local in @defra/interactive-map docs, never loaded by grants-ui runtime) and jsdom (vitest test runner, not shipped). Fixed in 7.29.0; interim ignore while the override is blocked by .npmrc min-release-age=7 (7.29.0 published 2026-07-24, installable from 2026-07-31). Replace with an overrides pin and remove this entry once it clears the cooldown.'
+        expires: '2026-08-06'
 

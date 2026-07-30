@@ -3,7 +3,7 @@ import {
   fetchParcelTile,
   locateParcelTiles,
   parcelsGroups,
-  parcelsWithExtendedInfo,
+  parcelsWithGroups,
   parcelsWithFields,
   parcelsWithSize,
   postToLandGrantsApi,
@@ -557,7 +557,7 @@ describe('Land Grants client', () => {
       }, 10000)
     })
 
-    describe('parcelsWithExtendedInfo', () => {
+    describe('parcelsWithGroups', () => {
       it('should timeout when fetch hangs', async () => {
         mockFetch.mockImplementation(() => new Promise(() => {}))
 
@@ -566,7 +566,7 @@ describe('Land Grants client', () => {
         )
 
         await expect(
-          Promise.race([parcelsWithExtendedInfo(['parcel1'], mockApiEndpoint, mockUserContext), timeoutPromise])
+          Promise.race([parcelsWithGroups(['parcel1'], mockApiEndpoint, mockUserContext), timeoutPromise])
         ).rejects.toThrow('Operation timed out')
       }, 10000)
     })
@@ -730,7 +730,7 @@ describe('Land Grants client', () => {
     })
   })
 
-  describe('parcelsWithExtendedInfo', () => {
+  describe('parcelsWithGroups', () => {
     it('should trigger a POST request to /api/v2/parcels with actions, size, and groups', async () => {
       const mockResponse = { id: 1, status: 'success' }
       const fields = ['actions', 'size', 'groups']
@@ -741,7 +741,7 @@ describe('Land Grants client', () => {
         json: () => mockResponse
       })
 
-      const result = await parcelsWithExtendedInfo(parcelIds, mockApiEndpoint, mockUserContext)
+      const result = await parcelsWithGroups(parcelIds, mockApiEndpoint, mockUserContext)
 
       expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/parcels`, {
         method: 'POST',
@@ -760,7 +760,7 @@ describe('Land Grants client', () => {
         json: () => mockResponse
       })
 
-      const result = await parcelsWithExtendedInfo(parcelIds, mockApiEndpoint, mockUserContext)
+      const result = await parcelsWithGroups(parcelIds, mockApiEndpoint, mockUserContext)
 
       // The actual fields depend on what getConsentTypes returns
       const callBody = JSON.parse(mockFetch.mock.calls[0][1].body)
