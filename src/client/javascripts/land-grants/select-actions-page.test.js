@@ -87,10 +87,7 @@ function fetchOk(body) {
   return vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(body) })
 }
 
-// A macrotask boundary reliably drains any depth of pending microtasks
-// (fetch → .then → Promise.all → async continuation → .json → ...), so
-// tests don't need to guess how many `await Promise.resolve()` hops deep
-// the refresh's promise chain currently is.
+// A macrotask boundary reliably drains any depth of pending microtasks.
 const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
 
 describe('initSelectActionsPage', () => {

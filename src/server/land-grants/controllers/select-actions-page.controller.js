@@ -24,10 +24,7 @@ import { error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
 
 /**
- * Parses the client's last live-confirmed plannedActions (see
- * writePlannedActionsSnapshot in select-actions-page.js), restricted to
- * currently selected codes - a stale snapshot from before an unrelated
- * uncheck must not resurrect a claim for an action no longer selected.
+ * Parses the client's last live-confirmed plannedActions, restricted to currently selected codes.
  * @param {object} payload
  * @returns {PlannedAction[]}
  */
@@ -43,10 +40,7 @@ function parsePlannedActionsSnapshot(payload) {
   }
   const selectedCodes = new Set(getSelectedActionCodes(payload))
   return plannedActions.filter(
-    (p) =>
-      selectedCodes.has(p?.actionCode) &&
-      typeof p.quantity === 'number' &&
-      (p.unit === 'ha' || p.unit === 'sqm')
+    (p) => selectedCodes.has(p?.actionCode) && typeof p.quantity === 'number' && typeof p.unit === 'string'
   )
 }
 
@@ -118,13 +112,10 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
    * @returns {Array<{ code: string, description: string, value?: string|number }>}
    */
   getAddedActionsForValidationError(payload, actions) {
-    const plannedActions = parsePlannedActionsSnapshot(payload)
-    return plannedActions
-      .map((p) => {
-        const actionInfo = actions.find((a) => a.code === p.actionCode)
-        return actionInfo && { code: actionInfo.code, description: actionInfo.description, value: p.quantity }
-      })
-      .filter(Boolean)
+    return parsePlannedActionsSnapshot(payload).flatMap((p) => {
+      const actionInfo = actions.find((a) => a.code === p.actionCode)
+      return actionInfo ? [{ code: actionInfo.code, description: actionInfo.description, value: p.quantity }] : []
+    })
   }
 
   /**

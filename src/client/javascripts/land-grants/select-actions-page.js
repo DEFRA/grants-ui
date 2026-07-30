@@ -460,9 +460,7 @@ function applyRefreshResponse(form, actions, plannedActions, forcedUnchecked, tr
 }
 
 /**
- * Records the last live-confirmed plannedActions in a hidden field, so a
- * server-side error re-render can reuse exactly what the client last sent
- * instead of reconstructing it from the submitted form fields.
+ * Records the last live-confirmed plannedActions so a server-side error re-render can reuse them verbatim.
  * @param {HTMLElement} form
  * @param {Array<{ actionCode: string, quantity: number, unit: string }>} plannedActions
  */
