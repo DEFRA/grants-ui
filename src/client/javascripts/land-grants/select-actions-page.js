@@ -160,8 +160,8 @@ function getLiveAvailableArea(checkbox) {
 function getChosenArea(checkbox) {
   if (getQuantityInput(checkbox)) {
     const raw = checkbox.getAttribute(TOTAL_CHOSEN_AREA_ATTR)
-    const value = raw == null ? NaN : Number(raw)
-    return Number.isFinite(value) ? value : undefined
+    const chosenArea = raw == null ? Number.NaN : Number(raw)
+    return Number.isFinite(chosenArea) ? chosenArea : undefined
   }
   const value = Number(getChosenAreaField(checkbox)?.value)
   return Number.isFinite(value) && value > 0 ? value : undefined
