@@ -12,7 +12,16 @@ import { error, log } from '~/src/server/common/helpers/logging/log.js'
 
 vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () => ({
   QuestionPageController: class {
+    constructor(model, pageDef) {
+      this.model = model
+      this.pageDef = pageDef
+    }
+
     getViewModel() {}
+
+    getHref(path) {
+      return `/${this.model.basePath}/${path}`.replace(/\/{2,}/g, '/')
+    }
 
     makeGetRouteHandler() {
       return async (request, context, h) => h.view('select-land-actions', this.getViewModel(request, context))

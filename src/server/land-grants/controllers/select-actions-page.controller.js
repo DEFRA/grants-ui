@@ -1,7 +1,8 @@
 import SelectActionsBasePageController from '~/src/server/land-grants/controllers/select-actions-base-page.controller.js'
 import {
   mapActionsToViewModel,
-  getPageConsents
+  getPageConsents,
+  getChosenAreaFieldsHtml
 } from '~/src/server/land-grants/view-models/select-actions.view-model.js'
 import {
   addSelectedActionsToState,
@@ -24,24 +25,24 @@ import { error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
 
 /**
- * Parses the client's last live-confirmed plannedActions, restricted to currently selected codes.
+ * Builds plannedActions for every checked action from its own landActionQuantity_<code>
+ * field - a real, user-typed value for a quantity action, or a hidden field
+ * the client keeps in sync with its live chosen area otherwise.
  * @param {object} payload
+ * @param {Array} actions
  * @returns {PlannedAction[]}
  */
-function parsePlannedActionsSnapshot(payload) {
-  let plannedActions
-  try {
-    plannedActions = JSON.parse(payload.plannedActionsSnapshot || '[]')
-  } catch {
-    return []
-  }
-  if (!Array.isArray(plannedActions)) {
-    return []
-  }
+function buildPlannedActionsFromFields(payload, actions) {
   const selectedCodes = new Set(getSelectedActionCodes(payload))
-  return plannedActions.filter(
-    (p) => selectedCodes.has(p?.actionCode) && typeof p.quantity === 'number' && typeof p.unit === 'string'
-  )
+  return actions.flatMap((action) => {
+    if (!selectedCodes.has(action.code)) {
+      return []
+    }
+    const quantity = Number(payload[getActionQuantityFieldName(action.code)])
+    return Number.isFinite(quantity) && quantity > 0
+      ? [{ actionCode: action.code, quantity, unit: action.availableArea?.unit }]
+      : []
+  })
 }
 
 export default class SelectActionsPageController extends SelectActionsBasePageController {
@@ -56,15 +57,18 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
    * @param {Array} actions
    * @param {Array} addedActions
    * @param {Record<string, string>} [quantityErrorsByCode] - Quantity validation error text, keyed by action code
+   * @param {boolean} [hasErrors] - Whether this page load is redisplaying a rejected submission
    * @returns {object}
    */
-  getViewModelWithActions(request, context, actions, addedActions, quantityErrorsByCode = {}) {
+  getViewModelWithActions(request, context, actions, addedActions, quantityErrorsByCode = {}, hasErrors = false) {
     return {
       ...super.getViewModel(request, context),
       actionFieldName: this.actionFieldName,
       addedActions,
-      actionItems: mapActionsToViewModel(actions, addedActions, quantityErrorsByCode),
-      pageConsents: getPageConsents(actions)
+      actionItems: mapActionsToViewModel(actions, addedActions, quantityErrorsByCode, hasErrors),
+      chosenAreaFieldsHtml: getChosenAreaFieldsHtml(actions, addedActions),
+      pageConsents: getPageConsents(actions),
+      selectLandParcelPath: this.getHref(this.getPreviousPagePath())
     }
   }
 
@@ -112,9 +116,13 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
    * @returns {Array<{ code: string, description: string, value?: string|number }>}
    */
   getAddedActionsForValidationError(payload, actions) {
-    return parsePlannedActionsSnapshot(payload).flatMap((p) => {
-      const actionInfo = actions.find((a) => a.code === p.actionCode)
-      return actionInfo ? [{ code: actionInfo.code, description: actionInfo.description, value: p.quantity }] : []
+    const selectedCodes = getSelectedActionCodes(payload)
+    return selectedCodes.flatMap((code) => {
+      const actionInfo = actions.find((a) => a.code === code)
+      if (!actionInfo) {
+        return []
+      }
+      return [{ code, description: actionInfo.description, value: payload[getActionQuantityFieldName(code)] ?? '' }]
     })
   }
 
@@ -139,7 +147,7 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
    * @returns {Promise<Array>}
    */
   async recomputeActionsForState(request, parcel, payload, actions) {
-    const plannedActions = parsePlannedActionsSnapshot(payload)
+    const plannedActions = buildPlannedActionsFromFields(payload, actions)
     if (!plannedActions.length) {
       return actions
     }
@@ -159,7 +167,16 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
       return actions
     }
 
-    return mergeRecomputedAvailability(actions, recomputed)
+    // A checked action's own claim is what was just sent for it above, not
+    // the response's headroom-beyond-that-claim (self-competing contract).
+    const sentByCode = new Map(plannedActions.map((p) => [p.actionCode, p.quantity]))
+    const withSentClaim = recomputed.map((action) =>
+      sentByCode.has(action.code)
+        ? { ...action, availableArea: { ...action.availableArea, value: sentByCode.get(action.code) } }
+        : action
+    )
+
+    return mergeRecomputedAvailability(actions, withSentClaim)
   }
 }
 

@@ -14,7 +14,16 @@ import { config } from '~/src/config/config.js'
 
 vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () => ({
   QuestionPageController: class {
+    constructor(model, pageDef) {
+      this.model = model
+      this.pageDef = pageDef
+    }
+
     getViewModel() {}
+
+    getHref(path) {
+      return `/${this.model.basePath}/${path}`.replace(/\/{2,}/g, '/')
+    }
 
     makeGetRouteHandler() {
       return async (request, context, h) => h.view('select-actions', this.getViewModel(request, context))
@@ -411,18 +420,15 @@ describe('SelectActionsPageController', () => {
       )
     })
 
-    test('should save the recomputed availableArea for a non-quantity action competing with a quantity claim from the same submission', async () => {
+    test('should save the sent claim, not the self-competing response, for a non-quantity action', async () => {
       mockRequest.payload = {
         landAction: ['UPL1', 'UPL2'],
         landActionQuantity_UPL2: '1',
-        plannedActionsSnapshot: JSON.stringify([
-          { actionCode: 'UPL1', quantity: 5, unit: 'ha' },
-          { actionCode: 'UPL2', quantity: 1, unit: 'ha' }
-        ])
+        landActionQuantity_UPL1: '5'
       }
       fetchActionsWithPlannedActions.mockResolvedValue({
         actions: [
-          { code: 'UPL1', availableArea: { unit: 'ha', value: 4 } },
+          { code: 'UPL1', availableArea: { unit: 'ha', value: 0 } },
           { code: 'UPL2', availableArea: { unit: 'ha', value: 2 }, requiresMaxQuantity: 2 }
         ]
       })
@@ -441,7 +447,7 @@ describe('SelectActionsPageController', () => {
         expect.anything()
       )
       const stateArg = controller.setState.mock.calls[0][1]
-      expect(stateArg.landParcels['sheet1-parcel1'].actionsObj.UPL1.value).toBe(4)
+      expect(stateArg.landParcels['sheet1-parcel1'].actionsObj.UPL1.value).toBe(5)
     })
 
     test('should keep the original uncompeted actions when the recompute fetch fails', async () => {
@@ -574,7 +580,7 @@ describe('SelectActionsPageController', () => {
       mockRequest.payload = {
         landAction: ['UPL1', 'UPL2'],
         landActionQuantity_UPL2: '1',
-        plannedActionsSnapshot: JSON.stringify([{ actionCode: 'UPL2', quantity: 1, unit: 'ha' }]),
+        landActionQuantity_UPL1: '4',
         action: 'validate'
       }
       fetchActionsWithPlannedActions.mockResolvedValue({
@@ -620,10 +626,7 @@ describe('SelectActionsPageController', () => {
       mockRequest.payload = {
         landAction: ['CMOR1', 'UPL2'],
         landActionQuantity_UPL2: '1.5',
-        plannedActionsSnapshot: JSON.stringify([
-          { actionCode: 'CMOR1', quantity: 10, unit: 'ha' },
-          { actionCode: 'UPL2', quantity: 1.5, unit: 'ha' }
-        ]),
+        landActionQuantity_CMOR1: '10',
         action: 'validate'
       }
       validateApplication.mockResolvedValue({
@@ -743,7 +746,7 @@ describe('SelectActionsPageController', () => {
     test('should keep the just-submitted selections checked when validateApplication throws', async () => {
       mockRequest.payload = {
         landAction: 'CMOR1',
-        plannedActionsSnapshot: JSON.stringify([{ actionCode: 'CMOR1', quantity: 10, unit: 'ha' }]),
+        landActionQuantity_CMOR1: '10',
         action: 'validate'
       }
       validateApplication.mockRejectedValue(new Error('Validation API failed'))

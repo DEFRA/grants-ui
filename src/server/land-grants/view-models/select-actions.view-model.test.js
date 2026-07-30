@@ -1,5 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
-import { mapActionToViewModel, mapActionsToViewModel, getPageConsents } from './select-actions.view-model.js'
+import {
+  mapActionToViewModel,
+  mapActionsToViewModel,
+  getPageConsents,
+  getChosenAreaFieldsHtml
+} from './select-actions.view-model.js'
 
 const configState = vi.hoisted(() => {
   const values = new Map()
@@ -179,6 +184,34 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, addedActions)
 
       expect(result.checked).toBe(false)
+    })
+
+    // Stamped per-checkbox (not a single form-wide flag) so the client can keep
+    // protecting THIS action's rejected value even after other actions refresh.
+    it('should mark a checked action with data-error-on-load when the page is redisplaying a rejected submission', () => {
+      const action = { code: 'SAM1', description: 'Test Action 1', ratePerUnitGbp: 100.5 }
+      const addedActions = [{ code: 'SAM1', description: 'Test Action 1' }]
+
+      const result = mapActionToViewModel(action, addedActions, {}, false, true)
+
+      expect(result.attributes['data-error-on-load']).toBe('true')
+    })
+
+    it('should not mark an unchecked action with data-error-on-load, even when the page has errors', () => {
+      const action = { code: 'SAM1', description: 'Test Action 1', ratePerUnitGbp: 100.5 }
+
+      const result = mapActionToViewModel(action, [], {}, false, true)
+
+      expect(result.attributes['data-error-on-load']).toBeUndefined()
+    })
+
+    it('should not mark a checked action with data-error-on-load when the page has no errors', () => {
+      const action = { code: 'SAM1', description: 'Test Action 1', ratePerUnitGbp: 100.5 }
+      const addedActions = [{ code: 'SAM1', description: 'Test Action 1' }]
+
+      const result = mapActionToViewModel(action, addedActions, {}, false, false)
+
+      expect(result.attributes['data-error-on-load']).toBeUndefined()
     })
 
     it('should not set a conditional when action does not require a quantity', () => {
@@ -400,6 +433,19 @@ describe('select-actions.view-model', () => {
       expect(mapActionsToViewModel([], [])).toEqual([])
     })
 
+    it('should forward hasErrors to mark every checked action with data-error-on-load', () => {
+      const actions = [
+        { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100 },
+        { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200 }
+      ]
+      const addedActions = [{ code: 'SAM1', description: 'Action 1' }]
+
+      const result = mapActionsToViewModel(actions, addedActions, {}, true)
+
+      expect(result.find((item) => item.value === 'SAM1').attributes['data-error-on-load']).toBe('true')
+      expect(result.find((item) => item.value === 'SAM2').attributes['data-error-on-load']).toBeUndefined()
+    })
+
     it('should mark a previously added action as checked', () => {
       const actions = [
         { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100 },
@@ -545,6 +591,43 @@ describe('select-actions.view-model', () => {
 
     it('should return an empty array for an empty actions list', () => {
       expect(getPageConsents([])).toEqual([])
+    })
+  })
+
+  describe('getChosenAreaFieldsHtml', () => {
+    it('should render a hidden field for a non-quantity action', () => {
+      const actions = [{ code: 'CMOR1', description: 'Moorland record' }]
+
+      const html = getChosenAreaFieldsHtml(actions, [])
+
+      expect(html).toContain('type="hidden"')
+      expect(html).toContain('id="landActionQuantity_CMOR1"')
+      expect(html).toContain('name="landActionQuantity_CMOR1"')
+    })
+
+    it('should skip a quantity-required action', () => {
+      const actions = [{ code: 'CSAM3', description: 'Herbal leys', requiresMaxQuantity: 0.3271 }]
+
+      const html = getChosenAreaFieldsHtml(actions, [])
+
+      expect(html).toBe('')
+    })
+
+    it('should pre-fill the value from a saved non-quantity action', () => {
+      const actions = [{ code: 'CMOR1', description: 'Moorland record' }]
+      const addedActions = [{ code: 'CMOR1', description: 'Moorland record', value: 1.3008 }]
+
+      const html = getChosenAreaFieldsHtml(actions, addedActions)
+
+      expect(html).toContain('value="1.3008"')
+    })
+
+    it('should default to 0 when there is no saved chosen area', () => {
+      const actions = [{ code: 'CMOR1', description: 'Moorland record' }]
+
+      const html = getChosenAreaFieldsHtml(actions, [])
+
+      expect(html).toContain('value="0"')
     })
   })
 })

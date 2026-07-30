@@ -12,7 +12,6 @@ const TOTAL_CHOSEN_AREA_ATTR = 'data-total-chosen-area'
 const REFRESH_BANNER_MESSAGE = 'Updating available land for this action…'
 const REFRESH_BANNER_CLASS = 'select-actions-refresh-banner'
 const REFRESH_BANNER_HIDDEN_CLASS = 'select-actions-refresh-banner--hidden'
-const PLANNED_ACTIONS_SNAPSHOT_ID = 'plannedActionsSnapshot'
 
 /**
  * @param {number} value
@@ -27,26 +26,51 @@ function getCheckboxes(form) {
   )
 }
 
-/** @param {HTMLInputElement} checkbox */
+/**
+ * A quantity action's real, user-facing input - a non-quantity action shares
+ * the same field name for its hidden chosen-area field instead (type="hidden"), so this returns null for it.
+ * @param {HTMLInputElement} checkbox
+ * @returns {HTMLInputElement | null}
+ */
 function getQuantityInput(checkbox) {
-  return /** @type {HTMLInputElement | null} */ (document.getElementById(getActionQuantityFieldName(checkbox.value)))
+  const field = /** @type {HTMLInputElement | null} */ (
+    document.getElementById(getActionQuantityFieldName(checkbox.value))
+  )
+  return field?.type === 'hidden' ? null : field
 }
 
 /**
- * A checked action with its own validation error, or on a page rendered
- * with errors, must never be touched by the live refresh.
- * @param {HTMLElement} form
+ * A non-quantity action's hidden field carrying its chosen area - shares its field name with getQuantityInput.
+ * @param {HTMLInputElement} checkbox
+ * @returns {HTMLInputElement | null}
+ */
+function getChosenAreaField(checkbox) {
+  const field = /** @type {HTMLInputElement | null} */ (
+    document.getElementById(getActionQuantityFieldName(checkbox.value))
+  )
+  return field?.type === 'hidden' ? field : null
+}
+
+/**
+ * A checked action redisplayed from a rejected submission (see
+ * data-error-on-load) must keep its own checked state, typed value and
+ * chosen area untouched by the live refresh, until the user directly
+ * interacts with it - clearErrorOnLoad below is what ends this.
  * @param {HTMLInputElement} checkbox
  * @returns {boolean}
  */
-function isProtectedFromRefresh(form, checkbox) {
-  if (!checkbox.checked) {
-    return false
-  }
-  if (form.dataset.hasErrors) {
-    return true
-  }
-  return Boolean(getQuantityInput(checkbox)?.classList.contains('govuk-input--error'))
+function isProtectedFromRefresh(checkbox) {
+  return checkbox.checked && Boolean(checkbox.dataset.errorOnLoad)
+}
+
+/**
+ * A direct interaction with this checkbox (or its own quantity input) means
+ * its rejected value is no longer what's protected - a fresh claim, however
+ * it turns out, must be trusted and reflected normally from here on.
+ * @param {HTMLInputElement} checkbox
+ */
+function clearErrorOnLoad(checkbox) {
+  delete checkbox.dataset.errorOnLoad
 }
 
 /**
@@ -91,7 +115,7 @@ function toggleRefreshBanner(checkbox, isLoading) {
  */
 function disableOtherActions(form, triggeringCheckbox) {
   for (const checkbox of getCheckboxes(form)) {
-    if (checkbox === triggeringCheckbox || isProtectedFromRefresh(form, checkbox)) {
+    if (checkbox === triggeringCheckbox || isProtectedFromRefresh(checkbox)) {
       continue
     }
     checkbox.disabled = true
@@ -125,17 +149,48 @@ function getLiveAvailableArea(checkbox) {
 }
 
 /**
- * What a checked action currently holds - its running claim (non-quantity) or last-confirmed quantity (quantity action).
+ * What a checked action currently holds - its own hidden field (non-quantity)
+ * or data-total-chosen-area (quantity action, which has no hidden field of
+ * its own). A non-quantity action can never genuinely claim exactly 0 (that's
+ * the same as not being checked), so a 0 hidden-field value - the server's
+ * default before any claim is established - reads as "not yet established".
  * @param {HTMLInputElement} checkbox
  * @returns {number | undefined}
  */
 function getChosenArea(checkbox) {
-  const raw = checkbox.getAttribute(TOTAL_CHOSEN_AREA_ATTR)
-  if (raw == null) {
-    return undefined
+  if (getQuantityInput(checkbox)) {
+    const raw = checkbox.getAttribute(TOTAL_CHOSEN_AREA_ATTR)
+    const value = raw == null ? NaN : Number(raw)
+    return Number.isFinite(value) ? value : undefined
   }
-  const value = Number(raw)
-  return Number.isFinite(value) ? value : undefined
+  const value = Number(getChosenAreaField(checkbox)?.value)
+  return Number.isFinite(value) && value > 0 ? value : undefined
+}
+
+/**
+ * Records a non-quantity action's chosen area in its hidden field, for both live client use and form submission.
+ * @param {HTMLInputElement} checkbox
+ * @param {number} chosenArea
+ */
+function setChosenArea(checkbox, chosenArea) {
+  const field = getChosenAreaField(checkbox)
+  if (field) {
+    field.value = String(chosenArea)
+  }
+}
+
+/**
+ * @param {HTMLInputElement} checkbox
+ */
+function clearChosenArea(checkbox) {
+  if (getQuantityInput(checkbox)) {
+    checkbox.removeAttribute(TOTAL_CHOSEN_AREA_ATTR)
+    return
+  }
+  const field = getChosenAreaField(checkbox)
+  if (field) {
+    field.value = '0'
+  }
 }
 
 /**
@@ -179,10 +234,7 @@ function uncheckUnconfirmedQuantityActions(form) {
   for (const checkbox of getCheckboxes(form)) {
     const quantityInput = getQuantityInput(checkbox)
     const isUnconfirmed =
-      !isProtectedFromRefresh(form, checkbox) &&
-      checkbox.checked &&
-      quantityInput &&
-      getValidTypedQuantity(checkbox) == null
+      !isProtectedFromRefresh(checkbox) && checkbox.checked && quantityInput && getValidTypedQuantity(checkbox) == null
     if (!isUnconfirmed) {
       continue
     }
@@ -265,7 +317,7 @@ function hideConditionalReveal(checkbox) {
 function markUnavailable(checkbox, quantityInput = getQuantityInput(checkbox)) {
   checkbox.checked = false
   checkbox.disabled = true
-  checkbox.removeAttribute(TOTAL_CHOSEN_AREA_ATTR)
+  clearChosenArea(checkbox)
   if (quantityInput) {
     quantityInput.value = ''
     quantityInput.disabled = true
@@ -355,7 +407,7 @@ function applyCheckedQuantityAvailability(checkbox, sentQuantity) {
  */
 function applyCheckedNonQuantityAvailability(checkbox, availableAreaValue, sentQuantity, allowGrowth) {
   const chosenArea = resolveChosenArea(availableAreaValue, sentQuantity, allowGrowth)
-  checkbox.setAttribute(TOTAL_CHOSEN_AREA_ATTR, String(chosenArea))
+  setChosenArea(checkbox, chosenArea)
   if (chosenArea === 0) {
     markUnavailable(checkbox)
   } else {
@@ -365,12 +417,17 @@ function applyCheckedNonQuantityAvailability(checkbox, availableAreaValue, sentQ
 
 /**
  * Applies one action's response: headroom attribute, quantity bounds, and - if checked - chosen area and disabled state.
+ * A protected checkbox (see isProtectedFromRefresh) keeps its own checked
+ * state, typed value and chosen area untouched - it's still allowed to be
+ * re-enabled/disabled by fresh availability, since that reflects what OTHER
+ * actions are doing, not a correction to its own rejected value.
  * @param {HTMLInputElement} checkbox
  * @param {{ availableArea?: { value: number, unit: string }, requiresMaxQuantity?: number }} action
  * @param {number | undefined} sentQuantity - What we claimed for this action, if checked and included.
  * @param {boolean} allowGrowth - Whether this checkbox may grow from response surplus (see resolveChosenArea).
+ * @param {boolean} isProtected
  */
-function applyAvailability(checkbox, action, sentQuantity, allowGrowth) {
+function applyAvailability(checkbox, action, sentQuantity, allowGrowth, isProtected) {
   const { availableArea } = action
   const quantityInput = getQuantityInput(checkbox)
   if (availableArea) {
@@ -385,6 +442,10 @@ function applyAvailability(checkbox, action, sentQuantity, allowGrowth) {
     return
   }
   if (availableArea == null) {
+    return
+  }
+  if (isProtected) {
+    clearUnavailable(checkbox)
     return
   }
   if (quantityInput) {
@@ -430,7 +491,7 @@ async function postPlannedActions(parcelId, plannedActions) {
  */
 function recoverFromFailedRefresh(form, forcedUnchecked) {
   for (const checkbox of getCheckboxes(form)) {
-    if (!forcedUnchecked.has(checkbox) && !isProtectedFromRefresh(form, checkbox)) {
+    if (!forcedUnchecked.has(checkbox) && !isProtectedFromRefresh(checkbox)) {
       clearUnavailable(checkbox)
     }
   }
@@ -446,27 +507,21 @@ function recoverFromFailedRefresh(form, forcedUnchecked) {
 function applyRefreshResponse(form, actions, plannedActions, forcedUnchecked, triggeringCheckbox) {
   const sentQuantityByCode = new Map(plannedActions.map((p) => [p.actionCode, p.quantity]))
   for (const checkbox of getCheckboxes(form)) {
-    if (forcedUnchecked.has(checkbox) || isProtectedFromRefresh(form, checkbox)) {
+    if (forcedUnchecked.has(checkbox)) {
       continue
     }
     const action = actions.find((a) => a.code === checkbox.value)
     if (action) {
       // A first-ever claim always "grows" from nothing - allowed regardless of trigger.
       const allowGrowth = checkbox === triggeringCheckbox || getChosenArea(checkbox) == null
-      applyAvailability(checkbox, action, sentQuantityByCode.get(checkbox.value), allowGrowth)
+      applyAvailability(
+        checkbox,
+        action,
+        sentQuantityByCode.get(checkbox.value),
+        allowGrowth,
+        isProtectedFromRefresh(checkbox)
+      )
     }
-  }
-  writePlannedActionsSnapshot(plannedActions)
-}
-
-/**
- * Records the last live-confirmed plannedActions so a server-side error re-render can reuse them verbatim.
- * @param {Array<{ actionCode: string, quantity: number, unit: string }>} plannedActions
- */
-function writePlannedActionsSnapshot(plannedActions) {
-  const field = /** @type {HTMLInputElement | null} */ (document.getElementById(PLANNED_ACTIONS_SNAPSHOT_ID))
-  if (field) {
-    field.value = JSON.stringify(plannedActions)
   }
 }
 
@@ -519,7 +574,9 @@ export function initSelectActionsPage(form) {
 
   const refreshAvailability = createAvailabilityRefresher(form, parcelId)
 
-  // Grey out incompatible selections and hydrate chosen areas (see isProtectedFromRefresh for checked/errors exceptions).
+  // Grey out incompatible selections and hydrate chosen areas (see
+  // isProtectedFromRefresh for checked/errored exceptions, cleared per
+  // checkbox by clearErrorOnLoad below on that checkbox's own next interaction).
   if (buildPlannedActions(form).length > 0) {
     refreshAvailability()
   }
@@ -536,6 +593,7 @@ export function initSelectActionsPage(form) {
     if (!(target instanceof HTMLInputElement) || target.type !== 'checkbox' || target.name !== CHECKBOX_NAME) {
       return
     }
+    clearErrorOnLoad(target)
     const quantityInput = getQuantityInput(target)
     if (!target.checked) {
       if (quantityInput) {
@@ -543,7 +601,7 @@ export function initSelectActionsPage(form) {
         quantityInput.value = ''
       }
       // A future re-check must claim afresh, not resend an old claim.
-      target.removeAttribute(TOTAL_CHOSEN_AREA_ATTR)
+      clearChosenArea(target)
     }
     if (target.checked && quantityInput && getValidTypedQuantity(target) == null) {
       return
@@ -565,12 +623,32 @@ export function initSelectActionsPage(form) {
     return checkbox instanceof HTMLInputElement ? checkbox : null
   }
 
+  // Remembers each quantity input's value as of its last focus, so blur can
+  // tell an actual edit apart from focus merely passing through (e.g. a click
+  // landing on a DIFFERENT checkbox first blurs this field with no edit at all).
+  let valueOnFocus = ''
+  form.addEventListener(
+    'focus',
+    (event) => {
+      if (getCheckboxForQuantityTarget(event.target)) {
+        valueOnFocus = /** @type {HTMLInputElement} */ (event.target).value
+      }
+    },
+    true
+  )
+
   // Refresh once the user leaves the field, not on every keystroke.
   form.addEventListener(
     'blur',
     (event) => {
       const checkbox = getCheckboxForQuantityTarget(event.target)
-      if (checkbox && getValidTypedQuantity(checkbox) != null) {
+      if (!checkbox) {
+        return
+      }
+      if (/** @type {HTMLInputElement} */ (event.target).value !== valueOnFocus) {
+        clearErrorOnLoad(checkbox)
+      }
+      if (getValidTypedQuantity(checkbox) != null) {
         refreshAvailability(checkbox)
       }
     },

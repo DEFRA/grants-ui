@@ -11,7 +11,16 @@ import SelectActionsBasePageController from './select-actions-base-page.controll
 
 vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () => ({
   QuestionPageController: class {
+    constructor(model, pageDef) {
+      this.model = model
+      this.pageDef = pageDef
+    }
+
     getViewModel() {}
+
+    getHref(path) {
+      return `/${this.model.basePath}/${path}`.replace(/\/{2,}/g, '/')
+    }
 
     makeGetRouteHandler() {
       return async (request, context, h) => h.view('stub-view', this.getViewModel(request, context))
@@ -54,8 +63,15 @@ class StubSelectActionsController extends SelectActionsBasePageController {
   validateUserInputResult = []
   writeActionsToStateResult = { landParcels: { 'sheet1-parcel1': { actionsObj: {} } } }
 
-  getViewModelWithActions(request, context, groupedActions, addedActions, quantityErrorsByCode = {}) {
-    return { ...super.getViewModel(request, context), groupedActions, addedActions, quantityErrorsByCode }
+  getViewModelWithActions(
+    request,
+    context,
+    groupedActions,
+    addedActions,
+    quantityErrorsByCode = {},
+    hasErrors = false
+  ) {
+    return { ...super.getViewModel(request, context), groupedActions, addedActions, quantityErrorsByCode, hasErrors }
   }
 
   validateUserInput() {
@@ -183,6 +199,15 @@ describe('SelectActionsBasePageController', () => {
       const [, viewModel] = mockH.view.mock.calls[0]
       expect(viewModel.errors).toEqual([{ text: 'Select an action', href: '#field' }])
       expect(controller.setState).not.toHaveBeenCalled()
+    })
+
+    test('passes hasErrors=true to getViewModelWithActions when re-rendering with errors', async () => {
+      controller.validateUserInputResult = [{ text: 'Select an action', href: '#field' }]
+
+      await controller.handlePost(mockRequest, mockContext, mockH)
+
+      const [, viewModel] = mockH.view.mock.calls[0]
+      expect(viewModel.hasErrors).toBe(true)
     })
 
     test('derives quantityErrorsByCode from quantity-validation errors so the offending input is highlighted', async () => {

@@ -8,21 +8,21 @@ function checkboxItemHtml({
   availableArea,
   requiresMaxQuantity,
   quantityValue = '',
-  chosenArea,
-  hasError = false
+  hasError = false,
+  errorOnLoad = false
 }) {
   const unitAttr = availableArea ? ` data-available-unit="${availableArea.unit}"` : ''
   const totalAreaAttr = availableArea ? ` data-total-available-area="${availableArea.value}"` : ''
-  // Matches the server: a saved non-quantity selection's chosen area is
-  // rendered directly on the checkbox, since it has no input field to carry it.
-  const chosenAreaAttr = chosenArea != null ? ` data-total-chosen-area="${chosenArea}"` : ''
+  // Stamped server-side per checkbox for a checked action redisplayed from a
+  // rejected submission (see mapActionToViewModel) - not a single form-wide flag.
+  const errorOnLoadAttr = errorOnLoad ? ' data-error-on-load="true"' : ''
   const conditionalId = `conditional-landAction-${code}`
   const ariaControlsAttr = requiresMaxQuantity ? ` aria-controls="${conditionalId}"` : ''
   // Matches govuk-frontend's real markup: the conditional reveal is a SIBLING
   // of .govuk-checkboxes__item, not nested inside it, and is only visible
   // (no --hidden class) when the checkbox starts out checked.
   const inputClass = `govuk-input${hasError ? ' govuk-input--error' : ''}`
-  const quantityInput = requiresMaxQuantity
+  const conditional = requiresMaxQuantity
     ? `
     <div class="govuk-checkboxes__conditional${checked ? '' : ' govuk-checkboxes__conditional--hidden'}" id="${conditionalId}">
         <div class="govuk-form-group">
@@ -35,19 +35,31 @@ function checkboxItemHtml({
     : ''
   return `
     <div class="govuk-checkboxes__item">
-      <input class="govuk-checkboxes__input" id="landAction-${code}" name="landAction" type="checkbox" value="${code}"${checked ? ' checked' : ''}${unitAttr}${totalAreaAttr}${chosenAreaAttr}${ariaControlsAttr}>
+      <input class="govuk-checkboxes__input" id="landAction-${code}" name="landAction" type="checkbox" value="${code}"${checked ? ' checked' : ''}${unitAttr}${totalAreaAttr}${ariaControlsAttr}${errorOnLoadAttr}>
       <label for="landAction-${code}">${code}</label>
     </div>
-    ${quantityInput}`
+    ${conditional}`
 }
 
+// Matches the server: a non-quantity action's chosen area is a plain hidden
+// field outside the checkboxes list (same field name as a quantity action's
+// real input, distinguished by type="hidden"), not a conditional reveal.
+function chosenAreaFieldHtml({ code, requiresMaxQuantity, chosenArea }) {
+  if (requiresMaxQuantity) {
+    return ''
+  }
+  return `<input type="hidden" id="landActionQuantity_${code}" name="landActionQuantity_${code}" value="${chosenArea ?? 0}">`
+}
+
+/** hasErrors stamps data-error-on-load onto every CHECKED item, matching mapActionToViewModel. */
 function setupDom(items, { hasErrors = false } = {}) {
-  const hasErrorsAttr = hasErrors ? ' data-has-errors="true"' : ''
+  const withErrorFlag = items.map((item) => ({ ...item, errorOnLoad: hasErrors && item.checked }))
   document.body.innerHTML = `
-    <form method="post"${hasErrorsAttr}>
+    <form method="post">
       <input type="hidden" name="crumb" value="test-crumb-value">
+      ${withErrorFlag.map(chosenAreaFieldHtml).join('\n')}
       <div class="govuk-checkboxes" data-module="govuk-checkboxes">
-        ${items.map(checkboxItemHtml).join('\n')}
+        ${withErrorFlag.map(checkboxItemHtml).join('\n')}
       </div>
     </form>`
   return document.querySelector('form')
@@ -57,6 +69,11 @@ function setupDom(items, { hasErrors = false } = {}) {
 function isConditionalHidden(checkbox) {
   const conditionalId = checkbox.getAttribute('aria-controls')
   return document.getElementById(conditionalId).classList.contains('govuk-checkboxes__conditional--hidden')
+}
+
+/** A non-quantity action's chosen area lives in its hidden field, sharing the checked action's quantity field id. */
+function getChosenAreaFieldValue(checkbox) {
+  return document.getElementById(`landActionQuantity_${checkbox.value}`).value
 }
 
 /**
@@ -222,6 +239,115 @@ describe('initSelectActionsPage', () => {
     const clig3Checkbox = form.querySelector('input[value="CLIG3"]')
     expect(clig3Checkbox.checked).toBe(false)
     expect(clig3Checkbox.disabled).toBe(true)
+  })
+
+  it('updates a non-quantity action hidden field on a fresh interaction after the initial errors-page load settles', async () => {
+    const form = setupDom(
+      [
+        {
+          code: 'CSAM3',
+          checked: true,
+          availableArea: { value: 6.3008, unit: 'ha' },
+          requiresMaxQuantity: 6.3008,
+          quantityValue: '777',
+          hasError: true
+        },
+        { code: 'CLIG3', checked: true, availableArea: { value: 6.3008, unit: 'ha' }, chosenArea: 1.3008 }
+      ],
+      { hasErrors: true }
+    )
+    global.fetch = fetchOk({ actions: [{ code: 'CLIG3', availableArea: { value: 1.3008, unit: 'ha' } }] })
+    initSelectActionsPage(form)
+    await flushPromises()
+
+    const clig3Checkbox = form.querySelector('input[value="CLIG3"]')
+    clig3Checkbox.checked = false
+    clig3Checkbox.dispatchEvent(new Event('change', { bubbles: true }))
+    await flushPromises()
+
+    // The claim just sent for CLIG3 (1.3008, its live headroom from the
+    // first response) plus the extra headroom this response reports (5) -
+    // the API contract is additive, not a flat replacement.
+    global.fetch = fetchOk({ actions: [{ code: 'CLIG3', availableArea: { value: 5, unit: 'ha' } }] })
+    clig3Checkbox.checked = true
+    clig3Checkbox.dispatchEvent(new Event('change', { bubbles: true }))
+    await flushPromises()
+
+    expect(getChosenAreaFieldValue(clig3Checkbox)).toBe('6.3008')
+    const csam3Checkbox = form.querySelector('input[value="CSAM3"]')
+    expect(csam3Checkbox.checked).toBe(true)
+    expect(form.querySelector('#landActionQuantity_CSAM3').value).toBe('777')
+  })
+
+  it('re-enables a protected checked action once another action frees up land, without touching its value or error', async () => {
+    const form = setupDom(
+      [
+        {
+          code: 'CSAM3',
+          checked: true,
+          availableArea: { value: 6.3008, unit: 'ha' },
+          requiresMaxQuantity: 6.3008,
+          quantityValue: '777',
+          hasError: true
+        },
+        { code: 'CLIG3', checked: true, availableArea: { value: 6.3008, unit: 'ha' }, chosenArea: 1.3008 }
+      ],
+      { hasErrors: true }
+    )
+    global.fetch = mockApi({ CSAM3: 0, CLIG3: 1.3008 })
+    initSelectActionsPage(form)
+    await flushPromises()
+
+    const csam3Checkbox = form.querySelector('input[value="CSAM3"]')
+    expect(csam3Checkbox.disabled).toBe(false)
+
+    const clig3Checkbox = form.querySelector('input[value="CLIG3"]')
+    global.fetch = mockApi({ CSAM3: 6.3008, CLIG3: 6.3008 })
+    clig3Checkbox.checked = false
+    clig3Checkbox.dispatchEvent(new Event('change', { bubbles: true }))
+    await flushPromises()
+
+    expect(csam3Checkbox.checked).toBe(true)
+    expect(csam3Checkbox.disabled).toBe(false)
+    expect(form.querySelector('#landActionQuantity_CSAM3').value).toBe('777')
+    expect(form.querySelector('.select-actions-unavailable-message')).toBeNull()
+  })
+
+  it('keeps a protected action checked when its field is merely focused/blurred (not edited) before another action is unchecked', async () => {
+    const form = setupDom(
+      [
+        {
+          code: 'CSAM3',
+          checked: true,
+          availableArea: { value: 6.3008, unit: 'ha' },
+          requiresMaxQuantity: 6.3008,
+          quantityValue: '777',
+          hasError: true
+        },
+        { code: 'CLIG3', checked: true, availableArea: { value: 6.3008, unit: 'ha' }, chosenArea: 1.3008 }
+      ],
+      { hasErrors: true }
+    )
+    global.fetch = mockApi({ CSAM3: 0, CLIG3: 1.3008 })
+    initSelectActionsPage(form)
+    await flushPromises()
+
+    // Clicking a different checkbox first blurs CSAM3's field via focus
+    // change, with no edit to its value - must not clear its protection.
+    const csam3Input = form.querySelector('#landActionQuantity_CSAM3')
+    csam3Input.dispatchEvent(new Event('focus'))
+    csam3Input.dispatchEvent(new Event('blur'))
+
+    const clig3Checkbox = form.querySelector('input[value="CLIG3"]')
+    global.fetch = mockApi({ CSAM3: 6.3008, CLIG3: 6.3008 })
+    clig3Checkbox.checked = false
+    clig3Checkbox.dispatchEvent(new Event('change', { bubbles: true }))
+    await flushPromises()
+
+    const csam3Checkbox = form.querySelector('input[value="CSAM3"]')
+    expect(csam3Checkbox.checked).toBe(true)
+    expect(csam3Checkbox.disabled).toBe(false)
+    expect(csam3Input.value).toBe('777')
   })
 
   it('includes a checked action from an errors-page load in plannedActions when a different action is checked', async () => {
@@ -1322,7 +1448,7 @@ describe('initSelectActionsPage', () => {
     clig3Checkbox.dispatchEvent(new Event('change', { bubbles: true }))
     await flushPromises()
 
-    expect(clig3Checkbox.getAttribute('data-total-chosen-area')).toBe('0.2271')
+    expect(getChosenAreaFieldValue(clig3Checkbox)).toBe('0.2271')
 
     const cmor1Checkbox = form.querySelector('#landAction-CMOR1')
     global.fetch = fetchOk({
@@ -1336,7 +1462,7 @@ describe('initSelectActionsPage', () => {
     cmor1Checkbox.dispatchEvent(new Event('change', { bubbles: true }))
     await flushPromises()
 
-    expect(cmor1Checkbox.getAttribute('data-total-chosen-area')).toBe('0.0301')
+    expect(getChosenAreaFieldValue(cmor1Checkbox)).toBe('0.0301')
   })
 
   it("does not grow an established non-quantity action's chosen area from a response triggered by unchecking a different action", async () => {
@@ -1369,8 +1495,8 @@ describe('initSelectActionsPage', () => {
 
     const clig3 = form.querySelector('input[value="CLIG3"]')
     const cmor1 = form.querySelector('input[value="CMOR1"]')
-    expect(clig3.getAttribute('data-total-chosen-area')).toBe('0.2271')
-    expect(cmor1.getAttribute('data-total-chosen-area')).toBe('0.0301')
+    expect(getChosenAreaFieldValue(clig3)).toBe('0.2271')
+    expect(getChosenAreaFieldValue(cmor1)).toBe('0.0301')
   })
 
   it("sends an unaffected non-quantity action's own chosen area when a different action is unchecked next", async () => {
