@@ -28,7 +28,7 @@ else
     exit 1
 fi
 
-rm -fr localstack/config-broker-local
+rm -fr compose/config-broker-local
 
 EXAMPLE_TAG=$(curl -s https://api.github.com/repos/DEFRA/grants-config-example-grants/tags | jq -r '.[0].name')
 
@@ -43,9 +43,9 @@ if [ "${USE_LOCAL_CONFIG_DEFINITION:-true}" = "true" ]; then
 else
   echo "Using version $EXAMPLE_TAG of the config for example-grant-with-auth"
 
-  mkdir -p localstack/config-broker-local/example-grant-with-auth@$EXAMPLE_TAG
-  curl -L https://raw.githubusercontent.com/DEFRA/grants-config-example-grants/$EXAMPLE_TAG/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml -o localstack/config-broker-local/example-grant-with-auth@$EXAMPLE_TAG/example-grant-with-auth.yaml
-  sed "s/^version:.*/version: $EXAMPLE_TAG/" localstack/config-broker/release.yml > localstack/config-broker-local/release.yml
+  mkdir -p compose/config-broker-local/example-grant-with-auth@$EXAMPLE_TAG
+  curl -L https://raw.githubusercontent.com/DEFRA/grants-config-example-grants/$EXAMPLE_TAG/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml -o compose/config-broker-local/example-grant-with-auth@$EXAMPLE_TAG/example-grant-with-auth.yaml
+  sed "s/^version:.*/version: $EXAMPLE_TAG/" compose/config-broker/release.yml > compose/config-broker-local/release.yml
 fi
 
 echo "Fetching example-grant-with-auth submission schema at version $EXAMPLE_TAG"
@@ -89,17 +89,17 @@ dump_diagnostics() {
   eval "${COMPOSE_COMMAND} ps" || true
   docker compose -f compose.tests.yml ps || true
 
-  for service in grants-ui grants-ui-backend grants-config-broker localstack fcp-defra-id-stub; do
+  for service in grants-ui grants-ui-backend grants-config-broker floci fcp-defra-id-stub; do
     echo ""
     echo "--- ${service} Service Logs ---"
     eval "${COMPOSE_COMMAND} logs --no-color --tail=300 ${service}" || true
   done
 
   echo ""
-  echo "--- LocalStack Resources ---"
-  eval "${COMPOSE_COMMAND} exec -T localstack aws --endpoint-url=http://localhost:4566 s3 ls" || true
-  eval "${COMPOSE_COMMAND} exec -T localstack aws --endpoint-url=http://localhost:4566 sqs list-queues" || true
-  eval "${COMPOSE_COMMAND} exec -T localstack aws --endpoint-url=http://localhost:4566 sns list-topics" || true
+  echo "--- Floci Resources ---"
+  eval "${COMPOSE_COMMAND} exec -T floci aws --endpoint-url=http://localhost:4566 s3 ls" || true
+  eval "${COMPOSE_COMMAND} exec -T floci aws --endpoint-url=http://localhost:4566 sqs list-queues" || true
+  eval "${COMPOSE_COMMAND} exec -T floci aws --endpoint-url=http://localhost:4566 sns list-topics" || true
 }
 
 # Guarantee teardown of both the main stack and the ephemeral test stack on

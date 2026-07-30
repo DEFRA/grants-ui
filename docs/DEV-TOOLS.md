@@ -69,7 +69,7 @@ DEV_DEMO_CONTACT_NAME=Demo Test User
 
 ## Local config & form-definition overrides
 
-The `gt up` flow runs `tools/setup-local-config.sh` first, which rebuilds `localstack/config-broker-local` by pulling the `DEFRA/grants-config-*` repos from GitHub.
+The `gt up` flow runs `tools/setup-local-config.sh` first, which rebuilds `compose/config-broker-local` by pulling the `DEFRA/grants-config-*` repos from GitHub.
 
 ### Offline-safe config pull
 
@@ -81,7 +81,7 @@ Each grant is stored under a version-named folder (e.g. `grasslands@0.4.0`), so 
 
 ### Local form-definition overrides
 
-For editing and testing a local WIP grant's **form definition** (not yet ready to push to the config repo), drop the definition into `localstack/config-broker/local-form-definitions/`, mirroring the repo layout `<grant>/<service>/<file>` (e.g. `woodland/grants-ui/woodland.yaml`). A single **Local form-definition overrides (all grants)** toggle in the `gt` TUI `local` menu enables/disables these local overrides.
+For editing and testing a local WIP grant's **form definition** (not yet ready to push to the config repo), drop the definition into `compose/config-broker/local-form-definitions/`, mirroring the repo layout `<grant>/<service>/<file>` (e.g. `woodland/grants-ui/woodland.yaml`). A single **Local form-definition overrides (all grants)** toggle in the `gt` TUI `local` menu enables/disables these local overrides.
 
 - Each enabled override is published to grants-ui-backend as one patch above the repo version (repo `1.2.3` -> override `1.2.4`), becoming the active version the frontend serves. The override document is stamped with a fresh `updatedAt` so grants-ui's forms-engine model cache (invalidated only when the definition's `updatedAt` changes) rebuilds and serves the new content rather than a stale compiled model.
 - Toggling **on** before `up` applies overrides automatically once the stack is healthy; toggling **on/off** while the stack is running applies/removes them immediately (no restart).

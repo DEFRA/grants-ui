@@ -8,7 +8,7 @@ export AWS_SECRET_ACCESS_KEY=test
 #
 # Land Grants Backend and Config Broker
 #
-echo "Land Grants Backend Localstack Startup"
+echo "Land Grants Backend Floci Startup"
 
 ENDPOINT="--endpoint-url=http://localhost:4566"
 ACCOUNT_ID=000000000000

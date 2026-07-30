@@ -58,14 +58,14 @@ When a request matches, it builds the event, calls `publishAuditEvent(...)`, and
 
 ## Configuration
 
-| Variable                                      | Default                                                       | Description                                                |
-| --------------------------------------------- | ------------------------------------------------------------- | ---------------------------------------------------------- |
-| `AUDIT_ENABLED`                               | `false`                                                       | Master switch - publish audit events to SNS                |
-| `AUDIT_SNS_TOPIC_ARN`                         | `arn:aws:sns:eu-west-2:000000000000:fcp_audit_events` (local) | ARN of grants-ui's own SNS topic                           |
-| `AUDIT_APPLICATION`                           | `Grants`                                                      | GIO application name (shared across the Grants services)   |
-| `AWS_REGION`                                  | `eu-west-2`                                                   | Region for the SNS client                                  |
-| `AWS_ENDPOINT_URL`                            | `http://localstack:4566` (local)                              | Custom AWS endpoint (LocalStack); leave unset for real AWS |
-| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | `test` / `test` (local)                                       | Credentials; in CDP these come from the IAM role           |
+| Variable                                      | Default                                                       | Description                                              |
+| --------------------------------------------- | ------------------------------------------------------------- | -------------------------------------------------------- |
+| `AUDIT_ENABLED`                               | `false`                                                       | Master switch - publish audit events to SNS              |
+| `AUDIT_SNS_TOPIC_ARN`                         | `arn:aws:sns:eu-west-2:000000000000:fcp_audit_events` (local) | ARN of grants-ui's own SNS topic                         |
+| `AUDIT_APPLICATION`                           | `Grants`                                                      | GIO application name (shared across the Grants services) |
+| `AWS_REGION`                                  | `eu-west-2`                                                   | Region for the SNS client                                |
+| `AWS_ENDPOINT_URL`                            | `http://floci:4566` (local)                                   | Custom AWS endpoint (Floci); leave unset for real AWS    |
+| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | `test` / `test` (local)                                       | Credentials; in CDP these come from the IAM role         |
 
 In deployed environments these are set via [cdp-app-config](https://github.com/DEFRA/cdp-app-config/blob/main/services/grants-ui). `environment` and `component` are derived automatically from `ENVIRONMENT` (mapped to `cdp-<env>`) and the git repository name (`grants-ui`); `version` is supplied by the publisher library.
 
@@ -94,7 +94,7 @@ Events carry an `audit` block only (persisted for analysis); they are **not** cu
 
 ## Local testing
 
-The whole flow runs locally against LocalStack and the Defra ID stub - no real AWS or Defra ID needed. (The `fcp-audit-publisher-stub` is itself a _publisher_, not a receiver, so it cannot observe grants-ui's events - use the steps below instead.)
+The whole flow runs locally against Floci and the Defra ID stub - no real AWS or Defra ID needed. (The `fcp-audit-publisher-stub` is itself a _publisher_, not a receiver, so it cannot observe grants-ui's events - use the steps below instead.)
 
 ### End-to-end walkthrough
 
@@ -106,13 +106,13 @@ The whole flow runs locally against LocalStack and the Defra ID stub - no real A
 
    The other `AUDIT_*` and `AWS_*` vars already default correctly in `compose.grants-ui.yml` for local use.
 
-2. **Start docker compose** (re-run after changing `.env` so the container picks up the new value). This boots LocalStack and auto-runs `localstack/start-localstack.sh`, which creates the `fcp_audit_events` topic and an `fcp_audit` SQS queue subscribed to it.
+2. **Start docker compose** (re-run after changing `.env` so the container picks up the new value). This boots Floci and auto-runs `compose/floci/common/10-setup-resources.sh`, which creates the `fcp_audit_events` topic and an `fcp_audit` SQS queue subscribed to it.
 
    ```bash
    docker compose up
    ```
 
-   The app serves on http://localhost:3000 and LocalStack on http://localhost:4566.
+   The app serves on http://localhost:3000 and Floci on http://localhost:4566.
 
 3. **Sign in** via the local Defra ID stub: open http://localhost:3000/auth/sign-in and choose a pre-seeded test user (no real credentials required).
 
@@ -127,7 +127,7 @@ The whole flow runs locally against LocalStack and the Defra ID stub - no real A
      npm run audit:logs
      ```
 
-   - or read the event off the local queue (runs `awslocal` inside the LocalStack container, so no host AWS CLI or credentials needed):
+   - or read the event off the local queue (runs `awslocal` inside the Floci container, so no host AWS CLI or credentials needed):
 
      ```bash
      npm run audit:queue
@@ -170,17 +170,17 @@ A `messageId` in the log line means the library validated the payload against th
 
 The structure is identical; only certain values are environment-specific:
 
-| Field                             | Local                                                                           | Deployed (CDP)                                                                                  |
-| --------------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `environment`                     | `local`                                                                         | `cdp-<env>` from `ENVIRONMENT` (e.g. `cdp-prod`)                                                |
-| `correlationid`                   | a generated UUID (no trace header locally)                                      | the request's `x-cdp-request-id` header; a UUID is generated only as a fallback                 |
-| `ip`                              | Docker host-gateway address (e.g. `192.168.65.1`)                               | the real client IP, taken from `x-forwarded-for`                                                |
-| `user` / `sessionid` / `accounts` | the local test user (`.env` `DEFAULT_CRN`/`DEFAULT_SBI` via the Defra ID stub)  | the signed-in user's real Defra ID session                                                      |
-| delivery                          | LocalStack `fcp_audit_events` topic → the local `fcp_audit` queue you read back | the service's real SNS topic → consumed by the FCP Audit service's `fcp_audit` SQS subscription |
+| Field                             | Local                                                                          | Deployed (CDP)                                                                                  |
+| --------------------------------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `environment`                     | `local`                                                                        | `cdp-<env>` from `ENVIRONMENT` (e.g. `cdp-prod`)                                                |
+| `correlationid`                   | a generated UUID (no trace header locally)                                     | the request's `x-cdp-request-id` header; a UUID is generated only as a fallback                 |
+| `ip`                              | Docker host-gateway address (e.g. `192.168.65.1`)                              | the real client IP, taken from `x-forwarded-for`                                                |
+| `user` / `sessionid` / `accounts` | the local test user (`.env` `DEFAULT_CRN`/`DEFAULT_SBI` via the Defra ID stub) | the signed-in user's real Defra ID session                                                      |
+| delivery                          | Floci `fcp_audit_events` topic → the local `fcp_audit` queue you read back     | the service's real SNS topic → consumed by the FCP Audit service's `fcp_audit` SQS subscription |
 
 ### Without infra - schema conformance test
 
-`src/server/common/helpers/audit/audit-event.test.js` runs the built event (with publisher defaults applied) through the library's real `validateAuditEvent`, so schema drift is caught with no LocalStack required:
+`src/server/common/helpers/audit/audit-event.test.js` runs the built event (with publisher defaults applied) through the library's real `validateAuditEvent`, so schema drift is caught with no Floci required:
 
 ```bash
 npm run audit:test

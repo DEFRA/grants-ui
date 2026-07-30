@@ -1,0 +1,99 @@
+{
+  "data": {
+    "customer": {
+      "business": {
+        "permissionGroups": [
+          {
+            "id": "BASIC_PAYMENT_SCHEME",
+            "level": "SUBMIT",
+            "functions": [
+              "View business summary",
+              "View claims",
+              "View land, features and covers",
+              "Create and edit a claim",
+              "Amend a previously submitted claim",
+              "Amend land, features and covers",
+              "Submit a claim",
+              "Withdraw a claim",
+              "Receive warnings and notifications"
+            ]
+          },
+          {
+            "id": "BUSINESS_DETAILS",
+            "level": "FULL_PERMISSION",
+            "functions": [
+              "View business details",
+              "View people associated with the business",
+              "Amend business and correspondence contact details",
+              "Amend controlled information, such as business name",
+              "Confirm business details",
+              "Amend bank account details",
+              "Make young/new farmer declaration",
+              "Add someone to the business",
+              "Give permissions on business"
+            ]
+          },
+          {
+            "id": "COUNTRYSIDE_STEWARDSHIP_AGREEMENTS",
+            "level": "SUBMIT",
+            "functions": [
+              "View CS Agreements",
+              "View Land, Features and Cover",
+              "View CS Agreement amendments",
+              "View CS agreement Transfers",
+              "View CS Claims",
+              "Amend land, Features and Covers",
+              "Create and edit a CS claim",
+              "Amend a previously submitted claim",
+              "Create and edit a CS agreement Amendment",
+              "Revise a previously submitted agreement amendment",
+              "Create and Edit a CS agreement transfer",
+              "Revise a previously submitted agreement transfer",
+              "Submit Acceptance of CS Agreement offer",
+              "Submit rejection of CS agreement offer",
+              "Submit (and resubmit) a CS claim",
+              "Withdraw a CS claim",
+              "Submit (and resubmit) a CS agreement amendment",
+              "Withdraw a CS agreement amendment",
+              "Submit (and resubmit) a CS agreement transfer",
+              "Withdraw a CS agreement transfer",
+              "Receive warnings and notifications"
+            ]
+          },
+          {
+            "id": "COUNTRYSIDE_STEWARDSHIP_APPLICATIONS",
+            "level": "SUBMIT",
+            "functions": [
+              "View CS Scheme eligibility",
+              "View Applications",
+              "View land, features and covers",
+              "View CS agreement offer",
+              "View draft CS Agreements",
+              "Create and edit a CS application",
+              "Amend a previously submitted CS application",
+              "Amend Land, Features and Covers",
+              "Submit CS Application",
+              "Withdraw CS application",
+              "Receive warnings and notifications"
+            ]
+          },
+          {
+            "id": "ENTITLEMENTS",
+            "level": "AMEND",
+            "functions": ["View entitlements", "Transfer entitlements", "Apply for new entitlements"]
+          },
+          {
+            "id": "ENVIRONMENTAL_LAND_MANAGEMENT_APPLICATIONS",
+            "level": "NO_ACCESS",
+            "functions": []
+          },
+          {
+            "id": "LAND_DETAILS",
+            "level": "AMEND",
+            "functions": ["View land, features and covers", "Amend land, features and covers", "Transfer land"]
+          }
+        ]
+      }
+    }
+  }
+}

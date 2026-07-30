@@ -8,7 +8,7 @@
  * Usage:
  *   node tools/apply-local-form-defs.mjs <enable|disable>
  *
- * enable  - for each override under localstack/config-broker/local-form-definitions,
+ * enable  - for each override under compose/config-broker/local-form-definitions,
  *           clone the current active `config__form_definitions` document for the
  *           grant, overlay the parsed override FormDefinition, bump the version by
  *           one patch above the repo version (e.g. 1.2.3 -> 1.2.4) and upsert it so
@@ -35,8 +35,8 @@ import { parse as parseYaml } from 'yaml'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(__dirname, '..')
 
-const FORM_DEFS_DIR = resolve(ROOT, 'localstack/config-broker/local-form-definitions')
-const CONFIG_BROKER_LOCAL = resolve(ROOT, 'localstack/config-broker-local')
+const FORM_DEFS_DIR = resolve(ROOT, 'compose/config-broker/local-form-definitions')
+const CONFIG_BROKER_LOCAL = resolve(ROOT, 'compose/config-broker-local')
 
 // Compose service that runs Mongo, and the physical database the backend uses.
 const MONGO_SERVICE = process.env.GRANTS_UI_MONGO_SERVICE || 'mongodb'

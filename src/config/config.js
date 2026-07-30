@@ -336,7 +336,7 @@ const convictConfig = {
       env: 'AWS_REGION'
     },
     endpointUrl: /** @type {SchemaObj<string | null>} */ ({
-      doc: 'Custom AWS endpoint URL (e.g. LocalStack). Leave null to use real AWS.',
+      doc: 'Custom AWS endpoint URL (e.g. Floci). Leave null to use real AWS.',
       format: String,
       nullable: true,
       default: null,
