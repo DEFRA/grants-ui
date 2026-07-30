@@ -456,15 +456,14 @@ function applyRefreshResponse(form, actions, plannedActions, forcedUnchecked, tr
       applyAvailability(checkbox, action, sentQuantityByCode.get(checkbox.value), allowGrowth)
     }
   }
-  writePlannedActionsSnapshot(form, plannedActions)
+  writePlannedActionsSnapshot(plannedActions)
 }
 
 /**
  * Records the last live-confirmed plannedActions so a server-side error re-render can reuse them verbatim.
- * @param {HTMLElement} form
  * @param {Array<{ actionCode: string, quantity: number, unit: string }>} plannedActions
  */
-function writePlannedActionsSnapshot(form, plannedActions) {
+function writePlannedActionsSnapshot(plannedActions) {
   const field = /** @type {HTMLInputElement | null} */ (document.getElementById(PLANNED_ACTIONS_SNAPSHOT_ID))
   if (field) {
     field.value = JSON.stringify(plannedActions)
