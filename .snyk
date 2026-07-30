@@ -3,8 +3,8 @@ version: v1.25.0
 ignore:
   'SNYK-JS-INFLIGHT-6095116':
     - '*':
-        reason: 'Not reachable in application runtime — inflight is only present via glob from @defra/interactive-map/polygon-splitter package metadata and dev/build tooling; grants-ui and the shipped map bundles do not import glob or inflight. No upstream fix available; reassess for interactive-map/polygon-splitter dependency removal.'
-        expires: '2026-07-30'
+        reason: 'Not reachable in application runtime — inflight is only present via glob from @defra/interactive-map/polygon-splitter package metadata and dev/build tooling; grants-ui and the shipped map bundles do not import glob or inflight. Checked 2026-07-30: latest @defra/interactive-map (0.0.35-alpha) and polygon-splitter (0.0.11) still pin glob@^8, which requires inflight; no upstream fix available. Reassess for interactive-map/polygon-splitter dependency removal.'
+        expires: '2026-08-30'
   'SNYK-JS-POSTCSSSELECTORPARSER-16873882':
     - '*':
         reason: 'No fix available — build-time only, not exposed at runtime. Monitor for upstream patch.'
