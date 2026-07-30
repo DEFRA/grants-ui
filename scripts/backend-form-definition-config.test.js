@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
 
+const infraComposeConfig = parse(readFileSync('compose.infra.yml', 'utf8'))
 const grantsUIComposeConfig = parse(readFileSync('compose.grants-ui.yml', 'utf8'))
 const landGrantsComposeConfig = parse(readFileSync('compose.land-grants.yml', 'utf8'))
 
@@ -19,7 +20,7 @@ describe('backend-sourced form deployment config', () => {
   })
 
   it('waits for Floci base resources before dependent services start', () => {
-    const floci = grantsUIComposeConfig.services.floci
+    const floci = infraComposeConfig.services.floci
 
     expect(floci.volumes).toContain(
       './compose/floci/check-floci-resources.sh:/usr/local/bin/check-floci-resources.sh:ro'
@@ -35,11 +36,15 @@ describe('backend-sourced form deployment config', () => {
   })
 
   it('extends Floci readiness for land-grants resources', () => {
-    const floci = landGrantsComposeConfig.services.floci
-    const environment = floci.environment ?? {}
+    const floci = infraComposeConfig.services.floci
+    const landGrants = landGrantsComposeConfig.services.floci
+    const landGrantsEnvironment = landGrants.environment ?? {}
+    const flociEnvironment = floci.environment ?? {}
 
-    expect(csv(environment.FLOCI_REQUIRED_S3_BUCKETS)).toEqual(expect.arrayContaining(['configs-bucket', 'land-data']))
-    expect(csv(environment.FLOCI_REQUIRED_SQS_QUEUES)).toEqual(
+    expect(csv(landGrantsEnvironment.FLOCI_REQUIRED_S3_BUCKETS)).toEqual(
+      expect.arrayContaining(['configs-bucket', 'land-data'])
+    )
+    expect(csv(landGrantsEnvironment.FLOCI_REQUIRED_SQS_QUEUES)).toEqual(
       expect.arrayContaining([
         'fcp_audit',
         'gfr__sqs___config_input',
@@ -47,7 +52,7 @@ describe('backend-sourced form deployment config', () => {
         'grants_config_broker_update'
       ])
     )
-    expect(csv(environment.FLOCI_REQUIRED_SNS_TOPICS)).toEqual(
+    expect(csv(flociEnvironment.FLOCI_REQUIRED_SNS_TOPICS)).toEqual(
       expect.arrayContaining(['fcp_audit_events', 'gfr__sns___config_update'])
     )
   })
