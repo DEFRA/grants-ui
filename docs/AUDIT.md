@@ -104,7 +104,7 @@ The whole flow runs locally against LocalStack and the Defra ID stub - no real A
    AUDIT_ENABLED=true
    ```
 
-   The other `AUDIT_*` and `AWS_*` vars already default correctly in `compose.yml` for local use.
+   The other `AUDIT_*` and `AWS_*` vars already default correctly in `compose.grants-ui.yml` for local use.
 
 2. **Start docker compose** (re-run after changing `.env` so the container picks up the new value). This boots LocalStack and auto-runs `localstack/start-localstack.sh`, which creates the `fcp_audit_events` topic and an `fcp_audit` SQS queue subscribed to it.
 
@@ -197,7 +197,7 @@ Each publishing service owns its SNS topic and asks FCP Audit to subscribe:
 
 No code change is needed - the ARN flows in via the `AUDIT_SNS_TOPIC_ARN` env var (`audit.snsTopicArn` config) and is passed straight to `publishAuditEvent`. Once you have it:
 
-1. **Set the ARN per environment** in [cdp-app-config](https://github.com/DEFRA/cdp-app-config/blob/main/services/grants-ui) (not in this repo's `compose.yml`/`.env`, which are local-only). Each environment has its own topic:
+1. **Set the ARN per environment** in [cdp-app-config](https://github.com/DEFRA/cdp-app-config/blob/main/services/grants-ui) (not in this repo's `compose.grants-ui.yml`/`.env`, which are local-only). Each environment has its own topic:
 
    ```
    AUDIT_SNS_TOPIC_ARN=arn:aws:sns:eu-west-2:<account>:fcp_audit_farming_grants_ui

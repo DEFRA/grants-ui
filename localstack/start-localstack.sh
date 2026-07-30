@@ -9,7 +9,7 @@ export AWS_SECRET_ACCESS_KEY=test
 # FCP Audit Service
 #
 
-# FCP Audit events topic (matches AUDIT_SNS_TOPIC_ARN default in compose.yml)
+# FCP Audit events topic (matches AUDIT_SNS_TOPIC_ARN default in compose.grants-ui.yml)
 aws --endpoint-url=http://localhost:4566 sns create-topic --name fcp_audit_events
 
 # Local stand-in for the FCP Audit service's SQS queue, subscribed to our topic so

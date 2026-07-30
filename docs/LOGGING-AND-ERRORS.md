@@ -291,11 +291,11 @@ LOG_LEVEL=debug docker compose up
 # Or set in .env file
 LOG_LEVEL=debug
 
-# Or set in compose.yml environment variables
+# Or set in compose.grants-ui.yml environment variables
 LOG_LEVEL: debug
 ```
 
-**Note**: When changing `LOG_LEVEL` in `compose.yml`, restart the container:
+**Note**: When changing `LOG_LEVEL` in `compose.grants-ui.yml`, restart the container:
 
 ```bash
 docker compose restart grants-ui

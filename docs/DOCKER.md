@@ -135,7 +135,7 @@ And optionally:
 - **GAS** (Grants Application Service) via `compose.gas.yml` — see [GAS Compose](#gas-compose-composegasyml)
 
 ```bash
-docker compose -f compose.yml -f compose.gas.yml up -d
+docker compose -f compose.infra.yml -f compose.grants-ui.yml -f compose.gas.yml up -d
 ```
 
 - **Land Grants API and Postgres** via `compose.land-grants.yml`
@@ -175,7 +175,7 @@ What it provides:
 To start the stack with GAS manually (without the TUI):
 
 ```bash
-docker compose -f compose.yml -f compose.gas.yml up -d
+docker compose -f compose.infra.yml -f compose.grants-ui.yml -f compose.gas.yml up -d
 ```
 
 ## High-Availability (HA) Local Proxy

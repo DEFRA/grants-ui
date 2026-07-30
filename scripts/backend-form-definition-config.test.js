@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
 
-const composeConfig = parse(readFileSync('compose.yml', 'utf8'))
+const composeConfig = parse(readFileSync('compose.grants-ui.yml', 'utf8'))
 const landGrantsComposeConfig = parse(readFileSync('compose.land-grants.yml', 'utf8'))
 
 const csv = (value = '') =>

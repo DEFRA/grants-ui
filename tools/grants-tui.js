@@ -225,7 +225,7 @@ function clearState() {
 // ---------------------------------------------------------------------------
 
 function composeFiles(selectedAddonKeys) {
-  const files = ['compose.yml']
+  const files = ['compose.infra.yml', 'compose.grants-ui.yml']
   for (const addon of ADDONS) {
     if (selectedAddonKeys.includes(addon.key)) files.push(addon.composeFile)
   }

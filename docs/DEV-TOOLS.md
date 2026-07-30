@@ -262,7 +262,7 @@ To exercise these pages, run `runJourney(N)` to land on the trigger page (`runJo
 Step 22 (`/select-land-parcel`) renders parcels fetched from the DAL stub for the signed-in SBI and runs `performAuthCheck` against the same source on submit. For the journey runner to clear the page, three things have to line up — the same conditions that the woodland journey relies on:
 
 1. **Sign in with CRN `1102838829`.** The DAL stub (`grants-ui-dal-stub`) returns parcels for this CRN; signing in with another CRN renders no checkboxes (or ones that fail the auth check).
-2. **Run with mockserver in front of the land-grants API.** The default `compose.yml` already points `LAND_GRANTS_API_URL` at mockserver. If you're running `compose.land-grants.yml` (real backend), layer in `compose.journey-runner.yml`:
+2. **Run with mockserver in front of the land-grants API.** The default `compose.grants-ui.yml` already points `LAND_GRANTS_API_URL` at mockserver. If you're running `compose.land-grants.yml` (real backend), layer in `compose.journey-runner.yml`:
 
    ```sh
    npm run docker:landgrants:journey-runner:up
@@ -288,7 +288,7 @@ npm run docker:landgrants:journey-runner:up
 # tear down with: npm run docker:landgrants:journey-runner:down
 ```
 
-Without `compose.land-grants.yml`, the default in `compose.yml` already points at mockserver, so no override is needed.
+Without `compose.land-grants.yml`, the default in `compose.grants-ui.yml` already points at mockserver, so no override is needed.
 
 If you change `mockserver/expectations.json` mid-session and the journey still shows the old values:
 

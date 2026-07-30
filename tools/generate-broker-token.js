@@ -4,7 +4,7 @@
  *
  * Generates an encrypted bearer token for authenticating with the config broker.
  * Reads CONFIG_BROKER_AUTH_TOKEN and CONFIG_BROKER_ENCRYPTION_KEY from your .env file
- * (defaults to compose.yml development values if not set).
+ * (defaults to compose.grants-ui.ymldevelopment values if not set).
  *
  * Usage:
  *   node scripts/generate-broker-token.js                     # Prints token to console
