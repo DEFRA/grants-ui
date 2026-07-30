@@ -649,9 +649,25 @@ function cmdDebug() {
 
 function cmdReset(dryRun) {
   console.log(`\n  ${YELLOW}⚠${RESET_COLOR}  RESET: This will remove all containers, volumes, and local images.\n`)
-  const status1 = runCompose(['down', '--volumes', '--remove-orphans', '--rmi', 'local'], dryRun)
-  if (status1 !== 0 && !_interactive) process.exit(status1)
-  if (status1 !== 0) return status1
+
+  const composeFiles = ['compose.grants-ui.yml', 'compose.land-grants.yml']
+
+  for (const file of composeFiles) {
+    console.log(
+      `  ${DIM}▶${RESET_COLOR}  docker compose -f ${file} -f compose.infra.yml down --volumes --remove-orphans --rmi local\n`
+    )
+
+    if (!dryRun) {
+      spawnSync(
+        'docker',
+        ['compose', '-f', file, '-f', 'compose.infra.yml', 'down', '--volumes', '--remove-orphans', '--rmi', 'local'],
+        {
+          cwd: ROOT,
+          stdio: 'inherit'
+        }
+      )
+    }
+  }
 
   const volList = spawnSync('docker', ['volume', 'ls', '--format', '{{.Name}}'], { encoding: 'utf8' })
   const anonVols = (volList.stdout ?? '')
