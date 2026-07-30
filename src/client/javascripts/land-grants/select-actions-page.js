@@ -169,7 +169,8 @@ function uncheckUnconfirmedQuantityActions(form) {
   const forced = new Set()
   for (const checkbox of getCheckboxes(form)) {
     const quantityInput = getQuantityInput(checkbox)
-    const isUnconfirmed = !hasQuantityError(checkbox) && checkbox.checked && quantityInput && getValidTypedQuantity(checkbox) == null
+    const isUnconfirmed =
+      !hasQuantityError(checkbox) && checkbox.checked && quantityInput && getValidTypedQuantity(checkbox) == null
     if (!isUnconfirmed) {
       continue
     }

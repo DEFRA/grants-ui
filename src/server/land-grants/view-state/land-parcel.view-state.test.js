@@ -682,7 +682,12 @@ describe('land-parcel-state.manager', () => {
   describe('mergeRecomputedAvailability', () => {
     it('should overwrite availableArea/requiresMaxQuantity from the recomputed match', () => {
       const actions = [
-        { code: 'CSAM3', description: 'Herbal leys', availableArea: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 }
+        {
+          code: 'CSAM3',
+          description: 'Herbal leys',
+          availableArea: { value: 0.3271, unit: 'ha' },
+          requiresMaxQuantity: 0.3271
+        }
       ]
       const recomputed = [{ code: 'CSAM3', availableArea: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
 

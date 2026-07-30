@@ -636,7 +636,7 @@ describe('SelectActionsPageController', () => {
       expect(upl2.conditional.html).toContain('value="1.5"')
     })
 
-    test("should render data-total-available-area from the static, uncompeted total even after a competing recompute", async () => {
+    test('should render data-total-available-area from the static, uncompeted total even after a competing recompute', async () => {
       mockRequest.payload = {
         landAction: ['UPL1', 'UPL2'],
         landActionQuantity_UPL2: '1.5',

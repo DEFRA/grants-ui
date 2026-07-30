@@ -219,7 +219,7 @@ describe('select-actions.view-model', () => {
       })
     })
 
-    it("should render data-total-available-area from staticAvailableArea when present, not the (possibly competed) availableArea", () => {
+    it('should render data-total-available-area from staticAvailableArea when present, not the (possibly competed) availableArea', () => {
       const action = {
         code: 'CSAM3',
         description: 'Herbal leys',
