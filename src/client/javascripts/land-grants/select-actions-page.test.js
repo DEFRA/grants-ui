@@ -191,13 +191,7 @@ describe('initSelectActionsPage', () => {
     )
   })
 
-  // Regression: a page re-rendered after ANY failed submit (not just a
-  // quantity-specific error - e.g. a generic API failure from
-  // validateApplication) must not run its automatic on-load refresh at all.
-  // The server-rendered state already reflects exactly what was submitted;
-  // a live re-check could disable/uncheck a selection for reasons unrelated
-  // to why the submission actually failed.
-  it('skips the automatic on-load refresh entirely when the page was rendered with errors', async () => {
+  it('runs the on-load refresh after a failed submit, but never touches a checked action while greying out an unchecked one', async () => {
     const form = setupDom(
       [
         {
@@ -207,25 +201,33 @@ describe('initSelectActionsPage', () => {
           requiresMaxQuantity: 0.3271,
           quantityValue: '0.2'
         },
-        { code: 'CLIG3', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, chosenArea: 0.3271 }
+        { code: 'CLIG3', checked: false, availableArea: { value: 0.3271, unit: 'ha' } }
       ],
       { hasErrors: true }
     )
-    global.fetch = vi.fn()
+    global.fetch = fetchOk({
+      actions: [
+        { code: 'CSAM3', availableArea: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 },
+        { code: 'CLIG3', availableArea: { value: 0, unit: 'ha' } }
+      ]
+    })
 
     initSelectActionsPage(form)
     await flushPromises()
 
-    expect(global.fetch).not.toHaveBeenCalled()
+    expect(global.fetch).toHaveBeenCalledTimes(1)
     const csam3Checkbox = form.querySelector('input[value="CSAM3"]')
     const csam3QuantityInput = form.querySelector('#landActionQuantity_CSAM3')
     expect(csam3Checkbox.checked).toBe(true)
     expect(csam3Checkbox.disabled).toBe(false)
     expect(csam3QuantityInput.value).toBe('0.2')
-    expect(form.querySelector('input[value="CLIG3"]').checked).toBe(true)
+
+    const clig3Checkbox = form.querySelector('input[value="CLIG3"]')
+    expect(clig3Checkbox.checked).toBe(false)
+    expect(clig3Checkbox.disabled).toBe(true)
   })
 
-  it('includes a quantity action from an errors-page load in plannedActions when a different action is checked', async () => {
+  it('includes a checked action from an errors-page load in plannedActions when a different action is checked', async () => {
     const form = setupDom(
       [
         {
@@ -235,13 +237,15 @@ describe('initSelectActionsPage', () => {
           requiresMaxQuantity: 0.3271,
           quantityValue: '0.2'
         },
-        { code: 'CLIG3', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, chosenArea: 0.3271 },
+        { code: 'CLIG3', checked: false, availableArea: { value: 0.3271, unit: 'ha' } },
         { code: 'CMOR1', availableArea: { value: 10, unit: 'ha' } }
       ],
       { hasErrors: true }
     )
     global.fetch = fetchOk({ actions: [] })
     initSelectActionsPage(form)
+    await flushPromises()
+    global.fetch.mockClear()
 
     form.querySelector('input[value="CMOR1"]').dispatchEvent(new Event('change', { bubbles: true }))
     await flushPromises()
@@ -251,21 +255,13 @@ describe('initSelectActionsPage', () => {
     expect(JSON.parse(options.body).plannedActions).toContainEqual({ actionCode: 'CSAM3', quantity: 0.2, unit: 'ha' })
   })
 
-  // Regression: after a failed submit re-renders the page, a checked action
-  // with a server-flagged validation error (govuk-input--error on its
-  // quantity input) must keep showing that feedback - the automatic on-load
-  // refresh must never disable/uncheck it or reset its typed value, even
-  // when a competing sibling action is also checked and the live response
-  // would otherwise treat it as unavailable.
   it('never disables, unchecks or resets a checked action whose quantity input already has a validation error', async () => {
     const form = setupDom([
       {
         code: 'CSAM3',
         checked: true,
         availableArea: { value: 0.3271, unit: 'ha' },
-        // Lower than quantityValue - reproduces the server rendering a
-        // stale/self-competing max after a failed submit, which would
-        // otherwise make getValidTypedQuantity reject the typed value.
+        // requiresMaxQuantity is lower than quantityValue to simulate a stale server-rendered max.
         requiresMaxQuantity: 0.0271,
         quantityValue: '0.3',
         hasError: true
@@ -301,10 +297,6 @@ describe('initSelectActionsPage', () => {
     expect(global.fetch).not.toHaveBeenCalled()
   })
 
-  // Regression: the server renders a checked action's hint against its full
-  // total, not what's left after its own saved quantity - that must be
-  // recomputed on load the same way typing does, not left stale until the
-  // user edits the field.
   it('updates a pre-selected quantity input hint on load to reflect what remains after its own saved value', () => {
     const form = setupDom([
       {
@@ -367,11 +359,6 @@ describe('initSelectActionsPage', () => {
     expect(form.querySelector('input[value="CLIG3"]').disabled).toBe(false)
   })
 
-  // Regression: checking CLIG3 alone must still surface CLIG3's competition
-  // against OTHER actions (e.g. CSAM3), even though CLIG3 is the only thing
-  // checked. This requires the request to include CLIG3's own claim (not
-  // exclude it), since excluding it would mean no request ever tells CSAM3
-  // that CLIG3 is competing with it.
   it('greys out a different, unchecked action genuinely made unavailable by the one checked action', async () => {
     const form = setupDom([
       { code: 'CLIG3', checked: true, availableArea: { value: 45.2, unit: 'ha' } },
@@ -397,10 +384,6 @@ describe('initSelectActionsPage', () => {
     expect(csam3.disabled).toBe(true)
   })
 
-  // Regression: a non-quantity action only needs SOME area left (> 0), not
-  // its full original total - it has no partial-amount concept of its own,
-  // so a reduced-but-nonzero availableArea (e.g. after a competing action
-  // takes a partial claim) must not grey it out.
   it('does not grey out a non-quantity action whose availableArea is reduced but still non-zero', async () => {
     const form = setupDom([
       {
@@ -429,14 +412,6 @@ describe('initSelectActionsPage', () => {
     expect(form.querySelector('input[value="CLIG3"]').disabled).toBe(false)
   })
 
-  // Regression: a quantity-required action that's checked but hasn't had a
-  // quantity typed yet must only need SOME area left (> 0), not its full
-  // original total - unlike a non-quantity action, it hasn't committed to
-  // needing the whole thing. A competing claim reducing its available area
-  // to a smaller but still non-zero number must not disable it.
-  // A checked, quantity-required action with nothing typed isn't a real
-  // selection - it's force-unchecked and disabled rather than left as a
-  // silent no-op, so it can't masquerade as a confirmed choice.
   it('unchecks and disables a checked quantity-required action that has no confirmed quantity', async () => {
     const form = setupDom([
       {
@@ -630,10 +605,6 @@ describe('initSelectActionsPage', () => {
     expect(JSON.parse(options.body).plannedActions).toEqual([{ actionCode: 'UPL1', quantity: 5, unit: 'ha' }])
   })
 
-  // Regression: the input's max/hint always reflects the raw availableArea
-  // the API most recently returned - typing a value the previous response
-  // now allows (0.2271, after a refresh reported that much available) fires
-  // a request rather than being blocked against a stale prior max.
   it('still fires a request when typing a valid quantity within the latest refreshed max', async () => {
     const form = setupDom([
       { code: 'CLIG3', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 }
@@ -660,11 +631,6 @@ describe('initSelectActionsPage', () => {
     expect(global.fetch).toHaveBeenCalledTimes(1)
   })
 
-  // Regression: CSAM3=0.10 confirmed, then a competing sibling (CLIG3) is
-  // checked, making CSAM3 self-competing (displayed max/hint correctly reads
-  // 0). Reducing CSAM3 to something at or below what's already confirmed
-  // must still be possible - the displayed 0 is not the effective ceiling
-  // for a reduction, only for an increase.
   it('allows reducing a quantity at or below its last-confirmed value even when the displayed max reads 0', async () => {
     const form = setupDom([
       { code: 'CSAM3', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 },
@@ -699,10 +665,6 @@ describe('initSelectActionsPage', () => {
     expect(JSON.parse(options.body).plannedActions).toContainEqual({ actionCode: 'CSAM3', quantity: 0.05, unit: 'ha' })
   })
 
-  // Regression: after reducing CSAM3 from 0.10 to 0.05 (while self-competing
-  // with a checked sibling), increasing it back to 0.10 must still be
-  // possible - the last-confirmed value must not become a new, lower ceiling
-  // that then blocks going back up to a quantity that was already valid.
   it('allows increasing a quantity back up after a reduction, up to the static uncompeted total', async () => {
     const form = setupDom([
       { code: 'CSAM3', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 },
@@ -746,9 +708,6 @@ describe('initSelectActionsPage', () => {
     expect(JSON.parse(options.body).plannedActions).toContainEqual({ actionCode: 'CSAM3', quantity: 0.1, unit: 'ha' })
   })
 
-  // Regression: typing above the action's own static, uncompeted total is
-  // still blocked - that's a quantity it could never hold under any
-  // circumstance, unlike a value merely above the current live headroom.
   it('still blocks an increase above the static uncompeted total', async () => {
     const form = setupDom([
       { code: 'CSAM3', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 },
@@ -779,12 +738,6 @@ describe('initSelectActionsPage', () => {
     expect(global.fetch).not.toHaveBeenCalled()
   })
 
-  // Regression: CSAM3=0.1 confirmed, then CLIG3 checked, then CSAM3 edited to
-  // an invalid 0.4 (above its own static total, never blurred/confirmed),
-  // then a DIFFERENT action (CMOR1) is checked. The in-flight, unconfirmed
-  // 0.4 edit must not wipe out CSAM3's last confirmed 0.1 - it should stay
-  // checked/enabled with its field reverted to 0.1, and CMOR1's refresh must
-  // still send CSAM3=0.1.
   it('reverts an in-progress invalid quantity edit to the last confirmed value instead of losing the selection', async () => {
     const form = setupDom([
       { code: 'CSAM3', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 },
@@ -833,9 +786,6 @@ describe('initSelectActionsPage', () => {
     expect(JSON.parse(options.body).plannedActions).toContainEqual({ actionCode: 'CSAM3', quantity: 0.1, unit: 'ha' })
   })
 
-  // Regression: a checked action with a genuinely valid quantity must stay
-  // in the request when a DIFFERENT action's quantity is typed - it must not
-  // be dropped just because it's not the one currently being edited.
   it('includes a checked action in plannedActions when a different action is being edited', async () => {
     const form = setupDom([
       {
@@ -1031,8 +981,6 @@ describe('initSelectActionsPage', () => {
     expect(global.fetch).not.toHaveBeenCalled()
   })
 
-  // Regression: "0", "abc", "-1" are typed-but-invalid - no different from
-  // nothing typed, so no request fires at all for these values.
   it.each([['0'], ['abc'], ['-1']])(
     'does not fire a request when the typed quantity is invalid but not empty (%j)',
     async (typedValue) => {
@@ -1074,10 +1022,6 @@ describe('initSelectActionsPage', () => {
     expect(global.fetch).not.toHaveBeenCalled()
   })
 
-  // Regression: typing an over-max quantity into a checked action must not
-  // grey out a different, genuinely available action - an invalid quantity
-  // contributes nothing to the request (it isn't sent at all), so it can't
-  // be treated as competing for anything.
   it('does not grey out a different, unchecked action when a checked action is given an over-max quantity', async () => {
     const form = setupDom([
       { code: 'CSAM3', checked: true, availableArea: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 },
@@ -1134,10 +1078,6 @@ describe('initSelectActionsPage', () => {
     expect(upl1.closest('.govuk-checkboxes__item').querySelector('.select-actions-unavailable-message')).toBeNull()
   })
 
-  // Regression: typing a quantity, then unchecking the action, must not
-  // leave it disabled because requiredQuantity() was still reading the
-  // leftover typed value from the (now hidden, but not cleared) input as if
-  // the action were still checked and needed that exact amount.
   it('re-enables an action after unchecking it, even with a leftover typed quantity still in its input', async () => {
     const form = setupDom([
       {
@@ -1233,9 +1173,6 @@ describe('initSelectActionsPage', () => {
     expect(document.getElementById('landActionQuantity_CSAM3-hint').textContent).toBe('18.5 ha available')
   })
 
-  // Regression: disabling a quantity-required action's checkbox must also
-  // hide its conditional reveal panel - otherwise an empty, disabled input
-  // is left visibly open on the page.
   it('hides the conditional reveal panel when a quantity-required action is disabled', async () => {
     const form = setupDom([
       { code: 'CMOR1', checked: true, availableArea: { value: 10, unit: 'ha' } },
@@ -1254,11 +1191,7 @@ describe('initSelectActionsPage', () => {
     expect(isConditionalHidden(csam3)).toBe(true)
   })
 
-  // Regression: re-enabling must also unhide the panel again.
-  // Regression: our own code must never force a conditional panel open -
-  // that's the browser's job on checked state, driven by a user click. Only
-  // forcing it shut (never open) means an uncheck's native close is never
-  // fought and reopened by a slightly-later availability response.
+  // Never force a conditional panel open - that's the browser's job on click.
   it('does not force an unchecked action back open when it becomes available again', async () => {
     const form = setupDom([
       { code: 'CMOR1', checked: true, availableArea: { value: 10, unit: 'ha' } },
@@ -1281,9 +1214,6 @@ describe('initSelectActionsPage', () => {
     expect(isConditionalHidden(csam3)).toBe(true)
   })
 
-  // Regression: unchecking a quantity-required action closes its panel via
-  // the browser's native click handling - our own async availability
-  // refresh landing afterwards must not force it back open.
   it('does not re-open the conditional panel after unchecking an action while a refresh is in flight', async () => {
     const form = setupDom([
       {
@@ -1312,13 +1242,6 @@ describe('initSelectActionsPage', () => {
     expect(isConditionalHidden(csam3)).toBe(true)
   })
 
-  // Regression: a selected (checked) action must never be disabled by its
-  // own response, even though its hint/max IS updated from it (whatever the
-  // API returns) - only OTHER, unselected actions react to a self-competing
-  // number by being disabled.
-  // Regression: a checked quantity action must never be disabled by its own
-  // self-competing 0 response - it has its own confirmed claim - but its
-  // hint/max reflect the raw response value as reported by the API.
   it('never disables a checked action from its own self-competing 0 response', async () => {
     const form = setupDom([
       {
@@ -1344,8 +1267,6 @@ describe('initSelectActionsPage', () => {
     expect(document.getElementById('landActionQuantity_CLIG3-hint').textContent).toBe('0 hectares available')
   })
 
-  // Regression: the hint/max reflect the raw availableArea the API returns,
-  // refreshed after each request - not the typed value plus that response.
   it('refreshes the hint to the raw response value after a refresh, not the typed value plus it', async () => {
     const form = setupDom([
       {
@@ -1421,10 +1342,6 @@ describe('initSelectActionsPage', () => {
     expect(cmor1Checkbox.getAttribute('data-total-chosen-area')).toBe('0.0301')
   })
 
-  // Regression: unchecking one action must not grow OR shrink a DIFFERENT,
-  // already-established checked non-quantity action's chosen area, even
-  // when the same response reports surplus for it - that combined growth
-  // was never verified against the API (see resolveChosenArea).
   it("does not grow an established non-quantity action's chosen area from a response triggered by unchecking a different action", async () => {
     const form = setupDom([
       {
@@ -1459,9 +1376,6 @@ describe('initSelectActionsPage', () => {
     expect(cmor1.getAttribute('data-total-chosen-area')).toBe('0.0301')
   })
 
-  // Regression: after that same uncheck, later unchecking CLIG3 must send
-  // CMOR1's own unchanged chosen area (0.0301), not a value inflated by
-  // growth CMOR1 never actually had confirmed.
   it("sends an unaffected non-quantity action's own chosen area when a different action is unchecked next", async () => {
     const form = setupDom([
       {

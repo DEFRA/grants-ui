@@ -288,9 +288,6 @@ describe('select-actions.view-model', () => {
       expect(result.conditional.html).toContain('18.5673 hectares available')
     })
 
-    // Regression: 0 is a valid, real available area and must not be treated as "no quantity
-    // required". `!requiresMaxQuantity` and `{% if maxQuantity %}` both silently swallow 0
-    // because it's falsy - the fix is an explicit `!= null` / `!= undefined` check throughout.
     it('should still show the conditional, hint and max attribute when requiresMaxQuantity is 0', () => {
       const action = {
         code: 'CSAM3',
@@ -443,12 +440,6 @@ describe('select-actions.view-model', () => {
       expect(result.map((item) => item.value)).toEqual(['SAM2'])
     })
 
-    // Regression: after recomputeActionsForState competes CLIG3 against a
-    // sibling action in the same submission, its availableArea can read 0
-    // even though CLIG3's own static total is non-zero and it was never
-    // actually submitted (it was correctly unchecked/unavailable
-    // client-side before the form was ever submitted). Since it isn't in
-    // addedActions either, it must stay visible based on its staticAvailableArea.
     it('should not omit an action with a competed 0 availableArea when its staticAvailableArea is non-zero', () => {
       const actions = [
         {

@@ -414,7 +414,11 @@ describe('SelectActionsPageController', () => {
     test('should save the recomputed availableArea for a non-quantity action competing with a quantity claim from the same submission', async () => {
       mockRequest.payload = {
         landAction: ['UPL1', 'UPL2'],
-        landActionQuantity_UPL2: '1'
+        landActionQuantity_UPL2: '1',
+        plannedActionsSnapshot: JSON.stringify([
+          { actionCode: 'UPL1', quantity: 5, unit: 'ha' },
+          { actionCode: 'UPL2', quantity: 1, unit: 'ha' }
+        ])
       }
       fetchActionsWithPlannedActions.mockResolvedValue({
         actions: [
@@ -429,7 +433,10 @@ describe('SelectActionsPageController', () => {
       expect(fetchActionsForParcel).toHaveBeenCalledTimes(1)
       expect(fetchActionsWithPlannedActions).toHaveBeenCalledWith(
         expect.objectContaining({
-          plannedActions: [{ actionCode: 'UPL2', quantity: 1, unit: 'ha' }]
+          plannedActions: [
+            { actionCode: 'UPL1', quantity: 5, unit: 'ha' },
+            { actionCode: 'UPL2', quantity: 1, unit: 'ha' }
+          ]
         }),
         expect.anything()
       )
@@ -563,12 +570,11 @@ describe('SelectActionsPageController', () => {
       expect(controller.proceed).not.toHaveBeenCalled()
     })
 
-    // Regression: the quantity hint must show the recomputed available area, not the stale total.
-    // Regression: the quantity hint must show the recomputed available area, not the stale total.
     test('should show the recomputed available area in the quantity hint when application validation fails', async () => {
       mockRequest.payload = {
         landAction: ['UPL1', 'UPL2'],
         landActionQuantity_UPL2: '1',
+        plannedActionsSnapshot: JSON.stringify([{ actionCode: 'UPL2', quantity: 1, unit: 'ha' }]),
         action: 'validate'
       }
       fetchActionsWithPlannedActions.mockResolvedValue({
@@ -610,13 +616,14 @@ describe('SelectActionsPageController', () => {
       )
     })
 
-    // Regression: on a failed validation, the just-submitted selections/quantities must
-    // still be shown as checked/pre-filled - not lost by falling back to the state as it
-    // was before this submission.
     test('should keep the just-submitted selections checked when the API validation fails', async () => {
       mockRequest.payload = {
         landAction: ['CMOR1', 'UPL2'],
         landActionQuantity_UPL2: '1.5',
+        plannedActionsSnapshot: JSON.stringify([
+          { actionCode: 'CMOR1', quantity: 10, unit: 'ha' },
+          { actionCode: 'UPL2', quantity: 1.5, unit: 'ha' }
+        ]),
         action: 'validate'
       }
       validateApplication.mockResolvedValue({
@@ -662,11 +669,6 @@ describe('SelectActionsPageController', () => {
       expect(upl2.attributes['data-total-available-area']).toBe(3)
     })
 
-    // Regression: UPL1 (non-quantity) was fully consumed by UPL2's claim in
-    // this submission and correctly unchecked client-side before submit, so
-    // it's genuinely absent from the payload/addedActions. Its recomputed
-    // availableArea reads 0 (competed), but it must still be RENDERED on the
-    // page (not silently dropped) since its static total is non-zero.
     test('should keep a non-quantity action visible after a failed validation even when unchecked and fully competed away', async () => {
       mockRequest.payload = {
         landAction: 'UPL2',
@@ -739,7 +741,11 @@ describe('SelectActionsPageController', () => {
     })
 
     test('should keep the just-submitted selections checked when validateApplication throws', async () => {
-      mockRequest.payload = { landAction: 'CMOR1', action: 'validate' }
+      mockRequest.payload = {
+        landAction: 'CMOR1',
+        plannedActionsSnapshot: JSON.stringify([{ actionCode: 'CMOR1', quantity: 10, unit: 'ha' }]),
+        action: 'validate'
+      }
       validateApplication.mockRejectedValue(new Error('Validation API failed'))
 
       const handler = controller.makePostRouteHandler()

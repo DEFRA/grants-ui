@@ -283,9 +283,8 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
     const result = await this.fetchActions(request, sheetId, parcelId)
     // Unwraps both ActionGroup[] (grouped page) and Action[] (flat page) into a flat list.
     const flatActions = (result?.actions || []).flatMap((a) => a.actions || [a])
-    const addedActions = payload
-      ? getAddedActionsFromPayload(payload, flatActions)
-      : getAddedActionsForStateParcel(prevState, selectedLandParcel)
+    const prevAddedActions = getAddedActionsForStateParcel(prevState, selectedLandParcel)
+    const addedActions = payload ? getAddedActionsFromPayload(payload, flatActions, prevAddedActions) : prevAddedActions
     const quantityErrorsByCode = Object.fromEntries(errors.filter((e) => e.code).map((e) => [e.code, e.text]))
     return this.renderErrorView(h, request, context, {
       errors,

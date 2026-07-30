@@ -4,6 +4,7 @@ import {
   addActionsToExistingState,
   addSelectedActionsToState,
   getAddedActionsForStateParcel,
+  getAddedActionsFromPayload,
   deleteParcelFromState,
   deleteActionFromState,
   hasLandParcels,
@@ -272,8 +273,6 @@ describe('land-parcel-state.manager', () => {
         expect(result.landParcels['AB1234-5678'].actionsObj.SAM1.value).toBe(10)
       })
 
-      // Regression: 0 is a valid, real available area and must be preserved in state rather
-      // than being coerced to '' by a falsy check (0 || fallback would silently drop it).
       it('should preserve a genuinely zero available area when no override is submitted', () => {
         const groupedActionsWithZeroArea = [
           {
@@ -461,9 +460,6 @@ describe('land-parcel-state.manager', () => {
       ])
     })
 
-    // Regression: the quantity input on the select-actions page must pre-populate with the
-    // previously submitted value when the page is revisited/refreshed - it reads this from
-    // the `value` returned here, so it has to survive the round-trip through state.
     it('should include the saved quantity value so the input can pre-populate on refresh', () => {
       const state = {
         landParcels: {
@@ -730,6 +726,39 @@ describe('land-parcel-state.manager', () => {
 
       expect(result[0]).toEqual(actions[0])
       expect(result[0].staticAvailableArea).toBeUndefined()
+    })
+  })
+
+  describe('getAddedActionsFromPayload', () => {
+    it('should use the payload value for a quantity-required action', () => {
+      const payload = { landAction: 'CSAM3', landActionQuantity_CSAM3: '0.2' }
+      const actions = [{ code: 'CSAM3', description: 'Herbal leys', requiresMaxQuantity: 0.3271 }]
+
+      const result = getAddedActionsFromPayload(payload, actions)
+
+      expect(result).toEqual([{ code: 'CSAM3', description: 'Herbal leys', value: '0.2' }])
+    })
+
+    it('should fall back to the previous chosen area for a non-quantity action', () => {
+      const payload = { landAction: ['CMOR1', 'CSAM3'], landActionQuantity_CSAM3: '0.2' }
+      const actions = [
+        { code: 'CMOR1', description: 'Moorland record' },
+        { code: 'CSAM3', description: 'Herbal leys', requiresMaxQuantity: 0.3271 }
+      ]
+      const prevAddedActions = [{ code: 'CMOR1', value: 0.1572 }]
+
+      const result = getAddedActionsFromPayload(payload, actions, prevAddedActions)
+
+      expect(result).toContainEqual({ code: 'CMOR1', description: 'Moorland record', value: 0.1572 })
+    })
+
+    it('should use an empty value for a non-quantity action with no previous chosen area', () => {
+      const payload = { landAction: 'CMOR1' }
+      const actions = [{ code: 'CMOR1', description: 'Moorland record' }]
+
+      const result = getAddedActionsFromPayload(payload, actions)
+
+      expect(result).toEqual([{ code: 'CMOR1', description: 'Moorland record', value: '' }])
     })
   })
 })

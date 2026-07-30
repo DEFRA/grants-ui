@@ -5,8 +5,6 @@ import {
 } from '~/src/server/land-grants/view-models/select-actions.view-model.js'
 import {
   addSelectedActionsToState,
-  buildPlannedActionsFromPayload,
-  getAddedActionsFromPayload,
   mergeRecomputedAvailability
 } from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
 import {
@@ -24,6 +22,33 @@ import {
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import { error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
+
+/**
+ * Parses the client's last live-confirmed plannedActions (see
+ * writePlannedActionsSnapshot in select-actions-page.js), restricted to
+ * currently selected codes - a stale snapshot from before an unrelated
+ * uncheck must not resurrect a claim for an action no longer selected.
+ * @param {object} payload
+ * @returns {PlannedAction[]}
+ */
+function parsePlannedActionsSnapshot(payload) {
+  let plannedActions
+  try {
+    plannedActions = JSON.parse(payload.plannedActionsSnapshot || '[]')
+  } catch {
+    return []
+  }
+  if (!Array.isArray(plannedActions)) {
+    return []
+  }
+  const selectedCodes = new Set(getSelectedActionCodes(payload))
+  return plannedActions.filter(
+    (p) =>
+      selectedCodes.has(p?.actionCode) &&
+      typeof p.quantity === 'number' &&
+      (p.unit === 'ha' || p.unit === 'sqm')
+  )
+}
 
 export default class SelectActionsPageController extends SelectActionsBasePageController {
   viewName = 'select-actions'
@@ -93,7 +118,13 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
    * @returns {Array<{ code: string, description: string, value?: string|number }>}
    */
   getAddedActionsForValidationError(payload, actions) {
-    return getAddedActionsFromPayload(payload, actions)
+    const plannedActions = parsePlannedActionsSnapshot(payload)
+    return plannedActions
+      .map((p) => {
+        const actionInfo = actions.find((a) => a.code === p.actionCode)
+        return actionInfo && { code: actionInfo.code, description: actionInfo.description, value: p.quantity }
+      })
+      .filter(Boolean)
   }
 
   /**
@@ -117,7 +148,7 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
    * @returns {Promise<Array>}
    */
   async recomputeActionsForState(request, parcel, payload, actions) {
-    const plannedActions = buildPlannedActionsFromPayload(payload, actions)
+    const plannedActions = parsePlannedActionsSnapshot(payload)
     if (!plannedActions.length) {
       return actions
     }
@@ -143,4 +174,5 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
 
 /**
  * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { PlannedAction } from '~/src/server/land-grants/types/land-grants.client.d.js'
  */

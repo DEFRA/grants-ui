@@ -12,6 +12,7 @@ const TOTAL_CHOSEN_AREA_ATTR = 'data-total-chosen-area'
 const REFRESH_BANNER_MESSAGE = 'Updating available land for this action…'
 const REFRESH_BANNER_CLASS = 'select-actions-refresh-banner'
 const REFRESH_BANNER_HIDDEN_CLASS = 'select-actions-refresh-banner--hidden'
+const PLANNED_ACTIONS_SNAPSHOT_ID = 'plannedActionsSnapshot'
 
 /**
  * @param {number} value
@@ -32,11 +33,19 @@ function getQuantityInput(checkbox) {
 }
 
 /**
- * A checked action the server flagged with a validation error must keep showing that feedback, untouched by the live refresh.
+ * A checked action with its own validation error, or on a page rendered
+ * with errors, must never be touched by the live refresh.
+ * @param {HTMLElement} form
  * @param {HTMLInputElement} checkbox
  * @returns {boolean}
  */
-function hasQuantityError(checkbox) {
+function isProtectedFromRefresh(form, checkbox) {
+  if (!checkbox.checked) {
+    return false
+  }
+  if (form.dataset.hasErrors) {
+    return true
+  }
   return Boolean(getQuantityInput(checkbox)?.classList.contains('govuk-input--error'))
 }
 
@@ -82,7 +91,7 @@ function toggleRefreshBanner(checkbox, isLoading) {
  */
 function disableOtherActions(form, triggeringCheckbox) {
   for (const checkbox of getCheckboxes(form)) {
-    if (checkbox === triggeringCheckbox || hasQuantityError(checkbox)) {
+    if (checkbox === triggeringCheckbox || isProtectedFromRefresh(form, checkbox)) {
       continue
     }
     checkbox.disabled = true
@@ -170,7 +179,10 @@ function uncheckUnconfirmedQuantityActions(form) {
   for (const checkbox of getCheckboxes(form)) {
     const quantityInput = getQuantityInput(checkbox)
     const isUnconfirmed =
-      !hasQuantityError(checkbox) && checkbox.checked && quantityInput && getValidTypedQuantity(checkbox) == null
+      !isProtectedFromRefresh(form, checkbox) &&
+      checkbox.checked &&
+      quantityInput &&
+      getValidTypedQuantity(checkbox) == null
     if (!isUnconfirmed) {
       continue
     }
@@ -418,7 +430,7 @@ async function postPlannedActions(parcelId, plannedActions) {
  */
 function recoverFromFailedRefresh(form, forcedUnchecked) {
   for (const checkbox of getCheckboxes(form)) {
-    if (!forcedUnchecked.has(checkbox) && !hasQuantityError(checkbox)) {
+    if (!forcedUnchecked.has(checkbox) && !isProtectedFromRefresh(form, checkbox)) {
       clearUnavailable(checkbox)
     }
   }
@@ -434,7 +446,7 @@ function recoverFromFailedRefresh(form, forcedUnchecked) {
 function applyRefreshResponse(form, actions, plannedActions, forcedUnchecked, triggeringCheckbox) {
   const sentQuantityByCode = new Map(plannedActions.map((p) => [p.actionCode, p.quantity]))
   for (const checkbox of getCheckboxes(form)) {
-    if (forcedUnchecked.has(checkbox) || hasQuantityError(checkbox)) {
+    if (forcedUnchecked.has(checkbox) || isProtectedFromRefresh(form, checkbox)) {
       continue
     }
     const action = actions.find((a) => a.code === checkbox.value)
@@ -443,6 +455,21 @@ function applyRefreshResponse(form, actions, plannedActions, forcedUnchecked, tr
       const allowGrowth = checkbox === triggeringCheckbox || getChosenArea(checkbox) == null
       applyAvailability(checkbox, action, sentQuantityByCode.get(checkbox.value), allowGrowth)
     }
+  }
+  writePlannedActionsSnapshot(form, plannedActions)
+}
+
+/**
+ * Records the last live-confirmed plannedActions in a hidden field, so a
+ * server-side error re-render can reuse exactly what the client last sent
+ * instead of reconstructing it from the submitted form fields.
+ * @param {HTMLElement} form
+ * @param {Array<{ actionCode: string, quantity: number, unit: string }>} plannedActions
+ */
+function writePlannedActionsSnapshot(form, plannedActions) {
+  const field = /** @type {HTMLInputElement | null} */ (document.getElementById(PLANNED_ACTIONS_SNAPSHOT_ID))
+  if (field) {
+    field.value = JSON.stringify(plannedActions)
   }
 }
 
@@ -495,11 +522,8 @@ export function initSelectActionsPage(form) {
 
   const refreshAvailability = createAvailabilityRefresher(form, parcelId)
 
-  // Grey out any saved selection that's now incompatible, and hydrate its
-  // chosen area - skipped after a failed submit, where the server-rendered
-  // state already reflects exactly what was submitted and shouldn't be
-  // second-guessed by a fresh live re-check.
-  if (!form.hasAttribute('data-has-errors') && buildPlannedActions(form).length > 0) {
+  // Grey out incompatible selections and hydrate chosen areas (see isProtectedFromRefresh for checked/errors exceptions).
+  if (buildPlannedActions(form).length > 0) {
     refreshAvailability()
   }
 
