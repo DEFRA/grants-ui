@@ -47,11 +47,6 @@ Then('(the user )should see label heading {string}', async function (text) {
   await expect(this.page.locator(`//h1/label[contains(text(),'${truncated}')]`)).toBeVisible()
 })
 
-Then('(the user )should see banner {string}', async function (text) {
-  const truncated = text.indexOf("'") > -1 ? text.substring(0, text.indexOf("'")) : text
-  await expect(this.page.locator("//span[@class='govuk-service-navigation__service-name']/a")).toHaveText(truncated)
-})
-
 Then('(the user )should see task title {string}', async function (text) {
   const truncated = text.indexOf("'") > -1 ? text.substring(0, text.indexOf("'")) : text
   await expect(this.page.locator("//h2[@id='section-title']")).toHaveText(truncated)
@@ -140,17 +135,6 @@ Then('(the user )should see {string} in the selected parcel summary', async func
   await expect(this.page.locator('#parcel-selection-summary')).toHaveText(`Selected: ${parcelId}`)
 })
 
-Then('(the user )should see error {string}', async function (text) {
-  await expect(this.page.locator(`//div[@class="govuk-error-summary"]//a[contains(text(),'${text}')]`)).toBeVisible()
-})
-
-Then('(the user )should see the following errors', async function (dataTable) {
-  const expectedErrors = dataTable.raw().map((row) => row[0])
-  const links = this.page.locator('//div[@class="govuk-error-summary"]//a')
-  await expect(links).toHaveCount(expectedErrors.length)
-  expect(await links.allTextContents()).toEqual(expectedErrors)
-})
-
 Then('(the user )should see a/an {string} reference number for their application', async function (prefix) {
   const selector = this.page.locator('//h1/following-sibling::div[1]/strong')
   await expect(selector).toContainText(prefix)
@@ -161,20 +145,6 @@ Then('(the user )should see a reference number for their application', async fun
   const selector = this.page.locator('//h1/following-sibling::div[1]/strong')
   await expect(selector).toBeVisible()
   referenceNumbers.push(await selector.textContent())
-})
-
-Then('(the user )should see body {string}', async function (text) {
-  await expect(this.page.locator(`//p[@class='govuk-body' and contains(text(),'${text}')]`)).toBeVisible()
-})
-
-Then('(the user )should see hint {string}', async function (text) {
-  await expect(this.page.locator(`//div[@class="govuk-hint" and contains(text(),'${text}')]`)).toBeVisible()
-})
-
-Then('(the user )should see warning {string}', async function (text) {
-  await expect(
-    this.page.locator(`//div[@class='govuk-warning-text']//strong[text()[contains(.,'${text}')]]`)
-  ).toBeVisible()
 })
 
 Then(
