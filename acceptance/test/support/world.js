@@ -9,7 +9,6 @@ export const PLAYWRIGHT_EXPECT_TIMEOUT_MS = parseInt(process.env.PLAYWRIGHT_EXPE
 setDefaultTimeout(CUCUMBER_STEP_TIMEOUT_MS)
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000'
-const BASE_BACKEND_URL = process.env.BASE_BACKEND_URL || 'http://localhost:3001'
 const HEADLESS = process.env.HEADLESS === 'true'
 
 class GrantsUiWorld {
@@ -27,7 +26,6 @@ class GrantsUiWorld {
     this.page = await this.context.newPage()
     this.page.setDefaultTimeout(PLAYWRIGHT_PAGE_TIMEOUT_MS)
     this.baseUrl = BASE_URL
-    this.baseBackendUrl = BASE_BACKEND_URL
   }
 
   async cleanup() {
