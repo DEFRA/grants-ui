@@ -1,0 +1,14 @@
+@use "govuk-frontend" as *;
+
+// Neutral plain-text department brand bar shown instead of the GOV.UK header
+// for grants that have not yet passed their public GDS assessment.
+.defra-brand-bar {
+  padding: govuk-spacing(3) 0;
+  border-bottom: 1px solid $govuk-border-colour;
+  background-color: govuk-colour("black");
+  color: govuk-colour("white");
+}
+
+.defra-brand-bar__title {
+  @include govuk-font($size: 24, $weight: bold);
+}

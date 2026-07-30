@@ -1,3 +1,5 @@
+import { maskCrn } from '~/src/server/common/helpers/logging/mask-crn.js'
+
 /**
  * @type {Object<string, import('./definition.js').LogCodesDefinition>}
  */
@@ -9,6 +11,6 @@ export const PRINT_APPLICATION = {
   ERROR: {
     level: 'error',
     messageFunc: (messageOptions) =>
-      `Print application error for user=${messageOptions.userId}, slug=${messageOptions.slug}: ${messageOptions.errorMessage}`
+      `Print application error for CRN=${maskCrn(messageOptions.userId)}, slug=${messageOptions.slug}: ${messageOptions.errorMessage}`
   }
 }

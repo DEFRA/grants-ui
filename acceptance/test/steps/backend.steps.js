@@ -60,11 +60,3 @@ Given(
     await Mongo.setApplicationStatus(crn, sbi, grantCode, applicationStatus)
   }
 )
-
-Then(
-  'there should be no application state in the backend for CRN {string} and SBI {string} and grant {string}',
-  async function (crn, sbi, grantCode) {
-    const state = await Mongo.getApplicationState(crn, sbi, grantCode)
-    expect(state).toBeNull()
-  }
-)

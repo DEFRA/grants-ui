@@ -32,12 +32,6 @@ class Mongo {
       )
     }
   }
-
-  async getApplicationState(crn, sbi, grantCode) {
-    const grantVersion = (await Backend.resolveGrantVersion(crn, sbi, grantCode)) ?? 1
-    const db = await getDb()
-    return db.collection(STATE_COLLECTION).findOne({ sbi, grantCode, grantVersion: String(grantVersion) })
-  }
 }
 
 export default new Mongo()

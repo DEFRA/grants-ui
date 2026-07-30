@@ -1,16 +1,17 @@
+import { maskCrn } from '~/src/server/common/helpers/logging/mask-crn.js'
+
 /**
  * @type {Object<string, import('./definition.js').LogCodesDefinition>}
  */
 export const FORMS = {
   FORM_LOAD: {
     level: 'info',
-    messageFunc: (messageOptions) =>
-      `Form loaded: ${messageOptions.formName} for user=${messageOptions.userId || 'unknown'}`
+    messageFunc: (messageOptions) => `Form loaded: ${messageOptions.formName} for CRN=${maskCrn(messageOptions.userId)}`
   },
   FORM_SUBMIT: {
     level: 'info',
     messageFunc: (messageOptions) =>
-      `Form submitted: ${messageOptions.formName} by user=${messageOptions.userId || 'unknown'}`
+      `Form submitted: ${messageOptions.formName} by CRN=${maskCrn(messageOptions.userId)}`
   },
   FORM_VALIDATION_ERROR: {
     level: 'error',
@@ -28,8 +29,7 @@ export const FORMS = {
   },
   FORM_SAVE: {
     level: 'info',
-    messageFunc: (messageOptions) =>
-      `Form saved: ${messageOptions.formName} for user=${messageOptions.userId || 'unknown'}`
+    messageFunc: (messageOptions) => `Form saved: ${messageOptions.formName} for CRN=${maskCrn(messageOptions.userId)}`
   },
   SLUG_STORED: {
     level: 'debug',
