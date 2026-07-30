@@ -12,7 +12,7 @@ ACCOUNT_ID=000000000000
 # FCP Audit Service
 #
 
-# FCP Audit events topic (matches AUDIT_SNS_TOPIC_ARN default in compose.yml)
+# FCP Audit events topic (matches AUDIT_SNS_TOPIC_ARN default in compose.grants-ui.yml)
 aws $ENDPOINT sns create-topic --name fcp_audit_events >/dev/null
 
 # Local stand-in for the FCP Audit service's SQS queue, subscribed to our topic so
