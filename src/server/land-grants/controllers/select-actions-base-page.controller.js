@@ -105,6 +105,20 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
   }
 
   /**
+   * Actions to show as added when re-rendering after a validateApplication
+   * failure. Defaults to what's in state; only the flat-checkbox page
+   * overrides it to read from payload instead (see getAddedActionsFromPayload).
+   * @param {object} _payload
+   * @param {Array} _actions
+   * @param {object} state
+   * @param {string} selectedLandParcel
+   * @returns {Array<{ code: string, description: string, value?: string|number }>}
+   */
+  getAddedActionsForValidationError(_payload, _actions, state, selectedLandParcel) {
+    return getAddedActionsForStateParcel(state, selectedLandParcel)
+  }
+
+  /**
    * Persist the submitted action selections (and any per-action overrides) into state.
    * @param {object} _prevState
    * @param {object} _payload
@@ -319,8 +333,7 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
           failedMessages.filter((e) => e.code).map((e) => [e.code, e.description])
         )
 
-        // state, not prevState, so submitted selections/quantities survive the reload
-        const addedActions = getAddedActionsForStateParcel(state, selectedLandParcel)
+        const addedActions = this.getAddedActionsForValidationError(payload, actions, state, selectedLandParcel)
         return this.renderErrorView(h, request, context, {
           errors: validationErrors,
           selectedLandParcel,
@@ -338,7 +351,7 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
         { sbi, parcelId, sheetId, errorMessage, statusCode, selectedActions },
         request
       )
-      const addedActions = getAddedActionsForStateParcel(state, selectedLandParcel)
+      const addedActions = this.getAddedActionsForValidationError(payload, actions, state, selectedLandParcel)
       return this.renderErrorView(h, request, context, {
         errors: [
           {

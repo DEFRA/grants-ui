@@ -6,6 +6,7 @@ import {
 import {
   addSelectedActionsToState,
   buildPlannedActionsFromPayload,
+  getAddedActionsFromPayload,
   mergeRecomputedAvailability
 } from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
 import {
@@ -84,6 +85,15 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
    */
   extractSelectedActionCodes(payload) {
     return getSelectedActionCodes(payload)
+  }
+
+  /**
+   * @param {object} payload
+   * @param {Array} actions
+   * @returns {Array<{ code: string, description: string, value?: string|number }>}
+   */
+  getAddedActionsForValidationError(payload, actions) {
+    return getAddedActionsFromPayload(payload, actions)
   }
 
   /**

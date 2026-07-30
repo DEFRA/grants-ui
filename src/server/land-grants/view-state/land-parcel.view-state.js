@@ -114,11 +114,11 @@ export function buildPlannedActionsFromPayload(payload, actions) {
 /**
  * Overlays freshly recomputed availableArea/requiresMaxQuantity (keyed by
  * code, from fetchActionsWithPlannedActions) onto the full action list from
- * the initial fetch - the recompute only returns those two fields, so
- * everything else (description, version, consents, etc.) still comes from
- * the original fetch. An action missing from the recompute (an upstream gap,
- * not expected in practice) keeps its original, uncompeted values rather
- * than losing the field entirely.
+ * the initial fetch - everything else (description, version, consents, etc.)
+ * still comes from the original fetch, and an action missing from the
+ * recompute keeps its original values. The action's first-seen availableArea
+ * is preserved as staticAvailableArea, since the recomputed value competes
+ * against whatever else is in this submission (see mapActionToViewModel).
  * @param {Array<Action>} actions - Flat list from the initial fetch
  * @param {Array<{ code: string, availableArea?: object, requiresMaxQuantity?: number }>} recomputed
  * @returns {Array<Action>}
@@ -129,7 +129,12 @@ export function mergeRecomputedAvailability(actions, recomputed) {
   return actions.map((action) => {
     const match = recomputedByCode.get(action.code)
     return match
-      ? { ...action, availableArea: match.availableArea, requiresMaxQuantity: match.requiresMaxQuantity }
+      ? {
+          ...action,
+          availableArea: match.availableArea,
+          requiresMaxQuantity: match.requiresMaxQuantity,
+          staticAvailableArea: action.staticAvailableArea ?? action.availableArea
+        }
       : action
   })
 }
@@ -350,6 +355,9 @@ export function findActionInfoFromState(landParcels, parcelKey, action) {
  * @property {object} [availableArea] - Available area for the action
  * @property {number} [availableArea.value] - Area value
  * @property {string} [availableArea.unit] - Area unit
+ * @property {object} [staticAvailableArea] - The action's original, uncompeted available area (see mergeRecomputedAvailability)
+ * @property {number} [staticAvailableArea.value] - Area value
+ * @property {string} [staticAvailableArea.unit] - Area unit
  */
 
 /**

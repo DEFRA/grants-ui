@@ -564,14 +564,8 @@ describe('SelectActionsPageController', () => {
     })
 
     // Regression: the quantity hint must show the recomputed available area, not the stale total.
-    // Regression: fetchActionsWithPlannedActions recomputes requiresMaxQuantity
-    // against this submission's OWN planned quantity - it's headroom BEYOND
-    // that claim (the self-competing contract also used client-side, see
-    // syncQuantityInputBounds), not a standalone ceiling. The rendered hint/max
-    // must add the submitted quantity back, or a same-page reload renders a max
-    // lower than what's already typed - which the client-side JS then reads as
-    // "no longer a valid quantity" and force-unchecks the action on load.
-    test('should show the submitted quantity plus the recomputed headroom in the quantity hint when application validation fails', async () => {
+    // Regression: the quantity hint must show the recomputed available area, not the stale total.
+    test('should show the recomputed available area in the quantity hint when application validation fails', async () => {
       mockRequest.payload = {
         landAction: ['UPL1', 'UPL2'],
         landActionQuantity_UPL2: '1',
@@ -594,8 +588,8 @@ describe('SelectActionsPageController', () => {
       const { actionItems } = mockH.view.mock.calls[0][1]
       const upl2 = actionItems.find((item) => item.value === 'UPL2')
 
-      expect(upl2.conditional.html).toContain('3 hectares available')
-      expect(upl2.conditional.html).toContain('max="3"')
+      expect(upl2.conditional.html).toContain('2 hectares available')
+      expect(upl2.conditional.html).not.toContain('3 hectares available')
     })
 
     test('should link a validation error to the specific action quantity input by code, not position', async () => {
@@ -640,6 +634,61 @@ describe('SelectActionsPageController', () => {
       expect(cmor1.checked).toBe(true)
       expect(upl2.checked).toBe(true)
       expect(upl2.conditional.html).toContain('value="1.5"')
+    })
+
+    test("should render data-total-available-area from the static, uncompeted total even after a competing recompute", async () => {
+      mockRequest.payload = {
+        landAction: ['UPL1', 'UPL2'],
+        landActionQuantity_UPL2: '1.5',
+        action: 'validate'
+      }
+      fetchActionsWithPlannedActions.mockResolvedValue({
+        actions: [
+          { code: 'UPL1', availableArea: { unit: 'ha', value: 0 } },
+          { code: 'UPL2', availableArea: { unit: 'ha', value: 0 }, requiresMaxQuantity: 0 }
+        ]
+      })
+      validateApplication.mockResolvedValue({
+        valid: false,
+        errorMessages: [{ code: 'UPL2', description: 'Invalid quantity', passed: false }]
+      })
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      const { actionItems } = mockH.view.mock.calls[0][1]
+      const upl2 = actionItems.find((item) => item.value === 'UPL2')
+
+      expect(upl2.attributes['data-total-available-area']).toBe(3)
+    })
+
+    // Regression: UPL1 (non-quantity) was fully consumed by UPL2's claim in
+    // this submission and correctly unchecked client-side before submit, so
+    // it's genuinely absent from the payload/addedActions. Its recomputed
+    // availableArea reads 0 (competed), but it must still be RENDERED on the
+    // page (not silently dropped) since its static total is non-zero.
+    test('should keep a non-quantity action visible after a failed validation even when unchecked and fully competed away', async () => {
+      mockRequest.payload = {
+        landAction: 'UPL2',
+        landActionQuantity_UPL2: '3',
+        action: 'validate'
+      }
+      fetchActionsWithPlannedActions.mockResolvedValue({
+        actions: [
+          { code: 'UPL1', availableArea: { unit: 'ha', value: 0 } },
+          { code: 'UPL2', availableArea: { unit: 'ha', value: 0 }, requiresMaxQuantity: 0 }
+        ]
+      })
+      validateApplication.mockRejectedValue(new Error('API issue'))
+
+      const handler = controller.makePostRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      const { actionItems } = mockH.view.mock.calls[0][1]
+      const upl1 = actionItems.find((item) => item.value === 'UPL1')
+
+      expect(upl1).toBeDefined()
+      expect(upl1.checked).toBe(false)
     })
 
     test('should highlight the govukInput for the action whose quantity failed validation', async () => {

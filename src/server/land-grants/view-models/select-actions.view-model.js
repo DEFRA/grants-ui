@@ -11,18 +11,14 @@ import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
 import { SELECTED_ACTIONS_FIELD_NAME } from '~/src/server/land-grants/utils/selected-actions-field.js'
 import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js'
 
-// Built in JS, not the template: Nunjucks can't mutate array items in a loop.
-// Own Environment (not the app-wide one) since that one's config.get('root')
-// call at import time isn't mocked in this page's controller test.
+// Own Environment, not the app-wide one - that one's config.get('root') call isn't mocked in this page's tests.
 const QUANTITY_INPUT_TEMPLATE = 'quantity-input/template.njk'
 const quantityInputEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader([govukFrontendPath, ...viewPaths]), {
   autoescape: true
 })
 
 /**
- * Builds the conditional reveal markup for an action that requires the user to
- * enter a specific quantity, rather than defaulting to the full available area.
- * Rendered through the govukInput macro so GOV.UK Frontend handles escaping.
+ * Builds the conditional reveal markup for an action that requires a user-entered quantity.
  * @param {string} actionCode
  * @param {string} actionName
  * @param {string} quantityValue
@@ -48,14 +44,24 @@ function getQuantityConditional(actionCode, actionName, quantityValue, maxQuanti
 }
 
 /**
- * First item must be exactly SELECTED_ACTIONS_FIELD_NAME (no suffix) - that's
- * what "no action selected" error-summary links anchor to.
+ * First item must be exactly SELECTED_ACTIONS_FIELD_NAME - the "no action selected" error anchors to it.
  * @param {string} actionCode
  * @param {boolean} isFirst
  * @returns {string}
  */
 function getCheckboxItemId(actionCode, isFirst) {
   return isFirst ? SELECTED_ACTIONS_FIELD_NAME : `${SELECTED_ACTIONS_FIELD_NAME}-${actionCode}`
+}
+
+/**
+ * An action's original, uncompeted total - availableArea may have been
+ * overwritten by a recompute against other actions in this submission (see
+ * mergeRecomputedAvailability), which isn't a safe standalone ceiling.
+ * @param {Action} action
+ * @returns {{ value?: number, unit?: string } | undefined}
+ */
+function getStaticAvailableArea(action) {
+  return action.staticAvailableArea ?? action.availableArea
 }
 
 /**
@@ -108,21 +114,6 @@ export function mapActionToViewModel(action, addedActions, quantityErrorsByCode 
   const requirementLineText = requirementText ? `<br>${requirementText}` : ''
   const hintText = `Payment rate per year: £${action.ratePerUnitGbp?.toFixed(2)}/ha${agreementRateText}${requirementLineText}`
 
-  // requiresMaxQuantity, when this action is checked with a submitted
-  // quantity, has already been recomputed against that same submission (see
-  // recomputeActionsForState) - it reports headroom BEYOND this action's own
-  // claim, not a standalone ceiling (the same self-competing contract the
-  // live client-side refresh uses, see syncQuantityInputBounds). The
-  // rendered max/hint must add that claim back, or a same-page reload after
-  // a failed validateApplication call renders a max lower than what's
-  // already typed - which the client-side JS then reads as "no longer a
-  // valid quantity" and force-unchecks the action on load.
-  const submittedQuantity = checked ? Number(quantityValue) : NaN
-  const maxQuantity =
-    action.requiresMaxQuantity != null && Number.isFinite(submittedQuantity) && submittedQuantity > 0
-      ? submittedQuantity + action.requiresMaxQuantity
-      : action.requiresMaxQuantity
-
   return {
     id: getCheckboxItemId(action.code, isFirst),
     value: action.code,
@@ -131,22 +122,17 @@ export function mapActionToViewModel(action, addedActions, quantityErrorsByCode 
     consents,
     attributes: {
       'data-available-unit': action.availableArea?.unit,
-      // Set once here, never touched by the client - the full amount this
-      // action needs to remain usable at all (a non-quantity action can't
-      // take a partial amount, so this is its pass/fail threshold).
-      'data-total-available-area': action.availableArea?.value,
-      // Non-quantity actions have no input field to carry their saved
-      // quantity, so the client needs it rendered here directly - without
-      // it, a saved non-quantity selection has no known chosen area on page
-      // load and the client would have to guess (see select-actions-page.js).
+      // A non-quantity action's pass/fail threshold - static, never touched by the client.
+      'data-total-available-area': getStaticAvailableArea(action)?.value,
+      // Non-quantity actions have no input field, so the client needs their saved chosen area rendered here.
       ...(action.requiresMaxQuantity == null && hasChosenArea && { 'data-total-chosen-area': chosenArea })
     },
-    ...(maxQuantity != null && {
+    ...(action.requiresMaxQuantity != null && {
       conditional: getQuantityConditional(
         action.code,
         action.description,
         quantityValue,
-        maxQuantity,
+        action.requiresMaxQuantity,
         action.availableArea?.unit,
         quantityErrorsByCode[action.code]
       )
@@ -167,14 +153,13 @@ export function getPageConsents(actions) {
 
 /**
  * A 0-available action is dropped from the initial render, unless it was
- * already saved to a previous selection - a saved choice must never silently
- * disappear from the page.
+ * already saved to a previous selection - a saved choice must never silently disappear.
  * @param {Action} action
  * @param {Array<{code: string}>} addedActions
  * @returns {boolean}
  */
 function isVisibleOnInitialLoad(action, addedActions) {
-  if (action.availableArea?.value !== 0) {
+  if (getStaticAvailableArea(action)?.value !== 0) {
     return true
   }
   return addedActions.some((a) => a.code === action.code)

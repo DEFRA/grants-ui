@@ -7,7 +7,8 @@ import {
   deleteParcelFromState,
   deleteActionFromState,
   hasLandParcels,
-  findActionInfoFromState
+  findActionInfoFromState,
+  mergeRecomputedAvailability
 } from './land-parcel.view-state.js'
 
 const configState = vi.hoisted(() => {
@@ -675,6 +676,55 @@ describe('land-parcel-state.manager', () => {
       const result = findActionInfoFromState(landParcels, 'AB1234-5678', 'SAM1')
 
       expect(result).toBeNull()
+    })
+  })
+
+  describe('mergeRecomputedAvailability', () => {
+    it('should overwrite availableArea/requiresMaxQuantity from the recomputed match', () => {
+      const actions = [
+        { code: 'CSAM3', description: 'Herbal leys', availableArea: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 }
+      ]
+      const recomputed = [{ code: 'CSAM3', availableArea: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
+
+      const result = mergeRecomputedAvailability(actions, recomputed)
+
+      expect(result[0].availableArea).toEqual({ value: 0, unit: 'ha' })
+      expect(result[0].requiresMaxQuantity).toBe(0)
+    })
+
+    it("should preserve the action's original availableArea as staticAvailableArea", () => {
+      const actions = [{ code: 'CSAM3', description: 'Herbal leys', availableArea: { value: 0.3271, unit: 'ha' } }]
+      const recomputed = [{ code: 'CSAM3', availableArea: { value: 0, unit: 'ha' } }]
+
+      const result = mergeRecomputedAvailability(actions, recomputed)
+
+      expect(result[0].staticAvailableArea).toEqual({ value: 0.3271, unit: 'ha' })
+      expect(result[0].availableArea).toEqual({ value: 0, unit: 'ha' })
+    })
+
+    it('should not overwrite an already-set staticAvailableArea on a second recompute pass', () => {
+      const actions = [
+        {
+          code: 'CSAM3',
+          description: 'Herbal leys',
+          availableArea: { value: 0, unit: 'ha' },
+          staticAvailableArea: { value: 0.3271, unit: 'ha' }
+        }
+      ]
+      const recomputed = [{ code: 'CSAM3', availableArea: { value: 0.1, unit: 'ha' } }]
+
+      const result = mergeRecomputedAvailability(actions, recomputed)
+
+      expect(result[0].staticAvailableArea).toEqual({ value: 0.3271, unit: 'ha' })
+    })
+
+    it('should keep the original action unchanged when no recomputed match exists for its code', () => {
+      const actions = [{ code: 'CSAM3', description: 'Herbal leys', availableArea: { value: 0.3271, unit: 'ha' } }]
+
+      const result = mergeRecomputedAvailability(actions, [])
+
+      expect(result[0]).toEqual(actions[0])
+      expect(result[0].staticAvailableArea).toBeUndefined()
     })
   })
 })

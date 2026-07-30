@@ -220,9 +220,6 @@ function mapAction(action) {
   return {
     ...action,
     description: landActionWithCode(action.description, action.code),
-    // Once land-grants-api is ready we need to replace this with their actual max quantity field.
-    // Falls back to 0 (not undefined) when availableArea is missing so a configured code always
-    // still gets a quantity input - undefined here is read downstream as "not required at all".
     requiresMaxQuantity: requiresQuantity ? (action.availableArea?.value ?? 0) : undefined
   }
 }

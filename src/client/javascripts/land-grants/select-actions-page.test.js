@@ -41,9 +41,10 @@ function checkboxItemHtml({
     ${quantityInput}`
 }
 
-function setupDom(items) {
+function setupDom(items, { hasErrors = false } = {}) {
+  const hasErrorsAttr = hasErrors ? ' data-has-errors="true"' : ''
   document.body.innerHTML = `
-    <form method="post">
+    <form method="post"${hasErrorsAttr}>
       <input type="hidden" name="crumb" value="test-crumb-value">
       <div class="govuk-checkboxes" data-module="govuk-checkboxes">
         ${items.map(checkboxItemHtml).join('\n')}
@@ -188,6 +189,66 @@ describe('initSelectActionsPage', () => {
         })
       })
     )
+  })
+
+  // Regression: a page re-rendered after ANY failed submit (not just a
+  // quantity-specific error - e.g. a generic API failure from
+  // validateApplication) must not run its automatic on-load refresh at all.
+  // The server-rendered state already reflects exactly what was submitted;
+  // a live re-check could disable/uncheck a selection for reasons unrelated
+  // to why the submission actually failed.
+  it('skips the automatic on-load refresh entirely when the page was rendered with errors', async () => {
+    const form = setupDom(
+      [
+        {
+          code: 'CSAM3',
+          checked: true,
+          availableArea: { value: 0.3271, unit: 'ha' },
+          requiresMaxQuantity: 0.3271,
+          quantityValue: '0.2'
+        },
+        { code: 'CLIG3', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, chosenArea: 0.3271 }
+      ],
+      { hasErrors: true }
+    )
+    global.fetch = vi.fn()
+
+    initSelectActionsPage(form)
+    await flushPromises()
+
+    expect(global.fetch).not.toHaveBeenCalled()
+    const csam3Checkbox = form.querySelector('input[value="CSAM3"]')
+    const csam3QuantityInput = form.querySelector('#landActionQuantity_CSAM3')
+    expect(csam3Checkbox.checked).toBe(true)
+    expect(csam3Checkbox.disabled).toBe(false)
+    expect(csam3QuantityInput.value).toBe('0.2')
+    expect(form.querySelector('input[value="CLIG3"]').checked).toBe(true)
+  })
+
+  it('includes a quantity action from an errors-page load in plannedActions when a different action is checked', async () => {
+    const form = setupDom(
+      [
+        {
+          code: 'CSAM3',
+          checked: true,
+          availableArea: { value: 0.3271, unit: 'ha' },
+          requiresMaxQuantity: 0.3271,
+          quantityValue: '0.2'
+        },
+        { code: 'CLIG3', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, chosenArea: 0.3271 },
+        { code: 'CMOR1', availableArea: { value: 10, unit: 'ha' } }
+      ],
+      { hasErrors: true }
+    )
+    global.fetch = fetchOk({ actions: [] })
+    initSelectActionsPage(form)
+
+    form.querySelector('input[value="CMOR1"]').dispatchEvent(new Event('change', { bubbles: true }))
+    await flushPromises()
+
+    expect(global.fetch).toHaveBeenCalledTimes(1)
+    const [, options] = global.fetch.mock.calls[0]
+    expect(JSON.parse(options.body).plannedActions).toContainEqual({ actionCode: 'CSAM3', quantity: 0.2, unit: 'ha' })
   })
 
   // Regression: after a failed submit re-renders the page, a checked action
@@ -569,32 +630,29 @@ describe('initSelectActionsPage', () => {
     expect(JSON.parse(options.body).plannedActions).toEqual([{ actionCode: 'UPL1', quantity: 5, unit: 'ha' }])
   })
 
-  // Regression: after typing the full max (so the response's own
-  // self-competing number reduces the input's `max` attribute towards 0,
-  // per applyAvailability applying the API's response as-is), typing a
-  // SMALLER, still-valid quantity must still fire a request rather than
-  // being blocked as "already known invalid" against that stale live max.
-  it('still fires a request when typing a smaller valid quantity after a previous self-competing refresh', async () => {
+  // Regression: the input's max/hint always reflects the raw availableArea
+  // the API most recently returned - typing a value the previous response
+  // now allows (0.2271, after a refresh reported that much available) fires
+  // a request rather than being blocked against a stale prior max.
+  it('still fires a request when typing a valid quantity within the latest refreshed max', async () => {
     const form = setupDom([
       { code: 'CLIG3', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 }
     ])
     global.fetch = fetchOk({
-      actions: [{ code: 'CLIG3', availableArea: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
+      actions: [{ code: 'CLIG3', availableArea: { value: 0.2271, unit: 'ha' }, requiresMaxQuantity: 0.2271 }]
     })
     initSelectActionsPage(form)
 
     const quantityInput = form.querySelector('#landActionQuantity_CLIG3')
-    quantityInput.value = '0.3271'
+    quantityInput.value = '0.1'
     quantityInput.dispatchEvent(new Event('input', { bubbles: true }))
     quantityInput.dispatchEvent(new Event('blur'))
     await flushPromises()
 
-    // Self-competing: the response's own 0 for CLIG3 means "nothing more
-    // beyond its own claim", so max reflects what's held (0.3271), not 0.
-    expect(quantityInput.max).toBe('0.3271')
+    expect(quantityInput.max).toBe('0.2271')
     global.fetch.mockClear()
 
-    quantityInput.value = '0.25'
+    quantityInput.value = '0.2'
     quantityInput.dispatchEvent(new Event('input', { bubbles: true }))
     quantityInput.dispatchEvent(new Event('blur'))
     await flushPromises()
@@ -602,11 +660,131 @@ describe('initSelectActionsPage', () => {
     expect(global.fetch).toHaveBeenCalledTimes(1)
   })
 
+  // Regression: CSAM3=0.10 confirmed, then a competing sibling (CLIG3) is
+  // checked, making CSAM3 self-competing (displayed max/hint correctly reads
+  // 0). Reducing CSAM3 to something at or below what's already confirmed
+  // must still be possible - the displayed 0 is not the effective ceiling
+  // for a reduction, only for an increase.
+  it('allows reducing a quantity at or below its last-confirmed value even when the displayed max reads 0', async () => {
+    const form = setupDom([
+      { code: 'CSAM3', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 },
+      { code: 'CLIG3', availableArea: { value: 0.3271, unit: 'ha' } }
+    ])
+    global.fetch = fetchOk({
+      actions: [{ code: 'CSAM3', availableArea: { value: 0.1, unit: 'ha' }, requiresMaxQuantity: 0.1 }]
+    })
+    const csam3QuantityInput = form.querySelector('#landActionQuantity_CSAM3')
+    csam3QuantityInput.value = '0.10'
+    csam3QuantityInput.dispatchEvent(new Event('input', { bubbles: true }))
+    csam3QuantityInput.dispatchEvent(new Event('blur'))
+    initSelectActionsPage(form)
+    await flushPromises()
+
+    global.fetch = fetchOk({
+      actions: [{ code: 'CSAM3', availableArea: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
+    })
+    form.querySelector('input[value="CLIG3"]').dispatchEvent(new Event('change', { bubbles: true }))
+    await flushPromises()
+
+    expect(document.getElementById('landActionQuantity_CSAM3-hint').textContent).toBe('0 hectares available')
+    global.fetch.mockClear()
+
+    csam3QuantityInput.value = '0.05'
+    csam3QuantityInput.dispatchEvent(new Event('input', { bubbles: true }))
+    csam3QuantityInput.dispatchEvent(new Event('blur'))
+    await flushPromises()
+
+    expect(global.fetch).toHaveBeenCalledTimes(1)
+    const [, options] = global.fetch.mock.calls[0]
+    expect(JSON.parse(options.body).plannedActions).toContainEqual({ actionCode: 'CSAM3', quantity: 0.05, unit: 'ha' })
+  })
+
+  // Regression: after reducing CSAM3 from 0.10 to 0.05 (while self-competing
+  // with a checked sibling), increasing it back to 0.10 must still be
+  // possible - the last-confirmed value must not become a new, lower ceiling
+  // that then blocks going back up to a quantity that was already valid.
+  it('allows increasing a quantity back up after a reduction, up to the static uncompeted total', async () => {
+    const form = setupDom([
+      { code: 'CSAM3', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 },
+      { code: 'CLIG3', availableArea: { value: 0.3271, unit: 'ha' } }
+    ])
+    global.fetch = fetchOk({
+      actions: [{ code: 'CSAM3', availableArea: { value: 0.1, unit: 'ha' }, requiresMaxQuantity: 0.1 }]
+    })
+    const csam3QuantityInput = form.querySelector('#landActionQuantity_CSAM3')
+    csam3QuantityInput.value = '0.10'
+    csam3QuantityInput.dispatchEvent(new Event('input', { bubbles: true }))
+    csam3QuantityInput.dispatchEvent(new Event('blur'))
+    initSelectActionsPage(form)
+    await flushPromises()
+
+    global.fetch = fetchOk({
+      actions: [{ code: 'CSAM3', availableArea: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
+    })
+    form.querySelector('input[value="CLIG3"]').dispatchEvent(new Event('change', { bubbles: true }))
+    await flushPromises()
+
+    global.fetch = fetchOk({
+      actions: [{ code: 'CSAM3', availableArea: { value: 0.05, unit: 'ha' }, requiresMaxQuantity: 0.05 }]
+    })
+    csam3QuantityInput.value = '0.05'
+    csam3QuantityInput.dispatchEvent(new Event('input', { bubbles: true }))
+    csam3QuantityInput.dispatchEvent(new Event('blur'))
+    await flushPromises()
+    global.fetch.mockClear()
+
+    global.fetch = fetchOk({
+      actions: [{ code: 'CSAM3', availableArea: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
+    })
+    csam3QuantityInput.value = '0.10'
+    csam3QuantityInput.dispatchEvent(new Event('input', { bubbles: true }))
+    csam3QuantityInput.dispatchEvent(new Event('blur'))
+    await flushPromises()
+
+    expect(global.fetch).toHaveBeenCalledTimes(1)
+    const [, options] = global.fetch.mock.calls[0]
+    expect(JSON.parse(options.body).plannedActions).toContainEqual({ actionCode: 'CSAM3', quantity: 0.1, unit: 'ha' })
+  })
+
+  // Regression: typing above the action's own static, uncompeted total is
+  // still blocked - that's a quantity it could never hold under any
+  // circumstance, unlike a value merely above the current live headroom.
+  it('still blocks an increase above the static uncompeted total', async () => {
+    const form = setupDom([
+      { code: 'CSAM3', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 },
+      { code: 'CLIG3', availableArea: { value: 0.3271, unit: 'ha' } }
+    ])
+    global.fetch = fetchOk({
+      actions: [{ code: 'CSAM3', availableArea: { value: 0.1, unit: 'ha' }, requiresMaxQuantity: 0.1 }]
+    })
+    const csam3QuantityInput = form.querySelector('#landActionQuantity_CSAM3')
+    csam3QuantityInput.value = '0.10'
+    csam3QuantityInput.dispatchEvent(new Event('input', { bubbles: true }))
+    csam3QuantityInput.dispatchEvent(new Event('blur'))
+    initSelectActionsPage(form)
+    await flushPromises()
+
+    global.fetch = fetchOk({
+      actions: [{ code: 'CSAM3', availableArea: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
+    })
+    form.querySelector('input[value="CLIG3"]').dispatchEvent(new Event('change', { bubbles: true }))
+    await flushPromises()
+    global.fetch.mockClear()
+
+    csam3QuantityInput.value = '0.35'
+    csam3QuantityInput.dispatchEvent(new Event('input', { bubbles: true }))
+    csam3QuantityInput.dispatchEvent(new Event('blur'))
+    await flushPromises()
+
+    expect(global.fetch).not.toHaveBeenCalled()
+  })
+
   // Regression: CSAM3=0.1 confirmed, then CLIG3 checked, then CSAM3 edited to
-  // an invalid 0.32 (never blurred/confirmed), then a DIFFERENT action
-  // (CMOR1) is checked. The in-flight, unconfirmed 0.32 edit must not wipe
-  // out CSAM3's last confirmed 0.1 - it should stay checked/enabled with its
-  // field reverted to 0.1, and CMOR1's refresh must still send CSAM3=0.1.
+  // an invalid 0.4 (above its own static total, never blurred/confirmed),
+  // then a DIFFERENT action (CMOR1) is checked. The in-flight, unconfirmed
+  // 0.4 edit must not wipe out CSAM3's last confirmed 0.1 - it should stay
+  // checked/enabled with its field reverted to 0.1, and CMOR1's refresh must
+  // still send CSAM3=0.1.
   it('reverts an in-progress invalid quantity edit to the last confirmed value instead of losing the selection', async () => {
     const form = setupDom([
       { code: 'CSAM3', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 },
@@ -634,7 +812,7 @@ describe('initSelectActionsPage', () => {
     await flushPromises()
 
     // An in-progress edit, never blurred - no refresh fires for this yet.
-    csam3QuantityInput.value = '0.32'
+    csam3QuantityInput.value = '0.4'
     csam3QuantityInput.dispatchEvent(new Event('input', { bubbles: true }))
 
     global.fetch = fetchOk({
@@ -1138,11 +1316,10 @@ describe('initSelectActionsPage', () => {
   // own response, even though its hint/max IS updated from it (whatever the
   // API returns) - only OTHER, unselected actions react to a self-competing
   // number by being disabled.
-  // Regression: CLIG3 claims its own full 0.3271, so its own response is
-  // self-competing (0 extra beyond what it just claimed) - the hint must
-  // show what CLIG3 actually holds (0.3271 + 0), not the raw 0, which would
-  // misleadingly read as "you have nothing" rather than "fully allocated".
-  it('shows what it currently holds, not a misleading 0, when its own self-competing response comes back', async () => {
+  // Regression: a checked quantity action must never be disabled by its own
+  // self-competing 0 response - it has its own confirmed claim - but its
+  // hint/max reflect the raw response value as reported by the API.
+  it('never disables a checked action from its own self-competing 0 response', async () => {
     const form = setupDom([
       {
         code: 'CLIG3',
@@ -1164,13 +1341,12 @@ describe('initSelectActionsPage', () => {
     const quantityInput = form.querySelector('#landActionQuantity_CLIG3')
     expect(clig3.disabled).toBe(false)
     expect(quantityInput.disabled).toBe(false)
-    expect(document.getElementById('landActionQuantity_CLIG3-hint').textContent).toBe('0.3271 hectares available')
+    expect(document.getElementById('landActionQuantity_CLIG3-hint').textContent).toBe('0 hectares available')
   })
 
-  // Regression: the hint is always typed value PLUS the response's own
-  // extra headroom, not the raw response alone - 0.1 already typed plus
-  // 0.2271 extra headroom the response reports is 0.3271, not 0.2271.
-  it('adds the typed quantity to the response value in the hint, not the response value alone', async () => {
+  // Regression: the hint/max reflect the raw availableArea the API returns,
+  // refreshed after each request - not the typed value plus that response.
+  it('refreshes the hint to the raw response value after a refresh, not the typed value plus it', async () => {
     const form = setupDom([
       {
         code: 'CLIG3',
@@ -1188,7 +1364,7 @@ describe('initSelectActionsPage', () => {
     form.querySelector('input[value="CLIG3"]').dispatchEvent(new Event('change', { bubbles: true }))
     await flushPromises()
 
-    expect(document.getElementById('landActionQuantity_CLIG3-hint').textContent).toBe('0.3271 hectares available')
+    expect(document.getElementById('landActionQuantity_CLIG3-hint').textContent).toBe('0.2271 hectares available')
   })
 
   // Full sequence from the algorithm this page implements: CSAM3=0.10, then

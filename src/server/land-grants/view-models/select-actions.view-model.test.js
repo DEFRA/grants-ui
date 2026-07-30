@@ -219,6 +219,20 @@ describe('select-actions.view-model', () => {
       })
     })
 
+    it("should render data-total-available-area from staticAvailableArea when present, not the (possibly competed) availableArea", () => {
+      const action = {
+        code: 'CSAM3',
+        description: 'Herbal leys',
+        ratePerUnitGbp: 224,
+        availableArea: { value: 0, unit: 'ha' },
+        staticAvailableArea: { value: 0.3271, unit: 'ha' }
+      }
+
+      const result = mapActionToViewModel(action, [])
+
+      expect(result.attributes['data-total-available-area']).toBe(0.3271)
+    })
+
     it('should set a conditional reveal when action requires a max quantity', () => {
       const action = {
         code: 'CSAM3',
@@ -427,6 +441,29 @@ describe('select-actions.view-model', () => {
       const result = mapActionsToViewModel(actions, [])
 
       expect(result.map((item) => item.value)).toEqual(['SAM2'])
+    })
+
+    // Regression: after recomputeActionsForState competes CLIG3 against a
+    // sibling action in the same submission, its availableArea can read 0
+    // even though CLIG3's own static total is non-zero and it was never
+    // actually submitted (it was correctly unchecked/unavailable
+    // client-side before the form was ever submitted). Since it isn't in
+    // addedActions either, it must stay visible based on its staticAvailableArea.
+    it('should not omit an action with a competed 0 availableArea when its staticAvailableArea is non-zero', () => {
+      const actions = [
+        {
+          code: 'CLIG3',
+          description: 'Manage grassland',
+          ratePerUnitGbp: 151,
+          availableArea: { value: 0, unit: 'ha' },
+          staticAvailableArea: { value: 0.3271, unit: 'ha' }
+        }
+      ]
+
+      const result = mapActionsToViewModel(actions, [])
+
+      expect(result.map((item) => item.value)).toEqual(['CLIG3'])
+      expect(result[0].checked).toBe(false)
     })
 
     it('should still render an action with 0 available area when it was already added', () => {

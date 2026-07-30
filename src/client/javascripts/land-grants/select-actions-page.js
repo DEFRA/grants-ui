@@ -32,11 +32,7 @@ function getQuantityInput(checkbox) {
 }
 
 /**
- * A checked action the server has just flagged with a validation error
- * (govuk-input--error, from a failed submit) must keep showing that
- * feedback - the live refresh must never disable/uncheck/reset it or its
- * quantity input, or the user loses both their input and the error message
- * they're meant to be correcting.
+ * A checked action the server flagged with a validation error must keep showing that feedback, untouched by the live refresh.
  * @param {HTMLInputElement} checkbox
  * @returns {boolean}
  */
@@ -45,8 +41,7 @@ function hasQuantityError(checkbox) {
 }
 
 /**
- * A non-quantity checkbox has no conditional panel to host a server-rendered
- * banner, so it's lazily created/removed here instead.
+ * A non-quantity checkbox has no conditional panel, so its banner is lazily created/removed here instead.
  * @param {HTMLInputElement} checkbox
  * @param {boolean} isLoading
  */
@@ -66,8 +61,7 @@ function toggleCheckboxRefreshBanner(checkbox, isLoading) {
 }
 
 /**
- * Shows/hides the "Updating..." banner for the action that triggered this
- * refresh - other actions' banners are left alone.
+ * Shows/hides the "Updating..." banner for the triggering action only.
  * @param {HTMLInputElement} checkbox
  * @param {boolean} isLoading
  */
@@ -82,10 +76,7 @@ function toggleRefreshBanner(checkbox, isLoading) {
 }
 
 /**
- * Disables every OTHER checkbox/quantity input while one action's refresh is
- * in flight, since the response could change any of them. Only ever
- * disables - the post-response applyAvailability pass re-establishes each
- * one's correct state once the response lands.
+ * Disables every OTHER checkbox/quantity input while one action's refresh is in flight; applyAvailability restores them after.
  * @param {HTMLElement} form
  * @param {HTMLInputElement} triggeringCheckbox
  */
@@ -111,8 +102,7 @@ function getTotalAvailableArea(checkbox) {
 }
 
 /**
- * Headroom left for OTHER actions, most recently reported by the API -
- * updated for every action (checked or not) on every response.
+ * Headroom left for OTHER actions, most recently reported by the API.
  * @param {HTMLInputElement} checkbox
  * @returns {number | undefined}
  */
@@ -126,14 +116,7 @@ function getLiveAvailableArea(checkbox) {
 }
 
 /**
- * What a checked action currently holds - set once it's successfully
- * claimed something, then only ever grown (see resolveGrownChosenArea) or
- * wiped by directly unchecking the action. For a non-quantity action, that's
- * its running claim; for a quantity action, it's the last quantity actually
- * confirmed (sent and accepted) - distinct from whatever's currently typed,
- * so an in-progress, unconfirmed edit (e.g. typing a new value that turns
- * out too high, then checking a different action before blurring) can fall
- * back to what was last known-good, rather than losing the selection.
+ * What a checked action currently holds - its running claim (non-quantity) or last-confirmed quantity (quantity action).
  * @param {HTMLInputElement} checkbox
  * @returns {number | undefined}
  */
@@ -147,19 +130,15 @@ function getChosenArea(checkbox) {
 }
 
 /**
- * A typed quantity is valid against the input's own max attribute - kept
- * accurate by syncQuantityInputBounds from the last confirmed server
- * response for this action (falling back to its static total before any
- * response has landed). Using the live max, not a separately-computed one,
- * means a value already known to conflict with the server's last answer
- * never triggers another doomed request.
+ * A typed quantity is valid up to the action's own static total - not the
+ * live/competed max, which can read lower than a value that's still valid.
  * @param {HTMLInputElement} checkbox
  * @returns {number | undefined}
  */
 function getValidTypedQuantity(checkbox) {
   const quantityInput = getQuantityInput(checkbox)
   const typed = Number(quantityInput?.value.trim())
-  const max = quantityInput?.max ? Number(quantityInput.max) : getTotalAvailableArea(checkbox)
+  const max = getTotalAvailableArea(checkbox)
   return typed > 0 && (max == null || typed <= max) ? typed : undefined
 }
 
@@ -181,13 +160,7 @@ function updateHintLive(checkbox) {
 }
 
 /**
- * A checked, quantity-required action with no valid typed quantity isn't a
- * real selection yet. If it has a last-confirmed quantity (see
- * applyAvailability), this is just an in-progress, unconfirmed edit - revert
- * the field to that confirmed value rather than losing the selection.
- * Otherwise there's nothing to fall back to, so uncheck and disable it
- * rather than leave it looking selected while silently absent from
- * submitted state.
+ * A checked quantity action with no valid typed quantity reverts to its last-confirmed value, or is unchecked if it has none.
  * @param {HTMLElement} form
  * @returns {Set<HTMLInputElement>} Checkboxes just force-unchecked, so the
  *   availability response for this same refresh doesn't re-enable them.
@@ -195,16 +168,15 @@ function updateHintLive(checkbox) {
 function uncheckUnconfirmedQuantityActions(form) {
   const forced = new Set()
   for (const checkbox of getCheckboxes(form)) {
-    if (hasQuantityError(checkbox)) {
+    const quantityInput = getQuantityInput(checkbox)
+    const isUnconfirmed = !hasQuantityError(checkbox) && checkbox.checked && quantityInput && getValidTypedQuantity(checkbox) == null
+    if (!isUnconfirmed) {
       continue
     }
-    const quantityInput = getQuantityInput(checkbox)
-    if (checkbox.checked && quantityInput && getValidTypedQuantity(checkbox) == null) {
-      const confirmed = getChosenArea(checkbox)
-      if (confirmed != null) {
-        quantityInput.value = String(confirmed)
-        continue
-      }
+    const confirmed = getChosenArea(checkbox)
+    if (confirmed != null) {
+      quantityInput.value = String(confirmed)
+    } else {
       checkbox.checked = false
       markUnavailable(checkbox, quantityInput)
       forced.add(checkbox)
@@ -214,14 +186,7 @@ function uncheckUnconfirmedQuantityActions(form) {
 }
 
 /**
- * What a checked action is claiming for THIS request - a quantity action
- * sends its own typed value, falling back to its last confirmed quantity if
- * what's currently typed is invalid/unconfirmed (uncheckUnconfirmedQuantityActions
- * already reverted the field to that same value, but a fetch triggered by a
- * DIFFERENT checkbox in the same tick can still race ahead of that); a
- * non-quantity action sends what it already holds (getChosenArea), or its
- * latest known headroom if it's being checked for the first time and holds
- * nothing yet.
+ * What a checked action is claiming for THIS request - typed/last-confirmed value for a quantity action, held/live area otherwise.
  * @param {HTMLInputElement} checkbox
  * @returns {number | undefined}
  */
@@ -270,8 +235,7 @@ function toggleUnavailableMessage(checkbox, isUnavailable) {
 }
 
 /**
- * Force-hides a checkbox's conditional reveal panel - GOV.UK's own JS only
- * toggles this on user click. Never force-shows; that stays the browser's job.
+ * Force-hides a checkbox's conditional reveal panel; never force-shows, that stays the browser's job.
  * @param {HTMLInputElement} checkbox
  */
 function hideConditionalReveal(checkbox) {
@@ -281,11 +245,7 @@ function hideConditionalReveal(checkbox) {
 }
 
 /**
- * Marks a checkbox as unavailable: unchecks it (a selection that's no longer
- * possible must not stay looking selected), disables it and its quantity
- * input, hides the panel, and shows the "not compatible" message. Also wipes
- * its chosen area, so a future re-check claims afresh rather than resending
- * a stale amount.
+ * Marks a checkbox as unavailable: unchecks, disables, hides the panel, shows the "not compatible" message, and wipes its chosen area.
  * @param {HTMLInputElement} checkbox
  * @param {HTMLInputElement | null} [quantityInput]
  */
@@ -302,14 +262,7 @@ function markUnavailable(checkbox, quantityInput = getQuantityInput(checkbox)) {
 }
 
 /**
- * Refreshes a quantity input's max/hint from the latest availableArea.
- * Availability (disabled state, panel, message) is handled separately by
- * the caller via markUnavailable / clearUnavailable. The API reports
- * availableArea as headroom BEYOND this action's own claim (see
- * resolveChosenArea for the same contract on non-quantity actions), so for
- * a checked action with a typed quantity, the displayed max/hint is what's
- * typed PLUS that extra headroom - not the raw response value alone, which
- * would misleadingly omit what's already held.
+ * Refreshes a quantity input's max/hint from the latest availableArea, as reported by the API.
  * @param {HTMLInputElement} checkbox
  * @param {{ availableArea?: { value: number, unit: string }, requiresMaxQuantity?: number }} action
  */
@@ -318,18 +271,15 @@ function syncQuantityInputBounds(checkbox, action) {
   if (action.requiresMaxQuantity == null || !quantityInput || !action.availableArea) {
     return
   }
-  const typed = checkbox.checked ? Number(quantityInput.value.trim()) : 0
-  const displayValue = typed > 0 ? typed + action.availableArea.value : action.availableArea.value
-  quantityInput.max = String(displayValue)
+  quantityInput.max = String(action.availableArea.value)
   const hint = document.getElementById(`${quantityInput.id}-hint`)
   if (hint) {
-    hint.textContent = availabilityHintText(displayValue, action.availableArea.unit)
+    hint.textContent = availabilityHintText(action.availableArea.value, action.availableArea.unit)
   }
 }
 
 /**
- * Marks a checkbox as available: clears disabled state and the "not
- * compatible" message. Leaves the panel's open/closed state alone.
+ * Marks a checkbox as available: clears disabled state and the "not compatible" message.
  * @param {HTMLInputElement} checkbox
  */
 function clearUnavailable(checkbox) {
@@ -342,17 +292,8 @@ function clearUnavailable(checkbox) {
 }
 
 /**
- * A non-quantity action's chosen area: sentQuantity (what it already
- * claimed) plus any EXTRA headroom this response reports beyond that claim
- * (responseValue - the API reports availableArea as headroom BEYOND an
- * action's own claim, not a repeat of its full holding, so a 0 response
- * means no extra - not a loss of what's already held), but ONLY when
- * allowGrowth is true. A single response can report surplus for several
- * checked actions at once (e.g. multiple actions freed up by the same
- * uncheck), but that combined growth was never itself verified against the
- * API - only the checkbox that actually triggered this refresh (or one
- * claiming for the first time) may grow; every other already-established
- * action keeps exactly what it already held.
+ * A non-quantity action's chosen area: sentQuantity plus any extra headroom the response reports, but only when allowGrowth is true
+ * (only the checkbox that triggered this refresh, or one claiming for the first time, may grow from unverified surplus).
  * @param {number} responseValue
  * @param {number} sentQuantity
  * @param {boolean} allowGrowth
@@ -363,18 +304,62 @@ function resolveChosenArea(responseValue, sentQuantity, allowGrowth) {
 }
 
 /**
- * Applies one action's response: refreshes its shared headroom attribute,
- * its quantity input bounds, and - if checked - its chosen area and
- * disabled state.
+ * Not selected: unavailable when there's nothing (or not enough, for a typed amount) left to claim.
+ * @param {HTMLInputElement} checkbox
+ * @param {HTMLInputElement | null} quantityInput
+ * @param {{ value: number, unit: string }} [availableArea]
+ */
+function applyUncheckedAvailability(checkbox, quantityInput, availableArea) {
+  const isUnavailable =
+    availableArea != null && quantityInput
+      ? availableArea.value === 0 || availableArea.value < (getValidTypedQuantity(checkbox) ?? 0)
+      : availableArea?.value === 0
+  if (isUnavailable) {
+    markUnavailable(checkbox)
+  } else {
+    clearUnavailable(checkbox)
+  }
+}
+
+/**
+ * Checked quantity action: records sentQuantity as its last-confirmed value (see getChosenArea); never disabled by its own response.
+ * @param {HTMLInputElement} checkbox
+ * @param {number | undefined} sentQuantity
+ */
+function applyCheckedQuantityAvailability(checkbox, sentQuantity) {
+  if (typeof sentQuantity === 'number') {
+    checkbox.setAttribute(TOTAL_CHOSEN_AREA_ATTR, String(sentQuantity))
+  }
+  clearUnavailable(checkbox)
+}
+
+/**
+ * Checked non-quantity action: grows its chosen area from response surplus when allowed, disables it if nothing's left claimed.
+ * @param {HTMLInputElement} checkbox
+ * @param {number} availableAreaValue
+ * @param {number} sentQuantity
+ * @param {boolean} allowGrowth
+ */
+function applyCheckedNonQuantityAvailability(checkbox, availableAreaValue, sentQuantity, allowGrowth) {
+  const chosenArea = resolveChosenArea(availableAreaValue, sentQuantity, allowGrowth)
+  checkbox.setAttribute(TOTAL_CHOSEN_AREA_ATTR, String(chosenArea))
+  if (chosenArea === 0) {
+    markUnavailable(checkbox)
+  } else {
+    clearUnavailable(checkbox)
+  }
+}
+
+/**
+ * Applies one action's response: headroom attribute, quantity bounds, and - if checked - chosen area and disabled state.
  * @param {HTMLInputElement} checkbox
  * @param {{ availableArea?: { value: number, unit: string }, requiresMaxQuantity?: number }} action
- * @param {number | undefined} sentQuantity - What we claimed for this action
- *   in the request this response answers, if it was checked and included.
- * @param {boolean} allowGrowth - Whether this checkbox may grow its chosen
- *   area from response surplus (see resolveChosenArea).
+ * @param {number | undefined} sentQuantity - What we claimed for this action, if checked and included.
+ * @param {boolean} allowGrowth - Whether this checkbox may grow from response surplus (see resolveChosenArea).
  */
 function applyAvailability(checkbox, action, sentQuantity, allowGrowth) {
   const { availableArea } = action
+  const quantityInput = getQuantityInput(checkbox)
   if (availableArea) {
     checkbox.setAttribute(AVAILABLE_UNIT_ATTR, availableArea.unit)
     checkbox.setAttribute(LIVE_AVAILABLE_AREA_ATTR, String(availableArea.value))
@@ -383,46 +368,17 @@ function applyAvailability(checkbox, action, sentQuantity, allowGrowth) {
   syncQuantityInputBounds(checkbox, action)
 
   if (!checkbox.checked) {
-    // Not selected: unavailable when there's genuinely nothing (or not
-    // enough, for a quantity action's typed amount) left to claim.
-    const quantityInput = getQuantityInput(checkbox)
-    const isUnavailable =
-      availableArea != null && quantityInput
-        ? availableArea.value === 0 || availableArea.value < (getValidTypedQuantity(checkbox) ?? 0)
-        : availableArea?.value === 0
-    if (isUnavailable) {
-      markUnavailable(checkbox)
-    } else {
-      clearUnavailable(checkbox)
-    }
+    applyUncheckedAvailability(checkbox, quantityInput, availableArea)
     return
   }
-
   if (availableArea == null) {
     return
   }
-
-  const quantityInput = getQuantityInput(checkbox)
   if (quantityInput) {
-    // Record what was actually confirmed for this quantity action, so a
-    // later invalid/unconfirmed edit can fall back to it instead of losing
-    // the selection - its own self-competing 0 response never disables it
-    // (it has its own confirmed claim).
-    if (typeof sentQuantity === 'number') {
-      checkbox.setAttribute(TOTAL_CHOSEN_AREA_ATTR, String(sentQuantity))
-    }
-    clearUnavailable(checkbox)
+    applyCheckedQuantityAvailability(checkbox, sentQuantity)
     return
   }
-
-  const chosenArea = resolveChosenArea(availableArea.value, /** @type {number} */ (sentQuantity), allowGrowth)
-  checkbox.setAttribute(TOTAL_CHOSEN_AREA_ATTR, String(chosenArea))
-
-  if (chosenArea === 0) {
-    markUnavailable(checkbox)
-  } else {
-    clearUnavailable(checkbox)
-  }
+  applyCheckedNonQuantityAvailability(checkbox, availableArea.value, /** @type {number} */ (sentQuantity), allowGrowth)
 }
 
 /**
@@ -455,6 +411,41 @@ async function postPlannedActions(parcelId, plannedActions) {
 }
 
 /**
+ * Request failed (network error or e.g. 422) - undo disableOtherActions rather than leaving every action stuck disabled.
+ * @param {HTMLElement} form
+ * @param {Set<HTMLInputElement>} forcedUnchecked
+ */
+function recoverFromFailedRefresh(form, forcedUnchecked) {
+  for (const checkbox of getCheckboxes(form)) {
+    if (!forcedUnchecked.has(checkbox) && !hasQuantityError(checkbox)) {
+      clearUnavailable(checkbox)
+    }
+  }
+}
+
+/**
+ * @param {HTMLElement} form
+ * @param {ActionAvailability[]} actions
+ * @param {Array<{ actionCode: string, quantity: number, unit: string }>} plannedActions
+ * @param {Set<HTMLInputElement>} forcedUnchecked
+ * @param {HTMLInputElement} [triggeringCheckbox]
+ */
+function applyRefreshResponse(form, actions, plannedActions, forcedUnchecked, triggeringCheckbox) {
+  const sentQuantityByCode = new Map(plannedActions.map((p) => [p.actionCode, p.quantity]))
+  for (const checkbox of getCheckboxes(form)) {
+    if (forcedUnchecked.has(checkbox) || hasQuantityError(checkbox)) {
+      continue
+    }
+    const action = actions.find((a) => a.code === checkbox.value)
+    if (action) {
+      // A first-ever claim always "grows" from nothing - allowed regardless of trigger.
+      const allowGrowth = checkbox === triggeringCheckbox || getChosenArea(checkbox) == null
+      applyAvailability(checkbox, action, sentQuantityByCode.get(checkbox.value), allowGrowth)
+    }
+  }
+}
+
+/**
  * @param {HTMLElement} form
  * @param {string} parcelId
  * @returns {(triggeringCheckbox?: HTMLInputElement) => Promise<void>}
@@ -483,32 +474,11 @@ function createAvailabilityRefresher(form, parcelId) {
     }
 
     if (!actions) {
-      // The request failed (network error, or the backend rejected this
-      // exact combination as invalid, e.g. 422) - we have no new
-      // information, so undo disableOtherActions rather than leaving
-      // every other action stuck disabled with no way to recover.
-      for (const checkbox of getCheckboxes(form)) {
-        if (!forcedUnchecked.has(checkbox) && !hasQuantityError(checkbox)) {
-          clearUnavailable(checkbox)
-        }
-      }
+      recoverFromFailedRefresh(form, forcedUnchecked)
       return
     }
 
-    const sentQuantityByCode = new Map(plannedActions.map((p) => [p.actionCode, p.quantity]))
-    for (const checkbox of getCheckboxes(form)) {
-      if (forcedUnchecked.has(checkbox) || hasQuantityError(checkbox)) {
-        continue
-      }
-      const action = actions.find((a) => a.code === checkbox.value)
-      if (action) {
-        // A first-ever claim (no chosen area yet) always "grows" from
-        // nothing to sentQuantity - that's establishing it, not surplus
-        // beyond an existing one, so it's allowed regardless of trigger.
-        const allowGrowth = checkbox === triggeringCheckbox || getChosenArea(checkbox) == null
-        applyAvailability(checkbox, action, sentQuantityByCode.get(checkbox.value), allowGrowth)
-      }
-    }
+    applyRefreshResponse(form, actions, plannedActions, forcedUnchecked, triggeringCheckbox)
   }
 }
 
@@ -524,9 +494,11 @@ export function initSelectActionsPage(form) {
 
   const refreshAvailability = createAvailabilityRefresher(form, parcelId)
 
-  // Grey out any already-checked (saved) selection that's now incompatible,
-  // and hydrate every checked action's chosen area from the saved state.
-  if (buildPlannedActions(form).length > 0) {
+  // Grey out any saved selection that's now incompatible, and hydrate its
+  // chosen area - skipped after a failed submit, where the server-rendered
+  // state already reflects exactly what was submitted and shouldn't be
+  // second-guessed by a fresh live re-check.
+  if (!form.hasAttribute('data-has-errors') && buildPlannedActions(form).length > 0) {
     refreshAvailability()
   }
 
@@ -571,8 +543,7 @@ export function initSelectActionsPage(form) {
     return checkbox instanceof HTMLInputElement ? checkbox : null
   }
 
-  // Refresh once the user leaves the quantity field, rather than on every
-  // keystroke - avoids firing a request for a value that's still being typed.
+  // Refresh once the user leaves the field, not on every keystroke.
   form.addEventListener(
     'blur',
     (event) => {

@@ -11,6 +11,9 @@
  * @property {object} [availableArea] - Available area for the action
  * @property {number} [availableArea.value] - Area value
  * @property {string} [availableArea.unit] - Area unit
+ * @property {object} [staticAvailableArea] - The action's original, uncompeted available area (see mergeRecomputedAvailability)
+ * @property {number} [staticAvailableArea.value] - Area value
+ * @property {string} [staticAvailableArea.unit] - Area unit
  */
 
 /**
