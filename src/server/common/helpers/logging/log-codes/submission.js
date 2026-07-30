@@ -1,3 +1,5 @@
+import { maskCrn } from '~/src/server/common/helpers/logging/mask-crn.js'
+
 /**
  * @type {Object<string, import('./definition.js').LogCodesDefinition>}
  */
@@ -15,7 +17,7 @@ export const SUBMISSION = {
   SUBMISSION_FAILURE: {
     level: 'error',
     messageFunc: (messageOptions) =>
-      `Grant submission failed for grantType=${messageOptions.grantType}, userCrn=${messageOptions.userCrn}, userSbi=${messageOptions.userSbi}, error=${messageOptions.errorMessage}`
+      `Grant submission failed for grantType=${messageOptions.grantType}, CRN=${maskCrn(messageOptions.userCrn)}, userSbi=${messageOptions.userSbi}, error=${messageOptions.errorMessage}`
   },
   SUBMISSION_VALIDATION_ERROR: {
     level: 'error',

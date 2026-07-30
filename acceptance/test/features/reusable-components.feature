@@ -9,6 +9,7 @@ Feature: Reusable Components
         Then the user should see heading "Example Grant"
         And the page is analyzed for accessibility
         And the user should see a notification banner
+        And the user should see a phase banner feedback link
         When the user clicks on "Start now"
 
         # check-details
@@ -16,6 +17,7 @@ Feature: Reusable Components
         And should see heading "Check your details"
         And the page is analyzed for accessibility
         And the user should see a notification banner
+        And the user should see a phase banner feedback link
         When the user selects "No"
         And continues
 
@@ -297,6 +299,7 @@ Feature: Reusable Components
         And the page is analyzed for accessibility
         And should see an "EGWA" reference number for their application
         And the user should not see a notification banner
+        And the user should see a confirmation page feedback link
         When the user clicks on "View / Print submitted application (opens in new tab)"
         Then a new tab should be opened at URL "print-submitted-application" and closed by the user
 

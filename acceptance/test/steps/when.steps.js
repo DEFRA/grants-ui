@@ -6,10 +6,6 @@ import AutocompleteField from '../page-objects/auto-complete.field.js'
 import DatePartsField from '../page-objects/date-parts.field.js'
 import MonthYearField from '../page-objects/month-year.field.js'
 
-When('the user pauses', async function () {
-  await this.page.pause()
-})
-
 When('the user selects parcel {string} on the map', async function (parcelId) {
   await this.page.waitForLoadState('domcontentloaded')
   // mimic the CustomEvent the parcel-map web component fires when a user clicks a parcel
@@ -60,16 +56,8 @@ When('(the user )continues', async function () {
   await this.page.getByRole('button', { name: 'Continue' }).click()
 })
 
-When('(the user )confirms and continues', async function () {
-  await this.page.getByRole('button', { name: 'Confirm and continue' }).click()
-})
-
 When('(the user )submits their form', async function () {
   await this.page.getByRole('button', { name: 'Send' }).click()
-})
-
-When('(the user )decides to save and return to their application later', async function () {
-  await this.page.getByRole('button', { name: 'Save and return' }).click()
 })
 
 When('(the user )navigates backward', async function () {
