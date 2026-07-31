@@ -1,13 +1,16 @@
-import {
-  fetchAvailableActionsForParcel,
-  validateApplication
-} from '~/src/server/land-grants/services/land-grants.service.js'
+import { validateApplication } from '~/src/server/land-grants/services/land-grants.service.js'
 import QuestionPageWithParcelCheckController from '~/src/server/common/controllers/question-page-with-parcel-check.controller.js'
 import { parseLandParcel } from '~/src/shared/format-parcel.js'
 import { log, error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
-import { getAddedActionsForStateParcel } from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
+import {
+  getAddedActionsForStateParcel,
+  getAddedActionsFromPayload
+} from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
 import { getParcelIdFromQuery } from '../utils/parcel-request.utils.js'
 import { getLandGrantsUserContext } from '../services/land-grants-user-context.js'
+
+/** fallback path when no predecessor page is found. */
+const SELECT_LAND_PARCEL_PATH = '/select-land-parcel'
 
 /**
  * Shared GET/POST flow for the grouped-radio and flat-checkbox select-actions pages.
@@ -22,6 +25,15 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
   singleParcelSubmission = false
 
   /**
+   * Service function fetchActions calls to get the parcel's actions. Every
+   * subclass must set its own - there is no shared default.
+   * @type {(parcel: { parcelId?: string, sheetId?: string, enabledLandActions?: string[], plannedActions?: PlannedAction[] }, userContext: LandGrantsUserContext) => Promise<{actions: ActionGroup[] | ActionOption[], parcel: {parcelId: string, sheetId: string, size: Size}}>}
+   */
+  fetchActionsService = () => {
+    throw new Error(`${this.constructor.name} must set fetchActionsService`)
+  }
+
+  /**
    * @param {FormModel} model
    * @param {PageQuestion} pageDef
    */
@@ -34,6 +46,15 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
 
   resolveParcelIds(request) {
     return getParcelIdFromQuery(request)
+  }
+
+  /**
+   * The bare path of the page before this one in the journey's page order.
+   * @returns {string}
+   */
+  getPreviousPagePath() {
+    const { pages } = this.model
+    return pages[pages.indexOf(this) - 1]?.path ?? SELECT_LAND_PARCEL_PATH
   }
 
   /**
@@ -55,9 +76,10 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
    * @param {Array} _groupedActions
    * @param {Array} _addedActions
    * @param {Record<string, string>} [_quantityErrorsByCode]
+   * @param {boolean} [_hasErrors] - Whether this page load is redisplaying a rejected submission
    * @returns {object}
    */
-  getViewModelWithActions(_request, _context, _groupedActions, _addedActions, _quantityErrorsByCode) {
+  getViewModelWithActions(_request, _context, _groupedActions, _addedActions, _quantityErrorsByCode, _hasErrors) {
     throw new Error(`${this.constructor.name} must implement getViewModelWithActions()`)
   }
 
@@ -71,16 +93,42 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
   }
 
   /**
-   * Validate submitted quantities against the fetched action metadata. Runs
-   * after fetchActions, unlike validateUserInput. No-op by default; only the
-   * flat-checkbox page overrides it (the grouped page surfaces quantity
-   * errors via handleApplicationValidation instead).
+   * Validate submitted quantities against the fetched action metadata. No-op
+   * by default; only the flat-checkbox page overrides it.
    * @param {object} _payload
    * @param {Array} _actions
    * @returns {Array<{ text: string, href?: string }>}
    */
   validateActionQuantities(_payload, _actions) {
     return []
+  }
+
+  /**
+   * Recompute action availability against this submission's quantity claims,
+   * before writing to state. No-op by default; only the flat-checkbox page
+   * overrides it.
+   * @param {AnyFormRequest} _request
+   * @param {{ selectedLandParcel: string, sheetId: string, parcelId: string }} _parcel
+   * @param {object} _payload
+   * @param {Array} actions
+   * @returns {Promise<Array>}
+   */
+  async recomputeActionsForState(_request, _parcel, _payload, actions) {
+    return actions
+  }
+
+  /**
+   * Actions to show as added when re-rendering after a validateApplication
+   * failure. Defaults to what's in state; only the flat-checkbox page
+   * overrides it to read from payload instead (see getAddedActionsFromPayload).
+   * @param {object} _payload
+   * @param {Array} _actions
+   * @param {object} state
+   * @param {string} selectedLandParcel
+   * @returns {Array<{ code: string, description: string, value?: string|number }>}
+   */
+  getAddedActionsForValidationError(_payload, _actions, state, selectedLandParcel) {
+    return getAddedActionsForStateParcel(state, selectedLandParcel)
   }
 
   /**
@@ -130,7 +178,7 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
     } = options
     const [sheetId = '', parcelId = ''] = parseLandParcel(selectedLandParcel)
     return h.view(this.viewName, {
-      ...this.getViewModelWithActions(request, context, actions, addedActions, quantityErrorsByCode),
+      ...this.getViewModelWithActions(request, context, actions, addedActions, quantityErrorsByCode, errors.length > 0),
       ...additionalState,
       parcelName: `${sheetId} ${parcelId}`,
       errors,
@@ -151,7 +199,7 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
   async fetchActions(request, sheetId, parcelId, plannedActions = []) {
     try {
       const userContext = getLandGrantsUserContext(request)
-      return await fetchAvailableActionsForParcel(
+      return await this.fetchActionsService(
         {
           parcelId,
           sheetId,
@@ -210,7 +258,7 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
   async handleGet(request, context, h) {
     const parcel = this.resolveParcelContext(request)
     if (!parcel.selectedLandParcel) {
-      return this.proceed(request, h, '/select-land-parcel')
+      return this.proceed(request, h, this.getPreviousPagePath())
     }
 
     const { result, groupedActions, addedActions } = await this.fetchAndPrepareActions(request, context, parcel)
@@ -240,18 +288,25 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
    * @param {Array} options.errors
    * @param {{ selectedLandParcel: string, sheetId: string, parcelId: string }} options.parcel
    * @param {object} options.prevState
+   * @param {object} [options.payload] - When given, re-renders with what was just
+   *   submitted instead of prevState, so an invalid quantity stays visible to correct.
    */
-  async handleValidationErrors(h, request, context, { errors, parcel, prevState }) {
+  async handleValidationErrors(h, request, context, { errors, parcel, prevState, payload }) {
     const { selectedLandParcel, sheetId, parcelId } = parcel
     const result = await this.fetchActions(request, sheetId, parcelId)
-    const addedActions = getAddedActionsForStateParcel(prevState, selectedLandParcel)
+    // Unwraps both ActionGroup[] (grouped page) and Action[] (flat page) into a flat list.
+    const flatActions = (result?.actions || []).flatMap((a) => a.actions || [a])
+    const prevAddedActions = getAddedActionsForStateParcel(prevState, selectedLandParcel)
+    const addedActions = payload ? getAddedActionsFromPayload(payload, flatActions, prevAddedActions) : prevAddedActions
+    const quantityErrorsByCode = Object.fromEntries(errors.filter((e) => e.code).map((e) => [e.code, e.text]))
     return this.renderErrorView(h, request, context, {
       errors,
       selectedLandParcel,
       actions: result?.actions || [],
       addedActions,
       additionalState: prevState,
-      existingLandParcels: Object.keys(prevState.landParcels || {}).length > 0
+      existingLandParcels: Object.keys(prevState.landParcels || {}).length > 0,
+      quantityErrorsByCode
     })
   }
 
@@ -290,8 +345,7 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
           failedMessages.filter((e) => e.code).map((e) => [e.code, e.description])
         )
 
-        // state, not prevState, so submitted selections/quantities survive the reload
-        const addedActions = getAddedActionsForStateParcel(state, selectedLandParcel)
+        const addedActions = this.getAddedActionsForValidationError(payload, actions, state, selectedLandParcel)
         return this.renderErrorView(h, request, context, {
           errors: validationErrors,
           selectedLandParcel,
@@ -309,7 +363,7 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
         { sbi, parcelId, sheetId, errorMessage, statusCode, selectedActions },
         request
       )
-      const addedActions = getAddedActionsForStateParcel(state, selectedLandParcel)
+      const addedActions = this.getAddedActionsForValidationError(payload, actions, state, selectedLandParcel)
       return this.renderErrorView(h, request, context, {
         errors: [
           {
@@ -358,15 +412,16 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
 
     const quantityErrors = this.validateActionQuantities(payload, actions)
     if (quantityErrors.length > 0) {
-      return this.handleValidationErrors(h, request, context, { errors: quantityErrors, parcel, prevState })
+      return this.handleValidationErrors(h, request, context, { errors: quantityErrors, parcel, prevState, payload })
     }
 
-    const state = this.writeActionsToState(prevState, payload, actions, fetchedParcel)
+    const recomputedActions = await this.recomputeActionsForState(request, parcel, payload, actions)
+    const state = this.writeActionsToState(prevState, payload, recomputedActions, fetchedParcel)
 
     if (payload.action === 'validate') {
       const validationResult = await this.handleApplicationValidation(h, request, context, {
         payload,
-        actions,
+        actions: recomputedActions,
         parcel,
         state
       })
@@ -384,5 +439,6 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
  * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
  * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
  * @import { PageQuestion } from '@defra/forms-model'
- * @import { PlannedAction } from '~/src/server/land-grants/types/land-grants.client.d.js'
+ * @import { PlannedAction, ActionGroup, ActionOption, Size } from '~/src/server/land-grants/types/land-grants.client.d.js'
+ * @import { LandGrantsUserContext } from '../services/land-grants-user-context.js'
  */

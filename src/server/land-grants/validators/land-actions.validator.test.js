@@ -151,28 +151,17 @@ describe('land-actions.validator', () => {
       { code: 'CLIG3', description: 'Manage grassland', version: '1' }
     ]
 
-    it('should return an error when a selected quantity-required action has no submitted quantity', () => {
-      const payload = { landAction: 'CSAM3' }
+    it.each([
+      ['has no submitted quantity', undefined],
+      ['is 0', '0']
+    ])('should return an error when the selected quantity-required action %s', (_description, quantity) => {
+      const payload = { landAction: 'CSAM3', ...(quantity != null && { landActionQuantity_CSAM3: quantity }) }
 
       const result = validateSelectedActionQuantities(payload, actions)
 
-      expect(result).toEqual([{ text: 'Enter a quantity for Herbal leys', href: '#landActionQuantity_CSAM3' }])
-    })
-
-    it('should return an error when the submitted quantity is 0', () => {
-      const payload = { landAction: 'CSAM3', landActionQuantity_CSAM3: '0' }
-
-      const result = validateSelectedActionQuantities(payload, actions)
-
-      expect(result).toEqual([{ text: 'Enter a quantity for Herbal leys', href: '#landActionQuantity_CSAM3' }])
-    })
-
-    it('should return no errors when a valid quantity is submitted', () => {
-      const payload = { landAction: 'CSAM3', landActionQuantity_CSAM3: '3.25' }
-
-      const result = validateSelectedActionQuantities(payload, actions)
-
-      expect(result).toEqual([])
+      expect(result).toEqual([
+        { text: 'Enter a quantity for Herbal leys', href: '#landActionQuantity_CSAM3', code: 'CSAM3' }
+      ])
     })
 
     it('should not require a quantity for an action with no requiresMaxQuantity', () => {
@@ -201,9 +190,42 @@ describe('land-actions.validator', () => {
       const result = validateSelectedActionQuantities(payload, withSecondQuantity)
 
       expect(result).toEqual([
-        { text: 'Enter a quantity for Herbal leys', href: '#landActionQuantity_CSAM3' },
-        { text: 'Enter a quantity for Low input', href: '#landActionQuantity_UPL8' }
+        { text: 'Enter a quantity for Herbal leys', href: '#landActionQuantity_CSAM3', code: 'CSAM3' },
+        { text: 'Enter a quantity for Low input', href: '#landActionQuantity_UPL8', code: 'UPL8' }
       ])
+    })
+
+    it.each([
+      ['more than 4 decimal places', '3.14159'],
+      ['more than one decimal point', '14.211.442121'],
+      ['not numeric', 'abc'],
+      ['negative', '-3.25'],
+      ['scientific notation', '1e5']
+    ])('should return an error when the submitted quantity is %s', (_description, quantity) => {
+      const payload = { landAction: 'CSAM3', landActionQuantity_CSAM3: quantity }
+
+      const result = validateSelectedActionQuantities(payload, actions)
+
+      expect(result).toEqual([
+        {
+          text: 'Quantity for Herbal leys must be 4 decimal places or fewer',
+          href: '#landActionQuantity_CSAM3',
+          code: 'CSAM3'
+        }
+      ])
+    })
+
+    it.each([
+      ['a valid quantity', '3.25'],
+      ['exactly 4 decimal places', '3.1415'],
+      ['fewer than 4 decimal places', '3.1'],
+      ['a whole number', '3']
+    ])('should return no errors when the submitted quantity is %s', (_description, quantity) => {
+      const payload = { landAction: 'CSAM3', landActionQuantity_CSAM3: quantity }
+
+      const result = validateSelectedActionQuantities(payload, actions)
+
+      expect(result).toEqual([])
     })
   })
 })

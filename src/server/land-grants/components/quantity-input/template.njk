@@ -19,5 +19,10 @@
   errorMessage: {
     text: errorText
   } if errorText else undefined,
-  value: quantityValue
+  value: quantityValue,
+  formGroup: {
+    beforeInput: {
+      html: '<div class="select-actions-refresh-banner select-actions-refresh-banner--hidden" id="' + fieldId + '-refresh-banner">Updating available land for this action&hellip;</div>'
+    }
+  }
 }) }}

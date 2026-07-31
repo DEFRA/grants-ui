@@ -87,37 +87,5 @@ export function mapGroupedActionsToViewModel(groupedActions, addedActions) {
 }
 
 /**
- * @typedef {object} Action
- * @property {string} code - Action code
- * @property {string} description - Action description
- * @property {string} version - Action version
- * @property {number} [ratePerUnitGbp] - Payment rate per unit in GBP
- * @property {boolean} [sssiConsentRequired] - Action requires SSSI consent
- * @property {boolean} [heferRequired] - Action requires HEFER
- * @property {number} [ratePerAgreementPerYearGbp] - Additional payment per agreement per year
- * @property {object} [availableArea] - Available area for the action
- * @property {string} [availableArea.value] - Area value
- * @property {string} [availableArea.unit] - Area unit
- */
-
-/**
- * @typedef {object} ActionGroup
- * @property {string} name - Group name
- * @property {Array<string>} consents - Array of consents for the group
- * @property {Array<Action>} actions - Actions in the group
- */
-
-/**
- * @typedef {object} CheckboxItem
- * @property {string} value - Checkbox value
- * @property {string} text - Checkbox label
- * @property {boolean} checked - Whether checkbox is checked
- * @property {object} hint - Hint text configuration
- * @property {string} hint.html - HTML content for hint
- */
-
-/**
- * @typedef {object} GroupViewModel
- * @property {string} name - Group name
- * @property {Array<CheckboxItem>} actions - Mapped action checkboxes
+ * @import { Action, ActionGroup, CheckboxItem, GroupViewModel } from '~/src/server/land-grants/types/select-actions-view-model.d.js'
  */

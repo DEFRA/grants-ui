@@ -9,7 +9,8 @@ import {
   calculate,
   locateParcelTiles,
   parcelsGroups,
-  parcelsWithExtendedInfo,
+  parcelsWithActions,
+  parcelsWithGroups,
   parcelsWithSize,
   validate
 } from '~/src/server/land-grants/services/land-grants.client.js'
@@ -68,48 +69,53 @@ export async function calculateLandActionsPayment(state, userContext) {
 /**
  * Creates a group with passed name and actions
  * @param {string} name
- * @param {ActionOption[]} groupActions
+ * @param {ActionOption[]} actionsInGroup
  * @returns {ActionGroup}- Parcel data with actions
  */
-const createGroup = (name, groupActions) => ({
+const createGroup = (name, actionsInGroup) => ({
   name,
   totalAvailableArea: {
-    unitFullName: formatAreaUnit(groupActions[0]?.availableArea.unit),
-    unit: groupActions[0]?.availableArea.unit,
-    value: Math.max(...groupActions.map((item) => item.availableArea.value))
+    unitFullName: formatAreaUnit(actionsInGroup[0]?.availableArea.unit),
+    unit: actionsInGroup[0]?.availableArea.unit,
+    value: Math.max(...actionsInGroup.map((item) => item.availableArea.value))
   },
-  actions: groupActions,
+  actions: actionsInGroup,
   consents: getConsentTypes()
-    .filter((ct) => groupActions.some((a) => /** @type {Record<string, unknown>} */ (a)[ct.apiField]))
+    .filter((ct) => actionsInGroup.some((a) => /** @type {Record<string, unknown>} */ (a)[ct.apiField]))
     .map((ct) => ct.key)
 })
 
 /**
- * Fetches available actions for a given parcel. When plannedActions is given,
- * each action's availableArea is recomputed against that combination and the
- * cache is bypassed (the cache key isn't keyed on plannedActions).
+ * Shared fetch+cache logic behind fetchGroupedActionsForParcel (grouped)
+ * and fetchActionsForParcel (flat). cacheKeyPrefix keeps their cache entries
+ * from colliding.
+ * @template T
  * @param {{ parcelId?: string, sheetId?: string, enabledLandActions?: string[], plannedActions?: PlannedAction[] }} parcel
  * @param {LandGrantsUserContext} userContext
- * @returns {Promise<{actions: ActionGroup[], parcel: {parcelId: string, sheetId: string, size: Size}}>}- Parcel data with actions
+ * @param {string} cacheKeyPrefix
+ * @param {(parcelIds: string[], baseUrl: string, userContext: LandGrantsUserContext, plannedActions: PlannedAction[]) => Promise<ParcelResponse>} fetchParcelsWithFields
+ * @param {(actionsForParcel: ActionOption[], enabledActions: string[], groupDefinitions: ActionGroupDefinition[]) => T} transformActions
+ * @returns {Promise<{actions: T, parcel: {parcelId: string, sheetId: string, size: Size}}>}
  * @throws {Error}
  */
-export async function fetchAvailableActionsForParcel(
+async function fetchParcelActions(
   { parcelId = '', sheetId = '', enabledLandActions = [], plannedActions = [] },
-  userContext
+  userContext,
+  cacheKeyPrefix,
+  fetchParcelsWithFields,
+  transformActions
 ) {
   const parcelKey = stringifyParcel({ sheetId, parcelId })
   const enabledActions = normaliseEnabledLandActions(enabledLandActions)
-  const cacheKey = buildParcelActionsCacheKey(parcelKey, enabledActions)
+  const cacheKey = buildParcelActionsCacheKey(`${cacheKeyPrefix}${parcelKey}`, enabledActions)
   const cached = plannedActions.length === 0 ? getCachedParcel(cacheKey) : null
 
   if (cached) {
     return cached
   }
 
-  /** @type {ActionGroup[]} */
-  const actions = []
   const parcelIds = [parcelKey]
-  const { parcels, groups: groupDefinitions = [] } = await parcelsWithExtendedInfo(
+  const { parcels, groups: groupDefinitions = [] } = await fetchParcelsWithFields(
     parcelIds,
     LAND_GRANTS_API_URL,
     userContext,
@@ -117,18 +123,6 @@ export async function fetchAvailableActionsForParcel(
   )
   const foundParcel = parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)
   const actionsForParcel = foundParcel?.actions?.map(mapAction) || []
-
-  groupDefinitions.forEach((group) => {
-    const groupActions = actionsForParcel.filter((a) => {
-      if (!enabledActions.includes(a.code)) {
-        return false
-      }
-      return group.actions.includes(a.code)
-    })
-    if (groupActions.length > 0) {
-      actions.push(createGroup(group.name, groupActions))
-    }
-  })
 
   const result = {
     parcel: {
@@ -140,13 +134,60 @@ export async function fetchAvailableActionsForParcel(
         value: foundParcel?.size?.value ?? 0
       }
     },
-    actions
+    actions: transformActions(actionsForParcel, enabledActions, groupDefinitions)
   }
 
   if (plannedActions.length === 0) {
     setCachedParcel(cacheKey, result)
   }
   return result
+}
+
+/**
+ * @param {ActionOption[]} actionsForParcel
+ * @param {string[]} enabledActions
+ * @param {ActionGroupDefinition[]} groupDefinitions
+ * @returns {ActionGroup[]}
+ */
+function groupActions(actionsForParcel, enabledActions, groupDefinitions) {
+  /** @type {ActionGroup[]} */
+  const groups = []
+  groupDefinitions.forEach((group) => {
+    const actionsInGroup = actionsForParcel.filter(
+      (a) => enabledActions.includes(a.code) && group.actions.includes(a.code)
+    )
+    if (actionsInGroup.length > 0) {
+      groups.push(createGroup(group.name, actionsInGroup))
+    }
+  })
+  return groups
+}
+
+/**
+ * Fetches available actions for a given parcel, grouped. When plannedActions
+ * is given, each action's availableArea is recomputed against that
+ * combination and the cache is bypassed.
+ * @param {{ parcelId?: string, sheetId?: string, enabledLandActions?: string[], plannedActions?: PlannedAction[] }} parcel
+ * @param {LandGrantsUserContext} userContext
+ * @returns {Promise<{actions: ActionGroup[], parcel: {parcelId: string, sheetId: string, size: Size}}>}
+ * @throws {Error}
+ */
+export async function fetchGroupedActionsForParcel(parcel, userContext) {
+  return fetchParcelActions(parcel, userContext, '', parcelsWithGroups, groupActions)
+}
+
+/**
+ * Same as fetchGroupedActionsForParcel, but returns a flat action list
+ * with no grouping step.
+ * @param {{ parcelId?: string, sheetId?: string, enabledLandActions?: string[], plannedActions?: PlannedAction[] }} parcel
+ * @param {LandGrantsUserContext} userContext
+ * @returns {Promise<{actions: ActionOption[], parcel: {parcelId: string, sheetId: string, size: Size}}>}
+ * @throws {Error}
+ */
+export async function fetchActionsForParcel(parcel, userContext) {
+  return fetchParcelActions(parcel, userContext, 'flat:', parcelsWithActions, (actionsForParcel, enabledActions) =>
+    actionsForParcel.filter((a) => enabledActions.includes(a.code))
+  )
 }
 
 /**
@@ -159,7 +200,7 @@ export async function fetchAvailableActionsForParcel(
  */
 export async function fetchActionsWithPlannedActions({ parcelId, sheetId, plannedActions }, userContext) {
   const parcelKey = stringifyParcel({ sheetId, parcelId })
-  const { parcels } = await parcelsWithExtendedInfo([parcelKey], LAND_GRANTS_API_URL, userContext, plannedActions)
+  const { parcels } = await parcelsWithActions([parcelKey], LAND_GRANTS_API_URL, userContext, plannedActions)
   const foundParcel = parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)
   const actions = (foundParcel?.actions || []).map(mapAction).map((action) => ({
     code: action.code,
@@ -179,9 +220,6 @@ function mapAction(action) {
   return {
     ...action,
     description: landActionWithCode(action.description, action.code),
-    // Once land-grants-api is ready we need to replace this with their actual max quantity field.
-    // Falls back to 0 (not undefined) when availableArea is missing so a configured code always
-    // still gets a quantity input - undefined here is read downstream as "not required at all".
     requiresMaxQuantity: requiresQuantity ? (action.availableArea?.value ?? 0) : undefined
   }
 }
@@ -342,7 +380,7 @@ function buildErrorMessagesFromResponse(actions = []) {
 }
 
 /**
- * @import { ActionOption, ActionGroup, ActionGroupDefinition, Parcel, HydratedParcel, PlannedAction, ValidateApplicationResponse, ValidationAction, ErrorItem, Size } from '~/src/server/land-grants/types/land-grants.client.d.js'
+ * @import { ActionOption, ActionGroup, ActionGroupDefinition, HydratedParcel, PlannedAction, ValidateApplicationResponse, ValidationAction, ErrorItem, Size, ParcelResponse } from '~/src/server/land-grants/types/land-grants.client.d.js'
  * @import { PaymentCalculation } from '~/src/server/land-grants/types/payment.d.js'
  * @import { LandParcels } from '~/src/server/land-grants/types/form-state.d.js'
  * @import { AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'

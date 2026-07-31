@@ -2,7 +2,7 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 import {
-  fetchAvailableActionsForParcel,
+  fetchGroupedActionsForParcel,
   fetchParcels,
   validateApplication
 } from '~/src/server/land-grants/services/land-grants.service.js'
@@ -11,7 +11,16 @@ import SelectActionsBasePageController from './select-actions-base-page.controll
 
 vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () => ({
   QuestionPageController: class {
+    constructor(model, pageDef) {
+      this.model = model
+      this.pageDef = pageDef
+    }
+
     getViewModel() {}
+
+    getHref(path) {
+      return `/${this.model.basePath}/${path}`.replace(/\/{2,}/g, '/')
+    }
 
     makeGetRouteHandler() {
       return async (request, context, h) => h.view('stub-view', this.getViewModel(request, context))
@@ -50,11 +59,19 @@ vi.mock('~/src/shared/format-parcel.js')
  */
 class StubSelectActionsController extends SelectActionsBasePageController {
   viewName = 'stub-view'
+  fetchActionsService = fetchGroupedActionsForParcel
   validateUserInputResult = []
   writeActionsToStateResult = { landParcels: { 'sheet1-parcel1': { actionsObj: {} } } }
 
-  getViewModelWithActions(request, context, groupedActions, addedActions, quantityErrorsByCode = {}) {
-    return { ...super.getViewModel(request, context), groupedActions, addedActions, quantityErrorsByCode }
+  getViewModelWithActions(
+    request,
+    context,
+    groupedActions,
+    addedActions,
+    quantityErrorsByCode = {},
+    hasErrors = false
+  ) {
+    return { ...super.getViewModel(request, context), groupedActions, addedActions, quantityErrorsByCode, hasErrors }
   }
 
   validateUserInput() {
@@ -115,7 +132,7 @@ describe('SelectActionsBasePageController', () => {
     mockH = { view: vi.fn().mockReturnValue('rendered view'), redirect: vi.fn() }
 
     parseLandParcel.mockReturnValue(['sheet1', 'parcel1'])
-    fetchAvailableActionsForParcel.mockResolvedValue({
+    fetchGroupedActionsForParcel.mockResolvedValue({
       actions: mockGroupedActions,
       parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
     })
@@ -151,7 +168,7 @@ describe('SelectActionsBasePageController', () => {
     })
 
     test('renders an error view when fetching actions fails', async () => {
-      fetchAvailableActionsForParcel.mockRejectedValue(Object.assign(new Error('boom'), { status: 500 }))
+      fetchGroupedActionsForParcel.mockRejectedValue(Object.assign(new Error('boom'), { status: 500 }))
 
       await controller.handleGet(mockRequest, mockContext, mockH)
 
@@ -162,7 +179,7 @@ describe('SelectActionsBasePageController', () => {
     test('renders the success view with actions fetched for the parcel', async () => {
       await controller.handleGet(mockRequest, mockContext, mockH)
 
-      expect(fetchAvailableActionsForParcel).toHaveBeenCalledWith(
+      expect(fetchGroupedActionsForParcel).toHaveBeenCalledWith(
         { parcelId: 'parcel1', sheetId: 'sheet1', enabledLandActions: [], plannedActions: [] },
         { defraIdToken: 'defra-id-access-token', sbi: '106284736' }
       )
@@ -181,6 +198,29 @@ describe('SelectActionsBasePageController', () => {
 
       const [, viewModel] = mockH.view.mock.calls[0]
       expect(viewModel.errors).toEqual([{ text: 'Select an action', href: '#field' }])
+      expect(controller.setState).not.toHaveBeenCalled()
+    })
+
+    test('passes hasErrors=true to getViewModelWithActions when re-rendering with errors', async () => {
+      controller.validateUserInputResult = [{ text: 'Select an action', href: '#field' }]
+
+      await controller.handlePost(mockRequest, mockContext, mockH)
+
+      const [, viewModel] = mockH.view.mock.calls[0]
+      expect(viewModel.hasErrors).toBe(true)
+    })
+
+    test('derives quantityErrorsByCode from quantity-validation errors so the offending input is highlighted', async () => {
+      controller.validateActionQuantities = () => [
+        { text: 'Quantity for Assess moorland must be 4 decimal places or fewer', href: '#CMOR1', code: 'CMOR1' }
+      ]
+
+      await controller.handlePost(mockRequest, mockContext, mockH)
+
+      const [, viewModel] = mockH.view.mock.calls[0]
+      expect(viewModel.quantityErrorsByCode).toEqual({
+        CMOR1: 'Quantity for Assess moorland must be 4 decimal places or fewer'
+      })
       expect(controller.setState).not.toHaveBeenCalled()
     })
 

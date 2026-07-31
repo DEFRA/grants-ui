@@ -2,8 +2,8 @@
 
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 {% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
-{% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
 
 {% block content %}
   <div class="govuk-body">
@@ -28,8 +28,23 @@
           <form method="post" novalidate="novalidate">
             <input type="hidden" name="crumb" value="{{ crumb }}">
             <input type="hidden" name="action" value="validate">
+            {{ chosenAreaFieldsHtml | safe }}
 
             <h2 class="govuk-heading-m">Available actions</h2>
+
+            {% if pageConsents.length %}
+              {% set consentLinks = [] %}
+              {% if 'sssi' in pageConsents %}
+                {% set consentLinks = (consentLinks.push('<a class="govuk-link" href="./fptt-information#sec-10-get-all-necessary-regulatory-consents-permissions-and-licences-in-place" target="_blank" rel="noopener noreferrer">SSSI consent (opens in new tab)</a>'), consentLinks) %}
+              {% endif %}
+              {% if 'hefer' in pageConsents %}
+                {% set consentLinks = (consentLinks.push('an <a class="govuk-link" href="https://www.gov.uk/government/publications/sustainable-farming-incentive-2026-sfi26/sfi26-scheme-rules-and-guidance#how-to-request-an-sfi-hefer" target="_blank" rel="noopener noreferrer">SFI HEFER (opens in new tab)</a>'), consentLinks) %}
+              {% endif %}
+              {% call govukInsetText({ id: "parcel-consent-intro" }) %}
+                Some actions on this parcel need {{ consentLinks | join(' and ') | safe }}.
+                We&rsquo;ll show this on those actions.
+              {% endcall %}
+            {% endif %}
 
             {{ govukCheckboxes({
                 name: actionFieldName,
@@ -45,10 +60,15 @@
             </div>
           </form>
         {% elif ((not errors) or (errors.length == 0)) %}
-          {{ govukWarningText({
-            text: "No actions available to select.",
-            iconFallbackText: "Warning"
-          }) }}
+          <p class="govuk-body">There are no eligible actions for this parcel.</p>
+          <p class="govuk-body">Change the parcel land cover or choose a different parcel to view eligible actions.</p>
+
+          <div class="govuk-button-group">
+            {{ govukButton({
+              text: "Continue",
+              href: selectLandParcelPath
+            }) }}
+          </div>
         {% endif %}
       </div>
     </div>

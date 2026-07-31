@@ -1,20 +1,107 @@
 @use 'govuk-frontend' as *;
 
 .select-actions-checkboxes {
-  .select-actions-unavailable-message {
-    margin-top: govuk-spacing(1);
+  position: relative;
+
+  .govuk-checkboxes__label {
+    align-self: flex-start;
   }
 
-  .govuk-hint {
+  .select-actions-hint {
     @include govuk-font-size(16);
+    display: block;
+    color: $govuk-secondary-text-colour;
+  }
+
+  .select-actions-unavailable-message {
+    @include govuk-font-size(16);
+    margin-top: 0;
+  }
+
+  %row-divider {
+    margin-bottom: govuk-spacing(2);
+    padding-bottom: govuk-spacing(2);
+    border-bottom: 1px solid govuk-colour('light-grey');
+  }
+
+  %no-row-divider {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+
+  .govuk-checkboxes__item {
+    @extend %row-divider;
+
+    .select-actions-refresh-banner {
+      margin-left: govuk-spacing(9);
+    }
+  }
+
+  .govuk-checkboxes__item:has(+ .govuk-checkboxes__conditional),
+  .govuk-checkboxes__item:last-child {
+    @extend %no-row-divider;
   }
 
   .govuk-checkboxes__conditional {
+    @extend %row-divider;
     @include govuk-font-size(16);
-    margin-bottom: 0;
+    // The item's own bottom spacing is zeroed out when a conditional
+    // follows it (see %no-row-divider), so this is the only gap between the
+    // item's hint text and the conditional's first line ("Quantity").
+    margin-top: govuk-spacing(2);
 
-    .govuk-label {
+    .govuk-label,
+    .govuk-hint {
       @include govuk-font-size(16);
     }
+
+    .govuk-input__wrapper {
+      flex-wrap: wrap;
+    }
+  }
+
+  .govuk-checkboxes__conditional:last-child {
+    @extend %no-row-divider;
+  }
+}
+
+.select-actions-refresh-banner {
+  @include govuk-font-size(16);
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  gap: govuk-spacing(2);
+  margin-top: govuk-spacing(1);
+  margin-bottom: govuk-spacing(3);
+  padding: govuk-spacing(2) govuk-spacing(3);
+  background-color: govuk-colour('light-grey');
+  border-left: govuk-spacing(1) solid govuk-colour('blue');
+
+  &::before {
+    content: '';
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    border: 2px solid govuk-colour('mid-grey');
+    border-top-color: govuk-colour('blue');
+    border-radius: 50%;
+    animation: select-actions-spin 0.8s linear infinite;
+  }
+
+  &--hidden {
+    display: none;
+  }
+}
+
+@keyframes select-actions-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .select-actions-refresh-banner::before {
+    animation: none;
   }
 }

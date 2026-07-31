@@ -1,4 +1,5 @@
 import SelectActionsBasePageController from '~/src/server/land-grants/controllers/select-actions-base-page.controller.js'
+import { fetchGroupedActionsForParcel } from '~/src/server/land-grants/services/land-grants.service.js'
 import { mapGroupedActionsToViewModel } from '~/src/server/land-grants/view-models/action.view-model.js'
 import { addActionsToExistingState } from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
 import {
@@ -9,6 +10,7 @@ import {
 export default class SelectGroupedActionsPageController extends SelectActionsBasePageController {
   viewName = 'select-grouped-actions'
   actionFieldPrefix = 'landAction_'
+  fetchActionsService = fetchGroupedActionsForParcel
 
   /**
    * Get view model for the page with actions
