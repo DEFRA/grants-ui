@@ -553,16 +553,16 @@ function applyRefreshResponse(form, actions, plannedActions) {
   return grown
 }
 
-/**
- * @param {HTMLElement} form
- * @param {string} parcelId
- * @returns {(triggeringCheckbox?: HTMLInputElement) => Promise<void>}
- */
 // A non-quantity action's growth changes what's actually planned, so every
 // OTHER action's response value from that same call is already stale - cap
 // the follow-up chase rather than trust convergence blindly.
 const MAX_GROWTH_FOLLOW_UPS = 3
 
+/**
+ * @param {HTMLElement} form
+ * @param {string} parcelId
+ * @returns {(triggeringCheckbox?: HTMLInputElement) => Promise<void>}
+ */
 function createAvailabilityRefresher(form, parcelId) {
   let requestId = 0
 

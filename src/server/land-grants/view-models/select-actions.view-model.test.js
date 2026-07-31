@@ -241,7 +241,7 @@ describe('select-actions.view-model', () => {
       })
     })
 
-    // Kept in sync live by the client (updateNonQuantityHint), so it needs a
+    // Kept in sync live by the client, so it needs a
     // stable id matching getActionQuantityFieldName - same pattern the
     // quantity-input's own hint uses.
     it('should show an availability hint for a non-quantity action, with an id the client can find and update live', () => {
