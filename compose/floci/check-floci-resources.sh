@@ -10,7 +10,7 @@ FLOCI_REQUIRED_SQS_QUEUES="${FLOCI_REQUIRED_SQS_QUEUES:-fcp_audit,gfr__sqs___con
 FLOCI_REQUIRED_SNS_TOPICS="${FLOCI_REQUIRED_SNS_TOPICS:-fcp_audit_events,gfr__sns___config_update}"
 
 aws_local() {
-  aws --endpoint-url="$ENDPOINT" "$@"
+  aws --endpoint-url="$ENDPOINT" --region="$REGION" "$@"
 }
 
 check_endpoint() {

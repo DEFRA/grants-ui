@@ -63,5 +63,3 @@ aws $ENDPOINT sns subscribe \
   --notification-endpoint "$QUEUE_ARN"
  
 echo "Subscribed $QUEUE_ARN to $TOPIC_ARN"
-
-echo READY > /tmp/READY
