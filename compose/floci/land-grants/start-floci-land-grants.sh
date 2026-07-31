@@ -22,10 +22,6 @@ UPDATES_QUEUE_NAME=grants_config_broker_update
 aws $ENDPOINT s3 mb "s3://${INGEST_BUCKET}" || true
 echo "Created S3 bucket: ${INGEST_BUCKET}"
 
-# Config broker S3 bucket
-aws $ENDPOINT s3 mb "s3://${CONFIG_BROKER_BUCKET}" || true
-echo "Created grants-config-broker S3 bucket: ${CONFIG_BROKER_BUCKET}"
-
 # SQS queue consumed to ingest config changes
 QUEUE_URL=$(aws $ENDPOINT sqs create-queue --queue-name "$UPDATES_QUEUE_NAME" --query QueueUrl --output text)
 QUEUE_ARN="arn:aws:sqs:${AWS_REGION}:${ACCOUNT_ID}:${UPDATES_QUEUE_NAME}"
