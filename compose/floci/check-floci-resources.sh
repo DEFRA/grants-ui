@@ -1,5 +1,5 @@
 #!/bin/sh
-set -eu
+set -eux
 
 ENDPOINT="${FLOCI_ENDPOINT:-http://localhost:4566}"
 REGION="${AWS_REGION:-eu-west-2}"
@@ -13,7 +13,7 @@ FLOCI_REQUIRED_SNS_TOPICS="${FLOCI_REQUIRED_SNS_TOPICS:-fcp_audit_events,gfr__sn
 WAIT_TIMEOUT="${FLOCI_HEALTHCHECK_TIMEOUT:-30}"
 
 log() {
-  echo "[healthcheck] $(date -Iseconds) $*" >&2
+  echo "[healthcheck] $*" >&2
 }
 
 aws_local() {
@@ -22,7 +22,7 @@ aws_local() {
 
 check_endpoint() {
   log "checking STS"
-  aws_local sts get-caller-identity >/dev/null
+  aws_local sts get-caller-identity
   log "STS OK"
 }
 
@@ -32,7 +32,7 @@ check_buckets() {
   IFS=,
   for bucket in $FLOCI_REQUIRED_S3_BUCKETS; do
     [ -n "$bucket" ] || continue
-    aws_local s3api head-bucket --bucket "$bucket" >/dev/null
+    aws_local s3api head-bucket --bucket "$bucket"
   done
   IFS=$old_ifs
   log "buckets OK"
@@ -44,7 +44,7 @@ check_queues() {
   IFS=,
   for queue in $FLOCI_REQUIRED_SQS_QUEUES; do
     [ -n "$queue" ] || continue
-    aws_local sqs get-queue-url --queue-name "$queue" >/dev/null
+    aws_local sqs get-queue-url --queue-name "$queue"
   done
   IFS=$old_ifs
   log "queues OK"
@@ -56,7 +56,7 @@ check_topics() {
   IFS=,
   for topic in $FLOCI_REQUIRED_SNS_TOPICS; do
     [ -n "$topic" ] || continue
-    aws_local sns get-topic-attributes --topic-arn "arn:aws:sns:${REGION}:${ACCOUNT_ID}:${topic}" >/dev/null
+    aws_local sns get-topic-attributes --topic-arn "arn:aws:sns:${REGION}:${ACCOUNT_ID}:${topic}"
   done
   IFS=$old_ifs
   log "topics OK"
@@ -65,15 +65,13 @@ check_topics() {
 wait_for_resources() {
   elapsed=0
 
-log "waiting for resources"
+  log "waiting for resources"
 
   while [ "$elapsed" -lt "$WAIT_TIMEOUT" ]; do
-    if (
-        check_endpoint
-        check_buckets
-        check_queues
-        check_topics
-      ); then
+    if check_endpoint &&
+       check_buckets &&
+       check_queues &&
+       check_topics; then
       log "all resources ready"
       exit 0
     fi
@@ -84,7 +82,6 @@ log "waiting for resources"
   done
 
   log "timed out"
-  echo "Timed out waiting for Floci resources after ${WAIT_TIMEOUT}s" >&2
   exit 1
 }
 
