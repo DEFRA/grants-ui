@@ -68,7 +68,7 @@ export class UpdateDetailsPageController extends TerminalPageController {
   }
 
   makeGetRouteHandler() {
-    return async (request, context, h) => {
+    return async (request, _context, h) => {
       const { slug } = request.params
 
       const metadata = /** @type {Record<string, unknown>} */ (this.model.def.metadata ?? {})

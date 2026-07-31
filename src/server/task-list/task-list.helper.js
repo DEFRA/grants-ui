@@ -615,7 +615,7 @@ export function withTaskContext(Base) {
         // Check if the default next page belongs to a different section.
         // If so, the current section is complete — return to the task list.
         // Ignore any query params on nextPath when matching against page paths.
-        const nextPagePath = nextPath && nextPath.split('?')[0]
+        const nextPagePath = nextPath?.split('?')[0]
         const nextPage = nextPagePath && model.pages.find((p) => p.path === nextPagePath)
 
         if (!nextPage || (nextPage.section && nextPage.section !== this.section)) {
