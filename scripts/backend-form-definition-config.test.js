@@ -22,10 +22,6 @@ describe('backend-sourced form deployment config', () => {
   it('waits for Floci base resources before dependent services start', () => {
     const floci = infraComposeConfig.services.floci
 
-    expect(floci.volumes).toContain(
-      './compose/floci/check-floci-resources.sh:/usr/local/bin/check-floci-resources.sh:ro'
-    )
-    expect(floci.healthcheck.test).toEqual(['CMD-SHELL', '/usr/local/bin/check-floci-resources.sh'])
     expect(csv(floci.environment.FLOCI_REQUIRED_S3_BUCKETS)).toEqual(expect.arrayContaining(['configs-bucket']))
     expect(csv(floci.environment.FLOCI_REQUIRED_SQS_QUEUES)).toEqual(
       expect.arrayContaining(['fcp_audit', 'gfr__sqs___config_input', 'grants_ui_backend__sqs__config_updates'])

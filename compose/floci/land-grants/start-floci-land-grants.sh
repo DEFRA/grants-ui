@@ -1,5 +1,8 @@
 #!/bin/bash
 set -euo pipefail
+
+rm -f /tmp/READY
+
 export AWS_REGION=eu-west-2
 export AWS_DEFAULT_REGION=eu-west-2
 export AWS_ACCESS_KEY_ID=test
@@ -42,3 +45,5 @@ aws $ENDPOINT sns subscribe \
   --notification-endpoint "$QUEUE_ARN"
 
 echo "Subscribed $QUEUE_ARN to $TOPIC_ARN"
+
+echo "READY" > /tmp/READY
