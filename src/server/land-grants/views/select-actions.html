@@ -2,7 +2,6 @@
 
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 {% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
-{% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
 
@@ -26,10 +25,10 @@
         <p>Incompatible actions are shown but cannot be selected.</p>
 
         {% if actionItems.length %}
-          <form method="post" novalidate="novalidate"{% if errors.length > 0 %} data-has-errors="true"{% endif %}>
+          <form method="post" novalidate="novalidate">
             <input type="hidden" name="crumb" value="{{ crumb }}">
             <input type="hidden" name="action" value="validate">
-            <input type="hidden" id="plannedActionsSnapshot" name="plannedActionsSnapshot" value="{{ plannedActionsSnapshot | default('') }}">
+            {{ chosenAreaFieldsHtml | safe }}
 
             <h2 class="govuk-heading-m">Available actions</h2>
 
@@ -61,10 +60,15 @@
             </div>
           </form>
         {% elif ((not errors) or (errors.length == 0)) %}
-          {{ govukWarningText({
-            text: "No actions available to select.",
-            iconFallbackText: "Warning"
-          }) }}
+          <p class="govuk-body">There are no eligible actions for this parcel.</p>
+          <p class="govuk-body">Change the parcel land cover or choose a different parcel to view eligible actions.</p>
+
+          <div class="govuk-button-group">
+            {{ govukButton({
+              text: "Continue",
+              href: selectLandParcelPath
+            }) }}
+          </div>
         {% endif %}
       </div>
     </div>

@@ -9,6 +9,9 @@ import {
 import { getParcelIdFromQuery } from '../utils/parcel-request.utils.js'
 import { getLandGrantsUserContext } from '../services/land-grants-user-context.js'
 
+/** fallback path when no predecessor page is found. */
+const SELECT_LAND_PARCEL_PATH = '/select-land-parcel'
+
 /**
  * Shared GET/POST flow for the grouped-radio and flat-checkbox select-actions pages.
  * Subclasses provide the parts that differ between the two payload/view shapes:
@@ -46,6 +49,15 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
   }
 
   /**
+   * The bare path of the page before this one in the journey's page order.
+   * @returns {string}
+   */
+  getPreviousPagePath() {
+    const { pages } = this.model
+    return pages[pages.indexOf(this) - 1]?.path ?? SELECT_LAND_PARCEL_PATH
+  }
+
+  /**
    * Resolve parcel identifiers from query param
    * @param {AnyFormRequest} request
    * @returns {{ selectedLandParcel: string, sheetId: string, parcelId: string }}
@@ -64,9 +76,10 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
    * @param {Array} _groupedActions
    * @param {Array} _addedActions
    * @param {Record<string, string>} [_quantityErrorsByCode]
+   * @param {boolean} [_hasErrors] - Whether this page load is redisplaying a rejected submission
    * @returns {object}
    */
-  getViewModelWithActions(_request, _context, _groupedActions, _addedActions, _quantityErrorsByCode) {
+  getViewModelWithActions(_request, _context, _groupedActions, _addedActions, _quantityErrorsByCode, _hasErrors) {
     throw new Error(`${this.constructor.name} must implement getViewModelWithActions()`)
   }
 
@@ -165,7 +178,7 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
     } = options
     const [sheetId = '', parcelId = ''] = parseLandParcel(selectedLandParcel)
     return h.view(this.viewName, {
-      ...this.getViewModelWithActions(request, context, actions, addedActions, quantityErrorsByCode),
+      ...this.getViewModelWithActions(request, context, actions, addedActions, quantityErrorsByCode, errors.length > 0),
       ...additionalState,
       parcelName: `${sheetId} ${parcelId}`,
       errors,
@@ -245,7 +258,7 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
   async handleGet(request, context, h) {
     const parcel = this.resolveParcelContext(request)
     if (!parcel.selectedLandParcel) {
-      return this.proceed(request, h, '/select-land-parcel')
+      return this.proceed(request, h, this.getPreviousPagePath())
     }
 
     const { result, groupedActions, addedActions } = await this.fetchAndPrepareActions(request, context, parcel)

@@ -98,14 +98,19 @@ function getRequirementText(consentKeys) {
  * @param {Array<{code: string, description: string, value?: string}>} addedActions - Actions already added to the parcel
  * @param {Record<string, string>} [quantityErrorsByCode] - Quantity validation error text, keyed by action code
  * @param {boolean} [isFirst] - Whether this is the first item in the rendered list
+ * @param {boolean} [hasErrors] - Whether this page load is redisplaying a rejected submission
  * @returns {CheckboxItem} View model for a single checkbox item
  */
-export function mapActionToViewModel(action, addedActions, quantityErrorsByCode = {}, isFirst = false) {
+export function mapActionToViewModel(
+  action,
+  addedActions,
+  quantityErrorsByCode = {},
+  isFirst = false,
+  hasErrors = false
+) {
   const existingAction = addedActions.find((a) => a.code === action.code)
   const quantityValue = existingAction?.value ?? ''
   const checked = Boolean(existingAction)
-  const chosenArea = Number(existingAction?.value)
-  const hasChosenArea = Number.isFinite(chosenArea) && chosenArea > 0
   const consents = getActionConsentKeys(action)
   const requirementText = getRequirementText(consents)
   const agreementRateText = action.ratePerAgreementPerYearGbp
@@ -124,8 +129,9 @@ export function mapActionToViewModel(action, addedActions, quantityErrorsByCode 
       'data-available-unit': action.availableArea?.unit,
       // A non-quantity action's pass/fail threshold - static, never touched by the client.
       'data-total-available-area': getStaticAvailableArea(action)?.value,
-      // Non-quantity actions have no input field, so the client needs their saved chosen area rendered here.
-      ...(action.requiresMaxQuantity == null && hasChosenArea && { 'data-total-chosen-area': chosenArea })
+      // Stamped per-checkbox (not a single form-wide flag) so protection survives
+      // until THIS action is directly interacted with, not just the first refresh.
+      ...(checked && hasErrors && { 'data-error-on-load': 'true' })
     },
     ...(action.requiresMaxQuantity != null && {
       conditional: getQuantityConditional(
@@ -138,6 +144,26 @@ export function mapActionToViewModel(action, addedActions, quantityErrorsByCode 
       )
     })
   }
+}
+
+/**
+ * A hidden input per non-quantity action, carrying its chosen area for form
+ * submission - rendered outside the checkboxes list (not as a conditional
+ * reveal, which applies visible box styling even to hidden content).
+ * @param {Array<Action>} actions
+ * @param {Array<{code: string, value?: string|number}>} addedActions
+ * @returns {string}
+ */
+export function getChosenAreaFieldsHtml(actions, addedActions) {
+  return actions
+    .filter((action) => action.requiresMaxQuantity == null)
+    .map((action) => {
+      const fieldName = getActionQuantityFieldName(action.code)
+      const chosenArea = Number(addedActions.find((a) => a.code === action.code)?.value)
+      const value = Number.isFinite(chosenArea) && chosenArea > 0 ? chosenArea : 0
+      return `<input type="hidden" id="${fieldName}" name="${fieldName}" value="${value}">`
+    })
+    .join('\n')
 }
 
 /**
@@ -170,12 +196,13 @@ function isVisibleOnInitialLoad(action, addedActions) {
  * @param {Array<Action>} actions - Flat array of actions
  * @param {Array<{code: string, description: string}>} addedActions - Actions already added to the parcel
  * @param {Record<string, string>} [quantityErrorsByCode] - Quantity validation error text, keyed by action code
+ * @param {boolean} [hasErrors] - Whether this page load is redisplaying a rejected submission
  * @returns {Array<CheckboxItem>} Flat array of mapped action checkboxes
  */
-export function mapActionsToViewModel(actions, addedActions, quantityErrorsByCode = {}) {
+export function mapActionsToViewModel(actions, addedActions, quantityErrorsByCode = {}, hasErrors = false) {
   const visibleActions = actions.filter((action) => isVisibleOnInitialLoad(action, addedActions))
   return visibleActions.map((action, index) =>
-    mapActionToViewModel(action, addedActions, quantityErrorsByCode, index === 0)
+    mapActionToViewModel(action, addedActions, quantityErrorsByCode, index === 0, hasErrors)
   )
 }
 
