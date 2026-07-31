@@ -557,20 +557,12 @@ function createAvailabilityRefresher(form, parcelId) {
   }
 }
 
-/** @param {HTMLElement | null} form */
-export function initSelectActionsPage(form) {
-  if (!form) {
-    return
-  }
-  const parcelId = new URLSearchParams(window.location.search).get('parcelId')
-  if (!parcelId || !isValidCompoundParcelId(parcelId)) {
-    return
-  }
-
-  const refreshAvailability = createAvailabilityRefresher(form, parcelId)
-
-  // Seed each checked quantity action's last-confirmed value from the
-  // server-rendered input, if it's actually valid.
+/**
+ * Seeds each checked quantity action's last-confirmed value from the
+ * server-rendered input, if it's actually valid.
+ * @param {HTMLElement} form
+ */
+function seedConfirmedQuantities(form) {
   for (const checkbox of getCheckboxes(form)) {
     const quantityInput = getQuantityInput(checkbox)
     if (checkbox.checked && quantityInput?.value.trim()) {
@@ -581,14 +573,13 @@ export function initSelectActionsPage(form) {
       }
     }
   }
+}
 
-  // Grey out incompatible selections and hydrate chosen areas (see
-  // isProtectedFromRefresh for checked/errored exceptions, cleared per
-  // checkbox by clearErrorOnLoad below on that checkbox's own next interaction).
-  if (buildPlannedActions(form).length > 0) {
-    refreshAvailability()
-  }
-
+/**
+ * @param {HTMLElement} form
+ * @param {(triggeringCheckbox?: HTMLInputElement) => Promise<void>} refreshAvailability
+ */
+function bindCheckboxChangeHandler(form, refreshAvailability) {
   form.addEventListener('change', (event) => {
     const target = /** @type {HTMLElement} */ (event.target)
     if (!(target instanceof HTMLInputElement) || target.type !== 'checkbox' || target.name !== CHECKBOX_NAME) {
@@ -609,21 +600,28 @@ export function initSelectActionsPage(form) {
     }
     refreshAvailability(target)
   })
+}
 
-  /**
-   * @param {EventTarget | null} target
-   * @returns {HTMLInputElement | null}
-   */
-  const getCheckboxForQuantityTarget = (target) => {
-    if (!(target instanceof HTMLInputElement) || !target.name.startsWith(ACTION_QUANTITY_FIELD_PREFIX)) {
-      return null
-    }
-    const checkbox = form.querySelector(
-      `input[name="${CHECKBOX_NAME}"][value="${target.name.slice(ACTION_QUANTITY_FIELD_PREFIX.length)}"]`
-    )
-    return checkbox instanceof HTMLInputElement ? checkbox : null
+/**
+ * @param {HTMLElement} form
+ * @param {EventTarget | null} target
+ * @returns {HTMLInputElement | null}
+ */
+function getCheckboxForQuantityTarget(form, target) {
+  if (!(target instanceof HTMLInputElement) || !target.name.startsWith(ACTION_QUANTITY_FIELD_PREFIX)) {
+    return null
   }
+  const checkbox = form.querySelector(
+    `input[name="${CHECKBOX_NAME}"][value="${target.name.slice(ACTION_QUANTITY_FIELD_PREFIX.length)}"]`
+  )
+  return checkbox instanceof HTMLInputElement ? checkbox : null
+}
 
+/**
+ * @param {HTMLElement} form
+ * @param {(triggeringCheckbox?: HTMLInputElement) => Promise<void>} refreshAvailability
+ */
+function bindQuantityFocusBlurHandlers(form, refreshAvailability) {
   // Remembers each quantity input's value as of its last focus, so blur can
   // tell an actual edit apart from focus merely passing through (e.g. a click
   // landing on a DIFFERENT checkbox first blurs this field with no edit at all).
@@ -631,7 +629,7 @@ export function initSelectActionsPage(form) {
   form.addEventListener(
     'focus',
     (event) => {
-      if (getCheckboxForQuantityTarget(event.target)) {
+      if (getCheckboxForQuantityTarget(form, event.target)) {
         valueOnFocus = /** @type {HTMLInputElement} */ (event.target).value
       }
     },
@@ -642,7 +640,7 @@ export function initSelectActionsPage(form) {
   form.addEventListener(
     'blur',
     (event) => {
-      const checkbox = getCheckboxForQuantityTarget(event.target)
+      const checkbox = getCheckboxForQuantityTarget(form, event.target)
       if (!checkbox) {
         return
       }
@@ -655,6 +653,31 @@ export function initSelectActionsPage(form) {
     },
     true
   )
+}
+
+/** @param {HTMLElement | null} form */
+export function initSelectActionsPage(form) {
+  if (!form) {
+    return
+  }
+  const parcelId = new URLSearchParams(window.location.search).get('parcelId')
+  if (!parcelId || !isValidCompoundParcelId(parcelId)) {
+    return
+  }
+
+  const refreshAvailability = createAvailabilityRefresher(form, parcelId)
+
+  seedConfirmedQuantities(form)
+
+  // Grey out incompatible selections and hydrate chosen areas (see
+  // isProtectedFromRefresh for checked/errored exceptions, cleared per
+  // checkbox by clearErrorOnLoad below on that checkbox's own next interaction).
+  if (buildPlannedActions(form).length > 0) {
+    refreshAvailability()
+  }
+
+  bindCheckboxChangeHandler(form, refreshAvailability)
+  bindQuantityFocusBlurHandlers(form, refreshAvailability)
 }
 
 initSelectActionsPage(document.querySelector('form'))
