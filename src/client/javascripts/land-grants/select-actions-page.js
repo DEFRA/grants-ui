@@ -344,6 +344,23 @@ function syncQuantityInputBounds(checkbox, action) {
 }
 
 /**
+ * Refreshes a non-quantity action's own "X available" hint (see
+ * getActionQuantityFieldName - shares its id with the quantity-action hint
+ * pattern) from the latest availableArea, as reported by the API.
+ * @param {HTMLInputElement} checkbox
+ * @param {{ availableArea?: { value: number, unit: string }, requiresMaxQuantity?: number }} action
+ */
+function syncNonQuantityHint(checkbox, action) {
+  if (action.requiresMaxQuantity != null || !action.availableArea) {
+    return
+  }
+  const hint = document.getElementById(`${getActionQuantityFieldName(checkbox.value)}-hint`)
+  if (hint) {
+    hint.textContent = availabilityHintText(action.availableArea.value, action.availableArea.unit)
+  }
+}
+
+/**
  * Marks a checkbox as available: clears disabled state and the "not compatible" message.
  * @param {HTMLInputElement} checkbox
  */
@@ -354,18 +371,6 @@ function clearUnavailable(checkbox) {
     quantityInput.disabled = false
   }
   toggleUnavailableMessage(checkbox, false)
-}
-
-/**
- * A non-quantity action's chosen area: sentQuantity plus any extra headroom the response reports, but only when allowGrowth is true
- * (only the checkbox that triggered this refresh, or one claiming for the first time, may grow from unverified surplus).
- * @param {number} responseValue
- * @param {number} sentQuantity
- * @param {boolean} allowGrowth
- * @returns {number}
- */
-function resolveChosenArea(responseValue, sentQuantity, allowGrowth) {
-  return allowGrowth ? sentQuantity + responseValue : sentQuantity
 }
 
 /**
@@ -399,20 +404,31 @@ function applyCheckedQuantityAvailability(checkbox, sentQuantity) {
 }
 
 /**
- * Checked non-quantity action: grows its chosen area from response surplus when allowed, disables it if nothing's left claimed.
+ * Checked non-quantity action: when allowed to grow, its chosen area is
+ * sentQuantity plus whatever extra headroom this response reports - it has
+ * no upper bound of its own, so any land freed up elsewhere is claimable by
+ * it. When growth isn't allowed this pass (see applyRefreshResponse), it
+ * stays flat at sentQuantity - the response's headroom figure is a
+ * hypothetical for THIS action alone and can't be trusted alongside another
+ * action's own growth in the same pass. Disables it if nothing's claimed.
  * @param {HTMLInputElement} checkbox
  * @param {number} availableAreaValue
  * @param {number} sentQuantity
  * @param {boolean} allowGrowth
+ * @returns {boolean} Whether this action's chosen area grew beyond what was sent -
+ *   every OTHER action's own availableArea in this same response was computed
+ *   against the smaller, pre-growth claim, so it's now stale.
  */
 function applyCheckedNonQuantityAvailability(checkbox, availableAreaValue, sentQuantity, allowGrowth) {
-  const chosenArea = resolveChosenArea(availableAreaValue, sentQuantity, allowGrowth)
+  const grows = allowGrowth && availableAreaValue > 0
+  const chosenArea = grows ? sentQuantity + availableAreaValue : sentQuantity
   setChosenArea(checkbox, chosenArea)
   if (chosenArea === 0) {
     markUnavailable(checkbox)
   } else {
     clearUnavailable(checkbox)
   }
+  return grows
 }
 
 /**
@@ -424,10 +440,11 @@ function applyCheckedNonQuantityAvailability(checkbox, availableAreaValue, sentQ
  * @param {HTMLInputElement} checkbox
  * @param {{ availableArea?: { value: number, unit: string }, requiresMaxQuantity?: number }} action
  * @param {number | undefined} sentQuantity - What we claimed for this action, if checked and included.
- * @param {boolean} allowGrowth - Whether this checkbox may grow from response surplus (see resolveChosenArea).
  * @param {boolean} isProtected
+ * @param {boolean} allowGrowth - Whether a non-quantity action may grow this pass (see applyRefreshResponse).
+ * @returns {boolean} Whether this action grew (see applyCheckedNonQuantityAvailability).
  */
-function applyAvailability(checkbox, action, sentQuantity, allowGrowth, isProtected) {
+function applyAvailability(checkbox, action, sentQuantity, isProtected, allowGrowth) {
   const { availableArea } = action
   const quantityInput = getQuantityInput(checkbox)
   if (availableArea) {
@@ -436,23 +453,29 @@ function applyAvailability(checkbox, action, sentQuantity, allowGrowth, isProtec
   }
 
   syncQuantityInputBounds(checkbox, action)
+  syncNonQuantityHint(checkbox, action)
 
   if (!checkbox.checked) {
     applyUncheckedAvailability(checkbox, quantityInput, availableArea)
-    return
+    return false
   }
   if (availableArea == null) {
-    return
+    return false
   }
   if (isProtected) {
     clearUnavailable(checkbox)
-    return
+    return false
   }
   if (quantityInput) {
     applyCheckedQuantityAvailability(checkbox, sentQuantity)
-    return
+    return false
   }
-  applyCheckedNonQuantityAvailability(checkbox, availableArea.value, /** @type {number} */ (sentQuantity), allowGrowth)
+  return applyCheckedNonQuantityAvailability(
+    checkbox,
+    availableArea.value,
+    /** @type {number} */ (sentQuantity),
+    allowGrowth
+  )
 }
 
 /**
@@ -497,27 +520,37 @@ function recoverFromFailedRefresh(form) {
 }
 
 /**
+ * Two checked non-quantity actions can each independently be reported as
+ * able to claim the SAME freed land in one response - it's a hypothetical
+ * "if only this action claimed it" figure per action, not a partition. So at
+ * most ONE action is allowed to grow per response (the first, in DOM order);
+ * every other one is left at its sent value for this pass. The caller must
+ * re-ask (with that one action's new, larger claim already sent) before any
+ * other action's own growth can be trusted.
  * @param {HTMLElement} form
  * @param {ActionAvailability[]} actions
  * @param {Array<{ actionCode: string, quantity: number, unit: string }>} plannedActions
- * @param {HTMLInputElement} [triggeringCheckbox]
+ * @returns {boolean} Whether an action grew and a follow-up refresh is needed.
  */
-function applyRefreshResponse(form, actions, plannedActions, triggeringCheckbox) {
+function applyRefreshResponse(form, actions, plannedActions) {
   const sentQuantityByCode = new Map(plannedActions.map((p) => [p.actionCode, p.quantity]))
+  let grown = false
   for (const checkbox of getCheckboxes(form)) {
     const action = actions.find((a) => a.code === checkbox.value)
-    if (action) {
-      // A first-ever claim always "grows" from nothing - allowed regardless of trigger.
-      const allowGrowth = checkbox === triggeringCheckbox || getChosenArea(checkbox) == null
-      applyAvailability(
-        checkbox,
-        action,
-        sentQuantityByCode.get(checkbox.value),
-        allowGrowth,
-        isProtectedFromRefresh(checkbox)
-      )
+    if (!action) {
+      continue
     }
+    const allowGrowth = !grown
+    const grew = applyAvailability(
+      checkbox,
+      action,
+      sentQuantityByCode.get(checkbox.value),
+      isProtectedFromRefresh(checkbox),
+      allowGrowth
+    )
+    grown = grown || grew
   }
+  return grown
 }
 
 /**
@@ -525,14 +558,29 @@ function applyRefreshResponse(form, actions, plannedActions, triggeringCheckbox)
  * @param {string} parcelId
  * @returns {(triggeringCheckbox?: HTMLInputElement) => Promise<void>}
  */
+// A non-quantity action's growth changes what's actually planned, so every
+// OTHER action's response value from that same call is already stale - cap
+// the follow-up chase rather than trust convergence blindly.
+const MAX_GROWTH_FOLLOW_UPS = 3
+
 function createAvailabilityRefresher(form, parcelId) {
   let requestId = 0
 
-  return async function refreshAvailability(triggeringCheckbox) {
+  /**
+   * @param {HTMLInputElement} [triggeringCheckbox]
+   * @param {number} [followUpsLeft]
+   */
+  async function refreshAvailability(triggeringCheckbox, followUpsLeft = MAX_GROWTH_FOLLOW_UPS) {
+    const isChainStart = followUpsLeft === MAX_GROWTH_FOLLOW_UPS
     uncheckUnconfirmedQuantityActions(form)
     requestId += 1
     const thisRequestId = requestId
-    if (triggeringCheckbox) {
+    // Loading feedback spans the whole growth-follow-up chain, not just this
+    // one call - shown/disabled once at the chain's start, restored again
+    // (below) after every response so a follow-up never has a gap where
+    // other actions flash back to enabled, and only hidden/re-enabled once
+    // the whole chain actually settles.
+    if (triggeringCheckbox && isChainStart) {
       toggleRefreshBanner(triggeringCheckbox, true)
       disableOtherActions(form, triggeringCheckbox)
     }
@@ -544,17 +592,32 @@ function createAvailabilityRefresher(form, parcelId) {
       // and leave the banner alone (the newer refresh owns it).
       return
     }
-    if (triggeringCheckbox) {
-      toggleRefreshBanner(triggeringCheckbox, false)
-    }
 
     if (!actions) {
+      if (triggeringCheckbox) {
+        toggleRefreshBanner(triggeringCheckbox, false)
+      }
       recoverFromFailedRefresh(form)
       return
     }
 
-    applyRefreshResponse(form, actions, plannedActions, triggeringCheckbox)
+    const anyGrew = applyRefreshResponse(form, actions, plannedActions)
+    if (anyGrew && followUpsLeft > 0) {
+      if (triggeringCheckbox) {
+        // applyRefreshResponse just re-enabled every checkbox with fresh
+        // data - restore the "fetch in flight" disabled state immediately,
+        // rather than leaving a gap until the follow-up fetch's own response.
+        disableOtherActions(form, triggeringCheckbox)
+      }
+      await refreshAvailability(triggeringCheckbox, followUpsLeft - 1)
+      return
+    }
+    if (triggeringCheckbox) {
+      toggleRefreshBanner(triggeringCheckbox, false)
+    }
   }
+
+  return refreshAvailability
 }
 
 /**
