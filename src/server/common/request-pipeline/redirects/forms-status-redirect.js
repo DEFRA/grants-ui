@@ -334,7 +334,12 @@ export function shouldHandlePreSubmission(previousStatus) {
  * @returns {previousStatus is string} `true` when post-submission redirect handling should run.
  */
 function shouldHandlePostSubmission(previousStatus) {
-  return previousStatus === ApplicationStatus.SUBMITTED || previousStatus === ApplicationStatus.REOPENED
+  return (
+    previousStatus === ApplicationStatus.SUBMITTED ||
+    previousStatus === ApplicationStatus.REOPENED ||
+    previousStatus === ApplicationStatus.CLAIM_STARTED ||
+    previousStatus === ApplicationStatus.CLAIM_SUBMITTED
+  )
 }
 
 /**
@@ -346,7 +351,11 @@ function shouldHandlePostSubmission(previousStatus) {
  * @returns {boolean} `true` when the pipeline should continue without redirect handling.
  */
 function shouldSkipFormsStatusRedirect(request, context, grantRedirectRules) {
-  const isPostSubmission = context.state.applicationStatus === ApplicationStatus.SUBMITTED
+  const applicationStatus = context.state.applicationStatus
+  const isPostSubmission =
+    applicationStatus === ApplicationStatus.SUBMITTED ||
+    applicationStatus === ApplicationStatus.CLAIM_STARTED ||
+    applicationStatus === ApplicationStatus.CLAIM_SUBMITTED
   const isWithinGrantPages = request.headers['sec-fetch-site'] === 'same-origin'
   const isCheckDetailsStartPage = request.app.model?.def?.startPage === '/check-details'
   const currentPath = request.params?.path
