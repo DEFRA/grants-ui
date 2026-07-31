@@ -14,7 +14,6 @@ ENDPOINT="--endpoint-url=http://localhost:4566"
 ACCOUNT_ID=000000000000
 
 INGEST_BUCKET=land-data
-CONFIG_BROKER_BUCKET=configs-bucket
 TOPIC_NAME=gfr__sns___config_update
 UPDATES_QUEUE_NAME=grants_config_broker_update
 
