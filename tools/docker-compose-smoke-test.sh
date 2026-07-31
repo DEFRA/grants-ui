@@ -139,7 +139,7 @@ ATTEMPTS=0
 MAX_ATTEMPTS=60
 
 echo "Waiting for grants-ui service to start..."
-until docker compose ps grants-ui | grep -q "Up"; do
+until eval "${COMPOSE_COMMAND} ps grants-ui"  | grep -q "Up"; do
     if [ ${ATTEMPTS} -eq ${MAX_ATTEMPTS} ]; then
         echo "Error: Timed out waiting for grants-ui service to start."
         exit 1
