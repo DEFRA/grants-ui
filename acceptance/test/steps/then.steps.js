@@ -215,6 +215,12 @@ Then('(the user )should see a notification banner', async function () {
   await expect(this.page.locator('div.govuk-notification-banner')).toBeVisible()
 })
 
+Then('(the user )should see full GOV.UK branding as a public beta service', async function () {
+  await expect(this.page.locator('.govuk-header')).toBeVisible()
+  await expect(this.page.locator('.defra-brand-bar')).toHaveCount(0)
+  await expect(this.page.locator('html')).toHaveClass(/govuk-template--rebranded/)
+})
+
 Then('(the user )should not see a notification banner', async function () {
   await expect(this.page.locator('div.govuk-notification-banner')).not.toBeVisible()
 })

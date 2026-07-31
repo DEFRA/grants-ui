@@ -1,4 +1,8 @@
 Feature: Reusable Components
+    Follow the example-grant-with-auth journey:
+    - Exercising all reusable UI components
+    - Checking feedback links are rendered
+    - Checking GOV.UK phase is observed
 
     Scenario: Use all available components in example journey and analyze accessibility
         Given there is no application data for SBI "107593059" and grant "example-grant-with-auth"
@@ -10,6 +14,7 @@ Feature: Reusable Components
         And the page is analyzed for accessibility
         And the user should see a notification banner
         And the user should see a phase banner feedback link
+        And the user should see full GOV.UK branding as a public beta service
         When the user clicks on "Start now"
 
         # check-details
