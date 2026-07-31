@@ -181,7 +181,7 @@ done
 echo "${READINESS_OUTPUT}"
 
 echo "Service Status:"
-docker compose ps
+eval "${COMPOSE_COMMAND} ps"
 
 if [ -n "${ACCEPTANCE_TESTS_HOOK:-}" ]; then
   echo "Running Acceptance Tests..."
