@@ -65,4 +65,8 @@ ignore:
     - '*':
         reason: 'Build-time/test-only — undici@7.28.0 via cheerio (docusaurus-search-local in @defra/interactive-map docs, never loaded by grants-ui runtime) and jsdom (vitest test runner, not shipped). Fixed in 7.29.0; interim ignore while the override is blocked by .npmrc min-release-age=7 (7.29.0 published 2026-07-24, installable from 2026-07-31). Replace with an overrides pin and remove this entry once it clears the cooldown.'
         expires: '2026-08-06'
+  'SNYK-JS-UNDICI-18426521':
+    - '*':
+        reason: 'CVE-2026-13697 is a cache-poisoning bug in undici''s cache interceptor (interceptors.cache(), shared-cache mode) triggered by malformed Cache-Control directives from an upstream response. grants-ui''s only runtime undici usage (root override@8.8.0, in src/server/common/helpers/proxy/setup-proxy.js) is ProxyAgent + setGlobalDispatcher for outbound HTTP proxying - the cache interceptor is never composed or configured anywhere in this codebase or its deps, so the vulnerable code path is unreachable. The cheerio/jsdom undici@7.28.0 path is separately build-time/test-only, same as the other UNDICI entries above. Fixed in 8.9.0/7.29.0; interim ignore while the overrides bump is blocked by .npmrc min-release-age=7 (both published 2026-07-24, installable from 2026-07-31). Replace with overrides pins and remove this entry once it clears the cooldown.'
+        expires: '2026-08-07'
 
