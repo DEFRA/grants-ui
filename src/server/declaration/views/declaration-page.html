@@ -3,18 +3,9 @@
 {% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
+{% from "support-details/macro.njk" import defraSupportDetails %}
+{% from "partials/components.html" import componentList with context %}
 
-{% set checkboxConfirmOptional = {
-  idPrefix: 'consentOptional',
-  name: 'consentOptional',
-  items: [{
-    value: 'CONSENT_OPTIONAL',
-    text: '(Optional) I consent to being contacted by Defra or a third party about service improvements',
-    checked: false,
-    selected: false
-  }]
-}
-%}
 {% set mainClasses = "govuk-body" %}
 
 {% block content %}
@@ -25,37 +16,66 @@
         {{- sectionTitle -}}
       </h2>
       {% endif %}
-      <h1 class="govuk-heading-l">Confirm and send</h1>
-      <p class="govuk-body">I confirm that, to the best of my knowledge, the details I have provided are correct.</p>
-      <p class="govuk-body">I understand the score was based on the answers I provided</p>
-      <p class="govuk-body">I am aware the information I submit will be checked.</p>
-      <p class="govuk-body">I am happy to be contacted by Defra and RPA (or a third-party on their behalf) about my application.</p>
+      <h1 class="govuk-heading-l">{{ declarationContent.heading }}</h1>
 
-      <h2 class="govuk-heading-m">Improving our schemes</h2>
-      <p class="govuk-body">As we develop new services we get feedback from farmers and agents.</p>
-      <p class="govuk-body">You may be contacted by us or a third party that we work with.</p>
+      {# CONFIGURABLE SECTION: HTML content from the page's `config:` block #}
+      {% if declarationContent.html %}
+        {{ declarationContent.html | safe }}
+      {% elif declarationContent.useDefaultCopy %}
+        <p class="govuk-body">I confirm that, to the best of my knowledge, the details I have provided are correct.</p>
+        <p class="govuk-body">I understand the score was based on the answers I provided</p>
+        <p class="govuk-body">I am aware the information I submit will be checked.</p>
+        <p class="govuk-body">I am happy to be contacted by Defra and RPA (or a third-party on their behalf) about my application.</p>
 
-      {{ govukCheckboxes({
-        idPrefix: 'consentOptional',
-        name: 'consentOptional',
-        items: checkboxConfirmOptional.items
-      }) }}
-      {{ govukWarningText({
-          text: 'You can only submit your details once.',
-          iconFallbackText: 'Warning'
-        })
-      }}
+        <h2 class="govuk-heading-m">Improving our schemes</h2>
+        <p class="govuk-body">As we develop new services we get feedback from farmers and agents.</p>
+        <p class="govuk-body">You may be contacted by us or a third party that we work with.</p>
+      {% endif %}
+
+      {% if declarationContent.optionalConsent %}
+        {{ govukCheckboxes({
+          idPrefix: 'consentOptional',
+          name: 'consentOptional',
+          items: [{
+            value: 'CONSENT_OPTIONAL',
+            text: '(Optional) I consent to being contacted by Defra or a third party about service improvements',
+            checked: false,
+            selected: false
+          }]
+        }) }}
+      {% endif %}
+
+      {% if declarationContent.warningText %}
+        {{ govukWarningText({
+            text: declarationContent.warningText,
+            iconFallbackText: 'Warning'
+          })
+        }}
+      {% endif %}
 
       {% block form %}
       <form method="post" novalidate>
         <input type="hidden" name="crumb" value="{{ crumb }}">
+
+        {{ componentList(components) }}
+
+        {# GAS wants us to send these as confirmation that the user has reached this page #}
+        {% for name, value in declarationContent.hiddenFields %}
+        <input type="hidden" id="{{ name }}" name="{{ name }}" value="{{ value }}">
+        {% endfor %}
+
         {{ govukButton({
-          text: "Confirm and send",
+          text: declarationContent.buttonText,
           preventDoubleClick: true
         }) }}
       </form>
       {% endblock %}
+
+      {% if declarationContent.showSupportDetails %}
+        {{ defraSupportDetails({typeOfSupport: 'question', email: supportEmail}) }}
+      {% endif %}
     </div>
+    {% if declarationContent.showDataProtection %}
     <div class="govuk-grid-column-full">
       <hr/>
       <p class="govuk-body">
@@ -63,5 +83,6 @@
         <a class="govuk-link" href="https://www.gov.uk/government/organisations/rural-payments-agency/about/personal-information-charter" target="_blank" rel="noopener noreferrer">Rural Payments Agency personal information charter (opens in new tab).</a>
       </p>
     </div>
+    {% endif %}
   </div>
 {% endblock %}

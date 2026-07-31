@@ -1,46 +1,11 @@
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { load } from 'cheerio'
-import nunjucks from 'nunjucks'
-import * as filters from '~/src/config/nunjucks/filters/filters.js'
-import * as globals from '~/src/config/nunjucks/globals.js'
-
-const dirname = path.dirname(fileURLToPath(import.meta.url))
-const projectRoot = path.resolve(dirname, '../../../..')
-const environment = nunjucks.configure(
-  [
-    path.join(projectRoot, 'node_modules/govuk-frontend/dist'),
-    dirname,
-    path.join(projectRoot, 'src/server/common/components'),
-    path.join(projectRoot, 'src/server/common/templates'),
-    path.join(projectRoot, 'src/server/land-grants/components')
-  ],
-  { autoescape: true, trimBlocks: true, lstripBlocks: true }
-)
-
-Object.entries(globals).forEach(([name, global]) => environment.addGlobal(name, global))
-Object.entries(filters).forEach(([name, filter]) => environment.addFilter(name, filter))
-environment.addFilter('evaluate', (value) => value)
-
-const renderPage = (template, viewModel) =>
-  load(
-    environment.render(template, {
-      baseLayoutPath: 'layouts/dxt-form.njk',
-      pageTitle: 'Update your details',
-      serviceName: 'Test grant',
-      serviceUrl: '/test-grant',
-      breadcrumbs: [],
-      cookiesPolicy: { confirmed: true },
-      auth: {},
-      getAssetPath: (asset) => `/public/${asset}`,
-      ...viewModel
-    })
-  )
+import { createPageRenderer } from '~/src/server/common/test-helpers/component-helpers.js'
 
 describe.each(['incorrect-details.njk', 'incorrect-details.html'])('%s view', (template) => {
+  const renderPage = createPageRenderer(import.meta.url, template, { pageTitle: 'Update your details' })
+
   it('should use meta refresh as the primary SFD redirect and an anchor as fallback', () => {
     const sfdUpdateUrl = 'https://sfd.example/update?source=grants&ssoOrgId=REL123'
-    const $ = renderPage(template, {
+    const $ = renderPage({
       sfdUpdateUrl,
       incorrectDetailsContent: {
         heading: 'Incorrect details content',
@@ -62,7 +27,7 @@ describe.each(['incorrect-details.njk', 'incorrect-details.html'])('%s view', (t
   })
 
   it('should preserve the existing incorrect-details content when no SFD URL is provided', () => {
-    const $ = renderPage(template, {
+    const $ = renderPage({
       sfdUpdateUrl: null,
       incorrectDetailsContent: {
         heading: 'Update needed',

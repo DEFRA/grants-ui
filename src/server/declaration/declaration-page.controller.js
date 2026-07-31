@@ -24,6 +24,28 @@ const answerTransformers = {
   'pigs-might-fly': transformPigsMightFlyAnswers
 }
 
+/**
+ * Applied to every declaration page, configured or not.
+ * @type {DeclarationContent}
+ */
+const BASE_DEFAULTS = {
+  heading: 'Confirm and send',
+  buttonText: 'Confirm and send'
+}
+
+/**
+ * Applied only when a page declares no `config:` block, so grants that have not
+ * yet moved their copy into configuration render exactly as they did before.
+ * @type {DeclarationContent}
+ */
+export const UNCONFIGURED_DEFAULTS = {
+  ...BASE_DEFAULTS,
+  useDefaultCopy: true,
+  optionalConsent: true,
+  warningText: 'You can only submit your details once.',
+  showDataProtection: true
+}
+
 export default class DeclarationPageController extends SummaryPageController {
   /**
    * @param {FormModel} model
@@ -46,6 +68,24 @@ export default class DeclarationPageController extends SummaryPageController {
   }
 
   /**
+   * Resolves the page copy from the page's `config:` block, hoisted onto
+   * `metadata.pageConfig[path]` by `hoistPageConfig`.
+   * @returns {DeclarationContent} The resolved declaration content
+   */
+  buildDeclarationContent() {
+    const metadata = /** @type {Record<string, unknown>} */ (this.model.def.metadata ?? {})
+    const config = /** @type {Record<string, Record<string, unknown>> | undefined} */ (metadata.pageConfig)?.[
+      this.pageDef.path
+    ]
+
+    if (!config) {
+      return { ...UNCONFIGURED_DEFAULTS }
+    }
+
+    return { ...BASE_DEFAULTS, ...config }
+  }
+
+  /**
    * Builds the view model for the declaration page
    * @param {FormContextRequest} request
    * @param {FormContext} context
@@ -63,6 +103,8 @@ export default class DeclarationPageController extends SummaryPageController {
       /** @type {unknown} */ ({
         ...viewModel,
         sectionTitle,
+        declarationContent: this.buildDeclarationContent(),
+        supportEmail: this.model.def.metadata?.supportEmail,
         ...(backLink ? { backLink } : {})
       })
     )
@@ -268,6 +310,20 @@ export default class DeclarationPageController extends SummaryPageController {
     }
   }
 }
+
+/**
+ * Configurable declaration page copy, supplied by the page's `config:` block.
+ * @typedef {object} DeclarationContent
+ * @property {string} [heading] - Page heading
+ * @property {string} [html] - Body copy as raw HTML, rendered unescaped
+ * @property {boolean} [useDefaultCopy] - Render the built-in body copy (unconfigured pages only)
+ * @property {string} [buttonText] - Submit button label
+ * @property {string} [warningText] - Warning banner text; omit to hide the banner
+ * @property {boolean} [optionalConsent] - Show the optional contact-consent checkbox
+ * @property {boolean} [showDataProtection] - Show the Defra data controller footer
+ * @property {boolean} [showSupportDetails] - Show the RPA support details panel
+ * @property {Record<string, string>} [hiddenFields] - Hidden inputs posted with the form
+ */
 
 /**
  * @import { FormModel, SummaryViewModel } from '@defra/forms-engine-plugin/engine/models/index.js'

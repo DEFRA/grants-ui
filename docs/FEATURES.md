@@ -182,10 +182,36 @@ The service supports several specialized page types for different stages of the 
 
 - **Purpose**: Final confirmation and submission
 - **Features**:
-  - Declaration text
+  - Declaration text, configured per grant (no bespoke template needed)
   - Form submission to GAS
   - Application status management
 - **Controller**: `DeclarationPageController`
+- **Configuration**: all copy comes from the page's `config:` block, hoisted onto `metadata.pageConfig[path]`:
+
+  ```yaml
+  - title: Submit your application
+    path: /declaration
+    controller: DeclarationPageController
+    config:
+      heading: Submit your application # default: "Confirm and send"
+      html: | # body copy, rendered unescaped
+        <p class="govuk-body">By submitting your application, you confirm that:</p>
+        <ul class="govuk-list govuk-list--bullet">
+          <li>the information you have provided is correct</li>
+        </ul>
+      buttonText: Confirm and submit # default: "Confirm and send"
+      warningText: You can only submit your details once. # omit to hide
+      optionalConsent: true # optional contact-consent checkbox
+      showDataProtection: true # Defra data controller footer
+      showSupportDetails: true # RPA support panel, email from metadata.supportEmail
+      hiddenFields: # posted with the form, not part of the state schema
+        guidanceRead: 'true'
+  ```
+
+  A page that declares any `config:` opts in to each block explicitly — only what it declares is rendered. A page with no `config:` falls back to the original built-in copy (heading, declaration paragraphs, consent checkbox, warning and data protection footer).
+
+  `html` is rendered unescaped, so it is trusted content from the config repo — the same posture as `paymentExplanation` and `confirmationContent.html`.
+
 - **Example**: [Example Grant – Declaration page (/declaration)](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml)
 
 ### Confirmation Pages

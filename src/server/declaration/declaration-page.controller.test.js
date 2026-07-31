@@ -5,7 +5,7 @@ import {
   resolveGasConfigVersion,
   transformStateObjectToGasApplication
 } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
-import DeclarationPageController from './declaration-page.controller.js'
+import DeclarationPageController, { UNCONFIGURED_DEFAULTS } from './declaration-page.controller.js'
 import { vi } from 'vitest'
 import { mockHapiRequest } from '~/src/__mocks__'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
@@ -135,21 +135,24 @@ describe('DeclarationPageController', () => {
       view: vi.fn().mockReturnValue('rendered view')
     }
 
-    transformStateObjectToGasApplication.mockReturnValue({
-      transformedApp: true,
-      metadata: {
-        submittedAt: '2025-01-01T00:00:00.000Z'
-      }
-    })
-    resolveGasConfigVersion.mockReturnValue('1.1.1')
-    submitGrantApplication.mockResolvedValue({
-      status: statusCodes.noContent
-    })
-
     // Mock the form-slug-helper functions
     formSlugHelper.storeSlugInContext.mockImplementation(() => null)
     formSlugHelper.getConfirmationPath.mockImplementation(() => '/example-grant-with-auth/confirmation')
   })
+
+  const mockGasSubmission = () =>
+    beforeEach(() => {
+      transformStateObjectToGasApplication.mockReturnValue({
+        transformedApp: true,
+        metadata: {
+          submittedAt: '2025-01-01T00:00:00.000Z'
+        }
+      })
+      resolveGasConfigVersion.mockReturnValue('1.1.1')
+      submitGrantApplication.mockResolvedValue({
+        status: statusCodes.noContent
+      })
+    })
 
   afterEach(() => {
     vi.clearAllMocks()
@@ -213,6 +216,107 @@ describe('DeclarationPageController', () => {
       getTaskPageBackLink.mockReturnValue(returnValue)
       const result = controller.getSummaryViewModel(mockRequest, mockContext)
       expect(result.backLink).toBeUndefined()
+    })
+
+    test('should fall back to the built-in copy when the page has no config block', () => {
+      const result = controller.getSummaryViewModel(mockRequest, mockContext)
+
+      expect(result.declarationContent).toEqual(UNCONFIGURED_DEFAULTS)
+    })
+
+    test('should fall back to the built-in copy when the form has no metadata', () => {
+      const controllerWithoutMetadata = new DeclarationPageController({ ...mockModel, def: {} }, mockPageDef)
+
+      const result = controllerWithoutMetadata.getSummaryViewModel(mockRequest, mockContext)
+
+      expect(result.declarationContent).toEqual(UNCONFIGURED_DEFAULTS)
+    })
+
+    test('should apply only the base defaults when the config block is empty', () => {
+      mockModel.def.metadata.pageConfig = { '/declaration': {} }
+      const emptyConfigController = new DeclarationPageController(mockModel, {
+        ...mockPageDef,
+        path: '/declaration'
+      })
+
+      const result = emptyConfigController.getSummaryViewModel(mockRequest, mockContext)
+
+      expect(result.declarationContent).toEqual({
+        heading: 'Confirm and send',
+        buttonText: 'Confirm and send'
+      })
+    })
+
+    test('should build declarationContent from the page config block', () => {
+      mockModel.def.metadata.pageConfig = {
+        '/declaration': {
+          heading: 'Submit your application',
+          html: '<p class="govuk-body">Configured copy.</p>',
+          buttonText: 'Confirm and submit',
+          showSupportDetails: true,
+          hiddenFields: { guidanceRead: 'true' }
+        }
+      }
+      const configuredController = new DeclarationPageController(mockModel, {
+        ...mockPageDef,
+        path: '/declaration'
+      })
+
+      const result = configuredController.getSummaryViewModel(mockRequest, mockContext)
+
+      expect(result.declarationContent).toEqual({
+        heading: 'Submit your application',
+        html: '<p class="govuk-body">Configured copy.</p>',
+        buttonText: 'Confirm and submit',
+        showSupportDetails: true,
+        hiddenFields: { guidanceRead: 'true' }
+      })
+    })
+
+    test('should not apply the built-in copy defaults to a configured page', () => {
+      mockModel.def.metadata.pageConfig = {
+        '/declaration': { html: '<p class="govuk-body">Configured copy.</p>' }
+      }
+      const configuredController = new DeclarationPageController(mockModel, {
+        ...mockPageDef,
+        path: '/declaration'
+      })
+
+      const result = configuredController.getSummaryViewModel(mockRequest, mockContext)
+
+      expect(result.declarationContent).toEqual({
+        heading: 'Confirm and send',
+        buttonText: 'Confirm and send',
+        html: '<p class="govuk-body">Configured copy.</p>'
+      })
+      expect(result.declarationContent.useDefaultCopy).toBeUndefined()
+      expect(result.declarationContent.optionalConsent).toBeUndefined()
+      expect(result.declarationContent.warningText).toBeUndefined()
+      expect(result.declarationContent.showDataProtection).toBeUndefined()
+    })
+
+    test('should ignore config declared against a different page path', () => {
+      mockModel.def.metadata.pageConfig = {
+        '/some-other-page': { heading: 'Not this one' }
+      }
+      const otherPageController = new DeclarationPageController(mockModel, {
+        ...mockPageDef,
+        path: '/declaration'
+      })
+
+      const result = otherPageController.getSummaryViewModel(mockRequest, mockContext)
+
+      expect(result.declarationContent.heading).toBe('Confirm and send')
+      expect(result.declarationContent.useDefaultCopy).toBe(true)
+    })
+
+    test('should expose the support email from form metadata', () => {
+      mockModel.def.metadata.supportEmail = 'ruralpayments@defra.gov.uk'
+      const controllerWithEmail = new DeclarationPageController(mockModel, mockPageDef)
+
+      const result = controllerWithEmail.getSummaryViewModel(mockRequest, mockContext)
+
+      expect(result.supportEmail).toBe('ruralpayments@defra.gov.uk')
     })
 
     test('should set sectionTitle to empty string when section has hideTitle set to true', () => {
@@ -315,10 +419,21 @@ describe('DeclarationPageController', () => {
   })
 
   describe('makePostRouteHandler', () => {
-    test('should return a function', () => {
-      const handler = controller.makePostRouteHandler()
-      expect(typeof handler).toBe('function')
-    })
+    mockGasSubmission()
+
+    /** @param {string} errorMessage */
+    const expectSubmissionFailureLogged = (errorMessage) =>
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SUBMISSION.SUBMISSION_FAILURE,
+        expect.objectContaining({
+          grantType: 'example-grant-with-auth',
+          referenceNumber: 'REF123',
+          sbi: 'sbi123',
+          crn: '1234567890',
+          errorMessage
+        }),
+        mockRequest
+      )
 
     test('should submit form and redirect on success', async () => {
       const handler = controller.makePostRouteHandler()
@@ -495,17 +610,7 @@ describe('DeclarationPageController', () => {
 
       await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(error)
 
-      expect(log).toHaveBeenCalledWith(
-        LogCodes.SUBMISSION.SUBMISSION_FAILURE,
-        expect.objectContaining({
-          grantType: 'example-grant-with-auth',
-          referenceNumber: 'REF123',
-          sbi: 'sbi123',
-          crn: '1234567890',
-          errorMessage: 'Submission failed'
-        }),
-        mockRequest
-      )
+      expectSubmissionFailureLogged('Submission failed')
     })
 
     test('should handle GrantApplicationServiceApiError and show custom error page', async () => {
@@ -523,17 +628,7 @@ describe('DeclarationPageController', () => {
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(log).toHaveBeenCalledWith(
-        LogCodes.SUBMISSION.SUBMISSION_FAILURE,
-        expect.objectContaining({
-          grantType: 'example-grant-with-auth',
-          referenceNumber: 'REF123',
-          sbi: 'sbi123',
-          crn: '1234567890',
-          errorMessage: 'GAS API Error'
-        }),
-        mockRequest
-      )
+      expectSubmissionFailureLogged('GAS API Error')
       expect(handleGasApiError).toHaveBeenCalledWith(mockH, mockContext, gasError)
       expect(result).toBe(mockErrorView)
     })
@@ -547,129 +642,28 @@ describe('DeclarationPageController', () => {
 
       await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(error)
 
-      expect(log).toHaveBeenCalledWith(
-        LogCodes.SUBMISSION.SUBMISSION_FAILURE,
-        expect.objectContaining({
-          grantType: 'example-grant-with-auth',
-          referenceNumber: 'REF123',
-          sbi: 'sbi123',
-          crn: '1234567890',
-          errorMessage: 'Some other error'
-        }),
-        mockRequest
-      )
+      expectSubmissionFailureLogged('Some other error')
       expect(handleGasApiError).not.toHaveBeenCalled()
     })
   })
 
   describe('buildApplicationData', () => {
-    test('should use frn from state.additionalAnswers.applicant.business.reference when full chain is present', () => {
-      const context = {
-        ...mockContext,
-        state: {
-          ...mockContext.state,
-          additionalAnswers: {
-            applicant: {
-              business: {
-                reference: 'FRN123456'
-              }
-            }
-          }
-        }
-      }
+    mockGasSubmission()
 
-      controller.buildApplicationData(mockRequest, context)
+    test.each([
+      ['the full chain is present', { applicant: { business: { reference: 'FRN123456' } } }, 'FRN123456'],
+      ['additionalAnswers is undefined', undefined, 'undefined'],
+      ['applicant is undefined', { applicant: undefined }, 'undefined'],
+      ['business is undefined', { applicant: { business: undefined } }, 'undefined'],
+      ['reference is undefined', { applicant: { business: { reference: undefined } } }, 'undefined']
+    ])('should resolve frn when %s', (_description, additionalAnswers, frn) => {
+      controller.buildApplicationData(mockRequest, {
+        ...mockContext,
+        state: { ...mockContext.state, additionalAnswers }
+      })
 
       expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
-        expect.objectContaining({ frn: 'FRN123456' }),
-        expect.anything(),
-        expect.any(Function),
-        '1.1.1'
-      )
-    })
-
-    test('should fall back to "undefined" when state.additionalAnswers is undefined', () => {
-      const context = {
-        ...mockContext,
-        state: {
-          ...mockContext.state,
-          additionalAnswers: undefined
-        }
-      }
-
-      controller.buildApplicationData(mockRequest, context)
-
-      expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
-        expect.objectContaining({ frn: 'undefined' }),
-        expect.anything(),
-        expect.any(Function),
-        '1.1.1'
-      )
-    })
-
-    test('should fall back to "undefined" when state.additionalAnswers.applicant is undefined', () => {
-      const context = {
-        ...mockContext,
-        state: {
-          ...mockContext.state,
-          additionalAnswers: {
-            applicant: undefined
-          }
-        }
-      }
-
-      controller.buildApplicationData(mockRequest, context)
-
-      expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
-        expect.objectContaining({ frn: 'undefined' }),
-        expect.anything(),
-        expect.any(Function),
-        '1.1.1'
-      )
-    })
-
-    test('should fall back to "undefined" when state.additionalAnswers.applicant.business is undefined', () => {
-      const context = {
-        ...mockContext,
-        state: {
-          ...mockContext.state,
-          additionalAnswers: {
-            applicant: {
-              business: undefined
-            }
-          }
-        }
-      }
-
-      controller.buildApplicationData(mockRequest, context)
-
-      expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
-        expect.objectContaining({ frn: 'undefined' }),
-        expect.anything(),
-        expect.any(Function),
-        '1.1.1'
-      )
-    })
-
-    test('should fall back to "undefined" when state.additionalAnswers.applicant.business.reference is undefined', () => {
-      const context = {
-        ...mockContext,
-        state: {
-          ...mockContext.state,
-          additionalAnswers: {
-            applicant: {
-              business: {
-                reference: undefined
-              }
-            }
-          }
-        }
-      }
-
-      controller.buildApplicationData(mockRequest, context)
-
-      expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
-        expect.objectContaining({ frn: 'undefined' }),
+        expect.objectContaining({ frn }),
         expect.anything(),
         expect.any(Function),
         '1.1.1'
