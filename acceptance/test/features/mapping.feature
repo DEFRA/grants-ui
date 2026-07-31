@@ -20,7 +20,7 @@ Feature: Mapping
         And should see heading "Select actions for land parcel SD6352 8774"
 
     Scenario: User selects a parcel but leaves before choosing actions and resumes on the select land parcel page
-        Given there is no application state stored for CRN "1100945520" and SBI "106842593" and grant "example-grant-with-map"
+        Given there is no application data for SBI "106842593" and grant "example-grant-with-map"
 
         # start
         Given the user navigates to "/example-grant-with-map"

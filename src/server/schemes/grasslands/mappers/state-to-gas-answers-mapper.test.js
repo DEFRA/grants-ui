@@ -40,7 +40,7 @@ describe('transformGrasslandsAnswers', () => {
     expect(result.parcels).toEqual([
       {
         parcelId: 'SD6364-6615',
-        actions: [{ actionCode: 'UPL1', value: 24.7964, unit: 'ha' }]
+        actions: [{ code: 'UPL1', value: 24.7964, unit: 'ha' }]
       }
     ])
   })
@@ -89,13 +89,13 @@ describe('transformGrasslandsAnswers', () => {
       {
         parcelId: 'SD6352-8774',
         actions: [
-          { actionCode: 'CLIG3', value: 11.1006, unit: 'ha' },
-          { actionCode: 'CSAM3', value: '10', unit: 'ha' }
+          { code: 'CLIG3', value: 11.1006, unit: 'ha' },
+          { code: 'CSAM3', value: '10', unit: 'ha' }
         ]
       },
       {
         parcelId: 'SD6364-6615',
-        actions: [{ actionCode: 'UPL1', value: 24.7964, unit: 'ha' }]
+        actions: [{ code: 'UPL1', value: 24.7964, unit: 'ha' }]
       }
     ])
   })
