@@ -241,6 +241,44 @@ describe('select-actions.view-model', () => {
       })
     })
 
+    // Kept in sync live by the client, so it needs a
+    // stable id matching getActionQuantityFieldName - same pattern the
+    // quantity-input's own hint uses.
+    it('should show an availability hint for a non-quantity action, with an id the client can find and update live', () => {
+      const action = {
+        code: 'CLIG3',
+        description: 'Manage grassland with very low nutrient inputs',
+        ratePerUnitGbp: 151,
+        availableArea: { value: 12.5, unit: 'ha' }
+      }
+
+      const result = mapActionToViewModel(action, [])
+
+      expect(result.html).toContain('<span id="landActionQuantity_CLIG3-hint">12.5 hectares available</span>')
+    })
+
+    it('should not show an availability hint for a non-quantity action when availableArea is missing', () => {
+      const action = { code: 'SAM1', description: 'Test Action 1', ratePerUnitGbp: 100.5 }
+
+      const result = mapActionToViewModel(action, [])
+
+      expect(result.html).not.toContain('available</span>')
+    })
+
+    it('should not duplicate the availability hint for a quantity-required action (it has its own inside the conditional)', () => {
+      const action = {
+        code: 'UPL2',
+        description: 'Heavy livestock grazing on moorland',
+        ratePerUnitGbp: 45,
+        requiresMaxQuantity: 3,
+        availableArea: { value: 3, unit: 'ha' }
+      }
+
+      const result = mapActionToViewModel(action, [])
+
+      expect(result.html).not.toContain('landActionQuantity_UPL2-hint')
+    })
+
     it('should leave the availableArea data attributes undefined when availableArea is missing', () => {
       const action = { code: 'SAM1', description: 'Test Action 1', ratePerUnitGbp: 100.5 }
 

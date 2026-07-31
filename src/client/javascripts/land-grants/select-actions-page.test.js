@@ -33,10 +33,17 @@ function checkboxItemHtml({
         </div>
       </div>`
     : ''
+  // Matches mapActionToViewModel: a non-quantity action gets its own "X
+  // available" hint, kept live by the client (see syncNonQuantityHint).
+  const nonQuantityHint =
+    !requiresMaxQuantity && availableArea
+      ? `<span id="landActionQuantity_${code}-hint">${availableArea.value} ha available</span>`
+      : ''
   return `
     <div class="govuk-checkboxes__item">
       <input class="govuk-checkboxes__input" id="landAction-${code}" name="landAction" type="checkbox" value="${code}"${checked ? ' checked' : ''}${unitAttr}${totalAreaAttr}${ariaControlsAttr}${errorOnLoadAttr}>
       <label for="landAction-${code}">${code}</label>
+      ${nonQuantityHint}
     </div>
     ${conditional}`
 }
@@ -267,8 +274,18 @@ describe('initSelectActionsPage', () => {
 
     // The claim just sent for CLIG3 (1.3008, its live headroom from the
     // first response) plus the extra headroom this response reports (5) -
-    // the API contract is additive, not a flat replacement.
-    global.fetch = fetchOk({ actions: [{ code: 'CLIG3', availableArea: { value: 5, unit: 'ha' } }] })
+    // the API contract is additive, not a flat replacement. Growth triggers
+    // a follow-up refresh, so the mock must report CLIG3 as self-competing
+    // (0 extra) once its own sent claim already covers the full total.
+    global.fetch = vi.fn().mockImplementation((url, options) => {
+      const { plannedActions } = JSON.parse(options.body)
+      const clig3Quantity = plannedActions.find((p) => p.actionCode === 'CLIG3')?.quantity ?? 0
+      const value = clig3Quantity >= 6.3008 ? 0 : 5
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ actions: [{ code: 'CLIG3', availableArea: { value, unit: 'ha' } }] })
+      })
+    })
     clig3Checkbox.checked = true
     clig3Checkbox.dispatchEvent(new Event('change', { bubbles: true }))
     await flushPromises()
@@ -617,6 +634,34 @@ describe('initSelectActionsPage', () => {
     await flushPromises()
 
     expect(form.querySelector('input[value="CLIG3"]').disabled).toBe(false)
+  })
+
+  it("updates a non-quantity action's own availability hint from the response", async () => {
+    const form = setupDom([
+      {
+        code: 'CSAM3',
+        checked: true,
+        availableArea: { value: 0.3271, unit: 'ha' },
+        requiresMaxQuantity: 0.3271,
+        quantityValue: '0.1'
+      },
+      { code: 'CLIG3', availableArea: { value: 0.3271, unit: 'ha' } }
+    ])
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          actions: [{ code: 'CLIG3', availableArea: { value: 0.2271, unit: 'ha' } }]
+        })
+    })
+    initSelectActionsPage(form)
+    await flushPromises()
+    global.fetch.mockClear()
+
+    form.querySelector('input[value="CSAM3"]').dispatchEvent(new Event('change', { bubbles: true }))
+    await flushPromises()
+
+    expect(document.getElementById('landActionQuantity_CLIG3-hint').textContent).toBe('0.2271 hectares available')
   })
 
   it('unchecks and clears a checked quantity-required action that has no confirmed quantity, without disabling it', async () => {
@@ -1128,6 +1173,9 @@ describe('initSelectActionsPage', () => {
       { code: 'CMOR1', availableArea: { value: 10, unit: 'ha' } },
       { code: 'UPL1', availableArea: { value: 5, unit: 'ha' }, requiresMaxQuantity: 5 }
     ])
+    // 0 headroom beyond CMOR1's own claim (self-competing, realistic) - not
+    // the same static 10 echoed back, which would read as fresh surplus and
+    // trigger a growth follow-up this test never resolves.
     let resolveFetch
     global.fetch = vi.fn().mockImplementation(
       () =>
@@ -1138,7 +1186,7 @@ describe('initSelectActionsPage', () => {
               json: () =>
                 Promise.resolve({
                   actions: [
-                    { code: 'CMOR1', availableArea: { value: 10, unit: 'ha' } },
+                    { code: 'CMOR1', availableArea: { value: 0, unit: 'ha' } },
                     { code: 'UPL1', availableArea: { value: 5, unit: 'ha' }, requiresMaxQuantity: 5 }
                   ]
                 })
@@ -1168,6 +1216,51 @@ describe('initSelectActionsPage', () => {
 
     expect(cmor1Item.querySelector('.select-actions-refresh-banner')).toBeNull()
     expect(upl1Checkbox.disabled).toBe(false)
+  })
+
+  it('keeps the refresh banner visible across a growth follow-up chain, without hiding and re-showing between links', async () => {
+    const form = setupDom([
+      { code: 'CMOR1', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, chosenArea: 0.2271 },
+      { code: 'CLIG3', availableArea: { value: 0.3271, unit: 'ha' } }
+    ])
+    // First call (triggered by checking CLIG3) reports growth for CMOR1;
+    // the automatic follow-up it triggers must not let the banner drop in
+    // between - only resolved once both fetches are pending/inspected.
+    const pending = []
+    global.fetch = vi.fn().mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          pending.push(resolve)
+        })
+    )
+    initSelectActionsPage(form)
+    await flushPromises()
+
+    const clig3Checkbox = form.querySelector('#landAction-CLIG3')
+    const clig3Item = clig3Checkbox.closest('.govuk-checkboxes__item')
+    clig3Checkbox.checked = true
+    clig3Checkbox.dispatchEvent(new Event('change', { bubbles: true }))
+    await flushPromises()
+
+    expect(clig3Item.querySelector('.select-actions-refresh-banner')).not.toBeNull()
+
+    pending.shift()({
+      ok: true,
+      json: () => Promise.resolve({ actions: [{ code: 'CMOR1', availableArea: { value: 0.1, unit: 'ha' } }] })
+    })
+    await flushPromises()
+
+    // The growth follow-up's own request is now in flight - banner must
+    // still be visible, not toggled off and back on.
+    expect(clig3Item.querySelector('.select-actions-refresh-banner')).not.toBeNull()
+
+    pending.shift()({
+      ok: true,
+      json: () => Promise.resolve({ actions: [{ code: 'CMOR1', availableArea: { value: 0, unit: 'ha' } }] })
+    })
+    await flushPromises()
+
+    expect(clig3Item.querySelector('.select-actions-refresh-banner')).toBeNull()
   })
 
   it.each([[''], ['  ']])('does not fire a request when the quantity field is left empty (%j)', async (typedValue) => {
@@ -1549,7 +1642,7 @@ describe('initSelectActionsPage', () => {
     expect(getChosenAreaFieldValue(cmor1Checkbox)).toBe('0.0301')
   })
 
-  it("does not grow an established non-quantity action's chosen area from a response triggered by unchecking a different action", async () => {
+  it('grows only the first checked non-quantity action per response, leaving others flat until a follow-up confirms what remains', async () => {
     const form = setupDom([
       {
         code: 'CSAM3',
@@ -1561,17 +1654,31 @@ describe('initSelectActionsPage', () => {
       { code: 'CLIG3', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, chosenArea: 0.2271 },
       { code: 'CMOR1', checked: true, availableArea: { value: 0.0301, unit: 'ha' }, chosenArea: 0.0301 }
     ])
-    // Unchecking CSAM3 frees up land - the response reports surplus for
-    // BOTH CLIG3 and CMOR1 in the same response, but neither triggered it.
-    global.fetch = fetchOk({
-      actions: [
-        { code: 'CLIG3', availableArea: { value: 0.1, unit: 'ha' } },
-        { code: 'CMOR1', availableArea: { value: 0.1, unit: 'ha' } }
-      ]
-    })
+    // Self-competing on load (everything checked, nothing freed yet) reports
+    // no surplus for either non-quantity action.
+    global.fetch = mockApi({ CLIG3: 0.2271, CMOR1: 0.0301 })
     initSelectActionsPage(form)
     await flushPromises()
 
+    // Unchecking CSAM3 frees up 0.1ha - only ONE non-quantity action may grow
+    // per response (see applyRefreshResponse), so CLIG3 (first in DOM order)
+    // claims it in the first pass; the follow-up, sent with CLIG3's now-grown
+    // claim, must report nothing left for CMOR1 to also grow into.
+    global.fetch = vi.fn().mockImplementation((url, options) => {
+      const { plannedActions } = JSON.parse(options.body)
+      const clig3Quantity = plannedActions.find((p) => p.actionCode === 'CLIG3')?.quantity ?? 0
+      const surplus = clig3Quantity >= 0.3271 ? 0 : 0.1
+      return Promise.resolve({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            actions: [
+              { code: 'CLIG3', availableArea: { value: surplus, unit: 'ha' } },
+              { code: 'CMOR1', availableArea: { value: surplus, unit: 'ha' } }
+            ]
+          })
+      })
+    })
     const csam3 = form.querySelector('input[value="CSAM3"]')
     csam3.checked = false
     csam3.dispatchEvent(new Event('change', { bubbles: true }))
@@ -1579,11 +1686,117 @@ describe('initSelectActionsPage', () => {
 
     const clig3 = form.querySelector('input[value="CLIG3"]')
     const cmor1 = form.querySelector('input[value="CMOR1"]')
-    expect(getChosenAreaFieldValue(clig3)).toBe('0.2271')
+    expect(getChosenAreaFieldValue(clig3)).toBe('0.3271')
     expect(getChosenAreaFieldValue(cmor1)).toBe('0.0301')
   })
 
-  it("sends an unaffected non-quantity action's own chosen area when a different action is unchecked next", async () => {
+  // Reproduces the real bug: releasing a quantity action's claim frees land,
+  // and the API reports the SAME freed amount as independently available to
+  // BOTH other checked non-quantity actions (a hypothetical per-action
+  // figure, not a partition) - only one may actually claim it.
+  it('does not double-allocate freed land when the response reports the same surplus for two non-quantity actions at once', async () => {
+    const form = setupDom([
+      {
+        code: 'CMOR3',
+        checked: true,
+        availableArea: { value: 23.9457, unit: 'ha' },
+        requiresMaxQuantity: 23.9457,
+        quantityValue: '20'
+      },
+      { code: 'CLIG3', checked: true, availableArea: { value: 23.9457, unit: 'ha' }, chosenArea: 2.9957 },
+      { code: 'CMOR1', checked: true, availableArea: { value: 23.9457, unit: 'ha' }, chosenArea: 0.975 }
+    ])
+    global.fetch = mockApi({ CLIG3: 2.9957, CMOR1: 0.975 })
+    initSelectActionsPage(form)
+    await flushPromises()
+
+    // Unchecking CMOR3 frees 20ha - the response reports it as available to
+    // EACH of CLIG3/CMOR1 independently (as the real API does), but only
+    // CLIG3 (first in DOM order) may claim it in this pass.
+    global.fetch = vi.fn().mockImplementation((url, options) => {
+      const { plannedActions } = JSON.parse(options.body)
+      const clig3Quantity = plannedActions.find((p) => p.actionCode === 'CLIG3')?.quantity ?? 0
+      const stillFree = clig3Quantity < 22.9957
+      return Promise.resolve({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            actions: [
+              { code: 'CLIG3', availableArea: { value: stillFree ? 20 : 0, unit: 'ha' } },
+              { code: 'CMOR1', availableArea: { value: stillFree ? 20 : 0, unit: 'ha' } }
+            ]
+          })
+      })
+    })
+    const cmor3 = form.querySelector('input[value="CMOR3"]')
+    cmor3.checked = false
+    cmor3.dispatchEvent(new Event('change', { bubbles: true }))
+    await flushPromises()
+
+    const clig3 = form.querySelector('input[value="CLIG3"]')
+    const cmor1 = form.querySelector('input[value="CMOR1"]')
+    expect(getChosenAreaFieldValue(clig3)).toBe('22.9957')
+    expect(getChosenAreaFieldValue(cmor1)).toBe('0.975')
+  })
+
+  // Same single response that grows CLIG3/CMOR1 also reports CSAM3's own
+  // (now zero) availability, since the backend recomputes every action
+  // against the SAME plannedActions in one call - no second fetch needed.
+  it('disables an unchecked quantity action and updates its hint to zero in the same response that lets other actions absorb its freed land', async () => {
+    const form = setupDom([
+      {
+        code: 'CSAM3',
+        checked: true,
+        availableArea: { value: 22.9957, unit: 'ha' },
+        requiresMaxQuantity: 22.9957,
+        quantityValue: '20'
+      },
+      { code: 'CLIG3', checked: true, availableArea: { value: 22.9957, unit: 'ha' }, chosenArea: 2.9957 }
+    ])
+    global.fetch = mockApi({ CLIG3: 2.9957 })
+    initSelectActionsPage(form)
+    await flushPromises()
+
+    // The first response is only accurate for the plannedActions it was
+    // given (CLIG3=2.9957, i.e. before it grows) - CLIG3 growing to
+    // 22.9957 makes CSAM3's "20 left" figure stale, so the follow-up
+    // refresh (sent with CLIG3's new, grown claim) must report CSAM3's
+    // true, now-zero availability.
+    global.fetch = vi.fn().mockImplementation((url, options) => {
+      const { plannedActions } = JSON.parse(options.body)
+      const clig3Quantity = plannedActions.find((p) => p.actionCode === 'CLIG3')?.quantity ?? 0
+      const csam3Available = clig3Quantity >= 22.9957 ? 0 : 20
+      const clig3Available = clig3Quantity >= 22.9957 ? 0 : 20
+      return Promise.resolve({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            actions: [
+              {
+                code: 'CSAM3',
+                availableArea: { value: csam3Available, unit: 'ha' },
+                requiresMaxQuantity: csam3Available
+              },
+              { code: 'CLIG3', availableArea: { value: clig3Available, unit: 'ha' } }
+            ]
+          })
+      })
+    })
+    const csam3 = form.querySelector('input[value="CSAM3"]')
+    csam3.checked = false
+    csam3.dispatchEvent(new Event('change', { bubbles: true }))
+    await flushPromises()
+
+    const clig3 = form.querySelector('input[value="CLIG3"]')
+    expect(getChosenAreaFieldValue(clig3)).toBe('22.9957')
+    expect(csam3.disabled).toBe(true)
+    expect(document.getElementById('landActionQuantity_CSAM3-hint').textContent).toBe('0 hectares available')
+    expect(csam3.closest('.govuk-checkboxes__item').textContent).toContain(
+      'Not compatible with other selected actions.'
+    )
+  })
+
+  it("sends a non-quantity action's flat chosen area as its claim when it never got a chance to grow", async () => {
     const form = setupDom([
       {
         code: 'CSAM3',
@@ -1595,11 +1808,23 @@ describe('initSelectActionsPage', () => {
       { code: 'CLIG3', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, chosenArea: 0.2271 },
       { code: 'CMOR1', checked: true, availableArea: { value: 0.0301, unit: 'ha' }, chosenArea: 0.0301 }
     ])
-    global.fetch = fetchOk({
-      actions: [
-        { code: 'CLIG3', availableArea: { value: 0.1, unit: 'ha' } },
-        { code: 'CMOR1', availableArea: { value: 0.1, unit: 'ha' } }
-      ]
+    // 0.1ha surplus is only genuinely available once - growth (both the
+    // initial checked-on-load refresh and any follow-up it triggers) must
+    // see it claimed (0) from the second call onward.
+    let surplusCalls = 0
+    global.fetch = vi.fn().mockImplementation(() => {
+      surplusCalls += 1
+      const value = surplusCalls === 1 ? 0.1 : 0
+      return Promise.resolve({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            actions: [
+              { code: 'CLIG3', availableArea: { value, unit: 'ha' } },
+              { code: 'CMOR1', availableArea: { value, unit: 'ha' } }
+            ]
+          })
+      })
     })
     initSelectActionsPage(form)
     await flushPromises()
@@ -1609,6 +1834,9 @@ describe('initSelectActionsPage', () => {
     csam3.dispatchEvent(new Event('change', { bubbles: true }))
     await flushPromises()
 
+    // CLIG3 already claimed the only surplus during the initial load's
+    // refresh (only one non-quantity action may grow per response) - CMOR1
+    // never had anything left to grow into, so it's still at its flat 0.0301.
     global.fetch = mockApi({ CMOR1: 0.0301 })
     const clig3 = form.querySelector('input[value="CLIG3"]')
     clig3.checked = false
@@ -1695,5 +1923,51 @@ describe('initSelectActionsPage', () => {
     other.dispatchEvent(new Event('input', { bubbles: true }))
 
     expect(global.fetch).not.toHaveBeenCalled()
+  })
+
+  it('keeps other actions disabled continuously across a growth follow-up chain, without a re-enabled gap between links', async () => {
+    const form = setupDom([
+      { code: 'CMOR1', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, chosenArea: 0.2271 },
+      { code: 'CLIG3', availableArea: { value: 0.3271, unit: 'ha' } }
+    ])
+    // First call (triggered by checking CLIG3) reports growth for CMOR1;
+    // applyRefreshResponse re-enables CMOR1 as part of applying that growth,
+    // so the follow-up it triggers must re-disable it again before its own
+    // fetch starts, not leave a gap until that fetch resolves.
+    const pending = []
+    global.fetch = vi.fn().mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          pending.push(resolve)
+        })
+    )
+    initSelectActionsPage(form)
+    await flushPromises()
+
+    const clig3Checkbox = form.querySelector('#landAction-CLIG3')
+    const cmor1Checkbox = form.querySelector('#landAction-CMOR1')
+    clig3Checkbox.checked = true
+    clig3Checkbox.dispatchEvent(new Event('change', { bubbles: true }))
+    await flushPromises()
+
+    expect(cmor1Checkbox.disabled).toBe(true)
+
+    pending.shift()({
+      ok: true,
+      json: () => Promise.resolve({ actions: [{ code: 'CMOR1', availableArea: { value: 0.1, unit: 'ha' } }] })
+    })
+    await flushPromises()
+
+    // The growth follow-up's own request is now in flight - CMOR1 must
+    // still read as disabled, not have flashed back to enabled in between.
+    expect(cmor1Checkbox.disabled).toBe(true)
+
+    pending.shift()({
+      ok: true,
+      json: () => Promise.resolve({ actions: [{ code: 'CMOR1', availableArea: { value: 0, unit: 'ha' } }] })
+    })
+    await flushPromises()
+
+    expect(cmor1Checkbox.disabled).toBe(false)
   })
 })

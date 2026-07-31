@@ -118,11 +118,18 @@ export function mapActionToViewModel(
     : ''
   const requirementLineText = requirementText ? `<br>${requirementText}` : ''
   const hintText = `Payment rate per year: £${action.ratePerUnitGbp?.toFixed(2)}/ha${agreementRateText}${requirementLineText}`
+  // A quantity action's own availability hint lives inside its conditional
+  // panel instead (see quantity-input/template.njk) - this is only for the
+  // non-quantity case, kept in sync live by the client.
+  const availabilityHintHtml =
+    action.requiresMaxQuantity == null && action.availableArea
+      ? `<br><span id="${getActionQuantityFieldName(action.code)}-hint">${action.availableArea.value} ${formatAreaUnit(action.availableArea.unit)} available</span>`
+      : ''
 
   return {
     id: getCheckboxItemId(action.code, isFirst),
     value: action.code,
-    html: `${action.description}<span class="select-actions-hint">${hintText}</span>`,
+    html: `${action.description}<span class="select-actions-hint">${hintText}${availabilityHintHtml}</span>`,
     checked,
     consents,
     attributes: {
