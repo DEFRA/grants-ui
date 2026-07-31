@@ -350,6 +350,90 @@ describe('initSelectActionsPage', () => {
     expect(csam3Input.value).toBe('777')
   })
 
+  it('reverts a checked quantity action to its valid on-load value, staying checked and enabled, after an invalid edit and unchecking a different action', async () => {
+    const form = setupDom(
+      [
+        {
+          code: 'CSAM3',
+          checked: true,
+          availableArea: { value: 9, unit: 'ha' },
+          requiresMaxQuantity: 9,
+          quantityValue: '2',
+          hasError: true
+        },
+        { code: 'CLIG3', checked: true, availableArea: { value: 9, unit: 'ha' }, chosenArea: 2.3161 }
+      ],
+      { hasErrors: true }
+    )
+    global.fetch = mockApi({ CSAM3: 0, CLIG3: 2.3161 })
+    initSelectActionsPage(form)
+    await flushPromises()
+
+    const csam3Checkbox = form.querySelector('input[value="CSAM3"]')
+    const csam3Input = form.querySelector('#landActionQuantity_CSAM3')
+    expect(csam3Checkbox.disabled).toBe(false)
+
+    // A genuine edit clears CSAM3's own protection.
+    csam3Input.dispatchEvent(new Event('focus'))
+    csam3Input.value = '9999'
+    csam3Input.dispatchEvent(new Event('blur'))
+
+    const clig3Checkbox = form.querySelector('input[value="CLIG3"]')
+    global.fetch = mockApi({ CSAM3: 9, CLIG3: 9 })
+    clig3Checkbox.checked = false
+    clig3Checkbox.dispatchEvent(new Event('change', { bubbles: true }))
+    await flushPromises()
+
+    expect(csam3Checkbox.checked).toBe(true)
+    expect(csam3Checkbox.disabled).toBe(false)
+    expect(csam3Input.value).toBe('2')
+  })
+
+  it('unchecks (without disabling) a checked action that was already invalid on load, after it is edited to another invalid value and a different action is unchecked', async () => {
+    const form = setupDom(
+      [
+        {
+          code: 'CSAM3',
+          checked: true,
+          availableArea: { value: 9, unit: 'ha' },
+          requiresMaxQuantity: 9,
+          quantityValue: '33',
+          hasError: true
+        },
+        { code: 'CLIG3', checked: false, availableArea: { value: 9, unit: 'ha' } }
+      ],
+      { hasErrors: true }
+    )
+    global.fetch = mockApi({ CSAM3: 9 })
+    initSelectActionsPage(form)
+    await flushPromises()
+
+    const csam3Checkbox = form.querySelector('input[value="CSAM3"]')
+    const csam3Input = form.querySelector('#landActionQuantity_CSAM3')
+
+    const clig3Checkbox = form.querySelector('input[value="CLIG3"]')
+    global.fetch = mockApi({ CSAM3: 9, CLIG3: 9 })
+    clig3Checkbox.checked = true
+    clig3Checkbox.dispatchEvent(new Event('change', { bubbles: true }))
+    await flushPromises()
+
+    csam3Input.dispatchEvent(new Event('focus'))
+    csam3Input.value = 'asdhasd'
+    csam3Input.dispatchEvent(new Event('blur'))
+
+    global.fetch = mockApi({ CSAM3: 9, CLIG3: 9 })
+    clig3Checkbox.checked = false
+    clig3Checkbox.dispatchEvent(new Event('change', { bubbles: true }))
+    await flushPromises()
+
+    expect(csam3Checkbox.checked).toBe(false)
+    expect(csam3Checkbox.disabled).toBe(false)
+    expect(csam3Input.value).toBe('')
+    expect(csam3Checkbox.closest('.govuk-checkboxes__item').textContent).not.toContain(
+      'Not compatible with other selected actions.'
+    )
+  })
+
   it('includes a checked action from an errors-page load in plannedActions when a different action is checked', async () => {
     const form = setupDom(
       [
@@ -535,7 +619,7 @@ describe('initSelectActionsPage', () => {
     expect(form.querySelector('input[value="CLIG3"]').disabled).toBe(false)
   })
 
-  it('unchecks and disables a checked quantity-required action that has no confirmed quantity', async () => {
+  it('unchecks and clears a checked quantity-required action that has no confirmed quantity, without disabling it', async () => {
     const form = setupDom([
       {
         code: 'CLIG3',
@@ -558,9 +642,9 @@ describe('initSelectActionsPage', () => {
 
     const csam3 = form.querySelector('input[value="CSAM3"]')
     expect(csam3.checked).toBe(false)
-    expect(csam3.disabled).toBe(true)
+    expect(csam3.disabled).toBe(false)
     expect(isConditionalHidden(csam3)).toBe(true)
-    expect(csam3.closest('.govuk-checkboxes__item').textContent).toContain(
+    expect(csam3.closest('.govuk-checkboxes__item').textContent).not.toContain(
       'Not compatible with other selected actions.'
     )
   })

@@ -224,13 +224,14 @@ function updateHintLive(checkbox) {
 }
 
 /**
- * A checked quantity action with no valid typed quantity reverts to its last-confirmed value, or is unchecked if it has none.
+ * A checked quantity action with no valid typed quantity reverts to its
+ * last-confirmed value, or is simply unchecked (with its value cleared) if it
+ * has none - an invalid typed value isn't the same as being incompatible with
+ * other selections, so it's left to flow through the refresh response like
+ * any other unchecked action, not force-disabled here.
  * @param {HTMLElement} form
- * @returns {Set<HTMLInputElement>} Checkboxes just force-unchecked, so the
- *   availability response for this same refresh doesn't re-enable them.
  */
 function uncheckUnconfirmedQuantityActions(form) {
-  const forced = new Set()
   for (const checkbox of getCheckboxes(form)) {
     const quantityInput = getQuantityInput(checkbox)
     const isUnconfirmed =
@@ -243,11 +244,10 @@ function uncheckUnconfirmedQuantityActions(form) {
       quantityInput.value = String(confirmed)
     } else {
       checkbox.checked = false
-      markUnavailable(checkbox, quantityInput)
-      forced.add(checkbox)
+      quantityInput.value = ''
+      hideConditionalReveal(checkbox)
     }
   }
-  return forced
 }
 
 /**
@@ -487,11 +487,10 @@ async function postPlannedActions(parcelId, plannedActions) {
 /**
  * Request failed (network error or e.g. 422) - undo disableOtherActions rather than leaving every action stuck disabled.
  * @param {HTMLElement} form
- * @param {Set<HTMLInputElement>} forcedUnchecked
  */
-function recoverFromFailedRefresh(form, forcedUnchecked) {
+function recoverFromFailedRefresh(form) {
   for (const checkbox of getCheckboxes(form)) {
-    if (!forcedUnchecked.has(checkbox) && !isProtectedFromRefresh(checkbox)) {
+    if (!isProtectedFromRefresh(checkbox)) {
       clearUnavailable(checkbox)
     }
   }
@@ -501,15 +500,11 @@ function recoverFromFailedRefresh(form, forcedUnchecked) {
  * @param {HTMLElement} form
  * @param {ActionAvailability[]} actions
  * @param {Array<{ actionCode: string, quantity: number, unit: string }>} plannedActions
- * @param {Set<HTMLInputElement>} forcedUnchecked
  * @param {HTMLInputElement} [triggeringCheckbox]
  */
-function applyRefreshResponse(form, actions, plannedActions, forcedUnchecked, triggeringCheckbox) {
+function applyRefreshResponse(form, actions, plannedActions, triggeringCheckbox) {
   const sentQuantityByCode = new Map(plannedActions.map((p) => [p.actionCode, p.quantity]))
   for (const checkbox of getCheckboxes(form)) {
-    if (forcedUnchecked.has(checkbox)) {
-      continue
-    }
     const action = actions.find((a) => a.code === checkbox.value)
     if (action) {
       // A first-ever claim always "grows" from nothing - allowed regardless of trigger.
@@ -534,7 +529,7 @@ function createAvailabilityRefresher(form, parcelId) {
   let requestId = 0
 
   return async function refreshAvailability(triggeringCheckbox) {
-    const forcedUnchecked = uncheckUnconfirmedQuantityActions(form)
+    uncheckUnconfirmedQuantityActions(form)
     requestId += 1
     const thisRequestId = requestId
     if (triggeringCheckbox) {
@@ -554,11 +549,11 @@ function createAvailabilityRefresher(form, parcelId) {
     }
 
     if (!actions) {
-      recoverFromFailedRefresh(form, forcedUnchecked)
+      recoverFromFailedRefresh(form)
       return
     }
 
-    applyRefreshResponse(form, actions, plannedActions, forcedUnchecked, triggeringCheckbox)
+    applyRefreshResponse(form, actions, plannedActions, triggeringCheckbox)
   }
 }
 
@@ -574,18 +569,24 @@ export function initSelectActionsPage(form) {
 
   const refreshAvailability = createAvailabilityRefresher(form, parcelId)
 
+  // Seed each checked quantity action's last-confirmed value from the
+  // server-rendered input, if it's actually valid.
+  for (const checkbox of getCheckboxes(form)) {
+    const quantityInput = getQuantityInput(checkbox)
+    if (checkbox.checked && quantityInput?.value.trim()) {
+      updateHintLive(checkbox)
+      const validQuantity = getValidTypedQuantity(checkbox)
+      if (validQuantity != null) {
+        checkbox.setAttribute(TOTAL_CHOSEN_AREA_ATTR, String(validQuantity))
+      }
+    }
+  }
+
   // Grey out incompatible selections and hydrate chosen areas (see
   // isProtectedFromRefresh for checked/errored exceptions, cleared per
   // checkbox by clearErrorOnLoad below on that checkbox's own next interaction).
   if (buildPlannedActions(form).length > 0) {
     refreshAvailability()
-  }
-
-  // Recompute a pre-selected action's hint against its own saved quantity.
-  for (const checkbox of getCheckboxes(form)) {
-    if (getQuantityInput(checkbox)?.value.trim()) {
-      updateHintLive(checkbox)
-    }
   }
 
   form.addEventListener('change', (event) => {
