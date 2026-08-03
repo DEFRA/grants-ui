@@ -52,6 +52,17 @@ echo "Fetching example-grant-with-auth submission schema at version $EXAMPLE_TAG
 mkdir -p acceptance/schemas
 curl -fL "https://raw.githubusercontent.com/DEFRA/grants-config-example-grants/$EXAMPLE_TAG/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth-submission.schema.json" -o acceptance/schemas/example-grant-with-auth-submission.schema.json
 
+GRASSLANDS_TAG=$(curl -s https://api.github.com/repos/DEFRA/grants-config-grasslands/tags | jq -r '.[0].name')
+
+if [ -z "$GRASSLANDS_TAG" ]; then
+  echo "Error: Could not fetch grasslands tag"
+  exit 1
+fi
+
+echo "Fetching grasslands GAS schema at version $GRASSLANDS_TAG"
+mkdir -p grants-ui-grasslands-tests-schemas
+curl -fL "https://raw.githubusercontent.com/DEFRA/grants-config-grasslands/$GRASSLANDS_TAG/configurations/grasslands/fg-gas-backend/grasslands.json" -o grants-ui-grasslands-tests-schemas/gas.schema.json
+
 WOODLAND_TAG=$(curl -s https://api.github.com/repos/DEFRA/grants-config-woodland/tags | jq -r '.[0].name')
 
 if [ -z "$WOODLAND_TAG" ]; then
