@@ -55,6 +55,7 @@ services:
       GRANTS_UI_BACKEND_ENCRYPTION_KEY: ${GRANTS_UI_BACKEND_ENCRYPTION_KEY:-encryption_key}
       MOCKSERVER_HOST: mockserver
       MOCKSERVER_PORT: 1080
+      MONGO_URI: mongodb://mongodb:27017/
     volumes:
       - ./nginx/certs:/etc/ssl/certs:ro
       - ./grants-ui-woodland-tests-schemas:/app/test/schemas:ro
