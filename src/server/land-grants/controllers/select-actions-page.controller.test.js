@@ -366,7 +366,7 @@ describe('SelectActionsPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions',
         expect.objectContaining({
-          errors: [{ text: 'Select an action to do on this land parcel', href: '#landAction' }]
+          errors: [{ text: 'Select at least one action', href: '#landAction' }]
         })
       )
     })
@@ -542,7 +542,7 @@ describe('SelectActionsPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions',
         expect.objectContaining({
-          errors: [{ text: 'Select an action to do on this land parcel', href: '#landAction' }]
+          errors: [{ text: 'Select at least one action', href: '#landAction' }]
         })
       )
       expect(controller.setState).not.toHaveBeenCalled()

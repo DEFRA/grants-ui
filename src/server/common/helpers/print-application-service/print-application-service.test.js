@@ -96,6 +96,20 @@ describe('print-application-service', () => {
       expect(result.referenceNumber).toBe('Not available')
     })
 
+    test('should expose the provided page so the template can resolve the configured width', () => {
+      const page = { path: '/print-submitted-application', def: { metadata: { pageConfig: {} } } }
+
+      const result = buildPrintViewModel({ ...baseParams, page })
+
+      expect(result.page).toBe(page)
+    })
+
+    test('should default page to undefined when not provided', () => {
+      const result = buildPrintViewModel(baseParams)
+
+      expect(result.page).toBeUndefined()
+    })
+
     test('should exclude pages where no questions have answers', () => {
       const result = buildPrintViewModel({
         ...baseParams,

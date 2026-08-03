@@ -415,7 +415,14 @@ describe('DeclarationPageController', () => {
       const transformAnswers = transformStateObjectToGasApplication.mock.calls[0][2]
       const transformedAnswers = transformAnswers({ ...mockContext.relevantState, landParcels })
 
-      expect(transformedAnswers).toMatchObject({ actionCode: 'UPL1' })
+      expect(transformedAnswers).toMatchObject({
+        parcels: [
+          {
+            parcelId: 'SD6364-6615',
+            actions: [{ code: 'UPL1', value: 24.7964, unit: 'ha' }]
+          }
+        ]
+      })
       expect(transformedAnswers).not.toHaveProperty('landParcels')
     })
 

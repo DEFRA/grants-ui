@@ -12,7 +12,7 @@
 {% block content %}
   <div class="govuk-body">
     <div class="govuk-grid-row">
-      <div class="{% if showPaymentActions %}govuk-grid-column-full{% else %}govuk-grid-column-two-thirds{% endif %}">
+      <div class="{{ gridColumnClass(page, 'govuk-grid-column-full' if showPaymentActions else 'govuk-grid-column-two-thirds') }}">
         {% if warning %}
           {{ govukWarningText({
           text: warning

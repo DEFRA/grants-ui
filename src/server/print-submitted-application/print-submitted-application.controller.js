@@ -87,7 +87,8 @@ export default class PrintSubmittedApplicationController extends StatusPageContr
       slug,
       sessionData,
       configurablePrintContent,
-      applicantDetailsSections
+      applicantDetailsSections,
+      page: this
     })
 
     return h.view('print-submitted-application', viewModel)

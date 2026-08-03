@@ -1,5 +1,6 @@
 {% extends "layouts/page.njk" %}
 {% set backLink = false %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/panel/macro.njk" import govukPanel %}
 {% from "dev-mode-banner/macro.njk" import appDevModeBanner %}
 {% from "support-details/macro.njk" import defraSupportDetails %}
@@ -8,7 +9,7 @@
 {% set mainClasses = "govuk-main-wrapper--l" %}
 
 {% block content %}
-  {% call appTwoThirdsColumn() %}
+  {% call appTwoThirdsColumn({ columnClass: gridColumnClass(page) }) %}
     {{ appDevModeBanner({
         isDevelopmentMode: isDevelopmentMode,
         formSlug: formSlug,
@@ -28,6 +29,13 @@
       {% if confirmationContent and confirmationContent.html %}
         {# Direct HTML injection from YAML #}
         {{ confirmationContent.html | safe }}
+        {% if confirmationContent.button and confirmationContent.button.text and confirmationContent.button.href %}
+          {% set envUrl = confirmationContent.button.href.replace('cdpEnv', cdpEnvironment) %}
+          {{ govukButton({
+          text: confirmationContent.button.text,
+          href: envUrl
+          }) }}
+        {% endif %}
       {% else %}
         {# Default content from image if no configuration provided #}
         <p class="govuk-body">It may be useful to write down your application number, so you have it ready if you need to contact us.</p>

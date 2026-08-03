@@ -10,6 +10,46 @@ import {
 } from './task-list.helper.js'
 import TaskListPageController from './task-list-page.controller.js'
 
+// Component types that store answers in state (question types).
+// The forms-engine collection.fields only contains these, excluding guidance
+// components such as Html, so we replicate that filtering when building a pageMap.
+const QUESTION_COMPONENT_TYPES = new Set([
+  'TextField',
+  'EmailAddressField',
+  'TelephoneNumberField',
+  'NumberField',
+  'MultilineTextField',
+  'DatePartsField',
+  'MonthYearField',
+  'RadiosField',
+  'CheckboxesField',
+  'SelectField',
+  'AutocompleteField',
+  'YesNoField',
+  'UkAddressField',
+  'FileUploadField',
+  'NationalGridFieldNumberField'
+])
+
+/**
+ * Builds a formModel.pageMap from a list of page definitions, mirroring the
+ * forms-engine structure the helper now reads via
+ * formModel.pageMap.get(path).collection.fields
+ * @param {object[]} [pages]
+ * @returns {Map<string, { collection: { fields: object[] } }>}
+ */
+function buildPageMap(pages = []) {
+  const pageMap = new Map()
+  pages.forEach((page, index) => {
+    if (page.path === undefined) {
+      page.path = `/__auto_page_${index}`
+    }
+    const fields = (page.components ?? []).filter((component) => QUESTION_COMPONENT_TYPES.has(component.type))
+    pageMap.set(page.path, { collection: { fields } })
+  })
+  return pageMap
+}
+
 describe('task-list.helper', () => {
   describe('getTaskListPath', () => {
     it('should return the path of the TaskListPageController', () => {
@@ -44,7 +84,7 @@ describe('task-list.helper', () => {
           }
         }
       }
-      const formModel = {}
+      const formModel = { pageMap: buildPageMap(mockModel.page.def.pages) }
       const state = { q1: 'val1', q3: 'val3' }
 
       const stats = getCompletionStats(mockModel, formModel, state)
@@ -63,7 +103,7 @@ describe('task-list.helper', () => {
           }
         }
       }
-      const formModel = {}
+      const formModel = { pageMap: buildPageMap(mockModel.page.def.pages) }
       const state = { q1: 'val1' }
       expect(getCompletionStats(mockModel, formModel, state).isComplete).toBe(true)
     })
@@ -76,7 +116,7 @@ describe('task-list.helper', () => {
           }
         }
       }
-      const formModel = {}
+      const formModel = { pageMap: buildPageMap(mockModel.page.def.pages) }
       const state = {}
       const stats = getCompletionStats(mockModel, formModel, state)
       expect(stats.completed).toBe(0)
@@ -98,8 +138,9 @@ describe('task-list.helper', () => {
           }
         }
       }
+      const formModel = { pageMap: buildPageMap(mockModel.page.def.pages), conditions: {} }
       const state = { q1: 'value' }
-      expect(getCompletionStats(mockModel, undefined, state).completed).toBe(0)
+      expect(getCompletionStats(mockModel, formModel, state).completed).toBe(0)
     })
 
     it('should not trigger an exit page when its condition name is absent from formModel.conditions', () => {
@@ -124,6 +165,7 @@ describe('task-list.helper', () => {
       }
       const formModel = {
         def: { metadata: {}, pages: mockModel.page.def.pages },
+        pageMap: buildPageMap(mockModel.page.def.pages),
         conditions: {}, // 'unknownCond' absent
         makeCondition: () => ({ fn: () => true })
       }
@@ -144,7 +186,7 @@ describe('task-list.helper', () => {
           }
         }
       }
-      const formModel = {}
+      const formModel = { pageMap: buildPageMap(mockModel.page.def.pages) }
       const state = { addr__postcode: 'SW1A 1AA' }
       expect(getCompletionStats(mockModel, formModel, state).completed).toBe(1)
     })
@@ -157,7 +199,7 @@ describe('task-list.helper', () => {
           }
         }
       }
-      const formModel = {}
+      const formModel = { pageMap: buildPageMap(mockModel.page.def.pages) }
       const state = { h1: 'some html' }
       expect(getCompletionStats(mockModel, formModel, state).completed).toBe(0)
       expect(getCompletionStats(mockModel, formModel, state).total).toBe(1)
@@ -178,6 +220,7 @@ describe('task-list.helper', () => {
         }
       }
       const formModel = {
+        pageMap: buildPageMap(mockModel.page.def.pages),
         conditions: {
           cond1: { items: [] }
         },
@@ -205,6 +248,7 @@ describe('task-list.helper', () => {
         }
       }
       const formModel = {
+        pageMap: buildPageMap(mockModel.page.def.pages),
         conditions: {
           cond1: { items: [] }
         },
@@ -224,7 +268,7 @@ describe('task-list.helper', () => {
           }
         }
       }
-      const formModel = {}
+      const formModel = { pageMap: buildPageMap(mockModel.page.def.pages) }
       const state = { grid: 'SP123456' }
       expect(getCompletionStats(mockModel, formModel, state).completed).toBe(1)
     })
@@ -237,7 +281,7 @@ describe('task-list.helper', () => {
           }
         }
       }
-      const formModel = {}
+      const formModel = { pageMap: buildPageMap(mockModel.page.def.pages) }
       const state = {}
       expect(getCompletionStats(mockModel, formModel, state).completed).toBe(0)
     })
@@ -258,6 +302,7 @@ describe('task-list.helper', () => {
         }
       }
       const formModel = {
+        pageMap: buildPageMap(mockModel.page.def.pages),
         def: {
           metadata: {
             tasklist: {
@@ -294,7 +339,7 @@ describe('task-list.helper', () => {
           }
         }
       }
-      const formModel = { def: { metadata: {} } }
+      const formModel = { def: { metadata: {} }, pageMap: buildPageMap(mockModel.page.def.pages) }
       const state = {} // Nothing completed
 
       const data = buildTaskListData(mockModel, formModel, state)
@@ -321,6 +366,7 @@ describe('task-list.helper', () => {
         }
       }
       const formModel = {
+        pageMap: buildPageMap(mockModel.page.def.pages),
         def: { metadata: {} },
         conditions: {
           cond1: { items: [] }
@@ -358,6 +404,7 @@ describe('task-list.helper', () => {
         }
       }
       const formModel = {
+        pageMap: buildPageMap(mockModel.page.def.pages),
         def: { metadata: {} },
         conditions: {
           cond1: { items: [] }
@@ -375,7 +422,7 @@ describe('task-list.helper', () => {
       expect(data[0].items[1].title.text).toBe('Conditional Task')
     })
 
-    it('should use NationalGridFieldNumberField shortDescription as task title', () => {
+    it('should use NationalGridFieldNumberField label as task title', () => {
       const mockModel = {
         serviceUrl: '/service',
         page: {
@@ -385,14 +432,14 @@ describe('task-list.helper', () => {
                 title: 'Page Title',
                 section: 's1',
                 path: '/t1',
-                components: [{ type: 'NationalGridFieldNumberField', name: 'grid', shortDescription: 'Grid reference' }]
+                components: [{ type: 'NationalGridFieldNumberField', name: 'grid', label: 'Grid reference' }]
               }
             ],
             sections: [{ id: 's1', title: 'Section 1' }]
           }
         }
       }
-      const formModel = { def: { metadata: {} } }
+      const formModel = { def: { metadata: {} }, pageMap: buildPageMap(mockModel.page.def.pages) }
       const state = {}
 
       const data = buildTaskListData(mockModel, formModel, state)
@@ -409,26 +456,26 @@ describe('task-list.helper', () => {
           }
         }
       })
-      const formModel = { def: { metadata: {} } }
+      const makeFormModel = (m) => ({ def: { metadata: {} }, pageMap: buildPageMap(m.page.def.pages) })
 
-      it('should use shortDescription when there is exactly one question component', () => {
-        const model = makeModel([{ type: 'TextField', name: 'q1', shortDescription: 'Your name' }])
-        const data = buildTaskListData(model, formModel, {})
+      it('should use the field label when there is exactly one question component', () => {
+        const model = makeModel([{ type: 'TextField', name: 'q1', label: 'Your name' }])
+        const data = buildTaskListData(model, makeFormModel(model), {})
         expect(data[0].items[0].title.text).toBe('Your name')
       })
 
-      it('should fall back to pageDef.title when single question component has no shortDescription', () => {
+      it('should fall back to pageDef.title when single question component has no label', () => {
         const model = makeModel([{ type: 'TextField', name: 'q1' }])
-        const data = buildTaskListData(model, formModel, {})
+        const data = buildTaskListData(model, makeFormModel(model), {})
         expect(data[0].items[0].title.text).toBe('Page Title')
       })
 
       it('should use pageDef.title when there are multiple question components', () => {
         const model = makeModel([
-          { type: 'TextField', name: 'q1', shortDescription: 'First name' },
-          { type: 'TextField', name: 'q2', shortDescription: 'Last name' }
+          { type: 'TextField', name: 'q1', label: 'First name' },
+          { type: 'TextField', name: 'q2', label: 'Last name' }
         ])
-        const data = buildTaskListData(model, formModel, { q1: 'a', q2: 'b' })
+        const data = buildTaskListData(model, makeFormModel(model), { q1: 'a', q2: 'b' })
         expect(data[0].items[0].title.text).toBe('Page Title')
       })
 
@@ -446,8 +493,8 @@ describe('task-list.helper', () => {
                   path: '/t1',
                   components: [
                     { type: 'Html', name: 'info', content: 'Some content' },
-                    { type: 'TextField', name: 'q1', shortDescription: 'Your answer' },
-                    { type: 'TextField', name: 'q2', shortDescription: 'Another answer' }
+                    { type: 'TextField', name: 'q1', label: 'Your answer' },
+                    { type: 'TextField', name: 'q2', label: 'Another answer' }
                   ]
                 }
               ],
@@ -455,16 +502,16 @@ describe('task-list.helper', () => {
             }
           }
         }
-        const data = buildTaskListData(mixedModel, formModel, { q1: 'a', q2: 'b' })
+        const data = buildTaskListData(mixedModel, makeFormModel(mixedModel), { q1: 'a', q2: 'b' })
         expect(data[0].items[0].title.text).toBe('Mixed Page')
       })
 
-      it('should use pageDef.title when there are multiple question components even if only one has shortDescription', () => {
+      it('should use pageDef.title when there are multiple question components even if only one has a label', () => {
         const model = makeModel([
-          { type: 'RadiosField', name: 'q1', shortDescription: 'Your choice' },
+          { type: 'RadiosField', name: 'q1', label: 'Your choice' },
           { type: 'TextField', name: 'q2' }
         ])
-        const data = buildTaskListData(model, formModel, { q1: 'yes', q2: 'text' })
+        const data = buildTaskListData(model, makeFormModel(model), { q1: 'yes', q2: 'text' })
         expect(data[0].items[0].title.text).toBe('Page Title')
       })
     })
@@ -490,6 +537,7 @@ describe('task-list.helper', () => {
         }
       }
       const formModel = {
+        pageMap: buildPageMap(mockModel.page.def.pages),
         def: { metadata: {}, pages: mockModel.page.def.pages },
         conditions: {
           cond1: { items: [] }
@@ -532,6 +580,7 @@ describe('task-list.helper', () => {
         }
       }
       const formModel = {
+        pageMap: buildPageMap(mockModel.page.def.pages),
         def: {
           metadata: {},
           pages: mockModel.page.def.pages
@@ -573,6 +622,7 @@ describe('task-list.helper', () => {
         }
       }
       const formModel = {
+        pageMap: buildPageMap(mockModel.page.def.pages),
         def: {
           metadata: {},
           pages: mockModel.page.def.pages
@@ -613,6 +663,7 @@ describe('task-list.helper', () => {
         }
       }
       const formModel = {
+        pageMap: buildPageMap(mockModel.page.def.pages),
         def: {
           metadata: {},
           pages: mockModel.page.def.pages
@@ -742,6 +793,7 @@ describe('task-list.helper', () => {
     })
 
     const makeFormModel = (state = {}) => ({
+      pageMap: buildPageMap(makeModel().page.def.pages),
       def: {
         metadata: {
           tasklist: { showQuestions: false }
@@ -831,6 +883,7 @@ describe('task-list.helper', () => {
         }
       }
       const formModel = {
+        pageMap: buildPageMap(model.page.def.pages),
         def: { metadata: { tasklist: { showQuestions: false } }, pages: model.page.def.pages },
         conditions: { condFalse: {} },
         makeCondition: () => ({ fn: () => false }) // condition always false -> page excluded
@@ -860,6 +913,7 @@ describe('task-list.helper', () => {
         }
       }
       const formModel = {
+        pageMap: buildPageMap(model.page.def.pages),
         def: { metadata: { tasklist: { showQuestions: false } }, pages: model.page.def.pages },
         conditions: { condTrue: {} },
         makeCondition: () => ({ fn: () => true }) // condition true -> page included
@@ -893,6 +947,7 @@ describe('task-list.helper', () => {
         }
       }
       const formModel = {
+        pageMap: buildPageMap(model.page.def.pages),
         def: { metadata: { tasklist: { showQuestions: false } }, pages: model.page.def.pages },
         conditions: { condFalse: {} },
         makeCondition: () => ({ fn: () => false }) // t1b excluded
@@ -906,6 +961,7 @@ describe('task-list.helper', () => {
     it('should use custom status text from metadata statuses config', () => {
       const model = makeModel()
       const formModel = {
+        pageMap: buildPageMap(model.page.def.pages),
         def: {
           metadata: {
             tasklist: {

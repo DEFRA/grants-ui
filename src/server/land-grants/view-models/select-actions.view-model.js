@@ -13,7 +13,8 @@ import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js
 
 // Own Environment, not the app-wide one - that one's config.get('root') call isn't mocked in this page's tests.
 const QUANTITY_INPUT_TEMPLATE = 'quantity-input/template.njk'
-const quantityInputEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader([govukFrontendPath, ...viewPaths]), {
+const ACTION_LABEL_TEMPLATE = 'action-label/template.njk'
+const landGrantsViewEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader([govukFrontendPath, ...viewPaths]), {
   autoescape: true
 })
 
@@ -31,7 +32,7 @@ const quantityInputEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader(
 function getQuantityConditional(actionCode, actionName, quantityValue, maxQuantity, unit, errorText) {
   const fieldId = getActionQuantityFieldName(actionCode)
   return {
-    html: quantityInputEnv.render(QUANTITY_INPUT_TEMPLATE, {
+    html: landGrantsViewEnv.render(QUANTITY_INPUT_TEMPLATE, {
       fieldId,
       actionName,
       quantityValue,
@@ -44,7 +45,22 @@ function getQuantityConditional(actionCode, actionName, quantityValue, maxQuanti
 }
 
 /**
- * First item must be exactly SELECTED_ACTIONS_FIELD_NAME - the "no action selected" error anchors to it.
+ * Builds the checkbox label markup: the action description plus an optional
+ * "read guidance" link. Rendered through Nunjucks (autoescape on) so the
+ * description and URL are escaped rather than concatenated into raw HTML.
+ * @param {string} description
+ * @param {string} [guidanceUrl]
+ * @returns {string}
+ */
+function getActionLabelHtml(description, guidanceUrl) {
+  return landGrantsViewEnv.render(ACTION_LABEL_TEMPLATE, { description, guidanceUrl })
+}
+
+/**
+ * Builds the stable, addressable checkbox id for an action. The first item in the
+ * rendered list must be exactly SELECTED_ACTIONS_FIELD_NAME (with no suffix) to match
+ * govuk-frontend's own default idPrefix behaviour - that's what "no action selected"
+ * error-summary links (see validateSelectedActions) anchor to.
  * @param {string} actionCode
  * @param {boolean} isFirst
  * @returns {string}
@@ -129,7 +145,7 @@ export function mapActionToViewModel(
   return {
     id: getCheckboxItemId(action.code, isFirst),
     value: action.code,
-    html: `${action.description}<span class="select-actions-hint">${hintText}${availabilityHintHtml}</span>`,
+    html: `${getActionLabelHtml(action.description, action.guidanceUrl)}<span class="select-actions-hint">${hintText}${availabilityHintHtml}</span>`,
     checked,
     consents,
     attributes: {

@@ -52,6 +52,53 @@ describe('select-actions.view-model', () => {
       })
     })
 
+    it('should render just the description with no guidance link when no guidance URL is set', () => {
+      const action = { code: 'SAM1', description: 'Test Action 1', ratePerUnitGbp: 100.5 }
+
+      const result = mapActionToViewModel(action, [])
+
+      expect(result.html).toContain('Test Action 1')
+      expect(result.html).not.toContain('<a')
+    })
+
+    it('should append a read guidance link pointing at the guidance URL when one is set', () => {
+      const action = {
+        code: 'CLIG3',
+        description: 'Manage grassland: CLIG3',
+        ratePerUnitGbp: 100.5,
+        guidanceUrl: 'https://www.gov.uk/find-funding-for-land-or-farms/clig3'
+      }
+
+      const result = mapActionToViewModel(action, [])
+
+      expect(result.html).toContain('href="https://www.gov.uk/find-funding-for-land-or-farms/clig3"')
+      expect(result.html).toContain('read guidance')
+      expect(result.html).toContain('target="_blank"')
+      expect(result.html).toContain('rel="noopener noreferrer"')
+    })
+
+    it('should escape the description and guidance URL in the label to avoid breaking the markup', () => {
+      const action = {
+        code: 'CLIG3',
+        description: 'Hedges & <ditches>',
+        ratePerUnitGbp: 100.5,
+        guidanceUrl: 'https://www.gov.uk/guidance?a=1&b=2'
+      }
+
+      const result = mapActionToViewModel(action, [])
+
+      expect(result.html).toContain('Hedges &amp; &lt;ditches&gt;')
+      expect(result.html).toContain('href="https://www.gov.uk/guidance?a=1&amp;b=2"')
+    })
+
+    it('should not mutate the input action when building the label', () => {
+      const action = { code: 'SAM1', description: 'Test Action 1', ratePerUnitGbp: 100.5 }
+
+      mapActionToViewModel(action, [])
+
+      expect(action).toEqual({ code: 'SAM1', description: 'Test Action 1', ratePerUnitGbp: 100.5 })
+    })
+
     it('should give each item a stable id derived from the action code, for error-anchor links', () => {
       const action = { code: 'CSAM3', description: 'Herbal leys: CSAM3', ratePerUnitGbp: 224 }
 

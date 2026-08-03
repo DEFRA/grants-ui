@@ -34,11 +34,70 @@ const baseRawState = {
 }
 
 describe('transformGrasslandsAnswers', () => {
-  it('maps the selected parcel id and action key from rawState to actionCode', () => {
+  it('maps every parcel with its parcelId and actions from rawState', () => {
     const result = transformGrasslandsAnswers(baseSubmissionState, baseRawState)
 
-    expect(result.selectedParcelId).toBe('SD6364-6615')
-    expect(result.actionCode).toBe('UPL1')
+    expect(result.parcels).toEqual([
+      {
+        parcelId: 'SD6364-6615',
+        actions: [{ code: 'UPL1', value: 24.7964, unit: 'ha' }]
+      }
+    ])
+  })
+
+  it('includes all parcels and all of their actions', () => {
+    const rawState = {
+      ...baseRawState,
+      landParcels: {
+        'SD6352-8774': {
+          size: { unitFullName: 'hectares', unit: 'ha', value: 11.1006 },
+          actionsObj: {
+            CLIG3: {
+              description: 'Manage grassland with very low nutrient inputs: CLIG3',
+              version: '1.0.0',
+              consents: [],
+              value: 11.1006,
+              unit: 'ha'
+            },
+            CSAM3: {
+              description: 'Herbal leys: CSAM3',
+              version: '1.0.0',
+              consents: [],
+              value: '10',
+              unit: 'ha'
+            }
+          }
+        },
+        'SD6364-6615': {
+          size: { unitFullName: 'hectares', unit: 'ha', value: 24.7964 },
+          actionsObj: {
+            UPL1: {
+              description: 'Moderate livestock grazing on moorland: UPL1',
+              version: '3.1.0',
+              consents: [],
+              value: 24.7964,
+              unit: 'ha'
+            }
+          }
+        }
+      }
+    }
+
+    const result = transformGrasslandsAnswers(baseSubmissionState, rawState)
+
+    expect(result.parcels).toEqual([
+      {
+        parcelId: 'SD6352-8774',
+        actions: [
+          { code: 'CLIG3', value: 11.1006, unit: 'ha' },
+          { code: 'CSAM3', value: '10', unit: 'ha' }
+        ]
+      },
+      {
+        parcelId: 'SD6364-6615',
+        actions: [{ code: 'UPL1', value: 24.7964, unit: 'ha' }]
+      }
+    ])
   })
 
   it('passes through other submission state fields unchanged', () => {
@@ -49,7 +108,7 @@ describe('transformGrasslandsAnswers', () => {
     expect(result.confirmLandDetailsUpToDate).toBe(true)
   })
 
-  it('does not include selectedParcelsDisplay or landParcels in the output', () => {
+  it('does not include selectedParcelsDisplay, selectedParcelId or landParcels in the output', () => {
     const result = transformGrasslandsAnswers(
       {
         ...baseSubmissionState
@@ -59,15 +118,16 @@ describe('transformGrasslandsAnswers', () => {
 
     expect(result).not.toHaveProperty('landParcels')
     expect(result).not.toHaveProperty('selectedParcelsDisplay')
+    expect(result).not.toHaveProperty('selectedParcelId')
   })
 
-  it('does not add actionCode when the selected parcel is absent from rawState', () => {
-    const result = transformGrasslandsAnswers(baseSubmissionState, { ...baseRawState, selectedParcelId: 'UNKNOWN' })
+  it('returns an empty parcels array when rawState has no land parcels', () => {
+    const result = transformGrasslandsAnswers(baseSubmissionState, { ...baseRawState, landParcels: undefined })
 
-    expect(result).not.toHaveProperty('actionCode')
+    expect(result.parcels).toEqual([])
   })
 
-  it('does not add actionCode when the selected parcel has no actions', () => {
+  it('returns a parcel with an empty actions array when the parcel has no actions', () => {
     const result = transformGrasslandsAnswers(baseSubmissionState, {
       ...baseRawState,
       landParcels: {
@@ -78,6 +138,6 @@ describe('transformGrasslandsAnswers', () => {
       }
     })
 
-    expect(result).not.toHaveProperty('actionCode')
+    expect(result.parcels).toEqual([{ parcelId: 'SD6364-6615', actions: [] }])
   })
 })

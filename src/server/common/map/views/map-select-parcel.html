@@ -6,7 +6,7 @@
 {% block content %}
 <div class="govuk-body">
   <div class="govuk-grid-row">
-    <div class="govuk-grid-column-full">
+    <div class="{{ gridColumnClass(page, 'full') }}">
 
       {% if errors %}
         {{ govukErrorSummary({
@@ -27,8 +27,13 @@
         }) }}
       </div>
 
+      {% if sectionTitle and sectionTitle.length and (sectionTitle !== pageTitle) %}
+      <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">
+        {{- sectionTitle -}}
+      </h2>
+      {% endif %}
       <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
-      <p id="map-hint" class="govuk-body" hidden>Click on a parcel to select it and see its details.</p>
+      <p id="map-hint" class="govuk-body" hidden>Select a land parcel on the map. You'll choose actions for that parcel on the next page.</p>
       <noscript>
         <p class="govuk-body">The interactive map requires JavaScript to be enabled in your browser.</p>
       </noscript>

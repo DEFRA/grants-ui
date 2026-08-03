@@ -28,7 +28,7 @@ export function validateLandActionsSelection(payload, actionFieldPrefix) {
 
   if (landActionFields.length === 0) {
     const firstActionInput = actionFieldPrefix + '1'
-    errors.push({ text: 'Select an action to do on this land parcel', href: `#${firstActionInput}` })
+    errors.push({ text: 'Select at least one action', href: `#${firstActionInput}` })
   }
 
   return errors
@@ -45,7 +45,7 @@ export function validateSelectedActions(payload) {
 
   if (getSelectedActionCodes(payload).length === 0) {
     errors.push({
-      text: 'Select an action to do on this land parcel',
+      text: 'Select at least one action',
       href: `#${SELECTED_ACTIONS_FIELD_NAME}`
     })
   }

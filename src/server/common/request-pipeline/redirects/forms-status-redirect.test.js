@@ -227,6 +227,123 @@ describe('formsStatusRedirect', () => {
     expect(h.redirect).not.toHaveBeenCalled()
   })
 
+  describe('pre-submission requirement gate', () => {
+    const gatedPreSubmission = [
+      {
+        toPath: '/check-selected-land-actions',
+        requiresAnyItemWithNonEmptyKey: { collection: 'landParcels', key: 'actionsObj' },
+        incompleteToPath: '/select-land-parcel'
+      }
+    ]
+
+    beforeEach(() => {
+      request.app.model.def.metadata.grantRedirectRules.preSubmission = gatedPreSubmission
+    })
+
+    it('redirects to the check-answers page when at least one parcel has actions', async () => {
+      const contextWithActions = {
+        referenceNumber: 'REF-010',
+        state: {
+          applicationStatus: 'CLEARED',
+          landParcels: { 'SD1234-5678': { size: 1, actionsObj: { CSAM1: { value: '1', unit: 'ha' } } } }
+        },
+        paths: ['/start']
+      }
+
+      await formsStatusRedirect(request, h, contextWithActions)
+
+      expect(h.redirect).toHaveBeenCalledWith('/grant-a/check-selected-land-actions')
+    })
+
+    it('redirects to the select-land-parcel page when the only parcel has no actions', async () => {
+      const contextWithoutActions = {
+        referenceNumber: 'REF-011',
+        state: {
+          applicationStatus: 'CLEARED',
+          landParcels: { 'SD1234-5678': { size: 1, actionsObj: {} } }
+        },
+        paths: ['/start']
+      }
+
+      await formsStatusRedirect(request, h, contextWithoutActions)
+
+      expect(h.redirect).toHaveBeenCalledWith('/grant-a/select-land-parcel')
+    })
+
+    it('redirects to the check-answers page when at least one of several parcels has actions', async () => {
+      const contextWithMixedParcels = {
+        referenceNumber: 'REF-012',
+        state: {
+          applicationStatus: 'CLEARED',
+          landParcels: {
+            'SD1234-5678': { size: 1, actionsObj: { CSAM1: { value: '1', unit: 'ha' } } },
+            'SD1234-9999': { size: 1, actionsObj: {} }
+          }
+        },
+        paths: ['/start']
+      }
+
+      await formsStatusRedirect(request, h, contextWithMixedParcels)
+
+      expect(h.redirect).toHaveBeenCalledWith('/grant-a/check-selected-land-actions')
+    })
+
+    it('redirects to the select-land-parcel page for the real grasslands state (parcel selected, landParcels cleared to empty)', async () => {
+      const contextParcelSelectedNoActions = {
+        referenceNumber: 'REF-013b',
+        state: {
+          applicationStatus: 'CLEARED',
+          selectedParcelId: 'SD1234-5678',
+          selectedParcelIds: ['SD1234-5678'],
+          selectedParcelsDisplay: 'SD1234-5678',
+          landParcels: {}
+        },
+        paths: ['/start']
+      }
+
+      await formsStatusRedirect(request, h, contextParcelSelectedNoActions)
+
+      expect(h.redirect).toHaveBeenCalledWith('/grant-a/select-land-parcel')
+    })
+
+    it('redirects to the select-land-parcel page when parcels are selected but none has actions (array shape)', async () => {
+      const contextWithSelectedOnly = {
+        referenceNumber: 'REF-013',
+        state: {
+          applicationStatus: 'CLEARED',
+          landParcels: ['SD1234-5678', 'SD1234-9999']
+        },
+        paths: ['/start']
+      }
+
+      await formsStatusRedirect(request, h, contextWithSelectedOnly)
+
+      expect(h.redirect).toHaveBeenCalledWith('/grant-a/select-land-parcel')
+    })
+
+    it('continues without redirecting when the gate is unmet and no incompleteToPath is configured', async () => {
+      request.app.model.def.metadata.grantRedirectRules.preSubmission = [
+        {
+          toPath: '/check-selected-land-actions',
+          requiresAnyItemWithNonEmptyKey: { collection: 'landParcels', key: 'actionsObj' }
+        }
+      ]
+      const contextWithoutActions = {
+        referenceNumber: 'REF-014',
+        state: {
+          applicationStatus: 'CLEARED',
+          landParcels: { 'SD1234-5678': { size: 1, actionsObj: {} } }
+        },
+        paths: ['/start']
+      }
+
+      const result = await formsStatusRedirect(request, h, contextWithoutActions)
+
+      expect(result).toBe(h.continue)
+      expect(h.redirect).not.toHaveBeenCalled()
+    })
+  })
+
   it('continues when previousStatus is SUBMITTED and no redirect needed', async () => {
     getApplicationStatus.mockResolvedValue({ json: async () => ({ status: 'RECEIVED' }) })
     request.path = '/grant-a/confirmation'

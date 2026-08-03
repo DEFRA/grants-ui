@@ -1,5 +1,10 @@
 import { getFormsCacheService } from '../../helpers/forms-cache/forms-cache.js'
-import { buildRedirectUrl, hasMeaningfulState, shouldHandlePreSubmission } from './forms-status-redirect.js'
+import {
+  buildRedirectUrl,
+  hasMeaningfulPreSubmissionState,
+  resolvePreSubmissionDestination,
+  shouldHandlePreSubmission
+} from './forms-status-redirect.js'
 
 const CHECK_DETAILS_START_PAGE = '/check-details'
 const SLUG_ROOT_ROUTE = '/{slug}'
@@ -62,11 +67,21 @@ export async function serviceRootRedirect(request, h) {
       return h.continue
     }
 
-    if (!hasMeaningfulState(/** @type {any} */ (state))) {
+    if (!hasMeaningfulPreSubmissionState(/** @type {any} */ (state))) {
       return h.continue
     }
 
-    return h.redirect(buildRedirectUrl(slug, preSubmissionRule.toPath)).takeover()
+    // Resolve the destination through the shared pre-submission gate so that,
+    // for gated grants (e.g. grasslands), a returning applicant who has selected
+    // a land parcel but no actions is sent to `incompleteToPath`
+    // (the select-land-parcel page) rather than straight to the check-answers
+    // page. Un-gated grants continue to use the rule's `toPath`.
+    const destinationPath = resolvePreSubmissionDestination(preSubmissionRule, /** @type {any} */ (state))
+    if (destinationPath === null) {
+      return h.continue
+    }
+
+    return h.redirect(buildRedirectUrl(slug, destinationPath)).takeover()
   } catch {
     return h.continue
   }

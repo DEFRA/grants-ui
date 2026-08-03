@@ -9,7 +9,7 @@
 
 {% block content %}
   <div class="govuk-grid-row">
-    <div class="govuk-grid-column-two-thirds-from-desktop">
+    <div class="{{ gridColumnClass(page, 'govuk-grid-column-two-thirds-from-desktop') }}">
       {% if previewMode %}
         {% include "partials/preview-banner.html" %}
       {% endif %}
@@ -25,6 +25,11 @@
         {{ govukErrorSummary(error) }}
       {% endif %}
 
+      {% if sectionTitle and sectionTitle.length and (sectionTitle !== pageTitle) %}
+      <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">
+        {{- sectionTitle -}}
+      </h2>
+      {% endif %}
       <h1 class="govuk-heading-l">
         {{ pageTitle }}
       </h1>
