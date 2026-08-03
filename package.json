@@ -99,7 +99,7 @@
     "ws": "8.21.1"
   },
   "dependencies": {
-    "@aws-sdk/client-sns": "3.1091.0",
+    "@aws-sdk/client-sns": "3.1095.0",
     "@babel/runtime": "8.0.0",
     "@defra/fcp-audit-publisher": "1.0.7",
     "@defra/forms-engine-plugin": "4.23.0",
@@ -112,7 +112,7 @@
     "@hapi/cookie": "12.0.1",
     "@hapi/crumb": "9.0.1",
     "@hapi/h2o2": "10.0.4",
-    "@hapi/hapi": "21.4.9",
+    "@hapi/hapi": "21.4.10",
     "@hapi/inert": "7.1.2",
     "@hapi/jwt": "3.2.4",
     "@hapi/vision": "7.0.3",
@@ -158,7 +158,7 @@
     "@typescript-eslint/eslint-plugin": "8.65.0",
     "@typescript-eslint/parser": "8.65.0",
     "@vitest/coverage-v8": "4.1.10",
-    "@vitest/eslint-plugin": "1.6.23",
+    "@vitest/eslint-plugin": "1.6.24",
     "@vitest/ui": "4.1.10",
     "autoprefixer": "10.5.4",
     "babel-loader": "10.1.1",
@@ -189,7 +189,7 @@
     "tsx": "4.23.1",
     "typescript": "6.0.3",
     "vitest": "4.1.10",
-    "webpack": "5.108.4",
+    "webpack": "5.109.0",
     "webpack-assets-manifest": "6.5.2",
     "webpack-cli": "7.2.1"
   },
