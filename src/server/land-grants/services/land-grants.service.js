@@ -23,7 +23,6 @@ import {
 } from '~/src/server/land-grants/services/parcel-cache.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
-const QUANTITY_REQUIRED_ACTION_CODES = config.get('landGrants.quantityRequiredActionCodes')
 
 /**
  * @param {unknown} enabledLandActions
@@ -193,9 +192,11 @@ export async function fetchActionsForParcel(parcel, userContext) {
 /**
  * Recomputes availableArea for a parcel's actions against an in-progress
  * selection, for the select-actions page's live availability refresh.
+ * available_area_type is static per action (not affected by the recompute),
+ * so it isn't returned here - the client already has it from initial render.
  * @param {{ parcelId: string, sheetId: string, plannedActions: PlannedAction[] }} params
  * @param {LandGrantsUserContext} userContext
- * @returns {Promise<{ actions: Array<{ code: string, availableArea?: Size, requiresMaxQuantity?: number }> }>}
+ * @returns {Promise<{ actions: Array<{ code: string, availableArea?: Size }> }>}
  * @throws {Error}
  */
 export async function fetchActionsWithPlannedActions({ parcelId, sheetId, plannedActions }, userContext) {
@@ -204,8 +205,7 @@ export async function fetchActionsWithPlannedActions({ parcelId, sheetId, planne
   const foundParcel = parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)
   const actions = (foundParcel?.actions || []).map(mapAction).map((action) => ({
     code: action.code,
-    availableArea: action.availableArea,
-    requiresMaxQuantity: action.requiresMaxQuantity
+    availableArea: action.availableArea
   }))
 
   return { actions }
@@ -216,11 +216,9 @@ export async function fetchActionsWithPlannedActions({ parcelId, sheetId, planne
  * @param {ActionOption} action
  */
 function mapAction(action) {
-  const requiresQuantity = QUANTITY_REQUIRED_ACTION_CODES.includes(action.code)
   return {
     ...action,
-    description: landActionWithCode(action.description, action.code),
-    requiresMaxQuantity: requiresQuantity ? (action.availableArea?.value ?? 0) : undefined
+    description: landActionWithCode(action.description, action.code)
   }
 }
 

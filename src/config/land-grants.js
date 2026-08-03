@@ -34,12 +34,6 @@ const landGrants = convict({
     env: 'LAND_GRANTS_API_ENCRYPTION_KEY',
     sensitive: true
   },
-  quantityRequiredActionCodes: {
-    doc: 'Action codes that require a dynamic quantity input field (to be deleted once API ready)',
-    format: Array,
-    default: ['CSAM3'],
-    env: 'QUANTITY_REQUIRED_ACTION_CODES'
-  },
   enableSSSIFeature: {
     doc: 'Enable SSSI feature from 22/01/2026',
     format: Boolean,

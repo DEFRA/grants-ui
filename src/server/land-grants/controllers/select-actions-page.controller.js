@@ -23,6 +23,7 @@ import {
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import { error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
+import { requiresQuantityInput } from '~/src/shared/action-quantity-type.js'
 
 /**
  * Builds plannedActions for every checked action from its own landActionQuantity_<code>
@@ -138,8 +139,8 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
   }
 
   /**
-   * Recomputes availableArea/requiresMaxQuantity for every action against
-   * the quantity claims in this same submission.
+   * Recomputes availableArea for every action against the quantity claims
+   * in this same submission.
    * @param {AnyFormRequest} request
    * @param {{ selectedLandParcel: string, sheetId: string, parcelId: string }} parcel
    * @param {object} payload
@@ -167,14 +168,17 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
       return actions
     }
 
-    // A checked action's own claim is what was just sent for it above, not
-    // the response's headroom-beyond-that-claim (self-competing contract).
+    // Self-competing contract: a non-quantity action's own claim is what was
+    // just sent, not the response's own-claim-excluded headroom. Skipped for
+    // quantity actions - their conditional's max/hint needs the true headroom.
     const sentByCode = new Map(plannedActions.map((p) => [p.actionCode, p.quantity]))
-    const withSentClaim = recomputed.map((action) =>
-      sentByCode.has(action.code)
+    const actionsByCode = new Map(actions.map((a) => [a.code, a]))
+    const withSentClaim = recomputed.map((action) => {
+      const needsQuantity = requiresQuantityInput(actionsByCode.get(action.code)?.metadata?.available_area_type)
+      return sentByCode.has(action.code) && !needsQuantity
         ? { ...action, availableArea: { ...action.availableArea, value: sentByCode.get(action.code) } }
         : action
-    )
+    })
 
     return mergeRecomputedAvailability(actions, withSentClaim)
   }

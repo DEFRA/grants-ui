@@ -3,6 +3,7 @@ import {
   fetchParcelTile,
   locateParcelTiles,
   parcelsGroups,
+  parcelsWithActions,
   parcelsWithGroups,
   parcelsWithFields,
   parcelsWithSize,
@@ -768,6 +769,47 @@ describe('Land Grants client', () => {
       expect(callBody.fields).toContain('actions')
       expect(callBody.fields).toContain('size')
       expect(callBody.fields).toContain('groups')
+      expect(result).toEqual(mockResponse)
+    })
+  })
+
+  describe('parcelsWithActions', () => {
+    it('should trigger a POST request to /api/v2/parcels with actions, size, and actions.metadata', async () => {
+      const mockResponse = { id: 1, status: 'success' }
+      const fields = ['actions', 'size', 'actions.metadata']
+      const parcelIds = ['parcel1']
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockResponse
+      })
+
+      const result = await parcelsWithActions(parcelIds, mockApiEndpoint, mockUserContext)
+
+      expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/parcels`, {
+        method: 'POST',
+        headers: expectedHeaders,
+        body: JSON.stringify({ parcelIds, fields, sbi: mockUserContext.sbi, plannedActions: [] })
+      })
+      expect(result).toEqual(mockResponse)
+    })
+
+    it('should include consent type fields from getConsentTypes', async () => {
+      const mockResponse = { id: 1, status: 'success' }
+      const parcelIds = ['parcel1']
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => mockResponse
+      })
+
+      const result = await parcelsWithActions(parcelIds, mockApiEndpoint, mockUserContext)
+
+      const callBody = JSON.parse(mockFetch.mock.calls[0][1].body)
+      expect(callBody.parcelIds).toEqual(parcelIds)
+      expect(callBody.fields).toContain('actions')
+      expect(callBody.fields).toContain('size')
+      expect(callBody.fields).toContain('actions.metadata')
       expect(result).toEqual(mockResponse)
     })
   })

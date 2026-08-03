@@ -329,11 +329,11 @@ function markUnavailable(checkbox, quantityInput = getQuantityInput(checkbox)) {
 /**
  * Refreshes a quantity input's max/hint from the latest availableArea, as reported by the API.
  * @param {HTMLInputElement} checkbox
- * @param {{ availableArea?: { value: number, unit: string }, requiresMaxQuantity?: number }} action
+ * @param {{ availableArea?: { value: number, unit: string } }} action
  */
 function syncQuantityInputBounds(checkbox, action) {
   const quantityInput = getQuantityInput(checkbox)
-  if (action.requiresMaxQuantity == null || !quantityInput || !action.availableArea) {
+  if (!quantityInput || !action.availableArea) {
     return
   }
   quantityInput.max = String(action.availableArea.value)
@@ -348,10 +348,10 @@ function syncQuantityInputBounds(checkbox, action) {
  * getActionQuantityFieldName - shares its id with the quantity-action hint
  * pattern) from the latest availableArea, as reported by the API.
  * @param {HTMLInputElement} checkbox
- * @param {{ availableArea?: { value: number, unit: string }, requiresMaxQuantity?: number }} action
+ * @param {{ availableArea?: { value: number, unit: string } }} action
  */
 function syncNonQuantityHint(checkbox, action) {
-  if (action.requiresMaxQuantity != null || !action.availableArea) {
+  if (getQuantityInput(checkbox) || !action.availableArea) {
     return
   }
   const hint = document.getElementById(`${getActionQuantityFieldName(checkbox.value)}-hint`)
@@ -438,7 +438,7 @@ function applyCheckedNonQuantityAvailability(checkbox, availableAreaValue, sentQ
  * re-enabled/disabled by fresh availability, since that reflects what OTHER
  * actions are doing, not a correction to its own rejected value.
  * @param {HTMLInputElement} checkbox
- * @param {{ availableArea?: { value: number, unit: string }, requiresMaxQuantity?: number }} action
+ * @param {{ availableArea?: { value: number, unit: string } }} action
  * @param {number | undefined} sentQuantity - What we claimed for this action, if checked and included.
  * @param {boolean} isProtected
  * @param {boolean} allowGrowth - Whether a non-quantity action may grow this pass (see applyRefreshResponse).
@@ -479,7 +479,7 @@ function applyAvailability(checkbox, action, sentQuantity, isProtected, allowGro
 }
 
 /**
- * @typedef {{ code: string, availableArea?: { value: number, unit: string }, requiresMaxQuantity?: number }} ActionAvailability
+ * @typedef {{ code: string, availableArea?: { value: number, unit: string } }} ActionAvailability
  */
 
 /**

@@ -92,7 +92,7 @@ describe('SelectActionsPageController', () => {
       description: 'Heavy livestock grazing on moorland: UPL2',
       availableArea: { unit: 'ha', value: 3 },
       ratePerUnitGbp: 45,
-      requiresMaxQuantity: 3
+      metadata: { available_area_type: 'partial' }
     }
   ]
 
@@ -429,7 +429,7 @@ describe('SelectActionsPageController', () => {
       fetchActionsWithPlannedActions.mockResolvedValue({
         actions: [
           { code: 'UPL1', availableArea: { unit: 'ha', value: 0 } },
-          { code: 'UPL2', availableArea: { unit: 'ha', value: 2 }, requiresMaxQuantity: 2 }
+          { code: 'UPL2', availableArea: { unit: 'ha', value: 2 } }
         ]
       })
 
@@ -586,7 +586,7 @@ describe('SelectActionsPageController', () => {
       fetchActionsWithPlannedActions.mockResolvedValue({
         actions: [
           { code: 'UPL1', availableArea: { unit: 'ha', value: 4 } },
-          { code: 'UPL2', availableArea: { unit: 'ha', value: 2 }, requiresMaxQuantity: 2 }
+          { code: 'UPL2', availableArea: { unit: 'ha', value: 2 } }
         ]
       })
       validateApplication.mockResolvedValue({
@@ -655,7 +655,7 @@ describe('SelectActionsPageController', () => {
       fetchActionsWithPlannedActions.mockResolvedValue({
         actions: [
           { code: 'UPL1', availableArea: { unit: 'ha', value: 0 } },
-          { code: 'UPL2', availableArea: { unit: 'ha', value: 0 }, requiresMaxQuantity: 0 }
+          { code: 'UPL2', availableArea: { unit: 'ha', value: 0 } }
         ]
       })
       validateApplication.mockResolvedValue({
@@ -681,7 +681,7 @@ describe('SelectActionsPageController', () => {
       fetchActionsWithPlannedActions.mockResolvedValue({
         actions: [
           { code: 'UPL1', availableArea: { unit: 'ha', value: 0 } },
-          { code: 'UPL2', availableArea: { unit: 'ha', value: 0 }, requiresMaxQuantity: 0 }
+          { code: 'UPL2', availableArea: { unit: 'ha', value: 0 } }
         ]
       })
       validateApplication.mockRejectedValue(new Error('API issue'))

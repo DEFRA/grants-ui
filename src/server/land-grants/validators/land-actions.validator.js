@@ -1,5 +1,6 @@
 import { getSelectedActionCodes, SELECTED_ACTIONS_FIELD_NAME } from '../utils/selected-actions-field.js'
 import { getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
+import { requiresQuantityInput } from '~/src/shared/action-quantity-type.js'
 import { hasSubmittedNonZeroQuantity } from '../view-state/land-parcel.view-state.js'
 
 /**
@@ -72,7 +73,7 @@ export function validateSelectedActionQuantities(payload, actions) {
   const errors = []
 
   const applicableActions = actions.filter(
-    (action) => selectedCodes.has(action.code) && action.requiresMaxQuantity != null
+    (action) => selectedCodes.has(action.code) && requiresQuantityInput(action.metadata?.available_area_type)
   )
 
   for (const action of applicableActions) {

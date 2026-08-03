@@ -55,10 +55,7 @@ vi.mock('~/src/config/nunjucks/filters/format-currency.js')
 
 // Hoisted shared state + helpers that the mock will use
 const configState = vi.hoisted(() => {
-  const defaults = new Map([
-    ['landGrants.grantsServiceApiEndpoint', 'https://land-grants-api'],
-    ['landGrants.quantityRequiredActionCodes', []]
-  ])
+  const defaults = new Map([['landGrants.grantsServiceApiEndpoint', 'https://land-grants-api']])
   const values = new Map(defaults)
 
   return {
@@ -889,6 +886,71 @@ describe('land-grants service', () => {
       })
     })
 
+    it.each([['partial'], ['limited']])(
+      'should pass metadata.available_area_type through unchanged when it is %s',
+      async (availableAreaType) => {
+        const mockApiResponse = {
+          parcels: [
+            {
+              parcelId: 'PARCEL456',
+              sheetId: 'SHEET123',
+              size: { value: 50.5, unit: 'ha' },
+              actions: [
+                {
+                  code: 'CSAM3',
+                  availableArea: { value: 10.5, unit: 'ha' },
+                  description: 'Herbal leys',
+                  metadata: { available_area_type: availableAreaType }
+                }
+              ]
+            }
+          ]
+        }
+        parcelsWithActions.mockResolvedValueOnce(mockApiResponse)
+
+        const result = await fetchActionsForParcel({
+          parcelId: 'PARCEL456',
+          sheetId: 'SHEET123',
+          enabledLandActions: ['CSAM3']
+        })
+
+        expect(result.actions[0].metadata).toEqual({ available_area_type: availableAreaType })
+        expect(result.actions[0].availableArea).toEqual({ value: 10.5, unit: 'ha' })
+      }
+    )
+
+    it.each([['total'], [undefined]])(
+      'should leave metadata.available_area_type as %s when the API returns it that way',
+      async (availableAreaType) => {
+        const mockApiResponse = {
+          parcels: [
+            {
+              parcelId: 'PARCEL456',
+              sheetId: 'SHEET123',
+              size: { value: 50.5, unit: 'ha' },
+              actions: [
+                {
+                  code: 'CMOR1',
+                  availableArea: { value: 8, unit: 'ha' },
+                  description: 'Assess moorland and produce a written record',
+                  ...(availableAreaType && { metadata: { available_area_type: availableAreaType } })
+                }
+              ]
+            }
+          ]
+        }
+        parcelsWithActions.mockResolvedValueOnce(mockApiResponse)
+
+        const result = await fetchActionsForParcel({
+          parcelId: 'PARCEL456',
+          sheetId: 'SHEET123',
+          enabledLandActions
+        })
+
+        expect(result.actions[0].metadata?.available_area_type).toBe(availableAreaType)
+      }
+    )
+
     it('should return no actions when enabledLandActions is empty', async () => {
       const mockApiResponse = {
         parcels: [
@@ -1034,8 +1096,8 @@ describe('land-grants service', () => {
       )
       expect(result).toEqual({
         actions: [
-          { code: 'CMOR1', availableArea: { value: 8, unit: 'ha' }, requiresMaxQuantity: undefined },
-          { code: 'UPL1', availableArea: { value: 0, unit: 'ha' }, requiresMaxQuantity: undefined }
+          { code: 'CMOR1', availableArea: { value: 8, unit: 'ha' } },
+          { code: 'UPL1', availableArea: { value: 0, unit: 'ha' } }
         ]
       })
     })
