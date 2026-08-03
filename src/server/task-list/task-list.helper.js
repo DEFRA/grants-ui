@@ -78,10 +78,11 @@ function evaluateCondition(formModel, conditionName, state) {
  * @returns {string[]} Array of required component names that hold state
  */
 function getPageComponentNames(pageDef, formModel) {
-  return formModel.pageMap
-    .get(pageDef.path)
-    .collection.fields.filter((field) => field.options?.required !== false)
-    .map((field) => field.name)
+  const page = formModel.pageMap.get(pageDef.path)
+  if (!page) {
+    return []
+  }
+  return page.collection.fields.filter((field) => field.options?.required !== false).map((field) => field.name)
 }
 
 /**
