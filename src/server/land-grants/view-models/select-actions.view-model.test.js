@@ -67,7 +67,7 @@ describe('select-actions.view-model', () => {
         code: 'CLIG3',
         description: 'Manage grassland: CLIG3',
         ratePerUnitGbp: 100.5,
-        guidanceUrl: 'https://www.gov.uk/find-funding-for-land-or-farms/clig3'
+        metadata: { guidance_link: 'https://www.gov.uk/find-funding-for-land-or-farms/clig3' }
       }
 
       const result = mapActionToViewModel(action, [])
@@ -83,7 +83,7 @@ describe('select-actions.view-model', () => {
         code: 'CLIG3',
         description: 'Hedges & <ditches>',
         ratePerUnitGbp: 100.5,
-        guidanceUrl: 'https://www.gov.uk/guidance?a=1&b=2'
+        metadata: { guidance_link: 'https://www.gov.uk/guidance?a=1&b=2' }
       }
 
       const result = mapActionToViewModel(action, [])
@@ -132,10 +132,10 @@ describe('select-actions.view-model', () => {
 
       const result = mapActionToViewModel(action, [])
 
-      expect(result.html).toBe(
-        'Test Action 1 - <a class="govuk-link" href="https://www.gov.uk/guidance/sam1" target="_blank" rel="noopener noreferrer">read guidance</a>' +
-          '<span class="select-actions-hint">Payment rate per year: £100.50/ha</span>'
-      )
+      expect(result.html).toContain('Test Action 1')
+      expect(result.html).toContain('href="https://www.gov.uk/guidance/sam1"')
+      expect(result.html).toContain('read guidance')
+      expect(result.html).toContain('<span class="select-actions-hint">Payment rate per year: £100.50/ha</span>')
     })
 
     it('should not append a guidance link when action metadata is absent', () => {

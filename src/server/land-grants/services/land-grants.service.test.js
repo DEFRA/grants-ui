@@ -394,47 +394,6 @@ describe('land-grants service', () => {
       })
     })
 
-    it('should attach the placeholder guidance URL to configured action codes (CLIG3) until the API provides it', async () => {
-      const mockApiResponse = {
-        parcels: [
-          {
-            parcelId: 'PARCEL456',
-            sheetId: 'SHEET123',
-            size: { value: 50.5, unit: 'ha' },
-            actions: [
-              {
-                code: 'CLIG3',
-                availableArea: { value: 10.5, unit: 'ha' },
-                description: 'Manage grassland with very low nutrient inputs'
-              },
-              {
-                code: 'CMOR1',
-                availableArea: { value: 10.5, unit: 'ha' },
-                description: 'Assess moorland and produce a written record'
-              }
-            ]
-          }
-        ],
-        groups: [{ name: 'Grassland', actions: ['CLIG3', 'CMOR1'] }]
-      }
-      parcelsWithGroups.mockResolvedValueOnce(mockApiResponse)
-
-      const result = await fetchGroupedActionsForParcel({
-        parcelId: 'PARCEL456',
-        sheetId: 'SHEET123',
-        enabledLandActions
-      })
-
-      const actions = result.actions[0].actions
-      const clig3 = actions.find((a) => a.code === 'CLIG3')
-      const cmor1 = actions.find((a) => a.code === 'CMOR1')
-
-      expect(clig3.guidanceUrl).toBe(
-        'https://www.gov.uk/find-funding-for-land-or-farms/clig3-manage-grassland-with-very-low-nutrient-inputs'
-      )
-      expect(cmor1.guidanceUrl).toBeUndefined()
-    })
-
     it('should handle empty parcel parameters', async () => {
       const mockApiResponse = { parcels: [], groups: [] }
 
