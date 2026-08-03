@@ -1,5 +1,6 @@
 {% extends baseLayoutPath %}
 
+{% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 {% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
@@ -16,12 +17,18 @@
         {{- sectionTitle -}}
       </h2>
       {% endif %}
-      <h1 class="govuk-heading-l">{{ declarationContent.heading }}</h1>
 
-      {# CONFIGURABLE SECTION: HTML content from the page's `config:` block #}
-      {% if declarationContent.html %}
-        {{ declarationContent.html | safe }}
-      {% elif declarationContent.useDefaultCopy %}
+      {% if errors %}
+        {{ govukErrorSummary({
+          titleText: "There is a problem",
+          errorList: checkErrorTemplates(errors)
+        }) }}
+      {% endif %}
+
+      <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
+
+      {# Configured pages supply their body copy as page `components` (see the form block below) #}
+      {% if declarationContent.useDefaultCopy %}
         <p class="govuk-body">I confirm that, to the best of my knowledge, the details I have provided are correct.</p>
         <p class="govuk-body">I understand the score was based on the answers I provided</p>
         <p class="govuk-body">I am aware the information I submit will be checked.</p>
@@ -32,40 +39,42 @@
         <p class="govuk-body">You may be contacted by us or a third party that we work with.</p>
       {% endif %}
 
-      {% if declarationContent.optionalConsent %}
-        {{ govukCheckboxes({
-          idPrefix: 'consentOptional',
-          name: 'consentOptional',
-          items: [{
-            value: 'CONSENT_OPTIONAL',
-            text: '(Optional) I consent to being contacted by Defra or a third party about service improvements',
-            checked: false,
-            selected: false
-          }]
-        }) }}
-      {% endif %}
-
-      {% if declarationContent.warningText %}
-        {{ govukWarningText({
-            text: declarationContent.warningText,
-            iconFallbackText: 'Warning'
-          })
-        }}
-      {% endif %}
-
       {% block form %}
       <form method="post" novalidate>
         <input type="hidden" name="crumb" value="{{ crumb }}">
 
         {{ componentList(components) }}
 
+        {% if declarationContent.showOptionalConsent %}
+          {{ govukCheckboxes({
+            idPrefix: 'consentOptional',
+            name: 'consentOptional',
+            items: [{
+              value: 'CONSENT_OPTIONAL',
+              text: '(Optional) I consent to being contacted by Defra or a third party about service improvements',
+              checked: false,
+              selected: false
+            }]
+          }) }}
+        {% endif %}
+
+        {% if declarationContent.warningText %}
+          {{ govukWarningText({
+              text: declarationContent.warningText,
+              iconFallbackText: 'Warning'
+            })
+          }}
+        {% endif %}
+
         {# GAS wants us to send these as confirmation that the user has reached this page #}
         {% for name, value in declarationContent.hiddenFields %}
         <input type="hidden" id="{{ name }}" name="{{ name }}" value="{{ value }}">
         {% endfor %}
 
+        {# Namespaced deliberately: a bare `submitButtonText` would resolve to the
+           form-wide label from metadata.options, not this page's #}
         {{ govukButton({
-          text: declarationContent.buttonText,
+          text: declarationContent.submitButtonText,
           preventDoubleClick: true
         }) }}
       </form>

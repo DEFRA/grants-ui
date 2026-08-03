@@ -35,6 +35,7 @@ vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () =>
       constructor(model, pageDef) {
         this.model = model
         this.pageDef = pageDef
+        this.collection = { getViewErrors: vi.fn((errors) => errors) }
       }
 
       getSummaryViewModel(request, context) {
@@ -187,14 +188,6 @@ describe('DeclarationPageController', () => {
   })
 
   describe('getSummaryViewModel', () => {
-    test('should call parent getSummaryViewModel and add section title', () => {
-      const result = controller.getSummaryViewModel(mockRequest, mockContext)
-
-      expect(result.serviceUrl).toBe('/service')
-      expect(result.page.title).toBe('Summary')
-      expect(result.sectionTitle).toBe('Example Section')
-    })
-
     test('should include backLink when getTaskPageBackLink returns a value', () => {
       getTaskPageBackLink.mockReturnValue({ href: '/task-list', text: 'Back to task list' })
 
@@ -232,82 +225,34 @@ describe('DeclarationPageController', () => {
       expect(result.declarationContent).toEqual(UNCONFIGURED_DEFAULTS)
     })
 
-    test('should apply only the base defaults when the config block is empty', () => {
-      mockModel.def.metadata.pageConfig = { '/declaration': {} }
-      const emptyConfigController = new DeclarationPageController(mockModel, {
-        ...mockPageDef,
-        path: '/declaration'
-      })
+    const declarationContentFor = (pageConfig) => {
+      mockModel.def.metadata.pageConfig = pageConfig
+      const configuredController = new DeclarationPageController(mockModel, { ...mockPageDef, path: '/declaration' })
 
-      const result = emptyConfigController.getSummaryViewModel(mockRequest, mockContext)
+      return configuredController.getSummaryViewModel(mockRequest, mockContext).declarationContent
+    }
 
-      expect(result.declarationContent).toEqual({
-        heading: 'Confirm and send',
-        buttonText: 'Confirm and send'
-      })
-    })
+    const fullConfig = {
+      submitButtonText: 'Confirm and submit',
+      showSupportDetails: true,
+      hiddenFields: { guidanceRead: 'true' }
+    }
 
-    test('should build declarationContent from the page config block', () => {
-      mockModel.def.metadata.pageConfig = {
-        '/declaration': {
-          heading: 'Submit your application',
-          html: '<p class="govuk-body">Configured copy.</p>',
-          buttonText: 'Confirm and submit',
-          showSupportDetails: true,
-          hiddenFields: { guidanceRead: 'true' }
-        }
-      }
-      const configuredController = new DeclarationPageController(mockModel, {
-        ...mockPageDef,
-        path: '/declaration'
-      })
-
-      const result = configuredController.getSummaryViewModel(mockRequest, mockContext)
-
-      expect(result.declarationContent).toEqual({
-        heading: 'Submit your application',
-        html: '<p class="govuk-body">Configured copy.</p>',
-        buttonText: 'Confirm and submit',
-        showSupportDetails: true,
-        hiddenFields: { guidanceRead: 'true' }
-      })
-    })
-
-    test('should not apply the built-in copy defaults to a configured page', () => {
-      mockModel.def.metadata.pageConfig = {
-        '/declaration': { html: '<p class="govuk-body">Configured copy.</p>' }
-      }
-      const configuredController = new DeclarationPageController(mockModel, {
-        ...mockPageDef,
-        path: '/declaration'
-      })
-
-      const result = configuredController.getSummaryViewModel(mockRequest, mockContext)
-
-      expect(result.declarationContent).toEqual({
-        heading: 'Confirm and send',
-        buttonText: 'Confirm and send',
-        html: '<p class="govuk-body">Configured copy.</p>'
-      })
-      expect(result.declarationContent.useDefaultCopy).toBeUndefined()
-      expect(result.declarationContent.optionalConsent).toBeUndefined()
-      expect(result.declarationContent.warningText).toBeUndefined()
-      expect(result.declarationContent.showDataProtection).toBeUndefined()
-    })
-
-    test('should ignore config declared against a different page path', () => {
-      mockModel.def.metadata.pageConfig = {
-        '/some-other-page': { heading: 'Not this one' }
-      }
-      const otherPageController = new DeclarationPageController(mockModel, {
-        ...mockPageDef,
-        path: '/declaration'
-      })
-
-      const result = otherPageController.getSummaryViewModel(mockRequest, mockContext)
-
-      expect(result.declarationContent.heading).toBe('Confirm and send')
-      expect(result.declarationContent.useDefaultCopy).toBe(true)
+    test.each([
+      ['the config block is empty', { '/declaration': {} }, { submitButtonText: 'Confirm and send' }],
+      ['a full config block is declared', { '/declaration': fullConfig }, fullConfig],
+      [
+        'a config opts out of the built-in copy',
+        { '/declaration': { showSupportDetails: true } },
+        { submitButtonText: 'Confirm and send', showSupportDetails: true }
+      ],
+      [
+        'the config targets another page path',
+        { '/some-other-page': { submitButtonText: 'Not this one' } },
+        UNCONFIGURED_DEFAULTS
+      ]
+    ])('should resolve declarationContent when %s', (_description, pageConfig, expected) => {
+      expect(declarationContentFor(pageConfig)).toEqual(expected)
     })
 
     test('should expose the support email from form metadata', () => {
@@ -342,7 +287,7 @@ describe('DeclarationPageController', () => {
     })
 
     test('should preserve all parent view model properties', () => {
-      vi.spyOn(SummaryPageController.prototype, 'getSummaryViewModel').mockReturnValue({
+      vi.spyOn(SummaryPageController.prototype, 'getSummaryViewModel').mockReturnValueOnce({
         serviceUrl: '/service',
         page: { title: 'Summary' },
         otherProperty: 'value',
@@ -360,50 +305,23 @@ describe('DeclarationPageController', () => {
   })
 
   describe('getStatusPath', () => {
-    test('should call getConfirmationPath with correct parameters', () => {
-      controller.getStatusPath(mockRequest, mockContext)
-
-      expect(formSlugHelper.getConfirmationPath).toHaveBeenCalledWith(mockRequest, mockContext, 'DeclarationController')
-    })
-
-    test('should return the result from getConfirmationPath', () => {
+    test('should delegate to getConfirmationPath and return its result', () => {
       formSlugHelper.getConfirmationPath.mockReturnValueOnce('/test-slug/confirmation')
 
       const result = controller.getStatusPath(mockRequest, mockContext)
 
+      expect(formSlugHelper.getConfirmationPath).toHaveBeenCalledWith(mockRequest, mockContext, 'DeclarationController')
       expect(result).toBe('/test-slug/confirmation')
-    })
-
-    test('should handle missing request or context parameters', () => {
-      // Test with undefined request
-      controller.getStatusPath(undefined, mockContext)
-      expect(formSlugHelper.getConfirmationPath).toHaveBeenCalledWith(undefined, mockContext, 'DeclarationController')
-
-      // Test with undefined context
-      controller.getStatusPath(mockRequest, undefined)
-      expect(formSlugHelper.getConfirmationPath).toHaveBeenCalledWith(mockRequest, undefined, 'DeclarationController')
     })
   })
 
   describe('makeGetRouteHandler', () => {
-    test('should return a function that wraps the parent handler', () => {
-      const handler = controller.makeGetRouteHandler()
-      expect(typeof handler).toBe('function')
-      expect(SummaryPageController.prototype.makeGetRouteHandler).toHaveBeenCalled()
-    })
-
-    test('should store slug in context before calling parent handler', async () => {
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(formSlugHelper.storeSlugInContext).toHaveBeenCalledWith(mockRequest, mockContext, 'DeclarationController')
-      expect(parentGetHandler).toHaveBeenCalledWith(mockRequest, mockContext, mockH)
-    })
-
-    test('should return the result from the parent handler', async () => {
+    test('should store the slug in context, then delegate to the parent handler', async () => {
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
+      expect(formSlugHelper.storeSlugInContext).toHaveBeenCalledWith(mockRequest, mockContext, 'DeclarationController')
+      expect(parentGetHandler).toHaveBeenCalledWith(mockRequest, mockContext, mockH)
       expect(result).toBe('parent handler response')
     })
 
@@ -465,6 +383,32 @@ describe('DeclarationPageController', () => {
         },
         mockRequest
       )
+      expect(mockH.redirect).toHaveBeenCalledWith('/example-grant-with-auth/confirmation')
+    })
+
+    test('should re-render with errors and not submit when a page component fails validation', async () => {
+      const errors = [{ href: '#agree', text: 'Select to confirm you agree to the declaration' }]
+      const handler = controller.makePostRouteHandler()
+
+      const result = await handler(mockRequest, { ...mockContext, errors }, mockH)
+
+      expect(controller.collection.getViewErrors).toHaveBeenCalledWith(errors)
+      expect(submitGrantApplication).not.toHaveBeenCalled()
+      expect(mockH.redirect).not.toHaveBeenCalled()
+      expect(mockH.view).toHaveBeenCalledWith(
+        'declaration-page.html',
+        expect.objectContaining({ serviceUrl: '/service', errors })
+      )
+      expect(result).toBe('rendered view')
+    })
+
+    test('should submit when the context errors belong to other pages', async () => {
+      controller.collection.getViewErrors.mockReturnValue([])
+      const handler = controller.makePostRouteHandler()
+
+      await handler(mockRequest, { ...mockContext, errors: [{ href: '#other', text: 'Enter a value' }] }, mockH)
+
+      expect(submitGrantApplication).toHaveBeenCalled()
       expect(mockH.redirect).toHaveBeenCalledWith('/example-grant-with-auth/confirmation')
     })
 
@@ -665,6 +609,20 @@ describe('DeclarationPageController', () => {
       expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
         expect.objectContaining({ frn }),
         expect.anything(),
+        expect.any(Function),
+        '1.1.1'
+      )
+    })
+
+    test('should exclude the presentational consent checkbox from the GAS payload', () => {
+      controller.buildApplicationData(mockRequest, {
+        ...mockContext,
+        payload: { action: 'send', consentOptional: 'CONSENT_OPTIONAL', guidanceRead: 'true' }
+      })
+
+      expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
+        expect.anything(),
+        { referenceNumber: 'REF123', field1: 'value1', guidanceRead: true },
         expect.any(Function),
         '1.1.1'
       )

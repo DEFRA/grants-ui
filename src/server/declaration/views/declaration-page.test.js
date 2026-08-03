@@ -13,22 +13,24 @@ const renderWoodland = createPageRenderer(import.meta.url, 'woodland-declaration
 
 /** The copy a page opts in to once it declares any `config:` block */
 const configured = {
-  heading: 'Submit your application',
-  buttonText: 'Confirm and submit',
-  html: '<p class="govuk-body">Configured copy.</p>'
+  submitButtonText: 'Confirm and submit'
 }
+
+const htmlComponent = (content) => [{ type: 'Html', model: { content } }]
 
 /** The woodland `config:` block as published to the config repo */
 const woodlandConfig = {
-  heading: 'Submit your application',
-  buttonText: 'Confirm and submit',
+  submitButtonText: 'Confirm and submit',
   showSupportDetails: true,
   hiddenFields: {
     guidanceRead: 'true',
     includedAllEligibleWoodland: 'true',
     applicationConfirmation: 'true'
-  },
-  html: [
+  }
+}
+
+const woodlandComponents = htmlComponent(
+  [
     '<p class="govuk-body">By submitting your application, you confirm that:</p>',
     '<ul class="govuk-list govuk-list--bullet">',
     '<li>the information you have provided is correct to the best of your knowledge</li>',
@@ -38,7 +40,7 @@ const woodlandConfig = {
     '<li>you agree to disclose all information relevant to this application, provide any additional information as may be required by the RPA, field officers or auditors and co-operate with or take part in any economic, environmental or other monitoring and evaluation of the scheme (including any research and development studies) conducted by RPA or the FC or by anyone appointed by either of them for that purpose</li>',
     '</ul>'
   ].join('\n')
-}
+)
 
 const mainText = ($) => $('main').text().replace(/\s+/g, ' ').trim()
 const links = ($) =>
@@ -71,12 +73,13 @@ describe('declaration-page.html view', () => {
   })
 
   describe('configured pages', () => {
-    it('should render the configured heading, body copy and button text', () => {
+    it('should render the page title as the heading, the components as body copy, and the configured button text', () => {
       const $ = renderPage({
-        declarationContent: {
-          ...configured,
-          html: '<p class="govuk-body">By submitting your application, you confirm that:</p><ul class="govuk-list govuk-list--bullet"><li>the information you have provided is correct</li><li>you have read the <a class="govuk-link" href="https://example.com/guidance" target="_blank">PA3 guidance (opens in new tab)</a> and agree to the <a class="govuk-link" href="https://example.com/terms" target="_blank">terms and conditions (opens in new tab)</a></li></ul>'
-        }
+        pageTitle: 'Submit your application',
+        components: htmlComponent(
+          '<p class="govuk-body">By submitting your application, you confirm that:</p><ul class="govuk-list govuk-list--bullet"><li>the information you have provided is correct</li><li>you have read the <a class="govuk-link" href="https://example.com/guidance" target="_blank">PA3 guidance (opens in new tab)</a> and agree to the <a class="govuk-link" href="https://example.com/terms" target="_blank">terms and conditions (opens in new tab)</a></li></ul>'
+        ),
+        declarationContent: configured
       })
 
       expect($('main h1').text().trim()).toBe('Submit your application')
@@ -88,6 +91,20 @@ describe('declaration-page.html view', () => {
           .get()
       ).toEqual(['https://example.com/guidance', 'https://example.com/terms'])
       expect($('main button').text().trim()).toBe('Confirm and submit')
+    })
+
+    it('should use the page submit button text, not the form-wide one', () => {
+      // `metadata.options.submitButtonText` is injected as a top-level global into every
+      // authenticated render (src/config/nunjucks/context/context.js). Woodland sets it to
+      // 'Save and continue'. The page's own label must win, which it only does while the
+      // template reads it namespaced as `declarationContent.submitButtonText`.
+      const $ = renderPage({
+        submitButtonText: 'Save and continue',
+        declarationContent: configured
+      })
+
+      expect($('main button').text().trim()).toBe('Confirm and submit')
+      expect(mainText($)).not.toContain('Save and continue')
     })
 
     it('should omit the built-in copy, consent checkbox, warning and data protection footer by default', () => {
@@ -120,38 +137,62 @@ describe('declaration-page.html view', () => {
       expect(mainText($)).toContain('ruralpayments@defra.gov.uk')
     })
 
-    it('should render an opted-in warning and consent checkbox', () => {
+    it('should render opted-in consent, warning and footer, with components above them inside the form', () => {
       const $ = renderPage({
+        components: htmlComponent('<p class="govuk-body" id="component-copy">Component copy.</p>'),
         declarationContent: {
           ...configured,
           warningText: 'You can only submit once.',
-          optionalConsent: true,
+          showOptionalConsent: true,
           showDataProtection: true
         }
       })
 
+      const form = $('main form')
+      expect(form.find('#component-copy')).toHaveLength(1)
+      expect(form.find('input[name="consentOptional"]')).toHaveLength(1)
       expect($('main .govuk-warning-text__text').text()).toContain('You can only submit once.')
-      expect($('main input[name="consentOptional"]')).toHaveLength(1)
       expect(mainText($)).toContain('is the data controller for personal data you give to RPA')
+
+      const text = form.text().replace(/\s+/g, ' ')
+      expect(text.indexOf('Component copy.')).toBeLessThan(text.indexOf('(Optional) I consent'))
+      expect(text.indexOf('(Optional) I consent')).toBeLessThan(text.indexOf('You can only submit once.'))
     })
 
-    it('should escape the section title but not the configured HTML', () => {
+    it('should escape the section title but not the component HTML', () => {
       const $ = renderPage({
         sectionTitle: 'Check & submit',
-        declarationContent: { ...configured, html: '<p class="govuk-body">Trusted <strong>markup</strong>.</p>' }
+        components: htmlComponent('<p class="govuk-body">Trusted <strong>markup</strong>.</p>'),
+        declarationContent: configured
       })
 
       expect($('main #section-title').text().trim()).toBe('Check & submit')
       expect($('main p strong').text()).toBe('markup')
     })
 
-    it('should render any components the page declares', () => {
+    it('should render an error summary when a component fails validation', () => {
       const $ = renderPage({
-        components: [{ type: 'Html', model: { content: '<p class="govuk-body">Component copy.</p>' } }],
-        declarationContent: configured
+        declarationContent: configured,
+        errors: [{ href: '#agree', text: 'Select to confirm you agree to the declaration' }]
       })
 
+      expect($('main .govuk-error-summary__title').text().trim()).toBe('There is a problem')
+      expect($('main .govuk-error-summary a').attr('href')).toBe('#agree')
+      expect($('main .govuk-error-summary a').text().trim()).toBe('Select to confirm you agree to the declaration')
+
+      // the user must be able to correct and resubmit
+      expect($('main form')).toHaveLength(1)
+      expect($('main button').text().trim()).toBe('Confirm and submit')
+    })
+  })
+
+  describe('part-migrated pages', () => {
+    it('should render components alongside the built-in copy when the page has no config block', () => {
+      const $ = renderPage({ components: htmlComponent('<p class="govuk-body">Component copy.</p>') })
+
+      expect(mainText($)).toContain('Improving our schemes')
       expect(mainText($)).toContain('Component copy.')
+      expect($('main input[name="consentOptional"]')).toHaveLength(1)
     })
   })
 
@@ -165,7 +206,11 @@ describe('declaration-page.html view', () => {
 
     it('should reproduce the woodland declaration page from configuration alone', () => {
       const bespoke = renderWoodland(viewModel)
-      const unified = renderPage({ ...viewModel, declarationContent: woodlandConfig })
+      const unified = renderPage({
+        ...viewModel,
+        components: woodlandComponents,
+        declarationContent: woodlandConfig
+      })
 
       expect(mainText(unified)).toBe(mainText(bespoke))
       expect(links(unified)).toEqual(links(bespoke))

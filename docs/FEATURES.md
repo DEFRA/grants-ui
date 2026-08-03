@@ -186,31 +186,35 @@ The service supports several specialized page types for different stages of the 
   - Form submission to GAS
   - Application status management
 - **Controller**: `DeclarationPageController`
-- **Configuration**: all copy comes from the page's `config:` block, hoisted onto `metadata.pageConfig[path]`:
+- **Configuration**: the heading is the page `title` and the body copy is the page's standard `components:`, exactly as on any other page. The remaining, page-specific switches come from the page's `config:` block, hoisted onto `metadata.pageConfig[path]`:
 
   ```yaml
-  - title: Submit your application
+  - title: Submit your application # rendered as the page heading
     path: /declaration
     controller: DeclarationPageController
+    components:
+      - id: 8f1f2d3c-6f4a-4a6f-9a1e-1c2b3d4e5f60
+        type: Html
+        content: |
+          <p class="govuk-body">By submitting your application, you confirm that:</p>
+          <ul class="govuk-list govuk-list--bullet">
+            <li>the information you have provided is correct</li>
+          </ul>
     config:
-      heading: Submit your application # default: "Confirm and send"
-      html: | # body copy, rendered unescaped
-        <p class="govuk-body">By submitting your application, you confirm that:</p>
-        <ul class="govuk-list govuk-list--bullet">
-          <li>the information you have provided is correct</li>
-        </ul>
-      buttonText: Confirm and submit # default: "Confirm and send"
+      submitButtonText: Confirm and submit # default: "Confirm and send"
       warningText: You can only submit your details once. # omit to hide
-      optionalConsent: true # optional contact-consent checkbox
+      showOptionalConsent: true # optional contact-consent checkbox
       showDataProtection: true # Defra data controller footer
       showSupportDetails: true # RPA support panel, email from metadata.supportEmail
       hiddenFields: # posted with the form, not part of the state schema
         guidanceRead: 'true'
   ```
 
-  A page that declares any `config:` opts in to each block explicitly — only what it declares is rendered. A page with no `config:` falls back to the original built-in copy (heading, declaration paragraphs, consent checkbox, warning and data protection footer).
+  Any component type the engine supports can be used, not just `Html` — an `InsetText`, or a required `CheckboxesField` for an "I agree…" declaration. Components render inside the form and are validated on POST, so a required field blocks submission and renders an error summary.
 
-  `html` is rendered unescaped, so it is trusted content from the config repo — the same posture as `paymentExplanation` and `confirmationContent.html`.
+  A page that declares any `config:` opts in to each block explicitly — only what it declares is rendered. A page with no `config:` falls back to the original built-in copy (declaration paragraphs, consent checkbox, warning and data protection footer).
+
+  `config.submitButtonText` sets this page's button only. It is separate from the form-wide `metadata.options.submitButtonText` documented below, which the declaration page deliberately ignores.
 
 - **Example**: [Example Grant – Declaration page (/declaration)](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml)
 

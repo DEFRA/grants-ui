@@ -90,10 +90,11 @@ export function createPageRenderer(callerMetaUrl, template, defaults = {}, extra
 
   configureNunjucksEnv(env)
 
-  // The engine plugin supplies these at runtime; both are identity functions
+  // The engine plugin supplies these at runtime; all are identity functions
   // outside a form context, which is what these tests render in.
   env.addFilter('evaluate', (value) => value)
   env.addGlobal('checkComponentTemplates', (component) => component)
+  env.addGlobal('checkErrorTemplates', (errors) => errors)
 
   return (viewModel = {}) =>
     load(
