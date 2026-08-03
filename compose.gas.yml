@@ -9,7 +9,7 @@ services:
 
   floci:
     volumes:
-      - ./compose/floci/gas/start-floci-gas.sh:/etc/floci/init/start.d/20-gas.sh:ro
+      - ./compose/floci/gas/20-gas.sh:/etc/floci/init/start.d/20-gas.sh:ro
 
   mongo-ready:
     environment:
