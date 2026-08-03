@@ -109,6 +109,30 @@ function getRequirementText(consentKeys) {
 }
 
 /**
+ * Builds the checkbox hint text: payment rate, consent requirement, and -
+ * for a non-quantity action only - its own availability. A quantity action's
+ * availability hint lives inside its conditional panel instead (see
+ * quantity-input/template.njk), kept in sync live by the client.
+ * @param {Action} action
+ * @param {boolean} needsQuantity
+ * @returns {string}
+ */
+function getHintHtml(action, needsQuantity) {
+  const consents = getActionConsentKeys(action)
+  const requirementText = getRequirementText(consents)
+  const agreementRateText = action.ratePerAgreementPerYearGbp
+    ? ` and <strong>£${action.ratePerAgreementPerYearGbp}</strong> per agreement`
+    : ''
+  const requirementLineText = requirementText ? `<br>${requirementText}` : ''
+  const rateText = `Payment rate per year: £${action.ratePerUnitGbp?.toFixed(2)}/ha${agreementRateText}${requirementLineText}`
+  const availabilityHintHtml =
+    !needsQuantity && action.availableArea
+      ? `<br><span id="${getActionQuantityFieldName(action.code)}-hint">${action.availableArea.value} ${formatAreaUnit(action.availableArea.unit)} available</span>`
+      : ''
+  return `${rateText}${availabilityHintHtml}`
+}
+
+/**
  * Maps a single action to a checkbox item view model
  * @param {Action} action - The action to map
  * @param {Array<{code: string, description: string, value?: string}>} addedActions - Actions already added to the parcel
@@ -127,27 +151,15 @@ export function mapActionToViewModel(
   const existingAction = addedActions.find((a) => a.code === action.code)
   const quantityValue = existingAction?.value ?? ''
   const checked = Boolean(existingAction)
-  const consents = getActionConsentKeys(action)
-  const requirementText = getRequirementText(consents)
-  const agreementRateText = action.ratePerAgreementPerYearGbp
-    ? ` and <strong>£${action.ratePerAgreementPerYearGbp}</strong> per agreement`
-    : ''
-  const requirementLineText = requirementText ? `<br>${requirementText}` : ''
-  const hintText = `Payment rate per year: £${action.ratePerUnitGbp?.toFixed(2)}/ha${agreementRateText}${requirementLineText}`
   const availableAreaType = action.metadata?.available_area_type
   const needsQuantity = requiresQuantityInput(availableAreaType)
-  // A quantity action's own availability hint lives inside its conditional
-  // panel instead (see quantity-input/template.njk) - this is only for the
-  // non-quantity case, kept in sync live by the client.
-  const availabilityHintHtml =
-    !needsQuantity && action.availableArea
-      ? `<br><span id="${getActionQuantityFieldName(action.code)}-hint">${action.availableArea.value} ${formatAreaUnit(action.availableArea.unit)} available</span>`
-      : ''
+  const hintHtml = getHintHtml(action, needsQuantity)
+  const consents = getActionConsentKeys(action)
 
   return {
     id: getCheckboxItemId(action.code, isFirst),
     value: action.code,
-    html: `${getActionLabelHtml(action.description, action.metadata?.guidance_link)}<span class="select-actions-hint">${hintText}${availabilityHintHtml}</span>`,
+    html: `${getActionLabelHtml(action.description, action.metadata?.guidance_link)}<span class="select-actions-hint">${hintHtml}</span>`,
     checked,
     consents,
     attributes: {
