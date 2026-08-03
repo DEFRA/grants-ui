@@ -18,7 +18,7 @@
 
 <div class="govuk-body">
   <div class="govuk-grid-row">
-    <div class="govuk-grid-column-two-thirds">
+    <div class="{{ gridColumnClass(page) }}">
       <h1 class="govuk-heading-l">Score results</h1>
       <p class="govuk-body">Based on your answers, your project's score is:</p>
       {{ govukInsetText({

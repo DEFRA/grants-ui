@@ -7,12 +7,24 @@ ignore:
         expires: '2026-08-30'
   'SNYK-JS-IMAGESIZE-17295814':
     - '*':
-        reason: 'Build-time only — vulnerable path is docusaurus mdx-loader in @defra/interactive-map docs, never loaded by grants-ui runtime. No upstream fix available.'
-        expires: '2026-08-01'
+        reason: 'Build-time only - vulnerable path is docusaurus mdx-loader in @defra/interactive-map docs (@defra/forms-engine-plugin > @defra/interactive-map > @docusaurus/theme-common > @docusaurus/mdx-loader > image-size), never loaded by grants-ui runtime. Re-checked 2026-08-03: image-size latest is still 2.0.2, no upstream fix or patch available. Remove once @defra/interactive-map drops the docusaurus toolchain or image-size ships a fix.'
+        expires: '2026-09-03'
   'SNYK-JS-IMAGESIZE-17295816':
     - '*':
-        reason: 'Build-time only — vulnerable path is docusaurus mdx-loader in @defra/interactive-map docs, never loaded by grants-ui runtime. No upstream fix available.'
-        expires: '2026-08-01'
+        reason: 'Build-time only - vulnerable path is docusaurus mdx-loader in @defra/interactive-map docs (@defra/forms-engine-plugin > @defra/interactive-map > @docusaurus/theme-common > @docusaurus/mdx-loader > image-size), never loaded by grants-ui runtime. Re-checked 2026-08-03: image-size latest is still 2.0.2, no upstream fix or patch available. Remove once @defra/interactive-map drops the docusaurus toolchain or image-size ships a fix.'
+        expires: '2026-09-03'
+  'SNYK-JS-NANOID-18506894':
+    - '*':
+        reason: 'Build-time only - nanoid@3.3.15 via postcss@8.5.19 (webpack CSS toolchain: autoprefixer/cssnano and the @docusaurus/cssnano-preset path under @defra/interactive-map docs), executed only during asset build, never shipped or run at grants-ui runtime. The runtime nanoid (via @defra/forms-engine-plugin > @defra/forms-model) is already 5.1.16 (fixed). Fix exists only in the 5.x line (5.1.16), which is an ESM-only breaking major, and postcss@8 pins nanoid to ^3.3.12 - an override to 5.x would break postcss. No 3.x fix available. Remove once postcss ships a nanoid-5 compatible release or the docusaurus/postcss toolchain is dropped.'
+        expires: '2026-09-03'
+  'SNYK-JS-NANOID-18506897':
+    - '*':
+        reason: 'Build-time only - nanoid@3.3.15 via postcss@8.5.19 (webpack CSS toolchain: autoprefixer/cssnano and the @docusaurus/cssnano-preset path under @defra/interactive-map docs), executed only during asset build, never shipped or run at grants-ui runtime. The runtime nanoid (via @defra/forms-engine-plugin > @defra/forms-model) is already 5.1.16 (fixed). Fix exists only in the 5.x line (5.1.16), which is an ESM-only breaking major, and postcss@8 pins nanoid to ^3.3.12 - an override to 5.x would break postcss. No 3.x fix available. Remove once postcss ships a nanoid-5 compatible release or the docusaurus/postcss toolchain is dropped.'
+        expires: '2026-09-03'
+  'SNYK-JS-FASTURI-18506908':
+    - '*':
+        reason: 'Build-time/dev-only - fast-uri@3.1.4 is only pulled in via ajv in webpack build tooling (copy-webpack-plugin > schema-utils > ajv, plus the docusaurus/webpack toolchain under @defra/interactive-map docs) and @stryker-mutator test tooling; it is not reachable at grants-ui runtime. Currently pinned to 3.1.4 by the root fast-uri override. Fixed in 3.1.5; interim ignore while the override bump is blocked by .npmrc min-release-age=7 (3.1.5 published 2026-07-31, installable from 2026-08-07). Bump the fast-uri override to 3.1.5 and remove this entry once it clears the cooldown.'
+        expires: '2026-08-14'
   'SNYK-JS-JSYAML-17342520':
     - '*':
         reason: 'Build-time only — remaining vulnerable copy is js-yaml@3.15.0 under gray-matter via the docusaurus mdx-loader toolchain in @defra/interactive-map docs, never loaded by grants-ui runtime. Fix exists only in the 4.x line (4.2.0+; 4.x copies already pinned to 4.3.0 via overrides) and gray-matter cannot take js-yaml 4.x — it calls the removed safeLoad API. Remove once @defra/interactive-map drops the docusaurus toolchain from its runtime dependencies or gray-matter supports js-yaml 4.'

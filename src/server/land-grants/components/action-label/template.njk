@@ -1,0 +1,8 @@
+{#
+  Checkbox label for a land action: the description, followed by an optional
+  "read guidance" link when a guidance URL is available. Rendered through
+  Nunjucks (autoescape on) so description and guidanceUrl are escaped rather
+  than concatenated into raw HTML.
+#}
+{{- description -}}
+{%- if guidanceUrl %} - <a href="{{ guidanceUrl }}" class="govuk-link" rel="noopener noreferrer" target="_blank">read guidance</a>{% endif -%}

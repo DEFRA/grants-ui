@@ -42,6 +42,7 @@ import ConsentPageController from '~/src/server/land-grants/controllers/consent-
 import RemoveActionPageController from '~/src/server/land-grants/controllers/remove-action-page.controller.js'
 import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-might-fly/controllers/potential-funding.controller.js'
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
+import { gridColumnClass } from '../config/nunjucks/grid-column.js'
 import { StatePersistenceService } from './common/services/state-persistence/state-persistence.service.js'
 import { router } from './router.js'
 import allowlist from '~/src/server/common/helpers/allowlist/allowlist.js'
@@ -125,6 +126,9 @@ const registerFormsPlugin = async (server, prefix = '') => {
       },
       filters: {
         formatCurrency
+      },
+      globals: {
+        gridColumnClass
       },
       nunjucks: {
         baseLayoutPath: 'layouts/dxt-form.njk',

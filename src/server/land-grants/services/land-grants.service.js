@@ -17,12 +17,20 @@ import {
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
 import {
   getCachedParcel,
-  setCachedParcel,
   getCachedSbiParcels,
+  setCachedParcel,
   setCachedSbiParcels
 } from '~/src/server/land-grants/services/parcel-cache.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
+
+// TODO - Hard-coded guidance URLs, keyed by action code, until land-grants-api
+// returns a guidanceUrl per action. Add a line per code that needs guidance, and
+// remove this map (and the guidanceUrl mapping in mapAction) once the API provides it.
+const GUIDANCE_URLS_BY_CODE = {
+  CLIG3: 'https://www.gov.uk/find-funding-for-land-or-farms/clig3-manage-grassland-with-very-low-nutrient-inputs',
+  CSAM3: 'https://www.gov.uk/find-funding-for-land-or-farms/csam3-herbal-leys'
+}
 
 /**
  * @param {unknown} enabledLandActions

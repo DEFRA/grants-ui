@@ -8,7 +8,7 @@
 {% block content %}
   <div class="govuk-body">
     <div class="govuk-grid-row">
-      <div class="govuk-grid-column-two-thirds-from-desktop">
+      <div class="{{ gridColumnClass(page, 'govuk-grid-column-three-quarters-from-desktop') }}">
 
         {% if errors.length > 0 %}
           {{ govukErrorSummary({
@@ -17,6 +17,11 @@
         }) }}
         {% endif %}
 
+        {% if sectionTitle and sectionTitle.length and (sectionTitle !== pageTitle) %}
+        <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">
+          {{- sectionTitle -}}
+        </h2>
+        {% endif %}
         <h1 class="govuk-heading-l">
           Select actions for this land parcel
         </h1>
@@ -54,7 +59,7 @@
 
             <div class="govuk-button-group">
               {{ govukButton({
-                text: "Continue",
+                text: submitButtonText or "Continue",
                 preventDoubleClick: true
               }) }}
             </div>

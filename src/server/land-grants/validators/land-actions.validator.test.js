@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
   extractLandActionFields,
   validateLandActionsSelection,
@@ -67,7 +67,7 @@ describe('land-actions.validator', () => {
 
       const result = validateLandActionsSelection(payload, 'landAction_')
 
-      expect(result).toEqual([{ text: 'Select an action to do on this land parcel', href: '#landAction_1' }])
+      expect(result).toEqual([{ text: 'Select at least one action', href: '#landAction_1' }])
     })
 
     it('should return errors when payload has no action fields', () => {
@@ -75,7 +75,7 @@ describe('land-actions.validator', () => {
 
       const result = validateLandActionsSelection(payload, 'landAction_')
 
-      expect(result).toEqual([{ text: 'Select an action to do on this land parcel', href: '#landAction_1' }])
+      expect(result).toEqual([{ text: 'Select at least one action', href: '#landAction_1' }])
     })
 
     it('should return empty errors when actions are selected', () => {
@@ -115,7 +115,7 @@ describe('land-actions.validator', () => {
 
       const result = validateLandActionsSelection(payload, 'landAction_')
 
-      expect(result).toEqual([{ text: 'Select an action to do on this land parcel', href: '#landAction_1' }])
+      expect(result).toEqual([{ text: 'Select at least one action', href: '#landAction_1' }])
     })
   })
 
@@ -123,7 +123,7 @@ describe('land-actions.validator', () => {
     it('should return an error when no action is selected', () => {
       const result = validateSelectedActions({})
 
-      expect(result).toEqual([{ text: 'Select an action to do on this land parcel', href: '#landAction' }])
+      expect(result).toEqual([{ text: 'Select at least one action', href: '#landAction' }])
     })
 
     it('should return no errors when a single action is selected (payload value is a string)', () => {
@@ -141,7 +141,7 @@ describe('land-actions.validator', () => {
     it('should return an error when the field is present but empty', () => {
       const result = validateSelectedActions({ landAction: '' })
 
-      expect(result).toEqual([{ text: 'Select an action to do on this land parcel', href: '#landAction' }])
+      expect(result).toEqual([{ text: 'Select at least one action', href: '#landAction' }])
     })
   })
 

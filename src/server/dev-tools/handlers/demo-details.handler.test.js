@@ -1,9 +1,9 @@
 import { vi } from 'vitest'
 import {
+  buildIncorrectDetailsViewModel,
+  buildViewModel,
   demoDetailsHandler,
   demoDetailsPostHandler,
-  buildViewModel,
-  buildIncorrectDetailsViewModel,
   generateFallbackViewModel,
   loadDisplaySectionsConfig
 } from './demo-details.handler.js'
@@ -312,7 +312,7 @@ describe('demo-details.handler', () => {
         expect.objectContaining({
           errors: [
             {
-              text: 'Select yes if your details are correct',
+              text: 'Select if these details are correct',
               href: '#detailsCorrect'
             }
           ]

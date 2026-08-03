@@ -4,7 +4,7 @@
 
 {% block content %}
   <div class="govuk-grid-row">
-    <div class="govuk-grid-column-two-thirds">
+    <div class="{{ gridColumnClass(page) }}">
       <h1 class="govuk-heading-l">{{heading}}</h1>
       {% if message %}
         <p class="govuk-body">{{message}}</p>

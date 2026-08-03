@@ -138,4 +138,78 @@ describe('serviceRootRedirect', () => {
     expect(result).toBe(h.continue)
     expect(h.redirect).not.toHaveBeenCalled()
   })
+
+  describe('pre-submission requirement gate', () => {
+    beforeEach(() => {
+      request.params.slug = 'grasslands'
+      request.app.model.def.metadata.grantRedirectRules.preSubmission = [
+        {
+          toPath: '/summary',
+          requiresAnyItemWithNonEmptyKey: { collection: 'landParcels', key: 'actionsObj' },
+          incompleteToPath: '/select-land-parcel'
+        }
+      ]
+    })
+
+    it('redirects to the check-answers page when at least one parcel has actions', async () => {
+      getState.mockResolvedValue({
+        applicationStatus: 'CLEARED',
+        landParcels: { 'SD1234-5678': { size: 1, actionsObj: { CSAM3: { value: '1', unit: 'ha' } } } }
+      })
+
+      const result = await serviceRootRedirect(request, h)
+
+      expect(h.redirect).toHaveBeenCalledWith('/grasslands/summary')
+      expect(result).not.toBe(h.continue)
+    })
+
+    it('redirects a returning applicant with a selected parcel but no actions to the select-land-parcel page', async () => {
+      getState.mockResolvedValue({
+        applicationStatus: 'CLEARED',
+        selectedParcelId: 'SD1234-5678',
+        selectedParcelIds: ['SD1234-5678'],
+        selectedParcelsDisplay: 'SD1234-5678',
+        landParcels: {}
+      })
+
+      const result = await serviceRootRedirect(request, h)
+
+      expect(h.redirect).toHaveBeenCalledWith('/grasslands/select-land-parcel')
+      expect(result).not.toBe(h.continue)
+    })
+
+    it('redirects to the check-answers page when at least one of several parcels has actions', async () => {
+      getState.mockResolvedValue({
+        applicationStatus: 'CLEARED',
+        landParcels: {
+          'SD1234-5678': { size: 1, actionsObj: { CSAM3: { value: '1', unit: 'ha' } } },
+          'SD1234-9999': { size: 1, actionsObj: {} }
+        }
+      })
+
+      const result = await serviceRootRedirect(request, h)
+
+      expect(h.redirect).toHaveBeenCalledWith('/grasslands/summary')
+      expect(result).not.toBe(h.continue)
+    })
+
+    it('continues when the gate is unmet and no incompleteToPath is configured', async () => {
+      request.app.model.def.metadata.grantRedirectRules.preSubmission = [
+        {
+          toPath: '/summary',
+          requiresAnyItemWithNonEmptyKey: { collection: 'landParcels', key: 'actionsObj' }
+        }
+      ]
+      getState.mockResolvedValue({
+        applicationStatus: 'CLEARED',
+        selectedParcelId: 'SD1234-5678',
+        landParcels: {}
+      })
+
+      const result = await serviceRootRedirect(request, h)
+
+      expect(result).toBe(h.continue)
+      expect(h.redirect).not.toHaveBeenCalled()
+    })
+  })
 })

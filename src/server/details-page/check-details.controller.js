@@ -9,6 +9,7 @@ import { debug, log, LogCodes } from '../common/helpers/logging/log.js'
 import { mergeAdditionalAnswers } from '../common/helpers/state/additional-answers-helper.js'
 import { ComponentType, ControllerType } from '@defra/forms-model'
 import { config } from '~/src/config/config.js'
+import { withTaskContext } from '../task-list/task-list.helper.js'
 
 const ERROR_TITLE = 'There is a problem'
 const UPDATE_DETAILS_PATH = '/update-details'
@@ -72,9 +73,11 @@ export class UpdateDetailsPageController extends TerminalPageController {
 
       const metadata = /** @type {Record<string, unknown>} */ (this.model.def.metadata ?? {})
       const sfdUpdateUrl = this.getSfdUpdateUrl(request)
+      const sectionTitle = this.section?.hideTitle !== true ? this.section?.title : ''
 
       return h.view('incorrect-details', {
         pageTitle: 'Update your details',
+        sectionTitle,
         serviceName: this.model.def.name,
         serviceUrl: `/${slug}`,
         backLink: sfdUpdateUrl ? null : { href: `/${slug}/check-details` },
@@ -91,7 +94,7 @@ export class UpdateDetailsPageController extends TerminalPageController {
  * Uses metadata.detailsPage configuration to dynamically build
  * GraphQL queries, map responses, and display sections.
  */
-export default class CheckDetailsController extends QuestionPageController {
+export default class CheckDetailsController extends withTaskContext(QuestionPageController) {
   viewName = 'check-details'
   confirmationFieldName
   isSfdEnabled
@@ -147,7 +150,7 @@ export default class CheckDetailsController extends QuestionPageController {
           options: {
             required: true,
             customValidationMessages: {
-              'any.required': 'Select yes if your details are correct'
+              'any.required': 'Select if these details are correct'
             }
           }
         }
@@ -176,7 +179,7 @@ export default class CheckDetailsController extends QuestionPageController {
    * microtask has not yet fired (e.g. in tests or unusual execution environments).
    */
   ensureUpdateDetailsPage() {
-    const { model, confirmationFieldName } = this
+    const { model, pageDef, confirmationFieldName } = this
 
     if (!model.pages?.length) {
       log(LogCodes.SYSTEM.PAGES_NOT_INITIALISED, { grantCode: model.def.metadata?.grantCode })
@@ -202,6 +205,7 @@ export default class CheckDetailsController extends QuestionPageController {
       const updateDetailsPageDef = {
         title: 'Update your details',
         path: UPDATE_DETAILS_PATH,
+        section: pageDef.section,
         controller: ControllerType.Terminal,
         condition: conditionName,
         components: []

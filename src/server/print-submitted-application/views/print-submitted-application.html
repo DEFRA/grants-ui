@@ -8,7 +8,7 @@
 {% set mainClasses = "govuk-main-wrapper--l" %}
 
 {% block content %}
-  {% call appTwoThirdsColumn() %}
+  {% call appTwoThirdsColumn({ columnClass: gridColumnClass(page) }) %}
     <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
     <p class="govuk-body">Application number: <strong>{{ referenceNumber }}</strong></p>
 

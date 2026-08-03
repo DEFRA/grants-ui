@@ -27,11 +27,19 @@ const POST_SUBMISSION_PAGE_STATE_GUARDS = [
 ]
 
 /**
+ * @typedef {Object} PreSubmissionRequirement
+ * @property {string} collection - Dot-delimited state key holding the collection to inspect (e.g. 'landParcels'). The collection may be an array of items or an object keyed by id.
+ * @property {string} key - Property each item must populate with a non-empty object/array to count as complete (e.g. 'actionsObj').
+ */
+
+/**
  * @typedef {Object} RedirectRule
  * @property {string} fromGrantsStatus - Grants UI status or comma-separated statuses or 'default'
  * @property {string} gasStatus - GAS status or 'default'
  * @property {string} toGrantsStatus - Grants UI status to update to
  * @property {string} toPath - URL path to redirect the user to
+ * @property {PreSubmissionRequirement} [requiresAnyItemWithNonEmptyKey] - Pre-submission gate: only redirect to `toPath` when at least one item in the configured collection has a non-empty value at the configured key; otherwise use `incompleteToPath`.
+ * @property {string} [incompleteToPath] - Pre-submission fallback destination used when `requiresAnyItemWithNonEmptyKey` is not satisfied. When omitted the pipeline continues without redirecting.
  */
 
 /**
@@ -134,23 +142,49 @@ async function persistStatus(request, newStatus, previousStatus, grantId, existi
 
 /**
  * Determines if the state contains any meaningful values other than the base keys.
+ *
+ * This is a generic, grant-agnostic check. Callers that need to ignore
+ * additional keys (for example the land-grants residual-state workaround used
+ * by the pre-submission redirect) can pass them via `additionalBaseKeys`.
+ *
  * @param {FormSubmissionState} state - The state object to check
+ * @param {Set<string>} [additionalBaseKeys] - Extra keys to treat as non-meaningful
  * @returns {boolean} - True if state contains meaningful values, otherwise false
  */
-export function hasMeaningfulState(state) {
-  const baseStateKeys = new Set(['$$__referenceNumber', 'applicationStatus', 'additionalAnswers'])
+export function hasMeaningfulState(state, additionalBaseKeys = new Set()) {
+  const baseStateKeys = new Set([
+    '$$__referenceNumber',
+    'applicationStatus',
+    'additionalAnswers',
+    ...additionalBaseKeys
+  ])
 
+  return Object.keys(state).some((k) => !baseStateKeys.has(k))
+}
+
+/**
+ * Pre-submission variant of {@link hasMeaningfulState}.
+ *
+ * Applies the land-grants residual-state workaround that previously lived
+ * inside `hasMeaningfulState`: a leftover farm-payments `selectedLandParcel`
+ * and an empty `landParcels` object are not, on their own, enough to treat an
+ * application as in progress. This keeps the existing behaviour of grants that
+ * do not configure a pre-submission gate (e.g. farm-payments, woodland) while
+ * letting gated grants (e.g. grasslands) reach `resolvePreSubmissionDestination`
+ * whenever a genuine parcel selection exists.
+ *
+ * @param {FormSubmissionState} state - The state object to check
+ * @returns {boolean} - True if state contains meaningful pre-submission values
+ */
+export function hasMeaningfulPreSubmissionState(state) {
   // TODO remove workaround for state clearing bug when SFIR-647 are complete
-  const farmPaymentsStateKeys = new Set(['selectedLandParcel'])
-  for (const key of farmPaymentsStateKeys) {
-    baseStateKeys.add(key)
-  }
+  const residualLandGrantsKeys = new Set(['selectedLandParcel'])
   if (!Object.keys(state.landParcels || {}).length) {
-    baseStateKeys.add('landParcels')
+    residualLandGrantsKeys.add('landParcels')
   }
   // end workaround
 
-  return Object.keys(state).some((k) => !baseStateKeys.has(k))
+  return hasMeaningfulState(state, residualLandGrantsKeys)
 }
 
 /**
@@ -199,14 +233,95 @@ function preSubmissionRedirect(request, h, context) {
   if (!preSubmissionRedirectRule) {
     return h.continue
   }
-  const preSubmissionRedirectUrl = preSubmissionRedirectRule.toPath.startsWith('/')
-    ? `/${grantId}${preSubmissionRedirectRule.toPath}`
-    : `/${grantId}/${preSubmissionRedirectRule.toPath}`
 
-  if (hasMeaningfulState(context.state) && isFormsStartPage(request, context)) {
-    return h.redirect(preSubmissionRedirectUrl).takeover()
+  if (!(hasMeaningfulPreSubmissionState(context.state) && isFormsStartPage(request, context))) {
+    return h.continue
   }
-  return h.continue
+
+  const destinationPath = resolvePreSubmissionDestination(preSubmissionRedirectRule, context.state)
+  if (destinationPath === null) {
+    return h.continue
+  }
+
+  return h.redirect(buildRedirectUrl(grantId, destinationPath)).takeover()
+}
+
+/**
+ * Resolves the destination path for a pre-submission redirect.
+ *
+ * By default a returning applicant with meaningful state is sent to the rule's
+ * `toPath` (typically the check-answers page). When the rule declares a
+ * `requiresAnyItemWithNonEmptyKey` gate, the check-answers page is only a valid
+ * destination once at least one item in the configured collection has a
+ * non-empty value at the configured key (for land grants: at least one selected
+ * land parcel that has actions). If the gate is not satisfied the applicant is
+ * sent to `incompleteToPath` instead (e.g. the select-land-parcel page), or the
+ * pipeline continues when no such path is configured.
+ *
+ * @param {RedirectRule} rule - The pre-submission redirect rule.
+ * @param {FormSubmissionState} state - The current form state.
+ * @returns {string | null} The path to redirect to, or `null` to continue without redirecting.
+ */
+export function resolvePreSubmissionDestination(rule, state) {
+  const requirement = rule.requiresAnyItemWithNonEmptyKey
+  if (!requirement) {
+    return rule.toPath
+  }
+
+  const collection = getStateValue(state, requirement.collection)
+  if (hasAnyItemWithNonEmptyKey(collection, requirement.key)) {
+    return rule.toPath
+  }
+
+  return rule.incompleteToPath ?? null
+}
+
+/**
+ * Determines whether a state collection contains at least one item that has a
+ * non-empty value at the given key. The collection may be stored either as an
+ * array of items or as an object keyed by id; in both cases each item is
+ * inspected. A value counts as "non-empty" when it is a non-empty array or an
+ * object with at least one own key.
+ *
+ * @param {unknown} collection - The collection value read from form state.
+ * @param {string} key - The property each item must populate to count.
+ * @returns {boolean} `true` if any item has a non-empty value at `key`.
+ */
+function hasAnyItemWithNonEmptyKey(collection, key) {
+  const items = resolveCollectionItems(collection)
+
+  return items.some((item) => {
+    if (!item || typeof item !== 'object') {
+      return false
+    }
+
+    const value = /** @type {Record<string, unknown>} */ (item)[key]
+
+    if (Array.isArray(value)) {
+      return value.length > 0
+    }
+
+    return Boolean(value) && typeof value === 'object' && Object.keys(/** @type {object} */ (value)).length > 0
+  })
+}
+
+/**
+ * Normalises a state collection (array or object keyed by id) into an array of
+ * its items so callers can iterate uniformly.
+ *
+ * @param {unknown} collection - The collection value read from form state.
+ * @returns {unknown[]} The collection's items, or an empty array.
+ */
+function resolveCollectionItems(collection) {
+  if (Array.isArray(collection)) {
+    return collection
+  }
+
+  if (collection && typeof collection === 'object') {
+    return Object.values(collection)
+  }
+
+  return []
 }
 
 /**
