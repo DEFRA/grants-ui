@@ -12,7 +12,6 @@ import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
 import { SELECTED_ACTIONS_FIELD_NAME } from '~/src/server/land-grants/utils/selected-actions-field.js'
 import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js'
 
-// Own Environment, not the app-wide one - that one's config.get('root') call isn't mocked in this page's tests.
 const QUANTITY_INPUT_TEMPLATE = 'quantity-input/template.njk'
 const ACTION_LABEL_TEMPLATE = 'action-label/template.njk'
 const landGrantsViewEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader([govukFrontendPath, ...viewPaths]), {
@@ -43,6 +42,18 @@ function getQuantityConditional(actionCode, actionName, quantityValue, maxQuanti
       errorText
     })
   }
+}
+
+/**
+ * Builds the checkbox label markup: the action description plus an optional
+ * "read guidance" link. Rendered through Nunjucks (autoescape on) so the
+ * description and URL are escaped rather than concatenated into raw HTML.
+ * @param {string} description
+ * @param {string} [guidanceUrl]
+ * @returns {string}
+ */
+function getActionLabelHtml(description, guidanceUrl) {
+  return landGrantsViewEnv.render(ACTION_LABEL_TEMPLATE, { description, guidanceUrl })
 }
 
 /**
@@ -132,14 +143,11 @@ export function mapActionToViewModel(
     !needsQuantity && action.availableArea
       ? `<br><span id="${getActionQuantityFieldName(action.code)}-hint">${action.availableArea.value} ${formatAreaUnit(action.availableArea.unit)} available</span>`
       : ''
-  const guidanceLinkHtml = action.metadata?.guidance_link
-    ? ` - <a class="govuk-link" href="${action.metadata.guidance_link}" target="_blank" rel="noopener noreferrer">read guidance</a>`
-    : ''
 
   return {
     id: getCheckboxItemId(action.code, isFirst),
     value: action.code,
-    html: `${action.description}${guidanceLinkHtml}<span class="select-actions-hint">${hintText}${availabilityHintHtml}</span>`,
+    html: `${getActionLabelHtml(action.description, action.metadata?.guidance_link)}<span class="select-actions-hint">${hintText}${availabilityHintHtml}</span>`,
     checked,
     consents,
     attributes: {
