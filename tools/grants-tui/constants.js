@@ -27,7 +27,7 @@ export const JOURNEYS_DIR = resolve(ROOT, 'src/server/dev-tools/journey-runner/j
 // Folder holding developer-private form-definition overrides, mirroring the
 // config repo layout `<grant>/<service>/<file>`. A single toggle enables/disables
 // all overrides found here.
-export const LOCAL_FORM_DEFS_DIR = resolve(ROOT, 'floci/config-broker/local-form-definitions')
+export const LOCAL_FORM_DEFS_DIR = resolve(ROOT, 'compose/config-broker/local-form-definitions')
 // Applier that (un)publishes the overrides against the running backend Mongo.
 export const APPLY_FORM_DEFS_SCRIPT = resolve(ROOT, 'tools/apply-local-form-defs.mjs')
 // Menu key used for the single all-grants form-definition override toggle.

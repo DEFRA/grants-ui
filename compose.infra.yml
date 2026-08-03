@@ -121,11 +121,9 @@ services:
       - 'compose/aws.env'
     environment:
       FLOCI_DEFAULT_REGION: eu-west-2
-      FLOCI_REQUIRED_S3_BUCKETS: configs-bucket
-      FLOCI_REQUIRED_SQS_QUEUES: fcp_audit,gfr__sqs___config_input,grants_ui_backend__sqs__config_updates
-      FLOCI_REQUIRED_SNS_TOPICS: fcp_audit_events,gfr__sns___config_update  
     volumes:
       - ./compose/floci/common/10-setup-resources.sh:/etc/floci/init/start.d/10-setup-resources.sh:ro
+      - ./compose/floci/common/99-ready.sh:/etc/floci/init/start.d/99-ready.sh:ro
       - ./compose/forms:/etc/forms:ro
     healthcheck:
       test: ["CMD-SHELL", "test -f /tmp/READY"]

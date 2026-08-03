@@ -6,9 +6,6 @@ x-common-postgres: &common-postgres
 
 services:
   floci:
-    environment:
-      FLOCI_REQUIRED_S3_BUCKETS: configs-bucket,land-data
-      FLOCI_REQUIRED_SQS_QUEUES: fcp_audit,gfr__sqs___config_input,grants_ui_backend__sqs__config_updates,grants_config_broker_update
     volumes:
       - ./compose/floci/land-grants/20-land-grants.sh:/etc/floci/init/start.d/20-land-grants.sh:ro
 

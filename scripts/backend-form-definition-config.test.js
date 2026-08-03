@@ -2,15 +2,11 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
 
-const infraComposeConfig = parse(readFileSync('compose.infra.yml', 'utf8'))
 const grantsUIComposeConfig = parse(readFileSync('compose.grants-ui.yml', 'utf8'))
-const landGrantsComposeConfig = parse(readFileSync('compose.land-grants.yml', 'utf8'))
 
-const csv = (value = '') =>
-  value
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean)
+const setupResources = readFileSync('compose/floci/common/10-setup-resources.sh', 'utf8')
+
+const landGrantsSetup = readFileSync('compose/floci/land-grants/20-land-grants.sh', 'utf8')
 
 describe('backend-sourced form deployment config', () => {
   it('waits for grants-config-broker before starting grants-ui-backend', () => {
@@ -19,37 +15,21 @@ describe('backend-sourced form deployment config', () => {
     })
   })
 
-  it('waits for Floci base resources before dependent services start', () => {
-    const floci = infraComposeConfig.services.floci
-
-    expect(csv(floci.environment.FLOCI_REQUIRED_S3_BUCKETS)).toEqual(expect.arrayContaining(['configs-bucket']))
-    expect(csv(floci.environment.FLOCI_REQUIRED_SQS_QUEUES)).toEqual(
-      expect.arrayContaining(['fcp_audit', 'gfr__sqs___config_input', 'grants_ui_backend__sqs__config_updates'])
-    )
-    expect(csv(floci.environment.FLOCI_REQUIRED_SNS_TOPICS)).toEqual(
-      expect.arrayContaining(['fcp_audit_events', 'gfr__sns___config_update'])
-    )
+  it('creates the required Floci base resources', () => {
+    expect(setupResources).toContain('configs-bucket')
+    expect(setupResources).toContain('gfr__sqs___config_input')
+    expect(setupResources).toContain('grants_ui_backend__sqs__config_updates')
+    expect(setupResources).toContain('fcp_audit')
+    expect(setupResources).toContain('fcp_audit_events')
+    expect(setupResources).toContain('gfr__sns___config_update')
   })
 
-  it('extends Floci readiness for land-grants resources', () => {
-    const floci = infraComposeConfig.services.floci
-    const landGrants = landGrantsComposeConfig.services.floci
-    const landGrantsEnvironment = landGrants.environment ?? {}
-    const flociEnvironment = floci.environment ?? {}
+  it('creates the required land-grants resources', () => {
+    expect(landGrantsSetup).toContain('INGEST_BUCKET=land-data')
+    expect(landGrantsSetup).toContain('s3 mb')
+    expect(landGrantsSetup).toContain('INGEST_BUCKET')
 
-    expect(csv(landGrantsEnvironment.FLOCI_REQUIRED_S3_BUCKETS)).toEqual(
-      expect.arrayContaining(['configs-bucket', 'land-data'])
-    )
-    expect(csv(landGrantsEnvironment.FLOCI_REQUIRED_SQS_QUEUES)).toEqual(
-      expect.arrayContaining([
-        'fcp_audit',
-        'gfr__sqs___config_input',
-        'grants_ui_backend__sqs__config_updates',
-        'grants_config_broker_update'
-      ])
-    )
-    expect(csv(flociEnvironment.FLOCI_REQUIRED_SNS_TOPICS)).toEqual(
-      expect.arrayContaining(['fcp_audit_events', 'gfr__sns___config_update'])
-    )
+    expect(landGrantsSetup).toContain('UPDATES_QUEUE_NAME=grants_config_broker_update')
+    expect(landGrantsSetup).toContain('create-queue --queue-name "$UPDATES_QUEUE_NAME"')
   })
 })
