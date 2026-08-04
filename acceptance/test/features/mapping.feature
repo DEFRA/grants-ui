@@ -17,7 +17,7 @@ Feature: Mapping
 
         # select-actions-for-land-parcel
         Then the user should be at URL "select-actions-for-land-parcel"
-        And should see heading "Select actions for land parcel SD6352 8774"
+        And should see heading "Select actions for this land parcel"
 
     Scenario: User selects a parcel but leaves before choosing actions and resumes on the select land parcel page
         Given there is no application data for SBI "106842593" and grant "example-grant-with-map"
