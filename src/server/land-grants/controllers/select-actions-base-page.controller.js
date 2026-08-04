@@ -353,6 +353,7 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
    * @param {Array} options.actions
    * @param {{ selectedLandParcel: string, sheetId: string, parcelId: string }} options.parcel
    * @param {object} options.state
+   * @param {Size} [options.size] - Parcel area for the "Selected land parcel" summary, on re-render
    */
   async handleApplicationValidation(h, request, context, { payload, actions, parcel, state, size }) {
     const { selectedLandParcel, sheetId, parcelId } = parcel
