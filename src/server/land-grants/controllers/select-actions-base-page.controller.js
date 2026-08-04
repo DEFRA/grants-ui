@@ -252,20 +252,23 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
 
   /**
    * Render success view with actions
+   * @param {object} h - Hapi response toolkit
+   * @param {AnyFormRequest} request
+   * @param {FormContext} context
+   * @param {Array} groupedActions
+   * @param {Array} addedActions
+   * @param {{ sheetId: string, parcelId: string, size?: Size }} parcel
    */
-  renderSuccessView(h, request, context, groupedActions, addedActions, sheetId, parcelId, size) {
+  renderSuccessView(h, request, context, groupedActions, addedActions, parcel) {
     const { state } = context
+    const { sheetId, parcelId } = parcel
 
     if (!groupedActions.length) {
       log(LogCodes.LAND_GRANTS.NO_ACTIONS_FOUND, { sheetId, parcelId }, request)
     }
 
     return h.view(this.viewName, {
-      ...this.getViewModelWithActions(request, context, groupedActions, addedActions, {}, false, {
-        sheetId,
-        parcelId,
-        size
-      }),
+      ...this.getViewModelWithActions(request, context, groupedActions, addedActions, {}, false, parcel),
       ...state,
       parcelName: `${sheetId} ${parcelId}`,
       existingLandParcels: Object.keys(state.landParcels || {}).length > 0,
@@ -299,16 +302,11 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
       })
     }
 
-    return this.renderSuccessView(
-      h,
-      request,
-      context,
-      groupedActions,
-      addedActions,
-      parcel.sheetId,
-      parcel.parcelId,
-      result.parcel?.size
-    )
+    return this.renderSuccessView(h, request, context, groupedActions, addedActions, {
+      sheetId: parcel.sheetId,
+      parcelId: parcel.parcelId,
+      size: result.parcel?.size
+    })
   }
 
   /**
