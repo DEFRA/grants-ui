@@ -27,6 +27,7 @@ localstack/config-broker/local-form-definitions/*
 /.grants-ui-cli-sonar.json
 /.scannerwork/
 /acceptance/schemas/
+/grants-ui-grasslands-tests-schemas/
 /grants-ui-woodland-tests-schemas/
 AGENTS.local.md
 /.codex

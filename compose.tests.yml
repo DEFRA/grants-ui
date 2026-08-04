@@ -43,6 +43,26 @@ services:
     networks:
       - grants-ui-net
 
+  grants-ui-grasslands-tests:
+    image: defradigital/grants-ui-grasslands-tests
+    pull_policy: always
+    environment:
+      MAX_INSTANCES: 3
+      NODE_EXTRA_CA_CERTS: /etc/ssl/certs/nginx.crt
+      BASE_URL: https://grants-ui-proxy:4000
+      BASE_BACKEND_URL: https://grants-ui-proxy:4001
+      GRANTS_UI_BACKEND_AUTH_TOKEN: ${GRANTS_UI_BACKEND_AUTH_TOKEN:-auth_token}
+      GRANTS_UI_BACKEND_ENCRYPTION_KEY: ${GRANTS_UI_BACKEND_ENCRYPTION_KEY:-encryption_key}
+      MOCKSERVER_HOST: mockserver
+      MOCKSERVER_PORT: 1080
+      MONGO_URI: mongodb://mongodb:27017/
+    volumes:
+      - ./nginx/certs:/etc/ssl/certs:ro
+      - ./grants-ui-grasslands-tests-schemas:/app/test/schemas:ro
+    command: ["npm", "run", "test:ci"]
+    networks:
+      - grants-ui-net
+
   grants-ui-woodland-tests:
     image: defradigital/grants-ui-woodland-tests
     pull_policy: always
