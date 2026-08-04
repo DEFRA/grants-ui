@@ -17,9 +17,9 @@ export default class CheckResponsesPageController extends SummaryPageController 
     }
 
     /** @type {AdditionalSection[] | undefined} */
-    this.additionalSections = /** @type {{ additionalSections?: AdditionalSection[] }} */ (
-      model?.def?.metadata?.pageConfig?.[pageDef.path] ?? {}
-    ).additionalSections
+    this.additionalSections = /** @type {{ additionalSections?: AdditionalSection[] } | undefined} */ (
+      model?.def?.metadata?.pageConfig?.[pageDef.path]
+    )?.additionalSections
   }
 
   /**
