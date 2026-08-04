@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { initParcelSelectPage } from './parcel-select-page.js'
 import {
   EVENT_READY,
@@ -12,14 +12,22 @@ import {
 function setupDom({ multiSelect = false } = {}) {
   document.body.innerHTML = `
     <div id="map-no-parcels-error" hidden></div>
-    <p id="map-hint" hidden></p>
     <div id="selected-parcels-inputs"></div>
-    <p id="parcel-selection-summary" hidden>No parcel selected.</p>
     <button id="map-select-continue">Continue</button>
+    <table>
+      <tr><td id="parcel-map-total-count"></td></tr>
+      <tr><td id="parcel-map-total-area"></td></tr>
+    </table>
+    <div id="selected-parcel-details" hidden>
+      <span id="selected-parcel-reference"></span>
+      <span id="selected-parcel-area"></span>
+      <a id="selected-parcel-change" href="#parcel-map">Change</a>
+    </div>
   `
   const mapEl = document.createElement('parcel-map')
   mapEl.id = 'parcel-map'
   mapEl.setAttribute('multi-select', multiSelect ? 'true' : 'false')
+  mapEl.clearSelection = () => {}
   document.body.appendChild(mapEl)
   initParcelSelectPage(mapEl)
   return mapEl
@@ -38,13 +46,6 @@ describe('initParcelSelectPage', () => {
     expect(() => initParcelSelectPage(null)).not.toThrow()
   })
 
-  it('unhides the hint and summary on ready', () => {
-    const mapEl = setupDom()
-    fire(mapEl, EVENT_READY)
-    expect(document.getElementById('map-hint').hidden).toBe(false)
-    expect(document.getElementById('parcel-selection-summary').hidden).toBe(false)
-  })
-
   it('disables Continue and shows the no-parcels error on a no-parcels error', () => {
     const mapEl = setupDom()
     fire(mapEl, EVENT_ERROR, { reason: ERROR_REASON_NO_PARCELS })
@@ -61,7 +62,13 @@ describe('initParcelSelectPage', () => {
 
   it('writes one hidden input per selected id', () => {
     const mapEl = setupDom()
-    fire(mapEl, EVENT_SELECTION, { selectedIds: ['SD7148-9160', 'SD7148-9161'] })
+    fire(mapEl, EVENT_SELECTION, {
+      selectedIds: ['SD7148-9160', 'SD7148-9161'],
+      selectedParcels: [
+        { id: 'SD7148-9160', areaHa: 1 },
+        { id: 'SD7148-9161', areaHa: 2 }
+      ]
+    })
     expect(hiddenValues()).toEqual([
       { name: 'landParcels', value: 'SD7148-9160' },
       { name: 'landParcels', value: 'SD7148-9161' }
@@ -70,22 +77,71 @@ describe('initParcelSelectPage', () => {
 
   it('replaces rather than appends on the next selection', () => {
     const mapEl = setupDom()
-    fire(mapEl, EVENT_SELECTION, { selectedIds: ['SD7148-9160', 'SD7148-9161'] })
-    fire(mapEl, EVENT_SELECTION, { selectedIds: ['SD7148-9162'] })
+    fire(mapEl, EVENT_SELECTION, {
+      selectedIds: ['SD7148-9160', 'SD7148-9161'],
+      selectedParcels: [
+        { id: 'SD7148-9160', areaHa: 1 },
+        { id: 'SD7148-9161', areaHa: 2 }
+      ]
+    })
+    fire(mapEl, EVENT_SELECTION, { selectedIds: ['SD7148-9162'], selectedParcels: [{ id: 'SD7148-9162', areaHa: 3 }] })
     expect(hiddenValues()).toEqual([{ name: 'landParcels', value: 'SD7148-9162' }])
   })
 
-  it.each([
-    [false, ['SD7148-9160'], 'Selected: SD7148-9160', 'No parcel selected.'],
-    [true, ['SD7148-9160', 'SD7148-9161'], 'Selected: SD7148-9160, SD7148-9161', 'No parcels selected.']
-  ])('summary text (multiSelect=%s): populated then cleared', (multiSelect, ids, populated, empty) => {
-    const mapEl = setupDom({ multiSelect })
-    const summary = document.getElementById('parcel-selection-summary')
+  it('shows the selected parcel details when exactly one parcel is selected', () => {
+    const mapEl = setupDom()
+    fire(mapEl, EVENT_SELECTION, {
+      selectedIds: ['SD7148-9160'],
+      selectedParcels: [{ id: 'SD7148-9160', areaHa: 1.5 }]
+    })
+    expect(document.getElementById('selected-parcel-details').hidden).toBe(false)
+    expect(document.getElementById('selected-parcel-reference').textContent).toBe('SD7148-9160')
+    expect(document.getElementById('selected-parcel-area').textContent).toBe('1.5000 hectares')
+  })
 
-    fire(mapEl, EVENT_SELECTION, { selectedIds: ids })
-    expect(summary.textContent).toBe(populated)
+  it('hides the selected parcel details when no parcel or multiple parcels are selected', () => {
+    const mapEl = setupDom()
+    fire(mapEl, EVENT_SELECTION, {
+      selectedIds: ['SD7148-9160'],
+      selectedParcels: [{ id: 'SD7148-9160', areaHa: 1.5 }]
+    })
+    fire(mapEl, EVENT_SELECTION, { selectedIds: [], selectedParcels: [] })
+    expect(document.getElementById('selected-parcel-details').hidden).toBe(true)
+  })
 
-    fire(mapEl, EVENT_SELECTION, { selectedIds: [] })
-    expect(summary.textContent).toBe(empty)
+  it('populates the map totals on ready', () => {
+    const mapEl = setupDom()
+    fire(mapEl, EVENT_READY, {
+      parcelIds: ['SD7148-9160', 'SD7148-9161'],
+      metaIndex: { 'SD7148-9160': { areaHa: 1.5 }, 'SD7148-9161': { areaHa: 2.5 } }
+    })
+    expect(document.getElementById('parcel-map-total-count').textContent).toBe('2')
+    expect(document.getElementById('parcel-map-total-area').textContent).toBe('4.0000')
+  })
+
+  it('defaults the map totals to zero when the ready event carries no detail', () => {
+    const mapEl = setupDom()
+    fire(mapEl, EVENT_READY, undefined)
+    expect(document.getElementById('parcel-map-total-count').textContent).toBe('0')
+    expect(document.getElementById('parcel-map-total-area').textContent).toBe('0.0000')
+  })
+
+  it('clears the map selection when the Change link is clicked', () => {
+    const mapEl = setupDom()
+    mapEl.clearSelection = vi.fn()
+    const changeLink = document.getElementById('selected-parcel-change')
+    changeLink.click()
+    expect(mapEl.clearSelection).toHaveBeenCalled()
+  })
+
+  it('does not navigate when the Change link is clicked', () => {
+    setupDom()
+    const changeLink = document.getElementById('selected-parcel-change')
+    let defaultPrevented = false
+    changeLink.addEventListener('click', (e) => {
+      defaultPrevented = e.defaultPrevented
+    })
+    changeLink.click()
+    expect(defaultPrevented).toBe(true)
   })
 })

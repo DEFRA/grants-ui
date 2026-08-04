@@ -45,6 +45,9 @@ export class ParcelMap extends HTMLElement {
   /** @type {Array<() => void>} */
   #mlCleanup = []
 
+  /** @type {{ allowNextClear: () => void } | null} */
+  #selectionRelay = null
+
   connectedCallback() {
     this.#state = STATE_IDLE
     this.#init()
@@ -67,6 +70,7 @@ export class ParcelMap extends HTMLElement {
     }
     this.#mapInstance = null
     this.#interactPlugin = null
+    this.#selectionRelay = null
     this.#mapEl?.parentElement?.remove()
     this.#mapEl = null
     this.#skeleton?.remove()
@@ -113,14 +117,26 @@ export class ParcelMap extends HTMLElement {
       const colorExpr = buildColorExpr(data.parcelIds)
       addParcelsToMap(ml, data, colorExpr)
       const tooltip = attachTooltip(ml, data.metaIndex, this.#mapEl, this.#mlCleanup)
-      attachSelectionRelay({ host: this, mapInstance: this.#mapInstance, ml, tooltip, cleanups: this.#mlCleanup })
+      this.#selectionRelay = attachSelectionRelay({
+        host: this,
+        mapInstance: this.#mapInstance,
+        ml,
+        tooltip,
+        cleanups: this.#mlCleanup,
+        multiSelect
+      })
       this.#interactPlugin?.enable()
 
       this.#state = STATE_READY
       this.#skeleton?.remove()
       this.#skeleton = null
 
-      this.dispatchEvent(new CustomEvent(EVENT_READY, { bubbles: true }))
+      this.dispatchEvent(
+        new CustomEvent(EVENT_READY, {
+          bubbles: true,
+          detail: { parcelIds: data.parcelIds, metaIndex: data.metaIndex }
+        })
+      )
     }
   }
 
@@ -128,5 +144,14 @@ export class ParcelMap extends HTMLElement {
   #showError(message) {
     this.#errorOverlay = buildOverlay(message, { role: 'alert' })
     this.appendChild(this.#errorOverlay)
+  }
+
+  // Deselects every selected parcel. Triggers the same interact:selectionchange
+  // path a manual deselect would, so highlight, hidden inputs and the selected-
+  // parcel summary all clear themselves via the normal event flow. Marked as an
+  // allowed clear so the relay doesn't re-assert the parcel it just dropped.
+  clearSelection() {
+    this.#selectionRelay?.allowNextClear()
+    this.#interactPlugin?.clear()
   }
 }

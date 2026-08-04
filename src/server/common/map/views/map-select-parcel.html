@@ -1,3 +1,4 @@
+{% set bodyCustomClass = "map-select-parcel" %}
 {% extends baseLayoutPath %}
 
 {% from "govuk/components/button/macro.njk" import govukButton %}
@@ -33,7 +34,7 @@
       </h2>
       {% endif %}
       <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
-      <p id="map-hint" class="govuk-body" hidden>Select a land parcel on the map. You'll choose actions for that parcel on the next page.</p>
+      <p class="govuk-body">Select a land parcel on the map. You'll choose actions for that parcel on the next page.</p>
       <noscript>
         <p class="govuk-body">The interactive map requires JavaScript to be enabled in your browser.</p>
       </noscript>
@@ -41,20 +42,57 @@
       <form method="post" action="{{ formAction }}" id="parcel-select-form">
         <input type="hidden" name="crumb" value="{{ crumb }}">
 
-        <parcel-map
-          id="parcel-map"
-          multi-select="{{ 'true' if multiSelect else 'false' }}"
-          aria-label="Land parcel selection map"
-          style="display:block;width:100%;height:500px;position:relative"
-        >
-        </parcel-map>
+        <div class="govuk-grid-row">
+          <div class="govuk-grid-column-two-thirds-from-desktop">
+            <parcel-map
+              id="parcel-map"
+              multi-select="{{ 'true' if multiSelect else 'false' }}"
+              aria-label="Land parcel selection map"
+              style="display:block;width:100%;height:500px;position:relative"
+            >
+            </parcel-map>
 
-        {# Hidden inputs written by the parcel-map:selection listener; also used by no-JS fallback #}
-        <div id="selected-parcels-inputs" aria-hidden="true"></div>
+            {# Hidden inputs written by the parcel-map:selection listener; also used by no-JS fallback #}
+            <div id="selected-parcels-inputs" aria-hidden="true"></div>
+          </div>
 
-        <p id="parcel-selection-summary" class="govuk-body govuk-!-margin-top-2" aria-live="polite" hidden>
-          {{ "No parcels selected." if multiSelect else "No parcel selected." }}
-        </p>
+          <div class="govuk-grid-column-one-third-from-desktop">
+            <table class="govuk-table" id="parcel-map-totals">
+              <caption class="govuk-table__caption">{{auth.organisationName}}</caption>
+              <tbody class="govuk-table__body">
+                <tr class="govuk-table__row">
+                  <th scope="row" class="govuk-table__header govuk-!-font-weight-regular">Available land parcels</th>
+                  <td class="govuk-table__cell govuk-table__cell--numeric" id="parcel-map-total-count">&ndash;</td>
+                </tr>
+                <tr class="govuk-table__row">
+                  <th scope="row" class="govuk-table__header govuk-!-font-weight-regular">Total area (hectares)</th>
+                  <td class="govuk-table__cell govuk-table__cell--numeric" id="parcel-map-total-area">&ndash;</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="selected-parcel-details" class="govuk-!-margin-top-6" hidden>
+          <h2 class="govuk-heading-m">Selected land parcel</h2>
+          {# Hand-rolled to match govukSummaryList's markup: that macro's row.value
+             only ever renders row.value.classes, never row.value.attributes, so an
+             id on the value cell (needed by parcel-select-page.js to target it)
+             is silently dropped when built via the macro. #}
+          <dl class="govuk-summary-list" id="selected-parcel-summary-list">
+            <div class="govuk-summary-list__row">
+              <dt class="govuk-summary-list__key">Parcel reference</dt>
+              <dd class="govuk-summary-list__value" id="selected-parcel-reference"></dd>
+              <dd class="govuk-summary-list__actions">
+                <a class="govuk-link" href="#parcel-map" id="selected-parcel-change">Change<span class="govuk-visually-hidden"> selected land parcel</span></a>
+              </dd>
+            </div>
+            <div class="govuk-summary-list__row govuk-summary-list__row--no-actions">
+              <dt class="govuk-summary-list__key">Total area</dt>
+              <dd class="govuk-summary-list__value" id="selected-parcel-area"></dd>
+            </div>
+          </dl>
+        </div>
 
         {{ govukButton({
           text: "Continue",

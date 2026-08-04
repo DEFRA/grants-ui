@@ -27,6 +27,7 @@ export const LAYER_TEXT_HALO_WIDTH = 1.5
 export const LAYER_LINE_WIDTH = 1.5
 export const FIT_BOUNDS_PADDING = 40
 export const AREA_DECIMAL_PLACES = 2
+export const TOTAL_AREA_DECIMAL_PLACES = 4
 
 // Feature property carrying the compound "SHEET-PARCEL" ID. Present in both the
 // vector tiles (stamped on by the grants-ui tile proxy) and the mock GeoJSON.
