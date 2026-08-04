@@ -216,6 +216,25 @@ export function getPageConsents(actions) {
 }
 
 /**
+ * Builds the govukSummaryList rows for the "Selected land parcel" summary card.
+ * Land cover isn't fetched yet, so it's omitted.
+ * @param {string} [sheetId]
+ * @param {string} [parcelId]
+ * @param {{ value?: number, unit?: string }} [size]
+ * @returns {{ rows: Array<{ key: { text: string }, value: { text: string } }> }}
+ */
+export function getParcelSummaryList(sheetId, parcelId, size) {
+  const areaText = size?.value != null ? `${size.value} ${formatAreaUnit(size.unit)}` : ''
+
+  return {
+    rows: [
+      { key: { text: 'Parcel reference' }, value: { text: `${sheetId} ${parcelId}` } },
+      { key: { text: 'Total area' }, value: { text: areaText } }
+    ]
+  }
+}
+
+/**
  * A 0-available action is dropped from the initial render, unless it was
  * already saved to a previous selection - a saved choice must never silently disappear.
  * @param {Action} action

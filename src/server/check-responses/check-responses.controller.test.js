@@ -162,6 +162,83 @@ describe('CheckResponsesPageController', () => {
     })
   })
 
+  describe('getSummaryViewModel - config.additionalSections', () => {
+    let mockRequest
+
+    beforeEach(() => {
+      mockRequest = mockSimpleRequest()
+    })
+
+    const buildControllerWithAdditionalSections = (additionalSections) =>
+      new CheckResponsesPageController(
+        {
+          ...mockModel,
+          def: {
+            ...mockModel.def,
+            metadata: {
+              pageConfig: {
+                [mockPageDef.path]: { additionalSections }
+              }
+            }
+          }
+        },
+        mockPageDef
+      )
+
+    it('should append a section built from configured state values', () => {
+      const ctrl = buildControllerWithAdditionalSections([
+        {
+          title: 'Payment summary',
+          items: [{ title: 'Annual payment for all parcels', stateValue: 'totalPayment' }]
+        }
+      ])
+
+      const context = mockContext({ state: { totalPayment: '£374.00' } })
+
+      const result = ctrl.getSummaryViewModel(mockRequest, context)
+
+      expect(result.checkAnswers).toHaveLength(2)
+      expect(result.checkAnswers[1]).toEqual({
+        title: { text: 'Payment summary' },
+        summaryList: {
+          rows: [{ key: { text: 'Annual payment for all parcels' }, value: { text: '£374.00' } }]
+        }
+      })
+    })
+
+    it('should show "Not provided" when the configured stateValue is missing from state', () => {
+      const ctrl = buildControllerWithAdditionalSections([
+        {
+          title: 'Payment summary',
+          items: [{ title: 'Annual payment for all parcels', stateValue: 'totalPayment' }]
+        }
+      ])
+
+      const context = mockContext({ state: {} })
+
+      const result = ctrl.getSummaryViewModel(mockRequest, context)
+
+      expect(result.checkAnswers[1].summaryList.rows[0].value).toEqual({ text: 'Not provided' })
+    })
+
+    it('should not modify checkAnswers when no additionalSections are configured', () => {
+      const context = mockContext({ state: {} })
+
+      const result = controller.getSummaryViewModel(mockRequest, context)
+
+      expect(result.checkAnswers).toHaveLength(1)
+    })
+
+    it('should not throw when additionalSections config is not an array', () => {
+      const ctrl = buildControllerWithAdditionalSections('not-an-array')
+      const context = mockContext({ state: {} })
+
+      const result = ctrl.getSummaryViewModel(mockRequest, context)
+
+      expect(result.checkAnswers).toHaveLength(1)
+    })
+  })
+
   describe('getSummaryViewModel - general behaviour', () => {
     let mockRequest
     let context

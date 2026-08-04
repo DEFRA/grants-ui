@@ -15,6 +15,11 @@ export default class CheckResponsesPageController extends SummaryPageController 
     if (pageDef.section) {
       this.section = model.getSection(pageDef.section)
     }
+
+    /** @type {AdditionalSection[] | undefined} */
+    this.additionalSections = /** @type {{ additionalSections?: AdditionalSection[] } | undefined} */ (
+      model?.def?.metadata?.pageConfig?.[pageDef.path]
+    )?.additionalSections
   }
 
   /**
@@ -31,6 +36,32 @@ export default class CheckResponsesPageController extends SummaryPageController 
         }
       })
     }
+  }
+
+  /**
+   * Appends read-only summary sections configured on the page (via `config.additionalSections`),
+   * populated with values already present on state that were not directly submitted by the user
+   * on this journey (e.g. a payment total calculated on a previous page).
+   * @param {{ checkAnswers?: any[] }} viewModel
+   * @param {AdditionalSection[] | undefined} additionalSections
+   * @param {Record<string, any>} state
+   */
+  #appendAdditionalSections(viewModel, additionalSections, state) {
+    if (!Array.isArray(additionalSections) || !viewModel.checkAnswers) {
+      return
+    }
+
+    additionalSections.forEach((section) => {
+      const rows = (section.items ?? []).map((item) => ({
+        key: { text: item.title },
+        value: { text: state?.[item.stateValue] ?? 'Not provided' }
+      }))
+
+      viewModel.checkAnswers?.push({
+        title: { text: section.title },
+        summaryList: { rows }
+      })
+    })
   }
 
   /**
@@ -96,6 +127,11 @@ export default class CheckResponsesPageController extends SummaryPageController 
 
     this.#excludeCheckDetailsEntries(viewModel)
     this.#applyLandParcels(viewModel, context?.state?.landParcels)
+    this.#appendAdditionalSections(
+      viewModel,
+      this.additionalSections,
+      /** @type {Record<string, any>} */ (/** @type {unknown} */ (context?.state))
+    )
 
     // SummaryViewModel is a class with a private `summaryDetails` member and does not
     // permit extra properties (`sectionTitle`), so a structural spread cannot satisfy
@@ -128,6 +164,18 @@ export default class CheckResponsesPageController extends SummaryPageController 
     return fn
   }
 }
+
+/**
+ * @typedef {object} AdditionalSectionItem
+ * @property {string} title - Row label shown in the summary list
+ * @property {string} stateValue - Key to read from form state for the row value
+ */
+
+/**
+ * @typedef {object} AdditionalSection
+ * @property {string} title - Section heading
+ * @property {AdditionalSectionItem[]} [items] - Rows to render in this section
+ */
 
 /**
  * @import { FormContext, FormContextRequest, AnyFormRequest, FormResponseToolkit, BackLink } from '@defra/forms-engine-plugin/types'

@@ -5,13 +5,9 @@ x-common-postgres: &common-postgres
   POSTGRES_USER: ${POSTGRES_USER:-land_grants_api}
 
 services:
-  localstack:
-    environment:
-      LOCALSTACK_REQUIRED_S3_BUCKETS: configs-bucket,land-data
-      LOCALSTACK_REQUIRED_SQS_QUEUES: fcp_audit,gfr__sqs___config_input,grants_ui_backend__sqs__config_updates,grants_config_broker_update
-      LOCALSTACK_REQUIRED_SNS_TOPICS: fcp_audit_events,gfr__sns___config_update
+  floci:
     volumes:
-      - ./localstack/start-localstack-land-grants.sh:/etc/localstack/init/ready.d/start-localstack-land-grants.sh
+      - ./compose/floci/land-grants/20-land-grants.sh:/etc/floci/init/start.d/20-land-grants.sh:ro
 
   grants-ui:
     depends_on:
@@ -45,7 +41,7 @@ services:
     image: defradigital/land-grants-api:latest
     pull_policy: always
     env_file:
-      - 'localstack/aws.env'
+      - 'compose/aws.env'
     environment:
       <<: *common-postgres
       PORT: 3009
@@ -54,11 +50,11 @@ services:
       POSTGRES_HOST: land-grants-backend-postgres
       LAND_GRANTS_AUTH_TOKEN: ${LAND_GRANTS_API_AUTH_TOKEN:-auth_token}
       LAND_GRANTS_ENCRYPTION_KEY: ${LAND_GRANTS_API_ENCRYPTION_KEY:-encryption_key}
-      AWS_ENDPOINT_URL: http://localstack:4566
-      GRANTS_CONFIG_QUEUE_URL: http://localstack:4566/000000000000/grants_config_broker_update
+      AWS_ENDPOINT_URL: http://floci:4566
+      GRANTS_CONFIG_QUEUE_URL: http://floci:4566/000000000000/grants_config_broker_update
       GRANTS_CONFIG_BUCKET: configs-bucket
-      SQS_ENDPOINT: http://localstack:4566
-      S3_ENDPOINT: http://localstack:4566
+      SQS_ENDPOINT: http://floci:4566
+      S3_ENDPOINT: http://floci:4566
       FEATURE_USE_DAL: ${FEATURE_USE_DAL:-false}
     healthcheck:
       test: ['CMD-SHELL', 'node -e "require(''http'').get(''http://localhost:3009/health'', r => process.exit(r.statusCode === 200 ? 0 : 1)).on(''error'', () => process.exit(1))"']
@@ -72,7 +68,7 @@ services:
     depends_on:
       land-grants-backend-postgres:
         condition: service_healthy
-      localstack:
+      floci:
         condition: service_healthy
     networks:
       - grants-ui-net

@@ -231,6 +231,22 @@ describe('SelectActionsPageController', () => {
       expect(cmor1.conditional).toBeUndefined()
     })
 
+    test('should render the parcel summary list with reference and area', async () => {
+      fetchActionsForParcel.mockResolvedValue({
+        actions: mockActions,
+        parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: { value: 45.22, unit: 'ha' } }
+      })
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(mockRequest, mockContext, mockH)
+
+      const [, viewModel] = mockH.view.mock.calls[0]
+      expect(viewModel.parcelSummaryList.rows).toEqual([
+        { key: { text: 'Parcel reference' }, value: { text: 'sheet1 parcel1' } },
+        { key: { text: 'Total area' }, value: { text: '45.22 hectares' } }
+      ])
+    })
+
     test('should return an empty pageConsents array when no action requires SSSI consent or HEFER', async () => {
       const handler = controller.makeGetRouteHandler()
       await handler(mockRequest, mockContext, mockH)

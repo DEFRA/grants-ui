@@ -13,11 +13,19 @@ const receiveBatch = () => {
   const out = execFileSync(
     'docker',
     [
-      'compose', 'exec', '-T', 'localstack',
-      'awslocal', 'sqs', 'receive-message',
-      '--queue-url', QUEUE_URL,
-      '--max-number-of-messages', '10',
-      '--wait-time-seconds', '1'
+      'compose',
+      'exec',
+      '-T',
+      'floci',
+      'awslocal',
+      'sqs',
+      'receive-message',
+      '--queue-url',
+      QUEUE_URL,
+      '--max-number-of-messages',
+      '10',
+      '--wait-time-seconds',
+      '1'
     ],
     { encoding: 'utf8' }
   ).trim()

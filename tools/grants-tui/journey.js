@@ -24,7 +24,7 @@ export const DEFAULT_CRN = '1102838829'
 /**
  * CRNs known to work for a journey, most-suitable first. Only journeys that need
  * a *specific* CRN are listed; anything absent uses DEFAULT_CRN (its allowlist is
- * `allowAll`). Sourced from localstack/config-broker/local-allowlists/*.yaml.
+ * `allowAll`). Sourced from compose/config-broker/local-allowlists/*.yaml.
  * @type {Record<string, {crn: string, note: string}[]>}
  */
 const JOURNEY_CRNS = {

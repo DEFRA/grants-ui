@@ -4,6 +4,8 @@
 {% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
+{% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+{% from "summaryCard/macro.njk" import summaryCard %}
 
 {% block content %}
   <div class="govuk-body">
@@ -26,16 +28,26 @@
           Select actions for this land parcel
         </h1>
 
-        <p>Only actions that can be used together on this parcel are available.</p>
-        <p>Incompatible actions are shown but cannot be selected.</p>
+        {% if parcelSummaryList %}
+          {% call summaryCard({
+            title: { text: "Selected land parcel" },
+            headerActions: { href: selectLandParcelPath, text: "Change", hiddenTextValue: "selected land parcel" }
+          }) %}
+            {{ govukSummaryList(parcelSummaryList) }}
+          {% endcall %}
+          <p class="govuk-inset-text">The amount available for each action may be lower depending on land cover, previous agreements and other actions you select.</p>
+        {% endif %}
+
+        <div class="govuk-form-group govuk-!-margin-top-2">
+          <h2 class="govuk-heading-m">Available actions</h2>
+          <p>Enter how much land you want for each action. Actions with no land left are shown but cannot be selected.</p>
+        </div>
 
         {% if actionItems.length %}
           <form method="post" novalidate="novalidate">
             <input type="hidden" name="crumb" value="{{ crumb }}">
             <input type="hidden" name="action" value="validate">
             {{ chosenAreaFieldsHtml | safe }}
-
-            <h2 class="govuk-heading-m">Available actions</h2>
 
             {% if pageConsents.length %}
               {% set consentLinks = [] %}
@@ -65,9 +77,10 @@
             </div>
           </form>
         {% elif ((not errors) or (errors.length == 0)) %}
-          <p class="govuk-body">There are no eligible actions for this parcel.</p>
-          <p class="govuk-body">Change the parcel land cover or choose a different parcel to view eligible actions.</p>
-
+          <div class="govuk-!-margin-top-4">
+            <p class="govuk-body govuk-!-font-weight-bold">There are no eligible actions for this parcel.</p>
+            <p class="govuk-body">Change the parcel land cover or choose a different parcel to view eligible actions.</p>
+          </div>
           <div class="govuk-button-group">
             {{ govukButton({
               text: "Continue",

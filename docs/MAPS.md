@@ -41,7 +41,7 @@ Then add it to `.env`:
 OS_MAPS_API_KEY=your-key-here
 ```
 
-`compose.yml` passes it through to the container.
+`compose.grants-ui.yml` passes it through to the container.
 
 #### Deployed environments
 
@@ -51,10 +51,10 @@ The key is a secret, so it is **not** set in `cdp-app-config`. It must be config
 
 Which compose command you want depends on where the parcel geometry comes from.
 
-| You want                                | Command                        | What you get                                                                                                         |
-| --------------------------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| Mock geometry (quickest, no API)        | `npm run docker:up`            | `MAP_MOCK_DATA_ENABLED` defaults to `true` in `compose.yml`. Geometry is served as GeoJSON from the embedded shapes. |
-| Real vector tiles (the production path) | `npm run docker:landgrants:up` | Adds `land-grants-backend` on `:3009` and its seeded Postgres. Set `MAP_MOCK_DATA_ENABLED=false` in `.env`.          |
+| You want                                | Command                        | What you get                                                                                                                   |
+| --------------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| Mock geometry (quickest, no API)        | `npm run docker:up`            | `MAP_MOCK_DATA_ENABLED` defaults to `true` in `compose.grants-ui.yml`. Geometry is served as GeoJSON from the embedded shapes. |
+| Real vector tiles (the production path) | `npm run docker:landgrants:up` | Adds `land-grants-backend` on `:3009` and its seeded Postgres. Set `MAP_MOCK_DATA_ENABLED=false` in `.env`.                    |
 
 > **This is the one that catches people out.** Plain `npm run docker:up` points `LAND_GRANTS_API_URL` at `mockserver:1080`. There is **no land-grants API in the base compose file**. Setting `MAP_MOCK_DATA_ENABLED=false` without also switching to `docker:landgrants:up` gives you a map with a working basemap, no parcels, and nothing obvious in the logs to explain why.
 
@@ -401,4 +401,4 @@ Once the real API is available everywhere:
 2. Remove `import { isMockData, buildMockFeatures }` from `map.plugin.js`
 3. Remove the `isMockData()` branch and the `/api/map/parcels/geojson` route from `map.plugin.js`
 4. Remove `mapMockDataEnabled` from `src/config/config.js`
-5. Remove `MAP_MOCK_DATA_ENABLED` from `compose.yml` and `.env`
+5. Remove `MAP_MOCK_DATA_ENABLED` from `compose.grants-ui.yml` and `.env`

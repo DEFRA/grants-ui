@@ -38,7 +38,7 @@ esc     go back / quit
 ```bash
 # Start the stack (optionally with addons)
 gt up
-gt up --gas                        # include GAS (fg-gas-backend + localstack)
+gt up --gas                        # include GAS (fg-gas-backend + floci)
 gt up --land-grants                # include Land Grants API + Postgres
 gt up --gas --land-grants --ha     # all addons + HA proxy
 gt up --scale 2                    # run 2 replicas of grants-ui / grants-ui-backend
@@ -70,7 +70,7 @@ Append an entry to the `LOCAL_SERVICES` array in `tools/grants-tui.js` with `key
 
 ### Local form-definition overrides
 
-Edit and test a grant's **form definition** locally before pushing it to the config repo by dropping the definition into `localstack/config-broker/local-form-definitions/`, mirroring the config-repo layout `<grant>/<service>/<file>` (e.g. `woodland/grants-ui/woodland.yaml`), then flip the **Local form-definition overrides (all grants)** toggle in the `local` menu.
+Edit and test a grant's **form definition** locally before pushing it to the config repo by dropping the definition into `compose/config-broker/local-form-definitions/`, mirroring the config-repo layout `<grant>/<service>/<file>` (e.g. `woodland/grants-ui/woodland.yaml`), then flip the **Local form-definition overrides (all grants)** toggle in the `local` menu.
 
 - **Version bump** — each override is published to grants-ui-backend as one patch above the repo version (e.g. repo `1.2.3` -> override `1.2.4`), so it becomes the highest/active version the frontend serves.
 - **Enable** — clones the current active `config__form_definitions` document for the grant, overlays your definition, bumps the version and upserts it. Works both before `up` (applied automatically once the stack is healthy) and while the stack is running (applied immediately). The injected definition's `name` is stamped with a ` (local override active)` suffix so an overridden form is obviously distinguishable from the real repo version wherever the name is surfaced.
@@ -135,7 +135,7 @@ And optionally:
 - **GAS** (Grants Application Service) via `compose.gas.yml` — see [GAS Compose](#gas-compose-composegasyml)
 
 ```bash
-docker compose -f compose.yml -f compose.gas.yml up -d
+docker compose -f compose.infra.yml -f compose.grants-ui.yml -f compose.gas.yml up -d
 ```
 
 - **Land Grants API and Postgres** via `compose.land-grants.yml`
@@ -167,15 +167,15 @@ npm run docker:migrate:ext:down
 
 What it provides:
 
-- **`fg-gas-backend`** — the GAS API service (`defradigital/fg-gas-backend:latest`) exposed on port `3102`, connected to MongoDB and LocalStack.
-- **LocalStack init script** — mounts `localstack/start-localstack-gas.sh` to provision the required SNS/SQS FIFO queues on startup.
+- **`fg-gas-backend`** — the GAS API service (`defradigital/fg-gas-backend:latest`) exposed on port `3102`, connected to MongoDB and Floci.
+- **Floci init script** — mounts `compose/floci/gas/20-gas.sh` to provision the required SNS/SQS FIFO queues on startup.
 - **Automatic token seeding** — the `mongo-ready` service waits for `fg-gas-backend` to become healthy, then upserts a pre-hashed access token into MongoDB so `grants-ui` can authenticate against GAS immediately.
 - **`grants-ui` environment** — sets `GAS_API_URL` and `GAS_API_AUTH_TOKEN` on the `grants-ui` container so no manual `.env` changes are needed.
 
 To start the stack with GAS manually (without the TUI):
 
 ```bash
-docker compose -f compose.yml -f compose.gas.yml up -d
+docker compose -f compose.infra.yml -f compose.grants-ui.yml -f compose.gas.yml up -d
 ```
 
 ## High-Availability (HA) Local Proxy

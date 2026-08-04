@@ -3,7 +3,8 @@ import {
   mapActionToViewModel,
   mapActionsToViewModel,
   getPageConsents,
-  getChosenAreaFieldsHtml
+  getChosenAreaFieldsHtml,
+  getParcelSummaryList
 } from './select-actions.view-model.js'
 
 const configState = vi.hoisted(() => {
@@ -740,6 +741,23 @@ describe('select-actions.view-model', () => {
       const html = getChosenAreaFieldsHtml(actions, [])
 
       expect(html).toContain('value="0"')
+    })
+  })
+
+  describe('getParcelSummaryList', () => {
+    it('should render the parcel reference and total area rows', () => {
+      const result = getParcelSummaryList('SO3757', '3185', { value: 45.22, unit: 'ha' })
+
+      expect(result.rows).toEqual([
+        { key: { text: 'Parcel reference' }, value: { text: 'SO3757 3185' } },
+        { key: { text: 'Total area' }, value: { text: '45.22 hectares' } }
+      ])
+    })
+
+    it('should render an empty area value when size is missing', () => {
+      const result = getParcelSummaryList('SO3757', '3185', undefined)
+
+      expect(result.rows[1]).toEqual({ key: { text: 'Total area' }, value: { text: '' } })
     })
   })
 })

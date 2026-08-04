@@ -2,7 +2,8 @@ import SelectActionsBasePageController from '~/src/server/land-grants/controller
 import {
   mapActionsToViewModel,
   getPageConsents,
-  getChosenAreaFieldsHtml
+  getChosenAreaFieldsHtml,
+  getParcelSummaryList
 } from '~/src/server/land-grants/view-models/select-actions.view-model.js'
 import {
   addSelectedActionsToState,
@@ -59,9 +60,20 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
    * @param {Array} addedActions
    * @param {Record<string, string>} [quantityErrorsByCode] - Quantity validation error text, keyed by action code
    * @param {boolean} [hasErrors] - Whether this page load is redisplaying a rejected submission
+   * @param {{ sheetId?: string, parcelId?: string, size?: Size }} [parcel] - Identifiers and area for the
+   *   "Selected land parcel" summary
    * @returns {object}
    */
-  getViewModelWithActions(request, context, actions, addedActions, quantityErrorsByCode = {}, hasErrors = false) {
+  getViewModelWithActions(
+    request,
+    context,
+    actions,
+    addedActions,
+    quantityErrorsByCode = {},
+    hasErrors = false,
+    parcel = {}
+  ) {
+    const selectLandParcelPath = this.getHref(this.getPreviousPagePath())
     return {
       ...super.getViewModel(request, context),
       actionFieldName: this.actionFieldName,
@@ -69,7 +81,8 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
       actionItems: mapActionsToViewModel(actions, addedActions, quantityErrorsByCode, hasErrors),
       chosenAreaFieldsHtml: getChosenAreaFieldsHtml(actions, addedActions),
       pageConsents: getPageConsents(actions),
-      selectLandParcelPath: this.getHref(this.getPreviousPagePath())
+      selectLandParcelPath,
+      parcelSummaryList: getParcelSummaryList(parcel.sheetId, parcel.parcelId, parcel.size)
     }
   }
 
@@ -186,5 +199,5 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
 
 /**
  * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
- * @import { PlannedAction } from '~/src/server/land-grants/types/land-grants.client.d.js'
+ * @import { PlannedAction, Size } from '~/src/server/land-grants/types/land-grants.client.d.js'
  */
