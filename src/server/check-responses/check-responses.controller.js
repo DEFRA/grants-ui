@@ -54,7 +54,7 @@ export default class CheckResponsesPageController extends SummaryPageController 
     additionalSections.forEach((section) => {
       const rows = (section.items ?? []).map((item) => ({
         key: { text: item.title },
-        value: { text: state?.[item.stateValue] }
+        value: { text: state?.[item.stateValue] ?? 'Not provided' }
       }))
 
       viewModel.checkAnswers?.push({

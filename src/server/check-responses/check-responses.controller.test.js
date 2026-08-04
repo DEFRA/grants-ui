@@ -206,6 +206,21 @@ describe('CheckResponsesPageController', () => {
       })
     })
 
+    it('should show "Not provided" when the configured stateValue is missing from state', () => {
+      const ctrl = buildControllerWithAdditionalSections([
+        {
+          title: 'Payment summary',
+          items: [{ title: 'Annual payment for all parcels', stateValue: 'totalPayment' }]
+        }
+      ])
+
+      const context = mockContext({ state: {} })
+
+      const result = ctrl.getSummaryViewModel(mockRequest, context)
+
+      expect(result.checkAnswers[1].summaryList.rows[0].value).toEqual({ text: 'Not provided' })
+    })
+
     it('should not modify checkAnswers when no additionalSections are configured', () => {
       const context = mockContext({ state: {} })
 
