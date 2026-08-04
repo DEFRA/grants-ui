@@ -243,7 +243,7 @@ When `DEV_TOOLS_ENABLED=true`, the following demo data can be configured. See [D
 #### Form Definitions
 
 All form definitions are served from `grants-ui-backend` (locally seeded via the
-config broker from `localstack/config-broker-local/`). There are no local YAML
+config broker from `compose/config-broker-local/`). There are no local YAML
 form definitions and no extra environment variables to configure. See
 [Architecture - Grant Form Definitions](./ARCHITECTURE.md#grant-form-definitions)
 for details.

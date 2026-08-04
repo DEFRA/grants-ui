@@ -109,11 +109,11 @@ describe('audit-publisher plugin', () => {
     })
 
     test('builds the SNS client with a custom endpoint when configured', () => {
-      setupConfig({ 'aws.endpointUrl': 'http://localstack:4566' })
+      setupConfig({ 'aws.endpointUrl': 'http://floci:4566' })
 
       auditPublisher.plugin.register(server)
 
-      expect(SNSClient).toHaveBeenCalledWith({ region: 'eu-west-2', endpoint: 'http://localstack:4566' })
+      expect(SNSClient).toHaveBeenCalledWith({ region: 'eu-west-2', endpoint: 'http://floci:4566' })
     })
   })
 

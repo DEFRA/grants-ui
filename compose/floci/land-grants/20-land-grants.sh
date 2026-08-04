@@ -1,5 +1,6 @@
 #!/bin/bash
 set -euo pipefail
+
 export AWS_REGION=eu-west-2
 export AWS_DEFAULT_REGION=eu-west-2
 export AWS_ACCESS_KEY_ID=test
@@ -8,23 +9,18 @@ export AWS_SECRET_ACCESS_KEY=test
 #
 # Land Grants Backend and Config Broker
 #
-echo "Land Grants Backend Localstack Startup"
+echo "Land Grants Backend Floci Startup"
 
 ENDPOINT="--endpoint-url=http://localhost:4566"
 ACCOUNT_ID=000000000000
 
 INGEST_BUCKET=land-data
-CONFIG_BROKER_BUCKET=configs-bucket
 TOPIC_NAME=gfr__sns___config_update
 UPDATES_QUEUE_NAME=grants_config_broker_update
 
 # Land data S3 bucket
 aws $ENDPOINT s3 mb "s3://${INGEST_BUCKET}" || true
 echo "Created S3 bucket: ${INGEST_BUCKET}"
-
-# Config broker S3 bucket
-aws $ENDPOINT s3 mb "s3://${CONFIG_BROKER_BUCKET}" || true
-echo "Created grants-config-broker S3 bucket: ${CONFIG_BROKER_BUCKET}"
 
 # SQS queue consumed to ingest config changes
 QUEUE_URL=$(aws $ENDPOINT sqs create-queue --queue-name "$UPDATES_QUEUE_NAME" --query QueueUrl --output text)
@@ -47,3 +43,5 @@ aws $ENDPOINT sns subscribe \
   --notification-endpoint "$QUEUE_ARN"
 
 echo "Subscribed $QUEUE_ARN to $TOPIC_ARN"
+
+echo "READY" > /tmp/READY

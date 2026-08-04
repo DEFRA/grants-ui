@@ -2,57 +2,34 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
 
-const composeConfig = parse(readFileSync('compose.yml', 'utf8'))
-const landGrantsComposeConfig = parse(readFileSync('compose.land-grants.yml', 'utf8'))
+const grantsUIComposeConfig = parse(readFileSync('compose.grants-ui.yml', 'utf8'))
 
-const csv = (value = '') =>
-  value
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean)
+const setupResources = readFileSync('compose/floci/common/10-setup-resources.sh', 'utf8')
+
+const landGrantsSetup = readFileSync('compose/floci/land-grants/20-land-grants.sh', 'utf8')
 
 describe('backend-sourced form deployment config', () => {
   it('waits for grants-config-broker before starting grants-ui-backend', () => {
-    expect(composeConfig.services['grants-ui-backend'].depends_on['grants-config-broker']).toEqual({
+    expect(grantsUIComposeConfig.services['grants-ui-backend'].depends_on['grants-config-broker']).toEqual({
       condition: 'service_healthy'
     })
   })
 
-  it('waits for LocalStack base resources before dependent services start', () => {
-    const localstack = composeConfig.services.localstack
-
-    expect(localstack.volumes).toContain(
-      './localstack/check-localstack-resources.sh:/usr/local/bin/check-localstack-resources.sh:ro'
-    )
-    expect(localstack.healthcheck.test).toEqual(['CMD-SHELL', '/usr/local/bin/check-localstack-resources.sh'])
-    expect(csv(localstack.environment.LOCALSTACK_REQUIRED_S3_BUCKETS)).toEqual(
-      expect.arrayContaining(['configs-bucket'])
-    )
-    expect(csv(localstack.environment.LOCALSTACK_REQUIRED_SQS_QUEUES)).toEqual(
-      expect.arrayContaining(['fcp_audit', 'gfr__sqs___config_input', 'grants_ui_backend__sqs__config_updates'])
-    )
-    expect(csv(localstack.environment.LOCALSTACK_REQUIRED_SNS_TOPICS)).toEqual(
-      expect.arrayContaining(['fcp_audit_events', 'gfr__sns___config_update'])
-    )
+  it('creates the required Floci base resources', () => {
+    expect(setupResources).toContain('configs-bucket')
+    expect(setupResources).toContain('gfr__sqs___config_input')
+    expect(setupResources).toContain('grants_ui_backend__sqs__config_updates')
+    expect(setupResources).toContain('fcp_audit')
+    expect(setupResources).toContain('fcp_audit_events')
+    expect(setupResources).toContain('gfr__sns___config_update')
   })
 
-  it('extends LocalStack readiness for land-grants resources', () => {
-    const localstack = landGrantsComposeConfig.services.localstack
-    const environment = localstack.environment ?? {}
+  it('creates the required land-grants resources', () => {
+    expect(landGrantsSetup).toContain('INGEST_BUCKET=land-data')
+    expect(landGrantsSetup).toContain('s3 mb')
+    expect(landGrantsSetup).toContain('INGEST_BUCKET')
 
-    expect(csv(environment.LOCALSTACK_REQUIRED_S3_BUCKETS)).toEqual(
-      expect.arrayContaining(['configs-bucket', 'land-data'])
-    )
-    expect(csv(environment.LOCALSTACK_REQUIRED_SQS_QUEUES)).toEqual(
-      expect.arrayContaining([
-        'fcp_audit',
-        'gfr__sqs___config_input',
-        'grants_ui_backend__sqs__config_updates',
-        'grants_config_broker_update'
-      ])
-    )
-    expect(csv(environment.LOCALSTACK_REQUIRED_SNS_TOPICS)).toEqual(
-      expect.arrayContaining(['fcp_audit_events', 'gfr__sns___config_update'])
-    )
+    expect(landGrantsSetup).toContain('UPDATES_QUEUE_NAME=grants_config_broker_update')
+    expect(landGrantsSetup).toContain('create-queue --queue-name "$UPDATES_QUEUE_NAME"')
   })
 })

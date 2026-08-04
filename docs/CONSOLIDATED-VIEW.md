@@ -33,8 +33,8 @@ ENTRA_INTERNAL_CLIENT_SECRET=<your-client-secret>
 
 ### Troubleshooting
 
-| Symptom                                        | Cause                                                                                                                                                          |
-| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `403 Forbidden` with `{"message":"Forbidden"}` | `CV_API_DEVELOPER_KEY` is missing, expired, or not passed into the Docker container. Check `compose.yml` includes the env var and your `.env` has a valid key. |
-| `401 Unauthorized`                             | Entra ID credentials are invalid or expired. Check `ENTRA_INTERNAL_*` values.                                                                                  |
-| Requests hit the stub instead of live DAL      | `CV_API_MOCK_ENABLED` is still `true` (the default). Set it to `false`.                                                                                        |
+| Symptom                                        | Cause                                                                                                                                                                    |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `403 Forbidden` with `{"message":"Forbidden"}` | `CV_API_DEVELOPER_KEY` is missing, expired, or not passed into the Docker container. Check `compose.grants-ui.yml` includes the env var and your `.env` has a valid key. |
+| `401 Unauthorized`                             | Entra ID credentials are invalid or expired. Check `ENTRA_INTERNAL_*` values.                                                                                            |
+| Requests hit the stub instead of live DAL      | `CV_API_MOCK_ENABLED` is still `true` (the default). Set it to `false`.                                                                                                  |

@@ -1,6 +1,6 @@
 # Grants UI Features
 
-This document provides a comprehensive overview of all the features available in the Grants UI service, as demonstrated by the Example Grant with Auth journey. Each feature is configured through the grant's form definition (authored as YAML and served from `grants-ui-backend`; local copies for development live under `localstack/config-broker-local/`) and can be used to build custom grant application forms.
+This document provides a comprehensive overview of all the features available in the Grants UI service, as demonstrated by the Example Grant with Auth journey. Each feature is configured through the grant's form definition (authored as YAML and served from `grants-ui-backend`; local copies for development live under `compose/config-broker-local/`) and can be used to build custom grant application forms.
 
 ## Table of Contents
 

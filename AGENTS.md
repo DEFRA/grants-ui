@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-Application code lives in `src`. Server routes, controllers, helpers, services, and views are under `src/server`; browser JavaScript and Sass are under `src/client`; shared utilities are in `src/shared`; configuration is in `src/config`. Unit tests are colocated as `*.test.js`. Contract assets live in `src/contracts`. Acceptance tests are in `acceptance/test`, with feature files, steps, page objects, and support utilities split by folder. Operational scripts and local tooling are in `scripts/`, `tools/`, `localstack/`, and root Docker Compose files.
+Application code lives in `src`. Server routes, controllers, helpers, services, and views are under `src/server`; browser JavaScript and Sass are under `src/client`; shared utilities are in `src/shared`; configuration is in `src/config`. Unit tests are colocated as `*.test.js`. Contract assets live in `src/contracts`. Acceptance tests are in `acceptance/test`, with feature files, steps, page objects, and support utilities split by folder. Operational scripts and local tooling are in `scripts/`, `tools/`, `floci/`, and root Docker Compose files.
 
 ## Build, Test, and Development Commands
 

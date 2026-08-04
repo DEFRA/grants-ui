@@ -9,7 +9,7 @@
 # The scanner reaches the server by service name on the shared default network,
 # which avoids Docker-Desktop-for-Mac networking quirks (--network host / host.docker.internal).
 #
-# Its own project name isolates this stack from the app stack (compose.yml), so
+# Its own project name isolates this stack from the app stack (compose.infra.yml+compose.grants-ui.yml), so
 # `down` only ever removes SonarQube's own containers/network, never the app's.
 name: grants-ui-sonar
 services:
