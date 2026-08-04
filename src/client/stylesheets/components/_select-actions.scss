@@ -7,6 +7,10 @@
     align-self: flex-start;
   }
 
+  .action-guidance-link {
+    @include govuk-font-size(16);
+  }
+
   .select-actions-hint {
     @include govuk-font-size(16);
     display: block;
