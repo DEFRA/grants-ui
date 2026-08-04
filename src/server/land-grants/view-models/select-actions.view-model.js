@@ -151,22 +151,22 @@ export function mapActionToViewModel(
   const existingAction = addedActions.find((a) => a.code === action.code)
   const quantityValue = existingAction?.value ?? ''
   const checked = Boolean(existingAction)
-  const availableAreaType = action.metadata?.availableAreaType
-  const needsQuantity = requiresQuantityInput(availableAreaType)
+  const availabilityType = action.availability?.type
+  const needsQuantity = requiresQuantityInput(availabilityType)
   const hintHtml = getHintHtml(action, needsQuantity)
   const consents = getActionConsentKeys(action)
 
   return {
     id: getCheckboxItemId(action.code, isFirst),
     value: action.code,
-    html: `${getActionLabelHtml(action.description, action.metadata?.guidanceLink)}<span class="select-actions-hint">${hintHtml}</span>`,
+    html: `${getActionLabelHtml(action.description, action.guidanceUrl)}<span class="select-actions-hint">${hintHtml}</span>`,
     checked,
     consents,
     attributes: {
       'data-available-unit': action.availableArea?.unit,
       // A non-quantity action's pass/fail threshold - static, never touched by the client.
       'data-total-available-area': getStaticAvailableArea(action)?.value,
-      'data-available-area-type': availableAreaType ?? 'total',
+      'data-available-area-type': availabilityType ?? 'total',
       // Stamped per-checkbox (not a single form-wide flag) so protection survives
       // until THIS action is directly interacted with, not just the first refresh.
       ...(checked && hasErrors && { 'data-error-on-load': 'true' })
@@ -194,7 +194,7 @@ export function mapActionToViewModel(
  */
 export function getChosenAreaFieldsHtml(actions, addedActions) {
   return actions
-    .filter((action) => !requiresQuantityInput(action.metadata?.availableAreaType))
+    .filter((action) => !requiresQuantityInput(action.availability?.type))
     .map((action) => {
       const fieldName = getActionQuantityFieldName(action.code)
       const chosenArea = Number(addedActions.find((a) => a.code === action.code)?.value)

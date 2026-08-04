@@ -36,7 +36,7 @@ export function buildNewState(state, actionsObj, parcel) {
  * @returns {boolean}
  */
 function hasSubmittedQuantity(payload, actionInfo) {
-  const quantityOverride = requiresQuantityInput(actionInfo.metadata?.availableAreaType)
+  const quantityOverride = requiresQuantityInput(actionInfo.availability?.type)
     ? payload[getActionQuantityFieldName(actionInfo.code)]
     : null
   return quantityOverride !== null && quantityOverride !== undefined && quantityOverride !== ''
@@ -87,7 +87,7 @@ function buildActionStateEntry(payload, actionInfo) {
 /**
  * Overlays freshly recomputed availableArea (keyed by code, from
  * fetchActionsWithPlannedActions) onto the full action list from the initial
- * fetch - everything else (description, version, consents, metadata, etc.)
+ * fetch - everything else (description, version, consents, availability, etc.)
  * still comes from the original fetch, and an action missing from the
  * recompute keeps its original values. The action's first-seen availableArea
  * is preserved as staticAvailableArea, since the recomputed value competes
@@ -180,8 +180,7 @@ export function addSelectedActionsToState(state, payload, actions, parcel) {
     actions,
     parcel,
     (actionInfo, formPayload) =>
-      !requiresQuantityInput(actionInfo.metadata?.availableAreaType) ||
-      hasSubmittedNonZeroQuantity(formPayload, actionInfo)
+      !requiresQuantityInput(actionInfo.availability?.type) || hasSubmittedNonZeroQuantity(formPayload, actionInfo)
   )
 }
 
@@ -204,7 +203,7 @@ export function getAddedActionsFromPayload(payload, actions, prevAddedActions = 
     .map((actionInfo) => ({
       code: actionInfo.code,
       description: actionInfo.description,
-      value: requiresQuantityInput(actionInfo.metadata?.availableAreaType)
+      value: requiresQuantityInput(actionInfo.availability?.type)
         ? (payload[getActionQuantityFieldName(actionInfo.code)] ?? '')
         : (prevAddedActions.find((a) => a.code === actionInfo.code)?.value ?? '')
     }))
@@ -326,9 +325,10 @@ export function findActionInfoFromState(landParcels, parcelKey, action) {
  * @property {string} description - Action description
  * @property {string} version - Action version
  * @property {string[]} [consents] - Array of consent type keys required (e.g., ['sssi', 'hefer'])
- * @property {object} [metadata] - Additional action metadata
- * @property {'total'|'partial'|'limited'} [metadata.availableAreaType] - Whether this action
- *   needs a user-typed quantity (see requiresQuantityInput in shared/action-quantity-type.js)
+ * @property {string} [guidanceUrl] - URL to the action's guidance page
+ * @property {object} [availability] - Governs whether this action needs a user-typed quantity
+ * @property {'total'|'partial'} [availability.type] - See requiresQuantityInput in
+ *   shared/action-quantity-type.js
  * @property {object} [availableArea] - Available area for the action
  * @property {number} [availableArea.value] - Area value
  * @property {string} [availableArea.unit] - Area unit

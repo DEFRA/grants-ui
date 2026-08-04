@@ -563,22 +563,18 @@ describe('parcels', () => {
           description: 'Manage grassland with very low nutrient inputs',
           ratePerUnitGbp: 10.6,
           ratePerAgreementPerYearGbp: 272,
-          metadata: {
-            guidanceLink: string(
-              'https://www.gov.uk/find-funding-for-land-or-farms/clig3-manage-grassland-with-very-low-nutrient-inputs'
-            ),
-            availableAreaType: 'total'
-          }
+          guidanceUrl: string(
+            'https://www.gov.uk/find-funding-for-land-or-farms/clig3-manage-grassland-with-very-low-nutrient-inputs'
+          ),
+          availability: { type: 'total' }
         },
         {
           code: 'CSAM3',
           availableArea: { value: 20.75, unit: 'ha' },
           description: 'Herbal leys',
           ratePerUnitGbp: 224,
-          metadata: {
-            guidanceLink: string('https://www.gov.uk/find-funding-for-land-or-farms/csam3-herbal-leys'),
-            availableAreaType: 'partial'
-          }
+          guidanceUrl: string('https://www.gov.uk/find-funding-for-land-or-farms/csam3-herbal-leys'),
+          availability: { type: 'partial' }
         }
       ]
     }
@@ -594,7 +590,7 @@ describe('parcels', () => {
         headers: makeLandGrantsHeaders(),
         body: {
           parcelIds: ['SD6743-8083'],
-          fields: ['actions', 'size', 'actions.metadata'],
+          fields: ['actions', 'size', 'actions.availability'],
           sbi: userContext.sbi
         }
       })
@@ -604,7 +600,7 @@ describe('parcels', () => {
           '/api/v2/parcels',
           {
             parcelIds: ['SD6743-8083'],
-            fields: ['actions', 'size', 'actions.metadata'],
+            fields: ['actions', 'size', 'actions.availability'],
             sbi: userContext.sbi
           },
           mockserver.url
@@ -614,12 +610,12 @@ describe('parcels', () => {
         expect(response.parcels[0].sheetId).toBe('8083')
 
         expect(response.parcels[0].actions[0].code).toBe('CLIG3')
-        expect(response.parcels[0].actions[0].metadata.guidanceLink).toEqual(expect.any(String))
-        expect(response.parcels[0].actions[0].metadata.availableAreaType).toBe('total')
+        expect(response.parcels[0].actions[0].guidanceUrl).toEqual(expect.any(String))
+        expect(response.parcels[0].actions[0].availability.type).toBe('total')
 
         expect(response.parcels[0].actions[1].code).toBe('CSAM3')
-        expect(response.parcels[0].actions[1].metadata.guidanceLink).toEqual(expect.any(String))
-        expect(response.parcels[0].actions[1].metadata.availableAreaType).toBe('partial')
+        expect(response.parcels[0].actions[1].guidanceUrl).toEqual(expect.any(String))
+        expect(response.parcels[0].actions[1].availability.type).toBe('partial')
       })
   })
 

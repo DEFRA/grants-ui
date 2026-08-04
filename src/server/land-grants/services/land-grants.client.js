@@ -200,7 +200,7 @@ export async function parcelsWithGroups(parcelIds, baseUrl, userContext, planned
  */
 export async function parcelsWithActions(parcelIds, baseUrl, userContext, plannedActions) {
   const consentTypes = getConsentTypes()
-  const fields = ['actions', 'size', 'actions.metadata', ...consentTypes.map((ct) => `actions.${ct.apiField}`)]
+  const fields = ['actions', 'size', 'actions.availability', ...consentTypes.map((ct) => `actions.${ct.apiField}`)]
 
   return parcelsWithFields(fields, parcelIds, baseUrl, userContext, plannedActions)
 }

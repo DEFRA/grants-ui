@@ -42,11 +42,10 @@
  */
 
 /**
- * @typedef {object} ActionMetadata
- * @property {string} [guidanceLink] - URL to the action's guidance page
- * @property {'total'|'partial'|'limited'} [availableAreaType] - How the user must enter a
- *   quantity relative to availableArea: 'total' (or unset) requires the full amount and shows
- *   no quantity input; 'partial'/'limited' show a quantity input capped at availableArea
+ * @typedef {object} ActionAvailability
+ * @property {'total'|'partial'} [type] - How the user must enter a quantity relative to
+ *   availableArea: 'total' (or unset) requires the full amount and shows no quantity input;
+ *   'partial' shows a quantity input capped at availableArea
  */
 
 /**
@@ -59,7 +58,9 @@
  * @property {Size} availableArea - The available area for the action
  * @property {number} ratePerUnitGbp - The rate per unit in GBP
  * @property {number} ratePerAgreementPerYearGbp - The rate per agreement per year in GBP
- * @property {ActionMetadata} [metadata] - Additional action metadata, e.g. guidance link
+ * @property {string} [guidanceUrl] - URL to the action's guidance page
+ * @property {ActionAvailability} [availability] - Governs whether this action needs a
+ *   user-typed quantity
  */
 
 /**

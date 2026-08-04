@@ -13,10 +13,10 @@
  * @property {object} [staticAvailableArea] - The action's original, uncompeted available area (see mergeRecomputedAvailability)
  * @property {number} [staticAvailableArea.value] - Area value
  * @property {string} [staticAvailableArea.unit] - Area unit
- * @property {object} [metadata] - Additional action metadata
- * @property {string} [metadata.guidanceLink] - URL to the action's guidance page
- * @property {'total'|'partial'|'limited'} [metadata.availableAreaType] - Whether this action
- *   needs a user-typed quantity (see requiresQuantityInput in shared/action-quantity-type.js)
+ * @property {string} [guidanceUrl] - URL to the action's guidance page
+ * @property {object} [availability] - Governs whether this action needs a user-typed quantity
+ * @property {'total'|'partial'} [availability.type] - See requiresQuantityInput in
+ *   shared/action-quantity-type.js
  */
 
 /**
@@ -42,7 +42,7 @@
  * @property {{ 'data-available-unit': string|undefined, 'data-total-available-area': number|undefined, 'data-available-area-type': string }} [attributes] -
  *   Rendered onto the checkbox <input> (flat page only). `data-total-available-area` is set
  *   once and never touched client-side, so it stays the original full amount.
- *   `data-available-area-type` mirrors metadata.availableAreaType ('total' when unset) so the
+ *   `data-available-area-type` mirrors availability.type ('total' when unset) so the
  *   client can decide whether an action needs a typed quantity without re-deriving it.
  * @property {{ html: string }} [conditional] - Conditional reveal markup shown when checked/selected
  */

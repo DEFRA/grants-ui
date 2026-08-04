@@ -192,7 +192,7 @@ export async function fetchActionsForParcel(parcel, userContext) {
 /**
  * Recomputes availableArea for a parcel's actions against an in-progress
  * selection, for the select-actions page's live availability refresh.
- * availableAreaType is static per action (not affected by the recompute),
+ * availability.type is static per action (not affected by the recompute),
  * so it isn't returned here - the client already has it from initial render.
  * @param {{ parcelId: string, sheetId: string, plannedActions: PlannedAction[] }} params
  * @param {LandGrantsUserContext} userContext

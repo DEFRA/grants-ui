@@ -886,9 +886,9 @@ describe('land-grants service', () => {
       })
     })
 
-    it.each([['partial'], ['limited']])(
-      'should pass metadata.availableAreaType through unchanged when it is %s',
-      async (availableAreaType) => {
+    it.each([['partial']])(
+      'should pass availability.type through unchanged when it is %s',
+      async (availabilityType) => {
         const mockApiResponse = {
           parcels: [
             {
@@ -900,7 +900,7 @@ describe('land-grants service', () => {
                   code: 'CSAM3',
                   availableArea: { value: 10.5, unit: 'ha' },
                   description: 'Herbal leys',
-                  metadata: { availableAreaType: availableAreaType }
+                  availability: { type: availabilityType }
                 }
               ]
             }
@@ -914,14 +914,14 @@ describe('land-grants service', () => {
           enabledLandActions: ['CSAM3']
         })
 
-        expect(result.actions[0].metadata).toEqual({ availableAreaType: availableAreaType })
+        expect(result.actions[0].availability).toEqual({ type: availabilityType })
         expect(result.actions[0].availableArea).toEqual({ value: 10.5, unit: 'ha' })
       }
     )
 
     it.each([['total'], [undefined]])(
-      'should leave metadata.availableAreaType as %s when the API returns it that way',
-      async (availableAreaType) => {
+      'should leave availability.type as %s when the API returns it that way',
+      async (availabilityType) => {
         const mockApiResponse = {
           parcels: [
             {
@@ -933,7 +933,7 @@ describe('land-grants service', () => {
                   code: 'CMOR1',
                   availableArea: { value: 8, unit: 'ha' },
                   description: 'Assess moorland and produce a written record',
-                  ...(availableAreaType && { metadata: { availableAreaType: availableAreaType } })
+                  ...(availabilityType && { availability: { type: availabilityType } })
                 }
               ]
             }
@@ -947,7 +947,7 @@ describe('land-grants service', () => {
           enabledLandActions
         })
 
-        expect(result.actions[0].metadata?.availableAreaType).toBe(availableAreaType)
+        expect(result.actions[0].availability?.type).toBe(availabilityType)
       }
     )
 

@@ -234,7 +234,7 @@ describe('land-parcel-state.manager', () => {
             {
               code: 'CSAM3',
               description: 'Herbal leys: CSAM3',
-              metadata: { availableAreaType: 'partial' },
+              availability: { type: 'partial' },
               availableArea: { value: 18.5673, unit: 'ha' }
             }
           ]
@@ -281,7 +281,7 @@ describe('land-parcel-state.manager', () => {
               {
                 code: 'CSAM3',
                 description: 'Herbal leys: CSAM3',
-                metadata: { availableAreaType: 'partial' },
+                availability: { type: 'partial' },
                 availableArea: { value: 0, unit: 'ha' }
               }
             ]
@@ -364,7 +364,7 @@ describe('land-parcel-state.manager', () => {
         {
           code: 'CSAM3',
           description: 'Herbal leys: CSAM3',
-          metadata: { availableAreaType: 'partial' },
+          availability: { type: 'partial' },
           availableArea: { value: 18.5673, unit: 'ha' }
         }
       ]
@@ -385,7 +385,7 @@ describe('land-parcel-state.manager', () => {
         {
           code: 'CSAM3',
           description: 'Herbal leys: CSAM3',
-          metadata: { availableAreaType: 'partial' },
+          availability: { type: 'partial' },
           availableArea: { value: 18.5673, unit: 'ha' }
         }
       ]
@@ -406,7 +406,7 @@ describe('land-parcel-state.manager', () => {
         {
           code: 'CSAM3',
           description: 'Herbal leys: CSAM3',
-          metadata: { availableAreaType: 'partial' },
+          availability: { type: 'partial' },
           availableArea: { value: 18.5673, unit: 'ha' }
         }
       ]
@@ -425,7 +425,7 @@ describe('land-parcel-state.manager', () => {
         {
           code: 'CSAM3',
           description: 'Herbal leys: CSAM3',
-          metadata: { availableAreaType: 'partial' },
+          availability: { type: 'partial' },
           availableArea: { value: 18.5673, unit: 'ha' }
         }
       ]
@@ -676,13 +676,13 @@ describe('land-parcel-state.manager', () => {
   })
 
   describe('mergeRecomputedAvailability', () => {
-    it('should overwrite availableArea from the recomputed match, leaving metadata untouched', () => {
+    it('should overwrite availableArea from the recomputed match, leaving availability untouched', () => {
       const actions = [
         {
           code: 'CSAM3',
           description: 'Herbal leys',
           availableArea: { value: 0.3271, unit: 'ha' },
-          metadata: { availableAreaType: 'partial' }
+          availability: { type: 'partial' }
         }
       ]
       const recomputed = [{ code: 'CSAM3', availableArea: { value: 0, unit: 'ha' } }]
@@ -690,7 +690,7 @@ describe('land-parcel-state.manager', () => {
       const result = mergeRecomputedAvailability(actions, recomputed)
 
       expect(result[0].availableArea).toEqual({ value: 0, unit: 'ha' })
-      expect(result[0].metadata).toEqual({ availableAreaType: 'partial' })
+      expect(result[0].availability).toEqual({ type: 'partial' })
     })
 
     it("should preserve the action's original availableArea as staticAvailableArea", () => {
@@ -732,7 +732,7 @@ describe('land-parcel-state.manager', () => {
   describe('getAddedActionsFromPayload', () => {
     it('should use the payload value for a quantity-required action', () => {
       const payload = { landAction: 'CSAM3', landActionQuantity_CSAM3: '0.2' }
-      const actions = [{ code: 'CSAM3', description: 'Herbal leys', metadata: { availableAreaType: 'partial' } }]
+      const actions = [{ code: 'CSAM3', description: 'Herbal leys', availability: { type: 'partial' } }]
 
       const result = getAddedActionsFromPayload(payload, actions)
 
@@ -743,7 +743,7 @@ describe('land-parcel-state.manager', () => {
       const payload = { landAction: ['CMOR1', 'CSAM3'], landActionQuantity_CSAM3: '0.2' }
       const actions = [
         { code: 'CMOR1', description: 'Moorland record' },
-        { code: 'CSAM3', description: 'Herbal leys', metadata: { availableAreaType: 'partial' } }
+        { code: 'CSAM3', description: 'Herbal leys', availability: { type: 'partial' } }
       ]
       const prevAddedActions = [{ code: 'CMOR1', value: 0.1572 }]
 

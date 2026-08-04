@@ -774,9 +774,9 @@ describe('Land Grants client', () => {
   })
 
   describe('parcelsWithActions', () => {
-    it('should trigger a POST request to /api/v2/parcels with actions, size, and actions.metadata', async () => {
+    it('should trigger a POST request to /api/v2/parcels with actions, size, and actions.availability', async () => {
       const mockResponse = { id: 1, status: 'success' }
-      const fields = ['actions', 'size', 'actions.metadata']
+      const fields = ['actions', 'size', 'actions.availability']
       const parcelIds = ['parcel1']
 
       mockFetch.mockResolvedValueOnce({
@@ -809,7 +809,7 @@ describe('Land Grants client', () => {
       expect(callBody.parcelIds).toEqual(parcelIds)
       expect(callBody.fields).toContain('actions')
       expect(callBody.fields).toContain('size')
-      expect(callBody.fields).toContain('actions.metadata')
+      expect(callBody.fields).toContain('actions.availability')
       expect(result).toEqual(mockResponse)
     })
   })

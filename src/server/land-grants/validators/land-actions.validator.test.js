@@ -147,7 +147,7 @@ describe('land-actions.validator', () => {
 
   describe('validateSelectedActionQuantities', () => {
     const actions = [
-      { code: 'CSAM3', description: 'Herbal leys', version: '1', metadata: { availableAreaType: 'partial' } },
+      { code: 'CSAM3', description: 'Herbal leys', version: '1', availability: { type: 'partial' } },
       { code: 'CLIG3', description: 'Manage grassland', version: '1' }
     ]
 
@@ -164,7 +164,7 @@ describe('land-actions.validator', () => {
       ])
     })
 
-    it('should not require a quantity for an action with no availableAreaType metadata', () => {
+    it('should not require a quantity for an action with no availability.type', () => {
       const payload = { landAction: 'CLIG3' }
 
       const result = validateSelectedActionQuantities(payload, actions)
@@ -183,7 +183,7 @@ describe('land-actions.validator', () => {
     it('should return multiple errors for multiple unconfirmed quantity-required actions', () => {
       const withSecondQuantity = [
         ...actions,
-        { code: 'UPL8', description: 'Low input', version: '1', metadata: { availableAreaType: 'partial' } }
+        { code: 'UPL8', description: 'Low input', version: '1', availability: { type: 'partial' } }
       ]
       const payload = { landAction: ['CSAM3', 'UPL8'] }
 

@@ -92,7 +92,7 @@ describe('SelectActionsPageController', () => {
       description: 'Heavy livestock grazing on moorland: UPL2',
       availableArea: { unit: 'ha', value: 3 },
       ratePerUnitGbp: 45,
-      metadata: { availableAreaType: 'partial' }
+      availability: { type: 'partial' }
     }
   ]
 
