@@ -77,9 +77,19 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
    * @param {Array} _addedActions
    * @param {Record<string, string>} [_quantityErrorsByCode]
    * @param {boolean} [_hasErrors] - Whether this page load is redisplaying a rejected submission
+   * @param {{ sheetId?: string, parcelId?: string, size?: Size }} [_parcel] - Identifiers and area for the
+   *   "Selected land parcel" summary
    * @returns {object}
    */
-  getViewModelWithActions(_request, _context, _groupedActions, _addedActions, _quantityErrorsByCode, _hasErrors) {
+  getViewModelWithActions(
+    _request,
+    _context,
+    _groupedActions,
+    _addedActions,
+    _quantityErrorsByCode,
+    _hasErrors,
+    _parcel
+  ) {
     throw new Error(`${this.constructor.name} must implement getViewModelWithActions()`)
   }
 
@@ -174,11 +184,20 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
       addedActions = [],
       additionalState,
       existingLandParcels = {},
-      quantityErrorsByCode = {}
+      quantityErrorsByCode = {},
+      size
     } = options
     const [sheetId = '', parcelId = ''] = parseLandParcel(selectedLandParcel)
     return h.view(this.viewName, {
-      ...this.getViewModelWithActions(request, context, actions, addedActions, quantityErrorsByCode, errors.length > 0),
+      ...this.getViewModelWithActions(
+        request,
+        context,
+        actions,
+        addedActions,
+        quantityErrorsByCode,
+        errors.length > 0,
+        { sheetId, parcelId, size }
+      ),
       ...additionalState,
       parcelName: `${sheetId} ${parcelId}`,
       errors,
@@ -233,16 +252,23 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
 
   /**
    * Render success view with actions
+   * @param {object} h - Hapi response toolkit
+   * @param {AnyFormRequest} request
+   * @param {FormContext} context
+   * @param {Array} groupedActions
+   * @param {Array} addedActions
+   * @param {{ sheetId: string, parcelId: string, size?: Size }} parcel
    */
-  renderSuccessView(h, request, context, groupedActions, addedActions, sheetId, parcelId) {
+  renderSuccessView(h, request, context, groupedActions, addedActions, parcel) {
     const { state } = context
+    const { sheetId, parcelId } = parcel
 
     if (!groupedActions.length) {
       log(LogCodes.LAND_GRANTS.NO_ACTIONS_FOUND, { sheetId, parcelId }, request)
     }
 
     return h.view(this.viewName, {
-      ...this.getViewModelWithActions(request, context, groupedActions, addedActions),
+      ...this.getViewModelWithActions(request, context, groupedActions, addedActions, {}, false, parcel),
       ...state,
       parcelName: `${sheetId} ${parcelId}`,
       existingLandParcels: Object.keys(state.landParcels || {}).length > 0,
@@ -276,7 +302,11 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
       })
     }
 
-    return this.renderSuccessView(h, request, context, groupedActions, addedActions, parcel.sheetId, parcel.parcelId)
+    return this.renderSuccessView(h, request, context, groupedActions, addedActions, {
+      sheetId: parcel.sheetId,
+      parcelId: parcel.parcelId,
+      size: result.parcel?.size
+    })
   }
 
   /**
@@ -306,7 +336,8 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
       addedActions,
       additionalState: prevState,
       existingLandParcels: Object.keys(prevState.landParcels || {}).length > 0,
-      quantityErrorsByCode
+      quantityErrorsByCode,
+      size: result?.parcel?.size
     })
   }
 
@@ -320,8 +351,9 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
    * @param {Array} options.actions
    * @param {{ selectedLandParcel: string, sheetId: string, parcelId: string }} options.parcel
    * @param {object} options.state
+   * @param {Size} [options.size] - Parcel area for the "Selected land parcel" summary, on re-render
    */
-  async handleApplicationValidation(h, request, context, { payload, actions, parcel, state }) {
+  async handleApplicationValidation(h, request, context, { payload, actions, parcel, state, size }) {
     const { selectedLandParcel, sheetId, parcelId } = parcel
     const { referenceNumber } = context
     const { sbi, crn } = request.auth.credentials
@@ -352,7 +384,8 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
           actions,
           addedActions,
           additionalState: state,
-          quantityErrorsByCode
+          quantityErrorsByCode,
+          size
         })
       }
     } catch (e) {
@@ -374,7 +407,8 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
         selectedLandParcel,
         actions,
         addedActions,
-        additionalState: state
+        additionalState: state,
+        size
       })
     }
     return null
@@ -423,7 +457,8 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
         payload,
         actions: recomputedActions,
         parcel,
-        state
+        state,
+        size: fetchedParcel.size
       })
       if (validationResult) {
         return validationResult
