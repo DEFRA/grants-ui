@@ -43,8 +43,8 @@
 
 /**
  * @typedef {object} ActionMetadata
- * @property {string} [guidance_link] - URL to the action's guidance page
- * @property {'total'|'partial'|'limited'} [available_area_type] - How the user must enter a
+ * @property {string} [guidanceLink] - URL to the action's guidance page
+ * @property {'total'|'partial'|'limited'} [availableAreaType] - How the user must enter a
  *   quantity relative to availableArea: 'total' (or unset) requires the full amount and shows
  *   no quantity input; 'partial'/'limited' show a quantity input capped at availableArea
  */

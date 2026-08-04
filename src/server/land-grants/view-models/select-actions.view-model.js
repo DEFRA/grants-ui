@@ -151,7 +151,7 @@ export function mapActionToViewModel(
   const existingAction = addedActions.find((a) => a.code === action.code)
   const quantityValue = existingAction?.value ?? ''
   const checked = Boolean(existingAction)
-  const availableAreaType = action.metadata?.available_area_type
+  const availableAreaType = action.metadata?.availableAreaType
   const needsQuantity = requiresQuantityInput(availableAreaType)
   const hintHtml = getHintHtml(action, needsQuantity)
   const consents = getActionConsentKeys(action)
@@ -159,7 +159,7 @@ export function mapActionToViewModel(
   return {
     id: getCheckboxItemId(action.code, isFirst),
     value: action.code,
-    html: `${getActionLabelHtml(action.description, action.metadata?.guidance_link)}<span class="select-actions-hint">${hintHtml}</span>`,
+    html: `${getActionLabelHtml(action.description, action.metadata?.guidanceLink)}<span class="select-actions-hint">${hintHtml}</span>`,
     checked,
     consents,
     attributes: {
@@ -194,7 +194,7 @@ export function mapActionToViewModel(
  */
 export function getChosenAreaFieldsHtml(actions, addedActions) {
   return actions
-    .filter((action) => !requiresQuantityInput(action.metadata?.available_area_type))
+    .filter((action) => !requiresQuantityInput(action.metadata?.availableAreaType))
     .map((action) => {
       const fieldName = getActionQuantityFieldName(action.code)
       const chosenArea = Number(addedActions.find((a) => a.code === action.code)?.value)

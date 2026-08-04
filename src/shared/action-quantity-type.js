@@ -1,6 +1,6 @@
 /**
  * Whether an action needs a user-typed quantity: 'partial'/'limited' do,
- * 'total' (or unset) don't. Shared so server (metadata.available_area_type)
+ * 'total' (or unset) don't. Shared so server (metadata.availableAreaType)
  * and client (its DOM mirror, data-available-area-type) agree.
  */
 

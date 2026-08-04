@@ -36,7 +36,7 @@ export function buildNewState(state, actionsObj, parcel) {
  * @returns {boolean}
  */
 function hasSubmittedQuantity(payload, actionInfo) {
-  const quantityOverride = requiresQuantityInput(actionInfo.metadata?.available_area_type)
+  const quantityOverride = requiresQuantityInput(actionInfo.metadata?.availableAreaType)
     ? payload[getActionQuantityFieldName(actionInfo.code)]
     : null
   return quantityOverride !== null && quantityOverride !== undefined && quantityOverride !== ''
@@ -180,7 +180,7 @@ export function addSelectedActionsToState(state, payload, actions, parcel) {
     actions,
     parcel,
     (actionInfo, formPayload) =>
-      !requiresQuantityInput(actionInfo.metadata?.available_area_type) ||
+      !requiresQuantityInput(actionInfo.metadata?.availableAreaType) ||
       hasSubmittedNonZeroQuantity(formPayload, actionInfo)
   )
 }
@@ -204,7 +204,7 @@ export function getAddedActionsFromPayload(payload, actions, prevAddedActions = 
     .map((actionInfo) => ({
       code: actionInfo.code,
       description: actionInfo.description,
-      value: requiresQuantityInput(actionInfo.metadata?.available_area_type)
+      value: requiresQuantityInput(actionInfo.metadata?.availableAreaType)
         ? (payload[getActionQuantityFieldName(actionInfo.code)] ?? '')
         : (prevAddedActions.find((a) => a.code === actionInfo.code)?.value ?? '')
     }))
@@ -327,7 +327,7 @@ export function findActionInfoFromState(landParcels, parcelKey, action) {
  * @property {string} version - Action version
  * @property {string[]} [consents] - Array of consent type keys required (e.g., ['sssi', 'hefer'])
  * @property {object} [metadata] - Additional action metadata
- * @property {'total'|'partial'|'limited'} [metadata.available_area_type] - Whether this action
+ * @property {'total'|'partial'|'limited'} [metadata.availableAreaType] - Whether this action
  *   needs a user-typed quantity (see requiresQuantityInput in shared/action-quantity-type.js)
  * @property {object} [availableArea] - Available area for the action
  * @property {number} [availableArea.value] - Area value

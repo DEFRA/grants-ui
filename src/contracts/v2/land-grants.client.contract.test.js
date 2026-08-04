@@ -564,10 +564,10 @@ describe('parcels', () => {
           ratePerUnitGbp: 10.6,
           ratePerAgreementPerYearGbp: 272,
           metadata: {
-            guidance_link: string(
+            guidanceLink: string(
               'https://www.gov.uk/find-funding-for-land-or-farms/clig3-manage-grassland-with-very-low-nutrient-inputs'
             ),
-            available_area_type: 'total'
+            availableAreaType: 'total'
           }
         },
         {
@@ -576,8 +576,8 @@ describe('parcels', () => {
           description: 'Herbal leys',
           ratePerUnitGbp: 224,
           metadata: {
-            guidance_link: string('https://www.gov.uk/find-funding-for-land-or-farms/csam3-herbal-leys'),
-            available_area_type: 'partial'
+            guidanceLink: string('https://www.gov.uk/find-funding-for-land-or-farms/csam3-herbal-leys'),
+            availableAreaType: 'partial'
           }
         }
       ]
@@ -614,12 +614,12 @@ describe('parcels', () => {
         expect(response.parcels[0].sheetId).toBe('8083')
 
         expect(response.parcels[0].actions[0].code).toBe('CLIG3')
-        expect(response.parcels[0].actions[0].metadata.guidance_link).toEqual(expect.any(String))
-        expect(response.parcels[0].actions[0].metadata.available_area_type).toBe('total')
+        expect(response.parcels[0].actions[0].metadata.guidanceLink).toEqual(expect.any(String))
+        expect(response.parcels[0].actions[0].metadata.availableAreaType).toBe('total')
 
         expect(response.parcels[0].actions[1].code).toBe('CSAM3')
-        expect(response.parcels[0].actions[1].metadata.guidance_link).toEqual(expect.any(String))
-        expect(response.parcels[0].actions[1].metadata.available_area_type).toBe('partial')
+        expect(response.parcels[0].actions[1].metadata.guidanceLink).toEqual(expect.any(String))
+        expect(response.parcels[0].actions[1].metadata.availableAreaType).toBe('partial')
       })
   })
 

@@ -68,7 +68,7 @@ describe('select-actions.view-model', () => {
         code: 'CLIG3',
         description: 'Manage grassland: CLIG3',
         ratePerUnitGbp: 100.5,
-        metadata: { guidance_link: 'https://www.gov.uk/find-funding-for-land-or-farms/clig3' }
+        metadata: { guidanceLink: 'https://www.gov.uk/find-funding-for-land-or-farms/clig3' }
       }
 
       const result = mapActionToViewModel(action, [])
@@ -84,7 +84,7 @@ describe('select-actions.view-model', () => {
         code: 'CLIG3',
         description: 'Hedges & <ditches>',
         ratePerUnitGbp: 100.5,
-        metadata: { guidance_link: 'https://www.gov.uk/guidance?a=1&b=2' }
+        metadata: { guidanceLink: 'https://www.gov.uk/guidance?a=1&b=2' }
       }
 
       const result = mapActionToViewModel(action, [])
@@ -128,7 +128,7 @@ describe('select-actions.view-model', () => {
         code: 'SAM1',
         description: 'Test Action 1',
         ratePerUnitGbp: 100.5,
-        metadata: { guidance_link: 'https://www.gov.uk/guidance/sam1' }
+        metadata: { guidanceLink: 'https://www.gov.uk/guidance/sam1' }
       }
 
       const result = mapActionToViewModel(action, [])
@@ -344,7 +344,7 @@ describe('select-actions.view-model', () => {
         code: 'UPL2',
         description: 'Heavy livestock grazing on moorland',
         ratePerUnitGbp: 45,
-        metadata: { available_area_type: 'partial' },
+        metadata: { availableAreaType: 'partial' },
         availableArea: { value: 3, unit: 'ha' }
       }
 
@@ -383,7 +383,7 @@ describe('select-actions.view-model', () => {
       const action = {
         code: 'CSAM3',
         description: 'Herbal leys: CSAM3',
-        metadata: { available_area_type: 'partial' },
+        metadata: { availableAreaType: 'partial' },
         availableArea: { value: 18.5673, unit: 'ha' }
       }
 
@@ -396,7 +396,7 @@ describe('select-actions.view-model', () => {
       const action = {
         code: 'CSAM3',
         description: 'Herbal leys: CSAM3',
-        metadata: { available_area_type: 'partial' },
+        metadata: { availableAreaType: 'partial' },
         availableArea: { value: 18.5673, unit: 'ha' }
       }
       const addedActions = [{ code: 'CSAM3', description: 'Herbal leys: CSAM3', value: '3.25' }]
@@ -410,7 +410,7 @@ describe('select-actions.view-model', () => {
       const action = {
         code: 'CSAM3',
         description: 'Herbal leys: CSAM3',
-        metadata: { available_area_type: 'partial' },
+        metadata: { availableAreaType: 'partial' },
         availableArea: { value: 10, unit: 'ha' }
       }
 
@@ -424,7 +424,7 @@ describe('select-actions.view-model', () => {
       const action = {
         code: 'CSAM3',
         description: 'Herbal leys: CSAM3',
-        metadata: { available_area_type: 'partial' },
+        metadata: { availableAreaType: 'partial' },
         availableArea: { value: 18.5673, unit: 'ha' }
       }
 
@@ -438,7 +438,7 @@ describe('select-actions.view-model', () => {
       const action = {
         code: 'CSAM3',
         description: 'Herbal leys: CSAM3',
-        metadata: { available_area_type: 'partial' },
+        metadata: { availableAreaType: 'partial' },
         availableArea: { value: 0, unit: 'ha' }
       }
 
@@ -453,7 +453,7 @@ describe('select-actions.view-model', () => {
       const action = {
         code: 'CSAM3',
         description: 'Herbal leys: CSAM3',
-        metadata: { available_area_type: 'partial' },
+        metadata: { availableAreaType: 'partial' },
         availableArea: { value: 5, unit: 'sqm' }
       }
 
@@ -466,7 +466,7 @@ describe('select-actions.view-model', () => {
       const action = {
         code: 'CSAM3',
         description: 'Herbal leys: CSAM3',
-        metadata: { available_area_type: 'partial' }
+        metadata: { availableAreaType: 'partial' }
       }
 
       const result = mapActionToViewModel(action, [])
@@ -479,7 +479,7 @@ describe('select-actions.view-model', () => {
       const action = {
         code: 'CSAM3',
         description: 'Herbal leys: CSAM3',
-        metadata: { available_area_type: 'partial' },
+        metadata: { availableAreaType: 'partial' },
         availableArea: { value: 5, unit: 'ha' }
       }
 
@@ -493,7 +493,7 @@ describe('select-actions.view-model', () => {
       const action = {
         code: 'CSAM3',
         description: 'Herbal leys: CSAM3',
-        metadata: { available_area_type: 'partial' },
+        metadata: { availableAreaType: 'partial' },
         availableArea: { value: 5, unit: 'ha' }
       }
 
@@ -506,7 +506,7 @@ describe('select-actions.view-model', () => {
       const action = {
         code: 'CSAM3',
         description: 'Herbal leys: CSAM3',
-        metadata: { available_area_type: 'partial' },
+        metadata: { availableAreaType: 'partial' },
         availableArea: { value: 5, unit: 'ha' }
       }
 
@@ -577,7 +577,7 @@ describe('select-actions.view-model', () => {
         {
           code: 'CSAM3',
           description: 'Herbal leys: CSAM3',
-          metadata: { available_area_type: 'partial' },
+          metadata: { availableAreaType: 'partial' },
           availableArea: { value: 5, unit: 'ha' }
         },
         { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200 }
@@ -719,7 +719,7 @@ describe('select-actions.view-model', () => {
     })
 
     it('should skip a quantity-required action', () => {
-      const actions = [{ code: 'CSAM3', description: 'Herbal leys', metadata: { available_area_type: 'partial' } }]
+      const actions = [{ code: 'CSAM3', description: 'Herbal leys', metadata: { availableAreaType: 'partial' } }]
 
       const html = getChosenAreaFieldsHtml(actions, [])
 
