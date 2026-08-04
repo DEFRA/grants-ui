@@ -17,7 +17,7 @@ Feature: Mapping
 
         # select-actions-for-land-parcel
         Then the user should be at URL "select-actions-for-land-parcel"
-        And should see heading "Select actions for this land parcel"
+        And should see heading "Select actions for land parcel SD6352 8774"
 
     Scenario: User selects a parcel but leaves before choosing actions and resumes on the select land parcel page
         Given there is no application data for SBI "106842593" and grant "example-grant-with-map"
@@ -42,5 +42,5 @@ Feature: Mapping
         And navigates to "/example-grant-with-map"
         And logs in as CRN "1100945520"
 
-        # resume should go to summary
-        Then the user should be at URL "summary"
+        # resume should return to select-land-parcel, not check your answers
+        Then the user should be at URL "select-land-parcel"
