@@ -24,6 +24,27 @@ const answerTransformers = {
   'pigs-might-fly': transformPigsMightFlyAnswers
 }
 
+/**
+ * Applied to every declaration page, configured or not. The heading comes from the page `title`.
+ * @type {DeclarationContent}
+ */
+const BASE_DEFAULTS = {
+  submitButtonText: 'Confirm and send'
+}
+
+/**
+ * Applied only when a page declares no `config:` block, so grants that have not
+ * yet moved their copy into configuration render exactly as they did before.
+ * @type {DeclarationContent}
+ */
+export const UNCONFIGURED_DEFAULTS = {
+  ...BASE_DEFAULTS,
+  useDefaultCopy: true,
+  showOptionalConsent: true,
+  warningText: 'You can only submit your details once.',
+  showDataProtection: true
+}
+
 export default class DeclarationPageController extends SummaryPageController {
   /**
    * @param {FormModel} model
@@ -46,6 +67,24 @@ export default class DeclarationPageController extends SummaryPageController {
   }
 
   /**
+   * Resolves the page copy from the page's `config:` block, hoisted onto
+   * `metadata.pageConfig[path]` by `hoistPageConfig`.
+   * @returns {DeclarationContent} The resolved declaration content
+   */
+  buildDeclarationContent() {
+    const metadata = /** @type {Record<string, unknown>} */ (this.model.def.metadata ?? {})
+    const config = /** @type {Record<string, Record<string, unknown>> | undefined} */ (metadata.pageConfig)?.[
+      this.pageDef.path
+    ]
+
+    if (!config) {
+      return { ...UNCONFIGURED_DEFAULTS }
+    }
+
+    return { ...BASE_DEFAULTS, ...config }
+  }
+
+  /**
    * Builds the view model for the declaration page
    * @param {FormContextRequest} request
    * @param {FormContext} context
@@ -63,6 +102,8 @@ export default class DeclarationPageController extends SummaryPageController {
       /** @type {unknown} */ ({
         ...viewModel,
         sectionTitle,
+        declarationContent: this.buildDeclarationContent(),
+        supportEmail: this.model.def.metadata?.supportEmail,
         ...(backLink ? { backLink } : {})
       })
     )
@@ -108,7 +149,7 @@ export default class DeclarationPageController extends SummaryPageController {
     const { state, relevantState, referenceNumber, payload } = context
 
     // Include form fields from declaration page and convert to booleans as appropriate
-    const { action, ...rest } = payload
+    const { action, consentOptional, ...rest } = payload
     /** @param {unknown} value */
     const toBoolean = (value) => {
       if (value === 'true') {
@@ -233,6 +274,12 @@ export default class DeclarationPageController extends SummaryPageController {
       const { sbi, crn } = request.auth.credentials
       storeSlugInContext(request, context, 'DeclarationController')
 
+      const errors = this.collection.getViewErrors(context.errors)
+
+      if (errors?.length) {
+        return h.view(this.viewName, { ...this.getSummaryViewModel(request, context), errors })
+      }
+
       const cacheService = getFormsCacheService(request.server)
       log(
         LogCodes.SUBMISSION.SUBMISSION_PROCESSING,
@@ -268,6 +315,19 @@ export default class DeclarationPageController extends SummaryPageController {
     }
   }
 }
+
+/**
+ * Configurable declaration page copy, supplied by the page's `config:` block.
+ * @typedef {object} DeclarationContent
+ * @property {boolean} [useDefaultCopy] - Render the built-in body copy (unconfigured pages only)
+ * @property {string} [submitButtonText] - Submit button label for this page, independent of the
+ * form-wide `metadata.options.submitButtonText`
+ * @property {string} [warningText] - Warning banner text; omit to hide the banner
+ * @property {boolean} [showOptionalConsent] - Show the optional contact-consent checkbox
+ * @property {boolean} [showDataProtection] - Show the Defra data controller footer
+ * @property {boolean} [showSupportDetails] - Show the RPA support details panel
+ * @property {Record<string, string>} [hiddenFields] - Hidden inputs posted with the form
+ */
 
 /**
  * @import { FormModel, SummaryViewModel } from '@defra/forms-engine-plugin/engine/models/index.js'

@@ -63,6 +63,56 @@ export function createComponentRenderer(callerMetaUrl, macroName) {
   }
 }
 
+/**
+ * Creates a renderer for a full page template, wired with the same view paths,
+ * globals and filters the app uses at runtime.
+ * @param {string} callerMetaUrl - import.meta.url from the test file
+ * @param {string} template - Template name, resolved relative to the caller's directory
+ * @param {object} [defaults] - View model defaults merged under each call's overrides
+ * @param {string[]} [extraViewPaths] - Extra view directories, relative to the project root
+ * @returns {(viewModel?: object) => CheerioAPI}
+ */
+export function createPageRenderer(callerMetaUrl, template, defaults = {}, extraViewPaths = []) {
+  const testDir = path.dirname(fileURLToPath(callerMetaUrl))
+
+  const env = nunjucks.configure(
+    [
+      path.join(projectRoot, 'node_modules/govuk-frontend/dist'),
+      path.join(projectRoot, 'node_modules/@defra/forms-engine-plugin/.server/server/plugins/engine/views'),
+      testDir,
+      ...extraViewPaths.map((viewPath) => path.join(projectRoot, viewPath)),
+      path.join(projectRoot, 'src/server/common/components'),
+      path.join(projectRoot, 'src/server/common/templates'),
+      path.join(projectRoot, 'src/server/land-grants/components')
+    ],
+    { autoescape: true, trimBlocks: true, lstripBlocks: true }
+  )
+
+  configureNunjucksEnv(env)
+
+  // The engine plugin supplies these at runtime; all are identity functions
+  // outside a form context, which is what these tests render in.
+  env.addFilter('evaluate', (value) => value)
+  env.addGlobal('checkComponentTemplates', (component) => component)
+  env.addGlobal('checkErrorTemplates', (errors) => errors)
+
+  return (viewModel = {}) =>
+    load(
+      env.render(template, {
+        baseLayoutPath: 'layouts/dxt-form.njk',
+        serviceName: 'Test grant',
+        serviceUrl: '/test-grant',
+        breadcrumbs: [],
+        cookiesPolicy: { confirmed: true },
+        auth: {},
+        crumb: 'test-crumb',
+        getAssetPath: (asset) => `/public/${asset}`,
+        ...defaults,
+        ...viewModel
+      })
+    )
+}
+
 const nunjucksTestEnv = nunjucks.configure(
   [
     '~/node_modules/govuk-frontend/dist/',
