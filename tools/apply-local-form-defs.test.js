@@ -8,7 +8,8 @@ import {
   buildEnableScript,
   bumpPatch,
   discoverOverrides,
-  findRepoVersion
+  findRepoVersion,
+  mongoExecArgs
 } from './apply-local-form-defs.mjs'
 
 /** @type {string} */
@@ -196,6 +197,20 @@ describe('buildEnableScript', () => {
     })
     expect(script).toContain('"grant":"woodland"')
     expect(script).toContain('"grant":"grasslands"')
+  })
+})
+
+describe('mongoExecArgs', () => {
+  it('targets the compose file that defines the mongodb service', () => {
+    // The stack no longer ships a default `compose.yml` (split into
+    // `compose.infra.yml` + `compose.grants-ui.yml` in the floci migration), so
+    // `docker compose exec` must be pointed at the file that defines `mongodb`
+    // explicitly — otherwise it cannot resolve the service and enabling
+    // overrides fails with "Cannot reach the mongodb service".
+    const args = mongoExecArgs()
+    expect(args.slice(0, 4)).toEqual(['compose', '-f', 'compose.infra.yml', 'exec'])
+    expect(args).toContain('mongodb')
+    expect(args).toContain('mongosh')
   })
 })
 

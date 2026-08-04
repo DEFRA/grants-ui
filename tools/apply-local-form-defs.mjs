@@ -42,6 +42,13 @@ const CONFIG_BROKER_LOCAL = resolve(ROOT, 'compose/config-broker-local')
 const MONGO_SERVICE = process.env.GRANTS_UI_MONGO_SERVICE || 'mongodb'
 const MONGO_DB = process.env.GRANTS_UI_BACKEND_DB || 'grants-ui-backend'
 
+// Compose file that defines the `mongodb` service. The stack no longer ships a
+// single default `compose.yml` (it was split into `compose.infra.yml` +
+// `compose.grants-ui.yml` when localstack was migrated to floci), so a bare
+// `docker compose exec` finds no configuration and cannot resolve the service.
+// The `mongodb` service lives in `compose.infra.yml`, so target it explicitly.
+const MONGO_COMPOSE_FILE = process.env.GRANTS_UI_MONGO_COMPOSE_FILE || 'compose.infra.yml'
+
 // Backend collections. Form definitions live in the mongoConfig logical DB;
 // application state/locks/submissions share the same physical database.
 const FORM_DEFS_COLLECTION = 'config__form_definitions'
@@ -471,6 +478,34 @@ for (const doc of orphans) {
 // ---------------------------------------------------------------------------
 
 /**
+ * Build the `docker compose … exec` argument list used to run a mongosh script
+ * against the backend database.
+ *
+ * The stack no longer ships a single default `compose.yml` (it was split into
+ * `compose.infra.yml` + `compose.grants-ui.yml` when localstack was migrated to
+ * floci), so a bare `docker compose exec` finds no configuration file and cannot
+ * resolve the `mongodb` service. The `-f ${MONGO_COMPOSE_FILE}` flag targets the
+ * compose file that defines `mongodb` explicitly, so the applier keeps working
+ * regardless of which compose files (if any) are auto-discovered.
+ * @returns {string[]}
+ */
+export function mongoExecArgs() {
+  return [
+    'compose',
+    '-f',
+    MONGO_COMPOSE_FILE,
+    'exec',
+    '-T',
+    MONGO_SERVICE,
+    'mongosh',
+    MONGO_DB,
+    '--quiet',
+    '--file',
+    '/dev/stdin'
+  ]
+}
+
+/**
  * Run a mongosh script against the backend database, passing the script on stdin
  * to avoid argv size and shell-quoting limits.
  *
@@ -485,11 +520,7 @@ for (const doc of orphans) {
  * @returns {{ status: number, stdout: string, stderr: string, error?: Error }}
  */
 function runMongo(script) {
-  const result = spawnSync(
-    'docker',
-    ['compose', 'exec', '-T', MONGO_SERVICE, 'mongosh', MONGO_DB, '--quiet', '--file', '/dev/stdin'],
-    { cwd: ROOT, input: script, encoding: 'utf8' }
-  )
+  const result = spawnSync('docker', mongoExecArgs(), { cwd: ROOT, input: script, encoding: 'utf8' })
   return {
     status: result.status ?? 1,
     stdout: result.stdout ?? '',

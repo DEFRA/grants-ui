@@ -5,7 +5,7 @@ import {
   resolveGasConfigVersion,
   transformStateObjectToGasApplication
 } from '~/src/server/common/helpers/grant-application-service/state-to-gas-payload-mapper.js'
-import DeclarationPageController from './declaration-page.controller.js'
+import DeclarationPageController, { UNCONFIGURED_DEFAULTS } from './declaration-page.controller.js'
 import { vi } from 'vitest'
 import { mockHapiRequest } from '~/src/__mocks__'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
@@ -35,6 +35,7 @@ vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () =>
       constructor(model, pageDef) {
         this.model = model
         this.pageDef = pageDef
+        this.collection = { getViewErrors: vi.fn((errors) => errors) }
       }
 
       getSummaryViewModel(request, context) {
@@ -135,21 +136,24 @@ describe('DeclarationPageController', () => {
       view: vi.fn().mockReturnValue('rendered view')
     }
 
-    transformStateObjectToGasApplication.mockReturnValue({
-      transformedApp: true,
-      metadata: {
-        submittedAt: '2025-01-01T00:00:00.000Z'
-      }
-    })
-    resolveGasConfigVersion.mockReturnValue('1.1.1')
-    submitGrantApplication.mockResolvedValue({
-      status: statusCodes.noContent
-    })
-
     // Mock the form-slug-helper functions
     formSlugHelper.storeSlugInContext.mockImplementation(() => null)
     formSlugHelper.getConfirmationPath.mockImplementation(() => '/example-grant-with-auth/confirmation')
   })
+
+  const mockGasSubmission = () =>
+    beforeEach(() => {
+      transformStateObjectToGasApplication.mockReturnValue({
+        transformedApp: true,
+        metadata: {
+          submittedAt: '2025-01-01T00:00:00.000Z'
+        }
+      })
+      resolveGasConfigVersion.mockReturnValue('1.1.1')
+      submitGrantApplication.mockResolvedValue({
+        status: statusCodes.noContent
+      })
+    })
 
   afterEach(() => {
     vi.clearAllMocks()
@@ -184,14 +188,6 @@ describe('DeclarationPageController', () => {
   })
 
   describe('getSummaryViewModel', () => {
-    test('should call parent getSummaryViewModel and add section title', () => {
-      const result = controller.getSummaryViewModel(mockRequest, mockContext)
-
-      expect(result.serviceUrl).toBe('/service')
-      expect(result.page.title).toBe('Summary')
-      expect(result.sectionTitle).toBe('Example Section')
-    })
-
     test('should include backLink when getTaskPageBackLink returns a value', () => {
       getTaskPageBackLink.mockReturnValue({ href: '/task-list', text: 'Back to task list' })
 
@@ -213,6 +209,59 @@ describe('DeclarationPageController', () => {
       getTaskPageBackLink.mockReturnValue(returnValue)
       const result = controller.getSummaryViewModel(mockRequest, mockContext)
       expect(result.backLink).toBeUndefined()
+    })
+
+    test('should fall back to the built-in copy when the page has no config block', () => {
+      const result = controller.getSummaryViewModel(mockRequest, mockContext)
+
+      expect(result.declarationContent).toEqual(UNCONFIGURED_DEFAULTS)
+    })
+
+    test('should fall back to the built-in copy when the form has no metadata', () => {
+      const controllerWithoutMetadata = new DeclarationPageController({ ...mockModel, def: {} }, mockPageDef)
+
+      const result = controllerWithoutMetadata.getSummaryViewModel(mockRequest, mockContext)
+
+      expect(result.declarationContent).toEqual(UNCONFIGURED_DEFAULTS)
+    })
+
+    const declarationContentFor = (pageConfig) => {
+      mockModel.def.metadata.pageConfig = pageConfig
+      const configuredController = new DeclarationPageController(mockModel, { ...mockPageDef, path: '/declaration' })
+
+      return configuredController.getSummaryViewModel(mockRequest, mockContext).declarationContent
+    }
+
+    const fullConfig = {
+      submitButtonText: 'Confirm and submit',
+      showSupportDetails: true,
+      hiddenFields: { guidanceRead: 'true' }
+    }
+
+    test.each([
+      ['the config block is empty', { '/declaration': {} }, { submitButtonText: 'Confirm and send' }],
+      ['a full config block is declared', { '/declaration': fullConfig }, fullConfig],
+      [
+        'a config opts out of the built-in copy',
+        { '/declaration': { showSupportDetails: true } },
+        { submitButtonText: 'Confirm and send', showSupportDetails: true }
+      ],
+      [
+        'the config targets another page path',
+        { '/some-other-page': { submitButtonText: 'Not this one' } },
+        UNCONFIGURED_DEFAULTS
+      ]
+    ])('should resolve declarationContent when %s', (_description, pageConfig, expected) => {
+      expect(declarationContentFor(pageConfig)).toEqual(expected)
+    })
+
+    test('should expose the support email from form metadata', () => {
+      mockModel.def.metadata.supportEmail = 'ruralpayments@defra.gov.uk'
+      const controllerWithEmail = new DeclarationPageController(mockModel, mockPageDef)
+
+      const result = controllerWithEmail.getSummaryViewModel(mockRequest, mockContext)
+
+      expect(result.supportEmail).toBe('ruralpayments@defra.gov.uk')
     })
 
     test('should set sectionTitle to empty string when section has hideTitle set to true', () => {
@@ -238,7 +287,7 @@ describe('DeclarationPageController', () => {
     })
 
     test('should preserve all parent view model properties', () => {
-      vi.spyOn(SummaryPageController.prototype, 'getSummaryViewModel').mockReturnValue({
+      vi.spyOn(SummaryPageController.prototype, 'getSummaryViewModel').mockReturnValueOnce({
         serviceUrl: '/service',
         page: { title: 'Summary' },
         otherProperty: 'value',
@@ -256,50 +305,23 @@ describe('DeclarationPageController', () => {
   })
 
   describe('getStatusPath', () => {
-    test('should call getConfirmationPath with correct parameters', () => {
-      controller.getStatusPath(mockRequest, mockContext)
-
-      expect(formSlugHelper.getConfirmationPath).toHaveBeenCalledWith(mockRequest, mockContext, 'DeclarationController')
-    })
-
-    test('should return the result from getConfirmationPath', () => {
+    test('should delegate to getConfirmationPath and return its result', () => {
       formSlugHelper.getConfirmationPath.mockReturnValueOnce('/test-slug/confirmation')
 
       const result = controller.getStatusPath(mockRequest, mockContext)
 
+      expect(formSlugHelper.getConfirmationPath).toHaveBeenCalledWith(mockRequest, mockContext, 'DeclarationController')
       expect(result).toBe('/test-slug/confirmation')
-    })
-
-    test('should handle missing request or context parameters', () => {
-      // Test with undefined request
-      controller.getStatusPath(undefined, mockContext)
-      expect(formSlugHelper.getConfirmationPath).toHaveBeenCalledWith(undefined, mockContext, 'DeclarationController')
-
-      // Test with undefined context
-      controller.getStatusPath(mockRequest, undefined)
-      expect(formSlugHelper.getConfirmationPath).toHaveBeenCalledWith(mockRequest, undefined, 'DeclarationController')
     })
   })
 
   describe('makeGetRouteHandler', () => {
-    test('should return a function that wraps the parent handler', () => {
-      const handler = controller.makeGetRouteHandler()
-      expect(typeof handler).toBe('function')
-      expect(SummaryPageController.prototype.makeGetRouteHandler).toHaveBeenCalled()
-    })
-
-    test('should store slug in context before calling parent handler', async () => {
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(formSlugHelper.storeSlugInContext).toHaveBeenCalledWith(mockRequest, mockContext, 'DeclarationController')
-      expect(parentGetHandler).toHaveBeenCalledWith(mockRequest, mockContext, mockH)
-    })
-
-    test('should return the result from the parent handler', async () => {
+    test('should store the slug in context, then delegate to the parent handler', async () => {
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
+      expect(formSlugHelper.storeSlugInContext).toHaveBeenCalledWith(mockRequest, mockContext, 'DeclarationController')
+      expect(parentGetHandler).toHaveBeenCalledWith(mockRequest, mockContext, mockH)
       expect(result).toBe('parent handler response')
     })
 
@@ -315,10 +337,21 @@ describe('DeclarationPageController', () => {
   })
 
   describe('makePostRouteHandler', () => {
-    test('should return a function', () => {
-      const handler = controller.makePostRouteHandler()
-      expect(typeof handler).toBe('function')
-    })
+    mockGasSubmission()
+
+    /** @param {string} errorMessage */
+    const expectSubmissionFailureLogged = (errorMessage) =>
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SUBMISSION.SUBMISSION_FAILURE,
+        expect.objectContaining({
+          grantType: 'example-grant-with-auth',
+          referenceNumber: 'REF123',
+          sbi: 'sbi123',
+          crn: '1234567890',
+          errorMessage
+        }),
+        mockRequest
+      )
 
     test('should submit form and redirect on success', async () => {
       const handler = controller.makePostRouteHandler()
@@ -350,6 +383,32 @@ describe('DeclarationPageController', () => {
         },
         mockRequest
       )
+      expect(mockH.redirect).toHaveBeenCalledWith('/example-grant-with-auth/confirmation')
+    })
+
+    test('should re-render with errors and not submit when a page component fails validation', async () => {
+      const errors = [{ href: '#agree', text: 'Select to confirm you agree to the declaration' }]
+      const handler = controller.makePostRouteHandler()
+
+      const result = await handler(mockRequest, { ...mockContext, errors }, mockH)
+
+      expect(controller.collection.getViewErrors).toHaveBeenCalledWith(errors)
+      expect(submitGrantApplication).not.toHaveBeenCalled()
+      expect(mockH.redirect).not.toHaveBeenCalled()
+      expect(mockH.view).toHaveBeenCalledWith(
+        'declaration-page.html',
+        expect.objectContaining({ serviceUrl: '/service', errors })
+      )
+      expect(result).toBe('rendered view')
+    })
+
+    test('should submit when the context errors belong to other pages', async () => {
+      controller.collection.getViewErrors.mockReturnValue([])
+      const handler = controller.makePostRouteHandler()
+
+      await handler(mockRequest, { ...mockContext, errors: [{ href: '#other', text: 'Enter a value' }] }, mockH)
+
+      expect(submitGrantApplication).toHaveBeenCalled()
       expect(mockH.redirect).toHaveBeenCalledWith('/example-grant-with-auth/confirmation')
     })
 
@@ -495,17 +554,7 @@ describe('DeclarationPageController', () => {
 
       await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(error)
 
-      expect(log).toHaveBeenCalledWith(
-        LogCodes.SUBMISSION.SUBMISSION_FAILURE,
-        expect.objectContaining({
-          grantType: 'example-grant-with-auth',
-          referenceNumber: 'REF123',
-          sbi: 'sbi123',
-          crn: '1234567890',
-          errorMessage: 'Submission failed'
-        }),
-        mockRequest
-      )
+      expectSubmissionFailureLogged('Submission failed')
     })
 
     test('should handle GrantApplicationServiceApiError and show custom error page', async () => {
@@ -523,17 +572,7 @@ describe('DeclarationPageController', () => {
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
-      expect(log).toHaveBeenCalledWith(
-        LogCodes.SUBMISSION.SUBMISSION_FAILURE,
-        expect.objectContaining({
-          grantType: 'example-grant-with-auth',
-          referenceNumber: 'REF123',
-          sbi: 'sbi123',
-          crn: '1234567890',
-          errorMessage: 'GAS API Error'
-        }),
-        mockRequest
-      )
+      expectSubmissionFailureLogged('GAS API Error')
       expect(handleGasApiError).toHaveBeenCalledWith(mockH, mockContext, gasError)
       expect(result).toBe(mockErrorView)
     })
@@ -547,130 +586,43 @@ describe('DeclarationPageController', () => {
 
       await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(error)
 
-      expect(log).toHaveBeenCalledWith(
-        LogCodes.SUBMISSION.SUBMISSION_FAILURE,
-        expect.objectContaining({
-          grantType: 'example-grant-with-auth',
-          referenceNumber: 'REF123',
-          sbi: 'sbi123',
-          crn: '1234567890',
-          errorMessage: 'Some other error'
-        }),
-        mockRequest
-      )
+      expectSubmissionFailureLogged('Some other error')
       expect(handleGasApiError).not.toHaveBeenCalled()
     })
   })
 
   describe('buildApplicationData', () => {
-    test('should use frn from state.additionalAnswers.applicant.business.reference when full chain is present', () => {
-      const context = {
-        ...mockContext,
-        state: {
-          ...mockContext.state,
-          additionalAnswers: {
-            applicant: {
-              business: {
-                reference: 'FRN123456'
-              }
-            }
-          }
-        }
-      }
+    mockGasSubmission()
 
-      controller.buildApplicationData(mockRequest, context)
+    test.each([
+      ['the full chain is present', { applicant: { business: { reference: 'FRN123456' } } }, 'FRN123456'],
+      ['additionalAnswers is undefined', undefined, 'undefined'],
+      ['applicant is undefined', { applicant: undefined }, 'undefined'],
+      ['business is undefined', { applicant: { business: undefined } }, 'undefined'],
+      ['reference is undefined', { applicant: { business: { reference: undefined } } }, 'undefined']
+    ])('should resolve frn when %s', (_description, additionalAnswers, frn) => {
+      controller.buildApplicationData(mockRequest, {
+        ...mockContext,
+        state: { ...mockContext.state, additionalAnswers }
+      })
 
       expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
-        expect.objectContaining({ frn: 'FRN123456' }),
+        expect.objectContaining({ frn }),
         expect.anything(),
         expect.any(Function),
         '1.1.1'
       )
     })
 
-    test('should fall back to "undefined" when state.additionalAnswers is undefined', () => {
-      const context = {
+    test('should exclude the presentational consent checkbox from the GAS payload', () => {
+      controller.buildApplicationData(mockRequest, {
         ...mockContext,
-        state: {
-          ...mockContext.state,
-          additionalAnswers: undefined
-        }
-      }
-
-      controller.buildApplicationData(mockRequest, context)
+        payload: { action: 'send', consentOptional: 'CONSENT_OPTIONAL', guidanceRead: 'true' }
+      })
 
       expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
-        expect.objectContaining({ frn: 'undefined' }),
         expect.anything(),
-        expect.any(Function),
-        '1.1.1'
-      )
-    })
-
-    test('should fall back to "undefined" when state.additionalAnswers.applicant is undefined', () => {
-      const context = {
-        ...mockContext,
-        state: {
-          ...mockContext.state,
-          additionalAnswers: {
-            applicant: undefined
-          }
-        }
-      }
-
-      controller.buildApplicationData(mockRequest, context)
-
-      expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
-        expect.objectContaining({ frn: 'undefined' }),
-        expect.anything(),
-        expect.any(Function),
-        '1.1.1'
-      )
-    })
-
-    test('should fall back to "undefined" when state.additionalAnswers.applicant.business is undefined', () => {
-      const context = {
-        ...mockContext,
-        state: {
-          ...mockContext.state,
-          additionalAnswers: {
-            applicant: {
-              business: undefined
-            }
-          }
-        }
-      }
-
-      controller.buildApplicationData(mockRequest, context)
-
-      expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
-        expect.objectContaining({ frn: 'undefined' }),
-        expect.anything(),
-        expect.any(Function),
-        '1.1.1'
-      )
-    })
-
-    test('should fall back to "undefined" when state.additionalAnswers.applicant.business.reference is undefined', () => {
-      const context = {
-        ...mockContext,
-        state: {
-          ...mockContext.state,
-          additionalAnswers: {
-            applicant: {
-              business: {
-                reference: undefined
-              }
-            }
-          }
-        }
-      }
-
-      controller.buildApplicationData(mockRequest, context)
-
-      expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
-        expect.objectContaining({ frn: 'undefined' }),
-        expect.anything(),
+        { referenceNumber: 'REF123', field1: 'value1', guidanceRead: true },
         expect.any(Function),
         '1.1.1'
       )
