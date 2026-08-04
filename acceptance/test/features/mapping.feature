@@ -42,5 +42,5 @@ Feature: Mapping
         And navigates to "/example-grant-with-map"
         And logs in as CRN "1100945520"
 
-        # resume should go to summary, not check your answers
+        # resume should go to summary
         Then the user should be at URL "summary"
