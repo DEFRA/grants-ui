@@ -551,6 +551,78 @@ describe('parcels', () => {
       })
   })
 
+  it('returns HTTP 200 with guidance metadata for a single parcel', async () => {
+    const parcelWithMetadataExample = {
+      parcelId: 'SD6743',
+      sheetId: '8083',
+      size: { value: 23.3424, unit: 'ha' },
+      actions: [
+        {
+          code: 'CLIG3',
+          availableArea: { value: 10.5, unit: 'ha' },
+          description: 'Manage grassland with very low nutrient inputs',
+          ratePerUnitGbp: 10.6,
+          ratePerAgreementPerYearGbp: 272,
+          metadata: {
+            guidance_link: string(
+              'https://www.gov.uk/find-funding-for-land-or-farms/clig3-manage-grassland-with-very-low-nutrient-inputs'
+            ),
+            available_area_type: 'total'
+          }
+        },
+        {
+          code: 'CSAM3',
+          availableArea: { value: 20.75, unit: 'ha' },
+          description: 'Herbal leys',
+          ratePerUnitGbp: 224,
+          metadata: {
+            guidance_link: string('https://www.gov.uk/find-funding-for-land-or-farms/csam3-herbal-leys'),
+            available_area_type: 'partial'
+          }
+        }
+      ]
+    }
+    const EXPECTED_BODY = like({ message: 'success', parcels: eachLike(parcelWithMetadataExample) })
+
+    const provider = createProvider()
+    await provider
+      .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
+      .uponReceiving('a v2 request for a single parcel with action guidance metadata')
+      .withRequest({
+        method: 'POST',
+        path: '/api/v2/parcels',
+        headers: makeLandGrantsHeaders(),
+        body: {
+          parcelIds: ['SD6743-8083'],
+          fields: ['actions', 'size', 'actions.metadata'],
+          sbi: userContext.sbi
+        }
+      })
+      .willRespondWith({ status: 200, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
+      .executeTest(async (mockserver) => {
+        const response = await postToLandGrantsApi(
+          '/api/v2/parcels',
+          {
+            parcelIds: ['SD6743-8083'],
+            fields: ['actions', 'size', 'actions.metadata'],
+            sbi: userContext.sbi
+          },
+          mockserver.url
+        )
+
+        expect(response.parcels[0].parcelId).toBe('SD6743')
+        expect(response.parcels[0].sheetId).toBe('8083')
+
+        expect(response.parcels[0].actions[0].code).toBe('CLIG3')
+        expect(response.parcels[0].actions[0].metadata.guidance_link).toEqual(expect.any(String))
+        expect(response.parcels[0].actions[0].metadata.available_area_type).toBe('total')
+
+        expect(response.parcels[0].actions[1].code).toBe('CSAM3')
+        expect(response.parcels[0].actions[1].metadata.guidance_link).toEqual(expect.any(String))
+        expect(response.parcels[0].actions[1].metadata.available_area_type).toBe('partial')
+      })
+  })
+
   it('returns HTTP 400 when requesting SSSI consent information for multiple parcels', async () => {
     const badRequestResponseExample = {
       statusCode: 400,
