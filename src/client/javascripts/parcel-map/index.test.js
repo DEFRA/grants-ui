@@ -324,7 +324,7 @@ describe('parcel-map web component', () => {
       expect(layerIds).toContain(LAYER_ID_LABEL)
     })
 
-    it('resolves PARCEL_TILES_URL against location.origin when no geojsonUrl', async () => {
+    it('resolves PARCEL_TILES_URL against location.origin when no inline geojson', async () => {
       await mountReady()
       const [, sourceSpec] = ml.addSource.mock.calls[0]
       expect(sourceSpec.tiles[0]).toBe(`${globalThis.location.origin}/api/map/parcel-tiles/{z}/{x}/{y}`)

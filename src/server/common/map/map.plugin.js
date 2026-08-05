@@ -8,8 +8,7 @@ const sessionAuth = { auth: { mode: 'required', strategy: 'session' } }
 
 /**
  * Map routes: parcels metadata, per-user vector tiles, and the OS raster
- * basemap (style + key-injecting tile proxy). The mock-only geojson route lives
- * in map.mock.plugin.js, registered only when mock mode is on.
+ * basemap (style + key-injecting tile proxy).
  */
 export const mapPlugin = {
   plugin: {

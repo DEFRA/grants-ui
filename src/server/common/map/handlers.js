@@ -12,7 +12,7 @@ import { toParcelData, toGeoJsonFeatures } from './parcel-features.js'
 import { withCompoundParcelIds } from './mvt-compound-id.js'
 import { buildOsBasemapStyle, fetchOsTile } from './os-maps.js'
 import { isMockData } from './map.mock.js'
-import { buildMockParcelsResponse } from './map.mock.plugin.js'
+import { buildMockParcelsResponse } from './map.mock.response.js'
 import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
@@ -47,7 +47,7 @@ export async function parcelsHandler(request, h) {
   const parcelData = toParcelData(result.value)
 
   if (isMockData()) {
-    return buildMockParcelsResponse(request, parcelData, h)
+    return buildMockParcelsResponse(parcelData, h)
   }
 
   const features = toGeoJsonFeatures(parcelData)

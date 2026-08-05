@@ -73,8 +73,8 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
 
     if (selectedParcelIds.length === 0) {
       const errorText = this.multiSelect
-        ? 'Select at least one land parcel on the map to continue'
-        : 'Select a land parcel on the map to continue'
+        ? 'Select at least one land parcel on the map before you continue.'
+        : 'Select a land parcel on the map before you continue.'
       return h.view(
         this.viewName,
         this.buildViewModel(request, context, {

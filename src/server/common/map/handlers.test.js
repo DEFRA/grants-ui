@@ -38,7 +38,7 @@ vi.mock('~/src/server/common/map/map.mock.js', () => ({
   isMockData: vi.fn().mockReturnValue(false)
 }))
 
-vi.mock('~/src/server/common/map/map.mock.plugin.js', () => ({
+vi.mock('~/src/server/common/map/map.mock.response.js', () => ({
   buildMockParcelsResponse: vi.fn()
 }))
 
@@ -52,7 +52,7 @@ import { fetchParcels, fetchParcelTileLocation } from '~/src/server/land-grants/
 import { fetchParcelTile } from '~/src/server/land-grants/services/land-grants.client.js'
 import { withCompoundParcelIds } from '~/src/server/common/map/mvt-compound-id.js'
 import { isMockData } from '~/src/server/common/map/map.mock.js'
-import { buildMockParcelsResponse } from '~/src/server/common/map/map.mock.plugin.js'
+import { buildMockParcelsResponse } from '~/src/server/common/map/map.mock.response.js'
 import { mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 
 const makeH = () => mockHapiResponseToolkit({ bytes: vi.fn().mockReturnThis() })
@@ -137,7 +137,6 @@ describe('parcelsHandler', () => {
 
     await parcelsHandler(request, makeH())
 
-    expect(request.yar.set).not.toHaveBeenCalled()
     expect(buildMockParcelsResponse).not.toHaveBeenCalled()
   })
 
@@ -152,7 +151,6 @@ describe('parcelsHandler', () => {
     const result = await parcelsHandler(request, h)
 
     expect(buildMockParcelsResponse).toHaveBeenCalledWith(
-      request,
       expect.arrayContaining([expect.objectContaining({ id: 'SD7148-9160' })]),
       h
     )

@@ -13,7 +13,9 @@ import {
   STATE_IDLE,
   STATE_LOADING,
   STATE_READY,
-  STATE_ERROR
+  STATE_ERROR,
+  PARCEL_ID_PROPERTY,
+  SOURCE_ID_PARCELS
 } from './config.js'
 
 /**
@@ -47,6 +49,9 @@ export class ParcelMap extends HTMLElement {
 
   /** @type {{ allowNextClear: () => void } | null} */
   #selectionRelay = null
+
+  /** @type {MLMap | null} */
+  #ml = null
 
   // customElements.define() upgrades an already-parsed <parcel-map> the instant
   // it registers, so connectedCallback() can run — and, once its data fetch
@@ -123,6 +128,7 @@ export class ParcelMap extends HTMLElement {
       this.#state = STATE_ERROR
       this.#dispatchTerminal(EVENT_ERROR, { reason: ERROR_REASON_NO_PARCELS })
     } else {
+      this.#ml = ml
       const colorExpr = buildColorExpr(data.parcelIds)
       addParcelsToMap(ml, data, colorExpr)
       const tooltip = attachTooltip(ml, data.metaIndex, this.#mapEl, this.#mlCleanup)
@@ -175,5 +181,27 @@ export class ParcelMap extends HTMLElement {
   clearSelection() {
     this.#selectionRelay?.allowNextClear()
     this.#interactPlugin?.clear()
+  }
+
+  // Screen coordinates (relative to the map container) of a rendered feature's
+  // centroid, or null if it isn't currently rendered
+  getFeatureScreenPoint(featureId) {
+    if (!this.#ml) {
+      return null
+    }
+    const feature = this.#ml
+      .querySourceFeatures(SOURCE_ID_PARCELS)
+      .find((f) => String(f.properties?.[PARCEL_ID_PROPERTY]) === String(featureId))
+    if (!feature) {
+      return null
+    }
+    const ring = feature.geometry?.type === 'Polygon' ? feature.geometry.coordinates[0] : null
+    if (!ring?.length) {
+      return null
+    }
+    const [sumLng, sumLat] = ring.reduce(([lng, lat], [pLng, pLat]) => [lng + pLng, lat + pLat], [0, 0])
+    const centroid = /** @type {[number, number]} */ ([sumLng / ring.length, sumLat / ring.length])
+    const { x, y } = this.#ml.project(centroid)
+    return { x, y }
   }
 }
