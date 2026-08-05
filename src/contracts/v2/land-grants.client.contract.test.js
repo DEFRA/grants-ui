@@ -551,7 +551,7 @@ describe('parcels', () => {
       })
   })
 
-  it('returns HTTP 200 with guidance metadata for a single parcel', async () => {
+  it('returns HTTP 200 with guidance and availability always included on each action', async () => {
     const parcelWithMetadataExample = {
       parcelId: 'SD6743',
       sheetId: '8083',
@@ -583,14 +583,14 @@ describe('parcels', () => {
     const provider = createProvider()
     await provider
       .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
-      .uponReceiving('a v2 request for a single parcel with action guidance metadata')
+      .uponReceiving('a v2 request for a single parcel with actions and size, expecting guidance and availability')
       .withRequest({
         method: 'POST',
         path: '/api/v2/parcels',
         headers: makeLandGrantsHeaders(),
         body: {
           parcelIds: ['SD6743-8083'],
-          fields: ['actions', 'size', 'actions.availability'],
+          fields: ['actions', 'size'],
           sbi: userContext.sbi
         }
       })
@@ -600,7 +600,7 @@ describe('parcels', () => {
           '/api/v2/parcels',
           {
             parcelIds: ['SD6743-8083'],
-            fields: ['actions', 'size', 'actions.availability'],
+            fields: ['actions', 'size'],
             sbi: userContext.sbi
           },
           mockserver.url
