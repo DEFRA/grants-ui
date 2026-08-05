@@ -122,6 +122,27 @@ describe('parcel-map web component', () => {
       expect(el.querySelector('[role="alert"]')).toBeNull()
     })
 
+    it('getLastEvent replays the ready event for a listener that attaches late', async () => {
+      const el = await mountReady()
+      const replayed = el.getLastEvent(EVENT_READY)
+      expect(replayed).not.toBeNull()
+      expect(replayed.detail.parcelIds).toEqual(PARCELS_RESPONSE.features.map((f) => f.id))
+    })
+
+    it('getLastEvent returns null for an event type that has not fired', async () => {
+      const el = await mountReady()
+      expect(el.getLastEvent(EVENT_ERROR)).toBeNull()
+    })
+
+    it('getLastEvent replays the error event when the map fails to load', async () => {
+      global.fetch = vi.fn().mockResolvedValue({ ok: false })
+      const el = await mountElement()
+      await waitForEvent(el, EVENT_ERROR)
+      const replayed = el.getLastEvent(EVENT_ERROR)
+      expect(replayed).not.toBeNull()
+      expect(replayed.detail.reason).toBe('unavailable')
+    })
+
     it('dispatches parcel-map:error and shows error overlay when fetch fails', async () => {
       global.fetch = vi.fn().mockResolvedValue({ ok: false })
       const el = await mountElement()

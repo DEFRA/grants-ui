@@ -1,5 +1,5 @@
 @use 'govuk-frontend' as *;
 
-body.map-select-parcel .govuk-width-container {
+.map-select-parcel .govuk-width-container {
   @include govuk-width-container(1400px);
 }

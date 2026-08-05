@@ -99,20 +99,29 @@ export function initParcelSelectPage(mapEl) {
   /** @type {import('./map-helpers.js').MetaIndex} */
   let metaIndex = {}
 
-  mapEl.addEventListener(EVENT_READY, (/** @type {Event} */ e) => {
-    const detail = /** @type {CustomEvent<ReadyDetail>} */ (e).detail ?? {}
+  /** @param {ReadyDetail} detail */
+  const handleReady = (detail) => {
     metaIndex = detail.metaIndex ?? {}
     updateMapTotals(metaIndex, detail.parcelIds ?? [])
-  })
+  }
 
-  mapEl.addEventListener(EVENT_ERROR, (/** @type {Event} */ e) => {
+  /** @param {ParcelMapErrorDetail} detail */
+  const handleError = (detail) => {
     const btn = /** @type {HTMLButtonElement | null} */ (document.getElementById(DOM_ID_MAP_SELECT_CONTINUE))
     if (btn) {
       btn.disabled = true
     }
-    if (/** @type {CustomEvent<ParcelMapErrorDetail>} */ (e).detail.reason === ERROR_REASON_NO_PARCELS) {
+    if (detail.reason === ERROR_REASON_NO_PARCELS) {
       unhide(DOM_ID_MAP_NO_PARCELS_ERROR)
     }
+  }
+
+  mapEl.addEventListener(EVENT_READY, (/** @type {Event} */ e) => {
+    handleReady(/** @type {CustomEvent<ReadyDetail>} */ (e).detail ?? {})
+  })
+
+  mapEl.addEventListener(EVENT_ERROR, (/** @type {Event} */ e) => {
+    handleError(/** @type {CustomEvent<ParcelMapErrorDetail>} */ (e).detail)
   })
 
   mapEl.addEventListener(EVENT_SELECTION, (/** @type {Event} */ e) => {
@@ -120,6 +129,20 @@ export function initParcelSelectPage(mapEl) {
     writeHiddenInputs(selectedIds)
     updateSelectedParcelDetails(selectedParcels)
   })
+
+  // customElements.define() upgrades an already-parsed <parcel-map> synchronously,
+  // so its data fetch can resolve — dispatching EVENT_READY/EVENT_ERROR — before this
+  // script (loaded via a later <script type="module">) has attached the listeners
+  // above. getLastEvent() catches up on whichever terminal event already fired.
+  const mapWithHistory = /** @type {HTMLElement & { getLastEvent?: (type: string) => CustomEvent | null } } */ (mapEl)
+  const lastReady = mapWithHistory.getLastEvent?.(EVENT_READY)
+  if (lastReady) {
+    handleReady(/** @type {ReadyDetail} */ (lastReady.detail ?? {}))
+  }
+  const lastError = mapWithHistory.getLastEvent?.(EVENT_ERROR)
+  if (lastError) {
+    handleError(/** @type {ParcelMapErrorDetail} */ (lastError.detail))
+  }
 
   const mapWithSelection = /** @type {HTMLElement & { clearSelection?: () => void }} */ (mapEl)
   const changeLink = document.getElementById(DOM_ID_SELECTED_PARCEL_CHANGE)

@@ -126,6 +126,56 @@ describe('initParcelSelectPage', () => {
     expect(document.getElementById('parcel-map-total-area').textContent).toBe('0.0000')
   })
 
+  it('catches up on EVENT_READY that fired before this script attached its listener', () => {
+    document.body.innerHTML = `
+      <div id="map-no-parcels-error" hidden></div>
+      <div id="selected-parcels-inputs"></div>
+      <button id="map-select-continue">Continue</button>
+      <table>
+        <tr><td id="parcel-map-total-count"></td></tr>
+        <tr><td id="parcel-map-total-area"></td></tr>
+      </table>
+      <div id="selected-parcel-details" hidden></div>
+    `
+    const mapEl = document.createElement('parcel-map')
+    mapEl.id = 'parcel-map'
+    const readyEvent = new CustomEvent(EVENT_READY, {
+      detail: { parcelIds: ['SD7148-9160'], metaIndex: { 'SD7148-9160': { areaHa: 3.25 } } }
+    })
+    // Simulates customElements.define() upgrading the element and it reaching
+    // STATE_READY before parcel-select-page.js's own <script type="module"> runs.
+    mapEl.getLastEvent = (type) => (type === EVENT_READY ? readyEvent : null)
+    document.body.appendChild(mapEl)
+
+    initParcelSelectPage(mapEl)
+
+    expect(document.getElementById('parcel-map-total-count').textContent).toBe('1')
+    expect(document.getElementById('parcel-map-total-area').textContent).toBe('3.2500')
+  })
+
+  it('catches up on EVENT_ERROR that fired before this script attached its listener', () => {
+    document.body.innerHTML = `
+      <div id="map-no-parcels-error" hidden></div>
+      <div id="selected-parcels-inputs"></div>
+      <button id="map-select-continue">Continue</button>
+      <table>
+        <tr><td id="parcel-map-total-count"></td></tr>
+        <tr><td id="parcel-map-total-area"></td></tr>
+      </table>
+      <div id="selected-parcel-details" hidden></div>
+    `
+    const mapEl = document.createElement('parcel-map')
+    mapEl.id = 'parcel-map'
+    const errorEvent = new CustomEvent(EVENT_ERROR, { detail: { reason: ERROR_REASON_NO_PARCELS } })
+    mapEl.getLastEvent = (type) => (type === EVENT_ERROR ? errorEvent : null)
+    document.body.appendChild(mapEl)
+
+    initParcelSelectPage(mapEl)
+
+    expect(document.getElementById('map-select-continue').disabled).toBe(true)
+    expect(document.getElementById('map-no-parcels-error').hidden).toBe(false)
+  })
+
   it('clears the map selection when the Change link is clicked', () => {
     const mapEl = setupDom()
     mapEl.clearSelection = vi.fn()
