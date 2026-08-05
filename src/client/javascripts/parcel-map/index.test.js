@@ -448,52 +448,6 @@ describe('parcel-map web component', () => {
       expect(e.detail.selectedIds).toEqual([])
     })
 
-    it('projects a rendered feature\'s polygon centroid to screen coordinates', async () => {
-      const el = await mountReady()
-      ml.querySourceFeatures.mockReturnValue([
-        {
-          properties: { id: 'SD7148-9160' },
-          geometry: {
-            type: 'Polygon',
-            coordinates: [
-              [
-                [0, 0],
-                [2, 0],
-                [2, 2],
-                [0, 2]
-              ]
-            ]
-          }
-        }
-      ])
-
-      const point = el.getFeatureScreenPoint('SD7148-9160')
-
-      expect(ml.project).toHaveBeenCalledWith([1, 1])
-      expect(point).toEqual({ x: 100, y: 200 })
-    })
-
-    it('returns null when the feature is not currently rendered', async () => {
-      const el = await mountReady()
-      ml.querySourceFeatures.mockReturnValue([])
-
-      expect(el.getFeatureScreenPoint('SD7148-9160')).toBeNull()
-    })
-
-    it('returns null for a non-Polygon feature geometry', async () => {
-      const el = await mountReady()
-      ml.querySourceFeatures.mockReturnValue([
-        { properties: { id: 'SD7148-9160' }, geometry: { type: 'Point', coordinates: [0, 0] } }
-      ])
-
-      expect(el.getFeatureScreenPoint('SD7148-9160')).toBeNull()
-    })
-
-    it('returns null before the map has loaded', () => {
-      const el = document.createElement('parcel-map')
-      expect(el.getFeatureScreenPoint('SD7148-9160')).toBeNull()
-    })
-
     it('dispatches all selected IDs in multi-select', async () => {
       const el = await mountReady({ 'multi-select': 'true' })
 

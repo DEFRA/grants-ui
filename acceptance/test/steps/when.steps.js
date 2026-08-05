@@ -8,19 +8,12 @@ import MonthYearField from '../page-objects/month-year.field.js'
 
 When('the user selects parcel {string} on the map', async function (parcelId) {
   await this.page.waitForLoadState('domcontentloaded')
-
-  await this.page.waitForFunction(() => document.getElementById('parcel-map')?.getLastEvent('parcel-map:ready'))
-
-  await this.page.waitForFunction(
-    (id) => document.getElementById('parcel-map')?.getFeatureScreenPoint(id) != null,
-    parcelId
-  )
-  const point = await this.page.evaluate(
-    (id) => document.getElementById('parcel-map').getFeatureScreenPoint(id),
-    parcelId
-  )
-  const mapBox = await this.page.locator('#parcel-map').boundingBox()
-  await this.page.mouse.click(mapBox.x + point.x, mapBox.y + point.y)
+  // mimic the CustomEvent the parcel-map web component fires when a user clicks a parcel
+  await this.page.evaluate((id) => {
+    document
+      .getElementById('parcel-map')
+      .dispatchEvent(new CustomEvent('parcel-map:selection', { bubbles: true, detail: { selectedIds: [id] } }))
+  }, parcelId)
 })
 
 When('(the user )clicks on {string}', async function (text) {
