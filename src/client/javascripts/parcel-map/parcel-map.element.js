@@ -146,10 +146,7 @@ export class ParcelMap extends HTMLElement {
     this.appendChild(this.#errorOverlay)
   }
 
-  // Deselects every selected parcel. Triggers the same interact:selectionchange
-  // path a manual deselect would, so highlight, hidden inputs and the selected-
-  // parcel summary all clear themselves via the normal event flow. Marked as an
-  // allowed clear so the relay doesn't re-assert the parcel it just dropped.
+  // Deselects every selected parcel
   clearSelection() {
     this.#selectionRelay?.allowNextClear()
     this.#interactPlugin?.clear()
