@@ -383,7 +383,7 @@ describe('parcel-map web component', () => {
       const selectionEvent = waitForEvent(el, EVENT_SELECTION)
       emitSelectionChange([{ featureId: 'SD7148-9160' }])
       const e = await selectionEvent
-      expect(e.detail.selectedIds).toEqual(['SD7148-9160'])
+      expect(e.detail.selectedParcels.map((p) => p.id)).toEqual(['SD7148-9160'])
     })
 
     it('dispatches selectedParcels with the feature id and properties', async () => {
@@ -409,7 +409,7 @@ describe('parcel-map web component', () => {
       const cleared = waitForEvent(el, EVENT_SELECTION)
       emitSelectionChange([])
       const e = await cleared
-      expect(e.detail.selectedIds).toEqual([])
+      expect(e.detail.selectedParcels).toEqual([])
     })
 
     it('re-selects the same parcel instead of dispatching empty when a single selection toggles off', async () => {
@@ -423,7 +423,7 @@ describe('parcel-map web component', () => {
       // should put it straight back rather than let this page-level event fire.
       let sawEmptySelection = false
       el.addEventListener(EVENT_SELECTION, (e) => {
-        sawEmptySelection = sawEmptySelection || e.detail.selectedIds.length === 0
+        sawEmptySelection = sawEmptySelection || e.detail.selectedParcels.length === 0
       })
       emitSelectionChange([])
 
@@ -445,7 +445,7 @@ describe('parcel-map web component', () => {
       el.clearSelection()
       emitSelectionChange([])
       const e = await cleared
-      expect(e.detail.selectedIds).toEqual([])
+      expect(e.detail.selectedParcels).toEqual([])
     })
 
     it('dispatches all selected IDs in multi-select', async () => {
@@ -454,7 +454,7 @@ describe('parcel-map web component', () => {
       const selectionEvent = waitForEvent(el, EVENT_SELECTION)
       emitSelectionChange([{ featureId: 'SD7148-9160' }, { featureId: 'SD7148-9161' }])
       const e = await selectionEvent
-      expect(e.detail.selectedIds).toEqual(['SD7148-9160', 'SD7148-9161'])
+      expect(e.detail.selectedParcels.map((p) => p.id)).toEqual(['SD7148-9160', 'SD7148-9161'])
     })
 
     it('calls setPaintProperty to highlight selected parcels', async () => {

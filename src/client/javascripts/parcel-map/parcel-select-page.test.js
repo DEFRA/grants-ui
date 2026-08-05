@@ -63,7 +63,6 @@ describe('initParcelSelectPage', () => {
   it('writes one hidden input per selected id', () => {
     const mapEl = setupDom()
     fire(mapEl, EVENT_SELECTION, {
-      selectedIds: ['SD7148-9160', 'SD7148-9161'],
       selectedParcels: [
         { id: 'SD7148-9160', areaHa: 1 },
         { id: 'SD7148-9161', areaHa: 2 }
@@ -78,20 +77,18 @@ describe('initParcelSelectPage', () => {
   it('replaces rather than appends on the next selection', () => {
     const mapEl = setupDom()
     fire(mapEl, EVENT_SELECTION, {
-      selectedIds: ['SD7148-9160', 'SD7148-9161'],
       selectedParcels: [
         { id: 'SD7148-9160', areaHa: 1 },
         { id: 'SD7148-9161', areaHa: 2 }
       ]
     })
-    fire(mapEl, EVENT_SELECTION, { selectedIds: ['SD7148-9162'], selectedParcels: [{ id: 'SD7148-9162', areaHa: 3 }] })
+    fire(mapEl, EVENT_SELECTION, { selectedParcels: [{ id: 'SD7148-9162', areaHa: 3 }] })
     expect(hiddenValues()).toEqual([{ name: 'landParcels', value: 'SD7148-9162' }])
   })
 
   it('shows the selected parcel details when exactly one parcel is selected', () => {
     const mapEl = setupDom()
     fire(mapEl, EVENT_SELECTION, {
-      selectedIds: ['SD7148-9160'],
       selectedParcels: [{ id: 'SD7148-9160', areaHa: 1.5 }]
     })
     expect(document.getElementById('selected-parcel-details').hidden).toBe(false)
@@ -102,10 +99,9 @@ describe('initParcelSelectPage', () => {
   it('hides the selected parcel details when no parcel or multiple parcels are selected', () => {
     const mapEl = setupDom()
     fire(mapEl, EVENT_SELECTION, {
-      selectedIds: ['SD7148-9160'],
       selectedParcels: [{ id: 'SD7148-9160', areaHa: 1.5 }]
     })
-    fire(mapEl, EVENT_SELECTION, { selectedIds: [], selectedParcels: [] })
+    fire(mapEl, EVENT_SELECTION, { selectedParcels: [] })
     expect(document.getElementById('selected-parcel-details').hidden).toBe(true)
   })
 

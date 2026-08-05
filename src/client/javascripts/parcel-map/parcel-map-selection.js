@@ -59,15 +59,14 @@ export function attachSelectionRelay({ host, mapInstance, ml, tooltip, cleanups,
       return
     }
 
-    const selectedIds = selectedFeatures.map((f) => String(f.featureId))
     const selectedParcels = selectedFeatures.map((f) => ({ id: String(f.featureId), ...f.properties }))
-    applyHighlight(selectedIds)
-    if (selectedIds.length === 0 && tooltip) {
+    applyHighlight(selectedParcels.map((p) => p.id))
+    if (selectedParcels.length === 0 && tooltip) {
       hideTooltip(tooltip)
     }
     lastSelectedFeature = selectedFeatures.length === 1 ? selectedFeatures[0] : null
     suppressReassert = false
-    host.dispatchEvent(new CustomEvent(EVENT_SELECTION, { bubbles: true, detail: { selectedIds, selectedParcels } }))
+    host.dispatchEvent(new CustomEvent(EVENT_SELECTION, { bubbles: true, detail: { selectedParcels } }))
   }
 
   mapInstance.on('interact:selectionchange', onSelectionChange)

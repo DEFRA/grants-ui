@@ -125,8 +125,8 @@ export function initParcelSelectPage(mapEl) {
   })
 
   mapEl.addEventListener(EVENT_SELECTION, (/** @type {Event} */ e) => {
-    const { selectedIds, selectedParcels } = /** @type {CustomEvent<SelectionDetail>} */ (e).detail
-    writeHiddenInputs(selectedIds)
+    const { selectedParcels } = /** @type {CustomEvent<SelectionDetail>} */ (e).detail
+    writeHiddenInputs(selectedParcels.map((p) => p.id))
     updateSelectedParcelDetails(selectedParcels)
   })
 
@@ -168,7 +168,6 @@ initParcelSelectPage(document.getElementById(DOM_ID_PARCEL_MAP))
 
 /**
  * @typedef {object} SelectionDetail
- * @property {string[]} selectedIds
  * @property {SelectedParcel[]} selectedParcels
  */
 

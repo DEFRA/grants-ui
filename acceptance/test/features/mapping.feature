@@ -11,6 +11,7 @@ Feature: Mapping
 
         # select-land-parcel
         Then the user should be at URL "select-land-parcel"
+        When the map has loaded parcel "SD6352-8774"
         And the user should see the available land parcels total populated
         When the user selects parcel "SD6352-8774" on the map
         Then the user should see "SD6352-8774" in the selected parcel summary
@@ -31,9 +32,10 @@ Feature: Mapping
 
         # select-land-parcel
         Then the user should be at URL "select-land-parcel"
-        When the user selects parcel "SD6352-8774" on the map
+        When the map has loaded parcel "SD6352-8774"
+        And the user selects parcel "SD6352-8774" on the map
         Then the user should see "SD6352-8774" in the selected parcel summary
-        When the user clicks on "Change"
+        When the user clicks "Change" on the selected parcel summary
         Then the user should not see a selected parcel summary
 
     Scenario: User selects a parcel but leaves before choosing actions and resumes on the select land parcel page
@@ -47,7 +49,8 @@ Feature: Mapping
 
         # select-land-parcel
         Then the user should be at URL "select-land-parcel"
-        When the user selects parcel "SD6352-8774" on the map
+        When the map has loaded parcel "SD6352-8774"
+        And the user selects parcel "SD6352-8774" on the map
         Then the user should see "SD6352-8774" in the selected parcel summary
         And continues
 
