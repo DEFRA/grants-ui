@@ -205,13 +205,32 @@ Feature: Reusable Components
         And the page is analyzed for accessibility
         When the user continues
 
-        # select-land-parcel
+        # select-land-parcel (map)
         Then the user should be at URL "select-land-parcel"
-        And should see heading "Select all the eligible land parcels for the location of your woodland"
+        And should see heading "Select a land parcel"
         And the page is analyzed for accessibility
-        When the user selects the following
-            | SD6351 8781 |
+        When the user selects parcel "SD6351-8781" on the map
         And continues
+
+        # select-actions-for-land-parcel
+        Then the user should be at URL "select-actions-for-land-parcel"
+        And should see heading "Select actions for this land parcel"
+        And the page is analyzed for accessibility
+        When the user selects the first item
+        And continues
+
+        # your land and actions (payment summary)
+        Then the user should be at URL "confirm-land-and-actions"
+        And should see heading "Your land and actions"
+        And the page is analyzed for accessibility
+        And the user should see the text "Action"
+        And the user should see the text "Area"
+        And the user should see the text "Yearly payment"
+        And the user should see the text "Total yearly payment for land parcel"
+        And the user should see the text "Total yearly payment for application"
+        And the user should see button "Save and continue"
+        And the user should see button "Add another land parcel"
+        When the user clicks on "Save and continue"
 
         # summary
         Then the user should be at URL "summary"
@@ -247,7 +266,7 @@ Feature: Reusable Components
             | Project description            | Project description     |
             | Project budget                 | 50000                   |
             | Item                           | You have added 1 answer |
-            | Select land parcels            | SD6351-8781             |
+            | Land parcel                    | SD6351-8781             |
         When the user chooses to change their summary answer to question "Country"
 
         # autocomplete-field
@@ -289,7 +308,7 @@ Feature: Reusable Components
             | Project description            | Project description     |
             | Project budget                 | 50000                   |
             | Item                           | You have added 1 answer |
-            | Select land parcels            | SD6351-8781             |
+            | Land parcel                    | SD6351-8781             |
         When the user continues
 
         # declaration
@@ -348,7 +367,7 @@ Feature: Reusable Components
             | Project name               | Test project                                    |
             | Project description        | Project description                             |
             | Project budget             | 50000                                           |
-            | Select land parcels        | SD6351-8781                                     |
+            | Land parcel                | SD6351-8781                                     |
         And should see the following configurable content
             | Configurable content                                                                                                                       |
             | This is an example of configurable content on the print page, defined via the configurablePrintContent property in the form YAML metadata. |

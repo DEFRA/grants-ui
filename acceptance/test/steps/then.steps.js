@@ -211,6 +211,10 @@ Then('(the user )should see button {string}', async function (text) {
   await expect(this.page.locator(`//button[contains(text(),'${text}')]`)).toBeVisible()
 })
 
+Then('(the user )should see the text {string}', async function (text) {
+  await expect(this.page.locator('main')).toContainText(text)
+})
+
 Then('(the user )should see a notification banner', async function () {
   await expect(this.page.locator('div.govuk-notification-banner')).toBeVisible()
 })

@@ -128,6 +128,58 @@ describe('land-grants service', () => {
       })
     })
 
+    it('should send all parcels and actions in a single calculate request', async () => {
+      const mockCalculateResponse = {
+        payment: { annualTotalPence: 123400 }
+      }
+      calculate.mockResolvedValueOnce(mockCalculateResponse)
+      formatCurrency.mockReturnValue('£1,234.00')
+
+      const result = await calculateLandActionsPayment({
+        landParcels: {
+          'SD1234-5678': {
+            actionsObj: {
+              CLIG3: { value: 2 },
+              CSAM3: { value: 4 }
+            }
+          },
+          'CD9999-1111': {
+            actionsObj: {
+              SCR2: { value: 1 }
+            }
+          }
+        }
+      })
+
+      expect(calculate).toHaveBeenCalledTimes(1)
+      expect(calculate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          parcel: [
+            {
+              sheetId: 'SD1234',
+              parcelId: '5678',
+              actions: [
+                { code: 'CLIG3', quantity: 2 },
+                { code: 'CSAM3', quantity: 4 }
+              ]
+            },
+            {
+              sheetId: 'CD9999',
+              parcelId: '1111',
+              actions: [{ code: 'SCR2', quantity: 1 }]
+            }
+          ]
+        }),
+        mockApiEndpoint,
+        mockUserContext
+      )
+      expect(result).toEqual({
+        payment: { annualTotalPence: 123400 },
+        paymentTotal: '£1,234.00',
+        errorMessage: undefined
+      })
+    })
+
     it('should handle zero payment amount', async () => {
       const mockCalculateResponse = { payment: { total: 0 } }
       calculate.mockResolvedValueOnce(mockCalculateResponse)

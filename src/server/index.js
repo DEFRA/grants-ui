@@ -40,6 +40,7 @@ import SubmissionPageController from '~/src/server/land-grants/controllers/submi
 import LandGrantsGenericPageController from '~/src/server/land-grants/controllers/land-grants-generic-page.controller.js'
 import ConsentPageController from '~/src/server/land-grants/controllers/consent-page.controller.js'
 import RemoveActionPageController from '~/src/server/land-grants/controllers/remove-action-page.controller.js'
+import ConfirmLandAndActionsPageController from '~/src/server/land-grants/controllers/confirm-land-and-actions-page.controller.js'
 import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-might-fly/controllers/potential-funding.controller.js'
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
 import { gridColumnClass } from '../config/nunjucks/grid-column.js'
@@ -149,6 +150,7 @@ const registerFormsPlugin = async (server, prefix = '') => {
         SelectActionsPageController,
         PaymentPageController,
         RemoveActionPageController,
+        ConfirmLandAndActionsPageController,
         ConsentPageController,
         PotentialFundingController,
         SummaryPageController,

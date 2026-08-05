@@ -128,11 +128,19 @@ Feature: Application Amendment
         # repeat-page (list summary)
         When the user continues
 
-        # select-land-parcel
+        # select-land-parcel (map)
         Then the user should be at URL "select-land-parcel"
-        When the user selects the following
-            | SD6351 8781 |
+        When the user selects the first available land parcel on the map
         And continues
+
+        # select-actions-for-land-parcel
+        Then the user should be at URL "select-actions-for-land-parcel"
+        When the user selects the first item
+        And continues
+
+        # your land and actions
+        Then the user should be at URL "confirm-land-and-actions"
+        When the user clicks on "Save and continue"
 
         # summary
         Then the user should be at URL "summary"
@@ -165,7 +173,7 @@ Feature: Application Amendment
             | Project description            | Project description     |
             | Project budget                 | 50000                   |
             | Item                           | You have added 1 answer |
-            | Select land parcels            | SD6351-8781             |
+            | Land parcel                   | {SELECTED PARCEL}             |
         When the user continues
 
         # declaration
@@ -268,7 +276,7 @@ Feature: Application Amendment
             | Project description            | Project description     |
             | Project budget                 | 50000                   |
             | Item                           | You have added 1 answer |
-            | Select land parcels            | SD6351-8781             |
+            | Land parcel                   | {SELECTED PARCEL}             |
         When the user continues
 
         # declaration
@@ -364,7 +372,7 @@ Feature: Application Amendment
             | Project description            | Project description     |
             | Project budget                 | 50000                   |
             | Item                           | You have added 1 answer |
-            | Select land parcels            | SD6351-8781             |
+            | Land parcel                   | {SELECTED PARCEL}             |
         When the user continues
 
         # declaration

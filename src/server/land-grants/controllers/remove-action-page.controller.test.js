@@ -40,7 +40,8 @@ describe('RemoveActionPageController', () => {
     controller.proceed = vi.fn().mockReturnValue('redirected')
     controller.performAuthCheck = vi.fn().mockResolvedValue(null)
     controller.getViewModel = vi.fn().mockReturnValue({
-      pageTitle: 'Remove action'
+      pageTitle: 'Remove action',
+      serviceUrl: '/test-grant'
     })
 
     mockRequest = {
@@ -189,6 +190,8 @@ describe('RemoveActionPageController', () => {
       expect(controller.getViewModel).toHaveBeenCalledWith(mockRequest, mockContext)
       expect(mockH.view).toHaveBeenCalledWith('remove-action', {
         pageTitle: 'Remove action',
+        serviceUrl: '/test-grant',
+        backLink: { text: 'Back', href: '/test-grant/check-selected-land-actions' },
         parcelId: 'SD6743-8083',
         ...pageHeadingAndHint,
         errors: 'Test error message'
@@ -283,6 +286,8 @@ describe('RemoveActionPageController', () => {
       expect(controller.getViewModel).toHaveBeenCalledWith(mockRequest, mockContext)
       expect(result).toEqual({
         pageTitle: 'Remove action',
+        serviceUrl: '/test-grant',
+        backLink: { text: 'Back', href: '/test-grant/check-selected-land-actions' },
         parcelId: 'SD6743-8083',
         pageHeading,
         hint
@@ -299,6 +304,8 @@ describe('RemoveActionPageController', () => {
       expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, [mockRequest.query.parcelId])
       expect(mockH.view).toHaveBeenCalledWith('remove-action', {
         pageTitle: 'Remove action',
+        serviceUrl: '/test-grant',
+        backLink: { text: 'Back', href: '/test-grant/check-selected-land-actions' },
         parcelId: 'SD6743-8083',
         pageHeading: `Do you want to remove Assess moorland and produce a written record: CMOR1 from land parcel SD6743 8083?`,
         hint: 'Select yes to remove this action from this land parcel. You can add a different action to the same parcel.'
@@ -314,6 +321,8 @@ describe('RemoveActionPageController', () => {
 
       expect(mockH.view).toHaveBeenCalledWith('remove-action', {
         pageTitle: 'Remove action',
+        serviceUrl: '/test-grant',
+        backLink: { text: 'Back', href: '/test-grant/check-selected-land-actions' },
         parcelId: 'SD6743-8083',
         pageHeading: 'Do you want to remove land parcel SD6743 8083 from this application?',
         hint: 'If you remove this land parcel you will also remove all the actions added to this parcel.'
@@ -367,6 +376,8 @@ describe('RemoveActionPageController', () => {
 
       expect(mockH.view).toHaveBeenCalledWith('remove-action', {
         pageTitle: 'Remove action',
+        serviceUrl: '/test-grant',
+        backLink: { text: 'Back', href: '/test-grant/check-selected-land-actions' },
         parcelId: 'SD6743-8083',
         pageHeading:
           'Do you want to remove Assess moorland and produce a written record: CMOR1 from land parcel SD6743 8083?',
@@ -386,6 +397,8 @@ describe('RemoveActionPageController', () => {
 
       expect(mockH.view).toHaveBeenCalledWith('remove-action', {
         pageTitle: 'Remove action',
+        serviceUrl: '/test-grant',
+        backLink: { text: 'Back', href: '/test-grant/check-selected-land-actions' },
         parcelId: 'SD6743-8083',
         hint: 'If you remove this land parcel you will also remove all the actions added to this parcel.',
         pageHeading: 'Do you want to remove land parcel SD6743 8083 from this application?',
@@ -505,6 +518,73 @@ describe('RemoveActionPageController', () => {
 
         expect(result).toEqual('failed auth check')
       })
+    })
+  })
+
+  describe('returnPath configuration', () => {
+    const buildConfiguredController = (returnPath) => {
+      const pageDef = { path: '/remove-action' }
+      const model = {
+        def: { metadata: { tasklist: {}, pageConfig: { '/remove-action': { returnPath } } } },
+        getSection: vi.fn()
+      }
+      const configured = new RemoveActionPageController(model, pageDef)
+      configured.setState = vi.fn().mockResolvedValue(true)
+      configured.proceed = vi.fn().mockReturnValue('redirected')
+      configured.performAuthCheck = vi.fn().mockResolvedValue(null)
+      configured.getViewModel = vi.fn().mockReturnValue({ pageTitle: 'Remove action', serviceUrl: '/test-grant' })
+      return configured
+    }
+
+    test('defaults returnPath to /check-selected-land-actions when unconfigured', () => {
+      expect(controller.returnPath).toBe('/check-selected-land-actions')
+    })
+
+    test('uses configured returnPath when parcels/actions remain', () => {
+      const configured = buildConfiguredController('/confirm-land-and-actions')
+      const newState = {
+        landParcels: {
+          'SD6743-8083': { actionsObj: { UPL1: { description: 'x' } } }
+        }
+      }
+      expect(configured.getNextPathAfterRemoval(newState, 'SD6743-8083', 'CMOR1')).toBe('/confirm-land-and-actions')
+    })
+
+    test('preserves last-action and last-parcel special destinations', () => {
+      const configured = buildConfiguredController('/confirm-land-and-actions')
+      expect(configured.getNextPathAfterRemoval({ landParcels: {} }, 'SD6743-8083', 'CMOR1')).toBe(
+        '/select-actions-for-land-parcel?parcelId=SD6743-8083'
+      )
+      expect(configured.getNextPathAfterRemoval({ landParcels: {} }, 'SD6743-8083', undefined)).toBe(
+        '/select-land-parcel'
+      )
+    })
+
+    test('GET redirects to configured returnPath when parcel not found', async () => {
+      const configured = buildConfiguredController('/confirm-land-and-actions')
+      mockRequest.query = {}
+      await configured.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+      expect(configured.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/confirm-land-and-actions')
+    })
+
+    test('POST cancel redirects to configured returnPath', async () => {
+      const configured = buildConfiguredController('/confirm-land-and-actions')
+      mockRequest.query = { parcelId: 'SD6743-8083', action: 'CMOR1' }
+      mockRequest.payload = { remove: 'false' }
+      await configured.makePostRouteHandler()(mockRequest, mockContext, mockH)
+      expect(configured.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/confirm-land-and-actions')
+    })
+
+    test('GET view Back link points at configured returnPath', async () => {
+      const configured = buildConfiguredController('/confirm-land-and-actions')
+      mockRequest.query = { parcelId: 'SD6743-8083', action: 'CMOR1' }
+      await configured.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+      expect(mockH.view).toHaveBeenCalledWith(
+        'remove-action',
+        expect.objectContaining({
+          backLink: { text: 'Back', href: '/test-grant/confirm-land-and-actions' }
+        })
+      )
     })
   })
 })

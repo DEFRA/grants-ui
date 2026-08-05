@@ -1,0 +1,107 @@
+{% extends baseLayoutPath %}
+
+{% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/table/macro.njk" import govukTable %}
+{% from "summaryCard/macro.njk" import summaryCard %}
+
+{% block content %}
+  <div class="govuk-body">
+    <div class="govuk-grid-row">
+      <div class="{{ gridColumnClass(page, 'govuk-grid-column-two-thirds') }}">
+        {% if hasCalculationError %}
+          {{ govukErrorSummary({
+            titleText: "There is a problem",
+            errorList: errors
+          }) }}
+        {% endif %}
+
+        {% if sectionTitle and sectionTitle.length and (sectionTitle !== pageTitle) %}
+          <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">
+            {{- sectionTitle -}}
+          </h2>
+        {% endif %}
+        <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
+
+        {% if not hasCalculationError %}
+          {% for parcel in parcels %}
+            {% set rows = [] %}
+            {% for landAction in parcel.actions %}
+              {% set changeRemove %}
+                <ul class="govuk-summary-list__actions-list">
+                  <li class="govuk-summary-list__actions-list-item"><a class="govuk-link" href="{{ landAction.changeHref }}">Change<span class="govuk-visually-hidden"> {{ landAction.action }}</span></a></li>
+                  <li class="govuk-summary-list__actions-list-item"><a class="govuk-link" href="{{ landAction.removeHref }}">Remove<span class="govuk-visually-hidden"> {{ landAction.action }}</span></a></li>
+                </ul>
+              {% endset %}
+              {% set _ = rows.push([
+                { text: landAction.action },
+                { text: landAction.area },
+                { text: landAction.yearlyPayment, format: "numeric" },
+                { html: changeRemove }
+              ]) %}
+            {% endfor %}
+            {% set _ = rows.push([
+              { html: '<strong>Total yearly payment for land parcel</strong>' },
+              { text: "" },
+              { html: '<strong>' + parcel.yearlyPayment + '</strong>', format: "numeric" },
+              { text: "" }
+            ]) %}
+
+            {% call summaryCard({
+              title: {
+                text: parcel.title
+              },
+              headerActions: {
+                text: "Remove parcel",
+                href: parcel.removeHref,
+                hiddenTextValue: "all actions for " + parcel.title
+              }
+            }) %}
+              {{ govukTable({
+                caption: "Actions selected for " + parcel.title,
+                captionClasses: "govuk-visually-hidden",
+                head: [
+                  { text: "Action", classes: "govuk-!-width-one-half" },
+                  { text: "Area" },
+                  { text: "Yearly payment", format: "numeric" },
+                  { html: '<span class="govuk-visually-hidden">Change or remove action</span>' }
+                ],
+                rows: rows,
+                classes: "govuk-table--no-bottom-border govuk-!-margin-bottom-0"
+              }) }}
+            {% endcall %}
+          {% endfor %}
+
+          <dl class="govuk-summary-list govuk-!-margin-top-6">
+            <div class="govuk-summary-list__row">
+              <dt class="govuk-summary-list__key">Total yearly payment for application</dt>
+              <dd class="govuk-summary-list__value govuk-!-text-align-right">{{ applicationYearlyPayment }}</dd>
+            </div>
+          </dl>
+
+          <form method="post" novalidate="novalidate">
+            <input type="hidden" name="crumb" value="{{ crumb }}">
+            <div class="govuk-button-group">
+              {{ govukButton({
+                text: "Save and continue",
+                name: "action",
+                value: "continue",
+                preventDoubleClick: true
+              }) }}
+              {{ govukButton({
+                text: "Add another land parcel",
+                name: "action",
+                value: "add-another",
+                classes: "govuk-button--secondary",
+                preventDoubleClick: true
+              }) }}
+            </div>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% if config.cdpEnvironment == 'local' and context | length and not context.isForceAccess and not hasCalculationError %}
+    {% include "partials/debug.html" %}
+  {% endif %}
+{% endblock %}

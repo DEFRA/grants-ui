@@ -6,12 +6,34 @@ import {
 } from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
 import { getParcelIdFromQuery } from '../utils/parcel-request.utils.js'
 
-const checkSelectedLandActionsPath = '/check-selected-land-actions'
+const defaultReturnPath = '/check-selected-land-actions'
 const selectActionsForParcelPath = '/select-actions-for-land-parcel'
 const selectLandParcelPath = '/select-land-parcel'
 
+const isNonEmptyString = (value) => typeof value === 'string' && value.trim() !== ''
+
 export default class RemoveActionPageController extends QuestionPageWithParcelCheckController {
   viewName = 'remove-action'
+
+  /**
+   * @param {FormModel} model
+   * @param {import('@defra/forms-model').Page} pageDef
+   */
+  constructor(model, pageDef) {
+    super(model, pageDef)
+    const returnPath = model?.def?.metadata?.pageConfig?.[pageDef?.path]?.returnPath
+    this.returnPath = isNonEmptyString(returnPath) ? returnPath : defaultReturnPath
+  }
+
+  /**
+   * Direct-only utility page: force the Back link to the configured return
+   * destination instead of inheriting a link based on YAML page order.
+   * @param {object} viewModel
+   * @returns {{ text: string, href: string }}
+   */
+  buildBackLink(viewModel) {
+    return { text: 'Back', href: `${viewModel.serviceUrl}${this.returnPath}` }
+  }
 
   resolveParcelIds(request) {
     return getParcelIdFromQuery(request)
@@ -38,7 +60,7 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
       return selectLandParcelPath
     }
 
-    return checkSelectedLandActionsPath
+    return this.returnPath
   }
 
   /**
@@ -72,8 +94,10 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
    * @returns {object} - Error view response
    */
   renderPostErrorView(h, request, context, errorMessage, parcelId, pageHeadingAndHint) {
+    const viewModel = this.getViewModel(request, context)
     return h.view(this.viewName, {
-      ...this.getViewModel(request, context),
+      ...viewModel,
+      backLink: this.buildBackLink(viewModel),
       parcelId,
       ...pageHeadingAndHint,
       errors: errorMessage
@@ -107,8 +131,10 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
    * @returns {object} - Complete view model
    */
   buildGetViewModel(request, context, parcelId, pageHeading, hint) {
+    const viewModel = this.getViewModel(request, context)
     return {
-      ...this.getViewModel(request, context),
+      ...viewModel,
+      backLink: this.buildBackLink(viewModel),
       parcelId,
       pageHeading,
       hint
@@ -145,7 +171,7 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
     const { action, parcelId } = request.query
 
     if (!parcelId || !landParcels[parcelId]) {
-      return this.proceed(request, h, checkSelectedLandActionsPath)
+      return this.proceed(request, h, this.returnPath)
     }
 
     const actionInfo = findActionInfoFromState(landParcels, parcelId, action)
@@ -181,11 +207,12 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
       return this.processRemoval(request, state, h, parcelId, action)
     }
 
-    return this.proceed(request, h, checkSelectedLandActionsPath)
+    return this.proceed(request, h, this.returnPath)
   }
 }
 
 /**
  * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
  * @import { ResponseObject, ResponseToolkit } from '@hapi/hapi'
  */
