@@ -10,7 +10,7 @@ When('the user selects parcel {string} on the map', async function (parcelId) {
   await this.page.waitForLoadState('domcontentloaded')
 
   await this.page.waitForFunction(() => document.getElementById('parcel-map')?.getLastEvent('parcel-map:ready'))
-  
+
   await this.page.waitForFunction(
     (id) => document.getElementById('parcel-map')?.getFeatureScreenPoint(id) != null,
     parcelId
