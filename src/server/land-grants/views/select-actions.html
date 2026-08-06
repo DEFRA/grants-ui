@@ -44,7 +44,7 @@
         </div>
 
         {% if actionItems.length %}
-          <form method="post" novalidate="novalidate">
+          <form id="select-actions-form" method="post" novalidate="novalidate">
             <input type="hidden" name="crumb" value="{{ crumb }}">
             <input type="hidden" name="action" value="validate">
             {{ chosenAreaFieldsHtml | safe }}
