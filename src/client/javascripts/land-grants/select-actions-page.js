@@ -680,15 +680,38 @@ function getCheckboxForQuantityTarget(form, target) {
   return checkbox instanceof HTMLInputElement ? checkbox : null
 }
 
+// How long a quantity field must sit idle after the user's last keystroke
+// before its refresh fires - long enough to absorb normal typing pauses
+// between digits, short enough not to read as unresponsive.
+const QUANTITY_INPUT_DEBOUNCE_MS = 500
+
 /**
  * @param {HTMLElement} form
  * @param {(triggeringCheckbox?: HTMLInputElement) => Promise<void>} refreshAvailability
  */
 function bindQuantityFocusBlurHandlers(form, refreshAvailability) {
-  // Remembers each quantity input's value as of its last focus, so blur can
+  // Remembers each quantity input's value as of its last focus, so input can
   // tell an actual edit apart from focus merely passing through (e.g. a click
   // landing on a DIFFERENT checkbox first blurs this field with no edit at all).
   let valueOnFocus = ''
+  // One pending debounce timer at a time - a quantity field's own input
+  // events are the only thing that can (re)start or flush it, and only one
+  // field can be focused/edited at once.
+  /** @type {{ checkbox: HTMLInputElement, timer: ReturnType<typeof setTimeout> } | null} */
+  let pending = null
+
+  function flushPending() {
+    if (!pending) {
+      return
+    }
+    const { checkbox } = pending
+    clearTimeout(pending.timer)
+    pending = null
+    if (getValidTypedQuantity(checkbox) != null) {
+      refreshAvailability(checkbox)
+    }
+  }
+
   form.addEventListener(
     'focus',
     (event) => {
@@ -699,19 +722,32 @@ function bindQuantityFocusBlurHandlers(form, refreshAvailability) {
     true
   )
 
-  // Refresh once the user leaves the field, not on every keystroke.
+  // Debounce while the user is actively typing, rather than waiting for blur.
+  form.addEventListener('input', (event) => {
+    const checkbox = getCheckboxForQuantityTarget(form, event.target)
+    if (!checkbox) {
+      return
+    }
+    if (/** @type {HTMLInputElement} */ (event.target).value !== valueOnFocus) {
+      clearErrorOnLoad(checkbox)
+    }
+    if (pending) {
+      clearTimeout(pending.timer)
+    }
+    pending = {
+      checkbox,
+      timer: setTimeout(flushPending, QUANTITY_INPUT_DEBOUNCE_MS)
+    }
+  })
+
+  // Leaving the field shouldn't leave a debounce dangling until its timer
+  // fires on its own - flush immediately so the refresh isn't delayed past
+  // the point the user has already moved on.
   form.addEventListener(
     'blur',
     (event) => {
-      const checkbox = getCheckboxForQuantityTarget(form, event.target)
-      if (!checkbox) {
-        return
-      }
-      if (/** @type {HTMLInputElement} */ (event.target).value !== valueOnFocus) {
-        clearErrorOnLoad(checkbox)
-      }
-      if (getValidTypedQuantity(checkbox) != null) {
-        refreshAvailability(checkbox)
+      if (getCheckboxForQuantityTarget(form, event.target)) {
+        flushPending()
       }
     },
     true
