@@ -1,14 +1,21 @@
 @use "govuk-frontend" as *;
 
-// Neutral plain-text department brand bar shown instead of the GOV.UK header
-// for grants that have not yet passed their public GDS assessment.
+// Blue DEFRA brand bar shown instead of the GOV.UK crown header for grants that
+// have not yet passed their public GDS assessment. Mirrors the Farm and Land
+// Service (SFD) header: GOV.UK blue background with the clickable Royal coat of
+// arms crest and department name.
 .defra-brand-bar {
-  padding: govuk-spacing(3) 0;
-  border-bottom: 1px solid $govuk-border-colour;
-  background-color: govuk-colour("black");
-  color: govuk-colour("white");
+  padding: govuk-spacing(2) 0;
+  background-color: govuk-colour("blue");
 }
 
-.defra-brand-bar__title {
-  @include govuk-font($size: 24, $weight: bold);
+.defra-brand-bar__link {
+  display: inline-block;
+}
+
+.defra-brand-bar__logotype {
+  display: block;
+  width: 490px;
+  max-width: 100%;
+  height: auto;
 }
