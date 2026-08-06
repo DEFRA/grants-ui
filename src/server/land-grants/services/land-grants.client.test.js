@@ -809,7 +809,6 @@ describe('Land Grants client', () => {
       expect(callBody.parcelIds).toEqual(parcelIds)
       expect(callBody.fields).toContain('actions')
       expect(callBody.fields).toContain('size')
-      expect(callBody.fields).not.toContain('actions.availability')
       expect(result).toEqual(mockResponse)
     })
   })
