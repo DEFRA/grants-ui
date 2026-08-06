@@ -3,6 +3,7 @@
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 {% from "govuk/components/notification-banner/macro.njk" import govukNotificationBanner %}
 {% from "partials/components.html" import componentList with context %}
+{% from "govuk/components/details/macro.njk" import govukDetails %}
 
 {% block content %}
   <div class="govuk-grid-row">
@@ -38,6 +39,11 @@
           {{ componentList(components) }}
         {% endif %}
       {% endblock %}
+
+      {% set rpaDetails = pageRpaDetails(page) %}
+      {% if rpaDetails %}
+        {{ govukDetails({ summaryText: rpaDetails.title, html: rpaDetails.content }) }}
+      {% endif %}
     </div>
   </div>
 

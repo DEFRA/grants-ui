@@ -21,7 +21,24 @@ describe('ConfirmationService', () => {
       const result = await ConfirmationService.loadConfirmationContent(validForm)
 
       expect(result).toEqual({
-        confirmationContent: MOCK_FORM_CACHE[0].metadata.confirmationContent
+        confirmationContent: MOCK_FORM_CACHE[0].metadata.pageConfig['/confirmation']
+      })
+    })
+
+    test('should resolve content for the requested page path', async () => {
+      const form = {
+        metadata: {
+          pageConfig: {
+            '/confirmation': { html: '<p>submitted</p>' },
+            '/claim-confirmation': { html: '<p>claim</p>' }
+          }
+        }
+      }
+
+      const result = await ConfirmationService.loadConfirmationContent(form, '/claim-confirmation')
+
+      expect(result).toEqual({
+        confirmationContent: { html: '<p>claim</p>' }
       })
     })
 
@@ -65,11 +82,23 @@ describe('ConfirmationService', () => {
         sbi: '123456789',
         contactName: 'John Doe',
         confirmationContent: { html: '<h2>Test content</h2>' },
+        components: null,
         serviceName: 'Test Form',
         serviceUrl: '/test-form',
         breadcrumbs: [],
         supportEmail: null
       })
+    })
+
+    test('should include rendered components on the view model when provided', () => {
+      const components = [{ type: 'Html', model: { content: '<p>Ref WMP-123</p>' } }]
+
+      const result = ConfirmationService.buildViewModel({
+        ...baseOptions,
+        components
+      })
+
+      expect(result.components).toEqual(components)
     })
 
     test('should include development mode properties when enabled', () => {
@@ -147,6 +176,18 @@ describe('ConfirmationService', () => {
       const result = ConfirmationService.processConfirmationContent(rawContent, 'farm-payments')
 
       expect(result.html).toBe('<a href="/farm-payments/page">Link</a>')
+    })
+
+    test('should render dynamic state tokens in html', () => {
+      const rawContent = {
+        html: '<p>Ref {{ referenceNumber }}</p>'
+      }
+
+      const result = ConfirmationService.processConfirmationContent(rawContent, 'woodland', {
+        referenceNumber: 'WMP-123'
+      })
+
+      expect(result.html).toBe('<p>Ref WMP-123</p>')
     })
 
     test('should return content unchanged if no HTML property', () => {

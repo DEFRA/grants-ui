@@ -72,6 +72,18 @@ export function getConfirmationPath(request, context, controllerName) {
 }
 
 /**
+ * Gets the path to the claim confirmation page for the given form
+ * @param {AnyRequest | undefined} request - The request object
+ * @param {FormContextLike | undefined} context - The context object containing state
+ * @param {string} controllerName - The name of the controller for logging
+ * @returns {string} - The claim confirmation page path
+ */
+export function getClaimConfirmationPath(request, context, controllerName) {
+  const slug = getFormSlug(request, context, controllerName)
+  return slug ? `/${slug}/claim-confirmation` : '/claim-confirmation'
+}
+
+/**
  * Gets the path to the print submitted application page for the given form
  * @param {AnyRequest | undefined} request - The request object
  * @param {FormContextLike | undefined} context - The context object containing state

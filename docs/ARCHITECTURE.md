@@ -422,19 +422,54 @@ The application supports config-driven confirmation pages that allow forms to de
 
 ### What you can add
 
-- Custom HTML content with GOV.UK Design System components
+- Custom HTML body content, authored as the page's standard `components:` list, with GOV.UK Design System markup
 - Reusable template components through placeholders
-- Dynamic content insertion using session data (reference numbers, business details, etc.)
+- Dynamic content in the component body using state values (e.g. `referenceNumber`, `slug`)
+- Multiple confirmation pages per grant, each with its own copy (for example an application confirmation and a claim confirmation)
 
 ### How to Use Config Confirmations
 
 #### Define Confirmation Content in Form YAML
 
-Please see journeys for examples
+The confirmation panel copy is configured **per page**, under the page's `config:` block (which `hoistPageConfig` moves onto `metadata.pageConfig[path]`), like the declaration page. The confirmation body is authored as the page's standard `components:` list. Assign the `ConfirmationPageController` to the page and supply both:
+
+```yaml
+- title: Confirmation
+  path: /confirmation
+  controller: ConfirmationPageController
+  config:
+    panelTitle: 'Application submitted'
+    panelText: 'Application reference number'
+  components:
+    - name: confirmationContent
+      type: Html
+      content: |
+        <p class="govuk-body">We've received your application.</p>
+        <p class="govuk-body"><a class="govuk-link" href="/{{ slug }}/print-submitted-application" target="_blank">View / Print submitted application (opens in new tab)</a></p>
+```
+
+A second confirmation page (for example the claim journey) reuses the same controller with its own copy and sets `confirmationType: claim` so the panel shows the claim number instead of the application reference number:
+
+```yaml
+- title: Confirmation
+  path: /claim-confirmation
+  controller: ConfirmationPageController
+  config:
+    confirmationType: claim
+    panelTitle: 'Claim submitted'
+    panelText: 'Your claim reference number'
+  components:
+    - name: claimConfirmationContent
+      type: Html
+      content: |
+        <p class="govuk-body">We've received your claim.</p>
+```
+
+Each `Html` component's `content` is rendered with Nunjucks against the current journey state, so state values such as `{{ referenceNumber }}` and `{{ slug }}` can be interpolated in the body. The panel value depends on `config.confirmationType`: an application confirmation (the default) shows the application reference number from state, while a claim confirmation (`confirmationType: claim`) shows the most recent claim's `claimNumber` from `state.claims`. When the value is missing the panel falls back to `Not available`. `{{SLUG}}` and registered component placeholders (see below) are also substituted in the component content.
 
 #### Route Configuration
 
-The config confirmation system automatically handles routes matching `/{slug}/confirmation` for any form that has `confirmationContent` defined in its YAML configuration.
+Each confirmation page is resolved through the generic forms-engine route by assigning `controller: ConfirmationPageController` to the page. The panel copy is read from that page's own `config:` block and the body from its own `components:` list, so a grant can define more than one confirmation page.
 
 ### Reusable Template Components
 
@@ -444,15 +479,17 @@ The system includes a components registry that allows you to define reusable HTM
 
 - `{{DEFRASUPPORTDETAILS}}` - Renders contact information and support details for DEFRA
 
-Simply include the placeholder in your confirmation content HTML:
+Simply include the placeholder in an `Html` component's `content`:
 
 ```yaml
-confirmationContent:
-  html: |
-    <h2 class="govuk-heading-m">Application submitted</h2>
-    <p class="govuk-body">Your reference number is: <strong>{{referenceNumber}}</strong></p>
+components:
+  - name: confirmationContent
+    type: Html
+    content: |
+      <h2 class="govuk-heading-m">Application submitted</h2>
+      <p class="govuk-body">Your reference number is: <strong>{{ referenceNumber }}</strong></p>
 
-    {{DEFRASUPPORTDETAILS}}
+      {{DEFRASUPPORTDETAILS}}
 ```
 
 #### Adding New Reusable Components
