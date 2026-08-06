@@ -19,7 +19,7 @@ Feature: Mapping
         # select-land-parcel
         Then the user should be at URL "select-land-parcel"
         When the map has loaded parcel "SD6352-8774"
-        And the user should see the available land parcels total populated
+        Then the user should see the available land parcels total populated
         When the user selects parcel "SD6352-8774" on the map
         Then the user should see "SD6352-8774" in the selected parcel summary
         And continues
