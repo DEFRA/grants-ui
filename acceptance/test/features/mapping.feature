@@ -1,5 +1,12 @@
 Feature: Mapping
 
+    # "the map has loaded parcel", "selects parcel ... on the map" and "clicks
+    # 'Change' on the selected parcel summary" fake the parcel-map:ready/
+    # parcel-map:selection CustomEvents directly, rather than driving the real
+    # <parcel-map> web component - headless CI Chromium has no working WebGL,
+    # so MapLibre never actually initialises there. This proves the page's
+    # event-handling wiring but not that a user can genuinely see and click a
+    # rendered map. Revisit once CI has a way to render WebGL and interact with the actual map.
     Scenario: User selects a land parcel from an interactive map
         Given there is no application data for SBI "106842593" and grant "example-grant-with-map"
 
