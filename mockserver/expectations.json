@@ -63,7 +63,7 @@
     "priority": 0,
     "httpRequest": {
       "method": "POST",
-      "path": "/application/validate"
+      "path": "/api/v2/application/validate"
     },
     "httpResponse": {
       "statusCode": 200,
@@ -153,7 +153,7 @@
   },
   {
     "id": "land-grants-api-parcels-actions-200",
-    "priority": 0,
+    "priority": 10,
     "httpRequest": {
       "method": "POST",
       "path": "/api/v2/parcels",
@@ -170,6 +170,7 @@
             "parcelId": "7039",
             "sheetId": "SD6843",
             "size": {
+              "value": 15.5,
               "total": 15.5,
               "unit": "ha"
             },
@@ -191,6 +192,33 @@
                 },
                 "ratePerUnitGbp": 75.0,
                 "description": "Test action 2"
+              },
+              {
+                "code": "CLIG3",
+                "availableArea": {
+                  "value": 9.0,
+                  "unit": "ha"
+                },
+                "ratePerUnitGbp": 151.0,
+                "description": "Manage grassland with very low nutrient inputs"
+              },
+              {
+                "code": "CSAM3",
+                "availableArea": {
+                  "value": 6.25,
+                  "unit": "ha"
+                },
+                "ratePerUnitGbp": 382.0,
+                "description": "Herbal leys"
+              },
+              {
+                "code": "SCR2",
+                "availableArea": {
+                  "value": 4.5,
+                  "unit": "ha"
+                },
+                "ratePerUnitGbp": 130.0,
+                "description": "Manage grassland with low nutrient inputs"
               }
             ]
           }
