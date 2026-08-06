@@ -46,9 +46,12 @@ describe('page layout branding phases', () => {
   describe('private beta (restricted branding)', () => {
     const $ = renderPage({ govukBranding: false })
 
-    test('renders the plain department brand bar instead of the GOV.UK crown header', () => {
+    test('renders the blue DEFRA crest brand bar instead of the GOV.UK crown header', () => {
       expect($('.govuk-header').length).toBe(0)
-      expect($('.defra-brand-bar').text()).toContain('Department for Environment, Food & Rural Affairs')
+
+      const $logo = $('.defra-brand-bar a.defra-brand-bar__link img.defra-brand-bar__logotype')
+      expect($logo.attr('src')).toBe('/public/assets/defra/images/defra-crest.png')
+      expect($logo.attr('alt')).toBe('Department for Environment, Food & Rural Affairs')
     })
 
     test('applies the restricted typography body class', () => {

@@ -62,7 +62,7 @@
       rebrand: true
     }) }}
   {% else %}
-    {{ defraBrandBar() }}
+    {{ defraBrandBar({ defraAssetPath: defraAssetPath }) }}
   {% endif %}
 
   {{ govukServiceNavigation({ serviceName: serviceName, serviceUrl: serviceUrl }) }}

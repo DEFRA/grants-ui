@@ -1,5 +1,8 @@
+{% set homepageUrl = params.homepageUrl | default("https://www.gov.uk/government/organisations/department-for-environment-food-rural-affairs") %}
 <header class="defra-brand-bar" role="banner">
   <div class="govuk-width-container">
-    <span class="defra-brand-bar__title">Department for Environment, Food &amp; Rural Affairs</span>
+    <a href="{{ homepageUrl }}" class="defra-brand-bar__link">
+      <img class="defra-brand-bar__logotype" src="{{ params.defraAssetPath }}/images/defra-crest.png" alt="Department for Environment, Food &amp; Rural Affairs">
+    </a>
   </div>
 </header>
