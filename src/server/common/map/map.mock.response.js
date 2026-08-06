@@ -20,6 +20,7 @@ export function buildMockParcelsResponse(parcelData, h) {
       mock: true
     })
     .code(statusCodes.ok)
+    .header('Cache-Control', 'no-store')
 }
 
 /**

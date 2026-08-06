@@ -108,6 +108,16 @@ describe('parcelsHandler', () => {
     expect(payload).not.toHaveProperty('tileUrl')
   })
 
+  it('marks the response as never cacheable, so a different signed-in user never sees a stale response', async () => {
+    fetchParcels.mockResolvedValue(mockParcels)
+    fetchParcelTileLocation.mockResolvedValue(null)
+    const h = makeH()
+
+    await parcelsHandler(makeRequest(), h)
+
+    expect(h.header).toHaveBeenCalledWith('Cache-Control', 'no-store')
+  })
+
   it('maps areaHa to null when area value is null', async () => {
     fetchParcels.mockResolvedValue([{ sheetId: 'SD7148', parcelId: '9161', area: { value: null } }])
     fetchParcelTileLocation.mockResolvedValue(null)
@@ -201,14 +211,14 @@ describe('tilesHandler', () => {
     expect(h.type).toHaveBeenCalledWith('application/x-protobuf')
   })
 
-  it('marks tiles as privately cacheable', async () => {
+  it('marks tiles as never cacheable, since the URL carries no user-scoping', async () => {
     fetchParcels.mockResolvedValue([])
     fetchParcelTile.mockResolvedValue(Buffer.alloc(0))
     const h = makeH()
 
     await tilesHandler(makeRequest({ z: '10', x: '50', y: '60' }), h)
 
-    expect(h.header).toHaveBeenCalledWith('Cache-Control', 'private, max-age=3600')
+    expect(h.header).toHaveBeenCalledWith('Cache-Control', 'no-store')
   })
 
   it('passes an empty parcel ID list through when the user has none', async () => {

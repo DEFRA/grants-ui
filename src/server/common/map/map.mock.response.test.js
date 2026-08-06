@@ -34,4 +34,13 @@ describe('buildMockParcelsResponse', () => {
     })
     expect(h.code).toHaveBeenCalledWith(200)
   })
+
+  it('marks the response as never cacheable, so a different signed-in user never sees a stale response', () => {
+    buildMockFeatures.mockReturnValue({ features: [], bbox: null })
+    const h = makeH()
+
+    buildMockParcelsResponse([], h)
+
+    expect(h.header).toHaveBeenCalledWith('Cache-Control', 'no-store')
+  })
 })
