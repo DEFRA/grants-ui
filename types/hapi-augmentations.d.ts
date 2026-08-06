@@ -21,6 +21,27 @@ declare module '@hapi/hapi' {
     // `...InBackground` variant is fire-and-forget and returns void.
     sendAuditEvent: (opts: AuditEventInput) => Promise<void>
     sendAuditEventInBackground: (opts: AuditEventInput) => void
+
+    // Decorated by @defra/hapi-auth-oidc (registered in src/server/auth/entraId/index.js).
+    login: (h: ResponseToolkit) => Promise<ResponseObject>
+    callback: (h: ResponseToolkit) => Promise<{
+      accessToken: string
+      refreshToken: string
+      idToken?: string
+      claims: Record<string, unknown>
+      expiresIn: number
+    } | null>
+    ensureValidToken: (token: { accessToken: string, refreshToken: string }) => Promise<{
+      token: { accessToken: string, refreshToken: string, idToken?: string, claims?: Record<string, unknown>, expiresIn?: number }
+      refreshed: boolean
+    }>
+
+    // Decorated by the 'entra-id-session' cookie auth strategy (requestDecoratorName option) -
+    // renamed from the scheme's default `cookieAuth` to avoid clashing with the citizen session strategy.
+    entraIdCookieAuth: {
+      set: (session: { sessionId: string }) => void
+      clear: () => void
+    }
   }
 
   interface ServerApplicationState {

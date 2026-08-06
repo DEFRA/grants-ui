@@ -85,5 +85,15 @@ export const AUTH = {
     level: 'error',
     messageFunc: (messageOptions) =>
       `OIDC config fetch failed after ${messageOptions.durationMs}ms: code=${messageOptions.code ?? 'n/a'} message=${messageOptions.errorMessage}`
+  },
+  ENTRA_ID_CONFIG: {
+    level: 'info',
+    messageFunc: (messageOptions) =>
+      `Entra ID strategy configured: redirectUri=${messageOptions.redirectUri} wellKnownUrl=${messageOptions.wellKnownUrl}`
+  },
+  ENTRA_ID_AUTH_FAILURE: {
+    level: 'error',
+    messageFunc: (messageOptions) =>
+      `Entra ID authentication failed: ${messageOptions.errorMessage} | statusCode=${messageOptions.statusCode ?? 'n/a'} | payload=${JSON.stringify(messageOptions.payload ?? null)}`
   }
 }
