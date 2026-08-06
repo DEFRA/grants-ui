@@ -7,6 +7,10 @@
     align-self: flex-start;
   }
 
+  .action-guidance-link {
+    @include govuk-font-size(16);
+  }
+
   .select-actions-hint {
     @include govuk-font-size(16);
     display: block;
@@ -38,17 +42,15 @@
     }
   }
 
-  .govuk-checkboxes__item:has(+ .govuk-checkboxes__conditional),
+
+  .govuk-checkboxes__item:has(+ .govuk-checkboxes__conditional:not(.govuk-checkboxes__conditional--hidden)),
+  .govuk-checkboxes__item:has(+ .govuk-checkboxes__conditional:last-child),
   .govuk-checkboxes__item:last-child {
     @extend %no-row-divider;
   }
 
   .govuk-checkboxes__conditional {
-    @extend %row-divider;
     @include govuk-font-size(16);
-    // The item's own bottom spacing is zeroed out when a conditional
-    // follows it (see %no-row-divider), so this is the only gap between the
-    // item's hint text and the conditional's first line ("Quantity").
     margin-top: govuk-spacing(2);
 
     .govuk-label,
@@ -61,8 +63,9 @@
     }
   }
 
-  .govuk-checkboxes__conditional:last-child {
-    @extend %no-row-divider;
+  .govuk-checkboxes__conditional:not(.govuk-checkboxes__conditional--hidden):not(:last-child) {
+    padding-bottom: govuk-spacing(2);
+    border-bottom: 1px solid govuk-colour('light-grey');
   }
 }
 

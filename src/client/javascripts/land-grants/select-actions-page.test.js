@@ -393,6 +393,7 @@ describe('initSelectActionsPage', () => {
     // A genuine edit clears CSAM3's own protection.
     csam3Input.dispatchEvent(new Event('focus'))
     csam3Input.value = '9999'
+    csam3Input.dispatchEvent(new Event('input', { bubbles: true }))
     csam3Input.dispatchEvent(new Event('blur'))
 
     const clig3Checkbox = form.querySelector('input[value="CLIG3"]')
@@ -436,6 +437,7 @@ describe('initSelectActionsPage', () => {
 
     csam3Input.dispatchEvent(new Event('focus'))
     csam3Input.value = 'asdhasd'
+    csam3Input.dispatchEvent(new Event('input', { bubbles: true }))
     csam3Input.dispatchEvent(new Event('blur'))
 
     global.fetch = mockApi({ CSAM3: 9, CLIG3: 9 })
@@ -1101,7 +1103,7 @@ describe('initSelectActionsPage', () => {
     })
   })
 
-  it('does not fire a request while typing, only once the field is blurred', async () => {
+  it('does not fire a request while typing, only once the field is blurred (which flushes any pending debounce immediately)', async () => {
     const form = setupDom([
       { code: 'CSAM3', checked: true, availableArea: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 },
       { code: 'UPL1', availableArea: { value: 5, unit: 'ha' } }
@@ -1128,6 +1130,63 @@ describe('initSelectActionsPage', () => {
     expect(global.fetch).toHaveBeenCalledTimes(1)
     const [, options] = global.fetch.mock.calls[0]
     expect(JSON.parse(options.body).plannedActions).toEqual([{ actionCode: 'CSAM3', quantity: 3, unit: 'ha' }])
+  })
+
+  it('fires a request 500ms after the user stops typing, without waiting for blur', async () => {
+    const form = setupDom([
+      { code: 'CSAM3', checked: true, availableArea: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 },
+      { code: 'UPL1', availableArea: { value: 5, unit: 'ha' } }
+    ])
+    global.fetch = fetchOk({ actions: [] })
+    initSelectActionsPage(form)
+    await flushPromises()
+    global.fetch.mockClear()
+
+    const quantityInput = form.querySelector('#landActionQuantity_CSAM3')
+    quantityInput.value = '1'
+    quantityInput.dispatchEvent(new Event('input', { bubbles: true }))
+    quantityInput.value = '2'
+    quantityInput.dispatchEvent(new Event('input', { bubbles: true }))
+    quantityInput.value = '3'
+    quantityInput.dispatchEvent(new Event('input', { bubbles: true }))
+
+    // Still short of the debounce window - no request yet, field untouched.
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    expect(global.fetch).not.toHaveBeenCalled()
+
+    // Past the debounce window from the last keystroke - fires on its own.
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    expect(global.fetch).toHaveBeenCalledTimes(1)
+    const [, options] = global.fetch.mock.calls[0]
+    expect(JSON.parse(options.body).plannedActions).toEqual([{ actionCode: 'CSAM3', quantity: 3, unit: 'ha' }])
+  })
+
+  it('restarts the 500ms debounce on every keystroke, rather than firing from the first one', async () => {
+    const form = setupDom([
+      { code: 'CSAM3', checked: true, availableArea: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 },
+      { code: 'UPL1', availableArea: { value: 5, unit: 'ha' } }
+    ])
+    global.fetch = fetchOk({ actions: [] })
+    initSelectActionsPage(form)
+    await flushPromises()
+    global.fetch.mockClear()
+
+    const quantityInput = form.querySelector('#landActionQuantity_CSAM3')
+    quantityInput.value = '1'
+    quantityInput.dispatchEvent(new Event('input', { bubbles: true }))
+
+    // A keystroke lands just before the first one's window would have
+    // elapsed - that must push the deadline out rather than let it fire.
+    await new Promise((resolve) => setTimeout(resolve, 400))
+    quantityInput.value = '12'
+    quantityInput.dispatchEvent(new Event('input', { bubbles: true }))
+    await new Promise((resolve) => setTimeout(resolve, 400))
+    expect(global.fetch).not.toHaveBeenCalled()
+
+    await new Promise((resolve) => setTimeout(resolve, 200))
+    expect(global.fetch).toHaveBeenCalledTimes(1)
+    const [, options] = global.fetch.mock.calls[0]
+    expect(JSON.parse(options.body).plannedActions).toEqual([{ actionCode: 'CSAM3', quantity: 12, unit: 'ha' }])
   })
 
   it("shows the triggering action's own refresh banner while a blur-triggered refresh is in flight, hiding it once it resolves, and never shows another action's banner", async () => {

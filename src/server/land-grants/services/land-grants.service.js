@@ -23,15 +23,6 @@ import {
 } from '~/src/server/land-grants/services/parcel-cache.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
-const QUANTITY_REQUIRED_ACTION_CODES = config.get('landGrants.quantityRequiredActionCodes')
-
-// TODO - Hard-coded guidance URLs, keyed by action code, until land-grants-api
-// returns a guidanceUrl per action. Add a line per code that needs guidance, and
-// remove this map (and the guidanceUrl mapping in mapAction) once the API provides it.
-const GUIDANCE_URLS_BY_CODE = {
-  CLIG3: 'https://www.gov.uk/find-funding-for-land-or-farms/clig3-manage-grassland-with-very-low-nutrient-inputs',
-  CSAM3: 'https://www.gov.uk/find-funding-for-land-or-farms/csam3-herbal-leys'
-}
 
 /**
  * @param {unknown} enabledLandActions
@@ -201,9 +192,11 @@ export async function fetchActionsForParcel(parcel, userContext) {
 /**
  * Recomputes availableArea for a parcel's actions against an in-progress
  * selection, for the select-actions page's live availability refresh.
+ * availability.type is static per action (not affected by the recompute),
+ * so it isn't returned here - the client already has it from initial render.
  * @param {{ parcelId: string, sheetId: string, plannedActions: PlannedAction[] }} params
  * @param {LandGrantsUserContext} userContext
- * @returns {Promise<{ actions: Array<{ code: string, availableArea?: Size, requiresMaxQuantity?: number }> }>}
+ * @returns {Promise<{ actions: Array<{ code: string, availableArea?: Size }> }>}
  * @throws {Error}
  */
 export async function fetchActionsWithPlannedActions({ parcelId, sheetId, plannedActions }, userContext) {
@@ -212,8 +205,7 @@ export async function fetchActionsWithPlannedActions({ parcelId, sheetId, planne
   const foundParcel = parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)
   const actions = (foundParcel?.actions || []).map(mapAction).map((action) => ({
     code: action.code,
-    availableArea: action.availableArea,
-    requiresMaxQuantity: action.requiresMaxQuantity
+    availableArea: action.availableArea
   }))
 
   return { actions }
@@ -224,16 +216,9 @@ export async function fetchActionsWithPlannedActions({ parcelId, sheetId, planne
  * @param {ActionOption} action
  */
 function mapAction(action) {
-  const requiresQuantity = QUANTITY_REQUIRED_ACTION_CODES.includes(action.code)
   return {
     ...action,
-    description: landActionWithCode(action.description, action.code),
-    // Once land-grants-api is ready we need to replace this with their actual max quantity field.
-    // Falls back to 0 (not undefined) when availableArea is missing so a configured code always
-    // still gets a quantity input - undefined here is read downstream as "not required at all".
-    requiresMaxQuantity: requiresQuantity ? (action.availableArea?.value ?? 0) : undefined,
-    // Prefer the API's own guidanceUrl once it provides one; fall back to the temporary lookup above.
-    guidanceUrl: action.guidanceUrl ?? GUIDANCE_URLS_BY_CODE[action.code]
+    description: landActionWithCode(action.description, action.code)
   }
 }
 
