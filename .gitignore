@@ -21,6 +21,7 @@ reports/mutation/mutation.html
 .stryker-tmp
 /http-client.private.env.json
 compose/config-broker-local
+/localstack/
 compose/config-broker/local-form-definitions/*
 !compose/config-broker/local-form-definitions/README.md
 /.grants-ui-cli-state.json

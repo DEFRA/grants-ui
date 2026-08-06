@@ -32,6 +32,10 @@
   const LOG_PREFIX = '[journey-runner]'
   const UUID_PATTERN = /^[0-9a-f-]{36}$/i
   const SNAPSHOT_VALUE_MAX_LENGTH = 80
+  const PARCELS_API_URL = '/api/map/parcels'
+  const PARCELS_FIELD_NAME = 'landParcels'
+  const WAIT_TIMEOUT_MS = 10000
+  const WAIT_POLL_INTERVAL_MS = 100
 
   // ---------------------------------------------------------------------------
   // DOM helpers
@@ -62,6 +66,41 @@
    */
   function inputSelector(name) {
     return `input[name="${name}"]`
+  }
+
+  /**
+   * Poll until `predicate` holds, for pages that settle their form state from an
+   * async round-trip after an interaction.
+   * @param {() => boolean} predicate
+   * @param {string} description  what we are waiting for, for the failure message
+   * @param {number} [timeoutMs]
+   * @returns {Promise<void>}
+   */
+  function waitFor(predicate, description, timeoutMs = WAIT_TIMEOUT_MS) {
+    return new Promise((resolve, reject) => {
+      const deadline = Date.now() + timeoutMs
+      const poll = () => {
+        if (predicate()) {
+          resolve()
+        } else if (Date.now() > deadline) {
+          reject(new Error(`Timed out after ${timeoutMs}ms waiting for ${description}`))
+        } else {
+          globalThis.setTimeout(poll, WAIT_POLL_INTERVAL_MS)
+        }
+      }
+      poll()
+    })
+  }
+
+  /**
+   * The page's error summary, ignoring ones inside a `hidden` container. The
+   * map pages ship a pre-rendered "No land parcels were found" summary that
+   * only their client script unhides - counting it would stop every run on
+   * those pages before the step even executed.
+   * @returns {Element | undefined}
+   */
+  function visibleErrorSummary() {
+    return Array.from(document.querySelectorAll('.govuk-error-summary')).find((el) => !el.closest('[hidden]'))
   }
 
   // ---------------------------------------------------------------------------
@@ -154,20 +193,32 @@
       submitForm()
     },
 
-    landActions(step) {
-      // Land-grants "select actions" pages tick an action checkbox, which reveals
-      // a required quantity input named `landActionQuantity_<actionCode>` where the
-      // action code is the checkbox's value. Tick the first action, then fill its
-      // revealed quantity before submitting.
+    /**
+     * Land-grants "select actions" pages tick an action checkbox, which carries a
+     * `landActionQuantity_<actionCode>` field. For an action the user sizes
+     * themselves that is a revealed input to type into; for one sized by the
+     * parcel it is a hidden field the page fills from an availability round-trip
+     * after the tick - so wait for that rather than inventing a number, which the
+     * server rejects.
+     * @param {JourneyStep} step
+     * @returns {Promise<void>}
+     */
+    async landActions(step) {
       const checkbox = document.querySelector(inputSelector(step.fieldName))
       if (!checkbox) {
         throw new Error(`${step.fieldName} action checkbox not found`)
       }
       checkbox.click()
+
       const quantityField = document.querySelector(`input[name="landActionQuantity_${checkbox.value}"]`)
       if (quantityField) {
-        setInputValue(quantityField, step.value ?? '1')
+        if (step.value || quantityField.type !== 'hidden') {
+          setInputValue(quantityField, step.value ?? '1')
+        } else {
+          await waitFor(() => Number(quantityField.value) > 0, `chosen area for ${checkbox.value} (page reported none)`)
+        }
       }
+
       submitForm()
     },
 
@@ -238,6 +289,68 @@
         throw new Error(`Link to /${step.linkSlug} not found`)
       }
       link.click()
+    },
+
+    /**
+     * Map-based parcel selection (`MapSelectPageController`). There is nothing
+     * per-parcel in the DOM to click - the map is a canvas, and the real
+     * selection listener writes hidden `landParcels` inputs into
+     * `#selected-parcels-inputs`. The runner takes the parcel IDs straight from
+     * the API the map itself loads and writes those same inputs, so the POST
+     * payload is identical to a human's without waiting on (or depending on)
+     * the map rendering.
+     * @param {JourneyStep} step
+     * @returns {Promise<void>}
+     */
+    async mapParcel(step) {
+      const container = document.getElementById('selected-parcels-inputs')
+      if (!container) {
+        throw new Error('Parcel selection container not found - is this a map page?')
+      }
+
+      const response = await fetch(PARCELS_API_URL, { headers: { accept: 'application/json' } })
+      if (!response.ok) {
+        throw new Error(`${PARCELS_API_URL} returned ${response.status}`)
+      }
+
+      const body = await response.json()
+      const available = (body.features ?? []).map((f) => f.properties?.id ?? f.id).filter(Boolean)
+      if (!available.length) {
+        throw new Error('No land parcels returned for this account')
+      }
+
+      let chosen
+      if (step.value) {
+        if (!available.includes(step.value)) {
+          throw new Error(`Parcel "${step.value}" not available (have: ${available.join(', ')})`)
+        }
+        chosen = [step.value]
+      } else if (step.selectAll) {
+        chosen = available
+      } else {
+        chosen = [available[0]]
+      }
+
+      container.replaceChildren(
+        ...chosen.map((id) => {
+          const input = document.createElement('input')
+          input.type = 'hidden'
+          input.name = PARCELS_FIELD_NAME
+          input.value = id
+          return input
+        })
+      )
+
+      // The page disables Continue when the map fails to load (e.g. no tile
+      // access). The selection above does not come from the map, so re-enable it
+      // rather than stalling a run the server would have accepted.
+      const continueButton = document.getElementById('map-select-continue')
+      if (continueButton) {
+        continueButton.disabled = false
+      }
+
+      console.log(`${LOG_PREFIX} Selected parcel(s): ${chosen.join(', ')}`)
+      submitForm()
     },
 
     textFields(step) {
@@ -350,7 +463,7 @@
     /** @type {string[]} */
     const detailParts = []
 
-    const errorSummary = document.querySelector('.govuk-error-summary')
+    const errorSummary = visibleErrorSummary()
     if (errorSummary) {
       detailParts.push(errorSummary.textContent.trim())
     }
@@ -407,6 +520,38 @@
   }
 
   /**
+   * Decide whether the run should stop before the matched step is executed,
+   * in priority order. Returns `null` when the step should run.
+   * @param {JourneyState} state
+   * @param {JourneyStep} step
+   * @param {number} stepNumber 1-based position of `step` in `steps`
+   * @returns {{ level: 'log' | 'error', message: string } | null}
+   */
+  function findStopReason(state, step, stepNumber) {
+    if (state.section && step.section !== state.section) {
+      return {
+        level: 'log',
+        message: `Section "${state.section}" complete - stopping at ${globalThis.location.pathname}`
+      }
+    }
+
+    if (stepNumber >= state.stopAt) {
+      return { level: 'log', message: `Arrived at "${step.name}" (step ${stepNumber}) - stopping here` }
+    }
+
+    const errorSummary = visibleErrorSummary()
+    if (errorSummary) {
+      return { level: 'error', message: `Page has errors, stopping:\n${errorSummary.textContent.trim()}` }
+    }
+
+    if (!stepHandlers[step.type]) {
+      return { level: 'error', message: `Unknown step type: ${step.type}` }
+    }
+
+    return null
+  }
+
+  /**
    * Read journey state from sessionStorage and run whichever step matches the
    * current URL. Called on every page load while a journey is active.
    * @returns {void}
@@ -429,32 +574,14 @@
     const step = steps[idx]
     const stepNumber = idx + 1
 
-    if (state.section && step.section !== state.section) {
+    const stop = findStopReason(state, step, stepNumber)
+    if (stop) {
       sessionStorage.removeItem(STORAGE_KEY)
-      console.log(`${LOG_PREFIX} Section "${state.section}" complete - stopping at ${globalThis.location.pathname}`)
-      return
-    }
-
-    if (stepNumber >= state.stopAt) {
-      sessionStorage.removeItem(STORAGE_KEY)
-      console.log(`${LOG_PREFIX} Arrived at "${step.name}" (step ${stepNumber}) - stopping here`)
-      return
-    }
-
-    const errorSummary = document.querySelector('.govuk-error-summary')
-    if (errorSummary) {
-      sessionStorage.removeItem(STORAGE_KEY)
-      console.error(`${LOG_PREFIX} Page has errors, stopping:\n${errorSummary.textContent.trim()}`)
+      console[stop.level](`${LOG_PREFIX} ${stop.message}`)
       return
     }
 
     const handler = stepHandlers[step.type]
-    if (!handler) {
-      sessionStorage.removeItem(STORAGE_KEY)
-      console.error(`${LOG_PREFIX} Unknown step type: ${step.type}`)
-      return
-    }
-
     console.log(`${LOG_PREFIX} Step ${stepNumber}: ${step.name}`)
 
     try {
@@ -462,11 +589,26 @@
       // resumes from the following step rather than re-running this one.
       state.lastCompleted = idx
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-      handler(step)
+      const result = handler(step)
+      // Async handlers (e.g. mapParcel, which has to fetch the parcel list)
+      // settle after this try block, so route their failures to the same place.
+      if (result && typeof result.then === 'function') {
+        result.catch((err) => failStep(step, err))
+      }
     } catch (err) {
-      sessionStorage.removeItem(STORAGE_KEY)
-      console.error(`${LOG_PREFIX} Failed on "${step.name}":`, err.message)
+      failStep(step, err)
     }
+  }
+
+  /**
+   * Abandon the run and explain which step broke.
+   * @param {JourneyStep} step
+   * @param {Error} err
+   * @returns {void}
+   */
+  function failStep(step, err) {
+    sessionStorage.removeItem(STORAGE_KEY)
+    console.error(`${LOG_PREFIX} Failed on "${step.name}":`, err.message)
   }
 
   // ---------------------------------------------------------------------------
@@ -509,7 +651,14 @@
     console.log(`${LOG_PREFIX} Journey stopped`)
   }
 
-  processCurrentPage()
+  // This is a classic script, so it runs while the document is still parsing -
+  // before the page's own deferred/module scripts (map wiring, select-actions
+  // quantity fields) have attached anything. Wait for them.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => processCurrentPage())
+  } else {
+    processCurrentPage()
+  }
 })()
 
 /**
@@ -520,7 +669,7 @@
  * @property {string} [section]            Optional section tag for partial runs.
  * @property {string} [fieldName]          Form field name (for steps that touch a single field).
  * @property {string} [value]              Value to set (for input/text/yesNo steps).
- * @property {boolean} [selectAll]         Tick every checkbox instead of just the first.
+ * @property {boolean} [selectAll]         Tick every checkbox (or select every land parcel) instead of just the first.
  * @property {number} [offsetDays]         Days to add to "today" for date-parts steps.
  * @property {string} [linkSlug]           Slug to match against an `<a href>` for clickLink.
  * @property {'prefix'} [matchMode]        Match `/slug/{uuid}` instead of exact `/slug`.

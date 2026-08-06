@@ -7,11 +7,11 @@
 import nunjucks from 'nunjucks'
 import { govukFrontendPath, viewPaths } from '~/src/config/nunjucks/view-paths.js'
 import { getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
+import { requiresQuantityInput } from '~/src/shared/action-quantity-type.js'
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
 import { SELECTED_ACTIONS_FIELD_NAME } from '~/src/server/land-grants/utils/selected-actions-field.js'
 import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js'
 
-// Own Environment, not the app-wide one - that one's config.get('root') call isn't mocked in this page's tests.
 const QUANTITY_INPUT_TEMPLATE = 'quantity-input/template.njk'
 const ACTION_LABEL_TEMPLATE = 'action-label/template.njk'
 const landGrantsViewEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader([govukFrontendPath, ...viewPaths]), {
@@ -109,6 +109,30 @@ function getRequirementText(consentKeys) {
 }
 
 /**
+ * Builds the checkbox hint text: payment rate, consent requirement, and -
+ * for a non-quantity action only - its own availability. A quantity action's
+ * availability hint lives inside its conditional panel instead (see
+ * quantity-input/template.njk), kept in sync live by the client.
+ * @param {Action} action
+ * @param {boolean} needsQuantity
+ * @returns {string}
+ */
+function getHintHtml(action, needsQuantity) {
+  const consents = getActionConsentKeys(action)
+  const requirementText = getRequirementText(consents)
+  const agreementRateText = action.ratePerAgreementPerYearGbp
+    ? ` and <strong>£${action.ratePerAgreementPerYearGbp}</strong> per agreement`
+    : ''
+  const requirementLineText = requirementText ? `<br>${requirementText}` : ''
+  const rateText = `Payment rate per year: £${action.ratePerUnitGbp?.toFixed(2)}/ha${agreementRateText}${requirementLineText}`
+  const availabilityHintHtml =
+    !needsQuantity && action.availableArea
+      ? `<br><span id="${getActionQuantityFieldName(action.code)}-hint">${action.availableArea.value} ${formatAreaUnit(action.availableArea.unit)} available</span>`
+      : ''
+  return `${rateText}${availabilityHintHtml}`
+}
+
+/**
  * Maps a single action to a checkbox item view model
  * @param {Action} action - The action to map
  * @param {Array<{code: string, description: string, value?: string}>} addedActions - Actions already added to the parcel
@@ -127,41 +151,32 @@ export function mapActionToViewModel(
   const existingAction = addedActions.find((a) => a.code === action.code)
   const quantityValue = existingAction?.value ?? ''
   const checked = Boolean(existingAction)
+  const availabilityType = action.availability?.type
+  const needsQuantity = requiresQuantityInput(availabilityType)
+  const hintHtml = getHintHtml(action, needsQuantity)
   const consents = getActionConsentKeys(action)
-  const requirementText = getRequirementText(consents)
-  const agreementRateText = action.ratePerAgreementPerYearGbp
-    ? ` and <strong>£${action.ratePerAgreementPerYearGbp}</strong> per agreement`
-    : ''
-  const requirementLineText = requirementText ? `<br>${requirementText}` : ''
-  const hintText = `Payment rate per year: £${action.ratePerUnitGbp?.toFixed(2)}/ha${agreementRateText}${requirementLineText}`
-  // A quantity action's own availability hint lives inside its conditional
-  // panel instead (see quantity-input/template.njk) - this is only for the
-  // non-quantity case, kept in sync live by the client.
-  const availabilityHintHtml =
-    action.requiresMaxQuantity == null && action.availableArea
-      ? `<br><span id="${getActionQuantityFieldName(action.code)}-hint">${action.availableArea.value} ${formatAreaUnit(action.availableArea.unit)} available</span>`
-      : ''
 
   return {
     id: getCheckboxItemId(action.code, isFirst),
     value: action.code,
-    html: `${getActionLabelHtml(action.description, action.guidanceUrl)}<span class="select-actions-hint">${hintText}${availabilityHintHtml}</span>`,
+    html: `${getActionLabelHtml(action.description, action.guidanceUrl)}<span class="select-actions-hint">${hintHtml}</span>`,
     checked,
     consents,
     attributes: {
       'data-available-unit': action.availableArea?.unit,
       // A non-quantity action's pass/fail threshold - static, never touched by the client.
       'data-total-available-area': getStaticAvailableArea(action)?.value,
+      'data-available-area-type': availabilityType ?? 'total',
       // Stamped per-checkbox (not a single form-wide flag) so protection survives
       // until THIS action is directly interacted with, not just the first refresh.
       ...(checked && hasErrors && { 'data-error-on-load': 'true' })
     },
-    ...(action.requiresMaxQuantity != null && {
+    ...(needsQuantity && {
       conditional: getQuantityConditional(
         action.code,
         action.description,
         quantityValue,
-        action.requiresMaxQuantity,
+        action.availableArea?.value ?? 0,
         action.availableArea?.unit,
         quantityErrorsByCode[action.code]
       )
@@ -179,7 +194,7 @@ export function mapActionToViewModel(
  */
 export function getChosenAreaFieldsHtml(actions, addedActions) {
   return actions
-    .filter((action) => action.requiresMaxQuantity == null)
+    .filter((action) => !requiresQuantityInput(action.availability?.type))
     .map((action) => {
       const fieldName = getActionQuantityFieldName(action.code)
       const chosenArea = Number(addedActions.find((a) => a.code === action.code)?.value)

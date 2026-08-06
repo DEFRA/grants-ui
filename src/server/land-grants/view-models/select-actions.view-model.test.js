@@ -48,7 +48,8 @@ describe('select-actions.view-model', () => {
         consents: [],
         attributes: {
           'data-available-unit': undefined,
-          'data-total-available-area': undefined
+          'data-total-available-area': undefined,
+          'data-available-area-type': 'total'
         }
       })
     })
@@ -120,6 +121,30 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, [], {}, true)
 
       expect(result.id).toBe('landAction')
+    })
+
+    it('should append a "read guidance" link next to the description when the action provides a guidance URL', () => {
+      const action = {
+        code: 'SAM1',
+        description: 'Test Action 1',
+        ratePerUnitGbp: 100.5,
+        guidanceUrl: 'https://www.gov.uk/guidance/sam1'
+      }
+
+      const result = mapActionToViewModel(action, [])
+
+      expect(result.html).toContain('Test Action 1')
+      expect(result.html).toContain('href="https://www.gov.uk/guidance/sam1"')
+      expect(result.html).toContain('read guidance')
+      expect(result.html).toContain('<span class="select-actions-hint">Payment rate per year: £100.50/ha</span>')
+    })
+
+    it('should not append a guidance link when the action has no guidance URL', () => {
+      const action = { code: 'SAM1', description: 'Test Action 1', ratePerUnitGbp: 100.5 }
+
+      const result = mapActionToViewModel(action, [])
+
+      expect(result.html).not.toContain('Guidance for')
     })
 
     it('should map action with rate per unit and per agreement', () => {
@@ -285,7 +310,8 @@ describe('select-actions.view-model', () => {
 
       expect(result.attributes).toEqual({
         'data-available-unit': 'ha',
-        'data-total-available-area': 12.5
+        'data-total-available-area': 12.5,
+        'data-available-area-type': 'total'
       })
     })
 
@@ -318,7 +344,7 @@ describe('select-actions.view-model', () => {
         code: 'UPL2',
         description: 'Heavy livestock grazing on moorland',
         ratePerUnitGbp: 45,
-        requiresMaxQuantity: 3,
+        availability: { type: 'partial' },
         availableArea: { value: 3, unit: 'ha' }
       }
 
@@ -334,7 +360,8 @@ describe('select-actions.view-model', () => {
 
       expect(result.attributes).toEqual({
         'data-available-unit': undefined,
-        'data-total-available-area': undefined
+        'data-total-available-area': undefined,
+        'data-available-area-type': 'total'
       })
     })
 
@@ -356,7 +383,7 @@ describe('select-actions.view-model', () => {
       const action = {
         code: 'CSAM3',
         description: 'Herbal leys: CSAM3',
-        requiresMaxQuantity: 18.5673,
+        availability: { type: 'partial' },
         availableArea: { value: 18.5673, unit: 'ha' }
       }
 
@@ -369,7 +396,7 @@ describe('select-actions.view-model', () => {
       const action = {
         code: 'CSAM3',
         description: 'Herbal leys: CSAM3',
-        requiresMaxQuantity: 18.5673,
+        availability: { type: 'partial' },
         availableArea: { value: 18.5673, unit: 'ha' }
       }
       const addedActions = [{ code: 'CSAM3', description: 'Herbal leys: CSAM3', value: '3.25' }]
@@ -383,7 +410,7 @@ describe('select-actions.view-model', () => {
       const action = {
         code: 'CSAM3',
         description: 'Herbal leys: CSAM3',
-        requiresMaxQuantity: 10,
+        availability: { type: 'partial' },
         availableArea: { value: 10, unit: 'ha' }
       }
 
@@ -397,7 +424,7 @@ describe('select-actions.view-model', () => {
       const action = {
         code: 'CSAM3',
         description: 'Herbal leys: CSAM3',
-        requiresMaxQuantity: 18.5673,
+        availability: { type: 'partial' },
         availableArea: { value: 18.5673, unit: 'ha' }
       }
 
@@ -407,11 +434,11 @@ describe('select-actions.view-model', () => {
       expect(result.conditional.html).toContain('18.5673 hectares available')
     })
 
-    it('should still show the conditional, hint and max attribute when requiresMaxQuantity is 0', () => {
+    it('should still show the conditional, hint and max attribute when available area is 0', () => {
       const action = {
         code: 'CSAM3',
         description: 'Herbal leys: CSAM3',
-        requiresMaxQuantity: 0,
+        availability: { type: 'partial' },
         availableArea: { value: 0, unit: 'ha' }
       }
 
@@ -426,7 +453,7 @@ describe('select-actions.view-model', () => {
       const action = {
         code: 'CSAM3',
         description: 'Herbal leys: CSAM3',
-        requiresMaxQuantity: 5,
+        availability: { type: 'partial' },
         availableArea: { value: 5, unit: 'sqm' }
       }
 
@@ -439,7 +466,7 @@ describe('select-actions.view-model', () => {
       const action = {
         code: 'CSAM3',
         description: 'Herbal leys: CSAM3',
-        requiresMaxQuantity: 5
+        availability: { type: 'partial' }
       }
 
       const result = mapActionToViewModel(action, [])
@@ -452,7 +479,7 @@ describe('select-actions.view-model', () => {
       const action = {
         code: 'CSAM3',
         description: 'Herbal leys: CSAM3',
-        requiresMaxQuantity: 5,
+        availability: { type: 'partial' },
         availableArea: { value: 5, unit: 'ha' }
       }
 
@@ -466,7 +493,7 @@ describe('select-actions.view-model', () => {
       const action = {
         code: 'CSAM3',
         description: 'Herbal leys: CSAM3',
-        requiresMaxQuantity: 5,
+        availability: { type: 'partial' },
         availableArea: { value: 5, unit: 'ha' }
       }
 
@@ -479,7 +506,7 @@ describe('select-actions.view-model', () => {
       const action = {
         code: 'CSAM3',
         description: 'Herbal leys: CSAM3',
-        requiresMaxQuantity: 5,
+        availability: { type: 'partial' },
         availableArea: { value: 5, unit: 'ha' }
       }
 
@@ -550,7 +577,7 @@ describe('select-actions.view-model', () => {
         {
           code: 'CSAM3',
           description: 'Herbal leys: CSAM3',
-          requiresMaxQuantity: 5,
+          availability: { type: 'partial' },
           availableArea: { value: 5, unit: 'ha' }
         },
         { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200 }
@@ -692,7 +719,7 @@ describe('select-actions.view-model', () => {
     })
 
     it('should skip a quantity-required action', () => {
-      const actions = [{ code: 'CSAM3', description: 'Herbal leys', requiresMaxQuantity: 0.3271 }]
+      const actions = [{ code: 'CSAM3', description: 'Herbal leys', availability: { type: 'partial' } }]
 
       const html = getChosenAreaFieldsHtml(actions, [])
 
