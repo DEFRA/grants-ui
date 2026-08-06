@@ -15,7 +15,7 @@
       rebrand: true
     }) }}
   {% else %}
-    {{ defraBrandBar({ defraAssetPath: defraAssetPath }) }}
+    {{ defraBrandBar({ defraAssetPath }) }}
   {% endif %}
 
   {{ govukServiceNavigation({ serviceName: name | default(serviceName) , serviceUrl: serviceUrl }) }}
