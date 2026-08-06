@@ -743,4 +743,4 @@ export function initSelectActionsPage(form) {
   bindQuantityFocusBlurHandlers(form, refreshAvailability)
 }
 
-initSelectActionsPage(document.querySelector('form'))
+initSelectActionsPage(document.getElementById('select-actions-form'))
