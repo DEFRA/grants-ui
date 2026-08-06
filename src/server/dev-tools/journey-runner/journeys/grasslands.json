@@ -1,0 +1,65 @@
+[
+  {
+    "slug": "check-details",
+    "name": "Check your details — Yes",
+    "type": "yesNo",
+    "fieldName": "businessDetailsUpToDate",
+    "value": "true"
+  },
+
+  {
+    "slug": "tasks",
+    "name": "Task list — check before you start",
+    "type": "clickLink",
+    "linkSlug": "check-your-land-details",
+    "section": "check"
+  },
+  {
+    "slug": "check-your-land-details",
+    "name": "Land details up to date — Yes",
+    "type": "yesNo",
+    "fieldName": "confirmLandDetailsUpToDate",
+    "value": "true",
+    "section": "check"
+  },
+  {
+    "slug": "management-control-of-land",
+    "name": "Management control — Yes",
+    "type": "yesNo",
+    "fieldName": "managementControl",
+    "value": "true",
+    "section": "check"
+  },
+
+  {
+    "slug": "tasks",
+    "name": "Task list — select land and actions",
+    "type": "clickLink",
+    "linkSlug": "select-land-parcel",
+    "section": "select"
+  },
+  {
+    "slug": "select-land-parcel",
+    "name": "Select land parcel on the map",
+    "type": "mapParcel",
+    "section": "select"
+  },
+  {
+    "slug": "select-actions-for-land-parcel",
+    "name": "Select actions",
+    "type": "landActions",
+    "fieldName": "landAction",
+    "section": "select"
+  },
+  { "slug": "you-must-have-consent", "name": "Consent", "type": "submitOnly", "section": "select" },
+
+  {
+    "slug": "tasks",
+    "name": "Task list — review and submit",
+    "type": "clickLink",
+    "linkSlug": "summary",
+    "section": "submit"
+  },
+  { "slug": "summary", "name": "Check your answers", "type": "submitOnly", "section": "submit" },
+  { "slug": "declaration", "name": "Confirm and submit", "type": "submitOnly", "section": "submit" }
+]

@@ -42,17 +42,25 @@
  */
 
 /**
+ * @typedef {object} ActionAvailability
+ * @property {'total'|'partial'} [type] - How the user must enter a quantity relative to
+ *   availableArea: 'total' (or unset) requires the full amount and shows no quantity input;
+ *   'partial' shows a quantity input capped at availableArea
+ */
+
+/**
  * @typedef {object} ActionOption
  * @property {string} code - The action code
  * @property {string} description - The action description
  * @property {string} version - The action version
  * @property {boolean} [sssiConsentRequired] - If action needs SSSI consent
  * @property {boolean} [heferRequired] - If action needs HEFER report
- * @property {number} [requiresMaxQuantity] - If set, the user must enter a quantity for this action, capped at this value
  * @property {Size} availableArea - The available area for the action
  * @property {number} ratePerUnitGbp - The rate per unit in GBP
  * @property {number} ratePerAgreementPerYearGbp - The rate per agreement per year in GBP
- * @property {string} [guidanceUrl] - URL to external guidance documentation for this action
+ * @property {string} [guidanceUrl] - URL to the action's guidance page
+ * @property {ActionAvailability} [availability] - Governs whether this action needs a
+ *   user-typed quantity
  */
 
 /**
