@@ -2,6 +2,7 @@ import { stringifyParcel } from '~/src/shared/format-parcel.js'
 import { getConsentTypes } from '../utils/consent-types.js'
 import { getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
 import { getSelectedActionCodes } from '../utils/selected-actions-field.js'
+import { requiresQuantityInput } from '~/src/shared/action-quantity-type.js'
 
 /**
  * Manages state operations for land parcels and their actions.
@@ -35,8 +36,9 @@ export function buildNewState(state, actionsObj, parcel) {
  * @returns {boolean}
  */
 function hasSubmittedQuantity(payload, actionInfo) {
-  const quantityOverride =
-    actionInfo.requiresMaxQuantity != null ? payload[getActionQuantityFieldName(actionInfo.code)] : null
+  const quantityOverride = requiresQuantityInput(actionInfo.availability?.type)
+    ? payload[getActionQuantityFieldName(actionInfo.code)]
+    : null
   return quantityOverride !== null && quantityOverride !== undefined && quantityOverride !== ''
 }
 
@@ -83,15 +85,15 @@ function buildActionStateEntry(payload, actionInfo) {
 }
 
 /**
- * Overlays freshly recomputed availableArea/requiresMaxQuantity (keyed by
- * code, from fetchActionsWithPlannedActions) onto the full action list from
- * the initial fetch - everything else (description, version, consents, etc.)
+ * Overlays freshly recomputed availableArea (keyed by code, from
+ * fetchActionsWithPlannedActions) onto the full action list from the initial
+ * fetch - everything else (description, version, consents, availability, etc.)
  * still comes from the original fetch, and an action missing from the
  * recompute keeps its original values. The action's first-seen availableArea
  * is preserved as staticAvailableArea, since the recomputed value competes
  * against whatever else is in this submission (see mapActionToViewModel).
  * @param {Array<Action>} actions - Flat list from the initial fetch
- * @param {Array<{ code: string, availableArea?: object, requiresMaxQuantity?: number }>} recomputed
+ * @param {Array<{ code: string, availableArea?: object }>} recomputed
  * @returns {Array<Action>}
  */
 export function mergeRecomputedAvailability(actions, recomputed) {
@@ -103,7 +105,6 @@ export function mergeRecomputedAvailability(actions, recomputed) {
       ? {
           ...action,
           availableArea: match.availableArea,
-          requiresMaxQuantity: match.requiresMaxQuantity,
           staticAvailableArea: action.staticAvailableArea ?? action.availableArea
         }
       : action
@@ -179,7 +180,7 @@ export function addSelectedActionsToState(state, payload, actions, parcel) {
     actions,
     parcel,
     (actionInfo, formPayload) =>
-      actionInfo.requiresMaxQuantity == null || hasSubmittedNonZeroQuantity(formPayload, actionInfo)
+      !requiresQuantityInput(actionInfo.availability?.type) || hasSubmittedNonZeroQuantity(formPayload, actionInfo)
   )
 }
 
@@ -202,10 +203,9 @@ export function getAddedActionsFromPayload(payload, actions, prevAddedActions = 
     .map((actionInfo) => ({
       code: actionInfo.code,
       description: actionInfo.description,
-      value:
-        actionInfo.requiresMaxQuantity != null
-          ? (payload[getActionQuantityFieldName(actionInfo.code)] ?? '')
-          : (prevAddedActions.find((a) => a.code === actionInfo.code)?.value ?? '')
+      value: requiresQuantityInput(actionInfo.availability?.type)
+        ? (payload[getActionQuantityFieldName(actionInfo.code)] ?? '')
+        : (prevAddedActions.find((a) => a.code === actionInfo.code)?.value ?? '')
     }))
 }
 
@@ -325,7 +325,10 @@ export function findActionInfoFromState(landParcels, parcelKey, action) {
  * @property {string} description - Action description
  * @property {string} version - Action version
  * @property {string[]} [consents] - Array of consent type keys required (e.g., ['sssi', 'hefer'])
- * @property {number} [requiresMaxQuantity] - If set, the user must enter a quantity for this action, capped at this value
+ * @property {string} [guidanceUrl] - URL to the action's guidance page
+ * @property {object} [availability] - Governs whether this action needs a user-typed quantity
+ * @property {'total'|'partial'} [availability.type] - See requiresQuantityInput in
+ *   shared/action-quantity-type.js
  * @property {object} [availableArea] - Available area for the action
  * @property {number} [availableArea.value] - Area value
  * @property {string} [availableArea.unit] - Area unit
