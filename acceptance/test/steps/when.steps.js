@@ -6,18 +6,45 @@ import AutocompleteField from '../page-objects/auto-complete.field.js'
 import DatePartsField from '../page-objects/date-parts.field.js'
 import MonthYearField from '../page-objects/month-year.field.js'
 
+When('the map has loaded parcel {string}', async function (parcelId) {
+  // Real usage populates the map totals from the parcel-map:ready event, which the
+  // <parcel-map> element only dispatches once MapLibre has actually loaded (a
+  // working WebGL context)
+  await this.page.waitForLoadState('domcontentloaded')
+  await this.page.evaluate((id) => {
+    document.getElementById('parcel-map').dispatchEvent(
+      new CustomEvent('parcel-map:ready', {
+        bubbles: true,
+        detail: { parcelIds: [id], metaIndex: { [id]: { areaHa: 11.1006 } } }
+      })
+    )
+  }, parcelId)
+})
+
 When('the user selects parcel {string} on the map', async function (parcelId) {
   await this.page.waitForLoadState('domcontentloaded')
-  // mimic the CustomEvent the parcel-map web component fires when a user clicks a parcel
   await this.page.evaluate((id) => {
-    document
-      .getElementById('parcel-map')
-      .dispatchEvent(new CustomEvent('parcel-map:selection', { bubbles: true, detail: { selectedIds: [id] } }))
+    const [sheetId, parcelNumber] = id.split('-')
+    document.getElementById('parcel-map').dispatchEvent(
+      new CustomEvent('parcel-map:selection', {
+        bubbles: true,
+        detail: { selectedParcels: [{ id, sheet_id: sheetId, parcel_id: parcelNumber, areaHa: 11.1006 }] }
+      })
+    )
   }, parcelId)
 })
 
 When('(the user )clicks on {string}', async function (text) {
   await this.page.locator(`//*[contains(text(),'${text}')]`).click()
+})
+
+When('(the user )clicks {string} on the selected parcel summary', async function (text) {
+  await this.page.locator(`//*[contains(text(),'${text}')]`).click()
+  await this.page.evaluate(() => {
+    document
+      .getElementById('parcel-map')
+      .dispatchEvent(new CustomEvent('parcel-map:selection', { bubbles: true, detail: { selectedParcels: [] } }))
+  })
 })
 
 When('the user selects {string}', async function (text) {

@@ -59,7 +59,7 @@ export function initMap(host, { multiSelect, skeleton, isLoading, cleanups }) {
   const interactPlugin = createInteractPlugin({
     interactionModes: ['selectFeature'],
     multiSelect,
-    deselectOnClickOutside: true,
+    deselectOnClickOutside: false,
     layers: [
       {
         layerId: LAYER_ID_FILL,

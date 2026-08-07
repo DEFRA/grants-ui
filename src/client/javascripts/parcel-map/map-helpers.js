@@ -223,10 +223,10 @@ export function buildSkeleton() {
 /**
  * Fits the viewport to the parcels' bounding box, then adds the parcel source.
  * @param {import('maplibre-gl').Map} ml
- * @param {{ geojsonUrl: string | null, bbox: { minLng: number, minLat: number, maxLng: number, maxLat: number } | null }} data
+ * @param {{ geojson: GeoJSON.FeatureCollection | null, bbox: { minLng: number, minLat: number, maxLng: number, maxLat: number } | null }} data
  * @param {unknown[]} colorExpr  MapLibre `match` expression
  */
-export function addParcelsToMap(ml, { geojsonUrl, bbox }, colorExpr) {
+export function addParcelsToMap(ml, { geojson, bbox }, colorExpr) {
   if (bbox) {
     const { minLng, minLat, maxLng, maxLat } = bbox
     ml.fitBounds(
@@ -243,17 +243,17 @@ export function addParcelsToMap(ml, { geojsonUrl, bbox }, colorExpr) {
   }
 
   const origin = globalThis.location.origin
-  const source = geojsonUrl
+  const source = geojson
     ? /** @type {import('maplibre-gl').GeoJSONSourceSpecification} */ ({
         type: 'geojson',
-        data: geojsonUrl.startsWith('http') ? geojsonUrl : `${origin}${geojsonUrl}`
+        data: geojson
       })
     : /** @type {import('maplibre-gl').VectorSourceSpecification} */ ({
         type: 'vector',
         tiles: [`${origin}${PARCEL_TILES_URL}`]
       })
   ml.addSource(SOURCE_ID_PARCELS, source)
-  const layers = buildParcelLayers(colorExpr, geojsonUrl ? undefined : SOURCE_ID_PARCELS)
+  const layers = buildParcelLayers(colorExpr, geojson ? undefined : SOURCE_ID_PARCELS)
   ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.fill))
   ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.outline))
   ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.label))

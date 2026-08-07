@@ -16,10 +16,6 @@ import {
   STATE_ERROR
 } from './config.js'
 
-/**
- * @import { Map as MLMap } from 'maplibre-gl'
- */
-
 // <parcel-map multi-select="true|false">
 // Lifecycle shell: owns the state machine and event dispatch, and delegates map
 // bootstrap, data loading, tooltip and selection wiring to focused modules.
@@ -45,8 +41,20 @@ export class ParcelMap extends HTMLElement {
   /** @type {Array<() => void>} */
   #mlCleanup = []
 
+  /** @type {{ allowNextClear: () => void } | null} */
+  #selectionRelay = null
+
+  // customElements.define() upgrades an already-parsed <parcel-map> the instant
+  // it registers, so connectedCallback() can run — and, once its data fetch
+  // resolves, dispatch EVENT_READY/EVENT_ERROR — before a later <script type="module">
+  // (e.g. parcel-select-page.js) has attached its listeners. Recording the last
+  // terminal event here lets #replayLastEvent() catch such a listener up.
+  /** @type {CustomEvent | null} */
+  #lastEvent = null
+
   connectedCallback() {
     this.#state = STATE_IDLE
+    this.#lastEvent = null
     this.#init()
   }
 
@@ -67,6 +75,7 @@ export class ParcelMap extends HTMLElement {
     }
     this.#mapInstance = null
     this.#interactPlugin = null
+    this.#selectionRelay = null
     this.#mapEl?.parentElement?.remove()
     this.#mapEl = null
     this.#skeleton?.remove()
@@ -104,23 +113,30 @@ export class ParcelMap extends HTMLElement {
       this.#teardown()
       this.#state = STATE_ERROR
       this.#showError(MSG_ERROR_UNAVAILABLE)
-      this.dispatchEvent(new CustomEvent(EVENT_ERROR, { bubbles: true, detail: { reason: ERROR_REASON_UNAVAILABLE } }))
+      this.#dispatchTerminal(EVENT_ERROR, { reason: ERROR_REASON_UNAVAILABLE })
     } else if (data.parcelIds.length === 0) {
       this.#teardown()
       this.#state = STATE_ERROR
-      this.dispatchEvent(new CustomEvent(EVENT_ERROR, { bubbles: true, detail: { reason: ERROR_REASON_NO_PARCELS } }))
+      this.#dispatchTerminal(EVENT_ERROR, { reason: ERROR_REASON_NO_PARCELS })
     } else {
       const colorExpr = buildColorExpr(data.parcelIds)
       addParcelsToMap(ml, data, colorExpr)
       const tooltip = attachTooltip(ml, data.metaIndex, this.#mapEl, this.#mlCleanup)
-      attachSelectionRelay({ host: this, mapInstance: this.#mapInstance, ml, tooltip, cleanups: this.#mlCleanup })
+      this.#selectionRelay = attachSelectionRelay({
+        host: this,
+        mapInstance: this.#mapInstance,
+        ml,
+        tooltip,
+        cleanups: this.#mlCleanup,
+        multiSelect
+      })
       this.#interactPlugin?.enable()
 
       this.#state = STATE_READY
       this.#skeleton?.remove()
       this.#skeleton = null
 
-      this.dispatchEvent(new CustomEvent(EVENT_READY, { bubbles: true }))
+      this.#dispatchTerminal(EVENT_READY, { parcelIds: data.parcelIds, metaIndex: data.metaIndex })
     }
   }
 
@@ -128,5 +144,32 @@ export class ParcelMap extends HTMLElement {
   #showError(message) {
     this.#errorOverlay = buildOverlay(message, { role: 'alert' })
     this.appendChild(this.#errorOverlay)
+  }
+
+  /**
+   * @param {string} type
+   * @param {unknown} detail
+   */
+  #dispatchTerminal(type, detail) {
+    const event = new CustomEvent(type, { bubbles: true, detail })
+    this.#lastEvent = event
+    this.dispatchEvent(event)
+  }
+
+  /**
+   * Returns the last EVENT_READY/EVENT_ERROR this element dispatched, or null
+   * if it hasn't reached a terminal state yet. Lets a listener attached after
+   * that event already fired (see #lastEvent above) catch up synchronously.
+   * @param {string} type
+   * @returns {CustomEvent | null}
+   */
+  getLastEvent(type) {
+    return this.#lastEvent?.type === type ? this.#lastEvent : null
+  }
+
+  // Deselects every selected parcel
+  clearSelection() {
+    this.#selectionRelay?.allowNextClear()
+    this.#interactPlugin?.clear()
   }
 }

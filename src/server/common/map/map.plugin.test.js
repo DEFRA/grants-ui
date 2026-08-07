@@ -46,10 +46,6 @@ describe('mapPlugin route registration', () => {
     ])
   })
 
-  it('does not register the mock-only geojson route', () => {
-    expect(server._routes.map((r) => r.path)).not.toContain(ROUTES.parcelsMockGeojson)
-  })
-
   it('requires session auth on every route', () => {
     for (const route of server._routes) {
       expect(route.options.auth).toEqual({ mode: 'required', strategy: 'session' })

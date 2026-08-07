@@ -1,5 +1,5 @@
 {% set govukRebrand = govukBranding %}
-{% set bodyClasses = "" if govukBranding else "app-brand-restricted" %}
+{% set bodyClasses = ("" if govukBranding else "app-brand-restricted") + (" " + bodyCustomClass if bodyCustomClass else "") %}
 
 {% extends "govuk/template.njk" %}
 
@@ -96,24 +96,27 @@
   {{ "Error: " if errors | length }}{{ pageTitle }} | {{ serviceName }}
 {% endblock %}
 
-{% block beforeContent %}
-  {% if breadcrumbs.length > 1 %}
-    {{ govukBreadcrumbs({
-      items: breadcrumbs
-    }) }}
-  {% endif %}
-  {% if notificationBanner %}
-    <div class="govuk-grid-row">
-      <div class="govuk-grid-column-two-thirds">
-        {{ govukNotificationBanner(notificationBanner) }}
-      </div>
-    </div>
-  {% endif %}
+{% block main %}
+  <div class="govuk-width-container">
+    {% block beforeContent %}
+      {% if breadcrumbs.length > 1 %}
+        {{ govukBreadcrumbs({
+          items: breadcrumbs
+        }) }}
+      {% endif %}
+      {% if notificationBanner %}
+        <div class="govuk-grid-row">
+          <div class="govuk-grid-column-two-thirds">
+            {{ govukNotificationBanner(notificationBanner) }}
+          </div>
+        </div>
+      {% endif %}
+    {% endblock %}
+    <main class="govuk-main-wrapper {{ mainClasses }}" id="main-content" role="main">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
 {% endblock %}
-
-<main id="main-content" class="{{ mainClasses }}" role="main">
-  {% block content %}{% endblock %}
-</main>
 
 {% block footer %}
   {% set footerItems = [

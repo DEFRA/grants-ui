@@ -48,6 +48,7 @@ function stubInteractiveMap({ mode = 'ready', ml, capture, once = false } = {}) 
     this._emit = (event, payload) => {
       ;(this._handlers[event] ?? []).forEach((fn) => fn(payload))
     }
+    this.emit = vi.fn(this._emit)
     capture?.(this)
     if (mode === 'ready') {
       Promise.resolve().then(() => {
@@ -119,6 +120,27 @@ describe('parcel-map web component', () => {
     it('dispatches parcel-map:ready when map and data load successfully', async () => {
       const el = await mountReady()
       expect(el.querySelector('[role="alert"]')).toBeNull()
+    })
+
+    it('getLastEvent replays the ready event for a listener that attaches late', async () => {
+      const el = await mountReady()
+      const replayed = el.getLastEvent(EVENT_READY)
+      expect(replayed).not.toBeNull()
+      expect(replayed.detail.parcelIds).toEqual(PARCELS_RESPONSE.features.map((f) => f.id))
+    })
+
+    it('getLastEvent returns null for an event type that has not fired', async () => {
+      const el = await mountReady()
+      expect(el.getLastEvent(EVENT_ERROR)).toBeNull()
+    })
+
+    it('getLastEvent replays the error event when the map fails to load', async () => {
+      global.fetch = vi.fn().mockResolvedValue({ ok: false })
+      const el = await mountElement()
+      await waitForEvent(el, EVENT_ERROR)
+      const replayed = el.getLastEvent(EVENT_ERROR)
+      expect(replayed).not.toBeNull()
+      expect(replayed.detail.reason).toBe('unavailable')
     })
 
     it('dispatches parcel-map:error and shows error overlay when fetch fails', async () => {
@@ -302,7 +324,7 @@ describe('parcel-map web component', () => {
       expect(layerIds).toContain(LAYER_ID_LABEL)
     })
 
-    it('resolves PARCEL_TILES_URL against location.origin when no geojsonUrl', async () => {
+    it('resolves PARCEL_TILES_URL against location.origin when no inline geojson', async () => {
       await mountReady()
       const [, sourceSpec] = ml.addSource.mock.calls[0]
       expect(sourceSpec.tiles[0]).toBe(`${globalThis.location.origin}/api/map/parcel-tiles/{z}/{x}/{y}`)
@@ -317,7 +339,7 @@ describe('parcel-map web component', () => {
         expect.objectContaining({
           interactionModes: ['selectFeature'],
           multiSelect: false,
-          deselectOnClickOutside: true,
+          deselectOnClickOutside: false,
           layers: [expect.objectContaining({ layerId: LAYER_ID_FILL, idProperty: 'id', labelProperty: 'id' })]
         })
       )
@@ -361,10 +383,58 @@ describe('parcel-map web component', () => {
       const selectionEvent = waitForEvent(el, EVENT_SELECTION)
       emitSelectionChange([{ featureId: 'SD7148-9160' }])
       const e = await selectionEvent
-      expect(e.detail.selectedIds).toEqual(['SD7148-9160'])
+      expect(e.detail.selectedParcels.map((p) => p.id)).toEqual(['SD7148-9160'])
     })
 
-    it('dispatches an empty selection when the plugin clears it', async () => {
+    it('dispatches selectedParcels with the feature id and properties', async () => {
+      const el = await mountReady()
+
+      const selectionEvent = waitForEvent(el, EVENT_SELECTION)
+      emitSelectionChange([
+        { featureId: 'SD7148-9160', properties: { areaHa: 1.5, sheet_id: 'SD7148', parcel_id: '9160' } }
+      ])
+      const e = await selectionEvent
+      expect(e.detail.selectedParcels).toEqual([
+        { id: 'SD7148-9160', areaHa: 1.5, sheet_id: 'SD7148', parcel_id: '9160' }
+      ])
+    })
+
+    it('dispatches an empty selection when multi-select clears it', async () => {
+      const el = await mountReady({ 'multi-select': 'true' })
+
+      const first = waitForEvent(el, EVENT_SELECTION)
+      emitSelectionChange([{ featureId: 'SD7148-9160' }, { featureId: 'SD7148-9161' }])
+      await first
+
+      const cleared = waitForEvent(el, EVENT_SELECTION)
+      emitSelectionChange([])
+      const e = await cleared
+      expect(e.detail.selectedParcels).toEqual([])
+    })
+
+    it('re-selects the same parcel instead of dispatching empty when a single selection toggles off', async () => {
+      const el = await mountReady()
+
+      const first = waitForEvent(el, EVENT_SELECTION)
+      emitSelectionChange([{ featureId: 'SD7148-9160', properties: { areaHa: 1.5 } }])
+      await first
+
+      // The vendor plugin toggles a re-clicked single selection off; the relay
+      // should put it straight back rather than let this page-level event fire.
+      let sawEmptySelection = false
+      el.addEventListener(EVENT_SELECTION, (e) => {
+        sawEmptySelection = sawEmptySelection || e.detail.selectedParcels.length === 0
+      })
+      emitSelectionChange([])
+
+      expect(sawEmptySelection).toBe(false)
+      expect(lastMapInstance().emit).toHaveBeenCalledWith(
+        'interact:selectFeature',
+        expect.objectContaining({ featureId: 'SD7148-9160', properties: { areaHa: 1.5 } })
+      )
+    })
+
+    it('clears a single selection via clearSelection() without re-asserting it', async () => {
       const el = await mountReady()
 
       const first = waitForEvent(el, EVENT_SELECTION)
@@ -372,9 +442,10 @@ describe('parcel-map web component', () => {
       await first
 
       const cleared = waitForEvent(el, EVENT_SELECTION)
+      el.clearSelection()
       emitSelectionChange([])
       const e = await cleared
-      expect(e.detail.selectedIds).toEqual([])
+      expect(e.detail.selectedParcels).toEqual([])
     })
 
     it('dispatches all selected IDs in multi-select', async () => {
@@ -383,7 +454,7 @@ describe('parcel-map web component', () => {
       const selectionEvent = waitForEvent(el, EVENT_SELECTION)
       emitSelectionChange([{ featureId: 'SD7148-9160' }, { featureId: 'SD7148-9161' }])
       const e = await selectionEvent
-      expect(e.detail.selectedIds).toEqual(['SD7148-9160', 'SD7148-9161'])
+      expect(e.detail.selectedParcels.map((p) => p.id)).toEqual(['SD7148-9160', 'SD7148-9161'])
     })
 
     it('calls setPaintProperty to highlight selected parcels', async () => {
@@ -399,13 +470,17 @@ describe('parcel-map web component', () => {
     it('hides the tooltip when the selection is cleared', async () => {
       const el = await mountReady()
 
-      // Show the tooltip via a parcel click first
-      ml._emitLayer('click', LAYER_ID_FILL, { features: [makeFeature('SD7148', '9160')], lngLat: { lng: 0, lat: 0 } })
+      // Show the tooltip via a parcel hover first
+      ml._emitLayer('mousemove', LAYER_ID_FILL, {
+        features: [makeFeature('SD7148', '9160')],
+        lngLat: { lng: 0, lat: 0 }
+      })
       const tooltip = el.querySelector('[role="tooltip"]')
       expect(tooltip.style.display).toBe('block')
 
       const cleared = waitForEvent(el, EVENT_SELECTION)
       emitSelectionChange([{ featureId: 'SD7148-9160' }])
+      el.clearSelection()
       emitSelectionChange([])
       await cleared
 
@@ -414,10 +489,10 @@ describe('parcel-map web component', () => {
   })
 
   describe('tooltip', () => {
-    it('renders parcel ID and area in tooltip on click', async () => {
+    it('renders parcel ID and area in tooltip on hover', async () => {
       const el = await mountReady()
 
-      ml._emitLayer('click', LAYER_ID_FILL, {
+      ml._emitLayer('mousemove', LAYER_ID_FILL, {
         features: [makeFeature('SD7148', '9160')],
         lngLat: { lng: 0, lat: 0 }
       })
@@ -431,7 +506,7 @@ describe('parcel-map web component', () => {
     it('shows "Unknown" area when areaHa is null', async () => {
       const el = await mountReady()
 
-      ml._emitLayer('click', LAYER_ID_FILL, {
+      ml._emitLayer('mousemove', LAYER_ID_FILL, {
         features: [makeFeature('SD7148', '9161')],
         lngLat: { lng: 0, lat: 0 }
       })
