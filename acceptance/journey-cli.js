@@ -147,6 +147,11 @@ async function main() {
     launchOpts.channel = 'chrome'
   } else {
     launchOpts.executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
+    // Headless Chromium has no hardware GPU, so map journeys (MapLibre GL / WebGL)
+    // need a software renderer or the map fails to initialise. Point ANGLE at
+    // Mesa's software Vulkan device (lavapipe) for a reliable headless WebGL
+    // context. Mirrors test/support/world.js; requires mesa-vulkan-swrast.
+    launchOpts.args.push('--use-gl=angle', '--use-angle=vulkan', '--enable-features=Vulkan', '--ignore-gpu-blocklist')
   }
   const browser = await chromium.launch(launchOpts)
   const context = await browser.newContext({
