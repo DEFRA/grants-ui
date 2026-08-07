@@ -955,6 +955,139 @@ describe('formsStatusRedirect', () => {
     })
   })
 
+  describe('claim journey start-page navigation', () => {
+    beforeEach(() => {
+      // Mirrors the woodland claim configuration: /claim is the claim journey start page.
+      request.app.model.def.metadata.grantRedirectRules.postSubmission = [
+        {
+          fromGrantsStatus: 'SUBMITTED',
+          gasStatus: 'STATUS_AWAITING_CLAIM',
+          toGrantsStatus: 'CLAIM_STARTED',
+          toPath: '/claim'
+        },
+        {
+          fromGrantsStatus: 'CLAIM_STARTED',
+          gasStatus: 'default',
+          toGrantsStatus: 'CLAIM_STARTED',
+          toPath: '/claim'
+        },
+        {
+          fromGrantsStatus: 'CLAIM_SUBMITTED',
+          gasStatus: 'default',
+          toGrantsStatus: 'CLAIM_SUBMITTED',
+          toPath: '/claim/submitted'
+        },
+        {
+          fromGrantsStatus: 'default',
+          gasStatus: 'default',
+          toGrantsStatus: 'SUBMITTED',
+          toPath: '/confirmation'
+        }
+      ]
+
+      // Ordered pages: the claim journey sits after the submitted-application pages.
+      request.app.model.def.pages = [
+        { path: '/start' },
+        { path: '/summary' },
+        { path: '/declaration' },
+        { path: '/confirmation' },
+        { path: '/print-submitted-application' },
+        { path: '/claim' },
+        { path: '/claim-declaration' },
+        { path: '/claim-confirmation' }
+      ]
+
+      context.state = { applicationStatus: ApplicationStatus.CLAIM_STARTED }
+    })
+
+    it('continues on the claim start page so it acts as the journey start page', async () => {
+      request.path = '/grant-a/claim'
+      request.params.path = 'claim'
+
+      const result = await formsStatusRedirect(request, h, context)
+
+      expect(result).toBe(h.continue)
+      expect(h.redirect).not.toHaveBeenCalled()
+      expect(getApplicationStatus).not.toHaveBeenCalled()
+    })
+
+    it.each(['claim-declaration', 'claim-confirmation'])(
+      'continues on the subsequent claim page %s (normal plugin navigation)',
+      async (path) => {
+        request.path = `/grant-a/${path}`
+        request.params.path = path
+
+        const result = await formsStatusRedirect(request, h, context)
+
+        expect(result).toBe(h.continue)
+        expect(h.redirect).not.toHaveBeenCalled()
+      }
+    )
+
+    it.each(['start', 'summary', 'declaration'])(
+      'redirects earlier page %s back to the claim start page',
+      async (path) => {
+        request.path = `/grant-a/${path}`
+        request.params.path = path
+
+        await formsStatusRedirect(request, h, context)
+
+        expect(h.redirect).toHaveBeenCalledWith('/grant-a/claim')
+      }
+    )
+
+    it('redirects /confirmation to the claim start page instead of forbidding access', async () => {
+      request.path = '/grant-a/confirmation'
+      request.params.path = 'confirmation'
+
+      await formsStatusRedirect(request, h, context)
+
+      expect(h.redirect).toHaveBeenCalledWith('/grant-a/claim')
+    })
+
+    it('continues on an excluded path without redirecting', async () => {
+      request.app.model.def.metadata.grantRedirectRules.excludedPaths = ['print-submitted-application']
+      request.path = '/grant-a/print-submitted-application'
+      request.params.path = 'print-submitted-application'
+
+      const result = await formsStatusRedirect(request, h, context)
+
+      expect(result).toBe(h.continue)
+      expect(h.redirect).not.toHaveBeenCalled()
+    })
+
+    it('does not call GAS or persist status while navigating the claim journey', async () => {
+      request.path = '/grant-a/claim-declaration'
+      request.params.path = 'claim-declaration'
+
+      await formsStatusRedirect(request, h, context)
+
+      expect(getApplicationStatus).not.toHaveBeenCalled()
+      expect(updateApplicationStatus).not.toHaveBeenCalled()
+    })
+
+    it('stays on the claim start page immediately after the status-change redirect', async () => {
+      request.path = '/grant-a/claim'
+      request.params.path = 'claim'
+      request.yar.get.mockReturnValue('/grant-a/claim')
+
+      const result = await formsStatusRedirect(request, h, context)
+
+      expect(request.yar.clear).toHaveBeenCalledWith(YarKeys.STATUS_CHANGE_REDIRECT)
+      expect(result).toBe(h.continue)
+    })
+
+    it('redirects CLAIM_SUBMITTED requests to the claim submitted page', async () => {
+      context.state = { applicationStatus: ApplicationStatus.CLAIM_SUBMITTED }
+      request.path = '/grant-a/confirmation'
+      request.params.path = 'confirmation'
+
+      await formsStatusRedirect(request, h, context)
+
+      expect(h.redirect).toHaveBeenCalledWith('/grant-a/claim/submitted')
+    })
+  })
+
   describe('status change one-shot redirect', () => {
     beforeEach(() => {
       // A transition from SUBMITTED to REOPENED should go to /reopened, and the
