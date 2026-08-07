@@ -1,0 +1,43 @@
+{% extends baseLayoutPath %}
+
+{% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/details/macro.njk" import govukDetails %}
+{% from "partials/components.html" import componentList with context %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="{{ gridColumnClass(page) }}">
+      {% if errors | length %}
+        {{ govukErrorSummary({
+          titleText: "There is a problem",
+          errorList: checkErrorTemplates(errors)
+        }) }}
+      {% endif %}
+
+      {% include "partials/heading.html" %}
+
+      <form method="post" action="#" novalidate>
+        <input type="hidden" name="crumb" value="{{ crumb }}">
+
+        {{ componentList(components) }}
+
+        <div class="govuk-button-group">
+          {{ govukButton({
+            text: submitButtonText or "Continue",
+            preventDoubleClick: true
+          }) }}
+        </div>
+      </form>
+
+      {% set rpaDetails = pageRpaDetails(page) %}
+      {% if rpaDetails %}
+        {{ govukDetails({ summaryText: rpaDetails.title, html: rpaDetails.content }) }}
+      {% endif %}
+    </div>
+  </div>
+
+  {% if config.cdpEnvironment == 'local' and context | length and not context.isForceAccess %}
+    {% include "partials/debug.html" %}
+  {% endif %}
+{% endblock %}

@@ -49,7 +49,7 @@
 
 {% block beforeContent %}
   {{ super() }}
-  {% if backLink %}
+  {% if backLink and not pageHideBackLink(page) %}
     {{ govukBackLink(backLink) }}
   {% endif %}
   {% if backToTaskList %}

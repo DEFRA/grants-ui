@@ -47,6 +47,8 @@ describe('ConfirmationPageController', () => {
       }
     }
 
+    controller.pageDef = { path: '/confirmation' }
+
     mockRequest = {
       params: {
         slug: 'test-form'
@@ -108,7 +110,8 @@ describe('ConfirmationPageController', () => {
         }),
         controller.model.def,
         'test-form',
-        mockH
+        mockH,
+        expect.any(Array)
       )
     })
 
@@ -139,7 +142,8 @@ describe('ConfirmationPageController', () => {
         }),
         expect.any(Object),
         expect.any(String),
-        mockH
+        mockH,
+        expect.any(Array)
       )
     })
 
@@ -161,8 +165,85 @@ describe('ConfirmationPageController', () => {
         }),
         expect.any(Object),
         expect.any(String),
-        mockH
+        mockH,
+        expect.any(Array)
       )
+    })
+
+    test('uses the state reference number as the panel value for an application confirmation', async () => {
+      mockFormsCacheServiceMethods.getState.mockResolvedValue({
+        $$__referenceNumber: 'WMP-123'
+      })
+
+      vi.spyOn(controller, 'loadConfirmationContent').mockResolvedValue(null)
+
+      const renderSpy = vi.spyOn(controller, 'buildAndRenderConfirmationResponse').mockReturnValue('rendered')
+
+      const handler = controller.makeGetRouteHandler()
+
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(renderSpy).toHaveBeenCalledWith(
+        null,
+        expect.objectContaining({
+          referenceNumber: 'WMP-123'
+        }),
+        expect.any(Object),
+        expect.any(String),
+        mockH,
+        expect.any(Array)
+      )
+    })
+
+    test('uses the latest claim number as the panel value for a claim confirmation', async () => {
+      controller.pageDef = { path: '/claim-confirmation' }
+      controller.model.def.metadata.pageConfig = {
+        '/claim-confirmation': { confirmationType: 'claim' }
+      }
+
+      mockFormsCacheServiceMethods.getState.mockResolvedValue({
+        $$__referenceNumber: 'WMP-A1B2-C3D4',
+        claims: [
+          { claimNumber: 'WMP-A1B2-C3D4-C0001', status: 'SUBMITTED' },
+          { claimNumber: 'WMP-A1B2-C3D4-C0002', status: 'SUBMITTED' }
+        ]
+      })
+
+      vi.spyOn(controller, 'loadConfirmationContent').mockResolvedValue(null)
+
+      const renderSpy = vi.spyOn(controller, 'buildAndRenderConfirmationResponse').mockReturnValue('rendered')
+
+      const handler = controller.makeGetRouteHandler()
+
+      await handler(mockRequest, mockContext, mockH)
+
+      expect(renderSpy).toHaveBeenCalledWith(
+        null,
+        expect.objectContaining({
+          referenceNumber: 'WMP-A1B2-C3D4-C0002'
+        }),
+        expect.any(Object),
+        expect.any(String),
+        mockH,
+        expect.any(Array)
+      )
+    })
+
+    test('renders Html components with state data (reference number and slug)', () => {
+      const components = [
+        {
+          type: 'Html',
+          model: {
+            content: 'Reference {{ referenceNumber }} for /{{ slug }}/print-submitted-application'
+          }
+        }
+      ]
+
+      const state = { $$__referenceNumber: 'WMP-123' }
+
+      const rendered = controller.renderComponents(components, state, 'test-form')
+
+      expect(rendered[0].model.content).toBe('Reference WMP-123 for /test-form/print-submitted-application')
     })
 
     test('delegates unexpected errors to handleError', async () => {
@@ -209,9 +290,72 @@ describe('ConfirmationPageController', () => {
     })
   })
 
+  describe('confirmationType', () => {
+    test('defaults to application when no config is set', () => {
+      expect(controller.confirmationType).toBe('application')
+    })
+
+    test('reads the configured confirmation type for this page', () => {
+      controller.pageDef = { path: '/claim-confirmation' }
+      controller.model.def.metadata.pageConfig = {
+        '/claim-confirmation': { confirmationType: 'claim' }
+      }
+
+      expect(controller.confirmationType).toBe('claim')
+    })
+  })
+
+  describe('resolvePanelReference', () => {
+    test('returns the application reference number for an application confirmation', () => {
+      expect(controller.resolvePanelReference({ $$__referenceNumber: 'WMP-A1B2-C3D4' })).toBe('WMP-A1B2-C3D4')
+    })
+
+    test('returns the latest claim number for a claim confirmation', () => {
+      controller.pageDef = { path: '/claim-confirmation' }
+      controller.model.def.metadata.pageConfig = {
+        '/claim-confirmation': { confirmationType: 'claim' }
+      }
+
+      const state = {
+        $$__referenceNumber: 'WMP-A1B2-C3D4',
+        claims: [
+          { claimNumber: 'WMP-A1B2-C3D4-C0001', status: 'SUBMITTED' },
+          { claimNumber: 'WMP-A1B2-C3D4-C0002', status: 'SUBMITTED' }
+        ]
+      }
+
+      expect(controller.resolvePanelReference(state)).toBe('WMP-A1B2-C3D4-C0002')
+    })
+
+    test('falls back to Not available when a claim confirmation has no claim', () => {
+      controller.pageDef = { path: '/claim-confirmation' }
+      controller.model.def.metadata.pageConfig = {
+        '/claim-confirmation': { confirmationType: 'claim' }
+      }
+
+      expect(controller.resolvePanelReference({ $$__referenceNumber: 'WMP-A1B2-C3D4' })).toBe('Not available')
+    })
+
+    test('falls back to Not available when the application reference is missing', () => {
+      expect(controller.resolvePanelReference({})).toBe('Not available')
+    })
+  })
+
   describe('getStatusPath', () => {
-    test('returns confirmation path', () => {
-      expect(controller.getStatusPath(mockRequest, mockContext)).toBe('/confirmation')
+    test('returns the page path for the application confirmation page', () => {
+      expect(controller.getStatusPath()).toBe('/confirmation')
+    })
+
+    test('returns the page path for the claim confirmation page', () => {
+      controller.pageDef = { path: '/claim-confirmation' }
+
+      expect(controller.getStatusPath()).toBe('/claim-confirmation')
+    })
+
+    test('falls back to the default confirmation path when pageDef is missing', () => {
+      controller.pageDef = undefined
+
+      expect(controller.getStatusPath()).toBe('/confirmation')
     })
   })
 
@@ -241,17 +385,18 @@ describe('ConfirmationPageController', () => {
         html: '<p>processed</p>'
       })
 
-      const state = { foo: 'bar' }
+      const state = { foo: 'bar', $$__referenceNumber: 'WMP-123' }
 
       const result = await controller.loadConfirmationContent(mockRequest, state)
 
-      expect(ConfirmationService.loadConfirmationContent).toHaveBeenCalledWith(controller.model.def)
+      expect(ConfirmationService.loadConfirmationContent).toHaveBeenCalledWith(controller.model.def, '/confirmation')
 
-      expect(ConfirmationService.processConfirmationContent).toHaveBeenCalledWith(
-        confirmationContent,
-        'test-form',
-        state
-      )
+      expect(ConfirmationService.processConfirmationContent).toHaveBeenCalledWith(confirmationContent, 'test-form', {
+        ...state,
+        referenceNumber: 'WMP-123',
+        slug: 'test-form',
+        cdpEnvironment: 'local'
+      })
 
       expect(result).toEqual({
         html: '<p>processed</p>'
@@ -269,6 +414,34 @@ describe('ConfirmationPageController', () => {
 
       expect(processSpy).not.toHaveBeenCalled()
       expect(result).toBeNull()
+    })
+  })
+
+  describe('renderComponents', () => {
+    test('renders {{SLUG}} and {{cdpEnvironment}} tokens in Html component content', () => {
+      const components = [
+        {
+          type: 'Html',
+          model: {
+            content:
+              '<a href="https://fcp-sfd-frontend.{{cdpEnvironment or \'local\'}}.cdp-int.defra.cloud/">Back</a>' +
+              '<a href="/{{SLUG}}/print-submitted-application">Print</a>'
+          }
+        }
+      ]
+
+      const [rendered] = controller.renderComponents(components, { $$__referenceNumber: 'REF123' }, 'test-form')
+
+      expect(rendered.model.content).toContain('https://fcp-sfd-frontend.local.cdp-int.defra.cloud/')
+      expect(rendered.model.content).toContain('/test-form/print-submitted-application')
+    })
+
+    test('leaves non-Html components untouched', () => {
+      const components = [{ type: 'Details', model: { content: '{{cdpEnvironment}}' } }]
+
+      const [rendered] = controller.renderComponents(components, {}, 'test-form')
+
+      expect(rendered.model.content).toBe('{{cdpEnvironment}}')
     })
   })
 

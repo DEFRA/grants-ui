@@ -651,4 +651,163 @@ describe('DeclarationPageController', () => {
       expect(result).toEqual(input)
     })
   })
+
+  describe('claim submissions', () => {
+    mockGasSubmission()
+
+    let claimModel
+    let claimController
+    let claimRequest
+    let claimContext
+
+    beforeEach(() => {
+      claimModel = {
+        ...mockModel,
+        def: {
+          metadata: {
+            version: '1.1.1',
+            submission: { grantCode: 'woodland' },
+            pageConfig: {
+              '/claim-declaration': { declarationType: 'claim', submitButtonText: 'Confirm and submit' }
+            }
+          }
+        }
+      }
+
+      claimController = new DeclarationPageController(claimModel, { path: '/claim-declaration' })
+      claimController.collection = { getViewErrors: vi.fn(() => []) }
+
+      formSlugHelper.getClaimConfirmationPath.mockReturnValue('/woodland/claim-confirmation')
+
+      claimRequest = mockHapiRequest({
+        payload: {},
+        params: { slug: 'woodland' },
+        path: '/woodland/claim-declaration',
+        server: {},
+        app: { model: claimModel },
+        auth: { credentials: { sbi: 'sbi123', crn: '1234567890' } }
+      })
+
+      claimContext = {
+        referenceNumber: 'REF123',
+        state: {
+          $$__referenceNumber: 'REF123',
+          claims: [
+            {
+              claimNumber: 'REF123-C1',
+              status: 'IN_PROGRESS',
+              totalEligibleArea: 24.95,
+              unit: 'ha',
+              totalClaimAmountPence: 150000
+            }
+          ]
+        },
+        payload: {}
+      }
+    })
+
+    test('resolves declarationType from the page config', () => {
+      expect(claimController.declarationType).toBe('claim')
+    })
+
+    test('defaults declarationType to application when the page has no config', () => {
+      const applicationModel = {
+        ...mockModel,
+        def: { metadata: { pageConfig: {} } }
+      }
+      const applicationController = new DeclarationPageController(applicationModel, { path: '/declaration' })
+
+      expect(applicationController.declarationType).toBe('application')
+    })
+
+    test('getStatusPath returns the claim confirmation path', () => {
+      expect(claimController.getStatusPath(claimRequest, claimContext)).toBe('/woodland/claim-confirmation')
+      expect(formSlugHelper.getClaimConfirmationPath).toHaveBeenCalledWith(
+        claimRequest,
+        claimContext,
+        'DeclarationController'
+      )
+    })
+
+    test('buildSubmissionData builds a claim payload from the current claim', () => {
+      claimController.buildSubmissionData(claimRequest, claimContext)
+
+      expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
+        { clientRef: 'ref123-c1', sbi: 'sbi123', crn: '1234567890', frn: 'undefined' },
+        {
+          referenceNumber: 'REF123',
+          claimNumber: 'REF123-C1',
+          totalEligibleArea: 24.95,
+          unit: 'ha',
+          totalClaimAmountPence: 150000
+        },
+        expect.any(Function),
+        '1.1.1'
+      )
+    })
+
+    test('the claim answer transformer forwards only the claim fields', () => {
+      claimController.buildSubmissionData(claimRequest, claimContext)
+
+      const transformAnswers = transformStateObjectToGasApplication.mock.calls.at(-1)[2]
+
+      expect(
+        transformAnswers({
+          referenceNumber: 'REF123',
+          claimNumber: 'REF123-C1',
+          totalEligibleArea: 24.95,
+          unit: 'ha',
+          totalClaimAmountPence: 150000,
+          landParcels: ['SD1234'],
+          extra: 'nope'
+        })
+      ).toEqual({
+        referenceNumber: 'REF123',
+        claimNumber: 'REF123-C1',
+        totalEligibleArea: 24.95,
+        unit: 'ha',
+        totalClaimAmountPence: 150000
+      })
+    })
+
+    test('POST submits the claim, marks it submitted and redirects to claim confirmation', async () => {
+      mockCacheService.getState.mockResolvedValue({
+        $$__referenceNumber: 'REF123',
+        claims: [
+          {
+            claimNumber: 'REF123-C1',
+            status: 'IN_PROGRESS',
+            totalEligibleArea: 24.95,
+            unit: 'ha',
+            totalClaimAmountPence: 150000
+          }
+        ]
+      })
+
+      const handler = claimController.makePostRouteHandler()
+      await handler(claimRequest, claimContext, mockH)
+
+      expect(submitGrantApplication).toHaveBeenCalledWith(
+        'woodland',
+        expect.objectContaining({ transformedApp: true }),
+        claimRequest
+      )
+
+      expect(mockCacheService.setState).toHaveBeenCalledWith(
+        claimRequest,
+        expect.objectContaining({
+          applicationStatus: 'CLAIM_SUBMITTED',
+          claims: [
+            expect.objectContaining({
+              claimNumber: 'REF123-C1',
+              status: 'SUBMITTED',
+              submittedAt: '2025-01-01T00:00:00.000Z'
+            })
+          ]
+        })
+      )
+
+      expect(mockH.redirect).toHaveBeenCalledWith('/woodland/claim-confirmation')
+    })
+  })
 })

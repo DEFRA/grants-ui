@@ -6,6 +6,7 @@ import { buildNavigation } from '~/src/config/nunjucks/context/build-navigation.
 import { buildCookieBannerConfig } from '~/src/config/nunjucks/context/build-cookie-banner-config.js'
 import { buildNotificationBannerConfig } from '~/src/config/nunjucks/context/build-notification-banner-config.js'
 import { buildServiceBranding } from '~/src/config/nunjucks/context/build-service-branding.js'
+import { pageSubmitButtonText } from '~/src/config/nunjucks/page-config.js'
 import { buildFeedbackSurveyUrl } from '~/src/server/common/helpers/feedback-survey.js'
 import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
@@ -173,7 +174,10 @@ const buildCommonConfig = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays
  * @returns {Record<string, unknown>} Complete context object for successful authentication
  */
 const buildSuccessContext = (auth, request, serviceName, cookiePolicyUrl, cookieConsentExpiryDays) => {
-  const submitButtonText = request?.app?.model?.def?.metadata?.options?.submitButtonText
+  // A page-level `config.submitButtonText` overrides the grant-level
+  // `options.submitButtonText`; fall back to the grant-level value otherwise.
+  const submitButtonText =
+    pageSubmitButtonText(request) ?? request?.app?.model?.def?.metadata?.options?.submitButtonText
 
   return {
     ...buildCommonConfig(serviceName, cookiePolicyUrl, cookieConsentExpiryDays, request),
@@ -240,6 +244,7 @@ export async function context(request) {
  * @typedef {object} FormMetadata
  * @property {{ serviceName?: string, cookiePolicyUrl?: string, expiryDays?: number }} [cookieConsent]
  * @property {{ submitButtonText?: string }} [options]
+ * @property {Record<string, Record<string, unknown>>} [pageConfig]
  * @property {import('~/src/config/nunjucks/context/build-notification-banner-config.js').NotificationBannerMetadata} [notificationBanner]
  * @property {string} [phase]
  */
