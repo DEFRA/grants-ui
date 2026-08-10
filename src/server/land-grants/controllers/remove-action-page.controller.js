@@ -4,14 +4,43 @@ import {
   deleteParcelFromState,
   deleteActionFromState
 } from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
+import { resolvePageConfig } from '~/src/config/nunjucks/page-config.js'
 import { getParcelIdFromQuery } from '../utils/parcel-request.utils.js'
 
-const checkSelectedLandActionsPath = '/check-selected-land-actions'
-const selectActionsForParcelPath = '/select-actions-for-land-parcel'
-const selectLandParcelPath = '/select-land-parcel'
+/**
+ * Where the user goes after a removal.
+ */
+const defaultRedirects = {
+  list: '/check-selected-land-actions',
+  noActionsRemain: '/select-actions-for-land-parcel',
+  noParcelsRemain: '/select-land-parcel'
+}
 
 export default class RemoveActionPageController extends QuestionPageWithParcelCheckController {
   viewName = 'remove-action'
+
+  /**
+   * @param {FormModel} model
+   * @param {import('@defra/forms-model').Page} pageDef
+   */
+  constructor(model, pageDef) {
+    super(model, pageDef)
+
+    const { redirects } = /** @type {{ redirects?: Partial<typeof defaultRedirects> }} */ (
+      resolvePageConfig({ path: pageDef?.path, def: model?.def })
+    )
+    this.redirects = { ...defaultRedirects, ...(redirects ?? {}) }
+  }
+
+  /**
+   * Direct-only utility page: force the Back link to the configured list
+   * destination instead of inheriting one based on YAML page order.
+   * @param {{ serviceUrl?: string }} viewModel
+   * @returns {{ text: string, href: string }}
+   */
+  buildBackLink(viewModel) {
+    return { text: 'Back', href: `${viewModel.serviceUrl}${this.redirects.list}` }
+  }
 
   resolveParcelIds(request) {
     return getParcelIdFromQuery(request)
@@ -21,7 +50,7 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
    * Determine next path after action removal
    * @param {object} newState - Updated state after removal
    * @param {string} parcel - Parcel key
-   * @param {string} action - Action code (optional)
+   * @param {string} [action] - Action code, absent when removing a whole parcel
    * @returns {string} - Next path to navigate to
    */
   getNextPathAfterRemoval(newState, parcel, action) {
@@ -30,15 +59,15 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
 
     // remove the only action
     if (!hasRemainingActions && action) {
-      return `${selectActionsForParcelPath}?parcelId=${parcel}`
+      return `${this.redirects.noActionsRemain}?parcelId=${parcel}`
     }
 
     // remove the only parcel
     if (!hasRemainingParcels) {
-      return selectLandParcelPath
+      return this.redirects.noParcelsRemain
     }
 
-    return checkSelectedLandActionsPath
+    return this.redirects.list
   }
 
   /**
@@ -72,8 +101,11 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
    * @returns {object} - Error view response
    */
   renderPostErrorView(h, request, context, errorMessage, parcelId, pageHeadingAndHint) {
+    const viewModel = this.getViewModel(request, context)
+
     return h.view(this.viewName, {
-      ...this.getViewModel(request, context),
+      ...viewModel,
+      backLink: this.buildBackLink(viewModel),
       parcelId,
       ...pageHeadingAndHint,
       errors: errorMessage
@@ -86,7 +118,7 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
    * @param {object} state - Current state
    * @param {object} h - Response toolkit
    * @param {string} parcel - Parcel key
-   * @param {string} action - Action code (optional)
+   * @param {string} [action] - Action code, absent when removing a whole parcel
    * @returns {Promise<object>} - Response object
    */
   async processRemoval(request, state, h, parcel, action) {
@@ -107,8 +139,11 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
    * @returns {object} - Complete view model
    */
   buildGetViewModel(request, context, parcelId, pageHeading, hint) {
+    const viewModel = this.getViewModel(request, context)
+
     return {
-      ...this.getViewModel(request, context),
+      ...viewModel,
+      backLink: this.buildBackLink(viewModel),
       parcelId,
       pageHeading,
       hint
@@ -144,8 +179,8 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
     const landParcels = context.state?.landParcels
     const { action, parcelId } = request.query
 
-    if (!parcelId || !landParcels[parcelId]) {
-      return this.proceed(request, h, checkSelectedLandActionsPath)
+    if (!parcelId || !landParcels?.[parcelId]) {
+      return this.proceed(request, h, this.redirects.list)
     }
 
     const actionInfo = findActionInfoFromState(landParcels, parcelId, action)
@@ -181,11 +216,12 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
       return this.processRemoval(request, state, h, parcelId, action)
     }
 
-    return this.proceed(request, h, checkSelectedLandActionsPath)
+    return this.proceed(request, h, this.redirects.list)
   }
 }
 
 /**
  * @import { FormContext, AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
  * @import { ResponseObject, ResponseToolkit } from '@hapi/hapi'
  */

@@ -25,3 +25,11 @@ export const parseLandParcel = (landParcel) => {
  * @returns {string}
  */
 export const stringifyParcel = ({ parcelId, sheetId }) => `${sheetId}-${parcelId}`
+
+/**
+ * The compound id as it is shown to the user - space separated rather than
+ * hyphenated, e.g. "SO3757-3192" reads as "SO3757 3192" on screen.
+ * @param {string} landParcel - The land parcel identifier
+ * @returns {string}
+ */
+export const formatParcelForDisplay = (landParcel) => (landParcel || '').replaceAll('-', ' ')

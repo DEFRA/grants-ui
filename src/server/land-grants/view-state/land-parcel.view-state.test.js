@@ -549,6 +549,100 @@ describe('land-parcel-state.manager', () => {
 
       expect(state.landParcels).toHaveProperty('AB1234-5678')
     })
+
+    it('should drop the parcel from the map selection and rebuild the display value', () => {
+      const state = {
+        landParcels: {
+          'AB1234-5678': { actionsObj: { SAM1: {} } },
+          'CD9999-1111': { actionsObj: { SAM2: {} } }
+        },
+        selectedParcelIds: ['AB1234-5678', 'CD9999-1111'],
+        selectedParcelsDisplay: 'AB1234-5678, CD9999-1111'
+      }
+
+      const result = deleteParcelFromState(state, 'AB1234-5678')
+
+      expect(result.selectedParcelIds).toEqual(['CD9999-1111'])
+      expect(result.selectedParcelsDisplay).toBe('CD9999-1111')
+    })
+
+    it('should clear the map selection keys when deleting the last parcel', () => {
+      const state = {
+        landParcels: {
+          'AB1234-5678': { actionsObj: { SAM1: {} } }
+        },
+        selectedParcelId: 'AB1234-5678',
+        selectedParcelIds: ['AB1234-5678'],
+        selectedParcelsDisplay: 'AB1234-5678'
+      }
+
+      const result = deleteParcelFromState(state, 'AB1234-5678')
+
+      expect(result).not.toHaveProperty('selectedParcelId')
+      expect(result).not.toHaveProperty('selectedParcelIds')
+      expect(result).not.toHaveProperty('selectedParcelsDisplay')
+    })
+
+    it('should keep a single-select parcel id belonging to a parcel that was not removed', () => {
+      const state = {
+        landParcels: {
+          'AB1234-5678': { actionsObj: { SAM1: {} } },
+          'CD9999-1111': { actionsObj: { SAM2: {} } }
+        },
+        selectedParcelId: 'CD9999-1111',
+        selectedParcelIds: ['CD9999-1111']
+      }
+
+      const result = deleteParcelFromState(state, 'AB1234-5678')
+
+      expect(result.selectedParcelId).toBe('CD9999-1111')
+      expect(result.selectedParcelIds).toEqual(['CD9999-1111'])
+    })
+
+    it('should rebuild the display value when only the id list is an array', () => {
+      const state = {
+        landParcels: {
+          'AB1234-5678': { actionsObj: { SAM1: {} } },
+          'CD9999-1111': { actionsObj: { SAM2: {} } }
+        },
+        selectedParcelIds: 'AB1234-5678, CD9999-1111',
+        selectedParcelsDisplay: 'AB1234-5678, CD9999-1111'
+      }
+
+      const result = deleteParcelFromState(state, 'AB1234-5678')
+
+      expect(result.selectedParcelIds).toBe('AB1234-5678, CD9999-1111')
+      expect(result).not.toHaveProperty('selectedParcelsDisplay')
+    })
+
+    it('should prune the id list when there is no display value to rebuild', () => {
+      const state = {
+        landParcels: {
+          'AB1234-5678': { actionsObj: { SAM1: {} } },
+          'CD9999-1111': { actionsObj: { SAM2: {} } }
+        },
+        selectedParcelIds: ['AB1234-5678', 'CD9999-1111']
+      }
+
+      const result = deleteParcelFromState(state, 'AB1234-5678')
+
+      expect(result.selectedParcelIds).toEqual(['CD9999-1111'])
+      expect(result).not.toHaveProperty('selectedParcelsDisplay')
+    })
+
+    it('should leave journeys that do not use the map untouched', () => {
+      const state = {
+        landParcels: {
+          'AB1234-5678': { actionsObj: { SAM1: {} } },
+          'CD9999-1111': { actionsObj: { SAM2: {} } }
+        }
+      }
+
+      const result = deleteParcelFromState(state, 'AB1234-5678')
+
+      expect(result).not.toHaveProperty('selectedParcelIds')
+      expect(result).not.toHaveProperty('selectedParcelsDisplay')
+    })
   })
 
   describe('deleteActionFromState', () => {
@@ -600,6 +694,37 @@ describe('land-parcel-state.manager', () => {
       expect(result).not.toHaveProperty('payment')
       expect(result).not.toHaveProperty('totalPence')
       expect(result).not.toHaveProperty('totalPayment')
+    })
+
+    it('should drop the parcel from the map selection when its last action goes', () => {
+      const state = {
+        landParcels: {
+          'AB1234-5678': { actionsObj: { SAM1: {} } },
+          'CD9999-1111': { actionsObj: { SAM2: {} } }
+        },
+        selectedParcelIds: ['AB1234-5678', 'CD9999-1111'],
+        selectedParcelsDisplay: 'AB1234-5678, CD9999-1111'
+      }
+
+      const result = deleteActionFromState(state, 'AB1234-5678', 'SAM1')
+
+      expect(result.selectedParcelIds).toEqual(['CD9999-1111'])
+      expect(result.selectedParcelsDisplay).toBe('CD9999-1111')
+    })
+
+    it('should keep the map selection when the parcel still has other actions', () => {
+      const state = {
+        landParcels: {
+          'AB1234-5678': { actionsObj: { SAM1: {}, SAM2: {} } }
+        },
+        selectedParcelIds: ['AB1234-5678'],
+        selectedParcelsDisplay: 'AB1234-5678'
+      }
+
+      const result = deleteActionFromState(state, 'AB1234-5678', 'SAM1')
+
+      expect(result.selectedParcelIds).toEqual(['AB1234-5678'])
+      expect(result.selectedParcelsDisplay).toBe('AB1234-5678')
     })
 
     it('should handle deleting non-existent action gracefully', () => {

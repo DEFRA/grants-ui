@@ -1,0 +1,37 @@
+{% extends baseLayoutPath %}
+
+{% from "govuk/components/button/macro.njk" import govukButton %}
+
+{% set pageTitle = "Remove this land parcel?" %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="{{ gridColumnClass(page, 'govuk-grid-column-two-thirds-from-desktop') }}">
+      {% if sectionTitle and sectionTitle.length and (sectionTitle !== pageTitle) %}
+        <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">
+          {{- sectionTitle -}}
+        </h2>
+      {% endif %}
+
+      <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
+
+      <p class="govuk-body">
+        This will remove land parcel {{ parcelReference }} and all actions added to it from your application.
+      </p>
+
+      <form method="post" novalidate="novalidate">
+        <input type="hidden" name="crumb" value="{{ crumb }}">
+
+        <div class="govuk-button-group">
+          {{ govukButton({
+            text: "Remove this land parcel",
+            classes: "govuk-button--warning",
+            preventDoubleClick: true
+          }) }}
+
+          <a class="govuk-link" href="{{ cancelPath }}">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

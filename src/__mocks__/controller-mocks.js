@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 
 /**
  * Replace a controller's interaction methods with vitest spies for tests.
- * @param {QuestionPageController} controller
+ * @param {QuestionPageController & { performAuthCheck?: (...args: unknown[]) => unknown }} controller
  * @param {SetupControllerMocksOptions} [options]
  * @returns {void}
  */
@@ -11,6 +11,7 @@ export const setupControllerMocks = (controller, { proceed = 'redirected', nextP
   controller.getNextPath = vi.fn().mockReturnValue(nextPath)
   controller.setState = vi.fn()
   controller.getState = vi.fn().mockResolvedValue({})
+  controller.performAuthCheck = vi.fn().mockResolvedValue(null)
 }
 
 /**

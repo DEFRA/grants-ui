@@ -122,7 +122,6 @@ describe('SelectLandParcelPageController', () => {
     const mockPageDef = {}
     controller = new SelectLandParcelPageController(mockModel, mockPageDef)
     setupControllerMocks(controller, { proceed: 'next', nextPath: '/next-page' })
-    controller.performAuthCheck = vi.fn().mockResolvedValue(null)
 
     fetchParcels.mockResolvedValue(mockParcelsResponse)
 

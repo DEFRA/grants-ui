@@ -1,6 +1,7 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
+import { setupControllerMocks } from '~/src/__mocks__/controller-mocks.js'
 import {
   fetchGroupedActionsForParcel,
   fetchParcels,
@@ -112,10 +113,7 @@ describe('SelectActionsBasePageController', () => {
     const mockModel = { def: { metadata: {} }, getSection: vi.fn(), pages: [] }
     controller = new StubSelectActionsController(mockModel, {})
     controller.collection = { getErrors: vi.fn().mockReturnValue([]) }
-    controller.setState = vi.fn().mockResolvedValue(true)
-    controller.proceed = vi.fn().mockReturnValue('redirected')
-    controller.getNextPath = vi.fn().mockReturnValue('/next-path')
-    controller.performAuthCheck = vi.fn().mockResolvedValue(null)
+    setupControllerMocks(controller)
 
     fetchParcels.mockResolvedValue(mockParcelsResponse)
 

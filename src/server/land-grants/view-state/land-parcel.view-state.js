@@ -233,6 +233,41 @@ export function getAddedActionsForStateParcel(state, selectedLandParcel) {
 }
 
 /**
+ * Drops a parcel from the map's own record of what is selected, which
+ * MapSelectPageController keeps separately from `landParcels`. Without this a
+ * removed parcel stays highlighted on the map and keeps appearing on Check
+ * your answers via the `selectedParcelsDisplay` hidden field. Journeys that
+ * pick parcels from a list rather than the map have none of these keys, so
+ * this is a no-op for them.
+ * @param {object} newState - State being built, mutated in place
+ * @param {string} parcel - Parcel key (format: "sheetId-parcelId")
+ * @returns {void}
+ */
+function pruneMapSelection(newState, parcel) {
+  if (Array.isArray(newState.selectedParcelIds)) {
+    newState.selectedParcelIds = newState.selectedParcelIds.filter((id) => id !== parcel)
+
+    if (newState.selectedParcelIds.length === 0) {
+      delete newState.selectedParcelIds
+    }
+  }
+
+  if (newState.selectedParcelId === parcel) {
+    delete newState.selectedParcelId
+  }
+
+  if (newState.selectedParcelsDisplay !== undefined) {
+    const remaining = Array.isArray(newState.selectedParcelIds) ? newState.selectedParcelIds : []
+
+    if (remaining.length === 0) {
+      delete newState.selectedParcelsDisplay
+    } else {
+      newState.selectedParcelsDisplay = remaining.join(', ')
+    }
+  }
+}
+
+/**
  * Delete an entire parcel from state and clean up related data
  * @param {object} state - Current state
  * @param {string} parcel - Parcel key (format: "sheetId-parcelId")
@@ -241,6 +276,7 @@ export function getAddedActionsForStateParcel(state, selectedLandParcel) {
 export function deleteParcelFromState(state, parcel) {
   const newState = structuredClone(state)
   delete newState.landParcels[parcel]
+  pruneMapSelection(newState, parcel)
 
   // Remove the land parcels key if it is empty
   if (Object.keys(newState.landParcels || {}).length === 0) {
@@ -269,6 +305,7 @@ export function deleteActionFromState(state, parcel, action) {
     // Remove parcel if no actions remain
     if (Object.keys(newState.landParcels[parcel].actionsObj).length === 0) {
       delete newState.landParcels[parcel]
+      pruneMapSelection(newState, parcel)
     }
 
     // Remove the land parcels key if it is empty
