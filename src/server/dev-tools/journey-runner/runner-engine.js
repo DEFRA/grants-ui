@@ -283,10 +283,18 @@
       submitForm()
     },
 
+    /**
+     * Links into direct-only utility pages carry a query string
+     * (`remove-parcel?parcelId=SD1234-5678`), so the `/slug`-suffix match never
+     * sees them. Such steps set `linkHrefContains` instead.
+     * @param {JourneyStep} step
+     * @returns {void}
+     */
     clickLink(step) {
-      const link = document.querySelector(`a[href$="/${step.linkSlug}"]`)
+      const selector = step.linkHrefContains ? `a[href*="${step.linkHrefContains}"]` : `a[href$="/${step.linkSlug}"]`
+      const link = document.querySelector(selector)
       if (!link) {
-        throw new Error(`Link to /${step.linkSlug} not found`)
+        throw new Error(`No link matching ${selector}`)
       }
       link.click()
     },
@@ -672,6 +680,7 @@
  * @property {boolean} [selectAll]         Tick every checkbox (or select every land parcel) instead of just the first.
  * @property {number} [offsetDays]         Days to add to "today" for date-parts steps.
  * @property {string} [linkSlug]           Slug to match against an `<a href>` for clickLink.
+ * @property {string} [linkHrefContains]   Substring to match an `<a href>` on instead of `linkSlug`, for links carrying a query string.
  * @property {'prefix'} [matchMode]        Match `/slug/{uuid}` instead of exact `/slug`.
  * @property {Record<string, string>} [fields] Multiple field name → value pairs.
  */
