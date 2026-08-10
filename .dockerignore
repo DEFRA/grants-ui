@@ -63,10 +63,10 @@ CODEOWNERS
 .DS_Store
 
 # HTTP client configs (may contain tokens)
-*.http
+**/*.http
+http-client/
 http-client.env.json
 http-client.private.env.json
-gas.http
 
 # Docker files (don't copy Dockerfile into itself)
 Dockerfile

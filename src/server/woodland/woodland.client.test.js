@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { calculateWmp, validateWoodland } from './woodland.client.js'
+import { calculateWmp, calculateWmpByTotalArea, validateWoodland } from './woodland.client.js'
 import * as landGrantsClient from '~/src/server/land-grants/services/land-grants.client.js'
 
 vi.mock('~/src/server/land-grants/services/land-grants.client.js', () => ({
@@ -49,6 +49,34 @@ describe('calculateWmp', () => {
         parcelIds: ['SD6346-3387'],
         oldWoodlandAreaHa: 0,
         newWoodlandAreaHa: 0
+      },
+      'http://api',
+      userContext
+    )
+    expect(result).toEqual({ message: 'success', payment: { agreementTotalPence: 375000 } })
+  })
+})
+
+describe('calculateWmpByTotalArea', () => {
+  it('posts to the calculate-by-total-area endpoint with the total area payload', async () => {
+    landGrantsClient.postToLandGrantsApi.mockResolvedValueOnce({
+      message: 'success',
+      payment: { agreementTotalPence: 375000 }
+    })
+
+    const result = await calculateWmpByTotalArea(
+      { totalAreaHa: 26.3397, applicationId: 'APP-123', sbi: '123456789', crn: '1234567890' },
+      'http://api',
+      userContext
+    )
+
+    expect(landGrantsClient.postToLandGrantsApi).toHaveBeenCalledWith(
+      '/api/v1/wmp/payments/calculate-by-total-area',
+      {
+        totalAreaHa: 26.3397,
+        applicationId: 'APP-123',
+        sbi: '123456789',
+        crn: '1234567890'
       },
       'http://api',
       userContext

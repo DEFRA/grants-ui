@@ -120,12 +120,13 @@ Set `paymentStrategy: <your-key>` in the page config block, along with `redirect
 
 ## API communication
 
-Payment calculations go through the Land Grants API. The client layer ([`land-grants.client.js`](../land-grants/services/land-grants.client.js)) handles authentication headers, retries, and error surfacing. Two endpoints are currently in use:
+Payment calculations go through the Land Grants API. The client layer ([`land-grants.client.js`](../land-grants/services/land-grants.client.js)) handles authentication headers, retries, and error surfacing. The following endpoints are currently in use:
 
-| Strategy      | Endpoint                              | Request shape                                                        |
-| ------------- | ------------------------------------- | -------------------------------------------------------------------- |
-| `multiAction` | `POST /api/v2/payments/calculate`     | `{ parcel: [{ sheetId, parcelId, actions: [{ code, quantity }] }] }` |
-| `wmp`         | `POST /api/v1/wmp/payments/calculate` | `{ parcelIds, newWoodlandAreaHa, oldWoodlandAreaHa }`                |
+| Strategy      | Endpoint                                            | Request shape                                                        |
+| ------------- | --------------------------------------------------- | -------------------------------------------------------------------- |
+| `multiAction` | `POST /api/v2/payments/calculate`                   | `{ parcel: [{ sheetId, parcelId, actions: [{ code, quantity }] }] }` |
+| `wmp`         | `POST /api/v1/wmp/payments/calculate`               | `{ parcelIds, newWoodlandAreaHa, oldWoodlandAreaHa }`                |
+| `wmp`         | `POST /api/v1/wmp/payments/calculate-by-total-area` | `{ totalAreaHa, applicationId, sbi, crn }`                           |
 
 ### `multiAction` response
 

@@ -252,6 +252,25 @@ export async function submitGrantApplication(code, payload, request) {
 }
 
 /**
+ * Submits a claim to the Grant Application Service (GAS)
+ * @param {string} code - Grant code
+ * @param {Record<string, unknown>} payload - Claim payload
+ * @param {AnyRequest | undefined} request - Request object
+ * @returns {Promise<Response>} - Promise that resolves to the submission response
+ * @throws {GrantApplicationServiceApiError} - If the API request fails
+ */
+export async function submitClaim(code, payload, request) {
+  const metadata = /** @type {Record<string, string | undefined>} */ (payload?.metadata ?? {})
+  const url = `${GAS_API_ENDPOINT}/grants/${mapFarmPaymentsGrantCode(code)}/applications/${metadata.clientRef}/claims`
+  const response = await makeGasApiRequest(url, code, request, { method: 'POST', payload })
+
+  // Submission succeeded (makeGasApiRequest throws on non-2xx), so audit it.
+  // TODO in later ticket auditClaimSubmission(code, payload, request)
+
+  return response
+}
+
+/**
  * Fetches the status of a specific application from GAS
  * @param {string} code - Grant code
  * @param {string} clientRef - Application client reference

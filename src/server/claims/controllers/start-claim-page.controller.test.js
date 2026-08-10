@@ -1,11 +1,17 @@
 import { vi } from 'vitest'
 import StartClaimPageController from './start-claim-page.controller.js'
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
+import { resolveStrategy } from '~/src/server/payment/resolve-strategy.js'
+
+vi.mock('~/src/server/payment/resolve-strategy.js', () => ({
+  resolveStrategy: vi.fn()
+}))
 
 describe('StartClaimPageController', () => {
   let mockRequest
   let mockContext
   let mockResponseToolkit
+  let strategyCalculatePayment
 
   const buildModel = (pageConfig = {}) => ({
     def: {
@@ -41,6 +47,10 @@ describe('StartClaimPageController', () => {
       view: vi.fn().mockReturnValue('rendered'),
       redirect: vi.fn()
     }
+
+    strategyCalculatePayment = vi.fn().mockResolvedValue({ payment: {}, totalPence: 0, totalPayment: '£0.00' })
+    vi.mocked(resolveStrategy).mockReset()
+    vi.mocked(resolveStrategy).mockReturnValue({ calculatePayment: strategyCalculatePayment })
   })
 
   describe('fetchClaimData', () => {
@@ -65,6 +75,29 @@ describe('StartClaimPageController', () => {
 
       expect(data).toEqual({})
     })
+
+    it('overrides totalClaimAmountPence with the payment strategy result when a paymentStrategy is configured', async () => {
+      strategyCalculatePayment.mockResolvedValueOnce({ payment: {}, totalPence: 425000, totalPayment: '£4,250.00' })
+
+      const controller = buildController({
+        dataSources: [{ name: 'claims', items: ['totalEligibleArea', 'unit', 'totalClaimAmountPence'] }],
+        paymentStrategy: 'woodland-claim'
+      })
+
+      const request = {
+        method: 'GET',
+        auth: { credentials: { token: 'defra-id-token', sbi: '123456789', crn: '1234567890' } }
+      }
+      const context = { state: { $$__referenceNumber: 'WMP-A1B2-C3D4' } }
+
+      const data = await controller.fetchClaimData(request, context)
+
+      expect(data).toEqual({
+        totalEligibleArea: 24.95,
+        unit: 'ha',
+        totalClaimAmountPence: 425000
+      })
+    })
   })
 
   describe('makeGetRouteHandler', () => {
@@ -86,6 +119,42 @@ describe('StartClaimPageController', () => {
       expect(viewModel.totalClaimAmountPence).toBe(150000)
       expect(viewModel.components[0].model.content).toBe(
         '<p>Total eligible area 24.95 ha, total claim amount £1,500.00</p>'
+      )
+    })
+
+    it('should calculate the claim payment and inject the returned amount into the view', async () => {
+      strategyCalculatePayment.mockResolvedValueOnce({ payment: {}, totalPence: 425000, totalPayment: '£4,250.00' })
+
+      const controller = buildController({
+        dataSources: [{ name: 'claims', items: ['totalEligibleArea', 'unit', 'totalClaimAmountPence'] }],
+        paymentStrategy: 'woodland-claim'
+      })
+      controller.setState = vi.fn().mockResolvedValue(undefined)
+
+      const request = {
+        method: 'GET',
+        auth: { credentials: { token: 'defra-id-token', sbi: '123456789', crn: '1234567890' } }
+      }
+      const context = { state: { $$__referenceNumber: 'WMP-A1B2-C3D4' } }
+
+      const handler = controller.makeGetRouteHandler()
+      await handler(request, context, mockResponseToolkit)
+
+      expect(resolveStrategy).toHaveBeenCalledWith('woodland-claim')
+      expect(strategyCalculatePayment).toHaveBeenCalledWith(
+        {
+          totalAreaHa: 24.95,
+          applicationId: 'WMP-A1B2-C3D4',
+          sbi: '123456789',
+          crn: '1234567890'
+        },
+        { defraIdToken: 'defra-id-token', sbi: '123456789' }
+      )
+
+      const [, viewModel] = mockResponseToolkit.view.mock.calls[0]
+      expect(viewModel.totalClaimAmountPence).toBe(425000)
+      expect(viewModel.components[0].model.content).toBe(
+        '<p>Total eligible area 24.95 ha, total claim amount £4,250.00</p>'
       )
     })
 
@@ -149,6 +218,91 @@ describe('StartClaimPageController', () => {
 
       const [, viewModel] = mockResponseToolkit.view.mock.calls[0]
       expect(viewModel.components[0].model.content).toBe('{{ totalEligibleArea }}')
+    })
+  })
+
+  describe('calculateClaimPayment', () => {
+    it('resolves the configured strategy and calls it with the payment context and user context', async () => {
+      strategyCalculatePayment.mockResolvedValueOnce({ payment: {}, totalPence: 425000, totalPayment: '£4,250.00' })
+
+      const controller = buildController({
+        dataSources: [{ name: 'claims', items: ['totalEligibleArea', 'unit', 'totalClaimAmountPence'] }],
+        paymentStrategy: 'woodland-claim'
+      })
+
+      const request = {
+        method: 'GET',
+        auth: { credentials: { token: 'defra-id-token', sbi: '123456789', crn: '1234567890' } }
+      }
+      const context = { state: { $$__referenceNumber: 'WMP-A1B2-C3D4' } }
+      const gasData = { totalEligibleArea: 24.95, unit: 'ha', totalClaimAmountPence: 150000 }
+
+      const result = await controller.calculateClaimPayment(request, context, gasData)
+
+      expect(resolveStrategy).toHaveBeenCalledWith('woodland-claim')
+      expect(strategyCalculatePayment).toHaveBeenCalledWith(
+        {
+          totalAreaHa: 24.95,
+          applicationId: 'WMP-A1B2-C3D4',
+          sbi: '123456789',
+          crn: '1234567890'
+        },
+        { defraIdToken: 'defra-id-token', sbi: '123456789' }
+      )
+      expect(result).toEqual({ payment: {}, totalPence: 425000, totalPayment: '£4,250.00' })
+    })
+
+    it('returns undefined and skips the strategy when no paymentStrategy is configured', async () => {
+      const controller = buildController({
+        dataSources: [{ name: 'claims', items: ['totalEligibleArea'] }]
+      })
+      const request = {
+        method: 'GET',
+        auth: { credentials: { token: 'defra-id-token', sbi: '123456789' } }
+      }
+      const gasData = { totalEligibleArea: 24.95 }
+
+      const result = await controller.calculateClaimPayment(
+        request,
+        { state: { $$__referenceNumber: 'WMP-A1B2-C3D4' } },
+        gasData
+      )
+
+      expect(resolveStrategy).not.toHaveBeenCalled()
+      expect(strategyCalculatePayment).not.toHaveBeenCalled()
+      expect(result).toBeUndefined()
+    })
+
+    it('returns undefined when there is no application reference number in state', async () => {
+      const controller = buildController({ paymentStrategy: 'woodland-claim' })
+      const request = {
+        method: 'GET',
+        auth: { credentials: { token: 'defra-id-token', sbi: '123456789' } }
+      }
+      const gasData = { totalEligibleArea: 24.95 }
+
+      const result = await controller.calculateClaimPayment(request, { state: {} }, gasData)
+
+      expect(strategyCalculatePayment).not.toHaveBeenCalled()
+      expect(result).toBeUndefined()
+    })
+
+    it('returns undefined when there is no total eligible area', async () => {
+      const controller = buildController({ paymentStrategy: 'woodland-claim' })
+      const request = {
+        method: 'GET',
+        auth: { credentials: { token: 'defra-id-token', sbi: '123456789' } }
+      }
+      const gasData = {}
+
+      const result = await controller.calculateClaimPayment(
+        request,
+        { state: { $$__referenceNumber: 'WMP-A1B2-C3D4' } },
+        gasData
+      )
+
+      expect(strategyCalculatePayment).not.toHaveBeenCalled()
+      expect(result).toBeUndefined()
     })
   })
 

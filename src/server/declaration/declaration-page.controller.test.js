@@ -1,6 +1,9 @@
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 import * as formSlugHelper from '~/src/server/common/helpers/form-slug-helper.js'
-import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
+import {
+  submitClaim,
+  submitGrantApplication
+} from '~/src/server/common/services/grant-application/grant-application.service.js'
 import {
   resolveGasConfigVersion,
   transformStateObjectToGasApplication
@@ -678,6 +681,7 @@ describe('DeclarationPageController', () => {
       claimController.collection = { getViewErrors: vi.fn(() => []) }
 
       formSlugHelper.getClaimConfirmationPath.mockReturnValue('/woodland/claim-confirmation')
+      submitClaim.mockResolvedValue({ status: statusCodes.noContent })
 
       claimRequest = mockHapiRequest({
         payload: {},
@@ -735,7 +739,6 @@ describe('DeclarationPageController', () => {
       expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
         { clientRef: 'ref123-c1', sbi: 'sbi123', crn: '1234567890', frn: 'undefined' },
         {
-          referenceNumber: 'REF123',
           claimNumber: 'REF123-C1',
           totalEligibleArea: 24.95,
           unit: 'ha',
@@ -787,7 +790,7 @@ describe('DeclarationPageController', () => {
       const handler = claimController.makePostRouteHandler()
       await handler(claimRequest, claimContext, mockH)
 
-      expect(submitGrantApplication).toHaveBeenCalledWith(
+      expect(submitClaim).toHaveBeenCalledWith(
         'woodland',
         expect.objectContaining({ transformedApp: true }),
         claimRequest
