@@ -43,6 +43,7 @@ describe('RemoveActionPageController', () => {
       pageTitle: 'Remove action',
       serviceUrl: '/test-grant'
     })
+    controller.getHref = vi.fn().mockImplementation((path) => `/test-grant${path}`)
 
     mockRequest = {
       query: {
@@ -295,30 +296,6 @@ describe('RemoveActionPageController', () => {
     })
   })
 
-  describe('buildBackLink', () => {
-    test('points at the default list page when no config is given', () => {
-      expect(controller.buildBackLink({ serviceUrl: '/farm-payments' })).toEqual({
-        text: 'Back',
-        href: '/farm-payments/check-selected-land-actions'
-      })
-    })
-
-    test('points at the configured list page', () => {
-      const configured = new RemoveActionPageController(
-        {
-          def: { metadata: { tasklist: {}, pageConfig: { '/remove-action': { redirects: { list: '/your-land' } } } } },
-          getSection: vi.fn()
-        },
-        { path: '/remove-action' }
-      )
-
-      expect(configured.buildBackLink({ serviceUrl: '/example-grant' })).toEqual({
-        text: 'Back',
-        href: '/example-grant/your-land'
-      })
-    })
-  })
-
   describe('redirects', () => {
     const withRedirects = (redirects) => {
       const configured = new RemoveActionPageController(
@@ -332,8 +309,15 @@ describe('RemoveActionPageController', () => {
       configured.proceed = vi.fn().mockReturnValue('redirected')
       configured.performAuthCheck = vi.fn().mockResolvedValue(null)
       configured.getViewModel = vi.fn().mockReturnValue({ pageTitle: 'Remove action', serviceUrl: '/test-grant' })
+      configured.getHref = vi.fn().mockImplementation((path) => `/test-grant${path}`)
       return configured
     }
+
+    test('the Back link follows the configured list page', () => {
+      const configured = withRedirects({ list: '/your-land' })
+
+      expect(configured.buildBackLink()).toEqual({ text: 'Back', href: '/test-grant/your-land' })
+    })
 
     test('defaults every destination when no config is given', () => {
       expect(controller.redirects).toEqual({

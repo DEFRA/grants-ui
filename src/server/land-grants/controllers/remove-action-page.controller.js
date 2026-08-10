@@ -5,6 +5,7 @@ import {
   deleteActionFromState
 } from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
 import { resolvePageConfig } from '~/src/config/nunjucks/page-config.js'
+import { formatParcelForDisplay } from '~/src/shared/format-parcel.js'
 import { getParcelIdFromQuery } from '../utils/parcel-request.utils.js'
 
 /**
@@ -34,12 +35,12 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
 
   /**
    * Direct-only utility page: force the Back link to the configured list
-   * destination instead of inheriting one based on YAML page order.
-   * @param {{ serviceUrl?: string }} viewModel
+   * destination instead of inheriting one based on YAML page order. Subclasses
+   * reuse the href for their cancel links so the two always agree.
    * @returns {{ text: string, href: string }}
    */
-  buildBackLink(viewModel) {
-    return { text: 'Back', href: `${viewModel.serviceUrl}${this.redirects.list}` }
+  buildBackLink() {
+    return { text: 'Back', href: this.getHref(this.redirects.list) }
   }
 
   resolveParcelIds(request) {
@@ -105,7 +106,7 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
 
     return h.view(this.viewName, {
       ...viewModel,
-      backLink: this.buildBackLink(viewModel),
+      backLink: this.buildBackLink(),
       parcelId,
       ...pageHeadingAndHint,
       errors: errorMessage
@@ -143,7 +144,7 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
 
     return {
       ...viewModel,
-      backLink: this.buildBackLink(viewModel),
+      backLink: this.buildBackLink(),
       parcelId,
       pageHeading,
       hint
@@ -165,8 +166,8 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
 
     return {
       pageHeading: actionInfo?.description
-        ? `Do you want to remove ${actionInfo.description} from land parcel ${parcelId.replaceAll('-', ' ')}?`
-        : `Do you want to remove land parcel ${parcelId.replaceAll('-', ' ')} from this application?`,
+        ? `Do you want to remove ${actionInfo.description} from land parcel ${formatParcelForDisplay(parcelId)}?`
+        : `Do you want to remove land parcel ${formatParcelForDisplay(parcelId)} from this application?`,
       hint
     }
   }

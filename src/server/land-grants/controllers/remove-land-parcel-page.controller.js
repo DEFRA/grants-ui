@@ -23,13 +23,14 @@ export default class RemoveLandParcelPageController extends RemoveActionPageCont
     }
 
     const viewModel = this.getViewModel(request, context)
+    const backLink = this.buildBackLink()
 
     return h.view(this.viewName, {
       ...viewModel,
-      backLink: this.buildBackLink(viewModel),
+      backLink,
       parcelId,
       parcelReference: formatParcelForDisplay(parcelId),
-      cancelPath: this.getHref(this.redirects.list)
+      cancelPath: backLink.href
     })
   }
 
