@@ -54,7 +54,7 @@ describe('StartClaimPageController', () => {
   })
 
   describe('fetchClaimData', () => {
-    it('should return stubbed values for the configured data items', async () => {
+    it('should return the stubbed GAS claim data', async () => {
       const controller = buildController({
         dataSources: [{ name: 'claims', items: ['totalEligibleArea', 'unit', 'totalClaimAmountPence'] }]
       })
@@ -62,18 +62,20 @@ describe('StartClaimPageController', () => {
       const data = await controller.fetchClaimData(mockRequest, mockContext)
 
       expect(data).toEqual({
-        totalEligibleArea: 24.95,
-        unit: 'ha',
-        totalClaimAmountPence: 150000
+        totalEligibleArea: 156.1025,
+        unit: 'ha'
       })
     })
 
-    it('should return an empty object when no data sources are configured', async () => {
+    it('should return the stubbed GAS claim data regardless of configured data sources', async () => {
       const controller = buildController({})
 
       const data = await controller.fetchClaimData(mockRequest, mockContext)
 
-      expect(data).toEqual({})
+      expect(data).toEqual({
+        totalEligibleArea: 156.1025,
+        unit: 'ha'
+      })
     })
 
     it('overrides totalClaimAmountPence with the payment strategy result when a paymentStrategy is configured', async () => {
@@ -93,7 +95,7 @@ describe('StartClaimPageController', () => {
       const data = await controller.fetchClaimData(request, context)
 
       expect(data).toEqual({
-        totalEligibleArea: 24.95,
+        totalEligibleArea: 156.1025,
         unit: 'ha',
         totalClaimAmountPence: 425000
       })
@@ -102,23 +104,33 @@ describe('StartClaimPageController', () => {
 
   describe('makeGetRouteHandler', () => {
     it('should render the start-claim view with dynamic values injected into Html components', async () => {
+      strategyCalculatePayment.mockResolvedValueOnce({ payment: {}, totalPence: 150000, totalPayment: '£1,500.00' })
+
       const controller = buildController({
-        dataSources: [{ name: 'claims', items: ['totalEligibleArea', 'unit', 'totalClaimAmountPence'] }]
+        dataSources: [{ name: 'claims', items: ['totalEligibleArea', 'unit', 'totalClaimAmountPence'] }],
+        paymentStrategy: 'woodland-claim'
       })
+      controller.setState = vi.fn().mockResolvedValue(undefined)
+
+      const request = {
+        method: 'GET',
+        auth: { credentials: { token: 'defra-id-token', sbi: '123456789', crn: '1234567890' } }
+      }
+      const context = { state: { $$__referenceNumber: 'WMP-A1B2-C3D4' } }
 
       const handler = controller.makeGetRouteHandler()
-      const result = await handler(mockRequest, mockContext, mockResponseToolkit)
+      const result = await handler(request, context, mockResponseToolkit)
 
       expect(result).toBe('rendered')
       expect(mockResponseToolkit.view).toHaveBeenCalledTimes(1)
 
       const [viewName, viewModel] = mockResponseToolkit.view.mock.calls[0]
       expect(viewName).toBe('start-claim')
-      expect(viewModel.totalEligibleArea).toBe(24.95)
+      expect(viewModel.totalEligibleArea).toBe(156.1025)
       expect(viewModel.unit).toBe('ha')
       expect(viewModel.totalClaimAmountPence).toBe(150000)
       expect(viewModel.components[0].model.content).toBe(
-        '<p>Total eligible area 24.95 ha, total claim amount £1,500.00</p>'
+        '<p>Total eligible area 156.1025 ha, total claim amount £1,500.00</p>'
       )
     })
 
@@ -143,7 +155,7 @@ describe('StartClaimPageController', () => {
       expect(resolveStrategy).toHaveBeenCalledWith('woodland-claim')
       expect(strategyCalculatePayment).toHaveBeenCalledWith(
         {
-          totalAreaHa: 24.95,
+          totalAreaHa: 156.1025,
           applicationId: 'WMP-A1B2-C3D4',
           sbi: '123456789',
           crn: '1234567890'
@@ -154,7 +166,7 @@ describe('StartClaimPageController', () => {
       const [, viewModel] = mockResponseToolkit.view.mock.calls[0]
       expect(viewModel.totalClaimAmountPence).toBe(425000)
       expect(viewModel.components[0].model.content).toBe(
-        '<p>Total eligible area 24.95 ha, total claim amount £4,250.00</p>'
+        '<p>Total eligible area 156.1025 ha, total claim amount £4,250.00</p>'
       )
     })
 
@@ -178,7 +190,7 @@ describe('StartClaimPageController', () => {
       await handler(mockRequest, mockContext, mockResponseToolkit)
 
       const [, viewModel] = mockResponseToolkit.view.mock.calls[0]
-      expect(viewModel.components[0].model.content).toBe('<p>Total eligible area 24.95 hectares</p>')
+      expect(viewModel.components[0].model.content).toBe('<p>Total eligible area 156.1025 hectares</p>')
     })
 
     it('should map a linear unit abbreviation to a human-readable name via formatLinearUnit', async () => {

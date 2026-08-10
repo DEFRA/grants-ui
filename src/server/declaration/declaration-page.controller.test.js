@@ -737,7 +737,7 @@ describe('DeclarationPageController', () => {
       claimController.buildSubmissionData(claimRequest, claimContext)
 
       expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
-        { clientRef: 'ref123-c1', sbi: 'sbi123', crn: '1234567890', frn: 'undefined' },
+        { clientRef: 'ref123', sbi: 'sbi123', crn: '1234567890', frn: 'undefined' },
         {
           claimNumber: 'REF123-C1',
           totalEligibleArea: 24.95,
