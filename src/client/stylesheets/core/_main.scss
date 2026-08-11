@@ -8,11 +8,10 @@
   padding-bottom: govuk-spacing(3);
 }
 
-// FGP-1103: The GOV.UK details/summary component underlines its summary text
-// by default, which mimics hyperlink styling and can mislead screen reader and
-// keyboard-only users into activating it as a link (WCAG 1.4.1 Use of Colour).
-// Remove the underline and use bold weight to differentiate the interactive
-// summary text instead.
+// FGP-1103: GOV.UK Frontend underlines details/summary text by default, which can
+// look like a hyperlink. Remove the underline and use bold weight instead so the
+// control remains visually distinct without relying on link-style decoration
+// (WCAG 1.4.1 Use of Colour).
 .govuk-details__summary-text {
   text-decoration: none;
   font-weight: bold;
