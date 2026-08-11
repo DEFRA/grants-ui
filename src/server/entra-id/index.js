@@ -1,7 +1,7 @@
 import { entraIdHomeController } from './entra-id-home.controller.js'
 
 /**
- * @satisfies {ServerRegisterPluginObject}
+ * @satisfies {ServerRegisterPluginObject<void>}
  */
 export const entraIdHome = {
   plugin: {
