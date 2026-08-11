@@ -30,11 +30,11 @@ Feature: Mapping
         And should see heading "Select actions for this land parcel"
 
     Scenario: User changes their mind about a selected parcel before continuing
-        Given there is no application data for SBI "106842593" and grant "example-grant-with-map"
+        Given there is no application data for SBI "106592443" and grant "example-grant-with-map"
 
         # start
         Given the user navigates to "/example-grant-with-map"
-        And logs in as CRN "1100945520"
+        And logs in as CRN "1100946543"
         Then the user should see heading "Apply for Example Grant with Map"
         When the user clicks on "Start now"
 
@@ -47,11 +47,11 @@ Feature: Mapping
         Then the user should not see a selected parcel summary
 
     Scenario: User selects a parcel but leaves before choosing actions and resumes on the select land parcel page
-        Given there is no application data for SBI "106842593" and grant "example-grant-with-map"
+        Given there is no application data for SBI "106206183" and grant "example-grant-with-map"
 
         # start
         Given the user navigates to "/example-grant-with-map"
-        And logs in as CRN "1100945520"
+        And logs in as CRN "1100947604"
         Then the user should see heading "Apply for Example Grant with Map"
         When the user clicks on "Start now"
 
@@ -68,7 +68,7 @@ Feature: Mapping
         # reload the browser session and resume the journey
         Given the user starts a new browser session
         And navigates to "/example-grant-with-map"
-        And logs in as CRN "1100945520"
+        And logs in as CRN "1100947604"
 
         # resume should return to select-land-parcel, not check your answers
         Then the user should be at URL "select-land-parcel"
