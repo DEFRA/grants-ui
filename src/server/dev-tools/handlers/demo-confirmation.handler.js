@@ -102,10 +102,10 @@ export async function demoConfirmationHandler(request, h) {
   } catch (error) {
     debug(LogCodes.CONFIRMATION.CONFIRMATION_ERROR, {
       userId: 'demo',
-      errorMessage: `Demo confirmation route error: ${error.message}`
+      errorMessage: `Demo confirmation route error: ${/** @type {Error} */ (error).message}`
     })
 
-    const fallbackViewModel = generateFallbackViewModel(error)
+    const fallbackViewModel = generateFallbackViewModel(/** @type {Error} */ (error))
     return h.view('config-confirmation-page', fallbackViewModel)
   }
 }

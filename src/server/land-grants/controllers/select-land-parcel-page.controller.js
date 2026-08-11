@@ -34,7 +34,11 @@ export default class SelectLandParcelPageController extends QuestionPageWithParc
         parcels = mapParcelsToViewModel(fetchedParcels, landParcels)
       } catch (error) {
         debug(
-          { level: 'error', error, messageFunc: () => 'Error fetching parcels for validation error rendering' },
+          {
+            level: 'error',
+            error: /** @type {Error} */ (error),
+            messageFunc: () => 'Error fetching parcels for validation error rendering'
+          },
           {},
           request
         )
@@ -97,7 +101,15 @@ export default class SelectLandParcelPageController extends QuestionPageWithParc
 
       return h.view(viewName, viewModel)
     } catch (error) {
-      debug({ level: 'error', error, messageFunc: () => `Unexpected error when fetching parcel data` }, {}, request)
+      debug(
+        {
+          level: 'error',
+          error: /** @type {Error} */ (error),
+          messageFunc: () => `Unexpected error when fetching parcel data`
+        },
+        {},
+        request
+      )
       const errorMessage =
         'Unable to find parcel information, please try again later or contact the Rural Payments Agency.'
 

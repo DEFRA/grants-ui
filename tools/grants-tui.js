@@ -99,7 +99,7 @@ function sweepOldLogs() {
   try {
     entries = fs.readdirSync(dir)
   } catch (err) {
-    console.error(`  ${DIM}log sweep skipped: ${err.message}${RESET_COLOR}`)
+    console.error(`  ${DIM}log sweep skipped: ${/** @type {Error} */ (err).message}${RESET_COLOR}`)
     return
   }
   for (const name of entries) {
@@ -509,7 +509,7 @@ async function cmdCheck(dryRun = false) {
   try {
     fs.writeFileSync(CHECK.logFile, summary)
   } catch (err) {
-    console.error(`  ${DIM}could not write check summary: ${err.message}${RESET_COLOR}`)
+    console.error(`  ${DIM}could not write check summary: ${/** @type {Error} */ (err).message}${RESET_COLOR}`)
   }
 
   console.log(`\n  ${BOLD}pre-pr check summary${RESET_COLOR}`)

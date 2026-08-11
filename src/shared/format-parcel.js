@@ -10,7 +10,7 @@ export const isValidCompoundParcelId = (landParcel) => COMPOUND_PARCEL_ID_PATTER
 
 /**
  * Parse land parcel
- * @param {string} landParcel - The land parcel identifier
+ * @param {string | null | undefined} landParcel - The land parcel identifier
  * @returns {string[]} - Array containing [sheetId, parcelId]
  */
 export const parseLandParcel = (landParcel) => {
@@ -19,9 +19,11 @@ export const parseLandParcel = (landParcel) => {
 
 /**
  * Converts landParcel object into a string
- * @param {object} parcel
- * @param {string} parcel.parcelId
- * @param {string} parcel.sheetId
+ * @param {ParcelIdentifier} parcel
  * @returns {string}
  */
 export const stringifyParcel = ({ parcelId, sheetId }) => `${sheetId}-${parcelId}`
+
+/**
+ * @typedef {{ sheetId: string, parcelId: string }} ParcelIdentifier
+ */

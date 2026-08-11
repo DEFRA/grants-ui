@@ -57,7 +57,7 @@ export async function demoPrintApplicationHandler(request, h) {
   } catch (error) {
     debug(LogCodes.PRINT_APPLICATION.ERROR, {
       userId: 'demo',
-      errorMessage: `Demo print application route error: ${error.message}`,
+      errorMessage: `Demo print application route error: ${/** @type {Error} */ (error).message}`,
       slug: request.params?.slug
     })
 
@@ -68,7 +68,7 @@ export async function demoPrintApplicationHandler(request, h) {
       <body style="font-family: system-ui, sans-serif; margin: 40px;">
         <div style="background: #ffe6cc; padding: 15px; border-left: 4px solid #f47738; margin-bottom: 30px;">
           <strong>Development Mode Error</strong><br>
-          ${error.message}
+          ${/** @type {Error} */ (error).message}
         </div>
         <p><a href="/dev">Back to Dev Tools</a></p>
       </body>
