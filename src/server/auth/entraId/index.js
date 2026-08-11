@@ -176,8 +176,15 @@ function entraIdCallbackHandler(sessionCache) {
   return async (request, h) => {
     logger.info('*** ENTRA CALLBACK HANDLER HIT ***')
     logger.info(`query: ${JSON.stringify(request.query)}`)
-    const credentials = await request.callback(h)
-    logger.info(`*** CALLBACK COMPLETED *** credentials: ${!!credentials}`)
+    let credentials
+    try {
+      credentials = await request.callback(h)
+      logger.info(`*** CALLBACK COMPLETED *** credentials: ${!!credentials}`)
+    } catch (error) {
+      logger.error(`*** ENTRA CALLBACK FAILED *** ${error instanceof Error ? error.stack : JSON.stringify(error)}`)
+
+      throw error
+    }
 
     if (!credentials) {
       throw unauthorized()
