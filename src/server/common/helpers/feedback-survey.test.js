@@ -1,25 +1,17 @@
 import { config } from '~/src/config/config.js'
 import { mockGrantRequest } from '~/src/__mocks__/hapi-mocks.js'
-import {
-  buildFeedbackSurveyUrl,
-  resolveJourney,
-  JOURNEY,
-  SCHEME_LABELS
-} from '~/src/server/common/helpers/feedback-survey.js'
+import { buildFeedbackSurveyUrl, resolveJourney, JOURNEY } from '~/src/server/common/helpers/feedback-survey.js'
 
 const BASE_URL = 'https://defragroup.eu.qualtrics.com/jfe/form/SV_test'
 
 /**
- * Literal — deliberately not derived from SCHEME_LABELS, so the allowlist
- * assertion below still catches a slug added to the source by mistake.
- * @type {Array<[string, string]>}
+ * @param {{ slug?: string, path?: string, href?: string }} [options]
+ * @param {string} [surveyLabel]
  */
-const SLUG_LABELS = [
-  ['farm-payments', 'Farm Payments'],
-  ['woodland', 'Woodland Management Plan'],
-  ['grasslands', 'Grasslands'],
-  ['example-grant-with-auth', 'Example Grant with Auth']
-]
+const mockSurveyRequest = (options, surveyLabel) => ({
+  ...mockGrantRequest(options),
+  app: { model: { def: { metadata: { surveyLabel } } } }
+})
 
 describe('#resolveJourney', () => {
   test.each([
@@ -41,8 +33,10 @@ describe('#buildFeedbackSurveyUrl', () => {
     config.set('feedback.surveyUrl', '')
   })
 
-  test('builds URL with grant, journey and url params for an in-scope grant', () => {
-    const result = buildFeedbackSurveyUrl(mockGrantRequest({ slug: 'woodland', path: '/woodland/summary' }))
+  test('builds URL with grant, journey and url params using the form definition survey label', () => {
+    const result = buildFeedbackSurveyUrl(
+      mockSurveyRequest({ slug: 'woodland', path: '/woodland/summary' }, 'Woodland Management Plan')
+    )
     const url = new URL(/** @type {string} */ (result))
 
     expect(url.origin + url.pathname).toBe(BASE_URL)
@@ -66,15 +60,12 @@ describe('#buildFeedbackSurveyUrl', () => {
     expect(url.searchParams.get('journey')).toBe(JOURNEY.submitted)
   })
 
-  test.each(SLUG_LABELS)('sends the grant label for slug %s as %s', (slug, label) => {
-    const result = buildFeedbackSurveyUrl(mockGrantRequest({ slug, path: `/${slug}/start` }))
-    expect(new URL(/** @type {string} */ (result)).searchParams.get('grant')).toBe(label)
-  })
+  test('falls back to the sentence-cased form definition filename when surveyLabel is absent', () => {
+    const result = buildFeedbackSurveyUrl(
+      mockGrantRequest({ slug: 'example-grant-with-auth', path: '/example-grant-with-auth/start' })
+    )
 
-  test('returns null for an out-of-scope grant (gating)', () => {
-    expect(
-      buildFeedbackSurveyUrl(mockGrantRequest({ slug: 'some-other-grant', path: '/some-other-grant/summary' }))
-    ).toBeNull()
+    expect(new URL(/** @type {string} */ (result)).searchParams.get('grant')).toBe('Example grant with auth')
   })
 
   test('returns null when no slug is present', () => {
@@ -92,14 +83,12 @@ describe('#buildFeedbackSurveyUrl', () => {
 
   test('appends params with & when base URL already has a query string', () => {
     config.set('feedback.surveyUrl', `${BASE_URL}?existing=1`)
-    const result = /** @type {string} */ (buildFeedbackSurveyUrl(mockGrantRequest()))
+    const result = /** @type {string} */ (
+      buildFeedbackSurveyUrl(mockSurveyRequest(undefined, 'Woodland Management Plan'))
+    )
     expect(result.startsWith(`${BASE_URL}?existing=1&`)).toBe(true)
     const url = new URL(result)
     expect(url.searchParams.get('existing')).toBe('1')
     expect(url.searchParams.get('grant')).toBe('Woodland Management Plan')
-  })
-
-  test('scope allowlist keys map to their exact labels', () => {
-    expect(SCHEME_LABELS).toEqual(Object.fromEntries(SLUG_LABELS))
   })
 })
