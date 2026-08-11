@@ -2,7 +2,7 @@ import {
   calculateLandActionsPayment,
   fetchParcelsGroups
 } from '~/src/server/land-grants/services/land-grants.service.js'
-import { calculateWmpPayment } from '~/src/server/woodland/woodland.service.js'
+import { calculateWmpPayment, calculateWmpPaymentByTotalArea } from '~/src/server/woodland/woodland.service.js'
 import {
   mapPaymentInfoToParcelItems,
   mapAdditionalYearlyPayments
@@ -13,7 +13,7 @@ import { formatPrice } from '~/src/server/common/utils/payment.js'
  * Registry of payment strategies keyed by name.
  * Referenced from the form definition YAML via `config.paymentStrategy`.
  *
- * Each strategy exposes a single `calculatePayment(state, userContext)` method that returns:
+ * Each strategy exposes a single `calculatePayment(paymentContext, userContext)` method that returns:
  *   { totalPence, totalPayment, payment, parcelItems?, additionalYearlyPayments? }
  *
  * - `totalPence`              — raw amount in pence, stored in state for re-render on validation errors
@@ -26,18 +26,18 @@ import { formatPrice } from '~/src/server/common/utils/payment.js'
  *   1. Add an entry below with a `calculatePayment` method
  *   2. Set `paymentStrategy: <key>` in the YAML page config
  */
-/** @type {Record<string, { calculatePayment: (state: object, userContext: LandGrantsUserContext) => Promise<PaymentStrategyResult> }>} */
+/** @type {Record<string, { calculatePayment: (paymentContext: object, userContext: LandGrantsUserContext) => Promise<PaymentStrategyResult> }>} */
 export const paymentStrategies = {
   multiAction: {
     /**
-     * @param {MultiActionState} state
+     * @param {MultiActionState} paymentContext
      * @param {LandGrantsUserContext} userContext
      * @returns {Promise<PaymentStrategyResult>}
      */
-    async calculatePayment(state, userContext) {
+    async calculatePayment(paymentContext, userContext) {
       const [paymentResult, actionGroups] = await Promise.all([
-        calculateLandActionsPayment(state, userContext),
-        fetchParcelsGroups(state, userContext)
+        calculateLandActionsPayment(paymentContext, userContext),
+        fetchParcelsGroups(paymentContext, userContext)
       ])
       const { payment } = paymentResult
       const totalPence = payment?.annualTotalPence ?? 0
@@ -53,12 +53,12 @@ export const paymentStrategies = {
 
   wmp: {
     /**
-     * @param {WmpState} state
+     * @param {WmpState} paymentContext
      * @param {LandGrantsUserContext} userContext
      * @returns {Promise<PaymentStrategyResult>}
      */
-    async calculatePayment(state, userContext) {
-      const { landParcels = [], hectaresUnderTenYearsOld = 0, hectaresTenOrOverYearsOld = 0 } = state
+    async calculatePayment(paymentContext, userContext) {
+      const { landParcels = [], hectaresUnderTenYearsOld = 0, hectaresTenOrOverYearsOld = 0 } = paymentContext
       const { payment, totalPence } = await calculateWmpPayment(
         {
           parcelIds: landParcels,
@@ -73,10 +73,35 @@ export const paymentStrategies = {
         payment
       }
     }
+  },
+
+  'woodland-claim': {
+    /**
+     * @param {WoodlandClaimPaymentContext} paymentContext
+     * @param {LandGrantsUserContext} userContext
+     * @returns {Promise<PaymentStrategyResult>}
+     */
+    async calculatePayment(paymentContext, userContext) {
+      const { totalAreaHa, applicationId, sbi, crn } = paymentContext
+      const { payment, totalPence } = await calculateWmpPaymentByTotalArea(
+        {
+          totalAreaHa,
+          applicationId,
+          sbi,
+          crn
+        },
+        userContext
+      )
+      return {
+        totalPence,
+        totalPayment: formatPrice(totalPence),
+        payment
+      }
+    }
   }
 }
 
 /**
- * @import { PaymentStrategyResult, MultiActionState, WmpState } from './payment-strategies.d.js'
+ * @import { PaymentStrategyResult, MultiActionState, WmpState, WoodlandClaimPaymentContext } from './payment-strategies.d.js'
  * @import { LandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
  */

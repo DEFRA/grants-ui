@@ -8,6 +8,7 @@ let invokeGasGetAction
 let invokeGasPostAction
 let makeGasApiRequest
 let submitGrantApplication
+let submitClaim
 let getApplicationStatus
 
 vi.mock('~/src/server/common/helpers/retry.js')
@@ -40,6 +41,7 @@ describe('Grant Application service (token present)', () => {
     invokeGasPostAction = mod.invokeGasPostAction
     makeGasApiRequest = mod.makeGasApiRequest
     submitGrantApplication = mod.submitGrantApplication
+    submitClaim = mod.submitClaim
     const mod2 = await import('./grant-application.service')
     getApplicationStatus = mod2.getApplicationStatus
   })
@@ -189,6 +191,87 @@ describe('Grant Application service (token present)', () => {
       await expect(submitGrantApplication(code, payload, mockRequest)).rejects.toThrow(mockMessage)
 
       expect(fetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/applications`, {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify(payload)
+      })
+    })
+  })
+
+  describe('submitClaim', () => {
+    const payload = {
+      metadata: {
+        clientRef: 'claim-ref-123',
+        submittedAt: '2025-04-22T12:00:00Z'
+      },
+      answers: {
+        totalArea: 24.95
+      }
+    }
+    const mockResponse = {
+      id: '67890',
+      status: 'submitted'
+    }
+
+    test('should successfully submit a claim to the clientRef claims endpoint', async () => {
+      const mockFetchInstance = mockFetchWithResponse(mockResponse)
+
+      const result = await submitClaim(code, payload)
+
+      expect(mockFetchInstance).toHaveBeenCalledWith(`${gasApi}/grants/${code}/applications/claim-ref-123/claims`, {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify(payload)
+      })
+      expect(result.ok).toBe(true)
+    })
+
+    test('should map the farm-payments grant code when submitting a claim', async () => {
+      const mockFetchInstance = mockFetchWithResponse(mockResponse)
+
+      const slug = 'farm-payments'
+      const grantCode = `frps-private-beta`
+
+      const result = await submitClaim(slug, payload)
+
+      expect(mockFetchInstance).toHaveBeenCalledWith(
+        `${gasApi}/grants/${grantCode}/applications/claim-ref-123/claims`,
+        {
+          method: 'POST',
+          headers: authHeaders,
+          body: JSON.stringify(payload)
+        }
+      )
+      expect(result.ok).toBe(true)
+    })
+
+    test('should build the URL with an undefined clientRef when metadata is missing', async () => {
+      const mockFetchInstance = mockFetchWithResponse(mockResponse)
+      const payloadWithoutMetadata = { answers: { totalArea: 24.95 } }
+
+      await submitClaim(code, payloadWithoutMetadata)
+
+      expect(mockFetchInstance).toHaveBeenCalledWith(`${gasApi}/grants/${code}/applications/undefined/claims`, {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify(payloadWithoutMetadata)
+      })
+    })
+
+    test('should throw an error when the request fails', async () => {
+      const mockedFetch = mockFetch()
+      const mockMessage = 'Bad Request'
+
+      mockedFetch.mockResolvedValue({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        json: vi.fn().mockResolvedValueOnce({ message: mockMessage })
+      })
+
+      await expect(submitClaim(code, payload, mockRequest)).rejects.toThrow(mockMessage)
+
+      expect(fetch).toHaveBeenCalledWith(`${gasApi}/grants/${code}/applications/claim-ref-123/claims`, {
         method: 'POST',
         headers: authHeaders,
         body: JSON.stringify(payload)

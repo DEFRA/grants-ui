@@ -150,4 +150,45 @@ describe('paymentStrategies', () => {
       )
     })
   })
+
+  describe('woodland-claim.calculatePayment', () => {
+    const mockPaymentContext = {
+      totalAreaHa: 24.95,
+      applicationId: 'WMP-A1B2-C3D4',
+      sbi: '123456789',
+      crn: '1234567890'
+    }
+    const mockPayment = { agreementTotalPence: 375000 }
+
+    beforeEach(() => {
+      vi.mocked(woodlandService.calculateWmpPaymentByTotalArea).mockResolvedValue({
+        payment: mockPayment,
+        totalPence: 375000
+      })
+    })
+
+    it('calls calculateWmpPaymentByTotalArea with the payment context fields and user context', async () => {
+      await paymentStrategies['woodland-claim'].calculatePayment(mockPaymentContext, userContext)
+
+      expect(woodlandService.calculateWmpPaymentByTotalArea).toHaveBeenCalledWith(
+        {
+          totalAreaHa: 24.95,
+          applicationId: 'WMP-A1B2-C3D4',
+          sbi: '123456789',
+          crn: '1234567890'
+        },
+        userContext
+      )
+    })
+
+    it('returns totalPence, totalPayment and payment', async () => {
+      const result = await paymentStrategies['woodland-claim'].calculatePayment(mockPaymentContext, userContext)
+
+      expect(result).toEqual({
+        totalPence: 375000,
+        totalPayment: '£3750.00',
+        payment: mockPayment
+      })
+    })
+  })
 })

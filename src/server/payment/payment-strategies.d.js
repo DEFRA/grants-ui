@@ -22,3 +22,11 @@
  * @property {number} [hectaresUnderTenYearsOld]
  * @property {number} [hectaresTenOrOverYearsOld]
  */
+
+/**
+ * @typedef {object} WoodlandClaimPaymentContext
+ * @property {number} totalAreaHa
+ * @property {string} applicationId
+ * @property {string} sbi
+ * @property {string} [crn]
+ */
