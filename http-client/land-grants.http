@@ -1,0 +1,58 @@
+### Land Grants API - HTTP Client
+
+# ─────────────────────────────────────────────
+# Health
+# ─────────────────────────────────────────────
+
+### Health check (no auth required)
+# @name getHealth
+GET {{landGrantsUrl}}/health
+
+###
+
+# ─────────────────────────────────────────────
+# Woodland Management Plan payments
+#
+# Required headers (see createApiHeadersForLandGrantsBackend in
+# backend-auth-helper.js and land-grants.client.js):
+#   Content-Type: application/json
+#   Authorization: Bearer <token>  (in the app this is the AES-256-GCM
+#     encrypted + base64 land-grants token; set landGrantsAuthToken to the
+#     value the backend expects for the selected environment)
+#   x-forwarded-authorization: <defra id access token>
+#   x-cdp-request-id: <trace id> (added by withTraceId; optional here)
+# ─────────────────────────────────────────────
+
+### Calculate WMP payment for the given parcels
+# @name calculateWmpPayment
+POST {{landGrantsUrl}}/api/v1/wmp/payments/calculate
+Content-Type: application/json
+Authorization: Bearer {{landGrantsAuthToken}}
+x-forwarded-authorization: {{defraIdToken}}
+x-cdp-request-id: {{$uuid}}
+
+{
+  "parcelIds": ["SD6346-3387"],
+  "oldWoodlandAreaHa": 126.3397,
+  "newWoodlandAreaHa": 0,
+  "startDate": "2025-08-05"
+}
+
+###
+
+### Calculate WMP payment by total area
+# @name calculateWmpPaymentByTotalArea
+POST {{landGrantsUrl}}/api/v1/wmp/payments/calculate-by-total-area
+Content-Type: application/json
+Authorization: Bearer {{landGrantsAuthToken}}
+x-forwarded-authorization: {{defraIdToken}}
+x-cdp-request-id: {{$uuid}}
+
+{
+  "totalAreaHa": 126.3397,
+  "applicationId": "APP-123",
+  "sbi": "123456789",
+  "crn": "1234567890"
+}
+
+###

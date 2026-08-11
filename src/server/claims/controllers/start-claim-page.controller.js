@@ -1,6 +1,8 @@
 import nunjucks from 'nunjucks'
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { upsertCurrentClaim } from '~/src/server/claims/services/claim-state.js'
+import { resolveStrategy } from '~/src/server/payment/resolve-strategy.js'
+import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
 import { formatCurrency } from '~/src/config/nunjucks/filters/format-currency.js'
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
 import { formatLinearUnit } from '~/src/shared/format-linear-unit.js'
@@ -19,25 +21,6 @@ claimContentEnv.addFilter('formatAreaUnit', formatAreaUnit)
 claimContentEnv.addFilter('formatLinearUnit', formatLinearUnit)
 
 /**
- * Stubbed claim data, keyed by the data item name that a page's
- * `config.dataSources` can request.
- *
- * The raw values are deliberately unformatted: `totalEligibleArea` is the
- * numeric area, `unit` is its unit, and `totalClaimAmountPence` is an integer
- * amount in pence. The `£` sign and the pounds/pence formatting are applied in
- * the form-definition template.
- *
- * TODO: Replace this stub with real values fetched from the relevant claim
- * APIs once they are available (see {@link StartClaimPageController#fetchClaimData}).
- * @type {Record<string, string | number>}
- */
-const STUBBED_CLAIM_DATA = {
-  totalEligibleArea: 24.95,
-  unit: 'ha',
-  totalClaimAmountPence: 150000
-}
-
-/**
  * Generic controller for the start of a claim journey (e.g. "Review your
  * claim"). It is designed to be reused across grants with different claim
  * journeys and data by driving everything from the page `config:` block in the
@@ -46,21 +29,14 @@ const STUBBED_CLAIM_DATA = {
  *   controller: StartClaimPageController
  *   config:
  *     submitButtonText: Continue            # button label (handled by the view)
+ *     paymentStrategy: woodland-claim       # key from payment-strategies.js (optional)
  *     rpaDetails:                           # GDS details block rendered by the view
  *       title: If you need help with your claim
  *       content: |
  *         <p class="govuk-body">Phone: 03000 200 301</p>
- *     dataSources:                          # where to get which data items from
- *       - name: claims                      # placeholder API/source identifier
- *         items:
- *           - totalEligibleArea
- *           - unit
- *           - totalClaimAmountPence
  *
- * The values fetched for the requested `dataSources[].items` are exposed to the
- * view and used to render each `Html` component's `content` through Nunjucks, so
- * the form definition can reference dynamic values (e.g. `{{ totalEligibleArea }}`)
- * instead of hardcoding them.
+ * The claim amount (`totalClaimAmountPence`) is derived by calling the `paymentStrategy`
+ * (a land-grants payment call) defined in config.
  *
  * @extends QuestionPageController
  */
@@ -81,32 +57,39 @@ export default class StartClaimPageController extends QuestionPageController {
   }
 
   /**
-   * Fetch claim data from one or more APIs.
+   * Fetch claim data.
    *
-   * The APIs to call and which data items to read from each are described by
-   * `config.dataSources` in the form definition.
+   * Returns the combined result: the GAS-derived data items, with
+   * `totalClaimAmountPence` taken from the payment call when a strategy ran.
    *
-   * TODO: The claim data APIs are not available yet, so values are stubbed from
-   * {@link STUBBED_CLAIM_DATA}. Replace this with real API calls, using each
-   * `dataSources[].name` to decide which API to call, once they are available.
+   * @param {AnyFormRequest} request
+   * @param {FormContext} context
+   * @returns {Promise<Record<string, string | number>>} data items keyed by item name
+   */
+  async fetchClaimData(request, context) {
+    const gasData = await this.fetchGasEntitlements(request, context)
+    const paymentResult = await this.calculateClaimPayment(request, context, gasData)
+
+    return {
+      ...gasData,
+      ...(paymentResult ? { totalClaimAmountPence: paymentResult.totalPence } : {})
+    }
+  }
+
+  /**
+   * Fetch claim data from GAS.
+   *
+   * TODO: The GAS API is not available yet, so values are stubbed
    *
    * @param {AnyFormRequest} _request
    * @param {FormContext} _context
    * @returns {Promise<Record<string, string | number>>} data items keyed by item name
    */
-  async fetchClaimData(_request, _context) {
-    const dataSources = /** @type {{ name?: string, items?: string[] }[]} */ (this.pageConfig.dataSources ?? [])
-    const data = /** @type {Record<string, string | number>} */ ({})
-
-    for (const source of dataSources) {
-      for (const item of source.items ?? []) {
-        // TODO: call the API identified by `source.name` for `item` instead of
-        // reading from the stub below.
-        data[item] = STUBBED_CLAIM_DATA[item]
-      }
+  async fetchGasEntitlements(_request, _context) {
+    return {
+      totalEligibleArea: 156.1025,
+      unit: 'ha'
     }
-
-    return data
   }
 
   /**
@@ -129,6 +112,53 @@ export default class StartClaimPageController extends QuestionPageController {
       }
       return component
     })
+  }
+
+  /**
+   * Calculate the claim payment for the current claim using the configured
+   * `paymentStrategy` (a land-grants payment call), returning the strategy
+   * result.
+   *
+   * The payment context passed to the strategy is assembled from the GAS claim
+   * data (`totalEligibleArea` as `totalAreaHa`), the application reference
+   * number held in state (as `applicationId`) and the authenticated user's
+   * `sbi`/`crn`.
+   *
+   * No-ops (returns `undefined`) when no `paymentStrategy` is configured, or
+   * when the application reference number or total eligible area is missing.
+   * @param {AnyFormRequest} request
+   * @param {FormContext} context
+   * @param {Record<string, string | number>} gasData
+   * @returns {Promise<PaymentStrategyResult | undefined>}
+   */
+  async calculateClaimPayment(request, context, gasData) {
+    const paymentStrategy = /** @type {string | undefined} */ (this.pageConfig.paymentStrategy)
+
+    if (!paymentStrategy) {
+      return undefined
+    }
+
+    const state = context.state ?? {}
+    const referenceNumber = /** @type {string | undefined} */ (state.$$__referenceNumber)
+    const totalAreaHa = /** @type {number | undefined} */ (gasData.totalEligibleArea)
+
+    if (!referenceNumber || totalAreaHa == null) {
+      return undefined
+    }
+
+    const strategy = resolveStrategy(paymentStrategy)
+    const userContext = getLandGrantsUserContext(request)
+    const credentials = /** @type {{ sbi?: string, crn?: string }} */ (request.auth?.credentials ?? {})
+
+    return strategy.calculatePayment(
+      {
+        totalAreaHa,
+        applicationId: referenceNumber,
+        sbi: /** @type {string} */ (credentials.sbi),
+        crn: credentials.crn
+      },
+      userContext
+    )
   }
 
   /**
@@ -211,4 +241,5 @@ export default class StartClaimPageController extends QuestionPageController {
  * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/FormModel.js'
  * @import { FormContext, AnyFormRequest, FormResponseToolkit } from '@defra/forms-engine-plugin/types'
  * @import { ResponseObject } from '@hapi/hapi'
+ * @import { PaymentStrategyResult } from '~/src/server/payment/payment-strategies.d.js'
  */
