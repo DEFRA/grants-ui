@@ -53,6 +53,35 @@ describe('StartClaimPageController', () => {
     vi.mocked(resolveStrategy).mockReturnValue({ calculatePayment: strategyCalculatePayment })
   })
 
+  describe('constructor', () => {
+    it('resolves and stores the section when the page definition has one', () => {
+      const model = buildModel({})
+      const section = { name: 'claim', title: 'Claim' }
+      model.getSection.mockReturnValue(section)
+
+      const controller = new StartClaimPageController(model, {
+        title: 'Review your WMP claim',
+        path: '/claim',
+        section: 'claim'
+      })
+
+      expect(model.getSection).toHaveBeenCalledWith('claim')
+      expect(controller.section).toBe(section)
+    })
+
+    it('does not resolve a section when the page definition has none', () => {
+      const model = buildModel({})
+
+      const controller = new StartClaimPageController(model, {
+        title: 'Review your WMP claim',
+        path: '/claim'
+      })
+
+      expect(model.getSection).not.toHaveBeenCalled()
+      expect(controller.section).toBeUndefined()
+    })
+  })
+
   describe('fetchClaimData', () => {
     it('should return the stubbed GAS claim data', async () => {
       const controller = buildController({
