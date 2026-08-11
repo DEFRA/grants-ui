@@ -7,6 +7,7 @@ import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 vi.mock('./entra-id-strategy.js')
 vi.mock('~/src/config/config.js')
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
+  logger: { info: vi.fn() },
   log: vi.fn(),
   LogCodes: { AUTH: { ENTRA_ID_AUTH_FAILURE: 'ENTRA_ID_AUTH_FAILURE' } }
 }))
