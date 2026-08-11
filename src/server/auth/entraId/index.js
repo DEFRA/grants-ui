@@ -1,7 +1,7 @@
 import { hapiAuthOidcPlugin } from '@defra/hapi-auth-oidc'
 import { unauthorized } from '@hapi/boom'
 import { config } from '~/src/config/config.js'
-import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { log, LogCodes, logger } from '~/src/server/common/helpers/logging/log.js'
 import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { getEntraIdOidcOptions } from './entra-id-strategy.js'
 
@@ -174,10 +174,10 @@ function entraIdCallbackHandler(sessionCache) {
    * @param {ResponseToolkit} h
    */
   return async (request, h) => {
-    console.log('*** ENTRA CALLBACK HANDLER HIT ***')
-    console.log('query:', request.query)
+    logger.info('*** ENTRA CALLBACK HANDLER HIT ***')
+    logger.info(`query: ${JSON.stringify(request.query)}`)
     const credentials = await request.callback(h)
-    console.log('*** CALLBACK COMPLETED ***', !!credentials)
+    logger.info(`*** CALLBACK COMPLETED *** credentials: ${!!credentials}`)
 
     if (!credentials) {
       throw unauthorized()
