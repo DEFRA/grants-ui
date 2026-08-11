@@ -7,3 +7,20 @@
   padding-top: govuk-spacing(4);
   padding-bottom: govuk-spacing(3);
 }
+
+// FGP-1103: The GOV.UK details/summary component underlines its summary text
+// by default, which mimics hyperlink styling and can mislead screen reader and
+// keyboard-only users into activating it as a link (WCAG 1.4.1 Use of Colour).
+// Remove the underline and use bold weight to differentiate the interactive
+// summary text instead.
+.govuk-details__summary-text {
+  text-decoration: none;
+  font-weight: bold;
+}
+
+// Keep the underline removed across hover/focus states, where GOV.UK Frontend
+// otherwise toggles text-decoration on the summary.
+.govuk-details__summary:hover .govuk-details__summary-text,
+.govuk-details__summary:focus .govuk-details__summary-text {
+  text-decoration: none;
+}
