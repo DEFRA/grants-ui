@@ -5,7 +5,10 @@ import {
   storeSlugInContext
 } from '~/src/server/common/helpers/form-slug-helper.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
-import { submitGrantApplication } from '~/src/server/common/services/grant-application/grant-application.service.js'
+import {
+  submitClaim,
+  submitGrantApplication
+} from '~/src/server/common/services/grant-application/grant-application.service.js'
 import {
   resolveGasConfigVersion,
   transformStateObjectToGasApplication
@@ -60,6 +63,38 @@ export const UNCONFIGURED_DEFAULTS = {
   showDataProtection: true
 }
 
+/**
+ * Per-declaration-type behaviour, keyed by {@link DeclarationType}. Centralises
+ * the differences between an application submission and a claim submission so the
+ * shared POST flow never has to branch on `declarationType`.
+ *
+ * Each strategy exposes:
+ * - `buildSubmissionData(controller, request, context)` — builds the GAS payload
+ * - `getClientReference(context)` — the GAS client reference for the submission
+ * - `submit(grantCode, payload, request)` — the GAS submission call
+ * - `getStatusPath(request, context)` — the post-submission redirect path
+ * - `handleSuccessfulSubmission(controller, args)` — the success-side state update
+ *
+ * Mirrors the `paymentStrategies` registry idiom used by the payment controllers.
+ * @type {Record<string, DeclarationStrategy>}
+ */
+const DECLARATION_STRATEGIES = {
+  [DeclarationType.APPLICATION]: {
+    buildSubmissionData: (controller, request, context) => controller.buildApplicationData(request, context),
+    getClientReference: (context) => context.referenceNumber,
+    submit: submitGrantApplication,
+    getStatusPath: (request, context) => getConfirmationPath(request, context, 'DeclarationController'),
+    handleSuccessfulSubmission: (controller, args) => controller.handleSuccessfulSubmission(args)
+  },
+  [DeclarationType.CLAIM]: {
+    buildSubmissionData: (controller, request, context) => controller.buildClaimData(request, context),
+    getClientReference: (context) => context.referenceNumber,
+    submit: submitClaim,
+    getStatusPath: (request, context) => getClaimConfirmationPath(request, context, 'DeclarationController'),
+    handleSuccessfulSubmission: (controller, args) => controller.handleSuccessfulClaimSubmission(args)
+  }
+}
+
 export default class DeclarationPageController extends SummaryPageController {
   /**
    * @param {FormModel} model
@@ -99,6 +134,15 @@ export default class DeclarationPageController extends SummaryPageController {
    */
   get declarationType() {
     return /** @type {string} */ (this.getPageConfig()?.declarationType ?? DeclarationType.APPLICATION)
+  }
+
+  /**
+   * The submission strategy for this page's declaration type, falling back to the
+   * application strategy for any unrecognised type.
+   * @returns {DeclarationStrategy} The resolved declaration strategy
+   */
+  get strategy() {
+    return DECLARATION_STRATEGIES[this.declarationType] ?? DECLARATION_STRATEGIES[DeclarationType.APPLICATION]
   }
 
   /**
@@ -148,10 +192,7 @@ export default class DeclarationPageController extends SummaryPageController {
    * @returns {string} path to the status page
    */
   getStatusPath(request, context) {
-    if (this.declarationType === DeclarationType.CLAIM) {
-      return getClaimConfirmationPath(request, context, 'DeclarationController')
-    }
-    return getConfirmationPath(request, context, 'DeclarationController')
+    return this.strategy.getStatusPath(request, context)
   }
 
   /**
@@ -176,19 +217,14 @@ export default class DeclarationPageController extends SummaryPageController {
   }
 
   /**
-   * Builds the GAS submission payload for this page, dispatching to the claim
-   * builder for claim declarations and the application builder otherwise, based
-   * on `config.declarationType`.
+   * Builds the GAS submission payload for this page by delegating to the resolved
+   * declaration strategy (application or claim), based on `config.declarationType`.
    * @param {AnyFormRequest} request
    * @param {FormContext} context
    * @returns {Record<string, unknown>} The GAS submission payload
    */
   buildSubmissionData(request, context) {
-    if (this.declarationType === DeclarationType.CLAIM) {
-      return this.buildClaimApplicationData(request, context)
-    }
-
-    return this.buildApplicationData(request, context)
+    return this.strategy.buildSubmissionData(this, request, context)
   }
 
   /**
@@ -243,18 +279,16 @@ export default class DeclarationPageController extends SummaryPageController {
    * @returns {{ clientRef: string, sbi: string, crn: string, frn: string, previousClientRef?: string }}
    */
   buildIdentifiers(request, context) {
-    const { state, referenceNumber } = context
+    const { state } = context
 
     const frn =
       /** @type {Record<string, any> | undefined} */ (state.additionalAnswers)?.applicant?.['business']?.reference ??
       'undefined'
 
-    // A claim submission is identified to GAS by its claim number; an application
-    // submission by the application reference number.
-    const clientReference =
-      this.declarationType === DeclarationType.CLAIM
-        ? (getCurrentClaim(state)?.claimNumber ?? referenceNumber)
-        : referenceNumber
+    // A claim submission is identified to GAS by its application reference number;
+    // an application submission by the application reference number.
+    // The resolved strategy owns that choice.
+    const clientReference = this.strategy.getClientReference(context)
 
     /** @type {{ clientRef: string, sbi: string, crn: string, frn: string, previousClientRef?: string }} */
     const identifiers = {
@@ -279,8 +313,8 @@ export default class DeclarationPageController extends SummaryPageController {
    * @param {FormContext} context
    * @returns {Record<string, unknown>} The GAS claim payload
    */
-  buildClaimApplicationData(request, context) {
-    const { state, referenceNumber } = context
+  buildClaimData(request, context) {
+    const { state } = context
 
     const currentClaim = getCurrentClaim(state)
 
@@ -288,7 +322,6 @@ export default class DeclarationPageController extends SummaryPageController {
     const configVersion = resolveGasConfigVersion(request)
 
     const claimSubmissionState = {
-      referenceNumber,
       claimNumber: currentClaim?.claimNumber,
       totalEligibleArea: currentClaim?.totalEligibleArea,
       unit: currentClaim?.unit,
@@ -299,7 +332,7 @@ export default class DeclarationPageController extends SummaryPageController {
   }
 
   /**
-   * @param {{ request: AnyFormRequest, context: FormContext & { grantVersion?: string | number }, cacheService: StatePersistenceService, applicationData: Record<string, any>, sbi: unknown, crn: unknown, grantCode: string }} options
+   * @param {SubmissionArgs} options
    */
   async handleSuccessfulSubmission({ request, context, cacheService, applicationData, sbi, crn, grantCode }) {
     log(
@@ -347,7 +380,7 @@ export default class DeclarationPageController extends SummaryPageController {
    * to SUBMITTED in state and advances the application-level status to
    * CLAIM_SUBMITTED. Unlike an application submission the application-level
    * `submittedAt`/`submittedBy` are left untouched.
-   * @param {{ request: AnyFormRequest, context: FormContext, cacheService: StatePersistenceService, applicationData: Record<string, any>, sbi: unknown, crn: unknown, grantCode: string }} options
+   * @param {SubmissionArgs} options
    */
   async handleSuccessfulClaimSubmission({ request, context, cacheService, applicationData, grantCode }) {
     const submittedAt = applicationData.metadata?.submittedAt
@@ -433,16 +466,11 @@ export default class DeclarationPageController extends SummaryPageController {
         const grantCode = getGrantCode(request)
 
         const applicationData = this.buildSubmissionData(request, context)
-
-        const result = await submitGrantApplication(grantCode, applicationData, request)
+        const result = await this.strategy.submit(grantCode, applicationData, request)
 
         if (result.status === statusCodes.noContent) {
           const submissionArgs = { request, context, cacheService, applicationData, sbi, crn, grantCode }
-          if (this.declarationType === DeclarationType.CLAIM) {
-            await this.handleSuccessfulClaimSubmission(submissionArgs)
-          } else {
-            await this.handleSuccessfulSubmission(submissionArgs)
-          }
+          await this.strategy.handleSuccessfulSubmission(this, submissionArgs)
         }
 
         const redirectPath = this.getStatusPath(request, context)
@@ -466,6 +494,29 @@ export default class DeclarationPageController extends SummaryPageController {
  * @property {boolean} [showDataProtection] - Show the Defra data controller footer
  * @property {boolean} [showSupportDetails] - Show the RPA support details panel
  * @property {Record<string, string>} [hiddenFields] - Hidden inputs posted with the form
+ */
+
+/**
+ * Per-declaration-type submission behaviour resolved from `config.declarationType`.
+ * @typedef {object} DeclarationStrategy
+ * @property {(controller: DeclarationPageController, request: AnyFormRequest, context: FormContext) => Record<string, unknown>} buildSubmissionData - Builds the GAS payload
+ * @property {(context: FormContext) => string} getClientReference - The GAS client reference for the submission
+ * @property {(grantCode: string, payload: Record<string, any>, request: AnyFormRequest) => Promise<{ status: number }>} submit - The GAS submission call
+ * @property {(request?: AnyFormRequest, context?: FormContext) => string} getStatusPath - The post-submission redirect path
+ * @property {(controller: DeclarationPageController, args: SubmissionArgs) => Promise<void>} handleSuccessfulSubmission - The success-side state update
+ */
+
+/**
+ * The arguments passed to the success-side state handlers after a submission returns
+ * a no-content response.
+ * @typedef {object} SubmissionArgs
+ * @property {AnyFormRequest} request
+ * @property {FormContext & { grantVersion?: string | number }} context
+ * @property {StatePersistenceService} cacheService
+ * @property {Record<string, any>} applicationData
+ * @property {unknown} sbi
+ * @property {unknown} crn
+ * @property {string} grantCode
  */
 
 /**

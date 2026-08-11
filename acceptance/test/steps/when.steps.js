@@ -40,11 +40,6 @@ When('(the user )clicks on {string}', async function (text) {
 
 When('(the user )clicks {string} on the selected parcel summary', async function (text) {
   await this.page.locator(`//*[contains(text(),'${text}')]`).click()
-  await this.page.evaluate(() => {
-    document
-      .getElementById('parcel-map')
-      .dispatchEvent(new CustomEvent('parcel-map:selection', { bubbles: true, detail: { selectedParcels: [] } }))
-  })
 })
 
 When('the user selects {string}', async function (text) {

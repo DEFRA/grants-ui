@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
-import { validateWoodlandHectares, calculateWmpPayment } from './woodland.service.js'
+import { validateWoodlandHectares, calculateWmpPayment, calculateWmpPaymentByTotalArea } from './woodland.service.js'
 import * as woodlandClient from './woodland.client.js'
 
 vi.mock('./woodland.client.js', () => ({
   validateWoodland: vi.fn(),
-  calculateWmp: vi.fn()
+  calculateWmp: vi.fn(),
+  calculateWmpByTotalArea: vi.fn()
 }))
 
 vi.mock('~/src/config/config.js', () => ({
@@ -122,6 +123,57 @@ describe('calculateWmpPayment', () => {
     await expect(
       calculateWmpPayment(
         { parcelIds: ['SD6346-3387'], hectaresUnderTenYearsOld: 0, hectaresTenOrOverYearsOld: 0 },
+        userContext
+      )
+    ).rejects.toThrow('API error')
+  })
+})
+
+describe('calculateWmpPaymentByTotalArea', () => {
+  const mockPayment = {
+    agreementTotalPence: 375000,
+    agreementStartDate: '2026-06-01',
+    agreementEndDate: '2036-06-01',
+    frequency: 'Single',
+    parcelItems: {},
+    agreementLevelItems: {
+      1: { code: 'PA3', description: 'Woodland Management Plan', agreementTotalPence: 375000 }
+    }
+  }
+
+  it('calls calculateWmpByTotalArea with correct args and returns payment and totalPence', async () => {
+    woodlandClient.calculateWmpByTotalArea.mockResolvedValueOnce({ message: 'success', payment: mockPayment })
+
+    const result = await calculateWmpPaymentByTotalArea(
+      { totalAreaHa: 24.95, applicationId: 'WMP-A1B2-C3D4', sbi: '123456789', crn: '1234567890' },
+      userContext
+    )
+
+    expect(woodlandClient.calculateWmpByTotalArea).toHaveBeenCalledWith(
+      { totalAreaHa: 24.95, applicationId: 'WMP-A1B2-C3D4', sbi: '123456789', crn: '1234567890' },
+      'http://api',
+      userContext
+    )
+    expect(result).toEqual({ payment: mockPayment, totalPence: 375000 })
+  })
+
+  it('returns zero totalPence when agreementTotalPence is missing', async () => {
+    woodlandClient.calculateWmpByTotalArea.mockResolvedValueOnce({ message: 'success', payment: {} })
+
+    const result = await calculateWmpPaymentByTotalArea(
+      { totalAreaHa: 24.95, applicationId: 'WMP-A1B2-C3D4', sbi: '123456789' },
+      userContext
+    )
+
+    expect(result).toEqual({ payment: {}, totalPence: 0 })
+  })
+
+  it('propagates API errors', async () => {
+    woodlandClient.calculateWmpByTotalArea.mockRejectedValueOnce(new Error('API error'))
+
+    await expect(
+      calculateWmpPaymentByTotalArea(
+        { totalAreaHa: 24.95, applicationId: 'WMP-A1B2-C3D4', sbi: '123456789' },
         userContext
       )
     ).rejects.toThrow('API error')

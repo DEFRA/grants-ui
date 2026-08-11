@@ -12,7 +12,7 @@
 - [Development Services Integration](#development-services-integration)
 - [Grant Form Definitions](#grant-form-definitions)
 - [GAS Integration](#gas-integration)
-  - [Using the gas.http Helper](#using-the-gashttp-helper-and-http-client-environments)
+  - [Using the HTTP client helpers](#using-the-http-client-helpers-and-http-client-environments)
   - [Grant Schema Updates](#grant-schema-updates)
 - [Config-Driven Confirmation Pages](#config-driven-confirmation-pages)
 - [Print Submitted Application](#print-submitted-application)
@@ -331,35 +331,40 @@ Example response:
 }
 ```
 
-### Using the `gas.http` helper and HTTP client environments
+### Using the HTTP client helpers and HTTP client environments
 
-For local development and manual testing of grant definitions and submissions against GAS, this repository includes:
+For local development and manual testing of the backing services, the request collections live together in the `http-client/` folder:
 
-- `gas.http` -- an HTTP client collection with example requests for:
+- `http-client/gas.http` -- example requests for:
   - creating grant definitions in GAS for `example-grant-with-auth`
   - submitting example applications for those grants
+- `http-client/broker.http` -- example requests against the grants config broker
+- `http-client/dal.http` -- example requests against the DAL
+- `http-client/land-grants.http` -- example requests against the Land Grants API, including the
+  `/api/v1/wmp/payments/calculate` and `/api/v1/wmp/payments/calculate-by-total-area` payment calls
 - `http-client.env.json` -- shared, non-secret environment configuration (base URLs)
 - `http-client.private.env.json` -- per-environment secrets (service tokens and API keys)
 
-Most IDEs (including JetBrains IDEs and VS Code with the REST Client extension) can execute the requests in `gas.http` using these environment files.
+The environment files remain in the repository root so they are resolved for every collection in `http-client/`.
+Most IDEs (including JetBrains IDEs and VS Code with the REST Client extension) can execute these requests using the environment files.
 
 #### `http-client.env.json` (public envs)
 
-The `http-client.env.json` file defines the non-secret per-environment configuration used by `gas.http`:
+The `http-client.env.json` file defines the non-secret per-environment base URLs used by the collections in `http-client/`:
 
 ```json
 {
   "local": {
-    "base": "http://localhost:3000"
+    "gasUrl": "http://localhost:3102",
+    "brokerUrl": "http://localhost:3012",
+    "backendUrl": "http://localhost:3001",
+    "landGrantsUrl": "http://localhost:3009"
   },
   "dev": {
-    "base": "https://ephemeral-protected.api.dev.cdp-int.defra.cloud/fg-gas-backend"
-  },
-  "test": {
-    "base": "https://ephemeral-protected.api.test.cdp-int.defra.cloud/fg-gas-backend"
-  },
-  "perf-test": {
-    "base": "https://ephemeral-protected.api.perf-test.cdp-int.defra.cloud/fg-gas-backend"
+    "gasUrl": "https://ephemeral-protected.api.dev.cdp-int.defra.cloud/fg-gas-backend",
+    "brokerUrl": "https://ephemeral-protected.api.dev.cdp-int.defra.cloud/grants-config-broker",
+    "backendUrl": "https://ephemeral-protected.api.dev.cdp-int.defra.cloud/grants-ui-backend",
+    "landGrantsUrl": "https://ephemeral-protected.api.dev.cdp-int.defra.cloud/land-grants-api"
   }
 }
 ```
@@ -376,11 +381,17 @@ Create this file locally using the following template:
 {
   "local": {
     "serviceToken": "<local-service-token>",
-    "x-api-key": "local"
+    "x-api-key": "local",
+    "brokerAuthToken": "<local-broker-auth-token>",
+    "landGrantsAuthToken": "<local-land-grants-api-token>",
+    "defraIdToken": "<defra-id-access-token>"
   },
   "dev": {
     "serviceToken": "<dev-service-token>",
-    "x-api-key": "<dev-x-api-key>"
+    "x-api-key": "<dev-x-api-key>",
+    "brokerAuthToken": "<dev-broker-auth-token>",
+    "landGrantsAuthToken": "<dev-land-grants-api-token>",
+    "defraIdToken": "<defra-id-access-token>"
   }
 }
 ```
@@ -393,11 +404,16 @@ Populate the placeholders as follows (do **not** paste real secrets into the rep
   - generate the token using the GAS tooling
   - register it in GAS (for example by adding it to the appropriate collection in GAS MongoDB)
   - use the raw token value here
+- `brokerAuthToken` and `landGrantsAuthToken` -- AES-256-GCM encrypted + base64 bearer tokens for the config broker (`broker.http`) and Land Grants API (`land-grants.http`). These are **not** raw tokens: the backing services expect the same encrypted format the app produces (see `encryptToken` in `src/server/common/helpers/auth/encrypt-token.js`). Generate both with the bundled tool rather than hand-crafting them:
+  - `npm run generate:tokens` -- prints both `brokerAuthToken` and `landGrantsAuthToken` to the console.
+  - `npm run generate:tokens:save` -- writes both values into `http-client.private.env.json` (under the `local` environment by default). To target another environment, run the tool directly and pass `--env`, for example `node ./tools/generate-tokens.js --save --env dev`.
+  - The raw tokens and encryption keys are read from your `.env` file, defaulting to the `compose.grants-ui.yml` / `compose.land-grants.yml` development values (`CONFIG_BROKER_AUTH_TOKEN` / `CONFIG_BROKER_ENCRYPTION_KEY` and `LAND_GRANTS_API_AUTH_TOKEN` / `LAND_GRANTS_API_ENCRYPTION_KEY`) when unset.
+- `defraIdToken` -- a Defra Identity access token for the signed-in user, forwarded via the `x-forwarded-authorization` header
 
 Once `http-client.private.env.json` is created and populated, you can:
 
 1. Select the desired environment (e.g. `local` or `dev`, etc) in your HTTP client.
-2. Use the `Create ...` requests in `gas.http` to define grants in GAS.
+2. Use the `Create ...` requests in `http-client/gas.http` to define grants in GAS.
 3. Use the corresponding `Submit application ...` requests to send example application payloads and verify end-to-end integration.
 
 ### Grant Schema Updates
