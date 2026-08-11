@@ -1,19 +1,6 @@
 import { config } from '~/src/config/config.js'
 
 /**
- * Slug → grant label. The keys double as the scope allowlist (only these grants
- * show the feedback CTA); the values are the exact `grant` query-param strings
- * sent to Qualtrics for segmentation and displayed to the user.
- * @type {Record<string, string>}
- */
-export const SCHEME_LABELS = {
-  'farm-payments': 'Farm Payments',
-  woodland: 'Woodland Management Plan',
-  grasslands: 'Grasslands',
-  'example-grant-with-auth': 'Example Grant with Auth'
-}
-
-/**
  * Query-param names appended to the Qualtrics URL. Kept in one place so a
  * rename (e.g. `journey` → `source`) is a single edit.
  */
@@ -62,16 +49,32 @@ function getAbsoluteUrl(request) {
 }
 
 /**
+ * Resolves the grant label from form metadata, falling back to the
+ * sentence-cased form definition filename.
+ * @param {import('@hapi/hapi').Request} request - Hapi request object
+ * @param {string} slug - Form definition filename without the extension
+ * @returns {string} The grant label
+ */
+function resolveGrantLabel(request, slug) {
+  const surveyLabel = /** @type {any} */ (request)?.app?.model?.def?.metadata?.surveyLabel
+  if (surveyLabel) {
+    return surveyLabel
+  }
+
+  const filename = slug.replaceAll('-', ' ').toLowerCase()
+  return filename.charAt(0).toUpperCase() + filename.slice(1)
+}
+
+/**
  * Builds the Qualtrics feedback survey URL for the current request, with the
- * grant / journey / url params appended. Returns null when the grant is out of
- * scope or no survey URL is configured — callers should hide the CTA in that case.
+ * grant / journey / url params appended. Returns null when no form definition
+ * filename or survey URL is configured — callers should hide the CTA in that case.
  * @param {import('@hapi/hapi').Request} request - Hapi request object
  * @returns {string | null} The survey URL, or null if the CTA should not render
  */
 export function buildFeedbackSurveyUrl(request) {
   const slug = request?.params?.slug
-  const grant = slug ? SCHEME_LABELS[slug] : undefined
-  if (!grant) {
+  if (!slug) {
     return null
   }
 
@@ -79,6 +82,8 @@ export function buildFeedbackSurveyUrl(request) {
   if (!base) {
     return null
   }
+
+  const grant = resolveGrantLabel(request, slug)
 
   const params = new URLSearchParams({
     [SURVEY_PARAMS.grant]: grant,

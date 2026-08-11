@@ -676,10 +676,13 @@ describe('context', () => {
   })
 
   describe('feedbackSurveyUrl in context', () => {
-    test('injects a survey URL for an in-scope grant', async () => {
+    test('injects a survey URL using the form definition survey label', async () => {
       setupManifestSuccess()
 
-      const request = mockGrantRequest({ slug: 'woodland' })
+      const request = {
+        ...mockGrantRequest({ slug: 'woodland' }),
+        app: { model: { def: { metadata: { surveyLabel: 'Woodland Management Plan' } } } }
+      }
 
       const contextImport = await importContext()
       const contextResult = await contextImport.context(request)
@@ -690,7 +693,7 @@ describe('context', () => {
       expect(url.searchParams.get('url')).toBe('https://grants.example/woodland/summary')
     })
 
-    test('is null for an out-of-scope grant', async () => {
+    test('injects a survey URL using the sentence-cased form definition filename when the label is absent', async () => {
       setupManifestSuccess()
 
       const request = mockGrantRequest({ slug: 'some-other-grant' })
@@ -698,7 +701,8 @@ describe('context', () => {
       const contextImport = await importContext()
       const contextResult = await contextImport.context(request)
 
-      expect(contextResult.feedbackSurveyUrl).toBeNull()
+      const url = new URL(contextResult.feedbackSurveyUrl)
+      expect(url.searchParams.get('grant')).toBe('Some other grant')
     })
   })
 
