@@ -41,6 +41,25 @@ Before(async function () {
   this.auditQueue = await createScenarioAuditQueue()
 })
 
+Before({ tags: '@stubParcelMap' }, async function () {
+  await this.context.addInitScript(() => {
+    if (window.customElements.get('parcel-map')) {
+      return
+    }
+
+    window.customElements.define(
+      'parcel-map',
+      class extends window.HTMLElement {
+        clearSelection() {
+          this.dispatchEvent(
+            new CustomEvent('parcel-map:selection', { bubbles: true, detail: { selectedParcels: [] } })
+          )
+        }
+      }
+    )
+  })
+})
+
 After(async function () {
   await this.cleanup()
   if (this.auditQueue) {
