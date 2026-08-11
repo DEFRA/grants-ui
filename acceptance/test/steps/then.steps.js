@@ -52,19 +52,6 @@ Then('(the user )should see task title {string}', async function (text) {
   await expect(this.page.locator("//h2[@id='section-title']")).toHaveText(truncated)
 })
 
-Then('(the user )should see {string} in the selected parcel summary', async function (parcelId) {
-  await expect(this.page.locator('#selected-parcel-reference')).toHaveText(parcelId)
-})
-
-Then('(the user )should not see a selected parcel summary', async function () {
-  await expect(this.page.locator('#selected-parcel-details')).toBeHidden()
-})
-
-Then('(the user )should see the available land parcels total populated', async function () {
-  await expect(this.page.locator('#parcel-map-total-count')).not.toHaveText('–')
-  await expect(this.page.locator('#parcel-map-total-area')).not.toHaveText('–')
-})
-
 Then('(the user )should (still )be (back )at URL {string}', async function (expectedPath) {
   await expect(this.page).toHaveURL(new RegExp(expectedPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
 })
