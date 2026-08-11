@@ -15,6 +15,7 @@ import { mapPlugin } from '~/src/server/common/map/map.plugin.js'
 import { landGrantsActionsPlugin } from '~/src/server/land-grants/land-grants-actions.plugin.js'
 import { mapMockPlugin } from '~/src/server/common/map/map.mock.plugin.js'
 import { isMockData } from '~/src/server/common/map/map.mock.js'
+import { entraIdHome } from './entra-id/index.js'
 
 const cdpEnvironment = config.get('cdpEnvironment')
 
@@ -34,7 +35,7 @@ export const router = {
       await server.register([auth])
 
       // Application specific routes, add your own routes here
-      await server.register([home, agreements, cookies, cannotSubmit, applicationDeleted])
+      await server.register([home, agreements, cookies, cannotSubmit, applicationDeleted, entraIdHome])
 
       await server.register([mapPlugin, landGrantsActionsPlugin])
 

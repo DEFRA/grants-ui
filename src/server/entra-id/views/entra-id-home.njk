@@ -1,0 +1,15 @@
+<h1 class="govuk-heading-xl">{{ heading }}</h1>
+
+<h2 class="govuk-heading-m">Entra ID session details</h2>
+
+{% set summaryRows = [] %}
+{% for key, value in entraId %}
+  {% if key != 'accessToken' and key != 'refreshToken' %}
+    {% set summaryRows = (summaryRows.push({
+      key: { text: key },
+      value: { text: value }
+    }), summaryRows) %}
+  {% endif %}
+{% endfor %}
+
+{{ govukSummaryList({ rows: summaryRows }) }}
