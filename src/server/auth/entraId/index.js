@@ -174,7 +174,10 @@ function entraIdCallbackHandler(sessionCache) {
    * @param {ResponseToolkit} h
    */
   return async (request, h) => {
+    console.log('*** ENTRA CALLBACK HANDLER HIT ***')
+    console.log('query:', request.query)
     const credentials = await request.callback(h)
+    console.log('*** CALLBACK COMPLETED ***', !!credentials)
 
     if (!credentials) {
       throw unauthorized()
