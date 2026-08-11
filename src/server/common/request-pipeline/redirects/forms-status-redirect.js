@@ -687,7 +687,7 @@ async function handlePostSubmissionWithFallback(request, h, context, redirectCon
     )
   } catch (err) {
     return handlePostSubmissionError(
-      err,
+      /** @type {Error & { status?: number }} */ (err),
       request,
       h,
       context,

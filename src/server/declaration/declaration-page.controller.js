@@ -477,7 +477,7 @@ export default class DeclarationPageController extends SummaryPageController {
         log(LogCodes.SUBMISSION.SUBMISSION_REDIRECT, { controller: 'DeclarationController', redirectPath }, request)
         return h.redirect(redirectPath)
       } catch (error) {
-        return this.handlePostError({ h, error, request, context, sbi, crn })
+        return this.handlePostError({ h, error: /** @type {Error} */ (error), request, context, sbi, crn })
       }
     }
   }

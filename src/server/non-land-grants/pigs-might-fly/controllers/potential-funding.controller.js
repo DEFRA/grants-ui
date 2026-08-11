@@ -55,7 +55,7 @@ export class PotentialFundingController extends QuestionPageController {
           reason: 'gas_action_failure',
           grantCode: 'pigs-might-fly',
           action: 'calculate-pig-totals'
-        }).from(error)
+        }).from(/** @type {Error} */ (error))
 
         grantApplicationServiceError.logCode = LogCodes.SYSTEM.GAS_ACTION_ERROR
         throw grantApplicationServiceError

@@ -4,6 +4,7 @@
  * @returns {string} - full unit name
  */
 export function formatAreaUnit(abbrev = '') {
+  /** @type {Record<string, string>} */
   const lookup = {
     sqm: 'square metres',
     m2: 'square metres',

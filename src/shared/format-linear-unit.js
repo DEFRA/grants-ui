@@ -4,6 +4,7 @@
  * @returns {string} - full unit name
  */
 export function formatLinearUnit(abbrev = '') {
+  /** @type {Record<string, string>} */
   const lookup = {
     m: 'metres',
     km: 'kilometres'

@@ -151,10 +151,10 @@ export async function demoDetailsHandler(request, h) {
   } catch (error) {
     debug(LogCodes.CONFIRMATION.CONFIRMATION_ERROR, {
       userId: 'demo',
-      errorMessage: `Demo details route error: ${error.message}`
+      errorMessage: `Demo details route error: ${/** @type {Error} */ (error).message}`
     })
 
-    const fallbackViewModel = generateFallbackViewModel(error)
+    const fallbackViewModel = generateFallbackViewModel(/** @type {Error} */ (error))
     return h.view(CHECK_DETAILS_VIEW, fallbackViewModel)
   }
 }

@@ -204,7 +204,7 @@ export async function probeBackendFormDefinition(config, requestImpl = requestHt
   } catch (error) {
     return {
       ok: false,
-      message: `Backend definition readiness request failed: ${error.message}`
+      message: `Backend definition readiness request failed: ${/** @type {Error} */ (error).message}`
     }
   }
 
