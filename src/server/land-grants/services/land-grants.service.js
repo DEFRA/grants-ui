@@ -185,7 +185,9 @@ export async function fetchGroupedActionsForParcel(parcel, userContext) {
  */
 export async function fetchActionsForParcel(parcel, userContext) {
   return fetchParcelActions(parcel, userContext, 'flat:', parcelsWithActions, (actionsForParcel, enabledActions) =>
-    actionsForParcel.filter((a) => enabledActions.includes(a.code))
+    actionsForParcel
+      .filter((a) => enabledActions.includes(a.code))
+      .sort((a, b) => a.description.localeCompare(b.description))
   )
 }
 
