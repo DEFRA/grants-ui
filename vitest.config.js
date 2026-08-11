@@ -37,6 +37,16 @@ export default {
         '**/dev-tools/journey-runner/runner-engine.js'
       ],
       reportsDirectory: './coverage'
+    },
+    server: {
+      deps: {
+        // @defra/hapi-auth-oidc is plain ESM with no transform needs, so Vitest externalizes it by
+        // default - its own `import 'openid-client'` then resolves via Node's native loader,
+        // bypassing vi.mock('openid-client', ...) entirely. Inlining it routes that import through
+        // Vite's SSR graph instead, where mocks apply. Needed by
+        // src/server/auth/entraId/entra-id-oidc.integration.test.js to stub network discovery.
+        inline: ['@defra/hapi-auth-oidc']
+      }
     }
   },
   resolve: {

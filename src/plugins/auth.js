@@ -308,6 +308,14 @@ function extractFarmDetails(relationships) {
  */
 export function mapPayloadToProfile(request, h) {
   if (request.auth.isAuthenticated) {
+    const { strategy } = request.auth
+
+    // Farm detail extraction relies on Defra ID-specific JWT claims (relationships, contactId, etc.)
+    // which are absent from other providers (e.g. Entra ID). Skip mapping for any other strategy.
+    if (strategy !== 'defra-id' && strategy !== 'session') {
+      return h.continue
+    }
+
     // Get the actual user data, handling both nested and flat structures
     const userData = /** @type {JwtPayload} */ (request.auth.credentials.profile || request.auth.credentials)
 
