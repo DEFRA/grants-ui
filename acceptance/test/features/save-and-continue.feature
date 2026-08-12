@@ -210,7 +210,7 @@ Feature: Save and Continue
             | Project description            | Project description     |
             | Project budget                 | 50000                   |
             | Item                           | You have added 1 answer |
-            | Land parcel                  | {SELECTED PARCEL}             |
+            | Land parcel                    | {SELECTED PARCEL}       |
         When the user continues
 
         # declaration

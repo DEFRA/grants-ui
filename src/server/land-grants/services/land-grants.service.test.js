@@ -173,6 +173,7 @@ describe('land-grants service', () => {
         mockApiEndpoint,
         mockUserContext
       )
+      expect(formatCurrency).toHaveBeenCalledWith(1234)
       expect(result).toEqual({
         payment: { annualTotalPence: 123400 },
         paymentTotal: '£1,234.00',

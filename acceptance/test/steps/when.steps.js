@@ -11,12 +11,27 @@ import selectedParcel from '../utils/selected-parcel-store.js'
 // a parcel. Kept in one place so a rename of the app-side event constant
 // (`EVENT_SELECTION` in src/client/javascripts/parcel-map/config.js) only has
 // to be chased here.
-const dispatchParcelSelection = (page, parcelId) =>
-  page.evaluate((id) => {
-    document
-      .getElementById('parcel-map')
-      .dispatchEvent(new CustomEvent('parcel-map:selection', { bubbles: true, detail: { selectedIds: [id] } }))
+//
+// Dispatching alone proves nothing: the hidden `landParcels` inputs the form
+// actually posts are written by a listener in
+// src/client/javascripts/parcel-map/parcel-select-page.js. If that bundle fails
+// to load the dispatch is a silent no-op, the form posts empty, and the failure
+// surfaces a step or two later as an opaque URL mismatch. So wait for the input
+// the listener writes and fail here instead.
+const dispatchParcelSelection = async (page, parcelId) => {
+  await page.evaluate((id) => {
+    const mapEl = document.getElementById('parcel-map')
+    if (!mapEl) {
+      throw new Error('No #parcel-map element on the page - is this a map page?')
+    }
+    mapEl.dispatchEvent(new CustomEvent('parcel-map:selection', { bubbles: true, detail: { selectedIds: [id] } }))
   }, parcelId)
+
+  await expect(
+    page.locator(`#selected-parcels-inputs input[name="landParcels"][value="${parcelId}"]`),
+    `the parcel-map selection listener did not record parcel ${parcelId} - did the client bundle load?`
+  ).toHaveCount(1)
+}
 
 When('the user selects parcel {string} on the map', async function (parcelId) {
   await this.page.waitForLoadState('domcontentloaded')

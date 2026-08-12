@@ -31,7 +31,12 @@
  * @property {string} agreementEndDate - Agreement end date in ISO format (YYYY-MM-DD)
  * @property {string} frequency - Payment frequency (e.g., "Quarterly", "Annual")
  * @property {number} agreementTotalPence - Total payment amount for entire agreement in pence
- * @property {number} annualTotalPence - Annual payment total in pence
+ * @property {number} annualTotalPence - Annual payment total in pence. Treat as
+ *   authoritative and never re-sum it from the items below: the in-repo fixtures
+ *   disagree on its composition (`src/__test-fixtures__/mock-payment.js` sets it
+ *   to the `parcelItems` sum only, while the agreed contract's payment schedule
+ *   in `src/contracts/v2/land-grants.client.contract.test.js` includes an
+ *   `agreementLevelItemId` line item in the instalments that make it up).
  * @property {object} parcelItems - Parcel-level payment items keyed by ID
  * @property {object} agreementLevelItems - Agreement-level payment items keyed by ID
  * @property {Array<ScheduledPayment>} payments - Scheduled payment breakdown
