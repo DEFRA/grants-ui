@@ -1,6 +1,13 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import RemoveActionPageController from './remove-action-page.controller.js'
 
+// The engine base supplies `getHref`; the shared test mock does not, so stand it
+// in here rather than changing global test infrastructure. Mirrors
+// `PageController.getHref`: prefix the base path, collapse repeated slashes.
+const stubGetHref = (controller) => {
+  controller.getHref = (target) => `/test-grant/${target ?? ''}`.replace(/\/{2,}/g, '/')
+}
+
 describe('RemoveActionPageController', () => {
   let controller
   let mockRequest
@@ -36,13 +43,17 @@ describe('RemoveActionPageController', () => {
   beforeEach(() => {
     const mockModel = { def: { metadata: { tasklist: {} } }, getSection: vi.fn() }
     controller = new RemoveActionPageController(mockModel, {})
+    stubGetHref(controller)
     controller.setState = vi.fn().mockResolvedValue(true)
     controller.proceed = vi.fn().mockReturnValue('redirected')
     controller.performAuthCheck = vi.fn().mockResolvedValue(null)
-    controller.getViewModel = vi.fn().mockReturnValue({
+    // Mirrors the engine: the back link comes from the `getBackLink` hook, so
+    // the controller's override is exercised rather than hand-fed.
+    controller.getViewModel = vi.fn((request, context) => ({
       pageTitle: 'Remove action',
-      serviceUrl: '/test-grant'
-    })
+      serviceUrl: '/test-grant',
+      backLink: controller.getBackLink(request, context)
+    }))
 
     mockRequest = {
       query: {
@@ -529,10 +540,15 @@ describe('RemoveActionPageController', () => {
         getSection: vi.fn()
       }
       const configured = new RemoveActionPageController(model, pageDef)
+      stubGetHref(configured)
       configured.setState = vi.fn().mockResolvedValue(true)
       configured.proceed = vi.fn().mockReturnValue('redirected')
       configured.performAuthCheck = vi.fn().mockResolvedValue(null)
-      configured.getViewModel = vi.fn().mockReturnValue({ pageTitle: 'Remove action', serviceUrl: '/test-grant' })
+      configured.getViewModel = vi.fn((request, context) => ({
+        pageTitle: 'Remove action',
+        serviceUrl: '/test-grant',
+        backLink: configured.getBackLink(request, context)
+      }))
       return configured
     }
 
@@ -579,6 +595,48 @@ describe('RemoveActionPageController', () => {
       const configured = buildConfiguredController('/confirm-land-and-actions')
       mockRequest.query = { parcelId: 'SD6743-8083', action: 'CMOR1' }
       await configured.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+      expect(mockH.view).toHaveBeenCalledWith(
+        'remove-action',
+        expect.objectContaining({
+          backLink: { text: 'Back', href: '/test-grant/confirm-land-and-actions' }
+        })
+      )
+    })
+
+    test.each([[''], ['   '], [null], [undefined], [123], [{}]])(
+      'falls back to the default returnPath for the unusable config value %p',
+      (returnPath) => {
+        expect(buildConfiguredController(returnPath).returnPath).toBe('/check-selected-land-actions')
+      }
+    )
+
+    test('trims a configured returnPath so the href is not malformed', () => {
+      expect(buildConfiguredController('  /confirm-land-and-actions  ').returnPath).toBe('/confirm-land-and-actions')
+    })
+
+    test('normalises a configured returnPath that omits its leading slash', () => {
+      const configured = buildConfiguredController('confirm-land-and-actions')
+
+      expect(configured.getBackLink().href).toBe('/test-grant/confirm-land-and-actions')
+    })
+
+    test('POST removal redirects to configured returnPath when parcels remain', async () => {
+      const configured = buildConfiguredController('/confirm-land-and-actions')
+      mockRequest.query = { parcelId: 'SD6743-8083', action: 'CMOR1' }
+      mockRequest.payload = { remove: 'true' }
+
+      await configured.makePostRouteHandler()(mockRequest, mockContext, mockH)
+
+      expect(configured.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/confirm-land-and-actions')
+    })
+
+    test('POST validation error view Back link points at configured returnPath', async () => {
+      const configured = buildConfiguredController('/confirm-land-and-actions')
+      mockRequest.query = { parcelId: 'SD6743-8083', action: 'CMOR1' }
+      mockRequest.payload = {}
+
+      await configured.makePostRouteHandler()(mockRequest, mockContext, mockH)
+
       expect(mockH.view).toHaveBeenCalledWith(
         'remove-action',
         expect.objectContaining({

@@ -171,9 +171,12 @@ Feature: Save and Continue
         And navigates to "/example-grant-with-auth"
         And logs in as CRN "1100960953"
 
-        # pre-submission resume now lands on the payment summary, which refreshes the calculation before Check answers
+        # Pre-submission resume lands on the payment summary rather than Check
+        # answers, because a GET of this page recalculates the payment. Assert
+        # the recalculated figures actually render before continuing.
         Then the user should be at URL "confirm-land-and-actions"
         And should see heading "Your land and actions"
+        And the user should see a populated land and actions payment summary
         When the user clicks on "Save and continue"
 
         # summary, should return to summary with all previous answers on resumption of completed but unsubmitted journey

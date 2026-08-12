@@ -5,6 +5,7 @@ import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land
 import { calculateLandActionsPayment } from '~/src/server/land-grants/services/land-grants.service.js'
 import { buildConfirmLandAndActionsViewModel } from '~/src/server/land-grants/view-models/confirm-land-and-actions.view-model.js'
 import { withTaskContext } from '~/src/server/task-list/task-list.helper.js'
+import { logUpstreamError } from '~/src/server/common/helpers/logging/upstream-error.js'
 
 const CALCULATION_ERROR_MESSAGE =
   'Unable to get payment information, please try again later or contact the Rural Payments Agency.'
@@ -14,6 +15,9 @@ const CALCULATION_ERROR_MESSAGE =
 // permits FormAction values or an `external-*` pattern, so a bespoke value is
 // rejected with a 400 before reaching this controller.
 const ADD_ANOTHER_ACTION = 'add-another'
+
+const LAND_GRANTS_ENDPOINT = 'Land grants API'
+const LAND_GRANTS_SERVICE = 'land-grants'
 
 /**
  * @param {unknown} value
@@ -77,10 +81,6 @@ export default class ConfirmLandAndActionsPageController extends withTaskContext
 
     this.nextPath = nextPath
     this.addAnotherLandParcelPath = addAnotherLandParcelPath
-
-    if (pageDef.section) {
-      this.section = model.getSection(pageDef.section)
-    }
   }
 
   makeGetRouteHandler() {
@@ -98,7 +98,6 @@ export default class ConfirmLandAndActionsPageController extends withTaskContext
         const { payment, paymentTotal } = await calculateLandActionsPayment(state, userContext)
         const confirmModel = buildConfirmLandAndActionsViewModel(
           payment,
-          paymentTotal,
           /** @type {import('~/src/server/land-grants/types/form-state.d.js').LandParcels} */ (
             /** @type {unknown} */ (state.landParcels)
           )
@@ -122,14 +121,7 @@ export default class ConfirmLandAndActionsPageController extends withTaskContext
           hasCalculationError: false
         })
       } catch (err) {
-        error(
-          LogCodes.SYSTEM.EXTERNAL_API_ERROR,
-          {
-            endpoint: `Land grants API`,
-            errorMessage: `error building land and actions payment summary - ${/** @type {Error} */ (err).message}`
-          },
-          request
-        )
+        this.logCalculationFailure(err, request)
 
         const { payment, totalPence, totalPayment, ...clearedState } = state
         await this.setState(
@@ -142,22 +134,77 @@ export default class ConfirmLandAndActionsPageController extends withTaskContext
         return h.view(viewName, {
           ...this.getViewModel(request, context),
           hasCalculationError: true,
-          errors: [{ text: CALCULATION_ERROR_MESSAGE }]
+          errors: [{ text: CALCULATION_ERROR_MESSAGE }],
+          // A re-GET re-runs the calculation, so the page must offer a way out
+          // rather than dead-ending with only an error summary.
+          retryHref: this.getHref(this.path),
+          selectLandParcelHref: this.getHref(this.addAnotherLandParcelPath)
         })
       }
     }
   }
 
+  /**
+   * Distinguishes a malformed payment response from a genuine upstream failure:
+   * reporting a response we could not render as an API outage sends responders
+   * to the wrong service. Both branches carry the SBI so an alert can be tied
+   * to a business, and the stack, which neither log code carries on its own.
+   * @param {unknown} err
+   * @param {FormRequest} request
+   */
+  logCalculationFailure(err, request) {
+    const sbi = /** @type {{ auth?: { credentials?: { sbi?: string } } }} */ (request).auth?.credentials?.sbi
+    const detail = err instanceof Error ? (err.stack ?? err.message) : String(err)
+
+    if (err instanceof SystemError && err.details?.reason === 'invalid_payment_response') {
+      error(
+        LogCodes.SYSTEM.SERVER_ERROR,
+        { errorMessage: `invalid payment response building land and actions summary for sbi ${sbi} - ${detail}` },
+        request
+      )
+      return
+    }
+
+    logUpstreamError(
+      {
+        endpoint: LAND_GRANTS_ENDPOINT,
+        service: LAND_GRANTS_SERVICE,
+        upstreamStatus: /** @type {{ output?: { statusCode?: number } }} */ (err)?.output?.statusCode,
+        errorMessage: `error building land and actions payment summary for sbi ${sbi} - ${detail}`
+      },
+      request
+    )
+  }
+
   makePostRouteHandler() {
     /**
      * @param {FormRequestPayload} request
-     * @param {FormContext} _context
+     * @param {FormContext} context
      * @param {FormResponseToolkit} h
      */
-    return async (request, _context, h) => {
+    return async (request, context, h) => {
+      // The GET establishes the payment state that Check answers and the GAS
+      // mapper read. If it failed it deliberately cleared that state, so
+      // advancing would submit an application with no payment.
+      if (!context.state?.payment) {
+        return h.redirect(this.getHref(this.path))
+      }
+
       const payload = /** @type {{ action?: string }} */ (request.payload ?? {})
-      const nextPath = payload.action === ADD_ANOTHER_ACTION ? this.addAnotherLandParcelPath : this.nextPath
-      return this.proceed(request, h, nextPath)
+
+      // "Add another land parcel" is lateral navigation back to the parcel
+      // picker, not the journey's next step, so it must not go through
+      // `withTaskContext.proceed`. That override rewrites the destination to the
+      // task-list path whenever the target sits in a different section or is not
+      // a page in the model, which would silently swallow the configured
+      // `redirects.addAnotherLandParcel`.
+      if (payload.action === ADD_ANOTHER_ACTION) {
+        return h.redirect(this.getHref(this.addAnotherLandParcelPath))
+      }
+
+      // The journey's real next step keeps `proceed`, so a completed section
+      // still returns to the task list as configured.
+      return this.proceed(request, h, this.nextPath)
     }
   }
 }

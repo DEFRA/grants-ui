@@ -215,6 +215,87 @@ Then('(the user )should see the text {string}', async function (text) {
   await expect(this.page.locator('main')).toContainText(text)
 })
 
+const CURRENCY_PATTERN = /^£[\d,]+\.\d{2}$/
+const PARCEL_TOTAL_LABEL = 'Total yearly payment for land parcel'
+
+const toPence = (text) => Math.round(Number(String(text).replace(/[£,\s]/g, '')) * 100)
+
+// Deliberately does NOT assert that the application total equals the parcel
+// totals plus the agreement-level rows: `annualTotalPence` is the authoritative
+// figure from the Land Grants API and its composition is not a contract this
+// suite can pin. What is asserted is that every displayed amount is a real
+// currency value and that each parcel total matches the rows it is built from,
+// which is how the view model computes it.
+Then('(the user )should see a populated land and actions payment summary', async function () {
+  const cards = this.page.locator('.govuk-summary-card')
+  const cardCount = await cards.count()
+  expect(cardCount, 'expected at least one summary card').toBeGreaterThan(0)
+
+  let parcelCards = 0
+  let parcelActionRows = 0
+
+  for (let i = 0; i < cardCount; i++) {
+    const card = cards.nth(i)
+    const title = (await card.locator('.govuk-summary-card__title').innerText()).trim()
+    const rows = card.locator('tbody tr')
+    const rowCount = await rows.count()
+    expect(rowCount, `card "${title}" rendered no rows`).toBeGreaterThan(0)
+
+    const isParcelCard = title.startsWith('Land parcel')
+    const amountIndex = isParcelCard ? 2 : 1
+    let actionSumPence = 0
+    let parcelTotalPence = null
+
+    for (let row = 0; row < rowCount; row++) {
+      const cells = rows.nth(row).locator('th, td')
+      const label = (await cells.nth(0).innerText()).trim()
+      const amount = (await cells.nth(amountIndex).innerText()).trim()
+
+      expect(amount, `card "${title}" row "${label}" has no payment value`).toMatch(CURRENCY_PATTERN)
+
+      if (label === PARCEL_TOTAL_LABEL) {
+        parcelTotalPence = toPence(amount)
+      } else if (isParcelCard) {
+        actionSumPence += toPence(amount)
+        parcelActionRows += 1
+      }
+    }
+
+    if (isParcelCard) {
+      parcelCards += 1
+      expect(parcelTotalPence, `card "${title}" has no total row`).not.toBeNull()
+      expect(parcelTotalPence, `card "${title}" total does not match its action rows`).toEqual(actionSumPence)
+    }
+  }
+
+  // Counted from parcel cards only: an agreement-level row must never stand in
+  // for a priced land action, or a summary showing no parcel actions at all
+  // would pass.
+  expect(parcelCards, 'no land parcel cards were rendered').toBeGreaterThan(0)
+  expect(parcelActionRows, 'no priced land action rows were rendered').toBeGreaterThan(0)
+
+  const applicationTotalRow = this.page.locator('.govuk-summary-list__row', {
+    hasText: 'Total yearly payment for application'
+  })
+  const applicationTotal = (await applicationTotalRow.locator('.govuk-summary-list__value').innerText()).trim()
+  expect(applicationTotal, 'application total is not a currency value').toMatch(CURRENCY_PATTERN)
+  expect(toPence(applicationTotal), 'application total is zero').toBeGreaterThan(0)
+})
+
+Then('(the user )should see {int} land parcel card(s)', async function (expected) {
+  const titles = this.page.locator('.govuk-summary-card__title')
+  const count = await titles.count()
+  let parcelCards = 0
+
+  for (let i = 0; i < count; i++) {
+    if ((await titles.nth(i).innerText()).trim().startsWith('Land parcel')) {
+      parcelCards += 1
+    }
+  }
+
+  expect(parcelCards).toEqual(expected)
+})
+
 Then('(the user )should see a notification banner', async function () {
   await expect(this.page.locator('div.govuk-notification-banner')).toBeVisible()
 })

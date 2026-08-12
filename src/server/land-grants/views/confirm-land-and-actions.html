@@ -41,9 +41,9 @@
               ]) %}
             {% endfor %}
             {% set _ = rows.push([
-              { html: '<strong>Total yearly payment for land parcel</strong>' },
+              { text: "Total yearly payment for land parcel", classes: "govuk-!-font-weight-bold" },
               { text: "" },
-              { html: '<strong>' + parcel.yearlyPayment + '</strong>', format: "numeric" },
+              { text: parcel.yearlyPayment, format: "numeric", classes: "govuk-!-font-weight-bold" },
               { text: "" }
             ]) %}
 
@@ -60,6 +60,7 @@
               {{ govukTable({
                 caption: "Actions selected for " + parcel.title,
                 captionClasses: "govuk-visually-hidden",
+                firstCellIsHeader: true,
                 head: [
                   { text: "Action", classes: "govuk-!-width-one-half" },
                   { text: "Area" },
@@ -71,6 +72,34 @@
               }) }}
             {% endcall %}
           {% endfor %}
+
+          {% if additionalYearlyPayments | length %}
+            {% set additionalRows = [] %}
+            {% for additionalPayment in additionalYearlyPayments %}
+              {% set _ = additionalRows.push([
+                { text: additionalPayment.action },
+                { text: additionalPayment.yearlyPayment, format: "numeric" }
+              ]) %}
+            {% endfor %}
+
+            {% call summaryCard({
+              title: {
+                text: "Additional yearly payments"
+              }
+            }) %}
+              {{ govukTable({
+                caption: "Additional payments per agreement per year",
+                captionClasses: "govuk-visually-hidden",
+                firstCellIsHeader: true,
+                head: [
+                  { text: "Action", classes: "govuk-!-width-one-half" },
+                  { text: "Yearly payment", format: "numeric" }
+                ],
+                rows: additionalRows,
+                classes: "govuk-table--no-bottom-border govuk-!-margin-bottom-0"
+              }) }}
+            {% endcall %}
+          {% endif %}
 
           <dl class="govuk-summary-list govuk-!-margin-top-6">
             <div class="govuk-summary-list__row">
@@ -97,6 +126,15 @@
               }) }}
             </div>
           </form>
+        {% else %}
+          <div class="govuk-button-group">
+            {{ govukButton({
+              text: "Try again",
+              href: retryHref,
+              preventDoubleClick: true
+            }) }}
+            <a class="govuk-link" href="{{ selectLandParcelHref }}">Change your land parcels</a>
+          </div>
         {% endif %}
       </div>
     </div>

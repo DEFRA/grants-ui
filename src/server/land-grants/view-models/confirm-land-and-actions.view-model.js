@@ -1,7 +1,13 @@
 import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
-import { stringifyParcel } from '~/src/shared/format-parcel.js'
 import { formatPrice } from '~/src/server/common/utils/payment.js'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
+import { stringifyParcel } from '~/src/shared/format-parcel.js'
+import {
+  changeActionsHref,
+  landParcelTitle,
+  removeActionHref,
+  removeParcelHref
+} from '~/src/server/land-grants/view-models/land-parcel-links.js'
 
 const SOURCE = 'buildConfirmLandAndActionsViewModel'
 const REASON = 'invalid_payment_response'
@@ -27,56 +33,64 @@ const isNonNegativeInteger = (value) => Number.isInteger(value) && /** @type {nu
 const isNonEmptyString = (value) => typeof value === 'string' && value.trim() !== ''
 
 /**
- * @param {string[]} a
- * @param {string[]} b
- * @returns {boolean}
+ * Renders the quantity/unit pair without emitting "undefined" when the API
+ * omits either half.
+ * @param {unknown} quantity
+ * @param {unknown} unit
+ * @returns {string}
  */
-function sameSet(a, b) {
-  if (a.length !== b.length) {
-    return false
-  }
-  const setB = new Set(b)
-  return a.every((value) => setB.has(value))
-}
+const formatArea = (quantity, unit) =>
+  [quantity, unit].filter((part) => part !== undefined && part !== null && part !== '').join(' ')
 
 /**
  * Builds the presentation model for the generic "Your land and actions"
  * payment-summary page. Performs presentation grouping only: it never looks up
  * rates, multiplies quantities, rounds, or computes the application total. The
- * application total always comes from the API-derived `paymentTotal`.
+ * application total always comes from the API's `annualTotalPence`.
+ *
+ * The response is rendered as received. Agreement-level items are shown in
+ * their own section because they contribute to `annualTotalPence` without
+ * belonging to any single parcel, and a selected action or parcel that the API
+ * prices at agreement level (or does not price at all) is a normal response
+ * rather than an error - see `src/contracts/v2/land-grants.client.contract.test.js`.
  *
  * @param {PaymentCalculation} payment - Raw payment calculation from the API
- * @param {string} paymentTotal - Formatted application total (API annualTotalPence)
- * @param {LandParcels} landParcels - Current state land parcels
+ * @param {LandParcels} [landParcels] - Current state land parcels, used only to order the cards
  * @returns {ConfirmLandAndActionsViewModel}
- * @throws {SystemError} when the response or state fails validation
+ * @throws {SystemError} when a rendered money field or parcel identifier is malformed
  */
-export function buildConfirmLandAndActionsViewModel(payment, paymentTotal, landParcels) {
+export function buildConfirmLandAndActionsViewModel(payment, landParcels) {
   if (!isNonNegativeInteger(payment?.annualTotalPence)) {
     throw invalidResponse('payment.annualTotalPence must be a non-negative integer')
   }
-  if (!isNonEmptyString(paymentTotal)) {
-    throw invalidResponse('paymentTotal must be a non-empty string')
-  }
-  if (!landParcels || typeof landParcels !== 'object' || Object.keys(landParcels).length === 0) {
-    throw invalidResponse('landParcels must be a non-empty object')
-  }
-  const parcelItems = Object.values(payment.parcelItems ?? {})
-  if (parcelItems.length === 0) {
-    throw invalidResponse('payment.parcelItems must contain at least one item')
-  }
 
-  /** @type {Map<string, { parcelId: string, title: string, removeHref: string, actions: object[], totalPence: number, codes: string[] }>} */
+  /** @type {Map<string, { title: string, removeHref: string, actions: ConfirmLandAndActionsActionViewModel[], totalPence: number }>} */
   const parcels = new Map()
 
-  for (const item of parcelItems) {
+  // Seed the map in selection order so the cards match the order the user
+  // picked the parcels on the earlier pages. `payment.parcelItems` is keyed by
+  // integer-like ids, which JS iterates in ascending numeric order, so relying
+  // on it alone would order the page by upstream item numbering instead.
+  for (const parcelKey of Object.keys(landParcels ?? {})) {
+    const [sheetId, parcelId] = parcelKey.split('-')
+    if (isNonEmptyString(sheetId) && isNonEmptyString(parcelId)) {
+      parcels.set(parcelKey, {
+        title: landParcelTitle(sheetId, parcelId),
+        removeHref: removeParcelHref(sheetId, parcelId),
+        actions: [],
+        totalPence: 0
+      })
+    }
+  }
+
+  for (const item of Object.values(payment.parcelItems ?? {})) {
     const { code, sheetId, parcelId, annualPaymentPence, description, quantity, unit } = item
 
-    if (!isNonNegativeInteger(annualPaymentPence)) {
-      throw invalidResponse(`annualPaymentPence must be a non-negative integer for action "${code}"`)
-    }
     if (!isNonEmptyString(code) || !isNonEmptyString(sheetId) || !isNonEmptyString(parcelId)) {
       throw invalidResponse('parcel item requires non-empty code, sheetId and parcelId')
+    }
+    if (!isNonNegativeInteger(annualPaymentPence)) {
+      throw invalidResponse(`annualPaymentPence must be a non-negative integer for action "${code}"`)
     }
 
     const parcelKey = stringifyParcel({ sheetId, parcelId })
@@ -84,76 +98,85 @@ export function buildConfirmLandAndActionsViewModel(payment, paymentTotal, landP
     let parcel = parcels.get(parcelKey)
     if (!parcel) {
       parcel = {
-        parcelId: parcelKey,
-        title: `Land parcel ${sheetId} ${parcelId}`,
-        removeHref: `remove-parcel?parcelId=${parcelKey}`,
+        title: landParcelTitle(sheetId, parcelId),
+        removeHref: removeParcelHref(sheetId, parcelId),
         actions: [],
-        totalPence: 0,
-        codes: []
+        totalPence: 0
       }
       parcels.set(parcelKey, parcel)
     }
 
     parcel.actions.push({
-      action: landActionWithCode(description, code),
-      area: `${quantity} ${unit}`,
+      action: isNonEmptyString(description) ? landActionWithCode(description, code) : code,
+      area: formatArea(quantity, unit),
       yearlyPayment: formatPrice(annualPaymentPence),
-      changeHref: `select-actions-for-land-parcel?parcelId=${parcelKey}`,
-      removeHref: `remove-action?parcelId=${parcelKey}&action=${code}`
+      changeHref: changeActionsHref(sheetId, parcelId),
+      removeHref: removeActionHref(sheetId, parcelId, code)
     })
     parcel.totalPence += annualPaymentPence
-    parcel.codes.push(code)
   }
 
-  const responseParcelKeys = [...parcels.keys()]
-  const stateParcelKeys = Object.keys(landParcels)
-  if (!sameSet(responseParcelKeys, stateParcelKeys)) {
-    throw invalidResponse('response parcels do not match selected land parcels')
-  }
+  /** @type {ConfirmLandAndActionsAdditionalPaymentViewModel[]} */
+  const additionalYearlyPayments = Object.values(payment.agreementLevelItems ?? {}).map((item) => {
+    const { code, description, annualPaymentPence } = item
 
-  for (const [parcelKey, parcel] of parcels) {
-    const expectedCodes = Object.keys(landParcels[parcelKey].actionsObj ?? {})
-    if (new Set(parcel.codes).size !== parcel.codes.length) {
-      throw invalidResponse(`duplicate action returned for parcel "${parcelKey}"`)
+    if (!isNonEmptyString(code)) {
+      throw invalidResponse('agreement level item requires a non-empty code')
     }
-    if (!sameSet(parcel.codes, expectedCodes)) {
-      throw invalidResponse(`response actions do not match selected actions for parcel "${parcelKey}"`)
+    if (!isNonNegativeInteger(annualPaymentPence)) {
+      throw invalidResponse(`annualPaymentPence must be a non-negative integer for action "${code}"`)
     }
-  }
+
+    return {
+      action: isNonEmptyString(description) ? landActionWithCode(description, code) : code,
+      yearlyPayment: formatPrice(annualPaymentPence)
+    }
+  })
 
   return {
-    parcels: [...parcels.values()].map(({ parcelId, title, removeHref, actions, totalPence }) => ({
-      parcelId,
-      title,
-      removeHref,
-      actions,
-      yearlyPayment: formatPrice(totalPence)
-    })),
-    applicationYearlyPayment: paymentTotal
+    // Only parcels the API actually priced get a card; a parcel selected with no
+    // actions yet is a valid state (the pre-submission gate allows it) and must
+    // not blank the whole page.
+    parcels: [...parcels.values()]
+      .filter((parcel) => parcel.actions.length > 0)
+      .map(({ title, removeHref, actions, totalPence }) => ({
+        title,
+        removeHref,
+        actions,
+        yearlyPayment: formatPrice(totalPence)
+      })),
+    additionalYearlyPayments,
+    applicationYearlyPayment: formatPrice(payment.annualTotalPence)
   }
 }
 
 /**
  * @typedef {object} ConfirmLandAndActionsActionViewModel
  * @property {string} action - Action description with code
- * @property {string} area - Formatted area (quantity + unit)
- * @property {string} yearlyPayment - Formatted action yearly payment
- * @property {string} changeHref - Change link href
- * @property {string} removeHref - Remove link href
+ * @property {string} area - Quantity and unit
+ * @property {string} yearlyPayment - Formatted yearly payment
+ * @property {string} changeHref - Link to change the parcel's actions
+ * @property {string} removeHref - Link to remove this action
+ */
+
+/**
+ * @typedef {object} ConfirmLandAndActionsAdditionalPaymentViewModel
+ * @property {string} action - Action description with code
+ * @property {string} yearlyPayment - Formatted yearly payment
  */
 
 /**
  * @typedef {object} ConfirmLandAndActionsParcelViewModel
- * @property {string} parcelId - State parcel key (sheetId-parcelId)
- * @property {string} title - Card title
- * @property {string} removeHref - Remove parcel link href
+ * @property {string} title - Land parcel card title
+ * @property {string} removeHref - Link to remove the whole parcel
  * @property {ConfirmLandAndActionsActionViewModel[]} actions - Action rows
- * @property {string} yearlyPayment - Formatted parcel yearly total
+ * @property {string} yearlyPayment - Formatted parcel total
  */
 
 /**
  * @typedef {object} ConfirmLandAndActionsViewModel
  * @property {ConfirmLandAndActionsParcelViewModel[]} parcels - Parcel cards
+ * @property {ConfirmLandAndActionsAdditionalPaymentViewModel[]} additionalYearlyPayments - Agreement-level payment rows
  * @property {string} applicationYearlyPayment - Formatted application yearly total
  */
 

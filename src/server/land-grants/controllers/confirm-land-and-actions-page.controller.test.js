@@ -2,9 +2,14 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import ConfirmLandAndActionsPageController from './confirm-land-and-actions-page.controller.js'
 import { calculateLandActionsPayment } from '~/src/server/land-grants/services/land-grants.service.js'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
+import { logUpstreamError } from '~/src/server/common/helpers/logging/upstream-error.js'
 
 vi.mock('~/src/server/land-grants/services/land-grants.service.js', () => ({
   calculateLandActionsPayment: vi.fn()
+}))
+
+vi.mock('~/src/server/common/helpers/logging/upstream-error.js', () => ({
+  logUpstreamError: vi.fn()
 }))
 
 const landParcels = {
@@ -56,6 +61,15 @@ const payment = {
 
 const paymentResult = { payment, paymentTotal: '£1,234.00', errorMessage: undefined }
 
+// The engine base supplies `path` and `getHref`; the shared test mock does not,
+// so stand them in here rather than changing global test infrastructure.
+// `getHref` mirrors `PageController.getHref`: prefix the base path, collapse
+// repeated slashes.
+const stubEngineHrefs = (controller, path) => {
+  controller.path = path
+  controller.getHref = (target) => `/test-grant/${target ?? ''}`.replace(/\/{2,}/g, '/')
+}
+
 function buildController(config = { redirects: { next: '/summary', addAnotherLandParcel: '/select-land-parcel' } }) {
   const pageDef = { path: '/confirm-land-and-actions' }
   const model = {
@@ -66,6 +80,7 @@ function buildController(config = { redirects: { next: '/summary', addAnotherLan
   controller.setState = vi.fn().mockResolvedValue(true)
   controller.proceed = vi.fn().mockReturnValue('redirected')
   controller.getViewModel = vi.fn().mockReturnValue({ pageTitle: 'Your land and actions' })
+  stubEngineHrefs(controller, pageDef.path)
   return controller
 }
 
@@ -80,8 +95,8 @@ describe('ConfirmLandAndActionsPageController', () => {
       payload: {},
       auth: { isAuthenticated: true, credentials: { token: 'defra-id-token', sbi: '106284736' } }
     }
-    mockContext = { state: { landParcels } }
-    mockH = { view: vi.fn().mockReturnValue('rendered view') }
+    mockContext = { state: { landParcels, payment } }
+    mockH = { view: vi.fn().mockReturnValue('rendered view'), redirect: vi.fn().mockReturnValue('redirected away') }
   })
 
   afterEach(() => {
@@ -132,6 +147,7 @@ describe('ConfirmLandAndActionsPageController', () => {
     test('persists raw payment, totalPence and totalPayment only after validation', async () => {
       calculateLandActionsPayment.mockResolvedValueOnce(paymentResult)
       const controller = buildController()
+      mockContext.state = { landParcels }
 
       await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
 
@@ -142,6 +158,21 @@ describe('ConfirmLandAndActionsPageController', () => {
         totalPence: 123400,
         totalPayment: '£1,234.00'
       })
+    })
+
+    test('renders agreement-level items alongside the parcel cards', async () => {
+      const withAgreementLevel = {
+        ...payment,
+        agreementLevelItems: { 1: { code: 'CMOR1', description: 'Assess moorland', annualPaymentPence: 27200 } }
+      }
+      calculateLandActionsPayment.mockResolvedValueOnce({ payment: withAgreementLevel, paymentTotal: '£1,234.00' })
+      const controller = buildController()
+
+      await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+
+      const model = mockH.view.mock.calls[0][1]
+      expect(model.hasCalculationError).toBe(false)
+      expect(model.additionalYearlyPayments).toEqual([{ action: 'Assess moorland: CMOR1', yearlyPayment: '£272.00' }])
     })
 
     test('clears prior payment data and renders error when service fails', async () => {
@@ -161,22 +192,48 @@ describe('ConfirmLandAndActionsPageController', () => {
       expect(model.applicationYearlyPayment).toBeUndefined()
     })
 
-    test('clears prior payment data and renders error when model validation fails', async () => {
-      // Response omits CD9999-1111 selected in state -> validation fails.
-      const badPayment = {
-        annualTotalPence: 30000,
-        parcelItems: { 1: payment.parcelItems[1], 2: payment.parcelItems[2] }
-      }
-      calculateLandActionsPayment.mockResolvedValueOnce({ payment: badPayment, paymentTotal: '£300.00' })
+    test('reports a genuine service failure as an upstream error', async () => {
+      calculateLandActionsPayment.mockRejectedValueOnce(new Error('boom'))
+      const controller = buildController()
+
+      await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+
+      expect(logUpstreamError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          endpoint: 'Land grants API',
+          service: 'land-grants',
+          errorMessage: expect.stringContaining('for sbi 106284736')
+        }),
+        mockRequest
+      )
+    })
+
+    test('does not report a malformed response as an upstream API outage', async () => {
+      calculateLandActionsPayment.mockResolvedValueOnce({
+        payment: { annualTotalPence: -1, parcelItems: {} },
+        paymentTotal: '£0.00'
+      })
       const controller = buildController()
       mockContext.state = { landParcels, payment: { annualTotalPence: 999 }, totalPence: 999, totalPayment: '£9.99' }
 
       await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
 
+      expect(logUpstreamError).not.toHaveBeenCalled()
       expect(controller.setState).toHaveBeenCalledWith(mockRequest, { landParcels })
       const model = mockH.view.mock.calls[0][1]
       expect(model.hasCalculationError).toBe(true)
       expect(model.parcels).toBeUndefined()
+    })
+
+    test('offers a way out of the error state instead of dead-ending', async () => {
+      calculateLandActionsPayment.mockRejectedValueOnce(new Error('boom'))
+      const controller = buildController()
+
+      await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+
+      const model = mockH.view.mock.calls[0][1]
+      expect(model.retryHref).toBe('/test-grant/confirm-land-and-actions')
+      expect(model.selectLandParcelHref).toBe('/test-grant/select-land-parcel')
     })
   })
 
@@ -191,13 +248,18 @@ describe('ConfirmLandAndActionsPageController', () => {
       expect(calculateLandActionsPayment).not.toHaveBeenCalled()
     })
 
-    test('addAnotherLandParcel proceeds to configured addAnotherLandParcel', async () => {
+    test('add-another redirects straight to the configured parcel picker', async () => {
+      // Must not go through `proceed`: `withTaskContext.proceed` rewrites the
+      // destination to the task-list path when the target is in another section
+      // or absent from the model, which would swallow the configured redirect.
       const controller = buildController()
       mockRequest.payload = { action: 'add-another' }
 
-      await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
+      const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
 
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/select-land-parcel')
+      expect(controller.proceed).not.toHaveBeenCalled()
+      expect(mockH.redirect).toHaveBeenCalledWith('/test-grant/select-land-parcel')
+      expect(result).toBe('redirected away')
     })
 
     test('missing or unknown action defaults to next', async () => {
@@ -219,6 +281,18 @@ describe('ConfirmLandAndActionsPageController', () => {
       await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
 
       expect(controller.setState).not.toHaveBeenCalled()
+    })
+
+    test('refuses to advance when the calculation left no payment in state', async () => {
+      const controller = buildController()
+      mockContext.state = { landParcels }
+      mockRequest.payload = { action: 'continue' }
+
+      const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
+
+      expect(controller.proceed).not.toHaveBeenCalled()
+      expect(mockH.redirect).toHaveBeenCalledWith('/test-grant/confirm-land-and-actions')
+      expect(result).toBe('redirected away')
     })
   })
 })

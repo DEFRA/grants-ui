@@ -22,17 +22,20 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
   constructor(model, pageDef) {
     super(model, pageDef)
     const returnPath = model?.def?.metadata?.pageConfig?.[pageDef?.path]?.returnPath
-    this.returnPath = isNonEmptyString(returnPath) ? returnPath : defaultReturnPath
+    this.returnPath = isNonEmptyString(returnPath) ? returnPath.trim() : defaultReturnPath
   }
 
   /**
    * Direct-only utility page: force the Back link to the configured return
    * destination instead of inheriting a link based on YAML page order.
-   * @param {object} viewModel
+   *
+   * Overrides the engine hook that `getViewModel` calls, so every render path
+   * gets the forced link and it is normalised by the same `getHref` the
+   * redirect uses - the two cannot disagree.
    * @returns {{ text: string, href: string }}
    */
-  buildBackLink(viewModel) {
-    return { text: 'Back', href: `${viewModel.serviceUrl}${this.returnPath}` }
+  getBackLink() {
+    return { text: 'Back', href: this.getHref(this.returnPath) }
   }
 
   resolveParcelIds(request) {
@@ -94,10 +97,8 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
    * @returns {object} - Error view response
    */
   renderPostErrorView(h, request, context, errorMessage, parcelId, pageHeadingAndHint) {
-    const viewModel = this.getViewModel(request, context)
     return h.view(this.viewName, {
-      ...viewModel,
-      backLink: this.buildBackLink(viewModel),
+      ...this.getViewModel(request, context),
       parcelId,
       ...pageHeadingAndHint,
       errors: errorMessage
@@ -131,10 +132,8 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
    * @returns {object} - Complete view model
    */
   buildGetViewModel(request, context, parcelId, pageHeading, hint) {
-    const viewModel = this.getViewModel(request, context)
     return {
-      ...viewModel,
-      backLink: this.buildBackLink(viewModel),
+      ...this.getViewModel(request, context),
       parcelId,
       pageHeading,
       hint

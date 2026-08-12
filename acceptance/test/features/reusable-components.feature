@@ -209,6 +209,8 @@ Feature: Reusable Components
         Then the user should be at URL "select-land-parcel"
         And should see heading "Select a land parcel"
         And the page is analyzed for accessibility
+        # Pinned deliberately: this scenario asserts the parcel reference in the
+        # check-answers and print tables below, which need a stable value.
         When the user selects parcel "SD6351-8781" on the map
         And continues
 
@@ -228,8 +230,22 @@ Feature: Reusable Components
         And the user should see the text "Yearly payment"
         And the user should see the text "Total yearly payment for land parcel"
         And the user should see the text "Total yearly payment for application"
+        And the user should see a populated land and actions payment summary
+        And the user should see 1 land parcel card
         And the user should see button "Save and continue"
         And the user should see button "Add another land parcel"
+
+        # "Add another land parcel" must route to the parcel picker rather than
+        # the task list. It does not add a parcel here - the same parcel is still
+        # selected - so the card count is asserted as unchanged on return.
+        When the user clicks on "Add another land parcel"
+        Then the user should be at URL "select-land-parcel"
+        When the user continues
+        Then the user should be at URL "select-actions-for-land-parcel"
+        When the user continues
+        Then the user should be at URL "confirm-land-and-actions"
+        And the user should see a populated land and actions payment summary
+        And the user should see 1 land parcel card
         When the user clicks on "Save and continue"
 
         # summary

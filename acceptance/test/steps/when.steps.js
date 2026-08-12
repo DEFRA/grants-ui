@@ -7,14 +7,20 @@ import DatePartsField from '../page-objects/date-parts.field.js'
 import MonthYearField from '../page-objects/month-year.field.js'
 import selectedParcel from '../utils/selected-parcel-store.js'
 
-When('the user selects parcel {string} on the map', async function (parcelId) {
-  await this.page.waitForLoadState('domcontentloaded')
-  // mimic the CustomEvent the parcel-map web component fires when a user clicks a parcel
-  await this.page.evaluate((id) => {
+// Mimics the CustomEvent the parcel-map web component fires when a user clicks
+// a parcel. Kept in one place so a rename of the app-side event constant
+// (`EVENT_SELECTION` in src/client/javascripts/parcel-map/config.js) only has
+// to be chased here.
+const dispatchParcelSelection = (page, parcelId) =>
+  page.evaluate((id) => {
     document
       .getElementById('parcel-map')
       .dispatchEvent(new CustomEvent('parcel-map:selection', { bubbles: true, detail: { selectedIds: [id] } }))
   }, parcelId)
+
+When('the user selects parcel {string} on the map', async function (parcelId) {
+  await this.page.waitForLoadState('domcontentloaded')
+  await dispatchParcelSelection(this.page, parcelId)
 })
 
 When('(the user )selects the first available land parcel on the map', async function () {
@@ -38,12 +44,12 @@ When('(the user )selects the first available land parcel on the map', async func
     }
     return String(first.id ?? first.properties.id)
   })
+
+  await dispatchParcelSelection(this.page, parcelId)
+  // Recorded only after the selection actually reached the page, so a failed
+  // dispatch cannot leave a stale parcel behind for the {SELECTED PARCEL}
+  // placeholder.
   selectedParcel.current = parcelId
-  await this.page.evaluate((id) => {
-    document
-      .getElementById('parcel-map')
-      .dispatchEvent(new CustomEvent('parcel-map:selection', { bubbles: true, detail: { selectedIds: [id] } }))
-  }, parcelId)
 })
 
 When('(the user )clicks on {string}', async function (text) {
