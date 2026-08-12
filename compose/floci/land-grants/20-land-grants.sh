@@ -40,6 +40,7 @@ aws $ENDPOINT sqs set-queue-attributes \
 aws $ENDPOINT sns subscribe \
   --topic-arn "$TOPIC_ARN" \
   --protocol sqs \
+  --attributes RawMessageDelivery=true \
   --notification-endpoint "$QUEUE_ARN"
 
 echo "Subscribed $QUEUE_ARN to $TOPIC_ARN"

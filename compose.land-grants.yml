@@ -66,6 +66,8 @@ services:
     ports:
       - 3009:3009
     depends_on:
+      grants-config-broker:
+        condition: service_healthy
       land-grants-backend-postgres:
         condition: service_healthy
       floci:
