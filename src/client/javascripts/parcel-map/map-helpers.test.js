@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import {
   COMPOUND_ID_EXPR,
+  LABEL_TEXT_EXPR,
   buildParcelLayers,
   getMapStyle,
   withParcelHitTolerance,
@@ -31,6 +32,29 @@ describe('buildParcelLayers', () => {
   it('omits source-layer when not provided (geojson source)', () => {
     const layers = buildParcelLayers(['match', COMPOUND_ID_EXPR], undefined)
     expect(layers.fill).not.toHaveProperty('source-layer')
+  })
+
+  it('labels parcels with the compound id reformatted as a space-separated reference', () => {
+    const layers = buildParcelLayers(['match', COMPOUND_ID_EXPR], undefined)
+    expect(layers.label.layout['text-field']).toBe(LABEL_TEXT_EXPR)
+    // Replaces the single dash in "SHEET-PARCEL" with a space via id alone,
+    // falling back to the raw id if there is no dash.
+    expect(LABEL_TEXT_EXPR).toEqual([
+      'let',
+      'dash',
+      ['index-of', '-', ['get', 'id']],
+      [
+        'case',
+        ['>=', ['var', 'dash'], 0],
+        [
+          'concat',
+          ['slice', ['get', 'id'], 0, ['var', 'dash']],
+          ' ',
+          ['slice', ['get', 'id'], ['+', ['var', 'dash'], 1]]
+        ],
+        ['get', 'id']
+      ]
+    ])
   })
 })
 

@@ -6,7 +6,7 @@ import {
   fetchParcels,
   validateApplication
 } from '~/src/server/land-grants/services/land-grants.service.js'
-import { parseLandParcel, stringifyParcel } from '~/src/shared/format-parcel.js'
+import { formatParcelReference, parseLandParcel, stringifyParcel } from '~/src/shared/format-parcel.js'
 import SelectGroupedActionsPageController from './select-grouped-actions-page.controller.js'
 import { error, log } from '~/src/server/common/helpers/logging/log.js'
 
@@ -166,6 +166,10 @@ describe('SelectGroupedActionsPageController', () => {
 
     parseLandParcel.mockReturnValue(['sheet1', 'parcel1'])
     stringifyParcel.mockImplementation(({ sheetId, parcelId }) => `${sheetId}-${parcelId}`)
+    formatParcelReference.mockImplementation((parcel) => {
+      const [sheetId, parcelId] = typeof parcel === 'string' ? parcel.split('-') : [parcel.sheetId, parcel.parcelId]
+      return [sheetId, parcelId].filter((part) => part != null && part !== '').join(' ')
+    })
     fetchGroupedActionsForParcel.mockResolvedValue({
       actions: mockGroupedActions,
       parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }

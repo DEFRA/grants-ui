@@ -6,7 +6,7 @@ import {
   fetchParcels,
   validateApplication
 } from '~/src/server/land-grants/services/land-grants.service.js'
-import { parseLandParcel } from '~/src/shared/format-parcel.js'
+import { formatParcelReference, parseLandParcel } from '~/src/shared/format-parcel.js'
 import SelectActionsBasePageController from './select-actions-base-page.controller.js'
 
 vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () => ({
@@ -132,6 +132,10 @@ describe('SelectActionsBasePageController', () => {
     mockH = { view: vi.fn().mockReturnValue('rendered view'), redirect: vi.fn() }
 
     parseLandParcel.mockReturnValue(['sheet1', 'parcel1'])
+    formatParcelReference.mockImplementation((parcel) => {
+      const [sheetId, parcelId] = typeof parcel === 'string' ? parcel.split('-') : [parcel.sheetId, parcel.parcelId]
+      return [sheetId, parcelId].filter((part) => part != null && part !== '').join(' ')
+    })
     fetchGroupedActionsForParcel.mockResolvedValue({
       actions: mockGroupedActions,
       parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }

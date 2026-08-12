@@ -1,4 +1,4 @@
-import { isValidCompoundParcelId, parseLandParcel, stringifyParcel } from './format-parcel.js'
+import { formatParcelReference, isValidCompoundParcelId, parseLandParcel, stringifyParcel } from './format-parcel.js'
 
 describe('format-parcel', () => {
   describe('isValidCompoundParcelId', () => {
@@ -63,6 +63,22 @@ describe('format-parcel', () => {
     it('should handle numeric values', () => {
       const result = stringifyParcel({ parcelId: 789, sheetId: 123 })
       expect(result).toBe('123-789')
+    })
+  })
+
+  describe('formatParcelReference', () => {
+    it('should format a parcel identifier object as a space-separated reference', () => {
+      expect(formatParcelReference({ sheetId: 'SD7946', parcelId: '0155' })).toBe('SD7946 0155')
+    })
+
+    it('should format a compound id string as a space-separated reference', () => {
+      expect(formatParcelReference('SD7946-0155')).toBe('SD7946 0155')
+    })
+
+    it('should omit empty or missing parts rather than render blanks', () => {
+      expect(formatParcelReference({ sheetId: 'SD7946', parcelId: '' })).toBe('SD7946')
+      expect(formatParcelReference({ sheetId: undefined, parcelId: undefined })).toBe('')
+      expect(formatParcelReference('')).toBe('')
     })
   })
 })

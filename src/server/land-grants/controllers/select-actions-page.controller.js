@@ -1,21 +1,21 @@
 import SelectActionsBasePageController from '~/src/server/land-grants/controllers/select-actions-base-page.controller.js'
 import {
-  mapActionsToViewModel,
-  getPageConsents,
   getChosenAreaFieldsHtml,
-  getParcelSummaryList
+  getPageConsents,
+  getParcelSummaryList,
+  mapActionsToViewModel
 } from '~/src/server/land-grants/view-models/select-actions.view-model.js'
 import {
   addSelectedActionsToState,
   mergeRecomputedAvailability
 } from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
 import {
-  validateSelectedActions,
-  validateSelectedActionQuantities
+  validateSelectedActionQuantities,
+  validateSelectedActions
 } from '~/src/server/land-grants/validators/land-actions.validator.js'
 import {
-  SELECTED_ACTIONS_FIELD_NAME,
-  getSelectedActionCodes
+  getSelectedActionCodes,
+  SELECTED_ACTIONS_FIELD_NAME
 } from '~/src/server/land-grants/utils/selected-actions-field.js'
 import { getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
 import {
@@ -60,7 +60,7 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
    * @param {Array} addedActions
    * @param {Record<string, string>} [quantityErrorsByCode] - Quantity validation error text, keyed by action code
    * @param {boolean} [hasErrors] - Whether this page load is redisplaying a rejected submission
-   * @param {{ sheetId?: string, parcelId?: string, size?: Size }} [parcel] - Identifiers and area for the
+   * @param {{ sheetId: string, parcelId: string, size?: Size }} [parcel] - Identifiers and area for the
    *   "Selected land parcel" summary
    * @returns {object}
    */
@@ -71,7 +71,7 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
     addedActions,
     quantityErrorsByCode = {},
     hasErrors = false,
-    parcel = {}
+    parcel = { sheetId: '', parcelId: '' }
   ) {
     const selectLandParcelPath = this.getHref(this.getPreviousPagePath())
     return {
