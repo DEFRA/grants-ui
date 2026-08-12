@@ -1,6 +1,7 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
+import { mockParcelsResponse, mockUserContext } from '~/src/__mocks__/land-grants-mocks.js'
 import {
   fetchGroupedActionsForParcel,
   fetchParcels,
@@ -53,19 +54,7 @@ vi.mock('~/src/config/config.js', async () => {
 vi.mock('~/src/server/land-grants/services/land-grants.service.js')
 vi.mock('~/src/shared/format-parcel.js')
 
-const mockParcelsResponse = [
-  {
-    parcelId: '0155',
-    sheetId: 'SD7946',
-    area: { unit: 'ha', value: 4.0383 }
-  },
-  {
-    parcelId: '4509',
-    sheetId: 'SD7846',
-    area: { unit: 'sqm', value: 0.0633 }
-  }
-]
-const userContext = { defraIdToken: 'defra-id-access-token', sbi: '106284736' }
+const userContext = mockUserContext
 
 describe('SelectGroupedActionsPageController', () => {
   let controller
@@ -175,6 +164,15 @@ describe('SelectGroupedActionsPageController', () => {
 
   afterEach(() => {
     vi.clearAllMocks()
+  })
+
+  describe('buildValidationErrors', () => {
+    test('omits the href when no field carries the action code', () => {
+      const payload = { landAction_1: 'UPL1' }
+      const errors = controller.buildValidationErrors(payload, [{ code: 'UPL2', description: 'Enter a quantity' }])
+
+      expect(errors).toEqual([{ text: 'Enter a quantity: UPL2', href: undefined }])
+    })
   })
 
   describe('singleParcelSubmission (grant-level config)', () => {

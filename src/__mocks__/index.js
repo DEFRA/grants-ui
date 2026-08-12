@@ -25,4 +25,6 @@ export {
 
 export { setupControllerMocks } from './controller-mocks.js'
 
+export { mockParcelsResponse, mockUserContext } from './land-grants-mocks.js'
+
 export { mockFilters } from './filters-mocks.js'

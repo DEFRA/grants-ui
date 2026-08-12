@@ -80,7 +80,12 @@ export function upsertCurrentClaim(state, { referenceNumber, totalEligibleArea, 
   const currentIndex = claims.findIndex((claim) => claim?.status !== ClaimStatus.SUBMITTED)
 
   if (currentIndex >= 0) {
-    claims[currentIndex] = { ...claims[currentIndex], totalEligibleArea, unit, totalClaimAmountPence }
+    claims[currentIndex] = {
+      ...claims[currentIndex],
+      ...(totalEligibleArea !== undefined && { totalEligibleArea }),
+      ...(unit !== undefined && { unit }),
+      ...(totalClaimAmountPence !== undefined && { totalClaimAmountPence })
+    }
     return { claims, currentClaim: claims[currentIndex] }
   }
 
