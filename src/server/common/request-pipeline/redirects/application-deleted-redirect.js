@@ -1,3 +1,4 @@
+// @ts-nocheck - noImplicitAny debt, remove when this file is typed
 import { ApplicationStatus } from '../../constants/application-status.js'
 
 export function applicationDeletedRedirect(request, h, context) {

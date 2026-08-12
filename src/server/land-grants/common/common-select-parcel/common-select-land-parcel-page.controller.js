@@ -1,3 +1,4 @@
+// @ts-nocheck - noImplicitAny debt, remove when this file is typed
 import { debug, log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { buildInvalidatedState } from '~/src/server/common/utils/state-invalidation.js'
 import LandGrantsQuestionWithAuthCheckController from '../../controllers/auth/land-grants-question-with-auth-check.controller.js'

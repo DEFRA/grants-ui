@@ -1,3 +1,4 @@
+// @ts-nocheck - noImplicitAny debt, remove when this file is typed
 import { PbfReader } from 'pbf'
 import { VectorTile } from '@mapbox/vector-tile'
 // @ts-ignore — no type declarations shipped with this package

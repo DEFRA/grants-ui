@@ -2,6 +2,7 @@
  * @typedef {Object} ActionData
  * @property {string} value - The value/quantity as a string
  * @property {string} unit - Unit of measurement (e.g., "ha")
+ * @property {string} [version] - Action version, defaulted to '0.0.0' when absent
  */
 
 /**
@@ -10,8 +11,15 @@
  */
 
 /**
+ * @typedef {Object} ParcelSize
+ * @property {string} [unit] - Unit of measurement (e.g., "ha")
+ * @property {number|string} [value] - Area value
+ */
+
+/**
  * @typedef {Object} LandParcel
- * @property {ActionsObject} actionsObj - Actions applied to this parcel
+ * @property {ActionsObject} [actionsObj] - Actions applied to this parcel
+ * @property {ParcelSize} [size] - Total size of the parcel
  */
 
 /**
@@ -33,9 +41,11 @@
  * @property {PaymentCalculation} payment - Payment details
  * @property {LandParcels} landParcels - Land parcels with actions
  * @property {LandParcelMetadataItem[]} [landParcelMetadata] - Area metadata for selected parcels (woodland journey)
+ * @property {ValidateApplicationResponse} [validationResult] - Last rules-engine result, mapped to rulesCalculations
  */
 
 /**
  * @import { PaymentCalculation } from '~/src/server/land-grants/types/payment.d.js'
  * @import { Applicant } from '~/src/server/land-grants/types/applicant.d.js'
+ * @import { ValidateApplicationResponse } from '~/src/server/land-grants/types/land-grants.client.d.js'
  */

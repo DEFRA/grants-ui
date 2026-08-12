@@ -1,3 +1,4 @@
+// @ts-nocheck - noImplicitAny debt, remove when this file is typed
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { TerminalPageController } from '@defra/forms-engine-plugin/controllers/TerminalPageController.js'
 import { buildGraphQLQuery, mapResponse, processSections } from '../common/services/details-page/index.js'

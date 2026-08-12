@@ -1,3 +1,4 @@
+// @ts-nocheck - noImplicitAny debt, remove when this file is typed
 import { stringifyParcel } from '~/src/shared/format-parcel.js'
 import { getConsentTypes } from '../utils/consent-types.js'
 import { getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'

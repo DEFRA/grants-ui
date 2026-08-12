@@ -1,3 +1,4 @@
+// @ts-nocheck - noImplicitAny debt, remove when this file is typed
 /**
  * Field naming and payload normalisation for the select-actions page, where every
  * action shares one checkbox field name (rather than a field per action). The browser

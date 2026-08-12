@@ -1,3 +1,4 @@
+// @ts-nocheck - noImplicitAny debt, remove when this file is typed
 import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { stringifyParcel } from '~/src/shared/format-parcel.js'

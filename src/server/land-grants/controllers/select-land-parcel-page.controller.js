@@ -1,3 +1,4 @@
+// @ts-nocheck - noImplicitAny debt, remove when this file is typed
 import { log, debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { fetchParcels } from '../services/land-grants.service.js'
 import QuestionPageWithParcelCheckController from '~/src/server/common/controllers/question-page-with-parcel-check.controller.js'

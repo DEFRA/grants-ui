@@ -1,3 +1,4 @@
+// @ts-nocheck - noImplicitAny debt, remove when this file is typed
 import { config } from '~/src/config/config.js'
 import { error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { ROUTES } from './map-routes.js'

@@ -1,3 +1,4 @@
+// @ts-nocheck - noImplicitAny debt, remove when this file is typed
 import { buildDemoMappedData, buildDemoRequest } from '../helpers/index.js'
 import { generateFormNotFoundResponse, resolveFormDefinition } from '../utils/index.js'
 import { processSections } from '../../common/services/details-page/index.js'

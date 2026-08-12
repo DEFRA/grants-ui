@@ -1,3 +1,4 @@
+// @ts-nocheck - noImplicitAny debt, remove when this file is typed
 /**
  * Maps land action data to view models for rendering on the select-actions page.
  * Handles transformation of action objects into checkbox items, including the

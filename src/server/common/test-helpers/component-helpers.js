@@ -1,3 +1,4 @@
+// @ts-nocheck - noImplicitAny debt, remove when this file is typed
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import nunjucks from 'nunjucks'

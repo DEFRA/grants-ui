@@ -1,3 +1,4 @@
+// @ts-nocheck - noImplicitAny debt, remove when this file is typed
 import nunjucks from 'nunjucks'
 import { StatusPageController } from '@defra/forms-engine-plugin/controllers/StatusPageController.js'
 import { config } from '~/src/config/config.js'

@@ -1,3 +1,4 @@
+// @ts-nocheck - noImplicitAny debt, remove when this file is typed
 import QuestionPageWithParcelCheckController from '~/src/server/common/controllers/question-page-with-parcel-check.controller.js'
 import { mapConsentPanelToViewModel } from '~/src/server/land-grants/view-models/consent.view-model.js'
 import { getRequiredConsents } from '~/src/server/common/utils/consents.js'

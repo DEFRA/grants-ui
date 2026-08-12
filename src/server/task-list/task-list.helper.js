@@ -1,3 +1,4 @@
+// @ts-nocheck - noImplicitAny debt, remove when this file is typed
 /**
  * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
  */

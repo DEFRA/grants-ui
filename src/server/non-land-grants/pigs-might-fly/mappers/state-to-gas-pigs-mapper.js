@@ -11,7 +11,7 @@
 
 /**
  * Transforms FormContext object into a GAS Application answers object for Pigs Might Fly.
- * @param {object} state
+ * @param {Partial<GASAnswers>} state
  * @returns {GASAnswers}
  */
 
@@ -23,6 +23,7 @@ export function transformPigsMightFlyAnswers(state = {}) {
     }
   }
 
+  /** @type {GASAnswers} */
   const result = {
     isPigFarmer: state.isPigFarmer || false,
     totalPigs: state.totalPigs || 0

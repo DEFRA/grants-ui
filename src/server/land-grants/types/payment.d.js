@@ -7,8 +7,18 @@
  * @property {number} quantity - Quantity
  * @property {number} rateInPence - Rate in pence
  * @property {number} annualPaymentPence - Annual payment in pence
+ * @property {number} [durationYears] - Number of years the action is paid for
  * @property {string} sheetId - Sheet identifier
  * @property {string} parcelId - Parcel identifier
+ */
+
+/**
+ * @typedef {Object} AgreementLevelItem
+ * @property {string} code - Action code
+ * @property {string} [description] - Action description
+ * @property {number} [durationYears] - Number of years the action is paid for
+ * @property {number} [rateInPence] - Rate in pence
+ * @property {number} [annualPaymentPence] - Annual payment in pence
  */
 
 /**
@@ -32,8 +42,8 @@
  * @property {string} frequency - Payment frequency (e.g., "Quarterly", "Annual")
  * @property {number} agreementTotalPence - Total payment amount for entire agreement in pence
  * @property {number} annualTotalPence - Annual payment total in pence
- * @property {object} parcelItems - Parcel-level payment items keyed by ID
- * @property {object} agreementLevelItems - Agreement-level payment items keyed by ID
+ * @property {Record<string, ParcelItem>} parcelItems - Parcel-level payment items keyed by ID
+ * @property {Record<string, AgreementLevelItem>} agreementLevelItems - Agreement-level payment items keyed by ID
  * @property {Array<ScheduledPayment>} payments - Scheduled payment breakdown
  */
 

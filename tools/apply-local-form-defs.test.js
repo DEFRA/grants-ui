@@ -1,3 +1,4 @@
+// @ts-nocheck - noImplicitAny debt, remove when this file is typed
 import * as fs from 'node:fs'
 import * as os from 'node:os'
 import { join } from 'node:path'

@@ -1,3 +1,4 @@
+// @ts-nocheck - noImplicitAny debt, remove when this file is typed
 /**
  * Generates mock answers for all answerable components in a form
  * @param {object} definition - Parsed YAML form definition

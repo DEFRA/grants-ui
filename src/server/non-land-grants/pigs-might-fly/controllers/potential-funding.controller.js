@@ -1,3 +1,4 @@
+// @ts-nocheck - noImplicitAny debt, remove when this file is typed
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { invokeGasPostAction } from '~/src/server/common/services/grant-application/grant-application.service.js'
 import { GrantApplicationServiceError } from '~/src/server/common/utils/errors/GrantApplicationServiceError.js'

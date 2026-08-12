@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @ts-nocheck - noImplicitAny debt, remove when this file is typed
 
 import crypto from 'node:crypto'
 import http from 'node:http'

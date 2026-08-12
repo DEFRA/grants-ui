@@ -1,3 +1,4 @@
+// @ts-nocheck - noImplicitAny debt, remove when this file is typed
 import SelectActionsBasePageController from '~/src/server/land-grants/controllers/select-actions-base-page.controller.js'
 import {
   mapActionsToViewModel,

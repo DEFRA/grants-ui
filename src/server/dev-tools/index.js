@@ -1,3 +1,4 @@
+// @ts-nocheck - noImplicitAny debt, remove when this file is typed
 import {
   devHomeHandler,
   demoConfirmationHandler,

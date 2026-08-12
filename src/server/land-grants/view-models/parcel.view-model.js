@@ -1,3 +1,4 @@
+// @ts-nocheck - noImplicitAny debt, remove when this file is typed
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
 import { stringifyParcel } from '~/src/shared/format-parcel.js'
 

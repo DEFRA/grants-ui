@@ -1,3 +1,4 @@
+// @ts-nocheck - noImplicitAny debt, remove when this file is typed
 import plugin from '@defra/forms-engine-plugin'
 import Bell from '@hapi/bell'
 import Cookie from '@hapi/cookie'

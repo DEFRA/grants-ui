@@ -1,3 +1,4 @@
+// @ts-nocheck - noImplicitAny debt, remove when this file is typed
 import { fetchBusinessPermissions } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import { can } from '~/src/server/common/helpers/permissions/can.js'
 const EXCLUDED_PATHS = ['/health', '/auth']

@@ -1,3 +1,4 @@
+// @ts-nocheck - noImplicitAny debt, remove when this file is typed
 import { buildDemoData, buildDemoPayment, buildDemoPrintAnswers } from '../helpers/index.js'
 import {
   buildPrintViewModel,
