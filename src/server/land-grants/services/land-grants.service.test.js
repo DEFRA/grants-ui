@@ -886,6 +886,36 @@ describe('land-grants service', () => {
       })
     })
 
+    it('should sort enabled actions alphabetically by description', async () => {
+      parcelsWithActions.mockResolvedValueOnce({
+        parcels: [
+          {
+            parcelId: 'PARCEL456',
+            sheetId: 'SHEET123',
+            size: { value: 50.5, unit: 'ha' },
+            actions: [
+              { code: 'UPL2', description: 'Supplementary winter feeding' },
+              { code: 'UNKNOWN1', description: 'A disabled action' },
+              { code: 'CMOR1', description: 'Assess moorland and produce a written record' },
+              { code: 'UPL1', description: 'Moderate livestock grazing on moorland' }
+            ]
+          }
+        ]
+      })
+
+      const result = await fetchActionsForParcel({
+        parcelId: 'PARCEL456',
+        sheetId: 'SHEET123',
+        enabledLandActions
+      })
+
+      expect(result.actions.map(({ description }) => description)).toEqual([
+        'Assess moorland and produce a written record: CMOR1',
+        'Moderate livestock grazing on moorland: UPL1',
+        'Supplementary winter feeding: UPL2'
+      ])
+    })
+
     it.each([['partial']])(
       'should pass availability.type through unchanged when it is %s',
       async (availabilityType) => {
