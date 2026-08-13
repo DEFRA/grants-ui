@@ -21,11 +21,14 @@ When('the user selects parcel {string} of area {string} hectares on the map', as
   await this.page.waitForLoadState('domcontentloaded')
   await this.page.evaluate(
     ({ id, areaHa }) => {
-      const [sheetId, parcelNumber] = id.split('-')
+      const [sheetId, parcelNumber] = id.split(' ')
+      const compoundId = `${sheetId}-${parcelNumber}`
       document.getElementById('parcel-map').dispatchEvent(
         new CustomEvent('parcel-map:selection', {
           bubbles: true,
-          detail: { selectedParcels: [{ id, sheet_id: sheetId, parcel_id: parcelNumber, areaHa: Number(areaHa) }] }
+          detail: {
+            selectedParcels: [{ id: compoundId, sheet_id: sheetId, parcel_id: parcelNumber, areaHa: Number(areaHa) }]
+          }
         })
       )
     },

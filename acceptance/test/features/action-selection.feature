@@ -1,30 +1,83 @@
 Feature: Action Selection
-@runme
-    Scenario: Select an action for a land parcel
-        Given there is no application data for SBI "300000003" and grant "example-grant-with-map"
+
+    Scenario: Select a partial area action for a land parcel
+        Given there is no application data for SBI "106514040" and grant "example-grant-with-map"
 
         # start
         Given the user navigates to "/example-grant-with-map"
-        And logs in as CRN "1300000003"
+        And logs in as CRN "1103313150"
         Then the user should see heading "Apply for Example Grant with Map"
         When the user clicks on "Start now"
 
         # select-land-parcel
         Then the user should be at URL "select-land-parcel"
         And should see heading "Select a land parcel"
-        When the user selects parcel "SD5551-1107" of area "21.5106" hectares on the map
+        When the user selects parcel "SK0972 6820" of area "0.2774" hectares on the map
         And continues
 
         # select-actions-for-land-parcel
         Then the user should be at URL "select-actions-for-land-parcel"
         And should see heading "Select actions for this land parcel"
         And should see the following selected land parcel
-            | FIELD             | VALUE            |
-            | Parcel reference  | SD5551 1107      |
-            | Total area        | 21.5106 hectares |
+            | FIELD             | VALUE           |
+            | Parcel reference  | SK0972 6820     |
+            | Total area        | 0.2774 hectares |
         And should see the following actions with guidance
-            | ACTION | GUIDANCE                          |
-            | CLIG3  | Payment rate per year: £151.00/ha |
-            |        | Requires SSSI consent             |
-            |        | 21.5106 hectares available        |
-            | CSAM3  | Payment rate per year: £224.00/ha |
+            | ACTION | DESCRIPTION                                           | GUIDANCE                          | URL |
+            | CSAM3  | Herbal leys: CSAM3                                    | Payment rate per year: £224.00/ha | Yes |
+            | CLIG3  | Manage grassland with very low nutrient inputs: CLIG3 | Payment rate per year: £151.00/ha | Yes |
+            |        |                                                       | 0.276 hectares available          |     |
+            | SCR2   | Manage scrub and open habitat mosaics: SCR2           | Payment rate per year: £350.00/ha | Yes |
+
+        When the user selects action "CSAM3"
+
+        # RULE: partial action hectares cannot be zero
+        When the user enters "0" hectares for action "CSAM3"
+        And continues
+        Then the user should see "Enter a quantity for Herbal leys: CSAM3" for action "CSAM3"
+
+        # RULE: partial action hectares cannot exceed available hectares
+        When the user enters "0.277" hectares for action "CSAM3"
+        And continues
+        Then the user should see "The amount of land must be the same as or less than the available area" for action "CSAM3"
+
+        # RULE: partial action hectares must be 4 decimal places or fewer
+        When the user enters "0.27666" hectares for action "CSAM3"
+        And continues
+        Then the user should see "Quantity for Herbal leys: CSAM3 must be 4 decimal places or fewer" for action "CSAM3"
+
+        # RULE: partial action hectares must be be given
+        When the user enters "" hectares for action "CSAM3"
+        And continues
+        Then the user should see "Enter a quantity for Herbal leys: CSAM3" for action "CSAM3"
+
+        # RULE: partial action cannot be selected once a total action is selected taking all available hectares
+        When the user deselects action "CSAM3"
+        And the user selects action "CLIG3"
+        Then the user should be unable to select action "CSAM3"
+
+        # RULE: selecting a partial action with less than the available hectares allows a total action to subsequently be selected
+        When the user deselects action "CLIG3"
+        And the user selects action "CSAM3"
+        And the user enters "0.1" hectares for action "CSAM3"
+        Then the user should be able to select action "CLIG3"
+
+        # RULE: selecting a partial action with all available hectares does not allow a total action to subsequently be selected
+        When the user enters "0.276" hectares for action "CSAM3"
+        Then the user should be unable to select action "CLIG3"
+
+        # RULE: partial area action can be applied to an eligible land parcel
+        When the user selects action "CSAM3"
+        When the user enters "0.276" hectares for action "CSAM3"
+        And continues
+
+        # summary, go back to select a different land parcel
+        Then the user should be at URL "summary"
+        When the user clicks on "Change"
+
+        # RULE: an action cannot be applied to a land parcel it is not eligible for
+        Then the user should be at URL "select-land-parcel"
+        When the user selects parcel "SK0972 7313" of area "0.2460" hectares on the map
+        And continues
+        Then the user should be at URL "select-actions-for-land-parcel"
+        Then the user should not see action "CSAM3"
