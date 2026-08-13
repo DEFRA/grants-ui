@@ -25,5 +25,19 @@ export const parseLandParcel = (landParcel) => {
 export const stringifyParcel = ({ parcelId, sheetId }) => `${sheetId}-${parcelId}`
 
 /**
+ * Formats a parcel reference for display, e.g. "SD7946 0155". This is the
+ * single source of truth for how a parcel reference is shown to users; it
+ * must not be used for URLs or state keys (use stringifyParcel for those).
+ * Accepts either a parcel identifier object or a compound id string
+ * (e.g. "SD7946-0155").
+ * @param {ParcelIdentifier | string} parcel
+ * @returns {string}
+ */
+export const formatParcelReference = (parcel) => {
+  const [sheetId, parcelId] = typeof parcel === 'string' ? parseLandParcel(parcel) : [parcel.sheetId, parcel.parcelId]
+  return [sheetId, parcelId].filter((part) => part != null && part !== '').join(' ')
+}
+
+/**
  * @typedef {{ sheetId: string, parcelId: string }} ParcelIdentifier
  */

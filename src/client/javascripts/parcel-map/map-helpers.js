@@ -27,6 +27,7 @@ import {
   TOOLTIP_FALLBACK_MAP_WIDTH,
   TOOLTIP_VERTICAL_OFFSET
 } from './config.js'
+import { formatParcelReference } from '../../../shared/format-parcel.js'
 
 /**
  * @import { MapGeoJSONFeature } from 'maplibre-gl'
@@ -41,6 +42,31 @@ import {
 // Same PARCEL_ID_PROPERTY the interact plugin matches on, so label/colour/
 // highlight logic can't disagree with what's selected.
 export const COMPOUND_ID_EXPR = ['get', PARCEL_ID_PROPERTY]
+
+// Display expression for the on-parcel map labels: the compound id
+// (e.g. "SD7148-9160") shown with its single dash replaced by a space
+// ("SD7148 9160") so labels match the parcel-reference format used everywhere
+// else. Derived from the compound id alone — the only property guaranteed to be
+// present on both the vector tiles and the mock GeoJSON — so it stays correct
+// regardless of whether sheet_id/parcel_id are stamped onto the tiles. Falls
+// back to the raw id if it somehow contains no dash. Kept separate from
+// COMPOUND_ID_EXPR, which must stay the raw id used for colour/highlight matching.
+export const LABEL_TEXT_EXPR = [
+  'let',
+  'dash',
+  ['index-of', '-', ['get', PARCEL_ID_PROPERTY]],
+  [
+    'case',
+    ['>=', ['var', 'dash'], 0],
+    [
+      'concat',
+      ['slice', ['get', PARCEL_ID_PROPERTY], 0, ['var', 'dash']],
+      ' ',
+      ['slice', ['get', PARCEL_ID_PROPERTY], ['+', ['var', 'dash'], 1]]
+    ],
+    ['get', PARCEL_ID_PROPERTY]
+  ]
+]
 
 /**
  * @param {unknown[]} colorExpr  MapLibre `match` expression
@@ -78,7 +104,7 @@ export function buildParcelLayers(colorExpr, sourceLayer) {
       source: SOURCE_ID_PARCELS,
       ...src,
       layout: {
-        'text-field': COMPOUND_ID_EXPR,
+        'text-field': LABEL_TEXT_EXPR,
         'text-font': [labelFont],
         'text-size': LAYER_TEXT_SIZE,
         'text-anchor': 'center'
@@ -294,7 +320,7 @@ export function resolveFeatureId(feature) {
 export function showTooltip(tooltip, id, props, x, y, mapEl) {
   const areaHa = props.areaHa == null ? null : Number(props.areaHa)
   tooltip.innerHTML = `
-    <strong style="display:block;margin-bottom:8px;font-size:15px">${htmlEncode(id || MSG_UNKNOWN_PARCEL)}</strong>
+    <strong style="display:block;margin-bottom:8px;font-size:15px">${htmlEncode(formatParcelReference(id) || MSG_UNKNOWN_PARCEL)}</strong>
     <table style="border-collapse:collapse;width:100%">
       <tr><td style="color:#505a5f;padding:2px 12px 2px 0;white-space:nowrap">Total area</td>
           <td>${areaHa == null ? MSG_UNKNOWN_AREA : htmlEncode(areaHa.toFixed(AREA_DECIMAL_PLACES) + ' ha')}</td></tr>

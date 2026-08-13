@@ -1,5 +1,6 @@
 import { formatPrice } from '~/src/server/common/utils/payment.js'
 import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
+import { formatParcelReference } from '~/src/shared/format-parcel.js'
 
 /**
  * @import { PrintPayment, PrintParcelCard, PrintTableCell } from '~/src/server/common/helpers/print-application-service/types/print-payment.d.js'
@@ -30,7 +31,7 @@ export function buildPrintPaymentViewModel(payment) {
  */
 export function buildPrintParcelItems(payment) {
   const grouped = Object.values(payment.parcelItems || {}).reduce((acc, data) => {
-    const parcelKey = `${data.sheetId} ${data.parcelId}`
+    const parcelKey = formatParcelReference(data)
 
     if (!acc[parcelKey]) {
       acc[parcelKey] = {

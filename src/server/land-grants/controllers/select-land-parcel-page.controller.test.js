@@ -39,7 +39,11 @@ vi.mock('~/src/server/land-grants/services/land-grants.service.js', () => ({
 }))
 
 vi.mock('~/src/shared/format-parcel.js', () => ({
-  stringifyParcel: ({ parcelId, sheetId }) => `${sheetId}-${parcelId}`
+  stringifyParcel: ({ parcelId, sheetId }) => `${sheetId}-${parcelId}`,
+  formatParcelReference: (parcel) => {
+    const [sheetId, parcelId] = typeof parcel === 'string' ? parcel.split('-') : [parcel.sheetId, parcel.parcelId]
+    return [sheetId, parcelId].filter((part) => part != null && part !== '').join(' ')
+  }
 }))
 
 const controllerParcelsResponse = [
