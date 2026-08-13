@@ -28,4 +28,3 @@ Feature: Action Selection
             |        | Requires SSSI consent             |
             |        | 21.5106 hectares available        |
             | CSAM3  | Payment rate per year: £224.00/ha |
-            |        | 0.0639 hectares available         |
