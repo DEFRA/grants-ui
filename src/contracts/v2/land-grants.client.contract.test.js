@@ -2,7 +2,10 @@ import { PactV3, MatchersV3, SpecificationVersion } from '@pact-foundation/pact'
 import { arrayContaining, integer } from '@pact-foundation/pact/src/v3/matchers'
 import path from 'path'
 import { vi } from 'vitest'
-import { postToLandGrantsApi as postToLandGrantsApiClient } from '~/src/server/land-grants/services/land-grants.client'
+import {
+  postToLandGrantsApi as postToLandGrantsApiClient,
+  validate
+} from '~/src/server/land-grants/services/land-grants.client'
 
 vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
   const { mockLogHelper } = await import('~/src/__mocks__/logger-mocks.js')
@@ -20,6 +23,8 @@ const makeLandGrantsHeaders = () => ({
   'x-forwarded-authorization': userContext.defraIdToken
 })
 const postToLandGrantsApi = (endpoint, body, baseUrl) => postToLandGrantsApiClient(endpoint, body, baseUrl, userContext)
+
+const validateApplication = (request, baseUrl) => validate(request, baseUrl, userContext)
 
 function createProvider() {
   return new PactV3({
@@ -880,7 +885,6 @@ describe('validate', () => {
     const payload = {
       applicationId: '123',
       requester: 'local',
-      sbi: 123456789,
       applicantCrn: 'crn',
       landActions: [
         {
@@ -903,7 +907,10 @@ describe('validate', () => {
         method: 'POST',
         path: '/api/v2/application/validate',
         headers: makeLandGrantsHeaders(),
-        body: payload
+        body: {
+          ...payload,
+          sbi: userContext.sbi
+        }
       })
       .willRespondWith({
         status: 200,
@@ -911,7 +918,7 @@ describe('validate', () => {
         body: EXPECTED_BODY
       })
       .executeTest(async (mockserver) => {
-        const response = await postToLandGrantsApi('/api/v2/application/validate', payload, mockserver.url)
+        const response = await validateApplication(payload, mockserver.url)
 
         expect(response.valid).toBe(true)
         expect(response.actions).toBeDefined()
@@ -965,7 +972,6 @@ describe('validate', () => {
     const payload = {
       applicationId: '123',
       requester: 'local',
-      sbi: 123456789,
       applicantCrn: 'crn',
       landActions: [
         {
@@ -985,7 +991,10 @@ describe('validate', () => {
         method: 'POST',
         path: '/api/v2/application/validate',
         headers: makeLandGrantsHeaders(),
-        body: payload
+        body: {
+          ...payload,
+          sbi: userContext.sbi
+        }
       })
       .willRespondWith({
         status: 200,
@@ -993,7 +1002,7 @@ describe('validate', () => {
         body: EXPECTED_BODY
       })
       .executeTest(async (mockserver) => {
-        const response = await postToLandGrantsApi('/api/v2/application/validate', payload, mockserver.url)
+        const response = await validateApplication(payload, mockserver.url)
 
         expect(response.valid).toBe(true)
         expect(response.actions).toBeDefined()
@@ -1044,7 +1053,6 @@ describe('validate', () => {
     const payload = {
       applicationId: '123',
       requester: 'local',
-      sbi: 123456789,
       applicantCrn: 'crn',
       landActions: [
         {
@@ -1064,7 +1072,10 @@ describe('validate', () => {
         method: 'POST',
         path: '/api/v2/application/validate',
         headers: makeLandGrantsHeaders(),
-        body: payload
+        body: {
+          ...payload,
+          sbi: userContext.sbi
+        }
       })
       .willRespondWith({
         status: 200,
@@ -1072,7 +1083,7 @@ describe('validate', () => {
         body: EXPECTED_BODY
       })
       .executeTest(async (mockserver) => {
-        const response = await postToLandGrantsApi('/api/v2/application/validate', payload, mockserver.url)
+        const response = await validateApplication(payload, mockserver.url)
 
         expect(response.valid).toBe(false)
         expect(response.actions).toBeDefined()
@@ -1087,7 +1098,6 @@ describe('validate', () => {
     const negativeQuantityPayload = {
       applicationId: '34E-8CA-45D',
       requester: 'grants-ui',
-      sbi: 106284736,
       applicantCrn: '1100014934',
       landActions: [
         {
@@ -1112,7 +1122,10 @@ describe('validate', () => {
         method: 'POST',
         path: '/api/v2/application/validate',
         headers: makeLandGrantsHeaders(),
-        body: negativeQuantityPayload
+        body: {
+          ...negativeQuantityPayload,
+          sbi: userContext.sbi
+        }
       })
       .willRespondWith({
         status: 422,
@@ -1120,9 +1133,10 @@ describe('validate', () => {
         body: EXPECTED_BODY
       })
       .executeTest(async (mockserver) => {
-        await expect(
-          postToLandGrantsApi('/api/v2/application/validate', negativeQuantityPayload, mockserver.url)
-        ).rejects.toMatchObject({ code: 422, status: 422 })
+        await expect(validateApplication(negativeQuantityPayload, mockserver.url)).rejects.toMatchObject({
+          code: 422,
+          status: 422
+        })
       })
   })
 
@@ -1130,7 +1144,6 @@ describe('validate', () => {
     const negativeQuantityPayload = {
       applicationId: '34E-8CA-45D',
       requester: 'grants-ui',
-      sbi: 106284736,
       applicantCrn: '1100014934',
       landActions: [
         {
@@ -1155,7 +1168,10 @@ describe('validate', () => {
         method: 'POST',
         path: '/api/v2/application/validate',
         headers: makeLandGrantsHeaders(),
-        body: negativeQuantityPayload
+        body: {
+          ...negativeQuantityPayload,
+          sbi: userContext.sbi
+        }
       })
       .willRespondWith({
         status: 422,
@@ -1163,17 +1179,17 @@ describe('validate', () => {
         body: EXPECTED_BODY
       })
       .executeTest(async (mockserver) => {
-        await expect(
-          postToLandGrantsApi('/api/v2/application/validate', negativeQuantityPayload, mockserver.url)
-        ).rejects.toMatchObject({ code: 422, status: 422 })
+        await expect(validateApplication(negativeQuantityPayload, mockserver.url)).rejects.toMatchObject({
+          code: 422,
+          status: 422
+        })
       })
   })
 
   it('returns HTTP 400 when required fields are missing', async () => {
     const incompletePayload = {
       applicationId: '34E-8CA-45D',
-      requester: 'grants-ui',
-      sbi: Number(userContext.sbi)
+      requester: 'grants-ui'
       // Missing applicantCrn and landActions
     }
 
@@ -1192,7 +1208,10 @@ describe('validate', () => {
         method: 'POST',
         path: '/api/v2/application/validate',
         headers: makeLandGrantsHeaders(),
-        body: incompletePayload
+        body: {
+          ...incompletePayload,
+          sbi: userContext.sbi
+        }
       })
       .willRespondWith({
         status: 400,
@@ -1200,9 +1219,10 @@ describe('validate', () => {
         body: EXPECTED_BODY
       })
       .executeTest(async (mockserver) => {
-        await expect(
-          postToLandGrantsApi('/api/v2/application/validate', incompletePayload, mockserver.url)
-        ).rejects.toMatchObject({ code: 400, status: 400 })
+        await expect(validateApplication(incompletePayload, mockserver.url)).rejects.toMatchObject({
+          code: 400,
+          status: 400
+        })
       })
   })
 
@@ -1210,7 +1230,6 @@ describe('validate', () => {
     const notFoundPayload = {
       applicationId: '34E-8CA-45D',
       requester: 'grants-ui',
-      sbi: 106284736,
       applicantCrn: '1100014934',
       landActions: [
         {
@@ -1237,7 +1256,10 @@ describe('validate', () => {
         method: 'POST',
         path: '/api/v2/application/validate',
         headers: makeLandGrantsHeaders(),
-        body: notFoundPayload
+        body: {
+          ...notFoundPayload,
+          sbi: userContext.sbi
+        }
       })
       .willRespondWith({
         status: 400,
@@ -1245,9 +1267,10 @@ describe('validate', () => {
         body: EXPECTED_BODY
       })
       .executeTest(async (mockserver) => {
-        await expect(
-          postToLandGrantsApi('/api/v2/application/validate', notFoundPayload, mockserver.url)
-        ).rejects.toMatchObject({ code: 400, status: 400 })
+        await expect(validateApplication(notFoundPayload, mockserver.url)).rejects.toMatchObject({
+          code: 400,
+          status: 400
+        })
       })
   })
 })
