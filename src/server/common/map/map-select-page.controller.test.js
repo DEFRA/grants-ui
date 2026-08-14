@@ -2,8 +2,16 @@
 import { vi } from 'vitest'
 import MapSelectPageController from './map-select-page.controller.js'
 import { setupControllerMocks } from '~/src/__mocks__/controller-mocks.js'
+import { fetchActionsForParcel } from '~/src/server/land-grants/services/land-grants.service.js'
+import { isNoActionsMockEnabled } from '~/src/server/dev-tools/mock-overrides.js'
+import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
+import { log, error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 const PAGE_PATH = '/select-land-parcel'
+
+const NO_ELIGIBLE_ACTIONS_ERROR =
+  'There are no eligible actions for this parcel.<br>' +
+  'Change the parcel land cover or choose a different parcel to view eligible actions.'
 
 function makePageDef(path = PAGE_PATH) {
   return { path }
@@ -21,6 +29,18 @@ vi.mock('~/src/server/task-list/task-list.helper.js', async (importOriginal) => 
   }
 })
 
+vi.mock('~/src/server/land-grants/services/land-grants.service.js', () => ({
+  fetchActionsForParcel: vi.fn()
+}))
+
+vi.mock('~/src/server/dev-tools/mock-overrides.js', () => ({
+  isNoActionsMockEnabled: vi.fn().mockReturnValue(false)
+}))
+
+vi.mock('~/src/server/land-grants/services/land-grants-user-context.js', () => ({
+  getLandGrantsUserContext: vi.fn().mockReturnValue({ defraIdToken: 'token', sbi: '123456789' })
+}))
+
 function makeController(config = {}, metadata = {}) {
   const controller = new MapSelectPageController(makeModel(config, metadata), makePageDef())
   setupControllerMocks(controller)
@@ -29,7 +49,7 @@ function makeController(config = {}, metadata = {}) {
 }
 
 function makeRequest(payload = {}, path = '/select-land-parcel') {
-  return { payload, path, query: {} }
+  return { payload, path, query: {}, auth: { credentials: { sbi: '123456789', token: 'token' } } }
 }
 
 function makeContext(state = {}) {
@@ -43,111 +63,242 @@ function makeH() {
   }
 }
 
+const expectNoActionsError = (h) =>
+  expect(h.view).toHaveBeenCalledWith(
+    'map-select-parcel',
+    expect.objectContaining({
+      errors: [{ html: NO_ELIGIBLE_ACTIONS_ERROR, href: '#parcel-map' }]
+    })
+  )
+
 describe('MapSelectPageController', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    isNoActionsMockEnabled.mockReturnValue(false)
+  })
+
   describe('constructor', () => {
-    it('defaults multiSelect to false', () => {
-      const controller = new MapSelectPageController(makeModel(), makePageDef())
-      expect(controller.multiSelect).toBe(false)
+    it.each([
+      ['defaults to false with no page config', {}, {}, false],
+      ['is true when the page config sets it', { multiSelect: true }, {}, true],
+      ['is false when the page config unsets it', { multiSelect: false }, {}, false],
+      [
+        'is forced false by grant-level singleParcelSubmission',
+        { multiSelect: true },
+        { singleParcelSubmission: true },
+        false
+      ],
+      ['stays true when singleParcelSubmission is absent', { multiSelect: true }, {}, true]
+    ])('multiSelect %s', (_name, config, metadata, expected) => {
+      const controller = new MapSelectPageController(makeModel(config, metadata), makePageDef())
+      expect(controller.multiSelect).toBe(expected)
     })
 
-    it('sets multiSelect true from model.def.metadata.pageConfig', () => {
-      const controller = new MapSelectPageController(makeModel({ multiSelect: true }), makePageDef())
-      expect(controller.multiSelect).toBe(true)
-    })
-
-    it('sets multiSelect false when config.multiSelect is falsy', () => {
-      const controller = new MapSelectPageController(makeModel({ multiSelect: false }), makePageDef())
-      expect(controller.multiSelect).toBe(false)
-    })
-
-    it('forces multiSelect false when grant-level singleParcelSubmission is true', () => {
-      const singleParcelModel = makeModel({ multiSelect: true }, { singleParcelSubmission: true })
-      const controller = new MapSelectPageController(singleParcelModel, makePageDef({ multiSelect: true }))
-      expect(controller.multiSelect).toBe(false)
-    })
-
-    it('keeps multiSelect true when singleParcelSubmission is not set', () => {
-      const controller = new MapSelectPageController(makeModel({ multiSelect: true }), makePageDef())
-      expect(controller.multiSelect).toBe(true)
+    it.each([
+      ['defaults to [] when metadata omits it', {}, []],
+      ['is ignored when metadata sets a non-array', { enabledLandActions: 'CLIG3' }, []],
+      ['is taken from metadata', { enabledLandActions: ['CLIG3'] }, ['CLIG3']]
+    ])('enabledLandActions %s', (_name, metadata, expected) => {
+      const controller = new MapSelectPageController(makeModel({}, metadata), makePageDef())
+      expect(controller.enabledLandActions).toEqual(expected)
     })
   })
 
   describe('handleGet', () => {
-    it('renders the map view with multiSelect and formAction', async () => {
-      const controller = makeController()
-      const request = makeRequest({}, '/my-path')
-      const context = makeContext()
+    it.each([
+      ['defaults multiSelect false and sets formAction from the path', {}, { multiSelect: false }],
+      ['passes multiSelect true when the page config sets it', { multiSelect: true }, { multiSelect: true }]
+    ])('renders the map view — %s', (_name, config, expected) => {
       const h = makeH()
 
-      await controller.handleGet(request, context, h)
+      makeController(config).handleGet(makeRequest({}, '/my-path'), makeContext(), h)
 
       expect(h.view).toHaveBeenCalledWith(
         'map-select-parcel',
-        expect.objectContaining({
-          multiSelect: false,
-          formAction: '/my-path'
-        })
-      )
-    })
-
-    it('passes multiSelect: true when configured', async () => {
-      const controller = makeController({ multiSelect: true })
-      const h = makeH()
-
-      await controller.handleGet(makeRequest(), makeContext(), h)
-
-      expect(h.view).toHaveBeenCalledWith(
-        'map-select-parcel',
-        expect.objectContaining({
-          multiSelect: true
-        })
+        expect.objectContaining({ ...expected, formAction: '/my-path' })
       )
     })
   })
 
   describe('handlePost — validation', () => {
-    it('re-renders with error when no parcels submitted (single-select)', async () => {
-      const controller = makeController()
+    it.each([
+      ['no landParcels key', {}, {}, 'Select a land parcel on the map before you continue.'],
+      ['an empty string', { landParcels: '' }, {}, 'Select a land parcel on the map before you continue.'],
+      ['an empty array', { landParcels: [] }, {}, 'Select a land parcel on the map before you continue.'],
+      [
+        'nothing selected in multi-select mode',
+        {},
+        { multiSelect: true },
+        'Select at least one land parcel on the map before you continue.'
+      ]
+    ])('re-renders with an error given %s', async (_name, payload, config, errorText) => {
+      const controller = makeController(config)
       const h = makeH()
 
-      await controller.handlePost(makeRequest({}), makeContext(), h)
+      await controller.handlePost(makeRequest(payload), makeContext(), h)
 
       expect(h.view).toHaveBeenCalledWith(
         'map-select-parcel',
-        expect.objectContaining({
-          errors: [{ text: 'Select a land parcel on the map before you continue.', href: '#parcel-map' }]
-        })
+        expect.objectContaining({ errors: [{ text: errorText, href: '#parcel-map' }] })
       )
-      expect(controller.setState).not.toHaveBeenCalled()
-    })
-
-    it('re-renders with multi-select error message when no parcels submitted', async () => {
-      const controller = makeController({ multiSelect: true })
-      const h = makeH()
-
-      await controller.handlePost(makeRequest({}), makeContext(), h)
-
-      expect(h.view).toHaveBeenCalledWith(
-        'map-select-parcel',
-        expect.objectContaining({
-          errors: [{ text: 'Select at least one land parcel on the map before you continue.', href: '#parcel-map' }]
-        })
-      )
-    })
-
-    it('re-renders when landParcels is empty string', async () => {
-      const controller = makeController()
-      const h = makeH()
-
-      await controller.handlePost(makeRequest({ landParcels: '' }), makeContext(), h)
-
-      expect(h.view).toHaveBeenCalled()
       expect(controller.setState).not.toHaveBeenCalled()
     })
   })
 
+  describe('handlePost — action eligibility', () => {
+    const withActions = { enabledLandActions: ['CLIG3', 'CSAM3'] }
+
+    it('rejects every selected parcel without calling the API when the dev mock is on', async () => {
+      isNoActionsMockEnabled.mockReturnValue(true)
+      const controller = makeController({}, withActions)
+      const h = makeH()
+
+      await controller.handlePost(makeRequest({ landParcels: 'SD7148-9160' }), makeContext(), h)
+
+      expect(fetchActionsForParcel).not.toHaveBeenCalled()
+      expectNoActionsError(h)
+      expect(controller.setState).not.toHaveBeenCalled()
+    })
+
+    it('skips the check entirely for grants without enabledLandActions, dev mock or not', async () => {
+      isNoActionsMockEnabled.mockReturnValue(true)
+      const controller = makeController()
+      const h = makeH()
+
+      await controller.handlePost(makeRequest({ landParcels: 'SD7148-9160' }), makeContext(), h)
+
+      expect(fetchActionsForParcel).not.toHaveBeenCalled()
+      expect(controller.setState).toHaveBeenCalled()
+    })
+
+    it('re-renders with the no-eligible-actions error, and logs it, when the parcel has none', async () => {
+      fetchActionsForParcel.mockResolvedValue({ actions: [] })
+      const controller = makeController({}, withActions)
+      const h = makeH()
+
+      await controller.handlePost(makeRequest({ landParcels: 'SD7148-9160' }), makeContext(), h)
+
+      expect(fetchActionsForParcel).toHaveBeenCalledWith(
+        { sheetId: 'SD7148', parcelId: '9160', enabledLandActions: ['CLIG3', 'CSAM3'] },
+        expect.anything()
+      )
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.LAND_GRANTS.NO_ACTIONS_FOUND,
+        { sheetId: 'SD7148', parcelId: '9160' },
+        expect.anything()
+      )
+      expectNoActionsError(h)
+      expect(controller.setState).not.toHaveBeenCalled()
+      expect(controller.proceed).not.toHaveBeenCalled()
+    })
+
+    it('proceeds when the parcel has eligible actions', async () => {
+      fetchActionsForParcel.mockResolvedValue({ actions: [{ code: 'CLIG3' }] })
+      const controller = makeController({}, withActions)
+      const h = makeH()
+
+      await controller.handlePost(makeRequest({ landParcels: 'SD7148-9160' }), makeContext(), h)
+
+      expect(controller.setState).toHaveBeenCalled()
+      expect(controller.proceed).toHaveBeenCalledWith(expect.anything(), h, '/next-path?parcelId=SD7148-9160')
+    })
+
+    it('fails open, logging the failure, when the actions fetch throws', async () => {
+      fetchActionsForParcel.mockRejectedValue(new Error('Land Grants API unavailable'))
+      const controller = makeController({}, withActions)
+      const h = makeH()
+
+      await controller.handlePost(makeRequest({ landParcels: 'SD7148-9160' }), makeContext(), h)
+
+      expect(error).toHaveBeenCalledWith(
+        LogCodes.LAND_GRANTS.FETCH_ACTIONS_ERROR,
+        expect.objectContaining({
+          sbi: '123456789',
+          sheetId: 'SD7148',
+          parcelId: '9160',
+          errorMessage: 'Land Grants API unavailable'
+        }),
+        expect.anything()
+      )
+      expect(controller.setState).toHaveBeenCalled()
+      expect(controller.proceed).toHaveBeenCalled()
+    })
+
+    it('errors when any one of several multi-selected parcels has no actions', async () => {
+      fetchActionsForParcel
+        .mockResolvedValueOnce({ actions: [{ code: 'CLIG3' }] })
+        .mockResolvedValueOnce({ actions: [] })
+      const controller = makeController({ multiSelect: true }, withActions)
+      const h = makeH()
+
+      await controller.handlePost(makeRequest({ landParcels: ['SD7148-9160', 'SD7148-9161'] }), makeContext(), h)
+
+      expectNoActionsError(h)
+      expect(controller.setState).not.toHaveBeenCalled()
+    })
+
+    it('still rejects a parcel with no actions when a different parcel fetch fails', async () => {
+      fetchActionsForParcel
+        .mockRejectedValueOnce(new Error('Land Grants API unavailable'))
+        .mockResolvedValueOnce({ actions: [] })
+      const controller = makeController({ multiSelect: true }, withActions)
+      const h = makeH()
+
+      await controller.handlePost(makeRequest({ landParcels: ['SD7148-9160', 'SD7148-9161'] }), makeContext(), h)
+
+      // The failure is logged against its own parcel, not the whole selection,
+      // and it does not blanket-pass the parcel that genuinely has no actions.
+      expect(error).toHaveBeenCalledWith(
+        LogCodes.LAND_GRANTS.FETCH_ACTIONS_ERROR,
+        expect.objectContaining({ sheetId: 'SD7148', parcelId: '9160' }),
+        expect.anything()
+      )
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.LAND_GRANTS.NO_ACTIONS_FOUND,
+        { sheetId: 'SD7148', parcelId: '9161' },
+        expect.anything()
+      )
+      expectNoActionsError(h)
+      expect(controller.setState).not.toHaveBeenCalled()
+    })
+
+    it('fails open, without calling the API, when the user context is unavailable', async () => {
+      getLandGrantsUserContext.mockImplementationOnce(() => {
+        throw new Error('Missing SBI in Land Grants user context')
+      })
+      const controller = makeController({}, withActions)
+      const h = makeH()
+
+      await controller.handlePost(makeRequest({ landParcels: 'SD7148-9160' }), makeContext(), h)
+
+      expect(error).toHaveBeenCalledWith(
+        LogCodes.LAND_GRANTS.FETCH_ACTIONS_ERROR,
+        expect.objectContaining({
+          sbi: '123456789',
+          sheetId: '',
+          parcelId: '',
+          errorMessage: 'Missing SBI in Land Grants user context'
+        }),
+        expect.anything()
+      )
+      expect(fetchActionsForParcel).not.toHaveBeenCalled()
+      expect(controller.setState).toHaveBeenCalled()
+    })
+
+    it('fetches each parcel once when the same parcel is submitted twice', async () => {
+      fetchActionsForParcel.mockResolvedValue({ actions: [{ code: 'CLIG3' }] })
+      const controller = makeController({ multiSelect: true }, withActions)
+      const h = makeH()
+
+      await controller.handlePost(makeRequest({ landParcels: ['SD7148-9160', 'SD7148-9160'] }), makeContext(), h)
+
+      expect(fetchActionsForParcel).toHaveBeenCalledTimes(1)
+      expect(controller.setState).toHaveBeenCalled()
+    })
+  })
+
   describe('handlePost — single-select success', () => {
-    it('saves selectedParcelId, selectedParcelIds, selectedParcelsDisplay to state', async () => {
+    it('saves the parcel to state and appends ?parcelId to the redirect', async () => {
       const controller = makeController()
       const h = makeH()
 
@@ -161,26 +312,16 @@ describe('MapSelectPageController', () => {
           selectedParcelsDisplay: 'SD7148-9160'
         })
       )
-    })
-
-    it('appends ?parcelId to the redirect URL', async () => {
-      const controller = makeController()
-      controller.getNextPath = vi.fn().mockReturnValue('/next')
-      const h = makeH()
-
-      await controller.handlePost(makeRequest({ landParcels: 'SD7148-9160' }), makeContext(), h)
-
-      expect(controller.proceed).toHaveBeenCalledWith(expect.anything(), h, '/next?parcelId=SD7148-9160')
+      expect(controller.proceed).toHaveBeenCalledWith(expect.anything(), h, '/next-path?parcelId=SD7148-9160')
     })
 
     it('URL-encodes the parcel ID in the redirect', async () => {
       const controller = makeController()
-      controller.getNextPath = vi.fn().mockReturnValue('/next')
       const h = makeH()
 
       await controller.handlePost(makeRequest({ landParcels: 'SD 71/48' }), makeContext(), h)
 
-      expect(controller.proceed).toHaveBeenCalledWith(expect.anything(), h, '/next?parcelId=SD%2071%2F48')
+      expect(controller.proceed).toHaveBeenCalledWith(expect.anything(), h, '/next-path?parcelId=SD%2071%2F48')
     })
 
     it('handles array payload with one item', async () => {
@@ -197,40 +338,32 @@ describe('MapSelectPageController', () => {
   })
 
   describe('handlePost — single-parcel-submission', () => {
+    const existingParcels = { landParcels: { 'SD0000-0001': { size: {}, actionsObj: {} } } }
+
     it('clears existing landParcels object when a parcel is selected', async () => {
       const controller = makeController({}, { singleParcelSubmission: true })
       const h = makeH()
-      const context = makeContext({ landParcels: { 'SD0000-0001': { size: {}, actionsObj: {} } } })
 
-      await controller.handlePost(makeRequest({ landParcels: 'SD7148-9160' }), context, h)
+      await controller.handlePost(makeRequest({ landParcels: 'SD7148-9160' }), makeContext(existingParcels), h)
 
       expect(controller.setState).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({
-          selectedParcelId: 'SD7148-9160',
-          landParcels: {}
-        })
+        expect.objectContaining({ selectedParcelId: 'SD7148-9160', landParcels: {} })
       )
     })
 
     it('does not clear landParcels when singleParcelSubmission is not set', async () => {
       const controller = makeController()
       const h = makeH()
-      const context = makeContext({ landParcels: { 'SD0000-0001': { size: {}, actionsObj: {} } } })
 
-      await controller.handlePost(makeRequest({ landParcels: 'SD7148-9160' }), context, h)
+      await controller.handlePost(makeRequest({ landParcels: 'SD7148-9160' }), makeContext(existingParcels), h)
 
-      expect(controller.setState).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.objectContaining({
-          landParcels: { 'SD0000-0001': { size: {}, actionsObj: {} } }
-        })
-      )
+      expect(controller.setState).toHaveBeenCalledWith(expect.anything(), expect.objectContaining(existingParcels))
     })
   })
 
   describe('handlePost — multi-select success', () => {
-    it('saves selectedParcelIds and selectedParcelsDisplay, no selectedParcelId', async () => {
+    it('saves every parcel, omits selectedParcelId, and does not append ?parcelId', async () => {
       const controller = makeController({ multiSelect: true })
       const h = makeH()
 
@@ -247,16 +380,7 @@ describe('MapSelectPageController', () => {
         expect.anything(),
         expect.not.objectContaining({ selectedParcelId: expect.anything() })
       )
-    })
-
-    it('does not append parcelId to redirect URL', async () => {
-      const controller = makeController({ multiSelect: true })
-      controller.getNextPath = vi.fn().mockReturnValue('/next')
-      const h = makeH()
-
-      await controller.handlePost(makeRequest({ landParcels: ['SD7148-9160', 'SD7148-9161'] }), makeContext(), h)
-
-      expect(controller.proceed).toHaveBeenCalledWith(expect.anything(), h, '/next')
+      expect(controller.proceed).toHaveBeenCalledWith(expect.anything(), h, '/next-path')
     })
 
     it('filters non-string values from array payload', async () => {
@@ -271,13 +395,14 @@ describe('MapSelectPageController', () => {
 
       expect(controller.setState).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({
-          selectedParcelIds: ['SD7148-9160', 'SD7148-9161']
-        })
+        expect.objectContaining({ selectedParcelIds: ['SD7148-9160', 'SD7148-9161'] })
       )
     })
   })
 
+  // These wrappers override base-class stubs that return a canned view/redirect,
+  // so without this coverage the overrides could be deleted and every other test
+  // here would still pass.
   describe('route handler wrappers', () => {
     it('makeGetRouteHandler delegates to handleGet', async () => {
       const controller = makeController()

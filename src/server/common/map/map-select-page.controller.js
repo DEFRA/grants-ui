@@ -1,6 +1,17 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { withTaskContext } from '~/src/server/task-list/task-list.helper.js'
 import { getParcelIdsFromPayload } from '~/src/server/land-grants/utils/parcel-request.utils.js'
+import { fetchActionsForParcel } from '~/src/server/land-grants/services/land-grants.service.js'
+import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
+import { parseLandParcel } from '~/src/shared/format-parcel.js'
+import { log, error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { isNoActionsMockEnabled } from '~/src/server/dev-tools/mock-overrides.js'
+
+// Must match the no-eligible-actions copy in
+// src/server/land-grants/views/select-actions.html
+const NO_ELIGIBLE_ACTIONS_ERROR =
+  'There are no eligible actions for this parcel.<br>' +
+  'Change the parcel land cover or choose a different parcel to view eligible actions.'
 
 export default class MapSelectPageController extends withTaskContext(QuestionPageController) {
   viewName = 'map-select-parcel'
@@ -10,6 +21,9 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
 
   /** @type {boolean} */
   singleParcelSubmission = false
+
+  /** @type {string[]} */
+  enabledLandActions = []
 
   /**
    * @param {FormModel} model
@@ -26,6 +40,8 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
     // Grant-level config: when only a single land parcel is allowed in state, multiple selection is always disabled.
     this.singleParcelSubmission = metadata.singleParcelSubmission === true
     this.multiSelect = !this.singleParcelSubmission && Boolean(config.multiSelect)
+
+    this.enabledLandActions = Array.isArray(metadata.enabledLandActions) ? metadata.enabledLandActions : []
   }
 
   makeGetRouteHandler() {
@@ -63,6 +79,93 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
   }
 
   /**
+   * One parcel's eligible actions, or null when the fetch failed.
+   *
+   * Mirrors SelectActionsBasePageController.fetchActions: the catch is per
+   * parcel, so one failing fetch cannot decide the outcome for the rest of the
+   * selection.
+   * @param {FormRequestPayload} request
+   * @param {LandGrantsUserContext} userContext
+   * @param {{ sheetId: string, parcelId: string }} parcel
+   * @returns {Promise<ActionOption[] | null>}
+   */
+  async fetchActionsOrNull(request, userContext, { sheetId, parcelId }) {
+    try {
+      const { actions } = await fetchActionsForParcel(
+        { sheetId, parcelId, enabledLandActions: this.enabledLandActions },
+        userContext
+      )
+      return actions
+    } catch (err) {
+      const { message: errorMessage, status: statusCode } = /** @type {Error & {status?: number}} */ (err)
+      error(
+        LogCodes.LAND_GRANTS.FETCH_ACTIONS_ERROR,
+        { sbi: userContext.sbi, sheetId, parcelId, errorMessage, statusCode },
+        request
+      )
+      return null
+    }
+  }
+
+  /**
+   * The selected parcels that have no action the user could go on to choose, so
+   * that Continue can be rejected here rather than sending the user to the
+   * select-actions page only to be told to come back.
+   *
+   * Uses the flat fetchActionsForParcel, matching SelectActionsPageController. A
+   * journey pairing this map page with SelectGroupedActionsPageController would
+   * need fetchGroupedActionsForParcel, which filters further by group definition
+   * and caches under a different key prefix ('' vs 'flat:').
+   *
+   * Fails open per parcel: a parcel whose fetch failed is treated as eligible,
+   * so an outage lets the user through to the select-actions page (which has its
+   * own fetch-failure message) instead of being reported as "no actions".
+   * @param {FormRequestPayload} request
+   * @param {string[]} selectedParcelIds
+   * @returns {Promise<string[]>}
+   */
+  async findParcelsWithNoActions(request, selectedParcelIds) {
+    if (this.enabledLandActions.length === 0) {
+      return []
+    }
+
+    // Dev-tools escape hatch: the local seed gives every parcel at least one
+    // action, so this is the only way to see the error page locally.
+    if (isNoActionsMockEnabled(request)) {
+      return selectedParcelIds
+    }
+
+    let userContext
+    try {
+      userContext = getLandGrantsUserContext(request)
+    } catch (err) {
+      const { message: errorMessage, status: statusCode } = /** @type {Error & {status?: number}} */ (err)
+      error(
+        LogCodes.LAND_GRANTS.FETCH_ACTIONS_ERROR,
+        { sbi: request.auth?.credentials?.sbi, sheetId: '', parcelId: '', errorMessage, statusCode },
+        request
+      )
+      return []
+    }
+
+    const results = await Promise.all(
+      [...new Set(selectedParcelIds)].map(async (selectedParcelId) => {
+        const [sheetId = '', parcelId = ''] = parseLandParcel(selectedParcelId)
+        const actions = await this.fetchActionsOrNull(request, userContext, { sheetId, parcelId })
+        return { selectedParcelId, sheetId, parcelId, actions }
+      })
+    )
+
+    // A null means the fetch failed — only a resolved empty list is "no actions".
+    const ineligible = results.filter((result) => result.actions?.length === 0)
+    ineligible.forEach(({ sheetId, parcelId }) => {
+      log(LogCodes.LAND_GRANTS.NO_ACTIONS_FOUND, { sheetId, parcelId }, request)
+    })
+
+    return ineligible.map((result) => result.selectedParcelId)
+  }
+
+  /**
    * @param {FormRequestPayload} request
    * @param {FormContext} context
    * @param {FormResponseToolkit} h
@@ -78,8 +181,21 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
       return h.view(
         this.viewName,
         this.buildViewModel(request, context, {
-          selectedParcelIds: [],
           errors: [{ text: errorText, href: '#parcel-map' }]
+        })
+      )
+    }
+
+    const parcelsWithNoActions = await this.findParcelsWithNoActions(request, selectedParcelIds)
+    if (parcelsWithNoActions.length > 0) {
+      // State is deliberately left untouched: a rejected change must not destroy a
+      // previously completed selection and its actions. The map always re-renders
+      // unselected regardless, because parcel-select-page.js builds its inputs from
+      // map events only — there is no server-side re-hydration of the selection.
+      return h.view(
+        this.viewName,
+        this.buildViewModel(request, context, {
+          errors: [{ html: NO_ELIGIBLE_ACTIONS_ERROR, href: '#parcel-map' }]
         })
       )
     }
@@ -115,4 +231,6 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
  * @import { FormRequest, FormRequestPayload, FormContext, FormResponseToolkit, FormSubmissionState } from '@defra/forms-engine-plugin/types'
  * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
  * @import { PageQuestion as PageDef } from '@defra/forms-model'
+ * @import { ActionOption } from '~/src/server/land-grants/types/land-grants.client.d.js'
+ * @import { LandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
  */
