@@ -110,7 +110,7 @@ describe('confirm-land-and-actions.html view', () => {
 
   it('renders no caption element outside the H1', () => {
     const $ = renderPage(model)
-    expect($('main .govuk-caption-l').length).toBe(1)
+    expect($('main .govuk-caption-l')).toHaveLength(1)
     expect($('main .govuk-caption-l').parent().is('h1')).toBe(true)
   })
 
@@ -122,7 +122,7 @@ describe('confirm-land-and-actions.html view', () => {
   it('renders one block per parcel, headed by the bare reference with a removal link', () => {
     const $ = renderPage(model)
     const blocks = $('.land-parcel-summary--parcel')
-    expect(blocks.length).toBe(2)
+    expect(blocks).toHaveLength(2)
 
     expect(blocks.eq(0).find('h2').text().trim()).toBe('SD1234 5678')
     expect(blocks.eq(1).find('h2').text().trim()).toBe('CD9999 1111')
@@ -226,7 +226,7 @@ describe('confirm-land-and-actions.html view', () => {
     const $ = renderPage(model)
     const block = $('.land-parcel-summary').eq(0)
 
-    expect(block.find('.land-parcel-summary__action-row').length).toBe(2)
+    expect(block.find('.land-parcel-summary__action-row')).toHaveLength(2)
     expect(
       block
         .find('.land-parcel-summary__action-row .govuk-table__header')
@@ -248,7 +248,7 @@ describe('confirm-land-and-actions.html view', () => {
     const $ = renderPage(model)
     const firstAction = $('.land-parcel-summary').eq(0).find('.land-parcel-summary__action-row').eq(0)
 
-    expect(firstAction.find('a').length).toBe(1)
+    expect(firstAction.find('a')).toHaveLength(1)
     expect(normalise(firstAction.find('a').text())).toBe('Change Action description (CLIG3)')
     expect(firstAction.find('a').attr('href')).toBe('select-actions-for-land-parcel?parcelId=SD1234-5678')
   })
@@ -267,7 +267,7 @@ describe('confirm-land-and-actions.html view', () => {
     const controls = $('.land-parcel-summary').eq(0).find('.land-parcel-summary__action-row').eq(0).find('td').last()
 
     expect(controls.hasClass('land-parcel-summary__actions')).toBe(true)
-    expect(controls.find('a').length).toBe(1)
+    expect(controls.find('a')).toHaveLength(1)
   })
 
   it('escapes action text rather than trusting it as markup', () => {
@@ -278,7 +278,7 @@ describe('confirm-land-and-actions.html view', () => {
       ]
     })
 
-    expect($('main script').length).toBe(0)
+    expect($('main script')).toHaveLength(0)
     expect(bodyText($)).toContain('<script>x</script> & co')
   })
 
@@ -289,12 +289,12 @@ describe('confirm-land-and-actions.html view', () => {
     })
     const blocks = $('.land-parcel-summary')
 
-    expect(blocks.length).toBe(3)
+    expect(blocks).toHaveLength(3)
     expect(blocks.eq(2).find('h2').text().trim()).toBe('Additional yearly payments')
     expect(rowsOf($, 2)).toEqual(['Assess moorland (CMOR1)|£272.00'])
-    expect(blocks.eq(2).find('.land-parcel-summary__action-row').length).toBe(0)
+    expect(blocks.eq(2).find('.land-parcel-summary__action-row')).toHaveLength(0)
     expect(blocks.eq(2).hasClass('land-parcel-summary--parcel')).toBe(false)
-    expect($('.land-parcel-summary--parcel').length).toBe(2)
+    expect($('.land-parcel-summary--parcel')).toHaveLength(2)
   })
 
   it('omits the agreement-level block when there are no such items', () => {
@@ -318,8 +318,8 @@ describe('confirm-land-and-actions.html view', () => {
       .filter((_, row) => normalise($(row).find('.govuk-table__header').text()) === 'Total yearly payment')
       .first()
 
-    expect(applicationTotalRow.length).toBe(1)
-    expect(applicationTotalRow.closest('.land-parcel-summary').length).toBe(0)
+    expect(applicationTotalRow).toHaveLength(1)
+    expect(applicationTotalRow.closest('.land-parcel-summary')).toHaveLength(0)
     expect(normalise(applicationTotalRow.find('.govuk-table__cell').first().text())).toBe('£1,234.00')
     expect(normalise(applicationTotalRow.closest('table').find('caption').text())).toBe(
       'Total yearly payment for the grant application'
@@ -359,9 +359,9 @@ describe('confirm-land-and-actions.html view', () => {
       expect(bodyText($)).toContain(
         'Unable to get payment information, please try again later or contact the Rural Payments Agency.'
       )
-      expect($('.land-parcel-summary').length).toBe(0)
-      expect($('.govuk-table').length).toBe(0)
-      expect($('form button, form input[type="submit"]').length).toBe(0)
+      expect($('.land-parcel-summary')).toHaveLength(0)
+      expect($('.govuk-table')).toHaveLength(0)
+      expect($('form button, form input[type="submit"]')).toHaveLength(0)
       expect(bodyText($)).not.toContain('Total yearly payment')
     })
 

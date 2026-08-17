@@ -15,6 +15,6 @@ describe('Brand Bar Component', () => {
     )
     expect($logo.attr('src')).toBe('/public/assets/defra/images/defra-crest.png')
     expect($logo.attr('alt')).toBe('Department for Environment, Food & Rural Affairs')
-    expect($brandBar('.govuk-header').length).toBe(0)
+    expect($brandBar('.govuk-header')).toHaveLength(0)
   })
 })

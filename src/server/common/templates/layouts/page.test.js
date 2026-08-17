@@ -47,7 +47,7 @@ describe('page layout branding phases', () => {
     const $ = renderPage({ govukBranding: false })
 
     test('renders the blue DEFRA crest brand bar instead of the GOV.UK crown header', () => {
-      expect($('.govuk-header').length).toBe(0)
+      expect($('.govuk-header')).toHaveLength(0)
 
       const $logo = $('.defra-brand-bar a.defra-brand-bar__link img.defra-brand-bar__logotype')
       expect($logo.attr('src')).toBe('/public/assets/defra/images/defra-crest.png')
@@ -68,7 +68,7 @@ describe('page layout branding phases', () => {
     })
 
     test('renders the footer without the GOV.UK rebrand crown', () => {
-      expect($('.govuk-footer__crown').length).toBe(0)
+      expect($('.govuk-footer__crown')).toHaveLength(0)
     })
   })
 
@@ -76,8 +76,8 @@ describe('page layout branding phases', () => {
     const $ = renderPage({ govukBranding: true })
 
     test('renders the official GOV.UK header with the crown logo', () => {
-      expect($('.govuk-header .govuk-header__logotype').length).toBe(1)
-      expect($('.defra-brand-bar').length).toBe(0)
+      expect($('.govuk-header .govuk-header__logotype')).toHaveLength(1)
+      expect($('.defra-brand-bar')).toHaveLength(0)
     })
 
     test('does not apply the restricted typography body class', () => {
