@@ -1,6 +1,7 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { vi } from 'vitest'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
+import { debug } from '~/src/server/common/helpers/logging/log.js'
 import { setupControllerMocks } from '~/src/__mocks__/controller-mocks.js'
 import { fetchParcels } from '~/src/server/land-grants/services/land-grants.service.js'
 import SelectLandParcelPageController from './select-land-parcel-page.controller.js'
@@ -37,7 +38,11 @@ vi.mock('~/src/server/land-grants/services/land-grants.service.js', () => ({
 }))
 
 vi.mock('~/src/shared/format-parcel.js', () => ({
-  stringifyParcel: ({ parcelId, sheetId }) => `${sheetId}-${parcelId}`
+  stringifyParcel: ({ parcelId, sheetId }) => `${sheetId}-${parcelId}`,
+  formatParcelReference: (parcel) => {
+    const [sheetId, parcelId] = typeof parcel === 'string' ? parcel.split('-') : [parcel.sheetId, parcel.parcelId]
+    return [sheetId, parcelId].filter((part) => part != null && part !== '').join(' ')
+  }
 }))
 
 const mockParcelsResponse = [
@@ -189,6 +194,20 @@ describe('SelectLandParcelPageController', () => {
       expect(result).toBe(renderedViewMock)
     })
 
+    it('logs the caught error at error level when fetching parcels fails', async () => {
+      const thrown = new Error('not found')
+      fetchParcels.mockRejectedValue(thrown)
+
+      await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+
+      const [logCode, messageOptions, loggedRequest] = debug.mock.calls[0]
+      expect(logCode.level).toBe('error')
+      expect(logCode.error).toBe(thrown)
+      expect(logCode.messageFunc()).toBe('Unexpected error when fetching parcel data')
+      expect(messageOptions).toEqual({})
+      expect(loggedRequest).toBe(mockRequest)
+    })
+
     it('handles empty parcels list info', async () => {
       fetchParcels.mockResolvedValue([])
 
@@ -329,6 +348,22 @@ describe('SelectLandParcelPageController', () => {
         })
       )
       expect(result).toBe('mock-rendered-view')
+    })
+
+    it('logs the caught error at error level when validation re-fetch fails', async () => {
+      const thrown = new Error('Fetch error')
+      mockRequest.payload = { action: 'validate' }
+      mockContext = setupContext({ existing: 'value', landParcels: { 'SD7946-0155': { actionsObj: { ACTION1: {} } } } })
+      fetchParcels.mockRejectedValue(thrown)
+
+      await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
+
+      const [logCode, messageOptions, loggedRequest] = debug.mock.calls[0]
+      expect(logCode.level).toBe('error')
+      expect(logCode.error).toBe(thrown)
+      expect(logCode.messageFunc()).toBe('Error fetching parcels for validation error rendering')
+      expect(messageOptions).toEqual({})
+      expect(loggedRequest).toBe(mockRequest)
     })
 
     it('should handle timeout when fetching parcels gracefully', async () => {

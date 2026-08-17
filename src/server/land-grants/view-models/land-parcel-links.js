@@ -1,4 +1,4 @@
-import { stringifyParcel } from '~/src/shared/format-parcel.js'
+import { formatParcelReference, stringifyParcel } from '~/src/shared/format-parcel.js'
 
 /**
  * Single source of truth for the land-parcel titles and journey hrefs shared by
@@ -16,12 +16,13 @@ export const parcelIdParam = (sheetId, parcelId) => encodeURIComponent(stringify
 
 /**
  * Bare land parcel reference (`SD1234 5678`), used where the surrounding
- * context already says it is a land parcel.
+ * context already says it is a land parcel. Delegates to the shared formatter
+ * so display references have one definition service-wide.
  * @param {string} sheetId
  * @param {string} parcelId
  * @returns {string}
  */
-export const landParcelReference = (sheetId, parcelId) => `${sheetId} ${parcelId}`
+export const landParcelReference = (sheetId, parcelId) => formatParcelReference({ sheetId, parcelId })
 
 /**
  * User-facing land parcel title. Uses the `CONTEXT.md` glossary casing.

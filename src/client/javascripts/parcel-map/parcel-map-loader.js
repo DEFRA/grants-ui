@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { PARCELS_API_URL, PARCELS_GEOJSON_URL, FETCH_MAX_ATTEMPTS, FETCH_RETRY_DELAY_MS } from './config.js'
+import { PARCELS_API_URL, FETCH_MAX_ATTEMPTS, FETCH_RETRY_DELAY_MS } from './config.js'
 
 /**
  * @import { MetaIndex } from './map-helpers.js'
@@ -7,7 +7,7 @@ import { PARCELS_API_URL, PARCELS_GEOJSON_URL, FETCH_MAX_ATTEMPTS, FETCH_RETRY_D
 
 /**
  * @typedef {{ minLng: number, minLat: number, maxLng: number, maxLat: number }} BBox
- * @typedef {{ parcelIds: string[], metaIndex: MetaIndex, geojsonUrl: string | null, bbox: BBox | null }} ParcelData
+ * @typedef {{ parcelIds: string[], metaIndex: MetaIndex, geojson: GeoJSON.FeatureCollection | null, bbox: BBox | null }} ParcelData
  */
 
 /**
@@ -65,7 +65,7 @@ export async function parseParcelResponse(resp) {
   return {
     parcelIds,
     metaIndex,
-    geojsonUrl: body.mock ? PARCELS_GEOJSON_URL : null,
+    geojson: body.mock ? { type: 'FeatureCollection', features } : null,
     bbox: body.bbox ?? null
   }
 }

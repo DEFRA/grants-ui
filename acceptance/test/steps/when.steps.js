@@ -66,7 +66,6 @@ When('(the user )selects the first available land parcel on the map', async func
   // placeholder.
   selectedParcel.current = parcelId
 })
-
 When('(the user )clicks on {string}', async function (text) {
   await this.page.locator(`//*[contains(text(),'${text}')]`).click()
 })

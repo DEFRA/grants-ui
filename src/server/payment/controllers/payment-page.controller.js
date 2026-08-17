@@ -1,26 +1,9 @@
 import nunjucks from 'nunjucks'
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
-import { paymentStrategies } from '~/src/server/payment/payment-strategies.js'
+import { resolveStrategy } from '~/src/server/payment/resolve-strategy.js'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
 import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
-
-/**
- * @param {string | undefined} paymentStrategy
- * @returns {{ calculatePayment: (state: object, userContext: LandGrantsUserContext) => Promise<PaymentStrategyResult> }}
- */
-function resolveStrategy(paymentStrategy) {
-  const strategy = paymentStrategy ? paymentStrategies[paymentStrategy] : undefined
-  if (!strategy) {
-    const systemError = new SystemError({
-      message: `Unknown paymentStrategy "${paymentStrategy}". Available strategies: ${Object.keys(paymentStrategies).join(', ')}`,
-      source: 'PaymentPageController',
-      reason: 'invalid_config'
-    })
-    throw systemError
-  }
-  return strategy
-}
 
 /**
  * @param {{ next?: string, addMoreActions?: string }} redirects

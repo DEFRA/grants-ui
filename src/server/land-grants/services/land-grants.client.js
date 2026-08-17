@@ -216,7 +216,7 @@ export async function parcelsWithActions(parcelIds, baseUrl, userContext, planne
 export async function validate(request, baseUrl, userContext) {
   const { sbi } = validateLandGrantsUserContext(userContext)
   const endpoint = '/api/v2/application/validate'
-  return postToLandGrantsApi(endpoint, { ...request, sbi: Number(sbi) }, baseUrl, userContext)
+  return postToLandGrantsApi(endpoint, { ...request, sbi }, baseUrl, userContext)
 }
 
 /**

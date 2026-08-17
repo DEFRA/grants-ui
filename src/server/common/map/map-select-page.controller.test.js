@@ -115,7 +115,7 @@ describe('MapSelectPageController', () => {
       expect(h.view).toHaveBeenCalledWith(
         'map-select-parcel',
         expect.objectContaining({
-          errors: [{ text: 'Select a land parcel on the map to continue', href: '#parcel-map' }]
+          errors: [{ text: 'Select a land parcel on the map before you continue.', href: '#parcel-map' }]
         })
       )
       expect(controller.setState).not.toHaveBeenCalled()
@@ -130,7 +130,7 @@ describe('MapSelectPageController', () => {
       expect(h.view).toHaveBeenCalledWith(
         'map-select-parcel',
         expect.objectContaining({
-          errors: [{ text: 'Select at least one land parcel on the map to continue', href: '#parcel-map' }]
+          errors: [{ text: 'Select at least one land parcel on the map before you continue.', href: '#parcel-map' }]
         })
       )
     })

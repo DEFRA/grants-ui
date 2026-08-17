@@ -264,7 +264,7 @@ export default class CheckDetailsController extends withTaskContext(QuestionPage
           sfdUpdateDetailsUrl: this.getSfdUpdateDetailsActionUrl(request)
         })
       } catch (error) {
-        return this.handleError(error, baseViewModel, h, request)
+        return this.handleError(/** @type {Error} */ (error), baseViewModel, h, request)
       }
     }
   }
@@ -393,7 +393,11 @@ export default class CheckDetailsController extends withTaskContext(QuestionPage
       )
       return this.proceed(request, h, this.getNextPath(context))
     } catch (error) {
-      debug(LogCodes.SYSTEM.EXTERNAL_API_ERROR, { endpoint: 'ConsolidatedView', errorMessage: error.message }, request)
+      debug(
+        LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+        { endpoint: 'ConsolidatedView', errorMessage: /** @type {Error} */ (error).message },
+        request
+      )
       return h.view(this.viewName, {
         ...baseViewModel,
         error: {

@@ -12,7 +12,7 @@ import { toParcelData, toGeoJsonFeatures } from './parcel-features.js'
 import { withCompoundParcelIds } from './mvt-compound-id.js'
 import { buildOsBasemapStyle, fetchOsTile } from './os-maps.js'
 import { isMockData } from './map.mock.js'
-import { buildMockParcelsResponse } from './map.mock.plugin.js'
+import { buildMockParcelsResponse } from './map.mock.response.js'
 import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
@@ -47,7 +47,7 @@ export async function parcelsHandler(request, h) {
   const parcelData = toParcelData(result.value)
 
   if (isMockData()) {
-    return buildMockParcelsResponse(request, parcelData, h)
+    return buildMockParcelsResponse(parcelData, h)
   }
 
   const features = toGeoJsonFeatures(parcelData)
@@ -56,7 +56,9 @@ export async function parcelsHandler(request, h) {
     userContext
   )
 
-  return h.response({ features, bbox }).code(statusCodes.ok)
+  // User-specific: never let the browser replay this for a different signed-in
+  // user against the same URL after a logout/login.
+  return h.response({ features, bbox }).code(statusCodes.ok).header(CACHE_CONTROL_HEADER, 'no-store')
 }
 
 /**
@@ -97,11 +99,15 @@ export async function tilesHandler(request, h) {
     return h.response().code(status ?? statusCodes.serviceUnavailable)
   }
 
+  // These tiles carry the signed-in user's own parcel geometry, but the URL
+  // is only {z}/{x}/{y} — no user-scoping — so a max-age here would let the
+  // browser replay one user's parcels to whoever is signed in next at the
+  // same tile coordinate after a logout/login. Must never be cached.
   return h
     .response(withCompoundParcelIds(tileResult.value))
     .code(statusCodes.ok)
     .type('application/x-protobuf')
-    .header(CACHE_CONTROL_HEADER, `private, max-age=${TILE_CACHE_MAX_AGE_SECONDS}`)
+    .header(CACHE_CONTROL_HEADER, 'no-store')
 }
 
 /**

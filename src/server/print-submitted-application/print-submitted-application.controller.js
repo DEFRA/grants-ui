@@ -128,7 +128,7 @@ export default class PrintSubmittedApplicationController extends StatusPageContr
           h
         )
       } catch (error) {
-        return this.handleError(error, request, h)
+        return this.handleError(/** @type {Error} */ (error), request, h)
       }
     }
   }

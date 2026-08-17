@@ -445,16 +445,27 @@ export function shouldHandlePreSubmission(previousStatus) {
 /**
  * Determines whether a submitted or reopened application should be checked against GAS.
  *
+ * Claim journeys (CLAIM_STARTED, CLAIM_SUBMITTED) are handled separately by
+ * {@link claimJourneyRedirect} and therefore do not go through the GAS-backed
+ * post-submission flow.
+ *
  * @param {string | undefined} previousStatus - The previous application status stored in the session or state.
  * @returns {previousStatus is string} `true` when post-submission redirect handling should run.
  */
 function shouldHandlePostSubmission(previousStatus) {
-  return (
-    previousStatus === ApplicationStatus.SUBMITTED ||
-    previousStatus === ApplicationStatus.REOPENED ||
-    previousStatus === ApplicationStatus.CLAIM_STARTED ||
-    previousStatus === ApplicationStatus.CLAIM_SUBMITTED
-  )
+  return previousStatus === ApplicationStatus.SUBMITTED || previousStatus === ApplicationStatus.REOPENED
+}
+
+/**
+ * Determines whether the previous application status represents an in-progress
+ * claim journey whose configured start page (e.g. `/claim`) should behave as the
+ * journey's start page.
+ *
+ * @param {string | undefined} previousStatus - The previous application status stored in the session or state.
+ * @returns {previousStatus is string} `true` when claim journey start-page handling should run.
+ */
+function isClaimJourneyStatus(previousStatus) {
+  return previousStatus === ApplicationStatus.CLAIM_STARTED || previousStatus === ApplicationStatus.CLAIM_SUBMITTED
 }
 
 /**
@@ -467,10 +478,7 @@ function shouldHandlePostSubmission(previousStatus) {
  */
 function shouldSkipFormsStatusRedirect(request, context, grantRedirectRules) {
   const applicationStatus = context.state.applicationStatus
-  const isPostSubmission =
-    applicationStatus === ApplicationStatus.SUBMITTED ||
-    applicationStatus === ApplicationStatus.CLAIM_STARTED ||
-    applicationStatus === ApplicationStatus.CLAIM_SUBMITTED
+  const isPostSubmission = applicationStatus === ApplicationStatus.SUBMITTED
   const isWithinGrantPages = request.headers['sec-fetch-site'] === 'same-origin'
   const isCheckDetailsStartPage = request.app.model?.def?.startPage === '/check-details'
   const currentPath = request.params?.path
@@ -679,7 +687,7 @@ async function handlePostSubmissionWithFallback(request, h, context, redirectCon
     )
   } catch (err) {
     return handlePostSubmissionError(
-      err,
+      /** @type {Error & { status?: number }} */ (err),
       request,
       h,
       context,
@@ -715,6 +723,89 @@ function consumeStatusChangeRedirect(request, h) {
 }
 
 /**
+ * Determines whether the current request targets the configured journey start
+ * page or a page positioned after it in the form definition's ordered pages.
+ *
+ * The form definition lists pages in journey order, so a page's index is a
+ * deterministic position within the journey. Pages before the start page are
+ * "off limits"; the start page and any later pages follow the normal
+ * forms-engine-plugin navigation rules.
+ *
+ * @param {AnyFormRequest} request - The Hapi forms request object.
+ * @param {string} grantId - The grant slug identifying the grant type.
+ * @param {string} startPath - The configured journey start page path (e.g. `/claim`).
+ * @returns {boolean} `true` when the request is for the start page or a later page.
+ */
+function isAtOrAfterJourneyStartPage(request, grantId, startPath) {
+  const pages = /** @type {{ path?: string }[]} */ (request.app.model?.def?.pages ?? [])
+
+  const startIndex = pages.findIndex((page) => page.path === startPath)
+  const currentIndex = pages.findIndex((page) => page.path && buildRedirectUrl(grantId, page.path) === request.path)
+
+  if (startIndex === -1 || currentIndex === -1) {
+    return false
+  }
+
+  return currentIndex >= startIndex
+}
+
+/**
+ * Handles navigation for in-progress claim journeys.
+ *
+ * The configured claim start page (e.g. `/claim`) is treated as the journey's
+ * start page: requests for earlier pages (including the submitted-application
+ * `/confirmation` page) are redirected to it, while the start page and any pages
+ * after it follow the normal forms-engine-plugin navigation rules. This lets a
+ * claim journey reuse the plugin's forward-navigation behaviour with a different
+ * start page instead of trapping the user on the start page.
+ *
+ * @param {AnyFormRequest} request - The Hapi forms request object.
+ * @param {ResponseToolkit} h - The Hapi response toolkit.
+ * @param {FormsStatusRedirectContext} redirectContext - Redirect context when a grant slug is present.
+ * @param {string} previousStatus - A claim journey status (CLAIM_STARTED or CLAIM_SUBMITTED).
+ * @returns {import('@hapi/hapi').ResponseObject | symbol} A redirect or `h.continue`.
+ */
+function claimJourneyRedirect(request, h, redirectContext, previousStatus) {
+  const { grantId, grantRedirectRules } = redirectContext
+
+  const statusChangeRedirect = consumeStatusChangeRedirect(request, h)
+  if (statusChangeRedirect) {
+    return statusChangeRedirect
+  }
+
+  const currentPath = request.params?.path
+  const currentPathIsExcluded = Boolean(currentPath && grantRedirectRules?.excludedPaths?.includes(currentPath))
+  if (currentPathIsExcluded) {
+    return h.continue
+  }
+
+  const postSubmissionRules = grantRedirectRules?.postSubmission ?? []
+  if (!postSubmissionRules.length) {
+    return h.continue
+  }
+
+  let startRule
+  try {
+    // Claim statuses are steady state (toGrantsStatus === fromGrantsStatus), so the
+    // destination is resolved from configuration without calling GAS, keeping this
+    // decision deterministic and side-effect-light.
+    startRule = mapStatusToUrl(previousStatus, 'default', postSubmissionRules)
+  } catch {
+    // No configured claim rule for this status; leave navigation to the plugin.
+    return h.continue
+  }
+
+  const startPath = startRule.toPath
+
+  if (isAtOrAfterJourneyStartPage(request, grantId, startPath)) {
+    return h.continue
+  }
+
+  const redirectUrl = buildRedirectUrl(grantId, startPath)
+  return request.path === redirectUrl ? h.continue : h.redirect(redirectUrl).takeover()
+}
+
+/**
  * Runs the forms status redirect decision tree once request context is available.
  *
  * @param {AnyFormRequest} request - The Hapi forms request object.
@@ -728,6 +819,15 @@ async function handleFormsStatusRedirect(request, h, context, redirectContext) {
     return h.continue
   }
 
+  const { previousStatus, grantRedirectRules } = redirectContext
+
+  // Claim journeys treat the configured claim start page (e.g. /claim) as the journey's
+  // start page. This runs before the SUBMITTED-oriented protected-page guard so that,
+  // for example, /confirmation is redirected to /claim rather than being forbidden.
+  if (isClaimJourneyStatus(previousStatus)) {
+    return claimJourneyRedirect(request, h, redirectContext, previousStatus)
+  }
+
   const protectedPageGuard = checkProtectedPageGuard(request, h, context)
   const protectedPageGuardProducedResponse = protectedPageGuard !== h.continue // NOSONAR S2159
   if (protectedPageGuardProducedResponse) {
@@ -738,8 +838,6 @@ async function handleFormsStatusRedirect(request, h, context, redirectContext) {
   if (statusChangeRedirect) {
     return statusChangeRedirect
   }
-
-  const { previousStatus, grantRedirectRules } = redirectContext
 
   /** Don't redirect if page is listed in the grant config excludedPaths
    * or if the request is from within the grant pages (e.g. user refreshing the page or navigating using the back button)

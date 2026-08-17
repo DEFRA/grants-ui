@@ -2,6 +2,7 @@ import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-w
 import { formatPrice } from '~/src/server/common/utils/payment.js'
 import {
   changeActionsHref,
+  landParcelReference,
   landParcelTitle,
   removeActionHref,
   removeParcelHref
@@ -98,11 +99,11 @@ export function buildLandParcelFooterActions(paymentItems, sheetId, parcelId, ac
  */
 export function mapPaymentInfoToParcelItems(paymentInfo, actionGroups = []) {
   const groupedByParcel = Object.values(paymentInfo?.parcelItems || {}).reduce((acc, data) => {
-    const parcelKey = `${data.sheetId} ${data.parcelId}`
+    const parcelKey = landParcelReference(data.sheetId, data.parcelId)
 
     if (!acc[parcelKey]) {
       acc[parcelKey] = {
-        cardTitle: `Land parcel ${parcelKey}`,
+        cardTitle: landParcelTitle(data.sheetId, data.parcelId),
         headerActions: buildLandParcelHeaderActions(data.sheetId, data.parcelId),
         footerActions: buildLandParcelFooterActions(
           paymentInfo?.parcelItems ?? {},

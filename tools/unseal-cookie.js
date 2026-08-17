@@ -20,7 +20,7 @@ const ironOptions = {
     const result = await Iron.unseal(sealed, password, ironOptions)
     console.log(JSON.stringify(result, null, 2))
   } catch (err) {
-    console.error('unseal failed:', err.message)
+    console.error('unseal failed:', /** @type {Error} */ (err).message)
     process.exit(1)
   }
 })()

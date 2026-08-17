@@ -131,10 +131,6 @@ Then('(the user )should see the following configurable content', async function 
   }
 })
 
-Then('(the user )should see {string} in the selected parcel summary', async function (parcelId) {
-  await expect(this.page.locator('#parcel-selection-summary')).toHaveText(`Selected: ${parcelId}`)
-})
-
 Then('(the user )should see a/an {string} reference number for their application', async function (prefix) {
   const selector = this.page.locator('//h1/following-sibling::div[1]/strong')
   await expect(selector).toContainText(prefix)
@@ -145,6 +141,15 @@ Then('(the user )should see a reference number for their application', async fun
   const selector = this.page.locator('//h1/following-sibling::div[1]/strong')
   await expect(selector).toBeVisible()
   referenceNumbers.push(await selector.textContent())
+})
+
+Then('(the user )should see claim reference number {string}', async function (claimNumberSuffix) {
+  if (!referenceNumbers.current) {
+    throw new Error('No reference number stored by earlier step')
+  }
+
+  const selector = this.page.locator('//h1/following-sibling::div[1]/strong')
+  await expect(selector).toHaveText(`${referenceNumbers.current}${claimNumberSuffix}`)
 })
 
 Then(

@@ -1,7 +1,6 @@
 // @ts-nocheck
 import { vi, describe, it, expect, afterEach } from 'vitest'
 import { parseParcelResponse, fetchParcelData } from './parcel-map-loader.js'
-import { PARCELS_GEOJSON_URL } from './config.js'
 
 const resp = (body) => ({ ok: true, json: () => Promise.resolve(body) })
 
@@ -19,7 +18,7 @@ describe('parseParcelResponse', () => {
 
     expect(data.parcelIds).toEqual(['SD7148-9160', 'SD7148-9161'])
     expect(data.metaIndex['SD7148-9160']).toMatchObject({ id: 'SD7148-9160', areaHa: 2.5 })
-    expect(data.geojsonUrl).toBeNull()
+    expect(data.geojson).toBeNull()
     expect(data.bbox).toEqual({ minLng: -2.5, minLat: 51.4, maxLng: -2.3, maxLat: 51.6 })
   })
 
@@ -41,9 +40,10 @@ describe('parseParcelResponse', () => {
     expect(Object.keys(data.metaIndex)).toEqual(expected)
   })
 
-  it('points at the GeoJSON source when mock mode is flagged', async () => {
-    const data = await parseParcelResponse(resp({ features: [{ id: 'A', properties: {} }], mock: true }))
-    expect(data.geojsonUrl).toBe(PARCELS_GEOJSON_URL)
+  it('carries the fetched features as inline GeoJSON when mock mode is flagged', async () => {
+    const features = [{ id: 'A', properties: {} }]
+    const data = await parseParcelResponse(resp({ features, mock: true }))
+    expect(data.geojson).toEqual({ type: 'FeatureCollection', features })
   })
 
   it('defaults bbox to null and features to [] when absent', async () => {

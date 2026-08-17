@@ -25,14 +25,33 @@ export const MOCK_CONFIRMATION_CONTENT = {
   detailed: {
     html: '<h2 class="govuk-heading-m">What happens next</h2><p class="govuk-body">Detailed confirmation content</p>'
   },
+  // Config-driven shape: panel copy comes from config, body from components.
+  panel: {
+    panelTitle: 'Application complete',
+    panelText: 'Your reference number'
+  },
   empty: {},
   withText: {
     text: 'Test text confirmation'
   }
 }
 
+// Standard forms `components:` list, as resolved onto the page view model. The
+// confirmation body is rendered from these components.
+export const MOCK_COMPONENTS = [
+  {
+    type: 'Html',
+    model: {
+      content: '<p class="govuk-body">Reference {{ referenceNumber }} for /{{ slug }}/print-submitted-application</p>'
+    }
+  }
+]
+
 export const MOCK_FORM_CACHE = [
-  { ...MOCK_FORM_ENTRIES.testForm, metadata: { confirmationContent: MOCK_CONFIRMATION_CONTENT.basic } },
+  {
+    ...MOCK_FORM_ENTRIES.testForm,
+    metadata: { pageConfig: { '/confirmation': MOCK_CONFIRMATION_CONTENT.basic } }
+  },
   MOCK_FORM_ENTRIES.anotherForm,
   MOCK_FORM_ENTRIES.exampleGrant
 ]

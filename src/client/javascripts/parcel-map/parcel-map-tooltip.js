@@ -7,7 +7,7 @@ import { LAYER_ID_FILL, TOOLTIP_STYLES } from './config.js'
  */
 
 /**
- * Adds the parcel tooltip and its MapLibre click/hover listeners, registering
+ * Adds the parcel tooltip and its MapLibre hover listeners, registering
  * each `off` into `cleanups` so teardown removes every one. Returns the tooltip
  * element (or undefined if the map wrapper isn't present).
  * @param {MLMap} ml
@@ -28,7 +28,7 @@ export function attachTooltip(ml, metaIndex, mapEl, cleanups) {
   tooltip.style.cssText = TOOLTIP_STYLES
   wrapper.appendChild(tooltip)
 
-  const onTooltipClick = (
+  const onTooltipMove = (
     /** @type {import('maplibre-gl').MapMouseEvent & { features?: import('maplibre-gl').MapGeoJSONFeature[] }} */ e
   ) => {
     const feature = e.features?.[0]
@@ -40,26 +40,20 @@ export function attachTooltip(ml, metaIndex, mapEl, cleanups) {
     const point = ml.project(e.lngLat)
     showTooltip(tooltip, id, props, point.x, point.y, mapEl)
   }
-  const onMapClick = (/** @type {import('maplibre-gl').MapMouseEvent} */ e) => {
-    if (ml.getLayer(LAYER_ID_FILL) && ml.queryRenderedFeatures(e.point, { layers: [LAYER_ID_FILL] }).length === 0) {
-      hideTooltip(tooltip)
-    }
-  }
   const onMouseEnter = () => {
     ml.getCanvas().style.cursor = 'pointer'
   }
   const onMouseLeave = () => {
     ml.getCanvas().style.cursor = ''
+    hideTooltip(tooltip)
   }
 
-  ml.on('click', LAYER_ID_FILL, onTooltipClick)
-  ml.on('click', onMapClick)
+  ml.on('mousemove', LAYER_ID_FILL, onTooltipMove)
   ml.on('mouseenter', LAYER_ID_FILL, onMouseEnter)
   ml.on('mouseleave', LAYER_ID_FILL, onMouseLeave)
 
   cleanups.push(
-    () => ml.off('click', LAYER_ID_FILL, onTooltipClick),
-    () => ml.off('click', onMapClick),
+    () => ml.off('mousemove', LAYER_ID_FILL, onTooltipMove),
     () => ml.off('mouseenter', LAYER_ID_FILL, onMouseEnter),
     () => ml.off('mouseleave', LAYER_ID_FILL, onMouseLeave)
   )

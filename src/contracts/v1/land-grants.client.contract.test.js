@@ -1,4 +1,4 @@
-import { PactV3, MatchersV3, SpecificationVersion } from '@pact-foundation/pact'
+import { MatchersV3, PactV3, SpecificationVersion } from '@pact-foundation/pact'
 import path from 'path'
 import { vi } from 'vitest'
 import { postToLandGrantsApi as postToLandGrantsApiClient } from '~/src/server/land-grants/services/land-grants.client'
@@ -158,6 +158,142 @@ describe('wmp/payments/calculate', () => {
       .executeTest(async (mockserver) => {
         await expect(
           postToLandGrantsApi('/api/v1/wmp/payments/calculate', invalidPayload, mockserver.url)
+        ).rejects.toMatchObject({ code: 400, status: 400 })
+      })
+  })
+})
+
+describe('wmp/payments/calculate-by-total-area', () => {
+  it('returns HTTP 200 and payment information for a valid total area request', async () => {
+    const calculateResponseContract = {
+      explanations: [],
+      agreementStartDate: string('2025-09-01'),
+      agreementEndDate: string('2035-08-31'),
+      frequency: string('Single'),
+      agreementTotalPence: like(339510),
+      parcelItems: like({}),
+      agreementLevelItems: like({
+        1: {
+          code: string('PA3'),
+          description: string('Woodland management plan'),
+          version: string('1.0.0'),
+          parcelIds: eachLike('SD6346-3387', 0),
+          activePaymentTier: like(3),
+          quantityInActiveTier: like(26.3397),
+          activeTierRatePence: like(1500),
+          activeTierFlatRatePence: like(300000),
+          quantity: like(126.3397),
+          agreementTotalPence: like(339510),
+          unit: string('ha')
+        }
+      }),
+      payments: eachLike({
+        totalPaymentPence: like(339510),
+        paymentDate: null,
+        lineItems: eachLike({
+          agreementLevelItemId: like(1),
+          paymentPence: like(339510)
+        })
+      })
+    }
+
+    const expectedPaymentResponse = {
+      explanations: [],
+      frequency: 'Single',
+      agreementTotalPence: 339510,
+      agreementLevelItems: {
+        1: {
+          code: 'PA3',
+          description: 'Woodland management plan',
+          quantity: 126.3397,
+          agreementTotalPence: 339510,
+          unit: 'ha'
+        }
+      },
+      payments: [
+        {
+          totalPaymentPence: 339510,
+          lineItems: [
+            {
+              agreementLevelItemId: 1,
+              paymentPence: 339510
+            }
+          ]
+        }
+      ]
+    }
+
+    const payload = {
+      totalAreaHa: 126.3397,
+      applicationId: 'APP-123',
+      sbi: '123456789',
+      crn: '1234567890'
+    }
+
+    const EXPECTED_BODY = like({
+      message: 'success',
+      payment: calculateResponseContract
+    })
+
+    const provider = createProvider()
+    await provider
+      .given('has woodland parcels', { parcelIds: ['SD6346-3387'] })
+      .uponReceiving('a v1 wmp calculate-by-total-area request for a valid total area')
+      .withRequest({
+        method: 'POST',
+        path: '/api/v1/wmp/payments/calculate-by-total-area',
+        headers: makeLandGrantsHeaders(),
+        body: payload
+      })
+      .willRespondWith({
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: EXPECTED_BODY
+      })
+      .executeTest(async (mockserver) => {
+        const response = await postToLandGrantsApi(
+          '/api/v1/wmp/payments/calculate-by-total-area',
+          payload,
+          mockserver.url
+        )
+        expect(response.payment).toMatchObject(expectedPaymentResponse)
+      })
+  })
+
+  it('returns HTTP 400 when totalAreaHa and applicationId are missing', async () => {
+    const invalidPayload = {
+      sbi: '123456789'
+    }
+
+    const badRequestResponseExample = {
+      statusCode: 400,
+      error: 'Bad Request',
+      message: '"totalAreaHa" is required. "applicationId" is required',
+      validation: like({
+        source: 'payload',
+        keys: ['totalAreaHa', 'applicationId']
+      })
+    }
+
+    const EXPECTED_BODY = like(badRequestResponseExample)
+
+    const provider = createProvider()
+    await provider
+      .uponReceiving('a v1 wmp calculate-by-total-area request with missing required fields')
+      .withRequest({
+        method: 'POST',
+        path: '/api/v1/wmp/payments/calculate-by-total-area',
+        headers: makeLandGrantsHeaders(),
+        body: invalidPayload
+      })
+      .willRespondWith({
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+        body: EXPECTED_BODY
+      })
+      .executeTest(async (mockserver) => {
+        await expect(
+          postToLandGrantsApi('/api/v1/wmp/payments/calculate-by-total-area', invalidPayload, mockserver.url)
         ).rejects.toMatchObject({ code: 400, status: 400 })
       })
   })

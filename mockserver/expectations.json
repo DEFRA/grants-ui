@@ -11,6 +11,17 @@
     }
   },
   {
+    "id": "gas-claims-post-204",
+    "priority": 0,
+    "httpRequest": {
+      "method": "POST",
+      "path": "/grants/[^/]+/applications/[^/]+/claims"
+    },
+    "httpResponse": {
+      "statusCode": 204
+    }
+  },
+  {
     "id": "gas-pigs-calculate-pig-totals-200",
     "priority": 0,
     "httpRequest": {

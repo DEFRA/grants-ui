@@ -68,17 +68,14 @@
     "start": "NODE_ENV=production node --use-strict .",
     "setup:husky": "node -e \"try { (await import('husky')).default() } catch (e) { if (e.code !== 'ERR_MODULE_NOT_FOUND') throw e }\" --input-type module",
     "unseal:cookie": "node ./tools/unseal-cookie.js",
-    "generate:broker-token": "node ./tools/generate-broker-token.js",
-    "generate:broker-token:save": "node ./tools/generate-broker-token.js --save"
+    "generate:tokens": "node ./tools/generate-tokens.js",
+    "generate:tokens:save": "node ./tools/generate-tokens.js --save"
   },
   "author": "Defra DDTS",
   "license": "OGL-UK-3.0",
   "overrides": {
-    "fast-uri": "3.1.4",
-    "js-yaml@4.2.0": "4.3.0",
-    "gray-matter": {
-      "js-yaml": "4.3.0"
-    },
+    "fast-uri": "3.1.5",
+    "js-yaml": "4.3.1",
     "liquidjs": "10.27.1",
     "serialize-javascript": "7.0.5",
     "shell-quote": "1.9.0",

@@ -67,7 +67,7 @@ function loadCoverageData() {
     const rawData = fs.readFileSync(COVERAGE_FILE, 'utf8')
     return JSON.parse(rawData)
   } catch (error) {
-    console.error('Failed to parse coverage file:', error.message)
+    console.error('Failed to parse coverage file:', /** @type {Error} */ (error).message)
     return null
   }
 }

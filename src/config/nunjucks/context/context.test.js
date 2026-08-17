@@ -594,6 +594,56 @@ describe('context', () => {
 
       expect(contextResult).not.toHaveProperty('submitButtonText')
     })
+
+    test('Should prefer page-level config.submitButtonText over the grant-level option', async () => {
+      setupManifestSuccess()
+
+      const request = {
+        ...requestWithMetadata({
+          options: { submitButtonText: 'Save and continue' },
+          pageConfig: { '/check-your-answers': { submitButtonText: 'Agree and submit' } }
+        }),
+        params: { path: 'check-your-answers' }
+      }
+
+      const contextImport = await importContext()
+      const contextResult = await contextImport.context(request)
+
+      expect(contextResult.submitButtonText).toBe('Agree and submit')
+    })
+
+    test('Should fall back to the grant-level option when the page has no submitButtonText', async () => {
+      setupManifestSuccess()
+
+      const request = {
+        ...requestWithMetadata({
+          options: { submitButtonText: 'Save and continue' },
+          pageConfig: { '/check-your-answers': { hideBackLink: true } }
+        }),
+        params: { path: 'check-your-answers' }
+      }
+
+      const contextImport = await importContext()
+      const contextResult = await contextImport.context(request)
+
+      expect(contextResult.submitButtonText).toBe('Save and continue')
+    })
+
+    test('Should use page-level config.submitButtonText when there is no grant-level option', async () => {
+      setupManifestSuccess()
+
+      const request = {
+        ...requestWithMetadata({
+          pageConfig: { '/check-your-answers': { submitButtonText: 'Agree and submit' } }
+        }),
+        params: { path: 'check-your-answers' }
+      }
+
+      const contextImport = await importContext()
+      const contextResult = await contextImport.context(request)
+
+      expect(contextResult.submitButtonText).toBe('Agree and submit')
+    })
   })
 
   describe('notificationBanner in context', () => {
@@ -626,10 +676,13 @@ describe('context', () => {
   })
 
   describe('feedbackSurveyUrl in context', () => {
-    test('injects a survey URL for an in-scope grant', async () => {
+    test('injects a survey URL using the form definition survey label', async () => {
       setupManifestSuccess()
 
-      const request = mockGrantRequest({ slug: 'woodland' })
+      const request = {
+        ...mockGrantRequest({ slug: 'woodland' }),
+        app: { model: { def: { metadata: { surveyLabel: 'Woodland Management Plan' } } } }
+      }
 
       const contextImport = await importContext()
       const contextResult = await contextImport.context(request)
@@ -640,7 +693,7 @@ describe('context', () => {
       expect(url.searchParams.get('url')).toBe('https://grants.example/woodland/summary')
     })
 
-    test('is null for an out-of-scope grant', async () => {
+    test('injects a survey URL using the sentence-cased form definition filename when the label is absent', async () => {
       setupManifestSuccess()
 
       const request = mockGrantRequest({ slug: 'some-other-grant' })
@@ -648,7 +701,8 @@ describe('context', () => {
       const contextImport = await importContext()
       const contextResult = await contextImport.context(request)
 
-      expect(contextResult.feedbackSurveyUrl).toBeNull()
+      const url = new URL(contextResult.feedbackSurveyUrl)
+      expect(url.searchParams.get('grant')).toBe('Some other grant')
     })
   })
 

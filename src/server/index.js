@@ -15,6 +15,7 @@ import { rateLimitPlugin } from '~/src/plugins/rate-limit.js'
 import sso from '~/src/plugins/sso.js'
 import { contentSecurityPolicy } from '~/src/plugins/content-security-policy.js'
 import CheckResponsesPageController from '~/src/server/check-responses/check-responses.controller.js'
+import StartClaimPageController from '~/src/server/claims/controllers/start-claim-page.controller.js'
 import { formsService } from '~/src/server/common/forms/services/form.js'
 import { outputService } from '~/src/server/common/forms/services/output.js'
 import { catchAll } from '~/src/server/common/helpers/errors.js'
@@ -44,6 +45,7 @@ import ConfirmLandAndActionsPageController from '~/src/server/land-grants/contro
 import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-might-fly/controllers/potential-funding.controller.js'
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
 import { gridColumnClass } from '../config/nunjucks/grid-column.js'
+import { pageHideBackLink, pageRpaDetails } from '../config/nunjucks/page-config.js'
 import { StatePersistenceService } from './common/services/state-persistence/state-persistence.service.js'
 import { router } from './router.js'
 import allowlist from '~/src/server/common/helpers/allowlist/allowlist.js'
@@ -129,7 +131,9 @@ const registerFormsPlugin = async (server, prefix = '') => {
         formatCurrency
       },
       globals: {
-        gridColumnClass
+        gridColumnClass,
+        pageHideBackLink,
+        pageRpaDetails
       },
       nunjucks: {
         baseLayoutPath: 'layouts/dxt-form.njk',
@@ -155,6 +159,7 @@ const registerFormsPlugin = async (server, prefix = '') => {
         PotentialFundingController,
         SummaryPageController,
         CheckResponsesPageController,
+        StartClaimPageController,
         ConfirmMethaneDetailsController,
         TaskListPageController,
         TaskPageController,

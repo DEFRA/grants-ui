@@ -5,8 +5,7 @@ import {
   deleteParcelFromState,
   deleteActionFromState
 } from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
-import { landParcelReference } from '~/src/server/land-grants/view-models/land-parcel-links.js'
-import { parseLandParcel } from '~/src/shared/format-parcel.js'
+import { formatParcelReference } from '~/src/shared/format-parcel.js'
 import { getParcelIdFromQuery } from '../utils/parcel-request.utils.js'
 
 const defaultReturnPath = '/check-selected-land-actions'
@@ -16,16 +15,6 @@ const removeParcelPath = '/remove-parcel'
 const confirmLandAndActionsPath = '/confirm-land-and-actions'
 
 const isNonEmptyString = (value) => typeof value === 'string' && value.trim() !== ''
-
-/**
- * Bare land parcel reference (`SD1234 5678`) for a compound parcel key.
- * @param {string} parcelKey - Compound parcel key (`SD1234-5678`)
- * @returns {string}
- */
-const parcelReference = (parcelKey) => {
-  const [sheetId, parcelId] = parseLandParcel(parcelKey)
-  return landParcelReference(sheetId, parcelId)
-}
 
 export default class RemoveActionPageController extends QuestionPageWithParcelCheckController {
   viewName = 'remove-action'
@@ -153,7 +142,7 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
       return
     }
 
-    request.yar?.set(YarKeys.LAND_PARCEL_REMOVAL_SUCCESS, parcelReference(parcel))
+    request.yar?.set(YarKeys.LAND_PARCEL_REMOVAL_SUCCESS, formatParcelReference(parcel))
   }
 
   /**
@@ -186,7 +175,7 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
    */
   buildPageHeadingAndHint(actionInfo, parcelId = '', isParcelRemoval = false) {
     if (isParcelRemoval) {
-      const reference = parcelReference(parcelId)
+      const reference = formatParcelReference(parcelId)
       return {
         pageHeading: `Remove all actions from ${reference}?`,
         hint: `This will remove ${reference} and all actions added to it from your application.`,
