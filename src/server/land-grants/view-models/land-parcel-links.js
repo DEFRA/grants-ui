@@ -15,12 +15,21 @@ import { stringifyParcel } from '~/src/shared/format-parcel.js'
 export const parcelIdParam = (sheetId, parcelId) => encodeURIComponent(stringifyParcel({ sheetId, parcelId }))
 
 /**
+ * Bare land parcel reference (`SD1234 5678`), used where the surrounding
+ * context already says it is a land parcel.
+ * @param {string} sheetId
+ * @param {string} parcelId
+ * @returns {string}
+ */
+export const landParcelReference = (sheetId, parcelId) => `${sheetId} ${parcelId}`
+
+/**
  * User-facing land parcel title. Uses the `CONTEXT.md` glossary casing.
  * @param {string} sheetId
  * @param {string} parcelId
  * @returns {string}
  */
-export const landParcelTitle = (sheetId, parcelId) => `Land parcel ${sheetId} ${parcelId}`
+export const landParcelTitle = (sheetId, parcelId) => `Land parcel ${landParcelReference(sheetId, parcelId)}`
 
 /**
  * @param {string} sheetId

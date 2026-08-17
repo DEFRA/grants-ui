@@ -220,6 +220,10 @@ const CURRENCY_PATTERN = /^£[\d,]+\.\d{2}$/
 const AMOUNT_IN_VALUE = /£[\d,]+\.\d{2}/
 const PARCEL_TOTAL_LABEL = 'Yearly payment for this parcel'
 const APPLICATION_TOTAL_LABEL = 'Total yearly payment'
+const AREA_LABELS = ['Total area', 'Area used for actions', 'Available area left']
+// Signed on purpose: overlapping action claims can exceed the parcel, and the
+// page must show the negative remainder rather than clamping it.
+const AREA_VALUE = /^(-?\d+\.\d{4}) (.+)$/
 
 const toPence = (text) => Math.round(Number(String(text).replace(/[£,\s]/g, '')) * 100)
 
@@ -237,14 +241,42 @@ const rowAmount = async (row, context) => {
   return { label, pence: toPence(amount) }
 }
 
+/**
+ * Reads a parcel's three area rows and checks them against each other in
+ * integer ten-thousandths, so the assertion never re-introduces the
+ * floating-point error the page deliberately avoids.
+ */
+const assertAreaRows = async (page, section, context) => {
+  /** @type {Record<string, { scaled: number, unit: string }>} */
+  const areas = {}
+
+  for (const label of AREA_LABELS) {
+    const row = section.locator('.govuk-table__row', {
+      has: page.locator(`th.govuk-table__header:text-is("${label}")`)
+    })
+    const value = (await row.locator('.govuk-table__cell').first().innerText()).trim()
+    const match = AREA_VALUE.exec(value)
+
+    expect(match, `${context} area row "${label}" is not a four-decimal area, got "${value}"`).not.toBeNull()
+    const [, decimals, unit] = /** @type {RegExpExecArray} */ (match)
+    areas[label] = { scaled: Number(decimals.replace('.', '')), unit }
+  }
+
+  const units = AREA_LABELS.map((label) => areas[label].unit)
+  expect(new Set(units).size, `${context} area rows disagree on units: ${units.join(', ')}`).toBe(1)
+  expect(areas['Available area left'].scaled, `${context} available area is not total minus used`).toEqual(
+    areas['Total area'].scaled - areas['Area used for actions'].scaled
+  )
+}
+
 // Deliberately does NOT assert that the application total equals the parcel
 // totals plus the agreement-level rows: `annualTotalPence` is the authoritative
 // figure from the Land Grants API and its composition is not a contract this
-// suite can pin. What is asserted is that every displayed amount is a real
-// currency value and that each parcel total matches the rows it is built from,
-// which is how the view model computes it.
+// suite can pin. What is asserted is that each parcel's area rows are
+// internally consistent, that every priced row is a real currency value, and
+// that each parcel total matches the action rows it is built from.
 Then('(the user )should see a populated land and actions payment summary', async function () {
-  const sections = this.page.locator('.land-parcel-summary')
+  const sections = this.page.locator('.land-parcel-summary--parcel')
   const sectionCount = await sections.count()
   expect(sectionCount, 'expected at least one land parcel section').toBeGreaterThan(0)
 
@@ -253,25 +285,18 @@ Then('(the user )should see a populated land and actions payment summary', async
 
   for (let i = 0; i < sectionCount; i++) {
     const section = sections.nth(i)
-    const title = (await section.locator('h2').innerText()).trim()
-    const context = `section "${title}"`
-    const rows = section.locator('.govuk-table__row')
-    const rowCount = await rows.count()
-    expect(rowCount, `${context} rendered no rows`).toBeGreaterThan(0)
+    const reference = (await section.locator('h2').innerText()).trim()
+    const context = `land parcel "${reference}"`
 
-    // Every row in the block must price something, agreement-level rows
-    // included; only the parcel total is singled out here.
-    let parcelTotalPence = null
-    for (let row = 0; row < rowCount; row++) {
-      const { label, pence } = await rowAmount(rows.nth(row), context)
-      if (label === PARCEL_TOTAL_LABEL) {
-        parcelTotalPence = pence
-      }
-    }
+    // Area rows are a required set on a real parcel: the journey always selects
+    // a parcel whose state carries a size and at least one matching action.
+    await assertAreaRows(this.page, section, context)
 
-    if (!title.startsWith('Land parcel')) {
-      continue
-    }
+    const totalRow = section.locator('.govuk-table__row', {
+      has: this.page.locator(`th.govuk-table__header:text-is("${PARCEL_TOTAL_LABEL}")`)
+    })
+    expect(await totalRow.count(), `${context} has no total row`).toBe(1)
+    const { pence: parcelTotalPence } = await rowAmount(totalRow, context)
     parcelSections += 1
 
     // Summed from the action rows alone: the total row and any non-action row
@@ -284,7 +309,6 @@ Then('(the user )should see a populated land and actions payment summary', async
       parcelActionRows += 1
     }
 
-    expect(parcelTotalPence, `${context} has no total row`).not.toBeNull()
     expect(parcelTotalPence, `${context} total does not match its action rows`).toEqual(actionSumPence)
   }
 
@@ -305,17 +329,9 @@ Then('(the user )should see a populated land and actions payment summary', async
 })
 
 Then('(the user )should see {int} land parcel section(s)', async function (expected) {
-  const titles = this.page.locator('.land-parcel-summary h2')
-  const count = await titles.count()
-  let parcelSections = 0
-
-  for (let i = 0; i < count; i++) {
-    if ((await titles.nth(i).innerText()).trim().startsWith('Land parcel')) {
-      parcelSections += 1
-    }
-  }
-
-  expect(parcelSections).toEqual(expected)
+  // Counted from the explicit parcel marker: an "Additional yearly payments"
+  // block shares the base class but is not a land parcel.
+  await expect(this.page.locator('.land-parcel-summary--parcel')).toHaveCount(expected)
 })
 
 Then('(the user )should see a notification banner', async function () {

@@ -225,6 +225,9 @@ Feature: Reusable Components
         Then the user should be at URL "confirm-land-and-actions"
         And should see heading "Your land and actions"
         And the page is analyzed for accessibility
+        And the user should see the text "Total area"
+        And the user should see the text "Area used for actions"
+        And the user should see the text "Available area left"
         And the user should see the text "Yearly payment for this parcel"
         And the user should see the text "Total yearly payment"
         And the user should see a populated land and actions payment summary

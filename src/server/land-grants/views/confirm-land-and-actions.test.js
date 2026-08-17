@@ -11,36 +11,35 @@ const renderPage = createPageRenderer(import.meta.url, 'confirm-land-and-actions
 const model = {
   parcels: [
     {
-      title: 'Land parcel SD1234 5678',
+      reference: 'SD1234 5678',
       removeHref: 'remove-parcel?parcelId=SD1234-5678',
+      areaSummary: { total: '12.0000 ha', used: '6.0000 ha', available: '6.0000 ha' },
       actions: [
         {
           action: 'Action description (CLIG3)',
           area: '2.0000 ha',
           yearlyPayment: '£10.00',
-          changeHref: 'select-actions-for-land-parcel?parcelId=SD1234-5678',
-          removeHref: 'remove-action?parcelId=SD1234-5678&action=CLIG3'
+          changeHref: 'select-actions-for-land-parcel?parcelId=SD1234-5678'
         },
         {
           action: 'Another action (CSAM3)',
           area: '4.0000 ha',
           yearlyPayment: '£20.00',
-          changeHref: 'select-actions-for-land-parcel?parcelId=SD1234-5678',
-          removeHref: 'remove-action?parcelId=SD1234-5678&action=CSAM3'
+          changeHref: 'select-actions-for-land-parcel?parcelId=SD1234-5678'
         }
       ],
       yearlyPayment: '£30.00'
     },
     {
-      title: 'Land parcel CD9999 1111',
+      reference: 'CD9999 1111',
       removeHref: 'remove-parcel?parcelId=CD9999-1111',
+      areaSummary: { total: '3.0000 ha', used: '1.0000 ha', available: '2.0000 ha' },
       actions: [
         {
           action: 'Third action (SCR2)',
           area: '1.0000 ha',
           yearlyPayment: '£3.00',
-          changeHref: 'select-actions-for-land-parcel?parcelId=CD9999-1111',
-          removeHref: 'remove-action?parcelId=CD9999-1111&action=SCR2'
+          changeHref: 'select-actions-for-land-parcel?parcelId=CD9999-1111'
         }
       ],
       yearlyPayment: '£3.00'
@@ -96,33 +95,77 @@ describe('confirm-land-and-actions.html view', () => {
     expect($('h1').parent().attr('class')).toBe('govuk-grid-column-full')
   })
 
-  it('renders one block per parcel, headed by the parcel with a removal link', () => {
+  it('renders one block per parcel, headed by the bare reference with a removal link', () => {
     const $ = renderPage(model)
-    const blocks = $('.land-parcel-summary')
+    const blocks = $('.land-parcel-summary--parcel')
     expect(blocks.length).toBe(2)
 
-    expect(blocks.eq(0).find('h2').text().trim()).toBe('Land parcel SD1234 5678')
-    expect(blocks.eq(1).find('h2').text().trim()).toBe('Land parcel CD9999 1111')
+    expect(blocks.eq(0).find('h2').text().trim()).toBe('SD1234 5678')
+    expect(blocks.eq(1).find('h2').text().trim()).toBe('CD9999 1111')
 
     const removeParcelLinks = blocks
       .find('.land-parcel-summary__heading a')
       .map((_, el) => `${$(el).attr('href')}:${normalise($(el).text())}`)
       .get()
     expect(removeParcelLinks).toEqual([
-      'remove-parcel?parcelId=SD1234-5678:Remove this land parcel and all actions for Land parcel SD1234 5678',
-      'remove-parcel?parcelId=CD9999-1111:Remove this land parcel and all actions for Land parcel CD9999 1111'
+      'remove-parcel?parcelId=SD1234-5678:Remove this land parcel and all actions for land parcel SD1234 5678',
+      'remove-parcel?parcelId=CD9999-1111:Remove this land parcel and all actions for land parcel CD9999 1111'
+    ])
+  })
+
+  it('renders the three area rows before the actions, in design order', () => {
+    const $ = renderPage(model)
+
+    expect(rowsOf($, 0).slice(0, 3)).toEqual([
+      'Total area|12.0000 ha',
+      'Area used for actions|6.0000 ha',
+      'Available area left|6.0000 ha'
+    ])
+  })
+
+  it('renders a negative available area as given, rather than hiding it', () => {
+    const $ = renderPage({
+      ...model,
+      parcels: [
+        {
+          ...model.parcels[0],
+          areaSummary: { total: '56.3210 ha', used: '78.9630 ha', available: '-22.6420 ha' }
+        }
+      ]
+    })
+
+    expect(rowsOf($, 0)).toContain('Available area left|-22.6420 ha')
+  })
+
+  it('omits all three area rows when the view model could not derive them', () => {
+    const $ = renderPage({
+      ...model,
+      parcels: [{ ...model.parcels[0], areaSummary: undefined }]
+    })
+    const text = bodyText($)
+
+    expect(text).not.toContain('Total area')
+    expect(text).not.toContain('Area used for actions')
+    expect(text).not.toContain('Available area left')
+    expect(rowsOf($, 0)).toEqual([
+      'Action description (CLIG3)|2.0000 ha (£10.00)',
+      'Another action (CSAM3)|4.0000 ha (£20.00)',
+      'Yearly payment for this parcel|£30.00'
     ])
   })
 
   it('renders each action as a table row showing its area and payment, in order', () => {
     const $ = renderPage(model)
 
-    expect(rowsOf($, 0)).toEqual([
+    expect(rowsOf($, 0).slice(3)).toEqual([
       'Action description (CLIG3)|2.0000 ha (£10.00)',
       'Another action (CSAM3)|4.0000 ha (£20.00)',
       'Yearly payment for this parcel|£30.00'
     ])
-    expect(rowsOf($, 1)).toEqual(['Third action (SCR2)|1.0000 ha (£3.00)', 'Yearly payment for this parcel|£3.00'])
+    expect(rowsOf($, 1).slice(3)).toEqual([
+      'Third action (SCR2)|1.0000 ha (£3.00)',
+      'Yearly payment for this parcel|£3.00'
+    ])
   })
 
   it('renders the payment alone when the API priced an action without an area', () => {
@@ -131,10 +174,13 @@ describe('confirm-land-and-actions.html view', () => {
       parcels: [{ ...model.parcels[0], actions: [{ ...model.parcels[0].actions[0], area: '' }] }]
     })
 
-    expect(rowsOf($, 0)).toEqual(['Action description (CLIG3)|£10.00', 'Yearly payment for this parcel|£30.00'])
+    expect(rowsOf($, 0).slice(3)).toEqual([
+      'Action description (CLIG3)|£10.00',
+      'Yearly payment for this parcel|£30.00'
+    ])
   })
 
-  it('names every row with a scoped row header so each money value is associated', () => {
+  it('names every row with a scoped row header so each value is associated', () => {
     const $ = renderPage(model)
     const headers = $('.land-parcel-summary')
       .eq(0)
@@ -142,17 +188,27 @@ describe('confirm-land-and-actions.html view', () => {
       .map((_, el) => normalise($(el).text()))
       .get()
 
-    expect(headers).toEqual(['Action description (CLIG3)', 'Another action (CSAM3)', 'Yearly payment for this parcel'])
+    expect(headers).toEqual([
+      'Total area',
+      'Area used for actions',
+      'Available area left',
+      'Action description (CLIG3)',
+      'Another action (CSAM3)',
+      'Yearly payment for this parcel'
+    ])
   })
 
-  it('marks only action rows so their extra spacing does not reach the total row', () => {
+  it('marks only action rows so their extra spacing reaches neither area nor total rows', () => {
     const $ = renderPage(model)
     const block = $('.land-parcel-summary').eq(0)
 
     expect(block.find('.land-parcel-summary__action-row').length).toBe(2)
-    expect(normalise(block.find('.govuk-table__row').last().find('.govuk-table__header').text())).toBe(
-      'Yearly payment for this parcel'
-    )
+    expect(
+      block
+        .find('.land-parcel-summary__action-row .govuk-table__header')
+        .map((_, el) => normalise($(el).text()))
+        .get()
+    ).toEqual(['Action description (CLIG3)', 'Another action (CSAM3)'])
     expect(block.find('.govuk-table__row').last().hasClass('land-parcel-summary__action-row')).toBe(false)
   })
 
@@ -160,29 +216,34 @@ describe('confirm-land-and-actions.html view', () => {
     const $ = renderPage(model)
     const caption = $('.land-parcel-summary').eq(0).find('caption')
 
-    expect(normalise(caption.text())).toBe('Actions and yearly payment for Land parcel SD1234 5678')
+    expect(normalise(caption.text())).toBe('Area, actions and yearly payment for land parcel SD1234 5678')
     expect(caption.hasClass('govuk-visually-hidden')).toBe(true)
   })
 
-  it('gives the Change and Remove links accessible names, and escapes the hrefs once', () => {
+  it('offers only Change on an action row, with an accessible name and a single-escaped href', () => {
     const $ = renderPage(model)
-    const firstRow = $('.land-parcel-summary').eq(0).find('.govuk-table__row').eq(0)
+    const firstAction = $('.land-parcel-summary').eq(0).find('.land-parcel-summary__action-row').eq(0)
 
-    expect(normalise(firstRow.find('a').eq(0).text())).toBe('Change Action description (CLIG3)')
-    expect(normalise(firstRow.find('a').eq(1).text())).toBe('Remove Action description (CLIG3)')
-    expect(firstRow.find('a').eq(0).attr('href')).toBe('select-actions-for-land-parcel?parcelId=SD1234-5678')
-    expect(firstRow.find('a').eq(1).attr('href')).toBe('remove-action?parcelId=SD1234-5678&action=CLIG3')
-    expect($('.land-parcel-summary').eq(1).find('.govuk-table__row').eq(0).find('a').eq(1).attr('href')).toBe(
-      'remove-action?parcelId=CD9999-1111&action=SCR2'
-    )
+    expect(firstAction.find('a').length).toBe(1)
+    expect(normalise(firstAction.find('a').text())).toBe('Change Action description (CLIG3)')
+    expect(firstAction.find('a').attr('href')).toBe('select-actions-for-land-parcel?parcelId=SD1234-5678')
+  })
+
+  it('renders no action-level Remove control anywhere on the page', () => {
+    const $ = renderPage(model)
+    const actionHrefs = $('.land-parcel-summary__action-row a')
+      .map((_, el) => $(el).attr('href'))
+      .get()
+
+    expect(actionHrefs.some((href) => href.startsWith('remove-action'))).toBe(false)
   })
 
   it('keeps the row controls in their own right-aligned cell', () => {
     const $ = renderPage(model)
-    const controls = $('.land-parcel-summary').eq(0).find('.govuk-table__row').eq(0).find('td').last()
+    const controls = $('.land-parcel-summary').eq(0).find('.land-parcel-summary__action-row').eq(0).find('td').last()
 
     expect(controls.hasClass('land-parcel-summary__actions')).toBe(true)
-    expect(controls.find('a').length).toBe(2)
+    expect(controls.find('a').length).toBe(1)
   })
 
   it('escapes action text rather than trusting it as markup', () => {
@@ -208,6 +269,8 @@ describe('confirm-land-and-actions.html view', () => {
     expect(blocks.eq(2).find('h2').text().trim()).toBe('Additional yearly payments')
     expect(rowsOf($, 2)).toEqual(['Assess moorland (CMOR1)|£272.00'])
     expect(blocks.eq(2).find('.land-parcel-summary__action-row').length).toBe(0)
+    expect(blocks.eq(2).hasClass('land-parcel-summary--parcel')).toBe(false)
+    expect($('.land-parcel-summary--parcel').length).toBe(2)
   })
 
   it('omits the agreement-level block when there are no such items', () => {

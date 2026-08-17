@@ -1,7 +1,13 @@
 /**
+ * Written by `buildActionStateEntry()` in
+ * `src/server/land-grants/view-state/land-parcel.view-state.js`, which coerces
+ * the claimed area with `Number()` before persisting it.
  * @typedef {Object} ActionData
- * @property {string} value - The value/quantity as a string
+ * @property {number} value - The claimed area for this action
  * @property {string} unit - Unit of measurement (e.g., "ha")
+ * @property {string} description - Action description with code
+ * @property {string} version - Action version
+ * @property {string[]} consents - Consent keys this action requires (e.g., "sssi", "hefer")
  */
 
 /**
@@ -11,6 +17,7 @@
 
 /**
  * @typedef {Object} LandParcel
+ * @property {Size | null} size - Total area of this parcel, as returned by the parcels API
  * @property {ActionsObject} actionsObj - Actions applied to this parcel
  */
 
@@ -38,4 +45,5 @@
 /**
  * @import { PaymentCalculation } from '~/src/server/land-grants/types/payment.d.js'
  * @import { Applicant } from '~/src/server/land-grants/types/applicant.d.js'
+ * @import { Size } from '~/src/server/land-grants/types/land-grants.client.d.js'
  */

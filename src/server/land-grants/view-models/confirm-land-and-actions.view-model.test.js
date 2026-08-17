@@ -56,28 +56,33 @@ describe('buildConfirmLandAndActionsViewModel', () => {
 
     expect(model.parcels).toHaveLength(2)
     expect(model.parcels[0]).toEqual({
-      title: 'Land parcel SD1234 5678',
+      reference: 'SD1234 5678',
       removeHref: 'remove-parcel?parcelId=SD1234-5678',
+      areaSummary: { total: '12.0000 ha', used: '6.0000 ha', available: '6.0000 ha' },
       yearlyPayment: '£30.00',
       actions: [
         {
           action: 'Action description (CLIG3)',
           area: '2.0000 ha',
           yearlyPayment: '£10.00',
-          changeHref: 'select-actions-for-land-parcel?parcelId=SD1234-5678',
-          removeHref: 'remove-action?parcelId=SD1234-5678&action=CLIG3'
+          changeHref: 'select-actions-for-land-parcel?parcelId=SD1234-5678'
         },
         {
           action: 'Another action (CSAM3)',
           area: '4.0000 ha',
           yearlyPayment: '£20.00',
-          changeHref: 'select-actions-for-land-parcel?parcelId=SD1234-5678',
-          removeHref: 'remove-action?parcelId=SD1234-5678&action=CSAM3'
+          changeHref: 'select-actions-for-land-parcel?parcelId=SD1234-5678'
         }
       ]
     })
-    expect(model.parcels[1].title).toBe('Land parcel CD9999 1111')
+    expect(model.parcels[1].reference).toBe('CD9999 1111')
     expect(model.parcels[1].actions).toHaveLength(1)
+  })
+
+  it('exposes no action-level removeHref, because this page offers only Change', () => {
+    const model = buildConfirmLandAndActionsViewModel(payment, landParcels)
+
+    expect(model.parcels[0].actions[0]).not.toHaveProperty('removeHref')
   })
 
   it('orders cards by state selection order, not by parcelItem id order', () => {
@@ -89,7 +94,7 @@ describe('buildConfirmLandAndActionsViewModel', () => {
 
     const model = buildConfirmLandAndActionsViewModel(payment, reversedSelection)
 
-    expect(model.parcels.map((parcel) => parcel.title)).toEqual(['Land parcel CD9999 1111', 'Land parcel SD1234 5678'])
+    expect(model.parcels.map((parcel) => parcel.reference)).toEqual(['CD9999 1111', 'SD1234 5678'])
   })
 
   it('takes applicationYearlyPayment from annualTotalPence, not from summed rows', () => {
@@ -204,13 +209,13 @@ describe('buildConfirmLandAndActionsViewModel', () => {
 
     const model = buildConfirmLandAndActionsViewModel(payment, withEmptyParcel)
 
-    expect(model.parcels.map((parcel) => parcel.title)).toEqual(['Land parcel SD1234 5678', 'Land parcel CD9999 1111'])
+    expect(model.parcels.map((parcel) => parcel.reference)).toEqual(['SD1234 5678', 'CD9999 1111'])
   })
 
   it('renders a parcel the API priced but state does not list', () => {
     const model = buildConfirmLandAndActionsViewModel(payment, { 'SD1234-5678': landParcels['SD1234-5678'] })
 
-    expect(model.parcels.map((parcel) => parcel.title)).toContain('Land parcel CD9999 1111')
+    expect(model.parcels.map((parcel) => parcel.reference)).toContain('CD9999 1111')
   })
 
   it('renders duplicate action rows rather than failing the page', () => {
@@ -255,15 +260,70 @@ describe('buildConfirmLandAndActionsViewModel', () => {
     expect(model.parcels[0].actions[0].area).toBe('2 ha')
   })
 
-  it('percent-encodes an action code used in a query string', () => {
-    const oddCode = { 1: { ...parcelItems[1], code: 'A&B' } }
+  it('percent-encodes a parcel id used in a query string', () => {
+    const model = buildConfirmLandAndActionsViewModel(payment, landParcels)
 
-    const model = buildConfirmLandAndActionsViewModel(
-      { annualTotalPence: 1000, parcelItems: oddCode },
-      { 'SD1234-5678': landParcels['SD1234-5678'] }
-    )
+    expect(model.parcels[0].actions[0].changeHref).toBe('select-actions-for-land-parcel?parcelId=SD1234-5678')
+  })
 
-    expect(model.parcels[0].actions[0].removeHref).toBe('remove-action?parcelId=SD1234-5678&action=A%26B')
+  describe('area summary', () => {
+    const parcelWith = (size, actionsObj) =>
+      buildConfirmLandAndActionsViewModel(
+        { annualTotalPence: 1000, parcelItems: { 1: parcelItems[1] } },
+        {
+          'SD1234-5678': { size, actionsObj }
+        }
+      ).parcels[0].areaSummary
+
+    it('subtracts used area from the parcel total without floating-point drift', () => {
+      // 44.8765 - 44 is 0.8765000000000057 in binary floating point.
+      expect(parcelWith({ unit: 'ha', value: 44.8765 }, { CIGL1: { value: 44, unit: 'ha' } })).toEqual({
+        total: '44.8765 ha',
+        used: '44.0000 ha',
+        available: '0.8765 ha'
+      })
+    })
+
+    it('reports a negative available area rather than clamping it', () => {
+      // Actions may overlap on the same land, so claims can exceed the parcel.
+      expect(
+        parcelWith(
+          { unit: 'ha', value: 56.321 },
+          { UPL1: { value: 45, unit: 'ha' }, UPL2: { value: 33.963, unit: 'ha' } }
+        )
+      ).toEqual({ total: '56.3210 ha', used: '78.9630 ha', available: '-22.6420 ha' })
+    })
+
+    it('counts an action the API prices at agreement level, which still occupies the parcel', () => {
+      // CMOR1 never appears in parcelItems, but the land is still committed.
+      expect(
+        parcelWith({ unit: 'ha', value: 10 }, { CLIG3: { value: 2, unit: 'ha' }, CMOR1: { value: 3, unit: 'ha' } }).used
+      ).toBe('5.0000 ha')
+    })
+
+    for (const [name, size, actionsObj] of [
+      ['the parcel has no persisted size', null, { CLIG3: { value: 2, unit: 'ha' } }],
+      ['the size value is not finite', { unit: 'ha', value: Number.NaN }, { CLIG3: { value: 2, unit: 'ha' } }],
+      ['the size has no unit', { unit: '', value: 10 }, { CLIG3: { value: 2, unit: 'ha' } }],
+      ['an action value is not finite', { unit: 'ha', value: 10 }, { CLIG3: { value: Number.NaN, unit: 'ha' } }],
+      ['an action unit differs from the parcel unit', { unit: 'ha', value: 10 }, { CLIG3: { value: 2, unit: 'sqm' } }],
+      ['state lists no actions for the parcel', { unit: 'ha', value: 10 }, {}]
+    ]) {
+      it(`omits every area row when ${name}`, () => {
+        expect(parcelWith(size, actionsObj)).toBeUndefined()
+      })
+    }
+
+    it('still renders the payment rows when the area rows are omitted', () => {
+      const model = buildConfirmLandAndActionsViewModel(
+        { annualTotalPence: 1000, parcelItems: { 1: parcelItems[1] } },
+        { 'SD1234-5678': { size: null, actionsObj: {} } }
+      )
+
+      expect(model.parcels[0].areaSummary).toBeUndefined()
+      expect(model.parcels[0].yearlyPayment).toBe('£10.00')
+      expect(model.parcels[0].actions).toHaveLength(1)
+    })
   })
 
   describe('malformed responses', () => {

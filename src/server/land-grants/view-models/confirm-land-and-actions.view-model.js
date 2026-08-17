@@ -3,8 +3,7 @@ import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
 import { stringifyParcel } from '~/src/shared/format-parcel.js'
 import {
   changeActionsHref,
-  landParcelTitle,
-  removeActionHref,
+  landParcelReference,
   removeParcelHref
 } from '~/src/server/land-grants/view-models/land-parcel-links.js'
 
@@ -56,6 +55,60 @@ const formatArea = (quantity, unit) => {
   return [area, unit].filter((part) => part !== undefined && part !== null && part !== '').join(' ')
 }
 
+const AREA_SCALE = 10_000
+
+/**
+ * @param {unknown} value
+ * @returns {value is number}
+ */
+const isFiniteNumber = (value) => typeof value === 'number' && Number.isFinite(value)
+
+/**
+ * Renders a scaled area (integer ten-thousandths) back as a four-decimal area.
+ * @param {number} scaled
+ * @param {string} unit
+ * @returns {string}
+ */
+const formatScaledArea = (scaled, unit) => `${(scaled / AREA_SCALE).toFixed(4)} ${unit}`
+
+/**
+ * Derives a parcel's total/used/available area from persisted state alone - the
+ * payment API is authoritative for money only. State actions define used area
+ * because an action priced at agreement level still occupies parcel area, so it
+ * is absent from `payment.parcelItems` while still consuming land.
+ *
+ * All or nothing: without a usable size, or with any action whose value is not
+ * finite or whose unit differs from the parcel's, the rows are omitted rather
+ * than showing partial or misleading arithmetic. Arithmetic runs in integer
+ * ten-thousandths so `44.8765 - 44` is exactly `0.8765`, and available area is
+ * never clamped - a negative result is real and must be shown.
+ *
+ * @param {LandParcel} [parcel] - Persisted state for this land parcel
+ * @returns {{ total: string, used: string, available: string } | undefined}
+ */
+function buildAreaSummary(parcel) {
+  const unit = parcel?.size?.unit
+  const total = parcel?.size?.value
+
+  if (!isFiniteNumber(total) || typeof unit !== 'string' || unit.trim() === '') {
+    return undefined
+  }
+
+  const actions = Object.values(parcel?.actionsObj ?? {})
+  if (!actions.length || !actions.every((action) => isFiniteNumber(action.value) && action.unit === unit)) {
+    return undefined
+  }
+
+  const totalScaled = Math.round(total * AREA_SCALE)
+  const usedScaled = actions.reduce((sum, action) => sum + Math.round(action.value * AREA_SCALE), 0)
+
+  return {
+    total: formatScaledArea(totalScaled, unit),
+    used: formatScaledArea(usedScaled, unit),
+    available: formatScaledArea(totalScaled - usedScaled, unit)
+  }
+}
+
 /**
  * Builds the presentation model for the generic "Your land and actions"
  * payment-summary page. Performs presentation grouping only: it never looks up
@@ -78,7 +131,11 @@ export function buildConfirmLandAndActionsViewModel(payment, landParcels) {
     throw invalidResponse('payment.annualTotalPence must be a non-negative integer')
   }
 
-  /** @type {Map<string, { title: string, removeHref: string, actions: ConfirmLandAndActionsActionViewModel[], totalPence: number }>} */
+  /**
+   * @type {Map<string, { reference: string, removeHref: string,
+   *   areaSummary?: { total: string, used: string, available: string },
+   *   actions: ConfirmLandAndActionsActionViewModel[], totalPence: number }>}
+   */
   const parcels = new Map()
 
   // Seed the map in selection order so the cards match the order the user
@@ -89,8 +146,9 @@ export function buildConfirmLandAndActionsViewModel(payment, landParcels) {
     const [sheetId, parcelId] = parcelKey.split('-')
     if (isNonEmptyString(sheetId) && isNonEmptyString(parcelId)) {
       parcels.set(parcelKey, {
-        title: landParcelTitle(sheetId, parcelId),
+        reference: landParcelReference(sheetId, parcelId),
         removeHref: removeParcelHref(sheetId, parcelId),
+        areaSummary: buildAreaSummary(landParcels?.[parcelKey]),
         actions: [],
         totalPence: 0
       })
@@ -112,8 +170,9 @@ export function buildConfirmLandAndActionsViewModel(payment, landParcels) {
     let parcel = parcels.get(parcelKey)
     if (!parcel) {
       parcel = {
-        title: landParcelTitle(sheetId, parcelId),
+        reference: landParcelReference(sheetId, parcelId),
         removeHref: removeParcelHref(sheetId, parcelId),
+        areaSummary: buildAreaSummary(landParcels?.[parcelKey]),
         actions: [],
         totalPence: 0
       }
@@ -124,8 +183,7 @@ export function buildConfirmLandAndActionsViewModel(payment, landParcels) {
       action: formatActionLabel(description, code),
       area: formatArea(quantity, unit),
       yearlyPayment: formatPrice(annualPaymentPence),
-      changeHref: changeActionsHref(sheetId, parcelId),
-      removeHref: removeActionHref(sheetId, parcelId, code)
+      changeHref: changeActionsHref(sheetId, parcelId)
     })
     parcel.totalPence += annualPaymentPence
   }
@@ -153,9 +211,10 @@ export function buildConfirmLandAndActionsViewModel(payment, landParcels) {
     // not blank the whole page.
     parcels: [...parcels.values()]
       .filter((parcel) => parcel.actions.length > 0)
-      .map(({ title, removeHref, actions, totalPence }) => ({
-        title,
+      .map(({ reference, removeHref, areaSummary, actions, totalPence }) => ({
+        reference,
         removeHref,
+        areaSummary,
         actions,
         yearlyPayment: formatPrice(totalPence)
       })),
@@ -170,7 +229,6 @@ export function buildConfirmLandAndActionsViewModel(payment, landParcels) {
  * @property {string} area - Quantity and unit
  * @property {string} yearlyPayment - Formatted yearly payment
  * @property {string} changeHref - Link to change the parcel's actions
- * @property {string} removeHref - Link to remove this action
  */
 
 /**
@@ -180,9 +238,17 @@ export function buildConfirmLandAndActionsViewModel(payment, landParcels) {
  */
 
 /**
+ * @typedef {object} ConfirmLandAndActionsAreaSummaryViewModel
+ * @property {string} total - Parcel total area
+ * @property {string} used - Area claimed by this parcel's selected actions
+ * @property {string} available - Total minus used; may be negative
+ */
+
+/**
  * @typedef {object} ConfirmLandAndActionsParcelViewModel
- * @property {string} title - Land parcel card title
+ * @property {string} reference - Bare land parcel reference, e.g. `SD1234 5678`
  * @property {string} removeHref - Link to remove the whole parcel
+ * @property {ConfirmLandAndActionsAreaSummaryViewModel} [areaSummary] - Omitted when state cannot support it
  * @property {ConfirmLandAndActionsActionViewModel[]} actions - Action rows
  * @property {string} yearlyPayment - Formatted parcel total
  */
@@ -196,5 +262,5 @@ export function buildConfirmLandAndActionsViewModel(payment, landParcels) {
 
 /**
  * @import { PaymentCalculation } from '~/src/server/land-grants/types/payment.d.js'
- * @import { LandParcels } from '~/src/server/land-grants/types/form-state.d.js'
+ * @import { LandParcel, LandParcels } from '~/src/server/land-grants/types/form-state.d.js'
  */
