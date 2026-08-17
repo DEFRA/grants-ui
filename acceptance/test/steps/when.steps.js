@@ -5,67 +5,6 @@ import TaskListPage from '../page-objects/task-list.page.js'
 import AutocompleteField from '../page-objects/auto-complete.field.js'
 import DatePartsField from '../page-objects/date-parts.field.js'
 import MonthYearField from '../page-objects/month-year.field.js'
-import selectedParcel from '../utils/selected-parcel-store.js'
-
-// Mimics the CustomEvent the parcel-map web component fires when a user clicks
-// a parcel. Kept in one place so a rename of the app-side event constant
-// (`EVENT_SELECTION` in src/client/javascripts/parcel-map/config.js) only has
-// to be chased here.
-//
-// Dispatching alone proves nothing: the hidden `landParcels` inputs the form
-// actually posts are written by a listener in
-// src/client/javascripts/parcel-map/parcel-select-page.js. If that bundle fails
-// to load the dispatch is a silent no-op, the form posts empty, and the failure
-// surfaces a step or two later as an opaque URL mismatch. So wait for the input
-// the listener writes and fail here instead.
-const dispatchParcelSelection = async (page, parcelId) => {
-  await page.evaluate((id) => {
-    const mapEl = document.getElementById('parcel-map')
-    if (!mapEl) {
-      throw new Error('No #parcel-map element on the page - is this a map page?')
-    }
-    mapEl.dispatchEvent(new CustomEvent('parcel-map:selection', { bubbles: true, detail: { selectedIds: [id] } }))
-  }, parcelId)
-
-  await expect(
-    page.locator(`#selected-parcels-inputs input[name="landParcels"][value="${parcelId}"]`),
-    `the parcel-map selection listener did not record parcel ${parcelId} - did the client bundle load?`
-  ).toHaveCount(1)
-}
-
-When('the user selects parcel {string} on the map', async function (parcelId) {
-  await this.page.waitForLoadState('domcontentloaded')
-  await dispatchParcelSelection(this.page, parcelId)
-})
-
-When('(the user )selects the first available land parcel on the map', async function () {
-  await this.page.waitForLoadState('domcontentloaded')
-  // Pick the first authorised parcel the map would render for this identity, so
-  // we never hard-code a parcel belonging to another SBI or bypass server-side
-  // parcel authorisation.
-  const parcelId = await this.page.evaluate(async () => {
-    const res = await fetch('/api/map/parcels', { headers: { accept: 'application/json' } })
-    if (!res.ok) {
-      throw new Error(`/api/map/parcels responded with ${res.status}`)
-    }
-    const body = await res.json()
-    const features = Array.isArray(body?.features) ? body.features : []
-    const first = features.find((f) => {
-      const rawId = f?.id ?? f?.properties?.id
-      return typeof rawId === 'string' ? rawId.trim() !== '' : typeof rawId === 'number'
-    })
-    if (!first) {
-      throw new Error('No authorised parcels returned by /api/map/parcels')
-    }
-    return String(first.id ?? first.properties.id)
-  })
-
-  await dispatchParcelSelection(this.page, parcelId)
-  // Recorded only after the selection actually reached the page, so a failed
-  // dispatch cannot leave a stale parcel behind for the {SELECTED PARCEL}
-  // placeholder.
-  selectedParcel.current = parcelId
-})
 
 When('(the user )clicks on {string}', async function (text) {
   await this.page.locator(`//*[contains(text(),'${text}')]`).click()

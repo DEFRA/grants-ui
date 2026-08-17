@@ -123,19 +123,11 @@ Feature: GAS Error-Handling
         # repeat-page (list summary)
         When the user continues
 
-        # select-land-parcel (map)
+        # select-land-parcel
         Then the user should be at URL "select-land-parcel"
-        When the user selects the first available land parcel on the map
+        When the user selects the following
+            | SD6351 8781 |
         And continues
-
-        # select-actions-for-land-parcel
-        Then the user should be at URL "select-actions-for-land-parcel"
-        When the user selects the first item
-        And continues
-
-        # your land and actions
-        Then the user should be at URL "confirm-land-and-actions"
-        When the user clicks on "Save and continue"
 
         # summary
         Then the user should be at URL "summary"

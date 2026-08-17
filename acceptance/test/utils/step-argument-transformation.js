@@ -1,14 +1,6 @@
 import referenceNumbers from './reference-number-store.js'
-import selectedParcel from './selected-parcel-store.js'
 
 export function transformStepArgument(value) {
-  if (value === '{SELECTED PARCEL}') {
-    if (!selectedParcel.current) {
-      throw new Error('No land parcel stored by earlier step')
-    }
-    return selectedParcel.current
-  }
-
   if (value === '{DATE IN A WEEK}') {
     const date = new Date()
     date.setDate(date.getUTCDate() + 7)

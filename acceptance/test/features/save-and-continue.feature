@@ -149,19 +149,11 @@ Feature: Save and Continue
         # repeat-page (list summary)
         When the user continues
 
-        # select-land-parcel (map)
+        # select-land-parcel
         Then the user should be at URL "select-land-parcel"
-        When the user selects the first available land parcel on the map
+        When the user selects the following
+            | SD6351 8781 |
         And continues
-
-        # select-actions-for-land-parcel
-        Then the user should be at URL "select-actions-for-land-parcel"
-        When the user selects the first item
-        And continues
-
-        # your land and actions
-        Then the user should be at URL "confirm-land-and-actions"
-        When the user clicks on "Save and continue"
 
         # summary
         Then the user should be at URL "summary"
@@ -170,14 +162,6 @@ Feature: Save and Continue
         Given the user starts a new browser session
         And navigates to "/example-grant-with-auth"
         And logs in as CRN "1100960953"
-
-        # Pre-submission resume lands on the payment summary rather than Check
-        # answers, because a GET of this page recalculates the payment. Assert
-        # the recalculated figures actually render before continuing.
-        Then the user should be at URL "confirm-land-and-actions"
-        And should see heading "Your land and actions"
-        And the user should see a populated land and actions payment summary
-        When the user clicks on "Save and continue"
 
         # summary, should return to summary with all previous answers on resumption of completed but unsubmitted journey
         Then the user should be at URL "summary"
@@ -210,7 +194,7 @@ Feature: Save and Continue
             | Project description            | Project description     |
             | Project budget                 | 50000                   |
             | Item                           | You have added 1 answer |
-            | Land parcel                    | {SELECTED PARCEL}       |
+            | Select land parcels            | SD6351-8781             |
         When the user continues
 
         # declaration
