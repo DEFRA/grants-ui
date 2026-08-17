@@ -605,7 +605,7 @@ describe('Land Grants client', () => {
       expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/application/validate`, {
         method: 'POST',
         headers: expectedHeaders,
-        body: JSON.stringify({ data: 'test', sbi: Number(mockUserContext.sbi) })
+        body: JSON.stringify({ data: 'test', sbi: mockUserContext.sbi })
       })
       expect(result).toEqual(mockResponse)
     })
