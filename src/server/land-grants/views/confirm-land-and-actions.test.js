@@ -5,6 +5,9 @@ const renderPage = createPageRenderer(import.meta.url, 'confirm-land-and-actions
   pageTitle: 'Your land and actions'
 })
 
+// Mirrors what buildConfirmLandAndActionsViewModel produces for the fixture in
+// confirm-land-and-actions.view-model.test.js, so the two tests together pin the
+// whole chain from API payload to rendered row.
 const model = {
   parcels: [
     {
@@ -12,29 +15,29 @@ const model = {
       removeHref: 'remove-parcel?parcelId=SD1234-5678',
       actions: [
         {
-          action: 'Action description: CLIG3',
-          area: '2 ha',
-          yearlyPayment: '£100.00',
+          action: 'Action description (CLIG3)',
+          area: '2.0000 ha',
+          yearlyPayment: '£10.00',
           changeHref: 'select-actions-for-land-parcel?parcelId=SD1234-5678',
           removeHref: 'remove-action?parcelId=SD1234-5678&action=CLIG3'
         },
         {
-          action: 'Action description: CSAM3',
-          area: '4 ha',
-          yearlyPayment: '£200.00',
+          action: 'Another action (CSAM3)',
+          area: '4.0000 ha',
+          yearlyPayment: '£20.00',
           changeHref: 'select-actions-for-land-parcel?parcelId=SD1234-5678',
           removeHref: 'remove-action?parcelId=SD1234-5678&action=CSAM3'
         }
       ],
-      yearlyPayment: '£300.00'
+      yearlyPayment: '£30.00'
     },
     {
       title: 'Land parcel CD9999 1111',
       removeHref: 'remove-parcel?parcelId=CD9999-1111',
       actions: [
         {
-          action: 'Action description: SCR2',
-          area: '1 ha',
+          action: 'Third action (SCR2)',
+          area: '1.0000 ha',
           yearlyPayment: '£3.00',
           changeHref: 'select-actions-for-land-parcel?parcelId=CD9999-1111',
           removeHref: 'remove-action?parcelId=CD9999-1111&action=SCR2'
@@ -48,85 +51,138 @@ const model = {
   hasCalculationError: false
 }
 
-const bodyText = ($) => $('main').text().replace(/\s+/g, ' ').trim()
+const normalise = (text) => text.replace(/\s+/g, ' ').trim()
+const bodyText = ($) => normalise($('main').text())
+
+/** Row header|value pairs of the table inside the nth `.land-parcel-summary` block. */
+const rowsOf = ($, index) =>
+  $('.land-parcel-summary')
+    .eq(index)
+    .find('.govuk-table__row')
+    .map((_, row) =>
+      [
+        normalise($(row).find('.govuk-table__header').text()),
+        normalise($(row).find('.govuk-table__cell').first().text())
+      ].join('|')
+    )
+    .get()
 
 describe('confirm-land-and-actions.html view', () => {
-  it('renders the H1', () => {
+  it('renders the H1 with a caption above the page title', () => {
     const $ = renderPage(model)
-    expect($('h1').text().trim()).toBe('Your land and actions')
+    expect(normalise($('h1').text())).toBe('Select land and actions Your land and actions')
+    expect(normalise($('h1 span.govuk-caption-l').text())).toBe('Select land and actions')
   })
 
-  it('renders one summary card per parcel with a Remove parcel link', () => {
+  it('uses the configured section title as the caption when one is set', () => {
+    const $ = renderPage({ ...model, sectionTitle: 'Land and actions' })
+    expect(normalise($('h1 span.govuk-caption-l').text())).toBe('Land and actions')
+  })
+
+  it('falls back to the standard caption rather than repeating the page title', () => {
+    const $ = renderPage({ ...model, sectionTitle: 'Your land and actions' })
+    expect(normalise($('h1 span.govuk-caption-l').text())).toBe('Select land and actions')
+    expect(normalise($('h1').text())).toBe('Select land and actions Your land and actions')
+  })
+
+  it('renders no caption element outside the H1', () => {
     const $ = renderPage(model)
-    const cards = $('.govuk-summary-card')
-    expect(cards.length).toBe(2)
-    const removeParcelHrefs = $('.govuk-summary-card__actions a')
-      .map((_, el) => $(el).attr('href'))
+    expect($('main .govuk-caption-l').length).toBe(1)
+    expect($('main .govuk-caption-l').parent().is('h1')).toBe(true)
+  })
+
+  it('renders the page in a full-width column so the parcel rows have room', () => {
+    const $ = renderPage(model)
+    expect($('h1').parent().attr('class')).toBe('govuk-grid-column-full')
+  })
+
+  it('renders one block per parcel, headed by the parcel with a removal link', () => {
+    const $ = renderPage(model)
+    const blocks = $('.land-parcel-summary')
+    expect(blocks.length).toBe(2)
+
+    expect(blocks.eq(0).find('h2').text().trim()).toBe('Land parcel SD1234 5678')
+    expect(blocks.eq(1).find('h2').text().trim()).toBe('Land parcel CD9999 1111')
+
+    const removeParcelLinks = blocks
+      .find('.land-parcel-summary__heading a')
+      .map((_, el) => `${$(el).attr('href')}:${normalise($(el).text())}`)
       .get()
-    expect(removeParcelHrefs).toContain('remove-parcel?parcelId=SD1234-5678')
-    expect(removeParcelHrefs).toContain('remove-parcel?parcelId=CD9999-1111')
-  })
-
-  it('renders the Action, Area and Yearly payment column headers', () => {
-    const $ = renderPage(model)
-    const headers = $('table thead th')
-      .map((_, el) => $(el).text().trim())
-      .get()
-    expect(headers).toContain('Action')
-    expect(headers).toContain('Area')
-    expect(headers).toContain('Yearly payment')
-  })
-
-  it('renders each action row inside its own parcel card, in order', () => {
-    const $ = renderPage(model)
-    const rowsOf = (index) =>
-      $('.govuk-summary-card')
-        .eq(index)
-        .find('tbody tr')
-        .map((_, tr) =>
-          $(tr)
-            .find('th, td')
-            .map((__, cell) => $(cell).text().trim())
-            .get()
-            .slice(0, 3)
-            .join('|')
-        )
-        .get()
-
-    expect(rowsOf(0)).toEqual([
-      'Action description: CLIG3|2 ha|£100.00',
-      'Action description: CSAM3|4 ha|£200.00',
-      'Total yearly payment for land parcel||£300.00'
+    expect(removeParcelLinks).toEqual([
+      'remove-parcel?parcelId=SD1234-5678:Remove this land parcel and all actions for Land parcel SD1234 5678',
+      'remove-parcel?parcelId=CD9999-1111:Remove this land parcel and all actions for Land parcel CD9999 1111'
     ])
-    expect(rowsOf(1)).toEqual(['Action description: SCR2|1 ha|£3.00', 'Total yearly payment for land parcel||£3.00'])
   })
 
-  it('names each action row with a row header so the money cells are associated', () => {
+  it('renders each action as a table row showing its area and payment, in order', () => {
     const $ = renderPage(model)
-    const rowHeaders = $('.govuk-summary-card')
+
+    expect(rowsOf($, 0)).toEqual([
+      'Action description (CLIG3)|2.0000 ha (£10.00)',
+      'Another action (CSAM3)|4.0000 ha (£20.00)',
+      'Yearly payment for this parcel|£30.00'
+    ])
+    expect(rowsOf($, 1)).toEqual(['Third action (SCR2)|1.0000 ha (£3.00)', 'Yearly payment for this parcel|£3.00'])
+  })
+
+  it('renders the payment alone when the API priced an action without an area', () => {
+    const $ = renderPage({
+      ...model,
+      parcels: [{ ...model.parcels[0], actions: [{ ...model.parcels[0].actions[0], area: '' }] }]
+    })
+
+    expect(rowsOf($, 0)).toEqual(['Action description (CLIG3)|£10.00', 'Yearly payment for this parcel|£30.00'])
+  })
+
+  it('names every row with a scoped row header so each money value is associated', () => {
+    const $ = renderPage(model)
+    const headers = $('.land-parcel-summary')
       .eq(0)
-      .find('tbody tr th[scope="row"]')
-      .map((_, el) => $(el).text().trim())
+      .find('th.govuk-table__header[scope="row"]')
+      .map((_, el) => normalise($(el).text()))
       .get()
 
-    expect(rowHeaders).toEqual([
-      'Action description: CLIG3',
-      'Action description: CSAM3',
-      'Total yearly payment for land parcel'
-    ])
+    expect(headers).toEqual(['Action description (CLIG3)', 'Another action (CSAM3)', 'Yearly payment for this parcel'])
+  })
+
+  it('marks only action rows so their extra spacing does not reach the total row', () => {
+    const $ = renderPage(model)
+    const block = $('.land-parcel-summary').eq(0)
+
+    expect(block.find('.land-parcel-summary__action-row').length).toBe(2)
+    expect(normalise(block.find('.govuk-table__row').last().find('.govuk-table__header').text())).toBe(
+      'Yearly payment for this parcel'
+    )
+    expect(block.find('.govuk-table__row').last().hasClass('land-parcel-summary__action-row')).toBe(false)
+  })
+
+  it('gives each parcel table a caption naming the parcel, for screen readers only', () => {
+    const $ = renderPage(model)
+    const caption = $('.land-parcel-summary').eq(0).find('caption')
+
+    expect(normalise(caption.text())).toBe('Actions and yearly payment for Land parcel SD1234 5678')
+    expect(caption.hasClass('govuk-visually-hidden')).toBe(true)
   })
 
   it('gives the Change and Remove links accessible names, and escapes the hrefs once', () => {
     const $ = renderPage(model)
-    const firstCard = $('.govuk-summary-card').eq(0)
+    const firstRow = $('.land-parcel-summary').eq(0).find('.govuk-table__row').eq(0)
 
-    expect(firstCard.find('tbody tr').eq(0).find('a').eq(0).text().trim()).toBe('Change Action description: CLIG3')
-    expect(firstCard.find('tbody tr').eq(0).find('a').eq(1).attr('href')).toBe(
-      'remove-action?parcelId=SD1234-5678&action=CLIG3'
-    )
-    expect($('.govuk-summary-card').eq(1).find('tbody tr').eq(0).find('a').eq(1).attr('href')).toBe(
+    expect(normalise(firstRow.find('a').eq(0).text())).toBe('Change Action description (CLIG3)')
+    expect(normalise(firstRow.find('a').eq(1).text())).toBe('Remove Action description (CLIG3)')
+    expect(firstRow.find('a').eq(0).attr('href')).toBe('select-actions-for-land-parcel?parcelId=SD1234-5678')
+    expect(firstRow.find('a').eq(1).attr('href')).toBe('remove-action?parcelId=SD1234-5678&action=CLIG3')
+    expect($('.land-parcel-summary').eq(1).find('.govuk-table__row').eq(0).find('a').eq(1).attr('href')).toBe(
       'remove-action?parcelId=CD9999-1111&action=SCR2'
     )
+  })
+
+  it('keeps the row controls in their own right-aligned cell', () => {
+    const $ = renderPage(model)
+    const controls = $('.land-parcel-summary').eq(0).find('.govuk-table__row').eq(0).find('td').last()
+
+    expect(controls.hasClass('land-parcel-summary__actions')).toBe(true)
+    expect(controls.find('a').length).toBe(2)
   })
 
   it('escapes action text rather than trusting it as markup', () => {
@@ -141,27 +197,20 @@ describe('confirm-land-and-actions.html view', () => {
     expect(bodyText($)).toContain('<script>x</script> & co')
   })
 
-  it('renders agreement-level items in their own card when present', () => {
+  it('renders agreement-level items in their own block when present', () => {
     const $ = renderPage({
       ...model,
-      additionalYearlyPayments: [{ action: 'Assess moorland: CMOR1', yearlyPayment: '£272.00' }]
+      additionalYearlyPayments: [{ action: 'Assess moorland (CMOR1)', yearlyPayment: '£272.00' }]
     })
-    const cards = $('.govuk-summary-card')
+    const blocks = $('.land-parcel-summary')
 
-    expect(cards.length).toBe(3)
-    expect(cards.eq(2).find('.govuk-summary-card__title').text().trim()).toBe('Additional yearly payments')
-    expect(
-      cards
-        .eq(2)
-        .find('tbody tr')
-        .eq(0)
-        .find('th, td')
-        .map((_, cell) => $(cell).text().trim())
-        .get()
-    ).toEqual(['Assess moorland: CMOR1', '£272.00'])
+    expect(blocks.length).toBe(3)
+    expect(blocks.eq(2).find('h2').text().trim()).toBe('Additional yearly payments')
+    expect(rowsOf($, 2)).toEqual(['Assess moorland (CMOR1)|£272.00'])
+    expect(blocks.eq(2).find('.land-parcel-summary__action-row').length).toBe(0)
   })
 
-  it('omits the agreement-level card when there are no such items', () => {
+  it('omits the agreement-level block when there are no such items', () => {
     const $ = renderPage(model)
 
     expect(bodyText($)).not.toContain('Additional yearly payments')
@@ -170,10 +219,24 @@ describe('confirm-land-and-actions.html view', () => {
   it('renders the parcel total label and application total label with values', () => {
     const $ = renderPage(model)
     const text = bodyText($)
-    expect(text).toContain('Total yearly payment for land parcel')
-    expect(text).toContain('£300.00')
-    expect(text).toContain('Total yearly payment for application')
+    expect(text).toContain('Yearly payment for this parcel')
+    expect(text).toContain('£30.00')
+    expect(text).toContain('Total yearly payment')
     expect(text).toContain('£1,234.00')
+  })
+
+  it('renders the application total in its own table outside the parcel blocks', () => {
+    const $ = renderPage(model)
+    const applicationTotalRow = $('.govuk-table__row')
+      .filter((_, row) => normalise($(row).find('.govuk-table__header').text()) === 'Total yearly payment')
+      .first()
+
+    expect(applicationTotalRow.length).toBe(1)
+    expect(applicationTotalRow.closest('.land-parcel-summary').length).toBe(0)
+    expect(normalise(applicationTotalRow.find('.govuk-table__cell').first().text())).toBe('£1,234.00')
+    expect(normalise(applicationTotalRow.closest('table').find('caption').text())).toBe(
+      'Total yearly payment for the grant application'
+    )
   })
 
   it('renders both Save and continue and Add another land parcel buttons', () => {
@@ -209,10 +272,10 @@ describe('confirm-land-and-actions.html view', () => {
       expect(bodyText($)).toContain(
         'Unable to get payment information, please try again later or contact the Rural Payments Agency.'
       )
-      expect($('.govuk-summary-card').length).toBe(0)
-      expect($('table').length).toBe(0)
+      expect($('.land-parcel-summary').length).toBe(0)
+      expect($('.govuk-table').length).toBe(0)
       expect($('form button, form input[type="submit"]').length).toBe(0)
-      expect(bodyText($)).not.toContain('Total yearly payment for application')
+      expect(bodyText($)).not.toContain('Total yearly payment')
     })
 
     it('offers a way forward rather than dead-ending on the error summary', () => {

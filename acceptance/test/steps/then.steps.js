@@ -216,9 +216,26 @@ Then('(the user )should see the text {string}', async function (text) {
 })
 
 const CURRENCY_PATTERN = /^£[\d,]+\.\d{2}$/
-const PARCEL_TOTAL_LABEL = 'Total yearly payment for land parcel'
+// Action rows read "44.0000 ha (£14,652.00)"; total rows carry the amount alone.
+const AMOUNT_IN_VALUE = /£[\d,]+\.\d{2}/
+const PARCEL_TOTAL_LABEL = 'Yearly payment for this parcel'
+const APPLICATION_TOTAL_LABEL = 'Total yearly payment'
 
 const toPence = (text) => Math.round(Number(String(text).replace(/[£,\s]/g, '')) * 100)
+
+/**
+ * Reads the row header and the money value from the second cell of a GOV.UK
+ * table row, asserting that the row really does carry a currency amount.
+ */
+const rowAmount = async (row, context) => {
+  const label = (await row.locator('.govuk-table__header').innerText()).trim()
+  const value = (await row.locator('.govuk-table__cell').first().innerText()).trim()
+  const amount = value.match(AMOUNT_IN_VALUE)?.[0] ?? value
+
+  expect(amount, `${context} row "${label}" has no payment value`).toMatch(CURRENCY_PATTERN)
+
+  return { label, pence: toPence(amount) }
+}
 
 // Deliberately does NOT assert that the application total equals the parcel
 // totals plus the agreement-level rows: `annualTotalPence` is the authoritative
@@ -227,73 +244,78 @@ const toPence = (text) => Math.round(Number(String(text).replace(/[£,\s]/g, '')
 // currency value and that each parcel total matches the rows it is built from,
 // which is how the view model computes it.
 Then('(the user )should see a populated land and actions payment summary', async function () {
-  const cards = this.page.locator('.govuk-summary-card')
-  const cardCount = await cards.count()
-  expect(cardCount, 'expected at least one summary card').toBeGreaterThan(0)
+  const sections = this.page.locator('.land-parcel-summary')
+  const sectionCount = await sections.count()
+  expect(sectionCount, 'expected at least one land parcel section').toBeGreaterThan(0)
 
-  let parcelCards = 0
+  let parcelSections = 0
   let parcelActionRows = 0
 
-  for (let i = 0; i < cardCount; i++) {
-    const card = cards.nth(i)
-    const title = (await card.locator('.govuk-summary-card__title').innerText()).trim()
-    const rows = card.locator('tbody tr')
+  for (let i = 0; i < sectionCount; i++) {
+    const section = sections.nth(i)
+    const title = (await section.locator('h2').innerText()).trim()
+    const context = `section "${title}"`
+    const rows = section.locator('.govuk-table__row')
     const rowCount = await rows.count()
-    expect(rowCount, `card "${title}" rendered no rows`).toBeGreaterThan(0)
+    expect(rowCount, `${context} rendered no rows`).toBeGreaterThan(0)
 
-    const isParcelCard = title.startsWith('Land parcel')
-    const amountIndex = isParcelCard ? 2 : 1
-    let actionSumPence = 0
+    // Every row in the block must price something, agreement-level rows
+    // included; only the parcel total is singled out here.
     let parcelTotalPence = null
-
     for (let row = 0; row < rowCount; row++) {
-      const cells = rows.nth(row).locator('th, td')
-      const label = (await cells.nth(0).innerText()).trim()
-      const amount = (await cells.nth(amountIndex).innerText()).trim()
-
-      expect(amount, `card "${title}" row "${label}" has no payment value`).toMatch(CURRENCY_PATTERN)
-
+      const { label, pence } = await rowAmount(rows.nth(row), context)
       if (label === PARCEL_TOTAL_LABEL) {
-        parcelTotalPence = toPence(amount)
-      } else if (isParcelCard) {
-        actionSumPence += toPence(amount)
-        parcelActionRows += 1
+        parcelTotalPence = pence
       }
     }
 
-    if (isParcelCard) {
-      parcelCards += 1
-      expect(parcelTotalPence, `card "${title}" has no total row`).not.toBeNull()
-      expect(parcelTotalPence, `card "${title}" total does not match its action rows`).toEqual(actionSumPence)
+    if (!title.startsWith('Land parcel')) {
+      continue
     }
+    parcelSections += 1
+
+    // Summed from the action rows alone: the total row and any non-action row
+    // must not feed the figure the total is checked against.
+    const actionRows = section.locator('.land-parcel-summary__action-row')
+    const actionRowCount = await actionRows.count()
+    let actionSumPence = 0
+    for (let row = 0; row < actionRowCount; row++) {
+      actionSumPence += (await rowAmount(actionRows.nth(row), context)).pence
+      parcelActionRows += 1
+    }
+
+    expect(parcelTotalPence, `${context} has no total row`).not.toBeNull()
+    expect(parcelTotalPence, `${context} total does not match its action rows`).toEqual(actionSumPence)
   }
 
-  // Counted from parcel cards only: an agreement-level row must never stand in
-  // for a priced land action, or a summary showing no parcel actions at all
+  // Counted from parcel sections only: an agreement-level row must never stand
+  // in for a priced land action, or a summary showing no parcel actions at all
   // would pass.
-  expect(parcelCards, 'no land parcel cards were rendered').toBeGreaterThan(0)
+  expect(parcelSections, 'no land parcel sections were rendered').toBeGreaterThan(0)
   expect(parcelActionRows, 'no priced land action rows were rendered').toBeGreaterThan(0)
 
-  const applicationTotalRow = this.page.locator('.govuk-summary-list__row', {
-    hasText: 'Total yearly payment for application'
+  // The application total sits in its own table outside the parcel sections, so
+  // it is located from the page by its exact row header.
+  const applicationTotalRow = this.page.locator('.govuk-table__row', {
+    has: this.page.locator(`th.govuk-table__header:text-is("${APPLICATION_TOTAL_LABEL}")`)
   })
-  const applicationTotal = (await applicationTotalRow.locator('.govuk-summary-list__value').innerText()).trim()
+  const applicationTotal = (await applicationTotalRow.locator('.govuk-table__cell').first().innerText()).trim()
   expect(applicationTotal, 'application total is not a currency value').toMatch(CURRENCY_PATTERN)
   expect(toPence(applicationTotal), 'application total is zero').toBeGreaterThan(0)
 })
 
-Then('(the user )should see {int} land parcel card(s)', async function (expected) {
-  const titles = this.page.locator('.govuk-summary-card__title')
+Then('(the user )should see {int} land parcel section(s)', async function (expected) {
+  const titles = this.page.locator('.land-parcel-summary h2')
   const count = await titles.count()
-  let parcelCards = 0
+  let parcelSections = 0
 
   for (let i = 0; i < count; i++) {
     if ((await titles.nth(i).innerText()).trim().startsWith('Land parcel')) {
-      parcelCards += 1
+      parcelSections += 1
     }
   }
 
-  expect(parcelCards).toEqual(expected)
+  expect(parcelSections).toEqual(expected)
 })
 
 Then('(the user )should see a notification banner', async function () {

@@ -61,15 +61,15 @@ describe('buildConfirmLandAndActionsViewModel', () => {
       yearlyPayment: '£30.00',
       actions: [
         {
-          action: 'Action description: CLIG3',
-          area: '2 ha',
+          action: 'Action description (CLIG3)',
+          area: '2.0000 ha',
           yearlyPayment: '£10.00',
           changeHref: 'select-actions-for-land-parcel?parcelId=SD1234-5678',
           removeHref: 'remove-action?parcelId=SD1234-5678&action=CLIG3'
         },
         {
-          action: 'Another action: CSAM3',
-          area: '4 ha',
+          action: 'Another action (CSAM3)',
+          area: '4.0000 ha',
           yearlyPayment: '£20.00',
           changeHref: 'select-actions-for-land-parcel?parcelId=SD1234-5678',
           removeHref: 'remove-action?parcelId=SD1234-5678&action=CSAM3'
@@ -163,11 +163,12 @@ describe('buildConfirmLandAndActionsViewModel', () => {
 
       expect(model.additionalYearlyPayments).toEqual([
         {
-          action: 'Assess moorland and produce a written record: CMOR1',
+          action: 'Assess moorland and produce a written record (CMOR1)',
           yearlyPayment: '£272.00'
         }
       ])
       expect(model.parcels[0].yearlyPayment).toBe('£29.73')
+      expect(model.parcels[0].actions[0].area).toBe('1.4869 ha')
       expect(model.applicationYearlyPayment).toBe('£360.55')
     })
 
@@ -241,6 +242,17 @@ describe('buildConfirmLandAndActionsViewModel', () => {
     )
 
     expect(model.parcels[0].actions[0].area).toBe('')
+  })
+
+  it('leaves an unexpected non-numeric quantity as received rather than validating it', () => {
+    const stringQuantity = { 1: { ...parcelItems[1], quantity: '2' } }
+
+    const model = buildConfirmLandAndActionsViewModel(
+      { annualTotalPence: 1000, parcelItems: stringQuantity },
+      { 'SD1234-5678': landParcels['SD1234-5678'] }
+    )
+
+    expect(model.parcels[0].actions[0].area).toBe('2 ha')
   })
 
   it('percent-encodes an action code used in a query string', () => {

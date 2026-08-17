@@ -2,13 +2,11 @@
 
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
-{% from "govuk/components/table/macro.njk" import govukTable %}
-{% from "summaryCard/macro.njk" import summaryCard %}
 
 {% block content %}
   <div class="govuk-body">
     <div class="govuk-grid-row">
-      <div class="{{ gridColumnClass(page, 'govuk-grid-column-two-thirds') }}">
+      <div class="{{ gridColumnClass(page, 'full') }}">
         {% if hasCalculationError %}
           {{ govukErrorSummary({
             titleText: "There is a problem",
@@ -16,97 +14,85 @@
           }) }}
         {% endif %}
 
-        {% if sectionTitle and sectionTitle.length and (sectionTitle !== pageTitle) %}
-          <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">
-            {{- sectionTitle -}}
-          </h2>
-        {% endif %}
-        <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
+        <h1 class="govuk-heading-l">
+          <span class="govuk-caption-l">
+            {%- if sectionTitle and sectionTitle.length and (sectionTitle !== pageTitle) -%}
+              {{- sectionTitle -}}
+            {%- else -%}
+              Select land and actions
+            {%- endif -%}
+          </span>
+          {{ pageTitle }}
+        </h1>
 
         {% if not hasCalculationError %}
           {% for parcel in parcels %}
-            {% set rows = [] %}
-            {% for landAction in parcel.actions %}
-              {% set changeRemove %}
-                <ul class="govuk-summary-list__actions-list">
-                  <li class="govuk-summary-list__actions-list-item"><a class="govuk-link" href="{{ landAction.changeHref }}">Change<span class="govuk-visually-hidden"> {{ landAction.action }}</span></a></li>
-                  <li class="govuk-summary-list__actions-list-item"><a class="govuk-link" href="{{ landAction.removeHref }}">Remove<span class="govuk-visually-hidden"> {{ landAction.action }}</span></a></li>
-                </ul>
-              {% endset %}
-              {% set _ = rows.push([
-                { text: landAction.action },
-                { text: landAction.area },
-                { text: landAction.yearlyPayment, format: "numeric" },
-                { html: changeRemove }
-              ]) %}
-            {% endfor %}
-            {% set _ = rows.push([
-              { text: "Total yearly payment for land parcel", classes: "govuk-!-font-weight-bold" },
-              { text: "" },
-              { text: parcel.yearlyPayment, format: "numeric", classes: "govuk-!-font-weight-bold" },
-              { text: "" }
-            ]) %}
+            <div class="land-parcel-summary">
+              <div class="land-parcel-summary__heading">
+                <h2 class="govuk-heading-s govuk-!-margin-bottom-0">{{ parcel.title }}</h2>
+                <a class="govuk-link" href="{{ parcel.removeHref }}">Remove this land parcel<span class="govuk-visually-hidden"> and all actions for {{ parcel.title }}</span></a>
+              </div>
 
-            {% call summaryCard({
-              title: {
-                text: parcel.title
-              },
-              headerActions: {
-                text: "Remove parcel",
-                href: parcel.removeHref,
-                hiddenTextValue: "all actions for " + parcel.title
-              }
-            }) %}
-              {{ govukTable({
-                caption: "Actions selected for " + parcel.title,
-                captionClasses: "govuk-visually-hidden",
-                firstCellIsHeader: true,
-                head: [
-                  { text: "Action", classes: "govuk-!-width-one-half" },
-                  { text: "Area" },
-                  { text: "Yearly payment", format: "numeric" },
-                  { html: '<span class="govuk-visually-hidden">Change or remove action</span>' }
-                ],
-                rows: rows,
-                classes: "govuk-table--no-bottom-border govuk-!-margin-bottom-0"
-              }) }}
-            {% endcall %}
+              <table class="govuk-table govuk-!-margin-bottom-0">
+                <caption class="govuk-table__caption govuk-visually-hidden">Actions and yearly payment for {{ parcel.title }}</caption>
+                <tbody class="govuk-table__body">
+                  {% for landAction in parcel.actions %}
+                    <tr class="govuk-table__row land-parcel-summary__action-row">
+                      <th scope="row" class="govuk-table__header govuk-!-width-one-third">{{ landAction.action }}</th>
+                      <td class="govuk-table__cell">{{ landAction.area ~ " (" ~ landAction.yearlyPayment ~ ")" if landAction.area else landAction.yearlyPayment }}</td>
+                      <td class="govuk-table__cell govuk-table__cell--numeric land-parcel-summary__actions">
+                        <ul class="govuk-summary-list__actions-list">
+                          <li class="govuk-summary-list__actions-list-item">
+                            <a class="govuk-link" href="{{ landAction.changeHref }}">Change<span class="govuk-visually-hidden"> {{ landAction.action }}</span></a>
+                          </li>
+                          <li class="govuk-summary-list__actions-list-item">
+                            <a class="govuk-link" href="{{ landAction.removeHref }}">Remove<span class="govuk-visually-hidden"> {{ landAction.action }}</span></a>
+                          </li>
+                        </ul>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                  <tr class="govuk-table__row">
+                    <th scope="row" class="govuk-table__header govuk-!-width-one-third">Yearly payment for this parcel</th>
+                    <td class="govuk-table__cell govuk-!-font-weight-bold">{{ parcel.yearlyPayment }}</td>
+                    <td class="govuk-table__cell"></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           {% endfor %}
 
           {% if additionalYearlyPayments | length %}
-            {% set additionalRows = [] %}
-            {% for additionalPayment in additionalYearlyPayments %}
-              {% set _ = additionalRows.push([
-                { text: additionalPayment.action },
-                { text: additionalPayment.yearlyPayment, format: "numeric" }
-              ]) %}
-            {% endfor %}
+            <div class="land-parcel-summary">
+              <div class="land-parcel-summary__heading">
+                <h2 class="govuk-heading-s govuk-!-margin-bottom-0">Additional yearly payments</h2>
+              </div>
 
-            {% call summaryCard({
-              title: {
-                text: "Additional yearly payments"
-              }
-            }) %}
-              {{ govukTable({
-                caption: "Additional payments per agreement per year",
-                captionClasses: "govuk-visually-hidden",
-                firstCellIsHeader: true,
-                head: [
-                  { text: "Action", classes: "govuk-!-width-one-half" },
-                  { text: "Yearly payment", format: "numeric" }
-                ],
-                rows: additionalRows,
-                classes: "govuk-table--no-bottom-border govuk-!-margin-bottom-0"
-              }) }}
-            {% endcall %}
+              <table class="govuk-table govuk-!-margin-bottom-0">
+                <caption class="govuk-table__caption govuk-visually-hidden">Additional yearly payments for the grant application</caption>
+                <tbody class="govuk-table__body">
+                  {% for additionalPayment in additionalYearlyPayments %}
+                    <tr class="govuk-table__row">
+                      <th scope="row" class="govuk-table__header govuk-!-width-one-third">{{ additionalPayment.action }}</th>
+                      <td class="govuk-table__cell">{{ additionalPayment.yearlyPayment }}</td>
+                      <td class="govuk-table__cell"></td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
           {% endif %}
 
-          <dl class="govuk-summary-list govuk-!-margin-top-6">
-            <div class="govuk-summary-list__row">
-              <dt class="govuk-summary-list__key">Total yearly payment for application</dt>
-              <dd class="govuk-summary-list__value govuk-!-text-align-right">{{ applicationYearlyPayment }}</dd>
-            </div>
-          </dl>
+          <table class="govuk-table">
+            <caption class="govuk-table__caption govuk-visually-hidden">Total yearly payment for the grant application</caption>
+            <tbody class="govuk-table__body">
+              <tr class="govuk-table__row">
+                <th scope="row" class="govuk-table__header govuk-!-width-one-third">Total yearly payment</th>
+                <td class="govuk-table__cell govuk-!-font-weight-bold">{{ applicationYearlyPayment }}</td>
+                <td class="govuk-table__cell"></td>
+              </tr>
+            </tbody>
+          </table>
 
           <form method="post" novalidate="novalidate">
             <input type="hidden" name="crumb" value="{{ crumb }}">

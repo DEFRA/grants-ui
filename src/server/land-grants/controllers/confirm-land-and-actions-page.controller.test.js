@@ -172,7 +172,7 @@ describe('ConfirmLandAndActionsPageController', () => {
 
       const model = mockH.view.mock.calls[0][1]
       expect(model.hasCalculationError).toBe(false)
-      expect(model.additionalYearlyPayments).toEqual([{ action: 'Assess moorland: CMOR1', yearlyPayment: '£272.00' }])
+      expect(model.additionalYearlyPayments).toEqual([{ action: 'Assess moorland (CMOR1)', yearlyPayment: '£272.00' }])
     })
 
     test('clears prior payment data and renders error when service fails', async () => {

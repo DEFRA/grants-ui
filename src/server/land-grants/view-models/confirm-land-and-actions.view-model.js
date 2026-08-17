@@ -1,4 +1,3 @@
-import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
 import { formatPrice } from '~/src/server/common/utils/payment.js'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
 import { stringifyParcel } from '~/src/shared/format-parcel.js'
@@ -33,14 +32,29 @@ const isNonNegativeInteger = (value) => Number.isInteger(value) && /** @type {nu
 const isNonEmptyString = (value) => typeof value === 'string' && value.trim() !== ''
 
 /**
+ * Renders an action label in the visible form "Description (CODE)", falling
+ * back to the bare code when the API omits the description. Deliberately not
+ * the shared `landActionWithCode()` helper: its "Description: CODE" form is
+ * still what the payment and submission paths send downstream.
+ * @param {unknown} description
+ * @param {string} code
+ * @returns {string}
+ */
+const formatActionLabel = (description, code) => (isNonEmptyString(description) ? `${description} (${code})` : code)
+
+/**
  * Renders the quantity/unit pair without emitting "undefined" when the API
- * omits either half.
+ * omits either half. A numeric quantity is shown to four decimal places so
+ * areas line up column-wise with the design; anything else is passed through
+ * untouched rather than validated here.
  * @param {unknown} quantity
  * @param {unknown} unit
  * @returns {string}
  */
-const formatArea = (quantity, unit) =>
-  [quantity, unit].filter((part) => part !== undefined && part !== null && part !== '').join(' ')
+const formatArea = (quantity, unit) => {
+  const area = typeof quantity === 'number' && Number.isFinite(quantity) ? quantity.toFixed(4) : quantity
+  return [area, unit].filter((part) => part !== undefined && part !== null && part !== '').join(' ')
+}
 
 /**
  * Builds the presentation model for the generic "Your land and actions"
@@ -107,7 +121,7 @@ export function buildConfirmLandAndActionsViewModel(payment, landParcels) {
     }
 
     parcel.actions.push({
-      action: isNonEmptyString(description) ? landActionWithCode(description, code) : code,
+      action: formatActionLabel(description, code),
       area: formatArea(quantity, unit),
       yearlyPayment: formatPrice(annualPaymentPence),
       changeHref: changeActionsHref(sheetId, parcelId),
@@ -128,7 +142,7 @@ export function buildConfirmLandAndActionsViewModel(payment, landParcels) {
     }
 
     return {
-      action: isNonEmptyString(description) ? landActionWithCode(description, code) : code,
+      action: formatActionLabel(description, code),
       yearlyPayment: formatPrice(annualPaymentPence)
     }
   })
