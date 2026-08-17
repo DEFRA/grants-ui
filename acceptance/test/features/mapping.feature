@@ -19,16 +19,16 @@ Feature: Mapping
         Then the user should see "Wilson Arable Crops" has 2 available land parcels totalling "79.1504" hectares
 
         # select a land parcel
-        When the user selects parcel "SD6352-8774" of area "11.1006" hectares on the map
-        Then the user should see "SD6352-8774" totalling "11.1006" hectares in the selected parcel summary
+        When the user selects parcel "SD6352 8774" of area "11.1006" hectares on the map
+        Then the user should see "SD6352 8774" totalling "11.1006" hectares in the selected parcel summary
 
         # clear selection
         When the user decides to change their selected parcel
         Then the user should not see a selected parcel summary
 
         # select a different land parcel
-        When the user selects parcel "SD6351-8781" of area "68.0498" hectares on the map
-        Then the user should see "SD6351-8781" totalling "68.0498" hectares in the selected parcel summary
+        When the user selects parcel "SD6351 8781" of area "68.0498" hectares on the map
+        Then the user should see "SD6351 8781" totalling "68.0498" hectares in the selected parcel summary
         And continues
 
         # select-actions-for-land-parcel
@@ -54,8 +54,8 @@ Feature: Mapping
             | SD7147-1461 | 120.5784 |
             | SD8542-1488 | 2.5076   |
             | SD7446-1499 | 2.2947   |
-        And the user selects parcel "SD6163-1441" of area "2.6897" hectares on the map
-        Then the user should see "SD6163-1441" totalling "2.6897" hectares in the selected parcel summary
+        And the user selects parcel "SD6163 1441" of area "2.6897" hectares on the map
+        Then the user should see "SD6163 1441" totalling "2.6897" hectares in the selected parcel summary
         And continues
 
         # select-actions-for-land-parcel

@@ -143,6 +143,15 @@ Then('(the user )should see a reference number for their application', async fun
   referenceNumbers.push(await selector.textContent())
 })
 
+Then('(the user )should see claim reference number {string}', async function (claimNumberSuffix) {
+  if (!referenceNumbers.current) {
+    throw new Error('No reference number stored by earlier step')
+  }
+
+  const selector = this.page.locator('//h1/following-sibling::div[1]/strong')
+  await expect(selector).toHaveText(`${referenceNumbers.current}${claimNumberSuffix}`)
+})
+
 Then(
   '(the user )should see the following task list with questions with {int} of {int} task pages completed',
   async function (completedTasks, totalTasks, dataTable) {

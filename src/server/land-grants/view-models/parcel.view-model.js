@@ -1,6 +1,6 @@
 // @ts-nocheck - noImplicitAny debt, remove when this file is typed
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
-import { stringifyParcel } from '~/src/shared/format-parcel.js'
+import { formatParcelReference, stringifyParcel } from '~/src/shared/format-parcel.js'
 
 /**
  * Maps land parcel data to view models for rendering in forms.
@@ -17,7 +17,7 @@ export function formatParcelForView(parcel, actionsForParcel) {
   const hint = buildParcelHint(parcel, actionsForParcel)
 
   return {
-    text: `${parcel.sheetId} ${parcel.parcelId}`,
+    text: formatParcelReference(parcel),
     value: stringifyParcel(parcel),
     hint: hint ? { text: hint } : undefined
   }

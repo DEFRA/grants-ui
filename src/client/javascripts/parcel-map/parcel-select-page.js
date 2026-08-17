@@ -8,6 +8,7 @@ import {
   ERROR_REASON_NO_PARCELS,
   TOTAL_AREA_DECIMAL_PLACES
 } from './config.js'
+import { formatParcelReference } from '../../../shared/format-parcel.js'
 
 // DOM ids this script expects map-select-parcel.html to provide.
 const DOM_ID_PARCEL_MAP = 'parcel-map'
@@ -63,7 +64,7 @@ const updateSelectedParcelDetails = (selectedParcels) => {
     return
   }
   const [{ id, areaHa }] = selectedParcels
-  setText(DOM_ID_SELECTED_PARCEL_REFERENCE, id)
+  setText(DOM_ID_SELECTED_PARCEL_REFERENCE, formatParcelReference(id))
   setText(
     DOM_ID_SELECTED_PARCEL_AREA,
     areaHa == null ? '' : `${Number(areaHa).toFixed(TOTAL_AREA_DECIMAL_PLACES)} hectares`

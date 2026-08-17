@@ -1,4 +1,4 @@
-import { PactV3, MatchersV3, SpecificationVersion } from '@pact-foundation/pact'
+import { MatchersV3, PactV3, SpecificationVersion } from '@pact-foundation/pact'
 import path from 'path'
 import { vi } from 'vitest'
 import { postToLandGrantsApi as postToLandGrantsApiClient } from '~/src/server/land-grants/services/land-grants.client'
@@ -177,7 +177,7 @@ describe('wmp/payments/calculate-by-total-area', () => {
           code: string('PA3'),
           description: string('Woodland management plan'),
           version: string('1.0.0'),
-          parcelIds: eachLike('SD6346-3387'),
+          parcelIds: eachLike('SD6346-3387', 0),
           activePaymentTier: like(3),
           quantityInActiveTier: like(26.3397),
           activeTierRatePence: like(1500),

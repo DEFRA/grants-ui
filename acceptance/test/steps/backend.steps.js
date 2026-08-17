@@ -3,6 +3,7 @@ import expect from '../support/expect.js'
 import { transformStepArgument } from '../utils/step-argument-transformation.js'
 import Backend from '../utils/backend.js'
 import Mongo from '../utils/mongo.js'
+import referenceNumbers from '../utils/reference-number-store.js'
 
 Given('there is no application data for SBI {string} and grant {string}', async function (sbi, grantCode) {
   await Backend.clearTestData(sbi, grantCode)
@@ -29,6 +30,23 @@ Then(
     for (const row of dataTable.hashes()) {
       expect(state[row.FIELD]).toEqual(transformStepArgument(row.VALUE))
     }
+  }
+)
+
+Then(
+  'the claim {string} for CRN {string} and SBI {string} and grant {string} should have status {string}',
+  async function (claimNumberSuffix, crn, sbi, grantCode, status) {
+    if (!referenceNumbers.current) {
+      throw new Error('No reference number stored by earlier step')
+    }
+
+    const state = (await Backend.getState(crn, sbi, grantCode)).state
+    const claims = Array.isArray(state.claims) ? state.claims : []
+    const claimNumber = `${referenceNumbers.current}${claimNumberSuffix}`
+    const claim = claims.find((c) => c.claimNumber === claimNumber)
+
+    expect(claim).toBeTruthy()
+    expect(claim.status).toEqual(status)
   }
 )
 

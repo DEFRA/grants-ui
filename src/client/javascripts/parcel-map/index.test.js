@@ -499,7 +499,7 @@ describe('parcel-map web component', () => {
 
       const tooltip = el.querySelector('[role="tooltip"]')
       expect(tooltip).not.toBeNull()
-      expect(tooltip.innerHTML).toContain('SD7148-9160')
+      expect(tooltip.innerHTML).toContain('SD7148 9160')
       expect(tooltip.innerHTML).toContain('2.50 ha')
     })
 

@@ -18,6 +18,7 @@ CONFIG_REPOS=(
   grants-config-woodland
   grants-config-farm-payments
   grants-config-grasslands
+  grants-config-land-grants
 )
 
 # Newline-separated "grant_name|version" entries collected while pulling config,
@@ -101,6 +102,19 @@ list_config_files() {
   local ref="$2"
   local tree_url="$CONFIG_REPO_API_URL_ROOT/$config_repo/git/trees/$ref?recursive=1"
   local api_response
+  local path_regex
+
+  # Most config repos store files as configurations/<grant>/<service>/<file>.
+  # grants-config-land-grants is not a grant scheme but configuration for the
+  # land grants API service; it still uses configurations/land-grants but with a
+  # deeper, arbitrary tree beneath it (currently actions/<action>/<versioned-file>).
+  # We don't care about the shape, only that everything under
+  # configurations/land-grants is pulled regardless of depth.
+  if [ "$config_repo" = "grants-config-land-grants" ]; then
+    path_regex='^configurations/[^/]+/.+$'
+  else
+    path_regex='^configurations/[^/]+/[^/]+/[^/]+$'
+  fi
 
   echo "Fetching configuration file list from $CONFIG_REPO_URL_ROOT/$config_repo..." >&2
 
@@ -109,7 +123,7 @@ list_config_files() {
     return 1
   fi
 
-  if ! printf '%s' "$api_response" | node -e '
+  if ! printf '%s' "$api_response" | CONFIG_PATH_REGEX="$path_regex" node -e '
 const fs = require("fs")
 const input = fs.readFileSync(0, "utf8")
 
@@ -136,8 +150,9 @@ if (data.truncated) {
   process.exit(1)
 }
 
+const pathRegex = new RegExp(process.env.CONFIG_PATH_REGEX)
 const paths = data.tree
-  .filter(({ path, type }) => type === "blob" && /^configurations\/[^/]+\/[^/]+\/[^/]+$/.test(path))
+  .filter(({ path, type }) => type === "blob" && pathRegex.test(path))
   .map(({ path }) => path)
   .sort()
 
@@ -322,23 +337,23 @@ for config_repo in "${CONFIG_REPOS[@]}"; do
 
     config_relative_path="${config_file_path#configurations/}"
     grant_name="${config_relative_path%%/*}"
-    service_and_file_name="${config_relative_path#*/}"
-    service_name="${service_and_file_name%%/*}"
-    config_file_name="${service_and_file_name#*/}"
-    target_dir="$CONFIG_BROKER_LOCAL_STAGING/$grant_name@$repo_version/$service_name"
-    target_file="$target_dir/$config_file_name"
+    # Everything after the grant name is preserved verbatim so both the standard
+    # <service>/<file> layout and the deeper land-grants tree map straight into
+    # <grant>@<version>/... .
+    grant_subpath="${config_relative_path#*/}"
+    target_file="$CONFIG_BROKER_LOCAL_STAGING/$grant_name@$repo_version/$grant_subpath"
     # The live folder already stores each grant under <grant>@<version>, so the
     # presence of this exact file tells us we already have this version. Reuse
     # the cached copy instead of re-downloading; only fetch what is missing (an
     # empty cache, or a new/changed version whose folder does not exist yet).
-    cached_file="$CONFIG_BROKER_LOCAL/$grant_name@$repo_version/$service_name/$config_file_name"
+    cached_file="$CONFIG_BROKER_LOCAL/$grant_name@$repo_version/$grant_subpath"
 
-    mkdir -p "$target_dir"
+    mkdir -p "$(dirname "$target_file")"
     if [ -f "$cached_file" ]; then
-      echo "Reusing cached $grant_name/$service_name/$config_file_name (already at $repo_version)..."
+      echo "Reusing cached $grant_name/$grant_subpath (already at $repo_version)..."
       cp "$cached_file" "$target_file"
     else
-      echo "Setting up config for $grant_name/$service_name/$config_file_name from $config_repo..."
+      echo "Setting up config for $grant_name/$grant_subpath from $config_repo..."
       if ! download_config_file "$config_repo" "$config_file_path" "$target_file" "$repo_ref"; then
         fall_back_to_cache_or_fail "Failed to download $config_file_path from $config_repo."
       fi

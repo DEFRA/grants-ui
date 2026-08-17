@@ -10,6 +10,7 @@ import { govukFrontendPath, viewPaths } from '~/src/config/nunjucks/view-paths.j
 import { getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
 import { requiresQuantityInput } from '~/src/shared/action-quantity-type.js'
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
+import { formatParcelReference } from '~/src/shared/format-parcel.js'
 import { SELECTED_ACTIONS_FIELD_NAME } from '~/src/server/land-grants/utils/selected-actions-field.js'
 import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js'
 
@@ -219,8 +220,8 @@ export function getPageConsents(actions) {
 /**
  * Builds the govukSummaryList rows for the "Selected land parcel" summary card.
  * Land cover isn't fetched yet, so it's omitted.
- * @param {string} [sheetId]
- * @param {string} [parcelId]
+ * @param {string} sheetId
+ * @param {string} parcelId
  * @param {{ value?: number, unit?: string }} [size]
  * @returns {{ rows: Array<{ key: { text: string }, value: { text: string } }> }}
  */
@@ -229,7 +230,7 @@ export function getParcelSummaryList(sheetId, parcelId, size) {
 
   return {
     rows: [
-      { key: { text: 'Parcel reference' }, value: { text: `${sheetId} ${parcelId}` } },
+      { key: { text: 'Parcel reference' }, value: { text: formatParcelReference({ sheetId, parcelId }) } },
       { key: { text: 'Total area' }, value: { text: areaText } }
     ]
   }

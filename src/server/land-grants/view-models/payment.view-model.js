@@ -1,5 +1,5 @@
 import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
-import { stringifyParcel } from '~/src/shared/format-parcel.js'
+import { formatParcelReference, stringifyParcel } from '~/src/shared/format-parcel.js'
 import { formatPrice } from '~/src/server/common/utils/payment.js'
 
 /**
@@ -17,7 +17,7 @@ function createLinks(data) {
     parcelId: data.parcelId,
     sheetId: data.sheetId
   })
-  const parcel = `${data.sheetId} ${data.parcelId}`
+  const parcel = formatParcelReference(data)
   const links = []
 
   links.push(
@@ -56,7 +56,7 @@ export function buildLandParcelHeaderActions(sheetId, parcelId) {
   return {
     text: 'Remove',
     href: `remove-parcel?parcelId=${stringifyParcel({ sheetId, parcelId })}`,
-    hiddenTextValue: `all actions for Land Parcel ${sheetId} ${parcelId}`
+    hiddenTextValue: `all actions for Land Parcel ${formatParcelReference({ sheetId, parcelId })}`
   }
 }
 
@@ -85,7 +85,7 @@ export function buildLandParcelFooterActions(paymentItems, sheetId, parcelId, ac
   return {
     text: 'Add another action',
     href: `select-actions-for-land-parcel?parcelId=${stringifyParcel({ sheetId, parcelId })}`,
-    hiddenTextValue: `to Land Parcel ${sheetId} ${parcelId}`
+    hiddenTextValue: `to Land Parcel ${formatParcelReference({ sheetId, parcelId })}`
   }
 }
 
@@ -97,7 +97,7 @@ export function buildLandParcelFooterActions(paymentItems, sheetId, parcelId, ac
  */
 export function mapPaymentInfoToParcelItems(paymentInfo, actionGroups = []) {
   const groupedByParcel = Object.values(paymentInfo?.parcelItems || {}).reduce((acc, data) => {
-    const parcelKey = `${data.sheetId} ${data.parcelId}`
+    const parcelKey = formatParcelReference(data)
 
     if (!acc[parcelKey]) {
       acc[parcelKey] = {

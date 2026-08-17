@@ -1,7 +1,7 @@
 // @ts-nocheck - noImplicitAny debt, remove when this file is typed
 import { validateApplication } from '~/src/server/land-grants/services/land-grants.service.js'
 import QuestionPageWithParcelCheckController from '~/src/server/common/controllers/question-page-with-parcel-check.controller.js'
-import { parseLandParcel } from '~/src/shared/format-parcel.js'
+import { formatParcelReference, parseLandParcel } from '~/src/shared/format-parcel.js'
 import { log, error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import {
   getAddedActionsForStateParcel,
@@ -200,11 +200,11 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
         { sheetId, parcelId, size }
       ),
       ...additionalState,
-      parcelName: `${sheetId} ${parcelId}`,
+      parcelName: formatParcelReference({ sheetId, parcelId }),
       errors,
       existingLandParcels,
       singleParcelSubmission: this.singleParcelSubmission,
-      pageTitle: `Select actions for land parcel ${sheetId} ${parcelId}`
+      pageTitle: `Select actions for land parcel ${formatParcelReference({ sheetId, parcelId })}`
     })
   }
 
@@ -271,11 +271,11 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
     return h.view(this.viewName, {
       ...this.getViewModelWithActions(request, context, groupedActions, addedActions, {}, false, parcel),
       ...state,
-      parcelName: `${sheetId} ${parcelId}`,
+      parcelName: formatParcelReference({ sheetId, parcelId }),
       existingLandParcels: Object.keys(state.landParcels || {}).length > 0,
       singleParcelSubmission: this.singleParcelSubmission,
       errors: [],
-      pageTitle: `Select actions for land parcel ${sheetId} ${parcelId}`
+      pageTitle: `Select actions for land parcel ${formatParcelReference({ sheetId, parcelId })}`
     })
   }
 

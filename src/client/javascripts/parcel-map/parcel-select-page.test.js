@@ -92,7 +92,7 @@ describe('initParcelSelectPage', () => {
       selectedParcels: [{ id: 'SD7148-9160', areaHa: 1.5 }]
     })
     expect(document.getElementById('selected-parcel-details').hidden).toBe(false)
-    expect(document.getElementById('selected-parcel-reference').textContent).toBe('SD7148-9160')
+    expect(document.getElementById('selected-parcel-reference').textContent).toBe('SD7148 9160')
     expect(document.getElementById('selected-parcel-area').textContent).toBe('1.5000 hectares')
   })
 
