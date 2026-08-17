@@ -53,7 +53,7 @@ export const sessionSchema = {
       env: 'MAX_DB_STATE_SIZE_BYTES'
     },
     jwtSecret: {
-      doc: 'JWT secret shared with grants-ui-backend for signing x-encrypted-auth tokens',
+      doc: 'JWT secret shared with grants-ui-backend for signing x-user-context tokens',
       format: String,
       default: 'default-grants-ui-backend-jwt-secret',
       env: 'GRANTS_UI_BACKEND_AUTH_JWT_SECRET',
