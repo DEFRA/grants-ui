@@ -131,79 +131,8 @@ export function buildConfirmLandAndActionsViewModel(payment, landParcels) {
     throw invalidResponse('payment.annualTotalPence must be a non-negative integer')
   }
 
-  /**
-   * @type {Map<string, { reference: string, removeHref: string,
-   *   areaSummary?: { total: string, used: string, available: string },
-   *   actions: ConfirmLandAndActionsActionViewModel[], totalPence: number }>}
-   */
-  const parcels = new Map()
-
-  // Seed the map in selection order so the cards match the order the user
-  // picked the parcels on the earlier pages. `payment.parcelItems` is keyed by
-  // integer-like ids, which JS iterates in ascending numeric order, so relying
-  // on it alone would order the page by upstream item numbering instead.
-  for (const parcelKey of Object.keys(landParcels ?? {})) {
-    const [sheetId, parcelId] = parcelKey.split('-')
-    if (isNonEmptyString(sheetId) && isNonEmptyString(parcelId)) {
-      parcels.set(parcelKey, {
-        reference: landParcelReference(sheetId, parcelId),
-        removeHref: removeParcelHref(sheetId, parcelId),
-        areaSummary: buildAreaSummary(landParcels?.[parcelKey]),
-        actions: [],
-        totalPence: 0
-      })
-    }
-  }
-
-  for (const item of Object.values(payment.parcelItems ?? {})) {
-    const { code, sheetId, parcelId, annualPaymentPence, description, quantity, unit } = item
-
-    if (!isNonEmptyString(code) || !isNonEmptyString(sheetId) || !isNonEmptyString(parcelId)) {
-      throw invalidResponse('parcel item requires non-empty code, sheetId and parcelId')
-    }
-    if (!isNonNegativeInteger(annualPaymentPence)) {
-      throw invalidResponse(`annualPaymentPence must be a non-negative integer for action "${code}"`)
-    }
-
-    const parcelKey = stringifyParcel({ sheetId, parcelId })
-
-    let parcel = parcels.get(parcelKey)
-    if (!parcel) {
-      parcel = {
-        reference: landParcelReference(sheetId, parcelId),
-        removeHref: removeParcelHref(sheetId, parcelId),
-        areaSummary: buildAreaSummary(landParcels?.[parcelKey]),
-        actions: [],
-        totalPence: 0
-      }
-      parcels.set(parcelKey, parcel)
-    }
-
-    parcel.actions.push({
-      action: formatActionLabel(description, code),
-      area: formatArea(quantity, unit),
-      yearlyPayment: formatPrice(annualPaymentPence),
-      changeHref: changeActionsHref(sheetId, parcelId)
-    })
-    parcel.totalPence += annualPaymentPence
-  }
-
-  /** @type {ConfirmLandAndActionsAdditionalPaymentViewModel[]} */
-  const additionalYearlyPayments = Object.values(payment.agreementLevelItems ?? {}).map((item) => {
-    const { code, description, annualPaymentPence } = item
-
-    if (!isNonEmptyString(code)) {
-      throw invalidResponse('agreement level item requires a non-empty code')
-    }
-    if (!isNonNegativeInteger(annualPaymentPence)) {
-      throw invalidResponse(`annualPaymentPence must be a non-negative integer for action "${code}"`)
-    }
-
-    return {
-      action: formatActionLabel(description, code),
-      yearlyPayment: formatPrice(annualPaymentPence)
-    }
-  })
+  const parcels = seedParcelsInSelectionOrder(landParcels)
+  addPricedParcelActions(parcels, payment, landParcels)
 
   return {
     // Only parcels the API actually priced get a card; a parcel selected with no
@@ -218,9 +147,111 @@ export function buildConfirmLandAndActionsViewModel(payment, landParcels) {
         actions,
         yearlyPayment: formatPrice(totalPence)
       })),
-    additionalYearlyPayments,
+    additionalYearlyPayments: buildAdditionalYearlyPayments(payment),
     applicationYearlyPayment: formatPrice(payment.annualTotalPence)
   }
+}
+
+/**
+ * Empty card for one parcel, ready to accumulate the actions the API priced
+ * against it.
+ * @param {string} sheetId
+ * @param {string} parcelId
+ * @param {LandParcels} [landParcels]
+ * @returns {ParcelCard}
+ */
+function buildParcelCard(sheetId, parcelId, landParcels) {
+  return {
+    reference: landParcelReference(sheetId, parcelId),
+    removeHref: removeParcelHref(sheetId, parcelId),
+    areaSummary: buildAreaSummary(landParcels?.[stringifyParcel({ sheetId, parcelId })]),
+    actions: [],
+    totalPence: 0
+  }
+}
+
+/**
+ * Seeds the card map in selection order so the cards match the order the user
+ * picked the parcels on the earlier pages. `payment.parcelItems` is keyed by
+ * integer-like ids, which JS iterates in ascending numeric order, so relying on
+ * it alone would order the page by upstream item numbering instead.
+ * @param {LandParcels} [landParcels]
+ * @returns {Map<string, ParcelCard>}
+ */
+function seedParcelsInSelectionOrder(landParcels) {
+  /** @type {Map<string, ParcelCard>} */
+  const parcels = new Map()
+
+  for (const parcelKey of Object.keys(landParcels ?? {})) {
+    const [sheetId, parcelId] = parcelKey.split('-')
+    if (isNonEmptyString(sheetId) && isNonEmptyString(parcelId)) {
+      parcels.set(parcelKey, buildParcelCard(sheetId, parcelId, landParcels))
+    }
+  }
+
+  return parcels
+}
+
+/**
+ * Folds the API's priced parcel items into the seeded cards, adding a card for
+ * any parcel the response prices that state did not seed.
+ * @param {Map<string, ParcelCard>} parcels
+ * @param {PaymentCalculation} payment
+ * @param {LandParcels} [landParcels]
+ * @throws {SystemError} when a rendered money field or parcel identifier is malformed
+ */
+function addPricedParcelActions(parcels, payment, landParcels) {
+  for (const item of Object.values(payment.parcelItems ?? {})) {
+    const { code, sheetId, parcelId, annualPaymentPence, description, quantity, unit } = item
+
+    if (!isNonEmptyString(code) || !isNonEmptyString(sheetId) || !isNonEmptyString(parcelId)) {
+      throw invalidResponse('parcel item requires non-empty code, sheetId and parcelId')
+    }
+    if (!isNonNegativeInteger(annualPaymentPence)) {
+      throw invalidResponse(`annualPaymentPence must be a non-negative integer for action "${code}"`)
+    }
+
+    const parcelKey = stringifyParcel({ sheetId, parcelId })
+
+    let parcel = parcels.get(parcelKey)
+    if (!parcel) {
+      parcel = buildParcelCard(sheetId, parcelId, landParcels)
+      parcels.set(parcelKey, parcel)
+    }
+
+    parcel.actions.push({
+      action: formatActionLabel(description, code),
+      area: formatArea(quantity, unit),
+      yearlyPayment: formatPrice(annualPaymentPence),
+      changeHref: changeActionsHref(sheetId, parcelId)
+    })
+    parcel.totalPence += annualPaymentPence
+  }
+}
+
+/**
+ * Agreement-level items contribute to `annualTotalPence` without belonging to
+ * any single parcel, so they get their own section.
+ * @param {PaymentCalculation} payment
+ * @returns {ConfirmLandAndActionsAdditionalPaymentViewModel[]}
+ * @throws {SystemError} when a rendered money field is malformed
+ */
+function buildAdditionalYearlyPayments(payment) {
+  return Object.values(payment.agreementLevelItems ?? {}).map((item) => {
+    const { code, description, annualPaymentPence } = item
+
+    if (!isNonEmptyString(code)) {
+      throw invalidResponse('agreement level item requires a non-empty code')
+    }
+    if (!isNonNegativeInteger(annualPaymentPence)) {
+      throw invalidResponse(`annualPaymentPence must be a non-negative integer for action "${code}"`)
+    }
+
+    return {
+      action: formatActionLabel(description, code),
+      yearlyPayment: formatPrice(annualPaymentPence)
+    }
+  })
 }
 
 /**
@@ -251,6 +282,17 @@ export function buildConfirmLandAndActionsViewModel(payment, landParcels) {
  * @property {ConfirmLandAndActionsAreaSummaryViewModel} [areaSummary] - Omitted when state cannot support it
  * @property {ConfirmLandAndActionsActionViewModel[]} actions - Action rows
  * @property {string} yearlyPayment - Formatted parcel total
+ */
+
+/**
+ * Mutable accumulator behind a parcel card. Carries the parcel total in pence so
+ * it is only formatted once, after every priced action has been folded in.
+ * @typedef {object} ParcelCard
+ * @property {string} reference - Bare land parcel reference, e.g. `SD1234 5678`
+ * @property {string} removeHref - Link to remove the whole parcel
+ * @property {ConfirmLandAndActionsAreaSummaryViewModel} [areaSummary] - Omitted when state cannot support it
+ * @property {ConfirmLandAndActionsActionViewModel[]} actions - Action rows accumulated so far
+ * @property {number} totalPence - Running total for this parcel
  */
 
 /**
