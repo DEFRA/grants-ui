@@ -6,6 +6,7 @@ import { calculateLandActionsPayment } from '~/src/server/land-grants/services/l
 import { buildConfirmLandAndActionsViewModel } from '~/src/server/land-grants/view-models/confirm-land-and-actions.view-model.js'
 import { withTaskContext } from '~/src/server/task-list/task-list.helper.js'
 import { logUpstreamError } from '~/src/server/common/helpers/logging/upstream-error.js'
+import { YarKeys } from '~/src/server/common/constants/session-keys.js'
 
 const CALCULATION_ERROR_MESSAGE =
   'Unable to get payment information, please try again later or contact the Rural Payments Agency.'
@@ -57,6 +58,30 @@ function resolveConfig(config, path) {
 }
 
 /**
+ * Consumes the one-shot land-parcel removal marker written by
+ * `RemoveActionPageController`.
+ *
+ * The marker is cleared on the first read, so a refresh or a later direct GET
+ * of this page does not repeat the notification. A stored value that is not a
+ * usable reference is consumed without rendering anything.
+ *
+ * @param {FormRequest} request
+ * @returns {string | undefined} The success message, or undefined when there is nothing to announce.
+ */
+export function consumeLandParcelRemovalSuccess(request) {
+  const reference = request.yar?.get(YarKeys.LAND_PARCEL_REMOVAL_SUCCESS)
+  if (!reference) {
+    return undefined
+  }
+
+  request.yar.clear(YarKeys.LAND_PARCEL_REMOVAL_SUCCESS)
+
+  return isNonEmptyString(reference)
+    ? `${/** @type {string} */ (reference).trim()} and its actions have been removed.`
+    : undefined
+}
+
+/**
  * Generic controller for the "Your land and actions" payment-summary page.
  *
  * Sends every selected parcel/action to the Land Grants payment API in one
@@ -92,6 +117,9 @@ export default class ConfirmLandAndActionsPageController extends withTaskContext
     return async (request, context, h) => {
       const { viewName } = this
       const { state } = context
+      // Read once per request, before either render branch: the parcel removal
+      // succeeded even if recalculating the remaining payment now fails.
+      const landParcelRemovalSuccessMessage = consumeLandParcelRemovalSuccess(request)
 
       try {
         const userContext = getLandGrantsUserContext(request)
@@ -118,7 +146,8 @@ export default class ConfirmLandAndActionsPageController extends withTaskContext
         return h.view(viewName, {
           ...this.getViewModel(request, context),
           ...confirmModel,
-          hasCalculationError: false
+          hasCalculationError: false,
+          landParcelRemovalSuccessMessage
         })
       } catch (err) {
         this.logCalculationFailure(err, request)
@@ -135,6 +164,7 @@ export default class ConfirmLandAndActionsPageController extends withTaskContext
           ...this.getViewModel(request, context),
           hasCalculationError: true,
           errors: [{ text: CALCULATION_ERROR_MESSAGE }],
+          landParcelRemovalSuccessMessage,
           // A re-GET re-runs the calculation, so the page must offer a way out
           // rather than dead-ending with only an error summary.
           retryHref: this.getHref(this.path),

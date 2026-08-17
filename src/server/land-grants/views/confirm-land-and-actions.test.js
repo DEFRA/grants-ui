@@ -67,6 +67,30 @@ const rowsOf = ($, index) =>
     .get()
 
 describe('confirm-land-and-actions.html view', () => {
+  describe('land parcel removal success banner', () => {
+    const message = 'SK0971 4776 and its actions have been removed.'
+
+    it('renders a GOV.UK success banner above the H1', () => {
+      const $ = renderPage({ ...model, landParcelRemovalSuccessMessage: message })
+
+      const banner = $('main .govuk-notification-banner')
+      expect(banner).toHaveLength(1)
+      expect(banner.hasClass('govuk-notification-banner--success')).toBe(true)
+      expect(banner.attr('role')).toBe('alert')
+      expect(normalise(banner.find('.govuk-notification-banner__title').text())).toBe('Success')
+      expect(normalise(banner.find('.govuk-notification-banner__heading').text())).toBe(message)
+
+      // Position matters: the outcome must be the first thing announced.
+      expect(banner.nextAll('h1')).toHaveLength(1)
+    })
+
+    it('renders no banner when nothing was removed', () => {
+      const $ = renderPage(model)
+
+      expect($('main .govuk-notification-banner')).toHaveLength(0)
+    })
+  })
+
   it('renders the H1 with a caption above the page title', () => {
     const $ = renderPage(model)
     expect(normalise($('h1').text())).toBe('Select land and actions Your land and actions')

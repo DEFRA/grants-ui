@@ -93,6 +93,7 @@ describe('ConfirmLandAndActionsPageController', () => {
     mockRequest = {
       query: {},
       payload: {},
+      yar: { get: vi.fn(), clear: vi.fn() },
       auth: { isAuthenticated: true, credentials: { token: 'defra-id-token', sbi: '106284736' } }
     }
     mockContext = { state: { landParcels, payment } }
@@ -234,6 +235,56 @@ describe('ConfirmLandAndActionsPageController', () => {
       const model = mockH.view.mock.calls[0][1]
       expect(model.retryHref).toBe('/test-grant/confirm-land-and-actions')
       expect(model.selectLandParcelHref).toBe('/test-grant/select-land-parcel')
+    })
+  })
+
+  describe('land parcel removal notification', () => {
+    test('announces the removal once and clears the marker', async () => {
+      calculateLandActionsPayment.mockResolvedValueOnce(paymentResult)
+      mockRequest.yar.get.mockReturnValueOnce('SD1234 5678')
+      const controller = buildController()
+
+      await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+
+      expect(mockRequest.yar.get).toHaveBeenCalledWith('landParcelRemovalSuccess')
+      expect(mockRequest.yar.clear).toHaveBeenCalledTimes(1)
+      expect(mockRequest.yar.clear).toHaveBeenCalledWith('landParcelRemovalSuccess')
+      expect(mockH.view.mock.calls[0][1].landParcelRemovalSuccessMessage).toBe(
+        'SD1234 5678 and its actions have been removed.'
+      )
+    })
+
+    test('still announces the removal when recalculating the remaining payment fails', async () => {
+      calculateLandActionsPayment.mockRejectedValueOnce(new Error('boom'))
+      mockRequest.yar.get.mockReturnValueOnce('SD1234 5678')
+      const controller = buildController()
+
+      await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+
+      const model = mockH.view.mock.calls[0][1]
+      expect(model.hasCalculationError).toBe(true)
+      expect(model.landParcelRemovalSuccessMessage).toBe('SD1234 5678 and its actions have been removed.')
+    })
+
+    test('a direct GET with no marker carries no message', async () => {
+      calculateLandActionsPayment.mockResolvedValueOnce(paymentResult)
+      const controller = buildController()
+
+      await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+
+      expect(mockRequest.yar.clear).not.toHaveBeenCalled()
+      expect(mockH.view.mock.calls[0][1].landParcelRemovalSuccessMessage).toBeUndefined()
+    })
+
+    test('consumes a blank stored value without rendering', async () => {
+      calculateLandActionsPayment.mockResolvedValueOnce(paymentResult)
+      mockRequest.yar.get.mockReturnValueOnce('   ')
+      const controller = buildController()
+
+      await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+
+      expect(mockRequest.yar.clear).toHaveBeenCalledWith('landParcelRemovalSuccess')
+      expect(mockH.view.mock.calls[0][1].landParcelRemovalSuccessMessage).toBeUndefined()
     })
   })
 

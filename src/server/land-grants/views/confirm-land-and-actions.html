@@ -2,11 +2,21 @@
 
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/notification-banner/macro.njk" import govukNotificationBanner %}
 
 {% block content %}
   <div class="govuk-body">
     <div class="govuk-grid-row">
       <div class="{{ gridColumnClass(page, 'full') }}">
+        {# One-time removal outcome: the marker behind it is cleared on read, so
+           a refresh must not repeat the announcement. #}
+        {% if landParcelRemovalSuccessMessage %}
+          {{ govukNotificationBanner({
+            type: "success",
+            text: landParcelRemovalSuccessMessage
+          }) }}
+        {% endif %}
+
         {% if hasCalculationError %}
           {{ govukErrorSummary({
             titleText: "There is a problem",

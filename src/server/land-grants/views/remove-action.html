@@ -10,56 +10,81 @@
 {% block content %}
   <div class="govuk-grid-row">
     <div class="{{ gridColumnClass(page, 'govuk-grid-column-two-thirds-from-desktop') }}">
-      {% if errors %}
-          {{ govukErrorSummary({
-          titleText: "There is a problem",
-          errorList: [
-            {
-              text: errors,
-              href: '#remove'
-            }
-          ]
-        }) }}
-      {% endif %}
+      {% if isParcelRemoval %}
+        {# Whole-parcel removal is a single destructive confirmation, so there is
+           nothing to select and nothing to validate: the choice is the button
+           the user presses. #}
+        <h1 class="govuk-heading-l">{{ pageHeading }}</h1>
 
-      <form method="post" novalidate="novalidate">
-        <input type="hidden" name="crumb" value="{{ crumb }}">
+        <p class="govuk-body">{{ hint }}</p>
 
-        {{ govukRadios({
-            classes: "govuk-radios--inline",
-            fieldset: {
-              legend: {
-                text: pageHeading,
-                isPageHeading: true,
-                classes: "govuk-fieldset__legend--l"
-              }
-            },
-            name: "remove",
-            hint: {
-              text: hint
-            },
-            items: [
+        <form method="post" novalidate="novalidate">
+          <input type="hidden" name="crumb" value="{{ crumb }}">
+          <input type="hidden" name="remove" value="true">
+
+          <div class="govuk-button-group">
+            {{ govukButton({
+                text: "Remove all actions",
+                classes: "govuk-button--warning",
+                preventDoubleClick: true
+              })
+            }}
+
+            <a class="govuk-link govuk-link--no-visited-state" href="{{ backLink.href }}">Cancel</a>
+          </div>
+        </form>
+      {% else %}
+        {% if errors %}
+            {{ govukErrorSummary({
+            titleText: "There is a problem",
+            errorList: [
               {
-                value: true,
-                text: "Yes"
+                text: errors,
+                href: '#remove'
+              }
+            ]
+          }) }}
+        {% endif %}
+
+        <form method="post" novalidate="novalidate">
+          <input type="hidden" name="crumb" value="{{ crumb }}">
+
+          {{ govukRadios({
+              classes: "govuk-radios--inline",
+              fieldset: {
+                legend: {
+                  text: pageHeading,
+                  isPageHeading: true,
+                  classes: "govuk-fieldset__legend--l"
+                }
               },
-              {
-                value: false,
-                text: "No"
-              }
-            ],
-            errorMessage: errors and { text: errors }
-          })
-        }}
+              name: "remove",
+              hint: {
+                text: hint
+              },
+              items: [
+                {
+                  value: true,
+                  text: "Yes"
+                },
+                {
+                  value: false,
+                  text: "No"
+                }
+              ],
+              errorMessage: errors and { text: errors }
+            })
+          }}
 
-        {{ govukButton({
-            text: "Continue",
-            preventDoubleClick: true
-          })
-        }}
-      </form>
+          {{ govukButton({
+              text: "Continue",
+              preventDoubleClick: true
+            })
+          }}
+        </form>
 
-      {{ defraSupportDetails({typeOfSupport: 'question', email: page.def.metadata.supportEmail}) }}
+        {{ defraSupportDetails({typeOfSupport: 'question', email: page.def.metadata.supportEmail}) }}
+      {% endif %}
     </div>
   </div>
 {% endblock %}

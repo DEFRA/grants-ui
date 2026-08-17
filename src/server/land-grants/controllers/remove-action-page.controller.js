@@ -1,16 +1,31 @@
 import QuestionPageWithParcelCheckController from '~/src/server/common/controllers/question-page-with-parcel-check.controller.js'
+import { YarKeys } from '~/src/server/common/constants/session-keys.js'
 import {
   findActionInfoFromState,
   deleteParcelFromState,
   deleteActionFromState
 } from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
+import { landParcelReference } from '~/src/server/land-grants/view-models/land-parcel-links.js'
+import { parseLandParcel } from '~/src/shared/format-parcel.js'
 import { getParcelIdFromQuery } from '../utils/parcel-request.utils.js'
 
 const defaultReturnPath = '/check-selected-land-actions'
 const selectActionsForParcelPath = '/select-actions-for-land-parcel'
 const selectLandParcelPath = '/select-land-parcel'
+const removeParcelPath = '/remove-parcel'
+const confirmLandAndActionsPath = '/confirm-land-and-actions'
 
 const isNonEmptyString = (value) => typeof value === 'string' && value.trim() !== ''
+
+/**
+ * Bare land parcel reference (`SD1234 5678`) for a compound parcel key.
+ * @param {string} parcelKey - Compound parcel key (`SD1234-5678`)
+ * @returns {string}
+ */
+const parcelReference = (parcelKey) => {
+  const [sheetId, parcelId] = parseLandParcel(parcelKey)
+  return landParcelReference(sheetId, parcelId)
+}
 
 export default class RemoveActionPageController extends QuestionPageWithParcelCheckController {
   viewName = 'remove-action'
@@ -23,6 +38,10 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
     super(model, pageDef)
     const returnPath = model?.def?.metadata?.pageConfig?.[pageDef?.path]?.returnPath
     this.returnPath = isNonEmptyString(returnPath) ? returnPath.trim() : defaultReturnPath
+    // Route identity, not action metadata, selects the branch: `/remove-parcel`
+    // always removes the whole parcel even if a stray `action` is in the query,
+    // and `/remove-action` always requires a resolvable action.
+    this.isParcelRemovalPage = pageDef?.path === removeParcelPath
   }
 
   /**
@@ -46,7 +65,7 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
    * Determine next path after action removal
    * @param {object} newState - Updated state after removal
    * @param {string} parcel - Parcel key
-   * @param {string} action - Action code (optional)
+   * @param {string} [action] - Action code; omitted when the whole parcel is removed
    * @returns {string} - Next path to navigate to
    */
   getNextPathAfterRemoval(newState, parcel, action) {
@@ -67,20 +86,16 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
   }
 
   /**
-   * Validate POST request payload
+   * Validate POST request payload. Only `/remove-action` reaches this: the
+   * whole-parcel page posts a hidden field, so it has nothing to select.
    * @param {object} payload - Request payload
-   * @param {object} actionInfo - Action Info (optional)
-   * @returns {object|null} - Validation error or null if valid
+   * @returns {{errorMessage: string}|null} - Validation error or null if valid
    */
-  validatePostPayload(payload, actionInfo) {
+  validatePostPayload(payload) {
     const { remove } = payload
 
     if (remove === undefined) {
-      return {
-        errorMessage: actionInfo?.description
-          ? `Select yes to remove this action from this land parcel`
-          : `Select yes to remove this land parcel from this application`
-      }
+      return { errorMessage: `Select yes to remove this action from this land parcel` }
     }
 
     return null
@@ -111,7 +126,7 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
    * @param {object} state - Current state
    * @param {object} h - Response toolkit
    * @param {string} parcel - Parcel key
-   * @param {string} action - Action code (optional)
+   * @param {string} [action] - Action code; omitted when the whole parcel is removed
    * @returns {Promise<object>} - Response object
    */
   async processRemoval(request, state, h, parcel, action) {
@@ -119,7 +134,26 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
     const nextPath = this.getNextPathAfterRemoval(newState, parcel, action)
 
     await this.setState(request, newState)
+    this.recordParcelRemovalSuccess(request, parcel, nextPath)
     return this.proceed(request, h, nextPath)
+  }
+
+  /**
+   * Leave a one-shot session marker so the confirmation page can announce the
+   * removal once. Written only for whole-parcel removal that lands on
+   * `/confirm-land-and-actions`, because that is the only destination which
+   * renders the banner; the last-parcel picker and the action-removal
+   * destinations would otherwise carry a stale success message.
+   * @param {AnyFormRequest} request - Request object
+   * @param {string} parcel - Removed parcel key
+   * @param {string} nextPath - Resolved destination
+   */
+  recordParcelRemovalSuccess(request, parcel, nextPath) {
+    if (!this.isParcelRemovalPage || this.getHref(nextPath) !== this.getHref(confirmLandAndActionsPath)) {
+      return
+    }
+
+    request.yar?.set(YarKeys.LAND_PARCEL_REMOVAL_SUCCESS, parcelReference(parcel))
   }
 
   /**
@@ -129,14 +163,16 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
    * @param {string} parcelId - Parcel ID
    * @param {string} pageHeading - Page heading
    * @param {string} hint - Hint text
+   * @param {boolean} isParcelRemoval - Whether the page removes the whole parcel
    * @returns {object} - Complete view model
    */
-  buildGetViewModel(request, context, parcelId, pageHeading, hint) {
+  buildGetViewModel(request, context, parcelId, pageHeading, hint, isParcelRemoval) {
     return {
       ...this.getViewModel(request, context),
       parcelId,
       pageHeading,
-      hint
+      hint,
+      isParcelRemoval
     }
   }
 
@@ -145,19 +181,23 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
    *
    * @param {{description?: string}|null|undefined} actionInfo - Optional action info object; when present its `description` is used in the heading/hint.
    * @param {string} parcelId ='' - Parcel identifier to include in the heading.
-   * @returns {{pageHeading: string, hint: string}} Object with `pageHeading` and `hint` strings.
+   * @param {boolean} isParcelRemoval =false - Whether the whole parcel is being removed.
+   * @returns {{pageHeading: string, hint: string, isParcelRemoval: boolean}} Copy for the confirmation page plus the branch flag the template reads.
    */
-
-  buildPageHeadingAndHint(actionInfo, parcelId = '') {
-    const hint = actionInfo?.description
-      ? `Select yes to remove this action from this land parcel. You can add a different action to the same parcel.`
-      : `If you remove this land parcel you will also remove all the actions added to this parcel.`
+  buildPageHeadingAndHint(actionInfo, parcelId = '', isParcelRemoval = false) {
+    if (isParcelRemoval) {
+      const reference = parcelReference(parcelId)
+      return {
+        pageHeading: `Remove all actions from ${reference}?`,
+        hint: `This will remove ${reference} and all actions added to it from your application.`,
+        isParcelRemoval: true
+      }
+    }
 
     return {
-      pageHeading: actionInfo?.description
-        ? `Do you want to remove ${actionInfo.description} from land parcel ${parcelId.replaceAll('-', ' ')}?`
-        : `Do you want to remove land parcel ${parcelId.replaceAll('-', ' ')} from this application?`,
-      hint
+      pageHeading: `Do you want to remove ${actionInfo?.description} from land parcel ${parcelId.replaceAll('-', ' ')}?`,
+      hint: `Select yes to remove this action from this land parcel. You can add a different action to the same parcel.`,
+      isParcelRemoval: false
     }
   }
 
@@ -165,18 +205,28 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
    * Handle GET requests to the page
    */
   async handleGet(request, context, h) {
-    const { viewName } = this
+    const { viewName, isParcelRemovalPage } = this
     const landParcels = context.state?.landParcels
-    const { action, parcelId } = request.query
+    const { parcelId } = request.query
 
-    if (!parcelId || !landParcels[parcelId]) {
+    if (!parcelId || !landParcels?.[parcelId]) {
       return this.proceed(request, h, this.returnPath)
     }
 
-    const actionInfo = findActionInfoFromState(landParcels, parcelId, action)
-    const { pageHeading, hint } = this.buildPageHeadingAndHint(actionInfo, parcelId)
+    const actionInfo = isParcelRemovalPage
+      ? undefined
+      : findActionInfoFromState(landParcels, parcelId, request.query.action)
+    if (!isParcelRemovalPage && !actionInfo) {
+      return this.proceed(request, h, this.returnPath)
+    }
 
-    const viewModel = this.buildGetViewModel(request, context, parcelId, pageHeading, hint)
+    const { pageHeading, hint, isParcelRemoval } = this.buildPageHeadingAndHint(
+      actionInfo,
+      parcelId,
+      isParcelRemovalPage
+    )
+
+    const viewModel = this.buildGetViewModel(request, context, parcelId, pageHeading, hint, isParcelRemoval)
     return h.view(viewName, viewModel)
   }
 
@@ -192,17 +242,26 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
     const payload = /** @type {{ remove?: string }} */ (request.payload ?? {})
     const { action, parcelId } = /** @type {{ action: string, parcelId: string }} */ (request.query)
 
-    // Get pageheading and hint from state for error messages
-    const actionInfo = findActionInfoFromState(state.landParcels, parcelId, action)
-    const pageHeadingAndHint = this.buildPageHeadingAndHint(actionInfo, parcelId)
+    if (this.isParcelRemovalPage) {
+      // Single destructive control behind a hidden field: anything other than
+      // the exact confirmation value is a cancel, not a removal.
+      return payload.remove === 'true'
+        ? this.processRemoval(request, state, h, parcelId, undefined)
+        : this.proceed(request, h, this.returnPath)
+    }
 
-    const validationError = this.validatePostPayload(payload, actionInfo)
+    const actionInfo = findActionInfoFromState(state.landParcels, parcelId, action)
+    if (!actionInfo) {
+      return this.proceed(request, h, this.returnPath)
+    }
+
+    const validationError = this.validatePostPayload(payload)
     if (validationError) {
+      const pageHeadingAndHint = this.buildPageHeadingAndHint(actionInfo, parcelId, false)
       return this.renderPostErrorView(h, request, context, validationError.errorMessage, parcelId, pageHeadingAndHint)
     }
 
-    const { remove } = payload
-    if (remove === 'true') {
+    if (payload.remove === 'true') {
       return this.processRemoval(request, state, h, parcelId, action)
     }
 
