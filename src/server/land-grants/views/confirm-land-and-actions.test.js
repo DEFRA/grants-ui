@@ -376,4 +376,73 @@ describe('confirm-land-and-actions.html view', () => {
       expect(hrefs).toContain('/test-grant/select-land-parcel')
     })
   })
+
+  describe('no land parcels', () => {
+    const emptyModel = {
+      pageTitle: 'Your land and actions',
+      hasNoLandParcels: true,
+      hasCalculationError: false,
+      selectLandParcelHref: '/test-grant/select-land-parcel'
+    }
+
+    it('explains nothing has been added and links to the parcel picker', () => {
+      const $ = renderPage(emptyModel)
+
+      expect(bodyText($)).toContain('You have not added any land parcels or actions yet.')
+      const link = $('main a').filter((_, el) => normalise($(el).text()) === 'Select a land parcel and add actions')
+      expect(link).toHaveLength(1)
+      expect(link.attr('href')).toBe('/test-grant/select-land-parcel')
+      expect(link.hasClass('govuk-link')).toBe(true)
+    })
+
+    it('omits the payment tables, buttons and error summary', () => {
+      const $ = renderPage(emptyModel)
+
+      expect($('.land-parcel-summary')).toHaveLength(0)
+      expect($('.govuk-table')).toHaveLength(0)
+      expect($('form')).toHaveLength(0)
+      expect($('.govuk-error-summary')).toHaveLength(0)
+    })
+
+    it('announces the removal that emptied the application above the H1', () => {
+      const $ = renderPage({
+        ...emptyModel,
+        landParcelRemovalSuccessMessage: 'Far Meadow and its actions have been removed.'
+      })
+
+      const banner = $('main .govuk-notification-banner')
+      expect(banner.hasClass('govuk-notification-banner--success')).toBe(true)
+      expect(normalise(banner.find('.govuk-notification-banner__heading').text())).toBe(
+        'Far Meadow and its actions have been removed.'
+      )
+      expect(banner.nextAll('h1')).toHaveLength(1)
+    })
+
+    // The design in the ticket is the conjunction of both signals: the removal
+    // marker supplies the banner, the empty selection supplies the copy and
+    // link. Each signal alone must render only its own half.
+    it('renders the empty copy without a banner when no removal preceded it', () => {
+      const $ = renderPage(emptyModel)
+
+      expect($('main .govuk-notification-banner')).toHaveLength(0)
+      expect(bodyText($)).toContain('You have not added any land parcels or actions yet.')
+    })
+
+    it('keeps the priced tables when a removal left parcels behind', () => {
+      const $ = renderPage({
+        ...model,
+        landParcelRemovalSuccessMessage: 'Far Meadow and its actions have been removed.'
+      })
+
+      expect($('main .govuk-notification-banner')).toHaveLength(1)
+      expect($('.land-parcel-summary--parcel')).toHaveLength(2)
+      expect(bodyText($)).not.toContain('You have not added any land parcels or actions yet.')
+    })
+
+    it('keeps the H1 caption in both states', () => {
+      const $ = renderPage(emptyModel)
+
+      expect(normalise($('h1 span.govuk-caption-l').text())).toBe('Select land and actions')
+    })
+  })
 })

@@ -485,8 +485,20 @@ describe('RemoveActionPageController', () => {
       expect(mockRequest.yar.set).not.toHaveBeenCalled()
     })
 
-    test('stores nothing when the last parcel is removed', async () => {
+    test('stores the reference when the last parcel is removed, which now stays on the summary', async () => {
       const parcelController = buildConfirmingParcelController()
+      mockContext.state = { landParcels: { 'SD6743-8083': structuredClone(mockLandParcels['SD6743-8083']) } }
+      mockRequest.query = { parcelId: 'SD6743-8083' }
+      mockRequest.payload = { remove: 'true' }
+
+      await parcelController.makePostRouteHandler()(mockRequest, mockContext, mockH)
+
+      expect(parcelController.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/confirm-land-and-actions')
+      expect(mockRequest.yar.set).toHaveBeenCalledWith(YarKeys.LAND_PARCEL_REMOVAL_SUCCESS, 'SD6743 8083')
+    })
+
+    test('stores nothing when the last parcel is removed on a journey that returns elsewhere', async () => {
+      const parcelController = buildController({ path: '/remove-parcel' })
       mockContext.state = { landParcels: { 'SD6743-8083': structuredClone(mockLandParcels['SD6743-8083']) } }
       mockRequest.query = { parcelId: 'SD6743-8083' }
       mockRequest.payload = { remove: 'true' }
@@ -515,11 +527,19 @@ describe('RemoveActionPageController', () => {
       expect(configured.getNextPathAfterRemoval(newState, 'SD6743-8083', 'CMOR1')).toBe('/confirm-land-and-actions')
     })
 
-    test('preserves last-action and last-parcel special destinations', () => {
+    test('preserves the last-action destination and keeps the last parcel on the summary', () => {
       const configured = buildConfiguredController('/confirm-land-and-actions')
       expect(configured.getNextPathAfterRemoval({ landParcels: {} }, 'SD6743-8083', 'CMOR1')).toBe(
         '/select-actions-for-land-parcel?parcelId=SD6743-8083'
       )
+      // The summary renders its own empty state, so it must not be skipped.
+      expect(configured.getNextPathAfterRemoval({ landParcels: {} }, 'SD6743-8083', undefined)).toBe(
+        '/confirm-land-and-actions'
+      )
+    })
+
+    test('falls back to the parcel picker for the last parcel when the journey returns elsewhere', () => {
+      const configured = buildConfiguredController('/check-selected-land-actions')
       expect(configured.getNextPathAfterRemoval({ landParcels: {} }, 'SD6743-8083', undefined)).toBe(
         '/select-land-parcel'
       )

@@ -35,7 +35,14 @@
           {{ pageTitle }}
         </h1>
 
-        {% if not hasCalculationError %}
+        {# Nothing selected - typically after removing the last parcel. Offers
+           the picker instead of empty payment tables and a submit control. #}
+        {% if hasNoLandParcels %}
+          <p class="govuk-body">You have not added any land parcels or actions yet.</p>
+          <p class="govuk-body">
+            <a class="govuk-link" href="{{ selectLandParcelHref }}">Select a land parcel and add actions</a>
+          </p>
+        {% elif not hasCalculationError %}
           {% for parcel in parcels %}
             <div class="land-parcel-summary land-parcel-summary--parcel">
               <div class="land-parcel-summary__heading">

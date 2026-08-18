@@ -121,6 +121,14 @@ export default class ConfirmLandAndActionsPageController extends withTaskContext
       // succeeded even if recalculating the remaining payment now fails.
       const landParcelRemovalSuccessMessage = consumeLandParcelRemovalSuccess(request)
 
+      // No parcels left to price: pricing an empty selection would surface a
+      // calculation error instead of the empty state, so render it directly and
+      // drop any payment left over from the previous selection - it belongs to
+      // parcels that are no longer part of the application.
+      if (!Object.keys(/** @type {Record<string, unknown>} */ (state.landParcels ?? {})).length) {
+        return this.renderNoLandParcels(request, context, h, landParcelRemovalSuccessMessage)
+      }
+
       try {
         const userContext = getLandGrantsUserContext(request)
         const { payment, paymentTotal } = await calculateLandActionsPayment(state, userContext)
@@ -172,6 +180,37 @@ export default class ConfirmLandAndActionsPageController extends withTaskContext
         })
       }
     }
+  }
+
+  /**
+   * Renders the empty state reached by removing the last land parcel: the
+   * summary has nothing to show, so it offers the parcel picker instead of the
+   * payment tables and the submit control.
+   *
+   * Any payment carried over from the previous selection is dropped from state,
+   * because Check answers and the GAS mapper read it and it now prices parcels
+   * that are no longer in the application.
+   * @param {FormRequest} request
+   * @param {FormContext} context
+   * @param {FormResponseToolkit} h
+   * @param {string | undefined} landParcelRemovalSuccessMessage
+   */
+  async renderNoLandParcels(request, context, h, landParcelRemovalSuccessMessage) {
+    const { payment, totalPence, totalPayment, ...clearedState } = context.state
+    await this.setState(
+      request,
+      /** @type {import('@defra/forms-engine-plugin/types').FormSubmissionState} */ (
+        /** @type {unknown} */ (clearedState)
+      )
+    )
+
+    return h.view(this.viewName, {
+      ...this.getViewModel(request, context),
+      hasCalculationError: false,
+      hasNoLandParcels: true,
+      landParcelRemovalSuccessMessage,
+      selectLandParcelHref: this.getHref(this.addAnotherLandParcelPath)
+    })
   }
 
   /**

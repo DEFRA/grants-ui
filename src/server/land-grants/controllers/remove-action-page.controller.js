@@ -51,6 +51,16 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
   }
 
   /**
+   * Whether this page's configured destination is the "Your land and actions"
+   * summary. Compared through `getHref` so a config value that omits its
+   * leading slash still matches the path this controller special-cases.
+   * @returns {boolean}
+   */
+  returnsToConfirmLandAndActions() {
+    return this.getHref(this.returnPath) === this.getHref(confirmLandAndActionsPath)
+  }
+
+  /**
    * Determine next path after action removal
    * @param {object} newState - Updated state after removal
    * @param {string} parcel - Parcel key
@@ -66,9 +76,12 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
       return `${selectActionsForParcelPath}?parcelId=${parcel}`
     }
 
-    // remove the only parcel
+    // Removing the only parcel: `/confirm-land-and-actions` renders its own
+    // empty state with the removal banner, so it must not be skipped in favour
+    // of the parcel picker. Journeys configured to return anywhere else keep
+    // the picker, which is the only destination they can render empty.
     if (!hasRemainingParcels) {
-      return selectLandParcelPath
+      return this.returnsToConfirmLandAndActions() ? this.returnPath : selectLandParcelPath
     }
 
     return this.returnPath
@@ -123,22 +136,21 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
     const nextPath = this.getNextPathAfterRemoval(newState, parcel, action)
 
     await this.setState(request, newState)
-    this.recordParcelRemovalSuccess(request, parcel, nextPath)
+    this.recordParcelRemovalSuccess(request, parcel)
     return this.proceed(request, h, nextPath)
   }
 
   /**
    * Leave a one-shot session marker so the confirmation page can announce the
-   * removal once. Written only for whole-parcel removal that lands on
-   * `/confirm-land-and-actions`, because that is the only destination which
-   * renders the banner; the last-parcel picker and the action-removal
-   * destinations would otherwise carry a stale success message.
+   * removal once. Written only for whole-parcel removal on a journey that
+   * returns to `/confirm-land-and-actions`, because that is the only
+   * destination which renders the banner; the action-removal destinations
+   * would otherwise carry a stale success message.
    * @param {AnyFormRequest} request - Request object
    * @param {string} parcel - Removed parcel key
-   * @param {string} nextPath - Resolved destination
    */
-  recordParcelRemovalSuccess(request, parcel, nextPath) {
-    if (!this.isParcelRemovalPage || this.getHref(nextPath) !== this.getHref(confirmLandAndActionsPath)) {
+  recordParcelRemovalSuccess(request, parcel) {
+    if (!this.isParcelRemovalPage || !this.returnsToConfirmLandAndActions()) {
       return
     }
 

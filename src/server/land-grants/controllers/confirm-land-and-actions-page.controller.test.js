@@ -236,6 +236,53 @@ describe('ConfirmLandAndActionsPageController', () => {
       expect(model.retryHref).toBe('/test-grant/confirm-land-and-actions')
       expect(model.selectLandParcelHref).toBe('/test-grant/select-land-parcel')
     })
+
+    describe('with no land parcels left', () => {
+      test('renders the empty state without pricing an empty selection', async () => {
+        const controller = buildController()
+        mockContext.state = { landParcels: {}, payment, totalPence: 999, totalPayment: '£9.99' }
+
+        await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+
+        expect(calculateLandActionsPayment).not.toHaveBeenCalled()
+        const model = mockH.view.mock.calls[0][1]
+        expect(model.hasNoLandParcels).toBe(true)
+        expect(model.hasCalculationError).toBe(false)
+        expect(model.selectLandParcelHref).toBe('/test-grant/select-land-parcel')
+      })
+
+      test('drops the payment left over from the removed parcels', async () => {
+        const controller = buildController()
+        mockContext.state = { landParcels: {}, payment, totalPence: 999, totalPayment: '£9.99' }
+
+        await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+
+        expect(controller.setState).toHaveBeenCalledWith(mockRequest, { landParcels: {} })
+      })
+
+      test('announces the removal that emptied the application', async () => {
+        mockRequest.yar.get.mockReturnValueOnce('Far Meadow')
+        const controller = buildController()
+        mockContext.state = { landParcels: {} }
+
+        await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+
+        expect(mockRequest.yar.clear).toHaveBeenCalledWith('landParcelRemovalSuccess')
+        expect(mockH.view.mock.calls[0][1].landParcelRemovalSuccessMessage).toBe(
+          'Far Meadow and its actions have been removed.'
+        )
+      })
+
+      test('treats missing landParcels state the same as an empty selection', async () => {
+        const controller = buildController()
+        mockContext.state = {}
+
+        await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+
+        expect(calculateLandActionsPayment).not.toHaveBeenCalled()
+        expect(mockH.view.mock.calls[0][1].hasNoLandParcels).toBe(true)
+      })
+    })
   })
 
   describe('land parcel removal notification', () => {
