@@ -20,11 +20,11 @@ export async function fetchAllowedGrants(crn, sbi) {
   const jwtSecret = config.get('session.cache.jwtSecret')
   const url = `${baseUrl}${ALLOWLIST_ENDPOINT}`
 
-  const encryptedAuth = Jwt.token.generate({ crn, sbi }, jwtSecret)
+  const userContext = Jwt.token.generate({ crn, sbi }, jwtSecret)
 
   const headers = /** @type {HeadersInit} */ ({
     ...createApiHeadersForGrantsUiBackend(),
-    'x-encrypted-auth': encryptedAuth
+    'x-user-context': userContext
   })
 
   const response = await fetch(url, { method: 'GET', headers }).catch((error) => {
