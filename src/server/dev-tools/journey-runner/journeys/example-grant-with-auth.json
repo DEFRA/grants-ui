@@ -115,10 +115,20 @@
   },
   {
     "slug": "select-land-parcel",
-    "name": "SelectLandParcel",
-    "type": "checkboxes",
-    "fieldName": "landParcels",
+    "name": "SelectLandParcel (map)",
+    "type": "mapParcel",
     "selectAll": true
+  },
+  {
+    "slug": "select-actions-for-land-parcel",
+    "name": "SelectActionsForLandParcel",
+    "type": "landActions",
+    "fieldName": "landAction"
+  },
+  {
+    "slug": "confirm-land-and-actions",
+    "name": "Your land and actions",
+    "type": "submitOnly"
   },
   { "slug": "summary", "name": "Summary (Check your answers)", "type": "submitOnly" },
   { "slug": "declaration", "name": "Declaration (Confirm and send)", "type": "submitOnly" }

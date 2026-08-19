@@ -56,7 +56,7 @@ describe('withCompoundParcelIds', () => {
 
     const layer = decode(withCompoundParcelIds(buffer)).layers.parcels
 
-    expect(layer.length).toBe(2)
+    expect(layer).toHaveLength(2)
     expect(layer.feature(0).properties.id).toBe('SD7148-9160')
     expect(layer.feature(1).properties.id).toBe('SD7149-0001')
   })
@@ -97,7 +97,7 @@ describe('withCompoundParcelIds', () => {
 
     expect(Object.keys(tile.layers).sort()).toEqual(['boundaries', 'parcels'])
     expect(tile.layers.parcels.feature(0).properties.id).toBe('SD7148-9160')
-    expect(tile.layers.boundaries.length).toBe(2)
+    expect(tile.layers.boundaries).toHaveLength(2)
     expect(tile.layers.boundaries.feature(0).properties.ref).toBe('B1')
     expect(tile.layers.boundaries.feature(1).properties.ref).toBe('B2')
     expect(tile.layers.boundaries.feature(0).properties.id).toBeUndefined()

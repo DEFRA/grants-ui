@@ -62,7 +62,7 @@ describe('retry with exponential backoff', () => {
       retry(mockOperation, { maxAttempts: 3, initialDelay, shouldRetry, maxDelay, onRetry })
     ).rejects.toThrow('Fail')
 
-    expect(delays.length).toBe(2)
+    expect(delays).toHaveLength(2)
     expect(delays[0]).toBeGreaterThanOrEqual(initialDelay)
     expect(delays[0]).toBeLessThanOrEqual(maxDelay)
     expect(mockOperation).toHaveBeenCalledTimes(3)

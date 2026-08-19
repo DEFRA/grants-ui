@@ -5,6 +5,9 @@
 .public
 .server
 .junie
+.omp
+.codex
+.claude
 node_modules
 npm-debug.log
 coverage
@@ -31,4 +34,3 @@ compose/config-broker/local-form-definitions/*
 /grants-ui-grasslands-tests-schemas/
 /grants-ui-woodland-tests-schemas/
 AGENTS.local.md
-/.codex
