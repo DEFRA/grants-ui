@@ -162,7 +162,7 @@ export async function parcelsGroups(parcelIds, baseUrl, userContext) {
  * @param {string} baseUrl
  * @param {LandGrantsUserContext} userContext
  * @param {PlannedAction[]} [plannedActions] - When given, the API recomputes each
- *   action's availableArea against these in-progress selections merged with existing
+ *   action's availability against these in-progress selections merged with existing
  *   agreements, rather than existing agreements alone.
  * @returns {Promise<ParcelResponse>}
  */

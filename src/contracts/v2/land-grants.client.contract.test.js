@@ -26,6 +26,16 @@ const postToLandGrantsApi = (endpoint, body, baseUrl) => postToLandGrantsApiClie
 
 const validateApplication = (request, baseUrl) => validate(request, baseUrl, userContext)
 
+const JSON_HEADERS = { 'Content-Type': 'application/json' }
+const CALCULATE_PATH = '/api/v2/payments/calculate'
+const PARCELS_PATH = '/api/v2/parcels'
+const VALIDATE_PATH = '/api/v2/application/validate'
+
+const PARCEL_8083 = { sheetId: 'SD6743', parcelId: '8083' }
+const HAS_8083 = { parcels: [PARCEL_8083] }
+const HAS_NO_PARCELS = { parcels: [] }
+const HAS_5677 = { parcels: [{ sheetId: 'SD7861', parcelId: '5677' }] }
+
 function createProvider() {
   return new PactV3({
     dir: path.resolve(process.cwd(), 'src/contracts/pacts'),
@@ -34,6 +44,66 @@ function createProvider() {
     spec: SpecificationVersion.SPECIFICATION_VERSION_V4,
     port: 0
   })
+}
+
+/**
+ * Register one interaction and run `assert` against the mock provider.
+ * `given` is optional - a malformed request never reaches parcel lookup, so
+ * those interactions carry no provider state.
+ */
+function pactInteraction({ given, receiving, path: requestPath, body, status, responseBody }, assert) {
+  const provider = createProvider()
+  const withState = given ? provider.given('has parcels', given) : provider
+
+  return withState
+    .uponReceiving(receiving)
+    .withRequest({ method: 'POST', path: requestPath, headers: makeLandGrantsHeaders(), body })
+    .willRespondWith({ status, headers: JSON_HEADERS, body: like(responseBody) })
+    .executeTest(assert)
+}
+
+/**
+ * Register an error interaction and return whatever the client rejected with,
+ * for the calling test to assert on.
+ */
+async function catchApiError({ path: requestPath, body, status, error, message, call, ...rest }) {
+  let caught
+  await pactInteraction(
+    { path: requestPath, body, status, responseBody: { statusCode: status, error, message }, ...rest },
+    async (mockserver) => {
+      caught = await call(mockserver.url).then(
+        () => new Error('expected the request to be rejected'),
+        (rejection) => rejection
+      )
+    }
+  )
+  return caught
+}
+
+/** An error contract exercised through the generic POST client. */
+const catchPostError = ({ path: requestPath, body, ...rest }) =>
+  catchApiError({
+    path: requestPath,
+    body,
+    call: (baseUrl) => postToLandGrantsApi(requestPath, body, baseUrl),
+    ...rest
+  })
+
+/** An error contract exercised through `validate()`, which appends the sbi itself. */
+const catchValidateError = ({ payload, ...rest }) =>
+  catchApiError({
+    path: VALIDATE_PATH,
+    body: { ...payload, sbi: userContext.sbi },
+    call: (baseUrl) => validateApplication(payload, baseUrl),
+    ...rest
+  })
+
+/** Every validate response carries per-action rule outcomes. */
+const expectValidatedActionShape = (response) => {
+  expect(response.actions.length).toBeGreaterThan(0)
+  expect(response.actions[0]).toHaveProperty('actionCode')
+  expect(response.actions[0]).toHaveProperty('hasPassed')
+  expect(response.actions[0]).toHaveProperty('rules')
 }
 
 describe('calculate', () => {
@@ -163,323 +233,152 @@ describe('calculate', () => {
         }
       ]
     }
-    const EXPECTED_BODY = like({
-      message: 'success',
-      payment: calculateResponseContract
-    })
-    const provider = createProvider()
-    await provider
-      .given('has parcels', {
-        parcels: [
-          { sheetId: 'SD6743', parcelId: '8083' },
-          { sheetId: 'SD6743', parcelId: '8084' }
-        ]
-      })
-      .uponReceiving('a calculate request for a valid parcel and action')
-      .withRequest({
-        method: 'POST',
-        path: '/api/v2/payments/calculate',
-        headers: makeLandGrantsHeaders(),
-        body: payload
-      })
-      .willRespondWith({
+
+    await pactInteraction(
+      {
+        given: {
+          parcels: [
+            { sheetId: 'SD6743', parcelId: '8083' },
+            { sheetId: 'SD6743', parcelId: '8084' }
+          ]
+        },
+        receiving: 'a calculate request for a valid parcel and action',
+        path: CALCULATE_PATH,
+        body: payload,
         status: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: EXPECTED_BODY
-      })
-      .executeTest(async (mockserver) => {
-        const response = await postToLandGrantsApi('/api/v2/payments/calculate', payload, mockserver.url)
+        responseBody: { message: 'success', payment: calculateResponseContract }
+      },
+      async (mockserver) => {
+        const response = await postToLandGrantsApi(CALCULATE_PATH, payload, mockserver.url)
         expect(response.payment).toEqual(expectedPaymentResponse)
-      })
+      }
+    )
   })
 
-  it('returns HTTP 400 when parcel is invalid', async () => {
-    const badRequestPayload = {
-      parcel: [
-        {
-          sheetId: 'INVALID',
-          parcelId: 'PARCEL',
-          actions: [
-            {
-              code: 'CMOR1',
-              quantity: 1.0
-            }
-          ]
-        }
-      ]
-    }
-    const notFoundResponseExample = {
-      statusCode: 400,
-      error: 'Bad Request',
-      message: 'Land parcels not found: INVALID-PARCEL'
-    }
-    const EXPECTED_BODY = like(notFoundResponseExample)
-    const provider = createProvider()
-    await provider
-      .given('has parcels', { parcels: [] })
-      .uponReceiving('a calculate request for an invalid parcel')
-      .withRequest({
-        method: 'POST',
-        path: '/api/v2/payments/calculate',
-        headers: makeLandGrantsHeaders(),
-        body: badRequestPayload
-      })
-      .willRespondWith({
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: EXPECTED_BODY
-      })
-      .executeTest(async (mockserver) => {
-        await expect(
-          postToLandGrantsApi('/api/v2/payments/calculate', badRequestPayload, mockserver.url)
-        ).rejects.toMatchObject({ code: 400, status: 400 })
-      })
-  })
+  it.each([
+    [
+      400,
+      'a calculate request for an invalid parcel',
+      HAS_NO_PARCELS,
+      { parcel: [{ sheetId: 'INVALID', parcelId: 'PARCEL', actions: [{ code: 'CMOR1', quantity: 1.0 }] }] },
+      'Bad Request',
+      'Land parcels not found: INVALID-PARCEL'
+    ],
+    [
+      400,
+      'a calculate request for an invalid action',
+      HAS_8083,
+      { parcel: [{ ...PARCEL_8083, actions: [{ code: 'INVALID_ACTION', quantity: 1.0 }] }] },
+      'Bad Request',
+      'Actions not found: INVALID_ACTION'
+    ],
+    [
+      422,
+      'a calculate request with invalid quantity',
+      HAS_8083,
+      { parcel: [{ ...PARCEL_8083, actions: [{ code: 'UPL1', quantity: 'invalid quantity provided' }] }] },
+      'Unprocessable Entity',
+      'Quantity must be a positive number'
+    ],
+    [
+      422,
+      'a calculate request with a negative quantity',
+      HAS_8083,
+      { parcel: [{ ...PARCEL_8083, actions: [{ code: 'UPL1', quantity: -5.0 }] }] },
+      'Unprocessable Entity',
+      'Quantity must be a positive number'
+    ]
+  ])('returns HTTP %s for %s', async (status, receiving, given, body, error, message) => {
+    const caught = await catchPostError({ path: CALCULATE_PATH, status, receiving, given, body, error, message })
 
-  it('returns HTTP 400 when action code is invalid', async () => {
-    const badRequestPayload = {
-      parcel: [
-        {
-          sheetId: 'SD6743',
-          parcelId: '8083',
-          actions: [
-            {
-              code: 'INVALID_ACTION',
-              quantity: 1.0
-            }
-          ]
-        }
-      ]
-    }
-    const notFoundResponseExample = {
-      statusCode: 400,
-      error: 'Bad Request',
-      message: 'Actions not found: INVALID_ACTION'
-    }
-    const EXPECTED_BODY = like(notFoundResponseExample)
-    const provider = createProvider()
-    await provider
-      .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
-      .uponReceiving('a calculate request for an invalid action')
-      .withRequest({
-        method: 'POST',
-        path: '/api/v2/payments/calculate',
-        headers: makeLandGrantsHeaders(),
-        body: badRequestPayload
-      })
-      .willRespondWith({
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: EXPECTED_BODY
-      })
-      .executeTest(async (mockserver) => {
-        await expect(
-          postToLandGrantsApi('/api/v2/payments/calculate', badRequestPayload, mockserver.url)
-        ).rejects.toMatchObject({ code: 400, status: 400 })
-      })
-  })
-
-  it('returns HTTP 422 when quantity is a string', async () => {
-    const invalidQuantityPayload = {
-      parcel: [
-        {
-          sheetId: 'SD6743',
-          parcelId: '8083',
-          actions: [
-            {
-              code: 'UPL1',
-              quantity: 'invalid quantity provided'
-            }
-          ]
-        }
-      ]
-    }
-    const unprocessableResponseExample = {
-      statusCode: 422,
-      error: 'Unprocessable Entity',
-      message: 'Quantity must be a positive number'
-    }
-    const EXPECTED_BODY = like(unprocessableResponseExample)
-    const provider = createProvider()
-    await provider
-      .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
-      .uponReceiving('a calculate request with invalid quantity')
-      .withRequest({
-        method: 'POST',
-        path: '/api/v2/payments/calculate',
-        headers: makeLandGrantsHeaders(),
-        body: invalidQuantityPayload
-      })
-      .willRespondWith({
-        status: 422,
-        headers: { 'Content-Type': 'application/json' },
-        body: EXPECTED_BODY
-      })
-      .executeTest(async (mockserver) => {
-        await expect(
-          postToLandGrantsApi('/api/v2/payments/calculate', invalidQuantityPayload, mockserver.url)
-        ).rejects.toMatchObject({ code: 422, status: 422 })
-      })
-  })
-
-  it('returns HTTP 422 when quantity is negative', async () => {
-    const invalidQuantityPayload = {
-      parcel: [
-        {
-          sheetId: 'SD6743',
-          parcelId: '8083',
-          actions: [
-            {
-              code: 'UPL1',
-              quantity: -5.0
-            }
-          ]
-        }
-      ]
-    }
-    const unprocessableResponseExample = {
-      statusCode: 422,
-      error: 'Unprocessable Entity',
-      message: 'Quantity must be a positive number'
-    }
-    const EXPECTED_BODY = like(unprocessableResponseExample)
-    const provider = createProvider()
-    await provider
-      .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
-      .uponReceiving('a calculate request with a negative quantity')
-      .withRequest({
-        method: 'POST',
-        path: '/api/v2/payments/calculate',
-        headers: makeLandGrantsHeaders(),
-        body: invalidQuantityPayload
-      })
-      .willRespondWith({
-        status: 422,
-        headers: { 'Content-Type': 'application/json' },
-        body: EXPECTED_BODY
-      })
-      .executeTest(async (mockserver) => {
-        await expect(
-          postToLandGrantsApi('/api/v2/payments/calculate', invalidQuantityPayload, mockserver.url)
-        ).rejects.toMatchObject({ code: 422, status: 422 })
-      })
+    expect(caught).toMatchObject({ code: status, status })
   })
 })
 
 describe('parcels', () => {
-  it('returns HTTP 400 when passing a wrong field name', async () => {
-    const badRequestResponseExample = {
-      statusCode: 400,
-      error: 'Bad Request',
-      message: '"fields[0]" must be one of [size, actions, actions.results]'
-    }
-    const EXPECTED_BODY = like(badRequestResponseExample)
+  it.each([
+    [
+      400,
+      'a v2 request for a wrong field name',
+      HAS_8083,
+      { parcelIds: ['SD6743-8083'], fields: ['WRONG'], sbi: userContext.sbi },
+      'Bad Request',
+      '"fields[0]" must be one of [size, actions, actions.results]'
+    ],
+    [
+      400,
+      'a v2 request for a malformed parcel with size field',
+      undefined,
+      { parcelIds: ['BADFORMAT-91977'], fields: ['size'], sbi: userContext.sbi },
+      'Bad Request',
+      '"parcelIds[0]" with value "BADFORMAT-91977" fails to match the required pattern: /^[A-Za-z0-9]{6}-[0-9]{4}$/'
+    ],
+    [
+      404,
+      'a v2 request for a not found parcel with size field',
+      HAS_NO_PARCELS,
+      { parcelIds: ['SD6843-1234'], fields: ['size'], sbi: userContext.sbi },
+      'Not Found',
+      'Land parcel not found: SD6843-1234'
+    ],
+    [
+      400,
+      'a v2 request for multiple parcels with SSSI consent information',
+      {
+        parcels: [
+          { sheetId: 'SD6743', parcelId: '8083' },
+          { sheetId: 'SD6743', parcelId: '8084' }
+        ]
+      },
+      {
+        parcelIds: ['SD6743-8083', 'SD6743-8084'],
+        fields: ['actions', 'size', 'actions.sssiConsentRequired'],
+        plannedActions: [],
+        sbi: userContext.sbi
+      },
+      'Bad Request',
+      'SSSI consent required is not supported for multiple parcels.'
+    ],
+    [
+      400,
+      'a v2 request for a malformed parcel with actions and size',
+      undefined,
+      { parcelIds: ['MALFORMED-PARCEL'], fields: ['actions', 'size'], plannedActions: [], sbi: userContext.sbi },
+      'Bad Request',
+      '"parcelIds[0]" with value "MALFORMED-PARCEL" fails to match the required pattern: /^[A-Za-z0-9]{6}-[0-9]{4}$/'
+    ],
+    [
+      404,
+      'a v2 request for a not found parcel with actions and size',
+      HAS_NO_PARCELS,
+      { parcelIds: ['SD1234-5678'], fields: ['actions', 'size'], plannedActions: [], sbi: userContext.sbi },
+      'Not Found',
+      'Land parcel not found: SD1234-5678'
+    ]
+  ])('returns HTTP %s for %s', async (status, receiving, given, body, error, message) => {
+    const caught = await catchPostError({ path: PARCELS_PATH, status, receiving, given, body, error, message })
 
-    const provider = createProvider()
-    await provider
-      .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
-      .uponReceiving('a v2 request for a wrong field name')
-      .withRequest({
-        method: 'POST',
-        path: '/api/v2/parcels',
-        headers: makeLandGrantsHeaders(),
-        body: { parcelIds: ['SD6743-8083'], fields: ['WRONG'], sbi: userContext.sbi }
-      })
-      .willRespondWith({ status: 400, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
-      .executeTest(async (mockserver) => {
-        await expect(
-          postToLandGrantsApi(
-            '/api/v2/parcels',
-            { parcelIds: ['SD6743-8083'], fields: ['WRONG'], sbi: userContext.sbi },
-            mockserver.url
-          )
-        ).rejects.toMatchObject({ code: 400, status: 400 })
-      })
+    expect(caught).toMatchObject({ code: status, status })
   })
 
   it('returns HTTP 200 and a list of parcels with size', async () => {
     const parcelWithSizeExample = { sheetId: 'SD6743', parcelId: '8083', size: { value: 23.3424, unit: 'ha' } }
-    const EXPECTED_BODY = like({ message: 'success', parcels: eachLike(parcelWithSizeExample) })
+    const requestBody = { parcelIds: ['SD6743-8083'], fields: ['size'], sbi: userContext.sbi }
 
-    const provider = createProvider()
-    await provider
-      .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
-      .uponReceiving('a v2 request for specific parcels with size field')
-      .withRequest({
-        method: 'POST',
-        path: '/api/v2/parcels',
-        headers: makeLandGrantsHeaders(),
-        body: { parcelIds: ['SD6743-8083'], fields: ['size'], sbi: userContext.sbi }
-      })
-      .willRespondWith({ status: 200, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
-      .executeTest(async (mockserver) => {
-        const response = await postToLandGrantsApi(
-          '/api/v2/parcels',
-          { parcelIds: ['SD6743-8083'], fields: ['size'], sbi: userContext.sbi },
-          mockserver.url
-        )
+    await pactInteraction(
+      {
+        given: HAS_8083,
+        receiving: 'a v2 request for specific parcels with size field',
+        path: PARCELS_PATH,
+        body: requestBody,
+        status: 200,
+        responseBody: { message: 'success', parcels: eachLike(parcelWithSizeExample) }
+      },
+      async (mockserver) => {
+        const response = await postToLandGrantsApi(PARCELS_PATH, requestBody, mockserver.url)
         expect(response.parcels[0]).toEqual(parcelWithSizeExample)
-      })
-  })
-
-  it('returns HTTP 400 when passing a wrong formatted parcel', async () => {
-    const badRequestResponseExample = {
-      statusCode: 400,
-      error: 'Bad Request',
-      message:
-        '"parcelIds[0]" with value "BADFORMAT-91977" fails to match the required pattern: /^[A-Za-z0-9]{6}-[0-9]{4}$/'
-    }
-    const EXPECTED_BODY = like(badRequestResponseExample)
-
-    const provider = createProvider()
-    await provider
-      .uponReceiving('a v2 request for a malformed parcel with size field')
-      .withRequest({
-        method: 'POST',
-        path: '/api/v2/parcels',
-        headers: makeLandGrantsHeaders(),
-        body: { parcelIds: ['BADFORMAT-91977'], fields: ['size'], sbi: userContext.sbi }
-      })
-      .willRespondWith({ status: 400, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
-      .executeTest(async (mockserver) => {
-        await expect(
-          postToLandGrantsApi(
-            '/api/v2/parcels',
-            { parcelIds: ['BADFORMAT-91977'], fields: ['size'], sbi: userContext.sbi },
-            mockserver.url
-          )
-        ).rejects.toMatchObject({ code: 400, status: 400 })
-      })
-  })
-
-  it('returns HTTP 404 when parcel with size field is not found', async () => {
-    const notFoundParcelExample = {
-      statusCode: 404,
-      error: 'Not Found',
-      message: 'Land parcel not found: SD6843-1234'
-    }
-    const EXPECTED_BODY = like(notFoundParcelExample)
-
-    const provider = createProvider()
-    await provider
-      .given('has parcels', { parcels: [] })
-      .uponReceiving('a v2 request for a not found parcel with size field')
-      .withRequest({
-        method: 'POST',
-        path: '/api/v2/parcels',
-        headers: makeLandGrantsHeaders(),
-        body: { parcelIds: ['SD6843-1234'], fields: ['size'], sbi: userContext.sbi }
-      })
-      .willRespondWith({ status: 404, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
-      .executeTest(async (mockserver) => {
-        await expect(
-          postToLandGrantsApi(
-            '/api/v2/parcels',
-            { parcelIds: ['SD6843-1234'], fields: ['size'], sbi: userContext.sbi },
-            mockserver.url
-          )
-        ).rejects.toMatchObject({ code: 404, status: 404 })
-      })
+      }
+    )
   })
 
   it('returns HTTP 200 with consent information for a single parcel', async () => {
@@ -490,7 +389,7 @@ describe('parcels', () => {
       actions: [
         {
           code: 'CMOR1',
-          availableArea: { value: 10.5, unit: 'ha' },
+          availability: { value: 10.5, unit: 'ha' },
           description: 'Assess moorland and produce a written record',
           ratePerUnitGbp: 10.6,
           ratePerAgreementPerYearGbp: 272,
@@ -499,7 +398,7 @@ describe('parcels', () => {
         },
         {
           code: 'UPL1',
-          availableArea: { value: 20.75, unit: 'ha' },
+          availability: { value: 20.75, unit: 'ha' },
           description: 'Moderate livestock grazing on moorland',
           ratePerUnitGbp: 20,
           sssiConsentRequired: true,
@@ -507,7 +406,7 @@ describe('parcels', () => {
         },
         {
           code: 'UPL2',
-          availableArea: { value: 15.25, unit: 'ha' },
+          availability: { value: 15.25, unit: 'ha' },
           description: 'Moderate livestock grazing on moorland',
           ratePerUnitGbp: 53,
           sssiConsentRequired: true,
@@ -515,45 +414,27 @@ describe('parcels', () => {
         }
       ]
     }
-    const EXPECTED_BODY = like({ message: 'success', parcels: eachLike(parcelWithConsentExample) })
+    const requestBody = {
+      parcelIds: ['SD6743-8083'],
+      fields: ['actions', 'size', 'actions.sssiConsentRequired', 'actions.heferRequired'],
+      sbi: userContext.sbi
+    }
 
-    const provider = createProvider()
-    await provider
-      .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
-      .uponReceiving('a v2 request for a single parcel with SSSI consent information')
-      .withRequest({
-        method: 'POST',
-        path: '/api/v2/parcels',
-        headers: makeLandGrantsHeaders(),
-        body: {
-          parcelIds: ['SD6743-8083'],
-          fields: ['actions', 'size', 'actions.sssiConsentRequired', 'actions.heferRequired'],
-          sbi: userContext.sbi
-        }
-      })
-      .willRespondWith({ status: 200, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
-      .executeTest(async (mockserver) => {
-        const response = await postToLandGrantsApi(
-          '/api/v2/parcels',
-          {
-            parcelIds: ['SD6743-8083'],
-            fields: ['actions', 'size', 'actions.sssiConsentRequired', 'actions.heferRequired'],
-            sbi: userContext.sbi
-          },
-          mockserver.url
-        )
+    await pactInteraction(
+      {
+        given: HAS_8083,
+        receiving: 'a v2 request for a single parcel with SSSI consent information',
+        path: PARCELS_PATH,
+        body: requestBody,
+        status: 200,
+        responseBody: { message: 'success', parcels: eachLike(parcelWithConsentExample) }
+      },
+      async (mockserver) => {
+        const response = await postToLandGrantsApi(PARCELS_PATH, requestBody, mockserver.url)
 
         expect(response.parcels[0]).toEqual(parcelWithConsentExample)
-
-        expect(response.parcels[0].actions[0].sssiConsentRequired).toBe(false)
-        expect(response.parcels[0].actions[0].heferRequired).toBe(true)
-
-        expect(response.parcels[0].actions[1].sssiConsentRequired).toBe(true)
-        expect(response.parcels[0].actions[1].heferRequired).toBe(false)
-
-        expect(response.parcels[0].actions[2].heferRequired).toBe(false)
-        expect(response.parcels[0].actions[2].sssiConsentRequired).toBe(true)
-      })
+      }
+    )
   })
 
   it('returns HTTP 200 with guidance and availability always included on each action', async () => {
@@ -564,109 +445,55 @@ describe('parcels', () => {
       actions: [
         {
           code: 'CLIG3',
-          availableArea: { value: 10.5, unit: 'ha' },
+          availability: { value: 10.5, unit: 'ha' },
           description: 'Manage grassland with very low nutrient inputs',
           ratePerUnitGbp: 10.6,
           ratePerAgreementPerYearGbp: 272,
           guidanceUrl: string(
             'https://www.gov.uk/find-funding-for-land-or-farms/clig3-manage-grassland-with-very-low-nutrient-inputs'
           ),
-          availability: { type: 'total' }
+          inputRequired: false
         },
         {
           code: 'CSAM3',
-          availableArea: { value: 20.75, unit: 'ha' },
+          availability: { value: 20.75, unit: 'ha' },
           description: 'Herbal leys',
           ratePerUnitGbp: 224,
           guidanceUrl: string('https://www.gov.uk/find-funding-for-land-or-farms/csam3-herbal-leys'),
-          availability: { type: 'partial' }
+          inputRequired: true
         }
       ]
     }
-    const EXPECTED_BODY = like({ message: 'success', parcels: eachLike(parcelWithMetadataExample) })
+    const requestBody = {
+      parcelIds: ['SD6743-8083'],
+      fields: ['actions', 'size'],
+      sbi: userContext.sbi
+    }
 
-    const provider = createProvider()
-    await provider
-      .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
-      .uponReceiving('a v2 request for a single parcel with actions and size, expecting guidance and availability')
-      .withRequest({
-        method: 'POST',
-        path: '/api/v2/parcels',
-        headers: makeLandGrantsHeaders(),
-        body: {
-          parcelIds: ['SD6743-8083'],
-          fields: ['actions', 'size'],
-          sbi: userContext.sbi
-        }
-      })
-      .willRespondWith({ status: 200, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
-      .executeTest(async (mockserver) => {
-        const response = await postToLandGrantsApi(
-          '/api/v2/parcels',
-          {
-            parcelIds: ['SD6743-8083'],
-            fields: ['actions', 'size'],
-            sbi: userContext.sbi
-          },
-          mockserver.url
-        )
+    await pactInteraction(
+      {
+        given: HAS_8083,
+        receiving: 'a v2 request for a single parcel with actions and size, expecting guidance and availability',
+        path: PARCELS_PATH,
+        body: requestBody,
+        status: 200,
+        responseBody: { message: 'success', parcels: eachLike(parcelWithMetadataExample) }
+      },
+      async (mockserver) => {
+        const response = await postToLandGrantsApi(PARCELS_PATH, requestBody, mockserver.url)
 
         expect(response.parcels[0].parcelId).toBe('SD6743')
         expect(response.parcels[0].sheetId).toBe('8083')
 
         expect(response.parcels[0].actions[0].code).toBe('CLIG3')
         expect(response.parcels[0].actions[0].guidanceUrl).toEqual(expect.any(String))
-        expect(response.parcels[0].actions[0].availability.type).toBe('total')
+        expect(response.parcels[0].actions[0].inputRequired).toBe(false)
 
         expect(response.parcels[0].actions[1].code).toBe('CSAM3')
         expect(response.parcels[0].actions[1].guidanceUrl).toEqual(expect.any(String))
-        expect(response.parcels[0].actions[1].availability.type).toBe('partial')
-      })
-  })
-
-  it('returns HTTP 400 when requesting SSSI consent information for multiple parcels', async () => {
-    const badRequestResponseExample = {
-      statusCode: 400,
-      error: 'Bad Request',
-      message: 'SSSI consent required is not supported for multiple parcels.'
-    }
-    const EXPECTED_BODY = like(badRequestResponseExample)
-
-    const provider = createProvider()
-    await provider
-      .given('has parcels', {
-        parcels: [
-          { sheetId: 'SD6743', parcelId: '8083' },
-          { sheetId: 'SD6743', parcelId: '8084' }
-        ]
-      })
-      .uponReceiving('a v2 request for multiple parcels with SSSI consent information')
-      .withRequest({
-        method: 'POST',
-        path: '/api/v2/parcels',
-        headers: makeLandGrantsHeaders(),
-        body: {
-          parcelIds: ['SD6743-8083', 'SD6743-8084'],
-          fields: ['actions', 'size', 'actions.sssiConsentRequired'],
-          plannedActions: [],
-          sbi: userContext.sbi
-        }
-      })
-      .willRespondWith({ status: 400, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
-      .executeTest(async (mockserver) => {
-        await expect(
-          postToLandGrantsApi(
-            '/api/v2/parcels',
-            {
-              parcelIds: ['SD6743-8083', 'SD6743-8084'],
-              fields: ['actions', 'size', 'actions.sssiConsentRequired'],
-              plannedActions: [],
-              sbi: userContext.sbi
-            },
-            mockserver.url
-          )
-        ).rejects.toMatchObject({ code: 400, status: 400 })
-      })
+        expect(response.parcels[0].actions[1].inputRequired).toBe(true)
+      }
+    )
   })
 
   it('returns HTTP 200 and a list of parcels with actions and size', async () => {
@@ -677,49 +504,49 @@ describe('parcels', () => {
       actions: [
         {
           code: 'CMOR1',
-          availableArea: { value: 10.5, unit: 'ha' },
+          availability: { value: 10.5, unit: 'ha' },
           description: 'Assess moorland and produce a written record',
           ratePerUnitGbp: 10.6,
           ratePerAgreementPerYearGbp: 272
         },
         {
           code: 'UPL1',
-          availableArea: { value: 20.75, unit: 'ha' },
+          availability: { value: 20.75, unit: 'ha' },
           description: 'Moderate livestock grazing on moorland',
           ratePerUnitGbp: 20
         },
         {
           code: 'UPL2',
-          availableArea: { value: 15.25, unit: 'ha' },
+          availability: { value: 15.25, unit: 'ha' },
           description: 'Moderate livestock grazing on moorland',
           ratePerUnitGbp: 53
         }
       ]
     }
-    const EXPECTED_BODY = like({ message: 'success', parcels: eachLike(parcelWithActionsAndSizeExample) })
+    const requestBody = {
+      parcelIds: ['SD6743-8083'],
+      fields: ['actions', 'size'],
+      plannedActions: [],
+      sbi: userContext.sbi
+    }
 
-    const provider = createProvider()
-    await provider
-      .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
-      .uponReceiving('a v2 request for a single parcel with actions and size')
-      .withRequest({
-        method: 'POST',
-        path: '/api/v2/parcels',
-        headers: makeLandGrantsHeaders(),
-        body: { parcelIds: ['SD6743-8083'], fields: ['actions', 'size'], plannedActions: [], sbi: userContext.sbi }
-      })
-      .willRespondWith({ status: 200, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
-      .executeTest(async (mockserver) => {
-        const response = await postToLandGrantsApi(
-          '/api/v2/parcels',
-          { parcelIds: ['SD6743-8083'], fields: ['actions', 'size'], plannedActions: [], sbi: userContext.sbi },
-          mockserver.url
-        )
+    await pactInteraction(
+      {
+        given: HAS_8083,
+        receiving: 'a v2 request for a single parcel with actions and size',
+        path: PARCELS_PATH,
+        body: requestBody,
+        status: 200,
+        responseBody: { message: 'success', parcels: eachLike(parcelWithActionsAndSizeExample) }
+      },
+      async (mockserver) => {
+        const response = await postToLandGrantsApi(PARCELS_PATH, requestBody, mockserver.url)
         expect(response.parcels[0]).toEqual(parcelWithActionsAndSizeExample)
-      })
+      }
+    )
   })
 
-  it('returns HTTP 200 with availableArea recomputed against a non-empty plannedActions selection', async () => {
+  it('returns HTTP 200 with availability recomputed against a non-empty plannedActions selection', async () => {
     const parcelWithRecomputedAreaExample = {
       parcelId: 'SD6743',
       sheetId: '8083',
@@ -727,111 +554,57 @@ describe('parcels', () => {
       actions: [
         {
           code: 'CMOR1',
-          availableArea: { value: 4.5341, unit: 'ha' },
+          availability: { value: 4.5341, unit: 'ha' },
           description: 'Assess moorland and produce a written record',
           ratePerUnitGbp: 10.6,
           ratePerAgreementPerYearGbp: 272
         },
         {
           code: 'UPL1',
-          availableArea: { value: 4.5341, unit: 'ha' },
+          availability: { value: 4.5341, unit: 'ha' },
           description: 'Moderate livestock grazing on moorland',
           ratePerUnitGbp: 20
         },
         {
           code: 'UPL2',
-          availableArea: { value: 4.5341, unit: 'ha' },
+          availability: { value: 4.5341, unit: 'ha' },
           description: 'Moderate livestock grazing on moorland',
           ratePerUnitGbp: 53
         }
       ]
     }
-    const EXPECTED_BODY = like({ message: 'success', parcels: eachLike(parcelWithRecomputedAreaExample) })
-    const plannedActions = [{ actionCode: 'UPL1', quantity: 1.0, unit: 'ha' }]
+    const requestBody = {
+      parcelIds: ['SD6743-8083'],
+      fields: ['actions', 'size'],
+      plannedActions: [{ actionCode: 'UPL1', quantity: 1.0, unit: 'ha' }],
+      sbi: userContext.sbi
+    }
 
-    const provider = createProvider()
-    await provider
-      .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
-      .uponReceiving('a v2 request for a single parcel with actions and size, competing against a planned selection')
-      .withRequest({
-        method: 'POST',
-        path: '/api/v2/parcels',
-        headers: makeLandGrantsHeaders(),
-        body: { parcelIds: ['SD6743-8083'], fields: ['actions', 'size'], plannedActions, sbi: userContext.sbi }
-      })
-      .willRespondWith({ status: 200, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
-      .executeTest(async (mockserver) => {
-        const response = await postToLandGrantsApi(
-          '/api/v2/parcels',
-          { parcelIds: ['SD6743-8083'], fields: ['actions', 'size'], plannedActions, sbi: userContext.sbi },
-          mockserver.url
-        )
+    await pactInteraction(
+      {
+        given: HAS_8083,
+        receiving: 'a v2 request for a single parcel with actions and size, competing against a planned selection',
+        path: PARCELS_PATH,
+        body: requestBody,
+        status: 200,
+        responseBody: { message: 'success', parcels: eachLike(parcelWithRecomputedAreaExample) }
+      },
+      async (mockserver) => {
+        const response = await postToLandGrantsApi(PARCELS_PATH, requestBody, mockserver.url)
         expect(response.parcels[0]).toEqual(parcelWithRecomputedAreaExample)
-      })
-  })
-
-  it('returns HTTP 400 when parcel id is malformed', async () => {
-    const badRequestResponseExample = {
-      statusCode: 400,
-      error: 'Bad Request',
-      message:
-        '"parcelIds[0]" with value "MALFORMED-PARCEL" fails to match the required pattern: /^[A-Za-z0-9]{6}-[0-9]{4}$/'
-    }
-    const EXPECTED_BODY = like(badRequestResponseExample)
-
-    const provider = createProvider()
-    await provider
-      .uponReceiving('a v2 request for a malformed parcel with actions and size')
-      .withRequest({
-        method: 'POST',
-        path: '/api/v2/parcels',
-        headers: makeLandGrantsHeaders(),
-        body: { parcelIds: ['MALFORMED-PARCEL'], fields: ['actions', 'size'], plannedActions: [], sbi: userContext.sbi }
-      })
-      .willRespondWith({ status: 400, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
-      .executeTest(async (mockserver) => {
-        await expect(
-          postToLandGrantsApi(
-            '/api/v2/parcels',
-            { parcelIds: ['MALFORMED-PARCEL'], fields: ['actions', 'size'], plannedActions: [], sbi: userContext.sbi },
-            mockserver.url
-          )
-        ).rejects.toMatchObject({ code: 400, status: 400 })
-      })
-  })
-
-  it('returns HTTP 404 when parcel with actions and size is not found', async () => {
-    const notFoundParcelExample = {
-      statusCode: 404,
-      error: 'Not Found',
-      message: 'Land parcel not found: SD1234-5678'
-    }
-    const EXPECTED_BODY = like(notFoundParcelExample)
-
-    const provider = createProvider()
-    await provider
-      .given('has parcels', { parcels: [] })
-      .uponReceiving('a v2 request for a not found parcel with actions and size')
-      .withRequest({
-        method: 'POST',
-        path: '/api/v2/parcels',
-        headers: makeLandGrantsHeaders(),
-        body: { parcelIds: ['SD1234-5678'], fields: ['actions', 'size'], plannedActions: [], sbi: userContext.sbi }
-      })
-      .willRespondWith({ status: 404, headers: { 'Content-Type': 'application/json' }, body: EXPECTED_BODY })
-      .executeTest(async (mockserver) => {
-        await expect(
-          postToLandGrantsApi(
-            '/api/v2/parcels',
-            { parcelIds: ['SD1234-5678'], fields: ['actions', 'size'], plannedActions: [], sbi: userContext.sbi },
-            mockserver.url
-          )
-        ).rejects.toMatchObject({ code: 404, status: 404 })
-      })
+      }
+    )
   })
 })
 
 describe('validate', () => {
+  const moorlandRules = (passed, reason) =>
+    like({
+      name: string('parcel-has-intersection-with-data-layer-moorland'),
+      passed: like(passed),
+      reason: string(reason)
+    })
+
   it('returns HTTP 200 with validation for multiple actions with no caveat', async () => {
     const validateResponseExample = {
       id: like(33),
@@ -844,11 +617,7 @@ describe('validate', () => {
           parcelId: 'SD7861',
           hasPassed: true,
           rules: arrayContaining(
-            like({
-              name: string('parcel-has-intersection-with-data-layer-moorland'),
-              passed: like(true),
-              reason: string('This parcel is majority on the moorland')
-            }),
+            moorlandRules(true, 'This parcel is majority on the moorland'),
             like({
               name: string('applied-for-total-available-area'),
               passed: like(true),
@@ -862,11 +631,7 @@ describe('validate', () => {
           parcelId: '5677',
           hasPassed: true,
           rules: arrayContaining(
-            like({
-              name: string('parcel-has-intersection-with-data-layer-moorland'),
-              passed: like(true),
-              reason: string('This parcel is majority on the moorland')
-            }),
+            moorlandRules(true, 'This parcel is majority on the moorland'),
             like({
               name: string('applied-for-total-available-area'),
               passed: like(true),
@@ -897,36 +662,23 @@ describe('validate', () => {
         }
       ]
     }
-    const EXPECTED_BODY = like(validateResponseExample)
 
-    const provider = createProvider()
-    await provider
-      .given('has parcels', { parcels: [{ sheetId: 'SD7861', parcelId: '5677' }] })
-      .uponReceiving('a v2 validation request for multiple actions with no caveat')
-      .withRequest({
-        method: 'POST',
-        path: '/api/v2/application/validate',
-        headers: makeLandGrantsHeaders(),
-        body: {
-          ...payload,
-          sbi: userContext.sbi
-        }
-      })
-      .willRespondWith({
+    await pactInteraction(
+      {
+        given: HAS_5677,
+        receiving: 'a v2 validation request for multiple actions with no caveat',
+        path: VALIDATE_PATH,
+        body: { ...payload, sbi: userContext.sbi },
         status: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: EXPECTED_BODY
-      })
-      .executeTest(async (mockserver) => {
+        responseBody: validateResponseExample
+      },
+      async (mockserver) => {
         const response = await validateApplication(payload, mockserver.url)
 
         expect(response.valid).toBe(true)
-        expect(response.actions).toBeDefined()
-        expect(response.actions.length).toBeGreaterThan(0)
-        expect(response.actions[0]).toHaveProperty('actionCode')
-        expect(response.actions[0]).toHaveProperty('hasPassed')
-        expect(response.actions[0]).toHaveProperty('rules')
-      })
+        expectValidatedActionShape(response)
+      }
+    )
   })
 
   it('returns HTTP 200 with validation for an action including SSSI caveat', async () => {
@@ -941,11 +693,7 @@ describe('validate', () => {
           parcelId: '5677',
           hasPassed: true,
           rules: [
-            like({
-              name: string('parcel-has-intersection-with-data-layer-moorland'),
-              passed: like(true),
-              reason: string('This parcel is majority on the moorland')
-            }),
+            moorlandRules(true, 'This parcel is majority on the moorland'),
             like({
               name: string('applied-for-total-available-area'),
               passed: like(true),
@@ -981,45 +729,37 @@ describe('validate', () => {
         }
       ]
     }
-    const EXPECTED_BODY = like(validateResponseExample)
 
-    const provider = createProvider()
-    await provider
-      .given('has parcels', { parcels: [{ sheetId: 'SD7861', parcelId: '5677' }] })
-      .uponReceiving('a v2 validation request for an action with SSSI caveat')
-      .withRequest({
-        method: 'POST',
-        path: '/api/v2/application/validate',
-        headers: makeLandGrantsHeaders(),
-        body: {
-          ...payload,
-          sbi: userContext.sbi
-        }
-      })
-      .willRespondWith({
+    await pactInteraction(
+      {
+        given: HAS_5677,
+        receiving: 'a v2 validation request for an action with SSSI caveat',
+        path: VALIDATE_PATH,
+        body: { ...payload, sbi: userContext.sbi },
         status: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: EXPECTED_BODY
-      })
-      .executeTest(async (mockserver) => {
+        responseBody: validateResponseExample
+      },
+      async (mockserver) => {
         const response = await validateApplication(payload, mockserver.url)
 
         expect(response.valid).toBe(true)
-        expect(response.actions).toBeDefined()
-        expect(response.actions.length).toBeGreaterThan(0)
-        expect(response.actions[0]).toHaveProperty('actionCode')
-        expect(response.actions[0]).toHaveProperty('hasPassed')
-        expect(response.actions[0]).toHaveProperty('rules')
+        expectValidatedActionShape(response)
 
         const sssiRule = response.actions[0].rules.find((rule) => rule.name === 'sssi-consent-required-sssi')
         expect(sssiRule).toBeDefined()
         expect(sssiRule).toHaveProperty('caveat')
         expect(sssiRule.caveat).toHaveProperty('code')
         expect(sssiRule.caveat).toHaveProperty('metadata')
-      })
+      }
+    )
   })
 
   it('returns HTTP 200 when parcel fails moorland check with no SSSI caveat', async () => {
+    const failedMoorlandRules = eachLike({
+      name: string('parcel-has-intersection-with-data-layer-moorland'),
+      passed: like(false),
+      reason: string('This parcel is not majority on the moorland')
+    })
     const validateResponseWithMoorlandFailure = {
       message: 'Application validated successfully',
       valid: false,
@@ -1029,22 +769,14 @@ describe('validate', () => {
           sheetId: 'SK0971',
           parcelId: '4262',
           hasPassed: false,
-          rules: eachLike({
-            name: string('parcel-has-intersection-with-data-layer-moorland'),
-            passed: like(false),
-            reason: string('This parcel is not majority on the moorland')
-          })
+          rules: failedMoorlandRules
         }),
         {
           actionCode: 'UPL1',
           sheetId: 'SK0971',
           parcelId: '4262',
           hasPassed: false,
-          rules: eachLike({
-            name: string('parcel-has-intersection-with-data-layer-moorland'),
-            passed: like(false),
-            reason: string('This parcel is not majority on the moorland')
-          })
+          rules: failedMoorlandRules
         }
       ],
       id: like(23)
@@ -1062,215 +794,77 @@ describe('validate', () => {
         }
       ]
     }
-    const EXPECTED_BODY = like(validateResponseWithMoorlandFailure)
 
-    const provider = createProvider()
-    await provider
-      .given('has parcels', { parcels: [{ sheetId: 'SK0971', parcelId: '4262' }] })
-      .uponReceiving('a v2 validation request that fails moorland check without SSSI caveat')
-      .withRequest({
-        method: 'POST',
-        path: '/api/v2/application/validate',
-        headers: makeLandGrantsHeaders(),
-        body: {
-          ...payload,
-          sbi: userContext.sbi
-        }
-      })
-      .willRespondWith({
+    await pactInteraction(
+      {
+        given: { parcels: [{ sheetId: 'SK0971', parcelId: '4262' }] },
+        receiving: 'a v2 validation request that fails moorland check without SSSI caveat',
+        path: VALIDATE_PATH,
+        body: { ...payload, sbi: userContext.sbi },
         status: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: EXPECTED_BODY
-      })
-      .executeTest(async (mockserver) => {
+        responseBody: validateResponseWithMoorlandFailure
+      },
+      async (mockserver) => {
         const response = await validateApplication(payload, mockserver.url)
 
         expect(response.valid).toBe(false)
-        expect(response.actions).toBeDefined()
-        expect(response.actions.length).toBeGreaterThan(0)
-        expect(response.actions[0]).toHaveProperty('actionCode')
-        expect(response.actions[0]).toHaveProperty('hasPassed')
-        expect(response.actions[0]).toHaveProperty('rules')
-      })
+        expectValidatedActionShape(response)
+      }
+    )
   })
 
-  it('returns HTTP 422 with error message when quantity is a string', async () => {
-    const negativeQuantityPayload = {
-      applicationId: '34E-8CA-45D',
-      requester: 'grants-ui',
-      applicantCrn: '1100014934',
-      landActions: [
-        {
-          sheetId: 'SD6743',
-          parcelId: '8083',
-          actions: [{ code: 'CMOR1', quantity: 'invalid quantity provided' }]
-        }
-      ]
-    }
-    const unprocessableResponseExample = {
-      statusCode: 422,
-      error: 'Unprocessable Entity',
-      message: 'Quantity must be a positive number'
-    }
-    const EXPECTED_BODY = like(unprocessableResponseExample)
-
-    const provider = createProvider()
-    await provider
-      .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
-      .uponReceiving('a v2 validation request for invalid quantity')
-      .withRequest({
-        method: 'POST',
-        path: '/api/v2/application/validate',
-        headers: makeLandGrantsHeaders(),
-        body: {
-          ...negativeQuantityPayload,
-          sbi: userContext.sbi
-        }
-      })
-      .willRespondWith({
-        status: 422,
-        headers: { 'Content-Type': 'application/json' },
-        body: EXPECTED_BODY
-      })
-      .executeTest(async (mockserver) => {
-        await expect(validateApplication(negativeQuantityPayload, mockserver.url)).rejects.toMatchObject({
-          code: 422,
-          status: 422
-        })
-      })
-  })
-
-  it('returns HTTP 422 with error message when quantity is negative', async () => {
-    const negativeQuantityPayload = {
-      applicationId: '34E-8CA-45D',
-      requester: 'grants-ui',
-      applicantCrn: '1100014934',
-      landActions: [
-        {
-          sheetId: 'SD6743',
-          parcelId: '8083',
-          actions: [{ code: 'CMOR1', quantity: -0.14472089 }]
-        }
-      ]
-    }
-    const unprocessableResponseExample = {
-      statusCode: 422,
-      error: 'Unprocessable Entity',
-      message: 'Quantity must be a positive number'
-    }
-    const EXPECTED_BODY = like(unprocessableResponseExample)
-
-    const provider = createProvider()
-    await provider
-      .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
-      .uponReceiving('a v2 validation request for negative quantity')
-      .withRequest({
-        method: 'POST',
-        path: '/api/v2/application/validate',
-        headers: makeLandGrantsHeaders(),
-        body: {
-          ...negativeQuantityPayload,
-          sbi: userContext.sbi
-        }
-      })
-      .willRespondWith({
-        status: 422,
-        headers: { 'Content-Type': 'application/json' },
-        body: EXPECTED_BODY
-      })
-      .executeTest(async (mockserver) => {
-        await expect(validateApplication(negativeQuantityPayload, mockserver.url)).rejects.toMatchObject({
-          code: 422,
-          status: 422
-        })
-      })
-  })
-
-  it('returns HTTP 400 when required fields are missing', async () => {
-    const incompletePayload = {
-      applicationId: '34E-8CA-45D',
-      requester: 'grants-ui'
+  it.each([
+    [
+      422,
+      'a v2 validation request for invalid quantity',
+      HAS_8083,
+      {
+        applicationId: '34E-8CA-45D',
+        requester: 'grants-ui',
+        applicantCrn: '1100014934',
+        landActions: [{ ...PARCEL_8083, actions: [{ code: 'CMOR1', quantity: 'invalid quantity provided' }] }]
+      },
+      'Unprocessable Entity',
+      'Quantity must be a positive number'
+    ],
+    [
+      422,
+      'a v2 validation request for negative quantity',
+      HAS_8083,
+      {
+        applicationId: '34E-8CA-45D',
+        requester: 'grants-ui',
+        applicantCrn: '1100014934',
+        landActions: [{ ...PARCEL_8083, actions: [{ code: 'CMOR1', quantity: -0.14472089 }] }]
+      },
+      'Unprocessable Entity',
+      'Quantity must be a positive number'
+    ],
+    [
+      400,
+      'a v2 validation request with missing required fields',
+      HAS_8083,
       // Missing applicantCrn and landActions
-    }
+      { applicationId: '34E-8CA-45D', requester: 'grants-ui' },
+      'Bad Request',
+      '"applicantCrn" is required'
+    ],
+    [
+      400,
+      'a v2 validation request for a non-existent parcel',
+      HAS_NO_PARCELS,
+      {
+        applicationId: '34E-8CA-45D',
+        requester: 'grants-ui',
+        applicantCrn: '1100014934',
+        landActions: [{ sheetId: 'NONEXIST', parcelId: '9999', actions: [{ code: 'CMOR1', quantity: 0.14472089 }] }]
+      },
+      'Bad Request',
+      'Land parcels not found: NONEXIST-9999'
+    ]
+  ])('returns HTTP %s for %s', async (status, receiving, given, payload, error, message) => {
+    const caught = await catchValidateError({ status, receiving, given, payload, error, message })
 
-    const badRequestResponseExample = {
-      statusCode: 400,
-      error: 'Bad Request',
-      message: '"applicantCrn" is required'
-    }
-    const EXPECTED_BODY = like(badRequestResponseExample)
-
-    const provider = createProvider()
-    await provider
-      .given('has parcels', { parcels: [{ sheetId: 'SD6743', parcelId: '8083' }] })
-      .uponReceiving('a v2 validation request with missing required fields')
-      .withRequest({
-        method: 'POST',
-        path: '/api/v2/application/validate',
-        headers: makeLandGrantsHeaders(),
-        body: {
-          ...incompletePayload,
-          sbi: userContext.sbi
-        }
-      })
-      .willRespondWith({
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: EXPECTED_BODY
-      })
-      .executeTest(async (mockserver) => {
-        await expect(validateApplication(incompletePayload, mockserver.url)).rejects.toMatchObject({
-          code: 400,
-          status: 400
-        })
-      })
-  })
-
-  it('returns HTTP 400 when parcel is not found', async () => {
-    const notFoundPayload = {
-      applicationId: '34E-8CA-45D',
-      requester: 'grants-ui',
-      applicantCrn: '1100014934',
-      landActions: [
-        {
-          sheetId: 'NONEXIST',
-          parcelId: '9999',
-          actions: [{ code: 'CMOR1', quantity: 0.14472089 }]
-        }
-      ]
-    }
-
-    const notFoundResponseExample = {
-      statusCode: 400,
-      error: 'Bad Request',
-      message: 'Land parcels not found: NONEXIST-9999'
-    }
-
-    const EXPECTED_BODY = like(notFoundResponseExample)
-
-    const provider = createProvider()
-    await provider
-      .given('has parcels', { parcels: [] })
-      .uponReceiving('a v2 validation request for a non-existent parcel')
-      .withRequest({
-        method: 'POST',
-        path: '/api/v2/application/validate',
-        headers: makeLandGrantsHeaders(),
-        body: {
-          ...notFoundPayload,
-          sbi: userContext.sbi
-        }
-      })
-      .willRespondWith({
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: EXPECTED_BODY
-      })
-      .executeTest(async (mockserver) => {
-        await expect(validateApplication(notFoundPayload, mockserver.url)).rejects.toMatchObject({
-          code: 400,
-          status: 400
-        })
-      })
+    expect(caught).toMatchObject({ code: status, status })
   })
 })
