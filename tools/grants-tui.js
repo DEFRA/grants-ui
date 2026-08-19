@@ -800,6 +800,8 @@ ${BOLD}Other flags:${RESET_COLOR}
 ${BOLD}Journey flags (for 'journey'):${RESET_COLOR}
   --crn <crn>      DefraID CRN to sign in as (default: the journey's allowlisted CRN, e.g. woodland → 1100943757)
   --stop <n|sect>  Stop before step <n> (1-indexed) or run only section <sect>
+  --parcel <ref>   Land parcel the map step selects, e.g. SD6843-7039 (overrides the step's own value)
+  --mock-no-actions  Make land parcels report no eligible actions (shows the map page's error)
   --headed         Watch it run in your installed Google Chrome (headless uses bundled Chromium)
   --clear          Flush saved application state first (so --stop starts at step 1)
   --base-url <url> App base URL (auto: https://localhost:4000 on --ha, else http://localhost:3000)
@@ -827,6 +829,8 @@ ${BOLD}Examples:${RESET_COLOR}
   gt test acceptance                 # docker-based acceptance journeys
   gt journey woodland                # walk the woodland journey headlessly
   gt journey example-grant-with-auth --stop 8 --headed   # watch it, stop before step 8
+  gt journey grasslands --parcel SD6843-7039             # drive the map step to a specific parcel
+  gt journey grasslands --mock-no-actions --headed       # see the "no actions available" error on the map page
   gt sonar                           # local SonarQube scan of src/
   gt sonar --changed                 # scope scan to src files changed vs main (approx. CI PR view)
   gt sonar --down                    # stop the local SonarQube server
@@ -879,6 +883,8 @@ async function main() {
       '--changed',
       '--crn',
       '--stop',
+      '--parcel',
+      '--mock-no-actions',
       '--headed',
       '--clear',
       '--base-url',
@@ -887,7 +893,7 @@ async function main() {
     ]
     // Flags that consume the following positional as their value — so it isn't
     // mistaken for an unknown command.
-    const valueFlagIdxs = ['--scale', '--crn', '--stop', '--base-url']
+    const valueFlagIdxs = ['--scale', '--crn', '--stop', '--parcel', '--base-url']
       .map((f) => argv.indexOf(f))
       .filter((i) => i !== -1)
       .map((i) => i + 1)
@@ -1000,6 +1006,8 @@ async function main() {
     const opts = {
       crn: valueOf('--crn'),
       stop: valueOf('--stop'),
+      parcel: valueOf('--parcel'),
+      mockNoActions: argv.includes('--mock-no-actions'),
       baseUrl,
       headed: argv.includes('--headed'),
       clear: argv.includes('--clear'),
@@ -1455,6 +1463,28 @@ async function main() {
         }
       }
 
+      // Offer the land-parcel mock before the stop-page question, so a run can be
+      // pointed at the "no eligible actions" path. The local seed gives every
+      // parcel at least one action, so this is the only way to reach that page.
+      // Only offered for journeys that actually have a map step.
+      let mockNoActions = false
+      if (journeySteps(chosen).some((s) => s.type === 'mapParcel')) {
+        const mockItems = [
+          { key: 'off', label: 'API Data', description: 'Use whatever actions the land-grants API returns' },
+          {
+            key: 'no-actions',
+            label: 'Mock no eligible actions',
+            description: 'Land parcels report no actions — shows the error on the map page'
+          }
+        ]
+        const pickedMock = await radioMenu(mockItems, `Land parcel actions for '${chosen}'?`, { hint: SELECT_HINT })
+        if (pickedMock === '__quit__') {
+          statusLine = ''
+          continue
+        }
+        mockNoActions = pickedMock === 'no-actions'
+      }
+
       // Headed only: let the user stop the browser on a chosen page. Lists every
       // page in the journey; picking one passes it as --stop so the run halts
       // there (on the page, before filling it) for inspection.
@@ -1483,6 +1513,7 @@ async function main() {
         {
           crn,
           stop,
+          mockNoActions,
           baseUrl: journeyBaseUrl(),
           headed: mode === 'headed',
           clear: clearChoice === 'clear',

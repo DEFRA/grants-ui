@@ -17,6 +17,7 @@
  *
  * Usage:
  *   node journey-cli.js <slug> [--crn <crn>] [--stop <n|section>] [--headed]
+ *                              [--parcel <ref>] [--mock-no-actions]
  *                              [--base-url <url>] [--timeout <ms>]
  *
  * Invoked by `gt journey <slug>` (tools/grants-tui/journey.js).
@@ -50,6 +51,8 @@ function parseArgs(argv) {
     crn: DEFAULT_CRN,
     stop: undefined,
     start: 'start',
+    parcel: undefined,
+    mockNoActions: false,
     headed: false,
     clear: false,
     baseUrl: DEFAULT_BASE_URL,
@@ -59,6 +62,8 @@ function parseArgs(argv) {
     const arg = argv[i]
     if (arg === '--headed') {
       opts.headed = true
+    } else if (arg === '--mock-no-actions') {
+      opts.mockNoActions = true
     } else if (arg === '--clear') {
       opts.clear = true
     } else if (arg === '--crn') {
@@ -67,6 +72,8 @@ function parseArgs(argv) {
       opts.stop = argv[++i]
     } else if (arg === '--start') {
       opts.start = argv[++i]
+    } else if (arg === '--parcel') {
+      opts.parcel = argv[++i]
     } else if (arg === '--base-url') {
       opts.baseUrl = argv[++i]
     } else if (arg === '--timeout') {
@@ -131,7 +138,7 @@ async function main() {
   const opts = parseArgs(process.argv.slice(2))
   if (!opts.slug) {
     console.error(
-      'Usage: node journey-cli.js <slug> [--crn <crn>] [--stop <n|section>] [--start <page>] [--headed] [--clear] [--base-url <url>]'
+      'Usage: node journey-cli.js <slug> [--crn <crn>] [--stop <n|section>] [--start <page>] [--parcel <ref>] [--mock-no-actions] [--headed] [--clear] [--base-url <url>]'
     )
     process.exit(2)
   }
@@ -158,7 +165,14 @@ async function main() {
   // <form> otherwise sits above the page form and the engine submits it by
   // mistake (getting stuck on the start page). 'false' = reject analytics, which
   // also keeps Google Analytics from adding network noise.
-  await context.addCookies([{ name: 'cookie_consent', value: 'false', url: opts.baseUrl }])
+  const cookies = [{ name: 'cookie_consent', value: 'false', url: opts.baseUrl }]
+  // Dev-tools override: makes the app report the selected land parcel as having
+  // no eligible actions, so the map page's error can be reached on any stack.
+  if (opts.mockNoActions) {
+    cookies.push({ name: 'dev_mock_no_actions', value: '1', url: opts.baseUrl })
+    console.log(`${LOG_PREFIX} Mock enabled: land parcels report no eligible actions`)
+  }
+  await context.addCookies(cookies)
   const page = await context.newPage()
   page.setDefaultTimeout(opts.timeout)
   page.setDefaultNavigationTimeout(opts.timeout)
@@ -203,7 +217,12 @@ async function main() {
     const stopArg = normaliseStop(opts.stop)
     // The first step submits and navigates, which can tear down the evaluate
     // context — that's expected, not an error.
-    await page.evaluate((arg) => globalThis.runJourney(arg), stopArg ?? null).catch(() => {})
+    await page
+      .evaluate(({ stop, parcel }) => globalThis.runJourney(stop, parcel ? { parcel } : undefined), {
+        stop: stopArg ?? null,
+        parcel: opts.parcel ?? null
+      })
+      .catch(() => {})
 
     const timer = new Promise((resolve) => setTimeout(() => resolve('timeout'), opts.timeout))
     result = await Promise.race([outcome, timer])
