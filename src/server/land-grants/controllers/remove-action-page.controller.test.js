@@ -2,9 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest'
 import RemoveActionPageController from './remove-action-page.controller.js'
 import { YarKeys } from '~/src/server/common/constants/session-keys.js'
 
-// The engine base supplies `getHref`; the shared test mock does not, so stand it
-// in here rather than changing global test infrastructure. Mirrors
-// `PageController.getHref`: prefix the base path, collapse repeated slashes.
+// The shared test mock has no `getHref`, so define it here instead of changing the
+// global test setup. Copies `PageController.getHref`: prefix the base path and
+// collapse repeated slashes.
 const stubGetHref = (controller) => {
   controller.getHref = (target) => `/test-grant/${target ?? ''}`.replace(/\/{2,}/g, '/')
 }

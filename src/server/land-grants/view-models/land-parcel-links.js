@@ -1,9 +1,9 @@
 import { formatParcelReference, stringifyParcel } from '~/src/shared/format-parcel.js'
 
 /**
- * Single source of truth for the land-parcel titles and journey hrefs shared by
- * the payment summary pages. Keeping these here stops the two view models
- * drifting apart on route names or on the accessible names they announce.
+ * Land parcel titles and journey hrefs shared by the payment summary pages, so
+ * the two view models cannot drift apart on route names or on the accessible
+ * names they announce.
  */
 
 /**
@@ -15,9 +15,9 @@ import { formatParcelReference, stringifyParcel } from '~/src/shared/format-parc
 export const parcelIdParam = (sheetId, parcelId) => encodeURIComponent(stringifyParcel({ sheetId, parcelId }))
 
 /**
- * Bare land parcel reference (`SD1234 5678`), used where the surrounding
- * context already says it is a land parcel. Delegates to the shared formatter
- * so display references have one definition service-wide.
+ * Land parcel reference on its own (`SD1234 5678`), for use where the
+ * surrounding context already says it is a land parcel. Delegates to the shared
+ * formatter so the display format has one definition.
  * @param {string} sheetId
  * @param {string} parcelId
  * @returns {string}

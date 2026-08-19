@@ -8,8 +8,8 @@
   <div class="govuk-body">
     <div class="govuk-grid-row">
       <div class="{{ gridColumnClass(page, 'full') }}">
-        {# One-time removal outcome: the marker behind it is cleared on read, so
-           a refresh must not repeat the announcement. #}
+        {# The session marker behind this message is cleared when it is read, so a
+           refresh does not show it again. #}
         {% if landParcelRemovalSuccessMessage %}
           {{ govukNotificationBanner({
             type: "success",
@@ -35,8 +35,8 @@
           {{ pageTitle }}
         </h1>
 
-        {# Nothing selected - typically after removing the last parcel. Offers
-           the picker instead of empty payment tables and a submit control. #}
+        {# No parcels selected, usually after removing the last one. Shows the
+           parcel picker instead of empty payment tables and a submit button. #}
         {% if hasNoLandParcels %}
           <p class="govuk-body">You have not added any land parcels or actions yet.</p>
           <p class="govuk-body">

@@ -31,10 +31,10 @@ const isNonNegativeInteger = (value) => Number.isInteger(value) && /** @type {nu
 const isNonEmptyString = (value) => typeof value === 'string' && value.trim() !== ''
 
 /**
- * Renders an action label in the visible form "Description (CODE)", falling
- * back to the bare code when the API omits the description. Deliberately not
- * the shared `landActionWithCode()` helper: its "Description: CODE" form is
- * still what the payment and submission paths send downstream.
+ * Builds the displayed action label as "Description (CODE)", or just the code
+ * when the API omits the description. Not the shared `landActionWithCode()`
+ * helper, whose "Description: CODE" form is what the payment and submission
+ * paths still send downstream.
  * @param {unknown} description
  * @param {string} code
  * @returns {string}
@@ -42,10 +42,10 @@ const isNonEmptyString = (value) => typeof value === 'string' && value.trim() !=
 const formatActionLabel = (description, code) => (isNonEmptyString(description) ? `${description} (${code})` : code)
 
 /**
- * Renders the quantity/unit pair without emitting "undefined" when the API
- * omits either half. A numeric quantity is shown to four decimal places so
- * areas line up column-wise with the design; anything else is passed through
- * untouched rather than validated here.
+ * Joins the quantity and unit, skipping either half when the API omits it so the
+ * output never contains "undefined". A numeric quantity gets four decimal places
+ * so the areas line up down the column; any other value passes through
+ * unchanged rather than being validated here.
  * @param {unknown} quantity
  * @param {unknown} unit
  * @returns {string}
@@ -72,16 +72,16 @@ const isFiniteNumber = (value) => typeof value === 'number' && Number.isFinite(v
 const formatScaledArea = (scaled, unit) => `${(scaled / AREA_SCALE).toFixed(4)} ${unit}`
 
 /**
- * Derives a parcel's total/used/available area from persisted state alone - the
- * payment API is authoritative for money only. State actions define used area
- * because an action priced at agreement level still occupies parcel area, so it
- * is absent from `payment.parcelItems` while still consuming land.
+ * Works out a parcel's total, used and available area from persisted state
+ * rather than the payment API, which is authoritative for money only. Used area
+ * comes from the state actions because an action priced at agreement level still
+ * occupies parcel area, so it is missing from `payment.parcelItems`.
  *
- * All or nothing: without a usable size, or with any action whose value is not
- * finite or whose unit differs from the parcel's, the rows are omitted rather
- * than showing partial or misleading arithmetic. Arithmetic runs in integer
- * ten-thousandths so `44.8765 - 44` is exactly `0.8765`, and available area is
- * never clamped - a negative result is real and must be shown.
+ * Returns nothing unless the parcel has a usable size and every action has a
+ * finite value in the parcel's unit, so the rows never show partial or
+ * misleading arithmetic. The sums run in integer ten-thousandths, which makes
+ * `44.8765 - 44` exactly `0.8765`. Available area is not clamped, because a
+ * negative result is real and has to be shown.
  *
  * @param {LandParcel} [parcel] - Persisted state for this land parcel
  * @returns {{ total: string, used: string, available: string } | undefined}
@@ -110,16 +110,16 @@ function buildAreaSummary(parcel) {
 }
 
 /**
- * Builds the presentation model for the generic "Your land and actions"
- * payment-summary page. Performs presentation grouping only: it never looks up
- * rates, multiplies quantities, rounds, or computes the application total. The
- * application total always comes from the API's `annualTotalPence`.
+ * Builds the view model for the "Your land and actions" payment summary page. It
+ * groups the API response for display and never looks up rates, multiplies
+ * quantities, rounds, or works out the application total, which always comes
+ * from the API's `annualTotalPence`.
  *
- * The response is rendered as received. Agreement-level items are shown in
- * their own section because they contribute to `annualTotalPence` without
- * belonging to any single parcel, and a selected action or parcel that the API
- * prices at agreement level (or does not price at all) is a normal response
- * rather than an error - see `src/contracts/v2/land-grants.client.contract.test.js`.
+ * The response is rendered as received. Agreement-level items get their own
+ * section because they count towards `annualTotalPence` without belonging to any
+ * one parcel, and a selected action or parcel the API prices at agreement level,
+ * or does not price at all, is a normal response rather than an error. See
+ * `src/contracts/v2/land-grants.client.contract.test.js`.
  *
  * @param {PaymentCalculation} payment - Raw payment calculation from the API
  * @param {LandParcels} [landParcels] - Current state land parcels, used only to order the cards
@@ -150,8 +150,8 @@ export function buildConfirmLandAndActionsViewModel(payment, landParcels) {
 }
 
 /**
- * Empty card for one parcel, ready to accumulate the actions the API priced
- * against it.
+ * Empty card for one parcel, ready to collect the actions the API priced against
+ * it.
  * @param {string} sheetId
  * @param {string} parcelId
  * @param {LandParcels} [landParcels]
@@ -168,10 +168,10 @@ function buildParcelCard(sheetId, parcelId, landParcels) {
 }
 
 /**
- * Seeds the card map in selection order so the cards match the order the user
- * picked the parcels on the earlier pages. `payment.parcelItems` is keyed by
- * integer-like ids, which JS iterates in ascending numeric order, so relying on
- * it alone would order the page by upstream item numbering instead.
+ * Builds the card map in state order so the cards match the order the user picked
+ * the parcels on the earlier pages. `payment.parcelItems` is keyed by
+ * integer-like ids, which JS iterates in ascending numeric order, so ordering by
+ * the response would follow upstream item numbering instead.
  * @param {LandParcels} [landParcels]
  * @returns {Map<string, ParcelCard>}
  */
@@ -190,8 +190,8 @@ function seedParcelsInSelectionOrder(landParcels) {
 }
 
 /**
- * Folds the API's priced parcel items into the seeded cards, adding a card for
- * any parcel the response prices that state did not seed.
+ * Adds the API's priced parcel items to the cards, creating a card for any parcel
+ * the response prices that state did not provide.
  * @param {Map<string, ParcelCard>} parcels
  * @param {PaymentCalculation} payment
  * @param {LandParcels} [landParcels]
@@ -282,8 +282,8 @@ function buildAdditionalYearlyPayments(payment) {
  */
 
 /**
- * Mutable accumulator behind a parcel card. Carries the parcel total in pence so
- * it is only formatted once, after every priced action has been folded in.
+ * Mutable accumulator behind a parcel card. Holds the parcel total in pence so it
+ * is formatted once, after every priced action has been added.
  * @typedef {object} ParcelCard
  * @property {string} reference - Bare land parcel reference, e.g. `SD1234 5678`
  * @property {string} removeHref - Link to remove the whole parcel

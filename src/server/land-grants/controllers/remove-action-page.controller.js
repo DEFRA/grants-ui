@@ -31,12 +31,11 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
   }
 
   /**
-   * Direct-only utility page: force the Back link to the configured return
-   * destination instead of inheriting a link based on YAML page order.
+   * Users only reach this page directly, so the Back link points at the
+   * configured return path rather than the previous page in YAML order.
    *
-   * Overrides the engine hook that `getViewModel` calls, so every render path
-   * gets the forced link and it is normalised by the same `getHref` the
-   * redirect uses - the two cannot disagree.
+   * Overriding the hook that `getViewModel` calls means every render path gets
+   * the same link, built by the same `getHref` as the redirect.
    * @returns {{ text: string, href: string }}
    */
   getBackLink() {
@@ -48,9 +47,9 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
   }
 
   /**
-   * Whether this page's configured destination is the "Your land and actions"
-   * summary. Compared through `getHref` so a config value that omits its
-   * leading slash still matches the path this controller special-cases.
+   * Whether the configured return path is the "Your land and actions" summary.
+   * Both sides go through `getHref` so a config value without a leading slash
+   * still matches.
    * @returns {boolean}
    */
   returnsToConfirmLandAndActions() {
@@ -81,7 +80,7 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
   }
 
   /**
-   * Validate POST request payload. Only `/remove-action` reaches this: the
+   * Validate POST request payload. Only `/remove-action` reaches this; the
    * whole-parcel page posts a hidden field, so it has nothing to select.
    * @param {object} payload - Request payload
    * @returns {{errorMessage: string}|null} - Validation error or null if valid
@@ -134,11 +133,11 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
   }
 
   /**
-   * Leave a one-shot session marker so the confirmation page can announce the
-   * removal once. Written only for whole-parcel removal on a journey that
-   * returns to `/confirm-land-and-actions`, because that is the only
-   * destination which renders the banner; the action-removal destinations
-   * would otherwise carry a stale success message.
+   * Stores a session marker so the summary page can show the removal message
+   * once. Only written for whole-parcel removal on a journey that returns to
+   * `/confirm-land-and-actions`, the one destination that renders the banner.
+   * The action-removal destinations would leave the marker unread and show it
+   * on a later visit.
    * @param {AnyFormRequest} request - Request object
    * @param {string} parcel - Removed parcel key
    */

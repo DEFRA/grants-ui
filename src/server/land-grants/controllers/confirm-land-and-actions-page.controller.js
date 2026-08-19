@@ -11,10 +11,9 @@ import { YarKeys } from '~/src/server/common/constants/session-keys.js'
 const CALCULATION_ERROR_MESSAGE =
   'Unable to get payment information, please try again later or contact the Rural Payments Agency.'
 
-// Canonical forms-engine FormAction value (`add-another`). The generic POST
-// route validates `action` against the engine's actionSchema, which only
-// permits FormAction values or an `external-*` pattern, so a bespoke value is
-// rejected with a 400 before reaching this controller.
+// Must be one of the engine's FormAction values: the generic POST route
+// validates `action` against the engine's actionSchema and rejects anything
+// else with a 400 before this controller runs.
 const ADD_ANOTHER_ACTION = 'add-another'
 
 const LAND_GRANTS_ENDPOINT = 'Land grants API'
@@ -58,15 +57,13 @@ function resolveConfig(config, path) {
 }
 
 /**
- * Consumes the one-shot land-parcel removal marker written by
- * `RemoveActionPageController`.
- *
- * The marker is cleared on the first read, so a refresh or a later direct GET
- * of this page does not repeat the notification. A stored value that is not a
- * usable reference is consumed without rendering anything.
+ * Reads the land-parcel removal marker set by `RemoveActionPageController` and
+ * clears it, so a refresh or a later GET of this page does not show the
+ * notification again. A stored value that is not a usable reference is cleared
+ * without producing a message.
  *
  * @param {FormRequest} request
- * @returns {string | undefined} The success message, or undefined when there is nothing to announce.
+ * @returns {string | undefined} The success message, or undefined when there is no marker.
  */
 export function consumeLandParcelRemovalSuccess(request) {
   const reference = request.yar?.get(YarKeys.LAND_PARCEL_REMOVAL_SUCCESS)
@@ -82,13 +79,11 @@ export function consumeLandParcelRemovalSuccess(request) {
 }
 
 /**
- * Generic controller for the "Your land and actions" payment-summary page.
+ * Controller for the "Your land and actions" payment summary page.
  *
- * Sends every selected parcel/action to the Land Grants payment API in one
- * request and renders the API-calculated action, parcel-grouped, and
- * application totals. It performs no rate lookup, quantity multiplication,
- * rounding, or total calculation, and is independent of the Farm Payments
- * `PaymentPageController`.
+ * Sends the selected parcels and actions to the Land Grants payment API in one
+ * request and renders the action, parcel and application totals the API
+ * returns. It does not look up rates or work out any totals itself.
  *
  * @extends QuestionPageController
  */
@@ -175,13 +170,13 @@ export default class ConfirmLandAndActionsPageController extends withTaskContext
   }
 
   /**
-   * Renders the empty state reached by removing the last land parcel: the
-   * summary has nothing to show, so it offers the parcel picker instead of the
-   * payment tables and the submit control.
+   * Renders the page with no parcels left, reached by removing the last one.
+   * There is nothing to price, so it shows the parcel picker instead of the
+   * payment tables and the submit button.
    *
-   * Any payment carried over from the previous selection is dropped from state,
-   * because Check answers and the GAS mapper read it and it now prices parcels
-   * that are no longer in the application.
+   * Also drops any payment left over from the previous selection, because Check
+   * answers and the GAS mapper read it and it prices parcels that are no longer
+   * in the application.
    * @param {FormRequest} request
    * @param {FormContext} context
    * @param {FormResponseToolkit} h
@@ -206,10 +201,10 @@ export default class ConfirmLandAndActionsPageController extends withTaskContext
   }
 
   /**
-   * Distinguishes a malformed payment response from a genuine upstream failure:
-   * reporting a response we could not render as an API outage sends responders
-   * to the wrong service. Both branches carry the SBI so an alert can be tied
-   * to a business, and the stack, which neither log code carries on its own.
+   * Logs a malformed payment response as a server error and everything else as
+   * an upstream failure, so a response we could not render is not reported as a
+   * Land Grants outage. Both branches include the SBI, which ties an alert to a
+   * business, and the stack, which neither log code carries on its own.
    * @param {unknown} err
    * @param {FormRequest} request
    */

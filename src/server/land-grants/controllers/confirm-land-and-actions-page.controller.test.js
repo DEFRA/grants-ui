@@ -61,10 +61,9 @@ const payment = {
 
 const paymentResult = { payment, paymentTotal: '£1,234.00', errorMessage: undefined }
 
-// The engine base supplies `path` and `getHref`; the shared test mock does not,
-// so stand them in here rather than changing global test infrastructure.
-// `getHref` mirrors `PageController.getHref`: prefix the base path, collapse
-// repeated slashes.
+// The shared test mock has no `path` or `getHref`, so define them here instead of
+// changing the global test setup. `getHref` copies `PageController.getHref`:
+// prefix the base path and collapse repeated slashes.
 const stubEngineHrefs = (controller, path) => {
   controller.path = path
   controller.getHref = (target) => `/test-grant/${target ?? ''}`.replace(/\/{2,}/g, '/')

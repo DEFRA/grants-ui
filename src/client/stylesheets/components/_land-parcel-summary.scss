@@ -1,7 +1,5 @@
 @use 'govuk-frontend' as *;
 
-// A land parcel block on the "Your land and actions" page: the parcel heading
-// with its parcel-level link on the same line, above the parcel's actions table.
 .land-parcel-summary {
   margin-bottom: govuk-spacing(8);
 
@@ -15,11 +13,6 @@
   }
 }
 
-// The design gives each action more room than the default table row padding, so
-// consecutive actions read as separate items rather than a block of text. Only
-// applies from tablet up, where the rows are laid out as a table; below that
-// each row already stacks. Total rows keep the GOV.UK defaults so they stay
-// compact.
 .land-parcel-summary__action-row > .govuk-table__header,
 .land-parcel-summary__action-row > .govuk-table__cell {
   @media #{govuk-from-breakpoint(tablet)} {

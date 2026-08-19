@@ -5,9 +5,9 @@ const renderPage = createPageRenderer(import.meta.url, 'confirm-land-and-actions
   pageTitle: 'Your land and actions'
 })
 
-// Mirrors what buildConfirmLandAndActionsViewModel produces for the fixture in
-// confirm-land-and-actions.view-model.test.js, so the two tests together pin the
-// whole chain from API payload to rendered row.
+// Matches what buildConfirmLandAndActionsViewModel returns for the fixture in
+// confirm-land-and-actions.view-model.test.js, so between them the two tests cover
+// the API payload and the rendered rows.
 const model = {
   parcels: [
     {

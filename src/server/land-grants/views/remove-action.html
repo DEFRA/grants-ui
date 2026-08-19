@@ -11,9 +11,8 @@
   <div class="govuk-grid-row">
     <div class="{{ gridColumnClass(page, 'govuk-grid-column-two-thirds-from-desktop') }}">
       {% if isParcelRemoval %}
-        {# Whole-parcel removal is a single destructive confirmation, so there is
-           nothing to select and nothing to validate: the choice is the button
-           the user presses. #}
+        {# Removing a whole parcel is confirmed by the button the user presses, so
+           there is nothing to select and nothing to validate. #}
         <h1 class="govuk-heading-l">{{ pageHeading }}</h1>
 
         <p class="govuk-body">{{ hint }}</p>
