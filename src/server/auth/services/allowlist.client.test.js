@@ -30,7 +30,7 @@ describe('fetchAllowedGrants', () => {
     Jwt.token.generate.mockReturnValue('mocked-encrypted-auth')
   })
 
-  it('signs the x-encrypted-auth JWT with crn and sbi', async () => {
+  it('signs the x-user-context JWT with crn and sbi', async () => {
     fetch.mockResolvedValue(createMockFetchResponse({ data: { grants: [] } }))
 
     await fetchAllowedGrants(CRN, SBI)
@@ -47,7 +47,7 @@ describe('fetchAllowedGrants', () => {
       method: 'GET',
       headers: {
         Authorization: 'Bearer test-token',
-        'x-encrypted-auth': 'mocked-encrypted-auth'
+        'x-user-context': 'mocked-encrypted-auth'
       }
     })
     expect(createApiHeadersForGrantsUiBackend).toHaveBeenCalled()

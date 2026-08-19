@@ -302,6 +302,21 @@
     }
   },
   {
+    "id": "farming-grants-agreements-ui-root-200",
+    "priority": 0,
+    "httpRequest": {
+      "method": "GET",
+      "path": "/"
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "headers": {
+        "Content-Type": ["text/html"]
+      },
+      "body": "<html><body><h1>Agreement</h1></body></html>"
+    }
+  },
+  {
     "id": "land-grants-api-parcels-size-with-value-200",
     "priority": 5,
     "httpRequest": {

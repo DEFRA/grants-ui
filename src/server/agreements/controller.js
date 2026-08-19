@@ -62,7 +62,7 @@ function buildProxyHeaders(token, request) {
     request.yar?.get(YarKeys.GRANT_APPLICATION_CONTEXT)
   )
   try {
-    const encryptedAuth = Jwt.token.generate(
+    const userContext = Jwt.token.generate(
       {
         sbi: /** @type {string | number} */ (sbi).toString(),
         grantCode: grantApplicationContext?.grantCode,
@@ -77,7 +77,7 @@ function buildProxyHeaders(token, request) {
       Authorization: `Bearer ${token}`,
       'x-base-url': /** @type {string} */ (config.get('agreements.baseUrl')),
       'content-type': contentType || 'application/x-www-form-urlencoded',
-      'x-encrypted-auth': encryptedAuth,
+      'x-user-context': userContext,
       'x-csp-nonce': /** @type {string} */ (request.app.cspNonce)
     }
   } catch (jwtError) {
