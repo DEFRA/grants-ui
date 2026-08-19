@@ -92,7 +92,7 @@ describe('contentSecurityPolicy plugin', () => {
       const result = await onRequest(request, h)
 
       expect(request.app.cspNonce).toMatch(/^[A-Za-z0-9+/=]+$/)
-      expect(request.app.cspNonce.length).toBe(24)
+      expect(request.app.cspNonce).toHaveLength(24)
       expect(result).toBe(h.continue)
     })
 

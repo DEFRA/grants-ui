@@ -1,6 +1,12 @@
 import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
-import { formatParcelReference, stringifyParcel } from '~/src/shared/format-parcel.js'
 import { formatPrice } from '~/src/server/common/utils/payment.js'
+import {
+  changeActionsHref,
+  landParcelReference,
+  landParcelTitle,
+  removeActionHref,
+  removeParcelHref
+} from '~/src/server/land-grants/view-models/land-parcel-links.js'
 
 /**
  * Maps payment information to view models for rendering in check pages.
@@ -13,16 +19,12 @@ import { formatPrice } from '~/src/server/common/utils/payment.js'
  * @returns {object} HTML object with links
  */
 function createLinks(data) {
-  const parcelParam = stringifyParcel({
-    parcelId: data.parcelId,
-    sheetId: data.sheetId
-  })
-  const parcel = formatParcelReference(data)
+  const parcel = `${data.sheetId} ${data.parcelId}`
   const links = []
 
   links.push(
-    `<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='select-actions-for-land-parcel?parcelId=${parcelParam}'>Change</a><span class="govuk-visually-hidden"> land action ${data.code} for parcel ${parcel}</span></li>
-    <li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='remove-action?parcelId=${parcelParam}&action=${data.code}'>Remove</a><span class="govuk-visually-hidden"> land action ${data.code} for parcel ${parcel}</span></li>`
+    `<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='${changeActionsHref(data.sheetId, data.parcelId)}'>Change</a><span class="govuk-visually-hidden"> land action ${data.code} for parcel ${parcel}</span></li>
+    <li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='${removeActionHref(data.sheetId, data.parcelId, data.code)}'>Remove</a><span class="govuk-visually-hidden"> land action ${data.code} for parcel ${parcel}</span></li>`
   )
 
   return {
@@ -55,8 +57,8 @@ export function createParcelItemRow(data) {
 export function buildLandParcelHeaderActions(sheetId, parcelId) {
   return {
     text: 'Remove',
-    href: `remove-parcel?parcelId=${stringifyParcel({ sheetId, parcelId })}`,
-    hiddenTextValue: `all actions for Land Parcel ${formatParcelReference({ sheetId, parcelId })}`
+    href: removeParcelHref(sheetId, parcelId),
+    hiddenTextValue: `all actions for ${landParcelTitle(sheetId, parcelId)}`
   }
 }
 
@@ -84,8 +86,8 @@ export function buildLandParcelFooterActions(paymentItems, sheetId, parcelId, ac
 
   return {
     text: 'Add another action',
-    href: `select-actions-for-land-parcel?parcelId=${stringifyParcel({ sheetId, parcelId })}`,
-    hiddenTextValue: `to Land Parcel ${formatParcelReference({ sheetId, parcelId })}`
+    href: changeActionsHref(sheetId, parcelId),
+    hiddenTextValue: `to ${landParcelTitle(sheetId, parcelId)}`
   }
 }
 
@@ -97,11 +99,11 @@ export function buildLandParcelFooterActions(paymentItems, sheetId, parcelId, ac
  */
 export function mapPaymentInfoToParcelItems(paymentInfo, actionGroups = []) {
   const groupedByParcel = Object.values(paymentInfo?.parcelItems || {}).reduce((acc, data) => {
-    const parcelKey = formatParcelReference(data)
+    const parcelKey = landParcelReference(data.sheetId, data.parcelId)
 
     if (!acc[parcelKey]) {
       acc[parcelKey] = {
-        cardTitle: `Land parcel ${parcelKey}`,
+        cardTitle: landParcelTitle(data.sheetId, data.parcelId),
         headerActions: buildLandParcelHeaderActions(data.sheetId, data.parcelId),
         footerActions: buildLandParcelFooterActions(
           paymentInfo?.parcelItems ?? {},

@@ -1,0 +1,162 @@
+{% extends baseLayoutPath %}
+
+{% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/notification-banner/macro.njk" import govukNotificationBanner %}
+
+{% block content %}
+  <div class="govuk-body">
+    <div class="govuk-grid-row">
+      <div class="{{ gridColumnClass(page, 'full') }}">
+        {# The session marker behind this message is cleared when it is read, so a
+           refresh does not show it again. #}
+        {% if landParcelRemovalSuccessMessage %}
+          {{ govukNotificationBanner({
+            type: "success",
+            text: landParcelRemovalSuccessMessage
+          }) }}
+        {% endif %}
+
+        {% if hasCalculationError %}
+          {{ govukErrorSummary({
+            titleText: "There is a problem",
+            errorList: errors
+          }) }}
+        {% endif %}
+
+        <h1 class="govuk-heading-l">
+          <span class="govuk-caption-l">
+            {%- if sectionTitle and sectionTitle.length and (sectionTitle !== pageTitle) -%}
+              {{- sectionTitle -}}
+            {%- else -%}
+              Select land and actions
+            {%- endif -%}
+          </span>
+          {{ pageTitle }}
+        </h1>
+
+        {# No parcels selected, usually after removing the last one. Shows the
+           parcel picker instead of empty payment tables and a submit button. #}
+        {% if hasNoLandParcels %}
+          <p class="govuk-body">You have not added any land parcels or actions yet.</p>
+          <p class="govuk-body">
+            <a class="govuk-link" href="{{ selectLandParcelHref }}">Select a land parcel and add actions</a>
+          </p>
+        {% elif not hasCalculationError %}
+          {% for parcel in parcels %}
+            <div class="land-parcel-summary land-parcel-summary--parcel">
+              <div class="land-parcel-summary__heading">
+                <h2 class="govuk-heading-s govuk-!-margin-bottom-0">{{ parcel.reference }}</h2>
+                <a class="govuk-link" href="{{ parcel.removeHref }}">Remove this land parcel<span class="govuk-visually-hidden"> and all actions for land parcel {{ parcel.reference }}</span></a>
+              </div>
+
+              <table class="govuk-table govuk-!-margin-bottom-0">
+                <caption class="govuk-table__caption govuk-visually-hidden">Area, actions and yearly payment for land parcel {{ parcel.reference }}</caption>
+                <tbody class="govuk-table__body">
+                  {% if parcel.areaSummary %}
+                    <tr class="govuk-table__row">
+                      <th scope="row" class="govuk-table__header govuk-!-width-one-third">Total area</th>
+                      <td class="govuk-table__cell">{{ parcel.areaSummary.total }}</td>
+                      <td class="govuk-table__cell"></td>
+                    </tr>
+                    <tr class="govuk-table__row">
+                      <th scope="row" class="govuk-table__header govuk-!-width-one-third">Area used for actions</th>
+                      <td class="govuk-table__cell">{{ parcel.areaSummary.used }}</td>
+                      <td class="govuk-table__cell"></td>
+                    </tr>
+                    <tr class="govuk-table__row">
+                      <th scope="row" class="govuk-table__header govuk-!-width-one-third">Available area left</th>
+                      <td class="govuk-table__cell">{{ parcel.areaSummary.available }}</td>
+                      <td class="govuk-table__cell"></td>
+                    </tr>
+                  {% endif %}
+                  {% for landAction in parcel.actions %}
+                    <tr class="govuk-table__row land-parcel-summary__action-row">
+                      <th scope="row" class="govuk-table__header govuk-!-width-one-third">{{ landAction.action }}</th>
+                      <td class="govuk-table__cell">{{ landAction.area ~ " (" ~ landAction.yearlyPayment ~ ")" if landAction.area else landAction.yearlyPayment }}</td>
+                      <td class="govuk-table__cell govuk-table__cell--numeric land-parcel-summary__actions">
+                        <ul class="govuk-summary-list__actions-list">
+                          <li class="govuk-summary-list__actions-list-item">
+                            <a class="govuk-link" href="{{ landAction.changeHref }}">Change<span class="govuk-visually-hidden"> {{ landAction.action }}</span></a>
+                          </li>
+                        </ul>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                  <tr class="govuk-table__row">
+                    <th scope="row" class="govuk-table__header govuk-!-width-one-third">Yearly payment for this parcel</th>
+                    <td class="govuk-table__cell govuk-!-font-weight-bold">{{ parcel.yearlyPayment }}</td>
+                    <td class="govuk-table__cell"></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          {% endfor %}
+
+          {% if additionalYearlyPayments | length %}
+            <div class="land-parcel-summary">
+              <div class="land-parcel-summary__heading">
+                <h2 class="govuk-heading-s govuk-!-margin-bottom-0">Additional yearly payments</h2>
+              </div>
+
+              <table class="govuk-table govuk-!-margin-bottom-0">
+                <caption class="govuk-table__caption govuk-visually-hidden">Additional yearly payments for the grant application</caption>
+                <tbody class="govuk-table__body">
+                  {% for additionalPayment in additionalYearlyPayments %}
+                    <tr class="govuk-table__row">
+                      <th scope="row" class="govuk-table__header govuk-!-width-one-third">{{ additionalPayment.action }}</th>
+                      <td class="govuk-table__cell">{{ additionalPayment.yearlyPayment }}</td>
+                      <td class="govuk-table__cell"></td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% endif %}
+
+          <table class="govuk-table">
+            <caption class="govuk-table__caption govuk-visually-hidden">Total yearly payment for the grant application</caption>
+            <tbody class="govuk-table__body">
+              <tr class="govuk-table__row">
+                <th scope="row" class="govuk-table__header govuk-!-width-one-third">Total yearly payment</th>
+                <td class="govuk-table__cell govuk-!-font-weight-bold">{{ applicationYearlyPayment }}</td>
+                <td class="govuk-table__cell"></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <form method="post" novalidate="novalidate">
+            <input type="hidden" name="crumb" value="{{ crumb }}">
+            <div class="govuk-button-group">
+              {{ govukButton({
+                text: "Save and continue",
+                name: "action",
+                value: "continue",
+                preventDoubleClick: true
+              }) }}
+              {{ govukButton({
+                text: "Add another land parcel",
+                name: "action",
+                value: "add-another",
+                classes: "govuk-button--secondary",
+                preventDoubleClick: true
+              }) }}
+            </div>
+          </form>
+        {% else %}
+          <div class="govuk-button-group">
+            {{ govukButton({
+              text: "Try again",
+              href: retryHref,
+              preventDoubleClick: true
+            }) }}
+            <a class="govuk-link" href="{{ selectLandParcelHref }}">Change your land parcels</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% if config.cdpEnvironment == 'local' and context | length and not context.isForceAccess and not hasCalculationError %}
+    {% include "partials/debug.html" %}
+  {% endif %}
+{% endblock %}
