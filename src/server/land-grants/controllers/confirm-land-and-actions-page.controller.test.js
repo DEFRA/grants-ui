@@ -347,9 +347,6 @@ describe('ConfirmLandAndActionsPageController', () => {
     })
 
     test('add-another redirects straight to the configured parcel picker', async () => {
-      // Must not go through `proceed`: `withTaskContext.proceed` rewrites the
-      // destination to the task-list path when the target is in another section
-      // or absent from the model, which would swallow the configured redirect.
       const controller = buildController()
       mockRequest.payload = { action: 'add-another' }
 

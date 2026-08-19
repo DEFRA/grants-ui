@@ -27,9 +27,6 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
     super(model, pageDef)
     const returnPath = model?.def?.metadata?.pageConfig?.[pageDef?.path]?.returnPath
     this.returnPath = isNonEmptyString(returnPath) ? returnPath.trim() : defaultReturnPath
-    // Route identity, not action metadata, selects the branch: `/remove-parcel`
-    // always removes the whole parcel even if a stray `action` is in the query,
-    // and `/remove-action` always requires a resolvable action.
     this.isParcelRemovalPage = pageDef?.path === removeParcelPath
   }
 
@@ -76,10 +73,6 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
       return `${selectActionsForParcelPath}?parcelId=${parcel}`
     }
 
-    // Removing the only parcel: `/confirm-land-and-actions` renders its own
-    // empty state with the removal banner, so it must not be skipped in favour
-    // of the parcel picker. Journeys configured to return anywhere else keep
-    // the picker, which is the only destination they can render empty.
     if (!hasRemainingParcels) {
       return this.returnsToConfirmLandAndActions() ? this.returnPath : selectLandParcelPath
     }
@@ -244,8 +237,6 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
     const { action, parcelId } = /** @type {{ action: string, parcelId: string }} */ (request.query)
 
     if (this.isParcelRemovalPage) {
-      // Single destructive control behind a hidden field: anything other than
-      // the exact confirmation value is a cancel, not a removal.
       return payload.remove === 'true'
         ? this.processRemoval(request, state, h, parcelId, undefined)
         : this.proceed(request, h, this.returnPath)

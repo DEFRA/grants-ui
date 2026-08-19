@@ -117,14 +117,8 @@ export default class ConfirmLandAndActionsPageController extends withTaskContext
     return async (request, context, h) => {
       const { viewName } = this
       const { state } = context
-      // Read once per request, before either render branch: the parcel removal
-      // succeeded even if recalculating the remaining payment now fails.
       const landParcelRemovalSuccessMessage = consumeLandParcelRemovalSuccess(request)
 
-      // No parcels left to price: pricing an empty selection would surface a
-      // calculation error instead of the empty state, so render it directly and
-      // drop any payment left over from the previous selection - it belongs to
-      // parcels that are no longer part of the application.
       if (!Object.keys(/** @type {Record<string, unknown>} */ (state.landParcels ?? {})).length) {
         return this.renderNoLandParcels(request, context, h, landParcelRemovalSuccessMessage)
       }
@@ -173,8 +167,6 @@ export default class ConfirmLandAndActionsPageController extends withTaskContext
           hasCalculationError: true,
           errors: [{ text: CALCULATION_ERROR_MESSAGE }],
           landParcelRemovalSuccessMessage,
-          // A re-GET re-runs the calculation, so the page must offer a way out
-          // rather than dead-ending with only an error summary.
           retryHref: this.getHref(this.path),
           selectLandParcelHref: this.getHref(this.addAnotherLandParcelPath)
         })
@@ -252,27 +244,16 @@ export default class ConfirmLandAndActionsPageController extends withTaskContext
      * @param {FormResponseToolkit} h
      */
     return async (request, context, h) => {
-      // The GET establishes the payment state that Check answers and the GAS
-      // mapper read. If it failed it deliberately cleared that state, so
-      // advancing would submit an application with no payment.
       if (!context.state?.payment) {
         return h.redirect(this.getHref(this.path))
       }
 
       const payload = /** @type {{ action?: string }} */ (request.payload ?? {})
 
-      // "Add another land parcel" is lateral navigation back to the parcel
-      // picker, not the journey's next step, so it must not go through
-      // `withTaskContext.proceed`. That override rewrites the destination to the
-      // task-list path whenever the target sits in a different section or is not
-      // a page in the model, which would silently swallow the configured
-      // `redirects.addAnotherLandParcel`.
       if (payload.action === ADD_ANOTHER_ACTION) {
         return h.redirect(this.getHref(this.addAnotherLandParcelPath))
       }
 
-      // The journey's real next step keeps `proceed`, so a completed section
-      // still returns to the task list as configured.
       return this.proceed(request, h, this.nextPath)
     }
   }

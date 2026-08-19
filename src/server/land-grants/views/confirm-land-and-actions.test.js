@@ -80,7 +80,6 @@ describe('confirm-land-and-actions.html view', () => {
       expect(normalise(banner.find('.govuk-notification-banner__title').text())).toBe('Success')
       expect(normalise(banner.find('.govuk-notification-banner__heading').text())).toBe(message)
 
-      // Position matters: the outcome must be the first thing announced.
       expect(banner.nextAll('h1')).toHaveLength(1)
     })
 
@@ -418,9 +417,6 @@ describe('confirm-land-and-actions.html view', () => {
       expect(banner.nextAll('h1')).toHaveLength(1)
     })
 
-    // The design in the ticket is the conjunction of both signals: the removal
-    // marker supplies the banner, the empty selection supplies the copy and
-    // link. Each signal alone must render only its own half.
     it('renders the empty copy without a banner when no removal preceded it', () => {
       const $ = renderPage(emptyModel)
 

@@ -135,9 +135,6 @@ export function buildConfirmLandAndActionsViewModel(payment, landParcels) {
   addPricedParcelActions(parcels, payment, landParcels)
 
   return {
-    // Only parcels the API actually priced get a card; a parcel selected with no
-    // actions yet is a valid state (the pre-submission gate allows it) and must
-    // not blank the whole page.
     parcels: [...parcels.values()]
       .filter((parcel) => parcel.actions.length > 0)
       .map(({ reference, removeHref, areaSummary, actions, totalPence }) => ({

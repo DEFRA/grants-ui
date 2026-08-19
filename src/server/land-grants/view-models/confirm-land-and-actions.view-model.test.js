@@ -86,7 +86,6 @@ describe('buildConfirmLandAndActionsViewModel', () => {
   })
 
   it('orders cards by state selection order, not by parcelItem id order', () => {
-    // Selection order is CD9999 first, but its priced items are numbered last.
     const reversedSelection = {
       'CD9999-1111': landParcels['CD9999-1111'],
       'SD1234-5678': landParcels['SD1234-5678']
@@ -98,7 +97,6 @@ describe('buildConfirmLandAndActionsViewModel', () => {
   })
 
   it('takes applicationYearlyPayment from annualTotalPence, not from summed rows', () => {
-    // Rows sum to £33.00; the application total must stay the API figure.
     const model = buildConfirmLandAndActionsViewModel(payment, landParcels)
 
     expect(model.applicationYearlyPayment).toBe('£1,234.00')
@@ -123,10 +121,6 @@ describe('buildConfirmLandAndActionsViewModel', () => {
   })
 
   describe('agreement-level items', () => {
-    // Payload copied from the agreed contract in
-    // src/contracts/v2/land-grants.client.contract.test.js:82-131, where the
-    // user selects UPL1 + CMOR1 on one parcel and the API prices CMOR1 at
-    // agreement level. Regression cover for TGC-1548 review findings 1 and 2.
     const contractPayment = {
       annualTotalPence: 36055,
       parcelItems: {
@@ -199,9 +193,6 @@ describe('buildConfirmLandAndActionsViewModel', () => {
   })
 
   it('does not throw when a selected parcel has no actions yet', () => {
-    // The pre-submission gate treats "at least one parcel has actions" as
-    // complete, so this state reaches the summary page. Regression cover for
-    // TGC-1548 review finding 3.
     const withEmptyParcel = {
       ...landParcels,
       'SD1234-9999': { size: { unit: 'ha', value: 1 }, actionsObj: {} }
@@ -276,7 +267,6 @@ describe('buildConfirmLandAndActionsViewModel', () => {
       ).parcels[0].areaSummary
 
     it('subtracts used area from the parcel total without floating-point drift', () => {
-      // 44.8765 - 44 is 0.8765000000000057 in binary floating point.
       expect(parcelWith({ unit: 'ha', value: 44.8765 }, { CIGL1: { value: 44, unit: 'ha' } })).toEqual({
         total: '44.8765 ha',
         used: '44.0000 ha',
@@ -285,7 +275,6 @@ describe('buildConfirmLandAndActionsViewModel', () => {
     })
 
     it('reports a negative available area rather than clamping it', () => {
-      // Actions may overlap on the same land, so claims can exceed the parcel.
       expect(
         parcelWith(
           { unit: 'ha', value: 56.321 },
@@ -295,7 +284,6 @@ describe('buildConfirmLandAndActionsViewModel', () => {
     })
 
     it('counts an action the API prices at agreement level, which still occupies the parcel', () => {
-      // CMOR1 never appears in parcelItems, but the land is still committed.
       expect(
         parcelWith({ unit: 'ha', value: 10 }, { CLIG3: { value: 2, unit: 'ha' }, CMOR1: { value: 3, unit: 'ha' } }).used
       ).toBe('5.0000 ha')

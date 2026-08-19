@@ -47,8 +47,6 @@ describe('RemoveActionPageController', () => {
     }
   }
 
-  // Route identity is what selects the branch, so every controller under test is
-  // built from a real `pageDef.path`.
   const buildController = ({ path = '/remove-action', returnPath } = {}) => {
     const pageDef = { path }
     const model = {
@@ -65,8 +63,6 @@ describe('RemoveActionPageController', () => {
     built.setState = vi.fn().mockResolvedValue(true)
     built.proceed = vi.fn().mockReturnValue('redirected')
     built.performAuthCheck = vi.fn().mockResolvedValue(null)
-    // Mirrors the engine: the back link comes from the `getBackLink` hook, so
-    // the controller's override is exercised rather than hand-fed.
     built.getViewModel = vi.fn((request, context) => ({
       pageTitle: 'Remove action',
       serviceUrl: '/test-grant',
@@ -532,7 +528,6 @@ describe('RemoveActionPageController', () => {
       expect(configured.getNextPathAfterRemoval({ landParcels: {} }, 'SD6743-8083', 'CMOR1')).toBe(
         '/select-actions-for-land-parcel?parcelId=SD6743-8083'
       )
-      // The summary renders its own empty state, so it must not be skipped.
       expect(configured.getNextPathAfterRemoval({ landParcels: {} }, 'SD6743-8083', undefined)).toBe(
         '/confirm-land-and-actions'
       )
