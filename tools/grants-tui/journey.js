@@ -130,7 +130,7 @@ export function listJourneys() {
  * Read and parse a journey's step definition file. Returns [] if the file is
  * missing or unparseable — the single source of truth for the readers below.
  * @param {string} slug  grant URL slug
- * @returns {{name?: string, slug: string}[]}
+ * @returns {{name?: string, slug: string, type?: string}[]}
  */
 function loadJourney(slug) {
   try {
@@ -153,12 +153,13 @@ export function firstStepSlug(slug) {
 
 /**
  * The ordered steps of a journey, for building a "stop at page" picker. Each
- * entry's 1-based position is the number `runJourney`/`--stop` expects.
+ * entry's 1-based position is the number `runJourney`/`--stop` expects. `type` is
+ * carried through so callers can tell whether a journey has, say, a map step.
  * @param {string} slug
- * @returns {{name: string, slug: string}[]}
+ * @returns {{name: string, slug: string, type?: string}[]}
  */
 export function journeySteps(slug) {
-  return loadJourney(slug).map((s) => ({ name: s.name ?? s.slug, slug: s.slug }))
+  return loadJourney(slug).map((s) => ({ name: s.name ?? s.slug, slug: s.slug, type: s.type }))
 }
 
 /**
@@ -166,7 +167,7 @@ export function journeySteps(slug) {
  * (`acceptance/journey-cli.js`). Streams the driver's output and returns its
  * exit code (0 = journey completed).
  * @param {string} slug  grant URL slug with a matching journeys/<slug>.json
- * @param {{crn?: string, stop?: string, headed?: boolean, clear?: boolean, acknowledged?: boolean, baseUrl?: string, skipInstall?: boolean}} [opts]
+ * @param {{crn?: string, stop?: string, parcel?: string, mockNoActions?: boolean, headed?: boolean, clear?: boolean, acknowledged?: boolean, baseUrl?: string, skipInstall?: boolean}} [opts]
  * @param {boolean} [dryRun]  print the command without running it
  * @returns {number}  child exit code
  */
@@ -214,6 +215,8 @@ export function cmdJourney(slug, opts = {}, dryRun = false) {
   if (startPage && startPage !== 'start') driverArgs.push('--start', startPage)
   driverArgs.push('--crn', crn)
   if (opts.stop) driverArgs.push('--stop', opts.stop)
+  if (opts.parcel) driverArgs.push('--parcel', opts.parcel)
+  if (opts.mockNoActions) driverArgs.push('--mock-no-actions')
   if (opts.headed) driverArgs.push('--headed')
   if (opts.clear) driverArgs.push('--clear')
   if (opts.baseUrl) driverArgs.push('--base-url', opts.baseUrl)

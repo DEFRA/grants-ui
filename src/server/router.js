@@ -6,6 +6,7 @@ import { health } from '~/src/server/health/index.js'
 import { home } from '~/src/server/home/index.js'
 import { agreements } from '~/src/server/agreements/index.js'
 import { devTools } from '~/src/server/dev-tools/index.js'
+import { isDevToolsEnabled } from '~/src/server/dev-tools/dev-tools-enabled.js'
 import { journeyRunnerPlugin } from '~/src/server/dev-tools/journey-runner/journey-runner-plugin.js'
 import { clearApplicationState } from './dev-tools/clear-application-state.js'
 import { cookies } from '~/src/server/cookies/index.js'
@@ -37,11 +38,7 @@ export const router = {
       await server.register([mapPlugin, landGrantsActionsPlugin])
 
       // Development tools (only available in development mode)
-      if (
-        config.get('devTools.enabled') &&
-        process.env.NODE_ENV !== 'production' &&
-        process.env.ENVIRONMENT === 'local'
-      ) {
+      if (isDevToolsEnabled()) {
         await server.register([devTools, journeyRunnerPlugin])
       }
 

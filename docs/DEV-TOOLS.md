@@ -112,6 +112,7 @@ Open the browser console and run:
 runJourney() // Run through all steps
 runJourney(5) // Stop before step 5
 runJourney('sectionName') // Run only the named section
+runJourney(null, { parcel: 'SD6843-7039' }) // Drive the mapParcel step to a specific parcel
 stopJourney() // Cancel a running journey
 ```
 
@@ -136,26 +137,56 @@ Prefer not to remember slugs and flags? Run `gt` with no arguments to open the i
 2. **CRN** — only asked when a journey has more than one known-good CRN (e.g. woodland); otherwise the right CRN is chosen automatically.
 3. **Headed or headless** — headless runs in the background (bundled Chromium); headed watches it in your installed Google Chrome.
 4. **Clear state?** — keep the saved application state (resume where it left off) or reset to step 1, matching the footer "Clear application state" link.
-5. **Stop on which page?** — headed runs only: halt the browser on a chosen page for inspection, or run to the end.
+5. **Land parcel actions?** — only asked for journeys with a map step: **API Data**, or **Mock no eligible actions** (see [below](#land-parcels-with-no-eligible-actions)).
+6. **Stop on which page?** — headed runs only: halt the browser on a chosen page for inspection, or run to the end.
 
 Journeys flagged as won't-complete (e.g. **farm-payments**, **methane**) make you acknowledge why before running. The `journey ⇢` item is disabled until the Docker stack is up; for a plain `npm run dev` server use the `gt journey <slug>` form above instead.
 
 Under the hood this launches a Chromium browser (reusing the acceptance suite's Playwright install in `acceptance/`), signs in through the DefraID stub, then calls `runJourney()` on the page and streams the `[journey-runner]` console output to your terminal. It exits non-zero if the journey gets stuck, and prints the final page heading and any error summary to help diagnose the stall.
 
-| Flag               | Default                   | Purpose                                                                                                                                                                                                                                                                                              |
-| ------------------ | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--crn <crn>`      | journey's allowlisted CRN | DefraID CRN to sign in as. Defaults per journey to a CRN on that grant's allowlist — most grants are `allowAll` (uses `1102838829`), but **woodland** needs `1100943757`/`1100943838`, and **farm-payments** uses `1102838829`. The interactive menu lets you pick when a journey has more than one. |
-| `--stop <n\|sect>` | run to the end            | Stop before step `n` (1-indexed), or run only section `sect`                                                                                                                                                                                                                                         |
-| `--headed`         | headless                  | Watch the run in your installed Google Chrome (headless uses bundled Chromium)                                                                                                                                                                                                                       |
-| `--clear`          | keeps state               | Flush saved application state first, so `--stop` starts from step 1                                                                                                                                                                                                                                  |
-| `--base-url <url>` | auto-detected             | App base URL — defaults to `https://localhost:4000` when the HA addon is running, otherwise `http://localhost:3000`                                                                                                                                                                                  |
-| `--skip-install`   | installs chromium         | Skip `playwright install chromium`                                                                                                                                                                                                                                                                   |
+| Flag                | Default                   | Purpose                                                                                                                                                                                                                                                                                                                                           |
+| ------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--parcel <ref>`    | first available parcel    | Land parcel the `mapParcel` step selects, e.g. `SD6843-7039`. Overrides the step's `value` without editing the journey file. The ref must be one `/api/map/parcels` returns, or the step fails listing what was available — note that with `MAP_MOCK_DATA_ENABLED=true` (the default) that list is truncated to the embedded mock geometry count. |
+| `--mock-no-actions` | off                       | Makes land parcels report **no eligible actions**, so the map page's "There are no eligible actions for this parcel" error can be reached. See [Land parcels with no eligible actions](#land-parcels-with-no-eligible-actions) below.                                                                                                             |
+| `--crn <crn>`       | journey's allowlisted CRN | DefraID CRN to sign in as. Defaults per journey to a CRN on that grant's allowlist — most grants are `allowAll` (uses `1102838829`), but **woodland** needs `1100943757`/`1100943838`, and **farm-payments** uses `1102838829`. The interactive menu lets you pick when a journey has more than one.                                              |
+| `--stop <n\|sect>`  | run to the end            | Stop before step `n` (1-indexed), or run only section `sect`                                                                                                                                                                                                                                                                                      |
+| `--headed`          | headless                  | Watch the run in your installed Google Chrome (headless uses bundled Chromium)                                                                                                                                                                                                                                                                    |
+| `--clear`           | keeps state               | Flush saved application state first, so `--stop` starts from step 1                                                                                                                                                                                                                                                                               |
+| `--base-url <url>`  | auto-detected             | App base URL — defaults to `https://localhost:4000` when the HA addon is running, otherwise `http://localhost:3000`                                                                                                                                                                                                                               |
+| `--skip-install`    | installs chromium         | Skip `playwright install chromium`                                                                                                                                                                                                                                                                                                                |
 
 The app must already be running (`gt up` or `npm run dev`), and the same land-grants/mockserver setup described below is needed for journeys that reach `/select-land-parcel` or `/total-area-of-woodland`. The stub password comes from `DEFRA_ID_USER_PASSWORD` (defaults to `x`, matching `acceptance/run-local.sh`).
 
 The base URL is auto-detected from the running stack: `http://localhost:3000` normally, or `https://localhost:4000` when the **High Availability** addon (`gt up --ha`) fronts the app with its HTTPS nginx proxy (the self-signed cert is accepted automatically). Override with `--base-url` for a non-standard setup.
 
 The journey must be allowlisted for the signed-in user, or the app redirects to `/auth/journey-unauthorised` and the run reports as stuck. Locally the allowlist lives in the `config__allowlist_entries` collection in the `grants-ui-backend` Mongo database; `example-grant-with-auth` is seeded `allowAll`, so it's the most reliable journey to smoke-test with.
+
+### Land parcels with no eligible actions
+
+The Grasslands map page rejects Continue when the selected parcel has no eligible action, showing:
+
+> There are no eligible actions for this parcel. Change the parcel land cover or choose a different parcel to view eligible actions.
+
+The wording deliberately matches the select-actions page's own empty state (`src/server/land-grants/views/select-actions.html`) — one condition, one message, whichever page the user reaches first.
+
+**That state cannot be reached from local data.** Every parcel the DAL stub returns for CRN `1102838829` comes back from the local `land-grants-backend` seed with at least one action, so no `--parcel` value produces it. Hence the mock:
+
+```sh
+gt journey grasslands --mock-no-actions --headed    # or pick "Mock no eligible actions" in the TUI
+```
+
+It sets a `dev_mock_no_actions=1` cookie, which `MapSelectPageController` honours by treating every selected parcel as having no eligible actions. Because it is request-scoped it needs no restart and works on either land-grants stack. It is read through `isNoActionsMockEnabled()` (`src/server/dev-tools/mock-overrides.js`), which returns `false` whenever `devTools.enabled` is off — so the cookie is inert in a deployed environment.
+
+The run is _expected_ to stop on `/select-land-parcel`; the driver prints the error summary and exits non-zero, which is the check.
+
+To poke at it by hand, set the cookie in devtools and click Continue. It is a session cookie and nothing in the app clears it, so unset it when you're done or every later local run will show the error:
+
+```js
+document.cookie = 'dev_mock_no_actions=1' // on
+document.cookie = 'dev_mock_no_actions=; Max-Age=0; path=/' // off
+```
+
+The `gt journey --mock-no-actions` path needs no cleanup — it sets the cookie on a throwaway Playwright context that is discarded when the run ends.
 
 ### Adding a new journey
 
