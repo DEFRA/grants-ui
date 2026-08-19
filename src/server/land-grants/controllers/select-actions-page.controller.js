@@ -42,7 +42,7 @@ function buildPlannedActionsFromFields(payload, actions) {
     }
     const quantity = Number(payload[getActionQuantityFieldName(action.code)])
     return Number.isFinite(quantity) && quantity > 0
-      ? [{ actionCode: action.code, quantity, unit: action.availableArea?.unit }]
+      ? [{ actionCode: action.code, quantity, unit: action.availability?.unit }]
       : []
   })
 }
@@ -146,7 +146,7 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
   }
 
   /**
-   * Recomputes availableArea for every action against the quantity claims
+   * Recomputes availability for every action against the quantity claims
    * in this same submission.
    * @param {AnyFormRequest} request
    * @param {{ selectedLandParcel: string, sheetId: string, parcelId: string }} parcel
@@ -181,9 +181,9 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
     const sentByCode = new Map(plannedActions.map((p) => [p.actionCode, p.quantity]))
     const actionsByCode = new Map(actions.map((a) => [a.code, a]))
     const withSentClaim = recomputed.map((action) => {
-      const needsQuantity = requiresQuantityInput(actionsByCode.get(action.code)?.availability?.type)
+      const needsQuantity = requiresQuantityInput(actionsByCode.get(action.code)?.inputRequired)
       return sentByCode.has(action.code) && !needsQuantity
-        ? { ...action, availableArea: { ...action.availableArea, value: sentByCode.get(action.code) } }
+        ? { ...action, availability: { ...action.availability, value: sentByCode.get(action.code) } }
         : action
     })
 

@@ -73,7 +73,7 @@ export function validateSelectedActionQuantities(payload, actions) {
   const errors = []
 
   const applicableActions = actions.filter(
-    (action) => selectedCodes.has(action.code) && requiresQuantityInput(action.availability?.type)
+    (action) => selectedCodes.has(action.code) && requiresQuantityInput(action.inputRequired)
   )
 
   for (const action of applicableActions) {

@@ -213,7 +213,7 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
    * @param {string} sheetId
    * @param {string} parcelId
    * @param {PlannedAction[]} [plannedActions] - When given, recomputes each
-   *   action's availableArea against this combination.
+   *   action's availability against this combination.
    */
   async fetchActions(request, sheetId, parcelId, plannedActions = []) {
     try {

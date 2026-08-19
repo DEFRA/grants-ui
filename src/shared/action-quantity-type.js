@@ -1,15 +1,13 @@
 /**
- * Whether an action needs a user-typed quantity: 'partial' does, 'total'
- * (or unset) doesn't. Shared so server (action.availability.type) and
- * client (its DOM mirror, data-available-area-type) agree.
+ * Whether an action needs a user-typed quantity, as declared by the API's
+ * inputRequired flag. By contract an action whose availability.value is null
+ * (no restriction) always sets the flag - there is no amount to fall back to.
  */
-
-export const QUANTITY_INPUT_AREA_TYPES = ['partial']
 
 /**
- * @param {string | undefined | null} availabilityType
+ * @param {boolean | undefined | null} inputRequired
  * @returns {boolean}
  */
-export function requiresQuantityInput(availabilityType) {
-  return QUANTITY_INPUT_AREA_TYPES.includes(availabilityType ?? '')
+export function requiresQuantityInput(inputRequired) {
+  return inputRequired === true
 }

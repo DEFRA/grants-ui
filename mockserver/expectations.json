@@ -188,7 +188,7 @@
             "actions": [
               {
                 "code": "TEST1",
-                "availableArea": {
+                "availability": {
                   "value": 7.0,
                   "unit": "ha"
                 },
@@ -197,7 +197,7 @@
               },
               {
                 "code": "TEST2",
-                "availableArea": {
+                "availability": {
                   "value": 8.5,
                   "unit": "ha"
                 },
@@ -206,7 +206,7 @@
               },
               {
                 "code": "CLIG3",
-                "availableArea": {
+                "availability": {
                   "value": 9.0,
                   "unit": "ha"
                 },
@@ -215,7 +215,7 @@
               },
               {
                 "code": "CSAM3",
-                "availableArea": {
+                "availability": {
                   "value": 6.25,
                   "unit": "ha"
                 },
@@ -224,12 +224,22 @@
               },
               {
                 "code": "SCR2",
-                "availableArea": {
+                "availability": {
                   "value": 4.5,
                   "unit": "ha"
                 },
                 "ratePerUnitGbp": 130.0,
                 "description": "Manage grassland with low nutrient inputs"
+              },
+              {
+                "code": "SCR3",
+                "availability": {
+                  "value": null,
+                  "unit": "ha"
+                },
+                "inputRequired": true,
+                "ratePerUnitGbp": 95.0,
+                "description": "Manage grassland with no availability restriction"
               }
             ]
           }
