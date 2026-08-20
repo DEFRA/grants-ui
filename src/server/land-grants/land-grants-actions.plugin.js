@@ -30,12 +30,9 @@ const plannedActionsValidation = {
 
 const consentsValidation = {
   params: compoundParcelParams,
-  // The journey's rendered action codes, used only to narrow which of the
-  // parcel's actions count towards the requirement - never as authorisation.
-  // An empty array is valid and means no action can contribute one.
-  payload: Joi.object({
-    enabledLandActions: Joi.array().items(Joi.string()).unique().required()
-  })
+  // Nothing to send: the requirement belongs to the parcel, and the parcel
+  // comes from the path. The empty body exists only to carry the crumb.
+  payload: Joi.object({}).max(0).default({})
 }
 
 /**
@@ -110,9 +107,10 @@ async function actionsHandler(request, h) {
 
 /**
  * The consent requirements that apply to one parcel, for the map page's
- * "Additional details" row. The parcel load itself carries no parcel-level
- * designation flags, so they are derived from the parcel's journey-enabled
- * actions after selection.
+ * "Additional details" row. The parcel load carries no parcel-level
+ * designation flags, so they are derived from every action the parcel
+ * carries - not just the ones this grant offers, since the designation is a
+ * property of the land rather than of the journey.
  * @param {Request} request
  * @param {ResponseToolkit} h
  */
@@ -123,11 +121,10 @@ async function consentsHandler(request, h) {
   }
 
   const { formRequest, sheetId, parcelId } = authorisedParcel
-  const { enabledLandActions } = /** @type {{ enabledLandActions: string[] }} */ (request.payload)
 
   try {
     const userContext = getLandGrantsUserContext(formRequest)
-    const result = await fetchConsentRequirementsForParcel({ parcelId, sheetId, enabledLandActions }, userContext)
+    const result = await fetchConsentRequirementsForParcel({ parcelId, sheetId }, userContext)
     return h.response(result).code(statusCodes.ok)
   } catch (err) {
     return upstreamErrorResponse(request, h, err, { sheetId, parcelId })

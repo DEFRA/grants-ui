@@ -77,13 +77,6 @@
           </div>
         </div>
 
-        {# The journey's enabled action codes, read back by parcel-select-page.js
-           for the selected-parcel consent lookup. Not form data: no name, so
-           nothing here is submitted. #}
-        <div id="enabled-land-actions" hidden aria-hidden="true">
-          {%- for actionCode in enabledLandActions %}<span data-enabled-land-action="{{ actionCode }}"></span>{% endfor -%}
-        </div>
-
         <div id="selected-parcel-details" class="govuk-!-margin-top-6" hidden>
           <h2 class="govuk-heading-m">Selected land parcel</h2>
           {# Hand-rolled to match govukSummaryList's markup: that macro's row.value

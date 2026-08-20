@@ -16,11 +16,9 @@ describe('map-select-parcel.html', () => {
     expect(template).toContain("getAssetPath('parcel-select-page.js')")
   })
 
-  it('renders one nameless span per enabled land action, so nothing is submitted with the form', () => {
-    const container = /<div id="enabled-land-actions"[^>]*>([\s\S]*?)<\/div>/.exec(template)
-
-    expect(container?.[1]).toContain('<span data-enabled-land-action="{{ actionCode }}"></span>')
-    expect(container?.[1]).not.toContain('name=')
+  it('renders no action-code block: the consent lookup is keyed on the parcel alone', () => {
+    expect(template).not.toContain('enabled-land-actions')
+    expect(template).not.toContain('data-enabled-land-action')
   })
 
   it('renders the Additional details row hidden, with an empty value cell', () => {

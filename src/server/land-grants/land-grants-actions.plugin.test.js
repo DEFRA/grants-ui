@@ -181,8 +181,7 @@ describe('landGrantsActionsPlugin', () => {
   describe('POST /api/land-grants/actions/{parcelId}/consents', () => {
     let handler
 
-    const consentsRequest = (enabledLandActions = ['CSAM3'], overrides = {}) =>
-      makeRequest({ payload: { enabledLandActions }, ...overrides })
+    const consentsRequest = (overrides = {}) => makeRequest({ payload: {}, ...overrides })
 
     beforeEach(() => {
       handler = routeFor(CONSENTS_PATH).handler
@@ -207,13 +206,11 @@ describe('landGrantsActionsPlugin', () => {
       expect(params.validate({ parcelId: 'not-a-parcel' }).error).toBeDefined()
     })
 
-    it('accepts an empty enabledLandActions array but rejects a missing or duplicated one', () => {
+    it('takes no request body beyond the crumb, and rejects anything sent in one', () => {
       const { payload } = routeFor(CONSENTS_PATH).options.validate
 
-      expect(payload.validate({ enabledLandActions: [] }).error).toBeUndefined()
-      expect(payload.validate({ enabledLandActions: ['CSAM3', 'CLIG3'] }).error).toBeUndefined()
-      expect(payload.validate({}).error).toBeDefined()
-      expect(payload.validate({ enabledLandActions: ['CSAM3', 'CSAM3'] }).error).toBeDefined()
+      expect(payload.validate({}).error).toBeUndefined()
+      expect(payload.validate({ enabledLandActions: ['CSAM3'] }).error).toBeDefined()
     })
 
     it.each([
@@ -232,15 +229,15 @@ describe('landGrantsActionsPlugin', () => {
       expect(h._responseObj.code).toHaveBeenCalledWith(200)
     })
 
-    it('passes the caller-supplied action codes through as display filtering only', async () => {
+    it('asks only for the parcel, so a requirement cannot be filtered out by the journey', async () => {
       fetchAuthorisedParcelIds.mockResolvedValue(['SD7946-0155'])
       fetchConsentRequirementsForParcel.mockResolvedValue({ consents: [] })
       const h = makeH()
 
-      await handler(consentsRequest(['CSAM3', 'CLIG3']), h)
+      await handler(consentsRequest(), h)
 
       expect(fetchConsentRequirementsForParcel).toHaveBeenCalledWith(
-        { parcelId: '0155', sheetId: 'SD7946', enabledLandActions: ['CSAM3', 'CLIG3'] },
+        { parcelId: '0155', sheetId: 'SD7946' },
         { defraIdToken: 'defra-id-access-token', sbi: '106284736' }
       )
     })

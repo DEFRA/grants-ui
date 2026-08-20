@@ -21,7 +21,6 @@ const DOM_ID_SELECTED_PARCEL_REFERENCE = 'selected-parcel-reference'
 const DOM_ID_SELECTED_PARCEL_AREA = 'selected-parcel-area'
 const DOM_ID_SELECTED_PARCEL_CHANGE = 'selected-parcel-change'
 const DOM_ID_SELECTED_PARCELS_INPUTS = 'selected-parcels-inputs'
-const DOM_ID_ENABLED_LAND_ACTIONS = 'enabled-land-actions'
 const DOM_ID_ADDITIONAL_DETAILS_ROW = 'selected-parcel-additional-details-row'
 const DOM_ID_ADDITIONAL_DETAILS = 'selected-parcel-additional-details'
 const DOM_ID_ADDITIONAL_DETAILS_STATUS = 'selected-parcel-additional-details-status'
@@ -115,35 +114,17 @@ const consentRequirementText = (consents) => {
 }
 
 /**
- * The journey's rendered action codes, which scope the requirement lookup to
- * the actions the user could actually go on to choose.
- * @returns {string[]}
- */
-const readEnabledLandActions = () => {
-  /** @type {string[]} */
-  const codes = []
-  for (const el of document.querySelectorAll(`#${DOM_ID_ENABLED_LAND_ACTIONS} [data-enabled-land-action]`)) {
-    const code = el.getAttribute('data-enabled-land-action')
-    if (code) {
-      codes.push(code)
-    }
-  }
-  return codes
-}
-
-/**
  * @param {string} parcelId
- * @param {string[]} enabledLandActions
  * @returns {Promise<string[] | null>} The parcel's consent keys, or null when the lookup failed.
  */
-const postConsentRequirements = async (parcelId, enabledLandActions) => {
+const postConsentRequirements = async (parcelId) => {
   const crumb = /** @type {HTMLInputElement | null} */ (document.querySelector('input[name="crumb"]'))?.value
   try {
     const response = await fetch(`/api/land-grants/actions/${encodeURIComponent(parcelId)}/consents`, {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json', ...(crumb ? { 'X-CSRF-Token': crumb } : {}) },
-      body: JSON.stringify({ enabledLandActions })
+      body: '{}'
     })
     if (!response.ok) {
       return null
@@ -193,7 +174,7 @@ function createConsentRequirementsUpdater() {
       return
     }
 
-    const consents = await postConsentRequirements(selectedParcels[0].id, readEnabledLandActions())
+    const consents = await postConsentRequirements(selectedParcels[0].id)
     if (thisRequestId !== requestId) {
       // A newer selection has already taken over - this response describes a
       // parcel that is no longer the one being shown.
