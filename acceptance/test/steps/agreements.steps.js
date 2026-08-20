@@ -4,12 +4,12 @@ import expect from '../support/expect.js'
 import AgreementsUi from '../utils/agreements-ui.js'
 
 Then(
-  'the agreements service should have been called with an x-user-context header JWT for SBI {string}',
+  'the agreements service should have been called with an x-encrypted-auth header JWT for SBI {string}',
   async function (sbi) {
     const request = await AgreementsUi.getLastRequest()
     expect(request).not.toBeNull()
 
-    const headerName = Object.keys(request.headers).find((name) => name.toLowerCase() === 'x-user-context')
+    const headerName = Object.keys(request.headers).find((name) => name.toLowerCase() === 'x-encrypted-auth')
     const [token] = (headerName && request.headers[headerName]) ?? []
     expect(token).toBeDefined()
 
