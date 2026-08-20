@@ -48,7 +48,7 @@ const buildParcelActionsCacheKey = (parcelKey, enabledLandActions) =>
  * Calculates grant payment for land actions.
  * @param {object} state
  * @param {LandGrantsUserContext} userContext
- * @returns {Promise<{payment: PaymentCalculation, errorMessage?: string, paymentTotal: string}>} - Payment calculation result
+ * @returns {Promise<{payment: PaymentCalculation, errorMessage?: string, paymentTotal?: string}>} - Payment calculation result
  * @throws {Error}
  */
 export async function calculateLandActionsPayment(state, userContext) {
@@ -56,13 +56,13 @@ export async function calculateLandActionsPayment(state, userContext) {
     parcel: stateToLandActionsMapper(state)
   }
   const { payment } = await calculate(payload, LAND_GRANTS_API_URL, userContext)
-  const paymentTotal = formatCurrency(payment?.annualTotalPence / 100)
+  const annualTotalPence = payment?.annualTotalPence
 
-  return {
-    payment,
-    errorMessage: paymentTotal == null ? 'Error calculating payment. Please try again later.' : undefined,
-    paymentTotal
+  if (annualTotalPence == null) {
+    return { payment, errorMessage: 'Error calculating payment. Please try again later.' }
   }
+
+  return { payment, paymentTotal: formatCurrency(annualTotalPence / 100) }
 }
 
 /**

@@ -1,6 +1,7 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
+import { mockParcelsResponse as allParcels, mockUserContext } from '~/src/__mocks__/land-grants-mocks.js'
 import {
   fetchActionsForParcel,
   fetchActionsWithPlannedActions,
@@ -55,14 +56,8 @@ vi.mock('~/src/config/config.js', async () => {
 vi.mock('~/src/server/land-grants/services/land-grants.service.js')
 vi.mock('~/src/shared/format-parcel.js')
 
-const mockParcelsResponse = [
-  {
-    parcelId: '0155',
-    sheetId: 'SD7946',
-    area: { unit: 'ha', value: 4.0383 }
-  }
-]
-const userContext = { defraIdToken: 'defra-id-access-token', sbi: '106284736' }
+const mockParcelsResponse = [allParcels[0]]
+const userContext = mockUserContext
 
 describe('SelectActionsPageController', () => {
   let controller

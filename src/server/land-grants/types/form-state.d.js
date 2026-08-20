@@ -18,7 +18,7 @@
 /**
  * @typedef {Object} LandParcel
  * @property {Size | null} size - Total area of this parcel, as returned by the parcels API
- * @property {ActionsObject} actionsObj - Actions applied to this parcel
+ * @property {ActionsObject} [actionsObj] - Actions applied to this parcel
  */
 
 /**
@@ -40,10 +40,11 @@
  * @property {PaymentCalculation} payment - Payment details
  * @property {LandParcels} landParcels - Land parcels with actions
  * @property {LandParcelMetadataItem[]} [landParcelMetadata] - Area metadata for selected parcels (woodland journey)
+ * @property {ValidateApplicationResponse} [validationResult] - Last rules-engine result, mapped to rulesCalculations
  */
 
 /**
  * @import { PaymentCalculation } from '~/src/server/land-grants/types/payment.d.js'
  * @import { Applicant } from '~/src/server/land-grants/types/applicant.d.js'
- * @import { Size } from '~/src/server/land-grants/types/land-grants.client.d.js'
+ * @import { Size, ValidateApplicationResponse } from '~/src/server/land-grants/types/land-grants.client.d.js'
  */

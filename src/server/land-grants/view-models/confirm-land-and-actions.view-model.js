@@ -20,7 +20,7 @@ function invalidResponse(message) {
 
 /**
  * @param {unknown} value
- * @returns {boolean}
+ * @returns {value is number}
  */
 const isNonNegativeInteger = (value) => Number.isInteger(value) && /** @type {number} */ (value) >= 0
 

@@ -1,6 +1,7 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
+import { mockParcelsResponse as allParcels } from '~/src/__mocks__/land-grants-mocks.js'
 import {
   fetchGroupedActionsForParcel,
   fetchParcels,
@@ -91,7 +92,7 @@ class StubSelectActionsController extends SelectActionsBasePageController {
   }
 }
 
-const mockParcelsResponse = [{ parcelId: '0155', sheetId: 'SD7946', area: { unit: 'ha', value: 4.0383 } }]
+const mockParcelsResponse = [allParcels[0]]
 
 const mockGroupedActions = [
   {
