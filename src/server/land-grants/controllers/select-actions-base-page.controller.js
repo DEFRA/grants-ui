@@ -76,8 +76,8 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
    * @param {Array} _groupedActions
    * @param {Array} _addedActions
    * @param {Record<string, string>} [_quantityErrorsByCode]
-   * @param {boolean} [_hasErrors] - Whether this page load is redisplaying a rejected submission
    * @param {{ sheetId?: string, parcelId?: string, size?: Size }} [_parcel] - Identifiers and area for the
+   * @param {boolean} [_hasErrors] - Whether this page load is redisplaying a rejected submission
    *   "Selected land parcel" summary
    * @returns {object}
    */
@@ -87,8 +87,8 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
     _groupedActions,
     _addedActions,
     _quantityErrorsByCode,
-    _hasErrors,
-    _parcel
+    _parcel,
+    _hasErrors
   ) {
     throw new Error(`${this.constructor.name} must implement getViewModelWithActions()`)
   }
@@ -195,8 +195,8 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
         actions,
         addedActions,
         quantityErrorsByCode,
-        errors.length > 0,
-        { sheetId, parcelId, size }
+        { sheetId, parcelId, size },
+        errors.length > 0
       ),
       ...additionalState,
       parcelName: formatParcelReference({ sheetId, parcelId }),
@@ -268,7 +268,7 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
     }
 
     return h.view(this.viewName, {
-      ...this.getViewModelWithActions(request, context, groupedActions, addedActions, {}, false, parcel),
+      ...this.getViewModelWithActions(request, context, groupedActions, addedActions, {}, parcel, false),
       ...state,
       parcelName: formatParcelReference({ sheetId, parcelId }),
       existingLandParcels: Object.keys(state.landParcels || {}).length > 0,

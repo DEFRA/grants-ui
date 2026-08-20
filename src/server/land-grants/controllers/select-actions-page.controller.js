@@ -59,12 +59,12 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
    * @param {Array} actions
    * @param {Array} addedActions
    * @param {Record<string, string>} [quantityErrorsByCode] - Quantity validation error text, keyed by action code
-   * @param {boolean} [hasErrors] - Whether this page load is redisplaying a rejected submission
    * @param {{ sheetId: string, parcelId: string, size?: Size }} [parcel] - Identifiers and area for the
+   * @param {boolean} [hasErrors] - Whether this page load is redisplaying a rejected submission
    *   "Selected land parcel" summary
    * @returns {object}
    */
-  getViewModelWithActions(request, context, actions, addedActions, quantityErrorsByCode, hasErrors = false, parcel) {
+  getViewModelWithActions(request, context, actions, addedActions, quantityErrorsByCode, parcel, hasErrors = false) {
     quantityErrorsByCode ??= {}
     parcel ??= { sheetId: '', parcelId: '' }
     const selectLandParcelPath = this.getHref(this.getPreviousPagePath())
