@@ -64,15 +64,9 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
    *   "Selected land parcel" summary
    * @returns {object}
    */
-  getViewModelWithActions(
-    request,
-    context,
-    actions,
-    addedActions,
-    quantityErrorsByCode = {},
-    hasErrors = false,
-    parcel = { sheetId: '', parcelId: '' }
-  ) {
+  getViewModelWithActions(request, context, actions, addedActions, quantityErrorsByCode, hasErrors = false, parcel) {
+    quantityErrorsByCode ??= {}
+    parcel ??= { sheetId: '', parcelId: '' }
     const selectLandParcelPath = this.getHref(this.getPreviousPagePath())
     return {
       ...super.getViewModel(request, context),
