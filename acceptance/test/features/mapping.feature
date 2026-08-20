@@ -18,9 +18,9 @@ Feature: Mapping
             | SD6351-8781 | 68.0498  |
         Then the user should see "Wilson Arable Crops" has 2 available land parcels totalling "79.1504" hectares
         And the selected parcel consent lookup returns
-            | PARCEL      | CONSENTS |
-            | SD6352-8774 | sssi     |
-            | SD6351-8781 |          |
+            | PARCEL      | NOTICE                                 |
+            | SD6352-8774 | SSSI consent may apply to some actions |
+            | SD6351-8781 |                                        |
 
         # select a land parcel
         When the user selects parcel "SD6352 8774" of area "11.1006" hectares on the map
