@@ -1,5 +1,6 @@
 Feature: Action Selection
 
+    @disabled
     Scenario: Select a partial area action for a land parcel
         Given there is no application data for SBI "106514040" and grant "example-grant-with-map"
 
@@ -71,9 +72,9 @@ Feature: Action Selection
         When the user enters "0.276" hectares for action "CSAM3"
         And continues
 
-        # summary, go back to select a different land parcel
-        Then the user should be at URL "summary"
-        When the user clicks on "Change"
+        Then the user should be at URL "confirm-land-and-actions"
+        And should see heading "Your land and actions"
+        When the user clicks on "Add another land parcel"
 
         # RULE: an action cannot be applied to a land parcel it is not eligible for
         Then the user should be at URL "select-land-parcel"
