@@ -52,7 +52,7 @@ describe('payment-view-model.mapper', () => {
       expect(result).toEqual({
         text: 'Remove',
         href: 'remove-parcel?parcelId=AB1234-5678',
-        hiddenTextValue: 'all actions for Land Parcel AB1234 5678'
+        hiddenTextValue: 'all actions for Land parcel AB1234 5678'
       })
     })
   })
@@ -71,7 +71,7 @@ describe('payment-view-model.mapper', () => {
       expect(result).toEqual({
         text: 'Add another action',
         href: 'select-actions-for-land-parcel?parcelId=AB1234-5678',
-        hiddenTextValue: 'to Land Parcel AB1234 5678'
+        hiddenTextValue: 'to Land parcel AB1234 5678'
       })
     })
 
