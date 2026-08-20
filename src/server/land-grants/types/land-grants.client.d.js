@@ -111,6 +111,7 @@
  * @property {boolean} passed
  * @property {string} reason
  * @property {string} description
+ * @property {object} [caveat] - Caveat attached to this rule, forwarded to GAS when enabled
  */
 
 /**
