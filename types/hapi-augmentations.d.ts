@@ -11,6 +11,12 @@ interface AuditEventInput {
 }
 
 declare module '@hapi/hapi' {
+  interface ReqRefDefaults {
+    Params: Record<string, string>
+    Headers: Record<string, string | string[] | undefined>
+    Query: Record<string, string | string[] | undefined>
+  }
+
   interface ServerMethods {
     getFormService: () => object
   }
