@@ -104,8 +104,8 @@ describe('ConfirmLandAndActionsPageController', () => {
   })
 
   describe('config resolution', () => {
-    test('throws SystemError with invalid_config when next is missing', () => {
-      expect(() => buildController({ redirects: { addAnotherLandParcel: '/select-land-parcel' } })).toThrow(SystemError)
+    test('builds without "next", leaving the page order to the engine', () => {
+      expect(() => buildController({ redirects: { addAnotherLandParcel: '/select-land-parcel' } })).not.toThrow()
     })
 
     test('throws SystemError with invalid_config when addAnotherLandParcel is missing', () => {
@@ -343,6 +343,28 @@ describe('ConfirmLandAndActionsPageController', () => {
 
       expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/summary')
       expect(calculateLandActionsPayment).not.toHaveBeenCalled()
+    })
+
+    test("Clicking continue uses the forms-engine default when 'next' is not configured", async () => {
+      const controller = buildController({ redirects: { addAnotherLandParcel: '/select-land-parcel' } })
+      controller.getNextPath = vi.fn().mockReturnValue('/you-must-have-consent')
+      mockRequest.payload = { action: 'continue' }
+
+      await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
+
+      expect(controller.getNextPath).toHaveBeenCalledWith(mockContext)
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/you-must-have-consent')
+    })
+
+    test('a configured "next" takes precedence over the engine page order', async () => {
+      const controller = buildController()
+      controller.getNextPath = vi.fn().mockReturnValue('/you-must-have-consent')
+      mockRequest.payload = { action: 'continue' }
+
+      await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
+
+      expect(controller.getNextPath).not.toHaveBeenCalled()
+      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/summary')
     })
 
     test('add-another redirects straight to the configured parcel picker', async () => {
