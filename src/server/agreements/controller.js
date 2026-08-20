@@ -77,7 +77,7 @@ function buildProxyHeaders(token, request) {
       Authorization: `Bearer ${token}`,
       'x-base-url': /** @type {string} */ (config.get('agreements.baseUrl')),
       'content-type': contentType || 'application/x-www-form-urlencoded',
-      'x-user-context': userContext,
+      'x-encrypted-auth': userContext, // TODO: https://eaflood.atlassian.net/browse/TGC-1596
       'x-csp-nonce': /** @type {string} */ (request.app.cspNonce)
     }
   } catch (jwtError) {
