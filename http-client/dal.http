@@ -8,17 +8,49 @@
 #   - Select the `test` environment in your HTTP client
 #
 # Usage:
-#   1. Run this request first to obtain a token
-#   2. Reference the token when using the DAL GraphQL explorer using headers:
-#      `Authorization: Bearer {{getEntraToken.response.body.access_token}}`
+#   1. Run this request first to obtain a token (saved to `auth_token`)
+#   2. The token is automatically used in requests below via:
+#      `Authorization: Bearer {{auth_token}}`
 #      email: testuser11 at defra.gov.uk
 
 # @name getEntraToken
 
-POST https://login.microsoftonline.com/6f504113-6b64-43f2-ade9-242e05780007/oauth2/v2.0/token HTTP/1.1
+POST https://login.microsoftonline.com/defradev.onmicrosoft.com/oauth2/v2.0/token HTTP/1.1
 Content-Type: application/x-www-form-urlencoded
 
 grant_type=client_credentials&
 client_id={{entraClientId}}&
 client_secret={{entraClientSecret}}&
 scope={{entraClientId}}/.default
+
+> {%
+    client.global.set("auth_token", response.body.access_token);
+%}
+
+###
+
+# ─────────────────────────────────────────────
+# Business Permissions
+# ─────────────────────────────────────────────
+
+@crn = 1102838829
+@sbi = 106284736
+
+### Get business permissions for SBI and CRN
+# @name getBusinessPermissions
+
+POST {{dalUrl}} HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+email: testuser11@defra.gov.uk
+#X-Forwarded-Authorization: {{defraIdToken}}
+
+{
+  "query": "query GetBusinessPermissions { customer(crn: \"{{crn}}\") { business(sbi: \"{{sbi}}\") { permissionGroups { id level functions } } } }",
+  "variables": {
+    "crn": "{{crn}}",
+    "sbi": "{{sbi}}"
+  }
+}
+
+

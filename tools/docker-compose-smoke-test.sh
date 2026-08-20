@@ -180,6 +180,14 @@ until READINESS_OUTPUT=$(node ./tools/check-backend-form-definition-ready.js 2>&
 done
 echo "${READINESS_OUTPUT}"
 
+# Apply any local form-definition overrides (compose/config-broker/local-form-definitions)
+# on top of the ingested repo definitions, so the acceptance run exercises
+# form-def changes that are not yet merged into the config repos. This is a
+# no-op when no overrides are present (e.g. in CI, where the folder is
+# git-ignored), so it is safe to always run.
+echo "Applying local form-definition overrides (if any)..."
+node ./tools/apply-local-form-defs.mjs enable
+
 echo "Service Status:"
 eval "${COMPOSE_COMMAND} ps"
 

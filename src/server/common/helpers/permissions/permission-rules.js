@@ -19,5 +19,14 @@ export const permissionRules = /** @type {const} */ {
       amend: ['AMEND', 'SUBMIT'],
       submit: ['SUBMIT']
     }
+  },
+  csAgreements: {
+    permissionGroup: 'COUNTRYSIDE_STEWARDSHIP_AGREEMENTS',
+
+    permissions: {
+      view: ['VIEW', 'AMEND', 'SUBMIT'],
+      amend: ['AMEND', 'SUBMIT'],
+      submit: ['SUBMIT']
+    }
   }
 }

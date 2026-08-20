@@ -31,9 +31,6 @@ vi.mock('~/src/server/cookies/index.js', () => ({
 vi.mock('~/src/server/print-submitted-application/print-submitted-application.controller.js', () => ({
   printSubmittedApplication: { plugin: { name: 'print-submitted-application', register: vi.fn() } }
 }))
-vi.mock('./cannot-submit/index.js', () => ({
-  cannotSubmit: { plugin: { name: 'cannot-submit', register: vi.fn() } }
-}))
 vi.mock('./application-deleted/index.js', () => ({
   applicationDeleted: { plugin: { name: 'application-deleted', register: vi.fn() } }
 }))

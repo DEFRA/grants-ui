@@ -9,25 +9,17 @@
   <div class="govuk-grid-column-two-thirds">
 
     <h1 class="govuk-heading-l">
-      You cannot submit this application
+      {{ pageTitle or "You cannot submit this application" }}
     </h1>
 
-    <p class="govuk-body">
-      Your progress has been saved.
-    </p>
+    {{ content | safe }}
 
-    <p class="govuk-body">
-      You do not have permission to submit the application.
-    </p>
-
-    <p class="govuk-body">
-      Contact an authorised person from your business to review and submit the application.
-    </p>
-
-    {{ govukButton({
-      text: returnText,
-      href: returnUrl
-    }) }}
+    {% if returnUrl and returnText %}
+      {{ govukButton({
+        text: returnText,
+        href: returnUrl
+      }) }}
+    {% endif %}
 
     {{ govukDetails({
       summaryText: "If you need to change your permissions",

@@ -117,15 +117,11 @@ function logTokenExchangeFailure(request, hasCredentials) {
 /**
  * Log a successful sign-in event.
  * @param {AuthProfile} profile
- * @param {string} role
- * @param {string[]} scope
  */
-function logSuccessfulSignIn(profile, role, scope) {
+function logSuccessfulSignIn(profile) {
   log(LogCodes.AUTH.SIGN_IN_SUCCESS, {
     userId: profile.contactId,
     organisationId: profile.currentRelationshipId,
-    role,
-    scope: scope.join(', '),
     sessionId: profile.sessionId
   })
 }
