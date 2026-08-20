@@ -27,9 +27,7 @@ Feature: Action Selection
             | CSAM3  | Herbal leys: CSAM3                                    | Payment rate per year: £224.00/ha | Yes |
             | CLIG3  | Manage grassland with very low nutrient inputs: CLIG3 | Payment rate per year: £151.00/ha | Yes |
             |        |                                                       | 0.276 hectares available          |     |
-        # SCR2 is deliberately absent: the seeded land-grants dataset has it
-        # disabled (actions.enabled = false) and it is not linked to this
-        # parcel's land covers, so the API never offers it here.
+            | SCR2   | Manage scrub and open habitat mosaics: SCR2           | Payment rate per year: £350.00/ha | Yes |
 
         When the user selects action "CSAM3"
 
