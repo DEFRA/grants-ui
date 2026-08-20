@@ -64,6 +64,9 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
     return {
       ...super.getViewModel(request, context),
       multiSelect: this.multiSelect,
+      // Rendered into the page so the client can ask which of this journey's
+      // actions carry a consent requirement for the selected parcel.
+      enabledLandActions: this.enabledLandActions,
       formAction: request.path,
       ...extra
     }

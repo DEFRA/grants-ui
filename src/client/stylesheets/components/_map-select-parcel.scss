@@ -3,3 +3,11 @@
 .map-select-parcel .govuk-width-container {
   @include govuk-width-container(1400px);
 }
+
+// govuk-summary-list__row sets its own `display`, which outranks the [hidden]
+// attribute's user-agent `display: none`. The Additional details row is hidden
+// until its requirement text is known, so without this it would show as an
+// empty row.
+.map-select-parcel .govuk-summary-list__row[hidden] {
+  display: none;
+}

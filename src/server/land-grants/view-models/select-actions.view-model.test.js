@@ -2,7 +2,6 @@ import { describe, it, expect, vi } from 'vitest'
 import {
   mapActionToViewModel,
   mapActionsToViewModel,
-  getPageConsents,
   getChosenAreaFieldsHtml,
   getParcelSummaryList
 } from './select-actions.view-model.js'
@@ -645,65 +644,6 @@ describe('select-actions.view-model', () => {
       const result = mapActionsToViewModel(actions, [])
 
       expect(result[0].id).toBe('landAction')
-    })
-  })
-
-  describe('getPageConsents', () => {
-    it('should return an empty array when no action requires SSSI consent or HEFER', () => {
-      const actions = [{ code: 'SAM1', description: 'Action 1' }]
-
-      expect(getPageConsents(actions)).toEqual([])
-    })
-
-    it('should include sssi when at least one action requires SSSI consent', () => {
-      configState.set('landGrants.enableSSSIFeature', true)
-      const actions = [
-        { code: 'SAM1', description: 'Action 1' },
-        { code: 'SCR2', sssiConsentRequired: true }
-      ]
-
-      const result = getPageConsents(actions)
-      configState.reset()
-
-      expect(result).toEqual(['sssi'])
-    })
-
-    it('should include hefer when at least one action requires a HEFER', () => {
-      configState.set('landGrants.enableHeferFeature', true)
-      const actions = [
-        { code: 'SAM1', description: 'Action 1' },
-        { code: 'GRH12', heferRequired: true }
-      ]
-
-      const result = getPageConsents(actions)
-      configState.reset()
-
-      expect(result).toEqual(['hefer'])
-    })
-
-    it('should include both keys, without duplicates, when multiple actions require different consents', () => {
-      configState.set('landGrants.enableSSSIFeature', true)
-      configState.set('landGrants.enableHeferFeature', true)
-      const actions = [
-        { code: 'SCR2', sssiConsentRequired: true },
-        { code: 'GRH12', heferRequired: true },
-        { code: 'SCR3', sssiConsentRequired: true }
-      ]
-
-      const result = getPageConsents(actions)
-      configState.reset()
-
-      expect(result).toEqual(['sssi', 'hefer'])
-    })
-
-    it('should return an empty array when the relevant feature flag is off, even if the action has the flag set', () => {
-      const actions = [{ code: 'GRH12', heferRequired: true }]
-
-      expect(getPageConsents(actions)).toEqual([])
-    })
-
-    it('should return an empty array for an empty actions list', () => {
-      expect(getPageConsents([])).toEqual([])
     })
   })
 

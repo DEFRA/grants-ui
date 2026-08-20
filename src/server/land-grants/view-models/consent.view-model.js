@@ -39,3 +39,24 @@ export function mapConsentPanelToViewModel(requiredConsents) {
 
   return null
 }
+
+/**
+ * The short "Requires ..." requirement label for a set of consent keys, used
+ * as a hint beneath an action's name. Membership-driven, so the canonical
+ * SSSI-then-HEFER order holds whatever order the keys arrive in; unknown keys
+ * and an empty set produce an empty string. Persisted state predating the
+ * consents field - or carrying a malformed value - yields no label either.
+ * @param {string[] | undefined} requiredConsents
+ * @returns {string}
+ */
+export function getConsentRequirementText(requiredConsents) {
+  const consents = Array.isArray(requiredConsents) ? requiredConsents : []
+  const labels = []
+  if (consents.includes('sssi')) {
+    labels.push('SSSI consent')
+  }
+  if (consents.includes('hefer')) {
+    labels.push('an SFI HEFER')
+  }
+  return labels.length ? `Requires ${labels.join(' and ')}` : ''
+}

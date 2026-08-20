@@ -1,5 +1,5 @@
 import { stringifyParcel } from '~/src/shared/format-parcel.js'
-import { getConsentTypes } from '../utils/consent-types.js'
+import { getActionConsentKeys } from '../utils/consent-types.js'
 import { getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
 import { getSelectedActionCodes } from '../utils/selected-actions-field.js'
 import { requiresQuantityInput } from '~/src/shared/action-quantity-type.js'
@@ -72,9 +72,7 @@ function buildActionStateEntry(payload, actionInfo) {
   return {
     description: actionInfo.description,
     version: actionInfo.version,
-    consents: getConsentTypes()
-      .filter((ct) => actionInfo[ct.apiField])
-      .map((ct) => ct.key),
+    consents: getActionConsentKeys(actionInfo),
     value: Number(
       hasQuantityOverride
         ? payload[getActionQuantityFieldName(actionInfo.code)]

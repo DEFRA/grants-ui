@@ -85,6 +85,71 @@ describe('buildConfirmLandAndActionsViewModel', () => {
     expect(model.parcels[0].actions[0]).not.toHaveProperty('removeHref')
   })
 
+  describe('action requirement text', () => {
+    const parcelsWithConsents = (clig3Consents, scr2Consents) => ({
+      'SD1234-5678': {
+        size: { unit: 'ha', value: 12 },
+        actionsObj: {
+          CLIG3: { value: 2, unit: 'ha', consents: clig3Consents },
+          CSAM3: { value: 4, unit: 'ha' }
+        }
+      },
+      'CD9999-1111': {
+        size: { unit: 'ha', value: 3 },
+        actionsObj: {
+          SCR2: { value: 1, unit: 'ha', consents: scr2Consents }
+        }
+      }
+    })
+
+    const requirementTextsOf = (parcels) =>
+      buildConfirmLandAndActionsViewModel(payment, parcels).parcels.map((parcel) =>
+        parcel.actions.map((action) => action.requirementText)
+      )
+
+    it.each([
+      [['sssi'], 'Requires SSSI consent'],
+      [['hefer'], 'Requires an SFI HEFER'],
+      [['sssi', 'hefer'], 'Requires SSSI consent and an SFI HEFER'],
+      [['hefer', 'sssi'], 'Requires SSSI consent and an SFI HEFER']
+    ])('renders %j as the hint for that action only', (consents, expected) => {
+      expect(requirementTextsOf(parcelsWithConsents(consents))).toEqual([[expected, undefined], [undefined]])
+    })
+
+    it('keeps each action on each parcel to its own persisted requirement', () => {
+      expect(requirementTextsOf(parcelsWithConsents(['sssi'], ['hefer']))).toEqual([
+        ['Requires SSSI consent', undefined],
+        ['Requires an SFI HEFER']
+      ])
+    })
+
+    it.each([
+      ['no consents key at all', undefined],
+      ['an empty consents array', []],
+      ['unknown consent keys', ['unknown']],
+      ['a non-array consents value', 'sssi'],
+      ['a null consents value', null]
+    ])('adds no requirementText for %s', (_name, consents) => {
+      const [firstParcel] = buildConfirmLandAndActionsViewModel(payment, parcelsWithConsents(consents)).parcels
+
+      expect(firstParcel.actions[0]).not.toHaveProperty('requirementText')
+    })
+
+    it('adds no requirementText when state has no entry for the priced action', () => {
+      const model = buildConfirmLandAndActionsViewModel(payment, {
+        'SD1234-5678': { size: { unit: 'ha', value: 12 }, actionsObj: {} }
+      })
+
+      expect(model.parcels[0].actions[0]).not.toHaveProperty('requirementText')
+    })
+
+    it('adds no requirementText when no state was supplied at all', () => {
+      const model = buildConfirmLandAndActionsViewModel(payment, undefined)
+
+      expect(model.parcels[0].actions[0]).not.toHaveProperty('requirementText')
+    })
+  })
+
   it('orders cards by state selection order, not by parcelItem id order', () => {
     const reversedSelection = {
       'CD9999-1111': landParcels['CD9999-1111'],
