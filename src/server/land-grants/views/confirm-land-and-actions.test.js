@@ -269,6 +269,64 @@ describe('confirm-land-and-actions.html view', () => {
     expect(controls.find('a')).toHaveLength(1)
   })
 
+  describe('action requirement hint', () => {
+    const withRequirement = (requirementText) => ({
+      ...model,
+      parcels: [
+        {
+          ...model.parcels[0],
+          actions: [{ ...model.parcels[0].actions[0], requirementText }, model.parcels[0].actions[1]]
+        },
+        model.parcels[1]
+      ]
+    })
+
+    it.each([
+      ['Requires SSSI consent'],
+      ['Requires an SFI HEFER'],
+      ['Requires SSSI consent and an SFI HEFER']
+    ])('renders %s as secondary text beneath its own action name', (requirementText) => {
+      const $ = renderPage(withRequirement(requirementText))
+      const rows = $('.land-parcel-summary').eq(0).find('.land-parcel-summary__action-row')
+      const header = rows.eq(0).find('.govuk-table__header')
+      const hint = header.find('.land-parcel-summary__action-hint')
+
+      expect(hint).toHaveLength(1)
+      expect(normalise(hint.text())).toBe(requirementText)
+      expect(normalise(header.text())).toBe(`Action description (CLIG3) ${requirementText}`)
+      expect(rows.eq(1).find('.land-parcel-summary__action-hint')).toHaveLength(0)
+    })
+
+    it('leaves the action payment cell and Change control untouched', () => {
+      const $ = renderPage(withRequirement('Requires SSSI consent'))
+      const row = $('.land-parcel-summary').eq(0).find('.land-parcel-summary__action-row').eq(0)
+
+      expect(normalise(row.find('.govuk-table__cell').first().text())).toBe('2.0000 ha (£10.00)')
+      expect(normalise(row.find('a').text())).toBe('Change Action description (CLIG3)')
+      expect(row.find('.govuk-table__cell .land-parcel-summary__action-hint')).toHaveLength(0)
+    })
+
+    it('renders no hint element for an action with no requirement', () => {
+      const $ = renderPage(model)
+
+      expect($('.land-parcel-summary__action-hint')).toHaveLength(0)
+    })
+
+    it('adds no inset or extra link alongside the hint', () => {
+      const $ = renderPage(withRequirement('Requires SSSI consent'))
+
+      expect($('main .govuk-inset-text')).toHaveLength(0)
+      expect($('.land-parcel-summary__action-hint a')).toHaveLength(0)
+    })
+
+    it('escapes requirement text rather than trusting it as markup', () => {
+      const $ = renderPage(withRequirement('<script>x</script> & co'))
+
+      expect($('main script')).toHaveLength(0)
+      expect(bodyText($)).toContain('<script>x</script> & co')
+    })
+  })
+
   it('escapes action text rather than trusting it as markup', () => {
     const $ = renderPage({
       ...model,

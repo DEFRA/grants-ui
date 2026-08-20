@@ -4,7 +4,7 @@ import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-w
 import { stringifyParcel } from '~/src/shared/format-parcel.js'
 import { stateToLandActionsMapper } from '../mappers/state-to-land-grants-mapper.js'
 import { config } from '~/src/config/config.js'
-import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js'
+import { getRequiredActionConsents } from '~/src/server/land-grants/utils/consent-types.js'
 import {
   calculate,
   locateParcelTiles,
@@ -86,9 +86,7 @@ const createGroup = (name, actionsInGroup) => {
       value: limited.length ? Math.max(...limited.map((a) => /** @type {number} */ (a.value))) : undefined
     },
     actions: actionsInGroup,
-    consents: getConsentTypes()
-      .filter((ct) => actionsInGroup.some((a) => /** @type {Record<string, unknown>} */ (a)[ct.apiField]))
-      .map((ct) => ct.key)
+    consents: getRequiredActionConsents(/** @type {Array<Record<string, unknown>>} */ (actionsInGroup))
   }
 }
 
@@ -219,6 +217,21 @@ export async function fetchActionsWithPlannedActions({ parcelId, sheetId, planne
   }))
 
   return { actions }
+}
+
+/**
+ * The consent requirements that apply to a single parcel, for the map's
+ * "Additional details" row: the union of consent keys across the parcel's
+ * journey-enabled actions. Reuses the cached flat action fetch, so a
+ * selection the user has already visited costs no upstream call.
+ * @param {{ parcelId?: string, sheetId?: string, enabledLandActions?: string[] }} parcel
+ * @param {LandGrantsUserContext} userContext
+ * @returns {Promise<{ consents: string[] }>}
+ * @throws {Error}
+ */
+export async function fetchConsentRequirementsForParcel(parcel, userContext) {
+  const { actions } = await fetchActionsForParcel(parcel, userContext)
+  return { consents: getRequiredActionConsents(/** @type {Array<Record<string, unknown>>} */ (actions)) }
 }
 
 /**

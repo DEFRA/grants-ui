@@ -21,6 +21,15 @@
   }
 }
 
+// Secondary text beneath an action's name: a consent requirement, not a
+// payment figure, so it stays out of the value and Change cells.
+.land-parcel-summary__action-hint {
+  @include govuk-font-size(16);
+  display: block;
+  font-weight: normal;
+  color: $govuk-secondary-text-colour;
+}
+
 .land-parcel-summary__actions {
   text-align: right;
 }

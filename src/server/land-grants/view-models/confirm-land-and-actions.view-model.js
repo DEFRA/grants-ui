@@ -6,6 +6,7 @@ import {
   landParcelReference,
   removeParcelHref
 } from '~/src/server/land-grants/view-models/land-parcel-links.js'
+import { getConsentRequirementText } from '~/src/server/land-grants/view-models/consent.view-model.js'
 
 const SOURCE = 'buildConfirmLandAndActionsViewModel'
 const REASON = 'invalid_payment_response'
@@ -216,11 +217,17 @@ function addPricedParcelActions(parcels, payment, landParcels) {
       parcels.set(parcelKey, parcel)
     }
 
+    // Parcel-and-code specific, so one parcel's requirement can never surface
+    // on another parcel's copy of the same action. Missing or malformed
+    // persisted consents yield no hint at all.
+    const requirementText = getConsentRequirementText(landParcels?.[parcelKey]?.actionsObj?.[code]?.consents)
+
     parcel.actions.push({
       action: formatActionLabel(description, code),
       area: formatArea(quantity, unit),
       yearlyPayment: formatPrice(annualPaymentPence),
-      changeHref: changeActionsHref(sheetId, parcelId)
+      changeHref: changeActionsHref(sheetId, parcelId),
+      ...(requirementText && { requirementText })
     })
     parcel.totalPence += annualPaymentPence
   }
@@ -257,6 +264,7 @@ function buildAdditionalYearlyPayments(payment) {
  * @property {string} area - Quantity and unit
  * @property {string} yearlyPayment - Formatted yearly payment
  * @property {string} changeHref - Link to change the parcel's actions
+ * @property {string} [requirementText] - "Requires ..." hint for this action's consent requirements, when it has any
  */
 
 /**
