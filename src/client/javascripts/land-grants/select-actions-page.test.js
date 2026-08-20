@@ -5,14 +5,15 @@ import { initSelectActionsPage } from './select-actions-page.js'
 function checkboxItemHtml({
   code,
   checked = false,
-  availableArea,
+  availability,
   requiresMaxQuantity,
+  unrestricted = false,
   quantityValue = '',
   hasError = false,
   errorOnLoad = false
 }) {
-  const unitAttr = availableArea ? ` data-available-unit="${availableArea.unit}"` : ''
-  const totalAreaAttr = availableArea ? ` data-total-available-area="${availableArea.value}"` : ''
+  const unitAttr = availability ? ` data-available-unit="${availability.unit}"` : ''
+  const totalAreaAttr = availability ? ` data-total-available-area="${availability.value ?? ''}"` : ''
   // Stamped server-side per checkbox for a checked action redisplayed from a
   // rejected submission (see mapActionToViewModel) - not a single form-wide flag.
   const errorOnLoadAttr = errorOnLoad ? ' data-error-on-load="true"' : ''
@@ -27,8 +28,8 @@ function checkboxItemHtml({
     <div class="govuk-checkboxes__conditional${checked ? '' : ' govuk-checkboxes__conditional--hidden'}" id="${conditionalId}">
         <div class="govuk-form-group">
           <div id="landActionQuantity_${code}-refresh-banner" class="select-actions-refresh-banner select-actions-refresh-banner--hidden">Updating available land for this action&hellip;</div>
-          <input class="${inputClass}" id="landActionQuantity_${code}" name="landActionQuantity_${code}" type="text" value="${quantityValue}" max="${requiresMaxQuantity}">
-          <div id="landActionQuantity_${code}-hint">${requiresMaxQuantity} ha available</div>
+          <input class="${inputClass}" id="landActionQuantity_${code}" name="landActionQuantity_${code}" type="text" value="${quantityValue}"${unrestricted ? '' : ` max="${requiresMaxQuantity}"`}>
+          ${unrestricted ? '' : `<div id="landActionQuantity_${code}-hint">${requiresMaxQuantity} ha available</div>`}
           <div class="govuk-input__suffix">ha</div>
         </div>
       </div>`
@@ -36,8 +37,8 @@ function checkboxItemHtml({
   // Matches mapActionToViewModel: a non-quantity action gets its own "X
   // available" hint, kept live by the client (see syncNonQuantityHint).
   const nonQuantityHint =
-    !requiresMaxQuantity && availableArea
-      ? `<span id="landActionQuantity_${code}-hint">${availableArea.value} ha available</span>`
+    !requiresMaxQuantity && availability?.value != null
+      ? `<span id="landActionQuantity_${code}-hint">${availability.value} ha available</span>`
       : ''
   return `
     <div class="govuk-checkboxes__item">
@@ -84,7 +85,7 @@ function getChosenAreaFieldValue(checkbox) {
 }
 
 /**
- * Simulates the real land-grants API: availableArea for a code is headroom
+ * Simulates the real land-grants API: availability for a code is headroom
  * BEYOND any claim already made for that same code in this request - 0
  * whenever the code itself is present in plannedActions (it's already
  * claiming its own share, so no MORE is left for it - self-competing), or
@@ -98,7 +99,7 @@ function mockApi(baseAreasByCode) {
     const competingCodes = new Set(plannedActions.map((p) => p.actionCode))
     const actions = Object.entries(baseAreasByCode).map(([code, value]) => ({
       code,
-      availableArea: {
+      availability: {
         value: competingCodes.size > 0 ? 0 : value,
         unit: 'ha'
       }
@@ -113,6 +114,43 @@ function fetchOk(body) {
 
 // A macrotask boundary reliably drains any depth of pending microtasks.
 const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
+
+const checkbox = (form, code) => form.querySelector(`input[value="${code}"]`)
+
+const quantityInputFor = (form, code) => form.querySelector(`#landActionQuantity_${code}`)
+
+const hintFor = (code) => document.getElementById(`landActionQuantity_${code}-hint`)
+
+// Flip a checkbox and let the refresh it triggers settle. Pass `checked` to
+// drive it to a specific state rather than just firing the event.
+async function toggle(form, code, checked) {
+  const target = checkbox(form, code)
+  if (checked !== undefined) {
+    target.checked = checked
+  }
+  target.dispatchEvent(new Event('change', { bubbles: true }))
+  await flushPromises()
+}
+
+// Type into an action's quantity field and blur, which flushes the debounce.
+async function typeQuantity(form, code, value) {
+  const input = quantityInputFor(form, code)
+  input.value = value
+  input.dispatchEvent(new Event('input', { bubbles: true }))
+  input.dispatchEvent(new Event('blur'))
+  await flushPromises()
+  return input
+}
+
+/** plannedActions from the body of a recorded fetch call. */
+const sentPlannedActions = (callIndex = 0) => JSON.parse(global.fetch.mock.calls[callIndex][1].body).plannedActions
+
+async function initSettled(form, fetchMock) {
+  global.fetch = fetchMock
+  initSelectActionsPage(form)
+  await flushPromises()
+  global.fetch.mockClear()
+}
 
 describe('initSelectActionsPage', () => {
   beforeEach(() => {
@@ -133,7 +171,7 @@ describe('initSelectActionsPage', () => {
 
   it('is a no-op when the URL has no parcelId', () => {
     window.history.pushState(null, '', '/select-actions')
-    const form = setupDom([{ code: 'CMOR1', availableArea: { value: 10, unit: 'ha' } }])
+    const form = setupDom([{ code: 'CMOR1', availability: { value: 10, unit: 'ha' } }])
     global.fetch = vi.fn()
 
     initSelectActionsPage(form)
@@ -147,7 +185,7 @@ describe('initSelectActionsPage', () => {
   // taint path at the source rather than relying solely on encodeURIComponent.
   it('is a no-op when the URL parcelId does not match the expected shape', () => {
     window.history.pushState(null, '', '/select-actions?parcelId=<script>alert(1)</script>')
-    const form = setupDom([{ code: 'CMOR1', availableArea: { value: 10, unit: 'ha' } }])
+    const form = setupDom([{ code: 'CMOR1', availability: { value: 10, unit: 'ha' } }])
     global.fetch = vi.fn()
 
     initSelectActionsPage(form)
@@ -158,16 +196,12 @@ describe('initSelectActionsPage', () => {
 
   it('always sends one request with the full, unfiltered plannedActions list', async () => {
     const form = setupDom([
-      { code: 'CMOR1', checked: true, availableArea: { value: 10, unit: 'ha' } },
-      { code: 'UPL1', checked: true, availableArea: { value: 5, unit: 'ha' } }
+      { code: 'CMOR1', checked: true, availability: { value: 10, unit: 'ha' } },
+      { code: 'UPL1', checked: true, availability: { value: 5, unit: 'ha' } }
     ])
-    global.fetch = fetchOk({ actions: [] })
-    initSelectActionsPage(form)
-    await flushPromises()
-    global.fetch.mockClear()
+    await initSettled(form, fetchOk({ actions: [] }))
 
-    form.querySelector('input[value="CMOR1"]').dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CMOR1')
 
     expect(global.fetch).toHaveBeenCalledTimes(1)
     expect(global.fetch).toHaveBeenCalledWith(
@@ -190,11 +224,11 @@ describe('initSelectActionsPage', () => {
       {
         code: 'CSAM3',
         checked: true,
-        availableArea: { value: 18.5, unit: 'ha' },
+        availability: { value: 18.5, unit: 'ha' },
         requiresMaxQuantity: 18.5,
         quantityValue: '3.25'
       },
-      { code: 'CLIG3', availableArea: { value: 45.2, unit: 'ha' } }
+      { code: 'CLIG3', availability: { value: 45.2, unit: 'ha' } }
     ])
     global.fetch = fetchOk({ actions: [] })
 
@@ -218,18 +252,18 @@ describe('initSelectActionsPage', () => {
         {
           code: 'CSAM3',
           checked: true,
-          availableArea: { value: 0.3271, unit: 'ha' },
+          availability: { value: 0.3271, unit: 'ha' },
           requiresMaxQuantity: 0.3271,
           quantityValue: '0.2'
         },
-        { code: 'CLIG3', checked: false, availableArea: { value: 0.3271, unit: 'ha' } }
+        { code: 'CLIG3', checked: false, availability: { value: 0.3271, unit: 'ha' } }
       ],
       { hasErrors: true }
     )
     global.fetch = fetchOk({
       actions: [
-        { code: 'CSAM3', availableArea: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 },
-        { code: 'CLIG3', availableArea: { value: 0, unit: 'ha' } }
+        { code: 'CSAM3', availability: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 },
+        { code: 'CLIG3', availability: { value: 0, unit: 'ha' } }
       ]
     })
 
@@ -237,13 +271,13 @@ describe('initSelectActionsPage', () => {
     await flushPromises()
 
     expect(global.fetch).toHaveBeenCalledTimes(1)
-    const csam3Checkbox = form.querySelector('input[value="CSAM3"]')
+    const csam3Checkbox = checkbox(form, 'CSAM3')
     const csam3QuantityInput = form.querySelector('#landActionQuantity_CSAM3')
     expect(csam3Checkbox.checked).toBe(true)
     expect(csam3Checkbox.disabled).toBe(false)
     expect(csam3QuantityInput.value).toBe('0.2')
 
-    const clig3Checkbox = form.querySelector('input[value="CLIG3"]')
+    const clig3Checkbox = checkbox(form, 'CLIG3')
     expect(clig3Checkbox.checked).toBe(false)
     expect(clig3Checkbox.disabled).toBe(true)
   })
@@ -254,23 +288,20 @@ describe('initSelectActionsPage', () => {
         {
           code: 'CSAM3',
           checked: true,
-          availableArea: { value: 6.3008, unit: 'ha' },
+          availability: { value: 6.3008, unit: 'ha' },
           requiresMaxQuantity: 6.3008,
           quantityValue: '777',
           hasError: true
         },
-        { code: 'CLIG3', checked: true, availableArea: { value: 6.3008, unit: 'ha' }, chosenArea: 1.3008 }
+        { code: 'CLIG3', checked: true, availability: { value: 6.3008, unit: 'ha' }, chosenArea: 1.3008 }
       ],
       { hasErrors: true }
     )
-    global.fetch = fetchOk({ actions: [{ code: 'CLIG3', availableArea: { value: 1.3008, unit: 'ha' } }] })
+    global.fetch = fetchOk({ actions: [{ code: 'CLIG3', availability: { value: 1.3008, unit: 'ha' } }] })
     initSelectActionsPage(form)
     await flushPromises()
 
-    const clig3Checkbox = form.querySelector('input[value="CLIG3"]')
-    clig3Checkbox.checked = false
-    clig3Checkbox.dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CLIG3', false)
 
     // The claim just sent for CLIG3 (1.3008, its live headroom from the
     // first response) plus the extra headroom this response reports (5) -
@@ -283,15 +314,13 @@ describe('initSelectActionsPage', () => {
       const value = clig3Quantity >= 6.3008 ? 0 : 5
       return Promise.resolve({
         ok: true,
-        json: () => Promise.resolve({ actions: [{ code: 'CLIG3', availableArea: { value, unit: 'ha' } }] })
+        json: () => Promise.resolve({ actions: [{ code: 'CLIG3', availability: { value, unit: 'ha' } }] })
       })
     })
-    clig3Checkbox.checked = true
-    clig3Checkbox.dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CLIG3', true)
 
-    expect(getChosenAreaFieldValue(clig3Checkbox)).toBe('6.3008')
-    const csam3Checkbox = form.querySelector('input[value="CSAM3"]')
+    expect(getChosenAreaFieldValue(checkbox(form, 'CLIG3'))).toBe('6.3008')
+    const csam3Checkbox = checkbox(form, 'CSAM3')
     expect(csam3Checkbox.checked).toBe(true)
     expect(form.querySelector('#landActionQuantity_CSAM3').value).toBe('777')
   })
@@ -302,12 +331,12 @@ describe('initSelectActionsPage', () => {
         {
           code: 'CSAM3',
           checked: true,
-          availableArea: { value: 6.3008, unit: 'ha' },
+          availability: { value: 6.3008, unit: 'ha' },
           requiresMaxQuantity: 6.3008,
           quantityValue: '777',
           hasError: true
         },
-        { code: 'CLIG3', checked: true, availableArea: { value: 6.3008, unit: 'ha' }, chosenArea: 1.3008 }
+        { code: 'CLIG3', checked: true, availability: { value: 6.3008, unit: 'ha' }, chosenArea: 1.3008 }
       ],
       { hasErrors: true }
     )
@@ -315,14 +344,11 @@ describe('initSelectActionsPage', () => {
     initSelectActionsPage(form)
     await flushPromises()
 
-    const csam3Checkbox = form.querySelector('input[value="CSAM3"]')
+    const csam3Checkbox = checkbox(form, 'CSAM3')
     expect(csam3Checkbox.disabled).toBe(false)
 
-    const clig3Checkbox = form.querySelector('input[value="CLIG3"]')
     global.fetch = mockApi({ CSAM3: 6.3008, CLIG3: 6.3008 })
-    clig3Checkbox.checked = false
-    clig3Checkbox.dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CLIG3', false)
 
     expect(csam3Checkbox.checked).toBe(true)
     expect(csam3Checkbox.disabled).toBe(false)
@@ -336,12 +362,12 @@ describe('initSelectActionsPage', () => {
         {
           code: 'CSAM3',
           checked: true,
-          availableArea: { value: 6.3008, unit: 'ha' },
+          availability: { value: 6.3008, unit: 'ha' },
           requiresMaxQuantity: 6.3008,
           quantityValue: '777',
           hasError: true
         },
-        { code: 'CLIG3', checked: true, availableArea: { value: 6.3008, unit: 'ha' }, chosenArea: 1.3008 }
+        { code: 'CLIG3', checked: true, availability: { value: 6.3008, unit: 'ha' }, chosenArea: 1.3008 }
       ],
       { hasErrors: true }
     )
@@ -355,13 +381,10 @@ describe('initSelectActionsPage', () => {
     csam3Input.dispatchEvent(new Event('focus'))
     csam3Input.dispatchEvent(new Event('blur'))
 
-    const clig3Checkbox = form.querySelector('input[value="CLIG3"]')
     global.fetch = mockApi({ CSAM3: 6.3008, CLIG3: 6.3008 })
-    clig3Checkbox.checked = false
-    clig3Checkbox.dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CLIG3', false)
 
-    const csam3Checkbox = form.querySelector('input[value="CSAM3"]')
+    const csam3Checkbox = checkbox(form, 'CSAM3')
     expect(csam3Checkbox.checked).toBe(true)
     expect(csam3Checkbox.disabled).toBe(false)
     expect(csam3Input.value).toBe('777')
@@ -373,12 +396,12 @@ describe('initSelectActionsPage', () => {
         {
           code: 'CSAM3',
           checked: true,
-          availableArea: { value: 9, unit: 'ha' },
+          availability: { value: 9, unit: 'ha' },
           requiresMaxQuantity: 9,
           quantityValue: '2',
           hasError: true
         },
-        { code: 'CLIG3', checked: true, availableArea: { value: 9, unit: 'ha' }, chosenArea: 2.3161 }
+        { code: 'CLIG3', checked: true, availability: { value: 9, unit: 'ha' }, chosenArea: 2.3161 }
       ],
       { hasErrors: true }
     )
@@ -386,7 +409,7 @@ describe('initSelectActionsPage', () => {
     initSelectActionsPage(form)
     await flushPromises()
 
-    const csam3Checkbox = form.querySelector('input[value="CSAM3"]')
+    const csam3Checkbox = checkbox(form, 'CSAM3')
     const csam3Input = form.querySelector('#landActionQuantity_CSAM3')
     expect(csam3Checkbox.disabled).toBe(false)
 
@@ -396,11 +419,8 @@ describe('initSelectActionsPage', () => {
     csam3Input.dispatchEvent(new Event('input', { bubbles: true }))
     csam3Input.dispatchEvent(new Event('blur'))
 
-    const clig3Checkbox = form.querySelector('input[value="CLIG3"]')
     global.fetch = mockApi({ CSAM3: 9, CLIG3: 9 })
-    clig3Checkbox.checked = false
-    clig3Checkbox.dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CLIG3', false)
 
     expect(csam3Checkbox.checked).toBe(true)
     expect(csam3Checkbox.disabled).toBe(false)
@@ -413,12 +433,12 @@ describe('initSelectActionsPage', () => {
         {
           code: 'CSAM3',
           checked: true,
-          availableArea: { value: 9, unit: 'ha' },
+          availability: { value: 9, unit: 'ha' },
           requiresMaxQuantity: 9,
           quantityValue: '33',
           hasError: true
         },
-        { code: 'CLIG3', checked: false, availableArea: { value: 9, unit: 'ha' } }
+        { code: 'CLIG3', checked: false, availability: { value: 9, unit: 'ha' } }
       ],
       { hasErrors: true }
     )
@@ -426,14 +446,11 @@ describe('initSelectActionsPage', () => {
     initSelectActionsPage(form)
     await flushPromises()
 
-    const csam3Checkbox = form.querySelector('input[value="CSAM3"]')
+    const csam3Checkbox = checkbox(form, 'CSAM3')
     const csam3Input = form.querySelector('#landActionQuantity_CSAM3')
 
-    const clig3Checkbox = form.querySelector('input[value="CLIG3"]')
     global.fetch = mockApi({ CSAM3: 9, CLIG3: 9 })
-    clig3Checkbox.checked = true
-    clig3Checkbox.dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CLIG3', true)
 
     csam3Input.dispatchEvent(new Event('focus'))
     csam3Input.value = 'asdhasd'
@@ -441,9 +458,7 @@ describe('initSelectActionsPage', () => {
     csam3Input.dispatchEvent(new Event('blur'))
 
     global.fetch = mockApi({ CSAM3: 9, CLIG3: 9 })
-    clig3Checkbox.checked = false
-    clig3Checkbox.dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CLIG3', false)
 
     expect(csam3Checkbox.checked).toBe(false)
     expect(csam3Checkbox.disabled).toBe(false)
@@ -459,26 +474,21 @@ describe('initSelectActionsPage', () => {
         {
           code: 'CSAM3',
           checked: true,
-          availableArea: { value: 0.3271, unit: 'ha' },
+          availability: { value: 0.3271, unit: 'ha' },
           requiresMaxQuantity: 0.3271,
           quantityValue: '0.2'
         },
-        { code: 'CLIG3', checked: false, availableArea: { value: 0.3271, unit: 'ha' } },
-        { code: 'CMOR1', availableArea: { value: 10, unit: 'ha' } }
+        { code: 'CLIG3', checked: false, availability: { value: 0.3271, unit: 'ha' } },
+        { code: 'CMOR1', availability: { value: 10, unit: 'ha' } }
       ],
       { hasErrors: true }
     )
-    global.fetch = fetchOk({ actions: [] })
-    initSelectActionsPage(form)
-    await flushPromises()
-    global.fetch.mockClear()
+    await initSettled(form, fetchOk({ actions: [] }))
 
-    form.querySelector('input[value="CMOR1"]').dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CMOR1')
 
     expect(global.fetch).toHaveBeenCalledTimes(1)
-    const [, options] = global.fetch.mock.calls[0]
-    expect(JSON.parse(options.body).plannedActions).toContainEqual({ actionCode: 'CSAM3', quantity: 0.2, unit: 'ha' })
+    expect(sentPlannedActions()).toContainEqual({ actionCode: 'CSAM3', quantity: 0.2, unit: 'ha' })
   })
 
   it('never disables, unchecks or resets a checked action whose quantity input already has a validation error', async () => {
@@ -486,25 +496,25 @@ describe('initSelectActionsPage', () => {
       {
         code: 'CSAM3',
         checked: true,
-        availableArea: { value: 0.3271, unit: 'ha' },
+        availability: { value: 0.3271, unit: 'ha' },
         // requiresMaxQuantity is lower than quantityValue to simulate a stale server-rendered max.
         requiresMaxQuantity: 0.0271,
         quantityValue: '0.3',
         hasError: true
       },
-      { code: 'CLIG3', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, chosenArea: 0.15 }
+      { code: 'CLIG3', checked: true, availability: { value: 0.3271, unit: 'ha' }, chosenArea: 0.15 }
     ])
     global.fetch = fetchOk({
       actions: [
-        { code: 'CSAM3', availableArea: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 },
-        { code: 'CLIG3', availableArea: { value: 0, unit: 'ha' } }
+        { code: 'CSAM3', availability: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 },
+        { code: 'CLIG3', availability: { value: 0, unit: 'ha' } }
       ]
     })
 
     initSelectActionsPage(form)
     await flushPromises()
 
-    const csam3Checkbox = form.querySelector('input[value="CSAM3"]')
+    const csam3Checkbox = checkbox(form, 'CSAM3')
     const csam3QuantityInput = form.querySelector('#landActionQuantity_CSAM3')
 
     expect(csam3Checkbox.checked).toBe(true)
@@ -515,7 +525,7 @@ describe('initSelectActionsPage', () => {
   })
 
   it('does not run an initial refresh on load when nothing is checked', () => {
-    const form = setupDom([{ code: 'CLIG3', availableArea: { value: 45.2, unit: 'ha' } }])
+    const form = setupDom([{ code: 'CLIG3', availability: { value: 45.2, unit: 'ha' } }])
     global.fetch = vi.fn()
 
     initSelectActionsPage(form)
@@ -528,7 +538,7 @@ describe('initSelectActionsPage', () => {
       {
         code: 'CSAM3',
         checked: true,
-        availableArea: { value: 18.5, unit: 'ha' },
+        availability: { value: 18.5, unit: 'ha' },
         requiresMaxQuantity: 18.5,
         quantityValue: '3.25'
       }
@@ -537,7 +547,7 @@ describe('initSelectActionsPage', () => {
 
     initSelectActionsPage(form)
 
-    expect(document.getElementById('landActionQuantity_CSAM3-hint').textContent).toBe('15.25 hectares available')
+    expect(hintFor('CSAM3').textContent).toBe('15.25 hectares available')
   })
 
   // The route validates crumb in restful mode (X-CSRF-Token header) rather
@@ -545,14 +555,10 @@ describe('initSelectActionsPage', () => {
   // @hapi/crumb's autoGenerate into silently rotating the cookie and
   // invalidating the crumb already embedded in the page's hidden form field.
   it('sends the crumb from the hidden form field as the X-CSRF-Token header', async () => {
-    const form = setupDom([{ code: 'CMOR1', checked: true, availableArea: { value: 10, unit: 'ha' } }])
-    global.fetch = fetchOk({ actions: [] })
-    initSelectActionsPage(form)
-    await flushPromises()
-    global.fetch.mockClear()
+    const form = setupDom([{ code: 'CMOR1', checked: true, availability: { value: 10, unit: 'ha' } }])
+    await initSettled(form, fetchOk({ actions: [] }))
 
-    form.querySelector('input[value="CMOR1"]').dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CMOR1')
 
     expect(global.fetch).toHaveBeenCalledWith(
       expect.any(String),
@@ -568,35 +574,28 @@ describe('initSelectActionsPage', () => {
   // at all until a quantity is actually typed.
   it('does not fire a request when checking a quantity-required action with no quantity typed yet', async () => {
     const form = setupDom([
-      { code: 'CSAM3', availableArea: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 },
-      { code: 'CLIG3', availableArea: { value: 45.2, unit: 'ha' } }
+      { code: 'CSAM3', availability: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 },
+      { code: 'CLIG3', availability: { value: 45.2, unit: 'ha' } }
     ])
     global.fetch = vi.fn()
     initSelectActionsPage(form)
 
-    const csam3 = form.querySelector('input[value="CSAM3"]')
-    csam3.checked = true
-    csam3.dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CSAM3', true)
 
     expect(global.fetch).not.toHaveBeenCalled()
     // Nothing has been confirmed yet, so CLIG3 must not be greyed out just
     // because CSAM3's box is checked.
-    expect(form.querySelector('input[value="CLIG3"]').disabled).toBe(false)
+    expect(checkbox(form, 'CLIG3').disabled).toBe(false)
   })
 
   it('greys out a different, unchecked action genuinely made unavailable by the one checked action', async () => {
     const form = setupDom([
-      { code: 'CLIG3', checked: true, availableArea: { value: 45.2, unit: 'ha' } },
-      { code: 'CSAM3', availableArea: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 }
+      { code: 'CLIG3', checked: true, availability: { value: 45.2, unit: 'ha' } },
+      { code: 'CSAM3', availability: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 }
     ])
-    global.fetch = mockApi({ CLIG3: 45.2, CSAM3: 18.5 })
-    initSelectActionsPage(form)
-    await flushPromises()
-    global.fetch.mockClear()
+    await initSettled(form, mockApi({ CLIG3: 45.2, CSAM3: 18.5 }))
 
-    form.querySelector('input[value="CLIG3"]').dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CLIG3')
 
     expect(global.fetch).toHaveBeenCalledWith(
       '/api/land-grants/actions/SD7946-0155',
@@ -604,66 +603,29 @@ describe('initSelectActionsPage', () => {
         body: JSON.stringify({ plannedActions: [{ actionCode: 'CLIG3', quantity: 45.2, unit: 'ha' }] })
       })
     )
-    const clig3 = form.querySelector('input[value="CLIG3"]')
-    const csam3 = form.querySelector('input[value="CSAM3"]')
+    const clig3 = checkbox(form, 'CLIG3')
+    const csam3 = checkbox(form, 'CSAM3')
     expect(clig3.disabled).toBe(false)
     expect(csam3.disabled).toBe(true)
   })
 
-  it('does not grey out a non-quantity action whose availableArea is reduced but still non-zero', async () => {
+  it("updates a non-quantity action's hint from the response without greying it out when it is still non-zero", async () => {
     const form = setupDom([
       {
         code: 'CSAM3',
         checked: true,
-        availableArea: { value: 0.3271, unit: 'ha' },
+        availability: { value: 0.3271, unit: 'ha' },
         requiresMaxQuantity: 0.3271,
         quantityValue: '0.1'
       },
-      { code: 'CLIG3', availableArea: { value: 0.3271, unit: 'ha' } }
+      { code: 'CLIG3', availability: { value: 0.3271, unit: 'ha' } }
     ])
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          actions: [{ code: 'CLIG3', availableArea: { value: 0.2271, unit: 'ha' } }]
-        })
-    })
-    initSelectActionsPage(form)
-    await flushPromises()
-    global.fetch.mockClear()
+    await initSettled(form, fetchOk({ actions: [{ code: 'CLIG3', availability: { value: 0.2271, unit: 'ha' } }] }))
 
-    form.querySelector('input[value="CSAM3"]').dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CSAM3')
 
-    expect(form.querySelector('input[value="CLIG3"]').disabled).toBe(false)
-  })
-
-  it("updates a non-quantity action's own availability hint from the response", async () => {
-    const form = setupDom([
-      {
-        code: 'CSAM3',
-        checked: true,
-        availableArea: { value: 0.3271, unit: 'ha' },
-        requiresMaxQuantity: 0.3271,
-        quantityValue: '0.1'
-      },
-      { code: 'CLIG3', availableArea: { value: 0.3271, unit: 'ha' } }
-    ])
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          actions: [{ code: 'CLIG3', availableArea: { value: 0.2271, unit: 'ha' } }]
-        })
-    })
-    initSelectActionsPage(form)
-    await flushPromises()
-    global.fetch.mockClear()
-
-    form.querySelector('input[value="CSAM3"]').dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
-
-    expect(document.getElementById('landActionQuantity_CLIG3-hint').textContent).toBe('0.2271 hectares available')
+    expect(checkbox(form, 'CLIG3').disabled).toBe(false)
+    expect(hintFor('CLIG3').textContent).toBe('0.2271 hectares available')
   })
 
   it('unchecks and clears a checked quantity-required action that has no confirmed quantity, without disabling it', async () => {
@@ -671,23 +633,23 @@ describe('initSelectActionsPage', () => {
       {
         code: 'CLIG3',
         checked: true,
-        availableArea: { value: 0.3271, unit: 'ha' },
+        availability: { value: 0.3271, unit: 'ha' },
         requiresMaxQuantity: 0.3271,
         quantityValue: '0.25'
       },
-      { code: 'CSAM3', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 }
+      { code: 'CSAM3', checked: true, availability: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 }
     ])
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: () =>
         Promise.resolve({
-          actions: [{ code: 'CSAM3', availableArea: { value: 0.0771, unit: 'ha' }, requiresMaxQuantity: 0.0771 }]
+          actions: [{ code: 'CSAM3', availability: { value: 0.0771, unit: 'ha' }, requiresMaxQuantity: 0.0771 }]
         })
     })
     initSelectActionsPage(form)
     await flushPromises()
 
-    const csam3 = form.querySelector('input[value="CSAM3"]')
+    const csam3 = checkbox(form, 'CSAM3')
     expect(csam3.checked).toBe(false)
     expect(csam3.disabled).toBe(false)
     expect(isConditionalHidden(csam3)).toBe(true)
@@ -709,22 +671,18 @@ describe('initSelectActionsPage', () => {
       {
         code: 'CSAM3',
         checked: true,
-        availableArea: { value: 18.5, unit: 'ha' },
+        availability: { value: 18.5, unit: 'ha' },
         requiresMaxQuantity: 18.5,
         quantityValue: '13.5'
       },
-      { code: 'UPL1', checked: true, availableArea: { value: 5, unit: 'ha' } }
+      { code: 'UPL1', checked: true, availability: { value: 5, unit: 'ha' } }
     ])
-    global.fetch = mockApi({ CSAM3: 18.5, UPL1: 5 })
-    initSelectActionsPage(form)
-    await flushPromises()
-    global.fetch.mockClear()
+    await initSettled(form, mockApi({ CSAM3: 18.5, UPL1: 5 }))
 
-    form.querySelector('input[value="UPL1"]').dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'UPL1')
 
-    const csam3 = form.querySelector('input[value="CSAM3"]')
-    const upl1 = form.querySelector('input[value="UPL1"]')
+    const csam3 = checkbox(form, 'CSAM3')
+    const upl1 = checkbox(form, 'UPL1')
     expect(csam3.disabled).toBe(false)
     expect(upl1.disabled).toBe(false)
   })
@@ -734,48 +692,42 @@ describe('initSelectActionsPage', () => {
   // checked (a genuinely unrelated action) must not affect CSAM3 at all.
   it('does not grey out an action that a different, non-competing action does not affect', async () => {
     const form = setupDom([
-      { code: 'CSAM3', checked: true, availableArea: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 },
-      { code: 'UPL1', checked: true, availableArea: { value: 5, unit: 'ha' } }
+      { code: 'CSAM3', checked: true, availability: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 },
+      { code: 'UPL1', checked: true, availability: { value: 5, unit: 'ha' } }
     ])
     // Neither action's area is reduced by the other being present - simulates
     // two actions that don't compete for the same land.
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          actions: [
-            { code: 'CSAM3', availableArea: { value: 18.5, unit: 'ha' } },
-            { code: 'UPL1', availableArea: { value: 5, unit: 'ha' } }
-          ]
-        })
-    })
-    initSelectActionsPage(form)
-    await flushPromises()
-    global.fetch.mockClear()
+    await initSettled(
+      form,
+      fetchOk({
+        actions: [
+          { code: 'CSAM3', availability: { value: 18.5, unit: 'ha' } },
+          { code: 'UPL1', availability: { value: 5, unit: 'ha' } }
+        ]
+      })
+    )
 
-    form.querySelector('input[value="UPL1"]').dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'UPL1')
 
-    const csam3 = form.querySelector('input[value="CSAM3"]')
-    const upl1 = form.querySelector('input[value="UPL1"]')
+    const csam3 = checkbox(form, 'CSAM3')
+    const upl1 = checkbox(form, 'UPL1')
     expect(csam3.disabled).toBe(false)
     expect(upl1.disabled).toBe(false)
   })
 
-  it('resets every action back to its unconstrained availableArea when nothing is checked', async () => {
-    const form = setupDom([{ code: 'UPL1', availableArea: { value: 5, unit: 'ha' } }])
-    const upl1 = form.querySelector('input[value="UPL1"]')
+  it('resets every action back to its unconstrained availability when nothing is checked', async () => {
+    const form = setupDom([{ code: 'UPL1', availability: { value: 5, unit: 'ha' } }])
+    const upl1 = checkbox(form, 'UPL1')
     upl1.disabled = true
 
-    global.fetch = fetchOk({ actions: [{ code: 'UPL1', availableArea: { value: 5, unit: 'ha' } }] })
+    global.fetch = fetchOk({ actions: [{ code: 'UPL1', availability: { value: 5, unit: 'ha' } }] })
     initSelectActionsPage(form)
 
     upl1.dispatchEvent(new Event('change', { bubbles: true }))
     await flushPromises()
 
     expect(global.fetch).toHaveBeenCalledTimes(1)
-    const [, options] = global.fetch.mock.calls[0]
-    expect(JSON.parse(options.body).plannedActions).toEqual([])
+    expect(sentPlannedActions()).toEqual([])
   })
 
   // When the action being edited is checked solo, its own request is NOT
@@ -786,21 +738,13 @@ describe('initSelectActionsPage', () => {
   // because there's no other request to source a clean number from).
   it('uses the typed quantity value over the full available area when present', async () => {
     const form = setupDom([
-      { code: 'CSAM3', checked: true, availableArea: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 }
+      { code: 'CSAM3', checked: true, availability: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 }
     ])
-    global.fetch = fetchOk({ actions: [] })
-    initSelectActionsPage(form)
-    await flushPromises()
-    global.fetch.mockClear()
+    await initSettled(form, fetchOk({ actions: [] }))
 
-    const quantityInput = form.querySelector('#landActionQuantity_CSAM3')
-    quantityInput.value = '3.25'
-    quantityInput.dispatchEvent(new Event('input', { bubbles: true }))
-    quantityInput.dispatchEvent(new Event('blur'))
-    await flushPromises()
+    await typeQuantity(form, 'CSAM3', '3.25')
 
-    const [, options] = global.fetch.mock.calls[0]
-    expect(JSON.parse(options.body).plannedActions).toEqual([{ actionCode: 'CSAM3', quantity: 3.25, unit: 'ha' }])
+    expect(sentPlannedActions()).toEqual([{ actionCode: 'CSAM3', quantity: 3.25, unit: 'ha' }])
   })
 
   // A quantity-required action's own hint updates instantly as the user
@@ -813,13 +757,13 @@ describe('initSelectActionsPage', () => {
   // out to be wrong once a competing action's claim is taken into account.
   it("does not change a quantity input's own hint as the user types, only after a refresh response", async () => {
     const form = setupDom([
-      { code: 'CSAM3', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 }
+      { code: 'CSAM3', checked: true, availability: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 }
     ])
     global.fetch = vi.fn()
     initSelectActionsPage(form)
 
     const quantityInput = form.querySelector('#landActionQuantity_CSAM3')
-    const hint = document.getElementById('landActionQuantity_CSAM3-hint')
+    const hint = hintFor('CSAM3')
     const before = hint.textContent
 
     quantityInput.value = '0.2'
@@ -839,59 +783,45 @@ describe('initSelectActionsPage', () => {
       {
         code: 'CSAM3',
         checked: true,
-        availableArea: { value: 18.5, unit: 'ha' },
+        availability: { value: 18.5, unit: 'ha' },
         requiresMaxQuantity: 18.5,
         quantityValue: '25'
       },
-      { code: 'UPL1', availableArea: { value: 5, unit: 'ha' } }
+      { code: 'UPL1', availability: { value: 5, unit: 'ha' } }
     ])
-    global.fetch = fetchOk({ actions: [] })
-    initSelectActionsPage(form)
-    await flushPromises()
-    global.fetch.mockClear()
+    await initSettled(form, fetchOk({ actions: [] }))
 
-    const upl1 = form.querySelector('input[value="UPL1"]')
-    upl1.checked = true
-    upl1.dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'UPL1', true)
 
-    const [, options] = global.fetch.mock.calls[0]
-    expect(JSON.parse(options.body).plannedActions).toEqual([{ actionCode: 'UPL1', quantity: 5, unit: 'ha' }])
+    expect(sentPlannedActions()).toEqual([{ actionCode: 'UPL1', quantity: 5, unit: 'ha' }])
   })
 
   it('still fires a request when typing a valid quantity within the latest refreshed max', async () => {
     const form = setupDom([
-      { code: 'CLIG3', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 }
+      { code: 'CLIG3', checked: true, availability: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 }
     ])
     global.fetch = fetchOk({
-      actions: [{ code: 'CLIG3', availableArea: { value: 0.2271, unit: 'ha' }, requiresMaxQuantity: 0.2271 }]
+      actions: [{ code: 'CLIG3', availability: { value: 0.2271, unit: 'ha' }, requiresMaxQuantity: 0.2271 }]
     })
     initSelectActionsPage(form)
 
-    const quantityInput = form.querySelector('#landActionQuantity_CLIG3')
-    quantityInput.value = '0.1'
-    quantityInput.dispatchEvent(new Event('input', { bubbles: true }))
-    quantityInput.dispatchEvent(new Event('blur'))
-    await flushPromises()
+    const quantityInput = await typeQuantity(form, 'CLIG3', '0.1')
 
     expect(quantityInput.max).toBe('0.2271')
     global.fetch.mockClear()
 
-    quantityInput.value = '0.2'
-    quantityInput.dispatchEvent(new Event('input', { bubbles: true }))
-    quantityInput.dispatchEvent(new Event('blur'))
-    await flushPromises()
+    await typeQuantity(form, 'CLIG3', '0.2')
 
     expect(global.fetch).toHaveBeenCalledTimes(1)
   })
 
   it('allows reducing a quantity at or below its last-confirmed value even when the displayed max reads 0', async () => {
     const form = setupDom([
-      { code: 'CSAM3', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 },
-      { code: 'CLIG3', availableArea: { value: 0.3271, unit: 'ha' } }
+      { code: 'CSAM3', checked: true, availability: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 },
+      { code: 'CLIG3', availability: { value: 0.3271, unit: 'ha' } }
     ])
     global.fetch = fetchOk({
-      actions: [{ code: 'CSAM3', availableArea: { value: 0.1, unit: 'ha' }, requiresMaxQuantity: 0.1 }]
+      actions: [{ code: 'CSAM3', availability: { value: 0.1, unit: 'ha' }, requiresMaxQuantity: 0.1 }]
     })
     const csam3QuantityInput = form.querySelector('#landActionQuantity_CSAM3')
     csam3QuantityInput.value = '0.10'
@@ -901,31 +831,26 @@ describe('initSelectActionsPage', () => {
     await flushPromises()
 
     global.fetch = fetchOk({
-      actions: [{ code: 'CSAM3', availableArea: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
+      actions: [{ code: 'CSAM3', availability: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
     })
-    form.querySelector('input[value="CLIG3"]').dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CLIG3')
 
-    expect(document.getElementById('landActionQuantity_CSAM3-hint').textContent).toBe('0 hectares available')
+    expect(hintFor('CSAM3').textContent).toBe('0 hectares available')
     global.fetch.mockClear()
 
-    csam3QuantityInput.value = '0.05'
-    csam3QuantityInput.dispatchEvent(new Event('input', { bubbles: true }))
-    csam3QuantityInput.dispatchEvent(new Event('blur'))
-    await flushPromises()
+    await typeQuantity(form, 'CSAM3', '0.05')
 
     expect(global.fetch).toHaveBeenCalledTimes(1)
-    const [, options] = global.fetch.mock.calls[0]
-    expect(JSON.parse(options.body).plannedActions).toContainEqual({ actionCode: 'CSAM3', quantity: 0.05, unit: 'ha' })
+    expect(sentPlannedActions()).toContainEqual({ actionCode: 'CSAM3', quantity: 0.05, unit: 'ha' })
   })
 
   it('allows increasing a quantity back up after a reduction, up to the static uncompeted total', async () => {
     const form = setupDom([
-      { code: 'CSAM3', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 },
-      { code: 'CLIG3', availableArea: { value: 0.3271, unit: 'ha' } }
+      { code: 'CSAM3', checked: true, availability: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 },
+      { code: 'CLIG3', availability: { value: 0.3271, unit: 'ha' } }
     ])
     global.fetch = fetchOk({
-      actions: [{ code: 'CSAM3', availableArea: { value: 0.1, unit: 'ha' }, requiresMaxQuantity: 0.1 }]
+      actions: [{ code: 'CSAM3', availability: { value: 0.1, unit: 'ha' }, requiresMaxQuantity: 0.1 }]
     })
     const csam3QuantityInput = form.querySelector('#landActionQuantity_CSAM3')
     csam3QuantityInput.value = '0.10'
@@ -935,40 +860,32 @@ describe('initSelectActionsPage', () => {
     await flushPromises()
 
     global.fetch = fetchOk({
-      actions: [{ code: 'CSAM3', availableArea: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
+      actions: [{ code: 'CSAM3', availability: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
     })
-    form.querySelector('input[value="CLIG3"]').dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CLIG3')
 
     global.fetch = fetchOk({
-      actions: [{ code: 'CSAM3', availableArea: { value: 0.05, unit: 'ha' }, requiresMaxQuantity: 0.05 }]
+      actions: [{ code: 'CSAM3', availability: { value: 0.05, unit: 'ha' }, requiresMaxQuantity: 0.05 }]
     })
-    csam3QuantityInput.value = '0.05'
-    csam3QuantityInput.dispatchEvent(new Event('input', { bubbles: true }))
-    csam3QuantityInput.dispatchEvent(new Event('blur'))
-    await flushPromises()
+    await typeQuantity(form, 'CSAM3', '0.05')
     global.fetch.mockClear()
 
     global.fetch = fetchOk({
-      actions: [{ code: 'CSAM3', availableArea: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
+      actions: [{ code: 'CSAM3', availability: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
     })
-    csam3QuantityInput.value = '0.10'
-    csam3QuantityInput.dispatchEvent(new Event('input', { bubbles: true }))
-    csam3QuantityInput.dispatchEvent(new Event('blur'))
-    await flushPromises()
+    await typeQuantity(form, 'CSAM3', '0.10')
 
     expect(global.fetch).toHaveBeenCalledTimes(1)
-    const [, options] = global.fetch.mock.calls[0]
-    expect(JSON.parse(options.body).plannedActions).toContainEqual({ actionCode: 'CSAM3', quantity: 0.1, unit: 'ha' })
+    expect(sentPlannedActions()).toContainEqual({ actionCode: 'CSAM3', quantity: 0.1, unit: 'ha' })
   })
 
   it('still blocks an increase above the static uncompeted total', async () => {
     const form = setupDom([
-      { code: 'CSAM3', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 },
-      { code: 'CLIG3', availableArea: { value: 0.3271, unit: 'ha' } }
+      { code: 'CSAM3', checked: true, availability: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 },
+      { code: 'CLIG3', availability: { value: 0.3271, unit: 'ha' } }
     ])
     global.fetch = fetchOk({
-      actions: [{ code: 'CSAM3', availableArea: { value: 0.1, unit: 'ha' }, requiresMaxQuantity: 0.1 }]
+      actions: [{ code: 'CSAM3', availability: { value: 0.1, unit: 'ha' }, requiresMaxQuantity: 0.1 }]
     })
     const csam3QuantityInput = form.querySelector('#landActionQuantity_CSAM3')
     csam3QuantityInput.value = '0.10'
@@ -978,29 +895,25 @@ describe('initSelectActionsPage', () => {
     await flushPromises()
 
     global.fetch = fetchOk({
-      actions: [{ code: 'CSAM3', availableArea: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
+      actions: [{ code: 'CSAM3', availability: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
     })
-    form.querySelector('input[value="CLIG3"]').dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CLIG3')
     global.fetch.mockClear()
 
-    csam3QuantityInput.value = '0.35'
-    csam3QuantityInput.dispatchEvent(new Event('input', { bubbles: true }))
-    csam3QuantityInput.dispatchEvent(new Event('blur'))
-    await flushPromises()
+    await typeQuantity(form, 'CSAM3', '0.35')
 
     expect(global.fetch).not.toHaveBeenCalled()
   })
 
   it('reverts an in-progress invalid quantity edit to the last confirmed value instead of losing the selection', async () => {
     const form = setupDom([
-      { code: 'CSAM3', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 },
-      { code: 'CLIG3', availableArea: { value: 0.3271, unit: 'ha' } },
-      { code: 'CMOR1', availableArea: { value: 10, unit: 'ha' } }
+      { code: 'CSAM3', checked: true, availability: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 },
+      { code: 'CLIG3', availability: { value: 0.3271, unit: 'ha' } },
+      { code: 'CMOR1', availability: { value: 10, unit: 'ha' } }
     ])
 
     global.fetch = fetchOk({
-      actions: [{ code: 'CSAM3', availableArea: { value: 0.2271, unit: 'ha' }, requiresMaxQuantity: 0.2271 }]
+      actions: [{ code: 'CSAM3', availability: { value: 0.2271, unit: 'ha' }, requiresMaxQuantity: 0.2271 }]
     })
     const csam3QuantityInput = form.querySelector('#landActionQuantity_CSAM3')
     csam3QuantityInput.value = '0.1'
@@ -1011,12 +924,11 @@ describe('initSelectActionsPage', () => {
 
     global.fetch = fetchOk({
       actions: [
-        { code: 'CSAM3', availableArea: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 },
-        { code: 'CLIG3', availableArea: { value: 0.2271, unit: 'ha' } }
+        { code: 'CSAM3', availability: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 },
+        { code: 'CLIG3', availability: { value: 0.2271, unit: 'ha' } }
       ]
     })
-    form.querySelector('input[value="CLIG3"]').dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CLIG3')
 
     // An in-progress edit, never blurred - no refresh fires for this yet.
     csam3QuantityInput.value = '0.4'
@@ -1024,20 +936,18 @@ describe('initSelectActionsPage', () => {
 
     global.fetch = fetchOk({
       actions: [
-        { code: 'CSAM3', availableArea: { value: 0.1271, unit: 'ha' }, requiresMaxQuantity: 0.1271 },
-        { code: 'CMOR1', availableArea: { value: 9.8, unit: 'ha' } }
+        { code: 'CSAM3', availability: { value: 0.1271, unit: 'ha' }, requiresMaxQuantity: 0.1271 },
+        { code: 'CMOR1', availability: { value: 9.8, unit: 'ha' } }
       ]
     })
-    form.querySelector('input[value="CMOR1"]').dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CMOR1')
 
-    const csam3Checkbox = form.querySelector('input[value="CSAM3"]')
+    const csam3Checkbox = checkbox(form, 'CSAM3')
     expect(csam3Checkbox.checked).toBe(true)
     expect(csam3Checkbox.disabled).toBe(false)
     expect(csam3QuantityInput.value).toBe('0.1')
 
-    const [, options] = global.fetch.mock.calls[0]
-    expect(JSON.parse(options.body).plannedActions).toContainEqual({ actionCode: 'CSAM3', quantity: 0.1, unit: 'ha' })
+    expect(sentPlannedActions()).toContainEqual({ actionCode: 'CSAM3', quantity: 0.1, unit: 'ha' })
   })
 
   it('includes a checked action in plannedActions when a different action is being edited', async () => {
@@ -1045,35 +955,27 @@ describe('initSelectActionsPage', () => {
       {
         code: 'CLIG3',
         checked: true,
-        availableArea: { value: 0.3271, unit: 'ha' },
+        availability: { value: 0.3271, unit: 'ha' },
         requiresMaxQuantity: 0.3271,
         quantityValue: '0.25'
       },
-      { code: 'CSAM3', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 }
+      { code: 'CSAM3', checked: true, availability: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 }
     ])
 
-    global.fetch = fetchOk({ actions: [] })
-    initSelectActionsPage(form)
-    await flushPromises()
-    global.fetch.mockClear()
+    await initSettled(form, fetchOk({ actions: [] }))
 
-    const csam3QuantityInput = form.querySelector('#landActionQuantity_CSAM3')
-    csam3QuantityInput.value = '0.0771'
-    csam3QuantityInput.dispatchEvent(new Event('input', { bubbles: true }))
-    csam3QuantityInput.dispatchEvent(new Event('blur'))
-    await flushPromises()
+    await typeQuantity(form, 'CSAM3', '0.0771')
 
-    const [, options] = global.fetch.mock.calls[0]
-    expect(JSON.parse(options.body).plannedActions).toContainEqual({ actionCode: 'CLIG3', quantity: 0.25, unit: 'ha' })
+    expect(sentPlannedActions()).toContainEqual({ actionCode: 'CLIG3', quantity: 0.25, unit: 'ha' })
   })
 
   // Typing doesn't fire a request at all - only leaving the field does, so
   // rapid successive keystrokes never trigger more than the one refresh
   // that happens on blur.
-  it('sends a non-quantity action its live availableArea from the previous response, not its original total', async () => {
+  it('sends a non-quantity action its live availability from the previous response, not its original total', async () => {
     const form = setupDom([
-      { code: 'CSAM3', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 },
-      { code: 'CLIG3', availableArea: { value: 0.3271, unit: 'ha' } }
+      { code: 'CSAM3', checked: true, availability: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 },
+      { code: 'CLIG3', availability: { value: 0.3271, unit: 'ha' } }
     ])
     initSelectActionsPage(form)
 
@@ -1082,21 +984,17 @@ describe('initSelectActionsPage', () => {
     csam3QuantityInput.dispatchEvent(new Event('input', { bubbles: true }))
     global.fetch = fetchOk({
       actions: [
-        { code: 'CSAM3', availableArea: { value: 0.2271, unit: 'ha' } },
-        { code: 'CLIG3', availableArea: { value: 0.2271, unit: 'ha' } }
+        { code: 'CSAM3', availability: { value: 0.2271, unit: 'ha' } },
+        { code: 'CLIG3', availability: { value: 0.2271, unit: 'ha' } }
       ]
     })
     csam3QuantityInput.dispatchEvent(new Event('blur'))
     await flushPromises()
 
     global.fetch = mockApi({ CSAM3: 0.2271, CLIG3: 0.2271 })
-    const clig3Checkbox = form.querySelector('#landAction-CLIG3')
-    clig3Checkbox.checked = true
-    clig3Checkbox.dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CLIG3', true)
 
-    const [, options] = global.fetch.mock.calls[0]
-    expect(JSON.parse(options.body).plannedActions).toContainEqual({
+    expect(sentPlannedActions()).toContainEqual({
       actionCode: 'CLIG3',
       quantity: 0.2271,
       unit: 'ha'
@@ -1105,13 +1003,10 @@ describe('initSelectActionsPage', () => {
 
   it('does not fire a request while typing, only once the field is blurred (which flushes any pending debounce immediately)', async () => {
     const form = setupDom([
-      { code: 'CSAM3', checked: true, availableArea: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 },
-      { code: 'UPL1', availableArea: { value: 5, unit: 'ha' } }
+      { code: 'CSAM3', checked: true, availability: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 },
+      { code: 'UPL1', availability: { value: 5, unit: 'ha' } }
     ])
-    global.fetch = fetchOk({ actions: [] })
-    initSelectActionsPage(form)
-    await flushPromises()
-    global.fetch.mockClear()
+    await initSettled(form, fetchOk({ actions: [] }))
 
     const quantityInput = form.querySelector('#landActionQuantity_CSAM3')
     quantityInput.value = '1'
@@ -1128,19 +1023,15 @@ describe('initSelectActionsPage', () => {
     await flushPromises()
 
     expect(global.fetch).toHaveBeenCalledTimes(1)
-    const [, options] = global.fetch.mock.calls[0]
-    expect(JSON.parse(options.body).plannedActions).toEqual([{ actionCode: 'CSAM3', quantity: 3, unit: 'ha' }])
+    expect(sentPlannedActions()).toEqual([{ actionCode: 'CSAM3', quantity: 3, unit: 'ha' }])
   })
 
   it('fires a request 500ms after the user stops typing, without waiting for blur', async () => {
     const form = setupDom([
-      { code: 'CSAM3', checked: true, availableArea: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 },
-      { code: 'UPL1', availableArea: { value: 5, unit: 'ha' } }
+      { code: 'CSAM3', checked: true, availability: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 },
+      { code: 'UPL1', availability: { value: 5, unit: 'ha' } }
     ])
-    global.fetch = fetchOk({ actions: [] })
-    initSelectActionsPage(form)
-    await flushPromises()
-    global.fetch.mockClear()
+    await initSettled(form, fetchOk({ actions: [] }))
 
     const quantityInput = form.querySelector('#landActionQuantity_CSAM3')
     quantityInput.value = '1'
@@ -1157,19 +1048,15 @@ describe('initSelectActionsPage', () => {
     // Past the debounce window from the last keystroke - fires on its own.
     await new Promise((resolve) => setTimeout(resolve, 300))
     expect(global.fetch).toHaveBeenCalledTimes(1)
-    const [, options] = global.fetch.mock.calls[0]
-    expect(JSON.parse(options.body).plannedActions).toEqual([{ actionCode: 'CSAM3', quantity: 3, unit: 'ha' }])
+    expect(sentPlannedActions()).toEqual([{ actionCode: 'CSAM3', quantity: 3, unit: 'ha' }])
   })
 
   it('restarts the 500ms debounce on every keystroke, rather than firing from the first one', async () => {
     const form = setupDom([
-      { code: 'CSAM3', checked: true, availableArea: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 },
-      { code: 'UPL1', availableArea: { value: 5, unit: 'ha' } }
+      { code: 'CSAM3', checked: true, availability: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 },
+      { code: 'UPL1', availability: { value: 5, unit: 'ha' } }
     ])
-    global.fetch = fetchOk({ actions: [] })
-    initSelectActionsPage(form)
-    await flushPromises()
-    global.fetch.mockClear()
+    await initSettled(form, fetchOk({ actions: [] }))
 
     const quantityInput = form.querySelector('#landActionQuantity_CSAM3')
     quantityInput.value = '1'
@@ -1185,14 +1072,13 @@ describe('initSelectActionsPage', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 200))
     expect(global.fetch).toHaveBeenCalledTimes(1)
-    const [, options] = global.fetch.mock.calls[0]
-    expect(JSON.parse(options.body).plannedActions).toEqual([{ actionCode: 'CSAM3', quantity: 12, unit: 'ha' }])
+    expect(sentPlannedActions()).toEqual([{ actionCode: 'CSAM3', quantity: 12, unit: 'ha' }])
   })
 
   it("shows the triggering action's own refresh banner while a blur-triggered refresh is in flight, hiding it once it resolves, and never shows another action's banner", async () => {
     const form = setupDom([
-      { code: 'CSAM3', checked: true, availableArea: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 },
-      { code: 'UPL1', checked: true, availableArea: { value: 5, unit: 'ha' }, requiresMaxQuantity: 5 }
+      { code: 'CSAM3', checked: true, availability: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 },
+      { code: 'UPL1', checked: true, availability: { value: 5, unit: 'ha' }, requiresMaxQuantity: 5 }
     ])
     global.fetch = fetchOk({ actions: [] })
     initSelectActionsPage(form)
@@ -1205,11 +1091,7 @@ describe('initSelectActionsPage', () => {
           resolveFetch = () => resolve({ ok: true, json: () => Promise.resolve({ actions: [] }) })
         })
     )
-    const quantityInput = form.querySelector('#landActionQuantity_CSAM3')
-    quantityInput.value = '5'
-    quantityInput.dispatchEvent(new Event('input', { bubbles: true }))
-    quantityInput.dispatchEvent(new Event('blur'))
-    await flushPromises()
+    const quantityInput = await typeQuantity(form, 'CSAM3', '5')
 
     const csam3Banner = document.getElementById('landActionQuantity_CSAM3-refresh-banner')
     const upl1Banner = document.getElementById('landActionQuantity_UPL1-refresh-banner')
@@ -1229,8 +1111,8 @@ describe('initSelectActionsPage', () => {
 
   it('shows a lazily-created refresh banner on the checked/unchecked non-quantity action, removing it once the refresh resolves, and never on a different action', async () => {
     const form = setupDom([
-      { code: 'CMOR1', availableArea: { value: 10, unit: 'ha' } },
-      { code: 'UPL1', availableArea: { value: 5, unit: 'ha' }, requiresMaxQuantity: 5 }
+      { code: 'CMOR1', availability: { value: 10, unit: 'ha' } },
+      { code: 'UPL1', availability: { value: 5, unit: 'ha' }, requiresMaxQuantity: 5 }
     ])
     // 0 headroom beyond CMOR1's own claim (self-competing, realistic) - not
     // the same static 10 echoed back, which would read as fresh surplus and
@@ -1245,8 +1127,8 @@ describe('initSelectActionsPage', () => {
               json: () =>
                 Promise.resolve({
                   actions: [
-                    { code: 'CMOR1', availableArea: { value: 0, unit: 'ha' } },
-                    { code: 'UPL1', availableArea: { value: 5, unit: 'ha' }, requiresMaxQuantity: 5 }
+                    { code: 'CMOR1', availability: { value: 0, unit: 'ha' } },
+                    { code: 'UPL1', availability: { value: 5, unit: 'ha' }, requiresMaxQuantity: 5 }
                   ]
                 })
             })
@@ -1254,11 +1136,9 @@ describe('initSelectActionsPage', () => {
     )
     initSelectActionsPage(form)
 
-    const cmor1Checkbox = form.querySelector('#landAction-CMOR1')
-    cmor1Checkbox.checked = true
-    cmor1Checkbox.dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CMOR1', true)
 
+    const cmor1Checkbox = checkbox(form, 'CMOR1')
     const cmor1Item = cmor1Checkbox.closest('.govuk-checkboxes__item')
     expect(cmor1Item.querySelector('.select-actions-refresh-banner')).not.toBeNull()
 
@@ -1279,8 +1159,8 @@ describe('initSelectActionsPage', () => {
 
   it('keeps the refresh banner visible across a growth follow-up chain, without hiding and re-showing between links', async () => {
     const form = setupDom([
-      { code: 'CMOR1', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, chosenArea: 0.2271 },
-      { code: 'CLIG3', availableArea: { value: 0.3271, unit: 'ha' } }
+      { code: 'CMOR1', checked: true, availability: { value: 0.3271, unit: 'ha' }, chosenArea: 0.2271 },
+      { code: 'CLIG3', availability: { value: 0.3271, unit: 'ha' } }
     ])
     // First call (triggered by checking CLIG3) reports growth for CMOR1;
     // the automatic follow-up it triggers must not let the banner drop in
@@ -1297,15 +1177,13 @@ describe('initSelectActionsPage', () => {
 
     const clig3Checkbox = form.querySelector('#landAction-CLIG3')
     const clig3Item = clig3Checkbox.closest('.govuk-checkboxes__item')
-    clig3Checkbox.checked = true
-    clig3Checkbox.dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CLIG3', true)
 
     expect(clig3Item.querySelector('.select-actions-refresh-banner')).not.toBeNull()
 
     pending.shift()({
       ok: true,
-      json: () => Promise.resolve({ actions: [{ code: 'CMOR1', availableArea: { value: 0.1, unit: 'ha' } }] })
+      json: () => Promise.resolve({ actions: [{ code: 'CMOR1', availability: { value: 0.1, unit: 'ha' } }] })
     })
     await flushPromises()
 
@@ -1315,7 +1193,7 @@ describe('initSelectActionsPage', () => {
 
     pending.shift()({
       ok: true,
-      json: () => Promise.resolve({ actions: [{ code: 'CMOR1', availableArea: { value: 0, unit: 'ha' } }] })
+      json: () => Promise.resolve({ actions: [{ code: 'CMOR1', availability: { value: 0, unit: 'ha' } }] })
     })
     await flushPromises()
 
@@ -1324,12 +1202,9 @@ describe('initSelectActionsPage', () => {
 
   it.each([[''], ['  ']])('does not fire a request when the quantity field is left empty (%j)', async (typedValue) => {
     const form = setupDom([
-      { code: 'CSAM3', checked: true, availableArea: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 }
+      { code: 'CSAM3', checked: true, availability: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 }
     ])
-    global.fetch = fetchOk({ actions: [] })
-    initSelectActionsPage(form)
-    await flushPromises()
-    global.fetch.mockClear()
+    await initSettled(form, fetchOk({ actions: [] }))
 
     const quantityInput = form.querySelector('#landActionQuantity_CSAM3')
     quantityInput.value = typedValue
@@ -1344,12 +1219,9 @@ describe('initSelectActionsPage', () => {
     'does not fire a request when the typed quantity is invalid but not empty (%j)',
     async (typedValue) => {
       const form = setupDom([
-        { code: 'CSAM3', checked: true, availableArea: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 }
+        { code: 'CSAM3', checked: true, availability: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 }
       ])
-      global.fetch = fetchOk({ actions: [] })
-      initSelectActionsPage(form)
-      await flushPromises()
-      global.fetch.mockClear()
+      await initSettled(form, fetchOk({ actions: [] }))
 
       const quantityInput = form.querySelector('#landActionQuantity_CSAM3')
       quantityInput.value = typedValue
@@ -1365,69 +1237,122 @@ describe('initSelectActionsPage', () => {
   // request fires until the user types something within range.
   it('does not fire a request when the typed quantity exceeds the input max', async () => {
     const form = setupDom([
-      { code: 'CSAM3', checked: true, availableArea: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 }
+      { code: 'CSAM3', checked: true, availability: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 }
     ])
-    global.fetch = fetchOk({ actions: [] })
-    initSelectActionsPage(form)
-    await flushPromises()
-    global.fetch.mockClear()
-
-    const quantityInput = form.querySelector('#landActionQuantity_CSAM3')
-    quantityInput.value = '25'
-    quantityInput.dispatchEvent(new Event('input', { bubbles: true }))
-    quantityInput.dispatchEvent(new Event('blur'))
-    await flushPromises()
+    await initSettled(form, fetchOk({ actions: [] }))
 
     expect(global.fetch).not.toHaveBeenCalled()
+  })
+
+  it('accepts any typed quantity for an action with no availability restriction', async () => {
+    const form = setupDom([
+      {
+        code: 'CSAM3',
+        checked: true,
+        availability: { value: null, unit: 'ha' },
+        requiresMaxQuantity: true,
+        unrestricted: true
+      }
+    ])
+    await initSettled(form, fetchOk({ actions: [] }))
+
+    const quantityInput = await typeQuantity(form, 'CSAM3', '9999')
+
+    expect(global.fetch).toHaveBeenCalled()
+    // Unrestricted or not, it still claims land that competes with everything
+    // else - and the API always gives it a unit, so the claim is sendable.
+    expect(sentPlannedActions()).toEqual([{ actionCode: 'CSAM3', quantity: 9999, unit: 'ha' }])
+    expect(quantityInput.disabled).toBe(false)
+  })
+
+  it('clears the max and hint rather than showing "null" when a refresh reports no restriction', async () => {
+    const form = setupDom([
+      { code: 'CSAM3', checked: true, availability: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 },
+      { code: 'CLIG3', availability: { value: 45.2, unit: 'ha' } }
+    ])
+    await initSettled(
+      form,
+      fetchOk({
+        actions: [
+          { code: 'CSAM3', availability: { value: null, unit: 'ha' } },
+          { code: 'CLIG3', availability: { value: 45.2, unit: 'ha' } }
+        ]
+      })
+    )
+
+    await toggle(form, 'CLIG3')
+
+    const quantityInput = form.querySelector('#landActionQuantity_CSAM3')
+    expect(quantityInput.hasAttribute('max')).toBe(false)
+    expect(hintFor('CSAM3').textContent).toBe('')
+    expect(checkbox(form, 'CSAM3').getAttribute('data-live-available-area')).toBeNull()
+  })
+
+  it('does not grey out an unchecked, unrestricted action when a quantity is typed into it', async () => {
+    const form = setupDom([
+      { code: 'CSAM3', availability: { value: null, unit: 'ha' }, requiresMaxQuantity: true, unrestricted: true },
+      { code: 'CLIG3', availability: { value: 45.2, unit: 'ha' } }
+    ])
+    await initSettled(
+      form,
+      fetchOk({
+        actions: [
+          { code: 'CSAM3', availability: { value: null, unit: 'ha' } },
+          { code: 'CLIG3', availability: { value: 45.2, unit: 'ha' } }
+        ]
+      })
+    )
+
+    // A typed amount on an unchecked action must not be compared against a null
+    // ceiling - that coerces to 0 and rejects anything above zero.
+    const quantityInput = form.querySelector('#landActionQuantity_CSAM3')
+    quantityInput.value = '12'
+    quantityInput.dispatchEvent(new Event('input', { bubbles: true }))
+    await toggle(form, 'CLIG3')
+
+    expect(global.fetch).toHaveBeenCalled()
+    expect(checkbox(form, 'CSAM3').disabled).toBe(false)
+    expect(quantityInput.value).toBe('12')
   })
 
   it('does not grey out a different, unchecked action when a checked action is given an over-max quantity', async () => {
     const form = setupDom([
-      { code: 'CSAM3', checked: true, availableArea: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 },
-      { code: 'CLIG3', availableArea: { value: 45.2, unit: 'ha' } }
+      { code: 'CSAM3', checked: true, availability: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 },
+      { code: 'CLIG3', availability: { value: 45.2, unit: 'ha' } }
     ])
-    global.fetch = mockApi({ CSAM3: 18.5, CLIG3: 45.2 })
-    initSelectActionsPage(form)
-    await flushPromises()
-    global.fetch.mockClear()
-
-    const quantityInput = form.querySelector('#landActionQuantity_CSAM3')
-    quantityInput.value = '25'
-    quantityInput.dispatchEvent(new Event('input', { bubbles: true }))
-    quantityInput.dispatchEvent(new Event('blur'))
-    await flushPromises()
+    await initSettled(form, mockApi({ CSAM3: 18.5, CLIG3: 45.2 }))
 
     expect(global.fetch).not.toHaveBeenCalled()
-    expect(form.querySelector('input[value="CLIG3"]').disabled).toBe(false)
+    expect(checkbox(form, 'CLIG3').disabled).toBe(false)
   })
 
   it('disables and shows a message for an action with 0 available area in the response', async () => {
     const form = setupDom([
-      { code: 'CMOR1', checked: true, availableArea: { value: 10, unit: 'ha' } },
-      { code: 'UPL1', availableArea: { value: 5, unit: 'ha' } }
+      { code: 'CMOR1', checked: true, availability: { value: 10, unit: 'ha' } },
+      { code: 'UPL1', availability: { value: 5, unit: 'ha' } }
     ])
-    global.fetch = fetchOk({ actions: [{ code: 'UPL1', availableArea: { value: 0, unit: 'ha' } }] })
+    global.fetch = fetchOk({ actions: [{ code: 'UPL1', availability: { value: 0, unit: 'ha' } }] })
     initSelectActionsPage(form)
 
-    const cmor1 = form.querySelector('input[value="CMOR1"]')
+    const cmor1 = checkbox(form, 'CMOR1')
     cmor1.dispatchEvent(new Event('change', { bubbles: true }))
     await flushPromises()
 
-    const upl1 = form.querySelector('input[value="UPL1"]')
+    const upl1 = checkbox(form, 'UPL1')
     expect(upl1.disabled).toBe(true)
     expect(upl1.closest('.govuk-checkboxes__item').textContent).toContain('Not compatible with other selected actions.')
   })
 
   it('re-enables and clears the message for an action that becomes available again', async () => {
-    const form = setupDom([{ code: 'UPL1', availableArea: { value: 0, unit: 'ha' } }])
-    const upl1 = form.querySelector('input[value="UPL1"]')
+    const form = setupDom([{ code: 'UPL1', availability: { value: 0, unit: 'ha' } }])
+    const upl1 = checkbox(form, 'UPL1')
     upl1.disabled = true
     const message = document.createElement('p')
     message.className = 'select-actions-unavailable-message'
     message.textContent = 'Not compatible with other selected actions.'
     upl1.closest('.govuk-checkboxes__item').appendChild(message)
 
-    global.fetch = fetchOk({ actions: [{ code: 'UPL1', availableArea: { value: 5, unit: 'ha' } }] })
+    global.fetch = fetchOk({ actions: [{ code: 'UPL1', availability: { value: 5, unit: 'ha' } }] })
     initSelectActionsPage(form)
 
     upl1.dispatchEvent(new Event('change', { bubbles: true }))
@@ -1442,21 +1367,18 @@ describe('initSelectActionsPage', () => {
       {
         code: 'CSAM3',
         checked: true,
-        availableArea: { value: 18.5, unit: 'ha' },
+        availability: { value: 18.5, unit: 'ha' },
         requiresMaxQuantity: 18.5,
         quantityValue: '2'
       }
     ])
-    global.fetch = fetchOk({ actions: [{ code: 'CSAM3', availableArea: { value: 18.5, unit: 'ha' } }] })
+    global.fetch = fetchOk({ actions: [{ code: 'CSAM3', availability: { value: 18.5, unit: 'ha' } }] })
     initSelectActionsPage(form)
     await flushPromises()
 
-    const csam3 = form.querySelector('input[value="CSAM3"]')
-    csam3.checked = false
-    csam3.dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CSAM3', false)
 
-    expect(csam3.disabled).toBe(false)
+    expect(checkbox(form, 'CSAM3').disabled).toBe(false)
   })
 
   it('clears the quantity input when its action is unchecked', async () => {
@@ -1464,7 +1386,7 @@ describe('initSelectActionsPage', () => {
       {
         code: 'CSAM3',
         checked: true,
-        availableArea: { value: 18.5, unit: 'ha' },
+        availability: { value: 18.5, unit: 'ha' },
         requiresMaxQuantity: 18.5,
         quantityValue: '2'
       }
@@ -1473,7 +1395,7 @@ describe('initSelectActionsPage', () => {
     initSelectActionsPage(form)
     await flushPromises()
 
-    const csam3 = form.querySelector('input[value="CSAM3"]')
+    const csam3 = checkbox(form, 'CSAM3')
     csam3.checked = false
     csam3.dispatchEvent(new Event('change', { bubbles: true }))
 
@@ -1482,70 +1404,66 @@ describe('initSelectActionsPage', () => {
 
   it('updates the data-available-unit attribute but does not disable a non-quantity action whose area is reduced but still non-zero', async () => {
     const form = setupDom([
-      { code: 'CMOR1', checked: true, availableArea: { value: 10, unit: 'ha' } },
-      { code: 'UPL1', availableArea: { value: 5, unit: 'ha' } }
+      { code: 'CMOR1', checked: true, availability: { value: 10, unit: 'ha' } },
+      { code: 'UPL1', availability: { value: 5, unit: 'ha' } }
     ])
-    global.fetch = fetchOk({ actions: [{ code: 'UPL1', availableArea: { value: 2, unit: 'ha' } }] })
+    global.fetch = fetchOk({ actions: [{ code: 'UPL1', availability: { value: 2, unit: 'ha' } }] })
     initSelectActionsPage(form)
 
-    form.querySelector('input[value="CMOR1"]').dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CMOR1')
 
-    const upl1 = form.querySelector('input[value="UPL1"]')
+    const upl1 = checkbox(form, 'UPL1')
     expect(upl1.getAttribute('data-available-unit')).toBe('ha')
     expect(upl1.disabled).toBe(false)
   })
 
   it('updates the quantity input max and hint from the response for an UNCHECKED quantity-required action', async () => {
     const form = setupDom([
-      { code: 'CMOR1', checked: true, availableArea: { value: 10, unit: 'ha' } },
-      { code: 'CSAM3', availableArea: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 }
+      { code: 'CMOR1', checked: true, availability: { value: 10, unit: 'ha' } },
+      { code: 'CSAM3', availability: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 }
     ])
     global.fetch = fetchOk({
-      actions: [{ code: 'CSAM3', availableArea: { value: 12, unit: 'ha' }, requiresMaxQuantity: 12 }]
+      actions: [{ code: 'CSAM3', availability: { value: 12, unit: 'ha' }, requiresMaxQuantity: 12 }]
     })
     initSelectActionsPage(form)
 
-    form.querySelector('input[value="CMOR1"]').dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CMOR1')
 
     const quantityInput = form.querySelector('#landActionQuantity_CSAM3')
     expect(quantityInput.max).toBe('12')
-    expect(document.getElementById('landActionQuantity_CSAM3-hint').textContent).toBe('12 hectares available')
+    expect(hintFor('CSAM3').textContent).toBe('12 hectares available')
   })
 
   it('checking an action with no quantity typed yet leaves its own hint/max at the un-competed full total (nothing confirmed yet to send)', async () => {
     const form = setupDom([
-      { code: 'CSAM3', checked: true, availableArea: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 }
+      { code: 'CSAM3', checked: true, availability: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 }
     ])
     global.fetch = mockApi({ CSAM3: 18.5 })
     initSelectActionsPage(form)
 
-    form.querySelector('input[value="CSAM3"]').dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CSAM3')
 
     // No request fires at all (nothing confirmed to send yet, per the
     // checkbox-change guard) - the hint is untouched, still whatever the
     // initial fixture/server-rendered markup set it to.
     const quantityInput = form.querySelector('#landActionQuantity_CSAM3')
     expect(quantityInput.max).toBe('18.5')
-    expect(document.getElementById('landActionQuantity_CSAM3-hint').textContent).toBe('18.5 ha available')
+    expect(hintFor('CSAM3').textContent).toBe('18.5 ha available')
   })
 
   it('hides the conditional reveal panel when a quantity-required action is disabled', async () => {
     const form = setupDom([
-      { code: 'CMOR1', checked: true, availableArea: { value: 10, unit: 'ha' } },
-      { code: 'CSAM3', availableArea: { value: 5, unit: 'ha' }, requiresMaxQuantity: 5 }
+      { code: 'CMOR1', checked: true, availability: { value: 10, unit: 'ha' } },
+      { code: 'CSAM3', availability: { value: 5, unit: 'ha' }, requiresMaxQuantity: 5 }
     ])
     global.fetch = fetchOk({
-      actions: [{ code: 'CSAM3', availableArea: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
+      actions: [{ code: 'CSAM3', availability: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
     })
     initSelectActionsPage(form)
 
-    form.querySelector('input[value="CMOR1"]').dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CMOR1')
 
-    const csam3 = form.querySelector('input[value="CSAM3"]')
+    const csam3 = checkbox(form, 'CSAM3')
     expect(csam3.disabled).toBe(true)
     expect(isConditionalHidden(csam3)).toBe(true)
   })
@@ -1553,21 +1471,20 @@ describe('initSelectActionsPage', () => {
   // Never force a conditional panel open - that's the browser's job on click.
   it('does not force an unchecked action back open when it becomes available again', async () => {
     const form = setupDom([
-      { code: 'CMOR1', checked: true, availableArea: { value: 10, unit: 'ha' } },
-      { code: 'CSAM3', availableArea: { value: 5, unit: 'ha' }, requiresMaxQuantity: 5 }
+      { code: 'CMOR1', checked: true, availability: { value: 10, unit: 'ha' } },
+      { code: 'CSAM3', availability: { value: 5, unit: 'ha' }, requiresMaxQuantity: 5 }
     ])
-    const csam3 = form.querySelector('input[value="CSAM3"]')
+    const csam3 = checkbox(form, 'CSAM3')
     const conditionalId = csam3.getAttribute('aria-controls')
     document.getElementById(conditionalId).classList.add('govuk-checkboxes__conditional--hidden')
     csam3.disabled = true
 
     global.fetch = fetchOk({
-      actions: [{ code: 'CSAM3', availableArea: { value: 5, unit: 'ha' }, requiresMaxQuantity: 5 }]
+      actions: [{ code: 'CSAM3', availability: { value: 5, unit: 'ha' }, requiresMaxQuantity: 5 }]
     })
     initSelectActionsPage(form)
 
-    form.querySelector('input[value="CMOR1"]').dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CMOR1')
 
     expect(csam3.disabled).toBe(false)
     expect(isConditionalHidden(csam3)).toBe(true)
@@ -1578,18 +1495,18 @@ describe('initSelectActionsPage', () => {
       {
         code: 'CSAM3',
         checked: true,
-        availableArea: { value: 5, unit: 'ha' },
+        availability: { value: 5, unit: 'ha' },
         requiresMaxQuantity: 5,
         quantityValue: '2'
       }
     ])
     global.fetch = fetchOk({
-      actions: [{ code: 'CSAM3', availableArea: { value: 5, unit: 'ha' }, requiresMaxQuantity: 5 }]
+      actions: [{ code: 'CSAM3', availability: { value: 5, unit: 'ha' }, requiresMaxQuantity: 5 }]
     })
     initSelectActionsPage(form)
     await flushPromises()
 
-    const csam3 = form.querySelector('input[value="CSAM3"]')
+    const csam3 = checkbox(form, 'CSAM3')
     const conditionalId = csam3.getAttribute('aria-controls')
     csam3.checked = false
     // Simulate the browser's native click handling closing the panel
@@ -1606,24 +1523,23 @@ describe('initSelectActionsPage', () => {
       {
         code: 'CLIG3',
         checked: true,
-        availableArea: { value: 0.3271, unit: 'ha' },
+        availability: { value: 0.3271, unit: 'ha' },
         requiresMaxQuantity: 0.3271,
         quantityValue: '0.3271'
       }
     ])
     global.fetch = fetchOk({
-      actions: [{ code: 'CLIG3', availableArea: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
+      actions: [{ code: 'CLIG3', availability: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
     })
     initSelectActionsPage(form)
 
-    form.querySelector('input[value="CLIG3"]').dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CLIG3')
 
-    const clig3 = form.querySelector('input[value="CLIG3"]')
+    const clig3 = checkbox(form, 'CLIG3')
     const quantityInput = form.querySelector('#landActionQuantity_CLIG3')
     expect(clig3.disabled).toBe(false)
     expect(quantityInput.disabled).toBe(false)
-    expect(document.getElementById('landActionQuantity_CLIG3-hint').textContent).toBe('0 hectares available')
+    expect(hintFor('CLIG3').textContent).toBe('0 hectares available')
   })
 
   it('refreshes the hint to the raw response value after a refresh, not the typed value plus it', async () => {
@@ -1631,20 +1547,19 @@ describe('initSelectActionsPage', () => {
       {
         code: 'CLIG3',
         checked: true,
-        availableArea: { value: 0.3271, unit: 'ha' },
+        availability: { value: 0.3271, unit: 'ha' },
         requiresMaxQuantity: 0.3271,
         quantityValue: '0.1'
       }
     ])
     global.fetch = fetchOk({
-      actions: [{ code: 'CLIG3', availableArea: { value: 0.2271, unit: 'ha' }, requiresMaxQuantity: 0.2271 }]
+      actions: [{ code: 'CLIG3', availability: { value: 0.2271, unit: 'ha' }, requiresMaxQuantity: 0.2271 }]
     })
     initSelectActionsPage(form)
 
-    form.querySelector('input[value="CLIG3"]').dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CLIG3')
 
-    expect(document.getElementById('landActionQuantity_CLIG3-hint').textContent).toBe('0.2271 hectares available')
+    expect(hintFor('CLIG3').textContent).toBe('0.2271 hectares available')
   })
 
   // Full sequence from the algorithm this page implements: CSAM3=0.10, then
@@ -1655,18 +1570,18 @@ describe('initSelectActionsPage', () => {
       {
         code: 'CSAM3',
         checked: true,
-        availableArea: { value: 0.3271, unit: 'ha' },
+        availability: { value: 0.3271, unit: 'ha' },
         requiresMaxQuantity: 0.3271,
         quantityValue: '0.10'
       },
-      { code: 'CLIG3', availableArea: { value: 0.3271, unit: 'ha' } },
-      { code: 'CMOR1', availableArea: { value: 0.0301, unit: 'ha' } }
+      { code: 'CLIG3', availability: { value: 0.3271, unit: 'ha' } },
+      { code: 'CMOR1', availability: { value: 0.0301, unit: 'ha' } }
     ])
     global.fetch = fetchOk({
       actions: [
-        { code: 'CSAM3', availableArea: { value: 0.2271, unit: 'ha' }, requiresMaxQuantity: 0.2271 },
-        { code: 'CLIG3', availableArea: { value: 0.2271, unit: 'ha' } },
-        { code: 'CMOR1', availableArea: { value: 0.0301, unit: 'ha' } }
+        { code: 'CSAM3', availability: { value: 0.2271, unit: 'ha' }, requiresMaxQuantity: 0.2271 },
+        { code: 'CLIG3', availability: { value: 0.2271, unit: 'ha' } },
+        { code: 'CMOR1', availability: { value: 0.0301, unit: 'ha' } }
       ]
     })
     initSelectActionsPage(form)
@@ -1675,28 +1590,24 @@ describe('initSelectActionsPage', () => {
     const clig3Checkbox = form.querySelector('#landAction-CLIG3')
     global.fetch = fetchOk({
       actions: [
-        { code: 'CSAM3', availableArea: { value: 0.2271, unit: 'ha' }, requiresMaxQuantity: 0.2271 },
-        { code: 'CLIG3', availableArea: { value: 0, unit: 'ha' } },
-        { code: 'CMOR1', availableArea: { value: 0.0301, unit: 'ha' } }
+        { code: 'CSAM3', availability: { value: 0.2271, unit: 'ha' }, requiresMaxQuantity: 0.2271 },
+        { code: 'CLIG3', availability: { value: 0, unit: 'ha' } },
+        { code: 'CMOR1', availability: { value: 0.0301, unit: 'ha' } }
       ]
     })
-    clig3Checkbox.checked = true
-    clig3Checkbox.dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CLIG3', true)
 
     expect(getChosenAreaFieldValue(clig3Checkbox)).toBe('0.2271')
 
     const cmor1Checkbox = form.querySelector('#landAction-CMOR1')
     global.fetch = fetchOk({
       actions: [
-        { code: 'CSAM3', availableArea: { value: 0.2271, unit: 'ha' }, requiresMaxQuantity: 0.2271 },
-        { code: 'CLIG3', availableArea: { value: 0, unit: 'ha' } },
-        { code: 'CMOR1', availableArea: { value: 0, unit: 'ha' } }
+        { code: 'CSAM3', availability: { value: 0.2271, unit: 'ha' }, requiresMaxQuantity: 0.2271 },
+        { code: 'CLIG3', availability: { value: 0, unit: 'ha' } },
+        { code: 'CMOR1', availability: { value: 0, unit: 'ha' } }
       ]
     })
-    cmor1Checkbox.checked = true
-    cmor1Checkbox.dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CMOR1', true)
 
     expect(getChosenAreaFieldValue(cmor1Checkbox)).toBe('0.0301')
   })
@@ -1706,12 +1617,12 @@ describe('initSelectActionsPage', () => {
       {
         code: 'CSAM3',
         checked: true,
-        availableArea: { value: 0.3271, unit: 'ha' },
+        availability: { value: 0.3271, unit: 'ha' },
         requiresMaxQuantity: 0.3271,
         quantityValue: '0.10'
       },
-      { code: 'CLIG3', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, chosenArea: 0.2271 },
-      { code: 'CMOR1', checked: true, availableArea: { value: 0.0301, unit: 'ha' }, chosenArea: 0.0301 }
+      { code: 'CLIG3', checked: true, availability: { value: 0.3271, unit: 'ha' }, chosenArea: 0.2271 },
+      { code: 'CMOR1', checked: true, availability: { value: 0.0301, unit: 'ha' }, chosenArea: 0.0301 }
     ])
     // Self-competing on load (everything checked, nothing freed yet) reports
     // no surplus for either non-quantity action.
@@ -1732,19 +1643,16 @@ describe('initSelectActionsPage', () => {
         json: () =>
           Promise.resolve({
             actions: [
-              { code: 'CLIG3', availableArea: { value: surplus, unit: 'ha' } },
-              { code: 'CMOR1', availableArea: { value: surplus, unit: 'ha' } }
+              { code: 'CLIG3', availability: { value: surplus, unit: 'ha' } },
+              { code: 'CMOR1', availability: { value: surplus, unit: 'ha' } }
             ]
           })
       })
     })
-    const csam3 = form.querySelector('input[value="CSAM3"]')
-    csam3.checked = false
-    csam3.dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CSAM3', false)
 
-    const clig3 = form.querySelector('input[value="CLIG3"]')
-    const cmor1 = form.querySelector('input[value="CMOR1"]')
+    const clig3 = checkbox(form, 'CLIG3')
+    const cmor1 = checkbox(form, 'CMOR1')
     expect(getChosenAreaFieldValue(clig3)).toBe('0.3271')
     expect(getChosenAreaFieldValue(cmor1)).toBe('0.0301')
   })
@@ -1758,12 +1666,12 @@ describe('initSelectActionsPage', () => {
       {
         code: 'CMOR3',
         checked: true,
-        availableArea: { value: 23.9457, unit: 'ha' },
+        availability: { value: 23.9457, unit: 'ha' },
         requiresMaxQuantity: 23.9457,
         quantityValue: '20'
       },
-      { code: 'CLIG3', checked: true, availableArea: { value: 23.9457, unit: 'ha' }, chosenArea: 2.9957 },
-      { code: 'CMOR1', checked: true, availableArea: { value: 23.9457, unit: 'ha' }, chosenArea: 0.975 }
+      { code: 'CLIG3', checked: true, availability: { value: 23.9457, unit: 'ha' }, chosenArea: 2.9957 },
+      { code: 'CMOR1', checked: true, availability: { value: 23.9457, unit: 'ha' }, chosenArea: 0.975 }
     ])
     global.fetch = mockApi({ CLIG3: 2.9957, CMOR1: 0.975 })
     initSelectActionsPage(form)
@@ -1781,19 +1689,16 @@ describe('initSelectActionsPage', () => {
         json: () =>
           Promise.resolve({
             actions: [
-              { code: 'CLIG3', availableArea: { value: stillFree ? 20 : 0, unit: 'ha' } },
-              { code: 'CMOR1', availableArea: { value: stillFree ? 20 : 0, unit: 'ha' } }
+              { code: 'CLIG3', availability: { value: stillFree ? 20 : 0, unit: 'ha' } },
+              { code: 'CMOR1', availability: { value: stillFree ? 20 : 0, unit: 'ha' } }
             ]
           })
       })
     })
-    const cmor3 = form.querySelector('input[value="CMOR3"]')
-    cmor3.checked = false
-    cmor3.dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CMOR3', false)
 
-    const clig3 = form.querySelector('input[value="CLIG3"]')
-    const cmor1 = form.querySelector('input[value="CMOR1"]')
+    const clig3 = checkbox(form, 'CLIG3')
+    const cmor1 = checkbox(form, 'CMOR1')
     expect(getChosenAreaFieldValue(clig3)).toBe('22.9957')
     expect(getChosenAreaFieldValue(cmor1)).toBe('0.975')
   })
@@ -1806,11 +1711,11 @@ describe('initSelectActionsPage', () => {
       {
         code: 'CSAM3',
         checked: true,
-        availableArea: { value: 22.9957, unit: 'ha' },
+        availability: { value: 22.9957, unit: 'ha' },
         requiresMaxQuantity: 22.9957,
         quantityValue: '20'
       },
-      { code: 'CLIG3', checked: true, availableArea: { value: 22.9957, unit: 'ha' }, chosenArea: 2.9957 }
+      { code: 'CLIG3', checked: true, availability: { value: 22.9957, unit: 'ha' }, chosenArea: 2.9957 }
     ])
     global.fetch = mockApi({ CLIG3: 2.9957 })
     initSelectActionsPage(form)
@@ -1833,23 +1738,21 @@ describe('initSelectActionsPage', () => {
             actions: [
               {
                 code: 'CSAM3',
-                availableArea: { value: csam3Available, unit: 'ha' },
+                availability: { value: csam3Available, unit: 'ha' },
                 requiresMaxQuantity: csam3Available
               },
-              { code: 'CLIG3', availableArea: { value: clig3Available, unit: 'ha' } }
+              { code: 'CLIG3', availability: { value: clig3Available, unit: 'ha' } }
             ]
           })
       })
     })
-    const csam3 = form.querySelector('input[value="CSAM3"]')
-    csam3.checked = false
-    csam3.dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CSAM3', false)
 
-    const clig3 = form.querySelector('input[value="CLIG3"]')
+    const clig3 = checkbox(form, 'CLIG3')
+    const csam3 = checkbox(form, 'CSAM3')
     expect(getChosenAreaFieldValue(clig3)).toBe('22.9957')
     expect(csam3.disabled).toBe(true)
-    expect(document.getElementById('landActionQuantity_CSAM3-hint').textContent).toBe('0 hectares available')
+    expect(hintFor('CSAM3').textContent).toBe('0 hectares available')
     expect(csam3.closest('.govuk-checkboxes__item').textContent).toContain(
       'Not compatible with other selected actions.'
     )
@@ -1860,12 +1763,12 @@ describe('initSelectActionsPage', () => {
       {
         code: 'CSAM3',
         checked: true,
-        availableArea: { value: 0.3271, unit: 'ha' },
+        availability: { value: 0.3271, unit: 'ha' },
         requiresMaxQuantity: 0.3271,
         quantityValue: '0.10'
       },
-      { code: 'CLIG3', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, chosenArea: 0.2271 },
-      { code: 'CMOR1', checked: true, availableArea: { value: 0.0301, unit: 'ha' }, chosenArea: 0.0301 }
+      { code: 'CLIG3', checked: true, availability: { value: 0.3271, unit: 'ha' }, chosenArea: 0.2271 },
+      { code: 'CMOR1', checked: true, availability: { value: 0.0301, unit: 'ha' }, chosenArea: 0.0301 }
     ])
     // 0.1ha surplus is only genuinely available once - growth (both the
     // initial checked-on-load refresh and any follow-up it triggers) must
@@ -1879,8 +1782,8 @@ describe('initSelectActionsPage', () => {
         json: () =>
           Promise.resolve({
             actions: [
-              { code: 'CLIG3', availableArea: { value, unit: 'ha' } },
-              { code: 'CMOR1', availableArea: { value, unit: 'ha' } }
+              { code: 'CLIG3', availability: { value, unit: 'ha' } },
+              { code: 'CMOR1', availability: { value, unit: 'ha' } }
             ]
           })
       })
@@ -1888,35 +1791,28 @@ describe('initSelectActionsPage', () => {
     initSelectActionsPage(form)
     await flushPromises()
 
-    const csam3 = form.querySelector('input[value="CSAM3"]')
-    csam3.checked = false
-    csam3.dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CSAM3', false)
 
     // CLIG3 already claimed the only surplus during the initial load's
     // refresh (only one non-quantity action may grow per response) - CMOR1
     // never had anything left to grow into, so it's still at its flat 0.0301.
     global.fetch = mockApi({ CMOR1: 0.0301 })
-    const clig3 = form.querySelector('input[value="CLIG3"]')
-    clig3.checked = false
-    clig3.dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CLIG3', false)
 
-    const [, options] = global.fetch.mock.calls[0]
-    expect(JSON.parse(options.body).plannedActions).toEqual([{ actionCode: 'CMOR1', quantity: 0.0301, unit: 'ha' }])
+    expect(sentPlannedActions()).toEqual([{ actionCode: 'CMOR1', quantity: 0.0301, unit: 'ha' }])
   })
 
   it('ignores an out-of-order (stale) response', async () => {
     const form = setupDom([
-      { code: 'CMOR1', checked: true, availableArea: { value: 10, unit: 'ha' } },
-      { code: 'UPL1', availableArea: { value: 5, unit: 'ha' } }
+      { code: 'CMOR1', checked: true, availability: { value: 10, unit: 'ha' } },
+      { code: 'UPL1', availability: { value: 5, unit: 'ha' } }
     ])
     let resolveFirst
     const firstResponse = new Promise((resolve) => {
       resolveFirst = () =>
         resolve({
           ok: true,
-          json: () => Promise.resolve({ actions: [{ code: 'UPL1', availableArea: { value: 0, unit: 'ha' } }] })
+          json: () => Promise.resolve({ actions: [{ code: 'UPL1', availability: { value: 0, unit: 'ha' } }] })
         })
     })
     global.fetch = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ actions: [] }) })
@@ -1929,50 +1825,51 @@ describe('initSelectActionsPage', () => {
       .mockImplementationOnce(() =>
         Promise.resolve({
           ok: true,
-          json: () => Promise.resolve({ actions: [{ code: 'UPL1', availableArea: { value: 5, unit: 'ha' } }] })
+          json: () => Promise.resolve({ actions: [{ code: 'UPL1', availability: { value: 5, unit: 'ha' } }] })
         })
       )
 
-    const cmor1 = form.querySelector('input[value="CMOR1"]')
+    const cmor1 = checkbox(form, 'CMOR1')
     cmor1.dispatchEvent(new Event('change', { bubbles: true }))
     cmor1.dispatchEvent(new Event('change', { bubbles: true }))
     await flushPromises()
     resolveFirst()
     await flushPromises()
 
-    const upl1 = form.querySelector('input[value="UPL1"]')
+    const upl1 = checkbox(form, 'UPL1')
     expect(upl1.disabled).toBe(false)
   })
 
   it('does nothing when the fetch call fails', async () => {
-    const form = setupDom([{ code: 'CMOR1', checked: true, availableArea: { value: 10, unit: 'ha' } }])
+    const form = setupDom([
+      { code: 'CMOR1', checked: true, availability: { value: 10, unit: 'ha' } },
+      { code: 'UPL1', availability: { value: 5, unit: 'ha' } }
+    ])
     global.fetch = vi.fn().mockRejectedValue(new Error('network error'))
     initSelectActionsPage(form)
 
-    const checkbox = form.querySelector('input[value="CMOR1"]')
-    await expect(async () => {
-      checkbox.dispatchEvent(new Event('change', { bubbles: true }))
-      await Promise.resolve()
-      await Promise.resolve()
-    }).not.toThrow()
+    await toggle(form, 'CMOR1')
+
+    expect(global.fetch).toHaveBeenCalled()
+    expect(checkbox(form, 'UPL1').disabled).toBe(false)
+    expect(checkbox(form, 'CMOR1').checked).toBe(true)
   })
 
   it('does nothing when the response is not ok', async () => {
     const form = setupDom([
-      { code: 'CMOR1', checked: true, availableArea: { value: 10, unit: 'ha' } },
-      { code: 'UPL1', availableArea: { value: 5, unit: 'ha' } }
+      { code: 'CMOR1', checked: true, availability: { value: 10, unit: 'ha' } },
+      { code: 'UPL1', availability: { value: 5, unit: 'ha' } }
     ])
     global.fetch = vi.fn().mockResolvedValue({ ok: false })
     initSelectActionsPage(form)
 
-    form.querySelector('input[value="UPL1"]').dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'UPL1')
 
-    expect(form.querySelector('input[value="UPL1"]').disabled).toBe(false)
+    expect(checkbox(form, 'UPL1').disabled).toBe(false)
   })
 
-  it('ignores unrelated form input events', async () => {
-    const form = setupDom([{ code: 'CMOR1', availableArea: { value: 10, unit: 'ha' } }])
+  it('ignores unrelated form input events', () => {
+    const form = setupDom([{ code: 'CMOR1', availability: { value: 10, unit: 'ha' } }])
     const other = document.createElement('input')
     other.name = 'crumb'
     form.appendChild(other)
@@ -1986,8 +1883,8 @@ describe('initSelectActionsPage', () => {
 
   it('keeps other actions disabled continuously across a growth follow-up chain, without a re-enabled gap between links', async () => {
     const form = setupDom([
-      { code: 'CMOR1', checked: true, availableArea: { value: 0.3271, unit: 'ha' }, chosenArea: 0.2271 },
-      { code: 'CLIG3', availableArea: { value: 0.3271, unit: 'ha' } }
+      { code: 'CMOR1', checked: true, availability: { value: 0.3271, unit: 'ha' }, chosenArea: 0.2271 },
+      { code: 'CLIG3', availability: { value: 0.3271, unit: 'ha' } }
     ])
     // First call (triggered by checking CLIG3) reports growth for CMOR1;
     // applyRefreshResponse re-enables CMOR1 as part of applying that growth,
@@ -2003,17 +1900,14 @@ describe('initSelectActionsPage', () => {
     initSelectActionsPage(form)
     await flushPromises()
 
-    const clig3Checkbox = form.querySelector('#landAction-CLIG3')
     const cmor1Checkbox = form.querySelector('#landAction-CMOR1')
-    clig3Checkbox.checked = true
-    clig3Checkbox.dispatchEvent(new Event('change', { bubbles: true }))
-    await flushPromises()
+    await toggle(form, 'CLIG3', true)
 
     expect(cmor1Checkbox.disabled).toBe(true)
 
     pending.shift()({
       ok: true,
-      json: () => Promise.resolve({ actions: [{ code: 'CMOR1', availableArea: { value: 0.1, unit: 'ha' } }] })
+      json: () => Promise.resolve({ actions: [{ code: 'CMOR1', availability: { value: 0.1, unit: 'ha' } }] })
     })
     await flushPromises()
 
@@ -2023,7 +1917,7 @@ describe('initSelectActionsPage', () => {
 
     pending.shift()({
       ok: true,
-      json: () => Promise.resolve({ actions: [{ code: 'CMOR1', availableArea: { value: 0, unit: 'ha' } }] })
+      json: () => Promise.resolve({ actions: [{ code: 'CMOR1', availability: { value: 0, unit: 'ha' } }] })
     })
     await flushPromises()
 

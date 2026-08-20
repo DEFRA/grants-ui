@@ -20,21 +20,11 @@ describe('land-actions.validator', () => {
       expect(result).toEqual(['landAction_1', 'landAction_2'])
     })
 
-    it('should return empty array when no action fields present', () => {
-      const payload = {
-        otherField: 'value',
-        anotherField: 'test'
-      }
-
-      const result = extractLandActionFields(payload, 'landAction_')
-
-      expect(result).toEqual([])
-    })
-
-    it('should handle empty payload', () => {
-      const result = extractLandActionFields({}, 'landAction_')
-
-      expect(result).toEqual([])
+    it.each([
+      ['no action fields are present', { otherField: 'value', anotherField: 'test' }],
+      ['the payload is empty', {}]
+    ])('should return empty array when %s', (_description, payload) => {
+      expect(extractLandActionFields(payload, 'landAction_')).toEqual([])
     })
 
     it('should work with different prefixes', () => {
@@ -62,60 +52,27 @@ describe('land-actions.validator', () => {
   })
 
   describe('validateLandActionsSelection', () => {
-    it('should return errors when no actions selected', () => {
-      const payload = {}
-
-      const result = validateLandActionsSelection(payload, 'landAction_')
-
-      expect(result).toEqual([{ text: 'Select at least one action', href: '#landAction_1' }])
+    it.each([
+      ['the payload is empty', {}],
+      ['the payload has a single non-matching field', { otherField: 'value' }],
+      ['no field matches the prefix', { otherField: 'value', anotherField: 'test', notAnAction: 'data' }]
+    ])('should return errors when %s', (_description, payload) => {
+      expect(validateLandActionsSelection(payload, 'landAction_')).toEqual([
+        { text: 'Select at least one action', href: '#landAction_1' }
+      ])
     })
 
-    it('should return errors when payload has no action fields', () => {
-      const payload = { otherField: 'value' }
-
-      const result = validateLandActionsSelection(payload, 'landAction_')
-
-      expect(result).toEqual([{ text: 'Select at least one action', href: '#landAction_1' }])
-    })
-
-    it('should return empty errors when actions are selected', () => {
-      const payload = { landAction_1: 'CMOR1' }
-
-      const result = validateLandActionsSelection(payload, 'landAction_')
-
-      expect(result).toEqual([])
-    })
-
-    it('should return empty errors when multiple actions selected', () => {
-      const payload = {
-        landAction_1: 'CMOR1',
-        landAction_2: 'UPL1',
-        landAction_3: 'SAM1'
-      }
-
-      const result = validateLandActionsSelection(payload, 'landAction_')
-
-      expect(result).toEqual([])
+    it.each([
+      ['one action is selected', { landAction_1: 'CMOR1' }],
+      ['multiple actions are selected', { landAction_1: 'CMOR1', landAction_2: 'UPL1', landAction_3: 'SAM1' }]
+    ])('should return empty errors when %s', (_description, payload) => {
+      expect(validateLandActionsSelection(payload, 'landAction_')).toEqual([])
     })
 
     it('should use correct href with custom prefix', () => {
-      const payload = {}
-
-      const result = validateLandActionsSelection(payload, 'customAction_')
+      const result = validateLandActionsSelection({}, 'customAction_')
 
       expect(result[0].href).toBe('#customAction_1')
-    })
-
-    it('should ignore fields that do not match prefix', () => {
-      const payload = {
-        otherField: 'value',
-        anotherField: 'test',
-        notAnAction: 'data'
-      }
-
-      const result = validateLandActionsSelection(payload, 'landAction_')
-
-      expect(result).toEqual([{ text: 'Select at least one action', href: '#landAction_1' }])
     })
   })
 
@@ -147,7 +104,7 @@ describe('land-actions.validator', () => {
 
   describe('validateSelectedActionQuantities', () => {
     const actions = [
-      { code: 'CSAM3', description: 'Herbal leys', version: '1', availability: { type: 'partial' } },
+      { code: 'CSAM3', description: 'Herbal leys', version: '1', inputRequired: true },
       { code: 'CLIG3', description: 'Manage grassland', version: '1' }
     ]
 
@@ -164,15 +121,7 @@ describe('land-actions.validator', () => {
       ])
     })
 
-    it('should not require a quantity for an action with no availability.type', () => {
-      const payload = { landAction: 'CLIG3' }
-
-      const result = validateSelectedActionQuantities(payload, actions)
-
-      expect(result).toEqual([])
-    })
-
-    it('should ignore quantity-required actions that were not selected', () => {
+    it('should not require a quantity for an action that does not need one, ignoring the unselected one that does', () => {
       const payload = { landAction: 'CLIG3' }
 
       const result = validateSelectedActionQuantities(payload, actions)
@@ -183,7 +132,7 @@ describe('land-actions.validator', () => {
     it('should return multiple errors for multiple unconfirmed quantity-required actions', () => {
       const withSecondQuantity = [
         ...actions,
-        { code: 'UPL8', description: 'Low input', version: '1', availability: { type: 'partial' } }
+        { code: 'UPL8', description: 'Low input', version: '1', inputRequired: true }
       ]
       const payload = { landAction: ['CSAM3', 'UPL8'] }
 

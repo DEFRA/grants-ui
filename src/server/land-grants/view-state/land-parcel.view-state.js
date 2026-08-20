@@ -3,6 +3,7 @@ import { getConsentTypes } from '../utils/consent-types.js'
 import { getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
 import { getSelectedActionCodes } from '../utils/selected-actions-field.js'
 import { requiresQuantityInput } from '~/src/shared/action-quantity-type.js'
+import { getAvailabilityLimit } from '~/src/shared/availability.js'
 
 /**
  * Manages state operations for land parcels and their actions.
@@ -36,7 +37,7 @@ export function buildNewState(state, actionsObj, parcel) {
  * @returns {boolean}
  */
 function hasSubmittedQuantity(payload, actionInfo) {
-  const quantityOverride = requiresQuantityInput(actionInfo.availability?.type)
+  const quantityOverride = requiresQuantityInput(actionInfo.inputRequired)
     ? payload[getActionQuantityFieldName(actionInfo.code)]
     : null
   return quantityOverride !== null && quantityOverride !== undefined && quantityOverride !== ''
@@ -60,7 +61,7 @@ export function hasSubmittedNonZeroQuantity(payload, actionInfo) {
  * Builds the state entry for a single selected action, applying its submitted
  * quantity override when it requires one, otherwise falling back to its
  * available area. actionInfo must already be recomputed against the full
- * submission, or a non-quantity action's availableArea here is its
+ * submission, or a non-quantity action's availability here is its
  * uncompeted total, not what's left once a sibling's claim is accounted for.
  * @param {object} payload - Form payload
  * @param {Action} actionInfo - The action's data from the API
@@ -78,22 +79,22 @@ function buildActionStateEntry(payload, actionInfo) {
     value: Number(
       hasQuantityOverride
         ? payload[getActionQuantityFieldName(actionInfo.code)]
-        : (actionInfo?.availableArea?.value ?? 0)
+        : (getAvailabilityLimit(actionInfo?.availability) ?? 0)
     ),
-    unit: actionInfo?.availableArea?.unit ?? ''
+    unit: actionInfo?.availability?.unit ?? ''
   }
 }
 
 /**
- * Overlays freshly recomputed availableArea (keyed by code, from
+ * Overlays freshly recomputed availability (keyed by code, from
  * fetchActionsWithPlannedActions) onto the full action list from the initial
- * fetch - everything else (description, version, consents, availability, etc.)
+ * fetch - everything else (description, version, consents, inputRequired, etc.)
  * still comes from the original fetch, and an action missing from the
- * recompute keeps its original values. The action's first-seen availableArea
- * is preserved as staticAvailableArea, since the recomputed value competes
+ * recompute keeps its original values. The action's first-seen availability
+ * is preserved as staticAvailability, since the recomputed value competes
  * against whatever else is in this submission (see mapActionToViewModel).
  * @param {Array<Action>} actions - Flat list from the initial fetch
- * @param {Array<{ code: string, availableArea?: object }>} recomputed
+ * @param {Array<{ code: string, availability?: object }>} recomputed
  * @returns {Array<Action>}
  */
 export function mergeRecomputedAvailability(actions, recomputed) {
@@ -104,8 +105,8 @@ export function mergeRecomputedAvailability(actions, recomputed) {
     return match
       ? {
           ...action,
-          availableArea: match.availableArea,
-          staticAvailableArea: action.staticAvailableArea ?? action.availableArea
+          availability: match.availability,
+          staticAvailability: action.staticAvailability ?? action.availability
         }
       : action
   })
@@ -180,7 +181,7 @@ export function addSelectedActionsToState(state, payload, actions, parcel) {
     actions,
     parcel,
     (actionInfo, formPayload) =>
-      !requiresQuantityInput(actionInfo.availability?.type) || hasSubmittedNonZeroQuantity(formPayload, actionInfo)
+      !requiresQuantityInput(actionInfo.inputRequired) || hasSubmittedNonZeroQuantity(formPayload, actionInfo)
   )
 }
 
@@ -203,7 +204,7 @@ export function getAddedActionsFromPayload(payload, actions, prevAddedActions = 
     .map((actionInfo) => ({
       code: actionInfo.code,
       description: actionInfo.description,
-      value: requiresQuantityInput(actionInfo.availability?.type)
+      value: requiresQuantityInput(actionInfo.inputRequired)
         ? (payload[getActionQuantityFieldName(actionInfo.code)] ?? '')
         : (prevAddedActions.find((a) => a.code === actionInfo.code)?.value ?? '')
     }))
@@ -326,13 +327,13 @@ export function findActionInfoFromState(landParcels, parcelKey, action) {
  * @property {string} version - Action version
  * @property {string[]} [consents] - Array of consent type keys required (e.g., ['sssi', 'hefer'])
  * @property {string} [guidanceUrl] - URL to the action's guidance page
- * @property {object} [availability] - Governs whether this action needs a user-typed quantity
- * @property {'total'|'partial'} [availability.type] - See requiresQuantityInput in
- *   shared/action-quantity-type.js
- * @property {object} [availableArea] - Available area for the action
- * @property {number} [availableArea.value] - Area value
- * @property {string} [availableArea.unit] - Area unit
- * @property {object} [staticAvailableArea] - The action's original, uncompeted available area (see mergeRecomputedAvailability)
- * @property {number} [staticAvailableArea.value] - Area value
- * @property {string} [staticAvailableArea.unit] - Area unit
+ * @property {boolean} [inputRequired] - Whether the user must type a quantity for this
+ *   action. See requiresQuantityInput in shared/action-quantity-type.js
+ * @property {object} [availability] - How much of the action is still claimable
+ * @property {number | null} [availability.value] - Amount still claimable. 0 means not
+ *   compatible with what is already selected; null means no restriction
+ * @property {string} [availability.unit] - Unit, area, linear or count
+ * @property {object} [staticAvailability] - The action's original, uncompeted availability (see mergeRecomputedAvailability)
+ * @property {number | null} [staticAvailability.value] - Amount claimable; null means no restriction
+ * @property {string} [staticAvailability.unit] - Unit, area, linear or count
  */

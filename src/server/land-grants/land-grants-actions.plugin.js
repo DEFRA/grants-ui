@@ -5,6 +5,7 @@ import { fetchAuthorisedParcelIds } from '~/src/server/land-grants/services/parc
 import { fetchActionsWithPlannedActions } from '~/src/server/land-grants/services/land-grants.service.js'
 import { COMPOUND_PARCEL_ID_PATTERN, parseLandParcel } from '~/src/shared/format-parcel.js'
 import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
+import { UNIT_TYPES } from '~/src/shared/unit-types.js'
 
 const plannedActionsValidation = {
   params: Joi.object({
@@ -16,7 +17,9 @@ const plannedActionsValidation = {
         Joi.object({
           actionCode: Joi.string().required(),
           quantity: Joi.number().required(),
-          unit: Joi.string().valid('ha', 'sqm').required()
+          unit: Joi.string()
+            .valid(...UNIT_TYPES)
+            .required()
         })
       )
       .required()
@@ -26,7 +29,7 @@ const plannedActionsValidation = {
 /**
  * Live action-availability refresh for the select-actions page. Given the
  * user's in-progress selection (plannedActions), recomputes each action's
- * availableArea so the client can grey out actions that are no longer
+ * availability so the client can grey out actions that are no longer
  * available with that combination, without a full page reload.
  * @param {Request} request
  * @param {ResponseToolkit} h

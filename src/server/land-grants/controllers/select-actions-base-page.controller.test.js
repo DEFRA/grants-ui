@@ -1,36 +1,25 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 import {
   fetchGroupedActionsForParcel,
   fetchParcels,
   validateApplication
 } from '~/src/server/land-grants/services/land-grants.service.js'
-import { formatParcelReference, parseLandParcel } from '~/src/shared/format-parcel.js'
 import SelectActionsBasePageController from './select-actions-base-page.controller.js'
+import {
+  CMOR1,
+  PARCELS_WITH_SIZE,
+  USER_CONTEXT,
+  makeLandGrantsRequest,
+  makeViewToolkit,
+  mockFormatParcelImplementations,
+  stubControllerMethods
+} from '~/src/server/land-grants/test-helpers.js'
 
-vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () => ({
-  QuestionPageController: class {
-    constructor(model, pageDef) {
-      this.model = model
-      this.pageDef = pageDef
-    }
-
-    getViewModel() {}
-
-    getHref(path) {
-      return `/${this.model.basePath}/${path}`.replace(/\/{2,}/g, '/')
-    }
-
-    makeGetRouteHandler() {
-      return async (request, context, h) => h.view('stub-view', this.getViewModel(request, context))
-    }
-
-    makePostRouteHandler() {
-      return async (request, context, h) => h.view('stub-view', this.getViewModel(request, context))
-    }
-  }
-}))
+vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', async () => {
+  const { makeQuestionPageControllerMock } = await import('~/src/__mocks__')
+  return makeQuestionPageControllerMock('stub-view')
+})
 
 vi.mock('~/src/server/task-list/task-list.helper.js', () => ({
   withTaskContext: (Base) => Base
@@ -91,14 +80,7 @@ class StubSelectActionsController extends SelectActionsBasePageController {
   }
 }
 
-const mockParcelsResponse = [{ parcelId: '0155', sheetId: 'SD7946', area: { unit: 'ha', value: 4.0383 } }]
-
-const mockGroupedActions = [
-  {
-    name: 'Assess moorland',
-    actions: [{ code: 'CMOR1', description: 'Assess moorland: CMOR1', availableArea: { unit: 'ha', value: 10 } }]
-  }
-]
+const mockGroupedActions = [{ name: 'Assess moorland', actions: [CMOR1] }]
 
 describe('SelectActionsBasePageController', () => {
   let controller
@@ -110,32 +92,18 @@ describe('SelectActionsBasePageController', () => {
     QuestionPageController.prototype.getViewModel = vi.fn().mockReturnValue({ pageTitle: 'Stub page' })
 
     const mockModel = { def: { metadata: {} }, getSection: vi.fn(), pages: [] }
-    controller = new StubSelectActionsController(mockModel, {})
-    controller.collection = { getErrors: vi.fn().mockReturnValue([]) }
-    controller.setState = vi.fn().mockResolvedValue(true)
-    controller.proceed = vi.fn().mockReturnValue('redirected')
-    controller.getNextPath = vi.fn().mockReturnValue('/next-path')
-    controller.performAuthCheck = vi.fn().mockResolvedValue(null)
+    controller = stubControllerMethods(new StubSelectActionsController(mockModel, {}))
 
-    fetchParcels.mockResolvedValue(mockParcelsResponse)
+    fetchParcels.mockResolvedValue(PARCELS_WITH_SIZE.slice(0, 1))
 
-    mockRequest = {
+    mockRequest = makeLandGrantsRequest({
       payload: { CMOR1: 'CMOR1' },
-      query: { parcelId: 'sheet1-parcel1' },
-      logger: mockRequestLogger(),
-      auth: {
-        isAuthenticated: true,
-        credentials: { token: 'defra-id-access-token', sbi: '106284736', crn: 'CRN123' }
-      }
-    }
-    mockContext = { state: {}, referenceNumber: 'REF123' }
-    mockH = { view: vi.fn().mockReturnValue('rendered view'), redirect: vi.fn() }
-
-    parseLandParcel.mockReturnValue(['sheet1', 'parcel1'])
-    formatParcelReference.mockImplementation((parcel) => {
-      const [sheetId, parcelId] = typeof parcel === 'string' ? parcel.split('-') : [parcel.sheetId, parcel.parcelId]
-      return [sheetId, parcelId].filter((part) => part != null && part !== '').join(' ')
+      query: { parcelId: 'sheet1-parcel1' }
     })
+    mockContext = { state: {}, referenceNumber: 'REF123' }
+    mockH = makeViewToolkit()
+
+    mockFormatParcelImplementations()
     fetchGroupedActionsForParcel.mockResolvedValue({
       actions: mockGroupedActions,
       parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
@@ -185,7 +153,7 @@ describe('SelectActionsBasePageController', () => {
 
       expect(fetchGroupedActionsForParcel).toHaveBeenCalledWith(
         { parcelId: 'parcel1', sheetId: 'sheet1', enabledLandActions: [], plannedActions: [] },
-        { defraIdToken: 'defra-id-access-token', sbi: '106284736' }
+        USER_CONTEXT
       )
       const [viewName, viewModel] = mockH.view.mock.calls[0]
       expect(viewName).toBe('stub-view')
@@ -249,7 +217,7 @@ describe('SelectActionsBasePageController', () => {
           applicationId: 'REF123',
           crn: 'CRN123'
         }),
-        { defraIdToken: 'defra-id-access-token', sbi: '106284736' }
+        USER_CONTEXT
       )
       const [, viewModel] = mockH.view.mock.calls[0]
       expect(viewModel.errors).toEqual([{ text: 'Too much land', href: '#CMOR1' }])
