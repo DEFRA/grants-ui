@@ -76,8 +76,8 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
    * @param {Array} _groupedActions
    * @param {Array} _addedActions
    * @param {Record<string, string>} [_quantityErrorsByCode]
-   * @param {{ sheetId?: string, parcelId?: string, size?: Size }} [_parcel] - Identifiers and area for the
    * @param {boolean} [_hasErrors] - Whether this page load is redisplaying a rejected submission
+   * @param {{ sheetId?: string, parcelId?: string, size?: Size }} [_parcel] - Identifiers and area for the
    *   "Selected land parcel" summary
    * @returns {object}
    */
