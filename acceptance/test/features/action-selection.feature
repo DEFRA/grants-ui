@@ -1,5 +1,12 @@
 Feature: Action Selection
 
+    # Disabled until both land:
+    #   1. the seeded land-grants dataset offers SCR2 for parcel SK0972 6820
+    #      (actions.enabled is currently false, and it is not linked to that
+    #      parcel's land covers), so the SCR2 row below can render
+    #   2. the example-grant-with-map config adding /confirm-land-and-actions is
+    #      released (DEFRA/grants-config-example-grants#157)
+    @disabled
     Scenario: Select a partial area action for a land parcel
         Given there is no application data for SBI "106514040" and grant "example-grant-with-map"
 
