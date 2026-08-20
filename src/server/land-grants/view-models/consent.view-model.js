@@ -41,22 +41,46 @@ export function mapConsentPanelToViewModel(requiredConsents) {
 }
 
 /**
- * The short "Requires ..." requirement label for a set of consent keys, used
- * as a hint beneath an action's name. Membership-driven, so the canonical
- * SSSI-then-HEFER order holds whatever order the keys arrive in; unknown keys
- * and an empty set produce an empty string. Persisted state predating the
- * consents field - or carrying a malformed value - yields no label either.
+ * The consent labels a set of keys resolves to, in canonical SSSI-then-HEFER
+ * order however they arrive. Unknown keys, an empty set, and persisted state
+ * predating the consents field all yield nothing.
+ * @param {string[] | undefined} requiredConsents
+ * @returns {string[]}
+ */
+function consentLabels(requiredConsents, sssiLabel, heferLabel) {
+  const consents = Array.isArray(requiredConsents) ? requiredConsents : []
+  const labels = []
+  if (consents.includes('sssi')) {
+    labels.push(sssiLabel)
+  }
+  if (consents.includes('hefer')) {
+    labels.push(heferLabel)
+  }
+  return labels
+}
+
+/**
+ * The "Requires ..." hint shown beneath a selected action's name.
  * @param {string[] | undefined} requiredConsents
  * @returns {string}
  */
 export function getConsentRequirementText(requiredConsents) {
-  const consents = Array.isArray(requiredConsents) ? requiredConsents : []
-  const labels = []
-  if (consents.includes('sssi')) {
-    labels.push('SSSI consent')
-  }
-  if (consents.includes('hefer')) {
-    labels.push('an SFI HEFER')
-  }
+  const labels = consentLabels(requiredConsents, 'SSSI consent', 'an SFI HEFER')
   return labels.length ? `Requires ${labels.join(' and ')}` : ''
+}
+
+/**
+ * The notice shown on the map's selected-parcel summary. Rendered here rather
+ * than in the browser so every consent string lives in one module.
+ * @param {string[] | undefined} requiredConsents
+ * @returns {string}
+ */
+export function getConsentNoticeText(requiredConsents) {
+  const labels = consentLabels(requiredConsents, 'SSSI consent', 'an SFI HEFER')
+  if (!labels.length) {
+    return ''
+  }
+  // "an SFI HEFER" leads the sentence when it is the only requirement.
+  const sentence = `${labels.join(' and ')} may apply to some actions`
+  return sentence.charAt(0).toUpperCase() + sentence.slice(1)
 }

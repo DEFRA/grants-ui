@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { getConsentRequirementText, mapConsentPanelToViewModel } from './consent.view-model.js'
+import {
+  getConsentNoticeText,
+  getConsentRequirementText,
+  mapConsentPanelToViewModel
+} from './consent.view-model.js'
 
 describe('consent.view-model', () => {
   describe('mapConsentPanelToViewModel', () => {
@@ -63,6 +67,20 @@ describe('consent.view-model', () => {
 
     it('should return an empty string when the consents value is not an array', () => {
       expect(getConsentRequirementText(undefined)).toBe('')
+    })
+  })
+
+  describe('getConsentNoticeText', () => {
+    it.each([
+      [[], ''],
+      [['sssi'], 'SSSI consent may apply to some actions'],
+      [['hefer'], 'An SFI HEFER may apply to some actions'],
+      [['sssi', 'hefer'], 'SSSI consent and an SFI HEFER may apply to some actions'],
+      [['hefer', 'sssi'], 'SSSI consent and an SFI HEFER may apply to some actions'],
+      [['unknown'], ''],
+      [undefined, '']
+    ])('renders %j as %j', (consents, expected) => {
+      expect(getConsentNoticeText(consents)).toBe(expected)
     })
   })
 })

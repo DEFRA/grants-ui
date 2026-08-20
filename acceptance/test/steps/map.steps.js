@@ -20,20 +20,15 @@ Given('the map has the following land parcels available for selection', async fu
 // Intercepts only the informational selected-parcel consent lookup, so the
 // rest of the journey (including the availability route) still hits the app.
 Given('the selected parcel consent lookup returns', async function (dataTable) {
-  const consentsByParcel = Object.fromEntries(
-    dataTable
-      .hashes()
-      .map((row) => [
-        row.PARCEL.replace(' ', '-'),
-        row.CONSENTS ? row.CONSENTS.split(',').map((key) => key.trim()) : []
-      ])
+  const noticeByParcel = Object.fromEntries(
+    dataTable.hashes().map((row) => [row.PARCEL.replace(' ', '-'), row.NOTICE ?? ''])
   )
   await this.page.route(/\/api\/land-grants\/actions\/[^/]+\/consents$/, (route) => {
     const compoundParcelId = decodeURIComponent(new URL(route.request().url()).pathname.split('/').at(-2))
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ consents: consentsByParcel[compoundParcelId] ?? [] })
+      body: JSON.stringify({ text: noticeByParcel[compoundParcelId] ?? '' })
     })
   })
 })

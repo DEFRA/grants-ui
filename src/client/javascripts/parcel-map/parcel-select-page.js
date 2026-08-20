@@ -92,32 +92,12 @@ const writeHiddenInputs = (selectedIds) => {
 }
 
 /**
- * The map row's wording for a parcel's consent requirements. Membership-driven,
- * so SSSI stays first whatever order the API returns the keys in; an unknown or
- * empty set leaves the row hidden.
- * @param {string[]} consents
- * @returns {string}
- */
-const consentRequirementText = (consents) => {
-  const hasSssi = consents.includes('sssi')
-  const hasHefer = consents.includes('hefer')
-  if (hasSssi && hasHefer) {
-    return 'SSSI consent and an SFI HEFER may apply to some actions'
-  }
-  if (hasSssi) {
-    return 'SSSI consent may apply to some actions'
-  }
-  if (hasHefer) {
-    return 'An SFI HEFER may apply to some actions'
-  }
-  return ''
-}
-
-/**
+ * The parcel's consent notice, already worded by the server so the copy lives
+ * in one place. Empty string when nothing applies; null when the lookup failed.
  * @param {string} parcelId
- * @returns {Promise<string[] | null>} The parcel's consent keys, or null when the lookup failed.
+ * @returns {Promise<string | null>}
  */
-const postConsentRequirements = async (parcelId) => {
+const fetchConsentNotice = async (parcelId) => {
   const crumb = /** @type {HTMLInputElement | null} */ (document.querySelector('input[name="crumb"]'))?.value
   try {
     const response = await fetch(`/api/land-grants/actions/${encodeURIComponent(parcelId)}/consents`, {
@@ -129,9 +109,8 @@ const postConsentRequirements = async (parcelId) => {
     if (!response.ok) {
       return null
     }
-    /** @type {{ consents?: unknown }} */
-    const { consents } = await response.json()
-    return Array.isArray(consents) ? consents : null
+    const { text } = await response.json()
+    return typeof text === 'string' ? text : null
   } catch {
     return null
   }
@@ -157,9 +136,9 @@ const showAdditionalDetails = (text) => {
 
 /**
  * Keeps the "Additional details" row in step with the current selection. The
- * requirement is a property of the selected parcel's own actions, so every
- * selection event - including deselection and multi-selection - invalidates
- * any in-flight lookup and clears the row before a new one is asked for.
+ * notice belongs to the selected parcel, so every selection event - including
+ * deselection and multi-selection - invalidates any in-flight lookup and
+ * clears the row before a new one is asked for.
  * @returns {(selectedParcels: SelectedParcel[]) => Promise<void>}
  */
 function createConsentRequirementsUpdater() {
@@ -174,14 +153,13 @@ function createConsentRequirementsUpdater() {
       return
     }
 
-    const consents = await postConsentRequirements(selectedParcels[0].id)
+    const text = await fetchConsentNotice(selectedParcels[0].id)
     if (thisRequestId !== requestId) {
       // A newer selection has already taken over - this response describes a
       // parcel that is no longer the one being shown.
       return
     }
 
-    const text = consentRequirementText(consents ?? [])
     if (text) {
       showAdditionalDetails(text)
     }

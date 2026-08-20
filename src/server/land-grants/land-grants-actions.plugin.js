@@ -6,15 +6,14 @@ import {
   fetchActionsWithPlannedActions,
   fetchConsentRequirementsForParcel
 } from '~/src/server/land-grants/services/land-grants.service.js'
+import { getConsentNoticeText } from '~/src/server/land-grants/view-models/consent.view-model.js'
 import { COMPOUND_PARCEL_ID_PATTERN, parseLandParcel } from '~/src/shared/format-parcel.js'
 import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
 
-const compoundParcelParams = Joi.object({
-  parcelId: Joi.string().pattern(COMPOUND_PARCEL_ID_PATTERN).required()
-})
-
 const plannedActionsValidation = {
-  params: compoundParcelParams,
+  params: Joi.object({
+    parcelId: Joi.string().pattern(COMPOUND_PARCEL_ID_PATTERN).required()
+  }),
   payload: Joi.object({
     plannedActions: Joi.array()
       .items(
@@ -28,21 +27,13 @@ const plannedActionsValidation = {
   })
 }
 
-const consentsValidation = {
-  params: compoundParcelParams,
-  // Nothing to send: the requirement belongs to the parcel, and the parcel
-  // comes from the path. The empty body exists only to carry the crumb.
-  payload: Joi.object({}).max(0).default({})
-}
-
 /**
- * The parcel a request is allowed to act on, or null when the caller is not
- * authorised for it - including when the authorisation lookup itself failed,
- * which must not be treated as "allowed".
+ * The parcel a request may act on, or null when the caller is not authorised
+ * for it. A failed authorisation lookup counts as not authorised.
  * @param {Request} request
  * @returns {Promise<{ formRequest: AnyFormRequest, sheetId: string, parcelId: string } | null>}
  */
-async function resolveAuthorisedParcel(request) {
+async function authorisedParcel(request) {
   const formRequest = /** @type {AnyFormRequest} */ (/** @type {unknown} */ (request))
   const { parcelId: compoundParcelId } = request.params
 
@@ -56,13 +47,15 @@ async function resolveAuthorisedParcel(request) {
 }
 
 /**
- * Logs an upstream failure and maps it to a response status.
+ * Logs an upstream failure and maps it to a status. A 4xx means the upstream
+ * rejected the request as invalid, not an outage - pass the real status
+ * through rather than masking it as a 503.
  * @param {Request} request
  * @param {ResponseToolkit} h
  * @param {unknown} err
  * @param {{ sheetId: string, parcelId: string }} parcel
  */
-function upstreamErrorResponse(request, h, err, { sheetId, parcelId }) {
+function upstreamFailure(request, h, err, { sheetId, parcelId }) {
   const { sbi } = request.auth.credentials
   const { message: errorMessage, status: upstreamStatus } = /** @type {Error & {status?: number}} */ (err)
   error(
@@ -70,8 +63,6 @@ function upstreamErrorResponse(request, h, err, { sheetId, parcelId }) {
     { sbi, sheetId, parcelId, errorMessage, statusCode: upstreamStatus },
     request
   )
-  // A 4xx means the upstream rejected the request as invalid, not an
-  // outage - pass the real status through rather than masking it as a 503.
   const isUpstreamClientError =
     typeof upstreamStatus === 'number' &&
     upstreamStatus >= statusCodes.badRequest &&
@@ -88,12 +79,12 @@ function upstreamErrorResponse(request, h, err, { sheetId, parcelId }) {
  * @param {ResponseToolkit} h
  */
 async function actionsHandler(request, h) {
-  const authorisedParcel = await resolveAuthorisedParcel(request)
-  if (!authorisedParcel) {
+  const parcel = await authorisedParcel(request)
+  if (!parcel) {
     return h.response().code(statusCodes.forbidden)
   }
 
-  const { formRequest, sheetId, parcelId } = authorisedParcel
+  const { formRequest, sheetId, parcelId } = parcel
   const { plannedActions } = /** @type {{ plannedActions: PlannedAction[] }} */ (request.payload)
 
   try {
@@ -101,33 +92,31 @@ async function actionsHandler(request, h) {
     const result = await fetchActionsWithPlannedActions({ parcelId, sheetId, plannedActions }, userContext)
     return h.response(result).code(statusCodes.ok)
   } catch (err) {
-    return upstreamErrorResponse(request, h, err, { sheetId, parcelId })
+    return upstreamFailure(request, h, err, parcel)
   }
 }
 
 /**
- * The consent requirements that apply to one parcel, for the map page's
- * "Additional details" row. The parcel load carries no parcel-level
- * designation flags, so they are derived from every action the parcel
- * carries - not just the ones this grant offers, since the designation is a
- * property of the land rather than of the journey.
+ * The consent notice for one parcel, shown on the map page after selection.
+ * Derived from every action the parcel carries: an SSSI designation or HEFER
+ * requirement belongs to the land, not to the actions this grant offers.
  * @param {Request} request
  * @param {ResponseToolkit} h
  */
 async function consentsHandler(request, h) {
-  const authorisedParcel = await resolveAuthorisedParcel(request)
-  if (!authorisedParcel) {
+  const parcel = await authorisedParcel(request)
+  if (!parcel) {
     return h.response().code(statusCodes.forbidden)
   }
 
-  const { formRequest, sheetId, parcelId } = authorisedParcel
+  const { formRequest, sheetId, parcelId } = parcel
 
   try {
     const userContext = getLandGrantsUserContext(formRequest)
-    const result = await fetchConsentRequirementsForParcel({ parcelId, sheetId }, userContext)
-    return h.response(result).code(statusCodes.ok)
+    const { consents } = await fetchConsentRequirementsForParcel({ parcelId, sheetId }, userContext)
+    return h.response({ text: getConsentNoticeText(consents) }).code(statusCodes.ok)
   } catch (err) {
-    return upstreamErrorResponse(request, h, err, { sheetId, parcelId })
+    return upstreamFailure(request, h, err, parcel)
   }
 }
 
@@ -151,7 +140,8 @@ export const landGrantsActionsPlugin = {
         path: '/api/land-grants/actions/{parcelId}/consents',
         options: {
           auth: { mode: 'required', strategy: 'session' },
-          validate: consentsValidation,
+          // No body: the parcel comes from the path, and the crumb from the header.
+          validate: { params: Joi.object({ parcelId: Joi.string().pattern(COMPOUND_PARCEL_ID_PATTERN).required() }) },
           plugins: { crumb: { restful: true } }
         },
         handler: consentsHandler
