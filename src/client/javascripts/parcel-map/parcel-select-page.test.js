@@ -11,7 +11,7 @@ import {
 
 const consentsResponse = (consents) => ({ ok: true, json: () => Promise.resolve({ consents }) })
 
-function setupDom({ multiSelect = false, enabledLandActions = ['CSAM3', 'CLIG3'] } = {}) {
+function setupDom({ multiSelect = false } = {}) {
   document.body.innerHTML = `
     <input type="hidden" name="crumb" value="test-crumb">
     <div id="map-no-parcels-error" hidden></div>
@@ -21,9 +21,6 @@ function setupDom({ multiSelect = false, enabledLandActions = ['CSAM3', 'CLIG3']
       <tr><td id="parcel-map-total-count"></td></tr>
       <tr><td id="parcel-map-total-area"></td></tr>
     </table>
-    <div id="enabled-land-actions" hidden aria-hidden="true">
-      ${enabledLandActions.map((code) => `<span data-enabled-land-action="${code}"></span>`).join('')}
-    </div>
     <div id="selected-parcel-details" hidden>
       <span id="selected-parcel-reference"></span>
       <span id="selected-parcel-area"></span>
@@ -211,8 +208,8 @@ describe('initParcelSelectPage', () => {
   describe('additional details row', () => {
     const select = (mapEl, ids) => fire(mapEl, EVENT_SELECTION, { selectedParcels: ids.map((id) => ({ id, areaHa: 1 })) })
 
-    it('posts the selected parcel and the journey action codes to the consents route', async () => {
-      const mapEl = setupDom({ enabledLandActions: ['CSAM3', 'CLIG3'] })
+    it('posts the selected parcel to the consents route, with no action list to narrow it', async () => {
+      const mapEl = setupDom()
 
       select(mapEl, ['SD7148-9160'])
       await flush()
@@ -221,7 +218,7 @@ describe('initParcelSelectPage', () => {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': 'test-crumb' },
-        body: JSON.stringify({ enabledLandActions: ['CSAM3', 'CLIG3'] })
+        body: '{}'
       })
     })
 

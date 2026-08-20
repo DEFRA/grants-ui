@@ -221,16 +221,25 @@ export async function fetchActionsWithPlannedActions({ parcelId, sheetId, planne
 
 /**
  * The consent requirements that apply to a single parcel, for the map's
- * "Additional details" row: the union of consent keys across the parcel's
- * journey-enabled actions. Reuses the cached flat action fetch, so a
- * selection the user has already visited costs no upstream call.
- * @param {{ parcelId?: string, sheetId?: string, enabledLandActions?: string[] }} parcel
+ * "Additional details" row: the union of consent keys across EVERY action the
+ * parcel carries. Deliberately unfiltered by the journey's enabled actions -
+ * an SSSI designation or HEFER requirement is a property of the land, so the
+ * map must surface it even when the action carrying it is not one this grant
+ * goes on to offer. Cached under its own prefix, so it never collides with the
+ * journey-filtered entries fetchActionsForParcel writes.
+ * @param {{ parcelId?: string, sheetId?: string }} parcel
  * @param {LandGrantsUserContext} userContext
  * @returns {Promise<{ consents: string[] }>}
  * @throws {Error}
  */
-export async function fetchConsentRequirementsForParcel(parcel, userContext) {
-  const { actions } = await fetchActionsForParcel(parcel, userContext)
+export async function fetchConsentRequirementsForParcel({ parcelId, sheetId }, userContext) {
+  const { actions } = await fetchParcelActions(
+    { parcelId, sheetId },
+    userContext,
+    'consents:',
+    parcelsWithActions,
+    (actionsForParcel) => actionsForParcel
+  )
   return { consents: getRequiredActionConsents(/** @type {Array<Record<string, unknown>>} */ (actions)) }
 }
 

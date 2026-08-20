@@ -118,20 +118,6 @@ describe('MapSelectPageController', () => {
         expect.objectContaining({ ...expected, formAction: '/my-path' })
       )
     })
-
-    it.each([
-      ['an empty list when the grant configures none', {}, []],
-      ['the grant-configured codes, for the client consent lookup', { enabledLandActions: ['CLIG3', 'CSAM3'] }, ['CLIG3', 'CSAM3']]
-    ])('passes %s', (_name, metadata, expected) => {
-      const h = makeH()
-
-      makeController({}, metadata).handleGet(makeRequest({}, '/my-path'), makeContext(), h)
-
-      expect(h.view).toHaveBeenCalledWith(
-        'map-select-parcel',
-        expect.objectContaining({ enabledLandActions: expected })
-      )
-    })
   })
 
   describe('handlePost — validation', () => {
