@@ -29,18 +29,10 @@ const isNonEmptyString = (value) => typeof value === 'string' && value.trim() !=
  * Resolves and validates the redirect config for this page.
  * @param {{ redirects?: { next?: string, addAnotherLandParcel?: string } }} config
  * @param {string} path
- * @returns {{ nextPath: string, addAnotherLandParcelPath: string }}
+ * @returns {{ nextPath: string | undefined, addAnotherLandParcelPath: string }}
  */
 function resolveConfig(config, path) {
   const redirects = config?.redirects ?? {}
-
-  if (!isNonEmptyString(redirects.next)) {
-    throw new SystemError({
-      message: `"redirects.next" is required in config for page "${path}"`,
-      source: 'ConfirmLandAndActionsPageController',
-      reason: 'invalid_config'
-    })
-  }
 
   if (!isNonEmptyString(redirects.addAnotherLandParcel)) {
     throw new SystemError({
@@ -51,7 +43,7 @@ function resolveConfig(config, path) {
   }
 
   return {
-    nextPath: /** @type {string} */ (redirects.next),
+    nextPath: isNonEmptyString(redirects.next) ? /** @type {string} */ (redirects.next) : undefined,
     addAnotherLandParcelPath: /** @type {string} */ (redirects.addAnotherLandParcel)
   }
 }
@@ -249,7 +241,7 @@ export default class ConfirmLandAndActionsPageController extends withTaskContext
         return h.redirect(this.getHref(this.addAnotherLandParcelPath))
       }
 
-      return this.proceed(request, h, this.nextPath)
+      return this.proceed(request, h, this.nextPath ?? this.getNextPath(context))
     }
   }
 }
