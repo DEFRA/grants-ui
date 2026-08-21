@@ -209,6 +209,7 @@ Feature: Application Lifecycle
 
         # review claim
         And should see heading "Example claim start page"
+        And the user should see a phase banner feedback link with journey "claim-inprogress"
         When the user clicks on "Continue"
 
         # claim-declaration
@@ -222,6 +223,8 @@ Feature: Application Lifecycle
         Then the user should be at URL "claim-confirmation"
         And should see heading "Claim submitted"
         And should see claim reference number "-C0001"
+        And the user should see a phase banner feedback link with journey "claim-submitted"
+        And the user should see a confirmation page feedback link with journey "claim-submitted"
 
         # reopen browser and remain on claim confirmation while GAS status is unchanged
         Given the user starts a new browser session
