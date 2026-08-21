@@ -1950,11 +1950,13 @@ describe('initSelectActionsPage', () => {
     initSelectActionsPage(form)
 
     const checkbox = form.querySelector('input[value="CMOR1"]')
-    await expect(async () => {
+    const action = async () => {
       checkbox.dispatchEvent(new Event('change', { bubbles: true }))
       await Promise.resolve()
       await Promise.resolve()
-    }).not.toThrow()
+    }
+
+    await expect(action()).resolves.toBeUndefined()
   })
 
   it('does nothing when the response is not ok', async () => {

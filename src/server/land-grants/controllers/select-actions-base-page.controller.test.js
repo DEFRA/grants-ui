@@ -69,6 +69,7 @@ class StubSelectActionsController extends SelectActionsBasePageController {
     groupedActions,
     addedActions,
     quantityErrorsByCode = {},
+    parcel,
     hasErrors = false
   ) {
     return { ...super.getViewModel(request, context), groupedActions, addedActions, quantityErrorsByCode, hasErrors }
