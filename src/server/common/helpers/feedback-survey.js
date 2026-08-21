@@ -15,12 +15,22 @@ export const SURVEY_PARAMS = {
  */
 export const JOURNEY = {
   inProgress: 'application-inprogress',
-  submitted: 'application-submitted'
+  submitted: 'application-submitted',
+  claimInProgress: 'claim-inprogress',
+  claimSubmitted: 'claim-submitted'
 }
 
 /**
- * Path suffixes that represent a submitted application. Everything else within a
- * grant journey is treated as in-progress.
+ * Path suffixes that identify the claim journey. Claims are separate from grant
+ * applications for feedback segmentation, even though they use the same routes
+ * and feedback CTA.
+ */
+export const CLAIM_IN_PROGRESS_PATH_SUFFIXES = ['/claim', '/claim-declaration']
+export const CLAIM_SUBMITTED_PATH_SUFFIXES = ['/claim-confirmation']
+
+/**
+ * Path suffixes that represent a submitted application. Everything else within
+ * a grant application journey is treated as in-progress.
  */
 export const SUBMITTED_PATH_SUFFIXES = ['/confirmation', '/print-submitted-application']
 
@@ -30,6 +40,14 @@ export const SUBMITTED_PATH_SUFFIXES = ['/confirmation', '/print-submitted-appli
  * @returns {string} The journey param value
  */
 export function resolveJourney(path) {
+  if (CLAIM_SUBMITTED_PATH_SUFFIXES.some((suffix) => path?.endsWith(suffix))) {
+    return JOURNEY.claimSubmitted
+  }
+
+  if (CLAIM_IN_PROGRESS_PATH_SUFFIXES.some((suffix) => path?.endsWith(suffix))) {
+    return JOURNEY.claimInProgress
+  }
+
   const isSubmitted = SUBMITTED_PATH_SUFFIXES.some((suffix) => path?.endsWith(suffix))
   return isSubmitted ? JOURNEY.submitted : JOURNEY.inProgress
 }
