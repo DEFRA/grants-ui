@@ -17,6 +17,9 @@ describe('#resolveJourney', () => {
   test.each([
     ['/woodland/confirmation', JOURNEY.submitted],
     ['/woodland/print-submitted-application', JOURNEY.submitted],
+    ['/woodland/claim', JOURNEY.claimInProgress],
+    ['/woodland/claim-declaration', JOURNEY.claimInProgress],
+    ['/woodland/claim-confirmation', JOURNEY.claimSubmitted],
     ['/woodland/summary', JOURNEY.inProgress],
     [undefined, JOURNEY.inProgress]
   ])('resolves %s to %s', (path, expected) => {
@@ -58,6 +61,32 @@ describe('#buildFeedbackSurveyUrl', () => {
     const result = buildFeedbackSurveyUrl(mockGrantRequest({ slug: 'woodland', path: '/woodland/confirmation' }))
     const url = new URL(/** @type {string} */ (result))
     expect(url.searchParams.get('journey')).toBe(JOURNEY.submitted)
+  })
+
+  test.each([
+    ['/woodland/claim', JOURNEY.claimInProgress],
+    ['/woodland/claim-confirmation', JOURNEY.claimSubmitted]
+  ])('uses %s for a Woodland Management Plan claim', (path, journey) => {
+    const result = buildFeedbackSurveyUrl(mockSurveyRequest({ slug: 'woodland', path }, 'Woodland Management Plan'))
+    const url = new URL(/** @type {string} */ (result))
+
+    expect(url.searchParams.get('grant')).toBe('Woodland Management Plan')
+    expect(url.searchParams.get('journey')).toBe(journey)
+    expect(url.searchParams.get('url')).toBe(`https://grants.example${path}`)
+  })
+
+  test.each([
+    ['/example-grant-with-auth/claim', JOURNEY.claimInProgress],
+    ['/example-grant-with-auth/claim-confirmation', JOURNEY.claimSubmitted]
+  ])('uses %s for the authenticated example grant claim', (path, journey) => {
+    const result = buildFeedbackSurveyUrl(
+      mockSurveyRequest({ slug: 'example-grant-with-auth', path }, 'Example Grant with Auth')
+    )
+    const url = new URL(/** @type {string} */ (result))
+
+    expect(url.searchParams.get('grant')).toBe('Example Grant with Auth')
+    expect(url.searchParams.get('journey')).toBe(journey)
+    expect(url.searchParams.get('url')).toBe(`https://grants.example${path}`)
   })
 
   test('falls back to the sentence-cased form definition filename when surveyLabel is absent', () => {
