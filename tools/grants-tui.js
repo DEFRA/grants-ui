@@ -63,10 +63,8 @@ import {
   CYAN,
   DEBUG_SERVICE,
   DIM,
-  FORM_DEFS_TOGGLE_KEY,
   GREEN,
   HIDE_CURSOR,
-  LOCAL_FORM_DEFS_DIR,
   LOCAL_SERVICES,
   LOG_RETENTION_MS,
   PRE_UP_SCRIPT,
@@ -89,6 +87,7 @@ import { pauseStdin, promptScale, radioMenu, releaseStdin, resumeStdin, toggleMe
 import { cmdTest, testLogPath } from './grants-tui/tests.js'
 import { cmdSonar } from './grants-tui/sonar.js'
 import { cmdJourney, journeyCrnOptions, journeySteps, listJourneys, wontCompleteReason } from './grants-tui/journey.js'
+import { discoverOverrides } from './apply-local-form-defs.mjs'
 
 // Sweep of stale tool logs from tmpdir. macOS auto-clears windows tmpdir
 // after ~3 days
@@ -126,29 +125,49 @@ process.on('exit', () => {
 // Local image helpers
 // ---------------------------------------------------------------------------
 
-/** Recursively collect override definition files (*.yaml/*.yml) under the local-form-definitions folder */
-function listLocalFormDefFiles(dir = LOCAL_FORM_DEFS_DIR) {
-  const files = []
-  let entries
+/**
+ * Discover every selectable form-definition override, from both the in-repo
+ * `local-form-definitions` folder and any sibling `grants-config-*` repo
+ * checkouts placed next to grants-ui. Each entry carries a stable `id`
+ * (`<grant>::<sourceKey>`) used as the selection key, its `grant`, and a
+ * human-readable `source`. Discovery failures degrade to an empty list so the
+ * menu never crashes.
+ * @returns {import('./apply-local-form-defs.mjs').OverrideEntry[]}
+ */
+function listOverrideSources() {
   try {
-    entries = fs.readdirSync(dir, { withFileTypes: true })
+    return discoverOverrides().overrides
   } catch {
-    return files
+    return []
   }
-  for (const entry of entries) {
-    const full = resolve(dir, entry.name)
-    if (entry.isDirectory()) {
-      files.push(...listLocalFormDefFiles(full))
-    } else if (/\.ya?ml$/i.test(entry.name)) {
-      files.push(full)
-    }
-  }
-  return files
 }
 
-/** True when at least one form-definition override file is present */
+/** True when at least one form-definition override (folder or sibling repo) is available */
 function hasLocalFormDefs() {
-  return listLocalFormDefFiles().length > 0
+  return listOverrideSources().length > 0
+}
+
+/**
+ * Resolve the persisted set of selected override ids, migrating the legacy
+ * boolean `localFormDefs` flag (all folder overrides on/off) to the per-grant
+ * `localFormDefSelections` array on first read.
+ * @param {{ localFormDefSelections?: string[], localFormDefs?: boolean } | null} state
+ * @returns {string[]}
+ */
+function getSelectedFormDefIds(state) {
+  if (!state) {
+    return []
+  }
+  if (Array.isArray(state.localFormDefSelections)) {
+    return state.localFormDefSelections
+  }
+  // Legacy migration: the old single toggle enabled every folder override.
+  if (state.localFormDefs) {
+    return listOverrideSources()
+      .filter((o) => o.source === 'local-form-definitions')
+      .map((o) => o.id)
+  }
+  return []
 }
 
 /** Returns the set of `<name>:local` image refs that exist in the local Docker daemon */
@@ -193,9 +212,9 @@ function writeTempOverride(localServiceKeys) {
 // State persistence
 // ---------------------------------------------------------------------------
 
-function saveState(addons, scale, localServices = [], localFormDefs = false) {
+function saveState(addons, scale, localServices = [], localFormDefSelections = []) {
   try {
-    fs.writeFileSync(STATE_FILE, JSON.stringify({ addons, scale, localServices, localFormDefs }, null, 2))
+    fs.writeFileSync(STATE_FILE, JSON.stringify({ addons, scale, localServices, localFormDefSelections }, null, 2))
   } catch {
     // non-fatal
   }
@@ -283,10 +302,10 @@ function buildStatusLine(runningFiles) {
   }
   const state = loadState()
   const localKeys = state && state.localServices && state.localServices.length ? state.localServices : []
-  const formDefsOn = !!(state && state.localFormDefs)
+  const formDefCount = getSelectedFormDefIds(state).length
   const localBits = []
   if (localKeys.length) localBits.push(`images: ${localKeys.join(', ')}`)
-  if (formDefsOn) localBits.push('form-def overrides')
+  if (formDefCount) localBits.push(`form-def overrides: ${formDefCount}`)
   const localSuffix = localBits.length ? `  ${PURPLE}(local: ${localBits.join('; ')})${RESET_COLOR}` : ''
   const runningWord = isDebugging ? `${RED}Debugging${RESET_COLOR}` : 'Running'
   const tick = isDebugging ? '🐛' : `${GREEN}✔${RESET_COLOR}`
@@ -393,19 +412,31 @@ function runPreUpScript(dryRun) {
 /**
  * Run the local form-definition override applier (`enable`/`disable`) against the
  * running stack. Returns the child process exit code (0 = success).
+ *
+ * When `selection` is an array, only those override ids are acted on (passed to
+ * the applier via `GRANTS_UI_FORMDEF_SELECTION`) — this is how the per-grant
+ * menu enables/removes just the overrides that changed. When `selection` is null
+ * the applier acts on every discovered override: for `disable` that also runs the
+ * marker sweep, purging any leftover/orphaned override from a persisted volume.
  * @param {'enable'|'disable'} mode
  * @param {boolean} [dryRun]
+ * @param {string[] | null} [selection]
  * @returns {number}
  */
-function runApplyFormDefs(mode, dryRun = false) {
+function runApplyFormDefs(mode, dryRun = false, selection = null) {
   console.log(
     `\n  ${DIM}▶${RESET_COLOR}  ${mode === 'enable' ? 'Applying' : 'Removing'} local form-definition overrides…\n`
   )
   if (dryRun) return 0
+  const env = { ...process.env }
+  if (selection) {
+    env.GRANTS_UI_FORMDEF_SELECTION = selection.join(',')
+  }
   const result = spawnSync(process.execPath, [APPLY_FORM_DEFS_SCRIPT, mode], {
     cwd: ROOT,
     stdio: 'inherit',
-    encoding: 'utf8'
+    encoding: 'utf8',
+    env
   })
   return result.status ?? 1
 }
@@ -550,19 +581,20 @@ function cmdUp(selectedAddons, scale, dryRun, localServices = []) {
   if (status === 0 && !dryRun) {
     const elapsedSeconds = ((Date.now() - startTime) / 1000).toFixed(1)
     _lastUpElapsedSeconds = elapsedSeconds
-    const formDefsEnabled = loadState()?.localFormDefs ?? false
-    saveState(selectedAddons, scale, localServices, formDefsEnabled)
+    const selectedFormDefIds = getSelectedFormDefIds(loadState())
+    saveState(selectedAddons, scale, localServices, selectedFormDefIds)
     console.log(
       `  ${GREEN}✔${RESET_COLOR}  Containers started — run ${CYAN}gt down${RESET_COLOR} to stop. ${DIM}Started in ${elapsedSeconds}s${RESET_COLOR}\n`
     )
     // The stack is healthy (up --wait), so the repo definitions are ingested.
-    // Reconcile the persisted Mongo volume to match the toggle: when enabled,
-    // publish the overrides on top; when disabled, purge any override that
-    // survived in the volume from a previous enabled session (a plain `down`
-    // keeps the volume, so a stale bumped doc would otherwise keep being served
-    // after disabling the toggle while the stack was stopped).
-    if (formDefsEnabled) {
-      runApplyFormDefs('enable', dryRun)
+    // Reconcile the persisted Mongo volume to match the selection: a plain `down`
+    // keeps the volume, so a stale bumped doc from a previous session would
+    // otherwise keep being served. First a full disable (marker sweep) clears any
+    // leftover override, then the current selection is published on top. When
+    // nothing is selected the sweep alone reverts every grant to its repo version.
+    if (selectedFormDefIds.length) {
+      runApplyFormDefs('disable', dryRun)
+      runApplyFormDefs('enable', dryRun, selectedFormDefIds)
     } else if (hasLocalFormDefs()) {
       runApplyFormDefs('disable', dryRun)
     }
@@ -1065,10 +1097,13 @@ async function main() {
     const containersRunning = !!getRunningComposeFiles()
 
     const localCount = (savedState && savedState.localServices && savedState.localServices.length) || 0
-    const localFormDefsOn = !!(savedState && savedState.localFormDefs)
+    const formDefSelectionCount = getSelectedFormDefIds(savedState).length
+    const localFormDefsOn = formDefSelectionCount > 0
     const localActiveParts = []
     if (localCount) localActiveParts.push(`${localCount} local image${localCount > 1 ? 's' : ''}`)
-    if (localFormDefsOn) localActiveParts.push('form-def overrides')
+    if (formDefSelectionCount) {
+      localActiveParts.push(`${formDefSelectionCount} form-def override${formDefSelectionCount > 1 ? 's' : ''}`)
+    }
     const localDesc = localActiveParts.length
       ? `${PURPLE}${localActiveParts.join(' + ')}${RESET_COLOR}`
       : 'Override services & form definitions locally'
@@ -1219,10 +1254,11 @@ async function main() {
     }
 
     if (command === 'local') {
-      // Dedicated local image override selection — only visited when user wants to change
+      // Dedicated local image + form-definition override selection — only visited
+      // when the user wants to change what runs locally.
       const localImages = getLocalImages()
       const previousLocalServices = (savedState && savedState.localServices) ?? []
-      const previousLocalFormDefs = !!(savedState && savedState.localFormDefs)
+      const previousFormDefIds = getSelectedFormDefIds(savedState)
       const localServiceItems = LOCAL_SERVICES.map((s) => ({
         ...s,
         label: s.key,
@@ -1233,35 +1269,41 @@ async function main() {
           : false
       }))
 
-      // Single all-grants toggle for local form-definition overrides.
-      const formDefsAvailable = hasLocalFormDefs()
-      const formDefsItem = {
-        key: FORM_DEFS_TOGGLE_KEY,
-        label: 'Local form-definition overrides (all grants)',
-        description: formDefsAvailable ? 'override files present' : 'no override files found',
-        disabled: !formDefsAvailable,
-        selected: !!(savedState && savedState.localFormDefs) && formDefsAvailable
-      }
+      // One toggle per discoverable form-definition override (folder + sibling
+      // `grants-config-*` repos). The `formdef|` key prefix distinguishes these
+      // rows from the local-image service rows when reading the toggle result.
+      const FORMDEF_KEY_PREFIX = 'formdef|'
+      const overrideSources = listOverrideSources()
+      const formDefItems = overrideSources.map((o) => ({
+        key: `${FORMDEF_KEY_PREFIX}${o.id}`,
+        label: `form-def: ${o.grant}`,
+        description: `${o.source} → ${o.bumpedVersion}`,
+        disabled: false,
+        selected: previousFormDefIds.includes(o.id)
+      }))
 
       const localTitle = containersRunning
         ? 'Local overrides  (changes apply now)'
         : "Local overrides  (applied on next 'up')"
-      const localToggled = await toggleMenu([formDefsItem, ...localServiceItems], localTitle)
+      const localToggled = await toggleMenu([...formDefItems, ...localServiceItems], localTitle)
       if (localToggled === null) {
         // ESC — back to main menu
         continue
       }
       const newLocalServices = localToggled
-        .filter((i) => i.selected && !i.disabled && i.key !== FORM_DEFS_TOGGLE_KEY)
+        .filter((i) => i.selected && !i.disabled && !i.key.startsWith(FORMDEF_KEY_PREFIX))
         .map((i) => i.key)
-      const newLocalFormDefs = !!localToggled.find((i) => i.key === FORM_DEFS_TOGGLE_KEY && i.selected && !i.disabled)
+      const newFormDefIds = localToggled
+        .filter((i) => i.selected && !i.disabled && i.key.startsWith(FORMDEF_KEY_PREFIX))
+        .map((i) => i.key.slice(FORMDEF_KEY_PREFIX.length))
       // Persist local selections into saved state (create state if none exists)
-      const currentState = loadState() || { addons: [], scale: null, localServices: [], localFormDefs: false }
-      saveState(currentState.addons, currentState.scale, newLocalServices, newLocalFormDefs)
+      const currentState = loadState() || { addons: [], scale: null, localServices: [], localFormDefSelections: [] }
+      saveState(currentState.addons, currentState.scale, newLocalServices, newFormDefIds)
 
       // When containers are already running, apply changes immediately: restart
-      // any service whose local-image setting changed (--no-deps) and (un)publish
-      // the form-definition overrides if that toggle changed.
+      // any service whose local-image setting changed (--no-deps) and reconcile
+      // the form-definition overrides — remove the ones just deselected and
+      // (re)publish the ones now selected.
       if (containersRunning) {
         const changedKeys = LOCAL_SERVICES.map((s) => s.key).filter(
           (k) => previousLocalServices.includes(k) !== newLocalServices.includes(k)
@@ -1271,7 +1313,9 @@ async function main() {
           .map((k) => LOCAL_SERVICES.find((s) => s.key === k)?.composeService)
           .filter((name) => name && runningSet.has(name))
 
-        const formDefsChanged = previousLocalFormDefs !== newLocalFormDefs
+        const addedFormDefIds = newFormDefIds.filter((id) => !previousFormDefIds.includes(id))
+        const removedFormDefIds = previousFormDefIds.filter((id) => !newFormDefIds.includes(id))
+        const formDefsChanged = addedFormDefIds.length > 0 || removedFormDefIds.length > 0
         const messages = []
         let hadError = false
 
@@ -1289,13 +1333,25 @@ async function main() {
 
         if (!hadError && formDefsChanged) {
           pauseStdin()
-          const applyStatus = runApplyFormDefs(newLocalFormDefs ? 'enable' : 'disable', dryRun)
+          let applyStatus = 0
+          if (newFormDefIds.length === 0) {
+            // Everything turned off — a full disable (marker sweep) reverts every
+            // grant to its repo version and clears any leftover override.
+            applyStatus = runApplyFormDefs('disable', dryRun)
+          } else {
+            if (applyStatus === 0 && removedFormDefIds.length) {
+              applyStatus = runApplyFormDefs('disable', dryRun, removedFormDefIds)
+            }
+            if (applyStatus === 0 && addedFormDefIds.length) {
+              applyStatus = runApplyFormDefs('enable', dryRun, addedFormDefIds)
+            }
+          }
           resumeStdin()
           if (applyStatus !== 0) {
             hadError = true
-            statusLine = `${RED}✖${RESET_COLOR}  Form-definition overrides ${newLocalFormDefs ? 'enable' : 'disable'} failed — check output above`
+            statusLine = `${RED}✖${RESET_COLOR}  Form-definition override change failed — check output above`
           } else {
-            messages.push(newLocalFormDefs ? 'Form-def overrides enabled' : 'Form-def overrides disabled')
+            messages.push(`Form-def overrides: ${newFormDefIds.length} active`)
           }
         }
 
@@ -1311,7 +1367,9 @@ async function main() {
       const n = newLocalServices.length
       const summaryParts = []
       if (n) summaryParts.push(`${n} service${n > 1 ? 's' : ''} using local image${n > 1 ? 's' : ''}`)
-      if (newLocalFormDefs) summaryParts.push('form-def overrides enabled')
+      if (newFormDefIds.length) {
+        summaryParts.push(`${newFormDefIds.length} form-def override${newFormDefIds.length > 1 ? 's' : ''}`)
+      }
       statusLine = summaryParts.length
         ? `${PURPLE}✔  ${summaryParts.join('  ·  ')}${RESET_COLOR}`
         : `${DIM}Local overrides updated${RESET_COLOR}`
@@ -1319,10 +1377,12 @@ async function main() {
     }
 
     if (command === 'refresh-overrides') {
-      // Re-publish the local YAML overrides into Mongo so freshly-edited
-      // definitions are served without toggling the override off and on.
+      // Re-publish the selected YAML overrides into Mongo so freshly-edited
+      // definitions (in the local folder or a sibling repo) are served without
+      // toggling the override off and on.
+      const refreshIds = getSelectedFormDefIds(loadState())
       pauseStdin()
-      const applyStatus = runApplyFormDefs('enable', dryRun)
+      const applyStatus = refreshIds.length ? runApplyFormDefs('enable', dryRun, refreshIds) : 0
       resumeStdin()
       statusLine =
         applyStatus !== 0

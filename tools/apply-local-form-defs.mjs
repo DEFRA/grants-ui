@@ -38,6 +38,25 @@ const ROOT = resolve(__dirname, '..')
 const FORM_DEFS_DIR = resolve(ROOT, 'compose/config-broker/local-form-definitions')
 const CONFIG_BROKER_LOCAL = resolve(ROOT, 'compose/config-broker-local')
 
+// Directory scanned for sibling config-repo checkouts (e.g. grants-config-grasslands).
+// Defaults to the folder grants-ui itself lives in, so a checkout placed next to
+// grants-ui is picked up automatically. Overridable for tests / bespoke layouts.
+const SIBLING_REPOS_DIR = process.env.GRANTS_UI_SIBLING_CONFIG_DIR || resolve(ROOT, '..')
+// Only directories named `grants-config-*` are treated as candidate config repos.
+const SIBLING_REPO_PREFIX = 'grants-config-'
+// Source key / label used for the in-repo local-form-definitions folder overrides.
+const LOCAL_SOURCE = 'local-form-definitions'
+// YAML files that live alongside a grant's grants-ui form definition but are NOT
+// form definitions themselves and must never be published as one. `allowlist.yaml`
+// (access control) sorts alphabetically before `<grant>.yaml`, so a naive
+// first-YAML pick would wrongly publish it as the form def — its top-level
+// `dev/test/perf-test/ext-test/prod` keys then fail form-definition schema
+// validation in grants-ui.
+const NON_FORM_DEF_YAML = new Set(['allowlist.yaml', 'allowlist.yml'])
+// Env var (comma-separated override ids) restricting which overrides enable/disable
+// act on. Unset = act on every discovered override (legacy behaviour).
+const SELECTION_ENV = 'GRANTS_UI_FORMDEF_SELECTION'
+
 // Compose service that runs Mongo, and the physical database the backend uses.
 const MONGO_SERVICE = process.env.GRANTS_UI_MONGO_SERVICE || 'mongodb'
 const MONGO_DB = process.env.GRANTS_UI_BACKEND_DB || 'grants-ui-backend'
@@ -140,13 +159,44 @@ function firstYamlFile(dir, recursive = false) {
 }
 
 /**
+ * Pick the form-definition YAML for a grant from a grants-ui service folder.
+ * Prefers the conventional `<grant>.yaml`, otherwise falls back to the first
+ * YAML that is not a known non-form-def file (e.g. `allowlist.yaml`). Returns
+ * null when the folder has no usable form-definition YAML.
+ * @param {string} dir - the grants-ui service folder to scan
+ * @param {string} grant - grant code, used to prefer `<grant>.yaml`
+ * @returns {string | null}
+ */
+function pickFormDefYaml(dir, grant) {
+  let entries
+  try {
+    entries = fs.readdirSync(dir, { withFileTypes: true })
+  } catch {
+    return null
+  }
+  const yamls = entries
+    .filter((e) => e.isFile() && /\.ya?ml$/i.test(e.name))
+    .map((e) => e.name)
+    .sort((a, b) => a.localeCompare(b))
+  // Prefer the conventional <grant>.yaml form definition.
+  const named = yamls.find((n) => n === `${grant}.yaml` || n === `${grant}.yml`)
+  if (named) {
+    return join(dir, named)
+  }
+  // Otherwise the first YAML that is not a known non-form-def file (allowlist etc.).
+  const candidate = yamls.find((n) => !NON_FORM_DEF_YAML.has(n.toLowerCase()))
+  return candidate ? join(dir, candidate) : null
+}
+
+/**
  * Locate the override definition file for a grant, preferring the grants-ui
  * service folder and falling back to any YAML under the grant folder.
  * @param {string} grantDir
+ * @param {string} grant
  * @returns {string | null}
  */
-function findOverrideFile(grantDir) {
-  const preferred = firstYamlFile(join(grantDir, 'grants-ui'))
+function findOverrideFile(grantDir, grant) {
+  const preferred = pickFormDefYaml(join(grantDir, 'grants-ui'), grant)
   if (preferred) {
     return preferred
   }
@@ -155,28 +205,51 @@ function findOverrideFile(grantDir) {
 
 /**
  * @typedef {object} OverrideEntry
+ * @property {string} id - Stable identifier `<grant>::<sourceKey>` (selection key)
  * @property {string} grant - Grant code / folder name
+ * @property {string} source - Human-readable source (folder name or sibling repo dir name)
  * @property {string} file - Absolute path to the override YAML file
  * @property {string} repoVersion - Repo version pulled into config-broker-local
  * @property {string} bumpedVersion - repoVersion + 1 patch
  */
 
 /**
- * Discover all available overrides, pairing each with its repo version.
- * @param {{ formDefsDir?: string, configBrokerLocalDir?: string }} [opts]
- * @returns {{ overrides: OverrideEntry[], warnings: string[] }}
+ * Build an override entry for a grant, resolving its pulled repo version.
+ * Returns null (and pushes a warning) when the grant was never pulled into
+ * config-broker-local, since without the repo version we cannot compute the
+ * bumped version to publish.
+ * @param {string} grant
+ * @param {string} file
+ * @param {string} source
+ * @param {string} sourceKey
+ * @param {string} configBrokerLocalDir
+ * @param {string[]} warnings
+ * @returns {OverrideEntry | null}
  */
-export function discoverOverrides({ formDefsDir = FORM_DEFS_DIR, configBrokerLocalDir = CONFIG_BROKER_LOCAL } = {}) {
+function makeOverrideEntry(grant, file, source, sourceKey, configBrokerLocalDir, warnings) {
+  const repoVersion = findRepoVersion(configBrokerLocalDir, grant)
+  if (!repoVersion) {
+    warnings.push(`Grant "${grant}" (${source}) has an override but was not pulled into config-broker-local — skipping`)
+    return null
+  }
+  return { id: `${grant}::${sourceKey}`, grant, source, file, repoVersion, bumpedVersion: bumpPatch(repoVersion) }
+}
+
+/**
+ * Discover overrides in the in-repo local-form-definitions folder.
+ * @param {string} formDefsDir
+ * @param {string} configBrokerLocalDir
+ * @param {string[]} warnings
+ * @returns {OverrideEntry[]}
+ */
+function discoverFolderOverrides(formDefsDir, configBrokerLocalDir, warnings) {
   /** @type {OverrideEntry[]} */
   const overrides = []
-  /** @type {string[]} */
-  const warnings = []
-
   let grantEntries
   try {
     grantEntries = fs.readdirSync(formDefsDir, { withFileTypes: true })
   } catch {
-    return { overrides, warnings }
+    return overrides
   }
 
   grantEntries.sort((a, b) => a.name.localeCompare(b.name))
@@ -186,20 +259,160 @@ export function discoverOverrides({ formDefsDir = FORM_DEFS_DIR, configBrokerLoc
       continue
     }
     const grant = entry.name
-    const file = findOverrideFile(join(formDefsDir, grant))
+    const file = findOverrideFile(join(formDefsDir, grant), grant)
     if (!file) {
       warnings.push(`No form-definition file found under ${grant}/ (expected e.g. ${grant}/grants-ui/${grant}.yaml)`)
       continue
     }
-    const repoVersion = findRepoVersion(configBrokerLocalDir, grant)
-    if (!repoVersion) {
-      warnings.push(`Grant "${grant}" has an override but was not pulled into config-broker-local — skipping`)
-      continue
+    const entryObj = makeOverrideEntry(grant, file, LOCAL_SOURCE, 'local', configBrokerLocalDir, warnings)
+    if (entryObj) {
+      overrides.push(entryObj)
     }
-    overrides.push({ grant, file, repoVersion, bumpedVersion: bumpPatch(repoVersion) })
   }
 
+  return overrides
+}
+
+/**
+ * Discover overrides in sibling config-repo checkouts (`grants-config-*`) placed
+ * next to grants-ui, mirroring the config-repo layout
+ * `configurations/<grant>/grants-ui/<file>.yaml`. This lets a developer edit
+ * "the real form definition" in its own repo (with diffs, history, etc.) and
+ * pull it straight into grants-ui without copying it into the local folder.
+ *
+ * Sibling repos also hold non-grants-ui services (e.g. allowlists, land-grants
+ * actions); those are silently ignored — only grants that expose a grants-ui
+ * form definition become selectable overrides.
+ * @param {string} siblingReposDir
+ * @param {string} configBrokerLocalDir
+ * @param {string[]} warnings
+ * @returns {OverrideEntry[]}
+ */
+function discoverSiblingOverrides(siblingReposDir, configBrokerLocalDir, warnings) {
+  /** @type {OverrideEntry[]} */
+  const overrides = []
+  let repoEntries
+  try {
+    repoEntries = fs.readdirSync(siblingReposDir, { withFileTypes: true })
+  } catch {
+    return overrides
+  }
+
+  repoEntries.sort((a, b) => a.name.localeCompare(b.name))
+
+  for (const repo of repoEntries) {
+    if (!repo.isDirectory() || !repo.name.startsWith(SIBLING_REPO_PREFIX)) {
+      continue
+    }
+    const configurationsDir = join(siblingReposDir, repo.name, 'configurations')
+    let grantEntries
+    try {
+      grantEntries = fs.readdirSync(configurationsDir, { withFileTypes: true })
+    } catch {
+      continue
+    }
+    grantEntries.sort((a, b) => a.name.localeCompare(b.name))
+
+    for (const grantEntry of grantEntries) {
+      if (!grantEntry.isDirectory()) {
+        continue
+      }
+      const grant = grantEntry.name
+      const file = pickFormDefYaml(join(configurationsDir, grant, 'grants-ui'), grant)
+      if (!file) {
+        // Sibling repos legitimately contain non-grants-ui services, or a
+        // grants-ui folder that only holds non-form-def YAML (e.g. an
+        // allowlist) — skip quietly.
+        continue
+      }
+      const entryObj = makeOverrideEntry(grant, file, repo.name, repo.name, configBrokerLocalDir, warnings)
+      if (entryObj) {
+        overrides.push(entryObj)
+      }
+    }
+  }
+
+  return overrides
+}
+
+/**
+ * Discover all available overrides, pairing each with its repo version. Overrides
+ * come from two sources: the in-repo `local-form-definitions` folder and any
+ * sibling `grants-config-*` repo checkouts placed next to grants-ui.
+ * @param {{ formDefsDir?: string, configBrokerLocalDir?: string, siblingReposDir?: string }} [opts]
+ * @returns {{ overrides: OverrideEntry[], warnings: string[] }}
+ */
+export function discoverOverrides({
+  formDefsDir = FORM_DEFS_DIR,
+  configBrokerLocalDir = CONFIG_BROKER_LOCAL,
+  siblingReposDir = SIBLING_REPOS_DIR
+} = {}) {
+  /** @type {string[]} */
+  const warnings = []
+  const overrides = [
+    ...discoverFolderOverrides(formDefsDir, configBrokerLocalDir, warnings),
+    ...discoverSiblingOverrides(siblingReposDir, configBrokerLocalDir, warnings)
+  ]
   return { overrides, warnings }
+}
+
+/**
+ * Parse the selection env var into an array of override ids, or null when unset
+ * (null = act on every discovered override — the legacy behaviour).
+ * @param {string | undefined} value
+ * @returns {string[] | null}
+ */
+export function parseSelectionEnv(value) {
+  if (value == null) {
+    return null
+  }
+  return value
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
+/**
+ * Restrict overrides to a selection of ids. A null selection returns every
+ * override unchanged.
+ * @template {{ id: string }} T
+ * @param {T[]} overrides
+ * @param {string[] | null} selection
+ * @returns {T[]}
+ */
+export function filterOverridesBySelection(overrides, selection) {
+  if (!selection) {
+    return overrides
+  }
+  const set = new Set(selection)
+  return overrides.filter((o) => set.has(o.id))
+}
+
+/**
+ * Collapse overrides so at most one source is active per grant — two sources for
+ * the same grant would resolve to the same bumped version document, so the second
+ * is ignored with a warning. The first occurrence (folder overrides are
+ * discovered before sibling repos) wins deterministically.
+ * @template {{ grant: string, source: string }} T
+ * @param {T[]} overrides
+ * @returns {{ overrides: T[], warnings: string[] }}
+ */
+export function dedupeByGrant(overrides) {
+  /** @type {Map<string, T>} */
+  const byGrant = new Map()
+  /** @type {string[]} */
+  const warnings = []
+  for (const o of overrides) {
+    const existing = byGrant.get(o.grant)
+    if (existing) {
+      warnings.push(
+        `Multiple overrides selected for grant "${o.grant}" — using ${existing.source}, ignoring ${o.source}`
+      )
+      continue
+    }
+    byGrant.set(o.grant, o)
+  }
+  return { overrides: [...byGrant.values()], warnings }
 }
 
 /**
@@ -271,7 +484,7 @@ export function applyLocalOverrideNameSuffix(definition) {
  *    deadline passes, so a just-started backend that is still ingesting is
  *    tolerated without re-spawning docker.
  *
- * @param {OverrideEntry[]} overrides
+ * @param {Array<Pick<OverrideEntry, 'grant' | 'repoVersion' | 'bumpedVersion'>>} overrides
  * @param {{ definitionsByGrant: Record<string, object>, waitMs?: number, pollMs?: number }} opts
  * @returns {string}
  */
@@ -388,10 +601,17 @@ for (const e of CONFIG.entries) { print('RESULT:' + e.grant + ':' + results[e.gr
  * version. The name-suffix marker written by `enable` is a queryable record of
  * exactly which documents were applied, so disable can always find and purge
  * them — even when zero override files remain.
+ *
+ * The orphan sweep is skipped for a *targeted* disable (`sweepOrphans: false`),
+ * e.g. when the TUI removes only the overrides a developer just deselected: the
+ * marker is shared by every applied override, so an unconditional sweep would
+ * also purge the overrides the developer chose to keep. A full disable (no
+ * selection) keeps the sweep so leftover/orphaned overrides are always cleaned.
  * @param {Array<Pick<OverrideEntry, 'grant' | 'bumpedVersion'>>} overrides
+ * @param {{ sweepOrphans?: boolean }} [opts]
  * @returns {string}
  */
-export function buildDisableScript(overrides) {
+export function buildDisableScript(overrides, { sweepOrphans = true } = {}) {
   const entries = overrides.map((o) => {
     const v = versionParts(o.bumpedVersion)
     return { grant: o.grant, version: v.version, major: v.major, minor: v.minor, patch: v.patch }
@@ -405,6 +625,33 @@ export function buildDisableScript(overrides) {
     submissions: SUBMISSION_COLLECTIONS,
     marker: LOCAL_OVERRIDE_NAME_SUFFIX
   }
+
+  const orphanSweep = `
+// Pass 2: sweep any documents still stamped as a local override. These are
+// orphans whose source files were deleted or moved before disable ran, so they
+// can no longer be discovered from the file system — the name-suffix marker is
+// the file-independent record used to purge them.
+let orphans = [];
+try {
+  orphans = defs
+    .find({ 'definition.name': { $exists: true } })
+    .toArray()
+    .filter((d) => typeof d.definition.name === 'string' && d.definition.name.endsWith(CONFIG.marker));
+} catch (e) {
+  orphans = [];
+}
+for (const doc of orphans) {
+  const g = grantOf(doc);
+  try {
+    const version = [doc.major, doc.minor, doc.patch].join('.');
+    const defsRemoved = defs.deleteOne({ _id: doc._id }).deletedCount;
+    const dependents = purgeDependents(g, version);
+    print('RESULT:' + g + ':OK:swept orphaned override ' + version + ' defs=' + defsRemoved + ' ' + dependents);
+  } catch (err) {
+    print('RESULT:' + g + ':ERR:' + (err && err.message ? err.message : err));
+  }
+}
+`
 
   return `
 const CONFIG = ${JSON.stringify(config)};
@@ -445,32 +692,7 @@ for (const e of CONFIG.entries) {
     print('RESULT:' + e.grant + ':ERR:' + (err && err.message ? err.message : err));
   }
 }
-
-// Pass 2: sweep any documents still stamped as a local override. These are
-// orphans whose source files were deleted or moved before disable ran, so they
-// can no longer be discovered from the file system — the name-suffix marker is
-// the file-independent record used to purge them.
-let orphans = [];
-try {
-  orphans = defs
-    .find({ 'definition.name': { $exists: true } })
-    .toArray()
-    .filter((d) => typeof d.definition.name === 'string' && d.definition.name.endsWith(CONFIG.marker));
-} catch (e) {
-  orphans = [];
-}
-for (const doc of orphans) {
-  const g = grantOf(doc);
-  try {
-    const version = [doc.major, doc.minor, doc.patch].join('.');
-    const defsRemoved = defs.deleteOne({ _id: doc._id }).deletedCount;
-    const dependents = purgeDependents(g, version);
-    print('RESULT:' + g + ':OK:swept orphaned override ' + version + ' defs=' + defsRemoved + ' ' + dependents);
-  } catch (err) {
-    print('RESULT:' + g + ':ERR:' + (err && err.message ? err.message : err));
-  }
-}
-`
+${sweepOrphans ? orphanSweep : ''}`
 }
 
 // ---------------------------------------------------------------------------
@@ -599,7 +821,7 @@ function enableAll(overrides) {
       if (r && r.status === 'OK') {
         messages.push({
           ok: true,
-          message: `${entry.grant}: applied override`
+          message: `${entry.grant} (${entry.source}): applied override`
         })
       } else if (r && r.status === 'SKIP') {
         messages.push({ ok: false, message: `${entry.grant}: ${r.detail || 'grant not ingested by the backend yet'}` })
@@ -617,10 +839,11 @@ function enableAll(overrides) {
 
 /**
  * @param {OverrideEntry[]} overrides
+ * @param {{ sweepOrphans?: boolean }} [opts]
  * @returns {{ ok: boolean, messages: { ok: boolean, message: string }[] }}
  */
-function disableAll(overrides) {
-  const script = buildDisableScript(overrides)
+function disableAll(overrides, { sweepOrphans = true } = {}) {
+  const script = buildDisableScript(overrides, { sweepOrphans })
   const result = runMongo(script)
   const parsed = parseResults(result.stdout)
   /** @type {{ ok: boolean, message: string }[]} */
@@ -677,17 +900,31 @@ export function run(mode) {
     return 2
   }
 
-  const { overrides, warnings } = discoverOverrides()
+  // A selection (comma-separated override ids in GRANTS_UI_FORMDEF_SELECTION)
+  // restricts which overrides we act on. Unset = act on every discovered
+  // override — the legacy all-grants behaviour used by a bare CLI invocation.
+  const selection = parseSelectionEnv(process.env[SELECTION_ENV])
+
+  const { overrides: discovered, warnings } = discoverOverrides()
   for (const warning of warnings) {
     console.warn(`  ⚠  ${warning}`)
   }
 
-  // For enable, no discovered overrides means there is nothing to apply. For
-  // disable we must NOT exit early: previously-applied overrides whose source
-  // files were deleted or moved still live in Mongo as the highest active
-  // version, and only the marker-based sweep in disableAll can purge them.
-  if (mode === 'enable' && !overrides.length) {
-    console.log('  No local form-definition overrides found — nothing to do.')
+  const { overrides: selected, warnings: dedupeWarnings } = dedupeByGrant(
+    filterOverridesBySelection(discovered, selection)
+  )
+  for (const warning of dedupeWarnings) {
+    console.warn(`  ⚠  ${warning}`)
+  }
+
+  // For enable, no selected overrides means there is nothing to apply. For a
+  // *full* disable (no selection) we must NOT exit early: previously-applied
+  // overrides whose source files were deleted or moved still live in Mongo as
+  // the highest active version, and only the marker-based sweep in disableAll
+  // can purge them. A *targeted* disable (selection given) with nothing selected
+  // is a genuine no-op.
+  if ((mode === 'enable' || selection) && !selected.length) {
+    console.log('  No local form-definition overrides selected — nothing to do.')
     return 0
   }
 
@@ -696,7 +933,10 @@ export function run(mode) {
     return 1
   }
 
-  const { ok, messages } = mode === 'enable' ? enableAll(overrides) : disableAll(overrides)
+  // Only a full disable (no selection) sweeps every marker-stamped override; a
+  // targeted disable must leave the overrides the developer kept selected alone.
+  const sweepOrphans = selection == null
+  const { ok, messages } = mode === 'enable' ? enableAll(selected) : disableAll(selected, { sweepOrphans })
   for (const m of messages) {
     if (m.ok) {
       console.log(`  ✔  ${m.message}`)

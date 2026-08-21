@@ -7,9 +7,12 @@ import {
   buildDisableScript,
   buildEnableScript,
   bumpPatch,
+  dedupeByGrant,
   discoverOverrides,
+  filterOverridesBySelection,
   findRepoVersion,
-  mongoExecArgs
+  mongoExecArgs,
+  parseSelectionEnv
 } from './apply-local-form-defs.mjs'
 
 /** @type {string} */
@@ -18,22 +21,40 @@ let tmp
 let formDefsDir
 /** @type {string} */
 let configBrokerLocalDir
+/** @type {string} */
+let siblingReposDir
 
 beforeEach(() => {
   tmp = fs.mkdtempSync(join(os.tmpdir(), 'apply-local-form-defs-'))
   formDefsDir = join(tmp, 'local-form-definitions')
   configBrokerLocalDir = join(tmp, 'config-broker-local')
+  // An isolated, empty sibling-repos dir keeps discovery hermetic — otherwise it
+  // would default to the real folder grants-ui lives in and pick up checkouts.
+  siblingReposDir = join(tmp, 'siblings')
   fs.mkdirSync(formDefsDir, { recursive: true })
   fs.mkdirSync(configBrokerLocalDir, { recursive: true })
+  fs.mkdirSync(siblingReposDir, { recursive: true })
 })
 
 afterEach(() => {
   fs.rmSync(tmp, { recursive: true, force: true })
 })
 
+/** Run discoverOverrides against the isolated temp dirs. */
+function discover(overrides = {}) {
+  return discoverOverrides({ formDefsDir, configBrokerLocalDir, siblingReposDir, ...overrides })
+}
+
 /** Helper to create an override file under <grant>/grants-ui/<file> */
 function writeOverride(grant, fileName = `${grant}.yaml`, contents = 'engine: V2\nname: Example\n') {
   const dir = join(formDefsDir, grant, 'grants-ui')
+  fs.mkdirSync(dir, { recursive: true })
+  fs.writeFileSync(join(dir, fileName), contents)
+}
+
+/** Helper to create a sibling config-repo override at grants-config-<repo>/configurations/<grant>/grants-ui/<file> */
+function writeSiblingOverride(repo, grant, fileName = `${grant}.yaml`, contents = 'engine: V2\nname: Example\n') {
+  const dir = join(siblingReposDir, `grants-config-${repo}`, 'configurations', grant, 'grants-ui')
   fs.mkdirSync(dir, { recursive: true })
   fs.writeFileSync(join(dir, fileName), contents)
 }
@@ -76,12 +97,14 @@ describe('discoverOverrides', () => {
     writeOverride('woodland')
     writeRepoVersion('woodland', '1.2.3')
 
-    const { overrides, warnings } = discoverOverrides({ formDefsDir, configBrokerLocalDir })
+    const { overrides, warnings } = discover()
 
     expect(warnings).toEqual([])
     expect(overrides).toHaveLength(1)
     expect(overrides[0]).toMatchObject({
+      id: 'woodland::local',
       grant: 'woodland',
+      source: 'local-form-definitions',
       repoVersion: '1.2.3',
       bumpedVersion: '1.2.4'
     })
@@ -91,7 +114,7 @@ describe('discoverOverrides', () => {
   it('warns and skips a grant present in overrides but not pulled', () => {
     writeOverride('grasslands')
 
-    const { overrides, warnings } = discoverOverrides({ formDefsDir, configBrokerLocalDir })
+    const { overrides, warnings } = discover()
 
     expect(overrides).toEqual([])
     expect(warnings).toHaveLength(1)
@@ -103,7 +126,7 @@ describe('discoverOverrides', () => {
     fs.mkdirSync(join(formDefsDir, 'woodland', 'grants-ui'), { recursive: true })
     writeRepoVersion('woodland', '1.2.3')
 
-    const { overrides, warnings } = discoverOverrides({ formDefsDir, configBrokerLocalDir })
+    const { overrides, warnings } = discover()
 
     expect(overrides).toEqual([])
     expect(warnings[0]).toMatch(/No form-definition file/)
@@ -114,14 +137,167 @@ describe('discoverOverrides', () => {
     writeOverride('woodland')
     writeRepoVersion('woodland', '2.0.0')
 
-    const { overrides } = discoverOverrides({ formDefsDir, configBrokerLocalDir })
+    const { overrides } = discover()
 
     expect(overrides.map((o) => o.grant)).toEqual(['woodland'])
   })
 
   it('returns nothing when the overrides folder is empty', () => {
-    const { overrides, warnings } = discoverOverrides({ formDefsDir, configBrokerLocalDir })
+    const { overrides, warnings } = discover()
     expect(overrides).toEqual([])
+    expect(warnings).toEqual([])
+  })
+
+  it('discovers overrides from a sibling grants-config-* repo', () => {
+    writeSiblingOverride('grasslands', 'grasslands')
+    writeRepoVersion('grasslands', '0.4.0')
+
+    const { overrides, warnings } = discover()
+
+    expect(warnings).toEqual([])
+    expect(overrides).toHaveLength(1)
+    expect(overrides[0]).toMatchObject({
+      id: 'grasslands::grants-config-grasslands',
+      grant: 'grasslands',
+      source: 'grants-config-grasslands',
+      repoVersion: '0.4.0',
+      bumpedVersion: '0.4.1'
+    })
+    expect(overrides[0].file).toMatch(
+      /grants-config-grasslands[/\\]configurations[/\\]grasslands[/\\]grants-ui[/\\]grasslands\.yaml$/
+    )
+  })
+
+  it('picks the <grant>.yaml form definition over a co-located allowlist.yaml', () => {
+    // Real config repos ship an allowlist.yaml beside the form def; it sorts
+    // alphabetically before <grant>.yaml but is NOT a form definition.
+    writeSiblingOverride('grasslands', 'grasslands', 'allowlist.yaml', 'dev:\n  allowAll: true\n')
+    writeSiblingOverride('grasslands', 'grasslands')
+    writeRepoVersion('grasslands', '0.4.0')
+
+    const { overrides, warnings } = discover()
+
+    expect(warnings).toEqual([])
+    expect(overrides).toHaveLength(1)
+    expect(overrides[0].id).toBe('grasslands::grants-config-grasslands')
+    expect(overrides[0].file).toMatch(/grants-ui[/\\]grasslands\.yaml$/)
+    expect(overrides[0].file).not.toMatch(/allowlist\.yaml$/)
+  })
+
+  it('ignores a sibling grants-ui folder that only holds an allowlist.yaml', () => {
+    writeSiblingOverride('grasslands', 'grasslands', 'allowlist.yaml', 'dev:\n  allowAll: true\n')
+    writeRepoVersion('grasslands', '0.4.0')
+
+    const { overrides, warnings } = discover()
+
+    expect(overrides).toEqual([])
+    expect(warnings).toEqual([])
+  })
+
+  it('prefers <grant>.yaml over a co-located allowlist.yaml in the local folder', () => {
+    const dir = join(formDefsDir, 'grasslands', 'grants-ui')
+    fs.mkdirSync(dir, { recursive: true })
+    fs.writeFileSync(join(dir, 'allowlist.yaml'), 'dev:\n  allowAll: true\n')
+    fs.writeFileSync(join(dir, 'grasslands.yaml'), 'engine: V2\nname: Example\n')
+    writeRepoVersion('grasslands', '0.4.0')
+
+    const { overrides } = discover()
+
+    expect(overrides).toHaveLength(1)
+    expect(overrides[0].file).toMatch(/grants-ui[/\\]grasslands\.yaml$/)
+  })
+
+  it('lists folder and sibling overrides for the same grant as distinct sources', () => {
+    writeOverride('grasslands')
+    writeSiblingOverride('grasslands', 'grasslands')
+    writeRepoVersion('grasslands', '0.4.0')
+
+    const { overrides } = discover()
+
+    expect(overrides.map((o) => o.id)).toEqual(['grasslands::local', 'grasslands::grants-config-grasslands'])
+  })
+
+  it('ignores sibling repos with no grants-ui form definition', () => {
+    // A sibling repo that only holds a non-grants-ui service (e.g. an allowlist).
+    const dir = join(siblingReposDir, 'grants-config-land-grants', 'configurations', 'land-grants', 'actions')
+    fs.mkdirSync(dir, { recursive: true })
+    fs.writeFileSync(join(dir, 'action.yaml'), 'x: 1\n')
+    writeRepoVersion('land-grants', '1.0.0')
+
+    const { overrides, warnings } = discover()
+
+    expect(overrides).toEqual([])
+    expect(warnings).toEqual([])
+  })
+
+  it('ignores sibling directories that are not named grants-config-*', () => {
+    const dir = join(siblingReposDir, 'some-other-repo', 'configurations', 'woodland', 'grants-ui')
+    fs.mkdirSync(dir, { recursive: true })
+    fs.writeFileSync(join(dir, 'woodland.yaml'), 'engine: V2\n')
+    writeRepoVersion('woodland', '1.2.3')
+
+    const { overrides } = discover()
+
+    expect(overrides).toEqual([])
+  })
+})
+
+describe('parseSelectionEnv', () => {
+  it('returns null when unset (act on every override)', () => {
+    expect(parseSelectionEnv(undefined)).toBeNull()
+  })
+
+  it('splits a comma-separated list into trimmed ids', () => {
+    expect(parseSelectionEnv('a::local, b::grants-config-b ,')).toEqual(['a::local', 'b::grants-config-b'])
+  })
+
+  it('returns an empty array for an empty string (nothing selected)', () => {
+    expect(parseSelectionEnv('')).toEqual([])
+  })
+})
+
+describe('filterOverridesBySelection', () => {
+  const overrides = [
+    { id: 'a::local', grant: 'a' },
+    { id: 'b::grants-config-b', grant: 'b' }
+  ]
+
+  it('returns every override unchanged for a null selection', () => {
+    expect(filterOverridesBySelection(overrides, null)).toEqual(overrides)
+  })
+
+  it('keeps only the overrides whose id is selected', () => {
+    expect(filterOverridesBySelection(overrides, ['b::grants-config-b'])).toEqual([overrides[1]])
+  })
+
+  it('returns nothing for an empty selection', () => {
+    expect(filterOverridesBySelection(overrides, [])).toEqual([])
+  })
+})
+
+describe('dedupeByGrant', () => {
+  it('keeps the first source per grant and warns about the rest', () => {
+    const overrides = [
+      { id: 'grasslands::local', grant: 'grasslands', source: 'local-form-definitions' },
+      { id: 'grasslands::grants-config-grasslands', grant: 'grasslands', source: 'grants-config-grasslands' }
+    ]
+
+    const { overrides: deduped, warnings } = dedupeByGrant(overrides)
+
+    expect(deduped.map((o) => o.id)).toEqual(['grasslands::local'])
+    expect(warnings).toHaveLength(1)
+    expect(warnings[0]).toMatch(/Multiple overrides selected for grant "grasslands"/)
+  })
+
+  it('leaves distinct grants untouched', () => {
+    const overrides = [
+      { id: 'a::local', grant: 'a', source: 'local-form-definitions' },
+      { id: 'b::grants-config-b', grant: 'b', source: 'grants-config-b' }
+    ]
+
+    const { overrides: deduped, warnings } = dedupeByGrant(overrides)
+
+    expect(deduped).toEqual(overrides)
     expect(warnings).toEqual([])
   })
 })
@@ -260,5 +436,18 @@ describe('buildDisableScript', () => {
     // Pass 2 (marker sweep) always runs alongside it.
     expect(script).toContain(' (local override active)')
     expect(script).toContain('endsWith(CONFIG.marker)')
+  })
+
+  it('omits the orphan marker sweep for a targeted disable (sweepOrphans: false)', () => {
+    // A targeted disable removes only the deselected overrides; the shared marker
+    // must NOT be swept or it would also purge the overrides kept selected.
+    const script = buildDisableScript([{ grant: 'woodland', bumpedVersion: '1.2.4' }], { sweepOrphans: false })
+
+    // Pass 1 still runs for the targeted grant.
+    expect(script).toContain('deleteMany')
+    expect(script).toContain('"version":"1.2.4"')
+    // Pass 2 (marker sweep) is absent.
+    expect(script).not.toContain('endsWith(CONFIG.marker)')
+    expect(script).not.toContain('swept orphaned override')
   })
 })
