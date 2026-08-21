@@ -20,9 +20,9 @@ export function getConsentTypes() {
 
 /**
  * Consent type keys (from the feature-flagged getConsentTypes registry) that
- * apply to a single action, in canonical registry order. A disabled consent
- * feature flag hides its key everywhere at once - persisted state, group
- * hints, requirement text and the map lookup.
+ * apply to a single action, in registry order. Disabling a consent feature
+ * flag hides its key in every caller at once: persisted state, group hints,
+ * requirement text and the map lookup.
  * @param {Record<string, unknown>} action
  * @returns {string[]}
  */
@@ -34,8 +34,8 @@ export function getActionConsentKeys(action) {
 
 /**
  * The union of consent type keys required by at least one of the supplied
- * actions, e.g. ['sssi', 'hefer']. Each key appears at most once, in
- * canonical registry order regardless of action order.
+ * actions, e.g. ['sssi', 'hefer']. Each key appears once, in registry order
+ * whatever order the actions arrive in.
  * @param {Array<Record<string, unknown>>} actions
  * @returns {string[]}
  */

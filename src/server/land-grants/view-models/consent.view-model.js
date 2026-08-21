@@ -41,9 +41,9 @@ export function mapConsentPanelToViewModel(requiredConsents) {
 }
 
 /**
- * The consent labels a set of keys resolves to, in canonical SSSI-then-HEFER
- * order however they arrive. Unknown keys, an empty set, and persisted state
- * predating the consents field all yield nothing.
+ * The labels for a set of consent keys, always SSSI first then HEFER whatever
+ * order they arrive in. Unknown keys, and a consents array that is empty or
+ * absent from older persisted state, produce an empty list.
  * @param {string[] | undefined} requiredConsents
  * @returns {string[]}
  */
@@ -70,7 +70,7 @@ export function getConsentRequirementText(requiredConsents) {
 }
 
 /**
- * The notice shown on the map's selected-parcel summary. Rendered here rather
+ * The notice shown on the map's selected-parcel summary. Built here rather
  * than in the browser so every consent string lives in one module.
  * @param {string[] | undefined} requiredConsents
  * @returns {string}

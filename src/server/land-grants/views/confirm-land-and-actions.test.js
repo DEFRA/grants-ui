@@ -281,21 +281,20 @@ describe('confirm-land-and-actions.html view', () => {
       ]
     })
 
-    it.each([
-      ['Requires SSSI consent'],
-      ['Requires an SFI HEFER'],
-      ['Requires SSSI consent and an SFI HEFER']
-    ])('renders %s as secondary text beneath its own action name', (requirementText) => {
-      const $ = renderPage(withRequirement(requirementText))
-      const rows = $('.land-parcel-summary').eq(0).find('.land-parcel-summary__action-row')
-      const header = rows.eq(0).find('.govuk-table__header')
-      const hint = header.find('.land-parcel-summary__action-hint')
+    it.each([['Requires SSSI consent'], ['Requires an SFI HEFER'], ['Requires SSSI consent and an SFI HEFER']])(
+      'renders %s as secondary text beneath its own action name',
+      (requirementText) => {
+        const $ = renderPage(withRequirement(requirementText))
+        const rows = $('.land-parcel-summary').eq(0).find('.land-parcel-summary__action-row')
+        const header = rows.eq(0).find('.govuk-table__header')
+        const hint = header.find('.land-parcel-summary__action-hint')
 
-      expect(hint).toHaveLength(1)
-      expect(normalise(hint.text())).toBe(requirementText)
-      expect(normalise(header.text())).toBe(`Action description (CLIG3) ${requirementText}`)
-      expect(rows.eq(1).find('.land-parcel-summary__action-hint')).toHaveLength(0)
-    })
+        expect(hint).toHaveLength(1)
+        expect(normalise(hint.text())).toBe(requirementText)
+        expect(normalise(header.text())).toBe(`Action description (CLIG3) ${requirementText}`)
+        expect(rows.eq(1).find('.land-parcel-summary__action-hint')).toHaveLength(0)
+      }
+    )
 
     it('leaves the action payment cell and Change control untouched', () => {
       const $ = renderPage(withRequirement('Requires SSSI consent'))

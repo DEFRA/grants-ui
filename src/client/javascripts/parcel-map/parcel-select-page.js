@@ -92,8 +92,9 @@ const writeHiddenInputs = (selectedIds) => {
 }
 
 /**
- * The parcel's consent notice, already worded by the server so the copy lives
- * in one place. Empty string when nothing applies; null when the lookup failed.
+ * Fetches the parcel's consent notice, worded by the server so the copy lives
+ * in one place. Empty string when nothing applies, null when the lookup
+ * failed.
  * @param {string} parcelId
  * @returns {Promise<string | null>}
  */
@@ -129,16 +130,14 @@ const clearAdditionalDetails = () => {
 const showAdditionalDetails = (text) => {
   setText(DOM_ID_ADDITIONAL_DETAILS, text)
   unhide(DOM_ID_ADDITIONAL_DETAILS_ROW)
-  // Written last: the status region only announces text once the row carrying
-  // it is actually visible.
   setText(DOM_ID_ADDITIONAL_DETAILS_STATUS, text)
 }
 
 /**
  * Keeps the "Additional details" row in step with the current selection. The
- * notice belongs to the selected parcel, so every selection event - including
- * deselection and multi-selection - invalidates any in-flight lookup and
- * clears the row before a new one is asked for.
+ * notice belongs to the selected parcel, so every selection event, including
+ * deselection and multi-selection, invalidates any lookup still in flight and
+ * clears the row before asking for a new one.
  * @returns {(selectedParcels: SelectedParcel[]) => Promise<void>}
  */
 function createConsentRequirementsUpdater() {
@@ -155,8 +154,6 @@ function createConsentRequirementsUpdater() {
 
     const text = await fetchConsentNotice(selectedParcels[0].id)
     if (thisRequestId !== requestId) {
-      // A newer selection has already taken over - this response describes a
-      // parcel that is no longer the one being shown.
       return
     }
 
@@ -209,8 +206,6 @@ export function initParcelSelectPage(mapEl) {
     const { selectedParcels } = /** @type {CustomEvent<SelectionDetail>} */ (e).detail
     writeHiddenInputs(selectedParcels.map((p) => p.id))
     updateSelectedParcelDetails(selectedParcels)
-    // Informational only: a failed or slow lookup must never block Continue,
-    // so the selection handler does not await it.
     updateConsentRequirements(selectedParcels)
   })
 

@@ -17,8 +17,6 @@ Given('the map has the following land parcels available for selection', async fu
   }, parcels)
 })
 
-// Intercepts only the informational selected-parcel consent lookup, so the
-// rest of the journey (including the availability route) still hits the app.
 Given('the selected parcel consent lookup returns', async function (dataTable) {
   const noticeByParcel = Object.fromEntries(
     dataTable.hashes().map((row) => [row.PARCEL.replace(' ', '-'), row.NOTICE ?? ''])

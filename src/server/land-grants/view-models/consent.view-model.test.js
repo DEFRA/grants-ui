@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  getConsentNoticeText,
-  getConsentRequirementText,
-  mapConsentPanelToViewModel
-} from './consent.view-model.js'
+import { getConsentNoticeText, getConsentRequirementText, mapConsentPanelToViewModel } from './consent.view-model.js'
 
 describe('consent.view-model', () => {
   describe('mapConsentPanelToViewModel', () => {

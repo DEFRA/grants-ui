@@ -206,7 +206,8 @@ describe('initParcelSelectPage', () => {
   })
 
   describe('additional details row', () => {
-    const select = (mapEl, ids) => fire(mapEl, EVENT_SELECTION, { selectedParcels: ids.map((id) => ({ id, areaHa: 1 })) })
+    const select = (mapEl, ids) =>
+      fire(mapEl, EVENT_SELECTION, { selectedParcels: ids.map((id) => ({ id, areaHa: 1 })) })
 
     it('posts the selected parcel to the consents route, with no action list to narrow it', async () => {
       const mapEl = setupDom()
@@ -250,7 +251,10 @@ describe('initParcelSelectPage', () => {
     })
 
     it('removes the previous requirement text when the selection changes to a parcel with none', async () => {
-      global.fetch = vi.fn().mockResolvedValueOnce(noticeResponse('SSSI consent may apply to some actions')).mockResolvedValueOnce(noticeResponse(''))
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce(noticeResponse('SSSI consent may apply to some actions'))
+        .mockResolvedValueOnce(noticeResponse(''))
       const mapEl = setupDom()
 
       select(mapEl, ['SD7148-9160'])

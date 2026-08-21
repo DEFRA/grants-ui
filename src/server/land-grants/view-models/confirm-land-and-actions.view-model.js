@@ -217,9 +217,6 @@ function addPricedParcelActions(parcels, payment, landParcels) {
       parcels.set(parcelKey, parcel)
     }
 
-    // Parcel-and-code specific, so one parcel's requirement can never surface
-    // on another parcel's copy of the same action. Missing or malformed
-    // persisted consents yield no hint at all.
     const requirementText = getConsentRequirementText(landParcels?.[parcelKey]?.actionsObj?.[code]?.consents)
 
     parcel.actions.push({
