@@ -24,14 +24,12 @@ export const JOURNEY_CLI_SCRIPT = resolve(ACCEPTANCE_DIR, 'journey-cli.js')
 // Journey definitions the runner steps through — one JSON per grant slug.
 export const JOURNEYS_DIR = resolve(ROOT, 'src/server/dev-tools/journey-runner/journeys')
 
-// Folder holding developer-private form-definition overrides, mirroring the
-// config repo layout `<grant>/<service>/<file>`. A single toggle enables/disables
-// all overrides found here.
-export const LOCAL_FORM_DEFS_DIR = resolve(ROOT, 'compose/config-broker/local-form-definitions')
-// Applier that (un)publishes the overrides against the running backend Mongo.
+// Applier that (un)publishes the form-definition overrides against the running
+// backend Mongo. It discovers overrides both in the in-repo
+// `compose/config-broker/local-form-definitions` folder and in sibling
+// `grants-config-*` repo checkouts placed next to grants-ui; the `gt` local menu
+// lists each as an individually selectable per-grant override.
 export const APPLY_FORM_DEFS_SCRIPT = resolve(ROOT, 'tools/apply-local-form-defs.mjs')
-// Menu key used for the single all-grants form-definition override toggle.
-export const FORM_DEFS_TOGGLE_KEY = '__local-form-defs__'
 
 // Service name used by the debug command
 export const DEBUG_SERVICE = 'grants-ui'
