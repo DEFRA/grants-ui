@@ -204,8 +204,8 @@ describe('ConfirmationPageController', () => {
       mockFormsCacheServiceMethods.getState.mockResolvedValue({
         $$__referenceNumber: 'WMP-A1B2-C3D4',
         claims: [
-          { claimNumber: 'WMP-A1B2-C3D4-C0001', status: 'SUBMITTED' },
-          { claimNumber: 'WMP-A1B2-C3D4-C0002', status: 'SUBMITTED' }
+          { claimNumber: 'WMP-A1B2-C3D4-C01', status: 'SUBMITTED' },
+          { claimNumber: 'WMP-A1B2-C3D4-C02', status: 'SUBMITTED' }
         ]
       })
 
@@ -220,7 +220,7 @@ describe('ConfirmationPageController', () => {
       expect(renderSpy).toHaveBeenCalledWith(
         null,
         expect.objectContaining({
-          referenceNumber: 'WMP-A1B2-C3D4-C0002'
+          referenceNumber: 'WMP-A1B2-C3D4-C02'
         }),
         expect.any(Object),
         expect.any(String),
@@ -319,12 +319,12 @@ describe('ConfirmationPageController', () => {
       const state = {
         $$__referenceNumber: 'WMP-A1B2-C3D4',
         claims: [
-          { claimNumber: 'WMP-A1B2-C3D4-C0001', status: 'SUBMITTED' },
-          { claimNumber: 'WMP-A1B2-C3D4-C0002', status: 'SUBMITTED' }
+          { claimNumber: 'WMP-A1B2-C3D4-C01', status: 'SUBMITTED' },
+          { claimNumber: 'WMP-A1B2-C3D4-C02', status: 'SUBMITTED' }
         ]
       }
 
-      expect(controller.resolvePanelReference(state)).toBe('WMP-A1B2-C3D4-C0002')
+      expect(controller.resolvePanelReference(state)).toBe('WMP-A1B2-C3D4-C02')
     })
 
     test('falls back to Not available when a claim confirmation has no claim', () => {

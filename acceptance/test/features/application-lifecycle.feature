@@ -205,7 +205,7 @@ Feature: Application Lifecycle
         And logs in as CRN "1100995048"
         Then the user should be at URL "claim"
         And the grants-ui application status for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" should be "CLAIM_STARTED"
-        And the claim "-C0001" for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" should have status "IN_PROGRESS"
+        And the claim "-C01" for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" should have status "IN_PROGRESS"
 
         # review claim
         And should see heading "Example claim start page"
@@ -216,12 +216,12 @@ Feature: Application Lifecycle
         And should see heading "Example claim declaration page"
         When the user clicks on "Confirm and submit"
         And the grants-ui application status for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" should be "CLAIM_SUBMITTED"
-        And the claim "-C0001" for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" should have status "SUBMITTED"
+        And the claim "-C01" for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" should have status "SUBMITTED"
 
         # claim-confirmation
         Then the user should be at URL "claim-confirmation"
         And should see heading "Claim submitted"
-        And should see claim reference number "-C0001"
+        And should see claim reference number "-C01"
 
         # reopen browser and remain on claim confirmation while GAS status is unchanged
         Given the user starts a new browser session
