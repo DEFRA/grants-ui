@@ -28,8 +28,8 @@ const plannedActionsValidation = {
 }
 
 /**
- * The parcel a request may act on, or null when the caller is not authorised
- * for it. A failed authorisation lookup counts as not authorised.
+ * Returns the parcel a request may act on, or null when the caller is not
+ * authorised for it. A failed authorisation lookup counts as not authorised.
  * @param {Request} request
  * @returns {Promise<{ formRequest: AnyFormRequest, sheetId: string, parcelId: string } | null>}
  */
@@ -48,8 +48,8 @@ async function authorisedParcel(request) {
 
 /**
  * Logs an upstream failure and maps it to a status. A 4xx means the upstream
- * rejected the request as invalid, not an outage - pass the real status
- * through rather than masking it as a 503.
+ * rejected the request as invalid rather than being unavailable, so that
+ * status is passed through; anything else becomes a 503.
  * @param {Request} request
  * @param {ResponseToolkit} h
  * @param {unknown} err
@@ -98,8 +98,9 @@ async function actionsHandler(request, h) {
 
 /**
  * The consent notice for one parcel, shown on the map page after selection.
- * Derived from every action the parcel carries: an SSSI designation or HEFER
- * requirement belongs to the land, not to the actions this grant offers.
+ * It covers every action the parcel carries: an SSSI designation or HEFER
+ * requirement belongs to the land rather than to the actions this grant
+ * offers.
  * @param {Request} request
  * @param {ResponseToolkit} h
  */

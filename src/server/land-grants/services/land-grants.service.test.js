@@ -1177,10 +1177,6 @@ describe('land-grants service', () => {
       expect(result).toEqual({ consents: expected })
     })
 
-    // The designation belongs to the land, so a parcel whose only designated
-    // actions sit outside this grant's enabledLandActions must still report
-    // them - this is what a real SSSI/HEFER parcel looks like on a journey
-    // that offers neither action.
     it('should report consents for actions no journey enables', async () => {
       parcelsWithActions.mockResolvedValueOnce(
         parcelWithActions([
@@ -1250,9 +1246,9 @@ describe('land-grants service', () => {
     it('should propagate an upstream failure to the caller', async () => {
       parcelsWithActions.mockRejectedValueOnce(new Error('upstream down'))
 
-      await expect(
-        fetchConsentRequirementsForParcel({ parcelId: 'PARCEL456', sheetId: 'SHEET123' })
-      ).rejects.toThrow('upstream down')
+      await expect(fetchConsentRequirementsForParcel({ parcelId: 'PARCEL456', sheetId: 'SHEET123' })).rejects.toThrow(
+        'upstream down'
+      )
     })
   })
 

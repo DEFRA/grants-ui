@@ -92,9 +92,9 @@ describe('consent-types', () => {
     it('should include sssi when at least one action requires SSSI consent', () => {
       configState.set('landGrants.enableSSSIFeature', true)
 
-      expect(
-        getRequiredActionConsents([{ code: 'SAM1' }, { code: 'SCR2', sssiConsentRequired: true }])
-      ).toEqual(['sssi'])
+      expect(getRequiredActionConsents([{ code: 'SAM1' }, { code: 'SCR2', sssiConsentRequired: true }])).toEqual([
+        'sssi'
+      ])
     })
 
     it('should include hefer when at least one action requires a HEFER', () => {
@@ -119,7 +119,10 @@ describe('consent-types', () => {
       bothFlagsOn()
 
       expect(
-        getRequiredActionConsents([{ code: 'GRH12', heferRequired: true }, { code: 'SCR2', sssiConsentRequired: true }])
+        getRequiredActionConsents([
+          { code: 'GRH12', heferRequired: true },
+          { code: 'SCR2', sssiConsentRequired: true }
+        ])
       ).toEqual(['sssi', 'hefer'])
     })
 
