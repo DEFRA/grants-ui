@@ -9,8 +9,11 @@ import {
   ERROR_REASON_UNAVAILABLE
 } from './config.js'
 
+const noticeResponse = (text) => ({ ok: true, json: () => Promise.resolve({ text }) })
+
 function setupDom({ multiSelect = false } = {}) {
   document.body.innerHTML = `
+    <input type="hidden" name="crumb" value="test-crumb">
     <div id="map-no-parcels-error" hidden></div>
     <div id="selected-parcels-inputs"></div>
     <button id="map-select-continue">Continue</button>
@@ -22,6 +25,10 @@ function setupDom({ multiSelect = false } = {}) {
       <span id="selected-parcel-reference"></span>
       <span id="selected-parcel-area"></span>
       <a id="selected-parcel-change" href="#parcel-map">Change</a>
+      <div id="selected-parcel-additional-details-row" hidden>
+        <span id="selected-parcel-additional-details"></span>
+      </div>
+      <span id="selected-parcel-additional-details-status" role="status"></span>
     </div>
   `
   const mapEl = document.createElement('parcel-map')
@@ -34,12 +41,19 @@ function setupDom({ multiSelect = false } = {}) {
 }
 
 const fire = (mapEl, type, detail) => mapEl.dispatchEvent(new CustomEvent(type, { detail }))
+const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
 const hiddenValues = () =>
   [...document.querySelectorAll('#selected-parcels-inputs input')].map((i) => ({ name: i.name, value: i.value }))
+const additionalDetails = () => ({
+  hidden: document.getElementById('selected-parcel-additional-details-row').hidden,
+  text: document.getElementById('selected-parcel-additional-details').textContent,
+  status: document.getElementById('selected-parcel-additional-details-status').textContent
+})
 
 describe('initParcelSelectPage', () => {
   beforeEach(() => {
     document.body.innerHTML = ''
+    global.fetch = vi.fn().mockResolvedValue(noticeResponse(''))
   })
 
   it('is a no-op when passed no element', () => {
@@ -189,5 +203,122 @@ describe('initParcelSelectPage', () => {
     })
     changeLink.click()
     expect(defaultPrevented).toBe(true)
+  })
+
+  describe('additional details row', () => {
+    const select = (mapEl, ids) =>
+      fire(mapEl, EVENT_SELECTION, { selectedParcels: ids.map((id) => ({ id, areaHa: 1 })) })
+
+    it('posts the selected parcel to the consents route, with no action list to narrow it', async () => {
+      const mapEl = setupDom()
+
+      select(mapEl, ['SD7148-9160'])
+      await flush()
+
+      expect(global.fetch).toHaveBeenCalledWith('/api/land-grants/actions/SD7148-9160/consents', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': 'test-crumb' },
+        body: '{}'
+      })
+    })
+
+    it('shows and announces whatever notice the server returns', async () => {
+      const notice = 'SSSI consent and an SFI HEFER may apply to some actions'
+      global.fetch = vi.fn().mockResolvedValue(noticeResponse(notice))
+      const mapEl = setupDom()
+
+      select(mapEl, ['SD7148-9160'])
+      await flush()
+
+      expect(additionalDetails()).toEqual({ hidden: false, text: notice, status: notice })
+    })
+
+    it.each([
+      ['empty notice text', () => Promise.resolve(noticeResponse(''))],
+      ['a malformed response body', () => Promise.resolve({ ok: true, json: () => Promise.resolve({}) })],
+      ['a non-2xx response', () => Promise.resolve({ ok: false, json: () => Promise.resolve({}) })],
+      ['a network error', () => Promise.reject(new Error('offline'))]
+    ])('keeps the row hidden and Continue usable for %s', async (_label, respond) => {
+      global.fetch = vi.fn().mockImplementation(respond)
+      const mapEl = setupDom()
+
+      select(mapEl, ['SD7148-9160'])
+      await flush()
+
+      expect(additionalDetails()).toEqual({ hidden: true, text: '', status: '' })
+      expect(document.getElementById('map-select-continue').disabled).toBe(false)
+    })
+
+    it('removes the previous requirement text when the selection changes to a parcel with none', async () => {
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce(noticeResponse('SSSI consent may apply to some actions'))
+        .mockResolvedValueOnce(noticeResponse(''))
+      const mapEl = setupDom()
+
+      select(mapEl, ['SD7148-9160'])
+      await flush()
+      select(mapEl, ['SD7148-9161'])
+      await flush()
+
+      expect(additionalDetails()).toEqual({ hidden: true, text: '', status: '' })
+    })
+
+    it('clears the requirement text immediately on deselection, before any response lands', async () => {
+      global.fetch = vi.fn().mockResolvedValue(noticeResponse('SSSI consent may apply to some actions'))
+      const mapEl = setupDom()
+
+      select(mapEl, ['SD7148-9160'])
+      await flush()
+      select(mapEl, [])
+
+      expect(additionalDetails()).toEqual({ hidden: true, text: '', status: '' })
+    })
+
+    it('does not reveal the row when the response arrives after deselection', async () => {
+      let resolveConsents
+      global.fetch = vi.fn().mockReturnValue(new Promise((resolve) => (resolveConsents = resolve)))
+      const mapEl = setupDom()
+
+      select(mapEl, ['SD7148-9160'])
+      select(mapEl, [])
+      resolveConsents(noticeResponse('SSSI consent may apply to some actions'))
+      await flush()
+
+      expect(additionalDetails()).toEqual({ hidden: true, text: '', status: '' })
+    })
+
+    it('does not reveal the row when the response arrives after a second parcel is added', async () => {
+      let resolveConsents
+      global.fetch = vi.fn().mockReturnValueOnce(new Promise((resolve) => (resolveConsents = resolve)))
+      const mapEl = setupDom({ multiSelect: true })
+
+      select(mapEl, ['SD7148-9160'])
+      select(mapEl, ['SD7148-9160', 'SD7148-9161'])
+      resolveConsents(noticeResponse('An SFI HEFER may apply to some actions'))
+      await flush()
+
+      expect(additionalDetails()).toEqual({ hidden: true, text: '', status: '' })
+      expect(global.fetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not let a delayed first response overwrite a faster second selection', async () => {
+      let resolveFirst
+      global.fetch = vi
+        .fn()
+        .mockReturnValueOnce(new Promise((resolve) => (resolveFirst = resolve)))
+        .mockResolvedValueOnce(noticeResponse('An SFI HEFER may apply to some actions'))
+      const mapEl = setupDom()
+
+      select(mapEl, ['SD7148-9160'])
+      select(mapEl, ['SD7148-9161'])
+      await flush()
+      resolveFirst(noticeResponse('SSSI consent may apply to some actions'))
+      await flush()
+
+      const expected = 'An SFI HEFER may apply to some actions'
+      expect(additionalDetails()).toEqual({ hidden: false, text: expected, status: expected })
+    })
   })
 })

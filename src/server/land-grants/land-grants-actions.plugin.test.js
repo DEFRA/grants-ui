@@ -2,7 +2,10 @@
 import { vi } from 'vitest'
 import { landGrantsActionsPlugin } from './land-grants-actions.plugin.js'
 import { fetchAuthorisedParcelIds } from '~/src/server/land-grants/services/parcel-cache.js'
-import { fetchActionsWithPlannedActions } from '~/src/server/land-grants/services/land-grants.service.js'
+import {
+  fetchActionsWithPlannedActions,
+  fetchConsentRequirementsForParcel
+} from '~/src/server/land-grants/services/land-grants.service.js'
 import { error } from '~/src/server/common/helpers/logging/log.js'
 
 vi.mock('~/src/server/land-grants/services/parcel-cache.js', () => ({
@@ -10,7 +13,8 @@ vi.mock('~/src/server/land-grants/services/parcel-cache.js', () => ({
 }))
 
 vi.mock('~/src/server/land-grants/services/land-grants.service.js', () => ({
-  fetchActionsWithPlannedActions: vi.fn()
+  fetchActionsWithPlannedActions: vi.fn(),
+  fetchConsentRequirementsForParcel: vi.fn()
 }))
 
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
@@ -146,5 +150,85 @@ describe('landGrantsActionsPlugin', () => {
       },
       request
     )
+  })
+
+  describe('the parcel consents route', () => {
+    const consentsRoute = () => {
+      const server = makeServer()
+      landGrantsActionsPlugin.plugin.register(server)
+      return server._routes.find((r) => r.path === '/api/land-grants/actions/{parcelId}/consents')
+    }
+
+    it('registers a session-authed, crumb-validated POST route taking no body', () => {
+      expect(consentsRoute()).toMatchObject({
+        method: 'POST',
+        options: expect.objectContaining({
+          auth: { mode: 'required', strategy: 'session' },
+          plugins: { crumb: { restful: true } }
+        })
+      })
+      expect(consentsRoute().options.validate.payload).toBeUndefined()
+    })
+
+    it('returns the notice for the whole parcel, unnarrowed by the journey', async () => {
+      fetchAuthorisedParcelIds.mockResolvedValue(['SD7946-0155'])
+      fetchConsentRequirementsForParcel.mockResolvedValue({ consents: ['sssi', 'hefer'] })
+      const h = makeH()
+
+      await consentsRoute().handler(makeRequest(), h)
+
+      expect(fetchConsentRequirementsForParcel).toHaveBeenCalledWith(
+        { parcelId: '0155', sheetId: 'SD7946' },
+        { defraIdToken: 'defra-id-access-token', sbi: '106284736' }
+      )
+      expect(h.response).toHaveBeenCalledWith({ text: 'SSSI consent and an SFI HEFER may apply to some actions' })
+      expect(h._responseObj.code).toHaveBeenCalledWith(200)
+    })
+
+    it('returns empty text when the parcel carries no requirement', async () => {
+      fetchAuthorisedParcelIds.mockResolvedValue(['SD7946-0155'])
+      fetchConsentRequirementsForParcel.mockResolvedValue({ consents: [] })
+      const h = makeH()
+
+      await consentsRoute().handler(makeRequest(), h)
+
+      expect(h.response).toHaveBeenCalledWith({ text: '' })
+    })
+
+    it('rejects with 403 when the parcel is not in the caller-authorised set', async () => {
+      fetchAuthorisedParcelIds.mockResolvedValue(['SD1111-0001'])
+      const h = makeH()
+
+      await consentsRoute().handler(makeRequest(), h)
+
+      expect(h._responseObj.code).toHaveBeenCalledWith(403)
+      expect(fetchConsentRequirementsForParcel).not.toHaveBeenCalled()
+    })
+
+    it('passes an upstream 4xx through rather than reporting it as an outage', async () => {
+      fetchAuthorisedParcelIds.mockResolvedValue(['SD7946-0155'])
+      fetchConsentRequirementsForParcel.mockRejectedValue(Object.assign(new Error('bad parcel'), { status: 400 }))
+      const h = makeH()
+
+      await consentsRoute().handler(makeRequest(), h)
+
+      expect(h._responseObj.code).toHaveBeenCalledWith(400)
+    })
+
+    it('degrades to 503 and logs when the lookup fails', async () => {
+      fetchAuthorisedParcelIds.mockResolvedValue(['SD7946-0155'])
+      fetchConsentRequirementsForParcel.mockRejectedValue(Object.assign(new Error('upstream down'), { status: 502 }))
+      const request = makeRequest()
+      const h = makeH()
+
+      await consentsRoute().handler(request, h)
+
+      expect(h._responseObj.code).toHaveBeenCalledWith(503)
+      expect(error).toHaveBeenCalledWith(
+        'FETCH_ACTIONS_ERROR',
+        { sbi: '106284736', sheetId: 'SD7946', parcelId: '0155', errorMessage: 'upstream down', statusCode: 502 },
+        request
+      )
+    })
   })
 })

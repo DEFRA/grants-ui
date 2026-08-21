@@ -1,10 +1,10 @@
 import SelectActionsBasePageController from '~/src/server/land-grants/controllers/select-actions-base-page.controller.js'
 import {
   getChosenAreaFieldsHtml,
-  getPageConsents,
   getParcelSummaryList,
   mapActionsToViewModel
 } from '~/src/server/land-grants/view-models/select-actions.view-model.js'
+import { getRequiredActionConsents } from '~/src/server/land-grants/utils/consent-types.js'
 import {
   addSelectedActionsToState,
   mergeRecomputedAvailability
@@ -80,7 +80,7 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
       addedActions,
       actionItems: mapActionsToViewModel(actions, addedActions, quantityErrorsByCode, hasErrors),
       chosenAreaFieldsHtml: getChosenAreaFieldsHtml(actions, addedActions),
-      pageConsents: getPageConsents(actions),
+      pageConsents: getRequiredActionConsents(actions),
       selectLandParcelPath,
       parcelSummaryList: getParcelSummaryList(parcel.sheetId, parcel.parcelId, parcel.size)
     }

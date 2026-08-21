@@ -4,7 +4,7 @@ import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-w
 import { stringifyParcel } from '~/src/shared/format-parcel.js'
 import { stateToLandActionsMapper } from '../mappers/state-to-land-grants-mapper.js'
 import { config } from '~/src/config/config.js'
-import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js'
+import { getRequiredActionConsents } from '~/src/server/land-grants/utils/consent-types.js'
 import {
   calculate,
   locateParcelTiles,
@@ -79,9 +79,7 @@ const createGroup = (name, actionsInGroup) => ({
     value: Math.max(...actionsInGroup.map((item) => item.availableArea.value))
   },
   actions: actionsInGroup,
-  consents: getConsentTypes()
-    .filter((ct) => actionsInGroup.some((a) => /** @type {Record<string, unknown>} */ (a)[ct.apiField]))
-    .map((ct) => ct.key)
+  consents: getRequiredActionConsents(/** @type {Array<Record<string, unknown>>} */ (actionsInGroup))
 })
 
 /**
@@ -211,6 +209,30 @@ export async function fetchActionsWithPlannedActions({ parcelId, sheetId, planne
   }))
 
   return { actions }
+}
+
+/**
+ * The consent requirements for a single parcel, used by the map's "Additional
+ * details" row: the union of consent keys across every action the parcel
+ * carries. The journey's enabled actions do not narrow this. An SSSI
+ * designation or HEFER requirement is a property of the land, so the map shows
+ * it even when the action carrying it is not one this grant offers. Cached
+ * under its own prefix so it never collides with the journey-filtered entries
+ * fetchActionsForParcel writes.
+ * @param {{ parcelId?: string, sheetId?: string }} parcel
+ * @param {LandGrantsUserContext} userContext
+ * @returns {Promise<{ consents: string[] }>}
+ * @throws {Error}
+ */
+export async function fetchConsentRequirementsForParcel({ parcelId, sheetId }, userContext) {
+  const { actions } = await fetchParcelActions(
+    { parcelId, sheetId },
+    userContext,
+    'consents:',
+    parcelsWithActions,
+    (actionsForParcel) => actionsForParcel
+  )
+  return { consents: getRequiredActionConsents(/** @type {Array<Record<string, unknown>>} */ (actions)) }
 }
 
 /**

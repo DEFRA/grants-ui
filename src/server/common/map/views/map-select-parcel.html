@@ -95,7 +95,15 @@
               <dt class="govuk-summary-list__key">Total area</dt>
               <dd class="govuk-summary-list__value" id="selected-parcel-area"></dd>
             </div>
+            <div class="govuk-summary-list__row govuk-summary-list__row--no-actions" id="selected-parcel-additional-details-row" hidden>
+              <dt class="govuk-summary-list__key">Additional details</dt>
+              <dd class="govuk-summary-list__value" id="selected-parcel-additional-details"></dd>
+            </div>
           </dl>
+          {# Outside the row above, so the asynchronous requirement text is
+             announced once it lands rather than as part of revealing the
+             summary itself. #}
+          <span id="selected-parcel-additional-details-status" class="govuk-visually-hidden" role="status"></span>
         </div>
 
         {{ govukButton({

@@ -7,6 +7,7 @@ import {
   fetchGroupedActionsForParcel as fetchGroupedActionsForParcelService,
   fetchActionsForParcel as fetchActionsForParcelService,
   fetchActionsWithPlannedActions as fetchActionsWithPlannedActionsService,
+  fetchConsentRequirementsForParcel as fetchConsentRequirementsForParcelService,
   fetchParcels as fetchParcelsService,
   fetchParcelsGroups as fetchParcelsGroupsService,
   fetchParcelTileLocation as fetchParcelTileLocationService,
@@ -36,6 +37,7 @@ const calculateLandActionsPayment = withUserContext(calculateLandActionsPaymentS
 const fetchGroupedActionsForParcel = withUserContext(fetchGroupedActionsForParcelService)
 const fetchActionsForParcel = withUserContext(fetchActionsForParcelService)
 const fetchActionsWithPlannedActions = withUserContext(fetchActionsWithPlannedActionsService)
+const fetchConsentRequirementsForParcel = withUserContext(fetchConsentRequirementsForParcelService)
 const fetchParcels = withUserContext(fetchParcelsService)
 const fetchParcelsGroups = withUserContext(fetchParcelsGroupsService)
 const fetchParcelTileLocation = withUserContext(fetchParcelTileLocationService)
@@ -1140,6 +1142,113 @@ describe('land-grants service', () => {
       expect(parcelsWithGroups).toHaveBeenCalledTimes(1)
       expect(Array.isArray(flatResult.actions)).toBe(true)
       expect(Array.isArray(groupedResult.actions[0]?.actions)).toBe(true)
+    })
+  })
+
+  describe('fetchConsentRequirementsForParcel', () => {
+    const parcelWithActions = (actions) => ({
+      parcels: [{ parcelId: 'PARCEL456', sheetId: 'SHEET123', size: { value: 50.5, unit: 'ha' }, actions }]
+    })
+
+    beforeEach(() => {
+      clearParcelCache()
+      configState.reset()
+      configState.set('landGrants.enableSSSIFeature', true)
+      configState.set('landGrants.enableHeferFeature', true)
+    })
+
+    it.each([
+      ['neither requirement', [{ code: 'CMOR1', description: 'Assess moorland' }], []],
+      ['a HEFER only', [{ code: 'CMOR1', description: 'Assess moorland', heferRequired: true }], ['hefer']],
+      ['SSSI consent only', [{ code: 'CMOR1', description: 'Assess moorland', sssiConsentRequired: true }], ['sssi']],
+      [
+        'both flags across different actions',
+        [
+          { code: 'UPL1', description: 'Moderate grazing', heferRequired: true },
+          { code: 'CMOR1', description: 'Assess moorland', sssiConsentRequired: true }
+        ],
+        ['sssi', 'hefer']
+      ]
+    ])('should return the consents for %s', async (_label, actions, expected) => {
+      parcelsWithActions.mockResolvedValueOnce(parcelWithActions(actions))
+
+      const result = await fetchConsentRequirementsForParcel({ parcelId: 'PARCEL456', sheetId: 'SHEET123' })
+
+      expect(result).toEqual({ consents: expected })
+    })
+
+    it('should report consents for actions no journey enables', async () => {
+      parcelsWithActions.mockResolvedValueOnce(
+        parcelWithActions([
+          { code: 'CMOR1', description: 'Assess moorland', sssiConsentRequired: true },
+          { code: 'UPL2', description: 'Supplementary winter feeding', heferRequired: true }
+        ])
+      )
+
+      const result = await fetchConsentRequirementsForParcel({ parcelId: 'PARCEL456', sheetId: 'SHEET123' })
+
+      expect(result).toEqual({ consents: ['sssi', 'hefer'] })
+    })
+
+    it('should ask the API for the parcel without narrowing to any action list', async () => {
+      parcelsWithActions.mockResolvedValueOnce(parcelWithActions([{ code: 'CMOR1', description: 'Assess moorland' }]))
+
+      await fetchConsentRequirementsForParcel({ parcelId: 'PARCEL456', sheetId: 'SHEET123' })
+
+      expect(parcelsWithActions).toHaveBeenCalledWith(['SHEET123-PARCEL456'], mockApiEndpoint, mockUserContext, [])
+    })
+
+    it('should omit a key whose feature flag is off, even when the action has the field set', async () => {
+      configState.set('landGrants.enableHeferFeature', false)
+      parcelsWithActions.mockResolvedValueOnce(
+        parcelWithActions([
+          { code: 'CMOR1', description: 'Assess moorland', sssiConsentRequired: true, heferRequired: true }
+        ])
+      )
+
+      const result = await fetchConsentRequirementsForParcel({ parcelId: 'PARCEL456', sheetId: 'SHEET123' })
+
+      expect(result).toEqual({ consents: ['sssi'] })
+    })
+
+    it('should cache its own unfiltered lookup rather than calling upstream twice', async () => {
+      parcelsWithActions.mockResolvedValue(
+        parcelWithActions([{ code: 'CMOR1', description: 'Assess moorland', sssiConsentRequired: true }])
+      )
+
+      await fetchConsentRequirementsForParcel({ parcelId: 'PARCEL456', sheetId: 'SHEET123' })
+      const result = await fetchConsentRequirementsForParcel({ parcelId: 'PARCEL456', sheetId: 'SHEET123' })
+
+      expect(parcelsWithActions).toHaveBeenCalledTimes(1)
+      expect(result).toEqual({ consents: ['sssi'] })
+    })
+
+    it('should not collide with the journey-filtered cache entry for the same parcel', async () => {
+      parcelsWithActions.mockResolvedValue(
+        parcelWithActions([
+          { code: 'CMOR1', description: 'Assess moorland', sssiConsentRequired: true },
+          { code: 'UNKNOWN1', description: 'A disabled action', heferRequired: true }
+        ])
+      )
+
+      const filtered = await fetchActionsForParcel({
+        parcelId: 'PARCEL456',
+        sheetId: 'SHEET123',
+        enabledLandActions: ['CMOR1']
+      })
+      const result = await fetchConsentRequirementsForParcel({ parcelId: 'PARCEL456', sheetId: 'SHEET123' })
+
+      expect(filtered.actions.map((a) => a.code)).toEqual(['CMOR1'])
+      expect(parcelsWithActions).toHaveBeenCalledTimes(2)
+      expect(result).toEqual({ consents: ['sssi', 'hefer'] })
+    })
+
+    it('should propagate an upstream failure to the caller', async () => {
+      parcelsWithActions.mockRejectedValueOnce(new Error('upstream down'))
+
+      await expect(fetchConsentRequirementsForParcel({ parcelId: 'PARCEL456', sheetId: 'SHEET123' })).rejects.toThrow(
+        'upstream down'
+      )
     })
   })
 

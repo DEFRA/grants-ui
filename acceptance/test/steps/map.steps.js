@@ -17,6 +17,20 @@ Given('the map has the following land parcels available for selection', async fu
   }, parcels)
 })
 
+Given('the selected parcel consent lookup returns', async function (dataTable) {
+  const noticeByParcel = Object.fromEntries(
+    dataTable.hashes().map((row) => [row.PARCEL.replace(' ', '-'), row.NOTICE ?? ''])
+  )
+  await this.page.route(/\/api\/land-grants\/actions\/[^/]+\/consents$/, (route) => {
+    const compoundParcelId = decodeURIComponent(new URL(route.request().url()).pathname.split('/').at(-2))
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ text: noticeByParcel[compoundParcelId] ?? '' })
+    })
+  })
+})
+
 When('the user selects parcel {string} of area {string} hectares on the map', async function (parcelId, areaHa) {
   await this.page.waitForLoadState('domcontentloaded')
   await this.page.evaluate(
@@ -58,6 +72,18 @@ Then(
 
 Then('(the user )should not see a selected parcel summary', async function () {
   await expect(this.page.locator('#selected-parcel-details')).toBeHidden()
+})
+
+Then(
+  '(the user )should see additional details {string} in the selected parcel summary',
+  async function (requirementText) {
+    await expect(this.page.locator('#selected-parcel-additional-details-row')).toBeVisible()
+    await expect(this.page.locator('#selected-parcel-additional-details')).toHaveText(requirementText)
+  }
+)
+
+Then('(the user )should not see additional details in the selected parcel summary', async function () {
+  await expect(this.page.locator('#selected-parcel-additional-details-row')).toBeHidden()
 })
 
 Then(

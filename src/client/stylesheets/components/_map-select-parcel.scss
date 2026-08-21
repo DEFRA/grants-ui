@@ -3,3 +3,7 @@
 .map-select-parcel .govuk-width-container {
   @include govuk-width-container(1400px);
 }
+
+.map-select-parcel .govuk-summary-list__row[hidden] {
+  display: none;
+}
