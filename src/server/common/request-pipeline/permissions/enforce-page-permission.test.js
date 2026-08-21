@@ -337,6 +337,21 @@ describe('enforcePagePermission', () => {
 
     expect(() => enforcePagePermission(request, h, context)).toThrow()
     expect(request.sendAuditEventInBackground).toHaveBeenCalledWith({
+      entity: 'application',
+      action: 'unauthorised',
+      status: 'denied',
+      details: { reason: 'permission', grantCode: 'sfi', permission: 'view' }
+    })
+  })
+
+  it('throws and audits an unauthorised claim event when a view-only user is denied in a claims journey', () => {
+    request.params.path = 'claim-start'
+    vi.mocked(getPermissionResource).mockReturnValue('csAgreements')
+    request.can.mockImplementation(canView)
+
+    expect(() => enforcePagePermission(request, h, context)).toThrow()
+    expect(request.sendAuditEventInBackground).toHaveBeenCalledWith({
+      entity: 'claim',
       action: 'unauthorised',
       status: 'denied',
       details: { reason: 'permission', grantCode: 'sfi', permission: 'view' }
@@ -375,6 +390,26 @@ describe('enforcePagePermission', () => {
       })
     )
     expect(request.sendAuditEventInBackground).toHaveBeenCalledWith({
+      entity: 'application',
+      action: 'unauthorised',
+      status: 'denied',
+      details: { reason: 'permission', grantCode: 'sfi', permission: 'submit' }
+    })
+  })
+
+  it('throws a 403 and audits an unauthorised claim event when the user has no permissions in a claims journey', () => {
+    vi.mocked(getRequiredPermission).mockReturnValue('submit')
+    vi.mocked(getPermissionResource).mockReturnValue('csAgreements')
+    request.can.mockReturnValue(false)
+
+    expect(() => enforcePagePermission(request, h, context)).toThrow(
+      expect.objectContaining({
+        message: 'Insufficient permissions',
+        output: expect.objectContaining({ statusCode: 403 })
+      })
+    )
+    expect(request.sendAuditEventInBackground).toHaveBeenCalledWith({
+      entity: 'claim',
       action: 'unauthorised',
       status: 'denied',
       details: { reason: 'permission', grantCode: 'sfi', permission: 'submit' }

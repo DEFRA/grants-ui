@@ -52,11 +52,11 @@ When permission enforcement is enabled for a grant, each page request is evaluat
 2. **View-Only Users**: Users with `VIEW` permission only are restricted from modifying draft journeys. They are only permitted to view confirmation and print pages after the journey has reached a submitted state:
    - Application journey: `/confirmation` and `/print-submitted-application` require status `SUBMITTED`.
    - Claims journey: `/claim-confirmation` requires status `CLAIM_SUBMITTED`.
-   - Accessing editable journey pages results in a `403 Forbidden` response and an `unauthorised` audit event.
+   - Accessing editable journey pages results in a `403 Forbidden` response and an `unauthorised` audit event (`entity: 'application'` for application pages or `entity: 'claim'` for claims pages).
 3. **Amend-Only Users on Submit Actions**: Users who hold `AMEND` permission but lack `SUBMIT` permission are blocked from completing declarations and submissions. Instead of redirecting to an error route, the "cannot submit" view is rendered in place on the requested URL:
    - The copy automatically reflects the resource context (e.g. `"You cannot submit this application"` for `csApplications`, or `"You cannot submit this claim"` for `csAgreements`).
    - Progress is preserved, and the user is provided a return link back to their task list or summary.
-4. **Unauthorised Users**: Users with no permissions for the resource receive a `403 Forbidden` response and an `unauthorised` audit event with reason `permission`.
+4. **Unauthorised Users**: Users with no permissions for the resource receive a `403 Forbidden` response and an `unauthorised` audit event with reason `permission` (`entity: 'application'` for `csApplications` or `entity: 'claim'` for `csAgreements`).
 
 ## Rate Limiting
 

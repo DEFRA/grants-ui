@@ -20,14 +20,26 @@ const VIEW_ONLY_ALLOWED_PATHS = new Map([
 ])
 
 /**
+ * Maps a permission resource to the audit entity name, so claims journey
+ * pages emit `entity: 'claim'` while application pages emit `entity: 'application'`.
+ */
+const AUDIT_ENTITIES = new Map([
+  ['csAgreements', 'claim'],
+  ['csApplications', 'application']
+])
+
+/**
  * Publishes an `unauthorised` audit event for an insufficient-permissions denial.
  * @param {import('../types.js').PipelineRequest} request - The Hapi request object.
  * @param {string} grantCode - The grant code for the denied page.
  * @param {string} permission - The permission the user lacked.
+ * @param {string} [resource] - The permission resource for the denied page.
  * @returns {void}
  */
-function auditPermissionDenied(request, grantCode, permission) {
+function auditPermissionDenied(request, grantCode, permission, resource) {
+  const entity = (resource && AUDIT_ENTITIES.get(resource)) ?? 'application'
   request.sendAuditEventInBackground({
+    entity,
     action: 'unauthorised',
     status: 'denied',
     details: { reason: 'permission', grantCode, permission }
@@ -99,9 +111,10 @@ export function getRequiredStatusForViewOnlyPath(path) {
  * @param {import('@hapi/hapi').ResponseToolkit} h - The Hapi response toolkit.
  * @param {FormContext} context - The context object which may contain form state.
  * @param {string} grantCode - The grant code for logging/audit.
+ * @param {string} [resource] - The permission resource for logging/audit.
  * @returns {import('@hapi/hapi').Lifecycle.ReturnValue} `h.continue` when allowed.
  */
-function handleViewOnlyUser(request, h, context, grantCode) {
+function handleViewOnlyUser(request, h, context, grantCode, resource) {
   const requiredStatus = getRequiredStatusForViewOnlyPath(request.params.path)
 
   if (requiredStatus !== undefined && isSubmittedApplication(context, requiredStatus)) {
@@ -121,7 +134,7 @@ function handleViewOnlyUser(request, h, context, grantCode) {
     enforcementEnabled: true,
     authorised: false
   })
-  auditPermissionDenied(request, grantCode, 'view')
+  auditPermissionDenied(request, grantCode, 'view', resource)
   throw forbidden('Insufficient permissions')
 }
 
@@ -291,7 +304,7 @@ export function enforcePagePermission(request, h, context) {
   const requiredPermission = /** @type {string} */ (getRequiredPermission(request))
 
   if (isViewOnlyUser(request, resource)) {
-    return handleViewOnlyUser(request, h, context, grantCode)
+    return handleViewOnlyUser(request, h, context, grantCode, resource)
   }
 
   if (request.can(requiredPermission, resource)) {
@@ -325,7 +338,7 @@ export function enforcePagePermission(request, h, context) {
     authorised: false
   })
 
-  auditPermissionDenied(request, grantCode, requiredPermission)
+  auditPermissionDenied(request, grantCode, requiredPermission, resource)
   throw forbidden('Insufficient permissions')
 }
 

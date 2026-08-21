@@ -11,13 +11,16 @@ The events, identified by their `action`, are:
 | `authorised`   | A signed-in user comes to our service - successfully loads a grant's start page |
 | `unauthorised` | Access is denied (see the `details.reason` breakdown below)                     |
 | `navigate`     | A signed-in user advances to the next page of the journey                       |
+| `submit`       | A signed-in user submits a completed grant application or claim                 |
+| `resubmit`     | A signed-in user resubmits an amended grant application or claim                |
 
 An **`unauthorised`** event (always `status: 'denied'`) distinguishes the denial case via `details.reason`:
 
-| `details.reason`    | Signed in? | Meaning                                                         | Emitted from                                       |
-| ------------------- | ---------- | --------------------------------------------------------------- | -------------------------------------------------- |
-| `not-authenticated` | No         | Not signed in - came to a grant and was bounced to sign-in      | `audit.js` (the `onPreResponse` hook)              |
-| `allowlist`         | Yes        | Signed in, but the grant is not in the user's backend allowlist | `src/server/common/helpers/allowlist/allowlist.js` |
+| `details.reason`    | Signed in? | Meaning                                                         | Emitted from                                                                |
+| ------------------- | ---------- | --------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `not-authenticated` | No         | Not signed in - came to a grant and was bounced to sign-in      | `audit.js` (the `onPreResponse` hook)                                       |
+| `allowlist`         | Yes        | Signed in, but the grant is not in the user's backend allowlist | `src/server/common/helpers/allowlist/allowlist.js`                          |
+| `permission`        | Yes        | Insufficient user permissions for the requested page            | `src/server/common/request-pipeline/permissions/enforce-page-permission.js` |
 
 Publishing is **fire-and-forget** and gated behind a feature flag, so it never adds latency to - or breaks - the user's request, and is off by default.
 
@@ -73,20 +76,20 @@ In deployed environments these are set via [cdp-app-config](https://github.com/D
 
 The event conforms to the canonical FCP Audit schema. grants-ui populates:
 
-| Field            | Value                                                                                                        |
-| ---------------- | ------------------------------------------------------------------------------------------------------------ |
-| `application`    | `Grants`                                                                                                     |
-| `component`      | `grants-ui`                                                                                                  |
-| `environment`    | `cdp-<env>` (e.g. `cdp-prod`); `local` for local dev                                                         |
-| `version`        | from the publisher library                                                                                   |
-| `user`           | `IDM/<contactId>` (Defra ID), when authenticated                                                             |
-| `sessionid`      | the session id from the JWT, when present                                                                    |
-| `correlationid`  | the `x-cdp-request-id` header, else a generated UUID                                                         |
-| `ip`             | the user's IP (first `x-forwarded-for` entry, else `remoteAddress`), sanitised to the schema's 20-char limit |
-| `datetime`       | ISO 8601 timestamp                                                                                           |
-| `audit.entities` | `[{ entity: 'application', action: <action>, entityid: <slug> }]` (e.g. `action: 'authorised'`)              |
-| `audit.status`   | `success` (`denied` for `unauthorised`)                                                                      |
-| `audit.accounts` | `crn` / `sbi` / `organisationId`, when known                                                                 |
+| Field            | Value                                                                                                              |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `application`    | `Grants`                                                                                                           |
+| `component`      | `grants-ui`                                                                                                        |
+| `environment`    | `cdp-<env>` (e.g. `cdp-prod`); `local` for local dev                                                               |
+| `version`        | from the publisher library                                                                                         |
+| `user`           | `IDM/<contactId>` (Defra ID), when authenticated                                                                   |
+| `sessionid`      | the session id from the JWT, when present                                                                          |
+| `correlationid`  | the `x-cdp-request-id` header, else a generated UUID                                                               |
+| `ip`             | the user's IP (first `x-forwarded-for` entry, else `remoteAddress`), sanitised to the schema's 20-char limit       |
+| `datetime`       | ISO 8601 timestamp                                                                                                 |
+| `audit.entities` | `[{ entity: 'application' \| 'claim' \| 'page', action: <action>, entityid: <id> }]` (e.g. `action: 'authorised'`) |
+| `audit.status`   | `success` (`denied` for `unauthorised`)                                                                            |
+| `audit.accounts` | `crn` / `sbi` / `organisationId`, when known                                                                       |
 
 Events carry an `audit` block only (persisted for analysis); they are **not** currently forwarded to the SOC, which would require a `security` block with a `pmccode` agreed with the security team.
 

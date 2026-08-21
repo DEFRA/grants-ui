@@ -281,7 +281,7 @@ Feature: User Permissions
         And navigates to "/example-grant-with-auth"
         And logs in as CRN "1062311183"
         Then the user should see heading "You do not have permission to view this page"
-        And an unauthorised audit event should be published for grant "example-grant-with-auth" with CRN "1062311183" and SBI "106238911" and reason "permission"
+        And an unauthorised claim audit event should be published for grant "example-grant-with-auth" with CRN "1062311183" and SBI "106238911" and reason "permission"
 
         # unlock from CRN 1062311183
         Given there is no application lock for CRN "1062311183" and SBI "106238911" and grant "example-grant-with-auth"
@@ -302,6 +302,7 @@ Feature: User Permissions
         # claim-confirmation
         Then the user should be at URL "claim-confirmation"
         And should see heading "Claim submitted"
+        And a submit claim audit event should be published for entity "{FIRST REFERENCE NUMBER}" with CRN "1062311181" and SBI "106238911"
 
         # unlock from CRN 1062311181
         Given there is no application lock for CRN "1062311181" and SBI "106238911" and grant "example-grant-with-auth"
@@ -321,7 +322,7 @@ Feature: User Permissions
         And navigates to "/example-grant-with-auth"
         And logs in as CRN "1062311184"
         Then the user should see heading "You do not have permission to view this page"
-        And an unauthorised audit event should be published for grant "example-grant-with-auth" with CRN "1062311184" and SBI "106238911" and reason "permission"
+        And an unauthorised claim audit event should be published for grant "example-grant-with-auth" with CRN "1062311184" and SBI "106238911" and reason "permission"
 
         # unlock from CRN 1062311184
         Given there is no application lock for CRN "1062311184" and SBI "106238911" and grant "example-grant-with-auth"
