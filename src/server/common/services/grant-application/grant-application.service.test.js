@@ -258,6 +258,62 @@ describe('Grant Application service (token present)', () => {
       })
     })
 
+    test('sends a "submit" audit event for claim with entity "claim" on success', async () => {
+      mockFetchWithResponse(mockResponse)
+      const sendAuditEventInBackground = vi.fn()
+
+      await submitClaim(code, payload, { ...mockRequest, sendAuditEventInBackground })
+
+      expect(sendAuditEventInBackground).toHaveBeenCalledWith({
+        entity: 'claim',
+        action: 'submit',
+        entityid: 'claim-ref-123',
+        details: {
+          grantCode: code,
+          referenceNumber: 'claim-ref-123',
+          answers: payload.answers
+        }
+      })
+    })
+
+    test('sends a "resubmit" audit event for claim when previousClientRef is present', async () => {
+      mockFetchWithResponse(mockResponse)
+      const sendAuditEventInBackground = vi.fn()
+      const resubmitPayload = {
+        metadata: { ...payload.metadata, previousClientRef: 'prev-claim-001' },
+        answers: payload.answers
+      }
+
+      await submitClaim(code, resubmitPayload, { ...mockRequest, sendAuditEventInBackground })
+
+      expect(sendAuditEventInBackground).toHaveBeenCalledWith({
+        entity: 'claim',
+        action: 'resubmit',
+        entityid: 'claim-ref-123',
+        details: {
+          grantCode: code,
+          referenceNumber: 'claim-ref-123',
+          previousReferenceNumber: 'prev-claim-001',
+          answers: resubmitPayload.answers
+        }
+      })
+    })
+
+    test('does not audit when claim submission fails', async () => {
+      const mockedFetch = mockFetch()
+      mockedFetch.mockResolvedValue({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        json: vi.fn().mockResolvedValueOnce({ message: 'Bad Request' })
+      })
+      const sendAuditEventInBackground = vi.fn()
+
+      await expect(submitClaim(code, payload, { ...mockRequest, sendAuditEventInBackground })).rejects.toThrow()
+
+      expect(sendAuditEventInBackground).not.toHaveBeenCalled()
+    })
+
     test('should throw an error when the request fails', async () => {
       const mockedFetch = mockFetch()
       const mockMessage = 'Bad Request'

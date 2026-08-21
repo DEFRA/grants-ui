@@ -1,10 +1,16 @@
 Feature: User Permissions
 
-    SBI 106238911 users and permissions:
+    SBI 106238911 users and permissions (same level for csApplications and csAgreements):
         CRN 1062311181 - SUBMIT permissions
         CRN 1062311182 - AMEND permissions
         CRN 1062311183 - VIEW permissions
         CRN 1062311184 - No permissions
+
+    The application journey pages are gated by the csApplications resource and the
+    claims journey pages by the csAgreements resource:
+        claim              - amend
+        claim-declaration  - submit
+        claim-confirmation - view
 
     Scenario: Complete a grant application with multiple users with different permissions
         Given there is no application data for SBI "106238911" and grant "example-grant-with-auth"
@@ -182,8 +188,8 @@ Feature: User Permissions
         And should see heading "Check your answers"
         When the user continues
 
-        # cannot-submit as logged-in user has AMEND but not SUBMIT permission
-        Then the user should be at URL "cannot-submit"
+        # cannot-submit rendered in place (URL stays on the submit-gated page) as logged-in user has AMEND but not SUBMIT permission
+        Then the user should be at URL "declaration"
         And should see heading "You cannot submit this application"
 
         # unlock from CRN 1062311182
@@ -245,6 +251,78 @@ Feature: User Permissions
         And logs in as CRN "1062311184"
         Then the user should see heading "You do not have permission to view this page"
         And an unauthorised audit event should be published for grant "example-grant-with-auth" with CRN "1062311184" and SBI "106238911" and reason "permission"
+
+        # unlock from CRN 1062311184
+        Given there is no application lock for CRN "1062311184" and SBI "106238911" and grant "example-grant-with-auth"
+
+        # ---- Claims journey permissions (csAgreements) ----
+        # Move the submitted application into the claims journey via the GAS status.
+        Given the application status in GAS is now "STATUS_AWAITING_CLAIM"
+
+        # CRN 1062311182 has csAgreements AMEND - can reach the claim (amend) page
+        Given the user starts a new browser session
+        And navigates to "/example-grant-with-auth"
+        And logs in as CRN "1062311182"
+        Then the user should be at URL "claim"
+        And should see heading "Example claim start page"
+        And an authorised audit event should be published for grant "example-grant-with-auth" with CRN "1062311182" and SBI "106238911"
+        When the user clicks on "Continue"
+
+        # claim-declaration requires csAgreements submit - the AMEND user sees the
+        # claims cannot-submit page rendered in place (URL stays on claim-declaration)
+        Then the user should be at URL "claim-declaration"
+        And should see heading "You cannot submit this claim"
+
+        # unlock from CRN 1062311182
+        Given there is no application lock for CRN "1062311182" and SBI "106238911" and grant "example-grant-with-auth"
+
+        # CRN 1062311183 has csAgreements VIEW only - cannot reach the claim (amend) page
+        Given the user starts a new browser session
+        And navigates to "/example-grant-with-auth"
+        And logs in as CRN "1062311183"
+        Then the user should see heading "You do not have permission to view this page"
+        And an unauthorised claim audit event should be published for grant "example-grant-with-auth" with CRN "1062311183" and SBI "106238911" and reason "permission"
+
+        # unlock from CRN 1062311183
+        Given there is no application lock for CRN "1062311183" and SBI "106238911" and grant "example-grant-with-auth"
+
+        # CRN 1062311181 has csAgreements SUBMIT - can submit the claim
+        Given the user starts a new browser session
+        And navigates to "/example-grant-with-auth"
+        And logs in as CRN "1062311181"
+        Then the user should be at URL "claim"
+        And should see heading "Example claim start page"
+        When the user clicks on "Continue"
+
+        # claim-declaration
+        Then the user should be at URL "claim-declaration"
+        And should see heading "Example claim declaration page"
+        When the user clicks on "Confirm and submit"
+
+        # claim-confirmation
+        Then the user should be at URL "claim-confirmation"
+        And should see heading "Claim submitted"
+        And a submit claim audit event should be published for entity "{FIRST REFERENCE NUMBER}" with CRN "1062311181" and SBI "106238911"
+
+        # unlock from CRN 1062311181
+        Given there is no application lock for CRN "1062311181" and SBI "106238911" and grant "example-grant-with-auth"
+
+        # CRN 1062311183 has csAgreements VIEW - can now view the submitted claim confirmation
+        Given the user starts a new browser session
+        And navigates to "/example-grant-with-auth"
+        And logs in as CRN "1062311183"
+        Then the user should be at URL "claim-confirmation"
+        And should see heading "Claim submitted"
+
+        # unlock from CRN 1062311183
+        Given there is no application lock for CRN "1062311183" and SBI "106238911" and grant "example-grant-with-auth"
+
+        # CRN 1062311184 has no csAgreements permissions - cannot view the claim confirmation
+        Given the user starts a new browser session
+        And navigates to "/example-grant-with-auth"
+        And logs in as CRN "1062311184"
+        Then the user should see heading "You do not have permission to view this page"
+        And an unauthorised claim audit event should be published for grant "example-grant-with-auth" with CRN "1062311184" and SBI "106238911" and reason "permission"
 
         # unlock from CRN 1062311184
         Given there is no application lock for CRN "1062311184" and SBI "106238911" and grant "example-grant-with-auth"

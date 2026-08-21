@@ -5,17 +5,41 @@ import { forbidden } from '@hapi/boom'
 import { logPermissionEvent } from '../../helpers/permissions/permission-logger.js'
 import { getGrantCode } from '../../helpers/grant-code.js'
 
-const VIEW_ONLY_ALLOWED_PATHS = new Set(['confirmation', 'print-submitted-application'])
+/**
+ * View-only pages that a view-only user may reach, mapped to the application
+ * status the journey must be in before access is granted.
+ *
+ * The application journey confirmation/print pages require the application to be
+ * `SUBMITTED`, whereas the claims journey `claim-confirmation` page mirrors that
+ * behaviour keyed on `CLAIM_SUBMITTED` instead.
+ */
+const VIEW_ONLY_ALLOWED_PATHS = new Map([
+  ['confirmation', ApplicationStatus.SUBMITTED],
+  ['print-submitted-application', ApplicationStatus.SUBMITTED],
+  ['claim-confirmation', ApplicationStatus.CLAIM_SUBMITTED]
+])
+
+/**
+ * Maps a permission resource to the audit entity name, so claims journey
+ * pages emit `entity: 'claim'` while application pages emit `entity: 'application'`.
+ */
+const AUDIT_ENTITIES = new Map([
+  ['csAgreements', 'claim'],
+  ['csApplications', 'application']
+])
 
 /**
  * Publishes an `unauthorised` audit event for an insufficient-permissions denial.
  * @param {import('../types.js').PipelineRequest} request - The Hapi request object.
  * @param {string} grantCode - The grant code for the denied page.
  * @param {string} permission - The permission the user lacked.
+ * @param {string} [resource] - The permission resource for the denied page.
  * @returns {void}
  */
-function auditPermissionDenied(request, grantCode, permission) {
+function auditPermissionDenied(request, grantCode, permission, resource) {
+  const entity = (resource && AUDIT_ENTITIES.get(resource)) ?? 'application'
   request.sendAuditEventInBackground({
+    entity,
     action: 'unauthorised',
     status: 'denied',
     details: { reason: 'permission', grantCode, permission }
@@ -41,15 +65,20 @@ export function isCannotSubmitUser(request, requiredPermission, resource) {
 }
 
 /**
- * Determines whether the current application has been submitted.
+ * Determines whether the current application is in the given submitted status.
+ *
+ * Defaults to the application-journey `SUBMITTED` status, but accepts an
+ * explicit status so the claims journey can key its view-only access on
+ * `CLAIM_SUBMITTED`.
  *
  * @param {FormContext} context - Request/context object containing application state.
- * @returns {boolean} True if the application is submitted.
+ * @param {string} [expectedStatus] - The status to compare against.
+ * @returns {boolean} True if the application matches the expected status.
  */
-export function isSubmittedApplication(context) {
+export function isSubmittedApplication(context, expectedStatus = ApplicationStatus.SUBMITTED) {
   const status = /** @type {{ applicationStatus?: string }} */ (context.state).applicationStatus
 
-  return status === ApplicationStatus.SUBMITTED
+  return status === expectedStatus
 }
 
 /**
@@ -65,7 +94,62 @@ export function isViewOnlyUser(request, resource) {
 }
 
 /**
- * Gets the best "return" URL for a form.
+ * Returns the application status a view-only path requires before access is
+ * granted, or `undefined` when the path is not a view-only allowed path.
+ *
+ * @param {string} path - The request path to check.
+ * @returns {string | undefined} The required application status.
+ */
+export function getRequiredStatusForViewOnlyPath(path) {
+  return VIEW_ONLY_ALLOWED_PATHS.get(path)
+}
+
+/**
+ * Handles a view-only user: allows the confirmation/print pages of a submitted
+ * application through, otherwise logs the denial and throws 403.
+ * @param {import('../types.js').PipelineRequest} request - The Hapi request object.
+ * @param {import('@hapi/hapi').ResponseToolkit} h - The Hapi response toolkit.
+ * @param {FormContext} context - The context object which may contain form state.
+ * @param {string} grantCode - The grant code for logging/audit.
+ * @param {string} [resource] - The permission resource for logging/audit.
+ * @returns {import('@hapi/hapi').Lifecycle.ReturnValue} `h.continue` when allowed.
+ */
+function handleViewOnlyUser(request, h, context, grantCode, resource) {
+  const requiredStatus = getRequiredStatusForViewOnlyPath(request.params.path)
+
+  if (requiredStatus !== undefined && isSubmittedApplication(context, requiredStatus)) {
+    logPermissionEvent({
+      request,
+      grantCode,
+      permission: 'view',
+      enforcementEnabled: true,
+      authorised: true
+    })
+    return h.continue
+  }
+  logPermissionEvent({
+    request,
+    grantCode,
+    permission: 'view',
+    enforcementEnabled: true,
+    authorised: false
+  })
+  auditPermissionDenied(request, grantCode, 'view', resource)
+  throw forbidden('Insufficient permissions')
+}
+
+/**
+ * Maps a permission resource to the noun used in the "cannot submit" copy, so
+ * claims journey pages say "claim" while the rest of the grant says
+ * "application".
+ */
+const CANNOT_SUBMIT_NOUNS = new Map([
+  ['csAgreements', 'claim'],
+  ['csApplications', 'application']
+])
+
+/**
+ * Gets the best default "return" URL for a form.
  * Falls back to check responses if no task list exists.
  * @param {object} model
  * @param {string} basePath
@@ -97,62 +181,72 @@ export function getReturnToApplicationPath(model, basePath, slug) {
 }
 
 /**
- * Checks whether a given path is allowed for view-only users.
+ * Resolves the "cannot submit" page content for the current request.
  *
- * @param {string} path - The request path to check.
- * @returns {boolean} True if the path is allowed for view-only users.
- */
-export function isAllowedViewOnlyPath(path) {
-  return VIEW_ONLY_ALLOWED_PATHS.has(path)
-}
-
-/**
- * Handles a view-only user: allows the confirmation/print pages of a submitted
- * application through, otherwise logs the denial and throws 403.
+ * The defaults are derived from the journey noun (claim vs application) so the
+ * page works with zero extra config. Both the `pageTitle` and the single
+ * `content` block can be overridden per resource via
+ * `metadata.permissions.cannotSubmit.<resource>` in the form definition.
+ *
+ * The return button is resolved as follows:
+ * - when there is no `cannotSubmit.<resource>` config block at all, the default
+ *   return button is used (task list / summary / farm-payments exception);
+ * - when a config block exists, the button is shown only if that block supplies
+ *   both `returnUrl` and `returnText`.
+ *
  * @param {import('../types.js').PipelineRequest} request - The Hapi request object.
- * @param {import('@hapi/hapi').ResponseToolkit} h - The Hapi response toolkit.
- * @param {FormContext} context - The context object which may contain form state.
- * @param {string} grantCode - The grant code for logging/audit.
- * @returns {import('@hapi/hapi').Lifecycle.ReturnValue} `h.continue` when allowed.
+ * @returns {{
+ *   pageTitle: string,
+ *   content: string,
+ *   returnUrl?: string,
+ *   returnText?: string
+ * }} The resolved view content.
  */
-function handleViewOnlyUser(request, h, context, grantCode) {
-  if (isSubmittedApplication(context) && isAllowedViewOnlyPath(request.params.path)) {
-    logPermissionEvent({
-      request,
-      grantCode,
-      permission: 'view',
-      enforcementEnabled: true,
-      authorised: true
-    })
-    return h.continue
+export function getCannotSubmitContent(request) {
+  const resource = getPermissionResource(request)
+  const noun = CANNOT_SUBMIT_NOUNS.get(resource) ?? 'application'
+
+  const defaults = {
+    pageTitle: `You cannot submit this ${noun}`,
+    content:
+      '<p class="govuk-body">Your progress has been saved.</p>' +
+      `<p class="govuk-body">You do not have permission to submit the ${noun}.</p>` +
+      `<p class="govuk-body">Contact an authorised person from your business to review and submit the ${noun}.</p>`
   }
-  logPermissionEvent({
-    request,
-    grantCode,
-    permission: 'view',
-    enforcementEnabled: true,
-    authorised: false
-  })
-  auditPermissionDenied(request, grantCode, 'view')
-  throw forbidden('Insufficient permissions')
+
+  const permissions =
+    /** @type {{ cannotSubmit?: Record<string, Record<string, string>> } | undefined} */
+    (request.app.model?.def?.metadata?.permissions)
+  const configured = permissions?.cannotSubmit?.[resource]
+
+  if (!configured) {
+    const basePath = request.params?.slug ? `/${request.params.slug}` : ''
+    const returnTo = getReturnToApplicationPath(request.app.model, basePath, request.params?.slug)
+
+    return {
+      ...defaults,
+      returnUrl: returnTo.href,
+      returnText: returnTo.text
+    }
+  }
+
+  return { ...defaults, ...configured }
 }
 
 /**
- * Builds the redirect that sends an amend-only user away from a submit action
- * to the "cannot submit" page, returning them to the application afterwards.
+ * Renders the "cannot submit" page in place for an amend-only user who hit a
+ * submit action, keeping the URL on the blocked page and passing the content as
+ * a proper view model (no redirect, no query params).
  * @param {import('../types.js').PipelineRequest} request - The Hapi request object.
  * @param {import('@hapi/hapi').ResponseToolkit} h - The Hapi response toolkit.
- * @returns {import('@hapi/hapi').Lifecycle.ReturnValue} A takeover redirect.
+ * @returns {import('@hapi/hapi').Lifecycle.ReturnValue} A takeover view response.
  */
-function redirectCannotSubmitUser(request, h) {
-  const basePath = request.params.slug ? `/${request.params.slug}` : ''
-  const model = request.app.model
-  if (!model) {
+function renderCannotSubmit(request, h) {
+  if (!request.app.model) {
     throw forbidden('Form model missing')
   }
-  const returnTo = getReturnToApplicationPath(model, basePath, request.params.slug)
-  const redirectUrl = `/cannot-submit?returnUrl=${encodeURIComponent(returnTo.href)}&returnText=${encodeURIComponent(returnTo.text)}`
-  return h.redirect(redirectUrl).takeover()
+
+  return h.view('cannot-submit', getCannotSubmitContent(request)).takeover()
 }
 
 /**
@@ -210,7 +304,7 @@ export function enforcePagePermission(request, h, context) {
   const requiredPermission = /** @type {string} */ (getRequiredPermission(request))
 
   if (isViewOnlyUser(request, resource)) {
-    return handleViewOnlyUser(request, h, context, grantCode)
+    return handleViewOnlyUser(request, h, context, grantCode, resource)
   }
 
   if (request.can(requiredPermission, resource)) {
@@ -233,7 +327,7 @@ export function enforcePagePermission(request, h, context) {
       enforcementEnabled: true,
       authorised: false
     })
-    return redirectCannotSubmitUser(request, h)
+    return renderCannotSubmit(request, h)
   }
 
   logPermissionEvent({
@@ -244,7 +338,7 @@ export function enforcePagePermission(request, h, context) {
     authorised: false
   })
 
-  auditPermissionDenied(request, grantCode, requiredPermission)
+  auditPermissionDenied(request, grantCode, requiredPermission, resource)
   throw forbidden('Insufficient permissions')
 }
 
