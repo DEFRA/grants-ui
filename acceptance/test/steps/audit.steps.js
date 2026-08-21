@@ -51,6 +51,20 @@ Then(
 )
 
 Then(
+  'a resubmit claim audit event should be published for entity {string} with CRN {string} and SBI {string}',
+  async function (entityId, crn, sbi) {
+    const event = await waitForAuditEvent(this.auditQueue.queueUrl, {
+      entity: 'claim',
+      action: 'resubmit',
+      entityId: transformStepArgument(entityId),
+      crn,
+      sbi
+    })
+    expect(event).not.toBeNull()
+  }
+)
+
+Then(
   'a submit audit event should be published for entity {string} with CRN {string} and SBI {string}',
   async function (entityId, crn, sbi) {
     const event = await waitForAuditEvent(this.auditQueue.queueUrl, {
@@ -65,10 +79,39 @@ Then(
 )
 
 Then(
+  'a submit claim audit event should be published for entity {string} with CRN {string} and SBI {string}',
+  async function (entityId, crn, sbi) {
+    const event = await waitForAuditEvent(this.auditQueue.queueUrl, {
+      entity: 'claim',
+      action: 'submit',
+      entityId: transformStepArgument(entityId),
+      crn,
+      sbi
+    })
+    expect(event).not.toBeNull()
+  }
+)
+
+Then(
   'an unauthorised audit event should be published for grant {string} with CRN {string} and SBI {string} and reason {string}',
   async function (grantCode, crn, sbi, reason) {
     const event = await waitForAuditEvent(this.auditQueue.queueUrl, {
       entity: 'application',
+      action: 'unauthorised',
+      entityId: grantCode,
+      crn,
+      sbi,
+      reason
+    })
+    expect(event).not.toBeNull()
+  }
+)
+
+Then(
+  'an unauthorised claim audit event should be published for grant {string} with CRN {string} and SBI {string} and reason {string}',
+  async function (grantCode, crn, sbi, reason) {
+    const event = await waitForAuditEvent(this.auditQueue.queueUrl, {
+      entity: 'claim',
       action: 'unauthorised',
       entityId: grantCode,
       crn,

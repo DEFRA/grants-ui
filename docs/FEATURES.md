@@ -396,6 +396,62 @@ Guidance components provide contextual help and information without requiring us
 - **Timeout Handling**: Automatic session expiration
 - **State Rehydration**: Restore user state from backend
 
+### Page Permissions Configuration
+
+Grant journeys support fine-grained permission enforcement configured in the form definition's `metadata.permissions` block.
+
+#### Form Definition Configuration
+
+```yaml
+metadata:
+  permissions:
+    enforce: true # Enable or disable permission checks for the grant
+    resource: csApplications # Default grant-wide resource ('csApplications' or 'csAgreements')
+    pageAccess:
+      default: amend # Default required permission for pages ('view', 'amend', or 'submit')
+      rules:
+        - paths:
+            - /declaration
+          permission: submit # Requires submit permission on csApplications
+        - paths:
+            - /claim
+          permission: amend
+          resource: csAgreements # Claims start page gated by csAgreements amend permission
+        - paths:
+            - /claim-declaration
+          permission: submit
+          resource: csAgreements # Claims declaration gated by csAgreements submit permission
+        - paths:
+            - /claim-confirmation
+          permission: view
+          resource: csAgreements # Claims confirmation accessible to csAgreements view-only users
+    cannotSubmit: # Optional copy overrides for amend-only users attempting to submit
+      csApplications:
+        pageTitle: You cannot submit this application
+        content: |
+          <p class="govuk-body">Your progress has been saved.</p>
+          <p class="govuk-body">You do not have permission to submit the application.</p>
+          <p class="govuk-body">Contact an authorised person from your business to review and submit the application.</p>
+        returnUrl: /summary
+        returnText: Return to summary
+      csAgreements:
+        pageTitle: You cannot submit this claim
+        content: |
+          <p class="govuk-body">Your progress has been saved.</p>
+          <p class="govuk-body">You do not have permission to submit the claim.</p>
+          <p class="govuk-body">Contact an authorised person from your business to review and submit the claim.</p>
+        returnUrl: /claim-summary
+        returnText: Return to summary
+```
+
+#### Mixed Journey Resource Gating
+
+A single grant definition can host both application and claims journeys by overriding the `resource` within individual `pageAccess.rules`:
+
+- **Application pages** default to `resource: csApplications`.
+- **Claims pages** specify `resource: csAgreements`.
+- In-place "cannot submit" screens and view-only access rules automatically apply the corresponding resource rules and terminology based on the matched page path.
+
 ## Conditional Logic
 
 ### Conditions

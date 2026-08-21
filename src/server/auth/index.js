@@ -1,5 +1,4 @@
 import { config } from '~/src/config/config.js'
-import { getPermissions } from '~/src/server/auth/get-permissions.js'
 import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { validateState } from '~/src/server/auth/state.js'
 import { verifyToken } from '~/src/server/auth/verify-token.js'
@@ -326,11 +325,10 @@ async function processAuthenticatedSignIn(request, h) {
 
   await verifyToken(token)
 
-  const { role, scope } = getPermissionsOrDefaults(profile, token)
-  await storeSessionData(request, profile, role, scope, token, refreshToken)
+  await storeSessionData(request, profile, token, refreshToken)
   setCookieAuth(request, profile)
 
-  logSuccessfulSignIn(profile, role, scope)
+  logSuccessfulSignIn(profile)
 
   return redirectAfterSignIn(request, h)
 }
@@ -352,44 +350,16 @@ function validateProfileData(profile) {
 }
 
 /**
- * @param {Profile} profile
- * @param {string} token
- * @returns {{ role: string, scope: string[] }}
- */
-function getPermissionsOrDefaults(profile, token) {
-  try {
-    const permissions = getPermissions(profile.crn, profile.organisationId, token)
-    return { role: permissions.role, scope: permissions.scope }
-  } catch (permissionsError) {
-    debug(LogCodes.AUTH.SIGN_IN_FAILURE, {
-      userId: profile.contactId,
-      errorMessage: `Failed to get permissions: ${/** @type {Error} */ (permissionsError).message}`,
-      step: 'get_permissions_error',
-      profileData: {
-        crn: profile.crn,
-        organisationId: profile.organisationId,
-        hasToken: !!token
-      }
-    })
-    return { role: 'user', scope: ['user'] }
-  }
-}
-
-/**
  * @param {RequestWithCookieAuth} request
  * @param {Profile} profile
- * @param {string} role
- * @param {string[]} scope
  * @param {string} token
  * @param {string} refreshToken
  */
-async function storeSessionData(request, profile, role, scope, token, refreshToken) {
+async function storeSessionData(request, profile, token, refreshToken) {
   try {
     await request.server.app.cache.set(profile.sessionId, {
       isAuthenticated: true,
       ...profile,
-      role,
-      scope,
       token,
       refreshToken
     })

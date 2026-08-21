@@ -7,20 +7,42 @@ export function getPermissionConfig(request) {
 }
 
 /**
+ * Finds the page access rule whose `paths` include the current request path.
+ *
+ * A single form definition can mix journeys (e.g. the application journey and
+ * the claims journey) whose pages are governed by different resources, so the
+ * matched rule is the anchor for resolving both the required permission and the
+ * resource for the current page.
+ *
+ * @param {PipelineRequest} request
+ * @returns {PageAccessRule | undefined}
+ */
+function getMatchedRule(request) {
+  const permissionConfig = getPermissionConfig(request)
+
+  return permissionConfig?.pageAccess?.rules?.find((/** @type {PageAccessRule} */ rule) =>
+    rule.paths.includes(request.params.path)
+  )
+}
+
+/**
  * @param {PipelineRequest} request
  * @returns {string | undefined}
  */
 export function getRequiredPermission(request) {
   const permissionConfig = getPermissionConfig(request)
 
-  const matchedRule = permissionConfig?.pageAccess?.rules?.find((/** @type {PageAccessRule} */ rule) =>
-    rule.paths.includes(request.params.path)
-  )
-
-  return matchedRule?.permission ?? permissionConfig?.pageAccess?.default
+  return getMatchedRule(request)?.permission ?? permissionConfig?.pageAccess?.default
 }
 
 /**
+ * Resolves the resource enforced for the current page.
+ *
+ * The resource is taken from the matched page access rule when present (so
+ * claims journey pages can enforce `csAgreements` while the rest of the grant
+ * enforces `csApplications`), otherwise it falls back to the top-level
+ * `resource`, which acts as the grant-wide default.
+ *
  * @param {PipelineRequest} request
  * @returns {string}
  */
@@ -31,17 +53,23 @@ export function getPermissionResource(request) {
     throw new Error('Permission config missing')
   }
 
-  if (!permissionConfig.resource) {
+  const resource = getMatchedRule(request)?.resource ?? permissionConfig.resource
+
+  if (!resource) {
     throw new Error(`Permission enforcement enabled but no resource configured for grant ${request.params.slug}`)
   }
 
-  return permissionConfig.resource
+  return resource
 }
 
 /**
  * @typedef {object} PageAccessRule
  * @property {string[]} paths
- * @property {string} permission
+ * @property {string} [permission] Required permission for the matched paths;
+ *   falls back to `pageAccess.default` when omitted.
+ * @property {string} [resource] Resource enforced for the matched paths (e.g.
+ *   `csAgreements` for claims journey pages); falls back to the top-level
+ *   `resource` when omitted.
  */
 
 /**
