@@ -182,11 +182,21 @@ echo "${READINESS_OUTPUT}"
 
 # Apply any local form-definition overrides (compose/config-broker/local-form-definitions)
 # on top of the ingested repo definitions, so the acceptance run exercises
-# form-def changes that are not yet merged into the config repos. This is a
-# no-op when no overrides are present (e.g. in CI, where the folder is
-# git-ignored), so it is safe to always run.
-echo "Applying local form-definition overrides (if any)..."
-node ./tools/apply-local-form-defs.mjs enable
+# form-def changes that are not yet merged into the config repos.
+#
+# Overrides only ever exist locally: the folder is git-ignored except for its
+# README, so a CI checkout never contains any override files. Run the applier
+# only when at least one override file is actually present. This keeps the
+# applier local-only and, crucially, avoids invoking a Node script that imports
+# third-party packages (semver, yaml) on the CI runner host, where npm
+# dependencies are not installed and the import would fail with ERR_MODULE_NOT_FOUND.
+LOCAL_FORM_DEFS_DIR="compose/config-broker/local-form-definitions"
+if find "${LOCAL_FORM_DEFS_DIR}" -type f \( -name '*.yaml' -o -name '*.yml' \) 2>/dev/null | grep -q .; then
+  echo "Applying local form-definition overrides..."
+  node ./tools/apply-local-form-defs.mjs enable
+else
+  echo "No local form-definition overrides present; skipping applier."
+fi
 
 echo "Service Status:"
 eval "${COMPOSE_COMMAND} ps"
