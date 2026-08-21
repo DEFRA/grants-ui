@@ -56,6 +56,8 @@ function buildTargetUri(baseUrl, path) {
  */
 function buildProxyHeaders(token, request) {
   const sbi = request?.auth?.credentials?.sbi
+  const crn = request?.auth?.credentials?.crn
+  const sub = (typeof crn === 'string' && crn !== '') || typeof crn === 'number' ? String(crn) : undefined
   const source = 'defra'
   const jwtSecret = config.get('agreements.jwtSecret')
   const grantApplicationContext = /** @type {{ grantCode?: string, clientRef?: string } | null} */ (
@@ -64,12 +66,16 @@ function buildProxyHeaders(token, request) {
   try {
     const userContext = Jwt.token.generate(
       {
+        ...(sub === undefined ? {} : { sub }),
+        iss: /** @type {string} */ (config.get('agreements.jwtIssuer')),
+        aud: /** @type {string} */ (/** @type {unknown} */ (config.get('agreements.jwtAudience'))),
         sbi: /** @type {string | number} */ (sbi).toString(),
         grantCode: grantApplicationContext?.grantCode,
         clientRef: grantApplicationContext?.clientRef,
         source
       },
-      jwtSecret
+      jwtSecret,
+      { ttlSec: /** @type {number} */ (config.get('agreements.jwtTtlSec')) }
     )
     const contentTypeHeader = request.headers['content-type']
     const contentType = Array.isArray(contentTypeHeader) ? contentTypeHeader[0] : contentTypeHeader
