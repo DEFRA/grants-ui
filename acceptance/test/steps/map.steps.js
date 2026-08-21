@@ -75,15 +75,15 @@ Then('(the user )should not see a selected parcel summary', async function () {
 })
 
 Then(
-  '(the user )should see additional details {string} in the selected parcel summary',
+  '(the user )should see additional requirements {string} in the selected parcel summary',
   async function (requirementText) {
-    await expect(this.page.locator('#selected-parcel-additional-details-row')).toBeVisible()
-    await expect(this.page.locator('#selected-parcel-additional-details')).toHaveText(requirementText)
+    await expect(this.page.locator('#selected-parcel-additional-requirements-row')).toBeVisible()
+    await expect(this.page.locator('#selected-parcel-additional-requirements')).toHaveText(requirementText)
   }
 )
 
-Then('(the user )should not see additional details in the selected parcel summary', async function () {
-  await expect(this.page.locator('#selected-parcel-additional-details-row')).toBeHidden()
+Then('(the user )should not see additional requirements in the selected parcel summary', async function () {
+  await expect(this.page.locator('#selected-parcel-additional-requirements-row')).toBeHidden()
 })
 
 Then(

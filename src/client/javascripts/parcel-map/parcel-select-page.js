@@ -21,9 +21,9 @@ const DOM_ID_SELECTED_PARCEL_REFERENCE = 'selected-parcel-reference'
 const DOM_ID_SELECTED_PARCEL_AREA = 'selected-parcel-area'
 const DOM_ID_SELECTED_PARCEL_CHANGE = 'selected-parcel-change'
 const DOM_ID_SELECTED_PARCELS_INPUTS = 'selected-parcels-inputs'
-const DOM_ID_ADDITIONAL_DETAILS_ROW = 'selected-parcel-additional-details-row'
-const DOM_ID_ADDITIONAL_DETAILS = 'selected-parcel-additional-details'
-const DOM_ID_ADDITIONAL_DETAILS_STATUS = 'selected-parcel-additional-details-status'
+const DOM_ID_ADDITIONAL_REQUIREMENTS_ROW = 'selected-parcel-additional-requirements-row'
+const DOM_ID_ADDITIONAL_REQUIREMENTS = 'selected-parcel-additional-requirements'
+const DOM_ID_ADDITIONAL_REQUIREMENTS_STATUS = 'selected-parcel-additional-requirements-status'
 
 /** @param {string} id */
 const unhide = (id) => {
@@ -117,24 +117,24 @@ const fetchConsentNotice = async (parcelId) => {
   }
 }
 
-const clearAdditionalDetails = () => {
-  const row = document.getElementById(DOM_ID_ADDITIONAL_DETAILS_ROW)
+const clearAdditionalRequirements = () => {
+  const row = document.getElementById(DOM_ID_ADDITIONAL_REQUIREMENTS_ROW)
   if (row) {
     row.hidden = true
   }
-  setText(DOM_ID_ADDITIONAL_DETAILS, '')
-  setText(DOM_ID_ADDITIONAL_DETAILS_STATUS, '')
+  setText(DOM_ID_ADDITIONAL_REQUIREMENTS, '')
+  setText(DOM_ID_ADDITIONAL_REQUIREMENTS_STATUS, '')
 }
 
 /** @param {string} text */
-const showAdditionalDetails = (text) => {
-  setText(DOM_ID_ADDITIONAL_DETAILS, text)
-  unhide(DOM_ID_ADDITIONAL_DETAILS_ROW)
-  setText(DOM_ID_ADDITIONAL_DETAILS_STATUS, text)
+const showAdditionalRequirements = (text) => {
+  setText(DOM_ID_ADDITIONAL_REQUIREMENTS, text)
+  unhide(DOM_ID_ADDITIONAL_REQUIREMENTS_ROW)
+  setText(DOM_ID_ADDITIONAL_REQUIREMENTS_STATUS, text)
 }
 
 /**
- * Keeps the "Additional details" row in step with the current selection. The
+ * Keeps the "Additional requirements" row in step with the current selection. The
  * notice belongs to the selected parcel, so every selection event, including
  * deselection and multi-selection, invalidates any lookup still in flight and
  * clears the row before asking for a new one.
@@ -146,7 +146,7 @@ function createConsentRequirementsUpdater() {
   return async function updateConsentRequirements(selectedParcels) {
     requestId += 1
     const thisRequestId = requestId
-    clearAdditionalDetails()
+    clearAdditionalRequirements()
 
     if (selectedParcels.length !== 1) {
       return
@@ -158,7 +158,7 @@ function createConsentRequirementsUpdater() {
     }
 
     if (text) {
-      showAdditionalDetails(text)
+      showAdditionalRequirements(text)
     }
   }
 }
