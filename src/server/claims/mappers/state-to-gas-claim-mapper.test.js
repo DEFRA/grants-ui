@@ -5,7 +5,7 @@ describe('transformClaimAnswers', () => {
   test('returns only the claim-specific answer fields', () => {
     const result = transformClaimAnswers({
       referenceNumber: 'WMP-A1B2-C3D4',
-      claimNumber: 'WMP-A1B2-C3D4-C0001',
+      claimNumber: 'WMP-A1B2-C3D4-C01',
       totalEligibleArea: 24.95,
       unit: 'ha',
       totalClaimAmountPence: 150000,
@@ -17,7 +17,7 @@ describe('transformClaimAnswers', () => {
 
     expect(result).toEqual({
       referenceNumber: 'WMP-A1B2-C3D4',
-      claimNumber: 'WMP-A1B2-C3D4-C0001',
+      claimNumber: 'WMP-A1B2-C3D4-C01',
       totalEligibleArea: 24.95,
       unit: 'ha',
       totalClaimAmountPence: 150000
