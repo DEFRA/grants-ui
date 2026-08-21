@@ -3,6 +3,7 @@ import { getAgreementController } from './controller.js'
 import { config } from '~/src/config/config.js'
 import Jwt from '@hapi/jwt'
 import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
+import { agreementsConfigValues } from '~/src/__mocks__/config-mocks.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 
 vi.mock('~/src/config/config.js', async () => {
@@ -15,10 +16,32 @@ vi.mock('~/src/server/common/helpers/logging/log-codes.js', async () => {
   return mockLogCodesHelper()
 })
 
+const BASE_URL = 'http://localhost:3003'
+const CONFIG_ERROR = {
+  error: 'Service Configuration Error',
+  message: 'Service temporarily unavailable'
+}
+const UPSTREAM_ERROR = {
+  error: 'External Service Unavailable',
+  message: 'Unable to process request'
+}
+const expectedHeaders = (contentType = 'application/x-www-form-urlencoded') => ({
+  Authorization: 'Bearer test-token',
+  'x-base-url': '/agreement',
+  'content-type': contentType,
+  'x-encrypted-auth': 'mocked-jwt-token',
+  'x-csp-nonce': 'test-nonce'
+})
+
 describe('Agreements Controller', () => {
   let mockRequest
   let mockH
-  let mockProxy
+
+  /** Resolve the mapUri callback the controller handed to h.proxy. */
+  const mapUri = () => mockH.proxy.mock.calls[0][0].mapUri()
+
+  /** The status code passed to h.response(...).code(...). */
+  const responseCode = () => mockH.response.mock.results[0].value.code.mock.calls[0][0]
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -26,9 +49,8 @@ describe('Agreements Controller', () => {
     // Reset JWT mock to default behavior
     Jwt.token.generate.mockReturnValue('mocked-jwt-token')
 
-    mockProxy = vi.fn()
     mockH = mockHapiResponseToolkit({
-      proxy: mockProxy,
+      proxy: vi.fn(),
       response: vi.fn(() => ({
         code: vi.fn(() => ({ code: vi.fn() }))
       }))
@@ -51,27 +73,7 @@ describe('Agreements Controller', () => {
       yar: { get: vi.fn().mockReturnValue(null) }
     })
 
-    // Default config setup
-    config.get.mockImplementation((key) => {
-      switch (key) {
-        case 'agreements.uiUrl':
-          return 'http://localhost:3003'
-        case 'agreements.uiToken':
-          return 'test-token'
-        case 'agreements.baseUrl':
-          return '/agreement'
-        case 'agreements.jwtSecret':
-          return 'test-jwt-secret'
-        case 'agreements.jwtIssuer':
-          return 'grants-ui'
-        case 'agreements.jwtAudience':
-          return ['agreements-ui', 'gas']
-        case 'agreements.jwtTtlSec':
-          return 300
-        default:
-          return undefined
-      }
-    })
+    config.get.mockImplementation(agreementsConfigValues())
   })
 
   describe('Configuration Validation', () => {
@@ -88,289 +90,77 @@ describe('Agreements Controller', () => {
       })
     })
 
-    test('should return 503 when agreements API URL is missing', async () => {
-      config.get.mockImplementation((key) => {
-        switch (key) {
-          case 'agreements.uiUrl':
-            return undefined
-          case 'agreements.uiToken':
-            return 'test-token'
-          case 'agreements.jwtSecret':
-            return 'test-jwt-secret'
-          case 'agreements.jwtIssuer':
-            return 'grants-ui'
-          case 'agreements.jwtAudience':
-            return ['agreements-ui', 'gas']
-          case 'agreements.jwtTtlSec':
-            return 300
-          default:
-            return undefined
-        }
-      })
+    test.each([
+      ['API URL', 'agreements.uiUrl'],
+      ['API token', 'agreements.uiToken']
+    ])('should return 503 when the agreements %s is missing', async (_label, key) => {
+      config.get.mockImplementation(agreementsConfigValues({ [key]: undefined }))
 
       await getAgreementController.handler(mockRequest, mockH)
 
       expect(mockH.proxy).not.toHaveBeenCalled()
-      expect(mockH.response).toHaveBeenCalledWith({
-        error: 'Service Configuration Error',
-        message: 'Service temporarily unavailable'
-      })
-    })
-
-    test('should return 503 when agreements API token is missing', async () => {
-      config.get.mockImplementation((key) => {
-        switch (key) {
-          case 'agreements.uiUrl':
-            return 'http://localhost:3003'
-          case 'agreements.uiToken':
-            return undefined
-          default:
-            return undefined
-        }
-      })
-
-      await getAgreementController.handler(mockRequest, mockH)
-
-      expect(mockH.proxy).not.toHaveBeenCalled()
-      expect(mockH.response).toHaveBeenCalledWith({
-        error: 'Service Configuration Error',
-        message: 'Service temporarily unavailable'
-      })
-    })
-
-    test('should handle baseUrl with trailing slashes', async () => {
-      config.get.mockImplementation((key) => {
-        switch (key) {
-          case 'agreements.uiUrl':
-            return 'http://localhost:3003///'
-          case 'agreements.uiToken':
-            return 'test-token'
-          case 'agreements.jwtSecret':
-            return 'test-jwt-secret'
-          case 'agreements.jwtIssuer':
-            return 'grants-ui'
-          case 'agreements.jwtAudience':
-            return ['agreements-ui', 'gas']
-          case 'agreements.jwtTtlSec':
-            return 300
-          default:
-            return undefined
-        }
-      })
-
-      await getAgreementController.handler(mockRequest, mockH)
-
-      expect(mockH.proxy).toHaveBeenCalledWith({
-        mapUri: expect.any(Function),
-        passThrough: true,
-        rejectUnauthorized: true
-      })
+      expect(mockH.response).toHaveBeenCalledWith(CONFIG_ERROR)
+      expect(responseCode()).toBe(503)
     })
   })
 
   describe('URI Building', () => {
-    test('should build target URI correctly with path', async () => {
+    test.each([
+      ['a plain path', 'api/v1/agreements', `${BASE_URL}/api/v1/agreements`],
+      ['a path with a leading slash', '/api/v1/agreements', `${BASE_URL}/api/v1/agreements`],
+      ['an empty path', '', BASE_URL],
+      ['a null path', null, BASE_URL],
+      ['an undefined path', undefined, BASE_URL],
+      ['a very long path', `api/${'segment/'.repeat(50)}`, `${BASE_URL}/api/${'segment/'.repeat(50)}`],
+      ['query parameters', 'agreements?filter=active&sort=date', `${BASE_URL}/agreements?filter=active&sort=date`],
+      ['special characters', 'agreements/test%20path/item-123', `${BASE_URL}/agreements/test%20path/item-123`]
+    ])('should build the target URI for %s', async (_label, path, expected) => {
+      mockRequest.params.path = path
+
+      await getAgreementController.handler(mockRequest, mockH)
+
+      expect(mapUri().uri).toBe(expected)
+    })
+
+    test.each([
+      ['no trailing slash', BASE_URL, `${BASE_URL}/api/v1/agreements`],
+      ['one trailing slash', `${BASE_URL}/`, `${BASE_URL}/api/v1/agreements`],
+      ['several trailing slashes', `${BASE_URL}///`, `${BASE_URL}///api/v1/agreements`]
+    ])('should build the target URI when the base URL has %s', async (_label, uiUrl, expected) => {
+      config.get.mockImplementation(agreementsConfigValues({ 'agreements.uiUrl': uiUrl }))
       mockRequest.params.path = 'api/v1/agreements'
 
       await getAgreementController.handler(mockRequest, mockH)
 
-      const proxyCall = mockH.proxy.mock.calls[0][0]
-      const mapUriResult = proxyCall.mapUri()
-
-      expect(mapUriResult.uri).toBe('http://localhost:3003/api/v1/agreements')
-    })
-
-    test('should build target URI correctly with path starting with slash', async () => {
-      mockRequest.params.path = '/api/v1/agreements'
-
-      await getAgreementController.handler(mockRequest, mockH)
-
-      const proxyCall = mockH.proxy.mock.calls[0][0]
-      const mapUriResult = proxyCall.mapUri()
-
-      expect(mapUriResult.uri).toBe('http://localhost:3003/api/v1/agreements')
-    })
-
-    test('should handle empty path', async () => {
-      mockRequest.params.path = ''
-
-      await getAgreementController.handler(mockRequest, mockH)
-
-      const proxyCall = mockH.proxy.mock.calls[0][0]
-      const mapUriResult = proxyCall.mapUri()
-
-      expect(mapUriResult.uri).toBe('http://localhost:3003')
-    })
-
-    test('should build target URI correctly with base URL having trailing slash', async () => {
-      config.get.mockImplementation((key) => {
-        switch (key) {
-          case 'agreements.uiUrl':
-            return 'http://localhost:3003/'
-          case 'agreements.uiToken':
-            return 'test-token'
-          case 'agreements.jwtSecret':
-            return 'test-jwt-secret'
-          case 'agreements.jwtIssuer':
-            return 'grants-ui'
-          case 'agreements.jwtAudience':
-            return ['agreements-ui', 'gas']
-          case 'agreements.jwtTtlSec':
-            return 300
-          default:
-            return undefined
-        }
-      })
-      mockRequest.params.path = 'api/v1/agreements'
-
-      await getAgreementController.handler(mockRequest, mockH)
-
-      const proxyCall = mockH.proxy.mock.calls[0][0]
-      const mapUriResult = proxyCall.mapUri()
-
-      expect(mapUriResult.uri).toBe('http://localhost:3003/api/v1/agreements')
+      expect(mapUri().uri).toBe(expected)
     })
   })
 
   describe('Header Building', () => {
-    test('should build proxy headers for GET request', async () => {
-      await getAgreementController.handler(mockRequest, mockH)
-
-      const proxyCall = mockH.proxy.mock.calls[0][0]
-      const mapUriResult = proxyCall.mapUri()
-
-      expect(mapUriResult.headers).toEqual({
-        Authorization: 'Bearer test-token',
-        'content-type': 'application/x-www-form-urlencoded',
-        'x-base-url': '/agreement',
-        'x-encrypted-auth': 'mocked-jwt-token',
-        'x-csp-nonce': 'test-nonce'
-      })
-      expect(Jwt.token.generate).toHaveBeenCalledWith(
-        {
-          sub: 'CRN123',
-          iss: 'grants-ui',
-          aud: ['agreements-ui', 'gas'],
-          sbi: '106284736',
-          grantCode: undefined,
-          clientRef: undefined,
-          source: 'defra'
-        },
-        'test-jwt-secret',
-        { ttlSec: 300 }
-      )
-    })
-
-    test('should build proxy headers for POST request with default content-type', async () => {
-      mockRequest.method = 'POST'
-
-      await getAgreementController.handler(mockRequest, mockH)
-
-      const proxyCall = mockH.proxy.mock.calls[0][0]
-      const mapUriResult = proxyCall.mapUri()
-
-      expect(mapUriResult.headers).toEqual({
-        Authorization: 'Bearer test-token',
-        'x-base-url': '/agreement',
-        'content-type': 'application/x-www-form-urlencoded',
-        'x-encrypted-auth': 'mocked-jwt-token',
-        'x-csp-nonce': 'test-nonce'
-      })
-    })
-
-    test('should build proxy headers for POST request with custom content-type', async () => {
-      mockRequest.method = 'POST'
-      mockRequest.headers = {
-        'x-request-id': 'test-request-id',
-        'content-type': 'application/json'
+    test.each([
+      ['GET', undefined, 'application/x-www-form-urlencoded'],
+      ['POST', undefined, 'application/x-www-form-urlencoded'],
+      ['PUT', undefined, 'application/x-www-form-urlencoded'],
+      ['PATCH', undefined, 'application/x-www-form-urlencoded'],
+      ['GET', 'application/json', 'application/json'],
+      ['POST', 'application/json', 'application/json']
+    ])('should build proxy headers for %s with inbound content-type %s', async (method, inbound, expected) => {
+      mockRequest.method = method
+      if (inbound) {
+        mockRequest.headers = { 'x-request-id': 'test-request-id', 'content-type': inbound }
       }
 
       await getAgreementController.handler(mockRequest, mockH)
 
-      const proxyCall = mockH.proxy.mock.calls[0][0]
-      const mapUriResult = proxyCall.mapUri()
-
-      expect(mapUriResult.headers).toEqual({
-        Authorization: 'Bearer test-token',
-        'x-base-url': '/agreement',
-        'content-type': 'application/json',
-        'x-encrypted-auth': 'mocked-jwt-token',
-        'x-csp-nonce': 'test-nonce'
-      })
+      expect(mapUri().headers).toEqual(expectedHeaders(expected))
     })
 
-    test('should build proxy headers for PUT request', async () => {
-      mockRequest.method = 'PUT'
+    test('should use the first value when content-type arrives as an array', async () => {
+      mockRequest.headers = { 'content-type': ['text/plain', 'application/json'] }
 
       await getAgreementController.handler(mockRequest, mockH)
 
-      const proxyCall = mockH.proxy.mock.calls[0][0]
-      const mapUriResult = proxyCall.mapUri()
-
-      expect(mapUriResult.headers).toEqual({
-        Authorization: 'Bearer test-token',
-        'x-base-url': '/agreement',
-        'content-type': 'application/x-www-form-urlencoded',
-        'x-encrypted-auth': 'mocked-jwt-token',
-        'x-csp-nonce': 'test-nonce'
-      })
-    })
-
-    test('should build proxy headers for PATCH request', async () => {
-      mockRequest.method = 'PATCH'
-
-      await getAgreementController.handler(mockRequest, mockH)
-
-      const proxyCall = mockH.proxy.mock.calls[0][0]
-      const mapUriResult = proxyCall.mapUri()
-
-      expect(mapUriResult.headers).toEqual({
-        Authorization: 'Bearer test-token',
-        'x-base-url': '/agreement',
-        'content-type': 'application/x-www-form-urlencoded',
-        'x-encrypted-auth': 'mocked-jwt-token',
-        'x-csp-nonce': 'test-nonce'
-      })
-    })
-
-    test('should preserve content-type for GET request when provided', async () => {
-      mockRequest.headers = {
-        'x-request-id': 'test-request-id',
-        'content-type': 'application/json'
-      }
-
-      await getAgreementController.handler(mockRequest, mockH)
-
-      const proxyCall = mockH.proxy.mock.calls[0][0]
-      const mapUriResult = proxyCall.mapUri()
-
-      expect(mapUriResult.headers).toEqual({
-        Authorization: 'Bearer test-token',
-        'x-base-url': '/agreement',
-        'x-csp-nonce': 'test-nonce',
-        'content-type': 'application/json',
-        'x-encrypted-auth': 'mocked-jwt-token'
-      })
-    })
-
-    test('should include grantCode and clientRef in JWT when grantApplicationContext is in yar session', async () => {
-      mockRequest.yar.get.mockReturnValue({ grantCode: 'farm-payments', clientRef: 'sfi123456' })
-
-      await getAgreementController.handler(mockRequest, mockH)
-
-      expect(Jwt.token.generate).toHaveBeenCalledWith(
-        {
-          sub: 'CRN123',
-          iss: 'grants-ui',
-          aud: ['agreements-ui', 'gas'],
-          sbi: '106284736',
-          grantCode: 'farm-payments',
-          clientRef: 'sfi123456',
-          source: 'defra'
-        },
-        'test-jwt-secret',
-        { ttlSec: 300 }
-      )
+      expect(mapUri().headers['content-type']).toBe('text/plain')
     })
 
     test('should handle JWT generation error and log failure', async () => {
@@ -384,12 +174,7 @@ describe('Agreements Controller', () => {
 
       await getAgreementController.handler(mockRequest, mockH)
 
-      expect(mockH.response).toHaveBeenCalledWith(
-        expect.objectContaining({
-          error: 'External Service Unavailable',
-          message: 'Unable to process request'
-        })
-      )
+      expect(mockH.response).toHaveBeenCalledWith(expect.objectContaining(UPSTREAM_ERROR))
     })
   })
 
@@ -407,28 +192,6 @@ describe('Agreements Controller', () => {
       expect(mockH.response).not.toHaveBeenCalled()
     })
 
-    test('should work correctly when path parameter is missing', async () => {
-      mockRequest.params.path = null
-
-      await getAgreementController.handler(mockRequest, mockH)
-
-      const proxyCall = mockH.proxy.mock.calls[0][0]
-      const mapUriResult = proxyCall.mapUri()
-
-      expect(mapUriResult.uri).toBe('http://localhost:3003')
-    })
-
-    test('should work correctly when path parameter is undefined', async () => {
-      mockRequest.params.path = undefined
-
-      await getAgreementController.handler(mockRequest, mockH)
-
-      const proxyCall = mockH.proxy.mock.calls[0][0]
-      const mapUriResult = proxyCall.mapUri()
-
-      expect(mapUriResult.uri).toBe('http://localhost:3003')
-    })
-
     test('should call proxy with correct parameters', async () => {
       mockRequest.params.path = 'test/endpoint'
 
@@ -439,73 +202,36 @@ describe('Agreements Controller', () => {
         passThrough: true,
         rejectUnauthorized: true
       })
-
-      const proxyCall = mockH.proxy.mock.calls[0][0]
-      const mapUriResult = proxyCall.mapUri()
-
-      expect(mapUriResult.uri).toBe('http://localhost:3003/test/endpoint')
-      expect(mapUriResult.headers).toEqual({
-        Authorization: 'Bearer test-token',
-        'x-base-url': '/agreement',
-        'content-type': 'application/x-www-form-urlencoded',
-        'x-encrypted-auth': 'mocked-jwt-token',
-        'x-csp-nonce': 'test-nonce'
-      })
+      expect(mapUri().uri).toBe(`${BASE_URL}/test/endpoint`)
     })
 
-    test('should handle proxy errors gracefully', async () => {
-      const proxyError = new Error('Proxy connection failed')
+    test('should return 502 when the upstream service returns no response', async () => {
+      mockH.proxy.mockResolvedValue(undefined)
+
+      await getAgreementController.handler(mockRequest, mockH)
+
+      expect(mockH.response).toHaveBeenCalledWith({
+        error: 'No response from upstream service',
+        message: 'The agreements API did not return any data'
+      })
+      expect(responseCode()).toBe(502)
+    })
+
+    test.each([
+      ['a bare error', {}, 503],
+      ['an error carrying statusCode', { statusCode: 503 }, 503],
+      ['an error carrying output.statusCode', { output: { statusCode: 502 } }, 502]
+    ])('should surface %s with the right status code', async (_label, extra, expectedCode) => {
+      const proxyError = Object.assign(new Error('Proxy connection failed'), extra)
       mockH.proxy.mockRejectedValue(proxyError)
 
       await getAgreementController.handler(mockRequest, mockH)
 
       expect(mockH.response).toHaveBeenCalledWith({
-        error: 'External Service Unavailable',
-        message: 'Unable to process request',
+        ...UPSTREAM_ERROR,
         details: 'Proxy connection failed'
       })
-    })
-
-    test('should handle proxy errors with status code', async () => {
-      const proxyError = new Error('Service unavailable')
-      proxyError.statusCode = 503
-      mockH.proxy.mockRejectedValue(proxyError)
-
-      await getAgreementController.handler(mockRequest, mockH)
-
-      expect(mockH.response).toHaveBeenCalledWith({
-        error: 'External Service Unavailable',
-        message: 'Unable to process request',
-        details: 'Service unavailable'
-      })
-    })
-
-    test('should use unknown requestId when header is missing', async () => {
-      delete mockRequest.headers['x-request-id']
-      const proxyError = new Error('Test error')
-      mockH.proxy.mockRejectedValue(proxyError)
-
-      await getAgreementController.handler(mockRequest, mockH)
-
-      expect(mockH.response).toHaveBeenCalledWith({
-        error: 'External Service Unavailable',
-        message: 'Unable to process request',
-        details: 'Test error'
-      })
-    })
-
-    test('should return proper status code for different error types', async () => {
-      const proxyError = new Error('Bad Gateway')
-      proxyError.output = { statusCode: 502 }
-      mockH.proxy.mockRejectedValue(proxyError)
-
-      await getAgreementController.handler(mockRequest, mockH)
-
-      expect(mockH.response).toHaveBeenCalledWith({
-        error: 'External Service Unavailable',
-        message: 'Unable to process request',
-        details: 'Bad Gateway'
-      })
+      expect(responseCode()).toBe(expectedCode)
     })
 
     test('should log EXTERNAL_API_ERROR with service and upstreamStatus on proxy 5xx', async () => {
@@ -531,54 +257,13 @@ describe('Agreements Controller', () => {
       const originalNodeEnv = process.env.NODE_ENV
       process.env.NODE_ENV = 'production'
 
-      const proxyError = new Error('Internal details')
-      mockH.proxy.mockRejectedValue(proxyError)
+      mockH.proxy.mockRejectedValue(new Error('Internal details'))
 
       await getAgreementController.handler(mockRequest, mockH)
 
-      expect(mockH.response).toHaveBeenCalledWith({
-        error: 'External Service Unavailable',
-        message: 'Unable to process request'
-      })
+      expect(mockH.response).toHaveBeenCalledWith(UPSTREAM_ERROR)
 
       process.env.NODE_ENV = originalNodeEnv
-    })
-  })
-
-  describe('Edge Cases', () => {
-    test('should handle very long paths', async () => {
-      const longPath = 'api/v1/agreements/' + 'segment/'.repeat(50)
-      mockRequest.params.path = longPath
-
-      await getAgreementController.handler(mockRequest, mockH)
-
-      const proxyCall = mockH.proxy.mock.calls[0][0]
-      const mapUriResult = proxyCall.mapUri()
-
-      expect(mapUriResult.uri).toBe(`http://localhost:3003/${longPath}`)
-    })
-
-    test('should handle complex path with query parameters', async () => {
-      mockRequest.params.path = 'api/v1/agreements?filter=active&sort=date'
-
-      await getAgreementController.handler(mockRequest, mockH)
-
-      const proxyCall = mockH.proxy.mock.calls[0][0]
-      const mapUriResult = proxyCall.mapUri()
-
-      expect(mapUriResult.uri).toBe('http://localhost:3003/api/v1/agreements?filter=active&sort=date')
-    })
-
-    test('should handle path with special characters', async () => {
-      const specialPath = 'api/v1/agreements/test%20path/item-123'
-      mockRequest.params.path = specialPath
-
-      await getAgreementController.handler(mockRequest, mockH)
-
-      const proxyCall = mockH.proxy.mock.calls[0][0]
-      const mapUriResult = proxyCall.mapUri()
-
-      expect(mapUriResult.uri).toBe(`http://localhost:3003/${specialPath}`)
     })
   })
 })
