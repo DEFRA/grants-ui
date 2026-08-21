@@ -134,18 +134,26 @@ The application includes a proxy endpoint for handling farming payment agreement
 The agreements controller acts as an authenticated proxy that:
 
 - Accepts requests at `/agreements/{path*}`
-- Extracts SBI (Single Business Identifier) from Defra ID credentials
-- Generates a JWT token with SBI and source information
+- Extracts SBI (Single Business Identifier) and CRN (Customer Reference Number) from Defra ID credentials
+- Generates a short-lived JWT, freshly signed for every request, carrying `sub` (CRN), `iss`, `aud`,
+  `exp`, the SBI, the grant application context (`grantCode`/`clientRef`) and the source
 - Forwards requests to the external agreements service with authentication headers
+
+The `aud` claim is an array so that a single token can be accepted by both the agreements service and
+GAS. The agreements service and GAS validate `exp`, `iss` and `aud`, so these values must match what
+those services are configured to expect in each environment.
 
 **Configuration:**
 
-| Variable                | Description                                  | Required |
-| ----------------------- | -------------------------------------------- | -------- |
-| `AGREEMENTS_UI_TOKEN`   | Bearer token for authenticating with the API | Yes      |
-| `AGREEMENTS_UI_URL`     | Base URL of the agreements service           | Yes      |
-| `AGREEMENTS_BASE_URL`   | Base path for agreements routes in grants-ui | Yes      |
-| `AGREEMENTS_JWT_SECRET` | Secret key for signing JWT tokens            | Yes      |
+| Variable                  | Description                                  | Required |
+| ------------------------- | -------------------------------------------- | -------- |
+| `AGREEMENTS_UI_TOKEN`     | Bearer token for authenticating with the API | Yes      |
+| `AGREEMENTS_UI_URL`       | Base URL of the agreements service           | Yes      |
+| `AGREEMENTS_BASE_URL`     | Base path for agreements routes in grants-ui | Yes      |
+| `AGREEMENTS_JWT_SECRET`   | Secret key for signing JWT tokens            | Yes      |
+| `AGREEMENTS_JWT_ISSUER`   | Value of the `iss` claim                     | Yes      |
+| `AGREEMENTS_JWT_AUDIENCE` | Comma-separated `aud` values (no spaces)     | Yes      |
+| `AGREEMENTS_JWT_TTL_SEC`  | Token lifetime in seconds (default `300`)    | No       |
 
 **Example Configuration:**
 
@@ -154,6 +162,9 @@ AGREEMENTS_UI_TOKEN=your-bearer-token
 AGREEMENTS_UI_URL=https://agreements-service.example.com
 AGREEMENTS_BASE_URL=/agreement
 AGREEMENTS_JWT_SECRET=your-jwt-secret
+AGREEMENTS_JWT_ISSUER=grants-ui
+AGREEMENTS_JWT_AUDIENCE=agreements-ui,gas
+AGREEMENTS_JWT_TTL_SEC=300
 ```
 
 **Security:**

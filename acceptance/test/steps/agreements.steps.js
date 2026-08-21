@@ -13,8 +13,10 @@ Then(
     const [token] = (headerName && request.headers[headerName]) ?? []
     expect(token).toBeDefined()
 
-    const payload = jwt.verify(token, process.env.AGREEMENTS_JWT_SECRET)
+    const payload = jwt.verify(token, process.env.AGREEMENTS_JWT_SECRET, { ignoreExpiration: true })
 
     expect(payload.sbi).toEqual(sbi)
+    expect(payload.exp - payload.iat).toEqual(Number(process.env.AGREEMENTS_JWT_TTL_SEC ?? 300))
+    expect(payload.iss).toEqual(process.env.AGREEMENTS_JWT_ISSUER ?? 'grants-ui')
   }
 )

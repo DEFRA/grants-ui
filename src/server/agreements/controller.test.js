@@ -62,6 +62,12 @@ describe('Agreements Controller', () => {
           return '/agreement'
         case 'agreements.jwtSecret':
           return 'test-jwt-secret'
+        case 'agreements.jwtIssuer':
+          return 'grants-ui'
+        case 'agreements.jwtAudience':
+          return ['agreements-ui', 'gas']
+        case 'agreements.jwtTtlSec':
+          return 300
         default:
           return undefined
       }
@@ -91,6 +97,12 @@ describe('Agreements Controller', () => {
             return 'test-token'
           case 'agreements.jwtSecret':
             return 'test-jwt-secret'
+          case 'agreements.jwtIssuer':
+            return 'grants-ui'
+          case 'agreements.jwtAudience':
+            return ['agreements-ui', 'gas']
+          case 'agreements.jwtTtlSec':
+            return 300
           default:
             return undefined
         }
@@ -135,6 +147,12 @@ describe('Agreements Controller', () => {
             return 'test-token'
           case 'agreements.jwtSecret':
             return 'test-jwt-secret'
+          case 'agreements.jwtIssuer':
+            return 'grants-ui'
+          case 'agreements.jwtAudience':
+            return ['agreements-ui', 'gas']
+          case 'agreements.jwtTtlSec':
+            return 300
           default:
             return undefined
         }
@@ -193,6 +211,12 @@ describe('Agreements Controller', () => {
             return 'test-token'
           case 'agreements.jwtSecret':
             return 'test-jwt-secret'
+          case 'agreements.jwtIssuer':
+            return 'grants-ui'
+          case 'agreements.jwtAudience':
+            return ['agreements-ui', 'gas']
+          case 'agreements.jwtTtlSec':
+            return 300
           default:
             return undefined
         }
@@ -223,8 +247,17 @@ describe('Agreements Controller', () => {
         'x-csp-nonce': 'test-nonce'
       })
       expect(Jwt.token.generate).toHaveBeenCalledWith(
-        { sbi: '106284736', grantCode: undefined, clientRef: undefined, source: 'defra' },
-        'test-jwt-secret'
+        {
+          sub: 'CRN123',
+          iss: 'grants-ui',
+          aud: ['agreements-ui', 'gas'],
+          sbi: '106284736',
+          grantCode: undefined,
+          clientRef: undefined,
+          source: 'defra'
+        },
+        'test-jwt-secret',
+        { ttlSec: 300 }
       )
     })
 
@@ -326,8 +359,17 @@ describe('Agreements Controller', () => {
       await getAgreementController.handler(mockRequest, mockH)
 
       expect(Jwt.token.generate).toHaveBeenCalledWith(
-        { sbi: '106284736', grantCode: 'farm-payments', clientRef: 'sfi123456', source: 'defra' },
-        'test-jwt-secret'
+        {
+          sub: 'CRN123',
+          iss: 'grants-ui',
+          aud: ['agreements-ui', 'gas'],
+          sbi: '106284736',
+          grantCode: 'farm-payments',
+          clientRef: 'sfi123456',
+          source: 'defra'
+        },
+        'test-jwt-secret',
+        { ttlSec: 300 }
       )
     })
 
