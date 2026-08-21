@@ -1,6 +1,7 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { vi } from 'vitest'
 import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
+import { mockParcelsResponse } from '~/src/__mocks__/land-grants-mocks.js'
 import { debug } from '~/src/server/common/helpers/logging/log.js'
 import { setupControllerMocks } from '~/src/__mocks__/controller-mocks.js'
 import { fetchParcels } from '~/src/server/land-grants/services/land-grants.service.js'
@@ -44,19 +45,6 @@ vi.mock('~/src/shared/format-parcel.js', () => ({
     return [sheetId, parcelId].filter((part) => part != null && part !== '').join(' ')
   }
 }))
-
-const mockParcelsResponse = [
-  {
-    parcelId: '0155',
-    sheetId: 'SD7946',
-    area: { unit: 'ha', value: 4.0383 }
-  },
-  {
-    parcelId: '4509',
-    sheetId: 'SD7846',
-    area: { unit: 'sqm', value: 0.0633 }
-  }
-]
 
 const controllerParcelsResponse = [
   {
