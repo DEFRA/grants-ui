@@ -17,6 +17,27 @@ export const mockLandGrantsConfig = () => ({
 })
 
 /**
+ * Build a `config.get` implementation for the agreements proxy, so the key list lives in one
+ * place.
+ * @param {Record<string, unknown>} [overrides]
+ * @returns {(key: string) => unknown}
+ */
+export const agreementsConfigValues = (overrides = {}) => {
+  /** @type {Record<string, unknown>} */
+  const values = {
+    'agreements.uiUrl': 'http://localhost:3003',
+    'agreements.uiToken': 'test-token',
+    'agreements.baseUrl': '/agreement',
+    'agreements.jwtSecret': 'test-jwt-secret',
+    'agreements.jwtIssuer': 'grants-ui',
+    'agreements.jwtAudience': ['agreements-ui', 'gas'],
+    'agreements.jwtTtlSec': 300,
+    ...overrides
+  }
+  return (/** @type {string} */ key) => values[key]
+}
+
+/**
  * Mock the config module, resolving keys against a fixed value map.
  * @param {Record<string, unknown>} [configValues] - keyed config values to return
  * @returns {{ config: { get: import('vitest').Mock } }}
