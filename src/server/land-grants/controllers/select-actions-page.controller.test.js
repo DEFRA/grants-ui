@@ -57,7 +57,7 @@ describe('SelectActionsPageController', () => {
 
   const enabledLandActions = ['CMOR1', 'UPL1', 'UPL2']
 
-  const mockActions = [CMOR1, UPL1, { ...UPL2, inputRequired: true }]
+  const mockActions = [CMOR1, UPL1, { ...UPL2, availability: { ...UPL2.availability, type: 'partial' } }]
 
   beforeEach(() => {
     QuestionPageController.prototype.getViewModel = vi.fn().mockReturnValue({
@@ -376,7 +376,7 @@ describe('SelectActionsPageController', () => {
 
     test('should still send the unit for an action with no availability restriction', async () => {
       fetchActionsForParcel.mockResolvedValue({
-        actions: [{ ...UPL2, availability: { unit: 'ha', value: null }, inputRequired: true }],
+        actions: [{ ...UPL2, availability: { unit: 'ha', value: null, type: 'partial' } }],
         parcel: { sheetId: 'sheet1', parcelId: 'parcel1', size: { unit: 'ha', value: 20 } }
       })
       mockRequest.payload = { landAction: ['UPL2'], landActionQuantity_UPL2: '7' }

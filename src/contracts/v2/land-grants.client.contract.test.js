@@ -445,22 +445,20 @@ describe('parcels', () => {
       actions: [
         {
           code: 'CLIG3',
-          availability: { value: 10.5, unit: 'ha' },
+          availability: { value: 10.5, unit: 'ha', type: 'total' },
           description: 'Manage grassland with very low nutrient inputs',
           ratePerUnitGbp: 10.6,
           ratePerAgreementPerYearGbp: 272,
           guidanceUrl: string(
             'https://www.gov.uk/find-funding-for-land-or-farms/clig3-manage-grassland-with-very-low-nutrient-inputs'
-          ),
-          inputRequired: false
+          )
         },
         {
           code: 'CSAM3',
-          availability: { value: 20.75, unit: 'ha' },
+          availability: { value: 20.75, unit: 'ha', type: 'partial' },
           description: 'Herbal leys',
           ratePerUnitGbp: 224,
-          guidanceUrl: string('https://www.gov.uk/find-funding-for-land-or-farms/csam3-herbal-leys'),
-          inputRequired: true
+          guidanceUrl: string('https://www.gov.uk/find-funding-for-land-or-farms/csam3-herbal-leys')
         }
       ]
     }
@@ -487,11 +485,11 @@ describe('parcels', () => {
 
         expect(response.parcels[0].actions[0].code).toBe('CLIG3')
         expect(response.parcels[0].actions[0].guidanceUrl).toEqual(expect.any(String))
-        expect(response.parcels[0].actions[0].inputRequired).toBe(false)
+        expect(response.parcels[0].actions[0].availability.type).toBe('total')
 
         expect(response.parcels[0].actions[1].code).toBe('CSAM3')
         expect(response.parcels[0].actions[1].guidanceUrl).toEqual(expect.any(String))
-        expect(response.parcels[0].actions[1].inputRequired).toBe(true)
+        expect(response.parcels[0].actions[1].availability.type).toBe('partial')
       }
     )
   })

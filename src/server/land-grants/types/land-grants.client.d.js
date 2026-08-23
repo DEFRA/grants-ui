@@ -45,10 +45,11 @@
 /**
  * How much of an action is still claimable. The API always sends this object -
  * `unit` is always present, and a null `value` is how it says "no restriction"
- * (paired, by contract, with the action requiring a typed quantity).
+ * while `type` controls whether the user must type a quantity.
  * @typedef {object} ActionAvailability
  * @property {string} unit - Area, linear or count unit
  * @property {number | null} value - Amount still claimable; null means no restriction
+ * @property {'total'|'partial'} [type] - 'partial' requires a typed quantity
  */
 
 /**
@@ -59,8 +60,6 @@
  * @property {boolean} [sssiConsentRequired] - If action needs SSSI consent
  * @property {boolean} [heferRequired] - If action needs HEFER report
  * @property {ActionAvailability} [availability] - How much of the action is still claimable
- * @property {boolean} [inputRequired] - Whether the user must type a quantity for this
- *   action
  * @property {number} ratePerUnitGbp - The rate per unit in GBP
  * @property {number} ratePerAgreementPerYearGbp - The rate per agreement per year in GBP
  * @property {string} [guidanceUrl] - URL to the action's guidance page

@@ -569,9 +569,8 @@ describe('land-grants service', () => {
         [
           {
             code: 'UPL8',
-            availability: { value: null, unit: 'ha' },
-            description: 'No restriction',
-            inputRequired: true
+            availability: { value: null, unit: 'ha', type: 'partial' },
+            description: 'No restriction'
           },
           { code: 'UPL10', availability: { value: 8, unit: 'm' }, description: 'Shepherding livestock' }
         ],
@@ -589,9 +588,8 @@ describe('land-grants service', () => {
         [
           {
             code: 'UPL8',
-            availability: { value: null, unit: 'ha' },
-            description: 'No restriction',
-            inputRequired: true
+            availability: { value: null, unit: 'ha', type: 'partial' },
+            description: 'No restriction'
           }
         ],
         [{ name: 'Shepherding livestock on moorland', actions: ['UPL8'] }]
@@ -780,23 +778,21 @@ describe('land-grants service', () => {
       ])
     })
 
-    it.each([[true], [false], [undefined]])(
-      'should pass inputRequired through unchanged when it is %s',
-      async (inputRequired) => {
+    it.each(['partial', 'total', undefined])(
+      'should pass availability.type through unchanged when it is %s',
+      async (type) => {
         const mockApiResponse = parcelResponse([
           {
             code: 'CSAM3',
-            availability: { value: 10.5, unit: 'ha' },
-            description: 'Herbal leys',
-            ...(inputRequired !== undefined && { inputRequired })
+            availability: { value: 10.5, unit: 'ha', ...(type !== undefined && { type }) },
+            description: 'Herbal leys'
           }
         ])
         parcelsWithActions.mockResolvedValueOnce(mockApiResponse)
 
         const result = await fetchFlat(['CSAM3'])
 
-        expect(result.actions[0].inputRequired).toBe(inputRequired)
-        expect(result.actions[0].availability).toEqual({ value: 10.5, unit: 'ha' })
+        expect(result.actions[0].availability).toEqual({ value: 10.5, unit: 'ha', ...(type !== undefined && { type }) })
       }
     )
 
@@ -804,17 +800,15 @@ describe('land-grants service', () => {
       const mockApiResponse = parcelResponse([
         {
           code: 'CSAM3',
-          availability: { value: null, unit: 'ha' },
-          description: 'Herbal leys',
-          inputRequired: true
+          availability: { value: null, unit: 'ha', type: 'partial' },
+          description: 'Herbal leys'
         }
       ])
       parcelsWithActions.mockResolvedValueOnce(mockApiResponse)
 
       const result = await fetchFlat(['CSAM3'])
 
-      expect(result.actions[0].availability).toEqual({ value: null, unit: 'ha' })
-      expect(result.actions[0].inputRequired).toBe(true)
+      expect(result.actions[0].availability).toEqual({ value: null, unit: 'ha', type: 'partial' })
     })
 
     it('should return no actions when enabledLandActions is empty', async () => {

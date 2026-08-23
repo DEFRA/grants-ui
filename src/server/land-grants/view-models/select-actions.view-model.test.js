@@ -18,8 +18,7 @@ describe('select-actions.view-model', () => {
   const csam3 = (availability) => ({
     code: 'CSAM3',
     description: 'Herbal leys: CSAM3',
-    inputRequired: true,
-    availability
+    availability: { ...availability, type: 'partial' }
   })
 
   describe('mapActionToViewModel', () => {
@@ -263,8 +262,7 @@ describe('select-actions.view-model', () => {
         code: 'UPL2',
         description: 'Heavy livestock grazing on moorland',
         ratePerUnitGbp: 45,
-        inputRequired: true,
-        availability: { value: 3, unit: 'ha' }
+        availability: { value: 3, unit: 'ha', type: 'partial' }
       }
 
       const result = mapActionToViewModel(action, [])
@@ -439,8 +437,7 @@ describe('select-actions.view-model', () => {
         {
           code: 'CSAM3',
           description: 'Herbal leys: CSAM3',
-          inputRequired: true,
-          availability: { value: 5, unit: 'ha' }
+          availability: { value: 5, unit: 'ha', type: 'partial' }
         },
         { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200 }
       ]
@@ -572,7 +569,7 @@ describe('select-actions.view-model', () => {
     })
 
     it('should skip a quantity-required action', () => {
-      const actions = [{ code: 'CSAM3', description: 'Herbal leys', inputRequired: true }]
+      const actions = [{ code: 'CSAM3', description: 'Herbal leys', availability: { type: 'partial' } }]
 
       const html = getChosenAreaFieldsHtml(actions, [])
 

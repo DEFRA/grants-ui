@@ -10,12 +10,11 @@
  * @property {object} [availability] - How much of the action is still claimable
  * @property {number | null} [availability.value] - Amount still claimable; null means no restriction
  * @property {string} [availability.unit] - Unit, area, linear or count
+ * @property {'total'|'partial'} [availability.type] - 'partial' requires a typed quantity
  * @property {object} [staticAvailability] - The action's original, uncompeted availability (see mergeRecomputedAvailability)
  * @property {number | null} [staticAvailability.value] - Amount claimable; null means no restriction
  * @property {string} [staticAvailability.unit] - Unit, area, linear or count
  * @property {string} [guidanceUrl] - URL to the action's guidance page
- * @property {boolean} [inputRequired] - Whether the user must type a quantity for this
- *   action. See requiresQuantityInput in shared/action-quantity-type.js
  */
 
 /**

@@ -235,9 +235,9 @@
                 "code": "SCR3",
                 "availability": {
                   "value": null,
-                  "unit": "ha"
+                  "unit": "ha",
+                  "type": "partial"
                 },
-                "inputRequired": true,
                 "ratePerUnitGbp": 95.0,
                 "description": "Manage grassland with no availability restriction"
               }

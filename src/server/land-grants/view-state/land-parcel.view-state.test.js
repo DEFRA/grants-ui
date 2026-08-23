@@ -219,8 +219,7 @@ describe('land-parcel-state.manager', () => {
             {
               code: 'CSAM3',
               description: 'Herbal leys: CSAM3',
-              inputRequired: true,
-              availability: { value: 18.5673, unit: 'ha' }
+              availability: { value: 18.5673, unit: 'ha', type: 'partial' }
             }
           ]
         }
@@ -266,8 +265,7 @@ describe('land-parcel-state.manager', () => {
               {
                 code: 'CSAM3',
                 description: 'Herbal leys: CSAM3',
-                inputRequired: true,
-                availability: { value: 0, unit: 'ha' }
+                availability: { value: 0, unit: 'ha', type: 'partial' }
               }
             ]
           }
@@ -349,8 +347,7 @@ describe('land-parcel-state.manager', () => {
         {
           code: 'CSAM3',
           description: 'Herbal leys: CSAM3',
-          inputRequired: true,
-          availability: { value: 18.5673, unit: 'ha' }
+          availability: { value: 18.5673, unit: 'ha', type: 'partial' }
         }
       ]
       const state = {}
@@ -370,8 +367,7 @@ describe('land-parcel-state.manager', () => {
         {
           code: 'CSAM3',
           description: 'Herbal leys: CSAM3',
-          inputRequired: true,
-          availability: { value: 18.5673, unit: 'ha' }
+          availability: { value: 18.5673, unit: 'ha', type: 'partial' }
         }
       ]
       const state = {}
@@ -391,8 +387,7 @@ describe('land-parcel-state.manager', () => {
         {
           code: 'CSAM3',
           description: 'Herbal leys: CSAM3',
-          inputRequired: true,
-          availability: { value: 18.5673, unit: 'ha' }
+          availability: { value: 18.5673, unit: 'ha', type: 'partial' }
         }
       ]
       const state = {}
@@ -410,8 +405,7 @@ describe('land-parcel-state.manager', () => {
         {
           code: 'CSAM3',
           description: 'Herbal leys: CSAM3',
-          inputRequired: true,
-          availability: { value: 18.5673, unit: 'ha' }
+          availability: { value: 18.5673, unit: 'ha', type: 'partial' }
         }
       ]
       const state = {}
@@ -614,21 +608,20 @@ describe('land-parcel-state.manager', () => {
   })
 
   describe('mergeRecomputedAvailability', () => {
-    it('should overwrite availability from the recomputed match, leaving inputRequired untouched', () => {
+    it('should overwrite availability from the recomputed match, preserving its static type', () => {
       const actions = [
         {
           code: 'CSAM3',
           description: 'Herbal leys',
-          availability: { value: 0.3271, unit: 'ha' },
-          inputRequired: true
+          availability: { value: 0.3271, unit: 'ha', type: 'partial' }
         }
       ]
       const recomputed = [{ code: 'CSAM3', availability: { value: 0, unit: 'ha' } }]
 
       const result = mergeRecomputedAvailability(actions, recomputed)
 
-      expect(result[0].availability).toEqual({ value: 0, unit: 'ha' })
-      expect(result[0].inputRequired).toBe(true)
+      expect(result[0].availability).toEqual({ value: 0, unit: 'ha', type: 'partial' })
+      expect(result[0].staticAvailability.type).toBe('partial')
     })
 
     it('should overwrite availability with a null value when the recompute reports no restriction', () => {
@@ -636,16 +629,15 @@ describe('land-parcel-state.manager', () => {
         {
           code: 'CSAM3',
           description: 'Herbal leys',
-          availability: { value: 0.3271, unit: 'ha' },
-          inputRequired: true
+          availability: { value: 0.3271, unit: 'ha', type: 'partial' }
         }
       ]
       const recomputed = [{ code: 'CSAM3', availability: { value: null, unit: 'ha' } }]
 
       const result = mergeRecomputedAvailability(actions, recomputed)
 
-      expect(result[0].availability).toEqual({ value: null, unit: 'ha' })
-      expect(result[0].staticAvailability).toEqual({ value: 0.3271, unit: 'ha' })
+      expect(result[0].availability).toEqual({ value: null, unit: 'ha', type: 'partial' })
+      expect(result[0].staticAvailability).toEqual({ value: 0.3271, unit: 'ha', type: 'partial' })
     })
 
     it("should preserve the action's original availability as staticAvailability", () => {
@@ -687,7 +679,7 @@ describe('land-parcel-state.manager', () => {
   describe('getAddedActionsFromPayload', () => {
     it('should use the payload value for a quantity-required action', () => {
       const payload = { landAction: 'CSAM3', landActionQuantity_CSAM3: '0.2' }
-      const actions = [{ code: 'CSAM3', description: 'Herbal leys', inputRequired: true }]
+      const actions = [{ code: 'CSAM3', description: 'Herbal leys', availability: { type: 'partial' } }]
 
       const result = getAddedActionsFromPayload(payload, actions)
 
@@ -698,7 +690,7 @@ describe('land-parcel-state.manager', () => {
       const payload = { landAction: ['CMOR1', 'CSAM3'], landActionQuantity_CSAM3: '0.2' }
       const actions = [
         { code: 'CMOR1', description: 'Moorland record' },
-        { code: 'CSAM3', description: 'Herbal leys', inputRequired: true }
+        { code: 'CSAM3', description: 'Herbal leys', availability: { type: 'partial' } }
       ]
       const prevAddedActions = [{ code: 'CMOR1', value: 0.1572 }]
 

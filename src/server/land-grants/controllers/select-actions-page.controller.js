@@ -181,7 +181,7 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
     const sentByCode = new Map(plannedActions.map((p) => [p.actionCode, p.quantity]))
     const actionsByCode = new Map(actions.map((a) => [a.code, a]))
     const withSentClaim = recomputed.map((action) => {
-      const needsQuantity = requiresQuantityInput(actionsByCode.get(action.code)?.inputRequired)
+      const needsQuantity = requiresQuantityInput(actionsByCode.get(action.code)?.availability?.type)
       return sentByCode.has(action.code) && !needsQuantity
         ? { ...action, availability: { ...action.availability, value: sentByCode.get(action.code) } }
         : action
