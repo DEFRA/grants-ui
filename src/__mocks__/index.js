@@ -12,7 +12,8 @@ export {
   createMockConfig,
   mockLandGrantsConfig,
   mockConfigWithState,
-  configState
+  configState,
+  agreementsConfigValues
 } from './config-mocks.js'
 
 export {

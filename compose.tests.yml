@@ -10,6 +10,9 @@ services:
       GRANTS_UI_BACKEND_ENCRYPTION_KEY: ${GRANTS_UI_BACKEND_ENCRYPTION_KEY:-encryption_key}
       APPLICATION_LOCK_TOKEN_SECRET: ${APPLICATION_LOCK_TOKEN_SECRET:-dev-lock-secret}
       AGREEMENTS_JWT_SECRET: ${AGREEMENTS_JWT_SECRET:-agreements-jwt-secret}
+      AGREEMENTS_JWT_ISSUER: ${AGREEMENTS_JWT_ISSUER:-grants-ui}
+      AGREEMENTS_JWT_AUDIENCE: ${AGREEMENTS_JWT_AUDIENCE:-agreements-ui,gas}
+      AGREEMENTS_JWT_TTL_SEC: ${AGREEMENTS_JWT_TTL_SEC:-300}
       DEFRA_ID_USER_PASSWORD: x
       MOCKSERVER_HOST: mockserver
       MOCKSERVER_PORT: 1080
@@ -19,7 +22,7 @@ services:
     volumes:
       - ./nginx/certs:/etc/ssl/certs:ro
       - ./acceptance/schemas:/home/node/app/schemas:ro
-    command: ["npm", "run", "test:ci"]
+    command: ['npm', 'run', 'test:ci']
     networks:
       - grants-ui-net
 
@@ -39,7 +42,7 @@ services:
     volumes:
       - ./nginx/certs:/etc/ssl/certs:ro
       - ./grants-ui-grasslands-tests-schemas:/app/test/schemas:ro
-    command: ["npm", "run", "test:ci"]
+    command: ['npm', 'run', 'test:ci']
     networks:
       - grants-ui-net
 
@@ -59,7 +62,7 @@ services:
     volumes:
       - ./nginx/certs:/etc/ssl/certs:ro
       - ./grants-ui-woodland-tests-schemas:/app/test/schemas:ro
-    command: ["npm", "run", "test:ci"]
+    command: ['npm', 'run', 'test:ci']
     networks:
       - grants-ui-net
 
