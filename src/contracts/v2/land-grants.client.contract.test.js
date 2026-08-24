@@ -432,38 +432,7 @@ describe('parcels', () => {
   })
 
   it('returns HTTP 200 with consent information for a single parcel', async () => {
-    const parcelWithConsentExample = {
-      parcelId: 'SD6743',
-      sheetId: '8083',
-      size: { value: 23.3424, unit: 'ha' },
-      actions: [
-        {
-          code: 'CMOR1',
-          availability: { value: 10.5, unit: 'ha' },
-          description: 'Assess moorland and produce a written record',
-          ratePerUnitGbp: 10.6,
-          ratePerAgreementPerYearGbp: 272,
-          sssiConsentRequired: false,
-          heferRequired: true
-        },
-        {
-          code: 'UPL1',
-          availability: { value: 20.75, unit: 'ha' },
-          description: 'Moderate livestock grazing on moorland',
-          ratePerUnitGbp: 20,
-          sssiConsentRequired: true,
-          heferRequired: false
-        },
-        {
-          code: 'UPL2',
-          availability: { value: 15.25, unit: 'ha' },
-          description: 'Moderate livestock grazing on moorland',
-          ratePerUnitGbp: 53,
-          sssiConsentRequired: true,
-          heferRequired: false
-        }
-      ]
-    }
+    const parcelSize = 23.3424
     const requestBody = {
       parcelIds: ['SD6743-8083'],
       fields: ['actions', 'size', 'actions.sssiConsentRequired', 'actions.heferRequired'],
@@ -477,43 +446,20 @@ describe('parcels', () => {
         path: PARCELS_PATH,
         body: requestBody,
         status: 200,
-        responseBody: parcelsWithActionAvailability(parcelWithConsentExample.size.value),
+        responseBody: parcelsWithActionAvailability(parcelSize),
         responseBodyHasMatchers: true
       },
       async (mockserver) => {
         const response = await postToLandGrantsApi(PARCELS_PATH, requestBody, mockserver.url)
 
-        expect(response.parcels[0].size.value).toBe(parcelWithConsentExample.size.value)
+        expect(response.parcels[0].size.value).toBe(parcelSize)
         expectActionAvailability(response)
       }
     )
   })
 
   it('returns HTTP 200 with guidance and availability always included on each action', async () => {
-    const parcelWithMetadataExample = {
-      parcelId: 'SD6743',
-      sheetId: '8083',
-      size: { value: 23.3424, unit: 'ha' },
-      actions: [
-        {
-          code: 'CLIG3',
-          availability: { value: 10.5, unit: 'ha', type: 'total' },
-          description: 'Manage grassland with very low nutrient inputs',
-          ratePerUnitGbp: 10.6,
-          ratePerAgreementPerYearGbp: 272,
-          guidanceUrl: string(
-            'https://www.gov.uk/find-funding-for-land-or-farms/clig3-manage-grassland-with-very-low-nutrient-inputs'
-          )
-        },
-        {
-          code: 'CSAM3',
-          availability: { value: 20.75, unit: 'ha', type: 'partial' },
-          description: 'Herbal leys',
-          ratePerUnitGbp: 224,
-          guidanceUrl: string('https://www.gov.uk/find-funding-for-land-or-farms/csam3-herbal-leys')
-        }
-      ]
-    }
+    const parcelSize = 23.3424
     const requestBody = {
       parcelIds: ['SD6743-8083'],
       fields: ['actions', 'size'],
@@ -527,7 +473,7 @@ describe('parcels', () => {
         path: PARCELS_PATH,
         body: requestBody,
         status: 200,
-        responseBody: parcelsWithActionAvailability(parcelWithMetadataExample.size.value),
+        responseBody: parcelsWithActionAvailability(parcelSize),
         responseBodyHasMatchers: true
       },
       async (mockserver) => {
@@ -542,32 +488,7 @@ describe('parcels', () => {
   })
 
   it('returns HTTP 200 and a list of parcels with actions and size', async () => {
-    const parcelWithActionsAndSizeExample = {
-      parcelId: 'SD6743',
-      sheetId: '8083',
-      size: { value: 23.3424, unit: 'ha' },
-      actions: [
-        {
-          code: 'CMOR1',
-          availability: { value: 10.5, unit: 'ha' },
-          description: 'Assess moorland and produce a written record',
-          ratePerUnitGbp: 10.6,
-          ratePerAgreementPerYearGbp: 272
-        },
-        {
-          code: 'UPL1',
-          availability: { value: 20.75, unit: 'ha' },
-          description: 'Moderate livestock grazing on moorland',
-          ratePerUnitGbp: 20
-        },
-        {
-          code: 'UPL2',
-          availability: { value: 15.25, unit: 'ha' },
-          description: 'Moderate livestock grazing on moorland',
-          ratePerUnitGbp: 53
-        }
-      ]
-    }
+    const parcelSize = 23.3424
     const requestBody = {
       parcelIds: ['SD6743-8083'],
       fields: ['actions', 'size'],
@@ -582,44 +503,19 @@ describe('parcels', () => {
         path: PARCELS_PATH,
         body: requestBody,
         status: 200,
-        responseBody: parcelsWithActionAvailability(parcelWithActionsAndSizeExample.size.value),
+        responseBody: parcelsWithActionAvailability(parcelSize),
         responseBodyHasMatchers: true
       },
       async (mockserver) => {
         const response = await postToLandGrantsApi(PARCELS_PATH, requestBody, mockserver.url)
-        expect(response.parcels[0].size.value).toBe(parcelWithActionsAndSizeExample.size.value)
+        expect(response.parcels[0].size.value).toBe(parcelSize)
         expectActionAvailability(response)
       }
     )
   })
 
   it('returns HTTP 200 with availability recomputed against a non-empty plannedActions selection', async () => {
-    const parcelWithRecomputedAreaExample = {
-      parcelId: 'SD6743',
-      sheetId: '8083',
-      size: { value: 4.5341, unit: 'ha' },
-      actions: [
-        {
-          code: 'CMOR1',
-          availability: { value: 4.5341, unit: 'ha' },
-          description: 'Assess moorland and produce a written record',
-          ratePerUnitGbp: 10.6,
-          ratePerAgreementPerYearGbp: 272
-        },
-        {
-          code: 'UPL1',
-          availability: { value: 4.5341, unit: 'ha' },
-          description: 'Moderate livestock grazing on moorland',
-          ratePerUnitGbp: 20
-        },
-        {
-          code: 'UPL2',
-          availability: { value: 4.5341, unit: 'ha' },
-          description: 'Moderate livestock grazing on moorland',
-          ratePerUnitGbp: 53
-        }
-      ]
-    }
+    const parcelSize = 4.5341
     const requestBody = {
       parcelIds: ['SD6743-8083'],
       fields: ['actions', 'size'],
@@ -634,12 +530,12 @@ describe('parcels', () => {
         path: PARCELS_PATH,
         body: requestBody,
         status: 200,
-        responseBody: parcelsWithActionAvailability(parcelWithRecomputedAreaExample.size.value),
+        responseBody: parcelsWithActionAvailability(parcelSize),
         responseBodyHasMatchers: true
       },
       async (mockserver) => {
         const response = await postToLandGrantsApi(PARCELS_PATH, requestBody, mockserver.url)
-        expect(response.parcels[0].size.value).toBe(parcelWithRecomputedAreaExample.size.value)
+        expect(response.parcels[0].size.value).toBe(parcelSize)
         expectActionAvailability(response)
       }
     )
