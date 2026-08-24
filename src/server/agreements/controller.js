@@ -60,6 +60,7 @@ function buildProxyHeaders(token, request) {
   const sub = (typeof crn === 'string' && crn !== '') || typeof crn === 'number' ? String(crn) : undefined
   const source = 'defra'
   const jwtSecret = config.get('agreements.jwtSecret')
+  const audience = /** @type {string[]} */ (config.get('agreements.jwtAudience'))
   const grantApplicationContext = /** @type {{ grantCode?: string, clientRef?: string } | null} */ (
     request.yar?.get(YarKeys.GRANT_APPLICATION_CONTEXT)
   )
@@ -68,7 +69,7 @@ function buildProxyHeaders(token, request) {
       {
         ...(sub === undefined ? {} : { sub }),
         iss: /** @type {string} */ (config.get('agreements.jwtIssuer')),
-        aud: /** @type {string} */ (/** @type {unknown} */ (config.get('agreements.jwtAudience'))),
+        aud: /** @type {string} */ (/** @type {unknown} */ (audience)),
         sbi: /** @type {string | number} */ (sbi).toString(),
         grantCode: grantApplicationContext?.grantCode,
         clientRef: grantApplicationContext?.clientRef,
