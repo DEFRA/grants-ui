@@ -35,6 +35,10 @@ const PARCEL_8083 = { sheetId: 'SD6743', parcelId: '8083' }
 const HAS_8083 = { parcels: [PARCEL_8083] }
 const HAS_NO_PARCELS = { parcels: [] }
 const HAS_5677 = { parcels: [{ sheetId: 'SD7861', parcelId: '5677' }] }
+const UNRESTRICTED_COUNT_ACTION = {
+  code: 'WBD1',
+  availability: { unit: 'count', value: null }
+}
 
 function createProvider() {
   return new PactV3({
@@ -411,7 +415,8 @@ describe('parcels', () => {
           ratePerUnitGbp: 53,
           sssiConsentRequired: true,
           heferRequired: false
-        }
+        },
+        UNRESTRICTED_COUNT_ACTION
       ]
     }
     const requestBody = {
@@ -459,7 +464,8 @@ describe('parcels', () => {
           description: 'Herbal leys',
           ratePerUnitGbp: 224,
           guidanceUrl: string('https://www.gov.uk/find-funding-for-land-or-farms/csam3-herbal-leys')
-        }
+        },
+        UNRESTRICTED_COUNT_ACTION
       ]
     }
     const requestBody = {
@@ -518,7 +524,8 @@ describe('parcels', () => {
           availability: { value: 15.25, unit: 'ha' },
           description: 'Moderate livestock grazing on moorland',
           ratePerUnitGbp: 53
-        }
+        },
+        UNRESTRICTED_COUNT_ACTION
       ]
     }
     const requestBody = {
@@ -568,7 +575,8 @@ describe('parcels', () => {
           availability: { value: 4.5341, unit: 'ha' },
           description: 'Moderate livestock grazing on moorland',
           ratePerUnitGbp: 53
-        }
+        },
+        UNRESTRICTED_COUNT_ACTION
       ]
     }
     const requestBody = {
