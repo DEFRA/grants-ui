@@ -16,7 +16,7 @@ vi.mock('~/src/server/common/helpers/retry.js', () => ({
   retry: (operation) => operation()
 }))
 
-const { like, eachLike, nullValue, number, string } = MatchersV3
+const { boolean, like, eachLike, nullValue, number, string } = MatchersV3
 const userContext = { defraIdToken: 'defra-id-access-token', sbi: '123456789' }
 const makeLandGrantsHeaders = () => ({
   'Content-Type': 'application/json',
@@ -38,27 +38,31 @@ const HAS_5677 = { parcels: [{ sheetId: 'SD7861', parcelId: '5677' }] }
 const actionWithLimitedAvailability = like({
   code: string('CLIG3'),
   description: string('Manage grassland with very low nutrient inputs'),
-  guidanceUrl: string(
-    'https://www.gov.uk/find-funding-for-land-or-farms/clig3-manage-grassland-with-very-low-nutrient-inputs'
-  ),
   ratePerUnitGbp: number(151),
   availability: { unit: string('ha'), value: number(10.5) }
 })
 const actionWithUnrestrictedAvailability = like({
   code: string('WBD1'),
   description: string('Manage ponds'),
-  guidanceUrl: string('https://www.gov.uk/find-funding-for-land-or-farms/wbd1-manage-ponds'),
   ratePerUnitGbp: number(257),
   availability: { unit: string('count'), value: nullValue() }
 })
+const actionWithConsentInformation = like({
+  sssiConsentRequired: boolean(false),
+  heferRequired: boolean(true)
+})
 
-const parcelsWithActionAvailability = (sizeValue) => ({
+const parcelsWithActionAvailability = (sizeValue, ...additionalActionVariants) => ({
   message: 'success',
   parcels: eachLike({
     parcelId: string('SD6743'),
     sheetId: string('8083'),
     size: { unit: string('ha'), value: number(sizeValue) },
-    actions: arrayContaining(actionWithLimitedAvailability, actionWithUnrestrictedAvailability)
+    actions: arrayContaining(
+      actionWithLimitedAvailability,
+      actionWithUnrestrictedAvailability,
+      ...additionalActionVariants
+    )
   })
 })
 
@@ -68,12 +72,21 @@ const expectActionAvailability = (response) => {
   expect(actions).toEqual(
     expect.arrayContaining([
       expect.objectContaining({
-        availability: expect.objectContaining({ unit: 'ha', value: expect.any(Number) }),
-        guidanceUrl: expect.any(String)
+        availability: expect.objectContaining({ unit: 'ha', value: expect.any(Number) })
       }),
       expect.objectContaining({
-        availability: { unit: 'count', value: null },
-        guidanceUrl: expect.any(String)
+        availability: { unit: 'count', value: null }
+      })
+    ])
+  )
+}
+
+const expectConsentInformation = (response) => {
+  expect(response.parcels[0].actions).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        sssiConsentRequired: expect.any(Boolean),
+        heferRequired: expect.any(Boolean)
       })
     ])
   )
@@ -446,7 +459,7 @@ describe('parcels', () => {
         path: PARCELS_PATH,
         body: requestBody,
         status: 200,
-        responseBody: parcelsWithActionAvailability(parcelSize),
+        responseBody: parcelsWithActionAvailability(parcelSize, actionWithConsentInformation),
         responseBodyHasMatchers: true
       },
       async (mockserver) => {
@@ -454,11 +467,12 @@ describe('parcels', () => {
 
         expect(response.parcels[0].size.value).toBe(parcelSize)
         expectActionAvailability(response)
+        expectConsentInformation(response)
       }
     )
   })
 
-  it('returns HTTP 200 with guidance and availability always included on each action', async () => {
+  it('returns HTTP 200 with numeric and unrestricted availability variants', async () => {
     const parcelSize = 23.3424
     const requestBody = {
       parcelIds: ['SD6743-8083'],
@@ -469,7 +483,8 @@ describe('parcels', () => {
     await pactInteraction(
       {
         given: HAS_8083,
-        receiving: 'a v2 request for a single parcel with actions and size, expecting guidance and availability',
+        receiving:
+          'a v2 request for a single parcel with actions and size, expecting numeric and unrestricted availability',
         path: PARCELS_PATH,
         body: requestBody,
         status: 200,
