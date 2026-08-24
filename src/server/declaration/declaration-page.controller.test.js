@@ -749,6 +749,66 @@ describe('DeclarationPageController', () => {
       )
     })
 
+    test.each([
+      ['no current claim', { claims: [] }],
+      ['no claims array at all', {}],
+      [
+        'a missing total eligible area',
+        { claims: [{ claimNumber: 'REF123-C1', status: 'IN_PROGRESS', unit: 'ha', totalClaimAmountPence: 150000 }] }
+      ],
+      [
+        'a missing unit',
+        {
+          claims: [
+            { claimNumber: 'REF123-C1', status: 'IN_PROGRESS', totalEligibleArea: 24.95, totalClaimAmountPence: 150000 }
+          ]
+        }
+      ],
+      [
+        'a missing claim amount',
+        { claims: [{ claimNumber: 'REF123-C1', status: 'IN_PROGRESS', totalEligibleArea: 24.95, unit: 'ha' }] }
+      ]
+    ])('buildSubmissionData refuses to build a claim payload with %s', (_label, stateOverrides) => {
+      const context = { ...claimContext, state: { $$__referenceNumber: 'REF123', ...stateOverrides } }
+
+      expect(() => claimController.buildSubmissionData(claimRequest, context)).toThrow(
+        'Cannot submit a claim with missing eligible area, unit or claim amount'
+      )
+      expect(transformStateObjectToGasApplication).not.toHaveBeenCalled()
+    })
+
+    test('buildSubmissionData accepts a genuine zero claim amount', () => {
+      const context = {
+        ...claimContext,
+        state: {
+          $$__referenceNumber: 'REF123',
+          claims: [
+            {
+              claimNumber: 'REF123-C1',
+              status: 'IN_PROGRESS',
+              totalEligibleArea: 0,
+              unit: 'ha',
+              totalClaimAmountPence: 0
+            }
+          ]
+        }
+      }
+
+      expect(() => claimController.buildSubmissionData(claimRequest, context)).not.toThrow()
+    })
+
+    test('POST surfaces an incomplete claim as a submission failure without calling GAS', async () => {
+      const context = { ...claimContext, state: { $$__referenceNumber: 'REF123', claims: [] } }
+
+      const handler = claimController.makePostRouteHandler()
+
+      await expect(handler(claimRequest, context, mockH)).rejects.toThrow(
+        'Cannot submit a claim with missing eligible area, unit or claim amount'
+      )
+
+      expect(submitClaim).not.toHaveBeenCalled()
+    })
+
     test('the claim answer transformer forwards only the claim fields', () => {
       claimController.buildSubmissionData(claimRequest, claimContext)
 

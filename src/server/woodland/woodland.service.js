@@ -1,5 +1,6 @@
 import { config } from '~/src/config/config.js'
 import { validateWoodland, calculateWmp, calculateWmpByTotalArea } from '~/src/server/woodland/woodland.client.js'
+import { ExternalApiError } from '~/src/server/common/utils/errors/ExternalApiError.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
 
@@ -84,7 +85,16 @@ export async function calculateWmpPaymentByTotalArea({ totalAreaHa, applicationI
     LAND_GRANTS_API_URL,
     userContext
   )
-  const totalPence = payment?.agreementTotalPence ?? 0
+  const totalPence = payment?.agreementTotalPence
+
+  if (totalPence == null) {
+    throw new ExternalApiError({
+      message: 'Land Grants API returned no agreementTotalPence for the claim payment',
+      source: 'calculateWmpPaymentByTotalArea',
+      reason: 'invalid_response'
+    })
+  }
+
   return { payment, totalPence }
 }
 

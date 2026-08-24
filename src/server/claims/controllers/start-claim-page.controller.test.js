@@ -163,6 +163,66 @@ describe('StartClaimPageController', () => {
       )
     })
 
+    it('clears previously stored amounts and rethrows when the payment call fails', async () => {
+      const apiError = new Error('Land Grants API unavailable')
+      strategyCalculatePayment.mockRejectedValueOnce(apiError)
+
+      const controller = buildController({ paymentStrategy: 'woodland-claim' })
+      controller.setState = vi.fn().mockResolvedValue(undefined)
+
+      const request = {
+        method: 'GET',
+        auth: { credentials: { token: 'defra-id-token', sbi: '123456789', crn: '1234567890' } }
+      }
+      const context = {
+        state: {
+          $$__referenceNumber: 'WMP-A1B2-C3D4',
+          claims: [
+            {
+              claimNumber: 'WMP-A1B2-C3D4-C01',
+              status: 'IN_PROGRESS',
+              totalEligibleArea: 24.95,
+              unit: 'ha',
+              totalClaimAmountPence: 150000
+            }
+          ]
+        }
+      }
+
+      const handler = controller.makeGetRouteHandler()
+
+      await expect(handler(request, context, mockResponseToolkit)).rejects.toThrow('Land Grants API unavailable')
+
+      expect(controller.setState).toHaveBeenCalledTimes(1)
+      expect(controller.setState).toHaveBeenCalledWith(
+        request,
+        expect.objectContaining({
+          claims: [{ claimNumber: 'WMP-A1B2-C3D4-C01', status: 'IN_PROGRESS' }]
+        })
+      )
+      expect(mockResponseToolkit.view).not.toHaveBeenCalled()
+    })
+
+    it('does not create a claim when the payment call fails on a first visit', async () => {
+      strategyCalculatePayment.mockRejectedValueOnce(new Error('Land Grants API unavailable'))
+
+      const controller = buildController({ paymentStrategy: 'woodland-claim' })
+      controller.setState = vi.fn().mockResolvedValue(undefined)
+
+      const request = {
+        method: 'GET',
+        auth: { credentials: { token: 'defra-id-token', sbi: '123456789', crn: '1234567890' } }
+      }
+
+      const handler = controller.makeGetRouteHandler()
+
+      await expect(
+        handler(request, { state: { $$__referenceNumber: 'WMP-A1B2-C3D4' } }, mockResponseToolkit)
+      ).rejects.toThrow('Land Grants API unavailable')
+
+      expect(controller.setState).not.toHaveBeenCalled()
+    })
+
     it('should calculate the claim payment and inject the returned amount into the view', async () => {
       strategyCalculatePayment.mockResolvedValueOnce({ payment: {}, totalPence: 425000, totalPayment: '£4,250.00' })
 
@@ -384,6 +444,55 @@ describe('StartClaimPageController', () => {
       controller.setState = vi.fn()
 
       await controller.persistCurrentClaim(mockRequest, { state: {} }, {})
+
+      expect(controller.setState).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('clearCurrentClaimAmounts', () => {
+    const storedClaimState = () => ({
+      state: {
+        $$__referenceNumber: 'WMP-A1B2-C3D4',
+        claims: [
+          {
+            claimNumber: 'WMP-A1B2-C3D4-C01',
+            status: 'IN_PROGRESS',
+            totalEligibleArea: 24.95,
+            unit: 'ha',
+            totalClaimAmountPence: 150000
+          }
+        ]
+      }
+    })
+
+    it('strips the stored amounts while keeping the claim number and status', async () => {
+      const controller = buildController({})
+      controller.setState = vi.fn().mockResolvedValue(undefined)
+
+      await controller.clearCurrentClaimAmounts(mockRequest, storedClaimState())
+
+      expect(controller.setState).toHaveBeenCalledWith(
+        mockRequest,
+        expect.objectContaining({
+          claims: [{ claimNumber: 'WMP-A1B2-C3D4-C01', status: 'IN_PROGRESS' }]
+        })
+      )
+    })
+
+    it('does not create a claim when none exists yet', async () => {
+      const controller = buildController({})
+      controller.setState = vi.fn()
+
+      await controller.clearCurrentClaimAmounts(mockRequest, { state: { $$__referenceNumber: 'WMP-A1B2-C3D4' } })
+
+      expect(controller.setState).not.toHaveBeenCalled()
+    })
+
+    it('does nothing when there is no application reference number in state', async () => {
+      const controller = buildController({})
+      controller.setState = vi.fn()
+
+      await controller.clearCurrentClaimAmounts(mockRequest, { state: {} })
 
       expect(controller.setState).not.toHaveBeenCalled()
     })

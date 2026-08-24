@@ -104,11 +104,11 @@ describe('claim-state', () => {
       expect(claims).toHaveLength(2)
     })
 
-    test('keeps stored amounts when the refreshed values are omitted', () => {
+    test('clears stored amounts when the refreshed values are omitted', () => {
       const state = {
         claims: [
           {
-            claimNumber: 'WMP-A1B2-C3D4-C0001',
+            claimNumber: 'WMP-A1B2-C3D4-C01',
             status: ClaimStatus.IN_PROGRESS,
             totalEligibleArea: 24.95,
             unit: 'ha',
@@ -119,9 +119,72 @@ describe('claim-state', () => {
 
       const { currentClaim } = upsertCurrentClaim(state, { referenceNumber: 'WMP-A1B2-C3D4' })
 
-      expect(currentClaim.totalClaimAmountPence).toBe(150000)
-      expect(currentClaim.totalEligibleArea).toBe(24.95)
-      expect(currentClaim.unit).toBe('ha')
+      expect(currentClaim).toEqual({
+        claimNumber: 'WMP-A1B2-C3D4-C01',
+        status: ClaimStatus.IN_PROGRESS
+      })
+    })
+
+    test('never leaves a mix of stale and refreshed amounts on a partial refresh', () => {
+      const state = {
+        claims: [
+          {
+            claimNumber: 'WMP-A1B2-C3D4-C01',
+            status: ClaimStatus.IN_PROGRESS,
+            totalEligibleArea: 24.95,
+            unit: 'ha',
+            totalClaimAmountPence: 150000
+          }
+        ]
+      }
+
+      const { currentClaim } = upsertCurrentClaim(state, {
+        referenceNumber: 'WMP-A1B2-C3D4',
+        totalEligibleArea: 30.5,
+        unit: 'ha'
+      })
+
+      expect(currentClaim).toEqual({
+        claimNumber: 'WMP-A1B2-C3D4-C01',
+        status: ClaimStatus.IN_PROGRESS,
+        totalEligibleArea: 30.5,
+        unit: 'ha'
+      })
+      expect(currentClaim).not.toHaveProperty('totalClaimAmountPence')
+    })
+
+    test('omits amounts entirely when a new claim is created without them', () => {
+      const { currentClaim } = upsertCurrentClaim({}, { referenceNumber: 'WMP-A1B2-C3D4' })
+
+      expect(currentClaim).toEqual({
+        claimNumber: 'WMP-A1B2-C3D4-C01',
+        status: ClaimStatus.IN_PROGRESS
+      })
+    })
+
+    test('preserves the claim number, status and submittedAt across a refresh', () => {
+      const state = {
+        claims: [
+          {
+            claimNumber: 'WMP-A1B2-C3D4-C01',
+            status: ClaimStatus.IN_PROGRESS,
+            submittedAt: '2025-01-01T00:00:00.000Z',
+            totalClaimAmountPence: 150000
+          }
+        ]
+      }
+
+      const { currentClaim } = upsertCurrentClaim(state, {
+        referenceNumber: 'WMP-A1B2-C3D4',
+        totalClaimAmountPence: 160000
+      })
+
+      expect(currentClaim).toEqual({
+        claimNumber: 'WMP-A1B2-C3D4-C01',
+        status: ClaimStatus.IN_PROGRESS,
+        submittedAt: '2025-01-01T00:00:00.000Z',
+        totalClaimAmountPence: 160000
+      })
     })
 
     test('refreshes amounts on the existing current claim instead of creating a new one', () => {
@@ -187,11 +250,11 @@ describe('claim-state', () => {
     })
 
     test('leaves every claim untouched when no claim number matches', () => {
-      const state = { claims: [{ claimNumber: 'WMP-A1B2-C3D4-C0001', status: ClaimStatus.IN_PROGRESS }] }
+      const state = { claims: [{ claimNumber: 'WMP-A1B2-C3D4-C01', status: ClaimStatus.IN_PROGRESS }] }
 
-      const result = markClaimSubmitted(state, 'WMP-A1B2-C3D4-C0999', '2025-01-01T00:00:00.000Z')
+      const result = markClaimSubmitted(state, 'WMP-A1B2-C3D4-C99', '2025-01-01T00:00:00.000Z')
 
-      expect(result).toEqual([{ claimNumber: 'WMP-A1B2-C3D4-C0001', status: ClaimStatus.IN_PROGRESS }])
+      expect(result).toEqual([{ claimNumber: 'WMP-A1B2-C3D4-C01', status: ClaimStatus.IN_PROGRESS }])
     })
 
     test('does not mutate the original state claims', () => {
