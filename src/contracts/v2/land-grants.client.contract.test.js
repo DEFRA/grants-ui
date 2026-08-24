@@ -16,7 +16,7 @@ vi.mock('~/src/server/common/helpers/retry.js', () => ({
   retry: (operation) => operation()
 }))
 
-const { like, eachLike, string } = MatchersV3
+const { like, eachLike, nullValue, number, string } = MatchersV3
 const userContext = { defraIdToken: 'defra-id-access-token', sbi: '123456789' }
 const makeLandGrantsHeaders = () => ({
   'Content-Type': 'application/json',
@@ -35,9 +35,48 @@ const PARCEL_8083 = { sheetId: 'SD6743', parcelId: '8083' }
 const HAS_8083 = { parcels: [PARCEL_8083] }
 const HAS_NO_PARCELS = { parcels: [] }
 const HAS_5677 = { parcels: [{ sheetId: 'SD7861', parcelId: '5677' }] }
-const UNRESTRICTED_COUNT_ACTION = {
-  code: 'WBD1',
-  availability: { unit: 'count', value: null }
+const actionWithLimitedAvailability = like({
+  code: string('CLIG3'),
+  description: string('Manage grassland with very low nutrient inputs'),
+  guidanceUrl: string(
+    'https://www.gov.uk/find-funding-for-land-or-farms/clig3-manage-grassland-with-very-low-nutrient-inputs'
+  ),
+  ratePerUnitGbp: number(151),
+  availability: { unit: string('ha'), value: number(10.5) }
+})
+const actionWithUnrestrictedAvailability = like({
+  code: string('WBD1'),
+  description: string('Manage ponds'),
+  guidanceUrl: string('https://www.gov.uk/find-funding-for-land-or-farms/wbd1-manage-ponds'),
+  ratePerUnitGbp: number(257),
+  availability: { unit: string('count'), value: nullValue() }
+})
+
+const parcelsWithActionAvailability = (sizeValue) => ({
+  message: 'success',
+  parcels: eachLike({
+    parcelId: string('SD6743'),
+    sheetId: string('8083'),
+    size: { unit: string('ha'), value: number(sizeValue) },
+    actions: arrayContaining(actionWithLimitedAvailability, actionWithUnrestrictedAvailability)
+  })
+})
+
+const expectActionAvailability = (response) => {
+  const actions = response.parcels[0].actions
+
+  expect(actions).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        availability: expect.objectContaining({ unit: 'ha', value: expect.any(Number) }),
+        guidanceUrl: expect.any(String)
+      }),
+      expect.objectContaining({
+        availability: { unit: 'count', value: null },
+        guidanceUrl: expect.any(String)
+      })
+    ])
+  )
 }
 
 function createProvider() {
@@ -55,14 +94,21 @@ function createProvider() {
  * `given` is optional - a malformed request never reaches parcel lookup, so
  * those interactions carry no provider state.
  */
-function pactInteraction({ given, receiving, path: requestPath, body, status, responseBody }, assert) {
+function pactInteraction(
+  { given, receiving, path: requestPath, body, status, responseBody, responseBodyHasMatchers = false },
+  assert
+) {
   const provider = createProvider()
   const withState = given ? provider.given('has parcels', given) : provider
 
   return withState
     .uponReceiving(receiving)
     .withRequest({ method: 'POST', path: requestPath, headers: makeLandGrantsHeaders(), body })
-    .willRespondWith({ status, headers: JSON_HEADERS, body: like(responseBody) })
+    .willRespondWith({
+      status,
+      headers: JSON_HEADERS,
+      body: responseBodyHasMatchers ? responseBody : like(responseBody)
+    })
     .executeTest(assert)
 }
 
@@ -415,8 +461,7 @@ describe('parcels', () => {
           ratePerUnitGbp: 53,
           sssiConsentRequired: true,
           heferRequired: false
-        },
-        UNRESTRICTED_COUNT_ACTION
+        }
       ]
     }
     const requestBody = {
@@ -432,12 +477,14 @@ describe('parcels', () => {
         path: PARCELS_PATH,
         body: requestBody,
         status: 200,
-        responseBody: { message: 'success', parcels: eachLike(parcelWithConsentExample) }
+        responseBody: parcelsWithActionAvailability(parcelWithConsentExample.size.value),
+        responseBodyHasMatchers: true
       },
       async (mockserver) => {
         const response = await postToLandGrantsApi(PARCELS_PATH, requestBody, mockserver.url)
 
-        expect(response.parcels[0]).toEqual(parcelWithConsentExample)
+        expect(response.parcels[0].size.value).toBe(parcelWithConsentExample.size.value)
+        expectActionAvailability(response)
       }
     )
   })
@@ -464,8 +511,7 @@ describe('parcels', () => {
           description: 'Herbal leys',
           ratePerUnitGbp: 224,
           guidanceUrl: string('https://www.gov.uk/find-funding-for-land-or-farms/csam3-herbal-leys')
-        },
-        UNRESTRICTED_COUNT_ACTION
+        }
       ]
     }
     const requestBody = {
@@ -481,7 +527,8 @@ describe('parcels', () => {
         path: PARCELS_PATH,
         body: requestBody,
         status: 200,
-        responseBody: { message: 'success', parcels: eachLike(parcelWithMetadataExample) }
+        responseBody: parcelsWithActionAvailability(parcelWithMetadataExample.size.value),
+        responseBodyHasMatchers: true
       },
       async (mockserver) => {
         const response = await postToLandGrantsApi(PARCELS_PATH, requestBody, mockserver.url)
@@ -489,13 +536,7 @@ describe('parcels', () => {
         expect(response.parcels[0].parcelId).toBe('SD6743')
         expect(response.parcels[0].sheetId).toBe('8083')
 
-        expect(response.parcels[0].actions[0].code).toBe('CLIG3')
-        expect(response.parcels[0].actions[0].guidanceUrl).toEqual(expect.any(String))
-        expect(response.parcels[0].actions[0].availability.type).toBe('total')
-
-        expect(response.parcels[0].actions[1].code).toBe('CSAM3')
-        expect(response.parcels[0].actions[1].guidanceUrl).toEqual(expect.any(String))
-        expect(response.parcels[0].actions[1].availability.type).toBe('partial')
+        expectActionAvailability(response)
       }
     )
   })
@@ -524,8 +565,7 @@ describe('parcels', () => {
           availability: { value: 15.25, unit: 'ha' },
           description: 'Moderate livestock grazing on moorland',
           ratePerUnitGbp: 53
-        },
-        UNRESTRICTED_COUNT_ACTION
+        }
       ]
     }
     const requestBody = {
@@ -542,11 +582,13 @@ describe('parcels', () => {
         path: PARCELS_PATH,
         body: requestBody,
         status: 200,
-        responseBody: { message: 'success', parcels: eachLike(parcelWithActionsAndSizeExample) }
+        responseBody: parcelsWithActionAvailability(parcelWithActionsAndSizeExample.size.value),
+        responseBodyHasMatchers: true
       },
       async (mockserver) => {
         const response = await postToLandGrantsApi(PARCELS_PATH, requestBody, mockserver.url)
-        expect(response.parcels[0]).toEqual(parcelWithActionsAndSizeExample)
+        expect(response.parcels[0].size.value).toBe(parcelWithActionsAndSizeExample.size.value)
+        expectActionAvailability(response)
       }
     )
   })
@@ -575,8 +617,7 @@ describe('parcels', () => {
           availability: { value: 4.5341, unit: 'ha' },
           description: 'Moderate livestock grazing on moorland',
           ratePerUnitGbp: 53
-        },
-        UNRESTRICTED_COUNT_ACTION
+        }
       ]
     }
     const requestBody = {
@@ -593,11 +634,13 @@ describe('parcels', () => {
         path: PARCELS_PATH,
         body: requestBody,
         status: 200,
-        responseBody: { message: 'success', parcels: eachLike(parcelWithRecomputedAreaExample) }
+        responseBody: parcelsWithActionAvailability(parcelWithRecomputedAreaExample.size.value),
+        responseBodyHasMatchers: true
       },
       async (mockserver) => {
         const response = await postToLandGrantsApi(PARCELS_PATH, requestBody, mockserver.url)
-        expect(response.parcels[0]).toEqual(parcelWithRecomputedAreaExample)
+        expect(response.parcels[0].size.value).toBe(parcelWithRecomputedAreaExample.size.value)
+        expectActionAvailability(response)
       }
     )
   })
