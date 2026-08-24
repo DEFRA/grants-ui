@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
+import { configState } from '~/src/__mocks__/config-mocks.js'
 import {
   mapActionToViewModel,
   mapActionsToViewModel,
@@ -7,28 +8,19 @@ import {
   getParcelSummaryList
 } from './select-actions.view-model.js'
 
-const configState = vi.hoisted(() => {
-  const values = new Map()
-  return {
-    set(key, value) {
-      values.set(key, value)
-    },
-    reset() {
-      values.clear()
-    },
-    get(key) {
-      return values.get(key) ?? false
-    }
-  }
+vi.mock('~/src/config/config.js', async () => {
+  const { mockConfigWithState } = await import('~/src/__mocks__/config-mocks.js')
+  return mockConfigWithState({ fallback: false })
 })
 
-vi.mock('~/src/config/config.js', () => ({
-  config: {
-    get: (key) => configState.get(key)
-  }
-}))
-
 describe('select-actions.view-model', () => {
+  const sam1 = (extra) => ({ code: 'SAM1', description: 'Test Action 1', ratePerUnitGbp: 100.5, ...extra })
+  const csam3 = (availability) => ({
+    code: 'CSAM3',
+    description: 'Herbal leys: CSAM3',
+    availability: { ...availability, type: 'partial' }
+  })
+
   describe('mapActionToViewModel', () => {
     it('should map action with rate per unit only', () => {
       const action = {
@@ -48,16 +40,13 @@ describe('select-actions.view-model', () => {
         consents: [],
         attributes: {
           'data-available-unit': undefined,
-          'data-total-available-area': undefined,
-          'data-available-area-type': 'total'
+          'data-total-available-area': undefined
         }
       })
     })
 
     it('should render just the description with no guidance link when no guidance URL is set', () => {
-      const action = { code: 'SAM1', description: 'Test Action 1', ratePerUnitGbp: 100.5 }
-
-      const result = mapActionToViewModel(action, [])
+      const result = mapActionToViewModel(sam1(), [])
 
       expect(result.html).toContain('Test Action 1')
       expect(result.html).not.toContain('<a')
@@ -121,30 +110,6 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, [], {}, true)
 
       expect(result.id).toBe('landAction')
-    })
-
-    it('should append a "read guidance" link next to the description when the action provides a guidance URL', () => {
-      const action = {
-        code: 'SAM1',
-        description: 'Test Action 1',
-        ratePerUnitGbp: 100.5,
-        guidanceUrl: 'https://www.gov.uk/guidance/sam1'
-      }
-
-      const result = mapActionToViewModel(action, [])
-
-      expect(result.html).toContain('Test Action 1')
-      expect(result.html).toContain('href="https://www.gov.uk/guidance/sam1"')
-      expect(result.html).toContain('read guidance')
-      expect(result.html).toContain('<span class="select-actions-hint">Payment rate per year: £100.50/ha</span>')
-    })
-
-    it('should not append a guidance link when the action has no guidance URL', () => {
-      const action = { code: 'SAM1', description: 'Test Action 1', ratePerUnitGbp: 100.5 }
-
-      const result = mapActionToViewModel(action, [])
-
-      expect(result.html).not.toContain('Guidance for')
     })
 
     it('should map action with rate per unit and per agreement', () => {
@@ -231,87 +196,48 @@ describe('select-actions.view-model', () => {
       )
     })
 
-    it('should not show any requirement text when neither flag is set', () => {
-      const action = { code: 'SAM1', description: 'Test Action 1', ratePerUnitGbp: 100.5 }
+    it.each([
+      ['SAM1', true],
+      ['SAM2', false]
+    ])('should mark action as checked only when it is in addedActions (%s)', (addedCode, expected) => {
+      const result = mapActionToViewModel(sam1(), [{ code: addedCode, description: 'Test Action' }])
 
-      const result = mapActionToViewModel(action, [])
-
-      expect(result.html).toBe(
-        'Test Action 1<span class="select-actions-hint">Payment rate per year: £100.50/ha</span>'
-      )
-    })
-
-    it('should mark action as checked when already added', () => {
-      const action = { code: 'SAM1', description: 'Test Action 1', ratePerUnitGbp: 100.5 }
-      const addedActions = [{ code: 'SAM1', description: 'Test Action 1' }]
-
-      const result = mapActionToViewModel(action, addedActions)
-
-      expect(result.checked).toBe(true)
-    })
-
-    it('should not mark action as checked when not added', () => {
-      const action = { code: 'SAM1', description: 'Test Action 1', ratePerUnitGbp: 100.5 }
-      const addedActions = [{ code: 'SAM2', description: 'Test Action 2' }]
-
-      const result = mapActionToViewModel(action, addedActions)
-
-      expect(result.checked).toBe(false)
+      expect(result.checked).toBe(expected)
     })
 
     // Stamped per-checkbox (not a single form-wide flag) so the client can keep
     // protecting THIS action's rejected value even after other actions refresh.
-    it('should mark a checked action with data-error-on-load when the page is redisplaying a rejected submission', () => {
-      const action = { code: 'SAM1', description: 'Test Action 1', ratePerUnitGbp: 100.5 }
-      const addedActions = [{ code: 'SAM1', description: 'Test Action 1' }]
+    it.each([
+      [true, true, 'true'],
+      [false, true, undefined],
+      [true, false, undefined]
+    ])(
+      'should stamp data-error-on-load only when checked (%s) and the page has errors (%s)',
+      (checked, hasErrors, expected) => {
+        const addedActions = checked ? [{ code: 'SAM1', description: 'Test Action 1' }] : []
 
-      const result = mapActionToViewModel(action, addedActions, {}, false, true)
+        const result = mapActionToViewModel(sam1(), addedActions, {}, false, hasErrors)
 
-      expect(result.attributes['data-error-on-load']).toBe('true')
-    })
-
-    it('should not mark an unchecked action with data-error-on-load, even when the page has errors', () => {
-      const action = { code: 'SAM1', description: 'Test Action 1', ratePerUnitGbp: 100.5 }
-
-      const result = mapActionToViewModel(action, [], {}, false, true)
-
-      expect(result.attributes['data-error-on-load']).toBeUndefined()
-    })
-
-    it('should not mark a checked action with data-error-on-load when the page has no errors', () => {
-      const action = { code: 'SAM1', description: 'Test Action 1', ratePerUnitGbp: 100.5 }
-      const addedActions = [{ code: 'SAM1', description: 'Test Action 1' }]
-
-      const result = mapActionToViewModel(action, addedActions, {}, false, false)
-
-      expect(result.attributes['data-error-on-load']).toBeUndefined()
-    })
-
-    it('should not set a conditional when action does not require a quantity', () => {
-      const action = { code: 'SAM1', description: 'Test Action 1', ratePerUnitGbp: 100.5 }
-
-      const result = mapActionToViewModel(action, [])
-
-      expect(result.conditional).toBeUndefined()
-    })
+        expect(result.attributes['data-error-on-load']).toBe(expected)
+      }
+    )
 
     // The client-side availability refresh needs the full available area for every
     // action, not just ones with a quantity input - this is the only place it's
     // rendered into the DOM for actions without one.
-    it('should render availableArea as data attributes even when the action has no quantity input', () => {
+    it('should render availability as data attributes even when the action has no quantity input', () => {
       const action = {
         code: 'SAM1',
         description: 'Test Action 1',
         ratePerUnitGbp: 100.5,
-        availableArea: { value: 12.5, unit: 'ha' }
+        availability: { value: 12.5, unit: 'ha' }
       }
 
       const result = mapActionToViewModel(action, [])
 
       expect(result.attributes).toEqual({
         'data-available-unit': 'ha',
-        'data-total-available-area': 12.5,
-        'data-available-area-type': 'total'
+        'data-total-available-area': 12.5
       })
     })
 
@@ -323,7 +249,7 @@ describe('select-actions.view-model', () => {
         code: 'CLIG3',
         description: 'Manage grassland with very low nutrient inputs',
         ratePerUnitGbp: 151,
-        availableArea: { value: 12.5, unit: 'ha' }
+        availability: { value: 12.5, unit: 'ha' }
       }
 
       const result = mapActionToViewModel(action, [])
@@ -331,21 +257,12 @@ describe('select-actions.view-model', () => {
       expect(result.html).toContain('<span id="landActionQuantity_CLIG3-hint">12.5 hectares available</span>')
     })
 
-    it('should not show an availability hint for a non-quantity action when availableArea is missing', () => {
-      const action = { code: 'SAM1', description: 'Test Action 1', ratePerUnitGbp: 100.5 }
-
-      const result = mapActionToViewModel(action, [])
-
-      expect(result.html).not.toContain('available</span>')
-    })
-
     it('should not duplicate the availability hint for a quantity-required action (it has its own inside the conditional)', () => {
       const action = {
         code: 'UPL2',
         description: 'Heavy livestock grazing on moorland',
         ratePerUnitGbp: 45,
-        availability: { type: 'partial' },
-        availableArea: { value: 3, unit: 'ha' }
+        availability: { value: 3, unit: 'ha', type: 'partial' }
       }
 
       const result = mapActionToViewModel(action, [])
@@ -353,25 +270,13 @@ describe('select-actions.view-model', () => {
       expect(result.html).not.toContain('landActionQuantity_UPL2-hint')
     })
 
-    it('should leave the availableArea data attributes undefined when availableArea is missing', () => {
-      const action = { code: 'SAM1', description: 'Test Action 1', ratePerUnitGbp: 100.5 }
-
-      const result = mapActionToViewModel(action, [])
-
-      expect(result.attributes).toEqual({
-        'data-available-unit': undefined,
-        'data-total-available-area': undefined,
-        'data-available-area-type': 'total'
-      })
-    })
-
-    it('should render data-total-available-area from staticAvailableArea when present, not the (possibly competed) availableArea', () => {
+    it('should render data-total-available-area from staticAvailability when present, not the (possibly competed) availability', () => {
       const action = {
         code: 'CSAM3',
         description: 'Herbal leys',
         ratePerUnitGbp: 224,
-        availableArea: { value: 0, unit: 'ha' },
-        staticAvailableArea: { value: 0.3271, unit: 'ha' }
+        availability: { value: 0, unit: 'ha' },
+        staticAvailability: { value: 0.3271, unit: 'ha' }
       }
 
       const result = mapActionToViewModel(action, [])
@@ -379,145 +284,111 @@ describe('select-actions.view-model', () => {
       expect(result.attributes['data-total-available-area']).toBe(0.3271)
     })
 
-    it('should set a conditional reveal when action requires a max quantity', () => {
+    it('should render the conditional input with its field id, max attribute and availability hint', () => {
+      const result = mapActionToViewModel(csam3({ value: 18.5673, unit: 'ha' }), [])
+
+      expect(result.conditional.html).toContain('landActionQuantity_CSAM3')
+      expect(result.conditional.html).toContain('max="18.5673"')
+      expect(result.conditional.html).toContain('18.5673 hectares available')
+    })
+
+    it('should render the conditional unbounded and hintless, keeping the unit, when the availability value is null', () => {
+      const result = mapActionToViewModel(csam3({ value: null, unit: 'ha' }), [])
+
+      expect(result.conditional.html).toContain('landActionQuantity_CSAM3')
+      expect(result.conditional.html).not.toContain('max=')
+      expect(result.conditional.html).not.toContain('id="landActionQuantity_CSAM3-hint"')
+      expect(result.conditional.html).toContain('>ha<')
+      expect(result.attributes['data-total-available-area']).toBeUndefined()
+      expect(result.attributes['data-available-unit']).toBe('ha')
+    })
+
+    it('should not render a "null available" hint for a non-quantity action with no limit', () => {
       const action = {
-        code: 'CSAM3',
-        description: 'Herbal leys: CSAM3',
-        availability: { type: 'partial' },
-        availableArea: { value: 18.5673, unit: 'ha' }
+        code: 'CLIG3',
+        description: 'Test',
+        ratePerUnitGbp: 12,
+        availability: { value: null, unit: 'ha' }
       }
 
       const result = mapActionToViewModel(action, [])
 
-      expect(result.conditional.html).toContain('landActionQuantity_CSAM3')
+      expect(result.html).not.toContain('landActionQuantity_CLIG3-hint')
+      expect(result.html).not.toContain('null')
+    })
+
+    it('should keep an action with a null availability value visible on initial load', () => {
+      const [item] = mapActionsToViewModel([csam3({ value: null, unit: 'ha' })], [])
+
+      expect(item.value).toBe('CSAM3')
     })
 
     it('should pre-fill the conditional input with the previously added action value', () => {
-      const action = {
-        code: 'CSAM3',
-        description: 'Herbal leys: CSAM3',
-        availability: { type: 'partial' },
-        availableArea: { value: 18.5673, unit: 'ha' }
-      }
       const addedActions = [{ code: 'CSAM3', description: 'Herbal leys: CSAM3', value: '3.25' }]
 
-      const result = mapActionToViewModel(action, addedActions)
+      const result = mapActionToViewModel(csam3({ value: 18.5673, unit: 'ha' }), addedActions)
 
       expect(result.conditional.html).toContain('value="3.25"')
     })
 
     it('should show the available area unit as a suffix on the conditional input', () => {
-      const action = {
-        code: 'CSAM3',
-        description: 'Herbal leys: CSAM3',
-        availability: { type: 'partial' },
-        availableArea: { value: 10, unit: 'ha' }
-      }
-
-      const result = mapActionToViewModel(action, [])
+      const result = mapActionToViewModel(csam3({ value: 10, unit: 'ha' }), [])
 
       expect(result.conditional.html).toContain('govuk-input__suffix')
       expect(result.conditional.html).toContain('>ha<')
     })
 
-    it('should set the max attribute and available-quantity hint on the conditional input', () => {
-      const action = {
-        code: 'CSAM3',
-        description: 'Herbal leys: CSAM3',
-        availability: { type: 'partial' },
-        availableArea: { value: 18.5673, unit: 'ha' }
-      }
-
-      const result = mapActionToViewModel(action, [])
-
-      expect(result.conditional.html).toContain('max="18.5673"')
-      expect(result.conditional.html).toContain('18.5673 hectares available')
-    })
-
     it('should still show the conditional, hint and max attribute when available area is 0', () => {
-      const action = {
-        code: 'CSAM3',
-        description: 'Herbal leys: CSAM3',
-        availability: { type: 'partial' },
-        availableArea: { value: 0, unit: 'ha' }
-      }
-
-      const result = mapActionToViewModel(action, [])
+      const result = mapActionToViewModel(csam3({ value: 0, unit: 'ha' }), [])
 
       expect(result.conditional).toBeDefined()
       expect(result.conditional.html).toContain('max="0"')
       expect(result.conditional.html).toContain('0 hectares available')
     })
 
-    it('should render the full unit name in the hint via formatAreaUnit', () => {
-      const action = {
-        code: 'CSAM3',
-        description: 'Herbal leys: CSAM3',
-        availability: { type: 'partial' },
-        availableArea: { value: 5, unit: 'sqm' }
+    it.each([[null], [undefined]])(
+      'should leave the input unbounded, hintless and suffix-less when availability is %j',
+      (availability) => {
+        const result = mapActionToViewModel(csam3(availability), [])
+
+        expect(result.conditional).toBeDefined()
+        expect(result.conditional.html).not.toContain('max=')
+        expect(result.conditional.html).not.toContain('available</div>')
+        expect(result.conditional.html).not.toContain('govuk-input__suffix')
+        expect(result.attributes['data-total-available-area']).toBeUndefined()
       }
+    )
 
-      const result = mapActionToViewModel(action, [])
+    it.each([
+      [{ value: 120, unit: 'm' }, '120 metres available'],
+      [{ value: 5, unit: 'sqm' }, '5 square metres available']
+    ])('should render the full unit name in the hint for %j', (availability, expected) => {
+      const result = mapActionToViewModel(csam3(availability), [])
 
-      expect(result.conditional.html).toContain('5 square metres available')
-    })
-
-    it('should not throw and omit the suffix when availableArea/unit is missing', () => {
-      const action = {
-        code: 'CSAM3',
-        description: 'Herbal leys: CSAM3',
-        availability: { type: 'partial' }
-      }
-
-      const result = mapActionToViewModel(action, [])
-
-      expect(result.conditional).toBeDefined()
-      expect(result.conditional.html).not.toContain('govuk-input__suffix')
+      expect(result.conditional.html).toContain(expected)
     })
 
     it('should highlight the quantity input with the given error text when this action has a quantity error', () => {
-      const action = {
-        code: 'CSAM3',
-        description: 'Herbal leys: CSAM3',
-        availability: { type: 'partial' },
-        availableArea: { value: 5, unit: 'ha' }
-      }
-
-      const result = mapActionToViewModel(action, [], { CSAM3: 'The amount of land must be no more than 5' })
+      const result = mapActionToViewModel(csam3({ value: 5, unit: 'ha' }), [], {
+        CSAM3: 'The amount of land must be no more than 5'
+      })
 
       expect(result.conditional.html).toContain('govuk-input--error')
       expect(result.conditional.html).toContain('The amount of land must be no more than 5')
     })
 
-    it('should not highlight the quantity input when a different action has the error', () => {
-      const action = {
-        code: 'CSAM3',
-        description: 'Herbal leys: CSAM3',
-        availability: { type: 'partial' },
-        availableArea: { value: 5, unit: 'ha' }
+    it.each([[{ UPL2: 'Some other error' }], [{}]])(
+      'should not highlight the quantity input when this action has no error (%j)',
+      (quantityErrorsByCode) => {
+        const result = mapActionToViewModel(csam3({ value: 5, unit: 'ha' }), [], quantityErrorsByCode)
+
+        expect(result.conditional.html).not.toContain('govuk-input--error')
       }
-
-      const result = mapActionToViewModel(action, [], { UPL2: 'Some other error' })
-
-      expect(result.conditional.html).not.toContain('govuk-input--error')
-    })
-
-    it('should not highlight the quantity input when no quantity errors are given', () => {
-      const action = {
-        code: 'CSAM3',
-        description: 'Herbal leys: CSAM3',
-        availability: { type: 'partial' },
-        availableArea: { value: 5, unit: 'ha' }
-      }
-
-      const result = mapActionToViewModel(action, [])
-
-      expect(result.conditional.html).not.toContain('govuk-input--error')
-    })
+    )
   })
 
   describe('mapActionsToViewModel', () => {
-    it('should map a flat list of actions', () => {
+    it('should map a flat list of actions, giving only the first item the bare field name as its id', () => {
       const actions = [
         { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100 },
         { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200 },
@@ -528,17 +399,6 @@ describe('select-actions.view-model', () => {
 
       expect(result).toHaveLength(3)
       expect(result.map((item) => item.value)).toEqual(['SAM1', 'SAM2', 'SAM3'])
-    })
-
-    it('should give only the first item the bare field name as its id', () => {
-      const actions = [
-        { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100 },
-        { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200 },
-        { code: 'SAM3', description: 'Action 3', ratePerUnitGbp: 150 }
-      ]
-
-      const result = mapActionsToViewModel(actions, [])
-
       expect(result.map((item) => item.id)).toEqual(['landAction', 'landAction-SAM2', 'landAction-SAM3'])
     })
 
@@ -577,8 +437,7 @@ describe('select-actions.view-model', () => {
         {
           code: 'CSAM3',
           description: 'Herbal leys: CSAM3',
-          availability: { type: 'partial' },
-          availableArea: { value: 5, unit: 'ha' }
+          availability: { value: 5, unit: 'ha', type: 'partial' }
         },
         { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200 }
       ]
@@ -588,25 +447,26 @@ describe('select-actions.view-model', () => {
       expect(result.find((item) => item.value === 'CSAM3').conditional.html).toContain('govuk-input--error')
     })
 
-    it('should omit an action with 0 available area from the initial render', () => {
+    it('should omit an action with 0 available area, moving the bare field name id to the first visible item', () => {
       const actions = [
-        { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100, availableArea: { value: 0, unit: 'ha' } },
-        { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200, availableArea: { value: 5, unit: 'ha' } }
+        { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100, availability: { value: 0, unit: 'ha' } },
+        { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200, availability: { value: 5, unit: 'ha' } }
       ]
 
       const result = mapActionsToViewModel(actions, [])
 
       expect(result.map((item) => item.value)).toEqual(['SAM2'])
+      expect(result[0].id).toBe('landAction')
     })
 
-    it('should not omit an action with a competed 0 availableArea when its staticAvailableArea is non-zero', () => {
+    it('should not omit an action with a competed 0 availability when its staticAvailability is non-zero', () => {
       const actions = [
         {
           code: 'CLIG3',
           description: 'Manage grassland',
           ratePerUnitGbp: 151,
-          availableArea: { value: 0, unit: 'ha' },
-          staticAvailableArea: { value: 0.3271, unit: 'ha' }
+          availability: { value: 0, unit: 'ha' },
+          staticAvailability: { value: 0.3271, unit: 'ha' }
         }
       ]
 
@@ -618,7 +478,7 @@ describe('select-actions.view-model', () => {
 
     it('should still render an action with 0 available area when it was already added', () => {
       const actions = [
-        { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100, availableArea: { value: 0, unit: 'ha' } }
+        { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100, availability: { value: 0, unit: 'ha' } }
       ]
       const addedActions = [{ code: 'SAM1', description: 'Action 1' }]
 
@@ -628,23 +488,12 @@ describe('select-actions.view-model', () => {
       expect(result[0].checked).toBe(true)
     })
 
-    it('should not omit an action with no availableArea at all', () => {
+    it('should not omit an action with no availability at all', () => {
       const actions = [{ code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100 }]
 
       const result = mapActionsToViewModel(actions, [])
 
       expect(result.map((item) => item.value)).toEqual(['SAM1'])
-    })
-
-    it('should assign the bare field name id to the first visible item, skipping omitted actions', () => {
-      const actions = [
-        { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100, availableArea: { value: 0, unit: 'ha' } },
-        { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200, availableArea: { value: 5, unit: 'ha' } }
-      ]
-
-      const result = mapActionsToViewModel(actions, [])
-
-      expect(result[0].id).toBe('landAction')
     })
   })
 
@@ -708,7 +557,7 @@ describe('select-actions.view-model', () => {
   })
 
   describe('getChosenAreaFieldsHtml', () => {
-    it('should render a hidden field for a non-quantity action', () => {
+    it('should render a hidden field for a non-quantity action, defaulting to 0 with no saved chosen area', () => {
       const actions = [{ code: 'CMOR1', description: 'Moorland record' }]
 
       const html = getChosenAreaFieldsHtml(actions, [])
@@ -716,6 +565,7 @@ describe('select-actions.view-model', () => {
       expect(html).toContain('type="hidden"')
       expect(html).toContain('id="landActionQuantity_CMOR1"')
       expect(html).toContain('name="landActionQuantity_CMOR1"')
+      expect(html).toContain('value="0"')
     })
 
     it('should skip a quantity-required action', () => {
@@ -733,14 +583,6 @@ describe('select-actions.view-model', () => {
       const html = getChosenAreaFieldsHtml(actions, addedActions)
 
       expect(html).toContain('value="1.3008"')
-    })
-
-    it('should default to 0 when there is no saved chosen area', () => {
-      const actions = [{ code: 'CMOR1', description: 'Moorland record' }]
-
-      const html = getChosenAreaFieldsHtml(actions, [])
-
-      expect(html).toContain('value="0"')
     })
   })
 

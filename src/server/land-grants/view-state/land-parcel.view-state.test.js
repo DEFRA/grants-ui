@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
+import { configState } from '~/src/__mocks__/config-mocks.js'
 import {
   buildNewState,
   addActionsToExistingState,
@@ -12,26 +13,10 @@ import {
   mergeRecomputedAvailability
 } from './land-parcel.view-state.js'
 
-const configState = vi.hoisted(() => {
-  const values = new Map()
-  return {
-    set(key, value) {
-      values.set(key, value)
-    },
-    reset() {
-      values.clear()
-    },
-    get(key) {
-      return values.get(key) ?? false
-    }
-  }
+vi.mock('~/src/config/config.js', async () => {
+  const { mockConfigWithState } = await import('~/src/__mocks__/config-mocks.js')
+  return mockConfigWithState({ fallback: false })
 })
-
-vi.mock('~/src/config/config.js', () => ({
-  config: {
-    get: (key) => configState.get(key)
-  }
-}))
 
 describe('land-parcel-state.manager', () => {
   describe('buildNewState', () => {
@@ -99,8 +84,8 @@ describe('land-parcel-state.manager', () => {
       {
         name: 'Group 1',
         actions: [
-          { code: 'SAM1', description: 'Action 1', availableArea: { value: '10', unit: 'ha' } },
-          { code: 'SAM2', description: 'Action 2', availableArea: { value: '5', unit: 'ha' } }
+          { code: 'SAM1', description: 'Action 1', availability: { value: '10', unit: 'ha' } },
+          { code: 'SAM2', description: 'Action 2', availability: { value: '5', unit: 'ha' } }
         ]
       }
     ]
@@ -133,7 +118,7 @@ describe('land-parcel-state.manager', () => {
               code: 'CMOR1',
               description: 'Moorland Assessment',
               sssiConsentRequired: true,
-              availableArea: { value: '10', unit: 'ha' }
+              availability: { value: '10', unit: 'ha' }
             }
           ]
         }
@@ -163,7 +148,7 @@ describe('land-parcel-state.manager', () => {
               code: 'SAM1',
               description: 'Action 1',
               sssiConsentRequired: false,
-              availableArea: { value: '10', unit: 'ha' }
+              availability: { value: '10', unit: 'ha' }
             }
           ]
         }
@@ -192,7 +177,7 @@ describe('land-parcel-state.manager', () => {
       expect(result).toEqual({})
     })
 
-    it('should handle actions without availableArea', () => {
+    it('should handle actions without availability', () => {
       const actionsWithoutArea = [
         {
           name: 'Group 1',
@@ -234,8 +219,7 @@ describe('land-parcel-state.manager', () => {
             {
               code: 'CSAM3',
               description: 'Herbal leys: CSAM3',
-              availability: { type: 'partial' },
-              availableArea: { value: 18.5673, unit: 'ha' }
+              availability: { value: 18.5673, unit: 'ha', type: 'partial' }
             }
           ]
         }
@@ -281,8 +265,7 @@ describe('land-parcel-state.manager', () => {
               {
                 code: 'CSAM3',
                 description: 'Herbal leys: CSAM3',
-                availability: { type: 'partial' },
-                availableArea: { value: 0, unit: 'ha' }
+                availability: { value: 0, unit: 'ha', type: 'partial' }
               }
             ]
           }
@@ -310,8 +293,8 @@ describe('land-parcel-state.manager', () => {
 
   describe('addSelectedActionsToState', () => {
     const actions = [
-      { code: 'SAM1', description: 'Action 1', availableArea: { value: '10', unit: 'ha' } },
-      { code: 'SAM2', description: 'Action 2', availableArea: { value: '5', unit: 'ha' } }
+      { code: 'SAM1', description: 'Action 1', availability: { value: '10', unit: 'ha' } },
+      { code: 'SAM2', description: 'Action 2', availability: { value: '5', unit: 'ha' } }
     ]
 
     it('should create state from a single selected action (payload value is a string)', () => {
@@ -364,8 +347,7 @@ describe('land-parcel-state.manager', () => {
         {
           code: 'CSAM3',
           description: 'Herbal leys: CSAM3',
-          availability: { type: 'partial' },
-          availableArea: { value: 18.5673, unit: 'ha' }
+          availability: { value: 18.5673, unit: 'ha', type: 'partial' }
         }
       ]
       const state = {}
@@ -385,8 +367,7 @@ describe('land-parcel-state.manager', () => {
         {
           code: 'CSAM3',
           description: 'Herbal leys: CSAM3',
-          availability: { type: 'partial' },
-          availableArea: { value: 18.5673, unit: 'ha' }
+          availability: { value: 18.5673, unit: 'ha', type: 'partial' }
         }
       ]
       const state = {}
@@ -406,8 +387,7 @@ describe('land-parcel-state.manager', () => {
         {
           code: 'CSAM3',
           description: 'Herbal leys: CSAM3',
-          availability: { type: 'partial' },
-          availableArea: { value: 18.5673, unit: 'ha' }
+          availability: { value: 18.5673, unit: 'ha', type: 'partial' }
         }
       ]
       const state = {}
@@ -421,12 +401,11 @@ describe('land-parcel-state.manager', () => {
 
     it('should still save a non-quantity action alongside a skipped quantity-required one', () => {
       const actionsWithQuantity = [
-        { code: 'SAM1', description: 'Action 1', availableArea: { value: '10', unit: 'ha' } },
+        { code: 'SAM1', description: 'Action 1', availability: { value: '10', unit: 'ha' } },
         {
           code: 'CSAM3',
           description: 'Herbal leys: CSAM3',
-          availability: { type: 'partial' },
-          availableArea: { value: 18.5673, unit: 'ha' }
+          availability: { value: 18.5673, unit: 'ha', type: 'partial' }
         }
       ]
       const state = {}
@@ -476,32 +455,12 @@ describe('land-parcel-state.manager', () => {
       expect(result).toEqual([{ code: 'CSAM3', description: 'Herbal leys: CSAM3', value: '3.25' }])
     })
 
-    it('should return empty array when parcel has no actions', () => {
-      const state = {
-        landParcels: {
-          'AB1234-5678': { actionsObj: {} }
-        }
-      }
-
-      const result = getAddedActionsForStateParcel(state, 'AB1234-5678')
-
-      expect(result).toEqual([])
-    })
-
-    it('should return empty array when parcel does not exist', () => {
-      const state = { landParcels: {} }
-
-      const result = getAddedActionsForStateParcel(state, 'AB1234-5678')
-
-      expect(result).toEqual([])
-    })
-
-    it('should return empty array when state has no landParcels', () => {
-      const state = {}
-
-      const result = getAddedActionsForStateParcel(state, 'AB1234-5678')
-
-      expect(result).toEqual([])
+    it.each([
+      ['parcel has no actions', { landParcels: { 'AB1234-5678': { actionsObj: {} } } }],
+      ['parcel does not exist', { landParcels: {} }],
+      ['state has no landParcels', {}]
+    ])('should return empty array when %s', (_case, state) => {
+      expect(getAddedActionsForStateParcel(state, 'AB1234-5678')).toEqual([])
     })
   })
 
@@ -616,26 +575,12 @@ describe('land-parcel-state.manager', () => {
   })
 
   describe('hasLandParcels', () => {
-    it('should return true when parcels exist', () => {
-      const state = {
-        landParcels: {
-          'AB1234-5678': { actionsObj: {} }
-        }
-      }
-
-      expect(hasLandParcels(state)).toBe(true)
-    })
-
-    it('should return false when landParcels is empty', () => {
-      const state = { landParcels: {} }
-
-      expect(hasLandParcels(state)).toBe(false)
-    })
-
-    it('should return false when landParcels does not exist', () => {
-      const state = {}
-
-      expect(hasLandParcels(state)).toBe(false)
+    it.each([
+      ['parcels exist', { landParcels: { 'AB1234-5678': { actionsObj: {} } } }, true],
+      ['landParcels is empty', { landParcels: {} }, false],
+      ['landParcels does not exist', {}, false]
+    ])('should return %s -> %s', (_case, state, expected) => {
+      expect(hasLandParcels(state)).toBe(expected)
     })
   })
 
@@ -654,78 +599,80 @@ describe('land-parcel-state.manager', () => {
       expect(result).toEqual({ description: 'Action 1', value: '10' })
     })
 
-    it('should return null when action does not exist', () => {
-      const landParcels = {
-        'AB1234-5678': {
-          actionsObj: { SAM1: {} }
-        }
-      }
-
-      const result = findActionInfoFromState(landParcels, 'AB1234-5678', 'NON_EXISTENT')
-
-      expect(result).toBeNull()
-    })
-
-    it('should return null when parcel does not exist', () => {
-      const landParcels = {}
-
-      const result = findActionInfoFromState(landParcels, 'AB1234-5678', 'SAM1')
-
-      expect(result).toBeNull()
+    it.each([
+      ['action does not exist', { 'AB1234-5678': { actionsObj: { SAM1: {} } } }, 'NON_EXISTENT'],
+      ['parcel does not exist', {}, 'SAM1']
+    ])('should return null when %s', (_case, landParcels, code) => {
+      expect(findActionInfoFromState(landParcels, 'AB1234-5678', code)).toBeNull()
     })
   })
 
   describe('mergeRecomputedAvailability', () => {
-    it('should overwrite availableArea from the recomputed match, leaving availability untouched', () => {
+    it('should overwrite availability from the recomputed match, preserving its static type', () => {
       const actions = [
         {
           code: 'CSAM3',
           description: 'Herbal leys',
-          availableArea: { value: 0.3271, unit: 'ha' },
-          availability: { type: 'partial' }
+          availability: { value: 0.3271, unit: 'ha', type: 'partial' }
         }
       ]
-      const recomputed = [{ code: 'CSAM3', availableArea: { value: 0, unit: 'ha' } }]
+      const recomputed = [{ code: 'CSAM3', availability: { value: 0, unit: 'ha' } }]
 
       const result = mergeRecomputedAvailability(actions, recomputed)
 
-      expect(result[0].availableArea).toEqual({ value: 0, unit: 'ha' })
-      expect(result[0].availability).toEqual({ type: 'partial' })
+      expect(result[0].availability).toEqual({ value: 0, unit: 'ha', type: 'partial' })
+      expect(result[0].staticAvailability.type).toBe('partial')
     })
 
-    it("should preserve the action's original availableArea as staticAvailableArea", () => {
-      const actions = [{ code: 'CSAM3', description: 'Herbal leys', availableArea: { value: 0.3271, unit: 'ha' } }]
-      const recomputed = [{ code: 'CSAM3', availableArea: { value: 0, unit: 'ha' } }]
-
-      const result = mergeRecomputedAvailability(actions, recomputed)
-
-      expect(result[0].staticAvailableArea).toEqual({ value: 0.3271, unit: 'ha' })
-      expect(result[0].availableArea).toEqual({ value: 0, unit: 'ha' })
-    })
-
-    it('should not overwrite an already-set staticAvailableArea on a second recompute pass', () => {
+    it('should overwrite availability with a null value when the recompute reports no restriction', () => {
       const actions = [
         {
           code: 'CSAM3',
           description: 'Herbal leys',
-          availableArea: { value: 0, unit: 'ha' },
-          staticAvailableArea: { value: 0.3271, unit: 'ha' }
+          availability: { value: 0.3271, unit: 'ha', type: 'partial' }
         }
       ]
-      const recomputed = [{ code: 'CSAM3', availableArea: { value: 0.1, unit: 'ha' } }]
+      const recomputed = [{ code: 'CSAM3', availability: { value: null, unit: 'ha' } }]
 
       const result = mergeRecomputedAvailability(actions, recomputed)
 
-      expect(result[0].staticAvailableArea).toEqual({ value: 0.3271, unit: 'ha' })
+      expect(result[0].availability).toEqual({ value: null, unit: 'ha', type: 'partial' })
+      expect(result[0].staticAvailability).toEqual({ value: 0.3271, unit: 'ha', type: 'partial' })
+    })
+
+    it("should preserve the action's original availability as staticAvailability", () => {
+      const actions = [{ code: 'CSAM3', description: 'Herbal leys', availability: { value: 0.3271, unit: 'ha' } }]
+      const recomputed = [{ code: 'CSAM3', availability: { value: 0, unit: 'ha' } }]
+
+      const result = mergeRecomputedAvailability(actions, recomputed)
+
+      expect(result[0].staticAvailability).toEqual({ value: 0.3271, unit: 'ha' })
+      expect(result[0].availability).toEqual({ value: 0, unit: 'ha' })
+    })
+
+    it('should not overwrite an already-set staticAvailability on a second recompute pass', () => {
+      const actions = [
+        {
+          code: 'CSAM3',
+          description: 'Herbal leys',
+          availability: { value: 0, unit: 'ha' },
+          staticAvailability: { value: 0.3271, unit: 'ha' }
+        }
+      ]
+      const recomputed = [{ code: 'CSAM3', availability: { value: 0.1, unit: 'ha' } }]
+
+      const result = mergeRecomputedAvailability(actions, recomputed)
+
+      expect(result[0].staticAvailability).toEqual({ value: 0.3271, unit: 'ha' })
     })
 
     it('should keep the original action unchanged when no recomputed match exists for its code', () => {
-      const actions = [{ code: 'CSAM3', description: 'Herbal leys', availableArea: { value: 0.3271, unit: 'ha' } }]
+      const actions = [{ code: 'CSAM3', description: 'Herbal leys', availability: { value: 0.3271, unit: 'ha' } }]
 
       const result = mergeRecomputedAvailability(actions, [])
 
       expect(result[0]).toEqual(actions[0])
-      expect(result[0].staticAvailableArea).toBeUndefined()
+      expect(result[0].staticAvailability).toBeUndefined()
     })
   })
 

@@ -1,24 +1,21 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { vi } from 'vitest'
-import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 import { debug } from '~/src/server/common/helpers/logging/log.js'
-import { setupControllerMocks } from '~/src/__mocks__/controller-mocks.js'
 import { fetchParcels } from '~/src/server/land-grants/services/land-grants.service.js'
 import SelectLandParcelPageController from './select-land-parcel-page.controller.js'
+import {
+  PARCELS_WITH_SIZE,
+  USER_CONTEXT,
+  makeLandGrantsRequest,
+  makeViewToolkit,
+  mockFormatParcelImplementations,
+  stubControllerMethods
+} from '~/src/server/land-grants/test-helpers.js'
 
-vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () => ({
-  QuestionPageController: class {
-    getViewModel() {}
-
-    makeGetRouteHandler() {
-      return async (request, context, h) => h.view('select-land-parcel', this.getViewModel(request, context))
-    }
-
-    makePostRouteHandler() {
-      return async (request, context, h) => h.view('select-land-parcel', this.getViewModel(request, context))
-    }
-  }
-}))
+vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', async () => {
+  const { makeQuestionPageControllerMock } = await import('~/src/__mocks__')
+  return makeQuestionPageControllerMock('select-land-parcel')
+})
 
 vi.mock('~/src/server/task-list/task-list.helper.js', () => ({
   withTaskContext: (Base) => Base
@@ -37,26 +34,7 @@ vi.mock('~/src/server/land-grants/services/land-grants.service.js', () => ({
   fetchParcels: vi.fn()
 }))
 
-vi.mock('~/src/shared/format-parcel.js', () => ({
-  stringifyParcel: ({ parcelId, sheetId }) => `${sheetId}-${parcelId}`,
-  formatParcelReference: (parcel) => {
-    const [sheetId, parcelId] = typeof parcel === 'string' ? parcel.split('-') : [parcel.sheetId, parcel.parcelId]
-    return [sheetId, parcelId].filter((part) => part != null && part !== '').join(' ')
-  }
-}))
-
-const mockParcelsResponse = [
-  {
-    parcelId: '0155',
-    sheetId: 'SD7946',
-    area: { unit: 'ha', value: 4.0383 }
-  },
-  {
-    parcelId: '4509',
-    sheetId: 'SD7846',
-    area: { unit: 'sqm', value: 0.0633 }
-  }
-]
+vi.mock('~/src/shared/format-parcel.js')
 
 const controllerParcelsResponse = [
   {
@@ -74,36 +52,15 @@ const controllerParcelsResponse = [
 describe('SelectLandParcelPageController', () => {
   let controller
   let mockRequest
-  let mockResponseWithCode
   let mockContext
   let mockH
 
   const renderedViewMock = 'mock-rendered-view'
   const state = { landParcels: ['sheet123'] }
-
-  const setupRequest = () => ({
-    query: {},
-    logger: mockRequestLogger(),
-    auth: {
-      isAuthenticated: true,
-      credentials: {
-        token: 'defra-id-access-token',
-        sbi: '106284736',
-        crn: '1102838829',
-        name: 'John Doe',
-        organisationName: 'Farm 1',
-        role: 'admin',
-        sessionId: 'valid-session-id'
-      }
-    }
-  })
+  const post = () => controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
+  const get = () => controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
 
   const setupContext = (state = {}) => ({ state })
-
-  const setupH = () => ({
-    view: vi.fn().mockReturnValue(renderedViewMock),
-    response: vi.fn().mockReturnValue(mockResponseWithCode)
-  })
 
   beforeEach(() => {
     const mockModelForViewModel = {
@@ -124,24 +81,17 @@ describe('SelectLandParcelPageController', () => {
       def: { metadata: { tasklist: {} } },
       getSection: vi.fn()
     }
-    const mockPageDef = {}
-    controller = new SelectLandParcelPageController(mockModel, mockPageDef)
-    setupControllerMocks(controller, { proceed: 'next', nextPath: '/next-page' })
-    controller.performAuthCheck = vi.fn().mockResolvedValue(null)
-
-    fetchParcels.mockResolvedValue(mockParcelsResponse)
-
-    mockRequest = setupRequest()
-    mockContext = setupContext({
-      sbi: 117235001,
-      customerReference: 1100598138
+    controller = stubControllerMethods(new SelectLandParcelPageController(mockModel, {}), {
+      proceed: 'next',
+      nextPath: '/next-page'
     })
 
-    mockResponseWithCode = {
-      code: vi.fn().mockReturnValue('final-response')
-    }
+    mockFormatParcelImplementations()
+    fetchParcels.mockResolvedValue(PARCELS_WITH_SIZE)
 
-    mockH = setupH()
+    mockRequest = makeLandGrantsRequest()
+    mockContext = setupContext({ sbi: 117235001, customerReference: 1100598138 })
+    mockH = makeViewToolkit(renderedViewMock)
   })
 
   afterEach(vi.clearAllMocks)
@@ -163,12 +113,9 @@ describe('SelectLandParcelPageController', () => {
 
   describe('GET route handler', () => {
     it('gets parcels info and renders view', async () => {
-      const result = await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+      const result = await get()
 
-      expect(fetchParcels).toHaveBeenCalledWith(mockRequest, {
-        defraIdToken: 'defra-id-access-token',
-        sbi: '106284736'
-      })
+      expect(fetchParcels).toHaveBeenCalledWith(mockRequest, USER_CONTEXT)
       expect(mockH.view).toHaveBeenCalledWith(
         'select-land-parcel',
         expect.objectContaining({
@@ -179,10 +126,14 @@ describe('SelectLandParcelPageController', () => {
       expect(result).toBe(renderedViewMock)
     })
 
-    it('handles missing parcels info', async () => {
-      fetchParcels.mockRejectedValue(new Error('not found'))
+    it.each([
+      ['the fetch rejects', () => fetchParcels.mockRejectedValue(new Error('not found'))],
+      ['the fetch times out', () => fetchParcels.mockRejectedValue(new Error('Operation timed out after 30000ms'))],
+      ['no parcels come back', () => fetchParcels.mockResolvedValue([])]
+    ])('renders the parcel-information error when %s', async (_case, arrange) => {
+      arrange()
 
-      const result = await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+      const result = await get()
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-land-parcel',
@@ -198,7 +149,7 @@ describe('SelectLandParcelPageController', () => {
       const thrown = new Error('not found')
       fetchParcels.mockRejectedValue(thrown)
 
-      await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+      await get()
 
       const [logCode, messageOptions, loggedRequest] = debug.mock.calls[0]
       expect(logCode.level).toBe('error')
@@ -207,21 +158,6 @@ describe('SelectLandParcelPageController', () => {
       expect(messageOptions).toEqual({})
       expect(loggedRequest).toBe(mockRequest)
     })
-
-    it('handles empty parcels list info', async () => {
-      fetchParcels.mockResolvedValue([])
-
-      const result = await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
-
-      expect(mockH.view).toHaveBeenCalledWith(
-        'select-land-parcel',
-        expect.objectContaining({
-          pageTitle: 'Select Land Parcel',
-          errors: ['Unable to find parcel information, please try again later or contact the Rural Payments Agency.']
-        })
-      )
-      expect(result).toBe(renderedViewMock)
-    })
   })
 
   describe('POST route handler', () => {
@@ -229,7 +165,7 @@ describe('SelectLandParcelPageController', () => {
       mockRequest.payload = state
       mockContext = setupContext({ existing: 'value' })
 
-      const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
+      const result = await post()
 
       expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, [state.landParcels[0]])
       expect(controller.setState).not.toHaveBeenCalled()
@@ -237,23 +173,26 @@ describe('SelectLandParcelPageController', () => {
       expect(result).toBe('next')
     })
 
-    describe('when the user does not own the land parcel', () => {
-      it('should return unauthorized response when user does not own the selected land parcel', async () => {
-        mockRequest.payload = state
-        mockContext = setupContext({ existing: 'value' })
-        controller.performAuthCheck.mockResolvedValue('failed auth check')
+    it('should return the unauthorized response when the user does not own the selected land parcel', async () => {
+      mockRequest.payload = state
+      mockContext = setupContext({ existing: 'value' })
+      controller.performAuthCheck.mockResolvedValue('failed auth check')
 
-        const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
+      const result = await post()
 
-        expect(result).toEqual('failed auth check')
-      })
+      expect(result).toEqual('failed auth check')
     })
 
-    it('sets an error if selectedLandParcel is not defined', async () => {
-      mockRequest.payload = { action: 'validate' }
+    it.each([
+      ['no parcel was selected', { action: 'validate' }, {}],
+      ['the selected parcel is blank', { action: 'validate', landParcels: [''] }, {}],
+      ['only the query carries a parcel id', { action: 'validate' }, { parcelId: 'queryParcel' }]
+    ])('shows the "select a parcel" error on validate when %s', async (_case, payload, query) => {
+      mockRequest.payload = payload
+      mockRequest.query = query
       mockContext = setupContext({ existing: 'value' })
 
-      const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
+      const result = await post()
 
       expect(controller.setState).not.toHaveBeenCalled()
       expect(controller.proceed).not.toHaveBeenCalled()
@@ -264,40 +203,28 @@ describe('SelectLandParcelPageController', () => {
           errors: 'Select a land parcel'
         })
       )
-      expect(result).toBe('mock-rendered-view')
+      expect(result).toBe(renderedViewMock)
     })
 
-    it('handles missing selectedLandParcel in payload', async () => {
-      mockRequest.payload = {}
+    it.each([
+      ['the payload has no parcel', {}],
+      ['the payload is null', null]
+    ])('proceeds with an undefined parcel id when %s', async (_case, payload) => {
+      mockRequest.payload = payload
       mockContext = setupContext({})
 
-      const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
+      const result = await post()
 
       expect(controller.setState).not.toHaveBeenCalled()
       expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-page?parcelId=undefined')
       expect(result).toBe('next')
     })
 
-    it('should verify both action=validate AND selectedLandParcel conditions', async () => {
-      mockRequest.payload = { action: 'validate', landParcels: [''] }
-      mockContext = setupContext({ existing: 'value' })
-
-      const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
-
-      expect(mockH.view).toHaveBeenCalledWith(
-        'select-land-parcel',
-        expect.objectContaining({
-          errors: 'Select a land parcel'
-        })
-      )
-      expect(result).toBe('mock-rendered-view')
-    })
-
     it('should not show error when action is not validate even if selectedLandParcel missing', async () => {
       mockRequest.payload = { action: 'other', landParcels: [''] }
       mockContext = setupContext({})
 
-      await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
+      await post()
 
       expect(mockH.view).not.toHaveBeenCalledWith(
         'select-land-parcel',
@@ -308,37 +235,12 @@ describe('SelectLandParcelPageController', () => {
       expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-page?parcelId=')
     })
 
-    it('should handle payload being null', async () => {
-      mockRequest.payload = null
-      mockContext = setupContext({})
-
-      const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
-
-      expect(controller.setState).not.toHaveBeenCalled()
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-page?parcelId=undefined')
-      expect(result).toBe('next')
-    })
-
-    it('does not use query parcelId for validation', async () => {
-      mockRequest.query = { parcelId: 'queryParcel' }
-      mockRequest.payload = { action: 'validate' }
-
-      await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
-
-      expect(mockH.view).toHaveBeenCalledWith(
-        'select-land-parcel',
-        expect.objectContaining({
-          errors: 'Select a land parcel'
-        })
-      )
-    })
-
     it('should handle error when fetching parcels for validation error', async () => {
       mockRequest.payload = { action: 'validate' }
       mockContext = setupContext({ existing: 'value', landParcels: { 'SD7946-0155': { actionsObj: { ACTION1: {} } } } })
       fetchParcels.mockRejectedValue(new Error('Fetch error'))
 
-      const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
+      const result = await post()
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-land-parcel',
@@ -347,7 +249,7 @@ describe('SelectLandParcelPageController', () => {
           parcels: []
         })
       )
-      expect(result).toBe('mock-rendered-view')
+      expect(result).toBe(renderedViewMock)
     })
 
     it('logs the caught error at error level when validation re-fetch fails', async () => {
@@ -356,7 +258,7 @@ describe('SelectLandParcelPageController', () => {
       mockContext = setupContext({ existing: 'value', landParcels: { 'SD7946-0155': { actionsObj: { ACTION1: {} } } } })
       fetchParcels.mockRejectedValue(thrown)
 
-      await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
+      await post()
 
       const [logCode, messageOptions, loggedRequest] = debug.mock.calls[0]
       expect(logCode.level).toBe('error')
@@ -364,20 +266,6 @@ describe('SelectLandParcelPageController', () => {
       expect(logCode.messageFunc()).toBe('Error fetching parcels for validation error rendering')
       expect(messageOptions).toEqual({})
       expect(loggedRequest).toBe(mockRequest)
-    })
-
-    it('should handle timeout when fetching parcels gracefully', async () => {
-      fetchParcels.mockRejectedValue(new Error('Operation timed out after 30000ms'))
-
-      const result = await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
-
-      expect(mockH.view).toHaveBeenCalledWith(
-        'select-land-parcel',
-        expect.objectContaining({
-          errors: ['Unable to find parcel information, please try again later or contact the Rural Payments Agency.']
-        })
-      )
-      expect(result).toBe(renderedViewMock)
     })
 
     it('should correctly calculate actions count', async () => {
@@ -388,7 +276,7 @@ describe('SelectLandParcelPageController', () => {
         }
       })
 
-      await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
+      await post()
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-land-parcel',
@@ -410,7 +298,7 @@ describe('SelectLandParcelPageController', () => {
         }
       })
 
-      await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
+      await post()
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-land-parcel',

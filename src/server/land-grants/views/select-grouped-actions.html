@@ -91,7 +91,9 @@
                     html: consentHintHtml
                   }) }}
                 {% endif %}
-                <p class="govuk-body">Total available area: {{ group.totalAvailableArea.value }} {{ group.totalAvailableArea.unitFullName }}</p>
+                {% if group.totalAvailableArea.value != undefined %}
+                  <p class="govuk-body">Total available area: {{ group.totalAvailableArea.value }} {{ group.totalAvailableArea.unitFullName }}</p>
+                {% endif %}
               {% endset %}
 
               {% if group.actions.length == 1 %}
