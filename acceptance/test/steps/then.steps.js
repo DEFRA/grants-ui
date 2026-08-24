@@ -240,16 +240,8 @@ const expectFeedbackLink = async (page, selector, text, journey) => {
   expect(params.get('journey')).toEqual(journey)
 }
 
-Then('(the user )should see a phase banner feedback link', async function () {
-  await expectFeedbackLink(this.page, '.govuk-phase-banner a.govuk-link', 'feedback', 'application-inprogress')
-})
-
 Then('(the user )should see a phase banner feedback link with journey {string}', async function (journey) {
   await expectFeedbackLink(this.page, '.govuk-phase-banner a.govuk-link', 'feedback', journey)
-})
-
-Then('(the user )should see a confirmation page feedback link', async function () {
-  await expectFeedbackLink(this.page, 'a.govuk-link', 'Give feedback on this service', 'application-submitted')
 })
 
 Then('(the user )should see a confirmation page feedback link with journey {string}', async function (journey) {

@@ -76,7 +76,7 @@
   "overrides": {
     "fast-uri": "3.1.5",
     "js-yaml": "4.3.1",
-    "liquidjs": "10.27.1",
+    "liquidjs": "10.27.2",
     "serialize-javascript": "7.0.5",
     "shell-quote": "1.9.0",
     "sirv": "3.0.2",
