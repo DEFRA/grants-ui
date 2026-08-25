@@ -144,9 +144,6 @@ describe('ConfirmLandAndActionsPageController', () => {
       expect(result).toBe('rendered view')
     })
 
-    // The journey's page name is not the design heading, so this page owns the
-    // title on every render path - and the design uses the softer one only when
-    // a removal just emptied the application.
     test.each([
       [
         'priced',

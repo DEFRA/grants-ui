@@ -11,10 +11,6 @@ import { YarKeys } from '~/src/server/common/constants/session-keys.js'
 const CALCULATION_ERROR_MESSAGE =
   'Unable to get payment information, please try again later or contact the Rural Payments Agency.'
 
-// Owned by this page rather than the form definition, so the H1 and the browser
-// title always match the design regardless of the journey's page name. The
-// design uses the softer title only when a removal just emptied the
-// application; arriving with nothing added yet still reviews what is there.
 const PAGE_TITLE = 'Review land parcels and actions'
 const AFTER_REMOVAL_PAGE_TITLE = 'Your land and actions'
 

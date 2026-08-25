@@ -240,8 +240,6 @@ describe('select-actions.view-model', () => {
       })
     })
 
-    // Kept in sync live by the client, so it needs a
-    // stable id matching getActionQuantityFieldName.
     it('should show an availability hint for an action, with an id the client can find and update live', () => {
       const action = {
         code: 'CLIG3',
@@ -291,8 +289,6 @@ describe('select-actions.view-model', () => {
       expect(result.html).toContain('18.5673 hectares available')
     })
 
-    // The hint sits in the checkbox label, so it describes the checkbox only -
-    // the quantity input has to reference it explicitly to be announced with it.
     it('should point the quantity input at the availability hint that lives outside its panel', () => {
       const result = mapActionToViewModel(csam3({ value: 18.5673, unit: 'ha' }), [])
 

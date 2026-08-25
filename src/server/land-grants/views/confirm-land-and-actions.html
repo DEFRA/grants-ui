@@ -37,9 +37,6 @@
           {{ pageTitle }}
         </h1>
 
-        {# No parcels selected. Removing the last one says so explicitly, since the
-           user did have parcels a moment ago; otherwise nothing has been added yet.
-           Either way the parcel picker replaces the payment cards and submit button. #}
         {% if hasNoLandParcels %}
           {% if landParcelRemovalSuccessMessage %}
             <p class="govuk-body">You removed the last land parcel. You must add at least one land parcel to continue your application.</p>

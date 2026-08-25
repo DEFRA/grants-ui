@@ -294,7 +294,6 @@ describe('SelectActionsPageController', () => {
         'select-actions',
         expect.objectContaining({
           errors: [{ text: 'Select at least one action', href: '#landAction' }],
-          // Rendered inline above the checkbox group, not only in the summary.
           selectionErrorText: 'Select at least one action'
         })
       )

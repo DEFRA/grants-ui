@@ -86,8 +86,8 @@ function getStaticAvailability(action) {
 }
 
 /**
- * A whole-pound rate is shown without pence (£224/ha), anything else keeps both
- * decimal places (£100.50/ha).
+ * Whole-pound rates drop the pence (£224/ha). Anything else keeps two decimal
+ * places (£100.50/ha).
  * @param {number} [rate]
  * @returns {string}
  */
@@ -96,9 +96,9 @@ function formatRate(rate) {
 }
 
 /**
- * Builds the checkbox hint text: payment rate, consent requirement, and the
- * action's own availability. Kept in sync live by the client for every action
- * (see select-actions-page.js), quantity-required or not.
+ * Builds the checkbox hint: payment rate, consent requirement, and the action's
+ * availability. The client updates the availability text in place as selections
+ * change (see select-actions-page.js).
  * @param {Action} action
  * @returns {string}
  */
