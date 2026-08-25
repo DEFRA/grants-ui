@@ -28,7 +28,7 @@ function setupDom({ multiSelect = false } = {}) {
       <div id="selected-parcel-additional-requirements-row" hidden>
         <span id="selected-parcel-additional-requirements"></span>
       </div>
-      <span id="selected-parcel-additional-requirements-status" role="status"></span>
+      <output id="selected-parcel-additional-requirements-status"></output>
     </div>
   `
   const mapEl = document.createElement('parcel-map')

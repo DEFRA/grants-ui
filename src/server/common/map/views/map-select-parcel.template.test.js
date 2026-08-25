@@ -44,7 +44,7 @@ describe('map-select-parcel.html', () => {
     const details = /<div id="selected-parcel-details"[\s\S]*?<\/dl>([\s\S]*?)<\/div>/.exec(template)
 
     expect(details?.[1]).toContain(
-      '<span id="selected-parcel-additional-requirements-status" class="govuk-visually-hidden" role="status"></span>'
+      '<output id="selected-parcel-additional-requirements-status" class="govuk-visually-hidden"></output>'
     )
   })
 })

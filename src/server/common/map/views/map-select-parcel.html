@@ -100,8 +100,9 @@
           </dl>
           {# Outside the row above, so the asynchronous requirement text is
              announced once it lands rather than as part of revealing the
-             summary itself. #}
-          <span id="selected-parcel-additional-requirements-status" class="govuk-visually-hidden" role="status"></span>
+             summary itself. <output> carries an implicit status role that is
+             honoured more consistently than role="status" on a <span>. #}
+          <output id="selected-parcel-additional-requirements-status" class="govuk-visually-hidden"></output>
         </div>
 
         {{ govukButton({
