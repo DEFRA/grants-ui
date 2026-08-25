@@ -12,18 +12,16 @@ const schemas = {
   'example-grant-with-auth': require('../../schemas/example-grant-with-auth-submission.schema.json')
 }
 
-if (process.env.MOCKSERVER_HOST) {
-  Before(async function () {
-    const expectationId = await Gas.setDefaultStatusQuery404Response()
-    expectationIds.push(expectationId)
-  })
+Before(async function () {
+  const expectationId = await Gas.setDefaultStatusQuery404Response()
+  expectationIds.push(expectationId)
+})
 
-  After(async function () {
-    for (const expectationId of expectationIds.all) {
-      await Gas.clearExpectation(expectationId)
-    }
-  })
-}
+After(async function () {
+  for (const expectationId of expectationIds.all) {
+    await Gas.clearExpectation(expectationId)
+  }
+})
 
 Given(
   'the next application submitted to GAS for SBI {string} will return HTTP {int} {string} for {int} requests',
@@ -57,7 +55,7 @@ Then(
     }
 
     const request = await Gas.getApplicationSubmission(referenceNumbers.current)
-    expect(request).not.toBeNull()
+    expect(request).toBeDefined()
     expect(request.body.json.metadata.clientRef).toEqual(referenceNumbers.current.toLowerCase())
     expect(request.body.json.metadata.sbi).toEqual(sbi)
     expect(request.body.json.metadata.crn).toEqual(crn)
@@ -72,10 +70,10 @@ Then('the GAS submission should contain applicant business address', async funct
   }
 
   const request = await Gas.getApplicationSubmission(referenceNumbers.current)
-  expect(request).not.toBeNull()
+  expect(request).toBeDefined()
 
   const actualAddress = request.body.json.answers.applicant?.business?.address
-  expect(actualAddress).not.toBeNull()
+  expect(actualAddress).toBeDefined()
 
   for (const [field, expectedValue] of dataTable.raw()) {
     expect(actualAddress[field]).toEqual(expectedValue)
@@ -93,7 +91,7 @@ Then('the GAS submission should be valid against the {string} schema', async fun
   }
 
   const request = await Gas.getApplicationSubmission(referenceNumbers.current)
-  expect(request).not.toBeNull()
+  expect(request).toBeDefined()
 
   const ajv = new Ajv({ strict: false, formats: { 'date-time': true } })
   const validate = ajv.compile(schema)
@@ -102,6 +100,23 @@ Then('the GAS submission should be valid against the {string} schema', async fun
     throw new Error(`GAS submission answers failed schema validation:\n${JSON.stringify(validate.errors, null, 2)}`)
   }
 })
+
+Then(
+  'the claim {string} for CRN {string} and SBI {string} should be submitted to GAS',
+  async function (claimNumberSuffix, crn, sbi) {
+    if (!referenceNumbers.current) {
+      throw new Error('No reference number stored by earlier step')
+    }
+
+    const request = await Gas.getClaimSubmission(referenceNumbers.current)
+    expect(request).toBeDefined()
+    expect(request.body.json.metadata.clientRef).toEqual(referenceNumbers.current.toLowerCase())
+    expect(request.body.json.metadata.sbi).toEqual(sbi)
+    expect(request.body.json.metadata.crn).toEqual(crn)
+    expect(request.body.json.metadata.configVersion).toMatch(/^\d+\.\d+\.\d+$/)
+    expect(request.body.json.answers.claimNumber).toEqual(`${referenceNumbers.current}${claimNumberSuffix}`)
+  }
+)
 
 Then(
   'the reference number and previous reference number along with SBI {string} and CRN {string} should be submitted to GAS',
@@ -115,7 +130,7 @@ Then(
     }
 
     const request = await Gas.getApplicationSubmission(referenceNumbers.current)
-    expect(request).not.toBeNull()
+    expect(request).toBeDefined()
     expect(request.body.json.metadata.clientRef).toEqual(referenceNumbers.current.toLowerCase())
     expect(request.body.json.metadata.previousClientRef).toEqual(referenceNumbers.previous.toLowerCase())
     expect(request.body.json.metadata.sbi).toEqual(sbi)
