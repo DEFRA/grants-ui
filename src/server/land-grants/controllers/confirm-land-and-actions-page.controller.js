@@ -11,6 +11,13 @@ import { YarKeys } from '~/src/server/common/constants/session-keys.js'
 const CALCULATION_ERROR_MESSAGE =
   'Unable to get payment information, please try again later or contact the Rural Payments Agency.'
 
+// Owned by this page rather than the form definition, so the H1 and the browser
+// title always match the design regardless of the journey's page name. The
+// design uses the softer title only when a removal just emptied the
+// application; arriving with nothing added yet still reviews what is there.
+const PAGE_TITLE = 'Review land parcels and actions'
+const AFTER_REMOVAL_PAGE_TITLE = 'Your land and actions'
+
 // Must be one of the engine's FormAction values: the generic POST route
 // validates `action` against the engine's actionSchema and rejects anything
 // else with a 400 before this controller runs.
@@ -134,6 +141,7 @@ export default class ConfirmLandAndActionsPageController extends withTaskContext
 
         return h.view(viewName, {
           ...this.getViewModel(request, context),
+          pageTitle: PAGE_TITLE,
           ...confirmModel,
           hasCalculationError: false,
           landParcelRemovalSuccessMessage
@@ -151,6 +159,7 @@ export default class ConfirmLandAndActionsPageController extends withTaskContext
 
         return h.view(viewName, {
           ...this.getViewModel(request, context),
+          pageTitle: PAGE_TITLE,
           hasCalculationError: true,
           errors: [{ text: CALCULATION_ERROR_MESSAGE }],
           landParcelRemovalSuccessMessage,
@@ -185,6 +194,7 @@ export default class ConfirmLandAndActionsPageController extends withTaskContext
 
     return h.view(this.viewName, {
       ...this.getViewModel(request, context),
+      pageTitle: landParcelRemovalSuccessMessage ? AFTER_REMOVAL_PAGE_TITLE : PAGE_TITLE,
       hasCalculationError: false,
       hasNoLandParcels: true,
       landParcelRemovalSuccessMessage,
