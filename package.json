@@ -81,7 +81,7 @@
     "joi": "17.13.4"
   },
   "dependencies": {
-    "@aws-sdk/client-sns": "3.1111.0",
+    "@aws-sdk/client-sns": "3.1112.0",
     "@babel/runtime": "8.0.0",
     "@defra/fcp-audit-publisher": "1.0.7",
     "@defra/forms-engine-plugin": "4.23.0",
