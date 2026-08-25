@@ -24,11 +24,11 @@ Feature: Action Selection
             | Parcel reference  | SK0972 6820     |
             | Total area        | 0.2774 hectares |
         And should see the following actions with guidance
-            | ACTION | DESCRIPTION                                           | GUIDANCE                       | URL |
-            | CSAM3  | Herbal leys: CSAM3                                    | Payment rate per year: £224/ha | Yes |
-            | CLIG3  | Manage grassland with very low nutrient inputs: CLIG3 | Payment rate per year: £151/ha | Yes |
-            |        |                                                       | 0.276 hectares available       |     |
-            | SCR2   | Manage scrub and open habitat mosaics: SCR2           | Payment rate per year: £350/ha | Yes |
+            | ACTION | DESCRIPTION                                           | GUIDANCE                          | URL |
+            | CSAM3  | Herbal leys: CSAM3                                    | Payment rate per year: £224.00/ha | Yes |
+            | CLIG3  | Manage grassland with very low nutrient inputs: CLIG3 | Payment rate per year: £151.00/ha | Yes |
+            |        |                                                       | 0.276 hectares available          |     |
+            | SCR2   | Manage scrub and open habitat mosaics: SCR2           | Payment rate per year: £350.00/ha | Yes |
 
         When the user selects action "CSAM3"
 
@@ -73,7 +73,7 @@ Feature: Action Selection
         And continues
 
         Then the user should be at URL "confirm-land-and-actions"
-        And should see heading "Review land parcels and actions"
+        And should see heading "Your land and actions"
         When the user clicks on "Add another land parcel"
 
         # RULE: an action cannot be applied to a land parcel it is not eligible for
