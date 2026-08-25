@@ -154,35 +154,34 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
    * @param {AnyFormRequest} request - Request object
    * @param {FormContext} context - Form context
    * @param {string} parcelId - Parcel ID
-   * @param {string} pageHeading - Page heading
-   * @param {string} hint - Hint text
-   * @param {boolean} isParcelRemoval - Whether the page removes the whole parcel
+   * @param {object} pageHeadingAndHint - Page heading, hint and branch flag from buildPageHeadingAndHint
    * @returns {object} - Complete view model
    */
-  buildGetViewModel(request, context, parcelId, pageHeading, hint, isParcelRemoval) {
+  buildGetViewModel(request, context, parcelId, pageHeadingAndHint) {
     return {
       ...this.getViewModel(request, context),
       parcelId,
-      pageHeading,
-      hint,
-      isParcelRemoval
+      ...pageHeadingAndHint
     }
   }
 
   /**
-   * Build page heading and hint for the removal confirmation page.
+   * Build page heading and hint for the removal confirmation page. Whole-parcel
+   * removal names the parcel in the body copy rather than the heading, so the
+   * reference is returned on its own for the template to emphasise.
    *
    * @param {{description?: string}|null|undefined} actionInfo - Optional action info object; when present its `description` is used in the heading/hint.
    * @param {string} parcelId ='' - Parcel identifier to include in the heading.
    * @param {boolean} isParcelRemoval =false - Whether the whole parcel is being removed.
-   * @returns {{pageHeading: string, hint: string, isParcelRemoval: boolean}} Copy for the confirmation page plus the branch flag the template reads.
+   * @returns {{pageHeading: string, hint: string, isParcelRemoval: boolean, parcelReference?: string}} Copy for the confirmation page plus the branch flag the template reads.
    */
   buildPageHeadingAndHint(actionInfo, parcelId = '', isParcelRemoval = false) {
     if (isParcelRemoval) {
       const reference = formatParcelReference(parcelId)
       return {
-        pageHeading: `Remove all actions from ${reference}?`,
-        hint: `This will remove ${reference} and all actions added to it from your application.`,
+        pageHeading: 'Remove this land parcel?',
+        hint: `Land parcel ${reference} and all related actions will be removed from your application.`,
+        parcelReference: reference,
         isParcelRemoval: true
       }
     }
@@ -213,13 +212,9 @@ export default class RemoveActionPageController extends QuestionPageWithParcelCh
       return this.proceed(request, h, this.returnPath)
     }
 
-    const { pageHeading, hint, isParcelRemoval } = this.buildPageHeadingAndHint(
-      actionInfo,
-      parcelId,
-      isParcelRemovalPage
-    )
+    const pageHeadingAndHint = this.buildPageHeadingAndHint(actionInfo, parcelId, isParcelRemovalPage)
 
-    const viewModel = this.buildGetViewModel(request, context, parcelId, pageHeading, hint, isParcelRemoval)
+    const viewModel = this.buildGetViewModel(request, context, parcelId, pageHeadingAndHint)
     return h.view(viewName, viewModel)
   }
 

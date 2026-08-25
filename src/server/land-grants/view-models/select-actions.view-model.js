@@ -113,25 +113,32 @@ function getRequirementText(consentKeys) {
 }
 
 /**
- * Builds the checkbox hint text: payment rate, consent requirement, and -
- * for a non-quantity action only - its own availability. A quantity action's
- * availability hint lives inside its conditional panel instead (see
- * quantity-input/template.njk), kept in sync live by the client.
- * @param {Action} action
- * @param {boolean} needsQuantity
+ * A whole-pound rate is shown without pence (£224/ha), anything else keeps both
+ * decimal places (£100.50/ha).
+ * @param {number} [rate]
  * @returns {string}
  */
-function getHintHtml(action, needsQuantity) {
-  const consents = getActionConsentKeys(action)
-  const requirementText = getRequirementText(consents)
+function formatRate(rate) {
+  return Number.isInteger(rate) ? String(rate) : `${rate?.toFixed(2)}`
+}
+
+/**
+ * Builds the checkbox hint text: payment rate, consent requirement, and the
+ * action's own availability. Kept in sync live by the client for every action
+ * (see select-actions-page.js), quantity-required or not.
+ * @param {Action} action
+ * @returns {string}
+ */
+function getHintHtml(action) {
+  const requirementText = getRequirementText(getActionConsentKeys(action))
   const agreementRateText = action.ratePerAgreementPerYearGbp
     ? ` and <strong>£${action.ratePerAgreementPerYearGbp}</strong> per agreement`
     : ''
   const requirementLineText = requirementText ? `<br>${requirementText}` : ''
-  const rateText = `Payment rate per year: £${action.ratePerUnitGbp?.toFixed(2)}/ha${agreementRateText}${requirementLineText}`
+  const rateText = `Payment rate per year: £${formatRate(action.ratePerUnitGbp)}/ha${agreementRateText}${requirementLineText}`
   const limit = getAvailabilityLimit(action.availability)
   const availabilityHintHtml =
-    !needsQuantity && limit != null
+    limit != null
       ? `<br><span id="${getActionQuantityFieldName(action.code)}-hint">${limit} ${formatUnit(action.availability?.unit)} available</span>`
       : ''
   return `${rateText}${availabilityHintHtml}`
@@ -157,7 +164,7 @@ export function mapActionToViewModel(
   const quantityValue = existingAction?.value ?? ''
   const checked = Boolean(existingAction)
   const needsQuantity = requiresQuantityInput(action.availability?.type)
-  const hintHtml = getHintHtml(action, needsQuantity)
+  const hintHtml = getHintHtml(action)
   const consents = getActionConsentKeys(action)
 
   return {

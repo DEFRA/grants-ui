@@ -334,10 +334,12 @@ function markUnavailable(checkbox, quantityInput = getQuantityInput(checkbox)) {
 }
 
 /**
- * Refreshes a quantity input's max/hint from the latest availability, as reported
- * by the API. A null value means no restriction, which has to clear the bound
- * rather than stringify - the server renders neither max nor hint in that case
- * (see quantity-input/template.njk), so this keeps the two in step.
+ * Refreshes a quantity input's max, and the action's availability hint (rendered
+ * in the checkbox hint, not the conditional panel - see
+ * select-actions.view-model.js), from the latest availability as reported by the
+ * API. A null value means no restriction, which has to clear the bound rather
+ * than stringify - the server renders neither max nor hint in that case, so this
+ * keeps the two in step.
  * @param {HTMLInputElement} checkbox
  * @param {{ availability?: ActionAvailability | null }} action
  */

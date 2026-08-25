@@ -141,7 +141,7 @@ describe('select-actions.view-model', () => {
       configState.reset()
 
       expect(result.html).toBe(
-        'Manage rough grassland for upland breeding waders<span class="select-actions-hint">Payment rate per year: £203.00/ha<br>Requires an SFI HEFER</span>'
+        'Manage rough grassland for upland breeding waders<span class="select-actions-hint">Payment rate per year: £203/ha<br>Requires an SFI HEFER</span>'
       )
     })
 
@@ -156,7 +156,7 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, [])
 
       expect(result.html).toBe(
-        'Manage rough grassland for upland breeding waders<span class="select-actions-hint">Payment rate per year: £203.00/ha</span>'
+        'Manage rough grassland for upland breeding waders<span class="select-actions-hint">Payment rate per year: £203/ha</span>'
       )
     })
 
@@ -173,7 +173,7 @@ describe('select-actions.view-model', () => {
       configState.reset()
 
       expect(result.html).toBe(
-        'Manage scrub and open habitat mosaics<span class="select-actions-hint">Payment rate per year: £350.00/ha<br>Requires SSSI consent</span>'
+        'Manage scrub and open habitat mosaics<span class="select-actions-hint">Payment rate per year: £350/ha<br>Requires SSSI consent</span>'
       )
     })
 
@@ -192,7 +192,7 @@ describe('select-actions.view-model', () => {
       configState.reset()
 
       expect(result.html).toBe(
-        'Manage scrub and open habitat mosaics<span class="select-actions-hint">Payment rate per year: £350.00/ha<br>Requires SSSI consent and an SFI HEFER</span>'
+        'Manage scrub and open habitat mosaics<span class="select-actions-hint">Payment rate per year: £350/ha<br>Requires SSSI consent and an SFI HEFER</span>'
       )
     })
 
@@ -242,9 +242,8 @@ describe('select-actions.view-model', () => {
     })
 
     // Kept in sync live by the client, so it needs a
-    // stable id matching getActionQuantityFieldName - same pattern the
-    // quantity-input's own hint uses.
-    it('should show an availability hint for a non-quantity action, with an id the client can find and update live', () => {
+    // stable id matching getActionQuantityFieldName.
+    it('should show an availability hint for an action, with an id the client can find and update live', () => {
       const action = {
         code: 'CLIG3',
         description: 'Manage grassland with very low nutrient inputs',
@@ -257,7 +256,7 @@ describe('select-actions.view-model', () => {
       expect(result.html).toContain('<span id="landActionQuantity_CLIG3-hint">12.5 hectares available</span>')
     })
 
-    it('should not duplicate the availability hint for a quantity-required action (it has its own inside the conditional)', () => {
+    it('should show the availability hint in the checkbox hint for a quantity-required action, not inside the conditional', () => {
       const action = {
         code: 'UPL2',
         description: 'Heavy livestock grazing on moorland',
@@ -267,7 +266,8 @@ describe('select-actions.view-model', () => {
 
       const result = mapActionToViewModel(action, [])
 
-      expect(result.html).not.toContain('landActionQuantity_UPL2-hint')
+      expect(result.html).toContain('<span id="landActionQuantity_UPL2-hint">3 hectares available</span>')
+      expect(result.conditional.html).not.toContain('hectares available')
     })
 
     it('should render data-total-available-area from staticAvailability when present, not the (possibly competed) availability', () => {
@@ -284,15 +284,33 @@ describe('select-actions.view-model', () => {
       expect(result.attributes['data-total-available-area']).toBe(0.3271)
     })
 
-    it('should render the conditional input with its field id, max attribute and availability hint', () => {
+    it('should render the conditional input with its field id and max attribute, and the availability hint above it', () => {
       const result = mapActionToViewModel(csam3({ value: 18.5673, unit: 'ha' }), [])
 
       expect(result.conditional.html).toContain('landActionQuantity_CSAM3')
       expect(result.conditional.html).toContain('max="18.5673"')
-      expect(result.conditional.html).toContain('18.5673 hectares available')
+      expect(result.html).toContain('18.5673 hectares available')
     })
 
-    it('should render the conditional unbounded and hintless, keeping the unit, when the availability value is null', () => {
+    // The hint sits in the checkbox label, so it describes the checkbox only -
+    // the quantity input has to reference it explicitly to be announced with it.
+    it('should point the quantity input at the availability hint that lives outside its panel', () => {
+      const result = mapActionToViewModel(csam3({ value: 18.5673, unit: 'ha' }), [])
+
+      expect(result.conditional.html).toContain('aria-describedby="landActionQuantity_CSAM3-hint"')
+    })
+
+    it('should keep the availability hint in the quantity input description alongside its error message', () => {
+      const result = mapActionToViewModel(csam3({ value: 18.5673, unit: 'ha' }), [], {
+        CSAM3: 'The amount of land must be no more than 18.5673'
+      })
+
+      expect(result.conditional.html).toContain(
+        'aria-describedby="landActionQuantity_CSAM3-hint landActionQuantity_CSAM3-error"'
+      )
+    })
+
+    it('should render the conditional unbounded, keeping the unit, and no hint anywhere, when the availability value is null', () => {
       const result = mapActionToViewModel(csam3({ value: null, unit: 'ha' }), [])
 
       expect(result.conditional.html).toContain('landActionQuantity_CSAM3')
@@ -343,7 +361,7 @@ describe('select-actions.view-model', () => {
 
       expect(result.conditional).toBeDefined()
       expect(result.conditional.html).toContain('max="0"')
-      expect(result.conditional.html).toContain('0 hectares available')
+      expect(result.html).toContain('0 hectares available')
     })
 
     it.each([[null], [undefined]])(
@@ -365,7 +383,7 @@ describe('select-actions.view-model', () => {
     ])('should render the full unit name in the hint for %j', (availability, expected) => {
       const result = mapActionToViewModel(csam3(availability), [])
 
-      expect(result.conditional.html).toContain(expected)
+      expect(result.html).toContain(expected)
     })
 
     it('should highlight the quantity input with the given error text when this action has a quantity error', () => {

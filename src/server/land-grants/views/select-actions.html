@@ -3,6 +3,7 @@
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 {% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/error-message/macro.njk" import govukErrorMessage %}
 {% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
 {% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
 {% from "summaryCard/macro.njk" import summaryCard %}
@@ -40,7 +41,14 @@
 
         <div class="govuk-form-group govuk-!-margin-top-2">
           <h2 class="govuk-heading-m">Available actions</h2>
-          <p>Enter how much land you want for each action. Actions with no land left are shown but cannot be selected.</p>
+          <p class="govuk-body">The quantity available for each action depends on:</p>
+          <ul class="govuk-list govuk-list--bullet">
+            <li>the land cover on this parcel</li>
+            <li>land already in existing agreements</li>
+            <li>other actions you select</li>
+            <li>whether any of the land is ineligible for the action</li>
+          </ul>
+          <p class="govuk-body">Every action has links to guidance to help you &ndash; all links open in a new tab.</p>
         </div>
 
         {% if actionItems.length %}
@@ -63,15 +71,25 @@
               {% endcall %}
             {% endif %}
 
+            {% if selectionErrorText %}
+              {{ govukErrorMessage({
+                id: actionFieldName + "-error",
+                text: selectionErrorText
+              }) }}
+            {% endif %}
+
             {{ govukCheckboxes({
                 name: actionFieldName,
                 items: actionItems,
-                classes: "select-actions-checkboxes"
+                classes: "select-actions-checkboxes",
+                hint: { text: "The available quantity will update as you make your selections." },
+                describedBy: (actionFieldName + "-error") if selectionErrorText else undefined,
+                formGroup: { classes: "govuk-form-group--error" } if selectionErrorText else undefined
               }) }}
 
             <div class="govuk-button-group">
               {{ govukButton({
-                text: submitButtonText or "Continue",
+                text: submitButtonText or "Save and continue",
                 preventDoubleClick: true
               }) }}
             </div>

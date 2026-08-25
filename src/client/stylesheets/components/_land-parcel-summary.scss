@@ -1,26 +1,10 @@
 @use 'govuk-frontend' as *;
 
-.land-parcel-summary {
-  margin-bottom: govuk-spacing(8);
-
-  &__heading {
-    display: flex;
-    flex-wrap: wrap;
-    gap: govuk-spacing(2);
-    align-items: baseline;
-    justify-content: space-between;
-    margin-bottom: govuk-spacing(2);
-  }
-}
-
-.land-parcel-summary__action-row > .govuk-table__header,
-.land-parcel-summary__action-row > .govuk-table__cell {
-  @media #{govuk-from-breakpoint(tablet)} {
-    padding-top: govuk-spacing(3);
-    padding-bottom: govuk-spacing(3);
-  }
-}
-
-.land-parcel-summary__actions {
-  text-align: right;
+// Secondary "Requires ..." text under an action name inside a summary card
+// table cell, which is a row header and therefore bold by default.
+.land-parcel-summary__action-hint {
+  @include govuk-font-size(16);
+  display: block;
+  font-weight: normal;
+  color: $govuk-secondary-text-colour;
 }

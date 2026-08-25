@@ -144,6 +144,50 @@ describe('ConfirmLandAndActionsPageController', () => {
       expect(result).toBe('rendered view')
     })
 
+    // The journey's page name is not the design heading, so this page owns the
+    // title on every render path - and the design uses the softer one only when
+    // a removal just emptied the application.
+    test.each([
+      [
+        'priced',
+        'Review land parcels and actions',
+        async (controller) => controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+      ],
+      [
+        'no land parcels, nothing added yet',
+        'Review land parcels and actions',
+        async (controller) => {
+          mockContext.state = { landParcels: {} }
+          return controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+        }
+      ],
+      [
+        'no land parcels, after removing the last one',
+        'Your land and actions',
+        async (controller) => {
+          mockRequest.yar.get.mockReturnValueOnce('SD1234 5678')
+          mockContext.state = { landParcels: {} }
+          return controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+        }
+      ],
+      [
+        'calculation error',
+        'Review land parcels and actions',
+        async (controller) => {
+          calculateLandActionsPayment.mockReset()
+          calculateLandActionsPayment.mockRejectedValueOnce(new Error('boom'))
+          return controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+        }
+      ]
+    ])('renders the design page title on the %s view', async (_case, expectedTitle, render) => {
+      calculateLandActionsPayment.mockResolvedValueOnce(paymentResult)
+      const controller = buildController()
+
+      await render(controller)
+
+      expect(mockH.view.mock.calls[0][1].pageTitle).toBe(expectedTitle)
+    })
+
     test('persists raw payment, totalPence and totalPayment only after validation', async () => {
       calculateLandActionsPayment.mockResolvedValueOnce(paymentResult)
       const controller = buildController()

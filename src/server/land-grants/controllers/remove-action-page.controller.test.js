@@ -195,8 +195,9 @@ describe('RemoveActionPageController', () => {
         serviceUrl: '/test-grant',
         backLink: { text: 'Back', href: '/test-grant/check-selected-land-actions' },
         parcelId: 'SD6743-8083',
-        pageHeading: 'Remove all actions from SD6743 8083?',
-        hint: 'This will remove SD6743 8083 and all actions added to it from your application.',
+        pageHeading: 'Remove this land parcel?',
+        hint: 'Land parcel SD6743 8083 and all related actions will be removed from your application.',
+        parcelReference: 'SD6743 8083',
         isParcelRemoval: true
       })
       expect(result).toBe('rendered view')
@@ -211,7 +212,7 @@ describe('RemoveActionPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'remove-action',
         expect.objectContaining({
-          pageHeading: 'Remove all actions from SD6743 8083?',
+          pageHeading: 'Remove this land parcel?',
           isParcelRemoval: true
         })
       )

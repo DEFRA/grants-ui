@@ -293,8 +293,21 @@ describe('SelectActionsPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions',
         expect.objectContaining({
-          errors: [{ text: 'Select at least one action', href: '#landAction' }]
+          errors: [{ text: 'Select at least one action', href: '#landAction' }],
+          // Rendered inline above the checkbox group, not only in the summary.
+          selectionErrorText: 'Select at least one action'
         })
+      )
+    })
+
+    test('should not treat a quantity error as the checkbox group error', async () => {
+      mockRequest.payload = { landAction: 'UPL2' }
+
+      await post()
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'select-actions',
+        expect.objectContaining({ selectionErrorText: undefined })
       )
     })
 
@@ -489,7 +502,7 @@ describe('SelectActionsPageController', () => {
       expect(controller.proceed).not.toHaveBeenCalled()
     })
 
-    test('should show the recomputed available area in the quantity hint when application validation fails', async () => {
+    test('should show the recomputed available area in the action hint when application validation fails', async () => {
       mockRequest.payload = {
         landAction: ['UPL1', 'UPL2'],
         landActionQuantity_UPL2: '1',
@@ -512,8 +525,8 @@ describe('SelectActionsPageController', () => {
       const { actionItems } = mockH.view.mock.calls[0][1]
       const upl2 = actionItems.find((item) => item.value === 'UPL2')
 
-      expect(upl2.conditional.html).toContain('2 hectares available')
-      expect(upl2.conditional.html).not.toContain('3 hectares available')
+      expect(upl2.html).toContain('2 hectares available')
+      expect(upl2.html).not.toContain('3 hectares available')
     })
 
     test('should link a validation error to the specific action quantity input by code, not position', async () => {
