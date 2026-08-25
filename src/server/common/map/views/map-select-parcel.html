@@ -80,10 +80,7 @@
 
         <div id="selected-parcel-details" class="govuk-!-margin-top-6" hidden>
           <h2 class="govuk-heading-m">Selected land parcel</h2>
-          {# Hand-rolled to match govukSummaryList's markup: that macro's row.value
-             only ever renders row.value.classes, never row.value.attributes, so an
-             id on the value cell (needed by parcel-select-page.js to target it)
-             is silently dropped when built via the macro. #}
+
           <dl class="govuk-summary-list" id="selected-parcel-summary-list">
             <div class="govuk-summary-list__row">
               <dt class="govuk-summary-list__key">Parcel reference</dt>
@@ -96,7 +93,16 @@
               <dt class="govuk-summary-list__key">Total area</dt>
               <dd class="govuk-summary-list__value" id="selected-parcel-area"></dd>
             </div>
+            <div class="govuk-summary-list__row govuk-summary-list__row--no-actions" id="selected-parcel-additional-requirements-row" hidden>
+              <dt class="govuk-summary-list__key">Additional requirements</dt>
+              <dd class="govuk-summary-list__value" id="selected-parcel-additional-requirements"></dd>
+            </div>
           </dl>
+          {# Outside the row above, so the asynchronous requirement text is
+             announced once it lands rather than as part of revealing the
+             summary itself. <output> carries an implicit status role that is
+             honoured more consistently than role="status" on a <span>. #}
+          <output id="selected-parcel-additional-requirements-status" class="govuk-visually-hidden"></output>
         </div>
 
         {{ govukButton({

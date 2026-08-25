@@ -72,7 +72,12 @@
                   {% endif %}
                   {% for landAction in parcel.actions %}
                     <tr class="govuk-table__row land-parcel-summary__action-row">
-                      <th scope="row" class="govuk-table__header govuk-!-width-one-third">{{ landAction.action }}</th>
+                      <th scope="row" class="govuk-table__header govuk-!-width-one-third">
+                        {{ landAction.action }}
+                        {%- if landAction.requirementText %}
+                          <span class="land-parcel-summary__action-hint">{{ landAction.requirementText }}</span>
+                        {%- endif %}
+                      </th>
                       <td class="govuk-table__cell">{{ landAction.area ~ " (" ~ landAction.yearlyPayment ~ ")" if landAction.area else landAction.yearlyPayment }}</td>
                       <td class="govuk-table__cell govuk-table__cell--numeric land-parcel-summary__actions">
                         <ul class="govuk-summary-list__actions-list">

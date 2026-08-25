@@ -13,7 +13,8 @@ import { formatUnit } from '~/src/shared/format-unit.js'
 import { getAvailabilityLimit } from '~/src/shared/availability.js'
 import { formatParcelReference } from '~/src/shared/format-parcel.js'
 import { SELECTED_ACTIONS_FIELD_NAME } from '~/src/server/land-grants/utils/selected-actions-field.js'
-import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js'
+import { getActionConsentKeys } from '~/src/server/land-grants/utils/consent-types.js'
+import { getConsentRequirementText } from '~/src/server/land-grants/view-models/consent.view-model.js'
 
 const QUANTITY_INPUT_TEMPLATE = 'quantity-input/template.njk'
 const ACTION_LABEL_TEMPLATE = 'action-label/template.njk'
@@ -85,34 +86,6 @@ function getStaticAvailability(action) {
 }
 
 /**
- * Consent type keys (from the feature-flagged getConsentTypes registry) that
- * apply to this action - same membership check buildActionStateEntry and
- * createGroup already use, so a disabled consent feature flag hides this
- * action's requirement text too, not just the persisted state/group hint.
- * @param {Action} action
- * @returns {string[]}
- */
-function getActionConsentKeys(action) {
-  return getConsentTypes()
-    .filter((ct) => action[ct.apiField])
-    .map((ct) => ct.key)
-}
-
-const CONSENT_LABELS = { sssi: 'SSSI consent', hefer: 'an SFI HEFER' }
-
-/**
- * @param {string[]} consentKeys
- * @returns {string}
- */
-function getRequirementText(consentKeys) {
-  if (!consentKeys.length) {
-    return ''
-  }
-  const labels = consentKeys.map((key) => CONSENT_LABELS[key])
-  return `Requires ${labels.join(' and ')}`
-}
-
-/**
  * Builds the checkbox hint text: payment rate, consent requirement, and -
  * for a non-quantity action only - its own availability. A quantity action's
  * availability hint lives inside its conditional panel instead (see
@@ -122,8 +95,7 @@ function getRequirementText(consentKeys) {
  * @returns {string}
  */
 function getHintHtml(action, needsQuantity) {
-  const consents = getActionConsentKeys(action)
-  const requirementText = getRequirementText(consents)
+  const requirementText = getConsentRequirementText(getActionConsentKeys(action))
   const agreementRateText = action.ratePerAgreementPerYearGbp
     ? ` and <strong>£${action.ratePerAgreementPerYearGbp}</strong> per agreement`
     : ''
@@ -205,17 +177,6 @@ export function getChosenAreaFieldsHtml(actions, addedActions) {
       return `<input type="hidden" id="${fieldName}" name="${fieldName}" value="${value}">`
     })
     .join('\n')
-}
-
-/**
- * The union of consent type keys required by at least one action on the
- * page, e.g. ['sssi', 'hefer'] - drives the shared intro banner. Same
- * key format as ActionGroup.consents/Action.consents elsewhere.
- * @param {Array<Action>} actions
- * @returns {string[]}
- */
-export function getPageConsents(actions) {
-  return [...new Set(actions.flatMap((action) => getActionConsentKeys(action)))]
 }
 
 /**
