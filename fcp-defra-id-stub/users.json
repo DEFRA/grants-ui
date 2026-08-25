@@ -380,7 +380,7 @@
     {
       "crn": 1062311181,
       "firstName": "James",
-      "lastName": "Test-Farmer",
+      "lastName": "Submit-All",
       "organisations": [
         {
           "organisationId": "32",
@@ -391,8 +391,8 @@
     },
     {
       "crn": 1062311182,
-      "firstName": "JamesAmend",
-      "lastName": "Test-FarmerAmend",
+      "firstName": "James",
+      "lastName": "Amend-All",
       "organisations": [
         {
           "organisationId": "32",
@@ -403,8 +403,8 @@
     },
     {
       "crn": 1062311183,
-      "firstName": "JamesView",
-      "lastName": "Test-FarmerView",
+      "firstName": "James",
+      "lastName": "View-All",
       "organisations": [
         {
           "organisationId": "32",
@@ -415,8 +415,44 @@
     },
     {
       "crn": 1062311184,
-      "firstName": "JamesNoPerms",
-      "lastName": "Test-FarmerNoPerms",
+      "firstName": "James",
+      "lastName": "NoPerms-All",
+      "organisations": [
+        {
+          "organisationId": "32",
+          "sbi": 106238911,
+          "name": "Test Farm"
+        }
+      ]
+    },
+    {
+      "crn": 1062311185,
+      "firstName": "James",
+      "lastName": "Submit-Agreements",
+      "organisations": [
+        {
+          "organisationId": "32",
+          "sbi": 106238911,
+          "name": "Test Farm"
+        }
+      ]
+    },
+    {
+      "crn": 1062311186,
+      "firstName": "James",
+      "lastName": "Amend-Agreements",
+      "organisations": [
+        {
+          "organisationId": "32",
+          "sbi": 106238911,
+          "name": "Test Farm"
+        }
+      ]
+    },
+    {
+      "crn": 1062311187,
+      "firstName": "James",
+      "lastName": "View-Agreements",
       "organisations": [
         {
           "organisationId": "32",
