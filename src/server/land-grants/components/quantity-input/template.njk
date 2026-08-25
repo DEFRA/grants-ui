@@ -1,8 +1,5 @@
 {% from "govuk/components/input/macro.njk" import govukInput %}
 
-{# describedBy points the input at the availability hint, which lives in the
-   checkbox hint above (see select-actions.view-model.js) rather than in this
-   panel - govukInput appends its own error message id after it. #}
 {{ govukInput({
   id: fieldId,
   name: fieldId,

@@ -1,7 +1,5 @@
 @use 'govuk-frontend' as *;
 
-// Secondary "Requires ..." text under an action name inside a summary card
-// table cell, which is a row header and therefore bold by default.
 .land-parcel-summary__action-hint {
   @include govuk-font-size(16);
   display: block;

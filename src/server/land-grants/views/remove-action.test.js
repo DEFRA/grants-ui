@@ -85,7 +85,6 @@ describe('remove-action.html view', () => {
       expect(normalise(cancel.text())).toBe('Cancel')
       expect(cancel.attr('href')).toBe('/test-grant/confirm-land-and-actions')
       expect(cancel.hasClass('govuk-link')).toBe(true)
-      // Below the button on its own line, rather than inline beside it.
       expect($('main .govuk-button-group')).toHaveLength(0)
       expect(button.nextAll('p').find('a')).toHaveLength(1)
     })

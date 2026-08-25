@@ -201,8 +201,6 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
       ...additionalState,
       parcelName: formatParcelReference({ sheetId, parcelId }),
       errors,
-      // The one error that belongs to the checkbox group itself, rather than to a
-      // single action's quantity input - rendered inline above the group.
       selectionErrorText: errors.find((e) => e.href === `#${this.actionFieldName}`)?.text,
       existingLandParcels,
       singleParcelSubmission: this.singleParcelSubmission,

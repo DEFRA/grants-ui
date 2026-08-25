@@ -462,7 +462,6 @@ describe('confirm-land-and-actions.html view', () => {
       })
 
       expect($('main .govuk-notification-banner')).toHaveLength(1)
-      // Two parcel cards plus the payment summary card.
       expect(cards($)).toHaveLength(3)
       expect(bodyText($)).not.toContain('You have not added any land parcels or actions yet.')
     })
