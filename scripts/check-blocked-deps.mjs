@@ -33,7 +33,11 @@ const BLOCKED = [
   { name: 'pino', target: '10.0.0', upstream: 'hapi-pino', field: 'dependencies.pino' },
   // typescript 7 is blocked by @typescript-eslint, whose latest parser still peers
   // typescript ">=4.8.4 <6.1.0". Remove when @typescript-eslint widens its typescript peer to 7.
-  { name: 'typescript', target: '7.0.0', upstream: '@typescript-eslint/parser', field: 'peerDependencies.typescript' }
+  { name: 'typescript', target: '7.0.0', upstream: '@typescript-eslint/parser', field: 'peerDependencies.typescript' },
+  // ioredis 6 is blocked by @hapi/catbox-redis (latest 7.0.2 deps ioredis ^5), which backs the
+  // session cache. Also note ioredis 6 defaults to RESP3 — add protocol: 2 in redis-client.js when
+  // adopting it. Remove when catbox-redis widens its ioredis dependency to include ^6.
+  { name: 'ioredis', target: '6.0.0', upstream: '@hapi/catbox-redis', field: 'dependencies.ioredis' }
 ]
 
 /** Read `field` from the latest published manifest of `pkg` via `npm view`. */
