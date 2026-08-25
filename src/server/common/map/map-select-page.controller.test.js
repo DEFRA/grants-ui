@@ -122,6 +122,17 @@ describe('MapSelectPageController', () => {
         expect.objectContaining({ ...expected, formAction: '/my-path' })
       )
     })
+
+    it('omits selectedParcelIds, so the view renders no pre-filled hidden inputs', () => {
+      const h = makeH()
+
+      makeController().handleGet(makeRequest(), makeContext(), h)
+
+      expect(h.view).toHaveBeenCalledWith(
+        'map-select-parcel',
+        expect.not.objectContaining({ selectedParcelIds: expect.anything() })
+      )
+    })
   })
 
   describe('handlePost — validation', () => {

@@ -11,7 +11,7 @@ import {
 
 const noticeResponse = (text) => ({ ok: true, json: () => Promise.resolve({ text }) })
 
-function setupDom({ multiSelect = false, selectedParcels = '', errors = false } = {}) {
+function setupDom({ multiSelect = false, selectedParcels = '', errors = false, lastEvent = null } = {}) {
   document.body.innerHTML = `
     <input type="hidden" name="crumb" value="test-crumb">
     ${errors ? '<div class="govuk-error-summary"><a id="error-link" href="#parcel-map">There is a problem</a></div>' : ''}
@@ -36,9 +36,13 @@ function setupDom({ multiSelect = false, selectedParcels = '', errors = false } 
   mapEl.id = 'parcel-map'
   mapEl.setAttribute('multi-select', multiSelect ? 'true' : 'false')
   mapEl.dataset.selectedParcels = selectedParcels
-  mapEl.clearSelection = () => {}
+  mapEl.clearSelection = vi.fn()
   mapEl.selectParcels = vi.fn()
   mapEl.focusParcels = vi.fn()
+
+  if (lastEvent) {
+    mapEl.getLastEvent = (type) => (lastEvent.type === type ? lastEvent : null)
+  }
   document.body.appendChild(mapEl)
   initParcelSelectPage(mapEl)
   return mapEl
@@ -141,61 +145,19 @@ describe('initParcelSelectPage', () => {
   })
 
   it('catches up on EVENT_READY that fired before this script attached its listener', () => {
-    document.body.innerHTML = `
-      <div id="map-no-parcels-error" hidden></div>
-      <div id="selected-parcels-inputs"></div>
-      <button id="map-select-continue">Continue</button>
-      <table>
-        <tr><td id="parcel-map-total-count"></td></tr>
-        <tr><td id="parcel-map-total-area"></td></tr>
-      </table>
-      <div id="selected-parcel-details" hidden></div>
-    `
-    const mapEl = document.createElement('parcel-map')
-    mapEl.id = 'parcel-map'
-    const readyEvent = new CustomEvent(EVENT_READY, {
-      detail: { parcelIds: ['SD7148-9160'], metaIndex: { 'SD7148-9160': { areaHa: 3.25 } } }
+    setupDom({
+      lastEvent: new CustomEvent(EVENT_READY, {
+        detail: { parcelIds: ['SD7148-9160'], metaIndex: { 'SD7148-9160': { areaHa: 3.25 } } }
+      })
     })
-    // Simulates customElements.define() upgrading the element and it reaching
-    // STATE_READY before parcel-select-page.js's own <script type="module"> runs.
-    mapEl.getLastEvent = (type) => (type === EVENT_READY ? readyEvent : null)
-    document.body.appendChild(mapEl)
-
-    initParcelSelectPage(mapEl)
-
     expect(document.getElementById('parcel-map-total-count').textContent).toBe('1')
     expect(document.getElementById('parcel-map-total-area').textContent).toBe('3.2500')
   })
 
   it('catches up on EVENT_ERROR that fired before this script attached its listener', () => {
-    document.body.innerHTML = `
-      <div id="map-no-parcels-error" hidden></div>
-      <div id="selected-parcels-inputs"></div>
-      <button id="map-select-continue">Continue</button>
-      <table>
-        <tr><td id="parcel-map-total-count"></td></tr>
-        <tr><td id="parcel-map-total-area"></td></tr>
-      </table>
-      <div id="selected-parcel-details" hidden></div>
-    `
-    const mapEl = document.createElement('parcel-map')
-    mapEl.id = 'parcel-map'
-    const errorEvent = new CustomEvent(EVENT_ERROR, { detail: { reason: ERROR_REASON_NO_PARCELS } })
-    mapEl.getLastEvent = (type) => (type === EVENT_ERROR ? errorEvent : null)
-    document.body.appendChild(mapEl)
-
-    initParcelSelectPage(mapEl)
-
+    setupDom({ lastEvent: new CustomEvent(EVENT_ERROR, { detail: { reason: ERROR_REASON_NO_PARCELS } }) })
     expect(document.getElementById('map-select-continue').disabled).toBe(true)
     expect(document.getElementById('map-no-parcels-error').hidden).toBe(false)
-  })
-
-  it('clears the map selection when the Change link is clicked', () => {
-    const mapEl = setupDom()
-    mapEl.clearSelection = vi.fn()
-    const changeLink = document.getElementById('selected-parcel-change')
-    changeLink.click()
-    expect(mapEl.clearSelection).toHaveBeenCalled()
   })
 
   it('reselects the parcels the server sent back once the map is ready', () => {
@@ -204,19 +166,19 @@ describe('initParcelSelectPage', () => {
     expect(mapEl.selectParcels).toHaveBeenCalledWith(['SD7148-9160', 'SD7148-9161'])
   })
 
+  it('ignores empty segments in the server-sent selection', () => {
+    const mapEl = setupDom({ selectedParcels: 'SD7148-9160,' })
+    fire(mapEl, EVENT_READY, { parcelIds: ['SD7148-9160'], metaIndex: {} })
+    expect(mapEl.selectParcels).toHaveBeenCalledWith(['SD7148-9160'])
+  })
+
   it('does not reselect anything when the server sent no selection', () => {
     const mapEl = setupDom()
     fire(mapEl, EVENT_READY, { parcelIds: ['SD7148-9160'], metaIndex: {} })
     expect(mapEl.selectParcels).not.toHaveBeenCalled()
   })
 
-  it('refocuses the map on the parcels when an error summary link is clicked', () => {
-    const mapEl = setupDom({ errors: true })
-    document.getElementById('error-link').click()
-    expect(mapEl.focusParcels).toHaveBeenCalled()
-  })
-
-  it('still lets the error summary link move focus to the map', () => {
+  it('refocuses the map on the parcels when an error summary link is clicked, without blocking its own focus move', () => {
     const mapEl = setupDom({ errors: true })
     const errorLink = document.getElementById('error-link')
     let defaultPrevented = false
@@ -224,18 +186,19 @@ describe('initParcelSelectPage', () => {
       defaultPrevented = e.defaultPrevented
     })
     errorLink.click()
-    expect(defaultPrevented).toBe(false)
     expect(mapEl.focusParcels).toHaveBeenCalled()
+    expect(defaultPrevented).toBe(false)
   })
 
-  it('does not navigate when the Change link is clicked', () => {
-    setupDom()
+  it('clears the map selection, without navigating, when the Change link is clicked', () => {
+    const mapEl = setupDom()
     const changeLink = document.getElementById('selected-parcel-change')
     let defaultPrevented = false
     changeLink.addEventListener('click', (e) => {
       defaultPrevented = e.defaultPrevented
     })
     changeLink.click()
+    expect(mapEl.clearSelection).toHaveBeenCalled()
     expect(defaultPrevented).toBe(true)
   })
 

@@ -115,8 +115,8 @@ async function mountElement(attrs = {}) {
   return el
 }
 
-async function mountReady(attrs = {}) {
-  global.fetch = fetchOk(PARCELS_RESPONSE)
+async function mountReady(attrs = {}, body = PARCELS_RESPONSE) {
+  global.fetch = fetchOk(body)
   const el = await mountElement(attrs)
   await waitForEvent(el, EVENT_READY)
   return el
@@ -163,41 +163,34 @@ describe('parcel-map web component', () => {
       expect(replayed.detail.reason).toBe('unavailable')
     })
 
-    it('dispatches parcel-map:error and shows error overlay when fetch fails', async () => {
-      global.fetch = vi.fn().mockResolvedValue({ ok: false })
-      const el = await mountElement()
-      const e = await waitForEvent(el, EVENT_ERROR)
-      expect(e.detail.reason).toBe('unavailable')
-      expect(el.querySelector('[role="alert"]')).not.toBeNull()
-    })
-
-    it('dispatches parcel-map:error when InteractiveMap emits map:error', async () => {
+    it.each([
+      ['fetch returns not-ok', () => vi.fn().mockResolvedValue({ ok: false }), 'unavailable'],
+      ['fetch throws', () => vi.fn().mockRejectedValue(new Error('network')), 'unavailable'],
+      ['InteractiveMap emits map:error', () => stubInteractiveMap({ mode: 'error' }), 'unavailable'],
+      ['the API returns no parcels', () => fetchOk({ features: [], bbox: null }), 'no-parcels']
+    ])('dispatches parcel-map:error when %s', async (_name, setup, reason) => {
       global.fetch = fetchOk(PARCELS_RESPONSE)
-      stubInteractiveMap({ mode: 'error' })
-      const el = await mountElement()
-      const e = await waitForEvent(el, EVENT_ERROR)
-      expect(e.detail.reason).toBe('unavailable')
+      // A setup that returns a fetch stub installs it; map:error returns nothing.
+      global.fetch = setup() ?? global.fetch
+
+      const e = await waitForEvent(await mountElement(), EVENT_ERROR)
+
+      expect(e.detail.reason).toBe(reason)
     })
 
-    it('removes skeleton and map elements after error', async () => {
+    it('replaces the skeleton with an error overlay after an error', async () => {
       global.fetch = vi.fn().mockResolvedValue({ ok: false })
       const el = await mountElement()
       await waitForEvent(el, EVENT_ERROR)
 
       expect(el.querySelector('[role="status"]')).toBeNull()
-      expect(el.querySelectorAll('div').length).toBeLessThanOrEqual(1)
+      expect(el.querySelector('[role="alert"]')).not.toBeNull()
+      expect(el.querySelectorAll('div').length).toBe(1)
     })
 
     it('removes skeleton once ready', async () => {
       const el = await mountReady()
       expect(el.querySelector('[role="status"]')).toBeNull()
-    })
-
-    it('dispatches parcel-map:error with reason no-parcels when API returns empty features', async () => {
-      global.fetch = fetchOk({ features: [], bbox: null })
-      const el = await mountElement()
-      const e = await waitForEvent(el, EVENT_ERROR)
-      expect(e.detail.reason).toBe('no-parcels')
     })
 
     it('dispatches parcel-map:ready exactly once after a disconnect-while-loading then reconnect', async () => {
@@ -220,14 +213,13 @@ describe('parcel-map web component', () => {
     })
 
     it('does not show the error overlay when maplibre emits an error after ready', async () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      vi.spyOn(console, 'error').mockImplementation(() => {})
       const el = await mountReady()
 
       ml._emit('error', new Error('basemap tile 404'))
       await Promise.resolve()
 
       expect(el.querySelector('[role="alert"]')).toBeNull()
-      errorSpy.mockRestore()
     })
 
     it('removes every maplibre listener it added on teardown', async () => {
@@ -238,61 +230,47 @@ describe('parcel-map web component', () => {
       expect(ml.off).toHaveBeenCalledTimes(ml.on.mock.calls.length)
     })
 
-    it('dispatches an unavailable error when the map load times out', async () => {
-      vi.useFakeTimers()
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      try {
+    describe('load timeout', () => {
+      beforeEach(() => {
+        vi.useFakeTimers()
+        vi.spyOn(console, 'error').mockImplementation(() => {})
         global.fetch = fetchOk(PARCELS_RESPONSE)
+      })
+
+      afterEach(() => {
+        vi.useRealTimers()
+      })
+
+      it('dispatches an unavailable error when the map load times out', async () => {
         stubInteractiveMap({ mode: 'none', once: true })
 
         const el = await mountElement()
         const errorEvent = waitForEvent(el, EVENT_ERROR)
         await vi.advanceTimersByTimeAsync(10000)
-        const e = await errorEvent
 
-        expect(e.detail.reason).toBe('unavailable')
-      } finally {
-        vi.useRealTimers()
-        errorSpy.mockRestore()
-      }
-    })
+        expect((await errorEvent).detail.reason).toBe('unavailable')
+      })
 
-    it('clears the load timeout when InteractiveMap emits map:error', async () => {
-      vi.useFakeTimers()
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      try {
-        global.fetch = fetchOk(PARCELS_RESPONSE)
+      it('clears the load timeout when InteractiveMap emits map:error', async () => {
         stubInteractiveMap({ mode: 'error' })
 
         const el = await mountElement()
         await waitForEvent(el, EVENT_ERROR)
 
         expect(vi.getTimerCount()).toBe(0)
-      } finally {
-        vi.useRealTimers()
-        errorSpy.mockRestore()
-      }
+      })
     })
   })
 
-  describe('viewport options', () => {
-    it('disables URL sync, constrains zoom-out to OS min zoom 7, and sets an accessible mapLabel', async () => {
-      await mountReady()
-
-      const [, options] = InteractiveMap.mock.calls[0]
-      expect(options.urlPosition).toBe('none')
-      expect(options.minZoom).toBe(7)
-      expect(options.mapLabel).toEqual(expect.stringContaining('land parcels'))
-    })
-  })
-
-  describe('basemap', () => {
-    it('uses the OS Maps style and constrains zoom-out to OS min zoom 7', async () => {
+  describe('InteractiveMap options', () => {
+    it('uses the OS Maps style, OS min zoom 7, no URL sync, and an accessible mapLabel', async () => {
       await mountReady()
 
       const [, options] = InteractiveMap.mock.calls.at(-1)
       expect(options.mapStyle.url).toBe('/api/map/os-basemap')
       expect(options.minZoom).toBe(7)
+      expect(options.urlPosition).toBe('none')
+      expect(options.mapLabel).toEqual(expect.stringContaining('land parcels'))
     })
   })
 
@@ -302,17 +280,8 @@ describe('parcel-map web component', () => {
       expect(ml.addSource).toHaveBeenCalledWith('parcels', expect.objectContaining({ type: 'vector' }))
     })
 
-    it('dispatches parcel-map:error when fetch throws', async () => {
-      global.fetch = vi.fn().mockRejectedValue(new Error('network'))
-      const el = await mountElement()
-      const e = await waitForEvent(el, EVENT_ERROR)
-      expect(e.detail.reason).toBe('unavailable')
-    })
-
     it('adds geojson source when mock mode is indicated in response', async () => {
-      global.fetch = fetchOk({ ...PARCELS_RESPONSE, mock: true })
-      const el = await mountElement()
-      await waitForEvent(el, EVENT_READY)
+      await mountReady({}, { ...PARCELS_RESPONSE, mock: true })
       expect(ml.addSource).toHaveBeenCalledWith('parcels', expect.objectContaining({ type: 'geojson' }))
     })
   })
@@ -330,9 +299,7 @@ describe('parcel-map web component', () => {
     })
 
     it('does not call fitBounds when bbox is null', async () => {
-      global.fetch = fetchOk({ ...PARCELS_RESPONSE, bbox: null })
-      const el = await mountElement()
-      await waitForEvent(el, EVENT_READY)
+      await mountReady({}, { ...PARCELS_RESPONSE, bbox: null })
       expect(ml.fitBounds).not.toHaveBeenCalled()
     })
 
@@ -528,10 +495,36 @@ describe('parcel-map web component', () => {
       expect(lastMapInstance().emit).toHaveBeenCalledTimes(2)
     })
 
-    it('selectParcels() waits for the interact plugin to subscribe before emitting', async () => {
-      const el = await mountReady()
-      vi.useFakeTimers()
-      try {
+    it('selectParcels() emits once for a repeated id in multi-select', async () => {
+      const el = await mountReady({ 'multi-select': 'true' })
+      attachInteractListener()
+
+      el.selectParcels(['SD7148-9160', 'SD7148-9160'])
+
+      expect(lastMapInstance().emit).toHaveBeenCalledTimes(1)
+    })
+
+    it('selectParcels() is a no-op before the map is ready', async () => {
+      global.fetch = fetchOk(PARCELS_RESPONSE)
+      const el = await mountElement()
+
+      expect(() => el.selectParcels(['SD7148-9160'])).not.toThrow()
+      expect(lastMapInstance().emit).not.toHaveBeenCalled()
+    })
+
+    describe('selectParcels() waiting for the interact plugin', () => {
+      let el
+
+      beforeEach(async () => {
+        el = await mountReady()
+        vi.useFakeTimers()
+      })
+
+      afterEach(() => {
+        vi.useRealTimers()
+      })
+
+      it('holds the emit until the plugin subscribes', () => {
         // Mirrors the real timing: the plugin's React effect has not run yet, so
         // an emit now would be dropped by the event bus.
         el.selectParcels(['SD7148-9160'])
@@ -541,45 +534,23 @@ describe('parcel-map web component', () => {
         vi.advanceTimersByTime(SELECT_LISTENER_POLL_MS)
 
         expect(lastMapInstance().emit).toHaveBeenCalledWith(SELECT_FEATURE_EVENT, expect.anything())
-      } finally {
-        vi.useRealTimers()
-      }
-    })
+      })
 
-    it('selectParcels() emits anyway once the wait for the plugin runs out', async () => {
-      const el = await mountReady()
-      vi.useFakeTimers()
-      try {
+      it('emits anyway once the wait runs out', () => {
         el.selectParcels(['SD7148-9160'])
         vi.advanceTimersByTime(SELECT_LISTENER_POLL_MS * SELECT_LISTENER_MAX_POLLS)
 
         expect(lastMapInstance().emit).toHaveBeenCalledWith(SELECT_FEATURE_EVENT, expect.anything())
-      } finally {
-        vi.useRealTimers()
-      }
-    })
+      })
 
-    it('selectParcels() stops waiting when the element is torn down', async () => {
-      const el = await mountReady()
-      vi.useFakeTimers()
-      try {
+      it('stops waiting when the element is torn down', () => {
         el.selectParcels(['SD7148-9160'])
         el.remove()
         attachInteractListener()
         vi.advanceTimersByTime(SELECT_LISTENER_POLL_MS * SELECT_LISTENER_MAX_POLLS)
 
         expect(lastMapInstance().emit).not.toHaveBeenCalled()
-      } finally {
-        vi.useRealTimers()
-      }
-    })
-
-    it('selectParcels() is a no-op before the map is ready', async () => {
-      global.fetch = fetchOk(PARCELS_RESPONSE)
-      const el = await mountElement()
-
-      expect(() => el.selectParcels(['SD7148-9160'])).not.toThrow()
-      expect(lastMapInstance().emit).not.toHaveBeenCalled()
+      })
     })
 
     it('hides the tooltip when the selection is cleared', async () => {
@@ -624,6 +595,16 @@ describe('parcel-map web component', () => {
       const el = await mountElement()
 
       expect(() => el.focusParcels()).not.toThrow()
+      expect(ml.fitBounds).not.toHaveBeenCalled()
+    })
+
+    it('is a no-op after the element is torn down', async () => {
+      const el = await mountReady()
+      el.remove()
+      ml.fitBounds.mockClear()
+
+      el.focusParcels()
+
       expect(ml.fitBounds).not.toHaveBeenCalled()
     })
   })
