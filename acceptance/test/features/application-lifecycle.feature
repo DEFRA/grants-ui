@@ -134,8 +134,6 @@ Feature: Application Lifecycle
             | SD6351 8781 |
         And continues
 
-        # check-details was moved to after start; no longer visited here
-
         # summary
         Then the user should be at URL "summary"
         When the user continues
@@ -226,6 +224,7 @@ Feature: Application Lifecycle
         When the user clicks on "Confirm and submit"
         And the grants-ui application status for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" should be "CLAIM_SUBMITTED"
         And the claim "-C01" for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" should have status "SUBMITTED"
+        And the claim "-C01" for CRN "1100995048" and SBI "115664358" should be submitted to GAS
 
         # claim-confirmation
         Then the user should be at URL "claim-confirmation"
