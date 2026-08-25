@@ -15,4 +15,10 @@ describe('map-select-parcel.html', () => {
     expect(template).toContain("getAssetPath('parcel-map.js')")
     expect(template).toContain("getAssetPath('parcel-select-page.js')")
   })
+
+  it('gives <parcel-map> a role so its aria-label is valid for assistive tech', () => {
+    const openingTag = template.match(/<parcel-map\b[\s\S]*?>/)?.[0] ?? ''
+    expect(openingTag).toContain('role="group"')
+    expect(openingTag).toContain('aria-label="Land parcel selection map"')
+  })
 })
