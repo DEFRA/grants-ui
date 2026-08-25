@@ -11,9 +11,10 @@ import {
 
 const noticeResponse = (text) => ({ ok: true, json: () => Promise.resolve({ text }) })
 
-function setupDom({ multiSelect = false } = {}) {
+function setupDom({ multiSelect = false, selectedParcels = '', errors = false } = {}) {
   document.body.innerHTML = `
     <input type="hidden" name="crumb" value="test-crumb">
+    ${errors ? '<div class="govuk-error-summary"><a id="error-link" href="#parcel-map">There is a problem</a></div>' : ''}
     <div id="map-no-parcels-error" hidden></div>
     <div id="selected-parcels-inputs"></div>
     <button id="map-select-continue">Continue</button>
@@ -34,7 +35,10 @@ function setupDom({ multiSelect = false } = {}) {
   const mapEl = document.createElement('parcel-map')
   mapEl.id = 'parcel-map'
   mapEl.setAttribute('multi-select', multiSelect ? 'true' : 'false')
+  mapEl.dataset.selectedParcels = selectedParcels
   mapEl.clearSelection = () => {}
+  mapEl.selectParcels = vi.fn()
+  mapEl.focusParcels = vi.fn()
   document.body.appendChild(mapEl)
   initParcelSelectPage(mapEl)
   return mapEl
@@ -192,6 +196,36 @@ describe('initParcelSelectPage', () => {
     const changeLink = document.getElementById('selected-parcel-change')
     changeLink.click()
     expect(mapEl.clearSelection).toHaveBeenCalled()
+  })
+
+  it('reselects the parcels the server sent back once the map is ready', () => {
+    const mapEl = setupDom({ selectedParcels: 'SD7148-9160,SD7148-9161' })
+    fire(mapEl, EVENT_READY, { parcelIds: ['SD7148-9160'], metaIndex: {} })
+    expect(mapEl.selectParcels).toHaveBeenCalledWith(['SD7148-9160', 'SD7148-9161'])
+  })
+
+  it('does not reselect anything when the server sent no selection', () => {
+    const mapEl = setupDom()
+    fire(mapEl, EVENT_READY, { parcelIds: ['SD7148-9160'], metaIndex: {} })
+    expect(mapEl.selectParcels).not.toHaveBeenCalled()
+  })
+
+  it('refocuses the map on the parcels when an error summary link is clicked', () => {
+    const mapEl = setupDom({ errors: true })
+    document.getElementById('error-link').click()
+    expect(mapEl.focusParcels).toHaveBeenCalled()
+  })
+
+  it('still lets the error summary link move focus to the map', () => {
+    const mapEl = setupDom({ errors: true })
+    const errorLink = document.getElementById('error-link')
+    let defaultPrevented = false
+    errorLink.addEventListener('click', (e) => {
+      defaultPrevented = e.defaultPrevented
+    })
+    errorLink.click()
+    expect(defaultPrevented).toBe(false)
+    expect(mapEl.focusParcels).toHaveBeenCalled()
   })
 
   it('does not navigate when the Change link is clicked', () => {

@@ -1,10 +1,15 @@
-import { buildSkeleton, buildOverlay, buildColorExpr, addParcelsToMap } from './map-helpers.js'
+import { buildSkeleton, buildOverlay, buildColorExpr, addParcelsToMap, fitToParcels } from './map-helpers.js'
 import { fetchParcelData } from './parcel-map-loader.js'
 import { initMap } from './parcel-map-init.js'
 import { attachTooltip } from './parcel-map-tooltip.js'
 import { attachSelectionRelay } from './parcel-map-selection.js'
 import {
   MULTI_SELECT_ATTRIBUTE,
+  LAYER_ID_FILL,
+  PARCEL_ID_PROPERTY,
+  SELECT_FEATURE_EVENT,
+  SELECT_LISTENER_POLL_MS,
+  SELECT_LISTENER_MAX_POLLS,
   MSG_ERROR_UNAVAILABLE,
   EVENT_READY,
   EVENT_ERROR,
@@ -29,6 +34,16 @@ export class ParcelMap extends HTMLElement {
   /** @type {ReturnType<typeof initMap>['interactPlugin'] | null} */
   #interactPlugin = null
 
+  /** @type {import('maplibre-gl').Map | null} */
+  #ml = null
+
+  /** Parcel metadata by compound id.
+   * @type {import('./map-helpers.js').MetaIndex} */
+  #metaIndex = {}
+
+  /** @type {import('./parcel-map-loader.js').BBox | null} */
+  #bbox = null
+
   /** @type {HTMLDivElement | null} */
   #mapEl = null
 
@@ -43,6 +58,9 @@ export class ParcelMap extends HTMLElement {
 
   /** @type {{ allowNextClear: () => void } | null} */
   #selectionRelay = null
+
+  /** @type {ReturnType<typeof globalThis.setTimeout> | null} */
+  #pendingSelect = null
 
   // customElements.define() upgrades an already-parsed <parcel-map> the instant
   // it registers, so connectedCallback() can run — and, once its data fetch
@@ -64,6 +82,10 @@ export class ParcelMap extends HTMLElement {
 
   #teardown() {
     this.#state = STATE_IDLE
+    if (this.#pendingSelect !== null) {
+      globalThis.clearTimeout(this.#pendingSelect)
+      this.#pendingSelect = null
+    }
     for (const off of this.#mlCleanup) {
       off()
     }
@@ -76,6 +98,9 @@ export class ParcelMap extends HTMLElement {
     this.#mapInstance = null
     this.#interactPlugin = null
     this.#selectionRelay = null
+    this.#ml = null
+    this.#metaIndex = {}
+    this.#bbox = null
     this.#mapEl?.parentElement?.remove()
     this.#mapEl = null
     this.#skeleton?.remove()
@@ -121,6 +146,9 @@ export class ParcelMap extends HTMLElement {
     } else {
       const colorExpr = buildColorExpr(data.parcelIds)
       addParcelsToMap(ml, data, colorExpr)
+      this.#ml = ml
+      this.#metaIndex = data.metaIndex
+      this.#bbox = data.bbox
       const tooltip = attachTooltip(ml, data.metaIndex, this.#mapEl, this.#mlCleanup)
       this.#selectionRelay = attachSelectionRelay({
         host: this,
@@ -171,5 +199,65 @@ export class ParcelMap extends HTMLElement {
   clearSelection() {
     this.#selectionRelay?.allowNextClear()
     this.#interactPlugin?.clear()
+  }
+
+  /**
+   * Selects parcels as if the user had clicked them, so a selection the server
+   * sent back (e.g. after a rejected submit) survives the re-render.
+   * @param {string[]} ids
+   */
+  selectParcels(ids) {
+    if (this.#state !== STATE_READY) {
+      return
+    }
+    const known = [...new Set(ids)].filter((id) => this.#metaIndex[id])
+    const multiSelect = this.getAttribute(MULTI_SELECT_ATTRIBUTE) === 'true'
+    const toSelect = multiSelect ? known : known.slice(0, 1)
+    if (toSelect.length === 0) {
+      return
+    }
+
+    this.#whenInteractListening(() => {
+      for (const id of toSelect) {
+        this.#mapInstance?.emit(SELECT_FEATURE_EVENT, {
+          featureId: id,
+          layerId: LAYER_ID_FILL,
+          idProperty: PARCEL_ID_PROPERTY,
+          properties: this.#metaIndex[id]
+        })
+      }
+    })
+  }
+
+  /**
+   * Runs `apply` once the interact plugin is listening for SELECT_FEATURE_EVENT.
+   * @param {() => void} apply
+   */
+  #whenInteractListening(apply) {
+    const isListening = () => {
+      const bus = /** @type {{ eventBus?: { events?: Record<string, unknown[]> } } | null} */ (this.#mapInstance)
+        ?.eventBus
+      return (bus?.events?.[SELECT_FEATURE_EVENT]?.length ?? 0) > 0
+    }
+
+    let polls = 0
+    const poll = () => {
+      this.#pendingSelect = null
+      if (this.#state !== STATE_READY) {
+        return
+      }
+      polls += 1
+      if (isListening() || polls >= SELECT_LISTENER_MAX_POLLS) {
+        apply()
+        return
+      }
+      this.#pendingSelect = globalThis.setTimeout(poll, SELECT_LISTENER_POLL_MS)
+    }
+    poll()
+  }
+
+  // Re-fits the viewport to every selectable parcel, undoing any pan/zoom.
+  focusParcels() {
+    fitToParcels(this.#ml, this.#bbox)
   }
 }

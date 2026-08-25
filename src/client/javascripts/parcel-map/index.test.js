@@ -18,7 +18,18 @@ vi.mock('@defra/interactive-map/plugins/interact', () => ({
 }))
 import InteractiveMap from '@defra/interactive-map'
 import createInteractPlugin from '@defra/interactive-map/plugins/interact'
-import { LAYER_ID_FILL, LAYER_ID_OUTLINE, LAYER_ID_LABEL, EVENT_READY, EVENT_ERROR, EVENT_SELECTION } from './config.js'
+import {
+  LAYER_ID_FILL,
+  LAYER_ID_OUTLINE,
+  LAYER_ID_LABEL,
+  PARCEL_ID_PROPERTY,
+  SELECT_FEATURE_EVENT,
+  SELECT_LISTENER_POLL_MS,
+  SELECT_LISTENER_MAX_POLLS,
+  EVENT_READY,
+  EVENT_ERROR,
+  EVENT_SELECTION
+} from './config.js'
 import { makeMlMap } from './test-helpers.js'
 
 const PARCELS_RESPONSE = {
@@ -40,6 +51,9 @@ function makeFeature(sheetId, parcelId, numericId) {
 function stubInteractiveMap({ mode = 'ready', ml, capture, once = false } = {}) {
   const impl = function () {
     this._handlers = {}
+    // Mirrors the real EventBus: `events` is the listener map the element polls
+    // to know whether the interact plugin has subscribed yet.
+    this.eventBus = { events: this._handlers }
     this.on = vi.fn((event, cb) => {
       this._handlers[event] = this._handlers[event] ?? []
       this._handlers[event].push(cb)
@@ -76,6 +90,12 @@ function waitForEvent(el, eventName) {
 
 function lastMapInstance() {
   return InteractiveMap.mock.instances.at(-1)
+}
+
+// The interact plugin only subscribes to this from a React effect, well after
+// EVENT_READY — tests that expect a selection to land have to stand that in.
+function attachInteractListener() {
+  lastMapInstance().on(SELECT_FEATURE_EVENT, () => {})
 }
 
 function emitSelectionChange(selectedFeatures) {
@@ -467,6 +487,101 @@ describe('parcel-map web component', () => {
       expect(ml.setPaintProperty).toHaveBeenCalledWith(LAYER_ID_FILL, 'fill-opacity', expect.arrayContaining(['match']))
     })
 
+    it('selectParcels() emits an interact selection carrying the parcel properties', async () => {
+      const el = await mountReady()
+      attachInteractListener()
+
+      el.selectParcels(['SD7148-9160'])
+
+      expect(lastMapInstance().emit).toHaveBeenCalledWith(SELECT_FEATURE_EVENT, {
+        featureId: 'SD7148-9160',
+        layerId: LAYER_ID_FILL,
+        idProperty: PARCEL_ID_PROPERTY,
+        properties: expect.objectContaining({ id: 'SD7148-9160', areaHa: 2.5 })
+      })
+    })
+
+    it('selectParcels() ignores ids the map does not know about', async () => {
+      const el = await mountReady()
+      attachInteractListener()
+
+      el.selectParcels(['XX0000-0000'])
+
+      expect(lastMapInstance().emit).not.toHaveBeenCalled()
+    })
+
+    it('selectParcels() takes only the first id in single-select', async () => {
+      const el = await mountReady()
+      attachInteractListener()
+
+      el.selectParcels(['SD7148-9160', 'SD7148-9161'])
+
+      expect(lastMapInstance().emit).toHaveBeenCalledTimes(1)
+    })
+
+    it('selectParcels() selects every known id in multi-select', async () => {
+      const el = await mountReady({ 'multi-select': 'true' })
+      attachInteractListener()
+
+      el.selectParcels(['SD7148-9160', 'SD7148-9161'])
+
+      expect(lastMapInstance().emit).toHaveBeenCalledTimes(2)
+    })
+
+    it('selectParcels() waits for the interact plugin to subscribe before emitting', async () => {
+      const el = await mountReady()
+      vi.useFakeTimers()
+      try {
+        // Mirrors the real timing: the plugin's React effect has not run yet, so
+        // an emit now would be dropped by the event bus.
+        el.selectParcels(['SD7148-9160'])
+        expect(lastMapInstance().emit).not.toHaveBeenCalled()
+
+        attachInteractListener()
+        vi.advanceTimersByTime(SELECT_LISTENER_POLL_MS)
+
+        expect(lastMapInstance().emit).toHaveBeenCalledWith(SELECT_FEATURE_EVENT, expect.anything())
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('selectParcels() emits anyway once the wait for the plugin runs out', async () => {
+      const el = await mountReady()
+      vi.useFakeTimers()
+      try {
+        el.selectParcels(['SD7148-9160'])
+        vi.advanceTimersByTime(SELECT_LISTENER_POLL_MS * SELECT_LISTENER_MAX_POLLS)
+
+        expect(lastMapInstance().emit).toHaveBeenCalledWith(SELECT_FEATURE_EVENT, expect.anything())
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('selectParcels() stops waiting when the element is torn down', async () => {
+      const el = await mountReady()
+      vi.useFakeTimers()
+      try {
+        el.selectParcels(['SD7148-9160'])
+        el.remove()
+        attachInteractListener()
+        vi.advanceTimersByTime(SELECT_LISTENER_POLL_MS * SELECT_LISTENER_MAX_POLLS)
+
+        expect(lastMapInstance().emit).not.toHaveBeenCalled()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('selectParcels() is a no-op before the map is ready', async () => {
+      global.fetch = fetchOk(PARCELS_RESPONSE)
+      const el = await mountElement()
+
+      expect(() => el.selectParcels(['SD7148-9160'])).not.toThrow()
+      expect(lastMapInstance().emit).not.toHaveBeenCalled()
+    })
+
     it('hides the tooltip when the selection is cleared', async () => {
       const el = await mountReady()
 
@@ -485,6 +600,31 @@ describe('parcel-map web component', () => {
       await cleared
 
       expect(tooltip.style.display).toBe('none')
+    })
+  })
+
+  describe('focusParcels', () => {
+    it('re-fits the viewport to the parcels bounding box', async () => {
+      const el = await mountReady()
+      ml.fitBounds.mockClear()
+
+      el.focusParcels()
+
+      expect(ml.fitBounds).toHaveBeenCalledWith(
+        [
+          [-2.5, 51.4],
+          [-2.3, 51.6]
+        ],
+        expect.objectContaining({ animate: false })
+      )
+    })
+
+    it('is a no-op before the map is ready', async () => {
+      global.fetch = fetchOk(PARCELS_RESPONSE)
+      const el = await mountElement()
+
+      expect(() => el.focusParcels()).not.toThrow()
+      expect(ml.fitBounds).not.toHaveBeenCalled()
     })
   })
 

@@ -9,8 +9,8 @@ import { log, error, LogCodes } from '~/src/server/common/helpers/logging/log.js
 
 const PAGE_PATH = '/select-land-parcel'
 
-const NO_ELIGIBLE_ACTIONS_ERROR =
-  'There are no eligible actions for this parcel.<br>' +
+const noEligibleActionsError = (parcelReference) =>
+  `There are no eligible actions for parcel ${parcelReference}.<br>` +
   'Change the parcel land cover or choose a different parcel to view eligible actions.'
 
 function makePageDef(path = PAGE_PATH) {
@@ -63,11 +63,15 @@ function makeH() {
   }
 }
 
-const expectNoActionsError = (h) =>
+const expectNoActionsError = (h, parcelReferences = ['SD7148 9160'], selectedParcelIds = ['SD7148-9160']) =>
   expect(h.view).toHaveBeenCalledWith(
     'map-select-parcel',
     expect.objectContaining({
-      errors: [{ html: NO_ELIGIBLE_ACTIONS_ERROR, href: '#parcel-map' }]
+      errors: parcelReferences.map((reference) => ({
+        html: noEligibleActionsError(reference),
+        href: '#parcel-map'
+      })),
+      selectedParcelIds
     })
   )
 
@@ -192,6 +196,21 @@ describe('MapSelectPageController', () => {
       expect(controller.proceed).not.toHaveBeenCalled()
     })
 
+    it('escapes the parcel id echoed into the error HTML', async () => {
+      fetchActionsForParcel.mockResolvedValue({ actions: [] })
+      const controller = makeController({}, withActions)
+      const h = makeH()
+
+      await controller.handlePost(makeRequest({ landParcels: '<img src=x>-9160' }), makeContext(), h)
+
+      expect(h.view).toHaveBeenCalledWith(
+        'map-select-parcel',
+        expect.objectContaining({
+          errors: [expect.objectContaining({ html: expect.stringContaining('&lt;img src=x&gt; 9160') })]
+        })
+      )
+    })
+
     it('proceeds when the parcel has eligible actions', async () => {
       fetchActionsForParcel.mockResolvedValue({ actions: [{ code: 'CLIG3' }] })
       const controller = makeController({}, withActions)
@@ -233,7 +252,7 @@ describe('MapSelectPageController', () => {
 
       await controller.handlePost(makeRequest({ landParcels: ['SD7148-9160', 'SD7148-9161'] }), makeContext(), h)
 
-      expectNoActionsError(h)
+      expectNoActionsError(h, ['SD7148 9161'], ['SD7148-9160', 'SD7148-9161'])
       expect(controller.setState).not.toHaveBeenCalled()
     })
 
@@ -258,7 +277,7 @@ describe('MapSelectPageController', () => {
         { sheetId: 'SD7148', parcelId: '9161' },
         expect.anything()
       )
-      expectNoActionsError(h)
+      expectNoActionsError(h, ['SD7148 9161'], ['SD7148-9160', 'SD7148-9161'])
       expect(controller.setState).not.toHaveBeenCalled()
     })
 
