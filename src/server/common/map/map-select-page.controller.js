@@ -3,14 +3,16 @@ import { withTaskContext } from '~/src/server/task-list/task-list.helper.js'
 import { getParcelIdsFromPayload } from '~/src/server/land-grants/utils/parcel-request.utils.js'
 import { fetchActionsForParcel } from '~/src/server/land-grants/services/land-grants.service.js'
 import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
-import { parseLandParcel } from '~/src/shared/format-parcel.js'
+import { formatParcelReference, parseLandParcel } from '~/src/shared/format-parcel.js'
+import { escapeHtml } from '~/src/server/common/utils/escape-html.js'
 import { log, error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { isNoActionsMockEnabled } from '~/src/server/dev-tools/mock-overrides.js'
 
-// Must match the no-eligible-actions copy in
-// src/server/land-grants/views/select-actions.html
-const NO_ELIGIBLE_ACTIONS_ERROR =
-  'There are no eligible actions for this parcel.<br>' +
+// Second line must match the no-eligible-actions copy in
+// src/server/land-grants/views/select-actions.html.
+/** @param {string} selectedParcelId */
+const noEligibleActionsError = (selectedParcelId) =>
+  `There are no eligible actions for parcel ${escapeHtml(formatParcelReference(selectedParcelId))}.<br>` +
   'Change the parcel land cover or choose a different parcel to view eligible actions.'
 
 export default class MapSelectPageController extends withTaskContext(QuestionPageController) {
@@ -189,13 +191,15 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
     const parcelsWithNoActions = await this.findParcelsWithNoActions(request, selectedParcelIds)
     if (parcelsWithNoActions.length > 0) {
       // State is deliberately left untouched: a rejected change must not destroy a
-      // previously completed selection and its actions. The map always re-renders
-      // unselected regardless, because parcel-select-page.js builds its inputs from
-      // map events only — there is no server-side re-hydration of the selection.
+      // previously completed selection and its actions.
       return h.view(
         this.viewName,
         this.buildViewModel(request, context, {
-          errors: [{ html: NO_ELIGIBLE_ACTIONS_ERROR, href: '#parcel-map' }]
+          errors: parcelsWithNoActions.map((selectedParcelId) => ({
+            html: noEligibleActionsError(selectedParcelId),
+            href: '#parcel-map'
+          })),
+          selectedParcelIds
         })
       )
     }

@@ -21,6 +21,11 @@ const DOM_ID_SELECTED_PARCEL_REFERENCE = 'selected-parcel-reference'
 const DOM_ID_SELECTED_PARCEL_AREA = 'selected-parcel-area'
 const DOM_ID_SELECTED_PARCEL_CHANGE = 'selected-parcel-change'
 const DOM_ID_SELECTED_PARCELS_INPUTS = 'selected-parcels-inputs'
+const DOM_ID_ADDITIONAL_REQUIREMENTS_ROW = 'selected-parcel-additional-requirements-row'
+const DOM_ID_ADDITIONAL_REQUIREMENTS = 'selected-parcel-additional-requirements'
+const DOM_ID_ADDITIONAL_REQUIREMENTS_STATUS = 'selected-parcel-additional-requirements-status'
+const SELECTOR_ERROR_SUMMARY_MAP_LINK = `.govuk-error-summary a[href="#${DOM_ID_PARCEL_MAP}"]`
+const DATASET_SELECTED_PARCELS = 'selectedParcels'
 
 /** @param {string} id */
 const unhide = (id) => {
@@ -89,6 +94,78 @@ const writeHiddenInputs = (selectedIds) => {
 }
 
 /**
+ * Fetches the parcel's consent notice, worded by the server so the copy lives
+ * in one place. Empty string when nothing applies, null when the lookup
+ * failed.
+ * @param {string} parcelId
+ * @returns {Promise<string | null>}
+ */
+const fetchConsentNotice = async (parcelId) => {
+  const crumb = /** @type {HTMLInputElement | null} */ (document.querySelector('input[name="crumb"]'))?.value
+  try {
+    const response = await fetch(`/api/land-grants/actions/${encodeURIComponent(parcelId)}/consents`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', ...(crumb ? { 'X-CSRF-Token': crumb } : {}) },
+      body: '{}'
+    })
+    if (!response.ok) {
+      return null
+    }
+    const { text } = await response.json()
+    return typeof text === 'string' ? text : null
+  } catch {
+    return null
+  }
+}
+
+const clearAdditionalRequirements = () => {
+  const row = document.getElementById(DOM_ID_ADDITIONAL_REQUIREMENTS_ROW)
+  if (row) {
+    row.hidden = true
+  }
+  setText(DOM_ID_ADDITIONAL_REQUIREMENTS, '')
+  setText(DOM_ID_ADDITIONAL_REQUIREMENTS_STATUS, '')
+}
+
+/** @param {string} text */
+const showAdditionalRequirements = (text) => {
+  setText(DOM_ID_ADDITIONAL_REQUIREMENTS, text)
+  unhide(DOM_ID_ADDITIONAL_REQUIREMENTS_ROW)
+  setText(DOM_ID_ADDITIONAL_REQUIREMENTS_STATUS, text)
+}
+
+/**
+ * Keeps the "Additional requirements" row in step with the current selection. The
+ * notice belongs to the selected parcel, so every selection event, including
+ * deselection and multi-selection, invalidates any lookup still in flight and
+ * clears the row before asking for a new one.
+ * @returns {(selectedParcels: SelectedParcel[]) => Promise<void>}
+ */
+function createConsentRequirementsUpdater() {
+  let requestId = 0
+
+  return async function updateConsentRequirements(selectedParcels) {
+    requestId += 1
+    const thisRequestId = requestId
+    clearAdditionalRequirements()
+
+    if (selectedParcels.length !== 1) {
+      return
+    }
+
+    const text = await fetchConsentNotice(selectedParcels[0].id)
+    if (thisRequestId !== requestId) {
+      return
+    }
+
+    if (text) {
+      showAdditionalRequirements(text)
+    }
+  }
+}
+
+/**
  * Wire the page's form DOM to a <parcel-map> element's events.
  * @param {HTMLElement | null} mapEl
  */
@@ -100,10 +177,22 @@ export function initParcelSelectPage(mapEl) {
   /** @type {import('./map-helpers.js').MetaIndex} */
   let metaIndex = {}
 
+  const serverSelectedIds = (mapEl.dataset[DATASET_SELECTED_PARCELS] ?? '').split(',').filter(Boolean)
+
+  const mapWithSelection = /** @type {HTMLElement & {
+    clearSelection?: () => void,
+    selectParcels?: (ids: string[]) => void,
+    focusParcels?: () => void
+  }} */ (mapEl)
+
   /** @param {ReadyDetail} detail */
   const handleReady = (detail) => {
     metaIndex = detail.metaIndex ?? {}
     updateMapTotals(metaIndex, detail.parcelIds ?? [])
+
+    if (serverSelectedIds.length > 0) {
+      mapWithSelection.selectParcels?.(serverSelectedIds)
+    }
   }
 
   /** @param {ParcelMapErrorDetail} detail */
@@ -125,10 +214,13 @@ export function initParcelSelectPage(mapEl) {
     handleError(/** @type {CustomEvent<ParcelMapErrorDetail>} */ (e).detail)
   })
 
+  const updateConsentRequirements = createConsentRequirementsUpdater()
+
   mapEl.addEventListener(EVENT_SELECTION, (/** @type {Event} */ e) => {
     const { selectedParcels } = /** @type {CustomEvent<SelectionDetail>} */ (e).detail
     writeHiddenInputs(selectedParcels.map((p) => p.id))
     updateSelectedParcelDetails(selectedParcels)
+    updateConsentRequirements(selectedParcels)
   })
 
   // customElements.define() upgrades an already-parsed <parcel-map> synchronously,
@@ -145,11 +237,14 @@ export function initParcelSelectPage(mapEl) {
     handleError(/** @type {ParcelMapErrorDetail} */ (lastError.detail))
   }
 
-  const mapWithSelection = /** @type {HTMLElement & { clearSelection?: () => void }} */ (mapEl)
   const changeLink = document.getElementById(DOM_ID_SELECTED_PARCEL_CHANGE)
   changeLink?.addEventListener('click', (e) => {
     e.preventDefault()
     mapWithSelection.clearSelection?.()
+  })
+
+  document.querySelectorAll(SELECTOR_ERROR_SUMMARY_MAP_LINK).forEach((link) => {
+    link.addEventListener('click', () => mapWithSelection.focusParcels?.())
   })
 }
 

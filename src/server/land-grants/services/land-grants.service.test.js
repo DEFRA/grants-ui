@@ -7,6 +7,7 @@ import {
   fetchGroupedActionsForParcel as fetchGroupedActionsForParcelService,
   fetchActionsForParcel as fetchActionsForParcelService,
   fetchActionsWithPlannedActions as fetchActionsWithPlannedActionsService,
+  fetchConsentRequirementsForParcel as fetchConsentRequirementsForParcelService,
   fetchParcels as fetchParcelsService,
   fetchParcelsGroups as fetchParcelsGroupsService,
   fetchParcelTileLocation as fetchParcelTileLocationService,
@@ -67,6 +68,7 @@ const calculateLandActionsPayment = withUserContext(calculateLandActionsPaymentS
 const fetchGroupedActionsForParcel = withUserContext(fetchGroupedActionsForParcelService)
 const fetchActionsForParcel = withUserContext(fetchActionsForParcelService)
 const fetchActionsWithPlannedActions = withUserContext(fetchActionsWithPlannedActionsService)
+const fetchConsentRequirementsForParcel = withUserContext(fetchConsentRequirementsForParcelService)
 const fetchParcels = withUserContext(fetchParcelsService)
 const fetchParcelsGroups = withUserContext(fetchParcelsGroupsService)
 const fetchParcelTileLocation = withUserContext(fetchParcelTileLocationService)
@@ -101,6 +103,8 @@ describe('land-grants service', () => {
   })
 
   describe('calculateLandActionsPayment', () => {
+    const PAYMENT_ERROR = 'Error calculating payment. Please try again later.'
+
     it('should calculate payment and format amount', async () => {
       const mockCalculateResponse = {
         payment: { annualTotalPence: 123456 }
@@ -136,8 +140,7 @@ describe('land-grants service', () => {
       expect(formatCurrency).toHaveBeenCalledWith(1234.56)
       expect(result).toEqual({
         payment: { annualTotalPence: 123456 },
-        paymentTotal: '£1,234.56',
-        errorMessage: undefined
+        paymentTotal: '£1,234.56'
       })
     })
 
@@ -194,37 +197,21 @@ describe('land-grants service', () => {
       })
     })
 
-    it('should handle zero payment amount', async () => {
-      const mockCalculateResponse = { payment: { total: 0 } }
-      calculate.mockResolvedValueOnce(mockCalculateResponse)
+    it.each([
+      ['a zero annual total', { payment: { annualTotalPence: 0 } }, '£0.00', undefined],
+      ['no payment object', {}, undefined, PAYMENT_ERROR],
+      ['a payment with no annual total', { payment: { total: 0 } }, undefined, PAYMENT_ERROR]
+    ])('handles %s', async (_, response, expectedTotal, expectedError) => {
+      calculate.mockResolvedValueOnce(response)
       formatCurrency.mockReturnValue('£0.00')
 
-      const result = await calculateLandActionsPayment({
-        landParcels: {
-          'SHEET123-PARCEL456': {
-            actionsObj: { CMOR1: { value: 0 } }
-          }
-        }
-      })
+      const result = await calculateLandActionsPayment({ landParcels: { 'SHEET123-PARCEL456': {} } })
 
-      expect(result.paymentTotal).toBe('£0.00')
-      expect(result.errorMessage).toBeUndefined()
-    })
-
-    it('should handle missing payment data with error message', async () => {
-      const mockCalculateResponse = {/* no payment property */}
-      calculate.mockResolvedValueOnce(mockCalculateResponse)
-
-      formatCurrency.mockReturnValue(null)
-
-      const result = await calculateLandActionsPayment({
-        landParcels: {
-          'SHEET123-PARCEL456': {}
-        }
-      })
-
-      expect(result.paymentTotal).toBeNull()
-      expect(result.errorMessage).toBe('Error calculating payment. Please try again later.')
+      expect(result.paymentTotal).toBe(expectedTotal)
+      expect(result.errorMessage).toBe(expectedError)
+      // A missing amount must never reach formatCurrency: it would format NaN
+      // and render "£NaN" to the user instead of the error message.
+      expect(formatCurrency).toHaveBeenCalledTimes(expectedTotal ? 1 : 0)
     })
 
     it('should propagate API errors', async () => {
@@ -875,6 +862,113 @@ describe('land-grants service', () => {
       expect(parcelsWithGroups).toHaveBeenCalledTimes(1)
       expect(Array.isArray(flatResult.actions)).toBe(true)
       expect(Array.isArray(groupedResult.actions[0]?.actions)).toBe(true)
+    })
+  })
+
+  describe('fetchConsentRequirementsForParcel', () => {
+    const parcelWithActions = (actions) => ({
+      parcels: [{ parcelId: 'PARCEL456', sheetId: 'SHEET123', size: { value: 50.5, unit: 'ha' }, actions }]
+    })
+
+    beforeEach(() => {
+      clearParcelCache()
+      configState.reset()
+      configState.set('landGrants.enableSSSIFeature', true)
+      configState.set('landGrants.enableHeferFeature', true)
+    })
+
+    it.each([
+      ['neither requirement', [{ code: 'CMOR1', description: 'Assess moorland' }], []],
+      ['a HEFER only', [{ code: 'CMOR1', description: 'Assess moorland', heferRequired: true }], ['hefer']],
+      ['SSSI consent only', [{ code: 'CMOR1', description: 'Assess moorland', sssiConsentRequired: true }], ['sssi']],
+      [
+        'both flags across different actions',
+        [
+          { code: 'UPL1', description: 'Moderate grazing', heferRequired: true },
+          { code: 'CMOR1', description: 'Assess moorland', sssiConsentRequired: true }
+        ],
+        ['sssi', 'hefer']
+      ]
+    ])('should return the consents for %s', async (_label, actions, expected) => {
+      parcelsWithActions.mockResolvedValueOnce(parcelWithActions(actions))
+
+      const result = await fetchConsentRequirementsForParcel({ parcelId: 'PARCEL456', sheetId: 'SHEET123' })
+
+      expect(result).toEqual({ consents: expected })
+    })
+
+    it('should report consents for actions no journey enables', async () => {
+      parcelsWithActions.mockResolvedValueOnce(
+        parcelWithActions([
+          { code: 'CMOR1', description: 'Assess moorland', sssiConsentRequired: true },
+          { code: 'UPL2', description: 'Supplementary winter feeding', heferRequired: true }
+        ])
+      )
+
+      const result = await fetchConsentRequirementsForParcel({ parcelId: 'PARCEL456', sheetId: 'SHEET123' })
+
+      expect(result).toEqual({ consents: ['sssi', 'hefer'] })
+    })
+
+    it('should ask the API for the parcel without narrowing to any action list', async () => {
+      parcelsWithActions.mockResolvedValueOnce(parcelWithActions([{ code: 'CMOR1', description: 'Assess moorland' }]))
+
+      await fetchConsentRequirementsForParcel({ parcelId: 'PARCEL456', sheetId: 'SHEET123' })
+
+      expect(parcelsWithActions).toHaveBeenCalledWith(['SHEET123-PARCEL456'], mockApiEndpoint, mockUserContext, [])
+    })
+
+    it('should omit a key whose feature flag is off, even when the action has the field set', async () => {
+      configState.set('landGrants.enableHeferFeature', false)
+      parcelsWithActions.mockResolvedValueOnce(
+        parcelWithActions([
+          { code: 'CMOR1', description: 'Assess moorland', sssiConsentRequired: true, heferRequired: true }
+        ])
+      )
+
+      const result = await fetchConsentRequirementsForParcel({ parcelId: 'PARCEL456', sheetId: 'SHEET123' })
+
+      expect(result).toEqual({ consents: ['sssi'] })
+    })
+
+    it('should cache its own unfiltered lookup rather than calling upstream twice', async () => {
+      parcelsWithActions.mockResolvedValue(
+        parcelWithActions([{ code: 'CMOR1', description: 'Assess moorland', sssiConsentRequired: true }])
+      )
+
+      await fetchConsentRequirementsForParcel({ parcelId: 'PARCEL456', sheetId: 'SHEET123' })
+      const result = await fetchConsentRequirementsForParcel({ parcelId: 'PARCEL456', sheetId: 'SHEET123' })
+
+      expect(parcelsWithActions).toHaveBeenCalledTimes(1)
+      expect(result).toEqual({ consents: ['sssi'] })
+    })
+
+    it('should not collide with the journey-filtered cache entry for the same parcel', async () => {
+      parcelsWithActions.mockResolvedValue(
+        parcelWithActions([
+          { code: 'CMOR1', description: 'Assess moorland', sssiConsentRequired: true },
+          { code: 'UNKNOWN1', description: 'A disabled action', heferRequired: true }
+        ])
+      )
+
+      const filtered = await fetchActionsForParcel({
+        parcelId: 'PARCEL456',
+        sheetId: 'SHEET123',
+        enabledLandActions: ['CMOR1']
+      })
+      const result = await fetchConsentRequirementsForParcel({ parcelId: 'PARCEL456', sheetId: 'SHEET123' })
+
+      expect(filtered.actions.map((a) => a.code)).toEqual(['CMOR1'])
+      expect(parcelsWithActions).toHaveBeenCalledTimes(2)
+      expect(result).toEqual({ consents: ['sssi', 'hefer'] })
+    })
+
+    it('should propagate an upstream failure to the caller', async () => {
+      parcelsWithActions.mockRejectedValueOnce(new Error('upstream down'))
+
+      await expect(fetchConsentRequirementsForParcel({ parcelId: 'PARCEL456', sheetId: 'SHEET123' })).rejects.toThrow(
+        'upstream down'
+      )
     })
   })
 
