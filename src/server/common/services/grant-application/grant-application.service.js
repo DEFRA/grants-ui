@@ -308,6 +308,20 @@ export async function getApplicationStatus(code, clientRef, request) {
 }
 
 /**
+ * Fetches the available claim entitlements for an application from GAS
+ * @param {string} code - Grant code
+ * @param {string} clientRef - Application client reference
+ * @param {AnyRequest | undefined} request - Request object
+ * @returns {Promise<any>} - Promise that resolves to the available claims payload JSON
+ * @throws {GrantApplicationServiceApiError} - If the API request fails
+ */
+export async function getAvailableClaimEntitlements(code, clientRef, request) {
+  const url = `${GAS_API_ENDPOINT}/grants/${code}/entitlements/${clientRef.toLowerCase()}/available-claims`
+  const response = await makeGasApiRequest(url, code, request, { method: 'GET' })
+  return response.json()
+}
+
+/**
  * Temporary function to map `farm-payments` grant code to `frps-private-beta` for GAS API calls
  * @param {string} grantCode
  * @returns {string}

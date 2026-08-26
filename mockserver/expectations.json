@@ -11,6 +11,40 @@
     }
   },
   {
+    "id": "gas-get-available-claim-entitlements-200",
+    "priority": 0,
+    "httpRequest": {
+      "method": "GET",
+      "path": "/grants/.*/entitlements/.*/available-claims"
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "body": {
+        "availableClaims": [
+          {
+            "code": "ENT_CS_CAPITAL_PA3",
+            "name": "PA3 Woodland Management Plan entitlement",
+            "description": "The maximum eligible woodland area that can be claimed under PA3.",
+            "data": {
+              "totalHectares": {
+                "value": 85.1099,
+                "decimalPlaces": 4,
+                "minValue": 0.5,
+                "maxValue": null
+              },
+              "actionCode": {
+                "value": "PA3"
+              },
+              "actionVersion": {
+                "value": "1.2.3"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
     "id": "gas-claims-post-204",
     "priority": 0,
     "httpRequest": {

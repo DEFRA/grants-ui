@@ -10,6 +10,7 @@ let makeGasApiRequest
 let submitGrantApplication
 let submitClaim
 let getApplicationStatus
+let getAvailableClaimEntitlements
 
 vi.mock('~/src/server/common/helpers/retry.js')
 
@@ -44,6 +45,7 @@ describe('Grant Application service (token present)', () => {
     submitClaim = mod.submitClaim
     const mod2 = await import('./grant-application.service')
     getApplicationStatus = mod2.getApplicationStatus
+    getAvailableClaimEntitlements = mod2.getAvailableClaimEntitlements
   })
 
   beforeEach(() => {
@@ -731,6 +733,93 @@ describe('Grant Application service (token present)', () => {
         headers: authHeaders
       })
       expect(result).toEqual(mockRawResponse)
+    })
+  })
+
+  describe('getAvailableClaimEntitlements', () => {
+    const availableClaimsResponse = {
+      availableClaims: [
+        {
+          code: 'ENT_CS_CAPITAL_PA3',
+          name: 'PA3 Woodland Management Plan entitlement',
+          description: 'The maximum eligible woodland area that can be claimed under PA3.',
+          data: {
+            totalHectares: { value: 455000, decimalPlaces: 4, minValue: 0.5, maxValue: null },
+            actionCode: { value: 'PA3' },
+            actionVersion: { value: '1.2.3' }
+          }
+        }
+      ]
+    }
+
+    test('should call the available-claims endpoint with GET method and return the parsed payload', async () => {
+      const mockedFetch = mockFetch()
+      const mockRawResponse = {
+        ok: true,
+        json: vi.fn().mockResolvedValueOnce(availableClaimsResponse)
+      }
+
+      mockedFetch.mockResolvedValueOnce(mockRawResponse)
+
+      const result = await getAvailableClaimEntitlements('my-code', 'client-ref', mockRequest)
+
+      expect(mockedFetch).toHaveBeenCalledWith(`${gasApi}/grants/my-code/entitlements/client-ref/available-claims`, {
+        method: 'GET',
+        headers: authHeaders
+      })
+      expect(result).toEqual(availableClaimsResponse)
+      expect(mockRawResponse.json).toHaveBeenCalled()
+    })
+
+    test('should lowercase the clientRef in the available-claims endpoint URL', async () => {
+      const mockedFetch = mockFetch()
+      const mockRawResponse = {
+        ok: true,
+        json: vi.fn().mockResolvedValueOnce(availableClaimsResponse)
+      }
+
+      mockedFetch.mockResolvedValueOnce(mockRawResponse)
+
+      await getAvailableClaimEntitlements('my-code', 'WMP-A1B2-C3D4', mockRequest)
+
+      expect(mockedFetch).toHaveBeenCalledWith(`${gasApi}/grants/my-code/entitlements/wmp-a1b2-c3d4/available-claims`, {
+        method: 'GET',
+        headers: authHeaders
+      })
+    })
+
+    test('should use the grant code as-is when fetching available claims', async () => {
+      const mockedFetch = mockFetch()
+      const mockRawResponse = {
+        ok: true,
+        json: vi.fn().mockResolvedValueOnce(availableClaimsResponse)
+      }
+
+      mockedFetch.mockResolvedValueOnce(mockRawResponse)
+
+      await getAvailableClaimEntitlements('farm-payments', 'client-ref', mockRequest)
+
+      expect(mockedFetch).toHaveBeenCalledWith(
+        `${gasApi}/grants/farm-payments/entitlements/client-ref/available-claims`,
+        {
+          method: 'GET',
+          headers: authHeaders
+        }
+      )
+    })
+
+    test('should throw an error when the request fails', async () => {
+      const mockedFetch = mockFetch()
+      const mockMessage = 'Not Found'
+
+      mockedFetch.mockResolvedValue({
+        ok: false,
+        status: 404,
+        statusText: 'Not Found',
+        json: vi.fn().mockResolvedValueOnce({ message: mockMessage })
+      })
+
+      await expect(getAvailableClaimEntitlements('my-code', 'client-ref', mockRequest)).rejects.toThrow(mockMessage)
     })
   })
 

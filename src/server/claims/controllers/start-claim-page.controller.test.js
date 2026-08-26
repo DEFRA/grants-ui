@@ -2,10 +2,30 @@ import { vi } from 'vitest'
 import StartClaimPageController from './start-claim-page.controller.js'
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { resolveStrategy } from '~/src/server/payment/resolve-strategy.js'
+import { getAvailableClaimEntitlements } from '~/src/server/common/services/grant-application/grant-application.service.js'
 
 vi.mock('~/src/server/payment/resolve-strategy.js', () => ({
   resolveStrategy: vi.fn()
 }))
+
+vi.mock('~/src/server/common/services/grant-application/grant-application.service.js', () => ({
+  getAvailableClaimEntitlements: vi.fn()
+}))
+
+const buildAvailableClaimsResponse = (totalHectaresValue) => ({
+  availableClaims: [
+    {
+      code: 'ENT_CS_CAPITAL_PA3',
+      name: 'PA3 Woodland Management Plan entitlement',
+      description: 'The maximum eligible woodland area that can be claimed under PA3.',
+      data: {
+        totalHectares: { value: totalHectaresValue, decimalPlaces: 4, minValue: 0.5, maxValue: null },
+        actionCode: { value: 'PA3' },
+        actionVersion: { value: '1.2.3' }
+      }
+    }
+  ]
+})
 
 describe('StartClaimPageController', () => {
   let mockRequest
@@ -41,7 +61,7 @@ describe('StartClaimPageController', () => {
       ]
     })
 
-    mockRequest = { method: 'GET' }
+    mockRequest = { method: 'GET', params: { slug: 'water-management' } }
     mockContext = { state: {} }
     mockResponseToolkit = {
       view: vi.fn().mockReturnValue('rendered'),
@@ -51,6 +71,9 @@ describe('StartClaimPageController', () => {
     strategyCalculatePayment = vi.fn().mockResolvedValue({ payment: {}, totalPence: 0, totalPayment: '£0.00' })
     vi.mocked(resolveStrategy).mockReset()
     vi.mocked(resolveStrategy).mockReturnValue({ calculatePayment: strategyCalculatePayment })
+
+    vi.mocked(getAvailableClaimEntitlements).mockReset()
+    vi.mocked(getAvailableClaimEntitlements).mockResolvedValue(buildAvailableClaimsResponse(156.1025))
   })
 
   describe('constructor', () => {
@@ -82,8 +105,35 @@ describe('StartClaimPageController', () => {
     })
   })
 
+  describe('fetchGasEntitlements', () => {
+    it('fetches the available claim entitlements and maps totalHectares.value onto totalEligibleArea', async () => {
+      vi.mocked(getAvailableClaimEntitlements).mockResolvedValueOnce(buildAvailableClaimsResponse(455000))
+
+      const controller = buildController({})
+      const context = { state: { $$__referenceNumber: 'WMP-A1B2-C3D4' } }
+
+      const data = await controller.fetchGasEntitlements(mockRequest, context)
+
+      expect(getAvailableClaimEntitlements).toHaveBeenCalledWith('water-management', 'WMP-A1B2-C3D4', mockRequest)
+      expect(data).toEqual({
+        totalEligibleArea: 455000,
+        unit: 'ha'
+      })
+    })
+
+    it('omits totalEligibleArea when there are no available claims', async () => {
+      vi.mocked(getAvailableClaimEntitlements).mockResolvedValueOnce({ availableClaims: [] })
+
+      const controller = buildController({})
+
+      const data = await controller.fetchGasEntitlements(mockRequest, mockContext)
+
+      expect(data).toEqual({ unit: 'ha' })
+    })
+  })
+
   describe('fetchClaimData', () => {
-    it('should return the stubbed GAS claim data', async () => {
+    it('should return the GAS claim data', async () => {
       const controller = buildController({
         dataSources: [{ name: 'claims', items: ['totalEligibleArea', 'unit', 'totalClaimAmountPence'] }]
       })
@@ -96,7 +146,7 @@ describe('StartClaimPageController', () => {
       })
     })
 
-    it('should return the stubbed GAS claim data regardless of configured data sources', async () => {
+    it('should return the GAS claim data regardless of configured data sources', async () => {
       const controller = buildController({})
 
       const data = await controller.fetchClaimData(mockRequest, mockContext)
@@ -117,6 +167,7 @@ describe('StartClaimPageController', () => {
 
       const request = {
         method: 'GET',
+        params: { slug: 'water-management' },
         auth: { credentials: { token: 'defra-id-token', sbi: '123456789', crn: '1234567890' } }
       }
       const context = { state: { $$__referenceNumber: 'WMP-A1B2-C3D4' } }
@@ -143,6 +194,7 @@ describe('StartClaimPageController', () => {
 
       const request = {
         method: 'GET',
+        params: { slug: 'water-management' },
         auth: { credentials: { token: 'defra-id-token', sbi: '123456789', crn: '1234567890' } }
       }
       const context = { state: { $$__referenceNumber: 'WMP-A1B2-C3D4' } }
@@ -172,6 +224,7 @@ describe('StartClaimPageController', () => {
 
       const request = {
         method: 'GET',
+        params: { slug: 'water-management' },
         auth: { credentials: { token: 'defra-id-token', sbi: '123456789', crn: '1234567890' } }
       }
       const context = {
@@ -211,6 +264,7 @@ describe('StartClaimPageController', () => {
 
       const request = {
         method: 'GET',
+        params: { slug: 'water-management' },
         auth: { credentials: { token: 'defra-id-token', sbi: '123456789', crn: '1234567890' } }
       }
 
@@ -234,6 +288,7 @@ describe('StartClaimPageController', () => {
 
       const request = {
         method: 'GET',
+        params: { slug: 'water-management' },
         auth: { credentials: { token: 'defra-id-token', sbi: '123456789', crn: '1234567890' } }
       }
       const context = { state: { $$__referenceNumber: 'WMP-A1B2-C3D4' } }
@@ -333,6 +388,7 @@ describe('StartClaimPageController', () => {
 
       const request = {
         method: 'GET',
+        params: { slug: 'water-management' },
         auth: { credentials: { token: 'defra-id-token', sbi: '123456789', crn: '1234567890' } }
       }
       const context = { state: { $$__referenceNumber: 'WMP-A1B2-C3D4' } }
