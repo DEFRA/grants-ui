@@ -7,9 +7,7 @@
   label: {
     text: "Quantity"
   },
-  hint: {
-    text: maxQuantity + " " + unitFullName + " available"
-  } if maxQuantity != undefined else undefined,
+  describedBy: (fieldId + "-hint") if maxQuantity != undefined else undefined,
   suffix: {
     text: unit
   } if unit else undefined,
