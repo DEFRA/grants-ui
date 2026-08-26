@@ -24,6 +24,8 @@ const DOM_ID_SELECTED_PARCELS_INPUTS = 'selected-parcels-inputs'
 const DOM_ID_ADDITIONAL_REQUIREMENTS_ROW = 'selected-parcel-additional-requirements-row'
 const DOM_ID_ADDITIONAL_REQUIREMENTS = 'selected-parcel-additional-requirements'
 const DOM_ID_ADDITIONAL_REQUIREMENTS_STATUS = 'selected-parcel-additional-requirements-status'
+const SELECTOR_ERROR_SUMMARY_MAP_LINK = `.govuk-error-summary a[href="#${DOM_ID_PARCEL_MAP}"]`
+const DATASET_SELECTED_PARCELS = 'selectedParcels'
 
 /** @param {string} id */
 const unhide = (id) => {
@@ -175,10 +177,22 @@ export function initParcelSelectPage(mapEl) {
   /** @type {import('./map-helpers.js').MetaIndex} */
   let metaIndex = {}
 
+  const serverSelectedIds = (mapEl.dataset[DATASET_SELECTED_PARCELS] ?? '').split(',').filter(Boolean)
+
+  const mapWithSelection = /** @type {HTMLElement & {
+    clearSelection?: () => void,
+    selectParcels?: (ids: string[]) => void,
+    focusParcels?: () => void
+  }} */ (mapEl)
+
   /** @param {ReadyDetail} detail */
   const handleReady = (detail) => {
     metaIndex = detail.metaIndex ?? {}
     updateMapTotals(metaIndex, detail.parcelIds ?? [])
+
+    if (serverSelectedIds.length > 0) {
+      mapWithSelection.selectParcels?.(serverSelectedIds)
+    }
   }
 
   /** @param {ParcelMapErrorDetail} detail */
@@ -223,11 +237,14 @@ export function initParcelSelectPage(mapEl) {
     handleError(/** @type {ParcelMapErrorDetail} */ (lastError.detail))
   }
 
-  const mapWithSelection = /** @type {HTMLElement & { clearSelection?: () => void }} */ (mapEl)
   const changeLink = document.getElementById(DOM_ID_SELECTED_PARCEL_CHANGE)
   changeLink?.addEventListener('click', (e) => {
     e.preventDefault()
     mapWithSelection.clearSelection?.()
+  })
+
+  document.querySelectorAll(SELECTOR_ERROR_SUMMARY_MAP_LINK).forEach((link) => {
+    link.addEventListener('click', () => mapWithSelection.focusParcels?.())
   })
 }
 

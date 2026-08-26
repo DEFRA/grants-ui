@@ -47,18 +47,26 @@
             {# tabindex makes the element a focus target: the error-summary links and
                the "Change" link below all point at #parcel-map, and govuk-frontend
                cannot move focus to a custom element without it. #}
+            {# data-selected-parcels re-seeds the map after a rejected submit —
+               parcel-select-page.js reselects these ids once the map is ready. #}
             <parcel-map
               id="parcel-map"
               role="group"
               tabindex="-1"
               multi-select="{{ 'true' if multiSelect else 'false' }}"
+              data-selected-parcels="{{ selectedParcelIds | join(',') if selectedParcelIds else '' }}"
               aria-label="Land parcel selection map"
               style="display:block;width:100%;height:500px;position:relative"
             >
             </parcel-map>
 
-            {# Hidden inputs written by the parcel-map:selection listener; also used by no-JS fallback #}
-            <div id="selected-parcels-inputs" aria-hidden="true"></div>
+            {# Hidden inputs written by the parcel-map:selection listener; also used by no-JS fallback.
+               Pre-filled on a re-render so a rejected selection survives even without JS. #}
+            <div id="selected-parcels-inputs" aria-hidden="true">
+              {% for parcelId in selectedParcelIds %}
+                <input type="hidden" name="landParcels" value="{{ parcelId }}">
+              {% endfor %}
+            </div>
           </div>
 
           <div class="govuk-grid-column-one-third-from-desktop">
