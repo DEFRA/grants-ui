@@ -25,6 +25,7 @@ import { transformGrasslandsAnswers } from '~/src/server/schemes/grasslands/mapp
 import { transformPigsMightFlyAnswers } from '~/src/server/non-land-grants/pigs-might-fly/mappers/state-to-gas-pigs-mapper.js'
 import { transformClaimAnswers } from '~/src/server/claims/mappers/state-to-gas-claim-mapper.js'
 import { getClaims, getCurrentClaim, markClaimSubmitted } from '~/src/server/claims/services/claim-state.js'
+import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
 
 /**
  * Selects which GAS payload the shared declaration controller builds. Set via
@@ -318,14 +319,26 @@ export default class DeclarationPageController extends SummaryPageController {
 
     const currentClaim = getCurrentClaim(state)
 
+    if (
+      currentClaim?.totalEligibleArea == null ||
+      currentClaim.unit == null ||
+      currentClaim.totalClaimAmountPence == null
+    ) {
+      throw new SystemError({
+        message: 'Cannot submit a claim with missing eligible area, unit or claim amount',
+        source: 'DeclarationController.buildClaimData',
+        reason: 'incomplete_claim'
+      })
+    }
+
     const identifiers = this.buildIdentifiers(request, context)
     const configVersion = resolveGasConfigVersion(request)
 
     const claimSubmissionState = {
-      claimNumber: currentClaim?.claimNumber,
-      totalEligibleArea: currentClaim?.totalEligibleArea,
-      unit: currentClaim?.unit,
-      totalClaimAmountPence: currentClaim?.totalClaimAmountPence
+      claimNumber: currentClaim.claimNumber,
+      totalEligibleArea: currentClaim.totalEligibleArea,
+      unit: currentClaim.unit,
+      totalClaimAmountPence: currentClaim.totalClaimAmountPence
     }
 
     return transformStateObjectToGasApplication(identifiers, claimSubmissionState, transformClaimAnswers, configVersion)

@@ -157,15 +157,32 @@ describe('calculateWmpPaymentByTotalArea', () => {
     expect(result).toEqual({ payment: mockPayment, totalPence: 375000 })
   })
 
-  it('returns zero totalPence when agreementTotalPence is missing', async () => {
-    woodlandClient.calculateWmpByTotalArea.mockResolvedValueOnce({ message: 'success', payment: {} })
+  it.each([{ payment: {} }, { payment: { agreementTotalPence: null } }, {}])(
+    'throws rather than coalescing to zero when agreementTotalPence is missing: %o',
+    async (response) => {
+      woodlandClient.calculateWmpByTotalArea.mockResolvedValueOnce({ message: 'success', ...response })
+
+      await expect(
+        calculateWmpPaymentByTotalArea(
+          { totalAreaHa: 24.95, applicationId: 'WMP-A1B2-C3D4', sbi: '123456789' },
+          userContext
+        )
+      ).rejects.toThrow('Land Grants API returned no agreementTotalPence for the claim payment')
+    }
+  )
+
+  it('returns a zero total when the API genuinely calculates zero', async () => {
+    woodlandClient.calculateWmpByTotalArea.mockResolvedValueOnce({
+      message: 'success',
+      payment: { agreementTotalPence: 0 }
+    })
 
     const result = await calculateWmpPaymentByTotalArea(
       { totalAreaHa: 24.95, applicationId: 'WMP-A1B2-C3D4', sbi: '123456789' },
       userContext
     )
 
-    expect(result).toEqual({ payment: {}, totalPence: 0 })
+    expect(result).toEqual({ payment: { agreementTotalPence: 0 }, totalPence: 0 })
   })
 
   it('propagates API errors', async () => {

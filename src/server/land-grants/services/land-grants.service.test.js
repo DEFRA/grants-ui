@@ -103,6 +103,8 @@ describe('land-grants service', () => {
   })
 
   describe('calculateLandActionsPayment', () => {
+    const PAYMENT_ERROR = 'Error calculating payment. Please try again later.'
+
     it('should calculate payment and format amount', async () => {
       const mockCalculateResponse = {
         payment: { annualTotalPence: 123456 }
@@ -138,8 +140,7 @@ describe('land-grants service', () => {
       expect(formatCurrency).toHaveBeenCalledWith(1234.56)
       expect(result).toEqual({
         payment: { annualTotalPence: 123456 },
-        paymentTotal: '£1,234.56',
-        errorMessage: undefined
+        paymentTotal: '£1,234.56'
       })
     })
 
@@ -196,37 +197,21 @@ describe('land-grants service', () => {
       })
     })
 
-    it('should handle zero payment amount', async () => {
-      const mockCalculateResponse = { payment: { total: 0 } }
-      calculate.mockResolvedValueOnce(mockCalculateResponse)
+    it.each([
+      ['a zero annual total', { payment: { annualTotalPence: 0 } }, '£0.00', undefined],
+      ['no payment object', {}, undefined, PAYMENT_ERROR],
+      ['a payment with no annual total', { payment: { total: 0 } }, undefined, PAYMENT_ERROR]
+    ])('handles %s', async (_, response, expectedTotal, expectedError) => {
+      calculate.mockResolvedValueOnce(response)
       formatCurrency.mockReturnValue('£0.00')
 
-      const result = await calculateLandActionsPayment({
-        landParcels: {
-          'SHEET123-PARCEL456': {
-            actionsObj: { CMOR1: { value: 0 } }
-          }
-        }
-      })
+      const result = await calculateLandActionsPayment({ landParcels: { 'SHEET123-PARCEL456': {} } })
 
-      expect(result.paymentTotal).toBe('£0.00')
-      expect(result.errorMessage).toBeUndefined()
-    })
-
-    it('should handle missing payment data with error message', async () => {
-      const mockCalculateResponse = {/* no payment property */}
-      calculate.mockResolvedValueOnce(mockCalculateResponse)
-
-      formatCurrency.mockReturnValue(null)
-
-      const result = await calculateLandActionsPayment({
-        landParcels: {
-          'SHEET123-PARCEL456': {}
-        }
-      })
-
-      expect(result.paymentTotal).toBeNull()
-      expect(result.errorMessage).toBe('Error calculating payment. Please try again later.')
+      expect(result.paymentTotal).toBe(expectedTotal)
+      expect(result.errorMessage).toBe(expectedError)
+      // A missing amount must never reach formatCurrency: it would format NaN
+      // and render "£NaN" to the user instead of the error message.
+      expect(formatCurrency).toHaveBeenCalledTimes(expectedTotal ? 1 : 0)
     })
 
     it('should propagate API errors', async () => {
