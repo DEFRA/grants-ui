@@ -41,7 +41,7 @@ gt up
 gt up --gas                        # include GAS (fg-gas-backend + floci)
 gt up --land-grants                # include Land Grants API + Postgres
 gt up --gas --land-grants --ha     # all addons + HA proxy
-gt up --scale 2                    # run 2 replicas of grants-ui / grants-ui-backend
+gt up --ha --scale 2               # run 2 replicas of grants-ui / grants-ui-backend (requires --ha)
 gt up --local-grants-ui-backend    # use locally-built grants-ui-backend:local
 
 # Stop the stack (uses saved state automatically)
@@ -53,20 +53,17 @@ gt debug
 # Full teardown including volumes
 gt reset
 
-# Show running compose containers
-gt status
-
 gt --help
 gt --version
 ```
 
 ### Adding new addon services
 
-Append an entry to the `ADDONS` array in `tools/grants-tui.js`. Each entry needs a `key`, `label`, `description`, and `composeFile`.
+Append an entry to the `ADDONS` array in `tools/grants-tui/constants.js`. Each entry needs a `key`, `label`, `description`, and `composeFile`.
 
 ### Adding new local-image overrides
 
-Append an entry to the `LOCAL_SERVICES` array in `tools/grants-tui.js` with `key`, `composeService`, and `image`.
+Append an entry to the `LOCAL_SERVICES` array in `tools/grants-tui/constants.js` with `key`, `composeService`, and `image`.
 
 ### Local form-definition overrides
 
@@ -125,9 +122,12 @@ A local environment with:
 
 - Redis
 - MongoDB
+- Floci, providing local AWS service emulation (SQS/SNS/S3) in place of LocalStack
 - FCP Defra ID Stub
+- Grants UI DAL Stub, providing a stub for the Consolidated View (DAL) API
 - This service
 - Grants UI Backend
+- Grants Config Broker, serving form-definition config to Grants UI Backend
 - MockServer, providing a stub for [fg-gas-backend](http://github.com/DEFRA/fg-gas-backend)
 
 The recommended way to start the stack is via the [Grants TUI](#grants-tui), which handles addon selection and local-image overrides interactively. For a plain start without the TUI:
@@ -193,7 +193,9 @@ What it provides:
 - Scalability of `grants-ui` and `grants-ui-backend` using `docker compose --scale`
 - TLS termination using the self-signed certs in `nginx/certs`
 - A single HTTPS entry point for the UI at `https://localhost:4000`
+- HTTPS access to Grants UI Backend at `https://localhost:4001`
 - HTTPS access to the DEFRA ID Stub at `https://localhost:4007`
+- HTTPS access to the Grants UI DAL Stub at `https://localhost:4008`
 - Environment overrides so the UI talks to the proxy over HTTPS (see `compose.ha.yml` and `nginx/nginx.conf`)
 
 Start the stack with the HA proxy:
@@ -248,7 +250,7 @@ Notes:
 
 - The command above stops any running `grants-ui` container and starts a one-off foreground debug container with `--service-ports` so ports `3000` and `9229` are available on your host.
 - The underlying script (`tools/docker-debug.js`) detects the compose files used by the running stack and re-uses them, so addon overlays (GAS, Land Grants, etc.) remain active.
-- The server is started with `--inspect=0.0.0.0:9229 --inspect-wait` so execution will pause until your debugger attaches.
+- The server is started with `--inspect=0.0.0.0:9229` (via `npm run dev:debug` / `npm run server:debug`), so execution continues immediately — attach your debugger as soon as the container is up rather than waiting for a pause.
 
 Alternatively, use the Grants TUI to restart `grants-ui` in debug mode without leaving the rest of the stack:
 

@@ -13,6 +13,8 @@ This document provides a comprehensive overview of all the features available in
 - [Lists & Data Sources](#lists--data-sources)
 - [Validation & Error Handling](#validation--error-handling)
 - [Submission & Confirmation](#submission--confirmation)
+- [Development Features](#development-features)
+- [Best Practices](#best-practices)
 
 ## Form Components
 
@@ -241,13 +243,13 @@ The service supports several specialized page types for different stages of the 
 
 ### Update Details Exit Page
 
-- **Purpose**: Page shown when a user indicates on the Check Details page that their Rural Payments Agency (RPA) details are incorrect. Served at `GET /{slug}/update-details` by the `updateDetails` plugin so the browser URL reflects the state the user is in.
-- **Flow**: The `CheckDetailsController` POST handler redirects to `/{slug}/update-details` when `detailsConfirmed === false`; the plugin resolves the form by slug and renders the `incorrect-details` view.
+- **Purpose**: Page shown when a user indicates on the Check Details page that their Rural Payments Agency (RPA) details are incorrect. Served at `GET /{slug}/update-details`.
+- **Implementation**: There is no separate plugin for this page. `CheckDetailsController` (`src/server/details-page/check-details.controller.js`) dynamically injects an `/update-details` page into the form's own page model at construction time (`ensureUpdateDetailsPage()`), backed by `UpdateDetailsPageController`, which extends `TerminalPageController` so the journey cannot continue past it. The injected page is gated by a generated `detailsNotConfirmed` condition and is reached through the forms engine's normal page-walk, not a manual redirect.
+- **Flow**: The `CheckDetailsController` POST handler saves state and calls `this.proceed(request, h, this.getNextPath(context))` when the confirmation answer is `false`; because of the injected condition this resolves to `/update-details`, whose `UpdateDetailsPageController` renders the `incorrect-details` view. (When the Farm and Land Service (SFD) external-update integration is enabled via `externalLinks.sfd.enabled`, the user can instead be redirected straight to SFD to update their details, bypassing this page.)
 - **Configuration**: Page content is driven by the form's `metadata.incorrectDetailsContent` block. If the block is omitted, the view falls back to a generic "Contact the RPA" message.
   - `heading` – page heading text.
   - `paragraphs` – ordered list of body paragraphs. Each entry is either a plain string or an object with `textBefore`, `link: { text, href }`, and `textAfter` to embed a single inline link.
   - `showRpaSupport` – when `true`, renders the shared `{{DEFRASUPPORTDETAILS}}` RPA contact block beneath the paragraphs.
-  - `continueText` – optional override for the continue-button label (defaults to `Continue`).
 - **Example**: the Woodland form definition sets `incorrectDetailsContent` in its metadata (Woodland lives in the internal grants config repo, not the example-grants repo)
 
 ### Land Parcel Map Pages
@@ -259,7 +261,7 @@ The service supports several specialized page types for different stages of the 
   - Parcel ID and area display via tooltip
   - Selected parcel IDs written to session state for downstream pages
 - **Controllers**: `MapSelectPageController`
-- **Full developer guide**: [src/server/common/map/README.md](./src/server/common/map/README.md)
+- **Full developer guide**: [docs/MAPS.md](./MAPS.md)
 - **Example**: [Example Grant with Map journey](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-map/grants-ui/example-grant-with-map.yaml)
 
 ### Conditional Pages
@@ -357,8 +359,8 @@ Guidance components provide contextual help and information without requiring us
   - `titleText` – banner heading (e.g. `Important`). **Required** when `enabled` is `true`; a missing `titleText` is a configuration error and throws at render time.
   - `text` – the banner message.
   - `link` – optional call-to-action link. If declared it must include **both** `text` and `href` (an incomplete link is a configuration error and throws). The `href` must be an `http(s)` URL or a same-origin relative path; other schemes (e.g. `javascript:`) are rejected and the banner falls back to text only.
-- **Excluded pages**: The list of excluded page path suffixes defaults to `/confirmation` and `/print-submitted-application` and is configurable via the `NOTIFICATION_BANNER_EXCLUDED_PATH_SUFFIXES` environment variable (see [config.js](./src/config/config.js#L280-L287)).
-- **Implementation**: The banner params are built in [build-notification-banner-config.js](./src/config/nunjucks/context/build-notification-banner-config.js) and injected into every page via the shared Nunjucks context, then rendered in the base layout [page.njk](./src/server/common/templates/layouts/page.njk).
+- **Excluded pages**: The list of excluded page path suffixes defaults to `/confirmation` and `/print-submitted-application` and is configurable via the `NOTIFICATION_BANNER_EXCLUDED_PATH_SUFFIXES` environment variable (see [config.js](../src/config/config.js#L280-L287)).
+- **Implementation**: The banner params are built in [build-notification-banner-config.js](../src/config/nunjucks/context/build-notification-banner-config.js) and injected into every page via the shared Nunjucks context, then rendered in the base layout [page.njk](../src/server/common/templates/layouts/page.njk).
 - **Example**: [Example Grant with Auth – `notificationBanner`](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml)
 
 ### Page Configuration
@@ -380,14 +382,15 @@ Guidance components provide contextual help and information without requiring us
   - JWT token validation
   - User session management
   - Automatic redirect handling
-- **Example**: [Auth plugin registration with Defra ID support](./src/plugins/auth.js#L91-L114)
+- **Example**: [Auth plugin registration with Defra ID support](../src/plugins/auth.js#L91-L114)
 
 ### Allowlist System
 
 - **Backend allowlist**: Per-grant access control driven by the grants-ui-backend allowlist endpoint
 - **CRN/SBI based**: Access is decided from the signed-in user's Customer Reference Number and Single Business Identifier
 - **Access Control**: Users who are not allowlisted for the grant are redirected to `/auth/journey-unauthorised`
-- **Example**: [Allowlist plugin](./src/server/common/helpers/allowlist/allowlist.js)
+- **Example**: [Allowlist plugin](../src/server/common/helpers/allowlist/allowlist.js)
+- **Details**: see [Auth & Security – Allowlist Functionality](./AUTH-AND-SECURITY.md#allowlist-functionality) for the full mechanism, including the audit event and fail-closed behaviour
 
 ### Session Management
 
@@ -530,7 +533,7 @@ A single grant definition can host both application and claims journeys by overr
   - Reference number generation
   - Status tracking
 - **Process**: Declaration → Submission → Confirmation
-- **Example**: [DeclarationPageController submission workflow](./src/server/declaration/declaration-page.controller.js#L51-L126)
+- **Example**: [DeclarationPageController submission workflow](../src/server/declaration/declaration-page.controller.js#L442-L483)
 
 ### Confirmation System
 
@@ -541,7 +544,7 @@ A single grant definition can host both application and claims journeys by overr
   - Next steps guidance
   - Support information
 - **Configuration**: Confirmation content defined in the form definition metadata
-- **Example**: [ConfirmationPageController renders confirmation view](./src/server/confirmation/confirmation-page.controller.js#L17-L63)
+- **Example**: [ConfirmationPageController renders confirmation view](../src/server/confirmation/confirmation-page.controller.js#L178-L231)
 
 ### State Management
 
@@ -551,7 +554,7 @@ A single grant definition can host both application and claims journeys by overr
   - Backend integration
   - State rehydration
   - Progress tracking
-- **Example**: [StatePersistenceService integration](./src/server/common/services/state-persistence/state-persistence.service.js#L24-L74) powering save-and-return functionality
+- **Example**: [StatePersistenceService integration](../src/server/common/services/state-persistence/state-persistence.service.js#L24-L74) powering save-and-return functionality
 
 ## Development Features
 
@@ -564,7 +567,7 @@ A single grant definition can host both application and claims journeys by overr
   - Debug information
   - Mock data support
 - **Access**: Development environment only
-- **Example**: [Dev tools plugin registering development routes](./src/server/dev-tools/index.js#L1-L120)
+- **Example**: [Dev tools plugin registering development routes](../src/server/dev-tools/index.js#L1-L92)
 
 ### Testing Support
 
@@ -574,7 +577,7 @@ A single grant definition can host both application and claims journeys by overr
   - Integration testing
   - Mock services
   - Test data management
-- **Example**: [Vitest scripts defined in package.json](./package.json#L30-L34)
+- **Example**: [Vitest scripts defined in package.json](../package.json#L56-L62)
 
 ## Best Practices
 

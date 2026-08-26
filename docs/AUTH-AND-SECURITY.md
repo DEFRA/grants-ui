@@ -23,7 +23,7 @@
 
 ### Allowlist Functionality
 
-Allowlisting restricts access to specific grant journeys based on the signed-in user's Customer Reference Number (CRN) and Single Business Identifier (SBI). At runtime, the allowlist plugin ([`src/server/common/helpers/allowlist/allowlist.js`](../src/server/common/helpers/allowlist/allowlist.js)) runs on `onPostAuth`: for an authenticated request to a grant journey, it asks grants-ui-backend which grants the user's CRN/SBI may access (`src/server/auth/services/allowlist.client.js`). If the requested grant has no allowlist.yaml or the allowlist is empty, access is denied — the user is redirected to `/auth/journey-unauthorised` and an `unauthorised` audit event (reason `allowlist`) is published. The check fails closed: if the backend call errors, access is refused.
+Allowlisting restricts access to specific grant journeys based on the signed-in user's Customer Reference Number (CRN) and Single Business Identifier (SBI). At runtime, the allowlist plugin ([`src/server/common/helpers/allowlist/allowlist.js`](../src/server/common/helpers/allowlist/allowlist.js)) runs on `onPostAuth`: for an authenticated request that includes a grant slug, it asks grants-ui-backend which grants the user's CRN/SBI may access via `GET /allowlist/grants` (`src/server/auth/services/allowlist.client.js`). If the requested grant code is not included in the returned list, access is denied — the user is redirected to `/auth/journey-unauthorised` and an `unauthorised` audit event (reason `allowlist`) is published. The check fails closed: if the backend call errors, access is refused.
 
 ### User & Page Permissions
 
@@ -113,7 +113,7 @@ When a client exceeds the rate limit:
 1. A `429 Too Many Requests` response is returned
 2. The event is logged with client details for monitoring:
    ```
-   [warn] Rate limit exceeded: path=/auth/sign-in, ip=192.168.1.100, userId=user123, userAgent=Mozilla/5.0...
+   [warn] Rate limit exceeded: path=/auth/sign-in, ip=192.168.1.100, CRN=******1234, userAgent=Mozilla/5.0...
    ```
 3. A user-friendly error page is displayed
 
@@ -133,7 +133,7 @@ The application includes a proxy endpoint for handling farming payment agreement
 
 The agreements controller acts as an authenticated proxy that:
 
-- Accepts requests at `/agreements/{path*}`
+- Accepts requests at `{AGREEMENTS_BASE_URL}/{path*}` (default `/agreement/{path*}`)
 - Extracts SBI (Single Business Identifier) and CRN (Customer Reference Number) from Defra ID credentials
 - Generates a short-lived JWT, freshly signed for every request, carrying `sub` (CRN), `iss`, `aud`,
   `exp`, the SBI, the grant application context (`grantCode`/`clientRef`) and the source
@@ -170,7 +170,7 @@ AGREEMENTS_JWT_TTL_SEC=300
 **Security:**
 
 - Requires authenticated session (Defra ID)
-- Uses JWT encryption for sensitive data transmission
+- Uses a signed JWT (`@hapi/jwt`, HMAC) carrying user/session context for the upstream service
 - Validates configuration at startup
 
 **Implementation:**
@@ -181,39 +181,43 @@ See `src/server/agreements/controller.js` for the proxy implementation.
 
 We use the `@hapi/cookie` plugin to manage user sessions and `@hapi/yar` to manage cache. The session cookie is encrypted and signed using a high-entropy password set via the `SESSION_COOKIE_PASSWORD` environment variable.
 
-The table below outlines the data the cookies control.
+The table below outlines the data the cookies control. Both cookies are backed by the same Catbox cache instance
+(`session.cache.name`, default `grants-ui-session-cache`), which uses `CatboxRedis` or `CatboxMemory` depending on
+`SESSION_CACHE_ENGINE`.
 
 <table>
   <thead>
     <tr>
       <th>Cookie Name</th>
-      <th>YAR managed</th>
-      <th>Cache name</th>
-      <th>Segment</th>
+      <th>Managed By</th>
+      <th>Cache Segment</th>
+      <th>Purpose</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <td>grants-ui-session-auth</td>
-      <td>No</td>
-      <td>session-auth</td>
+      <td><code>@hapi/cookie</code></td>
       <td>auth</td>
+      <td>Authenticated session data (credentials), keyed by the session ID stored in the cookie</td>
     </tr>
     <tr>
-      <td rowspan="3">grants-ui-session-cache</td>
-      <td>No</td>
-      <td rowspan="3">session-cache</td>
-      <td>tasklist-section-data</td>
+      <td rowspan="2">grants-ui-session-cache</td>
+      <td><code>@hapi/yar</code></td>
+      <td>yar-session-id</td>
+      <td>Small session values, e.g. OIDC CSRF <code>state</code>, <code>visitedSubSections</code>, <code>grantApplicationContext</code>, <code>statusChangeRedirect</code>, <code>landParcelRemovalSuccess</code></td>
     </tr>
     <tr>
-      <td rowspan="2">Yes</td>
-      <td>state</td>
-    </tr>
-    <tr>
+      <td>Forms engine (<code>StatePersistenceService</code>)</td>
       <td>formSubmission</td>
+      <td>Transient file-upload state</td>
     </tr>
   </tbody>
 </table>
+
+**Note:** Journey/form answer state (`context.state`) is not cached server-side at all — it is fetched from and
+persisted to the Grants UI Backend on every request (memoised only for the lifetime of a single request). See
+[Session Rehydration](#session-rehydration) below.
 
 ### Inspecting Cookies
 
@@ -242,21 +246,17 @@ instance of the service and it will not persist between restarts.
 sequenceDiagram
   participant User
   participant UI as Grants UI
-  participant Catbox as Catbox Cache
-  participant Redis as Redis (session cache)
+  participant Cache as Catbox (CatboxRedis/CatboxMemory)
   participant Backend as Grants UI Backend
   participant Mongo as MongoDB
 
   User->>UI: Request protected page
-  UI->>Catbox: Check cache (CatboxRedis/CatboxMemory)
-  Catbox-->>UI: Cache miss
-  UI->>Redis: Retrieve session data
-  Redis-->>UI: Session state (if present)
-  UI->>Backend: Persist state (async) / fetch saved state
+  UI->>Cache: Look up session by sessionId (auth cookie)
+  Cache-->>UI: Session data (or miss)
+  UI->>Backend: Fetch / persist journey state
   Backend->>Mongo: Read/write persisted state
   Mongo-->>Backend: State data
   Backend-->>UI: Saved state response
-  UI->>Catbox: Update cache entry
   UI-->>User: Rendered page
 ```
 
@@ -266,30 +266,11 @@ The application includes session rehydration functionality that allows user sess
 
 ### How Session Rehydration Works
 
-The application fetches saved state from the backend API using the endpoint configured in `GRANTS_UI_BACKEND_URL`.
-When a user is authenticated, the service:
-
-- Checks for existing cache
-- If there is none, fetches data from the Grants UI Backend service (which persists data to Mongo)
-- Performs session rehydration
-
-```mermaid
-sequenceDiagram
-  participant U as Authenticated User
-  participant UI as Grants UI
-  participant R as Redis cache
-  participant B as Grants UI Backend
-  participant M as MongoDB
-
-  U->>UI: Request page / resume journey
-  UI->>R: Check for cached session state
-  R-->>UI: Cache miss
-  UI->>B: GET /state?sbi&grantCode
-  B->>M: Query persisted state
-  M-->>B: Stored state payload
-  B-->>UI: Rehydrated state JSON
-  UI->>UI: Restore session & continue journey
-```
+Journey/form answer state is not cached locally between requests. For an authenticated request carrying a grant
+`slug`, the state and active form definition are resolved together via the Grants UI Backend's
+`POST /state/with-definition` endpoint (configured via `GRANTS_UI_BACKEND_URL`), memoised for the lifetime of a
+single request — see [Architecture – Forms Engine State Model](./ARCHITECTURE.md#forms-engine-state-model) and
+[Grant Form Definitions](./ARCHITECTURE.md#grant-form-definitions) for the full mechanism and sequence diagram.
 
 ### Configuration
 
@@ -316,7 +297,7 @@ When making API requests to backend services, our helpers handle the necessary a
 The primary helper is:
 
 ```js
-import { createApiHeadersForGrantsUiBackend } from '~/src/server/common/helpers/state/backend-auth-helper.js'
+import { createApiHeadersForGrantsUiBackend } from '~/src/server/common/helpers/auth/backend-auth-helper.js'
 ```
 
 It generates headers that include:
@@ -378,14 +359,14 @@ When a user accesses an application for editing:
 1. A lock token is generated using JWT and the configured secret
 2. The token is sent to the backend service with requests
 3. The backend service validates the token and ensures only the lock holder can modify the application
-4. Locks automatically expire after the configured TTL
+4. Locks are released on sign-out via a best-effort call to the backend (`releaseAllApplicationLocksForOwnerFromApi`); lock lifetime/expiry itself is enforced by the grants-ui-backend service
 
 #### Configuration
 
-| Variable                        | Description                        | Default           |
-| ------------------------------- | ---------------------------------- | ----------------- |
-| `APPLICATION_LOCK_TOKEN_SECRET` | Secret key for signing lock tokens | (required)        |
-| `APPLICATION_LOCK_TTL_MS`       | Lock time-to-live in milliseconds  | `14400000` (4hrs) |
+| Variable                              | Description                                                         | Default    |
+| ------------------------------------- | ------------------------------------------------------------------- | ---------- |
+| `APPLICATION_LOCK_TOKEN_SECRET`       | Secret key for signing lock tokens                                  | (required) |
+| `APPLICATION_LOCK_RELEASE_TIMEOUT_MS` | Timeout in ms for the best-effort lock release call during sign-out | `2000`     |
 
 **Note:** The same secret must be configured in both grants-ui and grants-ui-backend services.
 
@@ -429,7 +410,7 @@ When any request is made to the Land Grants API (e.g., `/payments/calculate`, `/
 4. API clients like `land-grants.client.js` automatically include these headers in every request using:
 
    ```javascript
-   import { createApiHeadersForLandGrantsBackend } from '~/src/server/common/helpers/state/backend-auth-helper.js'
+   import { createApiHeadersForLandGrantsBackend } from '~/src/server/common/helpers/auth/backend-auth-helper.js'
 
    const response = await fetch(`${baseUrl}/payments/calculate`, {
      method: 'POST',

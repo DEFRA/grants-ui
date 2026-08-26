@@ -50,12 +50,13 @@ npm run test:watch
 
 - `vitest.config.js` - Main configuration for all tests
 - `vitest.unit.config.js` - Configuration for unit tests only (excludes integration tests)
+- `vitest.contracts.config.js` - Configuration for Pact contract tests only
 
 Integration tests are identified by:
 
 - `**/*.contract.test.js` - Pact contract tests
 - Tests that start the full Hapi server (e.g., `start-server.test.js`)
-- Tests making real external service calls (e.g., `grant-application.service.test.js`)
+- Tests using real timers/delays rather than mocks (e.g., `retry.test.js`)
 
 ### Mutation Testing
 
@@ -74,8 +75,8 @@ open reports/mutation/mutation.html
 **Configuration:**
 
 - `stryker.config.mjs` - Main Stryker configuration
-- `testRunner: 'command'` - Uses the custom test command defined in `commandRunner`
-- `commandRunner.command: 'npm run test:stryker'` - Runs tests for mutation testing
+- `testRunner: 'vitest'` - Uses Stryker's Vitest runner plugin
+- `vitest.configFile: 'vitest.stryker.config.js'` - Vitest config used for mutation runs (also runnable directly via `npm run test:stryker`)
 - Reports are generated in `reports/mutation/` directory
 
 **What Mutation Testing Does:**
@@ -160,7 +161,7 @@ MAX_INSTANCES=4 ./tools/run-acceptance-tests.sh
 
 The grants-ui acceptance tests live in the `acceptance/` directory of this repository and are built locally as part of the Docker test run — there is no separate image to publish.
 
-Other journey test repositories (land grants, woodland grant) must:
+Other journey test repositories (grasslands, woodland grant) must:
 
 - Publish an image to Docker Hub as per the services
 - Allow a command to be passed to the entrypoint script
