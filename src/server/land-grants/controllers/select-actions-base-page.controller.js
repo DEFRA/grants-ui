@@ -201,7 +201,6 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
       ...additionalState,
       parcelName: formatParcelReference({ sheetId, parcelId }),
       errors,
-      selectionErrorText: errors.find((e) => e.href === `#${this.actionFieldName}`)?.text,
       existingLandParcels,
       singleParcelSubmission: this.singleParcelSubmission,
       pageTitle: `Select actions for land parcel ${formatParcelReference({ sheetId, parcelId })}`
