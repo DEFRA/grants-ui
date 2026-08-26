@@ -38,6 +38,13 @@ updates:
       # widens its typescript peer to include 7.
       - dependency-name: "typescript"
         versions: [">=7.0.0"]
+      # ioredis 6 is blocked by @hapi/catbox-redis (latest 7.0.2 deps ioredis ^5), which backs the
+      # session cache. Forcing ioredis 6 would run the session store on a version catbox-redis does
+      # not support and would duplicate ioredis in the tree. ioredis 6 also defaults to RESP3, which
+      # changes reply shapes for commands issued under the hood by catbox-redis/@hapi/yar; add
+      # protocol: 2 in redis-client.js when adopting it. Remove when catbox-redis widens to ioredis ^6.
+      - dependency-name: "ioredis"
+        versions: [">=6.0.0"]
       # babel 8 is NOT blocked by any upstream peer (engines are fine, babel-loader allows ^8),
       # so it is intentionally held rather than auto-tracked in scripts/check-blocked-deps.mjs.
       # Local dev/watch runs via tsx and never exercises babel — only build:server (CI + deploy)
