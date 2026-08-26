@@ -21,6 +21,8 @@ const DOM_ID_SELECTED_PARCEL_REFERENCE = 'selected-parcel-reference'
 const DOM_ID_SELECTED_PARCEL_AREA = 'selected-parcel-area'
 const DOM_ID_SELECTED_PARCEL_CHANGE = 'selected-parcel-change'
 const DOM_ID_SELECTED_PARCELS_INPUTS = 'selected-parcels-inputs'
+const DOM_ID_SELECTED_PARCEL_SUMMARY_LIST = 'selected-parcel-summary-list'
+const DOM_ID_ADDITIONAL_REQUIREMENTS_TEMPLATE = 'selected-parcel-additional-requirements-template'
 const DOM_ID_ADDITIONAL_REQUIREMENTS_ROW = 'selected-parcel-additional-requirements-row'
 const DOM_ID_ADDITIONAL_REQUIREMENTS = 'selected-parcel-additional-requirements'
 const DOM_ID_ADDITIONAL_REQUIREMENTS_STATUS = 'selected-parcel-additional-requirements-status'
@@ -119,19 +121,26 @@ const fetchConsentNotice = async (parcelId) => {
   }
 }
 
+// The row is added and removed rather than toggled with `hidden`, because
+// govuk-frontend gives .govuk-summary-list__row an author-level
+// `display: table-row` from the tablet breakpoint up that outranks the
+// user-agent `[hidden]` rule - a hidden row still renders, empty.
 const clearAdditionalRequirements = () => {
-  const row = document.getElementById(DOM_ID_ADDITIONAL_REQUIREMENTS_ROW)
-  if (row) {
-    row.hidden = true
-  }
-  setText(DOM_ID_ADDITIONAL_REQUIREMENTS, '')
+  document.getElementById(DOM_ID_ADDITIONAL_REQUIREMENTS_ROW)?.remove()
   setText(DOM_ID_ADDITIONAL_REQUIREMENTS_STATUS, '')
 }
 
 /** @param {string} text */
 const showAdditionalRequirements = (text) => {
+  const list = document.getElementById(DOM_ID_SELECTED_PARCEL_SUMMARY_LIST)
+  const template = /** @type {HTMLTemplateElement | null} */ (
+    document.getElementById(DOM_ID_ADDITIONAL_REQUIREMENTS_TEMPLATE)
+  )
+  if (!list || !template) {
+    return
+  }
+  list.appendChild(template.content.cloneNode(true))
   setText(DOM_ID_ADDITIONAL_REQUIREMENTS, text)
-  unhide(DOM_ID_ADDITIONAL_REQUIREMENTS_ROW)
   setText(DOM_ID_ADDITIONAL_REQUIREMENTS_STATUS, text)
 }
 

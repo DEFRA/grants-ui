@@ -57,9 +57,15 @@ const convictConfig = {
     env: 'APP_BASE_URL'
   },
   staticCacheTimeout: {
-    doc: 'Static cache timeout in milliseconds',
+    doc: [
+      'Static cache timeout in milliseconds.',
+      'Only production builds content-hash asset filenames (see webpack.config.js), so only production',
+      'may cache them. Everywhere else the filenames are stable while the bytes change, and a non-zero',
+      'timeout serves a stale bundle for that long — a rebuilt stylesheet or script is silently ignored',
+      'until the entry expires. 0 emits `Cache-Control: no-cache`, which still revalidates cheaply via ETag.'
+    ].join(' '),
     format: Number,
-    default: oneWeekMs,
+    default: isProduction ? oneWeekMs : 0,
     env: 'STATIC_CACHE_TIMEOUT'
   },
   gitRepositoryName: {

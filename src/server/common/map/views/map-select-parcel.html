@@ -101,10 +101,20 @@
               <dt class="govuk-summary-list__key">Total area</dt>
               <dd class="govuk-summary-list__value" id="selected-parcel-area"></dd>
             </div>
-            <div class="govuk-summary-list__row govuk-summary-list__row--no-actions" id="selected-parcel-additional-requirements-row" hidden>
-              <dt class="govuk-summary-list__key">Additional requirements</dt>
-              <dd class="govuk-summary-list__value" id="selected-parcel-additional-requirements"></dd>
-            </div>
+            {# Cloned into this list by parcel-select-page.js once the parcel's
+               notice arrives, rather than rendered up-front and toggled with
+               `hidden`: govuk-frontend gives .govuk-summary-list__row an
+               author-level `display: table-row` from the tablet breakpoint up,
+               which outranks the user-agent `[hidden]` rule. A pre-rendered row
+               therefore shows as an empty "Additional requirements" row whenever
+               this page's stylesheet is missing or stale. <template> content is
+               inert, so it cannot be revealed by a CSS regression. #}
+            <template id="selected-parcel-additional-requirements-template">
+              <div class="govuk-summary-list__row govuk-summary-list__row--no-actions" id="selected-parcel-additional-requirements-row">
+                <dt class="govuk-summary-list__key">Additional requirements</dt>
+                <dd class="govuk-summary-list__value" id="selected-parcel-additional-requirements"></dd>
+              </div>
+            </template>
           </dl>
           {# Outside the row above, so the asynchronous requirement text is
              announced once it lands rather than as part of revealing the

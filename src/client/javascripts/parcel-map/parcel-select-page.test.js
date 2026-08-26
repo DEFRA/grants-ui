@@ -26,9 +26,14 @@ function setupDom({ multiSelect = false, selectedParcels = '', errors = false, l
       <span id="selected-parcel-reference"></span>
       <span id="selected-parcel-area"></span>
       <a id="selected-parcel-change" href="#parcel-map">Change</a>
-      <div id="selected-parcel-additional-requirements-row" hidden>
-        <span id="selected-parcel-additional-requirements"></span>
-      </div>
+      <dl id="selected-parcel-summary-list">
+        <template id="selected-parcel-additional-requirements-template">
+          <div class="govuk-summary-list__row govuk-summary-list__row--no-actions" id="selected-parcel-additional-requirements-row">
+            <dt class="govuk-summary-list__key">Additional requirements</dt>
+            <dd class="govuk-summary-list__value" id="selected-parcel-additional-requirements"></dd>
+          </div>
+        </template>
+      </dl>
       <output id="selected-parcel-additional-requirements-status"></output>
     </div>
   `
@@ -53,8 +58,8 @@ const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
 const hiddenValues = () =>
   [...document.querySelectorAll('#selected-parcels-inputs input')].map((i) => ({ name: i.name, value: i.value }))
 const additionalRequirements = () => ({
-  hidden: document.getElementById('selected-parcel-additional-requirements-row').hidden,
-  text: document.getElementById('selected-parcel-additional-requirements').textContent,
+  rendered: document.getElementById('selected-parcel-additional-requirements-row') != null,
+  text: document.getElementById('selected-parcel-additional-requirements')?.textContent ?? '',
   status: document.getElementById('selected-parcel-additional-requirements-status').textContent
 })
 
@@ -228,7 +233,7 @@ describe('initParcelSelectPage', () => {
       select(mapEl, ['SD7148-9160'])
       await flush()
 
-      expect(additionalRequirements()).toEqual({ hidden: false, text: notice, status: notice })
+      expect(additionalRequirements()).toEqual({ rendered: true, text: notice, status: notice })
     })
 
     it.each([
@@ -243,7 +248,7 @@ describe('initParcelSelectPage', () => {
       select(mapEl, ['SD7148-9160'])
       await flush()
 
-      expect(additionalRequirements()).toEqual({ hidden: true, text: '', status: '' })
+      expect(additionalRequirements()).toEqual({ rendered: false, text: '', status: '' })
       expect(document.getElementById('map-select-continue').disabled).toBe(false)
     })
 
@@ -259,7 +264,7 @@ describe('initParcelSelectPage', () => {
       select(mapEl, ['SD7148-9161'])
       await flush()
 
-      expect(additionalRequirements()).toEqual({ hidden: true, text: '', status: '' })
+      expect(additionalRequirements()).toEqual({ rendered: false, text: '', status: '' })
     })
 
     it('clears the requirement text immediately on deselection, before any response lands', async () => {
@@ -270,7 +275,7 @@ describe('initParcelSelectPage', () => {
       await flush()
       select(mapEl, [])
 
-      expect(additionalRequirements()).toEqual({ hidden: true, text: '', status: '' })
+      expect(additionalRequirements()).toEqual({ rendered: false, text: '', status: '' })
     })
 
     it('does not reveal the row when the response arrives after deselection', async () => {
@@ -283,7 +288,7 @@ describe('initParcelSelectPage', () => {
       resolveConsents(noticeResponse('SSSI consent may apply to some actions'))
       await flush()
 
-      expect(additionalRequirements()).toEqual({ hidden: true, text: '', status: '' })
+      expect(additionalRequirements()).toEqual({ rendered: false, text: '', status: '' })
     })
 
     it('does not reveal the row when the response arrives after a second parcel is added', async () => {
@@ -296,7 +301,7 @@ describe('initParcelSelectPage', () => {
       resolveConsents(noticeResponse('An SFI HEFER may apply to some actions'))
       await flush()
 
-      expect(additionalRequirements()).toEqual({ hidden: true, text: '', status: '' })
+      expect(additionalRequirements()).toEqual({ rendered: false, text: '', status: '' })
       expect(global.fetch).toHaveBeenCalledTimes(1)
     })
 
@@ -315,7 +320,7 @@ describe('initParcelSelectPage', () => {
       await flush()
 
       const expected = 'An SFI HEFER may apply to some actions'
-      expect(additionalRequirements()).toEqual({ hidden: false, text: expected, status: expected })
+      expect(additionalRequirements()).toEqual({ rendered: true, text: expected, status: expected })
     })
   })
 })

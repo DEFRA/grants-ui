@@ -27,20 +27,27 @@ describe('map-select-parcel.html', () => {
     expect(template).not.toContain('data-enabled-land-action')
   })
 
-  it('renders the Additional requirements row hidden, with an empty value cell', () => {
-    const row = /<div class="[^"]*" id="selected-parcel-additional-requirements-row"[^>]*>([\s\S]*?)<\/div>/.exec(
-      template
-    )
+  it('keeps the Additional requirements row inside an inert <template>, so no stylesheet can reveal it empty', () => {
+    const tpl = /<template id="selected-parcel-additional-requirements-template">([\s\S]*?)<\/template>/.exec(template)
 
-    expect(row?.[0]).toContain('hidden')
-    expect(row?.[0]).toContain('govuk-summary-list__row--no-actions')
-    expect(row?.[1]).toContain('<dt class="govuk-summary-list__key">Additional requirements</dt>')
-    expect(row?.[1]).toContain(
+    expect(tpl?.[1]).toContain('id="selected-parcel-additional-requirements-row"')
+    expect(tpl?.[1]).toContain('govuk-summary-list__row--no-actions')
+    expect(tpl?.[1]).toContain('<dt class="govuk-summary-list__key">Additional requirements</dt>')
+    expect(tpl?.[1]).toContain(
       '<dd class="govuk-summary-list__value" id="selected-parcel-additional-requirements"></dd>'
     )
   })
 
-  it('places the live status region inside the summary block but outside the hidden row', () => {
+  it('renders no Additional requirements row outside that template', () => {
+    const withoutTemplate = template.replace(
+      /<template id="selected-parcel-additional-requirements-template">[\s\S]*?<\/template>/,
+      ''
+    )
+
+    expect(withoutTemplate).not.toContain('selected-parcel-additional-requirements-row')
+  })
+
+  it('places the live status region inside the summary block but outside the summary list', () => {
     const details = /<div id="selected-parcel-details"[\s\S]*?<\/dl>([\s\S]*?)<\/div>/.exec(template)
 
     expect(details?.[1]).toContain(
