@@ -1,8 +1,6 @@
 Feature: Action Selection
 
-    # @disabled: the TGC-1504 repeater redesign changed the confirm-land-and-actions
-    # page, so this scenario's "Your land and actions" heading step no longer matches.
-    # Re-enable when the expectations are updated for the new page.
+    # TGC-1504: Disabled for repeater pattern
     @disabled
     Scenario: Select a partial area action for a land parcel
         Given there is no application data for SBI "106514040" and grant "example-grant-with-map"
