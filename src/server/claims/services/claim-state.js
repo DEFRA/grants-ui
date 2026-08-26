@@ -19,6 +19,10 @@
  * @typedef {(typeof ClaimStatus)[keyof typeof ClaimStatus]} ClaimStatusValue
  */
 
+/**
+ * @typedef {Partial<Pick<Claim, 'totalEligibleArea' | 'unit' | 'totalClaimAmountPence'>>} ClaimAmounts
+ */
+
 export const ClaimStatus = {
   IN_PROGRESS: 'IN_PROGRESS',
   SUBMITTED: 'SUBMITTED'
@@ -67,20 +71,42 @@ export function getLatestClaim(state) {
 }
 
 /**
+ * Build the claim amount fields as one atomic set
+ * @param {ClaimAmounts} amounts
+ * @returns {ClaimAmounts}
+ */
+function buildClaimAmounts({ totalEligibleArea, unit, totalClaimAmountPence }) {
+  return {
+    ...(totalEligibleArea !== undefined && { totalEligibleArea }),
+    ...(unit !== undefined && { unit }),
+    ...(totalClaimAmountPence !== undefined && { totalClaimAmountPence })
+  }
+}
+
+/**
  * Ensure there is a current (unsubmitted) claim in state. When one already
  * exists its amounts are refreshed; otherwise a new claim is created with a
  * derived claim number. Returns a new claims array (state is not mutated) and
  * the resulting current claim.
  * @param {Record<string, unknown> | undefined} state
- * @param {{ referenceNumber: string, totalEligibleArea?: number, unit?: string, totalClaimAmountPence?: number }} data
+ * @param {{ referenceNumber: string } & ClaimAmounts} data
  * @returns {{ claims: Claim[], currentClaim: Claim }}
  */
 export function upsertCurrentClaim(state, { referenceNumber, totalEligibleArea, unit, totalClaimAmountPence }) {
   const claims = getClaims(state).map((claim) => ({ ...claim }))
   const currentIndex = claims.findIndex((claim) => claim?.status !== ClaimStatus.SUBMITTED)
+  const amounts = buildClaimAmounts({ totalEligibleArea, unit, totalClaimAmountPence })
 
   if (currentIndex >= 0) {
-    claims[currentIndex] = { ...claims[currentIndex], totalEligibleArea, unit, totalClaimAmountPence }
+    // Rebuilt from the identity fields rather than spread over the existing
+    // claim, so that stale amounts cannot survive the refresh.
+    const { claimNumber, status, submittedAt } = claims[currentIndex]
+    claims[currentIndex] = {
+      claimNumber,
+      status,
+      ...(submittedAt !== undefined && { submittedAt }),
+      ...amounts
+    }
     return { claims, currentClaim: claims[currentIndex] }
   }
 
@@ -88,9 +114,7 @@ export function upsertCurrentClaim(state, { referenceNumber, totalEligibleArea, 
   const currentClaim = {
     claimNumber: generateClaimNumber(referenceNumber, claims.length + 1),
     status: ClaimStatus.IN_PROGRESS,
-    totalEligibleArea,
-    unit,
-    totalClaimAmountPence
+    ...amounts
   }
   claims.push(currentClaim)
 

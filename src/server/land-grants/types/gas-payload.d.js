@@ -83,10 +83,11 @@
 
 /**
  * @typedef {Object} RulesCalculations
- * @property {number} id - Validation id
+ * @property {number|string} id - Validation id
  * @property {string} message - Validation response message
  * @property {boolean} valid - Validation result
  * @property {string} date - Validation date
+ * @property {object[]} [caveats] - Rule caveats, only sent when the SSSI/Hefer features are on
  */
 
 /**

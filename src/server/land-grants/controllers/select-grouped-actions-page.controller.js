@@ -45,10 +45,13 @@ export default class SelectGroupedActionsPageController extends SelectActionsBas
    */
   buildValidationErrors(payload, failedMessages) {
     const landActionFields = extractLandActionFields(payload, this.actionFieldPrefix)
-    return failedMessages.map((e) => ({
-      text: `${e.description}${e.code ? ': ' + e.code : ''}`,
-      href: e.code ? `#${landActionFields.find((field) => payload[field] === e.code)}` : undefined
-    }))
+    return failedMessages.map((e) => {
+      const field = e.code ? landActionFields.find((f) => payload[f] === e.code) : undefined
+      return {
+        text: `${e.description}${e.code ? ': ' + e.code : ''}`,
+        href: field ? `#${field}` : undefined
+      }
+    })
   }
 
   /**
