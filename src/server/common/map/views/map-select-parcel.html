@@ -47,18 +47,26 @@
             {# tabindex makes the element a focus target: the error-summary links and
                the "Change" link below all point at #parcel-map, and govuk-frontend
                cannot move focus to a custom element without it. #}
+            {# data-selected-parcels re-seeds the map after a rejected submit —
+               parcel-select-page.js reselects these ids once the map is ready. #}
             <parcel-map
               id="parcel-map"
               role="group"
               tabindex="-1"
               multi-select="{{ 'true' if multiSelect else 'false' }}"
+              data-selected-parcels="{{ selectedParcelIds | join(',') if selectedParcelIds else '' }}"
               aria-label="Land parcel selection map"
               style="display:block;width:100%;height:500px;position:relative"
             >
             </parcel-map>
 
-            {# Hidden inputs written by the parcel-map:selection listener; also used by no-JS fallback #}
-            <div id="selected-parcels-inputs" aria-hidden="true"></div>
+            {# Hidden inputs written by the parcel-map:selection listener; also used by no-JS fallback.
+               Pre-filled on a re-render so a rejected selection survives even without JS. #}
+            <div id="selected-parcels-inputs" aria-hidden="true">
+              {% for parcelId in selectedParcelIds %}
+                <input type="hidden" name="landParcels" value="{{ parcelId }}">
+              {% endfor %}
+            </div>
           </div>
 
           <div class="govuk-grid-column-one-third-from-desktop">
@@ -80,10 +88,7 @@
 
         <div id="selected-parcel-details" class="govuk-!-margin-top-6" hidden>
           <h2 class="govuk-heading-m">Selected land parcel</h2>
-          {# Hand-rolled to match govukSummaryList's markup: that macro's row.value
-             only ever renders row.value.classes, never row.value.attributes, so an
-             id on the value cell (needed by parcel-select-page.js to target it)
-             is silently dropped when built via the macro. #}
+
           <dl class="govuk-summary-list" id="selected-parcel-summary-list">
             <div class="govuk-summary-list__row">
               <dt class="govuk-summary-list__key">Parcel reference</dt>
@@ -96,7 +101,16 @@
               <dt class="govuk-summary-list__key">Total area</dt>
               <dd class="govuk-summary-list__value" id="selected-parcel-area"></dd>
             </div>
+            <div class="govuk-summary-list__row govuk-summary-list__row--no-actions" id="selected-parcel-additional-requirements-row" hidden>
+              <dt class="govuk-summary-list__key">Additional requirements</dt>
+              <dd class="govuk-summary-list__value" id="selected-parcel-additional-requirements"></dd>
+            </div>
           </dl>
+          {# Outside the row above, so the asynchronous requirement text is
+             announced once it lands rather than as part of revealing the
+             summary itself. <output> carries an implicit status role that is
+             honoured more consistently than role="status" on a <span>. #}
+          <output id="selected-parcel-additional-requirements-status" class="govuk-visually-hidden"></output>
         </div>
 
         {{ govukButton({

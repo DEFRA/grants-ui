@@ -247,22 +247,32 @@ export function buildSkeleton() {
 }
 
 /**
+ * Fits the viewport to the parcels' bounding box.
+ * @param {import('maplibre-gl').Map | null} ml
+ * @param {{ minLng: number, minLat: number, maxLng: number, maxLat: number } | null} bbox
+ */
+export function fitToParcels(ml, bbox) {
+  if (!ml || !bbox) {
+    return
+  }
+  const { minLng, minLat, maxLng, maxLat } = bbox
+  ml.fitBounds(
+    [
+      [Number(minLng), Number(minLat)],
+      [Number(maxLng), Number(maxLat)]
+    ],
+    { padding: FIT_BOUNDS_PADDING, animate: false }
+  )
+}
+
+/**
  * Fits the viewport to the parcels' bounding box, then adds the parcel source.
  * @param {import('maplibre-gl').Map} ml
  * @param {{ geojson: GeoJSON.FeatureCollection | null, bbox: { minLng: number, minLat: number, maxLng: number, maxLat: number } | null }} data
  * @param {unknown[]} colorExpr  MapLibre `match` expression
  */
 export function addParcelsToMap(ml, { geojson, bbox }, colorExpr) {
-  if (bbox) {
-    const { minLng, minLat, maxLng, maxLat } = bbox
-    ml.fitBounds(
-      [
-        [Number(minLng), Number(minLat)],
-        [Number(maxLng), Number(maxLat)]
-      ],
-      { padding: FIT_BOUNDS_PADDING, animate: false }
-    )
-  }
+  fitToParcels(ml, bbox)
 
   if (ml.getSource(SOURCE_ID_PARCELS)) {
     return
