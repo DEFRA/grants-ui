@@ -56,7 +56,7 @@ const bodyText = ($) => normalise($('main').text())
 /** Every summary card on the page, parcel cards first. */
 const cards = ($) => $('.govuk-summary-card')
 
-/** `Action|Quantity|Yearly payment` cell text of each body row in the nth parcel card's table. */
+/** Body row cell text (`Action|Quantity|Yearly payment`) of the nth parcel card. */
 const rowsOf = ($, index) =>
   cards($)
     .eq(index)
