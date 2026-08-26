@@ -230,24 +230,22 @@ Then('(the user )should not see a notification banner', async function () {
   await expect(this.page.locator('div.govuk-notification-banner')).not.toBeVisible()
 })
 
-Then('(the user )should see a phase banner feedback link', async function () {
-  const link = this.page.locator('.govuk-phase-banner a.govuk-link', { hasText: 'feedback' })
+const expectFeedbackLink = async (page, selector, text, journey) => {
+  const link = page.locator(selector, { hasText: text })
   await expect(link).toBeVisible()
   const href = await link.getAttribute('href')
   const params = new URL(href).searchParams
   expect(params.get('grant')).toBeTruthy()
   expect(params.get('url')).toBeTruthy()
-  expect(params.get('journey')).toEqual('application-inprogress')
+  expect(params.get('journey')).toEqual(journey)
+}
+
+Then('(the user )should see a phase banner feedback link with journey {string}', async function (journey) {
+  await expectFeedbackLink(this.page, '.govuk-phase-banner a.govuk-link', 'feedback', journey)
 })
 
-Then('(the user )should see a confirmation page feedback link', async function () {
-  const link = this.page.locator('a.govuk-link', { hasText: 'Give feedback on this service' })
-  await expect(link).toBeVisible()
-  const href = await link.getAttribute('href')
-  const params = new URL(href).searchParams
-  expect(params.get('grant')).toBeTruthy()
-  expect(params.get('url')).toBeTruthy()
-  expect(params.get('journey')).toEqual('application-submitted')
+Then('(the user )should see a confirmation page feedback link with journey {string}', async function (journey) {
+  await expectFeedbackLink(this.page, 'a.govuk-link', 'Give feedback on this service', journey)
 })
 
 Then('(the user )should see SBI {string} as the logged in organisation', async function (expectedSbi) {

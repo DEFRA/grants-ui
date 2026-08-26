@@ -13,17 +13,18 @@
 
 /**
  * An in-progress action selection sent to the parcels endpoint so it can recompute
- * availableArea against this planned combination merged with existing agreements.
+ * availability against this planned combination merged with existing agreements.
  * @typedef {object} PlannedAction
  * @property {string} actionCode
  * @property {number} quantity
- * @property {'ha'|'sqm'} unit
+ * @property {string} unit - Area or linear, depending on the action
  */
 
 /**
  * @typedef ActionGroup
  * @property {string} name
- * @property {Size} totalAvailableArea
+ * @property {{ value?: number, unit: string, unitFullName: string }} totalAvailableArea - The
+ *   largest availability in the group; `value` is absent when no action in it has a limit
  * @property {ActionOption[]} actions
  * @property {string[]} consents - Array of consent type keys required for this group (e.g., ['sssi', 'hefer'])
  */
@@ -42,10 +43,13 @@
  */
 
 /**
+ * How much of an action is still claimable. The API always sends this object -
+ * `unit` is always present, and a null `value` is how it says "no restriction"
+ * while `type` controls whether the user must type a quantity.
  * @typedef {object} ActionAvailability
- * @property {'total'|'partial'} [type] - How the user must enter a quantity relative to
- *   availableArea: 'total' (or unset) requires the full amount and shows no quantity input;
- *   'partial' shows a quantity input capped at availableArea
+ * @property {string} unit - Area, linear or count unit
+ * @property {number | null} value - Amount still claimable; null means no restriction
+ * @property {'total'|'partial'} [type] - 'partial' requires a typed quantity
  */
 
 /**
@@ -55,12 +59,10 @@
  * @property {string} version - The action version
  * @property {boolean} [sssiConsentRequired] - If action needs SSSI consent
  * @property {boolean} [heferRequired] - If action needs HEFER report
- * @property {Size} availableArea - The available area for the action
+ * @property {ActionAvailability} [availability] - How much of the action is still claimable
  * @property {number} ratePerUnitGbp - The rate per unit in GBP
  * @property {number} ratePerAgreementPerYearGbp - The rate per agreement per year in GBP
  * @property {string} [guidanceUrl] - URL to the action's guidance page
- * @property {ActionAvailability} [availability] - Governs whether this action needs a
- *   user-typed quantity
  */
 
 /**

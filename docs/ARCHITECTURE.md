@@ -358,13 +358,15 @@ The `http-client.env.json` file defines the non-secret per-environment base URLs
     "gasUrl": "http://localhost:3102",
     "brokerUrl": "http://localhost:3012",
     "backendUrl": "http://localhost:3001",
-    "landGrantsUrl": "http://localhost:3009"
+    "landGrantsUrl": "http://localhost:3009",
+    "dalUrl": "http://localhost:3008/graphql"
   },
   "dev": {
     "gasUrl": "https://ephemeral-protected.api.dev.cdp-int.defra.cloud/fg-gas-backend",
     "brokerUrl": "https://ephemeral-protected.api.dev.cdp-int.defra.cloud/grants-config-broker",
     "backendUrl": "https://ephemeral-protected.api.dev.cdp-int.defra.cloud/grants-ui-backend",
-    "landGrantsUrl": "https://ephemeral-protected.api.dev.cdp-int.defra.cloud/land-grants-api"
+    "landGrantsUrl": "https://ephemeral-protected.api.dev.cdp-int.defra.cloud/land-grants-api",
+    "dalUrl": "https://fcp-dal-api.api.dev.cdp-int.defra.cloud/graphql"
   }
 }
 ```

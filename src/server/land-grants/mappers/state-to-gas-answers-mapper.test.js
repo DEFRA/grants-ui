@@ -1,30 +1,10 @@
 import { stateToLandGrantsGasAnswers } from '~/src/server/land-grants/mappers/state-to-gas-answers-mapper.js'
+import { configState } from '~/src/__mocks__/config-mocks.js'
 
-const configState = vi.hoisted(() => {
-  const defaults = new Map()
-  const values = new Map(defaults)
-
-  return {
-    set(key, value) {
-      values.set(key, value)
-    },
-    reset() {
-      values.clear()
-      for (const [k, v] of defaults) {
-        values.set(k, v)
-      }
-    },
-    get(key) {
-      return values.get(key)
-    }
-  }
+vi.mock('~/src/config/config.js', async () => {
+  const { mockConfigWithState } = await import('~/src/__mocks__/config-mocks.js')
+  return mockConfigWithState()
 })
-
-vi.mock('~/src/config/config.js', () => ({
-  config: {
-    get: vi.fn((key) => configState.get(key))
-  }
-}))
 
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
   log: vi.fn()

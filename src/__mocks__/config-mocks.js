@@ -16,6 +16,74 @@ export const mockLandGrantsConfig = () => ({
   }
 })
 
+/** @type {Map<string, unknown>} */
+const stateValues = new Map()
+/** @type {Map<string, unknown>} */
+let stateDefaults = new Map()
+/** @type {unknown} */
+let stateFallback
+
+/**
+ * Feature-flag values a test can flip between cases, paired with
+ * `mockConfigWithState` below.
+ */
+export const configState = {
+  /**
+   * @param {string} key
+   * @param {unknown} value
+   */
+  set(key, value) {
+    stateValues.set(key, value)
+  },
+  reset() {
+    stateValues.clear()
+    stateDefaults.forEach((value, key) => stateValues.set(key, value))
+  },
+  /** @param {string} key */
+  get(key) {
+    return stateValues.has(key) ? stateValues.get(key) : stateFallback
+  }
+}
+
+/**
+ * Mock the config module against the mutable `configState` above.
+ * @param {object} [options]
+ * @param {Record<string, unknown>} [options.defaults] - values restored by `configState.reset()`
+ * @param {unknown} [options.fallback] - returned for a key that was never set
+ * @returns {{ config: { get: import('vitest').Mock } }}
+ */
+export const mockConfigWithState = ({ defaults = {}, fallback } = {}) => {
+  stateDefaults = new Map(Object.entries(defaults))
+  stateFallback = fallback
+  configState.reset()
+  return {
+    config: {
+      get: vi.fn((/** @type {string} */ key) => configState.get(key))
+    }
+  }
+}
+
+/**
+ * Build a `config.get` implementation for the agreements proxy, so the key list lives in one
+ * place.
+ * @param {Record<string, unknown>} [overrides]
+ * @returns {(key: string) => unknown}
+ */
+export const agreementsConfigValues = (overrides = {}) => {
+  /** @type {Record<string, unknown>} */
+  const values = {
+    'agreements.uiUrl': 'http://localhost:3003',
+    'agreements.uiToken': 'test-token',
+    'agreements.baseUrl': '/agreement',
+    'agreements.jwtSecret': 'test-jwt-secret',
+    'agreements.jwtIssuer': 'grants-ui',
+    'agreements.jwtAudience': ['agreements-ui', 'gas'],
+    'agreements.jwtTtlSec': 300,
+    ...overrides
+  }
+  return (/** @type {string} */ key) => values[key]
+}
+
 /**
  * Mock the config module, resolving keys against a fixed value map.
  * @param {Record<string, unknown>} [configValues] - keyed config values to return

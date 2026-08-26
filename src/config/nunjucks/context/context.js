@@ -18,18 +18,16 @@ let webpackManifest
 
 /**
  * @param {ExtendedRequest | undefined} request
- * @param {string | null | undefined} role
  * @returns {AuthDetails} User authentication and authorization details
  */
-const usersDetails = (request, role) => {
+const usersDetails = (request) => {
   return {
     isAuthenticated: request?.auth?.isAuthenticated ?? false,
     sbi: request?.auth?.credentials?.sbi,
     crn: request?.auth?.credentials?.crn,
     name: request?.auth?.credentials?.name,
     organisationName: request?.auth?.credentials?.organisationName,
-    relationshipId: request?.auth?.credentials?.relationshipId,
-    role
+    relationshipId: request?.auth?.credentials?.relationshipId
   }
 }
 
@@ -64,36 +62,6 @@ const loadWebpackManifest = (request) => {
         request
       )
     }
-  }
-}
-
-/**
- * @param {ExtendedRequest | undefined} request
- * @returns {Promise<SessionData>} Session data object or empty object if unavailable
- */
-const getSessionData = async (request) => {
-  if (!request?.auth?.isAuthenticated || !request.auth.credentials?.sessionId) {
-    return {}
-  }
-
-  try {
-    const cache = request.server?.app?.cache
-    if (!cache) {
-      return {}
-    }
-    return (await cache.get(/** @type {string} */ (request.auth.credentials.sessionId))) || {}
-  } catch (cacheError) {
-    const sessionId = String(request.auth.credentials.sessionId || 'unknown')
-    debug(
-      LogCodes.AUTH.SIGN_IN_FAILURE,
-      {
-        userId: 'unknown',
-        errorMessage: `Cache retrieval failed for session ${sessionId}: ${/** @type {Error} */ (cacheError).message}`,
-        step: 'context_cache_retrieval'
-      },
-      request
-    )
-    return {}
   }
 }
 
@@ -203,8 +171,7 @@ const buildFallbackContext = (serviceName, cookiePolicyUrl, cookieConsentExpiryD
       crn: null,
       name: null,
       organisationName: null,
-      relationshipId: null,
-      role: null
+      relationshipId: null
     },
     navigation: [],
     getAssetPath: (/** @type {string} */ asset) => `${assetPath}/${asset}`
@@ -220,8 +187,7 @@ export async function context(request) {
 
   try {
     loadWebpackManifest(request)
-    const session = await getSessionData(request)
-    const auth = usersDetails(request, session.role)
+    const auth = usersDetails(request)
 
     return buildSuccessContext(auth, request, serviceName, cookiePolicyUrl, cookieConsentExpiryDays)
   } catch (error) {
@@ -261,7 +227,6 @@ export async function context(request) {
  * @property {unknown} name
  * @property {unknown} organisationName
  * @property {unknown} relationshipId
- * @property {string | null | undefined} role
  */
 
 /**
@@ -269,9 +234,4 @@ export async function context(request) {
  * @property {string} serviceName
  * @property {string} cookiePolicyUrl
  * @property {number} cookieConsentExpiryDays
- */
-
-/**
- * @typedef {object} SessionData
- * @property {string | null} [role]
  */

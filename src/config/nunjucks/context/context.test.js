@@ -80,7 +80,6 @@ const getExpectedContext = () => ({
   auth: {
     isAuthenticated: false,
     name: undefined,
-    role: undefined,
     organisationName: undefined,
     crn: undefined,
     relationshipId: undefined,
@@ -270,63 +269,6 @@ describe('context', () => {
   })
 
   describe('Session and authentication handling', () => {
-    test('Should log cache retrieval error and fallback to empty session', async () => {
-      // Create a mock cache that throws an error
-      const mockCache = {
-        get: vi.fn().mockImplementation(() => {
-          throw new Error('Cache retrieval failed')
-        })
-      }
-
-      const requestWithAuth = {
-        ...mockRequest,
-        auth: { isAuthenticated: true, credentials: { sessionId: 'test-session' } },
-        server: {
-          app: {
-            cache: mockCache
-          }
-        }
-      }
-
-      const contextImport = await import('~/src/config/nunjucks/context/context.js')
-      const contextResult = await contextImport.context(requestWithAuth)
-
-      expect(mockLog).toHaveBeenCalledWith(
-        MockLogCodes.AUTH.SIGN_IN_FAILURE,
-        {
-          userId: 'unknown',
-          errorMessage: expect.stringContaining('Cache retrieval failed for session test-session'),
-          step: 'context_cache_retrieval'
-        },
-        expect.objectContaining({
-          auth: expect.objectContaining({
-            isAuthenticated: true,
-            credentials: expect.objectContaining({
-              sessionId: expect.any(String)
-            })
-          }),
-          method: 'GET',
-          path: '/',
-          server: expect.objectContaining({
-            app: expect.objectContaining({
-              cache: expect.objectContaining({
-                get: expect.any(Function)
-              })
-            })
-          })
-        })
-      )
-      expect(contextResult.auth).toEqual({
-        isAuthenticated: true,
-        sbi: undefined,
-        crn: undefined,
-        name: undefined,
-        organisationName: undefined,
-        relationshipId: undefined,
-        role: undefined
-      })
-    })
-
     test('Should provide correct auth properties when authenticated', async () => {
       const credentials = {
         sbi: '106284736',
@@ -336,9 +278,7 @@ describe('context', () => {
         relationshipId: 'rel456',
         sessionId: 'valid-session-id'
       }
-      const request = createAuthRequest(credentials, {
-        role: 'admin'
-      })
+      const request = createAuthRequest(credentials)
 
       const contextImport = await importContext()
       const contextResult = await contextImport.context(request)
@@ -349,8 +289,7 @@ describe('context', () => {
         crn: 'crn123',
         name: 'John Doe',
         organisationName: 'Farm 1',
-        relationshipId: 'rel456',
-        role: 'admin'
+        relationshipId: 'rel456'
       })
     })
 
@@ -366,8 +305,7 @@ describe('context', () => {
         crn: undefined,
         name: undefined,
         organisationName: undefined,
-        relationshipId: undefined,
-        role: undefined
+        relationshipId: undefined
       })
     })
 
@@ -387,55 +325,7 @@ describe('context', () => {
         crn: undefined,
         name: undefined,
         organisationName: undefined,
-        relationshipId: undefined,
-        role: undefined
-      })
-    })
-
-    test('Should handle cache error and log unknown when sessionId becomes falsy', async () => {
-      const credentials = { sessionId: 'valid-session' }
-      const requestWithAuth = createAuthRequest(credentials, null)
-      requestWithAuth.server.app.cache.get.mockImplementation(() => {
-        credentials.sessionId = null
-        throw new Error('Cache retrieval failed')
-      })
-
-      const contextImport = await importContext()
-      const contextResult = await contextImport.context(requestWithAuth)
-
-      expect(mockLog).toHaveBeenCalledWith(
-        MockLogCodes.AUTH.SIGN_IN_FAILURE,
-        {
-          userId: 'unknown',
-          errorMessage: expect.stringContaining('Cache retrieval failed for session unknown'),
-          step: 'context_cache_retrieval'
-        },
-        expect.objectContaining({
-          auth: expect.objectContaining({
-            isAuthenticated: true,
-            credentials: expect.objectContaining({
-              sessionId: null
-            })
-          }),
-          method: 'GET',
-          path: '/',
-          server: expect.objectContaining({
-            app: expect.objectContaining({
-              cache: expect.objectContaining({
-                get: expect.any(Function)
-              })
-            })
-          })
-        })
-      )
-      expect(contextResult.auth).toEqual({
-        isAuthenticated: true,
-        sbi: undefined,
-        crn: undefined,
-        name: undefined,
-        organisationName: undefined,
-        relationshipId: undefined,
-        role: undefined
+        relationshipId: undefined
       })
     })
   })
@@ -760,8 +650,7 @@ describe('context', () => {
           crn: null,
           name: null,
           organisationName: null,
-          relationshipId: null,
-          role: null
+          relationshipId: null
         }
       })
       expect(contextResult.cookieBannerConfig).toBeDefined()

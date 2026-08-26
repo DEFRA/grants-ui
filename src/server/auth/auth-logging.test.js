@@ -155,18 +155,14 @@ describe('auth-logging', () => {
       currentRelationshipId: 'org456',
       sessionId: 'session789'
     }
-    const role = 'admin'
-    const scope = ['read', 'write']
 
-    logSuccessfulSignIn(profile, role, scope)
+    logSuccessfulSignIn(profile)
 
     expect(log).toHaveBeenCalledWith(
       expect.objectContaining({ level: expect.any(String), messageFunc: expect.any(Function) }),
       expect.objectContaining({
         userId: 'user123',
         organisationId: 'org456',
-        role: 'admin',
-        scope: 'read, write',
         sessionId: 'session789'
       })
     )

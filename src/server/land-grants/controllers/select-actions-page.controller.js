@@ -1,10 +1,10 @@
 import SelectActionsBasePageController from '~/src/server/land-grants/controllers/select-actions-base-page.controller.js'
 import {
   getChosenAreaFieldsHtml,
-  getPageConsents,
   getParcelSummaryList,
   mapActionsToViewModel
 } from '~/src/server/land-grants/view-models/select-actions.view-model.js'
+import { getRequiredActionConsents } from '~/src/server/land-grants/utils/consent-types.js'
 import {
   addSelectedActionsToState,
   mergeRecomputedAvailability
@@ -42,7 +42,7 @@ function buildPlannedActionsFromFields(payload, actions) {
     }
     const quantity = Number(payload[getActionQuantityFieldName(action.code)])
     return Number.isFinite(quantity) && quantity > 0
-      ? [{ actionCode: action.code, quantity, unit: action.availableArea?.unit }]
+      ? [{ actionCode: action.code, quantity, unit: action.availability?.unit }]
       : []
   })
 }
@@ -59,20 +59,14 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
    * @param {Array} actions
    * @param {Array} addedActions
    * @param {Record<string, string>} [quantityErrorsByCode] - Quantity validation error text, keyed by action code
-   * @param {boolean} [hasErrors] - Whether this page load is redisplaying a rejected submission
    * @param {{ sheetId: string, parcelId: string, size?: Size }} [parcel] - Identifiers and area for the
+   * @param {boolean} [hasErrors] - Whether this page load is redisplaying a rejected submission
    *   "Selected land parcel" summary
    * @returns {object}
    */
-  getViewModelWithActions(
-    request,
-    context,
-    actions,
-    addedActions,
-    quantityErrorsByCode = {},
-    hasErrors = false,
-    parcel = { sheetId: '', parcelId: '' }
-  ) {
+  getViewModelWithActions(request, context, actions, addedActions, quantityErrorsByCode, parcel, hasErrors = false) {
+    quantityErrorsByCode ??= {}
+    parcel ??= { sheetId: '', parcelId: '' }
     const selectLandParcelPath = this.getHref(this.getPreviousPagePath())
     return {
       ...super.getViewModel(request, context),
@@ -80,7 +74,7 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
       addedActions,
       actionItems: mapActionsToViewModel(actions, addedActions, quantityErrorsByCode, hasErrors),
       chosenAreaFieldsHtml: getChosenAreaFieldsHtml(actions, addedActions),
-      pageConsents: getPageConsents(actions),
+      pageConsents: getRequiredActionConsents(actions),
       selectLandParcelPath,
       parcelSummaryList: getParcelSummaryList(parcel.sheetId, parcel.parcelId, parcel.size)
     }
@@ -152,7 +146,7 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
   }
 
   /**
-   * Recomputes availableArea for every action against the quantity claims
+   * Recomputes availability for every action against the quantity claims
    * in this same submission.
    * @param {AnyFormRequest} request
    * @param {{ selectedLandParcel: string, sheetId: string, parcelId: string }} parcel
@@ -189,7 +183,7 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
     const withSentClaim = recomputed.map((action) => {
       const needsQuantity = requiresQuantityInput(actionsByCode.get(action.code)?.availability?.type)
       return sentByCode.has(action.code) && !needsQuantity
-        ? { ...action, availableArea: { ...action.availableArea, value: sentByCode.get(action.code) } }
+        ? { ...action, availability: { ...action.availability, value: sentByCode.get(action.code) } }
         : action
     })
 

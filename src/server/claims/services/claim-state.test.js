@@ -12,14 +12,14 @@ import {
 describe('claim-state', () => {
   describe('generateClaimNumber', () => {
     test('derives a claim number from the application reference and sequence', () => {
-      expect(generateClaimNumber('WMP-A1B2-C3D4', 1)).toBe('WMP-A1B2-C3D4-C0001')
-      expect(generateClaimNumber('WMP-A1B2-C3D4', 3)).toBe('WMP-A1B2-C3D4-C0003')
+      expect(generateClaimNumber('WMP-A1B2-C3D4', 1)).toBe('WMP-A1B2-C3D4-C01')
+      expect(generateClaimNumber('WMP-A1B2-C3D4', 3)).toBe('WMP-A1B2-C3D4-C03')
     })
   })
 
   describe('getClaims', () => {
     test('returns the claims array when present', () => {
-      const claims = [{ claimNumber: 'WMP-A1B2-C3D4-C0001', status: ClaimStatus.IN_PROGRESS }]
+      const claims = [{ claimNumber: 'WMP-A1B2-C3D4-C01', status: ClaimStatus.IN_PROGRESS }]
       expect(getClaims({ claims })).toBe(claims)
     })
 
@@ -35,15 +35,15 @@ describe('claim-state', () => {
     test('returns the first not-yet-submitted claim', () => {
       const state = {
         claims: [
-          { claimNumber: 'WMP-A1B2-C3D4-C0001', status: ClaimStatus.SUBMITTED },
-          { claimNumber: 'WMP-A1B2-C3D4-C0002', status: ClaimStatus.IN_PROGRESS }
+          { claimNumber: 'WMP-A1B2-C3D4-C01', status: ClaimStatus.SUBMITTED },
+          { claimNumber: 'WMP-A1B2-C3D4-C02', status: ClaimStatus.IN_PROGRESS }
         ]
       }
-      expect(getCurrentClaim(state)?.claimNumber).toBe('WMP-A1B2-C3D4-C0002')
+      expect(getCurrentClaim(state)?.claimNumber).toBe('WMP-A1B2-C3D4-C02')
     })
 
     test('returns undefined when every claim is submitted', () => {
-      const state = { claims: [{ claimNumber: 'WMP-A1B2-C3D4-C0001', status: ClaimStatus.SUBMITTED }] }
+      const state = { claims: [{ claimNumber: 'WMP-A1B2-C3D4-C01', status: ClaimStatus.SUBMITTED }] }
       expect(getCurrentClaim(state)).toBeUndefined()
     })
 
@@ -56,16 +56,16 @@ describe('claim-state', () => {
     test('returns the most recent claim regardless of status', () => {
       const state = {
         claims: [
-          { claimNumber: 'WMP-A1B2-C3D4-C0001', status: ClaimStatus.SUBMITTED },
-          { claimNumber: 'WMP-A1B2-C3D4-C0002', status: ClaimStatus.SUBMITTED }
+          { claimNumber: 'WMP-A1B2-C3D4-C01', status: ClaimStatus.SUBMITTED },
+          { claimNumber: 'WMP-A1B2-C3D4-C02', status: ClaimStatus.SUBMITTED }
         ]
       }
-      expect(getLatestClaim(state)?.claimNumber).toBe('WMP-A1B2-C3D4-C0002')
+      expect(getLatestClaim(state)?.claimNumber).toBe('WMP-A1B2-C3D4-C02')
     })
 
     test('returns the single claim when only one exists', () => {
-      const state = { claims: [{ claimNumber: 'WMP-A1B2-C3D4-C0001', status: ClaimStatus.IN_PROGRESS }] }
-      expect(getLatestClaim(state)?.claimNumber).toBe('WMP-A1B2-C3D4-C0001')
+      const state = { claims: [{ claimNumber: 'WMP-A1B2-C3D4-C01', status: ClaimStatus.IN_PROGRESS }] }
+      expect(getLatestClaim(state)?.claimNumber).toBe('WMP-A1B2-C3D4-C01')
     })
 
     test('returns undefined when there are no claims', () => {
@@ -81,7 +81,7 @@ describe('claim-state', () => {
       )
 
       expect(currentClaim).toEqual({
-        claimNumber: 'WMP-A1B2-C3D4-C0001',
+        claimNumber: 'WMP-A1B2-C3D4-C01',
         status: ClaimStatus.IN_PROGRESS,
         totalEligibleArea: 24.95,
         unit: 'ha',
@@ -91,7 +91,7 @@ describe('claim-state', () => {
     })
 
     test('numbers a new claim after existing submitted claims', () => {
-      const state = { claims: [{ claimNumber: 'WMP-A1B2-C3D4-C0001', status: ClaimStatus.SUBMITTED }] }
+      const state = { claims: [{ claimNumber: 'WMP-A1B2-C3D4-C01', status: ClaimStatus.SUBMITTED }] }
 
       const { claims, currentClaim } = upsertCurrentClaim(state, {
         referenceNumber: 'WMP-A1B2-C3D4',
@@ -100,7 +100,7 @@ describe('claim-state', () => {
         totalClaimAmountPence: 10000
       })
 
-      expect(currentClaim.claimNumber).toBe('WMP-A1B2-C3D4-C0002')
+      expect(currentClaim.claimNumber).toBe('WMP-A1B2-C3D4-C02')
       expect(claims).toHaveLength(2)
     })
 
@@ -108,7 +108,7 @@ describe('claim-state', () => {
       const state = {
         claims: [
           {
-            claimNumber: 'WMP-A1B2-C3D4-C0001',
+            claimNumber: 'WMP-A1B2-C3D4-C01',
             status: ClaimStatus.IN_PROGRESS,
             totalEligibleArea: 1.11,
             unit: 'old',
@@ -126,7 +126,7 @@ describe('claim-state', () => {
 
       expect(claims).toHaveLength(1)
       expect(currentClaim).toEqual({
-        claimNumber: 'WMP-A1B2-C3D4-C0001',
+        claimNumber: 'WMP-A1B2-C3D4-C01',
         status: ClaimStatus.IN_PROGRESS,
         totalEligibleArea: 24.95,
         unit: 'ha',
@@ -135,7 +135,7 @@ describe('claim-state', () => {
     })
 
     test('does not mutate the original state claims', () => {
-      const original = [{ claimNumber: 'WMP-A1B2-C3D4-C0001', status: ClaimStatus.IN_PROGRESS }]
+      const original = [{ claimNumber: 'WMP-A1B2-C3D4-C01', status: ClaimStatus.IN_PROGRESS }]
       const state = { claims: original }
 
       upsertCurrentClaim(state, {
@@ -145,7 +145,7 @@ describe('claim-state', () => {
         totalClaimAmountPence: 1
       })
 
-      expect(original[0]).toEqual({ claimNumber: 'WMP-A1B2-C3D4-C0001', status: ClaimStatus.IN_PROGRESS })
+      expect(original[0]).toEqual({ claimNumber: 'WMP-A1B2-C3D4-C01', status: ClaimStatus.IN_PROGRESS })
     })
   })
 
@@ -153,25 +153,25 @@ describe('claim-state', () => {
     test('flips only the matching claim to SUBMITTED with a submittedAt', () => {
       const state = {
         claims: [
-          { claimNumber: 'WMP-A1B2-C3D4-C0001', status: ClaimStatus.SUBMITTED },
-          { claimNumber: 'WMP-A1B2-C3D4-C0002', status: ClaimStatus.IN_PROGRESS }
+          { claimNumber: 'WMP-A1B2-C3D4-C01', status: ClaimStatus.SUBMITTED },
+          { claimNumber: 'WMP-A1B2-C3D4-C02', status: ClaimStatus.IN_PROGRESS }
         ]
       }
 
-      const result = markClaimSubmitted(state, 'WMP-A1B2-C3D4-C0002', '2025-01-01T00:00:00.000Z')
+      const result = markClaimSubmitted(state, 'WMP-A1B2-C3D4-C02', '2025-01-01T00:00:00.000Z')
 
       expect(result).toEqual([
-        { claimNumber: 'WMP-A1B2-C3D4-C0001', status: ClaimStatus.SUBMITTED },
-        { claimNumber: 'WMP-A1B2-C3D4-C0002', status: ClaimStatus.SUBMITTED, submittedAt: '2025-01-01T00:00:00.000Z' }
+        { claimNumber: 'WMP-A1B2-C3D4-C01', status: ClaimStatus.SUBMITTED },
+        { claimNumber: 'WMP-A1B2-C3D4-C02', status: ClaimStatus.SUBMITTED, submittedAt: '2025-01-01T00:00:00.000Z' }
       ])
     })
 
     test('does not mutate the original state claims', () => {
-      const original = [{ claimNumber: 'WMP-A1B2-C3D4-C0001', status: ClaimStatus.IN_PROGRESS }]
+      const original = [{ claimNumber: 'WMP-A1B2-C3D4-C01', status: ClaimStatus.IN_PROGRESS }]
 
-      markClaimSubmitted({ claims: original }, 'WMP-A1B2-C3D4-C0001', '2025-01-01T00:00:00.000Z')
+      markClaimSubmitted({ claims: original }, 'WMP-A1B2-C3D4-C01', '2025-01-01T00:00:00.000Z')
 
-      expect(original[0]).toEqual({ claimNumber: 'WMP-A1B2-C3D4-C0001', status: ClaimStatus.IN_PROGRESS })
+      expect(original[0]).toEqual({ claimNumber: 'WMP-A1B2-C3D4-C01', status: ClaimStatus.IN_PROGRESS })
     })
   })
 })

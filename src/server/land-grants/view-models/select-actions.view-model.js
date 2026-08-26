@@ -9,9 +9,12 @@ import { govukFrontendPath, viewPaths } from '~/src/config/nunjucks/view-paths.j
 import { getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
 import { requiresQuantityInput } from '~/src/shared/action-quantity-type.js'
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
+import { formatUnit } from '~/src/shared/format-unit.js'
+import { getAvailabilityLimit } from '~/src/shared/availability.js'
 import { formatParcelReference } from '~/src/shared/format-parcel.js'
 import { SELECTED_ACTIONS_FIELD_NAME } from '~/src/server/land-grants/utils/selected-actions-field.js'
-import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js'
+import { getActionConsentKeys } from '~/src/server/land-grants/utils/consent-types.js'
+import { getConsentRequirementText } from '~/src/server/land-grants/view-models/consent.view-model.js'
 
 const QUANTITY_INPUT_TEMPLATE = 'quantity-input/template.njk'
 const ACTION_LABEL_TEMPLATE = 'action-label/template.njk'
@@ -24,7 +27,8 @@ const landGrantsViewEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader
  * @param {string} actionCode
  * @param {string} actionName
  * @param {string} quantityValue
- * @param {number} maxQuantity
+ * @param {number} [maxQuantity] - Omitted when the action has no availability
+ *   restriction, which leaves the input unbounded and hintless
  * @param {string} [unit]
  * @param {string} [errorText] - Error message shown on the input when this action's
  *   quantity failed validation
@@ -39,7 +43,7 @@ function getQuantityConditional(actionCode, actionName, quantityValue, maxQuanti
       quantityValue,
       maxQuantity,
       unit,
-      unitFullName: formatAreaUnit(unit),
+      unitFullName: formatUnit(unit),
       errorText
     })
   }
@@ -71,42 +75,14 @@ function getCheckboxItemId(actionCode, isFirst) {
 }
 
 /**
- * An action's original, uncompeted total - availableArea may have been
+ * An action's original, uncompeted total - availability may have been
  * overwritten by a recompute against other actions in this submission (see
  * mergeRecomputedAvailability), which isn't a safe standalone ceiling.
  * @param {Action} action
- * @returns {{ value?: number, unit?: string } | undefined}
+ * @returns {{ value?: number | null, unit?: string } | undefined}
  */
-function getStaticAvailableArea(action) {
-  return action.staticAvailableArea ?? action.availableArea
-}
-
-/**
- * Consent type keys (from the feature-flagged getConsentTypes registry) that
- * apply to this action - same membership check buildActionStateEntry and
- * createGroup already use, so a disabled consent feature flag hides this
- * action's requirement text too, not just the persisted state/group hint.
- * @param {Action} action
- * @returns {string[]}
- */
-function getActionConsentKeys(action) {
-  return getConsentTypes()
-    .filter((ct) => action[ct.apiField])
-    .map((ct) => ct.key)
-}
-
-const CONSENT_LABELS = { sssi: 'SSSI consent', hefer: 'an SFI HEFER' }
-
-/**
- * @param {string[]} consentKeys
- * @returns {string}
- */
-function getRequirementText(consentKeys) {
-  if (!consentKeys.length) {
-    return ''
-  }
-  const labels = consentKeys.map((key) => CONSENT_LABELS[key])
-  return `Requires ${labels.join(' and ')}`
+function getStaticAvailability(action) {
+  return action.staticAvailability ?? action.availability
 }
 
 /**
@@ -119,16 +95,16 @@ function getRequirementText(consentKeys) {
  * @returns {string}
  */
 function getHintHtml(action, needsQuantity) {
-  const consents = getActionConsentKeys(action)
-  const requirementText = getRequirementText(consents)
+  const requirementText = getConsentRequirementText(getActionConsentKeys(action))
   const agreementRateText = action.ratePerAgreementPerYearGbp
     ? ` and <strong>£${action.ratePerAgreementPerYearGbp}</strong> per agreement`
     : ''
   const requirementLineText = requirementText ? `<br>${requirementText}` : ''
   const rateText = `Payment rate per year: £${action.ratePerUnitGbp?.toFixed(2)}/ha${agreementRateText}${requirementLineText}`
+  const limit = getAvailabilityLimit(action.availability)
   const availabilityHintHtml =
-    !needsQuantity && action.availableArea
-      ? `<br><span id="${getActionQuantityFieldName(action.code)}-hint">${action.availableArea.value} ${formatAreaUnit(action.availableArea.unit)} available</span>`
+    !needsQuantity && limit != null
+      ? `<br><span id="${getActionQuantityFieldName(action.code)}-hint">${limit} ${formatUnit(action.availability?.unit)} available</span>`
       : ''
   return `${rateText}${availabilityHintHtml}`
 }
@@ -152,8 +128,7 @@ export function mapActionToViewModel(
   const existingAction = addedActions.find((a) => a.code === action.code)
   const quantityValue = existingAction?.value ?? ''
   const checked = Boolean(existingAction)
-  const availabilityType = action.availability?.type
-  const needsQuantity = requiresQuantityInput(availabilityType)
+  const needsQuantity = requiresQuantityInput(action.availability?.type)
   const hintHtml = getHintHtml(action, needsQuantity)
   const consents = getActionConsentKeys(action)
 
@@ -164,10 +139,9 @@ export function mapActionToViewModel(
     checked,
     consents,
     attributes: {
-      'data-available-unit': action.availableArea?.unit,
+      'data-available-unit': action.availability?.unit,
       // A non-quantity action's pass/fail threshold - static, never touched by the client.
-      'data-total-available-area': getStaticAvailableArea(action)?.value,
-      'data-available-area-type': availabilityType ?? 'total',
+      'data-total-available-area': getAvailabilityLimit(getStaticAvailability(action)),
       // Stamped per-checkbox (not a single form-wide flag) so protection survives
       // until THIS action is directly interacted with, not just the first refresh.
       ...(checked && hasErrors && { 'data-error-on-load': 'true' })
@@ -177,8 +151,8 @@ export function mapActionToViewModel(
         action.code,
         action.description,
         quantityValue,
-        action.availableArea?.value ?? 0,
-        action.availableArea?.unit,
+        getAvailabilityLimit(action.availability),
+        action.availability?.unit,
         quantityErrorsByCode[action.code]
       )
     })
@@ -203,17 +177,6 @@ export function getChosenAreaFieldsHtml(actions, addedActions) {
       return `<input type="hidden" id="${fieldName}" name="${fieldName}" value="${value}">`
     })
     .join('\n')
-}
-
-/**
- * The union of consent type keys required by at least one action on the
- * page, e.g. ['sssi', 'hefer'] - drives the shared intro banner. Same
- * key format as ActionGroup.consents/Action.consents elsewhere.
- * @param {Array<Action>} actions
- * @returns {string[]}
- */
-export function getPageConsents(actions) {
-  return [...new Set(actions.flatMap((action) => getActionConsentKeys(action)))]
 }
 
 /**
@@ -243,7 +206,7 @@ export function getParcelSummaryList(sheetId, parcelId, size) {
  * @returns {boolean}
  */
 function isVisibleOnInitialLoad(action, addedActions) {
-  if (getStaticAvailableArea(action)?.value !== 0) {
+  if (getAvailabilityLimit(getStaticAvailability(action)) !== 0) {
     return true
   }
   return addedActions.some((a) => a.code === action.code)

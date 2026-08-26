@@ -2,8 +2,8 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 
 import {
   enforcePagePermission,
-  getReturnToApplicationPath,
-  isAllowedViewOnlyPath,
+  getCannotSubmitContent,
+  getRequiredStatusForViewOnlyPath,
   isCannotSubmitUser,
   isSubmittedApplication,
   isViewOnlyUser
@@ -52,6 +52,17 @@ describe('isSubmittedApplication', () => {
   ])('isSubmittedApplication(%s) === %s', (applicationStatus, expected) => {
     expect(isSubmittedApplication({ state: { applicationStatus } })).toBe(expected)
   })
+
+  it.each([
+    [ApplicationStatus.CLAIM_SUBMITTED, true],
+    [ApplicationStatus.SUBMITTED, false],
+    [undefined, false]
+  ])(
+    'isSubmittedApplication(%s, CLAIM_SUBMITTED) === %s when an explicit status is given',
+    (applicationStatus, expected) => {
+      expect(isSubmittedApplication({ state: { applicationStatus } }, ApplicationStatus.CLAIM_SUBMITTED)).toBe(expected)
+    }
+  )
 })
 
 describe('isViewOnlyUser', () => {
@@ -64,57 +75,97 @@ describe('isViewOnlyUser', () => {
   })
 })
 
-describe('getReturnToApplicationPath', () => {
+describe('getRequiredStatusForViewOnlyPath', () => {
+  it.each([
+    ['confirmation', ApplicationStatus.SUBMITTED],
+    ['print-submitted-application', ApplicationStatus.SUBMITTED],
+    ['claim-confirmation', ApplicationStatus.CLAIM_SUBMITTED],
+    ['task-list', undefined]
+  ])('getRequiredStatusForViewOnlyPath(%s) === %s', (path, expected) => {
+    expect(getRequiredStatusForViewOnlyPath(path)).toBe(expected)
+  })
+})
+
+describe('getCannotSubmitContent', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it('returns task list path when available', () => {
-    vi.mocked(getTaskListPath).mockReturnValue('/task-list')
-
-    const result = getReturnToApplicationPath({}, '/sfi')
-
-    expect(result).toEqual({ href: '/sfi/task-list', text: 'Return to task list' })
+  const buildRequest = (metadata = {}) => ({
+    params: { slug: 'sfi' },
+    app: { model: { def: { metadata: { permissions: metadata } } } }
   })
 
-  it('falls back to summary path when no task list exists', () => {
+  const applicationContent =
+    '<p class="govuk-body">Your progress has been saved.</p>' +
+    '<p class="govuk-body">You do not have permission to submit the application.</p>' +
+    '<p class="govuk-body">Contact an authorised person from your business to review and submit the application.</p>'
+
+  const claimContent =
+    '<p class="govuk-body">Your progress has been saved.</p>' +
+    '<p class="govuk-body">You do not have permission to submit the claim.</p>' +
+    '<p class="govuk-body">Contact an authorised person from your business to review and submit the claim.</p>'
+
+  it('falls back to application wording and the default return button for an unknown resource', () => {
+    vi.mocked(getPermissionResource).mockReturnValue('somethingElse')
     vi.mocked(getTaskListPath).mockReturnValue(undefined)
 
-    const result = getReturnToApplicationPath({}, '/sfi')
-
-    expect(result).toEqual({ href: '/sfi/summary', text: 'Return to summary' })
-  })
-
-  it('returns check-selected-land-actions for farm-payments when no task list exists', () => {
-    vi.mocked(getTaskListPath).mockReturnValue(undefined)
-
-    const result = getReturnToApplicationPath({}, '/farm-payments', 'farm-payments')
-
-    expect(result).toEqual({
-      href: '/farm-payments/check-selected-land-actions',
-      text: 'Return to summary'
+    expect(getCannotSubmitContent(buildRequest())).toEqual({
+      pageTitle: 'You cannot submit this application',
+      content: applicationContent,
+      returnUrl: '/sfi/summary',
+      returnText: 'Return to summary'
     })
   })
 
-  it('still prefers task list over farm-payments exception when task list exists', () => {
+  it('uses claim wording and the default return button when there is no cannotSubmit config block', () => {
+    vi.mocked(getPermissionResource).mockReturnValue('csAgreements')
     vi.mocked(getTaskListPath).mockReturnValue('/task-list')
 
-    const result = getReturnToApplicationPath({}, '/farm-payments', 'farm-payments')
-
-    expect(result).toEqual({
-      href: '/farm-payments/task-list',
-      text: 'Return to task list'
+    expect(getCannotSubmitContent(buildRequest())).toEqual({
+      pageTitle: 'You cannot submit this claim',
+      content: claimContent,
+      returnUrl: '/sfi/task-list',
+      returnText: 'Return to task list'
     })
   })
-})
 
-describe('isAllowedViewOnlyPath', () => {
-  it.each([
-    ['confirmation', true],
-    ['print-submitted-application', true],
-    ['task-list', false]
-  ])('isAllowedViewOnlyPath(%s) === %s', (path, expected) => {
-    expect(isAllowedViewOnlyPath(path)).toBe(expected)
+  it('omits the default return button when a cannotSubmit config block exists without returnUrl/returnText', () => {
+    vi.mocked(getPermissionResource).mockReturnValue('csAgreements')
+    vi.mocked(getTaskListPath).mockReturnValue('/task-list')
+
+    const request = buildRequest({
+      cannotSubmit: {
+        csAgreements: {}
+      }
+    })
+
+    expect(getCannotSubmitContent(request)).toEqual({
+      pageTitle: 'You cannot submit this claim',
+      content: claimContent
+    })
+    expect(getTaskListPath).not.toHaveBeenCalled()
+  })
+
+  it('merges form-def overrides (title, content and return button) over the resource defaults', () => {
+    vi.mocked(getPermissionResource).mockReturnValue('csApplications')
+
+    const request = buildRequest({
+      cannotSubmit: {
+        csApplications: {
+          content: '<p class="govuk-body">Custom content.</p>',
+          returnUrl: '/sfi/task-list',
+          returnText: 'Return to task list'
+        }
+      }
+    })
+
+    expect(getCannotSubmitContent(request)).toEqual({
+      pageTitle: 'You cannot submit this application',
+      content: '<p class="govuk-body">Custom content.</p>',
+      returnUrl: '/sfi/task-list',
+      returnText: 'Return to task list'
+    })
   })
 })
 
@@ -148,8 +199,8 @@ describe('enforcePagePermission', () => {
 
     h = {
       continue: Symbol('continue'),
-      redirect: vi.fn(() => ({
-        takeover: vi.fn(() => 'redirected')
+      view: vi.fn(() => ({
+        takeover: vi.fn(() => 'rendered')
       }))
     }
 
@@ -177,30 +228,67 @@ describe('enforcePagePermission', () => {
     expect(enforcePagePermission(request, h, context)).toBe(h.continue)
   })
 
-  it.each([
-    [
-      'task list',
-      '/task-list',
-      'sfi',
-      '/cannot-submit?returnUrl=%2Fsfi%2Ftask-list&returnText=Return%20to%20task%20list'
-    ],
-    [
-      'farm-payments fallback',
-      undefined,
-      'farm-payments',
-      '/cannot-submit?returnUrl=%2Ffarm-payments%2Fcheck-selected-land-actions&returnText=Return%20to%20summary'
-    ]
-  ])('redirects amend-only users to cannot-submit via %s', (_label, taskListPath, slug, expectedUrl) => {
+  it('renders the cannot-submit page in place with the default return button for amend-only users', () => {
     vi.mocked(getRequiredPermission).mockReturnValue('submit')
-    vi.mocked(getTaskListPath).mockReturnValue(taskListPath)
-    request.params.slug = slug
+    vi.mocked(getTaskListPath).mockReturnValue(undefined)
     request.can.mockImplementation(canAmendNotSubmit)
 
     const result = enforcePagePermission(request, h, context)
 
-    expect(h.redirect).toHaveBeenCalledWith(expectedUrl)
-    expect(result).toBe('redirected')
+    expect(h.view).toHaveBeenCalledWith('cannot-submit', {
+      pageTitle: 'You cannot submit this application',
+      content:
+        '<p class="govuk-body">Your progress has been saved.</p>' +
+        '<p class="govuk-body">You do not have permission to submit the application.</p>' +
+        '<p class="govuk-body">Contact an authorised person from your business to review and submit the application.</p>',
+      returnUrl: '/sfi/summary',
+      returnText: 'Return to summary'
+    })
+    expect(result).toBe('rendered')
     expect(request.sendAuditEventInBackground).not.toHaveBeenCalled()
+  })
+
+  it('renders claim wording with the default return button when the page resource is csAgreements', () => {
+    vi.mocked(getRequiredPermission).mockReturnValue('submit')
+    vi.mocked(getPermissionResource).mockReturnValue('csAgreements')
+    vi.mocked(getTaskListPath).mockReturnValue('/task-list')
+    request.can.mockImplementation(canAmendNotSubmit)
+
+    const result = enforcePagePermission(request, h, context)
+
+    expect(h.view).toHaveBeenCalledWith('cannot-submit', {
+      pageTitle: 'You cannot submit this claim',
+      content:
+        '<p class="govuk-body">Your progress has been saved.</p>' +
+        '<p class="govuk-body">You do not have permission to submit the claim.</p>' +
+        '<p class="govuk-body">Contact an authorised person from your business to review and submit the claim.</p>',
+      returnUrl: '/sfi/task-list',
+      returnText: 'Return to task list'
+    })
+    expect(result).toBe('rendered')
+  })
+
+  it('applies form-def cannotSubmit overrides (including the return button) for the matched resource', () => {
+    vi.mocked(getRequiredPermission).mockReturnValue('submit')
+    vi.mocked(getPermissionResource).mockReturnValue('csAgreements')
+    request.app.model.def.metadata.permissions.cannotSubmit = {
+      csAgreements: {
+        pageTitle: 'You cannot submit this claim yet',
+        content: '<p class="govuk-body">Custom claim content.</p>',
+        returnUrl: '/sfi/claim-tasks',
+        returnText: 'Return to claim'
+      }
+    }
+    request.can.mockImplementation(canAmendNotSubmit)
+
+    enforcePagePermission(request, h, context)
+
+    expect(h.view).toHaveBeenCalledWith('cannot-submit', {
+      pageTitle: 'You cannot submit this claim yet',
+      content: '<p class="govuk-body">Custom claim content.</p>',
+      returnUrl: '/sfi/claim-tasks',
+      returnText: 'Return to claim'
+    })
   })
 
   it.each(['confirmation', 'print-submitted-application'])('allows submitted view-only users to access %s', (path) => {
@@ -213,6 +301,35 @@ describe('enforcePagePermission', () => {
     expect(request.sendAuditEventInBackground).not.toHaveBeenCalled()
   })
 
+  it('allows claim-submitted view-only users to access claim-confirmation', () => {
+    request.params.path = 'claim-confirmation'
+    context.state.applicationStatus = ApplicationStatus.CLAIM_SUBMITTED
+    request.can.mockImplementation(canView)
+
+    const result = enforcePagePermission(request, h, context)
+
+    expect(result).toBe(h.continue)
+    expect(request.sendAuditEventInBackground).not.toHaveBeenCalled()
+  })
+
+  it.each([ApplicationStatus.SUBMITTED, ApplicationStatus.REOPENED, undefined])(
+    'throws a 403 when a view-only user accesses claim-confirmation while application is %s',
+    (applicationStatus) => {
+      request.params.path = 'claim-confirmation'
+      context.state.applicationStatus = applicationStatus
+      request.can.mockImplementation(canView)
+
+      let error
+      try {
+        enforcePagePermission(request, h, context)
+      } catch (err) {
+        error = err
+      }
+
+      expect(error.output.statusCode).toBe(403)
+    }
+  )
+
   it('throws and audits an unauthorised event when a view-only user is denied a non-allowed path', () => {
     request.params.path = 'task-list'
 
@@ -220,6 +337,21 @@ describe('enforcePagePermission', () => {
 
     expect(() => enforcePagePermission(request, h, context)).toThrow()
     expect(request.sendAuditEventInBackground).toHaveBeenCalledWith({
+      entity: 'application',
+      action: 'unauthorised',
+      status: 'denied',
+      details: { reason: 'permission', grantCode: 'sfi', permission: 'view' }
+    })
+  })
+
+  it('throws and audits an unauthorised claim event when a view-only user is denied in a claims journey', () => {
+    request.params.path = 'claim-start'
+    vi.mocked(getPermissionResource).mockReturnValue('csAgreements')
+    request.can.mockImplementation(canView)
+
+    expect(() => enforcePagePermission(request, h, context)).toThrow()
+    expect(request.sendAuditEventInBackground).toHaveBeenCalledWith({
+      entity: 'claim',
       action: 'unauthorised',
       status: 'denied',
       details: { reason: 'permission', grantCode: 'sfi', permission: 'view' }
@@ -258,13 +390,33 @@ describe('enforcePagePermission', () => {
       })
     )
     expect(request.sendAuditEventInBackground).toHaveBeenCalledWith({
+      entity: 'application',
       action: 'unauthorised',
       status: 'denied',
       details: { reason: 'permission', grantCode: 'sfi', permission: 'submit' }
     })
   })
 
-  it('throws when model missing during cannot-submit redirect', () => {
+  it('throws a 403 and audits an unauthorised claim event when the user has no permissions in a claims journey', () => {
+    vi.mocked(getRequiredPermission).mockReturnValue('submit')
+    vi.mocked(getPermissionResource).mockReturnValue('csAgreements')
+    request.can.mockReturnValue(false)
+
+    expect(() => enforcePagePermission(request, h, context)).toThrow(
+      expect.objectContaining({
+        message: 'Insufficient permissions',
+        output: expect.objectContaining({ statusCode: 403 })
+      })
+    )
+    expect(request.sendAuditEventInBackground).toHaveBeenCalledWith({
+      entity: 'claim',
+      action: 'unauthorised',
+      status: 'denied',
+      details: { reason: 'permission', grantCode: 'sfi', permission: 'submit' }
+    })
+  })
+
+  it('throws when model missing while rendering the cannot-submit page', () => {
     vi.mocked(getRequiredPermission).mockReturnValue('submit')
 
     request.app.model = undefined

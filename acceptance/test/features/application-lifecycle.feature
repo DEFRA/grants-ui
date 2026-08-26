@@ -1,4 +1,9 @@
 Feature: Application Lifecycle
+    Follow the example-grant-with-auth journey thru a full lifecycle:
+    - Submitting an application to GAS
+    - Reacting to GAS status changes (offer, withdrawal, claims)
+    - Progressing a claim through to submission
+    - Checking feedback links are rendered
 
     Scenario: Application is successfully submitted and taken thru to agreement offer stages
         Given there is no application data for SBI "115664358" and grant "example-grant-with-auth"
@@ -7,6 +12,7 @@ Feature: Application Lifecycle
         Given the user navigates to "/example-grant-with-auth"
         And logs in as CRN "1100995048"
         Then the user should see heading "Example Grant"
+        And the user should see a phase banner feedback link with journey "application-inprogress"
         When the user clicks on "Start now"
 
         # check-details
@@ -128,8 +134,6 @@ Feature: Application Lifecycle
             | SD6351 8781 |
         And continues
 
-        # check-details was moved to after start; no longer visited here
-
         # summary
         Then the user should be at URL "summary"
         When the user continues
@@ -142,6 +146,8 @@ Feature: Application Lifecycle
         Then the user should be at URL "confirmation"
         And should see heading "Details submitted"
         And should see an "EGWA" reference number for their application
+        And the user should see a phase banner feedback link with journey "application-submitted"
+        And the user should see a confirmation page feedback link with journey "application-submitted"
 
         # validate Mongo state storage
         And the following application state should be stored for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth"
@@ -205,10 +211,11 @@ Feature: Application Lifecycle
         And logs in as CRN "1100995048"
         Then the user should be at URL "claim"
         And the grants-ui application status for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" should be "CLAIM_STARTED"
-        And the claim "-C0001" for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" should have status "IN_PROGRESS"
+        And the claim "-C01" for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" should have status "IN_PROGRESS"
 
         # review claim
         And should see heading "Example claim start page"
+        And the user should see a phase banner feedback link with journey "claim-inprogress"
         When the user clicks on "Continue"
 
         # claim-declaration
@@ -216,12 +223,15 @@ Feature: Application Lifecycle
         And should see heading "Example claim declaration page"
         When the user clicks on "Confirm and submit"
         And the grants-ui application status for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" should be "CLAIM_SUBMITTED"
-        And the claim "-C0001" for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" should have status "SUBMITTED"
+        And the claim "-C01" for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" should have status "SUBMITTED"
+        And the claim "-C01" for CRN "1100995048" and SBI "115664358" should be submitted to GAS
 
         # claim-confirmation
         Then the user should be at URL "claim-confirmation"
         And should see heading "Claim submitted"
-        And should see claim reference number "-C0001"
+        And should see claim reference number "-C01"
+        And the user should see a phase banner feedback link with journey "claim-submitted"
+        And the user should see a confirmation page feedback link with journey "claim-submitted"
 
         # reopen browser and remain on claim confirmation while GAS status is unchanged
         Given the user starts a new browser session

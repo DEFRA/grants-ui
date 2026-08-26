@@ -252,6 +252,30 @@ export async function submitGrantApplication(code, payload, request) {
 }
 
 /**
+ * Emits an FCP Audit event for a successful claim submission.
+ * @param {string} code - Grant code.
+ * @param {{ metadata?: object, answers?: object }} payload - The submitted GAS payload.
+ * @param {AuditableRequest} [request] - Hapi request decorated with `sendAuditEventInBackground`.
+ * @returns {void}
+ */
+function auditClaimSubmission(code, payload, request) {
+  const metadata = /** @type {Record<string, string | undefined>} */ (payload?.metadata ?? {})
+  const isResubmit = Boolean(metadata.previousClientRef)
+
+  request?.sendAuditEventInBackground?.({
+    entity: 'claim',
+    action: isResubmit ? 'resubmit' : 'submit',
+    entityid: metadata.clientRef,
+    details: {
+      grantCode: code,
+      referenceNumber: metadata.clientRef,
+      ...(isResubmit && { previousReferenceNumber: metadata.previousClientRef }),
+      answers: payload?.answers
+    }
+  })
+}
+
+/**
  * Submits a claim to the Grant Application Service (GAS)
  * @param {string} code - Grant code
  * @param {Record<string, unknown>} payload - Claim payload
@@ -265,7 +289,7 @@ export async function submitClaim(code, payload, request) {
   const response = await makeGasApiRequest(url, code, request, { method: 'POST', payload })
 
   // Submission succeeded (makeGasApiRequest throws on non-2xx), so audit it.
-  // TODO in later ticket auditClaimSubmission(code, payload, request)
+  auditClaimSubmission(code, payload, request)
 
   return response
 }

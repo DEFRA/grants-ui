@@ -3,58 +3,29 @@ version: v1.25.0
 ignore:
   'SNYK-JS-INFLIGHT-6095116':
     - '*':
-        reason: 'Not reachable in application runtime — inflight is only present via glob from @defra/interactive-map/polygon-splitter package metadata and dev/build tooling; grants-ui and the shipped map bundles do not import glob or inflight. Checked 2026-07-30: latest @defra/interactive-map (0.0.35-alpha) and polygon-splitter (0.0.11) still pin glob@^8, which requires inflight; no upstream fix available. Reassess for interactive-map/polygon-splitter dependency removal.'
-        expires: '2026-08-30'
+        reason: 'Not reachable in application runtime — inflight is only present via glob from @defra/interactive-map/polygon-splitter package metadata and dev/build tooling; grants-ui and the shipped map bundles do not import glob or inflight. Re-checked 2026-08-24 on @defra/interactive-map 0.0.40-alpha: polygon-splitter still pins glob@^8, which requires inflight; no upstream fix available. Reassess for interactive-map/polygon-splitter dependency removal.'
+        expires: '2026-09-24'
   'SNYK-JS-IMAGESIZE-17295814':
     - '*':
-        reason: 'Build-time only - vulnerable path is docusaurus mdx-loader in @defra/interactive-map docs (@defra/forms-engine-plugin > @defra/interactive-map > @docusaurus/theme-common > @docusaurus/mdx-loader > image-size), never loaded by grants-ui runtime. Re-checked 2026-08-03: image-size latest is still 2.0.2, no upstream fix or patch available. Remove once @defra/interactive-map drops the docusaurus toolchain or image-size ships a fix.'
-        expires: '2026-09-03'
+        reason: 'Build-time only - vulnerable path is docusaurus mdx-loader in @defra/interactive-map docs (@defra/forms-engine-plugin > @defra/interactive-map > @docusaurus/theme-common > @docusaurus/mdx-loader > image-size), never loaded by grants-ui runtime. Re-checked 2026-08-24 on @defra/interactive-map 0.0.40-alpha: no upstream fix or patch available in the docusaurus-pinned image-size range. Remove once @defra/interactive-map drops the docusaurus toolchain or image-size ships a fix.'
+        expires: '2026-09-24'
   'SNYK-JS-IMAGESIZE-17295816':
     - '*':
-        reason: 'Build-time only - vulnerable path is docusaurus mdx-loader in @defra/interactive-map docs (@defra/forms-engine-plugin > @defra/interactive-map > @docusaurus/theme-common > @docusaurus/mdx-loader > image-size), never loaded by grants-ui runtime. Re-checked 2026-08-03: image-size latest is still 2.0.2, no upstream fix or patch available. Remove once @defra/interactive-map drops the docusaurus toolchain or image-size ships a fix.'
-        expires: '2026-09-03'
-  'SNYK-JS-NANOID-18506894':
+        reason: 'Build-time only - vulnerable path is docusaurus mdx-loader in @defra/interactive-map docs (@defra/forms-engine-plugin > @defra/interactive-map > @docusaurus/theme-common > @docusaurus/mdx-loader > image-size), never loaded by grants-ui runtime. Re-checked 2026-08-24 on @defra/interactive-map 0.0.40-alpha: no upstream fix or patch available in the docusaurus-pinned image-size range. Remove once @defra/interactive-map drops the docusaurus toolchain or image-size ships a fix.'
+        expires: '2026-09-24'
+  'SNYK-JS-FASTURI-19256867':
     - '*':
-        reason: 'Build-time only - nanoid@3.3.15 via postcss@8.5.19 (webpack CSS toolchain: autoprefixer/cssnano and the @docusaurus/cssnano-preset path under @defra/interactive-map docs), executed only during asset build, never shipped or run at grants-ui runtime. The runtime nanoid (via @defra/forms-engine-plugin > @defra/forms-model) is already 5.1.16 (fixed). Fix exists only in the 5.x line (5.1.16), which is an ESM-only breaking major, and postcss@8 pins nanoid to ^3.3.12 - an override to 5.x would break postcss. No 3.x fix available. Remove once postcss ships a nanoid-5 compatible release or the docusaurus/postcss toolchain is dropped.'
-        expires: '2026-09-03'
-  'SNYK-JS-NANOID-18506897':
+        reason: 'Build/dev-tooling only - fast-uri is reached solely via ajv under webpack schema-utils and the docusaurus toolchain in @defra/interactive-map (all ajv consumers are eslint/stryker/webpack loaders/table), never loaded by the grants-ui server runtime. Re-checked 2026-08-25: fixes fast-uri 3.1.6/2.4.5/4.1.3 were published 2026-08-23 but are still inside the .npmrc min-release-age=7 cooldown (eligible 2026-08-30). Remove and override fast-uri to 3.1.6 once the cooldown clears.'
+        expires: '2026-09-24'
+  'SNYK-JS-FASTURI-19256869':
     - '*':
-        reason: 'Build-time only - nanoid@3.3.15 via postcss@8.5.19 (webpack CSS toolchain: autoprefixer/cssnano and the @docusaurus/cssnano-preset path under @defra/interactive-map docs), executed only during asset build, never shipped or run at grants-ui runtime. The runtime nanoid (via @defra/forms-engine-plugin > @defra/forms-model) is already 5.1.16 (fixed). Fix exists only in the 5.x line (5.1.16), which is an ESM-only breaking major, and postcss@8 pins nanoid to ^3.3.12 - an override to 5.x would break postcss. No 3.x fix available. Remove once postcss ships a nanoid-5 compatible release or the docusaurus/postcss toolchain is dropped.'
-        expires: '2026-09-03'
-  'SNYK-JS-FASTURI-18506908':
+        reason: 'Build/dev-tooling only - fast-uri is reached solely via ajv under webpack schema-utils and the docusaurus toolchain in @defra/interactive-map (all ajv consumers are eslint/stryker/webpack loaders/table), never loaded by the grants-ui server runtime. Re-checked 2026-08-25: fixes fast-uri 3.1.6/2.4.5/4.1.3 were published 2026-08-23 but are still inside the .npmrc min-release-age=7 cooldown (eligible 2026-08-30). Remove and override fast-uri to 3.1.6 once the cooldown clears.'
+        expires: '2026-09-24'
+  'SNYK-JS-FASTURI-19256871':
     - '*':
-        reason: 'Build-time/dev-only - fast-uri@3.1.4 is only pulled in via ajv in webpack build tooling (copy-webpack-plugin > schema-utils > ajv, plus the docusaurus/webpack toolchain under @defra/interactive-map docs) and @stryker-mutator test tooling; it is not reachable at grants-ui runtime. Currently pinned to 3.1.4 by the root fast-uri override. Fixed in 3.1.5; interim ignore while the override bump is blocked by .npmrc min-release-age=7 (3.1.5 published 2026-07-31, installable from 2026-08-07). Bump the fast-uri override to 3.1.5 and remove this entry once it clears the cooldown.'
-        expires: '2026-08-14'
-  'SNYK-JS-JSYAML-17342520':
+        reason: 'Build/dev-tooling only - fast-uri is reached solely via ajv under webpack schema-utils and the docusaurus toolchain in @defra/interactive-map (all ajv consumers are eslint/stryker/webpack loaders/table), never loaded by the grants-ui server runtime. Re-checked 2026-08-25: fixes fast-uri 3.1.6/2.4.5/4.1.3 were published 2026-08-23 but are still inside the .npmrc min-release-age=7 cooldown (eligible 2026-08-30). Remove and override fast-uri to 3.1.6 once the cooldown clears.'
+        expires: '2026-09-24'
+  'SNYK-JS-FASTURI-19256873':
     - '*':
-        reason: 'Build-time only — remaining vulnerable copy is js-yaml@3.15.0 under gray-matter via the docusaurus mdx-loader toolchain in @defra/interactive-map docs, never loaded by grants-ui runtime. Fix exists only in the 4.x line (4.2.0+; 4.x copies already pinned to 4.3.0 via overrides) and gray-matter cannot take js-yaml 4.x — it calls the removed safeLoad API. Remove once @defra/interactive-map drops the docusaurus toolchain from its runtime dependencies or gray-matter supports js-yaml 4.'
-        expires: '2026-08-13'
-  'SNYK-JS-JSYAML-18313070':
-    - '*':
-        reason: 'Build-time only — js-yaml@4.3.0 via @docusaurus/plugin-content-docs in the docusaurus toolchain of @defra/interactive-map docs, never loaded by grants-ui runtime. Fix is only in the 5.x line, but @docusaurus/plugin-content-docs@3.10.1 itself pins js-yaml to ^4.1.0 (and gray-matter elsewhere in the same tree cannot take 4.x+ at all, per SNYK-JS-JSYAML-17342520) — no viable override without breaking the consumer. Remove once @defra/interactive-map drops the docusaurus toolchain or docusaurus bumps its own js-yaml range to 5.x.'
-        expires: '2026-08-24'
-  'SNYK-JS-SVGO-18170231':
-    - '*':
-        reason: 'Fix version is incoming from Defra forms team - Incomplete List of Disallowed Inputs'
-        expires: '2026-09-01'
-  'SNYK-JS-UNDICI-18426067':
-    - '*':
-        reason: 'Build-time/test-only — undici@7.28.0 via cheerio (docusaurus-search-local in @defra/interactive-map docs, never loaded by grants-ui runtime) and jsdom (vitest test runner, not shipped). Fixed in 7.29.0; interim ignore while the override is blocked by .npmrc min-release-age=7 (7.29.0 published 2026-07-24, installable from 2026-07-31). Replace with an overrides pin and remove this entry once it clears the cooldown.'
-        expires: '2026-08-06'
-  'SNYK-JS-UNDICI-18426061':
-    - '*':
-        reason: 'Build-time/test-only — undici@7.28.0 via cheerio (docusaurus-search-local in @defra/interactive-map docs, never loaded by grants-ui runtime) and jsdom (vitest test runner, not shipped). Fixed in 7.29.0; interim ignore while the override is blocked by .npmrc min-release-age=7 (7.29.0 published 2026-07-24, installable from 2026-07-31). Replace with an overrides pin and remove this entry once it clears the cooldown.'
-        expires: '2026-08-06'
-  'SNYK-JS-UNDICI-18426063':
-    - '*':
-        reason: 'Build-time/test-only — undici@7.28.0 via cheerio (docusaurus-search-local in @defra/interactive-map docs, never loaded by grants-ui runtime) and jsdom (vitest test runner, not shipped). Fixed in 7.29.0; interim ignore while the override is blocked by .npmrc min-release-age=7 (7.29.0 published 2026-07-24, installable from 2026-07-31). Replace with an overrides pin and remove this entry once it clears the cooldown.'
-        expires: '2026-08-06'
-  'SNYK-JS-UNDICI-18426065':
-    - '*':
-        reason: 'Build-time/test-only — undici@7.28.0 via cheerio (docusaurus-search-local in @defra/interactive-map docs, never loaded by grants-ui runtime) and jsdom (vitest test runner, not shipped). Fixed in 7.29.0; interim ignore while the override is blocked by .npmrc min-release-age=7 (7.29.0 published 2026-07-24, installable from 2026-07-31). Replace with an overrides pin and remove this entry once it clears the cooldown.'
-        expires: '2026-08-06'
-  'SNYK-JS-UNDICI-18426521':
-    - '*':
-        reason: 'CVE-2026-13697 is a cache-poisoning bug in undici''s cache interceptor (interceptors.cache(), shared-cache mode) triggered by malformed Cache-Control directives from an upstream response. grants-ui''s only runtime undici usage (root override@8.8.0, in src/server/common/helpers/proxy/setup-proxy.js) is ProxyAgent + setGlobalDispatcher for outbound HTTP proxying - the cache interceptor is never composed or configured anywhere in this codebase or its deps, so the vulnerable code path is unreachable. The cheerio/jsdom undici@7.28.0 path is separately build-time/test-only, same as the other UNDICI entries above. Fixed in 8.9.0/7.29.0; interim ignore while the overrides bump is blocked by .npmrc min-release-age=7 (both published 2026-07-24, installable from 2026-07-31). Replace with overrides pins and remove this entry once it clears the cooldown.'
-        expires: '2026-08-07'
-
+        reason: 'Build/dev-tooling only - fast-uri is reached solely via ajv under webpack schema-utils and the docusaurus toolchain in @defra/interactive-map (all ajv consumers are eslint/stryker/webpack loaders/table), never loaded by the grants-ui server runtime. Re-checked 2026-08-25: fixes fast-uri 3.1.6/2.4.5/4.1.3 were published 2026-08-23 but are still inside the .npmrc min-release-age=7 cooldown (eligible 2026-08-30). Remove and override fast-uri to 3.1.6 once the cooldown clears.'
+        expires: '2026-09-24'

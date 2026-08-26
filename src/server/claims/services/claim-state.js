@@ -26,14 +26,14 @@ export const ClaimStatus = {
 
 /**
  * Derive a human-readable claim number from the application reference number
- * and a 1-based sequence, with the sequence zero-padded to 4 digits, e.g.
- * `WMP-A1B2-C3D4` + `1` -> `WMP-A1B2-C3D4-C0001`.
+ * and a 1-based sequence, with the sequence zero-padded to 2 digits, e.g.
+ * `WMP-A1B2-C3D4` + `1` -> `WMP-A1B2-C3D4-C01`.
  * @param {string} referenceNumber - Application reference number
  * @param {number} sequence - 1-based claim sequence for this application
  * @returns {string} The derived claim number
  */
 export function generateClaimNumber(referenceNumber, sequence) {
-  return `${referenceNumber}-C${String(sequence).padStart(4, '0')}`
+  return `${referenceNumber}-C${String(sequence).padStart(2, '0')}`
 }
 
 /**

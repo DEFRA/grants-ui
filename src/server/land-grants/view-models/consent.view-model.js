@@ -39,3 +39,48 @@ export function mapConsentPanelToViewModel(requiredConsents) {
 
   return null
 }
+
+/**
+ * The labels for a set of consent keys, always SSSI first then HEFER whatever
+ * order they arrive in. Unknown keys, and a consents array that is empty or
+ * absent from older persisted state, produce an empty list.
+ * @param {string[] | undefined} requiredConsents
+ * @returns {string[]}
+ */
+function consentLabels(requiredConsents, sssiLabel, heferLabel) {
+  const consents = Array.isArray(requiredConsents) ? requiredConsents : []
+  const labels = []
+  if (consents.includes('sssi')) {
+    labels.push(sssiLabel)
+  }
+  if (consents.includes('hefer')) {
+    labels.push(heferLabel)
+  }
+  return labels
+}
+
+/**
+ * The "Requires ..." hint shown beneath a selected action's name.
+ * @param {string[] | undefined} requiredConsents
+ * @returns {string}
+ */
+export function getConsentRequirementText(requiredConsents) {
+  const labels = consentLabels(requiredConsents, 'SSSI consent', 'an SFI HEFER')
+  return labels.length ? `Requires ${labels.join(' and ')}` : ''
+}
+
+/**
+ * The notice shown on the map's selected-parcel summary. Built here rather
+ * than in the browser so every consent string lives in one module.
+ * @param {string[] | undefined} requiredConsents
+ * @returns {string}
+ */
+export function getConsentNoticeText(requiredConsents) {
+  const labels = consentLabels(requiredConsents, 'SSSI consent', 'an SFI HEFER')
+  if (!labels.length) {
+    return ''
+  }
+  // "an SFI HEFER" leads the sentence when it is the only requirement.
+  const sentence = `${labels.join(' and ')} may apply to some actions`
+  return sentence.charAt(0).toUpperCase() + sentence.slice(1)
+}

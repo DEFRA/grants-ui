@@ -368,7 +368,7 @@ describe('StartClaimPageController', () => {
           $$__referenceNumber: 'WMP-A1B2-C3D4',
           claims: [
             {
-              claimNumber: 'WMP-A1B2-C3D4-C0001',
+              claimNumber: 'WMP-A1B2-C3D4-C01',
               status: 'IN_PROGRESS',
               totalEligibleArea: 24.95,
               unit: 'ha',

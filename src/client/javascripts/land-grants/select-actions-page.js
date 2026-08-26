@@ -1,5 +1,6 @@
 import { ACTION_QUANTITY_FIELD_PREFIX, getActionQuantityFieldName } from '../../../shared/action-quantity-field.js'
-import { formatAreaUnit } from '../../../shared/format-area-unit.js'
+import { formatUnit } from '../../../shared/format-unit.js'
+import { getAvailabilityLimit } from '../../../shared/availability.js'
 import { isValidCompoundParcelId } from '../../../shared/format-parcel.js'
 
 const CHECKBOX_NAME = 'landAction'
@@ -17,7 +18,7 @@ const REFRESH_BANNER_HIDDEN_CLASS = 'select-actions-refresh-banner--hidden'
  * @param {number} value
  * @param {string} unit
  */
-const availabilityHintText = (value, unit) => `${value} ${formatAreaUnit(unit)} available`
+const availabilityHintText = (value, unit) => `${value} ${formatUnit(unit)} available`
 
 /** @param {HTMLElement} form */
 function getCheckboxes(form) {
@@ -130,7 +131,13 @@ function disableOtherActions(form, triggeringCheckbox) {
  * @returns {number | undefined}
  */
 function getTotalAvailableArea(checkbox) {
-  const value = Number(checkbox.getAttribute(TOTAL_AVAILABLE_AREA_ATTR))
+  // An action with no availability restriction renders no usable value here,
+  // and Number('') is 0 - which would read as a zero ceiling, not "no ceiling".
+  const raw = checkbox.getAttribute(TOTAL_AVAILABLE_AREA_ATTR)
+  if (raw == null || raw.trim() === '') {
+    return undefined
+  }
+  const value = Number(raw)
   return Number.isFinite(value) ? value : undefined
 }
 
@@ -327,36 +334,48 @@ function markUnavailable(checkbox, quantityInput = getQuantityInput(checkbox)) {
 }
 
 /**
- * Refreshes a quantity input's max/hint from the latest availableArea, as reported by the API.
+ * Refreshes a quantity input's max/hint from the latest availability, as reported
+ * by the API. A null value means no restriction, which has to clear the bound
+ * rather than stringify - the server renders neither max nor hint in that case
+ * (see quantity-input/template.njk), so this keeps the two in step.
  * @param {HTMLInputElement} checkbox
- * @param {{ availableArea?: { value: number, unit: string } }} action
+ * @param {{ availability?: ActionAvailability | null }} action
  */
 function syncQuantityInputBounds(checkbox, action) {
   const quantityInput = getQuantityInput(checkbox)
-  if (!quantityInput || !action.availableArea) {
+  if (!quantityInput || !action.availability) {
     return
   }
-  quantityInput.max = String(action.availableArea.value)
+  const limit = getAvailabilityLimit(action.availability)
   const hint = document.getElementById(`${quantityInput.id}-hint`)
+  if (limit == null) {
+    quantityInput.removeAttribute('max')
+    if (hint) {
+      hint.textContent = ''
+    }
+    return
+  }
+  quantityInput.max = String(limit)
   if (hint) {
-    hint.textContent = availabilityHintText(action.availableArea.value, action.availableArea.unit)
+    hint.textContent = availabilityHintText(limit, action.availability.unit)
   }
 }
 
 /**
  * Refreshes a non-quantity action's own "X available" hint (see
  * getActionQuantityFieldName - shares its id with the quantity-action hint
- * pattern) from the latest availableArea, as reported by the API.
+ * pattern) from the latest availability, as reported by the API.
  * @param {HTMLInputElement} checkbox
- * @param {{ availableArea?: { value: number, unit: string } }} action
+ * @param {{ availability?: ActionAvailability | null }} action
  */
 function syncNonQuantityHint(checkbox, action) {
-  if (getQuantityInput(checkbox) || !action.availableArea) {
+  const limit = getAvailabilityLimit(action.availability)
+  if (getQuantityInput(checkbox) || limit == null) {
     return
   }
   const hint = document.getElementById(`${getActionQuantityFieldName(checkbox.value)}-hint`)
   if (hint) {
-    hint.textContent = availabilityHintText(action.availableArea.value, action.availableArea.unit)
+    hint.textContent = availabilityHintText(limit, /** @type {ActionAvailability} */ (action.availability).unit)
   }
 }
 
@@ -374,16 +393,17 @@ function clearUnavailable(checkbox) {
 }
 
 /**
- * Not selected: unavailable when there's nothing (or not enough, for a typed amount) left to claim.
+ * Not selected: unavailable when there's nothing (or not enough, for a typed amount)
+ * left to claim. An action with no limit at all can never be unavailable - comparing
+ * a null value would coerce it to 0 and reject any typed amount above zero.
  * @param {HTMLInputElement} checkbox
  * @param {HTMLInputElement | null} quantityInput
- * @param {{ value: number, unit: string }} [availableArea]
+ * @param {ActionAvailability | null} [availability]
  */
-function applyUncheckedAvailability(checkbox, quantityInput, availableArea) {
+function applyUncheckedAvailability(checkbox, quantityInput, availability) {
+  const limit = getAvailabilityLimit(availability)
   const isUnavailable =
-    availableArea != null && quantityInput
-      ? availableArea.value === 0 || availableArea.value < (getValidTypedQuantity(checkbox) ?? 0)
-      : availableArea?.value === 0
+    limit != null && quantityInput ? limit === 0 || limit < (getValidTypedQuantity(checkbox) ?? 0) : limit === 0
   if (isUnavailable) {
     markUnavailable(checkbox)
   } else {
@@ -412,16 +432,16 @@ function applyCheckedQuantityAvailability(checkbox, sentQuantity) {
  * hypothetical for THIS action alone and can't be trusted alongside another
  * action's own growth in the same pass. Disables it if nothing's claimed.
  * @param {HTMLInputElement} checkbox
- * @param {number} availableAreaValue
+ * @param {number} availabilityValue
  * @param {number} sentQuantity
  * @param {boolean} allowGrowth
  * @returns {boolean} Whether this action's chosen area grew beyond what was sent -
- *   every OTHER action's own availableArea in this same response was computed
+ *   every OTHER action's own availability in this same response was computed
  *   against the smaller, pre-growth claim, so it's now stale.
  */
-function applyCheckedNonQuantityAvailability(checkbox, availableAreaValue, sentQuantity, allowGrowth) {
-  const grows = allowGrowth && availableAreaValue > 0
-  const chosenArea = grows ? sentQuantity + availableAreaValue : sentQuantity
+function applyCheckedNonQuantityAvailability(checkbox, availabilityValue, sentQuantity, allowGrowth) {
+  const grows = allowGrowth && availabilityValue > 0
+  const chosenArea = grows ? sentQuantity + availabilityValue : sentQuantity
   setChosenArea(checkbox, chosenArea)
   if (chosenArea === 0) {
     markUnavailable(checkbox)
@@ -438,28 +458,32 @@ function applyCheckedNonQuantityAvailability(checkbox, availableAreaValue, sentQ
  * re-enabled/disabled by fresh availability, since that reflects what OTHER
  * actions are doing, not a correction to its own rejected value.
  * @param {HTMLInputElement} checkbox
- * @param {{ availableArea?: { value: number, unit: string } }} action
+ * @param {{ availability?: ActionAvailability | null }} action
  * @param {number | undefined} sentQuantity - What we claimed for this action, if checked and included.
  * @param {boolean} isProtected
  * @param {boolean} allowGrowth - Whether a non-quantity action may grow this pass (see applyRefreshResponse).
  * @returns {boolean} Whether this action grew (see applyCheckedNonQuantityAvailability).
  */
 function applyAvailability(checkbox, action, sentQuantity, isProtected, allowGrowth) {
-  const { availableArea } = action
+  const { availability } = action
   const quantityInput = getQuantityInput(checkbox)
-  if (availableArea) {
-    checkbox.setAttribute(AVAILABLE_UNIT_ATTR, availableArea.unit)
-    checkbox.setAttribute(LIVE_AVAILABLE_AREA_ATTR, String(availableArea.value))
+  const limit = getAvailabilityLimit(availability)
+  if (availability) {
+    checkbox.setAttribute(AVAILABLE_UNIT_ATTR, availability.unit)
+  }
+  // No limit means no live headroom to record - drop the attribute rather than
+  // stringify a null, which would read back as NaN instead of "unrestricted".
+  if (limit == null) {
+    checkbox.removeAttribute(LIVE_AVAILABLE_AREA_ATTR)
+  } else {
+    checkbox.setAttribute(LIVE_AVAILABLE_AREA_ATTR, String(limit))
   }
 
   syncQuantityInputBounds(checkbox, action)
   syncNonQuantityHint(checkbox, action)
 
   if (!checkbox.checked) {
-    applyUncheckedAvailability(checkbox, quantityInput, availableArea)
-    return false
-  }
-  if (availableArea == null) {
+    applyUncheckedAvailability(checkbox, quantityInput, availability)
     return false
   }
   if (isProtected) {
@@ -470,22 +494,29 @@ function applyAvailability(checkbox, action, sentQuantity, isProtected, allowGro
     applyCheckedQuantityAvailability(checkbox, sentQuantity)
     return false
   }
-  return applyCheckedNonQuantityAvailability(
-    checkbox,
-    availableArea.value,
-    /** @type {number} */ (sentQuantity),
-    allowGrowth
-  )
+  if (limit == null) {
+    // Nothing can make an unrestricted action incompatible, but disableOtherActions
+    // disabled it at the start of this refresh and this is its only way back.
+    clearUnavailable(checkbox)
+    return false
+  }
+  return applyCheckedNonQuantityAvailability(checkbox, limit, /** @type {number} */ (sentQuantity), allowGrowth)
 }
 
 /**
- * @typedef {{ code: string, availableArea?: { value: number, unit: string } }} ActionAvailability
+ * How much of an action is still claimable, as the API reports it. `unit` is
+ * always present; a null `value` means no restriction.
+ * @typedef {{ value: number | null, unit: string }} ActionAvailability
+ */
+
+/**
+ * @typedef {{ code: string, availability?: ActionAvailability | null }} ActionAvailabilityUpdate
  */
 
 /**
  * @param {string} parcelId
  * @param {Array<{ actionCode: string, quantity: number, unit: string }>} plannedActions
- * @returns {Promise<ActionAvailability[] | null>}
+ * @returns {Promise<ActionAvailabilityUpdate[] | null>}
  */
 async function postPlannedActions(parcelId, plannedActions) {
   const crumb = /** @type {HTMLInputElement | null} */ (document.querySelector('input[name="crumb"]'))?.value
@@ -499,7 +530,7 @@ async function postPlannedActions(parcelId, plannedActions) {
     if (!response.ok) {
       return null
     }
-    /** @type {{ actions: ActionAvailability[] }} */
+    /** @type {{ actions: ActionAvailabilityUpdate[] }} */
     const { actions = [] } = await response.json()
     return actions
   } catch {
@@ -528,7 +559,7 @@ function recoverFromFailedRefresh(form) {
  * re-ask (with that one action's new, larger claim already sent) before any
  * other action's own growth can be trusted.
  * @param {HTMLElement} form
- * @param {ActionAvailability[]} actions
+ * @param {ActionAvailabilityUpdate[]} actions
  * @param {Array<{ actionCode: string, quantity: number, unit: string }>} plannedActions
  * @returns {boolean} Whether an action grew and a follow-up refresh is needed.
  */

@@ -4,7 +4,7 @@ import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-w
 import { stringifyParcel } from '~/src/shared/format-parcel.js'
 import { stateToLandActionsMapper } from '../mappers/state-to-land-grants-mapper.js'
 import { config } from '~/src/config/config.js'
-import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js'
+import { getRequiredActionConsents } from '~/src/server/land-grants/utils/consent-types.js'
 import {
   calculate,
   locateParcelTiles,
@@ -15,6 +15,8 @@ import {
   validate
 } from '~/src/server/land-grants/services/land-grants.client.js'
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
+import { formatUnit } from '~/src/shared/format-unit.js'
+import { getAvailabilityLimit } from '~/src/shared/availability.js'
 import {
   getCachedParcel,
   getCachedSbiParcels,
@@ -71,18 +73,22 @@ export async function calculateLandActionsPayment(state, userContext) {
  * @param {ActionOption[]} actionsInGroup
  * @returns {ActionGroup}- Parcel data with actions
  */
-const createGroup = (name, actionsInGroup) => ({
-  name,
-  totalAvailableArea: {
-    unitFullName: formatAreaUnit(actionsInGroup[0]?.availableArea.unit),
-    unit: actionsInGroup[0]?.availableArea.unit,
-    value: Math.max(...actionsInGroup.map((item) => item.availableArea.value))
-  },
-  actions: actionsInGroup,
-  consents: getConsentTypes()
-    .filter((ct) => actionsInGroup.some((a) => /** @type {Record<string, unknown>} */ (a)[ct.apiField]))
-    .map((ct) => ct.key)
-})
+const createGroup = (name, actionsInGroup) => {
+  const availabilities = actionsInGroup.map((item) => item.availability).filter((a) => a != null)
+  const limited = availabilities.filter((a) => getAvailabilityLimit(a) != null)
+  const unitSource = limited[0] ?? availabilities[0]
+
+  return {
+    name,
+    totalAvailableArea: {
+      unitFullName: formatUnit(unitSource?.unit),
+      unit: unitSource?.unit ?? '',
+      value: limited.length ? Math.max(...limited.map((a) => /** @type {number} */ (a.value))) : undefined
+    },
+    actions: actionsInGroup,
+    consents: getRequiredActionConsents(/** @type {Array<Record<string, unknown>>} */ (actionsInGroup))
+  }
+}
 
 /**
  * Shared fetch+cache logic behind fetchGroupedActionsForParcel (grouped)
@@ -164,7 +170,7 @@ function groupActions(actionsForParcel, enabledActions, groupDefinitions) {
 
 /**
  * Fetches available actions for a given parcel, grouped. When plannedActions
- * is given, each action's availableArea is recomputed against that
+ * is given, each action's availability is recomputed against that
  * combination and the cache is bypassed.
  * @param {{ parcelId?: string, sheetId?: string, enabledLandActions?: string[], plannedActions?: PlannedAction[] }} parcel
  * @param {LandGrantsUserContext} userContext
@@ -192,13 +198,13 @@ export async function fetchActionsForParcel(parcel, userContext) {
 }
 
 /**
- * Recomputes availableArea for a parcel's actions against an in-progress
+ * Recomputes availability for a parcel's actions against an in-progress
  * selection, for the select-actions page's live availability refresh.
  * availability.type is static per action (not affected by the recompute),
  * so it isn't returned here - the client already has it from initial render.
  * @param {{ parcelId: string, sheetId: string, plannedActions: PlannedAction[] }} params
  * @param {LandGrantsUserContext} userContext
- * @returns {Promise<{ actions: Array<{ code: string, availableArea?: Size }> }>}
+ * @returns {Promise<{ actions: Array<{ code: string, availability?: ActionAvailability }> }>}
  * @throws {Error}
  */
 export async function fetchActionsWithPlannedActions({ parcelId, sheetId, plannedActions }, userContext) {
@@ -207,10 +213,34 @@ export async function fetchActionsWithPlannedActions({ parcelId, sheetId, planne
   const foundParcel = parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)
   const actions = (foundParcel?.actions || []).map(mapAction).map((action) => ({
     code: action.code,
-    availableArea: action.availableArea
+    availability: action.availability
   }))
 
   return { actions }
+}
+
+/**
+ * The consent requirements for a single parcel, used by the map's "Additional
+ * details" row: the union of consent keys across every action the parcel
+ * carries. The journey's enabled actions do not narrow this. An SSSI
+ * designation or HEFER requirement is a property of the land, so the map shows
+ * it even when the action carrying it is not one this grant offers. Cached
+ * under its own prefix so it never collides with the journey-filtered entries
+ * fetchActionsForParcel writes.
+ * @param {{ parcelId?: string, sheetId?: string }} parcel
+ * @param {LandGrantsUserContext} userContext
+ * @returns {Promise<{ consents: string[] }>}
+ * @throws {Error}
+ */
+export async function fetchConsentRequirementsForParcel({ parcelId, sheetId }, userContext) {
+  const { actions } = await fetchParcelActions(
+    { parcelId, sheetId },
+    userContext,
+    'consents:',
+    parcelsWithActions,
+    (actionsForParcel) => actionsForParcel
+  )
+  return { consents: getRequiredActionConsents(/** @type {Array<Record<string, unknown>>} */ (actions)) }
 }
 
 /**
@@ -380,7 +410,7 @@ function buildErrorMessagesFromResponse(actions = []) {
 }
 
 /**
- * @import { ActionOption, ActionGroup, ActionGroupDefinition, HydratedParcel, PlannedAction, ValidateApplicationResponse, ValidationAction, ErrorItem, Size, ParcelResponse } from '~/src/server/land-grants/types/land-grants.client.d.js'
+ * @import { ActionOption, ActionGroup, ActionGroupDefinition, HydratedParcel, PlannedAction, ValidateApplicationResponse, ValidationAction, ErrorItem, Size, ParcelResponse, ActionAvailability } from '~/src/server/land-grants/types/land-grants.client.d.js'
  * @import { PaymentCalculation } from '~/src/server/land-grants/types/payment.d.js'
  * @import { LandParcels } from '~/src/server/land-grants/types/form-state.d.js'
  * @import { AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'

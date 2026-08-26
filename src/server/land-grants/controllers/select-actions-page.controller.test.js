@@ -1,39 +1,30 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 import {
   fetchActionsForParcel,
   fetchActionsWithPlannedActions,
   fetchParcels,
   validateApplication
 } from '~/src/server/land-grants/services/land-grants.service.js'
-import { formatParcelReference, parseLandParcel, stringifyParcel } from '~/src/shared/format-parcel.js'
 import SelectActionsPageController from './select-actions-page.controller.js'
 import { error, log } from '~/src/server/common/helpers/logging/log.js'
 import { config } from '~/src/config/config.js'
+import {
+  CMOR1,
+  PARCELS_WITH_SIZE,
+  UPL1,
+  UPL2,
+  USER_CONTEXT,
+  makeLandGrantsRequest,
+  makeViewToolkit,
+  mockFormatParcelImplementations,
+  stubControllerMethods
+} from '~/src/server/land-grants/test-helpers.js'
 
-vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () => ({
-  QuestionPageController: class {
-    constructor(model, pageDef) {
-      this.model = model
-      this.pageDef = pageDef
-    }
-
-    getViewModel() {}
-
-    getHref(path) {
-      return `/${this.model.basePath}/${path}`.replace(/\/{2,}/g, '/')
-    }
-
-    makeGetRouteHandler() {
-      return async (request, context, h) => h.view('select-actions', this.getViewModel(request, context))
-    }
-
-    makePostRouteHandler() {
-      return async (request, context, h) => h.view('select-actions', this.getViewModel(request, context))
-    }
-  }
-}))
+vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', async () => {
+  const { makeQuestionPageControllerMock } = await import('~/src/__mocks__')
+  return makeQuestionPageControllerMock('select-actions')
+})
 
 vi.mock('~/src/server/task-list/task-list.helper.js', () => ({
   withTaskContext: (Base) => Base
@@ -55,46 +46,18 @@ vi.mock('~/src/config/config.js', async () => {
 vi.mock('~/src/server/land-grants/services/land-grants.service.js')
 vi.mock('~/src/shared/format-parcel.js')
 
-const mockParcelsResponse = [
-  {
-    parcelId: '0155',
-    sheetId: 'SD7946',
-    area: { unit: 'ha', value: 4.0383 }
-  }
-]
-const userContext = { defraIdToken: 'defra-id-access-token', sbi: '106284736' }
-
 describe('SelectActionsPageController', () => {
+  const post = () => controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
+  const get = () => controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+
   let controller
   let mockRequest
   let mockContext
   let mockH
-  let mockResponseWithCode
 
   const enabledLandActions = ['CMOR1', 'UPL1', 'UPL2']
 
-  const mockActions = [
-    {
-      code: 'CMOR1',
-      description: 'Assess moorland and produce a written record: CMOR1',
-      availableArea: { unit: 'ha', value: 10 },
-      ratePerUnitGbp: 16,
-      ratePerAgreementPerYearGbp: 272
-    },
-    {
-      code: 'UPL1',
-      description: 'Moderate livestock grazing on moorland: UPL1',
-      availableArea: { unit: 'ha', value: 5 },
-      ratePerUnitGbp: 33
-    },
-    {
-      code: 'UPL2',
-      description: 'Heavy livestock grazing on moorland: UPL2',
-      availableArea: { unit: 'ha', value: 3 },
-      ratePerUnitGbp: 45,
-      availability: { type: 'partial' }
-    }
-  ]
+  const mockActions = [CMOR1, UPL1, { ...UPL2, availability: { ...UPL2.availability, type: 'partial' } }]
 
   beforeEach(() => {
     QuestionPageController.prototype.getViewModel = vi.fn().mockReturnValue({
@@ -106,56 +69,15 @@ describe('SelectActionsPageController', () => {
     })
 
     const mockModel = { def: { metadata: { tasklist: {}, enabledLandActions } }, getSection: vi.fn(), pages: [] }
-    controller = new SelectActionsPageController(mockModel, {})
-    controller.collection = {
-      getErrors: vi.fn().mockReturnValue([])
-    }
-    controller.setState = vi.fn().mockResolvedValue(true)
-    controller.proceed = vi.fn().mockReturnValue('redirected')
-    controller.getNextPath = vi.fn().mockReturnValue('/next-path')
-    controller.performAuthCheck = vi.fn().mockResolvedValue(null)
+    controller = stubControllerMethods(new SelectActionsPageController(mockModel, {}))
 
-    fetchParcels.mockResolvedValue(mockParcelsResponse)
+    fetchParcels.mockResolvedValue(PARCELS_WITH_SIZE.slice(0, 1))
 
-    mockRequest = {
-      payload: { landAction: 'CMOR1' },
-      query: {},
-      logger: mockRequestLogger(),
-      auth: {
-        isAuthenticated: true,
-        credentials: {
-          token: userContext.defraIdToken,
-          sbi: userContext.sbi,
-          crn: 'CRN123',
-          name: 'John Doe',
-          organisationName: 'Farm 1',
-          role: 'admin',
-          sessionId: 'valid-session-id'
-        }
-      }
-    }
+    mockRequest = makeLandGrantsRequest({ payload: { landAction: 'CMOR1' } })
+    mockContext = { state: {}, referenceNumber: 'REF123' }
+    mockH = makeViewToolkit()
 
-    mockContext = {
-      state: {},
-      referenceNumber: 'REF123'
-    }
-
-    mockResponseWithCode = {
-      code: vi.fn().mockReturnValue('final-response')
-    }
-
-    mockH = {
-      view: vi.fn().mockReturnValue('rendered view'),
-      redirect: vi.fn(),
-      response: vi.fn().mockReturnValue(mockResponseWithCode)
-    }
-
-    parseLandParcel.mockReturnValue(['sheet1', 'parcel1'])
-    stringifyParcel.mockImplementation(({ sheetId, parcelId }) => `${sheetId}-${parcelId}`)
-    formatParcelReference.mockImplementation((parcel) => {
-      const [sheetId, parcelId] = typeof parcel === 'string' ? parcel.split('-') : [parcel.sheetId, parcel.parcelId]
-      return [sheetId, parcelId].filter((part) => part != null && part !== '').join(' ')
-    })
+    mockFormatParcelImplementations()
     fetchActionsForParcel.mockResolvedValue({
       actions: mockActions,
       parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
@@ -179,8 +101,7 @@ describe('SelectActionsPageController', () => {
     test('should redirect to /select-land-parcel if no selected land parcel is set', async () => {
       mockRequest.query = {}
 
-      const handler = controller.makeGetRouteHandler()
-      const result = await handler(mockRequest, mockContext, mockH)
+      const result = await get()
 
       expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/select-land-parcel')
       expect(result).toBe('redirected')
@@ -188,10 +109,9 @@ describe('SelectActionsPageController', () => {
 
     test('should fetch actions for the parcel', async () => {
       mockRequest.query.parcelId = 'sheet2-parcel2'
-      parseLandParcel.mockReturnValue(['sheet2', 'parcel2'])
+      mockFormatParcelImplementations({ sheetId: 'sheet2', parcelId: 'parcel2' })
 
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await get()
 
       expect(fetchActionsForParcel).toHaveBeenCalledWith(
         {
@@ -200,13 +120,12 @@ describe('SelectActionsPageController', () => {
           enabledLandActions,
           plannedActions: []
         },
-        userContext
+        USER_CONTEXT
       )
     })
 
     test('should render the view with a flat actionItems list rather than grouped actions', async () => {
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await get()
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions',
@@ -224,8 +143,7 @@ describe('SelectActionsPageController', () => {
     })
 
     test('should surface a conditional quantity input for actions that require a max quantity', async () => {
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await get()
 
       const { actionItems } = mockH.view.mock.calls[0][1]
       const upl2 = actionItems.find((item) => item.value === 'UPL2')
@@ -241,8 +159,7 @@ describe('SelectActionsPageController', () => {
         parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: { value: 45.22, unit: 'ha' } }
       })
 
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await get()
 
       const [, viewModel] = mockH.view.mock.calls[0]
       expect(viewModel.parcelSummaryList.rows).toEqual([
@@ -252,8 +169,7 @@ describe('SelectActionsPageController', () => {
     })
 
     test('should return an empty pageConsents array when no action requires SSSI consent or HEFER', async () => {
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await get()
 
       const [, viewModel] = mockH.view.mock.calls[0]
       expect(viewModel.pageConsents).toEqual([])
@@ -266,8 +182,7 @@ describe('SelectActionsPageController', () => {
         parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
       })
 
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await get()
 
       const [, viewModel] = mockH.view.mock.calls[0]
       expect(viewModel.pageConsents).toEqual(['hefer'])
@@ -280,8 +195,7 @@ describe('SelectActionsPageController', () => {
         parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
       })
 
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await get()
 
       const [, viewModel] = mockH.view.mock.calls[0]
       expect(viewModel.pageConsents).toEqual(['sssi'])
@@ -293,8 +207,7 @@ describe('SelectActionsPageController', () => {
         parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
       })
 
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await get()
 
       const [, viewModel] = mockH.view.mock.calls[0]
       expect(viewModel.pageConsents).toEqual([])
@@ -309,8 +222,7 @@ describe('SelectActionsPageController', () => {
         }
       }
 
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await get()
 
       const { actionItems } = mockH.view.mock.calls[0][1]
       const upl2 = actionItems.find((item) => item.value === 'UPL2')
@@ -322,8 +234,7 @@ describe('SelectActionsPageController', () => {
     test('should handle fetch errors gracefully', async () => {
       fetchActionsForParcel.mockRejectedValue(new Error('API Error'))
 
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await get()
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions',
@@ -349,8 +260,7 @@ describe('SelectActionsPageController', () => {
         parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
       })
 
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await get()
 
       expect(log).toHaveBeenCalledWith(
         expect.objectContaining({ level: 'error', messageFunc: expect.any(Function) }),
@@ -359,15 +269,13 @@ describe('SelectActionsPageController', () => {
       )
     })
 
-    describe('when the user does not own the land parcel', () => {
-      it('should return unauthorized response when user does not own the selected land parcel', async () => {
-        controller.performAuthCheck.mockResolvedValue('failed auth check')
+    test('should return the unauthorized response when the user does not own the selected land parcel', async () => {
+      controller.performAuthCheck.mockResolvedValue('failed auth check')
 
-        const result = await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+      const result = await get()
 
-        expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, ['sheet1-parcel1'])
-        expect(result).toEqual('failed auth check')
-      })
+      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, ['sheet1-parcel1'])
+      expect(result).toEqual('failed auth check')
     })
   })
 
@@ -380,8 +288,7 @@ describe('SelectActionsPageController', () => {
     test('should show errors when no actions selected', async () => {
       mockRequest.payload = {}
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions',
@@ -394,8 +301,7 @@ describe('SelectActionsPageController', () => {
     test('should update state and proceed on valid submission', async () => {
       mockRequest.payload = { landAction: 'CMOR1' }
 
-      const handler = controller.makePostRouteHandler()
-      const result = await handler(mockRequest, mockContext, mockH)
+      const result = await post()
 
       expect(controller.setState).toHaveBeenCalledWith(
         mockRequest,
@@ -421,8 +327,7 @@ describe('SelectActionsPageController', () => {
         landAction: ['CMOR1', 'UPL1']
       }
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       expect(controller.setState).toHaveBeenCalledWith(
         mockRequest,
@@ -448,13 +353,12 @@ describe('SelectActionsPageController', () => {
       }
       fetchActionsWithPlannedActions.mockResolvedValue({
         actions: [
-          { code: 'UPL1', availableArea: { unit: 'ha', value: 0 } },
-          { code: 'UPL2', availableArea: { unit: 'ha', value: 2 } }
+          { code: 'UPL1', availability: { unit: 'ha', value: 0 } },
+          { code: 'UPL2', availability: { unit: 'ha', value: 2 } }
         ]
       })
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       expect(fetchActionsForParcel).toHaveBeenCalledTimes(1)
       expect(fetchActionsWithPlannedActions).toHaveBeenCalledWith(
@@ -470,6 +374,28 @@ describe('SelectActionsPageController', () => {
       expect(stateArg.landParcels['sheet1-parcel1'].actionsObj.UPL1.value).toBe(5)
     })
 
+    test('should still send the unit for an action with no availability restriction', async () => {
+      fetchActionsForParcel.mockResolvedValue({
+        actions: [{ ...UPL2, availability: { unit: 'ha', value: null, type: 'partial' } }],
+        parcel: { sheetId: 'sheet1', parcelId: 'parcel1', size: { unit: 'ha', value: 20 } }
+      })
+      mockRequest.payload = { landAction: ['UPL2'], landActionQuantity_UPL2: '7' }
+      fetchActionsWithPlannedActions.mockResolvedValue({ actions: [] })
+
+      await post()
+
+      expect(fetchActionsWithPlannedActions).toHaveBeenCalledWith(
+        expect.objectContaining({
+          plannedActions: [{ actionCode: 'UPL2', quantity: 7, unit: 'ha' }]
+        }),
+        expect.anything()
+      )
+      const stateArg = controller.setState.mock.calls[0][1]
+      expect(stateArg.landParcels['sheet1-parcel1'].actionsObj.UPL2).toEqual(
+        expect.objectContaining({ value: 7, unit: 'ha' })
+      )
+    })
+
     test('should keep the original uncompeted actions when the recompute fetch fails', async () => {
       mockRequest.payload = {
         landAction: ['UPL1', 'UPL2'],
@@ -477,18 +403,19 @@ describe('SelectActionsPageController', () => {
       }
       fetchActionsWithPlannedActions.mockRejectedValue(Object.assign(new Error('boom'), { status: 503 }))
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       const stateArg = controller.setState.mock.calls[0][1]
       expect(stateArg.landParcels['sheet1-parcel1'].actionsObj.UPL1.value).toBe(5)
     })
 
-    test('should show an error and not save state when a quantity-required action has no submitted quantity', async () => {
-      mockRequest.payload = { landAction: 'UPL2' }
+    test.each([
+      ['has no submitted quantity', { landAction: 'UPL2' }],
+      ['has a submitted quantity of 0', { landAction: 'UPL2', landActionQuantity_UPL2: '0' }]
+    ])('should show an error and not save state when a quantity-required action %s', async (_case, payload) => {
+      mockRequest.payload = payload
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions',
@@ -506,35 +433,13 @@ describe('SelectActionsPageController', () => {
       expect(controller.proceed).not.toHaveBeenCalled()
     })
 
-    test('should show an error when a quantity-required action has a submitted quantity of 0', async () => {
-      mockRequest.payload = { landAction: 'UPL2', landActionQuantity_UPL2: '0' }
-
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(mockH.view).toHaveBeenCalledWith(
-        'select-actions',
-        expect.objectContaining({
-          errors: [
-            {
-              text: 'Enter a quantity for Heavy livestock grazing on moorland: UPL2',
-              href: '#landActionQuantity_UPL2',
-              code: 'UPL2'
-            }
-          ]
-        })
-      )
-      expect(controller.setState).not.toHaveBeenCalled()
-    })
-
     test('should store the submitted quantity override for an action that requires one', async () => {
       mockRequest.payload = {
         landAction: 'UPL2',
         landActionQuantity_UPL2: '1.5'
       }
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       const stateArg = controller.setState.mock.calls[0][1]
       expect(stateArg.landParcels['sheet1-parcel1'].actionsObj.UPL2.value).toBe(1.5)
@@ -546,8 +451,7 @@ describe('SelectActionsPageController', () => {
         landActionQuantity_CMOR1: '2'
       }
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       const stateArg = controller.setState.mock.calls[0][1]
       expect(stateArg.landParcels['sheet1-parcel1'].actionsObj.CMOR1.value).toBe(10)
@@ -556,8 +460,7 @@ describe('SelectActionsPageController', () => {
     test('should not save anything to state when no action is selected', async () => {
       mockRequest.payload = { landActionQuantity_UPL2: '1.5' }
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions',
@@ -568,15 +471,6 @@ describe('SelectActionsPageController', () => {
       expect(controller.setState).not.toHaveBeenCalled()
     })
 
-    test('should verify payload.action === "validate" comparison', async () => {
-      mockRequest.payload = { landAction: 'CMOR1', action: 'validate' }
-
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(validateApplication).toHaveBeenCalled()
-    })
-
     test('should show validation errors from API', async () => {
       mockRequest.payload = { landAction: 'CMOR1', action: 'validate' }
       validateApplication.mockResolvedValue({
@@ -584,8 +478,7 @@ describe('SelectActionsPageController', () => {
         errorMessages: [{ code: 'CMOR1', description: 'Invalid area', passed: false }]
       })
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions',
@@ -605,8 +498,8 @@ describe('SelectActionsPageController', () => {
       }
       fetchActionsWithPlannedActions.mockResolvedValue({
         actions: [
-          { code: 'UPL1', availableArea: { unit: 'ha', value: 4 } },
-          { code: 'UPL2', availableArea: { unit: 'ha', value: 2 } }
+          { code: 'UPL1', availability: { unit: 'ha', value: 4 } },
+          { code: 'UPL2', availability: { unit: 'ha', value: 2 } }
         ]
       })
       validateApplication.mockResolvedValue({
@@ -614,8 +507,7 @@ describe('SelectActionsPageController', () => {
         errorMessages: [{ code: 'UPL2', description: 'Not enough available area', passed: false }]
       })
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       const { actionItems } = mockH.view.mock.calls[0][1]
       const upl2 = actionItems.find((item) => item.value === 'UPL2')
@@ -631,8 +523,7 @@ describe('SelectActionsPageController', () => {
         errorMessages: [{ code: 'UPL1', description: 'Invalid quantity', passed: false }]
       })
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions',
@@ -654,8 +545,7 @@ describe('SelectActionsPageController', () => {
         errorMessages: [{ code: 'UPL2', description: 'Invalid quantity', passed: false }]
       })
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       const { actionItems } = mockH.view.mock.calls[0][1]
       const cmor1 = actionItems.find((item) => item.value === 'CMOR1')
@@ -674,8 +564,8 @@ describe('SelectActionsPageController', () => {
       }
       fetchActionsWithPlannedActions.mockResolvedValue({
         actions: [
-          { code: 'UPL1', availableArea: { unit: 'ha', value: 0 } },
-          { code: 'UPL2', availableArea: { unit: 'ha', value: 0 } }
+          { code: 'UPL1', availability: { unit: 'ha', value: 0 } },
+          { code: 'UPL2', availability: { unit: 'ha', value: 0 } }
         ]
       })
       validateApplication.mockResolvedValue({
@@ -683,8 +573,7 @@ describe('SelectActionsPageController', () => {
         errorMessages: [{ code: 'UPL2', description: 'Invalid quantity', passed: false }]
       })
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       const { actionItems } = mockH.view.mock.calls[0][1]
       const upl2 = actionItems.find((item) => item.value === 'UPL2')
@@ -700,14 +589,13 @@ describe('SelectActionsPageController', () => {
       }
       fetchActionsWithPlannedActions.mockResolvedValue({
         actions: [
-          { code: 'UPL1', availableArea: { unit: 'ha', value: 0 } },
-          { code: 'UPL2', availableArea: { unit: 'ha', value: 0 } }
+          { code: 'UPL1', availability: { unit: 'ha', value: 0 } },
+          { code: 'UPL2', availability: { unit: 'ha', value: 0 } }
         ]
       })
       validateApplication.mockRejectedValue(new Error('API issue'))
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       const { actionItems } = mockH.view.mock.calls[0][1]
       const upl1 = actionItems.find((item) => item.value === 'UPL1')
@@ -733,8 +621,7 @@ describe('SelectActionsPageController', () => {
         ]
       })
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       const { actionItems } = mockH.view.mock.calls[0][1]
       const upl2 = actionItems.find((item) => item.value === 'UPL2')
@@ -754,8 +641,7 @@ describe('SelectActionsPageController', () => {
         errorMessages: [{ code: 'CMOR1', description: 'Some other error', passed: false }]
       })
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       const { actionItems } = mockH.view.mock.calls[0][1]
       const upl2 = actionItems.find((item) => item.value === 'UPL2')
@@ -771,23 +657,19 @@ describe('SelectActionsPageController', () => {
       }
       validateApplication.mockRejectedValue(new Error('Validation API failed'))
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       const { actionItems } = mockH.view.mock.calls[0][1]
       expect(actionItems.find((item) => item.value === 'CMOR1').checked).toBe(true)
     })
 
-    describe('when the user does not own the land parcel', () => {
-      it('should return unauthorized response when user does not own the selected land parcel', async () => {
-        controller.performAuthCheck.mockResolvedValue('failed auth check')
-        mockRequest.query = { parcelId: 'sheet1-parcel1' }
+    test('should return the unauthorized response when the user does not own the selected land parcel', async () => {
+      controller.performAuthCheck.mockResolvedValue('failed auth check')
 
-        const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
+      const result = await post()
 
-        expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, ['sheet1-parcel1'])
-        expect(result).toEqual('failed auth check')
-      })
+      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, ['sheet1-parcel1'])
+      expect(result).toEqual('failed auth check')
     })
   })
 })

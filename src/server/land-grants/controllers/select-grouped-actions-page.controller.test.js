@@ -1,37 +1,29 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 import {
   fetchGroupedActionsForParcel,
   fetchParcels,
   validateApplication
 } from '~/src/server/land-grants/services/land-grants.service.js'
-import { formatParcelReference, parseLandParcel, stringifyParcel } from '~/src/shared/format-parcel.js'
+import { parseLandParcel } from '~/src/shared/format-parcel.js'
 import SelectGroupedActionsPageController from './select-grouped-actions-page.controller.js'
 import { error, log } from '~/src/server/common/helpers/logging/log.js'
+import {
+  CMOR1,
+  PARCELS_WITH_SIZE,
+  UPL1,
+  UPL2,
+  USER_CONTEXT,
+  makeLandGrantsRequest,
+  makeViewToolkit,
+  mockFormatParcelImplementations,
+  stubControllerMethods
+} from '~/src/server/land-grants/test-helpers.js'
 
-vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', () => ({
-  QuestionPageController: class {
-    constructor(model, pageDef) {
-      this.model = model
-      this.pageDef = pageDef
-    }
-
-    getViewModel() {}
-
-    getHref(path) {
-      return `/${this.model.basePath}/${path}`.replace(/\/{2,}/g, '/')
-    }
-
-    makeGetRouteHandler() {
-      return async (request, context, h) => h.view('select-land-actions', this.getViewModel(request, context))
-    }
-
-    makePostRouteHandler() {
-      return async (request, context, h) => h.view('select-land-actions', this.getViewModel(request, context))
-    }
-  }
-}))
+vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', async () => {
+  const { makeQuestionPageControllerMock } = await import('~/src/__mocks__')
+  return makeQuestionPageControllerMock('select-land-actions')
+})
 
 vi.mock('~/src/server/task-list/task-list.helper.js', () => ({
   withTaskContext: (Base) => Base
@@ -53,61 +45,20 @@ vi.mock('~/src/config/config.js', async () => {
 vi.mock('~/src/server/land-grants/services/land-grants.service.js')
 vi.mock('~/src/shared/format-parcel.js')
 
-const mockParcelsResponse = [
-  {
-    parcelId: '0155',
-    sheetId: 'SD7946',
-    area: { unit: 'ha', value: 4.0383 }
-  },
-  {
-    parcelId: '4509',
-    sheetId: 'SD7846',
-    area: { unit: 'sqm', value: 0.0633 }
-  }
-]
-const userContext = { defraIdToken: 'defra-id-access-token', sbi: '106284736' }
-
 describe('SelectGroupedActionsPageController', () => {
+  const post = () => controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
+  const get = () => controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+
   let controller
   let mockRequest
   let mockContext
   let mockH
-  let mockResponseWithCode
 
   const enabledLandActions = ['CMOR1', 'UPL1', 'UPL2']
 
   const mockGroupedActions = [
-    {
-      name: 'Assess moorland',
-      totalAvailableArea: { unit: 'ha', value: 10 },
-      actions: [
-        {
-          code: 'CMOR1',
-          description: 'Assess moorland and produce a written record: CMOR1',
-          availableArea: { unit: 'ha', value: 10 },
-          ratePerUnitGbp: 16,
-          ratePerAgreementPerYearGbp: 272
-        }
-      ]
-    },
-    {
-      name: 'Livestock grazing on moorland',
-      totalAvailableArea: { unit: 'ha', value: 5 },
-      actions: [
-        {
-          code: 'UPL1',
-          description: 'Moderate livestock grazing on moorland: UPL1',
-          availableArea: { unit: 'ha', value: 5 },
-          ratePerUnitGbp: 33
-        },
-        {
-          code: 'UPL2',
-          description: 'Heavy livestock grazing on moorland: UPL2',
-          availableArea: { unit: 'ha', value: 3 },
-          ratePerUnitGbp: 45
-        }
-      ]
-    }
+    { name: 'Assess moorland', totalAvailableArea: { unit: 'ha', value: 10 }, actions: [CMOR1] },
+    { name: 'Livestock grazing on moorland', totalAvailableArea: { unit: 'ha', value: 5 }, actions: [UPL1, UPL2] }
   ]
 
   beforeEach(() => {
@@ -120,56 +71,15 @@ describe('SelectGroupedActionsPageController', () => {
     })
 
     const mockModel = { def: { metadata: { tasklist: {}, enabledLandActions } }, getSection: vi.fn(), pages: [] }
-    controller = new SelectGroupedActionsPageController(mockModel, {})
-    controller.collection = {
-      getErrors: vi.fn().mockReturnValue([])
-    }
-    controller.setState = vi.fn().mockResolvedValue(true)
-    controller.proceed = vi.fn().mockReturnValue('redirected')
-    controller.getNextPath = vi.fn().mockReturnValue('/next-path')
-    controller.performAuthCheck = vi.fn().mockResolvedValue(null)
+    controller = stubControllerMethods(new SelectGroupedActionsPageController(mockModel, {}))
 
-    fetchParcels.mockResolvedValue(mockParcelsResponse)
+    fetchParcels.mockResolvedValue(PARCELS_WITH_SIZE)
 
-    mockRequest = {
-      payload: { landAction_1: 'CMOR1' },
-      query: {},
-      logger: mockRequestLogger(),
-      auth: {
-        isAuthenticated: true,
-        credentials: {
-          token: userContext.defraIdToken,
-          sbi: userContext.sbi,
-          crn: 'CRN123',
-          name: 'John Doe',
-          organisationName: 'Farm 1',
-          role: 'admin',
-          sessionId: 'valid-session-id'
-        }
-      }
-    }
+    mockRequest = makeLandGrantsRequest({ payload: { landAction_1: 'CMOR1' } })
+    mockContext = { state: {}, referenceNumber: 'REF123' }
+    mockH = makeViewToolkit()
 
-    mockContext = {
-      state: {},
-      referenceNumber: 'REF123'
-    }
-
-    mockResponseWithCode = {
-      code: vi.fn().mockReturnValue('final-response')
-    }
-
-    mockH = {
-      view: vi.fn().mockReturnValue('rendered view'),
-      redirect: vi.fn(),
-      response: vi.fn().mockReturnValue(mockResponseWithCode)
-    }
-
-    parseLandParcel.mockReturnValue(['sheet1', 'parcel1'])
-    stringifyParcel.mockImplementation(({ sheetId, parcelId }) => `${sheetId}-${parcelId}`)
-    formatParcelReference.mockImplementation((parcel) => {
-      const [sheetId, parcelId] = typeof parcel === 'string' ? parcel.split('-') : [parcel.sheetId, parcel.parcelId]
-      return [sheetId, parcelId].filter((part) => part != null && part !== '').join(' ')
-    })
+    mockFormatParcelImplementations()
     fetchGroupedActionsForParcel.mockResolvedValue({
       actions: mockGroupedActions,
       parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
@@ -182,16 +92,10 @@ describe('SelectGroupedActionsPageController', () => {
   })
 
   describe('singleParcelSubmission (grant-level config)', () => {
-    const buildController = (metadata) => {
-      const model = { def: { metadata }, getSection: vi.fn(), pages: [] }
-      const singleController = new SelectGroupedActionsPageController(model, {})
-      singleController.collection = { getErrors: vi.fn().mockReturnValue([]) }
-      singleController.setState = vi.fn().mockResolvedValue(true)
-      singleController.proceed = vi.fn().mockReturnValue('redirected')
-      singleController.getNextPath = vi.fn().mockReturnValue('/next-path')
-      singleController.performAuthCheck = vi.fn().mockResolvedValue(null)
-      return singleController
-    }
+    const buildController = (metadata) =>
+      stubControllerMethods(
+        new SelectGroupedActionsPageController({ def: { metadata }, getSection: vi.fn(), pages: [] }, {})
+      )
 
     test('defaults to false when metadata does not include the flag', () => {
       expect(controller.singleParcelSubmission).toBe(false)
@@ -235,8 +139,7 @@ describe('SelectGroupedActionsPageController', () => {
     test('should redirect to /select-land-parcel if no selected land parcel is set', async () => {
       mockRequest.query = {}
 
-      const handler = controller.makeGetRouteHandler()
-      const result = await handler(mockRequest, mockContext, mockH)
+      const result = await get()
 
       expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/select-land-parcel')
       expect(result).toBe('redirected')
@@ -246,8 +149,7 @@ describe('SelectGroupedActionsPageController', () => {
       mockRequest.query.parcelId = 'sheet2-parcel2'
       parseLandParcel.mockReturnValue(['sheet2', 'parcel2'])
 
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await get()
 
       expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, ['sheet2-parcel2'])
 
@@ -259,7 +161,7 @@ describe('SelectGroupedActionsPageController', () => {
           enabledLandActions,
           plannedActions: []
         },
-        userContext
+        USER_CONTEXT
       )
     })
 
@@ -268,8 +170,7 @@ describe('SelectGroupedActionsPageController', () => {
       controller = new SelectGroupedActionsPageController(mockModel, {})
       controller.performAuthCheck = vi.fn().mockResolvedValue(null)
 
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await get()
 
       expect(fetchGroupedActionsForParcel).toHaveBeenCalledWith(
         {
@@ -278,13 +179,12 @@ describe('SelectGroupedActionsPageController', () => {
           enabledLandActions: [],
           plannedActions: []
         },
-        userContext
+        USER_CONTEXT
       )
     })
 
     test('should render view with correct data', async () => {
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await get()
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-grouped-actions',
@@ -304,8 +204,7 @@ describe('SelectGroupedActionsPageController', () => {
         }
       }
 
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await get()
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-grouped-actions',
@@ -318,8 +217,7 @@ describe('SelectGroupedActionsPageController', () => {
     test('should handle fetch errors gracefully', async () => {
       fetchGroupedActionsForParcel.mockRejectedValue(new Error('API Error'))
 
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await get()
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-grouped-actions',
@@ -352,8 +250,7 @@ describe('SelectGroupedActionsPageController', () => {
         parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
       })
 
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await get()
 
       expect(log).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -368,16 +265,13 @@ describe('SelectGroupedActionsPageController', () => {
       )
     })
 
-    describe('when the user does not own the land parcel', () => {
-      it('should return unauthorized response when user does not own the selected land parcel', async () => {
-        controller.performAuthCheck.mockResolvedValue('failed auth check')
+    test('should return the unauthorized response when the user does not own the selected land parcel', async () => {
+      controller.performAuthCheck.mockResolvedValue('failed auth check')
 
-        const result = await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+      const result = await get()
 
-        expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, ['sheet1-parcel1'])
-
-        expect(result).toEqual('failed auth check')
-      })
+      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, ['sheet1-parcel1'])
+      expect(result).toEqual('failed auth check')
     })
   })
 
@@ -390,8 +284,7 @@ describe('SelectGroupedActionsPageController', () => {
     test('should handle null payload', async () => {
       mockRequest.payload = null
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-grouped-actions',
@@ -406,8 +299,7 @@ describe('SelectGroupedActionsPageController', () => {
       mockContext.state.selectedLandParcel = 'state-parcel'
       mockRequest.payload = { landAction_1: 'CMOR1' }
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, ['query-parcel'])
     })
@@ -416,8 +308,7 @@ describe('SelectGroupedActionsPageController', () => {
       fetchGroupedActionsForParcel.mockResolvedValue({ actions: [], parcel: {} })
       mockRequest.payload = { landAction_1: 'CMOR1' }
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-grouped-actions',
@@ -431,46 +322,16 @@ describe('SelectGroupedActionsPageController', () => {
       )
     })
 
-    test('should verify payload.action === "validate" comparison', async () => {
-      mockRequest.payload = {
-        landAction_1: 'CMOR1',
-        action: 'validate'
-      }
-
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(validateApplication).toHaveBeenCalled()
-    })
-
     test('should skip validation when action is different', async () => {
       mockRequest.payload = {
         landAction_1: 'CMOR1',
         action: 'continue'
       }
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       expect(validateApplication).not.toHaveBeenCalled()
       expect(controller.proceed).toHaveBeenCalled()
-    })
-
-    test('should return validation result when not null', async () => {
-      mockRequest.payload = {
-        landAction_1: 'CMOR1',
-        action: 'validate'
-      }
-      validateApplication.mockResolvedValue({
-        valid: false,
-        errorMessages: [{ code: 'CMOR1', description: 'Invalid', passed: false }]
-      })
-
-      const handler = controller.makePostRouteHandler()
-      const result = await handler(mockRequest, mockContext, mockH)
-
-      expect(controller.proceed).not.toHaveBeenCalled()
-      expect(result).not.toBe('redirected')
     })
 
     test('should handle validation error with no code property', async () => {
@@ -483,8 +344,7 @@ describe('SelectGroupedActionsPageController', () => {
         errorMessages: [{ description: 'Error without code', passed: false }]
       })
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-grouped-actions',
@@ -498,7 +358,7 @@ describe('SelectGroupedActionsPageController', () => {
       const groupedActions = [
         {
           name: 'Test',
-          actions: [{ code: 'TEST1', description: 'Test Action', availableArea: { value: 5, unit: 'ha' } }]
+          actions: [{ code: 'TEST1', description: 'Test Action', availability: { value: 5, unit: 'ha' } }]
         }
       ]
       fetchGroupedActionsForParcel.mockResolvedValue({
@@ -510,8 +370,7 @@ describe('SelectGroupedActionsPageController', () => {
         landAction_2: ''
       }
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       const stateArg = controller.setState.mock.calls[0][1]
       expect(Object.keys(stateArg.landParcels['sheet1-parcel1'].actionsObj)).toHaveLength(1)
@@ -521,8 +380,7 @@ describe('SelectGroupedActionsPageController', () => {
     test('should update state and proceed on valid submission', async () => {
       mockRequest.payload = { landAction_1: 'CMOR1' }
 
-      const handler = controller.makePostRouteHandler()
-      const result = await handler(mockRequest, mockContext, mockH)
+      const result = await post()
 
       expect(controller.setState).toHaveBeenCalledWith(
         mockRequest,
@@ -548,8 +406,7 @@ describe('SelectGroupedActionsPageController', () => {
     test('should show errors when no actions selected', async () => {
       mockRequest.payload = {}
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-grouped-actions',
@@ -565,8 +422,7 @@ describe('SelectGroupedActionsPageController', () => {
         action: 'validate'
       }
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       expect(validateApplication).toHaveBeenCalledWith(
         {
@@ -574,7 +430,7 @@ describe('SelectGroupedActionsPageController', () => {
           crn: 'CRN123',
           state: expect.any(Object)
         },
-        userContext
+        USER_CONTEXT
       )
     })
 
@@ -588,8 +444,7 @@ describe('SelectGroupedActionsPageController', () => {
         errorMessages: [{ code: 'CMOR1', description: 'Invalid area', passed: false }]
       })
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-grouped-actions',
@@ -613,8 +468,7 @@ describe('SelectGroupedActionsPageController', () => {
         ]
       })
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-grouped-actions',
@@ -630,8 +484,7 @@ describe('SelectGroupedActionsPageController', () => {
         landAction_2: 'UPL1'
       }
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       expect(controller.setState).toHaveBeenCalledWith(
         mockRequest,
@@ -662,8 +515,7 @@ describe('SelectGroupedActionsPageController', () => {
         landAction_2: 'UPL1'
       }
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       const stateArg = controller.setState.mock.calls[0][1]
       expect(stateArg.landParcels['sheet1-parcel1'].actionsObj).toHaveProperty('UPL2')
@@ -683,8 +535,7 @@ describe('SelectGroupedActionsPageController', () => {
         landAction_2: 'CMOR1'
       }
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       const stateArg = controller.setState.mock.calls[0][1]
       expect(stateArg.landParcels['sheet1-parcel1'].actionsObj).toHaveProperty('CMOR1')
@@ -701,8 +552,7 @@ describe('SelectGroupedActionsPageController', () => {
         errorMessages: []
       })
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       expect(controller.proceed).toHaveBeenCalled()
     })
@@ -718,8 +568,7 @@ describe('SelectGroupedActionsPageController', () => {
         errorMessages: [{ code: 'UPL1', description: 'Error for UPL1', passed: false }]
       })
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-grouped-actions',
@@ -729,26 +578,12 @@ describe('SelectGroupedActionsPageController', () => {
       )
     })
 
-    test('should proceed without validation when action is not validate', async () => {
-      mockRequest.payload = {
-        landAction_1: 'CMOR1',
-        action: 'continue'
-      }
-
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
-
-      expect(validateApplication).not.toHaveBeenCalled()
-      expect(controller.proceed).toHaveBeenCalled()
-    })
-
     test('should preserve state properties when updating', async () => {
       mockContext.state.someProperty = 'value'
       mockContext.state.landParcels = {}
       mockRequest.payload = { landAction_1: 'CMOR1' }
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       const stateArg = controller.setState.mock.calls[0][1]
       expect(stateArg).toHaveProperty('someProperty')
@@ -769,8 +604,7 @@ describe('SelectGroupedActionsPageController', () => {
         ]
       })
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-grouped-actions',
@@ -794,8 +628,7 @@ describe('SelectGroupedActionsPageController', () => {
 
       validateApplication.mockRejectedValue(apiError)
 
-      const handler = controller.makePostRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      await post()
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-grouped-actions',
@@ -810,35 +643,13 @@ describe('SelectGroupedActionsPageController', () => {
       )
     })
 
-    test('should handle timeout when fetching available actions gracefully', async () => {
-      fetchGroupedActionsForParcel.mockRejectedValue(new Error('Operation timed out after 30000ms'))
+    test('should return the unauthorized response when the user does not own the selected land parcel', async () => {
+      controller.performAuthCheck.mockResolvedValue('failed auth check')
 
-      const handler = controller.makeGetRouteHandler()
-      await handler(mockRequest, mockContext, mockH)
+      const result = await post()
 
-      expect(mockH.view).toHaveBeenCalledWith(
-        'select-grouped-actions',
-        expect.objectContaining({
-          errors: [
-            {
-              text: 'Unable to find actions information for parcel, please try again later or contact the Rural Payments Agency.'
-            }
-          ]
-        })
-      )
-    })
-
-    describe('when the user does not own the land parcel', () => {
-      it('should return unauthorized response when user does not own the selected land parcel', async () => {
-        controller.performAuthCheck.mockResolvedValue('failed auth check')
-        mockRequest.query = { parcelId: 'sheet1-parcel1' }
-
-        const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
-
-        expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, ['sheet1-parcel1'])
-
-        expect(result).toEqual('failed auth check')
-      })
+      expect(controller.performAuthCheck).toHaveBeenCalledWith(mockRequest, mockH, ['sheet1-parcel1'])
+      expect(result).toEqual('failed auth check')
     })
   })
 })

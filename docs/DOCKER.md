@@ -70,19 +70,25 @@ Append an entry to the `LOCAL_SERVICES` array in `tools/grants-tui.js` with `key
 
 ### Local form-definition overrides
 
-Edit and test a grant's **form definition** locally before pushing it to the config repo by dropping the definition into `compose/config-broker/local-form-definitions/`, mirroring the config-repo layout `<grant>/<service>/<file>` (e.g. `woodland/grants-ui/woodland.yaml`), then flip the **Local form-definition overrides (all grants)** toggle in the `local` menu.
+Edit and test a grant's **form definition** locally before pushing it to the config repo, then pick which grants to override from the per-grant checklist in the `gt` `local` menu. Overrides are discovered from two places:
 
-- **Version bump** — each override is published to grants-ui-backend as one patch above the repo version (e.g. repo `1.2.3` -> override `1.2.4`), so it becomes the highest/active version the frontend serves.
+- **In-repo folder** — drop the definition into `compose/config-broker/local-form-definitions/`, mirroring the config-repo layout `<grant>/<service>/<file>` (e.g. `woodland/grants-ui/woodland.yaml`). Listed with source `local-form-definitions`.
+- **Sibling config repos** — check out a `grants-config-*` repo **next to** grants-ui (e.g. `../grants-config-grasslands`); its `configurations/<grant>/grants-ui/<file>.yaml` is picked up automatically and listed with source `grants-config-<name>`. Edit "the real form definition" in that repo — with full git diffs/history — and pull it straight into grants-ui without copying anything. Point `GRANTS_UI_SIBLING_CONFIG_DIR` elsewhere if your checkouts don't sit beside grants-ui.
+
+Each override is a separate row (`form-def: <grant>` · `<source> → <bumped-version>`); tick the ones you want active. A grant can only have one active source at a time — if both a folder and a sibling override exist for it and you tick both, the folder one wins and the other is skipped with a warning.
+
+- **Version bump** — each selected override is published to grants-ui-backend as one patch above the repo version (e.g. repo `1.2.3` -> override `1.2.4`), so it becomes the highest/active version the frontend serves.
 - **Enable** — clones the current active `config__form_definitions` document for the grant, overlays your definition, bumps the version and upserts it. Works both before `up` (applied automatically once the stack is healthy) and while the stack is running (applied immediately). The injected definition's `name` is stamped with a ` (local override active)` suffix so an overridden form is obviously distinguishable from the real repo version wherever the name is surfaced.
-- **Disable** — deletes the bumped document and purges the dependent `state__grant_application_state`, `state__grant_application_locks` and submissions for that version, so the frontend cleanly reverts to the repo version with no orphaned drafts.
-- **Refresh** — while the override toggle is active, a `↳ refresh overrides` item appears directly below `local` in the main menu (styled in purple, matching the override status messages). Selecting it re-publishes the local YAML overrides into Mongo on demand, so while you're actively editing the YAML you can pull in the latest changes without toggling the override off and on again. It's disabled with a hint when the containers aren't running (Mongo must be up to refresh), and reports a purple success or red failure status line. It runs the same applier as **Enable** (`runApplyFormDefs('enable')`).
-- The toggle is a single all-or-nothing switch for **every** override in the folder, shown as available only when at least one override file is present. The folder contents are git-ignored (only its `README.md` is committed).
+- **Disable** — un-ticking a grant deletes its bumped document and purges the dependent `state__grant_application_state`, `state__grant_application_locks` and submissions for that version, so the frontend cleanly reverts to the repo version with no orphaned drafts.
+- **Refresh** — while any override is active, a `↳ refresh overrides` item appears directly below `local` in the main menu (styled in purple, matching the override status messages). Selecting it re-publishes the selected YAML (folder **or** sibling repo) into Mongo on demand, so while you're actively editing you can pull in the latest changes without toggling anything off and on again. It's disabled with a hint when the containers aren't running (Mongo must be up to refresh), and reports a purple success or red failure status line. It runs the same applier as **Enable** (`runApplyFormDefs('enable')`).
+- The `local-form-definitions` folder contents are git-ignored (only its `README.md` is committed); sibling config repos are their own separate checkouts.
 
-The applier (`tools/apply-local-form-defs.mjs`) talks to Mongo through `docker compose exec -T mongodb mongosh`, so it needs no extra dependencies. It can also be run directly:
+The applier (`tools/apply-local-form-defs.mjs`) talks to Mongo through `docker compose exec -T mongodb mongosh`, so it needs no extra dependencies. It can also be run directly — a bare invocation acts on every discovered override, or scope it to specific override ids (`<grant>::local` or `<grant>::grants-config-<name>`) via `GRANTS_UI_FORMDEF_SELECTION`:
 
 ```bash
 node tools/apply-local-form-defs.mjs enable
 node tools/apply-local-form-defs.mjs disable
+GRANTS_UI_FORMDEF_SELECTION=grasslands::grants-config-grasslands node tools/apply-local-form-defs.mjs enable
 ```
 
 ## Development Image

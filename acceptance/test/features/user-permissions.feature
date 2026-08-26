@@ -1,19 +1,21 @@
 Feature: User Permissions
-
     SBI 106238911 users and permissions:
-        CRN 1062311181 - SUBMIT permissions
-        CRN 1062311182 - AMEND permissions
-        CRN 1062311183 - VIEW permissions
+        CRN 1062311181 - SUBMIT CS Applications permissions
+        CRN 1062311182 - AMEND CS Applications permissions
+        CRN 1062311183 - VIEW CS Applications permissions
         CRN 1062311184 - No permissions
+        CRN 1062311185 - SUBMIT CS Agreements permissions
+        CRN 1062311186 - AMEND CS Agreements permissions
+        CRN 1062311187 - VIEW CS Agreements permissions
 
-    Scenario: Complete a grant application with multiple users with different permissions
+    Scenario: Complete a grant application and claim submission with multiple users with different permissions
         Given there is no application data for SBI "106238911" and grant "example-grant-with-auth"
 
         # attempt to start as CRN 1062311183 with VIEW permission only, before any application exists
         Given the user navigates to "/example-grant-with-auth"
         And logs in as CRN "1062311183"
         Then the user should see heading "You do not have permission to view this page"
-        And an unauthorised audit event should be published for grant "example-grant-with-auth" with CRN "1062311183" and SBI "106238911" and reason "permission"
+        And an unauthorised audit event should be published for entity "application" and grant "example-grant-with-auth" with CRN "1062311183" and SBI "106238911" and reason "permission"
 
         # unlock from CRN 1062311183
         Given there is no application lock for CRN "1062311183" and SBI "106238911" and grant "example-grant-with-auth"
@@ -24,7 +26,7 @@ Feature: User Permissions
         And logs in as CRN "1062311182"
         Then the user should see SBI "106238911" as the logged in organisation
         And the user should see heading "Example Grant"
-        And an authorised audit event should be published for grant "example-grant-with-auth" with CRN "1062311182" and SBI "106238911"
+        And an authorised audit event should be published for entity "application" and grant "example-grant-with-auth" with CRN "1062311182" and SBI "106238911"
         When the user clicks on "Start now"
 
         # check-details
@@ -182,8 +184,8 @@ Feature: User Permissions
         And should see heading "Check your answers"
         When the user continues
 
-        # cannot-submit as logged-in user has AMEND but not SUBMIT permission
-        Then the user should be at URL "cannot-submit"
+        # declaration - cannot submit application
+        Then the user should be at URL "declaration"
         And should see heading "You cannot submit this application"
 
         # unlock from CRN 1062311182
@@ -194,7 +196,7 @@ Feature: User Permissions
         And navigates to "/example-grant-with-auth"
         And logs in as CRN "1062311183"
         Then the user should see heading "You do not have permission to view this page"
-        And an unauthorised audit event should be published for grant "example-grant-with-auth" with CRN "1062311183" and SBI "106238911" and reason "permission"
+        And an unauthorised audit event should be published for entity "application" and grant "example-grant-with-auth" with CRN "1062311183" and SBI "106238911" and reason "permission"
 
         # unlock from CRN 1062311183
         Given there is no application lock for CRN "1062311183" and SBI "106238911" and grant "example-grant-with-auth"
@@ -244,7 +246,77 @@ Feature: User Permissions
         And navigates to "/example-grant-with-auth"
         And logs in as CRN "1062311184"
         Then the user should see heading "You do not have permission to view this page"
-        And an unauthorised audit event should be published for grant "example-grant-with-auth" with CRN "1062311184" and SBI "106238911" and reason "permission"
+        And an unauthorised audit event should be published for entity "application" and grant "example-grant-with-auth" with CRN "1062311184" and SBI "106238911" and reason "permission"
 
         # unlock from CRN 1062311184
         Given there is no application lock for CRN "1062311184" and SBI "106238911" and grant "example-grant-with-auth"
+
+        ## CLAIMS JOURNEY
+
+        # move the submitted application into the claims journey via the GAS status
+        Given the application status in GAS is now "STATUS_AWAITING_CLAIM"
+
+        # attempt to start a claim as CRN 1062311187 with VIEW permission only
+        Given the user starts a new browser session
+        And navigates to "/example-grant-with-auth"
+        And logs in as CRN "1062311187"
+        Then the user should see heading "You do not have permission to view this page"
+        And an unauthorised audit event should be published for entity "claim" and grant "example-grant-with-auth" with CRN "1062311187" and SBI "106238911" and reason "permission"
+
+        # unlock from CRN 1062311187
+        Given there is no application lock for CRN "1062311187" and SBI "106238911" and grant "example-grant-with-auth"
+
+        # log in as CRN 1062311186 with AMEND permission
+        Given the user starts a new browser session
+        And navigates to "/example-grant-with-auth"
+        And logs in as CRN "1062311186"
+        Then the user should be at URL "claim"
+        And should see heading "Example claim start page"
+        # And an authorised audit event should be published for entity "claim" and grant "example-grant-with-auth" with CRN "1062311186" and SBI "106238911"
+        When the user clicks on "Continue"
+
+        # claim-declaration - cannot submit claim
+        Then the user should be at URL "claim-declaration"
+        And should see heading "You cannot submit this claim"
+
+        # unlock from CRN 1062311186
+        Given there is no application lock for CRN "1062311186" and SBI "106238911" and grant "example-grant-with-auth"
+
+        # log in as CRN 1062311185 with SUBMIT permission
+        Given the user starts a new browser session
+        And navigates to "/example-grant-with-auth"
+        And logs in as CRN "1062311185"
+        Then the user should be at URL "claim"
+        And should see heading "Example claim start page"
+        When the user clicks on "Continue"
+        Then a navigate audit event should be published for grant "example-grant-with-auth" and entityId "claim" with CRN "1062311185" and SBI "106238911"
+
+        # claim-declaration
+        Then the user should be at URL "claim-declaration"
+        And should see heading "Example claim declaration page"
+        When the user clicks on "Confirm and submit"
+
+        # claim-confirmation
+        Then the user should be at URL "claim-confirmation"
+        And should see heading "Claim submitted"
+        And a submit audit event should be published for entity "claim" and entityId "{REFERENCE NUMBER}" with CRN "1062311185" and SBI "106238911"
+        And the claim "-C01" for CRN "1062311185" and SBI "106238911" should be submitted to GAS
+
+        # unlock from CRN 1062311185
+        Given there is no application lock for CRN "1062311185" and SBI "106238911" and grant "example-grant-with-auth"
+
+        # log in as CRN 1062311187 with VIEW permission to view the submitted claim
+        Given the user starts a new browser session
+        And navigates to "/example-grant-with-auth"
+        And logs in as CRN "1062311187"
+        Then the user should be at URL "claim-confirmation"
+        And should see heading "Claim submitted"
+
+        # unlock from CRN 1062311187
+        Given there is no application lock for CRN "1062311187" and SBI "106238911" and grant "example-grant-with-auth"
+
+        # attempt to view the submitted claim as CRN 1062311184 with no permissions
+        Given the user starts a new browser session
+        And navigates to "/example-grant-with-auth"
+        And logs in as CRN "1062311184"
+        Then the user should see heading "You do not have permission to view this page"

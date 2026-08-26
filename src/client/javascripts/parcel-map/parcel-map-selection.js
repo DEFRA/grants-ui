@@ -4,6 +4,7 @@ import {
   FILL_OPACITY_DEFAULT,
   FILL_OPACITY_SELECTED,
   SELECTION_NONE_SENTINEL,
+  SELECT_FEATURE_EVENT,
   EVENT_SELECTION
 } from './config.js'
 
@@ -55,7 +56,7 @@ export function attachSelectionRelay({ host, mapInstance, ml, tooltip, cleanups,
     // a no-op.
     if (!multiSelect && selectedFeatures.length === 0 && lastSelectedFeature && !suppressReassert) {
       const { featureId, layerId, idProperty, properties, geometry } = lastSelectedFeature
-      mapInstance.emit('interact:selectFeature', { featureId, layerId, idProperty, properties, geometry })
+      mapInstance.emit(SELECT_FEATURE_EVENT, { featureId, layerId, idProperty, properties, geometry })
       return
     }
 

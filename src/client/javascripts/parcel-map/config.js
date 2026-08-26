@@ -81,6 +81,9 @@ export const STATE_IDLE = 'idle'
 export const STATE_LOADING = 'loading'
 export const STATE_READY = 'ready'
 export const STATE_ERROR = 'error'
+export const SELECT_FEATURE_EVENT = 'interact:selectFeature'
+export const SELECT_LISTENER_POLL_MS = 20
+export const SELECT_LISTENER_MAX_POLLS = 25
 
 export const EVENT_READY = 'parcel-map:ready'
 export const EVENT_ERROR = 'parcel-map:error'

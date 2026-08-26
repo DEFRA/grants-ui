@@ -4,10 +4,10 @@ import { waitForAuditEvent } from '../utils/audit.js'
 import { transformStepArgument } from '../utils/step-argument-transformation.js'
 
 Then(
-  'an authorised audit event should be published for grant {string} with CRN {string} and SBI {string}',
-  async function (grantCode, crn, sbi) {
+  'an authorised audit event should be published for entity {string} and grant {string} with CRN {string} and SBI {string}',
+  async function (entity, grantCode, crn, sbi) {
     const event = await waitForAuditEvent(this.auditQueue.queueUrl, {
-      entity: 'application',
+      entity,
       action: 'authorised',
       entityId: grantCode,
       crn,
@@ -17,22 +17,33 @@ Then(
   }
 )
 
+async function assertNavigateAuditEvent(world, { grantCode, entityId, crn, sbi, dataTable }) {
+  const answers = Object.fromEntries(
+    (dataTable?.hashes() ?? []).map((row) => [row.FIELD, transformStepArgument(row.VALUE)])
+  )
+  const event = await waitForAuditEvent(world.auditQueue.queueUrl, {
+    entity: 'page',
+    action: 'navigate',
+    entityId,
+    crn,
+    sbi,
+    grant: grantCode,
+    answers
+  })
+  expect(event).not.toBeNull()
+}
+
 Then(
-  'a navigate audit event should be published for grant {string} and page {string} with CRN {string} and SBI {string}( with the following answers)',
+  'a navigate audit event should be published for grant {string} and entityId {string} with CRN {string} and SBI {string}',
+  async function (grantCode, entityId, crn, sbi) {
+    await assertNavigateAuditEvent(this, { grantCode, entityId, crn, sbi })
+  }
+)
+
+Then(
+  'a navigate audit event should be published for grant {string} and entityId {string} with CRN {string} and SBI {string} with the following answers',
   async function (grantCode, entityId, crn, sbi, dataTable) {
-    const answers = Object.fromEntries(
-      (dataTable?.hashes() ?? []).map((row) => [row.FIELD, transformStepArgument(row.VALUE)])
-    )
-    const event = await waitForAuditEvent(this.auditQueue.queueUrl, {
-      entity: 'page',
-      action: 'navigate',
-      entityId,
-      crn,
-      sbi,
-      grant: grantCode,
-      ...(dataTable && { answers })
-    })
-    expect(event).not.toBeNull()
+    await assertNavigateAuditEvent(this, { grantCode, entityId, crn, sbi, dataTable })
   }
 )
 
@@ -51,10 +62,10 @@ Then(
 )
 
 Then(
-  'a submit audit event should be published for entity {string} with CRN {string} and SBI {string}',
-  async function (entityId, crn, sbi) {
+  'a submit audit event should be published for entity {string} and entityId {string} with CRN {string} and SBI {string}',
+  async function (entity, entityId, crn, sbi) {
     const event = await waitForAuditEvent(this.auditQueue.queueUrl, {
-      entity: 'application',
+      entity,
       action: 'submit',
       entityId: transformStepArgument(entityId),
       crn,
@@ -65,10 +76,10 @@ Then(
 )
 
 Then(
-  'an unauthorised audit event should be published for grant {string} with CRN {string} and SBI {string} and reason {string}',
-  async function (grantCode, crn, sbi, reason) {
+  'an unauthorised audit event should be published for entity {string} and grant {string} with CRN {string} and SBI {string} and reason {string}',
+  async function (entity, grantCode, crn, sbi, reason) {
     const event = await waitForAuditEvent(this.auditQueue.queueUrl, {
-      entity: 'application',
+      entity,
       action: 'unauthorised',
       entityId: grantCode,
       crn,
