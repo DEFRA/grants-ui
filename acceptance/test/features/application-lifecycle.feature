@@ -213,7 +213,8 @@ Feature: Application Lifecycle
 
         # review claim
         And should see heading "Example claim start page"
-        And the user should see a phase banner feedback link with journey "claim-inprogress"
+        And should see a total claim amount of "£2,553.30"
+        And should see a phase banner feedback link with journey "claim-inprogress"
         When the user clicks on "Continue"
 
         # claim-declaration
