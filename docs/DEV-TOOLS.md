@@ -110,7 +110,7 @@ Automates clicking through grant application forms in the browser. Useful for qu
 
 ### Usage
 
-Navigate to the grant's normal start page (e.g. `http://localhost:3000/methane/start`), not a `/dev/` route. The journey runner script is automatically loaded on every page via the layout template.
+Navigate to the grant's normal start page (e.g. `http://localhost:3000/example-grant-with-auth/start`), not a `/dev/` route. The journey runner script is automatically loaded on every page via the layout template.
 
 Open the browser console and run:
 
@@ -196,7 +196,9 @@ The `gt journey --mock-no-actions` path needs no cleanup — it sets the cookie 
 
 ### Adding a new journey
 
-Create a JSON file in `journey-runner/journeys/` named after the grant's URL slug (e.g. `methane.json`).
+Create a JSON file in `journey-runner/journeys/` named after the grant's URL slug (e.g. `example-grant-with-map.json`).
+
+`journeys.test.js` checks each journey against the grant's form definition in `compose/config-broker-local/`: every step must point at a page the definition has, and no unconditional page may sit between two steps the journey does cover. It skips itself when the local config-broker sync has not been run. Both checks matter because the runner reports an unmatched page as `journey complete`, which `gt journey` counts as success — a journey that silently stops halfway still exits zero.
 
 The file is an array of step objects, executed in order:
 
@@ -237,15 +239,22 @@ Each step requires:
 
 ### Existing journeys
 
-| File                                | Grant                     |
-| ----------------------------------- | ------------------------- |
-| `example-grant-with-auth.json`      | Example grant (with auth) |
-| `example-grant-with-task-list.json` | Example grant (task list) |
-| `farm-payments.json`                | Farm payments (see note)  |
-| `grasslands.json`                   | Grasslands agreement      |
-| `pigs-might-fly.json`               | Flying pigs               |
-| `methane.json`                      | Methane                   |
-| `woodland.json`                     | Woodland Management Plan  |
+| File                                | Grant                     | Completes on a standard local stack? |
+| ----------------------------------- | ------------------------- | ------------------------------------ |
+| `example-grant-with-auth.json`      | Example grant (with auth) | Yes                                  |
+| `example-grant-with-map.json`       | Example grant (with map)  | Yes                                  |
+| `example-grant-with-task-list.json` | Example grant (task list) | Yes                                  |
+| `farm-payments.json`                | Farm payments             | No — see note                        |
+| `grasslands.json`                   | Grasslands agreement      | Yes                                  |
+| `pigs-might-fly.json`               | Flying pigs               | Yes                                  |
+| `methane.json`                      | Methane                   | No — see note                        |
+| `woodland.json`                     | Woodland Management Plan  | Yes                                  |
+
+Grants without a journey definition: `example-grant-with-task-list-hide-questions` and `example-whitelist`, both covered by the acceptance suite instead (`task-list-hide-questions.feature`, `allowlist.feature`).
+
+> **example-grant-with-map note:** the shortest end-to-end exercise of `MapSelectPageController` → `SelectActionsPageController` → `ConfirmLandAndActionsPageController`. Like grasslands it takes the first of the grant's enabled actions (`CLIG3`, `SCR2`, `CSAM3`), so it needs mockserver in front of the land-grants API. It has no `/declaration` — submitting `/summary` (`MapSubmissionPageController`) goes straight to `/confirmation`.
+
+> **methane note:** this journey cannot complete locally. methane is a frontend-code-only grant with no config-broker entry, so the backend allowlist turns every CRN away at `/auth/journey-unauthorised`. Onboarding methane to the config broker (or teaching the allowlist to skip code-only grants) would fix it; seeding `config__allowlist_entries` will not. `gt journey methane` makes you acknowledge this before running.
 
 > **grasslands note:** it runs end-to-end on the standard local stack (`gt up`, mockserver in front of the land-grants API). The journey enters at `/check-details`, picks a parcel on the map with the `mapParcel` step, and takes the first of the grant's enabled actions (`CLIG3`, `CSAM3`, `SCR2`) — those codes are in `mockserver/expectations.json`, so removing them there will strand the run on `/select-actions-for-land-parcel`.
 
