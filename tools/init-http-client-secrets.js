@@ -16,7 +16,7 @@
  *   - entraClientId       (dal.http)
  *   - entraClientSecret   (dal.http)
  *   - entraTenantId       (dal.http)
- *   - serviceToken        (gas.http)
+ *   - serviceToken        (gas.http)   -- local value pre-filled from compose.gas.yml
  *   - x-api-key           (gas.http)
  *   - defraIdToken        (dal.http / land-grants.http)
  *
@@ -49,6 +49,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const rootDir = join(__dirname, '..')
 const publicEnvPath = join(rootDir, 'http-client.env.json')
 const privateEnvPath = join(rootDir, 'http-client.private.env.json')
+const composeGasPath = join(rootDir, 'compose.gas.yml')
 
 /**
  * The canonical secret keys grouped by the `http-client/` collection that uses
@@ -110,16 +111,41 @@ function buildAuthToken(token, encryptionKey) {
 }
 
 /**
- * Reads and parses a JSON file, returning {} when it does not exist.
+ * Reads and parses a JSON file, returning {} when it does not exist or is empty.
+ * A present-but-empty (or whitespace-only) file is treated the same as a missing
+ * one so the tool can (re)initialise it instead of failing on JSON.parse.
  * @param {string} path
  * @returns {Promise<Record<string, any>>}
  */
 async function readJsonIfPresent(path) {
   try {
-    return JSON.parse(await readFile(path, 'utf-8'))
+    const content = await readFile(path, 'utf-8')
+    if (content.trim() === '') {
+      return {}
+    }
+    return JSON.parse(content)
   } catch (/** @type {any} */ error) {
     if (error.code === 'ENOENT') {
       return {}
+    }
+    throw error
+  }
+}
+
+/**
+ * Reads the local GAS service token (GAS_API_AUTH_TOKEN) from compose.gas.yml so
+ * the `local` environment's serviceToken can be pre-filled to match the token the
+ * local GAS backend accepts. Returns '' when the file or key is not found.
+ * @returns {Promise<string>}
+ */
+async function readLocalServiceToken() {
+  try {
+    const content = await readFile(composeGasPath, 'utf-8')
+    const match = content.match(/GAS_API_AUTH_TOKEN:\s*([^\s#]+)/)
+    return match ? match[1] : ''
+  } catch (/** @type {any} */ error) {
+    if (error.code === 'ENOENT') {
+      return ''
     }
     throw error
   }
@@ -130,6 +156,7 @@ const targetEnv = envIndex !== -1 ? process.argv[envIndex + 1] : 'local'
 
 const publicConfig = await readJsonIfPresent(publicEnvPath)
 const existingConfig = await readJsonIfPresent(privateEnvPath)
+const localServiceToken = await readLocalServiceToken()
 
 // Cover every environment declared publicly, plus any custom ones already present.
 const environments = [...new Set([...Object.keys(publicConfig), ...Object.keys(existingConfig)])]
@@ -152,7 +179,14 @@ for (const env of environments) {
 
   for (const group of SECRET_GROUPS) {
     for (const key of group.keys) {
-      envConfig[key] = typeof existing[key] === 'string' ? existing[key] : ''
+      let value = typeof existing[key] === 'string' ? existing[key] : ''
+      // Pre-fill the local serviceToken from compose.gas.yml (GAS_API_AUTH_TOKEN)
+      // so it matches the token the local GAS backend accepts, without clobbering
+      // any value the developer already set.
+      if (key === 'serviceToken' && env === 'local' && value === '' && localServiceToken) {
+        value = localServiceToken
+      }
+      envConfig[key] = value
     }
   }
 

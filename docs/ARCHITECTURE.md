@@ -376,6 +376,8 @@ Generate the skeleton locally with the bundled tool rather than hand-crafting it
 
 - `npm run http-client:init` -- creates (or updates) `http-client.private.env.json` with an entry for every environment listed in `http-client.env.json`, leaving the hand-populated secrets as empty strings and generating the encrypted bearer tokens under the `local` environment. To generate the encrypted tokens under another environment, run the tool directly and pass `--env`, for example `node ./tools/init-http-client-secrets.js --env dev`.
 - Existing values are preserved on re-run, and obsolete keys are dropped.
+- A present-but-empty (or whitespace-only) `http-client.private.env.json` is treated the same as a missing file and (re)initialised rather than failing to parse.
+- The `local` `serviceToken` is pre-filled from `GAS_API_AUTH_TOKEN` in `compose.gas.yml` so it matches the token the local GAS backend accepts (any value you have already set is preserved).
 - Within each environment the secrets are grouped by the `http-client/*.http` file that uses them, with each group separated by a blank line for readability.
 
 The generated skeleton looks like this (one block per environment):
@@ -387,7 +389,7 @@ The generated skeleton looks like this (one block per environment):
     "entraClientSecret": "",
     "entraTenantId": "",
 
-    "serviceToken": "",
+    "serviceToken": "<pre-filled-from-compose.gas.yml>",
     "x-api-key": "",
 
     "brokerAuthToken": "<generated-local-broker-auth-token>",
@@ -408,6 +410,7 @@ Populate the placeholders as follows (do **not** paste real secrets into the rep
   - generate the token using the GAS tooling
   - register it in GAS (for example by adding it to the appropriate collection in GAS MongoDB)
   - use the raw token value here
+  - for `local`, this is pre-filled automatically from `GAS_API_AUTH_TOKEN` in `compose.gas.yml`, which matches the token seeded into the local GAS backend
 - `brokerAuthToken` and `landGrantsAuthToken` -- AES-256-GCM encrypted + base64 bearer tokens for the config broker (`broker.http`) and Land Grants API (`land-grants.http`). These are **not** raw tokens: the backing services expect the same encrypted format the app produces (see `encryptToken` in `src/server/common/helpers/auth/encrypt-token.js`). `npm run http-client:init` generates both for you; the raw tokens and encryption keys are read from your `.env` file, defaulting to the `compose.grants-ui.yml` / `compose.land-grants.yml` development values (`GRANTS_CONFIG_BROKER_AUTH_TOKEN` / `GRANTS_CONFIG_BROKER_ENCRYPTION_KEY` and `LAND_GRANTS_API_AUTH_TOKEN` / `LAND_GRANTS_API_ENCRYPTION_KEY`) when unset.
 - `defraIdToken` -- a Defra Identity access token for the signed-in user, forwarded via the `x-forwarded-authorization` header
 

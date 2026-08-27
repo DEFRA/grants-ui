@@ -26,9 +26,15 @@ collections in `http-client/` (`broker.http`, `dal.http`, `gas.http`,
 in the committed `http-client.env.json`, it ensures the full set of secret keys
 the `.http` requests reference is present, leaving hand-populated secrets
 (`entraClientId`, `entraClientSecret`, `entraTenantId`, `serviceToken`,
-`x-api-key`, `defraIdToken`) as empty strings. Within each environment the
+`x-api-key`, `defraIdToken`) as empty strings. The `local` `serviceToken` is an
+exception: it is pre-filled from `GAS_API_AUTH_TOKEN` in `compose.gas.yml` so it
+matches the token the local GAS backend accepts. Within each environment the
 secrets are grouped by the `.http` file that uses them, with each group separated
 by a blank line for readability.
+
+A present-but-empty (or whitespace-only) `http-client.private.env.json` is handled
+gracefully -- it is treated the same as a missing file and (re)initialised rather
+than failing to parse.
 
 It also generates the encrypted (AES-256-GCM + base64) bearer tokens the HTTP
 client needs for the config broker (`brokerAuthToken`) and Land Grants API
