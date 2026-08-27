@@ -22,16 +22,9 @@ fi
 # CI-seeded allowlist state absent in a plain local stack.
 ACCEPTANCE_SUITES="${ACCEPTANCE_SUITES:-grants-ui-acceptance-tests grants-ui-grasslands-tests grants-ui-woodland-tests}"
 
-# TGC-1504: Disabled for repeater pattern
-GRASSLANDS_DISABLED_TEST='submits a Grasslands application exploring all pages from start to confirmation'
-
 HOOK=""
 for suite in $ACCEPTANCE_SUITES; do
-  suite_command="$TEST_COMMAND"
-  if [ "$suite" = "grants-ui-grasslands-tests" ] && [ -z "$FEATURE_FILE" ]; then
-    suite_command="$suite_command -- --grep-invert \"$GRASSLANDS_DISABLED_TEST\" --pass-with-no-tests"
-  fi
-  step="docker compose -f compose.tests.yml run --quiet-pull --rm ${suite} $suite_command"
+  step="docker compose -f compose.tests.yml run --quiet-pull --rm ${suite} $TEST_COMMAND"
   if [ -z "$HOOK" ]; then HOOK="$step"; else HOOK="$HOOK && $step"; fi
 done
 export ACCEPTANCE_TESTS_HOOK="$HOOK"
