@@ -4,7 +4,7 @@ Before making changes, read `CONTEXT.md`. It is the source of truth for Grants d
 
 ## Project Structure & Module Organization
 
-Application code lives in `src`. Server routes, controllers, helpers, services, and views are under `src/server`; browser JavaScript and Sass are under `src/client`; shared utilities are in `src/shared`; configuration is in `src/config`. Unit tests are colocated as `*.test.js`. Contract assets live in `src/contracts`. Acceptance tests are in `acceptance/test`, with feature files, steps, page objects, and support utilities split by folder. Operational scripts and local tooling are in `scripts/`, `tools/`, `floci/`, and root Docker Compose files.
+Application code lives in `src`. Server routes, controllers, helpers, services, and views are under `src/server`; browser JavaScript and Sass are under `src/client`; shared utilities are in `src/shared`; configuration is in `src/config`. Unit tests are colocated as `*.test.js`. Contract assets live in `src/contracts`. Acceptance tests are in `acceptance/test`, with feature files, steps, page objects, and support utilities split by folder. Operational scripts and local tooling are in `scripts/`, `tools/`, `compose/floci/`, and root Docker Compose files.
 
 ## Build, Test, and Development Commands
 
@@ -35,7 +35,7 @@ User -> Grants UI -> Grants UI Backend
                   -> GAS
 ```
 
-Grants UI renders journeys, handles authentication/session flow, maps form state into submission payloads, and decides user navigation. Grants UI Backend owns persisted application state and application status for save-and-return journeys, and serves form definitions for the slugs configured to load from it. GAS owns submitted grant applications, grant definitions used for submission, and post-submission GAS statuses.
+Grants UI renders journeys, handles authentication/session flow, maps form state into submission payloads, and decides user navigation. Grants UI Backend owns persisted application state and application status for save-and-return journeys, and serves all grant form definitions, resolved fresh per request; grants-ui itself holds no local form definitions. GAS owns submitted grant applications, grant definitions used for submission, and post-submission GAS statuses.
 
 ## Architectural Constraints
 

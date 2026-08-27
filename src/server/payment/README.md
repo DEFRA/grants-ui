@@ -10,7 +10,7 @@ YAML config
     ▼
 PaymentPageController (constructor reads config via resolveConfig)
     │
-    ├── strategy.fetch(state) ──► service function(s) ──► Land Grants API
+    ├── strategy.calculatePayment(state, userContext) ──► service function(s) ──► Land Grants API
     │        │
     │        └── returns { totalPence, totalPayment, payment, parcelItems?, additionalYearlyPayments? }
     │
@@ -19,7 +19,7 @@ PaymentPageController (constructor reads config via resolveConfig)
     └── redirect ──► redirects.next / redirects.addMoreActions
 ```
 
-On GET, the controller calls `strategy.fetch(state)`, stores `totalPence`, `totalPayment`, and the raw `payment` object in session state, then renders the view.
+On GET, the controller calls `strategy.calculatePayment(state, userContext)`, stores `totalPence`, `totalPayment`, and the raw `payment` object in session state, then renders the view.
 
 On POST, if the user triggers validation (submit without answering the radio), it re-fetches and re-renders with errors. Otherwise it reads `addMoreActions` from the payload and navigates accordingly.
 
@@ -38,7 +38,7 @@ On POST, if the user triggers validation (submit without answering the radio), i
       next: /submit-your-application # where to go when user is done (often a consent check page or submit application)
       addMoreActions: /select-land-parcel
 
-    # Display options (all optional, defaults shown)
+    # Display options (all optional; default to false/falsy if omitted)
     showPaymentActions: true # show per-parcel action breakdown tables
     showAddMoreActionsQuestion: true # show "Do you want to add actions to another parcel?" radio
     showSupportLink: true # show "If you have a question" support details
@@ -55,7 +55,7 @@ On POST, if the user triggers validation (submit without answering the radio), i
 
 ### 1. Add a payment strategy
 
-Open [`payment-strategies.js`](./payment-strategies.js) and add an entry. Each strategy exposes a single `fetch(state)` method that returns:
+Open [`payment-strategies.js`](./payment-strategies.js) and add an entry. Each strategy exposes a single `calculatePayment(state, userContext)` method that returns:
 
 | Field                      | Type                 | Description                                                                            |
 | -------------------------- | -------------------- | -------------------------------------------------------------------------------------- |
@@ -69,8 +69,8 @@ Example for a simple one-off payment:
 
 ```js
 myJourney: {
-  async fetch(state) {
-    const { totalPence } = await calculateMyPayment(state)
+  async calculatePayment(state, userContext) {
+    const { totalPence } = await calculateMyPayment(state, userContext)
     return {
       totalPence,
       totalPayment: formatPrice(totalPence),
@@ -84,10 +84,10 @@ Example for a multi-action journey with per-parcel breakdown:
 
 ```js
 myMultiAction: {
-  async fetch(state) {
+  async calculatePayment(state, userContext) {
     const [paymentResult, actionGroups] = await Promise.all([
-      calculateMyActionsPayment(state),
-      fetchMyActionGroups(state)
+      calculateMyActionsPayment(state, userContext),
+      fetchMyActionGroups(state, userContext)
     ])
     const { payment } = paymentResult
     const totalPence = payment?.annualTotalPence ?? 0
@@ -112,21 +112,25 @@ The strategy should call a service function in `land-grants.service.js` (or a ne
 - Calling the API client
 - Returning normalised data (e.g. converting a string result to pence)
 
-See `calculateLandActionsPayment` and `calculateWmpPayment` in [`land-grants.service.js`](../land-grants/services/land-grants.service.js) as examples.
+See `calculateLandActionsPayment` in [`land-grants.service.js`](../land-grants/services/land-grants.service.js) and `calculateWmpPayment` in [`woodland.service.js`](../woodland/woodland.service.js) as examples.
 
 ### 3. Configure the YAML page
 
 Set `paymentStrategy: <your-key>` in the page config block, along with `redirects.next` and any other required options (see YAML config reference above).
 
+Note: `redirects` and the other options above are specific to `PaymentPageController`. `resolveStrategy` (in [`resolve-strategy.js`](./resolve-strategy.js)) is also used by other controllers that drive payment behaviour from their own `config:` block — e.g. `StartClaimPageController` (see [`start-claim-page.controller.js`](../claims/controllers/start-claim-page.controller.js)) sets `paymentStrategy` alongside its own config shape (`submitButtonText`, `rpaDetails`, etc.), with no `redirects`.
+
 ## API communication
 
 Payment calculations go through the Land Grants API. The client layer ([`land-grants.client.js`](../land-grants/services/land-grants.client.js)) handles authentication headers, retries, and error surfacing. The following endpoints are currently in use:
 
-| Strategy      | Endpoint                                            | Request shape                                                        |
-| ------------- | --------------------------------------------------- | -------------------------------------------------------------------- |
-| `multiAction` | `POST /api/v2/payments/calculate`                   | `{ parcel: [{ sheetId, parcelId, actions: [{ code, quantity }] }] }` |
-| `wmp`         | `POST /api/v1/wmp/payments/calculate`               | `{ parcelIds, newWoodlandAreaHa, oldWoodlandAreaHa }`                |
-| `wmp`         | `POST /api/v1/wmp/payments/calculate-by-total-area` | `{ totalAreaHa, applicationId, sbi, crn }`                           |
+| Strategy         | Endpoint                                            | Request shape                                                        |
+| ---------------- | --------------------------------------------------- | -------------------------------------------------------------------- |
+| `multiAction`    | `POST /api/v2/payments/calculate`                   | `{ parcel: [{ sheetId, parcelId, actions: [{ code, quantity }] }] }` |
+| `wmp`            | `POST /api/v1/wmp/payments/calculate`               | `{ parcelIds, newWoodlandAreaHa, oldWoodlandAreaHa }`                |
+| `woodland-claim` | `POST /api/v1/wmp/payments/calculate-by-total-area` | `{ totalAreaHa, applicationId, sbi, crn }`                           |
+
+`multiAction` and `wmp` are currently configured on `PaymentPageController` pages (e.g. `farm-payments.yaml`, `woodland.yaml`). `woodland-claim` is currently only configured on a `StartClaimPageController` page (the claims journey's "Review your claim" page) — not on a `PaymentPageController` page.
 
 ### `multiAction` response
 
@@ -159,7 +163,7 @@ Payment calculations go through the Land Grants API. The client layer ([`land-gr
 }
 ```
 
-The `wmp` strategy reads `payment.agreementTotalPence` for `totalPence`.
+The `wmp` strategy reads `payment.agreementTotalPence` for `totalPence`. The `woodland-claim` strategy calls the same `calculate-by-total-area` endpoint and also reads `payment.agreementTotalPence` for `totalPence`.
 
 ## Session state
 
@@ -173,4 +177,4 @@ After a successful GET, the controller stores the following in session state:
 }
 ```
 
-The raw `payment` object shape depends on the strategy. For `multiAction`, downstream code (the GAS answers mapper) reads `payment.annualTotalPence` from state. For `wmp`, it reads `payment.agreementTotalPence`.
+The raw `payment` object shape depends on the strategy. For `multiAction`, downstream code (the GAS answers mapper) reads `payment.annualTotalPence` from state. For `wmp` and `woodland-claim`, it reads `payment.agreementTotalPence`.
