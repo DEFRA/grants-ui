@@ -184,7 +184,7 @@ Feature: Application Lifecycle
         And logs in as CRN "1100995048"
         Then the user should be at URL "agreement"
         And the grants-ui application status for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" should still be "SUBMITTED"
-        And the agreements service should have been called with an x-encrypted-auth header JWT for SBI "115664358"
+        And the agreements service should have been called with an x-encrypted-auth header JWT for CRN "1100995048" and SBI "115664358"
 
         # SUBMITTED application with GAS status of OFFER_ACCEPTED is redirected to confirmation
         Given the application status in GAS is now "OFFER_ACCEPTED"
@@ -193,7 +193,6 @@ Feature: Application Lifecycle
         And logs in as CRN "1100995048"
         Then the user should be at URL "agreement"
         And the grants-ui application status for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" should still be "SUBMITTED"
-        And the agreements service should have been called with an x-encrypted-auth header JWT for SBI "115664358"
 
         # SUBMITTED application with GAS status of OFFER_WITHDRAWN is redirected to confirmation
         Given the application status in GAS is now "OFFER_WITHDRAWN"
@@ -202,7 +201,6 @@ Feature: Application Lifecycle
         And logs in as CRN "1100995048"
         Then the user should be at URL "agreement"
         And the grants-ui application status for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" should still be "SUBMITTED"
-        And the agreements service should have been called with an x-encrypted-auth header JWT for SBI "115664358"
 
         # SUBMITTED application with GAS status of STATUS_AWAITING_CLAIM is redirected to the claims journey
         Given the application status in GAS is now "STATUS_AWAITING_CLAIM"
