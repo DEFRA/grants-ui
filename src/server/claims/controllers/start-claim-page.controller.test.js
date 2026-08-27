@@ -130,6 +130,42 @@ describe('StartClaimPageController', () => {
 
       expect(data).toEqual({ unit: 'ha' })
     })
+
+    it('omits totalEligibleArea when the response has no availableClaims property', async () => {
+      vi.mocked(getAvailableClaimEntitlements).mockResolvedValueOnce({})
+
+      const controller = buildController({})
+
+      const data = await controller.fetchGasEntitlements(mockRequest, mockContext)
+
+      expect(data).toEqual({ unit: 'ha' })
+    })
+
+    it('omits totalEligibleArea when the first claim has no totalHectares data', async () => {
+      vi.mocked(getAvailableClaimEntitlements).mockResolvedValueOnce({
+        availableClaims: [{ code: 'ENT_CS_CAPITAL_PA3', name: 'PA3 Woodland Management Plan entitlement' }]
+      })
+
+      const controller = buildController({})
+
+      const data = await controller.fetchGasEntitlements(mockRequest, mockContext)
+
+      expect(data).toEqual({ unit: 'ha' })
+    })
+
+    it('defaults to an empty reference number when the context has no state', async () => {
+      vi.mocked(getAvailableClaimEntitlements).mockResolvedValueOnce(buildAvailableClaimsResponse(455000))
+
+      const controller = buildController({})
+
+      const data = await controller.fetchGasEntitlements(mockRequest, {})
+
+      expect(getAvailableClaimEntitlements).toHaveBeenCalledWith('water-management', undefined, mockRequest)
+      expect(data).toEqual({
+        totalEligibleArea: 455000,
+        unit: 'ha'
+      })
+    })
   })
 
   describe('fetchClaimData', () => {
