@@ -410,6 +410,13 @@ Authorization: Bearer {{serviceToken}}
   }
 }
 
+### Get available claim entitlements for Example Grant With Auth
+
+# @name getAvailableClaimEntitlements
+
+GET {{gasUrl}}/grants/example-grant-with-auth/entitlements/EGWA-123-ABC/available-claims HTTP/1.1
+Authorization: Bearer {{serviceToken}}
+
 ### Get health
 
 # @name getHealth
