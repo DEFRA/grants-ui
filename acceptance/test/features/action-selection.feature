@@ -1,5 +1,4 @@
 Feature: Action Selection
-
     Scenario: Select a partial area action for a land parcel
         Given there is no application data for SBI "106514040" and grant "example-grant-with-map"
 
@@ -72,7 +71,7 @@ Feature: Action Selection
         And continues
 
         Then the user should be at URL "confirm-land-and-actions"
-        And should see heading "Your land and actions"
+        And should see heading "Review land parcels and actions"
         When the user clicks on "Add another land parcel"
 
         # RULE: an action cannot be applied to a land parcel it is not eligible for

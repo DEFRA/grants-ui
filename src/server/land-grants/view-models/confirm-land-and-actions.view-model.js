@@ -56,60 +56,6 @@ const formatArea = (quantity, unit) => {
   return [area, unit].filter((part) => part !== undefined && part !== null && part !== '').join(' ')
 }
 
-const AREA_SCALE = 10_000
-
-/**
- * @param {unknown} value
- * @returns {value is number}
- */
-const isFiniteNumber = (value) => typeof value === 'number' && Number.isFinite(value)
-
-/**
- * Renders a scaled area (integer ten-thousandths) back as a four-decimal area.
- * @param {number} scaled
- * @param {string} unit
- * @returns {string}
- */
-const formatScaledArea = (scaled, unit) => `${(scaled / AREA_SCALE).toFixed(4)} ${unit}`
-
-/**
- * Works out a parcel's total, used and available area from persisted state
- * rather than the payment API, which is authoritative for money only. Used area
- * comes from the state actions because an action priced at agreement level still
- * occupies parcel area, so it is missing from `payment.parcelItems`.
- *
- * Returns nothing unless the parcel has a usable size and every action has a
- * finite value in the parcel's unit, so the rows never show partial or
- * misleading arithmetic. The sums run in integer ten-thousandths, which makes
- * `44.8765 - 44` exactly `0.8765`. Available area is not clamped, because a
- * negative result is real and has to be shown.
- *
- * @param {LandParcel} [parcel] - Persisted state for this land parcel
- * @returns {{ total: string, used: string, available: string } | undefined}
- */
-function buildAreaSummary(parcel) {
-  const unit = parcel?.size?.unit
-  const total = parcel?.size?.value
-
-  if (!isFiniteNumber(total) || typeof unit !== 'string' || unit.trim() === '') {
-    return undefined
-  }
-
-  const actions = Object.values(parcel?.actionsObj ?? {})
-  if (!actions.length || !actions.every((action) => isFiniteNumber(action.value) && action.unit === unit)) {
-    return undefined
-  }
-
-  const totalScaled = Math.round(total * AREA_SCALE)
-  const usedScaled = actions.reduce((sum, action) => sum + Math.round(action.value * AREA_SCALE), 0)
-
-  return {
-    total: formatScaledArea(totalScaled, unit),
-    used: formatScaledArea(usedScaled, unit),
-    available: formatScaledArea(totalScaled - usedScaled, unit)
-  }
-}
-
 /**
  * Builds the view model for the "Your land and actions" payment summary page. It
  * groups the API response for display and never looks up rates, multiplies
@@ -138,10 +84,10 @@ export function buildConfirmLandAndActionsViewModel(payment, landParcels) {
   return {
     parcels: [...parcels.values()]
       .filter((parcel) => parcel.actions.length > 0)
-      .map(({ reference, removeHref, areaSummary, actions, totalPence }) => ({
+      .map(({ reference, removeHref, addActionsHref, actions, totalPence }) => ({
         reference,
         removeHref,
-        areaSummary,
+        addActionsHref,
         actions,
         yearlyPayment: formatPrice(totalPence)
       })),
@@ -155,14 +101,13 @@ export function buildConfirmLandAndActionsViewModel(payment, landParcels) {
  * it.
  * @param {string} sheetId
  * @param {string} parcelId
- * @param {LandParcels} [landParcels]
  * @returns {ParcelCard}
  */
-function buildParcelCard(sheetId, parcelId, landParcels) {
+function buildParcelCard(sheetId, parcelId) {
   return {
     reference: landParcelReference(sheetId, parcelId),
     removeHref: removeParcelHref(sheetId, parcelId),
-    areaSummary: buildAreaSummary(landParcels?.[stringifyParcel({ sheetId, parcelId })]),
+    addActionsHref: changeActionsHref(sheetId, parcelId),
     actions: [],
     totalPence: 0
   }
@@ -183,7 +128,7 @@ function seedParcelsInSelectionOrder(landParcels) {
   for (const parcelKey of Object.keys(landParcels ?? {})) {
     const [sheetId, parcelId] = parcelKey.split('-')
     if (isNonEmptyString(sheetId) && isNonEmptyString(parcelId)) {
-      parcels.set(parcelKey, buildParcelCard(sheetId, parcelId, landParcels))
+      parcels.set(parcelKey, buildParcelCard(sheetId, parcelId))
     }
   }
 
@@ -213,7 +158,7 @@ function addPricedParcelActions(parcels, payment, landParcels) {
 
     let parcel = parcels.get(parcelKey)
     if (!parcel) {
-      parcel = buildParcelCard(sheetId, parcelId, landParcels)
+      parcel = buildParcelCard(sheetId, parcelId)
       parcels.set(parcelKey, parcel)
     }
 
@@ -271,19 +216,12 @@ function buildAdditionalYearlyPayments(payment) {
  */
 
 /**
- * @typedef {object} ConfirmLandAndActionsAreaSummaryViewModel
- * @property {string} total - Parcel total area
- * @property {string} used - Area claimed by this parcel's selected actions
- * @property {string} available - Total minus used; may be negative
- */
-
-/**
  * @typedef {object} ConfirmLandAndActionsParcelViewModel
  * @property {string} reference - Bare land parcel reference, e.g. `SD1234 5678`
  * @property {string} removeHref - Link to remove the whole parcel
- * @property {ConfirmLandAndActionsAreaSummaryViewModel} [areaSummary] - Omitted when state cannot support it
+ * @property {string} addActionsHref - Link to add more actions to this parcel
  * @property {ConfirmLandAndActionsActionViewModel[]} actions - Action rows
- * @property {string} yearlyPayment - Formatted parcel total
+ * @property {string} yearlyPayment - Formatted parcel subtotal
  */
 
 /**
@@ -292,7 +230,7 @@ function buildAdditionalYearlyPayments(payment) {
  * @typedef {object} ParcelCard
  * @property {string} reference - Bare land parcel reference, e.g. `SD1234 5678`
  * @property {string} removeHref - Link to remove the whole parcel
- * @property {ConfirmLandAndActionsAreaSummaryViewModel} [areaSummary] - Omitted when state cannot support it
+ * @property {string} addActionsHref - Link to add more actions to this parcel
  * @property {ConfirmLandAndActionsActionViewModel[]} actions - Action rows accumulated so far
  * @property {number} totalPence - Running total for this parcel
  */
@@ -306,5 +244,5 @@ function buildAdditionalYearlyPayments(payment) {
 
 /**
  * @import { PaymentCalculation } from '~/src/server/land-grants/types/payment.d.js'
- * @import { LandParcel, LandParcels } from '~/src/server/land-grants/types/form-state.d.js'
+ * @import { LandParcels } from '~/src/server/land-grants/types/form-state.d.js'
  */
