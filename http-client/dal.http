@@ -4,7 +4,7 @@
 # The token can then be used as a Bearer token in requests to protected DAL endpoints.
 #
 # Prerequisites:
-#   - Set entraClientId and entraClientSecret under `test` env in http-client.private.env.json (never commit this file)
+#   - Set entraClientId, entraClientSecret and entraTenantId under `test` env in http-client.private.env.json (never commit this file)
 #   - Select the `test` environment in your HTTP client
 #
 # Usage:
@@ -15,7 +15,7 @@
 
 # @name getEntraToken
 
-POST https://login.microsoftonline.com/defradev.onmicrosoft.com/oauth2/v2.0/token HTTP/1.1
+POST https://login.microsoftonline.com/{{entraTenantId}}/oauth2/v2.0/token HTTP/1.1
 Content-Type: application/x-www-form-urlencoded
 
 grant_type=client_credentials&

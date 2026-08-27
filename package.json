@@ -68,8 +68,7 @@
     "start": "NODE_ENV=production node --use-strict .",
     "setup:husky": "node -e \"try { (await import('husky')).default() } catch (e) { if (e.code !== 'ERR_MODULE_NOT_FOUND') throw e }\" --input-type module",
     "unseal:cookie": "node ./tools/unseal-cookie.js",
-    "generate:tokens": "node ./tools/generate-tokens.js",
-    "generate:tokens:save": "node ./tools/generate-tokens.js --save"
+    "http-client:init": "node ./tools/init-http-client-secrets.js"
   },
   "author": "Defra DDTS",
   "license": "OGL-UK-3.0",

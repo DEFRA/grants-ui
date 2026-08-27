@@ -18,13 +18,24 @@ Unseal encrypted Hapi session cookies for debugging.
 npm run unseal:cookie -- <sealedCookie> <password>
 ```
 
-## generate-tokens.js
+## init-http-client-secrets.js
 
-Generates the encrypted (AES-256-GCM + base64) bearer tokens the HTTP client
-needs to authenticate with the config broker (`brokerAuthToken`) and Land
-Grants API (`landGrantsAuthToken`), using the same `encryptToken` helper the
-app uses. Raw tokens and encryption keys are read from your `.env` file,
-defaulting to the compose development values when unset.
+Creates (or updates) a skeleton `http-client.private.env.json` so the
+collections in `http-client/` (`broker.http`, `dal.http`, `gas.http`,
+`land-grants.http`) work with minimal manual setup. For every environment listed
+in the committed `http-client.env.json`, it ensures the full set of secret keys
+the `.http` requests reference is present, leaving hand-populated secrets
+(`entraClientId`, `entraClientSecret`, `entraTenantId`, `serviceToken`,
+`x-api-key`, `defraIdToken`) as empty strings. Within each environment the
+secrets are grouped by the `.http` file that uses them, with each group separated
+by a blank line for readability.
+
+It also generates the encrypted (AES-256-GCM + base64) bearer tokens the HTTP
+client needs for the config broker (`brokerAuthToken`) and Land Grants API
+(`landGrantsAuthToken`), using the same `encryptToken` helper the app uses. Raw
+tokens and encryption keys are read from your `.env` file, defaulting to the
+compose development values when unset. Existing values are preserved and
+obsolete keys are dropped.
 
 See [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md#http-clientprivateenvjson-secrets----do-not-commit)
 for how these fit into `http-client.private.env.json`.
@@ -32,7 +43,6 @@ for how these fit into `http-client.private.env.json`.
 ### Usage
 
 ```bash
-npm run generate:tokens           # Prints both tokens to the console
-npm run generate:tokens:save      # Writes both into http-client.private.env.json (local)
-node ./tools/generate-tokens.js --save --env dev   # Target another environment
+npm run http-client:init                              # Skeleton for all envs, tokens under "local"
+node ./tools/init-http-client-secrets.js --env dev   # Generate the encrypted tokens under another environment
 ```
