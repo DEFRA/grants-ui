@@ -71,7 +71,7 @@ Feature: Action Selection
         And continues
 
         Then the user should be at URL "confirm-land-and-actions"
-        And should see heading "Your land and actions"
+        And should see heading "Review land parcels and actions"
         When the user clicks on "Add another land parcel"
 
         # RULE: an action cannot be applied to a land parcel it is not eligible for
