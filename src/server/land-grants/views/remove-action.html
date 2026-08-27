@@ -13,24 +13,33 @@
       {% if isParcelRemoval %}
         {# Removing a whole parcel is confirmed by the button the user presses, so
            there is nothing to select and nothing to validate. #}
-        <h1 class="govuk-heading-l">{{ pageHeading }}</h1>
+        <h1 class="govuk-heading-l">
+          <span class="govuk-caption-l">
+            {%- if sectionTitle and sectionTitle.length and (sectionTitle !== pageHeading) -%}
+              {{- sectionTitle -}}
+            {%- else -%}
+              Select land and actions
+            {%- endif -%}
+          </span>
+          {{ pageHeading }}
+        </h1>
 
-        <p class="govuk-body">{{ hint }}</p>
+        <p class="govuk-body">Land parcel <strong>{{ parcelReference }}</strong> and all related actions will be removed from your application.</p>
 
         <form method="post" novalidate="novalidate">
           <input type="hidden" name="crumb" value="{{ crumb }}">
           <input type="hidden" name="remove" value="true">
 
-          <div class="govuk-button-group">
-            {{ govukButton({
-                text: "Remove all actions",
-                classes: "govuk-button--warning",
-                preventDoubleClick: true
-              })
-            }}
+          {{ govukButton({
+              text: "Remove this land parcel",
+              classes: "govuk-button--warning",
+              preventDoubleClick: true
+            })
+          }}
 
+          <p class="govuk-body">
             <a class="govuk-link govuk-link--no-visited-state" href="{{ backLink.href }}">Cancel</a>
-          </div>
+          </p>
         </form>
       {% else %}
         {% if errors %}
