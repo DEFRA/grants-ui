@@ -6,7 +6,7 @@ Feature: Application Amendment
         # start
         Given the user navigates to "/example-grant-with-auth"
         Given the user logs in as CRN "1100964517"
-        Then an authorised audit event should be published for grant "example-grant-with-auth" with CRN "1100964517" and SBI "115482347"
+        Then an authorised audit event should be published for entity "application" and grant "example-grant-with-auth" with CRN "1100964517" and SBI "115482347"
         And the user should see heading "Example Grant"
         When the user clicks on "Start now"
 
@@ -14,7 +14,7 @@ Feature: Application Amendment
         Then the user should be at URL "check-details"
         When the user selects "Yes"
         And continues
-        Then a navigate audit event should be published for grant "example-grant-with-auth" and page "check-details" with CRN "1100964517" and SBI "115482347" with the following answers
+        Then a navigate audit event should be published for grant "example-grant-with-auth" and entityId "check-details" with CRN "1100964517" and SBI "115482347" with the following answers
             | FIELD             | VALUE |
             | detailsConfirmed  | true  |
 
@@ -22,7 +22,7 @@ Feature: Application Amendment
         Then the user should be at URL "yes-no-field"
         When the user selects "Yes"
         And continues
-        Then a navigate audit event should be published for grant "example-grant-with-auth" and page "yes-no-field" with CRN "1100964517" and SBI "115482347" with the following answers
+        Then a navigate audit event should be published for grant "example-grant-with-auth" and entityId "yes-no-field" with CRN "1100964517" and SBI "115482347" with the following answers
             | FIELD      | VALUE |
             | yesNoField | true  |
 
@@ -176,7 +176,7 @@ Feature: Application Amendment
         Then the user should be at URL "confirmation"
         And should see heading "Details submitted"
         And should see an "EGWA" reference number for their application
-        And a submit audit event should be published for entity "{FIRST REFERENCE NUMBER}" with CRN "1100964517" and SBI "115482347"
+        And a submit audit event should be published for entity "application" and entityId "{FIRST REFERENCE NUMBER}" with CRN "1100964517" and SBI "115482347"
 
         # validate Mongo state storage
         And the following application state should be stored for CRN "1100964517" and SBI "115482347" and grant "example-grant-with-auth"

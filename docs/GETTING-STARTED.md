@@ -21,7 +21,7 @@
 
 ### Node.js
 
-Please install [Node.js](http://nodejs.org/) `>= v24` and [npm](https://nodejs.org/) `>= v9`. You will find it
+Please install [Node.js](http://nodejs.org/) `>= v24.15.0 <v25.0.0` and [npm](https://nodejs.org/) `>= v11.12.1`. You will find it
 easier to use the Node Version Manager [nvm](https://github.com/creationix/nvm)
 
 To use the correct version of Node.js for this application, via nvm:
@@ -131,13 +131,13 @@ These are required only if DEFRA ID authentication is enabled, and you are using
 
 #### Session and Cookie security
 
-| Variable                  | Description                                                    | Default |
-| ------------------------- | -------------------------------------------------------------- | ------- |
-| `SESSION_COOKIE_PASSWORD` | High-entropy password (e.g., 32+ chars) for cookie encryption. |
-| `SESSION_COOKIE_TTL`      | Cookie duration in milliseconds.                               |
-| `SESSION_TIMEOUT`         | Inactivity timeout before logout.                              |
-| `SESSION_CACHE_TTL`       | TTL for session data in the cache.                             |
-| `SESSION_CACHE_ENGINE`    | Session store engine — `memory` or `redis`.                    |
+| Variable                  | Description                                                    | Default                                   |
+| ------------------------- | -------------------------------------------------------------- | ----------------------------------------- |
+| `SESSION_COOKIE_PASSWORD` | High-entropy password (e.g., 32+ chars) for cookie encryption. | none — required in real environments      |
+| `SESSION_COOKIE_TTL`      | Cookie duration in milliseconds.                               | `14400000` (4 hours)                      |
+| `SESSION_TIMEOUT`         | Inactivity timeout before logout.                              | `14400000` (4 hours)                      |
+| `SESSION_CACHE_TTL`       | TTL for session data in the cache.                             | `14400000` (4 hours)                      |
+| `SESSION_CACHE_ENGINE`    | Session store engine — `memory` or `redis`.                    | `redis` in production, `memory` otherwise |
 
 #### Application URLs
 
@@ -157,26 +157,21 @@ Note: The token is a **SECRET** and needs to be generated using a script in the 
 a hash stored in the GAS MongoDB. This env var should be the raw token value,
 which is formatted as a GUID string.
 
-#### GOV.UK Notify
-
-| Variable             | Description                                           |
-| -------------------- | ----------------------------------------------------- |
-| `NOTIFY_TEMPLATE_ID` | ID of the Notify template used for user-facing comms. |
-| `NOTIFY_API_KEY`     | GOV.UK Notify API key — **treat as a secret**.        |
-
 #### Redis Configuration
 
-| Variable                    | Description                                          | Default                        |
-| --------------------------- | ---------------------------------------------------- | ------------------------------ |
-| `REDIS_HOST`                | Redis host (e.g., `localhost` or Docker)             | `127.0.0.1`                    |
-| `REDIS_USERNAME`            | Username for Redis, if using ACL.                    | (empty)                        |
-| `REDIS_PASSWORD`            | Password for Redis connection.                       | (empty)                        |
-| `REDIS_KEY_PREFIX`          | Prefix for all Redis keys used.                      | `grants-ui:`                   |
-| `USE_SINGLE_INSTANCE_CACHE` | Connect to single Redis instance instead of cluster. | `true` in dev, `false` in prod |
-| `REDIS_TLS`                 | Connect to Redis using TLS.                          | `true` in production           |
-| `REDIS_CONNECT_TIMEOUT`     | Redis connection timeout in milliseconds.            | `30000`                        |
-| `REDIS_RETRY_DELAY`         | Redis retry delay in milliseconds.                   | `1000`                         |
-| `REDIS_MAX_RETRIES`         | Redis max retries per request.                       | `10`                           |
+| Variable                     | Description                                                | Default                        |
+| ---------------------------- | ---------------------------------------------------------- | ------------------------------ |
+| `REDIS_HOST`                 | Redis host (e.g., `localhost` or Docker)                   | `127.0.0.1`                    |
+| `REDIS_USERNAME`             | Username for Redis, if using ACL.                          | (empty)                        |
+| `REDIS_PASSWORD`             | Password for Redis connection.                             | (empty)                        |
+| `REDIS_KEY_PREFIX`           | Prefix for all Redis keys used.                            | `grants-ui:`                   |
+| `USE_SINGLE_INSTANCE_CACHE`  | Connect to single Redis instance instead of cluster.       | `true` in dev, `false` in prod |
+| `REDIS_TLS`                  | Connect to Redis using TLS.                                | `true` in production           |
+| `REDIS_CONNECT_TIMEOUT`      | Redis connection timeout in milliseconds.                  | `30000`                        |
+| `REDIS_RETRY_DELAY`          | Redis retry delay in milliseconds.                         | `1000`                         |
+| `REDIS_MAX_RETRIES`          | Redis max retries per request.                             | `3`                            |
+| `REDIS_ENABLE_OFFLINE_QUEUE` | Queue commands while disconnected instead of failing fast. | `false`                        |
+| `REDIS_COMMAND_TIMEOUT`      | Redis command timeout in milliseconds.                     | `5000`                         |
 
 #### Feature Flags & Misc
 
@@ -231,14 +226,10 @@ See [Consolidated View API](./CONSOLIDATED-VIEW.md) for configuration and live D
 
 #### Development Tools Configuration
 
-When `DEV_TOOLS_ENABLED=true`, the following demo data can be configured. See [Development Tools](./DEV-TOOLS.md) for more details:
-
-| Variable                 | Description           | Default              |
-| ------------------------ | --------------------- | -------------------- |
-| `DEV_DEMO_REF_NUMBER`    | Demo reference number | `DEV2024001`         |
-| `DEV_DEMO_BUSINESS_NAME` | Demo business name    | `Demo Test Farm Ltd` |
-| `DEV_DEMO_SBI`           | Demo SBI number       | `999888777`          |
-| `DEV_DEMO_CONTACT_NAME`  | Demo contact name     | `Demo Test User`     |
+When `DEV_TOOLS_ENABLED=true`, demo data (reference number, business name, SBI, contact name, CRN) can be configured
+via `DEV_DEMO_*` environment variables — see
+[Development Tools – Demo Data Configuration](./DEV-TOOLS.md#demo-data-configuration) for the full variable list and
+defaults.
 
 #### Form Definitions
 
@@ -282,7 +273,7 @@ npm run
 - **`start`** - Start the production server (requires `npm run build` first)
 - **`snyk-test`** / **`snyk-monitor`** - Run security vulnerability scans
 - **`unseal:cookie`** - Utility to decrypt and inspect session cookies
-- **`gas-status:set`** - Update MockServer to return a specific GAS application status (e.g., `npm run gas-status -- APPLICATION_AMEND`)
+- **`gas-status:set`** - Update MockServer to return a specific GAS application status (e.g., `npm run gas-status:set -- APPLICATION_AMEND`)
 - **`gas-status:get`** - Retrieve the current GAS application status configured in MockServer
 
 ### Update Dependencies
@@ -312,8 +303,8 @@ Redis is an in-memory key-value store. Every instance of a service has access to
 to how services might have a database (or MongoDB). All frontend services are given access to a namespaced prefixed that
 matches the service name. e.g. `my-service` will have access to everything in Redis that is prefixed with `my-service`.
 
-If your service does not require a session cache to be shared between instances or if you don't require Redis, you can
-use the in-memory cache by setting `SESSION_CACHE_ENGINE=memory` or changing the default value in `~/src/config/config.js`.
+For how to switch the cache engine (`SESSION_CACHE_ENGINE=redis`/`memory`) and production-suitability notes, see
+[Auth & Security – Server-side Caching](./AUTH-AND-SECURITY.md#server-side-caching).
 
 ## Proxy
 

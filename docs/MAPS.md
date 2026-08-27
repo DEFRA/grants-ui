@@ -75,8 +75,8 @@ http://localhost:3000/example-grant-with-map/start, then continue to `/select-la
 - Parcel polygons render on top in the GOV.UK palette, each labelled with its `SHEET-PARCEL` ID.
 - Clicking a parcel selects it, highlights it, and shows a tooltip with the parcel's total area.
 - <kbd>Tab</kbd> into the map opens the keyboard listbox of parcels; <kbd>Enter</kbd> selects at the crosshair.
-- **Continue** is enabled once something is selected, and the next page receives `?parcelId=`.
-- Network tab: `/api/map/parcels` returns `200`, and `/api/map/os-tiles/{z}/{x}/{y}` returns `200` (`image/png`). In real mode `/api/map/parcel-tiles/{z}/{x}/{y}` returns `200` (`application/x-protobuf`); in mock mode you get `/api/map/parcels/geojson` instead.
+- **Continue** is clickable regardless of selection; submitting with nothing selected re-renders the page with an inline error (see `MapSelectPageController` below). On a successful submission the next page receives `?parcelId=`.
+- Network tab: `/api/map/parcels` returns `200`, and `/api/map/os-tiles/{z}/{x}/{y}` returns `200` (`image/png`). In real mode `/api/map/parcel-tiles/{z}/{x}/{y}` returns `200` (`application/x-protobuf`); in mock mode the parcel geometry is embedded directly in the `/api/map/parcels` response instead (see [Mock data mode](#mock-data-mode)).
 
 ### When it doesn't work
 
@@ -165,11 +165,11 @@ pages:
 
 #### `MapSelectPageController`
 
-Extends `QuestionPageController`. Renders `map-select-parcel.html`.
+Extends `QuestionPageController` (wrapped in `withTaskContext`). Renders `map-select-parcel.html`.
 
 **GET** passes `multiSelect` and `formAction` to the view.
 
-**POST** reads `landParcels` from the request payload (written by the JS selection listener as hidden inputs). Validates that at least one parcel was selected; returns the form with an inline error if not. On success:
+**POST** reads `landParcels` from the request payload (written by the JS selection listener as hidden inputs). Validates that at least one parcel was selected; returns the form with an inline error if not. It then checks each selected parcel has at least one eligible action (skipped when the grant has no `enabledLandActions`); if any selected parcel has none, the form re-renders with an inline error instead of proceeding — state is left untouched so a previously completed selection isn't destroyed. On success:
 
 - Writes `selectedParcelId` (first parcel), `selectedParcelIds` (full array), and `selectedParcelsDisplay` (comma-separated string) to session state.
 - In single-select mode, appends `?parcelId=<id>` to the redirect URL so downstream controllers (e.g. `SelectLandActionsPageController`) receive the parcel ID via query string.
@@ -246,7 +246,7 @@ Selection is handled by the `@defra/interactive-map` **interact plugin**, not ra
 - **Touch:** a crosshair with a "Select" action button
 - **Keyboard:** <kbd>Enter</kbd> selects at the crosshair target; <kbd>Tab</kbd> opens a listbox of parcels navigable with arrow keys
 
-The plugin only selects a polygon on an exact geometric hit, which is impractical for small zoomed-out parcels. The component adds a rendered-pixel fallback (see `withParcelHitTolerance` in `index.js`) so parcels stay selectable at any zoom, by pointer and by keyboard.
+The plugin only selects a polygon on an exact geometric hit, which is impractical for small zoomed-out parcels. The component adds a rendered-pixel fallback (see `withParcelHitTolerance` in `map-helpers.js`) so parcels stay selectable at any zoom, by pointer and by keyboard.
 
 The component listens to the plugin's selection events and re-dispatches them as `parcel-map:selection`, so page-level consumers are unaffected by the plugin internals.
 
@@ -311,7 +311,7 @@ Fetches the authenticated user's parcels from the DAL, enriches them with area d
     {
       "type": "Feature",
       "id": "SD7148-9160",
-      "properties": { "sheet_id": "SD7148", "parcel_id": "9160", "areaHa": 2.5 }
+      "properties": { "id": "SD7148-9160", "sheet_id": "SD7148", "parcel_id": "9160", "areaHa": 2.5 }
     }
   ],
   "bbox": { "minLng": -2.5, "minLat": 51.4, "maxLng": -2.3, "maxLat": 51.6 }
@@ -330,15 +330,11 @@ The component uses `PARCEL_TILES_URL` (a client-side constant in `config.js`) as
 }
 ```
 
-When `mock: true` is present the component uses `PARCELS_GEOJSON_URL` (another client-side constant) as a GeoJSON source instead of the vector tile source. Returns `503` if the land-grants API is unavailable. See [Mock data mode](#mock-data-mode).
-
-### `GET /api/map/parcels/geojson`
-
-Returns the full GeoJSON `FeatureCollection` for mock mode. Reads features stored in the session by the parcels endpoint. Returns `404` if mock mode is disabled or the session has no features. Requires session auth, since MapLibre fetches this from the browser, which sends the session cookie automatically (same-origin).
+When `mock: true` is present, the geometry is embedded directly in this same response (built fresh per-request by `buildMockFeatures`/`buildMockParcelsResponse` — nothing is read from or written to the session), and the component uses it as an inline GeoJSON source instead of pointing MapLibre at the vector-tile route. Returns `503` if the land-grants API is unavailable. See [Mock data mode](#mock-data-mode).
 
 ### `GET /api/map/parcel-tiles/{z}/{x}/{y}`
 
-Proxies MapLibre vector tile requests to the land-grants API. Fetches the current user's parcel IDs from `fetchParcels` (concurrent tile requests share one in-flight lookup per SBI) and sends them in the POST body so they are never exposed in the tile URL. Each tile is re-encoded on the way through (`withCompoundParcelIds`) to stamp the compound `id` property onto every feature; see the interact plugin section above. Returns the protobuf tile buffer with `Cache-Control: private, max-age=3600`, marked `private` because tiles are per-user.
+Proxies MapLibre vector tile requests to the land-grants API. Fetches the current user's parcel IDs from `fetchParcels` (concurrent tile requests share one in-flight lookup per SBI) and sends them in the POST body so they are never exposed in the tile URL. Each tile is re-encoded on the way through (`withCompoundParcelIds`) to stamp the compound `id` property onto every feature; see the interact plugin section above. Returns the protobuf tile buffer with `Cache-Control: no-store`: the URL is only `{z}/{x}/{y}` with no per-user scoping, so any positive max-age would let the browser replay one user's parcel geometry to whoever is signed in next at the same tile coordinate after a logout/login.
 
 ### `GET /api/map/os-basemap`
 
@@ -361,7 +357,7 @@ Proxies OS Maps raster tile requests to the configured `osMapsBaseUrl`, injectin
 
 Deliberately **not** configurable, and worth knowing why:
 
-- **The OS basemap layer** (`Outdoor_3857`) is pinned in `map.plugin.js`. Pinning it server-side is what stops a browser asking the proxy for a layer our key isn't scoped for, i.e. it's what keeps the key from being spent on arbitrary OS products.
+- **The OS basemap layer** (`Outdoor_3857`) is pinned in `os-maps.js`. Pinning it server-side is what stops a browser asking the proxy for a layer our key isn't scoped for, i.e. it's what keeps the key from being spent on arbitrary OS products.
 - **The OS zoom range** (7–20) is likewise pinned. These are facts about what OS publishes, not deployment choices, and they are the validation bound on a proxy that spends a metered API key. An env var could widen that bound with no code review on the path.
 
 ---
@@ -383,8 +379,8 @@ Then run `npm run docker:up` for the change to take effect.
 
 ### What mock mode does
 
-- Assigns pre-loaded polygon geometry to real parcel IDs (round-robin across 48 embedded shapes)
-- Serves geometry as GeoJSON from `/api/map/parcels/geojson` instead of vector tiles
+- Assigns pre-loaded polygon geometry to the first 48 real parcel IDs (one embedded shape per parcel, in order); an account with more than 48 parcels simply doesn't get the rest rendered, rather than reusing a shape across two parcels
+- Serves geometry as inline GeoJSON embedded in the `/api/map/parcels` response (flagged `mock: true`) instead of vector tiles
 - Uses pre-loaded area values instead of fetching from the API
 - Parcel IDs remain real (from the DAL), so downstream actions and "continue" still work
 
@@ -397,8 +393,8 @@ Then run `npm run docker:up` for the change to take effect.
 
 Once the real API is available everywhere:
 
-1. Delete `map.mock.js`
-2. Remove `import { isMockData, buildMockFeatures }` from `map.plugin.js`
-3. Remove the `isMockData()` branch and the `/api/map/parcels/geojson` route from `map.plugin.js`
+1. Delete `map.mock.js` and `map.mock.response.js`
+2. Remove `import { isMockData }` and `import { buildMockParcelsResponse }` from `handlers.js`
+3. Remove the `isMockData()` branch from `parcelsHandler` in `handlers.js`
 4. Remove `mapMockDataEnabled` from `src/config/config.js`
 5. Remove `MAP_MOCK_DATA_ENABLED` from `compose.grants-ui.yml` and `.env`

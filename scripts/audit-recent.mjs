@@ -14,6 +14,10 @@ const receiveBatch = () => {
     'docker',
     [
       'compose',
+      '-f',
+      'compose.infra.yml',
+      '-f',
+      'compose.grants-ui.yml',
       'exec',
       '-T',
       'floci',

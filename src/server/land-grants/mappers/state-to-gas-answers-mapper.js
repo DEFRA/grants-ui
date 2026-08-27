@@ -7,8 +7,8 @@ const shouldSendCaveatsToGas = () => {
 
 /**
  * Creates an object with unit and quantity if they exist
- * @param {object} data - The data object
- * @param {string} quantityField - The field name for quantity (default: 'value')
+ * @param {Size|ActionData|null|undefined} data - The data object
+ * @param {'value'} [quantityField] - The field name for quantity (default: 'value')
  * @returns {UnitQuantity} Object with unit and quantity
  */
 function createUnitQuantity(data, quantityField = 'value') {
@@ -24,7 +24,7 @@ function createUnitQuantity(data, quantityField = 'value') {
 
   const quantityValue = data[quantityField]
   if (quantityValue != null) {
-    const quantity = Number.parseFloat(quantityValue)
+    const quantity = Number.parseFloat(String(quantityValue))
     if (!Number.isNaN(quantity)) {
       result.quantity = quantity
     }
@@ -35,11 +35,11 @@ function createUnitQuantity(data, quantityField = 'value') {
 
 /**
  * Finds payment item data from API response for parcel-level items
- * @param {object} paymentData - The payment object from API
+ * @param {PaymentCalculation|undefined} paymentData - The payment object from API
  * @param {string} actionCode - The action code
  * @param {string} sheetId - The sheet ID
  * @param {string} parcelId - The parcel ID
- * @returns {object|null} The payment item data or null
+ * @returns {ParcelItem|null|undefined} The payment item data, or null/undefined when absent
  */
 function findParcelPaymentItem(paymentData, actionCode, sheetId, parcelId) {
   if (!paymentData?.parcelItems) {
@@ -53,9 +53,9 @@ function findParcelPaymentItem(paymentData, actionCode, sheetId, parcelId) {
 
 /**
  * Finds agreement-level payment item from API response
- * @param {object} paymentData - The payment object from API
+ * @param {PaymentCalculation|undefined} paymentData - The payment object from API
  * @param {string} actionCode - The action code
- * @returns {object|undefined} The agreement-level payment item or undefined
+ * @returns {AgreementLevelItem|undefined} The agreement-level payment item or undefined
  */
 function findAgreementPaymentItem(paymentData, actionCode) {
   return Object.values(paymentData?.agreementLevelItems ?? {}).find((item) => item.code === actionCode)
@@ -64,8 +64,8 @@ function findAgreementPaymentItem(paymentData, actionCode) {
 /**
  * Creates an action object for the application.parcel[].actions array
  * @param {string} actionCode - The action code
- * @param {object} actionData - The action data
- * @param {object} paymentItem - The payment item data
+ * @param {ActionData|undefined} actionData - The action data
+ * @param {ParcelItem|null|undefined} paymentItem - The payment item data
  * @returns {ApplicationAction} The application action object
  */
 function createApplicationParcelAction(actionCode, actionData, paymentItem) {
@@ -80,8 +80,8 @@ function createApplicationParcelAction(actionCode, actionData, paymentItem) {
 /**
  * Creates an action object for the payments.parcel[].actions array
  * @param {string} actionCode - The action code
- * @param {object} actionData - The action data
- * @param {object} paymentItem - The payment item data
+ * @param {ActionData|undefined} actionData - The action data
+ * @param {ParcelItem|null|undefined} paymentItem - The payment item data
  * @returns {PaymentAction} The payment action object
  */
 function createPaymentParcelAction(actionCode, actionData, paymentItem) {
@@ -101,8 +101,8 @@ function createPaymentParcelAction(actionCode, actionData, paymentItem) {
 /**
  * Creates a parcel object for application.parcel array
  * @param {string} parcelKey - The parcel key (sheetId-parcelId)
- * @param {object} data - The parcel data
- * @param {object} paymentData - The payment data from API
+ * @param {LandParcel} data - The parcel data
+ * @param {PaymentCalculation|undefined} paymentData - The payment data from API
  * @returns {ApplicationParcel} The application parcel object
  */
 function createApplicationParcel(parcelKey, data, paymentData) {
@@ -129,8 +129,8 @@ function createApplicationParcel(parcelKey, data, paymentData) {
 /**
  * Creates a parcel object for payments.parcel array
  * @param {string} parcelKey - The parcel key (sheetId-parcelId)
- * @param {object} data - The parcel data
- * @param {object} paymentData - The payment data from API
+ * @param {LandParcel} data - The parcel data
+ * @param {PaymentCalculation|undefined} paymentData - The payment data from API
  * @returns {PaymentParcel} The payment parcel object
  */
 function createPaymentParcel(parcelKey, data, paymentData) {
@@ -156,7 +156,7 @@ function createPaymentParcel(parcelKey, data, paymentData) {
 
 /**
  * Collects unique agreement-level action codes from payment data
- * @param {object} paymentData - The payment data from API
+ * @param {PaymentCalculation|undefined} paymentData - The payment data from API
  * @returns {Set<string>} Set of agreement-level action codes
  */
 function collectAgreementActionCodes(paymentData) {
@@ -185,7 +185,7 @@ function createApplicationAgreementActions() {
 /**
  * Creates agreement-level payment objects for payments.agreement array
  * @param {Set<string>} agreementCodes - Set of agreement action codes
- * @param {object} paymentData - The payment data from API
+ * @param {PaymentCalculation|undefined} paymentData - The payment data from API
  * @returns {PaymentAgreement[]} Array of agreement payment objects
  */
 function createPaymentAgreementActions(agreementCodes, paymentData) {
@@ -213,22 +213,25 @@ function createPaymentAgreementActions(agreementCodes, paymentData) {
 
 /**
  * Extracts caveats from a validation result's actions.
- * @param {object} validationResult - The validation result from the rules engine
+ * @param {ValidateApplicationResponse} validationResult - The validation result from the rules engine
  * @returns {object[]} Array of caveat objects
  */
 function mapCaveatsForValidationResult(validationResult) {
   const { actions = [] } = validationResult
-  return actions.flatMap((action) => action.rules?.filter((r) => r.caveat).map((r) => r.caveat) ?? [])
+  return actions.flatMap(
+    (action) => action.rules?.filter((r) => r.caveat).map((r) => /** @type {object} */ (r.caveat)) ?? []
+  )
 }
 
 /**
  * Builds the rulesCalculations object from a validation result.
- * @param {object} validationResult - The validation result from the rules engine
- * @returns {object} The rulesCalculations object
+ * @param {ValidateApplicationResponse} validationResult - The validation result from the rules engine
+ * @returns {RulesCalculations} The rulesCalculations object
  */
 function mapRulesCalculations(validationResult) {
   const { id, message, valid } = validationResult
 
+  /** @type {RulesCalculations} */
   const rulesCalculations = {
     id,
     message,
@@ -248,7 +251,7 @@ function mapRulesCalculations(validationResult) {
 
 /**
  * Transforms FormContext object into a GAS Application answers object for Land Grants.
- * @param {object} state
+ * @param {FormState} state
  * @returns {Application}
  */
 export function stateToLandGrantsGasAnswers(state) {
@@ -284,5 +287,8 @@ export function stateToLandGrantsGasAnswers(state) {
 }
 
 /**
- * @import { Application, UnitQuantity, ApplicationAction, PaymentAction, ApplicationParcel, PaymentParcel, ApplicationAgreement, PaymentAgreement } from '~/src/server/land-grants/types/gas-payload.d.js'
+ * @import { Application, UnitQuantity, ApplicationAction, PaymentAction, ApplicationParcel, PaymentParcel, ApplicationAgreement, PaymentAgreement, RulesCalculations } from '~/src/server/land-grants/types/gas-payload.d.js'
+ * @import { FormState, LandParcel, ActionData } from '~/src/server/land-grants/types/form-state.d.js'
+ * @import { PaymentCalculation, ParcelItem, AgreementLevelItem } from '~/src/server/land-grants/types/payment.d.js'
+ * @import { Size, ValidateApplicationResponse } from '~/src/server/land-grants/types/land-grants.client.d.js'
  */

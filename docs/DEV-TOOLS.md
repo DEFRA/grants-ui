@@ -6,7 +6,9 @@ Development-only tools and routes for testing and debugging. Automatically enabl
 
 Development tools are controlled by the `DEV_TOOLS_ENABLED` environment variable (default: `true` in development, `false` in production).
 
-Implementation lives in `src/server/dev-tools/` and is only registered when `DEV_TOOLS_ENABLED=true`.
+Routes are only registered when `devTools.enabled` is `true` **and** `NODE_ENV !== 'production'` **and** `ENVIRONMENT=local` (see `isDevToolsEnabled()` in `src/server/dev-tools/dev-tools-enabled.js`).
+
+Implementation lives in `src/server/dev-tools/` and is only registered when all of the above conditions are met.
 
 ## Available Dev Routes
 
@@ -31,6 +33,16 @@ When running in development mode, the demo confirmation handler:
 - Displays form metadata (title, slug, ID) for debugging
 - Includes error details when configuration issues occur
 - Uses mock data for testing dynamic content insertion
+
+### Demo Details Pages
+
+**Route:** `GET /dev/demo-details/{form-slug}`, `POST /dev/demo-details/{form-slug}`
+
+Preview the config-driven details (check-details) page with mock mapped data for any form whose definition configures `metadata.detailsPage.displaySections`.
+
+**Example:** `http://localhost:3000/dev/demo-details/example-grant-with-auth`
+
+Submitting "No" (details not correct) shows the incorrect-details page; submitting "Yes" redirects to the form's start page.
 
 ### Demo Print Application Pages
 
@@ -65,6 +77,7 @@ DEV_DEMO_REF_NUMBER=DEV2024001
 DEV_DEMO_BUSINESS_NAME=Demo Test Farm Ltd
 DEV_DEMO_SBI=999888777
 DEV_DEMO_CONTACT_NAME=Demo Test User
+DEV_DEMO_CRN=1234567890
 ```
 
 ## Local config & form-definition overrides
@@ -81,22 +94,9 @@ Each grant is stored under a version-named folder (e.g. `grasslands@0.4.0`), so 
 
 ### Local form-definition overrides
 
-For editing and testing a WIP grant's **form definition** (not yet ready to push to the config repo), the `gt` TUI `local` menu lists every discoverable override as its own per-grant toggle, so you tick exactly the grants you want to override. Overrides are discovered from **two** sources:
+For editing and testing a WIP grant's **form definition** (not yet ready to push to the config repo), the `gt` TUI `local` menu lets you toggle per-grant overrides sourced from an in-repo folder (`compose/config-broker/local-form-definitions/`) or a sibling `grants-config-*` checkout, then publishes the selection to grants-ui-backend as a bumped version that the frontend serves immediately.
 
-1. **In-repo folder** — drop a definition into `compose/config-broker/local-form-definitions/`, mirroring the repo layout `<grant>/<service>/<file>` (e.g. `woodland/grants-ui/woodland.yaml`). Shown as source `local-form-definitions`.
-2. **Sibling config repos** — any `grants-config-*` repo checked out **next to** grants-ui (e.g. `../grants-config-grasslands`) is scanned for `configurations/<grant>/grants-ui/`. Shown as source `grants-config-<name>`. This lets you edit "the real form definition" in its own repo (with diffs, history, branches, etc.) and pull it straight into grants-ui — no copying into the local folder. The **form definition** is picked as `<grant>.yaml`; other YAML in that folder such as `allowlist.yaml` (which is access-control config, not a form definition) is ignored, so it is never mistakenly published as the form def.
-
-Each row is labelled `form-def: <grant>` with its `<source> → <bumped-version>`. Two sources for the same grant appear as separate rows; only one can be active per grant (they resolve to the same bumped version), so if you tick both the folder override wins and the other is ignored with a warning.
-
-- Each selected override is published to grants-ui-backend as one patch above the repo version (repo `1.2.3` -> override `1.2.4`), becoming the active version the frontend serves. The override document is stamped with a fresh `updatedAt` so grants-ui's forms-engine model cache (invalidated only when the definition's `updatedAt` changes) rebuilds and serves the new content rather than a stale compiled model.
-- Selecting overrides before `up` applies them automatically once the stack is healthy; changing the selection while the stack is running applies the newly-ticked and removes the newly-unticked overrides immediately (no restart).
-- While any override is active, a `↳ refresh overrides` item appears directly below `local` in the `gt` main menu. Selecting it re-publishes the selected YAML (folder **or** sibling repo) into Mongo on demand, so you can iterate on the definition and pull in your latest edits without toggling anything off and on again (containers must be running).
-- The injected definition's `name` gets a ` (local override active)` suffix so an overridden form is easy to tell apart from the real repo version.
-- Un-ticking an override deletes its bumped document and purges the dependent `state__grant_application_state`, `state__grant_application_locks` and submissions for that version, so the frontend cleanly reverts to the repo version with no orphaned drafts.
-- A plain `down` keeps the Mongo volume, so a bumped override document survives a stop/start. To keep the DB in sync with the selection even when it changed **while the stack was stopped**, the next `up` reconciles once the stack is healthy: it first sweeps any leftover overrides, then re-publishes the current selection, so the frontend always matches the saved selection.
-- The sibling-repos search directory defaults to the folder grants-ui itself lives in; override it with the `GRANTS_UI_SIBLING_CONFIG_DIR` env var for a bespoke checkout layout.
-
-See [Local form-definition overrides](DOCKER.md#local-form-definition-overrides) in the Docker docs for full details.
+See [Local form-definition overrides](DOCKER.md#local-form-definition-overrides) in the Docker docs for the full mechanism — discovery sources, version-bump behaviour, the refresh/disable flow, and `GRANTS_UI_SIBLING_CONFIG_DIR`.
 
 ## Journey Runner
 
@@ -110,7 +110,7 @@ Automates clicking through grant application forms in the browser. Useful for qu
 
 ### Usage
 
-Navigate to the grant's normal start page (e.g. `http://localhost:3000/methane/start`), not a `/dev/` route. The journey runner script is automatically loaded on every page via the layout template.
+Navigate to the grant's normal start page (e.g. `http://localhost:3000/example-grant-with-auth/start`), not a `/dev/` route. The journey runner script is automatically loaded on every page via the layout template.
 
 Open the browser console and run:
 
@@ -196,7 +196,9 @@ The `gt journey --mock-no-actions` path needs no cleanup — it sets the cookie 
 
 ### Adding a new journey
 
-Create a JSON file in `journey-runner/journeys/` named after the grant's URL slug (e.g. `methane.json`).
+Create a JSON file in `journey-runner/journeys/` named after the grant's URL slug (e.g. `example-grant-with-map.json`).
+
+`journeys.test.js` checks each journey against the grant's form definition in `compose/config-broker-local/`: every step must point at a page the definition has, and no unconditional page may sit between two steps the journey does cover. It skips itself when the local config-broker sync has not been run. Both checks matter because the runner reports an unmatched page as `journey complete`, which `gt journey` counts as success — a journey that silently stops halfway still exits zero.
 
 The file is an array of step objects, executed in order:
 
@@ -237,15 +239,22 @@ Each step requires:
 
 ### Existing journeys
 
-| File                                | Grant                     |
-| ----------------------------------- | ------------------------- |
-| `example-grant-with-auth.json`      | Example grant (with auth) |
-| `example-grant-with-task-list.json` | Example grant (task list) |
-| `farm-payments.json`                | Farm payments (see note)  |
-| `grasslands.json`                   | Grasslands agreement      |
-| `pigs-might-fly.json`               | Flying pigs               |
-| `methane.json`                      | Methane                   |
-| `woodland.json`                     | Woodland Management Plan  |
+| File                                | Grant                     | Completes on a standard local stack? |
+| ----------------------------------- | ------------------------- | ------------------------------------ |
+| `example-grant-with-auth.json`      | Example grant (with auth) | Yes                                  |
+| `example-grant-with-map.json`       | Example grant (with map)  | Yes                                  |
+| `example-grant-with-task-list.json` | Example grant (task list) | Yes                                  |
+| `farm-payments.json`                | Farm payments             | No — see note                        |
+| `grasslands.json`                   | Grasslands agreement      | Yes                                  |
+| `pigs-might-fly.json`               | Flying pigs               | Yes                                  |
+| `methane.json`                      | Methane                   | No — see note                        |
+| `woodland.json`                     | Woodland Management Plan  | Yes                                  |
+
+Grants without a journey definition: `example-grant-with-task-list-hide-questions` and `example-whitelist`, both covered by the acceptance suite instead (`task-list-hide-questions.feature`, `allowlist.feature`).
+
+> **example-grant-with-map note:** the shortest end-to-end exercise of `MapSelectPageController` → `SelectActionsPageController` → `ConfirmLandAndActionsPageController`. Like grasslands it takes the first of the grant's enabled actions (`CLIG3`, `SCR2`, `CSAM3`), so it needs mockserver in front of the land-grants API. It has no `/declaration` — submitting `/summary` (`MapSubmissionPageController`) goes straight to `/confirmation`.
+
+> **methane note:** this journey cannot complete locally. methane is a frontend-code-only grant with no config-broker entry, so the backend allowlist turns every CRN away at `/auth/journey-unauthorised`. Onboarding methane to the config broker (or teaching the allowlist to skip code-only grants) would fix it; seeding `config__allowlist_entries` will not. `gt journey methane` makes you acknowledge this before running.
 
 > **grasslands note:** it runs end-to-end on the standard local stack (`gt up`, mockserver in front of the land-grants API). The journey enters at `/check-details`, picks a parcel on the map with the `mapParcel` step, and takes the first of the grant's enabled actions (`CLIG3`, `CSAM3`, `SCR2`) — those codes are in `mockserver/expectations.json`, so removing them there will strand the run on `/select-actions-for-land-parcel`.
 
@@ -261,32 +270,34 @@ Steps 20 and 21 traverse a `RepeatPageController`: the engine renders one URL pe
 
 Step 17 (`/location-components`) groups five location field types on a single page (`EastingNorthingField`, `OsGridRefField`, `NationalGridFieldNumberField`, `LatLongField`, `GeospatialField`); the runner submits valid values for all five (the `GeospatialField` textarea is filled with a single-feature GeoJSON example). Step 18 (`/hidden-field`) demonstrates a `HiddenField` rendered with no visible input — the runner just submits the page.
 
-| Step | Page slug                 | Component / purpose                                                                                                           |
-| ---- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| 1    | `start`                   | Start page (guidance components)                                                                                              |
-| 2    | `check-details`           | Authenticated details check (DefraID)                                                                                         |
-| 3    | `yes-no-field`            | `YesNoField`                                                                                                                  |
-| 4    | `autocomplete-field`      | `AutocompleteField`                                                                                                           |
-| 5    | `radios-field`            | `RadiosField`                                                                                                                 |
-| 6    | `conditional-page`        | Conditional page (reached when radios option one is chosen)                                                                   |
-| 7    | `checkboxes-field`        | `CheckboxesField`                                                                                                             |
-| 8    | `number-field-validation` | `NumberField` with schema `min`/`max` validation                                                                              |
-| 9    | `number-field-routing`    | `NumberField` driving an `is more than` condition (routing demo)                                                              |
-| 10   | `date-parts-field`        | `DatePartsField`                                                                                                              |
-| 11   | `month-year-field`        | `MonthYearField`                                                                                                              |
-| 12   | `select-field`            | `SelectField`                                                                                                                 |
-| 13   | `multiline-text-field`    | `MultilineTextField`                                                                                                          |
-| 14   | `email-address-field`     | `EmailAddressField`                                                                                                           |
-| 15   | `telephone-number-field`  | `TelephoneNumberField`                                                                                                        |
-| 16   | `uk-address-field`        | `UkAddressField` (compound)                                                                                                   |
-| 17   | `location-components`     | `EastingNorthingField`, `OsGridRefField`, `NationalGridFieldNumberField`, `LatLongField`, `GeospatialField` (all on one page) |
-| 18   | `hidden-field`            | `HiddenField` (rendered as `<input type="hidden">`; no visible control)                                                       |
-| 19   | `multi-field-form`        | Multiple components on one page (`TextField` + others)                                                                        |
-| 20   | `repeat-page/{itemId}`    | `RepeatPageController` item entry (one item filled in)                                                                        |
-| 21   | `repeat-page/summary`     | `RepeatPageController` list summary — submit to continue                                                                      |
-| 22   | `select-land-parcel`      | `CommonSelectLandParcelPageController` + `CheckboxesField`                                                                    |
-| 23   | `summary`                 | Check answers (`CheckResponsesPageController`)                                                                                |
-| 24   | `declaration`             | Declaration / submit (`DeclarationPageController`)                                                                            |
+| Step | Page slug                        | Component / purpose                                                                                                           |
+| ---- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| 1    | `start`                          | Start page (guidance components)                                                                                              |
+| 2    | `check-details`                  | Authenticated details check (DefraID)                                                                                         |
+| 3    | `yes-no-field`                   | `YesNoField`                                                                                                                  |
+| 4    | `autocomplete-field`             | `AutocompleteField`                                                                                                           |
+| 5    | `radios-field`                   | `RadiosField`                                                                                                                 |
+| 6    | `conditional-page`               | Conditional page (reached when radios option one is chosen)                                                                   |
+| 7    | `checkboxes-field`               | `CheckboxesField`                                                                                                             |
+| 8    | `number-field-validation`        | `NumberField` with schema `min`/`max` validation                                                                              |
+| 9    | `number-field-routing`           | `NumberField` driving an `is more than` condition (routing demo)                                                              |
+| 10   | `date-parts-field`               | `DatePartsField`                                                                                                              |
+| 11   | `month-year-field`               | `MonthYearField`                                                                                                              |
+| 12   | `select-field`                   | `SelectField`                                                                                                                 |
+| 13   | `multiline-text-field`           | `MultilineTextField`                                                                                                          |
+| 14   | `email-address-field`            | `EmailAddressField`                                                                                                           |
+| 15   | `telephone-number-field`         | `TelephoneNumberField`                                                                                                        |
+| 16   | `uk-address-field`               | `UkAddressField` (compound)                                                                                                   |
+| 17   | `location-components`            | `EastingNorthingField`, `OsGridRefField`, `NationalGridFieldNumberField`, `LatLongField`, `GeospatialField` (all on one page) |
+| 18   | `hidden-field`                   | `HiddenField` (rendered as `<input type="hidden">`; no visible control)                                                       |
+| 19   | `multi-field-form`               | Multiple components on one page (`TextField` + others)                                                                        |
+| 20   | `repeat-page/{itemId}`           | `RepeatPageController` item entry (one item filled in)                                                                        |
+| 21   | `repeat-page/summary`            | `RepeatPageController` list summary — submit to continue                                                                      |
+| 22   | `select-land-parcel`             | Map-based parcel selection (`MapSelectPageController`)                                                                        |
+| 23   | `select-actions-for-land-parcel` | Land grant action selection (`SelectActionsPageController`)                                                                   |
+| 24   | `confirm-land-and-actions`       | Selected land and actions review (`ConfirmLandAndActionsPageController`)                                                      |
+| 25   | `summary`                        | Check answers (`CheckResponsesPageController`)                                                                                |
+| 26   | `declaration`                    | Declaration / submit (`DeclarationPageController`)                                                                            |
 
 A few pages are reached only when their conditions match and are skipped by `runJourney()` during a normal traversal. Each one demonstrates a different condition operator:
 
@@ -300,9 +311,9 @@ To exercise these pages, run `runJourney(N)` to land on the trigger page (`runJo
 
 #### Environment setup for `runJourney()` to reach `/declaration`
 
-Step 22 (`/select-land-parcel`) renders parcels fetched from the DAL stub for the signed-in SBI and runs `performAuthCheck` against the same source on submit. For the journey runner to clear the page, three things have to line up — the same conditions that the woodland journey relies on:
+Step 22 (`/select-land-parcel`) is a `MapSelectPageController` page. It renders parcels fetched from the DAL stub for the signed-in SBI via the `/api/map/parcels` endpoint (`fetchParcels` → `fetchParcelsFromDal`), so the map is inherently scoped to that user — there is no separate auth check on submit for this page. For the journey runner to clear the page, three things have to line up — the same conditions that the woodland journey relies on:
 
-1. **Sign in with CRN `1102838829`.** The DAL stub (`grants-ui-dal-stub`) returns parcels for this CRN; signing in with another CRN renders no checkboxes (or ones that fail the auth check).
+1. **Sign in with CRN `1102838829`.** The DAL stub (`grants-ui-dal-stub`) returns parcels for this CRN; signing in with another CRN renders no selectable parcels on the map.
 2. **Run with mockserver in front of the land-grants API.** The default `compose.grants-ui.yml` already points `LAND_GRANTS_API_URL` at mockserver. If you're running `compose.land-grants.yml` (real backend), layer in `compose.journey-runner.yml`:
 
    ```sh
@@ -312,9 +323,9 @@ Step 22 (`/select-land-parcel`) renders parcels fetched from the DAL stub for th
 
 3. **Clear stale state between runs.** Visit `http://localhost:3000/example-grant-with-auth/clear-application-state` to flush both the Redis-backed form state and the in-memory parcel cache.
 
-The `select-land-parcel` step in `example-grant-with-auth.json` uses `"selectAll": true`, so the runner ticks every rendered parcel checkbox before submitting (mirroring the `land-parcels` step in `woodland.json`).
+The `select-land-parcel` step in `example-grant-with-auth.json` is a `mapParcel` step with `"selectAll": true`, so the runner fetches every parcel ID from `/api/map/parcels` and writes them all as hidden `landParcels` inputs before submitting — the map equivalent of the `land-parcels` step in `woodland.json`, which ticks every parcel checkbox on that checkbox-based page.
 
-If `runJourney()` reports `Stuck on "SelectLandParcel"`, the most likely cause is the signed-in CRN. Re-check step 1, hit the clear-state route in step 3, and re-run.
+If `runJourney()` reports `Stuck on "SelectLandParcel (map)"`, the most likely cause is the signed-in CRN. Re-check step 1, hit the clear-state route in step 3, and re-run.
 
 ### Woodland Management Plan
 

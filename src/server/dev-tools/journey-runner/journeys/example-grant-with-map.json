@@ -1,0 +1,20 @@
+[
+  { "slug": "start", "name": "Start", "type": "submitOnly" },
+  {
+    "slug": "select-land-parcel",
+    "name": "Select land parcel on the map",
+    "type": "mapParcel"
+  },
+  {
+    "slug": "select-actions-for-land-parcel",
+    "name": "Select actions",
+    "type": "landActions",
+    "fieldName": "landAction"
+  },
+  {
+    "slug": "confirm-land-and-actions",
+    "name": "Your land and actions",
+    "type": "submitOnly"
+  },
+  { "slug": "summary", "name": "Check your answers", "type": "submitOnly" }
+]

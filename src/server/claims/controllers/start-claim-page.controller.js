@@ -1,6 +1,8 @@
 import nunjucks from 'nunjucks'
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
-import { upsertCurrentClaim } from '~/src/server/claims/services/claim-state.js'
+import { getCurrentClaim, upsertCurrentClaim } from '~/src/server/claims/services/claim-state.js'
+import { getAvailableClaimEntitlements } from '~/src/server/common/services/grant-application/grant-application.service.js'
+import { getGrantCode } from '~/src/server/common/helpers/grant-code.js'
 import { resolveStrategy } from '~/src/server/payment/resolve-strategy.js'
 import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
 import { formatCurrency } from '~/src/config/nunjucks/filters/format-currency.js'
@@ -79,15 +81,26 @@ export default class StartClaimPageController extends QuestionPageController {
   /**
    * Fetch claim data from GAS.
    *
-   * TODO: The GAS API is not available yet, so values are stubbed
-   *
-   * @param {AnyFormRequest} _request
-   * @param {FormContext} _context
+   * Calls the GAS available-claims entitlements endpoint for the current grant
+   * and application reference number and maps the first available claim's
+   * `totalHectares.value` onto `totalEligibleArea`.
+   * @param {AnyFormRequest} request
+   * @param {FormContext} context
    * @returns {Promise<Record<string, string | number>>} data items keyed by item name
    */
-  async fetchGasEntitlements(_request, _context) {
+  async fetchGasEntitlements(request, context) {
+    const grantCode = getGrantCode(request)
+    const state = context.state ?? {}
+    const clientRef = /** @type {string} */ (state.$$__referenceNumber)
+
+    const { availableClaims } = await getAvailableClaimEntitlements(grantCode, clientRef, request)
+    /* Note: for Woodland there is only 1 claim and it always returns hectares -
+       future schemes may need to alter this logic for multiple claims */
+    const [firstClaim] = availableClaims ?? []
+    const totalEligibleArea = /** @type {number | undefined} */ (firstClaim?.data?.totalHectares?.value)
+
     return {
-      totalEligibleArea: 156.1025,
+      ...(totalEligibleArea != null ? { totalEligibleArea } : {}),
       unit: 'ha'
     }
   }
@@ -194,6 +207,36 @@ export default class StartClaimPageController extends QuestionPageController {
     )
   }
 
+  /**
+   * Clear the stored amounts on the current (unsubmitted) claim.
+   *
+   * The amounts must never outlive the round of API calls that produced them,
+   * so when a fetch fails the previously stored values are removed rather than
+   * left behind for the declaration controller to submit. No-ops when there is
+   * no reference number or no current claim, so a failed first visit does not
+   * create an empty claim.
+   * @param {AnyFormRequest} request
+   * @param {FormContext} context
+   * @returns {Promise<void>}
+   */
+  async clearCurrentClaimAmounts(request, context) {
+    const state = context.state ?? {}
+    const referenceNumber = /** @type {string | undefined} */ (state.$$__referenceNumber)
+
+    if (!referenceNumber || !getCurrentClaim(state)) {
+      return
+    }
+
+    const { claims } = upsertCurrentClaim(state, { referenceNumber })
+
+    await this.setState(
+      request,
+      /** @type {import('@defra/forms-engine-plugin/types').FormSubmissionState} */ (
+        /** @type {unknown} */ ({ ...state, claims })
+      )
+    )
+  }
+
   makeGetRouteHandler() {
     /**
      * Handle GET requests to the start claim page.
@@ -203,7 +246,18 @@ export default class StartClaimPageController extends QuestionPageController {
      * @returns {Promise<ResponseObject>}
      */
     const fn = async (request, context, h) => {
-      const claimData = await this.fetchClaimData(request, context)
+      /** @type {Record<string, string | number>} */
+      let claimData
+
+      // The fetch is all-or-nothing: a partial set of amounts must never be
+      // persisted, and a failure clears whatever an earlier visit stored before
+      // the error reaches the standard error page.
+      try {
+        claimData = await this.fetchClaimData(request, context)
+      } catch (error) {
+        await this.clearCurrentClaimAmounts(request, context)
+        throw error
+      }
 
       await this.persistCurrentClaim(request, context, claimData)
 

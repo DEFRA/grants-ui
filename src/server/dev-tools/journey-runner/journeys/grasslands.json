@@ -51,6 +51,12 @@
     "fieldName": "landAction",
     "section": "select"
   },
+  {
+    "slug": "confirm-land-and-actions",
+    "name": "Your land and actions",
+    "type": "submitOnly",
+    "section": "select"
+  },
   { "slug": "you-must-have-consent", "name": "Consent", "type": "submitOnly", "section": "select" },
 
   {
