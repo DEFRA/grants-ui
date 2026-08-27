@@ -27,8 +27,8 @@ ENTRA_INTERNAL_CLIENT_SECRET=<your-client-secret>
 
 ### How it works
 
-- When `CV_API_DEVELOPER_KEY` is set, an `x-api-key` header is added to all requests to the Consolidated View API.
-- When it is empty or unset, the header is omitted. This is the default for deployed environments.
+- The `x-api-key` header is added to requests to the Consolidated View API only when `CV_API_DEVELOPER_KEY` is set **and** the app is running with `cdpEnvironment` (`ENVIRONMENT`) set to `local`.
+- In any deployed environment the header is never sent, regardless of whether the key is set.
 - The key is only intended for local development. It should never be set in production.
 
 ### Troubleshooting

@@ -35,7 +35,7 @@ DXT Controllers pass a `context` object into every handler. Grants UI relies on 
 - `context.state`: the full mutable state bag for the current journey. Grants UI stores intermediate answers, lookups, and UI scaffolding here (for example `context.state.applicantContactDetails`). Use the helper methods exposed by the base controllers—primarily `await this.setState(request, newState)` or `await this.mergeState(request, context.state, update)`—to persist changes so they flow through the cache layer (`QuestionPageController.setState`, `QuestionPageController.mergeState` in the forms engine plugin).
 - `context.relevantState`: a projection produced by the forms engine that contains only the answers needed for submission. This is the source of truth used by declaration/confirmation controllers when building payloads for GAS (see `DeclarationPageController`).
 
-StatePersistenceService persists both structures through the Grants UI Backend API (which stores data in MongoDB) so that state survives page refreshes and "save and return" flows. Redis is used separately for session caching (auth cookies, Yar session data, tasklist temp data) but not for form state persistence. When working on new controllers, prefer `context.relevantState` for data you plan to submit, and use `context.state` for auxiliary UI data. Changes to either must be serialisable because the persistence layer stores them as JSON.
+StatePersistenceService persists `context.state` through the Grants UI Backend API (which stores data in MongoDB) so that state survives page refreshes and "save and return" flows. `context.relevantState` is not itself persisted — it is recomputed by the forms engine from `context.state` on every request, so it is always current without a separate write. Redis is used separately for session caching (auth cookies, Yar session data) but not for form state persistence. When working on new controllers, prefer `context.relevantState` for data you plan to submit, and use `context.state` for auxiliary UI data. Changes to either must be serialisable because the persistence layer stores them as JSON.
 
 Practical usage tips:
 
@@ -51,16 +51,13 @@ sequenceDiagram
   participant Ctrl as Feature Controller
   participant Cache as StatePersistenceService
   participant Backend as Grants UI Backend
-  participant Redis
   participant GAS as GAS API (Mocked)
 
   User->>Hapi: HTTP request (e.g. /{grant}/page)
   Hapi->>DXT: Delegate route handling
   DXT->>Ctrl: Invoke controller logic for page
   Ctrl->>Cache: getState(request)
-  Cache->>Redis: Retrieve session
-  Redis-->>Cache: State hit? (optional)
-  Cache->>Backend: fetchSavedStateFromApi (if needed)
+  Cache->>Backend: fetchStateWithDefinitionFromApi
   Backend-->>Cache: Persisted state payload
   Cache-->>Ctrl: Merged state
   Ctrl-->>DXT: Render view / continue journey
@@ -126,7 +123,7 @@ sections:
     title: Review and submit
 ```
 
-If only 1 section is used, section headers will be hidden on the task list page and all task pages.
+If only 1 section is used, the per-section subheading is hidden on the task list page. This does not extend to individual task pages — their section caption only hides when that section explicitly sets `hideTitle: true`, regardless of how many sections the form has.
 
 #### 2. Create the task list page
 
@@ -183,15 +180,20 @@ Tasks are automatically marked as completed when all required fields on the page
 
 ### Task Statuses
 
-The system provides three standard statuses:
+The system provides three standard statuses, customisable in the YAML configuration under `metadata.tasklist.statuses`:
 
-| Status           | Default Text       | Default Class      | When Shown                                                  |
-| ---------------- | ------------------ | ------------------ | ----------------------------------------------------------- |
-| Completed        | "Completed"        | `govuk-tag--green` | All required fields on the page have values                 |
-| Not started      | "Not started"      | `govuk-tag--blue`  | No required fields completed, and prerequisites met         |
-| Cannot start yet | "Cannot start yet" | `govuk-tag--grey`  | Previous tasks not completed (when `completeInOrder: true`) |
+| Status           | Default Text       | Default Class       | When Shown                                                  |
+| ---------------- | ------------------ | ------------------- | ----------------------------------------------------------- |
+| Completed        | "Completed"        | `govuk-tag--green`  | All required fields on the page have values                 |
+| Not started      | "Not started"      | `govuk-tag--yellow` | No required fields completed, and prerequisites met         |
+| Cannot start yet | "Cannot start yet" | `govuk-tag--grey`   | Previous tasks not completed (when `completeInOrder: true`) |
 
-Customise these in the YAML configuration under `metadata.tasklist.statuses`.
+Two further statuses exist for the alternative `showQuestions: false` display mode and are not currently configurable via `metadata.tasklist.statuses`:
+
+| Status          | Default Text  | Default Class       |
+| --------------- | ------------- | ------------------- |
+| In progress     | "In progress" | `govuk-tag--blue`   |
+| Cannot continue | "On hold"     | `govuk-tag--purple` |
 
 ### Navigation Behaviour
 
@@ -247,14 +249,9 @@ See [`example-grant-with-task-list.yaml`](https://github.com/DEFRA/grants-config
 
 ## Development Services Integration
 
-The following services are available via Docker Compose for local development:
-
-- **Grants UI Backend**: Separate Node.js service (`defradigital/grants-ui-backend`) for data persistence
-- **MongoDB**: Document database used by the backend service for storing application data
-- **FFC Grants Scoring**: External scoring service (`defradigital/ffc-grants-scoring`) for grant evaluation
-- **MockServer**: API mocking service for development and testing with predefined expectations
-- **Defra ID Stub**: Local OpenID Connect provider used to mimic Defra ID authentication flows
-- **GAS API (Mocked)**: Grants Application Service endpoint stubbed by MockServer for submissions and confirmation flows
+For local development, Grants UI runs alongside several services via Docker Compose (backend, MongoDB, MockServer,
+Defra ID Stub, config broker, and more) — see [Docker Compose](./DOCKER.md#docker-compose) for the full, current
+service list. The request flow between the core services looks like this:
 
 ```mermaid
 graph TD
@@ -262,12 +259,9 @@ graph TD
   UI -->|Session data| Redis[(Redis)]
   UI -->|State API| Backend[Grants UI Backend]
   Backend -->|Persist/Fetch| Mongo[(MongoDB)]
-  UI -->|Scoring request| Scoring[FFC Grants Scoring]
   UI -->|Grant submission| GAS[MockServer (GAS API)]
   UI -.->|OIDC flows| DefraID[Defra ID Stub]
 ```
-
-For complete service configuration and setup, see [Docker Compose](./DOCKER.md#docker-compose).
 
 ## Grant Form Definitions
 
@@ -283,9 +277,10 @@ request from the backend's combined `POST /state/with-definition` endpoint
 `state-with-definition-context.js`'s `AsyncLocalStorage`-backed request
 context, and `formsService()` (`src/server/common/forms/services/form.js`)
 derives everything else (`id`, `title`, `metadata`) from the slug and that
-resolved definition. Whitelist enforcement (`whitelist.js` `onPostAuth`)
-reads the grant's `whitelistCrnEnvVar`/`whitelistSbiEnvVar` from that same
-per-request envelope.
+resolved definition. Allowlist enforcement (`allowlist.js` `onPostAuth`) applies
+unconditionally to every authenticated request that carries a grant slug — see
+[Auth & Security – Allowlist Functionality](./AUTH-AND-SECURITY.md#allowlist-functionality)
+for the full mechanism.
 
 One consequence of resolving everything per-request: there is no enumerable
 list of grants in grants-ui, so the dev-tools demo pages are opened by slug
@@ -296,7 +291,7 @@ URL (e.g. `/dev/demo-confirmation/{slug}`) rather than picked from a list.
 The Grants Application Service (GAS) is used to store grant definitions that the app submits data against.
 
 Creating a Grant Definition
-A grant definition is created via the GAS backend by making a POST request to the /grants endpoint (see postman folder in the root of the project). This defines the structure and schema of the grant application payload, which the app will later submit.
+A grant definition is created via the GAS backend by making a POST request to the /grants endpoint (see the `http-client/gas.http` requests described below). This defines the structure and schema of the grant application payload, which the app will later submit.
 
 You can also create a grant using the [GAS API](https://github.com/DEFRA/fg-gas-backend). For API documentation and examples, see the [fg-gas-backend repository](https://github.com/DEFRA/fg-gas-backend).
 
@@ -409,7 +404,7 @@ Populate the placeholders as follows (do **not** paste real secrets into the rep
 - `brokerAuthToken` and `landGrantsAuthToken` -- AES-256-GCM encrypted + base64 bearer tokens for the config broker (`broker.http`) and Land Grants API (`land-grants.http`). These are **not** raw tokens: the backing services expect the same encrypted format the app produces (see `encryptToken` in `src/server/common/helpers/auth/encrypt-token.js`). Generate both with the bundled tool rather than hand-crafting them:
   - `npm run generate:tokens` -- prints both `brokerAuthToken` and `landGrantsAuthToken` to the console.
   - `npm run generate:tokens:save` -- writes both values into `http-client.private.env.json` (under the `local` environment by default). To target another environment, run the tool directly and pass `--env`, for example `node ./tools/generate-tokens.js --save --env dev`.
-  - The raw tokens and encryption keys are read from your `.env` file, defaulting to the `compose.grants-ui.yml` / `compose.land-grants.yml` development values (`CONFIG_BROKER_AUTH_TOKEN` / `CONFIG_BROKER_ENCRYPTION_KEY` and `LAND_GRANTS_API_AUTH_TOKEN` / `LAND_GRANTS_API_ENCRYPTION_KEY`) when unset.
+  - The raw tokens and encryption keys are read from your `.env` file, defaulting to the `compose.grants-ui.yml` / `compose.land-grants.yml` development values (`GRANTS_CONFIG_BROKER_AUTH_TOKEN` / `GRANTS_CONFIG_BROKER_ENCRYPTION_KEY` and `LAND_GRANTS_API_AUTH_TOKEN` / `LAND_GRANTS_API_ENCRYPTION_KEY`) when unset.
 - `defraIdToken` -- a Defra Identity access token for the signed-in user, forwarded via the `x-forwarded-authorization` header
 
 Once `http-client.private.env.json` is created and populated, you can:

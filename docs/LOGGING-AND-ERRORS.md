@@ -27,11 +27,14 @@ This is a work in progress (as of 12/02/2026)
 ### Tasks remaining
 
 - [x] BaseError class with structured properties and logging
-- [x] Example error classes extending BaseError (`AuthError` and `ViewError` currently)
+- [x] Example error classes extending BaseError (`AuthError`, `ViewError`, `SystemError`, `SessionError`,
+      `ExternalApiError`, `ConsolidatedViewError`, `GrantApplicationServiceError`, `GraphQLQueryError`, and
+      `GenericError` currently)
 - [x] Global error handler to format responses and log errors
 - [ ] Update existing code to throw specific error classes instead of generic `Error`
 - [ ] Update existing code to remove any manual logging of errors in `try {} catch {}` blocks
-- [ ] Create ESLint rule to forbid logging in `try {} catch {}` blocks.
+- [x] Create ESLint rule to forbid logging in `try {} catch {}` blocks (`grants-ui/try-catch-allowed-functions`,
+      configured in `eslint.config.js`)
 
 ### Introduction to structured errors
 
@@ -178,8 +181,11 @@ src/server/common/helpers/logging/
 ├── logger-options.js      # Logger configuration
 ├── request-logger.js      # Hapi request logger plugin
 ├── log.js                 # Structured logging wrapper
-├── log-codes.js           # Structured log definitions
+├── log-codes.js           # Re-exports LogCodes, validates at import
+├── log-codes/             # Structured log definitions (one file per category)
 ├── log-code-validator.js  # Log code validation
+├── mask-crn.js             # CRN masking helper for logs
+├── upstream-error.js       # Upstream error helpers
 └── *.test.js             # Test files
 ```
 
@@ -192,10 +198,17 @@ The system organizes log codes into logical categories:
 - **SUBMISSION**: Grant submission lifecycle
 - **DECLARATION**: Declaration page processing
 - **CONFIRMATION**: Confirmation page processing
-- **TASKLIST**: Task list management
 - **LAND_GRANTS**: Land grant specific functionality
+- **WOODLAND**: Woodland grant validation
 - **AGREEMENTS**: Agreement processing
+- **COOKIES**: Cookie consent page events
+- **RESOURCE_NOT_FOUND**: 404 tracking
+- **APPLICATION_LOCKS**: Application lock lifecycle events
+- **PERMISSIONS**: Grant permission enforcement checks
+- **PRINT_APPLICATION**: Application print functionality
+- **PURGE**: Data purge events
 - **SYSTEM**: System-level events and errors
+- **AUDIT**: Audit trail events
 
 ### Usage Examples
 
@@ -239,7 +252,7 @@ Each log code must have two required properties:
 
 ```javascript
 {
-  level: 'info' | 'debug' | 'error',
+  level: 'info' | 'debug' | 'warn' | 'error',
   messageFunc: (messageOptions) => string
 }
 ```
@@ -354,8 +367,10 @@ When writing new code:
 
 To add new log codes:
 
-1. **Define the log code** in `log-codes.js` with proper structure
-2. **Add to appropriate category** or create new category if needed
+1. **Define the log code** in the relevant category file under `log-codes/` (e.g.
+   `src/server/common/helpers/logging/log-codes/forms.js`)
+2. **Add to appropriate category** or create a new category file and register it in
+   `log-codes/definition.js` if needed
 3. **Include both level and messageFunc** properties
 4. **Write comprehensive tests** in the corresponding test file
 5. **Update documentation** if introducing new patterns
