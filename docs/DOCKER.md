@@ -128,15 +128,7 @@ A local environment with:
 - This service
 - Grants UI Backend
 - Grants Config Broker, serving form-definition config to Grants UI Backend
-- MockServer, providing stubs for [fg-gas-backend](http://github.com/DEFRA/fg-gas-backend) and
-  [land-grants-api](http://github.com/DEFRA/land-grants-api). The land-grants stubs live in
-  `mockserver/expectations.json` under `land-grants-api-*` ids and cover every endpoint this
-  service calls: `/api/v2/parcels`, `/api/v2/payments/calculate`, `/api/v2/application/validate`,
-  `/api/v1/parcel-tiles/locate`, `/api/v1/wmp/validate` and both `/api/v1/wmp/payments/*`
-  endpoints. The binary vector-tile endpoint (`/api/v1/parcel-tiles/{z}/{x}/{y}`) is deliberately
-  not stubbed — it serves protobuf, and the default stack sets `MAP_MOCK_DATA_ENABLED=true` so the
-  map renders from embedded geometry instead. For real tiles, run the API via
-  `compose.land-grants.yml`.
+- MockServer, providing a stub for [fg-gas-backend](http://github.com/DEFRA/fg-gas-backend) and [land-grants-api](http://github.com/DEFRA/land-grants-api).
 
 The recommended way to start the stack is via the [Grants TUI](#grants-tui), which handles addon selection and local-image overrides interactively. For a plain start without the TUI:
 
