@@ -254,6 +254,10 @@ Then('(the user )should see SBI {string} as the logged in organisation', async f
   expect(actualSbi).toEqual(expectedSbi)
 })
 
+Then('(the user )should see a total claim amount of {string}', async function (amount) {
+  await expect(this.page.getByText(amount, { exact: false })).toBeVisible()
+})
+
 Then('(the user )should see the following organisation address', async function (dataTable) {
   const label = 'Organisation address'
   const expectedLines = dataTable.raw().map((row) => row[0].trim())
