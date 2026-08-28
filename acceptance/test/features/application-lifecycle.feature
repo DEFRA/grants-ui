@@ -220,6 +220,9 @@ Feature: Application Lifecycle
         # claim-declaration
         Then the user should be at URL "claim-declaration"
         And should see heading "Example claim declaration page"
+
+        # submitting the claim moves the GAS status on to STATUS_CLAIM_COMPLETE
+        Given the application status in GAS is now "STATUS_CLAIM_COMPLETE"
         When the user clicks on "Confirm and submit"
         And the grants-ui application status for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" should be "CLAIM_SUBMITTED"
         And the claim "-C01" for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" should have status "SUBMITTED"
