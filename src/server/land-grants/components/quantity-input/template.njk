@@ -8,8 +8,8 @@
     text: "Quantity"
   },
   hint: {
-    text: maxQuantity + " " + unitFullName + " available"
-  } if maxQuantity != undefined else undefined,
+    text: availabilityHint
+  } if availabilityHint else undefined,
   suffix: {
     text: unit
   } if unit else undefined,

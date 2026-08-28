@@ -17,6 +17,13 @@
     color: $govuk-secondary-text-colour;
   }
 
+  // The available-area guidance is a statement about what selecting the action
+  // does, not another fact about it, so it sits apart from the hint lines above.
+  .select-actions-guidance {
+    display: block;
+    margin-top: govuk-spacing(2);
+  }
+
   .select-actions-unavailable-message {
     @include govuk-font-size(16);
     margin-top: 0;
@@ -60,6 +67,13 @@
 
     .govuk-input__wrapper {
       flex-wrap: wrap;
+    }
+
+    // Label and value read as one pair, so they sit on consecutive lines with
+    // no paragraph gap between them.
+    .select-actions-chosen-area__label,
+    .select-actions-chosen-area__value {
+      margin-bottom: 0;
     }
   }
 
