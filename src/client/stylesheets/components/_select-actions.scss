@@ -69,9 +69,12 @@
       flex-wrap: wrap;
     }
 
-    // Label and value read as one pair, so they sit on consecutive lines with
-    // no paragraph gap between them.
-    .select-actions-chosen-area__label,
+    // Label and value read as one pair: a little more than a plain line box
+    // between them (1.3x the 25px line height), and nothing after the value.
+    .select-actions-chosen-area__label {
+      margin-bottom: 7px;
+    }
+
     .select-actions-chosen-area__value {
       margin-bottom: 0;
     }
