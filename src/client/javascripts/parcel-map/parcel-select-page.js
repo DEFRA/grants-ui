@@ -21,9 +21,10 @@ const DOM_ID_SELECTED_PARCEL_REFERENCE = 'selected-parcel-reference'
 const DOM_ID_SELECTED_PARCEL_AREA = 'selected-parcel-area'
 const DOM_ID_SELECTED_PARCEL_CHANGE = 'selected-parcel-change'
 const DOM_ID_SELECTED_PARCELS_INPUTS = 'selected-parcels-inputs'
-const DOM_ID_ADDITIONAL_REQUIREMENTS_ROW = 'selected-parcel-additional-requirements-row'
-const DOM_ID_ADDITIONAL_REQUIREMENTS = 'selected-parcel-additional-requirements'
-const DOM_ID_ADDITIONAL_REQUIREMENTS_STATUS = 'selected-parcel-additional-requirements-status'
+const DOM_ID_REQUIREMENTS_ROW = 'selected-parcel-requirements-row'
+const DOM_ID_REQUIREMENTS_INTRO = 'selected-parcel-requirements-intro'
+const DOM_ID_REQUIREMENTS_LIST = 'selected-parcel-requirements-list'
+const DOM_ID_REQUIREMENTS_STATUS = 'selected-parcel-requirements-status'
 const SELECTOR_ERROR_SUMMARY_MAP_LINK = `.govuk-error-summary a[href="#${DOM_ID_PARCEL_MAP}"]`
 const DATASET_SELECTED_PARCELS = 'selectedParcels'
 
@@ -94,11 +95,11 @@ const writeHiddenInputs = (selectedIds) => {
 }
 
 /**
- * Fetches the parcel's consent notice, worded by the server so the copy lives
- * in one place. Empty string when nothing applies, null when the lookup
- * failed.
+ * Fetches the parcel's requirements notice, worded by the server so the copy
+ * lives in one place. An empty items array means nothing applies; null means
+ * the lookup failed.
  * @param {string} parcelId
- * @returns {Promise<string | null>}
+ * @returns {Promise<{ intro: string, items: string[] } | null>}
  */
 const fetchConsentNotice = async (parcelId) => {
   const crumb = /** @type {HTMLInputElement | null} */ (document.querySelector('input[name="crumb"]'))?.value
@@ -112,32 +113,49 @@ const fetchConsentNotice = async (parcelId) => {
     if (!response.ok) {
       return null
     }
-    const { text } = await response.json()
-    return typeof text === 'string' ? text : null
+    const { intro, items } = await response.json()
+    if (typeof intro !== 'string' || !Array.isArray(items)) {
+      return null
+    }
+    return { intro, items: items.filter((item) => typeof item === 'string') }
   } catch {
     return null
   }
 }
 
-const clearAdditionalRequirements = () => {
-  const row = document.getElementById(DOM_ID_ADDITIONAL_REQUIREMENTS_ROW)
+const clearRequirements = () => {
+  const row = document.getElementById(DOM_ID_REQUIREMENTS_ROW)
   if (row) {
     row.hidden = true
   }
-  setText(DOM_ID_ADDITIONAL_REQUIREMENTS, '')
-  setText(DOM_ID_ADDITIONAL_REQUIREMENTS_STATUS, '')
-}
-
-/** @param {string} text */
-const showAdditionalRequirements = (text) => {
-  setText(DOM_ID_ADDITIONAL_REQUIREMENTS, text)
-  unhide(DOM_ID_ADDITIONAL_REQUIREMENTS_ROW)
-  setText(DOM_ID_ADDITIONAL_REQUIREMENTS_STATUS, text)
+  setText(DOM_ID_REQUIREMENTS_INTRO, '')
+  document.getElementById(DOM_ID_REQUIREMENTS_LIST)?.replaceChildren()
+  setText(DOM_ID_REQUIREMENTS_STATUS, '')
 }
 
 /**
- * Keeps the "Additional requirements" row in step with the current selection. The
- * notice belongs to the selected parcel, so every selection event, including
+ * @param {string} intro
+ * @param {string[]} items
+ */
+const showRequirements = (intro, items) => {
+  setText(DOM_ID_REQUIREMENTS_INTRO, intro)
+  const list = document.getElementById(DOM_ID_REQUIREMENTS_LIST)
+  // textContent, never innerHTML: this copy arrives over fetch.
+  list?.replaceChildren(
+    ...items.map((item) => {
+      const li = document.createElement('li')
+      li.textContent = item
+      return li
+    })
+  )
+  unhide(DOM_ID_REQUIREMENTS_ROW)
+  // One utterance: the intro alone tells a screen-reader user nothing.
+  setText(DOM_ID_REQUIREMENTS_STATUS, `${intro} ${items.join(', ')}`)
+}
+
+/**
+ * Keeps the "Requirements" row in step with the current selection. The notice
+ * belongs to the selected parcel, so every selection event, including
  * deselection and multi-selection, invalidates any lookup still in flight and
  * clears the row before asking for a new one.
  * @returns {(selectedParcels: SelectedParcel[]) => Promise<void>}
@@ -148,19 +166,19 @@ function createConsentRequirementsUpdater() {
   return async function updateConsentRequirements(selectedParcels) {
     requestId += 1
     const thisRequestId = requestId
-    clearAdditionalRequirements()
+    clearRequirements()
 
     if (selectedParcels.length !== 1) {
       return
     }
 
-    const text = await fetchConsentNotice(selectedParcels[0].id)
+    const notice = await fetchConsentNotice(selectedParcels[0].id)
     if (thisRequestId !== requestId) {
       return
     }
 
-    if (text) {
-      showAdditionalRequirements(text)
+    if (notice?.items.length) {
+      showRequirements(notice.intro, notice.items)
     }
   }
 }
