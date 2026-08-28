@@ -750,23 +750,146 @@ function isAtOrAfterJourneyStartPage(request, grantId, startPath) {
 }
 
 /**
- * Handles navigation for in-progress claim journeys.
+ * Reads the current GAS status for a submitted claim.
+ *
+ * This is the single point in the claim journey that consults GAS. Any failure
+ * (GAS unavailable, application not found, malformed response) is swallowed and
+ * reported as `undefined` so the caller can fall back to deterministic claim
+ * navigation instead of guessing a transition.
+ *
+ * @param {AnyFormRequest} request - The Hapi forms request object.
+ * @param {string} grantCode - The grant code used to fetch status from GAS.
+ * @param {string} clientRef - The client reference number used in the GAS lookup.
+ * @returns {Promise<string | undefined>} The GAS status, or `undefined` when it could not be resolved.
+ */
+async function readGasClaimStatus(request, grantCode, clientRef) {
+  try {
+    const response = await getApplicationStatus(grantCode, clientRef.toLowerCase(), request)
+    const { status } = await response.json()
+    return status
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * Detects a returning claim window for an application whose current claim has
+ * already been submitted (CLAIM_SUBMITTED).
+ *
+ * A grant application can be claimed against more than once. After a claim is
+ * submitted, GAS eventually moves back to `STATUS_AWAITING_CLAIM` to signal that
+ * the next claim can begin. Unlike the in-progress claim navigation
+ * (CLAIM_STARTED), which stays deterministic and GAS-free, this is the one point
+ * where a GAS lookup is required, so it is scoped to CLAIM_SUBMITTED only.
+ *
+ * When a configured rule maps the live GAS status to a *different* Grants UI
+ * status (e.g. CLAIM_SUBMITTED -> CLAIM_STARTED) the new status is persisted
+ * through Grants UI Backend and the user is handed into the fresh claim journey
+ * via a one-shot status-change redirect. Otherwise `undefined` is returned so
+ * the caller falls back to normal claim navigation.
+ *
+ * @param {AnyFormRequest} request - The Hapi forms request object.
+ * @param {ResponseToolkit} h - The Hapi response toolkit.
+ * @param {FormContext} context - The request context containing state and reference data.
+ * @param {FormsStatusRedirectContext} redirectContext - Redirect context when a grant slug is present.
+ * @returns {Promise<import('@hapi/hapi').ResponseObject | symbol | undefined>} A redirect/`h.continue` when a new claim window opens, otherwise `undefined`.
+ */
+async function handleReturningClaimWindow(request, h, context, redirectContext) {
+  const { grantId, grantCode, grantRedirectRules } = redirectContext
+  const postSubmissionRules = grantRedirectRules?.postSubmission ?? []
+
+  const clientRef = resolveClientReference(ApplicationStatus.CLAIM_SUBMITTED, context)
+  const gasStatus = await readGasClaimStatus(request, grantCode, clientRef)
+  if (gasStatus === undefined) {
+    return undefined
+  }
+
+  let rule
+  try {
+    rule = mapStatusToUrl(ApplicationStatus.CLAIM_SUBMITTED, gasStatus, postSubmissionRules)
+  } catch {
+    return undefined
+  }
+
+  const isStatusChange = rule.toGrantsStatus !== ApplicationStatus.CLAIM_SUBMITTED
+  if (!isStatusChange) {
+    return undefined
+  }
+
+  await persistStatus(request, rule.toGrantsStatus, ApplicationStatus.CLAIM_SUBMITTED, grantId, context.state)
+
+  const grantVersion = getGrantVersion(request)
+  request.yar.set(YarKeys.GRANT_APPLICATION_CONTEXT, { grantCode, grantVersion, clientRef: clientRef.toLowerCase() })
+
+  const redirectUrl = buildRedirectUrl(grantId, rule.toPath)
+  if (request.path === redirectUrl) {
+    return h.continue
+  }
+
+  // Record the one-shot navigation so the immediately-following request (now
+  // CLAIM_STARTED) does not re-evaluate the steady-state rule and bounce the
+  // user off the fresh claim start page.
+  request.yar.set(YarKeys.STATUS_CHANGE_REDIRECT, redirectUrl)
+  return h.redirect(redirectUrl).takeover()
+}
+
+/**
+ * Resolves deterministic navigation for a claim journey status.
  *
  * The configured claim start page (e.g. `/claim`) is treated as the journey's
  * start page: requests for earlier pages (including the submitted-application
  * `/confirmation` page) are redirected to it, while the start page and any pages
- * after it follow the normal forms-engine-plugin navigation rules. This lets a
- * claim journey reuse the plugin's forward-navigation behaviour with a different
- * start page instead of trapping the user on the start page.
+ * after it follow the normal forms-engine-plugin navigation rules. Claim
+ * statuses are steady state (toGrantsStatus === fromGrantsStatus), so the
+ * destination is resolved from configuration without calling GAS, keeping this
+ * decision deterministic and side-effect-light.
  *
  * @param {AnyFormRequest} request - The Hapi forms request object.
  * @param {ResponseToolkit} h - The Hapi response toolkit.
  * @param {FormsStatusRedirectContext} redirectContext - Redirect context when a grant slug is present.
  * @param {string} previousStatus - A claim journey status (CLAIM_STARTED or CLAIM_SUBMITTED).
+ * @param {RedirectRule[]} postSubmissionRules - The configured post-submission redirect rules.
  * @returns {import('@hapi/hapi').ResponseObject | symbol} A redirect or `h.continue`.
  */
-function claimJourneyRedirect(request, h, redirectContext, previousStatus) {
-  const { grantId, grantRedirectRules } = redirectContext
+function navigateClaimJourney(request, h, redirectContext, previousStatus, postSubmissionRules) {
+  const { grantId } = redirectContext
+
+  let startRule
+  try {
+    startRule = mapStatusToUrl(previousStatus, 'default', postSubmissionRules)
+  } catch {
+    // No configured claim rule for this status; leave navigation to the plugin.
+    return h.continue
+  }
+
+  const startPath = startRule.toPath
+
+  if (isAtOrAfterJourneyStartPage(request, grantId, startPath)) {
+    return h.continue
+  }
+
+  const redirectUrl = buildRedirectUrl(grantId, startPath)
+  return request.path === redirectUrl ? h.continue : h.redirect(redirectUrl).takeover()
+}
+
+/**
+ * Handles navigation for claim journeys.
+ *
+ * In-progress claims (CLAIM_STARTED) navigate deterministically without calling
+ * GAS. A submitted claim (CLAIM_SUBMITTED) additionally consults GAS once so it
+ * can detect a move back to `STATUS_AWAITING_CLAIM` and open the next claim
+ * window for 2nd and subsequent claims; when no new window is open it falls back
+ * to the same deterministic navigation.
+ *
+ * @param {AnyFormRequest} request - The Hapi forms request object.
+ * @param {ResponseToolkit} h - The Hapi response toolkit.
+ * @param {FormContext} context - The request context containing state and reference data.
+ * @param {FormsStatusRedirectContext} redirectContext - Redirect context when a grant slug is present.
+ * @param {string} previousStatus - A claim journey status (CLAIM_STARTED or CLAIM_SUBMITTED).
+ * @returns {Promise<import('@hapi/hapi').ResponseObject | symbol>} A redirect or `h.continue`.
+ */
+async function claimJourneyRedirect(request, h, context, redirectContext, previousStatus) {
+  const { grantRedirectRules } = redirectContext
 
   const statusChangeRedirect = consumeStatusChangeRedirect(request, h)
   if (statusChangeRedirect) {
@@ -784,25 +907,16 @@ function claimJourneyRedirect(request, h, redirectContext, previousStatus) {
     return h.continue
   }
 
-  let startRule
-  try {
-    // Claim statuses are steady state (toGrantsStatus === fromGrantsStatus), so the
-    // destination is resolved from configuration without calling GAS, keeping this
-    // decision deterministic and side-effect-light.
-    startRule = mapStatusToUrl(previousStatus, 'default', postSubmissionRules)
-  } catch {
-    // No configured claim rule for this status; leave navigation to the plugin.
-    return h.continue
+  // A submitted claim is the only claim state that consults GAS: a move back to
+  // STATUS_AWAITING_CLAIM opens the next claim window (2nd and subsequent claims).
+  if (previousStatus === ApplicationStatus.CLAIM_SUBMITTED) {
+    const returningClaimRedirect = await handleReturningClaimWindow(request, h, context, redirectContext)
+    if (returningClaimRedirect) {
+      return returningClaimRedirect
+    }
   }
 
-  const startPath = startRule.toPath
-
-  if (isAtOrAfterJourneyStartPage(request, grantId, startPath)) {
-    return h.continue
-  }
-
-  const redirectUrl = buildRedirectUrl(grantId, startPath)
-  return request.path === redirectUrl ? h.continue : h.redirect(redirectUrl).takeover()
+  return navigateClaimJourney(request, h, redirectContext, previousStatus, postSubmissionRules)
 }
 
 /**
@@ -825,7 +939,7 @@ async function handleFormsStatusRedirect(request, h, context, redirectContext) {
   // start page. This runs before the SUBMITTED-oriented protected-page guard so that,
   // for example, /confirmation is redirected to /claim rather than being forbidden.
   if (isClaimJourneyStatus(previousStatus)) {
-    return claimJourneyRedirect(request, h, redirectContext, previousStatus)
+    return claimJourneyRedirect(request, h, context, redirectContext, previousStatus)
   }
 
   const protectedPageGuard = checkProtectedPageGuard(request, h, context)
