@@ -71,13 +71,13 @@ describe('consent.view-model', () => {
     const hefer = 'a Historic Environment Farm Environment Record (HEFER)'
 
     it.each([
-      [[], { text: '', items: [] }],
-      [['sssi'], { text: 'Some actions require:', items: [sssi] }],
-      [['hefer'], { text: 'Some actions require:', items: [hefer] }],
-      [['sssi', 'hefer'], { text: 'Some actions require:', items: [sssi, hefer] }],
-      [['hefer', 'sssi'], { text: 'Some actions require:', items: [sssi, hefer] }],
-      [['unknown'], { text: '', items: [] }],
-      [undefined, { text: '', items: [] }]
+      [[], { intro: '', items: [] }],
+      [['sssi'], { intro: 'Some actions require:', items: [sssi] }],
+      [['hefer'], { intro: 'Some actions require:', items: [hefer] }],
+      [['sssi', 'hefer'], { intro: 'Some actions require:', items: [sssi, hefer] }],
+      [['hefer', 'sssi'], { intro: 'Some actions require:', items: [sssi, hefer] }],
+      [['unknown'], { intro: '', items: [] }],
+      [undefined, { intro: '', items: [] }]
     ])('renders %j as %j', (consents, expected) => {
       expect(getConsentNotice(consents)).toEqual(expected)
     })

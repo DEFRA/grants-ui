@@ -14,7 +14,7 @@ const HEFER = 'a Historic Environment Farm Environment Record (HEFER)'
 const INTRO = 'Some actions require:'
 const noticeResponse = (items) => ({
   ok: true,
-  json: () => Promise.resolve({ text: items.length ? INTRO : '', items })
+  json: () => Promise.resolve({ intro: items.length ? INTRO : '', items })
 })
 const EMPTY = { hidden: true, intro: '', items: [], status: '' }
 
@@ -257,7 +257,7 @@ describe('initParcelSelectPage', () => {
     it.each([
       ['no requirements', () => Promise.resolve(noticeResponse([]))],
       ['a malformed response body', () => Promise.resolve({ ok: true, json: () => Promise.resolve({}) })],
-      ['a non-array items field', () => Promise.resolve({ ok: true, json: () => Promise.resolve({ text: 'x' }) })],
+      ['a non-array items field', () => Promise.resolve({ ok: true, json: () => Promise.resolve({ intro: 'x' }) })],
       ['a non-2xx response', () => Promise.resolve({ ok: false, json: () => Promise.resolve({}) })],
       ['a network error', () => Promise.reject(new Error('offline'))]
     ])('keeps the row hidden and Continue usable for %s', async (_label, respond) => {
@@ -272,7 +272,10 @@ describe('initParcelSelectPage', () => {
     })
 
     it('removes the previous bullets when the selection changes to a parcel with none', async () => {
-      global.fetch = vi.fn().mockResolvedValueOnce(noticeResponse([SSSI])).mockResolvedValueOnce(noticeResponse([]))
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce(noticeResponse([SSSI]))
+        .mockResolvedValueOnce(noticeResponse([]))
       const mapEl = setupDom()
 
       select(mapEl, ['SD7148-9160'])

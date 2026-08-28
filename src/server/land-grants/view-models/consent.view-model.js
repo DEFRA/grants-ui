@@ -77,9 +77,9 @@ export function getConsentRequirementText(requiredConsents) {
  * browser so every consent string lives in one module. An empty items array
  * means nothing applies and the row stays hidden.
  * @param {string[] | undefined} requiredConsents
- * @returns {{ text: string, items: string[] }}
+ * @returns {{ intro: string, items: string[] }}
  */
 export function getConsentNotice(requiredConsents) {
   const items = consentLabels(requiredConsents, SSSI_REQUIREMENT, HEFER_REQUIREMENT)
-  return { text: items.length ? 'Some actions require:' : '', items }
+  return { intro: items.length ? 'Some actions require:' : '', items }
 }

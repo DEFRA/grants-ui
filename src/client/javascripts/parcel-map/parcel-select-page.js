@@ -99,7 +99,7 @@ const writeHiddenInputs = (selectedIds) => {
  * lives in one place. An empty items array means nothing applies; null means
  * the lookup failed.
  * @param {string} parcelId
- * @returns {Promise<{ text: string, items: string[] } | null>}
+ * @returns {Promise<{ intro: string, items: string[] } | null>}
  */
 const fetchConsentNotice = async (parcelId) => {
   const crumb = /** @type {HTMLInputElement | null} */ (document.querySelector('input[name="crumb"]'))?.value
@@ -113,11 +113,11 @@ const fetchConsentNotice = async (parcelId) => {
     if (!response.ok) {
       return null
     }
-    const { text, items } = await response.json()
-    if (typeof text !== 'string' || !Array.isArray(items)) {
+    const { intro, items } = await response.json()
+    if (typeof intro !== 'string' || !Array.isArray(items)) {
       return null
     }
-    return { text, items: items.filter((item) => typeof item === 'string') }
+    return { intro, items: items.filter((item) => typeof item === 'string') }
   } catch {
     return null
   }
@@ -134,11 +134,11 @@ const clearRequirements = () => {
 }
 
 /**
- * @param {string} text
+ * @param {string} intro
  * @param {string[]} items
  */
-const showRequirements = (text, items) => {
-  setText(DOM_ID_REQUIREMENTS_INTRO, text)
+const showRequirements = (intro, items) => {
+  setText(DOM_ID_REQUIREMENTS_INTRO, intro)
   const list = document.getElementById(DOM_ID_REQUIREMENTS_LIST)
   // textContent, never innerHTML: this copy arrives over fetch.
   list?.replaceChildren(
@@ -150,7 +150,7 @@ const showRequirements = (text, items) => {
   )
   unhide(DOM_ID_REQUIREMENTS_ROW)
   // One utterance: the intro alone tells a screen-reader user nothing.
-  setText(DOM_ID_REQUIREMENTS_STATUS, `${text} ${items.join(', ')}`)
+  setText(DOM_ID_REQUIREMENTS_STATUS, `${intro} ${items.join(', ')}`)
 }
 
 /**
@@ -178,7 +178,7 @@ function createConsentRequirementsUpdater() {
     }
 
     if (notice?.items.length) {
-      showRequirements(notice.text, notice.items)
+      showRequirements(notice.intro, notice.items)
     }
   }
 }
