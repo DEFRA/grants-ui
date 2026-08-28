@@ -24,7 +24,7 @@
  * environment (default `local`) using the same AES-256-GCM routine the app uses
  * (see encryptToken in src/server/common/helpers/auth/encrypt-token.js):
  *
- *   - brokerAuthToken     from CONFIG_BROKER_AUTH_TOKEN / CONFIG_BROKER_ENCRYPTION_KEY
+ *   - brokerAuthToken     from GRANTS_CONFIG_BROKER_AUTH_TOKEN / GRANTS_CONFIG_BROKER_ENCRYPTION_KEY
  *   - landGrantsAuthToken from LAND_GRANTS_API_AUTH_TOKEN / LAND_GRANTS_API_ENCRYPTION_KEY
  *
  * Raw tokens and encryption keys are read from your .env file, defaulting to the
@@ -89,8 +89,8 @@ const SECRET_GROUPS = [
 const generatedTokens = [
   {
     key: 'brokerAuthToken',
-    token: process.env.CONFIG_BROKER_AUTH_TOKEN ?? 'config-broker-auth-token',
-    encryptionKey: process.env.CONFIG_BROKER_ENCRYPTION_KEY ?? 'config-broker-encryption-key'
+    token: process.env.GRANTS_CONFIG_BROKER_AUTH_TOKEN ?? 'config-broker-auth-token',
+    encryptionKey: process.env.GRANTS_CONFIG_BROKER_ENCRYPTION_KEY ?? 'config-broker-encryption-key'
   },
   {
     key: 'landGrantsAuthToken',
