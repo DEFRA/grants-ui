@@ -11,6 +11,7 @@ import { requiresQuantityInput } from '~/src/shared/action-quantity-type.js'
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
 import { formatUnit } from '~/src/shared/format-unit.js'
 import { getAvailabilityLimit, hasAvailableLand } from '~/src/shared/availability.js'
+import { TOTAL_ACTION_AREA_GUIDANCE, totalActionAppliedText } from '~/src/shared/total-action-area.js'
 import { formatParcelReference } from '~/src/shared/format-parcel.js'
 import { SELECTED_ACTIONS_FIELD_NAME } from '~/src/server/land-grants/utils/selected-actions-field.js'
 import { getActionConsentKeys } from '~/src/server/land-grants/utils/consent-types.js'
@@ -85,28 +86,41 @@ function getStaticAvailability(action) {
 }
 
 /**
- * Builds the checkbox hint text: payment rate, consent requirement, and the
- * action's own availability. Availability sits here for every action, quantity
- * or not - directly under the rate and above the conditional panel, so partial
- * and whole-parcel actions render alike and the "Quantity" label and its input
- * are the only things inside the conditional panel. The span's id is what the
- * client keeps in sync live (see updateHintLive).
+ * The live-updated availability text for a non-quantity (total) action.
  * @param {Action} action
+ * @param {number | null | undefined} limit
+ * @param {number | undefined} chosenArea
  * @returns {string}
  */
-function getHintHtml(action) {
+function getTotalActionAreaText(action, limit, chosenArea) {
+  if (chosenArea != null) {
+    return totalActionAppliedText(chosenArea, limit ?? 0, action.availability?.unit)
+  }
+  return `${limit} ${formatUnit(action.availability?.unit)} available`
+}
+
+/**
+ * Builds payment, consent and availability hints beneath the action label.
+ * Total actions also explain their applied area and all-available-area behaviour.
+ * @param {Action} action
+ * @param {boolean} needsQuantity
+ * @param {number} [chosenArea]
+ * @returns {string}
+ */
+function getHintHtml(action, needsQuantity, chosenArea) {
   const requirementText = getConsentRequirementText(getActionConsentKeys(action))
   const agreementRateText = action.ratePerAgreementPerYearGbp
     ? ` and <strong>£${action.ratePerAgreementPerYearGbp}</strong> per agreement`
     : ''
   const requirementLineText = requirementText ? `<br>${requirementText}` : ''
   const rateText = `Payment rate per year: £${action.ratePerUnitGbp?.toFixed(2)}/ha${agreementRateText}${requirementLineText}`
+  const totalChosenArea = needsQuantity ? undefined : chosenArea
   const limit = getAvailabilityLimit(action.availability)
   const availabilityHintHtml =
-    limit != null
-      ? `<br><span id="${getActionQuantityFieldName(action.code)}-hint">${limit} ${formatUnit(action.availability?.unit)} available</span>`
+    limit != null || totalChosenArea != null
+      ? `<br><span id="${getActionQuantityFieldName(action.code)}-hint">${getTotalActionAreaText(action, limit, totalChosenArea)}</span>`
       : ''
-  return `${rateText}${availabilityHintHtml}`
+  return `${rateText}${availabilityHintHtml}${needsQuantity ? '' : `<br>${TOTAL_ACTION_AREA_GUIDANCE}`}`
 }
 
 /**
@@ -129,7 +143,12 @@ export function mapActionToViewModel(
   const quantityValue = existingAction?.value ?? ''
   const checked = Boolean(existingAction)
   const needsQuantity = requiresQuantityInput(action.availability?.type)
-  const hintHtml = getHintHtml(action)
+  const chosenArea = Number(existingAction?.value)
+  const hintHtml = getHintHtml(
+    action,
+    needsQuantity,
+    Number.isFinite(chosenArea) && chosenArea > 0 ? chosenArea : undefined
+  )
   const consents = getActionConsentKeys(action)
 
   return {

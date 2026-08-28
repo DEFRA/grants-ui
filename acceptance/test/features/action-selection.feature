@@ -28,6 +28,7 @@ Feature: Action Selection
             |        |                                                       | 0.276 hectares available          |     |
             | CLIG3  | Manage grassland with very low nutrient inputs: CLIG3 | Payment rate per year: £151.00/ha | Yes |
             |        |                                                       | 0.276 hectares available          |     |
+            |        |                                                       | This action will use all the available area on this land parcel. |     |
             | SCR2   | Manage scrub and open habitat mosaics: SCR2           | Payment rate per year: £350.00/ha | Yes |
             |        |                                                       | hectares available                |     |
         When the user selects action "CSAM3"
@@ -55,7 +56,8 @@ Feature: Action Selection
         # RULE: partial action cannot be selected once a total action has been selected taking all available hectares
         When the user deselects action "CSAM3"
         And the user selects action "CLIG3"
-        Then the user should be unable to select action "CSAM3"
+        Then the user should see "0.2760" hectares applied to action "CLIG3" with "0.0000" remaining
+        And the user should be unable to select action "CSAM3"
 
         # RULE: selecting a partial area action with less than the available hectares allows a total area action to subsequently be selected
         When the user deselects action "CLIG3"
