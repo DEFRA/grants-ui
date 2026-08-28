@@ -1,5 +1,6 @@
 import { formatPrice } from '~/src/server/common/utils/payment.js'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
+import { formatArea } from '~/src/shared/format-area.js'
 import { stringifyParcel } from '~/src/shared/format-parcel.js'
 import {
   changeActionsHref,
@@ -41,20 +42,6 @@ const isNonEmptyString = (value) => typeof value === 'string' && value.trim() !=
  * @returns {string}
  */
 const formatActionLabel = (description, code) => (isNonEmptyString(description) ? `${description} (${code})` : code)
-
-/**
- * Joins the quantity and unit, skipping either half when the API omits it so the
- * output never contains "undefined". A numeric quantity gets four decimal places
- * so the areas line up down the column; any other value passes through
- * unchanged rather than being validated here.
- * @param {unknown} quantity
- * @param {unknown} unit
- * @returns {string}
- */
-const formatArea = (quantity, unit) => {
-  const area = typeof quantity === 'number' && Number.isFinite(quantity) ? quantity.toFixed(4) : quantity
-  return [area, unit].filter((part) => part !== undefined && part !== null && part !== '').join(' ')
-}
 
 /**
  * Builds the view model for the "Your land and actions" payment summary page. It

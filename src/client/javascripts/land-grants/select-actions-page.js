@@ -1,5 +1,6 @@
 import { ACTION_QUANTITY_FIELD_PREFIX, getActionQuantityFieldName } from '../../../shared/action-quantity-field.js'
 import { formatUnit } from '../../../shared/format-unit.js'
+import { totalActionAppliedText } from '../../../shared/total-action-area.js'
 import { getAvailabilityLimit } from '../../../shared/availability.js'
 import { isValidCompoundParcelId } from '../../../shared/format-parcel.js'
 
@@ -362,20 +363,50 @@ function syncQuantityInputBounds(checkbox, action) {
 }
 
 /**
- * Refreshes a non-quantity action's own "X available" hint (see
- * getActionQuantityFieldName - shares its id with the quantity-action hint
- * pattern) from the latest availability, as reported by the API.
+ * A non-quantity action's own hint element (see getActionQuantityFieldName -
+ * shares its id with the quantity-action hint pattern), or null when this is
+ * a quantity action or the hint was never rendered.
+ * @param {HTMLInputElement} checkbox
+ * @returns {HTMLElement | null}
+ */
+function getNonQuantityHint(checkbox) {
+  if (getQuantityInput(checkbox)) {
+    return null
+  }
+  return document.getElementById(`${getActionQuantityFieldName(checkbox.value)}-hint`)
+}
+
+/**
+ * Refreshes an unselected non-quantity action's "X available" hint from the
+ * latest availability, as reported by the API. A selected one shows what it
+ * has claimed instead (see setNonQuantityAppliedHint), which is applied after
+ * this and so overwrites it.
  * @param {HTMLInputElement} checkbox
  * @param {{ availability?: ActionAvailability | null }} action
  */
 function syncNonQuantityHint(checkbox, action) {
   const limit = getAvailabilityLimit(action.availability)
-  if (getQuantityInput(checkbox) || limit == null) {
+  if (limit == null) {
     return
   }
-  const hint = document.getElementById(`${getActionQuantityFieldName(checkbox.value)}-hint`)
+  const hint = getNonQuantityHint(checkbox)
   if (hint) {
     hint.textContent = availabilityHintText(limit, /** @type {ActionAvailability} */ (action.availability).unit)
+  }
+}
+
+/**
+ * A selected non-quantity action reports what it took and what that leaves -
+ * it has no quantity input of its own to show the user its claim.
+ * @param {HTMLInputElement} checkbox
+ * @param {number} applied
+ * @param {number} remaining
+ */
+function setNonQuantityAppliedHint(checkbox, applied, remaining) {
+  const hint = getNonQuantityHint(checkbox)
+  const unit = checkbox.getAttribute(AVAILABLE_UNIT_ATTR)
+  if (hint) {
+    hint.textContent = totalActionAppliedText(applied, remaining, unit ?? undefined)
   }
 }
 
@@ -446,6 +477,8 @@ function applyCheckedNonQuantityAvailability(checkbox, availabilityValue, sentQu
   if (chosenArea === 0) {
     markUnavailable(checkbox)
   } else {
+    // Growth consumed the reported headroom; without it, that headroom is what is left.
+    setNonQuantityAppliedHint(checkbox, chosenArea, grows ? 0 : availabilityValue)
     clearUnavailable(checkbox)
   }
   return grows

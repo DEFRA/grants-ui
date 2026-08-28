@@ -628,6 +628,52 @@ describe('initSelectActionsPage', () => {
     expect(hintFor('CLIG3').textContent).toBe('0.2271 hectares available')
   })
 
+  // Scenario 3: a total action takes every hectare available, so the user has
+  // to be told what it took - it has no quantity input of its own to show it.
+  it('reports what a selected total action applied, and that nothing is left for it', async () => {
+    const form = setupDom([
+      { code: 'CLIG3', availability: { value: 31.89, unit: 'ha' } },
+      { code: 'CSAM3', availability: { value: 31.89, unit: 'ha' }, requiresMaxQuantity: 31.89 }
+    ])
+    await initSettled(form, mockApi({ CLIG3: 31.89, CSAM3: 31.89 }))
+
+    await toggle(form, 'CLIG3', true)
+
+    expect(getChosenAreaFieldValue(checkbox(form, 'CLIG3'))).toBe('31.89')
+    expect(hintFor('CLIG3').textContent).toBe('31.8900 hectares applied, 0.0000 hectares remaining')
+  })
+
+  // Growth chases freed land across follow-up refreshes until nothing is left,
+  // so a settled total action always ends at 0 remaining - here it starts from
+  // a 9.5 claim and absorbs the 2.5 the response reports as still claimable.
+  it('grows a selected total action into freed land and still reports nothing left for it', async () => {
+    const form = setupDom([{ code: 'CLIG3', checked: true, availability: { value: 9.5, unit: 'ha' } }])
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ actions: [{ code: 'CLIG3', availability: { value: 2.5, unit: 'ha' } }] })
+      })
+      .mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ actions: [{ code: 'CLIG3', availability: { value: 0, unit: 'ha' } }] })
+      })
+    initSelectActionsPage(form)
+    await flushPromises()
+
+    expect(getChosenAreaFieldValue(checkbox(form, 'CLIG3'))).toBe('12')
+    expect(hintFor('CLIG3').textContent).toBe('12.0000 hectares applied, 0.0000 hectares remaining')
+  })
+
+  it('reverts a total action to its plain available hint once it is deselected', async () => {
+    const form = setupDom([{ code: 'CLIG3', checked: true, availability: { value: 31.89, unit: 'ha' } }])
+    await initSettled(form, fetchOk({ actions: [{ code: 'CLIG3', availability: { value: 31.89, unit: 'ha' } }] }))
+
+    await toggle(form, 'CLIG3', false)
+
+    expect(hintFor('CLIG3').textContent).toBe('31.89 hectares available')
+  })
+
   it('unchecks and clears a checked quantity-required action that has no confirmed quantity, without disabling it', async () => {
     const form = setupDom([
       {

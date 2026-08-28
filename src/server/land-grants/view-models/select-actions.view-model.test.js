@@ -34,7 +34,7 @@ describe('select-actions.view-model', () => {
       expect(result).toEqual({
         id: 'landAction-SAM1',
         value: 'SAM1',
-        html: 'Test Action 1<span class="select-actions-hint">Payment rate per year: £100.50/ha</span>',
+        html: 'Test Action 1<span class="select-actions-hint">Payment rate per year: £100.50/ha<br>This action will use all the available area on this land parcel.</span>',
         checked: false,
         consents: [],
         attributes: {
@@ -123,7 +123,7 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, addedActions)
 
       expect(result.html).toBe(
-        'Test Action 2<span class="select-actions-hint">Payment rate per year: £75.25/ha and <strong>£50</strong> per agreement</span>'
+        'Test Action 2<span class="select-actions-hint">Payment rate per year: £75.25/ha and <strong>£50</strong> per agreement<br>This action will use all the available area on this land parcel.</span>'
       )
     })
 
@@ -140,7 +140,7 @@ describe('select-actions.view-model', () => {
       configState.reset()
 
       expect(result.html).toBe(
-        'Manage rough grassland for upland breeding waders<span class="select-actions-hint">Payment rate per year: £203.00/ha<br>Requires an SFI HEFER</span>'
+        'Manage rough grassland for upland breeding waders<span class="select-actions-hint">Payment rate per year: £203.00/ha<br>Requires an SFI HEFER<br>This action will use all the available area on this land parcel.</span>'
       )
     })
 
@@ -155,7 +155,7 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, [])
 
       expect(result.html).toBe(
-        'Manage rough grassland for upland breeding waders<span class="select-actions-hint">Payment rate per year: £203.00/ha</span>'
+        'Manage rough grassland for upland breeding waders<span class="select-actions-hint">Payment rate per year: £203.00/ha<br>This action will use all the available area on this land parcel.</span>'
       )
     })
 
@@ -172,7 +172,7 @@ describe('select-actions.view-model', () => {
       configState.reset()
 
       expect(result.html).toBe(
-        'Manage scrub and open habitat mosaics<span class="select-actions-hint">Payment rate per year: £350.00/ha<br>Requires SSSI consent</span>'
+        'Manage scrub and open habitat mosaics<span class="select-actions-hint">Payment rate per year: £350.00/ha<br>Requires SSSI consent<br>This action will use all the available area on this land parcel.</span>'
       )
     })
 
@@ -191,7 +191,7 @@ describe('select-actions.view-model', () => {
       configState.reset()
 
       expect(result.html).toBe(
-        'Manage scrub and open habitat mosaics<span class="select-actions-hint">Payment rate per year: £350.00/ha<br>Requires SSSI consent and an SFI HEFER</span>'
+        'Manage scrub and open habitat mosaics<span class="select-actions-hint">Payment rate per year: £350.00/ha<br>Requires SSSI consent and an SFI HEFER<br>This action will use all the available area on this land parcel.</span>'
       )
     })
 
@@ -267,6 +267,61 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, [])
 
       expect(result.html).not.toContain('landActionQuantity_UPL2-hint')
+    })
+
+    // A total action is only ever all-or-nothing, so the page has to say so up
+    // front - it has no quantity input whose max would otherwise imply it.
+    it('should show the available-area guidance for a non-quantity (total) action', () => {
+      const result = mapActionToViewModel(
+        {
+          code: 'CLIG3',
+          description: 'Manage grassland with very low nutrient inputs: CLIG3',
+          ratePerUnitGbp: 151,
+          availability: { value: 31.89, unit: 'ha', type: 'total' }
+        },
+        []
+      )
+
+      expect(result.html).toContain('This action will use all the available area on this land parcel.')
+    })
+
+    it('should not show the available-area guidance for a quantity-required action', () => {
+      const result = mapActionToViewModel(csam3({ value: 3, unit: 'ha' }), [])
+
+      expect(result.html).not.toContain('This action will use all the available area on this land parcel.')
+    })
+
+    // Scenario 3: selecting a total action assigns every available hectare to
+    // it, leaving an explicit 0.0000 - shown to 4dp so it reads as a measured
+    // zero rather than missing data.
+    it('should show the applied and remaining area for a selected total action', () => {
+      const action = {
+        code: 'CLIG3',
+        description: 'Manage grassland with very low nutrient inputs: CLIG3',
+        ratePerUnitGbp: 151,
+        availability: { value: 0, unit: 'ha', type: 'total' },
+        staticAvailability: { value: 31.89, unit: 'ha', type: 'total' }
+      }
+
+      const result = mapActionToViewModel(action, [{ code: 'CLIG3', description: 'CLIG3', value: 31.89 }])
+
+      expect(result.html).toContain(
+        '<span id="landActionQuantity_CLIG3-hint">31.8900 hectares applied, 0.0000 hectares remaining</span>'
+      )
+      expect(result.html).not.toContain('available</span>')
+    })
+
+    it('should report the leftover headroom as remaining when a selected total action did not take it all', () => {
+      const action = {
+        code: 'CLIG3',
+        description: 'Manage grassland with very low nutrient inputs: CLIG3',
+        ratePerUnitGbp: 151,
+        availability: { value: 2.5, unit: 'ha', type: 'total' }
+      }
+
+      const result = mapActionToViewModel(action, [{ code: 'CLIG3', description: 'CLIG3', value: 9.5 }])
+
+      expect(result.html).toContain('9.5000 hectares applied, 2.5000 hectares remaining')
     })
 
     it('should render data-total-available-area from staticAvailability when present, not the (possibly competed) availability', () => {

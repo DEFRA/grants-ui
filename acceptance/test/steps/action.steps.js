@@ -55,6 +55,15 @@ Then('(the user )should see {string} hectares available for action {string}', as
   await expect(this.page.locator(`#landActionQuantity_${action}-hint`)).toContainText(`${quantity} hectares available`)
 })
 
+Then(
+  '(the user )should see {string} hectares applied to action {string} with {string} remaining',
+  async function (applied, action, remaining) {
+    await expect(this.page.locator(`#landActionQuantity_${action}-hint`)).toHaveText(
+      `${applied} hectares applied, ${remaining} hectares remaining`
+    )
+  }
+)
+
 Then('(the user )should see {string} for action {string}', async function (errorText, action) {
   await expect(this.page.locator(`#landActionQuantity_${action}-error`)).toContainText(errorText)
 })
