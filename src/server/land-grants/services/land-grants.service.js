@@ -220,8 +220,8 @@ export async function fetchActionsWithPlannedActions({ parcelId, sheetId, planne
 }
 
 /**
- * The consent requirements for a single parcel, used by the map's "Additional
- * details" row: the union of consent keys across every action the parcel
+ * The consent requirements for a single parcel, used by the map's
+ * "Requirements" row: the union of consent keys across every action the parcel
  * carries. The journey's enabled actions do not narrow this. An SSSI
  * designation or HEFER requirement is a property of the land, so the map shows
  * it even when the action carrying it is not one this grant offers. Cached

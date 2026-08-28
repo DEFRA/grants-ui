@@ -185,18 +185,24 @@ describe('landGrantsActionsPlugin', () => {
         { parcelId: '0155', sheetId: 'SD7946' },
         { defraIdToken: 'defra-id-access-token', sbi: '106284736' }
       )
-      expect(h.response).toHaveBeenCalledWith({ text: 'SSSI consent and an SFI HEFER may apply to some actions' })
+      expect(h.response).toHaveBeenCalledWith({
+        intro: 'Some actions require:',
+        items: [
+          'site of special scientific interest (SSSI) consent',
+          'a Historic Environment Farm Environment Record (HEFER)'
+        ]
+      })
       expect(h._responseObj.code).toHaveBeenCalledWith(200)
     })
 
-    it('returns empty text when the parcel carries no requirement', async () => {
+    it('returns an empty notice when the parcel carries no requirement', async () => {
       fetchAuthorisedParcelIds.mockResolvedValue(['SD7946-0155'])
       fetchConsentRequirementsForParcel.mockResolvedValue({ consents: [] })
       const h = makeH()
 
       await consentsRoute().handler(makeRequest(), h)
 
-      expect(h.response).toHaveBeenCalledWith({ text: '' })
+      expect(h.response).toHaveBeenCalledWith({ intro: '', items: [] })
     })
 
     it('rejects with 403 when the parcel is not in the caller-authorised set', async () => {

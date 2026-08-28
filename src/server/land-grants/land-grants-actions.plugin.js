@@ -6,7 +6,7 @@ import {
   fetchActionsWithPlannedActions,
   fetchConsentRequirementsForParcel
 } from '~/src/server/land-grants/services/land-grants.service.js'
-import { getConsentNoticeText } from '~/src/server/land-grants/view-models/consent.view-model.js'
+import { getConsentNotice } from '~/src/server/land-grants/view-models/consent.view-model.js'
 import { COMPOUND_PARCEL_ID_PATTERN, parseLandParcel } from '~/src/shared/format-parcel.js'
 import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
 import { UNIT_TYPES } from '~/src/shared/unit-types.js'
@@ -118,7 +118,7 @@ async function consentsHandler(request, h) {
   try {
     const userContext = getLandGrantsUserContext(formRequest)
     const { consents } = await fetchConsentRequirementsForParcel({ parcelId, sheetId }, userContext)
-    return h.response({ text: getConsentNoticeText(consents) }).code(statusCodes.ok)
+    return h.response(getConsentNotice(consents)).code(statusCodes.ok)
   } catch (err) {
     return upstreamFailure(request, h, err, parcel)
   }
