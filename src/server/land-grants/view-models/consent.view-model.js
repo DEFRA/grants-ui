@@ -5,6 +5,8 @@
 const SSSI_CONSENT_LINK =
   './fptt-information#sec-10-get-all-necessary-regulatory-consents-permissions-and-licences-in-place'
 const HEFER_LINK = './fptt-information#section-5.5'
+const SSSI_REQUIREMENT = 'site of special scientific interest (SSSI) consent'
+const HEFER_REQUIREMENT = 'a Historic Environment Farm Environment Record (HEFER)'
 
 /**
  * Returns the consent panel view model for the consent-required page.
@@ -12,10 +14,10 @@ const HEFER_LINK = './fptt-information#section-5.5'
  * @returns {{ consentType: string, sssiConsentLink?: string, heferLink?: string } | null}
  */
 export function mapConsentPanelToViewModel(requiredConsents) {
-  const hasSssi = requiredConsents.includes('sssi')
+  const hasSSSI = requiredConsents.includes('sssi')
   const hasHefer = requiredConsents.includes('hefer')
 
-  if (hasSssi && hasHefer) {
+  if (hasSSSI && hasHefer) {
     return {
       consentType: 'all',
       sssiConsentLink: SSSI_CONSENT_LINK,
@@ -30,7 +32,7 @@ export function mapConsentPanelToViewModel(requiredConsents) {
     }
   }
 
-  if (hasSssi) {
+  if (hasSSSI) {
     return {
       consentType: 'sssi',
       sssiConsentLink: SSSI_CONSENT_LINK
@@ -70,17 +72,14 @@ export function getConsentRequirementText(requiredConsents) {
 }
 
 /**
- * The notice shown on the map's selected-parcel summary. Built here rather
- * than in the browser so every consent string lives in one module.
+ * The requirements notice shown on the map's selected-parcel summary: an
+ * intro line plus one bullet per requirement. Built here rather than in the
+ * browser so every consent string lives in one module. An empty items array
+ * means nothing applies and the row stays hidden.
  * @param {string[] | undefined} requiredConsents
- * @returns {string}
+ * @returns {{ text: string, items: string[] }}
  */
-export function getConsentNoticeText(requiredConsents) {
-  const labels = consentLabels(requiredConsents, 'SSSI consent', 'an SFI HEFER')
-  if (!labels.length) {
-    return ''
-  }
-  // "an SFI HEFER" leads the sentence when it is the only requirement.
-  const sentence = `${labels.join(' and ')} may apply to some actions`
-  return sentence.charAt(0).toUpperCase() + sentence.slice(1)
+export function getConsentNotice(requiredConsents) {
+  const items = consentLabels(requiredConsents, SSSI_REQUIREMENT, HEFER_REQUIREMENT)
+  return { text: items.length ? 'Some actions require:' : '', items }
 }
