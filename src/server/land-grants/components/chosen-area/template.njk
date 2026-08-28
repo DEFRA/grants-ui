@@ -1,0 +1,8 @@
+{#
+  A total action's quantity: read-only, because the action always claims every
+  hectare available on the parcel rather than an amount the user types. The
+  figure is kept in step with other selections by select-actions-page.js, which
+  addresses the value by displayId.
+#}
+<p class="govuk-body select-actions-chosen-area__label">Quantity</p>
+<p class="govuk-body govuk-!-font-weight-bold select-actions-chosen-area__value" id="{{ displayId }}">{{ areaText }}</p>

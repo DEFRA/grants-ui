@@ -42,19 +42,19 @@ describe('consent.view-model', () => {
     })
 
     it('should return the SSSI requirement when only SSSI consent is required', () => {
-      expect(getConsentRequirementText(['sssi'])).toBe('Requires SSSI consent')
+      expect(getConsentRequirementText(['sssi'])).toBe('SSSI consent required')
     })
 
     it('should return the HEFER requirement when only a HEFER is required', () => {
-      expect(getConsentRequirementText(['hefer'])).toBe('Requires an SFI HEFER')
+      expect(getConsentRequirementText(['hefer'])).toBe('HEFER required')
     })
 
     it('should return both requirements when both consent types are required', () => {
-      expect(getConsentRequirementText(['sssi', 'hefer'])).toBe('Requires SSSI consent and an SFI HEFER')
+      expect(getConsentRequirementText(['sssi', 'hefer'])).toBe('SSSI consent and HEFER required')
     })
 
     it('should keep SSSI first when the keys arrive in the other order', () => {
-      expect(getConsentRequirementText(['hefer', 'sssi'])).toBe('Requires SSSI consent and an SFI HEFER')
+      expect(getConsentRequirementText(['hefer', 'sssi'])).toBe('SSSI consent and HEFER required')
     })
 
     it('should return an empty string for unknown consent keys only', () => {
