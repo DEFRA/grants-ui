@@ -128,7 +128,7 @@ A local environment with:
 - This service
 - Grants UI Backend
 - Grants Config Broker, serving form-definition config to Grants UI Backend
-- MockServer, providing a stub for [fg-gas-backend](http://github.com/DEFRA/fg-gas-backend)
+- MockServer, providing a stub for [fg-gas-backend](http://github.com/DEFRA/fg-gas-backend) and [land-grants-api](http://github.com/DEFRA/land-grants-api).
 
 The recommended way to start the stack is via the [Grants TUI](#grants-tui), which handles addon selection and local-image overrides interactively. For a plain start without the TUI:
 

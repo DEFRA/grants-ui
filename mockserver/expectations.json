@@ -66,12 +66,38 @@
       "statusCode": 200,
       "body": {
         "items": [
-          { "type": "largeWhite", "description": "Large White", "quantity": 2, "value": 10, "total": 20 },
-          { "type": "britishLandrace", "description": "British Landrace", "quantity": 2, "value": 15, "total": 30 },
-          { "type": "berkshire", "description": "Berkshire", "quantity": 2, "value": 18, "total": 36 },
-          { "type": "other", "description": "Other", "quantity": 2, "value": 10, "total": 20 }
+          {
+            "type": "largeWhite",
+            "description": "Large White",
+            "quantity": 2,
+            "value": 10,
+            "total": 20
+          },
+          {
+            "type": "britishLandrace",
+            "description": "British Landrace",
+            "quantity": 2,
+            "value": 15,
+            "total": 30
+          },
+          {
+            "type": "berkshire",
+            "description": "Berkshire",
+            "quantity": 2,
+            "value": 18,
+            "total": 36
+          },
+          {
+            "type": "other",
+            "description": "Other",
+            "quantity": 2,
+            "value": 10,
+            "total": 20
+          }
         ],
-        "pigsData": { "totalPigs": 8 }
+        "pigsData": {
+          "totalPigs": 8
+        }
       }
     }
   },
@@ -125,7 +151,7 @@
     "priority": 10,
     "httpRequest": {
       "method": "POST",
-      "path": "/payments/calculate",
+      "path": "/api/v2/payments/calculate",
       "body": {
         "type": "JSON_PATH",
         "jsonPath": "$.parcel[*].actions[1]"
@@ -145,7 +171,7 @@
     "priority": 5,
     "httpRequest": {
       "method": "POST",
-      "path": "/payments/calculate",
+      "path": "/api/v2/payments/calculate",
       "body": {
         "type": "JSON_PATH",
         "jsonPath": "$.parcel[*].actions[?(@.code == 'TEST1')]"
@@ -165,7 +191,7 @@
     "priority": 5,
     "httpRequest": {
       "method": "POST",
-      "path": "/payments/calculate",
+      "path": "/api/v2/payments/calculate",
       "body": {
         "type": "JSON_PATH",
         "jsonPath": "$.parcel[*].actions[?(@.code == 'TEST2')]"
@@ -185,7 +211,7 @@
     "priority": 0,
     "httpRequest": {
       "method": "POST",
-      "path": "/payments/calculate"
+      "path": "/api/v2/payments/calculate"
     },
     "httpResponse": {
       "statusCode": 200,
@@ -245,7 +271,9 @@
                   "unit": "ha"
                 },
                 "ratePerUnitGbp": 151.0,
-                "description": "Manage grassland with very low nutrient inputs"
+                "description": "Manage grassland with very low nutrient inputs",
+                "sssiConsentRequired": true,
+                "heferRequired": true
               },
               {
                 "code": "CSAM3",
@@ -254,7 +282,8 @@
                   "unit": "ha"
                 },
                 "ratePerUnitGbp": 382.0,
-                "description": "Herbal leys"
+                "description": "Herbal leys",
+                "heferRequired": true
               },
               {
                 "code": "SCR2",
@@ -263,7 +292,8 @@
                   "unit": "ha"
                 },
                 "ratePerUnitGbp": 130.0,
-                "description": "Manage grassland with low nutrient inputs"
+                "description": "Manage grassland with low nutrient inputs",
+                "sssiConsentRequired": true
               },
               {
                 "code": "SCR3",
@@ -276,6 +306,109 @@
                 "description": "Manage grassland with no availability restriction"
               }
             ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "land-grants-api-parcels-groups-200",
+    "priority": 20,
+    "httpRequest": {
+      "method": "POST",
+      "path": "/api/v2/parcels",
+      "body": {
+        "type": "JSON_PATH",
+        "jsonPath": "$.fields[?(@ == 'groups')]"
+      }
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "body": {
+        "parcels": [
+          {
+            "parcelId": "7039",
+            "sheetId": "SD6843",
+            "size": {
+              "value": 15.5,
+              "total": 15.5,
+              "unit": "ha"
+            },
+            "actions": [
+              {
+                "code": "TEST1",
+                "availability": {
+                  "value": 7.0,
+                  "unit": "ha"
+                },
+                "ratePerUnitGbp": 50.0,
+                "description": "Test action 1"
+              },
+              {
+                "code": "TEST2",
+                "availability": {
+                  "value": 8.5,
+                  "unit": "ha"
+                },
+                "ratePerUnitGbp": 75.0,
+                "description": "Test action 2"
+              },
+              {
+                "code": "CLIG3",
+                "availability": {
+                  "value": 9.0,
+                  "unit": "ha"
+                },
+                "ratePerUnitGbp": 151.0,
+                "description": "Manage grassland with very low nutrient inputs",
+                "sssiConsentRequired": true,
+                "heferRequired": true
+              },
+              {
+                "code": "CSAM3",
+                "availability": {
+                  "value": 6.25,
+                  "unit": "ha"
+                },
+                "ratePerUnitGbp": 382.0,
+                "description": "Herbal leys",
+                "heferRequired": true
+              },
+              {
+                "code": "SCR2",
+                "availability": {
+                  "value": 4.5,
+                  "unit": "ha"
+                },
+                "ratePerUnitGbp": 130.0,
+                "description": "Manage grassland with low nutrient inputs",
+                "sssiConsentRequired": true
+              },
+              {
+                "code": "SCR3",
+                "availability": {
+                  "value": null,
+                  "unit": "ha",
+                  "type": "partial"
+                },
+                "ratePerUnitGbp": 95.0,
+                "description": "Manage grassland with no availability restriction"
+              }
+            ]
+          }
+        ],
+        "groups": [
+          {
+            "name": "Manage grassland",
+            "actions": ["CLIG3", "SCR2", "SCR3"]
+          },
+          {
+            "name": "Herbal leys",
+            "actions": ["CSAM3"]
+          },
+          {
+            "name": "Test actions",
+            "actions": ["TEST1", "TEST2"]
           }
         ]
       }
@@ -296,6 +429,7 @@
             "parcelId": "7039",
             "sheetId": "SD6843",
             "size": {
+              "value": 15.5,
               "total": 15.5,
               "unit": "ha"
             }
@@ -306,10 +440,14 @@
   },
   {
     "id": "land-grants-api-v2-parcels-200",
-    "priority": 0,
+    "priority": 6,
     "httpRequest": {
       "method": "POST",
-      "path": "/api/v2/parcels"
+      "path": "/api/v2/parcels",
+      "body": {
+        "type": "JSON_PATH",
+        "jsonPath": "$.parcelIds[?(@ == 'SD5649-9215')]"
+      }
     },
     "httpResponse": {
       "statusCode": 200,
@@ -341,6 +479,123 @@
         "result": {
           "hasPassed": true,
           "rules": []
+        }
+      }
+    }
+  },
+  {
+    "id": "land-grants-api-parcel-tiles-locate-200",
+    "priority": 0,
+    "httpRequest": {
+      "method": "POST",
+      "path": "/api/v1/parcel-tiles/locate"
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "body": {
+        "bbox": {
+          "minLng": -2.478,
+          "minLat": 53.8858,
+          "maxLng": -2.4758,
+          "maxLat": 53.8872
+        }
+      }
+    }
+  },
+  {
+    "id": "land-grants-api-wmp-calculate-payment-200",
+    "priority": 0,
+    "httpRequest": {
+      "method": "POST",
+      "path": "/api/v1/wmp/payments/calculate"
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "body": {
+        "message": "success",
+        "payment": {
+          "explanations": [],
+          "agreementStartDate": "2025-09-01",
+          "agreementEndDate": "2035-08-31",
+          "frequency": "Single",
+          "agreementTotalPence": 339510,
+          "parcelItems": {},
+          "agreementLevelItems": {
+            "1": {
+              "code": "PA3",
+              "description": "Woodland management plan",
+              "version": "1.0.0",
+              "parcelIds": ["SD6346-3387"],
+              "activePaymentTier": 3,
+              "quantityInActiveTier": 26.3397,
+              "activeTierRatePence": 1500,
+              "activeTierFlatRatePence": 300000,
+              "quantity": 126.3397,
+              "agreementTotalPence": 339510,
+              "unit": "ha"
+            }
+          },
+          "payments": [
+            {
+              "totalPaymentPence": 339510,
+              "paymentDate": null,
+              "lineItems": [
+                {
+                  "agreementLevelItemId": 1,
+                  "paymentPence": 339510
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "id": "land-grants-api-wmp-calculate-by-total-area-200",
+    "priority": 0,
+    "httpRequest": {
+      "method": "POST",
+      "path": "/api/v1/wmp/payments/calculate-by-total-area"
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "body": {
+        "message": "success",
+        "payment": {
+          "explanations": [],
+          "agreementStartDate": "2025-09-01",
+          "agreementEndDate": "2035-08-31",
+          "frequency": "Single",
+          "agreementTotalPence": 339510,
+          "parcelItems": {},
+          "agreementLevelItems": {
+            "1": {
+              "code": "PA3",
+              "description": "Woodland management plan",
+              "version": "1.0.0",
+              "parcelIds": ["SD6346-3387"],
+              "activePaymentTier": 3,
+              "quantityInActiveTier": 26.3397,
+              "activeTierRatePence": 1500,
+              "activeTierFlatRatePence": 300000,
+              "quantity": 126.3397,
+              "agreementTotalPence": 339510,
+              "unit": "ha"
+            }
+          },
+          "payments": [
+            {
+              "totalPaymentPence": 339510,
+              "paymentDate": null,
+              "lineItems": [
+                {
+                  "agreementLevelItemId": 1,
+                  "paymentPence": 339510
+                }
+              ]
+            }
+          ]
         }
       }
     }
@@ -378,7 +633,10 @@
           {
             "parcelId": "7039",
             "sheetId": "SD6843",
-            "size": { "value": 100, "unit": "ha" }
+            "size": {
+              "value": 100,
+              "unit": "ha"
+            }
           }
         ]
       }
