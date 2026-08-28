@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getConsentNoticeText, getConsentRequirementText, mapConsentPanelToViewModel } from './consent.view-model.js'
+import { getConsentNotice, getConsentRequirementText, mapConsentPanelToViewModel } from './consent.view-model.js'
 
 describe('consent.view-model', () => {
   describe('mapConsentPanelToViewModel', () => {
@@ -66,17 +66,20 @@ describe('consent.view-model', () => {
     })
   })
 
-  describe('getConsentNoticeText', () => {
+  describe('getConsentNotice', () => {
+    const sssi = 'site of special scientific interest (SSSI) consent'
+    const hefer = 'a Historic Environment Farm Environment Record (HEFER)'
+
     it.each([
-      [[], ''],
-      [['sssi'], 'SSSI consent may apply to some actions'],
-      [['hefer'], 'An SFI HEFER may apply to some actions'],
-      [['sssi', 'hefer'], 'SSSI consent and an SFI HEFER may apply to some actions'],
-      [['hefer', 'sssi'], 'SSSI consent and an SFI HEFER may apply to some actions'],
-      [['unknown'], ''],
-      [undefined, '']
+      [[], { intro: '', items: [] }],
+      [['sssi'], { intro: 'Some actions require:', items: [sssi] }],
+      [['hefer'], { intro: 'Some actions require:', items: [hefer] }],
+      [['sssi', 'hefer'], { intro: 'Some actions require:', items: [sssi, hefer] }],
+      [['hefer', 'sssi'], { intro: 'Some actions require:', items: [sssi, hefer] }],
+      [['unknown'], { intro: '', items: [] }],
+      [undefined, { intro: '', items: [] }]
     ])('renders %j as %j', (consents, expected) => {
-      expect(getConsentNoticeText(consents)).toBe(expected)
+      expect(getConsentNotice(consents)).toEqual(expected)
     })
   })
 })

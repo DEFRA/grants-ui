@@ -101,16 +101,19 @@
               <dt class="govuk-summary-list__key">Total area</dt>
               <dd class="govuk-summary-list__value" id="selected-parcel-area"></dd>
             </div>
-            <div class="govuk-summary-list__row govuk-summary-list__row--no-actions" id="selected-parcel-additional-requirements-row" hidden>
-              <dt class="govuk-summary-list__key">Additional requirements</dt>
-              <dd class="govuk-summary-list__value" id="selected-parcel-additional-requirements"></dd>
+            <div class="govuk-summary-list__row govuk-summary-list__row--no-actions" id="selected-parcel-requirements-row" hidden>
+              <dt class="govuk-summary-list__key">Requirements</dt>
+              <dd class="govuk-summary-list__value" id="selected-parcel-requirements">
+                <p class="govuk-body govuk-!-margin-bottom-1" id="selected-parcel-requirements-intro"></p>
+                <ul class="govuk-list govuk-list--bullet govuk-!-margin-bottom-0" id="selected-parcel-requirements-list"></ul>
+              </dd>
             </div>
           </dl>
           {# Outside the row above, so the asynchronous requirement text is
              announced once it lands rather than as part of revealing the
              summary itself. <output> carries an implicit status role that is
              honoured more consistently than role="status" on a <span>. #}
-          <output id="selected-parcel-additional-requirements-status" class="govuk-visually-hidden"></output>
+          <output id="selected-parcel-requirements-status" class="govuk-visually-hidden"></output>
         </div>
 
         {{ govukButton({
