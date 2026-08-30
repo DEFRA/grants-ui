@@ -1,5 +1,6 @@
 Feature: Action Selection
-    Scenario: Select a partial area action for a land parcel
+
+    Scenario: Select actions for a land parcel
         Given there is no application data for SBI "106514040" and grant "example-grant-with-map"
 
         # start
@@ -40,28 +41,28 @@ Feature: Action Selection
         And continues
         Then the user should see "The amount of land must be the same as or less than the available area" for action "CSAM3"
 
-        # RULE: partial action hectares must be 4 decimal places or fewer
+        # RULE: partial action hectares must be 4 decimal places or less
         When the user enters "0.27666" hectares for action "CSAM3"
         And continues
         Then the user should see "Quantity for Herbal leys: CSAM3 must be 4 decimal places or fewer" for action "CSAM3"
 
-        # RULE: partial action hectares must be be given
+        # RULE: partial action hectares cannot be empty
         When the user enters "" hectares for action "CSAM3"
         And continues
         Then the user should see "Enter a quantity for Herbal leys: CSAM3" for action "CSAM3"
 
-        # RULE: partial action cannot be selected once a total action is selected taking all available hectares
+        # RULE: partial action cannot be selected once a total action has been selected taking all available hectares
         When the user deselects action "CSAM3"
         And the user selects action "CLIG3"
         Then the user should be unable to select action "CSAM3"
 
-        # RULE: selecting a partial action with less than the available hectares allows a total action to subsequently be selected
+        # RULE: selecting a partial area action with less than the available hectares allows a total area action to subsequently be selected
         When the user deselects action "CLIG3"
         And the user selects action "CSAM3"
-        And the user enters "0.1" hectares for action "CSAM3"
+        And enters "0.1" hectares for action "CSAM3"
         Then the user should be able to select action "CLIG3"
 
-        # RULE: selecting a partial action with all available hectares does not allow a total action to subsequently be selected
+        # RULE: selecting a partial area action with all available hectares does not allow a total area action to subsequently be selected
         When the user enters "0.276" hectares for action "CSAM3"
         Then the user should be unable to select action "CLIG3"
 
@@ -70,8 +71,91 @@ Feature: Action Selection
         When the user enters "0.276" hectares for action "CSAM3"
         And continues
 
+        # confirm-land-and-actions
         Then the user should be at URL "confirm-land-and-actions"
         And should see heading "Review land parcels and actions"
+        And should see the following parcel summary cards
+            | PARCEL      | ACTION              | QUANTITY  | YEARLY PAYMENT |
+            | SK0972 6820 | Herbal leys (CSAM3) | 0.2760 ha | £61.82         |
+            |             | Subtotal            |           | £61.82         |
+        And should see total yearly payment "£61.82"
+
+        # add another parcel
+        When the user clicks on "Add another land parcel"
+        Then the user should be at URL "select-land-parcel"
+        When the user selects parcel "SK0971 5039" of area "2.5674" hectares on the map
+        And continues
+
+        # select actions for second parcel
+        Then the user should be at URL "select-actions-for-land-parcel"
+        When the user selects action "CSAM3"
+        And enters "1.25" hectares for action "CSAM3"
+        And selects action "SCR2"
+        And enters "0.75" hectares for action "SCR2"
+        And selects action "CLIG3"
+# TODO: remove when https://eaflood.atlassian.net/browse/TGC-1625 is fixed
+        And waits for 3 seconds
+# TODO
+        And continues
+
+        # confirm-land-and-actions (both parcels)
+        Then the user should be at URL "confirm-land-and-actions"
+        And should see the following parcel summary cards
+            | PARCEL      | ACTION                                                       | QUANTITY  | YEARLY PAYMENT |
+            | SK0972 6820 | Herbal leys (CSAM3)                                          | 0.2760 ha | £61.82         |
+            |             | Subtotal                                                     |           | £61.82         |
+            | SK0971 5039 | Herbal leys (CSAM3)                                          | 1.2500 ha | £280.00        |
+            |             | Manage grassland with very low nutrient inputs (CLIG3)       | 0.5674 ha | £85.68         |
+            |             | Manage scrub and open habitat mosaics (SCR2)                 | 0.7500 ha | £262.50        |
+            |             | Subtotal                                                     |           | £628.18        |
+        And should see total yearly payment "£690.00"
+
+        # use a change link
+        When the user clicks the change link for action "CLIG3" for parcel "SK0971 5039"
+        Then the user should be at URL "select-actions-for-land-parcel"
+        And should see action "CSAM3" selected with "1.25" hectares
+        And should see action "CLIG3" selected
+        And should see action "SCR2" selected with "0.75" hectares
+        When the user deselects action "CLIG3"
+        And enters "1.5" hectares for action "CSAM3"
+# TODO: remove when https://eaflood.atlassian.net/browse/TGC-1625 is fixed
+        And waits for 3 seconds
+# TODO
+        And continues
+
+        # confirm-land-and-actions, amended parcel
+        Then the user should be at URL "confirm-land-and-actions"
+        And should see the following parcel summary cards
+            | PARCEL      | ACTION                                                       | QUANTITY  | YEARLY PAYMENT |
+            | SK0972 6820 | Herbal leys (CSAM3)                                          | 0.2760 ha | £61.82         |
+            |             | Subtotal                                                     |           | £61.82         |
+            | SK0971 5039 | Herbal leys (CSAM3)                                          | 1.5000 ha | £336.00        |
+            |             | Manage scrub and open habitat mosaics (SCR2)                 | 0.7500 ha | £262.50        |
+            |             | Subtotal                                                     |           | £598.50        |
+        And should see total yearly payment "£660.32"
+
+        # use the "Add more actions to this parcel" link
+        When the user clicks the add more actions link for parcel "SK0971 5039"
+        Then the user should be at URL "select-actions-for-land-parcel"
+        And should see action "CSAM3" selected with "1.5" hectares
+        And should see action "SCR2" selected with "0.75" hectares
+        When the user selects action "CLIG3"
+# TODO: remove when https://eaflood.atlassian.net/browse/TGC-1625 is fixed
+        And waits for 3 seconds
+# TODO
+        And continues
+
+        # confirm-land-and-actions, action added back to parcel
+        Then the user should be at URL "confirm-land-and-actions"
+        And should see the following parcel summary cards
+            | PARCEL      | ACTION                                                       | QUANTITY  | YEARLY PAYMENT |
+            | SK0972 6820 | Herbal leys (CSAM3)                                          | 0.2760 ha | £61.82         |
+            |             | Subtotal                                                     |           | £61.82         |
+            | SK0971 5039 | Herbal leys (CSAM3)                                          | 1.5000 ha | £336.00        |
+            |             | Manage grassland with very low nutrient inputs (CLIG3)       | 0.3174 ha | £47.93         |
+            |             | Manage scrub and open habitat mosaics (SCR2)                 | 0.7500 ha | £262.50        |
+            |             | Subtotal                                                     |           | £646.43        |
+        And should see total yearly payment "£708.25"
         When the user clicks on "Add another land parcel"
 
         # RULE: a land parcel with no eligible action is rejected on the map page
