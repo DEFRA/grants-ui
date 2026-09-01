@@ -220,9 +220,7 @@ Feature: Application Lifecycle
         # claim-declaration
         Then the user should be at URL "claim-declaration"
         And should see heading "Example claim declaration page"
-
-        # submitting the claim moves the GAS status on to STATUS_CLAIM_COMPLETE
-        Given the application status in GAS is now "STATUS_CLAIM_COMPLETE"
+        Given the application status will be "STATUS_CLAIM_COMPLETE" immediately after the next submission
         When the user clicks on "Confirm and submit"
         And the grants-ui application status for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" should be "CLAIM_SUBMITTED"
         And the claim "-C01" for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" should have status "SUBMITTED"
@@ -240,6 +238,38 @@ Feature: Application Lifecycle
         And navigates to "/example-grant-with-auth"
         And logs in as CRN "1100995048"
         Then the user should be at URL "claim-confirmation"
+
+        # CLAIM_SUBMITTED application with GAS status of STATUS_AWAITING_CLAIM is redirected to the claims journey for a second time
+        Given the application status in GAS is now "STATUS_AWAITING_CLAIM"
+        And the user starts a new browser session
+        And navigates to "/example-grant-with-auth"
+        And logs in as CRN "1100995048"
+        Then the user should be at URL "claim"
+        And the grants-ui application status for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" should be "CLAIM_STARTED"
+        And the claim "-C02" for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" should have status "IN_PROGRESS"
+        And the claim "-C01" for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" should have status "SUBMITTED"
+
+        # review claim
+        And should see heading "Example claim start page"
+        And should see a total claim amount of "£2,553.30"
+        And should see a phase banner feedback link with journey "claim-inprogress"
+        When the user clicks on "Continue"
+
+        # claim-declaration
+        Then the user should be at URL "claim-declaration"
+        And should see heading "Example claim declaration page"
+        Given the application status will be "STATUS_CLAIM_COMPLETE" immediately after the next submission
+        When the user clicks on "Confirm and submit"
+        And the grants-ui application status for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" should be "CLAIM_SUBMITTED"
+        And the claim "-C02" for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" should have status "SUBMITTED"
+        And the claim "-C02" for CRN "1100995048" and SBI "115664358" should be submitted to GAS
+
+        # claim-confirmation
+        Then the user should be at URL "claim-confirmation"
+        And should see heading "Claim submitted"
+        And should see claim reference number "-C02"
+        And the user should see a phase banner feedback link with journey "claim-submitted"
+        And the user should see a confirmation page feedback link with journey "claim-submitted"
 
         # grants-ui backend status is reset to SUBMITTED and GAS status of APPLICATION_WITHDRAWN clears the application
         Given the application status in the backend for CRN "1100995048" and SBI "115664358" and grant "example-grant-with-auth" is now "SUBMITTED"

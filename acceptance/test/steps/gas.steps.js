@@ -47,6 +47,15 @@ Given(
   }
 )
 
+Given('the application status will be {string} immediately after the next submission', async function (gasStatus) {
+  if (!referenceNumbers.current) {
+    throw new Error('No reference number stored by earlier step')
+  }
+
+  const expectationId = await Gas.setStatusQueryResponse(referenceNumbers.current, gasStatus)
+  expectationIds.push(expectationId)
+})
+
 Then(
   'the reference number along with SBI {string} and CRN {string} should be submitted to GAS',
   async function (sbi, crn) {
@@ -108,13 +117,14 @@ Then(
       throw new Error('No reference number stored by earlier step')
     }
 
-    const request = await Gas.getClaimSubmission(referenceNumbers.current)
+    const claimNumber = `${referenceNumbers.current}${claimNumberSuffix}`
+    const request = await Gas.getClaimSubmission(referenceNumbers.current, claimNumber)
     expect(request).toBeDefined()
     expect(request.body.json.metadata.clientRef).toEqual(referenceNumbers.current.toLowerCase())
     expect(request.body.json.metadata.sbi).toEqual(sbi)
     expect(request.body.json.metadata.crn).toEqual(crn)
     expect(request.body.json.metadata.configVersion).toMatch(/^\d+\.\d+\.\d+$/)
-    expect(request.body.json.answers.claimNumber).toEqual(`${referenceNumbers.current}${claimNumberSuffix}`)
+    expect(request.body.json.answers.claimNumber).toEqual(claimNumber)
   }
 )
 
