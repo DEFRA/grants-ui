@@ -22,9 +22,11 @@ const SLUG_PATTERN = /^[a-z0-9-]+$/
 export const DEFAULT_CRN = '1102838829'
 
 /**
- * CRNs known to work for a journey, most-suitable first. Only journeys that need
- * a *specific* CRN are listed; anything absent uses DEFAULT_CRN (its allowlist is
- * `allowAll`). Sourced from compose/config-broker/local-allowlists/*.yaml.
+ * CRNs known to work for a journey, most-suitable first — the first is the
+ * default, and the TUI only prompts when a journey lists more than one. Listed
+ * either because the journey needs a *specific* CRN (its allowlist is not
+ * `allowAll`), or because a second CRN reaches seed data the default cannot.
+ * Sourced from compose/config-broker/local-allowlists/*.yaml.
  * @type {Record<string, {crn: string, note: string}[]>}
  */
 const JOURNEY_CRNS = {
@@ -32,7 +34,12 @@ const JOURNEY_CRNS = {
     { crn: '1100943757', note: 'woodland allowlist (SBI 113593357)' },
     { crn: '1100943838', note: 'woodland allowlist (SBI 107173507)' }
   ],
-  'farm-payments': [{ crn: '1102838829', note: 'farm-payments allowlist + seeded land parcels' }]
+  'farm-payments': [{ crn: '1102838829', note: 'farm-payments allowlist + seeded land parcels' }],
+
+  grasslands: [
+    { crn: '1102838829', note: 'parcels with eligible actions — the happy path' },
+    { crn: '1103313150', note: 'SK0972-6811 / SK0972-7313 have no eligible actions' }
+  ]
   // methane is `allowAll` once seeded (see SELF_SEED_GRANTS), so it uses DEFAULT_CRN.
 }
 
