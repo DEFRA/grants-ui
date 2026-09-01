@@ -2,7 +2,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { initSelectActionsPage } from './select-actions-page.js'
 
-// Matches the server's 4dp area formatting (see src/shared/area-text.js).
 const areaText = (value) => `${Number(value).toFixed(4)} hectares`
 
 function checkboxItemHtml({
@@ -22,8 +21,6 @@ function checkboxItemHtml({
   // rejected submission (see mapActionToViewModel) - not a single form-wide flag.
   const errorOnLoadAttr = errorOnLoad ? ' data-error-on-load="true"' : ''
   const conditionalId = `conditional-landAction-${code}`
-  // A total action reveals a read-only display of what it claims; only an
-  // action with no availability restriction at all reveals nothing.
   const hasChosenAreaPanel = !requiresMaxQuantity && availability?.value != null
   const ariaControlsAttr = requiresMaxQuantity || hasChosenAreaPanel ? ` aria-controls="${conditionalId}"` : ''
   // Matches govuk-frontend's real markup: the conditional reveal is a SIBLING
@@ -56,9 +53,6 @@ function checkboxItemHtml({
         </div>
       </div>`
     : ''
-  // Matches mapActionToViewModel: every action's "X available" hint sits in
-  // the checkbox hint, under the payment rate - not inside the conditional
-  // panel - and is kept live by the client (see updateHintLive).
   let hintValue = null
   if (requiresMaxQuantity) {
     hintValue = unrestricted ? null : requiresMaxQuantity
@@ -67,8 +61,6 @@ function checkboxItemHtml({
   }
   const availabilityHint =
     hintValue != null ? `<span id="landActionQuantity_${code}-hint">${hintValue} ha available</span>` : ''
-  // Matches mapActionToViewModel: a total action's claim is shown in its
-  // conditional panel, seeded with what it would claim when unselected.
   const chosenAreaPanel = hasChosenAreaPanel
     ? `
     <div class="govuk-checkboxes__conditional${hiddenClass}" id="${conditionalId}">
@@ -691,9 +683,6 @@ describe('initSelectActionsPage', () => {
     expect(hintFor('CLIG3').textContent).toBe('0.2271 hectares available')
   })
 
-  // Scenario 3: a total action takes every hectare available, so the user has
-  // to be told what it took - its read-only panel shows the claim, its hint
-  // what that leaves.
   it('reports what a selected total action applied, and that nothing is left for it', async () => {
     const form = setupDom([
       { code: 'CLIG3', availability: { value: 31.89, unit: 'ha' } },
@@ -708,9 +697,6 @@ describe('initSelectActionsPage', () => {
     expect(hintFor('CLIG3').textContent).toBe('0.0000 hectares available')
   })
 
-  // Growth chases freed land across follow-up refreshes until nothing is left,
-  // so a settled total action always ends at 0 remaining - here it starts from
-  // a 9.5 claim and absorbs the 2.5 the response reports as still claimable.
   it('grows a selected total action into freed land and still reports nothing left for it', async () => {
     const form = setupDom([{ code: 'CLIG3', checked: true, availability: { value: 9.5, unit: 'ha' } }])
     global.fetch = vi
