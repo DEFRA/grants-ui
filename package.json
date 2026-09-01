@@ -68,8 +68,7 @@
     "start": "NODE_ENV=production node --use-strict .",
     "setup:husky": "node -e \"try { (await import('husky')).default() } catch (e) { if (e.code !== 'ERR_MODULE_NOT_FOUND') throw e }\" --input-type module",
     "unseal:cookie": "node ./tools/unseal-cookie.js",
-    "generate:tokens": "node ./tools/generate-tokens.js",
-    "generate:tokens:save": "node ./tools/generate-tokens.js --save"
+    "http-client:init": "node ./tools/init-http-client-secrets.js"
   },
   "author": "Defra DDTS",
   "license": "OGL-UK-3.0",
@@ -78,10 +77,10 @@
     "sirv": "3.0.2",
     "qs": "6.15.2",
     "uuid": "14.0.0",
-    "joi": "17.13.4"
+    "joi": "17.13.6"
   },
   "dependencies": {
-    "@aws-sdk/client-sns": "3.1112.0",
+    "@aws-sdk/client-sns": "3.1116.0",
     "@babel/runtime": "8.0.0",
     "@defra/fcp-audit-publisher": "1.0.7",
     "@defra/forms-engine-plugin": "4.23.0",
@@ -111,7 +110,7 @@
     "hapi-pulse": "4.0.0",
     "hapi-rate-limit": "8.0.0",
     "ioredis": "5.11.1",
-    "joi": "17.13.4",
+    "joi": "17.13.6",
     "jsonwebtoken": "9.0.3",
     "lodash": "4.18.1",
     "nunjucks": "3.2.4",
@@ -149,8 +148,8 @@
     "cheerio": "1.2.0",
     "clean-webpack-plugin": "4.0.0",
     "copy-webpack-plugin": "14.0.0",
-    "cssnano": "8.0.6",
-    "cssnano-preset-default": "8.0.6",
+    "cssnano": "8.0.8",
+    "cssnano-preset-default": "8.0.8",
     "eslint": "9.39.5",
     "eslint-config-prettier": "10.1.8",
     "husky": "9.1.7",
@@ -161,7 +160,7 @@
     "postcss-load-config": "6.0.1",
     "postcss-loader": "8.2.1",
     "prettier": "3.9.6",
-    "sass-embedded": "1.102.0",
+    "sass-embedded": "1.103.1",
     "sass-loader": "17.0.0",
     "snyk": "1.1306.4",
     "source-map-loader": "5.0.0",
