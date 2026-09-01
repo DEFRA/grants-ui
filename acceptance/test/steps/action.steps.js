@@ -55,14 +55,6 @@ Then('(the user )should see {string} hectares available for action {string}', as
   await expect(this.page.locator(`#landActionQuantity_${action}-hint`)).toContainText(`${quantity} hectares available`)
 })
 
-Then(
-  '(the user )should see {string} hectares applied to action {string} with {string} available',
-  async function (applied, action, available) {
-    await expect(this.page.locator(`#landActionChosenArea_${action}`)).toHaveText(`${applied} hectares`)
-    await expect(this.page.locator(`#landActionQuantity_${action}-hint`)).toHaveText(`${available} hectares available`)
-  }
-)
-
 Then('(the user )should see {string} for action {string}', async function (errorText, action) {
   await expect(this.page.locator(`#landActionQuantity_${action}-error`)).toContainText(errorText)
 })

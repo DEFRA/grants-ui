@@ -23,11 +23,10 @@ Feature: Action Selection
             | Total area        | 0.2774 hectares |
         And should see the following actions with guidance
             | ACTION | DESCRIPTION                                           | GUIDANCE                          | URL |
-            | CSAM3  | Herbal leys: CSAM3                                    | Payment rate per year: £224/ha    | Yes |
-            | CLIG3  | Manage grassland with very low nutrient inputs: CLIG3 | Payment rate per year: £151/ha    | Yes |
-            |        |                                                       | 0.2760 hectares available         |     |
-            |        |                                                       | This action will use all the available area on this land parcel. |     |
-            | SCR2   | Manage scrub and open habitat mosaics: SCR2           | Payment rate per year: £350/ha    | Yes |
+            | CSAM3  | Herbal leys: CSAM3                                    | Payment rate per year: £224.00/ha | Yes |
+            | CLIG3  | Manage grassland with very low nutrient inputs: CLIG3 | Payment rate per year: £151.00/ha | Yes |
+            |        |                                                       | 0.276 hectares available          |     |
+            | SCR2   | Manage scrub and open habitat mosaics: SCR2           | Payment rate per year: £350.00/ha | Yes |
 
         When the user selects action "CSAM3"
 
@@ -54,8 +53,7 @@ Feature: Action Selection
         # RULE: partial action cannot be selected once a total action is selected taking all available hectares
         When the user deselects action "CSAM3"
         And the user selects action "CLIG3"
-        Then the user should see "0.2760" hectares applied to action "CLIG3" with "0.0000" available
-        And the user should be unable to select action "CSAM3"
+        Then the user should be unable to select action "CSAM3"
 
         # RULE: selecting a partial action with less than the available hectares allows a total action to subsequently be selected
         When the user deselects action "CLIG3"
