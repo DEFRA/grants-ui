@@ -971,6 +971,14 @@ describe('formsStatusRedirect', () => {
           toGrantsStatus: 'CLAIM_STARTED',
           toPath: '/claim'
         },
+        // 2nd and subsequent claims: GAS moving back to STATUS_AWAITING_CLAIM opens the
+        // next claim window. This specific rule must precede the CLAIM_SUBMITTED default.
+        {
+          fromGrantsStatus: 'CLAIM_SUBMITTED',
+          gasStatus: 'STATUS_AWAITING_CLAIM',
+          toGrantsStatus: 'CLAIM_STARTED',
+          toPath: '/claim'
+        },
         {
           fromGrantsStatus: 'CLAIM_SUBMITTED',
           gasStatus: 'default',
@@ -1077,14 +1085,66 @@ describe('formsStatusRedirect', () => {
       expect(result).toBe(h.continue)
     })
 
-    it('redirects CLAIM_SUBMITTED requests to the claim submitted page', async () => {
+    it('redirects CLAIM_SUBMITTED requests to the claim submitted page while GAS has not reopened the claim window', async () => {
       context.state = { applicationStatus: ApplicationStatus.CLAIM_SUBMITTED }
       request.path = '/grant-a/confirmation'
       request.params.path = 'confirmation'
+      // GAS is still processing the submitted claim, so no new claim window is open.
+      getApplicationStatus.mockResolvedValue({ json: async () => ({ status: 'RECEIVED' }) })
 
       await formsStatusRedirect(request, h, context)
 
       expect(h.redirect).toHaveBeenCalledWith('/grant-a/claim/submitted')
+      expect(updateApplicationStatus).not.toHaveBeenCalled()
+      expect(request.yar.set).not.toHaveBeenCalledWith(YarKeys.STATUS_CHANGE_REDIRECT, expect.anything())
+    })
+
+    it('opens the next claim window when GAS moves a submitted claim back to STATUS_AWAITING_CLAIM', async () => {
+      context.state = { applicationStatus: ApplicationStatus.CLAIM_SUBMITTED }
+      request.path = '/grant-a/claim-confirmation'
+      request.params.path = 'claim-confirmation'
+      getApplicationStatus.mockResolvedValue({ json: async () => ({ status: 'STATUS_AWAITING_CLAIM' }) })
+
+      await formsStatusRedirect(request, h, context)
+
+      expect(getApplicationStatus).toHaveBeenCalledWith('grant-a', 'ref-001', request)
+      expect(updateApplicationStatus).toHaveBeenCalledWith(
+        ApplicationStatus.CLAIM_STARTED,
+        '12345:grant-a',
+        expect.objectContaining({ lockToken: 'mock-lock-token' })
+      )
+      expect(h.redirect).toHaveBeenCalledWith('/grant-a/claim')
+      expect(request.yar.set).toHaveBeenCalledWith(YarKeys.STATUS_CHANGE_REDIRECT, '/grant-a/claim')
+    })
+
+    it('persists the next claim transition but continues without a marker when already on the claim start page', async () => {
+      context.state = { applicationStatus: ApplicationStatus.CLAIM_SUBMITTED }
+      request.path = '/grant-a/claim'
+      request.params.path = 'claim'
+      getApplicationStatus.mockResolvedValue({ json: async () => ({ status: 'STATUS_AWAITING_CLAIM' }) })
+
+      const result = await formsStatusRedirect(request, h, context)
+
+      expect(result).toBe(h.continue)
+      expect(updateApplicationStatus).toHaveBeenCalledWith(
+        ApplicationStatus.CLAIM_STARTED,
+        '12345:grant-a',
+        expect.objectContaining({ lockToken: 'mock-lock-token' })
+      )
+      expect(h.redirect).not.toHaveBeenCalled()
+      expect(request.yar.set).not.toHaveBeenCalledWith(YarKeys.STATUS_CHANGE_REDIRECT, expect.anything())
+    })
+
+    it('keeps the user on the submitted claim page without throwing when GAS is unavailable', async () => {
+      context.state = { applicationStatus: ApplicationStatus.CLAIM_SUBMITTED }
+      request.path = '/grant-a/confirmation'
+      request.params.path = 'confirmation'
+      getApplicationStatus.mockRejectedValue(new Error('GAS unavailable'))
+
+      await formsStatusRedirect(request, h, context)
+
+      expect(h.redirect).toHaveBeenCalledWith('/grant-a/claim/submitted')
+      expect(updateApplicationStatus).not.toHaveBeenCalled()
     })
   })
 
