@@ -14,12 +14,16 @@ class Gas {
     return requests.find((r) => r.body.json.metadata.clientRef === referenceNumber.toLowerCase())
   }
 
-  async getClaimSubmission(referenceNumber) {
+  async getClaimSubmission(referenceNumber, claimNumber) {
     const client = mockServerClient(process.env.MOCKSERVER_HOST, process.env.MOCKSERVER_PORT)
     const requests = await client.retrieveRecordedRequests({
       path: '/grants/[^/]+/applications/[^/]+/claims'
     })
-    return requests.find((r) => r.body.json.metadata.clientRef === referenceNumber.toLowerCase())
+    return requests.find(
+      (r) =>
+        r.body.json.metadata.clientRef === referenceNumber.toLowerCase() &&
+        r.body.json.answers.claimNumber === claimNumber
+    )
   }
 
   async setApplicationSubmissionResponse(sbi, httpStatusCode, errorText, times) {
