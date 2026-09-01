@@ -58,8 +58,6 @@ Then('(the user )should see {string} hectares available for action {string}', as
 Then(
   '(the user )should see {string} hectares applied to action {string} with {string} available',
   async function (applied, action, available) {
-    // A total action shows its claim in a read-only display, since it has no
-    // quantity input, and what that leaves in its own hint.
     await expect(this.page.locator(`#landActionChosenArea_${action}`)).toHaveText(`${applied} hectares`)
     await expect(this.page.locator(`#landActionQuantity_${action}-hint`)).toHaveText(`${available} hectares available`)
   }

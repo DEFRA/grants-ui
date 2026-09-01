@@ -17,8 +17,6 @@
     color: $govuk-secondary-text-colour;
   }
 
-  // The available-area guidance is a statement about what selecting the action
-  // does, not another fact about it, so it sits apart from the hint lines above.
   .select-actions-guidance {
     display: block;
     margin-top: govuk-spacing(2);
@@ -49,7 +47,6 @@
     }
   }
 
-
   .govuk-checkboxes__item:has(+ .govuk-checkboxes__conditional:not(.govuk-checkboxes__conditional--hidden)),
   .govuk-checkboxes__item:has(+ .govuk-checkboxes__conditional:last-child),
   .govuk-checkboxes__item:last-child {
@@ -69,8 +66,6 @@
       flex-wrap: wrap;
     }
 
-    // Label and value read as one pair: a little more than a plain line box
-    // between them (1.3x the 25px line height), and nothing after the value.
     .select-actions-chosen-area__label {
       margin-bottom: 7px;
     }

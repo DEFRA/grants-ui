@@ -502,7 +502,6 @@ function applyCheckedNonQuantityAvailability(checkbox, availabilityValue, sentQu
   if (chosenArea === 0) {
     markUnavailable(checkbox)
   } else {
-    // Growth consumed the reported headroom; without it, that headroom is what is left.
     setNonQuantityClaim(checkbox, chosenArea, grows ? 0 : availabilityValue)
     clearUnavailable(checkbox)
   }

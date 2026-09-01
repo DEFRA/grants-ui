@@ -269,8 +269,6 @@ describe('select-actions.view-model', () => {
       expect(result.html).not.toContain('landActionQuantity_UPL2-hint')
     })
 
-    // A total action is only ever all-or-nothing, so the page has to say so up
-    // front - it has no quantity input whose max would otherwise imply it.
     it('should show the available-area guidance for a non-quantity (total) action', () => {
       const result = mapActionToViewModel(
         {
@@ -291,18 +289,12 @@ describe('select-actions.view-model', () => {
       expect(result.html).not.toContain('This action will use all the available area on this land parcel.')
     })
 
-    // A whole-pound rate reads as "£151", not "£151.00" - the pence are only
-    // shown when the rate actually has any (see £100.50 above).
     it('should drop a trailing .00 from the payment rate', () => {
       const result = mapActionToViewModel({ code: 'CLIG3', description: 'CLIG3', ratePerUnitGbp: 151 }, [])
 
       expect(result.html).toContain('Payment rate per year: £151/ha')
     })
 
-    // Scenario 3: selecting a total action assigns every available hectare to
-    // it, leaving an explicit 0.0000 - shown to 4dp so it reads as a measured
-    // zero rather than missing data. What it claimed goes in its read-only
-    // quantity panel, since a total action has no input of its own.
     it('should show what a selected total action claimed in its panel, and what that leaves in its hint', () => {
       const action = {
         code: 'CLIG3',
@@ -333,8 +325,6 @@ describe('select-actions.view-model', () => {
       expect(result.conditional.html).toContain('id="landActionChosenArea_CLIG3">9.5000 hectares</p>')
     })
 
-    // Unselected, the panel is hidden - but it is what the user sees the
-    // instant they tick the box, before the first live refresh answers.
     it('should show what an unselected total action would claim in its panel', () => {
       const action = {
         code: 'CLIG3',
