@@ -46,7 +46,7 @@ const allowlistHandler = async (request, h) => {
   // audit `entity` can be set correctly. The model isn't loaded at this
   // stage, so use a pragmatic path-name heuristic as a best-effort.
   const path = /** @type {string | undefined} */ (request.params?.path)
-  const isClaimPath = Boolean(path && path.includes('claim')) || request.path.includes('/claim')
+  const isClaimPath = path?.includes('claim') || request.path.includes('/claim')
 
   await request.sendAuditEvent({
     entity: isClaimPath ? 'claim' : 'application',
