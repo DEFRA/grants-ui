@@ -272,7 +272,7 @@ Feature: User Permissions
         And logs in as CRN "1062311186"
         Then the user should be at URL "claim"
         And should see heading "Example claim start page"
-        # And an authorised audit event should be published for entity "claim" and grant "example-grant-with-auth" with CRN "1062311186" and SBI "106238911"
+        And an authorised audit event should be published for entity "claim" and grant "example-grant-with-auth" with CRN "1062311186" and SBI "106238911"
         When the user clicks on "Continue"
 
         # claim-declaration - cannot submit claim

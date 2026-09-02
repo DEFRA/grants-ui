@@ -42,7 +42,14 @@ const allowlistHandler = async (request, h) => {
   }
 
   log(LogCodes.AUTH.ALLOWLIST_ACCESS_DENIED, { userId: crn, sbi, path: request.path, grantCode })
+  // Determine whether this request targets a claim journey page so the
+  // audit `entity` can be set correctly. The model isn't loaded at this
+  // stage, so use a pragmatic path-name heuristic as a best-effort.
+  const path = /** @type {string | undefined} */ (request.params?.path)
+  const isClaimPath = Boolean(path && path.includes('claim')) || request.path.includes('/claim')
+
   await request.sendAuditEvent({
+    entity: isClaimPath ? 'claim' : 'application',
     action: 'unauthorised',
     status: 'denied',
     details: { reason: 'allowlist', grantCode }

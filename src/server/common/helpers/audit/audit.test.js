@@ -221,7 +221,9 @@ describe('audit-publisher plugin', () => {
 
         await flushPromises()
 
-        expect(request.sendAuditEventInBackground).toHaveBeenCalledWith({ action: 'authorised' })
+        expect(request.sendAuditEventInBackground).toHaveBeenCalledWith(
+          expect.objectContaining({ action: 'authorised' })
+        )
         expect(request.sendAuditEvent).not.toHaveBeenCalled()
       })
 
@@ -234,6 +236,53 @@ describe('audit-publisher plugin', () => {
         handler(request, h)
 
         expect(request.sendAuditEventInBackground).toHaveBeenCalledTimes(1)
+      })
+
+      test('sends an "authorised" event with entity=application for a grant start page even when permissions resolve to csAgreements', async () => {
+        const request = successRequest({
+          // grant start-page access is still classified as application; claim is only
+          // audited on the dedicated /claim route.
+          app: { model: { def: { startPage: '/start', metadata: { permissions: { resource: 'csAgreements' } } } } }
+        })
+
+        const result = handler(request, h)
+        expect(result).toBe(h.continue)
+
+        await flushPromises()
+
+        expect(request.sendAuditEventInBackground).toHaveBeenCalledWith(
+          expect.objectContaining({ action: 'authorised', entity: 'application' })
+        )
+      })
+
+      test('sends an "authorised" event with entity=claim when a signed-in user first enters the claim page', async () => {
+        const request = successRequest({
+          method: 'get',
+          path: '/my-grant/claim',
+          params: { slug: 'my-grant', path: 'claim' },
+          app: {
+            model: {
+              def: {
+                metadata: {
+                  permissions: {
+                    pageAccess: {
+                      rules: [{ paths: ['claim'], resource: 'csAgreements', permission: 'amend' }]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        })
+
+        const result = handler(request, h)
+        expect(result).toBe(h.continue)
+
+        await flushPromises()
+
+        expect(request.sendAuditEventInBackground).toHaveBeenCalledWith(
+          expect.objectContaining({ action: 'authorised', entity: 'claim' })
+        )
       })
 
       test.each([

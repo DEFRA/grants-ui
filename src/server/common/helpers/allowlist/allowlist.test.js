@@ -103,6 +103,30 @@ describe('allowlist plugin', () => {
     expect(result).toBe(h)
   })
 
+  it('uses the claim entity when a claim route is denied by the allowlist', async () => {
+    const handler = registerAndGetHandler(server)
+    fetchAllowedGrants.mockResolvedValue([])
+
+    const sendAuditEvent = vi.fn().mockResolvedValue(undefined)
+    const request = mockHapiRequest({
+      params: { slug: SLUG, path: 'claim' },
+      path: `/${SLUG}/claim`,
+      auth: { isAuthenticated: true, credentials: { crn: CRN, sbi: SBI } },
+      sendAuditEvent
+    })
+
+    await handler(request, h)
+
+    expect(sendAuditEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entity: 'claim',
+        action: 'unauthorised',
+        status: 'denied',
+        details: expect.objectContaining({ reason: 'allowlist', grantCode: SLUG })
+      })
+    )
+  })
+
   it('throws when the backend allowlist call fails (fail-closed)', async () => {
     const handler = registerAndGetHandler(server)
     fetchAllowedGrants.mockRejectedValue(new Error('backend down'))
