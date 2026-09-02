@@ -1521,7 +1521,7 @@ async function main() {
       // headless runs) are skipped in whichever direction we're travelling, so
       // back-navigation always lands on the previous *visible* prompt. Only `esc` on
       // step 0 — or an explicit "Cancel" — returns to the main menu.
-      let chosen
+      let chosen = ''
       let crn
       let mode
       let clearChoice
