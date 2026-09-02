@@ -31,6 +31,7 @@
  *   ↑ ↓       navigate
  *   space     toggle addon selection
  *   a         select / deselect all items in current list
+ *   g         set the mocked GAS status (only when GAS runs on mockserver)
  *   enter     confirm selection
  *   esc       go back / quit
  *
@@ -83,7 +84,16 @@ import {
   VERSION,
   YELLOW
 } from './grants-tui/constants.js'
-import { pauseStdin, promptScale, radioMenu, releaseStdin, resumeStdin, toggleMenu } from './grants-tui/tui.js'
+import {
+  pauseStdin,
+  promptScale,
+  promptTextWithOptions,
+  radioMenu,
+  releaseStdin,
+  resumeStdin,
+  toggleMenu
+} from './grants-tui/tui.js'
+import { GAS_DIVIDER, gasStatusSegment, getGasStatus, setGasStatus } from './grants-tui/gas.js'
 import { cmdTest, testLogPath } from './grants-tui/tests.js'
 import { cmdSonar } from './grants-tui/sonar.js'
 import { cmdJourney, journeyCrnOptions, journeySteps, listJourneys, wontCompleteReason } from './grants-tui/journey.js'
@@ -286,27 +296,40 @@ function buildStatusLine(runningFiles) {
     return `${DIM}No containers running${RESET_COLOR}`
   }
   const isDebugging = runningFiles.some((f) => f.includes('grants-ui-cli-debug-override-'))
-  const labels = runningFiles
+  // The core stack always spans compose.infra + compose.grants-ui (and the legacy
+  // single `compose`); collapse them into one "Core" chip so the status line reads
+  // "Core" instead of listing each core compose file separately.
+  const CORE_BASES = new Set(['compose', 'compose.infra', 'compose.grants-ui'])
+  let hasCore = false
+  const addonLabels = []
+  runningFiles
     .filter((f) => !f.includes('grants-ui-cli-local-override-') && !f.includes('grants-ui-cli-debug-override-'))
-    .map((f) => {
+    .forEach((f) => {
       const base = f
         .split('/')
         .pop()
         .replace(/\.yml$/, '')
-      if (base === 'compose') return 'core'
+      if (CORE_BASES.has(base)) {
+        hasCore = true
+        return
+      }
       const addon = ADDONS.find((a) => a.composeFile === base + '.yml')
-      return addon ? addon.label : base
+      addonLabels.push(addon ? addon.label : base)
     })
+  const labels = hasCore ? ['Core', ...addonLabels] : addonLabels
   if (!labels.length) {
     return `${DIM}No containers running${RESET_COLOR}`
   }
   const state = loadState()
   const localKeys = state && state.localServices && state.localServices.length ? state.localServices : []
   const formDefCount = getSelectedFormDefIds(state).length
+  // Local overrides sit behind the same subtle divider used before the GAS badge,
+  // read as a plain `Local: …` chip (no parentheses, no `images:` prefix): the
+  // overridden image keys and the form-def override count, listed bare.
   const localBits = []
-  if (localKeys.length) localBits.push(`images: ${localKeys.join(', ')}`)
-  if (formDefCount) localBits.push(`form-def overrides: ${formDefCount}`)
-  const localSuffix = localBits.length ? `  ${PURPLE}(local: ${localBits.join('; ')})${RESET_COLOR}` : ''
+  if (localKeys.length) localBits.push(localKeys.join(', '))
+  if (formDefCount) localBits.push(`${formDefCount} form-def overrides`)
+  const localSuffix = localBits.length ? `  ${GAS_DIVIDER}  ${PURPLE}Local: ${localBits.join(', ')}${RESET_COLOR}` : ''
   const runningWord = isDebugging ? `${RED}Debugging${RESET_COLOR}` : 'Running'
   const tick = isDebugging ? '🐛' : `${GREEN}✔${RESET_COLOR}`
   return `${tick}  ${runningWord}: ${BOLD}${labels.join(', ')}${RESET_COLOR}${localSuffix}`
@@ -1094,7 +1117,8 @@ async function main() {
 
   while (true) {
     const savedState = loadState()
-    const containersRunning = !!getRunningComposeFiles()
+    const runningComposeFiles = getRunningComposeFiles()
+    const containersRunning = !!runningComposeFiles
 
     const localCount = (savedState && savedState.localServices && savedState.localServices.length) || 0
     const formDefSelectionCount = getSelectedFormDefIds(savedState).length
@@ -1159,8 +1183,55 @@ async function main() {
       { key: 'reset', label: 'reset ⇢', description: 'Full teardown — removes volumes & images' }
     ]
 
-    const command = await radioMenu(menuItems, 'What do you want to do?', { statusLine })
+    // GAS status is served by mockserver only when the GAS addon (compose.gas.yml)
+    // isn't running. In that mode surface the current mocked status on the status
+    // line (yellow, fenced off by a divider) and let `g` edit it.
+    const gasMockActive = containersRunning && !runningComposeFiles.some((f) => f.endsWith('compose.gas.yml'))
+    const gasStatus = gasMockActive ? await getGasStatus() : null
+    const gasReachable = gasStatus !== null
+    // Commands that return via `continue` leave `statusLine` empty; fall back to
+    // the default running status line so coming back from a submenu (journey,
+    // local, …) still shows the "Core" chip rather than just the GAS badge.
+    const baseStatusLine = statusLine || buildStatusLine(runningComposeFiles)
+    const menuStatusLine = gasReachable
+      ? `${baseStatusLine}  ${GAS_DIVIDER}  ${gasStatusSegment(gasStatus)}`
+      : baseStatusLine
+    const menuHint = gasReachable ? '↑ ↓  navigate    enter → select    g → set GAS status    esc → quit' : ''
+
+    const command = await radioMenu(menuItems, 'What do you want to do?', {
+      statusLine: menuStatusLine,
+      hint: menuHint,
+      gasEditable: gasReachable
+    })
     statusLine = ''
+
+    if (command === '__gas__') {
+      // Common statuses offered as selectable presets, with a free-form field as
+      // the last option for anything else. Land the cursor on the preset matching
+      // the current status (leaving the field blank); if it's not a preset,
+      // pre-fill the field with it "selected" so it's obvious you overtype it.
+      const GAS_STATUS_OPTIONS = ['RECEIVED', 'STATUS_AWAITING_CLAIM']
+      const current = gasStatus === 'RECEIVED (default)' ? 'RECEIVED' : (gasStatus ?? '')
+      const matched = GAS_STATUS_OPTIONS.includes(current) ? current : null
+      const nextStatus = await promptTextWithOptions('Set mocked GAS application status', {
+        options: GAS_STATUS_OPTIONS,
+        selectedOption: matched,
+        initial: matched ? '' : current,
+        hint: '↑ ↓  move    type to edit    enter → save    esc → cancel'
+      })
+      const trimmed = nextStatus?.trim()
+      if (trimmed) {
+        const ok = await setGasStatus(trimmed)
+        // No "GAS status set to …" confirmation — the yellow GAS badge in the
+        // status line already reflects the new value on the next render, so just
+        // fall back to the default running status line (and only surface a line
+        // when the update failed).
+        statusLine = ok
+          ? buildStatusLine(runningComposeFiles)
+          : `${RED}✖${RESET_COLOR}  Failed to set GAS status — is mockserver running?`
+      }
+      continue
+    }
 
     if (command === '__quit__') {
       process.stdout.write(ALT_SCREEN_EXIT + SHOW_CURSOR)
@@ -1438,133 +1509,205 @@ async function main() {
         statusLine = `${DIM}No journey definitions found${RESET_COLOR}`
         continue
       }
-      const SELECT_HINT = '↑ ↓  navigate    enter → select    esc → cancel'
-      // Annotate each journey with the CRN it needs (or a warning if it can't complete).
-      const journeyItems = journeys.map((slug) => {
-        const crns = journeyCrnOptions(slug)
-        const description = wontCompleteReason(slug)
-          ? `${YELLOW}⚠ may not complete${RESET_COLOR}`
-          : `${DIM}CRN ${crns[0]?.crn ?? '—'}${RESET_COLOR}`
-        return { key: slug, label: slug, description }
-      })
-      const chosen = await radioMenu(journeyItems, 'Select a journey to run', { hint: SELECT_HINT })
-      if (chosen === '__quit__') {
-        statusLine = ''
-        continue
-      }
+      // `esc` on the first prompt (the journey list) cancels back to the main menu;
+      // on every later prompt it steps back one level, so its hint says "back".
+      const CANCEL_HINT = '↑ ↓  navigate    enter → select    esc → cancel'
+      const BACK_HINT = '↑ ↓  navigate    enter → select    esc → back'
 
-      // Pick the CRN to sign in as. Journeys with more than one known-good CRN
-      // prompt; a single option is used automatically (methane has none — the
-      // won't-complete acknowledgement below covers it).
-      const crnOptions = journeyCrnOptions(chosen)
-      let crn = crnOptions[0]?.crn
-      if (crnOptions.length > 1) {
-        const crnItems = crnOptions.map((o) => ({ key: o.crn, label: o.crn, description: o.note }))
-        const pickedCrn = await radioMenu(crnItems, `Select a CRN for '${chosen}'`, { hint: SELECT_HINT })
-        if (pickedCrn === '__quit__') {
-          statusLine = ''
-          continue
-        }
-        crn = pickedCrn
-      }
-
-      // Then pick how to run it — headless (bundled Chromium) or headed (your Chrome).
-      const modeItems = [
-        { key: 'headless', label: 'headless', description: 'Run in the background (bundled Chromium)' },
-        { key: 'headed', label: 'headed', description: 'Watch it in your installed Google Chrome' }
-      ]
-      const mode = await radioMenu(modeItems, `Run '${chosen}' — headed or headless?`, { hint: SELECT_HINT })
-      if (mode === '__quit__') {
-        statusLine = ''
-        continue
-      }
-
-      // Then choose whether to flush saved application state first — the same
-      // reset the "Clear application state" footer link performs — so the run
-      // starts from step 1 rather than resuming the furthest-reached page.
-      const clearItems = [
-        { key: 'keep', label: 'keep state', description: 'Resume from where this application left off' },
-        {
-          key: 'clear',
-          label: 'clear state',
-          description: 'Reset to step 1 (like the footer "Clear application state" link)'
-        }
-      ]
-      const clearChoice = await radioMenu(clearItems, `Clear application state for '${chosen}' before running?`, {
-        hint: '↑ ↓  navigate    enter → run    esc → cancel'
-      })
-      if (clearChoice === '__quit__') {
-        statusLine = ''
-        continue
-      }
-
-      // For journeys known not to complete (e.g. farm-payments), make the user
-      // acknowledge why before running — a selectable confirm, not just a keypress.
-      const wontComplete = wontCompleteReason(chosen)
-      if (wontComplete) {
-        const ackItems = [
-          {
-            key: 'cancel',
-            label: 'Cancel',
-            description: 'Back to the menu'
-          },
-          {
-            key: 'run',
-            label: 'Run anyway',
-            description: wontComplete.join(' ')
-          }
-        ]
-        const ack = await radioMenu(ackItems, `${YELLOW}⚠  '${chosen}' will NOT complete — run anyway?${RESET_COLOR}`, {
-          hint: SELECT_HINT
-        })
-        if (ack !== 'run') {
-          statusLine = ack === '__quit__' ? '' : `${DIM}Journey '${chosen}' cancelled${RESET_COLOR}`
-          continue
-        }
-      }
-
-      // Offer the land-parcel mock before the stop-page question, so a run can be
-      // pointed at the "no eligible actions" path. The local seed gives every
-      // parcel at least one action, so this is the only way to reach that page.
-      // Only offered for journeys that actually have a map step.
+      // The journey setup is a sequence of prompts walked as a little state machine
+      // so `esc` goes back one prompt rather than abandoning the whole flow. `dir`
+      // tracks whether we're moving forwards (a selection) or backwards (an esc);
+      // prompts whose question doesn't apply (single-CRN journeys, non-map journeys,
+      // headless runs) are skipped in whichever direction we're travelling, so
+      // back-navigation always lands on the previous *visible* prompt. Only `esc` on
+      // step 0 — or an explicit "Cancel" — returns to the main menu.
+      let chosen
+      let crn
+      let mode
+      let clearChoice
       let mockNoActions = false
-      if (journeySteps(chosen).some((s) => s.type === 'mapParcel')) {
-        const mockItems = [
-          { key: 'off', label: 'API Data', description: 'Use whatever actions the land-grants API returns' },
-          {
-            key: 'no-actions',
-            label: 'Mock no eligible actions',
-            description: 'Land parcels report no actions — shows the error on the map page'
+      let stop
+      let cancelledStatus = null
+      let step = 0
+      let dir = 1
+      const LAST_STEP = 6
+
+      while (step >= 0 && step <= LAST_STEP) {
+        if (step === 0) {
+          // Select a journey. Annotate each with the CRN it needs (or a warning).
+          const journeyItems = journeys.map((slug) => {
+            const crns = journeyCrnOptions(slug)
+            const description = wontCompleteReason(slug)
+              ? `${YELLOW}⚠ may not complete${RESET_COLOR}`
+              : `${DIM}CRN ${crns[0]?.crn ?? '—'}${RESET_COLOR}`
+            return { key: slug, label: slug, description }
+          })
+          const picked = await radioMenu(journeyItems, 'Select a journey to run', { hint: CANCEL_HINT })
+          if (picked === '__quit__') {
+            step = -1 // esc on the first prompt → back to the main menu
+            break
           }
-        ]
-        const pickedMock = await radioMenu(mockItems, `Land parcel actions for '${chosen}'?`, { hint: SELECT_HINT })
-        if (pickedMock === '__quit__') {
-          statusLine = ''
-          continue
+          chosen = picked
+          dir = 1
+          step = 1
+        } else if (step === 1) {
+          // Pick the CRN to sign in as. Journeys with more than one known-good CRN
+          // prompt; a single option is used automatically (methane has none — the
+          // won't-complete acknowledgement below covers it).
+          const crnOptions = journeyCrnOptions(chosen)
+          if (crnOptions.length <= 1) {
+            crn = crnOptions[0]?.crn
+            step += dir
+            continue
+          }
+          const crnItems = crnOptions.map((o) => ({ key: o.crn, label: o.crn, description: o.note }))
+          const pickedCrn = await radioMenu(crnItems, `Select a CRN for '${chosen}'`, { hint: BACK_HINT })
+          if (pickedCrn === '__quit__') {
+            dir = -1
+            step -= 1
+            continue
+          }
+          crn = pickedCrn
+          dir = 1
+          step = 2
+        } else if (step === 2) {
+          // Pick how to run it — headless (bundled Chromium) or headed (your Chrome).
+          const modeItems = [
+            { key: 'headless', label: 'headless', description: 'Run in the background (bundled Chromium)' },
+            { key: 'headed', label: 'headed', description: 'Watch it in your installed Google Chrome' }
+          ]
+          const picked = await radioMenu(modeItems, `Run '${chosen}' — headed or headless?`, { hint: BACK_HINT })
+          if (picked === '__quit__') {
+            dir = -1
+            step -= 1
+            continue
+          }
+          mode = picked
+          dir = 1
+          step = 3
+        } else if (step === 3) {
+          // Choose whether to flush saved application state first — the same reset
+          // the "Clear application state" footer link performs — so the run starts
+          // from step 1 rather than resuming the furthest-reached page.
+          const clearItems = [
+            { key: 'keep', label: 'keep state', description: 'Resume from where this application left off' },
+            {
+              key: 'clear',
+              label: 'clear state',
+              description: 'Reset to step 1 (like the footer "Clear application state" link)'
+            }
+          ]
+          const picked = await radioMenu(clearItems, `Clear application state for '${chosen}' before running?`, {
+            hint: BACK_HINT
+          })
+          if (picked === '__quit__') {
+            dir = -1
+            step -= 1
+            continue
+          }
+          clearChoice = picked
+          dir = 1
+          step = 4
+        } else if (step === 4) {
+          // For journeys known not to complete (e.g. farm-payments), make the user
+          // acknowledge why before running — a selectable confirm, not just a keypress.
+          const wontComplete = wontCompleteReason(chosen)
+          if (!wontComplete) {
+            step += dir
+            continue
+          }
+          const ackItems = [
+            {
+              key: 'cancel',
+              label: 'Cancel',
+              description: 'Back to the menu'
+            },
+            {
+              key: 'run',
+              label: 'Run anyway',
+              description: wontComplete.join(' ')
+            }
+          ]
+          const ack = await radioMenu(
+            ackItems,
+            `${YELLOW}⚠  '${chosen}' will NOT complete — run anyway?${RESET_COLOR}`,
+            {
+              hint: BACK_HINT
+            }
+          )
+          if (ack === '__quit__') {
+            dir = -1
+            step -= 1
+            continue
+          }
+          if (ack !== 'run') {
+            cancelledStatus = `${DIM}Journey '${chosen}' cancelled${RESET_COLOR}`
+            step = -1
+            break
+          }
+          dir = 1
+          step = 5
+        } else if (step === 5) {
+          // Offer the land-parcel mock before the stop-page question, so a run can be
+          // pointed at the "no eligible actions" path. The local seed gives every
+          // parcel at least one action, so this is the only way to reach that page.
+          // Only offered for journeys that actually have a map step.
+          if (!journeySteps(chosen).some((s) => s.type === 'mapParcel')) {
+            mockNoActions = false
+            step += dir
+            continue
+          }
+          const mockItems = [
+            { key: 'off', label: 'API Data', description: 'Use whatever actions the land-grants API returns' },
+            {
+              key: 'no-actions',
+              label: 'Mock no eligible actions',
+              description: 'Land parcels report no actions — shows the error on the map page'
+            }
+          ]
+          const pickedMock = await radioMenu(mockItems, `Land parcel actions for '${chosen}'?`, { hint: BACK_HINT })
+          if (pickedMock === '__quit__') {
+            dir = -1
+            step -= 1
+            continue
+          }
+          mockNoActions = pickedMock === 'no-actions'
+          dir = 1
+          step = 6
+        } else if (step === 6) {
+          // Headed only: let the user stop the browser on a chosen page. Lists every
+          // page in the journey; picking one passes it as --stop so the run halts
+          // there (on the page, before filling it) for inspection.
+          if (mode !== 'headed') {
+            stop = undefined
+            step += dir
+            continue
+          }
+          const steps = journeySteps(chosen)
+          const stopItems = [
+            { key: '__end__', label: 'Run to the end', description: 'Complete the whole journey' },
+            ...steps.map((s, i) => ({
+              key: String(i + 1),
+              label: `${i + 1}. ${s.slug}`,
+              description: s.name === s.slug ? '' : s.name
+            }))
+          ]
+          const pickedStop = await radioMenu(stopItems, `Stop '${chosen}' on which page?`, { hint: BACK_HINT })
+          if (pickedStop === '__quit__') {
+            dir = -1
+            step -= 1
+            continue
+          }
+          stop = pickedStop !== '__end__' ? pickedStop : undefined
+          dir = 1
+          step = 7 // all prompts answered → run
         }
-        mockNoActions = pickedMock === 'no-actions'
       }
 
-      // Headed only: let the user stop the browser on a chosen page. Lists every
-      // page in the journey; picking one passes it as --stop so the run halts
-      // there (on the page, before filling it) for inspection.
-      let stop
-      if (mode === 'headed') {
-        const steps = journeySteps(chosen)
-        const stopItems = [
-          { key: '__end__', label: 'Run to the end', description: 'Complete the whole journey' },
-          ...steps.map((s, i) => ({
-            key: String(i + 1),
-            label: `${i + 1}. ${s.slug}`,
-            description: s.name === s.slug ? '' : s.name
-          }))
-        ]
-        const pickedStop = await radioMenu(stopItems, `Stop '${chosen}' on which page?`, { hint: SELECT_HINT })
-        if (pickedStop === '__quit__') {
-          statusLine = ''
-          continue
-        }
-        if (pickedStop !== '__end__') stop = pickedStop
+      // esc on the first prompt (or an explicit Cancel) → back to the main menu.
+      if (step < 0) {
+        statusLine = cancelledStatus ?? ''
+        continue
       }
 
       pauseStdin()

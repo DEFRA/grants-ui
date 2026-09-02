@@ -160,6 +160,9 @@ export const PURPLE = ANSI ? '\x1b[35m' : ''
 // Dimmed purple for the resting state of purple sub-items, so the highlighted
 // (full-purple) state is easier to distinguish at a glance.
 export const FADED_PURPLE = ANSI ? '\x1b[2;35m' : ''
+// Reverse video — used to render pre-filled prompt text as "selected" so it's
+// obvious the whole value will be replaced the moment you start typing.
+export const INVERSE = ANSI ? '\x1b[7m' : ''
 
 // Cursor / screen control — no-ops when ANSI unsupported
 export const HIDE_CURSOR = ANSI ? '\x1b[?25l' : ''
@@ -184,5 +187,6 @@ export const KEYS = {
   ENTER2: '\n',
   CTRL_C: '\u0003',
   ESC: '\u001b',
-  A: 'a'
+  A: 'a',
+  G: 'g'
 }
