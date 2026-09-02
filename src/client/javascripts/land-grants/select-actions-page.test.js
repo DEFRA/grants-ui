@@ -2,6 +2,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { initSelectActionsPage } from './select-actions-page.js'
 
+const areaText = (value) => `${Number(value).toFixed(4)} hectares`
+
 function checkboxItemHtml({
   code,
   checked = false,
@@ -9,6 +11,7 @@ function checkboxItemHtml({
   requiresMaxQuantity,
   unrestricted = false,
   quantityValue = '',
+  chosenArea,
   hasError = false,
   errorOnLoad = false
 }) {
@@ -18,14 +21,16 @@ function checkboxItemHtml({
   // rejected submission (see mapActionToViewModel) - not a single form-wide flag.
   const errorOnLoadAttr = errorOnLoad ? ' data-error-on-load="true"' : ''
   const conditionalId = `conditional-landAction-${code}`
-  const ariaControlsAttr = requiresMaxQuantity ? ` aria-controls="${conditionalId}"` : ''
+  const hasChosenAreaPanel = !requiresMaxQuantity && availability?.value != null
+  const ariaControlsAttr = requiresMaxQuantity || hasChosenAreaPanel ? ` aria-controls="${conditionalId}"` : ''
   // Matches govuk-frontend's real markup: the conditional reveal is a SIBLING
   // of .govuk-checkboxes__item, not nested inside it, and is only visible
   // (no --hidden class) when the checkbox starts out checked.
+  const hiddenClass = checked ? '' : ' govuk-checkboxes__conditional--hidden'
   const inputClass = `govuk-input${hasError ? ' govuk-input--error' : ''}`
   const conditional = requiresMaxQuantity
     ? `
-    <div class="govuk-checkboxes__conditional${checked ? '' : ' govuk-checkboxes__conditional--hidden'}" id="${conditionalId}">
+    <div class="govuk-checkboxes__conditional${hiddenClass}" id="${conditionalId}">
         <div class="govuk-form-group">
           <div id="landActionQuantity_${code}-refresh-banner" class="select-actions-refresh-banner select-actions-refresh-banner--hidden">Updating available land for this action&hellip;</div>
           <input class="${inputClass}" id="landActionQuantity_${code}" name="landActionQuantity_${code}" type="text" value="${quantityValue}"${unrestricted ? '' : ` max="${requiresMaxQuantity}"`}>
@@ -34,11 +39,18 @@ function checkboxItemHtml({
         </div>
       </div>`
     : ''
+  const chosenAreaPanel = hasChosenAreaPanel
+    ? `
+    <div class="govuk-checkboxes__conditional${hiddenClass}" id="${conditionalId}">
+        <p>Quantity</p>
+        <p id="landActionChosenArea_${code}">${areaText(chosenArea ?? availability.value)}</p>
+      </div>`
+    : ''
   // Matches mapActionToViewModel: a non-quantity action gets its own "X
   // available" hint, kept live by the client (see syncNonQuantityHint).
   const nonQuantityHint =
     !requiresMaxQuantity && availability?.value != null
-      ? `<span id="landActionQuantity_${code}-hint">${availability.value} ha available</span>`
+      ? `<span id="landActionQuantity_${code}-hint">${areaText(availability.value)} available</span>`
       : ''
   return `
     <div class="govuk-checkboxes__item">
@@ -46,7 +58,7 @@ function checkboxItemHtml({
       <label for="landAction-${code}">${code}</label>
       ${nonQuantityHint}
     </div>
-    ${conditional}`
+    ${conditional}${chosenAreaPanel}`
 }
 
 // Matches the server: a non-quantity action's chosen area is a plain hidden
@@ -120,6 +132,9 @@ const checkbox = (form, code) => form.querySelector(`input[value="${code}"]`)
 const quantityInputFor = (form, code) => form.querySelector(`#landActionQuantity_${code}`)
 
 const hintFor = (code) => document.getElementById(`landActionQuantity_${code}-hint`)
+
+/** A total action's read-only claim display (see chosen-area/template.njk). */
+const chosenAreaDisplayFor = (code) => document.getElementById(`landActionChosenArea_${code}`)
 
 // Flip a checkbox and let the refresh it triggers settle. Pass `checked` to
 // drive it to a specific state rather than just firing the event.
@@ -547,7 +562,7 @@ describe('initSelectActionsPage', () => {
 
     initSelectActionsPage(form)
 
-    expect(hintFor('CSAM3').textContent).toBe('15.25 hectares available')
+    expect(hintFor('CSAM3').textContent).toBe('15.2500 hectares available')
   })
 
   // The route validates crumb in restful mode (X-CSRF-Token header) rather
@@ -626,6 +641,50 @@ describe('initSelectActionsPage', () => {
 
     expect(checkbox(form, 'CLIG3').disabled).toBe(false)
     expect(hintFor('CLIG3').textContent).toBe('0.2271 hectares available')
+  })
+
+  it('reports what a selected total action applied, and that nothing is left for it', async () => {
+    const form = setupDom([
+      { code: 'CLIG3', availability: { value: 31.89, unit: 'ha' } },
+      { code: 'CSAM3', availability: { value: 31.89, unit: 'ha' }, requiresMaxQuantity: 31.89 }
+    ])
+    await initSettled(form, mockApi({ CLIG3: 31.89, CSAM3: 31.89 }))
+
+    await toggle(form, 'CLIG3', true)
+
+    expect(getChosenAreaFieldValue(checkbox(form, 'CLIG3'))).toBe('31.89')
+    expect(chosenAreaDisplayFor('CLIG3').textContent).toBe('31.8900 hectares')
+    expect(hintFor('CLIG3').textContent).toBe('0.0000 hectares available')
+  })
+
+  it('grows a selected total action into freed land and still reports nothing left for it', async () => {
+    const form = setupDom([{ code: 'CLIG3', checked: true, availability: { value: 9.5, unit: 'ha' } }])
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ actions: [{ code: 'CLIG3', availability: { value: 2.5, unit: 'ha' } }] })
+      })
+      .mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ actions: [{ code: 'CLIG3', availability: { value: 0, unit: 'ha' } }] })
+      })
+    initSelectActionsPage(form)
+    await flushPromises()
+
+    expect(getChosenAreaFieldValue(checkbox(form, 'CLIG3'))).toBe('12')
+    expect(chosenAreaDisplayFor('CLIG3').textContent).toBe('12.0000 hectares')
+    expect(hintFor('CLIG3').textContent).toBe('0.0000 hectares available')
+  })
+
+  it('reverts a total action to what it would claim again once it is deselected', async () => {
+    const form = setupDom([{ code: 'CLIG3', checked: true, availability: { value: 31.89, unit: 'ha' } }])
+    await initSettled(form, fetchOk({ actions: [{ code: 'CLIG3', availability: { value: 31.89, unit: 'ha' } }] }))
+
+    await toggle(form, 'CLIG3', false)
+
+    expect(hintFor('CLIG3').textContent).toBe('31.8900 hectares available')
+    expect(chosenAreaDisplayFor('CLIG3').textContent).toBe('31.8900 hectares')
   })
 
   it('unchecks and clears a checked quantity-required action that has no confirmed quantity, without disabling it', async () => {
@@ -835,7 +894,7 @@ describe('initSelectActionsPage', () => {
     })
     await toggle(form, 'CLIG3')
 
-    expect(hintFor('CSAM3').textContent).toBe('0 hectares available')
+    expect(hintFor('CSAM3').textContent).toBe('0.0000 hectares available')
     global.fetch.mockClear()
 
     await typeQuantity(form, 'CSAM3', '0.05')
@@ -1431,7 +1490,7 @@ describe('initSelectActionsPage', () => {
 
     const quantityInput = form.querySelector('#landActionQuantity_CSAM3')
     expect(quantityInput.max).toBe('12')
-    expect(hintFor('CSAM3').textContent).toBe('12 hectares available')
+    expect(hintFor('CSAM3').textContent).toBe('12.0000 hectares available')
   })
 
   it('checking an action with no quantity typed yet leaves its own hint/max at the un-competed full total (nothing confirmed yet to send)', async () => {
@@ -1539,7 +1598,7 @@ describe('initSelectActionsPage', () => {
     const quantityInput = form.querySelector('#landActionQuantity_CLIG3')
     expect(clig3.disabled).toBe(false)
     expect(quantityInput.disabled).toBe(false)
-    expect(hintFor('CLIG3').textContent).toBe('0 hectares available')
+    expect(hintFor('CLIG3').textContent).toBe('0.0000 hectares available')
   })
 
   it('refreshes the hint to the raw response value after a refresh, not the typed value plus it', async () => {
@@ -1752,7 +1811,7 @@ describe('initSelectActionsPage', () => {
     const csam3 = checkbox(form, 'CSAM3')
     expect(getChosenAreaFieldValue(clig3)).toBe('22.9957')
     expect(csam3.disabled).toBe(true)
-    expect(hintFor('CSAM3').textContent).toBe('0 hectares available')
+    expect(hintFor('CSAM3').textContent).toBe('0.0000 hectares available')
     expect(csam3.closest('.govuk-checkboxes__item').textContent).toContain(
       'Not compatible with other selected actions.'
     )

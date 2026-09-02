@@ -1,5 +1,9 @@
-import { ACTION_QUANTITY_FIELD_PREFIX, getActionQuantityFieldName } from '../../../shared/action-quantity-field.js'
-import { formatUnit } from '../../../shared/format-unit.js'
+import {
+  ACTION_QUANTITY_FIELD_PREFIX,
+  getActionChosenAreaDisplayId,
+  getActionQuantityFieldName
+} from '../../../shared/action-quantity-field.js'
+import { areaWithUnitText, availableAreaText } from '../../../shared/area-text.js'
 import { getAvailabilityLimit } from '../../../shared/availability.js'
 import { isValidCompoundParcelId } from '../../../shared/format-parcel.js'
 
@@ -15,10 +19,27 @@ const REFRESH_BANNER_CLASS = 'select-actions-refresh-banner'
 const REFRESH_BANNER_HIDDEN_CLASS = 'select-actions-refresh-banner--hidden'
 
 /**
- * @param {number} value
- * @param {string} unit
+ * Records what a total action is claiming in its read-only display (see
+ * chosen-area/template.njk). Null when this is a quantity action, whose claim
+ * is its own input's value, or when the action had no figure to display at
+ * render time (no availability restriction at all).
+ * @param {HTMLInputElement} checkbox
+ * @returns {HTMLElement | null}
  */
-const availabilityHintText = (value, unit) => `${value} ${formatUnit(unit)} available`
+function getChosenAreaDisplay(checkbox) {
+  return document.getElementById(getActionChosenAreaDisplayId(checkbox.value))
+}
+
+/**
+ * @param {HTMLInputElement} checkbox
+ * @param {number} chosenArea
+ */
+function setChosenAreaDisplay(checkbox, chosenArea) {
+  const display = getChosenAreaDisplay(checkbox)
+  if (display) {
+    display.textContent = areaWithUnitText(chosenArea, checkbox.getAttribute(AVAILABLE_UNIT_ATTR) ?? undefined)
+  }
+}
 
 /** @param {HTMLElement} form */
 function getCheckboxes(form) {
@@ -227,7 +248,7 @@ function updateHintLive(checkbox) {
   const typed = Number(quantityInput.value.trim())
   // Round to 4dp to absorb float noise (e.g. 0.3271 - 0.2 !== 0.1271 in JS).
   const remaining = typed > 0 ? Math.max(0, Math.round((total - typed) * 10000) / 10000) : total
-  hint.textContent = availabilityHintText(remaining, unit)
+  hint.textContent = availableAreaText(remaining, unit)
 }
 
 /**
@@ -357,26 +378,61 @@ function syncQuantityInputBounds(checkbox, action) {
   }
   quantityInput.max = String(limit)
   if (hint) {
-    hint.textContent = availabilityHintText(limit, action.availability.unit)
+    hint.textContent = availableAreaText(limit, action.availability.unit)
   }
 }
 
 /**
- * Refreshes a non-quantity action's own "X available" hint (see
- * getActionQuantityFieldName - shares its id with the quantity-action hint
- * pattern) from the latest availability, as reported by the API.
+ * A non-quantity action's own hint element (see getActionQuantityFieldName -
+ * shares its id with the quantity-action hint pattern), or null when this is
+ * a quantity action or the hint was never rendered.
+ * @param {HTMLInputElement} checkbox
+ * @returns {HTMLElement | null}
+ */
+function getNonQuantityHint(checkbox) {
+  if (getQuantityInput(checkbox)) {
+    return null
+  }
+  return document.getElementById(`${getActionQuantityFieldName(checkbox.value)}-hint`)
+}
+
+/**
+ * Refreshes a non-quantity action's "X available" hint from the latest
+ * availability, as reported by the API. An unselected action's read-only
+ * quantity display is refreshed with it, since that is what it would claim if
+ * selected right now - a selected one is left to setNonQuantityClaim, which
+ * runs after this and knows what the action actually holds.
  * @param {HTMLInputElement} checkbox
  * @param {{ availability?: ActionAvailability | null }} action
  */
 function syncNonQuantityHint(checkbox, action) {
   const limit = getAvailabilityLimit(action.availability)
-  if (getQuantityInput(checkbox) || limit == null) {
+  if (limit == null) {
     return
   }
-  const hint = document.getElementById(`${getActionQuantityFieldName(checkbox.value)}-hint`)
+  const hint = getNonQuantityHint(checkbox)
   if (hint) {
-    hint.textContent = availabilityHintText(limit, /** @type {ActionAvailability} */ (action.availability).unit)
+    hint.textContent = availableAreaText(limit, /** @type {ActionAvailability} */ (action.availability).unit)
   }
+  if (!checkbox.checked) {
+    setChosenAreaDisplay(checkbox, limit)
+  }
+}
+
+/**
+ * A selected non-quantity action shows what it took in its read-only quantity
+ * display - it has no input of its own - and what that leaves in its hint.
+ * @param {HTMLInputElement} checkbox
+ * @param {number} chosenArea
+ * @param {number} remaining
+ */
+function setNonQuantityClaim(checkbox, chosenArea, remaining) {
+  const hint = getNonQuantityHint(checkbox)
+  const unit = checkbox.getAttribute(AVAILABLE_UNIT_ATTR)
+  if (hint) {
+    hint.textContent = availableAreaText(remaining, unit ?? undefined)
+  }
+  setChosenAreaDisplay(checkbox, chosenArea)
 }
 
 /**
@@ -446,6 +502,7 @@ function applyCheckedNonQuantityAvailability(checkbox, availabilityValue, sentQu
   if (chosenArea === 0) {
     markUnavailable(checkbox)
   } else {
+    setNonQuantityClaim(checkbox, chosenArea, grows ? 0 : availabilityValue)
     clearUnavailable(checkbox)
   }
   return grows

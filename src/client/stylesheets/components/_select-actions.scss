@@ -17,6 +17,11 @@
     color: $govuk-secondary-text-colour;
   }
 
+  .select-actions-guidance {
+    display: block;
+    margin-top: govuk-spacing(2);
+  }
+
   .select-actions-unavailable-message {
     @include govuk-font-size(16);
     margin-top: 0;
@@ -60,6 +65,14 @@
 
     .govuk-input__wrapper {
       flex-wrap: wrap;
+    }
+
+    .select-actions-chosen-area__label {
+      margin-bottom: 7px;
+    }
+
+    .select-actions-chosen-area__value {
+      margin-bottom: 0;
     }
   }
 

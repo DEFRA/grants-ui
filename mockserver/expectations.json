@@ -242,7 +242,8 @@
                 "code": "CLIG3",
                 "availability": {
                   "value": 9.0,
-                  "unit": "ha"
+                  "unit": "ha",
+                  "type": "total"
                 },
                 "ratePerUnitGbp": 151.0,
                 "description": "Manage grassland with very low nutrient inputs"

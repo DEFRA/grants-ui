@@ -108,18 +108,18 @@ describe('buildConfirmLandAndActionsViewModel', () => {
       )
 
     it.each([
-      [['sssi'], 'Requires SSSI consent'],
-      [['hefer'], 'Requires an SFI HEFER'],
-      [['sssi', 'hefer'], 'Requires SSSI consent and an SFI HEFER'],
-      [['hefer', 'sssi'], 'Requires SSSI consent and an SFI HEFER']
+      [['sssi'], 'SSSI consent required'],
+      [['hefer'], 'HEFER required'],
+      [['sssi', 'hefer'], 'SSSI consent and HEFER required'],
+      [['hefer', 'sssi'], 'SSSI consent and HEFER required']
     ])('renders %j as the hint for that action only', (consents, expected) => {
       expect(requirementTextsOf(parcelsWithConsents(consents))).toEqual([[expected, undefined], [undefined]])
     })
 
     it('keeps each action on each parcel to its own persisted requirement', () => {
       expect(requirementTextsOf(parcelsWithConsents(['sssi'], ['hefer']))).toEqual([
-        ['Requires SSSI consent', undefined],
-        ['Requires an SFI HEFER']
+        ['SSSI consent required', undefined],
+        ['HEFER required']
       ])
     })
 

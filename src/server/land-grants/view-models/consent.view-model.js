@@ -62,13 +62,13 @@ function consentLabels(requiredConsents, sssiLabel, heferLabel) {
 }
 
 /**
- * The "Requires ..." hint shown beneath a selected action's name.
+ * The "... required" requirement line shown with a selected action's name.
  * @param {string[] | undefined} requiredConsents
  * @returns {string}
  */
 export function getConsentRequirementText(requiredConsents) {
-  const labels = consentLabels(requiredConsents, 'SSSI consent', 'an SFI HEFER')
-  return labels.length ? `Requires ${labels.join(' and ')}` : ''
+  const labels = consentLabels(requiredConsents, 'SSSI consent', 'HEFER')
+  return labels.length ? `${labels.join(' and ')} required` : ''
 }
 
 /**

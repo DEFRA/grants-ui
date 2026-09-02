@@ -235,7 +235,7 @@ describe('confirm-land-and-actions.html view', () => {
       ]
     })
 
-    it.each([['Requires SSSI consent'], ['Requires an SFI HEFER'], ['Requires SSSI consent and an SFI HEFER']])(
+    it.each([['SSSI consent required'], ['HEFER required'], ['SSSI consent and HEFER required']])(
       'renders %s as secondary text beneath its own action name',
       (requirementText) => {
         const $ = renderPage(withRequirement(requirementText))
@@ -251,7 +251,7 @@ describe('confirm-land-and-actions.html view', () => {
     )
 
     it('leaves the action quantity, payment and Change control untouched', () => {
-      const $ = renderPage(withRequirement('Requires SSSI consent'))
+      const $ = renderPage(withRequirement('SSSI consent required'))
       const row = cards($).eq(0).find('.govuk-table__body .govuk-table__row').eq(0)
 
       expect(normalise(row.find('.govuk-table__cell').eq(0).text())).toBe('2.0000 ha')
@@ -267,7 +267,7 @@ describe('confirm-land-and-actions.html view', () => {
     })
 
     it('adds no inset or extra link alongside the hint', () => {
-      const $ = renderPage(withRequirement('Requires SSSI consent'))
+      const $ = renderPage(withRequirement('SSSI consent required'))
 
       expect($('main .govuk-inset-text')).toHaveLength(0)
       expect($('.land-parcel-summary__action-hint a')).toHaveLength(0)

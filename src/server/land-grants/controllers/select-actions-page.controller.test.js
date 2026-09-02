@@ -142,7 +142,7 @@ describe('SelectActionsPageController', () => {
       expect(actionItems).toHaveLength(3)
     })
 
-    test('should surface a conditional quantity input for actions that require a max quantity', async () => {
+    test('should surface a quantity input for actions that require a max quantity, and a read-only display for the rest', async () => {
       await get()
 
       const { actionItems } = mockH.view.mock.calls[0][1]
@@ -150,7 +150,8 @@ describe('SelectActionsPageController', () => {
       const cmor1 = actionItems.find((item) => item.value === 'CMOR1')
 
       expect(upl2.conditional.html).toContain('landActionQuantity_UPL2')
-      expect(cmor1.conditional).toBeUndefined()
+      expect(cmor1.conditional.html).toContain('id="landActionChosenArea_CMOR1"')
+      expect(cmor1.conditional.html).not.toContain('<input')
     })
 
     test('should render the parcel summary list with reference and area', async () => {
@@ -512,8 +513,8 @@ describe('SelectActionsPageController', () => {
       const { actionItems } = mockH.view.mock.calls[0][1]
       const upl2 = actionItems.find((item) => item.value === 'UPL2')
 
-      expect(upl2.conditional.html).toContain('2 hectares available')
-      expect(upl2.conditional.html).not.toContain('3 hectares available')
+      expect(upl2.conditional.html).toContain('2.0000 hectares available')
+      expect(upl2.conditional.html).not.toContain('3.0000 hectares available')
     })
 
     test('should link a validation error to the specific action quantity input by code, not position', async () => {
