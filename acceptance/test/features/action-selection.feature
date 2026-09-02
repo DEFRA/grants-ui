@@ -76,9 +76,8 @@ Feature: Action Selection
         And should see heading "Review land parcels and actions"
         When the user clicks on "Add another land parcel"
 
-        # RULE: an action cannot be applied to a land parcel it is not eligible for
+        # RULE: a land parcel with no eligible action is rejected on the map page
         Then the user should be at URL "select-land-parcel"
         When the user selects parcel "SK0972 7313" of area "0.2460" hectares on the map
         And continues
-        Then the user should be at URL "select-actions-for-land-parcel"
-        Then the user should not see action "CSAM3"
+        Then the user should still be at URL "select-land-parcel"

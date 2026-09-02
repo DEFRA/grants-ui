@@ -175,7 +175,17 @@ The Grasslands map page rejects Continue when the selected parcel has no eligibl
 
 The wording deliberately matches the select-actions page's own empty state (`src/server/land-grants/views/select-actions.html`) — one condition, one message, whichever page the user reaches first.
 
-**That state cannot be reached from local data.** Every parcel the DAL stub returns for CRN `1102838829` comes back from the local `land-grants-backend` seed with at least one action, so no `--parcel` value produces it. Hence the mock:
+**That state _is_ reachable from local data, on the right CRN.** CRN `1103313150` owns parcels `SK0972-6811` and `SK0972-7313`, which sit on land cover classes (551 and 332) that no action maps to. Every enabled action comes back with `availability.value: 0`, and the parcel is rejected:
+
+```sh
+gt journey grasslands --crn 1103313150 --parcel SK0972-6811
+```
+
+That CRN is offered in the TUI's journey picker for grasslands, and `--crn` overrides it from the command line. Pass the parcel in its **hyphenated** form (`SK0972-6811`, not `SK0972 6811`) — the runner matches the ids the map API returns.
+
+Note the shape of the data, because it is easy to get wrong: the action list comes back **non-empty** and it is the availability that is zero. A guard counting returned actions rather than claimable ones misses this entirely. `acceptance/test/features/action-selection.feature` covers both parcels against the seeded API, and is the real regression guard for the detection logic.
+
+The mock below is still useful for forcing the state on _any_ parcel and any CRN, without depending on what the seed happens to contain. It short-circuits `findParcelsWithNoActions` before the API call, so it exercises the error rendering only — never the detection:
 
 ```sh
 gt journey grasslands --mock-no-actions --headed    # or pick "Mock no eligible actions" in the TUI

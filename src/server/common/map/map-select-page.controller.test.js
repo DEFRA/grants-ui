@@ -162,6 +162,10 @@ describe('MapSelectPageController', () => {
 
   describe('handlePost — action eligibility', () => {
     const withActions = { enabledLandActions: ['CLIG3', 'CSAM3'] }
+    const zeroFor = (code) => ({ code, availability: { value: 0, unit: 'ha' } })
+    const savedActionsFor = (parcelId) => ({
+      landParcels: { [parcelId]: { actionsObj: { CLIG3: { description: 'x', value: 1 } } } }
+    })
 
     it('rejects every selected parcel without calling the API when the dev mock is on', async () => {
       isNoActionsMockEnabled.mockReturnValue(true)
@@ -313,6 +317,71 @@ describe('MapSelectPageController', () => {
       )
       expect(fetchActionsForParcel).not.toHaveBeenCalled()
       expect(controller.setState).toHaveBeenCalled()
+    })
+
+    it('rejects a parcel whose every action has no land left, though the API returned them', async () => {
+      fetchActionsForParcel.mockResolvedValue({
+        actions: [zeroFor('CLIG3'), zeroFor('CSAM3')]
+      })
+      const controller = makeController({}, withActions)
+      const h = makeH()
+
+      await controller.handlePost(makeRequest({ landParcels: 'SD7148-9160' }), makeContext(), h)
+
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.LAND_GRANTS.NO_ACTIONS_FOUND,
+        { sheetId: 'SD7148', parcelId: '9160' },
+        expect.anything()
+      )
+      expectNoActionsError(h)
+      expect(controller.setState).not.toHaveBeenCalled()
+    })
+
+    it('proceeds when only some of the parcel actions have no land left', async () => {
+      fetchActionsForParcel.mockResolvedValue({
+        actions: [zeroFor('CLIG3'), { code: 'CSAM3', availability: { value: 2.5, unit: 'ha' } }]
+      })
+      const controller = makeController({}, withActions)
+      const h = makeH()
+
+      await controller.handlePost(makeRequest({ landParcels: 'SD7148-9160' }), makeContext(), h)
+
+      expect(controller.setState).toHaveBeenCalled()
+      expect(controller.proceed).toHaveBeenCalled()
+    })
+
+    it('proceeds for an all-zero parcel that already has actions saved against it', async () => {
+      // The select-actions page still renders a saved action with no land left,
+      // so re-selecting such a parcel to change it must not be blocked here.
+      fetchActionsForParcel.mockResolvedValue({ actions: [zeroFor('CLIG3')] })
+      const controller = makeController({ multiSelect: true }, withActions)
+      const h = makeH()
+
+      await controller.handlePost(
+        makeRequest({ landParcels: 'SD7148-9160' }),
+        makeContext(savedActionsFor('SD7148-9160')),
+        h
+      )
+
+      expect(controller.setState).toHaveBeenCalled()
+      expect(controller.proceed).toHaveBeenCalled()
+    })
+
+    it('still rejects an all-zero parcel with saved actions in single-parcel-submission mode', async () => {
+      // handlePost wipes landParcels here, so those saved actions would not
+      // survive to the select-actions render.
+      fetchActionsForParcel.mockResolvedValue({ actions: [zeroFor('CLIG3')] })
+      const controller = makeController({}, { ...withActions, singleParcelSubmission: true })
+      const h = makeH()
+
+      await controller.handlePost(
+        makeRequest({ landParcels: 'SD7148-9160' }),
+        makeContext(savedActionsFor('SD7148-9160')),
+        h
+      )
+
+      expectNoActionsError(h)
+      expect(controller.setState).not.toHaveBeenCalled()
     })
 
     it('fetches each parcel once when the same parcel is submitted twice', async () => {

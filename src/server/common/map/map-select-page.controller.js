@@ -4,6 +4,8 @@ import { getParcelIdsFromPayload } from '~/src/server/land-grants/utils/parcel-r
 import { fetchActionsForParcel } from '~/src/server/land-grants/services/land-grants.service.js'
 import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
 import { formatParcelReference, parseLandParcel } from '~/src/shared/format-parcel.js'
+import { hasAvailableLand } from '~/src/shared/availability.js'
+import { getAddedActionsForStateParcel } from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
 import { escapeHtml } from '~/src/server/common/utils/escape-html.js'
 import { log, error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { isNoActionsMockEnabled } from '~/src/server/dev-tools/mock-overrides.js'
@@ -110,6 +112,22 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
   }
 
   /**
+   * Whether a parcel's already-saved actions would still be rendered on the
+   * select-actions page, which makes it reachable even with nothing left
+   * available. Never in single-parcel mode: handlePost wipes landParcels straight
+   * after this check, so those saved actions would not survive to the render.
+   * @param {FormSubmissionState} state
+   * @param {string} selectedParcelId
+   * @returns {boolean}
+   */
+  hasSavedActions(state, selectedParcelId) {
+    if (this.singleParcelSubmission) {
+      return false
+    }
+    return getAddedActionsForStateParcel(state, selectedParcelId).length > 0
+  }
+
+  /**
    * The selected parcels that have no action the user could go on to choose, so
    * that Continue can be rejected here rather than sending the user to the
    * select-actions page only to be told to come back.
@@ -124,9 +142,10 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
    * own fetch-failure message) instead of being reported as "no actions".
    * @param {FormRequestPayload} request
    * @param {string[]} selectedParcelIds
+   * @param {FormSubmissionState} state
    * @returns {Promise<string[]>}
    */
-  async findParcelsWithNoActions(request, selectedParcelIds) {
+  async findParcelsWithNoActions(request, selectedParcelIds, state) {
     if (this.enabledLandActions.length === 0) {
       return []
     }
@@ -158,8 +177,13 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
       })
     )
 
-    // A null means the fetch failed — only a resolved empty list is "no actions".
-    const ineligible = results.filter((result) => result.actions?.length === 0)
+    // A null means the fetch failed — only a resolved list with nothing claimable is "no actions".
+    const ineligible = results.filter(
+      (result) =>
+        result.actions != null &&
+        !result.actions.some((action) => hasAvailableLand(action)) &&
+        !this.hasSavedActions(state, result.selectedParcelId)
+    )
     ineligible.forEach(({ sheetId, parcelId }) => {
       log(LogCodes.LAND_GRANTS.NO_ACTIONS_FOUND, { sheetId, parcelId }, request)
     })
@@ -188,7 +212,7 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
       )
     }
 
-    const parcelsWithNoActions = await this.findParcelsWithNoActions(request, selectedParcelIds)
+    const parcelsWithNoActions = await this.findParcelsWithNoActions(request, selectedParcelIds, state)
     if (parcelsWithNoActions.length > 0) {
       // State is deliberately left untouched: a rejected change must not destroy a
       // previously completed selection and its actions.

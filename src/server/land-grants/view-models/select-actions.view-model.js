@@ -10,7 +10,7 @@ import { getActionChosenAreaDisplayId, getActionQuantityFieldName } from '~/src/
 import { requiresQuantityInput } from '~/src/shared/action-quantity-type.js'
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
 import { TOTAL_ACTION_AREA_GUIDANCE, areaWithUnitText, availableAreaText } from '~/src/shared/area-text.js'
-import { getAvailabilityLimit } from '~/src/shared/availability.js'
+import { getAvailabilityLimit, hasAvailableLand } from '~/src/shared/availability.js'
 import { formatParcelReference } from '~/src/shared/format-parcel.js'
 import { SELECTED_ACTIONS_FIELD_NAME } from '~/src/server/land-grants/utils/selected-actions-field.js'
 import { getActionConsentKeys } from '~/src/server/land-grants/utils/consent-types.js'
@@ -251,10 +251,7 @@ export function getParcelSummaryList(sheetId, parcelId, size) {
  * @returns {boolean}
  */
 function isVisibleOnInitialLoad(action, addedActions) {
-  if (getAvailabilityLimit(getStaticAvailability(action)) !== 0) {
-    return true
-  }
-  return addedActions.some((a) => a.code === action.code)
+  return hasAvailableLand(action) || addedActions.some((a) => a.code === action.code)
 }
 
 /**
