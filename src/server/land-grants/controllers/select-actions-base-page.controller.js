@@ -8,9 +8,35 @@ import {
 } from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
 import { getParcelIdFromQuery } from '../utils/parcel-request.utils.js'
 import { getLandGrantsUserContext } from '../services/land-grants-user-context.js'
+import { ACTION_QUANTITY_FIELD_PREFIX } from '~/src/shared/action-quantity-field.js'
+import { normaliseQuantityInput } from '~/src/shared/action-quantity-validation.js'
 
 /** fallback path when no predecessor page is found. */
 const SELECT_LAND_PARCEL_PATH = '/select-land-parcel'
+
+/**
+ * The inline message for each action
+ * @param {Array<{ text: string, code?: string }>} errors
+ * @returns {Record<string, string>}
+ */
+function getQuantityErrorsByCode(errors) {
+  return Object.fromEntries(errors.filter((e) => e.code).map((e) => [/** @type {string} */ (e.code), e.text]))
+}
+
+/**
+ * Trims every quantity field and gives a bare decimal its leading zero.
+ * @param {Record<string, unknown>} payload
+ * @returns {Record<string, unknown>}
+ */
+function normaliseQuantityFields(payload) {
+  return Object.fromEntries(
+    Object.entries(payload).map(([key, value]) =>
+      key.startsWith(ACTION_QUANTITY_FIELD_PREFIX) && typeof value === 'string'
+        ? [key, normaliseQuantityInput(value)]
+        : [key, value]
+    )
+  )
+}
 
 /**
  * Shared GET/POST flow for the grouped-radio and flat-checkbox select-actions pages.
@@ -328,7 +354,7 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
     const flatActions = (result?.actions || []).flatMap((a) => a.actions || [a])
     const prevAddedActions = getAddedActionsForStateParcel(prevState, selectedLandParcel)
     const addedActions = payload ? getAddedActionsFromPayload(payload, flatActions, prevAddedActions) : prevAddedActions
-    const quantityErrorsByCode = Object.fromEntries(errors.filter((e) => e.code).map((e) => [e.code, e.text]))
+    const quantityErrorsByCode = getQuantityErrorsByCode(errors)
     return this.renderErrorView(h, request, context, {
       errors,
       selectedLandParcel,
@@ -373,9 +399,7 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
       if (!valid) {
         const failedMessages = errorMessages.filter((e) => !e.passed)
         const validationErrors = this.buildValidationErrors(payload, failedMessages)
-        const quantityErrorsByCode = Object.fromEntries(
-          failedMessages.filter((e) => e.code).map((e) => [e.code, e.description])
-        )
+        const quantityErrorsByCode = getQuantityErrorsByCode(validationErrors)
 
         const addedActions = this.getAddedActionsForValidationError(payload, actions, state, selectedLandParcel)
         return this.renderErrorView(h, request, context, {
@@ -419,7 +443,7 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
    */
   async handlePost(request, context, h) {
     const { state: prevState } = context
-    const payload = request.payload ?? {}
+    const payload = normaliseQuantityFields(request.payload ?? {})
     const parcel = this.resolveParcelContext(request)
 
     const errors = this.validateUserInput(payload)
