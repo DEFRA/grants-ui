@@ -12,6 +12,7 @@ import {
   FADED_PURPLE,
   GREEN,
   HIDE_CURSOR,
+  INVERSE,
   IS_WINDOWS,
   KEYS,
   PURPLE,
@@ -101,13 +102,15 @@ function makeCleanup(onKey) {
 
 /**
  * Single-select menu. Draws `items`, handles arrow/enter/esc keys, and resolves
- * with the chosen item's `key` — or `'__quit__'` on esc / ctrl-c.
+ * with the chosen item's `key` — or `'__quit__'` on esc / ctrl-c. When
+ * `gasEditable` is set, pressing `g` resolves with `'__gas__'` so the caller can
+ * prompt for a new mocked GAS status.
  * @param {MenuItem[]} items
  * @param {string} title
- * @param {{ hint?: string, statusLine?: string }} [opts]
+ * @param {{ hint?: string, statusLine?: string, gasEditable?: boolean }} [opts]
  * @returns {Promise<string>}
  */
-export async function radioMenu(items, title, { hint = '', statusLine = '' } = {}) {
+export async function radioMenu(items, title, { hint = '', statusLine = '', gasEditable = false } = {}) {
   return new Promise((resolve) => {
     // Start cursor on first non-disabled item
     let cursor = items.findIndex((i) => !i.disabled)
@@ -171,10 +174,177 @@ export async function radioMenu(items, title, { hint = '', statusLine = '' } = {
         while (items[next].disabled && next !== cursor) next = (next + 1) % items.length
         cursor = next
         draw()
+      } else if (gasEditable && seq === KEYS.G) {
+        cleanup()
+        resolve('__gas__')
       } else if (seq === KEYS.ENTER || seq === KEYS.ENTER2) {
         if (items[cursor].disabled) return
         cleanup()
         resolve(items[cursor].key)
+      }
+    }
+
+    const cleanup = makeCleanup(onKey)
+
+    process.stdin.on('keypress', onKey)
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Text prompt (free-form input)
+// ---------------------------------------------------------------------------
+
+/**
+ * Single-line text prompt. Draws `title` plus an editable buffer, handles
+ * printable keys / backspace, and resolves with the entered string on enter — or
+ * `null` on esc / ctrl-c.
+ * @param {string} title
+ * @param {{ initial?: string, hint?: string }} [opts]
+ * @returns {Promise<string | null>}
+ */
+export async function promptText(title, { initial = '', hint = 'type a value    enter → save    esc → cancel' } = {}) {
+  return new Promise((resolve) => {
+    let buffer = initial
+    // Pre-filled text opens "selected" (reverse video) so it's obvious the whole
+    // value will be replaced the moment you type — or wiped with a single
+    // backspace. Cleared as soon as the user starts editing.
+    let selected = initial.length > 0
+
+    function draw() {
+      const shown = selected ? `${INVERSE}${buffer}${RESET_COLOR}` : buffer
+      const body = [
+        `  ${BOLD}${title}${RESET_COLOR}`,
+        `  ${DIM}${hint}${RESET_COLOR}`,
+        '',
+        `  ${CYAN}${ARROW}${RESET_COLOR}  ${shown}${DIM}▏${RESET_COLOR}`
+      ]
+      renderScreen(body)
+    }
+
+    draw()
+    readline.emitKeypressEvents(process.stdin)
+    if (process.stdin.isTTY) process.stdin.setRawMode(true)
+
+    /**
+     * @param {string} str  the raw character
+     * @param {import('node:readline').Key} key
+     */
+    function onKey(str, key) {
+      if (!key) return
+      const seq = key.sequence ?? ''
+      if (seq === KEYS.CTRL_C || (seq === KEYS.ESC && key.name === 'escape')) {
+        cleanup()
+        resolve(null)
+      } else if (seq === KEYS.ENTER || seq === KEYS.ENTER2) {
+        cleanup()
+        resolve(buffer)
+      } else if (key.name === 'backspace') {
+        // A single backspace clears the whole pre-selected value; afterwards it
+        // deletes one character at a time.
+        buffer = selected ? '' : buffer.slice(0, -1)
+        selected = false
+        draw()
+      } else if (str && str.length === 1 && str >= ' ' && !key.ctrl && !key.meta) {
+        // Typing over the pre-selected value replaces it entirely.
+        if (selected) buffer = ''
+        selected = false
+        buffer += str
+        draw()
+      }
+    }
+
+    const cleanup = makeCleanup(onKey)
+
+    process.stdin.on('keypress', onKey)
+  })
+}
+
+/**
+ * A list of selectable presets with a free-form text field as the *last* option.
+ * The cursor moves between the presets (0..N-1) and the field (index N) with the
+ * arrow keys: typing edits the field, enter resolves either the highlighted
+ * preset or the typed buffer. The field has a fixed-width "bottom border" so it
+ * reads as an input box. Resolves with the chosen string on enter — or `null` on
+ * esc / ctrl-c.
+ * @param {string} title
+ * @param {{ initial?: string, hint?: string, options?: string[], selectedOption?: string | null, fieldWidth?: number }} [opts]
+ * @returns {Promise<string | null>}
+ */
+export async function promptTextWithOptions(
+  title,
+  {
+    initial = '',
+    hint = '↑ ↓  move    type to edit    enter → save    esc → cancel',
+    options = [],
+    selectedOption = null,
+    fieldWidth = 30
+  } = {}
+) {
+  return new Promise((resolve) => {
+    let buffer = initial
+    // cursor 0..N-1 = options[cursor], cursor === N = the text field (last item).
+    // Start on the matching preset when one was supplied, otherwise on the field.
+    const fieldIndex = options.length
+    const matchIndex = selectedOption != null ? options.indexOf(selectedOption) : -1
+    let cursor = matchIndex >= 0 ? matchIndex : fieldIndex
+    // Pre-filled field text opens "selected" (reverse video) so it's obvious the
+    // whole value will be replaced the moment you type — or wiped with a single
+    // backspace. Only relevant when we start on the field with a pre-filled value.
+    let selected = cursor === fieldIndex && buffer.length > 0
+
+    function draw() {
+      const fieldActive = cursor === fieldIndex
+      const shown = selected ? `${INVERSE}${buffer}${RESET_COLOR}` : buffer
+      const caret = fieldActive ? `${DIM}▏${RESET_COLOR}` : ''
+      const fieldArrow = fieldActive ? `${CYAN}${ARROW}${RESET_COLOR}` : ' '
+      const body = [`  ${BOLD}${title}${RESET_COLOR}`, `  ${DIM}${hint}${RESET_COLOR}`, '']
+      options.forEach((opt, i) => {
+        const active = cursor === i
+        const arrow = active ? `${CYAN}${ARROW}${RESET_COLOR}` : ' '
+        const label = active ? `${CYAN}${BOLD}${opt}${RESET_COLOR}` : opt
+        body.push(`  ${arrow}  ${label}`)
+      })
+      // The text field renders last, with a fixed-width bottom border beneath it.
+      body.push('', `  ${fieldArrow}  ${shown}${caret}`, `     ${DIM}${'─'.repeat(fieldWidth)}${RESET_COLOR}`)
+      renderScreen(body)
+    }
+
+    draw()
+    readline.emitKeypressEvents(process.stdin)
+    if (process.stdin.isTTY) process.stdin.setRawMode(true)
+
+    /**
+     * @param {string} str  the raw character
+     * @param {import('node:readline').Key} key
+     */
+    function onKey(str, key) {
+      if (!key) return
+      const seq = key.sequence ?? ''
+      const total = fieldIndex + 1
+      if (seq === KEYS.CTRL_C || (seq === KEYS.ESC && key.name === 'escape')) {
+        cleanup()
+        resolve(null)
+      } else if (seq === KEYS.UP) {
+        cursor = (cursor - 1 + total) % total
+        draw()
+      } else if (seq === KEYS.DOWN) {
+        cursor = (cursor + 1) % total
+        draw()
+      } else if (seq === KEYS.ENTER || seq === KEYS.ENTER2) {
+        cleanup()
+        resolve(cursor === fieldIndex ? buffer : options[cursor])
+      } else if (cursor === fieldIndex && key.name === 'backspace') {
+        // A single backspace clears the whole pre-selected value; afterwards it
+        // deletes one character at a time.
+        buffer = selected ? '' : buffer.slice(0, -1)
+        selected = false
+        draw()
+      } else if (cursor === fieldIndex && str && str.length === 1 && str >= ' ' && !key.ctrl && !key.meta) {
+        // Typing over the pre-selected value replaces it entirely.
+        if (selected) buffer = ''
+        selected = false
+        buffer += str
+        draw()
       }
     }
 
