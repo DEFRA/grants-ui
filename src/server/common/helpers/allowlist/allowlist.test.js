@@ -27,7 +27,15 @@ describe('allowlist plugin', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    server = mockHapiServer()
+    server = mockHapiServer({
+      plugins: {
+        'forms-engine-plugin': {
+          cacheService: {
+            getState: vi.fn().mockResolvedValue({ applicationStatus: 'CLEARED' })
+          }
+        }
+      }
+    })
     h = mockHapiResponseToolkit()
     config.get.mockReturnValue(['woodland'])
   })
@@ -103,15 +111,19 @@ describe('allowlist plugin', () => {
     expect(result).toBe(h)
   })
 
-  it('uses the claim entity when a claim route is denied by the allowlist', async () => {
+  it('uses the claim entity when the persisted application status is a claim journey', async () => {
     const handler = registerAndGetHandler(server)
     fetchAllowedGrants.mockResolvedValue([])
+    server.plugins['forms-engine-plugin'].cacheService.getState.mockResolvedValue({
+      applicationStatus: 'CLAIM_STARTED'
+    })
 
     const sendAuditEvent = vi.fn().mockResolvedValue(undefined)
     const request = mockHapiRequest({
-      params: { slug: SLUG, path: 'claim' },
-      path: `/${SLUG}/claim`,
+      params: { slug: SLUG },
+      path: `/${SLUG}/summary`,
       auth: { isAuthenticated: true, credentials: { crn: CRN, sbi: SBI } },
+      server,
       sendAuditEvent
     })
 
