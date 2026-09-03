@@ -255,7 +255,7 @@ describe('audit-publisher plugin', () => {
         )
       })
 
-      test('sends an "authorised" event with entity=claim when a signed-in user first enters the claim page', async () => {
+      test('sends an "authorised" event with entity=claim when a signed-in user first enters the configured claim page', async () => {
         const request = successRequest({
           method: 'get',
           path: '/my-grant/claim',
@@ -264,6 +264,11 @@ describe('audit-publisher plugin', () => {
             model: {
               def: {
                 metadata: {
+                  grantRedirectRules: {
+                    postSubmission: [
+                      { fromGrantsStatus: 'SUBMITTED', toGrantsStatus: 'CLAIM_STARTED', toPath: '/claim' }
+                    ]
+                  },
                   permissions: {
                     pageAccess: {
                       rules: [{ paths: ['claim'], resource: 'csAgreements', permission: 'amend' }]
