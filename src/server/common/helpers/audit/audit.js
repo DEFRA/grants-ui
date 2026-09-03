@@ -2,6 +2,7 @@ import { SNSClient } from '@aws-sdk/client-sns'
 import { publishAuditEvent } from '@defra/fcp-audit-publisher'
 import { getStartPath } from '@defra/forms-engine-plugin/engine/helpers.js'
 import { config } from '~/src/config/config.js'
+import { ApplicationStatus } from '~/src/server/common/constants/application-status.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { buildAuditEvent, mapEnvironment, resolveAuditEntityFields } from './audit-event.js'
 import { getPermissionResource } from '../permissions/page-permissions.js'
@@ -61,10 +62,32 @@ const isSuccessfulGrantAccess = (request) => {
 }
 
 /**
+ * Resolves the configured claim journey start path from the form redirect rules.
+ * This is preferred to a hardcoded route segment because the claim page path is
+ * configurable and may not literally be `/claim` for all grants.
+ * @param {import('@hapi/hapi').Request} request
+ * @returns {string | undefined}
+ */
+const getClaimStartPath = (request) => {
+  const postSubmissionRules =
+    /** @type {Array<{ toGrantsStatus?: string, fromGrantsStatus?: string, toPath?: string }> | undefined} */ (
+      request.app?.model?.def?.metadata?.grantRedirectRules?.postSubmission
+    )
+
+  const claimRule = postSubmissionRules?.find(
+    (rule) =>
+      rule.toGrantsStatus === ApplicationStatus.CLAIM_STARTED ||
+      rule.fromGrantsStatus === ApplicationStatus.CLAIM_STARTED
+  )
+
+  return claimRule?.toPath?.replace(/^\/+/, '')
+}
+
+/**
  * True when the request represents a signed-in (authorised) user successfully
  * entering a claim journey for the first time: an authenticated GET to the
- * claim page that returned 2xx and whose permission resource resolves to
- * `csAgreements`.
+ * configured claim start page that returned 2xx and whose permission resource
+ * resolves to `csAgreements`.
  * @param {import('@hapi/hapi').Request} request
  * @returns {boolean}
  */
@@ -74,11 +97,14 @@ const isSuccessfulClaimAccess = (request) => {
     return false
   }
 
+  const claimStartPath = getClaimStartPath(request)
+
   if (
     request.method !== 'get' ||
     !request.auth.isAuthenticated ||
     !request.params?.slug ||
-    request.params?.path !== 'claim' ||
+    !claimStartPath ||
+    request.params?.path !== claimStartPath ||
     response.statusCode < HTTP_OK_MIN ||
     response.statusCode >= HTTP_REDIRECT_MIN
   ) {
