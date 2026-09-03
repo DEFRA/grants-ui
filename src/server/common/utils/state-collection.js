@@ -1,8 +1,7 @@
 /**
- * Normalises a state collection (array or object keyed by id) into an array of
- * its items so callers can iterate uniformly.
- * @param {unknown} collection - The collection value read from form state.
- * @returns {unknown[]} The collection's items, or an empty array.
+ * Normalises a collection (array, or object keyed by id) into an array of items.
+ * @param {unknown} collection
+ * @returns {unknown[]}
  */
 function resolveCollectionItems(collection) {
   if (Array.isArray(collection)) {
@@ -17,14 +16,10 @@ function resolveCollectionItems(collection) {
 }
 
 /**
- * Determines whether a state collection contains at least one item that has a
- * non-empty value at the given key. The collection may be stored either as an
- * array of items or as an object keyed by id; in both cases each item is
- * inspected. A value counts as "non-empty" when it is a non-empty array or an
- * object with at least one own key.
- * @param {unknown} collection - The collection value read from form state.
- * @param {string} key - The property each item must populate to count.
- * @returns {boolean} `true` if any item has a non-empty value at `key`.
+ * Whether any item in the collection has a non-empty array/object value at `key`.
+ * @param {unknown} collection
+ * @param {string} key
+ * @returns {boolean}
  */
 export function hasAnyItemWithNonEmptyKey(collection, key) {
   const items = resolveCollectionItems(collection)

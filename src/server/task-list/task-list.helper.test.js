@@ -287,10 +287,6 @@ describe('task-list.helper', () => {
     })
 
     describe('metadata.tasklist.completionRequirements (select land and actions)', () => {
-      // select-actions-for-land-parcel has no row of its own in the task list
-      // (SelectActionsPageController is an excluded controller), so
-      // select-land-parcel's own bound field isn't enough on its own — a
-      // completionRequirements entry folds the actions page's completion in.
       const mapSelectPage = {
         path: '/select-land-parcel',
         section: 's1',

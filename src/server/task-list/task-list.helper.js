@@ -87,12 +87,8 @@ function getPageComponentNames(pageDef, formModel) {
 }
 
 /**
- * Looks up a page's extra completion requirement, configured under
- * metadata.tasklist.completionRequirements by page path. Lets a task page
- * whose own bound field can't capture the full task (e.g. a hidden field that
- * only records a selection was made) depend on state populated by a later
- * page that has no row of its own in the task list — see
- * requiresAnyItemWithNonEmptyKey below and excludedControllers further down.
+ * A page's extra completion requirement, from metadata.tasklist.completionRequirements
+ * by page path. Lets a page depend on state a later, non-task-list page writes.
  * @param {object} pageDef - The page definition
  * @param {object} formModel - The form model
  * @returns {{ requiresAnyItemWithNonEmptyKey?: { collection: string, key: string } } | undefined}
@@ -103,8 +99,7 @@ function getCompletionRequirement(pageDef, formModel) {
 }
 
 /**
- * Whether a page's configured completion requirement (if any) is met by the
- * current state. See getCompletionRequirement.
+ * Whether a page's configured completion requirement (if any) is met by state.
  * @param {object} pageDef - The page definition
  * @param {object} state - The current form state
  * @param {object} formModel - The form model
