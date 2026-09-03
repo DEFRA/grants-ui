@@ -18,7 +18,7 @@
  */
 
 import TaskListPageController from '~/src/server/task-list/task-list-page.controller.js'
-import { hasAnyItemWithNonEmptyKey } from '~/src/server/common/utils/state-collection.js'
+import { hasAnyItemWithNonEmptyKey } from '~/src/server/common/utils/objects.js'
 
 /**
  * Status key constants for task status comparisons.
@@ -125,8 +125,9 @@ function isCompletionRequirementMet(pageDef, state, formModel) {
 function isTaskPageCompleted(pageDef, state, formModel) {
   const componentNames = getPageComponentNames(pageDef, formModel)
 
-  // If no question components, consider it not applicable (shouldn't appear as task)
-  if (componentNames.length === 0) {
+  // If no question components and no configured completion requirement to fall
+  // back on, consider it not applicable (shouldn't appear as task)
+  if (componentNames.length === 0 && !getCompletionRequirement(pageDef, formModel)) {
     return false
   }
 
