@@ -256,7 +256,7 @@ describe('select-actions.view-model', () => {
       expect(result.html).toContain('<span id="landActionQuantity_CLIG3-hint">12.5 hectares available</span>')
     })
 
-    it('should render the availability hint on the label for a quantity-required action, not in its conditional', () => {
+    it('should show the availability in the checkbox hint for a quantity-required action, not inside its conditional', () => {
       const action = {
         code: 'UPL2',
         description: 'Heavy livestock grazing on moorland',
@@ -267,7 +267,15 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, [])
 
       expect(result.html).toContain('<span id="landActionQuantity_UPL2-hint">3 hectares available</span>')
-      expect(result.conditional.html).not.toContain('landActionQuantity_UPL2-hint')
+      expect(result.conditional.html).not.toContain('landActionQuantity_UPL2-hint">')
+    })
+
+    it('should put the availability directly after the payment rate in the checkbox hint', () => {
+      const result = mapActionToViewModel({ ...csam3({ value: 2.2822, unit: 'ha' }), ratePerUnitGbp: 45 }, [])
+
+      expect(result.html).toContain(
+        'Payment rate per year: £45.00/ha<br><span id="landActionQuantity_CSAM3-hint">2.2822 hectares available</span>'
+      )
     })
 
     it('should render data-total-available-area from staticAvailability when present, not the (possibly competed) availability', () => {
@@ -284,11 +292,13 @@ describe('select-actions.view-model', () => {
       expect(result.attributes['data-total-available-area']).toBe(0.3271)
     })
 
-    it('should render the conditional input with its field id and max attribute', () => {
+    it('should render the conditional input with its field id and max attribute, described by the hint above it', () => {
       const result = mapActionToViewModel(csam3({ value: 18.5673, unit: 'ha' }), [])
 
       expect(result.conditional.html).toContain('landActionQuantity_CSAM3')
       expect(result.conditional.html).toContain('max="18.5673"')
+      expect(result.conditional.html).toContain('aria-describedby="landActionQuantity_CSAM3-hint"')
+      expect(result.conditional.html).not.toContain('18.5673 hectares available')
     })
 
     it('should render no max and no hint anywhere, keeping the unit, when the availability value is null', () => {
@@ -297,6 +307,7 @@ describe('select-actions.view-model', () => {
       expect(result.conditional.html).toContain('landActionQuantity_CSAM3')
       expect(result.conditional.html).not.toContain('max=')
       expect(result.conditional.html).not.toContain('id="landActionQuantity_CSAM3-hint"')
+      expect(result.conditional.html).not.toContain('aria-describedby=')
       expect(result.html).not.toContain('id="landActionQuantity_CSAM3-hint"')
       expect(result.conditional.html).toContain('>ha<')
       expect(result.attributes['data-total-available-area']).toBeUndefined()
