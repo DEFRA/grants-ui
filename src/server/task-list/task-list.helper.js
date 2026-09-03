@@ -18,6 +18,7 @@
  */
 
 import TaskListPageController from '~/src/server/task-list/task-list-page.controller.js'
+import { hasAnyItemWithNonEmptyKey } from '~/src/server/common/utils/state-collection.js'
 
 /**
  * Status key constants for task status comparisons.
@@ -86,6 +87,40 @@ function getPageComponentNames(pageDef, formModel) {
 }
 
 /**
+ * Looks up a page's extra completion requirement, configured under
+ * metadata.tasklist.completionRequirements by page path. Lets a task page
+ * whose own bound field can't capture the full task (e.g. a hidden field that
+ * only records a selection was made) depend on state populated by a later
+ * page that has no row of its own in the task list — see
+ * requiresAnyItemWithNonEmptyKey below and excludedControllers further down.
+ * @param {object} pageDef - The page definition
+ * @param {object} formModel - The form model
+ * @returns {{ requiresAnyItemWithNonEmptyKey?: { collection: string, key: string } } | undefined}
+ */
+function getCompletionRequirement(pageDef, formModel) {
+  const { completionRequirements = {} } = formModel.def?.metadata?.tasklist ?? {}
+  return completionRequirements[pageDef.path]
+}
+
+/**
+ * Whether a page's configured completion requirement (if any) is met by the
+ * current state. See getCompletionRequirement.
+ * @param {object} pageDef - The page definition
+ * @param {object} state - The current form state
+ * @param {object} formModel - The form model
+ * @returns {boolean}
+ */
+function isCompletionRequirementMet(pageDef, state, formModel) {
+  const requirement = getCompletionRequirement(pageDef, formModel)
+  const gate = requirement?.requiresAnyItemWithNonEmptyKey
+  if (!gate) {
+    return true
+  }
+
+  return hasAnyItemWithNonEmptyKey(state[gate.collection], gate.key)
+}
+
+/**
  * Determines if a task page is completed based on state
  * @param {object} pageDef - The page definition
  * @param {object} state - The current form state
@@ -116,7 +151,7 @@ function isTaskPageCompleted(pageDef, state, formModel) {
     return Object.keys(state).some((key) => key.startsWith(`${name}__`))
   })
 
-  return allAnswered
+  return allAnswered && isCompletionRequirementMet(pageDef, state, formModel)
 }
 
 /**
