@@ -512,8 +512,8 @@ describe('SelectActionsPageController', () => {
       const { actionItems } = mockH.view.mock.calls[0][1]
       const upl2 = actionItems.find((item) => item.value === 'UPL2')
 
-      expect(upl2.conditional.html).toContain('2 hectares available')
-      expect(upl2.conditional.html).not.toContain('3 hectares available')
+      expect(upl2.html).toContain('2 hectares available')
+      expect(upl2.html).not.toContain('3 hectares available')
     })
 
     test('should link a validation error to the specific action quantity input by code, not position', async () => {
