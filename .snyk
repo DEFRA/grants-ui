@@ -37,3 +37,11 @@ ignore:
     - '*':
         reason: 'Build/dev-tooling only - qs is reached solely via express/body-parser under webpack-dev-server in the docusaurus toolchain of @defra/interactive-map (@defra/forms-engine-plugin > @defra/interactive-map > @easyops-cn/docusaurus-search-local > @docusaurus/plugin-content-docs > @docusaurus/core > webpack-dev-server > express > qs) and via the dev-only typed-rest-client; the grants-ui Hapi server runtime does not use qs. Checked 2026-09-01: the single resolved copy is pinned by our own overrides.qs in package.json, and the fix qs 6.16.0 was published 2026-08-29, still inside the .npmrc min-release-age=7 cooldown (eligible 2026-09-05). Dropping the override does not help - webpack-dev-server > body-parser requires ~6.15.1, which resolves to the still-vulnerable 6.15.3. Remove this ignore and bump overrides.qs to 6.16.0 once the cooldown clears.'
         expires: '2026-09-24'
+  'SNYK-JS-FASTURI-19502739':
+    - '*':
+        reason: 'Build/dev-tooling only - same fast-uri@3.1.6 chain as the other FASTURI ignores above (ajv > webpack schema-utils in the @defra/interactive-map docusaurus toolchain, and @stryker-mutator/core, both devDependencies); grants-ui does not import ajv, fast-uri or webpack directly, and npm ls shows a single resolved copy with no path into the server runtime. Checked 2026-09-03: fix fast-uri 3.1.7 was published 2026-09-02, still inside the .npmrc min-release-age=7 cooldown (eligible 2026-09-09). Remove and override fast-uri to 3.1.7 once the cooldown clears.'
+        expires: '2026-09-24'
+  'SNYK-JS-FASTURI-19502854':
+    - '*':
+        reason: 'Build/dev-tooling only - same fast-uri@3.1.6 chain as the other FASTURI ignores above (ajv > webpack schema-utils in the @defra/interactive-map docusaurus toolchain, and @stryker-mutator/core, both devDependencies); grants-ui does not import ajv, fast-uri or webpack directly, and npm ls shows a single resolved copy with no path into the server runtime. Checked 2026-09-03: fix fast-uri 3.1.7 was published 2026-09-02, still inside the .npmrc min-release-age=7 cooldown (eligible 2026-09-09). Remove and override fast-uri to 3.1.7 once the cooldown clears.'
+        expires: '2026-09-24'
