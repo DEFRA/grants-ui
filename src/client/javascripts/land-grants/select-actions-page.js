@@ -593,16 +593,10 @@ const MAX_GROWTH_FOLLOW_UPS = 3
 /**
  * @param {HTMLElement} form
  * @param {string} parcelId
- * @returns {{
- *   refreshAvailability: (triggeringCheckbox?: HTMLInputElement) => Promise<void>,
- *   isRefreshInFlight: () => boolean
- * }}
+ * @returns {(triggeringCheckbox?: HTMLInputElement) => Promise<void>}
  */
 function createAvailabilityRefresher(form, parcelId) {
   let requestId = 0
-  // Refresh chains in flight (a chain can overlap another, e.g. the untriggered
-  // init refresh racing a user's own change) - see bindSubmitGuard.
-  let inFlightCount = 0
 
   /**
    * @param {HTMLInputElement} [triggeringCheckbox]
@@ -613,9 +607,6 @@ function createAvailabilityRefresher(form, parcelId) {
     uncheckUnconfirmedQuantityActions(form)
     requestId += 1
     const thisRequestId = requestId
-    if (isChainStart) {
-      inFlightCount += 1
-    }
     // Loading feedback spans the whole growth-follow-up chain, not just this
     // one call - shown/disabled once at the chain's start, restored again
     // (below) after every response so a follow-up never has a gap where
@@ -631,7 +622,6 @@ function createAvailabilityRefresher(form, parcelId) {
     if (thisRequestId !== requestId) {
       // A newer refresh has already taken over - ignore this stale response,
       // and leave the banner alone (the newer refresh owns it).
-      inFlightCount -= 1
       return
     }
 
@@ -640,7 +630,6 @@ function createAvailabilityRefresher(form, parcelId) {
         toggleRefreshBanner(triggeringCheckbox, false)
       }
       recoverFromFailedRefresh(form)
-      inFlightCount -= 1
       return
     }
 
@@ -658,17 +647,40 @@ function createAvailabilityRefresher(form, parcelId) {
     if (triggeringCheckbox) {
       toggleRefreshBanner(triggeringCheckbox, false)
     }
-    inFlightCount -= 1
   }
 
-  return { refreshAvailability, isRefreshInFlight: () => inFlightCount > 0 }
+  return refreshAvailability
 }
 
 /**
- * Blocks a submit that lands mid-refresh, since disableOtherActions' disabled
- * fields would otherwise be dropped from it silently. No queue/auto-resubmit -
- * the user just submits again once the "Updating..." banner clears.
- * @param {HTMLFormElement} form
+ * Tracks chains currently running, including overlapping ones (e.g. the
+ * untriggered init refresh racing a user's own change) - see bindSubmitGuard.
+ * @param {(triggeringCheckbox?: HTMLInputElement) => Promise<void>} refreshAvailability
+ * @returns {{
+ *   refreshAvailability: (triggeringCheckbox?: HTMLInputElement) => Promise<void>,
+ *   isRefreshInFlight: () => boolean
+ * }}
+ */
+function withInFlightTracking(refreshAvailability) {
+  let inFlightCount = 0
+
+  /** @param {HTMLInputElement} [triggeringCheckbox] */
+  async function tracked(triggeringCheckbox) {
+    inFlightCount += 1
+    try {
+      await refreshAvailability(triggeringCheckbox)
+    } finally {
+      inFlightCount -= 1
+    }
+  }
+
+  return { refreshAvailability: tracked, isRefreshInFlight: () => inFlightCount > 0 }
+}
+
+/**
+ * Blocks a submit mid-refresh - disableOtherActions' disabled fields would
+ * otherwise drop silently from it. No queue/auto-resubmit; user tries again.
+ * @param {HTMLElement} form
  * @param {() => boolean} isRefreshInFlight
  */
 function bindSubmitGuard(form, isRefreshInFlight) {
@@ -823,7 +835,7 @@ export function initSelectActionsPage(form) {
     return
   }
 
-  const { refreshAvailability, isRefreshInFlight } = createAvailabilityRefresher(form, parcelId)
+  const { refreshAvailability, isRefreshInFlight } = withInFlightTracking(createAvailabilityRefresher(form, parcelId))
 
   seedConfirmedQuantities(form)
 
@@ -836,9 +848,7 @@ export function initSelectActionsPage(form) {
 
   bindCheckboxChangeHandler(form, refreshAvailability)
   bindQuantityFocusBlurHandlers(form, refreshAvailability)
-  if (typeof (/** @type {HTMLFormElement} */ (form).requestSubmit) === 'function') {
-    bindSubmitGuard(/** @type {HTMLFormElement} */ (form), isRefreshInFlight)
-  }
+  bindSubmitGuard(form, isRefreshInFlight)
 }
 
 initSelectActionsPage(document.getElementById('select-actions-form'))

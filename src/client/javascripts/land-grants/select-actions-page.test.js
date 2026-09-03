@@ -1926,4 +1926,108 @@ describe('initSelectActionsPage', () => {
 
     expect(cmor1Checkbox.disabled).toBe(false)
   })
+
+  // A submit landing before an in-flight refresh's own response has applied
+  // would otherwise serialise whatever's disabled OUT of the payload (the
+  // browser drops disabled fields from a form submission) - see TGC-1625.
+  function submitForm(form) {
+    const event = new Event('submit', { bubbles: true, cancelable: true })
+    form.dispatchEvent(event)
+    return event.defaultPrevented
+  }
+
+  it('blocks a submit that lands while a checkbox-triggered refresh is still in flight', async () => {
+    const form = setupDom([
+      { code: 'CSAM3', checked: true, availability: { value: 10, unit: 'ha' } },
+      { code: 'CLIG3', availability: { value: 5, unit: 'ha' } }
+    ])
+    await initSettled(form, fetchOk({ actions: [] }))
+
+    let resolveFetch
+    global.fetch = vi.fn().mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = () => resolve({ ok: true, json: () => Promise.resolve({ actions: [] }) })
+        })
+    )
+    checkbox(form, 'CLIG3').checked = true
+    checkbox(form, 'CLIG3').dispatchEvent(new Event('change', { bubbles: true }))
+
+    expect(submitForm(form)).toBe(true)
+
+    resolveFetch()
+    await flushPromises()
+  })
+
+  it('lets a submit through once the refresh has settled', async () => {
+    const form = setupDom([{ code: 'CSAM3', checked: true, availability: { value: 10, unit: 'ha' } }])
+    await initSettled(form, fetchOk({ actions: [] }))
+
+    await toggle(form, 'CSAM3', false)
+
+    expect(submitForm(form)).toBe(false)
+  })
+
+  it('blocks a submit that lands during the untriggered initial refresh, which leaves every checkbox enabled', async () => {
+    const form = setupDom([
+      { code: 'CSAM3', checked: true, availability: { value: 10, unit: 'ha' } },
+      { code: 'SCR2', checked: true, availability: { value: 5, unit: 'ha' } }
+    ])
+    let resolveFetch
+    global.fetch = vi.fn().mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = () => resolve({ ok: true, json: () => Promise.resolve({ actions: [] }) })
+        })
+    )
+
+    initSelectActionsPage(form)
+
+    // Nothing is disabled yet - the init refresh has no triggering checkbox
+    // for disableOtherActions to exempt, so it disables nothing at all.
+    expect(checkbox(form, 'CSAM3').disabled).toBe(false)
+    expect(checkbox(form, 'SCR2').disabled).toBe(false)
+
+    expect(submitForm(form)).toBe(true)
+
+    resolveFetch()
+    await flushPromises()
+  })
+
+  it('blocks a submit across a growth follow-up chain, only releasing once the whole chain settles', async () => {
+    const form = setupDom([
+      { code: 'CMOR1', checked: true, availability: { value: 0.3271, unit: 'ha' }, chosenArea: 0.2271 },
+      { code: 'CLIG3', availability: { value: 0.3271, unit: 'ha' } }
+    ])
+    const pending = []
+    global.fetch = vi.fn().mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          pending.push(resolve)
+        })
+    )
+    initSelectActionsPage(form)
+    await flushPromises()
+
+    await toggle(form, 'CLIG3', true)
+
+    expect(submitForm(form)).toBe(true)
+
+    pending.shift()({
+      ok: true,
+      json: () => Promise.resolve({ actions: [{ code: 'CMOR1', availability: { value: 0.1, unit: 'ha' } }] })
+    })
+    await flushPromises()
+
+    // The growth follow-up's own request is now in flight - still blocked.
+    expect(submitForm(form)).toBe(true)
+
+    pending.shift()({
+      ok: true,
+      json: () => Promise.resolve({ actions: [{ code: 'CMOR1', availability: { value: 0, unit: 'ha' } }] })
+    })
+    await flushPromises()
+
+    expect(submitForm(form)).toBe(false)
+  })
 })
