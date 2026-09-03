@@ -70,9 +70,9 @@ const isSuccessfulGrantAccess = (request) => {
  */
 const getClaimStartPath = (request) => {
   const postSubmissionRules =
-    /** @type {Array<{ toGrantsStatus?: string, fromGrantsStatus?: string, toPath?: string }> | undefined} */ (
-      request.app?.model?.def?.metadata?.grantRedirectRules?.postSubmission
-    )
+    /** @type {{ grantRedirectRules?: { postSubmission?: Array<{ toGrantsStatus?: string, fromGrantsStatus?: string, toPath?: string }> } } | undefined} */ (
+      request.app?.model?.def?.metadata
+    )?.grantRedirectRules?.postSubmission
 
   const claimRule = postSubmissionRules?.find(
     (rule) =>
