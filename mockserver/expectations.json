@@ -260,10 +260,12 @@
                 "code": "SCR2",
                 "availability": {
                   "value": 4.5,
-                  "unit": "ha"
+                  "unit": "ha",
+                  "type": "partial"
                 },
-                "ratePerUnitGbp": 130.0,
-                "description": "Manage grassland with low nutrient inputs"
+                "ratePerUnitGbp": 350.0,
+                "description": "Manage scrub and open habitat mosaics",
+                "guidanceUrl": "https://www.gov.uk/find-funding-for-land-or-farms/scr2-manage-scrub-and-open-habitat-mosaics"
               },
               {
                 "code": "SCR3",
