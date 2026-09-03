@@ -4,6 +4,7 @@ import { getStartPath } from '@defra/forms-engine-plugin/engine/helpers.js'
 import { config } from '~/src/config/config.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { buildAuditEvent, mapEnvironment, resolveAuditEntityFields } from './audit-event.js'
+import { getPermissionResource } from '../permissions/page-permissions.js'
 
 const HTTP_OK_MIN = 200
 const HTTP_REDIRECT_MIN = 300
@@ -57,6 +58,39 @@ const isSuccessfulGrantAccess = (request) => {
     response.statusCode < HTTP_REDIRECT_MIN &&
     isGrantStartPage(request)
   )
+}
+
+/**
+ * True when the request represents a signed-in (authorised) user successfully
+ * entering a claim journey for the first time: an authenticated GET to the
+ * claim page that returned 2xx and whose permission resource resolves to
+ * `csAgreements`.
+ * @param {import('@hapi/hapi').Request} request
+ * @returns {boolean}
+ */
+const isSuccessfulClaimAccess = (request) => {
+  const { response } = request
+  if (!response || response instanceof Error) {
+    return false
+  }
+
+  if (
+    request.method !== 'get' ||
+    !request.auth.isAuthenticated ||
+    !request.params?.slug ||
+    request.params?.path !== 'claim' ||
+    response.statusCode < HTTP_OK_MIN ||
+    response.statusCode >= HTTP_REDIRECT_MIN
+  ) {
+    return false
+  }
+
+  try {
+    const pipelineRequest = /** @type {PipelineRequest} */ (request)
+    return getPermissionResource(pipelineRequest) === 'csAgreements'
+  } catch {
+    return false
+  }
 }
 
 /**
@@ -193,7 +227,9 @@ export const auditPublisher = {
 
       server.ext('onPreResponse', (request, h) => {
         if (isSuccessfulGrantAccess(request)) {
-          request.sendAuditEventInBackground({ action: 'authorised' })
+          request.sendAuditEventInBackground({ action: 'authorised', entity: 'application' })
+        } else if (isSuccessfulClaimAccess(request)) {
+          request.sendAuditEventInBackground({ action: 'authorised', entity: 'claim' })
         } else if (isSuccessfulPageNavigation(request)) {
           request.sendAuditEventInBackground({
             action: 'navigate',
@@ -216,3 +252,7 @@ export const auditPublisher = {
     }
   }
 }
+
+/**
+ * @import { PipelineRequest } from '~/src/server/common/request-pipeline/types.js'
+ */
