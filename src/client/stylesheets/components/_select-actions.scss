@@ -53,8 +53,7 @@
     @include govuk-font-size(16);
     margin-top: govuk-spacing(2);
 
-    .govuk-label,
-    .govuk-hint {
+    .govuk-label {
       @include govuk-font-size(16);
     }
 
