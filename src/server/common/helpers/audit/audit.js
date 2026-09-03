@@ -83,6 +83,35 @@ const getClaimStartPath = (request) => {
   return claimRule?.toPath?.replace(/^\/+/, '')
 }
 
+const isSuccessfulResponse = (response) =>
+  response &&
+  !(response instanceof Error) &&
+  response.statusCode >= HTTP_OK_MIN &&
+  response.statusCode < HTTP_REDIRECT_MIN
+
+/**
+ * True when the request is a valid authenticated GET for the configured claim
+ * start page and the response is a successful 2xx response.
+ * @param {import('@hapi/hapi').Request} request
+ * @param {string | undefined} claimStartPath
+ * @returns {boolean}
+ */
+const isClaimAccessRequest = (request, claimStartPath) => {
+  if (request.method !== 'get' || !request.auth.isAuthenticated) {
+    return false
+  }
+
+  if (!request.params?.slug || !claimStartPath) {
+    return false
+  }
+
+  if (request.params.path !== claimStartPath) {
+    return false
+  }
+
+  return Boolean(isSuccessfulResponse(request.response))
+}
+
 /**
  * True when the request represents a signed-in (authorised) user successfully
  * entering a claim journey for the first time: an authenticated GET to the
@@ -92,22 +121,9 @@ const getClaimStartPath = (request) => {
  * @returns {boolean}
  */
 const isSuccessfulClaimAccess = (request) => {
-  const { response } = request
-  if (!response || response instanceof Error) {
-    return false
-  }
-
   const claimStartPath = getClaimStartPath(request)
 
-  if (
-    request.method !== 'get' ||
-    !request.auth.isAuthenticated ||
-    !request.params?.slug ||
-    !claimStartPath ||
-    request.params?.path !== claimStartPath ||
-    response.statusCode < HTTP_OK_MIN ||
-    response.statusCode >= HTTP_REDIRECT_MIN
-  ) {
+  if (!isClaimAccessRequest(request, claimStartPath)) {
     return false
   }
 
