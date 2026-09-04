@@ -117,6 +117,13 @@ When('(the user )clicks the add more actions link for parcel {string}', async fu
   await card.getByRole('link', { name: 'Add more actions to this parcel' }).click()
 })
 
+When('(the user )clicks the remove parcel link for parcel {string}', async function (parcelReference) {
+  const card = this.page.locator('.govuk-summary-card', {
+    has: this.page.locator('.govuk-summary-card__title', { hasText: `Parcel reference ${parcelReference}` })
+  })
+  await card.getByRole('link', { name: 'Remove parcel' }).click()
+})
+
 Then('(the user )should see action {string} selected', async function (action) {
   await expect(this.page.locator(`//input[@type='checkbox'][@value='${action}']`)).toBeChecked()
 })
