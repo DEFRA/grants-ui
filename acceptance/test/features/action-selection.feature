@@ -1,6 +1,6 @@
 Feature: Action Selection
 
-    Scenario: Select actions for a land parcel
+    Scenario: Add and remove land parcels and select actions
         Given there is no application data for SBI "106514040" and grant "example-grant-with-map"
 
         # start
@@ -30,7 +30,6 @@ Feature: Action Selection
             |        |                                                       | 0.276 hectares available          |     |
             | SCR2   | Manage scrub and open habitat mosaics: SCR2           | Payment rate per year: £350.00/ha | Yes |
             |        |                                                       | hectares available                |     |
-
         When the user selects action "CSAM3"
 
         # RULE: partial action hectares cannot be zero
@@ -158,10 +157,59 @@ Feature: Action Selection
             |             | Manage scrub and open habitat mosaics (SCR2)                 | 0.7500 ha | £262.50        |
             |             | Subtotal                                                     |           | £646.43        |
         And should see total yearly payment "£708.25"
-        When the user clicks on "Add another land parcel"
+
+        # remove a land parcel, then cancel
+        When the user clicks the remove parcel link for parcel "SK0972 6820"
+        Then the user should be at URL "remove-parcel"
+        And should see heading "Remove this land parcel?"
+        And should see "Land parcel SK0972 6820 and all related actions will be removed from your application."
+        When the user clicks on "Cancel"
+
+        # confirm-land-and-actions, parcel removal cancelled
+        Then the user should be at URL "confirm-land-and-actions"
+        And should see the following parcel summary cards
+            | PARCEL      | ACTION                                                       | QUANTITY  | YEARLY PAYMENT |
+            | SK0972 6820 | Herbal leys (CSAM3)                                          | 0.2760 ha | £61.82         |
+            |             | Subtotal                                                     |           | £61.82         |
+            | SK0971 5039 | Herbal leys (CSAM3)                                          | 1.5000 ha | £336.00        |
+            |             | Manage grassland with very low nutrient inputs (CLIG3)       | 0.3174 ha | £47.93         |
+            |             | Manage scrub and open habitat mosaics (SCR2)                 | 0.7500 ha | £262.50        |
+            |             | Subtotal                                                     |           | £646.43        |
+        And should see total yearly payment "£708.25"
+
+        # remove a land parcel, this time confirming
+        When the user clicks the remove parcel link for parcel "SK0972 6820"
+        Then the user should be at URL "remove-parcel"
+        When the user clicks button "Remove this land parcel"
+
+        # confirm-land-and-actions, first parcel removed
+        Then the user should be at URL "confirm-land-and-actions"
+        And should see a notification banner saying "SK0972 6820 and its actions have been removed."
+        And should see the following parcel summary cards
+            | PARCEL      | ACTION                                                       | QUANTITY  | YEARLY PAYMENT |
+            | SK0971 5039 | Herbal leys (CSAM3)                                          | 1.5000 ha | £336.00        |
+            |             | Manage grassland with very low nutrient inputs (CLIG3)       | 0.3174 ha | £47.93         |
+            |             | Manage scrub and open habitat mosaics (SCR2)                 | 0.7500 ha | £262.50        |
+            |             | Subtotal                                                     |           | £646.43        |
+        And should see total yearly payment "£646.43"
+
+        # remove the last remaining land parcel
+        When the user clicks the remove parcel link for parcel "SK0971 5039"
+        Then the user should be at URL "remove-parcel"
+        And should see "Land parcel SK0971 5039 and all related actions will be removed from your application."
+        When the user clicks button "Remove this land parcel"
+
+        # confirm-land-and-actions, last parcel removed - stays on this page rather than navigating to select-land-parcel
+        Then the user should be at URL "confirm-land-and-actions"
+        And should see a notification banner saying "SK0971 5039 and its actions have been removed."
+        And should see "You removed the last land parcel. You must add at least one land parcel to continue your application."
+        When the user clicks on "Select a land parcel and add actions"
 
         # RULE: a land parcel with no eligible action is rejected on the map page
         Then the user should be at URL "select-land-parcel"
         When the user selects parcel "SK0972 7313" of area "0.2460" hectares on the map
         And continues
         Then the user should still be at URL "select-land-parcel"
+        And should see the following error messages
+            | There are no eligible actions for parcel SK0972 7313.                              |
+            | Change the parcel land cover or choose a different parcel to view eligible actions. |
