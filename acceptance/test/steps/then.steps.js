@@ -220,6 +220,14 @@ Then('(the user )should see a notification banner', async function () {
   await expect(this.page.locator('div.govuk-notification-banner')).toBeVisible()
 })
 
+Then('(the user )should see a notification banner saying {string}', async function (text) {
+  await expect(this.page.locator('div.govuk-notification-banner')).toContainText(text)
+})
+
+Then('(the user )should see {string}', async function (text) {
+  await expect(this.page.getByText(text, { exact: false }).first()).toBeVisible()
+})
+
 Then('(the user )should see full GOV.UK branding as a public beta service', async function () {
   await expect(this.page.locator('.govuk-header')).toBeVisible()
   await expect(this.page.locator('.defra-brand-bar')).toHaveCount(0)
@@ -264,6 +272,18 @@ Then('(the user )should see the following organisation address', async function 
   const valueCell = this.page.locator(`//dt[normalize-space()='${label}']/following-sibling::dd[1]`)
   await expect(valueCell).toBeVisible()
   const actualText = (await valueCell.innerText()).trim()
+  const actualLines = actualText
+    .split(/\r\n|\r|\n/)
+    .map((l) => l.trim())
+    .filter(Boolean)
+  expect(actualLines).toEqual(expectedLines)
+})
+
+Then('(the user )should see the following error messages', async function (dataTable) {
+  const expectedLines = dataTable.raw().map((row) => row[0].trim())
+  const errorSummary = this.page.locator('.govuk-error-summary').first()
+  await expect(errorSummary).toBeVisible()
+  const actualText = (await errorSummary.locator('.govuk-error-summary__list').innerText()).trim()
   const actualLines = actualText
     .split(/\r\n|\r|\n/)
     .map((l) => l.trim())
