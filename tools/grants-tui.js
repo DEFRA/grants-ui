@@ -15,6 +15,7 @@
  *   gt debug                     # restart grants-ui in debug mode (detached, port 9229)
  *   gt restart [--dry-run]       # restart running containers (with --no-deps)
  *   gt test [unit|contracts|acceptance]  # run tests (default: unit)
+ *   gt state <grant-code> --sbi <sbi>    # inspect persisted application state
  *   gt sonar [--skip-tests]      # local SonarQube scan (server left up for the dashboard)
  *   gt sonar --changed           # scope scan to src files changed vs main (approx. CI PR view)
  *   gt sonar --down              # force-stop a leftover SonarQube server
@@ -97,6 +98,7 @@ import { GAS_DIVIDER, gasStatusSegment, getGasStatus, setGasStatus } from './gra
 import { cmdTest, testLogPath } from './grants-tui/tests.js'
 import { cmdSonar } from './grants-tui/sonar.js'
 import { cmdJourney, journeyCrnOptions, journeySteps, listJourneys, wontCompleteReason } from './grants-tui/journey.js'
+import { cmdState } from './grants-tui/state.js'
 import { discoverOverrides } from './apply-local-form-defs.mjs'
 
 // Sweep of stale tool logs from tmpdir. macOS auto-clears windows tmpdir
@@ -838,6 +840,7 @@ ${BOLD}Commands:${RESET_COLOR}
   restart Restart running containers (selectable; uses --no-deps)
   test    Run tests: ${TEST_TARGETS.map((t) => t.key).join(' | ')} (default: ${TEST_TARGETS[0].key})
   journey Run a Journey Runner journey headlessly (${listJourneys().join(' | ')})
+  state   Inspect persisted application state in the local backend database
   sonar   Run SonarQube analysis against a local server (--changed scopes to PR files; --down stops it)
   snyk    Run Snyk dependency vulnerability scan (same as CI; needs a Snyk login — see below)
   check   Pre-PR full check: all test suites + snyk + PR-scoped sonar (runs every step, summarises)
@@ -863,6 +866,11 @@ ${BOLD}Journey flags (for 'journey'):${RESET_COLOR}
   --skip-install   Skip 'playwright install chromium'
   ${DIM}Full journey/section reference: docs/DEV-TOOLS.md ("Run from the CLI")${RESET_COLOR}
 
+${BOLD}State flags (for 'state'):${RESET_COLOR}
+  --sbi <sbi>          SBI that owns the grant application (required)
+  --grant-version <v>  Inspect an exact grant version (default: show all matching versions)
+  --json               Print raw JSON instead of the terminal-friendly view
+
 ${BOLD}Snyk auth (for 'snyk'):${RESET_COLOR}
   One-time login — no org/paid token needed, a FREE personal Snyk account works:
     1. create a free account at https://snyk.io
@@ -886,6 +894,7 @@ ${BOLD}Examples:${RESET_COLOR}
   gt journey example-grant-with-auth --stop 8 --headed   # watch it, stop before step 8
   gt journey grasslands --parcel SD6843-7039             # drive the map step to a specific parcel
   gt journey grasslands --mock-no-actions --headed       # see the "no actions available" error on the map page
+  gt state example-grant-with-auth --sbi 106238911        # inspect saved application state
   gt sonar                           # local SonarQube scan of src/
   gt sonar --changed                 # scope scan to src files changed vs main (approx. CI PR view)
   gt sonar --down                    # stop the local SonarQube server
@@ -918,11 +927,12 @@ async function main() {
 
   // Validate args before doing anything else — catch unrecognised flags/commands early
   {
-    const knownCmds = ['up', 'down', 'debug', 'restart', 'reset', 'test', 'sonar', 'snyk', 'check', 'journey']
+    const knownCmds = ['up', 'down', 'debug', 'restart', 'reset', 'test', 'sonar', 'snyk', 'check', 'journey', 'state']
     // Test targets are valid positionals only after the `test` command
     const testTargetKeys = argv.includes('test') ? TEST_TARGETS.map((t) => t.key) : []
     // The journey slug is a free positional straight after the `journey` command.
     const journeyIdx = argv.indexOf('journey')
+    const stateIdx = argv.indexOf('state')
     const knownFlags = [
       '--dry-run',
       '--help',
@@ -944,11 +954,14 @@ async function main() {
       '--clear',
       '--base-url',
       '--skip-install',
+      '--sbi',
+      '--grant-version',
+      '--json',
       ...LOCAL_SERVICES.map((s) => `--local-${s.key}`)
     ]
     // Flags that consume the following positional as their value — so it isn't
     // mistaken for an unknown command.
-    const valueFlagIdxs = ['--scale', '--crn', '--stop', '--parcel', '--base-url']
+    const valueFlagIdxs = ['--scale', '--crn', '--stop', '--parcel', '--base-url', '--sbi', '--grant-version']
       .map((f) => argv.indexOf(f))
       .filter((i) => i !== -1)
       .map((i) => i + 1)
@@ -959,7 +972,8 @@ async function main() {
         !testTargetKeys.includes(a) &&
         !valueFlagIdxs.includes(i) &&
         // the journey slug positional (immediately after `journey`) is allowed
-        !(journeyIdx !== -1 && i === journeyIdx + 1)
+        !(journeyIdx !== -1 && i === journeyIdx + 1) &&
+        !(stateIdx !== -1 && i === stateIdx + 1)
     )
     const unknownFlag = argv.filter((a) => a.startsWith('-')).find((a) => !knownFlags.includes(a))
     if (unknownCmd) {
@@ -982,13 +996,14 @@ async function main() {
     : []
   const testNeedsDocker = testTargets.some((k) => TEST_TARGETS.find((t) => t.key === k)?.needsDocker)
   const snykInvoked = argv.includes('snyk')
+  const stateInvoked = argv.includes('state')
   // `journey` drives a browser against localhost:3000, which may be a plain
   // `npm run dev` rather than the Docker stack — don't force a Docker check.
   const journeyInvoked = argv.includes('journey')
 
   // Preflight: ensure Docker is available and running (skipped for --dry-run so
   // offline/CI usage works, and for test/snyk/journey runs that don't drive containers)
-  if (!dryRun && !(testInvoked && !testNeedsDocker) && !snykInvoked && !journeyInvoked) {
+  if (!dryRun && !(testInvoked && !testNeedsDocker) && !snykInvoked && !journeyInvoked && !stateInvoked) {
     const dockerCheck = spawnSync('docker', ['info'], { encoding: 'utf8', stdio: 'pipe' })
     if (dockerCheck.status !== 0 || dockerCheck.error) {
       console.error(
@@ -1045,6 +1060,23 @@ async function main() {
   if (argv.includes('check')) {
     releaseStdin()
     process.exit(await cmdCheck(dryRun))
+  }
+  if (argv.includes('state')) {
+    releaseStdin()
+    const stateIdx = argv.indexOf('state')
+    const grantCode = argv[stateIdx + 1] && !argv[stateIdx + 1].startsWith('-') ? argv[stateIdx + 1] : ''
+    const valueOf = (flag) => {
+      const i = argv.indexOf(flag)
+      return i !== -1 ? argv[i + 1] : undefined
+    }
+    process.exit(
+      cmdState({
+        grantCode,
+        sbi: valueOf('--sbi') ?? '',
+        grantVersion: valueOf('--grant-version'),
+        json: argv.includes('--json')
+      })
+    )
   }
   if (argv.includes('journey')) {
     releaseStdin()
