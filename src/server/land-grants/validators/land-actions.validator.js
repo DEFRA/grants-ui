@@ -1,7 +1,7 @@
 import { getSelectedActionCodes, SELECTED_ACTIONS_FIELD_NAME } from '../utils/selected-actions-field.js'
 import { getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
 import { requiresQuantityInput } from '~/src/shared/action-quantity-type.js'
-import { hasSubmittedNonZeroQuantity } from '../view-state/land-parcel.view-state.js'
+import { QUANTITY_PRECISION, getQuantityError } from '~/src/shared/action-quantity-validation.js'
 
 /**
  * Validators for land actions selection
@@ -54,16 +54,11 @@ export function validateSelectedActions(payload) {
   return errors
 }
 
-const QUANTITY_PRECISION = 4
-// Stricter than Number(value): rejects "14.211.442121", "1e5", etc. rather
-// than letting them slip through as NaN or unbounded-precision numbers.
-const QUANTITY_FORMAT = new RegExp(String.raw`^\d+(\.\d{1,${QUANTITY_PRECISION}})?$`)
-
 /**
- * Validate that every selected, quantity-required action has a confirmed
- * (submitted, non-zero) quantity, in plain decimal form with no more than 4
- * decimal places. Each error carries the action's code so the caller can
- * also highlight its specific input, not just list the error in the summary.
+ * Validate that every selected, quantity-required action has a submitted
+ * quantity that satisfies the shared rules (see getQuantityError). Each error
+ * carries the action's code so the caller can also highlight its specific
+ * input, not just list the error in the summary.
  * @param {object} payload - Form payload
  * @param {Action[]} actions
  * @returns {Array<{text: string, href: string, code: string}>} - Array of validation errors
@@ -78,12 +73,20 @@ export function validateSelectedActionQuantities(payload, actions) {
 
   for (const action of applicableActions) {
     const href = `#${getActionQuantityFieldName(action.code)}`
-    if (!hasSubmittedNonZeroQuantity(payload, action)) {
+    const rawValue = String(payload[getActionQuantityFieldName(action.code)] ?? '').trim()
+
+    // Nothing to claim, however it was expressed - "enter a quantity" is the
+    // action the user has to take whether the field was left blank or zeroed.
+    if (rawValue === '' || Number(rawValue) <= 0) {
       errors.push({ text: `Enter a quantity for ${action.description}`, href, code: action.code })
       continue
     }
-    const rawValue = String(payload[getActionQuantityFieldName(action.code)]).trim()
-    if (!QUANTITY_FORMAT.test(rawValue)) {
+
+    // The shared rules decide WHETHER the value is usable; the message stays
+    // here, where the action's description is in hand to name it. Anything
+    // non-numeric reaches this too (Number('abc') is NaN, so it fails no
+    // comparison above), reported as the format fault it is.
+    if (getQuantityError(rawValue)) {
       errors.push({
         text: `Quantity for ${action.description} must be ${QUANTITY_PRECISION} decimal places or fewer`,
         href,
