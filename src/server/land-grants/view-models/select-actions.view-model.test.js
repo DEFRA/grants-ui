@@ -270,9 +270,7 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel({ ...csam3({ value: 2.2822, unit: 'ha' }), ratePerUnitGbp: 45 }, [])
 
       expect(result.html).toContain('Payment rate per year: £45/ha')
-      expect(result.html).toContain(
-        '<span id="landActionQuantity_CSAM3-hint">2.2822 hectares available</span>'
-      )
+      expect(result.html).toContain('<span id="landActionQuantity_CSAM3-hint">2.2822 hectares available</span>')
     })
 
     it('should show the available-area guidance for a non-quantity (total) action', () => {
