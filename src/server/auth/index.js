@@ -13,6 +13,7 @@ import {
 import { releaseAllApplicationLocksForOwnerFromApi } from '../common/helpers/lock/application-lock.js'
 import { ViewError } from '~/src/server/common/utils/errors/ViewError.js'
 import { AuthError } from '~/src/server/common/utils/errors/AuthError.js'
+import { YarKeys } from '~/src/server/common/constants/session-keys.js'
 
 const UNKNOWN_USER = 'unknown'
 const USER_AGENT = 'user-agent'
@@ -503,6 +504,13 @@ async function handleSignOut(request, h) {
  * @param {ResponseToolkit} h
  */
 async function handleOidcSignOut(request, h) {
+  // Drop the grant application context first and unconditionally: the yar cookie
+  // outlives the session cookie, so a later sign-in on the same browser must not
+  // inherit a previous session's grantCode/clientRef and view another business'
+  // agreement. Done before the cookie/cache teardown below so a failure there
+  // cannot leave the stale context behind.
+  request.yar?.clear(YarKeys.GRANT_APPLICATION_CONTEXT)
+
   if (request.auth.isAuthenticated) {
     validateState(request, request.query.state)
 
@@ -527,6 +535,9 @@ async function handleOidcSignOut(request, h) {
 function handleOrganisationRedirect(request, h) {
   const redirect = request.yar.get('redirect') ?? '/home'
   request.yar.clear('redirect')
+  // Switching organisation changes the acting business, so any stored grant
+  // application context belongs to the previous SBI - drop it.
+  request.yar.clear(YarKeys.GRANT_APPLICATION_CONTEXT)
   const safeRedirect = getSafeRedirect(redirect)
   return h.redirect(safeRedirect)
 }
