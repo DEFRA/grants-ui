@@ -285,6 +285,68 @@ describe('task-list.helper', () => {
       const state = {}
       expect(getCompletionStats(mockModel, formModel, state).completed).toBe(0)
     })
+
+    describe('metadata.tasklist.completionRequirements (select land and actions)', () => {
+      const mapSelectPage = {
+        path: '/select-land-parcel',
+        section: 's1',
+        controller: 'MapSelectPageController',
+        components: [{ type: 'TextField', name: 'selectedParcelsDisplay' }]
+      }
+      const metadata = {
+        tasklist: {
+          completionRequirements: {
+            '/select-land-parcel': {
+              requiresAnyItemWithNonEmptyKey: { collection: 'landParcels', key: 'actionsObj' }
+            }
+          }
+        }
+      }
+
+      it('is not completed once a parcel is picked but before any action is saved', () => {
+        const mockModel = { page: { def: { pages: [mapSelectPage] } } }
+        const formModel = { pageMap: buildPageMap(mockModel.page.def.pages), def: { metadata } }
+        const state = { selectedParcelsDisplay: 'SD7148-9160', landParcels: {} }
+
+        expect(getCompletionStats(mockModel, formModel, state).completed).toBe(0)
+      })
+
+      it('is not completed when a selected parcel has an entry with no actions', () => {
+        const mockModel = { page: { def: { pages: [mapSelectPage] } } }
+        const formModel = { pageMap: buildPageMap(mockModel.page.def.pages), def: { metadata } }
+        const state = {
+          selectedParcelsDisplay: 'SD7148-9160',
+          landParcels: { 'SD7148-9160': { actionsObj: {} } }
+        }
+
+        expect(getCompletionStats(mockModel, formModel, state).completed).toBe(0)
+      })
+
+      it('is completed once the selected parcel has a saved action', () => {
+        const mockModel = { page: { def: { pages: [mapSelectPage] } } }
+        const formModel = { pageMap: buildPageMap(mockModel.page.def.pages), def: { metadata } }
+        const state = {
+          selectedParcelsDisplay: 'SD7148-9160',
+          landParcels: { 'SD7148-9160': { actionsObj: { CLIG3: { description: 'x', value: 1 } } } }
+        }
+
+        expect(getCompletionStats(mockModel, formModel, state).completed).toBe(1)
+      })
+
+      it('pages with no configured requirement are unaffected by landParcels/actionsObj', () => {
+        const mockModel = {
+          page: {
+            def: {
+              pages: [{ path: '/other', section: 's1', components: [{ type: 'TextField', name: 'q1' }] }]
+            }
+          }
+        }
+        const formModel = { pageMap: buildPageMap(mockModel.page.def.pages), def: { metadata: {} } }
+        const state = { q1: 'value' }
+
+        expect(getCompletionStats(mockModel, formModel, state).completed).toBe(1)
+      })
+    })
   })
 
   describe('buildTaskListData', () => {
