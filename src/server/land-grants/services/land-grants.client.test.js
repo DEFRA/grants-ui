@@ -672,9 +672,9 @@ describe('Land Grants client', () => {
   })
 
   describe('parcelsWithSize', () => {
-    it('should trigger a POST request to /api/v2/parcels with size filtering', async () => {
+    it('should trigger a POST request to /api/v2/parcels with size and actions filtering', async () => {
       const mockResponse = { parcels: [], status: 'success' }
-      const fields = ['size']
+      const fields = ['size', 'actions']
       const parcelIds = ['parcel1']
       mockFetch.mockResolvedValueOnce({
         ok: true,

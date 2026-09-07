@@ -27,6 +27,9 @@ const landParcels = {
 }
 
 const payment = {
+  agreementStartDate: '2026-02-01',
+  agreementEndDate: '2029-02-01',
+  agreementTotalPence: 370200,
   annualTotalPence: 123400,
   parcelItems: {
     1: {
@@ -141,6 +144,8 @@ describe('ConfirmLandAndActionsPageController', () => {
       expect(model.parcels[0].yearlyPayment).toBe('£300.00')
       expect(model.parcels[1].yearlyPayment).toBe('£3.00')
       expect(model.applicationYearlyPayment).toBe('£1,234.00')
+      expect(model.agreementDuration).toBe('3 years')
+      expect(model.agreementTotalPayment).toBe('£3,702.00')
       expect(result).toBe('rendered view')
     })
 
@@ -185,7 +190,7 @@ describe('ConfirmLandAndActionsPageController', () => {
       expect(mockH.view.mock.calls[0][1].pageTitle).toBe(expectedTitle)
     })
 
-    test('persists raw payment, totalPence and totalPayment only after validation', async () => {
+    test('persists payment totals and agreement-level fields only after validation', async () => {
       calculateLandActionsPayment.mockResolvedValueOnce(paymentResult)
       const controller = buildController()
       mockContext.state = { landParcels }
@@ -197,7 +202,10 @@ describe('ConfirmLandAndActionsPageController', () => {
         landParcels,
         payment,
         totalPence: 123400,
-        totalPayment: '£1,234.00'
+        totalPayment: '£1,234.00',
+        agreementStartDate: '2026-02-01',
+        agreementEndDate: '2029-02-01',
+        agreementTotalPence: 370200
       })
     })
 
@@ -219,7 +227,15 @@ describe('ConfirmLandAndActionsPageController', () => {
     test('clears prior payment data and renders error when service fails', async () => {
       calculateLandActionsPayment.mockRejectedValueOnce(new Error('boom'))
       const controller = buildController()
-      mockContext.state = { landParcels, payment: { annualTotalPence: 999 }, totalPence: 999, totalPayment: '£9.99' }
+      mockContext.state = {
+        landParcels,
+        payment: { annualTotalPence: 999 },
+        totalPence: 999,
+        totalPayment: '£9.99',
+        agreementStartDate: '2026-02-01',
+        agreementEndDate: '2029-02-01',
+        agreementTotalPence: 2997
+      }
 
       await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
 
@@ -255,7 +271,15 @@ describe('ConfirmLandAndActionsPageController', () => {
         paymentTotal: '£0.00'
       })
       const controller = buildController()
-      mockContext.state = { landParcels, payment: { annualTotalPence: 999 }, totalPence: 999, totalPayment: '£9.99' }
+      mockContext.state = {
+        landParcels,
+        payment: { annualTotalPence: 999 },
+        totalPence: 999,
+        totalPayment: '£9.99',
+        agreementStartDate: '2026-02-01',
+        agreementEndDate: '2029-02-01',
+        agreementTotalPence: 2997
+      }
 
       await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
 
@@ -274,13 +298,21 @@ describe('ConfirmLandAndActionsPageController', () => {
 
       const model = mockH.view.mock.calls[0][1]
       expect(model.retryHref).toBe('/test-grant/confirm-land-and-actions')
-      expect(model.selectLandParcelHref).toBe('/test-grant/select-land-parcel')
+      expect(model.selectLandParcelHref).toBe('/test-grant/select-land-parcel?origin=confirm-land-and-actions')
     })
 
     describe('with no land parcels left', () => {
       test('renders the empty state without pricing an empty selection', async () => {
         const controller = buildController()
-        mockContext.state = { landParcels: {}, payment, totalPence: 999, totalPayment: '£9.99' }
+        mockContext.state = {
+          landParcels: {},
+          payment,
+          totalPence: 999,
+          totalPayment: '£9.99',
+          agreementStartDate: '2026-02-01',
+          agreementEndDate: '2029-02-01',
+          agreementTotalPence: 2997
+        }
 
         await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
 
@@ -288,12 +320,20 @@ describe('ConfirmLandAndActionsPageController', () => {
         const model = mockH.view.mock.calls[0][1]
         expect(model.hasNoLandParcels).toBe(true)
         expect(model.hasCalculationError).toBe(false)
-        expect(model.selectLandParcelHref).toBe('/test-grant/select-land-parcel')
+        expect(model.selectLandParcelHref).toBe('/test-grant/select-land-parcel?origin=confirm-land-and-actions')
       })
 
       test('drops the payment left over from the removed parcels', async () => {
         const controller = buildController()
-        mockContext.state = { landParcels: {}, payment, totalPence: 999, totalPayment: '£9.99' }
+        mockContext.state = {
+          landParcels: {},
+          payment,
+          totalPence: 999,
+          totalPayment: '£9.99',
+          agreementStartDate: '2026-02-01',
+          agreementEndDate: '2029-02-01',
+          agreementTotalPence: 2997
+        }
 
         await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
 
@@ -415,7 +455,7 @@ describe('ConfirmLandAndActionsPageController', () => {
       const result = await controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
 
       expect(controller.proceed).not.toHaveBeenCalled()
-      expect(mockH.redirect).toHaveBeenCalledWith('/test-grant/select-land-parcel')
+      expect(mockH.redirect).toHaveBeenCalledWith('/test-grant/select-land-parcel?origin=confirm-land-and-actions')
       expect(result).toBe('redirected away')
     })
 

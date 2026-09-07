@@ -388,6 +388,144 @@ describe('task-list.helper', () => {
       expect(data[0].items[1].status.tag.text).toBe('Not started')
     })
 
+    describe('parcel-actions task entry', () => {
+      const makeModels = (showQuestions = true) => {
+        const pages = [
+          {
+            title: 'Select your land parcels',
+            section: 'land-actions',
+            path: '/select-land-parcel',
+            controller: 'MapSelectPageController',
+            components: [{ type: 'TextField', name: 'selectedParcelsDisplay' }]
+          },
+          {
+            title: 'Select actions',
+            section: 'land-actions',
+            path: '/select-actions-for-land-parcel',
+            controller: 'SelectActionsPageController',
+            components: []
+          },
+          {
+            title: 'Review land parcels and actions',
+            path: '/confirm-land-and-actions',
+            controller: 'ConfirmLandAndActionsPageController',
+            components: []
+          }
+        ]
+        const model = {
+          serviceUrl: '/service',
+          page: {
+            def: {
+              pages,
+              sections: [{ id: 'land-actions', title: 'Select land and actions' }]
+            }
+          }
+        }
+        const formModel = {
+          pageMap: buildPageMap(pages),
+          def: { metadata: { tasklist: { showQuestions } }, pages },
+          conditions: {}
+        }
+
+        return { model, formModel }
+      }
+
+      it('links to the map when no parcel has saved actions', () => {
+        const { model, formModel } = makeModels()
+
+        const data = buildTaskListData(model, formModel, { landParcels: {} })
+
+        expect(data[0].items[0].href).toBe('/service/select-land-parcel')
+        expect(data[0].items[0].status.tag.text).toBe('Not started')
+      })
+
+      it('links to the map when a parcel has an empty actions object', () => {
+        const { model, formModel } = makeModels()
+        const state = {
+          selectedParcelsDisplay: 'SD1234 5678',
+          landParcels: { 'SD1234-5678': { actionsObj: {} } }
+        }
+
+        const data = buildTaskListData(model, formModel, state)
+
+        expect(data[0].items[0].href).toBe('/service/select-land-parcel')
+        expect(data[0].items[0].status.tag.text).toBe('Not started')
+      })
+
+      it('links to the confirmation page when a parcel has saved actions', () => {
+        const { model, formModel } = makeModels()
+        const state = {
+          landParcels: { 'SD1234-5678': { actionsObj: { CSAM3: { description: 'Action' } } } }
+        }
+
+        const data = buildTaskListData(model, formModel, state)
+
+        expect(data[0].items[0].href).toBe('/service/confirm-land-and-actions')
+        expect(data[0].items[0].status.tag.text).toBe('Completed')
+      })
+
+      it.each(['SelectActionsPageController', 'ConfirmLandAndActionsPageController'])(
+        'keeps the map path when %s is absent',
+        (missingController) => {
+          const { model, formModel } = makeModels()
+          model.page.def.pages = model.page.def.pages.filter((page) => page.controller !== missingController)
+          formModel.def.pages = model.page.def.pages
+          const state = {
+            landParcels: { 'SD1234-5678': { actionsObj: { CSAM3: { description: 'Action' } } } }
+          }
+
+          const data = buildTaskListData(model, formModel, state)
+
+          expect(data[0].items[0].href).toBe('/service/select-land-parcel')
+        }
+      )
+
+      it('uses the same state-aware destination when task questions are hidden', () => {
+        const { model, formModel } = makeModels(false)
+        const state = {
+          landParcels: { 'SD1234-5678': { actionsObj: { CSAM3: { description: 'Action' } } } }
+        }
+
+        const data = buildTaskListData(model, formModel, state)
+
+        expect(data[0].items[0].href).toBe('/service/confirm-land-and-actions')
+      })
+    })
+
+    it('should render plain text without a govuk-tag when a status override has no classes', () => {
+      const mockModel = {
+        serviceUrl: '/service',
+        page: {
+          def: {
+            pages: [
+              { title: 'Task 1', section: 's1', path: '/t1', components: [{ type: 'TextField', name: 'q1' }] },
+              { title: 'Task 2', section: 's1', path: '/t2', components: [{ type: 'TextField', name: 'q2' }] }
+            ],
+            sections: [{ id: 's1', title: 'Section 1' }]
+          }
+        }
+      }
+      const formModel = {
+        pageMap: buildPageMap(mockModel.page.def.pages),
+        def: {
+          metadata: {
+            tasklist: {
+              statuses: {
+                completed: { text: 'Completed' }
+              }
+            }
+          },
+          pages: mockModel.page.def.pages
+        }
+      }
+      const state = { q1: 'val1' }
+
+      const data = buildTaskListData(mockModel, formModel, state)
+
+      expect(data[0].items[0].status.text).toBe('Completed')
+      expect(data[0].items[0].status.tag).toBeUndefined()
+    })
+
     it('should handle "cannot start yet" status when completeInOrder is true', () => {
       const mockModel = {
         serviceUrl: '/service',
@@ -833,6 +971,48 @@ describe('task-list.helper', () => {
     it('should return null for first page in section when hasReturnUrl is true', () => {
       const backLink = getTaskPageBackLink(viewModel, { path: '/p1', section: 's1' }, true)
       expect(backLink).toBeNull()
+    })
+
+    it.each([
+      {
+        path: '/select-land-parcel',
+        section: 'land-actions',
+        controller: 'MapSelectPageController'
+      },
+      {
+        path: '/select-actions-for-land-parcel',
+        section: 'land-actions',
+        controller: 'SelectActionsPageController'
+      },
+      {
+        path: '/confirm-land-and-actions',
+        controller: 'ConfirmLandAndActionsPageController'
+      }
+    ])('returns the task-list back link for parcel-actions page $path', (currentPage) => {
+      viewModel.page.def.pages = [
+        {
+          path: '/select-land-parcel',
+          section: 'land-actions',
+          controller: 'MapSelectPageController'
+        },
+        {
+          path: '/select-actions-for-land-parcel',
+          section: 'land-actions',
+          controller: 'SelectActionsPageController'
+        },
+        {
+          path: '/confirm-land-and-actions',
+          controller: 'ConfirmLandAndActionsPageController'
+        },
+        { path: '/declaration', section: 'submit' }
+      ]
+
+      const backLink = getTaskPageBackLink(viewModel, currentPage, true)
+
+      expect(backLink).toEqual({
+        href: '/service/task-list',
+        text: 'Back to task list'
+      })
     })
   })
 

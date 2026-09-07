@@ -5641,8 +5641,26 @@ function mockBbox() {
   return { minLng, minLat, maxLng, maxLat }
 }
 
+export const MOCK_ACTION_CODES = ['CLIG3', 'CSAM3', 'SCR2']
+
+export function buildMockParcels(parcelIds = []) {
+  return parcelIds.map((id, index) => {
+    const [sheetId, parcelId] = id.split('-')
+    const count = (index % MOCK_ACTION_CODES.length) + 1
+    const actions = MOCK_ACTION_CODES.slice(0, count).map((code) => ({ code }))
+    return {
+      id,
+      sheetId,
+      parcelId,
+      areaHa: null,
+      actions,
+      actionCount: count
+    }
+  })
+}
+
 /**
- * @param {{ id: string, sheetId: string, parcelId: string, areaHa: number | null }[]} parcels
+ * @param {{ id: string, sheetId: string, parcelId: string, areaHa: number | null, actionCount?: number, actions?: Array<unknown> }[]} parcels
  * @returns {{ features: import('./types.js').ParcelFeature[], bbox: { minLng: number, minLat: number, maxLng: number, maxLat: number } }}
  */
 export function buildMockFeatures(parcels) {
@@ -5651,13 +5669,20 @@ export function buildMockFeatures(parcels) {
   // reusing a shape stacked two parcels on one footprint, so the rendered
   // label and the clicked feature disagreed on which parcel it was.
   const features = parcels.slice(0, MOCK_GEOMETRIES.length).map((p, i) => {
+    const defaultActionCount = (i % MOCK_ACTION_CODES.length) + 1
     return /** @type {import('./types.js').ParcelFeature} */ ({
       type: 'Feature',
       id: p.id,
       geometry: MOCK_GEOMETRIES[i],
       // Real area when the size API supplied one, so the tooltip matches what
       // the rest of the journey shows; the shape's own area only as a fallback.
-      properties: { id: p.id, sheet_id: p.sheetId, parcel_id: p.parcelId, areaHa: p.areaHa ?? MOCK_AREAS[i] }
+      properties: {
+        id: p.id,
+        sheet_id: p.sheetId,
+        parcel_id: p.parcelId,
+        areaHa: p.areaHa ?? MOCK_AREAS[i],
+        actionCount: p.actionCount ?? p.actions?.length ?? defaultActionCount
+      }
     })
   })
   return { features, bbox: mockBbox() }

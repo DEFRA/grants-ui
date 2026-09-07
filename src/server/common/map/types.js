@@ -23,6 +23,7 @@
  * @property {string} sheet_id
  * @property {string} parcel_id
  * @property {number | null} areaHa
+ * @property {number} [actionCount]
  */
 
 export {}

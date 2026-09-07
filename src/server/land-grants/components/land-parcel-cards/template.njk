@@ -1,0 +1,80 @@
+{% from "summaryCard/macro.njk" import summaryCard %}
+
+{% for parcel in params.parcels %}
+  {% set headerActions = null %}
+  {% if params.readOnly and params.changeHref %}
+    {% set headerActions = {
+      href: params.changeHref,
+      classes: "govuk-link--no-visited-state",
+      text: "Change",
+      hiddenTextValue: "land parcel " + parcel.reference + " and actions"
+    } %}
+  {% elif not params.readOnly %}
+    {% set headerActions = {
+      href: parcel.removeHref,
+      classes: "govuk-link--no-visited-state",
+      text: "Remove parcel",
+      hiddenTextValue: "and all actions for land parcel " + parcel.reference
+    } %}
+  {% endif %}
+
+  {% call summaryCard({
+    title: { text: "Parcel reference " + parcel.reference },
+    headerActions: headerActions
+  }) %}
+    <table class="govuk-table govuk-!-margin-bottom-2 land-parcel-summary__table">
+      <caption class="govuk-table__caption govuk-visually-hidden">Actions on land parcel {{ parcel.reference }}</caption>
+      <colgroup>
+        <col>
+        <col class="land-parcel-summary__quantity-column">
+        <col class="land-parcel-summary__yearly-payment-column">
+        {% if not params.readOnly %}
+          <col class="land-parcel-summary__change-column">
+        {% endif %}
+      </colgroup>
+      <thead class="govuk-table__head">
+        <tr class="govuk-table__row">
+          <th scope="col" class="govuk-table__header">Action</th>
+          <th scope="col" class="govuk-table__header govuk-table__header--numeric">Quantity</th>
+          <th scope="col" class="govuk-table__header govuk-table__header--numeric">Yearly payment</th>
+          {% if not params.readOnly %}
+            <th scope="col" class="govuk-table__header"><span class="govuk-visually-hidden">Change</span></th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody class="govuk-table__body">
+        {% for landAction in parcel.actions %}
+          <tr class="govuk-table__row">
+            <th scope="row" class="govuk-table__header govuk-!-font-weight-regular">
+              {{ landAction.action }}
+              {%- if landAction.requirementText %}
+                <span class="land-parcel-summary__action-hint">{{ landAction.requirementText }}</span>
+              {%- endif %}
+            </th>
+            <td class="govuk-table__cell govuk-table__cell--numeric">{{ landAction.area }}</td>
+            <td class="govuk-table__cell govuk-table__cell--numeric">{{ landAction.yearlyPayment }}</td>
+            {% if not params.readOnly %}
+              <td class="govuk-table__cell govuk-table__cell--numeric">
+                <a class="govuk-link govuk-link--no-visited-state" href="{{ landAction.changeHref }}">Change<span class="govuk-visually-hidden"> {{ landAction.action }}</span></a>
+              </td>
+            {% endif %}
+          </tr>
+        {% endfor %}
+        <tr class="govuk-table__row land-parcel-summary-card__subtotal">
+          <th scope="row" class="govuk-table__header">Subtotal</th>
+          <td class="govuk-table__cell govuk-table__cell--numeric"></td>
+          <td class="govuk-table__cell govuk-table__cell--numeric">{{ parcel.yearlyPayment }}</td>
+          {% if not params.readOnly %}
+            <td class="govuk-table__cell"></td>
+          {% endif %}
+        </tr>
+      </tbody>
+    </table>
+
+    {% if not params.readOnly %}
+      <p class="govuk-body land-parcel-summary-card__add-action">
+        <a class="govuk-link govuk-link--no-visited-state" href="{{ parcel.addActionsHref }}">Add more actions to this parcel<span class="govuk-visually-hidden"> {{ parcel.reference }}</span></a>
+      </p>
+    {% endif %}
+  {% endcall %}
+{% endfor %}

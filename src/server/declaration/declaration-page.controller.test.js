@@ -191,6 +191,83 @@ describe('DeclarationPageController', () => {
   })
 
   describe('getSummaryViewModel', () => {
+    test.each([
+      [[], []],
+      [['sssi'], ['SSSI consent']],
+      [['hefer'], ['HEFER request']],
+      [
+        ['sssi', 'hefer'],
+        ['SSSI consent', 'HEFER request']
+      ]
+    ])('should render declaration HTML for selected action consents %j', (consents, expectedItems) => {
+      const content = [
+        '<ul><li>Information is correct</li>',
+        "{% if 'sssi' in pageConsents %}<li>SSSI consent</li>{% endif %}",
+        "{% if 'hefer' in pageConsents %}<li>HEFER request</li>{% endif %}",
+        '<li>Management control</li></ul>'
+      ].join('')
+      const components = [{ type: 'Html', model: { content } }]
+      vi.spyOn(SummaryPageController.prototype, 'getSummaryViewModel').mockReturnValueOnce({ components })
+      mockContext.state.landParcels = {
+        'AB1234-5678': { actionsObj: { ACTION1: { consents } } },
+        'CD5678-9012': { actionsObj: { ACTION2: { consents } } }
+      }
+      const originalState = structuredClone(mockContext.state)
+
+      const result = controller.getSummaryViewModel(mockRequest, mockContext)
+
+      expect(result.pageConsents).toEqual(consents)
+      expect(result.components[0].model.content).toBe(
+        `<ul>${['Information is correct', ...expectedItems, 'Management control']
+          .map((item) => `<li>${item}</li>`)
+          .join('')}</ul>`
+      )
+      expect(components[0].model.content).toBe(content)
+      expect(mockContext.state).toEqual(originalState)
+    })
+
+    test('should combine consents from different parcels and recompute them after actions are removed', () => {
+      mockContext.state.landParcels = {
+        'AB1234-5678': { actionsObj: { ACTION1: { consents: ['sssi'] } } },
+        'CD5678-9012': { actionsObj: { ACTION2: { consents: ['hefer'] } } }
+      }
+
+      expect(controller.getSummaryViewModel(mockRequest, mockContext).pageConsents).toEqual(['sssi', 'hefer'])
+
+      mockContext.state.landParcels = {
+        'AB1234-5678': { actionsObj: {} },
+        'CD5678-9012': { actionsObj: { ACTION2: { consents: ['hefer'] } } }
+      }
+
+      expect(controller.getSummaryViewModel(mockRequest, mockContext).pageConsents).toEqual(['hefer'])
+    })
+
+    test.each([undefined, {}, { landParcels: {} }, { landParcels: { 'AB1234-5678': {} } }])(
+      'should expose no consents for state %j',
+      (state) => {
+        mockContext.state = state
+
+        const result = controller.getSummaryViewModel(mockRequest, mockContext)
+
+        expect(result.pageConsents).toEqual([])
+        expect(result.components).toEqual([])
+      }
+    )
+
+    test('should preserve static HTML, non-HTML components and components without string content', () => {
+      const components = [
+        { type: 'Html', model: { content: '<p>Static declaration</p>', classes: 'govuk-body' } },
+        { type: 'CheckboxesField', model: { name: 'declaration', content: '{{ unchanged }}' } },
+        { type: 'Html' },
+        { type: 'Html', model: { content: null } }
+      ]
+      vi.spyOn(SummaryPageController.prototype, 'getSummaryViewModel').mockReturnValueOnce({ components })
+
+      const result = controller.getSummaryViewModel(mockRequest, mockContext)
+
+      expect(result.components).toEqual(components)
+    })
+
     test('should include backLink when getTaskPageBackLink returns a value', () => {
       getTaskPageBackLink.mockReturnValue({ href: '/task-list', text: 'Back to task list' })
 

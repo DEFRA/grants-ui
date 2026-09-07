@@ -48,7 +48,13 @@ const parcelItems = {
   }
 }
 
-const payment = { annualTotalPence: 123400, parcelItems }
+const payment = {
+  agreementStartDate: '2026-02-01',
+  agreementEndDate: '2029-02-01',
+  agreementTotalPence: 370200,
+  annualTotalPence: 123400,
+  parcelItems
+}
 
 describe('buildConfirmLandAndActionsViewModel', () => {
   it('groups actions into a card per parcel', () => {
@@ -58,20 +64,23 @@ describe('buildConfirmLandAndActionsViewModel', () => {
     expect(model.parcels[0]).toEqual({
       reference: 'SD1234 5678',
       removeHref: 'remove-parcel?parcelId=SD1234-5678',
-      addActionsHref: 'select-actions-for-land-parcel?parcelId=SD1234-5678',
+      addActionsHref:
+        'select-actions-for-land-parcel?parcelId=SD1234-5678&origin=confirm-land-and-actions&changeActions=true',
       yearlyPayment: '£30.00',
       actions: [
         {
           action: 'Action description (CLIG3)',
           area: '2.0000 ha',
           yearlyPayment: '£10.00',
-          changeHref: 'select-actions-for-land-parcel?parcelId=SD1234-5678'
+          changeHref:
+            'select-actions-for-land-parcel?parcelId=SD1234-5678&origin=confirm-land-and-actions&changeActions=true'
         },
         {
           action: 'Another action (CSAM3)',
           area: '4.0000 ha',
           yearlyPayment: '£20.00',
-          changeHref: 'select-actions-for-land-parcel?parcelId=SD1234-5678'
+          changeHref:
+            'select-actions-for-land-parcel?parcelId=SD1234-5678&origin=confirm-land-and-actions&changeActions=true'
         }
       ]
     })
@@ -165,6 +174,24 @@ describe('buildConfirmLandAndActionsViewModel', () => {
     const model = buildConfirmLandAndActionsViewModel(payment, landParcels)
 
     expect(model.applicationYearlyPayment).toBe('£1,234.00')
+  })
+
+  it('builds the agreement duration and estimated agreement payment from the API fields', () => {
+    const model = buildConfirmLandAndActionsViewModel(payment, landParcels)
+
+    expect(model.agreementDuration).toBe('3 years')
+    expect(model.agreementDurationYears).toBe(3)
+    expect(model.agreementTotalPayment).toBe('£3,702.00')
+  })
+
+  it('rounds an inclusive end date to the agreement duration in whole years', () => {
+    const model = buildConfirmLandAndActionsViewModel(
+      { ...payment, agreementStartDate: '2025-09-01', agreementEndDate: '2035-08-31' },
+      landParcels
+    )
+
+    expect(model.agreementDuration).toBe('10 years')
+    expect(model.agreementDurationYears).toBe(10)
   })
 
   it('sums only the parcel-scoped action pence for each parcel total', () => {
@@ -319,15 +346,17 @@ describe('buildConfirmLandAndActionsViewModel', () => {
   it('percent-encodes a parcel id used in a query string', () => {
     const model = buildConfirmLandAndActionsViewModel(payment, landParcels)
 
-    expect(model.parcels[0].actions[0].changeHref).toBe('select-actions-for-land-parcel?parcelId=SD1234-5678')
+    expect(model.parcels[0].actions[0].changeHref).toBe(
+      'select-actions-for-land-parcel?parcelId=SD1234-5678&origin=confirm-land-and-actions&changeActions=true'
+    )
   })
 
   it('links each parcel card to its own actions page so more actions can be added', () => {
     const model = buildConfirmLandAndActionsViewModel(payment, landParcels)
 
     expect(model.parcels.map((parcel) => parcel.addActionsHref)).toEqual([
-      'select-actions-for-land-parcel?parcelId=SD1234-5678',
-      'select-actions-for-land-parcel?parcelId=CD9999-1111'
+      'select-actions-for-land-parcel?parcelId=SD1234-5678&origin=confirm-land-and-actions&changeActions=true',
+      'select-actions-for-land-parcel?parcelId=CD9999-1111&origin=confirm-land-and-actions&changeActions=true'
     ])
   })
 
@@ -340,7 +369,8 @@ describe('buildConfirmLandAndActionsViewModel', () => {
     expect(model.parcels[0]).toMatchObject({
       reference: 'SD1234 5678',
       removeHref: 'remove-parcel?parcelId=SD1234-5678',
-      addActionsHref: 'select-actions-for-land-parcel?parcelId=SD1234-5678',
+      addActionsHref:
+        'select-actions-for-land-parcel?parcelId=SD1234-5678&origin=confirm-land-and-actions&changeActions=true',
       yearlyPayment: '£10.00'
     })
   })
@@ -352,6 +382,24 @@ describe('buildConfirmLandAndActionsViewModel', () => {
           /annualTotalPence must be a non-negative integer/
         )
       }
+    })
+
+    it('throws when the agreement total is malformed', () => {
+      expect(() =>
+        buildConfirmLandAndActionsViewModel({ ...payment, agreementTotalPence: '370200' }, landParcels)
+      ).toThrow(/agreementTotalPence must be a non-negative integer/)
+    })
+
+    it.each([
+      ['start date is invalid', { agreementStartDate: '2026-02-31' }, /agreementStartDate must be an ISO date/],
+      ['end date is invalid', { agreementEndDate: 'not-a-date' }, /agreementEndDate must be an ISO date/],
+      [
+        'end date precedes the start date',
+        { agreementEndDate: '2025-02-01' },
+        /agreementEndDate must not be before payment.agreementStartDate/
+      ]
+    ])('throws when the agreement %s', (_label, overrides, expected) => {
+      expect(() => buildConfirmLandAndActionsViewModel({ ...payment, ...overrides }, landParcels)).toThrow(expected)
     })
 
     it('throws when a parcel item is missing its code', () => {

@@ -70,6 +70,7 @@ describe('SelectActionsPageController', () => {
 
     const mockModel = { def: { metadata: { tasklist: {}, enabledLandActions } }, getSection: vi.fn(), pages: [] }
     controller = stubControllerMethods(new SelectActionsPageController(mockModel, {}))
+    controller.getHref = vi.fn((path) => path)
 
     fetchParcels.mockResolvedValue(PARCELS_WITH_SIZE.slice(0, 1))
 
@@ -174,6 +175,43 @@ describe('SelectActionsPageController', () => {
         { key: { text: 'Parcel reference' }, value: { text: 'sheet1 parcel1' } },
         { key: { text: 'Total area' }, value: { text: '45.22 hectares' } }
       ])
+    })
+
+    test('should show Cancel but keep the parcel Change link after coming through the parcel picker', async () => {
+      mockRequest.query = {
+        parcelId: 'sheet1-parcel1',
+        origin: 'confirm-land-and-actions'
+      }
+
+      await get()
+
+      const [, viewModel] = mockH.view.mock.calls[0]
+      expect(viewModel.cancelHref).toBe('/confirm-land-and-actions')
+      expect(viewModel.hideParcelChange).toBe(false)
+      expect(viewModel.selectLandParcelPath).toBe('/select-land-parcel?origin=confirm-land-and-actions')
+    })
+
+    test('should hide the parcel Change link when opened by Change or Add more actions on confirmation', async () => {
+      mockRequest.query = {
+        parcelId: 'sheet1-parcel1',
+        origin: 'confirm-land-and-actions',
+        changeActions: 'true'
+      }
+
+      await get()
+
+      const [, viewModel] = mockH.view.mock.calls[0]
+      expect(viewModel.cancelHref).toBe('/confirm-land-and-actions')
+      expect(viewModel.hideParcelChange).toBe(true)
+    })
+
+    test('should not show Cancel or hide the parcel Change link in the normal journey', async () => {
+      await get()
+
+      const [, viewModel] = mockH.view.mock.calls[0]
+      expect(viewModel.cancelHref).toBeUndefined()
+      expect(viewModel.hideParcelChange).toBe(false)
+      expect(viewModel.selectLandParcelPath).toBe('/select-land-parcel')
     })
 
     test('should return an empty pageConsents array when no action requires SSSI consent or HEFER', async () => {

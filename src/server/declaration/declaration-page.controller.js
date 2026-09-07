@@ -1,3 +1,4 @@
+import nunjucks from 'nunjucks'
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 import {
   getClaimConfirmationPath,
@@ -26,6 +27,9 @@ import { transformPigsMightFlyAnswers } from '~/src/server/non-land-grants/pigs-
 import { transformClaimAnswers } from '~/src/server/claims/mappers/state-to-gas-claim-mapper.js'
 import { getClaims, getCurrentClaim, markClaimSubmitted } from '~/src/server/claims/services/claim-state.js'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
+import { getRequiredConsents } from '~/src/server/common/utils/consents.js'
+
+const declarationContentEnv = new nunjucks.Environment(null, { autoescape: true })
 
 /**
  * Selects which GAS payload the shared declaration controller builds. Set via
@@ -162,6 +166,27 @@ export default class DeclarationPageController extends SummaryPageController {
   }
 
   /**
+   * Render configured HTML with the consent requirements for the selected actions.
+   * @param {object[] | undefined} components
+   * @param {string[]} pageConsents
+   * @returns {object[]}
+   */
+  renderComponents(components, pageConsents) {
+    return (components ?? []).map((component) => {
+      if (component.type === 'Html' && typeof component.model?.content === 'string') {
+        return {
+          ...component,
+          model: {
+            ...component.model,
+            content: declarationContentEnv.renderString(component.model.content, { pageConsents })
+          }
+        }
+      }
+      return component
+    })
+  }
+
+  /**
    * Builds the view model for the declaration page
    * @param {FormContextRequest} request
    * @param {FormContext} context
@@ -174,11 +199,14 @@ export default class DeclarationPageController extends SummaryPageController {
 
     const backLink = getTaskPageBackLink(viewModel, pageDef)
     const sectionTitle = this.section?.hideTitle !== true ? this.section?.title : ''
+    const pageConsents = getRequiredConsents(context.state ?? {})
 
     return /** @type {SummaryViewModel} */ (
       /** @type {unknown} */ ({
         ...viewModel,
         sectionTitle,
+        pageConsents,
+        components: this.renderComponents(viewModel.components, pageConsents),
         declarationContent: this.buildDeclarationContent(),
         supportEmail: this.model.def.metadata?.supportEmail,
         ...(backLink ? { backLink } : {})

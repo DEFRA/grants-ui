@@ -1,6 +1,6 @@
 import { formatAnswer } from './utils/format-answer.js'
 import { COMPONENT_TYPES, DISPLAY_ONLY_TYPES } from './constants.js'
-import { buildPrintPaymentViewModel } from './utils/build-print-payment-view-model.js'
+import { buildConfirmLandAndActionsViewModel } from '~/src/server/land-grants/view-models/confirm-land-and-actions.view-model.js'
 import { ComponentsRegistry } from '../../../confirmation/services/components.registry.js'
 
 export const COMPOSITE_FIELD_PARTS = {
@@ -12,13 +12,14 @@ export const COMPOSITE_FIELD_PARTS = {
 }
 
 /**
- * @import { PrintPayment } from './types/print-payment.d.js'
+ * @import { PaymentCalculation } from '~/src/server/land-grants/types/payment.d.js'
+ * @import { LandParcels } from '~/src/server/land-grants/types/form-state.d.js'
  */
 
 /**
  * @typedef {{ text: string, value: string | number | boolean }} ListItem
  * @typedef {{ type: string, name: string, title: string, shortDescription?: string, list?: string, items?: ListItem[] }} FormComponent
- * @typedef {{ title: string, components?: FormComponent[] }} FormPage
+ * @typedef {{ title: string, controller?: string, components?: FormComponent[] }} FormPage
  * @typedef {{
  *   pages?: FormPage[],
  *   metadata?: {
@@ -99,13 +100,18 @@ function extractQuestions(components, answers) {
  * Groups pages into sections, each containing its answered questions.
  * @param {FormPage[] | undefined} pages
  * @param {Answers} answers
+ * @param {boolean} hasLandAndActionsSummary
  * @returns {{ title: string, questions: { label: string, answer: string }[] }[]}
  */
-function buildSections(pages, answers) {
+function buildSections(pages, answers, hasLandAndActionsSummary) {
   return (pages || [])
+    .filter((page) => !hasLandAndActionsSummary || page.controller !== 'MapSelectPageController')
     .map((page) => ({
       title: page.title,
-      questions: extractQuestions(page.components, answers)
+      questions: extractQuestions(
+        page.components?.filter((component) => !hasLandAndActionsSummary || component.name !== 'landParcels'),
+        answers
+      )
     }))
     .filter((section) => section.questions.length > 0)
 }
@@ -187,6 +193,19 @@ export function buildPrintViewModel({
     pageTitle = form.name
   }
 
+  const payment = /** @type {PaymentCalculation | undefined} */ (answers.payment)
+  const landAndActionsSummary = payment
+    ? buildConfirmLandAndActionsViewModel(
+        {
+          ...payment,
+          agreementStartDate: /** @type {string} */ (answers.agreementStartDate ?? payment.agreementStartDate),
+          agreementEndDate: /** @type {string} */ (answers.agreementEndDate ?? payment.agreementEndDate),
+          agreementTotalPence: /** @type {number} */ (answers.agreementTotalPence ?? payment.agreementTotalPence)
+        },
+        Array.isArray(answers.landParcels) ? undefined : /** @type {LandParcels | undefined} */ (answers.landParcels)
+      )
+    : null
+
   return {
     page,
     pageTitle,
@@ -200,8 +219,8 @@ export function buildPrintViewModel({
       sbi: sessionData.sbi
     },
     applicantDetailsSections,
-    sections: buildSections(definition.pages, answers),
-    paymentInfo: buildPrintPaymentViewModel(/** @type {PrintPayment | undefined} */ (answers.payment)),
+    sections: buildSections(definition.pages, answers, Boolean(landAndActionsSummary)),
+    landAndActionsSummary,
     configurablePrintContent,
     breadcrumbs: []
   }

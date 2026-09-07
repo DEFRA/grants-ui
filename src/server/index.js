@@ -44,6 +44,7 @@ import RemoveActionPageController from '~/src/server/land-grants/controllers/rem
 import ConfirmLandAndActionsPageController from '~/src/server/land-grants/controllers/confirm-land-and-actions-page.controller.js'
 import { PotentialFundingController } from '~/src/server/non-land-grants/pigs-might-fly/controllers/potential-funding.controller.js'
 import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
+import { formatDate } from '../config/nunjucks/filters/format-date.js'
 import { gridColumnClass } from '../config/nunjucks/grid-column.js'
 import { pageHideBackLink, pageRpaDetails } from '../config/nunjucks/page-config.js'
 import { StatePersistenceService } from './common/services/state-persistence/state-persistence.service.js'
@@ -128,7 +129,8 @@ const registerFormsPlugin = async (server, prefix = '') => {
         outputService
       },
       filters: {
-        formatCurrency
+        formatCurrency,
+        formatDate
       },
       globals: {
         gridColumnClass,

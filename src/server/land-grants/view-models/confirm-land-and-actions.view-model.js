@@ -7,9 +7,13 @@ import {
   removeParcelHref
 } from '~/src/server/land-grants/view-models/land-parcel-links.js'
 import { getConsentRequirementText } from '~/src/server/land-grants/view-models/consent.view-model.js'
+import { withConfirmLandAndActionsOrigin } from '~/src/server/land-grants/utils/confirm-land-and-actions-navigation.js'
 
 const SOURCE = 'buildConfirmLandAndActionsViewModel'
 const REASON = 'invalid_payment_response'
+const ISO_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/
+const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000
+const DAYS_PER_YEAR = 365.2425
 
 /**
  * @param {string} message
@@ -30,6 +34,70 @@ const isNonNegativeInteger = (value) => Number.isInteger(value) && /** @type {nu
  * @returns {boolean}
  */
 const isNonEmptyString = (value) => typeof value === 'string' && value.trim() !== ''
+
+/**
+ * Parses an API date without allowing JavaScript to normalise invalid dates,
+ * such as 31 February, into a different calendar date.
+ * @param {unknown} value
+ * @param {string} fieldName
+ * @returns {number}
+ */
+function parseIsoDate(value, fieldName) {
+  const match = typeof value === 'string' ? ISO_DATE_PATTERN.exec(value) : null
+  if (!match) {
+    throw invalidResponse(`payment.${fieldName} must be an ISO date`)
+  }
+
+  const [, year, month, day] = match.map(Number)
+  const timestamp = Date.UTC(year, month - 1, day)
+  const date = new Date(timestamp)
+
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+    throw invalidResponse(`payment.${fieldName} must be an ISO date`)
+  }
+
+  return timestamp
+}
+
+/**
+ * Builds agreement-wide values when the calculate response supplies them. The
+ * API models agreements in whole years, while some end dates are represented
+ * as the day before an anniversary, so round the elapsed calendar duration to
+ * the nearest whole year.
+ * @param {PaymentCalculation} payment
+ * @returns {{ agreementDuration?: string, agreementDurationYears?: number, agreementTotalPayment?: string }}
+ */
+function buildAgreementSummary(payment) {
+  const { agreementStartDate, agreementEndDate, agreementTotalPence } = payment
+  const hasAgreementDetails =
+    agreementStartDate !== undefined || agreementEndDate !== undefined || agreementTotalPence !== undefined
+
+  // Retain compatibility with payment data saved before agreement-wide fields
+  // were persisted separately.
+  if (!hasAgreementDetails) {
+    return {}
+  }
+
+  if (!isNonNegativeInteger(agreementTotalPence)) {
+    throw invalidResponse('payment.agreementTotalPence must be a non-negative integer')
+  }
+
+  const start = parseIsoDate(agreementStartDate, 'agreementStartDate')
+  const end = parseIsoDate(agreementEndDate, 'agreementEndDate')
+
+  if (end < start) {
+    throw invalidResponse('payment.agreementEndDate must not be before payment.agreementStartDate')
+  }
+
+  const agreementDurationYears = Math.round((end - start) / MILLISECONDS_PER_DAY / DAYS_PER_YEAR)
+  const yearLabel = agreementDurationYears === 1 ? 'year' : 'years'
+
+  return {
+    agreementDuration: `${agreementDurationYears} ${yearLabel}`,
+    agreementDurationYears,
+    agreementTotalPayment: formatPrice(agreementTotalPence)
+  }
+}
 
 /**
  * Builds the displayed action label as "Description (CODE)", or just the code
@@ -92,7 +160,8 @@ export function buildConfirmLandAndActionsViewModel(payment, landParcels) {
         yearlyPayment: formatPrice(totalPence)
       })),
     additionalYearlyPayments: buildAdditionalYearlyPayments(payment),
-    applicationYearlyPayment: formatPrice(payment.annualTotalPence)
+    applicationYearlyPayment: formatPrice(payment.annualTotalPence),
+    ...buildAgreementSummary(payment)
   }
 }
 
@@ -107,7 +176,9 @@ function buildParcelCard(sheetId, parcelId) {
   return {
     reference: landParcelReference(sheetId, parcelId),
     removeHref: removeParcelHref(sheetId, parcelId),
-    addActionsHref: changeActionsHref(sheetId, parcelId),
+    addActionsHref: withConfirmLandAndActionsOrigin(changeActionsHref(sheetId, parcelId), {
+      changeActions: true
+    }),
     actions: [],
     totalPence: 0
   }
@@ -168,7 +239,9 @@ function addPricedParcelActions(parcels, payment, landParcels) {
       action: formatActionLabel(description, code),
       area: formatArea(quantity, unit),
       yearlyPayment: formatPrice(annualPaymentPence),
-      changeHref: changeActionsHref(sheetId, parcelId),
+      changeHref: withConfirmLandAndActionsOrigin(changeActionsHref(sheetId, parcelId), {
+        changeActions: true
+      }),
       ...(requirementText && { requirementText })
     })
     parcel.totalPence += annualPaymentPence
@@ -240,6 +313,9 @@ function buildAdditionalYearlyPayments(payment) {
  * @property {ConfirmLandAndActionsParcelViewModel[]} parcels - Parcel cards
  * @property {ConfirmLandAndActionsAdditionalPaymentViewModel[]} additionalYearlyPayments - Agreement-level payment rows
  * @property {string} applicationYearlyPayment - Formatted application yearly total
+ * @property {string} [agreementDuration] - Agreement duration with its unit, e.g. `3 years`
+ * @property {number} [agreementDurationYears] - Agreement duration as a whole number of years
+ * @property {string} [agreementTotalPayment] - Formatted payment over the whole agreement
  */
 
 /**

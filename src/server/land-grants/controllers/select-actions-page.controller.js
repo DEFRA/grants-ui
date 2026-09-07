@@ -25,6 +25,12 @@ import {
 import { error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
 import { requiresQuantityInput } from '~/src/shared/action-quantity-type.js'
+import {
+  CONFIRM_LAND_AND_ACTIONS_PATH,
+  isChangingActionsFromConfirmLandAndActions,
+  isFromConfirmLandAndActions,
+  withConfirmLandAndActionsOrigin
+} from '~/src/server/land-grants/utils/confirm-land-and-actions-navigation.js'
 
 /**
  * Builds plannedActions for every checked action from its own landActionQuantity_<code>
@@ -67,7 +73,11 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
   getViewModelWithActions(request, context, actions, addedActions, quantityErrorsByCode, parcel, hasErrors = false) {
     quantityErrorsByCode ??= {}
     parcel ??= { sheetId: '', parcelId: '' }
-    const selectLandParcelPath = this.getHref(this.getPreviousPagePath())
+    const fromConfirmLandAndActions = isFromConfirmLandAndActions(request)
+    const baseSelectLandParcelPath = this.getHref(this.getPreviousPagePath())
+    const selectLandParcelPath = fromConfirmLandAndActions
+      ? withConfirmLandAndActionsOrigin(baseSelectLandParcelPath)
+      : baseSelectLandParcelPath
     return {
       ...super.getViewModel(request, context),
       actionFieldName: this.actionFieldName,
@@ -76,6 +86,8 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
       chosenAreaFieldsHtml: getChosenAreaFieldsHtml(actions, addedActions),
       pageConsents: getRequiredActionConsents(actions),
       selectLandParcelPath,
+      cancelHref: fromConfirmLandAndActions ? this.getHref(CONFIRM_LAND_AND_ACTIONS_PATH) : undefined,
+      hideParcelChange: isChangingActionsFromConfirmLandAndActions(request),
       parcelSummaryList: getParcelSummaryList(parcel.sheetId, parcel.parcelId, parcel.size)
     }
   }

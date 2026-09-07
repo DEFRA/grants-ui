@@ -6,9 +6,9 @@
  * @typedef {object} TaskItem
  * @property {string} title - The task or task page title
  * @property {string} href - The path to the task page
- * @property {object} status - The status object for GOV.UK Task List component
- * @property {string} [status.text] - Status text (e.g., "Completed", "Not yet started")
- * @property {string} [status.tag] - Tag configuration if using a tag
+ * @property {object} status - The status object for the GOV.UK Task List component. Either a plain-text status (`{ text }`) or a tagged status (`{ tag: { text, classes } }`)
+ * @property {string} [status.text] - Plain status text (e.g., "Completed", "Not started"), used when the status renders without a tag
+ * @property {{ text: string, classes: string }} [status.tag] - Tag configuration (text and CSS classes) used when the status renders as a govuk-tag
  */
 
 /**
@@ -19,6 +19,10 @@
 
 import TaskListPageController from '~/src/server/task-list/task-list-page.controller.js'
 import { hasAnyItemWithNonEmptyKey } from '~/src/server/common/utils/objects.js'
+
+const MAP_SELECT_PAGE_CONTROLLER = 'MapSelectPageController'
+const SELECT_ACTIONS_PAGE_CONTROLLERS = new Set(['SelectActionsPageController', 'SelectGroupedActionsPageController'])
+const CONFIRM_LAND_AND_ACTIONS_PAGE_CONTROLLER = 'ConfirmLandAndActionsPageController'
 
 /**
  * Status key constants for task status comparisons.
@@ -123,6 +127,15 @@ function isCompletionRequirementMet(pageDef, state, formModel) {
  * @returns {boolean | null} True if all question components on the page have values in state, null if not applicable
  */
 function isTaskPageCompleted(pageDef, state, formModel) {
+  const parcelActionsTaskPages = findParcelActionsTaskPages(pageDef, formModel.def?.pages ?? [])
+  if (pageDef.controller === MAP_SELECT_PAGE_CONTROLLER && parcelActionsTaskPages) {
+    if (pageDef.condition && !evaluateCondition(formModel, pageDef.condition, state)) {
+      return null
+    }
+
+    return hasSavedLandParcelActions(state)
+  }
+
   const componentNames = getPageComponentNames(pageDef, formModel)
 
   // If no question components and no configured completion requirement to fall
@@ -214,18 +227,104 @@ function createTaskItemBase(title) {
 }
 
 /**
- * Creates a status tag with default values
- * @param {object} statusConfig - Status configuration from metadata
+ * Builds the status object for a task item.
+ *
+ * When there is no override for a status, the default text and classes are used
+ * and the status is rendered as a govuk-tag. When a status override is provided
+ * but resolves to empty classes (for example, an override that specifies `text`
+ * but no `classes`), the status is rendered as plain text instead of a govuk-tag.
  * @param {{ text: string, classes: string }} defaults - Default status text and CSS classes
- * @returns {object} Status tag configuration
+ * @param {object} [statusConfig] - Status configuration override from metadata
+ * @returns {{ tag: { text: string, classes: string } } | { text: string }} Status configuration for the GOV.UK Task List component
  */
-function createStatusTag(statusConfig, defaults) {
+function createStatusTag(defaults, statusConfig) {
+  const text = statusConfig?.text ?? defaults.text
+  // Only fall back to the default classes when no override is provided. This lets
+  // a configured status opt out of the tag (plain text) by omitting `classes`.
+  const classes = statusConfig ? statusConfig.classes : defaults.classes
+
+  if (!classes) {
+    return { text }
+  }
+
   return {
     tag: {
-      text: statusConfig?.text ?? defaults.text,
-      classes: statusConfig?.classes ?? defaults.classes
+      text,
+      classes
     }
   }
+}
+
+/**
+ * Checks whether at least one land parcel has saved actions.
+ * @param {object} state - Current form state
+ * @returns {boolean} True when any land parcel has a non-empty actions object
+ */
+function hasSavedLandParcelActions(state) {
+  return Object.values(state?.landParcels ?? {}).some((parcel) => {
+    const actions = /** @type {{ actionsObj?: unknown }} */ (parcel)?.actionsObj
+    return Boolean(actions) && typeof actions === 'object' && Object.keys(/** @type {object} */ (actions)).length > 0
+  })
+}
+
+/**
+ * Finds the map, action-selection and confirmation pages that make up a parcel-actions task.
+ * The search stops at the next section so unrelated land pages later in the journey cannot
+ * be treated as part of the task.
+ * @param {object} pageDef - Page that may belong to the parcel-actions task
+ * @param {object[]} pages - Ordered form page definitions
+ * @returns {{ mapPage: object, actionsPage: object, confirmPage: object } | null}
+ */
+function findParcelActionsTaskPages(pageDef, pages) {
+  for (let mapIndex = 0; mapIndex < pages.length; mapIndex++) {
+    const mapPage = pages[mapIndex]
+    if (mapPage.controller !== MAP_SELECT_PAGE_CONTROLLER || !mapPage.section) {
+      continue
+    }
+
+    const laterPages = pages.slice(mapIndex + 1)
+    const nextSectionOffset = laterPages.findIndex((page) => page.section && page.section !== mapPage.section)
+    const taskPages = nextSectionOffset === -1 ? laterPages : laterPages.slice(0, nextSectionOffset)
+    const actionsIndex = taskPages.findIndex((page) => SELECT_ACTIONS_PAGE_CONTROLLERS.has(page.controller))
+    if (actionsIndex === -1) {
+      continue
+    }
+
+    const actionsPage = taskPages[actionsIndex]
+    const confirmPage = taskPages
+      .slice(actionsIndex + 1)
+      .find((page) => page.controller === CONFIRM_LAND_AND_ACTIONS_PAGE_CONTROLLER)
+
+    if (confirmPage && [mapPage, actionsPage, confirmPage].some((page) => page.path === pageDef.path)) {
+      return { mapPage, actionsPage, confirmPage }
+    }
+  }
+
+  return null
+}
+
+/**
+ * Resolves the entry point for a task page.
+ *
+ * A parcel-actions task starts on its map page when no actions have been saved.
+ * Once at least one parcel has actions, its task-list link opens the later
+ * land-and-actions confirmation page. This is limited to definitions containing
+ * the complete map -> actions -> confirmation page sequence, so other map tasks
+ * retain their configured path.
+ * @param {object} pageDef - Task page definition
+ * @param {object} state - Current form state
+ * @param {object} formModel - Resolved form model
+ * @returns {string} Path the task-list item should link to
+ */
+function resolveTaskPagePath(pageDef, state, formModel) {
+  if (pageDef.controller !== MAP_SELECT_PAGE_CONTROLLER || !hasSavedLandParcelActions(state)) {
+    return pageDef.path
+  }
+
+  const pages = formModel.def?.pages ?? []
+  const taskPages = findParcelActionsTaskPages(pageDef, pages)
+
+  return taskPages?.confirmPage.path ?? pageDef.path
 }
 
 /**
@@ -263,7 +362,7 @@ function areAllPreviousTasksCompleted(pages, currentPage, state, formModel) {
 function createTaskItem(pageDef, state, pages, metadata, basePath, formModel) {
   const completed = isTaskPageCompleted(pageDef, state, formModel)
   const { statuses = {} } = metadata.tasklist ?? {}
-  const href = `${basePath}${pageDef.path}`
+  const href = `${basePath}${resolveTaskPagePath(pageDef, state, formModel)}`
   const completeInOrder = true // TODO force to true for now until completeInOrder=false logic implemented
 
   const taskItem = createTaskItemBase(getTaskTitle(pageDef, formModel))
@@ -275,7 +374,7 @@ function createTaskItem(pageDef, state, pages, metadata, basePath, formModel) {
 
   if (completed) {
     taskItem.href = href
-    taskItem.status = createStatusTag(statuses.completed, TASK_STATUS_CONFIG.completed)
+    taskItem.status = createStatusTag(TASK_STATUS_CONFIG.completed, statuses.completed)
     return taskItem
   }
 
@@ -286,12 +385,12 @@ function createTaskItem(pageDef, state, pages, metadata, basePath, formModel) {
     pageIndex > 0 &&
     !areAllPreviousTasksCompleted(pages, pageDef, state, formModel)
   ) {
-    taskItem.status = createStatusTag(statuses.cannotStart, TASK_STATUS_CONFIG.cannotStart)
+    taskItem.status = createStatusTag(TASK_STATUS_CONFIG.cannotStart, statuses.cannotStart)
     return taskItem
   }
 
   taskItem.href = href
-  taskItem.status = createStatusTag(statuses.notStarted, TASK_STATUS_CONFIG.notStarted)
+  taskItem.status = createStatusTag(TASK_STATUS_CONFIG.notStarted, statuses.notStarted)
   return taskItem
 }
 
@@ -424,26 +523,27 @@ function buildTaskListDataHideQuestions(model, formModel, state) {
 
     // For inProgress, link to last page so forms-engine-plugin redirects to first unanswered question
     // For notStarted or completed, link to first page
-    const firstPagePath = pages[0]?.path
-    const lastPagePath = pages[pages.length - 1]?.path
-    const hrefPath = status === TASK_STATUS.inProgress ? lastPagePath : firstPagePath
+    const firstPage = pages[0]
+    const lastPage = pages[pages.length - 1]
+    const hrefPage = status === TASK_STATUS.inProgress ? lastPage : firstPage
+    const hrefPath = hrefPage ? resolveTaskPagePath(hrefPage, state, formModel) : undefined
     const href = hrefPath ? `${basePath}${hrefPath}` : undefined
 
     const taskItem = createTaskItemBase(taskTitle)
 
     if (status === TASK_STATUS.completed) {
       taskItem.href = href
-      taskItem.status = createStatusTag(statuses.completed, TASK_STATUS_CONFIG.completed)
+      taskItem.status = createStatusTag(TASK_STATUS_CONFIG.completed, statuses.completed)
     } else if (status === TASK_STATUS.inProgress) {
       taskItem.href = href
-      taskItem.status = createStatusTag(statuses.inProgress, TASK_STATUS_CONFIG.inProgress)
+      taskItem.status = createStatusTag(TASK_STATUS_CONFIG.inProgress, statuses.inProgress)
     } else if (status === TASK_STATUS.cannotStart) {
-      taskItem.status = createStatusTag(statuses.cannotStart, TASK_STATUS_CONFIG.cannotStart)
+      taskItem.status = createStatusTag(TASK_STATUS_CONFIG.cannotStart, statuses.cannotStart)
     } else if (status === TASK_STATUS.cannotContinue) {
-      taskItem.status = createStatusTag(statuses.cannotContinue, TASK_STATUS_CONFIG.cannotContinue)
+      taskItem.status = createStatusTag(TASK_STATUS_CONFIG.cannotContinue, statuses.cannotContinue)
     } else {
       taskItem.href = href
-      taskItem.status = createStatusTag(statuses.notStarted, TASK_STATUS_CONFIG.notStarted)
+      taskItem.status = createStatusTag(TASK_STATUS_CONFIG.notStarted, statuses.notStarted)
     }
 
     return taskItem
@@ -583,7 +683,8 @@ export function getNextTaskPath(model, currentPage) {
 
 /**
  * Determine backLink for task page
- * If first task page for task, return to task list using getTaskListPath
+ * Parcel-actions pages always return to the task list because their in-page links handle
+ * adding and changing selections. For other tasks, the first page returns to the task list.
  * Otherwise, return null to fallback to default forms-engine-plugin behaviour
  * @param {object} viewModel - The view model
  * @param {object} currentPage - The current page definition
@@ -595,10 +696,15 @@ export function getTaskPageBackLink(viewModel, currentPage, hasReturnUrl = false
   const firstTaskPage = allTaskPages.find((page) => page.section === currentPage.section)
   const isFirstTaskPage = firstTaskPage?.path === currentPage.path
   const { returnAfterSection = true } = viewModel.page.def.metadata.tasklist ?? {}
+  const parcelActionsTaskPages = findParcelActionsTaskPages(currentPage, viewModel.page.def.pages ?? [])
 
-  if (isFirstTaskPage && returnAfterSection && !hasReturnUrl) {
+  if (parcelActionsTaskPages || (isFirstTaskPage && returnAfterSection && !hasReturnUrl)) {
     const basePath = viewModel.serviceUrl
     const taskListPath = getTaskListPath(viewModel.page.model)
+    if (!taskListPath) {
+      return null
+    }
+
     return {
       href: `${basePath}${taskListPath}`,
       text: 'Back to task list'
