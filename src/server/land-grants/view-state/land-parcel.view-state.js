@@ -3,7 +3,7 @@ import { getActionConsentKeys } from '../utils/consent-types.js'
 import { getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
 import { getSelectedActionCodes } from '../utils/selected-actions-field.js'
 import { requiresQuantityInput } from '~/src/shared/action-quantity-type.js'
-import { getAvailabilityLimit, getStaticAvailability } from '~/src/shared/availability.js'
+import { getAvailabilityLimit } from '~/src/shared/availability.js'
 
 /**
  * Manages state operations for land parcels and their actions.
@@ -104,7 +104,7 @@ export function mergeRecomputedAvailability(actions, recomputed) {
       ? {
           ...action,
           availability: { ...match.availability, type: action.availability?.type },
-          staticAvailability: getStaticAvailability(action)
+          staticAvailability: action.staticAvailability ?? action.availability
         }
       : action
   })

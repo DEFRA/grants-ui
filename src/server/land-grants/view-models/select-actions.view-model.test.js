@@ -127,7 +127,7 @@ describe('select-actions.view-model', () => {
       )
     })
 
-    it('should show the HEFER requirement text above the payment rate when heferRequired is set', () => {
+    it('should show the HEFER requirement text below the payment rate when heferRequired is set', () => {
       configState.set('landGrants.enableHeferFeature', true)
       const action = {
         code: 'GRH12',
@@ -140,7 +140,7 @@ describe('select-actions.view-model', () => {
       configState.reset()
 
       expect(result.html).toBe(
-        'Manage rough grassland for upland breeding waders<span class="select-actions-hint">HEFER required<br>Payment rate per year: £203/ha<span class="select-actions-guidance">This action will use all the available area on this land parcel.</span></span>'
+        'Manage rough grassland for upland breeding waders<span class="select-actions-hint">Payment rate per year: £203.00/ha<br>Requires an SFI HEFER<span class="select-actions-guidance">This action will use all the available area on this land parcel.</span></span>'
       )
     })
 
@@ -155,11 +155,11 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, [])
 
       expect(result.html).toBe(
-        'Manage rough grassland for upland breeding waders<span class="select-actions-hint">Payment rate per year: £203/ha<span class="select-actions-guidance">This action will use all the available area on this land parcel.</span></span>'
+        'Manage rough grassland for upland breeding waders<span class="select-actions-hint">Payment rate per year: £203.00/ha<span class="select-actions-guidance">This action will use all the available area on this land parcel.</span></span>'
       )
     })
 
-    it('should show the SSSI requirement text above the payment rate when sssiConsentRequired is set', () => {
+    it('should show the SSSI requirement text below the payment rate when sssiConsentRequired is set', () => {
       configState.set('landGrants.enableSSSIFeature', true)
       const action = {
         code: 'CLIG3',
@@ -171,7 +171,9 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, [])
       configState.reset()
 
-      expect(result.html).toContain('SSSI consent required')
+      expect(result.html).toBe(
+        'Manage grassland with very low nutrient inputs<span class="select-actions-hint">Payment rate per year: £151.00/ha<br>Requires SSSI consent<span class="select-actions-guidance">This action will use all the available area on this land parcel.</span></span>'
+      )
     })
 
     it('should show both requirements when sssiConsentRequired and heferRequired are both set', () => {
@@ -188,7 +190,9 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, [])
       configState.reset()
 
-      expect(result.html).toContain('SSSI consent and HEFER required')
+      expect(result.html).toBe(
+        'Manage grassland with very low nutrient inputs<span class="select-actions-hint">Payment rate per year: £151.00/ha<br>Requires SSSI consent and an SFI HEFER<span class="select-actions-guidance">This action will use all the available area on this land parcel.</span></span>'
+      )
     })
 
     it.each([
@@ -262,14 +266,14 @@ describe('select-actions.view-model', () => {
 
       const result = mapActionToViewModel(action, [])
 
-      expect(result.html).toContain('<span id="landActionQuantity_UPL2-hint">3.0000 hectares available</span>')
+      expect(result.html).toContain('<span id="landActionQuantity_UPL2-hint">3 hectares available</span>')
       expect(result.conditional.html).not.toContain('landActionQuantity_UPL2-hint">')
     })
 
     it('should put the availability directly after the payment rate in the checkbox hint', () => {
       const result = mapActionToViewModel({ ...csam3({ value: 2.2822, unit: 'ha' }), ratePerUnitGbp: 45 }, [])
 
-      expect(result.html).toContain('Payment rate per year: £45/ha')
+      expect(result.html).toContain('Payment rate per year: £45.00/ha')
       expect(result.html).toContain('<span id="landActionQuantity_CSAM3-hint">2.2822 hectares available</span>')
     })
 
@@ -291,12 +295,6 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(csam3({ value: 3, unit: 'ha' }), [])
 
       expect(result.html).not.toContain('This action will use all the available area on this land parcel.')
-    })
-
-    it('should drop a trailing .00 from the payment rate', () => {
-      const result = mapActionToViewModel({ code: 'CLIG3', description: 'CLIG3', ratePerUnitGbp: 151 }, [])
-
-      expect(result.html).toContain('Payment rate per year: £151/ha')
     })
 
     it('should show what a selected total action claimed in its panel, and what that leaves in its hint', () => {
@@ -430,7 +428,7 @@ describe('select-actions.view-model', () => {
 
       expect(result.conditional).toBeDefined()
       expect(result.conditional.html).toContain('max="0"')
-      expect(result.html).toContain('<span id="landActionQuantity_CSAM3-hint">0.0000 hectares available</span>')
+      expect(result.html).toContain('<span id="landActionQuantity_CSAM3-hint">0 hectares available</span>')
     })
 
     it.each([[null], [undefined]])(
@@ -447,8 +445,8 @@ describe('select-actions.view-model', () => {
     )
 
     it.each([
-      [{ value: 120, unit: 'm' }, '120.0000 metres available'],
-      [{ value: 5, unit: 'sqm' }, '5.0000 square metres available']
+      [{ value: 120, unit: 'm' }, '120 metres available'],
+      [{ value: 5, unit: 'sqm' }, '5 square metres available']
     ])('should render the full unit name in the hint for %j', (availability, expected) => {
       const result = mapActionToViewModel(csam3(availability), [])
 

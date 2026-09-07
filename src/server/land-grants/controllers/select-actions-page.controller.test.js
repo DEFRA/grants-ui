@@ -617,8 +617,8 @@ describe('SelectActionsPageController', () => {
       const { actionItems } = mockH.view.mock.calls[0][1]
       const upl2 = actionItems.find((item) => item.value === 'UPL2')
 
-      expect(upl2.html).toContain('2.0000 hectares available')
-      expect(upl2.html).not.toContain('3.0000 hectares available')
+      expect(upl2.html).toContain('2 hectares available')
+      expect(upl2.html).not.toContain('3 hectares available')
     })
 
     test('should report an API validation error with the same wording in the summary and on the field', async () => {

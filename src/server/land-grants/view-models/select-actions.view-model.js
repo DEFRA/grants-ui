@@ -9,8 +9,9 @@ import { govukFrontendPath, viewPaths } from '~/src/config/nunjucks/view-paths.j
 import { getActionChosenAreaDisplayId, getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
 import { requiresQuantityInput } from '~/src/shared/action-quantity-type.js'
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
+import { formatUnit } from '~/src/shared/format-unit.js'
 import { areaWithUnitText, availableAreaText } from '~/src/shared/area-text.js'
-import { getAvailabilityLimit, getStaticAvailability, hasAvailableLand } from '~/src/shared/availability.js'
+import { getAvailabilityLimit, hasAvailableLand } from '~/src/shared/availability.js'
 import { formatParcelReference } from '~/src/shared/format-parcel.js'
 import { SELECTED_ACTIONS_FIELD_NAME } from '~/src/server/land-grants/utils/selected-actions-field.js'
 import { getActionConsentKeys } from '~/src/server/land-grants/utils/consent-types.js'
@@ -100,18 +101,18 @@ function getCheckboxItemId(actionCode, isFirst) {
 }
 
 /**
- * The payment rate as pounds, dropping a pointless trailing ".00" so a
- * whole-pound rate reads as "£151" while one with pence keeps both digits.
- * @param {number} [rate]
- * @returns {string}
+ * An action's original, uncompeted total - availability may have been
+ * overwritten by a recompute against other actions in this submission (see
+ * mergeRecomputedAvailability), which isn't a safe standalone ceiling.
+ * @param {Action} action
+ * @returns {{ value?: number | null, unit?: string } | undefined}
  */
-function formatRate(rate) {
-  return Number.isInteger(rate) ? `${rate}` : `${rate?.toFixed(2)}`
+function getStaticAvailability(action) {
+  return action.staticAvailability ?? action.availability
 }
 
 /**
- * Builds the checkbox hint text: the consent requirement first (it decides
- * whether the action is usable at all), then the payment rate, and any
+ * Builds the checkbox hint text: payment rate, consent requirement, and any
  * available-area hint. The hint sits beneath the action label so it can be
  * shared by quantity inputs through aria-describedby and refreshed live by
  * the client. Total actions also include guidance that selecting them claims
@@ -127,12 +128,15 @@ function getHintHtml(action, needsQuantity, chosenArea) {
   const agreementRateText = action.ratePerAgreementPerYearGbp
     ? ` and <strong>£${action.ratePerAgreementPerYearGbp}</strong> per agreement`
     : ''
-  const requirementLineText = requirementText ? `${requirementText}<br>` : ''
-  const rateText = `${requirementLineText}Payment rate per year: £${formatRate(action.ratePerUnitGbp)}/ha${agreementRateText}`
+  const requirementLineText = requirementText ? `<br>${requirementText}` : ''
+  const rateText = `Payment rate per year: £${action.ratePerUnitGbp?.toFixed(2)}/ha${agreementRateText}${requirementLineText}`
   const limit = getAvailabilityLimit(action.availability)
+  const availabilityText = needsQuantity
+    ? `${limit} ${formatUnit(action.availability?.unit)} available`
+    : availableAreaText(limit ?? 0, action.availability?.unit)
   const availabilityHintHtml =
     limit != null || (!needsQuantity && chosenArea != null)
-      ? `<br><span id="${getActionQuantityFieldName(action.code)}-hint">${availableAreaText(limit ?? 0, action.availability?.unit)}</span>`
+      ? `<br><span id="${getActionQuantityFieldName(action.code)}-hint">${availabilityText}</span>`
       : ''
   return `${rateText}${availabilityHintHtml}${needsQuantity ? '' : `<span class="select-actions-guidance">${TOTAL_ACTION_AREA_GUIDANCE}</span>`}`
 }

@@ -173,9 +173,6 @@ const quantityInputFor = (form, code) => form.querySelector(`#landActionQuantity
 
 const hintFor = (code) => document.getElementById(`landActionQuantity_${code}-hint`)
 
-/** A submit button in the rendered select-actions form. */
-const submitButtonFor = (form) => form.querySelector('button[type="submit"]')
-
 /** A total action's read-only claim display (see chosen-area/template.njk). */
 const chosenAreaDisplayFor = (code) => document.getElementById(`landActionChosenArea_${code}`)
 
@@ -605,7 +602,7 @@ describe('initSelectActionsPage', () => {
 
     initSelectActionsPage(form)
 
-    expect(hintFor('CSAM3').textContent).toBe('15.2500 hectares available')
+    expect(hintFor('CSAM3').textContent).toBe('15.25 hectares available')
   })
 
   // The route validates crumb in restful mode (X-CSRF-Token header) rather
@@ -938,7 +935,7 @@ describe('initSelectActionsPage', () => {
     })
     await toggle(form, 'CLIG3')
 
-    expect(hintFor('CSAM3').textContent).toBe('0.0000 hectares available')
+    expect(hintFor('CSAM3').textContent).toBe('0 hectares available')
     global.fetch.mockClear()
 
     await typeQuantity(form, 'CSAM3', '0.05')
@@ -1534,7 +1531,7 @@ describe('initSelectActionsPage', () => {
 
     const quantityInput = form.querySelector('#landActionQuantity_CSAM3')
     expect(quantityInput.max).toBe('12')
-    expect(hintFor('CSAM3').textContent).toBe('12.0000 hectares available')
+    expect(hintFor('CSAM3').textContent).toBe('12 hectares available')
   })
 
   it('checking an action with no quantity typed yet leaves its own hint/max at the un-competed full total (nothing confirmed yet to send)', async () => {
@@ -1642,7 +1639,7 @@ describe('initSelectActionsPage', () => {
     const quantityInput = form.querySelector('#landActionQuantity_CLIG3')
     expect(clig3.disabled).toBe(false)
     expect(quantityInput.disabled).toBe(false)
-    expect(hintFor('CLIG3').textContent).toBe('0.0000 hectares available')
+    expect(hintFor('CLIG3').textContent).toBe('0 hectares available')
   })
 
   it('refreshes the hint to the raw response value after a refresh, not the typed value plus it', async () => {
@@ -1855,7 +1852,7 @@ describe('initSelectActionsPage', () => {
     const csam3 = checkbox(form, 'CSAM3')
     expect(getChosenAreaFieldValue(clig3)).toBe('22.9957')
     expect(csam3.disabled).toBe(true)
-    expect(hintFor('CSAM3').textContent).toBe('0.0000 hectares available')
+    expect(hintFor('CSAM3').textContent).toBe('0 hectares available')
     expect(csam3.closest('.govuk-checkboxes__item').textContent).toContain(
       'Not compatible with other selected actions.'
     )
