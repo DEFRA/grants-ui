@@ -1,5 +1,7 @@
+import { ApplicationStatus } from '~/src/server/common/constants/application-status.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
+import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 import { fetchAllowedGrants } from '~/src/server/auth/services/allowlist.client.js'
 
 export default {
@@ -10,6 +12,9 @@ export default {
     }
   }
 }
+
+const isClaimJourneyStatus = (status) =>
+  status === ApplicationStatus.CLAIM_STARTED || status === ApplicationStatus.CLAIM_SUBMITTED
 
 /**
  * Hapi `onPostAuth` extension that enforces grant access control via the
@@ -42,7 +47,18 @@ const allowlistHandler = async (request, h) => {
   }
 
   log(LogCodes.AUTH.ALLOWLIST_ACCESS_DENIED, { userId: crn, sbi, path: request.path, grantCode })
+
+  let isClaim = false
+  try {
+    const cacheService = getFormsCacheService(request.server)
+    const state = await cacheService.getState(request)
+    isClaim = isClaimJourneyStatus(state?.applicationStatus)
+  } catch {
+    isClaim = false
+  }
+
   await request.sendAuditEvent({
+    entity: isClaim ? 'claim' : 'application',
     action: 'unauthorised',
     status: 'denied',
     details: { reason: 'allowlist', grantCode }

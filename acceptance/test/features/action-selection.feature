@@ -25,9 +25,11 @@ Feature: Action Selection
         And should see the following actions with guidance
             | ACTION | DESCRIPTION                                           | GUIDANCE                          | URL |
             | CSAM3  | Herbal leys: CSAM3                                    | Payment rate per year: £224.00/ha | Yes |
+            |        |                                                       | 0.276 hectares available          |     |
             | CLIG3  | Manage grassland with very low nutrient inputs: CLIG3 | Payment rate per year: £151.00/ha | Yes |
             |        |                                                       | 0.276 hectares available          |     |
             | SCR2   | Manage scrub and open habitat mosaics: SCR2           | Payment rate per year: £350.00/ha | Yes |
+            |        |                                                       | hectares available                |     |
 
         When the user selects action "CSAM3"
 

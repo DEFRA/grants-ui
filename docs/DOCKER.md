@@ -29,9 +29,12 @@ The `local` menu holds both the per-service local-image toggles and the local fo
 ↑ ↓     navigate
 space   toggle selection
 a       select / deselect all in current list
+g       set the mocked GAS status (only when GAS runs on mockserver)
 enter   confirm
 esc     go back / quit
 ```
+
+The main menu status line collapses the always-on `compose.infra` + `compose.grants-ui` services into a single **Core** entry, with any addons listed after it. When GAS is served by the mockserver, the current mocked application status is shown in yellow. Press `g` to select a new status and `enter` to apply it — `gt` reads and writes it directly against the mockserver expectation (the same one the `gas-status:get` / `gas-status:set` npm scripts target).
 
 ### Non-interactive mode
 

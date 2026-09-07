@@ -57,7 +57,7 @@ describe('consent-types', () => {
     it('should return sssi for an action requiring SSSI consent', () => {
       bothFlagsOn()
 
-      expect(getActionConsentKeys({ code: 'SCR2', sssiConsentRequired: true })).toEqual(['sssi'])
+      expect(getActionConsentKeys({ code: 'CLIG3', sssiConsentRequired: true })).toEqual(['sssi'])
     })
 
     it('should return hefer for an action requiring a HEFER', () => {
@@ -69,7 +69,7 @@ describe('consent-types', () => {
     it('should return sssi before hefer for an action requiring both', () => {
       bothFlagsOn()
 
-      expect(getActionConsentKeys({ code: 'SCR2', heferRequired: true, sssiConsentRequired: true })).toEqual([
+      expect(getActionConsentKeys({ code: 'CLIG3', heferRequired: true, sssiConsentRequired: true })).toEqual([
         'sssi',
         'hefer'
       ])
@@ -78,7 +78,7 @@ describe('consent-types', () => {
     it('should omit a key whose feature flag is off, even when the action has the field set', () => {
       configState.set('landGrants.enableSSSIFeature', true)
 
-      expect(getActionConsentKeys({ code: 'SCR2', sssiConsentRequired: true, heferRequired: true })).toEqual(['sssi'])
+      expect(getActionConsentKeys({ code: 'CLIG3', sssiConsentRequired: true, heferRequired: true })).toEqual(['sssi'])
     })
   })
 
@@ -92,7 +92,7 @@ describe('consent-types', () => {
     it('should include sssi when at least one action requires SSSI consent', () => {
       configState.set('landGrants.enableSSSIFeature', true)
 
-      expect(getRequiredActionConsents([{ code: 'SAM1' }, { code: 'SCR2', sssiConsentRequired: true }])).toEqual([
+      expect(getRequiredActionConsents([{ code: 'SAM1' }, { code: 'CLIG3', sssiConsentRequired: true }])).toEqual([
         'sssi'
       ])
     })
@@ -108,7 +108,7 @@ describe('consent-types', () => {
 
       expect(
         getRequiredActionConsents([
-          { code: 'SCR2', sssiConsentRequired: true },
+          { code: 'CLIG3', sssiConsentRequired: true },
           { code: 'GRH12', heferRequired: true },
           { code: 'SCR3', sssiConsentRequired: true }
         ])
@@ -121,7 +121,7 @@ describe('consent-types', () => {
       expect(
         getRequiredActionConsents([
           { code: 'GRH12', heferRequired: true },
-          { code: 'SCR2', sssiConsentRequired: true }
+          { code: 'CLIG3', sssiConsentRequired: true }
         ])
       ).toEqual(['sssi', 'hefer'])
     })

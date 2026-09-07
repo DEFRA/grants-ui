@@ -2,8 +2,10 @@ import { SNSClient } from '@aws-sdk/client-sns'
 import { publishAuditEvent } from '@defra/fcp-audit-publisher'
 import { getStartPath } from '@defra/forms-engine-plugin/engine/helpers.js'
 import { config } from '~/src/config/config.js'
+import { ApplicationStatus } from '~/src/server/common/constants/application-status.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { buildAuditEvent, mapEnvironment, resolveAuditEntityFields } from './audit-event.js'
+import { getPermissionResource } from '../permissions/page-permissions.js'
 
 const HTTP_OK_MIN = 200
 const HTTP_REDIRECT_MIN = 300
@@ -57,6 +59,80 @@ const isSuccessfulGrantAccess = (request) => {
     response.statusCode < HTTP_REDIRECT_MIN &&
     isGrantStartPage(request)
   )
+}
+
+/**
+ * Resolves the configured claim journey start path from the form redirect rules.
+ * This is preferred to a hardcoded route segment because the claim page path is
+ * configurable and may not literally be `/claim` for all grants.
+ * @param {import('@hapi/hapi').Request} request
+ * @returns {string | undefined}
+ */
+const getClaimStartPath = (request) => {
+  const postSubmissionRules =
+    /** @type {{ grantRedirectRules?: { postSubmission?: Array<{ toGrantsStatus?: string, fromGrantsStatus?: string, toPath?: string }> } } | undefined} */ (
+      request.app?.model?.def?.metadata
+    )?.grantRedirectRules?.postSubmission
+
+  const claimRule = postSubmissionRules?.find(
+    (rule) =>
+      rule.toGrantsStatus === ApplicationStatus.CLAIM_STARTED ||
+      rule.fromGrantsStatus === ApplicationStatus.CLAIM_STARTED
+  )
+
+  return claimRule?.toPath?.replace(/^\/+/, '')
+}
+
+const isSuccessfulResponse = (response) =>
+  response &&
+  !(response instanceof Error) &&
+  response.statusCode >= HTTP_OK_MIN &&
+  response.statusCode < HTTP_REDIRECT_MIN
+
+/**
+ * True when the request is a valid authenticated GET for the configured claim
+ * start page and the response is a successful 2xx response.
+ * @param {import('@hapi/hapi').Request} request
+ * @param {string | undefined} claimStartPath
+ * @returns {boolean}
+ */
+const isClaimAccessRequest = (request, claimStartPath) => {
+  if (request.method !== 'get' || !request.auth.isAuthenticated) {
+    return false
+  }
+
+  if (!request.params?.slug || !claimStartPath) {
+    return false
+  }
+
+  if (request.params.path !== claimStartPath) {
+    return false
+  }
+
+  return Boolean(isSuccessfulResponse(request.response))
+}
+
+/**
+ * True when the request represents a signed-in (authorised) user successfully
+ * entering a claim journey for the first time: an authenticated GET to the
+ * configured claim start page that returned 2xx and whose permission resource
+ * resolves to `csAgreements`.
+ * @param {import('@hapi/hapi').Request} request
+ * @returns {boolean}
+ */
+const isSuccessfulClaimAccess = (request) => {
+  const claimStartPath = getClaimStartPath(request)
+
+  if (!isClaimAccessRequest(request, claimStartPath)) {
+    return false
+  }
+
+  try {
+    const pipelineRequest = /** @type {PipelineRequest} */ (request)
+    return getPermissionResource(pipelineRequest) === 'csAgreements'
+  } catch {
+    return false
+  }
 }
 
 /**
@@ -193,7 +269,9 @@ export const auditPublisher = {
 
       server.ext('onPreResponse', (request, h) => {
         if (isSuccessfulGrantAccess(request)) {
-          request.sendAuditEventInBackground({ action: 'authorised' })
+          request.sendAuditEventInBackground({ action: 'authorised', entity: 'application' })
+        } else if (isSuccessfulClaimAccess(request)) {
+          request.sendAuditEventInBackground({ action: 'authorised', entity: 'claim' })
         } else if (isSuccessfulPageNavigation(request)) {
           request.sendAuditEventInBackground({
             action: 'navigate',
@@ -216,3 +294,7 @@ export const auditPublisher = {
     }
   }
 }
+
+/**
+ * @import { PipelineRequest } from '~/src/server/common/request-pipeline/types.js'
+ */

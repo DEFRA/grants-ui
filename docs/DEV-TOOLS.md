@@ -98,6 +98,18 @@ For editing and testing a WIP grant's **form definition** (not yet ready to push
 
 See [Local form-definition overrides](DOCKER.md#local-form-definition-overrides) in the Docker docs for the full mechanism — discovery sources, version-bump behaviour, the refresh/disable flow, and `GRANTS_UI_SIBLING_CONFIG_DIR`.
 
+## Inspect application state
+
+Inspect the application state persisted in the local Grants UI Backend database:
+
+```bash
+gt state example-grant-with-auth --sbi 106238911
+```
+
+Use `--grant-version <version>` to select an exact grant version, or `--json` for machine-readable output. Without
+`--grant-version`, every matching version is shown newest first. This command is read-only and requires the local
+Docker stack to be running.
+
 ## Journey Runner
 
 Automates clicking through grant application forms in the browser. Useful for quickly reaching a specific page during development without manually filling in every field.

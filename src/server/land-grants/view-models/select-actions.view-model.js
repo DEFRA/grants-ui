@@ -28,7 +28,7 @@ const landGrantsViewEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader
  * @param {string} actionName
  * @param {string} quantityValue
  * @param {number} [maxQuantity] - Omitted when the action has no availability
- *   restriction, which leaves the input unbounded and hintless
+ *   restriction, which leaves the input unbounded
  * @param {string} [unit]
  * @param {string} [errorText] - Error message shown on the input when this action's
  *   quantity failed validation
@@ -43,7 +43,6 @@ function getQuantityConditional(actionCode, actionName, quantityValue, maxQuanti
       quantityValue,
       maxQuantity,
       unit,
-      unitFullName: formatUnit(unit),
       errorText
     })
   }
@@ -86,15 +85,15 @@ function getStaticAvailability(action) {
 }
 
 /**
- * Builds the checkbox hint text: payment rate, consent requirement, and -
- * for a non-quantity action only - its own availability. A quantity action's
- * availability hint lives inside its conditional panel instead (see
- * quantity-input/template.njk), kept in sync live by the client.
+ * Builds the checkbox hint text: payment rate, consent requirement, and the
+ * action's own availability. Every action carries its availability here,
+ * whether or not it takes a typed quantity, so the two render identically -
+ * a quantity action's conditional panel holds only the input itself. The
+ * span's id is what the client keeps in sync live (see updateHintLive).
  * @param {Action} action
- * @param {boolean} needsQuantity
  * @returns {string}
  */
-function getHintHtml(action, needsQuantity) {
+function getHintHtml(action) {
   const requirementText = getConsentRequirementText(getActionConsentKeys(action))
   const agreementRateText = action.ratePerAgreementPerYearGbp
     ? ` and <strong>£${action.ratePerAgreementPerYearGbp}</strong> per agreement`
@@ -103,7 +102,7 @@ function getHintHtml(action, needsQuantity) {
   const rateText = `Payment rate per year: £${action.ratePerUnitGbp?.toFixed(2)}/ha${agreementRateText}${requirementLineText}`
   const limit = getAvailabilityLimit(action.availability)
   const availabilityHintHtml =
-    !needsQuantity && limit != null
+    limit != null
       ? `<br><span id="${getActionQuantityFieldName(action.code)}-hint">${limit} ${formatUnit(action.availability?.unit)} available</span>`
       : ''
   return `${rateText}${availabilityHintHtml}`
@@ -129,7 +128,7 @@ export function mapActionToViewModel(
   const quantityValue = existingAction?.value ?? ''
   const checked = Boolean(existingAction)
   const needsQuantity = requiresQuantityInput(action.availability?.type)
-  const hintHtml = getHintHtml(action, needsQuantity)
+  const hintHtml = getHintHtml(action)
   const consents = getActionConsentKeys(action)
 
   return {

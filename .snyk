@@ -13,21 +13,13 @@ ignore:
     - '*':
         reason: 'Build-time only - vulnerable path is docusaurus mdx-loader in @defra/interactive-map docs (@defra/forms-engine-plugin > @defra/interactive-map > @docusaurus/theme-common > @docusaurus/mdx-loader > image-size), never loaded by grants-ui runtime. Re-checked 2026-08-24 on @defra/interactive-map 0.0.40-alpha: no upstream fix or patch available in the docusaurus-pinned image-size range. Remove once @defra/interactive-map drops the docusaurus toolchain or image-size ships a fix.'
         expires: '2026-09-24'
-  'SNYK-JS-FASTURI-19256867':
+  'SNYK-JS-FASTURI-19502739':
     - '*':
-        reason: 'Build/dev-tooling only - fast-uri is reached solely via ajv under webpack schema-utils and the docusaurus toolchain in @defra/interactive-map (all ajv consumers are eslint/stryker/webpack loaders/table), never loaded by the grants-ui server runtime. Re-checked 2026-08-25: fixes fast-uri 3.1.6/2.4.5/4.1.3 were published 2026-08-23 but are still inside the .npmrc min-release-age=7 cooldown (eligible 2026-08-30). Remove and override fast-uri to 3.1.6 once the cooldown clears.'
+        reason: 'Build/dev-tooling only - fast-uri is reached solely via ajv under webpack schema-utils and the docusaurus toolchain in @defra/interactive-map (@defra/forms-engine-plugin > @defra/interactive-map > @docusaurus/theme-common > @docusaurus/mdx-loader > @docusaurus/utils > @docusaurus/types > webpack > css-minimizer-webpack-plugin > schema-utils > ajv > fast-uri); this is the single resolved copy and the grants-ui Hapi server runtime never loads it. Checked 2026-09-03: the earlier fast-uri advisories are gone - the tree now resolves 3.1.6 - but these two land on 3.1.6 itself. The fixes 3.1.7/2.4.6/4.1.4 were published 2026-09-02T11:06Z and are still inside the .npmrc min-release-age=7 cooldown (eligible 2026-09-09T11:06Z) - npm install fails with "ETARGET notarget No matching version found for fast-uri@3.1.7 with a date before 8/27/2026". Remove this ignore and add overrides.fast-uri 3.1.7 once the cooldown clears.'
         expires: '2026-09-24'
-  'SNYK-JS-FASTURI-19256869':
+  'SNYK-JS-FASTURI-19502854':
     - '*':
-        reason: 'Build/dev-tooling only - fast-uri is reached solely via ajv under webpack schema-utils and the docusaurus toolchain in @defra/interactive-map (all ajv consumers are eslint/stryker/webpack loaders/table), never loaded by the grants-ui server runtime. Re-checked 2026-08-25: fixes fast-uri 3.1.6/2.4.5/4.1.3 were published 2026-08-23 but are still inside the .npmrc min-release-age=7 cooldown (eligible 2026-08-30). Remove and override fast-uri to 3.1.6 once the cooldown clears.'
-        expires: '2026-09-24'
-  'SNYK-JS-FASTURI-19256871':
-    - '*':
-        reason: 'Build/dev-tooling only - fast-uri is reached solely via ajv under webpack schema-utils and the docusaurus toolchain in @defra/interactive-map (all ajv consumers are eslint/stryker/webpack loaders/table), never loaded by the grants-ui server runtime. Re-checked 2026-08-25: fixes fast-uri 3.1.6/2.4.5/4.1.3 were published 2026-08-23 but are still inside the .npmrc min-release-age=7 cooldown (eligible 2026-08-30). Remove and override fast-uri to 3.1.6 once the cooldown clears.'
-        expires: '2026-09-24'
-  'SNYK-JS-FASTURI-19256873':
-    - '*':
-        reason: 'Build/dev-tooling only - fast-uri is reached solely via ajv under webpack schema-utils and the docusaurus toolchain in @defra/interactive-map (all ajv consumers are eslint/stryker/webpack loaders/table), never loaded by the grants-ui server runtime. Re-checked 2026-08-25: fixes fast-uri 3.1.6/2.4.5/4.1.3 were published 2026-08-23 but are still inside the .npmrc min-release-age=7 cooldown (eligible 2026-08-30). Remove and override fast-uri to 3.1.6 once the cooldown clears.'
+        reason: 'Build/dev-tooling only - fast-uri is reached solely via ajv under webpack schema-utils and the docusaurus toolchain in @defra/interactive-map (@defra/forms-engine-plugin > @defra/interactive-map > @docusaurus/theme-common > @docusaurus/mdx-loader > @docusaurus/utils > @docusaurus/types > webpack > css-minimizer-webpack-plugin > schema-utils > ajv > fast-uri); this is the single resolved copy and the grants-ui Hapi server runtime never loads it. Checked 2026-09-03: the earlier fast-uri advisories are gone - the tree now resolves 3.1.6 - but these two land on 3.1.6 itself. The fixes 3.1.7/2.4.6/4.1.4 were published 2026-09-02T11:06Z and are still inside the .npmrc min-release-age=7 cooldown (eligible 2026-09-09T11:06Z) - npm install fails with "ETARGET notarget No matching version found for fast-uri@3.1.7 with a date before 8/27/2026". Remove this ignore and add overrides.fast-uri 3.1.7 once the cooldown clears.'
         expires: '2026-09-24'
   'SNYK-JS-QS-19432017':
     - '*':

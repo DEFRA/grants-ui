@@ -22,6 +22,25 @@ const SLUG_PATTERN = /^[a-z0-9-]+$/
 export const DEFAULT_CRN = '1102838829'
 
 /**
+ * The SBI 106238911 test users, each carrying a fixed level of Countryside
+ * Stewardship permissions (csApplications / csAgreements). Notes come from the
+ * grants-ui-dal-stub 106238911-<crn>.json fixtures: CRNs …181–184 are the
+ * "-All" users (same level for both permission types, …184 has none), and
+ * …185–187 are agreements-only (csApplications n/a). Offered on journeys behind
+ * the permissions gate so you can sign in as any permission level.
+ * @type {{crn: string, note: string}[]}
+ */
+const CS_PERMISSION_CRNS = [
+  { crn: '1062311181', note: 'csApplications: SUBMIT, csAgreements: SUBMIT' },
+  { crn: '1062311182', note: 'csApplications: AMEND, csAgreements: AMEND' },
+  { crn: '1062311183', note: 'csApplications: VIEW, csAgreements: VIEW' },
+  { crn: '1062311184', note: 'csApplications: n/a, csAgreements: n/a' },
+  { crn: '1062311185', note: 'csApplications: n/a, csAgreements: SUBMIT' },
+  { crn: '1062311186', note: 'csApplications: n/a, csAgreements: AMEND' },
+  { crn: '1062311187', note: 'csApplications: n/a, csAgreements: VIEW' }
+]
+
+/**
  * CRNs known to work for a journey, most-suitable first — the first is the
  * default, and the TUI only prompts when a journey lists more than one. Listed
  * either because the journey needs a *specific* CRN (its allowlist is not
@@ -30,10 +49,8 @@ export const DEFAULT_CRN = '1102838829'
  * @type {Record<string, {crn: string, note: string}[]>}
  */
 const JOURNEY_CRNS = {
-  woodland: [
-    { crn: '1100943757', note: 'woodland allowlist (SBI 113593357)' },
-    { crn: '1100943838', note: 'woodland allowlist (SBI 107173507)' }
-  ],
+  'example-grant-with-auth': [...CS_PERMISSION_CRNS],
+  woodland: [...CS_PERMISSION_CRNS],
   'farm-payments': [{ crn: '1102838829', note: 'farm-payments allowlist + seeded land parcels' }],
 
   grasslands: [

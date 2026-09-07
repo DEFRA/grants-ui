@@ -29,22 +29,25 @@ function checkboxItemHtml({
         <div class="govuk-form-group">
           <div id="landActionQuantity_${code}-refresh-banner" class="select-actions-refresh-banner select-actions-refresh-banner--hidden">Updating available land for this action&hellip;</div>
           <input class="${inputClass}" id="landActionQuantity_${code}" name="landActionQuantity_${code}" type="text" value="${quantityValue}"${unrestricted ? '' : ` max="${requiresMaxQuantity}"`}>
-          ${unrestricted ? '' : `<div id="landActionQuantity_${code}-hint">${requiresMaxQuantity} ha available</div>`}
           <div class="govuk-input__suffix">ha</div>
         </div>
       </div>`
     : ''
-  // Matches mapActionToViewModel: a non-quantity action gets its own "X
-  // available" hint, kept live by the client (see syncNonQuantityHint).
-  const nonQuantityHint =
-    !requiresMaxQuantity && availability?.value != null
-      ? `<span id="landActionQuantity_${code}-hint">${availability.value} ha available</span>`
-      : ''
+  // Matches mapActionToViewModel: EVERY action carries its "X available" hint on
+  // the label, quantity-required or not - the conditional holds only the input.
+  let hintValue = null
+  if (requiresMaxQuantity) {
+    hintValue = unrestricted ? null : requiresMaxQuantity
+  } else if (availability?.value != null) {
+    hintValue = availability.value
+  }
+  const availabilityHint =
+    hintValue != null ? `<span id="landActionQuantity_${code}-hint">${hintValue} ha available</span>` : ''
   return `
     <div class="govuk-checkboxes__item">
       <input class="govuk-checkboxes__input" id="landAction-${code}" name="landAction" type="checkbox" value="${code}"${checked ? ' checked' : ''}${unitAttr}${totalAreaAttr}${ariaControlsAttr}${errorOnLoadAttr}>
       <label for="landAction-${code}">${code}</label>
-      ${nonQuantityHint}
+      ${availabilityHint}
     </div>
     ${conditional}`
 }
