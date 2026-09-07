@@ -33,7 +33,7 @@ export default class CheckResponsesPageController extends SummaryPageController 
    * @returns {boolean} Whether the detailed land and actions summary was applied
    */
   #applyLandParcels(viewModel, state) {
-    const { landParcels, payment, agreementStartDate, agreementEndDate, agreementTotalPence } = state
+    const { landParcels, payment } = state
 
     if (Array.isArray(landParcels) && landParcels.length) {
       this.#applyParcelReferences(viewModel, landParcels)
@@ -53,7 +53,20 @@ export default class CheckResponsesPageController extends SummaryPageController 
       return false
     }
 
-    const landAndActionsSummary = {
+    const landAndActionsSummary = this.#buildLandAndActionsSummary(state)
+
+    return this.#applyLandAndActionsSummary(viewModel.details, viewModel.checkAnswers, landAndActionsSummary)
+  }
+
+  /**
+   * Builds the detailed summary using saved agreement values when available.
+   * @param {Record<string, any>} state
+   * @returns {ReturnType<typeof buildConfirmLandAndActionsViewModel> & { changeHref: string }}
+   */
+  #buildLandAndActionsSummary(state) {
+    const { landParcels, payment, agreementStartDate, agreementEndDate, agreementTotalPence } = state
+
+    return {
       ...buildConfirmLandAndActionsViewModel(
         {
           ...payment,
@@ -65,8 +78,6 @@ export default class CheckResponsesPageController extends SummaryPageController 
       ),
       changeHref: this.getHref(CONFIRM_LAND_AND_ACTIONS_PATH)
     }
-
-    return this.#applyLandAndActionsSummary(viewModel.details, viewModel.checkAnswers, landAndActionsSummary)
   }
 
   /**
