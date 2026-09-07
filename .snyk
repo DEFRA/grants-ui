@@ -13,19 +13,47 @@ ignore:
     - '*':
         reason: 'Build-time only - vulnerable path is docusaurus mdx-loader in @defra/interactive-map docs (@defra/forms-engine-plugin > @defra/interactive-map > @docusaurus/theme-common > @docusaurus/mdx-loader > image-size), never loaded by grants-ui runtime. Re-checked 2026-08-24 on @defra/interactive-map 0.0.40-alpha: no upstream fix or patch available in the docusaurus-pinned image-size range. Remove once @defra/interactive-map drops the docusaurus toolchain or image-size ships a fix.'
         expires: '2026-09-24'
-  'SNYK-JS-FASTURI-19502739':
+  'SNYK-JS-UNDICI-19635212':
     - '*':
-        reason: 'Build/dev-tooling only - fast-uri is reached solely via ajv under webpack schema-utils and the docusaurus toolchain in @defra/interactive-map (@defra/forms-engine-plugin > @defra/interactive-map > @docusaurus/theme-common > @docusaurus/mdx-loader > @docusaurus/utils > @docusaurus/types > webpack > css-minimizer-webpack-plugin > schema-utils > ajv > fast-uri); this is the single resolved copy and the grants-ui Hapi server runtime never loads it. Checked 2026-09-03: the earlier fast-uri advisories are gone - the tree now resolves 3.1.6 - but these two land on 3.1.6 itself. The fixes 3.1.7/2.4.6/4.1.4 were published 2026-09-02T11:06Z and are still inside the .npmrc min-release-age=7 cooldown (eligible 2026-09-09T11:06Z) - npm install fails with "ETARGET notarget No matching version found for fast-uri@3.1.7 with a date before 8/27/2026". Remove this ignore and add overrides.fast-uri 3.1.7 once the cooldown clears.'
+        reason: 'HTTP Request Smuggling in undici@7.29.0. Not runtime-reachable - undici@7.x is pulled only by cheerio@1.2.0, used in vitest tests and the build-time docusaurus toolchain of @defra/interactive-map; the grants-ui Hapi runtime uses the direct undici@8.10.0 copy. Fixed in undici 7.29.1 (published 2026-09-04), inside the .npmrc min-release-age=7 cooldown until 2026-09-11. Then bump cheerio or add an undici@7 override and remove this ignore.'
         expires: '2026-09-24'
-  'SNYK-JS-FASTURI-19502854':
+  'SNYK-JS-UNDICI-19635214':
     - '*':
-        reason: 'Build/dev-tooling only - fast-uri is reached solely via ajv under webpack schema-utils and the docusaurus toolchain in @defra/interactive-map (@defra/forms-engine-plugin > @defra/interactive-map > @docusaurus/theme-common > @docusaurus/mdx-loader > @docusaurus/utils > @docusaurus/types > webpack > css-minimizer-webpack-plugin > schema-utils > ajv > fast-uri); this is the single resolved copy and the grants-ui Hapi server runtime never loads it. Checked 2026-09-03: the earlier fast-uri advisories are gone - the tree now resolves 3.1.6 - but these two land on 3.1.6 itself. The fixes 3.1.7/2.4.6/4.1.4 were published 2026-09-02T11:06Z and are still inside the .npmrc min-release-age=7 cooldown (eligible 2026-09-09T11:06Z) - npm install fails with "ETARGET notarget No matching version found for fast-uri@3.1.7 with a date before 8/27/2026". Remove this ignore and add overrides.fast-uri 3.1.7 once the cooldown clears.'
+        reason: 'Numeric Truncation Error in undici@7.29.0. Not runtime-reachable - undici@7.x is pulled only by cheerio@1.2.0, used in vitest tests and the build-time docusaurus toolchain of @defra/interactive-map; the grants-ui Hapi runtime uses the direct undici@8.10.0 copy. Fixed in undici 7.29.1 (published 2026-09-04), inside the .npmrc min-release-age=7 cooldown until 2026-09-11. Then bump cheerio or add an undici@7 override and remove this ignore.'
         expires: '2026-09-24'
-  'SNYK-JS-QS-19432017':
+  'SNYK-JS-UNDICI-19635220':
     - '*':
-        reason: 'Build/dev-tooling only - qs is reached solely via express/body-parser under webpack-dev-server in the docusaurus toolchain of @defra/interactive-map (@defra/forms-engine-plugin > @defra/interactive-map > @easyops-cn/docusaurus-search-local > @docusaurus/plugin-content-docs > @docusaurus/core > webpack-dev-server > express > qs) and via the dev-only typed-rest-client; the grants-ui Hapi server runtime does not use qs. Checked 2026-09-01: the single resolved copy is pinned by our own overrides.qs in package.json, and the fix qs 6.16.0 was published 2026-08-29, still inside the .npmrc min-release-age=7 cooldown (eligible 2026-09-05). Dropping the override does not help - webpack-dev-server > body-parser requires ~6.15.1, which resolves to the still-vulnerable 6.15.3. Remove this ignore and bump overrides.qs to 6.16.0 once the cooldown clears.'
+        reason: 'Insufficient Verification of Data Authenticity in undici@7.29.0. Not runtime-reachable - undici@7.x is pulled only by cheerio@1.2.0, used in vitest tests and the build-time docusaurus toolchain of @defra/interactive-map; the grants-ui Hapi runtime uses the direct undici@8.10.0 copy. Fixed in undici 7.29.1 (published 2026-09-04), inside the .npmrc min-release-age=7 cooldown until 2026-09-11. Then bump cheerio or add an undici@7 override and remove this ignore.'
         expires: '2026-09-24'
-  'SNYK-JS-QS-19432019':
+  'SNYK-JS-UNDICI-19635206':
     - '*':
-        reason: 'Build/dev-tooling only - qs is reached solely via express/body-parser under webpack-dev-server in the docusaurus toolchain of @defra/interactive-map (@defra/forms-engine-plugin > @defra/interactive-map > @easyops-cn/docusaurus-search-local > @docusaurus/plugin-content-docs > @docusaurus/core > webpack-dev-server > express > qs) and via the dev-only typed-rest-client; the grants-ui Hapi server runtime does not use qs. Checked 2026-09-01: the single resolved copy is pinned by our own overrides.qs in package.json, and the fix qs 6.16.0 was published 2026-08-29, still inside the .npmrc min-release-age=7 cooldown (eligible 2026-09-05). Dropping the override does not help - webpack-dev-server > body-parser requires ~6.15.1, which resolves to the still-vulnerable 6.15.3. Remove this ignore and bump overrides.qs to 6.16.0 once the cooldown clears.'
+        reason: 'Missing Release of Resource after Effective Lifetime in undici@7.29.0. Not runtime-reachable - undici@7.x is pulled only by cheerio@1.2.0, used in vitest tests and the build-time docusaurus toolchain of @defra/interactive-map; the grants-ui Hapi runtime uses the direct undici@8.10.0 copy. Fixed in undici 7.29.1 (published 2026-09-04), inside the .npmrc min-release-age=7 cooldown until 2026-09-11. Then bump cheerio or add an undici@7 override and remove this ignore.'
+        expires: '2026-09-24'
+  'SNYK-JS-UNDICI-19635208':
+    - '*':
+        reason: 'Allocation of Resources Without Limits or Throttling in undici@7.29.0. Not runtime-reachable - undici@7.x is pulled only by cheerio@1.2.0, used in vitest tests and the build-time docusaurus toolchain of @defra/interactive-map; the grants-ui Hapi runtime uses the direct undici@8.10.0 copy. Fixed in undici 7.29.1 (published 2026-09-04), inside the .npmrc min-release-age=7 cooldown until 2026-09-11. Then bump cheerio or add an undici@7 override and remove this ignore.'
+        expires: '2026-09-24'
+  'SNYK-JS-UNDICI-19635210':
+    - '*':
+        reason: 'Uncaught Exception in undici@7.29.0. Not runtime-reachable - undici@7.x is pulled only by cheerio@1.2.0, used in vitest tests and the build-time docusaurus toolchain of @defra/interactive-map; the grants-ui Hapi runtime uses the direct undici@8.10.0 copy. Fixed in undici 7.29.1 (published 2026-09-04), inside the .npmrc min-release-age=7 cooldown until 2026-09-11. Then bump cheerio or add an undici@7 override and remove this ignore.'
+        expires: '2026-09-24'
+  'SNYK-JS-UNDICI-19635216':
+    - '*':
+        reason: 'Use of Persistent Cookies Containing Sensitive Information in undici@7.29.0. Not runtime-reachable - undici@7.x is pulled only by cheerio@1.2.0, used in vitest tests and the build-time docusaurus toolchain of @defra/interactive-map; the grants-ui Hapi runtime uses the direct undici@8.10.0 copy. Fixed in undici 7.29.1 (published 2026-09-04), inside the .npmrc min-release-age=7 cooldown until 2026-09-11. Then bump cheerio or add an undici@7 override and remove this ignore.'
+        expires: '2026-09-24'
+  'SNYK-JS-UNDICI-19635222':
+    - '*':
+        reason: 'Uncaught Exception (WebSocket subprotocol selection) in undici@7.29.0. Not runtime-reachable - undici@7.x is pulled only by cheerio@1.2.0, used in vitest tests and the build-time docusaurus toolchain of @defra/interactive-map; the grants-ui Hapi runtime uses the direct undici@8.10.0 copy and opens no undici WebSockets. Fixed in undici 7.29.1 (published 2026-09-04), inside the .npmrc min-release-age=7 cooldown until 2026-09-11. Then bump cheerio or add an undici@7 override and remove this ignore.'
+        expires: '2026-09-24'
+  'SNYK-JS-UNDICI-19635226':
+    - '*':
+        reason: 'Uncaught Exception in undici@7.29.0. Not runtime-reachable - undici@7.x is pulled only by cheerio@1.2.0, used in vitest tests and the build-time docusaurus toolchain of @defra/interactive-map; the grants-ui Hapi runtime uses the direct undici@8.10.0 copy. Fixed in undici 7.29.1 (published 2026-09-04), inside the .npmrc min-release-age=7 cooldown until 2026-09-11. Then bump cheerio or add an undici@7 override and remove this ignore.'
+        expires: '2026-09-24'
+  'SNYK-JS-UNDICI-19635218':
+    - '*':
+        reason: 'Improper Certificate Validation (BalancedPool drops function-valued tls/connect callbacks) in undici@7.29.0. Not runtime-reachable - undici@7.x is pulled only by cheerio@1.2.0, used in vitest tests and the build-time docusaurus toolchain of @defra/interactive-map; the grants-ui Hapi runtime uses the direct undici@8.10.0 copy and does not use BalancedPool. Fixed in undici 7.29.1 (published 2026-09-04), inside the .npmrc min-release-age=7 cooldown until 2026-09-11. Then bump cheerio or add an undici@7 override and remove this ignore.'
+        expires: '2026-09-24'
+  'SNYK-JS-UNDICI-19635224':
+    - '*':
+        reason: 'Origin Validation Error in undici@8.10.0 (cache/deduplicate interceptor keys omit the destination origin). grants-ui uses undici only as ProxyAgent + setGlobalDispatcher in src/server/common/helpers/proxy/setup-proxy.js and never calls interceptors.cache()/interceptors.deduplicate(), so it is not exploitable here. Fixed in undici 8.10.2 (published 2026-09-04), inside the .npmrc min-release-age=7 cooldown until 2026-09-11 (npm install fails with ETARGET before then). Then bump dependencies.undici + overrides.undici to 8.10.2 and remove this ignore.'
         expires: '2026-09-24'
