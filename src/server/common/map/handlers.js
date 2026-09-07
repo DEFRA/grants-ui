@@ -45,8 +45,7 @@ export async function parcelsHandler(request, h) {
     return h.response({ error: PARCELS_ERROR_MESSAGE }).code(upstreamStatus ?? statusCodes.serviceUnavailable)
   }
 
-  const enabledLandActions =
-    /** @type {{ enabledLandActions?: string[] }} */ (request.query ?? {}).enabledLandActions ?? []
+  const enabledLandActions = /** @type {{ enabledLandActions?: string[] }} */ (request.query)?.enabledLandActions ?? []
   const parcelData = toParcelData(result.value, enabledLandActions)
 
   if (isMockData()) {

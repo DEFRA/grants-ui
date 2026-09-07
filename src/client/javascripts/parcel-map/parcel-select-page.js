@@ -68,20 +68,20 @@ const updateSelectedParcelDetails = (selectedParcels, metaIndex = {}) => {
   if (!details) {
     return
   }
+  const noActions = document.getElementById(DOM_ID_SUMMARY_PARCEL_NO_ACTIONS)
   if (selectedParcels.length !== 1) {
     details.hidden = true
-    const noActions = document.getElementById(DOM_ID_SUMMARY_PARCEL_NO_ACTIONS)
     if (noActions) {
       noActions.hidden = true
     }
     return
   }
   const [{ id, areaHa, actionCount }] = selectedParcels
-  const resolvedActionCount = actionCount ?? metaIndex[id]?.actionCount ?? 0
+  const count = actionCount ?? metaIndex[id]?.actionCount
+  const resolvedActionCount = typeof count === 'number' ? count : 0
   setText(DOM_ID_SELECTED_PARCEL_REFERENCE, formatParcelReference(id))
   setText(DOM_ID_SELECTED_PARCEL_AREA, areaHa == null ? '' : `${Number(areaHa).toFixed(TOTAL_AREA_DECIMAL_PLACES)} ha`)
   setText(DOM_ID_SELECTED_PARCEL_ACTIONS, String(resolvedActionCount))
-  const noActions = document.getElementById(DOM_ID_SUMMARY_PARCEL_NO_ACTIONS)
   if (noActions) {
     noActions.hidden = resolvedActionCount !== 0
   }

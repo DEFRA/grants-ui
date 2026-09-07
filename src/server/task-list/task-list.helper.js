@@ -120,6 +120,17 @@ function isCompletionRequirementMet(pageDef, state, formModel) {
 }
 
 /**
+ * Whether a page is applicable under its optional condition.
+ * @param {object} pageDef - The page definition
+ * @param {object} state - The current form state
+ * @param {object} formModel - The form model
+ * @returns {boolean}
+ */
+function isPageConditionMet(pageDef, state, formModel) {
+  return !pageDef.condition || evaluateCondition(formModel, pageDef.condition, state)
+}
+
+/**
  * Determines if a task page is completed based on state
  * @param {object} pageDef - The page definition
  * @param {object} state - The current form state
@@ -129,7 +140,7 @@ function isCompletionRequirementMet(pageDef, state, formModel) {
 function isTaskPageCompleted(pageDef, state, formModel) {
   const parcelActionsTaskPages = findParcelActionsTaskPages(pageDef, formModel.def?.pages ?? [])
   if (pageDef.controller === MAP_SELECT_PAGE_CONTROLLER && parcelActionsTaskPages) {
-    if (pageDef.condition && !evaluateCondition(formModel, pageDef.condition, state)) {
+    if (!isPageConditionMet(pageDef, state, formModel)) {
       return null
     }
 
@@ -144,7 +155,7 @@ function isTaskPageCompleted(pageDef, state, formModel) {
     return false
   }
 
-  if (pageDef.condition && !evaluateCondition(formModel, pageDef.condition, state)) {
+  if (!isPageConditionMet(pageDef, state, formModel)) {
     return null // Hide task as it is not applicable
   }
 
@@ -286,17 +297,15 @@ function findParcelActionsTaskPages(pageDef, pages) {
     const nextSectionOffset = laterPages.findIndex((page) => page.section && page.section !== mapPage.section)
     const taskPages = nextSectionOffset === -1 ? laterPages : laterPages.slice(0, nextSectionOffset)
     const actionsIndex = taskPages.findIndex((page) => SELECT_ACTIONS_PAGE_CONTROLLERS.has(page.controller))
-    if (actionsIndex === -1) {
-      continue
-    }
+    if (actionsIndex !== -1) {
+      const actionsPage = taskPages[actionsIndex]
+      const confirmPage = taskPages
+        .slice(actionsIndex + 1)
+        .find((page) => page.controller === CONFIRM_LAND_AND_ACTIONS_PAGE_CONTROLLER)
 
-    const actionsPage = taskPages[actionsIndex]
-    const confirmPage = taskPages
-      .slice(actionsIndex + 1)
-      .find((page) => page.controller === CONFIRM_LAND_AND_ACTIONS_PAGE_CONTROLLER)
-
-    if (confirmPage && [mapPage, actionsPage, confirmPage].some((page) => page.path === pageDef.path)) {
-      return { mapPage, actionsPage, confirmPage }
+      if (confirmPage && [mapPage, actionsPage, confirmPage].some((page) => page.path === pageDef.path)) {
+        return { mapPage, actionsPage, confirmPage }
+      }
     }
   }
 

@@ -194,17 +194,19 @@ export function buildPrintViewModel({
   }
 
   const payment = /** @type {PaymentCalculation | undefined} */ (answers.payment)
-  const landAndActionsSummary = payment
-    ? buildConfirmLandAndActionsViewModel(
-        {
-          ...payment,
-          agreementStartDate: /** @type {string} */ (answers.agreementStartDate ?? payment.agreementStartDate),
-          agreementEndDate: /** @type {string} */ (answers.agreementEndDate ?? payment.agreementEndDate),
-          agreementTotalPence: /** @type {number} */ (answers.agreementTotalPence ?? payment.agreementTotalPence)
-        },
-        Array.isArray(answers.landParcels) ? undefined : /** @type {LandParcels | undefined} */ (answers.landParcels)
-      )
-    : null
+  let landAndActionsSummary = null
+
+  if (payment) {
+    landAndActionsSummary = buildConfirmLandAndActionsViewModel(
+      {
+        ...payment,
+        agreementStartDate: /** @type {string} */ (answers.agreementStartDate ?? payment.agreementStartDate),
+        agreementEndDate: /** @type {string} */ (answers.agreementEndDate ?? payment.agreementEndDate),
+        agreementTotalPence: /** @type {number} */ (answers.agreementTotalPence ?? payment.agreementTotalPence)
+      },
+      Array.isArray(answers.landParcels) ? undefined : /** @type {LandParcels | undefined} */ (answers.landParcels)
+    )
+  }
 
   return {
     page,

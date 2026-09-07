@@ -329,13 +329,14 @@ export function resolveFeatureId(feature) {
  */
 export function showTooltip(tooltip, id, props, x, y, mapEl) {
   const areaHa = props.areaHa == null ? null : Number(props.areaHa)
+  const actionCount = typeof props.actionCount === 'number' ? props.actionCount : 0
   tooltip.innerHTML = `
     <strong style="display:block;margin-bottom:8px;font-size:15px">${htmlEncode(formatParcelReference(id) || MSG_UNKNOWN_PARCEL)}</strong>
     <div style="color:#505a5f;padding:2px 12px 2px 0;white-space:nowrap">
       Total area: ${areaHa == null ? MSG_UNKNOWN_AREA : htmlEncode(areaHa.toFixed(AREA_DECIMAL_PLACES) + ' ha')}
     </div>
     <div style="color:#505a5f;padding:2px 12px 2px 0;white-space:nowrap">
-      Available actions: ${props.actionCount ?? 0}
+      Available actions: ${actionCount}
     </div>`
   tooltip.style.left = `${Math.min(x + TOOLTIP_OFFSET_X, (mapEl?.offsetWidth ?? TOOLTIP_FALLBACK_MAP_WIDTH) - TOOLTIP_MAX_WIDTH)}px`
   tooltip.style.top = `${y - TOOLTIP_VERTICAL_OFFSET}px`

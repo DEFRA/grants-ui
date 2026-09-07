@@ -36,14 +36,7 @@ export default class CheckResponsesPageController extends SummaryPageController 
     const { landParcels, payment, agreementStartDate, agreementEndDate, agreementTotalPence } = state
 
     if (Array.isArray(landParcels) && landParcels.length) {
-      const displayValue = landParcels.join(', ')
-      viewModel.details?.forEach((detail, di) => {
-        const ii = detail.items?.findIndex((/** @type {any} */ item) => item.name === 'landParcels') ?? -1
-        if (ii !== -1 && viewModel.checkAnswers) {
-          viewModel.checkAnswers[di].summaryList.rows[ii].value = { html: displayValue }
-        }
-      })
-
+      this.#applyParcelReferences(viewModel, landParcels)
       return false
     }
 
@@ -51,11 +44,12 @@ export default class CheckResponsesPageController extends SummaryPageController 
       !landParcels ||
       Array.isArray(landParcels) ||
       typeof landParcels !== 'object' ||
-      Object.keys(landParcels).length === 0 ||
-      !payment ||
-      !Array.isArray(viewModel.details) ||
-      !Array.isArray(viewModel.checkAnswers)
+      Object.keys(landParcels).length === 0
     ) {
+      return false
+    }
+
+    if (!payment || !Array.isArray(viewModel.details) || !Array.isArray(viewModel.checkAnswers)) {
       return false
     }
 
@@ -71,15 +65,41 @@ export default class CheckResponsesPageController extends SummaryPageController 
       ),
       changeHref: this.getHref(CONFIRM_LAND_AND_ACTIONS_PATH)
     }
+
+    return this.#applyLandAndActionsSummary(viewModel.details, viewModel.checkAnswers, landAndActionsSummary)
+  }
+
+  /**
+   * Updates the compact answer used by journeys that store parcel references as an array.
+   * @param {{ details?: any[], checkAnswers?: any[] }} viewModel
+   * @param {any[]} landParcels
+   */
+  #applyParcelReferences(viewModel, landParcels) {
+    const displayValue = landParcels.join(', ')
+    viewModel.details?.forEach((detail, di) => {
+      const ii = detail.items?.findIndex((/** @type {any} */ item) => item.name === 'landParcels') ?? -1
+      if (ii !== -1 && viewModel.checkAnswers) {
+        viewModel.checkAnswers[di].summaryList.rows[ii].value = { html: displayValue }
+      }
+    })
+  }
+
+  /**
+   * Replaces matching parcel answers with the detailed summary, keeping detail items and rows aligned.
+   * @param {any[]} details
+   * @param {any[]} checkAnswers
+   * @param {ReturnType<typeof buildConfirmLandAndActionsViewModel> & { changeHref: string }} landAndActionsSummary
+   * @returns {boolean} Whether any parcel answer was replaced
+   */
+  #applyLandAndActionsSummary(details, checkAnswers, landAndActionsSummary) {
     const mapSelectPaths = new Set(
       (this.model?.def?.pages ?? [])
         .filter((/** @type {any} */ page) => page.controller === 'MapSelectPageController')
         .map((/** @type {any} */ page) => page.path)
     )
-    const { checkAnswers } = viewModel
     let applied = false
 
-    viewModel.details.forEach((detail, di) => {
+    details.forEach((detail, di) => {
       const parcelIndex =
         detail.items?.findIndex(
           (/** @type {any} */ item) => item.name === 'landParcels' || mapSelectPaths.has(item.page?.path)

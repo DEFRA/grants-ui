@@ -252,6 +252,16 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
 
     await this.setState(request, /** @type {FormSubmissionState} */ (/** @type {unknown} */ (newState)))
 
+    return this.proceed(request, h, this.getPostRedirect(request, context, selectedParcelIds))
+  }
+
+  /**
+   * Builds the next-page URL with the selected parcel and return-to-confirm origin.
+   * @param {FormRequestPayload} request
+   * @param {FormContext} context
+   * @param {string[]} selectedParcelIds
+   */
+  getPostRedirect(request, context, selectedParcelIds) {
     const nextPath = this.getNextPath(context)
     let redirect =
       !this.multiSelect && selectedParcelIds[0] && nextPath
@@ -262,7 +272,7 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
       redirect = withConfirmLandAndActionsOrigin(redirect)
     }
 
-    return this.proceed(request, h, redirect)
+    return redirect
   }
 }
 
