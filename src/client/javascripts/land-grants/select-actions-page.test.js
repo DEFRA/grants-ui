@@ -1966,7 +1966,7 @@ describe('initSelectActionsPage', () => {
   // A submit landing before an in-flight refresh's own response has applied
   // would otherwise serialise whatever's disabled OUT of the payload (the
   // browser drops disabled fields from a form submission) - see TGC-1625.
-  function submitForm(form) {
+  function isSubmitBlocked(form) {
     const event = new Event('submit', { bubbles: true, cancelable: true })
     form.dispatchEvent(event)
     return event.defaultPrevented
@@ -1989,7 +1989,7 @@ describe('initSelectActionsPage', () => {
     checkbox(form, 'CLIG3').checked = true
     checkbox(form, 'CLIG3').dispatchEvent(new Event('change', { bubbles: true }))
 
-    expect(submitForm(form)).toBe(true)
+    expect(isSubmitBlocked(form)).toBe(true)
 
     resolveFetch()
     await flushPromises()
@@ -2001,40 +2001,56 @@ describe('initSelectActionsPage', () => {
 
     await toggle(form, 'CSAM3', false)
 
-    expect(submitForm(form)).toBe(false)
+    expect(isSubmitBlocked(form)).toBe(false)
   })
 
   it('blocks a submit that lands during the untriggered initial refresh, which leaves every checkbox enabled', async () => {
     const form = setupDom([
-      { code: 'CSAM3', checked: true, availability: { value: 10, unit: 'ha' } },
-      { code: 'SCR2', checked: true, availability: { value: 5, unit: 'ha' } }
+      { code: 'CSAM3', checked: true, availability: { value: 10, unit: 'ha' }, chosenArea: 10 },
+      { code: 'SCR2', checked: true, availability: { value: 0, unit: 'ha' } }
     ])
     let resolveFetch
     global.fetch = vi.fn().mockImplementation(
       () =>
         new Promise((resolve) => {
-          resolveFetch = () => resolve({ ok: true, json: () => Promise.resolve({ actions: [] }) })
+          resolveFetch = () =>
+            resolve({
+              ok: true,
+              json: () =>
+                Promise.resolve({
+                  actions: [
+                    { code: 'CSAM3', availability: { value: 0, unit: 'ha' } },
+                    { code: 'SCR2', availability: { value: 0, unit: 'ha' } }
+                  ]
+                })
+            })
         })
     )
 
     initSelectActionsPage(form)
 
-    // Nothing is disabled yet - the init refresh has no triggering checkbox
-    // for disableOtherActions to exempt, so it disables nothing at all.
-    expect(checkbox(form, 'CSAM3').disabled).toBe(false)
-    expect(checkbox(form, 'SCR2').disabled).toBe(false)
-
-    expect(submitForm(form)).toBe(true)
+    expect(isSubmitBlocked(form)).toBe(true)
 
     resolveFetch()
     await flushPromises()
+
+    // The response has genuinely applied - CSAM3 keeps its full claim,
+    // SCR2 is unchecked and disabled for having nothing left
+    expect(checkbox(form, 'CSAM3').disabled).toBe(false)
+    expect(getChosenAreaFieldValue(checkbox(form, 'CSAM3'))).toBe('10')
+    expect(checkbox(form, 'SCR2').checked).toBe(false)
+    expect(checkbox(form, 'SCR2').disabled).toBe(true)
+    expect(isSubmitBlocked(form)).toBe(false)
   })
 
   it('blocks a submit across a growth follow-up chain, only releasing once the whole chain settles', async () => {
     const form = setupDom([
-      { code: 'CMOR1', checked: true, availability: { value: 0.3271, unit: 'ha' }, chosenArea: 0.2271 },
-      { code: 'CLIG3', availability: { value: 0.3271, unit: 'ha' } }
+      { code: 'CMOR1', checked: true, availability: { value: 10, unit: 'ha' }, chosenArea: 1 },
+      { code: 'CLIG3', availability: { value: 10, unit: 'ha' } }
     ])
+    // Settle the untriggered init refresh (CMOR1 starts checked)
+    await initSettled(form, fetchOk({ actions: [] }))
+
     const pending = []
     global.fetch = vi.fn().mockImplementation(
       () =>
@@ -2042,29 +2058,36 @@ describe('initSelectActionsPage', () => {
           pending.push(resolve)
         })
     )
-    initSelectActionsPage(form)
-    await flushPromises()
 
     await toggle(form, 'CLIG3', true)
 
-    expect(submitForm(form)).toBe(true)
+    expect(isSubmitBlocked(form)).toBe(true)
 
+    // CMOR1 sent 1 (its chosenArea); this reports 2 MORE ha freed up for it,
+    // so its new chosen area becomes 1 + 2 = 3
     pending.shift()({
       ok: true,
-      json: () => Promise.resolve({ actions: [{ code: 'CMOR1', availability: { value: 0.1, unit: 'ha' } }] })
+      json: () => Promise.resolve({ actions: [{ code: 'CMOR1', availability: { value: 2, unit: 'ha' } }] })
     })
     await flushPromises()
 
-    // The growth follow-up's own request is now in flight - still blocked.
-    expect(submitForm(form)).toBe(true)
+    expect(getChosenAreaFieldValue(checkbox(form, 'CMOR1'))).toBe('3')
+    // The growth follow-up's own request (re-sending CMOR1's new claim of 3)
+    // is now in flight - still blocked.
+    expect(isSubmitBlocked(form)).toBe(true)
 
+    // No further headroom this round - the chain ends here.
     pending.shift()({
       ok: true,
       json: () => Promise.resolve({ actions: [{ code: 'CMOR1', availability: { value: 0, unit: 'ha' } }] })
     })
     await flushPromises()
 
-    expect(submitForm(form)).toBe(false)
+    // The chain has genuinely settled into a submittable state
+    expect(checkbox(form, 'CMOR1').disabled).toBe(false)
+    expect(checkbox(form, 'CLIG3').disabled).toBe(false)
+    expect(getChosenAreaFieldValue(checkbox(form, 'CMOR1'))).toBe('3')
+    expect(isSubmitBlocked(form)).toBe(false)
   })
 })
 
