@@ -20,14 +20,23 @@ export function getCheckboxes(form) {
 }
 
 /**
+ * The field backing this action's quantity: a real, user-facing input for a
+ * quantity action, or a hidden field carrying the chosen area for a
+ * non-quantity action.
+ * @param {HTMLInputElement} checkbox
+ * @returns {HTMLInputElement | null}
+ */
+function getQuantityFieldElement(checkbox) {
+  return /** @type {HTMLInputElement | null} */ (document.getElementById(getActionQuantityFieldName(checkbox.value)))
+}
+
+/**
  * A quantity action's real, user-facing input.
  * @param {HTMLInputElement} checkbox
  * @returns {HTMLInputElement | null}
  */
 export function getQuantityInput(checkbox) {
-  const field = /** @type {HTMLInputElement | null} */ (
-    document.getElementById(getActionQuantityFieldName(checkbox.value))
-  )
+  const field = getQuantityFieldElement(checkbox)
   return field?.type === 'hidden' ? null : field
 }
 
@@ -37,9 +46,7 @@ export function getQuantityInput(checkbox) {
  * @returns {HTMLInputElement | null}
  */
 export function getChosenAreaField(checkbox) {
-  const field = /** @type {HTMLInputElement | null} */ (
-    document.getElementById(getActionQuantityFieldName(checkbox.value))
-  )
+  const field = getQuantityFieldElement(checkbox)
   return field?.type === 'hidden' ? field : null
 }
 
@@ -64,16 +71,24 @@ export function clearErrorOnLoad(checkbox) {
   delete checkbox.dataset.errorOnLoad
 }
 
-/** @param {HTMLInputElement} checkbox
+/**
+ * Parses a numeric data attribute, treating a blank or non-numeric value as absent.
+ * @param {string | null} raw
  * @returns {number | undefined}
  */
-export function getTotalAvailableArea(checkbox) {
-  const raw = checkbox.getAttribute(TOTAL_AVAILABLE_AREA_ATTR)
+function parseNumericAttr(raw) {
   if (raw == null || raw.trim() === '') {
     return undefined
   }
   const value = Number(raw)
   return Number.isFinite(value) ? value : undefined
+}
+
+/** @param {HTMLInputElement} checkbox
+ * @returns {number | undefined}
+ */
+export function getTotalAvailableArea(checkbox) {
+  return parseNumericAttr(checkbox.getAttribute(TOTAL_AVAILABLE_AREA_ATTR))
 }
 
 /**
@@ -83,11 +98,7 @@ export function getTotalAvailableArea(checkbox) {
  */
 export function getLiveAvailableArea(checkbox) {
   const raw = checkbox.getAttribute(LIVE_AVAILABLE_AREA_ATTR)
-  if (raw == null) {
-    return getTotalAvailableArea(checkbox)
-  }
-  const value = Number(raw)
-  return Number.isFinite(value) ? value : undefined
+  return raw == null ? getTotalAvailableArea(checkbox) : parseNumericAttr(raw)
 }
 
 /**
