@@ -4,7 +4,8 @@
  * areas the server and the availability API report.
  */
 
-import { getActionQuantityFieldName } from '../../../shared/action-quantity-field.js'
+import { getActionChosenAreaDisplayId, getActionQuantityFieldName } from '../../../shared/action-quantity-field.js'
+import { areaWithUnitText } from '../../../shared/area-text.js'
 
 export const CHECKBOX_NAME = 'landAction'
 export const AVAILABLE_UNIT_ATTR = 'data-available-unit'
@@ -48,6 +49,53 @@ export function getQuantityInput(checkbox) {
 export function getChosenAreaField(checkbox) {
   const field = getQuantityFieldElement(checkbox)
   return field?.type === 'hidden' ? field : null
+}
+
+/**
+ * A non-quantity action's available-area hint. Quantity actions use the
+ * quantity input's own hint, while total actions share the hidden field's
+ * naming convention without rendering that field as a visible input.
+ * @param {HTMLInputElement} checkbox
+ * @returns {HTMLElement | null}
+ */
+export function getNonQuantityHint(checkbox) {
+  if (getQuantityInput(checkbox)) {
+    return null
+  }
+  return document.getElementById(`${getActionQuantityFieldName(checkbox.value)}-hint`)
+}
+
+/**
+ * Writes a total action's read-only chosen-area display without changing its
+ * submitted hidden quantity. This is used for an unselected preview.
+ * @param {HTMLInputElement} checkbox
+ * @param {number} chosenArea
+ */
+export function setChosenAreaDisplay(checkbox, chosenArea) {
+  const display = document.getElementById(getActionChosenAreaDisplayId(checkbox.value))
+  if (display) {
+    display.textContent = areaWithUnitText(chosenArea, checkbox.getAttribute(AVAILABLE_UNIT_ATTR) ?? undefined)
+  }
+}
+
+/**
+ * A checked action's chosen area is its hidden submitted field for a
+ * non-quantity action, or its confirmed-area data attribute for a quantity
+ * action. Keep the hidden value and selected read-only display in sync when a
+ * confirmed total is written.
+ * @param {HTMLInputElement} checkbox
+ * @param {number} chosenArea
+ */
+export function setChosenArea(checkbox, chosenArea) {
+  if (getQuantityInput(checkbox)) {
+    checkbox.setAttribute(TOTAL_CHOSEN_AREA_ATTR, String(chosenArea))
+  } else {
+    const field = getChosenAreaField(checkbox)
+    if (field) {
+      field.value = String(chosenArea)
+    }
+    setChosenAreaDisplay(checkbox, chosenArea)
+  }
 }
 
 /**
@@ -116,18 +164,6 @@ export function getChosenArea(checkbox) {
   }
   const value = Number(getChosenAreaField(checkbox)?.value)
   return Number.isFinite(value) && value > 0 ? value : undefined
-}
-
-/**
- * Records a non-quantity action's chosen area in its hidden field, for both live client use and form submission.
- * @param {HTMLInputElement} checkbox
- * @param {number} chosenArea
- */
-export function setChosenArea(checkbox, chosenArea) {
-  const field = getChosenAreaField(checkbox)
-  if (field) {
-    field.value = String(chosenArea)
-  }
 }
 
 /**

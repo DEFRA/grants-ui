@@ -3,7 +3,7 @@ import { getActionConsentKeys } from '../utils/consent-types.js'
 import { getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
 import { getSelectedActionCodes } from '../utils/selected-actions-field.js'
 import { requiresQuantityInput } from '~/src/shared/action-quantity-type.js'
-import { getAvailabilityLimit } from '~/src/shared/availability.js'
+import { getAvailabilityLimit, getStaticAvailability } from '~/src/shared/availability.js'
 
 /**
  * Manages state operations for land parcels and their actions.
@@ -104,7 +104,7 @@ export function mergeRecomputedAvailability(actions, recomputed) {
       ? {
           ...action,
           availability: { ...match.availability, type: action.availability?.type },
-          staticAvailability: action.staticAvailability ?? action.availability
+          staticAvailability: getStaticAvailability(action)
         }
       : action
   })
@@ -185,9 +185,10 @@ export function addSelectedActionsToState(state, payload, actions, parcel) {
 
 /**
  * Builds addedActions-shaped entries from a just-submitted payload, so a
- * validation error re-renders with what the user typed. A non-quantity
- * action has no payload field to carry its chosen area, so it falls back to
- * its previous state value instead of an empty amount.
+ * validation error re-renders with what the user typed. A quantity-required
+ * action reads its submitted value, while a non-quantity action reads its
+ * hidden chosen-area field and falls back to its previous state value only when
+ * that field is omitted.
  * @param {object} payload - Form payload containing action selections
  * @param {Array<Action>} actions - Available actions, flat
  * @param {Array<{code: string, value?: string|number}>} [prevAddedActions] - Previously confirmed added actions, from state
@@ -199,13 +200,18 @@ export function getAddedActionsFromPayload(payload, actions, prevAddedActions = 
   return selectedCodes
     .map((actionCode) => actions.find((a) => a.code === actionCode))
     .filter((actionInfo) => actionInfo != null)
-    .map((actionInfo) => ({
-      code: actionInfo.code,
-      description: actionInfo.description,
-      value: requiresQuantityInput(actionInfo.availability?.type)
-        ? (payload[getActionQuantityFieldName(actionInfo.code)] ?? '')
-        : (prevAddedActions.find((a) => a.code === actionInfo.code)?.value ?? '')
-    }))
+    .map((actionInfo) => {
+      const quantityFieldName = getActionQuantityFieldName(actionInfo.code)
+
+      return {
+        code: actionInfo.code,
+        description: actionInfo.description,
+        value:
+          Object.hasOwn(payload, quantityFieldName) || requiresQuantityInput(actionInfo.availability?.type)
+            ? (payload[quantityFieldName] ?? '')
+            : (prevAddedActions.find((a) => a.code === actionInfo.code)?.value ?? '')
+      }
+    })
 }
 
 /**

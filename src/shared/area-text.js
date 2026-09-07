@@ -1,8 +1,6 @@
 import { formatArea } from './format-area.js'
 import { formatUnit } from './format-unit.js'
 
-export const TOTAL_ACTION_AREA_GUIDANCE = 'This action will use all the available area on this land parcel.'
-
 /**
  * An area with its full unit name, e.g. "39.8100 hectares". Four decimal
  * places throughout so a fully claimed action reads as "0.0000" and areas

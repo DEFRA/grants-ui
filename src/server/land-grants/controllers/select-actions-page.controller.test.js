@@ -491,6 +491,48 @@ describe('SelectActionsPageController', () => {
       expect(controller.setState).not.toHaveBeenCalled()
       expect(controller.proceed).not.toHaveBeenCalled()
     })
+    test('should preserve a submitted total action quantity in the error response hidden field and display', async () => {
+      const partialAction = {
+        ...UPL2,
+        availability: { ...UPL2.availability, type: 'partial' }
+      }
+      const totalAction = {
+        code: 'CLIG3',
+        description: 'Manage grassland',
+        availability: { value: 3.189, unit: 'ha', type: 'total' }
+      }
+      fetchActionsForParcel.mockResolvedValue({
+        actions: [partialAction, totalAction],
+        parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: { value: 3.189, unit: 'ha' } }
+      })
+      mockRequest.payload = {
+        landAction: ['UPL2', 'CLIG3'],
+        landActionQuantity_UPL2: '4.00001',
+        landActionQuantity_CLIG3: '2.189'
+      }
+
+      await post()
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'select-actions',
+        expect.objectContaining({
+          errors: [
+            {
+              text: 'Quantity for Heavy livestock grazing on moorland: UPL2 must be 4 decimal places or fewer',
+              href: '#landActionQuantity_UPL2',
+              code: 'UPL2'
+            }
+          ]
+        })
+      )
+
+      const { actionItems, chosenAreaFieldsHtml } = mockH.view.mock.calls[0][1]
+      const clig3 = actionItems.find((item) => item.value === 'CLIG3')
+
+      expect(clig3.checked).toBe(true)
+      expect(clig3.conditional.html).toContain('2.1890 hectares')
+      expect(chosenAreaFieldsHtml).toContain('name="landActionQuantity_CLIG3" value="2.189"')
+    })
 
     test('should normalise a bare decimal quantity to a leading-zero value before saving state', async () => {
       mockRequest.payload = { landAction: 'UPL2', landActionQuantity_UPL2: '.5' }

@@ -1,11 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { TOTAL_ACTION_AREA_GUIDANCE, areaWithUnitText, availableAreaText } from './area-text.js'
+import { areaWithUnitText, availableAreaText } from './area-text.js'
 
 describe('area-text', () => {
-  it('states that a total action consumes the whole available area', () => {
-    expect(TOTAL_ACTION_AREA_GUIDANCE).toBe('This action will use all the available area on this land parcel.')
-  })
-
   describe('areaWithUnitText', () => {
     it('renders an area at four decimal places with its full unit name', () => {
       expect(areaWithUnitText(39.81, 'ha')).toBe('39.8100 hectares')

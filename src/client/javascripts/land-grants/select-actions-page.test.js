@@ -173,6 +173,9 @@ const quantityInputFor = (form, code) => form.querySelector(`#landActionQuantity
 
 const hintFor = (code) => document.getElementById(`landActionQuantity_${code}-hint`)
 
+/** A submit button in the rendered select-actions form. */
+const submitButtonFor = (form) => form.querySelector('button[type="submit"]')
+
 /** A total action's read-only claim display (see chosen-area/template.njk). */
 const chosenAreaDisplayFor = (code) => document.getElementById(`landActionChosenArea_${code}`)
 
@@ -722,6 +725,7 @@ describe('initSelectActionsPage', () => {
     await initSettled(form, fetchOk({ actions: [{ code: 'CLIG3', availability: { value: 31.89, unit: 'ha' } }] }))
 
     await toggle(form, 'CLIG3', false)
+    expect(getChosenAreaFieldValue(checkbox(form, 'CLIG3'))).toBe('0')
 
     expect(hintFor('CLIG3').textContent).toBe('31.8900 hectares available')
     expect(chosenAreaDisplayFor('CLIG3').textContent).toBe('31.8900 hectares')
@@ -2186,7 +2190,6 @@ describe('initSelectActionsPage', () => {
       { code: 'CLIG3', availability: { value: 10, unit: 'ha' } }
     ])
     await initSettled(form, fetchOk({ actions: [] }))
-
     const pending = []
     global.fetch = vi.fn().mockImplementation(
       () =>

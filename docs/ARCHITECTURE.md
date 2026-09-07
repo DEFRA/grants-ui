@@ -42,6 +42,8 @@ Practical usage tips:
 - `await this.setState(request, { ...context.state, applicantContactDetails: updated })` completely replaces the stored state for the current journey.
 - `await this.mergeState(request, context.state, { applicantContactDetails: updated })` applies a shallow merge when you only need to tweak a subset of keys.
 - Never mutate `context.state` in place; always go through the helpers so that the new state is flushed through the cache service and persisted for save-and-return flows.
+- Land-action availability uses `src/shared/availability.js` to distinguish the original limit from recomputed headroom. Browser quantity state and read-only total-action displays are coordinated through `action-checkbox-state.js`; display-only previews must not change submitted quantities.
+- When redisplaying a land-action validation error, preserve the total action's submitted hidden quantity rather than replacing it with saved state or full availability. On the select-actions page, native submission (including Enter) waits for the latest availability refresh to settle so temporarily disabled selections are not omitted from the POST.
 
 ```mermaid
 sequenceDiagram

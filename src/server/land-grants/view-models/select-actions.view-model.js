@@ -9,8 +9,8 @@ import { govukFrontendPath, viewPaths } from '~/src/config/nunjucks/view-paths.j
 import { getActionChosenAreaDisplayId, getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
 import { requiresQuantityInput } from '~/src/shared/action-quantity-type.js'
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
-import { TOTAL_ACTION_AREA_GUIDANCE, areaWithUnitText, availableAreaText } from '~/src/shared/area-text.js'
-import { getAvailabilityLimit, hasAvailableLand } from '~/src/shared/availability.js'
+import { areaWithUnitText, availableAreaText } from '~/src/shared/area-text.js'
+import { getAvailabilityLimit, getStaticAvailability, hasAvailableLand } from '~/src/shared/availability.js'
 import { formatParcelReference } from '~/src/shared/format-parcel.js'
 import { SELECTED_ACTIONS_FIELD_NAME } from '~/src/server/land-grants/utils/selected-actions-field.js'
 import { getActionConsentKeys } from '~/src/server/land-grants/utils/consent-types.js'
@@ -19,6 +19,7 @@ import { getConsentRequirementText } from '~/src/server/land-grants/view-models/
 const QUANTITY_INPUT_TEMPLATE = 'quantity-input/template.njk'
 const CHOSEN_AREA_TEMPLATE = 'chosen-area/template.njk'
 const ACTION_LABEL_TEMPLATE = 'action-label/template.njk'
+const TOTAL_ACTION_AREA_GUIDANCE = 'This action will use all the available area on this land parcel.'
 const landGrantsViewEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader([govukFrontendPath, ...viewPaths]), {
   autoescape: true
 })
@@ -96,17 +97,6 @@ function getActionLabelHtml(description, guidanceUrl) {
  */
 function getCheckboxItemId(actionCode, isFirst) {
   return isFirst ? SELECTED_ACTIONS_FIELD_NAME : `${SELECTED_ACTIONS_FIELD_NAME}-${actionCode}`
-}
-
-/**
- * An action's original, uncompeted total - availability may have been
- * overwritten by a recompute against other actions in this submission (see
- * mergeRecomputedAvailability), which isn't a safe standalone ceiling.
- * @param {Action} action
- * @returns {{ value?: number | null, unit?: string } | undefined}
- */
-function getStaticAvailability(action) {
-  return action.staticAvailability ?? action.availability
 }
 
 /**
