@@ -99,14 +99,17 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
   }
 
   /**
+   * Same shape as the quantity validator's own errors, so both feed one
+   * presenter.
    * @param {object} _payload
    * @param {Array<{ code?: string, description: string }>} failedMessages
-   * @returns {Array<{ text: string, href?: string }>}
+   * @returns {Array<{ text: string, href?: string, code?: string }>}
    */
   buildValidationErrors(_payload, failedMessages) {
     return failedMessages.map((e) => ({
-      text: `${e.description}${e.code ? ': ' + e.code : ''}`,
-      href: e.code ? `#${getActionQuantityFieldName(e.code)}` : undefined
+      text: e.description,
+      href: e.code ? `#${getActionQuantityFieldName(e.code)}` : undefined,
+      ...(e.code && { code: e.code })
     }))
   }
 

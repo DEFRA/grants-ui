@@ -28,7 +28,7 @@ const landGrantsViewEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader
  * @param {string} actionName
  * @param {string} quantityValue
  * @param {number} [maxQuantity] - Omitted when the action has no availability
- *   restriction, which leaves the input unbounded
+ *   restriction, which leaves the input unbounded and with nothing to describe it
  * @param {string} [unit]
  * @param {string} [errorText] - Error message shown on the input when this action's
  *   quantity failed validation
@@ -86,10 +86,11 @@ function getStaticAvailability(action) {
 
 /**
  * Builds the checkbox hint text: payment rate, consent requirement, and the
- * action's own availability. Every action carries its availability here,
- * whether or not it takes a typed quantity, so the two render identically -
- * a quantity action's conditional panel holds only the input itself. The
- * span's id is what the client keeps in sync live (see updateHintLive).
+ * action's own availability. Availability sits here for every action, quantity
+ * or not - directly under the rate and above the conditional panel, so partial
+ * and whole-parcel actions render alike and the "Quantity" label and its input
+ * are the only things inside the conditional panel. The span's id is what the
+ * client keeps in sync live (see updateHintLive).
  * @param {Action} action
  * @returns {string}
  */

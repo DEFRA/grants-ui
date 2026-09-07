@@ -89,6 +89,14 @@ describe('SelectActionsPageController', () => {
     vi.clearAllMocks()
   })
 
+  /** land-grants-api rejecting one action. `passed: false` is what marks the
+   *  message as a failure - the controller filters on it. */
+  const mockValidationFailure = (code, description) =>
+    validateApplication.mockResolvedValue({
+      valid: false,
+      errorMessages: [{ code, description, passed: false }]
+    })
+
   test('has the select-actions view name', () => {
     expect(controller.viewName).toBe('select-actions')
   })
@@ -410,9 +418,27 @@ describe('SelectActionsPageController', () => {
     })
 
     test.each([
-      ['has no submitted quantity', { landAction: 'UPL2' }],
-      ['has a submitted quantity of 0', { landAction: 'UPL2', landActionQuantity_UPL2: '0' }]
-    ])('should show an error and not save state when a quantity-required action %s', async (_case, payload) => {
+      [
+        'has no submitted quantity',
+        { landAction: 'UPL2' },
+        'Enter a quantity for Heavy livestock grazing on moorland: UPL2'
+      ],
+      [
+        'has a submitted quantity of 0',
+        { landAction: 'UPL2', landActionQuantity_UPL2: '0' },
+        'Enter a quantity for Heavy livestock grazing on moorland: UPL2'
+      ],
+      [
+        'has a non-numeric submitted quantity',
+        { landAction: 'UPL2', landActionQuantity_UPL2: 'as' },
+        'Quantity for Heavy livestock grazing on moorland: UPL2 must be 4 decimal places or fewer'
+      ],
+      [
+        'has a submitted quantity with more than 4 decimal places',
+        { landAction: 'UPL2', landActionQuantity_UPL2: '11.22001' },
+        'Quantity for Heavy livestock grazing on moorland: UPL2 must be 4 decimal places or fewer'
+      ]
+    ])('should show an error and not save state when a quantity-required action %s', async (_case, payload, text) => {
       mockRequest.payload = payload
 
       await post()
@@ -420,17 +446,21 @@ describe('SelectActionsPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions',
         expect.objectContaining({
-          errors: [
-            {
-              text: 'Enter a quantity for Heavy livestock grazing on moorland: UPL2',
-              href: '#landActionQuantity_UPL2',
-              code: 'UPL2'
-            }
-          ]
+          errors: [{ text, href: '#landActionQuantity_UPL2', code: 'UPL2' }]
         })
       )
       expect(controller.setState).not.toHaveBeenCalled()
       expect(controller.proceed).not.toHaveBeenCalled()
+    })
+
+    test('should normalise a bare decimal quantity to a leading-zero value before saving state', async () => {
+      mockRequest.payload = { landAction: 'UPL2', landActionQuantity_UPL2: '.5' }
+
+      await post()
+
+      expect(controller.setState).toHaveBeenCalled()
+      const stateArg = controller.setState.mock.calls[0][1]
+      expect(stateArg.landParcels['sheet1-parcel1'].actionsObj.UPL2.value).toBe(0.5)
     })
 
     test('should store the submitted quantity override for an action that requires one', async () => {
@@ -473,23 +503,20 @@ describe('SelectActionsPageController', () => {
 
     test('should show validation errors from API', async () => {
       mockRequest.payload = { landAction: 'CMOR1', action: 'validate' }
-      validateApplication.mockResolvedValue({
-        valid: false,
-        errorMessages: [{ code: 'CMOR1', description: 'Invalid area', passed: false }]
-      })
+      mockValidationFailure('CMOR1', 'Invalid area')
 
       await post()
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions',
         expect.objectContaining({
-          errors: [{ text: 'Invalid area: CMOR1', href: '#landActionQuantity_CMOR1' }]
+          errors: [{ text: 'Invalid area', href: '#landActionQuantity_CMOR1', code: 'CMOR1' }]
         })
       )
       expect(controller.proceed).not.toHaveBeenCalled()
     })
 
-    test('should show the recomputed available area in the quantity hint when application validation fails', async () => {
+    test('should show the recomputed available area in the checkbox hint when application validation fails', async () => {
       mockRequest.payload = {
         landAction: ['UPL1', 'UPL2'],
         landActionQuantity_UPL2: '1',
@@ -502,10 +529,7 @@ describe('SelectActionsPageController', () => {
           { code: 'UPL2', availability: { unit: 'ha', value: 2 } }
         ]
       })
-      validateApplication.mockResolvedValue({
-        valid: false,
-        errorMessages: [{ code: 'UPL2', description: 'Not enough available area', passed: false }]
-      })
+      mockValidationFailure('UPL2', 'Not enough available area')
 
       await post()
 
@@ -516,19 +540,29 @@ describe('SelectActionsPageController', () => {
       expect(upl2.html).not.toContain('3 hectares available')
     })
 
+    test('should report an API validation error with the same wording in the summary and on the field', async () => {
+      mockRequest.payload = { landAction: 'UPL2', landActionQuantity_UPL2: '10', action: 'validate' }
+      mockValidationFailure('UPL2', 'The amount of land must be the same as or less than the available area')
+
+      await post()
+
+      const { errors, actionItems } = mockH.view.mock.calls[0][1]
+      const upl2 = actionItems.find((item) => item.value === 'UPL2')
+
+      expect(errors[0].text).toBe('The amount of land must be the same as or less than the available area')
+      expect(upl2.conditional.html).toContain(errors[0].text)
+    })
+
     test('should link a validation error to the specific action quantity input by code, not position', async () => {
       mockRequest.payload = { landAction: ['CMOR1', 'UPL1'], action: 'validate' }
-      validateApplication.mockResolvedValue({
-        valid: false,
-        errorMessages: [{ code: 'UPL1', description: 'Invalid quantity', passed: false }]
-      })
+      mockValidationFailure('UPL1', 'Invalid quantity')
 
       await post()
 
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions',
         expect.objectContaining({
-          errors: [{ text: 'Invalid quantity: UPL1', href: '#landActionQuantity_UPL1' }]
+          errors: [{ text: 'Invalid quantity', href: '#landActionQuantity_UPL1', code: 'UPL1' }]
         })
       )
     })
