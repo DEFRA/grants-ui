@@ -1,15 +1,31 @@
 import { ACTION_QUANTITY_FIELD_PREFIX, getActionQuantityFieldName } from '../../../shared/action-quantity-field.js'
+import {
+  getQuantityError,
+  isValidQuantity,
+  normaliseQuantityInput
+} from '../../../shared/action-quantity-validation.js'
+import {
+  AVAILABLE_UNIT_ATTR,
+  CHECKBOX_NAME,
+  LIVE_AVAILABLE_AREA_ATTR,
+  TOTAL_CHOSEN_AREA_ATTR,
+  clearChosenArea,
+  clearErrorOnLoad,
+  getChosenArea,
+  getCheckboxes,
+  getLiveAvailableArea,
+  getQuantityInput,
+  getTotalAvailableArea,
+  isProtectedFromRefresh,
+  setChosenArea
+} from './action-checkbox-state.js'
+import { clearQuantityError, showQuantityError } from './quantity-error-display.js'
 import { formatUnit } from '../../../shared/format-unit.js'
 import { getAvailabilityLimit } from '../../../shared/availability.js'
 import { isValidCompoundParcelId } from '../../../shared/format-parcel.js'
 
-const CHECKBOX_NAME = 'landAction'
 const UNAVAILABLE_MESSAGE = 'Not compatible with other selected actions.'
 const UNAVAILABLE_CLASS = 'select-actions-unavailable-message'
-const AVAILABLE_UNIT_ATTR = 'data-available-unit'
-const TOTAL_AVAILABLE_AREA_ATTR = 'data-total-available-area'
-const LIVE_AVAILABLE_AREA_ATTR = 'data-live-available-area'
-const TOTAL_CHOSEN_AREA_ATTR = 'data-total-chosen-area'
 const REFRESH_BANNER_MESSAGE = 'Updating available land for this action…'
 const REFRESH_BANNER_CLASS = 'select-actions-refresh-banner'
 const REFRESH_BANNER_HIDDEN_CLASS = 'select-actions-refresh-banner--hidden'
@@ -19,60 +35,6 @@ const REFRESH_BANNER_HIDDEN_CLASS = 'select-actions-refresh-banner--hidden'
  * @param {string} unit
  */
 const availabilityHintText = (value, unit) => `${value} ${formatUnit(unit)} available`
-
-/** @param {HTMLElement} form */
-function getCheckboxes(form) {
-  return /** @type {HTMLInputElement[]} */ (
-    Array.from(form.querySelectorAll(`input[type="checkbox"][name="${CHECKBOX_NAME}"]`))
-  )
-}
-
-/**
- * A quantity action's real, user-facing input - a non-quantity action shares
- * the same field name for its hidden chosen-area field instead (type="hidden"), so this returns null for it.
- * @param {HTMLInputElement} checkbox
- * @returns {HTMLInputElement | null}
- */
-function getQuantityInput(checkbox) {
-  const field = /** @type {HTMLInputElement | null} */ (
-    document.getElementById(getActionQuantityFieldName(checkbox.value))
-  )
-  return field?.type === 'hidden' ? null : field
-}
-
-/**
- * A non-quantity action's hidden field carrying its chosen area - shares its field name with getQuantityInput.
- * @param {HTMLInputElement} checkbox
- * @returns {HTMLInputElement | null}
- */
-function getChosenAreaField(checkbox) {
-  const field = /** @type {HTMLInputElement | null} */ (
-    document.getElementById(getActionQuantityFieldName(checkbox.value))
-  )
-  return field?.type === 'hidden' ? field : null
-}
-
-/**
- * A checked action redisplayed from a rejected submission (see
- * data-error-on-load) must keep its own checked state, typed value and
- * chosen area untouched by the live refresh, until the user directly
- * interacts with it - clearErrorOnLoad below is what ends this.
- * @param {HTMLInputElement} checkbox
- * @returns {boolean}
- */
-function isProtectedFromRefresh(checkbox) {
-  return checkbox.checked && Boolean(checkbox.dataset.errorOnLoad)
-}
-
-/**
- * A direct interaction with this checkbox (or its own quantity input) means
- * its rejected value is no longer what's protected - a fresh claim, however
- * it turns out, must be trusted and reflected normally from here on.
- * @param {HTMLInputElement} checkbox
- */
-function clearErrorOnLoad(checkbox) {
-  delete checkbox.dataset.errorOnLoad
-}
 
 /**
  * A non-quantity checkbox has no conditional panel, so its banner is lazily created/removed here instead.
@@ -127,79 +89,6 @@ function disableOtherActions(form, triggeringCheckbox) {
   }
 }
 
-/** @param {HTMLInputElement} checkbox
- * @returns {number | undefined}
- */
-function getTotalAvailableArea(checkbox) {
-  // An action with no availability restriction renders no usable value here,
-  // and Number('') is 0 - which would read as a zero ceiling, not "no ceiling".
-  const raw = checkbox.getAttribute(TOTAL_AVAILABLE_AREA_ATTR)
-  if (raw == null || raw.trim() === '') {
-    return undefined
-  }
-  const value = Number(raw)
-  return Number.isFinite(value) ? value : undefined
-}
-
-/**
- * Headroom left for OTHER actions, most recently reported by the API.
- * @param {HTMLInputElement} checkbox
- * @returns {number | undefined}
- */
-function getLiveAvailableArea(checkbox) {
-  const raw = checkbox.getAttribute(LIVE_AVAILABLE_AREA_ATTR)
-  if (raw == null) {
-    return getTotalAvailableArea(checkbox)
-  }
-  const value = Number(raw)
-  return Number.isFinite(value) ? value : undefined
-}
-
-/**
- * What a checked action currently holds - its own hidden field (non-quantity)
- * or data-total-chosen-area (quantity action, which has no hidden field of
- * its own). A non-quantity action can never genuinely claim exactly 0 (that's
- * the same as not being checked), so a 0 hidden-field value - the server's
- * default before any claim is established - reads as "not yet established".
- * @param {HTMLInputElement} checkbox
- * @returns {number | undefined}
- */
-function getChosenArea(checkbox) {
-  if (getQuantityInput(checkbox)) {
-    const raw = checkbox.getAttribute(TOTAL_CHOSEN_AREA_ATTR)
-    const chosenArea = raw == null ? Number.NaN : Number(raw)
-    return Number.isFinite(chosenArea) ? chosenArea : undefined
-  }
-  const value = Number(getChosenAreaField(checkbox)?.value)
-  return Number.isFinite(value) && value > 0 ? value : undefined
-}
-
-/**
- * Records a non-quantity action's chosen area in its hidden field, for both live client use and form submission.
- * @param {HTMLInputElement} checkbox
- * @param {number} chosenArea
- */
-function setChosenArea(checkbox, chosenArea) {
-  const field = getChosenAreaField(checkbox)
-  if (field) {
-    field.value = String(chosenArea)
-  }
-}
-
-/**
- * @param {HTMLInputElement} checkbox
- */
-function clearChosenArea(checkbox) {
-  if (getQuantityInput(checkbox)) {
-    checkbox.removeAttribute(TOTAL_CHOSEN_AREA_ATTR)
-    return
-  }
-  const field = getChosenAreaField(checkbox)
-  if (field) {
-    field.value = '0'
-  }
-}
-
 /**
  * A typed quantity is valid up to the action's own static total - not the
  * live/competed max, which can read lower than a value that's still valid.
@@ -208,9 +97,27 @@ function clearChosenArea(checkbox) {
  */
 function getValidTypedQuantity(checkbox) {
   const quantityInput = getQuantityInput(checkbox)
-  const typed = Number(quantityInput?.value.trim())
-  const max = getTotalAvailableArea(checkbox)
-  return typed > 0 && (max == null || typed <= max) ? typed : undefined
+  const raw = quantityInput?.value ?? ''
+  return isValidQuantity(raw, getTotalAvailableArea(checkbox)) ? Number(normaliseQuantityInput(raw)) : undefined
+}
+
+/**
+ * Rewrites a quantity field to its normalised form (".5" becomes "0.5").
+ * @param {HTMLInputElement} checkbox
+ */
+function normaliseAndValidateQuantity(checkbox) {
+  const quantityInput = getQuantityInput(checkbox)
+  if (!quantityInput) {
+    return
+  }
+  quantityInput.value = normaliseQuantityInput(quantityInput.value)
+  const message =
+    quantityInput.value === '' ? null : getQuantityError(quantityInput.value, getTotalAvailableArea(checkbox))
+  if (message) {
+    showQuantityError(quantityInput, message)
+  } else {
+    clearQuantityError(quantityInput)
+  }
 }
 
 /**
@@ -254,6 +161,8 @@ function uncheckUnconfirmedQuantityActions(form) {
       quantityInput.value = ''
       hideConditionalReveal(checkbox)
     }
+
+    clearQuantityError(quantityInput)
   }
 }
 
@@ -328,6 +237,7 @@ function markUnavailable(checkbox, quantityInput = getQuantityInput(checkbox)) {
   if (quantityInput) {
     quantityInput.value = ''
     quantityInput.disabled = true
+    clearQuantityError(quantityInput)
   }
   hideConditionalReveal(checkbox)
   toggleUnavailableMessage(checkbox, true)
@@ -762,6 +672,7 @@ function bindQuantityFocusBlurHandlers(form, refreshAvailability) {
     }
     if (/** @type {HTMLInputElement} */ (event.target).value !== valueOnFocus) {
       clearErrorOnLoad(checkbox)
+      clearQuantityError(getQuantityInput(checkbox))
     }
     if (pending) {
       clearTimeout(pending.timer)
@@ -778,9 +689,12 @@ function bindQuantityFocusBlurHandlers(form, refreshAvailability) {
   form.addEventListener(
     'blur',
     (event) => {
-      if (getCheckboxForQuantityTarget(form, event.target)) {
-        flushPending()
+      const checkbox = getCheckboxForQuantityTarget(form, event.target)
+      if (!checkbox) {
+        return
       }
+      normaliseAndValidateQuantity(checkbox)
+      flushPending()
     },
     true
   )
