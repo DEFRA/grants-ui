@@ -7,12 +7,7 @@
 
 import { ACTION_QUANTITY_FIELD_PREFIX } from '../../../shared/action-quantity-field.js'
 import { isValidCompoundParcelId } from '../../../shared/format-parcel.js'
-import {
-  CHECKBOX_NAME,
-  clearChosenArea,
-  clearErrorOnLoad,
-  getQuantityInput
-} from './action-checkbox-state.js'
+import { CHECKBOX_NAME, clearChosenArea, clearErrorOnLoad, getQuantityInput } from './action-checkbox-state.js'
 import { clearQuantityError } from './quantity-error-display.js'
 import {
   buildPlannedActions,

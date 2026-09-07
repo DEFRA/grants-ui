@@ -7,7 +7,11 @@
  */
 
 import { getActionQuantityFieldName } from '../../../shared/action-quantity-field.js'
-import { getQuantityError, isValidQuantity, normaliseQuantityInput } from '../../../shared/action-quantity-validation.js'
+import {
+  getQuantityError,
+  isValidQuantity,
+  normaliseQuantityInput
+} from '../../../shared/action-quantity-validation.js'
 import {
   AVAILABLE_UNIT_ATTR,
   LIVE_AVAILABLE_AREA_ATTR,
