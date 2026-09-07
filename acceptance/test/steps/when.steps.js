@@ -10,6 +10,10 @@ When('(the user )clicks on {string}', async function (text) {
   await this.page.locator(`//*[contains(text(),'${text}')]`).click()
 })
 
+When('(the user )clicks button {string}', async function (text) {
+  await this.page.getByRole('button', { name: text }).click()
+})
+
 When('(the user )waits for {int} seconds', async function (seconds) {
   await this.page.waitForTimeout(seconds * 1000)
 })
