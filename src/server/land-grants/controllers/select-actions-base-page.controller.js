@@ -8,6 +8,7 @@ import {
 } from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
 import { getParcelIdFromQuery } from '../utils/parcel-request.utils.js'
 import { getLandGrantsUserContext } from '../services/land-grants-user-context.js'
+import { getQuantityErrorsByCode, normaliseQuantityFields } from '../utils/select-actions-payload.utils.js'
 
 /** fallback path when no predecessor page is found. */
 const SELECT_LAND_PARCEL_PATH = '/select-land-parcel'
@@ -328,7 +329,7 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
     const flatActions = (result?.actions || []).flatMap((a) => a.actions || [a])
     const prevAddedActions = getAddedActionsForStateParcel(prevState, selectedLandParcel)
     const addedActions = payload ? getAddedActionsFromPayload(payload, flatActions, prevAddedActions) : prevAddedActions
-    const quantityErrorsByCode = Object.fromEntries(errors.filter((e) => e.code).map((e) => [e.code, e.text]))
+    const quantityErrorsByCode = getQuantityErrorsByCode(errors)
     return this.renderErrorView(h, request, context, {
       errors,
       selectedLandParcel,
@@ -373,9 +374,7 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
       if (!valid) {
         const failedMessages = errorMessages.filter((e) => !e.passed)
         const validationErrors = this.buildValidationErrors(payload, failedMessages)
-        const quantityErrorsByCode = Object.fromEntries(
-          failedMessages.filter((e) => e.code).map((e) => [e.code, e.description])
-        )
+        const quantityErrorsByCode = getQuantityErrorsByCode(validationErrors)
 
         const addedActions = this.getAddedActionsForValidationError(payload, actions, state, selectedLandParcel)
         return this.renderErrorView(h, request, context, {
@@ -419,7 +418,7 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
    */
   async handlePost(request, context, h) {
     const { state: prevState } = context
-    const payload = request.payload ?? {}
+    const payload = normaliseQuantityFields(request.payload ?? {})
     const parcel = this.resolveParcelContext(request)
 
     const errors = this.validateUserInput(payload)

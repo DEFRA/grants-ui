@@ -1,14 +1,25 @@
+/**
+ * Binds the DOM events that drive select-actions-availability.js's engine:
+ * checkbox changes, quantity-field focus/blur/debounced-input, and the
+ * submit guard. select-actions-page.js is the entry point that calls
+ * initSelectActionsPage, this module's only export.
+ */
+
 import { ACTION_QUANTITY_FIELD_PREFIX } from '../../../shared/action-quantity-field.js'
 import { isValidCompoundParcelId } from '../../../shared/format-parcel.js'
 import {
   CHECKBOX_NAME,
-  getQuantityInput,
-  getValidTypedQuantity,
-  buildPlannedActions,
+  clearChosenArea,
   clearErrorOnLoad,
+  getQuantityInput
+} from './action-checkbox-state.js'
+import { clearQuantityError } from './quantity-error-display.js'
+import {
+  buildPlannedActions,
   createAvailabilityRefresher,
-  seedConfirmedQuantities,
-  handleCheckboxToggled
+  getValidTypedQuantity,
+  normaliseAndValidateQuantity,
+  seedConfirmedQuantities
 } from './select-actions-availability.js'
 
 /**
@@ -60,8 +71,17 @@ function bindCheckboxChangeHandler(form, refreshAvailability) {
     if (!(target instanceof HTMLInputElement) || target.type !== 'checkbox' || target.name !== CHECKBOX_NAME) {
       return
     }
-    handleCheckboxToggled(target)
-    if (target.checked && getQuantityInput(target) && getValidTypedQuantity(target) == null) {
+    clearErrorOnLoad(target)
+    const quantityInput = getQuantityInput(target)
+    if (!target.checked) {
+      if (quantityInput) {
+        // Clear a stale typed quantity on uncheck.
+        quantityInput.value = ''
+      }
+      // A future re-check must claim afresh, not resend an old claim.
+      clearChosenArea(target)
+    }
+    if (target.checked && quantityInput && getValidTypedQuantity(target) == null) {
       return
     }
     refreshAvailability(target)
@@ -133,6 +153,7 @@ function bindQuantityFocusBlurHandlers(form, refreshAvailability) {
     }
     if (/** @type {HTMLInputElement} */ (event.target).value !== valueOnFocus) {
       clearErrorOnLoad(checkbox)
+      clearQuantityError(getQuantityInput(checkbox))
     }
     if (pending) {
       clearTimeout(pending.timer)
@@ -149,9 +170,12 @@ function bindQuantityFocusBlurHandlers(form, refreshAvailability) {
   form.addEventListener(
     'blur',
     (event) => {
-      if (getCheckboxForQuantityTarget(form, event.target)) {
-        flushPending()
+      const checkbox = getCheckboxForQuantityTarget(form, event.target)
+      if (!checkbox) {
+        return
       }
+      normaliseAndValidateQuantity(checkbox)
+      flushPending()
     },
     true
   )
