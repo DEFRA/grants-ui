@@ -20,7 +20,7 @@ import { getConsentRequirementText } from '~/src/server/land-grants/view-models/
 const QUANTITY_INPUT_TEMPLATE = 'quantity-input/template.njk'
 const CHOSEN_AREA_TEMPLATE = 'chosen-area/template.njk'
 const ACTION_LABEL_TEMPLATE = 'action-label/template.njk'
-const TOTAL_ACTION_AREA_GUIDANCE = 'This action will use all the available area on this land parcel.'
+const ACTION_HINT_TEMPLATE = 'action-hint/template.njk'
 const landGrantsViewEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader([govukFrontendPath, ...viewPaths]), {
   autoescape: true
 })
@@ -125,20 +125,18 @@ function getStaticAvailability(action) {
  */
 function getHintHtml(action, needsQuantity, chosenArea) {
   const requirementText = getConsentRequirementText(getActionConsentKeys(action))
-  const agreementRateText = action.ratePerAgreementPerYearGbp
-    ? ` and <strong>£${action.ratePerAgreementPerYearGbp}</strong> per agreement`
-    : ''
-  const requirementLineText = requirementText ? `<br>${requirementText}` : ''
-  const rateText = `Payment rate per year: £${action.ratePerUnitGbp?.toFixed(2)}/ha${agreementRateText}${requirementLineText}`
   const limit = getAvailabilityLimit(action.availability)
   const availabilityText = needsQuantity
     ? `${limit} ${formatUnit(action.availability?.unit)} available`
     : availableAreaText(limit ?? 0, action.availability?.unit)
-  const availabilityHintHtml =
-    limit != null || (!needsQuantity && chosenArea != null)
-      ? `<br><span id="${getActionQuantityFieldName(action.code)}-hint">${availabilityText}</span>`
-      : ''
-  return `${rateText}${availabilityHintHtml}${needsQuantity ? '' : `<span class="select-actions-guidance">${TOTAL_ACTION_AREA_GUIDANCE}</span>`}`
+  return landGrantsViewEnv.render(ACTION_HINT_TEMPLATE, {
+    rate: String(action.ratePerUnitGbp?.toFixed(2)),
+    agreementRate: action.ratePerAgreementPerYearGbp,
+    requirementText,
+    hintId: `${getActionQuantityFieldName(action.code)}-hint`,
+    availabilityText: limit != null || (!needsQuantity && chosenArea != null) ? availabilityText : undefined,
+    showTotalGuidance: !needsQuantity
+  })
 }
 
 /**
