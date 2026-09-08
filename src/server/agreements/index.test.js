@@ -9,6 +9,9 @@ import { fetchBusinessPermissions } from '~/src/server/common/services/consolida
 import { catchAll } from '~/src/server/common/helpers/errors.js'
 import { nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
 import { config } from '~/src/config/config.js'
+import { PermissionError } from '~/src/server/common/utils/errors/PermissionError.js'
+import { log } from '~/src/server/common/helpers/logging/log.js'
+import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 
 vi.mock('./controller.js', () => ({
   getAgreementController: { handler: vi.fn(() => 'Agreements journey') }
@@ -87,6 +90,20 @@ describe('Agreements route permissions', () => {
       expect(response.headers['content-type']).toContain('text/html')
       expect(response.payload).toContain('You do not have permission to view this page')
       expect(getAgreementController.handler).not.toHaveBeenCalled()
+      expect(log).toHaveBeenCalledExactlyOnceWith(
+        LogCodes.PERMISSIONS.ACCESS_DENIED,
+        expect.objectContaining({
+          errorMessage: 'Insufficient permissions',
+          status: 403,
+          source: 'enforceAgreementPermission',
+          reason: 'insufficient_permissions',
+          resource: 'csAgreements',
+          permission: 'submit',
+          path: route.url,
+          userId: 'test-crn'
+        }),
+        expect.any(Object)
+      )
     })
 
     it('requires an authenticated session', async () => {
@@ -106,8 +123,6 @@ describe('Agreements route permissions', () => {
   })
 
   it('denies access if the permission checker is unavailable', () => {
-    expect(() => enforceAgreementPermission({}, { continue: Symbol('continue') })).toThrow(
-      expect.objectContaining({ output: expect.objectContaining({ statusCode: 403 }) })
-    )
+    expect(() => enforceAgreementPermission({}, { continue: Symbol('continue') })).toThrow(expect.any(PermissionError))
   })
 })
