@@ -1,9 +1,5 @@
-/**
- * Binds the DOM events that drive select-actions-availability.js's engine:
- * checkbox changes, quantity-field focus/blur/debounced-input, and the
- * submit guard. select-actions-page.js is the entry point that calls
- * initSelectActionsPage, this module's only export.
- */
+// Binds the DOM events that drive select-actions-availability.js's engine.
+// select-actions-page.js is the entry point that calls initSelectActionsPage.
 
 import { ACTION_QUANTITY_FIELD_PREFIX } from '../../../shared/action-quantity-field.js'
 import { isValidCompoundParcelId } from '../../../shared/format-parcel.js'
@@ -17,26 +13,16 @@ import {
   seedConfirmedQuantities
 } from './select-actions-availability.js'
 
-/**
- * The form's own submit control, however govukButton rendered it - a
- * <button> by default, or an <input> if the page overrides element: 'input'.
- * Scoped to THIS form's descendants (not document.querySelector) - the page
- * can have other forms on it (e.g. the cookie banner, rendered as a sibling
- * form earlier in the DOM), which must never be reached from here.
- * @param {HTMLElement} form
+// Scoped to form.querySelector, not document - other forms can exist on the
+// page (e.g. the cookie banner) and must never be reached from here.
+/** @param {HTMLElement} form
  * @returns {HTMLButtonElement | HTMLInputElement | null}
  */
 function getSubmitButton(form) {
   return form.querySelector('button[type="submit"], input[type="submit"]')
 }
 
-/**
- * Disables the submit button while a refresh is in flight, so the user sees
- * why they can't proceed yet rather than clicking into bindSubmitGuard's
- * silent no-op. aria-disabled mirrors what govukButton itself renders for a
- * server-disabled button (see button/template.njk), so this reads the same
- * way to assistive tech as a page that loaded already disabled.
- * @param {HTMLButtonElement | HTMLInputElement} button
+/** @param {HTMLButtonElement | HTMLInputElement} button
  * @param {boolean} isLoading
  */
 function toggleSubmitButtonDisabled(button, isLoading) {
@@ -47,8 +33,7 @@ function toggleSubmitButtonDisabled(button, isLoading) {
 /**
  * Tracks chains currently running, including overlapping ones (e.g. the
  * untriggered init refresh racing a user's own change) - see bindSubmitGuard.
- * Also disables the submit button for the same span, so the user sees why
- * they can't proceed yet rather than hitting bindSubmitGuard's silent no-op.
+ * Also disables the submit button for the same span.
  * @param {(triggeringCheckbox?: HTMLInputElement) => Promise<void>} refreshAvailability
  * @param {HTMLButtonElement | HTMLInputElement | null} submitButton
  * @returns {{
@@ -78,13 +63,9 @@ function withInFlightTracking(refreshAvailability, submitButton) {
   return { refreshAvailability: tracked, isRefreshInFlight: () => inFlightCount > 0 }
 }
 
-/**
- * Blocks a submit mid-refresh - disableOtherActions' disabled fields would
- * otherwise drop silently from it. Belt-and-braces alongside the disabled
- * submit button (see withInFlightTracking): a disabled button already stops
- * a click/Enter-on-button submit, but Enter pressed in a text field submits
- * the form directly, bypassing the button's own disabled state entirely.
- * @param {HTMLElement} form
+// Belt-and-braces alongside the disabled button: Enter in a text field
+// submits the form directly, bypassing the button's disabled state.
+/** @param {HTMLElement} form
  * @param {() => boolean} isRefreshInFlight
  */
 function bindSubmitGuard(form, isRefreshInFlight) {
