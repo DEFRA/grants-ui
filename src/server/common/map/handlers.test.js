@@ -131,17 +131,19 @@ describe('parcelsHandler', () => {
   })
 
   it('counts only available actions enabled for the current grant journey', async () => {
-    fetchParcels.mockResolvedValue([
+    fetchParcels.mockImplementation(async (_request, _userContext, includeActions) => [
       {
         sheetId: 'SD7148',
         parcelId: '9160',
         area: { value: 2.5 },
-        actions: [
-          { code: 'CLIG3', availability: { value: 0, unit: 'ha' } },
-          { code: 'CSAM3', availability: { value: 0, unit: 'ha' } },
-          { code: 'SCR2', availability: { value: 2, unit: 'ha' } },
-          { code: 'WBD1', availability: { value: 3, unit: 'ha' } }
-        ]
+        actions: includeActions
+          ? [
+              { code: 'CLIG3', availability: { value: 0, unit: 'ha' } },
+              { code: 'CSAM3', availability: { value: 0, unit: 'ha' } },
+              { code: 'SCR2', availability: { value: 2, unit: 'ha' } },
+              { code: 'WBD1', availability: { value: 3, unit: 'ha' } }
+            ]
+          : []
       }
     ])
     fetchParcelTileLocation.mockResolvedValue(null)
