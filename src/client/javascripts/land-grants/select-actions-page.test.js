@@ -107,10 +107,14 @@ function setupDom(items, { hasErrors = false, summaryErrors = [] } = {}) {
         <div class="govuk-checkboxes" data-module="govuk-checkboxes">
           ${withErrorFlag.map(checkboxItemHtml).join('\n')}
         </div>
+        <button type="submit" class="govuk-button" data-module="govuk-button">Continue</button>
       </form>
     </div>`
   return document.querySelector('form')
 }
+
+/** @param {HTMLElement} form */
+const submitButton = (form) => form.querySelector('button[type="submit"]')
 
 /** @param {HTMLInputElement} checkbox */
 function isConditionalHidden(checkbox) {
@@ -2088,6 +2092,75 @@ describe('initSelectActionsPage', () => {
     expect(checkbox(form, 'CLIG3').disabled).toBe(false)
     expect(getChosenAreaFieldValue(checkbox(form, 'CMOR1'))).toBe('3')
     expect(isSubmitBlocked(form)).toBe(false)
+  })
+
+  it('disables the submit button while a refresh is in flight, and re-enables it once settled', async () => {
+    const form = setupDom([
+      { code: 'CSAM3', checked: true, availability: { value: 10, unit: 'ha' } },
+      { code: 'CLIG3', availability: { value: 5, unit: 'ha' } }
+    ])
+    await initSettled(form, fetchOk({ actions: [] }))
+
+    expect(submitButton(form).disabled).toBe(false)
+    expect(submitButton(form).getAttribute('aria-disabled')).toBe('false')
+
+    let resolveFetch
+    global.fetch = vi.fn().mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = () => resolve({ ok: true, json: () => Promise.resolve({ actions: [] }) })
+        })
+    )
+    checkbox(form, 'CLIG3').checked = true
+    checkbox(form, 'CLIG3').dispatchEvent(new Event('change', { bubbles: true }))
+
+    expect(submitButton(form).disabled).toBe(true)
+    expect(submitButton(form).getAttribute('aria-disabled')).toBe('true')
+
+    resolveFetch()
+    await flushPromises()
+
+    expect(submitButton(form).disabled).toBe(false)
+    expect(submitButton(form).getAttribute('aria-disabled')).toBe('false')
+  })
+
+  it('keeps the submit button disabled across a growth follow-up chain, only re-enabling once it settles', async () => {
+    const form = setupDom([
+      { code: 'CMOR1', checked: true, availability: { value: 10, unit: 'ha' }, chosenArea: 1 },
+      { code: 'CLIG3', availability: { value: 10, unit: 'ha' } }
+    ])
+    await initSettled(form, fetchOk({ actions: [] }))
+
+    const pending = []
+    global.fetch = vi.fn().mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          pending.push(resolve)
+        })
+    )
+
+    await toggle(form, 'CLIG3', true)
+
+    expect(submitButton(form).disabled).toBe(true)
+
+    // Growth reported - a follow-up request fires, button must stay disabled
+    // rather than flash enabled in the gap before that follow-up's own fetch.
+    pending.shift()({
+      ok: true,
+      json: () => Promise.resolve({ actions: [{ code: 'CMOR1', availability: { value: 2, unit: 'ha' } }] })
+    })
+    await flushPromises()
+
+    expect(submitButton(form).disabled).toBe(true)
+
+    pending.shift()({
+      ok: true,
+      json: () => Promise.resolve({ actions: [{ code: 'CMOR1', availability: { value: 0, unit: 'ha' } }] })
+    })
+    await flushPromises()
+
+    expect(submitButton(form).disabled).toBe(false)
+    expect(submitButton(form).getAttribute('aria-disabled')).toBe('false')
   })
 })
 

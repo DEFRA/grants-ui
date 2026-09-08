@@ -18,24 +18,60 @@ import {
 } from './select-actions-availability.js'
 
 /**
+ * The form's own submit control, however govukButton rendered it - a
+ * <button> by default, or an <input> if the page overrides element: 'input'.
+ * Scoped to THIS form's descendants (not document.querySelector) - the page
+ * can have other forms on it (e.g. the cookie banner, rendered as a sibling
+ * form earlier in the DOM), which must never be reached from here.
+ * @param {HTMLElement} form
+ * @returns {HTMLButtonElement | HTMLInputElement | null}
+ */
+function getSubmitButton(form) {
+  return form.querySelector('button[type="submit"], input[type="submit"]')
+}
+
+/**
+ * Disables the submit button while a refresh is in flight, so the user sees
+ * why they can't proceed yet rather than clicking into bindSubmitGuard's
+ * silent no-op. aria-disabled mirrors what govukButton itself renders for a
+ * server-disabled button (see button/template.njk), so this reads the same
+ * way to assistive tech as a page that loaded already disabled.
+ * @param {HTMLButtonElement | HTMLInputElement} button
+ * @param {boolean} isLoading
+ */
+function toggleSubmitButtonDisabled(button, isLoading) {
+  button.disabled = isLoading
+  button.setAttribute('aria-disabled', String(isLoading))
+}
+
+/**
  * Tracks chains currently running, including overlapping ones (e.g. the
  * untriggered init refresh racing a user's own change) - see bindSubmitGuard.
+ * Also disables the submit button for the same span, so the user sees why
+ * they can't proceed yet rather than hitting bindSubmitGuard's silent no-op.
  * @param {(triggeringCheckbox?: HTMLInputElement) => Promise<void>} refreshAvailability
+ * @param {HTMLButtonElement | HTMLInputElement | null} submitButton
  * @returns {{
  *   refreshAvailability: (triggeringCheckbox?: HTMLInputElement) => Promise<void>,
  *   isRefreshInFlight: () => boolean
  * }}
  */
-function withInFlightTracking(refreshAvailability) {
+function withInFlightTracking(refreshAvailability, submitButton) {
   let inFlightCount = 0
 
   /** @param {HTMLInputElement} [triggeringCheckbox] */
   async function tracked(triggeringCheckbox) {
     inFlightCount += 1
+    if (submitButton && inFlightCount === 1) {
+      toggleSubmitButtonDisabled(submitButton, true)
+    }
     try {
       await refreshAvailability(triggeringCheckbox)
     } finally {
       inFlightCount -= 1
+      if (submitButton && inFlightCount === 0) {
+        toggleSubmitButtonDisabled(submitButton, false)
+      }
     }
   }
 
@@ -44,7 +80,10 @@ function withInFlightTracking(refreshAvailability) {
 
 /**
  * Blocks a submit mid-refresh - disableOtherActions' disabled fields would
- * otherwise drop silently from it. No queue/auto-resubmit; user tries again.
+ * otherwise drop silently from it. Belt-and-braces alongside the disabled
+ * submit button (see withInFlightTracking): a disabled button already stops
+ * a click/Enter-on-button submit, but Enter pressed in a text field submits
+ * the form directly, bypassing the button's own disabled state entirely.
  * @param {HTMLElement} form
  * @param {() => boolean} isRefreshInFlight
  */
@@ -186,7 +225,10 @@ export function initSelectActionsPage(form) {
     return
   }
 
-  const { refreshAvailability, isRefreshInFlight } = withInFlightTracking(createAvailabilityRefresher(form, parcelId))
+  const { refreshAvailability, isRefreshInFlight } = withInFlightTracking(
+    createAvailabilityRefresher(form, parcelId),
+    getSubmitButton(form)
+  )
 
   seedConfirmedQuantities(form)
 
