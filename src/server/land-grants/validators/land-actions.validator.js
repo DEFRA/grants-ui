@@ -1,7 +1,8 @@
 import { getSelectedActionCodes, SELECTED_ACTIONS_FIELD_NAME } from '../utils/selected-actions-field.js'
 import { getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
 import { requiresQuantityInput } from '~/src/shared/action-quantity-type.js'
-import { QUANTITY_PRECISION, getQuantityError, requiresWholeNumber } from '~/src/shared/action-quantity-validation.js'
+import { requiresWholeNumber } from '~/src/shared/unit-types.js'
+import { QUANTITY_PRECISION, getQuantityError } from '~/src/shared/action-quantity-validation.js'
 
 /**
  * Validators for land actions selection

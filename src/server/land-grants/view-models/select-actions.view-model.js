@@ -8,7 +8,7 @@ import nunjucks from 'nunjucks'
 import { govukFrontendPath, viewPaths } from '~/src/config/nunjucks/view-paths.js'
 import { getActionChosenAreaDisplayId, getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
 import { requiresQuantityInput } from '~/src/shared/action-quantity-type.js'
-import { requiresWholeNumber } from '~/src/shared/action-quantity-validation.js'
+import { requiresWholeNumber, SQUARE_METRES } from '~/src/shared/unit-types.js'
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
 import { formatUnit, areaWithUnit, availableArea } from '~/src/shared/unit-format.js'
 import { getAvailabilityLimit, hasAvailableLand } from '~/src/shared/availability.js'
@@ -26,13 +26,13 @@ const landGrantsViewEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader
 })
 
 /**
- * Keep the established "ha" suffix while making square-metre units
- * understandable to users. The backend may use either spelling.
+ * Keep the established "ha" suffix while making the canonical square-metre unit
+ * understandable to users.
  * @param {string | undefined} unit
  * @returns {string | undefined}
  */
 function getQuantityInputUnit(unit) {
-  return ['sqm', 'm2'].includes(unit?.trim().toLowerCase() ?? '') ? formatUnit(unit) : unit
+  return unit === SQUARE_METRES ? formatUnit(unit) : unit
 }
 
 /**

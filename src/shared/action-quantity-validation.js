@@ -3,10 +3,11 @@
  * validator and the client-side page script.
  */
 
+import { requiresWholeNumber } from './unit-types.js'
+
 export const QUANTITY_PRECISION = 4
 
 const PLAIN_DECIMAL = /^-?(\d+(\.\d*)?|\.\d+)$/
-const WHOLE_NUMBER_UNITS = new Set(['sqm', 'm2', 'count'])
 
 const NOT_A_NUMBER_MESSAGE = 'Enter a number of hectares, for example 12.5 or 100'
 
@@ -15,16 +16,9 @@ export const QUANTITY_ERRORS = {
   NEGATIVE: NOT_A_NUMBER_MESSAGE,
   NOT_GREATER_THAN_ZERO: 'Enter a number greater than 0',
   NOT_WHOLE_NUMBER: 'Must be a whole number',
+  TOO_LARGE: 'Number is too large',
   TOO_MANY_DECIMAL_PLACES: NOT_A_NUMBER_MESSAGE,
   MORE_THAN_AVAILABLE: (max) => `Enter up to ${max} hectares`
-}
-
-/**
- * @param {string | null | undefined} unit
- * @returns {boolean}
- */
-export function requiresWholeNumber(unit) {
-  return WHOLE_NUMBER_UNITS.has(unit?.trim().toLowerCase() ?? '')
 }
 
 /**
@@ -77,6 +71,9 @@ export function getQuantityError(raw, max, unit) {
   if (wholeNumber) {
     if (!Number.isInteger(quantity)) {
       return QUANTITY_ERRORS.NOT_WHOLE_NUMBER
+    }
+    if (!Number.isSafeInteger(quantity)) {
+      return QUANTITY_ERRORS.TOO_LARGE
     }
   } else if (decimalPlaces(value) > QUANTITY_PRECISION) {
     return QUANTITY_ERRORS.TOO_MANY_DECIMAL_PLACES

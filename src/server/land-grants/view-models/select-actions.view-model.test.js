@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { configState } from '~/src/__mocks__/config-mocks.js'
 import {
   mapActionToViewModel,
@@ -13,6 +13,9 @@ vi.mock('~/src/config/config.js', async () => {
 })
 
 describe('select-actions.view-model', () => {
+  afterEach(() => {
+    configState.reset()
+  })
   const sam1 = (extra) => ({ code: 'SAM1', description: 'Test Action 1', ratePerUnitGbp: 100.5, ...extra })
   const csam3 = (availability) => ({
     code: 'CSAM3',
@@ -418,27 +421,49 @@ describe('select-actions.view-model', () => {
       expect(result.attributes['data-total-available-area']).toBeUndefined()
       expect(result.attributes['data-available-unit']).toBe('ha')
     })
-    it('should infer a quantity input for an unrestricted square-metre action', () => {
+    it('should infer an unrestricted quantity input for a square-metre action without unrelated warnings or fields', () => {
       configState.set('landGrants.enableHeferFeature', true)
-      const result = mapActionToViewModel(
-        {
-          code: 'HEF1',
-          description: 'Maintain weatherproof traditional farm or forestry buildings: HEF1',
-          ratePerUnitGbp: 5,
-          availability: { value: null, unit: 'sqm' },
-          heferRequired: true
-        },
-        []
-      )
-      configState.reset()
+      const action = {
+        code: 'HEF1',
+        description: 'Maintain weatherproof traditional farm or forestry buildings: HEF1',
+        ratePerUnitGbp: 5,
+        availability: { value: null, unit: 'sqm' },
+        heferRequired: true,
+        guidanceUrl:
+          'https://www.gov.uk/find-funding-for-land-or-farms/hef1-maintain-weatherproof-traditional-farm-or-forestry-buildings'
+      }
 
-      expect(result.conditional.html).toContain('name="landActionQuantity_HEF1"')
+      const result = mapActionToViewModel(action, [])
+
+      expect(result.conditional.html).toContain('id="landActionQuantity_HEF1"')
       expect(result.conditional.html).toContain('inputmode="numeric"')
       expect(result.conditional.html).toContain('>square metres<')
+      expect(result.conditional.html).not.toContain('max=')
+      expect(result.conditional.html).not.toContain('landActionQuantity_HEF1-hint')
+      expect(result.conditional.html).not.toContain('aria-describedby=')
+      expect(result.html).not.toContain('id="landActionQuantity_HEF1-hint"')
+      expect(result.html).not.toContain('SSSI')
       expect(result.html).toContain('Payment rate per year: £5.00/sqm')
       expect(result.html).toContain('Requires an SFI HEFER')
-      expect(result.html).not.toContain('metres available')
-      expect(result.html).not.toContain('This action will use all the available area on this land parcel.')
+      expect(result.html).toContain(
+        'href="https://www.gov.uk/find-funding-for-land-or-farms/hef1-maintain-weatherproof-traditional-farm-or-forestry-buildings"'
+      )
+      expect(getChosenAreaFieldsHtml([action], [])).toBe('')
+    })
+
+    it('should infer an unrestricted numeric quantity input for a count action without a hidden field', () => {
+      const action = {
+        code: 'WBD1',
+        description: 'Countable action',
+        ratePerUnitGbp: 5,
+        availability: { value: null, unit: 'count' }
+      }
+
+      const result = mapActionToViewModel(action, [])
+
+      expect(result.conditional.html).toContain('id="landActionQuantity_WBD1"')
+      expect(result.conditional.html).toContain('inputmode="numeric"')
+      expect(getChosenAreaFieldsHtml([action], [])).toBe('')
     })
 
     it('should not render a "null available" hint for a non-quantity action with no limit', () => {
@@ -498,13 +523,26 @@ describe('select-actions.view-model', () => {
       }
     )
 
-    it.each([
-      [{ value: 120, unit: 'm' }, '120 metres available'],
-      [{ value: 5, unit: 'sqm' }, '5 square metres available']
-    ])('should render the full unit name in the hint for %j', (availability, expected) => {
-      const result = mapActionToViewModel(csam3(availability), [])
+    it('should render the full unit name in the hint for a linear quantity action', () => {
+      const result = mapActionToViewModel(csam3({ value: 120, unit: 'm' }), [])
 
-      expect(result.html).toContain(expected)
+      expect(result.html).toContain('120 metres available')
+    })
+
+    it('should infer a bounded quantity input from a square-metre unit', () => {
+      const result = mapActionToViewModel(
+        {
+          code: 'CSAM3',
+          description: 'Herbal leys: CSAM3',
+          ratePerUnitGbp: 224,
+          availability: { value: 5, unit: 'sqm' }
+        },
+        []
+      )
+
+      expect(result.conditional.html).toContain('max="5"')
+      expect(result.conditional.html).toContain('aria-describedby="landActionQuantity_CSAM3-hint"')
+      expect(result.html).toContain('<span id="landActionQuantity_CSAM3-hint">5 square metres available</span>')
     })
 
     it('should highlight the quantity input with the given error text when this action has a quantity error', () => {

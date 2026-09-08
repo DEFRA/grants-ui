@@ -103,7 +103,10 @@ export function mergeRecomputedAvailability(actions, recomputed) {
     return match
       ? {
           ...action,
-          availability: { ...match.availability, type: action.availability?.type },
+          availability: {
+            ...match.availability,
+            type: action.availability?.type
+          },
           staticAvailability: action.staticAvailability ?? action.availability
         }
       : action

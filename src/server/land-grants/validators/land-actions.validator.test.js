@@ -237,7 +237,8 @@ describe('land-actions.validator', () => {
       ['0', 'Value must be greater than 0'],
       ['-11', 'Value must be greater than 0'],
       ['11.22001', 'Must be a whole number'],
-      ['as', 'Must be numbers']
+      ['as', 'Must be numbers'],
+      ['', 'Enter a quantity for Maintain weatherproof traditional farm or forestry buildings']
     ])('rejects invalid HEF1 quantity %j on the server', (quantity, text) => {
       const hef1 = {
         code: 'HEF1',
@@ -248,6 +249,22 @@ describe('land-actions.validator', () => {
       expect(
         validateSelectedActionQuantities({ landAction: 'HEF1', landActionQuantity_HEF1: quantity }, [hef1])
       ).toEqual([{ text, href: '#landActionQuantity_HEF1', code: 'HEF1' }])
+    })
+
+    it.each([
+      ['a fraction', '4.5', [{ text: 'Must be a whole number', href: '#landActionQuantity_COUNT', code: 'COUNT' }]],
+      ['a positive integer', '4', []]
+    ])('validates count quantities when the unit requires whole numbers: %s', (_description, quantity, expected) => {
+      const countAction = {
+        code: 'COUNT',
+        description: 'Count action',
+        version: '1.0.0',
+        availability: { unit: 'count', value: null }
+      }
+
+      expect(
+        validateSelectedActionQuantities({ landAction: 'COUNT', landActionQuantity_COUNT: quantity }, [countAction])
+      ).toEqual(expected)
     })
   })
 })
