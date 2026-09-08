@@ -15,8 +15,6 @@ import {
   withConfirmLandAndActionsOrigin
 } from '~/src/server/land-grants/utils/confirm-land-and-actions-navigation.js'
 
-// Second line must match the no-eligible-actions copy in
-// src/server/land-grants/views/select-actions.html.
 /** @param {string} selectedParcelId */
 const noEligibleActionsError = (selectedParcelId) =>
   `There are no actions available for parcel ${escapeHtml(formatParcelReference(selectedParcelId))}. Select another land parcel to continue.`
