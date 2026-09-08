@@ -1,6 +1,10 @@
 # Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities
 version: v1.25.0
 ignore:
+  'SNYK-JS-WEBPACKDEVMIDDLEWARE-19643962':
+    - '*':
+        reason: 'Directory Traversal in webpack-dev-middleware@7.4.5. Not runtime-reachable - webpack-dev-middleware is pulled by webpack-dev-server in the docusaurus toolchain of @defra/interactive-map; grants-ui uses Hapi at runtime and webpack build/watch without running the development server. Re-checked 2026-09-08 on @defra/forms-engine-plugin@4.23.0. Fixed in webpack-dev-middleware 7.4.6 (published 2026-09-03), inside the .npmrc min-release-age=7 cooldown until 2026-09-10 at 13:23:58 UTC. Then bump webpack-dev-middleware or add a webpack-dev-middleware@7 override and remove this ignore.'
+        expires: '2026-10-08'
   'SNYK-JS-INFLIGHT-6095116':
     - '*':
         reason: 'Not reachable in application runtime — inflight is only present via glob from @defra/interactive-map/polygon-splitter package metadata and dev/build tooling; grants-ui and the shipped map bundles do not import glob or inflight. Re-checked 2026-08-24 on @defra/interactive-map 0.0.40-alpha: polygon-splitter still pins glob@^8, which requires inflight; no upstream fix available. Reassess for interactive-map/polygon-splitter dependency removal.'
