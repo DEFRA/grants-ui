@@ -1,5 +1,4 @@
 {% extends baseLayoutPath %}
-
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 {% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
@@ -11,32 +10,31 @@
   <div class="govuk-body">
     <div class="govuk-grid-row">
       <div class="{{ gridColumnClass(page, 'govuk-grid-column-three-quarters-from-desktop') }}">
-
         {% if errors.length > 0 %}
-          {{ govukErrorSummary({
-          titleText: "There is a problem",
-          errorList: errors
-        }) }}
+          {{
+            govukErrorSummary({
+              titleText: "There is a problem",
+              errorList: errors
+            })
+          }}
         {% endif %}
 
         {% if sectionTitle and sectionTitle.length and (sectionTitle !== pageTitle) %}
-        <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">
-          {{- sectionTitle -}}
-        </h2>
+          <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">{{- sectionTitle -}}</h2>
         {% endif %}
-        <h1 class="govuk-heading-l">
-          Select actions for this land parcel
-        </h1>
+        <h1 class="govuk-heading-l">Select actions for this land parcel</h1>
 
         {% if parcelSummaryList %}
           {% set parcelHeaderActions = false %}
           {% if not hideParcelChange %}
             {% set parcelHeaderActions = { href: selectLandParcelPath, text: "Change", classes: "govuk-link govuk-link--no-visited-state", hiddenTextValue: "selected land parcel" } %}
           {% endif %}
-          {% call summaryCard({
-            title: { text: "Selected land parcel" },
-            headerActions: parcelHeaderActions
-          }) %}
+          {%
+            call summaryCard({
+              title: { text: "Selected land parcel" },
+              headerActions: parcelHeaderActions
+            })
+          %}
             {{ govukSummaryList(parcelSummaryList) }}
           {% endcall %}
         {% endif %}
@@ -49,51 +47,58 @@
             <li>land already in existing agreements</li>
             <li>other actions you select</li>
             {% if 'sssi' in pageConsents %}
-            <li>site of special scientific interest (SSSI) eligibility</li>
+              <li>site of special scientific interest (SSSI) eligibility</li>
             {% endif %}
             {% if 'hefer' in pageConsents %}
-            <li>Historic Environment Farm Environment Record (HEFER) eligibility</li>
+              <li>Historic Environment Farm Environment Record (HEFER) eligibility</li>
             {% endif %}
             {% if not ('sssi' in pageConsents or 'hefer' in pageConsents) %}
-            <li>whether any of the land is ineligible for the action</li>
+              <li>whether any of the land is ineligible for the action</li>
             {% endif %}
           </ul>
 
           {% if pageConsents.length %}
-          {% set consentLinks = [] %}
-          {% if 'sssi' in pageConsents %}
-          {% set consentLinks = (consentLinks.push('<a class="govuk-link" href="./fptt-information#sec-10-get-all-necessary-regulatory-consents-permissions-and-licences-in-place" target="_blank" rel="noopener noreferrer">SSSI consent (opens in new tab)</a>'), consentLinks) %}
-          {% endif %}
-          {% if 'hefer' in pageConsents %}
-          {% set consentLinks = (consentLinks.push('an <a class="govuk-link" href="https://www.gov.uk/government/publications/sustainable-farming-incentive-2026-sfi26/sfi26-scheme-rules-and-guidance#how-to-request-an-sfi-hefer" target="_blank" rel="noopener noreferrer">SFI HEFER (opens in new tab)</a>'), consentLinks) %}
-          {% endif %}
-          {% call govukInsetText({ id: "parcel-consent-intro" }) %}
-          Some actions on this parcel need {{ consentLinks | join(' and ') | safe }}.
-          We&rsquo;ll show this on those actions.
-          {% endcall %}
+            {% set consentLinks = [] %}
+            {% if 'sssi' in pageConsents %}
+              {% set consentLinks = (consentLinks.push('<a class="govuk-link" href="./fptt-information#sec-10-get-all-necessary-regulatory-consents-permissions-and-licences-in-place" target="_blank" rel="noopener noreferrer">SSSI consent (opens in new tab)</a>'), consentLinks) %}
+            {% endif %}
+            {% if 'hefer' in pageConsents %}
+              {% set consentLinks = (consentLinks.push('an <a class="govuk-link" href="https://www.gov.uk/government/publications/sustainable-farming-incentive-2026-sfi26/sfi26-scheme-rules-and-guidance#how-to-request-an-sfi-hefer" target="_blank" rel="noopener noreferrer">SFI HEFER (opens in new tab)</a>'), consentLinks) %}
+            {% endif %}
+            {% call govukInsetText({ id: "parcel-consent-intro" }) %}
+              Some actions on this parcel need {{ consentLinks | join(' and ') | safe }}. We&rsquo;ll show this on those
+              actions.
+            {% endcall %}
           {% endif %}
 
-          <p class="govuk-body">Each of these actions lasts for 3 years. Read the guidance for each action for what you’ll need to do. All links open in a new tab.</p>
+          <p class="govuk-body">
+            Each of these actions lasts for 3 years. Read the guidance for each action for what you’ll need to do. All
+            links open in a new tab.
+          </p>
           <p class="govuk-body">The available quantity will update as you make your selections.</p>
         </div>
 
         {% if actionItems.length %}
           <form id="select-actions-form" method="post" novalidate="novalidate">
-            <input type="hidden" name="crumb" value="{{ crumb }}">
-            <input type="hidden" name="action" value="validate">
+            <input type="hidden" name="crumb" value="{{ crumb }}" />
+            <input type="hidden" name="action" value="validate" />
             {{ chosenAreaFieldsHtml | safe }}
 
-            {{ govukCheckboxes({
+            {{
+              govukCheckboxes({
                 name: actionFieldName,
                 items: actionItems,
                 classes: "select-actions-checkboxes"
-              }) }}
+              })
+            }}
 
             <div class="govuk-button-group">
-              {{ govukButton({
-                text: submitButtonText or "Continue",
-                preventDoubleClick: true
-              }) }}
+              {{
+                govukButton({
+                  text: submitButtonText or "Continue",
+                  preventDoubleClick: true
+                })
+              }}
               {% if cancelHref %}
                 <a class="govuk-link govuk-link--no-visited-state" href="{{ cancelHref }}">Cancel</a>
               {% endif %}
@@ -102,13 +107,17 @@
         {% elif ((not errors) or (errors.length == 0)) %}
           <div class="govuk-!-margin-top-4">
             <p class="govuk-body govuk-!-font-weight-bold">There are no eligible actions for this parcel.</p>
-            <p class="govuk-body">Change the parcel land cover or choose a different parcel to view eligible actions.</p>
+            <p class="govuk-body">
+              Change the parcel land cover or choose a different parcel to view eligible actions.
+            </p>
           </div>
           <div class="govuk-button-group">
-            {{ govukButton({
-              text: "Continue",
-              href: selectLandParcelPath
-            }) }}
+            {{
+              govukButton({
+                text: "Continue",
+                href: selectLandParcelPath
+              })
+            }}
             {% if cancelHref %}
               <a class="govuk-link govuk-link--no-visited-state" href="{{ cancelHref }}">Cancel</a>
             {% endif %}

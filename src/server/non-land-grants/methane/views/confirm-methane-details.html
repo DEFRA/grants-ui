@@ -1,5 +1,4 @@
 {% extends baseLayoutPath %}
-
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 {% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
@@ -16,22 +15,21 @@
         {{ govukErrorSummary(error) }}
       {% endif %}
 
-      <h1 class="govuk-heading-l">
-        {{ pageTitle }}
-      </h1>
+      <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
 
-        {{ govukSummaryList(farmDetails) }}
+      {{ govukSummaryList(farmDetails) }}
 
       <form method="post" novalidate>
-        <input type="hidden" name="crumb" value="{{ crumb }}">
-        {{ govukButton({
+        <input type="hidden" name="crumb" value="{{ crumb }}" />
+        {{
+          govukButton({
             text: "Continue",
             preventDoubleClick: true
           })
         }}
       </form>
 
-<!--      Add support details component -->
+      <!--      Add support details component -->
       {{ defraSupportDetails({email: page.def.metadata.supportEmail}) }}
     </div>
   </div>

@@ -1,5 +1,4 @@
 {% extends baseLayoutPath %}
-
 {% from "govuk/components/radios/macro.njk" import govukRadios %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
@@ -16,10 +15,12 @@
       {% endif %}
 
       {% if errors %}
-        {{ govukErrorSummary({
-          titleText: "There is a problem",
-          errorList: errors
-        }) }}
+        {{
+          govukErrorSummary({
+            titleText: "There is a problem",
+            errorList: errors
+          })
+        }}
       {% endif %}
 
       {% if error %}
@@ -27,34 +28,34 @@
       {% endif %}
 
       {% if sectionTitle and sectionTitle.length and (sectionTitle !== pageTitle) %}
-      <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">
-        {{- sectionTitle -}}
-      </h2>
+        <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">{{- sectionTitle -}}</h2>
       {% endif %}
-      <h1 class="govuk-heading-l">
-        {{ pageTitle }}
-      </h1>
+      <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
 
       <p class="govuk-body">If your details are not correct you need to update them before you apply.</p>
 
       {{ appSectionList({ sections: sections }) }}
 
-      <form class="check-details-form{% if sfdUpdateDetailsUrl %} check-details-form--sfd{% endif %}" method="post" novalidate>
-        <input type="hidden" name="crumb" value="{{ crumb }}">
+      <form
+        class="check-details-form {% if sfdUpdateDetailsUrl %}check-details-form--sfd{% endif %}"
+        method="post"
+        novalidate
+      >
+        <input type="hidden" name="crumb" value="{{ crumb }}" />
 
         {{ componentList(components) }}
 
         <div class="check-details-form__submit">
-          {{ govukButton({
-            text: "Continue",
-            preventDoubleClick: true
-          }) }}
+          {{
+            govukButton({
+              text: "Continue",
+              preventDoubleClick: true
+            })
+          }}
         </div>
 
         {% if sfdUpdateDetailsUrl %}
-          <a class="govuk-button check-details-form__sfd-link" href="{{ sfdUpdateDetailsUrl }}">
-            Continue
-          </a>
+          <a class="govuk-button check-details-form__sfd-link" href="{{ sfdUpdateDetailsUrl }}"> Continue </a>
         {% endif %}
       </form>
 

@@ -37,14 +37,14 @@ describe('map-select-parcel.html', () => {
   })
 
   it('renders the Requirements row hidden, with an empty intro and bullet list', () => {
-    const row = /<div class="[^"]*" id="selected-parcel-requirements-row"[^>]*>([\s\S]*?)<\/dd>/.exec(template)
+    const row = /<div\s+class="[^"]*"\s+id="selected-parcel-requirements-row"[^>]*>([\s\S]*?)<\/dd>/.exec(template)
 
     expect(row?.[0]).toContain('hidden')
     expect(row?.[0]).toContain('govuk-summary-list__row--no-actions')
     expect(row?.[1]).toContain('<dt class="govuk-summary-list__key">Requirements</dt>')
-    expect(row?.[1]).toContain('id="selected-parcel-requirements-intro"></p>')
+    expect(row?.[1]).toMatch(/id="selected-parcel-requirements-intro"\s*>\s*<\/p>/)
     expect(row?.[1]).toContain('govuk-list govuk-list--bullet')
-    expect(row?.[1]).toContain('id="selected-parcel-requirements-list"></ul>')
+    expect(row?.[1]).toMatch(/id="selected-parcel-requirements-list"\s*>\s*<\/ul>/)
   })
 
   it('places the live status region inside the summary block but outside the hidden row', () => {

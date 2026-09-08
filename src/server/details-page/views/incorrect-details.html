@@ -1,11 +1,10 @@
 {% extends baseLayoutPath %}
-
 {% from "support-details/macro.njk" import defraSupportDetails %}
 
 {% block head %}
   {{ super() }}
   {% if sfdUpdateUrl %}
-    <meta http-equiv="refresh" content="0; url={{ sfdUpdateUrl }}">
+    <meta http-equiv="refresh" content="0; url={{ sfdUpdateUrl }}" />
   {% endif %}
 {% endblock %}
 
@@ -20,9 +19,7 @@
         {% endif %}
 
         {% if sectionTitle and sectionTitle.length and (sectionTitle !== pageTitle) %}
-        <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">
-          {{- sectionTitle -}}
-        </h2>
+          <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">{{- sectionTitle -}}</h2>
         {% endif %}
         {% if incorrectDetailsContent %}
           <h1 class="govuk-heading-l">{{ incorrectDetailsContent.heading }}</h1>
@@ -31,7 +28,9 @@
             {% if p is string %}
               <p class="govuk-body">{{ p }}</p>
             {% else %}
-              <p class="govuk-body">{{ p.textBefore }}<a class="govuk-link" href="{{ p.link.href }}">{{ p.link.text }}</a>{{ p.textAfter }}</p>
+              <p class="govuk-body">
+                {{ p.textBefore }}<a class="govuk-link" href="{{ p.link.href }}">{{ p.link.text }}</a>{{ p.textAfter }}
+              </p>
             {% endif %}
           {% endfor %}
 
@@ -41,12 +40,11 @@
         {% else %}
           <h1 class="govuk-heading-l">Contact the RPA to update your details</h1>
 
-          <p class="govuk-body">
-            You have indicated that your details are not correct.
-          </p>
+          <p class="govuk-body">You have indicated that your details are not correct.</p>
 
           <p class="govuk-body">
-            You will need to contact the Rural Payments Agency (RPA) to let them know of any changes to your details before you can continue with your application.
+            You will need to contact the Rural Payments Agency (RPA) to let them know of any changes to your details
+            before you can continue with your application.
           </p>
 
           {{ defraSupportDetails({ typeOfSupport: 'update', email: supportEmail }) }}
@@ -56,7 +54,6 @@
           </p>
         {% endif %}
       {% endif %}
-
     </div>
   </div>
 {% endblock %}

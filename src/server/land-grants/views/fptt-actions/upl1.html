@@ -1,156 +1,75 @@
 {% from "govuk/components/table/macro.njk" import govukTable %}
-    <section id="sec-2-UPL1">
-      <h2 class="govuk-heading-l">UPL1: Moderate livestock grazing on moorland</h2>
-      <p class="govuk-body">What you must do to get paid for UPL1 and advice on how to do it.</p>
+<section id="sec-2-UPL1">
+  <h2 class="govuk-heading-l">UPL1: Moderate livestock grazing on moorland</h2>
+  <p class="govuk-body">What you must do to get paid for UPL1 and advice on how to do it.</p>
 
-      <h3 class="govuk-heading-m">Duration</h3>
-      <p class="govuk-body">12 months</p>
+  <h3 class="govuk-heading-m">Duration</h3>
+  <p class="govuk-body">12 months</p>
 
-      <h3 class="govuk-heading-m">How much you’ll be paid</h3>
-      <p class="govuk-body">£35 per hectare (ha) per year</p>
+  <h3 class="govuk-heading-m">How much you’ll be paid</h3>
+  <p class="govuk-body">£35 per hectare (ha) per year</p>
 
-      <h3 class="govuk-heading-m">Action’s aim</h3>
-      <p class="govuk-body">
-        This action’s aim is that there’s a moderate livestock density grazing on the moorland,
-        so its habitat is maintained or enhanced alongside farming.
-      </p>
-      <p class="govuk-body">The purpose of this is to:</p>
-      <ul class="govuk-list govuk-list--bullet">
-        <li>prevent expansion of areas of bare ground</li>
-        <li>increase surface roughness</li>
-        <li>reduce diffuse pollution</li>
-        <li>improve water quality and flood risk management</li>
-        <li>provide habitats for moorland species</li>
-        <li>protect historic and archaeological features</li>
-      </ul>
+  <h3 class="govuk-heading-m">Action’s aim</h3>
+  <p class="govuk-body">
+    This action’s aim is that there’s a moderate livestock density grazing on the moorland, so its habitat is maintained
+    or enhanced alongside farming.
+  </p>
+  {% include "fptt-actions/shared/grazing-action-purpose.html" %}
+  {% include "fptt-actions/shared/moorland-grazing-eligible-location.html" %}
 
-      <h3 class="govuk-heading-m">Where you can do this action</h3>
-      <p class="govuk-body">You can do this action on land located above the moorland line that’s:</p>
-      <ul class="govuk-list govuk-list--bullet">
-        <li>
-          an eligible land type (as defined in <a class="govuk-link" rel="noreferrer noopener" target="_blank" href="/farm-payments/fptt-information#section-5.1">
-            section 5.1 ‘Eligible land types for FPTT’ (opens in new tab)</a> in the FPTT information)
-        </li>
-        <li>registered with an eligible land cover on your digital maps</li>
-      </ul>
-      <p class="govuk-body">
-        If a land parcel is located above and below the moorland line, you can enter it into this
-        action if:
-      </p>
-      <ul class="govuk-list govuk-list--bullet">
-        <li>most of the area is above the moorland line</li>
-        <li>it’s managed as one grazing unit with adjacent land parcels located above the moorland line</li>
-      </ul>
-      <p class="govuk-body">Farmyards or land used for turf or peat production are not eligible for this action.</p>
+  {{
+    govukTable({
+    caption: "Eligible land",
+    captionClasses: "govuk-table__caption--s",
+    head: [ { text: "Eligible land type" }, { text: "Eligible land cover" } ],
+    rows: [
+      [ { text: "Permanent grassland" }, { text: "Permanent grassland" } ],
+      [ { text: "Non-agricultural areas, such as scrub, scree, bracken and bog" }, { text: "Relevant non-agricultural land cover, such as scrub, scree, bracken or bog" } ] ]
+    })
+  }}
+  {% include "fptt-actions/shared/protected-land-eligibility-table.html" %}
+  {% include "fptt-actions/shared/available-area-and-type-of-action.html" %}
 
+  <h3 class="govuk-heading-m">What to do</h3>
+  <p class="govuk-body">
+    You must make sure that the livestock density across the land entered into this action does not exceed 0.16 grazing
+    livestock units (GLU) per hectare at any time.
+  </p>
+  {% include "fptt-actions/shared/glu-conversion.html" %}
+  <p class="govuk-body">
+    Read the <a href="#upl1-advice-to-help-you-do-this-action" class="govuk-link"> ‘advice to help you do UPL1’</a> to
+    find out how to calculate the livestock density.
+  </p>
+  {% include "fptt-actions/shared/grazing-stocking-calendar.html" %}
+  <p class="govuk-body">
+    If something happens which means you cannot complete this action, you must tell the Rural Payments Agency about this
+    in writing as soon as possible. For example, if there are fodder supply issues, so you need to increase the stocking
+    level.
+  </p>
+  <p class="govuk-body">
+    Read
+    <a class="govuk-link" href="/farm-payments/fptt-information#section-13.2" rel="noreferrer noopener" target="_blank">
+      section 13.2, ‘What you must do if you cannot comply with your agreement’ (opens in new tab)</a
+    >
+    in the FPTT information to find out how to do this.
+  </p>
 
+  <h3 class="govuk-heading-m">When to do it</h3>
+  <p class="govuk-body">You must do this action from the start date of your FPTT agreement.</p>
 
-      {{ govukTable({
-      caption: "Eligible land",
-      captionClasses: "govuk-table__caption--s",
-      head: [ { text: "Eligible land type" }, { text: "Eligible land cover" } ],
-      rows: [
-        [ { text: "Permanent grassland" }, { text: "Permanent grassland" } ],
-        [ { text: "Non-agricultural areas, such as scrub, scree, bracken and bog" }, { text: "Relevant non-agricultural land cover, such as scrub, scree, bracken or bog" } ] ]
-      }) }}
+  {% include "fptt-actions/shared/how-to-do-it.html" %}
+  <p class="govuk-body">
+    You may find it helpful to read the
+    <a href="#upl1-advice-to-help-you-do-this-action" class="govuk-link"> ‘advice to help you do UPL1’</a>, but it’s not
+    part of this action’s requirements.
+  </p>
 
-      {% include "fptt-actions/shared/protected-land-eligibility-table.html" %}
+  {% include "fptt-actions/shared/evidence-and-other-actions.html" %}
 
-      {% include "fptt-actions/shared/available-area-and-type-of-action.html" %}
+  <h3 class="govuk-heading-m" id="upl1-advice-to-help-you-do-this-action">Advice to help you do UPL1</h3>
+  <p class="govuk-body">
+    The following advice may help you to do this action, but it’s not part of this action’s requirements.
+  </p>
 
-      <h3 class="govuk-heading-m">What to do</h3>
-      <p class="govuk-body">
-        You must make sure that the livestock density across the land entered into this action
-        does not exceed 0.16 grazing livestock units (GLU) per hectare at any time.
-      </p>
-      {% include "fptt-actions/shared/glu-conversion.html" %}
-      <p class="govuk-body">
-        Read the <a href="#upl1-advice-to-help-you-do-this-action" class="govuk-link">
-        ‘advice to help you do UPL1’</a> to find out how to calculate the livestock density.
-      </p>
-      <p class="govuk-body">
-        You must not carry out supplementary feeding of livestock on land entered into this
-        action, apart from mineral licks.
-      </p>
-      <p class="govuk-body">
-        At the start of your FPTT agreement, you must produce a written stocking calendar for
-        each land parcel entered into this action.
-      </p>
-      <p class="govuk-body">
-        The stocking calendar must show how you plan to meet this action’s requirements. It
-        must include:
-      </p>
-      <ul class="govuk-list govuk-list--bullet">
-        <li>land parcel reference number and hectarage</li>
-        <li>dates you plan to graze the land parcel during each calendar month</li>
-        <li>
-          monthly numbers of livestock which will graze the land parcel, including their
-          type and age bracket
-        </li>
-      </ul>
-      <p class="govuk-body">
-        If you manage several adjacent land parcels as one grazing unit, you can keep one
-        stocking calendar for that grazing unit. You must include all the land parcel reference
-        numbers which comprise that grazing unit.
-      </p>
-      <p class="govuk-body">
-        If something happens which means you cannot complete this action, you must tell the
-        Rural Payments Agency about this in writing as soon as possible. For example, if there
-        are fodder supply issues, so you need to increase the stocking level.
-      </p>
-      <p class="govuk-body">
-        Read
-        <a class="govuk-link" href="/farm-payments/fptt-information#section-13.2" rel="noreferrer noopener" target="_blank">
-          section 13.2, ‘What you must do if you cannot comply with your agreement’ (opens in new tab)</a> in
-        the FPTT information to find out how to do this.
-      </p>
-
-      <h3 class="govuk-heading-m">When to do it</h3>
-      <p class="govuk-body">You must do this action from the start date of your FPTT agreement.</p>
-
-      {% include "fptt-actions/shared/how-to-do-it.html" %}
-      <p class="govuk-body">
-        You may find it helpful to read the <a href="#upl1-advice-to-help-you-do-this-action" class="govuk-link">
-        ‘advice to help you do UPL1’</a>, but it’s not part of
-        this action’s requirements.
-      </p>
-
-      <h3 class="govuk-heading-m">Evidence to keep</h3>
-      <p class="govuk-body">
-        You must keep the required written stocking calendar and supply this as evidence if the
-        RPA ask for it. It can be recorded on paper or electronically.
-      </p>
-
-      <h3 class="govuk-heading-m">Other actions or options you can do on the same area as this action</h3>
-      <p class="govuk-body">
-        You can do the following actions or options on the same area, in the same land parcel, as this action.
-      </p>
-
-      {% include "fptt-actions/shared/other-actions-same-area-table.html" %}
-
-      <p class="govuk-body">
-        If an action or option cannot be located on the same area, you may be able to do it on a
-        different area in the same land parcel. Read
-        <a class="govuk-link"
-           href="/farm-payments/fptt-information#sec-6-eligible-land-in-other-funding-schemes" rel="noreferrer noopener"
-           target="_blank">
-          section 6 ‘Eligible land in other funding schemes’ (opens in new tab)</a> in the FPTT information for more details.
-      </p>
-      <p class="govuk-body">
-        You can do the following actions or options on the eligible boundaries of a land parcel
-        entered into this action:
-      </p>
-      <ul class="govuk-list govuk-list--bullet">
-        <li>SFI 2024 actions: CHRW1, CHRW2, CHRW3, BND1, BND2 and WBD2</li>
-        <li>SFI 2023 actions: HRW1, HRW2, HRW3</li>
-        <li>CS option BE3 (management of hedgerows)</li>
-        <li>the introductory level of the SFI pilot hedgerows standard</li>
-      </ul>
-
-      <h3 class="govuk-heading-m" id="upl1-advice-to-help-you-do-this-action">Advice to help you do UPL1</h3>
-      <p class="govuk-body">
-        The following advice may help you to do this action, but it’s not part of this action’s requirements.
-      </p>
-
-      {% include "fptt-actions/shared/grazing-advice.html" %}
-    </section>
+  {% include "fptt-actions/shared/grazing-advice.html" %}
+</section>

@@ -1,68 +1,76 @@
 {% extends baseLayoutPath %}
 
 {% block content %}
+  <h1 class="defra-terms_and_conditions_page_heading">
+    {{ pageTitle }}
+    <div class="defra-terms_and_conditions_page_heading__caption">Published 8 December 2025</div>
+  </h1>
 
-<h1 class="defra-terms_and_conditions_page_heading">
-  {{ pageTitle }}
-  <div class="defra-terms_and_conditions_page_heading__caption">Published 8 December 2025</div>
-</h1>
+  <div class="govuk-grid-row" id="contents">
+    <div class="govuk-grid-column-one-quarter defra-sidebar">
+      <nav aria-label="Contents" class="gem-c-contents-list govuk-!-margin-bottom-4 ">
+        <h2 class="defra-sidebar__title">Contents</h2>
+        <ol class="govuk-list defra-sidebar__list">
+          <li>
+            <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+            <a class="govuk-link govuk-link--no-underline" href="#sec-1-CMOR1"
+              >CMOR1: Assess moorland and produce a written record</a
+            >
+          </li>
+          <li>
+            <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+            <a class="govuk-link govuk-link--no-underline" href="#sec-2-UPL1"
+              >UPL1: Moderate livestock grazing on moorland</a
+            >
+          </li>
+          <li>
+            <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+            <a class="govuk-link govuk-link--no-underline" href="#sec-3-UPL2"
+              >UPL2: Low livestock grazing on moorland</a
+            >
+          </li>
+          <li>
+            <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
+            <a class="govuk-link govuk-link--no-underline" href="#sec-4-UPL3"
+              >UPL3: Limited livestock grazing on moorland</a
+            >
+          </li>
+        </ol>
+      </nav>
+    </div>
 
-<div class="govuk-grid-row" id="contents">
-  <div class="govuk-grid-column-one-quarter defra-sidebar">
-    <nav aria-label="Contents" class="gem-c-contents-list govuk-!-margin-bottom-4 ">
-      <h2 class="defra-sidebar__title">
-        Contents
-      </h2>
-      <ol class="govuk-list defra-sidebar__list">
-        <li>
-          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
-          <a class="govuk-link govuk-link--no-underline" href="#sec-1-CMOR1">CMOR1: Assess moorland and produce a written record</a>
-        </li>
-        <li>
-          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
-          <a class="govuk-link govuk-link--no-underline" href="#sec-2-UPL1">UPL1: Moderate livestock grazing on moorland</a>
-        </li>
-        <li>
-          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
-          <a class="govuk-link govuk-link--no-underline"href="#sec-3-UPL2">UPL2: Low livestock grazing on moorland</a>
-        </li>
-        <li>
-          <span class="gem-c-contents-list__list-item-dash" aria-hidden="true"></span>
-          <a class="govuk-link govuk-link--no-underline" href="#sec-4-UPL3">UPL3: Limited livestock grazing on moorland</a>
-        </li>
+    <div class="govuk-grid-column-three-quarters-from-desktop">
+      <p class="govuk-body">
+        Information explaining what you must do to get paid for the Farm payments technical test (FPTT) actions.
+      </p>
 
-      </ol>
-    </nav>
+      {% include "fptt-actions/cmor1.html" %}
+      {% include "fptt-actions/upl1.html" %}
+      {% include "fptt-actions/upl2.html" %}
+      {% include "fptt-actions/upl3.html" %}
+    </div>
   </div>
 
-  <div class="govuk-grid-column-three-quarters-from-desktop">
-    <p class="govuk-body">
-      Information explaining what you must do to get paid for the Farm payments technical test (FPTT) actions.
-    </p>
-
-    {% include "fptt-actions/cmor1.html" %}
-
-    {% include "fptt-actions/upl1.html" %}
-
-    {% include "fptt-actions/upl2.html" %}
-
-    {% include "fptt-actions/upl3.html" %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-full govuk-!-margin-bottom-4">
+      <a class="govuk-link gem-c-back-to-top-link govuk-!-display-none-print" href="#contents">
+        <svg
+          class="gem-c-back-to-top-link__icon"
+          xmlns="http://www.w3.org/2000/svg"
+          width="13"
+          height="17"
+          viewBox="0 0 13 17"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path fill="currentColor" d="M6.5 0L0 6.5 1.4 8l4-4v12.7h2V4l4.3 4L13 6.4z"></path>
+        </svg>
+        Back to top
+      </a>
+    </div>
   </div>
-</div>
 
-<div class="govuk-grid-row">
-  <div class="govuk-grid-column-full govuk-!-margin-bottom-4">
-    <a class="govuk-link gem-c-back-to-top-link govuk-!-display-none-print" href="#contents">
-      <svg class="gem-c-back-to-top-link__icon" xmlns="http://www.w3.org/2000/svg" width="13" height="17" viewBox="0 0 13 17" aria-hidden="true" focusable="false">
-        <path fill="currentColor" d="M6.5 0L0 6.5 1.4 8l4-4v12.7h2V4l4.3 4L13 6.4z"></path>
-      </svg>
-      Back to top
-    </a>
-  </div>
-</div>
-
-
-{% if config.cdpEnvironment == 'local' and context | length and not context.isForceAccess %}
-{% include "partials/debug.html" %}
-{% endif %}
+  {% if config.cdpEnvironment == 'local' and context | length and not context.isForceAccess %}
+    {% include "partials/debug.html" %}
+  {% endif %}
 {% endblock %}
