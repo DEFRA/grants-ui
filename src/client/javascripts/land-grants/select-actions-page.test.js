@@ -1969,7 +1969,7 @@ describe('initSelectActionsPage', () => {
 
   // A submit landing before an in-flight refresh's own response has applied
   // would otherwise serialise whatever's disabled OUT of the payload (the
-  // browser drops disabled fields from a form submission) - see TGC-1625.
+  // browser drops disabled fields from a form submission)
   function isSubmitBlocked(form) {
     const event = new Event('submit', { bubbles: true, cancelable: true })
     form.dispatchEvent(event)

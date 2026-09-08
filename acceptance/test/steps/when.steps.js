@@ -52,7 +52,7 @@ When('(the user )selects the first item', async function () {
 
 When('(the user )continues', async function () {
   const continueButton = this.page.getByRole('button', { name: 'Continue' })
-  // Disabled while a live availability refresh is in flight (TGC-1625) -
+  // Disabled while a live availability refresh is in flight
   // wait for it to clear rather than clicking mid-refresh.
   await expect(continueButton).toBeEnabled()
   await continueButton.click()
