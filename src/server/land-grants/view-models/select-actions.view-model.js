@@ -6,10 +6,10 @@
 
 import nunjucks from 'nunjucks'
 import { govukFrontendPath, viewPaths } from '~/src/config/nunjucks/view-paths.js'
-import { getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
+import { getActionChosenAreaDisplayId, getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
 import { requiresQuantityInput } from '~/src/shared/action-quantity-type.js'
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
-import { formatUnit } from '~/src/shared/format-unit.js'
+import { formatUnit, areaWithUnit, availableArea } from '~/src/shared/unit-format.js'
 import { getAvailabilityLimit, hasAvailableLand } from '~/src/shared/availability.js'
 import { formatParcelReference } from '~/src/shared/format-parcel.js'
 import { SELECTED_ACTIONS_FIELD_NAME } from '~/src/server/land-grants/utils/selected-actions-field.js'
@@ -17,7 +17,9 @@ import { getActionConsentKeys } from '~/src/server/land-grants/utils/consent-typ
 import { getConsentRequirementText } from '~/src/server/land-grants/view-models/consent.view-model.js'
 
 const QUANTITY_INPUT_TEMPLATE = 'quantity-input/template.njk'
+const CHOSEN_AREA_TEMPLATE = 'chosen-area/template.njk'
 const ACTION_LABEL_TEMPLATE = 'action-label/template.njk'
+const ACTION_HINT_TEMPLATE = 'action-hint/template.njk'
 const landGrantsViewEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader([govukFrontendPath, ...viewPaths]), {
   autoescape: true
 })
@@ -44,6 +46,30 @@ function getQuantityConditional(actionCode, actionName, quantityValue, maxQuanti
       maxQuantity,
       unit,
       errorText
+    })
+  }
+}
+
+/**
+ * Builds the conditional reveal markup for a total action: a read-only
+ * display of the area it has claimed, since it takes everything available
+ * and so has nothing for the user to type. Omitted entirely for an action
+ * with no availability restriction at all - there is no figure to show.
+ * An unselected action shows what it would claim if selected now, which is
+ * what the user sees for the moment before the first live refresh lands.
+ * @param {Action} action
+ * @param {number} [chosenArea] - Area already claimed by this action, if selected
+ * @returns {{ html: string } | undefined}
+ */
+function getChosenAreaConditional(action, chosenArea) {
+  const area = chosenArea ?? getAvailabilityLimit(action.availability)
+  if (area == null) {
+    return undefined
+  }
+  return {
+    html: landGrantsViewEnv.render(CHOSEN_AREA_TEMPLATE, {
+      displayId: getActionChosenAreaDisplayId(action.code),
+      areaText: areaWithUnit(area, action.availability?.unit)
     })
   }
 }
@@ -85,28 +111,31 @@ function getStaticAvailability(action) {
 }
 
 /**
- * Builds the checkbox hint text: payment rate, consent requirement, and the
- * action's own availability. Availability sits here for every action, quantity
- * or not - directly under the rate and above the conditional panel, so partial
- * and whole-parcel actions render alike and the "Quantity" label and its input
- * are the only things inside the conditional panel. The span's id is what the
- * client keeps in sync live (see updateHintLive).
+ * Builds the checkbox hint text: payment rate, consent requirement, and any
+ * available-area hint. The hint sits beneath the action label so it can be
+ * shared by quantity inputs through aria-describedby and refreshed live by
+ * the client. Total actions also include guidance that selecting them claims
+ * all available area; their own claim is shown in the conditional panel
+ * instead (see chosen-area/template.njk).
  * @param {Action} action
+ * @param {boolean} needsQuantity
+ * @param {number} [chosenArea]
  * @returns {string}
  */
-function getHintHtml(action) {
+function getHintHtml(action, needsQuantity, chosenArea) {
   const requirementText = getConsentRequirementText(getActionConsentKeys(action))
-  const agreementRateText = action.ratePerAgreementPerYearGbp
-    ? ` and <strong>£${action.ratePerAgreementPerYearGbp}</strong> per agreement`
-    : ''
-  const requirementLineText = requirementText ? `<br>${requirementText}` : ''
-  const rateText = `Payment rate per year: £${action.ratePerUnitGbp?.toFixed(2)}/ha${agreementRateText}${requirementLineText}`
   const limit = getAvailabilityLimit(action.availability)
-  const availabilityHintHtml =
-    limit != null
-      ? `<br><span id="${getActionQuantityFieldName(action.code)}-hint">${limit} ${formatUnit(action.availability?.unit)} available</span>`
-      : ''
-  return `${rateText}${availabilityHintHtml}`
+  const availabilityText = needsQuantity
+    ? `${limit} ${formatUnit(action.availability?.unit)} available`
+    : availableArea(limit ?? 0, action.availability?.unit)
+  return landGrantsViewEnv.render(ACTION_HINT_TEMPLATE, {
+    rate: String(action.ratePerUnitGbp?.toFixed(2)),
+    agreementRate: action.ratePerAgreementPerYearGbp,
+    requirementText,
+    hintId: `${getActionQuantityFieldName(action.code)}-hint`,
+    availabilityText: limit != null || (!needsQuantity && chosenArea != null) ? availabilityText : undefined,
+    showTotalGuidance: !needsQuantity
+  })
 }
 
 /**
@@ -129,8 +158,20 @@ export function mapActionToViewModel(
   const quantityValue = existingAction?.value ?? ''
   const checked = Boolean(existingAction)
   const needsQuantity = requiresQuantityInput(action.availability?.type)
-  const hintHtml = getHintHtml(action)
+  const claimed = Number(existingAction?.value)
+  const chosenArea = Number.isFinite(claimed) && claimed > 0 ? claimed : undefined
+  const hintHtml = getHintHtml(action, needsQuantity, chosenArea)
   const consents = getActionConsentKeys(action)
+  const conditional = needsQuantity
+    ? getQuantityConditional(
+        action.code,
+        action.description,
+        quantityValue,
+        getAvailabilityLimit(action.availability),
+        action.availability?.unit,
+        quantityErrorsByCode[action.code]
+      )
+    : getChosenAreaConditional(action, chosenArea)
 
   return {
     id: getCheckboxItemId(action.code, isFirst),
@@ -146,16 +187,7 @@ export function mapActionToViewModel(
       // until THIS action is directly interacted with, not just the first refresh.
       ...(checked && hasErrors && { 'data-error-on-load': 'true' })
     },
-    ...(needsQuantity && {
-      conditional: getQuantityConditional(
-        action.code,
-        action.description,
-        quantityValue,
-        getAvailabilityLimit(action.availability),
-        action.availability?.unit,
-        quantityErrorsByCode[action.code]
-      )
-    })
+    ...(conditional && { conditional })
   }
 }
 

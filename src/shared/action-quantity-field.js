@@ -15,3 +15,15 @@ export const ACTION_QUANTITY_FIELD_PREFIX = 'landActionQuantity_'
 export function getActionQuantityFieldName(actionCode) {
   return `${ACTION_QUANTITY_FIELD_PREFIX}${actionCode}`
 }
+
+/**
+ * The element id of a total action's read-only chosen-area display, which
+ * reports what the action has claimed (its hidden quantity field carries the
+ * same number, but is never shown). Deliberately not the field prefix, so it
+ * is never mistaken for a submitted quantity field.
+ * @param {string} actionCode
+ * @returns {string}
+ */
+export function getActionChosenAreaDisplayId(actionCode) {
+  return `landActionChosenArea_${actionCode}`
+}
