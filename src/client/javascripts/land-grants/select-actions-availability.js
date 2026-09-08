@@ -6,7 +6,6 @@
  * point that wires the two together.
  */
 
-import { getActionQuantityFieldName } from '../../../shared/action-quantity-field.js'
 import {
   getQuantityError,
   isValidQuantity,
@@ -15,18 +14,19 @@ import {
 import {
   AVAILABLE_UNIT_ATTR,
   LIVE_AVAILABLE_AREA_ATTR,
-  TOTAL_CHOSEN_AREA_ATTR,
   clearChosenArea,
   getChosenArea,
   getCheckboxes,
   getLiveAvailableArea,
+  getNonQuantityHint,
   getQuantityInput,
   getTotalAvailableArea,
   isProtectedFromRefresh,
-  setChosenArea
+  setChosenArea,
+  setChosenAreaDisplay
 } from './action-checkbox-state.js'
 import { clearQuantityError, showQuantityError } from './quantity-error-display.js'
-import { formatUnit } from '../../../shared/format-unit.js'
+import { formatUnit, availableArea } from '../../../shared/unit-format.js'
 import { getAvailabilityLimit } from '../../../shared/availability.js'
 
 const UNAVAILABLE_MESSAGE = 'Not compatible with other selected actions.'
@@ -154,7 +154,7 @@ export function seedConfirmedQuantities(form) {
       updateHintLive(checkbox)
       const validQuantity = getValidTypedQuantity(checkbox)
       if (validQuantity != null) {
-        checkbox.setAttribute(TOTAL_CHOSEN_AREA_ATTR, String(validQuantity))
+        setChosenArea(checkbox, validQuantity)
       }
     }
   }
@@ -296,20 +296,25 @@ function syncQuantityInputBounds(checkbox, action) {
 }
 
 /**
- * Refreshes a non-quantity action's own "X available" hint (see
- * getActionQuantityFieldName - shares its id with the quantity-action hint
- * pattern) from the latest availability, as reported by the API.
+ * Refreshes a non-quantity action's "X available" hint from the latest
+ * availability, as reported by the API. An unselected action's read-only
+ * quantity display is refreshed with it, since that is what it would claim if
+ * selected right now - a selected one is left to setChosenArea, which runs
+ * after this and knows what the action actually holds.
  * @param {HTMLInputElement} checkbox
  * @param {{ availability?: ActionAvailability | null }} action
  */
 function syncNonQuantityHint(checkbox, action) {
   const limit = getAvailabilityLimit(action.availability)
-  if (getQuantityInput(checkbox) || limit == null) {
+  if (limit == null) {
     return
   }
-  const hint = document.getElementById(`${getActionQuantityFieldName(checkbox.value)}-hint`)
+  const hint = getNonQuantityHint(checkbox)
   if (hint) {
-    hint.textContent = availabilityHintText(limit, /** @type {ActionAvailability} */ (action.availability).unit)
+    hint.textContent = availableArea(limit, /** @type {ActionAvailability} */ (action.availability).unit)
+  }
+  if (!checkbox.checked) {
+    setChosenAreaDisplay(checkbox, limit)
   }
 }
 
@@ -352,7 +357,7 @@ function applyUncheckedAvailability(checkbox, quantityInput, availability) {
  */
 function applyCheckedQuantityAvailability(checkbox, sentQuantity) {
   if (typeof sentQuantity === 'number') {
-    checkbox.setAttribute(TOTAL_CHOSEN_AREA_ATTR, String(sentQuantity))
+    setChosenArea(checkbox, sentQuantity)
   }
   clearUnavailable(checkbox)
 }
@@ -380,6 +385,13 @@ function applyCheckedNonQuantityAvailability(checkbox, availabilityValue, sentQu
   if (chosenArea === 0) {
     markUnavailable(checkbox)
   } else {
+    const hint = getNonQuantityHint(checkbox)
+    if (hint) {
+      hint.textContent = availableArea(
+        grows ? 0 : availabilityValue,
+        checkbox.getAttribute(AVAILABLE_UNIT_ATTR) ?? undefined
+      )
+    }
     clearUnavailable(checkbox)
   }
   return grows
