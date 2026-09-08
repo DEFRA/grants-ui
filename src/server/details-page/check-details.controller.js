@@ -146,6 +146,7 @@ export default class CheckDetailsController extends withTaskContext(QuestionPage
           type: ComponentType.RadiosField,
           name: confirmationFieldName,
           title: 'Are these details correct?',
+          shortDescription: 'Check your details',
           list: 'yesNo',
           options: {
             required: true,

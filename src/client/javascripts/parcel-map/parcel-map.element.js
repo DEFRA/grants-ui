@@ -5,6 +5,7 @@ import { attachTooltip } from './parcel-map-tooltip.js'
 import { attachSelectionRelay } from './parcel-map-selection.js'
 import {
   MULTI_SELECT_ATTRIBUTE,
+  ENABLED_LAND_ACTIONS_ATTRIBUTE,
   LAYER_ID_FILL,
   PARCEL_ID_PROPERTY,
   SELECT_FEATURE_EVENT,
@@ -113,6 +114,10 @@ export class ParcelMap extends HTMLElement {
     this.#state = STATE_LOADING
 
     const multiSelect = this.getAttribute(MULTI_SELECT_ATTRIBUTE) === 'true'
+    const enabledLandActions = (this.getAttribute(ENABLED_LAND_ACTIONS_ATTRIBUTE) ?? '')
+      .split(',')
+      .map((action) => action.trim())
+      .filter(Boolean)
 
     this.#skeleton = buildSkeleton()
     this.appendChild(this.#skeleton)
@@ -127,7 +132,7 @@ export class ParcelMap extends HTMLElement {
     this.#mapInstance = mapInstance
     this.#interactPlugin = interactPlugin
 
-    const [ml, data] = await Promise.all([ready, fetchParcelData()])
+    const [ml, data] = await Promise.all([ready, fetchParcelData(enabledLandActions)])
 
     // Torn down (disconnected) while we were loading, nothing to wire up.
     if (this.#state !== STATE_LOADING) {

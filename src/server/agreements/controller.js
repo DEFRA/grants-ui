@@ -47,6 +47,40 @@ function buildTargetUri(baseUrl, path) {
 }
 
 /**
+ * Reads the grant application context from the session, but only when it belongs
+ * to the currently authenticated business. The context (grantCode/clientRef) is
+ * written during a grant's post-submission redirect and is not re-derived per
+ * request, so a stale entry left over from an earlier journey - or one for a
+ * different SBI on a shared/dev account - would otherwise cause the agreements
+ * service to resolve and render another business' agreement. Dropping the
+ * mismatched context makes the upstream service reject the request instead.
+ * @param {AnyRequest} request - The incoming request object
+ * @param {string | number | undefined} authenticatedSbi - SBI from the authenticated credentials
+ * @returns {{ grantCode?: string, clientRef?: string } | null}
+ */
+function resolveGrantApplicationContext(request, authenticatedSbi) {
+  const storedContext = /** @type {{ grantCode?: string, clientRef?: string, sbi?: string | number } | null} */ (
+    request.yar?.get(YarKeys.GRANT_APPLICATION_CONTEXT)
+  )
+
+  if (!storedContext) {
+    return null
+  }
+
+  const contextSbi = storedContext.sbi
+  if (contextSbi != null && String(contextSbi) !== String(authenticatedSbi)) {
+    log(
+      LogCodes.AGREEMENTS.CONTEXT_SBI_MISMATCH,
+      { contextSbi: String(contextSbi), authenticatedSbi: String(authenticatedSbi) },
+      request
+    )
+    return null
+  }
+
+  return storedContext
+}
+
+/**
  * Builds proxy headers for the request
  *  - 'sbi' should be provided by the defra-id service
  *  - 'source' from grants-ui service will always be 'defra'
@@ -61,8 +95,9 @@ function buildProxyHeaders(token, request) {
   const source = 'defra'
   const jwtSecret = config.get('agreements.jwtSecret')
   const audience = /** @type {string[]} */ (config.get('agreements.jwtAudience'))
-  const grantApplicationContext = /** @type {{ grantCode?: string, clientRef?: string } | null} */ (
-    request.yar?.get(YarKeys.GRANT_APPLICATION_CONTEXT)
+  const grantApplicationContext = resolveGrantApplicationContext(
+    request,
+    /** @type {string | number | undefined} */ (sbi)
   )
   try {
     const userContext = Jwt.token.generate(

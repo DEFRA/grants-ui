@@ -202,5 +202,4 @@ Feature: Action Selection
         And continues
         Then the user should still be at URL "select-land-parcel"
         And should see the following error messages
-            | There are no eligible actions for parcel SK0972 7313.                              |
-            | Change the parcel land cover or choose a different parcel to view eligible actions. |
+            | There are no actions available for parcel SK0972 7313. Select another land parcel to continue. |

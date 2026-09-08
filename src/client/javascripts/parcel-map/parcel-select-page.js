@@ -2,10 +2,10 @@
 // public events emitted by <parcel-map> and drives this journey's form DOM
 // (hidden inputs, hint, live summary, no-parcels error, Continue button).
 import {
-  EVENT_READY,
-  EVENT_ERROR,
-  EVENT_SELECTION,
   ERROR_REASON_NO_PARCELS,
+  EVENT_ERROR,
+  EVENT_READY,
+  EVENT_SELECTION,
   TOTAL_AREA_DECIMAL_PLACES
 } from './config.js'
 import { formatParcelReference } from '../../../shared/format-parcel.js'
@@ -19,6 +19,8 @@ const DOM_ID_PARCEL_MAP_TOTAL_AREA = 'parcel-map-total-area'
 const DOM_ID_SELECTED_PARCEL_DETAILS = 'selected-parcel-details'
 const DOM_ID_SELECTED_PARCEL_REFERENCE = 'selected-parcel-reference'
 const DOM_ID_SELECTED_PARCEL_AREA = 'selected-parcel-area'
+const DOM_ID_SELECTED_PARCEL_ACTIONS = 'selected-parcel-actions'
+const DOM_ID_SUMMARY_PARCEL_NO_ACTIONS = 'summary-parcel-no-actions'
 const DOM_ID_SELECTED_PARCEL_CHANGE = 'selected-parcel-change'
 const DOM_ID_SELECTED_PARCELS_INPUTS = 'selected-parcels-inputs'
 const DOM_ID_REQUIREMENTS_ROW = 'selected-parcel-requirements-row'
@@ -59,22 +61,30 @@ const updateMapTotals = (metaIndex, parcelIds) => {
 
 /**
  * @param {SelectedParcel[]} selectedParcels
+ * @param {import('./map-helpers.js').MetaIndex} [metaIndex]
  */
-const updateSelectedParcelDetails = (selectedParcels) => {
+const updateSelectedParcelDetails = (selectedParcels, metaIndex = {}) => {
   const details = document.getElementById(DOM_ID_SELECTED_PARCEL_DETAILS)
   if (!details) {
     return
   }
+  const noActions = document.getElementById(DOM_ID_SUMMARY_PARCEL_NO_ACTIONS)
   if (selectedParcels.length !== 1) {
     details.hidden = true
+    if (noActions) {
+      noActions.hidden = true
+    }
     return
   }
-  const [{ id, areaHa }] = selectedParcels
+  const [{ id, areaHa, actionCount }] = selectedParcels
+  const count = actionCount ?? metaIndex[id]?.actionCount
+  const resolvedActionCount = typeof count === 'number' ? count : 0
   setText(DOM_ID_SELECTED_PARCEL_REFERENCE, formatParcelReference(id))
-  setText(
-    DOM_ID_SELECTED_PARCEL_AREA,
-    areaHa == null ? '' : `${Number(areaHa).toFixed(TOTAL_AREA_DECIMAL_PLACES)} hectares`
-  )
+  setText(DOM_ID_SELECTED_PARCEL_AREA, areaHa == null ? '' : `${Number(areaHa).toFixed(TOTAL_AREA_DECIMAL_PLACES)} ha`)
+  setText(DOM_ID_SELECTED_PARCEL_ACTIONS, String(resolvedActionCount))
+  if (noActions) {
+    noActions.hidden = resolvedActionCount !== 0
+  }
   details.hidden = false
 }
 
@@ -237,7 +247,7 @@ export function initParcelSelectPage(mapEl) {
   mapEl.addEventListener(EVENT_SELECTION, (/** @type {Event} */ e) => {
     const { selectedParcels } = /** @type {CustomEvent<SelectionDetail>} */ (e).detail
     writeHiddenInputs(selectedParcels.map((p) => p.id))
-    updateSelectedParcelDetails(selectedParcels)
+    updateSelectedParcelDetails(selectedParcels, metaIndex)
     updateConsentRequirements(selectedParcels)
   })
 
@@ -278,6 +288,7 @@ initParcelSelectPage(document.getElementById(DOM_ID_PARCEL_MAP))
  * @typedef {object} SelectedParcel
  * @property {string} id
  * @property {number | null} [areaHa]
+ * @property {number} [actionCount]
  */
 
 /**

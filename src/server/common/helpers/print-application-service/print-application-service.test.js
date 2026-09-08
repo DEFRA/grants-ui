@@ -84,7 +84,7 @@ describe('print-application-service', () => {
         { label: 'Total project cost', answer: '50000' }
       ])
 
-      expect(result.paymentInfo).toBeNull()
+      expect(result.landAndActionsSummary).toBeNull()
     })
 
     test('should default referenceNumber to "Not available" when not provided', () => {
@@ -356,7 +356,7 @@ describe('print-application-service', () => {
       expect(result[field]).toEqual(expected)
     })
 
-    test('should return populated paymentInfo when answers contain payment data', () => {
+    test('should return shared parcel and payment cards when answers contain payment data', () => {
       const result = buildPrintViewModel({
         ...baseParams,
         answers: {
@@ -365,10 +365,28 @@ describe('print-application-service', () => {
         }
       })
 
-      expect(result.paymentInfo).not.toBeNull()
-      expect(result.paymentInfo.totalAnnualPayment).toBe('£1500.00')
-      expect(result.paymentInfo.parcelItems).toHaveLength(2)
-      expect(result.paymentInfo.parcelItems[0].cardTitle).toBe('Land parcel ID AB1234 0001')
+      expect(result.landAndActionsSummary.applicationYearlyPayment).toBe('£1500.00')
+      expect(result.landAndActionsSummary.parcels).toHaveLength(2)
+      expect(result.landAndActionsSummary.parcels[0].reference).toBe('AB1234 0001')
+      expect(result.landAndActionsSummary.parcels[0].yearlyPayment).toBe('£1300.00')
+    })
+
+    test('should render an annual payment of zero', () => {
+      const result = buildPrintViewModel({
+        ...baseParams,
+        answers: { payment: { annualTotalPence: 0, parcelItems: {}, agreementLevelItems: {} } }
+      })
+
+      expect(result.landAndActionsSummary.applicationYearlyPayment).toBe('£0.00')
+    })
+
+    test.each([null, -1, 1.5, '100'])('should reject a malformed annual total of %s', (annualTotalPence) => {
+      expect(() =>
+        buildPrintViewModel({
+          ...baseParams,
+          answers: { payment: { annualTotalPence, parcelItems: {}, agreementLevelItems: {} } }
+        })
+      ).toThrow('payment.annualTotalPence must be a non-negative integer')
     })
 
     test.each([

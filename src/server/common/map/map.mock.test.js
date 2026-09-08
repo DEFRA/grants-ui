@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { buildMockFeatures } from './map.mock.js'
+import { buildMockFeatures, buildMockParcels, MOCK_ACTION_CODES } from './map.mock.js'
 
 vi.mock('~/src/config/config.js', () => ({ config: { get: vi.fn() } }))
 
@@ -18,6 +18,28 @@ describe('buildMockFeatures', () => {
     expect(features[0].id).toBe('SD1234-5678')
     expect(features[0].properties).toMatchObject({ id: 'SD1234-5678', sheet_id: 'SD1234', parcel_id: '5678' })
     expect(features[0].geometry).toBeDefined()
+  })
+
+  it('includes actionCount on each feature property', () => {
+    const { features } = buildMockFeatures([
+      { id: 'SD1-1', sheetId: 'SD1', parcelId: '1', areaHa: 1.0, actionCount: 5 },
+      { id: 'SD1-2', sheetId: 'SD1', parcelId: '2', areaHa: 2.0 }
+    ])
+    expect(features[0].properties.actionCount).toBe(5)
+    expect(typeof features[1].properties.actionCount).toBe('number')
+  })
+
+  it('builds mock parcels using MOCK_ACTION_CODES (CLIG3, CSAM3, SCR2)', () => {
+    expect(MOCK_ACTION_CODES).toEqual(['CLIG3', 'CSAM3', 'SCR2'])
+    const parcels = buildMockParcels(['SD1-100', 'SD1-101', 'SD1-102', 'SD1-103'])
+    expect(parcels[0].actions).toEqual([{ code: 'CLIG3' }])
+    expect(parcels[0].actionCount).toBe(1)
+    expect(parcels[1].actions).toEqual([{ code: 'CLIG3' }, { code: 'CSAM3' }])
+    expect(parcels[1].actionCount).toBe(2)
+    expect(parcels[2].actions).toEqual([{ code: 'CLIG3' }, { code: 'CSAM3' }, { code: 'SCR2' }])
+    expect(parcels[2].actionCount).toBe(3)
+    expect(parcels[3].actions).toEqual([{ code: 'CLIG3' }])
+    expect(parcels[3].actionCount).toBe(1)
   })
 
   it('never renders two parcels on the same footprint, dropping parcels beyond the shape limit', () => {

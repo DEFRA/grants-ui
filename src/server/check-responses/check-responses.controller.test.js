@@ -37,6 +37,10 @@ vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () =>
       getSummaryViewModel() {
         return JSON.parse(JSON.stringify(defaultViewModel))
       }
+
+      getHref(path) {
+        return `${this.model.basePath}${path}`
+      }
     }
   }
 })
@@ -160,6 +164,113 @@ describe('CheckResponsesPageController', () => {
         text: 'Original'
       })
     })
+
+    it('should replace structured land parcels with the shared land and actions summary model', () => {
+      const context = mockContext({
+        state: {
+          landParcels: {
+            'SD1234-5678': { actionsObj: { CLIG3: { value: 2, unit: 'ha' } } }
+          },
+          payment: {
+            annualTotalPence: 10000,
+            parcelItems: {
+              1: {
+                code: 'CLIG3',
+                description: 'Action description',
+                sheetId: 'SD1234',
+                parcelId: '5678',
+                quantity: 2,
+                unit: 'ha',
+                annualPaymentPence: 10000
+              }
+            }
+          },
+          agreementStartDate: '2026-02-01',
+          agreementEndDate: '2029-02-01',
+          agreementTotalPence: 30000
+        }
+      })
+
+      const result = controller.getSummaryViewModel(mockRequest, context)
+      const summary = result.checkAnswers[0].landAndActionsSummary
+
+      expect(result.details[0].items).toEqual([])
+      expect(result.checkAnswers[0].summaryList.rows).toEqual([])
+      expect(summary.changeHref).toBe('/test-form/confirm-land-and-actions')
+      expect(summary.parcels[0]).toMatchObject({
+        reference: 'SD1234 5678',
+        yearlyPayment: '£100.00',
+        actions: [{ action: 'Action description (CLIG3)', area: '2.0000 ha', yearlyPayment: '£100.00' }]
+      })
+      expect(summary.applicationYearlyPayment).toBe('£100.00')
+      expect(summary.agreementDuration).toBe('3 years')
+      expect(summary.agreementDurationYears).toBe(3)
+      expect(summary.agreementTotalPayment).toBe('£300.00')
+    })
+
+    it('should replace the hidden display field used by a configured map-select page', () => {
+      mockModel.def.pages = [{ path: '/select-land-parcel', controller: 'MapSelectPageController' }]
+      vi.spyOn(SummaryPageController.prototype, 'getSummaryViewModel').mockReturnValue(
+        buildViewModel({
+          details: [
+            {
+              items: [
+                {
+                  name: 'selectedParcelsDisplay',
+                  page: { path: '/select-land-parcel' },
+                  value: 'SD1234-5678'
+                }
+              ]
+            }
+          ],
+          checkAnswers: [
+            {
+              summaryList: {
+                rows: [{ key: { text: 'Select the land and actions' }, value: { text: 'SD1234-5678' } }]
+              }
+            }
+          ]
+        })
+      )
+      const context = mockContext({
+        state: {
+          landParcels: { 'SD1234-5678': { actionsObj: { CLIG3: {} } } },
+          payment: {
+            annualTotalPence: 10000,
+            parcelItems: {
+              1: {
+                code: 'CLIG3',
+                description: 'Action description',
+                sheetId: 'SD1234',
+                parcelId: '5678',
+                quantity: 2,
+                unit: 'ha',
+                annualPaymentPence: 10000
+              }
+            }
+          }
+        }
+      })
+
+      const result = controller.getSummaryViewModel(mockRequest, context)
+
+      expect(result.details[0].items).toEqual([])
+      expect(result.checkAnswers[0].summaryList.rows).toEqual([])
+      expect(result.checkAnswers[0].landAndActionsSummary.parcels[0].reference).toBe('SD1234 5678')
+      expect(result.checkAnswers[0].landAndActionsSummary.applicationYearlyPayment).toBe('£100.00')
+    })
+
+    it('should retain the engine answer when structured land parcels have no saved payment', () => {
+      const context = mockContext({
+        state: { landParcels: { 'SD1234-5678': { actionsObj: {} } } }
+      })
+
+      const result = controller.getSummaryViewModel(mockRequest, context)
+
+      expect(result.details[0].items).toHaveLength(1)
+      expect(result.checkAnswers[0].summaryList.rows).toHaveLength(1)
+      expect(result.checkAnswers[0].landAndActionsSummary).toBeUndefined()
+    })
   })
 
   describe('getSummaryViewModel - config.additionalSections', () => {
@@ -236,6 +347,40 @@ describe('CheckResponsesPageController', () => {
       const result = ctrl.getSummaryViewModel(mockRequest, context)
 
       expect(result.checkAnswers).toHaveLength(1)
+    })
+
+    it('should not duplicate a configured totalPayment section when the shared payment card is present', () => {
+      const ctrl = buildControllerWithAdditionalSections([
+        {
+          title: 'Payment summary',
+          items: [{ title: 'Annual payment for all parcels', stateValue: 'totalPayment' }]
+        }
+      ])
+      const context = mockContext({
+        state: {
+          landParcels: { 'SD1234-5678': { actionsObj: { CLIG3: {} } } },
+          payment: {
+            annualTotalPence: 10000,
+            parcelItems: {
+              1: {
+                code: 'CLIG3',
+                description: 'Action description',
+                sheetId: 'SD1234',
+                parcelId: '5678',
+                quantity: 2,
+                unit: 'ha',
+                annualPaymentPence: 10000
+              }
+            }
+          },
+          totalPayment: '£100.00'
+        }
+      })
+
+      const result = ctrl.getSummaryViewModel(mockRequest, context)
+
+      expect(result.checkAnswers).toHaveLength(1)
+      expect(result.checkAnswers[0].landAndActionsSummary.applicationYearlyPayment).toBe('£100.00')
     })
   })
 

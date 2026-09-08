@@ -1173,6 +1173,34 @@ describe('land-grants service', () => {
       ])
     })
 
+    it('should include actions when returned by parcelsWithSize', async () => {
+      const mockParcels = [{ parcelId: 'PARCEL1', sheetId: 'SHEET1' }]
+      const mockSizeResponse = {
+        parcels: [
+          {
+            parcelId: 'PARCEL1',
+            sheetId: 'SHEET1',
+            size: { total: 15.5, unit: 'ha' },
+            actions: [{ code: 'CLIG3' }, { code: 'CSAM3' }]
+          }
+        ]
+      }
+
+      fetchParcelsFromDal.mockResolvedValueOnce(mockParcels)
+      parcelsWithSize.mockResolvedValueOnce(mockSizeResponse)
+
+      const result = await fetchParcels(mockRequest)
+
+      expect(result).toEqual([
+        {
+          parcelId: 'PARCEL1',
+          sheetId: 'SHEET1',
+          area: { total: 15.5, unit: 'ha' },
+          actions: [{ code: 'CLIG3' }, { code: 'CSAM3' }]
+        }
+      ])
+    })
+
     it('should handle parcels with missing size data', async () => {
       const mockParcels = [
         { parcelId: 'PARCEL1', sheetId: 'SHEET1' },

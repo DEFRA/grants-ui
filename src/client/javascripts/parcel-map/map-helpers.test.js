@@ -274,7 +274,8 @@ describe('tooltip helpers', () => {
 
     expect(tooltip.style.display).toBe('block')
     expect(tooltip.innerHTML).toContain('&lt;b&gt;SD1&lt;/b&gt;')
-    expect(tooltip.innerHTML).toContain('2.50 ha')
+    expect(tooltip.innerHTML).toContain('2.5000 ha')
+    expect(tooltip.innerHTML).toContain('Available actions: 0')
   })
 
   it('falls back to "Unknown parcel"/"Unknown" when id/area are missing', () => {

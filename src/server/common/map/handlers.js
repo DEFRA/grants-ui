@@ -25,7 +25,8 @@ const PARCELS_ERROR_MESSAGE = 'Unable to load your land parcels'
 
 /**
  * Returns the signed-in user's parcels as GeoJSON features (id, sheet_id,
- * parcel_id, areaHa) plus the bounding box the map fits its viewport to.
+ * parcel_id, areaHa and the journey-filtered available-action count) plus the bounding
+ * box the map fits its viewport to.
  * @param {Request} request
  * @param {ResponseToolkit} h
  */
@@ -44,7 +45,8 @@ export async function parcelsHandler(request, h) {
     return h.response({ error: PARCELS_ERROR_MESSAGE }).code(upstreamStatus ?? statusCodes.serviceUnavailable)
   }
 
-  const parcelData = toParcelData(result.value)
+  const enabledLandActions = /** @type {{ enabledLandActions?: string[] }} */ (request.query)?.enabledLandActions ?? []
+  const parcelData = toParcelData(result.value, enabledLandActions)
 
   if (isMockData()) {
     return buildMockParcelsResponse(parcelData, h)

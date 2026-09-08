@@ -14,9 +14,15 @@ import { PARCELS_API_URL, FETCH_MAX_ATTEMPTS, FETCH_RETRY_DELAY_MS } from './con
  * Fetches the authenticated user's parcels, retrying once after a short delay.
  * Returns null when every attempt fails — the caller treats that as an
  * `unavailable` error. Contains no map knowledge, only fetch + retry.
+ * @param {string[]} enabledLandActions
  * @returns {Promise<ParcelData | null>}
  */
-export async function fetchParcelData() {
+export async function fetchParcelData(enabledLandActions = []) {
+  const params = new URLSearchParams()
+  enabledLandActions.forEach((action) => params.append('enabledLandActions', action))
+  const query = params.toString()
+  const url = query ? `${PARCELS_API_URL}?${query}` : PARCELS_API_URL
+
   /** @type {unknown} */
   let lastError
   for (let attempt = 0; attempt < FETCH_MAX_ATTEMPTS; attempt++) {
@@ -24,7 +30,7 @@ export async function fetchParcelData() {
       await new Promise((resolve) => globalThis.setTimeout(resolve, FETCH_RETRY_DELAY_MS))
     }
     try {
-      const resp = await fetch(PARCELS_API_URL)
+      const resp = await fetch(url)
       if (resp.ok) {
         return await parseParcelResponse(resp)
       }

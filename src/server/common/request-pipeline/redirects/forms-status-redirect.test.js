@@ -215,6 +215,21 @@ describe('formsStatusRedirect', () => {
     expect(h.redirect).toHaveBeenCalled()
   })
 
+  it('continues when the preSubmission destination is the current start page', async () => {
+    request.app.model.def.metadata.grantRedirectRules.preSubmission = [{ toPath: '/tasks' }]
+    request.path = '/grant-a/tasks'
+    context = {
+      referenceNumber: 'REF-004',
+      state: { applicationStatus: 'CLEARED', firstQuestion: 'saved answer' },
+      paths: ['/tasks']
+    }
+
+    const result = await formsStatusRedirect(request, h, context)
+
+    expect(result).toBe(h.continue)
+    expect(h.redirect).not.toHaveBeenCalled()
+  })
+
   it('continues when state has empty landParcels object (not meaningful)', async () => {
     const contextWithEmptyLandParcels = {
       referenceNumber: 'REF-005',
@@ -928,7 +943,8 @@ describe('formsStatusRedirect', () => {
         expect(request.yar.set).toHaveBeenCalledWith(YarKeys.GRANT_APPLICATION_CONTEXT, {
           grantCode: 'grant-a',
           grantVersion: '1.0.0',
-          clientRef: 'ref-001'
+          clientRef: 'ref-001',
+          sbi: '12345'
         })
       }
     )

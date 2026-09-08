@@ -23,20 +23,12 @@ import {
   setCachedParcel,
   setCachedSbiParcels
 } from '~/src/server/land-grants/services/parcel-cache.js'
+import {
+  filterEnabledLandActions,
+  normaliseEnabledLandActions
+} from '~/src/server/land-grants/utils/enabled-land-actions.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
-
-/**
- * @param {unknown} enabledLandActions
- * @returns {string[]}
- */
-const normaliseEnabledLandActions = (enabledLandActions = []) =>
-  Array.isArray(enabledLandActions)
-    ? enabledLandActions
-        .filter((action) => typeof action === 'string')
-        .map((action) => action.trim())
-        .filter(Boolean)
-    : []
 
 /**
  * @param {string} parcelKey
@@ -191,9 +183,9 @@ export async function fetchGroupedActionsForParcel(parcel, userContext) {
  */
 export async function fetchActionsForParcel(parcel, userContext) {
   return fetchParcelActions(parcel, userContext, 'flat:', parcelsWithActions, (actionsForParcel, enabledActions) =>
-    actionsForParcel
-      .filter((a) => enabledActions.includes(a.code))
-      .sort((a, b) => a.description.localeCompare(b.description))
+    filterEnabledLandActions(actionsForParcel, enabledActions).sort((a, b) =>
+      a.description.localeCompare(b.description)
+    )
   )
 }
 
@@ -276,16 +268,19 @@ export async function fetchParcelsGroups(state, userContext) {
  * Fetches parcel size for a list of parcel IDs.
  * @param {string[]} parcelIds
  * @param {LandGrantsUserContext} userContext
- * @returns {Promise<Record<string, Size | null>>}
+ * @returns {Promise<Record<string, { size: Size | null, actions?: ActionOption[] }>>}
  * @throws {Error}
  */
 async function fetchParcelsSize(parcelIds, userContext) {
-  const { parcels } = await parcelsWithSize(parcelIds, LAND_GRANTS_API_URL, userContext)
+  const { parcels = [] } = await parcelsWithSize(parcelIds, LAND_GRANTS_API_URL, userContext)
 
   return parcels.reduce((acc, p) => {
-    acc[stringifyParcel(p)] = p.size
+    acc[stringifyParcel(p)] = {
+      size: p.size ?? null,
+      ...(p.actions ? { actions: p.actions } : {})
+    }
     return acc
-  }, /** @type {Record<string, Size | null>} */ ({}))
+  }, /** @type {Record<string, { size: Size | null, actions?: ActionOption[] }>} */ ({}))
 }
 
 /**
@@ -331,10 +326,15 @@ async function loadParcelsForSbi(request, sbi, userContext) {
   const parcels = await fetchParcelsFromDal(request)
   const parcelKeys = parcels.map(stringifyParcel)
   const sizes = await fetchParcelsSize(parcelKeys, userContext)
-  const hydratedParcels = parcels.map((p) => ({
-    ...p,
-    area: sizes[stringifyParcel(p)] || {}
-  }))
+  const hydratedParcels = parcels.map((p) => {
+    const key = stringifyParcel(p)
+    const parcelData = sizes[key]
+    return {
+      ...p,
+      area: parcelData?.size ?? {},
+      ...(parcelData?.actions !== undefined ? { actions: parcelData.actions } : {})
+    }
+  })
 
   setCachedSbiParcels(sbi, hydratedParcels)
   return hydratedParcels

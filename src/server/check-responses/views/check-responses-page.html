@@ -2,6 +2,8 @@
 
 {% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "land-parcel-cards/macro.njk" import landParcelCards %}
+{% from "payment-summary-card/macro.njk" import paymentSummaryCard %}
 
 {% block pageTitle %}
 {{ pageTitle | evaluate }} | {{ serviceName }}
@@ -25,7 +27,24 @@
           </h2>
         {% endif %}
 
-        {{ govukSummaryList(section.summaryList) }}
+        {% if section.summaryList.rows | length %}
+          {{ govukSummaryList(section.summaryList) }}
+        {% endif %}
+
+        {% if section.landAndActionsSummary %}
+          {{ landParcelCards({
+            parcels: section.landAndActionsSummary.parcels,
+            readOnly: true,
+            changeHref: section.landAndActionsSummary.changeHref
+          }) }}
+          {{ paymentSummaryCard({
+            additionalYearlyPayments: section.landAndActionsSummary.additionalYearlyPayments,
+            applicationYearlyPayment: section.landAndActionsSummary.applicationYearlyPayment,
+            agreementDuration: section.landAndActionsSummary.agreementDuration,
+            agreementDurationYears: section.landAndActionsSummary.agreementDurationYears,
+            agreementTotalPayment: section.landAndActionsSummary.agreementTotalPayment
+          }) }}
+        {% endif %}
       {% endfor %}
 
     {% endblock %}

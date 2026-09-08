@@ -247,6 +247,9 @@ export function deleteParcelFromState(state, parcel) {
     delete newState.payment
     delete newState.totalPence
     delete newState.totalPayment
+    delete newState.agreementStartDate
+    delete newState.agreementEndDate
+    delete newState.agreementTotalPence
   }
 
   return newState
@@ -276,6 +279,9 @@ export function deleteActionFromState(state, parcel, action) {
       delete newState.payment
       delete newState.totalPence
       delete newState.totalPayment
+      delete newState.agreementStartDate
+      delete newState.agreementEndDate
+      delete newState.agreementTotalPence
     }
   }
 

@@ -17,6 +17,7 @@ import { config } from '~/src/config/config.js'
 import { mapPlugin } from './map.plugin.js'
 import { ROUTES } from './map-routes.js'
 import { osTileParams, parcelTileParams } from './tile-params.js'
+import { parcelsQuery } from './parcels-query.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 function makeServer() {
@@ -52,11 +53,11 @@ describe('mapPlugin route registration', () => {
     }
   })
 
-  it('wires the matching tile-param schema onto each tile route and nowhere else', () => {
+  it('wires each route validation schema to the matching route', () => {
     const byPath = Object.fromEntries(server._routes.map((r) => [r.path, r]))
     expect(byPath[ROUTES.osTiles].options.validate).toBe(osTileParams)
     expect(byPath[ROUTES.parcelTiles].options.validate).toBe(parcelTileParams)
-    expect(byPath[ROUTES.parcels].options.validate).toBeUndefined()
+    expect(byPath[ROUTES.parcels].options.validate).toBe(parcelsQuery)
     expect(byPath[ROUTES.osBasemap].options.validate).toBeUndefined()
   })
 

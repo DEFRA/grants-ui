@@ -1,12 +1,12 @@
 // @ts-nocheck
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { initParcelSelectPage } from './parcel-select-page.js'
 import {
-  EVENT_READY,
-  EVENT_ERROR,
-  EVENT_SELECTION,
   ERROR_REASON_NO_PARCELS,
-  ERROR_REASON_UNAVAILABLE
+  ERROR_REASON_UNAVAILABLE,
+  EVENT_ERROR,
+  EVENT_READY,
+  EVENT_SELECTION
 } from './config.js'
 
 const SSSI = 'site of special scientific interest (SSSI) consent'
@@ -32,12 +32,14 @@ function setupDom({ multiSelect = false, selectedParcels = '', errors = false, l
     <div id="selected-parcel-details" hidden>
       <span id="selected-parcel-reference"></span>
       <span id="selected-parcel-area"></span>
+      <span id="selected-parcel-actions"></span>
       <a id="selected-parcel-change" href="#parcel-map">Change</a>
       <div id="selected-parcel-requirements-row" hidden>
         <p id="selected-parcel-requirements-intro"></p>
         <ul id="selected-parcel-requirements-list"></ul>
       </div>
       <output id="selected-parcel-requirements-status"></output>
+      <div id="summary-parcel-no-actions" hidden></div>
     </div>
   `
   const mapEl = document.createElement('parcel-map')
@@ -120,11 +122,66 @@ describe('initParcelSelectPage', () => {
   it('shows the selected parcel details when exactly one parcel is selected', () => {
     const mapEl = setupDom()
     fire(mapEl, EVENT_SELECTION, {
-      selectedParcels: [{ id: 'SD7148-9160', areaHa: 1.5 }]
+      selectedParcels: [{ id: 'SD7148-9160', areaHa: 1.5, actionCount: 3 }]
     })
     expect(document.getElementById('selected-parcel-details').hidden).toBe(false)
     expect(document.getElementById('selected-parcel-reference').textContent).toBe('SD7148 9160')
-    expect(document.getElementById('selected-parcel-area').textContent).toBe('1.5000 hectares')
+    expect(document.getElementById('selected-parcel-area').textContent).toBe('1.5000 ha')
+    expect(document.getElementById('selected-parcel-actions').textContent).toBe('3')
+  })
+
+  it('falls back to metaIndex actionCount when selectedParcel actionCount is omitted', () => {
+    const mapEl = setupDom()
+    fire(mapEl, EVENT_READY, {
+      parcelIds: ['SD7148-9160'],
+      metaIndex: { 'SD7148-9160': { areaHa: 1.5, actionCount: 2 } }
+    })
+    fire(mapEl, EVENT_SELECTION, {
+      selectedParcels: [{ id: 'SD7148-9160', areaHa: 1.5 }]
+    })
+    expect(document.getElementById('selected-parcel-actions').textContent).toBe('2')
+  })
+
+  it('defaults to 0 when actionCount is not in selectedParcel or metaIndex', () => {
+    const mapEl = setupDom()
+    fire(mapEl, EVENT_SELECTION, {
+      selectedParcels: [{ id: 'SD7148-9160', areaHa: 1.5 }]
+    })
+    expect(document.getElementById('selected-parcel-actions').textContent).toBe('0')
+  })
+
+  it('shows the no-actions message when the selected parcel has no available actions', () => {
+    const mapEl = setupDom()
+
+    fire(mapEl, EVENT_SELECTION, {
+      selectedParcels: [{ id: 'SD7148-9160', areaHa: 1.5, actionCount: 0 }]
+    })
+
+    expect(document.getElementById('summary-parcel-no-actions').hidden).toBe(false)
+  })
+
+  it('hides the no-actions message when the selected parcel has available actions', () => {
+    const mapEl = setupDom()
+
+    fire(mapEl, EVENT_SELECTION, {
+      selectedParcels: [{ id: 'SD7148-9160', areaHa: 1.5, actionCount: 0 }]
+    })
+    fire(mapEl, EVENT_SELECTION, {
+      selectedParcels: [{ id: 'SD7148-9161', areaHa: 2.5, actionCount: 1 }]
+    })
+
+    expect(document.getElementById('summary-parcel-no-actions').hidden).toBe(true)
+  })
+
+  it('hides the no-actions message when the parcel selection is cleared', () => {
+    const mapEl = setupDom()
+
+    fire(mapEl, EVENT_SELECTION, {
+      selectedParcels: [{ id: 'SD7148-9160', areaHa: 1.5, actionCount: 0 }]
+    })
+    fire(mapEl, EVENT_SELECTION, { selectedParcels: [] })
+
+    expect(document.getElementById('summary-parcel-no-actions').hidden).toBe(true)
   })
 
   it('hides the selected parcel details when no parcel or multiple parcels are selected', () => {

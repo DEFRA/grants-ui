@@ -10,8 +10,7 @@ import { log, error, LogCodes } from '~/src/server/common/helpers/logging/log.js
 const PAGE_PATH = '/select-land-parcel'
 
 const noEligibleActionsError = (parcelReference) =>
-  `There are no eligible actions for parcel ${parcelReference}.<br>` +
-  'Change the parcel land cover or choose a different parcel to view eligible actions.'
+  `There are no actions available for parcel ${parcelReference}. Select another land parcel to continue.`
 
 function makePageDef(path = PAGE_PATH) {
   return { path }
@@ -45,6 +44,7 @@ function makeController(config = {}, metadata = {}) {
   const controller = new MapSelectPageController(makeModel(config, metadata), makePageDef())
   setupControllerMocks(controller)
   controller.getViewModel = vi.fn().mockReturnValue({ pageTitle: 'Select a land parcel' })
+  controller.getHref = vi.fn((path) => path)
   return controller
 }
 
@@ -132,6 +132,41 @@ describe('MapSelectPageController', () => {
         'map-select-parcel',
         expect.not.objectContaining({ selectedParcelIds: expect.anything() })
       )
+    })
+
+    it('passes the grant journey enabled actions to the map view', () => {
+      const h = makeH()
+
+      makeController({}, { enabledLandActions: ['CLIG3', 'CSAM3'] }).handleGet(makeRequest(), makeContext(), h)
+
+      expect(h.view).toHaveBeenCalledWith(
+        'map-select-parcel',
+        expect.objectContaining({ enabledLandActions: ['CLIG3', 'CSAM3'] })
+      )
+    })
+
+    it('shows Cancel and preserves the confirmation-page origin in the form action when opened from there', () => {
+      const h = makeH()
+      const request = makeRequest({}, '/select-land-parcel')
+      request.query = { origin: 'confirm-land-and-actions' }
+
+      makeController().handleGet(request, makeContext(), h)
+
+      expect(h.view).toHaveBeenCalledWith(
+        'map-select-parcel',
+        expect.objectContaining({
+          formAction: '/select-land-parcel?origin=confirm-land-and-actions',
+          cancelHref: '/confirm-land-and-actions'
+        })
+      )
+    })
+
+    it('does not show Cancel when opened as part of the normal journey', () => {
+      const h = makeH()
+
+      makeController().handleGet(makeRequest(), makeContext(), h)
+
+      expect(h.view).toHaveBeenCalledWith('map-select-parcel', expect.objectContaining({ cancelHref: undefined }))
     })
   })
 
@@ -421,6 +456,21 @@ describe('MapSelectPageController', () => {
       await controller.handlePost(makeRequest({ landParcels: 'SD 71/48' }), makeContext(), h)
 
       expect(controller.proceed).toHaveBeenCalledWith(expect.anything(), h, '/next-path?parcelId=SD%2071%2F48')
+    })
+
+    it('carries the confirmation-page origin to select-actions', async () => {
+      const controller = makeController()
+      const h = makeH()
+      const request = makeRequest({ landParcels: 'SD7148-9160' })
+      request.query = { origin: 'confirm-land-and-actions' }
+
+      await controller.handlePost(request, makeContext(), h)
+
+      expect(controller.proceed).toHaveBeenCalledWith(
+        expect.anything(),
+        h,
+        '/next-path?parcelId=SD7148-9160&origin=confirm-land-and-actions'
+      )
     })
 
     it('handles array payload with one item', async () => {

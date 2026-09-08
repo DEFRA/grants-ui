@@ -142,6 +142,12 @@ describe('parcel-map web component', () => {
       expect(el.querySelector('[role="alert"]')).toBeNull()
     })
 
+    it('requests parcel metadata for the enabled actions on the map page', async () => {
+      await mountReady({ 'data-enabled-land-actions': 'CLIG3, CSAM3' })
+
+      expect(global.fetch).toHaveBeenCalledWith('/api/map/parcels?enabledLandActions=CLIG3&enabledLandActions=CSAM3')
+    })
+
     it('getLastEvent replays the ready event for a listener that attaches late', async () => {
       const el = await mountReady()
       const replayed = el.getLastEvent(EVENT_READY)
@@ -621,7 +627,8 @@ describe('parcel-map web component', () => {
       const tooltip = el.querySelector('[role="tooltip"]')
       expect(tooltip).not.toBeNull()
       expect(tooltip.innerHTML).toContain('SD7148 9160')
-      expect(tooltip.innerHTML).toContain('2.50 ha')
+      expect(tooltip.innerHTML).toContain('2.5000 ha')
+      expect(tooltip.innerHTML).toContain('Available actions: 0')
     })
 
     it('shows "Unknown" area when areaHa is null', async () => {

@@ -2,6 +2,7 @@ import { config } from '~/src/config/config.js'
 import { error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { ROUTES } from './map-routes.js'
 import { osTileParams, parcelTileParams } from './tile-params.js'
+import { parcelsQuery } from './parcels-query.js'
 import { parcelsHandler, tilesHandler, osBasemapHandler, osTileProxyHandler } from './handlers.js'
 
 const sessionAuth = { auth: { mode: 'required', strategy: 'session' } }
@@ -22,7 +23,7 @@ export const mapPlugin = {
       server.route({
         method: 'GET',
         path: ROUTES.parcels,
-        options: sessionAuth,
+        options: { ...sessionAuth, validate: parcelsQuery },
         handler: parcelsHandler
       })
       server.route({

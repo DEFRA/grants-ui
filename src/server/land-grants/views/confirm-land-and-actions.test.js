@@ -13,19 +13,22 @@ const model = {
     {
       reference: 'SD1234 5678',
       removeHref: 'remove-parcel?parcelId=SD1234-5678',
-      addActionsHref: 'select-actions-for-land-parcel?parcelId=SD1234-5678',
+      addActionsHref:
+        'select-actions-for-land-parcel?parcelId=SD1234-5678&origin=confirm-land-and-actions&changeActions=true',
       actions: [
         {
           action: 'Action description (CLIG3)',
           area: '2.0000 ha',
           yearlyPayment: '£10.00',
-          changeHref: 'select-actions-for-land-parcel?parcelId=SD1234-5678'
+          changeHref:
+            'select-actions-for-land-parcel?parcelId=SD1234-5678&origin=confirm-land-and-actions&changeActions=true'
         },
         {
           action: 'Another action (CSAM3)',
           area: '4.0000 ha',
           yearlyPayment: '£20.00',
-          changeHref: 'select-actions-for-land-parcel?parcelId=SD1234-5678'
+          changeHref:
+            'select-actions-for-land-parcel?parcelId=SD1234-5678&origin=confirm-land-and-actions&changeActions=true'
         }
       ],
       yearlyPayment: '£30.00'
@@ -33,13 +36,15 @@ const model = {
     {
       reference: 'CD9999 1111',
       removeHref: 'remove-parcel?parcelId=CD9999-1111',
-      addActionsHref: 'select-actions-for-land-parcel?parcelId=CD9999-1111',
+      addActionsHref:
+        'select-actions-for-land-parcel?parcelId=CD9999-1111&origin=confirm-land-and-actions&changeActions=true',
       actions: [
         {
           action: 'Third action (SCR2)',
           area: '1.0000 ha',
           yearlyPayment: '£3.00',
-          changeHref: 'select-actions-for-land-parcel?parcelId=CD9999-1111'
+          changeHref:
+            'select-actions-for-land-parcel?parcelId=CD9999-1111&origin=confirm-land-and-actions&changeActions=true'
         }
       ],
       yearlyPayment: '£3.00'
@@ -47,6 +52,9 @@ const model = {
   ],
   additionalYearlyPayments: [],
   applicationYearlyPayment: '£1,234.00',
+  agreementDuration: '3 years',
+  agreementDurationYears: 3,
+  agreementTotalPayment: '£3,702.00',
   hasCalculationError: false
 }
 
@@ -150,7 +158,24 @@ describe('confirm-land-and-actions.html view', () => {
       .map((_, el) => normalise($(el).text()))
       .get()
 
-    expect(headers).toEqual(['Action', 'Quantity', 'Yearly payment', 'Change action'])
+    expect(headers).toEqual(['Action', 'Quantity', 'Yearly payment', 'Change'])
+  })
+
+  it('marks up the parcel table with fixed-width value columns after the flexible action column', () => {
+    const $ = renderPage(model)
+    const table = cards($).eq(0).find('.govuk-table')
+    const columns = table
+      .find('colgroup col')
+      .map((_, column) => $(column).attr('class') ?? '')
+      .get()
+
+    expect(table.hasClass('land-parcel-summary__table')).toBe(true)
+    expect(columns).toEqual([
+      '',
+      'land-parcel-summary__quantity-column',
+      'land-parcel-summary__yearly-payment-column',
+      'land-parcel-summary__change-column'
+    ])
   })
 
   it('renders each action as a row of name, quantity and payment, then the parcel subtotal', () => {
@@ -188,7 +213,7 @@ describe('confirm-land-and-actions.html view', () => {
     const $ = renderPage(model)
     const caption = cards($).eq(0).find('caption')
 
-    expect(normalise(caption.text())).toBe('Actions, quantity and yearly payment for land parcel SD1234 5678')
+    expect(normalise(caption.text())).toBe('Actions on land parcel SD1234 5678')
     expect(caption.hasClass('govuk-visually-hidden')).toBe(true)
   })
 
@@ -198,7 +223,9 @@ describe('confirm-land-and-actions.html view', () => {
 
     expect(firstAction.find('a')).toHaveLength(1)
     expect(normalise(firstAction.find('a').text())).toBe('Change Action description (CLIG3)')
-    expect(firstAction.find('a').attr('href')).toBe('select-actions-for-land-parcel?parcelId=SD1234-5678')
+    expect(firstAction.find('a').attr('href')).toBe(
+      'select-actions-for-land-parcel?parcelId=SD1234-5678&origin=confirm-land-and-actions&changeActions=true'
+    )
   })
 
   it('renders no action-level Remove control anywhere on the page', () => {
@@ -218,8 +245,8 @@ describe('confirm-land-and-actions.html view', () => {
       .get()
 
     expect(links).toEqual([
-      'select-actions-for-land-parcel?parcelId=SD1234-5678:Add more actions to this parcel SD1234 5678',
-      'select-actions-for-land-parcel?parcelId=CD9999-1111:Add more actions to this parcel CD9999 1111'
+      'select-actions-for-land-parcel?parcelId=SD1234-5678&origin=confirm-land-and-actions&changeActions=true:Add more actions to this parcel SD1234 5678',
+      'select-actions-for-land-parcel?parcelId=CD9999-1111&origin=confirm-land-and-actions&changeActions=true:Add more actions to this parcel CD9999 1111'
     ])
   })
 
@@ -311,16 +338,19 @@ describe('confirm-land-and-actions.html view', () => {
           ].join('|')
         )
         .get()
-    ).toEqual(['Assess moorland (CMOR1)|£272.00', 'Total yearly payment|£1,234.00'])
+    ).toEqual([
+      'Assess moorland (CMOR1)|£272.00',
+      'Total yearly payment|£1,234.00',
+      'Agreement duration|3 years',
+      'Estimated payment over 3 years|£3,702.00'
+    ])
   })
 
-  it('shows the total alone when there are no agreement-level items', () => {
+  it('shows yearly and agreement totals when there are no agreement-level items', () => {
     const $ = renderPage(model)
     const summary = cards($).last()
 
-    expect(summary.find('.govuk-summary-list__row')).toHaveLength(1)
-    expect(normalise(summary.find('.govuk-summary-list__key').text())).toBe('Total yearly payment')
-    expect(normalise(summary.find('.govuk-summary-list__value').text())).toBe('£1,234.00')
+    expect(summary.find('.govuk-summary-list__row')).toHaveLength(3)
   })
 
   it('renders the parcel subtotal and the application total with values', () => {
