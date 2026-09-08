@@ -338,6 +338,7 @@ export function findActionInfoFromState(landParcels, parcelKey, action) {
  * @property {boolean} [quantityRequired] - Whether the user must enter a quantity
  * @property {string[]} [consents] - Array of consent type keys required (e.g., ['sssi', 'hefer'])
  * @property {string} [guidanceUrl] - URL to the action's guidance page
+ * @property {boolean} [quantityRequired] - Backend says the user must enter a quantity
  * @property {object} [availability] - How much of the action is still claimable
  * @property {number | null} [availability.value] - Amount still claimable. 0 means not
  *   compatible with what is already selected; null means no restriction

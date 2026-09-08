@@ -418,6 +418,28 @@ describe('select-actions.view-model', () => {
       expect(result.attributes['data-total-available-area']).toBeUndefined()
       expect(result.attributes['data-available-unit']).toBe('ha')
     })
+    it('should infer a quantity input for an unrestricted square-metre action', () => {
+      configState.set('landGrants.enableHeferFeature', true)
+      const result = mapActionToViewModel(
+        {
+          code: 'HEF1',
+          description: 'Maintain weatherproof traditional farm or forestry buildings: HEF1',
+          ratePerUnitGbp: 5,
+          availability: { value: null, unit: 'sqm' },
+          heferRequired: true
+        },
+        []
+      )
+      configState.reset()
+
+      expect(result.conditional.html).toContain('name="landActionQuantity_HEF1"')
+      expect(result.conditional.html).toContain('inputmode="numeric"')
+      expect(result.conditional.html).toContain('>square metres<')
+      expect(result.html).toContain('Payment rate per year: £5.00/sqm')
+      expect(result.html).toContain('Requires an SFI HEFER')
+      expect(result.html).not.toContain('metres available')
+      expect(result.html).not.toContain('This action will use all the available area on this land parcel.')
+    })
 
     it('should not render a "null available" hint for a non-quantity action with no limit', () => {
       const action = {

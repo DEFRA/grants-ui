@@ -2249,6 +2249,27 @@ describe('quantity input validation', () => {
     vi.restoreAllMocks()
   })
 
+  it('rejects fractional square metres before sending a HEF1 claim and accepts a whole quantity', async () => {
+    const form = setupDom([
+      {
+        code: 'HEF1',
+        checked: true,
+        availability: { value: null, unit: 'sqm' },
+        requiresMaxQuantity: true,
+        unrestricted: true
+      }
+    ])
+    await initSettled(form, fetchOk({ actions: [] }))
+
+    await typeQuantity(form, 'HEF1', '4.5')
+    expect(errorFor('HEF1').textContent).toContain('Must be a whole number')
+    expect(global.fetch).not.toHaveBeenCalled()
+
+    await typeQuantity(form, 'HEF1', '4')
+    expect(errorFor('HEF1')).toBeNull()
+    expect(sentPlannedActions()).toEqual([{ actionCode: 'HEF1', quantity: 4, unit: 'sqm' }])
+  })
+
   // The field must read back the same value that gets submitted, so a bare
   // decimal gains its leading zero and padding is trimmed - neither is an error.
   it.each([

@@ -64,6 +64,22 @@ describe('getQuantityError', () => {
   it('gives negative input a different message to zero', () => {
     expect(getQuantityError('0', AVAILABLE)).not.toBe(getQuantityError('-1', AVAILABLE))
   })
+
+  it.each(['sqm', 'm2', 'count'])('requires whole numbers for %s without limiting hectares', (unit) => {
+    expect(getQuantityError('4', undefined, unit)).toBeNull()
+    expect(getQuantityError('4.5', undefined, unit)).toBe(QUANTITY_ERRORS.NOT_WHOLE_NUMBER)
+    expect(isValidQuantity('4.5', undefined, unit)).toBe(false)
+    expect(getQuantityError('4.5', undefined, 'ha')).toBeNull()
+  })
+
+  it.each([
+    ['0', 'Value must be greater than 0'],
+    ['-11', 'Value must be greater than 0'],
+    ['11.22001', QUANTITY_ERRORS.NOT_WHOLE_NUMBER],
+    ['as', 'Must be numbers']
+  ])('rejects invalid square-metre quantity %j with %s', (raw, expected) => {
+    expect(getQuantityError(raw, undefined, 'sqm')).toBe(expected)
+  })
 })
 
 describe('isValidQuantity', () => {

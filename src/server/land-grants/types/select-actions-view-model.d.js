@@ -5,6 +5,7 @@
  * @property {string} version - Action version
  * @property {boolean} [quantityRequired] - Whether the user must enter a quantity
  * @property {number} [ratePerUnitGbp] - Payment rate per unit in GBP
+ * @property {boolean} [quantityRequired] - Backend says the user must enter a quantity
  * @property {boolean} [sssiConsentRequired] - Action requires SSSI consent
  * @property {boolean} [heferRequired] - Action requires HEFER
  * @property {number} [ratePerAgreementPerYearGbp] - Additional payment per agreement per year

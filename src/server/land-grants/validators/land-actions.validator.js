@@ -1,7 +1,7 @@
 import { getSelectedActionCodes, SELECTED_ACTIONS_FIELD_NAME } from '../utils/selected-actions-field.js'
 import { getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
 import { requiresQuantityInput } from '~/src/shared/action-quantity-type.js'
-import { QUANTITY_PRECISION, getQuantityError } from '~/src/shared/action-quantity-validation.js'
+import { QUANTITY_PRECISION, getQuantityError, requiresWholeNumber } from '~/src/shared/action-quantity-validation.js'
 
 /**
  * Validators for land actions selection
@@ -72,6 +72,14 @@ export function validateSelectedActionQuantities(payload, actions) {
   for (const action of applicableActions) {
     const href = `#${getActionQuantityFieldName(action.code)}`
     const rawValue = String(payload[getActionQuantityFieldName(action.code)] ?? '').trim()
+
+    if (rawValue !== '' && requiresWholeNumber(action.availability?.unit)) {
+      const quantityError = getQuantityError(rawValue, undefined, action.availability?.unit)
+      if (quantityError) {
+        errors.push({ text: quantityError, href, code: action.code })
+      }
+      continue
+    }
 
     // Nothing to claim, however it was expressed - "enter a quantity" is the
     // action the user has to take whether the field was left blank or zeroed.

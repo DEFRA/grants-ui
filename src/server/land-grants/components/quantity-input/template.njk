@@ -13,8 +13,11 @@
       text: unit
     } if unit else undefined,
     attributes: {
-      max: maxQuantity
-    } if maxQuantity != undefined else undefined,
+      max: maxQuantity,
+      inputmode: inputmode
+    } if maxQuantity != undefined else {
+      inputmode: inputmode
+    },
     errorMessage: {
       text: errorText
     } if errorText else undefined,

@@ -232,5 +232,22 @@ describe('land-actions.validator', () => {
         }
       ])
     })
+
+    it.each([
+      ['0', 'Value must be greater than 0'],
+      ['-11', 'Value must be greater than 0'],
+      ['11.22001', 'Must be a whole number'],
+      ['as', 'Must be numbers']
+    ])('rejects invalid HEF1 quantity %j on the server', (quantity, text) => {
+      const hef1 = {
+        code: 'HEF1',
+        description: 'Maintain weatherproof traditional farm or forestry buildings',
+        version: '1.1.0',
+        availability: { unit: 'sqm', value: null }
+      }
+      expect(
+        validateSelectedActionQuantities({ landAction: 'HEF1', landActionQuantity_HEF1: quantity }, [hef1])
+      ).toEqual([{ text, href: '#landActionQuantity_HEF1', code: 'HEF1' }])
+    })
   })
 })

@@ -363,6 +363,44 @@ describe('land-parcel-state.manager', () => {
 
       expect(result.landParcels['AB1234-5678'].actionsObj.CSAM3.value).toBe(3.25)
     })
+    it('should store a submitted quantity for an unrestricted square-metre action', () => {
+      const actionsWithQuantity = [
+        {
+          code: 'HEF1',
+          description: 'Maintain weatherproof traditional farm or forestry buildings: HEF1',
+          availability: { value: null, unit: 'sqm' }
+        }
+      ]
+
+      const result = addSelectedActionsToState(
+        {},
+        { landAction: 'HEF1', landActionQuantity_HEF1: '4' },
+        actionsWithQuantity,
+        { sheetId: 'AB1234', parcelId: '5678' }
+      )
+
+      expect(result.landParcels['AB1234-5678'].actionsObj.HEF1.value).toBe(4)
+    })
+
+    it('should let explicit quantityRequired false override a partial availability type', () => {
+      const actionsWithNoQuantity = [
+        {
+          code: 'HEF1',
+          description: 'Maintain weatherproof traditional farm or forestry buildings: HEF1',
+          quantityRequired: false,
+          availability: { value: 5, unit: 'ha', type: 'partial' }
+        }
+      ]
+
+      const result = addSelectedActionsToState(
+        {},
+        { landAction: 'HEF1', landActionQuantity_HEF1: '4' },
+        actionsWithNoQuantity,
+        { sheetId: 'AB1234', parcelId: '5678' }
+      )
+
+      expect(result.landParcels['AB1234-5678'].actionsObj.HEF1.value).toBe(5)
+    })
 
     // Checking a quantity-required action's box alone (no quantity typed yet)
     // is not a confirmed selection - it must not be saved to state on submit,
@@ -730,7 +768,20 @@ describe('land-parcel-state.manager', () => {
 
       expect(result).toEqual([{ code: 'CSAM3', description: 'Herbal leys', value: '0.2' }])
     })
+    it('should redisplay a submitted unrestricted square-metre quantity', () => {
+      const payload = { landAction: 'HEF1', landActionQuantity_HEF1: '4' }
+      const actions = [
+        {
+          code: 'HEF1',
+          description: 'Maintain weatherproof traditional farm or forestry buildings: HEF1',
+          availability: { value: null, unit: 'sqm' }
+        }
+      ]
 
+      expect(getAddedActionsFromPayload(payload, actions)).toEqual([
+        { code: 'HEF1', description: 'Maintain weatherproof traditional farm or forestry buildings: HEF1', value: '4' }
+      ])
+    })
     it('should prefer the submitted hidden quantity for a total action over its previous chosen area', () => {
       const payload = { landAction: 'CLIG3', landActionQuantity_CLIG3: '2.189' }
       const actions = [

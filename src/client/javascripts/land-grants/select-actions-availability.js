@@ -103,7 +103,9 @@ function disableOtherActions(form, triggeringCheckbox) {
 export function getValidTypedQuantity(checkbox) {
   const quantityInput = getQuantityInput(checkbox)
   const raw = quantityInput?.value ?? ''
-  return isValidQuantity(raw, getTotalAvailableArea(checkbox)) ? Number(normaliseQuantityInput(raw)) : undefined
+  return isValidQuantity(raw, getTotalAvailableArea(checkbox), checkbox.getAttribute(AVAILABLE_UNIT_ATTR))
+    ? Number(normaliseQuantityInput(raw))
+    : undefined
 }
 
 /**
@@ -117,7 +119,13 @@ export function normaliseAndValidateQuantity(checkbox) {
   }
   quantityInput.value = normaliseQuantityInput(quantityInput.value)
   const message =
-    quantityInput.value === '' ? null : getQuantityError(quantityInput.value, getTotalAvailableArea(checkbox))
+    quantityInput.value === ''
+      ? null
+      : getQuantityError(
+          quantityInput.value,
+          getTotalAvailableArea(checkbox),
+          checkbox.getAttribute(AVAILABLE_UNIT_ATTR)
+        )
   if (message) {
     showQuantityError(quantityInput, message)
   } else {
