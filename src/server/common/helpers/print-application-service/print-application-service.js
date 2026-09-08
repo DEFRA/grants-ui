@@ -100,16 +100,16 @@ function extractQuestions(components, answers) {
  * Groups pages into sections, each containing its answered questions.
  * @param {FormPage[] | undefined} pages
  * @param {Answers} answers
- * @param {boolean} hasLandAndActionsSummary
+ * @param {boolean} hasParcelCards
  * @returns {{ title: string, questions: { label: string, answer: string }[] }[]}
  */
-function buildSections(pages, answers, hasLandAndActionsSummary) {
+function buildSections(pages, answers, hasParcelCards) {
   return (pages || [])
-    .filter((page) => !hasLandAndActionsSummary || page.controller !== 'MapSelectPageController')
+    .filter((page) => !hasParcelCards || page.controller !== 'MapSelectPageController')
     .map((page) => ({
       title: page.title,
       questions: extractQuestions(
-        page.components?.filter((component) => !hasLandAndActionsSummary || component.name !== 'landParcels'),
+        page.components?.filter((component) => !hasParcelCards || component.name !== 'landParcels'),
         answers
       )
     }))
@@ -196,7 +196,8 @@ export function buildPrintViewModel({
   const payment = /** @type {PaymentCalculation | undefined} */ (answers.payment)
   let landAndActionsSummary = null
 
-  if (payment) {
+  // Single-payment journeys such as Woodland do not supply an annual total.
+  if (payment?.annualTotalPence !== undefined) {
     landAndActionsSummary = buildConfirmLandAndActionsViewModel(
       {
         ...payment,
@@ -221,7 +222,7 @@ export function buildPrintViewModel({
       sbi: sessionData.sbi
     },
     applicantDetailsSections,
-    sections: buildSections(definition.pages, answers, Boolean(landAndActionsSummary)),
+    sections: buildSections(definition.pages, answers, Boolean(landAndActionsSummary?.parcels.length)),
     landAndActionsSummary,
     configurablePrintContent,
     breadcrumbs: []

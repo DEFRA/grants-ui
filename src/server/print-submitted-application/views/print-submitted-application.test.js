@@ -105,6 +105,8 @@ describe('print-submitted-application.html view', () => {
       buildPrintViewModel({
         ...params,
         answers: {
+          selectedParcelsDisplay: 'SD1234-5678',
+          landParcels: ['SD1234-5678'],
           payment: {
             ...payment,
             parcelItems: {},
@@ -119,6 +121,45 @@ describe('print-submitted-application.html view', () => {
 
     expect($('.govuk-summary-card')).toHaveLength(1)
     expect(normalise($('.govuk-summary-card').text())).toContain('Estimated payment over 3 years £816.00')
+    expect(normalise($('main').text())).toContain('Selected parcels SD1234-5678')
+    expect(normalise($('main').text())).toContain('Land parcels ["SD1234-5678"]')
+  })
+
+  it('renders Woodland answers when the saved calculation is a single payment', () => {
+    const $ = renderPage(
+      buildPrintViewModel({
+        ...params,
+        answers: {
+          selectedParcelsDisplay: 'SD1234-5678',
+          landParcels: ['SD1234-5678'],
+          projectName: 'Woodland management plan',
+          payment: {
+            frequency: 'Single',
+            agreementStartDate: '2026-01-01',
+            agreementEndDate: '2035-12-31',
+            agreementTotalPence: 300000,
+            parcelItems: {},
+            agreementLevelItems: {
+              1: {
+                code: 'PA3',
+                description: 'Woodland management plan',
+                quantity: 50,
+                agreementTotalPence: 300000,
+                unit: 'ha'
+              }
+            },
+            payments: [{ totalPaymentPence: 300000, paymentDate: null }]
+          }
+        }
+      })
+    )
+
+    const content = normalise($('main').text())
+    expect(content).toContain('Project name Woodland management plan')
+    expect(content).toContain('Selected parcels SD1234-5678')
+    expect(content).toContain('Land parcels ["SD1234-5678"]')
+    expect($('.govuk-summary-card')).toHaveLength(0)
+    expect($('#print-button')).toHaveLength(1)
   })
 
   it('keeps the compact parcel answers when no payment calculation was saved', () => {

@@ -371,6 +371,24 @@ describe('print-application-service', () => {
       expect(result.landAndActionsSummary.parcels[0].yearlyPayment).toBe('£1300.00')
     })
 
+    test('should render an annual payment of zero', () => {
+      const result = buildPrintViewModel({
+        ...baseParams,
+        answers: { payment: { annualTotalPence: 0, parcelItems: {}, agreementLevelItems: {} } }
+      })
+
+      expect(result.landAndActionsSummary.applicationYearlyPayment).toBe('£0.00')
+    })
+
+    test.each([null, -1, 1.5, '100'])('should reject a malformed annual total of %s', (annualTotalPence) => {
+      expect(() =>
+        buildPrintViewModel({
+          ...baseParams,
+          answers: { payment: { annualTotalPence, parcelItems: {}, agreementLevelItems: {} } }
+        })
+      ).toThrow('payment.annualTotalPence must be a non-negative integer')
+    })
+
     test.each([
       {
         includeApplicationInTitle: true,
