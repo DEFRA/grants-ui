@@ -6,6 +6,8 @@ import { stateToLandActionsMapper } from '../mappers/state-to-land-grants-mapper
 import { config } from '~/src/config/config.js'
 import { getRequiredActionConsents } from '~/src/server/land-grants/utils/consent-types.js'
 import {
+  LAND_GRANTS_ACTION_SIZE,
+  LAND_GRANTS_ACTIONS,
   calculate,
   locateParcelTiles,
   parcelsGroups,
@@ -273,7 +275,8 @@ export async function fetchParcelsGroups(state, userContext) {
  * @throws {Error}
  */
 async function fetchParcelsSize(parcelIds, userContext, includeActions) {
-  const { parcels = [] } = await parcelsWithSize(parcelIds, LAND_GRANTS_API_URL, userContext, includeActions)
+  const fields = includeActions ? [LAND_GRANTS_ACTION_SIZE, LAND_GRANTS_ACTIONS] : [LAND_GRANTS_ACTION_SIZE]
+  const { parcels = [] } = await parcelsWithSize(parcelIds, LAND_GRANTS_API_URL, userContext, fields)
 
   return parcels.reduce((acc, p) => {
     acc[stringifyParcel(p)] = {

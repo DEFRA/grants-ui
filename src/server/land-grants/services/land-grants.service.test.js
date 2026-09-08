@@ -74,7 +74,8 @@ const fetchParcelsGroups = withUserContext(fetchParcelsGroupsService)
 const fetchParcelTileLocation = withUserContext(fetchParcelTileLocationService)
 const validateApplication = withUserContext(validateApplicationService)
 
-vi.mock('~/src/server/land-grants/services/land-grants.client.js', () => ({
+vi.mock('~/src/server/land-grants/services/land-grants.client.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   calculate: vi.fn(),
   parcelsGroups: vi.fn(),
   parcelsWithSize: vi.fn(),
@@ -1158,7 +1159,7 @@ describe('land-grants service', () => {
         ['SHEET1-PARCEL1', 'SHEET2-PARCEL2'],
         mockApiEndpoint,
         mockUserContext,
-        false
+        ['size']
       )
       expect(result).toEqual([
         {
@@ -1179,8 +1180,8 @@ describe('land-grants service', () => {
       async (concurrent) => {
         const actions = [{ code: 'CLIG3' }]
         fetchParcelsFromDal.mockResolvedValue(oneParcel)
-        parcelsWithSize.mockImplementation(async (_ids, _url, _user, includeActions) => ({
-          parcels: oneParcelSize.parcels.map((p) => ({ ...p, ...(includeActions && { actions }) }))
+        parcelsWithSize.mockImplementation(async (_ids, _url, _user, fields) => ({
+          parcels: oneParcelSize.parcels.map((p) => ({ ...p, ...(fields.includes('actions') && { actions }) }))
         }))
 
         const sizeLoad = fetchParcelsService(mockRequest, mockUserContext)
