@@ -1188,12 +1188,12 @@ describe('land-grants service', () => {
         if (!concurrent) {
           await sizeLoad
         }
-        const actionLoad = fetchParcelsService(mockRequest, mockUserContext, true)
+        const actionLoad = fetchParcelsService(mockRequest, mockUserContext, ['size', 'actions'])
 
         expect(await sizeLoad).toEqual(oneParcelWithArea)
         expect(await actionLoad).toEqual([{ ...oneParcelWithArea[0], actions }])
         expect(await fetchParcelsService(mockRequest, mockUserContext)).toEqual(oneParcelWithArea)
-        expect(await fetchParcelsService(mockRequest, mockUserContext, true)).toEqual([
+        expect(await fetchParcelsService(mockRequest, mockUserContext, ['actions', 'size'])).toEqual([
           { ...oneParcelWithArea[0], actions }
         ])
         expect(parcelsWithSize).toHaveBeenCalledTimes(2)
