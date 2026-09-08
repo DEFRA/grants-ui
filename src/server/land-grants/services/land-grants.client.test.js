@@ -672,16 +672,18 @@ describe('Land Grants client', () => {
   })
 
   describe('parcelsWithSize', () => {
-    it('should trigger a POST request to /api/v2/parcels with size and actions filtering', async () => {
+    it.each([
+      [undefined, ['size']],
+      [true, ['size', 'actions']]
+    ])('requests the required parcel fields with includeActions=%s', async (includeActions, fields) => {
       const mockResponse = { parcels: [], status: 'success' }
-      const fields = ['size', 'actions']
       const parcelIds = ['parcel1']
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => mockResponse
       })
 
-      const result = await parcelsWithSize(parcelIds, mockApiEndpoint, mockUserContext)
+      const result = await parcelsWithSize(parcelIds, mockApiEndpoint, mockUserContext, includeActions)
 
       expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/parcels`, {
         method: 'POST',

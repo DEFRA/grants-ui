@@ -98,7 +98,7 @@ describe('parcelsHandler', () => {
     const request = makeRequest()
     await parcelsHandler(request, h)
 
-    expect(fetchParcels).toHaveBeenCalledWith(request, expectedUserContext)
+    expect(fetchParcels).toHaveBeenCalledWith(request, expectedUserContext, false)
     expect(fetchParcelTileLocation).toHaveBeenCalledWith(['SD7148-9160', 'SD7148-9161'], expectedUserContext)
     const [payload] = h.response.mock.calls[0]
     expect(payload.features).toEqual([

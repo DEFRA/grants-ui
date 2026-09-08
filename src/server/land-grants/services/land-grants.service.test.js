@@ -1157,7 +1157,8 @@ describe('land-grants service', () => {
       expect(parcelsWithSize).toHaveBeenCalledWith(
         ['SHEET1-PARCEL1', 'SHEET2-PARCEL2'],
         mockApiEndpoint,
-        mockUserContext
+        mockUserContext,
+        false
       )
       expect(result).toEqual([
         {
@@ -1173,33 +1174,30 @@ describe('land-grants service', () => {
       ])
     })
 
-    it('should include actions when returned by parcelsWithSize', async () => {
-      const mockParcels = [{ parcelId: 'PARCEL1', sheetId: 'SHEET1' }]
-      const mockSizeResponse = {
-        parcels: [
-          {
-            parcelId: 'PARCEL1',
-            sheetId: 'SHEET1',
-            size: { total: 15.5, unit: 'ha' },
-            actions: [{ code: 'CLIG3' }, { code: 'CSAM3' }]
-          }
-        ]
-      }
+    it.each([false, true])(
+      'isolates size-only and action-aware loads for one SBI (concurrent=%s)',
+      async (concurrent) => {
+        const actions = [{ code: 'CLIG3' }]
+        fetchParcelsFromDal.mockResolvedValue(oneParcel)
+        parcelsWithSize.mockImplementation(async (_ids, _url, _user, includeActions) => ({
+          parcels: oneParcelSize.parcels.map((p) => ({ ...p, ...(includeActions && { actions }) }))
+        }))
 
-      fetchParcelsFromDal.mockResolvedValueOnce(mockParcels)
-      parcelsWithSize.mockResolvedValueOnce(mockSizeResponse)
-
-      const result = await fetchParcels(mockRequest)
-
-      expect(result).toEqual([
-        {
-          parcelId: 'PARCEL1',
-          sheetId: 'SHEET1',
-          area: { total: 15.5, unit: 'ha' },
-          actions: [{ code: 'CLIG3' }, { code: 'CSAM3' }]
+        const sizeLoad = fetchParcelsService(mockRequest, mockUserContext)
+        if (!concurrent) {
+          await sizeLoad
         }
-      ])
-    })
+        const actionLoad = fetchParcelsService(mockRequest, mockUserContext, true)
+
+        expect(await sizeLoad).toEqual(oneParcelWithArea)
+        expect(await actionLoad).toEqual([{ ...oneParcelWithArea[0], actions }])
+        expect(await fetchParcelsService(mockRequest, mockUserContext)).toEqual(oneParcelWithArea)
+        expect(await fetchParcelsService(mockRequest, mockUserContext, true)).toEqual([
+          { ...oneParcelWithArea[0], actions }
+        ])
+        expect(parcelsWithSize).toHaveBeenCalledTimes(2)
+      }
+    )
 
     it('should handle parcels with missing size data', async () => {
       const mockParcels = [

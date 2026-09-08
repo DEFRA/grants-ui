@@ -33,7 +33,8 @@ const PARCELS_ERROR_MESSAGE = 'Unable to load your land parcels'
 export async function parcelsHandler(request, h) {
   const formRequest = /** @type {AnyFormRequest} */ (/** @type {unknown} */ (request))
   const userContext = getLandGrantsUserContext(formRequest)
-  const result = await attempt(() => fetchParcels(formRequest, userContext))
+  const enabledLandActions = /** @type {{ enabledLandActions?: string[] }} */ (request.query)?.enabledLandActions ?? []
+  const result = await attempt(() => fetchParcels(formRequest, userContext, enabledLandActions.length > 0))
 
   if (!result.ok) {
     const err = /** @type {Error & { code?: unknown, status?: unknown }} */ (result.error)
@@ -45,7 +46,6 @@ export async function parcelsHandler(request, h) {
     return h.response({ error: PARCELS_ERROR_MESSAGE }).code(upstreamStatus ?? statusCodes.serviceUnavailable)
   }
 
-  const enabledLandActions = /** @type {{ enabledLandActions?: string[] }} */ (request.query)?.enabledLandActions ?? []
   const parcelData = toParcelData(result.value, enabledLandActions)
 
   if (isMockData()) {

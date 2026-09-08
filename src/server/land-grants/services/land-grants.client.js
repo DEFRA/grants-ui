@@ -138,10 +138,11 @@ export async function calculate(payload, baseUrl, userContext) {
  * @param {string[]} parcelIds
  * @param {string} baseUrl
  * @param {LandGrantsUserContext} userContext
+ * @param {boolean} [includeActions] - Include availability only for action-aware consumers.
  * @returns {Promise<ParcelResponse>}
  */
-export async function parcelsWithSize(parcelIds, baseUrl, userContext) {
-  return parcelsWithFields(['size', 'actions'], parcelIds, baseUrl, userContext)
+export async function parcelsWithSize(parcelIds, baseUrl, userContext, includeActions = false) {
+  return parcelsWithFields(includeActions ? ['size', 'actions'] : ['size'], parcelIds, baseUrl, userContext)
 }
 
 /**

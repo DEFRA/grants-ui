@@ -268,11 +268,12 @@ export async function fetchParcelsGroups(state, userContext) {
  * Fetches parcel size for a list of parcel IDs.
  * @param {string[]} parcelIds
  * @param {LandGrantsUserContext} userContext
+ * @param {boolean} includeActions
  * @returns {Promise<Record<string, { size: Size | null, actions?: ActionOption[] }>>}
  * @throws {Error}
  */
-async function fetchParcelsSize(parcelIds, userContext) {
-  const { parcels = [] } = await parcelsWithSize(parcelIds, LAND_GRANTS_API_URL, userContext)
+async function fetchParcelsSize(parcelIds, userContext, includeActions) {
+  const { parcels = [] } = await parcelsWithSize(parcelIds, LAND_GRANTS_API_URL, userContext, includeActions)
 
   return parcels.reduce((acc, p) => {
     acc[stringifyParcel(p)] = {
@@ -284,7 +285,7 @@ async function fetchParcelsSize(parcelIds, userContext) {
 }
 
 /**
- * In-flight parcel loads keyed by SBI. Map tile requests arrive in parallel
+ * In-flight parcel loads keyed by SBI and query mode. Map tile requests arrive in parallel
  * bursts; without this, every request that misses the value cache would fire
  * its own DAL + size-API round trip. Entries remove themselves on settle, so
  * failures are never cached and the next call retries.
@@ -294,38 +295,43 @@ const inflightParcelsBySbi = new Map()
 
 /**
  * Fetches parcels with area data for a given SBI. Concurrent calls for the
- * same SBI share a single upstream load.
+ * same SBI and query mode share a single upstream load.
  * @param {AnyFormRequest} request
  * @param {LandGrantsUserContext} userContext
+ * @param {boolean} [includeActions] - Only needed for map action counts.
  * @returns {Promise<HydratedParcel[]>}
  * @throws {Error}
  */
-export async function fetchParcels(request, userContext) {
+export async function fetchParcels(request, userContext, includeActions = false) {
   const sbi = request.auth?.credentials?.sbi
-  const cached = getCachedSbiParcels(sbi)
+  const cacheKey = includeActions ? `${sbi}:actions` : sbi
+  const cached = getCachedSbiParcels(cacheKey)
 
   if (cached) {
     return cached
   }
 
-  let inflight = inflightParcelsBySbi.get(sbi)
+  let inflight = inflightParcelsBySbi.get(cacheKey)
   if (!inflight) {
-    inflight = loadParcelsForSbi(request, sbi, userContext).finally(() => inflightParcelsBySbi.delete(sbi))
-    inflightParcelsBySbi.set(sbi, inflight)
+    inflight = loadParcelsForSbi(request, cacheKey, userContext, includeActions).finally(() =>
+      inflightParcelsBySbi.delete(cacheKey)
+    )
+    inflightParcelsBySbi.set(cacheKey, inflight)
   }
   return inflight
 }
 
 /**
  * @param {AnyFormRequest} request
- * @param {unknown} sbi
+ * @param {unknown} cacheKey
  * @param {LandGrantsUserContext} userContext
+ * @param {boolean} includeActions
  * @returns {Promise<HydratedParcel[]>}
  */
-async function loadParcelsForSbi(request, sbi, userContext) {
+async function loadParcelsForSbi(request, cacheKey, userContext, includeActions) {
   const parcels = await fetchParcelsFromDal(request)
   const parcelKeys = parcels.map(stringifyParcel)
-  const sizes = await fetchParcelsSize(parcelKeys, userContext)
+  const sizes = await fetchParcelsSize(parcelKeys, userContext, includeActions)
   const hydratedParcels = parcels.map((p) => {
     const key = stringifyParcel(p)
     const parcelData = sizes[key]
@@ -336,7 +342,7 @@ async function loadParcelsForSbi(request, sbi, userContext) {
     }
   })
 
-  setCachedSbiParcels(sbi, hydratedParcels)
+  setCachedSbiParcels(cacheKey, hydratedParcels)
   return hydratedParcels
 }
 
