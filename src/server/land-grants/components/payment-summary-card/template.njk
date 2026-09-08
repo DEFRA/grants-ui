@@ -1,0 +1,27 @@
+{% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+{% from "summaryCard/macro.njk" import summaryCard %}
+
+{% call summaryCard({ title: { text: "Payment summary" } }) %}
+  {% set paymentRows = [] %}
+  {% for additionalPayment in params.additionalYearlyPayments %}
+    {% set paymentRows = (paymentRows.push({
+      key: { text: additionalPayment.action },
+      value: { text: additionalPayment.yearlyPayment }
+    }), paymentRows) %}
+  {% endfor %}
+  {% set paymentRows = (paymentRows.push({
+    key: { text: "Total yearly payment" },
+    value: { text: params.applicationYearlyPayment }
+  }), paymentRows) %}
+  {% if params.agreementDuration and params.agreementDurationYears is defined and params.agreementTotalPayment %}
+    {% set paymentRows = (paymentRows.push({
+      key: { text: "Agreement duration" },
+      value: { text: params.agreementDuration }
+    }), paymentRows) %}
+    {% set paymentRows = (paymentRows.push({
+      key: { text: "Estimated payment over " + params.agreementDurationYears + (" year" if params.agreementDurationYears === 1 else " years") },
+      value: { text: params.agreementTotalPayment }
+    }), paymentRows) %}
+  {% endif %}
+  {{ govukSummaryList({ rows: paymentRows, classes: "govuk-!-margin-bottom-0" }) }}
+{% endcall %}

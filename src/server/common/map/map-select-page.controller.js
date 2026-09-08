@@ -7,15 +7,17 @@ import { formatParcelReference, parseLandParcel } from '~/src/shared/format-parc
 import { hasAvailableLand } from '~/src/shared/availability.js'
 import { getAddedActionsForStateParcel } from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
 import { escapeHtml } from '~/src/server/common/utils/escape-html.js'
-import { log, error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { error, log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { isNoActionsMockEnabled } from '~/src/server/dev-tools/mock-overrides.js'
+import {
+  CONFIRM_LAND_AND_ACTIONS_PATH,
+  isFromConfirmLandAndActions,
+  withConfirmLandAndActionsOrigin
+} from '~/src/server/land-grants/utils/confirm-land-and-actions-navigation.js'
 
-// Second line must match the no-eligible-actions copy in
-// src/server/land-grants/views/select-actions.html.
 /** @param {string} selectedParcelId */
 const noEligibleActionsError = (selectedParcelId) =>
-  `There are no eligible actions for parcel ${escapeHtml(formatParcelReference(selectedParcelId))}.<br>` +
-  'Change the parcel land cover or choose a different parcel to view eligible actions.'
+  `There are no actions available for parcel ${escapeHtml(formatParcelReference(selectedParcelId))}. Select another land parcel to continue.`
 
 export default class MapSelectPageController extends withTaskContext(QuestionPageController) {
   viewName = 'map-select-parcel'
@@ -65,10 +67,13 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
    * @param {Record<string, unknown>} [extra]
    */
   buildViewModel(request, context, extra = {}) {
+    const fromConfirmLandAndActions = isFromConfirmLandAndActions(request)
     return {
       ...super.getViewModel(request, context),
       multiSelect: this.multiSelect,
-      formAction: request.path,
+      enabledLandActions: this.enabledLandActions,
+      formAction: fromConfirmLandAndActions ? withConfirmLandAndActionsOrigin(request.path) : request.path,
+      cancelHref: fromConfirmLandAndActions ? this.getHref(CONFIRM_LAND_AND_ACTIONS_PATH) : undefined,
       ...extra
     }
   }
@@ -245,13 +250,27 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
 
     await this.setState(request, /** @type {FormSubmissionState} */ (/** @type {unknown} */ (newState)))
 
+    return this.proceed(request, h, this.getPostRedirect(request, context, selectedParcelIds))
+  }
+
+  /**
+   * Builds the next-page URL with the selected parcel and return-to-confirm origin.
+   * @param {FormRequestPayload} request
+   * @param {FormContext} context
+   * @param {string[]} selectedParcelIds
+   */
+  getPostRedirect(request, context, selectedParcelIds) {
     const nextPath = this.getNextPath(context)
-    const redirect =
+    let redirect =
       !this.multiSelect && selectedParcelIds[0] && nextPath
         ? `${nextPath}?parcelId=${encodeURIComponent(selectedParcelIds[0])}`
         : nextPath
 
-    return this.proceed(request, h, redirect)
+    if (redirect && isFromConfirmLandAndActions(request)) {
+      redirect = withConfirmLandAndActionsOrigin(redirect)
+    }
+
+    return redirect
   }
 }
 

@@ -141,7 +141,7 @@ export async function calculate(payload, baseUrl, userContext) {
  * @returns {Promise<ParcelResponse>}
  */
 export async function parcelsWithSize(parcelIds, baseUrl, userContext) {
-  return parcelsWithFields(['size'], parcelIds, baseUrl, userContext)
+  return parcelsWithFields(['size', 'actions'], parcelIds, baseUrl, userContext)
 }
 
 /**

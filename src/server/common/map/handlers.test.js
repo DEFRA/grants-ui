@@ -61,6 +61,7 @@ function makeRequest(params = {}) {
   return {
     auth: { credentials: { token: 'defra-id-access-token', sbi: '123456789' } },
     params,
+    query: {},
     yar: { get: vi.fn(), set: vi.fn() }
   }
 }
@@ -127,6 +128,31 @@ describe('parcelsHandler', () => {
 
     const [{ features }] = h.response.mock.calls[0]
     expect(features[0].properties.areaHa).toBeNull()
+  })
+
+  it('counts only available actions enabled for the current grant journey', async () => {
+    fetchParcels.mockResolvedValue([
+      {
+        sheetId: 'SD7148',
+        parcelId: '9160',
+        area: { value: 2.5 },
+        actions: [
+          { code: 'CLIG3', availability: { value: 0, unit: 'ha' } },
+          { code: 'CSAM3', availability: { value: 0, unit: 'ha' } },
+          { code: 'SCR2', availability: { value: 2, unit: 'ha' } },
+          { code: 'WBD1', availability: { value: 3, unit: 'ha' } }
+        ]
+      }
+    ])
+    fetchParcelTileLocation.mockResolvedValue(null)
+    const request = makeRequest()
+    request.query.enabledLandActions = ['CLIG3', 'CSAM3', 'SCR2']
+    const h = makeH()
+
+    await parcelsHandler(request, h)
+
+    const [{ features }] = h.response.mock.calls[0]
+    expect(features[0].properties.actionCount).toBe(1)
   })
 
   it('continues with null bbox when fetchParcelTileLocation returns null', async () => {

@@ -7,6 +7,7 @@ import { buildConfirmLandAndActionsViewModel } from '~/src/server/land-grants/vi
 import { withTaskContext } from '~/src/server/task-list/task-list.helper.js'
 import { logUpstreamError } from '~/src/server/common/helpers/logging/upstream-error.js'
 import { YarKeys } from '~/src/server/common/constants/session-keys.js'
+import { withConfirmLandAndActionsOrigin } from '~/src/server/land-grants/utils/confirm-land-and-actions-navigation.js'
 
 const CALCULATION_ERROR_MESSAGE =
   'Unable to get payment information, please try again later or contact the Rural Payments Agency.'
@@ -130,7 +131,10 @@ export default class ConfirmLandAndActionsPageController extends withTaskContext
               ...state,
               payment,
               totalPence: payment.annualTotalPence,
-              totalPayment: paymentTotal
+              totalPayment: paymentTotal,
+              agreementStartDate: payment.agreementStartDate,
+              agreementEndDate: payment.agreementEndDate,
+              agreementTotalPence: payment.agreementTotalPence
             })
           )
         )
@@ -145,7 +149,15 @@ export default class ConfirmLandAndActionsPageController extends withTaskContext
       } catch (err) {
         this.logCalculationFailure(err, request)
 
-        const { payment, totalPence, totalPayment, ...clearedState } = state
+        const {
+          payment,
+          totalPence,
+          totalPayment,
+          agreementStartDate,
+          agreementEndDate,
+          agreementTotalPence,
+          ...clearedState
+        } = state
         await this.setState(
           request,
           /** @type {import('@defra/forms-engine-plugin/types').FormSubmissionState} */ (
@@ -160,7 +172,7 @@ export default class ConfirmLandAndActionsPageController extends withTaskContext
           errors: [{ text: CALCULATION_ERROR_MESSAGE }],
           landParcelRemovalSuccessMessage,
           retryHref: this.getHref(this.path),
-          selectLandParcelHref: this.getHref(this.addAnotherLandParcelPath)
+          selectLandParcelHref: withConfirmLandAndActionsOrigin(this.getHref(this.addAnotherLandParcelPath))
         })
       }
     }
@@ -180,7 +192,15 @@ export default class ConfirmLandAndActionsPageController extends withTaskContext
    * @param {string | undefined} landParcelRemovalSuccessMessage
    */
   async renderNoLandParcels(request, context, h, landParcelRemovalSuccessMessage) {
-    const { payment, totalPence, totalPayment, ...clearedState } = context.state
+    const {
+      payment,
+      totalPence,
+      totalPayment,
+      agreementStartDate,
+      agreementEndDate,
+      agreementTotalPence,
+      ...clearedState
+    } = context.state
     await this.setState(
       request,
       /** @type {import('@defra/forms-engine-plugin/types').FormSubmissionState} */ (
@@ -194,7 +214,7 @@ export default class ConfirmLandAndActionsPageController extends withTaskContext
       hasCalculationError: false,
       hasNoLandParcels: true,
       landParcelRemovalSuccessMessage,
-      selectLandParcelHref: this.getHref(this.addAnotherLandParcelPath)
+      selectLandParcelHref: withConfirmLandAndActionsOrigin(this.getHref(this.addAnotherLandParcelPath))
     })
   }
 
@@ -244,7 +264,7 @@ export default class ConfirmLandAndActionsPageController extends withTaskContext
       const payload = /** @type {{ action?: string }} */ (request.payload ?? {})
 
       if (payload.action === ADD_ANOTHER_ACTION) {
-        return h.redirect(this.getHref(this.addAnotherLandParcelPath))
+        return h.redirect(withConfirmLandAndActionsOrigin(this.getHref(this.addAnotherLandParcelPath)))
       }
 
       return this.proceed(request, h, this.nextPath ?? this.getNextPath(context))

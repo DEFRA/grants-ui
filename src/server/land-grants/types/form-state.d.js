@@ -38,6 +38,9 @@
  * @property {string} crn - Customer Reference Number
  * @property {Applicant} applicant - Applicant details
  * @property {PaymentCalculation} payment - Payment details
+ * @property {string} [agreementStartDate] - Agreement start date from the payment calculation
+ * @property {string} [agreementEndDate] - Agreement end date from the payment calculation
+ * @property {number} [agreementTotalPence] - Payment over the whole agreement in pence
  * @property {LandParcels} landParcels - Land parcels with actions
  * @property {LandParcelMetadataItem[]} [landParcelMetadata] - Area metadata for selected parcels (woodland journey)
  * @property {ValidateApplicationResponse} [validationResult] - Last rules-engine result, mapped to rulesCalculations

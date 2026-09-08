@@ -1,30 +1,30 @@
 import {
-  MAP_STYLE_URL,
-  getMapStyleAttribution,
-  PARCEL_COLORS,
-  LAYER_TEXT_SIZE,
-  LAYER_TEXT_HALO_WIDTH,
-  LAYER_LINE_WIDTH,
   AREA_DECIMAL_PLACES,
-  PARCEL_ID_PROPERTY,
-  PARCEL_CLICK_TOLERANCE_PX,
-  PARCEL_TILES_URL,
-  FIT_BOUNDS_PADDING,
-  SOURCE_ID_PARCELS,
-  LAYER_ID_FILL,
-  LAYER_ID_OUTLINE,
-  LAYER_ID_LABEL,
-  FILL_OPACITY_DEFAULT,
-  ERROR_OVERLAY_STYLES,
   ERROR_LABEL_STYLES,
-  LABEL_TEXT_COLOR,
+  ERROR_OVERLAY_STYLES,
+  FILL_OPACITY_DEFAULT,
+  FIT_BOUNDS_PADDING,
+  getMapStyleAttribution,
   LABEL_HALO_COLOR,
+  LABEL_TEXT_COLOR,
+  LAYER_ID_FILL,
+  LAYER_ID_LABEL,
+  LAYER_ID_OUTLINE,
+  LAYER_LINE_WIDTH,
+  LAYER_TEXT_HALO_WIDTH,
+  LAYER_TEXT_SIZE,
+  MAP_STYLE_URL,
   MSG_LOADING,
-  MSG_UNKNOWN_PARCEL,
   MSG_UNKNOWN_AREA,
-  TOOLTIP_OFFSET_X,
-  TOOLTIP_MAX_WIDTH,
+  MSG_UNKNOWN_PARCEL,
+  PARCEL_CLICK_TOLERANCE_PX,
+  PARCEL_COLORS,
+  PARCEL_ID_PROPERTY,
+  PARCEL_TILES_URL,
+  SOURCE_ID_PARCELS,
   TOOLTIP_FALLBACK_MAP_WIDTH,
+  TOOLTIP_MAX_WIDTH,
+  TOOLTIP_OFFSET_X,
   TOOLTIP_VERTICAL_OFFSET
 } from './config.js'
 import { formatParcelReference } from '../../../shared/format-parcel.js'
@@ -34,7 +34,7 @@ import { formatParcelReference } from '../../../shared/format-parcel.js'
  */
 
 /**
- * @typedef {{ sheet_id?: unknown, parcel_id?: unknown, areaHa?: unknown, [key: string]: unknown }} ParcelProperties
+ * @typedef {{ sheet_id?: unknown, parcel_id?: unknown, areaHa?: unknown, actionCount?: unknown, [key: string]: unknown }} ParcelProperties
  * @typedef {{ id: string } & ParcelProperties} ParcelMeta
  * @typedef {Record<string, ParcelMeta>} MetaIndex
  */
@@ -329,12 +329,15 @@ export function resolveFeatureId(feature) {
  */
 export function showTooltip(tooltip, id, props, x, y, mapEl) {
   const areaHa = props.areaHa == null ? null : Number(props.areaHa)
+  const actionCount = typeof props.actionCount === 'number' ? props.actionCount : 0
   tooltip.innerHTML = `
     <strong style="display:block;margin-bottom:8px;font-size:15px">${htmlEncode(formatParcelReference(id) || MSG_UNKNOWN_PARCEL)}</strong>
-    <table style="border-collapse:collapse;width:100%">
-      <tr><td style="color:#505a5f;padding:2px 12px 2px 0;white-space:nowrap">Total area</td>
-          <td>${areaHa == null ? MSG_UNKNOWN_AREA : htmlEncode(areaHa.toFixed(AREA_DECIMAL_PLACES) + ' ha')}</td></tr>
-    </table>`
+    <div style="color:#505a5f;padding:2px 12px 2px 0;white-space:nowrap">
+      Total area: ${areaHa == null ? MSG_UNKNOWN_AREA : htmlEncode(areaHa.toFixed(AREA_DECIMAL_PLACES) + ' ha')}
+    </div>
+    <div style="color:#505a5f;padding:2px 12px 2px 0;white-space:nowrap">
+      Available actions: ${actionCount}
+    </div>`
   tooltip.style.left = `${Math.min(x + TOOLTIP_OFFSET_X, (mapEl?.offsetWidth ?? TOOLTIP_FALLBACK_MAP_WIDTH) - TOOLTIP_MAX_WIDTH)}px`
   tooltip.style.top = `${y - TOOLTIP_VERTICAL_OFFSET}px`
   tooltip.style.display = 'block'

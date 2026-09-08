@@ -244,7 +244,12 @@ function preSubmissionRedirect(request, h, context) {
     return h.continue
   }
 
-  return h.redirect(buildRedirectUrl(grantId, destinationPath)).takeover()
+  const redirectUrl = buildRedirectUrl(grantId, destinationPath)
+  if (request.path === redirectUrl) {
+    return h.continue
+  }
+
+  return h.redirect(redirectUrl).takeover()
 }
 
 /**

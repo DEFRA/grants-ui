@@ -107,6 +107,8 @@ metadata:
         classes: 'govuk-tag--green'
 ```
 
+Each status override can set `text` and `classes`. If a status override is provided without `classes` (or with empty `classes`), that status renders as plain `text` instead of a coloured `govuk-tag`. When no override is provided for a status, the default text and tag class are used.
+
 ### Defining Sections and Tasks
 
 #### 1. Define sections
@@ -187,6 +189,16 @@ The system provides three standard statuses, customisable in the YAML configurat
 | Completed        | "Completed"        | `govuk-tag--green`  | All required fields on the page have values                 |
 | Not started      | "Not started"      | `govuk-tag--yellow` | No required fields completed, and prerequisites met         |
 | Cannot start yet | "Cannot start yet" | `govuk-tag--grey`   | Previous tasks not completed (when `completeInOrder: true`) |
+
+To render a status as plain text instead of a coloured `govuk-tag`, provide an override for that status with `text` but without `classes` (or with empty `classes`). For example:
+
+```yaml
+metadata:
+  tasklist:
+    statuses:
+      completed:
+        text: 'Completed' # No `classes` - renders as plain text, not a tag
+```
 
 Two further statuses exist for the alternative `showQuestions: false` display mode and are not currently configurable via `metadata.tasklist.statuses`:
 

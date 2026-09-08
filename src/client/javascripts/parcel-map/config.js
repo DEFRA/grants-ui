@@ -10,6 +10,7 @@ export function getMapStyleAttribution() {
 export const TAG_NAME = 'parcel-map'
 
 export const MULTI_SELECT_ATTRIBUTE = 'multi-select'
+export const ENABLED_LAND_ACTIONS_ATTRIBUTE = 'data-enabled-land-actions'
 
 export const PARCEL_COLORS = [
   '#1d70b8', // govuk-blue
@@ -25,7 +26,7 @@ export const LAYER_TEXT_SIZE = 11
 export const LAYER_TEXT_HALO_WIDTH = 1.5
 export const LAYER_LINE_WIDTH = 1.5
 export const FIT_BOUNDS_PADDING = 40
-export const AREA_DECIMAL_PLACES = 2
+export const AREA_DECIMAL_PLACES = 4
 export const TOTAL_AREA_DECIMAL_PLACES = 4
 
 // Feature property carrying the compound "SHEET-PARCEL" ID. Present in both the

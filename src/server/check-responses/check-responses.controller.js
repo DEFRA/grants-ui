@@ -1,5 +1,7 @@
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 import { getTaskPageBackLink } from '~/src/server/task-list/task-list.helper.js'
+import { buildConfirmLandAndActionsViewModel } from '~/src/server/land-grants/view-models/confirm-land-and-actions.view-model.js'
+import { CONFIRM_LAND_AND_ACTIONS_PATH } from '~/src/server/land-grants/utils/confirm-land-and-actions-navigation.js'
 
 export default class CheckResponsesPageController extends SummaryPageController {
   /**
@@ -23,19 +25,116 @@ export default class CheckResponsesPageController extends SummaryPageController 
   }
 
   /**
+   * Replaces the engine's single land-parcels answer with the detailed parcel
+   * and payment cards used by the confirm land and actions page. Older journeys
+   * that store parcel references as an array retain their compact answer.
    * @param {{ details?: any[], checkAnswers?: any[] }} viewModel
-   * @param {any} landParcels
+   * @param {Record<string, any>} state
+   * @returns {boolean} Whether the detailed land and actions summary was applied
    */
-  #applyLandParcels(viewModel, landParcels) {
+  #applyLandParcels(viewModel, state) {
+    const { landParcels, payment } = state
+
     if (Array.isArray(landParcels) && landParcels.length) {
-      const displayValue = landParcels.join(', ')
-      viewModel.details?.forEach((detail, di) => {
-        const ii = detail.items?.findIndex((/** @type {any} */ item) => item.name === 'landParcels') ?? -1
-        if (ii !== -1 && viewModel.checkAnswers) {
-          viewModel.checkAnswers[di].summaryList.rows[ii].value = { html: displayValue }
-        }
-      })
+      this.#applyParcelReferences(viewModel, landParcels)
+      return false
     }
+
+    if (
+      !landParcels ||
+      Array.isArray(landParcels) ||
+      typeof landParcels !== 'object' ||
+      Object.keys(landParcels).length === 0
+    ) {
+      return false
+    }
+
+    if (!payment || !Array.isArray(viewModel.details) || !Array.isArray(viewModel.checkAnswers)) {
+      return false
+    }
+
+    const landAndActionsSummary = this.#buildLandAndActionsSummary(state)
+
+    return this.#applyLandAndActionsSummary(viewModel.details, viewModel.checkAnswers, landAndActionsSummary)
+  }
+
+  /**
+   * Builds the detailed summary using saved agreement values when available.
+   * @param {Record<string, any>} state
+   * @returns {ReturnType<typeof buildConfirmLandAndActionsViewModel> & { changeHref: string }}
+   */
+  #buildLandAndActionsSummary(state) {
+    const { landParcels, payment, agreementStartDate, agreementEndDate, agreementTotalPence } = state
+
+    return {
+      ...buildConfirmLandAndActionsViewModel(
+        {
+          ...payment,
+          agreementStartDate: agreementStartDate ?? payment.agreementStartDate,
+          agreementEndDate: agreementEndDate ?? payment.agreementEndDate,
+          agreementTotalPence: agreementTotalPence ?? payment.agreementTotalPence
+        },
+        landParcels
+      ),
+      changeHref: this.getHref(CONFIRM_LAND_AND_ACTIONS_PATH)
+    }
+  }
+
+  /**
+   * Updates the compact answer used by journeys that store parcel references as an array.
+   * @param {{ details?: any[], checkAnswers?: any[] }} viewModel
+   * @param {any[]} landParcels
+   */
+  #applyParcelReferences(viewModel, landParcels) {
+    const displayValue = landParcels.join(', ')
+    viewModel.details?.forEach((detail, di) => {
+      const ii = detail.items?.findIndex((/** @type {any} */ item) => item.name === 'landParcels') ?? -1
+      if (ii !== -1 && viewModel.checkAnswers) {
+        viewModel.checkAnswers[di].summaryList.rows[ii].value = { html: displayValue }
+      }
+    })
+  }
+
+  /**
+   * Replaces matching parcel answers with the detailed summary, keeping detail items and rows aligned.
+   * @param {any[]} details
+   * @param {any[]} checkAnswers
+   * @param {ReturnType<typeof buildConfirmLandAndActionsViewModel> & { changeHref: string }} landAndActionsSummary
+   * @returns {boolean} Whether any parcel answer was replaced
+   */
+  #applyLandAndActionsSummary(details, checkAnswers, landAndActionsSummary) {
+    const mapSelectPaths = new Set(
+      (this.model?.def?.pages ?? [])
+        .filter((/** @type {any} */ page) => page.controller === 'MapSelectPageController')
+        .map((/** @type {any} */ page) => page.path)
+    )
+    let applied = false
+
+    details.forEach((detail, di) => {
+      const parcelIndex =
+        detail.items?.findIndex(
+          (/** @type {any} */ item) => item.name === 'landParcels' || mapSelectPaths.has(item.page?.path)
+        ) ?? -1
+      const checkAnswer = checkAnswers[di]
+
+      if (parcelIndex === -1 || !checkAnswer) {
+        return
+      }
+
+      detail.items = detail.items.filter((/** @type {any} */ _item, /** @type {number} */ i) => i !== parcelIndex)
+      const rows = checkAnswer.summaryList?.rows ?? []
+      checkAnswers[di] = {
+        ...checkAnswer,
+        summaryList: {
+          ...checkAnswer.summaryList,
+          rows: rows.filter((/** @type {any} */ _row, /** @type {number} */ i) => i !== parcelIndex)
+        },
+        landAndActionsSummary
+      }
+      applied = true
+    })
+
+    return applied
   }
 
   /**
@@ -45,14 +144,24 @@ export default class CheckResponsesPageController extends SummaryPageController 
    * @param {{ checkAnswers?: any[] }} viewModel
    * @param {AdditionalSection[] | undefined} additionalSections
    * @param {Record<string, any>} state
+   * @param {Set<string>} [excludedStateValues]
    */
-  #appendAdditionalSections(viewModel, additionalSections, state) {
+  #appendAdditionalSections(viewModel, additionalSections, state, excludedStateValues = new Set()) {
     if (!Array.isArray(additionalSections) || !viewModel.checkAnswers) {
       return
     }
 
     additionalSections.forEach((section) => {
-      const rows = (section.items ?? []).map((item) => ({
+      const configuredItems = section.items ?? []
+      const items = configuredItems.filter((item) => !excludedStateValues.has(item.stateValue))
+
+      // The detailed land and actions summary already renders totalPayment in
+      // the shared payment card, so do not add the former configured duplicate.
+      if (configuredItems.length > 0 && items.length === 0) {
+        return
+      }
+
+      const rows = items.map((item) => ({
         key: { text: item.title },
         value: { text: state?.[item.stateValue] ?? 'Not provided' }
       }))
@@ -126,11 +235,13 @@ export default class CheckResponsesPageController extends SummaryPageController 
     const sectionTitle = this.section?.hideTitle !== true ? this.section?.title : ''
 
     this.#excludeCheckDetailsEntries(viewModel)
-    this.#applyLandParcels(viewModel, context?.state?.landParcels)
+    const state = /** @type {Record<string, any>} */ (/** @type {unknown} */ (context?.state ?? {}))
+    const hasLandAndActionsSummary = this.#applyLandParcels(viewModel, state)
     this.#appendAdditionalSections(
       viewModel,
       this.additionalSections,
-      /** @type {Record<string, any>} */ (/** @type {unknown} */ (context?.state))
+      state,
+      hasLandAndActionsSummary ? new Set(['totalPayment']) : undefined
     )
 
     // SummaryViewModel is a class with a private `summaryDetails` member and does not

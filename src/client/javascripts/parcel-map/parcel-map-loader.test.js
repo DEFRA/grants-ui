@@ -64,4 +64,12 @@ describe('fetchParcelData', () => {
     expect(data.parcelIds).toEqual(['A'])
     expect(global.fetch).toHaveBeenCalledTimes(1)
   })
+
+  it('passes each enabled land action to the parcels endpoint', async () => {
+    global.fetch = vi.fn().mockResolvedValue(resp({ features: [] }))
+
+    await fetchParcelData(['CLIG3', 'CSAM3'])
+
+    expect(global.fetch).toHaveBeenCalledWith('/api/map/parcels?enabledLandActions=CLIG3&enabledLandActions=CSAM3')
+  })
 })

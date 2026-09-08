@@ -486,7 +486,10 @@ describe('land-parcel-state.manager', () => {
         },
         payment: { total: 100 },
         totalPence: 10000,
-        totalPayment: 500
+        totalPayment: 500,
+        agreementStartDate: '2026-02-01',
+        agreementEndDate: '2029-02-01',
+        agreementTotalPence: 30000
       }
 
       const result = deleteParcelFromState(state, 'AB1234-5678')
@@ -495,6 +498,9 @@ describe('land-parcel-state.manager', () => {
       expect(result).not.toHaveProperty('payment')
       expect(result).not.toHaveProperty('totalPence')
       expect(result).not.toHaveProperty('totalPayment')
+      expect(result).not.toHaveProperty('agreementStartDate')
+      expect(result).not.toHaveProperty('agreementEndDate')
+      expect(result).not.toHaveProperty('agreementTotalPence')
     })
 
     it('should not mutate original state', () => {
@@ -550,7 +556,10 @@ describe('land-parcel-state.manager', () => {
         },
         payment: { total: 100 },
         totalPence: 10000,
-        totalPayment: 500
+        totalPayment: 500,
+        agreementStartDate: '2026-02-01',
+        agreementEndDate: '2029-02-01',
+        agreementTotalPence: 30000
       }
 
       const result = deleteActionFromState(state, 'AB1234-5678', 'SAM1')
@@ -559,6 +568,9 @@ describe('land-parcel-state.manager', () => {
       expect(result).not.toHaveProperty('payment')
       expect(result).not.toHaveProperty('totalPence')
       expect(result).not.toHaveProperty('totalPayment')
+      expect(result).not.toHaveProperty('agreementStartDate')
+      expect(result).not.toHaveProperty('agreementEndDate')
+      expect(result).not.toHaveProperty('agreementTotalPence')
     })
 
     it('should handle deleting non-existent action gracefully', () => {

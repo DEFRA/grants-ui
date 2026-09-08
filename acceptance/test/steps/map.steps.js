@@ -1,4 +1,4 @@
-import { Given, When, Then } from '@cucumber/cucumber'
+import { Given, Then, When } from '@cucumber/cucumber'
 import expect from '../support/expect.js'
 
 Given('the map has the following land parcels available for selection', async function (dataTable) {
@@ -52,7 +52,7 @@ Then(
   '(the user )should see {string} totalling {string} hectares in the selected parcel summary',
   async function (parcelId, area) {
     await expect(this.page.locator('#selected-parcel-reference')).toHaveText(parcelId)
-    await expect(this.page.locator('#selected-parcel-area')).toHaveText(`${area} hectares`)
+    await expect(this.page.locator('#selected-parcel-area')).toHaveText(`${area} ha`)
   }
 )
 
