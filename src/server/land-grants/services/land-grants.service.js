@@ -15,7 +15,7 @@ import {
   validate
 } from '~/src/server/land-grants/services/land-grants.client.js'
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
-import { formatUnit } from '~/src/shared/format-unit.js'
+import { formatUnit } from '~/src/shared/unit-format.js'
 import { getAvailabilityLimit } from '~/src/shared/availability.js'
 import {
   getCachedParcel,

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatArea, areaWithUnit, availableArea } from './unit-format.js'
+import { formatArea, formatUnit, areaWithUnit, availableArea } from './unit-format.js'
 
 describe('unit-format', () => {
   describe('areaWithUnit', () => {
@@ -59,5 +59,19 @@ describe('formatArea', () => {
     expect(formatArea(2, '')).toBe('2.0000')
     expect(formatArea(undefined, 'ha')).toBe('ha')
     expect(formatArea(null, null)).toBe('')
+  })
+})
+
+describe('formatUnit', () => {
+  it.each([
+    ['ha', 'hectares'],
+    ['sqm', 'square metres'],
+    ['m', 'metres'],
+    ['km', 'kilometres'],
+    [' KM ', 'kilometres'],
+    ['widgets', 'widgets'],
+    [undefined, '']
+  ])('formats %j as %j', (abbrev, expected) => {
+    expect(formatUnit(abbrev)).toBe(expected)
   })
 })
