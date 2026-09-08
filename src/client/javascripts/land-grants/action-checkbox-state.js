@@ -5,7 +5,7 @@
  */
 
 import { getActionChosenAreaDisplayId, getActionQuantityFieldName } from '../../../shared/action-quantity-field.js'
-import { areaWithUnitText } from '../../../shared/area-text.js'
+import { areaWithUnit } from '../../../shared/unit-format.js'
 
 export const CHECKBOX_NAME = 'landAction'
 export const AVAILABLE_UNIT_ATTR = 'data-available-unit'
@@ -74,7 +74,7 @@ export function getNonQuantityHint(checkbox) {
 export function setChosenAreaDisplay(checkbox, chosenArea) {
   const display = document.getElementById(getActionChosenAreaDisplayId(checkbox.value))
   if (display) {
-    display.textContent = areaWithUnitText(chosenArea, checkbox.getAttribute(AVAILABLE_UNIT_ATTR) ?? undefined)
+    display.textContent = areaWithUnit(chosenArea, checkbox.getAttribute(AVAILABLE_UNIT_ATTR) ?? undefined)
   }
 }
 

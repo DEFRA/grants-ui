@@ -10,7 +10,7 @@ import { getActionChosenAreaDisplayId, getActionQuantityFieldName } from '~/src/
 import { requiresQuantityInput } from '~/src/shared/action-quantity-type.js'
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
 import { formatUnit } from '~/src/shared/format-unit.js'
-import { areaWithUnitText, availableAreaText } from '~/src/shared/area-text.js'
+import { areaWithUnit, availableArea } from '~/src/shared/unit-format.js'
 import { getAvailabilityLimit, hasAvailableLand } from '~/src/shared/availability.js'
 import { formatParcelReference } from '~/src/shared/format-parcel.js'
 import { SELECTED_ACTIONS_FIELD_NAME } from '~/src/server/land-grants/utils/selected-actions-field.js'
@@ -70,7 +70,7 @@ function getChosenAreaConditional(action, chosenArea) {
   return {
     html: landGrantsViewEnv.render(CHOSEN_AREA_TEMPLATE, {
       displayId: getActionChosenAreaDisplayId(action.code),
-      areaText: areaWithUnitText(area, action.availability?.unit)
+      areaText: areaWithUnit(area, action.availability?.unit)
     })
   }
 }
@@ -128,7 +128,7 @@ function getHintHtml(action, needsQuantity, chosenArea) {
   const limit = getAvailabilityLimit(action.availability)
   const availabilityText = needsQuantity
     ? `${limit} ${formatUnit(action.availability?.unit)} available`
-    : availableAreaText(limit ?? 0, action.availability?.unit)
+    : availableArea(limit ?? 0, action.availability?.unit)
   return landGrantsViewEnv.render(ACTION_HINT_TEMPLATE, {
     rate: String(action.ratePerUnitGbp?.toFixed(2)),
     agreementRate: action.ratePerAgreementPerYearGbp,

@@ -23,7 +23,7 @@ export function formatArea(quantity, unit) {
  * @param {string} [unit]
  * @returns {string}
  */
-export function areaWithUnitText(value, unit) {
+export function areaWithUnit(value, unit) {
   return formatArea(value, formatUnit(unit))
 }
 
@@ -34,6 +34,6 @@ export function areaWithUnitText(value, unit) {
  * @param {string} [unit]
  * @returns {string}
  */
-export function availableAreaText(value, unit) {
-  return `${areaWithUnitText(value, unit)} available`
+export function availableArea(value, unit) {
+  return `${areaWithUnit(value, unit)} available`
 }

@@ -1,6 +1,6 @@
 import { formatPrice } from '~/src/server/common/utils/payment.js'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
-import { formatArea } from '~/src/shared/area-text.js'
+import { formatArea } from '~/src/shared/unit-format.js'
 import { stringifyParcel } from '~/src/shared/format-parcel.js'
 import {
   changeActionsHref,
