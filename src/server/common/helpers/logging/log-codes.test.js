@@ -569,7 +569,18 @@ describe('LogCodes', () => {
         { userId: TEST_USER_IDS.DEFAULT, errorMessage: TEST_ERRORS.PROCESSING_FAILED },
         `Agreement processing error for CRN=${TEST_USER_IDS.MASKED}: ${TEST_ERRORS.PROCESSING_FAILED}`
       ],
-      ['PROXY_RESPONSE_ERROR', 'error', {}, 'Proxy response is undefined. Possible upstream error or misconfiguration.']
+      [
+        'PROXY_RESPONSE_ERROR',
+        'error',
+        {},
+        'Proxy response is undefined. Possible upstream error or misconfiguration.'
+      ],
+      [
+        'CONTEXT_SBI_MISMATCH',
+        'warn',
+        { contextSbi: '106284736', authenticatedSbi: '106514040' },
+        'Ignoring stored grant application context: context SBI=106284736 does not match authenticated SBI=106514040'
+      ]
     ])
   })
 

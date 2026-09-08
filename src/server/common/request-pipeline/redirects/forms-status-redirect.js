@@ -522,7 +522,13 @@ async function handlePostSubmission(request, h, context, previousStatus, grantCo
   const redirectUrl = isAgreementsRedirect ? rule.toPath : buildRedirectUrl(grantId, rule.toPath)
 
   const grantVersion = getGrantVersion(request)
-  request.yar.set(YarKeys.GRANT_APPLICATION_CONTEXT, { grantCode, grantVersion, clientRef: clientRef.toLowerCase() })
+  const { sbi } = getCacheKey(request)
+  request.yar.set(YarKeys.GRANT_APPLICATION_CONTEXT, {
+    grantCode,
+    grantVersion,
+    clientRef: clientRef.toLowerCase(),
+    sbi
+  })
 
   if (request.path === redirectUrl) {
     return h.continue
@@ -772,7 +778,13 @@ async function handleReturningClaimWindow(request, h, context, redirectContext) 
   await persistStatus(request, rule.toGrantsStatus, ApplicationStatus.CLAIM_SUBMITTED, grantId, context.state)
 
   const grantVersion = getGrantVersion(request)
-  request.yar.set(YarKeys.GRANT_APPLICATION_CONTEXT, { grantCode, grantVersion, clientRef: clientRef.toLowerCase() })
+  const { sbi } = getCacheKey(request)
+  request.yar.set(YarKeys.GRANT_APPLICATION_CONTEXT, {
+    grantCode,
+    grantVersion,
+    clientRef: clientRef.toLowerCase(),
+    sbi
+  })
 
   const redirectUrl = buildRedirectUrl(grantId, rule.toPath)
   if (request.path === redirectUrl) {

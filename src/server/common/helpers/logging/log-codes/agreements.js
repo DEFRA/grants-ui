@@ -22,5 +22,10 @@ export const AGREEMENTS = {
   PROXY_RESPONSE_ERROR: {
     level: 'error',
     messageFunc: () => 'Proxy response is undefined. Possible upstream error or misconfiguration.'
+  },
+  CONTEXT_SBI_MISMATCH: {
+    level: 'warn',
+    messageFunc: (messageOptions) =>
+      `Ignoring stored grant application context: context SBI=${messageOptions.contextSbi} does not match authenticated SBI=${messageOptions.authenticatedSbi}`
   }
 }
