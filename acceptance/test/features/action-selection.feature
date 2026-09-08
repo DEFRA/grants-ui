@@ -94,9 +94,6 @@ Feature: Action Selection
         And selects action "SCR2"
         And enters "0.75" hectares for action "SCR2"
         And selects action "CLIG3"
-# TODO: remove when https://eaflood.atlassian.net/browse/TGC-1625 is fixed
-        And waits for 3 seconds
-# TODO
         And continues
 
         # confirm-land-and-actions (both parcels)
@@ -119,9 +116,6 @@ Feature: Action Selection
         And should see action "SCR2" selected with "0.75" hectares
         When the user deselects action "CLIG3"
         And enters "1.5" hectares for action "CSAM3"
-# TODO: remove when https://eaflood.atlassian.net/browse/TGC-1625 is fixed
-        And waits for 3 seconds
-# TODO
         And continues
 
         # confirm-land-and-actions, amended parcel
@@ -141,9 +135,6 @@ Feature: Action Selection
         And should see action "CSAM3" selected with "1.5" hectares
         And should see action "SCR2" selected with "0.75" hectares
         When the user selects action "CLIG3"
-# TODO: remove when https://eaflood.atlassian.net/browse/TGC-1625 is fixed
-        And waits for 3 seconds
-# TODO
         And continues
 
         # confirm-land-and-actions, action added back to parcel
