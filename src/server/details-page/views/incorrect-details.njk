@@ -3,13 +3,6 @@
 {% from "support-details/macro.njk" import defraSupportDetails %}
 {% from "two-thirds-column/macro.njk" import appTwoThirdsColumn %}
 
-{% block head %}
-  {{ super() }}
-  {% if sfdUpdateUrl %}
-    <meta http-equiv="refresh" content="0; url={{ sfdUpdateUrl }}" />
-  {% endif %}
-{% endblock %}
-
 {% block beforeContent %}
   {{ super() }}
   {% if backLink %}
@@ -19,9 +12,7 @@
 
 {% block content %}
   {% call appTwoThirdsColumn() %}
-    {% if sfdUpdateUrl %}
-      <a class="govuk-link" href="{{ sfdUpdateUrl }}">Update details</a>
-    {% elif incorrectDetailsContent %}
+    {% if incorrectDetailsContent %}
       {% if sectionTitle and sectionTitle.length and (sectionTitle !== pageTitle) %}
         <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">{{- sectionTitle -}}</h2>
       {% endif %}
