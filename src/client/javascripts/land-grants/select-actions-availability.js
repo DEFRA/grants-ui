@@ -6,7 +6,6 @@
  * point that wires the two together.
  */
 
-import { getActionQuantityFieldName } from '../../../shared/action-quantity-field.js'
 import {
   getQuantityError,
   isValidQuantity,
