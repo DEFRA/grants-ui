@@ -105,6 +105,35 @@ describe('agreements user context JWT - real signing', () => {
     expect(payload.sbi).toBe(SBI)
   })
 
+  test('forwards the grant application context when its stored SBI matches the authenticated SBI', async () => {
+    mockRequest.yar.get.mockReturnValue({ grantCode: 'farm-payments', clientRef: 'sfi123456', sbi: SBI })
+
+    const payload = jwt.decode(await signedToken())
+
+    expect(payload.grantCode).toBe('farm-payments')
+    expect(payload.clientRef).toBe('sfi123456')
+    expect(payload.sbi).toBe(SBI)
+  })
+
+  test('drops a stale grant application context whose stored SBI is for a different business', async () => {
+    mockRequest.yar.get.mockReturnValue({ grantCode: 'farm-payments', clientRef: 'sfi123456', sbi: '999999999' })
+
+    const payload = jwt.decode(await signedToken())
+
+    expect(payload).not.toHaveProperty('grantCode')
+    expect(payload).not.toHaveProperty('clientRef')
+    expect(payload.sbi).toBe(SBI)
+  })
+
+  test('forwards a legacy grant application context that has no stored SBI', async () => {
+    mockRequest.yar.get.mockReturnValue({ grantCode: 'farm-payments', clientRef: 'sfi123456' })
+
+    const payload = jwt.decode(await signedToken())
+
+    expect(payload.grantCode).toBe('farm-payments')
+    expect(payload.clientRef).toBe('sfi123456')
+  })
+
   test.each([
     ['an object', { id: 'CRN123' }],
     ['an empty string', ''],

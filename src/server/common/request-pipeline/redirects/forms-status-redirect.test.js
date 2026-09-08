@@ -943,7 +943,8 @@ describe('formsStatusRedirect', () => {
         expect(request.yar.set).toHaveBeenCalledWith(YarKeys.GRANT_APPLICATION_CONTEXT, {
           grantCode: 'grant-a',
           grantVersion: '1.0.0',
-          clientRef: 'ref-001'
+          clientRef: 'ref-001',
+          sbi: '12345'
         })
       }
     )
