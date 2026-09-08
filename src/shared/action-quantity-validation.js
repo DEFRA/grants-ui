@@ -7,11 +7,14 @@ export const QUANTITY_PRECISION = 4
 
 const PLAIN_DECIMAL = /^-?(\d+(\.\d*)?|\.\d+)$/
 
+const NOT_A_NUMBER_MESSAGE = 'Enter a number of hectares, for example 12.5 or 100'
+
 export const QUANTITY_ERRORS = {
-  NOT_A_NUMBER: 'Must be numbers',
-  NOT_GREATER_THAN_ZERO: 'Value must be greater than 0',
-  TOO_MANY_DECIMAL_PLACES: `No more than ${QUANTITY_PRECISION} dp`,
-  MORE_THAN_AVAILABLE: 'More than available area'
+  NOT_A_NUMBER: NOT_A_NUMBER_MESSAGE,
+  NEGATIVE: NOT_A_NUMBER_MESSAGE,
+  NOT_GREATER_THAN_ZERO: 'Enter a number greater than 0',
+  TOO_MANY_DECIMAL_PLACES: NOT_A_NUMBER_MESSAGE,
+  MORE_THAN_AVAILABLE: (max) => `Enter up to ${max} hectares`
 }
 
 /**
@@ -52,14 +55,17 @@ export function getQuantityError(raw, max) {
   if (!PLAIN_DECIMAL.test(value)) {
     return QUANTITY_ERRORS.NOT_A_NUMBER
   }
-  if (Number(value) <= 0) {
+  if (Number(value) < 0) {
+    return QUANTITY_ERRORS.NEGATIVE
+  }
+  if (Number(value) === 0) {
     return QUANTITY_ERRORS.NOT_GREATER_THAN_ZERO
   }
   if (decimalPlaces(value) > QUANTITY_PRECISION) {
     return QUANTITY_ERRORS.TOO_MANY_DECIMAL_PLACES
   }
   if (max != null && Number(value) > max) {
-    return QUANTITY_ERRORS.MORE_THAN_AVAILABLE
+    return QUANTITY_ERRORS.MORE_THAN_AVAILABLE(max)
   }
   return null
 }

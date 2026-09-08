@@ -25,7 +25,7 @@ function checkboxItemHtml({
   const inputClass = `govuk-input${hasError ? ' govuk-input--error' : ''}`
 
   const errorMessage = hasError
-    ? `<p id="landActionQuantity_${code}-error" class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> No more than 4 dp</p>`
+    ? `<p id="landActionQuantity_${code}-error" class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> Enter a number of hectares, for example 12.5 or 100</p>`
     : ''
   const describedByIds = [
     unrestricted ? '' : `landActionQuantity_${code}-hint`,
@@ -2010,11 +2010,11 @@ describe('quantity input validation', () => {
   // Every error is reported in both places, like every other error on this
   // page: the summary at the top, and the message on the field itself.
   it.each([
-    ['20', 'More than available area'],
-    ['0', 'Value must be greater than 0'],
-    ['-11', 'Value must be greater than 0'],
-    ['11.22001', 'No more than 4 dp'],
-    ['as', 'Must be numbers']
+    ['20', 'Enter up to 11.22 hectares'],
+    ['0', 'Enter a number greater than 0'],
+    ['-11', 'Enter a number of hectares, for example 12.5 or 100'],
+    ['11.22001', 'Enter a number of hectares, for example 12.5 or 100'],
+    ['as', 'Enter a number of hectares, for example 12.5 or 100']
   ])('reports %j everywhere an error is shown, on blur', async (value, message) => {
     const form = await initSingleAction()
 
@@ -2054,7 +2054,9 @@ describe('quantity input validation', () => {
         }
       ],
       {
-        summaryErrors: [{ href: '#landActionQuantity_CSAM3', text: 'No more than 4 dp' }]
+        summaryErrors: [
+          { href: '#landActionQuantity_CSAM3', text: 'Enter a number of hectares, for example 12.5 or 100' }
+        ]
       }
     )
     await initSettled(form, fetchOk({ actions: [] }))
@@ -2063,7 +2065,7 @@ describe('quantity input validation', () => {
 
     const links = document.querySelectorAll('.govuk-error-summary__list a')
     expect(links).toHaveLength(1)
-    expect(links[0].textContent).toBe('More than available area')
+    expect(links[0].textContent).toBe('Enter up to 11.22 hectares')
   })
 
   it('lists one entry per failing action when more than one is wrong', async () => {
@@ -2078,8 +2080,8 @@ describe('quantity input validation', () => {
 
     const links = [...document.querySelectorAll('.govuk-error-summary__list a')]
     expect(links.map((a) => [a.getAttribute('href'), a.textContent])).toEqual([
-      ['#landActionQuantity_CSAM3', 'More than available area'],
-      ['#landActionQuantity_UPL8', 'Must be numbers']
+      ['#landActionQuantity_CSAM3', 'Enter up to 11.22 hectares'],
+      ['#landActionQuantity_UPL8', 'Enter a number of hectares, for example 12.5 or 100']
     ])
   })
 
@@ -2140,7 +2142,7 @@ describe('quantity input validation', () => {
 
     input.dispatchEvent(new Event('blur'))
 
-    expect(errorFor('CSAM3').textContent).toContain('Value must be greater than 0')
+    expect(errorFor('CSAM3').textContent).toContain('Enter a number greater than 0')
   })
 
   it('does not flag a part-typed decimal mid-keystroke', async () => {
