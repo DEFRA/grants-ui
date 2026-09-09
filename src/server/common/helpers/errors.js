@@ -363,11 +363,13 @@ function handleClientErrors(request, response, statusCode) {
   // Special handling for 404s with detailed logging
   if (statusCode === statusCodes.notFound) {
     handle404WithContext(request, response)
+    return
   }
 
-  // Keep existing general logging
+  // Other client errors (400/403/429) are the client sending something we
+  // cannot serve, not a service fault - log at warn, not error.
   log(
-    LogCodes.SYSTEM.SERVER_ERROR,
+    LogCodes.SYSTEM.CLIENT_ERROR,
     {
       errorMessage: response?.message || errorMessage,
       statusCode,

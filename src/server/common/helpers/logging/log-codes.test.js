@@ -784,6 +784,12 @@ describe('LogCodes', () => {
         `Server error occurred: ${TEST_ERRORS.DATABASE_ERROR}`
       ],
       [
+        'CLIENT_ERROR',
+        'warn',
+        { statusCode: 403, method: 'POST', path: '/x', errorMessage: 'Forbidden' },
+        'Client error: status=403 POST /x - Forbidden'
+      ],
+      [
         'SYSTEM_STARTUP',
         'info',
         { port: TEST_PORTS.DEFAULT },
