@@ -305,7 +305,7 @@ const inflightParcelsBySbi = new Map()
  */
 export async function fetchParcels(request, userContext, fields = [LAND_GRANTS_ACTION_SIZE]) {
   const sbi = request.auth?.credentials?.sbi
-  const cacheKey = `${sbi}:${[...fields].sort().join(',')}`
+  const cacheKey = `${sbi}:${[...fields].sort((a, b) => a.localeCompare(b)).join(',')}`
   const cached = getCachedSbiParcels(cacheKey)
 
   if (cached) {
