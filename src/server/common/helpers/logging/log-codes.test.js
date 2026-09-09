@@ -703,6 +703,18 @@ describe('LogCodes', () => {
   describe('PERMISSIONS log codes', () => {
     testLogCodes('PERMISSIONS', [
       [
+        'ACCESS_DENIED',
+        'warn',
+        {
+          resource: 'csAgreements',
+          permission: 'submit',
+          userId: TEST_USER_IDS.DEFAULT,
+          path: '/agreement/offer/accept',
+          errorMessage: 'Insufficient permissions'
+        },
+        `Permission denied for resource=csAgreements, permission=submit, CRN=${TEST_USER_IDS.MASKED}, path=/agreement/offer/accept: Insufficient permissions`
+      ],
+      [
         'BYPASSED',
         'info',
         {

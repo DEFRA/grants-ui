@@ -5,7 +5,11 @@ import { attempt } from '~/src/server/common/helpers/attempt.js'
 import { readUpstreamStatus } from '~/src/server/common/helpers/errors.js'
 import { logUpstreamError } from '~/src/server/common/helpers/logging/upstream-error.js'
 import { fetchParcels, fetchParcelTileLocation } from '~/src/server/land-grants/services/land-grants.service.js'
-import { fetchParcelTile } from '~/src/server/land-grants/services/land-grants.client.js'
+import {
+  fetchParcelTile,
+  LAND_GRANTS_ACTION_SIZE,
+  LAND_GRANTS_ACTIONS
+} from '~/src/server/land-grants/services/land-grants.client.js'
 import { stringifyParcel } from '~/src/shared/format-parcel.js'
 import { ROUTES } from './map-routes.js'
 import { toParcelData, toGeoJsonFeatures } from './parcel-features.js'
@@ -33,7 +37,9 @@ const PARCELS_ERROR_MESSAGE = 'Unable to load your land parcels'
 export async function parcelsHandler(request, h) {
   const formRequest = /** @type {AnyFormRequest} */ (/** @type {unknown} */ (request))
   const userContext = getLandGrantsUserContext(formRequest)
-  const result = await attempt(() => fetchParcels(formRequest, userContext))
+  const enabledLandActions = /** @type {{ enabledLandActions?: string[] }} */ (request.query)?.enabledLandActions ?? []
+  const fields = enabledLandActions.length ? [LAND_GRANTS_ACTION_SIZE, LAND_GRANTS_ACTIONS] : undefined
+  const result = await attempt(() => fetchParcels(formRequest, userContext, fields))
 
   if (!result.ok) {
     const err = /** @type {Error & { code?: unknown, status?: unknown }} */ (result.error)
@@ -45,7 +51,6 @@ export async function parcelsHandler(request, h) {
     return h.response({ error: PARCELS_ERROR_MESSAGE }).code(upstreamStatus ?? statusCodes.serviceUnavailable)
   }
 
-  const enabledLandActions = /** @type {{ enabledLandActions?: string[] }} */ (request.query)?.enabledLandActions ?? []
   const parcelData = toParcelData(result.value, enabledLandActions)
 
   if (isMockData()) {
