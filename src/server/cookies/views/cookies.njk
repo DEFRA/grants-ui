@@ -10,28 +10,30 @@
   {% call appTwoThirdsColumn() %}
     <h1 class="govuk-heading-l">{{ heading }}</h1>
 
-      {% if success %}
-        {{ govukNotificationBanner({
+    {% if success %}
+      {{
+        govukNotificationBanner({
           type: "success",
           html: '<p class="govuk-notification-banner__heading">Your cookie settings have been saved</p>'
-        }) }}
-      {% endif %}
+        })
+      }}
+    {% endif %}
 
-      <p class="govuk-body">
-        Cookies are small files saved on your phone, tablet or computer when you visit a website.
-      </p>
+    <p class="govuk-body">Cookies are small files saved on your phone, tablet or computer when you visit a website.</p>
 
-      <p class="govuk-body">
-        We use cookies to make {{ serviceName }} work and collect information about how you use our service.
-      </p>
+    <p class="govuk-body">
+      We use cookies to make {{ serviceName }} work and collect information about how you use our service.
+    </p>
 
-      <h2 class="govuk-heading-m">Essential cookies</h2>
+    <h2 class="govuk-heading-m">Essential cookies</h2>
 
-      <p class="govuk-body">
-        Essential cookies keep your information secure while you use {{ serviceName }}. We do not need to ask permission to use them.
-      </p>
+    <p class="govuk-body">
+      Essential cookies keep your information secure while you use {{ serviceName }}. We do not need to ask permission
+      to use them.
+    </p>
 
-      {{ appCookieTable({
+    {{
+      appCookieTable({
         caption: "Essential cookies",
         cookies: [
           { name: "crumb", purpose: "Protects our services from bots and automated attacks", expires: "When you close your browser" },
@@ -39,42 +41,53 @@
           { name: "grants-ui-session-cache", purpose: "Stores temporary session data while you use the service", expires: appFormatDuration({ ttlMs: sessionCookieTtl }) },
           { name: cookieConsentName, purpose: "Saves your cookie consent settings", expires: cookieConsentExpiryDays + " days" }
         ]
-      }) }}
+      })
+    }}
 
-      <h2 class="govuk-heading-m">Analytics cookies (optional)</h2>
+    <h2 class="govuk-heading-m">Analytics cookies (optional)</h2>
 
-      <p class="govuk-body">
-        With your permission, we use Google Analytics to collect data about how you use {{ serviceName }}. This information helps us to improve our service.
-      </p>
+    <p class="govuk-body">
+      With your permission, we use Google Analytics to collect data about how you use {{ serviceName }}. This
+      information helps us to improve our service.
+    </p>
 
-      <p class="govuk-body">
-        Google is not allowed to use or share our analytics data with anyone.
-      </p>
+    <p class="govuk-body">Google is not allowed to use or share our analytics data with anyone.</p>
 
-      <p class="govuk-body">
-        These are third-party cookies set by Google Analytics. Google Analytics stores anonymised information about:
-      </p>
+    <p class="govuk-body">
+      These are third-party cookies set by Google Analytics. Google Analytics stores anonymised information about:
+    </p>
 
-      <ul class="govuk-list govuk-list--bullet">
-        <li>how you got to {{ serviceName }}</li>
-        <li>the pages you visit on {{ serviceName }} and how long you spend on them</li>
-        <li>any errors you see while using {{ serviceName }}</li>
-      </ul>
+    <ul class="govuk-list govuk-list--bullet">
+      <li>how you got to {{ serviceName }}</li>
+      <li>the pages you visit on {{ serviceName }} and how long you spend on them</li>
+      <li>any errors you see while using {{ serviceName }}</li>
+    </ul>
 
-      {{ appCookieTable({
+    {{
+      appCookieTable({
         caption: "Analytics cookies",
         cookies: [
           { name: "_ga", purpose: "Checks if you've visited " + serviceName + " before. This helps us count how many people visit our site.", expires: "2 years" },
           { name: "_ga_<container-id>", purpose: "Checks if you've visited " + serviceName + " before. This helps us count how many people visit our site.", expires: "2 years" },
           { name: "_gid", purpose: "Checks if you've visited " + serviceName + " before. This helps us count how many people visit our site.", expires: "24 hours" }
         ]
-      }) }}
+      })
+    }}
 
-      <form id="cookie-preferences-form" action="/cookies" method="POST" data-cookie-name="{{ cookieConsentName }}" data-expiry-days="{{ cookieConsentExpiryDays }}" data-ga-tracking-id="{{ gaTrackingId }}" data-referrer="{{ referrer }}">
-        <input type="hidden" name="crumb" value="{{ crumb }}">
-        <input type="hidden" name="returnUrl" value="{{ referrer }}">
+    <form
+      id="cookie-preferences-form"
+      action="/cookies"
+      method="POST"
+      data-cookie-name="{{ cookieConsentName }}"
+      data-expiry-days="{{ cookieConsentExpiryDays }}"
+      data-ga-tracking-id="{{ gaTrackingId }}"
+      data-referrer="{{ referrer }}"
+    >
+      <input type="hidden" name="crumb" value="{{ crumb }}" />
+      <input type="hidden" name="returnUrl" value="{{ referrer }}" />
 
-        {{ govukRadios({
+      {{
+        govukRadios({
           name: "analytics",
           fieldset: {
             legend: {
@@ -96,18 +109,23 @@
               checked: analyticsConsent === false
             }
           ]
-        }) }}
+        })
+      }}
 
-        {{ govukButton({
+      {{
+        govukButton({
           text: "Save cookie settings",
           attributes: {
             id: "save-cookie-settings"
           }
-        }) }}
+        })
+      }}
 
-        <noscript>
-          <p class="govuk-body">You can change your cookie settings. Your settings will be saved when you submit the form.</p>
-        </noscript>
-      </form>
+      <noscript>
+        <p class="govuk-body">
+          You can change your cookie settings. Your settings will be saved when you submit the form.
+        </p>
+      </noscript>
+    </form>
   {% endcall %}
 {% endblock %}

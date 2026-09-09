@@ -1,5 +1,4 @@
 {% extends baseLayoutPath %}
-
 {% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/panel/macro.njk" import govukPanel %}
 {% from "support-details/macro.njk" import defraSupportDetails %}
@@ -8,26 +7,74 @@
   <div class="govuk-grid-row">
     <div class="{{ gridColumnClass(page, 'govuk-grid-column-two-thirds-from-desktop') }}">
       <form method="post" novalidate="novalidate">
-        <input type="hidden" name="crumb" value="{{ crumb }}">
+        <input type="hidden" name="crumb" value="{{ crumb }}" />
 
         {% if consentPanel %}
           {% if consentPanel.consentType === 'all' %}
             {% set panelHtml %}
-              <p class="govuk-body">You are applying for {{ "an action" if actionCount == 1 else "actions" }} on land that's a site of special scientific interest (SSSI) and land with historic or archaeological features. Before starting your {{ "action" if actionCount == 1 else "actions" }}, you must get:</p>
+              <p class="govuk-body">
+                You are applying for {{ "an action" if actionCount == 1 else "actions" }} on land that's a site of
+                special scientific interest (SSSI) and land with historic or archaeological features. Before starting
+                your {{ "action" if actionCount == 1 else "actions" }}, you must get:
+              </p>
               <ul class="govuk-list govuk-list--bullet govuk-!-margin-top-4 govuk-!-margin-bottom-0">
-                <li class="govuk-!-margin-top-10">an <a class="govuk-link govuk-link--inverse" href="{{ consentPanel.heferLink }}" rel="noreferrer noopener" target="_blank">SFI Historic Environment Farm Environment Record (SFI HEFER) (opens in new tab)</a> from Historic England</li>
-                <li><a class="govuk-link govuk-link--inverse" href="{{ consentPanel.sssiConsentLink }}" rel="noreferrer noopener" target="_blank">SSSI consent (opens in new tab)</a> from Natural England</li>
+                <li class="govuk-!-margin-top-10">
+                  an
+                  <a
+                    class="govuk-link govuk-link--inverse"
+                    href="{{ consentPanel.heferLink }}"
+                    rel="noreferrer noopener"
+                    target="_blank"
+                    >SFI Historic Environment Farm Environment Record (SFI HEFER) (opens in new tab)</a
+                  >
+                  from Historic England
+                </li>
+                <li>
+                  <a
+                    class="govuk-link govuk-link--inverse"
+                    href="{{ consentPanel.sssiConsentLink }}"
+                    rel="noreferrer noopener"
+                    target="_blank"
+                    >SSSI consent (opens in new tab)</a
+                  >
+                  from Natural England
+                </li>
               </ul>
             {% endset %}
           {% elif consentPanel.consentType === 'hefer' %}
             {% set panelHtml %}
-              <p class="govuk-body">This is because you are applying for {{ "an action" if actionCount == 1 else "actions" }} on land with historic or archaeological features. You must do this before you do your selected SFI {{ "action" if actionCount == 1 else "actions" }} on this land.</p>
-              <p class="govuk-body"><a class="govuk-link govuk-link--inverse" href="{{ consentPanel.heferLink }}" rel="noreferrer noopener" target="_blank">Read the guidance on land with historic or archaeological features (opens in new tab)</a> to find out what a HEFER is and how to request one.</p>
+              <p class="govuk-body">
+                This is because you are applying for {{ "an action" if actionCount == 1 else "actions" }} on land with
+                historic or archaeological features. You must do this before you do your selected SFI
+                {{ "action" if actionCount == 1 else "actions" }} on this land.
+              </p>
+              <p class="govuk-body">
+                <a
+                  class="govuk-link govuk-link--inverse"
+                  href="{{ consentPanel.heferLink }}"
+                  rel="noreferrer noopener"
+                  target="_blank"
+                  >Read the guidance on land with historic or archaeological features (opens in new tab)</a
+                >
+                to find out what a HEFER is and how to request one.
+              </p>
             {% endset %}
           {% elif consentPanel.consentType === 'sssi' %}
             {% set panelHtml %}
-              <p class="govuk-body">You are applying for {{ "an action" if actionCount == 1 else "actions" }} on land that's a site of special scientific interest (SSSI). You must get SSSI consent from Natural England.</p>
-              <p class="govuk-body">Read the <a class="govuk-link govuk-link--inverse" href="{{ consentPanel.sssiConsentLink }}" rel="noreferrer noopener" target="_blank">guidance on SSSI consent (opens in new tab)</a>.</p>
+              <p class="govuk-body">
+                You are applying for {{ "an action" if actionCount == 1 else "actions" }} on land that's a site of
+                special scientific interest (SSSI). You must get SSSI consent from Natural England.
+              </p>
+              <p class="govuk-body">
+                Read the
+                <a
+                  class="govuk-link govuk-link--inverse"
+                  href="{{ consentPanel.sssiConsentLink }}"
+                  rel="noreferrer noopener"
+                  target="_blank"
+                  >guidance on SSSI consent (opens in new tab)</a
+                >.
+              </p>
             {% endset %}
           {% endif %}
 
@@ -39,20 +86,22 @@
             {% set titleText = "You must have SSSI consent" %}
           {% endif %}
 
-          {{ govukPanel({
-            classes: "defra-panel-card",
-            titleText: titleText,
-            html: panelHtml
-          }) }}
+          {{
+            govukPanel({
+              classes: "defra-panel-card",
+              titleText: titleText,
+              html: panelHtml
+            })
+          }}
         {% endif %}
 
-        {{ govukButton({
+        {{
+          govukButton({
             text: "Continue",
             preventDoubleClick: true
           })
         }}
       </form>
-
     </div>
   </div>
 {% endblock %}

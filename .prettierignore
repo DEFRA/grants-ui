@@ -3,7 +3,11 @@
 package-lock.json
 node_modules
 coverage
-*.html
 .stryker-tmp
 .claude
 .nwave
+
+# prettier-plugin-jinja-template can't parse dynamic tag names, e.g. <h{{ headingLevel }}>
+src/server/land-grants/components/summaryCard/template.njk
+src/server/land-grants/components/action-hint/template.njk
+src/server/land-grants/components/action-label/template.njk

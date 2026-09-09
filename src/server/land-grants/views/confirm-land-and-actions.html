@@ -1,5 +1,4 @@
 {% extends baseLayoutPath %}
-
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/notification-banner/macro.njk" import govukNotificationBanner %}
@@ -13,17 +12,21 @@
         {# The session marker behind this message is cleared when it is read, so a
            refresh does not show it again. #}
         {% if landParcelRemovalSuccessMessage %}
-          {{ govukNotificationBanner({
-            type: "success",
-            text: landParcelRemovalSuccessMessage
-          }) }}
+          {{
+            govukNotificationBanner({
+              type: "success",
+              text: landParcelRemovalSuccessMessage
+            })
+          }}
         {% endif %}
 
         {% if hasCalculationError %}
-          {{ govukErrorSummary({
-            titleText: "There is a problem",
-            errorList: errors
-          }) }}
+          {{
+            govukErrorSummary({
+              titleText: "There is a problem",
+              errorList: errors
+            })
+          }}
         {% endif %}
 
         <h1 class="govuk-heading-l">
@@ -39,7 +42,9 @@
 
         {% if hasNoLandParcels %}
           {% if landParcelRemovalSuccessMessage %}
-            <p class="govuk-body">You removed the last land parcel. You must add at least one land parcel to continue your application.</p>
+            <p class="govuk-body">
+              You removed the last land parcel. You must add at least one land parcel to continue your application.
+            </p>
           {% else %}
             <p class="govuk-body">You have not added any land parcels or actions yet.</p>
           {% endif %}
@@ -48,39 +53,47 @@
           </p>
         {% elif not hasCalculationError %}
           {{ landParcelCards({ parcels: parcels }) }}
-          {{ paymentSummaryCard({
-            additionalYearlyPayments: additionalYearlyPayments,
-            applicationYearlyPayment: applicationYearlyPayment,
-            agreementDuration: agreementDuration,
-            agreementDurationYears: agreementDurationYears,
-            agreementTotalPayment: agreementTotalPayment
-          }) }}
+          {{
+            paymentSummaryCard({
+              additionalYearlyPayments: additionalYearlyPayments,
+              applicationYearlyPayment: applicationYearlyPayment,
+              agreementDuration: agreementDuration,
+              agreementDurationYears: agreementDurationYears,
+              agreementTotalPayment: agreementTotalPayment
+            })
+          }}
 
           <form method="post" novalidate="novalidate">
-            <input type="hidden" name="crumb" value="{{ crumb }}">
+            <input type="hidden" name="crumb" value="{{ crumb }}" />
             <div class="govuk-button-group govuk-!-margin-top-9">
-              {{ govukButton({
-                text: "Save and continue",
-                name: "action",
-                value: "continue",
-                preventDoubleClick: true
-              }) }}
-              {{ govukButton({
-                text: "Add another land parcel",
-                name: "action",
-                value: "add-another",
-                classes: "govuk-button--secondary",
-                preventDoubleClick: true
-              }) }}
+              {{
+                govukButton({
+                  text: "Save and continue",
+                  name: "action",
+                  value: "continue",
+                  preventDoubleClick: true
+                })
+              }}
+              {{
+                govukButton({
+                  text: "Add another land parcel",
+                  name: "action",
+                  value: "add-another",
+                  classes: "govuk-button--secondary",
+                  preventDoubleClick: true
+                })
+              }}
             </div>
           </form>
         {% else %}
           <div class="govuk-button-group">
-            {{ govukButton({
-              text: "Try again",
-              href: retryHref,
-              preventDoubleClick: true
-            }) }}
+            {{
+              govukButton({
+                text: "Try again",
+                href: retryHref,
+                preventDoubleClick: true
+              })
+            }}
             <a class="govuk-link" href="{{ selectLandParcelHref }}">Change your land parcels</a>
           </div>
         {% endif %}

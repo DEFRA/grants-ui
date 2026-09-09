@@ -1,0 +1,59 @@
+{% from "govuk/components/table/macro.njk" import govukTable %}
+{{
+  govukTable({
+    caption: "Other actions or options you can do on the same area as this action",
+    captionClasses: "govuk-visually-hidden",
+    head: [ { text: "Scheme" }, { text: "Action or option codes" } ],
+    rows: [
+      [
+        {
+          text: "CSHT actions"
+        },
+        {
+          text: "CAGF1, CAGF2, CAGF3, CAGF4, CHS4, CSP13, CSP14, CSP15, CSP20, CSP21, CWS1, CWS3, CSW25"
+        }
+      ],
+      [
+        {
+          text: "SFI 2024 actions"
+        },
+        {
+          html: "
+            <p class=\"govuk-body\">
+              HEF5, UPL7, UPL8, UPL9, UPL10, CMOR1
+            </p>
+            <p class=\"govuk-body\">
+              You can do one of the following supplemental actions (unless indicated otherwise) on land entered into this action.
+              UPL4, UPL5, UPL6 (you can also do SPM4 or SPM5 on the same area as UPL4, UPL 5 or UPL6), SPM4, SPM5 (you can
+              also do UPL4 or UPL5 or UPL6 on the same area as SPM4 or SPM5)
+            </p>
+          "
+        }
+      ],
+      [
+        {
+          text: "SFI 2023 actions"
+        },
+        {
+          text: "MOR1"
+        }
+      ],
+      [
+        {
+          text: "CS options"
+        },
+        {
+          text: "HS4"
+        }
+      ],
+      [
+        {
+          text: "ES options"
+        },
+        {
+          text: "No ES revenue options"
+        }
+      ]
+    ]
+  })
+}}

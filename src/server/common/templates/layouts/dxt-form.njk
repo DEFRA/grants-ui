@@ -1,19 +1,21 @@
 {% extends "layouts/page.njk" %}
-
 {% from "govuk/components/back-link/macro.njk" import govukBackLink %}
 
 {% block pageTitle %}
-  {{ "Error: " if errors | length }}{{ pageTitle | evaluate }} | {{ name | default(serviceName) }}
+  {{ "Error: " if errors | length }}{{ pageTitle | evaluate }}
+  | {{ name | default(serviceName) }}
 {% endblock %}
 
 {% block header %}
   {% if govukBranding %}
-    {{ govukHeader({
-      homepageUrl: "https://www.gov.uk/",
-      classes: "govuk-header--full-width-border",
-      containerClasses: "govuk-width-container",
-      rebrand: true
-    }) }}
+    {{
+      govukHeader({
+        homepageUrl: "https://www.gov.uk/",
+        classes: "govuk-header--full-width-border",
+        containerClasses: "govuk-width-container",
+        rebrand: true
+      })
+    }}
   {% else %}
     {{ defraBrandBar({ defraAssetPath: defraAssetPath }) }}
   {% endif %}
@@ -22,29 +24,35 @@
 
   <div class="govuk-width-container">
     {% if feedbackSurveyUrl %}
-      {{ govukPhaseBanner({
-        tag: {
-          text: "Beta"
-        },
-        html: 'This is a new service. Your <a class="govuk-link" href="' + (feedbackSurveyUrl | escape) + '" target="_blank" rel="noopener noreferrer">feedback</a> will help us improve it.'
-      }) }}
+      {{
+        govukPhaseBanner({
+          tag: {
+            text: "Beta"
+          },
+          html: 'This is a new service. Your <a class="govuk-link" href="' + (feedbackSurveyUrl | escape) + '" target="_blank" rel="noopener noreferrer">feedback</a> will help us improve it.'
+        })
+      }}
     {% else %}
-      {{ govukPhaseBanner({
-        tag: {
-          text: "Beta"
-        },
-        text: 'This is a new service.'
-      }) }}
+      {{
+        govukPhaseBanner({
+          tag: {
+            text: "Beta"
+          },
+          text: 'This is a new service.'
+        })
+      }}
     {% endif %}
   </div>
 
-    {{ defraAccountBar({
+  {{
+    defraAccountBar({
       organisationName: auth.organisationName,
       sbi: auth.sbi | default(""),
       name: auth.name
-    }) }}
+    })
+  }}
 
-  <input type="hidden" id="csrf-token" value="{{ crumb }}">
+  <input type="hidden" id="csrf-token" value="{{ crumb }}" />
 {% endblock %}
 
 {% block beforeContent %}
@@ -53,6 +61,10 @@
     {{ govukBackLink(backLink) }}
   {% endif %}
   {% if backToTaskList %}
-    <span class="govuk-!-margin-left-1 defra-!-border-left govuk-!-padding-left-2"><a href="{{ backToTaskList.href }}" class="govuk-link govuk-link--text-colour">{{ backToTaskList.text }}</a></span>
+    <span class="govuk-!-margin-left-1 defra-!-border-left govuk-!-padding-left-2"
+      ><a href="{{ backToTaskList.href }}" class="govuk-link govuk-link--text-colour"
+        >{{ backToTaskList.text }}</a
+      ></span
+    >
   {% endif %}
 {% endblock %}

@@ -1,6 +1,5 @@
 {% set govukRebrand = govukBranding %}
 {% set bodyClasses = ("" if govukBranding else "app-brand-restricted") + (" " + bodyCustomClass if bodyCustomClass else "") %}
-
 {% extends "govuk/template.njk" %}
 
 {# Import GOVUK components globally #}
@@ -21,12 +20,12 @@
   {% if govukBranding %}
     {{ super() }}
   {% else %}
-    <link rel="icon" sizes="48x48" href="{{ defraAssetPath }}/images/defra-favicon.ico">
+    <link rel="icon" sizes="48x48" href="{{ defraAssetPath }}/images/defra-favicon.ico" />
   {% endif %}
 {% endblock %}
 
 {% block head %}
-  <link href="{{ getAssetPath('stylesheets/application.scss') }}" rel="stylesheet">
+  <link href="{{ getAssetPath('stylesheets/application.scss') }}" rel="stylesheet" />
 
   {# Google Analytics: loaded server-side below (bodyStart) for returning users who accepted, or client-side (cookie-consent.js) immediately on first accept #}
 {% endblock %}
@@ -34,33 +33,43 @@
 {% block bodyStart %}
   {# Show banner only if user hasn't made a choice yet — matches reference implementation #}
   {% if not cookiesPolicy.confirmed %}
-    {{ defraCookieBanner({
-      config: cookieBannerConfig,
-      crumb: crumb,
-      currentPath: currentPath
-    }) }}
+    {{
+      defraCookieBanner({
+        config: cookieBannerConfig,
+        crumb: crumb,
+        currentPath: currentPath
+      })
+    }}
   {% elif cookiesPolicy.analytics and gaTrackingId %}
     {# Returning user who has accepted analytics — load GTM server-side #}
     <script nonce="{{ cspNonce }}" async src="https://www.googletagmanager.com/gtm.js?id={{ gaTrackingId }}"></script>
     <script nonce="{{ cspNonce }}">
-      window.dataLayer = window.dataLayer || [];
-      window.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+      window.dataLayer = window.dataLayer || []
+      window.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' })
     </script>
     {# Fallback for users with JavaScript disabled — GTM noscript iframe #}
     <noscript>
-      <iframe src="https://www.googletagmanager.com/ns.html?id={{ gaTrackingId }}" height="0" width="0" style="display:none;visibility:hidden" title="Google Tag Manager"></iframe>
+      <iframe
+        src="https://www.googletagmanager.com/ns.html?id={{ gaTrackingId }}"
+        height="0"
+        width="0"
+        style="display:none;visibility:hidden"
+        title="Google Tag Manager"
+      ></iframe>
     </noscript>
   {% endif %}
 {% endblock %}
 
 {% block header %}
   {% if govukBranding %}
-    {{ govukHeader({
-      homepageUrl: "https://www.gov.uk/",
-      classes: "govuk-header--full-width-border",
-      containerClasses: "govuk-width-container",
-      rebrand: true
-    }) }}
+    {{
+      govukHeader({
+        homepageUrl: "https://www.gov.uk/",
+        classes: "govuk-header--full-width-border",
+        containerClasses: "govuk-width-container",
+        rebrand: true
+      })
+    }}
   {% else %}
     {{ defraBrandBar({ defraAssetPath: defraAssetPath }) }}
   {% endif %}
@@ -69,46 +78,53 @@
 
   <div class="govuk-width-container">
     {% if feedbackSurveyUrl %}
-      {{ govukPhaseBanner({
-        tag: {
-          text: "Beta"
-        },
-        html: 'This is a new service. Your <a class="govuk-link" href="' + (feedbackSurveyUrl | escape) + '" target="_blank" rel="noopener noreferrer">feedback</a> will help us improve it.'
-      }) }}
+      {{
+        govukPhaseBanner({
+          tag: {
+            text: "Beta"
+          },
+          html: 'This is a new service. Your <a class="govuk-link" href="' + (feedbackSurveyUrl | escape) + '" target="_blank" rel="noopener noreferrer">feedback</a> will help us improve it.'
+        })
+      }}
     {% else %}
-      {{ govukPhaseBanner({
-        tag: {
-          text: "Beta"
-        },
-        text: 'This is a new service.'
-      }) }}
+      {{
+        govukPhaseBanner({
+          tag: {
+            text: "Beta"
+          },
+          text: 'This is a new service.'
+        })
+      }}
     {% endif %}
   </div>
 
-  {{ defraAccountBar({
-    organisationName: auth.organisationName,
-    sbi: auth.sbi | default(""),
-    name: auth.name
-  }) }}
+  {{
+    defraAccountBar({
+      organisationName: auth.organisationName,
+      sbi: auth.sbi | default(""),
+      name: auth.name
+    })
+  }}
 {% endblock %}
 
 {% block pageTitle %}
-  {{ "Error: " if errors | length }}{{ pageTitle }} | {{ serviceName }}
+  {{ "Error: " if errors | length }}{{ pageTitle }}
+  | {{ serviceName }}
 {% endblock %}
 
 {% block main %}
   <div class="govuk-width-container">
     {% block beforeContent %}
       {% if breadcrumbs.length > 1 %}
-        {{ govukBreadcrumbs({
-          items: breadcrumbs
-        }) }}
+        {{
+          govukBreadcrumbs({
+            items: breadcrumbs
+          })
+        }}
       {% endif %}
       {% if notificationBanner %}
         <div class="govuk-grid-row">
-          <div class="govuk-grid-column-two-thirds">
-            {{ govukNotificationBanner(notificationBanner) }}
-          </div>
+          <div class="govuk-grid-column-two-thirds">{{ govukNotificationBanner(notificationBanner) }}</div>
         </div>
       {% endif %}
     {% endblock %}
@@ -119,34 +135,40 @@
 {% endblock %}
 
 {% block footer %}
-  {% set footerItems = [
-    {
-      href: "https://www.gov.uk/government/organisations/rural-payments-agency/about/personal-information-charter",
-      text: "Privacy (opens in new tab)",
-      attributes: {
-        target: "_blank",
-        rel: "noopener noreferrer"
+  {%
+    set footerItems = [
+      {
+        href: "https://www.gov.uk/government/organisations/rural-payments-agency/about/personal-information-charter",
+        text: "Privacy (opens in new tab)",
+        attributes: {
+          target: "_blank",
+          rel: "noopener noreferrer"
+        }
+      },
+      {
+        href: cookiePolicyUrl,
+        text: "Cookies"
       }
-    },
-    {
-      href: cookiePolicyUrl,
-      text: "Cookies"
-    }
-  ] %}
+    ]
+  %}
 
   {% if cdpEnvironment !== 'prod' %}
-    {% set footerItems = footerItems.concat([{
-      href: "./clear-application-state",
-      text: "Clear application state"
-    }]) %}
+    {%
+      set footerItems = footerItems.concat([{
+        href: "./clear-application-state",
+        text: "Clear application state"
+      }])
+    %}
   {% endif %}
 
-  {{ govukFooter({
-    meta: {
-      items: footerItems
-    },
-    rebrand: govukBranding
-  }) }}
+  {{
+    govukFooter({
+      meta: {
+        items: footerItems
+      },
+      rebrand: govukBranding
+    })
+  }}
 {% endblock %}
 
 {% block bodyEnd %}

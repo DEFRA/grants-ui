@@ -15,10 +15,12 @@
 
     {% set summaryRows = [] %}
     {% for key, value in auth %}
-      {% set summaryRows = (summaryRows.push({
-        key: { text: key },
-        value: { text: value }
-      }), summaryRows) %}
+      {%
+        set summaryRows = (summaryRows.push({
+          key: { text: key },
+          value: { text: value }
+        }), summaryRows)
+      %}
     {% endfor %}
 
     {{ govukSummaryList({ rows: summaryRows }) }}
