@@ -57,7 +57,11 @@ describe('SelectActionsPageController', () => {
 
   const enabledLandActions = ['CMOR1', 'UPL1', 'UPL2']
 
-  const mockActions = [CMOR1, UPL1, { ...UPL2, availability: { ...UPL2.availability, type: 'partial' } }]
+  const mockActions = [
+    { ...CMOR1, quantityRequired: false },
+    { ...UPL1, quantityRequired: false },
+    { ...UPL2, quantityRequired: true, availability: { ...UPL2.availability, type: 'partial' } }
+  ]
 
   beforeEach(() => {
     QuestionPageController.prototype.getViewModel = vi.fn().mockReturnValue({
@@ -151,7 +155,7 @@ describe('SelectActionsPageController', () => {
       expect(actionItems).toHaveLength(3)
     })
 
-    test('should surface a quantity input for actions that require a max quantity, and a read-only display for the rest', async () => {
+    test('should surface a quantity input for explicitly quantity-required actions, and a read-only display for the rest', async () => {
       await get()
 
       const { actionItems } = mockH.view.mock.calls[0][1]
@@ -421,9 +425,9 @@ describe('SelectActionsPageController', () => {
       expect(stateArg.landParcels['sheet1-parcel1'].actionsObj.UPL1.value).toBe(5)
     })
 
-    test('should still send the unit for an action with no availability restriction', async () => {
+    test('should still send the unit for a quantity-required action with no availability restriction', async () => {
       fetchActionsForParcel.mockResolvedValue({
-        actions: [{ ...UPL2, availability: { unit: 'ha', value: null, type: 'partial' } }],
+        actions: [{ ...UPL2, quantityRequired: true, availability: { unit: 'ha', value: null, type: 'partial' } }],
         parcel: { sheetId: 'sheet1', parcelId: 'parcel1', size: { unit: 'ha', value: 20 } }
       })
       mockRequest.payload = { landAction: ['UPL2'], landActionQuantity_UPL2: '7' }
@@ -494,11 +498,13 @@ describe('SelectActionsPageController', () => {
     test('should preserve a submitted total action quantity in the error response hidden field and display', async () => {
       const partialAction = {
         ...UPL2,
+        quantityRequired: true,
         availability: { ...UPL2.availability, type: 'partial' }
       }
       const totalAction = {
         code: 'CLIG3',
         description: 'Manage grassland',
+        quantityRequired: false,
         availability: { value: 3.189, unit: 'ha', type: 'total' }
       }
       fetchActionsForParcel.mockResolvedValue({

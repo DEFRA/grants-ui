@@ -67,9 +67,7 @@ export function validateSelectedActionQuantities(payload, actions) {
   const selectedCodes = new Set(getSelectedActionCodes(payload))
   const errors = []
 
-  const applicableActions = actions.filter(
-    (action) => selectedCodes.has(action.code) && requiresQuantityInput(action.availability?.type)
-  )
+  const applicableActions = actions.filter((action) => selectedCodes.has(action.code) && requiresQuantityInput(action))
 
   for (const action of applicableActions) {
     const href = `#${getActionQuantityFieldName(action.code)}`

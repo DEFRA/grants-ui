@@ -104,12 +104,19 @@ describe('land-actions.validator', () => {
 
   describe('validateSelectedActionQuantities', () => {
     const actions = [
-      { code: 'CSAM3', description: 'Herbal leys', version: '1', availability: { type: 'partial' } },
-      { code: 'CLIG3', description: 'Manage grassland', version: '1' },
+      {
+        code: 'CSAM3',
+        description: 'Herbal leys',
+        version: '1',
+        quantityRequired: true,
+        availability: { type: 'partial' }
+      },
+      { code: 'CLIG3', description: 'Manage grassland', version: '1', quantityRequired: false },
       {
         code: 'SCR2',
         description: 'Manage scrub and open habitat mosaics: SCR2',
         version: '1',
+        quantityRequired: true,
         availability: { type: 'partial' }
       }
     ]
@@ -125,7 +132,13 @@ describe('land-actions.validator', () => {
     it('should return multiple errors for multiple unconfirmed quantity-required actions', () => {
       const withSecondQuantity = [
         ...actions,
-        { code: 'UPL8', description: 'Low input', version: '1', availability: { type: 'partial' } }
+        {
+          code: 'UPL8',
+          description: 'Low input',
+          version: '1',
+          quantityRequired: true,
+          availability: { type: 'partial' }
+        }
       ]
       const payload = { landAction: ['CSAM3', 'UPL8'] }
 

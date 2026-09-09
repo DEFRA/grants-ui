@@ -222,6 +222,7 @@
             "actions": [
               {
                 "code": "TEST1",
+                "quantityRequired": false,
                 "availability": {
                   "value": 7.0,
                   "unit": "ha"
@@ -231,6 +232,7 @@
               },
               {
                 "code": "TEST2",
+                "quantityRequired": false,
                 "availability": {
                   "value": 8.5,
                   "unit": "ha"
@@ -240,6 +242,7 @@
               },
               {
                 "code": "CLIG3",
+                "quantityRequired": false,
                 "availability": {
                   "value": 9.0,
                   "unit": "ha",
@@ -250,6 +253,7 @@
               },
               {
                 "code": "CSAM3",
+                "quantityRequired": true,
                 "availability": {
                   "value": 6.25,
                   "unit": "ha"
@@ -259,6 +263,7 @@
               },
               {
                 "code": "SCR2",
+                "quantityRequired": true,
                 "availability": {
                   "value": 4.5,
                   "unit": "ha",
@@ -270,6 +275,7 @@
               },
               {
                 "code": "SCR3",
+                "quantityRequired": true,
                 "availability": {
                   "value": null,
                   "unit": "ha",
