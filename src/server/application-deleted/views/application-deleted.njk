@@ -1,28 +1,22 @@
 {% extends "layouts/page.njk" %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
 {% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <h1 class="govuk-heading-xl">Your draft application has been deleted</h1>
 
-<div class="govuk-grid-row">
-  <div class="govuk-grid-column-two-thirds">
+      <p class="govuk-body-l">A change has been made to the service requiring all draft applications to be removed.</p>
 
-    <h1 class="govuk-heading-xl">
-      Your draft application has been deleted
-    </h1>
+      <form method="post" novalidate>
+        <input type="hidden" name="crumb" value="{{ crumb }}" />
 
-    <p class="govuk-body-l">
-      A change has been made to the service requiring all draft applications to be removed.
-    </p>
-
-    <form method="post" novalidate>
-      <input type="hidden" name="crumb" value="{{ crumb }}">
-
-      {{ govukButton({
-        text: "Start a new application",
-        isStartButton: true
-      }) }}
-    </form>
-
+        {{
+          govukButton({
+            text: "Start a new application",
+            isStartButton: true
+          })
+        }}
+      </form>
+    </div>
   </div>
-</div>
-
 {% endblock %}

@@ -26,7 +26,8 @@ vi.mock('~/src/server/land-grants/services/land-grants.service.js', () => ({
   fetchParcelTileLocation: vi.fn()
 }))
 
-vi.mock('~/src/server/land-grants/services/land-grants.client.js', () => ({
+vi.mock('~/src/server/land-grants/services/land-grants.client.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   fetchParcelTile: vi.fn()
 }))
 
@@ -98,7 +99,7 @@ describe('parcelsHandler', () => {
     const request = makeRequest()
     await parcelsHandler(request, h)
 
-    expect(fetchParcels).toHaveBeenCalledWith(request, expectedUserContext)
+    expect(fetchParcels).toHaveBeenCalledWith(request, expectedUserContext, undefined)
     expect(fetchParcelTileLocation).toHaveBeenCalledWith(['SD7148-9160', 'SD7148-9161'], expectedUserContext)
     const [payload] = h.response.mock.calls[0]
     expect(payload.features).toEqual([
@@ -131,17 +132,19 @@ describe('parcelsHandler', () => {
   })
 
   it('counts only available actions enabled for the current grant journey', async () => {
-    fetchParcels.mockResolvedValue([
+    fetchParcels.mockImplementation(async (_request, _userContext, fields = ['size']) => [
       {
         sheetId: 'SD7148',
         parcelId: '9160',
         area: { value: 2.5 },
-        actions: [
-          { code: 'CLIG3', availability: { value: 0, unit: 'ha' } },
-          { code: 'CSAM3', availability: { value: 0, unit: 'ha' } },
-          { code: 'SCR2', availability: { value: 2, unit: 'ha' } },
-          { code: 'WBD1', availability: { value: 3, unit: 'ha' } }
-        ]
+        actions: fields.includes('actions')
+          ? [
+              { code: 'CLIG3', availability: { value: 0, unit: 'ha' } },
+              { code: 'CSAM3', availability: { value: 0, unit: 'ha' } },
+              { code: 'SCR2', availability: { value: 2, unit: 'ha' } },
+              { code: 'WBD1', availability: { value: 3, unit: 'ha' } }
+            ]
+          : []
       }
     ])
     fetchParcelTileLocation.mockResolvedValue(null)

@@ -1,0 +1,33 @@
+{% from "govuk/components/table/macro.njk" import govukTable %}
+{{
+  govukTable({
+    caption: "Eligibility of protected land",
+    captionClasses: "govuk-table__caption--s",
+    head: [ { text: "Protected land" }, { text: "Eligibility" } ],
+    rows: [
+      [
+        {
+          text: "Sites of special scientific interest (SSSIs)"
+        },
+        {
+          html: "Eligible – you must get SSSI consent before you do this action.
+            Read <a class='govuk-link' href='/farm-payments/fptt-information#section-10.3' rel='noreferrer noopener' target='_blank'>section 10.3 ‘SSSI consent’ (opens in new tab)</a> in the FPTT information to
+            find out:
+            <ul class='govuk-list govuk-list--bullet'>
+              <li>what’s advisable for you to do before you apply for this action on SSSI land</li>
+              <li>how to give notice to Natural England to get SSSI consent</li>
+              <li>what stocking information you need to provide with your SSSI notice</li>
+            </ul>"
+        }
+      ],
+      [
+        {
+          text: "Historic and archaeological features"
+        },
+        {
+          html: 'Eligible – you must get an SFI HEFER before you do this action (read <a class="govuk-link" href="/farm-payments/fptt-information#section-5.5" rel="noreferrer noopener" target="_blank">section 5.5 ‘Land with historic or archaeological features’ (opens in new tab)</a> in the FPTT information to find out how to do this)'
+        }
+      ]
+    ]
+  })
+}}

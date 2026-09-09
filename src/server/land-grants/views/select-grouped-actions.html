@@ -1,5 +1,4 @@
 {% extends baseLayoutPath %}
-
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 {% from "govuk/components/radios/macro.njk" import govukRadios %}
 {% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
@@ -13,12 +12,13 @@
   <div class="govuk-body">
     <div class="govuk-grid-row">
       <div class="{{ gridColumnClass(page, 'govuk-grid-column-two-thirds-from-desktop') }}">
-
         {% if errors.length > 0 %}
-          {{ govukErrorSummary({
-          titleText: "There is a problem",
-          errorList: errors
-        }) }}
+          {{
+            govukErrorSummary({
+              titleText: "There is a problem",
+              errorList: errors
+            })
+          }}
         {% endif %}
 
         <h1 class="govuk-heading-l">
@@ -33,71 +33,112 @@
         </ul>
 
         <p>
-          The service has automatically calculated the total available area in each land parcel that is eligible for the action.
+          The service has automatically calculated the total available area in each land parcel that is eligible for the
+          action.
         </p>
 
-        {{ govukDetails({
-        summaryText: "If you need to make an update",
-        html: '
-          <p>Contact the Rural Payments Agency if you think:</p>
-          <ul class="govuk-list govuk-list--bullet">
-            <li>the land details registered on the Rural Payments service need updating</li>
-            <li>the information about existing actions or options on this parcel is incorrect</li>
-          </ul>
-          <p>Telephone: 020 8026 2395<br>
-            Monday to Friday, 8:30am to 5pm (except bank holidays)</p>
-          <p>
-            <a class="govuk-link" href="https://www.gov.uk/call-charges" target="_blank">Find out about call charges (opens in new tab)</a>
-          </p>
-          <p class="govuk-body">Email: <a class="govuk-link" href="mailto:farmpayments@rpa.gov.uk">farmpayments@rpa.gov.uk</a></p>
-          <p class="govuk-body">The RPA responds to email queries within 10 working days.</p>
-        '
-      }) }}
+        {{
+          govukDetails({
+            summaryText: "If you need to make an update",
+            html: '
+              <p>Contact the Rural Payments Agency if you think:</p>
+              <ul class="govuk-list govuk-list--bullet">
+                <li>the land details registered on the Rural Payments service need updating</li>
+                <li>the information about existing actions or options on this parcel is incorrect</li>
+              </ul>
+              <p>Telephone: 020 8026 2395<br>
+                Monday to Friday, 8:30am to 5pm (except bank holidays)</p>
+              <p>
+                <a class="govuk-link" href="https://www.gov.uk/call-charges" target="_blank">Find out about call charges (opens in new tab)</a>
+              </p>
+              <p class="govuk-body">Email: <a class="govuk-link" href="mailto:farmpayments@rpa.gov.uk">farmpayments@rpa.gov.uk</a></p>
+              <p class="govuk-body">The RPA responds to email queries within 10 working days.</p>
+            '
+          })
+        }}
 
         {% if addedActions.length %}
-          {% call summaryCard({
-            title: {
-              text: "Actions already added to " + parcelName
-            }
-          }) %}
-          <ul class="govuk-list govuk-list--bullet">
-            {% for action in addedActions %}
-              <li>{{action.description}}</li>
-            {% endfor %}
-          </ul>
+          {%
+            call summaryCard({
+              title: {
+                text: "Actions already added to " + parcelName
+              }
+            })
+          %}
+            <ul class="govuk-list govuk-list--bullet">
+              {% for action in addedActions %}
+                <li>{{ action.description }}</li>
+              {% endfor %}
+            </ul>
           {% endcall %}
         {% endif %}
 
         {% if groupedActions.length %}
           <form method="post" novalidate="novalidate" data-actions="{{ actions }}">
-            <input type="hidden" name="crumb" value="{{ crumb }}">
+            <input type="hidden" name="crumb" value="{{ crumb }}" />
 
             {% for group in groupedActions %}
               {% set hintHTML %}
                 {% if group.consentHint %}
                   {% set consentHintHtml %}
-                    <p class="govuk-body">You must
-                    {% if group.consentHint.consentType === 'all' %}
-                      have <a class="govuk-link" rel="noreferrer noopener" target="_blank" href="{{ group.consentHint.sssiConsentLink }}">SSSI consent (opens in new tab)</a> and <a class="govuk-link" rel="noreferrer noopener" target="_blank" href="{{ group.consentHint.heferLink }}">get a HEFER (opens in new tab)</a>
-                    {% elif group.consentHint.consentType === 'sssi' %}
-                      have <a class="govuk-link" rel="noreferrer noopener" target="_blank" href="{{ group.consentHint.sssiConsentLink }}">SSSI consent (opens in new tab)</a>
-                    {% elif group.consentHint.consentType === 'hefer' %}
-                      <a class="govuk-link" rel="noreferrer noopener" target="_blank" href="{{ group.consentHint.heferLink }}">get a HEFER (opens in new tab)</a>
-                    {% endif %}
-                    to do {{ group.consentHint.actionText }} on this land parcel.</p>
+                    <p class="govuk-body">
+                      You must
+                      {% if group.consentHint.consentType === 'all' %}
+                        have
+                        <a
+                          class="govuk-link"
+                          rel="noreferrer noopener"
+                          target="_blank"
+                          href="{{ group.consentHint.sssiConsentLink }}"
+                          >SSSI consent (opens in new tab)</a
+                        >
+                        and
+                        <a
+                          class="govuk-link"
+                          rel="noreferrer noopener"
+                          target="_blank"
+                          href="{{ group.consentHint.heferLink }}"
+                          >get a HEFER (opens in new tab)</a
+                        >
+                      {% elif group.consentHint.consentType === 'sssi' %}
+                        have
+                        <a
+                          class="govuk-link"
+                          rel="noreferrer noopener"
+                          target="_blank"
+                          href="{{ group.consentHint.sssiConsentLink }}"
+                          >SSSI consent (opens in new tab)</a
+                        >
+                      {% elif group.consentHint.consentType === 'hefer' %}
+                        <a
+                          class="govuk-link"
+                          rel="noreferrer noopener"
+                          target="_blank"
+                          href="{{ group.consentHint.heferLink }}"
+                          >get a HEFER (opens in new tab)</a
+                        >
+                      {% endif %}
+                      to do {{ group.consentHint.actionText }} on this land parcel.
+                    </p>
                   {% endset %}
-                  {{ govukInsetText({
-                    classes: "govuk-!-margin-top-1 govuk-!-margin-bottom-4",
-                    html: consentHintHtml
-                  }) }}
+                  {{
+                    govukInsetText({
+                      classes: "govuk-!-margin-top-1 govuk-!-margin-bottom-4",
+                      html: consentHintHtml
+                    })
+                  }}
                 {% endif %}
                 {% if group.totalAvailableArea.value != undefined %}
-                  <p class="govuk-body">Total available area: {{ group.totalAvailableArea.value }} {{ group.totalAvailableArea.unitFullName }}</p>
+                  <p class="govuk-body">
+                    Total available area: {{ group.totalAvailableArea.value }}
+                    {{ group.totalAvailableArea.unitFullName }}
+                  </p>
                 {% endif %}
               {% endset %}
 
               {% if group.actions.length == 1 %}
-                {{ govukCheckboxes({
+                {{
+                  govukCheckboxes({
                     name: actionFieldPrefix + loop.index,
                     fieldset: {
                       legend: {
@@ -109,9 +150,11 @@
                       html: hintHTML
                     },
                     items: group.actions
-                  }) }}
+                  })
+                }}
               {% else %}
-                {{ govukRadios({
+                {{
+                  govukRadios({
                     name: actionFieldPrefix + loop.index,
                     fieldset: {
                       legend: {
@@ -123,31 +166,38 @@
                       html: hintHTML
                     },
                     items: group.actions
-                  }) }}
+                  })
+                }}
               {% endif %}
             {% endfor %}
 
             <div class="govuk-button-group">
               {% block form %}
-                {{ govukButton({
-                  text: "Continue",
-                  preventDoubleClick: true
-                }) }}
+                {{
+                  govukButton({
+                    text: "Continue",
+                    preventDoubleClick: true
+                  })
+                }}
               {% endblock %}
             </div>
           </form>
         {% elif ((not errors) or (errors.length == 0)) %}
-          {{ govukWarningText({
-            text: "No actions available to select.",
-            iconFallbackText: "Warning"
-          }) }}
+          {{
+            govukWarningText({
+              text: "No actions available to select.",
+              iconFallbackText: "Warning"
+            })
+          }}
         {% endif %}
       </div>
     </div>
   </div>
   {% if existingLandParcels and not singleParcelSubmission %}
     <p class="govuk-body govuk-!-margin-bottom-5">
-      <a href="check-selected-land-actions" class="govuk-link govuk-link--no-visited-state">Back to review selected actions</a>
+      <a href="check-selected-land-actions" class="govuk-link govuk-link--no-visited-state"
+        >Back to review selected actions</a
+      >
     </p>
   {% endif %}
 {% endblock %}

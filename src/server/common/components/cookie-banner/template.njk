@@ -1,8 +1,8 @@
 {% from "govuk/components/cookie-banner/macro.njk" import govukCookieBanner %}
 
 <form action="/cookies" method="post" novalidate>
-  <input type="hidden" name="crumb" value="{{ params.crumb }}">
-  <input type="hidden" name="async" value="false">
-  <input type="hidden" name="returnUrl" value="{{ params.currentPath }}">
+  <input type="hidden" name="crumb" value="{{ params.crumb }}" />
+  <input type="hidden" name="async" value="false" />
+  <input type="hidden" name="returnUrl" value="{{ params.currentPath }}" />
   {{ govukCookieBanner(params.config) }}
 </form>

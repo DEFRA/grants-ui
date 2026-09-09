@@ -1,5 +1,4 @@
 {% extends baseLayoutPath %}
-
 {% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
@@ -9,55 +8,56 @@
 {% set mainClasses = "govuk-body" %}
 
 {% block content %}
-<div class="govuk-grid-row">
-  <div class="{{ gridColumnClass(page) }}">
-    {% if sectionTitle and sectionTitle.length and (sectionTitle !== pageTitle) %}
-    <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">
-      {{- sectionTitle -}}
-    </h2>
-    {% endif %}
-    <h1 class="govuk-heading-l">Confirm and submit your application</h1>
+  <div class="govuk-grid-row">
+    <div class="{{ gridColumnClass(page) }}">
+      {% if sectionTitle and sectionTitle.length and (sectionTitle !== pageTitle) %}
+        <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">{{- sectionTitle -}}</h2>
+      {% endif %}
+      <h1 class="govuk-heading-l">Confirm and submit your application</h1>
 
-    <p class="govuk-body">
-      By submitting your application, you confirm that:
-    </p>
+      <p class="govuk-body">By submitting your application, you confirm that:</p>
 
-    <ul class="govuk-list govuk-list--bullet">
-      <li>the information in your application is correct</li>
-      <li>you have management control of the land for the required period</li>
-      <li>you will meet the requirements for the Grasslands actions you have applied for</li>
-    </ul>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>the information in your application is correct</li>
+        <li>you have management control of the land for the required period</li>
+        <li>you will meet the requirements for the Grasslands actions you have applied for</li>
+      </ul>
 
-    <p class="govuk-body">
-      It’s your responsibility to check that land (including landscape features) is eligible for your Grasslands actions. Payments may be reduced if the RPA finds ineligible land, features or incompatible actions.
-    </p>
+      <p class="govuk-body">
+        It’s your responsibility to check that land (including landscape features) is eligible for your Grasslands
+        actions. Payments may be reduced if the RPA finds ineligible land, features or incompatible actions.
+      </p>
 
-    <p class="govuk-body">
-      If you’ve applied for Grasslands actions on land that has a conditional exemption from Inheritance Tax, you will not be paid for activities which duplicate, or conflict with, your undertakings under that exemption.
-    </p>
+      <p class="govuk-body">
+        If you’ve applied for Grasslands actions on land that has a conditional exemption from Inheritance Tax, you will
+        not be paid for activities which duplicate, or conflict with, your undertakings under that exemption.
+      </p>
 
-    <p class="govuk-body">
-      If you’ve applied for Grasslands actions on land owned by a public body, you will not be paid for activities which conflict with, or duplicate, the public body’s statutory duties.
-    </p>
+      <p class="govuk-body">
+        If you’ve applied for Grasslands actions on land owned by a public body, you will not be paid for activities
+        which conflict with, or duplicate, the public body’s statutory duties.
+      </p>
 
-    <p class="govuk-body">
-      You must make sure that you have management control of the land for the duration of the actions.
-    </p>
+      <p class="govuk-body">
+        You must make sure that you have management control of the land for the duration of the actions.
+      </p>
 
-    {% block form %}
-    <form method="post" novalidate>
-      <input type="hidden" name="crumb" value="{{ crumb }}">
+      {% block form %}
+        <form method="post" novalidate>
+          <input type="hidden" name="crumb" value="{{ crumb }}" />
 
-      {{ componentList(components) }}
+          {{ componentList(components) }}
 
-      {{ govukButton({
-      text: "I agree – submit my application",
-      preventDoubleClick: true
-      }) }}
-    </form>
-    {% endblock %}
+          {{
+            govukButton({
+            text: "I agree – submit my application",
+            preventDoubleClick: true
+            })
+          }}
+        </form>
+      {% endblock %}
 
-<!--    {{ defraSupportDetails({typeOfSupport: 'question', email: page.def.metadata.supportEmail}) }}-->
+      <!--    {{ defraSupportDetails({typeOfSupport: 'question', email: page.def.metadata.supportEmail}) }}-->
+    </div>
   </div>
-</div>
 {% endblock %}
