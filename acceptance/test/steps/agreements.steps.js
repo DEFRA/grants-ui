@@ -2,10 +2,13 @@ import { Then } from '@cucumber/cucumber'
 import jwt from 'jsonwebtoken'
 import expect from '../support/expect.js'
 import AgreementsUi from '../utils/agreements-ui.js'
+import { transformStepArgument } from '../utils/step-argument-transformation.js'
 
 Then(
-  'the agreements service should have been called with an x-encrypted-auth header JWT for CRN {string} and SBI {string}',
-  async function (crn, sbi) {
+  'the agreements service should have been called with an x-encrypted-auth header JWT containing the following values',
+  async function (dataTable) {
+    const { CRN: crn, SBI: sbi, 'GRANT CODE': grantCode, 'CLIENT REFERENCE': clientRef } = dataTable.rowsHash()
+
     const request = await AgreementsUi.getLastRequest()
     expect(request).not.toBeNull()
 
@@ -20,5 +23,7 @@ Then(
     expect(payload.iss).toEqual('grants-ui')
     expect(payload.sbi).toEqual(sbi)
     expect(payload.sub).toEqual(crn)
+    expect(payload.grantCode).toEqual(grantCode)
+    expect(payload.clientRef).toEqual(transformStepArgument(clientRef).toLowerCase())
   }
 )
