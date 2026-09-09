@@ -2,23 +2,43 @@ import { requiresQuantityInput } from './action-quantity-type.js'
 
 describe('requiresQuantityInput', () => {
   it.each([
-    ['undefined action', undefined, false],
-    ['partial availability without the flag', { availability: { type: 'partial', unit: 'ha' } }, false],
-    ['non-partial availability', { availability: { type: 'total', unit: 'ha' } }, false],
-    ['explicit true', { quantityRequired: true, availability: { type: 'total', unit: 'ha' } }, true],
+    ['does not require a quantity when the action is missing', undefined, false],
     [
-      'explicit false over partial availability',
+      'does not infer a quantity requirement from partial availability when quantityRequired is absent',
+      { availability: { type: 'partial', unit: 'ha' } },
+      false
+    ],
+    [
+      'does not require a quantity for total availability when quantityRequired is absent',
+      { availability: { type: 'total', unit: 'ha' } },
+      false
+    ],
+    [
+      'requires a quantity when quantityRequired is true, even for total availability',
+      { quantityRequired: true, availability: { type: 'total', unit: 'ha' } },
+      true
+    ],
+    [
+      'does not require a quantity when quantityRequired is false, even for partial availability',
       { quantityRequired: false, availability: { type: 'partial', unit: 'ha' } },
       false
     ],
     [
-      'explicit false over a whole-number unit',
+      'does not require a quantity when quantityRequired is false, even for square metres',
       { quantityRequired: false, availability: { type: 'total', unit: 'sqm' } },
       false
     ],
-    ['square-metre unit without the flag', { availability: { type: 'total', unit: 'sqm' } }, false],
-    ['count unit without the flag', { availability: { type: 'total', unit: 'count' } }, false]
-  ])('%s returns the expected input requirement', (_description, action, expected) => {
+    [
+      'does not infer a quantity requirement from square metres when quantityRequired is absent',
+      { availability: { type: 'total', unit: 'sqm' } },
+      false
+    ],
+    [
+      'does not infer a quantity requirement from counts when quantityRequired is absent',
+      { availability: { type: 'total', unit: 'count' } },
+      false
+    ]
+  ])('%s', (_description, action, expected) => {
     expect(requiresQuantityInput(action)).toBe(expected)
   })
 })
