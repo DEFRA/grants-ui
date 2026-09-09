@@ -15,8 +15,6 @@ import { ROUTES } from './map-routes.js'
 import { toParcelData, toGeoJsonFeatures } from './parcel-features.js'
 import { withCompoundParcelIds } from './mvt-compound-id.js'
 import { buildOsBasemapStyle, fetchOsTile } from './os-maps.js'
-import { isMockData } from './map.mock.js'
-import { buildMockParcelsResponse } from './map.mock.response.js'
 import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
@@ -52,11 +50,6 @@ export async function parcelsHandler(request, h) {
   }
 
   const parcelData = toParcelData(result.value, enabledLandActions)
-
-  if (isMockData()) {
-    return buildMockParcelsResponse(parcelData, h)
-  }
-
   const features = toGeoJsonFeatures(parcelData)
   const bbox = await fetchParcelTileLocation(
     parcelData.map((p) => p.id),

@@ -76,9 +76,12 @@ const updateSelectedParcelDetails = (selectedParcels, metaIndex = {}) => {
     }
     return
   }
-  const [{ id, areaHa, actionCount }] = selectedParcels
-  const count = actionCount ?? metaIndex[id]?.actionCount
-  const resolvedActionCount = typeof count === 'number' ? count : 0
+  const [{ id }] = selectedParcels
+  // The clicked feature comes from the vector tile, which carries only
+  // id/sheet_id/parcel_id — area and action count come from the parcels API,
+  // held in metaIndex.
+  const { areaHa, actionCount } = metaIndex[id] ?? {}
+  const resolvedActionCount = typeof actionCount === 'number' ? actionCount : 0
   setText(DOM_ID_SELECTED_PARCEL_REFERENCE, formatParcelReference(id))
   setText(DOM_ID_SELECTED_PARCEL_AREA, areaHa == null ? '' : `${Number(areaHa).toFixed(TOTAL_AREA_DECIMAL_PLACES)} ha`)
   setText(DOM_ID_SELECTED_PARCEL_ACTIONS, String(resolvedActionCount))
@@ -285,10 +288,10 @@ initParcelSelectPage(document.getElementById(DOM_ID_PARCEL_MAP))
  */
 
 /**
- * @typedef {object} SelectedParcel
- * @property {string} id
- * @property {number | null} [areaHa]
- * @property {number} [actionCount]
+ * One entry of the plugin's selection payload: the compound id, plus whatever
+ * properties the clicked vector-tile feature carried (sheet_id/parcel_id). Area
+ * and action count are not on the tile — look them up in metaIndex by `id`.
+ * @typedef {{ id: string, [key: string]: unknown }} SelectedParcel
  */
 
 /**

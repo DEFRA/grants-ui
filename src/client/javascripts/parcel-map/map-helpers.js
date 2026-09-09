@@ -46,11 +46,11 @@ export const COMPOUND_ID_EXPR = ['get', PARCEL_ID_PROPERTY]
 // Display expression for the on-parcel map labels: the compound id
 // (e.g. "SD7148-9160") shown with its single dash replaced by a space
 // ("SD7148 9160") so labels match the parcel-reference format used everywhere
-// else. Derived from the compound id alone — the only property guaranteed to be
-// present on both the vector tiles and the mock GeoJSON — so it stays correct
-// regardless of whether sheet_id/parcel_id are stamped onto the tiles. Falls
-// back to the raw id if it somehow contains no dash. Kept separate from
-// COMPOUND_ID_EXPR, which must stay the raw id used for colour/highlight matching.
+// else. Derived from the compound id alone — the property guaranteed to be
+// present on the vector tiles — so it stays correct regardless of whether
+// sheet_id/parcel_id are stamped onto the tiles. Falls back to the raw id if it
+// somehow contains no dash. Kept separate from COMPOUND_ID_EXPR, which must stay
+// the raw id used for colour/highlight matching.
 export const LABEL_TEXT_EXPR = [
   'let',
   'dash',
@@ -69,11 +69,13 @@ export const LABEL_TEXT_EXPR = [
 ]
 
 /**
+ * Builds the fill, outline and label layer specs for the parcel vector-tile
+ * source. `source-layer` is always `parcels` — the layer name inside the
+ * land-grants vector tiles.
  * @param {unknown[]} colorExpr  MapLibre `match` expression
- * @param {string}   [sourceLayer]
  */
-export function buildParcelLayers(colorExpr, sourceLayer) {
-  const src = sourceLayer ? { 'source-layer': sourceLayer } : {}
+export function buildParcelLayers(colorExpr) {
+  const src = { source: SOURCE_ID_PARCELS, 'source-layer': SOURCE_ID_PARCELS }
   // OS Maps sets no `glyphs` URL, so any font renders locally via MapLibre's
   // TinySDF fallback.
   const labelFont = 'Arial Regular'
@@ -81,7 +83,6 @@ export function buildParcelLayers(colorExpr, sourceLayer) {
     fill: {
       id: LAYER_ID_FILL,
       type: 'fill',
-      source: SOURCE_ID_PARCELS,
       ...src,
       paint: {
         'fill-color': colorExpr,
@@ -91,7 +92,6 @@ export function buildParcelLayers(colorExpr, sourceLayer) {
     outline: {
       id: LAYER_ID_OUTLINE,
       type: 'line',
-      source: SOURCE_ID_PARCELS,
       ...src,
       paint: {
         'line-color': colorExpr,
@@ -101,7 +101,6 @@ export function buildParcelLayers(colorExpr, sourceLayer) {
     label: {
       id: LAYER_ID_LABEL,
       type: 'symbol',
-      source: SOURCE_ID_PARCELS,
       ...src,
       layout: {
         'text-field': LABEL_TEXT_EXPR,
@@ -266,12 +265,13 @@ export function fitToParcels(ml, bbox) {
 }
 
 /**
- * Fits the viewport to the parcels' bounding box, then adds the parcel source.
+ * Fits the viewport to the parcels' bounding box, then adds the parcel
+ * vector-tile source streamed from the grants-ui tile proxy.
  * @param {import('maplibre-gl').Map} ml
- * @param {{ geojson: GeoJSON.FeatureCollection | null, bbox: { minLng: number, minLat: number, maxLng: number, maxLat: number } | null }} data
+ * @param {{ bbox: { minLng: number, minLat: number, maxLng: number, maxLat: number } | null }} data
  * @param {unknown[]} colorExpr  MapLibre `match` expression
  */
-export function addParcelsToMap(ml, { geojson, bbox }, colorExpr) {
+export function addParcelsToMap(ml, { bbox }, colorExpr) {
   fitToParcels(ml, bbox)
 
   if (ml.getSource(SOURCE_ID_PARCELS)) {
@@ -279,17 +279,14 @@ export function addParcelsToMap(ml, { geojson, bbox }, colorExpr) {
   }
 
   const origin = globalThis.location.origin
-  const source = geojson
-    ? /** @type {import('maplibre-gl').GeoJSONSourceSpecification} */ ({
-        type: 'geojson',
-        data: geojson
-      })
-    : /** @type {import('maplibre-gl').VectorSourceSpecification} */ ({
-        type: 'vector',
-        tiles: [`${origin}${PARCEL_TILES_URL}`]
-      })
-  ml.addSource(SOURCE_ID_PARCELS, source)
-  const layers = buildParcelLayers(colorExpr, geojson ? undefined : SOURCE_ID_PARCELS)
+  ml.addSource(
+    SOURCE_ID_PARCELS,
+    /** @type {import('maplibre-gl').VectorSourceSpecification} */ ({
+      type: 'vector',
+      tiles: [`${origin}${PARCEL_TILES_URL}`]
+    })
+  )
+  const layers = buildParcelLayers(colorExpr)
   ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.fill))
   ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.outline))
   ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.label))
