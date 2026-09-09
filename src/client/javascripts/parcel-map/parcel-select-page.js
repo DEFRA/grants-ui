@@ -288,9 +288,6 @@ initParcelSelectPage(document.getElementById(DOM_ID_PARCEL_MAP))
  */
 
 /**
- * One entry of the plugin's selection payload: the compound id, plus whatever
- * properties the clicked vector-tile feature carried (sheet_id/parcel_id). Area
- * and action count are not on the tile — look them up in metaIndex by `id`.
  * @typedef {{ id: string, [key: string]: unknown }} SelectedParcel
  */
 
