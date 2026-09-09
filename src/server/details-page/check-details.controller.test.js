@@ -1023,8 +1023,7 @@ describe('UpdateDetailsPageController', () => {
         serviceUrl: '/test-form',
         backLink: { href: '/test-form/check-details' },
         incorrectDetailsContent: { heading: 'Update needed' },
-        supportEmail: 'support@example.com',
-        sfdUpdateUrl: null
+        supportEmail: 'support@example.com'
       })
       expect(result).toBe('mocked-view')
     })
@@ -1052,8 +1051,7 @@ describe('UpdateDetailsPageController', () => {
           paragraphs: ['Make sure your details are correct before you apply.'],
           showRpaSupport: false
         },
-        supportEmail: 'woodland@example.com',
-        sfdUpdateUrl: null
+        supportEmail: 'woodland@example.com'
       })
     })
 
@@ -1072,7 +1070,7 @@ describe('UpdateDetailsPageController', () => {
       )
     })
 
-    it('should provide the SFD URL with ssoOrgId and suppress the back link when enabled', async () => {
+    it('should redirect straight to the SFD URL with ssoOrgId when enabled, without rendering a view', async () => {
       vi.mocked(config.get).mockImplementation((key) => {
         if (key === 'externalLinks.sfd.enabled') {
           return true
@@ -1088,22 +1086,13 @@ describe('UpdateDetailsPageController', () => {
         supportEmail: 'support@example.com'
       }
 
-      await updateController.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+      const result = await updateController.makeGetRouteHandler()(mockRequest, mockContext, mockH)
 
-      const viewModel = mockH.view.mock.calls[0][1]
-      const sfdUpdateUrl = new URL(viewModel.sfdUpdateUrl)
-
-      expect(mockH.view).toHaveBeenCalledWith('incorrect-details', {
-        pageTitle: 'Update your details',
-        serviceName: 'Test Form',
-        serviceUrl: '/test-form',
-        backLink: null,
-        incorrectDetailsContent: { heading: 'This content must not be rendered' },
-        supportEmail: 'support@example.com',
-        sfdUpdateUrl: 'https://sfd.example/update?ssoOrgId=REL123&source=grants'
-      })
-      expect(sfdUpdateUrl.searchParams.get('source')).toBe('grants')
-      expect(sfdUpdateUrl.searchParams.getAll('ssoOrgId')).toEqual(['REL123'])
+      const redirectUrl = new URL(mockH.redirect.mock.calls[0][0])
+      expect(redirectUrl.searchParams.get('source')).toBe('grants')
+      expect(redirectUrl.searchParams.getAll('ssoOrgId')).toEqual(['REL123'])
+      expect(mockH.view).not.toHaveBeenCalled()
+      expect(result).toBe('mocked-redirect')
     })
 
     it.each([
@@ -1130,10 +1119,10 @@ describe('UpdateDetailsPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'incorrect-details',
         expect.objectContaining({
-          backLink: { href: '/test-form/check-details' },
-          sfdUpdateUrl: null
+          backLink: { href: '/test-form/check-details' }
         })
       )
+      expect(mockH.redirect).not.toHaveBeenCalled()
       expect(log).toHaveBeenCalledWith(LogCodes.SYSTEM.SFD_UPDATE_URL_MISSING_ON_REDIRECT, { updateUrl }, mockRequest)
     })
   })

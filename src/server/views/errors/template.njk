@@ -9,31 +9,28 @@
   {% call appTwoThirdsColumn() %}
     {% block errorContent %}
       <h1 class="govuk-heading-l">Sorry, there is a problem with the service</h1>
-      <p class="govuk-body">
-        Try again later.
-      </p>
+      <p class="govuk-body">Try again later.</p>
     {% endblock %}
 
     {% block preContactContent %}
-      <p class="govuk-body">
-        Contact the Rural Payments Agency (RPA) by phone or email for support.
-      </p>
+      <p class="govuk-body">Contact the Rural Payments Agency (RPA) by phone or email for support.</p>
     {% endblock %}
 
     <p class="govuk-body">
-      <span class="govuk-!-display-block">
-        Telephone: 03000 200 301
-      </span>
+      <span class="govuk-!-display-block"> Telephone: 03000 200 301 </span>
       <span>Monday to Friday 8:30am to 5pm (excluding bank holidays)</span>
     </p>
     <p class="govuk-body">
-      <a href="https://www.gov.uk/call-charges" class="govuk-link" rel="noreferrer noopener" target="_blank">Find out about call charges (opens in a new tab)</a>
+      <a href="https://www.gov.uk/call-charges" class="govuk-link" rel="noreferrer noopener" target="_blank"
+        >Find out about call charges (opens in a new tab)</a
+      >
     </p>
     <p class="govuk-body">
-      Email: <a href="mailto:{{supportEmail or 'ruralpayments@defra.gov.uk'}}" class="govuk-link">{{supportEmail or 'ruralpayments@defra.gov.uk'}}</a>
+      Email:
+      <a href="mailto:{{ supportEmail or 'ruralpayments@defra.gov.uk' }}" class="govuk-link"
+        >{{ supportEmail or 'ruralpayments@defra.gov.uk' }}</a
+      >
     </p>
-    <p class="govuk-body">
-      The RPA responds to email queries within 10 working days.
-    </p>
+    <p class="govuk-body">The RPA responds to email queries within 10 working days.</p>
   {% endcall %}
 {% endblock %}

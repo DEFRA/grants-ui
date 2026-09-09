@@ -1,38 +1,39 @@
 {% extends baseLayoutPath %}
-
 {% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/task-list/macro.njk" import govukTaskList %}
 {% from "partials/components.html" import componentList %}
 
 {% block content %}
-<div class="govuk-grid-row">
-  <div class="{{ gridColumnClass(page) }}">
-    <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
+  <div class="govuk-grid-row">
+    <div class="{{ gridColumnClass(page) }}">
+      <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
 
-    {# Render any components defined on the page (e.g., Html guidance) #}
-    {{ componentList(aboveComponents) }}
+      {# Render any components defined on the page (e.g., Html guidance) #}
+      {{ componentList(aboveComponents) }}
 
-    {# Completion status summary #}
-    {% if showCompletionStatus !== false %}
-    <h2 class="govuk-heading-s govuk-!-margin-bottom-2">Application status</h2>
-    <p class="govuk-body govuk-!-margin-bottom-7">
-      You have completed {{ completionStats.completed }} of {{ completionStats.total }} task pages.
-    </p>
-    {% endif %}
-
-    {# Render task list #}
-    {% for task in tasks %}
-      {% if tasks | length > 1 %}
-        <h2 class="govuk-heading-m">{{ task.title }}</h2>
+      {# Completion status summary #}
+      {% if showCompletionStatus !== false %}
+        <h2 class="govuk-heading-s govuk-!-margin-bottom-2">Application status</h2>
+        <p class="govuk-body govuk-!-margin-bottom-7">
+          You have completed {{ completionStats.completed }} of {{ completionStats.total }} task pages.
+        </p>
       {% endif %}
 
-      {{ govukTaskList({
-        items: task.items
-      }) }}
-    {% endfor %}
+      {# Render task list #}
+      {% for task in tasks %}
+        {% if tasks | length > 1 %}
+          <h2 class="govuk-heading-m">{{ task.title }}</h2>
+        {% endif %}
 
-    {# Render any components defined on the page (e.g., Html guidance) #}
-    {{ componentList(belowComponents) }}
+        {{
+          govukTaskList({
+            items: task.items
+          })
+        }}
+      {% endfor %}
+
+      {# Render any components defined on the page (e.g., Html guidance) #}
+      {{ componentList(belowComponents) }}
+    </div>
   </div>
-</div>
 {% endblock %}

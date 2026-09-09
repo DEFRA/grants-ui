@@ -28,9 +28,9 @@ describe('getQuantityError', () => {
   const AVAILABLE = 11.22
 
   it.each([
-    ['20', QUANTITY_ERRORS.MORE_THAN_AVAILABLE],
+    ['20', QUANTITY_ERRORS.MORE_THAN_AVAILABLE(AVAILABLE)],
     ['0', QUANTITY_ERRORS.NOT_GREATER_THAN_ZERO],
-    ['-11', QUANTITY_ERRORS.NOT_GREATER_THAN_ZERO],
+    ['-11', QUANTITY_ERRORS.NEGATIVE],
     ['11.22001', QUANTITY_ERRORS.TOO_MANY_DECIMAL_PLACES],
     ['as', QUANTITY_ERRORS.NOT_A_NUMBER]
   ])('reports %j as %j', (raw, expected) => {
@@ -45,8 +45,8 @@ describe('getQuantityError', () => {
     expect(getQuantityError(raw, AVAILABLE)).toBe(QUANTITY_ERRORS.NOT_A_NUMBER)
   })
 
-  it('checks the greater-than-zero rule before the precision rule', () => {
-    expect(getQuantityError('-11.22001', AVAILABLE)).toBe(QUANTITY_ERRORS.NOT_GREATER_THAN_ZERO)
+  it('checks the negative rule before the precision rule', () => {
+    expect(getQuantityError('-11.22001', AVAILABLE)).toBe(QUANTITY_ERRORS.NEGATIVE)
   })
 
   it('checks the precision rule before the available-area rule', () => {
@@ -58,7 +58,11 @@ describe('getQuantityError', () => {
   })
 
   it('rejects an over-available quantity when the ceiling is 0', () => {
-    expect(getQuantityError('0.0001', 0)).toBe(QUANTITY_ERRORS.MORE_THAN_AVAILABLE)
+    expect(getQuantityError('0.0001', 0)).toBe(QUANTITY_ERRORS.MORE_THAN_AVAILABLE(0))
+  })
+
+  it('gives negative input a different message to zero', () => {
+    expect(getQuantityError('0', AVAILABLE)).not.toBe(getQuantityError('-1', AVAILABLE))
   })
 })
 

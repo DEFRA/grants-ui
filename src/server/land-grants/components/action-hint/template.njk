@@ -1,0 +1,5 @@
+Payment rate per year: £{{ rate }}/ha
+{%- if agreementRate %} and <strong>£{{ agreementRate }}</strong> per agreement{% endif -%}
+{%- if requirementText %}<br>{{ requirementText }}{% endif -%}
+{%- if availabilityText %}<br><span id="{{ hintId }}">{{ availabilityText }}</span>{% endif -%}
+{%- if showTotalGuidance %}<span class="select-actions-guidance">This action will use all the available area on this land parcel.</span>{% endif -%}

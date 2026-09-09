@@ -1,5 +1,4 @@
 {% extends baseLayoutPath %}
-
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 {% from "govuk/components/warning-text/macro.njk" import govukWarningText %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
@@ -13,16 +12,16 @@
   <div class="govuk-grid-row">
     <div class="{{ gridColumnClass(page) }}">
       {% if sectionTitle and sectionTitle.length and (sectionTitle !== pageTitle) %}
-      <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">
-        {{- sectionTitle -}}
-      </h2>
+        <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">{{- sectionTitle -}}</h2>
       {% endif %}
 
       {% if errors %}
-        {{ govukErrorSummary({
-          titleText: "There is a problem",
-          errorList: checkErrorTemplates(errors)
-        }) }}
+        {{
+          govukErrorSummary({
+            titleText: "There is a problem",
+            errorList: checkErrorTemplates(errors)
+          })
+        }}
       {% endif %}
 
       <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
@@ -32,7 +31,9 @@
         <p class="govuk-body">I confirm that, to the best of my knowledge, the details I have provided are correct.</p>
         <p class="govuk-body">I understand the score was based on the answers I provided</p>
         <p class="govuk-body">I am aware the information I submit will be checked.</p>
-        <p class="govuk-body">I am happy to be contacted by Defra and RPA (or a third-party on their behalf) about my application.</p>
+        <p class="govuk-body">
+          I am happy to be contacted by Defra and RPA (or a third-party on their behalf) about my application.
+        </p>
 
         <h2 class="govuk-heading-m">Improving our schemes</h2>
         <p class="govuk-body">As we develop new services we get feedback from farmers and agents.</p>
@@ -40,44 +41,49 @@
       {% endif %}
 
       {% block form %}
-      <form method="post" novalidate>
-        <input type="hidden" name="crumb" value="{{ crumb }}">
+        <form method="post" novalidate>
+          <input type="hidden" name="crumb" value="{{ crumb }}" />
 
-        {{ componentList(components) }}
+          {{ componentList(components) }}
 
-        {% if declarationContent.showOptionalConsent %}
-          {{ govukCheckboxes({
-            idPrefix: 'consentOptional',
-            name: 'consentOptional',
-            items: [{
-              value: 'CONSENT_OPTIONAL',
-              text: '(Optional) I consent to being contacted by Defra or a third party about service improvements',
-              checked: false,
-              selected: false
-            }]
-          }) }}
-        {% endif %}
+          {% if declarationContent.showOptionalConsent %}
+            {{
+              govukCheckboxes({
+                idPrefix: 'consentOptional',
+                name: 'consentOptional',
+                items: [{
+                  value: 'CONSENT_OPTIONAL',
+                  text: '(Optional) I consent to being contacted by Defra or a third party about service improvements',
+                  checked: false,
+                  selected: false
+                }]
+              })
+            }}
+          {% endif %}
 
-        {% if declarationContent.warningText %}
-          {{ govukWarningText({
-              text: declarationContent.warningText,
-              iconFallbackText: 'Warning'
+          {% if declarationContent.warningText %}
+            {{
+              govukWarningText({
+                text: declarationContent.warningText,
+                iconFallbackText: 'Warning'
+              })
+            }}
+          {% endif %}
+
+          {# GAS wants us to send these as confirmation that the user has reached this page #}
+          {% for name, value in declarationContent.hiddenFields %}
+            <input type="hidden" id="{{ name }}" name="{{ name }}" value="{{ value }}" />
+          {% endfor %}
+
+          {# Namespaced deliberately: a bare `submitButtonText` would resolve to the
+           form-wide label from metadata.options, not this page's #}
+          {{
+            govukButton({
+              text: declarationContent.submitButtonText,
+              preventDoubleClick: true
             })
           }}
-        {% endif %}
-
-        {# GAS wants us to send these as confirmation that the user has reached this page #}
-        {% for name, value in declarationContent.hiddenFields %}
-        <input type="hidden" id="{{ name }}" name="{{ name }}" value="{{ value }}">
-        {% endfor %}
-
-        {# Namespaced deliberately: a bare `submitButtonText` would resolve to the
-           form-wide label from metadata.options, not this page's #}
-        {{ govukButton({
-          text: declarationContent.submitButtonText,
-          preventDoubleClick: true
-        }) }}
-      </form>
+        </form>
       {% endblock %}
 
       {% if declarationContent.showSupportDetails %}
@@ -85,13 +91,24 @@
       {% endif %}
     </div>
     {% if declarationContent.showDataProtection %}
-    <div class="govuk-grid-column-full">
-      <hr/>
-      <p class="govuk-body">
-        The Department for Environment, Food and Rural Affairs (Defra) is the data controller for personal data you give to RPA. For information on how we handle personal data go to <a class="govuk-link" href="https://www.gov.uk" target="_blank" rel="noopener noreferrer">GOV.UK (opens in new tab)</a> and search
-        <a class="govuk-link" href="https://www.gov.uk/government/organisations/rural-payments-agency/about/personal-information-charter" target="_blank" rel="noopener noreferrer">Rural Payments Agency personal information charter (opens in new tab).</a>
-      </p>
-    </div>
+      <div class="govuk-grid-column-full">
+        <hr />
+        <p class="govuk-body">
+          The Department for Environment, Food and Rural Affairs (Defra) is the data controller for personal data you
+          give to RPA. For information on how we handle personal data go to
+          <a class="govuk-link" href="https://www.gov.uk" target="_blank" rel="noopener noreferrer"
+            >GOV.UK (opens in new tab)</a
+          >
+          and search
+          <a
+            class="govuk-link"
+            href="https://www.gov.uk/government/organisations/rural-payments-agency/about/personal-information-charter"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Rural Payments Agency personal information charter (opens in new tab).</a
+          >
+        </p>
+      </div>
     {% endif %}
   </div>
 {% endblock %}

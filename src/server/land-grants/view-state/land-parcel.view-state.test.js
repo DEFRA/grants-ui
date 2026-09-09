@@ -697,6 +697,21 @@ describe('land-parcel-state.manager', () => {
 
       expect(result).toEqual([{ code: 'CSAM3', description: 'Herbal leys', value: '0.2' }])
     })
+    it('should prefer the submitted hidden quantity for a total action over its previous chosen area', () => {
+      const payload = { landAction: 'CLIG3', landActionQuantity_CLIG3: '2.189' }
+      const actions = [
+        {
+          code: 'CLIG3',
+          description: 'Manage grassland',
+          availability: { value: 3.189, unit: 'ha', type: 'total' }
+        }
+      ]
+      const prevAddedActions = [{ code: 'CLIG3', value: 3.189 }]
+
+      const result = getAddedActionsFromPayload(payload, actions, prevAddedActions)
+
+      expect(result).toEqual([{ code: 'CLIG3', description: 'Manage grassland', value: '2.189' }])
+    })
 
     it('should fall back to the previous chosen area for a non-quantity action', () => {
       const payload = { landAction: ['CMOR1', 'CSAM3'], landActionQuantity_CSAM3: '0.2' }
