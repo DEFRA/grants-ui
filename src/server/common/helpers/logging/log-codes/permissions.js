@@ -4,6 +4,11 @@ import { maskCrn } from '~/src/server/common/helpers/logging/mask-crn.js'
  * @type {Object<string, import('./definition.js').LogCodesDefinition>}
  */
 export const PERMISSIONS = {
+  ACCESS_DENIED: {
+    level: 'warn',
+    messageFunc: (messageOptions) =>
+      `Permission denied for resource=${messageOptions.resource}, permission=${messageOptions.permission}, CRN=${maskCrn(messageOptions.userId)}, path=${messageOptions.path}: ${messageOptions.errorMessage}`
+  },
   BYPASSED: {
     level: 'info',
     messageFunc: (messageOptions) =>
