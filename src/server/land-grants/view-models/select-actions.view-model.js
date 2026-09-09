@@ -8,7 +8,7 @@ import nunjucks from 'nunjucks'
 import { govukFrontendPath, viewPaths } from '~/src/config/nunjucks/view-paths.js'
 import { getActionChosenAreaDisplayId, getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
 import { requiresQuantityInput } from '~/src/shared/action-quantity-type.js'
-import { requiresWholeNumber, SQUARE_METRES } from '~/src/shared/unit-types.js'
+import { requiresWholeNumber, UNIT_SQUARE_METRES } from '~/src/shared/unit-types.js'
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
 import { formatUnit, areaWithUnit, availableArea } from '~/src/shared/unit-format.js'
 import { getAvailabilityLimit, hasAvailableLand } from '~/src/shared/availability.js'
@@ -32,7 +32,7 @@ const landGrantsViewEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader
  * @returns {string | undefined}
  */
 function getQuantityInputUnit(unit) {
-  return unit === SQUARE_METRES ? formatUnit(unit) : unit
+  return unit === UNIT_SQUARE_METRES ? formatUnit(unit) : unit
 }
 
 /**

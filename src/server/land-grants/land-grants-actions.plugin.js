@@ -9,7 +9,7 @@ import {
 import { getConsentNotice } from '~/src/server/land-grants/view-models/consent.view-model.js'
 import { COMPOUND_PARCEL_ID_PATTERN, parseLandParcel } from '~/src/shared/format-parcel.js'
 import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
-import { UNIT_TYPES } from '~/src/shared/unit-types.js'
+import { UNITS } from '~/src/shared/unit-types.js'
 
 const plannedActionsValidation = {
   params: Joi.object({
@@ -22,7 +22,7 @@ const plannedActionsValidation = {
           actionCode: Joi.string().required(),
           quantity: Joi.number().required(),
           unit: Joi.string()
-            .valid(...UNIT_TYPES)
+            .valid(...UNITS)
             .required()
         })
       )
