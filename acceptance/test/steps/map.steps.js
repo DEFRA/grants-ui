@@ -68,3 +68,9 @@ Then(
     await expect(this.page.locator('#parcel-map-total-area')).toHaveText(totalArea)
   }
 )
+
+Then('(the user )should see SSSI and HEFER requirements apply to the land parcel', async function () {
+  const items = this.page.locator('#selected-parcel-requirements-list li')
+  await expect(items).toContainText(['SSSI'])
+  await expect(items).toContainText(['HEFER'])
+})
