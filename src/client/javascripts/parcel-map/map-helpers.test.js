@@ -18,24 +18,20 @@ import {
 
 describe('buildParcelLayers', () => {
   it('labels with Arial Regular', () => {
-    const layers = buildParcelLayers(['match', COMPOUND_ID_EXPR], undefined)
+    const layers = buildParcelLayers(['match', COMPOUND_ID_EXPR])
     expect(layers.label.layout['text-font']).toEqual(['Arial Regular'])
   })
 
-  it('sets source-layer on every layer when provided (vector tiles)', () => {
-    const layers = buildParcelLayers(['match', COMPOUND_ID_EXPR], 'parcels')
-    expect(layers.fill['source-layer']).toBe('parcels')
-    expect(layers.outline['source-layer']).toBe('parcels')
-    expect(layers.label['source-layer']).toBe('parcels')
-  })
-
-  it('omits source-layer when not provided (geojson source)', () => {
-    const layers = buildParcelLayers(['match', COMPOUND_ID_EXPR], undefined)
-    expect(layers.fill).not.toHaveProperty('source-layer')
+  it('sets source and source-layer to "parcels" on every layer', () => {
+    const layers = buildParcelLayers(['match', COMPOUND_ID_EXPR])
+    for (const layer of [layers.fill, layers.outline, layers.label]) {
+      expect(layer.source).toBe('parcels')
+      expect(layer['source-layer']).toBe('parcels')
+    }
   })
 
   it('labels parcels with the compound id reformatted as a space-separated reference', () => {
-    const layers = buildParcelLayers(['match', COMPOUND_ID_EXPR], undefined)
+    const layers = buildParcelLayers(['match', COMPOUND_ID_EXPR])
     expect(layers.label.layout['text-field']).toBe(LABEL_TEXT_EXPR)
     // Replaces the single dash in "SHEET-PARCEL" with a space via id alone,
     // falling back to the raw id if there is no dash.

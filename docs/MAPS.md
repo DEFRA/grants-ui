@@ -24,7 +24,7 @@ The component fetches the authenticated user's parcels from `/api/map/parcels`, 
 
 The basemap is Ordnance Survey's **OS Maps API** (raster ZXY tiles), which requires an API key. The key is read from config as `osMapsApiKey` (env var `OS_MAPS_API_KEY`, marked sensitive) and is only ever used server-side by the `/api/map/os-tiles` proxy. It must never be shipped to the browser.
 
-The basemap always comes from Ordnance Survey, **including in mock mode**: mock mode only replaces the parcel geometry, never the map underneath it. Without a key the basemap 401s and the component shows its error overlay, which looks much like the map being broken.
+The basemap always comes from Ordnance Survey. Without a key the basemap 401s and the component shows its error overlay, which looks much like the map being broken.
 
 > **Which OS product?** The key's OS Data Hub project must have the **"OS Maps API"** product added, since a key without it gets `401` from the tile endpoint. We deliberately do **not** use the OS Vector Tile API: it is due to retire in 2028 and is not included in the keys we are issued. (If vector basemaps are ever needed, the successor is the OS NGD API – Tiles.)
 
@@ -49,14 +49,15 @@ The key is a secret, so it is **not** set in `cdp-app-config`. It must be config
 
 ### Start the right stack
 
-Which compose command you want depends on where the parcel geometry comes from.
+The parcel geometry always comes from the land-grants API vector tiles, so you need the land-grants stack running:
 
-| You want                                | Command                        | What you get                                                                                                                   |
-| --------------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| Mock geometry (quickest, no API)        | `npm run docker:up`            | `MAP_MOCK_DATA_ENABLED` defaults to `true` in `compose.grants-ui.yml`. Geometry is served as GeoJSON from the embedded shapes. |
-| Real vector tiles (the production path) | `npm run docker:landgrants:up` | Adds `land-grants-backend` on `:3009` and its seeded Postgres. Set `MAP_MOCK_DATA_ENABLED=false` in `.env`.                    |
+```
+npm run docker:landgrants:up
+```
 
-> **This is the one that catches people out.** Plain `npm run docker:up` points `LAND_GRANTS_API_URL` at `mockserver:1080`. There is **no land-grants API in the base compose file**. Setting `MAP_MOCK_DATA_ENABLED=false` without also switching to `docker:landgrants:up` gives you a map with a working basemap, no parcels, and nothing obvious in the logs to explain why.
+This adds `land-grants-backend` on `:3009` and its seeded Postgres. Both images are pinned to `:latest` with `pull_policy: always` in `compose.land-grants.yml`, so each `up` pulls the newest published image.
+
+> **This catches people out.** Plain `npm run docker:up` points `LAND_GRANTS_API_URL` at `mockserver:1080` and there is **no land-grants API in the base compose file**, so you get a working basemap, no parcels, and nothing obvious in the logs to explain why. Use `docker:landgrants:up`.
 
 ### Sign in as a user who actually has parcels
 
@@ -76,16 +77,16 @@ http://localhost:3000/example-grant-with-map/start, then continue to `/select-la
 - Clicking a parcel selects it, highlights it, and shows a tooltip with the parcel's total area.
 - <kbd>Tab</kbd> into the map opens the keyboard listbox of parcels; <kbd>Enter</kbd> selects at the crosshair.
 - **Continue** is clickable regardless of selection; submitting with nothing selected re-renders the page with an inline error (see `MapSelectPageController` below). On a successful submission the next page receives `?parcelId=`.
-- Network tab: `/api/map/parcels` returns `200`, and `/api/map/os-tiles/{z}/{x}/{y}` returns `200` (`image/png`). In real mode `/api/map/parcel-tiles/{z}/{x}/{y}` returns `200` (`application/x-protobuf`); in mock mode the parcel geometry is embedded directly in the `/api/map/parcels` response instead (see [Mock data mode](#mock-data-mode)).
+- Network tab: `/api/map/parcels` returns `200`, `/api/map/os-tiles/{z}/{x}/{y}` returns `200` (`image/png`), and `/api/map/parcel-tiles/{z}/{x}/{y}` returns `200` (`application/x-protobuf`).
 
 ### When it doesn't work
 
-| Symptom                                             | Most likely cause                                                                                                                 |
-| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| "There was a problem loading the map."              | Missing or wrong `OS_MAPS_API_KEY`, or the key's OS project lacks the OS Maps API product (`401` on `/api/map/os-tiles`).         |
-| Basemap draws, but no parcels and no error          | Signed in as a CRN other than `1102838829`.                                                                                       |
-| Basemap draws, parcels missing, real mode           | `MAP_MOCK_DATA_ENABLED=false` but running `docker:up` rather than `docker:landgrants:up` (see [Mock data mode](#mock-data-mode)). |
-| Changes to `webpack.config.js` appear to do nothing | It isn't volume-mounted. Run `npm run docker:rebuild && npm run docker:up`.                                                       |
+| Symptom                                             | Most likely cause                                                                                                         |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| "There was a problem loading the map."              | Missing or wrong `OS_MAPS_API_KEY`, or the key's OS project lacks the OS Maps API product (`401` on `/api/map/os-tiles`). |
+| Basemap draws, but no parcels and no error          | Signed in as a CRN other than `1102838829`.                                                                               |
+| Basemap draws, parcels missing                      | Running `docker:up` rather than `docker:landgrants:up`, so there is no land-grants API to serve parcel geometry.          |
+| Changes to `webpack.config.js` appear to do nothing | It isn't volume-mounted. Run `npm run docker:rebuild && npm run docker:up`.                                               |
 
 ---
 
@@ -301,9 +302,7 @@ The basemap is Ordnance Survey's raster basemap, served through the server-side 
 
 ### `GET /api/map/parcels`
 
-Fetches the authenticated user's parcels from the DAL, enriches them with area data from the land-grants API, and returns one of two shapes depending on whether mock data mode is enabled:
-
-**Real mode** (`MAP_MOCK_DATA_ENABLED=false`):
+Fetches the authenticated user's parcels from the DAL, enriches them with area data from the land-grants API, and returns:
 
 ```json
 {
@@ -318,19 +317,7 @@ Fetches the authenticated user's parcels from the DAL, enriches them with area d
 }
 ```
 
-The component uses `PARCEL_TILES_URL` (a client-side constant in `config.js`) as the vector tile source.
-
-**Mock mode** (`MAP_MOCK_DATA_ENABLED=true`):
-
-```json
-{
-  "features": [{ "type": "Feature", "id": "SD7148-9160", "geometry": { ... }, "properties": { ... } }],
-  "bbox": { "minLng": -2.5, "minLat": 51.4, "maxLng": -2.3, "maxLat": 51.6 },
-  "mock": true
-}
-```
-
-When `mock: true` is present, the geometry is embedded directly in this same response (built fresh per-request by `buildMockFeatures`/`buildMockParcelsResponse` — nothing is read from or written to the session), and the component uses it as an inline GeoJSON source instead of pointing MapLibre at the vector-tile route. Returns `503` if the land-grants API is unavailable. See [Mock data mode](#mock-data-mode).
+The features carry properties only, no geometry: the component uses `PARCEL_TILES_URL` (a client-side constant in `config.js`) as the vector tile source and streams geometry from `/api/map/parcel-tiles/{z}/{x}/{y}`. Returns `503` if the land-grants API is unavailable.
 
 ### `GET /api/map/parcel-tiles/{z}/{x}/{y}`
 
@@ -353,48 +340,8 @@ Proxies OS Maps raster tile requests to the configured `osMapsBaseUrl`, injectin
 | `osMapsApiKey`              | `OS_MAPS_API_KEY`                | _(none)_                               | OS Data Hub key. Sensitive, server-side only. See [Prerequisites: OS Maps API key](#prerequisites-os-maps-api-key). |
 | `osMapsBaseUrl`             | `OS_MAPS_BASE_URL`               | `https://api.os.uk/maps/raster/v1/zxy` | Upstream the `/api/map/os-tiles` proxy calls. Override to point at a stub or an egress proxy.                       |
 | `mapTileCacheMaxAgeSeconds` | `MAP_TILE_CACHE_MAX_AGE_SECONDS` | `3600`                                 | `Cache-Control` max-age on tiles and the basemap style. Lower it to chase a stale-tile problem.                     |
-| `mapMockDataEnabled`        | `MAP_MOCK_DATA_ENABLED`          | `false`                                | Serve embedded GeoJSON instead of vector tiles. See [Mock data mode](#mock-data-mode).                              |
 
 Deliberately **not** configurable, and worth knowing why:
 
 - **The OS basemap layer** (`Outdoor_3857`) is pinned in `os-maps.js`. Pinning it server-side is what stops a browser asking the proxy for a layer our key isn't scoped for, i.e. it's what keeps the key from being spent on arbitrary OS products.
 - **The OS zoom range** (7–20) is likewise pinned. These are facts about what OS publishes, not deployment choices, and they are the validation bound on a proxy that spends a metered API key. An env var could widen that bound with no code review on the path.
-
----
-
-## Mock data mode
-
-When the real land-grants API is unavailable locally, mock mode serves embedded GeoJSON geometry directly, removing the dependency on a running tile server and avoiding vector tile clipping issues at zoom boundaries.
-
-### Enable / disable
-
-In `.env`:
-
-```
-MAP_MOCK_DATA_ENABLED=true   # mock geometry (default for local docker)
-MAP_MOCK_DATA_ENABLED=false  # real land-grants API + vector tiles
-```
-
-Then run `npm run docker:up` for the change to take effect.
-
-### What mock mode does
-
-- Assigns pre-loaded polygon geometry to the first 48 real parcel IDs (one embedded shape per parcel, in order); an account with more than 48 parcels simply doesn't get the rest rendered, rather than reusing a shape across two parcels
-- Serves geometry as inline GeoJSON embedded in the `/api/map/parcels` response (flagged `mock: true`) instead of vector tiles
-- Uses pre-loaded area values instead of fetching from the API
-- Parcel IDs remain real (from the DAL), so downstream actions and "continue" still work
-
-### What mock mode does not affect
-
-- The parcel list, which is always fetched from the DAL stub
-- Actions and payment calculations, which always call the real land-grants API
-
-### Removing mock support entirely
-
-Once the real API is available everywhere:
-
-1. Delete `map.mock.js` and `map.mock.response.js`
-2. Remove `import { isMockData }` and `import { buildMockParcelsResponse }` from `handlers.js`
-3. Remove the `isMockData()` branch from `parcelsHandler` in `handlers.js`
-4. Remove `mapMockDataEnabled` from `src/config/config.js`
-5. Remove `MAP_MOCK_DATA_ENABLED` from `compose.grants-ui.yml` and `.env`
