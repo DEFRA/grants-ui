@@ -16,6 +16,15 @@
     "strictNullChecks": true,
     "types": ["vitest", "vitest/globals"]
   },
-  "exclude": [".cache", ".public", ".server", "coverage", "node_modules", "src/**/*.test.js", "acceptance"],
+  "exclude": [
+    ".cache",
+    ".public",
+    ".server",
+    "coverage",
+    "node_modules",
+    "src/**/*.test.js",
+    "src/**/*.test-helpers.js",
+    "acceptance"
+  ],
   "include": ["**/*.cjs", "**/*.js", ".eslintrc.*", ".prettierrc.*", "types/**/*.d.ts"]
 }
