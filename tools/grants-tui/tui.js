@@ -1,6 +1,7 @@
 /* eslint-disable curly, no-control-regex */
 
 import * as readline from 'node:readline'
+import { stripVTControlCharacters } from 'node:util'
 
 import {
   ARROW,
@@ -42,6 +43,22 @@ export function padVisible(str, width) {
   return pad > 0 ? str + ' '.repeat(pad) : str
 }
 
+/** Keep single-line menu rows inside the terminal without losing their colours. */
+export function truncateVisible(str, width) {
+  if (visibleLen(str) <= width) return str
+  let length = 0
+  let result = ''
+  for (const token of str.match(/\x1b\[[0-9;]*m|[^\x1b]/gu) ?? []) {
+    if (token.startsWith('\x1b')) result += token
+    else {
+      if (length >= width - 1) break
+      result += token
+      length++
+    }
+  }
+  return result + '…' + RESET_COLOR
+}
+
 // ---------------------------------------------------------------------------
 // Shared screen renderer
 // ---------------------------------------------------------------------------
@@ -68,18 +85,134 @@ export const HEADER = IS_WINDOWS
   : [
       '',
       ...WORDMARK.map((line) => `  ${PURPLE}${STRIPES}${RESET_COLOR}  ${BOLD}${GREEN}${line}${RESET_COLOR}`),
-      `  ${DIM}docker compose launcher · v${VERSION}${RESET_COLOR}`,
+      `  ${DIM}Grants Platform Toolkit · v${VERSION}${RESET_COLOR}`,
       ''
     ]
 
+let runtimeStatusLine = ''
+let commandStatusLine = ''
+
+/** Shared by menus and prompts so runtime information stays visible throughout the TUI. */
+export function setRuntimeStatusLine(line) {
+  runtimeStatusLine = line
+}
+
+function menuCapacity() {
+  return Math.max(1, (process.stdout.rows || 24) - HEADER.length - 7 - (runtimeStatusLine ? 2 : 0))
+}
+
+function screenLines(bodyLines, statusLine) {
+  const width = Math.max(1, (process.stdout.columns || 100) - 1)
+  const footer = runtimeStatusLine
+    ? [
+        '',
+        `  ${statusLine || `${DIM}Ready${RESET_COLOR}`}`,
+        `  ${DIM}${(IS_WINDOWS ? '-' : '─').repeat(Math.max(1, width - 2))}${RESET_COLOR}`,
+        `  ${runtimeStatusLine}`
+      ]
+    : statusLine
+      ? ['', `  ${statusLine}`]
+      : []
+  const padding = runtimeStatusLine
+    ? Math.max(0, (process.stdout.rows || 24) - HEADER.length - bodyLines.length - footer.length - 1)
+    : 0
+  return [...HEADER, ...bodyLines, ...Array(padding).fill(''), ...footer, ''].map((line) =>
+    truncateVisible(line, width)
+  )
+}
 /**
  * Clear the screen and draw the header followed by the given body lines.
  * @param {string[]} bodyLines
+ * @param {string} [statusLine]
  * @returns {void}
  */
-export function renderScreen(bodyLines) {
-  const lines = [...HEADER, ...bodyLines, '']
+export function renderScreen(bodyLines, statusLine = commandStatusLine) {
+  commandStatusLine = statusLine
+  const lines = screenLines(bodyLines, statusLine)
   process.stdout.write(HIDE_CURSOR + CLEAR_SCREEN + lines.join('\n'))
+}
+
+/** Shared layout for the selectable menu and its disabled running state. */
+function radioMenuBody(items, title, hint, cursor) {
+  const labelWidth = Math.max(...items.map((item) => visibleLen(item.label))) + 2
+  const body = [`  ${BOLD}${title}${RESET_COLOR}`, `  ${DIM}${hint}${RESET_COLOR}`, '']
+  items.forEach((item, index) => {
+    const active = index === cursor && !item.disabled
+    const colour = item.key === 'refresh-overrides' ? PURPLE : CYAN
+    const arrow = active ? `${colour}${ARROW}${RESET_COLOR}` : ' '
+    const restingColour = item.key === 'refresh-overrides' ? FADED_PURPLE : ''
+    const labelColour = item.disabled ? DIM : active ? `${colour}${BOLD}` : restingColour
+    const label = padVisible(`${labelColour}${item.label}${RESET_COLOR}`, labelWidth)
+    body.push(`  ${arrow}  ${label}  ${DIM}${item.description}${RESET_COLOR}`)
+  })
+  return body
+}
+
+/** A soft white highlight travels left to right, with a gap between sweeps. */
+export function shimmerText(text, frame, enabled = true) {
+  if (!enabled) return text
+  const chars = Array.from(text)
+  const centre = (frame % (chars.length + 16)) - 8
+  return (
+    chars
+      .map((char, index) => {
+        const brightness = Math.round(205 + 50 * Math.max(0, 1 - Math.abs(index - centre) / 5))
+        return `\x1b[38;2;${brightness};${brightness};${brightness}m${char}`
+      })
+      .join('') + '\x1b[0m'
+  )
+}
+
+/** Keep consuming input while busy so navigation cannot queue up for later. */
+export function showBusyMenu(items, message, cancel, animate = true, title = 'What do you want to do?') {
+  let frame = 0
+  let cancelling = false
+  let statusRow = 1
+  const width = () => Math.max(1, (process.stdout.columns || 100) - 3)
+  const status = () => shimmerText((cancelling ? 'Cancelling…' : message).slice(0, width()), frame++, animate)
+  const draw = () => {
+    const maxItems = menuCapacity()
+    const body = radioMenuBody(
+      items.slice(0, maxItems).map((item) => ({ ...item, disabled: true })),
+      title,
+      'Running — menu disabled    ctrl+c → cancel',
+      -1
+    )
+    if (items.length > maxItems) body.push(`     … ${items.length - maxItems} more actions`)
+    const menu = body.map((line) => `${DIM}${stripVTControlCharacters(line).slice(0, width())}${RESET_COLOR}`)
+    const lines = screenLines(menu, status())
+    statusRow = lines.length - (runtimeStatusLine ? 3 : 1)
+    process.stdout.write(HIDE_CURSOR + CLEAR_SCREEN + lines.slice(0, -1).join('\n'))
+  }
+  draw()
+  // Redraw only the status row between frames, avoiding a whole-screen flash.
+  const timer = animate
+    ? setInterval(() => {
+        process.stdout.write(`\x1b[${statusRow};1H\x1b[2K  ${status()}`)
+      }, 45)
+    : undefined
+  function onKey(_, key) {
+    if (key?.sequence !== KEYS.CTRL_C || cancelling) return
+    cancelling = true
+    cancel()
+    draw()
+  }
+  readline.emitKeypressEvents(process.stdin)
+  if (process.stdin.isTTY) process.stdin.setRawMode(true)
+  process.stdin.on('keypress', onKey)
+  process.stdout.on('resize', draw)
+  const stop = () => {
+    clearInterval(timer)
+    process.stdout.removeListener('resize', draw)
+    makeCleanup(onKey)()
+  }
+  stop.update = (nextMessage) => {
+    if (cancelling || nextMessage === message) return
+    message = nextMessage
+    // The next animation frame picks up the latest phase, coalescing bursts of log lines.
+    if (!animate) draw()
+  }
+  return stop
 }
 
 /**
@@ -107,50 +240,34 @@ function makeCleanup(onKey) {
  * prompt for a new mocked GAS status.
  * @param {MenuItem[]} items
  * @param {string} title
- * @param {{ hint?: string, statusLine?: string, gasEditable?: boolean }} [opts]
+ * @param {{ hint?: string, statusLine?: string, gasEditable?: boolean, outputAvailable?: boolean }} [opts]
  * @returns {Promise<string>}
  */
-export async function radioMenu(items, title, { hint = '', statusLine = '', gasEditable = false } = {}) {
+export async function radioMenu(
+  items,
+  title,
+  { hint = '', statusLine = commandStatusLine, gasEditable = false, outputAvailable = false } = {}
+) {
   return new Promise((resolve) => {
     // Start cursor on first non-disabled item
     let cursor = items.findIndex((i) => !i.disabled)
     if (cursor === -1) cursor = 0
 
-    const LABEL_WIDTH = Math.max(...items.map((i) => visibleLen(i.label))) + 2
     const hintText = hint || '↑ ↓  navigate    enter → select    esc → quit'
 
     function draw() {
-      const body = [`  ${BOLD}${title}${RESET_COLOR}`, `  ${DIM}${hintText}${RESET_COLOR}`, '']
-      items.forEach((item, i) => {
-        const active = i === cursor
-        const disabled = !!item.disabled
-        const arrowColour = item.key === 'refresh-overrides' ? PURPLE : CYAN
-        const arrow = active ? `${arrowColour}${ARROW}${RESET_COLOR}` : ' '
-        let rawLabel, desc
-        if (disabled) {
-          rawLabel = `${DIM}${item.label}${RESET_COLOR}`
-          desc = `${DIM}${item.description}${RESET_COLOR}`
-        } else if (item.key === 'refresh-overrides') {
-          // Faded purple at rest, full bold purple when highlighted, so it's
-          // obvious when this sub-item is the current selection.
-          rawLabel = active
-            ? `${BOLD}${PURPLE}${item.label}${RESET_COLOR}`
-            : `${FADED_PURPLE}${item.label}${RESET_COLOR}`
-          desc = `${DIM}${item.description}${RESET_COLOR}`
-        } else {
-          rawLabel = active ? `${CYAN}${BOLD}${item.label}${RESET_COLOR}` : item.label
-          desc = `${DIM}${item.description}${RESET_COLOR}`
-        }
-        const label = padVisible(rawLabel, LABEL_WIDTH)
-        body.push(`  ${arrow}  ${label}  ${desc}`)
-      })
-      if (statusLine) {
-        body.push('', `  ${statusLine}`)
+      const maxItems = menuCapacity()
+      const start = Math.max(0, Math.min(cursor - Math.floor(maxItems / 2), items.length - maxItems))
+      const visibleItems = items.slice(start, start + maxItems)
+      const body = radioMenuBody(visibleItems, title, hintText, cursor - start)
+      if (items.length > maxItems) {
+        body.push(`  ${DIM}${start + 1}–${start + visibleItems.length} of ${items.length}${RESET_COLOR}`)
       }
-      renderScreen(body)
+      renderScreen(body, statusLine)
     }
 
     draw()
+    process.stdout.on('resize', draw)
     readline.emitKeypressEvents(process.stdin)
     if (process.stdin.isTTY) process.stdin.setRawMode(true)
 
@@ -174,6 +291,9 @@ export async function radioMenu(items, title, { hint = '', statusLine = '', gasE
         while (items[next].disabled && next !== cursor) next = (next + 1) % items.length
         cursor = next
         draw()
+      } else if (outputAvailable && key.name === 'l') {
+        cleanup()
+        resolve('__output__')
       } else if (gasEditable && seq === KEYS.G) {
         cleanup()
         resolve('__gas__')
@@ -184,7 +304,10 @@ export async function radioMenu(items, title, { hint = '', statusLine = '', gasE
       }
     }
 
-    const cleanup = makeCleanup(onKey)
+    const cleanup = () => {
+      process.stdout.removeListener('resize', draw)
+      makeCleanup(onKey)()
+    }
 
     process.stdin.on('keypress', onKey)
   })
@@ -379,8 +502,10 @@ export async function toggleMenu(items, title) {
         `  ${DIM}↑ ↓  navigate    space → toggle    a → select all    enter → confirm    esc → back${RESET_COLOR}`,
         ''
       ]
-      items.forEach((item, i) => {
-        const active = i === cursor
+      const maxItems = menuCapacity()
+      const start = Math.max(0, Math.min(cursor - Math.floor(maxItems / 2), items.length - maxItems))
+      items.slice(start, start + maxItems).forEach((item, i) => {
+        const active = i + start === cursor
         const disabled = !!item.disabled
         const selected = item.selected
         const arrow = active ? `${CYAN}${ARROW}${RESET_COLOR}` : ' '
@@ -397,6 +522,9 @@ export async function toggleMenu(items, title) {
         const label = padVisible(rawLabel, LABEL_WIDTH)
         body.push(`  ${arrow}  ${marker}  ${label}  ${desc}`)
       })
+      if (items.length > maxItems) {
+        body.push(`  ${DIM}${start + 1}–${Math.min(items.length, start + maxItems)} of ${items.length}${RESET_COLOR}`)
+      }
       renderScreen(body)
     }
 

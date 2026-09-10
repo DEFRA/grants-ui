@@ -5,7 +5,7 @@ import * as fs from 'node:fs'
 import * as os from 'node:os'
 import { resolve } from 'node:path'
 
-import { ADDONS, BOLD, DIM, GREEN, LOCAL_SERVICES, PURPLE, RED, RESET_COLOR, ROOT } from './constants.js'
+import { ADDONS, BOLD, DIM, LOCAL_SERVICES, PURPLE, RED, RESET_COLOR, ROOT } from './constants.js'
 import { getSelectedFormDefIds } from './form-defs.js'
 import { GAS_DIVIDER } from './gas.js'
 import { loadState } from './cli-state.js'
@@ -130,16 +130,22 @@ export function buildStatusLine(runningFiles) {
   if (formDefCount) localBits.push(`${formDefCount} form-def overrides`)
   const localSuffix = localBits.length ? `  ${GAS_DIVIDER}  ${PURPLE}Local: ${localBits.join(', ')}${RESET_COLOR}` : ''
   const runningWord = isDebugging ? `${RED}Debugging${RESET_COLOR}` : 'Running'
-  const tick = isDebugging ? '🐛' : `${GREEN}✔${RESET_COLOR}`
-  return `${tick}  ${runningWord}: ${BOLD}${labels.join(', ')}${RESET_COLOR}${localSuffix}`
+  return `${runningWord}: ${BOLD}${labels.join(', ')}${RESET_COLOR}${localSuffix}`
+}
+
+// Let Compose resolve the project exactly as `up` does, including worktree
+// directory names and COMPOSE_PROJECT_NAME overrides. Include addon services
+// even though only the core files are needed to identify the project.
+function composePs(args) {
+  return spawnSync('docker', ['compose', ...composeFileArgs([]), 'ps', '--orphans', ...args], {
+    cwd: ROOT,
+    encoding: 'utf8'
+  })
 }
 
 export function getRunningComposeFiles() {
-  const ps = spawnSync(
-    'docker',
-    ['ps', '--filter', 'label=com.docker.compose.project=grants-ui', '--format', '{{.ID}}'],
-    { encoding: 'utf8' }
-  )
+  const ps = composePs(['--status', 'running', '--quiet'])
+  if (ps.status !== 0) return null
   const ids = (ps.stdout ?? '').trim().split('\n').filter(Boolean)
   if (!ids.length) return null
 
@@ -167,20 +173,12 @@ export function journeyBaseUrl() {
 }
 
 /**
- * `docker ps [-a]` service-label listing shared by getRunningServices/getAllServices.
+ * Compose service listing shared by getRunningServices/getAllServices.
  * @param {boolean} all Include stopped containers (`-a`)
  * @returns {string[]}
  */
 function dockerPsServiceLabels(all) {
-  const args = ['ps']
-  if (all) args.push('-a')
-  args.push(
-    '--filter',
-    'label=com.docker.compose.project=grants-ui',
-    '--format',
-    '{{.Label "com.docker.compose.service"}}'
-  )
-  const ps = spawnSync('docker', args, { encoding: 'utf8' })
+  const ps = composePs([...(all ? ['--all'] : ['--status', 'running']), '--services'])
   if (ps.status !== 0) return []
   return (ps.stdout ?? '').trim().split('\n').filter(Boolean)
 }

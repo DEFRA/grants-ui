@@ -15,7 +15,7 @@
 
 ## Grants TUI
 
-`tools/grants-tui.js` is an interactive Docker Compose launcher TUI for the Grants platform. It's registered as the `gt` bin entry in `package.json`. Run `npm link` once to make `gt` available globally; after that you can run `gt` from anywhere inside the repo.
+`tools/grants-tui.js` provides Grants TUI — Grants Platform Toolkit, an interactive terminal interface for managing the local stack, running checks and journeys, and inspecting audit output. It's registered as the `gt` bin entry in `package.json`. Run `npm link` once to make `gt` available globally; after that you can run `gt` from anywhere inside the repo.
 
 `package.json` also registers a second `gtx` bin entry pointing at the same script. It's a fallback alias: `gt` is a common command name (notably the [Graphite](https://graphite.dev/) `gt` CLI), so if `gt` clashes with another tool already on your `PATH`, run `gtx` instead — it's the exact same command.
 
