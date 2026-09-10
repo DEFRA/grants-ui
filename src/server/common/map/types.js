@@ -3,17 +3,14 @@
  */
 
 /**
- * A parcel as the map API serves it to the browser.
- *
- * Geometry is only present in mock mode — in real mode the client streams it
- * from the parcel-tiles route instead, so the feature carries properties only.
+ * A parcel as the map API serves it to the browser: properties only, no
+ * geometry — the client streams geometry from the parcel-tiles route.
  * `sheet_id`/`parcel_id` are snake_case because they mirror the property names
  * in the land-grants vector tiles; `id` is the compound "SHEET-PARCEL" key the
  * interact plugin identifies and labels features by.
  * @typedef {object} ParcelFeature
  * @property {'Feature'} type
  * @property {string} id - compound "SHEET-PARCEL" identifier
- * @property {import('geojson').Geometry} [geometry] - mock mode only
  * @property {ParcelFeatureProperties} properties
  */
 
