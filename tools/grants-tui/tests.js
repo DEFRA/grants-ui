@@ -49,3 +49,19 @@ export function cmdTest(targetKey, dryRun = false) {
   console.log(`\n  ${DIM}output: ${logFile}${RESET_COLOR}`)
   return result.status ?? 1
 }
+
+/**
+ * Run every suite, even after a failure, and preserve the first failing exit code.
+ * The action worker captures all suites and this summary in a single output log.
+ * @param {boolean} [dryRun]
+ * @param {(target: string, dryRun: boolean) => number} [runTest]
+ * @returns {number}
+ */
+export function cmdAllTests(dryRun = false, runTest = cmdTest) {
+  const results = TEST_TARGETS.map((target) => ({ key: target.key, code: runTest(target.key, dryRun) }))
+  console.log('\nAll tests summary:')
+  for (const result of results) {
+    console.log(`  ${result.key}: ${result.code === 0 ? 'passed' : `failed (exit ${result.code})`}`)
+  }
+  return results.find((result) => result.code !== 0)?.code ?? 0
+}

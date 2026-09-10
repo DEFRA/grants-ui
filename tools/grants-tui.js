@@ -2,7 +2,7 @@
 /* eslint-disable */
 
 /**
- * Grants TUI — Interactive Docker Compose launcher
+ * Grants TUI — Grants Platform Toolkit
  *
  * Usage (interactive — no args):
  *   gt

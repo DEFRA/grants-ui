@@ -20,7 +20,15 @@ import {
   TEST_TARGETS,
   YELLOW
 } from './constants.js'
-import { cmdCheck, cmdDebug, cmdDown, cmdReset, cmdRestart, cmdSnyk, cmdUp } from './commands.js'
+import {
+  actionStatus,
+  cancelActiveAction,
+  getActionRuns,
+  getLastRun,
+  runInteractiveAction,
+  setActionMenu
+} from './actions.js'
+import { viewOutput } from './output.js'
 import {
   buildStatusLine,
   getAllServices,
@@ -29,13 +37,11 @@ import {
   getRunningServices,
   journeyBaseUrl
 } from './docker.js'
-import { getSelectedFormDefIds, listOverrideSources, runApplyFormDefs } from './form-defs.js'
+import { getSelectedFormDefIds, listOverrideSources } from './form-defs.js'
 import { GAS_DIVIDER, gasStatusSegment, getGasStatus, setGasStatus } from './gas.js'
-import { cmdJourney, journeyCrnOptions, journeySteps, listJourneys, wontCompleteReason } from './journey.js'
-import { cmdSonar } from './sonar.js'
+import { journeyCrnOptions, journeySteps, listJourneys, wontCompleteReason } from './journey.js'
 import { loadState, saveState } from './cli-state.js'
-import { cmdTest, testLogPath } from './tests.js'
-import { pauseStdin, promptScale, promptTextWithOptions, radioMenu, resumeStdin, toggleMenu } from './tui.js'
+import { promptScale, promptTextWithOptions, radioMenu, setRuntimeStatusLine, toggleMenu } from './tui.js'
 
 // ---------------------------------------------------------------------------
 // Main menu
@@ -46,7 +52,7 @@ import { pauseStdin, promptScale, promptTextWithOptions, radioMenu, resumeStdin,
  * @param {boolean} containersRunning
  * @returns {object[]}
  */
-function buildMainMenuItems(savedState, containersRunning) {
+export function buildMainMenuItems(savedState, containersRunning) {
   const localCount = savedState?.localServices?.length || 0
   const formDefSelectionCount = getSelectedFormDefIds(savedState).length
   const localFormDefsOn = formDefSelectionCount > 0
@@ -94,20 +100,14 @@ function buildMainMenuItems(savedState, containersRunning) {
           }
         ]
       : []),
-    { key: 'test', label: 'test ⇢', description: 'Run unit / contract / acceptance tests' },
+    { key: 'checks', label: 'checks ⇢', description: 'Tests, lint, security scans and pre-PR checks' },
+    { key: 'tools', label: 'tools ⇢', description: 'Audit logs, queue messages and cleanup' },
     {
       key: 'journey',
       label: 'journey ⇢',
       description: 'Walk a Journey Runner journey headlessly',
       disabled: !containersRunning
     },
-    {
-      key: 'sonar',
-      label: 'sonar',
-      description: 'Scan src/ on a local SonarQube server (left up for the dashboard)'
-    },
-    { key: 'snyk', label: 'snyk', description: 'Snyk dependency vulnerability scan (same as CI)' },
-    { key: 'check', label: 'pre-pr check', description: 'Run all tests, Snyk and a PR-scoped Sonar scan (CI gates)' },
     { key: 'reset', label: 'reset ⇢', description: 'Full teardown — removes volumes & images' }
   ]
 }
@@ -125,16 +125,24 @@ async function resolveGasStatus(containersRunning, runningComposeFiles) {
   return gasMockActive ? await getGasStatus() : null
 }
 
+async function refreshRuntimeStatus(runningComposeFiles = getRunningComposeFiles()) {
+  const gasStatus = await resolveGasStatus(!!runningComposeFiles, runningComposeFiles)
+  const runtimeLine = buildStatusLine(runningComposeFiles)
+  setRuntimeStatusLine(
+    gasStatus === null ? runtimeLine : `${runtimeLine}  ${GAS_DIVIDER}  ${gasStatusSegment(gasStatus)}`
+  )
+  return gasStatus
+}
+
 // ---------------------------------------------------------------------------
 // Command handlers — one per main-menu item, each returns the next status line
 // ---------------------------------------------------------------------------
 
 /**
  * @param {string | null} gasStatus
- * @param {string[] | null} runningComposeFiles
  * @returns {Promise<string>}
  */
-async function handleGasCommand(gasStatus, runningComposeFiles) {
+async function handleGasCommand(gasStatus) {
   // Common statuses offered as selectable presets, with a free-form field as
   // the last option for anything else. Land the cursor on the preset matching
   // the current status (leaving the field blank); if it's not a preset,
@@ -151,12 +159,8 @@ async function handleGasCommand(gasStatus, runningComposeFiles) {
   const trimmed = nextStatus?.trim()
   if (!trimmed) return ''
   const ok = await setGasStatus(trimmed)
-  // No "GAS status set to …" confirmation — the yellow GAS badge in the status
-  // line already reflects the new value on the next render, so just fall back
-  // to the default running status line (and only surface a line on failure).
-  return ok
-    ? buildStatusLine(runningComposeFiles)
-    : `${RED}✖${RESET_COLOR}  Failed to set GAS status — is mockserver running?`
+  // The runtime footer reflects the saved GAS status on the next render.
+  return ok ? '' : `${RED}✖${RESET_COLOR}  Failed to set GAS status — is mockserver running?`
 }
 
 /** @param {boolean} dryRun */
@@ -184,9 +188,7 @@ async function handleRestartCommand(dryRun) {
     return `${DIM}No containers selected — restart cancelled${RESET_COLOR}`
   }
 
-  pauseStdin()
-  const restartStatus = cmdRestart(selectedServices, dryRun, true)
-  resumeStdin()
+  const restartStatus = await runInteractiveAction('restart', [selectedServices, dryRun, true], 'Restarting containers')
 
   const postRestartFiles = getRunningComposeFiles()
   return restartStatus !== 0
@@ -221,10 +223,13 @@ async function handleUpCommand(dryRun, savedState) {
     ? (savedState.localServices ?? []).filter((/** @type {string} */ k) => localImages.has(k + ':local'))
     : []
 
-  // Pause stdin (keep it open) and exit alt screen before running docker
-  pauseStdin()
-  const { status: upStatus, elapsedSeconds } = cmdUp(selectedAddons, scale, dryRun, selectedLocalServices, true)
-  resumeStdin()
+  const started = Date.now()
+  const upStatus = await runInteractiveAction(
+    'up',
+    [selectedAddons, scale, dryRun, selectedLocalServices, true],
+    'Starting containers'
+  )
+  const elapsedSeconds = ((Date.now() - started) / 1000).toFixed(1)
 
   const postUpFiles = getRunningComposeFiles()
   if (upStatus !== 0) {
@@ -242,9 +247,11 @@ async function handleUpCommand(dryRun, savedState) {
  */
 async function restartChangedLocalServices(dryRun, servicesToRestart) {
   if (!servicesToRestart.length) return null
-  pauseStdin()
-  const restartStatus = cmdRestart(servicesToRestart, dryRun, true)
-  resumeStdin()
+  const restartStatus = await runInteractiveAction(
+    'restart',
+    [servicesToRestart, dryRun, true],
+    'Restarting local services'
+  )
   return restartStatus !== 0
     ? `${RED}✖${RESET_COLOR}  Docker exited with code ${restartStatus} — check output above`
     : null
@@ -260,17 +267,25 @@ async function restartChangedLocalServices(dryRun, servicesToRestart) {
  * @returns {Promise<boolean>} true on success
  */
 async function reconcileFormDefOverrides(dryRun, addedFormDefIds, removedFormDefIds, newFormDefIds) {
-  pauseStdin()
   let applyStatus = 0
   if (newFormDefIds.length === 0) {
     // Everything turned off — a full disable (marker sweep) reverts every
     // grant to its repo version and clears any leftover override.
-    applyStatus = runApplyFormDefs('disable', dryRun)
+    applyStatus = await runInteractiveAction('form-defs', ['disable', dryRun], 'Removing form-def overrides')
   } else {
-    if (removedFormDefIds.length) applyStatus = runApplyFormDefs('disable', dryRun, removedFormDefIds)
-    if (applyStatus === 0 && addedFormDefIds.length) applyStatus = runApplyFormDefs('enable', dryRun, addedFormDefIds)
+    if (removedFormDefIds.length)
+      applyStatus = await runInteractiveAction(
+        'form-defs',
+        ['disable', dryRun, removedFormDefIds],
+        'Removing form-def overrides'
+      )
+    if (applyStatus === 0 && addedFormDefIds.length)
+      applyStatus = await runInteractiveAction(
+        'form-defs',
+        ['enable', dryRun, addedFormDefIds],
+        'Applying form-def overrides'
+      )
   }
-  resumeStdin()
   return applyStatus === 0
 }
 
@@ -407,49 +422,100 @@ async function handleRefreshOverridesCommand(dryRun) {
   // definitions (in the local folder or a sibling repo) are served without
   // toggling the override off and on.
   const refreshIds = getSelectedFormDefIds(loadState())
-  pauseStdin()
-  const applyStatus = refreshIds.length ? runApplyFormDefs('enable', dryRun, refreshIds) : 0
-  resumeStdin()
+  const applyStatus = refreshIds.length
+    ? await runInteractiveAction('form-defs', ['enable', dryRun, refreshIds], 'Refreshing form-def overrides')
+    : 0
   return applyStatus !== 0
     ? `${RED}✖${RESET_COLOR}  Form-def overrides refresh failed — check output above`
     : `${PURPLE}✔  Form-def overrides refreshed${RESET_COLOR}`
 }
 
 /** @param {boolean} dryRun */
-async function handleTestCommand(dryRun) {
-  const testItems = TEST_TARGETS.map((t) => ({
-    key: t.key,
-    label: t.label,
-    description: t.note ? `${t.description}  ${DIM}(${t.note})${RESET_COLOR}` : t.description,
-    selected: false
-  }))
-  const toggled = await toggleMenu(testItems, 'Select test suites to run')
-  if (toggled === null) return ''
-  const selected = toggled.filter((i) => i.selected).map((i) => i.key)
-  if (!selected.length) {
-    return `${DIM}No suites selected — test run cancelled${RESET_COLOR}`
-  }
+export async function handleChecksCommand(dryRun) {
+  const items = [
+    { key: 'format', label: 'format', description: 'Format code and docs with Prettier (updates files)' },
+    { key: 'lint', label: 'lint', description: 'Run JavaScript, SCSS and type checks' },
+    ...TEST_TARGETS.map((target) => ({
+      key: `test:${target.key}`,
+      label: target.key === 'contracts' ? 'contract tests' : `${target.label} tests`,
+      description: target.note ? `${target.description} (${target.note})` : target.description
+    })),
+    { key: 'all-tests', label: 'all tests', description: 'Run unit, contract and acceptance tests' },
+    { key: 'sonar', label: 'sonar', description: 'Scan src/ with local SonarQube (dashboard left running)' },
+    { key: 'snyk', label: 'snyk', description: 'Scan dependencies for vulnerabilities (same as CI)' },
+    { key: 'check', label: 'pre-pr check', description: 'All tests, Snyk and a PR-scoped Sonar scan (CI gates)' }
+  ]
+  return handleActionSubmenu(items, 'Checks', (selected) => runSelectedCheck(selected, dryRun))
+}
 
-  pauseStdin()
-  const passed = []
-  let failure = null
-  for (const key of selected) {
-    const code = cmdTest(key, dryRun)
-    if (code !== 0) {
-      failure = { key, code }
-      break
+/** @param {boolean} dryRun */
+export async function handleToolsCommand(dryRun) {
+  const items = [
+    { key: 'audit:logs', label: 'audit logs', description: 'Show audit entries from grants-ui container logs' },
+    { key: 'audit:queue', label: 'audit queue', description: 'Show the 10 most recent local audit messages' },
+    { key: 'audit:clear', label: 'clear audit', description: 'Purge the local audit queue and restart grants-ui' }
+  ]
+  const labels = {
+    'audit:logs': 'Reading audit logs',
+    'audit:queue': 'Reading audit queue',
+    'audit:clear': 'Clearing audit queue and restarting grants-ui'
+  }
+  return handleActionSubmenu(items, 'Tools', async (selected) => {
+    if (Object.hasOwn(labels, selected)) {
+      const previousRun = getLastRun()
+      await runInteractiveAction(selected, [dryRun], labels[selected])
+      const completed = getLastRun()
+      if (['audit:logs', 'audit:queue'].includes(selected) && completed !== previousRun && completed?.logPath) {
+        await viewOutput(completed)
+      }
     }
-    passed.push(key)
-  }
-  resumeStdin()
+    return ''
+  })
+}
 
-  if (failure) {
-    const skipped = selected.length - passed.length - 1
-    const skippedNote = skipped > 0 ? ` — skipped ${skipped} remaining` : ''
-    return `${RED}✖${RESET_COLOR}  ${failure.key} failed (exit ${failure.code})${skippedNote} — output: ${testLogPath(failure.key)}`
+async function handleActionSubmenu(items, title, runSelected) {
+  let statusLine = ''
+  while (true) {
+    await refreshRuntimeStatus()
+    const lastRun = getLastRun()
+    setActionMenu(items, title)
+    const selected = await radioMenu(items, title, {
+      hint: `↑ ↓ navigate    enter → run${lastRun?.logPath ? '    l → output' : ''}    esc → back`,
+      statusLine,
+      outputAvailable: !!lastRun?.logPath
+    })
+    if (selected === '__quit__') return statusLine
+    if (selected === '__output__') {
+      await viewOutput(lastRun)
+      continue
+    }
+    statusLine = await runSelected(selected)
+    const completed = getLastRun()
+    if (completed !== lastRun) {
+      statusLine = completed.logPath
+        ? actionStatus(completed)
+        : `${RED}✖${RESET_COLOR}  Could not run action: ${completed.error}`
+    }
   }
-  const outputs = !dryRun && passed.length ? ` — output: ${passed.map((k) => testLogPath(k)).join(', ')}` : ''
-  return `${PURPLE}✔  Passed: ${passed.join(', ')}${RESET_COLOR}${outputs}`
+}
+
+async function runSelectedCheck(selected, dryRun) {
+  const target = TEST_TARGETS.find((item) => `test:${item.key}` === selected)
+  if (target) {
+    await runInteractiveAction('test', [target.key, dryRun], `Running ${target.key} tests`)
+    return ''
+  }
+  if (selected === 'all-tests') {
+    await runInteractiveAction('all-tests', [dryRun], 'Running all tests')
+    return ''
+  }
+  if (selected === 'lint' || selected === 'format') {
+    const label = selected === 'format' ? 'Formatting code and docs' : 'Running lint checks'
+    await runInteractiveAction(selected, [dryRun], label)
+    return ''
+  }
+  const handlers = { sonar: handleSonarCommand, snyk: handleSnykCommand, check: handleCheckCommand }
+  return handlers[selected] ? handlers[selected](dryRun) : ''
 }
 
 // ---------------------------------------------------------------------------
@@ -673,21 +739,23 @@ async function handleJourneyCommand(dryRun) {
   if (wizardResult.cancelled) return wizardResult.statusLine
   const { ctx } = wizardResult
 
-  pauseStdin()
-  const code = cmdJourney(
-    ctx.chosen,
-    {
-      crn: ctx.crn,
-      stop: ctx.stop,
-      mockNoActions: ctx.mockNoActions,
-      baseUrl: journeyBaseUrl(),
-      headed: ctx.mode === 'headed',
-      clear: ctx.clearChoice === 'clear',
-      acknowledged: true
-    },
-    dryRun
+  const code = await runInteractiveAction(
+    'journey',
+    [
+      ctx.chosen,
+      {
+        crn: ctx.crn,
+        stop: ctx.stop,
+        mockNoActions: ctx.mockNoActions,
+        baseUrl: journeyBaseUrl(),
+        headed: ctx.mode === 'headed',
+        clear: ctx.clearChoice === 'clear',
+        acknowledged: true
+      },
+      dryRun
+    ],
+    ctx.stop ? `Running journey ${ctx.chosen} — close browser when finished` : `Running journey ${ctx.chosen}`
   )
-  resumeStdin()
 
   return code === 0
     ? `${PURPLE}✔  Journey '${ctx.chosen}' completed${RESET_COLOR}`
@@ -696,9 +764,7 @@ async function handleJourneyCommand(dryRun) {
 
 /** @param {boolean} dryRun */
 async function handleSonarCommand(dryRun) {
-  pauseStdin()
-  const code = await cmdSonar({ dryRun })
-  resumeStdin()
+  const code = await runInteractiveAction('sonar', [{ dryRun }], 'Running Sonar scan')
 
   const sonarLink = `${DIM}results: ${SONAR.hostUrl}${RESET_COLOR}`
   if (dryRun) return `${DIM}Sonar dry-run complete${RESET_COLOR}`
@@ -709,9 +775,7 @@ async function handleSonarCommand(dryRun) {
 
 /** @param {boolean} dryRun */
 async function handleCheckCommand(dryRun) {
-  pauseStdin()
-  const code = await cmdCheck(dryRun)
-  resumeStdin()
+  const code = await runInteractiveAction('check', [dryRun], 'Running pre-pr checks')
   if (dryRun) return `${DIM}pre-pr check dry-run complete${RESET_COLOR}`
   return code === 0
     ? `${PURPLE}✔  pre-pr check passed${RESET_COLOR} — ${DIM}${CHECK.logFile}${RESET_COLOR}`
@@ -720,9 +784,7 @@ async function handleCheckCommand(dryRun) {
 
 /** @param {boolean} dryRun */
 async function handleSnykCommand(dryRun) {
-  pauseStdin()
-  const code = cmdSnyk(dryRun)
-  resumeStdin()
+  const code = await runInteractiveAction('snyk', [dryRun], 'Running Snyk scan')
 
   if (dryRun) return `${DIM}Snyk dry-run complete${RESET_COLOR}`
   if (code === SNYK_EXIT.OK) return `${PURPLE}✔  Snyk: no vulnerabilities found${RESET_COLOR}`
@@ -749,12 +811,9 @@ async function handleDockerLifecycleCommand(command, dryRun) {
     }
   }
 
-  pauseStdin()
-  let runStatus = 0
-  if (command === 'down') runStatus = cmdDown(dryRun, true) ?? 0
-  else if (command === 'debug') runStatus = cmdDebug(true) ?? 0
-  else if (command === 'reset') runStatus = cmdReset(dryRun) ?? 0
-  resumeStdin()
+  const labels = { down: 'Stopping containers', debug: 'Starting debugger', reset: 'Resetting Docker stack' }
+  const args = command === 'debug' ? [true, dryRun] : [dryRun, true]
+  const runStatus = await runInteractiveAction(command, args, labels[command])
 
   const postRunFiles = getRunningComposeFiles()
   return runStatus !== 0
@@ -772,11 +831,9 @@ const COMMAND_HANDLERS = {
   up: (ctx) => handleUpCommand(ctx.dryRun, ctx.savedState),
   local: (ctx) => handleLocalCommand(ctx.dryRun, ctx.savedState, ctx.containersRunning),
   'refresh-overrides': (ctx) => handleRefreshOverridesCommand(ctx.dryRun),
-  test: (ctx) => handleTestCommand(ctx.dryRun),
+  checks: (ctx) => handleChecksCommand(ctx.dryRun),
+  tools: (ctx) => handleToolsCommand(ctx.dryRun),
   journey: (ctx) => handleJourneyCommand(ctx.dryRun),
-  sonar: (ctx) => handleSonarCommand(ctx.dryRun),
-  check: (ctx) => handleCheckCommand(ctx.dryRun),
-  snyk: (ctx) => handleSnykCommand(ctx.dryRun),
   down: (ctx) => handleDockerLifecycleCommand('down', ctx.dryRun),
   debug: (ctx) => handleDockerLifecycleCommand('debug', ctx.dryRun),
   reset: (ctx) => handleDockerLifecycleCommand('reset', ctx.dryRun)
@@ -789,6 +846,7 @@ const COMMAND_HANDLERS = {
 /** SIGINT handler: restore terminal state if Ctrl+C hits outside raw mode */
 function registerSigintHandler() {
   process.on('SIGINT', () => {
+    if (cancelActiveAction()) return
     process.stdout.write(ALT_SCREEN_EXIT + SHOW_CURSOR)
     if (process.stdin.isTTY) {
       try {
@@ -823,10 +881,7 @@ export async function runInteractiveLoop(dryRun) {
   // Enter alternate screen buffer so the TUI leaves no residue in scroll-back
   process.stdout.write(ALT_SCREEN_ENTER + HIDE_CURSOR)
 
-  // Interactive loop — keeps returning to main menu until user quits
-  // Run status on first entry so the user sees what's running immediately
-  const initialRunning = getRunningComposeFiles()
-  let statusLine = buildStatusLine(initialRunning)
+  let statusLine = ''
 
   while (true) {
     const savedState = loadState()
@@ -834,26 +889,44 @@ export async function runInteractiveLoop(dryRun) {
     const containersRunning = !!runningComposeFiles
 
     const menuItems = buildMainMenuItems(savedState, containersRunning)
-    const gasStatus = await resolveGasStatus(containersRunning, runningComposeFiles)
+    const lastRun = getLastRun()
+    if (getActionRuns().length) {
+      menuItems.push({ key: 'output', label: 'output ⇢', description: 'Browse output from this session (l → latest)' })
+    }
+    setActionMenu(menuItems)
+    const gasStatus = await refreshRuntimeStatus(runningComposeFiles)
     const gasReachable = gasStatus !== null
-    // Commands that return via `continue` leave `statusLine` empty; fall back to
-    // the default running status line so coming back from a submenu (journey,
-    // local, …) still shows the "Core" chip rather than just the GAS badge.
-    const baseStatusLine = statusLine || buildStatusLine(runningComposeFiles)
-    const menuStatusLine = gasReachable
-      ? `${baseStatusLine}  ${GAS_DIVIDER}  ${gasStatusSegment(gasStatus)}`
-      : baseStatusLine
     const menuHint = gasReachable ? '↑ ↓  navigate    enter → select    g → set GAS status    esc → quit' : ''
 
     const command = await radioMenu(menuItems, 'What do you want to do?', {
-      statusLine: menuStatusLine,
+      statusLine,
       hint: menuHint,
-      gasEditable: gasReachable
+      gasEditable: gasReachable,
+      outputAvailable: !!lastRun?.logPath
     })
+
+    if (command === '__output__') {
+      await viewOutput(lastRun)
+      continue
+    }
+    if (command === 'output') {
+      const runs = getActionRuns()
+      const picked = await radioMenu(
+        runs.map((run, index) => ({
+          key: String(index),
+          label: run.label,
+          description: `exit ${run.code}`
+        })),
+        'Action output — newest first',
+        { hint: '↑ ↓ navigate    enter → view output    esc → back' }
+      )
+      if (picked !== '__quit__') await viewOutput(runs[Number(picked)])
+      continue
+    }
     statusLine = ''
 
     if (command === '__gas__') {
-      statusLine = await handleGasCommand(gasStatus, runningComposeFiles)
+      statusLine = await handleGasCommand(gasStatus)
       continue
     }
     if (command === '__quit__') {
@@ -863,6 +936,12 @@ export async function runInteractiveLoop(dryRun) {
     const handler = COMMAND_HANDLERS[command]
     if (handler) {
       statusLine = await handler({ dryRun, savedState, containersRunning })
+      const completed = getLastRun()
+      if (completed !== lastRun) {
+        statusLine = completed.logPath
+          ? actionStatus(completed)
+          : `${RED}✖${RESET_COLOR}  Could not run action: ${completed.error}`
+      }
     }
   }
 }
