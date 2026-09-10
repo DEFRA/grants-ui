@@ -39,12 +39,14 @@ const actionWithLimitedAvailability = like({
   code: string('CLIG3'),
   description: string('Manage grassland with very low nutrient inputs'),
   ratePerUnitGbp: number(151),
+  quantityRequired: boolean(false),
   availability: { unit: string('ha'), value: number(10.5) }
 })
 const actionWithUnrestrictedAvailability = like({
   code: string('WBD1'),
   description: string('Manage ponds'),
   ratePerUnitGbp: number(257),
+  quantityRequired: boolean(true),
   availability: { unit: string('count'), value: nullValue() }
 })
 const actionWithConsentInformation = like({

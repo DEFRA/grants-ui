@@ -104,12 +104,25 @@ describe('land-actions.validator', () => {
 
   describe('validateSelectedActionQuantities', () => {
     const actions = [
-      { code: 'CSAM3', description: 'Herbal leys', version: '1', availability: { type: 'partial' } },
-      { code: 'CLIG3', description: 'Manage grassland', version: '1' },
+      {
+        code: 'CSAM3',
+        description: 'Herbal leys',
+        version: '1',
+        quantityRequired: true,
+        availability: { type: 'total' }
+      },
+      {
+        code: 'CLIG3',
+        description: 'Manage grassland',
+        version: '1',
+        quantityRequired: false,
+        availability: { type: 'partial' }
+      },
       {
         code: 'SCR2',
         description: 'Manage scrub and open habitat mosaics: SCR2',
         version: '1',
+        quantityRequired: true,
         availability: { type: 'partial' }
       }
     ]
@@ -125,7 +138,13 @@ describe('land-actions.validator', () => {
     it('should return multiple errors for multiple unconfirmed quantity-required actions', () => {
       const withSecondQuantity = [
         ...actions,
-        { code: 'UPL8', description: 'Low input', version: '1', availability: { type: 'partial' } }
+        {
+          code: 'UPL8',
+          description: 'Low input',
+          version: '1',
+          quantityRequired: true,
+          availability: { type: 'partial' }
+        }
       ]
       const payload = { landAction: ['CSAM3', 'UPL8'] }
 
@@ -184,7 +203,7 @@ describe('land-actions.validator', () => {
       expect(result).toEqual([])
     })
 
-    // SCR2 is a partial action like CSAM3, so the rules above already cover it -
+    // SCR2 requires a quantity like CSAM3, so the rules above already cover it -
     // these pin that they report against SCR2's own description and field id.
     it('should require a quantity for SCR2, naming it in the error', () => {
       const payload = { landAction: 'SCR2' }

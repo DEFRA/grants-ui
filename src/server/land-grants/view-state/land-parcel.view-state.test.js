@@ -84,8 +84,8 @@ describe('land-parcel-state.manager', () => {
       {
         name: 'Group 1',
         actions: [
-          { code: 'SAM1', description: 'Action 1', availability: { value: '10', unit: 'ha' } },
-          { code: 'SAM2', description: 'Action 2', availability: { value: '5', unit: 'ha' } }
+          { code: 'SAM1', description: 'Action 1', quantityRequired: false, availability: { value: '10', unit: 'ha' } },
+          { code: 'SAM2', description: 'Action 2', quantityRequired: false, availability: { value: '5', unit: 'ha' } }
         ]
       }
     ]
@@ -118,6 +118,7 @@ describe('land-parcel-state.manager', () => {
               code: 'CMOR1',
               description: 'Moorland Assessment',
               sssiConsentRequired: true,
+              quantityRequired: false,
               availability: { value: '10', unit: 'ha' }
             }
           ]
@@ -148,6 +149,7 @@ describe('land-parcel-state.manager', () => {
               code: 'SAM1',
               description: 'Action 1',
               sssiConsentRequired: false,
+              quantityRequired: false,
               availability: { value: '10', unit: 'ha' }
             }
           ]
@@ -181,7 +183,7 @@ describe('land-parcel-state.manager', () => {
       const actionsWithoutArea = [
         {
           name: 'Group 1',
-          actions: [{ code: 'SAM3', description: 'Action 3' }]
+          actions: [{ code: 'SAM3', description: 'Action 3', quantityRequired: false }]
         }
       ]
       const state = {}
@@ -211,7 +213,7 @@ describe('land-parcel-state.manager', () => {
       expect(Object.keys(result.landParcels['AB1234-5678'].actionsObj)).toEqual(['SAM1'])
     })
 
-    describe('quantity override for actions that require a quantity input', () => {
+    describe('quantity override for explicitly quantity-required actions', () => {
       const groupedActionsWithQuantity = [
         {
           name: 'Group 1',
@@ -219,6 +221,7 @@ describe('land-parcel-state.manager', () => {
             {
               code: 'CSAM3',
               description: 'Herbal leys: CSAM3',
+              quantityRequired: true,
               availability: { value: 18.5673, unit: 'ha', type: 'partial' }
             }
           ]
@@ -265,6 +268,7 @@ describe('land-parcel-state.manager', () => {
               {
                 code: 'CSAM3',
                 description: 'Herbal leys: CSAM3',
+                quantityRequired: true,
                 availability: { value: 0, unit: 'ha', type: 'partial' }
               }
             ]
@@ -293,8 +297,8 @@ describe('land-parcel-state.manager', () => {
 
   describe('addSelectedActionsToState', () => {
     const actions = [
-      { code: 'SAM1', description: 'Action 1', availability: { value: '10', unit: 'ha' } },
-      { code: 'SAM2', description: 'Action 2', availability: { value: '5', unit: 'ha' } }
+      { code: 'SAM1', description: 'Action 1', quantityRequired: false, availability: { value: '10', unit: 'ha' } },
+      { code: 'SAM2', description: 'Action 2', quantityRequired: false, availability: { value: '5', unit: 'ha' } }
     ]
 
     it('should create state from a single selected action (payload value is a string)', () => {
@@ -342,12 +346,13 @@ describe('land-parcel-state.manager', () => {
       expect(Object.keys(result.landParcels['AB1234-5678'].actionsObj)).toEqual(['SAM1'])
     })
 
-    it('should store the submitted quantity override for an action that requires one', () => {
+    it.each([18.5673, null])('should store a required quantity when available area is %j', (availableArea) => {
       const actionsWithQuantity = [
         {
           code: 'CSAM3',
           description: 'Herbal leys: CSAM3',
-          availability: { value: 18.5673, unit: 'ha', type: 'partial' }
+          quantityRequired: true,
+          availability: { value: availableArea, unit: 'ha' }
         }
       ]
       const state = {}
@@ -367,6 +372,7 @@ describe('land-parcel-state.manager', () => {
         {
           code: 'CSAM3',
           description: 'Herbal leys: CSAM3',
+          quantityRequired: true,
           availability: { value: 18.5673, unit: 'ha', type: 'partial' }
         }
       ]
@@ -387,6 +393,7 @@ describe('land-parcel-state.manager', () => {
         {
           code: 'CSAM3',
           description: 'Herbal leys: CSAM3',
+          quantityRequired: true,
           availability: { value: 18.5673, unit: 'ha', type: 'partial' }
         }
       ]
@@ -401,20 +408,27 @@ describe('land-parcel-state.manager', () => {
 
     it('should still save a non-quantity action alongside a skipped quantity-required one', () => {
       const actionsWithQuantity = [
-        { code: 'SAM1', description: 'Action 1', availability: { value: '10', unit: 'ha' } },
+        {
+          code: 'SAM1',
+          description: 'Action 1',
+          quantityRequired: false,
+          availability: { value: 10, unit: 'ha', type: 'partial' }
+        },
         {
           code: 'CSAM3',
           description: 'Herbal leys: CSAM3',
+          quantityRequired: true,
           availability: { value: 18.5673, unit: 'ha', type: 'partial' }
         }
       ]
       const state = {}
-      const payload = { landAction: ['SAM1', 'CSAM3'] }
+      const payload = { landAction: ['SAM1', 'CSAM3'], landActionQuantity_SAM1: '2' }
       const parcel = { sheetId: 'AB1234', parcelId: '5678' }
 
       const result = addSelectedActionsToState(state, payload, actionsWithQuantity, parcel)
 
       expect(Object.keys(result.landParcels['AB1234-5678'].actionsObj)).toEqual(['SAM1'])
+      expect(result.landParcels['AB1234-5678'].actionsObj.SAM1.value).toBe(10)
     })
   })
 
@@ -625,6 +639,7 @@ describe('land-parcel-state.manager', () => {
         {
           code: 'CSAM3',
           description: 'Herbal leys',
+          quantityRequired: true,
           availability: { value: 0.3271, unit: 'ha', type: 'partial' }
         }
       ]
@@ -641,6 +656,7 @@ describe('land-parcel-state.manager', () => {
         {
           code: 'CSAM3',
           description: 'Herbal leys',
+          quantityRequired: true,
           availability: { value: 0.3271, unit: 'ha', type: 'partial' }
         }
       ]
@@ -653,7 +669,14 @@ describe('land-parcel-state.manager', () => {
     })
 
     it("should preserve the action's original availability as staticAvailability", () => {
-      const actions = [{ code: 'CSAM3', description: 'Herbal leys', availability: { value: 0.3271, unit: 'ha' } }]
+      const actions = [
+        {
+          code: 'CSAM3',
+          description: 'Herbal leys',
+          quantityRequired: true,
+          availability: { value: 0.3271, unit: 'ha' }
+        }
+      ]
       const recomputed = [{ code: 'CSAM3', availability: { value: 0, unit: 'ha' } }]
 
       const result = mergeRecomputedAvailability(actions, recomputed)
@@ -667,6 +690,7 @@ describe('land-parcel-state.manager', () => {
         {
           code: 'CSAM3',
           description: 'Herbal leys',
+          quantityRequired: true,
           availability: { value: 0, unit: 'ha' },
           staticAvailability: { value: 0.3271, unit: 'ha' }
         }
@@ -679,7 +703,14 @@ describe('land-parcel-state.manager', () => {
     })
 
     it('should keep the original action unchanged when no recomputed match exists for its code', () => {
-      const actions = [{ code: 'CSAM3', description: 'Herbal leys', availability: { value: 0.3271, unit: 'ha' } }]
+      const actions = [
+        {
+          code: 'CSAM3',
+          description: 'Herbal leys',
+          quantityRequired: true,
+          availability: { value: 0.3271, unit: 'ha' }
+        }
+      ]
 
       const result = mergeRecomputedAvailability(actions, [])
 
@@ -689,20 +720,24 @@ describe('land-parcel-state.manager', () => {
   })
 
   describe('getAddedActionsFromPayload', () => {
-    it('should use the payload value for a quantity-required action', () => {
+    it('should use the payload value for an explicitly quantity-required action', () => {
       const payload = { landAction: 'CSAM3', landActionQuantity_CSAM3: '0.2' }
-      const actions = [{ code: 'CSAM3', description: 'Herbal leys', availability: { type: 'partial' } }]
+      const actions = [
+        { code: 'CSAM3', description: 'Herbal leys', quantityRequired: true, availability: { value: null, unit: 'ha' } }
+      ]
 
       const result = getAddedActionsFromPayload(payload, actions)
 
       expect(result).toEqual([{ code: 'CSAM3', description: 'Herbal leys', value: '0.2' }])
     })
+
     it('should prefer the submitted hidden quantity for a total action over its previous chosen area', () => {
       const payload = { landAction: 'CLIG3', landActionQuantity_CLIG3: '2.189' }
       const actions = [
         {
           code: 'CLIG3',
           description: 'Manage grassland',
+          quantityRequired: false,
           availability: { value: 3.189, unit: 'ha', type: 'total' }
         }
       ]
@@ -716,8 +751,8 @@ describe('land-parcel-state.manager', () => {
     it('should fall back to the previous chosen area for a non-quantity action', () => {
       const payload = { landAction: ['CMOR1', 'CSAM3'], landActionQuantity_CSAM3: '0.2' }
       const actions = [
-        { code: 'CMOR1', description: 'Moorland record' },
-        { code: 'CSAM3', description: 'Herbal leys', availability: { type: 'partial' } }
+        { code: 'CMOR1', description: 'Moorland record', quantityRequired: false },
+        { code: 'CSAM3', description: 'Herbal leys', quantityRequired: true, availability: { type: 'partial' } }
       ]
       const prevAddedActions = [{ code: 'CMOR1', value: 0.1572 }]
 
@@ -728,7 +763,7 @@ describe('land-parcel-state.manager', () => {
 
     it('should use an empty value for a non-quantity action with no previous chosen area', () => {
       const payload = { landAction: 'CMOR1' }
-      const actions = [{ code: 'CMOR1', description: 'Moorland record' }]
+      const actions = [{ code: 'CMOR1', description: 'Moorland record', quantityRequired: false }]
 
       const result = getAddedActionsFromPayload(payload, actions)
 

@@ -51,7 +51,7 @@ function getQuantityConditional(actionCode, actionName, quantityValue, maxQuanti
 }
 
 /**
- * Builds the conditional reveal markup for a total action: a read-only
+ * Builds the conditional reveal markup for a non-quantity action: a read-only
  * display of the area it has claimed, since it takes everything available
  * and so has nothing for the user to type. Omitted entirely for an action
  * with no availability restriction at all - there is no figure to show.
@@ -113,8 +113,8 @@ function getStaticAvailability(action) {
 /**
  * Builds the checkbox hint text: payment rate, consent requirement, and any
  * available-area hint. The hint sits beneath the action label so it can be
- * shared by quantity inputs through aria-describedby and refreshed live by
- * the client. Total actions also include guidance that selecting them claims
+ * shared by quantity inputs through aria-describedby and refreshed live by the
+ * client. Non-quantity actions also include guidance that selecting them claims
  * all available area; their own claim is shown in the conditional panel
  * instead (see chosen-area/template.njk).
  * @param {Action} action
@@ -157,7 +157,7 @@ export function mapActionToViewModel(
   const existingAction = addedActions.find((a) => a.code === action.code)
   const quantityValue = existingAction?.value ?? ''
   const checked = Boolean(existingAction)
-  const needsQuantity = requiresQuantityInput(action.availability?.type)
+  const needsQuantity = requiresQuantityInput(action)
   const claimed = Number(existingAction?.value)
   const chosenArea = Number.isFinite(claimed) && claimed > 0 ? claimed : undefined
   const hintHtml = getHintHtml(action, needsQuantity, chosenArea)
@@ -201,7 +201,7 @@ export function mapActionToViewModel(
  */
 export function getChosenAreaFieldsHtml(actions, addedActions) {
   return actions
-    .filter((action) => !requiresQuantityInput(action.availability?.type))
+    .filter((action) => !requiresQuantityInput(action))
     .map((action) => {
       const fieldName = getActionQuantityFieldName(action.code)
       const chosenArea = Number(addedActions.find((a) => a.code === action.code)?.value)
