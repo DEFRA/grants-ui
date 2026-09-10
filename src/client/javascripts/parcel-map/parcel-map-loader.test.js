@@ -18,14 +18,13 @@ describe('parseParcelResponse', () => {
 
     expect(data.parcelIds).toEqual(['SD7148-9160', 'SD7148-9161'])
     expect(data.metaIndex['SD7148-9160']).toMatchObject({ id: 'SD7148-9160', areaHa: 2.5 })
-    expect(data.geojson).toBeNull()
     expect(data.bbox).toEqual({ minLng: -2.5, minLat: 51.4, maxLng: -2.3, maxLat: 51.6 })
   })
 
   it.each([
     ['coerces a numeric id to a string', [{ id: 42, properties: {} }], ['42']],
     [
-      'falls back to properties.id when the top-level id is absent (mock shape)',
+      'falls back to properties.id when the top-level id is absent',
       [{ properties: { id: 'SD7148-9160' } }],
       ['SD7148-9160']
     ],
@@ -38,12 +37,6 @@ describe('parseParcelResponse', () => {
     const data = await parseParcelResponse(resp({ features }))
     expect(data.parcelIds).toEqual(expected)
     expect(Object.keys(data.metaIndex)).toEqual(expected)
-  })
-
-  it('carries the fetched features as inline GeoJSON when mock mode is flagged', async () => {
-    const features = [{ id: 'A', properties: {} }]
-    const data = await parseParcelResponse(resp({ features, mock: true }))
-    expect(data.geojson).toEqual({ type: 'FeatureCollection', features })
   })
 
   it('defaults bbox to null and features to [] when absent', async () => {

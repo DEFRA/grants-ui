@@ -96,10 +96,7 @@ describe('initParcelSelectPage', () => {
   it('writes one hidden input per selected id', () => {
     const mapEl = setupDom()
     fire(mapEl, EVENT_SELECTION, {
-      selectedParcels: [
-        { id: 'SD7148-9160', areaHa: 1 },
-        { id: 'SD7148-9161', areaHa: 2 }
-      ]
+      selectedParcels: [{ id: 'SD7148-9160' }, { id: 'SD7148-9161' }]
     })
     expect(hiddenValues()).toEqual([
       { name: 'landParcels', value: 'SD7148-9160' },
@@ -110,19 +107,20 @@ describe('initParcelSelectPage', () => {
   it('replaces rather than appends on the next selection', () => {
     const mapEl = setupDom()
     fire(mapEl, EVENT_SELECTION, {
-      selectedParcels: [
-        { id: 'SD7148-9160', areaHa: 1 },
-        { id: 'SD7148-9161', areaHa: 2 }
-      ]
+      selectedParcels: [{ id: 'SD7148-9160' }, { id: 'SD7148-9161' }]
     })
-    fire(mapEl, EVENT_SELECTION, { selectedParcels: [{ id: 'SD7148-9162', areaHa: 3 }] })
+    fire(mapEl, EVENT_SELECTION, { selectedParcels: [{ id: 'SD7148-9162' }] })
     expect(hiddenValues()).toEqual([{ name: 'landParcels', value: 'SD7148-9162' }])
   })
 
-  it('shows the selected parcel details when exactly one parcel is selected', () => {
+  it('shows the selected parcel details, reading area and actions from metaIndex', () => {
     const mapEl = setupDom()
+    fire(mapEl, EVENT_READY, {
+      parcelIds: ['SD7148-9160'],
+      metaIndex: { 'SD7148-9160': { areaHa: 1.5, actionCount: 3 } }
+    })
     fire(mapEl, EVENT_SELECTION, {
-      selectedParcels: [{ id: 'SD7148-9160', areaHa: 1.5, actionCount: 3 }]
+      selectedParcels: [{ id: 'SD7148-9160' }]
     })
     expect(document.getElementById('selected-parcel-details').hidden).toBe(false)
     expect(document.getElementById('selected-parcel-reference').textContent).toBe('SD7148 9160')
@@ -130,55 +128,49 @@ describe('initParcelSelectPage', () => {
     expect(document.getElementById('selected-parcel-actions').textContent).toBe('3')
   })
 
-  it('falls back to metaIndex actionCount when selectedParcel actionCount is omitted', () => {
+  it('shows no area when metaIndex has no entry for the selected parcel', () => {
     const mapEl = setupDom()
-    fire(mapEl, EVENT_READY, {
-      parcelIds: ['SD7148-9160'],
-      metaIndex: { 'SD7148-9160': { areaHa: 1.5, actionCount: 2 } }
-    })
     fire(mapEl, EVENT_SELECTION, {
-      selectedParcels: [{ id: 'SD7148-9160', areaHa: 1.5 }]
+      selectedParcels: [{ id: 'SD7148-9160' }]
     })
-    expect(document.getElementById('selected-parcel-actions').textContent).toBe('2')
+    expect(document.getElementById('selected-parcel-area').textContent).toBe('')
   })
 
-  it('defaults to 0 when actionCount is not in selectedParcel or metaIndex', () => {
+  it('defaults action count to 0 when metaIndex has no entry for the selected parcel', () => {
     const mapEl = setupDom()
     fire(mapEl, EVENT_SELECTION, {
-      selectedParcels: [{ id: 'SD7148-9160', areaHa: 1.5 }]
+      selectedParcels: [{ id: 'SD7148-9160' }]
     })
     expect(document.getElementById('selected-parcel-actions').textContent).toBe('0')
   })
 
   it('shows the no-actions message when the selected parcel has no available actions', () => {
     const mapEl = setupDom()
+    fire(mapEl, EVENT_READY, { parcelIds: ['SD7148-9160'], metaIndex: { 'SD7148-9160': { actionCount: 0 } } })
 
-    fire(mapEl, EVENT_SELECTION, {
-      selectedParcels: [{ id: 'SD7148-9160', areaHa: 1.5, actionCount: 0 }]
-    })
+    fire(mapEl, EVENT_SELECTION, { selectedParcels: [{ id: 'SD7148-9160' }] })
 
     expect(document.getElementById('summary-parcel-no-actions').hidden).toBe(false)
   })
 
   it('hides the no-actions message when the selected parcel has available actions', () => {
     const mapEl = setupDom()
+    fire(mapEl, EVENT_READY, {
+      parcelIds: ['SD7148-9160', 'SD7148-9161'],
+      metaIndex: { 'SD7148-9160': { actionCount: 0 }, 'SD7148-9161': { actionCount: 1 } }
+    })
 
-    fire(mapEl, EVENT_SELECTION, {
-      selectedParcels: [{ id: 'SD7148-9160', areaHa: 1.5, actionCount: 0 }]
-    })
-    fire(mapEl, EVENT_SELECTION, {
-      selectedParcels: [{ id: 'SD7148-9161', areaHa: 2.5, actionCount: 1 }]
-    })
+    fire(mapEl, EVENT_SELECTION, { selectedParcels: [{ id: 'SD7148-9160' }] })
+    fire(mapEl, EVENT_SELECTION, { selectedParcels: [{ id: 'SD7148-9161' }] })
 
     expect(document.getElementById('summary-parcel-no-actions').hidden).toBe(true)
   })
 
   it('hides the no-actions message when the parcel selection is cleared', () => {
     const mapEl = setupDom()
+    fire(mapEl, EVENT_READY, { parcelIds: ['SD7148-9160'], metaIndex: { 'SD7148-9160': { actionCount: 0 } } })
 
-    fire(mapEl, EVENT_SELECTION, {
-      selectedParcels: [{ id: 'SD7148-9160', areaHa: 1.5, actionCount: 0 }]
-    })
+    fire(mapEl, EVENT_SELECTION, { selectedParcels: [{ id: 'SD7148-9160' }] })
     fire(mapEl, EVENT_SELECTION, { selectedParcels: [] })
 
     expect(document.getElementById('summary-parcel-no-actions').hidden).toBe(true)
@@ -187,7 +179,7 @@ describe('initParcelSelectPage', () => {
   it('hides the selected parcel details when no parcel or multiple parcels are selected', () => {
     const mapEl = setupDom()
     fire(mapEl, EVENT_SELECTION, {
-      selectedParcels: [{ id: 'SD7148-9160', areaHa: 1.5 }]
+      selectedParcels: [{ id: 'SD7148-9160' }]
     })
     fire(mapEl, EVENT_SELECTION, { selectedParcels: [] })
     expect(document.getElementById('selected-parcel-details').hidden).toBe(true)
@@ -269,8 +261,7 @@ describe('initParcelSelectPage', () => {
   })
 
   describe('requirements row', () => {
-    const select = (mapEl, ids) =>
-      fire(mapEl, EVENT_SELECTION, { selectedParcels: ids.map((id) => ({ id, areaHa: 1 })) })
+    const select = (mapEl, ids) => fire(mapEl, EVENT_SELECTION, { selectedParcels: ids.map((id) => ({ id })) })
 
     it('posts the selected parcel to the consents route, with no action list to narrow it', async () => {
       const mapEl = setupDom()

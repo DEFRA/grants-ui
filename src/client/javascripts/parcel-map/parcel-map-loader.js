@@ -7,7 +7,7 @@ import { PARCELS_API_URL, FETCH_MAX_ATTEMPTS, FETCH_RETRY_DELAY_MS } from './con
 
 /**
  * @typedef {{ minLng: number, minLat: number, maxLng: number, maxLat: number }} BBox
- * @typedef {{ parcelIds: string[], metaIndex: MetaIndex, geojson: GeoJSON.FeatureCollection | null, bbox: BBox | null }} ParcelData
+ * @typedef {{ parcelIds: string[], metaIndex: MetaIndex, bbox: BBox | null }} ParcelData
  */
 
 /**
@@ -50,7 +50,7 @@ export async function fetchParcelData(enabledLandActions = []) {
  * @returns {Promise<ParcelData>}
  */
 export async function parseParcelResponse(resp) {
-  /** @type {{ features: GeoJSON.Feature[], bbox: BBox | null, mock?: boolean }} */
+  /** @type {{ features: GeoJSON.Feature[], bbox: BBox | null }} */
   const body = await resp.json()
   const features = Array.isArray(body.features) ? body.features : []
 
@@ -71,7 +71,6 @@ export async function parseParcelResponse(resp) {
   return {
     parcelIds,
     metaIndex,
-    geojson: body.mock ? { type: 'FeatureCollection', features } : null,
     bbox: body.bbox ?? null
   }
 }

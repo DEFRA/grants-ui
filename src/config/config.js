@@ -287,12 +287,6 @@ const convictConfig = {
       env: 'NOTIFICATION_BANNER_EXCLUDED_PATH_SUFFIXES'
     }
   },
-  mapMockDataEnabled: {
-    doc: 'Enable map mock data mode — uses embedded parcel geometry instead of tile URL.',
-    format: Boolean,
-    default: false,
-    env: 'MAP_MOCK_DATA_ENABLED'
-  },
   osMapsApiKey: {
     doc: 'Ordnance Survey Maps API key.',
     format: String,
