@@ -421,12 +421,13 @@ describe('select-actions.view-model', () => {
       expect(result.attributes['data-total-available-area']).toBeUndefined()
       expect(result.attributes['data-available-unit']).toBe('ha')
     })
-    it('should infer an unrestricted quantity input for a square-metre action without unrelated warnings or fields', () => {
+    it('should render an unrestricted quantity input for a square-metre action without unrelated warnings or fields', () => {
       configState.set('landGrants.enableHeferFeature', true)
       const action = {
         code: 'HEF1',
         description: 'Maintain weatherproof traditional farm or forestry buildings: HEF1',
         ratePerUnitGbp: 5,
+        quantityRequired: true,
         availability: { value: null, unit: 'sqm' },
         heferRequired: true,
         guidanceUrl:
@@ -451,11 +452,12 @@ describe('select-actions.view-model', () => {
       expect(getChosenAreaFieldsHtml([action], [])).toBe('')
     })
 
-    it('should infer an unrestricted numeric quantity input for a count action without a hidden field', () => {
+    it('should render an unrestricted numeric quantity input for a count action without a hidden field', () => {
       const action = {
         code: 'WBD1',
         description: 'Countable action',
         ratePerUnitGbp: 5,
+        quantityRequired: true,
         availability: { value: null, unit: 'count' }
       }
 
@@ -529,12 +531,13 @@ describe('select-actions.view-model', () => {
       expect(result.html).toContain('120 metres available')
     })
 
-    it('should infer a bounded quantity input from a square-metre unit', () => {
+    it('should render a bounded quantity input for a square-metre action', () => {
       const result = mapActionToViewModel(
         {
           code: 'CSAM3',
           description: 'Herbal leys: CSAM3',
           ratePerUnitGbp: 224,
+          quantityRequired: true,
           availability: { value: 5, unit: 'sqm' }
         },
         []

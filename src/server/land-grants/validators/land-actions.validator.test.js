@@ -244,6 +244,7 @@ describe('land-actions.validator', () => {
         code: 'HEF1',
         description: 'Maintain weatherproof traditional farm or forestry buildings',
         version: '1.1.0',
+        quantityRequired: true,
         availability: { unit: 'sqm', value: null }
       }
       expect(
@@ -259,6 +260,7 @@ describe('land-actions.validator', () => {
         code: 'COUNT',
         description: 'Count action',
         version: '1.0.0',
+        quantityRequired: true,
         availability: { unit: 'count', value: null }
       }
 

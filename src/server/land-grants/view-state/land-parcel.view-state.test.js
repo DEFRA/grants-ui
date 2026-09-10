@@ -368,6 +368,7 @@ describe('land-parcel-state.manager', () => {
         {
           code: 'HEF1',
           description: 'Maintain weatherproof traditional farm or forestry buildings: HEF1',
+          quantityRequired: true,
           availability: { value: null, unit: 'sqm' }
         }
       ]
@@ -774,6 +775,7 @@ describe('land-parcel-state.manager', () => {
         {
           code: 'HEF1',
           description: 'Maintain weatherproof traditional farm or forestry buildings: HEF1',
+          quantityRequired: true,
           availability: { value: null, unit: 'sqm' }
         }
       ]

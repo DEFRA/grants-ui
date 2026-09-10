@@ -446,12 +446,13 @@ describe('SelectActionsPageController', () => {
         expect.objectContaining({ value: 7, unit: 'ha' })
       )
     })
-    test('should infer quantity handling from an unrestricted square-metre unit', async () => {
+    test('should use quantityRequired for an unrestricted square-metre action', async () => {
       const hef1 = {
         code: 'HEF1',
         description: 'Maintain weatherproof traditional farm or forestry buildings: HEF1',
         version: '1.1.0',
         ratePerUnitGbp: 5,
+        quantityRequired: true,
         availability: { unit: 'sqm', value: null }
       }
       fetchActionsForParcel.mockResolvedValue({
