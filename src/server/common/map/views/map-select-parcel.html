@@ -112,7 +112,12 @@
           </div>
 
           <div class="govuk-grid-row">
-            <div id="selected-parcel-details" class="govuk-grid-column-three-quarters-from-desktop" hidden>
+            <div
+              id="selected-parcel-details"
+              class="govuk-grid-column-three-quarters-from-desktop"
+              tabindex="-1"
+              hidden
+            >
               <h2 class="govuk-heading-m">Selected land parcel</h2>
 
               <dl class="govuk-summary-list" id="selected-parcel-summary-list">
@@ -160,7 +165,7 @@
               </div>
             </div>
 
-            <div class="govuk-grid-column-three-quarters-from-desktop govuk-button-group">
+            <div class="govuk-grid-column-three-quarters-from-desktop">
               {{
                 govukButton({
                 text: "Continue",
@@ -169,7 +174,9 @@
                 })
               }}
               {% if cancelHref %}
-                <a class="govuk-link govuk-link--no-visited-state" href="{{ cancelHref }}">Cancel</a>
+                <p class="govuk-body">
+                  <a class="govuk-link govuk-link--no-visited-state" href="{{ cancelHref }}">Cancel</a>
+                </p>
               {% endif %}
             </div>
           </div>

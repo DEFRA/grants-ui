@@ -7,23 +7,6 @@
   color: $govuk-secondary-text-colour;
 }
 
-.land-parcel-summary__table {
-  table-layout: fixed;
-}
-
-.land-parcel-summary__quantity-column {
-  width: 8em;
-}
-
-.land-parcel-summary__yearly-payment-column {
-  width: 9em;
-}
-
-.land-parcel-summary__change-column {
-  width: 5em;
-}
-
-.land-parcel-summary__table .govuk-table__header:not(:first-child),
 .land-parcel-summary__table .govuk-table__cell {
   white-space: nowrap;
 }
@@ -36,4 +19,13 @@
 .land-parcel-summary-card__add-action {
   margin-top: 15px;
   margin-bottom: 0;
+}
+
+.payment-summary {
+  table-layout: auto;
+
+  .govuk-summary-list__key,
+  .govuk-summary-list__value {
+    width: auto;
+  }
 }

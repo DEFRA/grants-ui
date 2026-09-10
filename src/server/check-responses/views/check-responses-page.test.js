@@ -55,7 +55,6 @@ describe('check-responses-page.html view', () => {
         .map((_, header) => normalise($(header).text()))
         .get()
     ).toEqual(['Action', 'Quantity', 'Yearly payment'])
-    expect(parcelCard.find('colgroup col')).toHaveLength(3)
     expect(parcelCard.find('.govuk-table__body .govuk-table__row').first().find('th, td')).toHaveLength(3)
   })
 
