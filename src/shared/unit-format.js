@@ -38,7 +38,8 @@ export function formatArea(quantity, unit) {
  */
 function formatQuantity(quantity, unit) {
   const wholeNumber = typeof unit === 'string' && requiresWholeNumber(unit)
-  return typeof quantity === 'number' && Number.isFinite(quantity) ? quantity.toFixed(wholeNumber ? 0 : 4) : quantity
+  const decimalPlaces = wholeNumber ? 0 : 4
+  return typeof quantity === 'number' && Number.isFinite(quantity) ? quantity.toFixed(decimalPlaces) : quantity
 }
 
 /**

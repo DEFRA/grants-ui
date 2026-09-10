@@ -116,6 +116,10 @@ describe('SelectActionsPageController', () => {
   })
 
   describe('GET route handler', () => {
+    beforeEach(() => {
+      mockRequest.query = { parcelId: 'sheet1-parcel1' }
+    })
+
     test('shows WBD1 with HEFER consent and no SSSI warning', async () => {
       config.get.mockImplementation((key) =>
         ['landGrants.enableHeferFeature', 'landGrants.enableSSSIFeature'].includes(key)
@@ -130,10 +134,6 @@ describe('SelectActionsPageController', () => {
       const [, model] = mockH.view.mock.calls[0]
       expect(model.pageConsents).toEqual(['hefer'])
       expect(model.actionItems[0].value).toBe('WBD1')
-    })
-
-    beforeEach(() => {
-      mockRequest.query = { parcelId: 'sheet1-parcel1' }
     })
 
     test('should redirect to /select-land-parcel if no selected land parcel is set', async () => {
