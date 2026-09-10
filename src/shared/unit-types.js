@@ -13,7 +13,7 @@ export const UNITS = [UNIT_HECTARES, UNIT_SQUARE_METRES, UNIT_METRES, UNIT_COUNT
  * @param {string | null | undefined} unit
  * @returns {boolean}
  */
-export function isAreaUnit(unit) {
+export function isLandAreaUnit(unit) {
   return unit === UNIT_HECTARES
 }
 
