@@ -9,6 +9,15 @@ export const UNIT_COUNT = 'count'
 export const UNITS = [UNIT_HECTARES, UNIT_SQUARE_METRES, UNIT_METRES, UNIT_COUNT]
 
 /**
+ * Whether the unit measures an area of land.
+ * @param {string | null | undefined} unit
+ * @returns {boolean}
+ */
+export function isAreaUnit(unit) {
+  return unit === UNIT_HECTARES
+}
+
+/**
  * Whether the unit's quantity must be a whole number.
  * @param {string | null | undefined} unit
  * @returns {boolean}

@@ -1,10 +1,11 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { configState } from '~/src/__mocks__/config-mocks.js'
+import { filterEnabledLandActions } from '../utils/enabled-land-actions.js'
 import {
-  mapActionToViewModel,
-  mapActionsToViewModel,
   getChosenAreaFieldsHtml,
-  getParcelSummaryList
+  getParcelSummaryList,
+  mapActionsToViewModel,
+  mapActionToViewModel
 } from './select-actions.view-model.js'
 
 vi.mock('~/src/config/config.js', async () => {
@@ -25,6 +26,46 @@ describe('select-actions.view-model', () => {
   })
 
   describe('mapActionToViewModel', () => {
+    const wbd1 = {
+      code: 'WBD1',
+      description: 'Manage ponds: WBD1',
+      version: '1',
+      ratePerUnitGbp: 100,
+      guidanceUrl: 'https://example.test/guidance/wbd1',
+      quantityRequired: true,
+      availability: { unit: 'count', value: null },
+      heferRequired: true
+    }
+
+    it('renders WBD1 with a required quantity input and no hectares available', () => {
+      configState.set('landGrants.enableHeferFeature', true)
+      const result = mapActionToViewModel(wbd1, [])
+      configState.reset()
+
+      expect(result.html).toContain('Manage ponds: WBD1')
+      expect(result.html).toContain('href="https://example.test/guidance/wbd1"')
+      expect(result.html).toContain('Payment rate per year: £100.00/count')
+      expect(result.html).toContain('Requires an SFI HEFER')
+      expect(result.html).not.toContain('SSSI')
+      expect(result.consents).toEqual(['hefer'])
+      expect(result.html).not.toContain('available')
+      expect(result.html).not.toContain('all the available area')
+      // expect(result.conditional.html).toContain('type="text"')
+      expect(result.conditional.html).toContain('inputmode="numeric"')
+      expect(result.conditional.html).toContain('count')
+      expect(result.conditional.html).not.toContain('max=')
+      expect(getChosenAreaFieldsHtml([wbd1], [])).toBe('')
+    })
+
+    it('hides WBD1 when disabled in the grant configuration', () => {
+      expect(mapActionsToViewModel(filterEnabledLandActions([wbd1], ['CSAM3']), [])).toEqual([])
+      expect(mapActionsToViewModel(filterEnabledLandActions([wbd1], ['WBD1']), [])).toHaveLength(1)
+    })
+
+    it('hides WBD1 when the backend reports no availability for an existing incompatible agreement', () => {
+      expect(mapActionsToViewModel([{ ...wbd1, availability: { unit: 'count', value: 0 } }], [])).toEqual([])
+    })
+
     it('should map action with rate per unit only', () => {
       const action = {
         code: 'SAM1',
@@ -38,7 +79,7 @@ describe('select-actions.view-model', () => {
       expect(result).toEqual({
         id: 'landAction-SAM1',
         value: 'SAM1',
-        html: 'Test Action 1<span class="select-actions-hint">Payment rate per year: £100.50/ha<span class="select-actions-guidance">This action will use all the available area on this land parcel.</span></span>',
+        html: 'Test Action 1<span class="select-actions-hint">Payment rate per year: £100.50/ha</span>',
         checked: false,
         consents: [],
         attributes: {
@@ -127,7 +168,7 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, addedActions)
 
       expect(result.html).toBe(
-        'Test Action 2<span class="select-actions-hint">Payment rate per year: £75.25/ha and <strong>£50</strong> per agreement<span class="select-actions-guidance">This action will use all the available area on this land parcel.</span></span>'
+        'Test Action 2<span class="select-actions-hint">Payment rate per year: £75.25/ha and <strong>£50</strong> per agreement</span>'
       )
     })
 
@@ -144,7 +185,7 @@ describe('select-actions.view-model', () => {
       configState.reset()
 
       expect(result.html).toBe(
-        'Manage rough grassland for upland breeding waders<span class="select-actions-hint">Payment rate per year: £203.00/ha<br>Requires an SFI HEFER<span class="select-actions-guidance">This action will use all the available area on this land parcel.</span></span>'
+        'Manage rough grassland for upland breeding waders<span class="select-actions-hint">Payment rate per year: £203.00/ha<br>Requires an SFI HEFER</span>'
       )
     })
 
@@ -159,7 +200,7 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, [])
 
       expect(result.html).toBe(
-        'Manage rough grassland for upland breeding waders<span class="select-actions-hint">Payment rate per year: £203.00/ha<span class="select-actions-guidance">This action will use all the available area on this land parcel.</span></span>'
+        'Manage rough grassland for upland breeding waders<span class="select-actions-hint">Payment rate per year: £203.00/ha</span>'
       )
     })
 
@@ -176,7 +217,7 @@ describe('select-actions.view-model', () => {
       configState.reset()
 
       expect(result.html).toBe(
-        'Manage grassland with very low nutrient inputs<span class="select-actions-hint">Payment rate per year: £151.00/ha<br>Requires SSSI consent<span class="select-actions-guidance">This action will use all the available area on this land parcel.</span></span>'
+        'Manage grassland with very low nutrient inputs<span class="select-actions-hint">Payment rate per year: £151.00/ha<br>Requires SSSI consent</span>'
       )
     })
 
@@ -195,7 +236,7 @@ describe('select-actions.view-model', () => {
       configState.reset()
 
       expect(result.html).toBe(
-        'Manage grassland with very low nutrient inputs<span class="select-actions-hint">Payment rate per year: £151.00/ha<br>Requires SSSI consent and an SFI HEFER<span class="select-actions-guidance">This action will use all the available area on this land parcel.</span></span>'
+        'Manage grassland with very low nutrient inputs<span class="select-actions-hint">Payment rate per year: £151.00/ha<br>Requires SSSI consent and an SFI HEFER</span>'
       )
     })
 

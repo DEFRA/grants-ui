@@ -58,11 +58,13 @@ function decimalPlaces(value) {
 }
 
 /**
+ * @param {string} value
  * @param {number} quantity
  * @returns {string | null}
  */
-function getWholeNumberError(quantity) {
-  if (!Number.isInteger(quantity)) {
+function getWholeNumberError(value, quantity) {
+  // Check the typed fraction too, since Number can round it to an integer.
+  if (/\.\d*[1-9]/.test(value) || !Number.isInteger(quantity)) {
     return QUANTITY_ERRORS.NOT_WHOLE_NUMBER
   }
   if (!Number.isSafeInteger(quantity)) {
@@ -101,7 +103,7 @@ export function getQuantityError(raw, max, unit) {
   if (quantity === 0) {
     return errors.NOT_GREATER_THAN_ZERO
   }
-  const precisionError = wholeNumber ? getWholeNumberError(quantity) : getDecimalPrecisionError(value)
+  const precisionError = wholeNumber ? getWholeNumberError(value, quantity) : getDecimalPrecisionError(value)
   if (precisionError) {
     return precisionError
   }

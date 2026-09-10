@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { buildConfirmLandAndActionsViewModel } from '~/src/server/land-grants/view-models/confirm-land-and-actions.view-model.js'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
 
@@ -57,6 +57,43 @@ const payment = {
 }
 
 describe('buildConfirmLandAndActionsViewModel', () => {
+  it.each([
+    ['count', '4 count'],
+    ['sqm', '4 sqm'],
+    ['m', '4.0000 m'],
+    ['ha', '4.0000 ha']
+  ])('formats parcel action quantities using the payment unit %s', (unit, area) => {
+    const model = buildConfirmLandAndActionsViewModel({
+      ...payment,
+      parcelItems: { 1: { ...parcelItems[1], quantity: 4, unit } }
+    })
+
+    expect(model.parcels[0].actions[0].area).toBe(area)
+  })
+
+  it('shows whole pond quantities and HEFER consent in the shared repeater, check answers and print model', () => {
+    const model = buildConfirmLandAndActionsViewModel(
+      {
+        ...payment,
+        parcelItems: {
+          1: { ...parcelItems[1], code: 'WBD1', description: 'Manage ponds', quantity: 4, unit: 'count' }
+        }
+      },
+      {
+        'SD1234-5678': {
+          size: { unit: 'ha', value: 0.5 },
+          actionsObj: { WBD1: { value: 4, unit: 'count', consents: ['hefer'] } }
+        }
+      }
+    )
+
+    expect(model.parcels[0].actions[0]).toMatchObject({
+      action: 'Manage ponds (WBD1)',
+      area: '4 count',
+      requirementText: 'Requires an SFI HEFER'
+    })
+  })
+
   it('groups actions into a card per parcel', () => {
     const model = buildConfirmLandAndActionsViewModel(payment, landParcels)
 

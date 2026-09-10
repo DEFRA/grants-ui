@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { formatArea, formatUnit, areaWithUnit, availableArea } from './unit-format.js'
+import { describe, expect, it } from 'vitest'
+import { areaWithUnit, availableArea, formatArea, formatUnit } from './unit-format.js'
 
 describe('unit-format', () => {
   describe('areaWithUnit', () => {
@@ -13,6 +13,14 @@ describe('unit-format', () => {
 
     it('uses the action own unit, not a hardcoded hectare', () => {
       expect(areaWithUnit(120, 'm')).toBe('120.0000 metres')
+    })
+
+    it.each([
+      ['count', 'count'],
+      ['sqm', 'square metres']
+    ])('renders whole quantities for %s with its full unit name', (unit, label) => {
+      expect(areaWithUnit(4, unit)).toBe(`4 ${label}`)
+      expect(availableArea(0, unit)).toBe(`0 ${label} available`)
     })
 
     it('omits the unit entirely when there is none, rather than printing a gap', () => {
@@ -36,6 +44,11 @@ describe('unit-format', () => {
 })
 
 describe('formatArea', () => {
+  it.each(['count', 'sqm'])('renders %s quantities without decimal places', (unit) => {
+    expect(formatArea(4, unit)).toBe(`4 ${unit}`)
+    expect(formatArea(0, unit)).toBe(`0 ${unit}`)
+  })
+
   it('pads a numeric area to four decimal places and appends the unit', () => {
     expect(formatArea(2, 'ha')).toBe('2.0000 ha')
     expect(formatArea(31.89, 'hectares')).toBe('31.8900 hectares')

@@ -8,9 +8,9 @@ import nunjucks from 'nunjucks'
 import { govukFrontendPath, viewPaths } from '~/src/config/nunjucks/view-paths.js'
 import { getActionChosenAreaDisplayId, getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
 import { requiresQuantityInput } from '~/src/shared/action-quantity-type.js'
-import { requiresWholeNumber, UNIT_SQUARE_METRES } from '~/src/shared/unit-types.js'
+import { isAreaUnit, requiresWholeNumber, UNIT_SQUARE_METRES } from '~/src/shared/unit-types.js'
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
-import { formatUnit, areaWithUnit, availableArea } from '~/src/shared/unit-format.js'
+import { areaWithUnit, availableArea, formatUnit } from '~/src/shared/unit-format.js'
 import { getAvailabilityLimit, hasAvailableLand } from '~/src/shared/availability.js'
 import { formatParcelReference } from '~/src/shared/format-parcel.js'
 import { SELECTED_ACTIONS_FIELD_NAME } from '~/src/server/land-grants/utils/selected-actions-field.js'
@@ -148,7 +148,7 @@ function getHintHtml(action, needsQuantity, chosenArea) {
     requirementText,
     hintId: `${getActionQuantityFieldName(action.code)}-hint`,
     availabilityText: limit != null || (!needsQuantity && chosenArea != null) ? availabilityText : undefined,
-    showTotalGuidance: !needsQuantity
+    showTotalGuidance: !needsQuantity && isAreaUnit(action.availability?.unit)
   })
 }
 
