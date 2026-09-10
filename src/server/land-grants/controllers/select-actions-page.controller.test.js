@@ -59,8 +59,8 @@ describe('SelectActionsPageController', () => {
 
   const mockActions = [
     { ...CMOR1, quantityRequired: false },
-    { ...UPL1, quantityRequired: false },
-    { ...UPL2, quantityRequired: true, availability: { ...UPL2.availability, type: 'partial' } }
+    { ...UPL1, quantityRequired: false, availability: { ...UPL1.availability, type: 'partial' } },
+    { ...UPL2, quantityRequired: true, availability: { ...UPL2.availability, type: 'total' } }
   ]
 
   beforeEach(() => {
@@ -427,7 +427,7 @@ describe('SelectActionsPageController', () => {
 
     test('should still send the unit for a quantity-required action with no availability restriction', async () => {
       fetchActionsForParcel.mockResolvedValue({
-        actions: [{ ...UPL2, quantityRequired: true, availability: { unit: 'ha', value: null, type: 'partial' } }],
+        actions: [{ ...UPL2, quantityRequired: true, availability: { unit: 'ha', value: null } }],
         parcel: { sheetId: 'sheet1', parcelId: 'parcel1', size: { unit: 'ha', value: 20 } }
       })
       mockRequest.payload = { landAction: ['UPL2'], landActionQuantity_UPL2: '7' }

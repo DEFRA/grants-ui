@@ -346,13 +346,13 @@ describe('land-parcel-state.manager', () => {
       expect(Object.keys(result.landParcels['AB1234-5678'].actionsObj)).toEqual(['SAM1'])
     })
 
-    it('should store the submitted quantity override for an action that requires one', () => {
+    it.each([18.5673, null])('should store a required quantity when available area is %j', (availableArea) => {
       const actionsWithQuantity = [
         {
           code: 'CSAM3',
           description: 'Herbal leys: CSAM3',
           quantityRequired: true,
-          availability: { value: 18.5673, unit: 'ha', type: 'partial' }
+          availability: { value: availableArea, unit: 'ha' }
         }
       ]
       const state = {}
@@ -408,7 +408,12 @@ describe('land-parcel-state.manager', () => {
 
     it('should still save a non-quantity action alongside a skipped quantity-required one', () => {
       const actionsWithQuantity = [
-        { code: 'SAM1', description: 'Action 1', quantityRequired: false, availability: { value: '10', unit: 'ha' } },
+        {
+          code: 'SAM1',
+          description: 'Action 1',
+          quantityRequired: false,
+          availability: { value: 10, unit: 'ha', type: 'partial' }
+        },
         {
           code: 'CSAM3',
           description: 'Herbal leys: CSAM3',
@@ -417,12 +422,13 @@ describe('land-parcel-state.manager', () => {
         }
       ]
       const state = {}
-      const payload = { landAction: ['SAM1', 'CSAM3'] }
+      const payload = { landAction: ['SAM1', 'CSAM3'], landActionQuantity_SAM1: '2' }
       const parcel = { sheetId: 'AB1234', parcelId: '5678' }
 
       const result = addSelectedActionsToState(state, payload, actionsWithQuantity, parcel)
 
       expect(Object.keys(result.landParcels['AB1234-5678'].actionsObj)).toEqual(['SAM1'])
+      expect(result.landParcels['AB1234-5678'].actionsObj.SAM1.value).toBe(10)
     })
   })
 
@@ -717,7 +723,7 @@ describe('land-parcel-state.manager', () => {
     it('should use the payload value for an explicitly quantity-required action', () => {
       const payload = { landAction: 'CSAM3', landActionQuantity_CSAM3: '0.2' }
       const actions = [
-        { code: 'CSAM3', description: 'Herbal leys', quantityRequired: true, availability: { type: 'partial' } }
+        { code: 'CSAM3', description: 'Herbal leys', quantityRequired: true, availability: { value: null, unit: 'ha' } }
       ]
 
       const result = getAddedActionsFromPayload(payload, actions)
