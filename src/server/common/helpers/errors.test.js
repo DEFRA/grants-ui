@@ -675,7 +675,24 @@ describe('#catchAll 404 Logging', () => {
     )
   })
 
-  test('Should log client errors (e.g. 400) via SYSTEM.SERVER_ERROR', () => {
+  test('Should not log 404s at error or warn level (info-level context log only)', () => {
+    const request = create404Request('Not Found', '/wp-content/plugins/some-plugin/x.js', null, null, 'scanner')
+
+    catchAll(request, mockToolkit)
+
+    expect(log).not.toHaveBeenCalledWith(
+      expect.objectContaining({ level: 'error' }),
+      expect.anything(),
+      expect.anything()
+    )
+    expect(log).not.toHaveBeenCalledWith(
+      expect.objectContaining({ level: 'warn' }),
+      expect.anything(),
+      expect.anything()
+    )
+  })
+
+  test('Should log client errors (e.g. 400) at warn level via SYSTEM.CLIENT_ERROR, not error', () => {
     const request = {
       response: { isBoom: true, message: 'Bad', output: { statusCode: statusCodes.badRequest } },
       path: '/x',
@@ -690,9 +707,14 @@ describe('#catchAll 404 Logging', () => {
     catchAll(request, toolkit)
 
     expect(log).toHaveBeenCalledWith(
-      expect.any(Object),
+      expect.objectContaining({ level: 'warn' }),
       expect.objectContaining({ statusCode: statusCodes.badRequest, path: '/x' }),
       request
+    )
+    expect(log).not.toHaveBeenCalledWith(
+      expect.objectContaining({ level: 'error' }),
+      expect.anything(),
+      expect.anything()
     )
   })
 

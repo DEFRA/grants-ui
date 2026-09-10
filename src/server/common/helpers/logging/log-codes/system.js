@@ -33,6 +33,11 @@ export const SYSTEM = {
       return `Server error occurred: ${messageOptions.errorMessage}${suffix}`
     }
   },
+  CLIENT_ERROR: {
+    level: 'warn',
+    messageFunc: (messageOptions) =>
+      `Client error: status=${messageOptions.statusCode} ${messageOptions.method} ${messageOptions.path} - ${messageOptions.errorMessage}`
+  },
   STARTUP_PHASE: {
     level: 'info',
     messageFunc: (messageOptions) => `Startup phase: ${messageOptions.phase} - ${messageOptions.status}`
