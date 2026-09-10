@@ -142,7 +142,7 @@ function getHintHtml(action, needsQuantity, chosenArea) {
     ? `${limit} ${formatUnit(action.availability?.unit)} available`
     : availableArea(limit ?? 0, action.availability?.unit)
   return landGrantsViewEnv.render(ACTION_HINT_TEMPLATE, {
-    rate: String(action.ratePerUnitGbp?.toFixed(2)),
+    rate: String(action.ratePerUnitGbp?.toFixed(2).replace(/\.00$/, '')),
     rateUnit: action.availability?.unit ?? 'ha',
     agreementRate: action.ratePerAgreementPerYearGbp,
     requirementText,

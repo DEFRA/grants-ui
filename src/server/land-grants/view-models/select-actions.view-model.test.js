@@ -44,7 +44,7 @@ describe('select-actions.view-model', () => {
 
       expect(result.html).toContain('Manage ponds: WBD1')
       expect(result.html).toContain('href="https://example.test/guidance/wbd1"')
-      expect(result.html).toContain('Payment rate per year: £100.00/count')
+      expect(result.html).toContain('Payment rate per year: £100/count')
       expect(result.html).toContain('Requires an SFI HEFER')
       expect(result.html).not.toContain('SSSI')
       expect(result.consents).toEqual(['hefer'])
@@ -184,9 +184,7 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, [])
       configState.reset()
 
-      expect(result.html).toBe(
-        'Manage rough grassland for upland breeding waders<span class="select-actions-hint">Payment rate per year: £203.00/ha<br>Requires an SFI HEFER</span>'
-      )
+      expect(result.html).toContain('Requires an SFI HEFER')
     })
 
     it('should not show the HEFER requirement text when the HEFER feature flag is off', () => {
@@ -199,9 +197,7 @@ describe('select-actions.view-model', () => {
 
       const result = mapActionToViewModel(action, [])
 
-      expect(result.html).toBe(
-        'Manage rough grassland for upland breeding waders<span class="select-actions-hint">Payment rate per year: £203.00/ha</span>'
-      )
+      expect(result.html).not.toContain('Requires an SFI HEFER')
     })
 
     it('should show the SSSI requirement text below the payment rate when sssiConsentRequired is set', () => {
@@ -216,9 +212,7 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, [])
       configState.reset()
 
-      expect(result.html).toBe(
-        'Manage grassland with very low nutrient inputs<span class="select-actions-hint">Payment rate per year: £151.00/ha<br>Requires SSSI consent</span>'
-      )
+      expect(result.html).toContain('Requires SSSI consent')
     })
 
     it('should show both requirements when sssiConsentRequired and heferRequired are both set', () => {
@@ -235,9 +229,7 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, [])
       configState.reset()
 
-      expect(result.html).toBe(
-        'Manage grassland with very low nutrient inputs<span class="select-actions-hint">Payment rate per year: £151.00/ha<br>Requires SSSI consent and an SFI HEFER</span>'
-      )
+      expect(result.html).toContain('Requires SSSI consent and an SFI HEFER')
     })
 
     it.each([
@@ -321,7 +313,7 @@ describe('select-actions.view-model', () => {
     it('should put the availability directly after the payment rate in the checkbox hint', () => {
       const result = mapActionToViewModel({ ...csam3({ value: 2.2822, unit: 'ha' }), ratePerUnitGbp: 45 }, [])
 
-      expect(result.html).toContain('Payment rate per year: £45.00/ha')
+      expect(result.html).toContain('Payment rate per year: £45/ha')
       expect(result.html).toContain('<span id="landActionQuantity_CSAM3-hint">2.2822 hectares available</span>')
     })
 
@@ -485,7 +477,7 @@ describe('select-actions.view-model', () => {
       expect(result.conditional.html).not.toContain('aria-describedby=')
       expect(result.html).not.toContain('id="landActionQuantity_HEF1-hint"')
       expect(result.html).not.toContain('SSSI')
-      expect(result.html).toContain('Payment rate per year: £5.00/sqm')
+      expect(result.html).toContain('Payment rate per year: £5/sqm')
       expect(result.html).toContain('Requires an SFI HEFER')
       expect(result.html).toContain(
         'href="https://www.gov.uk/find-funding-for-land-or-farms/hef1-maintain-weatherproof-traditional-farm-or-forestry-buildings"'

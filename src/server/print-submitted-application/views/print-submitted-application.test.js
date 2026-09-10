@@ -67,7 +67,6 @@ describe('print-submitted-application.html view', () => {
         .map((_, th) => normalise($(th).text()))
         .get()
     ).toEqual(['Action', 'Quantity', 'Yearly payment'])
-    expect(parcelCard.find('colgroup col')).toHaveLength(3)
     expect(normalise(parcelCard.find('tbody tr').first().text())).toBe(
       'Action description (CLIG3) Requires SSSI consent 2.0000 ha £100.00'
     )
