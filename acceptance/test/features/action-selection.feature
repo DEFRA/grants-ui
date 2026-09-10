@@ -204,3 +204,62 @@ Feature: Action Selection
         Then the user should still be at URL "select-land-parcel"
         And should see the following error messages
             | There are no actions available for parcel SK0972 7313. Select another land parcel to continue. |
+
+        # RULE: a land parcel with pre-existing agreement for the total area prevents incompatible actions being shown
+        When the user navigates backward
+        Then the user should be at URL "example-grant-with-map"
+        When the user clicks on "Start now"
+        Then the user should be at URL "select-land-parcel"
+        When the user selects parcel "SK0971 5761" of area "0.6116" hectares on the map
+        And continues
+        Then the user should still be at URL "select-land-parcel"
+        And should see the following error messages
+            | There are no actions available for parcel SK0971 5761. Select another land parcel to continue. |
+
+        # RULE: a land parcel with pre-existing agreement for less than the total area reduces the available area for incompatible actions
+        When the user navigates backward
+        Then the user should be at URL "example-grant-with-map"
+        When the user clicks on "Start now"
+        Then the user should be at URL "select-land-parcel"
+        When the user selects parcel "SK0971 4561" of area "0.112" hectares on the map
+        And continues
+        Then the user should be at URL "select-actions-for-land-parcel"
+        And should see the following selected land parcel
+            | FIELD             | VALUE           |
+            | Parcel reference  | SK0971 4561     |
+            | Total area        | 0.0112 hectares |
+        And should see the following actions with guidance
+            | ACTION | DESCRIPTION         | GUIDANCE                          | URL |
+            | CSAM3  | Herbal leys: CSAM3  | Payment rate per year: £224.00/ha | Yes |
+            |        |                     | 0.0087 hectares available         |     |
+
+    Scenario: Land parcel area with SSSI and HEFER is deducted from available area for ineligible actions
+        Given there is no application data for SBI "106592443" and grant "example-grant-with-map"
+
+        # start
+        Given the user navigates to "/example-grant-with-map"
+        And logs in as CRN "1100946543"
+        Then the user should see heading "Apply for Example Grant with Map"
+        When the user clicks on "Start now"
+
+        # select-land-parcel
+        Then the user should be at URL "select-land-parcel"
+        And should see heading "Select a land parcel"
+        When the user selects parcel "NY1215 1016" of area "308.6793" hectares on the map
+        Then the user should see SSSI and HEFER requirements apply to the land parcel
+        When the user continues
+
+        # select-actions-for-land-parcel
+        Then the user should be at URL "select-actions-for-land-parcel"
+        And should see the following selected land parcel
+            | FIELD             | VALUE             |
+            | Parcel reference  | NY1215 1016       |
+            | Total area        | 308.6793 hectares |
+        And should see the following actions with guidance
+            | ACTION | DESCRIPTION                                           | GUIDANCE                                | URL |
+            | CSAM3  | Herbal leys: CSAM3                                    | Payment rate per year: £224.00/ha       | Yes |
+            |        |                                                       | 2.9402 hectares available               |     |
+            | CLIG3  | Manage grassland with very low nutrient inputs: CLIG3 | Payment rate per year: £151.00/ha       | Yes |
+            |        |                                                       | Requires SSSI consent and an SFI HEFER  |     |
+            |        |                                                       | 26.9088 hectares available              |     |
+        And should see "2.9402" hectares available for action "CSAM3"
