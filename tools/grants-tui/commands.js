@@ -257,10 +257,18 @@ export function cmdUp(selectedAddons, scale, dryRun, localServices = [], interac
     // leftover override, then the current selection is published on top. When
     // nothing is selected the sweep alone reverts every grant to its repo version.
     if (selectedFormDefIds.length) {
-      runApplyFormDefs('disable', dryRun)
-      runApplyFormDefs('enable', dryRun, selectedFormDefIds)
+      const disableStatus = runApplyFormDefs('disable', dryRun)
+      const applyStatus = disableStatus || runApplyFormDefs('enable', dryRun, selectedFormDefIds)
+      if (applyStatus !== 0) {
+        if (!interactive) process.exit(applyStatus)
+        return { status: applyStatus, elapsedSeconds }
+      }
     } else if (hasLocalFormDefs()) {
-      runApplyFormDefs('disable', dryRun)
+      const applyStatus = runApplyFormDefs('disable', dryRun)
+      if (applyStatus !== 0) {
+        if (!interactive) process.exit(applyStatus)
+        return { status: applyStatus, elapsedSeconds }
+      }
     }
   }
   if (status !== 0 && !interactive) process.exit(status)
@@ -295,7 +303,11 @@ export function cmdDown(dryRun, interactive = false) {
   return status
 }
 
-export function cmdDebug(interactive = false) {
+export function cmdDebug(interactive = false, dryRun = false) {
+  if (dryRun) {
+    console.log(`Restart ${DEBUG_SERVICE} in debug mode (port 9229)`)
+    return 0
+  }
   const { source, addonKeys } = resolveAddonKeys()
 
   if (source === 'state') {
@@ -317,7 +329,11 @@ export function cmdDebug(interactive = false) {
 
   console.log(`\n  ${DIM}Restarting ${DEBUG_SERVICE} in debug mode (port 9229)…${RESET_COLOR}\n`)
   // Stop the service first so the override takes effect cleanly
-  spawnSync('docker', ['compose', ...fileArgs, 'stop', DEBUG_SERVICE], { cwd: ROOT, stdio: 'inherit' })
+  const stopped = spawnSync('docker', ['compose', ...fileArgs, 'stop', DEBUG_SERVICE], { cwd: ROOT, stdio: 'inherit' })
+  if (stopped.status !== 0) {
+    if (!interactive) process.exit(stopped.status ?? 1)
+    return stopped.status ?? 1
+  }
 
   // Start detached with the debug command override — returns immediately
   const result = spawnSync(
@@ -333,8 +349,8 @@ export function cmdDebug(interactive = false) {
     )
   }
 
-  if (!interactive) process.exit(result.status ?? 0)
-  return result.status ?? 0
+  if (!interactive) process.exit(result.status ?? 1)
+  return result.status ?? 1
 }
 
 /**
@@ -360,6 +376,7 @@ export function cmdReset(dryRun) {
   console.log(`\n  ${YELLOW}⚠${RESET_COLOR}  RESET: This will remove all containers, volumes, and local images.\n`)
 
   const composeFiles = ['compose.grants-ui.yml', 'compose.land-grants.yml']
+  let status = 0
 
   for (const file of composeFiles) {
     console.log(
@@ -367,7 +384,7 @@ export function cmdReset(dryRun) {
     )
 
     if (!dryRun) {
-      spawnSync(
+      const result = spawnSync(
         'docker',
         ['compose', '-f', file, '-f', 'compose.infra.yml', 'down', '--volumes', '--remove-orphans', '--rmi', 'local'],
         {
@@ -375,6 +392,7 @@ export function cmdReset(dryRun) {
           stdio: 'inherit'
         }
       )
+      status ||= result.status ?? 1
     }
   }
 
@@ -418,11 +436,11 @@ export function cmdReset(dryRun) {
     }
   }
 
-  if (!dryRun) {
+  if (!dryRun && status === 0) {
     clearState()
     console.log(`  ${GREEN}✔${RESET_COLOR}  Reset complete.\n`)
   }
-  return 0
+  return status
 }
 
 /**
