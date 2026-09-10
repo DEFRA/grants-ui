@@ -1,9 +1,9 @@
-import { UNIT_COUNT, requiresWholeNumber, UNIT_SQUARE_METRES } from './unit-types.js'
+import { requiresWholeNumber, UNIT_COUNT, UNIT_SQUARE_METRES } from './unit-types.js'
 import {
-  QUANTITY_ERRORS,
   getQuantityError,
   isValidQuantity,
-  normaliseQuantityInput
+  normaliseQuantityInput,
+  QUANTITY_ERRORS
 } from './action-quantity-validation.js'
 
 describe('normaliseQuantityInput', () => {
@@ -26,6 +26,27 @@ describe('normaliseQuantityInput', () => {
 })
 
 describe('getQuantityError', () => {
+  describe.each(['sqm', 'count'])('whole-number quantities in %s', (unit) => {
+    it.each([
+      ['0', 'Value must be greater than 0'],
+      ['-11', 'Value must be greater than 0'],
+      ['11.22001', 'Must be a whole number'],
+      ['4.0000000000000001', 'Must be a whole number'],
+      ['as', 'Must be numbers'],
+      ['1e2', 'Must be numbers'],
+      ['9007199254740992', 'Number is too large'],
+      ['', 'Must be numbers']
+    ])('rejects %j with %j', (raw, expected) => {
+      expect(getQuantityError(raw, undefined, unit)).toBe(expected)
+      expect(isValidQuantity(raw, undefined, unit)).toBe(false)
+    })
+
+    it.each(['1', '4', ' 12 ', '99999', '4.00000'])('accepts %j without a parcel-area limit', (raw) => {
+      expect(getQuantityError(raw, undefined, unit)).toBeNull()
+      expect(isValidQuantity(raw, undefined, unit)).toBe(true)
+    })
+  })
+
   const AVAILABLE = 11.22
 
   it.each([

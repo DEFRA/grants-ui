@@ -1,5 +1,18 @@
 ### Land Grants API - HTTP Client
 
+# Local WBD1 fixture: CRN 1300000034, Valley Estate (SBI 300000034).
+# Authenticate as this CRN when obtaining defraIdToken for these requests.
+# landGrantsUrl, landGrantsAuthToken and defraIdToken use the selected HTTP
+# Client environment; keep credentials in http-client.private.env.json.
+@testSbi = 300000034
+@testCrn = 1300000034
+@testSheetId = SD5349
+@testParcelId = 3815
+@testApplicationId = http-client-wbd1
+@testQuantity = 4
+# Match availability.unit from getSelectedParcelActions. The local API uses count.
+@testQuantityUnit = count
+
 # ─────────────────────────────────────────────
 # Health
 # ─────────────────────────────────────────────
@@ -7,6 +20,125 @@
 ### Health check (no auth required)
 # @name getHealth
 GET {{landGrantsUrl}}/health
+
+###
+
+# ─────────────────────────────────────────────
+# MapSelectPageController and SelectActionsPageController
+#
+# MapSelectPageController GET renders the map; its browser requests trigger
+# the parcel-data and bounds lookups below via the Grants UI map handlers.
+# Both controllers use fetchActionsForParcel for the selected parcel.
+# enabledLandActions is filtered in Grants UI, not sent to the Land Grants API:
+# an action appearing here must also be enabled in the grant to appear in the UI.
+# ─────────────────────────────────────────────
+
+### Map load: sizes and actions for the business's parcels
+# @name getMapParcels
+# parcelsHandler -> fetchParcels -> parcelsWithSize (when enabledLandActions is set).
+# The initial parcel IDs come from the DAL; these are Valley Estate's five mock parcels.
+POST {{landGrantsUrl}}/api/v2/parcels
+Content-Type: application/json
+Authorization: Bearer {{landGrantsAuthToken}}
+x-forwarded-authorization: {{defraIdToken}}
+x-cdp-request-id: {{$uuid}}
+
+{
+  "sbi": "{{testSbi}}",
+  "parcelIds": ["SD5349-3815", "SD6050-3851", "SD8042-3851", "SD6759-3857", "SD6159-3880"],
+  "fields": ["size", "actions"],
+  "plannedActions": []
+}
+
+### Map load: bounding box used to fit the viewport
+# @name locateMapParcels
+# parcelsHandler -> fetchParcelTileLocation -> locateParcelTiles.
+POST {{landGrantsUrl}}/api/v1/parcel-tiles/locate
+Content-Type: application/json
+Authorization: Bearer {{landGrantsAuthToken}}
+x-forwarded-authorization: {{defraIdToken}}
+x-cdp-request-id: {{$uuid}}
+
+{
+  "parcelIds": ["SD5349-3815", "SD6050-3851", "SD8042-3851", "SD6759-3857", "SD6159-3880"]
+}
+
+### Map Continue / select-actions GET: selected parcel actions and consent requirements
+# @name getSelectedParcelActions
+# MapSelectPageController.findParcelsWithNoActions and SelectActionsPageController
+# use fetchActionsForParcel -> parcelsWithActions. The map consent lookup also
+# uses this request shape. Consent fields are included when their feature flags
+# are enabled; remove the corresponding fields to mirror disabled flags.
+# WBD1 should have availability.value null (unrestricted), not 0 (unavailable).
+POST {{landGrantsUrl}}/api/v2/parcels
+Content-Type: application/json
+Authorization: Bearer {{landGrantsAuthToken}}
+x-forwarded-authorization: {{defraIdToken}}
+x-cdp-request-id: {{$uuid}}
+
+{
+  "sbi": "{{testSbi}}",
+  "parcelIds": ["{{testSheetId}}-{{testParcelId}}"],
+  "fields": ["actions", "size", "actions.sssiConsentRequired", "actions.heferRequired"],
+  "plannedActions": []
+}
+
+### Select actions: recompute availability with four ponds selected
+# @name getActionsWithWbd1Selection
+# SelectActionsPageController.recomputeActionsForState -> fetchActionsWithPlannedActions.
+# The browser's live refresh through /api/land-grants/actions/{parcelId} uses
+# the same upstream call. Send plannedActions: [] to model deselecting WBD1.
+POST {{landGrantsUrl}}/api/v2/parcels
+Content-Type: application/json
+Authorization: Bearer {{landGrantsAuthToken}}
+x-forwarded-authorization: {{defraIdToken}}
+x-cdp-request-id: {{$uuid}}
+
+{
+  "sbi": "{{testSbi}}",
+  "parcelIds": ["{{testSheetId}}-{{testParcelId}}"],
+  "fields": ["actions", "size", "actions.sssiConsentRequired", "actions.heferRequired"],
+  "plannedActions": [
+    {
+      "actionCode": "WBD1",
+      "quantity": {{testQuantity}},
+      "unit": "{{testQuantityUnit}}"
+    }
+  ]
+}
+
+### Select actions Continue: validate the selected WBD1 quantity
+# @name validateWbd1Selection
+# SelectActionsBasePageController.handleApplicationValidation -> validateApplication.
+# applicationId is the lowercased grant application reference number in the UI;
+# this example uses a separate test identifier. For a full application, include
+# every selected parcel and action in landActions.
+# This payload uses code (not actionCode) and omits unit, matching the state mapper.
+# Grants UI validates positive whole numbers before calling this endpoint.
+POST {{landGrantsUrl}}/api/v2/application/validate
+Content-Type: application/json
+Authorization: Bearer {{landGrantsAuthToken}}
+x-forwarded-authorization: {{defraIdToken}}
+x-cdp-request-id: {{$uuid}}
+
+{
+  "applicationId": "{{testApplicationId}}",
+  "requester": "grants-ui",
+  "applicantCrn": "{{testCrn}}",
+  "sbi": "{{testSbi}}",
+  "landActions": [
+    {
+      "sheetId": "{{testSheetId}}",
+      "parcelId": "{{testParcelId}}",
+      "actions": [
+        {
+          "code": "WBD1",
+          "quantity": {{testQuantity}}
+        }
+      ]
+    }
+  ]
+}
 
 ###
 

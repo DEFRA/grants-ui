@@ -11,14 +11,14 @@ import { error, log } from '~/src/server/common/helpers/logging/log.js'
 import { config } from '~/src/config/config.js'
 import {
   CMOR1,
-  PARCELS_WITH_SIZE,
-  UPL1,
-  UPL2,
-  USER_CONTEXT,
   makeLandGrantsRequest,
   makeViewToolkit,
   mockFormatParcelImplementations,
-  stubControllerMethods
+  PARCELS_WITH_SIZE,
+  stubControllerMethods,
+  UPL1,
+  UPL2,
+  USER_CONTEXT
 } from '~/src/server/land-grants/test-helpers.js'
 
 vi.mock('@defra/forms-engine-plugin/controllers/QuestionPageController.js', async () => {
@@ -62,6 +62,15 @@ describe('SelectActionsPageController', () => {
     { ...UPL1, quantityRequired: false, availability: { ...UPL1.availability, type: 'partial' } },
     { ...UPL2, quantityRequired: true, availability: { ...UPL2.availability, type: 'total' } }
   ]
+  const wbd1 = {
+    code: 'WBD1',
+    description: 'Manage ponds: WBD1',
+    version: '1',
+    ratePerUnitGbp: 100,
+    quantityRequired: true,
+    availability: { unit: 'count', value: null },
+    heferRequired: true
+  }
 
   beforeEach(() => {
     QuestionPageController.prototype.getViewModel = vi.fn().mockReturnValue({
@@ -109,6 +118,22 @@ describe('SelectActionsPageController', () => {
   describe('GET route handler', () => {
     beforeEach(() => {
       mockRequest.query = { parcelId: 'sheet1-parcel1' }
+    })
+
+    test('shows WBD1 with HEFER consent and no SSSI warning', async () => {
+      config.get.mockImplementation((key) =>
+        ['landGrants.enableHeferFeature', 'landGrants.enableSSSIFeature'].includes(key)
+      )
+      fetchActionsForParcel.mockResolvedValue({
+        actions: [wbd1],
+        parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: { unit: 'ha', value: 0.5 } }
+      })
+
+      await get()
+
+      const [, model] = mockH.view.mock.calls[0]
+      expect(model.pageConsents).toEqual(['hefer'])
+      expect(model.actionItems[0].value).toBe('WBD1')
     })
 
     test('should redirect to /select-land-parcel if no selected land parcel is set', async () => {
@@ -446,6 +471,7 @@ describe('SelectActionsPageController', () => {
         expect.objectContaining({ value: 7, unit: 'ha' })
       )
     })
+
     test('should use quantityRequired for an unrestricted square-metre action', async () => {
       const hef1 = {
         code: 'HEF1',
@@ -501,6 +527,57 @@ describe('SelectActionsPageController', () => {
       expect(stateArg.landParcels['sheet1-parcel1'].actionsObj.HEF1).toEqual(
         expect.objectContaining({ value: 4, unit: 'sqm' })
       )
+    })
+
+    test.each([true, undefined])(
+      'saves WBD1 pond quantity and consent with quantityRequired=%j',
+      async (quantityRequired) => {
+        config.get.mockImplementation((key) => key === 'landGrants.enableHeferFeature')
+        fetchActionsForParcel.mockResolvedValue({
+          actions: [{ ...wbd1, quantityRequired }],
+          parcel: { sheetId: 'sheet1', parcelId: 'parcel1', size: { unit: 'ha', value: 0.5 } }
+        })
+        mockRequest.payload = { landAction: 'WBD1', landActionQuantity_WBD1: '4' }
+        fetchActionsWithPlannedActions.mockResolvedValue({
+          actions: [{ code: 'WBD1', availability: { unit: 'count', value: null } }]
+        })
+
+        await post()
+
+        expect(fetchActionsWithPlannedActions).toHaveBeenCalledWith(
+          expect.objectContaining({ plannedActions: [{ actionCode: 'WBD1', quantity: 4, unit: 'count' }] }),
+          expect.anything()
+        )
+        const state = controller.setState.mock.calls[0][1]
+        expect(state.landParcels['sheet1-parcel1'].actionsObj.WBD1).toMatchObject({
+          value: 4,
+          unit: 'count',
+          consents: ['hefer']
+        })
+      }
+    )
+
+    test.each([
+      ['0', 'Value must be greater than 0'],
+      ['-11', 'Value must be greater than 0'],
+      ['11.22001', 'Must be a whole number'],
+      ['as', 'Must be numbers'],
+      ['', 'Enter a quantity for Manage ponds: WBD1']
+    ])('rejects WBD1 quantity %j on submission and retains the input', async (quantity, text) => {
+      fetchActionsForParcel.mockResolvedValue({
+        actions: [wbd1],
+        parcel: { sheetId: 'sheet1', parcelId: 'parcel1', size: { unit: 'ha', value: 0.5 } }
+      })
+      mockRequest.payload = { landAction: 'WBD1', landActionQuantity_WBD1: quantity }
+
+      await post()
+
+      const [, model] = mockH.view.mock.calls[0]
+      expect(model.errors).toEqual([{ text, href: '#landActionQuantity_WBD1', code: 'WBD1' }])
+      expect(model.actionItems[0].conditional.html).toContain(`value="${quantity}"`)
+      expect(controller.setState).not.toHaveBeenCalled()
+      expect(controller.proceed).not.toHaveBeenCalled()
+      expect(validateApplication).not.toHaveBeenCalled()
     })
 
     test('should keep the original uncompeted actions when the recompute fetch fails', async () => {

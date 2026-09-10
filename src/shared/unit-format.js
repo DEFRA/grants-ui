@@ -1,5 +1,6 @@
 import { formatAreaUnit } from './format-area-unit.js'
 import { formatLinearUnit } from './format-linear-unit.js'
+import { requiresWholeNumber } from './unit-types.js'
 
 /**
  * Format a unit abbreviation that may be either area (e.g. "ha") or linear
@@ -17,7 +18,7 @@ export function formatUnit(abbrev = '') {
 
 /**
  * Joins the quantity and unit, skipping either half when it is missing so the
- * output never contains "undefined". A numeric quantity gets four decimal
+ * output never contains "undefined". Whole-number units have no decimal places; other numeric quantities get four decimal
  * places so areas line up down a column, and so a fully-claimed action reads
  * as an explicit "0.0000" rather than a bare "0"; any other value passes
  * through unchanged rather than being validated here.
@@ -26,20 +27,30 @@ export function formatUnit(abbrev = '') {
  * @returns {string}
  */
 export function formatArea(quantity, unit) {
-  const area = typeof quantity === 'number' && Number.isFinite(quantity) ? quantity.toFixed(4) : quantity
+  const area = formatQuantity(quantity, unit)
   return [area, unit].filter((part) => part !== undefined && part !== null && part !== '').join(' ')
 }
 
 /**
- * An area with its full unit name, e.g. "39.8100 hectares". Four decimal
- * places throughout so a fully claimed action reads as "0.0000" and areas
- * line up wherever they are listed together.
+ * @param {unknown} quantity
+ * @param {unknown} unit
+ * @returns {unknown}
+ */
+function formatQuantity(quantity, unit) {
+  const wholeNumber = typeof unit === 'string' && requiresWholeNumber(unit)
+  const decimalPlaces = wholeNumber ? 0 : 4
+  return typeof quantity === 'number' && Number.isFinite(quantity) ? quantity.toFixed(decimalPlaces) : quantity
+}
+
+/**
+ * A quantity with its full unit name, e.g. "39.8100 hectares" or "12 square metres".
+ * Determine precision using the original unit before expanding its label.
  * @param {number} value
  * @param {string} [unit]
  * @returns {string}
  */
 export function areaWithUnit(value, unit) {
-  return formatArea(value, formatUnit(unit))
+  return formatArea(formatQuantity(value, unit), formatUnit(unit))
 }
 
 /**
