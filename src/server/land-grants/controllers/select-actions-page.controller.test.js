@@ -446,6 +446,62 @@ describe('SelectActionsPageController', () => {
         expect.objectContaining({ value: 7, unit: 'ha' })
       )
     })
+    test('should use quantityRequired for an unrestricted square-metre action', async () => {
+      const hef1 = {
+        code: 'HEF1',
+        description: 'Maintain weatherproof traditional farm or forestry buildings: HEF1',
+        version: '1.1.0',
+        ratePerUnitGbp: 5,
+        quantityRequired: true,
+        availability: { unit: 'sqm', value: null }
+      }
+      fetchActionsForParcel.mockResolvedValue({
+        actions: [hef1],
+        parcel: { sheetId: 'sheet1', parcelId: 'parcel1', size: { unit: 'ha', value: 20 } }
+      })
+      mockRequest.payload = { landAction: 'HEF1', landActionQuantity_HEF1: '4' }
+      fetchActionsWithPlannedActions.mockResolvedValue({
+        actions: [{ code: 'HEF1', availability: { unit: 'sqm', value: null } }]
+      })
+
+      await post()
+
+      expect(fetchActionsWithPlannedActions).toHaveBeenCalledWith(
+        expect.objectContaining({
+          plannedActions: [{ actionCode: 'HEF1', quantity: 4, unit: 'sqm' }]
+        }),
+        expect.anything()
+      )
+      const stateArg = controller.setState.mock.calls[0][1]
+      expect(stateArg.landParcels['sheet1-parcel1'].actionsObj.HEF1).toEqual(
+        expect.objectContaining({ value: 4, unit: 'sqm' })
+      )
+    })
+
+    test('should use the source action quantity-required override when recomputed metadata omits it', async () => {
+      const hef1 = {
+        code: 'HEF1',
+        description: 'Maintain weatherproof traditional farm or forestry buildings: HEF1',
+        version: '1.1.0',
+        quantityRequired: false,
+        availability: { unit: 'sqm', value: null }
+      }
+      fetchActionsForParcel.mockResolvedValue({
+        actions: [hef1],
+        parcel: { sheetId: 'sheet1', parcelId: 'parcel1', size: { unit: 'ha', value: 20 } }
+      })
+      mockRequest.payload = { landAction: 'HEF1', landActionQuantity_HEF1: '4' }
+      fetchActionsWithPlannedActions.mockResolvedValue({
+        actions: [{ code: 'HEF1', availability: { unit: 'sqm', value: 0 } }]
+      })
+
+      await post()
+
+      const stateArg = controller.setState.mock.calls[0][1]
+      expect(stateArg.landParcels['sheet1-parcel1'].actionsObj.HEF1).toEqual(
+        expect.objectContaining({ value: 4, unit: 'sqm' })
+      )
+    })
 
     test('should keep the original uncompeted actions when the recompute fetch fails', async () => {
       mockRequest.payload = {

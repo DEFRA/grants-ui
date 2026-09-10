@@ -1,3 +1,4 @@
+import { UNIT_COUNT, requiresWholeNumber, UNIT_SQUARE_METRES } from './unit-types.js'
 import {
   QUANTITY_ERRORS,
   getQuantityError,
@@ -63,6 +64,47 @@ describe('getQuantityError', () => {
 
   it('gives negative input a different message to zero', () => {
     expect(getQuantityError('0', AVAILABLE)).not.toBe(getQuantityError('-1', AVAILABLE))
+  })
+
+  it.each([UNIT_SQUARE_METRES, UNIT_COUNT])('requires whole numbers for %s', (unit) => {
+    expect(getQuantityError('4', undefined, unit)).toBeNull()
+    expect(getQuantityError('4.5', undefined, unit)).toBe(QUANTITY_ERRORS.NOT_WHOLE_NUMBER)
+  })
+
+  it('does not require whole numbers for hectares', () => {
+    expect(getQuantityError('4.5', undefined, 'ha')).toBeNull()
+  })
+
+  it.each([
+    ['0', 'Value must be greater than 0'],
+    ['-11', 'Value must be greater than 0'],
+    ['11.22001', QUANTITY_ERRORS.NOT_WHOLE_NUMBER],
+    ['as', 'Must be numbers']
+  ])('rejects invalid square-metre quantity %j with %s', (raw, expected) => {
+    expect(getQuantityError(raw, undefined, 'sqm')).toBe(expected)
+  })
+
+  it.each(['m2', ' SQM ', 'SQM'])('does not infer whole numbers for unsupported spelling %j', (unit) => {
+    expect(requiresWholeNumber(unit)).toBe(false)
+    expect(getQuantityError('11.22001', undefined, unit)).toBe(QUANTITY_ERRORS.TOO_MANY_DECIMAL_PLACES)
+  })
+
+  it('checks positivity before the whole-number rule', () => {
+    expect(getQuantityError('-11.22001', undefined, UNIT_SQUARE_METRES)).toBe('Value must be greater than 0')
+  })
+
+  it('accepts the largest safe whole-number quantity', () => {
+    const quantity = '9007199254740991'
+
+    expect(getQuantityError(quantity, undefined, UNIT_SQUARE_METRES)).toBeNull()
+    expect(isValidQuantity(quantity, undefined, UNIT_SQUARE_METRES)).toBe(true)
+  })
+
+  it('rejects an unsafe whole-number quantity without changing the ticket errors', () => {
+    const quantity = '99999999999999999999'
+
+    expect(getQuantityError(quantity, undefined, UNIT_SQUARE_METRES)).toBe(QUANTITY_ERRORS.TOO_LARGE)
+    expect(isValidQuantity(quantity, undefined, UNIT_SQUARE_METRES)).toBe(false)
   })
 })
 

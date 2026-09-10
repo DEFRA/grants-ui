@@ -28,6 +28,7 @@ function checkboxItemHtml({
   // (no --hidden class) when the checkbox starts out checked.
   const hiddenClass = checked ? '' : ' govuk-checkboxes__conditional--hidden'
   const inputClass = `govuk-input${hasError ? ' govuk-input--error' : ''}`
+  const inputUnit = availability?.unit === 'sqm' ? 'square metres' : 'ha'
 
   const errorMessage = hasError
     ? `<p id="landActionQuantity_${code}-error" class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> Enter a number of hectares, for example 12.5 or 100</p>`
@@ -48,7 +49,7 @@ function checkboxItemHtml({
           <div class="govuk-input__wrapper">
             <div id="landActionQuantity_${code}-refresh-banner" class="select-actions-refresh-banner select-actions-refresh-banner--hidden">Updating available land for this action&hellip;</div>
             <input class="${inputClass}" id="landActionQuantity_${code}" name="landActionQuantity_${code}" type="text" value="${quantityValue}"${describedByAttr}${unrestricted ? '' : ` max="${requiresMaxQuantity}"`}>
-            <div class="govuk-input__suffix">ha</div>
+            <div class="govuk-input__suffix">${inputUnit}</div>
           </div>
         </div>
       </div>`
@@ -60,7 +61,9 @@ function checkboxItemHtml({
     hintValue = availability.value
   }
   const availabilityHint =
-    hintValue != null ? `<span id="landActionQuantity_${code}-hint">${hintValue} ha available</span>` : ''
+    hintValue != null
+      ? `<span id="landActionQuantity_${code}-hint">${hintValue} ${availability?.unit === 'sqm' ? 'square metres' : 'ha'} available</span>`
+      : ''
   const chosenAreaPanel = hasChosenAreaPanel
     ? `
     <div class="govuk-checkboxes__conditional${hiddenClass}" id="${conditionalId}">
@@ -2247,6 +2250,58 @@ describe('quantity input validation', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+  })
+
+  it('rejects fractional square metres before sending a HEF1 claim and accepts a whole quantity', async () => {
+    const form = setupDom([
+      {
+        code: 'HEF1',
+        checked: true,
+        availability: { value: null, unit: 'sqm' },
+        requiresMaxQuantity: true,
+        unrestricted: true
+      }
+    ])
+    await initSettled(form, fetchOk({ actions: [] }))
+
+    await typeQuantity(form, 'HEF1', '4.5')
+    expect(errorFor('HEF1').textContent).toContain('Must be a whole number')
+    expect(global.fetch).not.toHaveBeenCalled()
+
+    await typeQuantity(form, 'HEF1', '4')
+    expect(errorFor('HEF1')).toBeNull()
+    expect(sentPlannedActions()).toEqual([{ actionCode: 'HEF1', quantity: 4, unit: 'sqm' }])
+  })
+  it('keeps bounded square-metre limits and unit propagation through refreshes', async () => {
+    const form = setupDom([
+      {
+        code: 'HEF1',
+        checked: true,
+        availability: { value: 12, unit: 'sqm' },
+        requiresMaxQuantity: 12
+      }
+    ])
+    await initSettled(form, fetchOk({ actions: [{ code: 'HEF1', availability: { value: 12, unit: 'sqm' } }] }))
+
+    const input = quantityInputFor(form, 'HEF1')
+    expect(hintFor('HEF1').textContent).toBe('12 square metres available')
+    expect(input.max).toBe('12')
+
+    await typeQuantity(form, 'HEF1', '12')
+    expect(errorFor('HEF1')).toBeNull()
+    expect(sentPlannedActions()).toEqual([{ actionCode: 'HEF1', quantity: 12, unit: 'sqm' }])
+    expect(input.max).toBe('12')
+    expect(hintFor('HEF1').textContent).toBe('12 square metres available')
+
+    await typeQuantity(form, 'HEF1', '13')
+    expect(errorFor('HEF1').textContent).toContain('More than available area')
+    expect(global.fetch).toHaveBeenCalledTimes(1)
+
+    // Zero, negative, and non-numeric values are covered by shared validation;
+    // this case only protects the unit-specific fractional rule.
+    await typeQuantity(form, 'HEF1', '12.5')
+    expect(errorFor('HEF1').textContent).toContain('Must be a whole number')
+    expect(global.fetch).toHaveBeenCalledTimes(1)
   })
 
   // The field must read back the same value that gets submitted, so a bare
