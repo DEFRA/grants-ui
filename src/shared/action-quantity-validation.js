@@ -21,6 +21,14 @@ export const QUANTITY_ERRORS = {
   MORE_THAN_AVAILABLE: (max) => `Enter up to ${max} hectares`
 }
 
+const WHOLE_NUMBER_QUANTITY_ERRORS = {
+  ...QUANTITY_ERRORS,
+  NOT_A_NUMBER: 'Must be numbers',
+  NEGATIVE: 'Value must be greater than 0',
+  NOT_GREATER_THAN_ZERO: 'Value must be greater than 0',
+  MORE_THAN_AVAILABLE: () => 'More than available area'
+}
+
 /**
  * Normalises a typed quantity for display and submission: trims it, and gives
  * a bare decimal its leading zero (".5" -> "0.5").
@@ -48,6 +56,20 @@ function decimalPlaces(value) {
 }
 
 /**
+ * @param {number} quantity
+ * @returns {string | null}
+ */
+function getWholeNumberError(quantity) {
+  if (!Number.isInteger(quantity)) {
+    return QUANTITY_ERRORS.NOT_WHOLE_NUMBER
+  }
+  if (!Number.isSafeInteger(quantity)) {
+    return QUANTITY_ERRORS.TOO_LARGE
+  }
+  return null
+}
+
+/**
  * The quantity's fault, or null when it's valid.
  * @param {string | number | null | undefined} raw - Typed value, normalised or not
  * @param {number} [max] - Claimable ceiling; omitted means unrestricted
@@ -57,29 +79,28 @@ function decimalPlaces(value) {
 export function getQuantityError(raw, max, unit) {
   const value = normaliseQuantityInput(raw)
   const wholeNumber = requiresWholeNumber(unit)
+  const errors = wholeNumber ? WHOLE_NUMBER_QUANTITY_ERRORS : QUANTITY_ERRORS
 
   if (!PLAIN_DECIMAL.test(value)) {
-    return wholeNumber ? 'Must be numbers' : QUANTITY_ERRORS.NOT_A_NUMBER
+    return errors.NOT_A_NUMBER
   }
   const quantity = Number(value)
   if (quantity < 0) {
-    return wholeNumber ? 'Value must be greater than 0' : QUANTITY_ERRORS.NEGATIVE
+    return errors.NEGATIVE
   }
   if (quantity === 0) {
-    return wholeNumber ? 'Value must be greater than 0' : QUANTITY_ERRORS.NOT_GREATER_THAN_ZERO
+    return errors.NOT_GREATER_THAN_ZERO
   }
   if (wholeNumber) {
-    if (!Number.isInteger(quantity)) {
-      return QUANTITY_ERRORS.NOT_WHOLE_NUMBER
-    }
-    if (!Number.isSafeInteger(quantity)) {
-      return QUANTITY_ERRORS.TOO_LARGE
+    const error = getWholeNumberError(quantity)
+    if (error) {
+      return error
     }
   } else if (decimalPlaces(value) > QUANTITY_PRECISION) {
-    return QUANTITY_ERRORS.TOO_MANY_DECIMAL_PLACES
+    return errors.TOO_MANY_DECIMAL_PLACES
   }
   if (max != null && quantity > max) {
-    return wholeNumber ? 'More than available area' : QUANTITY_ERRORS.MORE_THAN_AVAILABLE(max)
+    return errors.MORE_THAN_AVAILABLE(max)
   }
   return null
 }
