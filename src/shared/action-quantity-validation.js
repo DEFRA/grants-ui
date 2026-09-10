@@ -10,6 +10,8 @@ export const QUANTITY_PRECISION = 4
 const PLAIN_DECIMAL = /^-?(\d+(\.\d*)?|\.\d+)$/
 
 const NOT_A_NUMBER_MESSAGE = 'Enter a number of hectares, for example 12.5 or 100'
+const moreThanAvailableHectares = (max) => `Enter up to ${max} hectares`
+const moreThanAvailableArea = () => 'More than available area'
 
 export const QUANTITY_ERRORS = {
   NOT_A_NUMBER: NOT_A_NUMBER_MESSAGE,
@@ -18,7 +20,7 @@ export const QUANTITY_ERRORS = {
   NOT_WHOLE_NUMBER: 'Must be a whole number',
   TOO_LARGE: 'Number is too large',
   TOO_MANY_DECIMAL_PLACES: NOT_A_NUMBER_MESSAGE,
-  MORE_THAN_AVAILABLE: (max) => `Enter up to ${max} hectares`
+  MORE_THAN_AVAILABLE: moreThanAvailableHectares
 }
 
 const WHOLE_NUMBER_QUANTITY_ERRORS = {
@@ -26,7 +28,7 @@ const WHOLE_NUMBER_QUANTITY_ERRORS = {
   NOT_A_NUMBER: 'Must be numbers',
   NEGATIVE: 'Value must be greater than 0',
   NOT_GREATER_THAN_ZERO: 'Value must be greater than 0',
-  MORE_THAN_AVAILABLE: () => 'More than available area'
+  MORE_THAN_AVAILABLE: moreThanAvailableArea
 }
 
 /**
@@ -70,6 +72,14 @@ function getWholeNumberError(quantity) {
 }
 
 /**
+ * @param {string} value
+ * @returns {string | null}
+ */
+function getDecimalPrecisionError(value) {
+  return decimalPlaces(value) > QUANTITY_PRECISION ? QUANTITY_ERRORS.TOO_MANY_DECIMAL_PLACES : null
+}
+
+/**
  * The quantity's fault, or null when it's valid.
  * @param {string | number | null | undefined} raw - Typed value, normalised or not
  * @param {number} [max] - Claimable ceiling; omitted means unrestricted
@@ -91,13 +101,9 @@ export function getQuantityError(raw, max, unit) {
   if (quantity === 0) {
     return errors.NOT_GREATER_THAN_ZERO
   }
-  if (wholeNumber) {
-    const error = getWholeNumberError(quantity)
-    if (error) {
-      return error
-    }
-  } else if (decimalPlaces(value) > QUANTITY_PRECISION) {
-    return errors.TOO_MANY_DECIMAL_PLACES
+  const precisionError = wholeNumber ? getWholeNumberError(quantity) : getDecimalPrecisionError(value)
+  if (precisionError) {
+    return precisionError
   }
   if (max != null && quantity > max) {
     return errors.MORE_THAN_AVAILABLE(max)
