@@ -3,6 +3,7 @@
  * @property {string} code - Action code
  * @property {string} description - Action description
  * @property {string} version - Action version
+ * @property {boolean} [quantityRequired] - Whether the user must enter a quantity
  * @property {number} [ratePerUnitGbp] - Payment rate per unit in GBP
  * @property {boolean} [sssiConsentRequired] - Action requires SSSI consent
  * @property {boolean} [heferRequired] - Action requires HEFER
@@ -10,7 +11,7 @@
  * @property {object} [availability] - How much of the action is still claimable
  * @property {number | null} [availability.value] - Amount still claimable; null means no restriction
  * @property {string} [availability.unit] - Unit, area, linear or count
- * @property {'total'|'partial'} [availability.type] - 'partial' requires a typed quantity
+ * @property {'total'|'partial'} [availability.type] - API availability classification; does not control quantity input
  * @property {object} [staticAvailability] - The action's original, uncompeted availability (see mergeRecomputedAvailability)
  * @property {number | null} [staticAvailability.value] - Amount claimable; null means no restriction
  * @property {string} [staticAvailability.unit] - Unit, area, linear or count
