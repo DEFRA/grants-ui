@@ -26,20 +26,13 @@ vi.mock('~/src/server/land-grants/services/land-grants.service.js', () => ({
   fetchParcelTileLocation: vi.fn()
 }))
 
-vi.mock('~/src/server/land-grants/services/land-grants.client.js', () => ({
+vi.mock('~/src/server/land-grants/services/land-grants.client.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   fetchParcelTile: vi.fn()
 }))
 
 vi.mock('~/src/server/common/map/mvt-compound-id.js', () => ({
   withCompoundParcelIds: vi.fn((buf) => buf)
-}))
-
-vi.mock('~/src/server/common/map/map.mock.js', () => ({
-  isMockData: vi.fn().mockReturnValue(false)
-}))
-
-vi.mock('~/src/server/common/map/map.mock.response.js', () => ({
-  buildMockParcelsResponse: vi.fn()
 }))
 
 vi.mock('~/src/shared/format-parcel.js', () => ({
@@ -51,8 +44,6 @@ import { config } from '~/src/config/config.js'
 import { fetchParcels, fetchParcelTileLocation } from '~/src/server/land-grants/services/land-grants.service.js'
 import { fetchParcelTile } from '~/src/server/land-grants/services/land-grants.client.js'
 import { withCompoundParcelIds } from '~/src/server/common/map/mvt-compound-id.js'
-import { isMockData } from '~/src/server/common/map/map.mock.js'
-import { buildMockParcelsResponse } from '~/src/server/common/map/map.mock.response.js'
 import { mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 
 const makeH = () => mockHapiResponseToolkit({ bytes: vi.fn().mockReturnThis() })
@@ -87,7 +78,6 @@ const expectedUserContext = {
 describe('parcelsHandler', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    isMockData.mockReturnValue(false)
   })
 
   it('returns features and bbox on success', async () => {
@@ -98,7 +88,7 @@ describe('parcelsHandler', () => {
     const request = makeRequest()
     await parcelsHandler(request, h)
 
-    expect(fetchParcels).toHaveBeenCalledWith(request, expectedUserContext)
+    expect(fetchParcels).toHaveBeenCalledWith(request, expectedUserContext, undefined)
     expect(fetchParcelTileLocation).toHaveBeenCalledWith(['SD7148-9160', 'SD7148-9161'], expectedUserContext)
     const [payload] = h.response.mock.calls[0]
     expect(payload.features).toEqual([
@@ -131,17 +121,19 @@ describe('parcelsHandler', () => {
   })
 
   it('counts only available actions enabled for the current grant journey', async () => {
-    fetchParcels.mockResolvedValue([
+    fetchParcels.mockImplementation(async (_request, _userContext, fields = ['size']) => [
       {
         sheetId: 'SD7148',
         parcelId: '9160',
         area: { value: 2.5 },
-        actions: [
-          { code: 'CLIG3', availability: { value: 0, unit: 'ha' } },
-          { code: 'CSAM3', availability: { value: 0, unit: 'ha' } },
-          { code: 'SCR2', availability: { value: 2, unit: 'ha' } },
-          { code: 'WBD1', availability: { value: 3, unit: 'ha' } }
-        ]
+        actions: fields.includes('actions')
+          ? [
+              { code: 'CLIG3', availability: { value: 0, unit: 'ha' } },
+              { code: 'CSAM3', availability: { value: 0, unit: 'ha' } },
+              { code: 'SCR2', availability: { value: 2, unit: 'ha' } },
+              { code: 'WBD1', availability: { value: 3, unit: 'ha' } }
+            ]
+          : []
       }
     ])
     fetchParcelTileLocation.mockResolvedValue(null)
@@ -164,34 +156,6 @@ describe('parcelsHandler', () => {
 
     const [{ bbox }] = h.response.mock.calls[0]
     expect(bbox).toBeNull()
-  })
-
-  it('never writes to the session on the production path', async () => {
-    fetchParcels.mockResolvedValue(mockParcels)
-    fetchParcelTileLocation.mockResolvedValue(null)
-    const request = makeRequest()
-
-    await parcelsHandler(request, makeH())
-
-    expect(buildMockParcelsResponse).not.toHaveBeenCalled()
-  })
-
-  it('delegates to the mock response builder in mock mode', async () => {
-    isMockData.mockReturnValue(true)
-    fetchParcels.mockResolvedValue(mockParcels)
-    const sentinel = Symbol('mock-response')
-    buildMockParcelsResponse.mockReturnValue(sentinel)
-    const request = makeRequest()
-    const h = makeH()
-
-    const result = await parcelsHandler(request, h)
-
-    expect(buildMockParcelsResponse).toHaveBeenCalledWith(
-      expect.arrayContaining([expect.objectContaining({ id: 'SD7148-9160' })]),
-      h
-    )
-    expect(fetchParcelTileLocation).not.toHaveBeenCalled()
-    expect(result).toBe(sentinel)
   })
 
   // Every failure returns the generic body — the raw upstream message must

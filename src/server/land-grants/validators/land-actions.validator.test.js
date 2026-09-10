@@ -104,12 +104,25 @@ describe('land-actions.validator', () => {
 
   describe('validateSelectedActionQuantities', () => {
     const actions = [
-      { code: 'CSAM3', description: 'Herbal leys', version: '1', availability: { type: 'partial' } },
-      { code: 'CLIG3', description: 'Manage grassland', version: '1' },
+      {
+        code: 'CSAM3',
+        description: 'Herbal leys',
+        version: '1',
+        quantityRequired: true,
+        availability: { type: 'total' }
+      },
+      {
+        code: 'CLIG3',
+        description: 'Manage grassland',
+        version: '1',
+        quantityRequired: false,
+        availability: { type: 'partial' }
+      },
       {
         code: 'SCR2',
         description: 'Manage scrub and open habitat mosaics: SCR2',
         version: '1',
+        quantityRequired: true,
         availability: { type: 'partial' }
       }
     ]
@@ -125,7 +138,13 @@ describe('land-actions.validator', () => {
     it('should return multiple errors for multiple unconfirmed quantity-required actions', () => {
       const withSecondQuantity = [
         ...actions,
-        { code: 'UPL8', description: 'Low input', version: '1', availability: { type: 'partial' } }
+        {
+          code: 'UPL8',
+          description: 'Low input',
+          version: '1',
+          quantityRequired: true,
+          availability: { type: 'partial' }
+        }
       ]
       const payload = { landAction: ['CSAM3', 'UPL8'] }
 
@@ -184,7 +203,7 @@ describe('land-actions.validator', () => {
       expect(result).toEqual([])
     })
 
-    // SCR2 is a partial action like CSAM3, so the rules above already cover it -
+    // SCR2 requires a quantity like CSAM3, so the rules above already cover it -
     // these pin that they report against SCR2's own description and field id.
     it('should require a quantity for SCR2, naming it in the error', () => {
       const payload = { landAction: 'SCR2' }
@@ -212,6 +231,42 @@ describe('land-actions.validator', () => {
           code: 'SCR2'
         }
       ])
+    })
+
+    it.each([
+      ['0', 'Value must be greater than 0'],
+      ['-11', 'Value must be greater than 0'],
+      ['11.22001', 'Must be a whole number'],
+      ['as', 'Must be numbers'],
+      ['', 'Enter a quantity for Maintain weatherproof traditional farm or forestry buildings']
+    ])('rejects invalid HEF1 quantity %j on the server', (quantity, text) => {
+      const hef1 = {
+        code: 'HEF1',
+        description: 'Maintain weatherproof traditional farm or forestry buildings',
+        version: '1.1.0',
+        quantityRequired: true,
+        availability: { unit: 'sqm', value: null }
+      }
+      expect(
+        validateSelectedActionQuantities({ landAction: 'HEF1', landActionQuantity_HEF1: quantity }, [hef1])
+      ).toEqual([{ text, href: '#landActionQuantity_HEF1', code: 'HEF1' }])
+    })
+
+    it.each([
+      ['a fraction', '4.5', [{ text: 'Must be a whole number', href: '#landActionQuantity_COUNT', code: 'COUNT' }]],
+      ['a positive integer', '4', []]
+    ])('validates count quantities when the unit requires whole numbers: %s', (_description, quantity, expected) => {
+      const countAction = {
+        code: 'COUNT',
+        description: 'Count action',
+        version: '1.0.0',
+        quantityRequired: true,
+        availability: { unit: 'count', value: null }
+      }
+
+      expect(
+        validateSelectedActionQuantities({ landAction: 'COUNT', landActionQuantity_COUNT: quantity }, [countAction])
+      ).toEqual(expected)
     })
   })
 })

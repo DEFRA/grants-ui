@@ -8,6 +8,7 @@ import nunjucks from 'nunjucks'
 import { govukFrontendPath, viewPaths } from '~/src/config/nunjucks/view-paths.js'
 import { getActionChosenAreaDisplayId, getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
 import { requiresQuantityInput } from '~/src/shared/action-quantity-type.js'
+import { requiresWholeNumber, UNIT_SQUARE_METRES } from '~/src/shared/unit-types.js'
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
 import { formatUnit, areaWithUnit, availableArea } from '~/src/shared/unit-format.js'
 import { getAvailabilityLimit, hasAvailableLand } from '~/src/shared/availability.js'
@@ -25,6 +26,16 @@ const landGrantsViewEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader
 })
 
 /**
+ * Keep the established "ha" suffix while making the canonical square-metre unit
+ * understandable to users.
+ * @param {string | undefined} unit
+ * @returns {string | undefined}
+ */
+function getQuantityInputUnit(unit) {
+  return unit === UNIT_SQUARE_METRES ? formatUnit(unit) : unit
+}
+
+/**
  * Builds the conditional reveal markup for an action that requires a user-entered quantity.
  * @param {string} actionCode
  * @param {string} actionName
@@ -38,20 +49,22 @@ const landGrantsViewEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader
  */
 function getQuantityConditional(actionCode, actionName, quantityValue, maxQuantity, unit, errorText) {
   const fieldId = getActionQuantityFieldName(actionCode)
+  const inputUnit = getQuantityInputUnit(unit)
   return {
     html: landGrantsViewEnv.render(QUANTITY_INPUT_TEMPLATE, {
       fieldId,
       actionName,
       quantityValue,
       maxQuantity,
-      unit,
+      unit: inputUnit,
+      inputmode: requiresWholeNumber(unit) ? 'numeric' : 'decimal',
       errorText
     })
   }
 }
 
 /**
- * Builds the conditional reveal markup for a total action: a read-only
+ * Builds the conditional reveal markup for a non-quantity action: a read-only
  * display of the area it has claimed, since it takes everything available
  * and so has nothing for the user to type. Omitted entirely for an action
  * with no availability restriction at all - there is no figure to show.
@@ -113,8 +126,8 @@ function getStaticAvailability(action) {
 /**
  * Builds the checkbox hint text: payment rate, consent requirement, and any
  * available-area hint. The hint sits beneath the action label so it can be
- * shared by quantity inputs through aria-describedby and refreshed live by
- * the client. Total actions also include guidance that selecting them claims
+ * shared by quantity inputs through aria-describedby and refreshed live by the
+ * client. Non-quantity actions also include guidance that selecting them claims
  * all available area; their own claim is shown in the conditional panel
  * instead (see chosen-area/template.njk).
  * @param {Action} action
@@ -130,6 +143,7 @@ function getHintHtml(action, needsQuantity, chosenArea) {
     : availableArea(limit ?? 0, action.availability?.unit)
   return landGrantsViewEnv.render(ACTION_HINT_TEMPLATE, {
     rate: String(action.ratePerUnitGbp?.toFixed(2)),
+    rateUnit: action.availability?.unit ?? 'ha',
     agreementRate: action.ratePerAgreementPerYearGbp,
     requirementText,
     hintId: `${getActionQuantityFieldName(action.code)}-hint`,
@@ -157,7 +171,7 @@ export function mapActionToViewModel(
   const existingAction = addedActions.find((a) => a.code === action.code)
   const quantityValue = existingAction?.value ?? ''
   const checked = Boolean(existingAction)
-  const needsQuantity = requiresQuantityInput(action.availability?.type)
+  const needsQuantity = requiresQuantityInput(action)
   const claimed = Number(existingAction?.value)
   const chosenArea = Number.isFinite(claimed) && claimed > 0 ? claimed : undefined
   const hintHtml = getHintHtml(action, needsQuantity, chosenArea)
@@ -201,7 +215,7 @@ export function mapActionToViewModel(
  */
 export function getChosenAreaFieldsHtml(actions, addedActions) {
   return actions
-    .filter((action) => !requiresQuantityInput(action.availability?.type))
+    .filter((action) => !requiresQuantityInput(action))
     .map((action) => {
       const fieldName = getActionQuantityFieldName(action.code)
       const chosenArea = Number(addedActions.find((a) => a.code === action.code)?.value)

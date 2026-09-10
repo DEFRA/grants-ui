@@ -1,4 +1,4 @@
-/** Every map route path in one place, so handlers and the mock plugin agree. */
+/** Every map route path in one place, so the plugin and its handlers agree. */
 export const ROUTES = {
   parcels: '/api/map/parcels',
   parcelTiles: '/api/map/parcel-tiles/{z}/{x}/{y}',

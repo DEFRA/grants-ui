@@ -70,9 +70,13 @@ export class UpdateDetailsPageController extends TerminalPageController {
   makeGetRouteHandler() {
     return async (request, _context, h) => {
       const { slug } = request.params
+      const sfdUpdateUrl = this.getSfdUpdateUrl(request)
+
+      if (sfdUpdateUrl) {
+        return h.redirect(sfdUpdateUrl)
+      }
 
       const metadata = /** @type {Record<string, unknown>} */ (this.model.def.metadata ?? {})
-      const sfdUpdateUrl = this.getSfdUpdateUrl(request)
       const sectionTitle = this.section?.hideTitle !== true ? this.section?.title : ''
 
       return h.view('incorrect-details', {
@@ -80,10 +84,9 @@ export class UpdateDetailsPageController extends TerminalPageController {
         sectionTitle,
         serviceName: this.model.def.name,
         serviceUrl: `/${slug}`,
-        backLink: sfdUpdateUrl ? null : { href: `/${slug}/check-details` },
+        backLink: { href: `/${slug}/check-details` },
         incorrectDetailsContent: metadata.incorrectDetailsContent ?? null,
-        supportEmail: metadata.supportEmail ?? null,
-        sfdUpdateUrl
+        supportEmail: metadata.supportEmail ?? null
       })
     }
   }

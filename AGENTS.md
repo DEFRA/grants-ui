@@ -22,6 +22,16 @@ Application code lives in `src`. Server routes, controllers, helpers, services, 
 
 Use ES modules and 2-space indentation. Prettier uses single quotes, no semicolons, no trailing commas, and a 120-character print width. Run `npm run format` or `npm run format:check` before committing broad edits. ESLint and Stylelint enforce JavaScript and Sass style. Prefer descriptive kebab-case filenames such as `forms-status-redirect.js`; keep tests beside covered modules as `module-name.test.js`.
 
+## Error Handling & Logging
+
+Follow [docs/LOGGING-AND-ERRORS.md](docs/LOGGING-AND-ERRORS.md) for structured errors and logging.
+
+- For application errors propagated to the global handler, use a specific `BaseError` subclass from `src/server/common/utils/errors`, with `message`, `source`, `reason`, and the appropriate HTTP `status`. Prefer an existing suitable class; add one when the failure needs a distinct logging policy.
+- Preserve caught errors with `.from(error)` when adding context, or `BaseError.wrap(error)` when only wrapping an ordinary error. Do not discard the original cause.
+- Each error class selects a `LogCodes` entry through its `logCode` property. Supply the details consumed by that entry's message formatter. Let the global `catchAll` handler log propagated errors and render the response; do not also log the same failure at the throw site.
+- For operational events and failures handled locally, use `log(LogCodes.…, details, request)` and the existing shared helpers, such as `logUpstreamError`, where appropriate. Reuse a suitable log code or define one in `src/server/common/helpers/logging/log-codes`; avoid ad hoc logging and duplicate error logs.
+- When changing error handling, verify the resulting HTTP status and error page as well as the logging behaviour, especially when replacing a Boom error.
+
 ## Domain Language
 
 Use `CONTEXT.md` as the source of truth for grant-domain terms and avoided synonyms. When adding user-facing copy, tests, docs, or AI-generated changes, prefer the glossary terms there, especially around grants, journeys, statuses, identities, and integrations.

@@ -1,66 +1,67 @@
 {% extends baseLayoutPath %}
-
 {% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "land-parcel-cards/macro.njk" import landParcelCards %}
 {% from "payment-summary-card/macro.njk" import paymentSummaryCard %}
 
 {% block pageTitle %}
-{{ pageTitle | evaluate }} | {{ serviceName }}
+  {{ pageTitle | evaluate }}
+  | {{ serviceName }}
 {% endblock %}
 
 {% block content %}
-<div class="govuk-grid-row">
-  <div class="{{ gridColumnClass(page) }}">
-    {% block table %}
-      {% if sectionTitle and sectionTitle.length and (sectionTitle !== pageTitle) %}
-      <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">
-        {{- sectionTitle -}}
-      </h2>
-      {% endif %}
-      <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
-
-      {% for section in checkAnswers %}
-        {% if page.model.sections | length > 1 and section.title.text %}
-          <h2 class="govuk-heading-m">
-            {{ section.title.text }}
-          </h2>
+  <div class="govuk-grid-row">
+    <div class="{{ gridColumnClass(page) }}">
+      {% block table %}
+        {% if sectionTitle and sectionTitle.length and (sectionTitle !== pageTitle) %}
+          <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">{{- sectionTitle -}}</h2>
         {% endif %}
+        <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
 
-        {% if section.summaryList.rows | length %}
-          {{ govukSummaryList(section.summaryList) }}
-        {% endif %}
+        {% for section in checkAnswers %}
+          {% if page.model.sections | length > 1 and section.title.text %}
+            <h2 class="govuk-heading-m">{{ section.title.text }}</h2>
+          {% endif %}
 
-        {% if section.landAndActionsSummary %}
-          {{ landParcelCards({
-            parcels: section.landAndActionsSummary.parcels,
-            readOnly: true,
-            changeHref: section.landAndActionsSummary.changeHref
-          }) }}
-          {{ paymentSummaryCard({
-            additionalYearlyPayments: section.landAndActionsSummary.additionalYearlyPayments,
-            applicationYearlyPayment: section.landAndActionsSummary.applicationYearlyPayment,
-            agreementDuration: section.landAndActionsSummary.agreementDuration,
-            agreementDurationYears: section.landAndActionsSummary.agreementDurationYears,
-            agreementTotalPayment: section.landAndActionsSummary.agreementTotalPayment
-          }) }}
-        {% endif %}
-      {% endfor %}
+          {% if section.summaryList.rows | length %}
+            {{ govukSummaryList(section.summaryList) }}
+          {% endif %}
 
-    {% endblock %}
+          {% if section.landAndActionsSummary %}
+            {{
+              landParcelCards({
+                parcels: section.landAndActionsSummary.parcels,
+                readOnly: true,
+                changeHref: section.landAndActionsSummary.changeHref
+              })
+            }}
+            {{
+              paymentSummaryCard({
+                additionalYearlyPayments: section.landAndActionsSummary.additionalYearlyPayments,
+                applicationYearlyPayment: section.landAndActionsSummary.applicationYearlyPayment,
+                agreementDuration: section.landAndActionsSummary.agreementDuration,
+                agreementDurationYears: section.landAndActionsSummary.agreementDurationYears,
+                agreementTotalPayment: section.landAndActionsSummary.agreementTotalPayment
+              })
+            }}
+          {% endif %}
+        {% endfor %}
+      {% endblock %}
 
-    {% block form %}
-      <form method="post" novalidate>
-        <input type="hidden" name="crumb" value="{{ crumb }}">
+      {% block form %}
+        <form method="post" novalidate>
+          <input type="hidden" name="crumb" value="{{ crumb }}" />
 
-        <div class="govuk-button-group">
-          {{ govukButton({
-            text: "Continue",
-            preventDoubleClick: true
-          }) }}
-        </div>
-      </form>
-    {% endblock %}
+          <div class="govuk-button-group">
+            {{
+              govukButton({
+                text: "Continue",
+                preventDoubleClick: true
+              })
+            }}
+          </div>
+        </form>
+      {% endblock %}
+    </div>
   </div>
-</div>
 {% endblock %}

@@ -7,7 +7,7 @@ import {
   fetchConsentRequirementsForParcel
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import { error } from '~/src/server/common/helpers/logging/log.js'
-import { UNIT_TYPES } from '~/src/shared/unit-types.js'
+import { UNITS } from '~/src/shared/unit-types.js'
 import { USER_CONTEXT } from '~/src/server/land-grants/test-helpers.js'
 
 vi.mock('~/src/server/land-grants/services/parcel-cache.js', () => ({
@@ -76,7 +76,7 @@ describe('landGrantsActionsPlugin', () => {
     })
   })
 
-  it.each(UNIT_TYPES)('accepts %s as a planned action unit', (unit) => {
+  it.each(UNITS)('accepts %s as a planned action unit', (unit) => {
     expect(validatePlannedActionUnit(unit)).toBeUndefined()
   })
 

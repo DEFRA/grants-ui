@@ -8,6 +8,9 @@ import { validateLandGrantsUserContext } from './land-grants-user-context.js'
 
 const LAND_GRANTS_SERVICE = 'grants-ui-backend'
 
+export const LAND_GRANTS_ACTION_SIZE = 'size'
+export const LAND_GRANTS_ACTIONS = 'actions'
+
 /**
  * Performs a POST request to the Land Grants API and returns the raw Response
  * (with its body unread) after retry, error mapping and structured logging.
@@ -138,10 +141,11 @@ export async function calculate(payload, baseUrl, userContext) {
  * @param {string[]} parcelIds
  * @param {string} baseUrl
  * @param {LandGrantsUserContext} userContext
+ * @param {string[]} [fields] - Parcel fields requested by the caller.
  * @returns {Promise<ParcelResponse>}
  */
-export async function parcelsWithSize(parcelIds, baseUrl, userContext) {
-  return parcelsWithFields(['size', 'actions'], parcelIds, baseUrl, userContext)
+export async function parcelsWithSize(parcelIds, baseUrl, userContext, fields = [LAND_GRANTS_ACTION_SIZE]) {
+  return parcelsWithFields(fields, parcelIds, baseUrl, userContext)
 }
 
 /**

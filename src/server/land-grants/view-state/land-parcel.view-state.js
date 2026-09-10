@@ -37,7 +37,7 @@ export function buildNewState(state, actionsObj, parcel) {
  * @returns {boolean}
  */
 function hasSubmittedQuantity(payload, actionInfo) {
-  const quantityOverride = requiresQuantityInput(actionInfo.availability?.type)
+  const quantityOverride = requiresQuantityInput(actionInfo)
     ? payload[getActionQuantityFieldName(actionInfo.code)]
     : null
   return quantityOverride !== null && quantityOverride !== undefined && quantityOverride !== ''
@@ -86,7 +86,7 @@ function buildActionStateEntry(payload, actionInfo) {
 /**
  * Overlays freshly recomputed availability (keyed by code, from
  * fetchActionsWithPlannedActions) onto the full action list from the initial
- * fetch - everything else (description, version, consents, availability.type, etc.)
+ * fetch - everything else (description, version, consents, quantityRequired, etc.)
  * still comes from the original fetch, and an action missing from the
  * recompute keeps its original values. The action's first-seen availability
  * is preserved as staticAvailability, since the recomputed value competes
@@ -103,7 +103,10 @@ export function mergeRecomputedAvailability(actions, recomputed) {
     return match
       ? {
           ...action,
-          availability: { ...match.availability, type: action.availability?.type },
+          availability: {
+            ...match.availability,
+            type: action.availability?.type
+          },
           staticAvailability: action.staticAvailability ?? action.availability
         }
       : action
@@ -179,7 +182,7 @@ export function addSelectedActionsToState(state, payload, actions, parcel) {
     actions,
     parcel,
     (actionInfo, formPayload) =>
-      !requiresQuantityInput(actionInfo.availability?.type) || hasSubmittedNonZeroQuantity(formPayload, actionInfo)
+      !requiresQuantityInput(actionInfo) || hasSubmittedNonZeroQuantity(formPayload, actionInfo)
   )
 }
 
@@ -207,7 +210,7 @@ export function getAddedActionsFromPayload(payload, actions, prevAddedActions = 
         code: actionInfo.code,
         description: actionInfo.description,
         value:
-          Object.hasOwn(payload, quantityFieldName) || requiresQuantityInput(actionInfo.availability?.type)
+          Object.hasOwn(payload, quantityFieldName) || requiresQuantityInput(actionInfo)
             ? (payload[quantityFieldName] ?? '')
             : (prevAddedActions.find((a) => a.code === actionInfo.code)?.value ?? '')
       }
@@ -335,13 +338,15 @@ export function findActionInfoFromState(landParcels, parcelKey, action) {
  * @property {string} code - Action code
  * @property {string} description - Action description
  * @property {string} version - Action version
+ * @property {boolean} [quantityRequired] - Whether the user must enter a quantity
  * @property {string[]} [consents] - Array of consent type keys required (e.g., ['sssi', 'hefer'])
  * @property {string} [guidanceUrl] - URL to the action's guidance page
+ * @property {boolean} [quantityRequired] - Backend says the user must enter a quantity
  * @property {object} [availability] - How much of the action is still claimable
  * @property {number | null} [availability.value] - Amount still claimable. 0 means not
  *   compatible with what is already selected; null means no restriction
  * @property {string} [availability.unit] - Unit, area, linear or count
- * @property {'total'|'partial'} [availability.type] - 'partial' requires a typed quantity
+ * @property {'total'|'partial'} [availability.type] - API availability classification; does not control quantity input
  * @property {object} [staticAvailability] - The action's original, uncompeted availability (see mergeRecomputedAvailability)
  * @property {number | null} [staticAvailability.value] - Amount claimable; null means no restriction
  * @property {string} [staticAvailability.unit] - Unit, area, linear or count

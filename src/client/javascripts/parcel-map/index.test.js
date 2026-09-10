@@ -285,11 +285,6 @@ describe('parcel-map web component', () => {
       await mountReady()
       expect(ml.addSource).toHaveBeenCalledWith('parcels', expect.objectContaining({ type: 'vector' }))
     })
-
-    it('adds geojson source when mock mode is indicated in response', async () => {
-      await mountReady({}, { ...PARCELS_RESPONSE, mock: true })
-      expect(ml.addSource).toHaveBeenCalledWith('parcels', expect.objectContaining({ type: 'geojson' }))
-    })
   })
 
   describe('_addParcelsToMap', () => {
@@ -317,7 +312,7 @@ describe('parcel-map web component', () => {
       expect(layerIds).toContain(LAYER_ID_LABEL)
     })
 
-    it('resolves PARCEL_TILES_URL against location.origin when no inline geojson', async () => {
+    it('resolves PARCEL_TILES_URL against location.origin', async () => {
       await mountReady()
       const [, sourceSpec] = ml.addSource.mock.calls[0]
       expect(sourceSpec.tiles[0]).toBe(`${globalThis.location.origin}/api/map/parcel-tiles/{z}/{x}/{y}`)

@@ -44,12 +44,12 @@
 
 /**
  * How much of an action is still claimable. The API always sends this object -
- * `unit` is always present, and a null `value` is how it says "no restriction"
- * while `type` controls whether the user must type a quantity.
+ * `unit` is always present, and a null `value` means "no restriction".
+ * Input rendering is controlled separately by the action's `quantityRequired` flag.
  * @typedef {object} ActionAvailability
  * @property {string} unit - Area, linear or count unit
  * @property {number | null} value - Amount still claimable; null means no restriction
- * @property {'total'|'partial'} [type] - 'partial' requires a typed quantity
+ * @property {'total'|'partial'} [type] - API availability classification; does not control quantity input
  */
 
 /**
@@ -57,6 +57,7 @@
  * @property {string} code - The action code
  * @property {string} description - The action description
  * @property {string} version - The action version
+ * @property {boolean} [quantityRequired] - Whether the user must enter a quantity
  * @property {boolean} [sssiConsentRequired] - If action needs SSSI consent
  * @property {boolean} [heferRequired] - If action needs HEFER report
  * @property {ActionAvailability} [availability] - How much of the action is still claimable

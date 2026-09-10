@@ -1,5 +1,4 @@
 {% extends baseLayoutPath %}
-
 {% from "govuk/components/radios/macro.njk" import govukRadios %}
 {% from "govuk/components/button/macro.njk" import govukButton %}
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
@@ -24,13 +23,17 @@
           {{ pageHeading }}
         </h1>
 
-        <p class="govuk-body">Land parcel <strong>{{ parcelReference }}</strong> and all related actions will be removed from your application.</p>
+        <p class="govuk-body">
+          Land parcel <strong>{{ parcelReference }}</strong> and all related actions will be removed from your
+          application.
+        </p>
 
         <form method="post" novalidate="novalidate">
-          <input type="hidden" name="crumb" value="{{ crumb }}">
-          <input type="hidden" name="remove" value="true">
+          <input type="hidden" name="crumb" value="{{ crumb }}" />
+          <input type="hidden" name="remove" value="true" />
 
-          {{ govukButton({
+          {{
+            govukButton({
               text: "Remove this land parcel",
               classes: "govuk-button--warning",
               preventDoubleClick: true
@@ -43,21 +46,24 @@
         </form>
       {% else %}
         {% if errors %}
-            {{ govukErrorSummary({
-            titleText: "There is a problem",
-            errorList: [
-              {
-                text: errors,
-                href: '#remove'
-              }
-            ]
-          }) }}
+          {{
+            govukErrorSummary({
+              titleText: "There is a problem",
+              errorList: [
+                {
+                  text: errors,
+                  href: '#remove'
+                }
+              ]
+            })
+          }}
         {% endif %}
 
         <form method="post" novalidate="novalidate">
-          <input type="hidden" name="crumb" value="{{ crumb }}">
+          <input type="hidden" name="crumb" value="{{ crumb }}" />
 
-          {{ govukRadios({
+          {{
+            govukRadios({
               classes: "govuk-radios--inline",
               fieldset: {
                 legend: {
@@ -84,7 +90,8 @@
             })
           }}
 
-          {{ govukButton({
+          {{
+            govukButton({
               text: "Continue",
               preventDoubleClick: true
             })

@@ -57,7 +57,11 @@ describe('SelectActionsPageController', () => {
 
   const enabledLandActions = ['CMOR1', 'UPL1', 'UPL2']
 
-  const mockActions = [CMOR1, UPL1, { ...UPL2, availability: { ...UPL2.availability, type: 'partial' } }]
+  const mockActions = [
+    { ...CMOR1, quantityRequired: false },
+    { ...UPL1, quantityRequired: false, availability: { ...UPL1.availability, type: 'partial' } },
+    { ...UPL2, quantityRequired: true, availability: { ...UPL2.availability, type: 'total' } }
+  ]
 
   beforeEach(() => {
     QuestionPageController.prototype.getViewModel = vi.fn().mockReturnValue({
@@ -151,7 +155,7 @@ describe('SelectActionsPageController', () => {
       expect(actionItems).toHaveLength(3)
     })
 
-    test('should surface a quantity input for actions that require a max quantity, and a read-only display for the rest', async () => {
+    test('should surface a quantity input for explicitly quantity-required actions, and a read-only display for the rest', async () => {
       await get()
 
       const { actionItems } = mockH.view.mock.calls[0][1]
@@ -421,9 +425,9 @@ describe('SelectActionsPageController', () => {
       expect(stateArg.landParcels['sheet1-parcel1'].actionsObj.UPL1.value).toBe(5)
     })
 
-    test('should still send the unit for an action with no availability restriction', async () => {
+    test('should still send the unit for a quantity-required action with no availability restriction', async () => {
       fetchActionsForParcel.mockResolvedValue({
-        actions: [{ ...UPL2, availability: { unit: 'ha', value: null, type: 'partial' } }],
+        actions: [{ ...UPL2, quantityRequired: true, availability: { unit: 'ha', value: null } }],
         parcel: { sheetId: 'sheet1', parcelId: 'parcel1', size: { unit: 'ha', value: 20 } }
       })
       mockRequest.payload = { landAction: ['UPL2'], landActionQuantity_UPL2: '7' }
@@ -440,6 +444,62 @@ describe('SelectActionsPageController', () => {
       const stateArg = controller.setState.mock.calls[0][1]
       expect(stateArg.landParcels['sheet1-parcel1'].actionsObj.UPL2).toEqual(
         expect.objectContaining({ value: 7, unit: 'ha' })
+      )
+    })
+    test('should use quantityRequired for an unrestricted square-metre action', async () => {
+      const hef1 = {
+        code: 'HEF1',
+        description: 'Maintain weatherproof traditional farm or forestry buildings: HEF1',
+        version: '1.1.0',
+        ratePerUnitGbp: 5,
+        quantityRequired: true,
+        availability: { unit: 'sqm', value: null }
+      }
+      fetchActionsForParcel.mockResolvedValue({
+        actions: [hef1],
+        parcel: { sheetId: 'sheet1', parcelId: 'parcel1', size: { unit: 'ha', value: 20 } }
+      })
+      mockRequest.payload = { landAction: 'HEF1', landActionQuantity_HEF1: '4' }
+      fetchActionsWithPlannedActions.mockResolvedValue({
+        actions: [{ code: 'HEF1', availability: { unit: 'sqm', value: null } }]
+      })
+
+      await post()
+
+      expect(fetchActionsWithPlannedActions).toHaveBeenCalledWith(
+        expect.objectContaining({
+          plannedActions: [{ actionCode: 'HEF1', quantity: 4, unit: 'sqm' }]
+        }),
+        expect.anything()
+      )
+      const stateArg = controller.setState.mock.calls[0][1]
+      expect(stateArg.landParcels['sheet1-parcel1'].actionsObj.HEF1).toEqual(
+        expect.objectContaining({ value: 4, unit: 'sqm' })
+      )
+    })
+
+    test('should use the source action quantity-required override when recomputed metadata omits it', async () => {
+      const hef1 = {
+        code: 'HEF1',
+        description: 'Maintain weatherproof traditional farm or forestry buildings: HEF1',
+        version: '1.1.0',
+        quantityRequired: false,
+        availability: { unit: 'sqm', value: null }
+      }
+      fetchActionsForParcel.mockResolvedValue({
+        actions: [hef1],
+        parcel: { sheetId: 'sheet1', parcelId: 'parcel1', size: { unit: 'ha', value: 20 } }
+      })
+      mockRequest.payload = { landAction: 'HEF1', landActionQuantity_HEF1: '4' }
+      fetchActionsWithPlannedActions.mockResolvedValue({
+        actions: [{ code: 'HEF1', availability: { unit: 'sqm', value: 0 } }]
+      })
+
+      await post()
+
+      const stateArg = controller.setState.mock.calls[0][1]
+      expect(stateArg.landParcels['sheet1-parcel1'].actionsObj.HEF1).toEqual(
+        expect.objectContaining({ value: 4, unit: 'sqm' })
       )
     })
 
@@ -494,11 +554,13 @@ describe('SelectActionsPageController', () => {
     test('should preserve a submitted total action quantity in the error response hidden field and display', async () => {
       const partialAction = {
         ...UPL2,
+        quantityRequired: true,
         availability: { ...UPL2.availability, type: 'partial' }
       }
       const totalAction = {
         code: 'CLIG3',
         description: 'Manage grassland',
+        quantityRequired: false,
         availability: { value: 3.189, unit: 'ha', type: 'total' }
       }
       fetchActionsForParcel.mockResolvedValue({

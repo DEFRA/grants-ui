@@ -1,4 +1,6 @@
 import {
+  LAND_GRANTS_ACTION_SIZE,
+  LAND_GRANTS_ACTIONS,
   calculate,
   fetchParcelTile,
   locateParcelTiles,
@@ -672,16 +674,21 @@ describe('Land Grants client', () => {
   })
 
   describe('parcelsWithSize', () => {
-    it('should trigger a POST request to /api/v2/parcels with size and actions filtering', async () => {
+    it.each([
+      [undefined, ['size']],
+      [
+        [LAND_GRANTS_ACTION_SIZE, LAND_GRANTS_ACTIONS],
+        ['size', 'actions']
+      ]
+    ])('requests the supplied parcel fields %s', async (requestedFields, fields) => {
       const mockResponse = { parcels: [], status: 'success' }
-      const fields = ['size', 'actions']
       const parcelIds = ['parcel1']
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () => mockResponse
       })
 
-      const result = await parcelsWithSize(parcelIds, mockApiEndpoint, mockUserContext)
+      const result = await parcelsWithSize(parcelIds, mockApiEndpoint, mockUserContext, requestedFields)
 
       expect(mockFetch).toHaveBeenCalledWith(`${mockApiEndpoint}/api/v2/parcels`, {
         method: 'POST',

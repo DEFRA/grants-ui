@@ -1,26 +1,31 @@
 {% from "govuk/components/input/macro.njk" import govukInput %}
 
-{{ govukInput({
-  id: fieldId,
-  name: fieldId,
-  classes: "govuk-input--width-5",
-  label: {
-    text: "Quantity"
-  },
-  describedBy: (fieldId + "-hint") if maxQuantity != undefined else undefined,
-  suffix: {
-    text: unit
-  } if unit else undefined,
-  attributes: {
-    max: maxQuantity
-  } if maxQuantity != undefined else undefined,
-  errorMessage: {
-    text: errorText
-  } if errorText else undefined,
-  value: quantityValue,
-  formGroup: {
-    beforeInput: {
-      html: '<div class="select-actions-refresh-banner select-actions-refresh-banner--hidden" id="' + fieldId + '-refresh-banner">Updating available land for this action&hellip;</div>'
+{{
+  govukInput({
+    id: fieldId,
+    name: fieldId,
+    classes: "govuk-input--width-5",
+    label: {
+      text: "Quantity"
+    },
+    describedBy: (fieldId + "-hint") if maxQuantity != undefined else undefined,
+    suffix: {
+      text: unit
+    } if unit else undefined,
+    attributes: {
+      max: maxQuantity,
+      inputmode: inputmode
+    } if maxQuantity != undefined else {
+      inputmode: inputmode
+    },
+    errorMessage: {
+      text: errorText
+    } if errorText else undefined,
+    value: quantityValue,
+    formGroup: {
+      beforeInput: {
+        html: '<div class="select-actions-refresh-banner select-actions-refresh-banner--hidden" id="' + fieldId + '-refresh-banner">Updating available land for this action&hellip;</div>'
+      }
     }
-  }
-}) }}
+  })
+}}

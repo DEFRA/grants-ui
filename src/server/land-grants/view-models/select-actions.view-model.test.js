@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { configState } from '~/src/__mocks__/config-mocks.js'
 import {
   mapActionToViewModel,
@@ -13,10 +13,14 @@ vi.mock('~/src/config/config.js', async () => {
 })
 
 describe('select-actions.view-model', () => {
+  afterEach(() => {
+    configState.reset()
+  })
   const sam1 = (extra) => ({ code: 'SAM1', description: 'Test Action 1', ratePerUnitGbp: 100.5, ...extra })
   const csam3 = (availability) => ({
     code: 'CSAM3',
     description: 'Herbal leys: CSAM3',
+    quantityRequired: true,
     availability: { ...availability, type: 'partial' }
   })
 
@@ -229,6 +233,7 @@ describe('select-actions.view-model', () => {
         code: 'SAM1',
         description: 'Test Action 1',
         ratePerUnitGbp: 100.5,
+        quantityRequired: false,
         availability: { value: 12.5, unit: 'ha' }
       }
 
@@ -248,6 +253,7 @@ describe('select-actions.view-model', () => {
         code: 'CLIG3',
         description: 'Manage grassland with very low nutrient inputs',
         ratePerUnitGbp: 151,
+        quantityRequired: false,
         availability: { value: 12.5, unit: 'ha' }
       }
 
@@ -261,6 +267,7 @@ describe('select-actions.view-model', () => {
         code: 'UPL2',
         description: 'Heavy livestock grazing on moorland',
         ratePerUnitGbp: 45,
+        quantityRequired: true,
         availability: { value: 3, unit: 'ha', type: 'partial' }
       }
 
@@ -283,12 +290,35 @@ describe('select-actions.view-model', () => {
           code: 'CLIG3',
           description: 'Manage grassland with very low nutrient inputs: CLIG3',
           ratePerUnitGbp: 151,
+          quantityRequired: false,
           availability: { value: 31.89, unit: 'ha', type: 'total' }
         },
         []
       )
 
       expect(result.html).toContain('This action will use all the available area on this land parcel.')
+    })
+    it('uses quantityRequired rather than availability type or unit to render the quantity input', () => {
+      const quantityAction = {
+        code: 'QTY1',
+        description: 'Quantity action',
+        ratePerUnitGbp: 10,
+        quantityRequired: true,
+        availability: { value: 4, unit: 'ha', type: 'total' }
+      }
+      const wholeAreaAction = {
+        code: 'WHOLE1',
+        description: 'Whole area action',
+        ratePerUnitGbp: 10,
+        quantityRequired: false,
+        availability: { value: 4, unit: 'sqm', type: 'partial' }
+      }
+
+      const quantityResult = mapActionToViewModel(quantityAction, [])
+      const wholeAreaResult = mapActionToViewModel(wholeAreaAction, [])
+
+      expect(quantityResult.conditional.html).toContain('id="landActionQuantity_QTY1"')
+      expect(wholeAreaResult.conditional?.html ?? '').not.toContain('id="landActionQuantity_WHOLE1"')
     })
 
     it('should not show the available-area guidance for a quantity-required action', () => {
@@ -302,6 +332,7 @@ describe('select-actions.view-model', () => {
         code: 'CLIG3',
         description: 'Manage grassland with very low nutrient inputs: CLIG3',
         ratePerUnitGbp: 151,
+        quantityRequired: false,
         availability: { value: 0, unit: 'ha', type: 'total' },
         staticAvailability: { value: 31.89, unit: 'ha', type: 'total' }
       }
@@ -318,6 +349,7 @@ describe('select-actions.view-model', () => {
         code: 'CLIG3',
         description: 'Manage grassland with very low nutrient inputs: CLIG3',
         ratePerUnitGbp: 151,
+        quantityRequired: false,
         availability: { value: 2.5, unit: 'ha', type: 'total' }
       }
 
@@ -332,6 +364,7 @@ describe('select-actions.view-model', () => {
         code: 'CLIG3',
         description: 'Manage grassland with very low nutrient inputs: CLIG3',
         ratePerUnitGbp: 151,
+        quantityRequired: false,
         availability: { value: 31.89, unit: 'ha', type: 'total' }
       }
 
@@ -345,6 +378,7 @@ describe('select-actions.view-model', () => {
         code: 'CLIG3',
         description: 'Manage grassland with very low nutrient inputs: CLIG3',
         ratePerUnitGbp: 151,
+        quantityRequired: false,
         availability: { value: null, unit: 'ha', type: 'total' }
       }
 
@@ -356,6 +390,7 @@ describe('select-actions.view-model', () => {
         code: 'CSAM3',
         description: 'Herbal leys',
         ratePerUnitGbp: 224,
+        quantityRequired: true,
         availability: { value: 0, unit: 'ha' },
         staticAvailability: { value: 0.3271, unit: 'ha' }
       }
@@ -386,12 +421,58 @@ describe('select-actions.view-model', () => {
       expect(result.attributes['data-total-available-area']).toBeUndefined()
       expect(result.attributes['data-available-unit']).toBe('ha')
     })
+    it('should render an unrestricted quantity input for a square-metre action without unrelated warnings or fields', () => {
+      configState.set('landGrants.enableHeferFeature', true)
+      const action = {
+        code: 'HEF1',
+        description: 'Maintain weatherproof traditional farm or forestry buildings: HEF1',
+        ratePerUnitGbp: 5,
+        quantityRequired: true,
+        availability: { value: null, unit: 'sqm' },
+        heferRequired: true,
+        guidanceUrl:
+          'https://www.gov.uk/find-funding-for-land-or-farms/hef1-maintain-weatherproof-traditional-farm-or-forestry-buildings'
+      }
+
+      const result = mapActionToViewModel(action, [])
+
+      expect(result.conditional.html).toContain('id="landActionQuantity_HEF1"')
+      expect(result.conditional.html).toContain('inputmode="numeric"')
+      expect(result.conditional.html).toContain('>square metres<')
+      expect(result.conditional.html).not.toContain('max=')
+      expect(result.conditional.html).not.toContain('landActionQuantity_HEF1-hint')
+      expect(result.conditional.html).not.toContain('aria-describedby=')
+      expect(result.html).not.toContain('id="landActionQuantity_HEF1-hint"')
+      expect(result.html).not.toContain('SSSI')
+      expect(result.html).toContain('Payment rate per year: £5.00/sqm')
+      expect(result.html).toContain('Requires an SFI HEFER')
+      expect(result.html).toContain(
+        'href="https://www.gov.uk/find-funding-for-land-or-farms/hef1-maintain-weatherproof-traditional-farm-or-forestry-buildings"'
+      )
+      expect(getChosenAreaFieldsHtml([action], [])).toBe('')
+    })
+
+    it('should render an unrestricted numeric quantity input for a count action without a hidden field', () => {
+      const action = {
+        code: 'WBD1',
+        description: 'Countable action',
+        ratePerUnitGbp: 5,
+        quantityRequired: true,
+        availability: { value: null, unit: 'count' }
+      }
+
+      const result = mapActionToViewModel(action, [])
+
+      expect(result.conditional.html).toContain('id="landActionQuantity_WBD1"')
+      expect(result.conditional.html).toContain('inputmode="numeric"')
+      expect(getChosenAreaFieldsHtml([action], [])).toBe('')
+    })
 
     it('should not render a "null available" hint for a non-quantity action with no limit', () => {
       const action = {
         code: 'CLIG3',
-        description: 'Test',
         ratePerUnitGbp: 12,
+        quantityRequired: false,
         availability: { value: null, unit: 'ha' }
       }
 
@@ -444,13 +525,27 @@ describe('select-actions.view-model', () => {
       }
     )
 
-    it.each([
-      [{ value: 120, unit: 'm' }, '120 metres available'],
-      [{ value: 5, unit: 'sqm' }, '5 square metres available']
-    ])('should render the full unit name in the hint for %j', (availability, expected) => {
-      const result = mapActionToViewModel(csam3(availability), [])
+    it('should render the full unit name in the hint for a linear quantity action', () => {
+      const result = mapActionToViewModel(csam3({ value: 120, unit: 'm' }), [])
 
-      expect(result.html).toContain(expected)
+      expect(result.html).toContain('120 metres available')
+    })
+
+    it('should render a bounded quantity input for a square-metre action', () => {
+      const result = mapActionToViewModel(
+        {
+          code: 'CSAM3',
+          description: 'Herbal leys: CSAM3',
+          ratePerUnitGbp: 224,
+          quantityRequired: true,
+          availability: { value: 5, unit: 'sqm' }
+        },
+        []
+      )
+
+      expect(result.conditional.html).toContain('max="5"')
+      expect(result.conditional.html).toContain('aria-describedby="landActionQuantity_CSAM3-hint"')
+      expect(result.html).toContain('<span id="landActionQuantity_CSAM3-hint">5 square metres available</span>')
     })
 
     it('should highlight the quantity input with the given error text when this action has a quantity error', () => {
@@ -475,9 +570,9 @@ describe('select-actions.view-model', () => {
   describe('mapActionsToViewModel', () => {
     it('should map a flat list of actions, giving only the first item the bare field name as its id', () => {
       const actions = [
-        { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100 },
-        { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200 },
-        { code: 'SAM3', description: 'Action 3', ratePerUnitGbp: 150 }
+        { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100, quantityRequired: false },
+        { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200, quantityRequired: false },
+        { code: 'SAM3', description: 'Action 3', ratePerUnitGbp: 150, quantityRequired: false }
       ]
 
       const result = mapActionsToViewModel(actions, [])
@@ -493,8 +588,8 @@ describe('select-actions.view-model', () => {
 
     it('should forward hasErrors to mark every checked action with data-error-on-load', () => {
       const actions = [
-        { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100 },
-        { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200 }
+        { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100, quantityRequired: false },
+        { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200, quantityRequired: false }
       ]
       const addedActions = [{ code: 'SAM1', description: 'Action 1' }]
 
@@ -506,8 +601,8 @@ describe('select-actions.view-model', () => {
 
     it('should mark a previously added action as checked', () => {
       const actions = [
-        { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100 },
-        { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200 }
+        { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100, quantityRequired: false },
+        { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200, quantityRequired: false }
       ]
       const addedActions = [{ code: 'SAM2', description: 'Action 2' }]
 
@@ -522,9 +617,10 @@ describe('select-actions.view-model', () => {
         {
           code: 'CSAM3',
           description: 'Herbal leys: CSAM3',
+          quantityRequired: true,
           availability: { value: 5, unit: 'ha', type: 'partial' }
         },
-        { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200 }
+        { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200, quantityRequired: false }
       ]
 
       const result = mapActionsToViewModel(actions, [], { CSAM3: 'Too much land' })
@@ -534,8 +630,20 @@ describe('select-actions.view-model', () => {
 
     it('should omit an action with 0 available area, moving the bare field name id to the first visible item', () => {
       const actions = [
-        { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100, availability: { value: 0, unit: 'ha' } },
-        { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200, availability: { value: 5, unit: 'ha' } }
+        {
+          code: 'SAM1',
+          description: 'Action 1',
+          ratePerUnitGbp: 100,
+          quantityRequired: false,
+          availability: { value: 0, unit: 'ha' }
+        },
+        {
+          code: 'SAM2',
+          description: 'Action 2',
+          ratePerUnitGbp: 200,
+          quantityRequired: false,
+          availability: { value: 5, unit: 'ha' }
+        }
       ]
 
       const result = mapActionsToViewModel(actions, [])
@@ -550,6 +658,7 @@ describe('select-actions.view-model', () => {
           code: 'CLIG3',
           description: 'Manage grassland',
           ratePerUnitGbp: 151,
+          quantityRequired: false,
           availability: { value: 0, unit: 'ha' },
           staticAvailability: { value: 0.3271, unit: 'ha' }
         }
@@ -563,7 +672,13 @@ describe('select-actions.view-model', () => {
 
     it('should still render an action with 0 available area when it was already added', () => {
       const actions = [
-        { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100, availability: { value: 0, unit: 'ha' } }
+        {
+          code: 'SAM1',
+          description: 'Action 1',
+          ratePerUnitGbp: 100,
+          quantityRequired: false,
+          availability: { value: 0, unit: 'ha' }
+        }
       ]
       const addedActions = [{ code: 'SAM1', description: 'Action 1' }]
 
@@ -574,7 +689,7 @@ describe('select-actions.view-model', () => {
     })
 
     it('should not omit an action with no availability at all', () => {
-      const actions = [{ code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100 }]
+      const actions = [{ code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100, quantityRequired: false }]
 
       const result = mapActionsToViewModel(actions, [])
 
@@ -584,7 +699,7 @@ describe('select-actions.view-model', () => {
 
   describe('getChosenAreaFieldsHtml', () => {
     it('should render a hidden field for a non-quantity action, defaulting to 0 with no saved chosen area', () => {
-      const actions = [{ code: 'CMOR1', description: 'Moorland record' }]
+      const actions = [{ code: 'CMOR1', description: 'Moorland record', quantityRequired: false }]
 
       const html = getChosenAreaFieldsHtml(actions, [])
 
@@ -595,7 +710,9 @@ describe('select-actions.view-model', () => {
     })
 
     it('should skip a quantity-required action', () => {
-      const actions = [{ code: 'CSAM3', description: 'Herbal leys', availability: { type: 'partial' } }]
+      const actions = [
+        { code: 'CSAM3', description: 'Herbal leys', quantityRequired: true, availability: { type: 'partial' } }
+      ]
 
       const html = getChosenAreaFieldsHtml(actions, [])
 
@@ -603,7 +720,7 @@ describe('select-actions.view-model', () => {
     })
 
     it('should pre-fill the value from a saved non-quantity action', () => {
-      const actions = [{ code: 'CMOR1', description: 'Moorland record' }]
+      const actions = [{ code: 'CMOR1', description: 'Moorland record', quantityRequired: false }]
       const addedActions = [{ code: 'CMOR1', description: 'Moorland record', value: 1.3008 }]
 
       const html = getChosenAreaFieldsHtml(actions, addedActions)
