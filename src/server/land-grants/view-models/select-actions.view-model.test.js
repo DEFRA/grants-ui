@@ -471,13 +471,13 @@ describe('select-actions.view-model', () => {
 
       expect(result.conditional.html).toContain('id="landActionQuantity_HEF1"')
       expect(result.conditional.html).toContain('inputmode="numeric"')
-      expect(result.conditional.html).toContain('>square metres<')
+      expect(result.conditional.html).toContain('>m²<')
       expect(result.conditional.html).not.toContain('max=')
       expect(result.conditional.html).not.toContain('landActionQuantity_HEF1-hint')
       expect(result.conditional.html).not.toContain('aria-describedby=')
       expect(result.html).not.toContain('id="landActionQuantity_HEF1-hint"')
       expect(result.html).not.toContain('SSSI')
-      expect(result.html).toContain('Payment rate per year: £5/sqm')
+      expect(result.html).toContain('Payment rate per year: £5/m²')
       expect(result.html).toContain('Requires an SFI HEFER')
       expect(result.html).toContain(
         'href="https://www.gov.uk/find-funding-for-land-or-farms/hef1-maintain-weatherproof-traditional-farm-or-forestry-buildings"'

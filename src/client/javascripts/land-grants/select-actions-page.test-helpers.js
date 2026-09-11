@@ -8,6 +8,11 @@ const HIDDEN_CLASS = 'govuk-checkboxes__conditional--hidden'
 
 const unitLabel = (availability) => (availability?.unit === 'sqm' ? 'square metres' : 'ha')
 
+const unitAlternativeLabel = (availability) => {
+  const label = unitLabel(availability)
+  return label === 'square metres' ? 'm²' : label
+}
+
 // Stamped server-side per checkbox for a checked action redisplayed from a
 // rejected submission (see mapActionToViewModel) - not a single form-wide flag.
 const errorOnLoadAttr = (errorOnLoad) => (errorOnLoad ? ' data-error-on-load="true"' : '')
@@ -50,7 +55,7 @@ function quantityConditionalHtml({
           <div class="govuk-input__wrapper">
             <div id="landActionQuantity_${code}-refresh-banner" class="select-actions-refresh-banner select-actions-refresh-banner--hidden">Updating available land for this action&hellip;</div>
             <input class="${inputClass}" id="landActionQuantity_${code}" name="landActionQuantity_${code}" type="text" value="${quantityValue}"${describedByAttr({ code, unrestricted, hasError })}${unrestricted ? '' : ` max="${requiresMaxQuantity}"`}>
-            <div class="govuk-input__suffix">${unitLabel(availability)}</div>
+            <div class="govuk-input__suffix">${unitAlternativeLabel(availability)}</div>
           </div>
         </div>
       </div>`
