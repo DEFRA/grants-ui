@@ -5,7 +5,7 @@
 {% from "payment-summary-card/macro.njk" import paymentSummaryCard %}
 {% from "two-thirds-column/macro.njk" import appTwoThirdsColumn %}
 
-{% set mainClasses = "govuk-main-wrapper--l" %}
+{% set bodyCustomClass = "app-view-application" %}
 
 {% block content %}
   {% call appTwoThirdsColumn({ columnClass: gridColumnClass(page) }) %}
@@ -59,6 +59,9 @@
 
     {% set sectionRows = [] %}
     {% for section in sections %}
+      {% if groupAnswersByTask %}
+        {% set sectionRows = [] %}
+      {% endif %}
       {% for question in section.questions %}
         {%
           set sectionRows = sectionRows.concat([{
@@ -67,13 +70,23 @@
           }])
         %}
       {% endfor %}
+      {% if groupAnswersByTask %}
+        <h2 class="govuk-heading-m">{{ section.title }}</h2>
+        {% if sectionRows | length %}
+          {{ govukSummaryList({ rows: sectionRows, classes: "app-submitted-answers" }) }}
+        {% endif %}
+        {% if section.showLandAndActions %}
+          {{ landParcelCards({ parcels: landAndActionsSummary.parcels, readOnly: true }) }}
+          {{ paymentSummaryCard(landAndActionsSummary) }}
+        {% endif %}
+      {% endif %}
     {% endfor %}
-    {% if sectionRows | length %}
+    {% if not groupAnswersByTask and sectionRows | length %}
       <h2 class="govuk-heading-m">Submitted answers</h2>
-      {{ govukSummaryList({ rows: sectionRows }) }}
+      {{ govukSummaryList({ rows: sectionRows, classes: "app-submitted-answers" }) }}
     {% endif %}
 
-    {% if landAndActionsSummary %}
+    {% if landAndActionsSummary and not landAndActionsGrouped %}
       {{ landParcelCards({ parcels: landAndActionsSummary.parcels, readOnly: true }) }}
       {{ paymentSummaryCard(landAndActionsSummary) }}
     {% endif %}

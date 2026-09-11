@@ -55,6 +55,86 @@ const params = {
 }
 
 describe('print-submitted-application.html view', () => {
+  it.each(['Select land and actions', 'Choose parcels and actions'])(
+    'renders land and payment cards once under the configured task title %s',
+    (taskTitle) => {
+      const $ = renderPage(
+        buildPrintViewModel({
+          ...params,
+          definition: {
+            sections: [
+              { id: 'land', title: taskTitle },
+              { id: 'other', title: 'Other task' }
+            ],
+            pages: [
+              { title: 'Tasks', controller: 'TaskListPageController' },
+              { ...params.definition.pages[0], section: 'land' },
+              { ...params.definition.pages[1], section: 'other' }
+            ]
+          }
+        })
+      )
+
+      const headings = $('main h2.govuk-heading-m')
+      expect(headings.map((_, heading) => $(heading).text()).get()).toEqual([taskTitle, 'Other task'])
+      expect(headings.first().nextUntil('h2.govuk-heading-m').filter('.govuk-summary-card')).toHaveLength(2)
+      expect($('.govuk-summary-card')).toHaveLength(2)
+      expect(normalise($('main').text())).not.toContain('Selected parcels SD1234-5678')
+    }
+  )
+
+  it('groups answers from multiple pages under their task names in task order', () => {
+    const questionPage = (section, name) => ({
+      title: `Page ${name}`,
+      section,
+      components: [{ type: 'TextField', name, title: `Question ${name}` }]
+    })
+    const $ = renderPage(
+      buildPrintViewModel({
+        ...params,
+        definition: {
+          sections: [
+            { id: 'second', title: 'Second task' },
+            { id: 'first', title: 'First task' },
+            { id: 'empty', title: 'Empty task' }
+          ],
+          pages: [
+            { title: 'Tasks', controller: 'TaskListPageController' },
+            questionPage('first', 'one'),
+            questionPage('second', 'two'),
+            questionPage('first', 'three'),
+            questionPage('empty', 'unanswered')
+          ]
+        },
+        answers: { one: 'Answer one', two: 'Answer two', three: 'Answer three' }
+      })
+    )
+
+    expect(
+      $('main h2')
+        .map((_, heading) => $(heading).text())
+        .get()
+    ).toEqual(['First task', 'Second task'])
+    expect(normalise($('main h2').first().next().text())).toBe('Question one Answer one Question three Answer three')
+    expect(normalise($('main h2').last().next().text())).toBe('Question two Answer two')
+    expect($('main').text()).not.toContain('Submitted answers')
+  })
+
+  it('retains answers without a matching task under Submitted answers', () => {
+    const $ = renderPage(
+      buildPrintViewModel({
+        ...params,
+        definition: {
+          pages: [{ title: 'Tasks', controller: 'TaskListPageController' }, ...params.definition.pages]
+        },
+        answers: { projectName: 'Test project' }
+      })
+    )
+
+    expect($('main h2').text()).toBe('Submitted answers')
+    expect(normalise($('main h2').next().text())).toBe('Project name Test project')
+  })
+
   it('replaces parcel reference answers and the old tables with shared cards without editing links', () => {
     const $ = renderPage(buildPrintViewModel(params))
     const parcelCard = $('.govuk-summary-card').first()
@@ -74,6 +154,7 @@ describe('print-submitted-application.html view', () => {
     expect(normalise(parcelCard.find('tbody tr').last().text())).toBe('Subtotal £100.00')
     expect($('.govuk-summary-card a')).toHaveLength(0)
     expect(content).toContain('Project name Test project')
+    expect(content).toContain('Submitted answers')
     expect(content).not.toContain('Selected parcels')
     expect(content).not.toContain('Land parcels')
     expect(content).not.toContain('Parcel based actions')

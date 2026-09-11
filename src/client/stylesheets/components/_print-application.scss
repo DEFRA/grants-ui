@@ -10,6 +10,7 @@
   .govuk-service-navigation,
   .govuk-phase-banner,
   .defra-account-bar,
+  .defra-brand-bar,
   .govuk-footer,
   .app-print-button,
   .govuk-details {
@@ -51,5 +52,115 @@
     color: govuk-colour('black') !important;
   }
 
+  // View and print application page
+  .app-view-application {
+    color: #0b0c0c;
+
+    // Keep headings with the start of their content, including consecutive headings.
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      break-after: avoid;
+      break-inside: avoid;
+    }
+
+    // Avoid isolated lines when longer answers or explanatory text span pages.
+    p,
+    li,
+    dd,
+    td,
+    th {
+      orphans: 3;
+      widows: 3;
+    }
+
+    // Repeat column headings when a parcel's action table spans pages.
+    thead {
+      display: table-header-group;
+      break-after: avoid;
+      break-inside: avoid;
+    }
+
+    img,
+    svg {
+      break-inside: avoid;
+      max-width: 100%;
+    }
+  }
+
+  .app-view-application .govuk-summary-card {
+    // Long cards may span pages; their titles and individual rows stay together.
+    break-inside: auto;
+    border: 0;
+    box-shadow: none;
+    background: none;
+    margin-bottom: 20px;
+  }
+
+  .app-view-application .govuk-summary-card__title-wrapper {
+    break-after: avoid;
+    break-inside: avoid;
+    background: none;
+    border: 0;
+    border-bottom: 0;
+    padding: 0 0 8px;
+  }
+
+  .app-view-application .govuk-summary-card__title {
+    color: #0b0c0c;
+  }
+
+  .app-view-application .govuk-summary-card__content {
+    border: 0;
+    padding: 0;
+  }
+
+  .app-view-application .govuk-table {
+    width: 100%;
+    border: 0;
+  }
+
+  .app-view-application .govuk-table__header,
+  .app-view-application .govuk-table__cell,
+  .app-view-application .govuk-summary-list__key,
+  .app-view-application .govuk-summary-list__value,
+  .app-view-application .app-confirm-parcel-card__hint {
+    color: #0b0c0c;
+    border: 0;
+    border-bottom: 0;
+  }
+
+  .app-view-application .govuk-table__row,
+  .app-view-application .govuk-summary-list__row {
+    break-inside: avoid;
+    border: 0;
+    border-bottom: 0;
+  }
+
+  .app-view-application .govuk-summary-list {
+    border: 0;
+  }
+
+  // Size submitted-answer columns from their content without changing applicant details.
+  .app-view-application .app-submitted-answers {
+    width: auto;
+    max-width: 100%;
+    table-layout: auto;
+
+    .govuk-summary-list__key {
+      padding-right: 6ch;
+    }
+
+    .govuk-summary-list__key,
+    .govuk-summary-list__value {
+      // Override the equal-width utilities used by the screen layout.
+      width: auto !important;
+      text-align: left;
+      overflow-wrap: anywhere;
+    }
+  }
   // stylelint-enable declaration-no-important
 }
