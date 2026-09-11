@@ -26,13 +26,12 @@ const landGrantsViewEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader
 })
 
 /**
- * Keep the established "ha" suffix while making the canonical square-metre unit
- * understandable to users.
+ * Use a compact square-metre symbol while preserving other unit abbreviations.
  * @param {string | undefined} unit
  * @returns {string | undefined}
  */
-function getQuantityInputUnit(unit) {
-  return unit === UNIT_SQUARE_METRES ? formatUnit(unit) : unit
+function getCompactUnit(unit) {
+  return unit === UNIT_SQUARE_METRES ? 'm²' : unit
 }
 
 /**
@@ -49,7 +48,7 @@ function getQuantityInputUnit(unit) {
  */
 function getQuantityConditional(actionCode, actionName, quantityValue, maxQuantity, unit, errorText) {
   const fieldId = getActionQuantityFieldName(actionCode)
-  const inputUnit = getQuantityInputUnit(unit)
+  const inputUnit = getCompactUnit(unit)
   return {
     html: landGrantsViewEnv.render(QUANTITY_INPUT_TEMPLATE, {
       fieldId,
@@ -143,7 +142,7 @@ function getHintHtml(action, needsQuantity, chosenArea) {
     : availableArea(limit ?? 0, action.availability?.unit)
   return landGrantsViewEnv.render(ACTION_HINT_TEMPLATE, {
     rate: String(action.ratePerUnitGbp?.toFixed(2)),
-    rateUnit: action.availability?.unit ?? 'ha',
+    rateUnit: getCompactUnit(action.availability?.unit) ?? 'ha',
     agreementRate: action.ratePerAgreementPerYearGbp,
     requirementText,
     hintId: `${getActionQuantityFieldName(action.code)}-hint`,
