@@ -19,9 +19,10 @@ export const COMPOSITE_FIELD_PARTS = {
 /**
  * @typedef {{ text: string, value: string | number | boolean }} ListItem
  * @typedef {{ type: string, name: string, title: string, shortDescription?: string, list?: string, items?: ListItem[] }} FormComponent
- * @typedef {{ title: string, controller?: string, components?: FormComponent[] }} FormPage
+ * @typedef {{ title: string, section?: string, controller?: string, components?: FormComponent[] }} FormPage
  * @typedef {{
  *   pages?: FormPage[],
+ *   sections?: { id?: string, title: string }[],
  *   metadata?: {
  *     printPage?: {
  *       includeApplicationInTitle?: boolean
@@ -117,6 +118,86 @@ function buildSections(pages, answers, hasParcelCards) {
 }
 
 /**
+ * Combines answered pages by task, preserving the task list's first-page order.
+ * @param {FormDefinition} definition
+ * @param {Answers} answers
+ * @param {boolean} hasParcelCards
+ * @param {string | undefined} landAndActionsSectionId
+ */
+function buildTaskSections(definition, answers, hasParcelCards, landAndActionsSectionId) {
+  const titles = new Map((definition.sections || []).map((section) => [section.id, section.title]))
+  /** @type {Map<string | undefined, { title: string, questions: { label: string, answer: string }[], showLandAndActions: boolean }>} */
+  const groups = new Map()
+
+  for (const page of definition.pages || []) {
+    const sectionId = page.section && titles.has(page.section) ? page.section : undefined
+    const group = groups.get(sectionId) ?? createTaskSection(titles, sectionId, landAndActionsSectionId)
+    groups.set(sectionId, group)
+    for (const section of buildSections([page], answers, hasParcelCards)) {
+      group.questions.push(...section.questions)
+    }
+  }
+
+  return [...groups.values()].filter((section) => section.questions.length > 0 || section.showLandAndActions)
+}
+
+/**
+ * Creates an empty task group, including whether it owns the land and payment cards.
+ * @param {Map<string | undefined, string>} titles
+ * @param {string | undefined} sectionId
+ * @param {string | undefined} landAndActionsSectionId
+ */
+function createTaskSection(titles, sectionId, landAndActionsSectionId) {
+  return {
+    title: (sectionId && titles.get(sectionId)) || 'Submitted answers',
+    questions: /** @type {{ label: string, answer: string }[]} */ ([]),
+    showLandAndActions: Boolean(landAndActionsSectionId && sectionId === landAndActionsSectionId)
+  }
+}
+
+/**
+ * Builds the land and payment cards from submitted state for annual-payment journeys.
+ * @param {Answers} answers
+ */
+function buildSubmittedLandAndActionsSummary(answers) {
+  const payment = /** @type {PaymentCalculation | undefined} */ (answers.payment)
+
+  // Single-payment journeys such as Woodland do not supply an annual total.
+  if (payment?.annualTotalPence === undefined) {
+    return null
+  }
+
+  return buildConfirmLandAndActionsViewModel(
+    {
+      ...payment,
+      agreementStartDate: /** @type {string} */ (answers.agreementStartDate ?? payment.agreementStartDate),
+      agreementEndDate: /** @type {string} */ (answers.agreementEndDate ?? payment.agreementEndDate),
+      agreementTotalPence: /** @type {number} */ (answers.agreementTotalPence ?? payment.agreementTotalPence)
+    },
+    Array.isArray(answers.landParcels) ? undefined : /** @type {LandParcels | undefined} */ (answers.landParcels)
+  )
+}
+
+/**
+ * Finds the configured task that owns the land and payment cards.
+ * @param {FormDefinition} definition
+ * @param {boolean} enabled
+ */
+function findLandAndActionsSectionId(definition, enabled) {
+  if (!enabled) {
+    return undefined
+  }
+
+  const landAndActionsPage = definition.pages?.find(
+    (formPage) =>
+      ['MapSelectPageController', 'ConfirmLandAndActionsPageController'].includes(formPage.controller ?? '') &&
+      formPage.section &&
+      definition.sections?.some((section) => section.id === formPage.section)
+  )
+  return landAndActionsPage?.section
+}
+
+/**
  * Resolves list UUID references on components to actual items arrays.
  * @param {FormDefinition & { lists?: { id?: string, items?: ListItem[] }[] }} definition - Parsed YAML form definition
  * @returns {FormDefinition} The same definition, with list items resolved on components
@@ -193,21 +274,15 @@ export function buildPrintViewModel({
     pageTitle = form.name
   }
 
-  const payment = /** @type {PaymentCalculation | undefined} */ (answers.payment)
-  let landAndActionsSummary = null
+  const landAndActionsSummary = buildSubmittedLandAndActionsSummary(answers)
 
-  // Single-payment journeys such as Woodland do not supply an annual total.
-  if (payment?.annualTotalPence !== undefined) {
-    landAndActionsSummary = buildConfirmLandAndActionsViewModel(
-      {
-        ...payment,
-        agreementStartDate: /** @type {string} */ (answers.agreementStartDate ?? payment.agreementStartDate),
-        agreementEndDate: /** @type {string} */ (answers.agreementEndDate ?? payment.agreementEndDate),
-        agreementTotalPence: /** @type {number} */ (answers.agreementTotalPence ?? payment.agreementTotalPence)
-      },
-      Array.isArray(answers.landParcels) ? undefined : /** @type {LandParcels | undefined} */ (answers.landParcels)
-    )
-  }
+  const groupAnswersByTask =
+    definition.pages?.some((formPage) => formPage.controller === 'TaskListPageController') ?? false
+  const hasParcelCards = Boolean(landAndActionsSummary?.parcels.length)
+  const landAndActionsSectionId = findLandAndActionsSectionId(
+    definition,
+    groupAnswersByTask && Boolean(landAndActionsSummary)
+  )
 
   return {
     page,
@@ -222,8 +297,12 @@ export function buildPrintViewModel({
       sbi: sessionData.sbi
     },
     applicantDetailsSections,
-    sections: buildSections(definition.pages, answers, Boolean(landAndActionsSummary?.parcels.length)),
+    groupAnswersByTask,
+    sections: groupAnswersByTask
+      ? buildTaskSections(definition, answers, hasParcelCards, landAndActionsSectionId)
+      : buildSections(definition.pages, answers, hasParcelCards),
     landAndActionsSummary,
+    landAndActionsGrouped: Boolean(landAndActionsSectionId),
     configurablePrintContent,
     breadcrumbs: []
   }
