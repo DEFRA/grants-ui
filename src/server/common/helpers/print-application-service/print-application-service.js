@@ -131,11 +131,7 @@ function buildTaskSections(definition, answers, hasParcelCards, landAndActionsSe
 
   for (const page of definition.pages || []) {
     const sectionId = page.section && titles.has(page.section) ? page.section : undefined
-    const group = groups.get(sectionId) ?? {
-      title: (sectionId && titles.get(sectionId)) || 'Submitted answers',
-      questions: [],
-      showLandAndActions: Boolean(landAndActionsSectionId && sectionId === landAndActionsSectionId)
-    }
+    const group = groups.get(sectionId) ?? createTaskSection(titles, sectionId, landAndActionsSectionId)
     groups.set(sectionId, group)
     for (const section of buildSections([page], answers, hasParcelCards)) {
       group.questions.push(...section.questions)
@@ -143,6 +139,62 @@ function buildTaskSections(definition, answers, hasParcelCards, landAndActionsSe
   }
 
   return [...groups.values()].filter((section) => section.questions.length > 0 || section.showLandAndActions)
+}
+
+/**
+ * Creates an empty task group, including whether it owns the land and payment cards.
+ * @param {Map<string | undefined, string>} titles
+ * @param {string | undefined} sectionId
+ * @param {string | undefined} landAndActionsSectionId
+ */
+function createTaskSection(titles, sectionId, landAndActionsSectionId) {
+  return {
+    title: (sectionId && titles.get(sectionId)) || 'Submitted answers',
+    questions: /** @type {{ label: string, answer: string }[]} */ ([]),
+    showLandAndActions: Boolean(landAndActionsSectionId && sectionId === landAndActionsSectionId)
+  }
+}
+
+/**
+ * Builds the land and payment cards from submitted state for annual-payment journeys.
+ * @param {Answers} answers
+ */
+function buildSubmittedLandAndActionsSummary(answers) {
+  const payment = /** @type {PaymentCalculation | undefined} */ (answers.payment)
+
+  // Single-payment journeys such as Woodland do not supply an annual total.
+  if (payment?.annualTotalPence === undefined) {
+    return null
+  }
+
+  return buildConfirmLandAndActionsViewModel(
+    {
+      ...payment,
+      agreementStartDate: /** @type {string} */ (answers.agreementStartDate ?? payment.agreementStartDate),
+      agreementEndDate: /** @type {string} */ (answers.agreementEndDate ?? payment.agreementEndDate),
+      agreementTotalPence: /** @type {number} */ (answers.agreementTotalPence ?? payment.agreementTotalPence)
+    },
+    Array.isArray(answers.landParcels) ? undefined : /** @type {LandParcels | undefined} */ (answers.landParcels)
+  )
+}
+
+/**
+ * Finds the configured task that owns the land and payment cards.
+ * @param {FormDefinition} definition
+ * @param {boolean} enabled
+ */
+function findLandAndActionsSectionId(definition, enabled) {
+  if (!enabled) {
+    return undefined
+  }
+
+  const landAndActionsPage = definition.pages?.find(
+    (formPage) =>
+      ['MapSelectPageController', 'ConfirmLandAndActionsPageController'].includes(formPage.controller ?? '') &&
+      formPage.section &&
+      definition.sections?.some((section) => section.id === formPage.section)
+  )
+  return landAndActionsPage?.section
 }
 
 /**
@@ -222,32 +274,15 @@ export function buildPrintViewModel({
     pageTitle = form.name
   }
 
-  const payment = /** @type {PaymentCalculation | undefined} */ (answers.payment)
-  let landAndActionsSummary = null
-
-  // Single-payment journeys such as Woodland do not supply an annual total.
-  if (payment?.annualTotalPence !== undefined) {
-    landAndActionsSummary = buildConfirmLandAndActionsViewModel(
-      {
-        ...payment,
-        agreementStartDate: /** @type {string} */ (answers.agreementStartDate ?? payment.agreementStartDate),
-        agreementEndDate: /** @type {string} */ (answers.agreementEndDate ?? payment.agreementEndDate),
-        agreementTotalPence: /** @type {number} */ (answers.agreementTotalPence ?? payment.agreementTotalPence)
-      },
-      Array.isArray(answers.landParcels) ? undefined : /** @type {LandParcels | undefined} */ (answers.landParcels)
-    )
-  }
+  const landAndActionsSummary = buildSubmittedLandAndActionsSummary(answers)
 
   const groupAnswersByTask =
     definition.pages?.some((formPage) => formPage.controller === 'TaskListPageController') ?? false
   const hasParcelCards = Boolean(landAndActionsSummary?.parcels.length)
-  const landAndActionsPage = definition.pages?.find(
-    (formPage) =>
-      ['MapSelectPageController', 'ConfirmLandAndActionsPageController'].includes(formPage.controller ?? '') &&
-      formPage.section &&
-      definition.sections?.some((section) => section.id === formPage.section)
+  const landAndActionsSectionId = findLandAndActionsSectionId(
+    definition,
+    groupAnswersByTask && Boolean(landAndActionsSummary)
   )
-  const landAndActionsSectionId = groupAnswersByTask && landAndActionsSummary ? landAndActionsPage?.section : undefined
 
   return {
     page,
