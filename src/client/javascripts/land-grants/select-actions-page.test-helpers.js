@@ -1,12 +1,11 @@
 // @ts-nocheck
 import { vi } from 'vitest'
 import { initSelectActionsPage } from './select-actions-page.js'
+import { unitLabel, unitAlternativeLabel } from '~/src/shared/unit-format.js'
 
 export const areaText = (value) => `${Number(value).toFixed(4)} hectares`
 
 const HIDDEN_CLASS = 'govuk-checkboxes__conditional--hidden'
-
-const unitLabel = (availability) => (availability?.unit === 'sqm' ? 'square metres' : 'ha')
 
 // Stamped server-side per checkbox for a checked action redisplayed from a
 // rejected submission (see mapActionToViewModel) - not a single form-wide flag.
@@ -50,7 +49,7 @@ function quantityConditionalHtml({
           <div class="govuk-input__wrapper">
             <div id="landActionQuantity_${code}-refresh-banner" class="select-actions-refresh-banner select-actions-refresh-banner--hidden">Updating available land for this action&hellip;</div>
             <input class="${inputClass}" id="landActionQuantity_${code}" name="landActionQuantity_${code}" type="text" value="${quantityValue}"${describedByAttr({ code, unrestricted, hasError })}${unrestricted ? '' : ` max="${requiresMaxQuantity}"`}>
-            <div class="govuk-input__suffix">${unitLabel(availability)}</div>
+            <div class="govuk-input__suffix">${unitAlternativeLabel(availability)}</div>
           </div>
         </div>
       </div>`

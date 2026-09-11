@@ -1,6 +1,6 @@
 import { formatAreaUnit } from './format-area-unit.js'
 import { formatLinearUnit } from './format-linear-unit.js'
-import { requiresWholeNumber } from './unit-types.js'
+import { requiresWholeNumber, UNIT_SQUARE_METRES } from './unit-types.js'
 
 /**
  * Format a unit abbreviation that may be either area (e.g. "ha") or linear
@@ -14,6 +14,26 @@ import { requiresWholeNumber } from './unit-types.js'
 export function formatUnit(abbrev = '') {
   const linear = formatLinearUnit(abbrev)
   return linear === abbrev ? formatAreaUnit(abbrev) : linear
+}
+
+/**
+ * Label an availability unit, expanding square metres and defaulting to hectares.
+ * @param {{ unit?: string } | null} [availability]
+ * @returns {string}
+ */
+export function unitLabel(availability) {
+  const unit = availability?.unit ?? 'ha'
+  return unit === UNIT_SQUARE_METRES ? 'square metres' : unit
+}
+
+/**
+ * Use the square-metre symbol for compact displays, preserving other labels.
+ * @param {{ unit?: string } | null} [availability]
+ * @returns {string}
+ */
+export function unitAlternativeLabel(availability) {
+  const label = unitLabel(availability)
+  return label === 'square metres' ? 'm²' : label
 }
 
 /**
