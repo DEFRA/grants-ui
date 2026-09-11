@@ -8,9 +8,9 @@ import nunjucks from 'nunjucks'
 import { govukFrontendPath, viewPaths } from '~/src/config/nunjucks/view-paths.js'
 import { getActionChosenAreaDisplayId, getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
 import { requiresQuantityInput } from '~/src/shared/action-quantity-type.js'
-import { isLandAreaUnit, requiresWholeNumber, UNIT_SQUARE_METRES } from '~/src/shared/unit-types.js'
+import { isLandAreaUnit, requiresWholeNumber } from '~/src/shared/unit-types.js'
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
-import { areaWithUnit, availableArea, formatUnit } from '~/src/shared/unit-format.js'
+import { areaWithUnit, availableArea, formatUnit, unitAlternativeLabel } from '~/src/shared/unit-format.js'
 import { getAvailabilityLimit, hasAvailableLand } from '~/src/shared/availability.js'
 import { formatParcelReference } from '~/src/shared/format-parcel.js'
 import { SELECTED_ACTIONS_FIELD_NAME } from '~/src/server/land-grants/utils/selected-actions-field.js'
@@ -26,29 +26,21 @@ const landGrantsViewEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader
 })
 
 /**
- * Use a compact square-metre symbol while preserving other unit abbreviations.
- * @param {string | undefined} unit
- * @returns {string | undefined}
- */
-function getCompactUnit(unit) {
-  return unit === UNIT_SQUARE_METRES ? 'm²' : unit
-}
-
-/**
  * Builds the conditional reveal markup for an action that requires a user-entered quantity.
  * @param {string} actionCode
  * @param {string} actionName
  * @param {string} quantityValue
  * @param {number} [maxQuantity] - Omitted when the action has no availability
  *   restriction, which leaves the input unbounded and with nothing to describe it
- * @param {string} [unit]
+ * @param {{ unit?: string } | null} [availability]
  * @param {string} [errorText] - Error message shown on the input when this action's
  *   quantity failed validation
  * @returns {{ html: string }}
  */
-function getQuantityConditional(actionCode, actionName, quantityValue, maxQuantity, unit, errorText) {
+function getQuantityConditional(actionCode, actionName, quantityValue, maxQuantity, availability, errorText) {
   const fieldId = getActionQuantityFieldName(actionCode)
-  const inputUnit = getCompactUnit(unit)
+  const unit = availability?.unit
+  const inputUnit = unit ? unitAlternativeLabel(availability) : undefined
   return {
     html: landGrantsViewEnv.render(QUANTITY_INPUT_TEMPLATE, {
       fieldId,
@@ -142,7 +134,7 @@ function getHintHtml(action, needsQuantity, chosenArea) {
     : availableArea(limit ?? 0, action.availability?.unit)
   return landGrantsViewEnv.render(ACTION_HINT_TEMPLATE, {
     rate: String(action.ratePerUnitGbp?.toFixed(2)),
-    rateUnit: getCompactUnit(action.availability?.unit) ?? 'ha',
+    rateUnit: unitAlternativeLabel(action.availability),
     agreementRate: action.ratePerAgreementPerYearGbp,
     requirementText,
     hintId: `${getActionQuantityFieldName(action.code)}-hint`,
@@ -181,7 +173,7 @@ export function mapActionToViewModel(
         action.description,
         quantityValue,
         getAvailabilityLimit(action.availability),
-        action.availability?.unit,
+        action.availability,
         quantityErrorsByCode[action.code]
       )
     : getChosenAreaConditional(action, chosenArea)

@@ -1,17 +1,11 @@
 // @ts-nocheck
 import { vi } from 'vitest'
 import { initSelectActionsPage } from './select-actions-page.js'
+import { unitLabel, unitAlternativeLabel } from '~/src/shared/unit-format.js'
 
 export const areaText = (value) => `${Number(value).toFixed(4)} hectares`
 
 const HIDDEN_CLASS = 'govuk-checkboxes__conditional--hidden'
-
-const unitLabel = (availability) => (availability?.unit === 'sqm' ? 'square metres' : 'ha')
-
-const unitAlternativeLabel = (availability) => {
-  const label = unitLabel(availability)
-  return label === 'square metres' ? 'm²' : label
-}
 
 // Stamped server-side per checkbox for a checked action redisplayed from a
 // rejected submission (see mapActionToViewModel) - not a single form-wide flag.
