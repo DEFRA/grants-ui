@@ -174,53 +174,6 @@ export default class CheckResponsesPageController extends SummaryPageController 
   }
 
   /**
-   * @param {{ details?: any[], checkAnswers?: any[] }} viewModel
-   */
-  #excludeCheckDetailsEntries(viewModel) {
-    const excludedPaths = new Set(
-      (this.model?.def?.pages ?? [])
-        .filter((/** @type {any} */ page) => page.controller === 'CheckDetailsController')
-        .map((/** @type {any} */ page) => page.path)
-    )
-
-    if (excludedPaths.size === 0 || !Array.isArray(viewModel.details)) {
-      return
-    }
-
-    /** @type {any[]} */
-    const keptDetails = []
-    /** @type {any[]} */
-    const keptCheckAnswers = []
-
-    viewModel.details.forEach((detail, di) => {
-      const items = detail.items ?? []
-      const keep = items.map((/** @type {any} */ item) => !excludedPaths.has(item.page?.path))
-      const filteredItems = items.filter((/** @type {any} */ _item, /** @type {number} */ i) => keep[i])
-
-      if (filteredItems.length === 0) {
-        return
-      }
-
-      keptDetails.push({ ...detail, items: filteredItems })
-
-      const checkAnswer = viewModel.checkAnswers?.[di]
-      if (checkAnswer) {
-        const rows = checkAnswer.summaryList?.rows ?? []
-        keptCheckAnswers.push({
-          ...checkAnswer,
-          summaryList: {
-            ...checkAnswer.summaryList,
-            rows: rows.filter((/** @type {any} */ _row, /** @type {number} */ i) => keep[i])
-          }
-        })
-      }
-    })
-
-    viewModel.details = keptDetails
-    viewModel.checkAnswers = keptCheckAnswers
-  }
-
-  /**
    * Builds the view model for the page
    * @param {FormContextRequest} request
    * @param {FormContext} context
@@ -234,7 +187,6 @@ export default class CheckResponsesPageController extends SummaryPageController 
     const backLink = /** @type {BackLink | null} */ (getTaskPageBackLink(viewModel, pageDef))
     const sectionTitle = this.section?.hideTitle !== true ? this.section?.title : ''
 
-    this.#excludeCheckDetailsEntries(viewModel)
     const state = /** @type {Record<string, any>} */ (/** @type {unknown} */ (context?.state ?? {}))
     const hasLandAndActionsSummary = this.#applyLandParcels(viewModel, state)
     this.#appendAdditionalSections(

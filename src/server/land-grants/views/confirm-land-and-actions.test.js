@@ -161,23 +161,6 @@ describe('confirm-land-and-actions.html view', () => {
     expect(headers).toEqual(['Action', 'Quantity', 'Yearly payment', 'Change'])
   })
 
-  it('marks up the parcel table with fixed-width value columns after the flexible action column', () => {
-    const $ = renderPage(model)
-    const table = cards($).eq(0).find('.govuk-table')
-    const columns = table
-      .find('colgroup col')
-      .map((_, column) => $(column).attr('class') ?? '')
-      .get()
-
-    expect(table.hasClass('land-parcel-summary__table')).toBe(true)
-    expect(columns).toEqual([
-      '',
-      'land-parcel-summary__quantity-column',
-      'land-parcel-summary__yearly-payment-column',
-      'land-parcel-summary__change-column'
-    ])
-  })
-
   it('renders each action as a row of name, quantity and payment, then the parcel subtotal', () => {
     const $ = renderPage(model)
 

@@ -9,7 +9,7 @@
 {% block content %}
   <div class="govuk-body">
     <div class="govuk-grid-row">
-      <div class="{{ gridColumnClass(page, 'govuk-grid-column-three-quarters-from-desktop') }}">
+      <div class="{{ gridColumnClass(page, 'full') }}">
         {% if errors.length > 0 %}
           {{
             govukErrorSummary({
@@ -92,7 +92,7 @@
               })
             }}
 
-            <div class="govuk-button-group">
+            <div>
               {{
                 govukButton({
                   text: submitButtonText or "Continue",
@@ -100,7 +100,7 @@
                 })
               }}
               {% if cancelHref %}
-                <a class="govuk-link govuk-link--no-visited-state" href="{{ cancelHref }}">Cancel</a>
+                <a class="govuk-link govuk-link--no-visited-state govuk-!-display-block" href="{{ cancelHref }}">Cancel</a>
               {% endif %}
             </div>
           </form>
@@ -111,7 +111,7 @@
               Change the parcel land cover or choose a different parcel to view eligible actions.
             </p>
           </div>
-          <div class="govuk-button-group">
+          <div>
             {{
               govukButton({
                 text: "Continue",
@@ -119,7 +119,7 @@
               })
             }}
             {% if cancelHref %}
-              <a class="govuk-link govuk-link--no-visited-state" href="{{ cancelHref }}">Cancel</a>
+              <a class="govuk-link govuk-link--no-visited-state govuk-!-display-block" href="{{ cancelHref }}">Cancel</a>
             {% endif %}
           </div>
         {% endif %}
