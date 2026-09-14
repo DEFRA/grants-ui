@@ -14,6 +14,7 @@ import { releaseAllApplicationLocksForOwnerFromApi } from '../common/helpers/loc
 import { ViewError } from '~/src/server/common/utils/errors/ViewError.js'
 import { AuthError } from '~/src/server/common/utils/errors/AuthError.js'
 import { YarKeys } from '~/src/server/common/constants/session-keys.js'
+import { clearCachedPermissions } from '../common/helpers/permissions/clear-cached-permissions.js'
 
 const UNKNOWN_USER = 'unknown'
 const USER_AGENT = 'user-agent'
@@ -452,6 +453,8 @@ async function handleOidcSignIn(request, h) {
  * @param {ResponseToolkit} h
  */
 async function handleSignOut(request, h) {
+  clearCachedPermissions(request)
+
   if (!request.auth.isAuthenticated) {
     log(
       LogCodes.AUTH.UNAUTHORIZED_ACCESS,
@@ -504,6 +507,8 @@ async function handleSignOut(request, h) {
  * @param {ResponseToolkit} h
  */
 async function handleOidcSignOut(request, h) {
+  clearCachedPermissions(request)
+
   // Drop the grant application context first and unconditionally: the yar cookie
   // outlives the session cookie, so a later sign-in on the same browser must not
   // inherit a previous session's grantCode/clientRef and view another business'
