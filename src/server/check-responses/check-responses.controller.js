@@ -18,10 +18,12 @@ export default class CheckResponsesPageController extends SummaryPageController 
       this.section = model.getSection(pageDef.section)
     }
 
-    /** @type {AdditionalSection[] | undefined} */
-    this.additionalSections = /** @type {{ additionalSections?: AdditionalSection[] } | undefined} */ (
-      model?.def?.metadata?.pageConfig?.[pageDef.path]
-    )?.additionalSections
+    const pageConfig =
+      /** @type {{ additionalSections?: AdditionalSection[], showDetailsConfirmation?: boolean } | undefined} */ (
+        model?.def?.metadata?.pageConfig?.[pageDef.path]
+      )
+    this.additionalSections = pageConfig?.additionalSections
+    this.showDetailsConfirmation = pageConfig?.showDetailsConfirmation === true
   }
 
   /**
@@ -174,6 +176,57 @@ export default class CheckResponsesPageController extends SummaryPageController 
   }
 
   /**
+   * Hides check-details answers unless this summary page explicitly includes them.
+   * Keep the engine's detail items and rendered rows aligned when removing answers.
+   * @param {{ details?: any[], checkAnswers?: any[] }} viewModel
+   */
+  #excludeCheckDetailsEntries(viewModel) {
+    if (this.showDetailsConfirmation || !Array.isArray(viewModel.details)) {
+      return
+    }
+
+    const excludedPaths = new Set(
+      (this.model?.def?.pages ?? [])
+        .filter((/** @type {any} */ page) => page.controller === 'CheckDetailsController')
+        .map((/** @type {any} */ page) => page.path)
+    )
+    if (excludedPaths.size === 0) {
+      return
+    }
+
+    /** @type {any[]} */
+    const keptDetails = []
+    /** @type {any[]} */
+    const keptCheckAnswers = []
+
+    viewModel.details.forEach((detail, di) => {
+      const items = detail.items ?? []
+      const keep = items.map((/** @type {any} */ item) => !excludedPaths.has(item.page?.path))
+      const filteredItems = items.filter((/** @type {any} */ _item, /** @type {number} */ i) => keep[i])
+      if (filteredItems.length === 0) {
+        return
+      }
+
+      keptDetails.push({ ...detail, items: filteredItems })
+      const checkAnswer = viewModel.checkAnswers?.[di]
+      if (checkAnswer) {
+        keptCheckAnswers.push({
+          ...checkAnswer,
+          summaryList: {
+            ...checkAnswer.summaryList,
+            rows: (checkAnswer.summaryList?.rows ?? []).filter(
+              (/** @type {any} */ _row, /** @type {number} */ i) => keep[i]
+            )
+          }
+        })
+      }
+    })
+
+    viewModel.details = keptDetails
+    viewModel.checkAnswers = keptCheckAnswers
+  }
+
+  /**
    * Builds the view model for the page
    * @param {FormContextRequest} request
    * @param {FormContext} context
@@ -187,6 +240,7 @@ export default class CheckResponsesPageController extends SummaryPageController 
     const backLink = /** @type {BackLink | null} */ (getTaskPageBackLink(viewModel, pageDef))
     const sectionTitle = this.section?.hideTitle !== true ? this.section?.title : ''
 
+    this.#excludeCheckDetailsEntries(viewModel)
     const state = /** @type {Record<string, any>} */ (/** @type {unknown} */ (context?.state ?? {}))
     const hasLandAndActionsSummary = this.#applyLandParcels(viewModel, state)
     this.#appendAdditionalSections(

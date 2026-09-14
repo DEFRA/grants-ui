@@ -499,8 +499,46 @@ describe('CheckResponsesPageController', () => {
         ]
       })
 
+    it.each([undefined, false])('hides the details confirmation when showDetailsConfirmation is %s', (configured) => {
+      mockModel.def.pages = [{ path: '/check-details', controller: 'CheckDetailsController' }]
+      if (configured !== undefined) {
+        mockModel.def.metadata = { pageConfig: { [mockPageDef.path]: { showDetailsConfirmation: configured } } }
+      }
+      vi.spyOn(SummaryPageController.prototype, 'getSummaryViewModel').mockReturnValue(makeFixture())
+      const ctrl = new CheckResponsesPageController(mockModel, mockPageDef)
+
+      const result = ctrl.getSummaryViewModel(mockRequest, mockContext({ state: { landParcels: ['C'] } }))
+
+      expect(result.details.map((detail) => detail.items.map((item) => item.name))).toEqual([['landParcels']])
+      expect(result.checkAnswers.map((section) => section.summaryList.rows)).toEqual([
+        [{ key: { text: 'Select land parcels' }, value: { html: 'C' } }]
+      ])
+    })
+
+    it('preserves other answers in the same section as a hidden details confirmation', () => {
+      mockModel.def.pages = [{ path: '/check-details', controller: 'CheckDetailsController' }]
+      const fixture = makeFixture()
+      fixture.details[0].items.push({ name: 'otherAnswer', page: { path: '/other-question' }, value: 'Other value' })
+      const otherRow = { key: { text: 'Other question' }, value: { text: 'Other value' } }
+      fixture.checkAnswers[0].summaryList.rows.push(otherRow)
+      vi.spyOn(SummaryPageController.prototype, 'getSummaryViewModel').mockReturnValue(fixture)
+      const ctrl = new CheckResponsesPageController(mockModel, mockPageDef)
+
+      const result = ctrl.getSummaryViewModel(mockRequest, mockContext({ state: { landParcels: ['C'] } }))
+
+      expect(result.details.map((detail) => detail.items.map((item) => item.name))).toEqual([
+        ['otherAnswer'],
+        ['landParcels']
+      ])
+      expect(result.checkAnswers.map((section) => section.summaryList.rows)).toEqual([
+        [otherRow],
+        [{ key: { text: 'Select land parcels' }, value: { html: 'C' } }]
+      ])
+    })
+
     it('retains the details confirmation section alongside the land and actions summary', () => {
       mockModel.def.pages = [{ path: '/check-details', controller: 'CheckDetailsController' }]
+      mockModel.def.metadata = { pageConfig: { [mockPageDef.path]: { showDetailsConfirmation: true } } }
       vi.spyOn(SummaryPageController.prototype, 'getSummaryViewModel').mockReturnValue(makeFixture())
 
       const context = mockContext({

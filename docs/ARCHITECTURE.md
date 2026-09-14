@@ -25,6 +25,8 @@ We override the default DXT SummaryPageController which is used as a combined "c
 
 CheckResponsesPageController renders a page showing the questions and answers the user has completed, and allows the user to change their answers.
 
+Answers from `CheckDetailsController` are hidden on check answers by default. To include the details confirmation and its Change link for a journey, set `config.showDetailsConfirmation: true` on its `CheckResponsesPageController` page. The form-definition loader hoists this setting into `metadata.pageConfig[page.path]`. Omit it or set it to `false` to keep the confirmation hidden, as in woodland. Other answers in the same section remain visible.
+
 DeclarationPageController renders a declaration page and submits the form to GAS. It does not use the `confirmationState` used by DXT and does not clear the state.
 Instead it sets `applicationStatus` to `SUBMITTED` along with `submittedAt` and `submittedBy` fields.
 
