@@ -20,6 +20,7 @@ const DOM_ID_SELECTED_PARCEL_DETAILS = 'selected-parcel-details'
 const DOM_ID_SELECTED_PARCEL_REFERENCE = 'selected-parcel-reference'
 const DOM_ID_SELECTED_PARCEL_AREA = 'selected-parcel-area'
 const DOM_ID_SELECTED_PARCEL_ACTIONS = 'selected-parcel-actions'
+const DOM_ID_SELECTED_PARCEL_ACTIONS_ROW = 'selected-parcel-actions-row'
 const DOM_ID_SUMMARY_PARCEL_NO_ACTIONS = 'summary-parcel-no-actions'
 const DOM_ID_SELECTED_PARCEL_CHANGE = 'selected-parcel-change'
 const DOM_ID_SELECTED_PARCELS_INPUTS = 'selected-parcels-inputs'
@@ -81,12 +82,16 @@ const updateSelectedParcelDetails = (selectedParcels, metaIndex = {}) => {
   // id/sheet_id/parcel_id — area and action count come from the parcels API,
   // held in metaIndex.
   const { areaHa, actionCount } = metaIndex[id] ?? {}
-  const resolvedActionCount = typeof actionCount === 'number' ? actionCount : 0
+  const hasActionCount = typeof actionCount === 'number'
   setText(DOM_ID_SELECTED_PARCEL_REFERENCE, formatParcelReference(id))
   setText(DOM_ID_SELECTED_PARCEL_AREA, areaHa == null ? '' : `${Number(areaHa).toFixed(TOTAL_AREA_DECIMAL_PLACES)} ha`)
-  setText(DOM_ID_SELECTED_PARCEL_ACTIONS, String(resolvedActionCount))
+  setText(DOM_ID_SELECTED_PARCEL_ACTIONS, hasActionCount ? String(actionCount) : '')
+  const actionsRow = document.getElementById(DOM_ID_SELECTED_PARCEL_ACTIONS_ROW)
+  if (actionsRow) {
+    actionsRow.hidden = !hasActionCount
+  }
   if (noActions) {
-    noActions.hidden = resolvedActionCount !== 0
+    noActions.hidden = actionCount !== 0
   }
   details.hidden = false
 }

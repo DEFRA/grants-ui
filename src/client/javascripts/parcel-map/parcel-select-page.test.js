@@ -32,7 +32,7 @@ function setupDom({ multiSelect = false, selectedParcels = '', errors = false, l
     <div id="selected-parcel-details" tabindex="-1" hidden>
       <span id="selected-parcel-reference"></span>
       <span id="selected-parcel-area"></span>
-      <span id="selected-parcel-actions"></span>
+      <div id="selected-parcel-actions-row" hidden><span id="selected-parcel-actions"></span></div>
       <a id="selected-parcel-change" href="#parcel-map">Change</a>
       <div id="selected-parcel-requirements-row" hidden>
         <p id="selected-parcel-requirements-intro"></p>
@@ -158,6 +158,7 @@ describe('initParcelSelectPage', () => {
     expect(document.getElementById('selected-parcel-reference').textContent).toBe('SD7148 9160')
     expect(document.getElementById('selected-parcel-area').textContent).toBe('1.5000 ha')
     expect(document.getElementById('selected-parcel-actions').textContent).toBe('3')
+    expect(document.getElementById('selected-parcel-actions-row').hidden).toBe(false)
   })
 
   it('shows no area when metaIndex has no entry for the selected parcel', () => {
@@ -168,12 +169,21 @@ describe('initParcelSelectPage', () => {
     expect(document.getElementById('selected-parcel-area').textContent).toBe('')
   })
 
-  it('defaults action count to 0 when metaIndex has no entry for the selected parcel', () => {
+  it('hides action details when the count was not fetched, including after a zero-count selection', () => {
     const mapEl = setupDom()
-    fire(mapEl, EVENT_SELECTION, {
-      selectedParcels: [{ id: 'SD7148-9160' }]
+    fire(mapEl, EVENT_READY, {
+      parcelIds: ['SD7148-9160', 'SD7148-9161'],
+      metaIndex: { 'SD7148-9160': { actionCount: 0 }, 'SD7148-9161': { areaHa: 2.5 } }
     })
-    expect(document.getElementById('selected-parcel-actions').textContent).toBe('0')
+    fire(mapEl, EVENT_SELECTION, { selectedParcels: [{ id: 'SD7148-9160' }] })
+    expect(document.getElementById('selected-parcel-actions-row').hidden).toBe(false)
+    expect(document.getElementById('summary-parcel-no-actions').hidden).toBe(false)
+
+    fire(mapEl, EVENT_SELECTION, { selectedParcels: [{ id: 'SD7148-9161' }] })
+
+    expect(document.getElementById('selected-parcel-actions-row').hidden).toBe(true)
+    expect(document.getElementById('summary-parcel-no-actions').hidden).toBe(true)
+    expect(document.getElementById('map-select-continue').disabled).toBe(false)
   })
 
   it('shows the no-actions message when the selected parcel has no available actions', () => {
