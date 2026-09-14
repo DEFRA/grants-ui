@@ -24,7 +24,7 @@
           {% endif %}
 
           {% if section.summaryList.rows | length %}
-            {{ govukSummaryList(section.summaryList) }}
+            <div class="check-answers-summary">{{ govukSummaryList(section.summaryList) }}</div>
           {% endif %}
 
           {% if section.landAndActionsSummary %}

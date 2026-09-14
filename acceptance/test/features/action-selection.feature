@@ -24,12 +24,12 @@ Feature: Action Selection
             | Total area        | 0.2774 hectares |
         And should see the following actions with guidance
             | ACTION | DESCRIPTION                                           | GUIDANCE                          | URL |
-            | CSAM3  | Herbal leys: CSAM3                                    | Payment rate per year: £224.00/ha | Yes |
+            | CSAM3  | Herbal leys: CSAM3                                    | Payment rate per year: £224/ha | Yes |
             |        |                                                       | 0.276 hectares available          |     |
-            | CLIG3  | Manage grassland with very low nutrient inputs: CLIG3 | Payment rate per year: £151.00/ha | Yes |
+            | CLIG3  | Manage grassland with very low nutrient inputs: CLIG3 | Payment rate per year: £151/ha | Yes |
             |        |                                                       | 0.2760 hectares available         |     |
             |        |                                                       | This action will use all the available area on this land parcel. |     |
-            | SCR2   | Manage scrub and open habitat mosaics: SCR2           | Payment rate per year: £350.00/ha | Yes |
+            | SCR2   | Manage scrub and open habitat mosaics: SCR2           | Payment rate per year: £350/ha | Yes |
             |        |                                                       | hectares available                |     |
         When the user selects action "CSAM3"
 
@@ -230,7 +230,7 @@ Feature: Action Selection
             | Total area        | 0.0112 hectares |
         And should see the following actions with guidance
             | ACTION | DESCRIPTION         | GUIDANCE                          | URL |
-            | CSAM3  | Herbal leys: CSAM3  | Payment rate per year: £224.00/ha | Yes |
+            | CSAM3  | Herbal leys: CSAM3  | Payment rate per year: £224/ha | Yes |
             |        |                     | 0.0087 hectares available         |     |
 
     Scenario: Land parcel area with SSSI and HEFER is deducted from available area for ineligible actions
@@ -257,9 +257,9 @@ Feature: Action Selection
             | Total area        | 308.6793 hectares |
         And should see the following actions with guidance
             | ACTION | DESCRIPTION                                           | GUIDANCE                                | URL |
-            | CSAM3  | Herbal leys: CSAM3                                    | Payment rate per year: £224.00/ha       | Yes |
+            | CSAM3  | Herbal leys: CSAM3                                    | Payment rate per year: £224/ha       | Yes |
             |        |                                                       | 2.9402 hectares available               |     |
-            | CLIG3  | Manage grassland with very low nutrient inputs: CLIG3 | Payment rate per year: £151.00/ha       | Yes |
+            | CLIG3  | Manage grassland with very low nutrient inputs: CLIG3 | Payment rate per year: £151/ha       | Yes |
             |        |                                                       | Requires SSSI consent and an SFI HEFER  |     |
             |        |                                                       | 26.9088 hectares available              |     |
         And should see "2.9402" hectares available for action "CSAM3"

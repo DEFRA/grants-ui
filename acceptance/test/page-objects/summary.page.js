@@ -6,14 +6,12 @@ export default class SummaryPage {
   async answers() {
     const summaryAnswers = []
 
-    // wait for the summary table to be present before iterating
-    await this.page.locator('//h1/following-sibling::dl/div[1]').waitFor({ state: 'visible' })
+    const rows = this.page.locator('main .check-answers-summary > .govuk-summary-list > .govuk-summary-list__row')
+    await rows.first().waitFor({ state: 'visible' })
+    const rowCount = await rows.count()
 
-    for (let i = 1; ; i++) {
-      const row = this.page.locator(`//h1/following-sibling::dl/div[${i}]`)
-      if (!(await row.isVisible().catch(() => false))) {
-        break
-      }
+    for (let i = 0; i < rowCount; i++) {
+      const row = rows.nth(i)
 
       const question = (await row.locator('dt').textContent()).trim()
       const summaryAnswer = { question, answers: [] }

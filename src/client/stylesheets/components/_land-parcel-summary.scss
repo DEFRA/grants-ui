@@ -7,23 +7,6 @@
   color: $govuk-secondary-text-colour;
 }
 
-.land-parcel-summary__table {
-  table-layout: fixed;
-}
-
-.land-parcel-summary__quantity-column {
-  width: 8em;
-}
-
-.land-parcel-summary__yearly-payment-column {
-  width: 9em;
-}
-
-.land-parcel-summary__change-column {
-  width: 5em;
-}
-
-.land-parcel-summary__table .govuk-table__header:not(:first-child),
 .land-parcel-summary__table .govuk-table__cell {
   white-space: nowrap;
 }
@@ -36,4 +19,53 @@
 .land-parcel-summary-card__add-action {
   margin-top: 15px;
   margin-bottom: 0;
+}
+
+.payment-summary,
+.check-answers-summary .govuk-summary-list {
+  table-layout: auto;
+
+  .govuk-summary-list__key,
+  .govuk-summary-list__value,
+  .govuk-summary-list__actions {
+    width: auto;
+  }
+
+  @supports (grid-template-columns: subgrid) {
+    @include govuk-media-query($from: tablet) {
+      display: grid;
+      grid-template-columns: fit-content(66.6667%) minmax(0, 1fr);
+
+      .govuk-summary-list__row {
+        display: grid;
+        grid-column: 1 / -1;
+        grid-template-columns: subgrid;
+      }
+
+      .govuk-summary-list__key {
+        min-width: 0;
+        margin-bottom: 0;
+        overflow-wrap: anywhere;
+      }
+    }
+  }
+}
+
+.check-answers-summary {
+  @supports (grid-template-columns: subgrid) {
+    @include govuk-media-query($from: tablet) {
+      .govuk-summary-list {
+        grid-template-columns: fit-content(66.6667%) repeat(2, minmax(0, 1fr));
+      }
+
+      .govuk-summary-list__value,
+      .govuk-summary-list__actions {
+        white-space: nowrap;
+      }
+
+      .govuk-summary-list__actions {
+        margin-bottom: 0;
+      }
+    }
+  }
 }
