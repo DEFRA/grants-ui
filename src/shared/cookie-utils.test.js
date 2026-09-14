@@ -15,7 +15,11 @@ describe('deleteGoogleAnalyticsCookies', () => {
     document = dom.window.document
     window = dom.window
 
-    globalThis.document = document
+    Object.defineProperty(globalThis, 'document', {
+      value: document,
+      configurable: true,
+      writable: true
+    })
     globalThis.window = window
 
     document.cookie.split(';').forEach((cookie) => {
@@ -71,7 +75,11 @@ describe('deleteGoogleAnalyticsCookies', () => {
       url: 'http://grants-ui.dev.cdp-int.defra.cloud'
     })
 
-    globalThis.document = dom.window.document
+    Object.defineProperty(globalThis, 'document', {
+      value: dom.window.document,
+      configurable: true,
+      writable: true
+    })
     globalThis.window = dom.window
     globalThis.location = dom.window.location
 
