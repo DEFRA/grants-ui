@@ -188,9 +188,9 @@ const convictConfig = {
     },
     webIdentity: {
       audience: {
-        doc: 'Audience (aud claim) requested on the STS Web Identity token when entra.authMethod is "web_identity". Must match the Audience configured on the Entra federated credential for this environment. Defaults to the service name.',
+        doc: 'Audience (aud claim) requested on the STS Web Identity token when entra.authMethod is "web_identity". Must match the Audience configured on the Entra federated credential for this environment - confirmed via Graph API as "Grants Application UI" (the App Registration display name, not the service identifier) for every grants-ui environment (dev, test, ext-test, perf-test).',
         format: Array,
-        default: ['grants-ui'],
+        default: ['Grants Application UI'],
         env: 'ENTRA_FEDERATED_CREDENTIALS_AUDIENCE'
       }
     }

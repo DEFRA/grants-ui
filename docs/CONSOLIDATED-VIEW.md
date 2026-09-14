@@ -17,6 +17,8 @@ grants-ui is being migrated environment by environment to authenticate to Entra 
 - **`web_identity`** - authenticates via AWS STS (see `entra.webIdentity.audience` / `ENTRA_FEDERATED_CREDENTIALS_AUDIENCE`). Set only for environments where a Web Identity federated credential has been configured and verified in the Entra App Registration.
 - **`client_secret`** (the default) - uses `ENTRA_INTERNAL_CLIENT_SECRET`, exactly as before. This is every environment that hasn't been migrated yet, and local development, which has no IAM role to obtain a Web Identity token from.
 
+`ENTRA_FEDERATED_CREDENTIALS_AUDIENCE` defaults to `Grants Application UI` - the grants-ui Entra App Registration's **display name**, not the service identifier `grants-ui`. This was confirmed via the Microsoft Graph API against the actual federated credentials on the App Registration (`GET /applications/{id}/federatedIdentityCredentials`) after `grants-ui` (the more common org convention - see `grants-config-browser`, `fg-grants-platform-admin`) was tried and rejected with `AADSTS700212`.
+
 Set the following in your `.env` file:
 
 ```env
