@@ -209,6 +209,8 @@ export function initParcelSelectPage(mapEl) {
   let metaIndex = {}
 
   const serverSelectedIds = (mapEl.dataset[DATASET_SELECTED_PARCELS] ?? '').split(',').filter(Boolean)
+  /** @type {string | undefined} */
+  let selectedParcelId = serverSelectedIds[0]
 
   const mapWithSelection = /** @type {HTMLElement & {
     clearSelection?: () => void,
@@ -252,6 +254,13 @@ export function initParcelSelectPage(mapEl) {
     writeHiddenInputs(selectedParcels.map((p) => p.id))
     updateSelectedParcelDetails(selectedParcels, metaIndex)
     updateConsentRequirements(selectedParcels)
+    const nextParcelId = selectedParcels.length === 1 ? selectedParcels[0].id : undefined
+    if (nextParcelId && nextParcelId !== selectedParcelId) {
+      const details = document.getElementById(DOM_ID_SELECTED_PARCEL_DETAILS)
+      details?.focus({ preventScroll: true })
+      details?.scrollIntoView({ block: 'start' })
+    }
+    selectedParcelId = nextParcelId
   })
 
   // customElements.define() upgrades an already-parsed <parcel-map> synchronously,
