@@ -173,18 +173,26 @@ const convictConfig = {
       default: '',
       env: 'ENTRA_INTERNAL_CLIENT_ID'
     },
-    webIdentityAudience: {
-      doc: 'Audience (aud claim) requested on the STS Web Identity token, must match the Audience configured on the Entra federated credential for this environment. Unset by default: its presence is what switches this service from client_secret to Web Identity authentication, so it should only be set once a Web Identity federated credential has been confirmed working for a given environment (see entra.clientSecret).',
-      format: String,
-      default: '',
-      env: 'ENTRA_WEB_IDENTITY_AUDIENCE'
-    },
     clientSecret: {
-      doc: 'Client secret used to authenticate to Entra. Used whenever entra.webIdentityAudience is not set - i.e. everywhere a Web Identity federated credential has not yet been configured and verified for this environment (see CDP Web Identity Federated Credentials guidance for the migration path).',
+      doc: 'Client secret used to authenticate to Entra when entra.authMethod is "client_secret" (see entra.authMethod).',
       format: String,
       default: '',
       env: 'ENTRA_INTERNAL_CLIENT_SECRET',
       sensitive: true
+    },
+    authMethod: {
+      doc: 'Which method this service uses to authenticate to Entra. "client_secret" sends entra.clientSecret in the token request, as before - not a federated credential at all. "web_identity" instead signs the request with an AWS STS Web Identity token bound to the service IAM role (see entra.federatedCredentials) - no stored secret - via a Web Identity federated credential configured on the Entra App Registration for this environment (see CDP Web Identity Federated Credentials guidance). Web Identity is being rolled out environment by environment, so this must stay "client_secret" for any environment that does not yet have a working federated credential.',
+      format: ['client_secret', 'web_identity'],
+      default: 'client_secret',
+      env: 'ENTRA_AUTH_METHOD'
+    },
+    federatedCredentials: {
+      audience: {
+        doc: 'Audience (aud claim) requested on the STS Web Identity token when entra.authMethod is "web_identity". Must match the Audience configured on the Entra federated credential for this environment. Defaults to the service name.',
+        format: Array,
+        default: ['grants-ui'],
+        env: 'ENTRA_FEDERATED_CREDENTIALS_AUDIENCE'
+      }
     }
   },
   log: {

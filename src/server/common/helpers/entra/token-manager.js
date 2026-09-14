@@ -25,7 +25,7 @@ let webIdentityTokenProvider = null
 function getWebIdentityTokenProvider() {
   if (!webIdentityTokenProvider) {
     webIdentityTokenProvider = new WebIdentityTokenProvider({
-      audience: [config.get('entra.webIdentityAudience')]
+      audience: config.get('entra.federatedCredentials.audience')
     })
   }
   return webIdentityTokenProvider
@@ -104,50 +104,12 @@ export function createClientSecretTokenRequestParams(clientId, scope, clientSecr
 }
 
 /**
- * Builds the request params for the Entra token exchange.
- *
- * Web Identity federated credentials are being rolled out environment by
- * environment (see CDP Web Identity Federated Credentials guidance), so
- * which auth method to use is driven by whether entra.webIdentityAudience is
- * set, not by which environment this is running in:
- * - entra.webIdentityAudience set: authenticate via a Web Identity federated
- *   credential bound to the service's IAM role (no stored secret).
- * - entra.webIdentityAudience unset: fall back to entra.clientSecret. This
- *   covers environments where a Web Identity federated credential has not
- *   yet been configured and verified, as well as local development, where
- *   there is no IAM role to obtain a Web Identity token from at all.
- * @param {string} clientId - Client ID
- * @param {string} scope - Scope of the token
- * @returns {Promise<URLSearchParams>} - URLSearchParams object with the request parameters
- */
-async function buildTokenRequestParams(clientId, scope) {
-  const webIdentityAudience = config.get('entra.webIdentityAudience')
-
-  if (!webIdentityAudience) {
-    return createClientSecretTokenRequestParams(clientId, scope, config.get('entra.clientSecret'))
-  }
-
-  let clientAssertion
-  try {
-    clientAssertion = await getWebIdentityTokenProvider().getCredentials(logger)
-  } catch (error) {
-    throw new StsWebIdentityError(webIdentityAudience, /** @type {Error} */ (error))
-  }
-
-  if (!clientAssertion) {
-    throw new StsWebIdentityError(webIdentityAudience, new Error('Web Identity token provider returned no token'))
-  }
-
-  return createTokenRequestParams(clientId, scope, clientAssertion)
-}
-
-/**
  * Marks a failure to obtain a token from AWS STS, so refreshToken's catch
  * can log it distinctly from a failure at the Entra token endpoint itself.
  */
 class StsWebIdentityError extends Error {
   /**
-   * @param {string} audience - The Web Identity audience that was requested
+   * @param {string[]} audience - The Web Identity audience that was requested
    * @param {Error} cause - The underlying error from the token provider
    */
   constructor(audience, cause) {
@@ -155,6 +117,56 @@ class StsWebIdentityError extends Error {
     this.name = 'StsWebIdentityError'
     this.audience = audience
     this.cause = cause
+  }
+}
+
+/**
+ * Requests a signed Web Identity token from AWS STS and returns the
+ * client_assertion request params for it.
+ * @param {string} clientId - Client ID
+ * @param {string} scope - Scope of the token
+ * @returns {Promise<URLSearchParams>}
+ */
+async function buildWebIdentityTokenRequestParams(clientId, scope) {
+  const audience = config.get('entra.federatedCredentials.audience')
+
+  let clientAssertion
+  try {
+    clientAssertion = await getWebIdentityTokenProvider().getCredentials(logger)
+  } catch (error) {
+    throw new StsWebIdentityError(audience, /** @type {Error} */ (error))
+  }
+
+  if (!clientAssertion) {
+    throw new StsWebIdentityError(audience, new Error('Web Identity token provider returned no token'))
+  }
+
+  return createTokenRequestParams(clientId, scope, clientAssertion)
+}
+
+/**
+ * Builds the request params for the Entra token exchange, using the
+ * authentication method configured for this environment via entra.authMethod.
+ * Web Identity federated credentials are being rolled out environment by
+ * environment (see CDP Web Identity Federated Credentials guidance), so
+ * environments without a working federated credential keep using
+ * entra.clientSecret until theirs is ready.
+ * @param {string} clientId - Client ID
+ * @param {string} scope - Scope of the token
+ * @returns {Promise<URLSearchParams>} - URLSearchParams object with the request parameters
+ */
+async function buildTokenRequestParams(clientId, scope) {
+  const authMethod = config.get('entra.authMethod')
+
+  switch (authMethod) {
+    case 'web_identity':
+      return buildWebIdentityTokenRequestParams(clientId, scope)
+
+    case 'client_secret':
+      return createClientSecretTokenRequestParams(clientId, scope, config.get('entra.clientSecret'))
+
+    default:
+      throw new Error(`Unrecognised entra.authMethod: ${authMethod}`)
   }
 }
 
@@ -176,7 +188,7 @@ export async function refreshToken() {
   const tenantId = config.get('entra.tenantId')
   const clientId = config.get('entra.clientId')
   const scope = `${clientId}/.default`
-  const authMethod = config.get('entra.webIdentityAudience') ? 'web_identity' : 'client_secret'
+  const authMethod = config.get('entra.authMethod')
 
   try {
     log(LogCodes.SYSTEM.ENTRA_TOKEN_REFRESH_ATTEMPT, { authMethod })
@@ -240,13 +252,13 @@ export async function refreshToken() {
  * Identity token from AWS STS from a failure at the Entra token endpoint
  * itself (wrong client secret, audience mismatch, network error, etc).
  * @param {string} authMethod - 'web_identity' or 'client_secret'
- * @param {Error & { audience?: string, status?: number }} error
+ * @param {Error & { audience?: string[], status?: number }} error
  * @returns {void}
  */
 function logRefreshTokenError(authMethod, error) {
   if (error.name === 'StsWebIdentityError') {
     log(LogCodes.SYSTEM.ENTRA_WEB_IDENTITY_ERROR, {
-      audience: error.audience,
+      audience: error.audience?.join(', '),
       errorMessage: error.message
     })
     return

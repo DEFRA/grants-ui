@@ -40,8 +40,11 @@ describe('Token Manager', () => {
       tokenEndpoint: 'https://login.microsoftonline.com',
       tenantId: 'mock-tenant-id',
       clientId: 'mock-client-id',
-      webIdentityAudience: 'mock-audience',
-      clientSecret: ''
+      clientSecret: '',
+      authMethod: 'web_identity',
+      federatedCredentials: {
+        audience: ['mock-audience']
+      }
     })
     clearTokenState()
     vi.clearAllMocks()
@@ -189,8 +192,8 @@ describe('Token Manager', () => {
       })
     })
 
-    test('falls back to a client secret when no Web Identity audience is configured for this environment', async () => {
-      config.set('entra.webIdentityAudience', '')
+    test('uses a client secret when authMethod is client_secret', async () => {
+      config.set('entra.authMethod', 'client_secret')
       config.set('entra.clientSecret', 'a-client-secret')
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -215,6 +218,13 @@ describe('Token Manager', () => {
         client_secret: 'a-client-secret',
         grant_type: 'client_credentials'
       })
+    })
+
+    test('throws error for an unrecognised authMethod', async () => {
+      config.set('entra.authMethod', 'not-a-real-provider')
+
+      await expect(refreshToken()).rejects.toThrow('Entra token refresh failed')
+      expect(mockFetch).not.toHaveBeenCalled()
     })
   })
 
