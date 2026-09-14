@@ -152,7 +152,7 @@ function isTaskPageCompleted(pageDef, state, formModel) {
   // If no question components and no configured completion requirement to fall
   // back on, consider it not applicable (shouldn't appear as task)
   if (componentNames.length === 0 && !getCompletionRequirement(pageDef, formModel)) {
-    return false
+    return null
   }
 
   if (!isPageConditionMet(pageDef, state, formModel)) {
