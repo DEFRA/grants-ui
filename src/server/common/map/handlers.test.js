@@ -91,7 +91,7 @@ describe('parcelsHandler', () => {
     const request = makeRequest()
     await parcelsHandler(request, h)
 
-    expect(fetchParcels).toHaveBeenCalledWith(request, expectedUserContext, undefined)
+    expect(fetchParcels).toHaveBeenCalledWith(request, expectedUserContext, ['size'])
     expect(fetchParcelTileLocation).toHaveBeenCalledWith(['SD7148-9160', 'SD7148-9161'], expectedUserContext)
     const [payload] = h.response.mock.calls[0]
     expect(payload.features).toEqual([
@@ -147,7 +147,7 @@ describe('parcelsHandler', () => {
 
     await parcelsHandler(request, h)
 
-    expect(fetchParcels).toHaveBeenCalledWith(request, expectedUserContext, enabled ? ['size', 'actions'] : undefined)
+    expect(fetchParcels).toHaveBeenCalledWith(request, expectedUserContext, enabled ? ['size', 'actions'] : ['size'])
 
     const [{ features }] = h.response.mock.calls[0]
     expect(features[0].properties.actionCount).toBe(enabled ? 1 : undefined)

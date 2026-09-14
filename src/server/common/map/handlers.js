@@ -37,8 +37,10 @@ export async function parcelsHandler(request, h) {
   const userContext = getLandGrantsUserContext(formRequest)
   const enabledLandActions = /** @type {{ enabledLandActions?: string[] }} */ (request.query)?.enabledLandActions ?? []
   const enableActionCount = config.get('landGrants.enableMapActionCount')
-  const fields =
-    enableActionCount && enabledLandActions.length ? [LAND_GRANTS_ACTION_SIZE, LAND_GRANTS_ACTIONS] : undefined
+  const fields = [LAND_GRANTS_ACTION_SIZE]
+  if (enableActionCount && enabledLandActions.length) {
+    fields.push(LAND_GRANTS_ACTIONS)
+  }
   const result = await attempt(() => fetchParcels(formRequest, userContext, fields))
 
   if (!result.ok) {
