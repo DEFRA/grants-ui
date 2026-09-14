@@ -184,7 +184,7 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, [])
       configState.reset()
 
-      expect(result.html).toContain('Requires an SFI HEFER')
+      expect(result.html).toContain('Payment rate per year: £203/ha<br>Requires an SFI HEFER')
     })
 
     it('should not show the HEFER requirement text when the HEFER feature flag is off', () => {
@@ -197,6 +197,7 @@ describe('select-actions.view-model', () => {
 
       const result = mapActionToViewModel(action, [])
 
+      expect(result.html).toContain('Payment rate per year: £203/ha')
       expect(result.html).not.toContain('Requires an SFI HEFER')
     })
 
@@ -212,7 +213,7 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, [])
       configState.reset()
 
-      expect(result.html).toContain('Requires SSSI consent')
+      expect(result.html).toContain('Payment rate per year: £151/ha<br>Requires SSSI consent')
     })
 
     it('should show both requirements when sssiConsentRequired and heferRequired are both set', () => {
@@ -229,7 +230,7 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, [])
       configState.reset()
 
-      expect(result.html).toContain('Requires SSSI consent and an SFI HEFER')
+      expect(result.html).toContain('Payment rate per year: £151/ha<br>Requires SSSI consent and an SFI HEFER')
     })
 
     it.each([
