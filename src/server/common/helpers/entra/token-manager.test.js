@@ -3,6 +3,7 @@ import { config } from '~/src/config/config.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
 import {
   clearTokenState,
+  createClientSecretTokenRequestParams,
   createTokenRequestParams,
   getValidToken,
   isTokenExpired,
@@ -10,6 +11,14 @@ import {
 } from '~/src/server/common/helpers/entra/token-manager.js'
 
 vi.mock('~/src/server/common/helpers/retry.js')
+
+const mockGetCredentials = vi.fn()
+
+vi.mock('@defra/hapi-auth-oidc', () => ({
+  WebIdentityTokenProvider: vi.fn().mockImplementation(function WebIdentityTokenProvider() {
+    this.getCredentials = mockGetCredentials
+  })
+}))
 
 const mockFetch = vi.fn()
 global.fetch = mockFetch
@@ -20,12 +29,19 @@ describe('Token Manager', () => {
       tokenEndpoint: 'https://login.microsoftonline.com',
       tenantId: 'mock-tenant-id',
       clientId: 'mock-client-id',
-      clientSecret: 'mock-client-secret'
+      webIdentityAudience: 'mock-audience',
+      clientSecret: ''
     })
+    config.set('cdpEnvironment', 'dev')
     clearTokenState()
     vi.clearAllMocks()
 
     retry.mockImplementation((operation) => operation())
+    mockGetCredentials.mockResolvedValue('mock-web-identity-token')
+  })
+
+  afterEach(() => {
+    config.set('cdpEnvironment', 'local')
   })
 
   describe('isTokenExpired', () => {
@@ -51,7 +67,22 @@ describe('Token Manager', () => {
 
   describe('createTokenRequestParams', () => {
     test('creates correct URL search params', () => {
-      const params = createTokenRequestParams('client-id', 'test-scope', 'secret')
+      const params = createTokenRequestParams('client-id', 'test-scope', 'assertion')
+      const paramsObject = Object.fromEntries(params)
+
+      expect(paramsObject).toEqual({
+        client_id: 'client-id',
+        scope: 'test-scope',
+        client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+        client_assertion: 'assertion',
+        grant_type: 'client_credentials'
+      })
+    })
+  })
+
+  describe('createClientSecretTokenRequestParams', () => {
+    test('creates correct URL search params', () => {
+      const params = createClientSecretTokenRequestParams('client-id', 'test-scope', 'secret')
       const paramsObject = Object.fromEntries(params)
 
       expect(paramsObject).toEqual({
@@ -64,7 +95,7 @@ describe('Token Manager', () => {
   })
 
   describe('refreshToken', () => {
-    test('successfully refreshes token', async () => {
+    test('successfully refreshes token using a Web Identity client assertion', async () => {
       const mockToken = 'new-access-token'
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -78,6 +109,7 @@ describe('Token Manager', () => {
       const token = await refreshToken()
 
       expect(token).toBe(mockToken)
+      expect(mockGetCredentials).toHaveBeenCalledTimes(1)
 
       const [[calledUrl, calledOptions]] = mockFetch.mock.calls
 
@@ -89,7 +121,8 @@ describe('Token Manager', () => {
       expect(Object.fromEntries(bodyParams)).toEqual({
         client_id: 'mock-client-id',
         scope: 'mock-client-id/.default',
-        client_secret: 'mock-client-secret',
+        client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+        client_assertion: 'mock-web-identity-token',
         grant_type: 'client_credentials'
       })
     })
@@ -115,6 +148,56 @@ describe('Token Manager', () => {
       })
 
       await expect(refreshToken()).rejects.toThrow('Entra token refresh failed')
+    })
+
+    test('throws error when the Web Identity token cannot be obtained', async () => {
+      mockGetCredentials.mockRejectedValueOnce(new Error('sts unavailable'))
+
+      await expect(refreshToken()).rejects.toThrow('Entra token refresh failed')
+      expect(mockFetch).not.toHaveBeenCalled()
+    })
+
+    test('falls back to a client secret when running locally with one configured', async () => {
+      config.set('cdpEnvironment', 'local')
+      config.set('entra.clientSecret', 'local-dev-secret')
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            access_token: 'local-access-token',
+            expires_in: 3600
+          })
+      })
+
+      const token = await refreshToken()
+
+      expect(token).toBe('local-access-token')
+      expect(mockGetCredentials).not.toHaveBeenCalled()
+
+      const [[, calledOptions]] = mockFetch.mock.calls
+      const bodyParams = new URLSearchParams(calledOptions.body)
+      expect(Object.fromEntries(bodyParams)).toEqual({
+        client_id: 'mock-client-id',
+        scope: 'mock-client-id/.default',
+        client_secret: 'local-dev-secret',
+        grant_type: 'client_credentials'
+      })
+    })
+
+    test('uses Web Identity locally when no client secret is configured', async () => {
+      config.set('cdpEnvironment', 'local')
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            access_token: 'new-access-token',
+            expires_in: 3600
+          })
+      })
+
+      await refreshToken()
+
+      expect(mockGetCredentials).toHaveBeenCalledTimes(1)
     })
   })
 

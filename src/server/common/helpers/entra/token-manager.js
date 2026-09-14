@@ -1,13 +1,35 @@
 import { URLSearchParams } from 'node:url'
 
+import { WebIdentityTokenProvider } from '@defra/hapi-auth-oidc'
+
 import { config } from '~/src/config/config.js'
 import { ExternalApiError } from '~/src/server/common/utils/errors/ExternalApiError.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
+import { logger } from '~/src/server/common/helpers/logging/log.js'
+
+const clientAssertionType = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
 
 const msInSec = 1000
 const secsInMins = 60
 const numMins = 5
 const expirationBuffer = numMins * secsInMins * msInSec // refresh tokens 5 minutes before actual expiry
+
+/** @type {WebIdentityTokenProvider | null} */
+let webIdentityTokenProvider = null
+
+/**
+ * Lazily creates (and caches) the Web Identity token provider. This binds
+ * directly to the service's IAM role via AWS STS - no stored secret involved.
+ * @returns {WebIdentityTokenProvider}
+ */
+function getWebIdentityTokenProvider() {
+  if (!webIdentityTokenProvider) {
+    webIdentityTokenProvider = new WebIdentityTokenProvider({
+      audience: [config.get('entra.webIdentityAudience')]
+    })
+  }
+  return webIdentityTokenProvider
+}
 
 /**
  * @typedef {object} TokenState - The state of the OAuth2 token
@@ -30,6 +52,7 @@ export function clearTokenState() {
     currentToken: null,
     tokenExpiry: null
   }
+  webIdentityTokenProvider = null
 }
 
 /**
@@ -45,19 +68,59 @@ export function isTokenExpired(expiryTime) {
 }
 
 /**
- * Creates the request parameters for the token request
+ * Creates the request parameters for a token request authenticated with a
+ * signed Web Identity token (client_assertion) bound to this service's IAM
+ * role, instead of a stored client secret.
+ * @param {string} clientId - Client ID
+ * @param {string} scope - Scope of the token
+ * @param {string} clientAssertion - Signed AWS STS Web Identity token
+ * @returns {URLSearchParams} - URLSearchParams object with the request parameters
+ */
+export function createTokenRequestParams(clientId, scope, clientAssertion) {
+  return new URLSearchParams({
+    client_id: clientId,
+    scope,
+    client_assertion_type: clientAssertionType,
+    client_assertion: clientAssertion,
+    grant_type: 'client_credentials'
+  })
+}
+
+/**
+ * Creates the request parameters for a token request authenticated with a
+ * client secret. Local development only - see entra.clientSecret.
  * @param {string} clientId - Client ID
  * @param {string} scope - Scope of the token
  * @param {string} clientSecret - Client Secret
  * @returns {URLSearchParams} - URLSearchParams object with the request parameters
  */
-export function createTokenRequestParams(clientId, scope, clientSecret) {
+export function createClientSecretTokenRequestParams(clientId, scope, clientSecret) {
   return new URLSearchParams({
     client_id: clientId,
     scope,
     client_secret: clientSecret,
     grant_type: 'client_credentials'
   })
+}
+
+/**
+ * Builds the request params for the Entra token exchange. Deployed
+ * environments always authenticate via a Web Identity federated credential
+ * bound to the service's IAM role. Locally - which has no IAM role to obtain
+ * a Web Identity token from - a client secret can be used instead if one is
+ * configured, so developers can still exercise the live Consolidated View API.
+ * @param {string} clientId - Client ID
+ * @param {string} scope - Scope of the token
+ * @returns {Promise<URLSearchParams>} - URLSearchParams object with the request parameters
+ */
+async function buildTokenRequestParams(clientId, scope) {
+  const clientSecret = config.get('entra.clientSecret')
+  if (config.get('cdpEnvironment') === 'local' && clientSecret) {
+    return createClientSecretTokenRequestParams(clientId, scope, clientSecret)
+  }
+
+  const clientAssertion = await getWebIdentityTokenProvider().getCredentials(logger)
+  return createTokenRequestParams(clientId, scope, clientAssertion)
 }
 
 /**
@@ -77,11 +140,10 @@ export async function refreshToken() {
   const tokenEndpoint = config.get('entra.tokenEndpoint')
   const tenantId = config.get('entra.tenantId')
   const clientId = config.get('entra.clientId')
-  const clientSecret = config.get('entra.clientSecret')
   const scope = `${clientId}/.default`
 
   try {
-    const params = createTokenRequestParams(clientId, scope, clientSecret)
+    const params = await buildTokenRequestParams(clientId, scope)
 
     const response = await retry(
       () =>

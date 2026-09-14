@@ -8,9 +8,11 @@ The Consolidated View API provides business data via a GraphQL endpoint. By defa
 
 - The DAL endpoint URL
 - A valid `CV_API_DEVELOPER_KEY` (generate from https://portal.cdp-int.defra.cloud/user-profile)
-- Entra ID credentials (`ENTRA_INTERNAL_TENANT_ID`, `ENTRA_INTERNAL_CLIENT_ID`, `ENTRA_INTERNAL_CLIENT_SECRET`)
+- Entra ID settings (`ENTRA_INTERNAL_TENANT_ID`, `ENTRA_INTERNAL_CLIENT_ID`) and, if the environment you're pointing at requires one, an `ENTRA_INTERNAL_CLIENT_SECRET`
 
 ### Configuration
+
+Deployed environments authenticate to Entra using an AWS Web Identity federated credential bound to the service's IAM role (per CDP's Web Identity Federated Credentials guidance) - no client secret involved. A laptop has no IAM role to obtain that token from, so locally you authenticate with a client secret instead, requested from the team that manages the grants-ui Entra App Registration.
 
 Set the following in your `.env` file:
 
@@ -25,6 +27,8 @@ ENTRA_INTERNAL_CLIENT_ID=<your-client-id>
 ENTRA_INTERNAL_CLIENT_SECRET=<your-client-secret>
 ```
 
+`ENTRA_INTERNAL_CLIENT_SECRET` is only ever read when `ENVIRONMENT` (`cdpEnvironment`) is `local` (the default outside of a deployed CDP environment) - it's ignored everywhere else, including in the Docker Compose setup below, which always uses Web Identity.
+
 ### How it works
 
 - The `x-api-key` header is added to requests to the Consolidated View API only when `CV_API_DEVELOPER_KEY` is set **and** the app is running with `cdpEnvironment` (`ENVIRONMENT`) set to `local`.
@@ -33,8 +37,8 @@ ENTRA_INTERNAL_CLIENT_SECRET=<your-client-secret>
 
 ### Troubleshooting
 
-| Symptom                                        | Cause                                                                                                                                                                    |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `403 Forbidden` with `{"message":"Forbidden"}` | `CV_API_DEVELOPER_KEY` is missing, expired, or not passed into the Docker container. Check `compose.grants-ui.yml` includes the env var and your `.env` has a valid key. |
-| `401 Unauthorized`                             | Entra ID credentials are invalid or expired. Check `ENTRA_INTERNAL_*` values.                                                                                            |
-| Requests hit the stub instead of live DAL      | `CV_API_MOCK_ENABLED` is still `true` (the default). Set it to `false`.                                                                                                  |
+| Symptom                                        | Cause                                                                                                                                                                                                                                                                |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `403 Forbidden` with `{"message":"Forbidden"}` | `CV_API_DEVELOPER_KEY` is missing, expired, or not passed into the Docker container. Check `compose.grants-ui.yml` includes the env var and your `.env` has a valid key.                                                                                             |
+| `401 Unauthorized`                             | Entra ID credentials are invalid or expired. Locally, check `ENTRA_INTERNAL_*` values including `ENTRA_INTERNAL_CLIENT_SECRET`; in a deployed environment, check the Entra App Registration has a Web Identity federated credential configured for that environment. |
+| Requests hit the stub instead of live DAL      | `CV_API_MOCK_ENABLED` is still `true` (the default). Set it to `false`.                                                                                                                                                                                              |
