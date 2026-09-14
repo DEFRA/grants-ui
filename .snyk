@@ -61,3 +61,11 @@ ignore:
     - '*':
         reason: 'Origin Validation Error in undici@8.10.0 (cache/deduplicate interceptor keys omit the destination origin). grants-ui uses undici only as ProxyAgent + setGlobalDispatcher in src/server/common/helpers/proxy/setup-proxy.js and never calls interceptors.cache()/interceptors.deduplicate(), so it is not exploitable here. Fixed in undici 8.10.2 (published 2026-09-04), inside the .npmrc min-release-age=7 cooldown until 2026-09-11 (npm install fails with ETARGET before then). Then bump dependencies.undici + overrides.undici to 8.10.2 and remove this ignore.'
         expires: '2026-09-24'
+  'SNYK-JS-JOI-19778379':
+    - '*':
+        reason: 'Prototype Pollution in JOI'
+        expires: '2026-09-20'
+  'SNYK-JS-COMPRESSION-19778377':
+    - '*':
+        reason: 'Missing Release of Memory after Effective Lifetime [High Severity][https://security.snyk.io/vuln/SNYK-JS-COMPRESSION-19778377]'
+        expires: '2026-09-20'
