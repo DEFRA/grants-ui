@@ -12,12 +12,10 @@ The Consolidated View API provides business data via a GraphQL endpoint. By defa
 
 ### Configuration
 
-grants-ui is being migrated environment by environment to authenticate to Entra using a Cognito federated credential instead of a stored client secret. Which method is used is set explicitly per environment via `ENTRA_AUTH_METHOD`:
+grants-ui is being migrated environment by environment to authenticate to Entra using an AWS STS Web Identity federated credential bound to the service's IAM role, instead of a stored client secret. Which method is used is set explicitly per environment via `ENTRA_AUTH_METHOD`:
 
-- **`cognito`** - authenticates via an AWS Cognito Identity Pool (see `entra.cognito.identityPoolId` / `COGNITO_IDENTITY_POOL_ID`). This is what the grants-ui Entra App Registration is set up for.
-- **`client_secret`** (the default) - uses `ENTRA_INTERNAL_CLIENT_SECRET`, exactly as before. This is every environment that hasn't been migrated yet, and local development, which has no AWS credentials to authenticate as.
-
-grants-ui does not use AWS STS Web Identity federated credentials - that would need a new ServiceNow change to add a matching credential to the Entra App Registration, which isn't being pursued.
+- **`web_identity`** - authenticates via AWS STS (see `entra.webIdentity.audience` / `ENTRA_FEDERATED_CREDENTIALS_AUDIENCE`). Set only for environments where a Web Identity federated credential has been configured and verified in the Entra App Registration.
+- **`client_secret`** (the default) - uses `ENTRA_INTERNAL_CLIENT_SECRET`, exactly as before. This is every environment that hasn't been migrated yet, and local development, which has no IAM role to obtain a Web Identity token from.
 
 Set the following in your `.env` file:
 
@@ -32,7 +30,7 @@ ENTRA_INTERNAL_CLIENT_ID=<your-client-id>
 ENTRA_INTERNAL_CLIENT_SECRET=<your-client-secret>
 ```
 
-Leave `ENTRA_AUTH_METHOD` unset locally (and in the Docker Compose setup below) so it defaults to `client_secret` - a laptop has no AWS credentials to authenticate as.
+Leave `ENTRA_AUTH_METHOD` unset locally (and in the Docker Compose setup below) so it defaults to `client_secret` - a laptop has no IAM role to authenticate as.
 
 ### How it works
 
@@ -42,8 +40,8 @@ Leave `ENTRA_AUTH_METHOD` unset locally (and in the Docker Compose setup below) 
 
 ### Troubleshooting
 
-| Symptom                                        | Cause                                                                                                                                                                                                                                           |
-| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `403 Forbidden` with `{"message":"Forbidden"}` | `CV_API_DEVELOPER_KEY` is missing, expired, or not passed into the Docker container. Check `compose.grants-ui.yml` includes the env var and your `.env` has a valid key.                                                                        |
-| `401 Unauthorized`                             | Entra ID credentials are invalid or expired. If `ENTRA_AUTH_METHOD` is `client_secret` (or unset), check `ENTRA_INTERNAL_CLIENT_SECRET`; if it's `cognito`, check `COGNITO_IDENTITY_POOL_ID` is current (it has changed before without notice). |
-| Requests hit the stub instead of live DAL      | `CV_API_MOCK_ENABLED` is still `true` (the default). Set it to `false`.                                                                                                                                                                         |
+| Symptom                                        | Cause                                                                                                                                                                                                                                                                                                                       |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `403 Forbidden` with `{"message":"Forbidden"}` | `CV_API_DEVELOPER_KEY` is missing, expired, or not passed into the Docker container. Check `compose.grants-ui.yml` includes the env var and your `.env` has a valid key.                                                                                                                                                    |
+| `401 Unauthorized`                             | Entra ID credentials are invalid or expired. If `ENTRA_AUTH_METHOD` is `client_secret` (or unset), check `ENTRA_INTERNAL_CLIENT_SECRET`; if it's `web_identity`, check the Entra App Registration's Web Identity federated credential has an Audience matching `ENTRA_FEDERATED_CREDENTIALS_AUDIENCE` for that environment. |
+| Requests hit the stub instead of live DAL      | `CV_API_MOCK_ENABLED` is still `true` (the default). Set it to `false`.                                                                                                                                                                                                                                                     |

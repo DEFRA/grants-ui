@@ -217,16 +217,16 @@ See [Consolidated View API](./CONSOLIDATED-VIEW.md) for configuration and live D
 
 #### Microsoft Entra (Internal Use)
 
-grants-ui is being migrated environment by environment to authenticate to Entra using a Cognito federated credential instead of a stored client secret. Which method an environment uses is set explicitly via `ENTRA_AUTH_METHOD` - see [Consolidated View API](./CONSOLIDATED-VIEW.md) for the full explanation.
+grants-ui is being migrated environment by environment to authenticate to Entra using an AWS STS Web Identity federated credential bound to the service's IAM role, instead of a stored client secret. Which method an environment uses is set explicitly via `ENTRA_AUTH_METHOD` - see [Consolidated View API](./CONSOLIDATED-VIEW.md) for the full explanation.
 
-| Variable                       | Description                                                          |
-| ------------------------------ | -------------------------------------------------------------------- |
-| `ENTRA_INTERNAL_TOKEN_URL`     | Microsoft Entra token endpoint                                       |
-| `ENTRA_INTERNAL_TENANT_ID`     | Microsoft tenant ID                                                  |
-| `ENTRA_INTERNAL_CLIENT_ID`     | Microsoft client ID                                                  |
-| `ENTRA_AUTH_METHOD`            | `client_secret` (default) or `cognito`                               |
-| `COGNITO_IDENTITY_POOL_ID`     | AWS Cognito Identity Pool ID, used when the auth method is `cognito` |
-| `ENTRA_INTERNAL_CLIENT_SECRET` | Client secret, used when the auth method is `client_secret`          |
+| Variable                               | Description                                                                                                    |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `ENTRA_INTERNAL_TOKEN_URL`             | Microsoft Entra token endpoint                                                                                 |
+| `ENTRA_INTERNAL_TENANT_ID`             | Microsoft tenant ID                                                                                            |
+| `ENTRA_INTERNAL_CLIENT_ID`             | Microsoft client ID                                                                                            |
+| `ENTRA_AUTH_METHOD`                    | `client_secret` (default) or `web_identity`                                                                    |
+| `ENTRA_FEDERATED_CREDENTIALS_AUDIENCE` | Audience requested on the STS Web Identity token when the auth method is `web_identity` (default: `grants-ui`) |
+| `ENTRA_INTERNAL_CLIENT_SECRET`         | Client secret, used when the auth method is `client_secret`                                                    |
 
 #### Development Tools Configuration
 
