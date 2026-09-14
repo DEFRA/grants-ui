@@ -181,18 +181,18 @@ const convictConfig = {
       sensitive: true
     },
     authMethod: {
-      doc: 'Which method this service uses to authenticate to Entra. "client_secret" sends entra.clientSecret in the token request, as before - not a federated credential at all. "web_identity" instead signs the request with an AWS STS Web Identity token bound to the service IAM role (see entra.federatedCredentials) - no stored secret - via a Web Identity federated credential configured on the Entra App Registration for this environment (see CDP Web Identity Federated Credentials guidance). Web Identity is being rolled out environment by environment, so this must stay "client_secret" for any environment that does not yet have a working federated credential.',
-      format: ['client_secret', 'web_identity'],
+      doc: 'Which method this service uses to authenticate to Entra. "client_secret" sends entra.clientSecret in the token request, as before - not a federated credential at all. "cognito" instead signs the request with a federated token obtained from an AWS Cognito Identity Pool (see cognito.identityPoolId) - no stored secret. This is what the grants-ui Entra App Registration is set up for; Cognito is being rolled out environment by environment, so this must stay "client_secret" for any environment that does not yet have a working Cognito federated credential.',
+      format: ['client_secret', 'cognito'],
       default: 'client_secret',
       env: 'ENTRA_AUTH_METHOD'
-    },
-    federatedCredentials: {
-      audience: {
-        doc: 'Audience (aud claim) requested on the STS Web Identity token when entra.authMethod is "web_identity". Must match the Audience configured on the Entra federated credential for this environment. Defaults to the service name.',
-        format: Array,
-        default: ['grants-ui'],
-        env: 'ENTRA_FEDERATED_CREDENTIALS_AUDIENCE'
-      }
+    }
+  },
+  cognito: {
+    identityPoolId: {
+      doc: 'AWS Cognito Identity Pool ID used to obtain a federated token to authenticate to Entra when entra.authMethod is "cognito". This is the only part of the Cognito setup that varies by environment - the logins map key/value are a fixed "grants-ui-aad-access":"grants-ui" convention, hardcoded in token-manager.js to match cdp-api-hub. A separate AWS resource from Entra - the Platform team can change it independently (it has happened before without notice).',
+      format: String,
+      default: '',
+      env: 'COGNITO_IDENTITY_POOL_ID'
     }
   },
   log: {

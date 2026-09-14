@@ -23,11 +23,11 @@ vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
   }
 })
 
-const mockGetCredentials = vi.fn()
+const mockCognitoGetCredentials = vi.fn()
 
 vi.mock('@defra/hapi-auth-oidc', () => ({
-  WebIdentityTokenProvider: vi.fn().mockImplementation(function WebIdentityTokenProvider() {
-    this.getCredentials = mockGetCredentials
+  CognitoTokenProvider: vi.fn().mockImplementation(function CognitoTokenProvider() {
+    this.getCredentials = mockCognitoGetCredentials
   })
 }))
 
@@ -41,16 +41,16 @@ describe('Token Manager', () => {
       tenantId: 'mock-tenant-id',
       clientId: 'mock-client-id',
       clientSecret: '',
-      authMethod: 'web_identity',
-      federatedCredentials: {
-        audience: ['mock-audience']
-      }
+      authMethod: 'cognito'
+    })
+    config.set('cognito', {
+      identityPoolId: 'eu-west-2:mock-pool-id'
     })
     clearTokenState()
     vi.clearAllMocks()
 
     retry.mockImplementation((operation) => operation())
-    mockGetCredentials.mockResolvedValue('mock-web-identity-token')
+    mockCognitoGetCredentials.mockResolvedValue('mock-cognito-token')
   })
 
   describe('isTokenExpired', () => {
@@ -104,7 +104,7 @@ describe('Token Manager', () => {
   })
 
   describe('refreshToken', () => {
-    test('successfully refreshes token using a Web Identity client assertion', async () => {
+    test('successfully refreshes token using a Cognito client assertion', async () => {
       const mockToken = 'new-access-token'
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -118,9 +118,9 @@ describe('Token Manager', () => {
       const token = await refreshToken()
 
       expect(token).toBe(mockToken)
-      expect(mockGetCredentials).toHaveBeenCalledTimes(1)
-      expect(log).toHaveBeenCalledWith(LogCodes.SYSTEM.ENTRA_TOKEN_REFRESH_ATTEMPT, { authMethod: 'web_identity' })
-      expect(log).toHaveBeenCalledWith(LogCodes.SYSTEM.ENTRA_TOKEN_REFRESH_SUCCESS, { authMethod: 'web_identity' })
+      expect(mockCognitoGetCredentials).toHaveBeenCalledTimes(1)
+      expect(log).toHaveBeenCalledWith(LogCodes.SYSTEM.ENTRA_TOKEN_REFRESH_ATTEMPT, { authMethod: 'cognito' })
+      expect(log).toHaveBeenCalledWith(LogCodes.SYSTEM.ENTRA_TOKEN_REFRESH_SUCCESS, { authMethod: 'cognito' })
 
       const [[calledUrl, calledOptions]] = mockFetch.mock.calls
 
@@ -133,7 +133,7 @@ describe('Token Manager', () => {
         client_id: 'mock-client-id',
         scope: 'mock-client-id/.default',
         client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
-        client_assertion: 'mock-web-identity-token',
+        client_assertion: 'mock-cognito-token',
         grant_type: 'client_credentials'
       })
     })
@@ -150,9 +150,9 @@ describe('Token Manager', () => {
 
       expect(log).toHaveBeenCalledWith(
         LogCodes.SYSTEM.ENTRA_TOKEN_ENDPOINT_ERROR,
-        expect.objectContaining({ authMethod: 'web_identity', status: 401 })
+        expect.objectContaining({ authMethod: 'cognito', status: 401 })
       )
-      expect(log).not.toHaveBeenCalledWith(LogCodes.SYSTEM.ENTRA_WEB_IDENTITY_ERROR, expect.anything())
+      expect(log).not.toHaveBeenCalledWith(LogCodes.SYSTEM.ENTRA_COGNITO_ERROR, expect.anything())
     })
 
     test('throws error for a malformed token response', async () => {
@@ -167,28 +167,28 @@ describe('Token Manager', () => {
       await expect(refreshToken()).rejects.toThrow('Entra token refresh failed')
     })
 
-    test('throws error when the Web Identity token cannot be obtained, logging it as an STS failure', async () => {
-      mockGetCredentials.mockRejectedValueOnce(new Error('sts unavailable'))
+    test('throws error when the Cognito token cannot be obtained, logging it as a Cognito failure', async () => {
+      mockCognitoGetCredentials.mockRejectedValueOnce(new Error('cognito unavailable'))
 
       await expect(refreshToken()).rejects.toThrow('Entra token refresh failed')
       expect(mockFetch).not.toHaveBeenCalled()
 
-      expect(log).toHaveBeenCalledWith(LogCodes.SYSTEM.ENTRA_WEB_IDENTITY_ERROR, {
-        audience: 'mock-audience',
-        errorMessage: 'sts unavailable'
+      expect(log).toHaveBeenCalledWith(LogCodes.SYSTEM.ENTRA_COGNITO_ERROR, {
+        identityPoolId: 'eu-west-2:mock-pool-id',
+        errorMessage: 'cognito unavailable'
       })
       expect(log).not.toHaveBeenCalledWith(LogCodes.SYSTEM.ENTRA_TOKEN_ENDPOINT_ERROR, expect.anything())
     })
 
-    test('throws error when the Web Identity token provider returns no token, logging it as an STS failure', async () => {
-      mockGetCredentials.mockResolvedValueOnce(undefined)
+    test('throws error when the Cognito token provider returns no token, logging it as a Cognito failure', async () => {
+      mockCognitoGetCredentials.mockResolvedValueOnce(undefined)
 
       await expect(refreshToken()).rejects.toThrow('Entra token refresh failed')
       expect(mockFetch).not.toHaveBeenCalled()
 
-      expect(log).toHaveBeenCalledWith(LogCodes.SYSTEM.ENTRA_WEB_IDENTITY_ERROR, {
-        audience: 'mock-audience',
-        errorMessage: 'Web Identity token provider returned no token'
+      expect(log).toHaveBeenCalledWith(LogCodes.SYSTEM.ENTRA_COGNITO_ERROR, {
+        identityPoolId: 'eu-west-2:mock-pool-id',
+        errorMessage: 'Cognito token provider returned no token'
       })
     })
 
@@ -207,7 +207,7 @@ describe('Token Manager', () => {
       const token = await refreshToken()
 
       expect(token).toBe('secret-access-token')
-      expect(mockGetCredentials).not.toHaveBeenCalled()
+      expect(mockCognitoGetCredentials).not.toHaveBeenCalled()
       expect(log).toHaveBeenCalledWith(LogCodes.SYSTEM.ENTRA_TOKEN_REFRESH_ATTEMPT, { authMethod: 'client_secret' })
 
       const [[, calledOptions]] = mockFetch.mock.calls

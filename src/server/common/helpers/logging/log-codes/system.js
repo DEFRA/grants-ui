@@ -185,10 +185,10 @@ export const SYSTEM = {
     level: 'info',
     messageFunc: (messageOptions) => `Entra token refresh: requesting token via authMethod=${messageOptions.authMethod}`
   },
-  ENTRA_WEB_IDENTITY_ERROR: {
+  ENTRA_COGNITO_ERROR: {
     level: 'error',
     messageFunc: (messageOptions) =>
-      `Entra token refresh: failed to obtain a Web Identity token from AWS STS (audience=${messageOptions.audience}) | error=${messageOptions.errorMessage}`
+      `Entra token refresh: failed to obtain a federated token from Cognito (identityPoolId=${messageOptions.identityPoolId}) | error=${messageOptions.errorMessage}`
   },
   ENTRA_TOKEN_ENDPOINT_ERROR: {
     level: 'error',

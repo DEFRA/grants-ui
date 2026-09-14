@@ -1,6 +1,6 @@
 import { URLSearchParams } from 'node:url'
 
-import { WebIdentityTokenProvider } from '@defra/hapi-auth-oidc'
+import { CognitoTokenProvider } from '@defra/hapi-auth-oidc'
 
 import { config } from '~/src/config/config.js'
 import { ExternalApiError } from '~/src/server/common/utils/errors/ExternalApiError.js'
@@ -14,21 +14,24 @@ const secsInMins = 60
 const numMins = 5
 const expirationBuffer = numMins * secsInMins * msInSec // refresh tokens 5 minutes before actual expiry
 
-/** @type {WebIdentityTokenProvider | null} */
-let webIdentityTokenProvider = null
+/** @type {CognitoTokenProvider | null} */
+let cognitoTokenProvider = null
 
 /**
- * Lazily creates (and caches) the Web Identity token provider. This binds
- * directly to the service's IAM role via AWS STS - no stored secret involved.
- * @returns {WebIdentityTokenProvider}
+ * Lazily creates (and caches) the Cognito federated token provider. The
+ * logins map key/value are a fixed "grants-ui-aad-access":"grants-ui"
+ * convention (matching cdp-api-hub's own hardcoded logins map) rather than
+ * environment config - only the identity pool ID varies by environment.
+ * @returns {CognitoTokenProvider}
  */
-function getWebIdentityTokenProvider() {
-  if (!webIdentityTokenProvider) {
-    webIdentityTokenProvider = new WebIdentityTokenProvider({
-      audience: config.get('entra.federatedCredentials.audience')
+function getCognitoTokenProvider() {
+  if (!cognitoTokenProvider) {
+    cognitoTokenProvider = new CognitoTokenProvider({
+      poolId: config.get('cognito.identityPoolId'),
+      logins: { 'grants-ui-aad-access': 'grants-ui' }
     })
   }
-  return webIdentityTokenProvider
+  return cognitoTokenProvider
 }
 
 /**
@@ -52,7 +55,7 @@ export function clearTokenState() {
     currentToken: null,
     tokenExpiry: null
   }
-  webIdentityTokenProvider = null
+  cognitoTokenProvider = null
 }
 
 /**
@@ -69,11 +72,11 @@ export function isTokenExpired(expiryTime) {
 
 /**
  * Creates the request parameters for a token request authenticated with a
- * signed Web Identity token (client_assertion) bound to this service's IAM
- * role, instead of a stored client secret.
+ * signed federated token (client_assertion), instead of a stored client
+ * secret.
  * @param {string} clientId - Client ID
  * @param {string} scope - Scope of the token
- * @param {string} clientAssertion - Signed AWS STS Web Identity token
+ * @param {string} clientAssertion - Signed federated token (e.g. from Cognito)
  * @returns {URLSearchParams} - URLSearchParams object with the request parameters
  */
 export function createTokenRequestParams(clientId, scope, clientAssertion) {
@@ -104,41 +107,41 @@ export function createClientSecretTokenRequestParams(clientId, scope, clientSecr
 }
 
 /**
- * Marks a failure to obtain a token from AWS STS, so refreshToken's catch
- * can log it distinctly from a failure at the Entra token endpoint itself.
+ * Marks a failure to obtain a token from Cognito, so refreshToken's catch can
+ * log it distinctly from a failure at the Entra token endpoint itself.
  */
-class StsWebIdentityError extends Error {
+class FederatedTokenProviderError extends Error {
   /**
-   * @param {string[]} audience - The Web Identity audience that was requested
+   * @param {Record<string, unknown>} context - Identifying details for the provider (e.g. identityPoolId)
    * @param {Error} cause - The underlying error from the token provider
    */
-  constructor(audience, cause) {
+  constructor(context, cause) {
     super(cause.message)
-    this.name = 'StsWebIdentityError'
-    this.audience = audience
+    this.name = 'FederatedTokenProviderError'
+    this.context = context
     this.cause = cause
   }
 }
 
 /**
- * Requests a signed Web Identity token from AWS STS and returns the
- * client_assertion request params for it.
+ * Requests a Cognito federated token and returns the client_assertion
+ * request params for it.
  * @param {string} clientId - Client ID
  * @param {string} scope - Scope of the token
  * @returns {Promise<URLSearchParams>}
  */
-async function buildWebIdentityTokenRequestParams(clientId, scope) {
-  const audience = config.get('entra.federatedCredentials.audience')
+async function buildCognitoTokenRequestParams(clientId, scope) {
+  const identityPoolId = config.get('cognito.identityPoolId')
 
   let clientAssertion
   try {
-    clientAssertion = await getWebIdentityTokenProvider().getCredentials(logger)
+    clientAssertion = await getCognitoTokenProvider().getCredentials(logger)
   } catch (error) {
-    throw new StsWebIdentityError(audience, /** @type {Error} */ (error))
+    throw new FederatedTokenProviderError({ identityPoolId }, /** @type {Error} */ (error))
   }
 
   if (!clientAssertion) {
-    throw new StsWebIdentityError(audience, new Error('Web Identity token provider returned no token'))
+    throw new FederatedTokenProviderError({ identityPoolId }, new Error('Cognito token provider returned no token'))
   }
 
   return createTokenRequestParams(clientId, scope, clientAssertion)
@@ -147,10 +150,9 @@ async function buildWebIdentityTokenRequestParams(clientId, scope) {
 /**
  * Builds the request params for the Entra token exchange, using the
  * authentication method configured for this environment via entra.authMethod.
- * Web Identity federated credentials are being rolled out environment by
- * environment (see CDP Web Identity Federated Credentials guidance), so
- * environments without a working federated credential keep using
- * entra.clientSecret until theirs is ready.
+ * Cognito is being rolled out environment by environment, so this must stay
+ * "client_secret" for any environment that does not yet have a working
+ * Cognito federated credential.
  * @param {string} clientId - Client ID
  * @param {string} scope - Scope of the token
  * @returns {Promise<URLSearchParams>} - URLSearchParams object with the request parameters
@@ -159,8 +161,8 @@ async function buildTokenRequestParams(clientId, scope) {
   const authMethod = config.get('entra.authMethod')
 
   switch (authMethod) {
-    case 'web_identity':
-      return buildWebIdentityTokenRequestParams(clientId, scope)
+    case 'cognito':
+      return buildCognitoTokenRequestParams(clientId, scope)
 
     case 'client_secret':
       return createClientSecretTokenRequestParams(clientId, scope, config.get('entra.clientSecret'))
@@ -248,17 +250,17 @@ export async function refreshToken() {
 }
 
 /**
- * Logs why a token refresh failed, distinguishing a failure to obtain a Web
- * Identity token from AWS STS from a failure at the Entra token endpoint
+ * Logs why a token refresh failed, distinguishing a failure to obtain a
+ * federated token from Cognito from a failure at the Entra token endpoint
  * itself (wrong client secret, audience mismatch, network error, etc).
- * @param {string} authMethod - 'web_identity' or 'client_secret'
- * @param {Error & { audience?: string[], status?: number }} error
+ * @param {string} authMethod - 'cognito' or 'client_secret'
+ * @param {Error & { context?: Record<string, unknown>, status?: number }} error
  * @returns {void}
  */
 function logRefreshTokenError(authMethod, error) {
-  if (error.name === 'StsWebIdentityError') {
-    log(LogCodes.SYSTEM.ENTRA_WEB_IDENTITY_ERROR, {
-      audience: error.audience?.join(', '),
+  if (error.name === 'FederatedTokenProviderError') {
+    log(LogCodes.SYSTEM.ENTRA_COGNITO_ERROR, {
+      identityPoolId: error.context?.identityPoolId,
       errorMessage: error.message
     })
     return
