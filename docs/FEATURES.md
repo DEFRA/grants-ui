@@ -372,6 +372,19 @@ Guidance components provide contextual help and information without requiring us
 - **Conditions**: Conditional display logic
 - **Next**: Navigation configuration
 
+The two guidance links in the `SelectActionsPageController` consent warning are configured per page:
+
+```yaml
+config:
+  links:
+    SFI Hefer:
+      url: https://example.org/sfi-hefer-guidance
+    SSI Consent:
+      url: https://example.org/sssi-consent-guidance
+```
+
+The link names are case-sensitive. URLs may be absolute or relative to the journey page. If a URL is omitted, the consent text remains without a link. This configuration does not affect grouped-action hints or the consent-required page.
+
 ## Authentication & Authorization
 
 ### Defra ID Integration

@@ -55,4 +55,33 @@ describe('select-actions.html', () => {
 
     expect(linksNamed($, 'Cancel')).toHaveLength(1)
   })
+
+  it('uses the current scheme page configuration for both consent links and escapes URL attributes', () => {
+    const path = '/select-actions-for-land-parcel'
+    const configuredLinks = {
+      'SSI Consent': { url: 'https://example.test/sssi?scheme=grasslands&section=consent' },
+      'SFI Hefer': { url: 'https://example.test/hefer?note=" onmouseover="alert(1)&section=request' }
+    }
+    const $ = renderPage({
+      pageConsents: ['sssi', 'hefer'],
+      page: { path, def: { metadata: { pageConfig: { [path]: { links: configuredLinks } } } } }
+    })
+    const links = $('#parcel-consent-intro a')
+
+    expect(links.map((_, link) => $(link).attr('href')).get()).toEqual([
+      configuredLinks['SSI Consent'].url,
+      configuredLinks['SFI Hefer'].url
+    ])
+    expect(links.map((_, link) => $(link).attr('target')).get()).toEqual(['_blank', '_blank'])
+    expect(links.eq(1).attr('onmouseover')).toBeUndefined()
+  })
+
+  it('retains the consent warning without empty or hardcoded links when guidance is not configured', () => {
+    const $ = renderPage({ pageConsents: ['sssi', 'hefer'] })
+    const warning = $('#parcel-consent-intro')
+
+    expect(warning.find('a')).toHaveLength(0)
+    expect(normalise(warning.text())).toContain('Some actions on this parcel need SSSI consent and an SFI HEFER.')
+    expect(warning.text()).not.toContain('opens in new tab')
+  })
 })

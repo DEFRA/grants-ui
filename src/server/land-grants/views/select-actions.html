@@ -58,12 +58,32 @@
           </ul>
 
           {% if pageConsents.length %}
+            {% set links = page.def.metadata.pageConfig[page.path].links %}
             {% set consentLinks = [] %}
             {% if 'sssi' in pageConsents %}
-              {% set consentLinks = (consentLinks.push('<a class="govuk-link" href="./fptt-information#sec-10-get-all-necessary-regulatory-consents-permissions-and-licences-in-place" target="_blank" rel="noopener noreferrer">SSSI consent (opens in new tab)</a>'), consentLinks) %}
+              {% set sssiLink %}
+                {% if links["SSI Consent"].url %}
+                  <a class="govuk-link" href="{{ links["SSI Consent"].url }}" target="_blank" rel="noopener noreferrer"
+                    >SSSI consent (opens in new tab)</a
+                  >
+                {% else %}
+                  SSSI consent
+                {% endif %}
+              {% endset %}
+              {% set consentLinks = (consentLinks.push(sssiLink | trim), consentLinks) %}
             {% endif %}
             {% if 'hefer' in pageConsents %}
-              {% set consentLinks = (consentLinks.push('an <a class="govuk-link" href="https://www.gov.uk/government/publications/sustainable-farming-incentive-2026-sfi26/sfi26-scheme-rules-and-guidance#how-to-request-an-sfi-hefer" target="_blank" rel="noopener noreferrer">SFI HEFER (opens in new tab)</a>'), consentLinks) %}
+              {% set heferLink %}
+                {% if links["SFI Hefer"].url %}
+                  an
+                  <a class="govuk-link" href="{{ links["SFI Hefer"].url }}" target="_blank" rel="noopener noreferrer"
+                    >SFI HEFER (opens in new tab)</a
+                  >
+                {% else %}
+                  an SFI HEFER
+                {% endif %}
+              {% endset %}
+              {% set consentLinks = (consentLinks.push(heferLink | trim), consentLinks) %}
             {% endif %}
             {% call govukInsetText({ id: "parcel-consent-intro" }) %}
               Some actions on this parcel need {{ consentLinks | join(' and ') | safe }}. We&rsquo;ll show this on those
