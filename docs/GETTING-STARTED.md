@@ -217,15 +217,15 @@ See [Consolidated View API](./CONSOLIDATED-VIEW.md) for configuration and live D
 
 #### Microsoft Entra (Internal Use)
 
-Deployed environments authenticate to Entra using an AWS Web Identity federated credential bound to the service's IAM role - no client secret required. `ENTRA_INTERNAL_CLIENT_SECRET` is a local-development-only fallback (see [Consolidated View API](./CONSOLIDATED-VIEW.md)).
+grants-ui is being migrated environment by environment to authenticate to Entra using an AWS Web Identity federated credential bound to the service's IAM role, instead of a stored client secret. Whether an environment uses Web Identity or the client secret is driven entirely by whether `ENTRA_WEB_IDENTITY_AUDIENCE` is set for it - see [Consolidated View API](./CONSOLIDATED-VIEW.md) for the full explanation.
 
-| Variable                       | Description                                                             |
-| ------------------------------ | ----------------------------------------------------------------------- |
-| `ENTRA_INTERNAL_TOKEN_URL`     | Microsoft Entra token endpoint                                          |
-| `ENTRA_INTERNAL_TENANT_ID`     | Microsoft tenant ID                                                     |
-| `ENTRA_INTERNAL_CLIENT_ID`     | Microsoft client ID                                                     |
-| `ENTRA_WEB_IDENTITY_AUDIENCE`  | Audience requested on the STS Web Identity token (default: `grants-ui`) |
-| `ENTRA_INTERNAL_CLIENT_SECRET` | Local-development-only client secret fallback                           |
+| Variable                       | Description                                                                                   |
+| ------------------------------ | --------------------------------------------------------------------------------------------- |
+| `ENTRA_INTERNAL_TOKEN_URL`     | Microsoft Entra token endpoint                                                                |
+| `ENTRA_INTERNAL_TENANT_ID`     | Microsoft tenant ID                                                                           |
+| `ENTRA_INTERNAL_CLIENT_ID`     | Microsoft client ID                                                                           |
+| `ENTRA_WEB_IDENTITY_AUDIENCE`  | Audience requested on the STS Web Identity token. Unset = use the client secret below instead |
+| `ENTRA_INTERNAL_CLIENT_SECRET` | Client secret, used whenever `ENTRA_WEB_IDENTITY_AUDIENCE` is unset                           |
 
 #### Development Tools Configuration
 

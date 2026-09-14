@@ -174,13 +174,13 @@ const convictConfig = {
       env: 'ENTRA_INTERNAL_CLIENT_ID'
     },
     webIdentityAudience: {
-      doc: 'Audience (aud claim) requested on the STS Web Identity token, must match the Audience configured on the Entra federated credential. Defaults to the service name.',
+      doc: 'Audience (aud claim) requested on the STS Web Identity token, must match the Audience configured on the Entra federated credential for this environment. Unset by default: its presence is what switches this service from client_secret to Web Identity authentication, so it should only be set once a Web Identity federated credential has been confirmed working for a given environment (see entra.clientSecret).',
       format: String,
-      default: 'grants-ui',
+      default: '',
       env: 'ENTRA_WEB_IDENTITY_AUDIENCE'
     },
     clientSecret: {
-      doc: 'Local-development-only client secret fallback. A laptop has no IAM role to obtain a Web Identity token from, so when cdpEnvironment is "local" and this is set, it is used instead. Ignored in every deployed environment, which always authenticate via Web Identity federated credentials.',
+      doc: 'Client secret used to authenticate to Entra. Used whenever entra.webIdentityAudience is not set - i.e. everywhere a Web Identity federated credential has not yet been configured and verified for this environment (see CDP Web Identity Federated Credentials guidance for the migration path).',
       format: String,
       default: '',
       env: 'ENTRA_INTERNAL_CLIENT_SECRET',

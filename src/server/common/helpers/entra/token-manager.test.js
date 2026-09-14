@@ -1,6 +1,8 @@
 import { vi } from 'vitest'
 import { config } from '~/src/config/config.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
+import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
+import { log } from '~/src/server/common/helpers/logging/log.js'
 import {
   clearTokenState,
   createClientSecretTokenRequestParams,
@@ -11,6 +13,15 @@ import {
 } from '~/src/server/common/helpers/entra/token-manager.js'
 
 vi.mock('~/src/server/common/helpers/retry.js')
+
+vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
+  const { LogCodes: actualLogCodes } = await vi.importActual('~/src/server/common/helpers/logging/log-codes.js')
+  return {
+    log: vi.fn(),
+    logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
+    LogCodes: actualLogCodes
+  }
+})
 
 const mockGetCredentials = vi.fn()
 
@@ -32,16 +43,11 @@ describe('Token Manager', () => {
       webIdentityAudience: 'mock-audience',
       clientSecret: ''
     })
-    config.set('cdpEnvironment', 'dev')
     clearTokenState()
     vi.clearAllMocks()
 
     retry.mockImplementation((operation) => operation())
     mockGetCredentials.mockResolvedValue('mock-web-identity-token')
-  })
-
-  afterEach(() => {
-    config.set('cdpEnvironment', 'local')
   })
 
   describe('isTokenExpired', () => {
@@ -110,6 +116,8 @@ describe('Token Manager', () => {
 
       expect(token).toBe(mockToken)
       expect(mockGetCredentials).toHaveBeenCalledTimes(1)
+      expect(log).toHaveBeenCalledWith(LogCodes.SYSTEM.ENTRA_TOKEN_REFRESH_ATTEMPT, { authMethod: 'web_identity' })
+      expect(log).toHaveBeenCalledWith(LogCodes.SYSTEM.ENTRA_TOKEN_REFRESH_SUCCESS, { authMethod: 'web_identity' })
 
       const [[calledUrl, calledOptions]] = mockFetch.mock.calls
 
@@ -127,7 +135,7 @@ describe('Token Manager', () => {
       })
     })
 
-    test('throws error when token refresh fails', async () => {
+    test('throws error when token refresh fails, logging it as an Entra token endpoint failure', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         text: () => Promise.resolve('Invalid credentials'),
@@ -136,6 +144,12 @@ describe('Token Manager', () => {
       })
 
       await expect(refreshToken()).rejects.toThrow('Entra token refresh failed')
+
+      expect(log).toHaveBeenCalledWith(
+        LogCodes.SYSTEM.ENTRA_TOKEN_ENDPOINT_ERROR,
+        expect.objectContaining({ authMethod: 'web_identity', status: 401 })
+      )
+      expect(log).not.toHaveBeenCalledWith(LogCodes.SYSTEM.ENTRA_WEB_IDENTITY_ERROR, expect.anything())
     })
 
     test('throws error for a malformed token response', async () => {
@@ -150,54 +164,57 @@ describe('Token Manager', () => {
       await expect(refreshToken()).rejects.toThrow('Entra token refresh failed')
     })
 
-    test('throws error when the Web Identity token cannot be obtained', async () => {
+    test('throws error when the Web Identity token cannot be obtained, logging it as an STS failure', async () => {
       mockGetCredentials.mockRejectedValueOnce(new Error('sts unavailable'))
 
       await expect(refreshToken()).rejects.toThrow('Entra token refresh failed')
       expect(mockFetch).not.toHaveBeenCalled()
+
+      expect(log).toHaveBeenCalledWith(LogCodes.SYSTEM.ENTRA_WEB_IDENTITY_ERROR, {
+        audience: 'mock-audience',
+        errorMessage: 'sts unavailable'
+      })
+      expect(log).not.toHaveBeenCalledWith(LogCodes.SYSTEM.ENTRA_TOKEN_ENDPOINT_ERROR, expect.anything())
     })
 
-    test('falls back to a client secret when running locally with one configured', async () => {
-      config.set('cdpEnvironment', 'local')
-      config.set('entra.clientSecret', 'local-dev-secret')
+    test('throws error when the Web Identity token provider returns no token, logging it as an STS failure', async () => {
+      mockGetCredentials.mockResolvedValueOnce(undefined)
+
+      await expect(refreshToken()).rejects.toThrow('Entra token refresh failed')
+      expect(mockFetch).not.toHaveBeenCalled()
+
+      expect(log).toHaveBeenCalledWith(LogCodes.SYSTEM.ENTRA_WEB_IDENTITY_ERROR, {
+        audience: 'mock-audience',
+        errorMessage: 'Web Identity token provider returned no token'
+      })
+    })
+
+    test('falls back to a client secret when no Web Identity audience is configured for this environment', async () => {
+      config.set('entra.webIdentityAudience', '')
+      config.set('entra.clientSecret', 'a-client-secret')
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () =>
           Promise.resolve({
-            access_token: 'local-access-token',
+            access_token: 'secret-access-token',
             expires_in: 3600
           })
       })
 
       const token = await refreshToken()
 
-      expect(token).toBe('local-access-token')
+      expect(token).toBe('secret-access-token')
       expect(mockGetCredentials).not.toHaveBeenCalled()
+      expect(log).toHaveBeenCalledWith(LogCodes.SYSTEM.ENTRA_TOKEN_REFRESH_ATTEMPT, { authMethod: 'client_secret' })
 
       const [[, calledOptions]] = mockFetch.mock.calls
       const bodyParams = new URLSearchParams(calledOptions.body)
       expect(Object.fromEntries(bodyParams)).toEqual({
         client_id: 'mock-client-id',
         scope: 'mock-client-id/.default',
-        client_secret: 'local-dev-secret',
+        client_secret: 'a-client-secret',
         grant_type: 'client_credentials'
       })
-    })
-
-    test('uses Web Identity locally when no client secret is configured', async () => {
-      config.set('cdpEnvironment', 'local')
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            access_token: 'new-access-token',
-            expires_in: 3600
-          })
-      })
-
-      await refreshToken()
-
-      expect(mockGetCredentials).toHaveBeenCalledTimes(1)
     })
   })
 
