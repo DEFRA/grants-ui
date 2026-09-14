@@ -9,6 +9,10 @@ import SummaryPage from '../page-objects/summary.page.js'
 import PrintSubmittedApplicationPage from '../page-objects/print-submitted-application.page.js'
 import TaskListPage from '../page-objects/task-list.page.js'
 
+Then('(the user )pauses', async function () {
+  await this.page.pause()
+})
+
 Then('a new tab should be opened at URL {string} and closed by the user', async function (expectedPath) {
   const newPage = await this.context.waitForEvent('page')
   await newPage.waitForLoadState()
