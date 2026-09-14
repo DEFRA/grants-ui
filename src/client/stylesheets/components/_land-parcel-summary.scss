@@ -28,4 +28,23 @@
   .govuk-summary-list__value {
     width: auto;
   }
+
+  @supports (grid-template-columns: subgrid) {
+    @include govuk-media-query($from: tablet) {
+      display: grid;
+      grid-template-columns: fit-content(66.6667%) minmax(0, 1fr);
+
+      .govuk-summary-list__row {
+        display: grid;
+        grid-column: 1 / -1;
+        grid-template-columns: subgrid;
+      }
+
+      .govuk-summary-list__key {
+        min-width: 0;
+        margin-bottom: 0;
+        overflow-wrap: anywhere;
+      }
+    }
+  }
 }
