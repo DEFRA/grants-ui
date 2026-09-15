@@ -1,6 +1,10 @@
 # Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities
 version: v1.25.0
 ignore:
+  'SNYK-JS-MOMENT-19821607':
+    - '*':
+        reason: 'Temporary ignore for Directory Traversal in moment@2.30.1, introduced through @defra/forms-engine-plugin > @defra/forms-model > @joi/date > moment. Fixed in moment 2.31.0 (published 2026-09-15), inside the .npmrc min-release-age=7 cooldown until 2026-09-22. Update the transitive Moment dependency and remove this ignore once the patched version is eligible.'
+        expires: '2026-09-24'
   'SNYK-JS-PROXYADDR-19812342':
     - '*':
         reason: 'Temporary ignore for User Impersonation in proxy-addr@2.0.7, introduced through @defra/forms-engine-plugin > @defra/interactive-map > the Docusaurus toolchain > webpack-dev-server > express. Fixed in proxy-addr 2.0.8; remove this ignore when the transitive dependency is updated.'
