@@ -176,6 +176,11 @@ export const SYSTEM = {
     messageFunc: (messageOptions) =>
       `check-details: SFD is enabled but externalLinks.sfd.updateUrl is missing or invalid (value=${messageOptions.updateUrl}); falling through to the update-details page instead of redirecting to SFD`
   },
+  SFD_HOME_URL_MISSING_ON_REDIRECT: {
+    level: 'warn',
+    messageFunc: (messageOptions) =>
+      `home: SFD is enabled but externalLinks.sfd.homeUrl is missing or invalid (value=${messageOptions.homeUrl}); falling through to the tactical grants landing page instead of redirecting to SFD`
+  },
   OS_MAPS_API_KEY_MISSING: {
     level: 'error',
     messageFunc: () =>
