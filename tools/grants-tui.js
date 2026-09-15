@@ -9,7 +9,8 @@
  *   node tools/grants-tui.js   (direct)
  *
  * Usage (non-interactive):
- *   gt up [--land-grants] [--gas] [--ha] [--scale <n>] [--dry-run]
+ *   gt up [--land-grants] [--gas] [--ha | --tailscale] [--scale <n>] [--dry-run]
+ *   gt tailscale on|off          # switch browser URLs and Serve proxies while running
  *   gt up --local-<service-key>  # use locally-built image for a defradigital service
  *   gt down [--dry-run]          # uses saved state automatically
  *   gt debug                     # restart grants-ui in debug mode (detached, port 9229)
@@ -79,6 +80,7 @@ import { cmdState } from './grants-tui/state.js'
 import { cmdTest } from './grants-tui/tests.js'
 import { releaseStdin } from './grants-tui/tui.js'
 import { runInteractiveLoop } from './grants-tui/tui-loop.js'
+import { cmdTailscale } from './grants-tui/tailscale.js'
 
 // Sweep of stale tool logs from tmpdir. macOS auto-clears windows tmpdir
 // after ~3 days
@@ -152,6 +154,11 @@ async function main() {
   }
 
   // Non-interactive commands
+  if (argv[0] === 'tailscale') {
+    releaseStdin()
+    process.exitCode = cmdTailscale(argv[1] === 'on', dryRun)
+    return
+  }
   if (argv.includes('down')) {
     releaseStdin()
     cmdDown(dryRun)

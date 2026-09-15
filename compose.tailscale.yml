@@ -1,0 +1,11 @@
+# Use after compose.infra.yml and compose.grants-ui.yml. See docs/DOCKER.md.
+services:
+  grants-ui:
+    environment:
+      APP_BASE_URL: 'https://${TAILSCALE_HOSTNAME:?Set TAILSCALE_HOSTNAME to your full .ts.net hostname}'
+      DEFRA_ID_REDIRECT_URL: 'https://${TAILSCALE_HOSTNAME:?Set TAILSCALE_HOSTNAME}/auth/sign-in-oidc'
+      DEFRA_ID_SIGN_OUT_REDIRECT_URL: 'https://${TAILSCALE_HOSTNAME:?Set TAILSCALE_HOSTNAME}/auth/sign-out-oidc'
+
+  fcp-defra-id-stub:
+    environment:
+      WELL_KNOWN_HOST_OVERRIDE: 'https://${TAILSCALE_HOSTNAME:?Set TAILSCALE_HOSTNAME}:8443'
