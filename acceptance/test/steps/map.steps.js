@@ -69,8 +69,9 @@ Then(
   }
 )
 
-Then('(the user )should see SSSI and HEFER requirements apply to the land parcel', async function () {
+Then('(the user )should see the following requirements applied to the land parcel', async function (dataTable) {
+  const [intro, ...expectedItems] = dataTable.raw().map((row) => row[0])
+  await expect(this.page.locator('#selected-parcel-requirements-intro')).toHaveText(intro)
   const items = this.page.locator('#selected-parcel-requirements-list li')
-  await expect(items).toContainText(['SSSI'])
-  await expect(items).toContainText(['HEFER'])
+  await expect(items).toHaveText(expectedItems)
 })

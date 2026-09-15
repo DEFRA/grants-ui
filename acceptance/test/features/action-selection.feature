@@ -23,14 +23,14 @@ Feature: Action Selection
             | Parcel reference  | SK0972 6820     |
             | Total area        | 0.2774 hectares |
         And should see the following actions with guidance
-            | ACTION | DESCRIPTION                                           | GUIDANCE                          | URL |
-            | CSAM3  | Herbal leys: CSAM3                                    | Payment rate per year: £224/ha | Yes |
-            |        |                                                       | 0.276 hectares available          |     |
-            | CLIG3  | Manage grassland with very low nutrient inputs: CLIG3 | Payment rate per year: £151/ha | Yes |
-            |        |                                                       | 0.2760 hectares available         |     |
+            | ACTION | DESCRIPTION                                           | GUIDANCE                                                         | URL |
+            | CSAM3  | Herbal leys: CSAM3                                    | Payment rate per year: £224/ha                                   | Yes |
+            |        |                                                       | 0.276 hectares available                                         |     |
+            | CLIG3  | Manage grassland with very low nutrient inputs: CLIG3 | Payment rate per year: £151/ha                                   | Yes |
+            |        |                                                       | 0.2760 hectares available                                        |     |
             |        |                                                       | This action will use all the available area on this land parcel. |     |
-            | SCR2   | Manage scrub and open habitat mosaics: SCR2           | Payment rate per year: £350/ha | Yes |
-            |        |                                                       | hectares available                |     |
+            | SCR2   | Manage scrub and open habitat mosaics: SCR2           | Payment rate per year: £350/ha                                   | Yes |
+            |        |                                                       | hectares available                                               |     |
         When the user selects action "CSAM3"
 
         # RULE: partial action hectares cannot be zero
@@ -229,11 +229,11 @@ Feature: Action Selection
             | Parcel reference  | SK0971 4561     |
             | Total area        | 0.0112 hectares |
         And should see the following actions with guidance
-            | ACTION | DESCRIPTION         | GUIDANCE                          | URL |
+            | ACTION | DESCRIPTION         | GUIDANCE                       | URL |
             | CSAM3  | Herbal leys: CSAM3  | Payment rate per year: £224/ha | Yes |
-            |        |                     | 0.0087 hectares available         |     |
+            |        |                     | 0.0087 hectares available      |     |
 
-    Scenario: Land parcel area with SSSI and HEFER is deducted from available area for ineligible actions
+    Scenario: User is advised when both SSSI and HEFER apply to a land parcel
         Given there is no application data for SBI "106592443" and grant "example-grant-with-map"
 
         # start
@@ -246,7 +246,10 @@ Feature: Action Selection
         Then the user should be at URL "select-land-parcel"
         And should see heading "Select a land parcel"
         When the user selects parcel "NY1215 1016" of area "308.6793" hectares on the map
-        Then the user should see SSSI and HEFER requirements apply to the land parcel
+        Then the user should see the following requirements applied to the land parcel
+            | Some actions require:                                  |
+            | site of special scientific interest (SSSI) consent     |
+            | a Historic Environment Farm Environment Record (HEFER) |
         When the user continues
 
         # select-actions-for-land-parcel
@@ -255,11 +258,75 @@ Feature: Action Selection
             | FIELD             | VALUE             |
             | Parcel reference  | NY1215 1016       |
             | Total area        | 308.6793 hectares |
+        And should see the following consent advice
+            | Some actions on this parcel need SSSI consent (opens in new tab) and an SFI HEFER (opens in new tab). We’ll show this on those actions. |
         And should see the following actions with guidance
-            | ACTION | DESCRIPTION                                           | GUIDANCE                                | URL |
-            | CSAM3  | Herbal leys: CSAM3                                    | Payment rate per year: £224/ha       | Yes |
-            |        |                                                       | 2.9402 hectares available               |     |
-            | CLIG3  | Manage grassland with very low nutrient inputs: CLIG3 | Payment rate per year: £151/ha       | Yes |
-            |        |                                                       | Requires SSSI consent and an SFI HEFER  |     |
-            |        |                                                       | 26.9088 hectares available              |     |
-        And should see "2.9402" hectares available for action "CSAM3"
+            | ACTION | DESCRIPTION                                           | GUIDANCE                               | URL |
+            | CSAM3  | Herbal leys: CSAM3                                    | Payment rate per year: £224/ha         | Yes |
+            |        |                                                       | 2.9402 hectares available              |     |
+            | CLIG3  | Manage grassland with very low nutrient inputs: CLIG3 | Payment rate per year: £151/ha         | Yes |
+            |        |                                                       | Requires SSSI consent and an SFI HEFER |     |
+            |        |                                                       | 26.9088 hectares available             |     |
+
+    Scenario: User is advised when either SSSI or HEFER applies to a land parcel
+        Given there is no application data for SBI "300000100" and grant "example-grant-with-map"
+
+        # start
+        Given the user navigates to "/example-grant-with-map"
+        And logs in as CRN "1300000100"
+        Then the user should see heading "Apply for Example Grant with Map"
+        When the user clicks on "Start now"
+
+        # select-land-parcel, parcel has SSSI intersection
+        Then the user should be at URL "select-land-parcel"
+        And should see heading "Select a land parcel"
+        When the user selects parcel "SD5848 9205" of area "169.8586" hectares on the map
+        Then the user should see the following requirements applied to the land parcel
+            | Some actions require:                               |
+            | site of special scientific interest (SSSI) consent  |
+        When the user continues
+
+        # select-actions-for-land-parcel, parcel has SSSI intersection
+        Then the user should be at URL "select-actions-for-land-parcel"
+        And should see the following selected land parcel
+            | FIELD             | VALUE             |
+            | Parcel reference  | SD5848 9205       |
+            | Total area        | 169.8586 hectares |
+        And should see the following consent advice
+            | Some actions on this parcel need SSSI consent (opens in new tab). We’ll show this on those actions. |
+        And should see the following actions with guidance
+            | ACTION | DESCRIPTION                                           | GUIDANCE                        | URL |
+            | CSAM3  | Herbal leys: CSAM3                                    | Payment rate per year: £224/ha  | Yes |
+            |        |                                                       | 0.1028 hectares available       |     |
+            | CLIG3  | Manage grassland with very low nutrient inputs: CLIG3 | Payment rate per year: £151/ha  | Yes |
+            |        |                                                       | Requires SSSI consent           |     |
+            |        |                                                       | 169.8586 hectares available     |     |
+            | SCR2   | Manage scrub and open habitat mosaics: SCR2           | Payment rate per year: £350/ha  | Yes |
+            |        |                                                       | 0.1028 hectares available       |     |
+
+        # select-land-parcel, parcel has HEFER intersection
+        When the user decides to change their land parcel
+        Then the user should be at URL "select-land-parcel"
+        When the user selects parcel "NU1514 2607" of area "110.5436" hectares on the map
+        Then the user should see the following requirements applied to the land parcel
+            | Some actions require:                                   |
+            | a Historic Environment Farm Environment Record (HEFER)  |
+        When the user continues
+
+        # select-actions-for-land-parcel, parcel has SSSI intersection
+        Then the user should be at URL "select-actions-for-land-parcel"
+        And should see the following selected land parcel
+            | FIELD             | VALUE             |
+            | Parcel reference  | NU1514 2607       |
+            | Total area        | 110.5436 hectares |
+        And should see the following consent advice
+            | Some actions on this parcel need an SFI HEFER (opens in new tab). We’ll show this on those actions. |
+        And should see the following actions with guidance
+            | ACTION | DESCRIPTION                                           | GUIDANCE                        | URL |
+            | CSAM3  | Herbal leys: CSAM3                                    | Payment rate per year: £224/ha  | Yes |
+            |        |                                                       | 0.0001 hectares available       |     |
+            | CLIG3  | Manage grassland with very low nutrient inputs: CLIG3 | Payment rate per year: £151/ha  | Yes |
+            |        |                                                       | Requires an SFI HEFER           |     |
+            |        |                                                       | 108.8600 hectares available     |     |
+            | SCR2   | Manage scrub and open habitat mosaics: SCR2           | Payment rate per year: £350/ha  | Yes |
+            |        |                                                       | 0.0001 hectares available       |     |
