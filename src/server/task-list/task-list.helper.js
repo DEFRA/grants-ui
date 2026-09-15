@@ -137,30 +137,44 @@ function isPageConditionMet(pageDef, state, formModel) {
  * @param formModel
  * @returns {boolean | null} True if all question components on the page have values in state, null if not applicable
  */
-function isTaskPageCompleted(pageDef, state, formModel) {
-  const parcelActionsTaskPages = findParcelActionsTaskPages(pageDef, formModel.def?.pages ?? [])
-  if (pageDef.controller === MAP_SELECT_PAGE_CONTROLLER && parcelActionsTaskPages) {
-    if (!isPageConditionMet(pageDef, state, formModel)) {
-      return null
-    }
-
-    return hasSavedLandParcelActions(state)
-  }
-
-  const componentNames = getPageComponentNames(pageDef, formModel)
-
-  // If no question components and no configured completion requirement to fall
-  // back on, consider it not applicable (shouldn't appear as task)
-  if (componentNames.length === 0 && !getCompletionRequirement(pageDef, formModel)) {
-    return false
-  }
-
+/**
+ * Whether a select-land-parcel-actions page is completed.
+ * @param {object} pageDef - The page definition
+ * @param {object} state - The current form state
+ * @param {object} formModel - The form model
+ * @returns {boolean | null}
+ */
+function isMapSelectPageCompleted(pageDef, state, formModel) {
   if (!isPageConditionMet(pageDef, state, formModel)) {
-    return null // Hide task as it is not applicable
+    return null
   }
 
-  // Check if all components have a value in state (unless required=false)
-  const allAnswered = componentNames.every((name) => {
+  return hasSavedLandParcelActions(state)
+}
+
+/**
+ * Status for a page with no question components and no completion requirement.
+ * A page with components defined, but none of them questions (e.g. Html-only
+ * guidance), isn't a real task - excluded from the count (null).
+ * A page with no components field at all (e.g. CheckResponsesPageController,
+ * DeclarationPageController) is a real task, just not one tracked via question
+ * values - kept as not-yet-completed (false).
+ * @param {object} pageDef - The page definition
+ * @returns {boolean | null}
+ */
+function emptyComponentsStatus(pageDef) {
+  const hasNonQuestionComponents = (pageDef.components?.length ?? 0) > 0
+  return hasNonQuestionComponents ? null : false
+}
+
+/**
+ * Whether all a page's question components have a value in state.
+ * @param {string[]} componentNames - Required component names
+ * @param {object} state - The current form state
+ * @returns {boolean}
+ */
+function allComponentsAnswered(componentNames, state) {
+  return componentNames.every((name) => {
     // Check if the exact name exists
     const value = state[name]
     if (value !== undefined && value !== null && value !== '') {
@@ -170,8 +184,25 @@ function isTaskPageCompleted(pageDef, state, formModel) {
     // Check if any subfield exists (name__subfield pattern)
     return Object.keys(state).some((key) => key.startsWith(`${name}__`))
   })
+}
 
-  return allAnswered && isCompletionRequirementMet(pageDef, state, formModel)
+function isTaskPageCompleted(pageDef, state, formModel) {
+  const parcelActionsTaskPages = findParcelActionsTaskPages(pageDef, formModel.def?.pages ?? [])
+  if (pageDef.controller === MAP_SELECT_PAGE_CONTROLLER && parcelActionsTaskPages) {
+    return isMapSelectPageCompleted(pageDef, state, formModel)
+  }
+
+  const componentNames = getPageComponentNames(pageDef, formModel)
+
+  if (componentNames.length === 0 && !getCompletionRequirement(pageDef, formModel)) {
+    return emptyComponentsStatus(pageDef)
+  }
+
+  if (!isPageConditionMet(pageDef, state, formModel)) {
+    return null // Hide task as it is not applicable
+  }
+
+  return allComponentsAnswered(componentNames, state) && isCompletionRequirementMet(pageDef, state, formModel)
 }
 
 /**

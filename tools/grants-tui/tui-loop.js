@@ -531,7 +531,8 @@ const BACK_HINT = '↑ ↓  navigate    enter → select    esc → back'
 
 /**
  * @typedef {{ chosen: string, crn: string | undefined, mode: string | undefined,
- *   clearChoice: string | undefined, mockNoActions: boolean, stop: string | undefined }} JourneyWizardCtx
+ *   clearChoice: string | undefined, commonLand: string | undefined, mockNoActions: boolean,
+ *   stop: string | undefined }} JourneyWizardCtx
  */
 
 /**
@@ -624,6 +625,38 @@ async function journeyStepAck(ctx) {
 }
 
 /** @param {JourneyWizardCtx} ctx */
+async function journeyStepCommonLand(ctx) {
+  // Offer a common-land yes/no override before running, for journeys with a
+  // yesNo step that supports it (currently woodland's grazing-rights question)
+  // - so a run can walk the "yes" branch (guidance page + confirmation
+  // section) without editing the journey definition file. Only offered for
+  // journeys that actually have such a step.
+  if (!journeySteps(ctx.chosen).some((s) => s.overrideKey === 'commonLand')) {
+    ctx.commonLand = undefined
+    return { type: 'skip' }
+  }
+  const commonLandItems = [
+    {
+      key: 'no',
+      label: 'No',
+      description: 'Standard journey - confirmation page shows only the default "What happens next" content'
+    },
+    {
+      key: 'yes',
+      label: 'Yes',
+      description:
+        'Shows the guidance page, and the confirmation page adds a "What you need to do" section on common land obligations'
+    }
+  ]
+  const picked = await radioMenu(commonLandItems, `Common land or shared grazing for '${ctx.chosen}'?`, {
+    hint: BACK_HINT
+  })
+  if (picked === '__quit__') return { type: 'back' }
+  ctx.commonLand = picked
+  return { type: 'next' }
+}
+
+/** @param {JourneyWizardCtx} ctx */
 async function journeyStepMock(ctx) {
   // Offer the land-parcel mock before the stop-page question, so a run can be
   // pointed at the "no eligible actions" path. The local seed gives every
@@ -677,6 +710,7 @@ const JOURNEY_WIZARD_STEPS = [
   journeyStepMode,
   journeyStepClear,
   journeyStepAck,
+  journeyStepCommonLand,
   journeyStepMock,
   journeyStepStop
 ]
@@ -697,6 +731,7 @@ async function runJourneyWizard(journeys) {
     crn: undefined,
     mode: undefined,
     clearChoice: undefined,
+    commonLand: undefined,
     mockNoActions: false,
     stop: undefined
   }
@@ -746,6 +781,7 @@ async function handleJourneyCommand(dryRun) {
       {
         crn: ctx.crn,
         stop: ctx.stop,
+        commonLand: ctx.commonLand,
         mockNoActions: ctx.mockNoActions,
         baseUrl: journeyBaseUrl(),
         headed: ctx.mode === 'headed',
