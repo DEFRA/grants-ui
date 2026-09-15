@@ -154,7 +154,7 @@ export function listJourneys() {
  * Read and parse a journey's step definition file. Returns [] if the file is
  * missing or unparseable — the single source of truth for the readers below.
  * @param {string} slug  grant URL slug
- * @returns {{name?: string, slug: string, type?: string}[]}
+ * @returns {{name?: string, slug: string, type?: string, overrideKey?: string}[]}
  */
 function loadJourney(slug) {
   try {
@@ -180,10 +180,15 @@ export function firstStepSlug(slug) {
  * entry's 1-based position is the number `runJourney`/`--stop` expects. `type` is
  * carried through so callers can tell whether a journey has, say, a map step.
  * @param {string} slug
- * @returns {{name: string, slug: string, type?: string}[]}
+ * @returns {{name: string, slug: string, type?: string, overrideKey?: string}[]}
  */
 export function journeySteps(slug) {
-  return loadJourney(slug).map((s) => ({ name: s.name ?? s.slug, slug: s.slug, type: s.type }))
+  return loadJourney(slug).map((s) => ({
+    name: s.name ?? s.slug,
+    slug: s.slug,
+    type: s.type,
+    overrideKey: s.overrideKey
+  }))
 }
 
 /**
@@ -191,7 +196,7 @@ export function journeySteps(slug) {
  * (`acceptance/journey-cli.js`). Streams the driver's output and returns its
  * exit code (0 = journey completed).
  * @param {string} slug  grant URL slug with a matching journeys/<slug>.json
- * @param {{crn?: string, stop?: string, parcel?: string, mockNoActions?: boolean, headed?: boolean, clear?: boolean, acknowledged?: boolean, baseUrl?: string, skipInstall?: boolean}} [opts]
+ * @param {{crn?: string, stop?: string, parcel?: string, commonLand?: string, mockNoActions?: boolean, headed?: boolean, clear?: boolean, acknowledged?: boolean, baseUrl?: string, skipInstall?: boolean}} [opts]
  * @param {boolean} [dryRun]  print the command without running it
  * @returns {number}  child exit code
  */
@@ -240,6 +245,7 @@ export function cmdJourney(slug, opts = {}, dryRun = false) {
   driverArgs.push('--crn', crn)
   if (opts.stop) driverArgs.push('--stop', opts.stop)
   if (opts.parcel) driverArgs.push('--parcel', opts.parcel)
+  if (opts.commonLand) driverArgs.push('--common-land', opts.commonLand)
   if (opts.mockNoActions) driverArgs.push('--mock-no-actions')
   if (opts.headed) driverArgs.push('--headed')
   if (opts.clear) driverArgs.push('--clear')

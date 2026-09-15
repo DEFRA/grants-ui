@@ -40,10 +40,17 @@
   },
   {
     "slug": "eligibility-grazing-rights",
-    "name": "Grazing rights — No",
+    "name": "Grazing rights / common land — No (override: --common-land)",
     "type": "yesNo",
     "fieldName": "landHasGrazingRights",
     "value": "false",
+    "overrideKey": "commonLand",
+    "section": "eligibility"
+  },
+  {
+    "slug": "eligibility-grazing-rights-guidance",
+    "name": "Common land guidance — Confirm and continue",
+    "type": "submitOnly",
     "section": "eligibility"
   },
   {
