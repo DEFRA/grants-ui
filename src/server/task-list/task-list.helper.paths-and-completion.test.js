@@ -169,6 +169,40 @@ describe('task-list.helper', () => {
       expect(getCompletionStats(mockModel, formModel, state).total).toBe(1)
     })
 
+    it('should treat an explicit TaskPageController page with only non-question components as not applicable', () => {
+      const mockModel = {
+        page: {
+          def: {
+            pages: [{ section: 's1', controller: 'TaskPageController', components: [{ type: 'Html', name: 'h1' }] }]
+          }
+        }
+      }
+      const formModel = { pageMap: buildPageMap(mockModel.page.def.pages) }
+      const state = { h1: 'some html' }
+      expect(getCompletionStats(mockModel, formModel, state).completed).toBe(0)
+      expect(getCompletionStats(mockModel, formModel, state).total).toBe(0)
+    })
+
+    it('should treat a dedicated-controller page with decorative components as an applicable, not-completed task', () => {
+      const mockModel = {
+        page: {
+          def: {
+            pages: [
+              {
+                section: 's1',
+                controller: 'DeclarationPageController',
+                components: [{ type: 'Html', name: 'declarationContent' }]
+              }
+            ]
+          }
+        }
+      }
+      const formModel = { pageMap: buildPageMap(mockModel.page.def.pages) }
+      const state = {}
+      expect(getCompletionStats(mockModel, formModel, state).completed).toBe(0)
+      expect(getCompletionStats(mockModel, formModel, state).total).toBe(1)
+    })
+
     it('should return null for tasks with unmet conditions', () => {
       const mockModel = {
         page: {
