@@ -1,6 +1,10 @@
 # Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities
 version: v1.25.0
 ignore:
+  'SNYK-JS-PROXYADDR-19812342':
+    - '*':
+        reason: 'Temporary ignore for User Impersonation in proxy-addr@2.0.7, introduced through @defra/forms-engine-plugin > @defra/interactive-map > the Docusaurus toolchain > webpack-dev-server > express. Fixed in proxy-addr 2.0.8; remove this ignore when the transitive dependency is updated.'
+        expires: '2026-09-24'
   'SNYK-JS-INFLIGHT-6095116':
     - '*':
         reason: 'Not reachable in application runtime — inflight is only present via glob from @defra/interactive-map/polygon-splitter package metadata and dev/build tooling; grants-ui and the shipped map bundles do not import glob or inflight. Re-checked 2026-08-24 on @defra/interactive-map 0.0.40-alpha: polygon-splitter still pins glob@^8, which requires inflight; no upstream fix available. Reassess for interactive-map/polygon-splitter dependency removal.'

@@ -266,7 +266,7 @@ function buildAdditionalYearlyPayments(payment) {
  * @property {string} area - Quantity and unit
  * @property {string} yearlyPayment - Formatted yearly payment
  * @property {string} changeHref - Link to change the parcel's actions
- * @property {string} [requirementText] - "Requires ..." hint for this action's consent requirements, when it has any
+ * @property {string} [requirementText] - Hint for this action's consent requirements, when it has any
  */
 
 /**
