@@ -169,6 +169,26 @@ describe('task-list.helper', () => {
       expect(getCompletionStats(mockModel, formModel, state).total).toBe(1)
     })
 
+    it.each([
+      ['without a components field', {}],
+      ['with an empty components list', { controller: 'TaskPageController', components: [] }]
+    ])('keeps a generic task %s in the outstanding task count', (_, pageDefinition) => {
+      const mockModel = {
+        page: {
+          def: {
+            pages: [{ section: 's1', ...pageDefinition }]
+          }
+        }
+      }
+      const formModel = { pageMap: buildPageMap(mockModel.page.def.pages) }
+
+      expect(getCompletionStats(mockModel, formModel, {})).toEqual({
+        completed: 0,
+        total: 1,
+        isComplete: false
+      })
+    })
+
     it('should treat an explicit TaskPageController page with only non-question components as not applicable', () => {
       const mockModel = {
         page: {
@@ -201,6 +221,27 @@ describe('task-list.helper', () => {
       const state = {}
       expect(getCompletionStats(mockModel, formModel, state).completed).toBe(0)
       expect(getCompletionStats(mockModel, formModel, state).total).toBe(1)
+    })
+
+    it('keeps the declaration outstanding after all questions are answered, excluding guidance from the count', () => {
+      const pages = [
+        { ...task1Page },
+        { section: 's1', path: '/guidance', components: [{ type: 'Html', name: 'guidance' }] },
+        {
+          section: 's2',
+          path: '/declaration',
+          controller: 'DeclarationPageController',
+          components: [{ type: 'Html', name: 'declarationContent' }]
+        }
+      ]
+      const mockModel = { page: { def: { pages } } }
+      const formModel = { pageMap: buildPageMap(pages) }
+
+      expect(getCompletionStats(mockModel, formModel, { q1: true })).toEqual({
+        completed: 1,
+        total: 2,
+        isComplete: false
+      })
     })
 
     it('should return null for tasks with unmet conditions', () => {
