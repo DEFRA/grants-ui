@@ -383,7 +383,7 @@ config:
       href: https://example.org/sssi-consent-guidance
 ```
 
-The link names are case-sensitive. URLs may be absolute or relative to the journey page. If a URL is omitted, the consent text remains without a link. This configuration does not affect grouped-action hints or the consent-required page.
+The link names are case-sensitive. Configure absolute HTTPS URLs pointing to the published production guidance, not relative journey URLs. If a URL is omitted, the consent text remains without a link. This configuration does not affect grouped-action hints or the consent-required page.
 
 ## Authentication & Authorization
 
