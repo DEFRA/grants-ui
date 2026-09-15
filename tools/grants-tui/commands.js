@@ -30,6 +30,8 @@ import { cmdSonar } from './sonar.js'
 import { loadState, saveState, clearState } from './cli-state.js'
 import { cmdTest, testLogPath } from './tests.js'
 import { registerTempFile } from './temp-files.js'
+import { disableTailscaleServe, enableTailscaleServe } from './tailscale-serve.js'
+import { cmdTailscale, tailscaleEnabled } from './tailscale.js'
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -226,6 +228,29 @@ export async function cmdCheck(dryRun = false) {
  * @returns {{ status: number, elapsedSeconds: string | null }}
  */
 export function cmdUp(selectedAddons, scale, dryRun, localServices = [], interactive = false) {
+  if (selectedAddons.includes('tailscale') && selectedAddons.includes('ha')) {
+    console.error('Tailscale mode cannot be combined with the HA proxy.')
+    if (!interactive) process.exit(1)
+    return { status: 1, elapsedSeconds: null }
+  }
+  const runningFiles = getRunningComposeFiles()
+  if (tailscaleEnabled(runningFiles) && !selectedAddons.includes('tailscale')) {
+    const switchStatus = cmdTailscale(false, dryRun)
+    if (switchStatus !== 0) {
+      if (!interactive) process.exit(switchStatus)
+      return { status: switchStatus, elapsedSeconds: null }
+    }
+  }
+  let createdPorts = []
+  if (selectedAddons.includes('tailscale')) {
+    try {
+      createdPorts = enableTailscaleServe(dryRun)
+    } catch (error) {
+      console.error(error.message)
+      if (!interactive) process.exit(1)
+      return { status: 1, elapsedSeconds: null }
+    }
+  }
   const fileArgs = composeFileArgs(selectedAddons, localServices)
   const extraArgs = ['-d', '--wait']
   if (scale && selectedAddons.includes('ha')) {
@@ -237,12 +262,15 @@ export function cmdUp(selectedAddons, scale, dryRun, localServices = [], interac
   console.log(`  ${BOLD}Starting:${RESET_COLOR} core${addonSummary}${scaleSuffix}\n`)
   const preStatus = runPreUpScript(dryRun)
   if (preStatus !== 0) {
+    disableTailscaleServe(dryRun, createdPorts)
     if (!interactive) process.exit(preStatus)
     return { status: preStatus, elapsedSeconds: null }
   }
   const startTime = Date.now()
   let elapsedSeconds = null
   const status = runCompose([...fileArgs, 'up', ...extraArgs], dryRun)
+  // Keep Serve available after a partial Docker startup so retrying up can
+  // recover; removing it could strand an already-recreated UI at its new URL.
   if (status === 0 && !dryRun) {
     elapsedSeconds = ((Date.now() - startTime) / 1000).toFixed(1)
     const selectedFormDefIds = getSelectedFormDefIds(loadState())
@@ -282,6 +310,7 @@ export function cmdUp(selectedAddons, scale, dryRun, localServices = [], interac
  */
 export function cmdDown(dryRun, interactive = false) {
   const state = loadState()
+  const tailscaleOn = tailscaleEnabled(getRunningComposeFiles()) || state?.addons?.includes('tailscale')
   let fileArgs
 
   if (state) {
@@ -294,7 +323,8 @@ export function cmdDown(dryRun, interactive = false) {
     fileArgs = composeFileArgs([])
   }
 
-  const status = runCompose([...fileArgs, 'down', '--remove-orphans', '--rmi', 'local'], dryRun)
+  let status = runCompose([...fileArgs, 'down', '--remove-orphans', '--rmi', 'local'], dryRun)
+  if (status === 0 && tailscaleOn) status = disableTailscaleServe(dryRun)
   if (status === 0 && !dryRun) {
     // Keep state so next `up` can pre-select the same addons
     console.log(`  ${GREEN}✔${RESET_COLOR}  Containers stopped.\n`)
@@ -373,6 +403,7 @@ function runDockerOrPreview(dryRun, args, previewCmd) {
  * @returns {number}
  */
 export function cmdReset(dryRun) {
+  const tailscaleOn = tailscaleEnabled(getRunningComposeFiles()) || loadState()?.addons?.includes('tailscale')
   console.log(`\n  ${YELLOW}⚠${RESET_COLOR}  RESET: This will remove all containers, volumes, and local images.\n`)
 
   const composeFiles = ['compose.grants-ui.yml', 'compose.land-grants.yml']
@@ -436,6 +467,7 @@ export function cmdReset(dryRun) {
     }
   }
 
+  if (status === 0 && tailscaleOn) status = disableTailscaleServe(dryRun)
   if (!dryRun && status === 0) {
     clearState()
     console.log(`  ${GREEN}✔${RESET_COLOR}  Reset complete.\n`)

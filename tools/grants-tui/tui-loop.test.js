@@ -1,8 +1,9 @@
 // @vitest-environment node
 import { beforeEach, expect, test, vi } from 'vitest'
-import { buildMainMenuItems, handleChecksCommand, handleToolsCommand } from './tui-loop.js'
+import { stripVTControlCharacters } from 'node:util'
+import { buildMainMenuItems, handleChecksCommand, handleToolsCommand, refreshRuntimeStatus } from './tui-loop.js'
 import { radioMenu, setRuntimeStatusLine, toggleMenu } from './tui.js'
-import { getRunningComposeFiles } from './docker.js'
+import { getRunningComposeFiles, getRunningAppBaseUrl } from './docker.js'
 import { getGasStatus } from './gas.js'
 import { getLastRun, runInteractiveAction, setActionMenu } from './actions.js'
 import { viewOutput } from './output.js'
@@ -10,7 +11,8 @@ import { viewOutput } from './output.js'
 vi.mock('./tui.js', () => ({ radioMenu: vi.fn(), toggleMenu: vi.fn(), setRuntimeStatusLine: vi.fn() }))
 vi.mock('./docker.js', async (importOriginal) => ({
   ...(await importOriginal()),
-  getRunningComposeFiles: vi.fn()
+  getRunningComposeFiles: vi.fn(),
+  getRunningAppBaseUrl: vi.fn(() => 'https://test.example.ts.net')
 }))
 vi.mock('./gas.js', async (importOriginal) => ({ ...(await importOriginal()), getGasStatus: vi.fn() }))
 vi.mock('./actions.js', async (importOriginal) => ({
@@ -35,6 +37,34 @@ test('the main menu groups checks into one entry', () => {
   expect(keys).toContain('checks')
   expect(keys).not.toEqual(expect.arrayContaining(['lint']))
   expect(keys.filter((key) => ['format', 'test', 'sonar', 'snyk', 'check'].includes(key))).toEqual([])
+})
+
+test('Tailscale toggle is available while running and reflects the actual mode', () => {
+  const item = buildMainMenuItems(null, true, true).find((i) => i.key === 'tailscale')
+  expect(item).toMatchObject({ label: 'tailscale', description: expect.stringContaining('Disable') })
+  expect(item.disabled).toBeUndefined()
+  expect(buildMainMenuItems(null, true, false).find((i) => i.key === 'tailscale').description).toContain('Enable')
+})
+
+test('Tailscale toggle is disabled with an install hint when unavailable at startup', () => {
+  const item = buildMainMenuItems(null, false, false, { available: false, description: 'Install Tailscale CLI' }).find(
+    (i) => i.key === 'tailscale'
+  )
+  expect(item).toMatchObject({ disabled: true, description: 'Install Tailscale CLI' })
+})
+
+test('Tailscale address follows GAS in the persistent runtime footer', async () => {
+  await refreshRuntimeStatus(['compose.infra.yml', 'compose.grants-ui.yml', 'compose.tailscale.yml'])
+  const text = String(vi.mocked(setRuntimeStatusLine).mock.lastCall?.[0])
+  expect(stripVTControlCharacters(text)).toContain('GAS: RECEIVED  │  Tailscale: https://test.example.ts.net')
+  expect(text).not.toContain('\n')
+  expect(getRunningAppBaseUrl).toHaveBeenCalledTimes(1)
+})
+
+test('Tailscale footer disappears after disabling, regardless of saved selection', async () => {
+  await refreshRuntimeStatus(['compose.infra.yml', 'compose.grants-ui.yml'])
+  expect(setRuntimeStatusLine).toHaveBeenCalledWith(expect.not.stringContaining('Tailscale:'))
+  expect(getRunningAppBaseUrl).not.toHaveBeenCalled()
 })
 
 test('checks exposes each suite directly and escape starts no action', async () => {

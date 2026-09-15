@@ -4,6 +4,7 @@ import {
   ADDONS,
   ALT_SCREEN_ENTER,
   ALT_SCREEN_EXIT,
+  BLUE,
   CHECK,
   DIM,
   HIDE_CURSOR,
@@ -34,6 +35,7 @@ import {
   getAllServices,
   getLocalImages,
   getRunningComposeFiles,
+  getRunningAppBaseUrl,
   getRunningServices,
   journeyBaseUrl
 } from './docker.js'
@@ -42,17 +44,26 @@ import { GAS_DIVIDER, gasStatusSegment, getGasStatus, setGasStatus } from './gas
 import { journeyCrnOptions, journeySteps, listJourneys, wontCompleteReason } from './journey.js'
 import { loadState, saveState } from './cli-state.js'
 import { promptScale, promptTextWithOptions, radioMenu, setRuntimeStatusLine, toggleMenu } from './tui.js'
+import { tailscaleEnabled, tailscaleStatusSegment } from './tailscale.js'
+import { getTailscaleAvailability } from './tailscale-serve.js'
 
 // ---------------------------------------------------------------------------
 // Main menu
 // ---------------------------------------------------------------------------
 
 /**
- * @param {{ localServices?: string[], localFormDefSelections?: string[], localFormDefs?: boolean } | null} savedState
+ * @param {{ addons?: string[], localServices?: string[], localFormDefSelections?: string[], localFormDefs?: boolean } | null} savedState
  * @param {boolean} containersRunning
+ * @param {boolean} [tailscaleOn]
+ * @param {{ available: boolean, description: string }} [tailscaleAvailability]
  * @returns {object[]}
  */
-export function buildMainMenuItems(savedState, containersRunning) {
+export function buildMainMenuItems(
+  savedState,
+  containersRunning,
+  tailscaleOn = savedState?.addons?.includes('tailscale') ?? false,
+  tailscaleAvailability = { available: true, description: '' }
+) {
   const localCount = savedState?.localServices?.length || 0
   const formDefSelectionCount = getSelectedFormDefIds(savedState).length
   const localFormDefsOn = formDefSelectionCount > 0
@@ -100,6 +111,17 @@ export function buildMainMenuItems(savedState, containersRunning) {
           }
         ]
       : []),
+    {
+      key: 'tailscale',
+      label: 'tailscale',
+      colour: tailscaleOn ? BLUE : undefined,
+      description: tailscaleOn
+        ? 'Disable Tailscale mode — restore localhost'
+        : tailscaleAvailability.available
+          ? 'Enable Tailscale mode — HTTPS phone testing'
+          : tailscaleAvailability.description,
+      ...(tailscaleAvailability.available ? {} : { disabled: true })
+    },
     { key: 'checks', label: 'checks ⇢', description: 'Tests, lint, security scans and pre-PR checks' },
     { key: 'tools', label: 'tools ⇢', description: 'Audit logs, queue messages and cleanup' },
     {
@@ -125,12 +147,14 @@ async function resolveGasStatus(containersRunning, runningComposeFiles) {
   return gasMockActive ? await getGasStatus() : null
 }
 
-async function refreshRuntimeStatus(runningComposeFiles = getRunningComposeFiles()) {
+export async function refreshRuntimeStatus(runningComposeFiles = getRunningComposeFiles()) {
   const gasStatus = await resolveGasStatus(!!runningComposeFiles, runningComposeFiles)
   const runtimeLine = buildStatusLine(runningComposeFiles)
-  setRuntimeStatusLine(
-    gasStatus === null ? runtimeLine : `${runtimeLine}  ${GAS_DIVIDER}  ${gasStatusSegment(gasStatus)}`
-  )
+  const gasLine = gasStatus === null ? runtimeLine : `${runtimeLine}  ${GAS_DIVIDER}  ${gasStatusSegment(gasStatus)}`
+  const tailscaleLine = tailscaleEnabled(runningComposeFiles)
+    ? `  ${GAS_DIVIDER}  ${tailscaleStatusSegment(getRunningAppBaseUrl() ?? 'address unavailable')}`
+    : ''
+  setRuntimeStatusLine(gasLine + tailscaleLine)
   return gasStatus
 }
 
@@ -531,7 +555,8 @@ const BACK_HINT = '↑ ↓  navigate    enter → select    esc → back'
 
 /**
  * @typedef {{ chosen: string, crn: string | undefined, mode: string | undefined,
- *   clearChoice: string | undefined, mockNoActions: boolean, stop: string | undefined }} JourneyWizardCtx
+ *   clearChoice: string | undefined, commonLand: string | undefined, mockNoActions: boolean,
+ *   stop: string | undefined }} JourneyWizardCtx
  */
 
 /**
@@ -624,6 +649,38 @@ async function journeyStepAck(ctx) {
 }
 
 /** @param {JourneyWizardCtx} ctx */
+async function journeyStepCommonLand(ctx) {
+  // Offer a common-land yes/no override before running, for journeys with a
+  // yesNo step that supports it (currently woodland's grazing-rights question)
+  // - so a run can walk the "yes" branch (guidance page + confirmation
+  // section) without editing the journey definition file. Only offered for
+  // journeys that actually have such a step.
+  if (!journeySteps(ctx.chosen).some((s) => s.overrideKey === 'commonLand')) {
+    ctx.commonLand = undefined
+    return { type: 'skip' }
+  }
+  const commonLandItems = [
+    {
+      key: 'no',
+      label: 'No',
+      description: 'Standard journey - confirmation page shows only the default "What happens next" content'
+    },
+    {
+      key: 'yes',
+      label: 'Yes',
+      description:
+        'Shows the guidance page, and the confirmation page adds a "What you need to do" section on common land obligations'
+    }
+  ]
+  const picked = await radioMenu(commonLandItems, `Common land or shared grazing for '${ctx.chosen}'?`, {
+    hint: BACK_HINT
+  })
+  if (picked === '__quit__') return { type: 'back' }
+  ctx.commonLand = picked
+  return { type: 'next' }
+}
+
+/** @param {JourneyWizardCtx} ctx */
 async function journeyStepMock(ctx) {
   // Offer the land-parcel mock before the stop-page question, so a run can be
   // pointed at the "no eligible actions" path. The local seed gives every
@@ -677,6 +734,7 @@ const JOURNEY_WIZARD_STEPS = [
   journeyStepMode,
   journeyStepClear,
   journeyStepAck,
+  journeyStepCommonLand,
   journeyStepMock,
   journeyStepStop
 ]
@@ -697,6 +755,7 @@ async function runJourneyWizard(journeys) {
     crn: undefined,
     mode: undefined,
     clearChoice: undefined,
+    commonLand: undefined,
     mockNoActions: false,
     stop: undefined
   }
@@ -746,6 +805,7 @@ async function handleJourneyCommand(dryRun) {
       {
         crn: ctx.crn,
         stop: ctx.stop,
+        commonLand: ctx.commonLand,
         mockNoActions: ctx.mockNoActions,
         baseUrl: journeyBaseUrl(),
         headed: ctx.mode === 'headed',
@@ -822,11 +882,19 @@ async function handleDockerLifecycleCommand(command, dryRun) {
 }
 
 /**
- * @typedef {{ dryRun: boolean, savedState: object | null, containersRunning: boolean }} CommandContext
+ * @typedef {{ dryRun: boolean, savedState: object | null, containersRunning: boolean, tailscaleOn: boolean }} CommandContext
  */
 
 /** @type {Record<string, (ctx: CommandContext) => Promise<string>>} */
 const COMMAND_HANDLERS = {
+  tailscale: async (ctx) => {
+    const status = await runInteractiveAction(
+      'tailscale',
+      [!ctx.tailscaleOn, ctx.dryRun],
+      ctx.tailscaleOn ? 'Disabling Tailscale mode' : 'Enabling Tailscale mode'
+    )
+    return status === 0 ? '' : `${RED}Tailscale switch failed — check output${RESET_COLOR}`
+  },
   restart: (ctx) => handleRestartCommand(ctx.dryRun),
   up: (ctx) => handleUpCommand(ctx.dryRun, ctx.savedState),
   local: (ctx) => handleLocalCommand(ctx.dryRun, ctx.savedState, ctx.containersRunning),
@@ -878,6 +946,10 @@ export async function runInteractiveLoop(dryRun) {
 
   registerSigintHandler()
 
+  // Check once at startup so rendering the menu does not repeatedly invoke
+  // Tailscale's local service.
+  const tailscaleAvailability = getTailscaleAvailability()
+
   // Enter alternate screen buffer so the TUI leaves no residue in scroll-back
   process.stdout.write(ALT_SCREEN_ENTER + HIDE_CURSOR)
 
@@ -888,7 +960,10 @@ export async function runInteractiveLoop(dryRun) {
     const runningComposeFiles = getRunningComposeFiles()
     const containersRunning = !!runningComposeFiles
 
-    const menuItems = buildMainMenuItems(savedState, containersRunning)
+    const tailscaleOn = containersRunning
+      ? tailscaleEnabled(runningComposeFiles)
+      : (savedState?.addons?.includes('tailscale') ?? false)
+    const menuItems = buildMainMenuItems(savedState, containersRunning, tailscaleOn, tailscaleAvailability)
     const lastRun = getLastRun()
     if (getActionRuns().length) {
       menuItems.push({ key: 'output', label: 'output ⇢', description: 'Browse output from this session (l → latest)' })
@@ -935,7 +1010,7 @@ export async function runInteractiveLoop(dryRun) {
 
     const handler = COMMAND_HANDLERS[command]
     if (handler) {
-      statusLine = await handler({ dryRun, savedState, containersRunning })
+      statusLine = await handler({ dryRun, savedState, containersRunning, tailscaleOn })
       const completed = getLastRun()
       if (completed !== lastRun) {
         statusLine = completed.logPath

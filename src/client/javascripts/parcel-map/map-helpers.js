@@ -41,6 +41,7 @@ import { formatParcelReference } from '../../../shared/format-parcel.js'
 
 // Same PARCEL_ID_PROPERTY the interact plugin matches on, so label/colour/
 // highlight logic can't disagree with what's selected.
+/** @type {['get', string]} */
 export const COMPOUND_ID_EXPR = ['get', PARCEL_ID_PROPERTY]
 
 // Display expression for the on-parcel map labels: the compound id
