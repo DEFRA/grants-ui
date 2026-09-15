@@ -141,7 +141,7 @@ describe('task-list.helper', () => {
       expect(getCompletionStats(mockModel, formModel, state).completed).toBe(1)
     })
 
-    it('should ignore non-question components', () => {
+    it('should treat a page with only non-question components as not applicable', () => {
       const mockModel = {
         page: {
           def: {
@@ -151,6 +151,20 @@ describe('task-list.helper', () => {
       }
       const formModel = { pageMap: buildPageMap(mockModel.page.def.pages) }
       const state = { h1: 'some html' }
+      expect(getCompletionStats(mockModel, formModel, state).completed).toBe(0)
+      expect(getCompletionStats(mockModel, formModel, state).total).toBe(0)
+    })
+
+    it('should treat a page with no components field at all as an applicable, not-completed task', () => {
+      const mockModel = {
+        page: {
+          def: {
+            pages: [{ section: 's1', controller: 'CheckResponsesPageController' }]
+          }
+        }
+      }
+      const formModel = { pageMap: buildPageMap(mockModel.page.def.pages) }
+      const state = {}
       expect(getCompletionStats(mockModel, formModel, state).completed).toBe(0)
       expect(getCompletionStats(mockModel, formModel, state).total).toBe(1)
     })

@@ -18,6 +18,7 @@
  * Usage:
  *   node journey-cli.js <slug> [--crn <crn>] [--stop <n|section>] [--headed]
  *                              [--parcel <ref>] [--mock-no-actions]
+ *                              [--common-land <yes|no>]
  *                              [--base-url <url>] [--timeout <ms>]
  *
  * Invoked by `gt journey <slug>` (tools/grants-tui/journey.js).
@@ -52,6 +53,7 @@ function parseArgs(argv) {
     stop: undefined,
     start: 'start',
     parcel: undefined,
+    commonLand: undefined,
     mockNoActions: false,
     headed: false,
     clear: false,
@@ -74,6 +76,8 @@ function parseArgs(argv) {
       opts.start = argv[++i]
     } else if (arg === '--parcel') {
       opts.parcel = argv[++i]
+    } else if (arg === '--common-land') {
+      opts.commonLand = argv[++i]
     } else if (arg === '--base-url') {
       opts.baseUrl = argv[++i]
     } else if (arg === '--timeout') {
@@ -138,7 +142,7 @@ async function main() {
   const opts = parseArgs(process.argv.slice(2))
   if (!opts.slug) {
     console.error(
-      'Usage: node journey-cli.js <slug> [--crn <crn>] [--stop <n|section>] [--start <page>] [--parcel <ref>] [--mock-no-actions] [--headed] [--clear] [--base-url <url>]'
+      'Usage: node journey-cli.js <slug> [--crn <crn>] [--stop <n|section>] [--start <page>] [--parcel <ref>] [--common-land <yes|no>] [--mock-no-actions] [--headed] [--clear] [--base-url <url>]'
     )
     process.exit(2)
   }
@@ -218,10 +222,23 @@ async function main() {
     // The first step submits and navigates, which can tear down the evaluate
     // context — that's expected, not an error.
     await page
-      .evaluate(({ stop, parcel }) => globalThis.runJourney(stop, parcel ? { parcel } : undefined), {
-        stop: stopArg ?? null,
-        parcel: opts.parcel ?? null
-      })
+      .evaluate(
+        ({ stop, parcel, commonLand }) => {
+          const options = {}
+          if (parcel) {
+            options.parcel = parcel
+          }
+          if (commonLand !== null) {
+            options.commonLand = commonLand
+          }
+          globalThis.runJourney(stop, Object.keys(options).length ? options : undefined)
+        },
+        {
+          stop: stopArg ?? null,
+          parcel: opts.parcel ?? null,
+          commonLand: opts.commonLand === undefined ? null : opts.commonLand === 'yes'
+        }
+      )
       .catch(() => {})
 
     const timer = new Promise((resolve) => setTimeout(() => resolve('timeout'), opts.timeout))

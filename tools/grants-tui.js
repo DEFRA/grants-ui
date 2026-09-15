@@ -232,6 +232,7 @@ async function main() {
       crn: valueOf('--crn'),
       stop: valueOf('--stop'),
       parcel: valueOf('--parcel'),
+      commonLand: valueOf('--common-land'),
       mockNoActions: argv.includes('--mock-no-actions'),
       baseUrl,
       headed: argv.includes('--headed'),
