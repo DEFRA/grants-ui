@@ -47,7 +47,7 @@ export async function persistSubmissionToApi(submission, request) {
   try {
     const response = await fetch(url.href, {
       method: 'POST',
-      headers: createApiHeadersForGrantsUiBackend({ lockToken }),
+      headers: await createApiHeadersForGrantsUiBackend({ lockToken }),
       body: JSON.stringify({
         ...submission,
         grantVersion

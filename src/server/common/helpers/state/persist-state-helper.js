@@ -56,7 +56,7 @@ export async function persistStateToApi(state, key, { lockToken, grantVersion } 
   try {
     const response = await fetch(url.href, {
       method: 'POST',
-      headers: createApiHeadersForGrantsUiBackend({ lockToken }),
+      headers: await createApiHeadersForGrantsUiBackend({ lockToken }),
       body
     })
 

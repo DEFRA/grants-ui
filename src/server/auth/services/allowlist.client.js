@@ -23,7 +23,7 @@ export async function fetchAllowedGrants(crn, sbi) {
   const userContext = Jwt.token.generate({ crn, sbi }, jwtSecret)
 
   const headers = /** @type {HeadersInit} */ ({
-    ...createApiHeadersForGrantsUiBackend(),
+    ...(await createApiHeadersForGrantsUiBackend()),
     'x-user-context': userContext
   })
 

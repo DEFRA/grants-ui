@@ -98,7 +98,7 @@ describe('Backend Auth Helper', () => {
         setupMockConfig('', TEST_ENCRYPTION_KEY)
 
         const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
-        const headers = createApiHeadersForGrantsUiBackend(HEADER_OBJECTS.CONTENT_TYPE_JSON)
+        const headers = await createApiHeadersForGrantsUiBackend(HEADER_OBJECTS.CONTENT_TYPE_JSON)
 
         expect(mockConfigGet).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_AUTH_TOKEN)
         expect(headers).toEqual(HEADER_OBJECTS.CONTENT_TYPE_JSON)
@@ -111,7 +111,7 @@ describe('Backend Auth Helper', () => {
         setupMockConfig(MOCK_TOKENS.DEFAULT)
 
         const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
-        const headers = createApiHeadersForGrantsUiBackend(HEADER_OBJECTS.CONTENT_TYPE_JSON)
+        const headers = await createApiHeadersForGrantsUiBackend(HEADER_OBJECTS.CONTENT_TYPE_JSON)
 
         expect(mockConfigGet).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_AUTH_TOKEN)
         expect(headers).toHaveProperty('Content-Type', 'application/json')
@@ -127,7 +127,7 @@ describe('Backend Auth Helper', () => {
         setupMockConfig(MOCK_TOKENS.ALTERNATIVE)
 
         const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
-        const headers = createApiHeadersForGrantsUiBackend(undefined)
+        const headers = await createApiHeadersForGrantsUiBackend(undefined)
 
         expect(mockConfigGet).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_AUTH_TOKEN)
         expect(headers).toHaveProperty('Authorization')
@@ -167,7 +167,7 @@ describe('Backend Auth Helper', () => {
       setupMockConfig(MOCK_TOKENS.MUTATION_TEST)
 
       const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
-      const headers = createApiHeadersForGrantsUiBackend(baseHeaders)
+      const headers = await createApiHeadersForGrantsUiBackend(baseHeaders)
 
       expect(baseHeaders).toEqual(HEADER_OBJECTS.CONTENT_TYPE_JSON)
       expect(baseHeaders.Authorization).toBeUndefined()
@@ -178,7 +178,7 @@ describe('Backend Auth Helper', () => {
       setupMockConfig(null, TEST_ENCRYPTION_KEY)
 
       const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
-      const headers = createApiHeadersForGrantsUiBackend({ 'Content-Type': CONTENT_TYPE_JSON })
+      const headers = await createApiHeadersForGrantsUiBackend({ 'Content-Type': CONTENT_TYPE_JSON })
 
       expect(headers).toEqual(HEADER_OBJECTS.CONTENT_TYPE_JSON)
       expect(headers.Authorization).toBeUndefined()
@@ -188,7 +188,7 @@ describe('Backend Auth Helper', () => {
       setupMockConfig(MOCK_TOKENS.DEFAULT)
       const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
 
-      const headers = createApiHeadersForGrantsUiBackend({ lockToken: 'LOCK-123' })
+      const headers = await createApiHeadersForGrantsUiBackend({ lockToken: 'LOCK-123' })
 
       expect(headers).toHaveProperty('X-Application-Lock-Owner', 'LOCK-123')
       expect(headers.Authorization).toBeDefined()
@@ -201,7 +201,7 @@ describe('Backend Auth Helper', () => {
       setupMockConfig('', TEST_ENCRYPTION_KEY)
 
       const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
-      const headers = createApiHeadersForGrantsUiBackend()
+      const headers = await createApiHeadersForGrantsUiBackend()
 
       expect(headers).toEqual(HEADER_OBJECTS.CONTENT_TYPE_JSON)
     })
@@ -210,7 +210,7 @@ describe('Backend Auth Helper', () => {
       setupMockConfig(MOCK_TOKENS.API)
 
       const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
-      const headers = createApiHeadersForGrantsUiBackend()
+      const headers = await createApiHeadersForGrantsUiBackend()
 
       expect(headers).toHaveProperty('Content-Type', 'application/json')
       expect(headers).toHaveProperty('Authorization')
@@ -227,7 +227,7 @@ describe('Backend Auth Helper', () => {
       setupMockConfig(MOCK_TOKENS.SECRET)
 
       const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
-      const headers = createApiHeadersForGrantsUiBackend()
+      const headers = await createApiHeadersForGrantsUiBackend()
       const authHeader = headers.Authorization
 
       const base64Part = authHeader.replace('Bearer ', '')
@@ -252,7 +252,7 @@ describe('Backend Auth Helper', () => {
       mockConfigGet.mockImplementation((key) => configValues[key] || null)
 
       const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
-      const headers = createApiHeadersForGrantsUiBackend(HEADER_OBJECTS.CONTENT_TYPE_JSON)
+      const headers = await createApiHeadersForGrantsUiBackend(HEADER_OBJECTS.CONTENT_TYPE_JSON)
 
       expect(mockConfigGet).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_AUTH_TOKEN)
       expect(mockConfigGet).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_ENCRYPTION_KEY)

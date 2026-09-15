@@ -55,6 +55,7 @@ services:
       GRANTS_UI_BACKEND_AUTH_TOKEN: ${GRANTS_UI_BACKEND_AUTH_TOKEN:-auth_token}
       GRANTS_UI_BACKEND_ENCRYPTION_KEY: ${GRANTS_UI_BACKEND_ENCRYPTION_KEY:-encryption_key}
       GRANTS_UI_BACKEND_AUTH_JWT_SECRET: ${GRANTS_UI_BACKEND_AUTH_JWT_SECRET:-allowlist-jwt-secret}
+      GRANTS_UI_BACKEND_AUTH_METHOD: '${GRANTS_UI_BACKEND_AUTH_METHOD:-shared_token}'
       APP_BASE_URL: '${APP_BASE_URL:-http://localhost:3000}'
       HOST: 0.0.0.0
       GAS_API_URL: '${GAS_API_URL:-http://mockserver:1080}'
@@ -129,12 +130,14 @@ services:
       GRANTS_UI_BACKEND_AUTH_TOKEN: ${GRANTS_UI_BACKEND_AUTH_TOKEN:-auth_token}
       GRANTS_UI_BACKEND_ENCRYPTION_KEY: ${GRANTS_UI_BACKEND_ENCRYPTION_KEY:-encryption_key}
       ENCRYPTED_AUTH_JWT_SECRET: ${GRANTS_UI_BACKEND_AUTH_JWT_SECRET:-allowlist-jwt-secret}
+      # Off by default - the legacy shared bearer token above keeps working either
+      # way. Set to true (needs a grants-ui-backend image built from a version with
+      # the service-jwt strategy) to also accept a Web Identity token from grants-ui.
+      SERVICE_AUTH_ENABLED: '${SERVICE_AUTH_ENABLED:-false}'
       APPLICATION_LOCK_TOKEN_SECRET: ${APPLICATION_LOCK_TOKEN_SECRET:-dev-lock-secret}
       APPLICATION_LOCK_TTL_MS: ${APPLICATION_LOCK_TTL_MS:-14400000}
       AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL:-http://floci:4566}
       CONFIG_BROKER_BASE_URL: http://grants-config-broker:3012
-      GRANTS_CONFIG_BROKER_AUTH_TOKEN: '${GRANTS_CONFIG_BROKER_AUTH_TOKEN:-config-broker-auth-token}'
-      GRANTS_CONFIG_BROKER_ENCRYPTION_KEY: '${GRANTS_CONFIG_BROKER_ENCRYPTION_KEY:-config-broker-encryption-key}'
       CONFIG_INGEST_SQS_QUEUE_URL: http://floci:4566/000000000000/grants_ui_backend__sqs__config_updates
     networks:
       - grants-ui-net
