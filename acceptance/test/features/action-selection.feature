@@ -265,7 +265,7 @@ Feature: Action Selection
             | CSAM3  | Herbal leys: CSAM3                                    | Payment rate per year: £224/ha         | Yes |
             |        |                                                       | 2.9402 hectares available              |     |
             | CLIG3  | Manage grassland with very low nutrient inputs: CLIG3 | Payment rate per year: £151/ha         | Yes |
-            |        |                                                       | Requires SSSI consent and an SFI HEFER |     |
+            |        |                                                       | SSSI consent and HEFER required       |     |
             |        |                                                       | 26.9088 hectares available             |     |
 
     Scenario: User is advised when either SSSI or HEFER applies to a land parcel
@@ -299,7 +299,7 @@ Feature: Action Selection
             | CSAM3  | Herbal leys: CSAM3                                    | Payment rate per year: £224/ha  | Yes |
             |        |                                                       | 0.1028 hectares available       |     |
             | CLIG3  | Manage grassland with very low nutrient inputs: CLIG3 | Payment rate per year: £151/ha  | Yes |
-            |        |                                                       | Requires SSSI consent           |     |
+            |        |                                                       | SSSI consent required           |     |
             |        |                                                       | 169.8586 hectares available     |     |
             | SCR2   | Manage scrub and open habitat mosaics: SCR2           | Payment rate per year: £350/ha  | Yes |
             |        |                                                       | 0.1028 hectares available       |     |
@@ -326,7 +326,7 @@ Feature: Action Selection
             | CSAM3  | Herbal leys: CSAM3                                    | Payment rate per year: £224/ha  | Yes |
             |        |                                                       | 0.0001 hectares available       |     |
             | CLIG3  | Manage grassland with very low nutrient inputs: CLIG3 | Payment rate per year: £151/ha  | Yes |
-            |        |                                                       | Requires an SFI HEFER           |     |
+            |        |                                                       | HEFER required                 |     |
             |        |                                                       | 108.8600 hectares available     |     |
             | SCR2   | Manage scrub and open habitat mosaics: SCR2           | Payment rate per year: £350/ha  | Yes |
             |        |                                                       | 0.0001 hectares available       |     |

@@ -45,7 +45,7 @@ describe('select-actions.view-model', () => {
       expect(result.html).toContain('Manage ponds: WBD1')
       expect(result.html).toContain('href="https://example.test/guidance/wbd1"')
       expect(result.html).toContain('Payment rate per year: £100/count')
-      expect(result.html).toContain('Requires an SFI HEFER')
+      expect(result.html).toContain('HEFER required')
       expect(result.html).not.toContain('SSSI')
       expect(result.consents).toEqual(['hefer'])
       expect(result.html).not.toContain('available')
@@ -184,7 +184,7 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, [])
       configState.reset()
 
-      expect(result.html).toContain('Payment rate per year: £203/ha<br>Requires an SFI HEFER')
+      expect(result.html).toContain('Payment rate per year: £203/ha<br>HEFER required')
     })
 
     it('should not show the HEFER requirement text when the HEFER feature flag is off', () => {
@@ -198,7 +198,7 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, [])
 
       expect(result.html).toContain('Payment rate per year: £203/ha')
-      expect(result.html).not.toContain('Requires an SFI HEFER')
+      expect(result.html).not.toContain('HEFER required')
     })
 
     it('should show the SSSI requirement text below the payment rate when sssiConsentRequired is set', () => {
@@ -213,7 +213,7 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, [])
       configState.reset()
 
-      expect(result.html).toContain('Payment rate per year: £151/ha<br>Requires SSSI consent')
+      expect(result.html).toContain('Payment rate per year: £151/ha<br>SSSI consent required')
     })
 
     it('should show both requirements when sssiConsentRequired and heferRequired are both set', () => {
@@ -230,7 +230,7 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, [])
       configState.reset()
 
-      expect(result.html).toContain('Payment rate per year: £151/ha<br>Requires SSSI consent and an SFI HEFER')
+      expect(result.html).toContain('Payment rate per year: £151/ha<br>SSSI consent and HEFER required')
     })
 
     it.each([
@@ -479,7 +479,7 @@ describe('select-actions.view-model', () => {
       expect(result.html).not.toContain('id="landActionQuantity_HEF1-hint"')
       expect(result.html).not.toContain('SSSI')
       expect(result.html).toContain('Payment rate per year: £5/m²')
-      expect(result.html).toContain('Requires an SFI HEFER')
+      expect(result.html).toContain('HEFER required')
       expect(result.html).toContain(
         'href="https://www.gov.uk/find-funding-for-land-or-farms/hef1-maintain-weatherproof-traditional-farm-or-forestry-buildings"'
       )
