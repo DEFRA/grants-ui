@@ -40,6 +40,7 @@ export function validateArgs(argv) {
     '--crn',
     '--stop',
     '--parcel',
+    '--common-land',
     '--mock-no-actions',
     '--headed',
     '--clear',
@@ -52,7 +53,7 @@ export function validateArgs(argv) {
   ])
 
   const valueFlagIdxs = new Set(
-    ['--scale', '--crn', '--stop', '--parcel', '--base-url', '--sbi', '--grant-version']
+    ['--scale', '--crn', '--stop', '--parcel', '--common-land', '--base-url', '--sbi', '--grant-version']
       .map((f) => argv.indexOf(f))
       .filter((i) => i !== -1)
       .map((i) => i + 1)

@@ -148,7 +148,7 @@ describe('print-submitted-application.html view', () => {
         .get()
     ).toEqual(['Action', 'Quantity', 'Yearly payment'])
     expect(normalise(parcelCard.find('tbody tr').first().text())).toBe(
-      'Action description (CLIG3) Requires SSSI consent 2.0000 ha £100.00'
+      'Action description (CLIG3) SSSI consent required 2.0000 ha £100.00'
     )
     expect(normalise(parcelCard.find('tbody tr').last().text())).toBe('Subtotal £100.00')
     expect($('.govuk-summary-card a')).toHaveLength(0)

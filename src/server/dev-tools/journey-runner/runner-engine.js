@@ -40,7 +40,7 @@
   /**
    * Per-run overrides from `runJourney(stop, options)`, rehydrated from
    * sessionStorage on every page load so they survive the journey's navigations.
-   * @type {{parcel?: string}}
+   * @type {{parcel?: string, commonLand?: boolean}}
    */
   let runOptions = {}
 
@@ -167,7 +167,15 @@
     },
 
     yesNo(step) {
-      const input = document.querySelector(`input[name="${step.fieldName}"][value="${step.value || 'true'}"]`)
+      // A step can name an `overrideKey` (e.g. "commonLand") so a run-level
+      // option (`runJourney(stop, { commonLand: true })`, i.e.
+      // `gt journey <slug> --common-land yes`) picks the answer instead of the
+      // step's own hardcoded `value` - lets a run walk the branch a fixed
+      // journey file wouldn't otherwise reach (e.g. the common-land guidance
+      // page and confirmation section).
+      const override = step.overrideKey ? runOptions[step.overrideKey] : undefined
+      const value = override !== undefined ? String(override) : step.value || 'true'
+      const input = document.querySelector(`input[name="${step.fieldName}"][value="${value}"]`)
       if (!input) {
         throw new Error(`${step.fieldName} radio not found`)
       }
@@ -637,9 +645,11 @@
    *   - **Number**: stop when arriving at that step (1-indexed).
    *   - **String**: only run steps whose `section` tag matches.
    *   - **Omitted**: run to the end.
-   * @param {{parcel?: string}} [options]
+   * @param {{parcel?: string, commonLand?: boolean}} [options]
    *   - `parcel`: parcel reference (e.g. `SD6843-7039`) the `mapParcel` step
    *     should select, overriding that step's own `value`.
+   *   - `commonLand`: answer a `yesNo` step whose `overrideKey` is
+   *     `"commonLand"` with this value instead of its own `value`.
    * @returns {void}
    */
   globalThis.runJourney = function (stopAtPageOrSection, options) {
@@ -657,9 +667,14 @@
       state = { stopAt: stopAtPageOrSection || steps.length + 1 }
       console.log(`${LOG_PREFIX} Starting journey, will stop at step ${state.stopAt}`)
     }
-    if (options?.parcel) {
-      state.options = { parcel: options.parcel }
-      console.log(`${LOG_PREFIX} Land parcel override: ${options.parcel}`)
+    if (options && Object.keys(options).length) {
+      state.options = { ...options }
+      if (options.parcel) {
+        console.log(`${LOG_PREFIX} Land parcel override: ${options.parcel}`)
+      }
+      if (options.commonLand !== undefined) {
+        console.log(`${LOG_PREFIX} Common land override: ${options.commonLand}`)
+      }
     }
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state))
     processCurrentPage()
@@ -692,6 +707,7 @@
  * @property {string} [section]            Optional section tag for partial runs.
  * @property {string} [fieldName]          Form field name (for steps that touch a single field).
  * @property {string} [value]              Value to set (for input/text/yesNo steps).
+ * @property {string} [overrideKey]        For `yesNo` steps: a `runJourney(stop, options)` key (e.g. `commonLand`) whose value replaces `value` when the run supplies it.
  * @property {boolean} [selectAll]         Tick every checkbox (or select every land parcel) instead of just the first.
  * @property {number} [offsetDays]         Days to add to "today" for date-parts steps.
  * @property {string} [linkSlug]           Slug to match against an `<a href>` for clickLink.
@@ -704,7 +720,7 @@
  * @property {number} stopAt               Stop when reaching this 1-indexed step.
  * @property {string} [section]            Restrict run to steps with this section tag.
  * @property {number} [lastCompleted]      Index of the last completed step (for resume across page loads).
- * @property {{parcel?: string}} [options] Per-run overrides from `runJourney`'s second argument.
+ * @property {{parcel?: string, commonLand?: boolean}} [options] Per-run overrides from `runJourney`'s second argument.
  */
 
 /**
