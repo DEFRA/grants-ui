@@ -112,7 +112,12 @@
           </div>
 
           <div class="govuk-grid-row">
-            <div id="selected-parcel-details" class="govuk-grid-column-three-quarters-from-desktop" hidden>
+            <div
+              id="selected-parcel-details"
+              class="govuk-grid-column-three-quarters-from-desktop"
+              tabindex="-1"
+              hidden
+            >
               <h2 class="govuk-heading-m">Selected land parcel</h2>
 
               <dl class="govuk-summary-list" id="selected-parcel-summary-list">
@@ -129,7 +134,11 @@
                   <dt class="govuk-summary-list__key">Total area</dt>
                   <dd class="govuk-summary-list__value" id="selected-parcel-area"></dd>
                 </div>
-                <div class="govuk-summary-list__row govuk-summary-list__row--no-actions">
+                <div
+                  class="govuk-summary-list__row govuk-summary-list__row--no-actions"
+                  id="selected-parcel-actions-row"
+                  hidden
+                >
                   <dt class="govuk-summary-list__key">Available actions</dt>
                   <dd class="govuk-summary-list__value" id="selected-parcel-actions"></dd>
                 </div>
@@ -160,7 +169,7 @@
               </div>
             </div>
 
-            <div class="govuk-grid-column-three-quarters-from-desktop govuk-button-group">
+            <div class="govuk-grid-column-three-quarters-from-desktop">
               {{
                 govukButton({
                 text: "Continue",
@@ -169,7 +178,9 @@
                 })
               }}
               {% if cancelHref %}
-                <a class="govuk-link govuk-link--no-visited-state" href="{{ cancelHref }}">Cancel</a>
+                <a class="govuk-link govuk-link--no-visited-state govuk-!-display-block" href="{{ cancelHref }}"
+                  >Cancel</a
+                >
               {% endif %}
             </div>
           </div>

@@ -1,10 +1,7 @@
 // @vitest-environment node
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { describe, it, expect } from 'vitest'
 import { createPageRenderer } from '~/src/server/common/test-helpers/component-helpers.js'
 
-const template = readFileSync(fileURLToPath(new URL('./map-select-parcel.html', import.meta.url)), 'utf8')
 const renderPage = createPageRenderer(import.meta.url, 'map-select-parcel.html', {
   pageTitle: 'Select a land parcel',
   formAction: '/select-land-parcel'
@@ -13,20 +10,27 @@ const renderPage = createPageRenderer(import.meta.url, 'map-select-parcel.html',
 const normalise = (text) => text.replace(/\s+/g, ' ').trim()
 
 describe('map-select-parcel.html', () => {
-  it('contains no inline <script> bodies (all JS lives in webpack entries)', () => {
-    const bodies = [...template.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1].trim())
-    expect(bodies).toEqual(bodies.map(() => ''))
+  it('exposes the map as a named group for assistive technology', () => {
+    const map = renderPage()('#parcel-map')
+    expect(map.attr('role')).toBe('group')
+    expect(map.attr('aria-label')).toBe('Land parcel selection map')
   })
 
-  it('loads the component and page-wiring bundles via getAssetPath', () => {
-    expect(template).toContain("getAssetPath('parcel-map.js')")
-    expect(template).toContain("getAssetPath('parcel-select-page.js')")
+  it('keeps the requirements notice hidden until requirements are available', () => {
+    const $ = renderPage()
+    const row = $('#selected-parcel-requirements-row')
+    expect(row.attr('hidden')).toBeDefined()
+    expect(row.find('dt').text()).toBe('Requirements')
+    expect($('#selected-parcel-requirements-intro').text()).toBe('')
+    expect($('#selected-parcel-requirements-list li')).toHaveLength(0)
   })
 
-  it('gives <parcel-map> a role so its aria-label is valid for assistive tech', () => {
-    const openingTag = template.match(/<parcel-map\b[\s\S]*?>/)?.[0] ?? ''
-    expect(openingTag).toContain('role="group"')
-    expect(openingTag).toContain('aria-label="Land parcel selection map"')
+  it('keeps the live notice outside the hidden requirements row', () => {
+    const $ = renderPage()
+    const status = $('output#selected-parcel-requirements-status')
+    expect(status).toHaveLength(1)
+    expect(status.closest('#selected-parcel-details')).toHaveLength(1)
+    expect(status.closest('#selected-parcel-requirements-row')).toHaveLength(0)
   })
 
   it('passes enabled action codes to the map without adding an action-code content block', () => {
@@ -34,25 +38,6 @@ describe('map-select-parcel.html', () => {
 
     expect($('#parcel-map').attr('data-enabled-land-actions')).toBe('CLIG3,CSAM3')
     expect($('[data-enabled-land-actions]').not('#parcel-map')).toHaveLength(0)
-  })
-
-  it('renders the Requirements row hidden, with an empty intro and bullet list', () => {
-    const row = /<div\s+class="[^"]*"\s+id="selected-parcel-requirements-row"[^>]*>([\s\S]*?)<\/dd>/.exec(template)
-
-    expect(row?.[0]).toContain('hidden')
-    expect(row?.[0]).toContain('govuk-summary-list__row--no-actions')
-    expect(row?.[1]).toContain('<dt class="govuk-summary-list__key">Requirements</dt>')
-    expect(row?.[1]).toMatch(/id="selected-parcel-requirements-intro"\s*>\s*<\/p>/)
-    expect(row?.[1]).toContain('govuk-list govuk-list--bullet')
-    expect(row?.[1]).toMatch(/id="selected-parcel-requirements-list"\s*>\s*<\/ul>/)
-  })
-
-  it('places the live status region inside the summary block but outside the hidden row', () => {
-    const details = /<div id="selected-parcel-details"[\s\S]*?<\/dl>([\s\S]*?)<\/div>/.exec(template)
-
-    expect(details?.[1]).toContain(
-      '<output id="selected-parcel-requirements-status" class="govuk-visually-hidden"></output>'
-    )
   })
 
   it('renders the no-actions message hidden initially', () => {

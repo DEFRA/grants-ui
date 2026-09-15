@@ -9,7 +9,7 @@
 {% block content %}
   <div class="govuk-body">
     <div class="govuk-grid-row">
-      <div class="{{ gridColumnClass(page, 'govuk-grid-column-three-quarters-from-desktop') }}">
+      <div class="{{ gridColumnClass(page) }}">
         {% if errors.length > 0 %}
           {{
             govukErrorSummary({
@@ -77,7 +77,11 @@
           </p>
           <p class="govuk-body">The available quantity will update as you make your selections.</p>
         </div>
+      </div>
+    </div>
 
+    <div class="govuk-grid-row">
+      <div class="{{ 'govuk-grid-column-full' if actionItems.length else gridColumnClass(page) }}">
         {% if actionItems.length %}
           <form id="select-actions-form" method="post" novalidate="novalidate">
             <input type="hidden" name="crumb" value="{{ crumb }}" />
@@ -92,7 +96,7 @@
               })
             }}
 
-            <div class="govuk-button-group">
+            <div>
               {{
                 govukButton({
                   text: submitButtonText or "Continue",
@@ -100,7 +104,9 @@
                 })
               }}
               {% if cancelHref %}
-                <a class="govuk-link govuk-link--no-visited-state" href="{{ cancelHref }}">Cancel</a>
+                <a class="govuk-link govuk-link--no-visited-state govuk-!-display-block" href="{{ cancelHref }}"
+                  >Cancel</a
+                >
               {% endif %}
             </div>
           </form>
@@ -111,7 +117,7 @@
               Change the parcel land cover or choose a different parcel to view eligible actions.
             </p>
           </div>
-          <div class="govuk-button-group">
+          <div>
             {{
               govukButton({
                 text: "Continue",
@@ -119,7 +125,9 @@
               })
             }}
             {% if cancelHref %}
-              <a class="govuk-link govuk-link--no-visited-state" href="{{ cancelHref }}">Cancel</a>
+              <a class="govuk-link govuk-link--no-visited-state govuk-!-display-block" href="{{ cancelHref }}"
+                >Cancel</a
+              >
             {% endif %}
           </div>
         {% endif %}

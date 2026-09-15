@@ -446,22 +446,25 @@ describe('CheckResponsesPageController', () => {
     })
   })
 
-  describe('getSummaryViewModel - check-details exclusion', () => {
+  describe('getSummaryViewModel - check-details summary', () => {
     let mockRequest
-    let context
 
     beforeEach(() => {
       mockRequest = mockSimpleRequest()
-      context = mockContext({ state: {} })
     })
 
     const makeFixture = () =>
       buildViewModel({
         details: [
           {
-            name: undefined,
             title: undefined,
-            items: [{ name: 'detailsConfirmed', page: { path: '/check-details' }, value: 'Yes' }]
+            items: [
+              {
+                name: 'businessDetailsUpToDate',
+                page: { path: '/check-details' },
+                value: 'Yes'
+              }
+            ]
           },
           {
             title: 'About your woodland',
@@ -471,7 +474,23 @@ describe('CheckResponsesPageController', () => {
         checkAnswers: [
           {
             title: { text: undefined },
-            summaryList: { rows: [{ key: { text: 'Are these details correct?' }, value: { text: 'Yes' } }] }
+            summaryList: {
+              rows: [
+                {
+                  key: { text: 'Are these details correct?' },
+                  value: { text: 'Yes' },
+                  actions: {
+                    items: [
+                      {
+                        href: '/test-form/check-details',
+                        text: 'Change',
+                        visuallyHiddenText: 'Are these details correct?'
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
           },
           {
             title: { text: 'About your woodland' },
@@ -480,114 +499,103 @@ describe('CheckResponsesPageController', () => {
         ]
       })
 
-    it('drops the check-details detail/checkAnswers pair and leaves the woodland group intact', () => {
+    it.each([undefined, false])('hides the details confirmation when showDetailsConfirmation is %s', (configured) => {
       mockModel.def.pages = [{ path: '/check-details', controller: 'CheckDetailsController' }]
+      if (configured !== undefined) {
+        mockModel.def.metadata = { pageConfig: { [mockPageDef.path]: { showDetailsConfirmation: configured } } }
+      }
       vi.spyOn(SummaryPageController.prototype, 'getSummaryViewModel').mockReturnValue(makeFixture())
-
       const ctrl = new CheckResponsesPageController(mockModel, mockPageDef)
-      const result = ctrl.getSummaryViewModel(mockRequest, context)
 
-      expect(result.details).toHaveLength(1)
-      expect(result.details[0].title).toBe('About your woodland')
-      expect(result.details[0].items).toHaveLength(1)
-      expect(result.details[0].items[0].name).toBe('landParcels')
-      expect(result.checkAnswers).toHaveLength(1)
-      expect(result.checkAnswers[0].title.text).toBe('About your woodland')
-      expect(result.checkAnswers[0].summaryList.rows[0].key.text).toBe('Select land parcels')
+      const result = ctrl.getSummaryViewModel(mockRequest, mockContext({ state: { landParcels: ['C'] } }))
+
+      expect(result.details.map((detail) => detail.items.map((item) => item.name))).toEqual([['landParcels']])
+      expect(result.checkAnswers.map((section) => section.summaryList.rows)).toEqual([
+        [{ key: { text: 'Select land parcels' }, value: { html: 'C' } }]
+      ])
     })
 
-    it('passes through unchanged when no CheckDetailsController page exists', () => {
-      mockModel.def.pages = [{ path: '/other', controller: 'QuestionPageController' }]
+    it('preserves other answers in the same section as a hidden details confirmation', () => {
+      mockModel.def.pages = [{ path: '/check-details', controller: 'CheckDetailsController' }]
+      const fixture = makeFixture()
+      fixture.details[0].items.push({ name: 'otherAnswer', page: { path: '/other-question' }, value: 'Other value' })
+      const otherRow = { key: { text: 'Other question' }, value: { text: 'Other value' } }
+      fixture.checkAnswers[0].summaryList.rows.push(otherRow)
+      vi.spyOn(SummaryPageController.prototype, 'getSummaryViewModel').mockReturnValue(fixture)
+      const ctrl = new CheckResponsesPageController(mockModel, mockPageDef)
+
+      const result = ctrl.getSummaryViewModel(mockRequest, mockContext({ state: { landParcels: ['C'] } }))
+
+      expect(result.details.map((detail) => detail.items.map((item) => item.name))).toEqual([
+        ['otherAnswer'],
+        ['landParcels']
+      ])
+      expect(result.checkAnswers.map((section) => section.summaryList.rows)).toEqual([
+        [otherRow],
+        [{ key: { text: 'Select land parcels' }, value: { html: 'C' } }]
+      ])
+    })
+
+    it('retains the details confirmation section alongside the land and actions summary', () => {
+      mockModel.def.pages = [{ path: '/check-details', controller: 'CheckDetailsController' }]
+      mockModel.def.metadata = { pageConfig: { [mockPageDef.path]: { showDetailsConfirmation: true } } }
       vi.spyOn(SummaryPageController.prototype, 'getSummaryViewModel').mockReturnValue(makeFixture())
+
+      const context = mockContext({
+        state: {
+          businessDetailsUpToDate: true,
+          landParcels: {
+            'SD1234-5678': { actionsObj: { CLIG3: { value: 2, unit: 'ha' } } }
+          },
+          payment: {
+            annualTotalPence: 10000,
+            parcelItems: {
+              1: {
+                code: 'CLIG3',
+                description: 'Action description',
+                sheetId: 'SD1234',
+                parcelId: '5678',
+                quantity: 2,
+                unit: 'ha',
+                annualPaymentPence: 10000
+              }
+            }
+          },
+          agreementStartDate: '2026-02-01',
+          agreementEndDate: '2029-02-01',
+          agreementTotalPence: 30000
+        }
+      })
 
       const ctrl = new CheckResponsesPageController(mockModel, mockPageDef)
       const result = ctrl.getSummaryViewModel(mockRequest, context)
 
       expect(result.details).toHaveLength(2)
-      expect(result.checkAnswers).toHaveLength(2)
-    })
-
-    it('row-level filter: drops check-details item within a mixed group, keeps the group', () => {
-      mockModel.def.pages = [{ path: '/check-details', controller: 'CheckDetailsController' }]
-      vi.spyOn(SummaryPageController.prototype, 'getSummaryViewModel').mockReturnValue(
-        buildViewModel({
-          details: [
+      expect(result.details[0].items[0]).toMatchObject({
+        name: 'businessDetailsUpToDate',
+        page: { path: '/check-details' },
+        value: 'Yes'
+      })
+      expect(result.checkAnswers[0]).toMatchObject({
+        title: { text: undefined },
+        summaryList: {
+          rows: [
             {
-              title: undefined,
-              items: [
-                { name: 'detailsConfirmed', page: { path: '/check-details' }, value: 'Yes' },
-                { name: 'otherField', page: { path: '/other' }, value: 'keep me' }
-              ]
-            }
-          ],
-          checkAnswers: [
-            {
-              title: { text: undefined },
-              summaryList: {
-                rows: [
-                  { key: { text: 'Are these details correct?' }, value: { text: 'Yes' } },
-                  { key: { text: 'Other' }, value: { text: 'keep me' } }
-                ]
+              key: { text: 'Are these details correct?' },
+              value: { text: 'Yes' },
+              actions: {
+                items: [{ href: '/test-form/check-details', text: 'Change' }]
               }
             }
           ]
-        })
-      )
-
-      const ctrl = new CheckResponsesPageController(mockModel, mockPageDef)
-      const result = ctrl.getSummaryViewModel(mockRequest, context)
-
-      expect(result.details).toHaveLength(1)
-      expect(result.details[0].items).toHaveLength(1)
-      expect(result.details[0].items[0].name).toBe('otherField')
-      expect(result.checkAnswers[0].summaryList.rows).toHaveLength(1)
-      expect(result.checkAnswers[0].summaryList.rows[0].key.text).toBe('Other')
-    })
-
-    it('applies landParcels substitution at the correct post-filter index', () => {
-      mockModel.def.pages = [{ path: '/check-details', controller: 'CheckDetailsController' }]
-      vi.spyOn(SummaryPageController.prototype, 'getSummaryViewModel').mockReturnValue(makeFixture())
-
-      const ctrl = new CheckResponsesPageController(mockModel, mockPageDef)
-      const result = ctrl.getSummaryViewModel(mockRequest, mockContext({ state: { landParcels: ['X', 'Y'] } }))
-
-      expect(result.checkAnswers[0].summaryList.rows[0].value).toEqual({ html: 'X, Y' })
-    })
-
-    it('falls back when model.def.pages is missing', () => {
-      mockModel.def = undefined
-      vi.spyOn(SummaryPageController.prototype, 'getSummaryViewModel').mockReturnValue(makeFixture())
-
-      const ctrl = new CheckResponsesPageController(mockModel, mockPageDef)
-      const result = ctrl.getSummaryViewModel(mockRequest, context)
-
-      expect(result.details).toHaveLength(2)
-      expect(result.checkAnswers).toHaveLength(2)
-    })
-
-    it('handles missing detail.items, missing checkAnswers entry, and missing rows', () => {
-      mockModel.def.pages = [{ path: '/check-details', controller: 'CheckDetailsController' }]
-      vi.spyOn(SummaryPageController.prototype, 'getSummaryViewModel').mockReturnValue(
-        buildViewModel({
-          details: [
-            {},
-            {
-              items: [
-                { name: 'detailsConfirmed', page: { path: '/check-details' }, value: 'Yes' },
-                { name: 'otherField', page: { path: '/other' }, value: 'keep' }
-              ]
-            }
-          ]
-        })
-      )
-
-      const ctrl = new CheckResponsesPageController(mockModel, mockPageDef)
-      const result = ctrl.getSummaryViewModel(mockRequest, context)
-
-      expect(result.details).toHaveLength(1)
-      expect(result.details[0].items).toHaveLength(1)
-      expect(result.details[0].items[0].name).toBe('otherField')
-      expect(result.checkAnswers).toEqual([])
+        }
+      })
+      expect(result.checkAnswers[1].landAndActionsSummary).toMatchObject({
+        changeHref: '/test-form/confirm-land-and-actions',
+        parcels: [{ reference: 'SD1234 5678' }]
+      })
+      expect(result.details[1].items).toEqual([])
+      expect(result.checkAnswers[1].summaryList.rows).toEqual([])
     })
   })
 })

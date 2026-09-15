@@ -70,7 +70,7 @@ describe('updateApplicationStatus', () => {
     })
 
     afterEach(() => {
-      vi.unmock('~/src/config/config.js')
+      vi.doUnmock('~/src/config/config.js')
     })
 
     it('throws when no grantVersion is provided', async () => {
@@ -192,7 +192,7 @@ describe('updateApplicationStatus', () => {
     })
 
     afterEach(() => {
-      vi.unmock('~/src/config/config.js')
+      vi.doUnmock('~/src/config/config.js')
     })
 
     it('should return early when backend endpoint is not configured', async () => {

@@ -1,6 +1,10 @@
 import { Then, When } from '@cucumber/cucumber'
 import expect from '../support/expect.js'
 
+When('(the user )decides to change their land parcel', async function () {
+  await this.page.getByRole('link', { name: 'Change' }).click()
+})
+
 Then('(the user )should see the following selected land parcel', async function (dataTable) {
   for (const row of dataTable.hashes()) {
     const label = row.FIELD
@@ -35,6 +39,11 @@ Then('(the user )should see the following parcel summary cards', async function 
 Then('(the user )should see total yearly payment {string}', async function (amount) {
   const valueCell = this.page.locator(`//dt[contains(text(),'Total yearly payment')]/following-sibling::dd[1]`)
   await expect(valueCell).toHaveText(amount)
+})
+
+Then('(the user )should see the following consent advice', async function (dataTable) {
+  const [text] = dataTable.raw().map((row) => row[0])
+  await expect(this.page.locator('#parcel-consent-intro')).toHaveText(text)
 })
 
 Then('(the user )should see the following actions with guidance', async function (dataTable) {
@@ -77,10 +86,6 @@ When('(the user )enters {string} hectares for action {string}', async function (
   await expect(this.page.locator(`#landActionQuantity_${action}-refresh-banner`)).toHaveClass(
     /select-actions-refresh-banner--hidden/
   )
-})
-
-Then('(the user )should see {string} hectares available for action {string}', async function (quantity, action) {
-  await expect(this.page.locator(`#landActionQuantity_${action}-hint`)).toContainText(`${quantity} hectares available`)
 })
 
 Then('(the user )should see {string} for action {string}', async function (errorText, action) {

@@ -60,7 +60,7 @@ describe('persistStateToApi', () => {
     })
 
     afterEach(() => {
-      vi.unmock('~/src/config/config.js')
+      vi.doUnmock('~/src/config/config.js')
     })
 
     it('persists state successfully when response is ok', async () => {
@@ -177,7 +177,7 @@ describe('persistStateToApi', () => {
     })
 
     afterEach(() => {
-      vi.unmock('~/src/config/config.js')
+      vi.doUnmock('~/src/config/config.js')
     })
 
     it('throws an error and does not call fetch when state exceeds size limit', async () => {
@@ -221,7 +221,7 @@ describe('persistStateToApi', () => {
     })
 
     afterEach(() => {
-      vi.unmock('~/src/config/config.js')
+      vi.doUnmock('~/src/config/config.js')
     })
 
     it('should return early when backend endpoint is not configured', async () => {

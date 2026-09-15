@@ -36,7 +36,11 @@ export async function parcelsHandler(request, h) {
   const formRequest = /** @type {AnyFormRequest} */ (/** @type {unknown} */ (request))
   const userContext = getLandGrantsUserContext(formRequest)
   const enabledLandActions = /** @type {{ enabledLandActions?: string[] }} */ (request.query)?.enabledLandActions ?? []
-  const fields = enabledLandActions.length ? [LAND_GRANTS_ACTION_SIZE, LAND_GRANTS_ACTIONS] : undefined
+  const enableActionCount = config.get('landGrants.enableMapActionCount')
+  const fields = [LAND_GRANTS_ACTION_SIZE]
+  if (enableActionCount && enabledLandActions.length) {
+    fields.push(LAND_GRANTS_ACTIONS)
+  }
   const result = await attempt(() => fetchParcels(formRequest, userContext, fields))
 
   if (!result.ok) {
@@ -49,7 +53,7 @@ export async function parcelsHandler(request, h) {
     return h.response({ error: PARCELS_ERROR_MESSAGE }).code(upstreamStatus ?? statusCodes.serviceUnavailable)
   }
 
-  const parcelData = toParcelData(result.value, enabledLandActions)
+  const parcelData = toParcelData(result.value, enableActionCount ? enabledLandActions : undefined)
   const features = toGeoJsonFeatures(parcelData)
   const bbox = await fetchParcelTileLocation(
     parcelData.map((p) => p.id),
