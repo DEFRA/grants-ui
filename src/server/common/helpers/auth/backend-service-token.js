@@ -3,6 +3,10 @@ import { MockProvider, WebIdentityTokenProvider } from '@defra/hapi-auth-oidc'
 import { config } from '~/src/config/config.js'
 import { logger } from '~/src/server/common/helpers/logging/log.js'
 
+// grants-ui-backend checks the token's exp on receipt, so refresh early enough
+// that a token can't expire mid-request (request budget plus clock-skew slack).
+const EARLY_REFRESH_MS = 20_000
+
 /** @type {WebIdentityTokenProvider | MockProvider | null} */
 let webIdentityTokenProvider = null
 
@@ -18,7 +22,8 @@ function getWebIdentityTokenProvider() {
       config.get('cdpEnvironment') === 'local'
         ? new MockProvider({})
         : new WebIdentityTokenProvider({
-            audience: [config.get('session.cache.webIdentity.audience')]
+            audience: [config.get('session.cache.webIdentity.audience')],
+            earlyRefreshMs: EARLY_REFRESH_MS
           })
   }
   return webIdentityTokenProvider

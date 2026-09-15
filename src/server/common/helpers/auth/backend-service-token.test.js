@@ -51,13 +51,14 @@ describe('backend-service-token', () => {
   })
 
   describe('getBackendServiceToken', () => {
-    test('creates the provider with the configured audience', async () => {
+    test('creates the provider with the configured audience and an early-refresh window covering a request', async () => {
       mockGetCredentials.mockResolvedValue('a-token')
 
       await getBackendServiceToken()
 
       expect(WebIdentityTokenProvider).toHaveBeenCalledWith({
-        audience: ['grants-ui-backend']
+        audience: ['grants-ui-backend'],
+        earlyRefreshMs: 20_000
       })
     })
 
