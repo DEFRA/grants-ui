@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 // ---------------------------------------------------------------------------
 // Version
 // ---------------------------------------------------------------------------
-export const VERSION = '1.6.0'
+export const VERSION = '1.7.0'
 
 // ---------------------------------------------------------------------------
 // Cross-platform: detect ANSI support
@@ -137,6 +137,12 @@ export const ADDONS = [
     composeFile: 'compose.gas.yml'
   },
   {
+    key: 'tailscale',
+    label: 'Tailscale',
+    description: 'HTTPS phone testing through Tailscale Serve (without HA)',
+    composeFile: 'compose.tailscale.yml'
+  },
+  {
     key: 'ha',
     label: 'High Availability',
     description: 'Nginx proxy + scaled grants-ui / grants-ui-backend',
@@ -150,6 +156,7 @@ export const ADDONS = [
 
 // Named colour/style helpers — degrade gracefully when ANSI is unsupported
 export const CYAN = ANSI ? '\x1b[36m' : ''
+export const BLUE = ANSI ? '\x1b[34m' : ''
 export const BOLD = ANSI ? '\x1b[1m' : ''
 export const DIM = ANSI ? '\x1b[2m' : ''
 export const RESET_COLOR = ANSI ? '\x1b[0m' : ''

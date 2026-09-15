@@ -97,8 +97,35 @@ export function setRuntimeStatusLine(line) {
   runtimeStatusLine = line
 }
 
+/** Wrap the runtime footer without splitting ANSI escapes or dropping address text. */
+function runtimeRows() {
+  if (!runtimeStatusLine) return []
+  const width = Math.max(1, (process.stdout.columns || 100) - 1)
+  const indent = ' '.repeat(Math.min(2, width - 1))
+  const contentWidth = width - indent.length
+  const rows = []
+  let row = indent
+  let length = 0
+  for (const token of runtimeStatusLine.match(/\x1b\[[0-9;]*m|[^\x1b]/gu) ?? []) {
+    if (token.startsWith('\x1b')) {
+      row += token
+      continue
+    }
+    if (length === contentWidth) {
+      rows.push(row)
+      row = indent
+      length = 0
+    }
+    row += token
+    length++
+  }
+  rows.push(row)
+  return rows
+}
+
 function menuCapacity() {
-  return Math.max(1, (process.stdout.rows || 24) - HEADER.length - 7 - (runtimeStatusLine ? 2 : 0))
+  const footerRows = runtimeRows().length
+  return Math.max(1, (process.stdout.rows || 24) - HEADER.length - 7 - (footerRows ? footerRows + 1 : 0))
 }
 
 function screenLines(bodyLines, statusLine) {
@@ -108,7 +135,7 @@ function screenLines(bodyLines, statusLine) {
         '',
         `  ${statusLine || `${DIM}Ready${RESET_COLOR}`}`,
         `  ${DIM}${(IS_WINDOWS ? '-' : '─').repeat(Math.max(1, width - 2))}${RESET_COLOR}`,
-        `  ${runtimeStatusLine}`
+        ...runtimeRows()
       ]
     : statusLine
       ? ['', `  ${statusLine}`]
@@ -138,9 +165,9 @@ function radioMenuBody(items, title, hint, cursor) {
   const body = [`  ${BOLD}${title}${RESET_COLOR}`, `  ${DIM}${hint}${RESET_COLOR}`, '']
   items.forEach((item, index) => {
     const active = index === cursor && !item.disabled
-    const colour = item.key === 'refresh-overrides' ? PURPLE : CYAN
+    const colour = item.colour ?? (item.key === 'refresh-overrides' ? PURPLE : CYAN)
     const arrow = active ? `${colour}${ARROW}${RESET_COLOR}` : ' '
-    const restingColour = item.key === 'refresh-overrides' ? FADED_PURPLE : ''
+    const restingColour = item.colour ?? (item.key === 'refresh-overrides' ? FADED_PURPLE : '')
     const labelColour = item.disabled ? DIM : active ? `${colour}${BOLD}` : restingColour
     const label = padVisible(`${labelColour}${item.label}${RESET_COLOR}`, labelWidth)
     body.push(`  ${arrow}  ${label}  ${DIM}${item.description}${RESET_COLOR}`)
@@ -181,7 +208,7 @@ export function showBusyMenu(items, message, cancel, animate = true, title = 'Wh
     if (items.length > maxItems) body.push(`     … ${items.length - maxItems} more actions`)
     const menu = body.map((line) => `${DIM}${stripVTControlCharacters(line).slice(0, width())}${RESET_COLOR}`)
     const lines = screenLines(menu, status())
-    statusRow = lines.length - (runtimeStatusLine ? 3 : 1)
+    statusRow = lines.length - (runtimeStatusLine ? runtimeRows().length + 2 : 1)
     process.stdout.write(HIDE_CURSOR + CLEAR_SCREEN + lines.slice(0, -1).join('\n'))
   }
   draw()
@@ -529,6 +556,7 @@ export async function toggleMenu(items, title) {
     }
 
     draw()
+    process.stdout.on('resize', draw)
     readline.emitKeypressEvents(process.stdin)
     if (process.stdin.isTTY) process.stdin.setRawMode(true)
 
@@ -567,7 +595,10 @@ export async function toggleMenu(items, title) {
       }
     }
 
-    const cleanup = makeCleanup(onKey)
+    const cleanup = () => {
+      process.stdout.removeListener('resize', draw)
+      makeCleanup(onKey)()
+    }
 
     process.stdin.on('keypress', onKey)
   })
@@ -637,6 +668,7 @@ export function resumeStdin() {
  * @property {string} label  text shown in the menu
  * @property {string} description  dim helper text shown after the label
  * @property {boolean} [disabled]  non-selectable when true
+ * @property {string} [colour]  label colour for both focused and resting states
  */
 
 /**

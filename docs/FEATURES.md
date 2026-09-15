@@ -372,7 +372,31 @@ Guidance components provide contextual help and information without requiring us
 - **Conditions**: Conditional display logic
 - **Next**: Navigation configuration
 
+The two guidance links in the `SelectActionsPageController` consent warning are configured per page:
+
+```yaml
+config:
+  links:
+    sfi_hefer:
+      href: https://example.org/sfi-hefer-guidance
+    sssi_consent:
+      href: https://example.org/sssi-consent-guidance
+```
+
+The link names are case-sensitive. Configure absolute HTTPS URLs pointing to the published production guidance, not relative journey URLs. If a URL is omitted, the consent text remains without a link. This configuration does not affect grouped-action hints or the consent-required page.
+
 ## Authentication & Authorization
+
+### Tactical grants landing page
+
+After signing in without a retained grant-journey return URL, users arrive at `/home`. While
+`externalLinks.sfd.enabled` is false, this route displays the active grants available to the user's CRN and current SBI
+from the Grants UI Backend allowlist endpoint. An authenticated request to `/` redirects to `/home`; an unauthenticated
+request continues to display the sign-in page.
+
+When `externalLinks.sfd.enabled` is true and `externalLinks.sfd.homeUrl` is a valid HTTP(S) URL, `/home` redirects to
+the Single Front Door homepage instead. `SFD_HOME_URL` is separate from `SFD_UPDATE_URL`, which remains the destination
+for updating business details. A missing or invalid homepage URL falls back to the tactical landing page and is logged.
 
 ### Defra ID Integration
 

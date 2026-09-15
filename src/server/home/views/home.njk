@@ -1,28 +1,30 @@
 {% extends 'layouts/page.njk' %}
-{% from "govuk/components/button/macro.njk" import govukButton %}
-{% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
 {% from "two-thirds-column/macro.njk" import appTwoThirdsColumn %}
 
 {% block content %}
   {% call appTwoThirdsColumn() %}
-    <h1 class="govuk-heading-l">
-      <span class="govuk-caption-l">{{ auth.name }}</span>
-      You have signed in
-    </h1>
+    <h1 class="govuk-heading-l">Grants available to you</h1>
 
-    <span class="govuk-caption-m">{{ auth.sbi }}</span>
-    <h2 class="govuk-heading-m">Your session details</h2>
+    {% if grants | length %}
+      <p class="govuk-body">
+        Select a grant to start or continue an
+        application{% if organisationName %}for {{ organisationName }}{% endif %}.
+      </p>
 
-    {% set summaryRows = [] %}
-    {% for key, value in auth %}
-      {%
-        set summaryRows = (summaryRows.push({
-          key: { text: key },
-          value: { text: value }
-        }), summaryRows)
-      %}
-    {% endfor %}
-
-    {{ govukSummaryList({ rows: summaryRows }) }}
+      <ul class="govuk-list">
+        {% for grant in grants %}
+          <li class="govuk-!-margin-bottom-6">
+            <h2 class="govuk-heading-m govuk-!-margin-bottom-2">
+              <a class="govuk-link" href="{{ grant.href }}">{{ grant.title }}</a>
+            </h2>
+            {% if grant.description %}
+              <p class="govuk-body">{{ grant.description }}</p>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="govuk-body">You do not currently have access to any active grant services.</p>
+    {% endif %}
   {% endcall %}
 {% endblock %}

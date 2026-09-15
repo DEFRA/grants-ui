@@ -7,15 +7,15 @@ const ALLOWLIST_ENDPOINT = '/allowlist/grants'
 const SERVICE = 'grants-ui-backend'
 
 /**
- * Fetches the list of grant codes the given user is permitted to access.
+ * Fetches the grants the given user is permitted to access.
  * Returns an empty array when the user has no permitted grants (backend 200 + empty array).
  * Throws on non-2xx responses or network failures.
  *
  * @param {string} crn
  * @param {string} sbi
- * @returns {Promise<string[]>} Array of grant codes e.g. ['woodland', 'farm-payments']
+ * @returns {Promise<AllowedGrant[]>}
  */
-export async function fetchAllowedGrants(crn, sbi) {
+export async function fetchAllowedGrantDetails(crn, sbi) {
   const baseUrl = config.get('session.cache.apiEndpoint')
   const jwtSecret = config.get('session.cache.jwtSecret')
   const url = `${baseUrl}${ALLOWLIST_ENDPOINT}`
@@ -56,7 +56,27 @@ export async function fetchAllowedGrants(crn, sbi) {
     throw error
   }
 
-  /** @type {{ grants?: Array<{ code: string }> }} */
+  /** @type {{ grants?: AllowedGrant[] }} */
   const body = await response.json()
-  return (body.grants ?? []).map((g) => g.code)
+  return body.grants ?? []
 }
+
+/**
+ * Fetches only the grant codes used by journey-level allowlist enforcement.
+ *
+ * @param {string} crn
+ * @param {string} sbi
+ * @returns {Promise<string[]>}
+ */
+export async function fetchAllowedGrants(crn, sbi) {
+  const grants = await fetchAllowedGrantDetails(crn, sbi)
+  return grants.map(({ code }) => code)
+}
+
+/**
+ * @typedef {Object} AllowedGrant
+ * @property {string} code
+ * @property {string} title
+ * @property {string|null} description
+ * @property {string|null} url
+ */

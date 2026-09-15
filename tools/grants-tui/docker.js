@@ -3,7 +3,7 @@
 import { spawnSync } from 'node:child_process'
 import * as fs from 'node:fs'
 import * as os from 'node:os'
-import { resolve } from 'node:path'
+import { basename, resolve } from 'node:path'
 
 import { ADDONS, BOLD, DIM, LOCAL_SERVICES, PURPLE, RED, RESET_COLOR, ROOT } from './constants.js'
 import { getSelectedFormDefIds } from './form-defs.js'
@@ -76,6 +76,26 @@ export function composeFileArgs(selectedAddonKeys, localServiceKeys = []) {
   return args
 }
 
+/** Preserve the running stack's addons and custom overrides during a live URL switch. */
+export function tailscaleComposeArgs(runningFiles, enabled, localServices = []) {
+  const files = runningFiles.filter(
+    (f) =>
+      basename(f) !== 'compose.tailscale.yml' &&
+      !f.includes('grants-ui-cli-local-override-') &&
+      !f.includes('grants-ui-cli-debug-override-')
+  )
+  if (enabled) files.push(resolve(ROOT, 'compose.tailscale.yml'))
+  const localOverride = writeTempOverride(localServices)
+  if (localOverride) files.push(localOverride)
+  if (runningFiles.some((f) => f.includes('grants-ui-cli-debug-override-'))) {
+    const debugOverride = resolve(os.tmpdir(), `grants-ui-cli-debug-override-${process.pid}.yml`)
+    fs.writeFileSync(debugOverride, 'services:\n  grants-ui:\n    command: npm run dev:debug\n')
+    registerTempFile(debugOverride)
+    files.push(debugOverride)
+  }
+  return files.flatMap((f) => ['-f', f])
+}
+
 export function runCompose(args, dryRun = false) {
   const fullArgs = ['compose', ...args]
   const displayArgs = fullArgs.map((a) => {
@@ -102,7 +122,12 @@ export function buildStatusLine(runningFiles) {
   let hasCore = false
   const addonLabels = []
   runningFiles
-    .filter((f) => !f.includes('grants-ui-cli-local-override-') && !f.includes('grants-ui-cli-debug-override-'))
+    .filter(
+      (f) =>
+        !f.includes('grants-ui-cli-local-override-') &&
+        !f.includes('grants-ui-cli-debug-override-') &&
+        basename(f) !== 'compose.tailscale.yml'
+    )
     .forEach((f) => {
       const base = f
         .split('/')
@@ -151,14 +176,44 @@ export function getRunningComposeFiles() {
 
   const inspect = spawnSync(
     'docker',
-    ['inspect', ids[0], '--format', '{{ index .Config.Labels "com.docker.compose.project.config_files" }}'],
+    [
+      'inspect',
+      ...ids,
+      '--format',
+      '{{ index .Config.Labels "com.docker.compose.service" }}\t{{ index .Config.Labels "com.docker.compose.project.config_files" }}'
+    ],
     { encoding: 'utf8' }
   )
   if (inspect.status !== 0 || !inspect.stdout.trim()) return null
-  return inspect.stdout
-    .trim()
+  // A live switch recreates only the UI and auth stub. Other containers retain
+  // old config-file labels, so the UI is authoritative for the current mode.
+  const lines = inspect.stdout.trim().split('\n')
+  const selected =
+    lines.find((line) => line.startsWith('grants-ui\t')) ??
+    lines.find((line) => line.startsWith('fcp-defra-id-stub\t')) ??
+    lines[0]
+  return selected
+    .slice(selected.indexOf('\t') + 1)
     .split(',')
     .map((f) => f.trim())
+}
+
+/** Read only the public URL from the running UI, without exposing other environment values. */
+export function getRunningAppBaseUrl() {
+  const ps = composePs(['--status', 'running', '--quiet', 'grants-ui'])
+  const id = ps.stdout?.trim().split('\n')[0]
+  if (ps.status !== 0 || !id) return null
+  const result = spawnSync(
+    'docker',
+    [
+      'inspect',
+      id,
+      '--format',
+      '{{range .Config.Env}}{{if eq (index (split . "=") 0) "APP_BASE_URL"}}{{println .}}{{end}}{{end}}'
+    ],
+    { encoding: 'utf8' }
+  )
+  return result.status === 0 ? result.stdout.trim().replace(/^APP_BASE_URL=/, '') || null : null
 }
 
 /**
@@ -169,6 +224,9 @@ export function getRunningComposeFiles() {
  */
 export function journeyBaseUrl() {
   const runningFiles = getRunningComposeFiles()
+  if (runningFiles?.some((f) => f.endsWith('compose.tailscale.yml'))) {
+    return getRunningAppBaseUrl() ?? 'http://localhost:3000'
+  }
   return runningFiles?.some((f) => f.endsWith('compose.ha.yml')) ? 'https://localhost:4000' : 'http://localhost:3000'
 }
 

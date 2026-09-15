@@ -23,7 +23,7 @@ export const home = {
           method: 'GET',
           path: '/',
           options: {
-            auth: false
+            auth: { strategy: 'session', mode: 'try' }
           },
           ...indexController
         }
