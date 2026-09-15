@@ -29,6 +29,8 @@ Allowlisting restricts access to specific grant journeys based on the signed-in 
 
 Grants UI enforces role-based page permissions based on the signed-in user's relationship with the business (SBI) retrieved from the Consolidated View Data Access Layer (DAL).
 
+DAL permissions are cached in the Yar session by CRN and SBI. When `/auth/sign-out` is requested, only the entry for the signed-in user's CRN and current SBI is cleared, so their next signed-in page request fetches fresh permissions from DAL. The OIDC sign-out callback repeats this cleanup when those credentials are still available. Other CRN/SBI entries are preserved; cleanup does nothing when the CRN or SBI is unavailable.
+
 #### Permission Resources and Levels
 
 Permissions are grouped by resource type:

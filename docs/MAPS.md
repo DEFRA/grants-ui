@@ -319,6 +319,8 @@ Fetches the authenticated user's parcels from the DAL, enriches them with area d
 
 The features carry properties only, no geometry: the component uses `PARCEL_TILES_URL` (a client-side constant in `config.js`) as the vector tile source and streams geometry from `/api/map/parcel-tiles/{z}/{x}/{y}`. Returns `503` if the land-grants API is unavailable.
 
+Available-action counts are controlled by `ENABLE_LAND_GRANT_MAP_ACTION_COUNT`. With the flag off (the application default), map load requests only `["size"]` and omits `actionCount` from parcel properties. Tooltips and the selected-parcel summary omit the count; the summary also hides the no-actions warning because availability has not been calculated. With the flag on, map load requests `["size", "actions"]` when the journey has enabled action codes, and displays the journey-filtered available-action count, including zero. Selected-parcel action and consent requests are unchanged.
+
 ### `GET /api/map/parcel-tiles/{z}/{x}/{y}`
 
 Proxies MapLibre vector tile requests to the land-grants API. Fetches the current user's parcel IDs from `fetchParcels` (concurrent tile requests share one in-flight lookup per SBI) and sends them in the POST body so they are never exposed in the tile URL. Each tile is re-encoded on the way through (`withCompoundParcelIds`) to stamp the compound `id` property onto every feature; see the interact plugin section above. Returns the protobuf tile buffer with `Cache-Control: no-store`: the URL is only `{z}/{x}/{y}` with no per-user scoping, so any positive max-age would let the browser replay one user's parcel geometry to whoever is signed in next at the same tile coordinate after a logout/login.
@@ -335,11 +337,12 @@ Proxies OS Maps raster tile requests to the configured `osMapsBaseUrl`, injectin
 
 ## Configuration
 
-| Config key                  | Env var                          | Default                                | Purpose                                                                                                             |
-| --------------------------- | -------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `osMapsApiKey`              | `OS_MAPS_API_KEY`                | _(none)_                               | OS Data Hub key. Sensitive, server-side only. See [Prerequisites: OS Maps API key](#prerequisites-os-maps-api-key). |
-| `osMapsBaseUrl`             | `OS_MAPS_BASE_URL`               | `https://api.os.uk/maps/raster/v1/zxy` | Upstream the `/api/map/os-tiles` proxy calls. Override to point at a stub or an egress proxy.                       |
-| `mapTileCacheMaxAgeSeconds` | `MAP_TILE_CACHE_MAX_AGE_SECONDS` | `3600`                                 | `Cache-Control` max-age on tiles and the basemap style. Lower it to chase a stale-tile problem.                     |
+| Config key                        | Env var                              | Default                                | Purpose                                                                                                             |
+| --------------------------------- | ------------------------------------ | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `osMapsApiKey`                    | `OS_MAPS_API_KEY`                    | _(none)_                               | OS Data Hub key. Sensitive, server-side only. See [Prerequisites: OS Maps API key](#prerequisites-os-maps-api-key). |
+| `osMapsBaseUrl`                   | `OS_MAPS_BASE_URL`                   | `https://api.os.uk/maps/raster/v1/zxy` | Upstream the `/api/map/os-tiles` proxy calls. Override to point at a stub or an egress proxy.                       |
+| `mapTileCacheMaxAgeSeconds`       | `MAP_TILE_CACHE_MAX_AGE_SECONDS`     | `3600`                                 | `Cache-Control` max-age on tiles and the basemap style. Lower it to chase a stale-tile problem.                     |
+| `landGrants.enableMapActionCount` | `ENABLE_LAND_GRANT_MAP_ACTION_COUNT` | `false` (`true` in local Compose)      | Fetch and display action counts on map load. Disable to avoid bulk action calculations.                             |
 
 Deliberately **not** configurable, and worth knowing why:
 

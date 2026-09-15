@@ -155,6 +155,20 @@ describe('task-list.helper', () => {
       expect(getCompletionStats(mockModel, formModel, state).total).toBe(0)
     })
 
+    it('should treat a page with no components field at all as an applicable, not-completed task', () => {
+      const mockModel = {
+        page: {
+          def: {
+            pages: [{ section: 's1', controller: 'CheckResponsesPageController' }]
+          }
+        }
+      }
+      const formModel = { pageMap: buildPageMap(mockModel.page.def.pages) }
+      const state = {}
+      expect(getCompletionStats(mockModel, formModel, state).completed).toBe(0)
+      expect(getCompletionStats(mockModel, formModel, state).total).toBe(1)
+    })
+
     it('should return null for tasks with unmet conditions', () => {
       const mockModel = {
         page: {

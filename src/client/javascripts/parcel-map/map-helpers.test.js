@@ -271,7 +271,14 @@ describe('tooltip helpers', () => {
     expect(tooltip.style.display).toBe('block')
     expect(tooltip.innerHTML).toContain('&lt;b&gt;SD1&lt;/b&gt;')
     expect(tooltip.innerHTML).toContain('2.5000 ha')
-    expect(tooltip.innerHTML).toContain('Available actions: 0')
+    expect(tooltip.innerHTML).not.toContain('Available actions')
+  })
+
+  it.each([0, 3])('shows an available action count of %s when supplied', (actionCount) => {
+    const tooltip = document.createElement('div')
+    showTooltip(tooltip, 'SD7148-9160', { areaHa: 2.5, actionCount }, 10, 20, null)
+
+    expect(tooltip.textContent).toContain(`Available actions: ${actionCount}`)
   })
 
   it('falls back to "Unknown parcel"/"Unknown" when id/area are missing', () => {

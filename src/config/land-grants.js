@@ -12,6 +12,7 @@ import 'dotenv/config'
  * @property {boolean} enableSSSIFeature
  * @property {boolean} enableHeferFeature
  * @property {boolean} enablePrintApplication
+ * @property {boolean} enableMapActionCount
  */
 
 const landGrants = convict({
@@ -45,6 +46,12 @@ const landGrants = convict({
     format: Boolean,
     default: false,
     env: 'ENABLE_LAND_GRANT_HEFER_20260219'
+  },
+  enableMapActionCount: {
+    doc: 'Fetch and display available action counts on map load',
+    format: Boolean,
+    default: false,
+    env: 'ENABLE_LAND_GRANT_MAP_ACTION_COUNT'
   }
 })
 
