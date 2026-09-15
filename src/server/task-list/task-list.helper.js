@@ -152,19 +152,24 @@ function isMapSelectPageCompleted(pageDef, state, formModel) {
   return hasSavedLandParcelActions(state)
 }
 
+const GENERIC_TASK_PAGE_CONTROLLERS = new Set([undefined, 'TaskPageController'])
+
 /**
  * Status for a page with no question components and no completion requirement.
- * A page with components defined, but none of them questions (e.g. Html-only
- * guidance), isn't a real task - excluded from the count (null).
- * A page with no components field at all (e.g. CheckResponsesPageController,
- * DeclarationPageController) is a real task, just not one tracked via question
- * values - kept as not-yet-completed (false).
+ * Only a plain/default task page (no dedicated controller) with non-question
+ * components (e.g. Html-only guidance) is a genuine non-task interstitial -
+ * excluded from the count (null).
+ * A page with a dedicated controller (e.g. CheckResponsesPageController,
+ * DeclarationPageController) is always a real task, even if it also renders
+ * decorative components - kept as not-yet-completed (false). Likewise a page
+ * with no components field at all.
  * @param {object} pageDef - The page definition
  * @returns {boolean | null}
  */
 function emptyComponentsStatus(pageDef) {
-  const hasNonQuestionComponents = (pageDef.components?.length ?? 0) > 0
-  return hasNonQuestionComponents ? null : false
+  const isGuidanceOnlyInterstitial =
+    GENERIC_TASK_PAGE_CONTROLLERS.has(pageDef.controller) && (pageDef.components?.length ?? 0) > 0
+  return isGuidanceOnlyInterstitial ? null : false
 }
 
 /**
