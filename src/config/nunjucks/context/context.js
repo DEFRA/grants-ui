@@ -129,7 +129,8 @@ const buildCommonConfig = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays
       analytics: consentCookieValue === 'true'
     },
     breadcrumbs: [],
-    feedbackSurveyUrl: buildFeedbackSurveyUrl(/** @type {any} */ (request))
+    feedbackSurveyUrl: buildFeedbackSurveyUrl(/** @type {any} */ (request)),
+    componentMapsEnabled: Boolean(config.get('osMapsApiSecret'))
   }
 }
 
