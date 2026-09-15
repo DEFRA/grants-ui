@@ -62,8 +62,8 @@
             {% set consentLinks = [] %}
             {% if 'sssi' in pageConsents %}
               {% set sssiLink %}
-                {% if links["SSI Consent"].url %}
-                  <a class="govuk-link" href="{{ links["SSI Consent"].url }}" target="_blank" rel="noopener noreferrer"
+                {% if links.sssi_consent.href %}
+                  <a class="govuk-link" href="{{ links.sssi_consent.href }}" target="_blank" rel="noopener noreferrer"
                     >SSSI consent (opens in new tab)</a
                   >
                 {% else %}
@@ -74,9 +74,9 @@
             {% endif %}
             {% if 'hefer' in pageConsents %}
               {% set heferLink %}
-                {% if links["SFI Hefer"].url %}
+                {% if links.sfi_hefer.href %}
                   an
-                  <a class="govuk-link" href="{{ links["SFI Hefer"].url }}" target="_blank" rel="noopener noreferrer"
+                  <a class="govuk-link" href="{{ links.sfi_hefer.href }}" target="_blank" rel="noopener noreferrer"
                     >SFI HEFER (opens in new tab)</a
                   >
                 {% else %}

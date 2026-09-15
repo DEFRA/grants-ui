@@ -377,10 +377,10 @@ The two guidance links in the `SelectActionsPageController` consent warning are 
 ```yaml
 config:
   links:
-    SFI Hefer:
-      url: https://example.org/sfi-hefer-guidance
-    SSI Consent:
-      url: https://example.org/sssi-consent-guidance
+    sfi_hefer:
+      href: https://example.org/sfi-hefer-guidance
+    sssi_consent:
+      href: https://example.org/sssi-consent-guidance
 ```
 
 The link names are case-sensitive. URLs may be absolute or relative to the journey page. If a URL is omitted, the consent text remains without a link. This configuration does not affect grouped-action hints or the consent-required page.
