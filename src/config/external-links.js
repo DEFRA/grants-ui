@@ -13,6 +13,12 @@ const externalLinks = convict({
       format: String,
       default: '',
       env: 'SFD_UPDATE_URL'
+    },
+    homeUrl: {
+      doc: 'The Single Front Door homepage URL',
+      format: String,
+      default: '',
+      env: 'SFD_HOME_URL'
     }
   }
 })

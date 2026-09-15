@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import Jwt from '@hapi/jwt'
-import { fetchAllowedGrants } from './allowlist.client.js'
+import { fetchAllowedGrantDetails, fetchAllowedGrants } from './allowlist.client.js'
 import { logUpstreamError } from '~/src/server/common/helpers/logging/upstream-error.js'
 import { createApiHeadersForGrantsUiBackend } from '~/src/server/common/helpers/auth/backend-auth-helper.js'
 import { createMockFetchResponse, mockFetch } from '~/src/__mocks__/hapi-mocks.js'
@@ -68,6 +68,15 @@ describe('fetchAllowedGrants', () => {
     const result = await fetchAllowedGrants(CRN, SBI)
 
     expect(result).toEqual(['woodland', 'farm-payments'])
+  })
+
+  it('retains grant metadata for consumers that display available grants', async () => {
+    const grants = [{ code: 'woodland', title: 'Woodland Management Plan', description: 'Create a plan.', url: null }]
+    fetch.mockResolvedValue(createMockFetchResponse({ data: { grants } }))
+
+    const result = await fetchAllowedGrantDetails(CRN, SBI)
+
+    expect(result).toEqual(grants)
   })
 
   it('returns an empty array when the user has no permitted grants', async () => {

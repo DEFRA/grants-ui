@@ -25,6 +25,10 @@
 
 Allowlisting restricts access to specific grant journeys based on the signed-in user's Customer Reference Number (CRN) and Single Business Identifier (SBI). At runtime, the allowlist plugin ([`src/server/common/helpers/allowlist/allowlist.js`](../src/server/common/helpers/allowlist/allowlist.js)) runs on `onPostAuth`: for an authenticated request that includes a grant slug, it asks grants-ui-backend which grants the user's CRN/SBI may access via `GET /allowlist/grants` (`src/server/auth/services/allowlist.client.js`). If the requested grant code is not included in the returned list, access is denied — the user is redirected to `/auth/journey-unauthorised` and an `unauthorised` audit event (reason `allowlist`) is published. The check fails closed: if the backend call errors, access is refused.
 
+The authenticated `/home` route uses the same endpoint to display active grants available to the user's current CRN
+and SBI. The endpoint supplies the grant title and description as well as its code. An empty successful response renders
+the no-available-grants guidance; an upstream failure is not treated as an empty allowlist.
+
 ### User & Page Permissions
 
 Grants UI enforces role-based page permissions based on the signed-in user's relationship with the business (SBI) retrieved from the Consolidated View Data Access Layer (DAL).
