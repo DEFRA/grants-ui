@@ -3,4 +3,3 @@
 // src/shared/cookie-utils.js, whichever runs first.
 // eslint-disable-next-line no-var
 declare var dataLayer: unknown[] | undefined
-declare var componentMapsEnabled: boolean
