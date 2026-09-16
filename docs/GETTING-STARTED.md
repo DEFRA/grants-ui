@@ -147,6 +147,19 @@ These are required only if DEFRA ID authentication is enabled, and you are using
 | `GRANTS_UI_BACKEND_URL` | Local or remote backend endpoint.              |
 | `GAS_API_URL`           | Endpoint for Grants Application Service (GAS). |
 
+#### Grants UI Backend Authentication
+
+grants-ui is being migrated environment by environment to authenticate to grants-ui-backend with an AWS STS Web Identity token bound to the service's IAM role, instead of a shared secret. This is a CDP-to-CDP hop, so no Entra credential is involved; grants-ui-backend must have `SERVICE_AUTH_ENABLED=true` before an environment is switched. See [Auth & Security - Session Rehydration](./AUTH-AND-SECURITY.md#session-rehydration).
+
+| Variable                                  | Description                                                                                                                                         |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GRANTS_UI_BACKEND_AUTH_METHOD`           | `shared_token` (default) sends the encrypted `GRANTS_UI_BACKEND_AUTH_TOKEN`; `web_identity` sends an AWS STS Web Identity token as the Bearer token |
+| `GRANTS_UI_BACKEND_WEB_IDENTITY_AUDIENCE` | Audience requested on the STS Web Identity token when the auth method is `web_identity` (default: `grants-ui-backend`)                              |
+| `GRANTS_UI_BACKEND_AUTH_TOKEN`            | Shared bearer token, used when the auth method is `shared_token`                                                                                    |
+| `GRANTS_UI_BACKEND_ENCRYPTION_KEY`        | Key used to encrypt the shared bearer token, used when the auth method is `shared_token`                                                            |
+
+Locally (`ENVIRONMENT=local`) the Web Identity token is mocked, because Floci cannot issue STS Web Identity tokens; grants-ui-backend accepts any Bearer token in the same mode.
+
 #### GAS API
 
 | Variable             | Description                                |
@@ -219,14 +232,14 @@ See [Consolidated View API](./CONSOLIDATED-VIEW.md) for configuration and live D
 
 grants-ui is being migrated environment by environment to authenticate to Entra using an AWS STS Web Identity federated credential bound to the service's IAM role, instead of a stored client secret. Which method an environment uses is set explicitly via `ENTRA_AUTH_METHOD` - see [Consolidated View API](./CONSOLIDATED-VIEW.md) for the full explanation.
 
-| Variable                               | Description                                                                                                    |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `ENTRA_INTERNAL_TOKEN_URL`             | Microsoft Entra token endpoint                                                                                 |
-| `ENTRA_INTERNAL_TENANT_ID`             | Microsoft tenant ID                                                                                            |
-| `ENTRA_INTERNAL_CLIENT_ID`             | Microsoft client ID                                                                                            |
-| `ENTRA_AUTH_METHOD`                    | `client_secret` (default) or `web_identity`                                                                    |
-| `ENTRA_FEDERATED_CREDENTIALS_AUDIENCE` | Audience requested on the STS Web Identity token when the auth method is `web_identity` (default: `grants-ui`) |
-| `ENTRA_INTERNAL_CLIENT_SECRET`         | Client secret, used when the auth method is `client_secret`                                                    |
+| Variable                               | Description                                                                                                                                                   |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ENTRA_INTERNAL_TOKEN_URL`             | Microsoft Entra token endpoint                                                                                                                                |
+| `ENTRA_INTERNAL_TENANT_ID`             | Microsoft tenant ID                                                                                                                                           |
+| `ENTRA_INTERNAL_CLIENT_ID`             | Microsoft client ID                                                                                                                                           |
+| `ENTRA_AUTH_METHOD`                    | `client_secret` (default) or `web_identity`                                                                                                                   |
+| `ENTRA_FEDERATED_CREDENTIALS_AUDIENCE` | Audience requested on the STS Web Identity token when the auth method is `web_identity` (default: `Grants Application UI`, the App Registration display name) |
+| `ENTRA_INTERNAL_CLIENT_SECRET`         | Client secret, used when the auth method is `client_secret`                                                                                                   |
 
 #### Development Tools Configuration
 
