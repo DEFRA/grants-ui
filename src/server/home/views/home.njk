@@ -7,8 +7,8 @@
 
     {% if grants | length %}
       <p class="govuk-body">
-        Select a grant to start or continue an
-        application{% if organisationName %}for {{ organisationName }}{% endif %}.
+        Select a grant to start or continue an application
+        {% if organisationName %}for {{ organisationName }}{% endif %}.
       </p>
 
       <ul class="govuk-list">
