@@ -79,6 +79,91 @@ test.each(['radio', 'toggle'])('%s menus scroll without pushing either footer li
   }
 })
 
+test('GAS and Tailscale share one runtime row below the busy animation', () => {
+  vi.useFakeTimers()
+  process.stdout.rows = 24
+  process.stdout.columns = 80
+  const write = vi.spyOn(process.stdout, 'write').mockReturnValue(true)
+  setRuntimeStatusLine('Running: Core  │  GAS: RECEIVED  │  \x1b[34mTailscale: https://test.example.ts.net\x1b[0m')
+  const items = Array.from({ length: 20 }, (_, i) => ({ key: String(i), label: `action ${i}`, description: '' }))
+  const stop = showBusyMenu(items, 'Switching mode…', vi.fn())
+  try {
+    const lines = stripVTControlCharacters(String(write.mock.lastCall?.[0])).split('\n')
+    expect(lines).toHaveLength(23)
+    expect(lines.at(-1)).toBe('  Running: Core  │  GAS: RECEIVED  │  Tailscale: https://test.example.ts.net')
+    expect(lines.at(-3)).toBe('  Switching mode…')
+    write.mockClear()
+    vi.advanceTimersByTime(45)
+    expect(write.mock.lastCall?.[0]).toContain('\x1b[21;1H')
+  } finally {
+    stop()
+  }
+})
+
+test.each(['radio', 'toggle'])('%s reflows the complete coloured runtime status on resize', async (kind) => {
+  process.stdout.rows = 24
+  process.stdout.columns = 100
+  const write = vi.spyOn(process.stdout, 'write').mockReturnValue(true)
+  const status = 'Running: Core  │  GAS: RECEIVED  │  \x1b[34mTailscale: https://test.example.ts.net\x1b[0m'
+  const plain = stripVTControlCharacters(status)
+  setRuntimeStatusLine(status)
+  const items = Array.from({ length: 20 }, (_, i) => ({ key: String(i), label: `action ${i}`, description: '' }))
+  const originalListeners = process.stdout.listenerCount('resize')
+  const picked = kind === 'radio' ? radioMenu(items, 'Menu') : toggleMenu(items, 'Menu')
+  try {
+    process.stdout.columns = 50
+    process.stdout.emit('resize')
+    const raw = String(write.mock.lastCall?.[0])
+    const lines = stripVTControlCharacters(raw).split('\n')
+    expect(lines).toHaveLength(24)
+    expect(
+      lines
+        .slice(-3, -1)
+        .map((line) => line.slice(2))
+        .join('')
+    ).toBe(plain)
+    expect(lines.every((line) => line.length <= 49)).toBe(true)
+    expect(raw).toContain('\x1b[34m')
+
+    process.stdout.columns = 100
+    process.stdout.emit('resize')
+    const wider = stripVTControlCharacters(String(write.mock.lastCall?.[0])).split('\n')
+    expect(wider.at(-2)).toBe(`  ${plain}`)
+    expect(wider).toHaveLength(24)
+  } finally {
+    process.stdin.emit('keypress', '', { sequence: '\x1b', name: 'escape' })
+    await picked
+  }
+  expect(process.stdout.listenerCount('resize')).toBe(originalListeners)
+})
+
+test('busy animation moves above the wrapped footer when the terminal narrows', () => {
+  vi.useFakeTimers()
+  process.stdout.rows = 24
+  process.stdout.columns = 100
+  const write = vi.spyOn(process.stdout, 'write').mockReturnValue(true)
+  const status = 'Running: Core  │  GAS: RECEIVED  │  Tailscale: https://test.example.ts.net'
+  setRuntimeStatusLine(status)
+  const stop = showBusyMenu([], 'Switching mode…', vi.fn())
+  try {
+    process.stdout.columns = 50
+    process.stdout.emit('resize')
+    const lines = stripVTControlCharacters(String(write.mock.lastCall?.[0])).split('\n')
+    expect(lines).toHaveLength(23)
+    expect(
+      lines
+        .slice(-2)
+        .map((line) => line.slice(2))
+        .join('')
+    ).toBe(status)
+    write.mockClear()
+    vi.advanceTimersByTime(45)
+    expect(write.mock.lastCall?.[0]).toContain('\x1b[20;1H')
+  } finally {
+    stop()
+  }
+})
+
 test('the shimmer moves a white highlight from left to right without changing the text', () => {
   const first = shimmerText('Working', 8)
   const later = shimmerText('Working', 10)

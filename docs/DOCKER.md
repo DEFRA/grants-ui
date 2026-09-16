@@ -9,6 +9,7 @@
 - [Development Image](#development-image)
 - [Production Image](#production-image)
 - [Docker Compose](#docker-compose)
+- [Tailscale phone testing](#tailscale-phone-testing)
 - [GAS Compose (`compose.gas.yml`)](#gas-compose-composegasyml)
 - [High-Availability (HA) Local Proxy](#high-availability-ha-local-proxy)
 - [Debugging with Docker](#debugging-with-docker)
@@ -21,7 +22,10 @@
 
 ### Interactive mode
 
-Running `gt` with no arguments opens a menu-driven interface where you can toggle addon services (Land Grants, GAS, HA proxy), set a replica scale, choose which `defradigital/*` images to replace with a locally-built `<service>:local` image, and toggle [local form-definition overrides](#local-form-definition-overrides). Selections are persisted in `.grants-ui-cli-state.json` (git-ignored) so the next run pre-selects the same options.
+Running `gt` with no arguments opens a menu-driven interface where you can toggle addon services (Land Grants, GAS, HA proxy, Tailscale), set a replica scale, choose which `defradigital/*` images to replace with a locally-built `<service>:local` image, and toggle [local form-definition overrides](#local-form-definition-overrides). Selections are persisted in `.grants-ui-cli-state.json` (git-ignored) so the next run pre-selects the same options.
+
+The main menu's `tailscale` action enables or disables [Tailscale phone testing](#tailscale-phone-testing).
+When the stack is running, it applies the change immediately. Before startup, it saves the selection for the `up` menu.
 
 The `local` menu holds both the per-service local-image toggles and the local form definitions override toggle. When the stack is already running, changes apply immediately (services restart with `--no-deps`, overrides are (un)published in place); otherwise they take effect on the next `up`.
 
@@ -45,6 +49,9 @@ gt up --gas                        # include GAS (fg-gas-backend + floci)
 gt up --land-grants                # include Land Grants API + Postgres
 gt up --gas --land-grants --ha     # all addons + HA proxy
 gt up --ha --scale 2               # run 2 replicas of grants-ui / grants-ui-backend (requires --ha)
+gt up --tailscale                  # start with HTTPS tailnet URLs and configure Serve
+gt tailscale on                    # switch the running stack to Tailscale
+gt tailscale off                   # restore localhost and remove the Serve proxies
 gt up --local-grants-ui-backend    # use locally-built grants-ui-backend:local
 
 # Stop the stack (uses saved state automatically)
@@ -133,10 +140,10 @@ A local environment with:
 - Grants Config Broker, serving form-definition config to Grants UI Backend
 - MockServer, providing a stub for [fg-gas-backend](http://github.com/DEFRA/fg-gas-backend)
 
-The recommended way to start the stack is via the [Grants TUI](#grants-tui), which handles addon selection and local-image overrides interactively. For a plain start without the TUI:
+The recommended way to start the stack is via the [Grants TUI](#grants-tui), which handles addon selection and local-image overrides interactively. For a plain start from the CLI:
 
 ```bash
-npm run docker:up
+gt up
 ```
 
 And optionally:
@@ -169,6 +176,76 @@ npm run docker:migrate:ext:up
 # Roll back all migrations to the base tag v0.0.0
 npm run docker:migrate:ext:down
 ```
+
+## Tailscale phone testing
+
+`compose.tailscale.yml` overrides the browser-facing app and Defra ID stub URLs for
+testing from another device on your Tailscale network.
+Install [Tailscale](https://tailscale.com/download) on the host and remote device,
+install the `tailscale` CLI on the host, and connect Tailscale on both devices.
+When you enable the addon, `gt` reads this host's `.ts.net` hostname from the CLI;
+no Tailscale setting is needed in `.env`.
+Enable HTTPS certificates in your tailnet.
+If HTTPS needs enabling, Serve prints an approval link in the action output;
+follow it and retry.
+
+**DO NOT** enable Tailscale Funnel - this would expose the app to the internet.
+
+Start with Tailscale enabled:
+
+```bash
+gt up --tailscale
+```
+
+Or run `gt`, choose `up`, and select the Tailscale addon. The main menu's
+`tailscale` action toggles the mode, including while the app is running.
+On interactive startup, `gt` disables that action with an install hint if either
+the Tailscale service or its CLI is unavailable.
+
+Switch an existing stack without changing other addon selections:
+
+```bash
+gt tailscale on
+gt tailscale off
+```
+
+Open the `https://…ts.net` address shown by `gt` on both devices. The override changes sign-in,
+sign-out and the stub's browser endpoints; server-to-server URLs retain their
+normal configuration. This setup uses the local Defra ID stub and the standard
+published ports. Combining Tailscale with the HA proxy is rejected because that
+override removes the required published ports. HTTPS is required because the
+app's content security policy upgrades asset requests to HTTPS.
+
+The running status area shows `Tailscale: https://<your-host>.ts.net`.
+The status wraps onto additional rows when the terminal is too narrow and
+returns to one line when widened.
+`gt journey` also uses the running app's Tailscale URL.
+
+Switch back to `http://localhost:3000`, including when Tailscale is disconnected:
+
+```bash
+gt tailscale off
+# Or start the standard stack without Tailscale:
+gt up
+```
+
+Switching modes recreates only the Defra ID stub and Grants UI, waiting for the
+stub before restarting the UI so its cached sign-in configuration is refreshed.
+Other services and form-definition selections are preserved. Sign in again at
+the selected address. No `.env` edits are needed between modes.
+
+`gt` manages [Tailscale Serve](https://tailscale.com/docs/reference/tailscale-cli/serve):
+enable creates HTTPS listeners on port 443 forwarding to `127.0.0.1:3000` and
+port 8443 forwarding to `127.0.0.1:3007`. Disable restores localhost URLs first,
+then runs `tailscale serve --bg --https=<port> off` for each matching listener.
+`gt down` and `gt reset` also remove these proxies when the running or saved mode is Tailscale.
+Existing identical proxies can be reused; conflicting listeners are left intact
+and reported. Other Serve entries are preserved; `gt` never runs `serve reset`.
+
+If Tailscale is already disconnected or its CLI is unavailable, switching off
+still restores the app's localhost configuration. A cleanup failure is reported;
+run `gt tailscale off` again once the CLI is available to remove any remaining
+proxies. `--dry-run` previews commands without changing Docker, Serve or saved selections.
 
 ## GAS Compose (`compose.gas.yml`)
 
