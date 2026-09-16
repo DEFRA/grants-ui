@@ -66,6 +66,7 @@ const getExpectedContext = () => ({
   serviceName: 'Farm and land service',
   serviceUrl: '/',
   cdpEnvironment: undefined,
+  componentMapsEnabled: false,
   gaTrackingId: undefined,
   cookiePolicyUrl: expect.any(String),
   cookieConsentName: expect.any(String),

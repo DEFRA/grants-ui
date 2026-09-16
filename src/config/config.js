@@ -309,6 +309,13 @@ const convictConfig = {
     env: 'OS_MAPS_API_KEY',
     sensitive: true
   },
+  osMapsApiSecret: {
+    doc: 'Ordnance Survey Maps API secret.',
+    format: String,
+    default: '',
+    env: 'OS_MAPS_API_SECRET',
+    sensitive: true
+  },
   osMapsBaseUrl: {
     doc: 'Base URL of the OS Maps API raster ZXY tile service, proxied by /api/map/os-tiles. Configurable for the same reasons every other upstream is: pointing at a stub or sandbox, or routing through an egress proxy, without a code change. Note the layer and zoom range stay pinned in code — they are properties of the OS product, not deployment choices.',
     format: String,
