@@ -9,6 +9,10 @@ ignore:
     - '*':
         reason: 'Temporary ignore for User Impersonation in proxy-addr@2.0.7, introduced through @defra/forms-engine-plugin > @defra/interactive-map > the Docusaurus toolchain > webpack-dev-server > express. Fixed in proxy-addr 2.0.8; remove this ignore when the transitive dependency is updated.'
         expires: '2026-09-24'
+  'SNYK-JS-FASTURI-19846649':
+    - '*':
+        reason: 'Improper Handling of Case Sensitivity in fast-uri@3.1.7, introduced through @defra/forms-engine-plugin > @defra/interactive-map > the Docusaurus toolchain > webpack > minimizer-webpack-plugin > schema-utils > ajv. Fixed in fast-uri 3.1.8 (published 2026-09-15), inside the .npmrc min-release-age=7 cooldown until 2026-09-22. Update the transitive Fast URI dependency and remove this ignore once the patched version is eligible.'
+        expires: '2026-09-24'
   'SNYK-JS-INFLIGHT-6095116':
     - '*':
         reason: 'Not reachable in application runtime — inflight is only present via glob from @defra/interactive-map/polygon-splitter package metadata and dev/build tooling; grants-ui and the shipped map bundles do not import glob or inflight. Re-checked 2026-08-24 on @defra/interactive-map 0.0.40-alpha: polygon-splitter still pins glob@^8, which requires inflight; no upstream fix available. Reassess for interactive-map/polygon-splitter dependency removal.'
