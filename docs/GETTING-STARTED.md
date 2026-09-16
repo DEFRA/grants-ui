@@ -149,7 +149,7 @@ These are required only if DEFRA ID authentication is enabled, and you are using
 
 #### Grants UI Backend Authentication
 
-grants-ui is being migrated environment by environment to authenticate to grants-ui-backend with an AWS STS Web Identity token bound to the service's IAM role, instead of a shared secret. This is a CDP-to-CDP hop, so no Entra credential is involved; grants-ui-backend must have `SERVICE_AUTH_ENABLED=true` before an environment is switched. See [Auth & Security - Session Rehydration](./AUTH-AND-SECURITY.md#session-rehydration).
+Calls to grants-ui-backend can use either the shared encrypted bearer token or an AWS STS Web Identity token bound to the service's IAM role, chosen per environment with `GRANTS_UI_BACKEND_AUTH_METHOD`. This is a CDP-to-CDP hop (no Entra involved); switch an environment only once its grants-ui-backend has `SERVICE_AUTH_ENABLED=true`. Details in [Auth & Security - Session Rehydration](./AUTH-AND-SECURITY.md#session-rehydration).
 
 | Variable                                  | Description                                                                                                                                         |
 | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -230,7 +230,7 @@ See [Consolidated View API](./CONSOLIDATED-VIEW.md) for configuration and live D
 
 #### Microsoft Entra (Internal Use)
 
-grants-ui is being migrated environment by environment to authenticate to Entra using an AWS STS Web Identity federated credential bound to the service's IAM role, instead of a stored client secret. Which method an environment uses is set explicitly via `ENTRA_AUTH_METHOD` - see [Consolidated View API](./CONSOLIDATED-VIEW.md) for the full explanation.
+`ENTRA_AUTH_METHOD` selects how each environment authenticates to Entra: the stored client secret, or an AWS STS Web Identity federated credential. See [Consolidated View API](./CONSOLIDATED-VIEW.md#configuration) for how the migration works and which value to use where.
 
 | Variable                               | Description                                                                                                                                                   |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
