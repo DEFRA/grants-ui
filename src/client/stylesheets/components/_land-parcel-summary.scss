@@ -55,15 +55,17 @@
   @supports (grid-template-columns: subgrid) {
     @include govuk-media-query($from: tablet) {
       .govuk-summary-list {
-        grid-template-columns: fit-content(66.6667%) repeat(2, minmax(0, 1fr));
+        grid-template-columns: fit-content(66.6667%) minmax(0, 1fr) max-content;
       }
 
-      .govuk-summary-list__value,
+      .govuk-summary-list__value {
+        min-width: 0;
+        white-space: normal;
+        overflow-wrap: anywhere;
+      }
+
       .govuk-summary-list__actions {
         white-space: nowrap;
-      }
-
-      .govuk-summary-list__actions {
         margin-bottom: 0;
       }
     }
