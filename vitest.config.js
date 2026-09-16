@@ -25,7 +25,6 @@ export default {
         '**/.public/**',
         '**/test-helpers/**',
         '**/test-helpers.js',
-        '**/src/client/javascripts/application.js',
         '**/src/index.js',
         '**/index.js',
         '**/__mocks__/**',
