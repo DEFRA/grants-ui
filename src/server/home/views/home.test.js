@@ -13,7 +13,9 @@ describe('home.njk', () => {
     })
 
     expect($('h1').text().trim()).toBe('Grants available to you')
-    expect($('.govuk-body').first().text()).toContain('for Test Farm')
+    expect($('.govuk-body').first().text().replace(/\s+/g, ' ').trim()).toBe(
+      'Select a grant to start or continue an application for Test Farm.'
+    )
     expect($('a[href="/farm-payments"]').text().trim()).toBe('Farm payments')
     expect($('a[href="/woodland"]').text().trim()).toBe('Woodland grant')
     expect($.root().text()).toContain('Apply for farm payments.')
