@@ -126,7 +126,8 @@ const fetchConsentNotice = async (parcelId, enabledLandActions = []) => {
   const params = new URLSearchParams()
   enabledLandActions.forEach((action) => params.append('enabledLandActions', action))
   const query = params.toString()
-  const endpoint = `/api/land-grants/actions/${encodeURIComponent(parcelId)}/consents${query ? `?${query}` : ''}`
+  const querySuffix = query ? `?${query}` : ''
+  const endpoint = `/api/land-grants/actions/${encodeURIComponent(parcelId)}/consents${querySuffix}`
 
   try {
     const response = await fetch(endpoint, {
@@ -202,7 +203,8 @@ function createSelectedParcelDetailsUpdater(mapEl) {
   let requestId = 0
 
   return async function updateSelectedParcelDetailsForSelection(selectedParcels, metaIndex) {
-    const thisRequestId = ++requestId
+    requestId += 1
+    const thisRequestId = requestId
     clearRequirements()
 
     if (selectedParcels.length !== 1) {
