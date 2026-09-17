@@ -74,7 +74,7 @@ export async function releaseAllApplicationLocksForOwnerFromApi({ ownerId }) {
     const response = await fetch(url.href, {
       method: 'DELETE',
       headers: {
-        ...createApiHeadersForGrantsUiBackend(),
+        ...(await createApiHeadersForGrantsUiBackend()),
         'x-application-lock-release': String(token)
       },
       signal: controller.signal
