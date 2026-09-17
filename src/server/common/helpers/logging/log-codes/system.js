@@ -184,6 +184,6 @@ export const SYSTEM = {
   OS_MAPS_API_KEY_MISSING: {
     level: 'error',
     messageFunc: () =>
-      `map: osMapsApiKey (OS_MAPS_API_KEY) is not set; every /api/map/os-tiles request will fail as a 401 from OS with no diagnostic`
+      `map: maps.land.apiKey (LAND_MAPS_API_KEY) is not set; every /api/map/os-tiles request will fail as a 401 from OS with no diagnostic`
   }
 }

@@ -130,7 +130,7 @@ const buildCommonConfig = (serviceName, cookiePolicyUrl, cookieConsentExpiryDays
     },
     breadcrumbs: [],
     feedbackSurveyUrl: buildFeedbackSurveyUrl(/** @type {any} */ (request)),
-    componentMapsEnabled: Boolean(config.get('osMapsApiSecret'))
+    componentMapsEnabled: Boolean(config.get('maps.forms.apiSecret'))
   }
 }
 

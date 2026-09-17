@@ -16,7 +16,7 @@ export const mapPlugin = {
     name: 'map',
     register(server) {
       // Surface a missing OS key at startup
-      if (!config.get('osMapsApiKey')) {
+      if (!config.get('maps.land.apiKey')) {
         error(LogCodes.SYSTEM.OS_MAPS_API_KEY_MISSING, {})
       }
 
