@@ -1,0 +1,157 @@
+[
+  {
+    "slug": "check-details",
+    "name": "Check details — yes",
+    "type": "yesNo",
+    "fieldName": "businessDetailsUpToDate",
+    "value": "true"
+  },
+  {
+    "section": "check-before-you-start",
+    "slug": "tasks",
+    "name": "Task list — check-before-you-start",
+    "type": "clickLink",
+    "linkSlug": "crops-growing"
+  },
+  {
+    "section": "check-before-you-start",
+    "slug": "crops-growing",
+    "name": "Crops growing — yes",
+    "type": "radios",
+    "fieldName": "cropsGrowing",
+    "value": "FOOD_INDUSTRY"
+  },
+  {
+    "section": "check-before-you-start",
+    "slug": "county-project-located",
+    "name": "County project located — selects first option",
+    "type": "selectField",
+    "fieldName": "countyProjectLocated"
+  },
+  {
+    "section": "check-before-you-start",
+    "slug": "work-started-yet",
+    "name": "Work started yet — yes prep",
+    "type": "radios",
+    "fieldName": "workStartedYet",
+    "value": "YES_PREPARATORY_WORK"
+  },
+  {
+    "section": "check-before-you-start",
+    "slug": "score-results",
+    "name": "Score results temp",
+    "type": "textFields",
+    "fields": {
+      "tempOne": "aa"
+    }
+  },
+  {
+    "section": "project-details",
+    "slug": "tasks",
+    "name": "Task list — project-details",
+    "type": "clickLink",
+    "linkSlug": "how-much-water"
+  },
+  {
+    "section": "project-details",
+    "slug": "how-much-water",
+    "name": "How much water",
+    "type": "numberField",
+    "fieldName": "howMuchWater",
+    "value": "10000"
+  },
+  {
+    "section": "project-details",
+    "slug": "where-water-will-come-from",
+    "name": "Where water will come from - selects all options",
+    "type": "checkboxes",
+    "fieldName": "whereWaterWillComeFrom",
+    "selectAll": true
+  },
+  {
+    "section": "project-details",
+    "slug": "have-planning-permission",
+    "name": "Have planning permission — yes",
+    "type": "yesNo",
+    "fieldName": "havePlanningPermission",
+    "value": "true"
+  },
+  {
+    "section": "project-details",
+    "slug": "need-abstraction-licence",
+    "name": "Need abstraction licence — not needed",
+    "type": "radios",
+    "fieldName": "needAbstractionLicence",
+    "value": "LICENSE_NOT_NEEDED"
+  },
+  {
+    "section": "project-details",
+    "slug": "supplying-other-farms",
+    "name": "Supplying other farms — selects first option",
+    "type": "selectField",
+    "fieldName": "supplyingOtherFarms"
+  },
+  {
+    "section": "project-details",
+    "slug": "expected-project-start-date",
+    "name": "Expected project start date - current month year",
+    "type": "monthYear",
+    "fieldName": "expectedProjectStartDate"
+  },
+  {
+    "section": "estimated-costs",
+    "slug": "tasks",
+    "name": "Task list — estimated-costs",
+    "type": "clickLink",
+    "linkSlug": "items-planning-to-install"
+  },
+  {
+    "section": "estimated-costs",
+    "slug": "items-planning-to-install",
+    "name": "Items planning to install - selects first option",
+    "type": "checkboxes",
+    "fieldName": "itemsPlanningToInstall"
+  },
+  {
+    "section": "estimated-costs",
+    "slug": "reservoir-lining",
+    "name": "Reservoir lining - synthetic",
+    "type": "radios",
+    "fieldName": "reservoirLining",
+    "value": "synthetic"
+  },
+  {
+    "section": "estimated-costs",
+    "slug": "total-estimated-cost",
+    "name": "Total estimated cost - aa",
+    "type": "textFields",
+    "fields": {
+      "tempTwo": "aa"
+    }
+  },
+  {
+    "section": "check-and-submit-your-application",
+    "slug": "tasks",
+    "name": "Task list — check-and-submit-your-application",
+    "type": "clickLink",
+    "linkSlug": "summary"
+  },
+  {
+    "section": "check-and-submit-your-application",
+    "slug": "summary",
+    "name": "Check your answers",
+    "type": "submitOnly"
+  },
+  {
+    "section": "check-and-submit-your-application",
+    "slug": "potential-funding",
+    "name": "Potential grant funding",
+    "type": "submitOnly"
+  },
+  {
+    "section": "check-and-submit-your-application",
+    "slug": "declaration",
+    "name": "Submit your application",
+    "type": "submitOnly"
+  }
+]

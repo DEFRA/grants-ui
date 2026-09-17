@@ -60,6 +60,10 @@ import CheckDetailsController from '~/src/server/details-page/check-details.cont
 import CommonSelectLandParcelPageController from './land-grants/common/common-select-parcel/common-select-land-parcel-page.controller.js'
 import MapSelectPageController from '~/src/server/common/map/map-select-page.controller.js'
 import MapSubmissionPageController from '~/src/server/common/map/map-submission-page.controller.js'
+import ScoreResultsController from '~/src/server/non-land-grants/water-management/controllers/score-results.controller.js'
+import ScoreResultsTaskPageController from '~/src/server/non-land-grants/water-management/controllers/score-results-task-page.controller.js'
+import TotalEstimatedCostController from '~/src/server/non-land-grants/water-management/controllers/total-estimated-cost.controller.js'
+import TotalEstimatedCostTaskPageController from '~/src/server/non-land-grants/water-management/controllers/total-estimated-cost-task-page.controller.js'
 import permissions from '../plugins/permissions.js'
 import { formsRequestPipeline } from './common/request-pipeline/forms-request-pipeline.js'
 import { serviceRootRedirect } from './common/request-pipeline/redirects/service-root-redirect.js'
@@ -172,7 +176,11 @@ const registerFormsPlugin = async (server, prefix = '') => {
         CheckDetailsController,
         WoodlandHectaresPageController,
         MapSelectPageController,
-        MapSubmissionPageController
+        MapSubmissionPageController,
+        ScoreResultsController,
+        ScoreResultsTaskPageController,
+        TotalEstimatedCostController,
+        TotalEstimatedCostTaskPageController
       }
     }
   })
