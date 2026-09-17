@@ -17,7 +17,7 @@ export default class ScoreResultsController extends QuestionPageController {
         context.state = await this.setState(request, mergeAdditionalAnswers(context.state, { scoreResults }))
 
         const baseViewModel = super.getViewModel(request, context)
-        return h.view(this.viewName, { ...baseViewModel })
+        return h.view(this.viewName, baseViewModel)
       } catch (error) {
         const grantApplicationServiceError = new GrantApplicationServiceError({
           message: 'Failed to retrieve score results',

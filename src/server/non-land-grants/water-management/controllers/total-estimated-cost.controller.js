@@ -10,11 +10,9 @@ export default class TotalEstimatedCostController extends QuestionPageController
   makeGetRouteHandler() {
     const fn = async (request, context, h) => {
       try {
-        const reservoirCostPerUnit =
-          h.request.app?.model?.def?.metadata?.totalEstimatedCostsPage?.reservoirCostPerUnit ?? 2.5
-        const distNetworkCostPerUnit =
-          h.request.app?.model?.def?.metadata?.totalEstimatedCostsPage?.distNetworkCostPerUnit ?? 5
-        const tanksCostPerUnit = h.request.app?.model?.def?.metadata?.totalEstimatedCostsPage?.tanksCostPerUnit ?? 1.5
+        const reservoirCostPerUnit = h.request.app.model.def.metadata.totalEstimatedCostsPage.reservoirCostPerUnit
+        const distNetworkCostPerUnit = h.request.app.model.def.metadata.totalEstimatedCostsPage.distNetworkCostPerUnit
+        const tanksCostPerUnit = h.request.app.model.def.metadata.totalEstimatedCostsPage.tanksCostPerUnit
         const {
           itemsPlanningToInstall,
           howMuchWater = 0,
@@ -45,7 +43,7 @@ export default class TotalEstimatedCostController extends QuestionPageController
         )
 
         const baseViewModel = super.getViewModel(request, context)
-        return h.view(this.viewName, { ...baseViewModel })
+        return h.view(this.viewName, baseViewModel)
       } catch (error) {
         const grantApplicationServiceError = new GrantApplicationServiceError({
           message: 'Failed to calculate total estimated cost',
