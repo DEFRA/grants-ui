@@ -6,6 +6,29 @@ import { radioMenu, renderScreen, setRuntimeStatusLine, shimmerText, showBusyMen
 const originalRows = process.stdout.rows
 const originalColumns = process.stdout.columns
 
+test.each([
+  ['older', 'older'],
+  ['missing', 'latest'],
+  ['disabled', 'latest'],
+  [undefined, 'latest']
+])(
+  'radio menu starts at remembered choice %s or falls back to the first enabled item',
+  async (initialKey, expected) => {
+    vi.spyOn(process.stdout, 'write').mockReturnValue(true)
+    const picked = radioMenu(
+      [
+        { key: 'latest', label: 'Latest', description: '' },
+        { key: 'older', label: 'Older', description: '' },
+        { key: 'disabled', label: 'Disabled', description: '', disabled: true }
+      ],
+      'Versions',
+      { initialKey }
+    )
+    process.stdin.emit('keypress', '', { sequence: '\r', name: 'return' })
+    await expect(picked).resolves.toBe(expected)
+  }
+)
+
 afterEach(() => {
   process.stdout.rows = originalRows
   process.stdout.columns = originalColumns

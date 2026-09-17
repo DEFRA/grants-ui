@@ -7,6 +7,7 @@ import { getRunningComposeFiles, getRunningAppBaseUrl } from './docker.js'
 import { getGasStatus } from './gas.js'
 import { getLastRun, runInteractiveAction, setActionMenu } from './actions.js'
 import { viewOutput } from './output.js'
+import { inspectState } from './state-inspector.js'
 
 vi.mock('./tui.js', () => ({ radioMenu: vi.fn(), toggleMenu: vi.fn(), setRuntimeStatusLine: vi.fn() }))
 vi.mock('./docker.js', async (importOriginal) => ({
@@ -22,6 +23,7 @@ vi.mock('./actions.js', async (importOriginal) => ({
   setActionMenu: vi.fn()
 }))
 vi.mock('./output.js', () => ({ viewOutput: vi.fn() }))
+vi.mock('./state-inspector.js', () => ({ inspectState: vi.fn() }))
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -90,10 +92,18 @@ test('the tools submenu exposes audit scripts with descriptions and escape start
   expect(buildMainMenuItems(null, false)).toContainEqual(expect.objectContaining({ key: 'tools', label: 'tools ⇢' }))
   await expect(handleToolsCommand(false)).resolves.toBe('')
   const items = vi.mocked(radioMenu).mock.calls[0][0]
-  expect(items.map((item) => item.key)).toEqual(['audit:logs', 'audit:queue', 'audit:clear'])
+  expect(items.map((item) => item.key)).toEqual(['state', 'audit:logs', 'audit:queue', 'audit:clear'])
   expect(items.every((item) => item.description.length > 0)).toBe(true)
-  expect(items[2].description).toMatch(/Purge.*queue.*restart grants-ui/)
+  expect(items[3].description).toMatch(/Purge.*queue.*restart grants-ui/)
   expect(runInteractiveAction).not.toHaveBeenCalled()
+})
+
+test('application state opens the inspector and returns to Tools without starting a worker', async () => {
+  vi.mocked(radioMenu).mockResolvedValueOnce('state')
+  await handleToolsCommand(false)
+  expect(inspectState).toHaveBeenCalledExactlyOnceWith(false)
+  expect(runInteractiveAction).not.toHaveBeenCalled()
+  expect(vi.mocked(radioMenu).mock.calls.map((call) => call[1])).toEqual(['Tools', 'Tools'])
 })
 
 test.each(['audit:logs', 'audit:queue', 'audit:clear'])(
