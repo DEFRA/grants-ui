@@ -36,6 +36,7 @@ const UNAVAILABLE_CLASS = 'select-actions-unavailable-message'
 const REFRESH_BANNER_MESSAGE = 'Updating available land for this action…'
 const REFRESH_BANNER_CLASS = 'select-actions-refresh-banner'
 const REFRESH_BANNER_HIDDEN_CLASS = 'select-actions-refresh-banner--hidden'
+const CHECKBOX_ITEM_SELECTOR = '.govuk-checkboxes__item'
 
 /**
  * @param {number} value
@@ -49,7 +50,7 @@ const availabilityHintText = (value, unit) => `${value} ${formatUnit(unit)} avai
  * @param {boolean} isLoading
  */
 function toggleCheckboxRefreshBanner(checkbox, isLoading) {
-  const item = /** @type {HTMLElement | null} */ (checkbox.closest('.govuk-checkboxes__item'))
+  const item = /** @type {HTMLElement | null} */ (checkbox.closest(CHECKBOX_ITEM_SELECTOR))
   const existing = item?.querySelector(`.${REFRESH_BANNER_CLASS}`)
   if (!isLoading) {
     existing?.remove()
@@ -128,8 +129,8 @@ function actionSpecificQuantityMessage(checkbox, rawValue, message) {
   }
 
   const actionText =
-    checkbox.getAttribute('data-action-description')?.trim() ||
-    checkbox.closest('.govuk-checkboxes__item')?.querySelector('label')?.textContent?.trim() ||
+    checkbox.dataset.actionDescription?.trim() ||
+    checkbox.closest(CHECKBOX_ITEM_SELECTOR)?.querySelector('label')?.textContent?.trim() ||
     checkbox.value
   return `Quantity for ${actionText} must be ${QUANTITY_PRECISION} decimal places or fewer`
 }
@@ -257,7 +258,7 @@ export function buildPlannedActions(form) {
  * @param {boolean} isUnavailable
  */
 function toggleUnavailableMessage(checkbox, isUnavailable) {
-  const item = /** @type {HTMLElement | null} */ (checkbox.closest('.govuk-checkboxes__item'))
+  const item = /** @type {HTMLElement | null} */ (checkbox.closest(CHECKBOX_ITEM_SELECTOR))
   const message = item?.querySelector(`.${UNAVAILABLE_CLASS}`)
   if (!isUnavailable) {
     message?.remove()
