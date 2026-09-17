@@ -65,7 +65,7 @@ const updateMapTotals = (metaIndex, parcelIds) => {
  * @param {SelectedParcel[]} selectedParcels
  * @param {import('./map-helpers.js').MetaIndex} [metaIndex]
  */
-const updateSelectedParcelDetails = (selectedParcels, metaIndex = {}) => {
+const renderSelectedParcelDetails = (selectedParcels, metaIndex = {}) => {
   const details = document.getElementById(DOM_ID_SELECTED_PARCEL_DETAILS)
   if (!details) {
     return
@@ -202,7 +202,7 @@ function createSelectedParcelDetailsUpdater(mapEl) {
   ]
   let requestId = 0
 
-  return async function updateSelectedParcelDetailsForSelection(selectedParcels, metaIndex) {
+  return async function updateSelectedParcelDetails(selectedParcels, metaIndex) {
     requestId += 1
     const thisRequestId = requestId
     clearRequirements()
@@ -222,7 +222,7 @@ function createSelectedParcelDetailsUpdater(mapEl) {
       showRequirements(notice.intro, notice.items)
     }
     if (typeof notice?.actionCount === 'number') {
-      updateSelectedParcelDetails(selectedParcels, {
+      renderSelectedParcelDetails(selectedParcels, {
         [id]: { ...metaIndex[id], id, actionCount: notice.actionCount }
       })
     }
@@ -279,13 +279,13 @@ export function initParcelSelectPage(mapEl) {
   mapEl.addEventListener(EVENT_ERROR, (/** @type {Event} */ e) => {
     handleError(/** @type {CustomEvent<ParcelMapErrorDetail>} */ (e).detail)
   })
-  const updateSelectedParcelDetailsForSelection = createSelectedParcelDetailsUpdater(mapEl)
+  const updateSelectedParcelDetails = createSelectedParcelDetailsUpdater(mapEl)
 
   mapEl.addEventListener(EVENT_SELECTION, (/** @type {Event} */ e) => {
     const { selectedParcels } = /** @type {CustomEvent<SelectionDetail>} */ (e).detail
     writeHiddenInputs(selectedParcels.map((p) => p.id))
+    renderSelectedParcelDetails(selectedParcels, metaIndex)
     updateSelectedParcelDetails(selectedParcels, metaIndex)
-    updateSelectedParcelDetailsForSelection(selectedParcels, metaIndex)
     const nextParcelId = selectedParcels.length === 1 ? selectedParcels[0].id : undefined
     if (nextParcelId && nextParcelId !== selectedParcelId) {
       const details = document.getElementById(DOM_ID_SELECTED_PARCEL_DETAILS)

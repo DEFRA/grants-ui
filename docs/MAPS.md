@@ -321,9 +321,11 @@ Fetches the authenticated user's parcels from the DAL, enriches them with area d
 
 The features carry properties only, no geometry: the component uses `PARCEL_TILES_URL` (a client-side constant in `config.js`) as the vector tile source and streams geometry from `/api/map/parcel-tiles/{z}/{x}/{y}`. Returns `503` if the land-grants API is unavailable.
 
-Available-action counts on map load are controlled by `ENABLE_LAND_GRANT_MAP_ACTION_COUNT`. With the flag off (the application default), map load requests only `["size"]` and omits `actionCount` from parcel properties and tooltips. With the flag on, map load requests `["size", "actions"]` when the journey has enabled action codes, and displays the journey-filtered available-action count, including zero.
+`ENABLE_LAND_GRANT_MAP_ACTION_COUNT` is off by default: map load requests `["size"]` and omits `actionCount` and tooltip counts. When on, it also requests `"actions"` if the journey has enabled action codes.
 
-The selected-parcel details count is independent of this flag. When the bulk count is absent and the journey has enabled action codes, the existing `POST /api/land-grants/actions/{parcelId}/consents` request includes those codes as `enabledLandActions` query parameters. The server returns an `actionCount` alongside the notice, counting enabled actions with available land from the same cached parcel-actions lookup. Consent requirements still cover every action on the parcel. No second upstream lookup is made for the count, and tooltip metadata is never updated. Zero shows the no-actions notice; a pending or failed lookup leaves the count and notice hidden, with Continue still usable. Responses for an old selection are ignored. An existing bulk count is reused; when no action codes are enabled, selection does not request a count.
+Selection reuses bulk counts or passes `enabledLandActions` query parameters to `POST /api/land-grants/actions/{parcelId}/consents`. The same cached lookup returns `actionCount` for enabled actions with available land; consents still cover all actions. This adds no upstream call and leaves tooltips unchanged. No enabled codes means no count request.
+
+Zero shows the no-actions warning. Pending or failed counts hide the count and warning without blocking Continue. Responses for old selections are ignored.
 
 ### `GET /api/map/parcel-tiles/{z}/{x}/{y}`
 
