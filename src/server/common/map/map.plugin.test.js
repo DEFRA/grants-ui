@@ -3,14 +3,14 @@ import { vi } from 'vitest'
 
 const { defaultConfigGet } = vi.hoisted(() => ({
   defaultConfigGet: (/** @type {string} */ key) =>
-    key === 'mapTileCacheMaxAgeSeconds' ? 3600 : key === 'baseUrl' ? '' : 'https://land-grants-api'
+    key === 'maps.land.tileCacheMaxAgeSeconds' ? 3600 : key === 'baseUrl' ? '' : 'https://land-grants-api'
 }))
 vi.mock('~/src/config/config.js', () => ({ config: { get: vi.fn(defaultConfigGet) } }))
 
 const mockError = vi.fn()
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
   error: (...args) => mockError(...args),
-  LogCodes: { SYSTEM: { OS_MAPS_API_KEY_MISSING: { level: 'error', messageFunc: () => 'missing key' } } }
+  LogCodes: { SYSTEM: { LAND_MAPS_API_KEY_MISSING: { level: 'error', messageFunc: () => 'missing key' } } }
 }))
 
 import { config } from '~/src/config/config.js'
@@ -62,11 +62,11 @@ describe('mapPlugin route registration', () => {
   })
 
   it('logs a startup error when the OS Maps API key is not set', () => {
-    config.get.mockImplementation((key) => (key === 'osMapsApiKey' ? '' : 'x'))
+    config.get.mockImplementation((key) => (key === 'maps.land.apiKey' ? '' : 'x'))
 
     mapPlugin.plugin.register(makeServer())
 
-    expect(mockError).toHaveBeenCalledWith(LogCodes.SYSTEM.OS_MAPS_API_KEY_MISSING, {})
+    expect(mockError).toHaveBeenCalledWith(LogCodes.SYSTEM.LAND_MAPS_API_KEY_MISSING, {})
   })
 
   it('does not log when the OS Maps API key is present', () => {
