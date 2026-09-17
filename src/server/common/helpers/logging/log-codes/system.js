@@ -185,5 +185,23 @@ export const SYSTEM = {
     level: 'error',
     messageFunc: () =>
       `map: maps.land.apiKey (LAND_MAPS_API_KEY) is not set; every /api/map/os-tiles request will fail as a 401 from OS with no diagnostic`
+  },
+  ENTRA_TOKEN_REFRESH_ATTEMPT: {
+    level: 'info',
+    messageFunc: (messageOptions) => `Entra token refresh: requesting token via authMethod=${messageOptions.authMethod}`
+  },
+  ENTRA_WEB_IDENTITY_ERROR: {
+    level: 'error',
+    messageFunc: (messageOptions) =>
+      `Entra token refresh: failed to obtain a Web Identity token from AWS STS (audience=${messageOptions.audience}) | error=${messageOptions.errorMessage}`
+  },
+  ENTRA_TOKEN_ENDPOINT_ERROR: {
+    level: 'error',
+    messageFunc: (messageOptions) =>
+      `Entra token refresh: POST to token endpoint failed | authMethod=${messageOptions.authMethod} | status=${messageOptions.status || 'unknown'} | error=${messageOptions.errorMessage}`
+  },
+  ENTRA_TOKEN_REFRESH_SUCCESS: {
+    level: 'info',
+    messageFunc: (messageOptions) => `Entra token refresh succeeded via authMethod=${messageOptions.authMethod}`
   }
 }

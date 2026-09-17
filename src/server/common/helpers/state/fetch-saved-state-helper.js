@@ -68,7 +68,7 @@ async function callStateApi(key, method, request, { lockToken, grantVersion } = 
   try {
     response = await fetch(endpoint, {
       method,
-      headers: createApiHeadersForGrantsUiBackend({ lockToken })
+      headers: await createApiHeadersForGrantsUiBackend({ lockToken })
     })
   } catch (err) {
     logError(request, { method, endpoint, identity: key, errorMessage: /** @type {Error} */ (err).message })
@@ -126,7 +126,7 @@ export async function fetchStateWithDefinitionFromApi(key, request, { lockToken 
   try {
     response = await fetch(endpoint, {
       method,
-      headers: createApiHeadersForGrantsUiBackend({ lockToken }),
+      headers: await createApiHeadersForGrantsUiBackend({ lockToken }),
       body: JSON.stringify({ sbi, grantCode, includeDefinition: true })
     })
   } catch (err) {
@@ -184,7 +184,7 @@ export async function clearSavedStateFromApiByContext({ sbi, grantCode, grantVer
 
   const response = await fetch(url.href, {
     method: 'DELETE',
-    headers: createApiHeadersForGrantsUiBackend({ lockToken })
+    headers: await createApiHeadersForGrantsUiBackend({ lockToken })
   })
 
   if (!response.ok && response.status !== statusCodes.notFound) {

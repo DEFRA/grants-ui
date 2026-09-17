@@ -174,10 +174,25 @@ const convictConfig = {
       env: 'ENTRA_INTERNAL_CLIENT_ID'
     },
     clientSecret: {
-      doc: 'Microsoft client secret',
+      doc: 'Client secret used to authenticate to Entra when entra.authMethod is "client_secret" (see entra.authMethod).',
       format: String,
       default: '',
-      env: 'ENTRA_INTERNAL_CLIENT_SECRET'
+      env: 'ENTRA_INTERNAL_CLIENT_SECRET',
+      sensitive: true
+    },
+    authMethod: {
+      doc: 'Which method this service uses to authenticate to Entra. "client_secret" sends entra.clientSecret in the token request, as before - not a federated credential at all. "web_identity" instead signs the request with an AWS STS Web Identity token bound to the service IAM role (see entra.webIdentity) - no stored secret. Web Identity is being rolled out environment by environment, so this must stay "client_secret" for any environment that does not yet have a working federated credential.',
+      format: ['client_secret', 'web_identity'],
+      default: 'client_secret',
+      env: 'ENTRA_AUTH_METHOD'
+    },
+    webIdentity: {
+      audience: {
+        doc: 'Audience (aud claim) requested on the STS Web Identity token when entra.authMethod is "web_identity". Must match the Audience configured on the Entra federated credential for this environment - confirmed via Graph API as "Grants Application UI" (the App Registration display name, not the service identifier) for every grants-ui environment (dev, test, ext-test, perf-test).',
+        format: Array,
+        default: ['Grants Application UI'],
+        env: 'ENTRA_FEDERATED_CREDENTIALS_AUDIENCE'
+      }
     }
   },
   log: {

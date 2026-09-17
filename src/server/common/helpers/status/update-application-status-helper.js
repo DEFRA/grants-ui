@@ -43,7 +43,7 @@ export async function updateApplicationStatus(
   try {
     const response = await fetch(url.href, {
       method: 'PATCH',
-      headers: createApiHeadersForGrantsUiBackend({ lockToken }),
+      headers: await createApiHeadersForGrantsUiBackend({ lockToken }),
       body: JSON.stringify({
         state: {
           applicationStatus

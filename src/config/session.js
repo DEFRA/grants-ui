@@ -33,18 +33,32 @@ export const sessionSchema = {
       env: 'GRANTS_UI_BACKEND_URL'
     },
     authToken: {
-      doc: 'Bearer token for authenticating with Grants UI Backend',
+      doc: 'Bearer token for authenticating with Grants UI Backend when cache.authMethod is "shared_token" (see cache.authMethod).',
       format: String,
       default: '',
       env: 'GRANTS_UI_BACKEND_AUTH_TOKEN',
       sensitive: true
     },
     encryptionKey: {
-      doc: 'Encryption key for securing bearer token transmission',
+      doc: 'Encryption key for securing bearer token transmission when cache.authMethod is "shared_token".',
       format: String,
       default: '',
       env: 'GRANTS_UI_BACKEND_ENCRYPTION_KEY',
       sensitive: true
+    },
+    authMethod: {
+      doc: 'Which method this service uses to authenticate to Grants UI Backend. "shared_token" sends an encrypted static bearer token (cache.authToken), as before. "web_identity" instead sends an AWS STS Web Identity token bound to the service IAM role (see cache.webIdentity) as a raw Bearer token - no stored secret, no second token exchange. Web Identity is being rolled out environment by environment, so this must stay "shared_token" for any environment that does not yet have grants-ui-backend verifying Web Identity tokens.',
+      format: ['shared_token', 'web_identity'],
+      default: 'shared_token',
+      env: 'GRANTS_UI_BACKEND_AUTH_METHOD'
+    },
+    webIdentity: {
+      audience: {
+        doc: 'Audience (aud claim) requested on the STS Web Identity token when cache.authMethod is "web_identity". Must match grants-ui-backend\'s own service name (serviceAuth.audience).',
+        format: String,
+        default: 'grants-ui-backend',
+        env: 'GRANTS_UI_BACKEND_WEB_IDENTITY_AUDIENCE'
+      }
     },
     maxDbStateSizeBytes: {
       doc: 'Maximum allowed size in bytes for serialised state payloads persisted to the backend API',
