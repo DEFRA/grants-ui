@@ -4,16 +4,19 @@ import { vi } from 'vitest'
 vi.mock('~/src/config/config.js', () => ({
   config: {
     get: vi.fn((key) => {
-      if (key === 'mapTileCacheMaxAgeSeconds') {
+      if (key === 'landGrants.enableMapActionCount') {
+        return false
+      }
+      if (key === 'maps.land.tileCacheMaxAgeSeconds') {
         return 3600
       }
       if (key === 'baseUrl') {
         return ''
       }
-      if (key === 'osMapsApiKey') {
+      if (key === 'maps.land.apiKey') {
         return 'test-os-key'
       }
-      if (key === 'osMapsBaseUrl') {
+      if (key === 'maps.land.baseUrl') {
         return 'https://api.os.uk/maps/raster/v1/zxy'
       }
       return 'https://land-grants-api'
@@ -88,7 +91,7 @@ describe('parcelsHandler', () => {
     const request = makeRequest()
     await parcelsHandler(request, h)
 
-    expect(fetchParcels).toHaveBeenCalledWith(request, expectedUserContext, undefined)
+    expect(fetchParcels).toHaveBeenCalledWith(request, expectedUserContext, ['size'])
     expect(fetchParcelTileLocation).toHaveBeenCalledWith(['SD7148-9160', 'SD7148-9161'], expectedUserContext)
     const [payload] = h.response.mock.calls[0]
     expect(payload.features).toEqual([
@@ -120,7 +123,8 @@ describe('parcelsHandler', () => {
     expect(features[0].properties.areaHa).toBeNull()
   })
 
-  it('counts only available actions enabled for the current grant journey', async () => {
+  it.each([false, true])('gates bulk action calculations and counts when the flag is %s', async (enabled) => {
+    config.get.mockReturnValueOnce(enabled)
     fetchParcels.mockImplementation(async (_request, _userContext, fields = ['size']) => [
       {
         sheetId: 'SD7148',
@@ -143,8 +147,10 @@ describe('parcelsHandler', () => {
 
     await parcelsHandler(request, h)
 
+    expect(fetchParcels).toHaveBeenCalledWith(request, expectedUserContext, enabled ? ['size', 'actions'] : ['size'])
+
     const [{ features }] = h.response.mock.calls[0]
-    expect(features[0].properties.actionCount).toBe(1)
+    expect(features[0].properties.actionCount).toBe(enabled ? 1 : undefined)
   })
 
   it('continues with null bbox when fetchParcelTileLocation returns null', async () => {

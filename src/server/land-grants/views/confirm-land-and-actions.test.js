@@ -161,23 +161,6 @@ describe('confirm-land-and-actions.html view', () => {
     expect(headers).toEqual(['Action', 'Quantity', 'Yearly payment', 'Change'])
   })
 
-  it('marks up the parcel table with fixed-width value columns after the flexible action column', () => {
-    const $ = renderPage(model)
-    const table = cards($).eq(0).find('.govuk-table')
-    const columns = table
-      .find('colgroup col')
-      .map((_, column) => $(column).attr('class') ?? '')
-      .get()
-
-    expect(table.hasClass('land-parcel-summary__table')).toBe(true)
-    expect(columns).toEqual([
-      '',
-      'land-parcel-summary__quantity-column',
-      'land-parcel-summary__yearly-payment-column',
-      'land-parcel-summary__change-column'
-    ])
-  })
-
   it('renders each action as a row of name, quantity and payment, then the parcel subtotal', () => {
     const $ = renderPage(model)
 
@@ -262,7 +245,7 @@ describe('confirm-land-and-actions.html view', () => {
       ]
     })
 
-    it.each([['Requires SSSI consent'], ['Requires an SFI HEFER'], ['Requires SSSI consent and an SFI HEFER']])(
+    it.each([['SSSI consent required'], ['HEFER required'], ['SSSI consent and HEFER required']])(
       'renders %s as secondary text beneath its own action name',
       (requirementText) => {
         const $ = renderPage(withRequirement(requirementText))
@@ -278,7 +261,7 @@ describe('confirm-land-and-actions.html view', () => {
     )
 
     it('leaves the action quantity, payment and Change control untouched', () => {
-      const $ = renderPage(withRequirement('Requires SSSI consent'))
+      const $ = renderPage(withRequirement('SSSI consent required'))
       const row = cards($).eq(0).find('.govuk-table__body .govuk-table__row').eq(0)
 
       expect(normalise(row.find('.govuk-table__cell').eq(0).text())).toBe('2.0000 ha')
@@ -294,7 +277,7 @@ describe('confirm-land-and-actions.html view', () => {
     })
 
     it('adds no inset or extra link alongside the hint', () => {
-      const $ = renderPage(withRequirement('Requires SSSI consent'))
+      const $ = renderPage(withRequirement('SSSI consent required'))
 
       expect($('main .govuk-inset-text')).toHaveLength(0)
       expect($('.land-parcel-summary__action-hint a')).toHaveLength(0)

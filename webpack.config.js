@@ -14,7 +14,7 @@ const dirname = path.dirname(fileURLToPath(import.meta.url))
 const govukFrontendPath = path.dirname(require.resolve('govuk-frontend/package.json'))
 
 const defraFormsPath = path.dirname(require.resolve('@defra/forms-engine-plugin/package.json'))
-const interactiveMapCss = path.join(dirname, 'node_modules/@defra/interactive-map/dist/css/index.css')
+const interactiveMapPath = path.resolve(path.dirname(require.resolve('@defra/interactive-map')), '../..')
 
 const ruleTypeAssetResource = 'asset/resource'
 
@@ -29,6 +29,9 @@ export default {
     },
     'parcel-map': {
       import: ['./javascripts/parcel-map/index.js']
+    },
+    map: {
+      import: ['./stylesheets/map.scss']
     },
     'parcel-select-page': {
       import: ['./javascripts/parcel-map/parcel-select-page.js']
@@ -191,8 +194,8 @@ export default {
           to: 'assets/defra'
         },
         {
-          from: interactiveMapCss,
-          to: 'stylesheets/interactive-map.css'
+          from: path.join(interactiveMapPath, 'assets/images'),
+          to: 'assets/interactive-map/assets/images'
         }
       ]
     })

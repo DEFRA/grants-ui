@@ -43,7 +43,11 @@ const mockDocument = {
   addEventListener: vi.fn()
 }
 
-globalThis.document = mockDocument
+Object.defineProperty(globalThis, 'document', {
+  value: mockDocument,
+  configurable: true,
+  writable: true
+})
 
 function MockXMLHttpRequest() {
   return mockXhr

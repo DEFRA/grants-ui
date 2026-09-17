@@ -25,6 +25,7 @@ ${BOLD}Commands:${RESET_COLOR}
   down    Stop containers (uses saved state — no need to re-select)
   debug   Restart grants-ui in debug mode (detached, port 9229)
   restart Restart running containers (selectable; uses --no-deps)
+  tailscale on|off  Switch Tailscale mode live (updates URLs and Serve proxies)
   test    Run tests: ${TEST_TARGETS.map((t) => t.key).join(' | ')} (default: ${TEST_TARGETS[0].key})
   journey Run a Journey Runner journey headlessly (${listJourneys().join(' | ')})
   state   Inspect persisted application state in the local backend database
@@ -46,10 +47,11 @@ ${BOLD}Journey flags (for 'journey'):${RESET_COLOR}
   --crn <crn>      DefraID CRN to sign in as (default: the journey's allowlisted CRN, e.g. woodland → 1100943757)
   --stop <n|sect>  Stop before step <n> (1-indexed) or run only section <sect>
   --parcel <ref>   Land parcel the map step selects, e.g. SD6843-7039 (overrides the step's own value)
+  --common-land <yes|no>  Answer a common-land/grazing-rights yesNo step this way, e.g. woodland (default: no)
   --mock-no-actions  Make land parcels report no eligible actions (shows the map page's error)
   --headed         Watch it run in your installed Google Chrome (headless uses bundled Chromium)
   --clear          Flush saved application state first (so --stop starts at step 1)
-  --base-url <url> App base URL (auto: https://localhost:4000 on --ha, else http://localhost:3000)
+  --base-url <url> App base URL (auto: running Tailscale URL, HA :4000, or localhost :3000)
   --skip-install   Skip 'playwright install chromium'
   ${DIM}Full journey/section reference: docs/DEV-TOOLS.md ("Run from the CLI")${RESET_COLOR}
 
@@ -72,6 +74,9 @@ ${BOLD}Examples:${RESET_COLOR}
   gt up                              # core only
   gt up --land-grants --gas
   gt up --ha --scale 3
+  gt up --tailscale                   # configure Serve and start with HTTPS tailnet URLs
+  gt tailscale on                     # enable while running, preserving other addons
+  gt tailscale off                    # restore localhost and remove the two proxies
   gt down                            # stops whatever was started
   gt debug
   gt restart
@@ -81,6 +86,7 @@ ${BOLD}Examples:${RESET_COLOR}
   gt journey example-grant-with-auth --stop 8 --headed   # watch it, stop before step 8
   gt journey grasslands --parcel SD6843-7039             # drive the map step to a specific parcel
   gt journey grasslands --mock-no-actions --headed       # see the "no actions available" error on the map page
+  gt journey woodland --common-land yes                  # walk the common-land guidance + confirmation branch
   gt state example-grant-with-auth --sbi 106238911        # inspect saved application state
   gt sonar                           # local SonarQube scan of src/
   gt sonar --changed                 # scope scan to src files changed vs main (approx. CI PR view)

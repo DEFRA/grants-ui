@@ -9,6 +9,10 @@ import SummaryPage from '../page-objects/summary.page.js'
 import PrintSubmittedApplicationPage from '../page-objects/print-submitted-application.page.js'
 import TaskListPage from '../page-objects/task-list.page.js'
 
+Then('(the user )pauses', async function () {
+  await this.page.pause()
+})
+
 Then('a new tab should be opened at URL {string} and closed by the user', async function (expectedPath) {
   const newPage = await this.context.waitForEvent('page')
   await newPage.waitForLoadState()
@@ -31,6 +35,16 @@ Then('the footer should contain the following links', async function (dataTable)
       await expect(link).toHaveAttribute('href', url)
     }
   }
+})
+
+Then('(the user )should see {string} in their available grants', async function (grantName) {
+  const link = this.page.locator(`//main//a[contains(text(),'${grantName}')]`)
+  await expect(link).toBeVisible()
+})
+
+Then('(the user )should not see {string} in their available grants', async function (grantName) {
+  const link = this.page.locator(`//main//a[contains(text(),'${grantName}')]`)
+  await expect(link).not.toBeVisible()
 })
 
 Then('the page is analyzed for accessibility', async function () {

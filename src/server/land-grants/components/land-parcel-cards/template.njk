@@ -32,14 +32,6 @@
       <caption class="govuk-table__caption govuk-visually-hidden">
         Actions on land parcel {{ parcel.reference }}
       </caption>
-      <colgroup>
-        <col />
-        <col class="land-parcel-summary__quantity-column" />
-        <col class="land-parcel-summary__yearly-payment-column" />
-        {% if not params.readOnly %}
-          <col class="land-parcel-summary__change-column" />
-        {% endif %}
-      </colgroup>
       <thead class="govuk-table__head">
         <tr class="govuk-table__row">
           <th scope="col" class="govuk-table__header">Action</th>

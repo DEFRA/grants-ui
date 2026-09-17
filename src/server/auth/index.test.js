@@ -4,6 +4,12 @@ import Hapi from '@hapi/hapi'
 import Yar from '@hapi/yar'
 import { auth } from '~/src/server/auth/index.js'
 import { YarKeys } from '~/src/server/common/constants/session-keys.js'
+import permissionsPlugin from '~/src/plugins/permissions.js'
+import { fetchBusinessPermissions } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
+
+vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.service.js', () => ({
+  fetchBusinessPermissions: vi.fn()
+}))
 
 vi.mock('~/src/config/config.js', async () => {
   const { mockConfig } = await import('~/src/__mocks__/config-mocks.js')
@@ -86,6 +92,8 @@ async function buildServer({ authenticated = true } = {}) {
       return h.authenticated({
         credentials: {
           contactId: '1100000001',
+          crn: 'crn-1',
+          sbi: 'sbi-1',
           sessionId: 'session-abc',
           token: 'stub-token'
         }
@@ -104,6 +112,10 @@ async function buildServer({ authenticated = true } = {}) {
     options: { auth: false },
     handler: (request, h) => {
       request.yar.set(YarKeys.GRANT_APPLICATION_CONTEXT, STALE_CONTEXT)
+      request.yar.set('permissions:crn-1:sbi-1', [{ id: 'group-1', level: 'SUBMIT' }])
+      request.yar.set('permissions:crn-2:sbi-1', [{ id: 'group-2', level: 'VIEW' }])
+      request.yar.set('permissions:crn-1:sbi-2', [])
+      request.yar.set('unrelated', 'preserved')
       return h.response({ ok: true })
     }
   })
@@ -112,11 +124,21 @@ async function buildServer({ authenticated = true } = {}) {
     path: '/test/read',
     options: { auth: false },
     handler: (request) => ({
-      context: request.yar.get(YarKeys.GRANT_APPLICATION_CONTEXT) ?? null
+      context: request.yar.get(YarKeys.GRANT_APPLICATION_CONTEXT) ?? null,
+      permissions: request.yar.get('permissions:crn-1:sbi-1'),
+      otherUserPermissions: request.yar.get('permissions:crn-2:sbi-1'),
+      otherBusinessPermissions: request.yar.get('permissions:crn-1:sbi-2'),
+      unrelated: request.yar.get('unrelated')
     })
   })
 
   await server.register(auth)
+  await server.register(permissionsPlugin)
+  server.route({
+    method: 'GET',
+    path: '/test/permissions',
+    handler: (request) => request.auth.credentials.permissions
+  })
   await server.initialize()
   return server
 }
@@ -137,14 +159,55 @@ async function contextAfter(server, url) {
     headers: { cookie }
   })
 
-  const nextCookie = res.headers['set-cookie']?.[0].split(';')[0] ?? cookie
+  const nextCookie = res.headers['set-cookie']?.find((value) => value.startsWith('session='))?.split(';')[0] ?? cookie
   const read = await server.inject({
     method: 'GET',
     url: '/test/read',
     headers: { cookie: nextCookie }
   })
-  return { status: res.statusCode, context: JSON.parse(read.payload).context }
+  return { status: res.statusCode, cookie: nextCookie, ...JSON.parse(read.payload) }
 }
+
+describe('auth router - permissions cache clearing', () => {
+  afterEach(() => vi.clearAllMocks())
+
+  it.each([
+    ['/auth/sign-out', true],
+    ['/auth/sign-out', false],
+    ['/auth/sign-out-oidc?state=xyz', true],
+    ['/auth/sign-out-oidc?state=xyz', false]
+  ])(
+    'scopes permissions cleanup to the current user and business at %s (authenticated: %s)',
+    async (url, authenticated) => {
+      const server = await buildServer({ authenticated })
+      try {
+        const result = await contextAfter(server, url)
+
+        expect(result.status).toBe(302)
+        expect(result.permissions).toEqual(authenticated ? null : [{ id: 'group-1', level: 'SUBMIT' }])
+        expect(result.otherUserPermissions).toEqual([{ id: 'group-2', level: 'VIEW' }])
+        expect(result.otherBusinessPermissions).toEqual([])
+        expect(result.unrelated).toBe('preserved')
+        expect(fetchBusinessPermissions).not.toHaveBeenCalled()
+
+        if (authenticated) {
+          const freshPermissions = [{ id: 'group-1', level: 'VIEW' }]
+          vi.mocked(fetchBusinessPermissions).mockResolvedValue(freshPermissions)
+          const response = await server.inject({
+            url: '/test/permissions',
+            headers: { cookie: result.cookie }
+          })
+
+          expect(response.statusCode).toBe(200)
+          expect(JSON.parse(response.payload)).toEqual(freshPermissions)
+          expect(fetchBusinessPermissions).toHaveBeenCalledTimes(1)
+        }
+      } finally {
+        await server.stop()
+      }
+    }
+  )
+})
 
 describe('auth router - GRANT_APPLICATION_CONTEXT clearing', () => {
   afterEach(() => vi.clearAllMocks())

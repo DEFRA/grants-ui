@@ -80,7 +80,7 @@ describe('persistSubmissionToApi', () => {
     })
 
     afterEach(() => {
-      vi.unmock('~/src/config/config.js')
+      vi.doUnmock('~/src/config/config.js')
     })
 
     it('persists submission successfully when response is ok', async () => {
@@ -214,7 +214,7 @@ describe('persistSubmissionToApi', () => {
     })
 
     afterEach(() => {
-      vi.unmock('~/src/config/config.js')
+      vi.doUnmock('~/src/config/config.js')
     })
 
     it('should return early when backend endpoint is not configured', async () => {

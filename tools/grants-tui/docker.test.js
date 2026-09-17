@@ -2,7 +2,14 @@
 import { beforeEach, expect, test, vi } from 'vitest'
 import { spawnSync } from 'node:child_process'
 import { stripVTControlCharacters } from 'node:util'
-import { buildStatusLine, getAllServices, getRunningComposeFiles, getRunningServices } from './docker.js'
+import {
+  buildStatusLine,
+  getAllServices,
+  getRunningComposeFiles,
+  getRunningServices,
+  tailscaleComposeArgs,
+  journeyBaseUrl
+} from './docker.js'
 import { ROOT } from './constants.js'
 import { buildMainMenuItems } from './tui-loop.js'
 
@@ -46,7 +53,7 @@ test('detects a worktree stack through Compose and enables the running-stack men
       'inspect',
       'worktree-container-id',
       '--format',
-      '{{ index .Config.Labels "com.docker.compose.project.config_files" }}'
+      '{{ index .Config.Labels "com.docker.compose.service" }}\t{{ index .Config.Labels "com.docker.compose.project.config_files" }}'
     ],
     { encoding: 'utf8' }
   )
@@ -81,3 +88,51 @@ test.each([result(), result('partial output', 1)])(
     expect(spawnSync).toHaveBeenCalledTimes(1)
   }
 )
+
+test('live mode detection uses UI labels even when unchanged dependencies appear first', () => {
+  vi.mocked(spawnSync)
+    .mockReturnValueOnce(result('redis-id\nui-id\n'))
+    .mockReturnValueOnce(
+      result(
+        'redis\tcompose.infra.yml,compose.grants-ui.yml\ngrants-ui\tcompose.infra.yml,compose.grants-ui.yml,compose.tailscale.yml\n'
+      )
+    )
+  expect(getRunningComposeFiles()).toContain('compose.tailscale.yml')
+})
+
+test('live switching preserves custom Compose files and removes only the Tailscale overlay', () => {
+  const files = ['compose.infra.yml', 'compose.grants-ui.yml', '/tmp/custom.yml', '/repo/compose.tailscale.yml']
+  expect(tailscaleComposeArgs(files, false)).toEqual([
+    '-f',
+    'compose.infra.yml',
+    '-f',
+    'compose.grants-ui.yml',
+    '-f',
+    '/tmp/custom.yml'
+  ])
+  expect(tailscaleComposeArgs(files, true)).toEqual([
+    '-f',
+    'compose.infra.yml',
+    '-f',
+    'compose.grants-ui.yml',
+    '-f',
+    '/tmp/custom.yml',
+    '-f',
+    `${ROOT}/compose.tailscale.yml`
+  ])
+})
+
+test('Tailscale has its own runtime section instead of a duplicate core addon label', () => {
+  expect(stripVTControlCharacters(buildStatusLine(['compose.grants-ui.yml', 'compose.tailscale.yml']))).toBe(
+    'Running: Core'
+  )
+})
+
+test('journey defaults to the running Tailscale public URL', () => {
+  vi.mocked(spawnSync)
+    .mockReturnValueOnce(result('ui-id\n'))
+    .mockReturnValueOnce(result('grants-ui\tcompose.infra.yml,compose.grants-ui.yml,compose.tailscale.yml\n'))
+    .mockReturnValueOnce(result('ui-id\n'))
+    .mockReturnValueOnce(result('APP_BASE_URL=https://test.example.ts.net\n'))
+  expect(journeyBaseUrl()).toBe('https://test.example.ts.net')
+})

@@ -19,7 +19,11 @@ export const setupDOM = (html, url = 'http://localhost') => {
     virtualConsole
   })
 
-  globalThis.document = dom.window.document
+  Object.defineProperty(globalThis, 'document', {
+    value: dom.window.document,
+    configurable: true,
+    writable: true
+  })
   globalThis.window = dom.window
   globalThis.location = dom.window.location
 
@@ -92,7 +96,11 @@ export const setupLoadingDocument = async (html, importCallback) => {
   const originalDocument = globalThis.document
   const originalWindow = globalThis.window
 
-  globalThis.document = dom.window.document
+  Object.defineProperty(globalThis, 'document', {
+    value: dom.window.document,
+    configurable: true,
+    writable: true
+  })
   globalThis.window = dom.window
   globalThis.location = dom.window.location
 
@@ -113,7 +121,11 @@ export const setupLoadingDocument = async (html, importCallback) => {
 
   await importCallback()
 
-  globalThis.document = originalDocument
+  Object.defineProperty(globalThis, 'document', {
+    value: originalDocument,
+    configurable: true,
+    writable: true
+  })
   globalThis.window = originalWindow
 
   return {

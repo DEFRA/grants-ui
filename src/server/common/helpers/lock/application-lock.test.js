@@ -43,7 +43,7 @@ describe('releaseAllApplicationLocksForOwnerFromApi', () => {
     })
 
     afterEach(() => {
-      vi.unmock('~/src/config/config.js')
+      vi.doUnmock('~/src/config/config.js')
     })
 
     it('calls the backend and returns releasedCount from JSON', async () => {
@@ -155,7 +155,7 @@ describe('releaseAllApplicationLocksForOwnerFromApi', () => {
     })
 
     afterEach(() => {
-      vi.unmock('~/src/config/config.js')
+      vi.doUnmock('~/src/config/config.js')
     })
 
     it('returns skipped=true and does not call fetch', async () => {

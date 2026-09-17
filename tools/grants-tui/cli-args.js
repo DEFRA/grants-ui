@@ -21,6 +21,14 @@ export function validateArgs(argv) {
     'journey',
     'state'
   ])
+  knownCmds.add('tailscale')
+  if (argv[0] === 'tailscale') {
+    if (!['on', 'off'].includes(argv[1])) {
+      console.error('Usage: gt tailscale on|off [--dry-run]')
+      process.exit(1)
+    }
+    knownCmds.add(argv[1])
+  }
   const testTargetKeys = new Set(argv.includes('test') ? TEST_TARGETS.map((t) => t.key) : [])
   const journeyIdx = argv.indexOf('journey')
   const stateIdx = argv.indexOf('state')
@@ -34,12 +42,14 @@ export function validateArgs(argv) {
     '--land-grants',
     '--gas',
     '--ha',
+    '--tailscale',
     '--down',
     '--skip-tests',
     '--changed',
     '--crn',
     '--stop',
     '--parcel',
+    '--common-land',
     '--mock-no-actions',
     '--headed',
     '--clear',
@@ -52,7 +62,7 @@ export function validateArgs(argv) {
   ])
 
   const valueFlagIdxs = new Set(
-    ['--scale', '--crn', '--stop', '--parcel', '--base-url', '--sbi', '--grant-version']
+    ['--scale', '--crn', '--stop', '--parcel', '--common-land', '--base-url', '--sbi', '--grant-version']
       .map((f) => argv.indexOf(f))
       .filter((i) => i !== -1)
       .map((i) => i + 1)

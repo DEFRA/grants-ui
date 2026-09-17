@@ -9,6 +9,7 @@ import { cmdSonar } from './sonar.js'
 import { cmdAllTests, cmdTest } from './tests.js'
 import { spawnSync } from 'node:child_process'
 import { ROOT } from './constants.js'
+import { cmdTailscale } from './tailscale.js'
 
 function runNpmScript(script, dryRun) {
   console.log(`npm run ${script}`)
@@ -26,6 +27,7 @@ function runNpmScript(script, dryRun) {
 }
 
 const actions = {
+  tailscale: cmdTailscale,
   up: (addons, scale, dryRun, localServices, interactive) =>
     cmdUp(addons, scale, dryRun, localServices, interactive).status,
   down: cmdDown,

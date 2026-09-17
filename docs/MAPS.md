@@ -22,7 +22,9 @@ The component fetches the authenticated user's parcels from `/api/map/parcels`, 
 
 ### Prerequisites: OS Maps API key
 
-The basemap is Ordnance Survey's **OS Maps API** (raster ZXY tiles), which requires an API key. The key is read from config as `osMapsApiKey` (env var `OS_MAPS_API_KEY`, marked sensitive) and is only ever used server-side by the `/api/map/os-tiles` proxy. It must never be shipped to the browser.
+The basemap is Ordnance Survey's **OS Maps API** (raster ZXY tiles), which requires an API key. The key is read from config as `maps.land.apiKey` (env var `LAND_MAPS_API_KEY`, marked sensitive) and is only ever used server-side by the `/api/map/os-tiles` proxy. It must never be shipped to the browser.
+
+> This is a separate key from `maps.forms.apiKey`/`maps.forms.apiSecret` (env vars `FORMS_MAPS_API_KEY`/`FORMS_MAPS_API_SECRET`), which the Defra Forms location component uses for its own OS Maps integration. The two are unrelated: this document only covers the `<parcel-map>` component's key.
 
 The basemap always comes from Ordnance Survey. Without a key the basemap 401s and the component shows its error overlay, which looks much like the map being broken.
 
@@ -38,7 +40,7 @@ The basemap always comes from Ordnance Survey. Without a key the basemap 401s an
 Then add it to `.env`:
 
 ```
-OS_MAPS_API_KEY=your-key-here
+LAND_MAPS_API_KEY=your-key-here
 ```
 
 `compose.grants-ui.yml` passes it through to the container.
@@ -81,12 +83,12 @@ http://localhost:3000/example-grant-with-map/start, then continue to `/select-la
 
 ### When it doesn't work
 
-| Symptom                                             | Most likely cause                                                                                                         |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| "There was a problem loading the map."              | Missing or wrong `OS_MAPS_API_KEY`, or the key's OS project lacks the OS Maps API product (`401` on `/api/map/os-tiles`). |
-| Basemap draws, but no parcels and no error          | Signed in as a CRN other than `1102838829`.                                                                               |
-| Basemap draws, parcels missing                      | Running `docker:up` rather than `docker:landgrants:up`, so there is no land-grants API to serve parcel geometry.          |
-| Changes to `webpack.config.js` appear to do nothing | It isn't volume-mounted. Run `npm run docker:rebuild && npm run docker:up`.                                               |
+| Symptom                                             | Most likely cause                                                                                                           |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| "There was a problem loading the map."              | Missing or wrong `LAND_MAPS_API_KEY`, or the key's OS project lacks the OS Maps API product (`401` on `/api/map/os-tiles`). |
+| Basemap draws, but no parcels and no error          | Signed in as a CRN other than `1102838829`.                                                                                 |
+| Basemap draws, parcels missing                      | Running `docker:up` rather than `docker:landgrants:up`, so there is no land-grants API to serve parcel geometry.            |
+| Changes to `webpack.config.js` appear to do nothing | It isn't volume-mounted. Run `npm run docker:rebuild && npm run docker:up`.                                                 |
 
 ---
 
@@ -319,6 +321,8 @@ Fetches the authenticated user's parcels from the DAL, enriches them with area d
 
 The features carry properties only, no geometry: the component uses `PARCEL_TILES_URL` (a client-side constant in `config.js`) as the vector tile source and streams geometry from `/api/map/parcel-tiles/{z}/{x}/{y}`. Returns `503` if the land-grants API is unavailable.
 
+Available-action counts are controlled by `ENABLE_LAND_GRANT_MAP_ACTION_COUNT`. With the flag off (the application default), map load requests only `["size"]` and omits `actionCount` from parcel properties. Tooltips and the selected-parcel summary omit the count; the summary also hides the no-actions warning because availability has not been calculated. With the flag on, map load requests `["size", "actions"]` when the journey has enabled action codes, and displays the journey-filtered available-action count, including zero. Selected-parcel action and consent requests are unchanged.
+
 ### `GET /api/map/parcel-tiles/{z}/{x}/{y}`
 
 Proxies MapLibre vector tile requests to the land-grants API. Fetches the current user's parcel IDs from `fetchParcels` (concurrent tile requests share one in-flight lookup per SBI) and sends them in the POST body so they are never exposed in the tile URL. Each tile is re-encoded on the way through (`withCompoundParcelIds`) to stamp the compound `id` property onto every feature; see the interact plugin section above. Returns the protobuf tile buffer with `Cache-Control: no-store`: the URL is only `{z}/{x}/{y}` with no per-user scoping, so any positive max-age would let the browser replay one user's parcel geometry to whoever is signed in next at the same tile coordinate after a logout/login.
@@ -329,17 +333,18 @@ Serves a locally built MapLibre style for the OS Maps **raster** basemap. No ups
 
 ### `GET /api/map/os-tiles/{z}/{x}/{y}`
 
-Proxies OS Maps raster tile requests to the configured `osMapsBaseUrl`, injecting the API key server-side so the browser never sees it. The basemap layer is fixed server-side, so clients cannot spend our key on anything else. A non-OK upstream status (e.g. `401` from a key without the right product) is logged and passed through. Responses are served with `Cache-Control: public, max-age=3600`, because basemap tiles are identical for every user.
+Proxies OS Maps raster tile requests to the configured `maps.land.baseUrl`, injecting the API key server-side so the browser never sees it. The basemap layer is fixed server-side, so clients cannot spend our key on anything else. A non-OK upstream status (e.g. `401` from a key without the right product) is logged and passed through. Responses are served with `Cache-Control: public, max-age=3600`, because basemap tiles are identical for every user.
 
 ---
 
 ## Configuration
 
-| Config key                  | Env var                          | Default                                | Purpose                                                                                                             |
-| --------------------------- | -------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `osMapsApiKey`              | `OS_MAPS_API_KEY`                | _(none)_                               | OS Data Hub key. Sensitive, server-side only. See [Prerequisites: OS Maps API key](#prerequisites-os-maps-api-key). |
-| `osMapsBaseUrl`             | `OS_MAPS_BASE_URL`               | `https://api.os.uk/maps/raster/v1/zxy` | Upstream the `/api/map/os-tiles` proxy calls. Override to point at a stub or an egress proxy.                       |
-| `mapTileCacheMaxAgeSeconds` | `MAP_TILE_CACHE_MAX_AGE_SECONDS` | `3600`                                 | `Cache-Control` max-age on tiles and the basemap style. Lower it to chase a stale-tile problem.                     |
+| Config key                         | Env var                              | Default                                | Purpose                                                                                                             |
+| ---------------------------------- | ------------------------------------ | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `maps.land.apiKey`                 | `LAND_MAPS_API_KEY`                  | _(none)_                               | OS Data Hub key. Sensitive, server-side only. See [Prerequisites: OS Maps API key](#prerequisites-os-maps-api-key). |
+| `maps.land.baseUrl`                | `LAND_MAPS_BASE_URL`                 | `https://api.os.uk/maps/raster/v1/zxy` | Upstream the `/api/map/os-tiles` proxy calls. Override to point at a stub or an egress proxy.                       |
+| `maps.land.tileCacheMaxAgeSeconds` | `MAP_TILE_CACHE_MAX_AGE_SECONDS`     | `3600`                                 | `Cache-Control` max-age on tiles and the basemap style. Lower it to chase a stale-tile problem.                     |
+| `landGrants.enableMapActionCount`  | `ENABLE_LAND_GRANT_MAP_ACTION_COUNT` | `false` (`true` in local Compose)      | Fetch and display action counts on map load. Disable to avoid bulk action calculations.                             |
 
 Deliberately **not** configurable, and worth knowing why:
 

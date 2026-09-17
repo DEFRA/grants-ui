@@ -251,6 +251,31 @@ Feature: User Permissions
         # unlock from CRN 1062311184
         Given there is no application lock for CRN "1062311184" and SBI "106238911" and grant "example-grant-with-auth"
 
+        ## AGREEMENT
+
+        # move the submitted application to an agreement via the GAS status
+        Given the application status in GAS is now "OFFER_SENT"
+
+        # attempt to view the agreement as CRN 1062311187 with CS Agreements AMEND permission
+        Given the user starts a new browser session
+        And navigates to "/example-grant-with-auth"
+        And logs in as CRN "1062311186"
+        Then the user should be at URL "agreement"
+        And should see heading "You do not have permission to view this page"
+
+        # unlock from CRN 1062311186
+        Given there is no application lock for CRN "1062311186" and SBI "106238911" and grant "example-grant-with-auth"
+
+        # attempt to view the agreement as CRN 1062311187 with CS Agreements SUBMIT permission
+        Given the user starts a new browser session
+        And navigates to "/example-grant-with-auth"
+        And logs in as CRN "1062311185"
+        Then the user should be at URL "agreement"
+        And should see heading "Agreement"
+
+        # unlock from CRN 1062311185
+        Given there is no application lock for CRN "1062311185" and SBI "106238911" and grant "example-grant-with-auth"
+
         ## CLAIMS JOURNEY
 
         # move the submitted application into the claims journey via the GAS status

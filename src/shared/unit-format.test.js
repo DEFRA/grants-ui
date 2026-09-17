@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { areaWithUnit, availableArea, formatArea, formatUnit } from './unit-format.js'
+import { areaWithUnit, availableArea, formatArea, formatUnit, unitLabel, unitAlternativeLabel } from './unit-format.js'
 
 describe('unit-format', () => {
+  it('uses a square-metre symbol only for the alternative label', () => {
+    const availability = { unit: 'sqm' }
+    expect(unitLabel(availability)).toBe('square metres')
+    expect(unitAlternativeLabel(availability)).toBe('m²')
+  })
+
+  it.each(['ha', 'count', 'm'])('preserves %s in both availability labels', (unit) => {
+    expect(unitLabel({ unit })).toBe(unit)
+    expect(unitAlternativeLabel({ unit })).toBe(unit)
+  })
+
   describe('areaWithUnit', () => {
     it('renders an area at four decimal places with its full unit name', () => {
       expect(areaWithUnit(39.81, 'ha')).toBe('39.8100 hectares')

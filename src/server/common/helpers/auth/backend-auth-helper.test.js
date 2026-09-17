@@ -63,6 +63,12 @@ vi.mock('@defra/hapi-tracing', () => ({
   withTraceId: mockWithTraceId
 }))
 
+const mockGetBackendServiceToken = vi.fn()
+
+vi.mock('./backend-service-token.js', () => ({
+  getBackendServiceToken: mockGetBackendServiceToken
+}))
+
 async function importBackendAuthHelper() {
   return await import('./backend-auth-helper.js')
 }
@@ -98,7 +104,7 @@ describe('Backend Auth Helper', () => {
         setupMockConfig('', TEST_ENCRYPTION_KEY)
 
         const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
-        const headers = createApiHeadersForGrantsUiBackend(HEADER_OBJECTS.CONTENT_TYPE_JSON)
+        const headers = await createApiHeadersForGrantsUiBackend(HEADER_OBJECTS.CONTENT_TYPE_JSON)
 
         expect(mockConfigGet).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_AUTH_TOKEN)
         expect(headers).toEqual(HEADER_OBJECTS.CONTENT_TYPE_JSON)
@@ -111,7 +117,7 @@ describe('Backend Auth Helper', () => {
         setupMockConfig(MOCK_TOKENS.DEFAULT)
 
         const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
-        const headers = createApiHeadersForGrantsUiBackend(HEADER_OBJECTS.CONTENT_TYPE_JSON)
+        const headers = await createApiHeadersForGrantsUiBackend(HEADER_OBJECTS.CONTENT_TYPE_JSON)
 
         expect(mockConfigGet).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_AUTH_TOKEN)
         expect(headers).toHaveProperty('Content-Type', 'application/json')
@@ -127,7 +133,7 @@ describe('Backend Auth Helper', () => {
         setupMockConfig(MOCK_TOKENS.ALTERNATIVE)
 
         const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
-        const headers = createApiHeadersForGrantsUiBackend(undefined)
+        const headers = await createApiHeadersForGrantsUiBackend(undefined)
 
         expect(mockConfigGet).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_AUTH_TOKEN)
         expect(headers).toHaveProperty('Authorization')
@@ -167,7 +173,7 @@ describe('Backend Auth Helper', () => {
       setupMockConfig(MOCK_TOKENS.MUTATION_TEST)
 
       const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
-      const headers = createApiHeadersForGrantsUiBackend(baseHeaders)
+      const headers = await createApiHeadersForGrantsUiBackend(baseHeaders)
 
       expect(baseHeaders).toEqual(HEADER_OBJECTS.CONTENT_TYPE_JSON)
       expect(baseHeaders.Authorization).toBeUndefined()
@@ -178,7 +184,7 @@ describe('Backend Auth Helper', () => {
       setupMockConfig(null, TEST_ENCRYPTION_KEY)
 
       const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
-      const headers = createApiHeadersForGrantsUiBackend({ 'Content-Type': CONTENT_TYPE_JSON })
+      const headers = await createApiHeadersForGrantsUiBackend({ 'Content-Type': CONTENT_TYPE_JSON })
 
       expect(headers).toEqual(HEADER_OBJECTS.CONTENT_TYPE_JSON)
       expect(headers.Authorization).toBeUndefined()
@@ -188,11 +194,58 @@ describe('Backend Auth Helper', () => {
       setupMockConfig(MOCK_TOKENS.DEFAULT)
       const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
 
-      const headers = createApiHeadersForGrantsUiBackend({ lockToken: 'LOCK-123' })
+      const headers = await createApiHeadersForGrantsUiBackend({ lockToken: 'LOCK-123' })
 
       expect(headers).toHaveProperty('X-Application-Lock-Owner', 'LOCK-123')
       expect(headers.Authorization).toBeDefined()
       expect(headers['Content-Type']).toBe('application/json')
+    })
+
+    describe('when the auth method is web_identity', () => {
+      const setupWebIdentityConfig = () => {
+        const configValues = {
+          'session.cache.authMethod': 'web_identity',
+          [CONFIG_SESSION_CACHE_AUTH_TOKEN]: MOCK_TOKENS.DEFAULT,
+          [CONFIG_SESSION_CACHE_ENCRYPTION_KEY]: TEST_ENCRYPTION_KEY
+        }
+        mockConfigGet.mockImplementation((key) => configValues[key] || null)
+      }
+
+      it('sends the Web Identity token as a raw Bearer token instead of the encrypted shared token', async () => {
+        setupWebIdentityConfig()
+        mockGetBackendServiceToken.mockResolvedValue('a-web-identity-token')
+
+        const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
+        const headers = await createApiHeadersForGrantsUiBackend()
+
+        expect(mockGetBackendServiceToken).toHaveBeenCalled()
+        expect(headers).toEqual({
+          'Content-Type': CONTENT_TYPE_JSON,
+          Authorization: 'Bearer a-web-identity-token'
+        })
+      })
+
+      it('omits the Authorization header when no Web Identity token is available', async () => {
+        setupWebIdentityConfig()
+        mockGetBackendServiceToken.mockResolvedValue(undefined)
+
+        const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
+        const headers = await createApiHeadersForGrantsUiBackend()
+
+        expect(headers).toEqual(HEADER_OBJECTS.CONTENT_TYPE_JSON)
+        expect(headers.Authorization).toBeUndefined()
+      })
+
+      it('still adds the lock token header', async () => {
+        setupWebIdentityConfig()
+        mockGetBackendServiceToken.mockResolvedValue('a-web-identity-token')
+
+        const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
+        const headers = await createApiHeadersForGrantsUiBackend({ lockToken: 'LOCK-123' })
+
+        expect(headers).toHaveProperty('X-Application-Lock-Owner', 'LOCK-123')
+        expect(headers.Authorization).toBe('Bearer a-web-identity-token')
+      })
     })
   })
 
@@ -201,7 +254,7 @@ describe('Backend Auth Helper', () => {
       setupMockConfig('', TEST_ENCRYPTION_KEY)
 
       const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
-      const headers = createApiHeadersForGrantsUiBackend()
+      const headers = await createApiHeadersForGrantsUiBackend()
 
       expect(headers).toEqual(HEADER_OBJECTS.CONTENT_TYPE_JSON)
     })
@@ -210,7 +263,7 @@ describe('Backend Auth Helper', () => {
       setupMockConfig(MOCK_TOKENS.API)
 
       const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
-      const headers = createApiHeadersForGrantsUiBackend()
+      const headers = await createApiHeadersForGrantsUiBackend()
 
       expect(headers).toHaveProperty('Content-Type', 'application/json')
       expect(headers).toHaveProperty('Authorization')
@@ -227,7 +280,7 @@ describe('Backend Auth Helper', () => {
       setupMockConfig(MOCK_TOKENS.SECRET)
 
       const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
-      const headers = createApiHeadersForGrantsUiBackend()
+      const headers = await createApiHeadersForGrantsUiBackend()
       const authHeader = headers.Authorization
 
       const base64Part = authHeader.replace('Bearer ', '')
@@ -252,7 +305,7 @@ describe('Backend Auth Helper', () => {
       mockConfigGet.mockImplementation((key) => configValues[key] || null)
 
       const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
-      const headers = createApiHeadersForGrantsUiBackend(HEADER_OBJECTS.CONTENT_TYPE_JSON)
+      const headers = await createApiHeadersForGrantsUiBackend(HEADER_OBJECTS.CONTENT_TYPE_JSON)
 
       expect(mockConfigGet).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_AUTH_TOKEN)
       expect(mockConfigGet).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_ENCRYPTION_KEY)
