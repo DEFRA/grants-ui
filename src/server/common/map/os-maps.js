@@ -23,8 +23,8 @@ const stripQueryString = (/** @type {string} */ url) => url.split('?')[0]
  * @returns {string}
  */
 function buildOsTileUrl(z, x, y) {
-  const baseUrl = config.get('osMapsBaseUrl')
-  const apiKey = config.get('osMapsApiKey')
+  const baseUrl = config.get('maps.land.baseUrl')
+  const apiKey = config.get('maps.land.apiKey')
   return `${baseUrl}/${OS_MAPS_LAYER}/${z}/${x}/${y}.png?key=${apiKey}`
 }
 
