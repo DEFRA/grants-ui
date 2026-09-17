@@ -283,8 +283,10 @@ single request — see [Architecture – Forms Engine State Model](./ARCHITECTUR
 Session rehydration is controlled by the following environment variables:
 
 - `GRANTS_UI_BACKEND_URL`: The Grants UI Backend service endpoint used for state persistence
-- `GRANTS_UI_BACKEND_AUTH_TOKEN`: Bearer token used to authenticate requests to the backend
-- `GRANTS_UI_BACKEND_ENCRYPTION_KEY`: Encryption key used to secure the backend bearer token
+- `GRANTS_UI_BACKEND_AUTH_METHOD`: How requests to the backend are authenticated. `shared_token` (the default) sends the encrypted shared bearer token below. `web_identity` instead sends an AWS STS Web Identity token bound to the service's IAM role as the Bearer token - no stored secret. It is rolled out per environment and requires grants-ui-backend to have `SERVICE_AUTH_ENABLED=true`; the backend keeps accepting the shared token either way, so the two can be switched independently.
+- `GRANTS_UI_BACKEND_WEB_IDENTITY_AUDIENCE`: Audience requested on the Web Identity token (default `grants-ui-backend`, matching the backend's expected audience)
+- `GRANTS_UI_BACKEND_AUTH_TOKEN`: Bearer token used to authenticate requests to the backend when the auth method is `shared_token`
+- `GRANTS_UI_BACKEND_ENCRYPTION_KEY`: Encryption key used to secure the backend bearer token when the auth method is `shared_token`
 
 ### Error Handling
 

@@ -1,6 +1,7 @@
 import { config } from '~/src/config/config.js'
 import { withTraceId } from '@defra/hapi-tracing'
 import { encryptToken } from './encrypt-token.js'
+import { getBackendServiceToken } from './backend-service-token.js'
 
 export { encryptToken }
 
@@ -36,18 +37,38 @@ export function createAuthenticatedHeaders(token, encryptionKey, baseHeaders = {
 }
 
 /**
- * Creates standard headers for API requests to grants-ui-backend
+ * Creates standard headers for API requests to grants-ui-backend. The
+ * authentication scheme used depends on session.cache.authMethod: a shared
+ * encrypted bearer token as before, or an AWS STS Web Identity token sent
+ * directly as a raw Bearer token - no stored secret.
  * @param {{ lockToken?: string }} [options]
- * @returns {Record<string, string>} Headers with Content-Type and authentication
+ * @returns {Promise<Record<string, string>>} Headers with Content-Type and authentication
  */
-export function createApiHeadersForGrantsUiBackend({ lockToken } = {}) {
-  const headers = createAuthenticatedHeaders(GRANTS_UI_BACKEND_AUTH_TOKEN, ENCRYPTION_KEY, {
-    'Content-Type': CONTENT_TYPE_JSON
-  })
+export async function createApiHeadersForGrantsUiBackend({ lockToken } = {}) {
+  const headers =
+    config.get('session.cache.authMethod') === 'web_identity'
+      ? await createWebIdentityHeaders()
+      : createAuthenticatedHeaders(GRANTS_UI_BACKEND_AUTH_TOKEN, ENCRYPTION_KEY, {
+          'Content-Type': CONTENT_TYPE_JSON
+        })
 
   if (lockToken) {
     headers['X-Application-Lock-Owner'] = lockToken
   }
+  return headers
+}
+
+/**
+ * @returns {Promise<Record<string, string>>} Headers with Content-Type and a Web Identity bearer token, if available
+ */
+async function createWebIdentityHeaders() {
+  const headers = { 'Content-Type': CONTENT_TYPE_JSON }
+  const token = await getBackendServiceToken()
+
+  if (token) {
+    headers.Authorization = `${AUTH_SCHEME} ${token}`
+  }
+
   return headers
 }
 

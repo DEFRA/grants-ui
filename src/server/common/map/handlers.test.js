@@ -7,16 +7,16 @@ vi.mock('~/src/config/config.js', () => ({
       if (key === 'landGrants.enableMapActionCount') {
         return false
       }
-      if (key === 'mapTileCacheMaxAgeSeconds') {
+      if (key === 'maps.land.tileCacheMaxAgeSeconds') {
         return 3600
       }
       if (key === 'baseUrl') {
         return ''
       }
-      if (key === 'osMapsApiKey') {
+      if (key === 'maps.land.apiKey') {
         return 'test-os-key'
       }
-      if (key === 'osMapsBaseUrl') {
+      if (key === 'maps.land.baseUrl') {
         return 'https://api.os.uk/maps/raster/v1/zxy'
       }
       return 'https://land-grants-api'
