@@ -338,6 +338,39 @@ describe('LogCodes', () => {
       expect(result).toContain('isBuilt=true')
       expect(result).toContain('pathsResolved=2')
     })
+
+    testLogCodes('SYSTEM', [
+      [
+        'ENTRA_TOKEN_REFRESH_ATTEMPT',
+        'info',
+        { authMethod: 'web_identity' },
+        'Entra token refresh: requesting token via authMethod=web_identity'
+      ],
+      [
+        'ENTRA_WEB_IDENTITY_ERROR',
+        'error',
+        { audience: ['Grants Application UI'], errorMessage: 'STS unavailable' },
+        'Entra token refresh: failed to obtain a Web Identity token from AWS STS (audience=Grants Application UI) | error=STS unavailable'
+      ],
+      [
+        'ENTRA_TOKEN_ENDPOINT_ERROR with status',
+        'error',
+        { authMethod: 'client_secret', status: 401, errorMessage: 'invalid_client' },
+        'Entra token refresh: POST to token endpoint failed | authMethod=client_secret | status=401 | error=invalid_client'
+      ],
+      [
+        'ENTRA_TOKEN_ENDPOINT_ERROR without status reports unknown',
+        'error',
+        { authMethod: 'web_identity', errorMessage: 'fetch failed' },
+        'Entra token refresh: POST to token endpoint failed | authMethod=web_identity | status=unknown | error=fetch failed'
+      ],
+      [
+        'ENTRA_TOKEN_REFRESH_SUCCESS',
+        'info',
+        { authMethod: 'web_identity' },
+        'Entra token refresh succeeded via authMethod=web_identity'
+      ]
+    ])
   })
 
   describe('AUDIT log codes', () => {
