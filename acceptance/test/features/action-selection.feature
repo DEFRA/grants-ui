@@ -109,6 +109,26 @@ Feature: Action Selection
             |             | Subtotal                                                     |           | £628.18        |
         And should see total yearly payment "£690.00"
 
+        # use a change link but cancel
+        When the user clicks the change link for action "CLIG3" for parcel "SK0971 5039"
+        Then the user should be at URL "select-actions-for-land-parcel"
+        And should see action "CSAM3" selected with "1.25" hectares
+        And should see action "CLIG3" selected
+        And should see action "SCR2" selected with "0.75" hectares
+        When the user clicks on "Cancel"
+
+        # confirm-land-and-actions, change cancelled - nothing changed
+        Then the user should be at URL "confirm-land-and-actions"
+        And should see the following parcel summary cards
+            | PARCEL      | ACTION                                                       | QUANTITY  | YEARLY PAYMENT |
+            | SK0972 6820 | Herbal leys (CSAM3)                                          | 0.2760 ha | £61.82         |
+            |             | Subtotal                                                     |           | £61.82         |
+            | SK0971 5039 | Herbal leys (CSAM3)                                          | 1.2500 ha | £280.00        |
+            |             | Manage grassland with very low nutrient inputs (CLIG3)       | 0.5674 ha | £85.68         |
+            |             | Manage scrub and open habitat mosaics (SCR2)                 | 0.7500 ha | £262.50        |
+            |             | Subtotal                                                     |           | £628.18        |
+        And should see total yearly payment "£690.00"
+
         # use a change link
         When the user clicks the change link for action "CLIG3" for parcel "SK0971 5039"
         Then the user should be at URL "select-actions-for-land-parcel"
@@ -150,7 +170,7 @@ Feature: Action Selection
             |             | Subtotal                                                     |           | £646.43        |
         And should see total yearly payment "£708.25"
 
-        # remove a land parcel, then cancel
+        # opt to remove a land parcel but cancel
         When the user clicks the remove parcel link for parcel "SK0972 6820"
         Then the user should be at URL "remove-parcel"
         And should see heading "Remove this land parcel?"
