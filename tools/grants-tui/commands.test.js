@@ -74,8 +74,58 @@ test('debug preserves the stop failure and does not attempt to restart', () => {
   expect(spawnSync).toHaveBeenCalledTimes(1)
 })
 
-test('reset returns a teardown failure and preserves saved state', () => {
+test('reset returns a teardown failure but completes independent cleanup', () => {
   vi.mocked(spawnSync).mockReturnValueOnce({ status: 17, stdout: '', stderr: '', pid: 1, output: [], signal: null })
   expect(cmdReset(false)).toBe(17)
-  expect(clearState).not.toHaveBeenCalled()
+  expect(spawnSync).toHaveBeenCalledWith(
+    'docker',
+    ['compose', '-f', expect.any(String), 'down', '--volumes'],
+    expect.objectContaining({ cwd: expect.any(String), stdio: 'inherit' })
+  )
+  expect(clearState).toHaveBeenCalledOnce()
+})
+
+test('reset supplies the core stack before the Land Grants overlay', () => {
+  expect(cmdReset(false)).toBe(0)
+  expect(spawnSync).toHaveBeenNthCalledWith(
+    1,
+    'docker',
+    [
+      'compose',
+      '-f',
+      'compose.infra.yml',
+      '-f',
+      'compose.grants-ui.yml',
+      'down',
+      '--volumes',
+      '--remove-orphans',
+      '--rmi',
+      'local'
+    ],
+    expect.objectContaining({ cwd: expect.any(String), stdio: 'inherit' })
+  )
+  expect(spawnSync).toHaveBeenNthCalledWith(
+    2,
+    'docker',
+    [
+      'compose',
+      '-f',
+      'compose.infra.yml',
+      '-f',
+      'compose.grants-ui.yml',
+      '-f',
+      'compose.land-grants.yml',
+      'down',
+      '--volumes',
+      '--remove-orphans',
+      '--rmi',
+      'local'
+    ],
+    expect.objectContaining({ cwd: expect.any(String), stdio: 'inherit' })
+  )
+})
+
+test('reset dry-run does not query or change Docker', () => {
+  expect(cmdReset(true)).toBe(0)
+  expect(spawnSync).not.toHaveBeenCalled()
 })
