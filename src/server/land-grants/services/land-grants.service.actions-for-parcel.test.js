@@ -232,6 +232,63 @@ describe('land-grants service', () => {
       expect(result).toEqual({ consents: ['sssi', 'hefer'] })
     })
 
+    it('counts enabled actions with available land while retaining all parcel consents', async () => {
+      parcelsWithActions.mockResolvedValueOnce(
+        parcelResponse([
+          { code: 'CMOR1', description: 'Assess moorland', availability: { value: 10 } },
+          { code: 'UPL1', description: 'Winter feeding', availability: { value: 0 }, sssiConsentRequired: true },
+          { code: 'UPL2', description: 'Supplementary feeding' },
+          { code: 'OTHER1', description: 'Other action', availability: { value: 5 }, heferRequired: true }
+        ])
+      )
+
+      const result = await fetchConsentRequirementsForParcel({
+        parcelId: 'PARCEL456',
+        sheetId: 'SHEET123',
+        enabledLandActions: ['CMOR1', 'UPL1', 'UPL2']
+      })
+
+      expect(result).toEqual({ consents: ['sssi', 'hefer'], actionCount: 2 })
+    })
+
+    it('reuses the unfiltered consent cache across enabled action lists', async () => {
+      parcelsWithActions.mockResolvedValueOnce(
+        parcelResponse([
+          { code: 'CMOR1', description: 'Assess moorland', availability: { value: 10 } },
+          { code: 'UPL1', description: 'Winter feeding', availability: { value: 0 } }
+        ])
+      )
+
+      const first = await fetchConsentRequirementsForParcel({
+        parcelId: 'PARCEL456',
+        sheetId: 'SHEET123',
+        enabledLandActions: ['CMOR1']
+      })
+      const second = await fetchConsentRequirementsForParcel({
+        parcelId: 'PARCEL456',
+        sheetId: 'SHEET123',
+        enabledLandActions: ['UPL1']
+      })
+
+      expect(parcelsWithActions).toHaveBeenCalledTimes(1)
+      expect(first.actionCount).toBe(1)
+      expect(second.actionCount).toBe(0)
+    })
+
+    it.each([undefined, []])('omits actionCount when enabled actions are %j', async (enabledLandActions) => {
+      parcelsWithActions.mockResolvedValueOnce(
+        parcelResponse([{ code: 'CMOR1', description: 'Assess moorland', availability: { value: 10 } }])
+      )
+
+      const result = await fetchConsentRequirementsForParcel({
+        parcelId: 'PARCEL456',
+        sheetId: 'SHEET123',
+        enabledLandActions
+      })
+
+      expect(result).toEqual({ consents: [] })
+    })
+
     it('should ask the API for the parcel without narrowing to any action list', async () => {
       parcelsWithActions.mockResolvedValueOnce(parcelResponse([{ code: 'CMOR1', description: 'Assess moorland' }]))
 
