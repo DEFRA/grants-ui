@@ -15,7 +15,17 @@ describe('TotalEstimatedCostController', () => {
   let mockH
 
   beforeEach(() => {
-    const mockModel = {}
+    const mockModel = {
+      def: {
+        metadata: {
+          totalEstimatedCostsPage: {
+            reservoirCostPerUnit: 2.5,
+            distNetworkCostPerUnit: 5,
+            tanksCostPerUnit: 1.5
+          }
+        }
+      }
+    }
     const mockPageDef = {
       path: '/total-estimated-cost',
       title: 'Total estimated cost'
@@ -23,7 +33,11 @@ describe('TotalEstimatedCostController', () => {
     controller = new TotalEstimatedCostController(mockModel, mockPageDef)
     setupControllerMocks(controller)
 
-    mockRequest = {}
+    mockRequest = {
+      app: {
+        model: mockModel
+      }
+    }
     mockContext = {
       state: {
         itemsPlanningToInstall: [],
@@ -33,22 +47,7 @@ describe('TotalEstimatedCostController', () => {
       }
     }
     mockH = {
-      view: vi.fn().mockReturnValue('mocked-view'),
-      request: {
-        app: {
-          model: {
-            def: {
-              metadata: {
-                totalEstimatedCostsPage: {
-                  reservoirCostPerUnit: 2.5,
-                  distNetworkCostPerUnit: 5,
-                  tanksCostPerUnit: 1.5
-                }
-              }
-            }
-          }
-        }
-      }
+      view: vi.fn().mockReturnValue('mocked-view')
     }
 
     vi.spyOn(QuestionPageController.prototype, 'getViewModel').mockReturnValue({
@@ -124,6 +123,58 @@ describe('TotalEstimatedCostController', () => {
       const handler = controller.makeGetRouteHandler()
 
       await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow('Failed to calculate total estimated cost')
+    })
+
+    it('should throw if totalEstimatedCostsPage is missing from metadata', async () => {
+      mockRequest.app.model.def.metadata.totalEstimatedCostsPage = undefined
+
+      const handler = controller.makeGetRouteHandler()
+
+      try {
+        await handler(mockRequest, mockContext, mockH)
+        expect.fail('Should have thrown')
+      } catch (error) {
+        expect(error.message).toBe('Failed to calculate total estimated cost')
+        const cause = Array.from(error.causeErrors)[0]
+        expect(cause.message).toBe('Missing required configuration: metadata.totalEstimatedCostsPage')
+      }
+    })
+
+    it('should throw and report all missing cost units', async () => {
+      mockRequest.app.model.def.metadata.totalEstimatedCostsPage = {}
+
+      const handler = controller.makeGetRouteHandler()
+
+      try {
+        await handler(mockRequest, mockContext, mockH)
+        expect.fail('Should have thrown')
+      } catch (error) {
+        expect(error.message).toBe('Failed to calculate total estimated cost')
+        const cause = Array.from(error.causeErrors)[0]
+        expect(cause.message).toBe(
+          'Missing required configuration: metadata.totalEstimatedCostsPage.reservoirCostPerUnit, metadata.totalEstimatedCostsPage.distNetworkCostPerUnit, metadata.totalEstimatedCostsPage.tanksCostPerUnit'
+        )
+      }
+    })
+
+    it('should throw if only reservoirCostPerUnit is missing', async () => {
+      mockRequest.app.model.def.metadata.totalEstimatedCostsPage = {
+        distNetworkCostPerUnit: 5,
+        tanksCostPerUnit: 1.5
+      }
+
+      const handler = controller.makeGetRouteHandler()
+
+      try {
+        await handler(mockRequest, mockContext, mockH)
+        expect.fail('Should have thrown')
+      } catch (error) {
+        expect(error.message).toBe('Failed to calculate total estimated cost')
+        const cause = Array.from(error.causeErrors)[0]
+        expect(cause.message).toBe(
+          'Missing required configuration: metadata.totalEstimatedCostsPage.reservoirCostPerUnit'
+        )
+      }
     })
   })
 })

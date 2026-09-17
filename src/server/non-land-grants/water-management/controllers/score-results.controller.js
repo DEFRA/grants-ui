@@ -1,7 +1,7 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { mergeAdditionalAnswers } from '~/src/server/common/helpers/state/additional-answers-helper.js'
-import { GrantApplicationServiceError } from '~/src/server/common/utils/errors/GrantApplicationServiceError.js'
+import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
 
 export default class ScoreResultsController extends QuestionPageController {
   /**
@@ -16,18 +16,16 @@ export default class ScoreResultsController extends QuestionPageController {
         const scoreResults = 'Average'
         context.state = await this.setState(request, mergeAdditionalAnswers(context.state, { scoreResults }))
 
-        const baseViewModel = super.getViewModel(request, context)
+        const baseViewModel = this.getViewModel(request, context)
         return h.view(this.viewName, baseViewModel)
       } catch (error) {
-        const grantApplicationServiceError = new GrantApplicationServiceError({
+        const systemError = new SystemError({
           message: 'Failed to retrieve score results',
           source: 'ScoreResultsController.makeGetRouteHandler',
-          reason: 'gas_action_failure',
-          grantCode: 'water-management',
-          action: 'retrieve-score-results'
+          reason: 'grants_ui_controller_failure'
         }).from(/** @type {Error} */ (error))
-        grantApplicationServiceError.logCode = LogCodes.SYSTEM.GAS_ACTION_ERROR
-        throw grantApplicationServiceError
+        systemError.logCode = LogCodes.SYSTEM.GENERIC_ERROR
+        throw systemError
       }
     }
     return fn

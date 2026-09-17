@@ -1,7 +1,7 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
-import { LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { mergeAdditionalAnswers } from '~/src/server/common/helpers/state/additional-answers-helper.js'
-import { GrantApplicationServiceError } from '~/src/server/common/utils/errors/GrantApplicationServiceError.js'
+import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
 
 export default class TotalEstimatedCostController extends QuestionPageController {
   /**
@@ -10,9 +10,7 @@ export default class TotalEstimatedCostController extends QuestionPageController
   makeGetRouteHandler() {
     const fn = async (request, context, h) => {
       try {
-        const reservoirCostPerUnit = h.request.app.model.def.metadata.totalEstimatedCostsPage.reservoirCostPerUnit
-        const distNetworkCostPerUnit = h.request.app.model.def.metadata.totalEstimatedCostsPage.distNetworkCostPerUnit
-        const tanksCostPerUnit = h.request.app.model.def.metadata.totalEstimatedCostsPage.tanksCostPerUnit
+        const { reservoirCostPerUnit, distNetworkCostPerUnit, tanksCostPerUnit } = this.validatePageConfig(request)
         const {
           itemsPlanningToInstall,
           howMuchWater = 0,
@@ -42,20 +40,53 @@ export default class TotalEstimatedCostController extends QuestionPageController
           })
         )
 
-        const baseViewModel = super.getViewModel(request, context)
+        const baseViewModel = this.getViewModel(request, context)
         return h.view(this.viewName, baseViewModel)
       } catch (error) {
-        const grantApplicationServiceError = new GrantApplicationServiceError({
+        const systemError = new SystemError({
           message: 'Failed to calculate total estimated cost',
           source: 'TotalEstimatedCostController.makeGetRouteHandler',
-          reason: 'grants_ui_controller_failure',
-          grantCode: 'water-management',
-          action: 'calculate-total-estimated-cost'
+          reason: 'grants_ui_controller_failure'
         }).from(/** @type {Error} */ (error))
-        grantApplicationServiceError.logCode = LogCodes.SYSTEM.GENERIC_ERROR
-        throw grantApplicationServiceError
+        systemError.logCode = LogCodes.SYSTEM.GENERIC_ERROR
+        throw systemError
       }
     }
     return fn
+  }
+
+  /**
+   * Validates the costs configuration in the form metadata.
+   * @param {import('@hapi/hapi').Request} request
+   * @returns {{reservoirCostPerUnit: number, distNetworkCostPerUnit: number, tanksCostPerUnit: number}}
+   * @private
+   */
+  validatePageConfig(request) {
+    const costsConfig = request.app.model?.def?.metadata?.totalEstimatedCostsPage
+
+    if (!costsConfig) {
+      log(LogCodes.SYSTEM.CONFIG_MISSING, { missing: ['metadata.totalEstimatedCostsPage'] }, request)
+      throw new Error('Missing required configuration: metadata.totalEstimatedCostsPage')
+    }
+
+    // @ts-ignore
+    const { reservoirCostPerUnit, distNetworkCostPerUnit, tanksCostPerUnit } = costsConfig
+
+    if (reservoirCostPerUnit === undefined || distNetworkCostPerUnit === undefined || tanksCostPerUnit === undefined) {
+      const missing = []
+      if (reservoirCostPerUnit === undefined) {
+        missing.push('metadata.totalEstimatedCostsPage.reservoirCostPerUnit')
+      }
+      if (distNetworkCostPerUnit === undefined) {
+        missing.push('metadata.totalEstimatedCostsPage.distNetworkCostPerUnit')
+      }
+      if (tanksCostPerUnit === undefined) {
+        missing.push('metadata.totalEstimatedCostsPage.tanksCostPerUnit')
+      }
+      log(LogCodes.SYSTEM.CONFIG_MISSING, { missing }, request)
+      throw new Error(`Missing required configuration: ${missing.join(', ')}`)
+    }
+
+    return { reservoirCostPerUnit, distNetworkCostPerUnit, tanksCostPerUnit }
   }
 }
