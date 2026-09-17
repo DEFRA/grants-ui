@@ -37,10 +37,10 @@ describe('buildParcelLabelLayer', () => {
     expect(layer['source-layer']).toBeUndefined()
   })
 
-  it('never hides a parcel label to collision, even at the cost of overlapping text', () => {
+  it('lets MapLibre hide colliding labels, now that clustering keeps them apart', () => {
     const layer = buildParcelLabelLayer()
-    expect(layer.layout['text-allow-overlap']).toBe(true)
-    expect(layer.layout['text-ignore-placement']).toBe(true)
+    expect(layer.layout['text-allow-overlap']).toBeUndefined()
+    expect(layer.layout['text-ignore-placement']).toBeUndefined()
   })
 
   it('reads the pre-formatted label text from the feature, not a GL expression', () => {

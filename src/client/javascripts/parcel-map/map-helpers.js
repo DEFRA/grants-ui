@@ -111,9 +111,7 @@ export function buildParcelLabelLayer() {
       'text-field': ['get', 'label'],
       'text-font': [labelFont],
       'text-size': LAYER_TEXT_SIZE,
-      'text-anchor': 'center',
-      'text-allow-overlap': true,
-      'text-ignore-placement': true
+      'text-anchor': 'center'
     },
     paint: {
       'text-color': LABEL_TEXT_COLOR,
