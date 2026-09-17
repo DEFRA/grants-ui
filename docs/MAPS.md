@@ -323,10 +323,6 @@ The features carry properties only, no geometry: the component uses `PARCEL_TILE
 
 `ENABLE_LAND_GRANT_MAP_ACTION_COUNT` is off by default: map load requests `["size"]` and omits `actionCount` and tooltip counts. When on, it also requests `"actions"` if the journey has enabled action codes.
 
-Selection reuses bulk counts or passes `enabledLandActions` query parameters to `POST /api/land-grants/actions/{parcelId}/consents`. The same cached lookup returns `actionCount` for enabled actions with available land; consents still cover all actions. This adds no upstream call and leaves tooltips unchanged. No enabled codes means no count request.
-
-Zero shows the no-actions warning. Pending or failed counts hide the count and warning without blocking Continue. Responses for old selections are ignored.
-
 ### `GET /api/map/parcel-tiles/{z}/{x}/{y}`
 
 Proxies MapLibre vector tile requests to the land-grants API. Fetches the current user's parcel IDs from `fetchParcels` (concurrent tile requests share one in-flight lookup per SBI) and sends them in the POST body so they are never exposed in the tile URL. Each tile is re-encoded on the way through (`withCompoundParcelIds`) to stamp the compound `id` property onto every feature; see the interact plugin section above. Returns the protobuf tile buffer with `Cache-Control: no-store`: the URL is only `{z}/{x}/{y}` with no per-user scoping, so any positive max-age would let the browser replay one user's parcel geometry to whoever is signed in next at the same tile coordinate after a logout/login.
