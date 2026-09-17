@@ -13,6 +13,10 @@ Feature: Allowlisting
         And should see heading "Example Whitelist"
         And an authorised audit event should be published for entity "application" and grant "example-whitelist" with CRN "1100953760" and SBI "108633093"
 
+        # home
+        Given the user navigates to "/home"
+        Then the user should see "Example Whitelist" in their available grants
+
         # reload the browser session and login again
         Given the user starts a new browser session
         And navigates to "/example-whitelist"
@@ -22,3 +26,7 @@ Feature: Allowlisting
         Then the user should be at URL "journey-unauthorised"
         And should see heading "You are not able to complete this grant application"
         And an unauthorised audit event should be published for entity "application" and grant "example-whitelist" with CRN "1100955380" and SBI "115425713" and reason "allowlist"
+
+        # home
+        Given the user navigates to "/home"
+        Then the user should not see "Example Whitelist" in their available grants
