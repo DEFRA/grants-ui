@@ -15,9 +15,9 @@ export const mapPlugin = {
   plugin: {
     name: 'map',
     register(server) {
-      // Surface a missing OS key at startup
+      // Surface a missing land maps OS key at startup
       if (!config.get('maps.land.apiKey')) {
-        error(LogCodes.SYSTEM.OS_MAPS_API_KEY_MISSING, {})
+        error(LogCodes.SYSTEM.LAND_MAPS_API_KEY_MISSING, {})
       }
 
       server.route({

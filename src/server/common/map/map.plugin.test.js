@@ -10,7 +10,7 @@ vi.mock('~/src/config/config.js', () => ({ config: { get: vi.fn(defaultConfigGet
 const mockError = vi.fn()
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
   error: (...args) => mockError(...args),
-  LogCodes: { SYSTEM: { OS_MAPS_API_KEY_MISSING: { level: 'error', messageFunc: () => 'missing key' } } }
+  LogCodes: { SYSTEM: { LAND_MAPS_API_KEY_MISSING: { level: 'error', messageFunc: () => 'missing key' } } }
 }))
 
 import { config } from '~/src/config/config.js'
@@ -66,7 +66,7 @@ describe('mapPlugin route registration', () => {
 
     mapPlugin.plugin.register(makeServer())
 
-    expect(mockError).toHaveBeenCalledWith(LogCodes.SYSTEM.OS_MAPS_API_KEY_MISSING, {})
+    expect(mockError).toHaveBeenCalledWith(LogCodes.SYSTEM.LAND_MAPS_API_KEY_MISSING, {})
   })
 
   it('does not log when the OS Maps API key is present', () => {
