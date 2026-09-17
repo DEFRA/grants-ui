@@ -79,10 +79,11 @@ describe('select-actions.view-model', () => {
       expect(result).toEqual({
         id: 'landAction-SAM1',
         value: 'SAM1',
-        html: 'Test Action 1<span class="select-actions-hint">Payment rate per year: £100.50/ha</span>',
+        html: 'Test Action 1 <span class="select-actions-hint">Payment rate per year: £100.50/ha</span>',
         checked: false,
         consents: [],
         attributes: {
+          'data-action-description': 'Test Action 1',
           'data-available-unit': undefined,
           'data-total-available-area': undefined
         }
@@ -110,6 +111,9 @@ describe('select-actions.view-model', () => {
       expect(result.html).toContain('read guidance')
       expect(result.html).toContain('target="_blank"')
       expect(result.html).toContain('rel="noopener noreferrer"')
+      expect(result.html).toContain(
+        'read guidance</a> <span class="select-actions-hint">Payment rate per year: £100.50/ha</span>'
+      )
     })
 
     it('should escape the description and guidance URL in the label to avoid breaking the markup', () => {
@@ -168,7 +172,7 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, addedActions)
 
       expect(result.html).toBe(
-        'Test Action 2<span class="select-actions-hint">Payment rate per year: £75.25/ha and <strong>£50</strong> per agreement</span>'
+        'Test Action 2 <span class="select-actions-hint">Payment rate per year: £75.25/ha and <strong>£50</strong> per agreement</span>'
       )
     })
 
@@ -274,6 +278,7 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, [])
 
       expect(result.attributes).toEqual({
+        'data-action-description': 'Test Action 1',
         'data-available-unit': 'ha',
         'data-total-available-area': 12.5
       })

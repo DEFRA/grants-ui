@@ -83,6 +83,7 @@ function chosenAreaPanelHtml({ code, checked, chosenArea, availability, hasChose
 
 export function checkboxItemHtml({
   code,
+  description = code,
   checked = false,
   availability,
   requiresMaxQuantity,
@@ -120,8 +121,8 @@ export function checkboxItemHtml({
 
   return `
     <div class="govuk-checkboxes__item">
-      <input class="govuk-checkboxes__input" id="landAction-${code}" name="landAction" type="checkbox" value="${code}"${checked ? ' checked' : ''}${unitAttr}${totalAreaAttr}${ariaControlsAttr}${errorOnLoadAttr(errorOnLoad)}>
-      <label for="landAction-${code}">${code}</label>
+      <input class="govuk-checkboxes__input" id="landAction-${code}" name="landAction" type="checkbox" value="${code}" data-action-description="${description}"${checked ? ' checked' : ''}${unitAttr}${totalAreaAttr}${ariaControlsAttr}${errorOnLoadAttr(errorOnLoad)}>
+      <label for="landAction-${code}">${description}</label>
       ${availabilityHint}
     </div>
     ${conditional}${chosenAreaPanel}`
