@@ -7,14 +7,14 @@
     "value": "true"
   },
   {
-    "section": "check-before-you-start",
+    "section": "check-your-eligibility",
     "slug": "tasks",
-    "name": "Task list — check-before-you-start",
+    "name": "Task list — check-your-eligibility",
     "type": "clickLink",
     "linkSlug": "crops-growing"
   },
   {
-    "section": "check-before-you-start",
+    "section": "check-your-eligibility",
     "slug": "crops-growing",
     "name": "Crops growing — yes",
     "type": "radios",
@@ -22,14 +22,14 @@
     "value": "FOOD_INDUSTRY"
   },
   {
-    "section": "check-before-you-start",
+    "section": "check-your-eligibility",
     "slug": "county-project-located",
     "name": "County project located — selects first option",
     "type": "selectField",
     "fieldName": "countyProjectLocated"
   },
   {
-    "section": "check-before-you-start",
+    "section": "check-your-eligibility",
     "slug": "work-started-yet",
     "name": "Work started yet — yes prep",
     "type": "radios",
@@ -37,13 +37,44 @@
     "value": "YES_PREPARATORY_WORK"
   },
   {
-    "section": "check-before-you-start",
+    "section": "check-your-eligibility",
+    "slug": "eligible-organisation",
+    "name": "Eligible organisation - yes",
+    "type": "yesNo",
+    "fieldName": "eligibleOrganisation",
+    "value": "true"
+  },
+  {
+    "section": "check-your-eligibility",
     "slug": "score-results",
     "name": "Score results temp",
     "type": "textFields",
     "fields": {
       "tempOne": "aa"
     }
+  },
+  {
+    "section": "business-details",
+    "slug": "tasks",
+    "name": "Task list — business-details",
+    "type": "clickLink",
+    "linkSlug": "organisation-type"
+  },
+  {
+    "section": "business-details",
+    "slug": "organisation-type",
+    "name": "Organisation type - landlord",
+    "type": "radios",
+    "fieldName": "organisationType",
+    "value": "LANDLORD"
+  },
+  {
+    "section": "business-details",
+    "slug": "have-management-control",
+    "name": "Have management control - yes",
+    "type": "yesNo",
+    "fieldName": "haveManagementControl",
+    "value": "true"
   },
   {
     "section": "project-details",
