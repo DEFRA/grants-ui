@@ -30,6 +30,9 @@ export default {
     'parcel-map': {
       import: ['./javascripts/parcel-map/index.js']
     },
+    map: {
+      import: ['./stylesheets/map.scss']
+    },
     'parcel-select-page': {
       import: ['./javascripts/parcel-map/parcel-select-page.js']
     },
@@ -193,10 +196,6 @@ export default {
         {
           from: path.join(interactiveMapPath, 'assets/images'),
           to: 'assets/interactive-map/assets/images'
-        },
-        {
-          from: path.join(interactiveMapPath, 'dist/css/index.css'),
-          to: 'stylesheets/interactive-map.css'
         }
       ]
     })
