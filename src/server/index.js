@@ -128,8 +128,8 @@ const registerFormsPlugin = async (server, prefix = '') => {
         formsService: formService,
         outputService
       },
-      ordnanceSurveyApiKey: config.get('osMapsApiKey'),
-      ...(config.get('osMapsApiSecret') && { ordnanceSurveyApiSecret: config.get('osMapsApiSecret') }),
+      ordnanceSurveyApiKey: config.get('maps.forms.apiKey'),
+      ...(config.get('maps.forms.apiSecret') && { ordnanceSurveyApiSecret: config.get('maps.forms.apiSecret') }),
       filters: {
         formatCurrency,
         formatDate

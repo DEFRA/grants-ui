@@ -306,6 +306,12 @@ describe('LogCodes', () => {
         'warn',
         {},
         'ensureUpdateDetailsPage: model.pages is empty for grantCode=unknown — pages may not have been initialised yet. If the forms engine has changed to async page initialisation, the queueMicrotask timing assumption no longer holds.'
+      ],
+      [
+        'LAND_MAPS_API_KEY_MISSING',
+        'error',
+        {},
+        'map: maps.land.apiKey (LAND_MAPS_API_KEY) is not set; every /api/map/os-tiles request will fail as a 401 from OS with no diagnostic'
       ]
     ])
 

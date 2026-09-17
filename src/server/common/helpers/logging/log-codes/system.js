@@ -181,10 +181,10 @@ export const SYSTEM = {
     messageFunc: (messageOptions) =>
       `home: SFD is enabled but externalLinks.sfd.homeUrl is missing or invalid (value=${messageOptions.homeUrl}); falling through to the tactical grants landing page instead of redirecting to SFD`
   },
-  OS_MAPS_API_KEY_MISSING: {
+  LAND_MAPS_API_KEY_MISSING: {
     level: 'error',
     messageFunc: () =>
-      `map: osMapsApiKey (OS_MAPS_API_KEY) is not set; every /api/map/os-tiles request will fail as a 401 from OS with no diagnostic`
+      `map: maps.land.apiKey (LAND_MAPS_API_KEY) is not set; every /api/map/os-tiles request will fail as a 401 from OS with no diagnostic`
   },
   ENTRA_TOKEN_REFRESH_ATTEMPT: {
     level: 'info',
