@@ -321,7 +321,7 @@ Fetches the authenticated user's parcels from the DAL, enriches them with area d
 
 The features carry properties only, no geometry: the component uses `PARCEL_TILES_URL` (a client-side constant in `config.js`) as the vector tile source and streams geometry from `/api/map/parcel-tiles/{z}/{x}/{y}`. Returns `503` if the land-grants API is unavailable.
 
-`ENABLE_LAND_GRANT_MAP_ACTION_COUNT` is off by default: map load requests `["size"]` and omits `actionCount` and tooltip counts. When on, it also requests `"actions"` if the journey has enabled action codes.
+`ENABLE_LAND_GRANT_MAP_ACTION_COUNT` controls whether the map fetches action counts on load for its tooltips. It defaults to `false`; selecting a parcel still loads its count for the details panel.
 
 ### `GET /api/map/parcel-tiles/{z}/{x}/{y}`
 
