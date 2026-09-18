@@ -241,6 +241,7 @@ async function main() {
       parcel: valueOf('--parcel'),
       commonLand: valueOf('--common-land'),
       mockNoActions: argv.includes('--mock-no-actions'),
+      mockWindowClosed: argv.includes('--mock-window-closed'),
       baseUrl,
       headed: argv.includes('--headed'),
       clear: argv.includes('--clear'),

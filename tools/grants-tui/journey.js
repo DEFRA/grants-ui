@@ -196,7 +196,7 @@ export function journeySteps(slug) {
  * (`acceptance/journey-cli.js`). Streams the driver's output and returns its
  * exit code (0 = journey completed).
  * @param {string} slug  grant URL slug with a matching journeys/<slug>.json
- * @param {{crn?: string, stop?: string, parcel?: string, commonLand?: string, mockNoActions?: boolean, headed?: boolean, clear?: boolean, acknowledged?: boolean, baseUrl?: string, skipInstall?: boolean}} [opts]
+ * @param {{crn?: string, stop?: string, parcel?: string, commonLand?: string, mockNoActions?: boolean, mockWindowClosed?: boolean, headed?: boolean, clear?: boolean, acknowledged?: boolean, baseUrl?: string, skipInstall?: boolean}} [opts]
  * @param {boolean} [dryRun]  print the command without running it
  * @returns {number}  child exit code
  */
@@ -247,6 +247,7 @@ export function cmdJourney(slug, opts = {}, dryRun = false) {
   if (opts.parcel) driverArgs.push('--parcel', opts.parcel)
   if (opts.commonLand) driverArgs.push('--common-land', opts.commonLand)
   if (opts.mockNoActions) driverArgs.push('--mock-no-actions')
+  if (opts.mockWindowClosed) driverArgs.push('--mock-window-closed')
   if (opts.headed) driverArgs.push('--headed')
   if (opts.clear) driverArgs.push('--clear')
   if (opts.baseUrl) driverArgs.push('--base-url', opts.baseUrl)

@@ -51,6 +51,7 @@ export function validateArgs(argv) {
     '--parcel',
     '--common-land',
     '--mock-no-actions',
+    '--mock-window-closed',
     '--headed',
     '--clear',
     '--base-url',
