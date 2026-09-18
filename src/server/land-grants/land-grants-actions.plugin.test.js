@@ -35,12 +35,14 @@ function makeServer() {
 function makeRequest({
   parcelId = 'SD7946-0155',
   plannedActions = [],
+  query,
   sbi = USER_CONTEXT.sbi,
   token = USER_CONTEXT.defraIdToken
 } = {}) {
   return {
     params: { parcelId },
     payload: { plannedActions },
+    ...(query && { query }),
     auth: { credentials: { sbi, token } }
   }
 }
@@ -172,6 +174,40 @@ describe('landGrantsActionsPlugin', () => {
         })
       })
       expect(consentsRoute().options.validate.payload).toBeUndefined()
+    })
+
+    it('validates repeated enabled action codes in the query', () => {
+      expect(
+        consentsRoute().options.validate.query.validate({ enabledLandActions: ['CMOR1', 'UPL1'] }).error
+      ).toBeUndefined()
+    })
+
+    it('forwards enabled action codes and returns the available action count', async () => {
+      fetchAuthorisedParcelIds.mockResolvedValue(['SD7946-0155'])
+      fetchConsentRequirementsForParcel.mockResolvedValue({ consents: ['sssi'], actionCount: 2 })
+      const h = makeH()
+
+      await consentsRoute().handler(makeRequest({ query: { enabledLandActions: ['CMOR1', 'UPL1'] } }), h)
+
+      expect(fetchConsentRequirementsForParcel).toHaveBeenCalledWith(
+        { parcelId: '0155', sheetId: 'SD7946', enabledLandActions: ['CMOR1', 'UPL1'] },
+        { defraIdToken: 'defra-id-access-token', sbi: '106284736' }
+      )
+      expect(h.response).toHaveBeenCalledWith({
+        intro: 'Some actions require:',
+        items: ['site of special scientific interest (SSSI) consent'],
+        actionCount: 2
+      })
+    })
+
+    it('does not turn a malformed count into zero', async () => {
+      fetchAuthorisedParcelIds.mockResolvedValue(['SD7946-0155'])
+      fetchConsentRequirementsForParcel.mockResolvedValue({ consents: [], actionCount: null })
+      const h = makeH()
+
+      await consentsRoute().handler(makeRequest({ query: { enabledLandActions: ['CMOR1'] } }), h)
+
+      expect(h.response).toHaveBeenCalledWith({ intro: '', items: [] })
     })
 
     it('returns the notice for the whole parcel, unnarrowed by the journey', async () => {

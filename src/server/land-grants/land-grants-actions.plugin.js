@@ -10,6 +10,7 @@ import { getConsentNotice } from '~/src/server/land-grants/view-models/consent.v
 import { COMPOUND_PARCEL_ID_PATTERN, parseLandParcel } from '~/src/shared/format-parcel.js'
 import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
 import { UNITS } from '~/src/shared/unit-types.js'
+import { parcelsQuery } from '~/src/server/common/map/parcels-query.js'
 
 const plannedActionsValidation = {
   params: Joi.object({
@@ -114,11 +115,19 @@ async function consentsHandler(request, h) {
   }
 
   const { formRequest, sheetId, parcelId } = parcel
+  const { enabledLandActions = [] } = /** @type {{ enabledLandActions?: string[] }} */ (request.query ?? {})
 
   try {
     const userContext = getLandGrantsUserContext(formRequest)
-    const { consents } = await fetchConsentRequirementsForParcel({ parcelId, sheetId }, userContext)
-    return h.response(getConsentNotice(consents)).code(statusCodes.ok)
+    const parcelRequest =
+      enabledLandActions.length > 0 ? { parcelId, sheetId, enabledLandActions } : { parcelId, sheetId }
+    const { consents, actionCount } = await fetchConsentRequirementsForParcel(parcelRequest, userContext)
+    const notice = {
+      ...getConsentNotice(consents),
+      ...(enabledLandActions.length > 0 && Number.isFinite(actionCount) ? { actionCount } : {})
+    }
+
+    return h.response(notice).code(statusCodes.ok)
   } catch (err) {
     return upstreamFailure(request, h, err, parcel)
   }
@@ -145,7 +154,11 @@ export const landGrantsActionsPlugin = {
         options: {
           auth: { mode: 'required', strategy: 'session' },
           // No body: the parcel comes from the path, and the crumb from the header.
-          validate: { params: Joi.object({ parcelId: Joi.string().pattern(COMPOUND_PARCEL_ID_PATTERN).required() }) },
+          // Action codes are query parameters.
+          validate: {
+            params: Joi.object({ parcelId: Joi.string().pattern(COMPOUND_PARCEL_ID_PATTERN).required() }),
+            ...parcelsQuery
+          },
           plugins: { crumb: { restful: true } }
         },
         handler: consentsHandler

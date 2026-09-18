@@ -12,13 +12,24 @@ import {
 const SSSI = 'site of special scientific interest (SSSI) consent'
 const HEFER = 'a Historic Environment Farm Environment Record (HEFER)'
 const INTRO = 'Some actions require:'
-const noticeResponse = (items) => ({
+const noticeResponse = (items, actionCount) => ({
   ok: true,
-  json: () => Promise.resolve({ intro: items.length ? INTRO : '', items })
+  json: () =>
+    Promise.resolve({
+      intro: items.length ? INTRO : '',
+      items,
+      ...(actionCount === undefined ? {} : { actionCount })
+    })
 })
 const EMPTY = { hidden: true, intro: '', items: [], status: '' }
 
-function setupDom({ multiSelect = false, selectedParcels = '', errors = false, lastEvent = null } = {}) {
+function setupDom({
+  multiSelect = false,
+  selectedParcels = '',
+  errors = false,
+  lastEvent = null,
+  enabledLandActions = ''
+} = {}) {
   document.body.innerHTML = `
     <input type="hidden" name="crumb" value="test-crumb">
     ${errors ? '<div class="govuk-error-summary"><a id="error-link" href="#parcel-map">There is a problem</a></div>' : ''}
@@ -47,6 +58,7 @@ function setupDom({ multiSelect = false, selectedParcels = '', errors = false, l
   mapEl.id = 'parcel-map'
   mapEl.setAttribute('multi-select', multiSelect ? 'true' : 'false')
   mapEl.dataset.selectedParcels = selectedParcels
+  mapEl.dataset.enabledLandActions = enabledLandActions
   mapEl.clearSelection = vi.fn()
   mapEl.selectParcels = vi.fn()
   mapEl.focusParcels = vi.fn()
@@ -300,6 +312,101 @@ describe('initParcelSelectPage', () => {
     changeLink.click()
     expect(mapEl.clearSelection).toHaveBeenCalled()
     expect(defaultPrevented).toBe(true)
+  })
+
+  describe('selected parcel action count without bulk counts', () => {
+    const select = (mapEl, ids) => fire(mapEl, EVENT_SELECTION, { selectedParcels: ids.map((id) => ({ id })) })
+    const respond = (actionCount) => noticeResponse([], actionCount)
+    const details = () => ({
+      hidden: document.getElementById('selected-parcel-actions-row').hidden,
+      count: document.getElementById('selected-parcel-actions').textContent,
+      noActions: !document.getElementById('summary-parcel-no-actions').hidden
+    })
+
+    it('fetches consent and count together without changing tooltip metadata', async () => {
+      global.fetch.mockResolvedValue(respond(1))
+      const mapEl = setupDom({ enabledLandActions: 'CLIG3,CSAM3' })
+      const metaIndex = { 'SD7148-9160': { areaHa: 1.5 } }
+      fire(mapEl, EVENT_READY, { parcelIds: Object.keys(metaIndex), metaIndex })
+      expect(global.fetch).not.toHaveBeenCalled()
+      select(mapEl, ['SD7148-9160'])
+      await flush()
+      expect(details()).toEqual({ hidden: false, count: '1', noActions: false })
+      expect(metaIndex['SD7148-9160']).not.toHaveProperty('actionCount')
+      expect(global.fetch).toHaveBeenCalledTimes(1)
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/land-grants/actions/SD7148-9160/consents?enabledLandActions=CLIG3&enabledLandActions=CSAM3',
+        {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': 'test-crumb' },
+          body: '{}'
+        }
+      )
+    })
+
+    it('does not request a count when no enabled action codes are configured', async () => {
+      const mapEl = setupDom()
+      select(mapEl, ['SD7148-9160'])
+      await flush()
+      expect(details()).toEqual({ hidden: true, count: '', noActions: false })
+      expect(global.fetch).toHaveBeenCalledTimes(1)
+      expect(global.fetch.mock.calls[0][0]).toBe('/api/land-grants/actions/SD7148-9160/consents')
+    })
+
+    it.each([
+      ['zero available', respond(0), { hidden: false, count: '0', noActions: true }],
+      ['upstream failure', { ok: false }, { hidden: true, count: '', noActions: false }],
+      [
+        'malformed action count',
+        { ok: true, json: async () => ({ intro: '', items: [], actionCount: '0' }) },
+        { hidden: true, count: '', noActions: false }
+      ]
+    ])('distinguishes %s from an unknown count', async (_name, response, expected) => {
+      global.fetch.mockResolvedValue(response)
+      const mapEl = setupDom({ enabledLandActions: 'CLIG3' })
+      select(mapEl, ['SD7148-9160'])
+      await flush()
+      expect(details()).toEqual(expected)
+      expect(document.getElementById('map-select-continue').disabled).toBe(false)
+    })
+
+    it.each([[[]], [['SD7148-9161']], [['SD7148-9160', 'SD7148-9161']]])(
+      'ignores a count arriving after selection becomes %j',
+      async (ids) => {
+        let resolveFirst
+        global.fetch.mockImplementationOnce(
+          () =>
+            new Promise((resolve) => {
+              resolveFirst = resolve
+            })
+        )
+        if (ids.length === 1) {
+          global.fetch.mockResolvedValueOnce(respond(1))
+        }
+        const mapEl = setupDom({ enabledLandActions: 'CLIG3' })
+        select(mapEl, ['SD7148-9160'])
+        select(mapEl, ids)
+        await flush()
+        resolveFirst(respond(0))
+        await flush()
+        expect(details().noActions).toBe(false)
+        if (ids.length === 1) {
+          expect(details()).toEqual({ hidden: false, count: '1', noActions: false })
+        } else {
+          expect(document.getElementById('selected-parcel-details').hidden).toBe(true)
+        }
+      }
+    )
+
+    it('uses a bulk count when present without a count query', async () => {
+      const mapEl = setupDom({ enabledLandActions: 'CLIG3' })
+      fire(mapEl, EVENT_READY, { metaIndex: { 'SD7148-9160': { actionCount: 2 } } })
+      select(mapEl, ['SD7148-9160'])
+      await flush()
+      expect(details()).toEqual({ hidden: false, count: '2', noActions: false })
+      expect(global.fetch.mock.calls.map(([url]) => url)).toEqual(['/api/land-grants/actions/SD7148-9160/consents'])
+    })
   })
 
   describe('requirements row', () => {

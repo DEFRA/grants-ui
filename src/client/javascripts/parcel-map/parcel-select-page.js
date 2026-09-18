@@ -2,6 +2,7 @@
 // public events emitted by <parcel-map> and drives this journey's form DOM
 // (hidden inputs, hint, live summary, no-parcels error, Continue button).
 import {
+  ENABLED_LAND_ACTIONS_ATTRIBUTE,
   ERROR_REASON_NO_PARCELS,
   EVENT_ERROR,
   EVENT_READY,
@@ -64,7 +65,7 @@ const updateMapTotals = (metaIndex, parcelIds) => {
  * @param {SelectedParcel[]} selectedParcels
  * @param {import('./map-helpers.js').MetaIndex} [metaIndex]
  */
-const updateSelectedParcelDetails = (selectedParcels, metaIndex = {}) => {
+const renderSelectedParcelDetails = (selectedParcels, metaIndex = {}) => {
   const details = document.getElementById(DOM_ID_SELECTED_PARCEL_DETAILS)
   if (!details) {
     return
@@ -117,12 +118,19 @@ const writeHiddenInputs = (selectedIds) => {
  * lives in one place. An empty items array means nothing applies; null means
  * the lookup failed.
  * @param {string} parcelId
- * @returns {Promise<{ intro: string, items: string[] } | null>}
+ * @param {string[]} [enabledLandActions]
+ * @returns {Promise<{ intro: string, items: string[], actionCount?: number } | null>}
  */
-const fetchConsentNotice = async (parcelId) => {
+const fetchConsentNotice = async (parcelId, enabledLandActions = []) => {
   const crumb = /** @type {HTMLInputElement | null} */ (document.querySelector('input[name="crumb"]'))?.value
+  const params = new URLSearchParams()
+  enabledLandActions.forEach((action) => params.append('enabledLandActions', action))
+  const query = params.toString()
+  const querySuffix = query ? `?${query}` : ''
+  const endpoint = `/api/land-grants/actions/${encodeURIComponent(parcelId)}/consents${querySuffix}`
+
   try {
-    const response = await fetch(`/api/land-grants/actions/${encodeURIComponent(parcelId)}/consents`, {
+    const response = await fetch(endpoint, {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json', ...(crumb ? { 'X-CSRF-Token': crumb } : {}) },
@@ -131,11 +139,15 @@ const fetchConsentNotice = async (parcelId) => {
     if (!response.ok) {
       return null
     }
-    const { intro, items } = await response.json()
+    const { intro, items, actionCount } = await response.json()
     if (typeof intro !== 'string' || !Array.isArray(items)) {
       return null
     }
-    return { intro, items: items.filter((item) => typeof item === 'string') }
+    return {
+      intro,
+      items: items.filter((item) => typeof item === 'string'),
+      ...(typeof actionCount === 'number' ? { actionCount } : {})
+    }
   } catch {
     return null
   }
@@ -172,16 +184,25 @@ const showRequirements = (intro, items) => {
 }
 
 /**
- * Keeps the "Requirements" row in step with the current selection. The notice
- * belongs to the selected parcel, so every selection event, including
+ * Keeps the selected parcel details in step with the current selection. The
+ * notice belongs to the selected parcel, so every selection event, including
  * deselection and multi-selection, invalidates any lookup still in flight and
  * clears the row before asking for a new one.
- * @returns {(selectedParcels: SelectedParcel[]) => Promise<void>}
+ * @param {HTMLElement} mapEl
+ * @returns {(selectedParcels: SelectedParcel[], metaIndex: import('./map-helpers.js').MetaIndex) => Promise<void>}
  */
-function createConsentRequirementsUpdater() {
+function createSelectedParcelDetailsUpdater(mapEl) {
+  const enabledActions = [
+    ...new Set(
+      (mapEl.getAttribute(ENABLED_LAND_ACTIONS_ATTRIBUTE) ?? '')
+        .split(',')
+        .map((code) => code.trim())
+        .filter(Boolean)
+    )
+  ]
   let requestId = 0
 
-  return async function updateConsentRequirements(selectedParcels) {
+  return async function updateSelectedParcelDetails(selectedParcels, metaIndex) {
     requestId += 1
     const thisRequestId = requestId
     clearRequirements()
@@ -190,13 +211,20 @@ function createConsentRequirementsUpdater() {
       return
     }
 
-    const notice = await fetchConsentNotice(selectedParcels[0].id)
+    const [{ id }] = selectedParcels
+    const hasBulkActionCount = typeof metaIndex[id]?.actionCount === 'number'
+    const notice = await fetchConsentNotice(id, hasBulkActionCount ? [] : enabledActions)
     if (thisRequestId !== requestId) {
       return
     }
 
     if (notice?.items.length) {
       showRequirements(notice.intro, notice.items)
+    }
+    if (typeof notice?.actionCount === 'number') {
+      renderSelectedParcelDetails(selectedParcels, {
+        [id]: { ...metaIndex[id], id, actionCount: notice.actionCount }
+      })
     }
   }
 }
@@ -251,14 +279,13 @@ export function initParcelSelectPage(mapEl) {
   mapEl.addEventListener(EVENT_ERROR, (/** @type {Event} */ e) => {
     handleError(/** @type {CustomEvent<ParcelMapErrorDetail>} */ (e).detail)
   })
-
-  const updateConsentRequirements = createConsentRequirementsUpdater()
+  const updateSelectedParcelDetails = createSelectedParcelDetailsUpdater(mapEl)
 
   mapEl.addEventListener(EVENT_SELECTION, (/** @type {Event} */ e) => {
     const { selectedParcels } = /** @type {CustomEvent<SelectionDetail>} */ (e).detail
     writeHiddenInputs(selectedParcels.map((p) => p.id))
+    renderSelectedParcelDetails(selectedParcels, metaIndex)
     updateSelectedParcelDetails(selectedParcels, metaIndex)
-    updateConsentRequirements(selectedParcels)
     const nextParcelId = selectedParcels.length === 1 ? selectedParcels[0].id : undefined
     if (nextParcelId && nextParcelId !== selectedParcelId) {
       const details = document.getElementById(DOM_ID_SELECTED_PARCEL_DETAILS)
