@@ -25,7 +25,7 @@ export function buildNewState(state, actionsObj, parcel) {
     ...state,
     landParcels: {
       ...state.landParcels,
-      [selectedLandParcel]: { size: parcel.size, actionsObj }
+      [selectedLandParcel]: { size: parcel.size, actionsObj, updatedAt: Date.now() }
     }
   }
 }
@@ -280,6 +280,8 @@ export function deleteActionFromState(state, parcel, action) {
     // Remove parcel if no actions remain
     if (Object.keys(newState.landParcels[parcel].actionsObj).length === 0) {
       delete newState.landParcels[parcel]
+    } else {
+      newState.landParcels[parcel].updatedAt = Date.now()
     }
 
     // Remove the land parcels key if it is empty
