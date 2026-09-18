@@ -17,7 +17,7 @@ import {
 } from '~/src/server/land-grants/services/land-grants.client.js'
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
 import { formatUnit } from '~/src/shared/unit-format.js'
-import { getAvailabilityLimit } from '~/src/shared/availability.js'
+import { getAvailabilityLimit, hasAvailableLand } from '~/src/shared/availability.js'
 import {
   getCachedParcel,
   getCachedSbiParcels,
@@ -219,13 +219,15 @@ export async function fetchActionsWithPlannedActions({ parcelId, sheetId, planne
  * designation or HEFER requirement is a property of the land, so the map shows
  * it even when the action carrying it is not one this grant offers. Cached
  * under its own prefix so it never collides with the journey-filtered entries
- * fetchActionsForParcel writes.
- * @param {{ parcelId?: string, sheetId?: string }} parcel
+ * fetchActionsForParcel writes. When enabledLandActions is supplied, actionCount
+ * reports the enabled actions that still have available land while consents
+ * continue to cover every action.
+ * @param {{ parcelId?: string, sheetId?: string, enabledLandActions?: string[] }} parcel
  * @param {LandGrantsUserContext} userContext
- * @returns {Promise<{ consents: string[] }>}
+ * @returns {Promise<{ consents: string[], actionCount?: number }>}
  * @throws {Error}
  */
-export async function fetchConsentRequirementsForParcel({ parcelId, sheetId }, userContext) {
+export async function fetchConsentRequirementsForParcel({ parcelId, sheetId, enabledLandActions }, userContext) {
   const { actions } = await fetchParcelActions(
     { parcelId, sheetId },
     userContext,
@@ -233,7 +235,16 @@ export async function fetchConsentRequirementsForParcel({ parcelId, sheetId }, u
     parcelsWithActions,
     (actionsForParcel) => actionsForParcel
   )
-  return { consents: getRequiredActionConsents(/** @type {Array<Record<string, unknown>>} */ (actions)) }
+  const result = /** @type {{ consents: string[], actionCount?: number }} */ ({
+    consents: getRequiredActionConsents(/** @type {Array<Record<string, unknown>>} */ (actions))
+  })
+  const enabledActions = normaliseEnabledLandActions(enabledLandActions)
+
+  if (enabledActions.length > 0) {
+    result.actionCount = filterEnabledLandActions(actions, enabledActions).filter(hasAvailableLand).length
+  }
+
+  return result
 }
 
 /**

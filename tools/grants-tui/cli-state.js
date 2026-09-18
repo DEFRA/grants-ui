@@ -10,9 +10,22 @@ import { STATE_FILE } from './constants.js'
 
 export function saveState(addons, scale, localServices = [], localFormDefSelections = []) {
   try {
-    fs.writeFileSync(STATE_FILE, JSON.stringify({ addons, scale, localServices, localFormDefSelections }, null, 2))
+    fs.writeFileSync(
+      STATE_FILE,
+      JSON.stringify({ ...loadState(), addons, scale, localServices, localFormDefSelections }, null, 2)
+    )
   } catch {
     // non-fatal
+  }
+}
+
+/** Store query preferences only, never fetched application state. */
+export function saveInspectorSelection(selection) {
+  try {
+    const state = loadState() ?? { addons: [], scale: null, localServices: [], localFormDefSelections: [] }
+    fs.writeFileSync(STATE_FILE, JSON.stringify({ ...state, stateInspector: selection }, null, 2), { mode: 0o600 })
+  } catch {
+    // Preferences are optional; the inspector can still run.
   }
 }
 

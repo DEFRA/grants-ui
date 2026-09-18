@@ -393,9 +393,10 @@ export function cmdDebug(interactive = false, dryRun = false) {
 function runDockerOrPreview(dryRun, args, previewCmd) {
   if (dryRun) {
     console.log(`  ${DIM}▶${RESET_COLOR}  ${previewCmd}\n`)
-    return
+    return 0
   }
-  spawnSync('docker', args, { cwd: ROOT, stdio: 'inherit' })
+  const result = spawnSync('docker', args, { cwd: ROOT, stdio: 'inherit' })
+  return result.status ?? 1
 }
 
 /**
@@ -406,28 +407,42 @@ export function cmdReset(dryRun) {
   const tailscaleOn = tailscaleEnabled(getRunningComposeFiles()) || loadState()?.addons?.includes('tailscale')
   console.log(`\n  ${YELLOW}⚠${RESET_COLOR}  RESET: This will remove all containers, volumes, and local images.\n`)
 
-  const composeFiles = ['compose.grants-ui.yml', 'compose.land-grants.yml']
+  // The Land Grants overlay only extends services from the core stack. Running
+  // it with compose.infra alone makes Compose reject the project because
+  // `grants-ui` has no image or build context. That was the source of the
+  // repeatable exit 1 in the interactive reset command.
+  const composeStacks = [
+    ['compose.infra.yml', 'compose.grants-ui.yml'],
+    ['compose.infra.yml', 'compose.grants-ui.yml', 'compose.land-grants.yml']
+  ]
   let status = 0
+  const recordStatus = (commandStatus) => {
+    if (status === 0 && commandStatus !== 0) status = commandStatus
+  }
 
-  for (const file of composeFiles) {
+  for (const files of composeStacks) {
+    const fileArgs = files.flatMap((file) => ['-f', file])
     console.log(
-      `  ${DIM}▶${RESET_COLOR}  docker compose -f ${file} -f compose.infra.yml down --volumes --remove-orphans --rmi local\n`
+      `  ${DIM}▶${RESET_COLOR}  docker compose ${fileArgs.join(' ')} down --volumes --remove-orphans --rmi local\n`
     )
 
     if (!dryRun) {
       const result = spawnSync(
         'docker',
-        ['compose', '-f', file, '-f', 'compose.infra.yml', 'down', '--volumes', '--remove-orphans', '--rmi', 'local'],
+        ['compose', ...fileArgs, 'down', '--volumes', '--remove-orphans', '--rmi', 'local'],
         {
           cwd: ROOT,
           stdio: 'inherit'
         }
       )
-      status ||= result.status ?? 1
+      recordStatus(result.status ?? 1)
     }
   }
 
-  const volList = spawnSync('docker', ['volume', 'ls', '--format', '{{.Name}}'], { encoding: 'utf8' })
+  const volList = dryRun
+    ? { status: 0, stdout: '' }
+    : spawnSync('docker', ['volume', 'ls', '--format', '{{.Name}}'], { encoding: 'utf8' })
+  recordStatus(volList.status ?? 1)
   const anonVols = (volList.stdout ?? '')
     .trim()
     .split('\n')
@@ -435,7 +450,7 @@ export function cmdReset(dryRun) {
 
   if (anonVols.length) {
     console.log(`\n  ${DIM}Removing ${anonVols.length} anonymous volume(s)…${RESET_COLOR}\n`)
-    runDockerOrPreview(dryRun, ['volume', 'rm', ...anonVols], `docker volume rm ${anonVols.join(' ')}`)
+    recordStatus(runDockerOrPreview(dryRun, ['volume', 'rm', ...anonVols], `docker volume rm ${anonVols.join(' ')}`))
   }
 
   // Remove specific defradigital images (mirrors docker:reset npm script)
@@ -445,19 +460,39 @@ export function cmdReset(dryRun) {
     'defradigital/land-grants-api',
     'defradigital/land-grants-postgres-seeded'
   ]
-  console.log(`\n  ${DIM}Removing defradigital images…${RESET_COLOR}\n`)
-  runDockerOrPreview(dryRun, ['rmi', '-f', ...resetImages], `docker rmi -f ${resetImages.join(' ')}`)
+  const imageList = dryRun
+    ? { status: 0, stdout: resetImages.join('\n') }
+    : spawnSync('docker', ['images', '--format', '{{.Repository}}'], { encoding: 'utf8' })
+  recordStatus(imageList.status ?? 1)
+  const availableImages = new Set((imageList.stdout ?? '').trim().split('\n').filter(Boolean))
+  const imagesToRemove = resetImages.filter((image) => availableImages.has(image))
+  if (imagesToRemove.length) {
+    console.log(`\n  ${DIM}Removing defradigital images…${RESET_COLOR}\n`)
+    recordStatus(
+      runDockerOrPreview(dryRun, ['rmi', '-f', ...imagesToRemove], `docker rmi -f ${imagesToRemove.join(' ')}`)
+    )
+  }
 
-  // Remove named postgres volume (mirrors docker:reset npm script)
+  // A missing image or volume means that part of reset has already completed;
+  // do not turn that harmless state into a failed reset.
   const postgresVolume = 'grants-ui_postgres_data'
-  console.log(`  ${DIM}Removing volume ${postgresVolume}…${RESET_COLOR}\n`)
-  runDockerOrPreview(dryRun, ['volume', 'rm', '-f', postgresVolume], `docker volume rm -f ${postgresVolume}`)
+  const postgresVolumeCheck = dryRun
+    ? { status: 0 }
+    : spawnSync('docker', ['volume', 'inspect', postgresVolume], { encoding: 'utf8' })
+  if (postgresVolumeCheck.status === 0) {
+    console.log(`  ${DIM}Removing volume ${postgresVolume}…${RESET_COLOR}\n`)
+    recordStatus(
+      runDockerOrPreview(dryRun, ['volume', 'rm', '-f', postgresVolume], `docker volume rm -f ${postgresVolume}`)
+    )
+  }
 
   console.log(`  ${DIM}Removing local SonarQube stack…${RESET_COLOR}\n`)
-  runDockerOrPreview(
-    dryRun,
-    ['compose', '-f', SONAR.composeFile, 'down', '--volumes'],
-    `docker compose -f ${SONAR.composeFile} down --volumes`
+  recordStatus(
+    runDockerOrPreview(
+      dryRun,
+      ['compose', '-f', SONAR.composeFile, 'down', '--volumes'],
+      `docker compose -f ${SONAR.composeFile} down --volumes`
+    )
   )
   if (!dryRun) {
     try {
@@ -467,10 +502,12 @@ export function cmdReset(dryRun) {
     }
   }
 
-  if (status === 0 && tailscaleOn) status = disableTailscaleServe(dryRun)
-  if (!dryRun && status === 0) {
+  // These are independent cleanup steps: make the best possible reset even
+  // when an earlier Docker command failed.
+  if (tailscaleOn) recordStatus(disableTailscaleServe(dryRun))
+  if (!dryRun) {
     clearState()
-    console.log(`  ${GREEN}✔${RESET_COLOR}  Reset complete.\n`)
+    if (status === 0) console.log(`  ${GREEN}✔${RESET_COLOR}  Reset complete.\n`)
   }
   return status
 }
