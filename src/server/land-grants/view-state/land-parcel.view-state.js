@@ -280,8 +280,6 @@ export function deleteActionFromState(state, parcel, action) {
     // Remove parcel if no actions remain
     if (Object.keys(newState.landParcels[parcel].actionsObj).length === 0) {
       delete newState.landParcels[parcel]
-    } else {
-      newState.landParcels[parcel].updatedAt = Date.now()
     }
 
     // Remove the land parcels key if it is empty

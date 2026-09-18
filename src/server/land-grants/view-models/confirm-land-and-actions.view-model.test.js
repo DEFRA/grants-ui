@@ -208,7 +208,7 @@ describe('buildConfirmLandAndActionsViewModel', () => {
     expect(model.parcels.map((parcel) => parcel.reference)).toEqual(['CD9999 1111', 'SD1234 5678'])
   })
 
-  it('puts newly added and edited parcels first without changing the previous state', () => {
+  it('puts added and edited parcels first but preserves their timestamp and order on deletion', () => {
     const now = vi.spyOn(Date, 'now')
     const firstParcel = { sheetId: 'SD1234', parcelId: '5678', size: landParcels['SD1234-5678'].size }
     const secondParcel = { sheetId: 'CD9999', parcelId: '1111', size: landParcels['CD9999-1111'].size }
@@ -229,7 +229,8 @@ describe('buildConfirmLandAndActionsViewModel', () => {
 
       now.mockReturnValue(4000)
       const removed = deleteActionFromState(added, 'SD1234-5678', 'CSAM3')
-      expect(references(removed)).toEqual(['SD1234 5678', 'CD9999 1111'])
+      expect(removed.landParcels['SD1234-5678'].updatedAt).toBe(added.landParcels['SD1234-5678'].updatedAt)
+      expect(references(removed)).toEqual(['CD9999 1111', 'SD1234 5678'])
       expect(references(added)).toEqual(['CD9999 1111', 'SD1234 5678'])
     } finally {
       now.mockRestore()
