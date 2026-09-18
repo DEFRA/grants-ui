@@ -33,6 +33,7 @@ describe('land-parcel-state.manager', () => {
         landParcels: {
           'AB1234-5678': {
             size: { value: 10, unit: 'ha' },
+            updatedAt: expect.any(Number),
             actionsObj: {
               SAM1: { description: 'Action 1', value: '10', unit: 'ha' }
             }
