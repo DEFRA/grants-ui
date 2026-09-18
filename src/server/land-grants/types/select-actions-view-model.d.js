@@ -5,6 +5,8 @@
  * @property {string} version - Action version
  * @property {boolean} [quantityRequired] - Whether the user must enter a quantity
  * @property {number} [ratePerUnitGbp] - Payment rate per unit in GBP
+ * @property {string | null} [displayUnit] - Singular unit label used for the payment rate
+ * @property {string | null} [displayUnitPlural] - Plural unit label used beside the quantity input
  * @property {boolean} [quantityRequired] - Backend says the user must enter a quantity
  * @property {boolean} [sssiConsentRequired] - Action requires SSSI consent
  * @property {boolean} [heferRequired] - Action requires HEFER

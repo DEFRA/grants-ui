@@ -7,7 +7,8 @@ describe('action-view-model.mapper', () => {
       const action = {
         code: 'SAM1',
         description: 'Test Action 1',
-        ratePerUnitGbp: 100.5
+        ratePerUnitGbp: 100.5,
+        displayUnit: 'hectare'
       }
       const addedActions = []
 
@@ -23,11 +24,38 @@ describe('action-view-model.mapper', () => {
       })
     })
 
+    it('uses the backend display unit for the payment rate', () => {
+      const action = {
+        code: 'WBD1',
+        description: 'Manage ponds',
+        ratePerUnitGbp: 257,
+        displayUnit: 'pond'
+      }
+
+      const result = mapActionToViewModel(action, [])
+
+      expect(result.hint.html).toBe('Payment rate per year: <strong>£257.00 per pond</strong>')
+    })
+
+    it('escapes the backend display unit', () => {
+      const action = {
+        code: 'WBD1',
+        description: 'Manage ponds',
+        ratePerUnitGbp: 257,
+        displayUnit: '<pond>'
+      }
+
+      const result = mapActionToViewModel(action, [])
+
+      expect(result.hint.html).toContain('per &lt;pond&gt;')
+    })
+
     it('should map action with rate per unit and per agreement', () => {
       const action = {
         code: 'SAM2',
         description: 'Test Action 2',
         ratePerUnitGbp: 75.25,
+        displayUnit: 'hectare',
         ratePerAgreementPerYearGbp: 50
       }
       const addedActions = []
@@ -70,16 +98,29 @@ describe('action-view-model.mapper', () => {
       expect(result.checked).toBe(false)
     })
 
-    it('should handle action with undefined rates', () => {
+    it('should handle action with undefined rates and display unit', () => {
       const action = {
         code: 'SAM3',
-        description: 'Test Action 3'
+        description: 'Test Action 3',
+        displayUnit: 'hectare'
       }
       const addedActions = []
 
       const result = mapActionToViewModel(action, addedActions)
 
       expect(result.hint.html).toBe('Payment rate per year: <strong>£undefined per hectare</strong>')
+    })
+
+    it('does not assume a unit when the backend display unit is absent', () => {
+      const action = {
+        code: 'SAM3',
+        description: 'Test Action 3',
+        ratePerUnitGbp: 100
+      }
+
+      const result = mapActionToViewModel(action, [])
+
+      expect(result.hint.html).toBe('Payment rate per year: <strong>£100.00</strong>')
     })
   })
 
