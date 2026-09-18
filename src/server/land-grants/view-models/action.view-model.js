@@ -60,14 +60,14 @@ function getGroupConsentHint(consents, actionCount) {
  */
 export function mapActionToViewModel(action, addedActions) {
   const existingActions = addedActions.map((a) => a.code)
-  const rateUnit = escapeHtml(action.displayUnit ?? 'hectare')
+  const rateUnit = action.displayUnit ? ` per ${escapeHtml(action.displayUnit)}` : ''
   return {
     value: action.code,
     text: action.description,
     checked: existingActions.includes(action.code),
     hint: {
       html:
-        `Payment rate per year: <strong>£${action.ratePerUnitGbp?.toFixed(2)} per ${rateUnit}</strong>` +
+        `Payment rate per year: <strong>£${action.ratePerUnitGbp?.toFixed(2)}${rateUnit}</strong>` +
         (action.ratePerAgreementPerYearGbp
           ? ` and <strong>£${action.ratePerAgreementPerYearGbp}</strong> per agreement`
           : '')
