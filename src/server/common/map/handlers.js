@@ -18,7 +18,7 @@ import { buildOsBasemapStyle, fetchOsTile } from './os-maps.js'
 import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
-const TILE_CACHE_MAX_AGE_SECONDS = config.get('mapTileCacheMaxAgeSeconds')
+const TILE_CACHE_MAX_AGE_SECONDS = config.get('maps.land.tileCacheMaxAgeSeconds')
 const SERVICE_LAND_GRANTS = 'land-grants-api'
 const CACHE_CONTROL_HEADER = 'Cache-Control'
 // Generic, so the upstream land-grants response body never reaches the browser;

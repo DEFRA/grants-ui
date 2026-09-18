@@ -37,6 +37,16 @@ Then('the footer should contain the following links', async function (dataTable)
   }
 })
 
+Then('(the user )should see {string} in their available grants', async function (grantName) {
+  const link = this.page.locator(`//main//a[contains(text(),'${grantName}')]`)
+  await expect(link).toBeVisible()
+})
+
+Then('(the user )should not see {string} in their available grants', async function (grantName) {
+  const link = this.page.locator(`//main//a[contains(text(),'${grantName}')]`)
+  await expect(link).not.toBeVisible()
+})
+
 Then('the page is analyzed for accessibility', async function () {
   await analyzeAccessibility(this.page)
 })
