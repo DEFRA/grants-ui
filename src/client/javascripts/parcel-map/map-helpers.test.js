@@ -13,8 +13,33 @@ import {
   resolveFeatureId,
   showTooltip,
   hideTooltip,
-  htmlEncode
+  htmlEncode,
+  fitToParcels
 } from './map-helpers.js'
+import { makeMlMap } from './test-helpers.js'
+
+describe('fitToParcels', () => {
+  const BBOX = { minLng: -1, minLat: 51, maxLng: 1, maxLat: 53 }
+
+  it('does nothing when ml or bbox is missing', () => {
+    const ml = makeMlMap()
+    fitToParcels(null, BBOX)
+    fitToParcels(ml, null)
+    expect(ml.fitBounds).not.toHaveBeenCalled()
+  })
+
+  it('fits without animating by default (instant initial fit)', () => {
+    const ml = makeMlMap()
+    fitToParcels(ml, BBOX)
+    expect(ml.fitBounds).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ animate: false }))
+  })
+
+  it('animates when explicitly requested (e.g. a user-triggered reset)', () => {
+    const ml = makeMlMap()
+    fitToParcels(ml, BBOX, { animate: true })
+    expect(ml.fitBounds).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ animate: true }))
+  })
+})
 
 describe('buildParcelLayers', () => {
   it('labels with Arial Regular', () => {

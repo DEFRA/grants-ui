@@ -196,7 +196,10 @@ describe('parcel-map web component', () => {
 
     it('removes skeleton once ready', async () => {
       const el = await mountReady()
-      expect(el.querySelector('[role="status"]')).toBeNull()
+      // Distinguishes the (removed) skeleton from the reset button's
+      // permanent aria-live announcer, which also carries role="status"
+      // but no aria-label.
+      expect(el.querySelector('[role="status"][aria-label]')).toBeNull()
     })
 
     it('dispatches parcel-map:ready exactly once after a disconnect-while-loading then reconnect', async () => {

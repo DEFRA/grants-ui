@@ -14,11 +14,21 @@ export function makeMlMap(overrides = {}) {
     setPaintProperty: vi.fn(),
     project: vi.fn().mockReturnValue({ x: 100, y: 200 }),
     getCanvas: vi.fn().mockReturnValue({ style: {} }),
+    getCenter: vi.fn().mockReturnValue({ lng: 0, lat: 0 }),
+    getZoom: vi.fn().mockReturnValue(10),
     on: vi.fn((event, layerOrCb, cb) => {
       const key = cb ? `${event}:${layerOrCb}` : event
       const handler = cb ?? layerOrCb
       listeners[key] = listeners[key] ?? []
       listeners[key].push(handler)
+    }),
+    once: vi.fn((event, cb) => {
+      const wrapped = (eventObj) => {
+        listeners[event] = (listeners[event] ?? []).filter((fn) => fn !== wrapped)
+        cb(eventObj)
+      }
+      listeners[event] = listeners[event] ?? []
+      listeners[event].push(wrapped)
     }),
     off: vi.fn((event, layerOrCb, cb) => {
       const key = cb ? `${event}:${layerOrCb}` : event
