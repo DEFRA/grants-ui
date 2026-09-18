@@ -777,9 +777,8 @@ describe('DeclarationPageController', () => {
             {
               claimNumber: 'REF123-C1',
               status: 'IN_PROGRESS',
-              totalEligibleArea: 24.95,
-              unit: 'ha',
-              totalClaimAmountPence: 150000
+              entitlementId: 'mongo-entitlement-id',
+              claimAmountPence: 150000
             }
           ]
         },
@@ -811,47 +810,38 @@ describe('DeclarationPageController', () => {
     })
 
     test('buildSubmissionData builds a claim payload from the current claim', () => {
-      claimController.buildSubmissionData(claimRequest, claimContext)
-
-      expect(transformStateObjectToGasApplication).toHaveBeenCalledWith(
-        { clientRef: 'ref123', sbi: 'sbi123', crn: '1234567890', frn: 'undefined' },
-        {
-          claimNumber: 'REF123-C1',
-          totalEligibleArea: 24.95,
-          unit: 'ha',
-          totalClaimAmountPence: 150000
+      expect(claimController.buildSubmissionData(claimRequest, claimContext)).toEqual({
+        metadata: {
+          grantCode: 'woodland',
+          clientRef: 'ref123',
+          clientClaimRef: 'ref123-c1',
+          sbi: 'sbi123',
+          crn: '1234567890',
+          frn: 'undefined',
+          configVersion: '1.1.1',
+          submittedAt: expect.any(String)
         },
-        expect.any(Function),
-        '1.1.1'
-      )
+        claim: { entitlementId: 'mongo-entitlement-id', totalClaimAmountPence: 150000 }
+      })
     })
 
     test.each([
       ['no current claim', { claims: [] }],
       ['no claims array at all', {}],
       [
-        'a missing total eligible area',
-        { claims: [{ claimNumber: 'REF123-C1', status: 'IN_PROGRESS', unit: 'ha', totalClaimAmountPence: 150000 }] }
-      ],
-      [
-        'a missing unit',
-        {
-          claims: [
-            { claimNumber: 'REF123-C1', status: 'IN_PROGRESS', totalEligibleArea: 24.95, totalClaimAmountPence: 150000 }
-          ]
-        }
+        'a missing entitlement ID',
+        { claims: [{ claimNumber: 'REF123-C1', status: 'IN_PROGRESS', claimAmountPence: 150000 }] }
       ],
       [
         'a missing claim amount',
-        { claims: [{ claimNumber: 'REF123-C1', status: 'IN_PROGRESS', totalEligibleArea: 24.95, unit: 'ha' }] }
+        { claims: [{ claimNumber: 'REF123-C1', status: 'IN_PROGRESS', entitlementId: 'mongo-entitlement-id' }] }
       ]
     ])('buildSubmissionData refuses to build a claim payload with %s', (_label, stateOverrides) => {
       const context = { ...claimContext, state: { $$__referenceNumber: 'REF123', ...stateOverrides } }
 
       expect(() => claimController.buildSubmissionData(claimRequest, context)).toThrow(
-        'Cannot submit a claim with missing eligible area, unit or claim amount'
+        'Cannot submit a claim with missing entitlement ID or claim amount'
       )
-      expect(transformStateObjectToGasApplication).not.toHaveBeenCalled()
     })
 
     test('buildSubmissionData accepts a genuine zero claim amount', () => {
@@ -863,9 +853,8 @@ describe('DeclarationPageController', () => {
             {
               claimNumber: 'REF123-C1',
               status: 'IN_PROGRESS',
-              totalEligibleArea: 0,
-              unit: 'ha',
-              totalClaimAmountPence: 0
+              entitlementId: 'mongo-entitlement-id',
+              claimAmountPence: 0
             }
           ]
         }
@@ -880,74 +869,55 @@ describe('DeclarationPageController', () => {
       const handler = claimController.makePostRouteHandler()
 
       await expect(handler(claimRequest, context, mockH)).rejects.toThrow(
-        'Cannot submit a claim with missing eligible area, unit or claim amount'
+        'Cannot submit a claim with missing entitlement ID or claim amount'
       )
 
       expect(submitClaim).not.toHaveBeenCalled()
     })
 
-    test('the claim answer transformer forwards only the claim fields', () => {
-      claimController.buildSubmissionData(claimRequest, claimContext)
-
-      const transformAnswers = transformStateObjectToGasApplication.mock.calls.at(-1)[2]
-
-      expect(
-        transformAnswers({
-          referenceNumber: 'REF123',
-          claimNumber: 'REF123-C1',
-          totalEligibleArea: 24.95,
-          unit: 'ha',
-          totalClaimAmountPence: 150000,
-          landParcels: ['SD1234'],
-          extra: 'nope'
-        })
-      ).toEqual({
-        referenceNumber: 'REF123',
-        claimNumber: 'REF123-C1',
-        totalEligibleArea: 24.95,
-        unit: 'ha',
-        totalClaimAmountPence: 150000
-      })
-    })
-
-    test('POST submits the claim, marks it submitted and redirects to claim confirmation', async () => {
-      mockCacheService.getState.mockResolvedValue({
-        $$__referenceNumber: 'REF123',
-        claims: [
-          {
-            claimNumber: 'REF123-C1',
-            status: 'IN_PROGRESS',
-            totalEligibleArea: 24.95,
-            unit: 'ha',
-            totalClaimAmountPence: 150000
-          }
-        ]
-      })
-
-      const handler = claimController.makePostRouteHandler()
-      await handler(claimRequest, claimContext, mockH)
-
-      expect(submitClaim).toHaveBeenCalledWith(
-        'woodland',
-        expect.objectContaining({ transformedApp: true }),
-        claimRequest
-      )
-
-      expect(mockCacheService.setState).toHaveBeenCalledWith(
-        claimRequest,
-        expect.objectContaining({
-          applicationStatus: 'CLAIM_SUBMITTED',
+    test.each([statusCodes.noContent, statusCodes.created])(
+      'POST marks the claim submitted after a successful GAS response (%i)',
+      async (status) => {
+        submitClaim.mockResolvedValue({ status })
+        mockCacheService.getState.mockResolvedValue({
+          $$__referenceNumber: 'REF123',
           claims: [
-            expect.objectContaining({
+            {
               claimNumber: 'REF123-C1',
-              status: 'SUBMITTED',
-              submittedAt: '2025-01-01T00:00:00.000Z'
-            })
+              status: 'IN_PROGRESS',
+              entitlementId: 'mongo-entitlement-id',
+              claimAmountPence: 150000
+            }
           ]
         })
-      )
 
-      expect(mockH.redirect).toHaveBeenCalledWith('/woodland/claim-confirmation')
-    })
+        const handler = claimController.makePostRouteHandler()
+        await handler(claimRequest, claimContext, mockH)
+
+        expect(submitClaim).toHaveBeenCalledWith(
+          'woodland',
+          expect.objectContaining({
+            claim: { entitlementId: 'mongo-entitlement-id', totalClaimAmountPence: 150000 }
+          }),
+          claimRequest
+        )
+
+        expect(mockCacheService.setState).toHaveBeenCalledWith(
+          claimRequest,
+          expect.objectContaining({
+            applicationStatus: 'CLAIM_SUBMITTED',
+            claims: [
+              expect.objectContaining({
+                claimNumber: 'REF123-C1',
+                status: 'SUBMITTED',
+                submittedAt: expect.any(String)
+              })
+            ]
+          })
+        )
+
+        expect(mockH.redirect).toHaveBeenCalledWith('/woodland/claim-confirmation')
+      }
+    )
   })
 })

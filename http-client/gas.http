@@ -410,12 +410,40 @@ Authorization: Bearer {{serviceToken}}
   }
 }
 
+
 ### Get available claim entitlements for Example Grant With Auth
+
+@clientRef = wmp-ehu-fkp
 
 # @name getAvailableClaimEntitlements
 
-GET {{gasUrl}}/grants/example-grant-with-auth/entitlements/EGWA-123-ABC/available-claims HTTP/1.1
+GET {{gasUrl}}/grants/woodland/entitlements/{{clientRef}}/available-claims HTTP/1.1
 Authorization: Bearer {{serviceToken}}
+
+### Create entitlement
+
+# Note this is an admin endpoint which requires a special access token
+# See docs/GAS-APPLICATION-TO-AWAITING-CLAIM.md:193
+# §6: Mint a temporary Grant Admin token and create the entitlement
+
+# @name createEntitlement
+
+POST {{gasUrl}}/grant-admin/grants/woodland/applications/{{clientRef}}/claims/entitlements HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer 7d41c883-ada4-45d5-aed4-af020dfbb66f
+
+{
+  "clientRef": "{{clientRef}}",
+  "grantCode": "woodland",
+  "claimCode": "ENT_CS_CAPITAL_PA3",
+  "data": {
+    "totalHectares": {
+      "value": 5000
+    }
+  }
+}
+
+
 
 ### Get health
 

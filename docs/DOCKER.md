@@ -255,7 +255,7 @@ What it provides:
 
 - **`fg-gas-backend`** — the GAS API service (`defradigital/fg-gas-backend:latest`) exposed on port `3102`, connected to MongoDB and Floci.
 - **Floci init script** — mounts `compose/floci/gas/20-gas.sh` to provision the required SNS/SQS FIFO queues on startup.
-- **Automatic token seeding** — the `mongo-ready` service waits for `fg-gas-backend` to become healthy, then upserts a pre-hashed access token into MongoDB so `grants-ui` can authenticate against GAS immediately.
+- **Automatic token seeding** — GAS seeds the pre-hashed local Grants UI access token during its own startup, once `mongo-ready` has initialised the MongoDB replica set.
 - **`grants-ui` environment** — sets `GAS_API_URL` and `GAS_API_AUTH_TOKEN` on the `grants-ui` container so no manual `.env` changes are needed.
 
 To start the stack with GAS manually (without the TUI):
