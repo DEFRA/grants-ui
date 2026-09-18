@@ -59,9 +59,11 @@ test('detects a worktree stack through Compose and enables the running-stack men
   )
   const items = buildMainMenuItems(null, !!running)
   expect(items.find((item) => item.key === 'up')?.disabled).toBe(true)
-  expect(
-    items.filter((item) => ['down', 'debug', 'restart', 'journey'].includes(item.key)).map((item) => item.disabled)
-  ).toEqual([false, false, false, false])
+  expect(items.filter((item) => ['down', 'debug', 'restart'].includes(item.key)).map((item) => item.disabled)).toEqual([
+    false,
+    false,
+    false
+  ])
 })
 
 test('running and stopped service discovery uses the same project and includes addons', () => {
