@@ -6,7 +6,7 @@ Development-only tools and routes for testing and debugging. Automatically enabl
 
 Development tools are controlled by the `DEV_TOOLS_ENABLED` environment variable (default: `true` in development, `false` in production).
 
-Routes are only registered when `devTools.enabled` is `true` **and** `NODE_ENV !== 'production'` **and** `ENVIRONMENT=local` (see `isDevToolsEnabled()` in `src/server/dev-tools/dev-tools-enabled.js`).
+Routes are only registered when `devTools.enabled` is `true` **and** `NODE_ENV !== 'production'` **and** `ENVIRONMENT=local` (see `isDevToolsEnabled()` in `src/server/common/helpers/dev-tools-enabled.js`).
 
 Implementation lives in `src/server/dev-tools/` and is only registered when all of the above conditions are met.
 
@@ -157,9 +157,8 @@ Prefer not to remember slugs and flags? Run `gt` with no arguments to open the i
 2. **CRN** — only asked when a journey has more than one known-good CRN (e.g. woodland); otherwise the right CRN is chosen automatically.
 3. **Headed or headless** — headless runs in the background (bundled Chromium); headed watches it in your installed Google Chrome.
 4. **Clear state?** — keep the saved application state (resume where it left off) or reset to step 1, matching the footer "Clear application state" link.
-5. **Land parcel actions?** — only asked for journeys with a map step: **API Data**, or **Mock no eligible actions** (see [below](#land-parcels-with-no-eligible-actions)).
-6. **Common land or shared grazing?** — only asked for journeys with a `yesNo` step that supports it (currently woodland): **Yes** shows the guidance page and adds the "What you need to do" section to the confirmation page; **No** is the standard journey with only the default confirmation content — so either branch is reachable without editing the journey file.
-7. **Stop on which page?** — headed runs only: halt the browser on a chosen page for inspection, or run to the end.
+5. **Common land or shared grazing?** — only asked for journeys with a `yesNo` step that supports it (currently woodland): **Yes** shows the guidance page and adds the "What you need to do" section to the confirmation page; **No** is the standard journey with only the default confirmation content — so either branch is reachable without editing the journey file.
+6. **Run '\<journey\>' how?** — one combined menu: **Run to the end** (default), **Window closed** (see [below](#application-window-closed)), **Mock no eligible actions** for journeys with a map step (see [below](#land-parcels-with-no-eligible-actions)), or — headed runs only — halt the browser on a chosen page for inspection.
 
 Journeys flagged as won't-complete (e.g. **farm-payments**, **methane**) make you acknowledge why before running. The `journey ⇢` item is disabled until the Docker stack is up; for a plain `npm run dev` server use the `gt journey <slug>` form above instead.
 
@@ -170,6 +169,7 @@ Under the hood this launches a Chromium browser (reusing the acceptance suite's 
 | `--parcel <ref>`          | first available parcel            | Land parcel the `mapParcel` step selects, e.g. `SD6843-7039`. Overrides the step's `value` without editing the journey file. The ref must be one `/api/map/parcels` returns, or the step fails listing what was available.                                                                           |
 | `--common-land <yes\|no>` | step's own `value` (woodland: no) | Answers a `yesNo` step whose `overrideKey` is `commonLand` this way instead of its hardcoded `value` — e.g. `woodland`'s grazing-rights question, to reach the common-land guidance page and the confirmation page's extra section.                                                                  |
 | `--mock-no-actions`       | off                               | Makes land parcels report **no eligible actions**, so the map page's "There are no eligible actions for this parcel" error can be reached. See [Land parcels with no eligible actions](#land-parcels-with-no-eligible-actions) below.                                                                |
+| `--mock-window-closed`    | off                               | Makes the app report the grant's **application window as closed**, redirecting to the interruption page. See [Application window closed](#application-window-closed) below.                                                                                                                          |
 | `--crn <crn>`             | journey's allowlisted CRN         | DefraID CRN to sign in as. Defaults per journey to a CRN on that grant's allowlist — most grants are `allowAll` (uses `1102838829`), but **woodland** needs `1100943757`/`1100943838`, and **farm-payments** uses `1102838829`. The interactive menu lets you pick when a journey has more than one. |
 | `--stop <n\|sect>`        | run to the end                    | Stop before step `n` (1-indexed), or run only section `sect`                                                                                                                                                                                                                                         |
 | `--headed`                | headless                          | Watch the run in your installed Google Chrome (headless uses bundled Chromium)                                                                                                                                                                                                                       |
@@ -207,7 +207,7 @@ The mock below is still useful for forcing the state on _any_ parcel and any CRN
 gt journey grasslands --mock-no-actions --headed    # or pick "Mock no eligible actions" in the TUI
 ```
 
-It sets a `dev_mock_no_actions=1` cookie, which `MapSelectPageController` honours by treating every selected parcel as having no eligible actions. Because it is request-scoped it needs no restart and works on either land-grants stack. It is read through `isNoActionsMockEnabled()` (`src/server/dev-tools/mock-overrides.js`), which returns `false` whenever `devTools.enabled` is off — so the cookie is inert in a deployed environment.
+It sets a `dev_mock_no_actions=1` cookie, which `MapSelectPageController` honours by treating every selected parcel as having no eligible actions. Because it is request-scoped it needs no restart and works on either land-grants stack. It is read through `isNoActionsMockEnabled()` (`src/server/common/helpers/mock-overrides.js`), which returns `false` whenever `devTools.enabled` is off — so the cookie is inert in a deployed environment.
 
 The run is _expected_ to stop on `/select-land-parcel`; the driver prints the error summary and exits non-zero, which is the check.
 
@@ -219,6 +219,27 @@ document.cookie = 'dev_mock_no_actions=; Max-Age=0; path=/' // off
 ```
 
 The `gt journey --mock-no-actions` path needs no cleanup — it sets the cookie on a throwaway Playwright context that is discarded when the run ends.
+
+### Application window closed
+
+A grant's `metadata.isApplicationWindowOpen: false` redirects new/draft applicants to the "Application window closed" page (existing applications with a submitted status are unaffected). Testing that for real means editing a grant's config-broker YAML fixture and bumping its version to dodge the local config-broker's re-pull-on-`docker:up` caching — awkward for a quick check.
+
+```sh
+gt journey example-grant-with-auth --mock-window-closed --headed    # or pick "Window closed" in the TUI
+```
+
+This sets a `dev_mock_window_closed=1` cookie, honoured by `applicationWindowClosedRedirect` and `serviceRootRedirect` (`src/server/common/request-pipeline/redirects/`) as if the grant's metadata had the window closed, regardless of what the grant is actually configured with. It's read through `isWindowClosedMockEnabled()` (`src/server/common/helpers/mock-overrides.js`), which returns `false` whenever `devTools.enabled` is off — so the cookie is inert in a deployed environment.
+
+The run is _expected_ to stop immediately on `/{slug}/application-window-closed`; the driver reports it as stuck there, which is the check.
+
+To poke at it by hand:
+
+```js
+document.cookie = 'dev_mock_window_closed=1' // on
+document.cookie = 'dev_mock_window_closed=; Max-Age=0; path=/' // off
+```
+
+The `gt journey --mock-window-closed` path needs no cleanup — same throwaway-context mechanism as `--mock-no-actions` above.
 
 ### Adding a new journey
 

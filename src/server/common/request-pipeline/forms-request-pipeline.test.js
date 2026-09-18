@@ -1,11 +1,16 @@
 import { describe, expect, test, vi, beforeEach } from 'vitest'
 import { applicationDeletedRedirect } from './redirects/application-deleted-redirect.js'
+import { applicationWindowClosedRedirect } from './redirects/application-window-closed-redirect.js'
 import { formsRequestPipeline } from './forms-request-pipeline.js'
 import { enforcePagePermission } from './permissions/enforce-page-permission.js'
 import { formsStatusRedirect } from './redirects/forms-status-redirect.js'
 
 vi.mock('./redirects/application-deleted-redirect.js', () => ({
   applicationDeletedRedirect: vi.fn()
+}))
+
+vi.mock('./redirects/application-window-closed-redirect.js', () => ({
+  applicationWindowClosedRedirect: vi.fn()
 }))
 
 vi.mock('./permissions/enforce-page-permission.js', () => ({
@@ -26,6 +31,8 @@ describe('formsRequestPipeline', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(applicationDeletedRedirect).mockResolvedValue(h.continue)
+    vi.mocked(applicationWindowClosedRedirect).mockResolvedValue(h.continue)
   })
 
   test('returns deleted redirect when applicationDeletedRedirect does not continue', async () => {
@@ -36,18 +43,31 @@ describe('formsRequestPipeline', () => {
 
     expect(applicationDeletedRedirect).toHaveBeenCalledWith(request, h, context)
 
+    expect(applicationWindowClosedRedirect).not.toHaveBeenCalled()
     expect(formsStatusRedirect).not.toHaveBeenCalled()
     expect(enforcePagePermission).not.toHaveBeenCalled()
     expect(result).toBe(redirectResponse)
   })
 
-  test('calls status redirect when applicationDeletedRedirect continues', async () => {
-    vi.mocked(applicationDeletedRedirect).mockResolvedValue(h.continue)
+  test('returns window closed redirect when applicationWindowClosedRedirect does not continue', async () => {
+    const redirectResponse = { statusCode: 302 }
+    vi.mocked(applicationWindowClosedRedirect).mockResolvedValue(redirectResponse)
+
+    const result = await formsRequestPipeline(request, h, context)
+
+    expect(applicationWindowClosedRedirect).toHaveBeenCalledWith(request, h, context)
+    expect(formsStatusRedirect).not.toHaveBeenCalled()
+    expect(enforcePagePermission).not.toHaveBeenCalled()
+    expect(result).toBe(redirectResponse)
+  })
+
+  test('calls status redirect once the earlier pipeline steps continue', async () => {
     vi.mocked(formsStatusRedirect).mockResolvedValue({ statusCode: 302 })
 
     await formsRequestPipeline(request, h, context)
 
     expect(applicationDeletedRedirect).toHaveBeenCalledWith(request, h, context)
+    expect(applicationWindowClosedRedirect).toHaveBeenCalledWith(request, h, context)
     expect(formsStatusRedirect).toHaveBeenCalledWith(request, h, context)
   })
 
@@ -56,7 +76,6 @@ describe('formsRequestPipeline', () => {
       statusCode: 302
     }
     vi.mocked(formsStatusRedirect).mockResolvedValue(redirectResponse)
-    vi.mocked(applicationDeletedRedirect).mockResolvedValue(h.continue)
 
     const result = await formsRequestPipeline(request, h, context)
 
@@ -70,7 +89,6 @@ describe('formsRequestPipeline', () => {
       statusCode: 403
     }
 
-    vi.mocked(applicationDeletedRedirect).mockResolvedValue(h.continue)
     vi.mocked(formsStatusRedirect).mockResolvedValue(h.continue)
     vi.mocked(enforcePagePermission).mockResolvedValue(forbiddenResponse)
 
