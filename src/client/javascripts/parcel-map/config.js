@@ -51,8 +51,8 @@ export const LAYER_ID_LABEL = 'parcels-label'
 export const LAYER_ID_LABEL_CLUSTER = 'parcels-label-cluster'
 export const LAYER_ID_LABEL_CLUSTER_COUNT = 'parcels-label-cluster-count'
 
-export const LABEL_CLUSTER_RADIUS_PX = 50
-export const LABEL_CLUSTER_MAX_ZOOM = 13
+export const LABEL_CLUSTER_RADIUS_PX = 85
+export const LABEL_CLUSTER_MAX_ZOOM = 10
 export const LABEL_CLUSTER_COLOR = COLOR_GOV_UK_BLUE
 export const LABEL_CLUSTER_RADIUS = 14
 export const LABEL_CLUSTER_TEXT_COLOR = '#ffffff'
