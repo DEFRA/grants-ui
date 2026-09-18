@@ -1,9 +1,9 @@
 /* eslint-disable no-console */
 
-import { spawnSync } from 'node:child_process'
+import { execFile, spawnSync } from 'node:child_process'
 import { inspect } from 'node:util'
 
-import { BOLD, CYAN, DIM, RED, RESET_COLOR } from './constants.js'
+import { BOLD, CYAN, DIM, RED, RESET_COLOR, ROOT } from './constants.js'
 
 const MONGO_SERVICE = process.env.GRANTS_UI_MONGO_SERVICE || 'mongodb'
 const MONGO_DB = process.env.GRANTS_UI_BACKEND_DB || 'grants-ui-backend'
@@ -40,6 +40,15 @@ export function buildStateScript(query) {
   )
 }
 
+/** Only load selection metadata, never other businesses' application answers. */
+export function buildStateCatalogScript() {
+  return (
+    `const documents = db.getCollection(${JSON.stringify(STATE_COLLECTION)})\n` +
+    '.find({}, { _id: 0, grantCode: 1, sbi: 1, grantVersion: 1 }).toArray();\n' +
+    `print(${JSON.stringify(RESULT_MARKER)} + EJSON.stringify(documents));\n`
+  )
+}
+
 /**
  * Extract the marked EJSON-compatible JSON emitted by mongosh.
  *
@@ -55,7 +64,93 @@ export function parseStateResult(output) {
     throw new Error('MongoDB returned no application-state result')
   }
 
-  return JSON.parse(line.slice(RESULT_MARKER.length))
+  const documents = JSON.parse(line.slice(RESULT_MARKER.length))
+  if (!Array.isArray(documents) || documents.some((doc) => !doc || typeof doc !== 'object' || Array.isArray(doc))) {
+    throw new Error('MongoDB returned an invalid application-state result')
+  }
+  return documents
+}
+
+function stateCommand(input) {
+  return {
+    args: [
+      'compose',
+      '-f',
+      MONGO_COMPOSE_FILE,
+      'exec',
+      '-T',
+      MONGO_SERVICE,
+      'mongosh',
+      MONGO_DB,
+      '--quiet',
+      '--file',
+      '/dev/stdin'
+    ],
+    input
+  }
+}
+
+/**
+ * @typedef {(command: string, args: string[], options: import('node:child_process').ExecFileOptionsWithStringEncoding,
+ * callback: (error: Error | null, stdout: string, stderr: string) => void) =>
+ * { stdin?: Pick<import('node:stream').Writable, 'on' | 'end'> | null }} StateExecutor
+ */
+
+/**
+ * @param {{ grantCode: string, sbi: string, grantVersion?: string }} options
+ * @param {AbortSignal | undefined} signal
+ * @param {StateExecutor} [execute]
+ */
+export function fetchState(options, signal, execute = execFile) {
+  return fetchStateScript(buildStateScript(buildStateQuery(options)), signal, execute)
+}
+
+/** @param {AbortSignal} signal @param {StateExecutor} [execute] */
+export function fetchStateCatalog(signal, execute = execFile) {
+  return fetchStateScript(buildStateCatalogScript(), signal, execute)
+}
+
+/**
+ * Read asynchronously so menus remain responsive while MongoDB is unavailable.
+ * @param {string} input
+ * @param {AbortSignal | undefined} signal
+ * @param {StateExecutor} execute
+ * @returns {Promise<Record<string, any>[]>}
+ */
+function fetchStateScript(input, signal, execute) {
+  const { args } = stateCommand(input)
+  return new Promise((resolve, reject) => {
+    const child = execute(
+      'docker',
+      args,
+      {
+        cwd: ROOT,
+        encoding: 'utf8',
+        timeout: 30000,
+        maxBuffer: 16 * 1024 * 1024,
+        signal
+      },
+      (error, stdout, stderr) => {
+        if (error) {
+          reject(
+            new Error(
+              `Could not inspect application state. Check Docker and the MongoDB service. ${stderr?.trim() || error.message}`,
+              { cause: error }
+            )
+          )
+          return
+        }
+        try {
+          resolve(parseStateResult(stdout))
+        } catch (error) {
+          reject(error)
+        }
+      }
+    )
+    // Early process exit is reported by the callback; do not leak an EPIPE event.
+    child.stdin?.on('error', () => {})
+    child.stdin?.end(input)
+  })
 }
 
 /**
@@ -73,22 +168,10 @@ export function cmdState({ grantCode, sbi, grantVersion, json = false }, spawn =
     return 2
   }
 
-  const query = buildStateQuery({ grantCode, sbi, grantVersion })
-  const args = [
-    'compose',
-    '-f',
-    MONGO_COMPOSE_FILE,
-    'exec',
-    '-T',
-    MONGO_SERVICE,
-    'mongosh',
-    MONGO_DB,
-    '--quiet',
-    '--file',
-    '/dev/stdin'
-  ]
+  const { args, input } = stateCommand(buildStateScript(buildStateQuery({ grantCode, sbi, grantVersion })))
   const result = spawn('docker', args, {
-    input: buildStateScript(query),
+    input,
+    cwd: ROOT,
     encoding: 'utf8',
     stdio: ['pipe', 'pipe', 'pipe']
   })

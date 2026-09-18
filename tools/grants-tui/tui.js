@@ -267,17 +267,17 @@ function makeCleanup(onKey) {
  * prompt for a new mocked GAS status.
  * @param {MenuItem[]} items
  * @param {string} title
- * @param {{ hint?: string, statusLine?: string, gasEditable?: boolean, outputAvailable?: boolean }} [opts]
+ * @param {{ hint?: string, statusLine?: string, gasEditable?: boolean, outputAvailable?: boolean, initialKey?: string }} [opts]
  * @returns {Promise<string>}
  */
 export async function radioMenu(
   items,
   title,
-  { hint = '', statusLine = commandStatusLine, gasEditable = false, outputAvailable = false } = {}
+  { hint = '', statusLine = commandStatusLine, gasEditable = false, outputAvailable = false, initialKey } = {}
 ) {
   return new Promise((resolve) => {
-    // Start cursor on first non-disabled item
-    let cursor = items.findIndex((i) => !i.disabled)
+    let cursor = items.findIndex((i) => i.key === initialKey && !i.disabled)
+    if (cursor === -1) cursor = items.findIndex((i) => !i.disabled)
     if (cursor === -1) cursor = 0
 
     const hintText = hint || '↑ ↓  navigate    enter → select    esc → quit'

@@ -46,6 +46,7 @@ import { loadState, saveState } from './cli-state.js'
 import { promptScale, promptTextWithOptions, radioMenu, setRuntimeStatusLine, toggleMenu } from './tui.js'
 import { tailscaleEnabled, tailscaleStatusSegment } from './tailscale.js'
 import { getTailscaleAvailability } from './tailscale-serve.js'
+import { inspectState } from './state-inspector.js'
 
 // ---------------------------------------------------------------------------
 // Main menu
@@ -123,7 +124,7 @@ export function buildMainMenuItems(
       ...(tailscaleAvailability.available ? {} : { disabled: true })
     },
     { key: 'checks', label: 'checks ⇢', description: 'Tests, lint, security scans and pre-PR checks' },
-    { key: 'tools', label: 'tools ⇢', description: 'Audit logs, queue messages and cleanup' },
+    { key: 'tools', label: 'tools ⇢', description: 'Application state, audit logs, queue messages and cleanup' },
     {
       key: 'journey',
       label: 'journey ⇢',
@@ -475,6 +476,11 @@ export async function handleChecksCommand(dryRun) {
 /** @param {boolean} dryRun */
 export async function handleToolsCommand(dryRun) {
   const items = [
+    {
+      key: 'state',
+      label: 'application state',
+      description: 'Inspect saved state, search JSON and compare refreshes (read-only)'
+    },
     { key: 'audit:logs', label: 'audit logs', description: 'Show audit entries from grants-ui container logs' },
     { key: 'audit:queue', label: 'audit queue', description: 'Show the 10 most recent local audit messages' },
     { key: 'audit:clear', label: 'clear audit', description: 'Purge the local audit queue and restart grants-ui' }
@@ -485,6 +491,7 @@ export async function handleToolsCommand(dryRun) {
     'audit:clear': 'Clearing audit queue and restarting grants-ui'
   }
   return handleActionSubmenu(items, 'Tools', async (selected) => {
+    if (selected === 'state') await inspectState(dryRun)
     if (Object.hasOwn(labels, selected)) {
       const previousRun = getLastRun()
       await runInteractiveAction(selected, [dryRun], labels[selected])

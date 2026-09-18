@@ -24,6 +24,10 @@ Choose **tools ⇢** for **audit logs** (`npm run audit:logs`, audit entries fro
 
 See [docs/DEV-TOOLS.md](../docs/DEV-TOOLS.md) for the dev-tooling reference, including the headless Journey Runner (`gt journey <slug>`).
 
+Choose **tools ⇢ application state** to inspect persisted Grants UI Backend state without changing it. Select a grant, then an SBI from the MongoDB collection. The version menu lists all versions for that grant/SBI, newest first, with the latest selected by default. Only one version is displayed at a time. Closing its viewer returns to the version menu; Escape backs through the SBI and grant menus to Tools. Grant/SBI selections are remembered in the git-ignored `.grants-ui-cli-state.json`; fetched documents stay in memory.
+
+The inspector shows the version in its header and a white **Application status:** label with a yellow value (or **Pre-submission** when no status is recorded). Searchable JSON uses an IntelliJ Darcula-style palette: purple keys, muted green strings, blue numbers, orange literals and grey punctuation. `NO_COLOR=1` disables colour. Use arrows, Page Up/Down, Home/End and Left/Right to navigate, **/** to search, **n** for the next match, **r** to refresh and **q** or Escape to return. Refresh shows changed fields with **- before / + after** markers and colour highlighting where supported, including removed fields and documents. Failed refreshes retain the last successful snapshot, labelled stale, and can be retried with **r**. Queries time out after 30 seconds; leaving the viewer cancels a pending query, and Ctrl+C cancels menu loading. Reopen the inspector to reload available grants, SBIs and versions. `--dry-run` explains the workflow without querying MongoDB or saving preferences.
+
 ## unseal-cookie.js
 
 Unseal encrypted Hapi session cookies for debugging.
