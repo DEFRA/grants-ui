@@ -39,9 +39,10 @@
  *   (flat page only)
  * @property {object} [hint] - Hint text configuration (grouped page)
  * @property {string} [hint.html] - HTML content for hint (grouped page)
- * @property {{ 'data-available-unit': string|undefined, 'data-total-available-area': number|undefined }} [attributes] -
- *   Rendered onto the checkbox <input> (flat page only). `data-total-available-area` is set
- *   once and never touched client-side, so it stays the original full amount.
+ * @property {{ 'data-action-description': string|undefined, 'data-available-unit': string|undefined, 'data-total-available-area': number|undefined }} [attributes] -
+ *   Rendered onto the checkbox <input> (flat page only). `data-action-description` is the
+ *   plain action description used by the client to build the action-specific validation message,
+ *   while `data-total-available-area` stays the original full amount and is never touched client-side.
  * @property {{ html: string }} [conditional] - Conditional reveal markup shown when checked/selected
  */
 

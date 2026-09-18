@@ -181,10 +181,11 @@ export function mapActionToViewModel(
   return {
     id: getCheckboxItemId(action.code, isFirst),
     value: action.code,
-    html: `${getActionLabelHtml(action.description, action.guidanceUrl)}<span class="select-actions-hint">${hintHtml}</span>`,
+    html: `${getActionLabelHtml(action.description, action.guidanceUrl)} <span class="select-actions-hint">${hintHtml}</span>`,
     checked,
     consents,
     attributes: {
+      'data-action-description': action.description,
       'data-available-unit': action.availability?.unit,
       // A non-quantity action's pass/fail threshold - static, never touched by the client.
       'data-total-available-area': getAvailabilityLimit(getStaticAvailability(action)),

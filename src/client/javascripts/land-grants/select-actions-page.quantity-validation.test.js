@@ -20,13 +20,14 @@ describe('quantity input validation', () => {
     const form = setupDom([
       {
         code: 'CSAM3',
+        description: 'Herbal leys: CSAM3',
         checked,
         availability: { value: 11.22, unit: 'ha' },
         requiresMaxQuantity: 11.22,
         quantityValue,
         hasError
       },
-      { code: 'CLIG3', availability: { value: 11.22, unit: 'ha' } }
+      { code: 'CLIG3', description: 'Low input', availability: { value: 11.22, unit: 'ha' } }
     ])
     await initSettled(form, fetchOk({ actions: [] }))
     return form
@@ -113,8 +114,8 @@ describe('quantity input validation', () => {
     ['20', 'Enter up to 11.22 hectares'],
     ['0', 'Enter a number greater than 0'],
     ['-11', 'Enter a number of hectares, for example 12.5 or 100'],
-    ['11.22001', 'Enter a number of hectares, for example 12.5 or 100'],
-    ['as', 'Enter a number of hectares, for example 12.5 or 100']
+    ['11.22001', 'Quantity for Herbal leys: CSAM3 must be 4 decimal places or fewer'],
+    ['as', 'Quantity for Herbal leys: CSAM3 must be 4 decimal places or fewer']
   ])('reports %j everywhere an error is shown, on blur', async (value, message) => {
     const form = await initSingleAction()
 
@@ -170,8 +171,20 @@ describe('quantity input validation', () => {
 
   it('lists one entry per failing action when more than one is wrong', async () => {
     const form = setupDom([
-      { code: 'CSAM3', checked: true, availability: { value: 11.22, unit: 'ha' }, requiresMaxQuantity: 11.22 },
-      { code: 'UPL8', checked: true, availability: { value: 11.22, unit: 'ha' }, requiresMaxQuantity: 11.22 }
+      {
+        code: 'CSAM3',
+        description: 'Herbal leys: CSAM3',
+        checked: true,
+        availability: { value: 11.22, unit: 'ha' },
+        requiresMaxQuantity: 11.22
+      },
+      {
+        code: 'UPL8',
+        description: 'Low input',
+        checked: true,
+        availability: { value: 11.22, unit: 'ha' },
+        requiresMaxQuantity: 11.22
+      }
     ])
     await initSettled(form, fetchOk({ actions: [] }))
 
@@ -181,7 +194,7 @@ describe('quantity input validation', () => {
     const links = [...document.querySelectorAll('.govuk-error-summary__list a')]
     expect(links.map((a) => [a.getAttribute('href'), a.textContent])).toEqual([
       ['#landActionQuantity_CSAM3', 'Enter up to 11.22 hectares'],
-      ['#landActionQuantity_UPL8', 'Enter a number of hectares, for example 12.5 or 100']
+      ['#landActionQuantity_UPL8', 'Quantity for Low input must be 4 decimal places or fewer']
     ])
   })
 
