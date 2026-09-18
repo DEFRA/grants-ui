@@ -23,6 +23,32 @@ describe('action-view-model.mapper', () => {
       })
     })
 
+    it('uses the backend display unit for the payment rate', () => {
+      const action = {
+        code: 'WBD1',
+        description: 'Manage ponds',
+        ratePerUnitGbp: 257,
+        displayUnit: 'pond'
+      }
+
+      const result = mapActionToViewModel(action, [])
+
+      expect(result.hint.html).toBe('Payment rate per year: <strong>£257.00 per pond</strong>')
+    })
+
+    it('escapes the backend display unit', () => {
+      const action = {
+        code: 'WBD1',
+        description: 'Manage ponds',
+        ratePerUnitGbp: 257,
+        displayUnit: '<pond>'
+      }
+
+      const result = mapActionToViewModel(action, [])
+
+      expect(result.hint.html).toContain('per &lt;pond&gt;')
+    })
+
     it('should map action with rate per unit and per agreement', () => {
       const action = {
         code: 'SAM2',

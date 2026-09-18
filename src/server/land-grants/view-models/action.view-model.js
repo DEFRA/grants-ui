@@ -3,6 +3,8 @@
  * Handles transformation of action objects into checkbox/form items with hints.
  */
 
+import { escapeHtml } from '~/src/server/common/utils/escape-html.js'
+
 const SSSI_CONSENT_LINK =
   './fptt-information#sec-10-get-all-necessary-regulatory-consents-permissions-and-licences-in-place'
 const HEFER_LINK = './fptt-information#section-5.5'
@@ -58,13 +60,14 @@ function getGroupConsentHint(consents, actionCount) {
  */
 export function mapActionToViewModel(action, addedActions) {
   const existingActions = addedActions.map((a) => a.code)
+  const rateUnit = escapeHtml(action.displayUnit ?? 'hectare')
   return {
     value: action.code,
     text: action.description,
     checked: existingActions.includes(action.code),
     hint: {
       html:
-        `Payment rate per year: <strong>£${action.ratePerUnitGbp?.toFixed(2)} per hectare</strong>` +
+        `Payment rate per year: <strong>£${action.ratePerUnitGbp?.toFixed(2)} per ${rateUnit}</strong>` +
         (action.ratePerAgreementPerYearGbp
           ? ` and <strong>£${action.ratePerAgreementPerYearGbp}</strong> per agreement`
           : '')
