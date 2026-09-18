@@ -3,6 +3,8 @@ import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { mergeAdditionalAnswers } from '~/src/server/common/helpers/state/additional-answers-helper.js'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
 
+const GRANT_MAX_RATE = 0.4
+
 export default class TotalEstimatedCostController extends QuestionPageController {
   /**
    * Handle GET requests to the total estimated cost page
@@ -26,7 +28,7 @@ export default class TotalEstimatedCostController extends QuestionPageController
           ? tanksCostPerUnit * waterStorageCapacity
           : 0
         const totalEstimatedCost = reservoirCost + waterDistributionNetworkCost + waterTanksCost
-        const estimatedCostFortyPercent = totalEstimatedCost * 0.4
+        const estimatedMaxGrant = totalEstimatedCost * GRANT_MAX_RATE
 
         context.state = await this.setState(
           request,
@@ -38,7 +40,7 @@ export default class TotalEstimatedCostController extends QuestionPageController
             waterDistributionNetworkCost,
             waterTanksCost,
             totalEstimatedCost,
-            estimatedCostFortyPercent
+            estimatedMaxGrant
           })
         )
 
