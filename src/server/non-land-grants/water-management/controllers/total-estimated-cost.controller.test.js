@@ -73,7 +73,8 @@ describe('TotalEstimatedCostController', () => {
         reservoirCost: 250,
         waterDistributionNetworkCost: 250,
         waterTanksCost: 300,
-        totalEstimatedCost: 800
+        totalEstimatedCost: 800,
+        estimatedCostFortyPercent: 320
       })
       expect(controller.setState).toHaveBeenCalled()
       expect(mockH.view).toHaveBeenCalledWith(controller.viewName, expect.objectContaining({ baseModel: 'data' }))
@@ -92,7 +93,8 @@ describe('TotalEstimatedCostController', () => {
         reservoirCost: 250,
         waterDistributionNetworkCost: 0,
         waterTanksCost: 0,
-        totalEstimatedCost: 250
+        totalEstimatedCost: 250,
+        estimatedCostFortyPercent: 100
       })
       expect(controller.setState).toHaveBeenCalled()
       expect(mockH.view).toHaveBeenCalledWith(controller.viewName, expect.objectContaining({ baseModel: 'data' }))
@@ -111,7 +113,8 @@ describe('TotalEstimatedCostController', () => {
         reservoirCost: 0,
         waterDistributionNetworkCost: 250,
         waterTanksCost: 300,
-        totalEstimatedCost: 550
+        totalEstimatedCost: 550,
+        estimatedCostFortyPercent: 220
       })
       expect(controller.setState).toHaveBeenCalled()
       expect(mockH.view).toHaveBeenCalledWith(controller.viewName, expect.objectContaining({ baseModel: 'data' }))

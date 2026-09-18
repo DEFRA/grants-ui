@@ -26,6 +26,7 @@ export default class TotalEstimatedCostController extends QuestionPageController
           ? tanksCostPerUnit * waterStorageCapacity
           : 0
         const totalEstimatedCost = reservoirCost + waterDistributionNetworkCost + waterTanksCost
+        const estimatedCostFortyPercent = totalEstimatedCost * 0.4
 
         context.state = await this.setState(
           request,
@@ -36,7 +37,8 @@ export default class TotalEstimatedCostController extends QuestionPageController
             reservoirCost,
             waterDistributionNetworkCost,
             waterTanksCost,
-            totalEstimatedCost
+            totalEstimatedCost,
+            estimatedCostFortyPercent
           })
         )
 

@@ -47,11 +47,8 @@
   {
     "section": "check-your-eligibility",
     "slug": "score-results",
-    "name": "Score results temp",
-    "type": "textFields",
-    "fields": {
-      "tempOne": "aa"
-    }
+    "name": "Score results",
+    "type": "submitOnly"
   },
   {
     "section": "business-details",
@@ -154,11 +151,8 @@
   {
     "section": "estimated-costs",
     "slug": "total-estimated-cost",
-    "name": "Total estimated cost - aa",
-    "type": "textFields",
-    "fields": {
-      "tempTwo": "aa"
-    }
+    "name": "Total estimated cost",
+    "type": "submitOnly"
   },
   {
     "section": "check-and-submit-your-application",
