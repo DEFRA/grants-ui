@@ -1,4 +1,5 @@
 import { getFormsCacheService } from '../../helpers/forms-cache/forms-cache.js'
+import { isWindowClosedMockEnabled } from '../../helpers/mock-overrides.js'
 import {
   buildRedirectUrl,
   hasMeaningfulPreSubmissionState,
@@ -50,6 +51,10 @@ export async function serviceRootRedirect(request, h) {
     const def = /** @type {{ startPage?: string, metadata?: Record<string, any> } | undefined} */ (
       /** @type {{ model?: { def?: unknown } }} */ (request.app).model?.def
     )
+
+    if (def?.metadata?.isApplicationWindowOpen === false || isWindowClosedMockEnabled(request)) {
+      return h.continue
+    }
 
     if (def?.startPage !== CHECK_DETAILS_START_PAGE) {
       return h.continue

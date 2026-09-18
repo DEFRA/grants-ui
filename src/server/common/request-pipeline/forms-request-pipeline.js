@@ -1,6 +1,7 @@
 import { formsStatusRedirect } from '~/src/server/common/request-pipeline/redirects/forms-status-redirect.js'
 import { enforcePagePermission } from './permissions/enforce-page-permission.js'
 import { applicationDeletedRedirect } from './redirects/application-deleted-redirect.js'
+import { applicationWindowClosedRedirect } from './redirects/application-window-closed-redirect.js'
 
 /**
  * Pipeline handler that delegates to forms status redirect, then enforces page permissions.
@@ -19,6 +20,12 @@ export async function formsRequestPipeline(request, h, context) {
 
   if (deletedResult !== h.continue) {
     return deletedResult
+  }
+
+  const windowClosedResult = await applicationWindowClosedRedirect(request, h, context)
+
+  if (windowClosedResult !== h.continue) {
+    return windowClosedResult
   }
 
   const redirectResult = await formsStatusRedirect(request, h, context)
