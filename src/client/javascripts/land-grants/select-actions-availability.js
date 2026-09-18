@@ -9,7 +9,9 @@
 import {
   getQuantityError,
   isValidQuantity,
-  normaliseQuantityInput
+  normaliseQuantityInput,
+  QUANTITY_ERRORS,
+  QUANTITY_PRECISION
 } from '../../../shared/action-quantity-validation.js'
 import {
   AVAILABLE_UNIT_ATTR,
@@ -34,6 +36,7 @@ const UNAVAILABLE_CLASS = 'select-actions-unavailable-message'
 const REFRESH_BANNER_MESSAGE = 'Updating available land for this action…'
 const REFRESH_BANNER_CLASS = 'select-actions-refresh-banner'
 const REFRESH_BANNER_HIDDEN_CLASS = 'select-actions-refresh-banner--hidden'
+const CHECKBOX_ITEM_SELECTOR = '.govuk-checkboxes__item'
 
 /**
  * @param {number} value
@@ -47,7 +50,7 @@ const availabilityHintText = (value, unit) => `${value} ${formatUnit(unit)} avai
  * @param {boolean} isLoading
  */
 function toggleCheckboxRefreshBanner(checkbox, isLoading) {
-  const item = /** @type {HTMLElement | null} */ (checkbox.closest('.govuk-checkboxes__item'))
+  const item = /** @type {HTMLElement | null} */ (checkbox.closest(CHECKBOX_ITEM_SELECTOR))
   const existing = item?.querySelector(`.${REFRESH_BANNER_CLASS}`)
   if (!isLoading) {
     existing?.remove()
@@ -109,7 +112,32 @@ export function getValidTypedQuantity(checkbox) {
 }
 
 /**
- * Rewrites a quantity field to its normalised form (".5" becomes "0.5").
+ * Rewrites generic quantity-validation errors to include the action label, so
+ * blur-time feedback matches the server-side wording for that specific action.
+ * @param {HTMLInputElement} checkbox
+ * @param {string} rawValue
+ * @param {string} message
+ * @returns {string}
+ */
+function actionSpecificQuantityMessage(checkbox, rawValue, message) {
+  if (!rawValue || Number(rawValue) <= 0) {
+    return message
+  }
+  const quantityErrorMessages = new Set([QUANTITY_ERRORS.NOT_A_NUMBER, QUANTITY_ERRORS.TOO_MANY_DECIMAL_PLACES])
+  if (!quantityErrorMessages.has(message)) {
+    return message
+  }
+
+  const actionText =
+    checkbox.dataset.actionDescription?.trim() ||
+    checkbox.closest(CHECKBOX_ITEM_SELECTOR)?.querySelector('label')?.textContent?.trim() ||
+    checkbox.value
+  return `Quantity for ${actionText} must be ${QUANTITY_PRECISION} decimal places or fewer`
+}
+
+/**
+ * Rewrites a quantity field to its normalised form (".5" becomes "0.5") and
+ * shows the matching blur-time validation error for the action it belongs to.
  * @param {HTMLInputElement} checkbox
  */
 export function normaliseAndValidateQuantity(checkbox) {
@@ -118,16 +146,14 @@ export function normaliseAndValidateQuantity(checkbox) {
     return
   }
   quantityInput.value = normaliseQuantityInput(quantityInput.value)
+  const rawValue = quantityInput.value
   const message =
-    quantityInput.value === ''
+    rawValue === ''
       ? null
-      : getQuantityError(
-          quantityInput.value,
-          getTotalAvailableArea(checkbox),
-          checkbox.getAttribute(AVAILABLE_UNIT_ATTR)
-        )
-  if (message) {
-    showQuantityError(quantityInput, message)
+      : getQuantityError(rawValue, getTotalAvailableArea(checkbox), checkbox.getAttribute(AVAILABLE_UNIT_ATTR))
+  const displayMessage = message == null ? null : actionSpecificQuantityMessage(checkbox, rawValue, message)
+  if (displayMessage) {
+    showQuantityError(quantityInput, displayMessage)
   } else {
     clearQuantityError(quantityInput)
   }
@@ -232,7 +258,7 @@ export function buildPlannedActions(form) {
  * @param {boolean} isUnavailable
  */
 function toggleUnavailableMessage(checkbox, isUnavailable) {
-  const item = /** @type {HTMLElement | null} */ (checkbox.closest('.govuk-checkboxes__item'))
+  const item = /** @type {HTMLElement | null} */ (checkbox.closest(CHECKBOX_ITEM_SELECTOR))
   const message = item?.querySelector(`.${UNAVAILABLE_CLASS}`)
   if (!isUnavailable) {
     message?.remove()
