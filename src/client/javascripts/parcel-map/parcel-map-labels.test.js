@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { attachParcelLabels } from './parcel-map-labels.js'
 import { makeMlMap } from './test-helpers.js'
+import { CLUSTER_EXPAND_MAX_ZOOM } from './config.js'
 
 const polygon = (rings) => ({ type: 'Polygon', coordinates: [rings] })
 
@@ -39,6 +40,61 @@ describe('attachParcelLabels', () => {
   it('does nothing until the map goes idle', () => {
     const { setData } = setup()
     expect(setData).not.toHaveBeenCalled()
+  })
+
+  it('only calls setData once when repeated idles produce the same features, avoiding an idle -> setData -> render -> idle cycle', () => {
+    const feature = {
+      properties: { id: 'SD7148-9160' },
+      geometry: polygon([
+        [-2.5, 51.4],
+        [-2.4, 51.4],
+        [-2.4, 51.5],
+        [-2.5, 51.5]
+      ])
+    }
+    const { ml, setData } = setup({ sourceFeatures: [feature] })
+
+    ml._emit('idle')
+    ml._emit('idle')
+    ml._emit('idle')
+
+    expect(setData).toHaveBeenCalledTimes(1)
+  })
+
+  it('calls setData again once the underlying features actually change', () => {
+    const feature = {
+      properties: { id: 'SD7148-9160' },
+      geometry: polygon([
+        [-2.5, 51.4],
+        [-2.4, 51.4],
+        [-2.4, 51.5],
+        [-2.5, 51.5]
+      ])
+    }
+    const querySourceFeatures = vi.fn().mockReturnValue([feature])
+    const setData = vi.fn()
+    const ml = makeMlMap({
+      getSource: vi.fn().mockReturnValue({ setData }),
+      querySourceFeatures
+    })
+    attachParcelLabels(ml, [])
+
+    ml._emit('idle')
+    expect(setData).toHaveBeenCalledTimes(1)
+
+    const moved = {
+      ...feature,
+      geometry: polygon([
+        [-2.9, 51.4],
+        [-2.8, 51.4],
+        [-2.8, 51.5],
+        [-2.9, 51.5]
+      ])
+    }
+    querySourceFeatures.mockReturnValue([moved])
+    ml._emit('idle')
+
+    expect(setData).toHaveBeenCalledTimes(2)
   })
 
   it('builds one labelled point per parcel id from its rendered fragment', () => {
@@ -144,36 +200,60 @@ describe('attachParcelLabels', () => {
   })
 
   describe('cluster click-to-zoom', () => {
-    function setupCluster({ clusterId = 5, expansionZoom = 14 } = {}) {
-      const getClusterExpansionZoom = vi.fn().mockResolvedValue(expansionZoom)
-      const easeTo = vi.fn()
+    function setupCluster({ clusterId = 5, pointCount = 8, leaves = [] } = {}) {
+      const getClusterLeaves = vi.fn().mockResolvedValue(leaves)
+      const fitBounds = vi.fn()
       const ml = makeMlMap({
-        getSource: vi.fn().mockReturnValue({ getClusterExpansionZoom }),
-        easeTo
+        getSource: vi.fn().mockReturnValue({ getClusterLeaves }),
+        fitBounds
       })
       attachParcelLabels(ml, [])
       const cluster = {
-        properties: { cluster_id: clusterId, point_count: 8 },
+        properties: { cluster_id: clusterId, point_count: pointCount },
         geometry: { type: 'Point', coordinates: [-2.45, 51.45] }
       }
-      return { ml, easeTo, getClusterExpansionZoom, cluster }
+      return { ml, fitBounds, getClusterLeaves, cluster }
     }
 
-    it('eases to the cluster centre at its expansion zoom on click', async () => {
-      const { ml, easeTo, getClusterExpansionZoom, cluster } = setupCluster()
+    it('fits the viewport to the bounding box of the parcels the cluster groups, on click', async () => {
+      const leaves = [
+        { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [-2.5, 51.4] } },
+        { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [-2.4, 51.5] } }
+      ]
+      const { ml, fitBounds, getClusterLeaves, cluster } = setupCluster({ pointCount: 2, leaves })
 
       ml._emitLayer('click', 'parcels-label-cluster', { features: [cluster] })
-      expect(getClusterExpansionZoom).toHaveBeenCalledWith(5)
-      await vi.waitFor(() => expect(easeTo).toHaveBeenCalledWith({ center: [-2.45, 51.45], zoom: 14 }))
+      expect(getClusterLeaves).toHaveBeenCalledWith(5, 2, 0)
+      await vi.waitFor(() =>
+        expect(fitBounds).toHaveBeenCalledWith(
+          [
+            [-2.5, 51.4],
+            [-2.4, 51.5]
+          ],
+          expect.objectContaining({ padding: expect.any(Number) })
+        )
+      )
+    })
+
+    it('caps the zoom at CLUSTER_EXPAND_MAX_ZOOM, so a tight cluster of 2-3 parcels does not zoom in too aggressively', async () => {
+      const leaves = [
+        { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [-2.45, 51.45] } },
+        { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [-2.451, 51.451] } }
+      ]
+      const { ml, fitBounds, cluster } = setupCluster({ pointCount: 2, leaves })
+
+      ml._emitLayer('click', 'parcels-label-cluster', { features: [cluster] })
+
+      await vi.waitFor(() => expect(fitBounds).toHaveBeenCalledWith(expect.any(Array), expect.objectContaining({ maxZoom: CLUSTER_EXPAND_MAX_ZOOM })))
     })
 
     it('does nothing when the click carries no cluster feature', () => {
-      const { ml, easeTo, getClusterExpansionZoom } = setupCluster()
+      const { ml, fitBounds, getClusterLeaves } = setupCluster()
 
       ml._emitLayer('click', 'parcels-label-cluster', { features: [] })
 
-      expect(getClusterExpansionZoom).not.toHaveBeenCalled()
-      expect(easeTo).not.toHaveBeenCalled()
+      expect(getClusterLeaves).not.toHaveBeenCalled()
+      expect(fitBounds).not.toHaveBeenCalled()
     })
 
     it('shows a pointer cursor over a cluster and restores it on leave', () => {

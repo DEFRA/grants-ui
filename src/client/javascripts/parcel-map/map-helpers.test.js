@@ -16,6 +16,7 @@ import {
   hideTooltip,
   htmlEncode
 } from './map-helpers.js'
+import { LAYER_ID_LABEL_CLUSTER } from './config.js'
 
 describe('buildParcelLayers', () => {
   it('sets source and source-layer to "parcels" on every layer', () => {
@@ -219,7 +220,10 @@ describe('withParcelHitTolerance', () => {
     const descriptor = makeDescriptor(() => [{ id: 'hit' }])
     const { MapProvider } = await withParcelHitTolerance(descriptor).load()
     const provider = new MapProvider()
-    provider.map = { getLayer: () => true }
+    provider.map = {
+      getLayer: () => true,
+      queryRenderedFeatures: vi.fn().mockReturnValue([])
+    }
 
     expect(provider.getFeaturesAtPoint({ x: 0, y: 0 })).toEqual([{ id: 'hit' }])
   })
@@ -243,7 +247,7 @@ describe('withParcelHitTolerance', () => {
     }
     provider.map = {
       getLayer: () => true,
-      queryRenderedFeatures: vi.fn().mockReturnValue([nearby]),
+      queryRenderedFeatures: vi.fn().mockImplementation((_point, { layers }) => (layers.includes(LAYER_ID_LABEL_CLUSTER) ? [] : [nearby])),
       project: ([lng, lat]) => ({ x: lng, y: lat })
     }
 
@@ -255,6 +259,18 @@ describe('withParcelHitTolerance', () => {
     const { MapProvider } = await withParcelHitTolerance(descriptor).load()
     const provider = new MapProvider()
     provider.map = { getLayer: () => false }
+
+    expect(provider.getFeaturesAtPoint({ x: 0, y: 0 })).toEqual([])
+  })
+
+  it('returns no hits when the point lands on a cluster badge, so the parcel behind it is not also selected', async () => {
+    const descriptor = makeDescriptor(() => [{ id: 'hit' }])
+    const { MapProvider } = await withParcelHitTolerance(descriptor).load()
+    const provider = new MapProvider()
+    provider.map = {
+      getLayer: () => true,
+      queryRenderedFeatures: vi.fn().mockImplementation((_point, { layers }) => (layers.includes(LAYER_ID_LABEL_CLUSTER) ? [{ id: 'cluster' }] : []))
+    }
 
     expect(provider.getFeaturesAtPoint({ x: 0, y: 0 })).toEqual([])
   })

@@ -1,5 +1,12 @@
 import { formatParcelReference } from '../../../shared/format-parcel.js'
-import { LAYER_ID_LABEL_CLUSTER, PARCEL_ID_PROPERTY, SOURCE_ID_PARCEL_LABELS, SOURCE_ID_PARCELS } from './config.js'
+import {
+  CLUSTER_EXPAND_MAX_ZOOM,
+  FIT_BOUNDS_PADDING,
+  LAYER_ID_LABEL_CLUSTER,
+  PARCEL_ID_PROPERTY,
+  SOURCE_ID_PARCEL_LABELS,
+  SOURCE_ID_PARCELS
+} from './config.js'
 
 /**
  * @import { Map as MLMap, GeoJSONSource, MapMouseEvent, MapGeoJSONFeature } from 'maplibre-gl'
@@ -17,12 +24,22 @@ import { LAYER_ID_LABEL_CLUSTER, PARCEL_ID_PROPERTY, SOURCE_ID_PARCEL_LABELS, SO
  * @param {Array<() => void>} cleanups
  */
 export function attachParcelLabels(ml, cleanups) {
+  // setData() re-renders, which can re-fire 'idle' — only call it when the
+  // features actually changed, to avoid a needless idle -> setData loop.
+  /** @type {string | null} */
+  let lastFingerprint = null
+
   const recompute = () => {
     const source = /** @type {GeoJSONSource | undefined} */ (ml.getSource(SOURCE_ID_PARCEL_LABELS))
     if (!source || !ml.getSource(SOURCE_ID_PARCELS) || !ml.isSourceLoaded(SOURCE_ID_PARCELS)) {
       return
     }
-    source.setData(buildLabelFeatures(ml))
+    const { features, fingerprint } = buildLabelFeatures(ml)
+    if (fingerprint === lastFingerprint) {
+      return
+    }
+    lastFingerprint = fingerprint
+    source.setData(features)
   }
 
   ml.on('idle', recompute)
@@ -32,7 +49,9 @@ export function attachParcelLabels(ml, cleanups) {
 }
 
 /**
- * Clicking a cluster badge zooms in just far enough to split it apart.
+ * Clicking a cluster badge zooms into the bounding box of the parcels it
+ * groups, so they end up fully framed and split apart rather than just
+ * zoomed toward the cluster's own centre point.
  * @param {MLMap} ml
  * @param {Array<() => void>} cleanups
  */
@@ -40,14 +59,29 @@ function attachClusterExpandOnClick(ml, cleanups) {
   const onClusterClick = (/** @type {MapMouseEvent & { features?: MapGeoJSONFeature[] }} */ e) => {
     const cluster = e.features?.[0]
     const clusterId = cluster?.properties?.cluster_id
+    const pointCount = cluster?.properties?.point_count
     const source = /** @type {GeoJSONSource | undefined} */ (ml.getSource(SOURCE_ID_PARCEL_LABELS))
-    if (!cluster || clusterId == null || !source) {
+    if (!cluster || clusterId == null || typeof pointCount !== 'number' || !source) {
       return
     }
-    source.getClusterExpansionZoom(clusterId).then((zoom) => {
-      const [lng, lat] = /** @type {GeoJSON.Point} */ (cluster.geometry).coordinates
-      ml.easeTo({ center: [lng, lat], zoom })
-    }, Boolean) // ignore: rejects past the source's own max zoom
+    source
+      .getClusterLeaves(clusterId, pointCount, 0)
+      .then((leaves) => {
+        const bbox = boundsOfPoints(leaves)
+        if (!bbox) {
+          return
+        }
+        ml.fitBounds(
+          [
+            [bbox.minLng, bbox.minLat],
+            [bbox.maxLng, bbox.maxLat]
+          ],
+          // Capped so a tight bbox (e.g. a 2-3 parcel cluster) doesn't zoom
+          // in further than useful to split it apart.
+          { padding: FIT_BOUNDS_PADDING, maxZoom: CLUSTER_EXPAND_MAX_ZOOM }
+        )
+      })
+      .catch(Boolean) // ignore: e.g. the cluster no longer exists after a concurrent setData
   }
   const onMouseEnter = () => {
     ml.getCanvas().style.cursor = 'pointer'
@@ -68,8 +102,35 @@ function attachClusterExpandOnClick(ml, cleanups) {
 }
 
 /**
+ * The bounding box of a set of Point features, as returned by
+ * getClusterLeaves — the ungrouped parcel label points a cluster badge
+ * stands in for.
+ * @param {GeoJSON.Feature[]} points
+ * @returns {{ minLng: number, minLat: number, maxLng: number, maxLat: number } | null}
+ */
+function boundsOfPoints(points) {
+  if (points.length === 0) {
+    return null
+  }
+  const bounds = { minLng: Infinity, minLat: Infinity, maxLng: -Infinity, maxLat: -Infinity }
+  for (const point of points) {
+    const [lng, lat] = /** @type {GeoJSON.Point} */ (point.geometry).coordinates
+    bounds.minLng = Math.min(bounds.minLng, lng)
+    bounds.minLat = Math.min(bounds.minLat, lat)
+    bounds.maxLng = Math.max(bounds.maxLng, lng)
+    bounds.maxLat = Math.max(bounds.maxLat, lat)
+  }
+  return bounds
+}
+
+// Bounds are floating-point lng/lat, so two computations of an otherwise-
+// unchanged parcel can differ in the last few decimal places — round before
+// fingerprinting so that isn't mistaken for a real change.
+const FINGERPRINT_DECIMAL_PLACES = 6
+
+/**
  * @param {MLMap} ml
- * @returns {GeoJSON.FeatureCollection}
+ * @returns {{ features: GeoJSON.FeatureCollection, fingerprint: string }}
  */
 function buildLabelFeatures(ml) {
   const fragments = ml.querySourceFeatures(SOURCE_ID_PARCELS, { sourceLayer: SOURCE_ID_PARCELS })
@@ -84,7 +145,11 @@ function buildLabelFeatures(ml) {
     extendBounds(boundsById, String(id), /** @type {GeoJSON.Polygon | GeoJSON.MultiPolygon} */ (fragment.geometry))
   }
 
-  const features = [...boundsById].map(([id, { minLng, minLat, maxLng, maxLat }]) => ({
+  // Sorted by id so the fingerprint doesn't depend on fragment/iteration
+  // order, only on which parcels are present and where.
+  const entries = [...boundsById].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+
+  const features = entries.map(([id, { minLng, minLat, maxLng, maxLat }]) => ({
     type: /** @type {const} */ ('Feature'),
     geometry: {
       type: /** @type {const} */ ('Point'),
@@ -93,7 +158,15 @@ function buildLabelFeatures(ml) {
     properties: { id, label: formatParcelReference(id) }
   }))
 
-  return { type: 'FeatureCollection', features }
+  const fingerprint = entries
+    .map(([id, { minLng, minLat, maxLng, maxLat }]) => {
+      const lng = ((minLng + maxLng) / 2).toFixed(FINGERPRINT_DECIMAL_PLACES)
+      const lat = ((minLat + maxLat) / 2).toFixed(FINGERPRINT_DECIMAL_PLACES)
+      return `${id}:${lng},${lat}`
+    })
+    .join('|')
+
+  return { features: { type: 'FeatureCollection', features }, fingerprint }
 }
 
 /**

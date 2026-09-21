@@ -171,7 +171,9 @@ export function getMapStyle() {
 /**
  * Falls back to the nearest rendered parcel within PARCEL_CLICK_TOLERANCE_PX
  * when the interact plugin's strict inside-the-shape hit test finds nothing —
- * which is common for small parcels at low zoom.
+ * common for small parcels at low zoom. Also suppresses hits on a cluster
+ * badge, so its click doesn't also select the parcel sitting behind it (the
+ * interact plugin hit-tests every map click, not just ones on its own layer).
  *
  * Wrapped via `load()` because the map library hands us a provider
  * *descriptor*, not the provider itself — the real class only exists once
@@ -188,6 +190,9 @@ export function withParcelHitTolerance(descriptor) {
        * @param {{ radius?: number }} [options]
        */
       getFeaturesAtPoint(point, options) {
+        if (this.map?.getLayer(LAYER_ID_LABEL_CLUSTER) && this.map.queryRenderedFeatures(point, { layers: [LAYER_ID_LABEL_CLUSTER] }).length > 0) {
+          return []
+        }
         // @ts-ignore — base method exists on the runtime provider
         const hits = super.getFeaturesAtPoint(point, options)
         if (hits.length > 0 || !this.map?.getLayer(LAYER_ID_FILL)) {
