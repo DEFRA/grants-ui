@@ -27,8 +27,6 @@ export const LAYER_TEXT_SIZE = 11
 export const LAYER_TEXT_HALO_WIDTH = 1.5
 export const LAYER_LINE_WIDTH = 1.5
 export const FIT_BOUNDS_PADDING = 40
-// Screen-pixel drift before "Show all parcels" appears; filters out incidental nudges.
-export const SHOW_ALL_MOVE_THRESHOLD_PX = 100
 export const AREA_DECIMAL_PLACES = 4
 export const TOTAL_AREA_DECIMAL_PLACES = 4
 
@@ -91,7 +89,6 @@ export const MSG_LOADING = 'Loading map…'
 export const MSG_ERROR_UNAVAILABLE = 'There was a problem loading the map.'
 export const MSG_UNKNOWN_PARCEL = 'Unknown parcel'
 export const MSG_UNKNOWN_AREA = 'Unknown'
-export const MSG_SHOW_ALL_PARCELS = 'Show all parcels'
 
 export const TOOLTIP_VERTICAL_OFFSET = 10
 
@@ -123,53 +120,6 @@ export const ERROR_OVERLAY_STYLES = [
 ].join(';')
 
 export const ERROR_LABEL_STYLES = 'font-family:GDS Transport,arial,sans-serif;font-size:16px;color:#505a5f'
-
-// display/box-shadow live in SHOW_ALL_BUTTON_FOCUS_STYLE instead of here.
-export const SHOW_ALL_BUTTON_STYLES = [
-  'position:absolute',
-  'top:16px',
-  'left:16px',
-  'z-index:2',
-  'align-items:center',
-  'gap:6px',
-  'background:#fff',
-  'border:2px solid #0b0c0c',
-  'border-radius:4px',
-  'padding:8px 12px',
-  'font-size:16px',
-  'font-family:GDS Transport,arial,sans-serif',
-  'color:#0b0c0c',
-  'cursor:pointer'
-].join(';')
-
-export const SHOW_ALL_BUTTON_CLASS = 'parcel-map-show-all-button'
-
-export const MSG_SHOW_ALL_PARCELS_AVAILABLE = 'Show all parcels button now available'
-
-// GOV.UK's govuk-visually-hidden pattern.
-export const VISUALLY_HIDDEN_STYLES = [
-  'position:absolute',
-  'width:1px',
-  'height:1px',
-  'margin:0',
-  'padding:0',
-  'overflow:hidden',
-  'clip:rect(0 0 0 0)',
-  'clip-path:inset(50%)',
-  'border:0',
-  'white-space:nowrap'
-].join(';')
-
-// GOV.UK's govuk-focused-box focus style.
-export const SHOW_ALL_BUTTON_FOCUS_STYLE = `
-  .${SHOW_ALL_BUTTON_CLASS} {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-  }
-  .${SHOW_ALL_BUTTON_CLASS}:focus {
-    outline: 3px solid transparent;
-    box-shadow: 0 0 0 4px #ffdd00, 0 0 0 8px #0b0c0c;
-  }
-`
 
 export const TOOLTIP_STYLES = [
   'position:absolute',

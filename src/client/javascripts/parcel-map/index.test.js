@@ -196,9 +196,6 @@ describe('parcel-map web component', () => {
 
     it('removes skeleton once ready', async () => {
       const el = await mountReady()
-      // Distinguishes the (removed) skeleton from the reset button's
-      // permanent aria-live announcer, which also carries role="status"
-      // but no aria-label.
       expect(el.querySelector('[role="status"][aria-label]')).toBeNull()
     })
 

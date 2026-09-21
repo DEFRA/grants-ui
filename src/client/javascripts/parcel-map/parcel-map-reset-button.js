@@ -5,23 +5,14 @@ import {
   SHOW_ALL_BUTTON_STYLES,
   SHOW_ALL_BUTTON_CLASS,
   SHOW_ALL_BUTTON_FOCUS_STYLE,
-  SHOW_ALL_MOVE_THRESHOLD_PX,
-  VISUALLY_HIDDEN_STYLES
-} from './config.js'
+  SHOW_ALL_ICON_SVG,
+  SHOW_ALL_MOVE_THRESHOLD_PX
+} from './parcel-map-reset-button.config.js'
 
 /**
  * @import { Map as MLMap } from 'maplibre-gl'
  * @import { BBox } from './parcel-map-loader.js'
  */
-
-const SHOW_ALL_ICON_SVG =
-  '<svg class="map-reset-view-button__icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
-  '<path d="M8 4H4v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>' +
-  '<path d="M16 4h4v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>' +
-  '<path d="M8 20H4v-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>' +
-  '<path d="M16 20h4v-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>' +
-  '<rect x="7" y="7" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2"></rect>' +
-  '</svg>'
 
 const FOCUS_STYLE_MARKER = 'data-parcel-map-show-all-focus-style'
 
@@ -87,9 +78,9 @@ export function attachResetButton(ml, bbox, mapEl, cleanups) {
   wrapper.appendChild(button)
 
   const announcer = document.createElement('div')
+  announcer.className = 'govuk-visually-hidden'
   announcer.setAttribute('role', 'status')
   announcer.setAttribute('aria-live', 'polite')
-  announcer.style.cssText = VISUALLY_HIDDEN_STYLES
   wrapper.appendChild(announcer)
 
   // Derived from bbox since fitBounds() may not have applied synchronously yet.
