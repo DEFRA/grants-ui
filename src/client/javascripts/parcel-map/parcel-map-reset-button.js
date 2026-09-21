@@ -8,7 +8,7 @@ import {
   SHOW_ALL_ICON_SVG,
   SHOW_ALL_MOVE_THRESHOLD_PX,
   ZOOM_DRIFT_TOLERANCE
-} from './parcel-map-reset-button.config.js'
+} from './config.js'
 
 const FOCUS_STYLE_MARKER = 'data-parcel-map-show-all-focus-style'
 

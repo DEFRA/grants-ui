@@ -6,7 +6,7 @@ import {
   MSG_SHOW_ALL_PARCELS_AVAILABLE,
   SHOW_ALL_BUTTON_CLASS,
   SHOW_ALL_MOVE_THRESHOLD_PX
-} from './parcel-map-reset-button.config.js'
+} from './config.js'
 import { makeMlMap } from './test-helpers.js'
 
 const BBOX = { minLng: -1, minLat: 51, maxLng: 1, maxLat: 53 }
