@@ -247,7 +247,9 @@ describe('withParcelHitTolerance', () => {
     }
     provider.map = {
       getLayer: () => true,
-      queryRenderedFeatures: vi.fn().mockImplementation((_point, { layers }) => (layers.includes(LAYER_ID_LABEL_CLUSTER) ? [] : [nearby])),
+      queryRenderedFeatures: vi
+        .fn()
+        .mockImplementation((_point, { layers }) => (layers.includes(LAYER_ID_LABEL_CLUSTER) ? [] : [nearby])),
       project: ([lng, lat]) => ({ x: lng, y: lat })
     }
 
@@ -269,7 +271,11 @@ describe('withParcelHitTolerance', () => {
     const provider = new MapProvider()
     provider.map = {
       getLayer: () => true,
-      queryRenderedFeatures: vi.fn().mockImplementation((_point, { layers }) => (layers.includes(LAYER_ID_LABEL_CLUSTER) ? [{ id: 'cluster' }] : []))
+      queryRenderedFeatures: vi
+        .fn()
+        .mockImplementation((_point, { layers }) =>
+          layers.includes(LAYER_ID_LABEL_CLUSTER) ? [{ id: 'cluster' }] : []
+        )
     }
 
     expect(provider.getFeaturesAtPoint({ x: 0, y: 0 })).toEqual([])

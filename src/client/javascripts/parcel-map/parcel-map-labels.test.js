@@ -244,7 +244,12 @@ describe('attachParcelLabels', () => {
 
       ml._emitLayer('click', 'parcels-label-cluster', { features: [cluster] })
 
-      await vi.waitFor(() => expect(fitBounds).toHaveBeenCalledWith(expect.any(Array), expect.objectContaining({ maxZoom: CLUSTER_EXPAND_MAX_ZOOM })))
+      await vi.waitFor(() =>
+        expect(fitBounds).toHaveBeenCalledWith(
+          expect.any(Array),
+          expect.objectContaining({ maxZoom: CLUSTER_EXPAND_MAX_ZOOM })
+        )
+      )
     })
 
     it('does nothing when the click carries no cluster feature', () => {

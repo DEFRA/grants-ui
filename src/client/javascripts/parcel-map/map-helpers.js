@@ -190,7 +190,10 @@ export function withParcelHitTolerance(descriptor) {
        * @param {{ radius?: number }} [options]
        */
       getFeaturesAtPoint(point, options) {
-        if (this.map?.getLayer(LAYER_ID_LABEL_CLUSTER) && this.map.queryRenderedFeatures(point, { layers: [LAYER_ID_LABEL_CLUSTER] }).length > 0) {
+        if (
+          this.map?.getLayer(LAYER_ID_LABEL_CLUSTER) &&
+          this.map.queryRenderedFeatures(point, { layers: [LAYER_ID_LABEL_CLUSTER] }).length > 0
+        ) {
           return []
         }
         // @ts-ignore — base method exists on the runtime provider
