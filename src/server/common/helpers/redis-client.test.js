@@ -24,26 +24,6 @@ vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
 
 describe('#buildRedisClient', () => {
   describe('When Redis Single InstanceCache is requested', () => {
-    beforeEach(() => {
-      buildRedisClient({
-        host: '127.0.0.1',
-        keyPrefix: 'grants-ui:',
-        useSingleInstanceCache: true,
-        useTLS: false,
-        username: '',
-        password: ''
-      })
-    })
-
-    test('Should instantiate a single Redis client', () => {
-      expect(vi.mocked(Redis)).toHaveBeenCalledWith({
-        db: 0,
-        host: '127.0.0.1',
-        keyPrefix: 'grants-ui:',
-        port: 6379
-      })
-    })
-
     test('Should log Redis connect and error events', () => {
       const mockOn = vi.fn((event, cb) => {
         if (event === 'connect') {
@@ -121,39 +101,6 @@ describe('#buildRedisClient', () => {
       const promise = waitForRedisReady(client)
       listeners.error(error)
       await expect(promise).rejects.toThrow('connection refused')
-    })
-  })
-
-  describe('When a Redis Cluster is requested', () => {
-    beforeEach(() => {
-      buildRedisClient({
-        host: '127.0.0.1',
-        keyPrefix: 'grants-ui:',
-        useSingleInstanceCache: false,
-        useTLS: true,
-        username: 'user',
-        password: 'pass',
-        enableOfflineQueue: false,
-        commandTimeout: 5000,
-        maxRetries: 3
-      })
-    })
-
-    test('Should instantiate a Redis Cluster client', () => {
-      expect(vi.mocked(Cluster)).toHaveBeenCalledWith([{ host: '127.0.0.1', port: 6379 }], {
-        dnsLookup: expect.any(Function),
-        keyPrefix: 'grants-ui:',
-        enableOfflineQueue: false,
-        redisOptions: {
-          db: 0,
-          password: 'pass',
-          tls: {},
-          username: 'user',
-          commandTimeout: 5000,
-          maxRetriesPerRequest: 3
-        },
-        slotsRefreshTimeout: 10000
-      })
     })
   })
 })

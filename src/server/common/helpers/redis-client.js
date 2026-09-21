@@ -46,6 +46,8 @@ export function buildRedisClient(redisConfig) {
     /** @type {RedisOptions} */
     const redisOptions = {
       port,
+      // Retain the existing wire protocol when using ioredis 6.
+      protocol: 2,
       host,
       db,
       keyPrefix,
@@ -77,6 +79,7 @@ export function buildRedisClient(redisConfig) {
         enableOfflineQueue: redisConfig.enableOfflineQueue,
         redisOptions: {
           db,
+          protocol: 2,
           ...credentials,
           ...tls,
           commandTimeout: redisConfig.commandTimeout,
