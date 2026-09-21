@@ -122,7 +122,8 @@ function attachClusters(ml, cleanups) {
       return
     }
     const order = ml.getStyle()?.layers?.map((layer) => layer.id) ?? []
-    const lastTwo = order.slice(-2)
+    const CLUSTER_LAYER_COUNT = 2
+    const lastTwo = order.slice(-CLUSTER_LAYER_COUNT)
     if (lastTwo[0] === LAYER_ID_LABEL_CLUSTER && lastTwo[1] === LAYER_ID_LABEL_CLUSTER_COUNT) {
       return
     }
@@ -156,6 +157,21 @@ function boundsOfPoints(points) {
   return bounds
 }
 
+/**
+ * @param {string} a
+ * @param {string} b
+ * @returns {number}
+ */
+function compareIds(a, b) {
+  if (a < b) {
+    return -1
+  }
+  if (a > b) {
+    return 1
+  }
+  return 0
+}
+
 // Bounds are floating-point lng/lat, so two computations of an otherwise-
 // unchanged parcel can differ in the last few decimal places — round before
 // fingerprinting so that isn't mistaken for a real change.
@@ -180,7 +196,7 @@ function buildLabelFeatures(ml) {
 
   // Sorted by id so the fingerprint doesn't depend on fragment/iteration
   // order, only on which parcels are present and where.
-  const entries = [...boundsById].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+  const entries = [...boundsById].sort(([a], [b]) => compareIds(a, b))
 
   const features = entries.map(([id, { minLng, minLat, maxLng, maxLat }]) => ({
     type: /** @type {const} */ ('Feature'),
