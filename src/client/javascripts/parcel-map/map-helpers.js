@@ -299,8 +299,10 @@ export function buildSkeleton() {
  * Fits the viewport to the parcels' bounding box.
  * @param {import('maplibre-gl').Map | null} ml
  * @param {{ minLng: number, minLat: number, maxLng: number, maxLat: number } | null} bbox
+ * @param {{ animate?: boolean }} [options]  animate defaults to false (used for the
+ *   instant initial fit); pass true for a user-triggered reset (e.g. "Show all parcels")
  */
-export function fitToParcels(ml, bbox) {
+export function fitToParcels(ml, bbox, { animate = false } = {}) {
   if (!ml || !bbox) {
     return
   }
@@ -310,7 +312,7 @@ export function fitToParcels(ml, bbox) {
       [Number(minLng), Number(minLat)],
       [Number(maxLng), Number(maxLat)]
     ],
-    { padding: FIT_BOUNDS_PADDING, animate: false }
+    { padding: FIT_BOUNDS_PADDING, animate }
   )
 }
 

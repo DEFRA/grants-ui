@@ -4,6 +4,7 @@ import { initMap } from './parcel-map-init.js'
 import { attachTooltip } from './parcel-map-tooltip.js'
 import { attachParcelLabels } from './parcel-map-labels.js'
 import { attachSelectionRelay } from './parcel-map-selection.js'
+import { attachResetButton } from './parcel-map-reset-button.js'
 import {
   MULTI_SELECT_ATTRIBUTE,
   ENABLED_LAND_ACTIONS_ATTRIBUTE,
@@ -157,6 +158,7 @@ export class ParcelMap extends HTMLElement {
       this.#metaIndex = data.metaIndex
       this.#bbox = data.bbox
       const tooltip = attachTooltip(ml, data.metaIndex, this.#mapEl, this.#mlCleanup)
+      attachResetButton(ml, data.bbox, this.#mapEl, this.#mlCleanup)
       this.#selectionRelay = attachSelectionRelay({
         host: this,
         mapInstance: this.#mapInstance,

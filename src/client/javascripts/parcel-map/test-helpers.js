@@ -3,6 +3,30 @@ import { vi } from 'vitest'
 
 export function makeMlMap(overrides = {}) {
   const listeners = {}
+
+  function on(event, layerOrCb, cb) {
+    const key = cb ? `${event}:${layerOrCb}` : event
+    const handler = cb ?? layerOrCb
+    listeners[key] = listeners[key] ?? []
+    listeners[key].push(handler)
+  }
+
+  function off(event, layerOrCb, cb) {
+    const key = cb ? `${event}:${layerOrCb}` : event
+    const handler = cb ?? layerOrCb
+    listeners[key] = (listeners[key] ?? []).filter((fn) => fn !== handler)
+  }
+
+  // once() must only call cb one time, unlike on() — unsubscribe via the
+  // same off() a caller would use, right before running cb.
+  function once(event, cb) {
+    const wrapped = (eventObj) => {
+      off(event, wrapped)
+      cb(eventObj)
+    }
+    on(event, wrapped)
+  }
+
   return {
     fitBounds: vi.fn(),
     getSource: vi.fn().mockReturnValue(null),
@@ -17,17 +41,11 @@ export function makeMlMap(overrides = {}) {
     setPaintProperty: vi.fn(),
     project: vi.fn().mockReturnValue({ x: 100, y: 200 }),
     getCanvas: vi.fn().mockReturnValue({ style: {} }),
-    on: vi.fn((event, layerOrCb, cb) => {
-      const key = cb ? `${event}:${layerOrCb}` : event
-      const handler = cb ?? layerOrCb
-      listeners[key] = listeners[key] ?? []
-      listeners[key].push(handler)
-    }),
-    off: vi.fn((event, layerOrCb, cb) => {
-      const key = cb ? `${event}:${layerOrCb}` : event
-      const handler = cb ?? layerOrCb
-      listeners[key] = (listeners[key] ?? []).filter((fn) => fn !== handler)
-    }),
+    getCenter: vi.fn().mockReturnValue({ lng: 0, lat: 0 }),
+    getZoom: vi.fn().mockReturnValue(10),
+    on: vi.fn(on),
+    once: vi.fn(once),
+    off: vi.fn(off),
     _emit(event, eventObj) {
       ;(listeners[event] ?? []).forEach((fn) => fn(eventObj))
     },
