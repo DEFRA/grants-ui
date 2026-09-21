@@ -25,6 +25,11 @@ export function makeMlMap(overrides = {}) {
       listeners[key] = listeners[key] ?? []
       listeners[key].push(handler)
     }),
+    // once() must only ever call cb one time, unlike on(). Without removing
+    // itself, wrapped would stay in listeners[event] and fire on every later
+    // _emit, same as a regular on() listener. Safe to remove mid-_emit:
+    // filter() returns a new array rather than mutating the one _emit's
+    // forEach is currently iterating.
     once: vi.fn((event, cb) => {
       const wrapped = (eventObj) => {
         listeners[event] = (listeners[event] ?? []).filter((fn) => fn !== wrapped)
