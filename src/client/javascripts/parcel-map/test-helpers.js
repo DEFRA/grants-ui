@@ -9,6 +9,8 @@ export function makeMlMap(overrides = {}) {
     addSource: vi.fn(),
     addLayer: vi.fn(),
     getLayer: vi.fn().mockReturnValue(true),
+    getStyle: vi.fn().mockReturnValue({ layers: [] }),
+    moveLayer: vi.fn(),
     isSourceLoaded: vi.fn().mockReturnValue(true),
     queryRenderedFeatures: vi.fn().mockReturnValue([]),
     querySourceFeatures: vi.fn().mockReturnValue([]),

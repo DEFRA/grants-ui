@@ -25,16 +25,14 @@ describe('attachParcelLabels', () => {
     expect(ml.off).toHaveBeenCalledWith('idle', expect.any(Function))
   })
 
-  it('wires up click-to-zoom and a pointer cursor on the cluster badge layer, with matching cleanups', () => {
+  it('wires up click-to-zoom and a pointer-cursor mousemove on the cluster badge layer, with matching cleanups', () => {
     const { ml, cleanups } = setup()
     expect(ml.on).toHaveBeenCalledWith('click', 'parcels-label-cluster', expect.any(Function))
-    expect(ml.on).toHaveBeenCalledWith('mouseenter', 'parcels-label-cluster', expect.any(Function))
-    expect(ml.on).toHaveBeenCalledWith('mouseleave', 'parcels-label-cluster', expect.any(Function))
+    expect(ml.on).toHaveBeenCalledWith('mousemove', expect.any(Function))
 
     cleanups.forEach((off) => off())
     expect(ml.off).toHaveBeenCalledWith('click', 'parcels-label-cluster', expect.any(Function))
-    expect(ml.off).toHaveBeenCalledWith('mouseenter', 'parcels-label-cluster', expect.any(Function))
-    expect(ml.off).toHaveBeenCalledWith('mouseleave', 'parcels-label-cluster', expect.any(Function))
+    expect(ml.off).toHaveBeenCalledWith('mousemove', expect.any(Function))
   })
 
   it('does nothing until the map goes idle', () => {
@@ -261,14 +259,73 @@ describe('attachParcelLabels', () => {
       expect(fitBounds).not.toHaveBeenCalled()
     })
 
-    it('shows a pointer cursor over a cluster and restores it on leave', () => {
-      const { ml } = setupCluster()
+    it('sets a pointer cursor a frame after mousemove when the point hits a cluster badge, so it wins over the vendor hover-cursor handler', async () => {
+      const getClusterLeaves = vi.fn().mockResolvedValue([])
+      const ml = makeMlMap({
+        getSource: vi.fn().mockReturnValue({ getClusterLeaves }),
+        queryRenderedFeatures: vi.fn().mockReturnValue([{ properties: { cluster_id: 5, point_count: 8 } }])
+      })
+      attachParcelLabels(ml, [])
 
-      ml._emitLayer('mouseenter', 'parcels-label-cluster')
-      expect(ml.getCanvas().style.cursor).toBe('pointer')
+      ml._emit('mousemove', { point: { x: 5, y: 5 } })
+      // Simulates the vendor's own same-tick 'mousemove' handler clobbering
+      // the cursor before our deferred check runs.
+      ml.getCanvas().style.cursor = ''
 
-      ml._emitLayer('mouseleave', 'parcels-label-cluster')
+      await vi.waitFor(() => expect(ml.getCanvas().style.cursor).toBe('pointer'))
+    })
+
+    it('does not touch the cursor on mousemove when the point misses every cluster badge', async () => {
+      const ml = makeMlMap({ queryRenderedFeatures: vi.fn().mockReturnValue([]) })
+      attachParcelLabels(ml, [])
+      ml.getCanvas().style.cursor = ''
+
+      ml._emit('mousemove', { point: { x: 5, y: 5 } })
+      await new Promise((resolve) => globalThis.requestAnimationFrame(resolve))
+
+      // Left to whichever other handler (e.g. the fill-layer hover, or the
+      // vendor's own setupHoverCursor) owns the cursor when no cluster is hit.
       expect(ml.getCanvas().style.cursor).toBe('')
+    })
+  })
+
+  describe('keeping the cluster badge on top', () => {
+    it('moves the cluster layers back to the top when something else (e.g. a selection highlight) is drawn above them', () => {
+      const getStyle = vi.fn().mockReturnValue({
+        layers: [
+          { id: 'parcels-fill' },
+          { id: 'parcels-label-cluster' },
+          { id: 'parcels-label-cluster-count' },
+          { id: 'selected-highlight-parcels-fill-line' }
+        ]
+      })
+      const ml = makeMlMap({ getStyle })
+      attachParcelLabels(ml, [])
+
+      ml._emit('styledata')
+
+      expect(ml.moveLayer).toHaveBeenCalledWith('parcels-label-cluster')
+      expect(ml.moveLayer).toHaveBeenCalledWith('parcels-label-cluster-count')
+    })
+
+    it('does nothing when the cluster layers are already last, avoiding a moveLayer -> styledata -> moveLayer loop', () => {
+      const getStyle = vi.fn().mockReturnValue({
+        layers: [{ id: 'parcels-fill' }, { id: 'parcels-label-cluster' }, { id: 'parcels-label-cluster-count' }]
+      })
+      const ml = makeMlMap({ getStyle })
+      attachParcelLabels(ml, [])
+
+      ml._emit('styledata')
+
+      expect(ml.moveLayer).not.toHaveBeenCalled()
+    })
+
+    it('does nothing before the cluster layers exist', () => {
+      const ml = makeMlMap({ getLayer: vi.fn().mockReturnValue(false) })
+      attachParcelLabels(ml, [])
+
+      expect(() => ml._emit('styledata')).not.toThrow()
+      expect(ml.moveLayer).not.toHaveBeenCalled()
     })
   })
 })

@@ -3,6 +3,7 @@ import {
   CLUSTER_EXPAND_MAX_ZOOM,
   FIT_BOUNDS_PADDING,
   LAYER_ID_LABEL_CLUSTER,
+  LAYER_ID_LABEL_CLUSTER_COUNT,
   PARCEL_ID_PROPERTY,
   SOURCE_ID_PARCEL_LABELS,
   SOURCE_ID_PARCELS
@@ -45,17 +46,23 @@ export function attachParcelLabels(ml, cleanups) {
   ml.on('idle', recompute)
   cleanups.push(() => ml.off('idle', recompute))
 
-  attachClusterExpandOnClick(ml, cleanups)
+  attachClusters(ml, cleanups)
 }
 
 /**
- * Clicking a cluster badge zooms into the bounding box of the parcels it
- * groups, so they end up fully framed and split apart rather than just
- * zoomed toward the cluster's own centre point.
+ * Wires up cluster badge behaviour: click-to-zoom into the bounding box of
+ * the parcels a cluster groups, and keeping the badge layers pinned to the
+ * very top of the style so a badge always sits above a selected parcel's
+ * border. The interactive-map plugin's own selection highlight adds a layer
+ * and calls `moveLayer(id)` (no beforeId — i.e. "move to the top") on every
+ * selection change, which would otherwise draw over the badge. `moveLayer`
+ * always sets the style dirty even when nothing moves, so the reassertion
+ * only calls it when the cluster layers aren't already last, to avoid
+ * retriggering itself via `styledata`.
  * @param {MLMap} ml
  * @param {Array<() => void>} cleanups
  */
-function attachClusterExpandOnClick(ml, cleanups) {
+function attachClusters(ml, cleanups) {
   const onClusterClick = (/** @type {MapMouseEvent & { features?: MapGeoJSONFeature[] }} */ e) => {
     const cluster = e.features?.[0]
     const clusterId = cluster?.properties?.cluster_id
@@ -83,22 +90,48 @@ function attachClusterExpandOnClick(ml, cleanups) {
       })
       .catch(Boolean) // ignore: e.g. the cluster no longer exists after a concurrent setData
   }
-  const onMouseEnter = () => {
-    ml.getCanvas().style.cursor = 'pointer'
-  }
-  const onMouseLeave = () => {
-    ml.getCanvas().style.cursor = ''
+  // interactive-map's own setupHoverCursor (a React effect, committed on its
+  // own schedule — there's no reliable way to register after it) attaches a
+  // plain 'mousemove' listener that unconditionally sets the cursor from
+  // LAYER_ID_FILL alone, every time it fires. Whichever of that handler and
+  // ours runs later on a given tick wins, so instead of racing it, this
+  // re-asserts on the next animation frame — after every same-tick
+  // 'mousemove' listener (vendor's included) has already run.
+  let pendingFrame = 0
+  const onMouseMove = (/** @type {MapMouseEvent} */ e) => {
+    const { point } = e
+    globalThis.cancelAnimationFrame(pendingFrame)
+    pendingFrame = globalThis.requestAnimationFrame(() => {
+      if (ml.queryRenderedFeatures(point, { layers: [LAYER_ID_LABEL_CLUSTER] }).length > 0) {
+        ml.getCanvas().style.cursor = 'pointer'
+      }
+    })
   }
 
   ml.on('click', LAYER_ID_LABEL_CLUSTER, onClusterClick)
-  ml.on('mouseenter', LAYER_ID_LABEL_CLUSTER, onMouseEnter)
-  ml.on('mouseleave', LAYER_ID_LABEL_CLUSTER, onMouseLeave)
+  ml.on('mousemove', onMouseMove)
 
   cleanups.push(
     () => ml.off('click', LAYER_ID_LABEL_CLUSTER, onClusterClick),
-    () => ml.off('mouseenter', LAYER_ID_LABEL_CLUSTER, onMouseEnter),
-    () => ml.off('mouseleave', LAYER_ID_LABEL_CLUSTER, onMouseLeave)
+    () => ml.off('mousemove', onMouseMove),
+    () => globalThis.cancelAnimationFrame(pendingFrame)
   )
+
+  const reassertOnTop = () => {
+    if (!ml.getLayer(LAYER_ID_LABEL_CLUSTER) || !ml.getLayer(LAYER_ID_LABEL_CLUSTER_COUNT)) {
+      return
+    }
+    const order = ml.getStyle()?.layers?.map((layer) => layer.id) ?? []
+    const lastTwo = order.slice(-2)
+    if (lastTwo[0] === LAYER_ID_LABEL_CLUSTER && lastTwo[1] === LAYER_ID_LABEL_CLUSTER_COUNT) {
+      return
+    }
+    ml.moveLayer(LAYER_ID_LABEL_CLUSTER)
+    ml.moveLayer(LAYER_ID_LABEL_CLUSTER_COUNT)
+  }
+
+  ml.on('styledata', reassertOnTop)
+  cleanups.push(() => ml.off('styledata', reassertOnTop))
 }
 
 /**
