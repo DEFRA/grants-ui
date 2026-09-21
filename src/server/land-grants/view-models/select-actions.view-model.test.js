@@ -31,6 +31,8 @@ describe('select-actions.view-model', () => {
       description: 'Manage ponds: WBD1',
       version: '1',
       ratePerUnitGbp: 100,
+      displayUnit: 'pond',
+      displayUnitPlural: 'ponds',
       guidanceUrl: 'https://example.test/guidance/wbd1',
       quantityRequired: true,
       availability: { unit: 'count', value: null },
@@ -44,7 +46,7 @@ describe('select-actions.view-model', () => {
 
       expect(result.html).toContain('Manage ponds: WBD1')
       expect(result.html).toContain('href="https://example.test/guidance/wbd1"')
-      expect(result.html).toContain('Payment rate per year: £100/count')
+      expect(result.html).toContain('Payment rate per year: £100/pond')
       expect(result.html).toContain('HEFER required')
       expect(result.html).not.toContain('SSSI')
       expect(result.consents).toEqual(['hefer'])
@@ -52,7 +54,8 @@ describe('select-actions.view-model', () => {
       expect(result.html).not.toContain('all the available area')
       // expect(result.conditional.html).toContain('type="text"')
       expect(result.conditional.html).toContain('inputmode="numeric"')
-      expect(result.conditional.html).toContain('count')
+      expect(result.conditional.html).toContain('ponds')
+      expect(result.conditional.html).not.toContain('>count<')
       expect(result.conditional.html).not.toContain('max=')
       expect(getChosenAreaFieldsHtml([wbd1], [])).toBe('')
     })
