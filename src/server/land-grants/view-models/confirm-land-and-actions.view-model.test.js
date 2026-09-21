@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { buildConfirmLandAndActionsViewModel } from '~/src/server/land-grants/view-models/confirm-land-and-actions.view-model.js'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
+import { buildNewState, deleteActionFromState } from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
 
 const landParcels = {
   'SD1234-5678': {
@@ -203,6 +204,44 @@ describe('buildConfirmLandAndActionsViewModel', () => {
     }
 
     const model = buildConfirmLandAndActionsViewModel(payment, reversedSelection)
+
+    expect(model.parcels.map((parcel) => parcel.reference)).toEqual(['CD9999 1111', 'SD1234 5678'])
+  })
+
+  it('puts added and edited parcels first but preserves their timestamp and order on deletion', () => {
+    const now = vi.spyOn(Date, 'now')
+    const firstParcel = { sheetId: 'SD1234', parcelId: '5678', size: landParcels['SD1234-5678'].size }
+    const secondParcel = { sheetId: 'CD9999', parcelId: '1111', size: landParcels['CD9999-1111'].size }
+    const references = (state) =>
+      buildConfirmLandAndActionsViewModel(payment, state.landParcels).parcels.map((parcel) => parcel.reference)
+
+    try {
+      now.mockReturnValue(1000)
+      const initial = buildNewState({}, landParcels['SD1234-5678'].actionsObj, firstParcel)
+      now.mockReturnValue(2000)
+      const added = buildNewState(initial, landParcels['CD9999-1111'].actionsObj, secondParcel)
+      expect(references(added)).toEqual(['CD9999 1111', 'SD1234 5678'])
+
+      now.mockReturnValue(3000)
+      const edited = buildNewState(added, { CLIG3: { value: 3, unit: 'ha' } }, firstParcel)
+      expect(references(edited)).toEqual(['SD1234 5678', 'CD9999 1111'])
+      expect(references(added)).toEqual(['CD9999 1111', 'SD1234 5678'])
+
+      now.mockReturnValue(4000)
+      const removed = deleteActionFromState(added, 'SD1234-5678', 'CSAM3')
+      expect(removed.landParcels['SD1234-5678'].updatedAt).toBe(added.landParcels['SD1234-5678'].updatedAt)
+      expect(references(removed)).toEqual(['CD9999 1111', 'SD1234 5678'])
+      expect(references(added)).toEqual(['CD9999 1111', 'SD1234 5678'])
+    } finally {
+      now.mockRestore()
+    }
+  })
+
+  it('places timestamped parcels before parcels from older saved state', () => {
+    const model = buildConfirmLandAndActionsViewModel(payment, {
+      ...landParcels,
+      'CD9999-1111': { ...landParcels['CD9999-1111'], updatedAt: 1000 }
+    })
 
     expect(model.parcels.map((parcel) => parcel.reference)).toEqual(['CD9999 1111', 'SD1234 5678'])
   })
