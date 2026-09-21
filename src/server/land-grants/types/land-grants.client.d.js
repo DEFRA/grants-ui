@@ -63,6 +63,8 @@
  * @property {ActionAvailability} [availability] - How much of the action is still claimable
  * @property {number} ratePerUnitGbp - The rate per unit in GBP
  * @property {number} ratePerAgreementPerYearGbp - The rate per agreement per year in GBP
+ * @property {string | null} [displayUnit] - Singular unit label for presentation (e.g. "pond")
+ * @property {string | null} [displayUnitPlural] - Plural unit label for presentation (e.g. "ponds")
  * @property {string} [guidanceUrl] - URL to the action's guidance page
  */
 
