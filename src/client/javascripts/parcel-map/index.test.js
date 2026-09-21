@@ -28,7 +28,8 @@ import {
   SELECT_LISTENER_MAX_POLLS,
   EVENT_READY,
   EVENT_ERROR,
-  EVENT_SELECTION
+  EVENT_SELECTION,
+  MSG_LOADING
 } from './config.js'
 import { makeMlMap } from './test-helpers.js'
 
@@ -196,7 +197,7 @@ describe('parcel-map web component', () => {
 
     it('removes skeleton once ready', async () => {
       const el = await mountReady()
-      expect(el.querySelector('[role="status"][aria-label]')).toBeNull()
+      expect(el.querySelector(`[aria-label="${MSG_LOADING}"]`)).toBeNull()
     })
 
     it('dispatches parcel-map:ready exactly once after a disconnect-while-loading then reconnect', async () => {
