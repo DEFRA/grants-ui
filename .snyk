@@ -1,35 +1,50 @@
 # Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities
 version: v1.25.0
 ignore:
-  'SNYK-JS-MOMENT-19821607':
-    - '*':
-        reason: 'Temporary ignore for Directory Traversal in moment@2.30.1, introduced through @defra/forms-engine-plugin > @defra/forms-model > @joi/date > moment. Fixed in moment 2.31.0 (published 2026-09-15), inside the .npmrc min-release-age=7 cooldown until 2026-09-22. Update the transitive Moment dependency and remove this ignore once the patched version is eligible.'
-        expires: '2026-09-24'
   'SNYK-JS-PROXYADDR-19812342':
-    - '*':
-        reason: 'Temporary ignore for User Impersonation in proxy-addr@2.0.7, introduced through @defra/forms-engine-plugin > @defra/interactive-map > the Docusaurus toolchain > webpack-dev-server > express. Fixed in proxy-addr 2.0.8; remove this ignore when the transitive dependency is updated.'
-        expires: '2026-09-24'
+    - '@defra/forms-engine-plugin > *':
+        reason: 'Awaiting Defra Forms dependency updates.'
+        expires: '2026-10-31'
   'SNYK-JS-FASTURI-19846649':
-    - '*':
-        reason: 'Improper Handling of Case Sensitivity in fast-uri@3.1.7, introduced through @defra/forms-engine-plugin > @defra/interactive-map > the Docusaurus toolchain > webpack > minimizer-webpack-plugin > schema-utils > ajv. Fixed in fast-uri 3.1.8 (published 2026-09-15), inside the .npmrc min-release-age=7 cooldown until 2026-09-22. Update the transitive Fast URI dependency and remove this ignore once the patched version is eligible.'
-        expires: '2026-09-24'
+    - '@defra/forms-engine-plugin > *':
+        reason: 'Awaiting Defra Forms dependency updates.'
+        expires: '2026-10-31'
   'SNYK-JS-INFLIGHT-6095116':
-    - '*':
-        reason: 'Not reachable in application runtime — inflight is only present via glob from @defra/interactive-map/polygon-splitter package metadata and dev/build tooling; grants-ui and the shipped map bundles do not import glob or inflight. Re-checked 2026-08-24 on @defra/interactive-map 0.0.40-alpha: polygon-splitter still pins glob@^8, which requires inflight; no upstream fix available. Reassess for interactive-map/polygon-splitter dependency removal.'
-        expires: '2026-09-24'
+    - '@defra/forms-engine-plugin > *':
+        reason: 'Awaiting Defra Forms dependency updates.'
+        expires: '2026-10-31'
+    - '@defra/interactive-map > *':
+        reason: 'Awaiting Defra map dependency updates.'
+        expires: '2026-10-31'
   'SNYK-JS-IMAGESIZE-17295814':
-    - '*':
-        reason: 'Transitive image-size@2.0.2 from the Docusaurus toolchain in @defra/interactive-map. Re-checked 2026-09-15: Snyk still lists no fixed version for CVE-2025-71329; the GitHub advisory limits the affected range to <=2.0.2 but does not identify a first patched version. npm now publishes 2.0.4 (2026-09-14), inside the .npmrc min-release-age=7 cooldown until 2026-09-21. Verify the fix and update the dependency before removing this ignore.'
-        expires: '2026-09-24'
+    - '@defra/forms-engine-plugin > *':
+        reason: 'Awaiting Defra Forms dependency updates.'
+        expires: '2026-10-31'
   'SNYK-JS-IMAGESIZE-17295816':
-    - '*':
-        reason: 'Transitive image-size@2.0.2 from the Docusaurus toolchain in @defra/interactive-map. Re-checked 2026-09-15: Snyk still lists no fixed version for CVE-2025-71330; the GitHub advisory limits the affected range to <=2.0.2 but does not identify a first patched version. npm now publishes 2.0.4 (2026-09-14), inside the .npmrc min-release-age=7 cooldown until 2026-09-21. Verify the fix and update the dependency before removing this ignore.'
-        expires: '2026-09-24'
-  'SNYK-JS-JOI-19778379':
-    - '*':
-        reason: 'Prototype Pollution in joi@17.13.7. Fixed in 17.13.8 (published 2026-09-11), inside the .npmrc min-release-age=7 cooldown until 2026-09-18. Update both dependencies.joi and overrides.joi to 17.13.8 and remove this ignore once the patched version is eligible.'
-        expires: '2026-09-20'
+    - '@defra/forms-engine-plugin > *':
+        reason: 'Awaiting Defra Forms dependency updates.'
+        expires: '2026-10-31'
   'SNYK-JS-COMPRESSION-19778377':
-    - '*':
-        reason: 'Missing Release of Memory after Effective Lifetime in compression@1.8.1, introduced through webpack-dev-server. Fixed in compression 1.8.2 (published 2026-09-11), inside the .npmrc min-release-age=7 cooldown until 2026-09-18. Update the transitive dependency and remove this ignore once the patched version is eligible.'
-        expires: '2026-09-20'
+    - '@defra/forms-engine-plugin > *':
+        reason: 'Awaiting Defra Forms dependency updates.'
+        expires: '2026-10-31'
+  'SNYK-JS-BRACES-19963945':
+    - '@defra/forms-engine-plugin > *':
+        reason: 'Awaiting Defra Forms dependency updates.'
+        expires: '2026-10-31'
+  'SNYK-JS-HTTPCACHESEMANTICS-19964064':
+    - '@defra/forms-engine-plugin > *':
+        reason: 'Awaiting Defra Forms dependency updates.'
+        expires: '2026-10-31'
+  'SNYK-JS-HTTPCACHESEMANTICS-19964068':
+    - '@defra/forms-engine-plugin > *':
+        reason: 'Awaiting Defra Forms dependency updates.'
+        expires: '2026-10-31'
+  'SNYK-JS-URIJS-19963961':
+    - '@defra/forms-engine-plugin > *':
+        reason: 'Awaiting Defra Forms dependency updates.'
+        expires: '2026-10-31'
+  'SNYK-JS-URIJS-19963963':
+    - '@defra/forms-engine-plugin > *':
+        reason: 'Awaiting Defra Forms dependency updates.'
+        expires: '2026-10-31'
