@@ -304,18 +304,32 @@ describe('parcel-map web component', () => {
       expect(ml.fitBounds).not.toHaveBeenCalled()
     })
 
-    it('adds fill, outline and label layers', async () => {
+    it('adds fill, outline, label and cluster-badge layers', async () => {
       await mountReady()
       const layerIds = ml.addLayer.mock.calls.map((c) => c[0].id)
       expect(layerIds).toContain(LAYER_ID_FILL)
       expect(layerIds).toContain(LAYER_ID_OUTLINE)
       expect(layerIds).toContain(LAYER_ID_LABEL)
+      expect(layerIds).toContain('parcels-label-cluster')
+      expect(layerIds).toContain('parcels-label-cluster-count')
+    })
+
+    it('clusters the label source so labels too close together group into a count badge', async () => {
+      await mountReady()
+      const [, labelSourceSpec] = ml.addSource.mock.calls.find((c) => c[0] === 'parcels-labels')
+      expect(labelSourceSpec).toMatchObject({ type: 'geojson', cluster: true })
     })
 
     it('resolves PARCEL_TILES_URL against location.origin', async () => {
       await mountReady()
       const [, sourceSpec] = ml.addSource.mock.calls[0]
       expect(sourceSpec.tiles[0]).toBe(`${globalThis.location.origin}/api/map/parcel-tiles/{z}/{x}/{y}`)
+    })
+
+    it('promotes the compound id so a parcel split across tiles renders once, not twice', async () => {
+      await mountReady()
+      const [, sourceSpec] = ml.addSource.mock.calls[0]
+      expect(sourceSpec.promoteId).toBe('id')
     })
   })
 

@@ -5,10 +5,17 @@ import {
   FILL_OPACITY_DEFAULT,
   FIT_BOUNDS_PADDING,
   getMapStyleAttribution,
+  LABEL_CLUSTER_COLOR,
+  LABEL_CLUSTER_MAX_ZOOM,
+  LABEL_CLUSTER_RADIUS,
+  LABEL_CLUSTER_RADIUS_PX,
+  LABEL_CLUSTER_TEXT_COLOR,
   LABEL_HALO_COLOR,
   LABEL_TEXT_COLOR,
   LAYER_ID_FILL,
   LAYER_ID_LABEL,
+  LAYER_ID_LABEL_CLUSTER,
+  LAYER_ID_LABEL_CLUSTER_COUNT,
   LAYER_ID_OUTLINE,
   LAYER_LINE_WIDTH,
   LAYER_TEXT_HALO_WIDTH,
@@ -21,6 +28,7 @@ import {
   PARCEL_COLORS,
   PARCEL_ID_PROPERTY,
   PARCEL_TILES_URL,
+  SOURCE_ID_PARCEL_LABELS,
   SOURCE_ID_PARCELS,
   TOOLTIP_FALLBACK_MAP_WIDTH,
   TOOLTIP_MAX_WIDTH,
@@ -39,46 +47,22 @@ import { formatParcelReference } from '../../../shared/format-parcel.js'
  * @typedef {Record<string, ParcelMeta>} MetaIndex
  */
 
+/** @type {GeoJSON.FeatureCollection} */
+const EMPTY_FEATURE_COLLECTION = { type: 'FeatureCollection', features: [] }
+
 // Same PARCEL_ID_PROPERTY the interact plugin matches on, so label/colour/
 // highlight logic can't disagree with what's selected.
 export const COMPOUND_ID_EXPR = ['get', PARCEL_ID_PROPERTY]
 
-// Display expression for the on-parcel map labels: the compound id
-// (e.g. "SD7148-9160") shown with its single dash replaced by a space
-// ("SD7148 9160") so labels match the parcel-reference format used everywhere
-// else. Derived from the compound id alone — the property guaranteed to be
-// present on the vector tiles — so it stays correct regardless of whether
-// sheet_id/parcel_id are stamped onto the tiles. Falls back to the raw id if it
-// somehow contains no dash. Kept separate from COMPOUND_ID_EXPR, which must stay
-// the raw id used for colour/highlight matching.
-export const LABEL_TEXT_EXPR = [
-  'let',
-  'dash',
-  ['index-of', '-', ['get', PARCEL_ID_PROPERTY]],
-  [
-    'case',
-    ['>=', ['var', 'dash'], 0],
-    [
-      'concat',
-      ['slice', ['get', PARCEL_ID_PROPERTY], 0, ['var', 'dash']],
-      ' ',
-      ['slice', ['get', PARCEL_ID_PROPERTY], ['+', ['var', 'dash'], 1]]
-    ],
-    ['get', PARCEL_ID_PROPERTY]
-  ]
-]
-
 /**
- * Builds the fill, outline and label layer specs for the parcel vector-tile
- * source. `source-layer` is always `parcels` — the layer name inside the
- * land-grants vector tiles.
+ * Builds the fill and outline layer specs for the parcel vector-tile source.
+ * `source-layer` is always `parcels` — the layer name inside the land-grants
+ * vector tiles. Labels are a separate layer (see buildParcelLabelLayer) reading
+ * from its own GeoJSON source, not this one.
  * @param {unknown[]} colorExpr  MapLibre `match` expression
  */
 export function buildParcelLayers(colorExpr) {
   const src = { source: SOURCE_ID_PARCELS, 'source-layer': SOURCE_ID_PARCELS }
-  // OS Maps sets no `glyphs` URL, so any font renders locally via MapLibre's
-  // TinySDF fallback.
-  const labelFont = 'Arial Regular'
   return {
     fill: {
       id: LAYER_ID_FILL,
@@ -97,23 +81,81 @@ export function buildParcelLayers(colorExpr) {
         'line-color': colorExpr,
         'line-width': LAYER_LINE_WIDTH
       }
+    }
+  }
+}
+
+// Set by MapLibre's clustering on grouped points only — distinguishes a
+// cluster badge from an individual parcel point.
+/** @type {import('maplibre-gl').FilterSpecification} */
+const IS_CLUSTER_FILTER = ['has', 'point_count']
+
+/**
+ * The parcel label symbol layer, reading from the deduplicated GeoJSON source
+ * (see parcel-map-labels.js) rather than the vector tile source, which would
+ * place one label per tile a parcel's geometry appears in. Filtered to
+ * unclustered points — a clustered point gets the count badge instead (see
+ * buildParcelLabelClusterLayers).
+ * @returns {import('maplibre-gl').SymbolLayerSpecification}
+ */
+export function buildParcelLabelLayer() {
+  // OS Maps sets no `glyphs` URL, so any font renders locally via MapLibre's
+  // TinySDF fallback.
+  const labelFont = 'Arial Regular'
+  return /** @type {import('maplibre-gl').SymbolLayerSpecification} */ ({
+    id: LAYER_ID_LABEL,
+    type: 'symbol',
+    source: SOURCE_ID_PARCEL_LABELS,
+    filter: /** @type {import('maplibre-gl').FilterSpecification} */ (['!', IS_CLUSTER_FILTER]),
+    layout: {
+      'text-field': ['get', 'label'],
+      'text-font': [labelFont],
+      'text-size': LAYER_TEXT_SIZE,
+      'text-anchor': 'center'
     },
-    label: {
-      id: LAYER_ID_LABEL,
+    paint: {
+      'text-color': LABEL_TEXT_COLOR,
+      'text-halo-color': LABEL_HALO_COLOR,
+      'text-halo-width': LAYER_TEXT_HALO_WIDTH
+    }
+  })
+}
+
+/**
+ * The clustered-parcels badge: a filled circle plus its count text, shown
+ * below LABEL_CLUSTER_MAX_ZOOM in place of individual labels for parcels too
+ * close together on screen.
+ * @returns {{ circle: import('maplibre-gl').CircleLayerSpecification, count: import('maplibre-gl').SymbolLayerSpecification }}
+ */
+export function buildParcelLabelClusterLayers() {
+  const src = { source: SOURCE_ID_PARCEL_LABELS, filter: IS_CLUSTER_FILTER }
+  return {
+    circle: /** @type {import('maplibre-gl').CircleLayerSpecification} */ ({
+      id: LAYER_ID_LABEL_CLUSTER,
+      type: 'circle',
+      ...src,
+      paint: {
+        'circle-color': LABEL_CLUSTER_COLOR,
+        'circle-radius': LABEL_CLUSTER_RADIUS,
+        'circle-stroke-width': 2,
+        'circle-stroke-color': LABEL_HALO_COLOR
+      }
+    }),
+    count: /** @type {import('maplibre-gl').SymbolLayerSpecification} */ ({
+      id: LAYER_ID_LABEL_CLUSTER_COUNT,
       type: 'symbol',
       ...src,
       layout: {
-        'text-field': LABEL_TEXT_EXPR,
-        'text-font': [labelFont],
+        'text-field': ['get', 'point_count_abbreviated'],
+        'text-font': ['Arial Regular'],
         'text-size': LAYER_TEXT_SIZE,
-        'text-anchor': 'center'
+        'text-allow-overlap': true,
+        'text-ignore-placement': true
       },
       paint: {
-        'text-color': LABEL_TEXT_COLOR,
-        'text-halo-color': LABEL_HALO_COLOR,
-        'text-halo-width': LAYER_TEXT_HALO_WIDTH
+        'text-color': LABEL_CLUSTER_TEXT_COLOR
       }
-    }
+    })
   }
 }
 
@@ -129,7 +171,9 @@ export function getMapStyle() {
 /**
  * Falls back to the nearest rendered parcel within PARCEL_CLICK_TOLERANCE_PX
  * when the interact plugin's strict inside-the-shape hit test finds nothing —
- * which is common for small parcels at low zoom.
+ * common for small parcels at low zoom. Also suppresses hits on a cluster
+ * badge, so its click doesn't also select the parcel sitting behind it (the
+ * interact plugin hit-tests every map click, not just ones on its own layer).
  *
  * Wrapped via `load()` because the map library hands us a provider
  * *descriptor*, not the provider itself — the real class only exists once
@@ -146,6 +190,12 @@ export function withParcelHitTolerance(descriptor) {
        * @param {{ radius?: number }} [options]
        */
       getFeaturesAtPoint(point, options) {
+        if (
+          this.map?.getLayer(LAYER_ID_LABEL_CLUSTER) &&
+          this.map.queryRenderedFeatures([point.x, point.y], { layers: [LAYER_ID_LABEL_CLUSTER] }).length > 0
+        ) {
+          return []
+        }
         // @ts-ignore — base method exists on the runtime provider
         const hits = super.getFeaturesAtPoint(point, options)
         if (hits.length > 0 || !this.map?.getLayer(LAYER_ID_FILL)) {
@@ -283,13 +333,25 @@ export function addParcelsToMap(ml, { bbox }, colorExpr) {
     SOURCE_ID_PARCELS,
     /** @type {import('maplibre-gl').VectorSourceSpecification} */ ({
       type: 'vector',
-      tiles: [`${origin}${PARCEL_TILES_URL}`]
+      tiles: [`${origin}${PARCEL_TILES_URL}`],
+      // Dedupes a parcel split across tiles so its fill/outline render once.
+      promoteId: PARCEL_ID_PROPERTY
     })
   )
+  ml.addSource(SOURCE_ID_PARCEL_LABELS, {
+    type: 'geojson',
+    data: EMPTY_FEATURE_COLLECTION,
+    cluster: true,
+    clusterRadius: LABEL_CLUSTER_RADIUS_PX,
+    clusterMaxZoom: LABEL_CLUSTER_MAX_ZOOM
+  })
   const layers = buildParcelLayers(colorExpr)
   ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.fill))
   ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.outline))
-  ml.addLayer(/** @type {import('maplibre-gl').LayerSpecification} */ (layers.label))
+  const labelClusterLayers = buildParcelLabelClusterLayers()
+  ml.addLayer(labelClusterLayers.circle)
+  ml.addLayer(labelClusterLayers.count)
+  ml.addLayer(buildParcelLabelLayer())
 }
 
 /**

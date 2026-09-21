@@ -12,8 +12,9 @@ export const TAG_NAME = 'parcel-map'
 export const MULTI_SELECT_ATTRIBUTE = 'multi-select'
 export const ENABLED_LAND_ACTIONS_ATTRIBUTE = 'data-enabled-land-actions'
 
+const COLOR_GOV_UK_BLUE = '#1d70b8'
 export const PARCEL_COLORS = [
-  '#1d70b8', // govuk-blue
+  COLOR_GOV_UK_BLUE, // govuk-blue
   '#d4351c', // govuk-red
   '#f47738', // govuk-orange
   '#4c2c92', // govuk-purple
@@ -40,10 +41,24 @@ export const PARCEL_ID_PROPERTY = 'id'
 // parcels are practically unclickable.
 export const PARCEL_CLICK_TOLERANCE_PX = 10
 export const SOURCE_ID_PARCELS = 'parcels'
+// GeoJSON source the label layer reads from — one deduplicated point per
+// parcel id, rebuilt on 'idle' by parcel-map-labels.js.
+export const SOURCE_ID_PARCEL_LABELS = 'parcels-labels'
 
 export const LAYER_ID_FILL = 'parcels-fill'
 export const LAYER_ID_OUTLINE = 'parcels-outline'
 export const LAYER_ID_LABEL = 'parcels-label'
+export const LAYER_ID_LABEL_CLUSTER = 'parcels-label-cluster'
+export const LAYER_ID_LABEL_CLUSTER_COUNT = 'parcels-label-cluster-count'
+
+export const LABEL_CLUSTER_RADIUS_PX = 85
+export const LABEL_CLUSTER_MAX_ZOOM = 10
+export const LABEL_CLUSTER_COLOR = COLOR_GOV_UK_BLUE
+export const LABEL_CLUSTER_RADIUS = 14
+export const LABEL_CLUSTER_TEXT_COLOR = '#ffffff'
+// Zoom ceiling when fitting to a clicked cluster's bounds — kept separate
+// from LABEL_CLUSTER_MAX_ZOOM, which is too low to double as this cap.
+export const CLUSTER_EXPAND_MAX_ZOOM = 16
 
 export const FILL_OPACITY_DEFAULT = 0.2
 export const FILL_OPACITY_SELECTED = 0.5
