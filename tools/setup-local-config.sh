@@ -19,6 +19,7 @@ CONFIG_REPOS=(
   grants-config-farm-payments
   grants-config-grasslands
   grants-config-land-grants
+  grants-config-water-management
 )
 
 # Newline-separated "grant_name|version" entries collected while pulling config,
