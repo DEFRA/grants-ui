@@ -3,6 +3,7 @@ import { mockFetch, mockFetchWithResponse, mockSimpleRequest } from '~/src/__moc
 import { config } from '~/src/config/config.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
+import { buildClaimPayload } from '~/src/server/claims/mappers/state-to-gas-claim-mapper.js'
 
 let invokeGasGetAction
 let invokeGasPostAction
@@ -201,15 +202,21 @@ describe('Grant Application service (token present)', () => {
   })
 
   describe('submitClaim', () => {
-    const payload = {
-      metadata: {
+    const payload = buildClaimPayload(
+      {
+        grantCode: code,
         clientRef: 'claim-ref-123',
-        submittedAt: '2025-04-22T12:00:00Z'
+        clientClaimRef: 'claim-ref-123-c01',
+        sbi: 'test-sbi',
+        crn: 'test-crn',
+        frn: 'test-frn',
+        configVersion: '1.0.0'
       },
-      answers: {
-        totalArea: 24.95
+      {
+        entitlementId: 'test-entitlement',
+        totalClaimAmountPence: 150000
       }
-    }
+    )
     const mockResponse = {
       id: '67890',
       status: 'submitted'
@@ -249,7 +256,7 @@ describe('Grant Application service (token present)', () => {
 
     test('should build the URL with an undefined clientRef when metadata is missing', async () => {
       const mockFetchInstance = mockFetchWithResponse(mockResponse)
-      const payloadWithoutMetadata = { answers: { totalArea: 24.95 } }
+      const payloadWithoutMetadata = { claim: payload.claim }
 
       await submitClaim(code, payloadWithoutMetadata)
 
@@ -273,7 +280,8 @@ describe('Grant Application service (token present)', () => {
         details: {
           grantCode: code,
           referenceNumber: 'claim-ref-123',
-          answers: payload.answers
+          claimReferenceNumber: 'claim-ref-123-c01',
+          answers: { entitlementId: 'test-entitlement', totalClaimAmountPence: 150000 }
         }
       })
     })
@@ -283,7 +291,7 @@ describe('Grant Application service (token present)', () => {
       const sendAuditEventInBackground = vi.fn()
       const resubmitPayload = {
         metadata: { ...payload.metadata, previousClientRef: 'prev-claim-001' },
-        answers: payload.answers
+        claim: payload.claim
       }
 
       await submitClaim(code, resubmitPayload, { ...mockRequest, sendAuditEventInBackground })
@@ -296,7 +304,8 @@ describe('Grant Application service (token present)', () => {
           grantCode: code,
           referenceNumber: 'claim-ref-123',
           previousReferenceNumber: 'prev-claim-001',
-          answers: resubmitPayload.answers
+          claimReferenceNumber: 'claim-ref-123-c01',
+          answers: resubmitPayload.claim
         }
       })
     })

@@ -24,7 +24,7 @@ import { getGrantCode } from '../common/helpers/grant-code.js'
 import { transformWoodlandAnswers } from '~/src/server/woodland/mappers/state-to-gas-answers-mapper.js'
 import { transformGrasslandsAnswers } from '~/src/server/schemes/grasslands/mappers/state-to-gas-answers-mapper.js'
 import { transformPigsMightFlyAnswers } from '~/src/server/non-land-grants/pigs-might-fly/mappers/state-to-gas-pigs-mapper.js'
-import { transformClaimAnswers } from '~/src/server/claims/mappers/state-to-gas-claim-mapper.js'
+import { buildClaimPayload } from '~/src/server/claims/mappers/state-to-gas-claim-mapper.js'
 import { getClaims, getCurrentClaim, markClaimSubmitted } from '~/src/server/claims/services/claim-state.js'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
 import { getRequiredConsents } from '~/src/server/common/utils/consents.js'
@@ -347,29 +347,26 @@ export default class DeclarationPageController extends SummaryPageController {
 
     const currentClaim = getCurrentClaim(state)
 
-    if (
-      currentClaim?.totalEligibleArea == null ||
-      currentClaim.unit == null ||
-      currentClaim.totalClaimAmountPence == null
-    ) {
+    if (currentClaim?.entitlementId == null || currentClaim.totalClaimAmountPence == null) {
       throw new SystemError({
-        message: 'Cannot submit a claim with missing eligible area, unit or claim amount',
+        message: 'Cannot submit a claim with missing entitlement ID or claim amount',
         source: 'DeclarationController.buildClaimData',
         reason: 'incomplete_claim'
       })
     }
 
-    const identifiers = this.buildIdentifiers(request, context)
+    const { previousClientRef: _previousClientRef, ...identifiers } = this.buildIdentifiers(request, context)
     const configVersion = resolveGasConfigVersion(request)
 
-    const claimSubmissionState = {
-      claimNumber: currentClaim.claimNumber,
-      totalEligibleArea: currentClaim.totalEligibleArea,
-      unit: currentClaim.unit,
-      totalClaimAmountPence: currentClaim.totalClaimAmountPence
-    }
-
-    return transformStateObjectToGasApplication(identifiers, claimSubmissionState, transformClaimAnswers, configVersion)
+    return buildClaimPayload(
+      {
+        grantCode: getGrantCode(request),
+        ...identifiers,
+        clientClaimRef: currentClaim.claimNumber.toLowerCase(),
+        configVersion
+      },
+      { entitlementId: currentClaim.entitlementId, totalClaimAmountPence: currentClaim.totalClaimAmountPence }
+    )
   }
 
   /**
@@ -509,7 +506,7 @@ export default class DeclarationPageController extends SummaryPageController {
         const applicationData = this.buildSubmissionData(request, context)
         const result = await this.strategy.submit(grantCode, applicationData, request)
 
-        if (result.status === statusCodes.noContent) {
+        if ([statusCodes.created, statusCodes.noContent].includes(result.status)) {
           const submissionArgs = { request, context, cacheService, applicationData, sbi, crn, grantCode }
           await this.strategy.handleSuccessfulSubmission(this, submissionArgs)
         }
