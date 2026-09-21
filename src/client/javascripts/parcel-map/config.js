@@ -158,7 +158,7 @@ export const MSG_SHOW_ALL_PARCELS_AVAILABLE = 'Show all parcels button now avail
 // Layout only — background/border/box-shadow/hover/focus live in
 // SHOW_ALL_BUTTON_FOCUS_STYLE so :hover/:focus can override them.
 export const SHOW_ALL_BUTTON_STYLES = [
-  'position:absolute',
+  POSITION_ABSOLUTE,
   'top:12px',
   'left:12px',
   'z-index:2',

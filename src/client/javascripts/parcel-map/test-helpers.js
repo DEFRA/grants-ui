@@ -3,6 +3,30 @@ import { vi } from 'vitest'
 
 export function makeMlMap(overrides = {}) {
   const listeners = {}
+
+  function on(event, layerOrCb, cb) {
+    const key = cb ? `${event}:${layerOrCb}` : event
+    const handler = cb ?? layerOrCb
+    listeners[key] = listeners[key] ?? []
+    listeners[key].push(handler)
+  }
+
+  function off(event, layerOrCb, cb) {
+    const key = cb ? `${event}:${layerOrCb}` : event
+    const handler = cb ?? layerOrCb
+    listeners[key] = (listeners[key] ?? []).filter((fn) => fn !== handler)
+  }
+
+  // once() must only call cb one time, unlike on() — unsubscribe via the
+  // same off() a caller would use, right before running cb.
+  function once(event, cb) {
+    const wrapped = (eventObj) => {
+      off(event, wrapped)
+      cb(eventObj)
+    }
+    on(event, wrapped)
+  }
+
   return {
     fitBounds: vi.fn(),
     getSource: vi.fn().mockReturnValue(null),
@@ -19,30 +43,9 @@ export function makeMlMap(overrides = {}) {
     getCanvas: vi.fn().mockReturnValue({ style: {} }),
     getCenter: vi.fn().mockReturnValue({ lng: 0, lat: 0 }),
     getZoom: vi.fn().mockReturnValue(10),
-    on: vi.fn((event, layerOrCb, cb) => {
-      const key = cb ? `${event}:${layerOrCb}` : event
-      const handler = cb ?? layerOrCb
-      listeners[key] = listeners[key] ?? []
-      listeners[key].push(handler)
-    }),
-    // once() must only ever call cb one time, unlike on(). Without removing
-    // itself, wrapped would stay in listeners[event] and fire on every later
-    // _emit, same as a regular on() listener. Safe to remove mid-_emit:
-    // filter() returns a new array rather than mutating the one _emit's
-    // forEach is currently iterating.
-    once: vi.fn((event, cb) => {
-      const wrapped = (eventObj) => {
-        listeners[event] = (listeners[event] ?? []).filter((fn) => fn !== wrapped)
-        cb(eventObj)
-      }
-      listeners[event] = listeners[event] ?? []
-      listeners[event].push(wrapped)
-    }),
-    off: vi.fn((event, layerOrCb, cb) => {
-      const key = cb ? `${event}:${layerOrCb}` : event
-      const handler = cb ?? layerOrCb
-      listeners[key] = (listeners[key] ?? []).filter((fn) => fn !== handler)
-    }),
+    on: vi.fn(on),
+    once: vi.fn(once),
+    off: vi.fn(off),
     _emit(event, eventObj) {
       ;(listeners[event] ?? []).forEach((fn) => fn(eventObj))
     },
