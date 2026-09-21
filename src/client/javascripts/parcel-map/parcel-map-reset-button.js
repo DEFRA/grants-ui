@@ -6,13 +6,9 @@ import {
   SHOW_ALL_BUTTON_CLASS,
   SHOW_ALL_BUTTON_FOCUS_STYLE,
   SHOW_ALL_ICON_SVG,
-  SHOW_ALL_MOVE_THRESHOLD_PX
+  SHOW_ALL_MOVE_THRESHOLD_PX,
+  ZOOM_DRIFT_TOLERANCE
 } from './parcel-map-reset-button.config.js'
-
-/**
- * @import { Map as MLMap } from 'maplibre-gl'
- * @import { BBox } from './parcel-map-loader.js'
- */
 
 const FOCUS_STYLE_MARKER = 'data-parcel-map-show-all-focus-style'
 
@@ -38,8 +34,6 @@ function centerDriftPx(ml, initialCenter) {
   const currentPoint = ml.project(ml.getCenter())
   return Math.hypot(currentPoint.x - initialPoint.x, currentPoint.y - initialPoint.y)
 }
-
-const ZOOM_DRIFT_TOLERANCE = 0.1
 
 /**
  * True once the map has moved far enough from the initial fit-to-parcels view.
@@ -129,3 +123,8 @@ export function attachResetButton(ml, bbox, mapEl, cleanups) {
 
   return button
 }
+
+/**
+ * @import { Map as MLMap } from 'maplibre-gl'
+ * @import { BBox } from './parcel-map-loader.js'
+ */

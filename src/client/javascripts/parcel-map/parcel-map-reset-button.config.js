@@ -9,6 +9,7 @@ export const SHOW_ALL_ICON_SVG =
 
 // Screen-pixel drift before "Show all parcels" appears; filters out incidental nudges.
 export const SHOW_ALL_MOVE_THRESHOLD_PX = 100
+export const ZOOM_DRIFT_TOLERANCE = 0.1
 
 export const MSG_SHOW_ALL_PARCELS = 'Show all parcels'
 export const MSG_SHOW_ALL_PARCELS_AVAILABLE = 'Show all parcels button now available'
