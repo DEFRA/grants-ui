@@ -58,7 +58,7 @@ export const LABEL_CLUSTER_RADIUS = 14
 export const LABEL_CLUSTER_TEXT_COLOR = '#ffffff'
 // Zoom ceiling when fitting to a clicked cluster's bounds — kept separate
 // from LABEL_CLUSTER_MAX_ZOOM, which is too low to double as this cap.
-export const CLUSTER_EXPAND_MAX_ZOOM = 16
+export const CLUSTER_EXPAND_MAX_ZOOM = 14
 
 export const FILL_OPACITY_DEFAULT = 0.2
 export const FILL_OPACITY_SELECTED = 0.5
