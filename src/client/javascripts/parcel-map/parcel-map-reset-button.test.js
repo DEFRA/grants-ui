@@ -62,10 +62,10 @@ describe('attachResetButton', () => {
     const button = attachResetButton(makeMl(), BBOX, mapEl, cleanups)
 
     expect(button.hidden).toBe(true)
-    // The bug this guards: 'display:flex' baked into the base cssText
+    // The bug this guards: 'display:inline-flex' baked into the base cssText
     // overrides [hidden]'s UA display:none, so the button showed on load
     // regardless of the `hidden` property.
-    expect(button.style.display).not.toBe('flex')
+    expect(button.style.display).not.toBe('inline-flex')
     expect(button.textContent).toContain(MSG_SHOW_ALL_PARCELS)
   })
 
@@ -89,7 +89,7 @@ describe('attachResetButton', () => {
     ml._emit('moveend')
 
     expect(button.hidden).toBe(true)
-    expect(button.style.display).not.toBe('flex')
+    expect(button.style.display).not.toBe('inline-flex')
   })
 
   it('shows the button once drift reaches the threshold', () => {
@@ -100,7 +100,7 @@ describe('attachResetButton', () => {
     ml._emit('moveend')
 
     expect(button.hidden).toBe(false)
-    expect(button.style.display).toBe('flex')
+    expect(button.style.display).toBe('inline-flex')
   })
 
   it('triggers an animated re-fit when clicked, but stays visible until the map actually settles', () => {

@@ -153,32 +153,38 @@ export const ZOOM_DRIFT_TOLERANCE = 0.1
 export const MSG_SHOW_ALL_PARCELS = 'Show all parcels'
 export const MSG_SHOW_ALL_PARCELS_AVAILABLE = 'Show all parcels button now available'
 
+// Layout only — background/border/box-shadow/hover/focus live in
+// SHOW_ALL_BUTTON_FOCUS_STYLE so :hover/:focus can override them.
 export const SHOW_ALL_BUTTON_STYLES = [
   'position:absolute',
-  'top:16px',
-  'left:16px',
+  'top:12px',
+  'left:12px',
   'z-index:2',
   'align-items:center',
-  'gap:6px',
-  'background:#fff',
-  'border:2px solid #0b0c0c',
-  'border-radius:4px',
+  'gap:8px',
+  'margin:0',
   'padding:8px 12px',
   'font-size:16px',
+  'font-weight:400',
+  'line-height:1.25',
   'font-family:GDS Transport,arial,sans-serif',
   'color:#0b0c0c',
   'cursor:pointer'
 ].join(';')
 
-export const SHOW_ALL_BUTTON_CLASS = 'parcel-map-show-all-button'
+export const SHOW_ALL_BUTTON_CLASS = 'map-reset-view-button'
 
-// GOV.UK's govuk-focused-box focus style.
 export const SHOW_ALL_BUTTON_FOCUS_STYLE = `
   .${SHOW_ALL_BUTTON_CLASS} {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+    background: #ffffff;
+    border: 2px solid #0b0c0c;
+    box-shadow: 0 2px 4px rgba(11,12,12,0.15);
+  }
+  .${SHOW_ALL_BUTTON_CLASS}:hover {
+    background-color: var(--button-hover-color);
   }
   .${SHOW_ALL_BUTTON_CLASS}:focus {
     outline: 3px solid transparent;
-    box-shadow: 0 0 0 4px #ffdd00, 0 0 0 8px #0b0c0c;
+    box-shadow: 0 0 0 3px #ffdd00, 0 2px 4px rgba(11,12,12,0.15);
   }
 `

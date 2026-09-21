@@ -89,7 +89,7 @@ export function attachResetButton(ml, bbox, mapEl, cleanups) {
       return
     }
     button.hidden = false
-    button.style.display = 'flex'
+    button.style.display = 'inline-flex'
     announcer.textContent = MSG_SHOW_ALL_PARCELS_AVAILABLE
   }
   const hideButton = () => {
