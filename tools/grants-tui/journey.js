@@ -15,113 +15,19 @@ import {
   RESET_COLOR,
   YELLOW
 } from './constants.js'
+import { defaultCrn, wontCompleteReason } from '../../src/server/dev-tools/journey-runner/journey-meta.js'
 
 const SLUG_PATTERN = /^[a-z0-9-]+$/
 
-// Generic CRN for the many grants whose allowlist is `allowAll: true`.
-export const DEFAULT_CRN = '1102838829'
-
 /**
- * The SBI 106238911 test users, each carrying a fixed level of Countryside
- * Stewardship permissions (csApplications / csAgreements). Notes come from the
- * grants-ui-dal-stub 106238911-<crn>.json fixtures: CRNs …181–184 are the
- * "-All" users (same level for both permission types, …184 has none), and
- * …185–187 are agreements-only (csApplications n/a). Offered on journeys behind
- * the permissions gate so you can sign in as any permission level.
- * @type {{crn: string, note: string}[]}
- */
-const CS_PERMISSION_CRNS = [
-  { crn: '1062311181', note: 'csApplications: SUBMIT, csAgreements: SUBMIT' },
-  { crn: '1062311182', note: 'csApplications: AMEND, csAgreements: AMEND' },
-  { crn: '1062311183', note: 'csApplications: VIEW, csAgreements: VIEW' },
-  { crn: '1062311184', note: 'csApplications: n/a, csAgreements: n/a' },
-  { crn: '1062311185', note: 'csApplications: n/a, csAgreements: SUBMIT' },
-  { crn: '1062311186', note: 'csApplications: n/a, csAgreements: AMEND' },
-  { crn: '1062311187', note: 'csApplications: n/a, csAgreements: VIEW' }
-]
-
-/**
- * CRNs known to work for a journey, most-suitable first — the first is the
- * default, and the TUI only prompts when a journey lists more than one. Listed
- * either because the journey needs a *specific* CRN (its allowlist is not
- * `allowAll`), or because a second CRN reaches seed data the default cannot.
- * Sourced from compose/config-broker/local-allowlists/*.yaml.
- * @type {Record<string, {crn: string, note: string}[]>}
- */
-const JOURNEY_CRNS = {
-  'example-grant-with-auth': [...CS_PERMISSION_CRNS],
-  woodland: [...CS_PERMISSION_CRNS],
-  'farm-payments': [{ crn: '1102838829', note: 'farm-payments allowlist + seeded land parcels' }],
-
-  grasslands: [
-    { crn: '1102838829', note: 'parcels with eligible actions — the happy path' },
-    { crn: '1103313150', note: 'SK0972-6811 / SK0972-7313 have no eligible actions' }
-  ]
-  // methane is `allowAll` once seeded (see SELF_SEED_GRANTS), so it uses DEFAULT_CRN.
-}
-
-/**
- * CRN options for a journey (most-suitable first). Journeys not in JOURNEY_CRNS
- * are `allowAll`, so any CRN works and DEFAULT_CRN is offered.
- * @param {string} slug
- * @returns {{crn: string, note: string}[]}
- */
-export function journeyCrnOptions(slug) {
-  if (slug in JOURNEY_CRNS) return JOURNEY_CRNS[slug]
-  return [{ crn: DEFAULT_CRN, note: 'allowlisted for all CRNs' }]
-}
-
-/**
- * The default CRN to sign in with for a journey when none is given explicitly.
- * @param {string} slug
- * @returns {string}
- */
-export function defaultCrn(slug) {
-  return journeyCrnOptions(slug)[0]?.crn ?? DEFAULT_CRN
-}
-
-/**
- * Journeys that are known not to complete on a standard local stack, with the
- * reason (one array entry per printed line). Shown as a blocking warning the user
- * must acknowledge before the run.
- * @type {Record<string, string[]>}
- */
-const WONT_COMPLETE = {
-  'farm-payments': [
-    'It stops at "select-actions-for-land-parcel": the offered actions (CMOR1, UPL1–UPL3) are',
-    'moorland-only, and the local land-grants seed has no majority-moorland parcel, so every',
-    'parcel is rejected with "This parcel is not majority on the moorland".',
-    'This is backend seed data, not a journey bug.'
-  ],
-  methane: [
-    'Every CRN is turned away at /auth/journey-unauthorised. methane is a frontend-code-only grant',
-    'not known to grants-ui-backend, whose allowlist only governs config-broker grants — so it has',
-    'no way to authorise methane (seeding config__allowlist_entries is ignored). This needs an',
-    'architecture change (skip the backend allowlist for local grants, or onboard methane), not a seed.'
-  ]
-}
-
-/**
- * The reason a journey is known not to complete, as printable lines — or null if
- * it should run normally. Lets the interactive menu show its own acknowledgement.
- * @param {string} slug
- * @returns {string[] | null}
- */
-export function wontCompleteReason(slug) {
-  return WONT_COMPLETE[slug] ?? null
-}
-
-/**
- * If the chosen journey is known not to complete, print why and block until the
- * user presses Enter (or Ctrl+C). No-op for a dry run or a non-interactive stdin.
- * Uses a synchronous fd-0 read so it works from the plain `gt journey <slug>`
- * path, where stdin has already left raw mode.
+ * Print why a known-blocked journey won't complete and wait for Enter. No-op for a
+ * dry run or non-TTY stdin. Reads fd 0 synchronously because stdin has already
+ * left raw mode on the plain `gt journey <slug>` path.
  * @param {string} slug
  * @param {boolean} dryRun
- * @returns {void}
  */
 function acknowledgeIfWontComplete(slug, dryRun) {
-  const reason = WONT_COMPLETE[slug]
+  const reason = wontCompleteReason(slug)
   if (!reason || dryRun || !process.stdin.isTTY) return
   console.log(`\n  ${YELLOW}⚠  '${slug}' will NOT complete.${RESET_COLOR}`)
   for (const line of reason) console.log(`     ${line}`)
@@ -135,8 +41,7 @@ function acknowledgeIfWontComplete(slug, dryRun) {
 }
 
 /**
- * List the journey slugs that have a definition file, for validation and
- * for the "unknown journey" hint.
+ * Slugs that have a journey definition file.
  * @returns {string[]}
  */
 export function listJourneys() {
@@ -151,9 +56,8 @@ export function listJourneys() {
 }
 
 /**
- * Read and parse a journey's step definition file. Returns [] if the file is
- * missing or unparseable — the single source of truth for the readers below.
- * @param {string} slug  grant URL slug
+ * Parse a journey's step file; [] if missing or unparseable.
+ * @param {string} slug
  * @returns {{name?: string, slug: string, type?: string, overrideKey?: string}[]}
  */
 function loadJourney(slug) {
@@ -166,19 +70,17 @@ function loadJourney(slug) {
 }
 
 /**
- * The slug of a journey's first step — the page the runner must enter on. Not
- * every grant starts at `/start` (farm-payments begins at /confirm-farm-details).
- * @param {string} slug  grant URL slug
- * @returns {string | null}  first step's page slug, or null if unreadable
+ * First step's page slug — not every grant starts at `/start` (farm-payments
+ * begins at /confirm-farm-details). Null if unreadable.
+ * @param {string} slug
+ * @returns {string | null}
  */
 export function firstStepSlug(slug) {
   return loadJourney(slug)[0]?.slug ?? null
 }
 
 /**
- * The ordered steps of a journey, for building a "stop at page" picker. Each
- * entry's 1-based position is the number `runJourney`/`--stop` expects. `type` is
- * carried through so callers can tell whether a journey has, say, a map step.
+ * Ordered steps for the "stop at page" picker; 1-based position is what `--stop` expects.
  * @param {string} slug
  * @returns {{name: string, slug: string, type?: string, overrideKey?: string}[]}
  */
@@ -192,10 +94,9 @@ export function journeySteps(slug) {
 }
 
 /**
- * Run a journey headlessly by shelling into the acceptance Playwright driver
- * (`acceptance/journey-cli.js`). Streams the driver's output and returns its
- * exit code (0 = journey completed).
- * @param {string} slug  grant URL slug with a matching journeys/<slug>.json
+ * Run a journey headlessly via the acceptance Playwright driver
+ * (`acceptance/journey-cli.js`), streaming its output.
+ * @param {string} slug
  * @param {{crn?: string, stop?: string, parcel?: string, commonLand?: string, mockNoActions?: boolean, headed?: boolean, clear?: boolean, acknowledged?: boolean, baseUrl?: string, skipInstall?: boolean}} [opts]
  * @param {boolean} [dryRun]  print the command without running it
  * @returns {number}  child exit code
