@@ -133,7 +133,7 @@ export function buildConfirmLandAndActionsViewModel(payment, landParcels) {
     throw invalidResponse('payment.annualTotalPence must be a non-negative integer')
   }
 
-  const parcels = seedParcelsInSelectionOrder(landParcels)
+  const parcels = seedParcelsInUpdatedOrder(landParcels)
   addPricedParcelActions(parcels, payment, landParcels)
 
   return {
@@ -172,18 +172,17 @@ function buildParcelCard(sheetId, parcelId) {
 }
 
 /**
- * Builds the card map in state order so the cards match the order the user picked
- * the parcels on the earlier pages. `payment.parcelItems` is keyed by
- * integer-like ids, which JS iterates in ascending numeric order, so ordering by
- * the response would follow upstream item numbering instead.
+ * Builds the card map with recently added or edited parcels first. Parcels without
+ * a timestamp retain their state order below timestamped parcels.
  * @param {LandParcels} [landParcels]
  * @returns {Map<string, ParcelCard>}
  */
-function seedParcelsInSelectionOrder(landParcels) {
+function seedParcelsInUpdatedOrder(landParcels) {
   /** @type {Map<string, ParcelCard>} */
   const parcels = new Map()
 
-  for (const parcelKey of Object.keys(landParcels ?? {})) {
+  const entries = Object.entries(landParcels ?? {}).sort(([, a], [, b]) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0))
+  for (const [parcelKey] of entries) {
     const [sheetId, parcelId] = parcelKey.split('-')
     if (isNonEmptyString(sheetId) && isNonEmptyString(parcelId)) {
       parcels.set(parcelKey, buildParcelCard(sheetId, parcelId))

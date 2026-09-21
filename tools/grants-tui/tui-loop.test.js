@@ -1,17 +1,28 @@
 // @vitest-environment node
 import { beforeEach, expect, test, vi } from 'vitest'
 import { stripVTControlCharacters } from 'node:util'
-import { buildMainMenuItems, handleChecksCommand, handleToolsCommand, refreshRuntimeStatus } from './tui-loop.js'
+import {
+  buildMainMenuItems,
+  handleChecksCommand,
+  handleGasStateTool,
+  handleToolsCommand,
+  refreshRuntimeStatus
+} from './tui-loop.js'
+import { getGasGrant, listGasApplications, updateGasApplication } from './gas-state.js'
+import { journeySteps } from './journey.js'
+import { YELLOW } from './constants.js'
 import { radioMenu, setRuntimeStatusLine, toggleMenu } from './tui.js'
-import { getRunningComposeFiles, getRunningAppBaseUrl } from './docker.js'
+import { getRunningComposeFiles, getRunningAppBaseUrl, getRunningServices } from './docker.js'
 import { getGasStatus } from './gas.js'
 import { getLastRun, runInteractiveAction, setActionMenu } from './actions.js'
 import { viewOutput } from './output.js'
+import { inspectState } from './state-inspector.js'
 
 vi.mock('./tui.js', () => ({ radioMenu: vi.fn(), toggleMenu: vi.fn(), setRuntimeStatusLine: vi.fn() }))
 vi.mock('./docker.js', async (importOriginal) => ({
   ...(await importOriginal()),
   getRunningComposeFiles: vi.fn(),
+  getRunningServices: vi.fn(),
   getRunningAppBaseUrl: vi.fn(() => 'https://test.example.ts.net')
 }))
 vi.mock('./gas.js', async (importOriginal) => ({ ...(await importOriginal()), getGasStatus: vi.fn() }))
@@ -22,6 +33,150 @@ vi.mock('./actions.js', async (importOriginal) => ({
   setActionMenu: vi.fn()
 }))
 vi.mock('./output.js', () => ({ viewOutput: vi.fn() }))
+vi.mock('./state-inspector.js', () => ({ inspectState: vi.fn() }))
+vi.mock('./journey.js', () => ({
+  listJourneys: () => ['test-grant'],
+  journeyCrnOptions: () => [{ crn: 'test-crn', note: 'Test user' }],
+  wontCompleteReason: () => null,
+  journeySteps: vi.fn(() => [])
+}))
+vi.mock('./gas-state.js', async (importOriginal) => ({
+  ...(await importOriginal()),
+  getGasGrant: vi.fn(),
+  listGasApplications: vi.fn(),
+  updateGasApplication: vi.fn()
+}))
+
+test('GAS picker retains the current position in yellow and selecting it makes no update', async () => {
+  vi.mocked(listGasApplications).mockReturnValue([
+    {
+      code: 'example',
+      clientRef: 'example-ref',
+      currentPhase: 'REVIEW',
+      currentStage: 'CHECKS',
+      currentStatus: 'PASSED'
+    }
+  ])
+  vi.mocked(getGasGrant).mockReturnValue({
+    phases: [{ code: 'REVIEW', stages: [{ code: 'CHECKS', statuses: ['PENDING', 'PASSED'] }] }]
+  })
+  vi.mocked(radioMenu).mockResolvedValueOnce('0').mockResolvedValueOnce('status').mockResolvedValueOnce('1')
+
+  expect(stripVTControlCharacters(await handleGasStateTool())).toBe('GAS status unchanged')
+  expect(vi.mocked(radioMenu).mock.calls[2][0]).toEqual([
+    { key: '0', label: 'REVIEW > CHECKS > PENDING', colour: undefined, description: '' },
+    { key: '1', label: 'REVIEW > CHECKS > PASSED', colour: YELLOW, description: '' }
+  ])
+  expect(vi.mocked(radioMenu).mock.calls[2][2]).toMatchObject({ initialKey: '1' })
+  expect(updateGasApplication).not.toHaveBeenCalled()
+})
+
+test.each([false, true])(
+  'manage GAS displays progress while it queues an offer or previews it (dryRun=%s)',
+  async (dryRun) => {
+    const application = { code: 'woodland', clientRef: 'test-ref' }
+    vi.mocked(listGasApplications).mockReturnValue([application])
+    vi.mocked(radioMenu).mockResolvedValueOnce('0').mockResolvedValueOnce('offer')
+
+    await handleGasStateTool(dryRun)
+
+    expect(runInteractiveAction).toHaveBeenCalledWith('generate-offer', [application, dryRun], 'Generating offer')
+    expect(updateGasApplication).not.toHaveBeenCalled()
+    expect(vi.mocked(radioMenu).mock.calls[1][0].map((item) => item.label)).toEqual([
+      'change status ⇢',
+      'generate offer',
+      'prepare claim'
+    ])
+  }
+)
+
+test('manage GAS prepares a claim as an output-captured action', async () => {
+  const application = { code: 'woodland', clientRef: 'test-ref' }
+  vi.mocked(listGasApplications).mockReturnValue([application])
+  vi.mocked(radioMenu).mockResolvedValueOnce('0').mockResolvedValueOnce('prepare-claim')
+
+  await handleGasStateTool()
+
+  expect(runInteractiveAction).toHaveBeenCalledWith(
+    'prepare-claim',
+    [application, false],
+    'Preparing claim and creating entitlement'
+  )
+})
+
+test('status picker refreshes after preparing a claim and can restore the original status', async () => {
+  const application = {
+    _id: { $oid: 'test-application' },
+    code: 'woodland',
+    clientRef: 'test-ref',
+    currentPhase: 'AGREEMENT',
+    currentStage: 'OFFER',
+    currentStatus: 'STATUS_AGREEMENT_READY_FOR_APPLICANT'
+  }
+  const fresh = {
+    ...application,
+    _id: { ...application._id },
+    currentPhase: 'CLAIM',
+    currentStage: 'CLAIM',
+    currentStatus: 'STATUS_AWAITING_CLAIM'
+  }
+  vi.mocked(listGasApplications).mockReturnValueOnce([application]).mockReturnValue([fresh])
+  vi.mocked(getGasGrant).mockReturnValue({
+    phases: [
+      { code: 'AGREEMENT', stages: [{ code: 'OFFER', statuses: ['STATUS_AGREEMENT_READY_FOR_APPLICANT'] }] },
+      { code: 'CLAIM', stages: [{ code: 'CLAIM', statuses: ['STATUS_AWAITING_CLAIM'] }] }
+    ]
+  })
+  vi.mocked(radioMenu)
+    .mockResolvedValueOnce('0')
+    .mockResolvedValueOnce('prepare-claim')
+    .mockResolvedValueOnce('status')
+    .mockResolvedValueOnce('0')
+
+  await handleGasStateTool()
+
+  expect(vi.mocked(radioMenu).mock.calls[3][2]).toMatchObject({ initialKey: '1' })
+  expect(updateGasApplication).toHaveBeenCalledWith(application, {
+    phase: 'AGREEMENT',
+    stage: 'OFFER',
+    status: 'STATUS_AGREEMENT_READY_FOR_APPLICANT'
+  })
+})
+
+test('status changes stop if the selected application has disappeared', async () => {
+  vi.mocked(listGasApplications)
+    .mockReturnValueOnce([{ _id: 'removed', code: 'woodland', clientRef: 'test-ref' }])
+    .mockReturnValue([])
+  vi.mocked(radioMenu).mockResolvedValueOnce('0').mockResolvedValueOnce('status')
+
+  expect(await handleGasStateTool()).toContain('Application no longer exists')
+  expect(updateGasApplication).not.toHaveBeenCalled()
+  expect(getGasGrant).not.toHaveBeenCalled()
+})
+
+test('escaping a selected GAS application returns to the GAS application list', async () => {
+  vi.mocked(listGasApplications).mockReturnValue([{ code: 'woodland', clientRef: 'test-ref' }])
+  vi.mocked(radioMenu).mockResolvedValueOnce('0').mockResolvedValueOnce('__quit__').mockResolvedValueOnce('__quit__')
+
+  await handleGasStateTool()
+
+  expect(vi.mocked(radioMenu).mock.calls.map((call) => call[1])).toEqual([
+    'Select a GAS application',
+    'Manage GAS · woodland · test-ref',
+    'Select a GAS application'
+  ])
+})
+
+test('offer failures remain visible in the application submenu', async () => {
+  const failure = { code: 1, signal: null, cancelled: false, label: 'Generating offer', logPath: '/tmp/offer.log' }
+  vi.mocked(listGasApplications).mockReturnValue([{ code: 'woodland', clientRef: 'test-ref' }])
+  vi.mocked(getLastRun).mockReturnValueOnce(null).mockReturnValueOnce(failure)
+  vi.mocked(radioMenu).mockResolvedValueOnce('0').mockResolvedValueOnce('offer')
+
+  await handleGasStateTool()
+
+  expect(vi.mocked(radioMenu).mock.calls[2][2]?.statusLine).toContain('Generating offer — failed')
+})
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -29,6 +184,7 @@ beforeEach(() => {
   vi.mocked(getLastRun).mockReturnValue(null)
   vi.mocked(radioMenu).mockResolvedValue('__quit__')
   vi.mocked(getRunningComposeFiles).mockReturnValue(null)
+  vi.mocked(getRunningServices).mockReturnValue([])
   vi.mocked(getGasStatus).mockResolvedValue('RECEIVED')
 })
 
@@ -88,12 +244,69 @@ test('checks exposes each suite directly and escape starts no action', async () 
 
 test('the tools submenu exposes audit scripts with descriptions and escape starts no action', async () => {
   expect(buildMainMenuItems(null, false)).toContainEqual(expect.objectContaining({ key: 'tools', label: 'tools ⇢' }))
+  expect(buildMainMenuItems(null, true).some((item) => item.key === 'journey')).toBe(false)
   await expect(handleToolsCommand(false)).resolves.toBe('')
   const items = vi.mocked(radioMenu).mock.calls[0][0]
-  expect(items.map((item) => item.key)).toEqual(['audit:logs', 'audit:queue', 'audit:clear'])
+  expect(items.map((item) => item.key)).toEqual([
+    'state',
+    'journey',
+    'gas:state',
+    'audit:logs',
+    'audit:queue',
+    'audit:clear'
+  ])
   expect(items.every((item) => item.description.length > 0)).toBe(true)
-  expect(items[2].description).toMatch(/Purge.*queue.*restart grants-ui/)
+  expect(items[5].description).toMatch(/Purge.*queue.*restart grants-ui/)
+  expect(items[2]).toMatchObject({ disabled: true, description: expect.stringContaining('GAS addon') })
+  expect(items[1]).toMatchObject({ label: 'journey ⇢', disabled: true, description: expect.stringContaining('Chrome') })
   expect(runInteractiveAction).not.toHaveBeenCalled()
+})
+
+test('application state opens the inspector and returns to Tools without starting a worker', async () => {
+  vi.mocked(radioMenu).mockResolvedValueOnce('state')
+
+  await handleToolsCommand(false)
+
+  expect(inspectState).toHaveBeenCalledExactlyOnceWith(false)
+  expect(runInteractiveAction).not.toHaveBeenCalled()
+  expect(vi.mocked(radioMenu).mock.calls.map((call) => call[1])).toEqual(['Tools', 'Tools'])
+})
+
+test.each(['headless', 'headed'])('journey runs from Tools with arrows only for further prompts (%s)', async (mode) => {
+  vi.mocked(getRunningComposeFiles).mockReturnValue(['compose.infra.yml', 'compose.grants-ui.yml'])
+  vi.mocked(journeySteps).mockReturnValue([])
+  for (const choice of ['journey', 'test-grant', mode, 'keep', ...(mode === 'headed' ? ['__end__'] : [])]) {
+    vi.mocked(radioMenu).mockResolvedValueOnce(choice)
+  }
+
+  await handleToolsCommand(true)
+
+  const calls = vi.mocked(radioMenu).mock.calls
+  expect(calls[0][0].find((item) => item.key === 'journey')).toMatchObject({ disabled: false })
+  expect(calls[1][0][0].label).toBe('test-grant ⇢')
+  expect(calls[2][0].every((item) => item.label.endsWith(' ⇢'))).toBe(true)
+  expect(calls[3][0].every((item) => item.label.endsWith(' ⇢'))).toBe(mode === 'headed')
+  if (mode === 'headed') {
+    expect(calls[4][0][0].label).toBe('Run to the end')
+  }
+  expect(calls.at(-1)?.[1]).toBe('Tools')
+  expect(runInteractiveAction).toHaveBeenCalledWith(
+    'journey',
+    ['test-grant', expect.objectContaining({ headed: mode === 'headed', clear: false }), true],
+    expect.any(String)
+  )
+})
+
+test('GAS state is enabled only while the GAS compose service is running', async () => {
+  vi.mocked(getRunningComposeFiles).mockReturnValue(['compose.infra.yml', 'compose.grants-ui.yml', 'compose.gas.yml'])
+  vi.mocked(getRunningServices).mockReturnValue(['grants-ui', 'fg-gas-backend'])
+
+  await handleToolsCommand(false)
+
+  expect(vi.mocked(radioMenu).mock.calls[0][0].find((item) => item.key === 'gas:state')).toMatchObject({
+    disabled: false,
+    description: expect.stringContaining('change')
+  })
 })
 
 test.each(['audit:logs', 'audit:queue', 'audit:clear'])(

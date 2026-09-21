@@ -9,6 +9,7 @@
  * @typedef {object} Claim
  * @property {string} claimNumber - Human-readable claim number derived from the application reference
  * @property {ClaimStatusValue} status - Per-claim lifecycle status
+ * @property {string} [entitlementId] - GAS entitlement MongoDB identifier for the claim
  * @property {number} [totalEligibleArea] - Total eligible area for the claim (e.g. `24.95`)
  * @property {string} [unit] - Unit for the total eligible area (e.g. `ha`)
  * @property {number} [totalClaimAmountPence] - Total claim amount for the claim, as an integer number of pence
@@ -20,7 +21,7 @@
  */
 
 /**
- * @typedef {Partial<Pick<Claim, 'totalEligibleArea' | 'unit' | 'totalClaimAmountPence'>>} ClaimAmounts
+ * @typedef {Partial<Pick<Claim, 'entitlementId' | 'totalEligibleArea' | 'unit' | 'totalClaimAmountPence'>>} ClaimDetails
  */
 
 export const ClaimStatus = {
@@ -71,12 +72,13 @@ export function getLatestClaim(state) {
 }
 
 /**
- * Build the claim amount fields as one atomic set
- * @param {ClaimAmounts} amounts
- * @returns {ClaimAmounts}
+ * Build the entitlement and calculated fields as one atomic set.
+ * @param {ClaimDetails} details
+ * @returns {ClaimDetails}
  */
-function buildClaimAmounts({ totalEligibleArea, unit, totalClaimAmountPence }) {
+function buildClaimDetails({ entitlementId, totalEligibleArea, unit, totalClaimAmountPence }) {
   return {
+    ...(entitlementId !== undefined && { entitlementId }),
     ...(totalEligibleArea !== undefined && { totalEligibleArea }),
     ...(unit !== undefined && { unit }),
     ...(totalClaimAmountPence !== undefined && { totalClaimAmountPence })
@@ -89,13 +91,16 @@ function buildClaimAmounts({ totalEligibleArea, unit, totalClaimAmountPence }) {
  * derived claim number. Returns a new claims array (state is not mutated) and
  * the resulting current claim.
  * @param {Record<string, unknown> | undefined} state
- * @param {{ referenceNumber: string } & ClaimAmounts} data
+ * @param {{ referenceNumber: string } & ClaimDetails} data
  * @returns {{ claims: Claim[], currentClaim: Claim }}
  */
-export function upsertCurrentClaim(state, { referenceNumber, totalEligibleArea, unit, totalClaimAmountPence }) {
+export function upsertCurrentClaim(
+  state,
+  { referenceNumber, entitlementId, totalEligibleArea, unit, totalClaimAmountPence }
+) {
   const claims = getClaims(state).map((claim) => ({ ...claim }))
   const currentIndex = claims.findIndex((claim) => claim?.status !== ClaimStatus.SUBMITTED)
-  const amounts = buildClaimAmounts({ totalEligibleArea, unit, totalClaimAmountPence })
+  const details = buildClaimDetails({ entitlementId, totalEligibleArea, unit, totalClaimAmountPence })
 
   if (currentIndex >= 0) {
     // Rebuilt from the identity fields rather than spread over the existing
@@ -105,7 +110,7 @@ export function upsertCurrentClaim(state, { referenceNumber, totalEligibleArea, 
       claimNumber,
       status,
       ...(submittedAt !== undefined && { submittedAt }),
-      ...amounts
+      ...details
     }
     return { claims, currentClaim: claims[currentIndex] }
   }
@@ -114,7 +119,7 @@ export function upsertCurrentClaim(state, { referenceNumber, totalEligibleArea, 
   const currentClaim = {
     claimNumber: generateClaimNumber(referenceNumber, claims.length + 1),
     status: ClaimStatus.IN_PROGRESS,
-    ...amounts
+    ...details
   }
   claims.push(currentClaim)
 

@@ -22,7 +22,7 @@ class Gas {
     return requests.find(
       (r) =>
         r.body.json.metadata.clientRef === referenceNumber.toLowerCase() &&
-        r.body.json.answers.claimNumber === claimNumber
+        r.body.json.metadata.clientClaimRef === claimNumber.toLowerCase()
     )
   }
 

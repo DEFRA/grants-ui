@@ -254,7 +254,7 @@ export async function submitGrantApplication(code, payload, request) {
 /**
  * Emits an FCP Audit event for a successful claim submission.
  * @param {string} code - Grant code.
- * @param {{ metadata?: object, answers?: object }} payload - The submitted GAS payload.
+ * @param {{ metadata?: object, claim?: object }} payload - The submitted GAS payload.
  * @param {AuditableRequest} [request] - Hapi request decorated with `sendAuditEventInBackground`.
  * @returns {void}
  */
@@ -269,8 +269,9 @@ function auditClaimSubmission(code, payload, request) {
     details: {
       grantCode: code,
       referenceNumber: metadata.clientRef,
+      claimReferenceNumber: metadata.clientClaimRef,
       ...(isResubmit && { previousReferenceNumber: metadata.previousClientRef }),
-      answers: payload?.answers
+      answers: payload?.claim
     }
   })
 }

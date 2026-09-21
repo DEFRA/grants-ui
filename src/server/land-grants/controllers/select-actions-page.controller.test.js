@@ -385,6 +385,7 @@ describe('SelectActionsPageController', () => {
           landParcels: {
             'sheet1-parcel1': {
               size: 10,
+              updatedAt: expect.any(Number),
               actionsObj: {
                 CMOR1: expect.objectContaining({
                   description: 'Assess moorland and produce a written record: CMOR1'
@@ -411,6 +412,7 @@ describe('SelectActionsPageController', () => {
           landParcels: {
             'sheet1-parcel1': {
               size: 10,
+              updatedAt: expect.any(Number),
               actionsObj: expect.objectContaining({
                 CMOR1: expect.any(Object),
                 UPL1: expect.any(Object)

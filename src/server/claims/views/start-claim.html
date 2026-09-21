@@ -15,26 +15,31 @@
           })
         }}
       {% endif %}
-      {% include "partials/heading.html" %}
+      {% if noAvailableClaims %}
+        <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
+        <p class="govuk-body">{{ noAvailableClaimsMessage }}</p>
+      {% else %}
+        {% include "partials/heading.html" %}
 
-      <form method="post" action="#" novalidate>
-        <input type="hidden" name="crumb" value="{{ crumb }}" />
+        <form method="post" action="#" novalidate>
+          <input type="hidden" name="crumb" value="{{ crumb }}" />
 
-        {{ componentList(components) }}
+          {{ componentList(components) }}
 
-        <div class="govuk-button-group">
-          {{
-            govukButton({
-              text: submitButtonText or "Continue",
-              preventDoubleClick: true
-            })
-          }}
-        </div>
-      </form>
+          <div class="govuk-button-group">
+            {{
+              govukButton({
+                text: submitButtonText or "Continue",
+                preventDoubleClick: true
+              })
+            }}
+          </div>
+        </form>
 
-      {% set rpaDetails = pageRpaDetails(page) %}
-      {% if rpaDetails %}
-        {{ govukDetails({ summaryText: rpaDetails.title, html: rpaDetails.content }) }}
+        {% set rpaDetails = pageRpaDetails(page) %}
+        {% if rpaDetails %}
+          {{ govukDetails({ summaryText: rpaDetails.title, html: rpaDetails.content }) }}
+        {% endif %}
       {% endif %}
     </div>
   </div>

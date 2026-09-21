@@ -31,6 +31,8 @@ describe('select-actions.view-model', () => {
       description: 'Manage ponds: WBD1',
       version: '1',
       ratePerUnitGbp: 100,
+      displayUnit: 'pond',
+      displayUnitPlural: 'ponds',
       guidanceUrl: 'https://example.test/guidance/wbd1',
       quantityRequired: true,
       availability: { unit: 'count', value: null },
@@ -44,7 +46,7 @@ describe('select-actions.view-model', () => {
 
       expect(result.html).toContain('Manage ponds: WBD1')
       expect(result.html).toContain('href="https://example.test/guidance/wbd1"')
-      expect(result.html).toContain('Payment rate per year: £100/count')
+      expect(result.html).toContain('Payment rate per year: £100/pond')
       expect(result.html).toContain('HEFER required')
       expect(result.html).not.toContain('SSSI')
       expect(result.consents).toEqual(['hefer'])
@@ -52,7 +54,8 @@ describe('select-actions.view-model', () => {
       expect(result.html).not.toContain('all the available area')
       // expect(result.conditional.html).toContain('type="text"')
       expect(result.conditional.html).toContain('inputmode="numeric"')
-      expect(result.conditional.html).toContain('count')
+      expect(result.conditional.html).toContain('ponds')
+      expect(result.conditional.html).not.toContain('>count<')
       expect(result.conditional.html).not.toContain('max=')
       expect(getChosenAreaFieldsHtml([wbd1], [])).toBe('')
     })
@@ -79,10 +82,11 @@ describe('select-actions.view-model', () => {
       expect(result).toEqual({
         id: 'landAction-SAM1',
         value: 'SAM1',
-        html: 'Test Action 1<span class="select-actions-hint">Payment rate per year: £100.50/ha</span>',
+        html: 'Test Action 1 <span class="select-actions-hint">Payment rate per year: £100.50/ha</span>',
         checked: false,
         consents: [],
         attributes: {
+          'data-action-description': 'Test Action 1',
           'data-available-unit': undefined,
           'data-total-available-area': undefined
         }
@@ -110,6 +114,9 @@ describe('select-actions.view-model', () => {
       expect(result.html).toContain('read guidance')
       expect(result.html).toContain('target="_blank"')
       expect(result.html).toContain('rel="noopener noreferrer"')
+      expect(result.html).toContain(
+        'read guidance</a> <span class="select-actions-hint">Payment rate per year: £100.50/ha</span>'
+      )
     })
 
     it('should escape the description and guidance URL in the label to avoid breaking the markup', () => {
@@ -168,7 +175,7 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, addedActions)
 
       expect(result.html).toBe(
-        'Test Action 2<span class="select-actions-hint">Payment rate per year: £75.25/ha and <strong>£50</strong> per agreement</span>'
+        'Test Action 2 <span class="select-actions-hint">Payment rate per year: £75.25/ha and <strong>£50</strong> per agreement</span>'
       )
     })
 
@@ -274,6 +281,7 @@ describe('select-actions.view-model', () => {
       const result = mapActionToViewModel(action, [])
 
       expect(result.attributes).toEqual({
+        'data-action-description': 'Test Action 1',
         'data-available-unit': 'ha',
         'data-total-available-area': 12.5
       })

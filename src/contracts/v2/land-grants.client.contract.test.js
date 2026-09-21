@@ -46,6 +46,8 @@ const actionWithUnrestrictedAvailability = like({
   code: string('WBD1'),
   description: string('Manage ponds'),
   ratePerUnitGbp: number(257),
+  displayUnit: string('pond'),
+  displayUnitPlural: string('ponds'),
   quantityRequired: boolean(true),
   availability: { unit: string('count'), value: nullValue() }
 })
@@ -77,7 +79,9 @@ const expectActionAvailability = (response) => {
         availability: expect.objectContaining({ unit: 'ha', value: expect.any(Number) })
       }),
       expect.objectContaining({
-        availability: { unit: 'count', value: null }
+        availability: { unit: 'count', value: null },
+        displayUnit: 'pond',
+        displayUnitPlural: 'ponds'
       })
     ])
   )

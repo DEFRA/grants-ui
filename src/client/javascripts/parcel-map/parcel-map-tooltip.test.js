@@ -1,7 +1,7 @@
 // @ts-nocheck
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { attachTooltip } from './parcel-map-tooltip.js'
-import { LAYER_ID_FILL } from './config.js'
+import { LAYER_ID_FILL, LAYER_ID_LABEL_CLUSTER } from './config.js'
 import { makeMlMap } from './test-helpers.js'
 
 const META_INDEX = {
@@ -57,6 +57,27 @@ describe('attachTooltip', () => {
     ml._emitLayer('mousemove', LAYER_ID_FILL, { features: [], lngLat: { lng: 0, lat: 0 } })
 
     expect(tooltip.style.display).not.toBe('block')
+  })
+
+  it('hides the tooltip instead of showing it when a cluster badge sits on top of the parcel at that point', () => {
+    ml = makeMlMap({
+      queryRenderedFeatures: vi
+        .fn()
+        .mockImplementation((_point, { layers }) =>
+          layers.includes(LAYER_ID_LABEL_CLUSTER) ? [{ id: 'cluster' }] : []
+        )
+    })
+    const mapEl = makeMapEl()
+    const tooltip = attachTooltip(ml, META_INDEX, mapEl, cleanups)
+    tooltip.style.display = 'block'
+
+    ml._emitLayer('mousemove', LAYER_ID_FILL, {
+      features: [{ properties: { id: 'SD7148-9160' } }],
+      lngLat: { lng: 0, lat: 0 },
+      point: { x: 5, y: 5 }
+    })
+
+    expect(tooltip.style.display).toBe('none')
   })
 
   it('toggles the pointer cursor and hides the tooltip on hover enter/leave', () => {

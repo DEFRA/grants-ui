@@ -33,14 +33,23 @@ const landGrantsViewEnv = new nunjucks.Environment(new nunjucks.FileSystemLoader
  * @param {number} [maxQuantity] - Omitted when the action has no availability
  *   restriction, which leaves the input unbounded and with nothing to describe it
  * @param {{ unit?: string } | null} [availability]
+ * @param {string | null} [displayUnitPlural]
  * @param {string} [errorText] - Error message shown on the input when this action's
  *   quantity failed validation
  * @returns {{ html: string }}
  */
-function getQuantityConditional(actionCode, actionName, quantityValue, maxQuantity, availability, errorText) {
+function getQuantityConditional(
+  actionCode,
+  actionName,
+  quantityValue,
+  maxQuantity,
+  availability,
+  displayUnitPlural,
+  errorText
+) {
   const fieldId = getActionQuantityFieldName(actionCode)
   const unit = availability?.unit
-  const inputUnit = unit ? unitAlternativeLabel(availability) : undefined
+  const inputUnit = displayUnitPlural ?? (unit ? unitAlternativeLabel(availability) : undefined)
   return {
     html: landGrantsViewEnv.render(QUANTITY_INPUT_TEMPLATE, {
       fieldId,
@@ -134,7 +143,7 @@ function getHintHtml(action, needsQuantity, chosenArea) {
     : availableArea(limit ?? 0, action.availability?.unit)
   return landGrantsViewEnv.render(ACTION_HINT_TEMPLATE, {
     rate: String(action.ratePerUnitGbp?.toFixed(2).replace(/\.00$/, '')),
-    rateUnit: unitAlternativeLabel(action.availability),
+    rateUnit: action.displayUnit ?? unitAlternativeLabel(action.availability),
     agreementRate: action.ratePerAgreementPerYearGbp,
     requirementText,
     hintId: `${getActionQuantityFieldName(action.code)}-hint`,
@@ -174,6 +183,7 @@ export function mapActionToViewModel(
         quantityValue,
         getAvailabilityLimit(action.availability),
         action.availability,
+        action.displayUnitPlural,
         quantityErrorsByCode[action.code]
       )
     : getChosenAreaConditional(action, chosenArea)
@@ -181,10 +191,11 @@ export function mapActionToViewModel(
   return {
     id: getCheckboxItemId(action.code, isFirst),
     value: action.code,
-    html: `${getActionLabelHtml(action.description, action.guidanceUrl)}<span class="select-actions-hint">${hintHtml}</span>`,
+    html: `${getActionLabelHtml(action.description, action.guidanceUrl)} <span class="select-actions-hint">${hintHtml}</span>`,
     checked,
     consents,
     attributes: {
+      'data-action-description': action.description,
       'data-available-unit': action.availability?.unit,
       // A non-quantity action's pass/fail threshold - static, never touched by the client.
       'data-total-available-area': getAvailabilityLimit(getStaticAvailability(action)),

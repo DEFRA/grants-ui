@@ -5,6 +5,8 @@
  * @property {string} version - Action version
  * @property {boolean} [quantityRequired] - Whether the user must enter a quantity
  * @property {number} [ratePerUnitGbp] - Payment rate per unit in GBP
+ * @property {string | null} [displayUnit] - Singular unit label used for the payment rate
+ * @property {string | null} [displayUnitPlural] - Plural unit label used beside the quantity input
  * @property {boolean} [quantityRequired] - Backend says the user must enter a quantity
  * @property {boolean} [sssiConsentRequired] - Action requires SSSI consent
  * @property {boolean} [heferRequired] - Action requires HEFER
@@ -39,9 +41,10 @@
  *   (flat page only)
  * @property {object} [hint] - Hint text configuration (grouped page)
  * @property {string} [hint.html] - HTML content for hint (grouped page)
- * @property {{ 'data-available-unit': string|undefined, 'data-total-available-area': number|undefined }} [attributes] -
- *   Rendered onto the checkbox <input> (flat page only). `data-total-available-area` is set
- *   once and never touched client-side, so it stays the original full amount.
+ * @property {{ 'data-action-description': string|undefined, 'data-available-unit': string|undefined, 'data-total-available-area': number|undefined }} [attributes] -
+ *   Rendered onto the checkbox <input> (flat page only). `data-action-description` is the
+ *   plain action description used by the client to build the action-specific validation message,
+ *   while `data-total-available-area` stays the original full amount and is never touched client-side.
  * @property {{ html: string }} [conditional] - Conditional reveal markup shown when checked/selected
  */
 

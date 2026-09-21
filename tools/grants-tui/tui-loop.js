@@ -7,6 +7,7 @@ import {
   BLUE,
   CHECK,
   DIM,
+  GREEN,
   HIDE_CURSOR,
   LOCAL_SERVICES,
   PURPLE,
@@ -41,11 +42,13 @@ import {
 } from './docker.js'
 import { getSelectedFormDefIds, listOverrideSources } from './form-defs.js'
 import { GAS_DIVIDER, gasStatusSegment, getGasStatus, setGasStatus } from './gas.js'
+import { gasStatusChoices, getGasGrant, listGasApplications, updateGasApplication } from './gas-state.js'
 import { journeyCrnOptions, journeySteps, listJourneys, wontCompleteReason } from './journey.js'
 import { loadState, saveState } from './cli-state.js'
 import { promptScale, promptTextWithOptions, radioMenu, setRuntimeStatusLine, toggleMenu } from './tui.js'
 import { tailscaleEnabled, tailscaleStatusSegment } from './tailscale.js'
 import { getTailscaleAvailability } from './tailscale-serve.js'
+import { inspectState } from './state-inspector.js'
 
 // ---------------------------------------------------------------------------
 // Main menu
@@ -123,12 +126,10 @@ export function buildMainMenuItems(
       ...(tailscaleAvailability.available ? {} : { disabled: true })
     },
     { key: 'checks', label: 'checks ⇢', description: 'Tests, lint, security scans and pre-PR checks' },
-    { key: 'tools', label: 'tools ⇢', description: 'Audit logs, queue messages and cleanup' },
     {
-      key: 'journey',
-      label: 'journey ⇢',
-      description: 'Walk a Journey Runner journey headlessly',
-      disabled: !containersRunning
+      key: 'tools',
+      label: 'tools ⇢',
+      description: 'Run grant journeys, manage GAS, inspect state and audit messages'
     },
     { key: 'reset', label: 'reset ⇢', description: 'Full teardown — removes volumes & images' }
   ]
@@ -474,7 +475,30 @@ export async function handleChecksCommand(dryRun) {
 
 /** @param {boolean} dryRun */
 export async function handleToolsCommand(dryRun) {
+  const runningComposeFiles = getRunningComposeFiles()
+  const gasRunning =
+    (runningComposeFiles?.some((file) => file.endsWith('compose.gas.yml')) ?? false) &&
+    getRunningServices().includes('fg-gas-backend')
   const items = [
+    {
+      key: 'state',
+      label: 'application state',
+      description: 'Inspect saved state, search JSON and compare refreshes (read-only)'
+    },
+    {
+      key: 'journey',
+      label: 'journey ⇢',
+      description: 'Automatically fill a grant journey in the background or watch it in Chrome',
+      disabled: !runningComposeFiles
+    },
+    {
+      key: 'gas:state',
+      label: 'manage GAS ⇢',
+      description: gasRunning
+        ? 'View applications, change status and generate offers'
+        : 'Available when the GAS addon is running',
+      disabled: !gasRunning
+    },
     { key: 'audit:logs', label: 'audit logs', description: 'Show audit entries from grants-ui container logs' },
     { key: 'audit:queue', label: 'audit queue', description: 'Show the 10 most recent local audit messages' },
     { key: 'audit:clear', label: 'clear audit', description: 'Purge the local audit queue and restart grants-ui' }
@@ -485,6 +509,9 @@ export async function handleToolsCommand(dryRun) {
     'audit:clear': 'Clearing audit queue and restarting grants-ui'
   }
   return handleActionSubmenu(items, 'Tools', async (selected) => {
+    if (selected === 'state') await inspectState(dryRun)
+    if (selected === 'gas:state') return handleGasStateTool(dryRun)
+    if (selected === 'journey') return handleJourneyCommand(dryRun)
     if (Object.hasOwn(labels, selected)) {
       const previousRun = getLastRun()
       await runInteractiveAction(selected, [dryRun], labels[selected])
@@ -495,6 +522,111 @@ export async function handleToolsCommand(dryRun) {
     }
     return ''
   })
+}
+
+/** Select a GAS application and manage its status or trigger its offer process. */
+export async function handleGasStateTool(dryRun = false) {
+  let applications
+  try {
+    applications = listGasApplications()
+  } catch (error) {
+    return `${RED}✖${RESET_COLOR}  Could not read GAS applications — ${/** @type {Error} */ (error).message}`
+  }
+  if (!applications.length) return `${DIM}No applications found in GAS${RESET_COLOR}`
+
+  const applicationItems = applications.map((application, index) => ({
+    key: String(index),
+    label: `${application.code ?? 'unknown'} · ${application.clientRef ?? 'no client reference'} ⇢`,
+    description: `${application.currentPhase ?? '—'} > ${application.currentStage ?? '—'} > ${application.currentStatus ?? '—'}`
+  }))
+  let statusLine = ''
+  while (true) {
+    const picked = await radioMenu(applicationItems, 'Select a GAS application', {
+      hint: '↑ ↓ navigate    enter → select    esc → back'
+    })
+    if (picked === '__quit__') return statusLine
+    const application = applications[Number(picked)]
+
+    statusLine = await handleActionSubmenu(
+      [
+        {
+          key: 'status',
+          label: 'change status ⇢',
+          description: 'Set local GAS status directly; does not run processes'
+        },
+        {
+          key: 'offer',
+          label: 'generate offer',
+          description: 'Send the configured Caseworking event to run GENERATE_OFFER'
+        },
+        {
+          key: 'prepare-claim',
+          label: 'prepare claim',
+          description: 'Offer, accept and complete the agreement, then create the PA3 entitlement'
+        }
+      ],
+      `Manage GAS · ${application.code} · ${application.clientRef}`,
+      async (selected) => {
+        if (selected === 'status') return handleGasStatusChange(application, dryRun)
+        if (selected === 'prepare-claim') {
+          await runInteractiveAction('prepare-claim', [application, dryRun], 'Preparing claim and creating entitlement')
+          return ''
+        }
+        if (selected !== 'offer') return ''
+        await runInteractiveAction('generate-offer', [application, dryRun], 'Generating offer')
+        return ''
+      }
+    )
+  }
+}
+
+async function handleGasStatusChange(application, dryRun) {
+  try {
+    const fresh = listGasApplications().find(
+      (candidate) => JSON.stringify(candidate._id) === JSON.stringify(application._id)
+    )
+    if (!fresh) throw new Error('Application no longer exists')
+    Object.assign(application, fresh)
+  } catch (error) {
+    return `${RED}✖${RESET_COLOR}  Could not refresh GAS application — ${/** @type {Error} */ (error).message}`
+  }
+  let grant
+  try {
+    grant = getGasGrant(application)
+  } catch (error) {
+    return `${RED}✖${RESET_COLOR}  Could not read the GAS grant definition — ${/** @type {Error} */ (error).message}`
+  }
+  const choices = gasStatusChoices(grant)
+  const currentIndex = choices.findIndex(
+    (choice) =>
+      choice.phase === application.currentPhase &&
+      choice.stage === application.currentStage &&
+      choice.status === application.currentStatus
+  )
+  if (!choices.length) {
+    return `${RED}✖${RESET_COLOR}  No valid statuses found for ${application.code} version ${application.version}`
+  }
+  const choiceItems = choices.map((choice, index) => ({
+    key: String(index),
+    label: `${choice.phase} > ${choice.stage} > ${choice.status}`,
+    colour: index === currentIndex ? YELLOW : undefined,
+    description: ''
+  }))
+  const chosen = await radioMenu(choiceItems, `Set GAS status for ${application.code} · ${application.clientRef}`, {
+    initialKey: currentIndex >= 0 ? String(currentIndex) : undefined,
+    hint: '↑ ↓ navigate    enter → save    esc → back'
+  })
+  if (chosen === '__quit__') return ''
+  if (Number(chosen) === currentIndex) return `${DIM}GAS status unchanged${RESET_COLOR}`
+  const next = choices[Number(chosen)]
+  if (dryRun) return `${DIM}Would set GAS status to ${next.phase} > ${next.stage} > ${next.status}${RESET_COLOR}`
+  try {
+    updateGasApplication(application, next)
+    Object.assign(application, { currentPhase: next.phase, currentStage: next.stage, currentStatus: next.status })
+    return `${GREEN}✔${RESET_COLOR}  GAS status set to ${next.phase} > ${next.stage} > ${next.status}`
+  } catch (error) {
+    return `${RED}✖${RESET_COLOR}  Could not update GAS application — ${/** @type {Error} */ (error).message}`
+  }
 }
 
 async function handleActionSubmenu(items, title, runSelected) {
@@ -570,10 +702,10 @@ async function journeyStepSelectJourney(ctx, journeys) {
     const description = wontCompleteReason(slug)
       ? `${YELLOW}⚠ may not complete${RESET_COLOR}`
       : `${DIM}CRN ${crns[0]?.crn ?? '—'}${RESET_COLOR}`
-    return { key: slug, label: slug, description }
+    return { key: slug, label: `${slug} ⇢`, description }
   })
   const picked = await radioMenu(journeyItems, 'Select a journey to run', { hint: CANCEL_HINT })
-  // esc on the first prompt → back to the main menu (no message, unlike step 4's decline)
+  // esc on the first prompt → back to Tools (no message, unlike step 4's decline)
   if (picked === '__quit__') return { type: 'cancel', message: null }
   ctx.chosen = picked
   return { type: 'next' }
@@ -589,7 +721,7 @@ async function journeyStepCrn(ctx) {
     ctx.crn = crnOptions[0]?.crn
     return { type: 'skip' }
   }
-  const crnItems = crnOptions.map((o) => ({ key: o.crn, label: o.crn, description: o.note }))
+  const crnItems = crnOptions.map((o) => ({ key: o.crn, label: `${o.crn} ⇢`, description: o.note }))
   const picked = await radioMenu(crnItems, `Select a CRN for '${ctx.chosen}'`, { hint: BACK_HINT })
   if (picked === '__quit__') return { type: 'back' }
   ctx.crn = picked
@@ -600,8 +732,8 @@ async function journeyStepCrn(ctx) {
 async function journeyStepMode(ctx) {
   // Pick how to run it — headless (bundled Chromium) or headed (your Chrome).
   const modeItems = [
-    { key: 'headless', label: 'headless', description: 'Run in the background (bundled Chromium)' },
-    { key: 'headed', label: 'headed', description: 'Watch it in your installed Google Chrome' }
+    { key: 'headless', label: 'headless ⇢', description: 'Run in the background (bundled Chromium)' },
+    { key: 'headed', label: 'headed ⇢', description: 'Watch it in your installed Google Chrome' }
   ]
   const picked = await radioMenu(modeItems, `Run '${ctx.chosen}' — headed or headless?`, { hint: BACK_HINT })
   if (picked === '__quit__') return { type: 'back' }
@@ -615,10 +747,14 @@ async function journeyStepClear(ctx) {
   // the "Clear application state" footer link performs — so the run starts
   // from step 1 rather than resuming the furthest-reached page.
   const clearItems = [
-    { key: 'keep', label: 'keep state', description: 'Resume from where this application left off' },
+    {
+      key: 'keep',
+      label: `keep state${journeyNextMenuArrow(ctx, 'clear')}`,
+      description: 'Resume from where this application left off'
+    },
     {
       key: 'clear',
-      label: 'clear state',
+      label: `clear state${journeyNextMenuArrow(ctx, 'clear')}`,
       description: 'Reset to step 1 (like the footer "Clear application state" link)'
     }
   ]
@@ -638,7 +774,7 @@ async function journeyStepAck(ctx) {
   if (!wontComplete) return { type: 'skip' }
   const ackItems = [
     { key: 'cancel', label: 'Cancel', description: 'Back to the menu' },
-    { key: 'run', label: 'Run anyway', description: wontComplete.join(' ') }
+    { key: 'run', label: `Run anyway${journeyNextMenuArrow(ctx, 'ack')}`, description: wontComplete.join(' ') }
   ]
   const ack = await radioMenu(ackItems, `${YELLOW}⚠  '${ctx.chosen}' will NOT complete — run anyway?${RESET_COLOR}`, {
     hint: BACK_HINT
@@ -662,12 +798,12 @@ async function journeyStepCommonLand(ctx) {
   const commonLandItems = [
     {
       key: 'no',
-      label: 'No',
+      label: `No${journeyNextMenuArrow(ctx, 'commonLand')}`,
       description: 'Standard journey - confirmation page shows only the default "What happens next" content'
     },
     {
       key: 'yes',
-      label: 'Yes',
+      label: `Yes${journeyNextMenuArrow(ctx, 'commonLand')}`,
       description:
         'Shows the guidance page, and the confirmation page adds a "What you need to do" section on common land obligations'
     }
@@ -691,10 +827,14 @@ async function journeyStepMock(ctx) {
     return { type: 'skip' }
   }
   const mockItems = [
-    { key: 'off', label: 'API Data', description: 'Use whatever actions the land-grants API returns' },
+    {
+      key: 'off',
+      label: `API Data${journeyNextMenuArrow(ctx, 'mock')}`,
+      description: 'Use whatever actions the land-grants API returns'
+    },
     {
       key: 'no-actions',
-      label: 'Mock no eligible actions',
+      label: `Mock no eligible actions${journeyNextMenuArrow(ctx, 'mock')}`,
       description: 'Land parcels report no actions — shows the error on the map page'
     }
   ]
@@ -726,6 +866,20 @@ async function journeyStepStop(ctx) {
   if (pickedStop === '__quit__') return { type: 'back' }
   ctx.stop = pickedStop !== '__end__' ? pickedStop : undefined
   return { type: 'next' }
+}
+
+/** Only mark choices that actually open another prompt for this journey and mode. */
+function journeyNextMenuArrow(ctx, currentStep) {
+  const steps = journeySteps(ctx.chosen)
+  const remaining = [
+    ['clear', false],
+    ['ack', !!wontCompleteReason(ctx.chosen)],
+    ['commonLand', steps.some((step) => step.overrideKey === 'commonLand')],
+    ['mock', steps.some((step) => step.type === 'mapParcel')],
+    ['stop', ctx.mode === 'headed']
+  ]
+  const currentIndex = remaining.findIndex(([name]) => name === currentStep)
+  return remaining.slice(currentIndex + 1).some(([, enabled]) => enabled) ? ' ⇢' : ''
 }
 
 const JOURNEY_WIZARD_STEPS = [
@@ -901,7 +1055,6 @@ const COMMAND_HANDLERS = {
   'refresh-overrides': (ctx) => handleRefreshOverridesCommand(ctx.dryRun),
   checks: (ctx) => handleChecksCommand(ctx.dryRun),
   tools: (ctx) => handleToolsCommand(ctx.dryRun),
-  journey: (ctx) => handleJourneyCommand(ctx.dryRun),
   down: (ctx) => handleDockerLifecycleCommand('down', ctx.dryRun),
   debug: (ctx) => handleDockerLifecycleCommand('debug', ctx.dryRun),
   reset: (ctx) => handleDockerLifecycleCommand('reset', ctx.dryRun)
