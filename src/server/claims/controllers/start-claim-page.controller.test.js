@@ -55,7 +55,7 @@ describe('StartClaimPageController', () => {
           type: 'Html',
           model: {
             content:
-              '<p>Total eligible area {{ totalEligibleArea }} {{ unit }}, total claim amount {{ (claimAmountPence / 100) | formatCurrency }}</p>'
+              '<p>Total eligible area {{ totalEligibleArea }} {{ unit }}, total claim amount {{ (totalClaimAmountPence / 100) | formatCurrency }}</p>'
           }
         }
       ]
@@ -213,7 +213,7 @@ describe('StartClaimPageController', () => {
       })
     })
 
-    it('sets claimAmountPence from the payment strategy result when a paymentStrategy is configured', async () => {
+    it('sets totalClaimAmountPence from the payment strategy result when a paymentStrategy is configured', async () => {
       strategyCalculatePayment.mockResolvedValueOnce({ payment: {}, totalPence: 425000, totalPayment: '£4,250.00' })
 
       const controller = buildController({
@@ -234,7 +234,7 @@ describe('StartClaimPageController', () => {
         hasAvailableClaims: true,
         totalEligibleArea: 156.1025,
         unit: 'ha',
-        claimAmountPence: 425000
+        totalClaimAmountPence: 425000
       })
     })
 
@@ -277,7 +277,7 @@ describe('StartClaimPageController', () => {
       expect(viewName).toBe('start-claim')
       expect(viewModel.totalEligibleArea).toBe(156.1025)
       expect(viewModel.unit).toBe('ha')
-      expect(viewModel.claimAmountPence).toBe(150000)
+      expect(viewModel.totalClaimAmountPence).toBe(150000)
       expect(viewModel.components[0].model.content).toBe(
         '<p>Total eligible area 156.1025 ha, total claim amount £1,500.00</p>'
       )
@@ -412,7 +412,7 @@ describe('StartClaimPageController', () => {
       )
 
       const [, viewModel] = mockResponseToolkit.view.mock.calls[0]
-      expect(viewModel.claimAmountPence).toBe(425000)
+      expect(viewModel.totalClaimAmountPence).toBe(425000)
       expect(viewModel.components[0].model.content).toBe(
         '<p>Total eligible area 156.1025 ha, total claim amount £4,250.00</p>'
       )
@@ -580,7 +580,7 @@ describe('StartClaimPageController', () => {
         totalEligibleArea: 24.95,
         unit: 'ha',
         entitlementId: 'mongo-entitlement-id',
-        claimAmountPence: 150000
+        totalClaimAmountPence: 150000
       })
 
       expect(controller.setState).toHaveBeenCalledWith(
@@ -594,7 +594,7 @@ describe('StartClaimPageController', () => {
               entitlementId: 'mongo-entitlement-id',
               totalEligibleArea: 24.95,
               unit: 'ha',
-              claimAmountPence: 150000
+              totalClaimAmountPence: 150000
             }
           ]
         })

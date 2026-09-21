@@ -82,7 +82,7 @@ describe('claim-state', () => {
           entitlementId: 'mongo-entitlement-id',
           totalEligibleArea: 24.95,
           unit: 'ha',
-          claimAmountPence: 150000
+          totalClaimAmountPence: 150000
         }
       )
 
@@ -92,7 +92,7 @@ describe('claim-state', () => {
         entitlementId: 'mongo-entitlement-id',
         totalEligibleArea: 24.95,
         unit: 'ha',
-        claimAmountPence: 150000
+        totalClaimAmountPence: 150000
       })
       expect(claims).toEqual([currentClaim])
     })
@@ -104,7 +104,7 @@ describe('claim-state', () => {
         referenceNumber: 'WMP-A1B2-C3D4',
         totalEligibleArea: 10,
         unit: 'ha',
-        claimAmountPence: 10000
+        totalClaimAmountPence: 10000
       })
 
       expect(currentClaim.claimNumber).toBe('WMP-A1B2-C3D4-C02')
@@ -119,7 +119,7 @@ describe('claim-state', () => {
             status: ClaimStatus.IN_PROGRESS,
             totalEligibleArea: 24.95,
             unit: 'ha',
-            claimAmountPence: 150000
+            totalClaimAmountPence: 150000
           }
         ]
       }
@@ -140,7 +140,7 @@ describe('claim-state', () => {
             status: ClaimStatus.IN_PROGRESS,
             totalEligibleArea: 24.95,
             unit: 'ha',
-            claimAmountPence: 150000
+            totalClaimAmountPence: 150000
           }
         ]
       }
@@ -157,7 +157,7 @@ describe('claim-state', () => {
         totalEligibleArea: 30.5,
         unit: 'ha'
       })
-      expect(currentClaim).not.toHaveProperty('claimAmountPence')
+      expect(currentClaim).not.toHaveProperty('totalClaimAmountPence')
     })
 
     test('omits amounts entirely when a new claim is created without them', () => {
@@ -176,21 +176,21 @@ describe('claim-state', () => {
             claimNumber: 'WMP-A1B2-C3D4-C01',
             status: ClaimStatus.IN_PROGRESS,
             submittedAt: '2025-01-01T00:00:00.000Z',
-            claimAmountPence: 150000
+            totalClaimAmountPence: 150000
           }
         ]
       }
 
       const { currentClaim } = upsertCurrentClaim(state, {
         referenceNumber: 'WMP-A1B2-C3D4',
-        claimAmountPence: 160000
+        totalClaimAmountPence: 160000
       })
 
       expect(currentClaim).toEqual({
         claimNumber: 'WMP-A1B2-C3D4-C01',
         status: ClaimStatus.IN_PROGRESS,
         submittedAt: '2025-01-01T00:00:00.000Z',
-        claimAmountPence: 160000
+        totalClaimAmountPence: 160000
       })
     })
 
@@ -202,7 +202,7 @@ describe('claim-state', () => {
             status: ClaimStatus.IN_PROGRESS,
             totalEligibleArea: 1.11,
             unit: 'old',
-            claimAmountPence: 0
+            totalClaimAmountPence: 0
           }
         ]
       }
@@ -211,7 +211,7 @@ describe('claim-state', () => {
         referenceNumber: 'WMP-A1B2-C3D4',
         totalEligibleArea: 24.95,
         unit: 'ha',
-        claimAmountPence: 150000
+        totalClaimAmountPence: 150000
       })
 
       expect(claims).toHaveLength(1)
@@ -220,7 +220,7 @@ describe('claim-state', () => {
         status: ClaimStatus.IN_PROGRESS,
         totalEligibleArea: 24.95,
         unit: 'ha',
-        claimAmountPence: 150000
+        totalClaimAmountPence: 150000
       })
     })
 
@@ -232,7 +232,7 @@ describe('claim-state', () => {
         referenceNumber: 'WMP-A1B2-C3D4',
         totalEligibleArea: 1,
         unit: 'ha',
-        claimAmountPence: 1
+        totalClaimAmountPence: 1
       })
 
       expect(original[0]).toEqual({ claimNumber: 'WMP-A1B2-C3D4-C01', status: ClaimStatus.IN_PROGRESS })

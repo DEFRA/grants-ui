@@ -14,7 +14,7 @@ export function getGasOfferContext(application, spawn) {
     const version = pinned ? db.config_versions.findOne({
       grantCode: application.code, major: Number(pinned.split('.')[0]), status: 'active',
       'definitions.grant.fetchStatus': { $ne: 'permanent_error' }
-    }, { sort: { minor: -1, patch: -1 } }) : null;
+    }, {}, { sort: { minor: -1, patch: -1 } }) : null;
     if (pinned && !version) throw new Error('No active GAS config version found');
     const grant = db.grants.findOne({ code: application.code, version: version?.version ?? '0.0.0' },
       { phases: 1, externalStatusMap: 1 });

@@ -1,6 +1,38 @@
 // @vitest-environment node
 import { describe, expect, test, vi } from 'vitest'
-import { gasOfferAction, generateGasOffer } from './gas-offer.js'
+import { runInNewContext } from 'node:vm'
+import { gasOfferAction, generateGasOffer, getGasOfferContext } from './gas-offer.js'
+
+test('resolves the pinned major using mongosh sort options before looking up the grant', () => {
+  const context = fixture()
+  const findVersion = vi.fn(() => ({ version: '1.3.2' }))
+  const findGrant = vi.fn(() => context.grant)
+  const spawn = vi.fn((_command, _args, options) => {
+    let stdout
+    runInNewContext(options.input, {
+      db: {
+        applications: { findOne: () => ({ ...context.application, currentConfigVersion: '1.0.0' }) },
+        config_versions: { findOne: findVersion },
+        grants: { findOne: findGrant },
+        agreements__agreements: { findOne: () => null }
+      },
+      EJSON: { deserialize: (value) => value, stringify: JSON.stringify },
+      print: (value) => {
+        stdout = value
+      }
+    })
+    return { status: 0, stdout }
+  })
+
+  getGasOfferContext(context.application, spawn)
+
+  expect(findVersion).toHaveBeenCalledWith(
+    { grantCode: 'woodland', major: 1, status: 'active', 'definitions.grant.fetchStatus': { $ne: 'permanent_error' } },
+    {},
+    { sort: { minor: -1, patch: -1 } }
+  )
+  expect(findGrant).toHaveBeenCalledWith({ code: 'woodland', version: '1.3.2' }, { phases: 1, externalStatusMap: 1 })
+})
 
 function fixture() {
   return {

@@ -1,4 +1,5 @@
 import { describe, expect, test, vi } from 'vitest'
+import { ROOT } from './constants.js'
 
 import {
   buildApplicationsScript,
@@ -102,7 +103,7 @@ test('Mongo helpers use the GAS database and reject an unmatched update', () => 
       'mongosh',
       'fg-gas-backend'
     ]),
-    expect.any(Object)
+    expect.objectContaining({ cwd: ROOT })
   )
 
   const unmatched = vi

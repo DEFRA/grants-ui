@@ -104,6 +104,56 @@ test('manage GAS prepares a claim as an output-captured action', async () => {
   )
 })
 
+test('status picker refreshes after preparing a claim and can restore the original status', async () => {
+  const application = {
+    _id: { $oid: 'test-application' },
+    code: 'woodland',
+    clientRef: 'test-ref',
+    currentPhase: 'AGREEMENT',
+    currentStage: 'OFFER',
+    currentStatus: 'STATUS_AGREEMENT_READY_FOR_APPLICANT'
+  }
+  const fresh = {
+    ...application,
+    _id: { ...application._id },
+    currentPhase: 'CLAIM',
+    currentStage: 'CLAIM',
+    currentStatus: 'STATUS_AWAITING_CLAIM'
+  }
+  vi.mocked(listGasApplications).mockReturnValueOnce([application]).mockReturnValue([fresh])
+  vi.mocked(getGasGrant).mockReturnValue({
+    phases: [
+      { code: 'AGREEMENT', stages: [{ code: 'OFFER', statuses: ['STATUS_AGREEMENT_READY_FOR_APPLICANT'] }] },
+      { code: 'CLAIM', stages: [{ code: 'CLAIM', statuses: ['STATUS_AWAITING_CLAIM'] }] }
+    ]
+  })
+  vi.mocked(radioMenu)
+    .mockResolvedValueOnce('0')
+    .mockResolvedValueOnce('prepare-claim')
+    .mockResolvedValueOnce('status')
+    .mockResolvedValueOnce('0')
+
+  await handleGasStateTool()
+
+  expect(vi.mocked(radioMenu).mock.calls[3][2]).toMatchObject({ initialKey: '1' })
+  expect(updateGasApplication).toHaveBeenCalledWith(application, {
+    phase: 'AGREEMENT',
+    stage: 'OFFER',
+    status: 'STATUS_AGREEMENT_READY_FOR_APPLICANT'
+  })
+})
+
+test('status changes stop if the selected application has disappeared', async () => {
+  vi.mocked(listGasApplications)
+    .mockReturnValueOnce([{ _id: 'removed', code: 'woodland', clientRef: 'test-ref' }])
+    .mockReturnValue([])
+  vi.mocked(radioMenu).mockResolvedValueOnce('0').mockResolvedValueOnce('status')
+
+  expect(await handleGasStateTool()).toContain('Application no longer exists')
+  expect(updateGasApplication).not.toHaveBeenCalled()
+  expect(getGasGrant).not.toHaveBeenCalled()
+})
+
 test('escaping a selected GAS application returns to the GAS application list', async () => {
   vi.mocked(listGasApplications).mockReturnValue([{ code: 'woodland', clientRef: 'test-ref' }])
   vi.mocked(radioMenu).mockResolvedValueOnce('0').mockResolvedValueOnce('__quit__').mockResolvedValueOnce('__quit__')

@@ -13,7 +13,7 @@ describe('buildClaimPayload', () => {
         frn: '1100943757',
         configVersion: '1.14.0'
       },
-      { entitlementId: 'mongo-entitlement-id', claimAmountPence: 150000 }
+      { entitlementId: 'mongo-entitlement-id', totalClaimAmountPence: 150000 }
     )
 
     expect(result).toEqual({
@@ -27,7 +27,7 @@ describe('buildClaimPayload', () => {
         configVersion: '1.14.0',
         submittedAt: expect.any(String)
       },
-      claim: { entitlementId: 'mongo-entitlement-id', claimAmountPence: 150000 }
+      claim: { entitlementId: 'mongo-entitlement-id', totalClaimAmountPence: 150000 }
     })
   })
 })

@@ -778,7 +778,7 @@ describe('DeclarationPageController', () => {
               claimNumber: 'REF123-C1',
               status: 'IN_PROGRESS',
               entitlementId: 'mongo-entitlement-id',
-              claimAmountPence: 150000
+              totalClaimAmountPence: 150000
             }
           ]
         },
@@ -830,7 +830,7 @@ describe('DeclarationPageController', () => {
       ['no claims array at all', {}],
       [
         'a missing entitlement ID',
-        { claims: [{ claimNumber: 'REF123-C1', status: 'IN_PROGRESS', claimAmountPence: 150000 }] }
+        { claims: [{ claimNumber: 'REF123-C1', status: 'IN_PROGRESS', totalClaimAmountPence: 150000 }] }
       ],
       [
         'a missing claim amount',
@@ -854,7 +854,7 @@ describe('DeclarationPageController', () => {
               claimNumber: 'REF123-C1',
               status: 'IN_PROGRESS',
               entitlementId: 'mongo-entitlement-id',
-              claimAmountPence: 0
+              totalClaimAmountPence: 0
             }
           ]
         }
@@ -886,7 +886,7 @@ describe('DeclarationPageController', () => {
               claimNumber: 'REF123-C1',
               status: 'IN_PROGRESS',
               entitlementId: 'mongo-entitlement-id',
-              claimAmountPence: 150000
+              totalClaimAmountPence: 150000
             }
           ]
         })

@@ -14,7 +14,7 @@ import { formatLinearUnit } from '~/src/shared/format-linear-unit.js'
  * fetched claim data. The app's `formatCurrency`, `formatAreaUnit` and
  * `formatLinearUnit` filters are registered so the form definition can turn a
  * pence integer into a formatted pounds value
- * (e.g. `{{ (claimAmountPence / 100) | formatCurrency }}`) and a unit
+ * (e.g. `{{ (totalClaimAmountPence / 100) | formatCurrency }}`) and a unit
  * abbreviation into a human-readable name (e.g. `{{ unit | formatAreaUnit }}`).
  */
 const claimContentEnv = new nunjucks.Environment(null, { autoescape: true })
@@ -37,7 +37,7 @@ claimContentEnv.addFilter('formatLinearUnit', formatLinearUnit)
  *       content: |
  *         <p class="govuk-body">Phone: 03000 200 301</p>
  *
- * The claim amount (`claimAmountPence`) is derived by calling the `paymentStrategy`
+ * The claim amount (`totalClaimAmountPence`) is derived by calling the `paymentStrategy`
  * (a land-grants payment call) defined in config.
  *
  * @extends QuestionPageController
@@ -62,7 +62,7 @@ export default class StartClaimPageController extends QuestionPageController {
    * Fetch claim data.
    *
    * Returns the combined result: the GAS-derived data items, with
-   * `claimAmountPence` taken from the payment call when a strategy ran.
+   * `totalClaimAmountPence` taken from the payment call when a strategy ran.
    *
    * @param {AnyFormRequest} request
    * @param {FormContext} context
@@ -80,7 +80,7 @@ export default class StartClaimPageController extends QuestionPageController {
 
     return {
       ...gasData,
-      ...(paymentResult ? { claimAmountPence: paymentResult.totalPence } : {})
+      ...(paymentResult ? { totalClaimAmountPence: paymentResult.totalPence } : {})
     }
   }
 
@@ -213,7 +213,7 @@ export default class StartClaimPageController extends QuestionPageController {
       entitlementId: /** @type {string | undefined} */ (claimData.entitlementId),
       totalEligibleArea: /** @type {number | undefined} */ (claimData.totalEligibleArea),
       unit: /** @type {string | undefined} */ (claimData.unit),
-      claimAmountPence: /** @type {number | undefined} */ (claimData.claimAmountPence)
+      totalClaimAmountPence: /** @type {number | undefined} */ (claimData.totalClaimAmountPence)
     })
 
     await this.setState(

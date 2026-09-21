@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process'
+import { ROOT } from './constants.js'
 
 const MONGO_SERVICE = process.env.GRANTS_UI_MONGO_SERVICE || 'mongodb'
 const MONGO_COMPOSE_FILE = process.env.GRANTS_UI_MONGO_COMPOSE_FILE || 'compose.infra.yml'
@@ -70,7 +71,7 @@ export function runMongo(script, spawn = spawnSync) {
       '--file',
       '/dev/stdin'
     ],
-    { input: script, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
+    { cwd: ROOT, input: script, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
   )
   if (result.status !== 0 || result.error) {
     throw new Error(result.error?.message || result.stderr?.trim() || 'MongoDB is unavailable')

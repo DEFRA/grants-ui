@@ -581,6 +581,15 @@ export async function handleGasStateTool(dryRun = false) {
 }
 
 async function handleGasStatusChange(application, dryRun) {
+  try {
+    const fresh = listGasApplications().find(
+      (candidate) => JSON.stringify(candidate._id) === JSON.stringify(application._id)
+    )
+    if (!fresh) throw new Error('Application no longer exists')
+    Object.assign(application, fresh)
+  } catch (error) {
+    return `${RED}✖${RESET_COLOR}  Could not refresh GAS application — ${/** @type {Error} */ (error).message}`
+  }
   let grant
   try {
     grant = getGasGrant(application)

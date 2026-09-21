@@ -12,7 +12,7 @@
  * @property {string} [entitlementId] - GAS entitlement MongoDB identifier for the claim
  * @property {number} [totalEligibleArea] - Total eligible area for the claim (e.g. `24.95`)
  * @property {string} [unit] - Unit for the total eligible area (e.g. `ha`)
- * @property {number} [claimAmountPence] - Total claim amount for the claim, as an integer number of pence
+ * @property {number} [totalClaimAmountPence] - Total claim amount for the claim, as an integer number of pence
  * @property {string} [submittedAt] - ISO timestamp set when the claim is submitted to GAS
  */
 
@@ -21,7 +21,7 @@
  */
 
 /**
- * @typedef {Partial<Pick<Claim, 'entitlementId' | 'totalEligibleArea' | 'unit' | 'claimAmountPence'>>} ClaimDetails
+ * @typedef {Partial<Pick<Claim, 'entitlementId' | 'totalEligibleArea' | 'unit' | 'totalClaimAmountPence'>>} ClaimDetails
  */
 
 export const ClaimStatus = {
@@ -76,12 +76,12 @@ export function getLatestClaim(state) {
  * @param {ClaimDetails} details
  * @returns {ClaimDetails}
  */
-function buildClaimDetails({ entitlementId, totalEligibleArea, unit, claimAmountPence }) {
+function buildClaimDetails({ entitlementId, totalEligibleArea, unit, totalClaimAmountPence }) {
   return {
     ...(entitlementId !== undefined && { entitlementId }),
     ...(totalEligibleArea !== undefined && { totalEligibleArea }),
     ...(unit !== undefined && { unit }),
-    ...(claimAmountPence !== undefined && { claimAmountPence })
+    ...(totalClaimAmountPence !== undefined && { totalClaimAmountPence })
   }
 }
 
@@ -96,11 +96,11 @@ function buildClaimDetails({ entitlementId, totalEligibleArea, unit, claimAmount
  */
 export function upsertCurrentClaim(
   state,
-  { referenceNumber, entitlementId, totalEligibleArea, unit, claimAmountPence }
+  { referenceNumber, entitlementId, totalEligibleArea, unit, totalClaimAmountPence }
 ) {
   const claims = getClaims(state).map((claim) => ({ ...claim }))
   const currentIndex = claims.findIndex((claim) => claim?.status !== ClaimStatus.SUBMITTED)
-  const details = buildClaimDetails({ entitlementId, totalEligibleArea, unit, claimAmountPence })
+  const details = buildClaimDetails({ entitlementId, totalEligibleArea, unit, totalClaimAmountPence })
 
   if (currentIndex >= 0) {
     // Rebuilt from the identity fields rather than spread over the existing
