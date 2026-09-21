@@ -107,8 +107,10 @@ export const EVENT_SELECTION = 'parcel-map:selection'
 export const ERROR_REASON_UNAVAILABLE = 'unavailable'
 export const ERROR_REASON_NO_PARCELS = 'no-parcels'
 
+const POSITION_ABSOLUTE = 'position:absolute'
+
 export const ERROR_OVERLAY_STYLES = [
-  'position:absolute',
+  POSITION_ABSOLUTE,
   'inset:0',
   'background:#f3f2f1',
   'border:2px solid #b1b4b6',
@@ -122,7 +124,7 @@ export const ERROR_OVERLAY_STYLES = [
 export const ERROR_LABEL_STYLES = 'font-family:GDS Transport,arial,sans-serif;font-size:16px;color:#505a5f'
 
 export const TOOLTIP_STYLES = [
-  'position:absolute',
+  POSITION_ABSOLUTE,
   'z-index:9999',
   'background:#fff',
   'border:2px solid #b1b4b6',
