@@ -19,6 +19,7 @@
  * @typedef {Object} LandParcel
  * @property {Size | null} size - Total area of this parcel, as returned by the parcels API
  * @property {ActionsObject} [actionsObj] - Actions applied to this parcel
+ * @property {number} [updatedAt] - Last action edit in milliseconds since epoch; absent in older saved state
  */
 
 /**

@@ -25,7 +25,7 @@ export function buildNewState(state, actionsObj, parcel) {
     ...state,
     landParcels: {
       ...state.landParcels,
-      [selectedLandParcel]: { size: parcel.size, actionsObj }
+      [selectedLandParcel]: { size: parcel.size, actionsObj, updatedAt: Date.now() }
     }
   }
 }
