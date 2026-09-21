@@ -5,6 +5,8 @@
 import { cmdCheck, cmdDebug, cmdDown, cmdReset, cmdRestart, cmdSnyk, cmdUp } from './commands.js'
 import { runApplyFormDefs } from './form-defs.js'
 import { cmdJourney } from './journey.js'
+import { generateGasOffer } from './gas-offer.js'
+import { prepareGasClaim } from './gas-prepare-claim.js'
 import { cmdSonar } from './sonar.js'
 import { cmdAllTests, cmdTest } from './tests.js'
 import { spawnSync } from 'node:child_process'
@@ -45,7 +47,25 @@ const actions = {
   sonar: cmdSonar,
   check: cmdCheck,
   snyk: cmdSnyk,
-  'form-defs': runApplyFormDefs
+  'form-defs': runApplyFormDefs,
+  'prepare-claim': (application, dryRun) => {
+    const result = prepareGasClaim(application, { dryRun })
+    if (dryRun) {
+      console.log(`Would prepare claim and create PA3 entitlement for ${result.totalHectares}ha`)
+    } else {
+      console.log(`Claim prepared and PA3 entitlement created: ${result.entitlement.id}`)
+    }
+    return 0
+  },
+  'generate-offer': (application, dryRun) => {
+    const { event } = generateGasOffer(application, { dryRun })
+    if (dryRun) {
+      console.log(`Would queue GENERATE_OFFER via ${event.data.currentStatus}`)
+    } else {
+      console.log(`Offer generation queued (${event.id}); GAS processes it asynchronously`)
+    }
+    return 0
+  }
 }
 
 try {
