@@ -77,12 +77,19 @@ describe('claim-state', () => {
     test('creates a new claim with a derived claim number when none exists', () => {
       const { claims, currentClaim } = upsertCurrentClaim(
         {},
-        { referenceNumber: 'WMP-A1B2-C3D4', totalEligibleArea: 24.95, unit: 'ha', totalClaimAmountPence: 150000 }
+        {
+          referenceNumber: 'WMP-A1B2-C3D4',
+          entitlementId: 'mongo-entitlement-id',
+          totalEligibleArea: 24.95,
+          unit: 'ha',
+          totalClaimAmountPence: 150000
+        }
       )
 
       expect(currentClaim).toEqual({
         claimNumber: 'WMP-A1B2-C3D4-C01',
         status: ClaimStatus.IN_PROGRESS,
+        entitlementId: 'mongo-entitlement-id',
         totalEligibleArea: 24.95,
         unit: 'ha',
         totalClaimAmountPence: 150000

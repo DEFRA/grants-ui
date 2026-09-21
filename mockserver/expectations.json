@@ -22,6 +22,7 @@
       "body": {
         "availableClaims": [
           {
+            "entitlementId": "000000000000000000000001",
             "code": "ENT_CS_CAPITAL_PA3",
             "name": "PA3 Woodland Management Plan entitlement",
             "description": "The maximum eligible woodland area that can be claimed under PA3.",

@@ -106,6 +106,22 @@ describe('StartClaimPageController', () => {
   })
 
   describe('fetchGasEntitlements', () => {
+    it('maps the first available claim entitlement ID', async () => {
+      vi.mocked(getAvailableClaimEntitlements).mockResolvedValueOnce({
+        availableClaims: [{ entitlementId: 'entitlement-123', data: { totalHectares: { value: 455000 } } }]
+      })
+
+      const controller = buildController({})
+      const data = await controller.fetchGasEntitlements(mockRequest, mockContext)
+
+      expect(data).toEqual({
+        hasAvailableClaims: true,
+        entitlementId: 'entitlement-123',
+        totalEligibleArea: 455000,
+        unit: 'ha'
+      })
+    })
+
     it('fetches the available claim entitlements and maps totalHectares.value onto totalEligibleArea', async () => {
       vi.mocked(getAvailableClaimEntitlements).mockResolvedValueOnce(buildAvailableClaimsResponse(455000))
 
@@ -116,19 +132,20 @@ describe('StartClaimPageController', () => {
 
       expect(getAvailableClaimEntitlements).toHaveBeenCalledWith('water-management', 'WMP-A1B2-C3D4', mockRequest)
       expect(data).toEqual({
+        hasAvailableClaims: true,
         totalEligibleArea: 455000,
         unit: 'ha'
       })
     })
 
-    it('omits totalEligibleArea when there are no available claims', async () => {
+    it('marks the response unavailable when there are no available claims', async () => {
       vi.mocked(getAvailableClaimEntitlements).mockResolvedValueOnce({ availableClaims: [] })
 
       const controller = buildController({})
 
       const data = await controller.fetchGasEntitlements(mockRequest, mockContext)
 
-      expect(data).toEqual({ unit: 'ha' })
+      expect(data).toEqual({ hasAvailableClaims: false, unit: 'ha' })
     })
 
     it('omits totalEligibleArea when the response has no availableClaims property', async () => {
@@ -138,7 +155,7 @@ describe('StartClaimPageController', () => {
 
       const data = await controller.fetchGasEntitlements(mockRequest, mockContext)
 
-      expect(data).toEqual({ unit: 'ha' })
+      expect(data).toEqual({ hasAvailableClaims: false, unit: 'ha' })
     })
 
     it('omits totalEligibleArea when the first claim has no totalHectares data', async () => {
@@ -150,7 +167,7 @@ describe('StartClaimPageController', () => {
 
       const data = await controller.fetchGasEntitlements(mockRequest, mockContext)
 
-      expect(data).toEqual({ unit: 'ha' })
+      expect(data).toEqual({ hasAvailableClaims: true, unit: 'ha' })
     })
 
     it('defaults to an empty reference number when the context has no state', async () => {
@@ -162,6 +179,7 @@ describe('StartClaimPageController', () => {
 
       expect(getAvailableClaimEntitlements).toHaveBeenCalledWith('water-management', undefined, mockRequest)
       expect(data).toEqual({
+        hasAvailableClaims: true,
         totalEligibleArea: 455000,
         unit: 'ha'
       })
@@ -177,6 +195,7 @@ describe('StartClaimPageController', () => {
       const data = await controller.fetchClaimData(mockRequest, mockContext)
 
       expect(data).toEqual({
+        hasAvailableClaims: true,
         totalEligibleArea: 156.1025,
         unit: 'ha'
       })
@@ -188,12 +207,13 @@ describe('StartClaimPageController', () => {
       const data = await controller.fetchClaimData(mockRequest, mockContext)
 
       expect(data).toEqual({
+        hasAvailableClaims: true,
         totalEligibleArea: 156.1025,
         unit: 'ha'
       })
     })
 
-    it('overrides totalClaimAmountPence with the payment strategy result when a paymentStrategy is configured', async () => {
+    it('sets totalClaimAmountPence from the payment strategy result when a paymentStrategy is configured', async () => {
       strategyCalculatePayment.mockResolvedValueOnce({ payment: {}, totalPence: 425000, totalPayment: '£4,250.00' })
 
       const controller = buildController({
@@ -211,10 +231,22 @@ describe('StartClaimPageController', () => {
       const data = await controller.fetchClaimData(request, context)
 
       expect(data).toEqual({
+        hasAvailableClaims: true,
         totalEligibleArea: 156.1025,
         unit: 'ha',
         totalClaimAmountPence: 425000
       })
+    })
+
+    it('does not calculate a payment when there are no available claims', async () => {
+      vi.mocked(getAvailableClaimEntitlements).mockResolvedValueOnce({ availableClaims: [] })
+      const controller = buildController({ paymentStrategy: 'woodland-claim' })
+
+      const data = await controller.fetchClaimData(mockRequest, mockContext)
+
+      expect(data).toEqual({ hasAvailableClaims: false, unit: 'ha' })
+      expect(resolveStrategy).not.toHaveBeenCalled()
+      expect(strategyCalculatePayment).not.toHaveBeenCalled()
     })
   })
 
@@ -248,6 +280,42 @@ describe('StartClaimPageController', () => {
       expect(viewModel.totalClaimAmountPence).toBe(150000)
       expect(viewModel.components[0].model.content).toBe(
         '<p>Total eligible area 156.1025 ha, total claim amount £1,500.00</p>'
+      )
+    })
+
+    it('shows an unavailable message without a form or payment total when there are no available claims', async () => {
+      vi.mocked(getAvailableClaimEntitlements).mockResolvedValueOnce({ availableClaims: [] })
+      const controller = buildController({ paymentStrategy: 'woodland-claim' })
+      controller.setState = vi.fn().mockResolvedValue(undefined)
+      const context = {
+        state: {
+          $$__referenceNumber: 'WMP-A1B2-C3D4',
+          claims: [
+            {
+              claimNumber: 'WMP-A1B2-C3D4-C01',
+              status: 'IN_PROGRESS',
+              totalEligibleArea: 24.95,
+              unit: 'ha',
+              totalClaimAmountPence: 150000
+            }
+          ]
+        }
+      }
+
+      await controller.makeGetRouteHandler()(mockRequest, context, mockResponseToolkit)
+
+      const [viewName, viewModel] = mockResponseToolkit.view.mock.calls[0]
+      expect(viewName).toBe('start-claim')
+      expect(viewModel).toMatchObject({
+        noAvailableClaims: true,
+        pageTitle: 'There are no claims available',
+        noAvailableClaimsMessage: 'There are no claims available for this grant application.'
+      })
+      expect(viewModel).not.toHaveProperty('totalClaimAmountPence')
+      expect(resolveStrategy).not.toHaveBeenCalled()
+      expect(controller.setState).toHaveBeenCalledWith(
+        mockRequest,
+        expect.objectContaining({ claims: [{ claimNumber: 'WMP-A1B2-C3D4-C01', status: 'IN_PROGRESS' }] })
       )
     })
 
@@ -511,6 +579,7 @@ describe('StartClaimPageController', () => {
       await controller.persistCurrentClaim(mockRequest, context, {
         totalEligibleArea: 24.95,
         unit: 'ha',
+        entitlementId: 'mongo-entitlement-id',
         totalClaimAmountPence: 150000
       })
 
@@ -522,6 +591,7 @@ describe('StartClaimPageController', () => {
             {
               claimNumber: 'WMP-A1B2-C3D4-C01',
               status: 'IN_PROGRESS',
+              entitlementId: 'mongo-entitlement-id',
               totalEligibleArea: 24.95,
               unit: 'ha',
               totalClaimAmountPence: 150000

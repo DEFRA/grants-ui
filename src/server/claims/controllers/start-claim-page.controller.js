@@ -66,10 +66,16 @@ export default class StartClaimPageController extends QuestionPageController {
    *
    * @param {AnyFormRequest} request
    * @param {FormContext} context
-   * @returns {Promise<Record<string, string | number>>} data items keyed by item name
+   * @returns {Promise<Record<string, string | number | boolean>>} data items keyed by item name
    */
   async fetchClaimData(request, context) {
     const gasData = await this.fetchGasEntitlements(request, context)
+
+    // An empty entitlement response means that there is no claim to calculate or submit.
+    if (!gasData.hasAvailableClaims) {
+      return gasData
+    }
+
     const paymentResult = await this.calculateClaimPayment(request, context, gasData)
 
     return {
@@ -82,11 +88,18 @@ export default class StartClaimPageController extends QuestionPageController {
    * Fetch claim data from GAS.
    *
    * Calls the GAS available-claims entitlements endpoint for the current grant
-   * and application reference number and maps the first available claim's
-   * `totalHectares.value` onto `totalEligibleArea`.
+   * and application reference number. It maps the first available claim's
+   * identifier and `totalHectares.value` onto the page data. An empty (or
+   * absent) response is surfaced as `hasAvailableClaims: false` so the page
+   * can show an unavailable state instead of a misleading payment total.
    * @param {AnyFormRequest} request
    * @param {FormContext} context
-   * @returns {Promise<Record<string, string | number>>} data items keyed by item name
+   * @returns {Promise<{
+   *   hasAvailableClaims: boolean,
+   *   entitlementId?: string,
+   *   totalEligibleArea?: number,
+   *   unit: 'ha'
+   * }>} data mapped from the first available claim
    */
   async fetchGasEntitlements(request, context) {
     const grantCode = getGrantCode(request)
@@ -96,10 +109,13 @@ export default class StartClaimPageController extends QuestionPageController {
     const { availableClaims } = await getAvailableClaimEntitlements(grantCode, clientRef, request)
     /* Note: for Woodland there is only 1 claim and it always returns hectares -
        future schemes may need to alter this logic for multiple claims */
-    const [firstClaim] = availableClaims ?? []
-    const totalEligibleArea = /** @type {number | undefined} */ (firstClaim?.data?.totalHectares?.value)
+    const [firstAvailableClaim] = availableClaims ?? []
+    const entitlementId = /** @type {string | undefined} */ (firstAvailableClaim?.entitlementId)
+    const totalEligibleArea = /** @type {number | undefined} */ (firstAvailableClaim?.data?.totalHectares?.value)
 
     return {
+      hasAvailableClaims: Array.isArray(availableClaims) && availableClaims.length > 0,
+      ...(entitlementId != null ? { entitlementId } : {}),
       ...(totalEligibleArea != null ? { totalEligibleArea } : {}),
       unit: 'ha'
     }
@@ -109,7 +125,7 @@ export default class StartClaimPageController extends QuestionPageController {
    * Render each `Html` component's content through Nunjucks so the form
    * definition can use dynamic values (e.g. `{{ totalEligibleArea }}`).
    * @param {object[]} components
-   * @param {Record<string, string | number>} data
+   * @param {Record<string, string | number | boolean>} data
    * @returns {object[]}
    */
   renderComponentsWithData(components, data) {
@@ -141,7 +157,7 @@ export default class StartClaimPageController extends QuestionPageController {
    * when the application reference number or total eligible area is missing.
    * @param {AnyFormRequest} request
    * @param {FormContext} context
-   * @param {Record<string, string | number>} gasData
+   * @param {Record<string, string | number | boolean>} gasData
    * @returns {Promise<PaymentStrategyResult | undefined>}
    */
   async calculateClaimPayment(request, context, gasData) {
@@ -181,7 +197,7 @@ export default class StartClaimPageController extends QuestionPageController {
    * visits update the same current claim rather than creating duplicates.
    * @param {AnyFormRequest} request
    * @param {FormContext} context
-   * @param {Record<string, string | number>} claimData
+   * @param {Record<string, string | number | boolean>} claimData
    * @returns {Promise<void>}
    */
   async persistCurrentClaim(request, context, claimData) {
@@ -194,6 +210,7 @@ export default class StartClaimPageController extends QuestionPageController {
 
     const { claims } = upsertCurrentClaim(state, {
       referenceNumber,
+      entitlementId: /** @type {string | undefined} */ (claimData.entitlementId),
       totalEligibleArea: /** @type {number | undefined} */ (claimData.totalEligibleArea),
       unit: /** @type {string | undefined} */ (claimData.unit),
       totalClaimAmountPence: /** @type {number | undefined} */ (claimData.totalClaimAmountPence)
@@ -246,7 +263,7 @@ export default class StartClaimPageController extends QuestionPageController {
      * @returns {Promise<ResponseObject>}
      */
     const fn = async (request, context, h) => {
-      /** @type {Record<string, string | number>} */
+      /** @type {Record<string, string | number | boolean>} */
       let claimData
 
       // The fetch is all-or-nothing: a partial set of amounts must never be
@@ -259,9 +276,20 @@ export default class StartClaimPageController extends QuestionPageController {
         throw error
       }
 
-      await this.persistCurrentClaim(request, context, claimData)
-
       const baseViewModel = super.getViewModel(request, context)
+
+      if (!claimData.hasAvailableClaims) {
+        await this.clearCurrentClaimAmounts(request, context)
+
+        return h.view(this.viewName, {
+          ...baseViewModel,
+          noAvailableClaims: true,
+          pageTitle: 'There are no claims available',
+          noAvailableClaimsMessage: 'There are no claims available for this grant application.'
+        })
+      }
+
+      await this.persistCurrentClaim(request, context, claimData)
 
       const viewModel = {
         ...baseViewModel,

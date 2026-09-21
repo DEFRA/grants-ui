@@ -124,7 +124,11 @@ Then(
     expect(request.body.json.metadata.sbi).toEqual(sbi)
     expect(request.body.json.metadata.crn).toEqual(crn)
     expect(request.body.json.metadata.configVersion).toMatch(/^\d+\.\d+\.\d+$/)
-    expect(request.body.json.answers.claimNumber).toEqual(claimNumber)
+    expect(request.body.json.metadata.clientClaimRef).toEqual(claimNumber.toLowerCase())
+    expect(request.body.json.claim).toEqual({
+      entitlementId: '000000000000000000000001',
+      totalClaimAmountPence: 255330
+    })
   }
 )
 

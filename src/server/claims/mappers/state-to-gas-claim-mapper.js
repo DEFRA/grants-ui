@@ -1,15 +1,16 @@
 /**
- * Transforms the claim submission state into the answers shape expected by GAS
- * for a claim submission.
- *
- * Unlike an application submission, a claim GAS payload must contain ONLY the
- * claim-specific answers below (the standard identifiers/metadata are added by
- * `transformStateObjectToGasApplication`). Nothing else from journey state is
- * sent.
- * @param {Record<string, unknown>} claimSubmissionState
- * @returns {{ totalEligibleArea: unknown, unit: unknown, totalClaimAmountPence: unknown, referenceNumber: unknown, claimNumber: unknown }}
+ * Builds the GAS claim payload. Claims have a distinct contract from grant
+ * applications: their entitlement and amount are under `claim`, not `answers`.
+ * @param {{ grantCode: string, clientRef: string, clientClaimRef: string, sbi: string, crn: string, frn: string, configVersion: string }} metadata
+ * @param {{ entitlementId: string, totalClaimAmountPence: number }} claim
+ * @returns {{ metadata: object, claim: { entitlementId: string, totalClaimAmountPence: number } }}
  */
-export function transformClaimAnswers(claimSubmissionState) {
-  const { totalEligibleArea, unit, totalClaimAmountPence, referenceNumber, claimNumber } = claimSubmissionState
-  return { totalEligibleArea, unit, totalClaimAmountPence, referenceNumber, claimNumber }
+export function buildClaimPayload(metadata, claim) {
+  return {
+    metadata: {
+      ...metadata,
+      submittedAt: new Date().toISOString()
+    },
+    claim
+  }
 }
