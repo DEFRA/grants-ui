@@ -112,8 +112,8 @@ describe('quantity input validation', () => {
   // page: the summary at the top, and the message on the field itself.
   it.each([
     ['20', 'Enter up to 11.22 hectares'],
-    ['0', 'Enter a number greater than 0'],
-    ['-11', 'Enter a number of hectares, for example 12.5 or 100'],
+    ['0', 'Enter a quantity for Herbal leys: CSAM3'],
+    ['-11', 'Enter a quantity for Herbal leys: CSAM3'],
     ['11.22001', 'Quantity for Herbal leys: CSAM3 must be 4 decimal places or fewer'],
     ['as', 'Quantity for Herbal leys: CSAM3 must be 4 decimal places or fewer']
   ])('reports %j everywhere an error is shown, on blur', async (value, message) => {
@@ -207,12 +207,12 @@ describe('quantity input validation', () => {
     expect(global.fetch).not.toHaveBeenCalled()
   })
 
-  it('says nothing about an empty field, which is the server-side message on submit', async () => {
+  it('uses the server-side required message for an empty field', async () => {
     const form = await initSingleAction()
 
     await typeQuantity(form, 'CSAM3', '')
 
-    expect(errorFor('CSAM3')).toBeNull()
+    expect(errorFor('CSAM3').textContent).toContain('Enter a quantity for Herbal leys: CSAM3')
   })
 
   it('clears the error on the first real edit, without waiting for the new value to be valid', async () => {
@@ -255,7 +255,7 @@ describe('quantity input validation', () => {
 
     input.dispatchEvent(new Event('blur'))
 
-    expect(errorFor('CSAM3').textContent).toContain('Enter a number greater than 0')
+    expect(errorFor('CSAM3').textContent).toContain('Enter a quantity for Herbal leys: CSAM3')
   })
 
   it('does not flag a part-typed decimal mid-keystroke', async () => {

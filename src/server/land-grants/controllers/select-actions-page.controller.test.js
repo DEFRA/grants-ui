@@ -630,6 +630,33 @@ describe('SelectActionsPageController', () => {
       expect(controller.setState).not.toHaveBeenCalled()
       expect(controller.proceed).not.toHaveBeenCalled()
     })
+
+    test('should use the on-blur maximum quantity message on submission', async () => {
+      fetchActionsForParcel.mockResolvedValue({
+        actions: [
+          {
+            ...UPL2,
+            quantityRequired: true,
+            availability: { ...UPL2.availability, type: 'total', value: 0.276 }
+          }
+        ],
+        parcel: { parcelId: 'parcel1', sheetId: 'sheet1', size: 10 }
+      })
+      mockRequest.payload = { landAction: 'UPL2', landActionQuantity_UPL2: '0.277', action: 'validate' }
+
+      await post()
+
+      expect(mockH.view).toHaveBeenCalledWith(
+        'select-actions',
+        expect.objectContaining({
+          errors: [{ text: 'Enter up to 0.276 hectares', href: '#landActionQuantity_UPL2', code: 'UPL2' }]
+        })
+      )
+      expect(controller.setState).not.toHaveBeenCalled()
+      expect(controller.proceed).not.toHaveBeenCalled()
+      expect(validateApplication).not.toHaveBeenCalled()
+    })
+
     test('should preserve a submitted total action quantity in the error response hidden field and display', async () => {
       const partialAction = {
         ...UPL2,
@@ -763,7 +790,7 @@ describe('SelectActionsPageController', () => {
     })
 
     test('should report an API validation error with the same wording in the summary and on the field', async () => {
-      mockRequest.payload = { landAction: 'UPL2', landActionQuantity_UPL2: '10', action: 'validate' }
+      mockRequest.payload = { landAction: 'UPL2', landActionQuantity_UPL2: '1', action: 'validate' }
       mockValidationFailure('UPL2', 'The amount of land must be the same as or less than the available area')
 
       await post()
@@ -863,7 +890,7 @@ describe('SelectActionsPageController', () => {
     test('should highlight the govukInput for the action whose quantity failed validation', async () => {
       mockRequest.payload = {
         landAction: 'UPL2',
-        landActionQuantity_UPL2: '10',
+        landActionQuantity_UPL2: '1',
         action: 'validate'
       }
       validateApplication.mockResolvedValue({
@@ -889,7 +916,7 @@ describe('SelectActionsPageController', () => {
     test('should not highlight quantity inputs for actions unaffected by the validation error', async () => {
       mockRequest.payload = {
         landAction: ['UPL2'],
-        landActionQuantity_UPL2: '10',
+        landActionQuantity_UPL2: '1',
         action: 'validate'
       }
       validateApplication.mockResolvedValue({

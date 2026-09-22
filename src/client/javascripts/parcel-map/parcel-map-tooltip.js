@@ -1,5 +1,5 @@
 import { resolveFeatureId, showTooltip, hideTooltip } from './map-helpers.js'
-import { LAYER_ID_FILL, TOOLTIP_STYLES } from './config.js'
+import { LAYER_ID_FILL, LAYER_ID_LABEL_CLUSTER, TOOLTIP_STYLES } from './config.js'
 
 /**
  * @import { Map as MLMap } from 'maplibre-gl'
@@ -32,7 +32,11 @@ export function attachTooltip(ml, metaIndex, mapEl, cleanups) {
     /** @type {import('maplibre-gl').MapMouseEvent & { features?: import('maplibre-gl').MapGeoJSONFeature[] }} */ e
   ) => {
     const feature = e.features?.[0]
-    if (!feature) {
+    // A cluster badge sits on top of the fill layer, but this listener still
+    // fires for the parcel underneath it — hide the tooltip rather than show
+    // details for a parcel the badge is standing in for.
+    if (!feature || ml.queryRenderedFeatures(e.point, { layers: [LAYER_ID_LABEL_CLUSTER] }).length > 0) {
+      hideTooltip(tooltip)
       return
     }
     const id = resolveFeatureId(feature)
