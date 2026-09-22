@@ -14,12 +14,80 @@ import {
   MAP_DEFAULT_CENTER,
   MAP_DEFAULT_ZOOM,
   MAP_MIN_ZOOM,
-  MAP_LOAD_TIMEOUT_MS
+  MAP_LOAD_TIMEOUT_MS,
+  FULLSCREEN_BUTTON_VISIBILITY_STYLE,
+  EVENT_PSEUDO_FULLSCREEN_CHANGE,
+  PSEUDO_FULLSCREEN_CLASS
 } from './config.js'
 
 /**
  * @import { Map as MLMap } from 'maplibre-gl'
  */
+
+const FULLSCREEN_VISIBILITY_MARKER = 'data-parcel-map-fullscreen-visibility'
+const PSEUDO_FULLSCREEN_MARKER = 'data-parcel-map-pseudo-fullscreen'
+
+// Injected once document-wide, guarded against duplicates.
+function ensureFullscreenVisibilityStyleInjected() {
+  if (document.head.querySelector(`style[${FULLSCREEN_VISIBILITY_MARKER}]`)) {
+    return
+  }
+  const style = document.createElement('style')
+  style.setAttribute(FULLSCREEN_VISIBILITY_MARKER, '')
+  style.textContent = FULLSCREEN_BUTTON_VISIBILITY_STYLE
+  document.head.appendChild(style)
+}
+
+// Injected once document-wide, guarded against duplicates.
+function ensurePseudoFullscreenStyleInjected() {
+  if (document.head.querySelector(`style[${PSEUDO_FULLSCREEN_MARKER}]`)) {
+    return
+  }
+  const style = document.createElement('style')
+  style.setAttribute(PSEUDO_FULLSCREEN_MARKER, '')
+  style.textContent = `.${PSEUDO_FULLSCREEN_CLASS} { position: fixed; inset: 0; z-index: 1000; }`
+  document.head.appendChild(style)
+}
+
+let pseudoFullscreenPatched = false
+
+/**
+ * iOS Safari has no Element.requestFullscreen, so @defra/interactive-map's
+ * enableFullscreen throws when its button is pressed. Patches the API itself
+ * (not the click) with a CSS-only pseudo-fullscreen equivalent.
+ * @param {string} appRootId  the "${mapEl.id}-im-app" element's id
+ */
+function attachFullscreenFallback(appRootId) {
+  if (typeof globalThis.Element.prototype.requestFullscreen === 'function') {
+    return
+  }
+  if (pseudoFullscreenPatched) {
+    return
+  }
+  pseudoFullscreenPatched = true
+
+  ensurePseudoFullscreenStyleInjected()
+
+  const setPseudoFullscreen = (/** @type {boolean} */ on) => {
+    const appRoot = document.getElementById(appRootId)
+    appRoot?.classList.toggle(PSEUDO_FULLSCREEN_CLASS, on)
+    Object.defineProperty(document, 'fullscreenElement', {
+      configurable: true,
+      value: on ? appRoot : null
+    })
+    document.dispatchEvent(new Event(EVENT_PSEUDO_FULLSCREEN_CHANGE))
+    document.dispatchEvent(new Event('fullscreenchange'))
+  }
+
+  globalThis.Element.prototype.requestFullscreen = function () {
+    setPseudoFullscreen(true)
+    return Promise.resolve()
+  }
+  document.exitFullscreen = function () {
+    setPseudoFullscreen(false)
+    return Promise.resolve()
+  }
+}
 
 /**
  * Builds the map DOM, boots InteractiveMap + the interact plugin, and resolves
@@ -69,6 +137,8 @@ export function initMap(host, { multiSelect, skeleton, isLoading, cleanups }) {
     ]
   })
 
+  ensureFullscreenVisibilityStyleInjected()
+
   const mapInstance = new InteractiveMap(mapEl.id, {
     behaviour: 'inline',
     mapLabel: MAP_LABEL,
@@ -79,8 +149,13 @@ export function initMap(host, { multiSelect, skeleton, isLoading, cleanups }) {
     center: MAP_DEFAULT_CENTER,
     zoom: MAP_DEFAULT_ZOOM,
     minZoom: MAP_MIN_ZOOM,
-    urlPosition: 'none'
+    urlPosition: 'none',
+    // Native fullscreen toggle; hidden above mobile widths via the injected
+    // stylesheet above (no mobile-only option in the library itself).
+    enableFullscreen: true
   })
+
+  attachFullscreenFallback(`${mapEl.id}-im-app`)
 
   const ready = /** @type {Promise<MLMap | null>} */ (
     new Promise((resolve) => {

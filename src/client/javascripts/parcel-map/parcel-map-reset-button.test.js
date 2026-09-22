@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { attachResetButton } from './parcel-map-reset-button.js'
 import {
   MSG_SHOW_ALL_PARCELS,
@@ -35,6 +35,10 @@ function makeMl({ offsetPx = 0, zoom = INITIAL_ZOOM } = {}) {
   })
 }
 
+function makeMapInstance() {
+  return { addControl: vi.fn() }
+}
+
 describe('attachResetButton', () => {
   let cleanups
 
@@ -43,23 +47,30 @@ describe('attachResetButton', () => {
     cleanups = []
   })
 
+  // attachFullscreenResetControl adds document-level click/fullscreenchange
+  // listeners — without this, a test that doesn't explicitly clean up leaves
+  // them dangling for every later test in the file to also react to.
+  afterEach(() => {
+    cleanups.forEach((off) => off())
+  })
+
   it('returns undefined when the map element has no wrapper parent', () => {
     const orphan = document.createElement('div')
-    expect(attachResetButton(makeMl(), BBOX, orphan, cleanups)).toBeUndefined()
+    expect(attachResetButton(makeMapInstance(), makeMl(), BBOX, orphan, cleanups)).toBeUndefined()
   })
 
   it('returns undefined when the map element is null', () => {
-    expect(attachResetButton(makeMl(), BBOX, null, cleanups)).toBeUndefined()
+    expect(attachResetButton(makeMapInstance(), makeMl(), BBOX, null, cleanups)).toBeUndefined()
   })
 
   it('returns undefined when there is no bbox', () => {
     const mapEl = makeMapEl()
-    expect(attachResetButton(makeMl(), null, mapEl, cleanups)).toBeUndefined()
+    expect(attachResetButton(makeMapInstance(), makeMl(), null, mapEl, cleanups)).toBeUndefined()
   })
 
   it('is hidden by default (no inline display fighting the hidden attribute) and labelled "Show all parcels"', () => {
     const mapEl = makeMapEl()
-    const button = attachResetButton(makeMl(), BBOX, mapEl, cleanups)
+    const button = attachResetButton(makeMapInstance(), makeMl(), BBOX, mapEl, cleanups)
 
     expect(button.hidden).toBe(true)
     // The bug this guards: 'display:inline-flex' baked into the base cssText
@@ -71,20 +82,23 @@ describe('attachResetButton', () => {
 
   it('carries the class the GOV.UK-style focus ring is scoped to, and injects that style once', () => {
     const mapEl = makeMapEl()
-    const button = attachResetButton(makeMl(), BBOX, mapEl, cleanups)
+    const button = attachResetButton(makeMapInstance(), makeMl(), BBOX, mapEl, cleanups)
 
     expect(button.classList.contains(SHOW_ALL_BUTTON_CLASS)).toBe(true)
     expect(document.head.querySelectorAll('style[data-parcel-map-show-all-focus-style]')).toHaveLength(1)
 
     // A second <parcel-map> instance on the same page must not duplicate it.
-    attachResetButton(makeMl(), BBOX, makeMapEl(), [])
+    const secondCleanups = []
+    attachResetButton(makeMapInstance(), makeMl(), BBOX, makeMapEl(), secondCleanups)
     expect(document.head.querySelectorAll('style[data-parcel-map-show-all-focus-style]')).toHaveLength(1)
+
+    secondCleanups.forEach((off) => off())
   })
 
   it('stays hidden when drift is below the threshold (incidental nudge)', () => {
     const mapEl = makeMapEl()
     const ml = makeMl({ offsetPx: SHOW_ALL_MOVE_THRESHOLD_PX - 1 })
-    const button = attachResetButton(ml, BBOX, mapEl, cleanups)
+    const button = attachResetButton(makeMapInstance(), ml, BBOX, mapEl, cleanups)
 
     ml._emit('moveend')
 
@@ -95,7 +109,7 @@ describe('attachResetButton', () => {
   it('shows the button once drift reaches the threshold', () => {
     const mapEl = makeMapEl()
     const ml = makeMl({ offsetPx: SHOW_ALL_MOVE_THRESHOLD_PX })
-    const button = attachResetButton(ml, BBOX, mapEl, cleanups)
+    const button = attachResetButton(makeMapInstance(), ml, BBOX, mapEl, cleanups)
 
     ml._emit('moveend')
 
@@ -106,7 +120,7 @@ describe('attachResetButton', () => {
   it('hides itself immediately and triggers an animated re-fit when clicked', () => {
     const mapEl = makeMapEl()
     const ml = makeMl({ offsetPx: SHOW_ALL_MOVE_THRESHOLD_PX })
-    const button = attachResetButton(ml, BBOX, mapEl, cleanups)
+    const button = attachResetButton(makeMapInstance(), ml, BBOX, mapEl, cleanups)
 
     ml._emit('moveend')
     expect(button.hidden).toBe(false)
@@ -127,7 +141,7 @@ describe('attachResetButton', () => {
   it('ignores the moveend fired by its own reset animation', () => {
     const mapEl = makeMapEl()
     const ml = makeMl({ offsetPx: SHOW_ALL_MOVE_THRESHOLD_PX })
-    const button = attachResetButton(ml, BBOX, mapEl, cleanups)
+    const button = attachResetButton(makeMapInstance(), ml, BBOX, mapEl, cleanups)
 
     ml._emit('moveend')
     expect(button.hidden).toBe(false)
@@ -144,7 +158,7 @@ describe('attachResetButton', () => {
   it('resumes normal drift-checking on the next moveend after a reset', () => {
     const mapEl = makeMapEl()
     const ml = makeMl({ offsetPx: SHOW_ALL_MOVE_THRESHOLD_PX })
-    const button = attachResetButton(ml, BBOX, mapEl, cleanups)
+    const button = attachResetButton(makeMapInstance(), ml, BBOX, mapEl, cleanups)
 
     ml._emit('moveend')
     button.click()
@@ -161,7 +175,7 @@ describe('attachResetButton', () => {
   it('does not hide itself when the user pans back to the initial view without clicking the button', () => {
     const mapEl = makeMapEl()
     const ml = makeMl({ offsetPx: SHOW_ALL_MOVE_THRESHOLD_PX })
-    const button = attachResetButton(ml, BBOX, mapEl, cleanups)
+    const button = attachResetButton(makeMapInstance(), ml, BBOX, mapEl, cleanups)
 
     ml._emit('moveend')
     expect(button.hidden).toBe(false)
@@ -178,7 +192,7 @@ describe('attachResetButton', () => {
   it('shows the button on a zoom change alone, even with the center unchanged', () => {
     const mapEl = makeMapEl()
     const ml = makeMl()
-    const button = attachResetButton(ml, BBOX, mapEl, cleanups)
+    const button = attachResetButton(makeMapInstance(), ml, BBOX, mapEl, cleanups)
 
     ml._emit('idle')
     ml.getZoom.mockReturnValue(INITIAL_ZOOM + 1)
@@ -190,7 +204,7 @@ describe('attachResetButton', () => {
   it('ignores a negligible zoom change below the tolerance', () => {
     const mapEl = makeMapEl()
     const ml = makeMl()
-    const button = attachResetButton(ml, BBOX, mapEl, cleanups)
+    const button = attachResetButton(makeMapInstance(), ml, BBOX, mapEl, cleanups)
 
     ml._emit('idle')
     ml.getZoom.mockReturnValue(INITIAL_ZOOM + 0.01)
@@ -202,7 +216,7 @@ describe('attachResetButton', () => {
   it('does not hide once shown, even when zoom returns to its initial-view value', () => {
     const mapEl = makeMapEl()
     const ml = makeMl()
-    const button = attachResetButton(ml, BBOX, mapEl, cleanups)
+    const button = attachResetButton(makeMapInstance(), ml, BBOX, mapEl, cleanups)
 
     ml._emit('idle')
     ml.getZoom.mockReturnValue(INITIAL_ZOOM + 1)
@@ -219,7 +233,7 @@ describe('attachResetButton', () => {
     const mapEl = makeMapEl()
     // Simulates fitBounds not having applied yet when attachResetButton runs.
     const ml = makeMl({ zoom: 4 })
-    const button = attachResetButton(ml, BBOX, mapEl, cleanups)
+    const button = attachResetButton(makeMapInstance(), ml, BBOX, mapEl, cleanups)
 
     // fitBounds settles after attach; idle reports the real fitted zoom.
     ml.getZoom.mockReturnValue(INITIAL_ZOOM)
@@ -237,7 +251,7 @@ describe('attachResetButton', () => {
     ml.getCenter.mockReturnValue(fittedCenter)
     ml.project.mockImplementation((lngLat) => (lngLat === fittedCenter ? { x: 0, y: 0 } : { x: 999, y: 0 }))
 
-    const button = attachResetButton(ml, BBOX, mapEl, cleanups)
+    const button = attachResetButton(makeMapInstance(), ml, BBOX, mapEl, cleanups)
     ml._emit('idle')
 
     // The map is still exactly at the real fitted center, not the bbox
@@ -250,7 +264,7 @@ describe('attachResetButton', () => {
   it('announces the button becoming available via a visually-hidden live region', () => {
     const mapEl = makeMapEl()
     const ml = makeMl({ offsetPx: SHOW_ALL_MOVE_THRESHOLD_PX })
-    attachResetButton(ml, BBOX, mapEl, cleanups)
+    attachResetButton(makeMapInstance(), ml, BBOX, mapEl, cleanups)
     const announcer = mapEl.parentElement.querySelector('[role="status"]')
 
     expect(announcer).not.toBeNull()
@@ -264,7 +278,7 @@ describe('attachResetButton', () => {
   it('clears the announcement once the button is clicked', () => {
     const mapEl = makeMapEl()
     const ml = makeMl({ offsetPx: SHOW_ALL_MOVE_THRESHOLD_PX })
-    const button = attachResetButton(ml, BBOX, mapEl, cleanups)
+    const button = attachResetButton(makeMapInstance(), ml, BBOX, mapEl, cleanups)
     const announcer = mapEl.parentElement.querySelector('[role="status"]')
 
     ml._emit('moveend')
@@ -278,7 +292,7 @@ describe('attachResetButton', () => {
   it('does not re-announce on repeated moveends while already shown', () => {
     const mapEl = makeMapEl()
     const ml = makeMl({ offsetPx: SHOW_ALL_MOVE_THRESHOLD_PX })
-    attachResetButton(ml, BBOX, mapEl, cleanups)
+    attachResetButton(makeMapInstance(), ml, BBOX, mapEl, cleanups)
     const announcer = mapEl.parentElement.querySelector('[role="status"]')
 
     ml._emit('moveend')
@@ -288,13 +302,158 @@ describe('attachResetButton', () => {
     expect(announcer.textContent).toBe('sentinel-not-cleared')
   })
 
-  it('registers a cleanup for the moveend listener and the click handler', () => {
+  it('registers a cleanup for the moveend listener, the click handler, and the fullscreen control listeners', () => {
     const mapEl = makeMapEl()
     const ml = makeMl()
-    attachResetButton(ml, BBOX, mapEl, cleanups)
+    attachResetButton(makeMapInstance(), ml, BBOX, mapEl, cleanups)
 
-    expect(cleanups).toHaveLength(2)
+    expect(cleanups).toHaveLength(5)
     cleanups.forEach((off) => off())
     expect(ml.off).toHaveBeenCalledWith('moveend', expect.any(Function))
+  })
+
+  describe('fullscreen control', () => {
+    afterEach(() => {
+      Object.defineProperty(document, 'fullscreenElement', { value: null, writable: true, configurable: true })
+    })
+
+    it('registers a control in the top-left slot at every breakpoint', () => {
+      const mapEl = makeMapEl()
+      const mapInstance = makeMapInstance()
+      attachResetButton(mapInstance, makeMl(), BBOX, mapEl, cleanups)
+
+      expect(mapInstance.addControl).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          mobile: { slot: 'top-left' },
+          tablet: { slot: 'top-left' },
+          desktop: { slot: 'top-left' },
+          html: expect.stringContaining(MSG_SHOW_ALL_PARCELS)
+        })
+      )
+    })
+
+    it('registers the control markup hidden by default, with pointer-events:auto overriding the overlay ancestor that disables them', () => {
+      const mapEl = makeMapEl()
+      const mapInstance = makeMapInstance()
+      attachResetButton(mapInstance, makeMl(), BBOX, mapEl, cleanups)
+
+      const [, control] = mapInstance.addControl.mock.calls[0]
+      const mount = document.createElement('div')
+      mount.innerHTML = control.html
+      const controlButton = mount.querySelector('button')
+
+      expect(controlButton.style.display).toBe('none')
+      expect(controlButton.style.pointerEvents).toBe('auto')
+    })
+
+    it('shows the control markup once native fullscreen activates', () => {
+      const mapEl = makeMapEl()
+      const mapInstance = makeMapInstance()
+      attachResetButton(mapInstance, makeMl(), BBOX, mapEl, cleanups)
+
+      const [, control] = mapInstance.addControl.mock.calls[0]
+      const mount = document.createElement('div')
+      mount.innerHTML = control.html
+      document.body.appendChild(mount)
+      const controlButton = mount.querySelector('button')
+
+      Object.defineProperty(document, 'fullscreenElement', { value: mapEl, writable: true, configurable: true })
+      document.dispatchEvent(new Event('fullscreenchange'))
+
+      expect(controlButton.style.display).toBe('inline-flex')
+    })
+
+    it('hides the control markup again once fullscreen exits', () => {
+      const mapEl = makeMapEl()
+      const mapInstance = makeMapInstance()
+      attachResetButton(mapInstance, makeMl(), BBOX, mapEl, cleanups)
+
+      const [, control] = mapInstance.addControl.mock.calls[0]
+      const mount = document.createElement('div')
+      mount.innerHTML = control.html
+      document.body.appendChild(mount)
+      const controlButton = mount.querySelector('button')
+
+      Object.defineProperty(document, 'fullscreenElement', { value: mapEl, writable: true, configurable: true })
+      document.dispatchEvent(new Event('fullscreenchange'))
+      expect(controlButton.style.display).toBe('inline-flex')
+
+      Object.defineProperty(document, 'fullscreenElement', { value: null, writable: true, configurable: true })
+      document.dispatchEvent(new Event('fullscreenchange'))
+
+      expect(controlButton.style.display).toBe('none')
+    })
+
+    it('stops responding to fullscreenchange once cleaned up', () => {
+      const mapEl = makeMapEl()
+      const mapInstance = makeMapInstance()
+      attachResetButton(mapInstance, makeMl(), BBOX, mapEl, cleanups)
+
+      const [, control] = mapInstance.addControl.mock.calls[0]
+      const mount = document.createElement('div')
+      mount.innerHTML = control.html
+      document.body.appendChild(mount)
+      const controlButton = mount.querySelector('button')
+
+      cleanups.forEach((off) => off())
+
+      Object.defineProperty(document, 'fullscreenElement', { value: mapEl, writable: true, configurable: true })
+      document.dispatchEvent(new Event('fullscreenchange'))
+
+      expect(controlButton.style.display).toBe('none')
+    })
+
+    it('triggers an animated re-fit when the registered control markup is clicked anywhere in the document', () => {
+      const mapEl = makeMapEl()
+      const mapInstance = makeMapInstance()
+      const ml = makeMl()
+      attachResetButton(mapInstance, ml, BBOX, mapEl, cleanups)
+
+      const [, control] = mapInstance.addControl.mock.calls[0]
+      // Simulates the library mounting the control's static html elsewhere
+      // in the document (inside its own fullscreen app root).
+      const mount = document.createElement('div')
+      mount.innerHTML = control.html
+      document.body.appendChild(mount)
+
+      mount.querySelector('button').click()
+
+      expect(ml.fitBounds).toHaveBeenCalledWith(
+        [
+          [BBOX.minLng, BBOX.minLat],
+          [BBOX.maxLng, BBOX.maxLat]
+        ],
+        expect.objectContaining({ animate: true })
+      )
+    })
+
+    it('ignores clicks that are not on the registered control', () => {
+      const mapEl = makeMapEl()
+      const mapInstance = makeMapInstance()
+      const ml = makeMl()
+      attachResetButton(mapInstance, ml, BBOX, mapEl, cleanups)
+
+      document.body.click()
+
+      expect(ml.fitBounds).not.toHaveBeenCalled()
+    })
+
+    it('stops responding to clicks once cleaned up', () => {
+      const mapEl = makeMapEl()
+      const mapInstance = makeMapInstance()
+      const ml = makeMl()
+      attachResetButton(mapInstance, ml, BBOX, mapEl, cleanups)
+
+      const [, control] = mapInstance.addControl.mock.calls[0]
+      const mount = document.createElement('div')
+      mount.innerHTML = control.html
+      document.body.appendChild(mount)
+
+      cleanups.forEach((off) => off())
+      mount.querySelector('button').click()
+
+      expect(ml.fitBounds).not.toHaveBeenCalled()
+    })
   })
 })

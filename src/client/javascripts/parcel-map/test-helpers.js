@@ -43,6 +43,7 @@ export function makeMlMap(overrides = {}) {
     getCanvas: vi.fn().mockReturnValue({ style: {} }),
     getCenter: vi.fn().mockReturnValue({ lng: 0, lat: 0 }),
     getZoom: vi.fn().mockReturnValue(10),
+    resize: vi.fn(),
     on: vi.fn(on),
     once: vi.fn(once),
     off: vi.fn(off),

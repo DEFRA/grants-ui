@@ -190,3 +190,24 @@ export const SHOW_ALL_BUTTON_FOCUS_STYLE = `
     box-shadow: 0 0 0 3px #ffdd00, 0 2px 4px rgba(11,12,12,0.15);
   }
 `
+
+// Matches the library's own maxMobileWidth default. @defra/interactive-map's
+// own fullscreen button (enableFullscreen) has no mobile-only visibility
+// option, so it's hidden above this width via its stable rendered class.
+export const FULLSCREEN_BUTTON_MAX_WIDTH_PX = 640
+
+export const FULLSCREEN_BUTTON_VISIBILITY_STYLE = `
+  @media (min-width: ${FULLSCREEN_BUTTON_MAX_WIDTH_PX + 1}px) {
+    .im-c-button-wrapper--fullscreen {
+      display: none;
+    }
+  }
+`
+
+// Set on the map's app root by the pseudo-fullscreen fallback (parcel-map-init.js)
+// for browsers without Element.requestFullscreen (e.g. iOS Safari).
+export const PSEUDO_FULLSCREEN_CLASS = 'parcel-map-pseudo-fullscreen'
+
+// Dispatched on document whenever PSEUDO_FULLSCREEN_CLASS toggles, since no
+// native fullscreenchange event fires for it.
+export const EVENT_PSEUDO_FULLSCREEN_CHANGE = 'parcel-map:pseudo-fullscreen-change'

@@ -158,7 +158,7 @@ export class ParcelMap extends HTMLElement {
       this.#metaIndex = data.metaIndex
       this.#bbox = data.bbox
       const tooltip = attachTooltip(ml, data.metaIndex, this.#mapEl, this.#mlCleanup)
-      attachResetButton(ml, data.bbox, this.#mapEl, this.#mlCleanup)
+      attachResetButton(this.#mapInstance, ml, data.bbox, this.#mapEl, this.#mlCleanup)
       this.#selectionRelay = attachSelectionRelay({
         host: this,
         mapInstance: this.#mapInstance,

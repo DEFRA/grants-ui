@@ -7,7 +7,9 @@ import {
   SHOW_ALL_BUTTON_FOCUS_STYLE,
   SHOW_ALL_ICON_SVG,
   SHOW_ALL_MOVE_THRESHOLD_PX,
-  ZOOM_DRIFT_TOLERANCE
+  ZOOM_DRIFT_TOLERANCE,
+  PSEUDO_FULLSCREEN_CLASS,
+  EVENT_PSEUDO_FULLSCREEN_CHANGE
 } from './config.js'
 
 const FOCUS_STYLE_MARKER = 'data-parcel-map-show-all-focus-style'
@@ -47,19 +49,87 @@ function hasMovedFromInitialView(ml, initialCenter, initialZoom) {
   return zoomDrifted || centerDriftPx(ml, initialCenter) >= SHOW_ALL_MOVE_THRESHOLD_PX
 }
 
+// Registered as a library control so it renders inside @defra/interactive-map's
+// fullscreen root; visibility tracks document.fullscreenElement directly since
+// the control's own `inline: false` option is a no-op under behaviour: 'inline'.
+const FULLSCREEN_CONTROL_ID = 'parcel-map-show-all-fullscreen'
+const FULLSCREEN_CONTROL_SELECTOR = `[data-control-id="${FULLSCREEN_CONTROL_ID}"]`
+
+/**
+ * Same markup as attachResetButton's own button, built the same way, so the
+ * two can never drift apart. React mounts this as static HTML (the library's
+ * control API takes a markup string, not a component), so it starts hidden
+ * and gets pointer-events:auto to opt back into the overlay ancestor that
+ * disables clicks by default.
+ * @returns {string}
+ */
+function buildFullscreenControlHtml() {
+  const button = document.createElement('button')
+  button.type = 'button'
+  button.className = SHOW_ALL_BUTTON_CLASS
+  button.style.cssText = `${SHOW_ALL_BUTTON_STYLES};display:none;pointer-events:auto`
+  button.dataset.controlId = FULLSCREEN_CONTROL_ID
+  button.innerHTML = `${SHOW_ALL_ICON_SVG}<span>${MSG_SHOW_ALL_PARCELS}</span>`
+  return button.outerHTML
+}
+
+/**
+ * Registers a "Show all parcels" control visible only during native
+ * fullscreen, since attachResetButton's own button isn't.
+ * @param {InstanceType<typeof import('@defra/interactive-map').default>} mapInstance
+ * @param {MLMap} ml
+ * @param {BBox} bbox
+ * @param {Array<() => void>} cleanups
+ */
+function attachFullscreenResetControl(mapInstance, ml, bbox, cleanups) {
+  mapInstance.addControl(FULLSCREEN_CONTROL_ID, {
+    label: MSG_SHOW_ALL_PARCELS,
+    html: buildFullscreenControlHtml(),
+    mobile: { slot: 'top-left' },
+    tablet: { slot: 'top-left' },
+    desktop: { slot: 'top-left' }
+  })
+
+  // The control's element doesn't exist until React mounts it, so both
+  // listeners delegate from document instead of targeting it directly.
+  const onDocumentClick = (/** @type {MouseEvent} */ e) => {
+    if (/** @type {HTMLElement} */ (e.target).closest(FULLSCREEN_CONTROL_SELECTOR)) {
+      fitToParcels(ml, bbox, { animate: true })
+    }
+  }
+  const onFullscreenChange = () => {
+    const control = /** @type {HTMLElement | null} */ (document.querySelector(FULLSCREEN_CONTROL_SELECTOR))
+    if (!control) {
+      return
+    }
+    const isFullscreen = Boolean(document.fullscreenElement) || Boolean(document.querySelector(`.${PSEUDO_FULLSCREEN_CLASS}`))
+    control.style.display = isFullscreen ? 'inline-flex' : 'none'
+  }
+
+  document.addEventListener('click', onDocumentClick)
+  document.addEventListener('fullscreenchange', onFullscreenChange)
+  document.addEventListener(EVENT_PSEUDO_FULLSCREEN_CHANGE, onFullscreenChange)
+  cleanups.push(() => document.removeEventListener('click', onDocumentClick))
+  cleanups.push(() => document.removeEventListener('fullscreenchange', onFullscreenChange))
+  cleanups.push(() => document.removeEventListener(EVENT_PSEUDO_FULLSCREEN_CHANGE, onFullscreenChange))
+}
+
 /**
  * Adds the "Show all parcels" button.
+ * @param {InstanceType<typeof import('@defra/interactive-map').default>} mapInstance
  * @param {MLMap} ml
  * @param {BBox | null} bbox
  * @param {HTMLDivElement | null} mapEl
  * @param {Array<() => void>} cleanups
  * @returns {HTMLButtonElement | undefined}
  */
-export function attachResetButton(ml, bbox, mapEl, cleanups) {
+export function attachResetButton(mapInstance, ml, bbox, mapEl, cleanups) {
   const wrapper = mapEl?.parentElement
   if (!wrapper || !bbox) {
     return undefined
   }
+
+  attachFullscreenResetControl(mapInstance, ml, bbox, cleanups)
 
   ensureFocusStyleInjected()
 
