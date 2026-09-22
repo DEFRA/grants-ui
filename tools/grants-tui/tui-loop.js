@@ -43,7 +43,8 @@ import {
 import { getSelectedFormDefIds, listOverrideSources } from './form-defs.js'
 import { GAS_DIVIDER, gasStatusSegment, getGasStatus, setGasStatus } from './gas.js'
 import { gasStatusChoices, getGasGrant, listGasApplications, updateGasApplication } from './gas-state.js'
-import { journeyCrnOptions, journeySteps, listJourneys, wontCompleteReason } from './journey.js'
+import { journeySteps, listJourneys } from './journey.js'
+import { journeyCrnOptions, wontCompleteReason } from '../../src/server/dev-tools/journey-runner/journey-meta.js'
 import { loadState, saveState } from './cli-state.js'
 import { promptScale, promptTextWithOptions, radioMenu, setRuntimeStatusLine, toggleMenu } from './tui.js'
 import { tailscaleEnabled, tailscaleStatusSegment } from './tailscale.js'
@@ -53,6 +54,8 @@ import { inspectState } from './state-inspector.js'
 // ---------------------------------------------------------------------------
 // Main menu
 // ---------------------------------------------------------------------------
+
+const TAILSCALE_AVAILABLE = Object.freeze({ available: true, description: '' })
 
 /**
  * @param {{ addons?: string[], localServices?: string[], localFormDefSelections?: string[], localFormDefs?: boolean } | null} savedState
@@ -65,7 +68,7 @@ export function buildMainMenuItems(
   savedState,
   containersRunning,
   tailscaleOn = savedState?.addons?.includes('tailscale') ?? false,
-  tailscaleAvailability = { available: true, description: '' }
+  tailscaleAvailability = TAILSCALE_AVAILABLE
 ) {
   const localCount = savedState?.localServices?.length || 0
   const formDefSelectionCount = getSelectedFormDefIds(savedState).length
@@ -78,6 +81,13 @@ export function buildMainMenuItems(
   const localDesc = localActiveParts.length
     ? `${PURPLE}${localActiveParts.join(' + ')}${RESET_COLOR}`
     : 'Override services & form definitions locally'
+
+  let tailscaleDesc = tailscaleAvailability.description
+  if (tailscaleOn) {
+    tailscaleDesc = 'Disable Tailscale mode — restore localhost'
+  } else if (tailscaleAvailability.available) {
+    tailscaleDesc = 'Enable Tailscale mode — HTTPS phone testing'
+  }
 
   return [
     {
@@ -118,11 +128,7 @@ export function buildMainMenuItems(
       key: 'tailscale',
       label: 'tailscale',
       colour: tailscaleOn ? BLUE : undefined,
-      description: tailscaleOn
-        ? 'Disable Tailscale mode — restore localhost'
-        : tailscaleAvailability.available
-          ? 'Enable Tailscale mode — HTTPS phone testing'
-          : tailscaleAvailability.description,
+      description: tailscaleDesc,
       ...(tailscaleAvailability.available ? {} : { disabled: true })
     },
     { key: 'checks', label: 'checks ⇢', description: 'Tests, lint, security scans and pre-PR checks' },
@@ -1087,6 +1093,73 @@ function quitTui() {
 }
 
 /**
+ * Draw the main menu and wait for a choice.
+ * @param {{ savedState: ReturnType<typeof loadState>, tailscaleAvailability: { available: boolean, description: string }, statusLine: string }} options
+ */
+async function promptMainMenu({ savedState, tailscaleAvailability, statusLine }) {
+  const runningComposeFiles = getRunningComposeFiles()
+  const containersRunning = !!runningComposeFiles
+  const tailscaleOn = containersRunning
+    ? tailscaleEnabled(runningComposeFiles)
+    : (savedState?.addons?.includes('tailscale') ?? false)
+  const menuItems = buildMainMenuItems(savedState, containersRunning, tailscaleOn, tailscaleAvailability)
+  const lastRun = getLastRun()
+  if (getActionRuns().length) {
+    menuItems.push({ key: 'output', label: 'output ⇢', description: 'Browse output from this session (l → latest)' })
+  }
+  setActionMenu(menuItems)
+  const gasStatus = await refreshRuntimeStatus(runningComposeFiles)
+  const gasReachable = gasStatus !== null
+  const menuHint = gasReachable ? '↑ ↓  navigate    enter → select    g → set GAS status    esc → quit' : ''
+
+  const command = await radioMenu(menuItems, 'What do you want to do?', {
+    statusLine,
+    hint: menuHint,
+    gasEditable: gasReachable,
+    outputAvailable: !!lastRun?.logPath
+  })
+  return { command, containersRunning, tailscaleOn, lastRun, gasStatus }
+}
+
+/**
+ * View the latest run's output (`__output__`) or pick one from the session's runs (`output`).
+ * @param {string} command
+ * @param {ReturnType<typeof getLastRun>} lastRun
+ */
+async function browseOutput(command, lastRun) {
+  if (command === '__output__') {
+    await viewOutput(lastRun)
+    return
+  }
+  const runs = getActionRuns()
+  const picked = await radioMenu(
+    runs.map((run, index) => ({
+      key: String(index),
+      label: run.label,
+      description: `exit ${run.code}`
+    })),
+    'Action output — newest first',
+    { hint: '↑ ↓ navigate    enter → view output    esc → back' }
+  )
+  if (picked !== '__quit__') await viewOutput(runs[Number(picked)])
+}
+
+/**
+ * Run a command handler and return the status line to show: the handler's own,
+ * unless it started an action, in which case that action's outcome.
+ * @param {(context: object) => Promise<string>} handler
+ * @param {object} context
+ * @param {ReturnType<typeof getLastRun>} lastRun  last run before the handler started
+ * @returns {Promise<string>}
+ */
+async function runCommandHandler(handler, context, lastRun) {
+  const statusLine = await handler(context)
+  const completed = getLastRun()
+  if (completed === lastRun) return statusLine
+  return completed.logPath ? actionStatus(completed) : `${RED}✖${RESET_COLOR}  Could not run action: ${completed.error}`
+}
+
+/**
  * Run the interactive TUI: a menu-driven loop that keeps returning to the main
  * menu until the user quits. Requires a TTY on stdin.
  * @param {boolean} dryRun
@@ -1107,69 +1180,31 @@ export async function runInteractiveLoop(dryRun) {
   process.stdout.write(ALT_SCREEN_ENTER + HIDE_CURSOR)
 
   let statusLine = ''
+  let quitRequested = false
 
-  while (true) {
+  while (!quitRequested) {
     const savedState = loadState()
-    const runningComposeFiles = getRunningComposeFiles()
-    const containersRunning = !!runningComposeFiles
-
-    const tailscaleOn = containersRunning
-      ? tailscaleEnabled(runningComposeFiles)
-      : (savedState?.addons?.includes('tailscale') ?? false)
-    const menuItems = buildMainMenuItems(savedState, containersRunning, tailscaleOn, tailscaleAvailability)
-    const lastRun = getLastRun()
-    if (getActionRuns().length) {
-      menuItems.push({ key: 'output', label: 'output ⇢', description: 'Browse output from this session (l → latest)' })
-    }
-    setActionMenu(menuItems)
-    const gasStatus = await refreshRuntimeStatus(runningComposeFiles)
-    const gasReachable = gasStatus !== null
-    const menuHint = gasReachable ? '↑ ↓  navigate    enter → select    g → set GAS status    esc → quit' : ''
-
-    const command = await radioMenu(menuItems, 'What do you want to do?', {
-      statusLine,
-      hint: menuHint,
-      gasEditable: gasReachable,
-      outputAvailable: !!lastRun?.logPath
+    const { command, containersRunning, tailscaleOn, lastRun, gasStatus } = await promptMainMenu({
+      savedState,
+      tailscaleAvailability,
+      statusLine
     })
 
-    if (command === '__output__') {
-      await viewOutput(lastRun)
-      continue
-    }
-    if (command === 'output') {
-      const runs = getActionRuns()
-      const picked = await radioMenu(
-        runs.map((run, index) => ({
-          key: String(index),
-          label: run.label,
-          description: `exit ${run.code}`
-        })),
-        'Action output — newest first',
-        { hint: '↑ ↓ navigate    enter → view output    esc → back' }
-      )
-      if (picked !== '__quit__') await viewOutput(runs[Number(picked)])
+    if (command === '__output__' || command === 'output') {
+      await browseOutput(command, lastRun)
       continue
     }
     statusLine = ''
 
     if (command === '__gas__') {
       statusLine = await handleGasCommand(gasStatus)
-      continue
-    }
-    if (command === '__quit__') {
-      quitTui()
-    }
-
-    const handler = COMMAND_HANDLERS[command]
-    if (handler) {
-      statusLine = await handler({ dryRun, savedState, containersRunning, tailscaleOn })
-      const completed = getLastRun()
-      if (completed !== lastRun) {
-        statusLine = completed.logPath
-          ? actionStatus(completed)
-          : `${RED}✖${RESET_COLOR}  Could not run action: ${completed.error}`
-      }
+    } else if (command === '__quit__') {
+      quitRequested = true
+    } else if (COMMAND_HANDLERS[command]) {
+      const context = { dryRun, savedState, containersRunning, tailscaleOn }
+      statusLine = await runCommandHandler(COMMAND_HANDLERS[command], context, lastRun)
     }
   }
+
+  quitTui()
 }

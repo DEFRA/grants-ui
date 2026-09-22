@@ -10,6 +10,7 @@ import {
 } from './tui-loop.js'
 import { getGasGrant, listGasApplications, updateGasApplication } from './gas-state.js'
 import { journeySteps } from './journey.js'
+import { journeyCrnOptions, wontCompleteReason } from '../../src/server/dev-tools/journey-runner/journey-meta.js'
 import { YELLOW } from './constants.js'
 import { radioMenu, setRuntimeStatusLine, toggleMenu } from './tui.js'
 import { getRunningComposeFiles, getRunningAppBaseUrl, getRunningServices } from './docker.js'
@@ -36,9 +37,11 @@ vi.mock('./output.js', () => ({ viewOutput: vi.fn() }))
 vi.mock('./state-inspector.js', () => ({ inspectState: vi.fn() }))
 vi.mock('./journey.js', () => ({
   listJourneys: () => ['test-grant'],
-  journeyCrnOptions: () => [{ crn: 'test-crn', note: 'Test user' }],
-  wontCompleteReason: () => null,
   journeySteps: vi.fn(() => [])
+}))
+vi.mock('../../src/server/dev-tools/journey-runner/journey-meta.js', () => ({
+  journeyCrnOptions: vi.fn(() => [{ crn: 'test-crn', note: 'Test user' }]),
+  wontCompleteReason: vi.fn(() => null)
 }))
 vi.mock('./gas-state.js', async (importOriginal) => ({
   ...(await importOriginal()),
@@ -186,6 +189,8 @@ beforeEach(() => {
   vi.mocked(getRunningComposeFiles).mockReturnValue(null)
   vi.mocked(getRunningServices).mockReturnValue([])
   vi.mocked(getGasStatus).mockResolvedValue('RECEIVED')
+  vi.mocked(journeyCrnOptions).mockReturnValue([{ crn: 'test-crn', note: 'Test user' }])
+  vi.mocked(wontCompleteReason).mockReturnValue(null)
 })
 
 test('the main menu groups checks into one entry', () => {
@@ -296,6 +301,58 @@ test.each(['headless', 'headed'])('journey runs from Tools with arrows only for 
     expect.any(String)
   )
 })
+
+test('journey with more than one known-good CRN prompts for a choice, and the pick reaches the run', async () => {
+  vi.mocked(getRunningComposeFiles).mockReturnValue(['compose.infra.yml', 'compose.grants-ui.yml'])
+  vi.mocked(journeySteps).mockReturnValue([])
+  vi.mocked(journeyCrnOptions).mockReturnValue([
+    { crn: '1102838829', note: 'happy path' },
+    { crn: '1103313150', note: 'no eligible actions' }
+  ])
+  for (const choice of ['journey', 'test-grant', '1103313150', 'headless', 'keep']) {
+    vi.mocked(radioMenu).mockResolvedValueOnce(choice)
+  }
+
+  await handleToolsCommand(true)
+
+  const calls = vi.mocked(radioMenu).mock.calls
+  expect(calls[2][1]).toBe("Select a CRN for 'test-grant'")
+  expect(calls[2][0]).toEqual([
+    expect.objectContaining({ key: '1102838829', description: 'happy path' }),
+    expect.objectContaining({ key: '1103313150', description: 'no eligible actions' })
+  ])
+  expect(runInteractiveAction).toHaveBeenCalledWith(
+    'journey',
+    ['test-grant', expect.objectContaining({ crn: '1103313150' }), true],
+    expect.any(String)
+  )
+})
+
+test.each([
+  ['run', true],
+  ['cancel', false]
+])(
+  "won't-complete journey shows an acknowledgement prompt, and choosing '%s' %s the run",
+  async (choice, shouldRun) => {
+    vi.mocked(getRunningComposeFiles).mockReturnValue(['compose.infra.yml', 'compose.grants-ui.yml'])
+    vi.mocked(journeySteps).mockReturnValue([])
+    vi.mocked(wontCompleteReason).mockReturnValue(['It stops halfway through.'])
+    for (const menuChoice of ['journey', 'test-grant', 'headless', 'keep', choice]) {
+      vi.mocked(radioMenu).mockResolvedValueOnce(menuChoice)
+    }
+
+    const statusLine = await handleToolsCommand(true)
+
+    const calls = vi.mocked(radioMenu).mock.calls
+    expect(calls[4][1]).toBe("⚠  'test-grant' will NOT complete — run anyway?")
+    if (shouldRun) {
+      expect(runInteractiveAction).toHaveBeenCalledWith('journey', expect.any(Array), expect.any(String))
+    } else {
+      expect(runInteractiveAction).not.toHaveBeenCalled()
+      expect(statusLine).toContain("Journey 'test-grant' cancelled")
+    }
+  }
+)
 
 test('GAS state is enabled only while the GAS compose service is running', async () => {
   vi.mocked(getRunningComposeFiles).mockReturnValue(['compose.infra.yml', 'compose.grants-ui.yml', 'compose.gas.yml'])
