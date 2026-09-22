@@ -572,7 +572,7 @@ describe('context', () => {
 
       const request = {
         ...mockGrantRequest({ slug: 'woodland' }),
-        app: { model: { def: { metadata: { surveyLabel: 'Woodland Management Plan' } } } }
+        app: { model: { def: { metadata: { shortName: 'Woodland Management Plan' } } } }
       }
 
       const contextImport = await importContext()

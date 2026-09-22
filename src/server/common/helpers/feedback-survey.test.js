@@ -6,11 +6,11 @@ const BASE_URL = 'https://defragroup.eu.qualtrics.com/jfe/form/SV_test'
 
 /**
  * @param {{ slug?: string, path?: string, href?: string }} [options]
- * @param {string} [surveyLabel]
+ * @param {string} [shortName]
  */
-const mockSurveyRequest = (options, surveyLabel) => ({
+const mockSurveyRequest = (options, shortName) => ({
   ...mockGrantRequest(options),
-  app: { model: { def: { metadata: { surveyLabel } } } }
+  app: { model: { def: { metadata: { shortName } } } }
 })
 
 describe('#resolveJourney', () => {
@@ -89,12 +89,32 @@ describe('#buildFeedbackSurveyUrl', () => {
     expect(url.searchParams.get('url')).toBe(`https://grants.example${path}`)
   })
 
-  test('falls back to the sentence-cased form definition filename when surveyLabel is absent', () => {
+  test('falls back to the sentence-cased form definition filename when shortName is absent', () => {
     const result = buildFeedbackSurveyUrl(
       mockGrantRequest({ slug: 'example-grant-with-auth', path: '/example-grant-with-auth/start' })
     )
 
     expect(new URL(/** @type {string} */ (result)).searchParams.get('grant')).toBe('Example grant with auth')
+  })
+
+  test('falls back to the legacy surveyLabel metadata when shortName is absent', () => {
+    const request = {
+      ...mockGrantRequest({ slug: 'woodland', path: '/woodland/summary' }),
+      app: { model: { def: { metadata: { surveyLabel: 'Woodland Management Plan' } } } }
+    }
+    const result = buildFeedbackSurveyUrl(request)
+
+    expect(new URL(/** @type {string} */ (result)).searchParams.get('grant')).toBe('Woodland Management Plan')
+  })
+
+  test('prefers shortName over the legacy surveyLabel metadata', () => {
+    const request = {
+      ...mockGrantRequest({ slug: 'woodland', path: '/woodland/summary' }),
+      app: { model: { def: { metadata: { shortName: 'Woodland Management Plan', surveyLabel: 'Old Label' } } } }
+    }
+    const result = buildFeedbackSurveyUrl(request)
+
+    expect(new URL(/** @type {string} */ (result)).searchParams.get('grant')).toBe('Woodland Management Plan')
   })
 
   test('returns null when no slug is present', () => {
