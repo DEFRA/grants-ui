@@ -1,8 +1,9 @@
 import { describe, it, expect, vi } from 'vitest'
 import {
   COMPOUND_ID_EXPR,
-  LABEL_TEXT_EXPR,
   buildParcelLayers,
+  buildParcelLabelLayer,
+  buildParcelLabelClusterLayers,
   getMapStyle,
   withParcelHitTolerance,
   nearestFeatureToPoint,
@@ -13,44 +14,88 @@ import {
   resolveFeatureId,
   showTooltip,
   hideTooltip,
-  htmlEncode
+  htmlEncode,
+  fitToParcels
 } from './map-helpers.js'
+import { makeMlMap } from './test-helpers.js'
+import { LAYER_ID_LABEL_CLUSTER } from './config.js'
 
-describe('buildParcelLayers', () => {
-  it('labels with Arial Regular', () => {
-    const layers = buildParcelLayers(['match', COMPOUND_ID_EXPR])
-    expect(layers.label.layout['text-font']).toEqual(['Arial Regular'])
+describe('fitToParcels', () => {
+  const BBOX = { minLng: -1, minLat: 51, maxLng: 1, maxLat: 53 }
+
+  it('does nothing when ml or bbox is missing', () => {
+    const ml = makeMlMap()
+    fitToParcels(null, BBOX)
+    fitToParcels(ml, null)
+    expect(ml.fitBounds).not.toHaveBeenCalled()
   })
 
+  it('fits without animating by default (instant initial fit)', () => {
+    const ml = makeMlMap()
+    fitToParcels(ml, BBOX)
+    expect(ml.fitBounds).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ animate: false }))
+  })
+
+  it('animates when explicitly requested (e.g. a user-triggered reset)', () => {
+    const ml = makeMlMap()
+    fitToParcels(ml, BBOX, { animate: true })
+    expect(ml.fitBounds).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ animate: true }))
+  })
+})
+
+describe('buildParcelLayers', () => {
   it('sets source and source-layer to "parcels" on every layer', () => {
     const layers = buildParcelLayers(['match', COMPOUND_ID_EXPR])
-    for (const layer of [layers.fill, layers.outline, layers.label]) {
+    for (const layer of [layers.fill, layers.outline]) {
       expect(layer.source).toBe('parcels')
       expect(layer['source-layer']).toBe('parcels')
     }
   })
+})
 
-  it('labels parcels with the compound id reformatted as a space-separated reference', () => {
-    const layers = buildParcelLayers(['match', COMPOUND_ID_EXPR])
-    expect(layers.label.layout['text-field']).toBe(LABEL_TEXT_EXPR)
-    // Replaces the single dash in "SHEET-PARCEL" with a space via id alone,
-    // falling back to the raw id if there is no dash.
-    expect(LABEL_TEXT_EXPR).toEqual([
-      'let',
-      'dash',
-      ['index-of', '-', ['get', 'id']],
-      [
-        'case',
-        ['>=', ['var', 'dash'], 0],
-        [
-          'concat',
-          ['slice', ['get', 'id'], 0, ['var', 'dash']],
-          ' ',
-          ['slice', ['get', 'id'], ['+', ['var', 'dash'], 1]]
-        ],
-        ['get', 'id']
-      ]
-    ])
+describe('buildParcelLabelLayer', () => {
+  it('labels with Arial Regular, reading from the parcels-labels GeoJSON source', () => {
+    const layer = buildParcelLabelLayer()
+    expect(layer.layout['text-font']).toEqual(['Arial Regular'])
+    expect(layer.source).toBe('parcels-labels')
+    // A GeoJSON source, unlike the vector tile source, so there is no
+    // source-layer to set — and exactly one feature per parcel id.
+    expect(layer['source-layer']).toBeUndefined()
+  })
+
+  it('lets MapLibre hide colliding labels, now that clustering keeps them apart', () => {
+    const layer = buildParcelLabelLayer()
+    expect(layer.layout['text-allow-overlap']).toBeUndefined()
+    expect(layer.layout['text-ignore-placement']).toBeUndefined()
+  })
+
+  it('reads the pre-formatted label text from the feature, not a GL expression', () => {
+    const layer = buildParcelLabelLayer()
+    expect(layer.layout['text-field']).toEqual(['get', 'label'])
+  })
+
+  it('only labels unclustered points — clustered ones get the count badge instead', () => {
+    const layer = buildParcelLabelLayer()
+    expect(layer.filter).toEqual(['!', ['has', 'point_count']])
+  })
+})
+
+describe('buildParcelLabelClusterLayers', () => {
+  it('renders only clustered points', () => {
+    const { circle, count } = buildParcelLabelClusterLayers()
+    expect(circle.filter).toEqual(['has', 'point_count'])
+    expect(count.filter).toEqual(['has', 'point_count'])
+  })
+
+  it('shows the abbreviated cluster count as the badge text', () => {
+    const { count } = buildParcelLabelClusterLayers()
+    expect(count.layout['text-field']).toEqual(['get', 'point_count_abbreviated'])
+  })
+
+  it('reads from the parcels-labels GeoJSON source, same as the individual label layer', () => {
+    const { circle, count } = buildParcelLabelClusterLayers()
+    expect(circle.source).toBe('parcels-labels')
+    expect(count.source).toBe('parcels-labels')
   })
 })
 
@@ -200,7 +245,10 @@ describe('withParcelHitTolerance', () => {
     const descriptor = makeDescriptor(() => [{ id: 'hit' }])
     const { MapProvider } = await withParcelHitTolerance(descriptor).load()
     const provider = new MapProvider()
-    provider.map = { getLayer: () => true }
+    provider.map = {
+      getLayer: () => true,
+      queryRenderedFeatures: vi.fn().mockReturnValue([])
+    }
 
     expect(provider.getFeaturesAtPoint({ x: 0, y: 0 })).toEqual([{ id: 'hit' }])
   })
@@ -224,7 +272,9 @@ describe('withParcelHitTolerance', () => {
     }
     provider.map = {
       getLayer: () => true,
-      queryRenderedFeatures: vi.fn().mockReturnValue([nearby]),
+      queryRenderedFeatures: vi
+        .fn()
+        .mockImplementation((_point, { layers }) => (layers.includes(LAYER_ID_LABEL_CLUSTER) ? [] : [nearby])),
       project: ([lng, lat]) => ({ x: lng, y: lat })
     }
 
@@ -236,6 +286,22 @@ describe('withParcelHitTolerance', () => {
     const { MapProvider } = await withParcelHitTolerance(descriptor).load()
     const provider = new MapProvider()
     provider.map = { getLayer: () => false }
+
+    expect(provider.getFeaturesAtPoint({ x: 0, y: 0 })).toEqual([])
+  })
+
+  it('returns no hits when the point lands on a cluster badge, so the parcel behind it is not also selected', async () => {
+    const descriptor = makeDescriptor(() => [{ id: 'hit' }])
+    const { MapProvider } = await withParcelHitTolerance(descriptor).load()
+    const provider = new MapProvider()
+    provider.map = {
+      getLayer: () => true,
+      queryRenderedFeatures: vi
+        .fn()
+        .mockImplementation((_point, { layers }) =>
+          layers.includes(LAYER_ID_LABEL_CLUSTER) ? [{ id: 'cluster' }] : []
+        )
+    }
 
     expect(provider.getFeaturesAtPoint({ x: 0, y: 0 })).toEqual([])
   })
