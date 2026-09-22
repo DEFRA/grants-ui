@@ -4,7 +4,6 @@ import {
   ADDONS,
   ALT_SCREEN_ENTER,
   ALT_SCREEN_EXIT,
-  BLUE,
   CHECK,
   DIM,
   GREEN,
@@ -45,9 +44,11 @@ import { GAS_DIVIDER, gasStatusSegment, getGasStatus, setGasStatus } from './gas
 import { gasStatusChoices, getGasGrant, listGasApplications, updateGasApplication } from './gas-state.js'
 import { journeySteps, listJourneys } from './journey.js'
 import { journeyCrnOptions, wontCompleteReason } from '../../src/server/dev-tools/journey-runner/journey-meta.js'
-import { loadState, saveState } from './cli-state.js'
-import { promptScale, promptTextWithOptions, radioMenu, setRuntimeStatusLine, toggleMenu } from './tui.js'
-import { tailscaleEnabled, tailscaleStatusSegment } from './tailscale.js'
+import { getTailscaleShareIds, loadState, saveState } from './cli-state.js'
+import { promptScale, promptText, promptTextWithOptions, radioMenu, setRuntimeStatusLine, toggleMenu } from './tui.js'
+import { tailscaleEnabled, tailscaleSharesStatusSegment, tailscaleStatusSegment } from './tailscale.js'
+import { TAILSCALE_SHARE_API_KEY } from './tailscale-share.js'
+import { getTailscaleSharingPolicyStatus } from './tailscale-policy.js'
 import { getTailscaleAvailability } from './tailscale-serve.js'
 import { inspectState } from './state-inspector.js'
 
@@ -55,21 +56,12 @@ import { inspectState } from './state-inspector.js'
 // Main menu
 // ---------------------------------------------------------------------------
 
-const TAILSCALE_AVAILABLE = Object.freeze({ available: true, description: '' })
-
 /**
- * @param {{ addons?: string[], localServices?: string[], localFormDefSelections?: string[], localFormDefs?: boolean } | null} savedState
+ * @param {{ addons?: string[], localServices?: string[], localFormDefSelections?: string[], localFormDefs?: boolean, tailscaleShareIds?: string[] } | null} savedState
  * @param {boolean} containersRunning
- * @param {boolean} [tailscaleOn]
- * @param {{ available: boolean, description: string }} [tailscaleAvailability]
  * @returns {object[]}
  */
-export function buildMainMenuItems(
-  savedState,
-  containersRunning,
-  tailscaleOn = savedState?.addons?.includes('tailscale') ?? false,
-  tailscaleAvailability = TAILSCALE_AVAILABLE
-) {
+export function buildMainMenuItems(savedState, containersRunning) {
   const localCount = savedState?.localServices?.length || 0
   const formDefSelectionCount = getSelectedFormDefIds(savedState).length
   const localFormDefsOn = formDefSelectionCount > 0
@@ -81,13 +73,6 @@ export function buildMainMenuItems(
   const localDesc = localActiveParts.length
     ? `${PURPLE}${localActiveParts.join(' + ')}${RESET_COLOR}`
     : 'Override services & form definitions locally'
-
-  let tailscaleDesc = tailscaleAvailability.description
-  if (tailscaleOn) {
-    tailscaleDesc = 'Disable Tailscale mode — restore localhost'
-  } else if (tailscaleAvailability.available) {
-    tailscaleDesc = 'Enable Tailscale mode — HTTPS phone testing'
-  }
 
   return [
     {
@@ -124,13 +109,6 @@ export function buildMainMenuItems(
           }
         ]
       : []),
-    {
-      key: 'tailscale',
-      label: 'tailscale',
-      colour: tailscaleOn ? BLUE : undefined,
-      description: tailscaleDesc,
-      ...(tailscaleAvailability.available ? {} : { disabled: true })
-    },
     { key: 'checks', label: 'checks ⇢', description: 'Tests, lint, security scans and pre-PR checks' },
     {
       key: 'tools',
@@ -154,12 +132,21 @@ async function resolveGasStatus(containersRunning, runningComposeFiles) {
   return gasMockActive ? await getGasStatus() : null
 }
 
-export async function refreshRuntimeStatus(runningComposeFiles = getRunningComposeFiles()) {
+export async function refreshRuntimeStatus(
+  runningComposeFiles = getRunningComposeFiles(),
+  tailscaleOn = tailscaleEnabled(runningComposeFiles)
+) {
   const gasStatus = await resolveGasStatus(!!runningComposeFiles, runningComposeFiles)
   const runtimeLine = buildStatusLine(runningComposeFiles)
   const gasLine = gasStatus === null ? runtimeLine : `${runtimeLine}  ${GAS_DIVIDER}  ${gasStatusSegment(gasStatus)}`
-  const tailscaleLine = tailscaleEnabled(runningComposeFiles)
-    ? `  ${GAS_DIVIDER}  ${tailscaleStatusSegment(getRunningAppBaseUrl() ?? 'address unavailable')}`
+  const tailscaleLine = tailscaleOn
+    ? `  ${GAS_DIVIDER}  ${tailscaleStatusSegment(
+        runningComposeFiles ? (getRunningAppBaseUrl() ?? 'address unavailable') : 'enabled · app not running'
+      )}${
+        getTailscaleShareIds().length
+          ? `  ${GAS_DIVIDER}  ${tailscaleSharesStatusSegment(getTailscaleShareIds().length)}`
+          : ''
+      }`
     : ''
   setRuntimeStatusLine(gasLine + tailscaleLine)
   return gasStatus
@@ -479,8 +466,11 @@ export async function handleChecksCommand(dryRun) {
   return handleActionSubmenu(items, 'Checks', (selected) => runSelectedCheck(selected, dryRun))
 }
 
-/** @param {boolean} dryRun */
-export async function handleToolsCommand(dryRun) {
+/**
+ * @param {boolean} dryRun
+ * @param {Partial<CommandContext>} [tailscaleContext]
+ */
+export async function handleToolsCommand(dryRun, tailscaleContext = {}) {
   const runningComposeFiles = getRunningComposeFiles()
   const gasRunning =
     (runningComposeFiles?.some((file) => file.endsWith('compose.gas.yml')) ?? false) &&
@@ -505,6 +495,16 @@ export async function handleToolsCommand(dryRun) {
         : 'Available when the GAS addon is running',
       disabled: !gasRunning
     },
+    {
+      key: 'tailscale',
+      label: 'tailscale & sharing ⇢',
+      description: tailscaleContext.tailscaleOn
+        ? `Tailscale on${getTailscaleShareIds(tailscaleContext.savedState).length ? ` · ${getTailscaleShareIds(tailscaleContext.savedState).length} share(s) active` : ''}`
+        : tailscaleContext.tailscaleAvailable === false
+          ? tailscaleContext.tailscaleAvailabilityDescription
+          : 'Enable Tailscale mode — HTTPS phone testing and external sharing',
+      ...(tailscaleContext.tailscaleAvailable === false ? { disabled: true } : {})
+    },
     { key: 'audit:logs', label: 'audit logs', description: 'Show audit entries from grants-ui container logs' },
     { key: 'audit:queue', label: 'audit queue', description: 'Show the 10 most recent local audit messages' },
     { key: 'audit:clear', label: 'clear audit', description: 'Purge the local audit queue and restart grants-ui' }
@@ -515,6 +515,16 @@ export async function handleToolsCommand(dryRun) {
     'audit:clear': 'Clearing audit queue and restarting grants-ui'
   }
   return handleActionSubmenu(items, 'Tools', async (selected) => {
+    if (selected === 'tailscale') {
+      return handleTailscaleCommand({
+        dryRun,
+        savedState: tailscaleContext.savedState ?? loadState(),
+        containersRunning: tailscaleContext.containersRunning ?? !!runningComposeFiles,
+        tailscaleOn: tailscaleContext.tailscaleOn ?? false,
+        tailscaleServiceRunning: tailscaleContext.tailscaleServiceRunning ?? false,
+        tailscaleSession: tailscaleContext.tailscaleSession
+      })
+    }
     if (selected === 'state') await inspectState(dryRun)
     if (selected === 'gas:state') return handleGasStateTool(dryRun)
     if (selected === 'journey') return handleJourneyCommand(dryRun)
@@ -1041,26 +1051,193 @@ async function handleDockerLifecycleCommand(command, dryRun) {
     : buildStatusLine(postRunFiles)
 }
 
+/** Tailscale mode and external-share actions, kept together to make active access obvious. */
+export async function handleTailscaleCommand(ctx) {
+  let containersRunning = ctx.containersRunning
+  let tailscaleOn = ctx.tailscaleOn
+  let apiKeyEntered = ctx.tailscaleSession?.apiKeyEntered ?? false
+  let statusLine = ''
+  while (true) {
+    const shareIds = getTailscaleShareIds()
+    const tailscaleServiceRunning = ctx.tailscaleServiceRunning
+    const canCreateShare = tailscaleServiceRunning && containersRunning && tailscaleOn && apiKeyEntered
+    const canSetupPolicy = tailscaleServiceRunning && apiKeyEntered
+    const canManageShares = tailscaleServiceRunning && apiKeyEntered
+    const apiKeyHint = 'Enter an API key in this menu first'
+    let policyDescription = apiKeyHint
+    if (tailscaleServiceRunning && apiKeyEntered) {
+      try {
+        policyDescription =
+          (await getTailscaleSharingPolicyStatus()) === 'active'
+            ? 'Sharing policy active — shared users are restricted to browser ports'
+            : 'Set up the restricted shared-user grant'
+      } catch {
+        policyDescription = 'Could not check sharing policy — select to inspect or set up'
+      }
+    }
+    const items = [
+      {
+        key: 'mode',
+        label: tailscaleOn ? 'disable Tailscale mode' : 'enable Tailscale mode',
+        description: tailscaleOn ? 'Revoke gt shares and restore localhost' : 'HTTPS phone testing'
+      },
+      {
+        key: 'api-key',
+        label: 'enter API key',
+        description: apiKeyEntered
+          ? 'API key available for this gt session'
+          : 'Paste a Tailscale Admin API access token (not saved)',
+        ...(apiKeyEntered ? { colour: GREEN } : {})
+      },
+      {
+        key: 'create',
+        label: 'share grants-ui',
+        description: canCreateShare
+          ? 'Create and copy a single-use invitation'
+          : !tailscaleServiceRunning
+            ? 'Connect Tailscale first'
+            : !tailscaleOn || !containersRunning
+              ? 'Start grants-ui with Tailscale mode first'
+              : apiKeyHint,
+        disabled: !canCreateShare
+      },
+      {
+        key: 'shares',
+        label: 'active shares ⇢',
+        description: !tailscaleServiceRunning
+          ? 'Connect Tailscale first'
+          : !apiKeyEntered
+            ? apiKeyHint
+            : shareIds.length
+              ? `${shareIds.length} gt-created share(s) can be revoked`
+              : 'No gt-created shares',
+        disabled: !canManageShares
+      },
+      {
+        key: 'policy',
+        label: 'set up sharing policy',
+        description: tailscaleServiceRunning ? policyDescription : 'Connect Tailscale first',
+        disabled: !canSetupPolicy
+      }
+    ]
+    const selected = await radioMenu(items, 'Tailscale & sharing', {
+      hint: '↑ ↓  navigate    enter → select    esc → back',
+      statusLine
+    })
+    if (selected === '__quit__') return ''
+    if (selected === 'api-key') {
+      const apiKey = await promptText('Paste Tailscale Admin API access token', {
+        hint: 'paste key    enter → use for this gt session    esc → cancel',
+        mask: true
+      })
+      if (apiKey?.trim()) {
+        process.env[TAILSCALE_SHARE_API_KEY] = apiKey.trim()
+        apiKeyEntered = true
+        if (ctx.tailscaleSession) ctx.tailscaleSession.apiKeyEntered = true
+        statusLine = `${GREEN}✔${RESET_COLOR}  API key available for this gt session only`
+      } else if (apiKey === '') {
+        statusLine = `${YELLOW}⚠${RESET_COLOR}  No API key entered`
+      }
+      continue
+    }
+    if (selected === 'mode') {
+      const status = await runInteractiveAction(
+        'tailscale',
+        [!tailscaleOn, ctx.dryRun],
+        tailscaleOn ? 'Revoking shares and disabling Tailscale mode' : 'Enabling Tailscale mode'
+      )
+      const files = getRunningComposeFiles()
+      containersRunning = !!files
+      tailscaleOn = containersRunning ? tailscaleEnabled(files) : (loadState()?.addons?.includes('tailscale') ?? false)
+      await refreshRuntimeStatus(files, tailscaleOn)
+      statusLine =
+        status === 0
+          ? `${GREEN}✔${RESET_COLOR}  Tailscale mode ${tailscaleOn ? 'enabled' : 'disabled'}`
+          : `${RED}✖${RESET_COLOR}  Tailscale switch failed — check output`
+      continue
+    }
+    if (selected === 'create') {
+      const status = await runInteractiveAction(
+        'tailscale-share:create',
+        [ctx.dryRun],
+        'Creating single-use Tailscale share'
+      )
+      statusLine =
+        status === 0
+          ? `${GREEN}✔${RESET_COLOR}  Share created and tester message copied`
+          : `${RED}✖${RESET_COLOR}  Could not create share`
+      continue
+    }
+    if (selected === 'policy') {
+      const confirmed = await radioMenu(
+        [
+          { key: 'cancel', label: 'cancel', description: 'Do not change the tailnet policy' },
+          { key: 'apply', label: 'apply policy', description: 'Add only the grants-ui-dev host and TCP 443/8443 grant' }
+        ],
+        'Set up Tailscale sharing policy',
+        { hint: '↑ ↓  choose    enter → confirm    esc → back' }
+      )
+      if (confirmed !== 'apply') continue
+      const status = await runInteractiveAction(
+        'tailscale-policy:setup',
+        [!ctx.dryRun],
+        'Previewing and applying Tailscale sharing policy'
+      )
+      statusLine =
+        status === 0
+          ? `${GREEN}✔${RESET_COLOR}  Tailscale sharing policy is ready`
+          : `${RED}✖${RESET_COLOR}  Could not update Tailscale sharing policy`
+      continue
+    }
+    const sharesStatus = await handleTailscaleSharesCommand(ctx.dryRun, shareIds)
+    if (sharesStatus === '__back__') continue
+    statusLine = sharesStatus
+  }
+}
+
+export async function handleTailscaleSharesCommand(dryRun, shareIds) {
+  if (!shareIds.length) {
+    await radioMenu(
+      [{ key: 'none', label: 'no active shares', description: 'No shares created by gt', disabled: true }],
+      'Active Tailscale shares',
+      {
+        hint: 'esc → back'
+      }
+    )
+    return '__back__'
+  }
+  const items = [
+    { key: 'all', label: 'revoke all shares', description: 'Immediately remove access for every gt-created share' },
+    ...shareIds.map((id) => ({ key: id, label: `revoke ${id}`, description: 'Immediately remove access' }))
+  ]
+  const selected = await radioMenu(items, 'Active Tailscale shares', {
+    hint: '↑ ↓  navigate    enter → revoke    esc → back'
+  })
+  if (selected === '__quit__') return '__back__'
+  const action = selected === 'all' ? 'tailscale-share:revoke-all' : 'tailscale-share:revoke'
+  const args = selected === 'all' ? [dryRun] : [selected, dryRun]
+  const status = await runInteractiveAction(
+    action,
+    args,
+    selected === 'all' ? 'Revoking all Tailscale shares' : 'Revoking Tailscale share'
+  )
+  return status === 0
+    ? `${GREEN}✔${RESET_COLOR}  Tailscale access revoked`
+    : `${RED}✖${RESET_COLOR}  Could not revoke share`
+}
+
 /**
- * @typedef {{ dryRun: boolean, savedState: object | null, containersRunning: boolean, tailscaleOn: boolean }} CommandContext
+ * @typedef {{ dryRun: boolean, savedState: object | null, containersRunning: boolean, tailscaleOn: boolean, tailscaleServiceRunning: boolean, tailscaleAvailable?: boolean, tailscaleAvailabilityDescription?: string, tailscaleSession?: { apiKeyEntered: boolean } }} CommandContext
  */
 
 /** @type {Record<string, (ctx: CommandContext) => Promise<string>>} */
 const COMMAND_HANDLERS = {
-  tailscale: async (ctx) => {
-    const status = await runInteractiveAction(
-      'tailscale',
-      [!ctx.tailscaleOn, ctx.dryRun],
-      ctx.tailscaleOn ? 'Disabling Tailscale mode' : 'Enabling Tailscale mode'
-    )
-    return status === 0 ? '' : `${RED}Tailscale switch failed — check output${RESET_COLOR}`
-  },
   restart: (ctx) => handleRestartCommand(ctx.dryRun),
   up: (ctx) => handleUpCommand(ctx.dryRun, ctx.savedState),
   local: (ctx) => handleLocalCommand(ctx.dryRun, ctx.savedState, ctx.containersRunning),
   'refresh-overrides': (ctx) => handleRefreshOverridesCommand(ctx.dryRun),
   checks: (ctx) => handleChecksCommand(ctx.dryRun),
-  tools: (ctx) => handleToolsCommand(ctx.dryRun),
+  tools: (ctx) => handleToolsCommand(ctx.dryRun, ctx),
   down: (ctx) => handleDockerLifecycleCommand('down', ctx.dryRun),
   debug: (ctx) => handleDockerLifecycleCommand('debug', ctx.dryRun),
   reset: (ctx) => handleDockerLifecycleCommand('reset', ctx.dryRun)
@@ -1094,21 +1271,21 @@ function quitTui() {
 
 /**
  * Draw the main menu and wait for a choice.
- * @param {{ savedState: ReturnType<typeof loadState>, tailscaleAvailability: { available: boolean, description: string }, statusLine: string }} options
+ * @param {{ savedState: ReturnType<typeof loadState>, statusLine: string }} options
  */
-async function promptMainMenu({ savedState, tailscaleAvailability, statusLine }) {
+async function promptMainMenu({ savedState, statusLine }) {
   const runningComposeFiles = getRunningComposeFiles()
   const containersRunning = !!runningComposeFiles
   const tailscaleOn = containersRunning
     ? tailscaleEnabled(runningComposeFiles)
     : (savedState?.addons?.includes('tailscale') ?? false)
-  const menuItems = buildMainMenuItems(savedState, containersRunning, tailscaleOn, tailscaleAvailability)
+  const menuItems = buildMainMenuItems(savedState, containersRunning)
   const lastRun = getLastRun()
   if (getActionRuns().length) {
     menuItems.push({ key: 'output', label: 'output ⇢', description: 'Browse output from this session (l → latest)' })
   }
   setActionMenu(menuItems)
-  const gasStatus = await refreshRuntimeStatus(runningComposeFiles)
+  const gasStatus = await refreshRuntimeStatus(runningComposeFiles, tailscaleOn)
   const gasReachable = gasStatus !== null
   const menuHint = gasReachable ? '↑ ↓  navigate    enter → select    g → set GAS status    esc → quit' : ''
 
@@ -1181,12 +1358,12 @@ export async function runInteractiveLoop(dryRun) {
 
   let statusLine = ''
   let quitRequested = false
+  const tailscaleSession = { apiKeyEntered: false }
 
   while (!quitRequested) {
     const savedState = loadState()
     const { command, containersRunning, tailscaleOn, lastRun, gasStatus } = await promptMainMenu({
       savedState,
-      tailscaleAvailability,
       statusLine
     })
 
@@ -1201,7 +1378,16 @@ export async function runInteractiveLoop(dryRun) {
     } else if (command === '__quit__') {
       quitRequested = true
     } else if (COMMAND_HANDLERS[command]) {
-      const context = { dryRun, savedState, containersRunning, tailscaleOn }
+      const context = {
+        dryRun,
+        savedState,
+        containersRunning,
+        tailscaleOn,
+        tailscaleServiceRunning: tailscaleAvailability.running,
+        tailscaleAvailable: tailscaleAvailability.available,
+        tailscaleAvailabilityDescription: tailscaleAvailability.description,
+        tailscaleSession
+      }
       statusLine = await runCommandHandler(COMMAND_HANDLERS[command], context, lastRun)
     }
   }

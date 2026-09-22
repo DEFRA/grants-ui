@@ -24,7 +24,7 @@
 
 Running `gt` with no arguments opens a menu-driven interface where you can toggle addon services (Land Grants, GAS, HA proxy, Tailscale), set a replica scale, choose which `defradigital/*` images to replace with a locally-built `<service>:local` image, and toggle [local form-definition overrides](#local-form-definition-overrides). Selections are persisted in `.grants-ui-cli-state.json` (git-ignored) so the next run pre-selects the same options.
 
-The main menu's `tailscale` action enables or disables [Tailscale phone testing](#tailscale-phone-testing).
+The `tools` menu's `tailscale & sharing` action enables or disables [Tailscale phone testing](#tailscale-phone-testing).
 When the stack is running, it applies the change immediately. Before startup, it saves the selection for the `up` menu.
 
 The `local` menu holds both the per-service local-image toggles and the local form definitions override toggle. When the stack is already running, changes apply immediately (services restart with `--no-deps`, overrides are (un)published in place); otherwise they take effect on the next `up`.
@@ -52,6 +52,10 @@ gt up --ha --scale 2               # run 2 replicas of grants-ui / grants-ui-bac
 gt up --tailscale                  # start with HTTPS tailnet URLs and configure Serve
 gt tailscale on                    # switch the running stack to Tailscale
 gt tailscale off                   # restore localhost and remove the Serve proxies
+gt share create                    # copy a one-use external Tailscale invitation
+gt share list                      # show gt-created shares (without invite URLs)
+gt share revoke <share-id>         # revoke one share
+gt share revoke-all                # revoke every gt-created share
 gt up --local-grants-ui-backend    # use locally-built grants-ui-backend:local
 
 # Stop the stack (uses saved state automatically)
@@ -197,8 +201,8 @@ Start with Tailscale enabled:
 gt up --tailscale
 ```
 
-Or run `gt`, choose `up`, and select the Tailscale addon. The main menu's
-`tailscale` action toggles the mode, including while the app is running.
+Or run `gt`, choose `up`, and select the Tailscale addon. The `tools` menu's
+`tailscale & sharing` action toggles the mode, including while the app is running.
 On interactive startup, `gt` disables that action with an install hint if either
 the Tailscale service or its CLI is unavailable.
 
@@ -246,6 +250,65 @@ If Tailscale is already disconnected or its CLI is unavailable, switching off
 still restores the app's localhost configuration. A cleanup failure is reported;
 run `gt tailscale off` again once the CLI is available to remove any remaining
 proxies. `--dry-run` previews commands without changing Docker, Serve or saved selections.
+
+### External Tailscale sharing
+
+Use `gt` → **tools** → **tailscale & sharing** → **share grants-ui** to create a single-use
+Tailscale device-share invitation for a tester on another tailnet. The tester
+message, containing both the invitation and Grants UI URL, is copied directly
+to the clipboard. The TUI footer and the **active shares** menu make every
+gt-created share visible and let you revoke each share individually.
+
+The app must be running in Tailscale mode. In the **tailscale & sharing** menu,
+choose **enter API key** and paste a short-lived Tailscale Admin API access token.
+The prompt masks the token, and `gt` keeps it only for the current session; it is
+not saved in the repository, `.grants-ui-cli-state.json`, or action output.
+
+Generate the token in Tailscale Admin Console → **Keys** → **API access tokens**.
+Use the shortest practical expiry. `gt` stores only the non-secret Tailscale
+invite IDs, so it can revoke its own shares on demand and before `tailscale off`,
+`gt down`, or `gt reset`. It does not manage invitations created elsewhere.
+
+Tailscale shares a machine, rather than a single HTTP service. Before using this
+feature, a tailnet administrator must add a grant that allows only shared users
+to reach this machine's browser endpoints. Use a stable host alias for the
+developer machine and preserve the existing grants in the tailnet policy:
+
+`gt` can safely set this up using the same API token used for share invitations.
+Generate it from an account allowed to manage the tailnet policy, paste it into
+the **enter API key** menu action, then preview the change before applying it:
+
+gt → tools → tailscale & sharing → set up sharing policy
+
+The setup command gets this machine's current Tailscale IPv4 address, adds or
+updates only `hosts.grants-ui-dev`, and adds the exact `autogroup:shared` TCP
+443/8443 grant if absent. It uses the policy ETag, so it refuses to overwrite a
+policy changed after its preview. Tailscale validates the proposed policy and
+any existing policy tests before accepting it. The policy API returns canonical
+JSON, so an applied setup may reformat the policy and remove comments; all policy
+fields are retained. The TUI provides the same action under **tools** → **tailscale &
+sharing** → **set up sharing policy**, with a confirmation step.
+
+If the tailnet policy is managed by GitOps or you prefer to retain its comments,
+make the equivalent change through that source instead:
+
+```json
+{
+  "hosts": {
+    "grants-ui-dev": "100.x.y.z"
+  },
+  "grants": [
+    {
+      "src": ["autogroup:shared"],
+      "dst": ["grants-ui-dev"],
+      "ip": ["tcp:443", "tcp:8443"]
+    }
+  ]
+}
+```
+
+Port `8443` is required by the local Defra ID stub, so external testers follow
+the same sign-in flow as local users. Do not use Tailscale Funnel for this.
 
 ## GAS Compose (`compose.gas.yml`)
 

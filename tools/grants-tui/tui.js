@@ -349,10 +349,13 @@ export async function radioMenu(
  * printable keys / backspace, and resolves with the entered string on enter — or
  * `null` on esc / ctrl-c.
  * @param {string} title
- * @param {{ initial?: string, hint?: string }} [opts]
+ * @param {{ initial?: string, hint?: string, mask?: boolean }} [opts]
  * @returns {Promise<string | null>}
  */
-export async function promptText(title, { initial = '', hint = 'type a value    enter → save    esc → cancel' } = {}) {
+export async function promptText(
+  title,
+  { initial = '', hint = 'type a value    enter → save    esc → cancel', mask = false } = {}
+) {
   return new Promise((resolve) => {
     let buffer = initial
     // Pre-filled text opens "selected" (reverse video) so it's obvious the whole
@@ -361,7 +364,8 @@ export async function promptText(title, { initial = '', hint = 'type a value    
     let selected = initial.length > 0
 
     function draw() {
-      const shown = selected ? `${INVERSE}${buffer}${RESET_COLOR}` : buffer
+      const value = mask ? '•'.repeat(buffer.length) : buffer
+      const shown = selected ? `${INVERSE}${value}${RESET_COLOR}` : value
       const body = [
         `  ${BOLD}${title}${RESET_COLOR}`,
         `  ${DIM}${hint}${RESET_COLOR}`,
@@ -394,7 +398,7 @@ export async function promptText(title, { initial = '', hint = 'type a value    
         buffer = selected ? '' : buffer.slice(0, -1)
         selected = false
         draw()
-      } else if (str && str.length === 1 && str >= ' ' && !key.ctrl && !key.meta) {
+      } else if (str && /^[^\x00-\x1f\x7f]+$/u.test(str) && !key.ctrl && !key.meta) {
         // Typing over the pre-selected value replaces it entirely.
         if (selected) buffer = ''
         selected = false
