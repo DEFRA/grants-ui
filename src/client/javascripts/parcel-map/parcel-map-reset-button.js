@@ -77,7 +77,7 @@ export function attachResetButton(ml, bbox, mapEl, cleanups) {
   announcer.setAttribute('aria-live', 'polite')
   wrapper.appendChild(announcer)
 
-  // Derived from bbox since fitBounds() may not have applied synchronously yet.
+  // bbox, not ml.getCenter() — fitBounds() may not have applied yet.
   const initialCenter = {
     lng: (bbox.minLng + bbox.maxLng) / 2,
     lat: (bbox.minLat + bbox.maxLat) / 2
@@ -98,20 +98,25 @@ export function attachResetButton(ml, bbox, mapEl, cleanups) {
     announcer.textContent = ''
   }
 
-  // First idle is when fitBounds's real zoom becomes known.
+  // Real zoom is only known once fitBounds settles.
   const onIdle = () => {
     initialZoom = ml.getZoom()
   }
-  // Also fires for the button's own reset fitBounds(), hence drift-checking
-  // instead of reacting to the event directly.
+  // Skips the reset's own moveend — its easing can briefly overshoot.
+  let isResetting = false
+  // Only shows the button; hiding it is click-only.
   const onMoveEnd = () => {
+    if (isResetting) {
+      isResetting = false
+      return
+    }
     if (hasMovedFromInitialView(ml, initialCenter, initialZoom)) {
       showButton()
-    } else {
-      hideButton()
     }
   }
   const onClick = () => {
+    hideButton()
+    isResetting = true
     fitToParcels(ml, bbox, { animate: true })
   }
 

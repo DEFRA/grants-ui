@@ -103,7 +103,7 @@ describe('attachResetButton', () => {
     expect(button.style.display).toBe('inline-flex')
   })
 
-  it('triggers an animated re-fit when clicked, but stays visible until the map actually settles', () => {
+  it('hides itself immediately and triggers an animated re-fit when clicked', () => {
     const mapEl = makeMapEl()
     const ml = makeMl({ offsetPx: SHOW_ALL_MOVE_THRESHOLD_PX })
     const button = attachResetButton(ml, BBOX, mapEl, cleanups)
@@ -113,9 +113,8 @@ describe('attachResetButton', () => {
 
     button.click()
 
-    // Not hidden by the click itself — only once onMoveEnd confirms the
-    // animated reset has actually landed back at the initial view.
-    expect(button.hidden).toBe(false)
+    expect(button.hidden).toBe(true)
+    expect(button.style.display).toBe('none')
     expect(ml.fitBounds).toHaveBeenCalledWith(
       [
         [BBOX.minLng, BBOX.minLat],
@@ -123,16 +122,9 @@ describe('attachResetButton', () => {
       ],
       expect.objectContaining({ animate: true })
     )
-
-    // The reset settles back at the initial center.
-    ml.project.mockImplementation(() => ({ x: 0, y: 0 }))
-    ml._emit('moveend')
-
-    expect(button.hidden).toBe(true)
-    expect(button.style.display).toBe('none')
   })
 
-  it('hides itself when the user pans back to the initial view without clicking the button', () => {
+  it('does not hide itself when the user pans back to the initial view without clicking the button', () => {
     const mapEl = makeMapEl()
     const ml = makeMl({ offsetPx: SHOW_ALL_MOVE_THRESHOLD_PX })
     const button = attachResetButton(ml, BBOX, mapEl, cleanups)
@@ -140,12 +132,12 @@ describe('attachResetButton', () => {
     ml._emit('moveend')
     expect(button.hidden).toBe(false)
 
+    // Manually panning back to the initial view doesn't itself hide the
+    // button — only clicking it does.
     ml.project.mockImplementation(() => ({ x: 0, y: 0 }))
     ml._emit('moveend')
 
-    expect(button.hidden).toBe(true)
-    expect(button.style.display).toBe('none')
-    // Panning back doesn't itself reset the camera — only the click does.
+    expect(button.hidden).toBe(false)
     expect(ml.fitBounds).not.toHaveBeenCalled()
   })
 
@@ -173,7 +165,7 @@ describe('attachResetButton', () => {
     expect(button.hidden).toBe(true)
   })
 
-  it('hides again once zoom returns to its initial-view value', () => {
+  it('does not hide once shown, even when zoom returns to its initial-view value', () => {
     const mapEl = makeMapEl()
     const ml = makeMl()
     const button = attachResetButton(ml, BBOX, mapEl, cleanups)
@@ -186,7 +178,7 @@ describe('attachResetButton', () => {
     ml.getZoom.mockReturnValue(INITIAL_ZOOM)
     ml._emit('moveend')
 
-    expect(button.hidden).toBe(true)
+    expect(button.hidden).toBe(false)
   })
 
   it("captures the initial zoom from the map's first idle, not from attach time", () => {
@@ -217,17 +209,16 @@ describe('attachResetButton', () => {
     expect(announcer.textContent).toBe(MSG_SHOW_ALL_PARCELS_AVAILABLE)
   })
 
-  it('clears the announcement once the button hides again', () => {
+  it('clears the announcement once the button is clicked', () => {
     const mapEl = makeMapEl()
     const ml = makeMl({ offsetPx: SHOW_ALL_MOVE_THRESHOLD_PX })
-    attachResetButton(ml, BBOX, mapEl, cleanups)
+    const button = attachResetButton(ml, BBOX, mapEl, cleanups)
     const announcer = mapEl.parentElement.querySelector('[role="status"]')
 
     ml._emit('moveend')
     expect(announcer.textContent).toBe(MSG_SHOW_ALL_PARCELS_AVAILABLE)
 
-    ml.project.mockImplementation(() => ({ x: 0, y: 0 }))
-    ml._emit('moveend')
+    button.click()
 
     expect(announcer.textContent).toBe('')
   })
