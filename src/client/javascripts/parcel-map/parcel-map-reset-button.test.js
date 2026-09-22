@@ -229,6 +229,24 @@ describe('attachResetButton', () => {
     expect(button.hidden).toBe(true)
   })
 
+  it("captures the initial center from the map's first idle, since fitBounds padding can shift it off the bbox midpoint", () => {
+    const mapEl = makeMapEl()
+    const ml = makeMl()
+    // Real fitted center, deliberately different from the bbox midpoint.
+    const fittedCenter = { lng: 0.4, lat: 52.3 }
+    ml.getCenter.mockReturnValue(fittedCenter)
+    ml.project.mockImplementation((lngLat) => (lngLat === fittedCenter ? { x: 0, y: 0 } : { x: 999, y: 0 }))
+
+    const button = attachResetButton(ml, BBOX, mapEl, cleanups)
+    ml._emit('idle')
+
+    // The map is still exactly at the real fitted center, not the bbox
+    // midpoint — the button should stay hidden.
+    ml._emit('moveend')
+
+    expect(button.hidden).toBe(true)
+  })
+
   it('announces the button becoming available via a visually-hidden live region', () => {
     const mapEl = makeMapEl()
     const ml = makeMl({ offsetPx: SHOW_ALL_MOVE_THRESHOLD_PX })

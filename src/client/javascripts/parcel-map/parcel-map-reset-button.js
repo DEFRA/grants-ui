@@ -77,8 +77,8 @@ export function attachResetButton(ml, bbox, mapEl, cleanups) {
   announcer.setAttribute('aria-live', 'polite')
   wrapper.appendChild(announcer)
 
-  // bbox, not ml.getCenter() — fitBounds() may not have applied yet.
-  const initialCenter = {
+  // Placeholder until onIdle refines it to the real fitted center.
+  let initialCenter = {
     lng: (bbox.minLng + bbox.maxLng) / 2,
     lat: (bbox.minLat + bbox.maxLat) / 2
   }
@@ -98,8 +98,9 @@ export function attachResetButton(ml, bbox, mapEl, cleanups) {
     announcer.textContent = ''
   }
 
-  // Real zoom is only known once fitBounds settles.
+  // Real center/zoom are only known once fitBounds settles.
   const onIdle = () => {
+    initialCenter = ml.getCenter()
     initialZoom = ml.getZoom()
   }
   // Skips the reset's own moveend — its easing can briefly overshoot.
