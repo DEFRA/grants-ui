@@ -124,6 +124,40 @@ describe('attachResetButton', () => {
     )
   })
 
+  it('ignores the moveend fired by its own reset animation', () => {
+    const mapEl = makeMapEl()
+    const ml = makeMl({ offsetPx: SHOW_ALL_MOVE_THRESHOLD_PX })
+    const button = attachResetButton(ml, BBOX, mapEl, cleanups)
+
+    ml._emit('moveend')
+    expect(button.hidden).toBe(false)
+
+    button.click()
+    expect(button.hidden).toBe(true)
+
+    // The reset animation's own moveend, still reporting drift mid-overshoot.
+    ml._emit('moveend')
+
+    expect(button.hidden).toBe(true)
+  })
+
+  it('resumes normal drift-checking on the next moveend after a reset', () => {
+    const mapEl = makeMapEl()
+    const ml = makeMl({ offsetPx: SHOW_ALL_MOVE_THRESHOLD_PX })
+    const button = attachResetButton(ml, BBOX, mapEl, cleanups)
+
+    ml._emit('moveend')
+    button.click()
+
+    // The reset's own moveend is ignored...
+    ml._emit('moveend')
+    expect(button.hidden).toBe(true)
+
+    // ...but a genuine subsequent user move is not.
+    ml._emit('moveend')
+    expect(button.hidden).toBe(false)
+  })
+
   it('does not hide itself when the user pans back to the initial view without clicking the button', () => {
     const mapEl = makeMapEl()
     const ml = makeMl({ offsetPx: SHOW_ALL_MOVE_THRESHOLD_PX })
