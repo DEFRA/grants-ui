@@ -109,7 +109,7 @@ describe('land-actions.validator', () => {
         description: 'Herbal leys',
         version: '1',
         quantityRequired: true,
-        availability: { type: 'total' }
+        availability: { type: 'total', value: 11.22, unit: 'ha' }
       },
       {
         code: 'CLIG3',
@@ -181,12 +181,15 @@ describe('land-actions.validator', () => {
       expect(result).toEqual([{ text, href: '#landActionQuantity_CSAM3', code: 'CSAM3' }])
     })
 
-    it('should not report an over-available quantity, which land-grants-api owns', () => {
-      const payload = { landAction: 'CSAM3', landActionQuantity_CSAM3: '9999' }
+    it('should use the same maximum quantity error as on-blur validation', () => {
+      const payload = { landAction: 'CSAM3', landActionQuantity_CSAM3: '0.277' }
+      const actionsWithLimitedArea = actions.map((action) =>
+        action.code === 'CSAM3' ? { ...action, availability: { ...action.availability, value: 0.276 } } : action
+      )
 
-      const result = validateSelectedActionQuantities(payload, actions)
+      const result = validateSelectedActionQuantities(payload, actionsWithLimitedArea)
 
-      expect(result).toEqual([])
+      expect(result).toEqual([{ text: 'Enter up to 0.276 hectares', href: '#landActionQuantity_CSAM3', code: 'CSAM3' }])
     })
 
     it.each([

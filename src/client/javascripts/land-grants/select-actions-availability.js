@@ -30,6 +30,7 @@ import {
 import { clearQuantityError, showQuantityError } from './quantity-error-display.js'
 import { formatUnit, availableArea } from '../../../shared/unit-format.js'
 import { getAvailabilityLimit } from '../../../shared/availability.js'
+import { requiresWholeNumber } from '../../../shared/unit-types.js'
 
 const UNAVAILABLE_MESSAGE = 'Not compatible with other selected actions.'
 const UNAVAILABLE_CLASS = 'select-actions-unavailable-message'
@@ -120,18 +121,25 @@ export function getValidTypedQuantity(checkbox) {
  * @returns {string}
  */
 function actionSpecificQuantityMessage(checkbox, rawValue, message) {
-  if (!rawValue || Number(rawValue) <= 0) {
+  const actionText =
+    checkbox.dataset.actionDescription?.trim() ||
+    checkbox.closest(CHECKBOX_ITEM_SELECTOR)?.querySelector('label')?.textContent?.trim() ||
+    checkbox.value
+
+  if (rawValue === '') {
+    return `Enter a quantity for ${actionText}`
+  }
+  if (requiresWholeNumber(checkbox.getAttribute(AVAILABLE_UNIT_ATTR))) {
     return message
+  }
+  if (Number(rawValue) <= 0) {
+    return `Enter a quantity for ${actionText}`
   }
   const quantityErrorMessages = new Set([QUANTITY_ERRORS.NOT_A_NUMBER, QUANTITY_ERRORS.TOO_MANY_DECIMAL_PLACES])
   if (!quantityErrorMessages.has(message)) {
     return message
   }
 
-  const actionText =
-    checkbox.dataset.actionDescription?.trim() ||
-    checkbox.closest(CHECKBOX_ITEM_SELECTOR)?.querySelector('label')?.textContent?.trim() ||
-    checkbox.value
   return `Quantity for ${actionText} must be ${QUANTITY_PRECISION} decimal places or fewer`
 }
 
@@ -147,10 +155,11 @@ export function normaliseAndValidateQuantity(checkbox) {
   }
   quantityInput.value = normaliseQuantityInput(quantityInput.value)
   const rawValue = quantityInput.value
-  const message =
-    rawValue === ''
-      ? null
-      : getQuantityError(rawValue, getTotalAvailableArea(checkbox), checkbox.getAttribute(AVAILABLE_UNIT_ATTR))
+  const message = getQuantityError(
+    rawValue,
+    getTotalAvailableArea(checkbox),
+    checkbox.getAttribute(AVAILABLE_UNIT_ATTR)
+  )
   const displayMessage = message == null ? null : actionSpecificQuantityMessage(checkbox, rawValue, message)
   if (displayMessage) {
     showQuantityError(quantityInput, displayMessage)
