@@ -62,8 +62,10 @@ export function validateSelectedActions(payload) {
  * @returns {string | null}
  */
 function getActionQuantityErrorText(action, rawValue) {
+  const availableQuantity = action.availability?.value ?? undefined
+
   if (rawValue !== '' && requiresWholeNumber(action.availability?.unit)) {
-    return getQuantityError(rawValue, undefined, action.availability?.unit)
+    return getQuantityError(rawValue, availableQuantity, action.availability?.unit)
   }
 
   // Empty, zero and negative area claims all require the user to enter a quantity.
@@ -76,7 +78,7 @@ function getActionQuantityErrorText(action, rawValue) {
     return `Quantity for ${action.description} must be ${QUANTITY_PRECISION} decimal places or fewer`
   }
 
-  return null
+  return getQuantityError(rawValue, availableQuantity, action.availability?.unit)
 }
 
 /**

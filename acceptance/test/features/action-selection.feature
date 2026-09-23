@@ -41,7 +41,7 @@ Feature: Action Selection
         # RULE: partial action hectares cannot exceed available hectares
         When the user enters "0.277" hectares for action "CSAM3"
         And continues
-        Then the user should see "The amount of land must be the same as or less than the available area" for action "CSAM3"
+        Then the user should see "Enter up to 0.276 hectares" for action "CSAM3"
 
         # RULE: partial action hectares must be 4 decimal places or less
         When the user enters "0.27666" hectares for action "CSAM3"
