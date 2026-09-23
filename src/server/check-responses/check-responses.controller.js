@@ -3,6 +3,7 @@ import { resolvePath } from '~/src/server/common/helpers/path-utils.js'
 import { getTaskPageBackLink } from '~/src/server/task-list/task-list.helper.js'
 import { buildConfirmLandAndActionsViewModel } from '~/src/server/land-grants/view-models/confirm-land-and-actions.view-model.js'
 import { CONFIRM_LAND_AND_ACTIONS_PATH } from '~/src/server/land-grants/utils/confirm-land-and-actions-navigation.js'
+import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 
 export default class CheckResponsesPageController extends SummaryPageController {
   /**
@@ -46,15 +47,16 @@ export default class CheckResponsesPageController extends SummaryPageController 
     for (const path of this.derivedStatePages) {
       const page = context.relevantPages.find((candidate) => candidate.path === path)
       const derivedPage = /** @type {DerivedStatePage | undefined} */ (/** @type {unknown} */ (page))
-      if (typeof derivedPage?.isStateStale !== 'function' || !(await derivedPage.isStateStale(request, context))) {
-        continue
+      if (typeof derivedPage?.isStateStale === 'function' && (await derivedPage.isStateStale(request, context))) {
+        if (derivedPage.derivedState?.requiresAcknowledgement === false) {
+          context.state = await derivedPage.refreshState(request, context)
+        } else {
+          const query = new URLSearchParams({ returnUrl: this.getHref(this.path) })
+          return h
+            .redirect(`${this.getHref(derivedPage.path)}?${query}`)
+            .code(request.method === 'post' ? statusCodes.seeOther : statusCodes.redirect)
+        }
       }
-      if (derivedPage.derivedState?.requiresAcknowledgement === false) {
-        context.state = await derivedPage.refreshState(request, context)
-        continue
-      }
-      const query = new URLSearchParams({ returnUrl: this.getHref(this.path) })
-      return h.redirect(`${this.getHref(derivedPage.path)}?${query}`).code(request.method === 'post' ? 303 : 302)
     }
     return undefined
   }
@@ -266,7 +268,10 @@ export default class CheckResponsesPageController extends SummaryPageController 
       .find(Boolean)
     const insertionIndex = followingSummary
       ? checkAnswers.indexOf(followingSummary)
-      : Math.max(-1, ...[...summariesBySection.values()].map((summary) => checkAnswers.indexOf(summary))) + 1
+      : Math.max(
+          -1,
+          ...[...summariesBySection.values()].map((sectionSummary) => checkAnswers.indexOf(sectionSummary))
+        ) + 1
     const summary = {
       title: ownerSection?.title ? { text: ownerSection.title } : undefined,
       summaryList: { rows: [] }
