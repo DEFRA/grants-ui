@@ -121,23 +121,11 @@ const convictConfig = {
       env: 'SCORING_SERVICE_URL'
     },
     serviceAuth: {
-      enabled: {
-        doc: 'Whether to use service auth when calling the grant scoring service',
-        format: Boolean,
-        default: isProduction,
-        env: 'SCORING_SERVICE_AUTH_ENABLED'
-      },
       audience: {
         doc: 'JWT audience sent in the token request',
         format: String,
         default: 'grants-scoring-api',
         env: 'SCORING_SERVICE_AUTH_AUDIENCE'
-      },
-      tokenDuration: {
-        doc: 'Token lifetime in seconds (max 900)',
-        format: Number,
-        default: 60,
-        env: 'SCORING_SERVICE_AUTH_TOKEN_DURATION'
       }
     }
   },

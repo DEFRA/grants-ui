@@ -1,7 +1,8 @@
 import { config } from '~/src/config/config.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
-import { generateToken } from '../../aws/sts/grants-scoring-token.js'
+import { getScoringServiceToken } from '~/src/server/common/helpers/auth/scoring-service-token.js'
+import { withTraceId } from '@defra/hapi-tracing'
 
 const SCORING_SERVICE_URL = config.get('scoring.serviceUrl')
 
@@ -53,16 +54,16 @@ class GrantScoringServiceApiError extends Error {
 async function buildRequestOptions(method, request) {
   let authToken
   if (config.get('scoring.serviceAuth.enabled')) {
-    authToken = await generateToken(request.sts)
+    authToken = await getScoringServiceToken()
   }
 
   /** @type {RequestInit} */
   return {
     method,
-    headers: {
+    headers: withTraceId(config.get('tracing.header'), {
       ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       'Content-Type': 'application/json'
-    }
+    })
   }
 }
 

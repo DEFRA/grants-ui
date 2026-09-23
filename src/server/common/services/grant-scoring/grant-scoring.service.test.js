@@ -6,8 +6,8 @@ import { invokeGrantScoringGetAction, makeScoringApiRequest } from './grant-scor
 
 global.fetch = mockFetch
 
-vi.mock('../../aws/sts/grants-scoring-token.js', () => ({
-  generateToken: vi.fn().mockResolvedValue('mock-token')
+vi.mock('~/src/server/common/helpers/auth/scoring-service-token.js', () => ({
+  getScoringServiceToken: vi.fn().mockResolvedValue('mock-token')
 }))
 
 describe('Grant Scoring service', () => {
@@ -29,7 +29,10 @@ describe('Grant Scoring service', () => {
       if (path === 'scoring.serviceAuth.enabled') {
         return false
       }
-      return config.get(path)
+      if (path === 'tracing.header') {
+        return 'x-trace-id'
+      }
+      return undefined
     })
   })
 
@@ -75,6 +78,13 @@ describe('Grant Scoring service', () => {
   })
 
   test('should successfully invoke a scoring GET action with auth token', async () => {
+    const mockResponse = { score: 75, band: 'High' }
+    const mockedFetch = mockFetch()
+    mockedFetch.mockResolvedValueOnce({
+      ok: true,
+      json: vi.fn().mockResolvedValueOnce(mockResponse)
+    })
+
     vi.spyOn(config, 'get').mockImplementation((path) => {
       if (path === 'scoring.serviceUrl') {
         return 'http://localhost:3002'
@@ -82,13 +92,10 @@ describe('Grant Scoring service', () => {
       if (path === 'scoring.serviceAuth.enabled') {
         return true
       }
-      return config.get(path)
-    })
-    const mockResponse = { score: 75, band: 'High' }
-    const mockedFetch = mockFetch()
-    mockedFetch.mockResolvedValueOnce({
-      ok: true,
-      json: vi.fn().mockResolvedValueOnce(mockResponse)
+      if (path === 'tracing.header') {
+        return 'x-trace-id'
+      }
+      return undefined
     })
 
     const result = await invokeGrantScoringGetAction(code, mockRequest)
