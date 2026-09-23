@@ -47,11 +47,10 @@ class GrantScoringServiceApiError extends Error {
  * Builds HTTP request options for Scoring API calls.
  *
  * @param {string} method - HTTP method (GET, POST, etc.)
- * @param {import('../../request-pipeline/types.js').PipelineRequest} request - The Hapi request object.
  * @returns {Promise<RequestInit>} Fetch-compatible request options
  * @private
  */
-async function buildRequestOptions(method, request) {
+async function buildRequestOptions(method) {
   const authToken = await getScoringServiceToken()
 
   /** @type {RequestInit} */
@@ -148,7 +147,7 @@ export async function makeScoringApiRequest(url, grantCode, request, options = {
 
   try {
     const requestUrl = buildRequestUrl(url, queryParams)
-    const requestOptions = await buildRequestOptions(method, request)
+    const requestOptions = await buildRequestOptions(method)
 
     const response = await retry(() => fetch(requestUrl, requestOptions), {
       timeout: 30000,
