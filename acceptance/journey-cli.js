@@ -27,7 +27,6 @@
 import { chromium } from '@playwright/test'
 
 import { DEFAULT_CRN } from '../src/server/dev-tools/journey-runner/journey-meta.js'
-import { submitDefraIdLogin } from './test/support/defra-id-login.js'
 
 const DEFAULT_BASE_URL = 'http://localhost:3000'
 const DEFAULT_TIMEOUT_MS = 120000
@@ -120,7 +119,9 @@ async function loginIfNeeded(page, crn) {
   }
 
   console.log(`${LOG_PREFIX} Signing in via DefraID stub as CRN ${crn}`)
-  await submitDefraIdLogin(page, crn, process.env.DEFRA_ID_USER_PASSWORD ?? 'x')
+  await page.locator("//input[@id='crn']").fill(crn)
+  await page.locator("//input[@id='password']").fill(process.env.DEFRA_ID_USER_PASSWORD ?? 'x')
+  await page.locator("//button[@type='submit']").click()
   // The stub processes the sign-in once its login form detaches (mirrors the
   // acceptance suite) — more reliable than networkidle, which GA keeps busy.
   await crnInput.waitFor({ state: 'hidden' }).catch(() => {})
