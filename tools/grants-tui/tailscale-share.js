@@ -68,11 +68,29 @@ function assertShareableStack() {
 }
 
 function copyText(text) {
-  /** @type {[string, string[]]} */
-  const command =
-    process.platform === 'darwin' ? ['pbcopy', []] : process.platform === 'win32' ? ['clip', []] : ['wl-copy', []]
-  const result = spawnSync(command[0], command[1], { input: text, encoding: 'utf8', timeout: 5000 })
-  return !result.error && result.status === 0
+  /** @type {Array<[string, string[]]>} */
+  let commands
+  if (process.platform === 'darwin') {
+    commands = [['pbcopy', []]]
+  } else if (process.platform === 'win32') {
+    commands = [['clip.exe', []]]
+  } else {
+    /** @type {Array<[string, string[]]>} */
+    const linuxCommands = [
+      ['wl-copy', []],
+      ['xclip', ['-selection', 'clipboard']],
+      ['xsel', ['--clipboard', '--input']]
+    ]
+    commands =
+      process.env.WSL_DISTRO_NAME || process.env.WSL_INTEROP
+        ? [['clip.exe', []], ...linuxCommands]
+        : [...linuxCommands, ['clip.exe', []]]
+  }
+
+  return commands.some(([command, args]) => {
+    const result = spawnSync(command, args, { input: text, encoding: 'utf8', timeout: 5000 })
+    return !result.error && result.status === 0
+  })
 }
 
 /** Create, copy, and record a single-use device-share invitation. */

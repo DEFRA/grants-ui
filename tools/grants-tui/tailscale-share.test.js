@@ -15,10 +15,21 @@ vi.mock('./tailscale-serve.js', () => ({ getConnectedTailscaleNode: vi.fn() }))
 
 const inviteUrl = 'https://login.tailscale.com/admin/invite/secret-code'
 const jsonResponse = (value, status = 200) => new Response(JSON.stringify(value), { status })
+const originalPlatform = Object.getOwnPropertyDescriptor(process, 'platform') ?? {
+  configurable: true,
+  value: process.platform
+}
+const successfulClipboardResult = { status: 0, stdout: '', stderr: '', pid: 1, output: [], signal: null }
+
+function stubPlatform(platform) {
+  Object.defineProperty(process, 'platform', { ...originalPlatform, value: platform })
+}
 
 beforeEach(() => {
   vi.clearAllMocks()
   vi.stubEnv('GRANTS_UI_TAILSCALE_API_KEY', 'tskey-api-test')
+  vi.stubEnv('WSL_DISTRO_NAME', '')
+  vi.stubEnv('WSL_INTEROP', '')
   vi.stubGlobal('fetch', vi.fn())
   vi.mocked(getRunningComposeFiles).mockReturnValue([
     'compose.infra.yml',
@@ -28,18 +39,20 @@ beforeEach(() => {
   vi.mocked(getRunningAppBaseUrl).mockReturnValue('https://test.example.ts.net')
   vi.mocked(getConnectedTailscaleNode).mockReturnValue({ hostname: 'test.example.ts.net', nodeId: 'node-123' })
   vi.mocked(getTailscaleShareIds).mockReturnValue([])
-  vi.mocked(spawnSync).mockReturnValue({ status: 0, stdout: '', stderr: '', pid: 1, output: [], signal: null })
+  vi.mocked(spawnSync).mockReturnValue(successfulClipboardResult)
   vi.spyOn(console, 'log').mockImplementation(() => {})
   vi.spyOn(console, 'error').mockImplementation(() => {})
 })
 
 afterEach(() => {
+  Object.defineProperty(process, 'platform', originalPlatform)
   vi.unstubAllEnvs()
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
 })
 
 test('creates a single-use non-exit-node invite and copies a tester message without logging its secret URL', async () => {
+  stubPlatform('darwin')
   vi.mocked(fetch).mockResolvedValueOnce(jsonResponse([{ id: 'share-1', inviteUrl }]))
 
   await expect(createTailscaleShare()).resolves.toEqual({ id: 'share-1' })
@@ -59,6 +72,66 @@ test('creates a single-use non-exit-node invite and copies a tester message with
   )
   expect(saveTailscaleShareIds).toHaveBeenCalledWith(['share-1'])
   expect(console.log).not.toHaveBeenCalledWith(expect.stringContaining(inviteUrl))
+})
+
+test.each([
+  ['Windows', 'win32', false, 'clip.exe', []],
+  ['Linux Wayland', 'linux', false, 'wl-copy', []],
+  ['WSL', 'linux', true, 'clip.exe', []]
+])('copies the tester message on %s', async (_name, platform, isWsl, command, args) => {
+  stubPlatform(platform)
+  if (isWsl) {
+    vi.stubEnv('WSL_DISTRO_NAME', 'Ubuntu')
+  }
+  vi.mocked(fetch).mockResolvedValueOnce(jsonResponse([{ id: 'share-1', inviteUrl }]))
+
+  await expect(createTailscaleShare()).resolves.toEqual({ id: 'share-1' })
+
+  expect(spawnSync).toHaveBeenCalledWith(
+    command,
+    args,
+    expect.objectContaining({ input: expect.stringContaining(inviteUrl) })
+  )
+})
+
+test('falls back from Wayland to X11 clipboard utilities on Linux', async () => {
+  stubPlatform('linux')
+  vi.mocked(fetch).mockResolvedValueOnce(jsonResponse([{ id: 'share-1', inviteUrl }]))
+  vi.mocked(spawnSync)
+    .mockReturnValueOnce({ ...successfulClipboardResult, error: new Error('ENOENT'), status: null })
+    .mockReturnValueOnce({ ...successfulClipboardResult, status: 1 })
+
+  await expect(createTailscaleShare()).resolves.toEqual({ id: 'share-1' })
+
+  expect(vi.mocked(spawnSync).mock.calls.map(([command, args]) => [command, args])).toEqual([
+    ['wl-copy', []],
+    ['xclip', ['-selection', 'clipboard']],
+    ['xsel', ['--clipboard', '--input']]
+  ])
+  expect(spawnSync).toHaveBeenNthCalledWith(
+    3,
+    'xsel',
+    ['--clipboard', '--input'],
+    expect.objectContaining({
+      input: expect.stringContaining(inviteUrl)
+    })
+  )
+})
+
+test('revokes the invitation if no clipboard utility succeeds', async () => {
+  stubPlatform('linux')
+  vi.mocked(fetch)
+    .mockResolvedValueOnce(jsonResponse([{ id: 'share-1', inviteUrl }]))
+    .mockResolvedValueOnce(new Response(null, { status: 204 }))
+  vi.mocked(spawnSync).mockReturnValue({ ...successfulClipboardResult, error: new Error('ENOENT'), status: null })
+
+  await expect(createTailscaleShare()).rejects.toThrow(/Could not copy the share message/)
+
+  expect(fetch).toHaveBeenLastCalledWith(
+    'https://api.tailscale.com/api/v2/device-invites/share-1',
+    expect.objectContaining({ method: 'DELETE' })
+  )
+  expect(saveTailscaleShareIds).not.toHaveBeenCalled()
 })
 
 test('does not create a share without an API token', async () => {
