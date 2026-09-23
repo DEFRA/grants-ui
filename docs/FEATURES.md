@@ -458,7 +458,7 @@ metadata:
         content: |
           <p class="govuk-body">Your progress has been saved.</p>
           <p class="govuk-body">You do not have permission to submit the application.</p>
-          <p class="govuk-body">Contact an authorised person from your business to review and submit the application.</p>
+          <p class="govuk-body">Contact a person from your business to review and submit the application.</p>
         returnUrl: /summary
         returnText: Return to summary
       csAgreements:
@@ -466,7 +466,7 @@ metadata:
         content: |
           <p class="govuk-body">Your progress has been saved.</p>
           <p class="govuk-body">You do not have permission to submit the claim.</p>
-          <p class="govuk-body">Contact an authorised person from your business to review and submit the claim.</p>
+          <p class="govuk-body">Contact a person from your business to review and submit the claim.</p>
         returnUrl: /claim-summary
         returnText: Return to summary
 ```
