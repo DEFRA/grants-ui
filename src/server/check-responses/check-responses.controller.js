@@ -1,4 +1,5 @@
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
+import { resolvePath } from '~/src/server/common/helpers/path-utils.js'
 import { getTaskPageBackLink } from '~/src/server/task-list/task-list.helper.js'
 import { buildConfirmLandAndActionsViewModel } from '~/src/server/land-grants/view-models/confirm-land-and-actions.view-model.js'
 import { CONFIRM_LAND_AND_ACTIONS_PATH } from '~/src/server/land-grants/utils/confirm-land-and-actions-navigation.js'
@@ -19,11 +20,49 @@ export default class CheckResponsesPageController extends SummaryPageController 
     }
 
     const pageConfig =
-      /** @type {{ additionalSections?: AdditionalSection[], showDetailsConfirmation?: boolean } | undefined} */ (
+      /** @type {{ additionalSections?: AdditionalSection[], showDetailsConfirmation?: boolean, derivedStatePages?: string[] } | undefined} */ (
         model?.def?.metadata?.pageConfig?.[pageDef.path]
       )
     this.additionalSections = pageConfig?.additionalSections
     this.showDetailsConfirmation = pageConfig?.showDetailsConfirmation === true
+    this.derivedStatePages = pageConfig?.derivedStatePages ?? []
+  }
+
+  /**
+   * Refreshes applicable derived pages in configured dependency order, visiting
+   * pages that require review and refreshing other results before rendering.
+   * Include returnUrl in the destination: the engine strips it from GET redirects
+   * made through getRelevantPath, losing the return to this Check answers page.
+   * @param {AnyFormRequest} request
+   * @param {FormContext} context
+   * @param {FormResponseToolkit} h
+   * @returns {Promise<ResponseObject | undefined>}
+   */
+  async #refreshDerivedPages(request, context, h) {
+    if (context.isForceAccess) {
+      return undefined
+    }
+
+    for (const path of this.derivedStatePages) {
+      const page = context.relevantPages.find((candidate) => candidate.path === path)
+      const derivedPage = /** @type {DerivedStatePage | undefined} */ (/** @type {unknown} */ (page))
+      if (typeof derivedPage?.isStateStale !== 'function' || !(await derivedPage.isStateStale(request, context))) {
+        continue
+      }
+      if (derivedPage.derivedState?.requiresAcknowledgement === false) {
+        context.state = await derivedPage.refreshState(request, context)
+        continue
+      }
+      const query = new URLSearchParams({ returnUrl: this.getHref(this.path) })
+      return h.redirect(`${this.getHref(derivedPage.path)}?${query}`).code(request.method === 'post' ? 303 : 302)
+    }
+    return undefined
+  }
+
+  makeGetRouteHandler() {
+    const handler = super.makeGetRouteHandler()
+    return async (request, context, h) =>
+      (await this.#refreshDerivedPages(request, context, h)) ?? handler(request, context, h)
   }
 
   /**
@@ -143,17 +182,33 @@ export default class CheckResponsesPageController extends SummaryPageController 
    * Appends read-only summary sections configured on the page (via `config.additionalSections`),
    * populated with values already present on state that were not directly submitted by the user
    * on this journey (e.g. a payment total calculated on a previous page).
-   * @param {{ checkAnswers?: any[] }} viewModel
+   * Entries without a title use `page` to append rows to the owning page's section.
+   * @param {{ details?: any[], checkAnswers?: any[] }} viewModel
    * @param {AdditionalSection[] | undefined} additionalSections
    * @param {Record<string, any>} state
+   * @param {FormContext['relevantPages']} relevantPages
    * @param {Set<string>} [excludedStateValues]
    */
-  #appendAdditionalSections(viewModel, additionalSections, state, excludedStateValues = new Set()) {
+  #appendAdditionalSections(viewModel, additionalSections, state, relevantPages, excludedStateValues = new Set()) {
     if (!Array.isArray(additionalSections) || !viewModel.checkAnswers) {
       return
     }
 
+    const { checkAnswers } = viewModel
+    const relevantPagePaths = new Set(relevantPages.map((page) => page.path.replace(/^\//, '')))
+    const sections = this.model.sections ?? []
+    const summariesBySection = new Map(
+      (viewModel.details ?? []).map((detail, index) => [
+        detail.items?.[0]?.page?.section ?? sections.find((candidate) => detail.name && candidate.name === detail.name),
+        checkAnswers[index]
+      ])
+    )
+
     additionalSections.forEach((section) => {
+      if (section.page && !relevantPagePaths.has(section.page.replace(/^\//, ''))) {
+        return
+      }
+
       const configuredItems = section.items ?? []
       const items = configuredItems.filter((item) => !excludedStateValues.has(item.stateValue))
 
@@ -165,14 +220,60 @@ export default class CheckResponsesPageController extends SummaryPageController 
 
       const rows = items.map((item) => ({
         key: { text: item.title },
-        value: { text: state?.[item.stateValue] ?? 'Not provided' }
+        value: { text: resolvePath(state, item.stateValue) ?? 'Not provided' }
       }))
 
-      viewModel.checkAnswers?.push({
+      if (!section.title && section.page) {
+        this.#getOwningSectionSummary(checkAnswers, section.page, summariesBySection)?.summaryList.rows.push(...rows)
+        return
+      }
+
+      checkAnswers.push({
         title: { text: section.title },
         summaryList: { rows }
       })
     })
+  }
+
+  /**
+   * Finds the owning section, creating an empty summary in form-section order when needed.
+   * Unknown pages or section references are ignored rather than placed in an unrelated section.
+   * @param {any[]} checkAnswers
+   * @param {string} pagePath - Page path with or without a leading slash
+   * @param {Map<import('@defra/forms-model').Section | undefined, any>} summariesBySection
+   * @returns {any}
+   */
+  #getOwningSectionSummary(checkAnswers, pagePath, summariesBySection) {
+    const ownerPage = this.model.def.pages.find((page) => page.path.replace(/^\//, '') === pagePath.replace(/^\//, ''))
+    if (!ownerPage) {
+      return undefined
+    }
+
+    const ownerSection = ownerPage.section ? this.model.getSection(ownerPage.section) : undefined
+    if (ownerPage.section && !ownerSection) {
+      return undefined
+    }
+
+    const existing = summariesBySection.get(ownerSection)
+    if (existing) {
+      return existing
+    }
+
+    const sectionOrder = [...(this.model.sections ?? []), undefined]
+    const followingSummary = sectionOrder
+      .slice(sectionOrder.indexOf(ownerSection) + 1)
+      .map((section) => summariesBySection.get(section))
+      .find(Boolean)
+    const insertionIndex = followingSummary
+      ? checkAnswers.indexOf(followingSummary)
+      : Math.max(-1, ...[...summariesBySection.values()].map((summary) => checkAnswers.indexOf(summary))) + 1
+    const summary = {
+      title: ownerSection?.title ? { text: ownerSection.title } : undefined,
+      summaryList: { rows: [] }
+    }
+    checkAnswers.splice(insertionIndex, 0, summary)
+    summariesBySection.set(ownerSection, summary)
+    return summary
   }
 
   /**
@@ -247,6 +348,7 @@ export default class CheckResponsesPageController extends SummaryPageController 
       viewModel,
       this.additionalSections,
       state,
+      context.relevantPages,
       hasLandAndActionsSummary ? new Set(['totalPayment']) : undefined
     )
 
@@ -263,20 +365,18 @@ export default class CheckResponsesPageController extends SummaryPageController 
     )
   }
 
-  /**
-   *
-   * @this {QuestionPageController}
-   */
   makePostRouteHandler() {
     /**
-     * Handle POST requests to the confirm farm details page.
+     * Refresh stale derived answers before continuing from Check answers.
      * @param {AnyFormRequest} request
      * @param {FormContext} context
      * @param {FormResponseToolkit} h
      * @returns {Promise<ResponseObject>}
      */
     const fn = async (request, context, h) => {
-      return this.proceed(request, h, this.getNextPath(context))
+      return (
+        (await this.#refreshDerivedPages(request, context, h)) ?? this.proceed(request, h, this.getNextPath(context))
+      )
     }
     return fn
   }
@@ -285,13 +385,22 @@ export default class CheckResponsesPageController extends SummaryPageController 
 /**
  * @typedef {object} AdditionalSectionItem
  * @property {string} title - Row label shown in the summary list
- * @property {string} stateValue - Key to read from form state for the row value
+ * @property {string} stateValue - Dot-notation path to read from form state for the row value
  */
 
 /**
  * @typedef {object} AdditionalSection
- * @property {string} title - Section heading
+ * @property {string} [title] - Heading for a separate section; omit to use the owning page's section
+ * @property {string} [page] - Applicable owning page path; also selects its section when title is omitted
  * @property {AdditionalSectionItem[]} [items] - Rows to render in this section
+ */
+
+/**
+ * @typedef {object} DerivedStatePage
+ * @property {string} path
+ * @property {{ requiresAcknowledgement: boolean }} [derivedState]
+ * @property {(request: AnyFormRequest, context: FormContext) => boolean | Promise<boolean>} [isStateStale]
+ * @property {(request: AnyFormRequest, context: FormContext) => Promise<FormContext['state']>} refreshState
  */
 
 /**
@@ -299,5 +408,4 @@ export default class CheckResponsesPageController extends SummaryPageController 
  * @import { ResponseObject } from '@hapi/hapi'
  * @import { FormModel, SummaryViewModel } from '@defra/forms-engine-plugin/engine/models/index.js'
  * @import { PageSummary } from '@defra/forms-model'
- * @import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
  */
