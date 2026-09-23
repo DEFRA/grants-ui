@@ -211,7 +211,7 @@ export function getCannotSubmitContent(request) {
     content:
       '<p class="govuk-body">Your progress has been saved.</p>' +
       `<p class="govuk-body">You do not have permission to submit the ${noun}.</p>` +
-      `<p class="govuk-body">Contact a person from your business to review and submit the ${noun}.</p>`
+      `<p class="govuk-body">Contact a person in your business to review and submit the ${noun}.</p>`
   }
 
   const permissions =
