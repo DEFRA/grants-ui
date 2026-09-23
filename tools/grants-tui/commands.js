@@ -27,10 +27,11 @@ import {
 import { composeFileArgs, getLocalImages, getRunningComposeFiles, runCompose } from './docker.js'
 import { hasLocalFormDefs, getSelectedFormDefIds, runApplyFormDefs } from './form-defs.js'
 import { cmdSonar } from './sonar.js'
-import { loadState, saveState, clearState } from './cli-state.js'
+import { getTailscaleShareIds, loadState, saveState, clearState } from './cli-state.js'
 import { cmdTest, testLogPath } from './tests.js'
 import { registerTempFile } from './temp-files.js'
 import { disableTailscaleServe, enableTailscaleServe } from './tailscale-serve.js'
+import { revokeAllTailscaleSharesSync } from './tailscale-share.js'
 import { cmdTailscale, tailscaleEnabled } from './tailscale.js'
 
 // ---------------------------------------------------------------------------
@@ -317,12 +318,23 @@ export function cmdDown(dryRun, interactive = false) {
     const addonLabels = addonLabelsFor(state.addons)
     const addonSummary = addonLabels.length ? ` + ${addonLabels.join(', ')}` : ''
     console.log(`\n  ${DIM}Saved state:${RESET_COLOR} core${addonSummary}\n`)
-    fileArgs = composeFileArgs(state.addons, state.localServices ?? [])
+    // The Tailscale overlay only changes environment values for services. It is
+    // not needed for `down`, and including it makes Compose interpolate
+    // TAILSCALE_HOSTNAME in this new gt process before it can stop anything.
+    fileArgs = composeFileArgs(
+      state.addons.filter((addon) => addon !== 'tailscale'),
+      state.localServices ?? []
+    )
   } else {
     console.log(`\n  ${YELLOW}⚠${RESET_COLOR}  No saved state — stopping core services only.\n`)
     fileArgs = composeFileArgs([])
   }
 
+  if (getTailscaleShareIds(state).length && revokeAllTailscaleSharesSync(dryRun) !== 0) {
+    console.error('Containers remain running because one or more Tailscale shares could not be revoked.')
+    if (!interactive) process.exit(1)
+    return 1
+  }
   let status = runCompose([...fileArgs, 'down', '--remove-orphans', '--rmi', 'local'], dryRun)
   if (status === 0 && tailscaleOn) status = disableTailscaleServe(dryRun)
   if (status === 0 && !dryRun) {
@@ -404,8 +416,14 @@ function runDockerOrPreview(dryRun, args, previewCmd) {
  * @returns {number}
  */
 export function cmdReset(dryRun) {
-  const tailscaleOn = tailscaleEnabled(getRunningComposeFiles()) || loadState()?.addons?.includes('tailscale')
+  const state = loadState()
+  const tailscaleOn = tailscaleEnabled(getRunningComposeFiles()) || state?.addons?.includes('tailscale')
   console.log(`\n  ${YELLOW}⚠${RESET_COLOR}  RESET: This will remove all containers, volumes, and local images.\n`)
+
+  if (getTailscaleShareIds(state).length && revokeAllTailscaleSharesSync(dryRun) !== 0) {
+    console.error('Reset stopped because one or more Tailscale shares could not be revoked.')
+    return 1
+  }
 
   // The Land Grants overlay only extends services from the core stack. Running
   // it with compose.infra alone makes Compose reject the project because

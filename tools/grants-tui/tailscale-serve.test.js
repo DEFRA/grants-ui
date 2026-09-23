@@ -4,6 +4,8 @@ import { spawnSync } from 'node:child_process'
 import {
   disableTailscaleServe,
   enableTailscaleServe,
+  getConnectedTailscaleNode,
+  getConnectedTailscalePolicyTarget,
   getTailscaleAvailability,
   getTailscaleHostname
 } from './tailscale-serve.js'
@@ -146,6 +148,24 @@ test('gets the hostname from the connected Tailscale CLI and makes it available 
   expect(process.env.TAILSCALE_HOSTNAME).toBe(hostname)
 })
 
+test('gets the connected node ID for Tailscale share API calls', () => {
+  vi.mocked(spawnSync).mockImplementationOnce(() =>
+    result({ BackendState: 'Running', Self: { DNSName: `${hostname}.`, ID: 'node-123' } })
+  )
+  expect(getConnectedTailscaleNode()).toEqual({ hostname, nodeId: 'node-123' })
+})
+
+test('gets the connected tailnet and IPv4 address for the sharing policy', () => {
+  vi.mocked(spawnSync).mockImplementationOnce(() =>
+    result({
+      BackendState: 'Running',
+      CurrentTailnet: { Name: 'example.com' },
+      TailscaleIPs: ['100.121.112.23', 'fd7a:115c:a1e0::1']
+    })
+  )
+  expect(getConnectedTailscalePolicyTarget()).toEqual({ tailnet: 'example.com', ipv4: '100.121.112.23' })
+})
+
 test('rejects a missing DNS hostname from the CLI', () => {
   vi.mocked(spawnSync).mockImplementationOnce(() => result({ BackendState: 'Running', Self: {} }))
   expect(() => getTailscaleHostname()).toThrow(/Connect Tailscale/)
@@ -153,8 +173,12 @@ test('rejects a missing DNS hostname from the CLI', () => {
 
 test('interactive availability distinguishes a missing CLI from a missing Tailscale service', () => {
   vi.mocked(spawnSync).mockReturnValueOnce({ ...result(), error: Object.assign(new Error(), { code: 'ENOENT' }) })
-  expect(getTailscaleAvailability()).toEqual({ available: false, description: 'Install Tailscale CLI' })
+  expect(getTailscaleAvailability()).toEqual({ available: false, running: false, description: 'Install Tailscale CLI' })
 
   vi.mocked(spawnSync).mockReturnValueOnce({ ...result(), status: 1 })
-  expect(getTailscaleAvailability()).toEqual({ available: false, description: 'Install Tailscale' })
+  expect(getTailscaleAvailability()).toEqual({ available: false, running: false, description: 'Install Tailscale' })
+})
+
+test('interactive availability reports a connected Tailscale service', () => {
+  expect(getTailscaleAvailability()).toEqual({ available: true, running: true, description: '' })
 })

@@ -19,6 +19,27 @@ export function saveState(addons, scale, localServices = [], localFormDefSelecti
   }
 }
 
+/**
+ * IDs of Tailscale device invites created by gt. The invite URLs are deliberately
+ * never persisted: anyone with one can accept the share.
+ * @param {string[]} ids
+ */
+export function saveTailscaleShareIds(ids) {
+  try {
+    const state = loadState() ?? { addons: [], scale: null, localServices: [], localFormDefSelections: [] }
+    fs.writeFileSync(STATE_FILE, JSON.stringify({ ...state, tailscaleShareIds: [...new Set(ids)] }, null, 2), {
+      mode: 0o600
+    })
+  } catch {
+    // Non-fatal: the Tailscale admin console remains the source of truth.
+  }
+}
+
+/** @param {object | null | undefined} state */
+export function getTailscaleShareIds(state = loadState()) {
+  return Array.isArray(state?.tailscaleShareIds) ? state.tailscaleShareIds.filter((id) => typeof id === 'string') : []
+}
+
 /** Store query preferences only, never fetched application state. */
 export function saveInspectorSelection(selection) {
   try {

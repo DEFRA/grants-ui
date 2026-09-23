@@ -11,6 +11,8 @@
  * Usage (non-interactive):
  *   gt up [--land-grants] [--gas] [--ha | --tailscale] [--scale <n>] [--dry-run]
  *   gt tailscale on|off          # switch browser URLs and Serve proxies while running
+ *   gt share create|list|revoke   # create and manage external Tailscale invitations
+ *   gt setup tailscale-sharing     # preview the restrictive external-sharing policy
  *   gt up --local-<service-key>  # use locally-built image for a defradigital service
  *   gt down [--dry-run]          # uses saved state automatically
  *   gt debug                     # restart grants-ui in debug mode (detached, port 9229)
@@ -81,6 +83,8 @@ import { cmdTest } from './grants-tui/tests.js'
 import { releaseStdin } from './grants-tui/tui.js'
 import { runInteractiveLoop } from './grants-tui/tui-loop.js'
 import { cmdTailscale } from './grants-tui/tailscale.js'
+import { cmdTailscaleShare } from './grants-tui/tailscale-share.js'
+import { cmdTailscaleSetup } from './grants-tui/tailscale-policy.js'
 
 // Sweep of stale tool logs from tmpdir. macOS auto-clears windows tmpdir
 // after ~3 days
@@ -137,13 +141,23 @@ async function main() {
   const testNeedsDocker = testTargets.some((k) => TEST_TARGETS.find((t) => t.key === k)?.needsDocker)
   const snykInvoked = argv.includes('snyk')
   const stateInvoked = argv.includes('state')
+  const shareInvoked = argv[0] === 'share'
+  const setupInvoked = argv[0] === 'setup'
   // `journey` drives a browser against localhost:3000, which may be a plain
   // `npm run dev` rather than the Docker stack — don't force a Docker check.
   const journeyInvoked = argv.includes('journey')
 
   // Preflight: ensure Docker is available and running (skipped for --dry-run so
   // offline/CI usage works, and for test/snyk/journey/state runs that don't drive containers)
-  if (!dryRun && !(testInvoked && !testNeedsDocker) && !snykInvoked && !journeyInvoked && !stateInvoked) {
+  if (
+    !dryRun &&
+    !(testInvoked && !testNeedsDocker) &&
+    !snykInvoked &&
+    !journeyInvoked &&
+    !stateInvoked &&
+    !shareInvoked &&
+    !setupInvoked
+  ) {
     const dockerCheck = spawnSync('docker', ['info'], { encoding: 'utf8', stdio: 'pipe' })
     if (dockerCheck.status !== 0 || dockerCheck.error) {
       console.error(
@@ -157,6 +171,26 @@ async function main() {
   if (argv[0] === 'tailscale') {
     releaseStdin()
     process.exitCode = cmdTailscale(argv[1] === 'on', dryRun)
+    return
+  }
+  if (argv[0] === 'share') {
+    releaseStdin()
+    try {
+      process.exitCode = await cmdTailscaleShare(argv.slice(1), dryRun)
+    } catch (error) {
+      console.error(error.message)
+      process.exitCode = 1
+    }
+    return
+  }
+  if (argv[0] === 'setup') {
+    releaseStdin()
+    try {
+      process.exitCode = await cmdTailscaleSetup(argv.slice(1), dryRun)
+    } catch (error) {
+      console.error(error.message)
+      process.exitCode = 1
+    }
     return
   }
   if (argv.includes('down')) {
