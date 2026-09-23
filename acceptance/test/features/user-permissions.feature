@@ -187,6 +187,7 @@ Feature: User Permissions
         # declaration - cannot submit application
         Then the user should be at URL "declaration"
         And should see heading "You cannot submit this application"
+        And should see "Contact a person in your business to review and submit the application."
 
         # unlock from CRN 1062311182
         Given there is no application lock for CRN "1062311182" and SBI "106238911" and grant "example-grant-with-auth"
@@ -196,6 +197,8 @@ Feature: User Permissions
         And navigates to "/example-grant-with-auth"
         And logs in as CRN "1062311183"
         Then the user should see heading "You do not have permission to view this page"
+        And should see "contact a person in your business with the correct permission level to update your access"
+        And should see "If you still need help"
         And an unauthorised audit event should be published for entity "application" and grant "example-grant-with-auth" with CRN "1062311183" and SBI "106238911" and reason "permission"
 
         # unlock from CRN 1062311183
@@ -286,6 +289,8 @@ Feature: User Permissions
         And navigates to "/example-grant-with-auth"
         And logs in as CRN "1062311187"
         Then the user should see heading "You do not have permission to view this page"
+        And should see "contact a person in your business with the correct permission level to update your access"
+        And should see "If you still need help"
         And an unauthorised audit event should be published for entity "claim" and grant "example-grant-with-auth" with CRN "1062311187" and SBI "106238911" and reason "permission"
 
         # unlock from CRN 1062311187
@@ -303,6 +308,7 @@ Feature: User Permissions
         # claim-declaration - cannot submit claim
         Then the user should be at URL "claim-declaration"
         And should see heading "You cannot submit this claim"
+        And should see "Contact a person in your business to review and submit the claim."
 
         # unlock from CRN 1062311186
         Given there is no application lock for CRN "1062311186" and SBI "106238911" and grant "example-grant-with-auth"
