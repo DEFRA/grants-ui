@@ -2,7 +2,7 @@ import { beforeEach, vi } from 'vitest'
 import { mockFetch, mockSimpleRequest } from '~/src/__mocks__/hapi-mocks.js'
 import { config } from '~/src/config/config.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
-import { invokeGrantScoringGetAction } from './grant-scoring.service.js'
+import { invokeGrantScoringGetAction, makeScoringApiRequest } from './grant-scoring.service.js'
 
 global.fetch = mockFetch
 
@@ -135,5 +135,31 @@ describe('Grant Scoring service', () => {
     mockedFetch.mockRejectedValue(networkError)
 
     await expect(invokeGrantScoringGetAction(code, mockRequest)).rejects.toThrow('Network error')
+  })
+
+  test('should return base URL if queryParams is not provided', async () => {
+    const mockedFetch = mockFetch()
+    mockedFetch.mockResolvedValueOnce({
+      ok: true,
+      json: vi.fn().mockResolvedValueOnce({})
+    })
+
+    const url = 'http://localhost:3002/scoring/water-management'
+    await makeScoringApiRequest(url, code, mockRequest, { queryParams: undefined })
+
+    expect(mockedFetch).toHaveBeenCalledWith(url, expect.anything())
+  })
+
+  test('should return base URL if queryParams is empty', async () => {
+    const mockedFetch = mockFetch()
+    mockedFetch.mockResolvedValueOnce({
+      ok: true,
+      json: vi.fn().mockResolvedValueOnce({})
+    })
+
+    const url = 'http://localhost:3002/scoring/water-management'
+    await makeScoringApiRequest(url, code, mockRequest, { queryParams: {} })
+
+    expect(mockedFetch).toHaveBeenCalledWith(url, expect.anything())
   })
 })
