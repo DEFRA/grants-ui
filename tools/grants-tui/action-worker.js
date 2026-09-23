@@ -12,6 +12,8 @@ import { cmdAllTests, cmdTest } from './tests.js'
 import { spawnSync } from 'node:child_process'
 import { ROOT } from './constants.js'
 import { cmdTailscale } from './tailscale.js'
+import { createTailscaleShare, revokeAllTailscaleShares, revokeTailscaleShare } from './tailscale-share.js'
+import { setupTailscaleSharingPolicy } from './tailscale-policy.js'
 
 function runNpmScript(script, dryRun) {
   console.log(`npm run ${script}`)
@@ -30,6 +32,13 @@ function runNpmScript(script, dryRun) {
 
 const actions = {
   tailscale: cmdTailscale,
+  'tailscale-share:create': async (dryRun) => {
+    await createTailscaleShare(dryRun)
+    return 0
+  },
+  'tailscale-share:revoke': revokeTailscaleShare,
+  'tailscale-share:revoke-all': revokeAllTailscaleShares,
+  'tailscale-policy:setup': setupTailscaleSharingPolicy,
   up: (addons, scale, dryRun, localServices, interactive) =>
     cmdUp(addons, scale, dryRun, localServices, interactive).status,
   down: cmdDown,
