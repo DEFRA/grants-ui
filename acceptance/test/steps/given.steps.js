@@ -1,15 +1,14 @@
 import { Given } from '@cucumber/cucumber'
 import expect from '../support/expect.js'
 import DefraAccountBar from '../page-objects/defra-account-bar.js'
+import { submitDefraIdLogin } from '../support/defra-id-login.js'
 
 Given('(the user )navigates to {string}', async function (path) {
   await this.page.goto(path)
 })
 
 Given('(the user )logs in as CRN {string}', async function (crn) {
-  await this.page.locator("//input[@id='crn']").fill(crn)
-  await this.page.locator("//input[@id='password']").fill(process.env.DEFRA_ID_USER_PASSWORD)
-  await this.page.locator("//button[@type='submit']").click()
+  await submitDefraIdLogin(this.page, crn)
   // wait for the stub's login form to disappear, indicating the sign-in has been processed
   await expect(this.page.locator("//input[@id='crn']")).not.toBeVisible()
 })

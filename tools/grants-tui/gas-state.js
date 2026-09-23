@@ -1,8 +1,6 @@
 import { spawnSync } from 'node:child_process'
-import { ROOT } from './constants.js'
+import { markedResult, runMongoSync } from './mongo.js'
 
-const MONGO_SERVICE = process.env.GRANTS_UI_MONGO_SERVICE || 'mongodb'
-const MONGO_COMPOSE_FILE = process.env.GRANTS_UI_MONGO_COMPOSE_FILE || 'compose.infra.yml'
 const GAS_DATABASE = 'fg-gas-backend'
 const APPLICATIONS_COLLECTION = 'applications'
 const GRANTS_COLLECTION = 'grants'
@@ -45,34 +43,11 @@ export function buildUpdateApplicationScript(applicationId, next) {
 
 /** @param {string} output */
 export function parseGasStateResult(output) {
-  const line = output
-    .split('\n')
-    .map((value) => value.trim())
-    .find((value) => value.startsWith(RESULT_MARKER))
-  if (!line) {
-    throw new Error('GAS MongoDB returned no result')
-  }
-  return JSON.parse(line.slice(RESULT_MARKER.length))
+  return markedResult(RESULT_MARKER, output, 'GAS MongoDB returned no result')
 }
 
 export function runMongo(script, spawn = spawnSync) {
-  const result = spawn(
-    'docker',
-    [
-      'compose',
-      '-f',
-      MONGO_COMPOSE_FILE,
-      'exec',
-      '-T',
-      MONGO_SERVICE,
-      'mongosh',
-      GAS_DATABASE,
-      '--quiet',
-      '--file',
-      '/dev/stdin'
-    ],
-    { cwd: ROOT, input: script, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
-  )
+  const result = runMongoSync(GAS_DATABASE, script, spawn)
   if (result.status !== 0 || result.error) {
     throw new Error(result.error?.message || result.stderr?.trim() || 'MongoDB is unavailable')
   }
@@ -103,6 +78,59 @@ export function updateGasApplication(application, next, spawn) {
   if (result.matchedCount !== 1 || result.modifiedCount !== 1) {
     throw new Error('GAS application was not updated')
   }
+}
+
+/** mongosh snippet loading a GAS application by `_id`, throwing if it no longer exists. */
+export function findApplicationSnippet(applicationId, varName = 'application') {
+  return `const ${varName} = db.applications.findOne({ _id: EJSON.deserialize(${JSON.stringify(applicationId)}) });
+    if (!${varName}) throw new Error('Application no longer exists');`
+}
+
+/**
+ * Run a Node ESM script inside the running GAS container via `docker exec`.
+ * @param {string} script
+ * @param {{ spawn?: typeof spawnSync, timeoutMs?: number, fallbackMessage?: string }} [options]
+ */
+export function runGasNodeScript(
+  script,
+  { spawn = spawnSync, timeoutMs = 15000, fallbackMessage = 'Could not run GAS script' } = {}
+) {
+  const result = spawn(
+    'docker',
+    ['exec', '-i', process.env.GRANTS_UI_GAS_CONTAINER || 'gas', 'node', '--input-type=module'],
+    { input: script, encoding: 'utf8', timeout: timeoutMs, stdio: ['pipe', 'pipe', 'pipe'] }
+  )
+  if (result.error || result.status !== 0) {
+    throw new Error(result.error?.message || result.stderr?.trim() || fallbackMessage)
+  }
+  return result
+}
+
+/**
+ * Send a CloudEvent to a GAS SQS queue via the running GAS container's AWS SDK.
+ * @param {{ id: string, data: Record<string, unknown> }} event
+ * @param {string} queueEnvironmentName
+ * @param {{ spawn?: typeof spawnSync, fallbackMessage?: string }} [options]
+ */
+export function queueGasEvent(
+  event,
+  queueEnvironmentName,
+  { spawn = spawnSync, fallbackMessage = 'Could not queue GAS event' } = {}
+) {
+  const script = `
+    import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
+    const queueUrl = process.env[${JSON.stringify(queueEnvironmentName)}];
+    if (!queueUrl) throw new Error('GAS queue is not configured: ${queueEnvironmentName}');
+    const client = new SQSClient({ region: process.env.AWS_REGION || 'eu-west-2', endpoint: process.env.AWS_ENDPOINT_URL, maxAttempts: 1 });
+    try {
+      await client.send(new SendMessageCommand({ QueueUrl: queueUrl,
+        MessageBody: ${JSON.stringify(JSON.stringify(event))},
+        MessageGroupId: ${JSON.stringify(`${event.data.code ?? event.data.workflowCode}-${event.data.clientRef ?? event.data.caseRef}`)},
+        MessageDeduplicationId: ${JSON.stringify(event.id)}
+      }), { abortSignal: AbortSignal.timeout(10000) });
+    } finally { client.destroy(); }
+  `
+  runGasNodeScript(script, { spawn, fallbackMessage })
 }
 
 /**

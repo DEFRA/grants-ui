@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { runMongo, updateGasApplication } from './gas-state.js'
+import { findApplicationSnippet, queueGasEvent, runGasNodeScript, runMongo, updateGasApplication } from './gas-state.js'
+import { markedResult } from './mongo.js'
 
 export const CLAIM_POSITION = {
   phase: 'PHASE_PRE_AWARD',
@@ -39,8 +40,7 @@ function readApplication(application, spawn) {
     throw new Error('GAS application has no _id')
   }
   return runMongo(
-    `const application = db.applications.findOne({ _id: EJSON.deserialize(${JSON.stringify(application._id)}) });
-     if (!application) throw new Error('Application no longer exists');
+    `${findApplicationSnippet(application._id)}
      print('GT_GAS_STATE_RESULT:' + EJSON.stringify(application));`,
     spawn
   )
@@ -59,30 +59,6 @@ function waitForPosition(application, position, spawn) {
     pause(250)
   }
   throw new Error(`Timed out waiting for ${position.phase} > ${position.stage} > ${position.status}`)
-}
-
-function queueEvent(event, queueEnvironmentName, spawn) {
-  const script = `
-    import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
-    const queueUrl = process.env[${JSON.stringify(queueEnvironmentName)}];
-    if (!queueUrl) throw new Error('GAS queue is not configured: ${queueEnvironmentName}');
-    const client = new SQSClient({ region: process.env.AWS_REGION || 'eu-west-2', endpoint: process.env.AWS_ENDPOINT_URL, maxAttempts: 1 });
-    try {
-      await client.send(new SendMessageCommand({ QueueUrl: queueUrl,
-        MessageBody: ${JSON.stringify(JSON.stringify(event))},
-        MessageGroupId: ${JSON.stringify(`${event.data.code ?? event.data.workflowCode}-${event.data.clientRef ?? event.data.caseRef}`)},
-        MessageDeduplicationId: ${JSON.stringify(event.id)}
-      }), { abortSignal: AbortSignal.timeout(10000) });
-    } finally { client.destroy(); }
-  `
-  const result = spawn(
-    'docker',
-    ['exec', '-i', process.env.GRANTS_UI_GAS_CONTAINER || 'gas', 'node', '--input-type=module'],
-    { input: script, encoding: 'utf8', timeout: 15000, stdio: ['pipe', 'pipe', 'pipe'] }
-  )
-  if (result.error || result.status !== 0) {
-    throw new Error(result.error?.message || result.stderr?.trim() || 'Could not queue GAS event')
-  }
 }
 
 function createAdminEntitlement(application, totalHectares, spawn) {
@@ -120,20 +96,8 @@ function createAdminEntitlement(application, totalHectares, spawn) {
       await client.close();
     }
   `
-  const result = spawn(
-    'docker',
-    ['exec', '-i', process.env.GRANTS_UI_GAS_CONTAINER || 'gas', 'node', '--input-type=module'],
-    { input: script, encoding: 'utf8', timeout: 30000, stdio: ['pipe', 'pipe', 'pipe'] }
-  )
-  if (result.error || result.status !== 0) {
-    throw new Error(result.error?.message || result.stderr?.trim() || 'Could not create entitlement')
-  }
-  const marker = 'GT_GAS_STATE_RESULT:'
-  const line = (result.stdout ?? '').split('\n').find((value) => value.startsWith(marker))
-  if (!line) {
-    throw new Error('Entitlement API returned no result')
-  }
-  return JSON.parse(line.slice(marker.length))
+  const result = runGasNodeScript(script, { spawn, timeoutMs: 30000, fallbackMessage: 'Could not create entitlement' })
+  return markedResult('GT_GAS_STATE_RESULT:', result.stdout ?? '', 'Entitlement API returned no result')
 }
 
 /** Progress an offered woodland agreement through the local claim-preparation fixture flow. */
@@ -195,11 +159,11 @@ export function prepareGasClaim(application, { spawn = spawnSync, dryRun = false
   }
 
   if (!alreadyPrepared) {
-    queueEvent(offered, 'GAS__SQS__UPDATE_STATUS_QUEUE_URL', spawn)
+    queueGasEvent(offered, 'GAS__SQS__UPDATE_STATUS_QUEUE_URL', { spawn })
     waitForPosition(application, OFFERED_POSITION, spawn)
-    queueEvent(accepted, 'GAS__SQS__UPDATE_AGREEMENT_STATUS_QUEUE_URL', spawn)
+    queueGasEvent(accepted, 'GAS__SQS__UPDATE_AGREEMENT_STATUS_QUEUE_URL', { spawn })
     waitForPosition(application, ACCEPTED_POSITION, spawn)
-    queueEvent(completed, 'GAS__SQS__UPDATE_STATUS_QUEUE_URL', spawn)
+    queueGasEvent(completed, 'GAS__SQS__UPDATE_STATUS_QUEUE_URL', { spawn })
     const completedApplication = waitForPosition(application, COMPLETED_POSITION, spawn)
     updateGasApplication(completedApplication, CLAIM_POSITION, spawn)
   }

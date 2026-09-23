@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { runMongo } from './gas-state.js'
+import { findApplicationSnippet, queueGasEvent, runMongo } from './gas-state.js'
 
 /** Read fresh state and resolve the latest active grant within the application's major, as GAS does. */
 export function getGasOfferContext(application, spawn) {
@@ -8,8 +8,7 @@ export function getGasOfferContext(application, spawn) {
     throw new Error('GAS application has no _id')
   }
   return runMongo(
-    `const application = db.applications.findOne({ _id: EJSON.deserialize(${JSON.stringify(application._id)}) });
-    if (!application) throw new Error('Application no longer exists');
+    `${findApplicationSnippet(application._id)}
     const pinned = application.currentConfigVersion ?? application.originalConfigVersion ?? application.configVersion;
     const version = pinned ? db.config_versions.findOne({
       grantCode: application.code, major: Number(pinned.split('.')[0]), status: 'active',
@@ -93,31 +92,9 @@ export function generateGasOffer(application, { spawn = spawnSync, dryRun = fals
   if (dryRun) {
     return { event, dryRun: true }
   }
-  const script = `
-    import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
-    const queueUrl = process.env.GAS__SQS__UPDATE_STATUS_QUEUE_URL;
-    if (!queueUrl) throw new Error('GAS status queue is not configured');
-    const client = new SQSClient({ region: process.env.AWS_REGION || 'eu-west-2', endpoint: process.env.AWS_ENDPOINT_URL, maxAttempts: 1 });
-    try {
-      await client.send(new SendMessageCommand({ QueueUrl: queueUrl,
-        MessageBody: ${JSON.stringify(JSON.stringify(event))},
-        MessageGroupId: ${JSON.stringify(`${event.data.workflowCode}-${event.data.caseRef}`)},
-        MessageDeduplicationId: ${JSON.stringify(event.id)}
-      }), { abortSignal: AbortSignal.timeout(10000) });
-    } finally { client.destroy(); }
-  `
-  const result = spawn(
-    'docker',
-    ['exec', '-i', process.env.GRANTS_UI_GAS_CONTAINER || 'gas', 'node', '--input-type=module'],
-    {
-      input: script,
-      encoding: 'utf8',
-      timeout: 15000,
-      stdio: ['pipe', 'pipe', 'pipe']
-    }
-  )
-  if (result.error || result.status !== 0) {
-    throw new Error(result.error?.message || result.stderr?.trim() || 'Could not queue offer generation')
-  }
+  queueGasEvent(event, 'GAS__SQS__UPDATE_STATUS_QUEUE_URL', {
+    spawn,
+    fallbackMessage: 'Could not queue offer generation'
+  })
   return { event, dryRun: false }
 }

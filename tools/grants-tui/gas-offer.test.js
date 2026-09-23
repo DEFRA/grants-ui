@@ -146,7 +146,7 @@ test('queues a fresh event using current DB identity and the GAS container envir
   expect(event.id).toMatch(/^[\da-f-]{36}$/)
   expect(spawn.mock.calls[1][1]).toEqual(['exec', '-i', 'gas', 'node', '--input-type=module'])
   const script = spawn.mock.calls[1][2].input
-  expect(script).toContain('process.env.GAS__SQS__UPDATE_STATUS_QUEUE_URL')
+  expect(script).toContain('process.env["GAS__SQS__UPDATE_STATUS_QUEUE_URL"]')
   expect(script).toContain('MessageDeduplicationId: "' + event.id + '"')
   expect(script).toContain(JSON.stringify(JSON.stringify(event)))
   expect(generateGasOffer(fixture().application, { spawn: mockSpawn() }).event.id).not.toBe(event.id)
