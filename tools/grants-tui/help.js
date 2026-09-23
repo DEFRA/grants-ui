@@ -26,6 +26,8 @@ ${BOLD}Commands:${RESET_COLOR}
   debug   Restart grants-ui in debug mode (detached, port 9229)
   restart Restart running containers (selectable; uses --no-deps)
   tailscale on|off  Switch Tailscale mode live (updates URLs and Serve proxies)
+  share   Create, list and revoke external Tailscale shares (requires ${'GRANTS_UI_TAILSCALE_API_KEY'})
+  setup   Preview/apply the restrictive external-sharing policy (requires ${'GRANTS_UI_TAILSCALE_API_KEY'})
   test    Run tests: ${TEST_TARGETS.map((t) => t.key).join(' | ')} (default: ${TEST_TARGETS[0].key})
   journey Run a Journey Runner journey headlessly (${listJourneys().join(' | ')})
   state   Inspect persisted application state in the local backend database
@@ -77,6 +79,11 @@ ${BOLD}Examples:${RESET_COLOR}
   gt up --tailscale                   # configure Serve and start with HTTPS tailnet URLs
   gt tailscale on                     # enable while running, preserving other addons
   gt tailscale off                    # restore localhost and remove the two proxies
+  gt share create                     # copy a single-use external Tailscale invitation
+  gt share list                       # list gt-created shares (without secret URLs)
+  gt share revoke-all                 # revoke every gt-created share
+  gt setup tailscale-sharing           # preview the policy change
+  gt setup tailscale-sharing --apply   # confirm and apply it
   gt down                            # stops whatever was started
   gt debug
   gt restart

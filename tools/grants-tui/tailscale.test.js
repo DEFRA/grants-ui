@@ -4,6 +4,7 @@ import { cmdTailscale, tailscaleStatusSegment } from './tailscale.js'
 import { getRunningComposeFiles, runCompose, tailscaleComposeArgs } from './docker.js'
 import { loadState, saveState } from './cli-state.js'
 import { disableTailscaleServe, enableTailscaleServe } from './tailscale-serve.js'
+import { revokeAllTailscaleSharesSync } from './tailscale-share.js'
 
 vi.mock('./constants.js', async (original) => ({ ...(await original()), BLUE: '\x1b[34m', RESET_COLOR: '\x1b[0m' }))
 vi.mock('./docker.js', () => ({
@@ -14,6 +15,7 @@ vi.mock('./docker.js', () => ({
 vi.mock('./cli-state.js', () => ({ loadState: vi.fn(), saveState: vi.fn() }))
 vi.mock('./form-defs.js', () => ({ getSelectedFormDefIds: vi.fn(() => ['woodland']) }))
 vi.mock('./tailscale-serve.js', () => ({ enableTailscaleServe: vi.fn(), disableTailscaleServe: vi.fn() }))
+vi.mock('./tailscale-share.js', () => ({ revokeAllTailscaleSharesSync: vi.fn() }))
 
 const localFiles = ['compose.infra.yml', 'compose.grants-ui.yml', 'compose.land-grants.yml']
 const tailFiles = [...localFiles, 'compose.tailscale.yml']
@@ -27,6 +29,7 @@ beforeEach(() => {
   vi.mocked(runCompose).mockReturnValue(0)
   vi.mocked(enableTailscaleServe).mockReturnValue([443, 8443])
   vi.mocked(disableTailscaleServe).mockReturnValue(0)
+  vi.mocked(revokeAllTailscaleSharesSync).mockReturnValue(0)
 })
 afterEach(() => vi.restoreAllMocks())
 

@@ -1,10 +1,12 @@
 // @vitest-environment node
-import { beforeEach, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { stripVTControlCharacters } from 'node:util'
 import {
   buildMainMenuItems,
   handleChecksCommand,
   handleGasStateTool,
+  handleTailscaleCommand,
+  handleTailscaleSharesCommand,
   handleToolsCommand,
   refreshRuntimeStatus
 } from './tui-loop.js'
@@ -12,14 +14,20 @@ import { getGasGrant, listGasApplications, updateGasApplication } from './gas-st
 import { journeySteps } from './journey.js'
 import { journeyCrnOptions, wontCompleteReason } from '../../src/server/dev-tools/journey-runner/journey-meta.js'
 import { YELLOW } from './constants.js'
-import { radioMenu, setRuntimeStatusLine, toggleMenu } from './tui.js'
+import { promptText, radioMenu, setRuntimeStatusLine, toggleMenu } from './tui.js'
 import { getRunningComposeFiles, getRunningAppBaseUrl, getRunningServices } from './docker.js'
 import { getGasStatus } from './gas.js'
 import { getLastRun, runInteractiveAction, setActionMenu } from './actions.js'
 import { viewOutput } from './output.js'
 import { inspectState } from './state-inspector.js'
+import { getTailscaleSharingPolicyStatus } from './tailscale-policy.js'
 
-vi.mock('./tui.js', () => ({ radioMenu: vi.fn(), toggleMenu: vi.fn(), setRuntimeStatusLine: vi.fn() }))
+vi.mock('./tui.js', () => ({
+  promptText: vi.fn(),
+  radioMenu: vi.fn(),
+  toggleMenu: vi.fn(),
+  setRuntimeStatusLine: vi.fn()
+}))
 vi.mock('./docker.js', async (importOriginal) => ({
   ...(await importOriginal()),
   getRunningComposeFiles: vi.fn(),
@@ -35,6 +43,7 @@ vi.mock('./actions.js', async (importOriginal) => ({
 }))
 vi.mock('./output.js', () => ({ viewOutput: vi.fn() }))
 vi.mock('./state-inspector.js', () => ({ inspectState: vi.fn() }))
+vi.mock('./tailscale-policy.js', () => ({ getTailscaleSharingPolicyStatus: vi.fn() }))
 vi.mock('./journey.js', () => ({
   listJourneys: () => ['test-grant'],
   journeySteps: vi.fn(() => [])
@@ -191,27 +200,124 @@ beforeEach(() => {
   vi.mocked(getGasStatus).mockResolvedValue('RECEIVED')
   vi.mocked(journeyCrnOptions).mockReturnValue([{ crn: 'test-crn', note: 'Test user' }])
   vi.mocked(wontCompleteReason).mockReturnValue(null)
+  vi.mocked(getTailscaleSharingPolicyStatus).mockResolvedValue('needs-setup')
 })
+
+afterEach(() => vi.unstubAllEnvs())
 
 test('the main menu groups checks into one entry', () => {
   const keys = buildMainMenuItems(null, false).map((item) => item.key)
   expect(keys).toContain('checks')
+  expect(keys).not.toContain('tailscale')
   expect(keys).not.toEqual(expect.arrayContaining(['lint']))
   expect(keys.filter((key) => ['format', 'test', 'sonar', 'snyk', 'check'].includes(key))).toEqual([])
 })
 
-test('Tailscale toggle is available while running and reflects the actual mode', () => {
-  const item = buildMainMenuItems(null, true, true).find((i) => i.key === 'tailscale')
-  expect(item).toMatchObject({ label: 'tailscale', description: expect.stringContaining('Disable') })
+test('Tailscale and sharing is available from Tools while running and reflects the actual mode', async () => {
+  vi.mocked(radioMenu).mockResolvedValue('__quit__')
+
+  await handleToolsCommand(false, { containersRunning: true, tailscaleOn: true, tailscaleServiceRunning: true })
+
+  const item = vi.mocked(radioMenu).mock.calls[0][0].find((i) => i.key === 'tailscale')
+  if (!item) {
+    throw new Error('Expected Tailscale menu item')
+  }
+  expect(item).toMatchObject({ label: 'tailscale & sharing ⇢', description: expect.stringContaining('Tailscale on') })
+  expect(item.colour).toBeUndefined()
   expect(item.disabled).toBeUndefined()
-  expect(buildMainMenuItems(null, true, false).find((i) => i.key === 'tailscale').description).toContain('Enable')
 })
 
-test('Tailscale toggle is disabled with an install hint when unavailable at startup', () => {
-  const item = buildMainMenuItems(null, false, false, { available: false, description: 'Install Tailscale CLI' }).find(
-    (i) => i.key === 'tailscale'
-  )
+test('Tailscale toggle is disabled with an install hint when unavailable', async () => {
+  vi.mocked(radioMenu).mockResolvedValue('__quit__')
+
+  await handleToolsCommand(false, {
+    containersRunning: false,
+    tailscaleOn: false,
+    tailscaleAvailable: false,
+    tailscaleAvailabilityDescription: 'Install Tailscale CLI'
+  })
+
+  const item = vi.mocked(radioMenu).mock.calls[0][0].find((i) => i.key === 'tailscale')
+  if (!item) {
+    throw new Error('Expected Tailscale menu item')
+  }
   expect(item).toMatchObject({ disabled: true, description: 'Install Tailscale CLI' })
+})
+
+test('Tailscale menu makes managed external shares obvious', async () => {
+  vi.mocked(radioMenu).mockResolvedValue('__quit__')
+
+  await handleToolsCommand(false, {
+    savedState: { tailscaleShareIds: ['one', 'two'] },
+    containersRunning: true,
+    tailscaleOn: true,
+    tailscaleServiceRunning: true
+  })
+
+  const item = vi.mocked(radioMenu).mock.calls[0][0].find((i) => i.key === 'tailscale')
+  if (!item) {
+    throw new Error('Expected Tailscale menu item')
+  }
+  expect(item.description).toContain('2 share(s) active')
+})
+
+test('policy setup and active shares require an API key entered in gt', async () => {
+  vi.stubEnv('GRANTS_UI_TAILSCALE_API_KEY', 'tskey-share')
+
+  await handleTailscaleCommand({
+    dryRun: false,
+    savedState: null,
+    containersRunning: false,
+    tailscaleOn: false,
+    tailscaleServiceRunning: true
+  })
+
+  const items = vi.mocked(radioMenu).mock.calls[0][0]
+  expect(items.find((item) => item.key === 'shares')).toMatchObject({
+    disabled: true,
+    description: 'Enter an API key in this menu first'
+  })
+  expect(items.find((item) => item.key === 'policy')).toMatchObject({
+    disabled: true,
+    description: 'Enter an API key in this menu first'
+  })
+})
+
+test('a Tailscale API key can be pasted into gt for the current session', async () => {
+  vi.stubEnv('GRANTS_UI_TAILSCALE_API_KEY', '')
+  vi.mocked(radioMenu).mockResolvedValueOnce('api-key').mockResolvedValueOnce('__quit__')
+  vi.mocked(promptText).mockResolvedValue('tskey-api-session-only')
+
+  await handleTailscaleCommand({
+    dryRun: false,
+    savedState: null,
+    containersRunning: false,
+    tailscaleOn: false,
+    tailscaleServiceRunning: true
+  })
+
+  expect(promptText).toHaveBeenCalledWith(
+    'Paste Tailscale Admin API access token',
+    expect.objectContaining({ mask: true })
+  )
+  expect(process.env.GRANTS_UI_TAILSCALE_API_KEY).toBe('tskey-api-session-only')
+  const firstMenuItems = vi.mocked(radioMenu).mock.calls[0][0]
+  expect(firstMenuItems.find((item) => item.key === 'api-key')).toMatchObject({
+    description: 'Paste a Tailscale Admin API access token (not saved)'
+  })
+  const secondMenuItems = vi.mocked(radioMenu).mock.calls[1][0]
+  expect(secondMenuItems.find((item) => item.key === 'shares')).toMatchObject({ disabled: false })
+  expect(secondMenuItems.find((item) => item.key === 'policy')).toMatchObject({ disabled: false })
+})
+
+test('the empty active-shares view is informational and backs out to its parent menu', async () => {
+  vi.mocked(radioMenu).mockResolvedValueOnce('__quit__')
+
+  await expect(handleTailscaleSharesCommand(false, [])).resolves.toBe('__back__')
+
+  expect(vi.mocked(radioMenu).mock.calls[0][0]).toEqual([
+    { key: 'none', label: 'no active shares', description: 'No shares created by gt', disabled: true }
+  ])
 })
 
 test('Tailscale address follows GAS in the persistent runtime footer', async () => {
@@ -226,6 +332,87 @@ test('Tailscale footer disappears after disabling, regardless of saved selection
   await refreshRuntimeStatus(['compose.infra.yml', 'compose.grants-ui.yml'])
   expect(setRuntimeStatusLine).toHaveBeenCalledWith(expect.not.stringContaining('Tailscale:'))
   expect(getRunningAppBaseUrl).not.toHaveBeenCalled()
+})
+
+test('Tailscale footer remains visible when mode is enabled but the app is not running', async () => {
+  await refreshRuntimeStatus(null, true)
+  expect(stripVTControlCharacters(String(vi.mocked(setRuntimeStatusLine).mock.lastCall?.[0]))).toContain(
+    'Tailscale: enabled · app not running'
+  )
+  expect(getRunningAppBaseUrl).not.toHaveBeenCalled()
+})
+
+test('switching Tailscale mode returns to the Tailscale and sharing menu', async () => {
+  vi.mocked(getRunningComposeFiles).mockReturnValue(['compose.infra.yml', 'compose.tailscale.yml'])
+  vi.mocked(runInteractiveAction).mockResolvedValue(0)
+  vi.mocked(radioMenu).mockResolvedValueOnce('mode').mockResolvedValueOnce('__quit__')
+
+  await expect(
+    handleTailscaleCommand({
+      dryRun: false,
+      savedState: null,
+      containersRunning: true,
+      tailscaleOn: false,
+      tailscaleServiceRunning: true
+    })
+  ).resolves.toBe('')
+
+  expect(runInteractiveAction).toHaveBeenCalledWith('tailscale', [true, false], 'Enabling Tailscale mode')
+  expect(vi.mocked(radioMenu).mock.calls.filter((call) => call[1] === 'Tailscale & sharing')).toHaveLength(2)
+  expect(setRuntimeStatusLine).toHaveBeenCalledWith(expect.stringContaining('Tailscale: https://test.example.ts.net'))
+})
+
+test('sharing an app returns to Tailscale and sharing before returning to Tools', async () => {
+  vi.mocked(runInteractiveAction).mockResolvedValue(0)
+  vi.mocked(radioMenu)
+    .mockResolvedValueOnce('tailscale')
+    .mockResolvedValueOnce('create')
+    .mockResolvedValueOnce('__quit__')
+    .mockResolvedValueOnce('__quit__')
+
+  await handleToolsCommand(false, {
+    containersRunning: true,
+    tailscaleOn: true,
+    tailscaleServiceRunning: true,
+    tailscaleSession: { apiKeyEntered: true }
+  })
+
+  expect(runInteractiveAction).toHaveBeenCalledWith(
+    'tailscale-share:create',
+    [false],
+    'Creating single-use Tailscale share'
+  )
+  expect(vi.mocked(radioMenu).mock.calls.map((call) => call[1])).toEqual([
+    'Tools',
+    'Tailscale & sharing',
+    'Tailscale & sharing',
+    'Tools'
+  ])
+})
+
+test('setting up the sharing policy returns to Tailscale and sharing', async () => {
+  vi.mocked(runInteractiveAction).mockResolvedValue(0)
+  vi.mocked(radioMenu).mockResolvedValueOnce('policy').mockResolvedValueOnce('apply').mockResolvedValueOnce('__quit__')
+
+  await handleTailscaleCommand({
+    dryRun: false,
+    savedState: null,
+    containersRunning: true,
+    tailscaleOn: true,
+    tailscaleServiceRunning: true,
+    tailscaleSession: { apiKeyEntered: true }
+  })
+
+  expect(runInteractiveAction).toHaveBeenCalledWith(
+    'tailscale-policy:setup',
+    [true],
+    'Previewing and applying Tailscale sharing policy'
+  )
+  expect(vi.mocked(radioMenu).mock.calls.map((call) => call[1])).toEqual([
+    'Tailscale & sharing',
+    'Set up Tailscale sharing policy',
+    'Tailscale & sharing'
+  ])
 })
 
 test('checks exposes each suite directly and escape starts no action', async () => {
@@ -256,12 +443,13 @@ test('the tools submenu exposes audit scripts with descriptions and escape start
     'state',
     'journey',
     'gas:state',
+    'tailscale',
     'audit:logs',
     'audit:queue',
     'audit:clear'
   ])
   expect(items.every((item) => item.description.length > 0)).toBe(true)
-  expect(items[5].description).toMatch(/Purge.*queue.*restart grants-ui/)
+  expect(items[6].description).toMatch(/Purge.*queue.*restart grants-ui/)
   expect(items[2]).toMatchObject({ disabled: true, description: expect.stringContaining('GAS addon') })
   expect(items[1]).toMatchObject({ label: 'journey ⇢', disabled: true, description: expect.stringContaining('Chrome') })
   expect(runInteractiveAction).not.toHaveBeenCalled()
