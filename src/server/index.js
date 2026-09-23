@@ -69,6 +69,7 @@ import { formsRequestPipeline } from './common/request-pipeline/forms-request-pi
 import { serviceRootRedirect } from './common/request-pipeline/redirects/service-root-redirect.js'
 import { auditPublisher } from '~/src/server/common/helpers/audit/audit.js'
 import { bindRequestContext, getStateWithDefinition } from './common/helpers/state/state-with-definition-context.js'
+import { awsClients } from './common/aws/aws-clients-plugin.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
 
@@ -217,7 +218,8 @@ const registerPlugins = async (server) => {
     permissions,
     contentSecurityPolicy,
     allowlist,
-    auditPublisher
+    auditPublisher,
+    awsClients
   ])
 
   await server.register([router])
