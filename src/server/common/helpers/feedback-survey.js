@@ -74,9 +74,10 @@ function getAbsoluteUrl(request) {
  * @returns {string} The grant label
  */
 function resolveGrantLabel(request, slug) {
-  const surveyLabel = /** @type {any} */ (request)?.app?.model?.def?.metadata?.surveyLabel
-  if (surveyLabel) {
-    return surveyLabel
+  const metadata = /** @type {any} */ (request)?.app?.model?.def?.metadata
+  const shortName = metadata?.shortName ?? metadata?.surveyLabel
+  if (shortName) {
+    return shortName
   }
 
   const filename = slug.replaceAll('-', ' ').toLowerCase()
