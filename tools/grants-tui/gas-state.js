@@ -106,6 +106,20 @@ export function runGasNodeScript(
   return result
 }
 
+/** Resolve the Caseworking event contract from the running GAS image and its environment. */
+export function getGasCaseStatusEventType(spawn = spawnSync) {
+  const result = runGasNodeScript(
+    `import { CASE_STATUS_UPDATED_EVENT_TYPE } from './src/grants/events/inbound-event-types.js';
+    console.log(${JSON.stringify(RESULT_MARKER)} + JSON.stringify(CASE_STATUS_UPDATED_EVENT_TYPE));`,
+    { spawn, fallbackMessage: 'Could not resolve GAS Caseworking event type' }
+  )
+  const type = parseGasStateResult(result.stdout ?? '')
+  if (typeof type !== 'string' || !type.trim()) {
+    throw new Error('GAS returned an invalid Caseworking event type')
+  }
+  return type
+}
+
 /**
  * Send a CloudEvent to a GAS SQS queue via the running GAS container's AWS SDK.
  * @param {{ id: string, data: Record<string, unknown> }} event

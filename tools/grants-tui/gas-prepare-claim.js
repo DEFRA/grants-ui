@@ -1,6 +1,13 @@
 import { spawnSync } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { findApplicationSnippet, queueGasEvent, runGasNodeScript, runMongo, updateGasApplication } from './gas-state.js'
+import {
+  findApplicationSnippet,
+  getGasCaseStatusEventType,
+  queueGasEvent,
+  runGasNodeScript,
+  runMongo,
+  updateGasApplication
+} from './gas-state.js'
 import { markedResult } from './mongo.js'
 
 export const CLAIM_POSITION = {
@@ -128,11 +135,12 @@ export function prepareGasClaim(application, { spawn = spawnSync, dryRun = false
   }
 
   const now = new Date().toISOString()
+  const caseStatusEventType = getGasCaseStatusEventType(spawn)
   const cwEvent = (currentStatus) => ({
     id: randomUUID(),
     specversion: '1.0',
     time: now,
-    type: 'fg.cw-backend.test.case.status.updated',
+    type: caseStatusEventType,
     source: 'CW',
     data: { caseRef: current.clientRef, workflowCode: current.code, currentStatus }
   })

@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { findApplicationSnippet, queueGasEvent, runMongo } from './gas-state.js'
+import { findApplicationSnippet, getGasCaseStatusEventType, queueGasEvent, runMongo } from './gas-state.js'
 
 /** Read fresh state and resolve the latest active grant within the application's major, as GAS does. */
 export function getGasOfferContext(application, spawn) {
@@ -81,7 +81,7 @@ export function generateGasOffer(application, { spawn = spawnSync, dryRun = fals
     id: randomUUID(),
     specversion: '1.0',
     time: new Date().toISOString(),
-    type: 'fg.cw-backend.test.case.status.updated',
+    type: getGasCaseStatusEventType(spawn),
     source: 'CW',
     data: {
       caseRef: context.application.clientRef,

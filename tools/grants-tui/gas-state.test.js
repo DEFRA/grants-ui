@@ -6,6 +6,7 @@ import {
   buildGrantScript,
   buildUpdateApplicationScript,
   gasStatusChoices,
+  getGasCaseStatusEventType,
   listGasApplications,
   parseGasStateResult,
   updateGasApplication
@@ -45,6 +46,33 @@ test('update targets one application _id and changes all GAS state fields togeth
 
 test('parses only the marked Mongosh result', () => {
   expect(parseGasStateResult('warning\nGT_GAS_STATE_RESULT:[{"code":"EGWA"}]\n')).toEqual([{ code: 'EGWA' }])
+})
+
+test('reads the Caseworking event type from the running GAS contract', () => {
+  const spawn = vi.fn().mockReturnValue({
+    status: 0,
+    stdout: 'notice\nGT_GAS_STATE_RESULT:"cloud.defra.dev.fg-cw-backend.case.status.updated"\n'
+  })
+  expect(getGasCaseStatusEventType(spawn)).toBe('cloud.defra.dev.fg-cw-backend.case.status.updated')
+  expect(spawn).toHaveBeenCalledWith(
+    'docker',
+    ['exec', '-i', 'gas', 'node', '--input-type=module'],
+    expect.objectContaining({
+      input: expect.stringContaining(
+        "import { CASE_STATUS_UPDATED_EVENT_TYPE } from './src/grants/events/inbound-event-types.js'"
+      )
+    })
+  )
+})
+
+test.each(['null', '{}', '""', '" "'])('rejects an invalid GAS event type: %s', (value) => {
+  const spawn = vi.fn().mockReturnValue({ status: 0, stdout: `GT_GAS_STATE_RESULT:${value}` })
+  expect(() => getGasCaseStatusEventType(spawn)).toThrow('invalid Caseworking event type')
+})
+
+test('surfaces failures reading the GAS event contract', () => {
+  const spawn = vi.fn().mockReturnValue({ status: 1, stderr: 'Cannot find module inbound-event-types.js' })
+  expect(() => getGasCaseStatusEventType(spawn)).toThrow('Cannot find module inbound-event-types.js')
 })
 
 describe('gasStatusChoices', () => {

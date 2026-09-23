@@ -132,30 +132,39 @@ describe('offer transition selection', () => {
   })
 })
 
-function mockSpawn(context = fixture()) {
+function mockSpawn(context = fixture(), eventType = 'cloud.defra.local.fg-cw-backend.case.status.updated') {
   return vi
     .fn()
     .mockReturnValueOnce({ status: 0, stdout: `GT_GAS_STATE_RESULT:${JSON.stringify(context)}\n` })
+    .mockReturnValueOnce({ status: 0, stdout: `GT_GAS_STATE_RESULT:${JSON.stringify(eventType)}\n` })
     .mockReturnValue({ status: 0 })
 }
 
-test('queues a fresh event using current DB identity and the GAS container environment', () => {
-  const spawn = mockSpawn()
-  const { event } = generateGasOffer({ _id: 'test-id', code: 'stale', clientRef: 'stale' }, { spawn })
-  expect(event.data).toEqual({ workflowCode: 'woodland', caseRef: 'test-ref', currentStatus: 'APPROVED' })
-  expect(event.id).toMatch(/^[\da-f-]{36}$/)
-  expect(spawn.mock.calls[1][1]).toEqual(['exec', '-i', 'gas', 'node', '--input-type=module'])
-  const script = spawn.mock.calls[1][2].input
-  expect(script).toContain('process.env["GAS__SQS__UPDATE_STATUS_QUEUE_URL"]')
-  expect(script).toContain('MessageDeduplicationId: "' + event.id + '"')
-  expect(script).toContain(JSON.stringify(JSON.stringify(event)))
-  expect(generateGasOffer(fixture().application, { spawn: mockSpawn() }).event.id).not.toBe(event.id)
-})
+test.each(['local', 'dev'])(
+  'queues a fresh event using the GAS %s event contract and current DB identity',
+  (environment) => {
+    const eventType = `cloud.defra.${environment}.fg-cw-backend.case.status.updated`
+    const spawn = mockSpawn(fixture(), eventType)
+    const { event } = generateGasOffer({ _id: 'test-id', code: 'stale', clientRef: 'stale' }, { spawn })
+    expect(event.data).toEqual({ workflowCode: 'woodland', caseRef: 'test-ref', currentStatus: 'APPROVED' })
+    expect(event.id).toMatch(/^[\da-f-]{36}$/)
+    expect(event.type).toBe(eventType)
+    expect(spawn.mock.calls[2][1]).toEqual(['exec', '-i', 'gas', 'node', '--input-type=module'])
+    const script = spawn.mock.calls[2][2].input
+    expect(script).toContain('process.env["GAS__SQS__UPDATE_STATUS_QUEUE_URL"]')
+    expect(script).toContain('MessageDeduplicationId: "' + event.id + '"')
+    expect(script).toContain(JSON.stringify(JSON.stringify(event)))
+    expect(generateGasOffer(fixture().application, { spawn: mockSpawn() }).event.id).not.toBe(event.id)
+  }
+)
 
 test('dry run reads state but sends nothing', () => {
   const spawn = mockSpawn()
-  expect(generateGasOffer(fixture().application, { spawn, dryRun: true }).dryRun).toBe(true)
-  expect(spawn).toHaveBeenCalledTimes(1)
+  expect(generateGasOffer(fixture().application, { spawn, dryRun: true })).toMatchObject({
+    dryRun: true,
+    event: { type: 'cloud.defra.local.fg-cw-backend.case.status.updated' }
+  })
+  expect(spawn).toHaveBeenCalledTimes(2)
 })
 
 test('stale selection cannot queue when the database position has changed', () => {
@@ -170,4 +179,13 @@ test('reports SQS delivery errors instead of claiming success', () => {
   const spawn = mockSpawn()
   spawn.mockReturnValue({ status: 1, stderr: 'Queue unavailable' })
   expect(() => generateGasOffer(fixture().application, { spawn })).toThrow('Queue unavailable')
+})
+
+test('does not queue an offer when the GAS event contract cannot be resolved', () => {
+  const spawn = vi
+    .fn()
+    .mockReturnValueOnce({ status: 0, stdout: `GT_GAS_STATE_RESULT:${JSON.stringify(fixture())}\n` })
+    .mockReturnValueOnce({ status: 1, stderr: 'GAS contract unavailable' })
+  expect(() => generateGasOffer(fixture().application, { spawn })).toThrow('GAS contract unavailable')
+  expect(spawn).toHaveBeenCalledTimes(2)
 })
