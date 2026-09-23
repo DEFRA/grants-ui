@@ -122,7 +122,7 @@ const convictConfig = {
     },
     serviceAuth: {
       enabled: {
-        doc: 'Whether service auth is enabled',
+        doc: 'Whether to use service auth when calling the grant scoring service',
         format: Boolean,
         default: isProduction,
         env: 'SCORING_SERVICE_AUTH_ENABLED'

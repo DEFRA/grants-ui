@@ -32,7 +32,7 @@ export default class ScoreResultsController extends QuestionPageController {
         const grantScoringServiceError = new GrantScoringServiceError({
           message: 'Failed to get grant eligibility score result',
           source: 'ScoreResultsController.makeGetRouteHandler',
-          reason: 'scoring_action_failure',
+          reason: 'grant_scoring_action_failure',
           grantCode,
           action: 'get-grant-eligibility-score-result'
         }).from(/** @type {Error} */ (error))

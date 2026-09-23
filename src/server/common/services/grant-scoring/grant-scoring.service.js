@@ -83,7 +83,7 @@ function buildRequestUrl(url, queryParams) {
 
   Object.entries(queryParams).forEach(([key, value]) => {
     if (value !== undefined && value !== null) {
-      searchParams.append(key, value.toString())
+      searchParams.append(key, String(value))
     }
   })
 

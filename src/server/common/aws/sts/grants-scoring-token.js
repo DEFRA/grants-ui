@@ -5,7 +5,7 @@ const serviceAuthAudience = config.get('scoring.serviceAuth.audience')
 const serviceAuthTokenDuration = config.get('scoring.serviceAuth.tokenDuration')
 
 /**
- * Generates a token for the scoring service
+ * Generates a token for the grants scoring service
  * @param {import('@aws-sdk/client-sts').STSClient} stsClient
  * @returns WebIdentityToken
  */
