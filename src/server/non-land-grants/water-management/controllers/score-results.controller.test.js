@@ -65,7 +65,7 @@ describe('ScoreResultsController', () => {
       expect(mockH.view).toHaveBeenCalledWith(controller.viewName, expect.objectContaining({ baseModel: 'data' }))
     })
 
-    it('should throw SystemError on failure', async () => {
+    it('should throw GrantScoringServiceError on failure', async () => {
       invokeGrantScoringGetAction.mockRejectedValue(new Error('Test Error'))
 
       const handler = controller.makeGetRouteHandler()
