@@ -52,16 +52,13 @@ class GrantScoringServiceApiError extends Error {
  * @private
  */
 async function buildRequestOptions(method, request) {
-  let authToken
-  if (config.get('scoring.serviceAuth.enabled')) {
-    authToken = await getScoringServiceToken()
-  }
+  const authToken = await getScoringServiceToken()
 
   /** @type {RequestInit} */
   return {
     method,
     headers: withTraceId(config.get('tracing.header'), {
-      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      Authorization: `Bearer ${authToken}`,
       'Content-Type': 'application/json'
     })
   }

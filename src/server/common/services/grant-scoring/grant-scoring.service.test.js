@@ -15,7 +15,8 @@ describe('Grant Scoring service', () => {
   const scoringApi = config.get('scoring.serviceUrl')
   const code = 'water-management'
   const jsonHeaders = {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    Authorization: 'Bearer mock-token'
   }
 
   beforeEach(() => {
@@ -25,9 +26,6 @@ describe('Grant Scoring service', () => {
     vi.spyOn(config, 'get').mockImplementation((path) => {
       if (path === 'scoring.serviceUrl') {
         return 'http://localhost:3002'
-      }
-      if (path === 'scoring.serviceAuth.enabled') {
-        return false
       }
       if (path === 'tracing.header') {
         return 'x-trace-id'
@@ -72,42 +70,6 @@ describe('Grant Scoring service', () => {
       expect.objectContaining({
         method: 'GET',
         headers: jsonHeaders
-      })
-    )
-    expect(result).toEqual(mockResponse)
-  })
-
-  test('should successfully invoke a scoring GET action with auth token', async () => {
-    const mockResponse = { score: 75, band: 'High' }
-    const mockedFetch = mockFetch()
-    mockedFetch.mockResolvedValueOnce({
-      ok: true,
-      json: vi.fn().mockResolvedValueOnce(mockResponse)
-    })
-
-    vi.spyOn(config, 'get').mockImplementation((path) => {
-      if (path === 'scoring.serviceUrl') {
-        return 'http://localhost:3002'
-      }
-      if (path === 'scoring.serviceAuth.enabled') {
-        return true
-      }
-      if (path === 'tracing.header') {
-        return 'x-trace-id'
-      }
-      return undefined
-    })
-
-    const result = await invokeGrantScoringGetAction(code, mockRequest)
-
-    expect(mockedFetch).toHaveBeenCalledWith(
-      `${scoringApi}/scoring/${code}`,
-      expect.objectContaining({
-        method: 'GET',
-        headers: {
-          ...jsonHeaders,
-          Authorization: 'Bearer mock-token'
-        }
       })
     )
     expect(result).toEqual(mockResponse)
