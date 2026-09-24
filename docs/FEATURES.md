@@ -419,6 +419,12 @@ config:
 
 The link names are case-sensitive. Configure absolute HTTPS URLs pointing to the published production guidance, not relative journey URLs. If a URL is omitted, the consent text remains without a link. This configuration does not affect grouped-action hints or the consent-required page.
 
+On the select-actions page, each action's SSSI/HEFER requirement appears directly below its title and guidance link, before the payment rate. The requirement uses the standard text colour; payment and available-quantity details remain secondary text. Requirements are shown only when the corresponding consent feature flags are enabled.
+
+The requirement, payment rate and available quantity use separate `<span>` rows with 2px spacing and no `<br>` separators. They inherit GOV.UK's responsive 16px typography: at desktop widths, each single-line box is 20px high. The “This action will use…” guidance retains its separate 10px top margin. Heights remain content-driven so longer text can wrap on smaller screens.
+
+Each action after the first owns a top divider, with an 8px gap before it and 10px padding below it. There are no bottom dividers on actions or quantity panels. Expanded panels retain their 10px top spacing; the next action owns the gap and divider regardless of whether a panel is open. Action heights grow with their content rather than using a fixed height.
+
 ### Task completion participation
 
 Set `config.excludeFromTaskCompletion: true` when a result or interstitial page should not count towards task completion:
