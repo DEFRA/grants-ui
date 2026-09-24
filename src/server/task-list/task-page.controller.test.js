@@ -10,4 +10,14 @@ describe('TaskPageController', () => {
   it('should extend QuestionPageController via withTaskContext mixin', () => {
     expect(TaskPageController.prototype).toBeInstanceOf(QuestionPageController)
   })
+
+  it.each([
+    [{}, false],
+    [{ components: [] }, false],
+    [{ components: [{ type: 'Html', content: 'Guidance' }] }, true]
+  ])('declares guidance participation for %s', (pageDef, excluded) => {
+    const page = new TaskPageController({}, pageDef)
+    page.pageDef = pageDef
+    expect(page.excludeFromTaskCompletion).toBe(excluded)
+  })
 })
