@@ -29,6 +29,7 @@ Feature: Action Selection
             | CLIG3  | Manage grassland with very low nutrient inputs: CLIG3 | Payment rate per year: £151/ha                                   | Yes |
             |        |                                                       | 0.2760 hectares available                                        |     |
             |        |                                                       | This action will use all the available area on this land parcel. |     |
+            | WBD1   | Manage ponds: WBD1                                    | Payment rate per year: £257/pond                                 | Yes |
             | SCR2   | Manage scrub and open habitat mosaics: SCR2           | Payment rate per year: £350/ha                                   | Yes |
             |        |                                                       | hectares available                                               |     |
         When the user selects action "CSAM3"
@@ -36,22 +37,22 @@ Feature: Action Selection
         # RULE: partial action hectares cannot be zero
         When the user enters "0" hectares for action "CSAM3"
         And continues
-        Then the user should see "Enter a quantity for Herbal leys: CSAM3" for action "CSAM3"
+        Then the user should see error "Enter a quantity for Herbal leys: CSAM3" for action "CSAM3"
 
         # RULE: partial action hectares cannot exceed available hectares
         When the user enters "0.277" hectares for action "CSAM3"
         And continues
-        Then the user should see "Enter up to 0.276 hectares" for action "CSAM3"
+        Then the user should see error "Enter up to 0.276 hectares" for action "CSAM3"
 
         # RULE: partial action hectares must be 4 decimal places or less
         When the user enters "0.27666" hectares for action "CSAM3"
         And continues
-        Then the user should see "Quantity for Herbal leys: CSAM3 must be 4 decimal places or fewer" for action "CSAM3"
+        Then the user should see error "Quantity for Herbal leys: CSAM3 must be 4 decimal places or fewer" for action "CSAM3"
 
         # RULE: partial action hectares cannot be empty
         When the user enters "" hectares for action "CSAM3"
         And continues
-        Then the user should see "Enter a quantity for Herbal leys: CSAM3" for action "CSAM3"
+        Then the user should see error "Enter a quantity for Herbal leys: CSAM3" for action "CSAM3"
 
         # RULE: partial action cannot be selected once a total action has been selected taking all available hectares
         When the user deselects action "CSAM3"
@@ -71,6 +72,7 @@ Feature: Action Selection
         # RULE: partial area action can be applied to an eligible land parcel
         When the user selects action "CSAM3"
         When the user enters "0.276" hectares for action "CSAM3"
+
         And continues
 
         # confirm-land-and-actions
@@ -227,21 +229,17 @@ Feature: Action Selection
         #     | There are no actions available for parcel SK0972 7313. Select another land parcel to continue. |
 
         # RULE: a land parcel with pre-existing agreement for the total area prevents incompatible actions being shown
-        # TODO: Refactor once WBD1 is added to example-grant-with-map
-        # When the user navigates backward
-        # Then the user should be at URL "example-grant-with-map"
-        # When the user clicks on "Start now"
-        # Then the user should be at URL "select-land-parcel"
-        # When the user selects parcel "SK0971 5761" of area "0.6116" hectares on the map
-        # And continues
-        # Then the user should still be at URL "select-land-parcel"
-        # And should see the following error messages
-        #     | There are no actions available for parcel SK0971 5761. Select another land parcel to continue. |
+        Then the user should be at URL "select-land-parcel"
+        When the user selects parcel "SK0971 5761" of area "0.6116" hectares on the map
+        And continues
+        Then the user should be at URL "select-actions-for-land-parcel"
+        And should not see the following actions
+            | CSAM3 |
+            | CLIG3 |
+            | SCR2  |
 
         # RULE: a land parcel with pre-existing agreement for less than the total area reduces the available area for incompatible actions
-        # When the user navigates backward
-        # Then the user should be at URL "example-grant-with-map"
-        # When the user clicks on "Start now"
+        When the user navigates backward
         Then the user should be at URL "select-land-parcel"
         When the user selects parcel "SK0971 4561" of area "0.112" hectares on the map
         And continues
@@ -254,6 +252,53 @@ Feature: Action Selection
             | ACTION | DESCRIPTION         | GUIDANCE                       | URL |
             | CSAM3  | Herbal leys: CSAM3  | Payment rate per year: £224/ha | Yes |
             |        |                     | 0.0087 hectares available      |     |
+
+        # select a land parcel with land cover eligible for a count-based action
+        When the user navigates backward
+        Then the user should be at URL "select-land-parcel"
+        When the user selects parcel "SD7323 4596" of area "17.5194" hectares on the map
+        And continues
+        Then the user should be at URL "select-actions-for-land-parcel"
+
+        # RULE: count-based action shows its payment rate per singular unit and its quantity in plural units
+        When the user selects action "WBD1"
+        Then the user should see the following actions with guidance
+            | ACTION | DESCRIPTION        | GUIDANCE                         | URL |
+            | WBD1   | Manage ponds: WBD1 | Payment rate per year: £257/pond | Yes |
+        And should see unit "ponds" for action "WBD1"
+
+        # RULE: count-based action cannot be zero
+        When the user enters "0" ponds for action "WBD1"
+        And continues
+        Then the user should see error "Value must be greater than 0" for action "WBD1"
+
+        # RULE: count-based action cannot be negative
+        When the user enters "-1" ponds for action "WBD1"
+        And continues
+        Then the user should see error "Value must be greater than 0" for action "WBD1"
+
+        # RULE: count-based action must be numeric
+        When the user enters "abc" ponds for action "WBD1"
+        And continues
+        Then the user should see error "Must be numbers" for action "WBD1"
+
+        # RULE: count-based action cannot be empty
+        When the user enters "" ponds for action "WBD1"
+        And continues
+        Then the user should see error "Enter a quantity for Manage ponds: WBD1" for action "WBD1"
+
+        # RULE: count-based action can be applied to an eligible land parcel
+        When the user enters "2" ponds for action "WBD1"
+        And continues
+
+        # confirm-land-and-actions
+        Then the user should be at URL "confirm-land-and-actions"
+        And should see heading "Review land parcels and actions"
+        And should see the following parcel summary cards
+            | PARCEL      | ACTION              | QUANTITY | YEARLY PAYMENT |
+            | SD7323 4596 | Manage ponds (WBD1) | 2 count  | £514.00        |
+            |             | Subtotal            |          | £514.00        |
+        And should see total yearly payment "£514.00"
 
     Scenario: User is advised when both SSSI and HEFER apply to a land parcel
         Given there is no application data for SBI "106592443" and grant "example-grant-with-map"
