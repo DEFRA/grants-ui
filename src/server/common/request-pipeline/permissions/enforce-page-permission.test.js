@@ -99,12 +99,12 @@ describe('getCannotSubmitContent', () => {
   const applicationContent =
     '<p class="govuk-body">Your progress has been saved.</p>' +
     '<p class="govuk-body">You do not have permission to submit the application.</p>' +
-    '<p class="govuk-body">Contact a person in your business to review and submit the application.</p>'
+    '<p class="govuk-body">Contact a person in your business with the correct permission level to review and submit the application.</p>'
 
   const claimContent =
     '<p class="govuk-body">Your progress has been saved.</p>' +
     '<p class="govuk-body">You do not have permission to submit the claim.</p>' +
-    '<p class="govuk-body">Contact a person in your business to review and submit the claim.</p>'
+    '<p class="govuk-body">Contact a person in your business with the correct permission level to review and submit the claim.</p>'
 
   it('falls back to application wording and the default return button for an unknown resource', () => {
     vi.mocked(getPermissionResource).mockReturnValue('somethingElse')
@@ -240,7 +240,7 @@ describe('enforcePagePermission', () => {
       content:
         '<p class="govuk-body">Your progress has been saved.</p>' +
         '<p class="govuk-body">You do not have permission to submit the application.</p>' +
-        '<p class="govuk-body">Contact a person in your business to review and submit the application.</p>',
+        '<p class="govuk-body">Contact a person in your business with the correct permission level to review and submit the application.</p>',
       returnUrl: '/sfi/summary',
       returnText: 'Return to summary'
     })
@@ -261,7 +261,7 @@ describe('enforcePagePermission', () => {
       content:
         '<p class="govuk-body">Your progress has been saved.</p>' +
         '<p class="govuk-body">You do not have permission to submit the claim.</p>' +
-        '<p class="govuk-body">Contact a person in your business to review and submit the claim.</p>',
+        '<p class="govuk-body">Contact a person in your business with the correct permission level to review and submit the claim.</p>',
       returnUrl: '/sfi/task-list',
       returnText: 'Return to task list'
     })
