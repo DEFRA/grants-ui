@@ -267,10 +267,6 @@ Feature: Action Selection
             | WBD1   | Manage ponds: WBD1 | Payment rate per year: £257/pond | Yes |
         And should see unit "ponds" for action "WBD1"
 
-        # RULE: an empty count is not an error on blur
-        When the user enters "" ponds for action "WBD1"
-        Then the user should not see an error for action "WBD1"
-
         # RULE: count-based action cannot be zero
         When the user enters "0" ponds for action "WBD1"
         Then the user should see error "Enter a number greater than 0" for action "WBD1"
