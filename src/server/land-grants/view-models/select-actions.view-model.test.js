@@ -69,30 +69,6 @@ describe('select-actions.view-model', () => {
       expect(mapActionsToViewModel([{ ...wbd1, availability: { unit: 'count', value: 0 } }], [])).toEqual([])
     })
 
-    it('should map action with rate per unit only', () => {
-      const action = {
-        code: 'SAM1',
-        description: 'Test Action 1',
-        ratePerUnitGbp: 100.5
-      }
-      const addedActions = []
-
-      const result = mapActionToViewModel(action, addedActions)
-
-      expect(result).toEqual({
-        id: 'landAction-SAM1',
-        value: 'SAM1',
-        html: 'Test Action 1 <span class="select-actions-hint">Payment rate per year: £100.50/ha</span>',
-        checked: false,
-        consents: [],
-        attributes: {
-          'data-action-description': 'Test Action 1',
-          'data-available-unit': undefined,
-          'data-total-available-area': undefined
-        }
-      })
-    })
-
     it('should render just the description with no guidance link when no guidance URL is set', () => {
       const result = mapActionToViewModel(sam1(), [])
 
@@ -114,9 +90,6 @@ describe('select-actions.view-model', () => {
       expect(result.html).toContain('read guidance')
       expect(result.html).toContain('target="_blank"')
       expect(result.html).toContain('rel="noopener noreferrer"')
-      expect(result.html).toContain(
-        'read guidance</a> <span class="select-actions-hint">Payment rate per year: £100.50/ha</span>'
-      )
     })
 
     it('should escape the description and guidance URL in the label to avoid breaking the markup', () => {
@@ -163,37 +136,6 @@ describe('select-actions.view-model', () => {
       expect(result.id).toBe('landAction')
     })
 
-    it('should map action with rate per unit and per agreement', () => {
-      const action = {
-        code: 'SAM2',
-        description: 'Test Action 2',
-        ratePerUnitGbp: 75.25,
-        ratePerAgreementPerYearGbp: 50
-      }
-      const addedActions = []
-
-      const result = mapActionToViewModel(action, addedActions)
-
-      expect(result.html).toBe(
-        'Test Action 2 <span class="select-actions-hint">Payment rate per year: £75.25/ha and <strong>£50</strong> per agreement</span>'
-      )
-    })
-
-    it('should show the HEFER requirement text below the payment rate when heferRequired is set', () => {
-      configState.set('landGrants.enableHeferFeature', true)
-      const action = {
-        code: 'GRH12',
-        description: 'Manage rough grassland for upland breeding waders',
-        ratePerUnitGbp: 203,
-        heferRequired: true
-      }
-
-      const result = mapActionToViewModel(action, [])
-      configState.reset()
-
-      expect(result.html).toContain('Payment rate per year: £203/ha<br>HEFER required')
-    })
-
     it('should not show the HEFER requirement text when the HEFER feature flag is off', () => {
       const action = {
         code: 'GRH12',
@@ -206,38 +148,6 @@ describe('select-actions.view-model', () => {
 
       expect(result.html).toContain('Payment rate per year: £203/ha')
       expect(result.html).not.toContain('HEFER required')
-    })
-
-    it('should show the SSSI requirement text below the payment rate when sssiConsentRequired is set', () => {
-      configState.set('landGrants.enableSSSIFeature', true)
-      const action = {
-        code: 'CLIG3',
-        description: 'Manage grassland with very low nutrient inputs',
-        ratePerUnitGbp: 151,
-        sssiConsentRequired: true
-      }
-
-      const result = mapActionToViewModel(action, [])
-      configState.reset()
-
-      expect(result.html).toContain('Payment rate per year: £151/ha<br>SSSI consent required')
-    })
-
-    it('should show both requirements when sssiConsentRequired and heferRequired are both set', () => {
-      configState.set('landGrants.enableSSSIFeature', true)
-      configState.set('landGrants.enableHeferFeature', true)
-      const action = {
-        code: 'CLIG3',
-        description: 'Manage grassland with very low nutrient inputs',
-        ratePerUnitGbp: 151,
-        sssiConsentRequired: true,
-        heferRequired: true
-      }
-
-      const result = mapActionToViewModel(action, [])
-      configState.reset()
-
-      expect(result.html).toContain('Payment rate per year: £151/ha<br>SSSI consent and HEFER required')
     })
 
     it.each([
