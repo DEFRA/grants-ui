@@ -86,6 +86,7 @@ export function checkboxItemHtml({
   description = code,
   checked = false,
   availability,
+  displayUnitPlural,
   requiresMaxQuantity,
   unrestricted = false,
   quantityValue = '',
@@ -97,6 +98,7 @@ export function checkboxItemHtml({
   const hasChosenAreaPanel = !requiresMaxQuantity && availability?.value != null
   const descriptionAttr = ` data-action-description="${description}"`
   const unitAttr = availability ? ` data-available-unit="${availability.unit}"` : ''
+  const displayUnitAttr = displayUnitPlural ? ` data-display-unit-plural="${displayUnitPlural}"` : ''
   const totalAreaAttr = availability ? ` data-total-available-area="${availability.value ?? ''}"` : ''
   const ariaControlsAttr = requiresMaxQuantity || hasChosenAreaPanel ? ` aria-controls="${conditionalId}"` : ''
 
@@ -122,7 +124,7 @@ export function checkboxItemHtml({
 
   return `
     <div class="govuk-checkboxes__item">
-      <input class="govuk-checkboxes__input" id="landAction-${code}" name="landAction" type="checkbox" value="${code}"${checked ? ' checked' : ''}${descriptionAttr}${unitAttr}${totalAreaAttr}${ariaControlsAttr}${errorOnLoadAttr(errorOnLoad)}>
+      <input class="govuk-checkboxes__input" id="landAction-${code}" name="landAction" type="checkbox" value="${code}"${checked ? ' checked' : ''}${descriptionAttr}${unitAttr}${displayUnitAttr}${totalAreaAttr}${ariaControlsAttr}${errorOnLoadAttr(errorOnLoad)}>
       <label for="landAction-${code}">${description}</label>
       ${availabilityHint}
     </div>

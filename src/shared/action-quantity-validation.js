@@ -3,7 +3,7 @@
  * validator and the client-side page script.
  */
 
-import { requiresWholeNumber } from './unit-types.js'
+import { requiresWholeNumber, UNIT_COUNT } from './unit-types.js'
 
 export const QUANTITY_PRECISION = 4
 
@@ -29,6 +29,27 @@ const WHOLE_NUMBER_QUANTITY_ERRORS = {
   NEGATIVE: 'Value must be greater than 0',
   NOT_GREATER_THAN_ZERO: 'Value must be greater than 0',
   MORE_THAN_AVAILABLE: moreThanAvailableArea
+}
+
+/**
+ * @param {string | null | undefined} unit
+ * @param {string | null | undefined} displayUnitPlural
+ * @returns {typeof QUANTITY_ERRORS}
+ */
+function getQuantityErrors(unit, displayUnitPlural) {
+  const errors = requiresWholeNumber(unit) ? WHOLE_NUMBER_QUANTITY_ERRORS : QUANTITY_ERRORS
+  if (unit !== UNIT_COUNT || !displayUnitPlural) {
+    return errors
+  }
+
+  const numberMessage = `Enter a number of ${displayUnitPlural}, for example 1 or 2`
+  return {
+    ...errors,
+    NOT_A_NUMBER: numberMessage,
+    NEGATIVE: numberMessage,
+    NOT_GREATER_THAN_ZERO: QUANTITY_ERRORS.NOT_GREATER_THAN_ZERO,
+    NOT_WHOLE_NUMBER: `Enter a whole number of ${displayUnitPlural}, for example 1 or 2`
+  }
 }
 
 /**
@@ -60,15 +81,16 @@ function decimalPlaces(value) {
 /**
  * @param {string} value
  * @param {number} quantity
+ * @param {typeof QUANTITY_ERRORS} errors
  * @returns {string | null}
  */
-function getWholeNumberError(value, quantity) {
+function getWholeNumberError(value, quantity, errors) {
   // Check the typed fraction too, since Number can round it to an integer.
   if (/\.\d*[1-9]/.test(value) || !Number.isInteger(quantity)) {
-    return QUANTITY_ERRORS.NOT_WHOLE_NUMBER
+    return errors.NOT_WHOLE_NUMBER
   }
   if (!Number.isSafeInteger(quantity)) {
-    return QUANTITY_ERRORS.TOO_LARGE
+    return errors.TOO_LARGE
   }
   return null
 }
@@ -86,12 +108,13 @@ function getDecimalPrecisionError(value) {
  * @param {string | number | null | undefined} raw - Typed value, normalised or not
  * @param {number} [max] - Claimable ceiling; omitted means unrestricted
  * @param {string | null} [unit] - Square metres and counts require whole numbers.
+ * @param {string | null} [displayUnitPlural] - Display label for count-based quantities.
  * @returns {string | null}
  */
-export function getQuantityError(raw, max, unit) {
+export function getQuantityError(raw, max, unit, displayUnitPlural) {
   const value = normaliseQuantityInput(raw)
   const wholeNumber = requiresWholeNumber(unit)
-  const errors = wholeNumber ? WHOLE_NUMBER_QUANTITY_ERRORS : QUANTITY_ERRORS
+  const errors = getQuantityErrors(unit, displayUnitPlural)
 
   if (!PLAIN_DECIMAL.test(value)) {
     return errors.NOT_A_NUMBER
@@ -103,7 +126,7 @@ export function getQuantityError(raw, max, unit) {
   if (quantity === 0) {
     return errors.NOT_GREATER_THAN_ZERO
   }
-  const precisionError = wholeNumber ? getWholeNumberError(value, quantity) : getDecimalPrecisionError(value)
+  const precisionError = wholeNumber ? getWholeNumberError(value, quantity, errors) : getDecimalPrecisionError(value)
   if (precisionError) {
     return precisionError
   }
