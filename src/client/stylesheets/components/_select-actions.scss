@@ -13,12 +13,19 @@
 
   .select-actions-hint {
     @include govuk-font-size(16);
-    display: block;
+    display: grid;
     color: $govuk-secondary-text-colour;
+
+    > :not(:first-child):not(.select-actions-guidance) {
+      margin-top: 2px;
+    }
+  }
+
+  .select-actions-requirement {
+    color: $govuk-text-colour;
   }
 
   .select-actions-guidance {
-    display: block;
     margin-top: govuk-spacing(2);
   }
 
@@ -27,31 +34,24 @@
     margin-top: 0;
   }
 
-  %row-divider {
-    margin-bottom: govuk-spacing(2);
-    padding-bottom: govuk-spacing(2);
-    border-bottom: 1px solid govuk-colour('light-grey');
-  }
-
-  %no-row-divider {
-    margin-bottom: 0;
-    padding-bottom: 0;
-    border-bottom: none;
-  }
-
   .govuk-checkboxes__item {
-    @extend %row-divider;
+    margin-bottom: 0;
 
     .select-actions-refresh-banner {
       margin-left: govuk-spacing(9);
     }
   }
 
+  .govuk-checkboxes__item ~ .govuk-checkboxes__item {
+    margin-top: 8px;
+    padding-top: govuk-spacing(2);
+    border-top: 1px solid govuk-colour('light-grey');
 
-  .govuk-checkboxes__item:has(+ .govuk-checkboxes__conditional:not(.govuk-checkboxes__conditional--hidden)),
-  .govuk-checkboxes__item:has(+ .govuk-checkboxes__conditional:last-child),
-  .govuk-checkboxes__item:last-child {
-    @extend %no-row-divider;
+    // GOV.UK positions checkbox markers against the item, outside its padding.
+    .govuk-checkboxes__label::before,
+    .govuk-checkboxes__label::after {
+      margin-top: govuk-spacing(2);
+    }
   }
 
   .govuk-checkboxes__conditional {
@@ -75,9 +75,8 @@
     }
   }
 
-  .govuk-checkboxes__conditional:not(.govuk-checkboxes__conditional--hidden):not(:last-child) {
-    padding-bottom: govuk-spacing(2);
-    border-bottom: 1px solid govuk-colour('light-grey');
+  .govuk-checkboxes__conditional:not(:last-child) {
+    margin-bottom: 0;
   }
 }
 
