@@ -26,7 +26,8 @@
 
 import { chromium } from '@playwright/test'
 
-const DEFAULT_CRN = '1102838829'
+import { DEFAULT_CRN } from '../src/server/dev-tools/journey-runner/journey-meta.js'
+
 const DEFAULT_BASE_URL = 'http://localhost:3000'
 const DEFAULT_TIMEOUT_MS = 120000
 const LOG_PREFIX = '[journey-runner]'
@@ -118,7 +119,7 @@ async function loginIfNeeded(page, crn) {
   }
 
   console.log(`${LOG_PREFIX} Signing in via DefraID stub as CRN ${crn}`)
-  await crnInput.fill(crn)
+  await page.locator("//input[@id='crn']").fill(crn)
   await page.locator("//input[@id='password']").fill(process.env.DEFRA_ID_USER_PASSWORD ?? 'x')
   await page.locator("//button[@type='submit']").click()
   // The stub processes the sign-in once its login form detaches (mirrors the

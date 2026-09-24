@@ -4,10 +4,9 @@ import { execFile, spawnSync } from 'node:child_process'
 import { inspect } from 'node:util'
 
 import { BOLD, CYAN, DIM, RED, RESET_COLOR, ROOT } from './constants.js'
+import { markedResult, mongoExecArgs } from './mongo.js'
 
-const MONGO_SERVICE = process.env.GRANTS_UI_MONGO_SERVICE || 'mongodb'
 const MONGO_DB = process.env.GRANTS_UI_BACKEND_DB || 'grants-ui-backend'
-const MONGO_COMPOSE_FILE = process.env.GRANTS_UI_MONGO_COMPOSE_FILE || 'compose.infra.yml'
 const STATE_COLLECTION = 'state__grant_application_state'
 const RESULT_MARKER = 'GT_STATE_RESULT:'
 
@@ -55,16 +54,7 @@ export function buildStateCatalogScript() {
  * @param {string} output
  */
 export function parseStateResult(output) {
-  const line = output
-    .split('\n')
-    .map((item) => item.trim())
-    .find((item) => item.startsWith(RESULT_MARKER))
-
-  if (!line) {
-    throw new Error('MongoDB returned no application-state result')
-  }
-
-  const documents = JSON.parse(line.slice(RESULT_MARKER.length))
+  const documents = markedResult(RESULT_MARKER, output, 'MongoDB returned no application-state result')
   if (!Array.isArray(documents) || documents.some((doc) => !doc || typeof doc !== 'object' || Array.isArray(doc))) {
     throw new Error('MongoDB returned an invalid application-state result')
   }
@@ -72,22 +62,7 @@ export function parseStateResult(output) {
 }
 
 function stateCommand(input) {
-  return {
-    args: [
-      'compose',
-      '-f',
-      MONGO_COMPOSE_FILE,
-      'exec',
-      '-T',
-      MONGO_SERVICE,
-      'mongosh',
-      MONGO_DB,
-      '--quiet',
-      '--file',
-      '/dev/stdin'
-    ],
-    input
-  }
+  return { args: mongoExecArgs(MONGO_DB), input }
 }
 
 /**
