@@ -30,7 +30,7 @@ import {
 import { clearQuantityError, showQuantityError } from './quantity-error-display.js'
 import { formatUnit, availableArea } from '../../../shared/unit-format.js'
 import { getAvailabilityLimit } from '../../../shared/availability.js'
-import { requiresWholeNumber } from '../../../shared/unit-types.js'
+import { requiresWholeNumber, UNIT_COUNT } from '../../../shared/unit-types.js'
 
 const UNAVAILABLE_MESSAGE = 'Not compatible with other selected actions.'
 const UNAVAILABLE_CLASS = 'select-actions-unavailable-message'
@@ -155,11 +155,12 @@ export function normaliseAndValidateQuantity(checkbox) {
   }
   quantityInput.value = normaliseQuantityInput(quantityInput.value)
   const rawValue = quantityInput.value
-  const message = getQuantityError(
-    rawValue,
-    getTotalAvailableArea(checkbox),
-    checkbox.getAttribute(AVAILABLE_UNIT_ATTR)
-  )
+  const unit = checkbox.getAttribute(AVAILABLE_UNIT_ATTR)
+  if (rawValue === '' && unit === UNIT_COUNT) {
+    clearQuantityError(quantityInput)
+    return
+  }
+  const message = getQuantityError(rawValue, getTotalAvailableArea(checkbox), unit, checkbox.dataset.displayUnitPlural)
   const displayMessage = message == null ? null : actionSpecificQuantityMessage(checkbox, rawValue, message)
   if (displayMessage) {
     showQuantityError(quantityInput, displayMessage)

@@ -269,22 +269,32 @@ Feature: Action Selection
 
         # RULE: count-based action cannot be zero
         When the user enters "0" ponds for action "WBD1"
-        And continues
-        Then the user should see error "Value must be greater than 0" for action "WBD1"
+        Then the user should see error "Enter a number greater than 0" for action "WBD1"
+        When the user continues
+        Then the user should see error "Enter a number greater than 0" for action "WBD1"
+
+        # RULE: count-based action must be a whole number
+        When the user enters "0.1" ponds for action "WBD1"
+        Then the user should see error "Enter a whole number of ponds, for example 1 or 2" for action "WBD1"
+        When the user continues
+        Then the user should see error "Enter a whole number of ponds, for example 1 or 2" for action "WBD1"
 
         # RULE: count-based action cannot be negative
         When the user enters "-1" ponds for action "WBD1"
-        And continues
-        Then the user should see error "Value must be greater than 0" for action "WBD1"
+        Then the user should see error "Enter a number of ponds, for example 1 or 2" for action "WBD1"
+        When the user continues
+        Then the user should see error "Enter a number of ponds, for example 1 or 2" for action "WBD1"
 
         # RULE: count-based action must be numeric
         When the user enters "abc" ponds for action "WBD1"
-        And continues
-        Then the user should see error "Must be numbers" for action "WBD1"
+        Then the user should see error "Enter a number of ponds, for example 1 or 2" for action "WBD1"
+        When the user continues
+        Then the user should see error "Enter a number of ponds, for example 1 or 2" for action "WBD1"
 
-        # RULE: count-based action cannot be empty
+        # RULE: clearing a count removes the blur error, but submission still requires a quantity
         When the user enters "" ponds for action "WBD1"
-        And continues
+        Then the user should not see an error for action "WBD1"
+        When the user continues
         Then the user should see error "Enter a quantity for Manage ponds: WBD1" for action "WBD1"
 
         # RULE: count-based action can be applied to an eligible land parcel

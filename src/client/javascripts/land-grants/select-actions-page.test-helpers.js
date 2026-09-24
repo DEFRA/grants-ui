@@ -86,6 +86,7 @@ export function checkboxItemHtml({
   description = code,
   checked = false,
   availability,
+  displayUnitPlural,
   requiresMaxQuantity,
   unrestricted = false,
   quantityValue = '',
@@ -97,6 +98,7 @@ export function checkboxItemHtml({
   const hasChosenAreaPanel = !requiresMaxQuantity && availability?.value != null
   const descriptionAttr = ` data-action-description="${description}"`
   const unitAttr = availability ? ` data-available-unit="${availability.unit}"` : ''
+  const displayUnitAttr = displayUnitPlural ? ` data-display-unit-plural="${displayUnitPlural}"` : ''
   const totalAreaAttr = availability ? ` data-total-available-area="${availability.value ?? ''}"` : ''
   const ariaControlsAttr = requiresMaxQuantity || hasChosenAreaPanel ? ` aria-controls="${conditionalId}"` : ''
 
@@ -122,7 +124,7 @@ export function checkboxItemHtml({
 
   return `
     <div class="govuk-checkboxes__item">
-      <input class="govuk-checkboxes__input" id="landAction-${code}" name="landAction" type="checkbox" value="${code}"${checked ? ' checked' : ''}${descriptionAttr}${unitAttr}${totalAreaAttr}${ariaControlsAttr}${errorOnLoadAttr(errorOnLoad)}>
+      <input class="govuk-checkboxes__input" id="landAction-${code}" name="landAction" type="checkbox" value="${code}"${checked ? ' checked' : ''}${descriptionAttr}${unitAttr}${displayUnitAttr}${totalAreaAttr}${ariaControlsAttr}${errorOnLoadAttr(errorOnLoad)}>
       <label for="landAction-${code}">${description}</label>
       ${availabilityHint}
     </div>
@@ -139,11 +141,7 @@ export function chosenAreaFieldHtml({ code, requiresMaxQuantity, chosenArea }) {
   return `<input type="hidden" id="landActionQuantity_${code}" name="landActionQuantity_${code}" value="${chosenArea ?? 0}">`
 }
 
-/**
- * hasErrors stamps data-error-on-load onto every CHECKED item, matching
- * mapActionToViewModel. summaryErrors renders the govukErrorSummary the server
- * puts above the heading, as a sibling of the form inside the content column.
- */
+/** Renders the server summary and form in separate columns, as on the real page. */
 export function setupDom(items, { hasErrors = false, summaryErrors = [] } = {}) {
   const withErrorFlag = items.map((item) => ({ ...item, errorOnLoad: hasErrors && item.checked }))
   const summary = summaryErrors.length
@@ -159,18 +157,22 @@ export function setupDom(items, { hasErrors = false, summaryErrors = [] } = {}) 
        </div>`
     : ''
   document.body.innerHTML = `
-    <div class="govuk-grid-column-three-quarters-from-desktop">
-      ${summary}
-      <h1 class="govuk-heading-l">Select actions for this land parcel</h1>
-      <form method="post">
-        <input type="hidden" name="crumb" value="test-crumb-value">
-        ${withErrorFlag.map(chosenAreaFieldHtml).join('\n')}
-        <div class="govuk-checkboxes" data-module="govuk-checkboxes">
-          ${withErrorFlag.map(checkboxItemHtml).join('\n')}
-        </div>
-        <button type="submit" class="govuk-button" data-module="govuk-button">Continue</button>
-      </form>
-    </div>`
+    <main>
+      <div class="govuk-grid-column-three-quarters-from-desktop">
+        ${summary}
+        <h1 class="govuk-heading-l">Select actions for this land parcel</h1>
+      </div>
+      <div class="govuk-grid-column-full">
+        <form method="post">
+          <input type="hidden" name="crumb" value="test-crumb-value">
+          ${withErrorFlag.map(chosenAreaFieldHtml).join('\n')}
+          <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+            ${withErrorFlag.map(checkboxItemHtml).join('\n')}
+          </div>
+          <button type="submit" class="govuk-button" data-module="govuk-button">Continue</button>
+        </form>
+      </div>
+    </main>`
   return document.querySelector('form')
 }
 
