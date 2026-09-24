@@ -198,9 +198,93 @@ describe('task-list.helper', () => {
         }
       }
       const formModel = { pageMap: buildPageMap(mockModel.page.def.pages) }
+      formModel.pageMap.get(mockModel.page.def.pages[0].path).excludeFromTaskCompletion = true
       const state = { h1: 'some html' }
       expect(getCompletionStats(mockModel, formModel, state).completed).toBe(0)
       expect(getCompletionStats(mockModel, formModel, state).total).toBe(0)
+    })
+
+    it.each([undefined, [], [{ type: 'Html', name: 'result' }]])(
+      'honours a new custom controller capability regardless of decorative components: %s',
+      (components) => {
+        const pageDef = { path: '/custom-result', section: 's1', controller: 'AnotherResultController', components }
+        const model = { page: { def: { pages: [pageDef] } } }
+        const formModel = { pageMap: buildPageMap([pageDef]) }
+        const page = formModel.pageMap.get(pageDef.path)
+        page.excludeFromTaskCompletion = true
+        page.isStateStale = vi.fn().mockResolvedValue(true)
+
+        expect(getCompletionStats(model, formModel, {})).toEqual({ completed: 0, total: 0, isComplete: true })
+        expect(page.isStateStale).not.toHaveBeenCalled()
+      }
+    )
+
+    it.each([true, false, undefined])(
+      'reads task exclusion from the form definition: %s',
+      (excludeFromTaskCompletion) => {
+        const pageDef = {
+          path: '/score-results',
+          section: 's1',
+          controller: 'ScoreResultsTaskPageController',
+          components: []
+        }
+        const model = { page: { def: { pages: [pageDef] } } }
+        const formModel = {
+          pageMap: buildPageMap([pageDef]),
+          def: { metadata: { pageConfig: { [pageDef.path]: { excludeFromTaskCompletion } } } }
+        }
+
+        expect(getCompletionStats(model, formModel, {})).toEqual({
+          completed: 0,
+          total: excludeFromTaskCompletion === true ? 0 : 1,
+          isComplete: excludeFromTaskCompletion === true
+        })
+      }
+    )
+
+    it.each(['controller', 'config'])('keeps required questions in the task count when %s opts out', (source) => {
+      const pageDef = { ...task1Page, controller: 'AnotherResultController' }
+      const model = { page: { def: { pages: [pageDef] } } }
+      const formModel = { pageMap: buildPageMap([pageDef]) }
+      if (source === 'config') {
+        formModel.def = {
+          metadata: { pageConfig: { [pageDef.path]: { excludeFromTaskCompletion: true } } }
+        }
+      } else {
+        formModel.pageMap.get(pageDef.path).excludeFromTaskCompletion = true
+      }
+
+      expect(getCompletionStats(model, formModel, {})).toEqual({ completed: 0, total: 1, isComplete: false })
+      expect(getCompletionStats(model, formModel, { q1: true })).toEqual({ completed: 1, total: 1, isComplete: true })
+    })
+
+    it.each(['controller', 'config'])('honours explicit completion requirements before %s exclusion', (source) => {
+      const pageDef = { path: '/custom-result', section: 's1', controller: 'AnotherResultController', components: [] }
+      const model = { page: { def: { pages: [pageDef] } } }
+      const formModel = {
+        pageMap: buildPageMap([pageDef]),
+        def: {
+          metadata: {
+            tasklist: {
+              completionRequirements: {
+                '/custom-result': { requiresAnyItemWithNonEmptyKey: { collection: 'items', key: 'answer' } }
+              }
+            }
+          }
+        }
+      }
+      if (source === 'config') {
+        formModel.def.metadata.pageConfig = { [pageDef.path]: { excludeFromTaskCompletion: true } }
+      } else {
+        formModel.pageMap.get(pageDef.path).excludeFromTaskCompletion = true
+      }
+
+      expect(getCompletionStats(model, formModel, {})).toEqual({ completed: 0, total: 1, isComplete: false })
+      expect(getCompletionStats(model, formModel, { items: { item1: { answer: { value: 1 } } } })).toEqual({
+        completed: 1,
+        total: 1,
+        isComplete: true
+      })
     })
 
     it('should treat a dedicated-controller page with decorative components as an applicable, not-completed task', () => {

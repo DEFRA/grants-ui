@@ -5,6 +5,7 @@ import { loadState, saveState } from './cli-state.js'
 import { getRunningComposeFiles, runCompose, tailscaleComposeArgs } from './docker.js'
 import { getSelectedFormDefIds } from './form-defs.js'
 import { disableTailscaleServe, enableTailscaleServe } from './tailscale-serve.js'
+import { revokeAllTailscaleSharesSync } from './tailscale-share.js'
 
 export function tailscaleEnabled(files) {
   return !!files?.some((f) => f.endsWith('compose.tailscale.yml'))
@@ -12,6 +13,10 @@ export function tailscaleEnabled(files) {
 
 export function tailscaleStatusSegment(url) {
   return `${BLUE}Tailscale: ${url}${RESET_COLOR}`
+}
+
+export function tailscaleSharesStatusSegment(count) {
+  return `${BLUE}Shares: ${count} active${RESET_COLOR}`
 }
 
 function recreateAuthAndUi(args, dryRun) {
@@ -39,6 +44,13 @@ export function cmdTailscale(enabled, dryRun = false) {
   const localServices = state?.localServices ?? []
   let created = []
   try {
+    // A device share remains valid independently of Serve. Revoke our shares
+    // before removing the app's external surface, rather than leaving a link
+    // that becomes unexpectedly useful after a later re-enable.
+    if (!enabled && revokeAllTailscaleSharesSync(dryRun) !== 0) {
+      console.error('Tailscale mode remains enabled because one or more shares could not be revoked.')
+      return 1
+    }
     // Selecting the mode before startup only saves the choice. `up` configures Serve.
     if (files && enabled) created = enableTailscaleServe(dryRun)
     // Reapply even if the UI label already matches: an earlier partial failure

@@ -180,6 +180,40 @@ The service supports several specialized page types for different stages of the 
 - **Controller**: `CheckResponsesPageController`
 - **Example**: [Example Grant – Summary page (/summary)](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml)
 
+#### Additional Check answers sections
+
+Use `config.additionalSections` on a `CheckResponsesPageController` page to display read-only values already present in
+form state. These values can come from custom pages or integrations; they do not need to be derived answers or use
+`withDerivedState`.
+
+```yaml
+- title: Check your answers
+  path: /summary
+  controller: CheckResponsesPageController
+  config:
+    additionalSections:
+      - title: Payment summary
+        items:
+          - title: Annual payment for all parcels
+            stateValue: totalPayment
+      - page: /score-results
+        items:
+          - title: Score
+            stateValue: additionalAnswers.scoreResults
+```
+
+The form-definition loader exposes the page's `config:` block as `metadata.pageConfig[path]` at runtime.
+
+- `items[].title` labels the row; `items[].stateValue` is a dot-separated path into form state. Missing or null values
+  display as `Not provided`; zero values are preserved. Rows do not add Change links.
+- `title` creates a separate summary section. Without a title, supply `page` to append rows to that page's owning section,
+  creating the section in form-section order if needed. Unknown pages or section references are ignored in this case.
+- `page` optionally ties visibility to a page in the engine's `context.relevantPages`. Rows for excluded pages are omitted,
+  even if their values remain in state. Use slash-prefixed paths such as `/score-results`.
+
+This configuration displays saved values; it does not calculate or refresh them. For local calculations that need freshness
+checks, configure `derivedStatePages` separately as described in [Derived answers on custom pages](DERIVED-STATE-PAGES.md#check-answers-configuration).
+
 ### Declaration Pages
 
 - **Purpose**: Final confirmation and submission
@@ -385,6 +419,24 @@ config:
 
 The link names are case-sensitive. Configure absolute HTTPS URLs pointing to the published production guidance, not relative journey URLs. If a URL is omitted, the consent text remains without a link. This configuration does not affect grouped-action hints or the consent-required page.
 
+### Task completion participation
+
+Set `config.excludeFromTaskCompletion: true` when a result or interstitial page should not count towards task completion:
+
+```yaml
+config:
+  excludeFromTaskCompletion: true
+```
+
+The task helper reads this directly from `metadata.pageConfig`. It excludes
+the page from completion counts and task-completion requirements; it does not remove the page from the grant journey.
+The setting applies only when the page has no required question components and no configured completion requirement
+under `metadata.tasklist.completionRequirements`. Those requirements always retain their existing completion semantics.
+
+Default guidance pages and guidance-only `TaskPageController` pages remain excluded. Custom result pages opt in through
+their form definitions; Check answers and Declaration remain tasks. A custom controller's exclusion does not depend on
+whether it renders Html components or uses a custom view.
+
 ## Authentication & Authorization
 
 ### Tactical grants landing page
@@ -458,7 +510,7 @@ metadata:
         content: |
           <p class="govuk-body">Your progress has been saved.</p>
           <p class="govuk-body">You do not have permission to submit the application.</p>
-          <p class="govuk-body">Contact an authorised person from your business to review and submit the application.</p>
+          <p class="govuk-body">Contact a person from your business to review and submit the application.</p>
         returnUrl: /summary
         returnText: Return to summary
       csAgreements:
@@ -466,7 +518,7 @@ metadata:
         content: |
           <p class="govuk-body">Your progress has been saved.</p>
           <p class="govuk-body">You do not have permission to submit the claim.</p>
-          <p class="govuk-body">Contact an authorised person from your business to review and submit the claim.</p>
+          <p class="govuk-body">Contact a person from your business to review and submit the claim.</p>
         returnUrl: /claim-summary
         returnText: Return to summary
 ```

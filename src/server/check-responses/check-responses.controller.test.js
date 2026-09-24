@@ -1,8 +1,14 @@
 import { vi } from 'vitest'
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 import CheckResponsesPageController from '~/src/server/check-responses/check-responses.controller.js'
-import { mockContext, mockHapiResponseToolkit, mockSimpleRequest } from '~/src/__mocks__/hapi-mocks.js'
+import {
+  mockContext as createMockContext,
+  mockHapiResponseToolkit,
+  mockSimpleRequest
+} from '~/src/__mocks__/hapi-mocks.js'
 import { getTaskPageBackLink } from '../task-list/task-list.helper.js'
+
+const mockContext = (overrides = {}) => createMockContext({ relevantPages: [], ...overrides })
 
 const buildViewModel = (overrides = {}) => ({
   serviceUrl: '/service',
@@ -34,8 +40,20 @@ vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () =>
         this.pageDef = pageDef
       }
 
+      get path() {
+        return this.pageDef.path
+      }
+
       getSummaryViewModel() {
         return JSON.parse(JSON.stringify(defaultViewModel))
+      }
+
+      getRelevantPath() {
+        return this.pageDef.path
+      }
+
+      makeGetRouteHandler() {
+        return (request, context, h) => h.view(this.viewName, this.getSummaryViewModel(request, context))
       }
 
       getHref(path) {
@@ -91,6 +109,115 @@ describe('CheckResponsesPageController', () => {
     it('should not set section when pageDef has no section', () => {
       const ctrl = new CheckResponsesPageController(mockModel, { path: '/x', title: 'x' })
       expect(ctrl.section).toBeUndefined()
+    })
+  })
+
+  describe('derived state navigation', () => {
+    let derivedPage
+    let context
+    let h
+
+    beforeEach(() => {
+      derivedPage = { path: '/total-estimated-cost', isStateStale: vi.fn().mockReturnValue(true) }
+      mockModel.def.metadata = {
+        pageConfig: { [mockPageDef.path]: { derivedStatePages: [derivedPage.path] } }
+      }
+      controller = new CheckResponsesPageController(mockModel, mockPageDef)
+      context = mockContext({ state: {}, relevantPages: [derivedPage] })
+      h = mockHapiResponseToolkit()
+    })
+
+    it.each([
+      ['get', 'makeGetRouteHandler', 302],
+      ['post', 'makePostRouteHandler', 303]
+    ])('redirects a stale %s request with an explicit return URL', async (method, factory, status) => {
+      const request = mockSimpleRequest({ method })
+      const response = await controller[factory]()(request, context, h)
+
+      expect(h.redirect).toHaveBeenCalledWith('/test-form/total-estimated-cost?returnUrl=%2Ftest-form%2Fcheck-answers')
+      expect(response.code).toHaveBeenCalledWith(status)
+      expect(derivedPage.isStateStale).toHaveBeenCalledWith(request, context)
+    })
+
+    it('does not check or redirect to an excluded derived page', async () => {
+      context.relevantPages = []
+      mockModel.pageMap = new Map([[derivedPage.path, derivedPage]])
+
+      await controller.makeGetRouteHandler()(mockSimpleRequest(), context, h)
+
+      expect(derivedPage.isStateStale).not.toHaveBeenCalled()
+      expect(h.redirect).not.toHaveBeenCalled()
+      expect(h.view).toHaveBeenCalled()
+    })
+
+    it('renders Check answers when derived state is current', async () => {
+      derivedPage.isStateStale.mockResolvedValue(false)
+
+      await controller.makeGetRouteHandler()(mockSimpleRequest(), context, h)
+
+      expect(h.redirect).not.toHaveBeenCalled()
+      expect(h.view).toHaveBeenCalled()
+    })
+
+    it.each([
+      ['get', 'makeGetRouteHandler'],
+      ['post', 'makePostRouteHandler']
+    ])('awaits an automatic refresh before continuing a %s request', async (method, factory) => {
+      const refreshed = { additionalAnswers: { total: 500 } }
+      derivedPage.derivedState = { requiresAcknowledgement: false }
+      derivedPage.isStateStale.mockResolvedValue(true)
+      derivedPage.refreshState = vi.fn().mockResolvedValue(refreshed)
+      controller.getNextPath = vi.fn().mockReturnValue('/declaration')
+      controller.proceed = vi.fn()
+
+      await controller[factory]()(mockSimpleRequest({ method }), context, h)
+
+      expect(context.state).toBe(refreshed)
+      expect(derivedPage.refreshState).toHaveBeenCalledTimes(1)
+      expect(h.redirect).not.toHaveBeenCalled()
+      if (method === 'get') {
+        expect(h.view).toHaveBeenCalled()
+      } else {
+        expect(controller.proceed).toHaveBeenCalled()
+      }
+    })
+
+    it('uses the refreshed state when checking the next configured calculation', async () => {
+      const refreshed = { additionalAnswers: { total: 500 } }
+      derivedPage.derivedState = { requiresAcknowledgement: false }
+      derivedPage.refreshState = vi.fn().mockResolvedValue(refreshed)
+      const dependent = {
+        path: '/dependent-result',
+        isStateStale: vi.fn((_request, ctx) => ctx.state.additionalAnswers.total === 500)
+      }
+      context.relevantPages.push(dependent)
+      controller.derivedStatePages.push(dependent.path)
+
+      await controller.makeGetRouteHandler()(mockSimpleRequest({ method: 'get' }), context, h)
+
+      expect(h.redirect).toHaveBeenCalledWith('/test-form/dependent-result?returnUrl=%2Ftest-form%2Fcheck-answers')
+    })
+
+    it('does not render or proceed when automatic calculation fails', async () => {
+      derivedPage.derivedState = { requiresAcknowledgement: false }
+      derivedPage.refreshState = vi.fn().mockRejectedValue(new Error('Calculation failed'))
+
+      await expect(controller.makeGetRouteHandler()(mockSimpleRequest(), context, h)).rejects.toThrow(
+        'Calculation failed'
+      )
+      expect(h.view).not.toHaveBeenCalled()
+      expect(h.redirect).not.toHaveBeenCalled()
+      expect(context.state).toEqual({})
+    })
+
+    it('preserves forced preview access', async () => {
+      context.isForceAccess = true
+
+      await controller.makeGetRouteHandler()(mockSimpleRequest(), context, h)
+
+      expect(derivedPage.isStateStale).not.toHaveBeenCalled()
+      expect(h.redirect).not.toHaveBeenCalled()
+      expect(h.view).toHaveBeenCalled()
     })
   })
 
@@ -314,6 +441,179 @@ describe('CheckResponsesPageController', () => {
         summaryList: {
           rows: [{ key: { text: 'Annual payment for all parcels' }, value: { text: '£374.00' } }]
         }
+      })
+    })
+
+    it.each([
+      ['a calculated cost', { additionalAnswers: { totalEstimatedCost: 800 } }, 800],
+      ['a zero cost', { additionalAnswers: { totalEstimatedCost: 0 } }, 0],
+      ['a missing parent', {}, 'Not provided'],
+      ['a null parent', { additionalAnswers: null }, 'Not provided'],
+      ['a missing value', { additionalAnswers: {} }, 'Not provided'],
+      ['a null value', { additionalAnswers: { totalEstimatedCost: null } }, 'Not provided']
+    ])('should resolve a nested state path with %s', (_description, state, expected) => {
+      const ctrl = buildControllerWithAdditionalSections([
+        {
+          title: 'Cost',
+          items: [{ title: 'Total Estimated Cost', stateValue: 'additionalAnswers.totalEstimatedCost' }]
+        }
+      ])
+
+      const result = ctrl.getSummaryViewModel(mockRequest, mockContext({ state }))
+
+      expect(result.checkAnswers[1]).toEqual({
+        title: { text: 'Cost' },
+        summaryList: {
+          rows: [{ key: { text: 'Total Estimated Cost' }, value: { text: expected } }]
+        }
+      })
+    })
+
+    describe('owning page sections', () => {
+      const costsSection = { name: 'estimated-costs', title: 'Estimated costs' }
+      const otherSection = { name: 'other', title: 'Other answers' }
+      const costItem = { title: 'Total Estimated Cost', stateValue: 'additionalAnswers.totalEstimatedCost' }
+      const costRow = { key: { text: 'Total Estimated Cost' }, value: { text: 800 } }
+      const state = { additionalAnswers: { totalEstimatedCost: 800 } }
+      const mockContext = (overrides = {}) => createMockContext({ relevantPages: mockModel.def.pages, ...overrides })
+
+      const mockSummary = (sections) => {
+        vi.spyOn(SummaryPageController.prototype, 'getSummaryViewModel').mockReturnValue({
+          details: sections.map((section) => ({
+            name: section?.name,
+            items: [{ name: 'existingAnswer', page: { section, path: '/another-page' } }]
+          })),
+          checkAnswers: sections.map((section) => ({
+            title: section ? { text: section.title } : undefined,
+            summaryList: { rows: [{ key: { text: 'Existing answer' }, value: { text: 'Yes' } }] }
+          }))
+        })
+      }
+
+      beforeEach(() => {
+        mockModel.sections = [costsSection, otherSection]
+        mockModel.getSection = vi.fn((name) => mockModel.sections.find((section) => section.name === name))
+        mockModel.def.pages = [{ path: '/total-estimated-cost', section: 'estimated-costs' }]
+        mockSummary([costsSection, otherSection])
+      })
+
+      it.each(['total-estimated-cost', '/total-estimated-cost'])(
+        'should append to the owning section for page %s',
+        (page) => {
+          const ctrl = buildControllerWithAdditionalSections([{ page, items: [costItem] }])
+
+          const result = ctrl.getSummaryViewModel(mockRequest, mockContext({ state }))
+
+          expect(result.checkAnswers).toHaveLength(2)
+          expect(result.checkAnswers[0].title).toEqual({ text: 'Estimated costs' })
+          expect(result.checkAnswers[0].summaryList.rows).toHaveLength(2)
+          expect(result.checkAnswers[0].summaryList.rows[1]).toEqual(costRow)
+          expect(result.checkAnswers[1].summaryList.rows).toHaveLength(1)
+        }
+      )
+
+      it('should create a missing section in form order and reuse it for subsequent entries', () => {
+        mockSummary([otherSection])
+        const ctrl = buildControllerWithAdditionalSections([
+          { title: 'Separate section', items: [costItem] },
+          { page: 'total-estimated-cost', items: [costItem] },
+          { page: 'total-estimated-cost', items: [costItem] },
+          { page: 'other-page', items: [costItem] }
+        ])
+        mockModel.def.pages.push({ path: '/other-page', section: 'other' })
+
+        const result = ctrl.getSummaryViewModel(mockRequest, mockContext({ state }))
+
+        expect(result.checkAnswers.map((section) => section.title.text)).toEqual([
+          'Estimated costs',
+          'Other answers',
+          'Separate section'
+        ])
+        expect(result.checkAnswers[0].summaryList.rows).toEqual([costRow, costRow])
+        expect(result.checkAnswers[1].summaryList.rows[1]).toEqual(costRow)
+      })
+
+      it('should create a section when there are no existing answers', () => {
+        mockSummary([])
+        const ctrl = buildControllerWithAdditionalSections([{ page: 'total-estimated-cost', items: [costItem] }])
+
+        const result = ctrl.getSummaryViewModel(mockRequest, mockContext({ state }))
+
+        expect(result.checkAnswers).toEqual([{ title: { text: 'Estimated costs' }, summaryList: { rows: [costRow] } }])
+      })
+
+      it('should match sections identified by ID instead of name', () => {
+        const section = { id: 'cost-section-id', title: 'Estimated costs' }
+        mockModel.sections = [section]
+        mockModel.getSection = vi.fn((id) => mockModel.sections.find((candidate) => candidate.id === id))
+        mockModel.def.pages[0].section = section.id
+        mockSummary([section])
+        const ctrl = buildControllerWithAdditionalSections([{ page: 'total-estimated-cost', items: [costItem] }])
+
+        const result = ctrl.getSummaryViewModel(mockRequest, mockContext({ state }))
+
+        expect(result.checkAnswers).toHaveLength(1)
+        expect(result.checkAnswers[0].summaryList.rows[1]).toEqual(costRow)
+      })
+
+      it('should append unsectioned page values to the unsectioned answers', () => {
+        delete mockModel.def.pages[0].section
+        mockSummary([costsSection, undefined])
+        const ctrl = buildControllerWithAdditionalSections([{ page: 'total-estimated-cost', items: [costItem] }])
+
+        const result = ctrl.getSummaryViewModel(mockRequest, mockContext({ state }))
+
+        expect(result.checkAnswers).toHaveLength(2)
+        expect(result.checkAnswers[0].summaryList.rows).toHaveLength(1)
+        expect(result.checkAnswers[1].summaryList.rows[1]).toEqual(costRow)
+      })
+
+      it('should keep an explicit title as a separate section even when page is supplied', () => {
+        const ctrl = buildControllerWithAdditionalSections([
+          { title: 'Cost', page: 'total-estimated-cost', items: [costItem] }
+        ])
+
+        const result = ctrl.getSummaryViewModel(mockRequest, mockContext({ state }))
+
+        expect(result.checkAnswers).toHaveLength(3)
+        expect(result.checkAnswers[0].summaryList.rows).toHaveLength(1)
+        expect(result.checkAnswers[2]).toEqual({ title: { text: 'Cost' }, summaryList: { rows: [costRow] } })
+      })
+
+      it.each([undefined, 'Cost'])('omits an excluded owning page with title %s', (title) => {
+        mockSummary([otherSection])
+        const ctrl = buildControllerWithAdditionalSections([{ title, page: 'total-estimated-cost', items: [costItem] }])
+
+        const result = ctrl.getSummaryViewModel(mockRequest, mockContext({ state, relevantPages: [] }))
+
+        expect(result.checkAnswers).toEqual([
+          {
+            title: { text: 'Other answers' },
+            summaryList: { rows: [{ key: { text: 'Existing answer' }, value: { text: 'Yes' } }] }
+          }
+        ])
+      })
+
+      it('does not append excluded page values to an existing section', () => {
+        const ctrl = buildControllerWithAdditionalSections([{ page: 'total-estimated-cost', items: [costItem] }])
+
+        const result = ctrl.getSummaryViewModel(mockRequest, mockContext({ state, relevantPages: [] }))
+
+        expect(result.checkAnswers).toHaveLength(2)
+        expect(result.checkAnswers.every((answer) => answer.summaryList.rows.length === 1)).toBe(true)
+      })
+
+      it.each([
+        ['unknown page', '/missing-page', 'estimated-costs'],
+        ['unknown section', '/total-estimated-cost', 'missing-section']
+      ])('should skip an %s reference', (_description, path, section) => {
+        mockModel.def.pages = [{ path, section }]
+        const ctrl = buildControllerWithAdditionalSections([{ page: 'total-estimated-cost', items: [costItem] }])
+
+        const result = ctrl.getSummaryViewModel(mockRequest, mockContext({ state }))
+
+        expect(result.checkAnswers).toHaveLength(2)
+        expect(result.checkAnswers.every((answer) => answer.summaryList.rows.length === 1)).toBe(true)
       })
     })
 

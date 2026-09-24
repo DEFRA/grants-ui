@@ -8,7 +8,7 @@ const PROXIES = [
 ]
 
 export function getTailscaleHostname() {
-  const hostname = tailscaleJson(['status', '--json']).Self?.DNSName?.replace(/\.$/, '')
+  const hostname = getTailscaleStatus().Self?.DNSName?.replace(/\.$/, '')
   if (!hostname || !/^[a-z0-9-]+(?:\.[a-z0-9-]+)+\.ts\.net$/.test(hostname)) {
     throw new Error('Connect Tailscale so gt can determine this host’s full .ts.net hostname.')
   }
@@ -18,14 +18,52 @@ export function getTailscaleHostname() {
   return hostname
 }
 
+/** Return the local daemon status for callers that need the node identity. */
+export function getTailscaleStatus() {
+  return tailscaleJson(['status', '--json'])
+}
+
+/**
+ * Get the connected node identity accepted by Tailscale's device-invites API.
+ * The local CLI is the authority for which machine gt is currently serving.
+ */
+export function getConnectedTailscaleNode() {
+  const status = getTailscaleStatus()
+  const hostname = status.Self?.DNSName?.replace(/\.$/, '')
+  const nodeId = status.Self?.ID ?? status.Self?.NodeID
+  if (status.BackendState !== 'Running' || !hostname || !nodeId) {
+    throw new Error('Connect Tailscale and retry.')
+  }
+  return { hostname, nodeId }
+}
+
+/**
+ * Get the current tailnet name and IPv4 address for a narrowly-scoped policy
+ * host alias. These come from the local daemon, not user input.
+ */
+export function getConnectedTailscalePolicyTarget() {
+  const status = getTailscaleStatus()
+  const tailnet = status.CurrentTailnet?.Name ?? status.TailnetName
+  const ipv4 = status.TailscaleIPs?.find((ip) => /^100\./.test(String(ip)))
+  if (status.BackendState !== 'Running' || !tailnet || !ipv4) {
+    throw new Error('Connect Tailscale so gt can determine this tailnet and machine IPv4 address.')
+  }
+  return { tailnet, ipv4: String(ipv4) }
+}
+
 /** Check the local Tailscale service and CLI before drawing the interactive menu. */
 export function getTailscaleAvailability() {
   const result = spawnSync('tailscale', ['status', '--json'], { encoding: 'utf8', timeout: 10000 })
   /** @type {NodeJS.ErrnoException | undefined} */
   const error = result.error
-  if (error?.code === 'ENOENT') return { available: false, description: 'Install Tailscale CLI' }
-  if (result.error || result.status !== 0) return { available: false, description: 'Install Tailscale' }
-  return { available: true, description: '' }
+  if (error?.code === 'ENOENT') return { available: false, running: false, description: 'Install Tailscale CLI' }
+  if (result.error || result.status !== 0) return { available: false, running: false, description: 'Install Tailscale' }
+  const status = JSON.parse(result.stdout || '{}')
+  return {
+    available: true,
+    running: status.BackendState === 'Running',
+    description: status.BackendState === 'Running' ? '' : 'Connect Tailscale'
+  }
 }
 
 function tailscaleJson(args) {
@@ -85,7 +123,7 @@ function proxyExists(config, hostname, proxy) {
 export function enableTailscaleServe(dryRun = false) {
   const hostname = dryRun ? 'your-machine.your-tailnet.ts.net' : getTailscaleHostname()
   if (!dryRun) {
-    const status = tailscaleJson(['status', '--json'])
+    const status = getTailscaleStatus()
     if (status.BackendState !== 'Running' || status.Self?.DNSName?.replace(/\.$/, '') !== hostname) {
       throw new Error('Connect Tailscale and retry.')
     }

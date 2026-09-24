@@ -152,24 +152,25 @@ function isMapSelectPageCompleted(pageDef, state, formModel) {
   return hasSavedLandParcelActions(state)
 }
 
-const GENERIC_TASK_PAGE_CONTROLLERS = new Set([undefined, 'TaskPageController'])
-
 /**
- * Status for a page with no question components and no completion requirement.
- * Only a plain/default task page (no dedicated controller) with non-question
- * components (e.g. Html-only guidance) is a genuine non-task interstitial -
- * excluded from the count (null).
- * A page with a dedicated controller (e.g. CheckResponsesPageController,
- * DeclarationPageController) is always a real task, even if it also renders
- * decorative components - kept as not-yet-completed (false). Likewise a page
- * with no components field at all.
+ * Status for a page with no required question components and no completion requirement.
+ * Form definitions can exclude such a page with config.excludeFromTaskCompletion,
+ * independently of calculation behaviour. Controller exclusion capabilities are also honoured.
+ * Default pages containing only guidance are also excluded. Other custom pages
+ * remain outstanding tasks, including Check answers and Declaration.
+ * Exclusion says nothing about derived-answer freshness; Check answers checks that separately.
  * @param {object} pageDef - The page definition
+ * @param {object} formModel - The resolved form model
  * @returns {boolean | null}
  */
-function emptyComponentsStatus(pageDef) {
-  const isGuidanceOnlyInterstitial =
-    GENERIC_TASK_PAGE_CONTROLLERS.has(pageDef.controller) && (pageDef.components?.length ?? 0) > 0
-  return isGuidanceOnlyInterstitial ? null : false
+function emptyComponentsStatus(pageDef, formModel) {
+  const page = formModel.pageMap.get(pageDef.path)
+  const configured = formModel.def?.metadata?.pageConfig?.[pageDef.path]
+  const isExcluded =
+    configured?.excludeFromTaskCompletion === true ||
+    page?.excludeFromTaskCompletion === true ||
+    (!pageDef.controller && (pageDef.components?.length ?? 0) > 0)
+  return isExcluded ? null : false
 }
 
 /**
@@ -200,7 +201,7 @@ function isTaskPageCompleted(pageDef, state, formModel) {
   const componentNames = getPageComponentNames(pageDef, formModel)
 
   if (componentNames.length === 0 && !getCompletionRequirement(pageDef, formModel)) {
-    return emptyComponentsStatus(pageDef)
+    return emptyComponentsStatus(pageDef, formModel)
   }
 
   if (!isPageConditionMet(pageDef, state, formModel)) {

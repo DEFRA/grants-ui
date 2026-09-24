@@ -22,9 +22,28 @@ export function validateArgs(argv) {
     'state'
   ])
   knownCmds.add('tailscale')
+  knownCmds.add('share')
+  knownCmds.add('setup')
   if (argv[0] === 'tailscale') {
     if (!['on', 'off'].includes(argv[1])) {
       console.error('Usage: gt tailscale on|off [--dry-run]')
+      process.exit(1)
+    }
+    knownCmds.add(argv[1])
+  }
+  if (argv[0] === 'share') {
+    if (!['create', 'list', 'revoke', 'revoke-all'].includes(argv[1]) || (argv[1] === 'revoke' && !argv[2])) {
+      console.error('Usage: gt share create|list|revoke <share-id>|revoke-all [--dry-run]')
+      process.exit(1)
+    }
+    knownCmds.add(argv[1])
+    if (argv[1] === 'revoke') {
+      knownCmds.add(argv[2])
+    }
+  }
+  if (argv[0] === 'setup') {
+    if (argv[1] !== 'tailscale-sharing') {
+      console.error('Usage: gt setup tailscale-sharing [--apply] [--dry-run]')
       process.exit(1)
     }
     knownCmds.add(argv[1])
@@ -58,6 +77,7 @@ export function validateArgs(argv) {
     '--sbi',
     '--grant-version',
     '--json',
+    '--apply',
     ...LOCAL_SERVICES.map((s) => `--local-${s.key}`)
   ])
 

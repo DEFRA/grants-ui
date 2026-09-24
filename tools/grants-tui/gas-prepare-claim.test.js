@@ -14,7 +14,13 @@ const application = {
 }
 
 test('dry run validates the ready application and exposes the three lifecycle events', () => {
-  const spawn = vi.fn().mockReturnValue({ status: 0, stdout: `GT_GAS_STATE_RESULT:${JSON.stringify(application)}\n` })
+  const spawn = vi
+    .fn()
+    .mockReturnValueOnce({ status: 0, stdout: `GT_GAS_STATE_RESULT:${JSON.stringify(application)}\n` })
+    .mockReturnValueOnce({
+      status: 0,
+      stdout: 'GT_GAS_STATE_RESULT:"cloud.defra.local.fg-cw-backend.case.status.updated"\n'
+    })
   const result = prepareGasClaim(application, { spawn, dryRun: true })
 
   expect(result.totalHectares).toBe(50)
@@ -25,10 +31,13 @@ test('dry run validates the ready application and exposes the three lifecycle ev
     'PHASE_PRE_AWARD:STAGE_AGREEMENT_WITH_APPLICANT:STATUS_AGREEMENT_OFFERED'
   )
   expect(result.events.accepted.data).toMatchObject({ agreementNumber: 'WMP1', status: 'accepted' })
+  expect(result.events.offered.type).toBe('cloud.defra.local.fg-cw-backend.case.status.updated')
+  expect(result.events.completed.type).toBe(result.events.offered.type)
+  expect(result.events.accepted.type).toBe('io.onsite.agreement.status.updated')
   expect(result.events.completed.data.currentStatus).toBe(
     'PHASE_PRE_AWARD:STAGE_APPLICATION_COMPLETED:STATUS_APPLICATION_COMPLETED'
   )
-  expect(spawn).toHaveBeenCalledTimes(1)
+  expect(spawn).toHaveBeenCalledTimes(2)
 })
 
 test('claim target is the configured prepare-claim position', () => {
