@@ -79,7 +79,7 @@ When('(the user )deselects action {string}', async function (action) {
   }
 })
 
-When('(the user )enters {string} hectares for action {string}', async function (quantity, action) {
+When('(the user )enters {string} {word} for action {string}', async function (quantity, _unit, action) {
   const input = this.page.locator(`#landActionQuantity_${action}`)
   await input.fill(quantity)
   await input.blur()
@@ -88,7 +88,15 @@ When('(the user )enters {string} hectares for action {string}', async function (
   )
 })
 
-Then('(the user )should see {string} for action {string}', async function (errorText, action) {
+Then('(the user )should see unit {string} for action {string}', async function (unit, action) {
+  const input = this.page.locator(`#landActionQuantity_${action}`)
+  await expect(input.locator('xpath=following-sibling::div[contains(@class, "govuk-input__suffix")]')).toHaveText(unit)
+})
+
+Then('(the user )should see error {string} for action {string}', async function (errorText, action) {
+  await expect(this.page.locator(`.govuk-error-summary__list a[href="#landActionQuantity_${action}"]`)).toContainText(
+    errorText
+  )
   await expect(this.page.locator(`#landActionQuantity_${action}-error`)).toContainText(errorText)
 })
 
@@ -102,6 +110,12 @@ Then('(the user )should be able to select action {string}', async function (acti
 
 Then('(the user )should not see action {string}', async function (action) {
   await expect(this.page.locator(`//input[@type='checkbox'][@value='${action}']`)).toBeHidden()
+})
+
+Then('(the user )should not see the following actions', async function (dataTable) {
+  for (const [action] of dataTable.raw()) {
+    await expect(this.page.locator(`//input[@type='checkbox'][@value='${action}']`)).toHaveCount(0)
+  }
 })
 
 When(
