@@ -3,7 +3,7 @@ import { vi } from 'vitest'
 import MapSelectPageController from './map-select-page.controller.js'
 import { setupControllerMocks } from '~/src/__mocks__/controller-mocks.js'
 import { fetchActionsForParcel } from '~/src/server/land-grants/services/land-grants.service.js'
-import { isNoActionsMockEnabled } from '~/src/server/dev-tools/mock-overrides.js'
+import { isNoActionsMockEnabled } from '~/src/server/common/helpers/mock-overrides.js'
 import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
 import { log, error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
@@ -32,7 +32,7 @@ vi.mock('~/src/server/land-grants/services/land-grants.service.js', () => ({
   fetchActionsForParcel: vi.fn()
 }))
 
-vi.mock('~/src/server/dev-tools/mock-overrides.js', () => ({
+vi.mock('~/src/server/common/helpers/mock-overrides.js', () => ({
   isNoActionsMockEnabled: vi.fn().mockReturnValue(false)
 }))
 

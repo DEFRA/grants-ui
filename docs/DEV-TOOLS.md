@@ -6,7 +6,7 @@ Development-only tools and routes for testing and debugging. Automatically enabl
 
 Development tools are controlled by the `DEV_TOOLS_ENABLED` environment variable (default: `true` in development, `false` in production).
 
-Routes are only registered when `devTools.enabled` is `true` **and** `NODE_ENV !== 'production'` **and** `ENVIRONMENT=local` (see `isDevToolsEnabled()` in `src/server/dev-tools/dev-tools-enabled.js`).
+Routes are only registered when `devTools.enabled` is `true` **and** `NODE_ENV !== 'production'` **and** `ENVIRONMENT=local` (see `isDevToolsEnabled()` in `src/server/common/helpers/dev-tools-enabled.js`).
 
 Implementation lives in `src/server/dev-tools/` and is only registered when all of the above conditions are met.
 
@@ -207,7 +207,7 @@ The mock below is still useful for forcing the state on _any_ parcel and any CRN
 gt journey grasslands --mock-no-actions --headed    # or pick "Mock no eligible actions" in the TUI
 ```
 
-It sets a `dev_mock_no_actions=1` cookie, which `MapSelectPageController` honours by treating every selected parcel as having no eligible actions. Because it is request-scoped it needs no restart and works on either land-grants stack. It is read through `isNoActionsMockEnabled()` (`src/server/dev-tools/mock-overrides.js`), which returns `false` whenever `devTools.enabled` is off — so the cookie is inert in a deployed environment.
+It sets a `dev_mock_no_actions=1` cookie, which `MapSelectPageController` honours by treating every selected parcel as having no eligible actions. Because it is request-scoped it needs no restart and works on either land-grants stack. It is read through `isNoActionsMockEnabled()` (`src/server/common/helpers/mock-overrides.js`), which returns `false` whenever `devTools.enabled` is off — so the cookie is inert in a deployed environment.
 
 The run is _expected_ to stop on `/select-land-parcel`; the driver prints the error summary and exits non-zero, which is the check.
 

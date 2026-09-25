@@ -1,4 +1,4 @@
-import { isDevToolsEnabled } from '~/src/server/dev-tools/dev-tools-enabled.js'
+import { isDevToolsEnabled } from './dev-tools-enabled.js'
 
 /**
  * Make the app pretend the selected land parcel has no eligible actions.

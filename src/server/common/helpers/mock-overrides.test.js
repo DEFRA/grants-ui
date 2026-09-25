@@ -1,9 +1,9 @@
 // @ts-nocheck
 import { vi } from 'vitest'
 import { isNoActionsMockEnabled, NO_ACTIONS_MOCK_COOKIE } from './mock-overrides.js'
-import { isDevToolsEnabled } from '~/src/server/dev-tools/dev-tools-enabled.js'
+import { isDevToolsEnabled } from './dev-tools-enabled.js'
 
-vi.mock('~/src/server/dev-tools/dev-tools-enabled.js', () => ({ isDevToolsEnabled: vi.fn() }))
+vi.mock('./dev-tools-enabled.js', () => ({ isDevToolsEnabled: vi.fn() }))
 
 describe('isNoActionsMockEnabled', () => {
   beforeEach(() => {
