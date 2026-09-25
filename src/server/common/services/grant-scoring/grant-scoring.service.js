@@ -9,7 +9,7 @@ const SCORING_SERVICE_URL = config.get('scoring.serviceUrl')
 /**
  * Invokes a GET action on the Grant Scoring Service
  * @param {string} grantCode - Grant code
- * @param {import('../../request-pipeline/types.js').PipelineRequest} request - The Hapi request object.
+ * @param {import('@defra/forms-engine-plugin/types').AnyFormRequest} request
  * @param {Record<string, unknown>} [queryParams] - Optional query parameters
  * @returns {Promise<any>} - Promise that resolves to the response JSON
  * @throws {GrantScoringServiceApiError} - If the API request fails
@@ -113,7 +113,7 @@ async function handleResponse(response, grantCode) {
 }
 
 /**
- * @param {import('../../request-pipeline/types.js').PipelineRequest} request - The Hapi request object.
+ * @param {import('@defra/forms-engine-plugin/types').AnyFormRequest} request
  * @param {string} url
  * @param {unknown} error
  */
@@ -135,7 +135,7 @@ function logScoringUpstreamError(request, url, error) {
  * Makes a request to the Grant Scoring Service API
  * @param {string} url - API endpoint URL
  * @param {string} grantCode - Grant code for error context
- * @param {import('../../request-pipeline/types.js').PipelineRequest} request - The Hapi request object.
+ * @param {import('@defra/forms-engine-plugin/types').AnyFormRequest} request
  * @param {object} [options] - Request options
  * @param {string} [options.method] - HTTP method (GET, POST, etc.)
  * @param {Record<string, unknown>} [options.queryParams] - Query parameters for GET requests
