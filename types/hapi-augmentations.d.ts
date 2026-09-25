@@ -1,7 +1,6 @@
 import '@hapi/hapi'
 import type { CacheService } from '@defra/forms-engine-plugin/cache-service.js'
 import type { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
-import { STSClient } from '@aws-sdk/client-sts'
 
 interface AuditEventInput {
   action: string
@@ -28,7 +27,6 @@ declare module '@hapi/hapi' {
     // `...InBackground` variant is fire-and-forget and returns void.
     sendAuditEvent: (opts: AuditEventInput) => Promise<void>
     sendAuditEventInBackground: (opts: AuditEventInput) => void
-    sts: STSClient
   }
 
   interface ServerApplicationState {
