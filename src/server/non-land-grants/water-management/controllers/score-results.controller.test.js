@@ -6,7 +6,10 @@ import { mergeAdditionalAnswers } from '~/src/server/common/helpers/state/additi
 import { invokeGrantScoringGetAction } from '~/src/server/common/services/grant-scoring/grant-scoring.service.js'
 
 vi.mock('~/src/server/common/helpers/state/additional-answers-helper.js', () => ({
-  mergeAdditionalAnswers: vi.fn((state, answers) => ({ ...state, ...answers }))
+  mergeAdditionalAnswers: vi.fn((state, answers) => ({
+    ...state,
+    additionalAnswers: { ...state.additionalAnswers, ...answers }
+  }))
 }))
 
 vi.mock('~/src/server/common/services/grant-scoring/grant-scoring.service.js', () => ({
@@ -20,16 +23,31 @@ describe('ScoreResultsController', () => {
   let mockH
 
   beforeEach(() => {
-    const mockModel = {}
+    const mockModel = {
+      def: {
+        metadata: {
+          pageConfig: {
+            '/score-results': {
+              derivedState: {
+                stateKeys: ['eligibilityScore', 'eligibilityBand'],
+                requiresAcknowledgement: false
+              }
+            }
+          }
+        }
+      }
+    }
     const mockPageDef = {
       path: '/score-results',
       title: 'Score results'
     }
     controller = new ScoreResultsController(mockModel, mockPageDef)
+    controller.path = mockPageDef.path
     setupControllerMocks(controller)
 
     mockRequest = {}
     mockContext = {
+      relevantPages: [controller],
       state: {
         countyProjectLocated: 'CHESHIRE'
       }
