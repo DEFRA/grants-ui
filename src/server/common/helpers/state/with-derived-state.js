@@ -1,5 +1,6 @@
 import { isDeepStrictEqual } from 'node:util'
 import { mergeAdditionalAnswers } from './additional-answers-helper.js'
+import { BaseError } from '~/src/server/common/utils/errors/BaseError.js'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
 import { DANGEROUS_KEYS } from '~/src/server/common/utils/objects.js'
 
@@ -181,6 +182,9 @@ function contractError(message) {
 }
 
 function operationError(operation, error) {
+  if (error instanceof BaseError) {
+    return error
+  }
   return new SystemError({
     message: `Failed to ${operation} derived answers`,
     source: `withDerivedState.${operation}`,
