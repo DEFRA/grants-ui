@@ -116,6 +116,10 @@ _Avoid_: Declaration, Success screen, Receipt, Summary
 An end-of-journey page shown when a user cannot or should not continue, often due to eligibility or access rules.
 _Avoid_: Error page, Confirmation, Dead end, Failure page
 
+**Application window**
+The period in which a grant accepts new applications, closed per grant by an optional ISO 8601 `closesAt` datetime in the form definition's `metadata.applicationWindow`. A grant with no `closesAt` is open. From `closesAt` onwards, new and draft applicants are redirected to the application-window-closed page; submitted applications are unaffected.
+_Avoid_: Feature flag, Environment variable
+
 **Landing page**
 An off-journey interstitial page reached by redirect rule or direct link to explain an application state before sending the user onward.
 _Avoid_: Start page, Terminal page, Marketing page, Summary page

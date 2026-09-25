@@ -704,7 +704,7 @@ const BACK_HINT = '↑ ↓  navigate    enter → select    esc → back'
 /**
  * @typedef {{ chosen: string, crn: string | undefined, mode: string | undefined,
  *   clearChoice: string | undefined, commonLand: string | undefined, mockNoActions: boolean,
- *   stop: string | undefined }} JourneyWizardCtx
+ *   mockWindowClosed: boolean, stop: string | undefined }} JourneyWizardCtx
  */
 
 /**
@@ -765,12 +765,12 @@ async function journeyStepClear(ctx) {
   const clearItems = [
     {
       key: 'keep',
-      label: `keep state${journeyNextMenuArrow(ctx, 'clear')}`,
+      label: 'keep state ⇢',
       description: 'Resume from where this application left off'
     },
     {
       key: 'clear',
-      label: `clear state${journeyNextMenuArrow(ctx, 'clear')}`,
+      label: 'clear state ⇢',
       description: 'Reset to step 1 (like the footer "Clear application state" link)'
     }
   ]
@@ -790,7 +790,7 @@ async function journeyStepAck(ctx) {
   if (!wontComplete) return { type: 'skip' }
   const ackItems = [
     { key: 'cancel', label: 'Cancel', description: 'Back to the menu' },
-    { key: 'run', label: `Run anyway${journeyNextMenuArrow(ctx, 'ack')}`, description: wontComplete.join(' ') }
+    { key: 'run', label: 'Run anyway ⇢', description: wontComplete.join(' ') }
   ]
   const ack = await radioMenu(ackItems, `${YELLOW}⚠  '${ctx.chosen}' will NOT complete — run anyway?${RESET_COLOR}`, {
     hint: BACK_HINT
@@ -814,12 +814,12 @@ async function journeyStepCommonLand(ctx) {
   const commonLandItems = [
     {
       key: 'no',
-      label: `No${journeyNextMenuArrow(ctx, 'commonLand')}`,
+      label: 'No ⇢',
       description: 'Standard journey - confirmation page shows only the default "What happens next" content'
     },
     {
       key: 'yes',
-      label: `Yes${journeyNextMenuArrow(ctx, 'commonLand')}`,
+      label: 'Yes ⇢',
       description:
         'Shows the guidance page, and the confirmation page adds a "What you need to do" section on common land obligations'
     }
@@ -832,70 +832,48 @@ async function journeyStepCommonLand(ctx) {
   return { type: 'next' }
 }
 
-/** @param {JourneyWizardCtx} ctx */
-async function journeyStepMock(ctx) {
-  // Offer the land-parcel mock before the stop-page question, so a run can be
-  // pointed at the "no eligible actions" path. The local seed gives every
-  // parcel at least one action, so this is the only way to reach that page.
-  // Only offered for journeys that actually have a map step.
-  if (!journeySteps(ctx.chosen).some((s) => s.type === 'mapParcel')) {
-    ctx.mockNoActions = false
-    return { type: 'skip' }
-  }
-  const mockItems = [
-    {
-      key: 'off',
-      label: `API Data${journeyNextMenuArrow(ctx, 'mock')}`,
-      description: 'Use whatever actions the land-grants API returns'
-    },
-    {
-      key: 'no-actions',
-      label: `Mock no eligible actions${journeyNextMenuArrow(ctx, 'mock')}`,
-      description: 'Land parcels report no actions — shows the error on the map page'
-    }
-  ]
-  const pickedMock = await radioMenu(mockItems, `Land parcel actions for '${ctx.chosen}'?`, { hint: BACK_HINT })
-  if (pickedMock === '__quit__') return { type: 'back' }
-  ctx.mockNoActions = pickedMock === 'no-actions'
-  return { type: 'next' }
-}
-
-/** @param {JourneyWizardCtx} ctx */
+/**
+ * One combined "how should this run go" menu: run to the end, force a
+ * dev-tools mock, or (headed only) stop the browser on a chosen page for
+ * inspection. "Window closed" applies to every journey and sits right after
+ * the default; "no eligible actions" only applies to journeys with a map step
+ * (the local seed gives every parcel at least one action, so it's the only
+ * way to reach that page's error); the per-page stop points only make sense
+ * when watching the browser headed, so they're appended just for that mode.
+ * @param {JourneyWizardCtx} ctx
+ */
 async function journeyStepStop(ctx) {
-  // Headed only: let the user stop the browser on a chosen page. Lists every
-  // page in the journey; picking one passes it as --stop so the run halts
-  // there (on the page, before filling it) for inspection.
-  if (ctx.mode !== 'headed') {
-    ctx.stop = undefined
-    return { type: 'skip' }
-  }
-  const steps = journeySteps(ctx.chosen)
+  const hasMapStep = journeySteps(ctx.chosen).some((s) => s.type === 'mapParcel')
   const stopItems = [
-    { key: '__end__', label: 'Run to the end', description: 'Complete the whole journey' },
-    ...steps.map((s, i) => ({
-      key: String(i + 1),
-      label: `${i + 1}. ${s.slug}`,
-      description: s.name === s.slug ? '' : s.name
-    }))
+    { key: '__end__', label: 'Run to the end', description: 'Complete the whole journey, unmocked' },
+    {
+      key: 'window-closed',
+      label: 'Window closed',
+      description: "Force the application-window-closed redirect on the grant's start page"
+    },
+    ...(hasMapStep
+      ? [
+          {
+            key: 'no-actions',
+            label: 'Mock no eligible actions',
+            description: 'Land parcels report no actions — shows the error on the map page'
+          }
+        ]
+      : []),
+    ...(ctx.mode === 'headed'
+      ? journeySteps(ctx.chosen).map((s, i) => ({
+          key: String(i + 1),
+          label: `${i + 1}. ${s.slug}`,
+          description: s.name === s.slug ? '' : s.name
+        }))
+      : [])
   ]
-  const pickedStop = await radioMenu(stopItems, `Stop '${ctx.chosen}' on which page?`, { hint: BACK_HINT })
-  if (pickedStop === '__quit__') return { type: 'back' }
-  ctx.stop = pickedStop !== '__end__' ? pickedStop : undefined
+  const picked = await radioMenu(stopItems, `Run '${ctx.chosen}' how?`, { hint: BACK_HINT })
+  if (picked === '__quit__') return { type: 'back' }
+  ctx.mockNoActions = picked === 'no-actions'
+  ctx.mockWindowClosed = picked === 'window-closed'
+  ctx.stop = ['__end__', 'window-closed', 'no-actions'].includes(picked) ? undefined : picked
   return { type: 'next' }
-}
-
-/** Only mark choices that actually open another prompt for this journey and mode. */
-function journeyNextMenuArrow(ctx, currentStep) {
-  const steps = journeySteps(ctx.chosen)
-  const remaining = [
-    ['clear', false],
-    ['ack', !!wontCompleteReason(ctx.chosen)],
-    ['commonLand', steps.some((step) => step.overrideKey === 'commonLand')],
-    ['mock', steps.some((step) => step.type === 'mapParcel')],
-    ['stop', ctx.mode === 'headed']
-  ]
-  const currentIndex = remaining.findIndex(([name]) => name === currentStep)
-  return remaining.slice(currentIndex + 1).some(([, enabled]) => enabled) ? ' ⇢' : ''
 }
 
 const JOURNEY_WIZARD_STEPS = [
@@ -905,7 +883,6 @@ const JOURNEY_WIZARD_STEPS = [
   journeyStepClear,
   journeyStepAck,
   journeyStepCommonLand,
-  journeyStepMock,
   journeyStepStop
 ]
 
@@ -927,6 +904,7 @@ async function runJourneyWizard(journeys) {
     clearChoice: undefined,
     commonLand: undefined,
     mockNoActions: false,
+    mockWindowClosed: false,
     stop: undefined
   }
   let step = 0
@@ -977,6 +955,7 @@ async function handleJourneyCommand(dryRun) {
         stop: ctx.stop,
         commonLand: ctx.commonLand,
         mockNoActions: ctx.mockNoActions,
+        mockWindowClosed: ctx.mockWindowClosed,
         baseUrl: journeyBaseUrl(),
         headed: ctx.mode === 'headed',
         clear: ctx.clearChoice === 'clear',

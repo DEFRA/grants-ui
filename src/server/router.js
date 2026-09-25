@@ -6,11 +6,12 @@ import { health } from '~/src/server/health/index.js'
 import { home } from '~/src/server/home/index.js'
 import { agreements } from '~/src/server/agreements/index.js'
 import { devTools } from '~/src/server/dev-tools/index.js'
-import { isDevToolsEnabled } from '~/src/server/dev-tools/dev-tools-enabled.js'
+import { isDevToolsEnabled } from '~/src/server/common/helpers/dev-tools-enabled.js'
 import { journeyRunnerPlugin } from '~/src/server/dev-tools/journey-runner/journey-runner-plugin.js'
 import { clearApplicationState } from './dev-tools/clear-application-state.js'
 import { cookies } from '~/src/server/cookies/index.js'
 import { applicationDeleted } from './application-deleted/index.js'
+import { applicationWindowClosed } from './application-window-closed/index.js'
 import { mapPlugin } from '~/src/server/common/map/map.plugin.js'
 import { landGrantsActionsPlugin } from '~/src/server/land-grants/land-grants-actions.plugin.js'
 
@@ -32,7 +33,7 @@ export const router = {
       await server.register([auth])
 
       // Application specific routes, add your own routes here
-      await server.register([home, agreements, cookies, applicationDeleted])
+      await server.register([home, agreements, cookies, applicationDeleted, applicationWindowClosed])
 
       await server.register([mapPlugin, landGrantsActionsPlugin])
 
