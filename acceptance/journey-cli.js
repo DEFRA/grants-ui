@@ -18,6 +18,7 @@
  * Usage:
  *   node journey-cli.js <slug> [--crn <crn>] [--stop <n|section>] [--headed]
  *                              [--parcel <ref>] [--mock-no-actions]
+ *                              [--mock-window-closed]
  *                              [--common-land <yes|no>]
  *                              [--base-url <url>] [--timeout <ms>]
  *
@@ -56,6 +57,7 @@ function parseArgs(argv) {
     parcel: undefined,
     commonLand: undefined,
     mockNoActions: false,
+    mockWindowClosed: false,
     headed: false,
     clear: false,
     baseUrl: DEFAULT_BASE_URL,
@@ -67,6 +69,8 @@ function parseArgs(argv) {
       opts.headed = true
     } else if (arg === '--mock-no-actions') {
       opts.mockNoActions = true
+    } else if (arg === '--mock-window-closed') {
+      opts.mockWindowClosed = true
     } else if (arg === '--clear') {
       opts.clear = true
     } else if (arg === '--crn') {
@@ -143,7 +147,7 @@ async function main() {
   const opts = parseArgs(process.argv.slice(2))
   if (!opts.slug) {
     console.error(
-      'Usage: node journey-cli.js <slug> [--crn <crn>] [--stop <n|section>] [--start <page>] [--parcel <ref>] [--common-land <yes|no>] [--mock-no-actions] [--headed] [--clear] [--base-url <url>]'
+      'Usage: node journey-cli.js <slug> [--crn <crn>] [--stop <n|section>] [--start <page>] [--parcel <ref>] [--common-land <yes|no>] [--mock-no-actions] [--mock-window-closed] [--headed] [--clear] [--base-url <url>]'
     )
     process.exit(2)
   }
@@ -176,6 +180,12 @@ async function main() {
   if (opts.mockNoActions) {
     cookies.push({ name: 'dev_mock_no_actions', value: '1', url: opts.baseUrl })
     console.log(`${LOG_PREFIX} Mock enabled: land parcels report no eligible actions`)
+  }
+  // Dev-tools override: makes the app report the grant's application window as
+  // closed, so the interruption page can be reached without editing grant config.
+  if (opts.mockWindowClosed) {
+    cookies.push({ name: 'dev_mock_window_closed', value: '1', url: opts.baseUrl })
+    console.log(`${LOG_PREFIX} Mock enabled: application window reports closed`)
   }
   await context.addCookies(cookies)
   const page = await context.newPage()
