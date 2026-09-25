@@ -53,9 +53,23 @@ describe('resolveApplicationWindowClosedPath', () => {
       const result = resolveApplicationWindowClosedPath(request, context)
 
       expect(result).toBe('/test-grant/application-window-closed')
-      expect(request.yar.set).toHaveBeenCalledWith('applicationWindowClosedSchemeName', 'Test Grant')
+      expect(request.yar.set).toHaveBeenCalledWith('applicationWindowClosedSchemeName', {
+        'test-grant': 'Test Grant'
+      })
     }
   )
+
+  it("keeps other grants' stored scheme names when storing this one", () => {
+    const request = buildRequest({ name: 'Test Grant', applicationWindow: CLOSED })
+    request.yar.get.mockReturnValue({ 'other-grant': 'Other Grant' })
+
+    resolveApplicationWindowClosedPath(request, { state: {} })
+
+    expect(request.yar.set).toHaveBeenCalledWith('applicationWindowClosedSchemeName', {
+      'other-grant': 'Other Grant',
+      'test-grant': 'Test Grant'
+    })
+  })
 
   it('returns null when already on the application-window-closed page', () => {
     const request = buildRequest({

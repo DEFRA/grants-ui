@@ -468,7 +468,7 @@ test('application state opens the inspector and returns to Tools without startin
 test.each(['headless', 'headed'])('journey runs from Tools with arrows only for further prompts (%s)', async (mode) => {
   vi.mocked(getRunningComposeFiles).mockReturnValue(['compose.infra.yml', 'compose.grants-ui.yml'])
   vi.mocked(journeySteps).mockReturnValue([])
-  for (const choice of ['journey', 'test-grant', mode, 'keep', ...(mode === 'headed' ? ['__end__'] : [])]) {
+  for (const choice of ['journey', 'test-grant', mode, 'keep', '__end__']) {
     vi.mocked(radioMenu).mockResolvedValueOnce(choice)
   }
 
@@ -478,10 +478,8 @@ test.each(['headless', 'headed'])('journey runs from Tools with arrows only for 
   expect(calls[0][0].find((item) => item.key === 'journey')).toMatchObject({ disabled: false })
   expect(calls[1][0][0].label).toBe('test-grant ⇢')
   expect(calls[2][0].every((item) => item.label.endsWith(' ⇢'))).toBe(true)
-  expect(calls[3][0].every((item) => item.label.endsWith(' ⇢'))).toBe(mode === 'headed')
-  if (mode === 'headed') {
-    expect(calls[4][0][0].label).toBe('Run to the end')
-  }
+  expect(calls[3][0].every((item) => item.label.endsWith(' ⇢'))).toBe(true)
+  expect(calls[4][0][0].label).toBe('Run to the end')
   expect(calls.at(-1)?.[1]).toBe('Tools')
   expect(runInteractiveAction).toHaveBeenCalledWith(
     'journey',
@@ -497,7 +495,7 @@ test('journey with more than one known-good CRN prompts for a choice, and the pi
     { crn: '1102838829', note: 'happy path' },
     { crn: '1103313150', note: 'no eligible actions' }
   ])
-  for (const choice of ['journey', 'test-grant', '1103313150', 'headless', 'keep']) {
+  for (const choice of ['journey', 'test-grant', '1103313150', 'headless', 'keep', '__end__']) {
     vi.mocked(radioMenu).mockResolvedValueOnce(choice)
   }
 
@@ -525,7 +523,7 @@ test.each([
     vi.mocked(getRunningComposeFiles).mockReturnValue(['compose.infra.yml', 'compose.grants-ui.yml'])
     vi.mocked(journeySteps).mockReturnValue([])
     vi.mocked(wontCompleteReason).mockReturnValue(['It stops halfway through.'])
-    for (const menuChoice of ['journey', 'test-grant', 'headless', 'keep', choice]) {
+    for (const menuChoice of ['journey', 'test-grant', 'headless', 'keep', choice, ...(shouldRun ? ['__end__'] : [])]) {
       vi.mocked(radioMenu).mockResolvedValueOnce(menuChoice)
     }
 

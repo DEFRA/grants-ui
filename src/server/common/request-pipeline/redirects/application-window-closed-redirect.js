@@ -29,7 +29,13 @@ export function resolveApplicationWindowClosedPath(request, context) {
     return null
   }
 
-  request.yar.set(YarKeys.APPLICATION_WINDOW_CLOSED_SCHEME_NAME, def?.name)
+  const schemeNames = /** @type {Record<string, string | undefined> | undefined} */ (
+    request.yar.get(YarKeys.APPLICATION_WINDOW_CLOSED_SCHEME_NAME)
+  )
+  request.yar.set(YarKeys.APPLICATION_WINDOW_CLOSED_SCHEME_NAME, {
+    ...schemeNames,
+    [request.params.slug]: def?.name
+  })
 
   return `${basePath}/application-window-closed`
 }
