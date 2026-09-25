@@ -18,6 +18,7 @@ import {
   SELECTED_ACTIONS_FIELD_NAME
 } from '~/src/server/land-grants/utils/selected-actions-field.js'
 import { getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
+import { SELECT_ACTIONS_ELEMENT_IDS } from '~/src/shared/select-actions-element-ids.js'
 import {
   fetchActionsForParcel,
   fetchActionsWithPlannedActions
@@ -81,6 +82,7 @@ export default class SelectActionsPageController extends SelectActionsBasePageCo
     return {
       ...super.getViewModel(request, context),
       actionFieldName: this.actionFieldName,
+      selectActionsElementIds: SELECT_ACTIONS_ELEMENT_IDS,
       addedActions,
       actionItems: mapActionsToViewModel(actions, addedActions, quantityErrorsByCode, hasErrors),
       chosenAreaFieldsHtml: getChosenAreaFieldsHtml(actions, addedActions),

@@ -104,12 +104,16 @@
       <div class="{{ 'govuk-grid-column-full' if actionItems.length else gridColumnClass(page) }}">
         {% if actionItems.length %}
           <form id="select-actions-form" method="post" novalidate="novalidate">
-            <output id="select-actions-loading" class="govuk-body" hidden>Loading actions…</output>
-            <fieldset id="select-actions-controls" class="govuk-fieldset" aria-labelledby="available-actions-heading">
+            <output id="{{ selectActionsElementIds.loading }}" class="govuk-body" hidden>Loading actions…</output>
+            <fieldset
+              id="{{ selectActionsElementIds.controls }}"
+              class="govuk-fieldset"
+              aria-labelledby="available-actions-heading"
+            >
               {# Block interaction before the external module loads. Without JavaScript, retain the normal form. #}
               <script nonce="{{ cspNonce }}">
-                document.getElementById('select-actions-controls').disabled = true
-                document.getElementById('select-actions-loading').hidden = false
+                document.getElementById('{{ selectActionsElementIds.controls }}').disabled = true
+                document.getElementById('{{ selectActionsElementIds.loading }}').hidden = false
               </script>
               <input type="hidden" name="crumb" value="{{ crumb }}" />
               <input type="hidden" name="action" value="validate" />

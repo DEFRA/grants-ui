@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { runInNewContext } from 'node:vm'
 import { initSelectActionsPage } from '~/src/client/javascripts/land-grants/select-actions-events.js'
 import { createPageRenderer } from '~/src/server/common/test-helpers/component-helpers.js'
+import { SELECT_ACTIONS_ELEMENT_IDS } from '~/src/shared/select-actions-element-ids.js'
 
 const renderPage = createPageRenderer(import.meta.url, 'select-actions.html', {
   pageTitle: 'Select actions for this land parcel',
   errors: [],
   actionItems: [{ text: 'Action one', value: 'ACTION1' }],
   actionFieldName: 'landAction',
+  selectActionsElementIds: SELECT_ACTIONS_ELEMENT_IDS,
   chosenAreaFieldsHtml: '',
   pageConsents: [],
   parcelSummaryList: {
@@ -36,18 +38,18 @@ describe('select-actions.html', () => {
     expect(button.matches(':disabled')).toBe(true)
     checkbox.click()
     expect(checkbox.checked).toBe(false)
-    expect(document.getElementById('select-actions-loading').hidden).toBe(false)
+    expect(document.getElementById(SELECT_ACTIONS_ELEMENT_IDS.loading).hidden).toBe(false)
 
     initSelectActionsPage(form)
     expect(checkbox.matches(':disabled')).toBe(false)
     expect(button.matches(':disabled')).toBe(false)
-    expect(document.getElementById('select-actions-loading').hidden).toBe(true)
+    expect(document.getElementById(SELECT_ACTIONS_ELEMENT_IDS.loading).hidden).toBe(true)
   })
 
   it('leaves the form usable when JavaScript is disabled', () => {
     const $ = renderPage()
-    expect($('#select-actions-controls').attr('disabled')).toBeUndefined()
-    expect($('#select-actions-loading').attr('hidden')).toBeDefined()
+    expect($(`#${SELECT_ACTIONS_ELEMENT_IDS.controls}`).attr('disabled')).toBeUndefined()
+    expect($(`#${SELECT_ACTIONS_ELEMENT_IDS.loading}`).attr('hidden')).toBeDefined()
   })
 
   it('shows the parcel Change link without Cancel in the normal journey', () => {
