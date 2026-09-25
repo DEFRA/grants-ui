@@ -150,6 +150,15 @@ describe('LogCodes', () => {
         'Invalid redirect rules in form "testFormName" | reason=preSubmission: missing targetUrl'
       ],
       [
+        'INVALID_APPLICATION_WINDOW',
+        'error',
+        {
+          formName: 'testFormName',
+          closesAt: 'not-a-date'
+        },
+        'Invalid application window in form "testFormName" | closesAt=not-a-date'
+      ],
+      [
         'CONSOLIDATED_VIEW_API_ERROR',
         'error',
         {

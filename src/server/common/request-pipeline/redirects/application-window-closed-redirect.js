@@ -17,6 +17,9 @@ export function resolveApplicationWindowClosedPath(request, context) {
     return null
   }
 
+  // Only new and draft (CLEARED) applicants are gated. Submitted, reopened and claim journeys
+  // (CLAIM_STARTED / CLAIM_SUBMITTED) are deliberately unaffected: the window governs new
+  // applications, not post-submission or post-award activity.
   const previousStatus = /** @type {string | undefined} */ (context.state?.applicationStatus)
 
   if (!shouldHandlePreSubmission(previousStatus)) {
@@ -29,7 +32,13 @@ export function resolveApplicationWindowClosedPath(request, context) {
     return null
   }
 
-  request.yar.set(YarKeys.APPLICATION_WINDOW_CLOSED_SCHEME_NAME, def?.name)
+  const schemeNames = /** @type {Record<string, string | undefined> | undefined} */ (
+    request.yar.get(YarKeys.APPLICATION_WINDOW_CLOSED_SCHEME_NAME)
+  )
+  request.yar.set(YarKeys.APPLICATION_WINDOW_CLOSED_SCHEME_NAME, {
+    ...schemeNames,
+    [request.params.slug]: def?.name
+  })
 
   return `${basePath}/application-window-closed`
 }

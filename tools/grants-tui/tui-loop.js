@@ -765,12 +765,12 @@ async function journeyStepClear(ctx) {
   const clearItems = [
     {
       key: 'keep',
-      label: `keep state${journeyNextMenuArrow(ctx, 'clear')}`,
+      label: 'keep state ⇢',
       description: 'Resume from where this application left off'
     },
     {
       key: 'clear',
-      label: `clear state${journeyNextMenuArrow(ctx, 'clear')}`,
+      label: 'clear state ⇢',
       description: 'Reset to step 1 (like the footer "Clear application state" link)'
     }
   ]
@@ -790,7 +790,7 @@ async function journeyStepAck(ctx) {
   if (!wontComplete) return { type: 'skip' }
   const ackItems = [
     { key: 'cancel', label: 'Cancel', description: 'Back to the menu' },
-    { key: 'run', label: `Run anyway${journeyNextMenuArrow(ctx, 'ack')}`, description: wontComplete.join(' ') }
+    { key: 'run', label: 'Run anyway ⇢', description: wontComplete.join(' ') }
   ]
   const ack = await radioMenu(ackItems, `${YELLOW}⚠  '${ctx.chosen}' will NOT complete — run anyway?${RESET_COLOR}`, {
     hint: BACK_HINT
@@ -814,12 +814,12 @@ async function journeyStepCommonLand(ctx) {
   const commonLandItems = [
     {
       key: 'no',
-      label: `No${journeyNextMenuArrow(ctx, 'commonLand')}`,
+      label: 'No ⇢',
       description: 'Standard journey - confirmation page shows only the default "What happens next" content'
     },
     {
       key: 'yes',
-      label: `Yes${journeyNextMenuArrow(ctx, 'commonLand')}`,
+      label: 'Yes ⇢',
       description:
         'Shows the guidance page, and the confirmation page adds a "What you need to do" section on common land obligations'
     }
@@ -874,20 +874,6 @@ async function journeyStepStop(ctx) {
   ctx.mockWindowClosed = picked === 'window-closed'
   ctx.stop = ['__end__', 'window-closed', 'no-actions'].includes(picked) ? undefined : picked
   return { type: 'next' }
-}
-
-/** Only mark choices that actually open another prompt for this journey and mode. */
-function journeyNextMenuArrow(ctx, currentStep) {
-  const steps = journeySteps(ctx.chosen)
-  const remaining = [
-    ['clear', false],
-    ['ack', !!wontCompleteReason(ctx.chosen)],
-    ['commonLand', steps.some((step) => step.overrideKey === 'commonLand')],
-    ['mock', steps.some((step) => step.type === 'mapParcel')],
-    ['stop', ctx.mode === 'headed']
-  ]
-  const currentIndex = remaining.findIndex(([name]) => name === currentStep)
-  return remaining.slice(currentIndex + 1).some(([, enabled]) => enabled) ? ' ⇢' : ''
 }
 
 const JOURNEY_WIZARD_STEPS = [

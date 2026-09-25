@@ -1,10 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { isApplicationWindowOpen } from './application-window.js'
 import { isWindowClosedMockEnabled } from './mock-overrides.js'
+import { log, LogCodes } from './logging/log.js'
 
 vi.mock('./mock-overrides.js', () => ({
   isWindowClosedMockEnabled: vi.fn()
 }))
+
+vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
+  const { mockLogHelper } = await import('~/src/__mocks__/logger-mocks.js')
+  return mockLogHelper()
+})
 
 describe('isApplicationWindowOpen', () => {
   const now = new Date('2026-10-01T12:00:00Z')
@@ -31,6 +37,20 @@ describe('isApplicationWindowOpen', () => {
     }
   ])('is open=$open when $label', ({ applicationWindow, open }) => {
     expect(isApplicationWindowOpen(buildRequest(applicationWindow), now)).toBe(open)
+    expect(log).not.toHaveBeenCalled()
+  })
+
+  it('is closed and logs when closesAt is malformed', () => {
+    const request = {
+      app: { model: { def: { name: 'Test grant', metadata: { applicationWindow: { closesAt: 'not-a-date' } } } } }
+    }
+
+    expect(isApplicationWindowOpen(request, now)).toBe(false)
+    expect(log).toHaveBeenCalledWith(
+      LogCodes.SYSTEM.INVALID_APPLICATION_WINDOW,
+      { formName: 'Test grant', closesAt: 'not-a-date' },
+      request
+    )
   })
 
   it('is open when the request has no form model', () => {
