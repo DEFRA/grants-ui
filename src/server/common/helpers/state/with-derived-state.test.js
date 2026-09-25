@@ -21,6 +21,101 @@ function fixture(options = {}) {
 }
 
 describe('withDerivedState', () => {
+  describe('configured calculation inputs', () => {
+    it('reads input paths from the form definition', () => {
+      const Page = withDerivedState(class {})
+      const page = new Page(
+        {
+          def: {
+            metadata: {
+              pageConfig: {
+                '/result': {
+                  derivedState: {
+                    stateKeys: ['result'],
+                    calculationInputs: ['county'],
+                    requiresAcknowledgement: true
+                  }
+                }
+              }
+            }
+          }
+        },
+        { path: '/result' }
+      )
+      expect(page.derivedState.calculationInputs).toEqual(['county'])
+      expect(Object.isFrozen(page.derivedState.calculationInputs)).toBe(true)
+    })
+
+    it('migrates missing snapshots and skips both calculation and writes when fresh', async () => {
+      const { page, context, request } = fixture({ calculationInputs: ['quantity'] })
+      await expect(page.isStateStale(request, context)).resolves.toBe(true)
+      expect(page.getCalculatedAnswers).not.toHaveBeenCalled()
+      const before = structuredClone(context.state)
+      const saved = await page.refreshState(request, context)
+      expect(context.state).toEqual(before)
+      expect(saved.additionalAnswers).toEqual(before.additionalAnswers)
+      context.state = JSON.parse(JSON.stringify(saved))
+      await expect(page.isStateStale(request, context)).resolves.toBe(false)
+      await expect(page.refreshState(request, context)).resolves.toBe(context.state)
+      expect(page.getCalculatedAnswers).toHaveBeenCalledTimes(1)
+      expect(page.setState).toHaveBeenCalledTimes(1)
+    })
+
+    it('tracks nested configured inputs while ignoring unrelated state', async () => {
+      const { page, context, request } = fixture({ calculationInputs: ['quantity', 'additionalAnswers.otherResult'] })
+      context.state = await page.refreshState(request, context)
+      context.state.unrelated = 'changed'
+      await expect(page.isStateStale(request, context)).resolves.toBe(false)
+      context.state.additionalAnswers.otherResult = 'changed'
+      await expect(page.isStateStale(request, context)).resolves.toBe(true)
+      expect(page.getCalculatedAnswers).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps missing inputs stable across persistence and distinguishes null', async () => {
+      const { page, context, request } = fixture({ calculationInputs: ['optional'] })
+      context.state = await page.refreshState(request, context)
+      await expect(page.isStateStale(request, context)).resolves.toBe(false)
+      context.state.optional = null
+      await expect(page.isStateStale(request, context)).resolves.toBe(true)
+    })
+
+    it('treats missing results as stale even when inputs match', async () => {
+      const { page, context, request } = fixture({ calculationInputs: ['quantity'] })
+      context.state = await page.refreshState(request, context)
+      delete context.state.additionalAnswers.total
+      await expect(page.isStateStale(request, context)).resolves.toBe(true)
+    })
+
+    it('preserves other page snapshots and invalidates changed input configuration', async () => {
+      const { page, context, request } = fixture({ calculationInputs: ['quantity'] })
+      context.state.derivedStateSnapshots = { '/other': { inputs: [] } }
+      context.state = await page.refreshState(request, context)
+      expect(context.state.derivedStateSnapshots['/other']).toEqual({ inputs: [] })
+      const { page: updatedPage } = fixture({ calculationInputs: ['quantity', 'newInput'] })
+      await expect(updatedPage.isStateStale(request, context)).resolves.toBe(true)
+      expect(updatedPage.getCalculatedAnswers).not.toHaveBeenCalled()
+    })
+
+    it.each(['calculate', 'persist'])('keeps stale results and inputs intact on %s failure', async (stage) => {
+      const { page, context, request } = fixture({ calculationInputs: ['quantity'] })
+      context.state = await page.refreshState(request, context)
+      context.state.quantity = 12
+      const before = structuredClone(context.state)
+      const operation = stage === 'calculate' ? page.getCalculatedAnswers : page.setState
+      operation.mockRejectedValueOnce(new Error('Unavailable'))
+      await expect(page.refreshState(request, context)).rejects.toThrow('Failed to refresh derived answers')
+      expect(context.state).toEqual(before)
+      await expect(page.isStateStale(request, context)).resolves.toBe(true)
+    })
+
+    it.each([[], null, 'quantity', ['quantity', 'quantity'], [''], ['a..b'], ['__proto__.x'], ['x.constructor']])(
+      'rejects invalid calculationInputs: %j',
+      (calculationInputs) => {
+        expect(() => fixture({ calculationInputs })).toThrow('Invalid derived-state calculationInputs')
+      }
+    )
+  })
+
   it('compares local calculated answers and detects an edited input', async () => {
     const { page, context, request } = fixture()
 

@@ -7,6 +7,7 @@ import {
   mockSimpleRequest
 } from '~/src/__mocks__/hapi-mocks.js'
 import { getTaskPageBackLink } from '../task-list/task-list.helper.js'
+import { withDerivedState } from '../common/helpers/state/with-derived-state.js'
 
 const mockContext = (overrides = {}) => createMockContext({ relevantPages: [], ...overrides })
 
@@ -125,6 +126,38 @@ describe('CheckResponsesPageController', () => {
       controller = new CheckResponsesPageController(mockModel, mockPageDef)
       context = mockContext({ state: {}, relevantPages: [derivedPage] })
       h = mockHapiResponseToolkit()
+    })
+
+    it.each([
+      ['get', 'makeGetRouteHandler'],
+      ['post', 'makePostRouteHandler']
+    ])('checks configured inputs on %s without calling the calculation API', async (method, factory) => {
+      class ScoringPage extends withDerivedState(class {}, {
+        stateKeys: ['score'],
+        calculationInputs: ['county'],
+        requiresAcknowledgement: true
+      }) {
+        path = '/score-results'
+        getCalculatedAnswers = vi.fn().mockResolvedValue({ score: 50 })
+        setState = vi.fn(async (_request, state) => state)
+      }
+      const scoringPage = new ScoringPage()
+      const request = mockSimpleRequest({ method })
+      context = mockContext({ state: { county: 'CHESHIRE' }, relevantPages: [scoringPage] })
+      context.state = await scoringPage.refreshState(request, context)
+      scoringPage.getCalculatedAnswers.mockClear()
+      controller.derivedStatePages = [scoringPage.path]
+      controller.getNextPath = vi.fn().mockReturnValue('/declaration')
+      controller.proceed = vi.fn()
+
+      await controller[factory]()(request, context, h)
+      expect(h.redirect).not.toHaveBeenCalled()
+      expect(method === 'get' ? h.view : controller.proceed).toHaveBeenCalled()
+
+      context.state = { ...context.state, county: 'BERKSHIRE' }
+      await controller[factory]()(request, context, h)
+      expect(h.redirect).toHaveBeenCalledWith('/test-form/score-results?returnUrl=%2Ftest-form%2Fcheck-answers')
+      expect(scoringPage.getCalculatedAnswers).not.toHaveBeenCalled()
     })
 
     it.each([

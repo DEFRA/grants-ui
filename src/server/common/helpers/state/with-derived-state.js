@@ -7,14 +7,14 @@ import { DANGEROUS_KEYS } from '~/src/server/common/utils/objects.js'
  * @typedef {object} DerivedStateOptions
  * @property {string[]} stateKeys - Exclusive top-level keys owned in state.additionalAnswers.
  * @property {boolean} requiresAcknowledgement - Visit the result page when stale; false permits an automatic refresh.
+ * @property {string[]} [calculationInputs] - State paths whose values determine calculation freshness.
  */
 
 /**
  * Adds derived-answer freshness and persistence without changing navigation or task counting.
  * The controller implements getCalculatedAnswers(request, state), returning all owned keys
- * using local calculations. API-backed results are saved by their result page and read
- * from additionalAnswers on Check answers; they must not use this freshness check.
- * Freshness checks compare calculated outputs with saved answers.
+ * using local calculations by default. With calculationInputs configured, freshness
+ * compares saved inputs locally and calculation (including API calls) happens only on refresh.
  * Invoke the asynchronous methods in handlers, never in getRelevantPath.
  * See docs/DERIVED-STATE-PAGES.md for the complete contract and acknowledgement semantics.
  * @template {new (...args: any[]) => any} T
@@ -59,6 +59,9 @@ export function withDerivedState(Base, options) {
         if (this.derivedState.stateKeys.some((key) => !Object.hasOwn(saved, key) || saved[key] === undefined)) {
           return true
         }
+        if (this.derivedState.calculationInputs) {
+          return !isDeepStrictEqual(state.derivedStateSnapshots?.[this.path], this.#inputSnapshot(state))
+        }
         const calculated = await this.#calculate(request, state)
         return this.derivedState.stateKeys.some((key) => !isDeepStrictEqual(saved[key], calculated[key]))
       } catch (error) {
@@ -79,11 +82,39 @@ export function withDerivedState(Base, options) {
       }
       try {
         const state = /** @type {Record<string, any>} */ (context.state)
-        const answers = await this.#calculate(request, state)
+        const tracksInputs = Boolean(this.derivedState.calculationInputs)
+        if (tracksInputs && !(await this.isStateStale(request, context))) {
+          return context.state
+        }
+        // Capture the state used by the calculation before any asynchronous work.
+        const calculationState = tracksInputs ? structuredClone(state) : state
+        const snapshot = tracksInputs ? this.#inputSnapshot(calculationState) : undefined
+        const answers = await this.#calculate(request, calculationState)
         const updated = mergeAdditionalAnswers(context.state, answers)
+        if (tracksInputs) {
+          Object.assign(updated, {
+            derivedStateSnapshots: {
+              ...state.derivedStateSnapshots,
+              [this.path]: snapshot
+            }
+          })
+        }
         return await this.setState(request, updated)
       } catch (error) {
         throw operationError('refresh', error)
+      }
+    }
+
+    #inputSnapshot(state) {
+      return {
+        stateKeys: this.derivedState.stateKeys,
+        inputs: this.derivedState.calculationInputs?.map((path) => {
+          const value = path.split('.').reduce((current, key) => {
+            return current != null && Object.hasOwn(current, key) ? current[key] : undefined
+          }, state)
+          // Empty and singleton arrays distinguish absent values from null after JSON persistence.
+          return [path, value === undefined ? [] : [structuredClone(value)]]
+        })
       }
     }
 
@@ -104,7 +135,7 @@ export function withDerivedState(Base, options) {
 
 /** @param {DerivedStateOptions | undefined} options */
 function validateOptions(options) {
-  const { stateKeys, requiresAcknowledgement } = options ?? {}
+  const { stateKeys, requiresAcknowledgement, calculationInputs } = options ?? {}
   if (
     !Array.isArray(stateKeys) ||
     !stateKeys.length ||
@@ -114,7 +145,22 @@ function validateOptions(options) {
   ) {
     throw contractError('Invalid derived-state options')
   }
-  return { stateKeys: Object.freeze([...stateKeys]), requiresAcknowledgement }
+  if (
+    calculationInputs !== undefined &&
+    (!Array.isArray(calculationInputs) ||
+      !calculationInputs.length ||
+      new Set(calculationInputs).size !== calculationInputs.length ||
+      calculationInputs.some(
+        (path) => typeof path !== 'string' || path.split('.').some((key) => !key || DANGEROUS_KEYS.has(key))
+      ))
+  ) {
+    throw contractError('Invalid derived-state calculationInputs')
+  }
+  return {
+    stateKeys: Object.freeze([...stateKeys]),
+    requiresAcknowledgement,
+    ...(calculationInputs ? { calculationInputs: Object.freeze([...calculationInputs]) } : {})
+  }
 }
 
 function contractError(message) {
