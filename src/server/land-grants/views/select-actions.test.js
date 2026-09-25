@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { runInNewContext } from 'node:vm'
+import { initSelectActionsPage } from '~/src/client/javascripts/land-grants/select-actions-events.js'
 import { createPageRenderer } from '~/src/server/common/test-helpers/component-helpers.js'
 
 const renderPage = createPageRenderer(import.meta.url, 'select-actions.html', {
@@ -18,6 +20,36 @@ const normalise = (text) => text.replace(/\s+/g, ' ').trim()
 const linksNamed = ($, name) => $('main a').filter((_, link) => normalise($(link).text()) === name)
 
 describe('select-actions.html', () => {
+  it('blocks selection before the page module loads and releases controls after initialization', () => {
+    const $ = renderPage({ cspNonce: 'test-nonce' })
+    document.body.innerHTML = $('#select-actions-form').prop('outerHTML')
+    window.history.replaceState(null, '', '/test-grant/select-actions-for-land-parcel?parcelId=SD1234-5678')
+    const form = document.getElementById('select-actions-form')
+    const checkbox = form.querySelector('input[type="checkbox"]')
+    const button = form.querySelector('button')
+    const script = form.querySelector('script')
+    expect(script.nonce).toBe('test-nonce')
+
+    // The parser executes this inline script before rendering the action controls.
+    runInNewContext(script.textContent, { document })
+    expect(checkbox.matches(':disabled')).toBe(true)
+    expect(button.matches(':disabled')).toBe(true)
+    checkbox.click()
+    expect(checkbox.checked).toBe(false)
+    expect(document.getElementById('select-actions-loading').hidden).toBe(false)
+
+    initSelectActionsPage(form)
+    expect(checkbox.matches(':disabled')).toBe(false)
+    expect(button.matches(':disabled')).toBe(false)
+    expect(document.getElementById('select-actions-loading').hidden).toBe(true)
+  })
+
+  it('leaves the form usable when JavaScript is disabled', () => {
+    const $ = renderPage()
+    expect($('#select-actions-controls').attr('disabled')).toBeUndefined()
+    expect($('#select-actions-loading').attr('hidden')).toBeDefined()
+  })
+
   it('shows the parcel Change link without Cancel in the normal journey', () => {
     const $ = renderPage()
 

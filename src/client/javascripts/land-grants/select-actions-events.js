@@ -223,4 +223,15 @@ export function initSelectActionsPage(form) {
   bindCheckboxChangeHandler(form, refreshAvailability)
   bindQuantityFocusBlurHandlers(form, refreshAvailability)
   bindSubmitGuard(form, isRefreshInFlight)
+
+  // The inline page script blocks interaction while this module downloads.
+  // Any initial refresh now owns the disabled state of individual controls.
+  const controls = /** @type {HTMLFieldSetElement | null} */ (form.querySelector('#select-actions-controls'))
+  if (controls) {
+    controls.disabled = false
+  }
+  const loading = form.querySelector('#select-actions-loading')
+  if (loading instanceof HTMLElement) {
+    loading.hidden = true
+  }
 }
