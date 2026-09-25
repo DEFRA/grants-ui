@@ -43,12 +43,12 @@ beforeEach(() => {
 test('up reports a failed override apply instead of success after Docker started', () => {
   vi.mocked(getSelectedFormDefIds).mockReturnValueOnce(['example'])
   vi.mocked(runApplyFormDefs).mockReturnValueOnce(8)
-  expect(cmdUp([], null, false, [], true).status).toBe(8)
+  expect(cmdUp([], null, false, []).status).toBe(8)
   expect(runApplyFormDefs).toHaveBeenCalledTimes(1)
 })
 
 test('up configures Tailscale before starting containers', () => {
-  expect(cmdUp(['tailscale'], null, false, [], true).status).toBe(0)
+  expect(cmdUp(['tailscale'], null, false, []).status).toBe(0)
   expect(enableTailscaleServe).toHaveBeenCalledWith(false)
   expect(vi.mocked(enableTailscaleServe).mock.invocationCallOrder[0]).toBeLessThan(
     vi.mocked(runCompose).mock.invocationCallOrder[0]
@@ -57,7 +57,7 @@ test('up configures Tailscale before starting containers', () => {
 
 test('HA and Tailscale fail before Serve or Docker changes', () => {
   vi.spyOn(console, 'error').mockImplementation(() => {})
-  expect(cmdUp(['ha', 'tailscale'], 2, false, [], true).status).toBe(1)
+  expect(cmdUp(['ha', 'tailscale'], 2, false, []).status).toBe(1)
   expect(enableTailscaleServe).not.toHaveBeenCalled()
   expect(runCompose).not.toHaveBeenCalled()
 })
@@ -65,7 +65,7 @@ test('HA and Tailscale fail before Serve or Docker changes', () => {
 test('down removes matching proxies after the containers stop', () => {
   vi.mocked(loadState).mockReturnValueOnce({ addons: ['tailscale'], tailscaleShareIds: ['share-1'] })
   vi.mocked(getTailscaleShareIds).mockReturnValueOnce(['share-1'])
-  expect(cmdDown(false, true)).toBe(0)
+  expect(cmdDown(false)).toBe(0)
   expect(revokeAllTailscaleSharesSync).toHaveBeenCalledWith(false)
   expect(vi.mocked(revokeAllTailscaleSharesSync).mock.invocationCallOrder[0]).toBeLessThan(
     vi.mocked(runCompose).mock.invocationCallOrder[0]
@@ -79,7 +79,7 @@ test('down removes matching proxies after the containers stop', () => {
 test('down omits the Tailscale environment overlay from Compose interpolation', () => {
   vi.mocked(loadState).mockReturnValueOnce({ addons: ['land-grants', 'tailscale'] })
 
-  expect(cmdDown(false, true)).toBe(0)
+  expect(cmdDown(false)).toBe(0)
 
   expect(composeFileArgs).toHaveBeenCalledWith(['land-grants'], [])
 })
@@ -90,19 +90,19 @@ test('down leaves the stack running when a share cannot be revoked', () => {
   vi.mocked(revokeAllTailscaleSharesSync).mockReturnValueOnce(1)
   vi.spyOn(console, 'error').mockImplementation(() => {})
 
-  expect(cmdDown(false, true)).toBe(1)
+  expect(cmdDown(false)).toBe(1)
   expect(runCompose).not.toHaveBeenCalled()
   expect(disableTailscaleServe).not.toHaveBeenCalled()
 })
 
 test('debug dry-run does not execute any Docker commands', () => {
-  expect(cmdDebug(true, true)).toBe(0)
+  expect(cmdDebug(true)).toBe(0)
   expect(spawnSync).not.toHaveBeenCalled()
 })
 
 test('debug preserves the stop failure and does not attempt to restart', () => {
   vi.mocked(spawnSync).mockReturnValueOnce({ status: 9, stdout: '', stderr: '', pid: 1, output: [], signal: null })
-  expect(cmdDebug(true)).toBe(9)
+  expect(cmdDebug()).toBe(9)
   expect(spawnSync).toHaveBeenCalledTimes(1)
 })
 
