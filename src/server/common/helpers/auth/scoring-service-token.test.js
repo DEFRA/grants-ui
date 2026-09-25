@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import { config } from '~/src/config/config.js'
 import { getWebIdentityTokenProvider, getServiceToken } from './service-token.js'
-import { clearCachedBackendServiceToken, getBackendServiceToken } from './backend-service-token.js'
+import { clearCachedScoringServiceToken, getScoringServiceToken } from './scoring-service-token.js'
 
 vi.mock('~/src/config/config.js', () => ({
   config: {
@@ -14,26 +14,26 @@ vi.mock('./service-token.js', () => ({
   getServiceToken: vi.fn()
 }))
 
-describe('backend-service-token', () => {
+describe('scoring-service-token', () => {
   beforeEach(() => {
-    clearCachedBackendServiceToken()
-    config.get.mockReturnValue('grants-ui-backend')
+    clearCachedScoringServiceToken()
+    config.get.mockReturnValue('grants-scoring-api')
     getWebIdentityTokenProvider.mockClear()
     getServiceToken.mockClear()
   })
 
-  describe('getBackendServiceToken', () => {
+  describe('getScoringServiceToken', () => {
     test('creates the provider with the configured audience and an early-refresh window covering a request', async () => {
       const mockProvider = { getCredentials: vi.fn() }
       getWebIdentityTokenProvider.mockReturnValue(mockProvider)
       getServiceToken.mockResolvedValue('a-token')
 
-      const token = await getBackendServiceToken()
+      const token = await getScoringServiceToken()
 
       expect(token).toBe('a-token')
-      expect(config.get).toHaveBeenCalledWith('session.cache.webIdentity.audience')
-      expect(getWebIdentityTokenProvider).toHaveBeenCalledWith('grants-ui-backend', 20_000)
-      expect(getServiceToken).toHaveBeenCalledWith(mockProvider, 'grants-ui-backend', 'grants-ui-backend')
+      expect(config.get).toHaveBeenCalledWith('scoring.serviceAuth.audience')
+      expect(getWebIdentityTokenProvider).toHaveBeenCalledWith('grants-scoring-api', 20_000)
+      expect(getServiceToken).toHaveBeenCalledWith(mockProvider, 'grants-scoring-api', 'grants-scoring-api')
     })
 
     test('reuses the same provider instance across calls', async () => {
@@ -41,8 +41,8 @@ describe('backend-service-token', () => {
       getWebIdentityTokenProvider.mockReturnValue(mockProvider)
       getServiceToken.mockResolvedValue('a-token')
 
-      await getBackendServiceToken()
-      await getBackendServiceToken()
+      await getScoringServiceToken()
+      await getScoringServiceToken()
 
       expect(getWebIdentityTokenProvider).toHaveBeenCalledTimes(1)
       expect(getServiceToken).toHaveBeenCalledTimes(2)
