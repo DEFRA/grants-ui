@@ -5,7 +5,8 @@ const common = {
   require: ['test/support/world.js', 'test/steps/*.js'],
   requireModule: [],
   format: ['progress'],
-  parallel: parseInt(process.env.MAX_INSTANCES) || 1
+  parallel: parseInt(process.env.MAX_INSTANCES) || 1,
+  tags: 'not @skip-ci'
 }
 
 export default common
