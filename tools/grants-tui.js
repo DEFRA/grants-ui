@@ -195,22 +195,22 @@ async function main() {
   }
   if (argv.includes('down')) {
     releaseStdin()
-    cmdDown(dryRun)
+    process.exitCode = cmdDown(dryRun)
     return
   }
   if (argv.includes('debug')) {
     releaseStdin()
-    cmdDebug()
+    process.exitCode = cmdDebug()
     return
   }
   if (argv.includes('restart')) {
     releaseStdin()
-    cmdRestart(getRunningServices(), dryRun)
+    process.exitCode = cmdRestart(getRunningServices(), dryRun)
     return
   }
   if (argv.includes('reset')) {
     releaseStdin()
-    cmdReset(dryRun)
+    process.exitCode = cmdReset(dryRun)
     return
   }
   if (testInvoked) {
@@ -295,7 +295,7 @@ async function main() {
     }
     const localServices = LOCAL_SERVICES.filter((s) => argv.includes(`--local-${s.key}`)).map((s) => s.key)
     releaseStdin()
-    cmdUp(flaggedAddons, scale, dryRun, localServices)
+    process.exitCode = cmdUp(flaggedAddons, scale, dryRun, localServices).status
     return
   }
 

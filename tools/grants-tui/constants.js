@@ -105,17 +105,35 @@ export const PRE_UP_SCRIPT = resolve(ROOT, 'tools/setup-local-config.sh')
 // defradigital services that can be overridden with a locally-built image.
 // The local image name is always `<serviceName>:local`.
 // Add new entries here when new defradigital services are introduced.
+// `removeOnReset` marks images that `reset` force-removes (mirrors the
+// `docker:reset` npm script).
 // ---------------------------------------------------------------------------
 export const LOCAL_SERVICES = [
   { key: 'grants-ui-backend', composeService: 'grants-ui-backend', image: 'defradigital/grants-ui-backend' },
   { key: 'grants-config-broker', composeService: 'grants-config-broker', image: 'defradigital/grants-config-broker' },
-  { key: 'grants-ui-dal-stub', composeService: 'grants-ui-dal-stub', image: 'defradigital/grants-ui-dal-stub' },
-  { key: 'fg-gas-backend', composeService: 'fg-gas-backend', image: 'defradigital/fg-gas-backend' },
-  { key: 'land-grants-api', composeService: 'land-grants-backend', image: 'defradigital/land-grants-api' },
+  {
+    key: 'grants-ui-dal-stub',
+    composeService: 'grants-ui-dal-stub',
+    image: 'defradigital/grants-ui-dal-stub',
+    removeOnReset: true
+  },
+  {
+    key: 'fg-gas-backend',
+    composeService: 'fg-gas-backend',
+    image: 'defradigital/fg-gas-backend',
+    removeOnReset: true
+  },
+  {
+    key: 'land-grants-api',
+    composeService: 'land-grants-backend',
+    image: 'defradigital/land-grants-api',
+    removeOnReset: true
+  },
   {
     key: 'land-grants-postgres-seeded',
     composeService: 'land-grants-backend-postgres',
-    image: 'defradigital/land-grants-postgres-seeded'
+    image: 'defradigital/land-grants-postgres-seeded',
+    removeOnReset: true
   },
   { key: 'fcp-defra-id-stub', composeService: 'fcp-defra-id-stub', image: 'defradigital/fcp-defra-id-stub' }
 ]
