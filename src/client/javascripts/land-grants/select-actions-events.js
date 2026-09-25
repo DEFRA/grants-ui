@@ -2,6 +2,7 @@
 // select-actions-page.js is the entry point that calls initSelectActionsPage.
 
 import { ACTION_QUANTITY_FIELD_PREFIX } from '../../../shared/action-quantity-field.js'
+import { SELECT_ACTIONS_ELEMENT_IDS } from '../../../shared/select-actions-element-ids.js'
 import { isValidCompoundParcelId } from '../../../shared/format-parcel.js'
 import { CHECKBOX_NAME, clearChosenArea, clearErrorOnLoad, getQuantityInput } from './action-checkbox-state.js'
 import { clearQuantityError } from './quantity-error-display.js'
@@ -226,11 +227,13 @@ export function initSelectActionsPage(form) {
 
   // The inline page script blocks interaction while this module downloads.
   // Any initial refresh now owns the disabled state of individual controls.
-  const controls = /** @type {HTMLFieldSetElement | null} */ (form.querySelector('#select-actions-controls'))
+  const controls = /** @type {HTMLFieldSetElement | null} */ (
+    form.querySelector(`#${SELECT_ACTIONS_ELEMENT_IDS.controls}`)
+  )
   if (controls) {
     controls.disabled = false
   }
-  const loading = form.querySelector('#select-actions-loading')
+  const loading = form.querySelector(`#${SELECT_ACTIONS_ELEMENT_IDS.loading}`)
   if (loading instanceof HTMLElement) {
     loading.hidden = true
   }
