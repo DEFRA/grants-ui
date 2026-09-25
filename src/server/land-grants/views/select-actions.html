@@ -40,7 +40,7 @@
         {% endif %}
 
         <div class="govuk-form-group govuk-!-margin-top-2">
-          <h2 class="govuk-heading-m">Available actions</h2>
+          <h2 class="govuk-heading-m" id="available-actions-heading">Available actions</h2>
           <p class="govuk-body">The quantity available for each action depends on:</p>
           <ul class="govuk-list govuk-list--bullet">
             <li>the land cover on this parcel</li>
@@ -104,25 +104,39 @@
       <div class="{{ 'govuk-grid-column-full' if actionItems.length else gridColumnClass(page) }}">
         {% if actionItems.length %}
           <form id="select-actions-form" method="post" novalidate="novalidate">
-            <input type="hidden" name="crumb" value="{{ crumb }}" />
-            <input type="hidden" name="action" value="validate" />
-            {{ chosenAreaFieldsHtml | safe }}
+            <output id="{{ selectActionsElementIds.loading }}" class="govuk-body" hidden>Loading actions…</output>
+            <fieldset
+              id="{{ selectActionsElementIds.controls }}"
+              class="govuk-fieldset"
+              aria-labelledby="available-actions-heading"
+            >
+              {# Block interaction before the external module loads. Without JavaScript, retain the normal form. #}
+              <script nonce="{{ cspNonce }}">
+                document.getElementById('{{ selectActionsElementIds.controls }}').disabled = true
+                document.getElementById('{{ selectActionsElementIds.loading }}').hidden = false
+              </script>
+              <input type="hidden" name="crumb" value="{{ crumb }}" />
+              <input type="hidden" name="action" value="validate" />
+              {{ chosenAreaFieldsHtml | safe }}
 
-            {{
-              govukCheckboxes({
-                name: actionFieldName,
-                items: actionItems,
-                classes: "select-actions-checkboxes"
-              })
-            }}
-
-            <div>
               {{
-                govukButton({
-                  text: submitButtonText or "Continue",
-                  preventDoubleClick: true
+                govukCheckboxes({
+                  name: actionFieldName,
+                  items: actionItems,
+                  classes: "select-actions-checkboxes"
                 })
               }}
+
+              <div>
+                {{
+                  govukButton({
+                    text: submitButtonText or "Continue",
+                    preventDoubleClick: true
+                  })
+                }}
+              </div>
+            </fieldset>
+            <div>
               {% if cancelHref %}
                 <a class="govuk-link govuk-link--no-visited-state govuk-!-display-block" href="{{ cancelHref }}"
                   >Cancel</a

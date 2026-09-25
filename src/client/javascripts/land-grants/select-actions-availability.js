@@ -81,9 +81,10 @@ function toggleRefreshBanner(checkbox, isLoading) {
 }
 
 /**
- * Disables every OTHER checkbox/quantity input while one action's refresh is in flight; applyAvailability restores them after.
+ * Disables other actions during a refresh, or all actions during the initial refresh.
+ * applyAvailability restores them after.
  * @param {HTMLElement} form
- * @param {HTMLInputElement} triggeringCheckbox
+ * @param {HTMLInputElement} [triggeringCheckbox]
  */
 function disableOtherActions(form, triggeringCheckbox) {
   for (const checkbox of getCheckboxes(form)) {
@@ -600,8 +601,10 @@ export function createAvailabilityRefresher(form, parcelId) {
     // (below) after every response so a follow-up never has a gap where
     // other actions flash back to enabled, and only hidden/re-enabled once
     // the whole chain actually settles.
-    if (triggeringCheckbox && isChainStart) {
-      toggleRefreshBanner(triggeringCheckbox, true)
+    if (isChainStart) {
+      if (triggeringCheckbox) {
+        toggleRefreshBanner(triggeringCheckbox, true)
+      }
       disableOtherActions(form, triggeringCheckbox)
     }
     const plannedActions = buildPlannedActions(form)
@@ -623,12 +626,8 @@ export function createAvailabilityRefresher(form, parcelId) {
 
     const anyGrew = applyRefreshResponse(form, actions, plannedActions)
     if (anyGrew && followUpsLeft > 0) {
-      if (triggeringCheckbox) {
-        // applyRefreshResponse just re-enabled every checkbox with fresh
-        // data - restore the "fetch in flight" disabled state immediately,
-        // rather than leaving a gap until the follow-up fetch's own response.
-        disableOtherActions(form, triggeringCheckbox)
-      }
+      // Keep actions disabled until the whole chain, including initial-load growth, settles.
+      disableOtherActions(form, triggeringCheckbox)
       await refreshAvailability(triggeringCheckbox, followUpsLeft - 1)
       return
     }

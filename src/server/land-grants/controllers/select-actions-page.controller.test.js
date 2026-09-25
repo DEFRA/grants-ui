@@ -9,6 +9,7 @@ import {
 import SelectActionsPageController from './select-actions-page.controller.js'
 import { error, log } from '~/src/server/common/helpers/logging/log.js'
 import { config } from '~/src/config/config.js'
+import { SELECT_ACTIONS_ELEMENT_IDS } from '~/src/shared/select-actions-element-ids.js'
 import {
   CMOR1,
   makeLandGrantsRequest,
@@ -169,6 +170,7 @@ describe('SelectActionsPageController', () => {
         'select-actions',
         expect.objectContaining({
           parcelName: 'sheet1 parcel1',
+          selectActionsElementIds: SELECT_ACTIONS_ELEMENT_IDS,
           actionItems: expect.arrayContaining([
             expect.objectContaining({ value: 'CMOR1' }),
             expect.objectContaining({ value: 'UPL1' }),
