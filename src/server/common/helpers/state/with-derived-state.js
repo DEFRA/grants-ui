@@ -60,7 +60,7 @@ export function withDerivedState(Base, options) {
           return true
         }
         if (this.derivedState.calculationInputs) {
-          return !isDeepStrictEqual(state.derivedStateSnapshots?.[this.path], this.#inputSnapshot(state))
+          return !isDeepStrictEqual(state.derivedStateSnapshots?.[this.path], inputSnapshot(state, this.derivedState))
         }
         const calculated = await this.#calculate(request, state)
         return this.derivedState.stateKeys.some((key) => !isDeepStrictEqual(saved[key], calculated[key]))
@@ -88,7 +88,7 @@ export function withDerivedState(Base, options) {
         }
         // Capture the state used by the calculation before any asynchronous work.
         const calculationState = tracksInputs ? structuredClone(state) : state
-        const snapshot = tracksInputs ? this.#inputSnapshot(calculationState) : undefined
+        const snapshot = tracksInputs ? inputSnapshot(calculationState, this.derivedState) : undefined
         const answers = await this.#calculate(request, calculationState)
         const updated = mergeAdditionalAnswers(context.state, answers)
         if (tracksInputs) {
@@ -105,55 +105,44 @@ export function withDerivedState(Base, options) {
       }
     }
 
-    #inputSnapshot(state) {
-      return {
-        stateKeys: this.derivedState.stateKeys,
-        inputs: this.derivedState.calculationInputs?.map((path) => {
-          const value = path.split('.').reduce((current, key) => {
-            return current != null && Object.hasOwn(current, key) ? current[key] : undefined
-          }, state)
-          // Empty and singleton arrays distinguish absent values from null after JSON persistence.
-          return [path, value === undefined ? [] : [structuredClone(value)]]
-        })
-      }
-    }
-
     async #calculate(request, state) {
       const answers = await this.getCalculatedAnswers(request, state)
-      const { stateKeys } = this.derivedState
-      if (
-        !answers ||
-        Object.keys(answers).length !== stateKeys.length ||
-        stateKeys.some((key) => !Object.hasOwn(answers, key) || answers[key] === undefined)
-      ) {
-        throw contractError('Calculation must return exactly its owned state keys')
-      }
-      return answers
+      return validateCalculatedAnswers(answers, this.derivedState.stateKeys)
     }
   }
+}
+
+function inputSnapshot(state, derivedState) {
+  return {
+    stateKeys: derivedState.stateKeys,
+    inputs: derivedState.calculationInputs?.map((path) => {
+      const value = path.split('.').reduce((current, key) => {
+        return current != null && Object.hasOwn(current, key) ? current[key] : undefined
+      }, state)
+      // Empty and singleton arrays distinguish absent values from null after JSON persistence.
+      return [path, value === undefined ? [] : [structuredClone(value)]]
+    })
+  }
+}
+
+function validateCalculatedAnswers(answers, stateKeys) {
+  if (
+    !answers ||
+    Object.keys(answers).length !== stateKeys.length ||
+    stateKeys.some((key) => !Object.hasOwn(answers, key) || answers[key] === undefined)
+  ) {
+    throw contractError('Calculation must return exactly its owned state keys')
+  }
+  return answers
 }
 
 /** @param {DerivedStateOptions | undefined} options */
 function validateOptions(options) {
   const { stateKeys, requiresAcknowledgement, calculationInputs } = options ?? {}
-  if (
-    !Array.isArray(stateKeys) ||
-    !stateKeys.length ||
-    new Set(stateKeys).size !== stateKeys.length ||
-    stateKeys.some((key) => typeof key !== 'string' || !key || DANGEROUS_KEYS.has(key) || key.includes('.')) ||
-    typeof requiresAcknowledgement !== 'boolean'
-  ) {
+  if (!isValidStateKeys(stateKeys) || typeof requiresAcknowledgement !== 'boolean') {
     throw contractError('Invalid derived-state options')
   }
-  if (
-    calculationInputs !== undefined &&
-    (!Array.isArray(calculationInputs) ||
-      !calculationInputs.length ||
-      new Set(calculationInputs).size !== calculationInputs.length ||
-      calculationInputs.some(
-        (path) => typeof path !== 'string' || path.split('.').some((key) => !key || DANGEROUS_KEYS.has(key))
-      ))
-  ) {
+  if (calculationInputs !== undefined && !isValidCalculationInputs(calculationInputs)) {
     throw contractError('Invalid derived-state calculationInputs')
   }
   return {
@@ -161,6 +150,30 @@ function validateOptions(options) {
     requiresAcknowledgement,
     ...(calculationInputs ? { calculationInputs: Object.freeze([...calculationInputs]) } : {})
   }
+}
+
+/**
+ * @param {unknown} stateKeys
+ * @returns {stateKeys is string[]}
+ */
+function isValidStateKeys(stateKeys) {
+  return (
+    Array.isArray(stateKeys) &&
+    stateKeys.length > 0 &&
+    new Set(stateKeys).size === stateKeys.length &&
+    stateKeys.every((key) => typeof key === 'string' && key && !DANGEROUS_KEYS.has(key) && !key.includes('.'))
+  )
+}
+
+function isValidCalculationInputs(calculationInputs) {
+  return (
+    Array.isArray(calculationInputs) &&
+    calculationInputs.length > 0 &&
+    new Set(calculationInputs).size === calculationInputs.length &&
+    calculationInputs.every(
+      (path) => typeof path === 'string' && path.split('.').every((key) => key && !DANGEROUS_KEYS.has(key))
+    )
+  )
 }
 
 function contractError(message) {
