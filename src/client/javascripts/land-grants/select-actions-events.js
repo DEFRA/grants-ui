@@ -223,4 +223,11 @@ export function initSelectActionsPage(form) {
   bindCheckboxChangeHandler(form, refreshAvailability)
   bindQuantityFocusBlurHandlers(form, refreshAvailability)
   bindSubmitGuard(form, isRefreshInFlight)
+
+  // Release the outer fieldset disabled by the template while this module loads.
+  // An initial availability refresh still controls individual inputs and the submit button.
+  const controls = /** @type {HTMLFieldSetElement | null} */ (form.querySelector(':scope > fieldset'))
+  if (controls) {
+    controls.disabled = false
+  }
 }
