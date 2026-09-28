@@ -113,6 +113,22 @@ const convictConfig = {
       env: 'GAS_API_AUTH_TOKEN'
     }
   },
+  scoring: {
+    serviceUrl: {
+      doc: 'Grant Scoring API endpoint',
+      format: String,
+      default: '',
+      env: 'SCORING_SERVICE_URL'
+    },
+    serviceAuth: {
+      audience: {
+        doc: 'JWT audience sent in the token request',
+        format: String,
+        default: 'grants-scoring-api',
+        env: 'SCORING_SERVICE_AUTH_AUDIENCE'
+      }
+    }
+  },
   consolidatedView: {
     mockDALEnabled: {
       doc: 'Consolidated View API mock enabled',

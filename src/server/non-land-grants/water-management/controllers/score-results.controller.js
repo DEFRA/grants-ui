@@ -1,33 +1,35 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
-import { LogCodes } from '~/src/server/common/helpers/logging/log.js'
-import { mergeAdditionalAnswers } from '~/src/server/common/helpers/state/additional-answers-helper.js'
-import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
+import { invokeGrantScoringGetAction } from '~/src/server/common/services/grant-scoring/grant-scoring.service.js'
+import { withDerivedState } from '~/src/server/common/helpers/state/with-derived-state.js'
 
-export default class ScoreResultsController extends QuestionPageController {
+export default class ScoreResultsController extends withDerivedState(QuestionPageController) {
   /**
    * Handle GET requests to the score results page
    */
   makeGetRouteHandler() {
-    const fn = async (request, context, h) => {
-      try {
-        // api call example: invokeGasPostAction
-        // api param: context.state.cropsGrowing
-        // api param: context.state.countyProjectLocated
-        const scoreResults = 'Average'
-        context.state = await this.setState(request, mergeAdditionalAnswers(context.state, { scoreResults }))
+    return async (request, context, h) => {
+      context.state = await this.refreshState(request, context)
 
-        const baseViewModel = this.getViewModel(request, context)
-        return h.view(this.viewName, baseViewModel)
-      } catch (error) {
-        const systemError = new SystemError({
-          message: 'Failed to retrieve score results',
-          source: 'ScoreResultsController.makeGetRouteHandler',
-          reason: 'grants_ui_controller_failure'
-        }).from(/** @type {Error} */ (error))
-        systemError.logCode = LogCodes.SYSTEM.GENERIC_ERROR
-        throw systemError
-      }
+      const baseViewModel = this.getViewModel(request, context)
+      return h.view(this.viewName, baseViewModel)
     }
-    return fn
+  }
+
+  /**
+   * Calculates the derived answers without changing persisted state.
+   * @param {import('@defra/forms-engine-plugin/types').AnyFormRequest} request
+   * @param {any} state
+   * @returns {Promise<Record<string, any>>}
+   */
+  async getCalculatedAnswers(request, state) {
+    const { countyProjectLocated } = state
+
+    const { score: eligibilityScore, band: eligibilityBand } = await invokeGrantScoringGetAction(
+      'water-management',
+      request,
+      { county: countyProjectLocated }
+    )
+
+    return { eligibilityScore, eligibilityBand }
   }
 }

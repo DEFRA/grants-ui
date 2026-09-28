@@ -1,33 +1,11 @@
-import { MockProvider, WebIdentityTokenProvider } from '@defra/hapi-auth-oidc'
-
+import { getServiceToken, getWebIdentityTokenProvider } from '~/src/server/common/helpers/auth/service-token.js'
 import { config } from '~/src/config/config.js'
-import { logger } from '~/src/server/common/helpers/logging/log.js'
 
 // grants-ui-backend checks the token's exp on receipt, so refresh early enough
 // that a token can't expire mid-request (request budget plus clock-skew slack).
 const EARLY_REFRESH_MS = 20_000
 
-/** @type {WebIdentityTokenProvider | MockProvider | null} */
 let webIdentityTokenProvider = null
-
-/**
- * Lazily creates (and caches) the token provider. Binds directly to the
- * service's IAM role via AWS STS - no stored secret. Locally, floci has no
- * GetWebIdentityToken support, so a MockProvider stands in instead.
- * @returns {WebIdentityTokenProvider | MockProvider}
- */
-function getWebIdentityTokenProvider() {
-  if (!webIdentityTokenProvider) {
-    webIdentityTokenProvider =
-      config.get('cdpEnvironment') === 'local'
-        ? new MockProvider({})
-        : new WebIdentityTokenProvider({
-            audience: [config.get('session.cache.webIdentity.audience')],
-            earlyRefreshMs: EARLY_REFRESH_MS
-          })
-  }
-  return webIdentityTokenProvider
-}
 
 /**
  * Resets the cached token provider. Test-only.
@@ -46,11 +24,9 @@ export function clearCachedBackendServiceToken() {
 export async function getBackendServiceToken() {
   const audience = config.get('session.cache.webIdentity.audience')
 
-  const token = await getWebIdentityTokenProvider().getCredentials(logger)
-  if (token) {
-    logger.info(`[grants-ui-backend] Web Identity token ready (audience=${audience})`)
-  } else {
-    logger.warn(`[grants-ui-backend] no Web Identity token available (audience=${audience})`)
+  if (!webIdentityTokenProvider) {
+    webIdentityTokenProvider = getWebIdentityTokenProvider(audience, EARLY_REFRESH_MS)
   }
-  return token ?? undefined
+
+  return getServiceToken(webIdentityTokenProvider, audience, 'grants-ui-backend')
 }
