@@ -1,7 +1,5 @@
 Feature: Action Selection
 
-    # Temporarily excluded from CI — CLIG3 availability race; re-enable with #1310 (TGC-1709).
-    @skip-ci
     Scenario: Add and remove land parcels and select actions
         Given there is no application data for SBI "106514040" and grant "example-grant-with-map"
 
