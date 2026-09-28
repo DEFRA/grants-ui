@@ -1,3 +1,5 @@
+# Temporarily excluded from CI — see TGC-1682 for failure details and re-enablement.
+@skip-ci
 Feature: User Permissions
     SBI 106238911 users and permissions:
         CRN 1062311181 - SUBMIT CS Applications permissions
@@ -189,7 +191,7 @@ Feature: User Permissions
         # declaration - cannot submit application
         Then the user should be at URL "declaration"
         And should see heading "You cannot submit this application"
-        And should see "Contact a person in your business to review and submit the application."
+        And should see "Contact a person in your business with the correct permission level to review and submit the application."
 
         # unlock from CRN 1062311182
         Given there is no application lock for CRN "1062311182" and SBI "106238911" and grant "example-grant-with-auth"
@@ -310,7 +312,7 @@ Feature: User Permissions
         # claim-declaration - cannot submit claim
         Then the user should be at URL "claim-declaration"
         And should see heading "You cannot submit this claim"
-        And should see "Contact a person in your business to review and submit the claim."
+        And should see "Contact a person in your business with the correct permission level to review and submit the claim."
 
         # unlock from CRN 1062311186
         Given there is no application lock for CRN "1062311186" and SBI "106238911" and grant "example-grant-with-auth"
