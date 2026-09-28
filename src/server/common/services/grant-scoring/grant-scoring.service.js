@@ -80,8 +80,9 @@ function buildRequestUrl(url, queryParams) {
 async function handleResponse(response, grantCode) {
   if (!response.ok) {
     const error = await response.json()
+    const responseErrorMessage = error?.message ? ` - ${error.message}` : ''
     throw new GrantScoringServiceError({
-      message: `${response.status} ${response.statusText}${error?.message ? ` - ${error.message}` : ''}`,
+      message: `${response.status} ${response.statusText}${responseErrorMessage}`,
       source: 'GrantScoringService.handleResponse',
       reason: 'grant_scoring_http_failure',
       status: 500,
@@ -98,14 +99,14 @@ async function handleResponse(response, grantCode) {
  * Makes a request to the Grant Scoring Service API
  * @param {string} url - API endpoint URL
  * @param {string} grantCode - Grant code for error context
- * @param {import('@defra/forms-engine-plugin/types').AnyFormRequest} request
+ * @param {import('@defra/forms-engine-plugin/types').AnyFormRequest} _request
  * @param {object} [options] - Request options
  * @param {string} [options.method] - HTTP method (GET, POST, etc.)
  * @param {Record<string, unknown>} [options.queryParams] - Query parameters for GET requests
  * @returns {Promise<Response>} - Promise that resolves to the response
  * @throws {GrantScoringServiceError}
  */
-export async function makeScoringApiRequest(url, grantCode, request, options = {}) {
+export async function makeScoringApiRequest(url, grantCode, _request, options = {}) {
   const { method = 'GET', queryParams } = options
 
   try {
