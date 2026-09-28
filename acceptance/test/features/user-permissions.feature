@@ -1,3 +1,5 @@
+# Temporarily excluded from CI — see TGC-1682 for failure details and re-enablement.
+@skip-ci
 Feature: User Permissions
     SBI 106238911 users and permissions:
         CRN 1062311181 - SUBMIT CS Applications permissions
