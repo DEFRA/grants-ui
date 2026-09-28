@@ -1,7 +1,7 @@
 import { beforeEach, vi } from 'vitest'
-import { mockFetch, mockSimpleRequest } from '~/src/__mocks__/hapi-mocks.js'
+import { mockFetch, mockHapiRequest } from '~/src/__mocks__/hapi-mocks.js'
 import { config } from '~/src/config/config.js'
-import { log } from '~/src/server/common/helpers/logging/log.js'
+import * as logging from '~/src/server/common/helpers/logging/log.js'
 import { invokeGrantScoringGetAction, makeScoringApiRequest } from './grant-scoring.service.js'
 
 global.fetch = mockFetch
@@ -21,7 +21,8 @@ describe('Grant Scoring service', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockRequest = mockSimpleRequest()
+    vi.spyOn(logging, 'log')
+    mockRequest = mockHapiRequest()
     mockRequest.sts = {}
     vi.spyOn(config, 'get').mockImplementation((path) => {
       if (path === 'scoring.serviceUrl') {
@@ -75,7 +76,7 @@ describe('Grant Scoring service', () => {
     expect(result).toEqual(mockResponse)
   })
 
-  test('should throw a GrantScoringServiceApiError when the request fails', async () => {
+  test('should throw a GrantScoringServiceError when the request fails', async () => {
     const mockedFetch = mockFetch()
     const mockMessage = 'Internal Server Error'
 
@@ -86,16 +87,11 @@ describe('Grant Scoring service', () => {
       json: () => ({ message: mockMessage })
     })
 
-    await expect(invokeGrantScoringGetAction(code, mockRequest)).rejects.toThrow(mockMessage)
-
-    expect(log).toHaveBeenCalledWith(
-      expect.objectContaining({ level: 'error' }),
-      expect.objectContaining({
-        service: 'grant-scoring-service',
-        upstreamStatus: 500
-      }),
-      mockRequest
+    await expect(invokeGrantScoringGetAction(code, mockRequest)).rejects.toThrow(
+      '500 Internal Server Error - Internal Server Error'
     )
+
+    expect(logging.log).not.toHaveBeenCalled()
   })
 
   test('should handle network errors', async () => {
@@ -103,7 +99,9 @@ describe('Grant Scoring service', () => {
     const networkError = new Error('Network error')
     mockedFetch.mockRejectedValue(networkError)
 
-    await expect(invokeGrantScoringGetAction(code, mockRequest)).rejects.toThrow('Network error')
+    await expect(invokeGrantScoringGetAction(code, mockRequest)).rejects.toThrow(
+      'Failed to get grant eligibility score result'
+    )
   })
 
   test('should return base URL if queryParams is not provided', async () => {

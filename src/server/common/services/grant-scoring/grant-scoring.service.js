@@ -1,8 +1,8 @@
 import { config } from '~/src/config/config.js'
-import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
 import { getScoringServiceToken } from '~/src/server/common/helpers/auth/scoring-service-token.js'
 import { withTraceId } from '@defra/hapi-tracing'
+import { GrantScoringServiceError } from '~/src/server/common/utils/errors/GrantScoringServiceError.js'
 
 const SCORING_SERVICE_URL = config.get('scoring.serviceUrl')
 
@@ -12,7 +12,7 @@ const SCORING_SERVICE_URL = config.get('scoring.serviceUrl')
  * @param {import('@defra/forms-engine-plugin/types').AnyFormRequest} request
  * @param {Record<string, unknown>} [queryParams] - Optional query parameters
  * @returns {Promise<any>} - Promise that resolves to the response JSON
- * @throws {GrantScoringServiceApiError} - If the API request fails
+ * @throws {GrantScoringServiceError}
  */
 export async function invokeGrantScoringGetAction(grantCode, request, queryParams = {}) {
   const url = `${SCORING_SERVICE_URL}/scoring/${grantCode}`
@@ -21,26 +21,6 @@ export async function invokeGrantScoringGetAction(grantCode, request, queryParam
     queryParams
   })
   return response.json()
-}
-
-/**
- * Custom error type thrown when Scoring API requests fail.
- */
-class GrantScoringServiceApiError extends Error {
-  /**
-   * @param {string} message - Human-readable error message
-   * @param {number} statusCode - HTTP status code returned by Scoring Service
-   * @param {string} responseBody - Error response body from Scoring Service
-   * @param {string} code - Grant code for context
-   * @param {Error} [cause] - Optional underlying error
-   */
-  constructor(message, statusCode, responseBody, code, cause) {
-    super(message, cause ? { cause } : undefined)
-    this.name = 'GrantScoringServiceApiError'
-    this.status = statusCode
-    this.responseBody = responseBody
-    this.grantCode = code
-  }
 }
 
 /**
@@ -94,41 +74,24 @@ function buildRequestUrl(url, queryParams) {
  * @param {Response} response - Fetch response object
  * @param {string} grantCode - Grant code for error context
  * @returns {Promise<Response>} The original response if successful
- * @throws {GrantScoringServiceApiError}
+ * @throws {GrantScoringServiceError}
  * @private
  */
 async function handleResponse(response, grantCode) {
   if (!response.ok) {
     const error = await response.json()
-
-    throw new GrantScoringServiceApiError(
-      `${response.status} ${response.statusText} - ${error.message}`,
-      response.status,
-      error.message,
-      grantCode
-    )
+    throw new GrantScoringServiceError({
+      message: `${response.status} ${response.statusText}${error?.message ? ` - ${error.message}` : ''}`,
+      source: 'GrantScoringService.handleResponse',
+      reason: 'grant_scoring_http_failure',
+      status: 500,
+      service: 'grant-scoring-service',
+      grantCode,
+      upstreamStatus: response.status
+    })
   }
 
   return response
-}
-
-/**
- * @param {import('@defra/forms-engine-plugin/types').AnyFormRequest} request
- * @param {string} url
- * @param {unknown} error
- */
-function logScoringUpstreamError(request, url, error) {
-  const upstream = /** @type {{ status?: number, message?: string }} */ (error)
-  log(
-    LogCodes.SYSTEM.EXTERNAL_API_ERROR,
-    {
-      endpoint: url,
-      service: 'grant-scoring-service',
-      upstreamStatus: upstream.status ?? null,
-      errorMessage: upstream.message
-    },
-    request
-  )
 }
 
 /**
@@ -140,7 +103,7 @@ function logScoringUpstreamError(request, url, error) {
  * @param {string} [options.method] - HTTP method (GET, POST, etc.)
  * @param {Record<string, unknown>} [options.queryParams] - Query parameters for GET requests
  * @returns {Promise<Response>} - Promise that resolves to the response
- * @throws {GrantScoringServiceApiError} - If the API request fails
+ * @throws {GrantScoringServiceError}
  */
 export async function makeScoringApiRequest(url, grantCode, request, options = {}) {
   const { method = 'GET', queryParams } = options
@@ -159,19 +122,18 @@ export async function makeScoringApiRequest(url, grantCode, request, options = {
 
     return response
   } catch (error) {
-    logScoringUpstreamError(request, url, error)
-    if (error instanceof GrantScoringServiceApiError) {
+    if (error instanceof GrantScoringServiceError) {
       throw error
     }
-
-    const err = /** @type {{ status?: number, message?: string }} */ (error)
-    throw new GrantScoringServiceApiError(
-      'Failed to process Scoring API request: ' + err.message,
-      /** @type {number} */ (err.status),
-      /** @type {string} */ (err.message),
-      grantCode,
-      /** @type {Error} */ (error)
-    )
+    throw new GrantScoringServiceError({
+      message: 'Failed to get grant eligibility score result',
+      source: 'GrantScoringService.makeScoringApiRequest',
+      reason: 'grant_scoring_request_failure',
+      status: 500,
+      endpoint: url,
+      service: 'grant-scoring-service',
+      grantCode
+    }).from(error)
   }
 }
 

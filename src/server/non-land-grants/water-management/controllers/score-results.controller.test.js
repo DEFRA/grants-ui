@@ -83,14 +83,18 @@ describe('ScoreResultsController', () => {
       expect(mockH.view).toHaveBeenCalledWith(controller.viewName, expect.objectContaining({ baseModel: 'data' }))
     })
 
-    it('should throw GrantScoringServiceError on failure', async () => {
-      invokeGrantScoringGetAction.mockRejectedValue(new Error('Test Error'))
-
+    it('should throw if invokeGrantScoringGetAction fails', async () => {
+      invokeGrantScoringGetAction.mockRejectedValueOnce(new Error('Failed to get grant eligibility score result'))
       const handler = controller.makeGetRouteHandler()
 
-      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow(
-        'Failed to get grant eligibility score result'
-      )
+      try {
+        await handler(mockRequest, mockContext, mockH)
+        expect.fail('Should have thrown')
+      } catch (error) {
+        expect(error.message).toBe('Failed to refresh derived answers')
+        const [cause] = error.causeErrors
+        expect(cause.message).toBe('Failed to get grant eligibility score result')
+      }
     })
   })
 })
