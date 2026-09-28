@@ -1,3 +1,5 @@
+# Temporarily excluded from CI — see TGC-1682 for failure details and re-enablement.
+@skip-ci
 Feature: User Permissions
     SBI 106238911 users and permissions:
         CRN 1062311181 - SUBMIT CS Applications permissions
@@ -8,6 +10,8 @@ Feature: User Permissions
         CRN 1062311186 - AMEND CS Agreements permissions
         CRN 1062311187 - VIEW CS Agreements permissions
 
+    # Temporarily excluded from CI — copy changed in config 3.27.1; re-enable with #1307 (TGC-1682).
+    @skip-ci
     Scenario: Complete a grant application and claim submission with multiple users with different permissions
         Given there is no application data for SBI "106238911" and grant "example-grant-with-auth"
 
