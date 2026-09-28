@@ -528,7 +528,7 @@ describe('initSelectActionsPage - submit', () => {
     expect(isSubmitBlocked(form)).toBe(false)
   })
 
-  it('blocks a submit that lands during the untriggered initial refresh, which leaves every checkbox enabled', async () => {
+  it('blocks submission and action changes during the initial refresh', async () => {
     const form = setupDom([
       { code: 'CSAM3', checked: true, availability: { value: 10, unit: 'ha' }, chosenArea: 10 },
       { code: 'SCR2', checked: true, availability: { value: 0, unit: 'ha' } }
@@ -539,6 +539,8 @@ describe('initSelectActionsPage - submit', () => {
     initSelectActionsPage(form)
 
     expect(isSubmitBlocked(form)).toBe(true)
+    expect(checkbox(form, 'CSAM3').disabled).toBe(true)
+    expect(checkbox(form, 'SCR2').disabled).toBe(true)
 
     fetchMock.resolve({
       actions: [
@@ -555,13 +557,111 @@ describe('initSelectActionsPage - submit', () => {
     expect(isSubmitBlocked(form)).toBe(false)
   })
 
+  it('waits for remaining availability before allowing a total action to be added to an existing parcel', async () => {
+    const form = setupDom([
+      {
+        code: 'CSAM3',
+        checked: true,
+        availability: { value: 2.5674, unit: 'ha' },
+        requiresMaxQuantity: 2.5674,
+        quantityValue: '1.5'
+      },
+      { code: 'CLIG3', availability: { value: 2.5674, unit: 'ha' } },
+      {
+        code: 'SCR2',
+        checked: true,
+        availability: { value: 2.5674, unit: 'ha' },
+        requiresMaxQuantity: 2.5674,
+        quantityValue: '0.75'
+      }
+    ])
+    const fetchMock = deferredFetch()
+    global.fetch = fetchMock.mock
+
+    initSelectActionsPage(form)
+
+    const clig3 = checkbox(form, 'CLIG3')
+    expect(clig3.disabled).toBe(true)
+    clig3.click()
+    expect(clig3.checked).toBe(false)
+    expect(quantityInputFor(form, 'CSAM3').disabled).toBe(true)
+
+    fetchMock.resolve({
+      actions: ['CSAM3', 'CLIG3', 'SCR2'].map((code) => ({ code, availability: { value: 0.3174, unit: 'ha' } }))
+    })
+    await flushPromises()
+
+    expect(clig3.disabled).toBe(false)
+    expect(quantityInputFor(form, 'CSAM3').disabled).toBe(false)
+    global.fetch = fetchOk({
+      actions: ['CSAM3', 'CLIG3', 'SCR2'].map((code) => ({ code, availability: { value: 0, unit: 'ha' } }))
+    })
+    await toggle(form, 'CLIG3', true)
+
+    expect(sentPlannedActions()).toContainEqual({ actionCode: 'CLIG3', quantity: 0.3174, unit: 'ha' })
+    expect(getChosenAreaFieldValue(clig3)).toBe('0.3174')
+  })
+
+  it('keeps actions disabled across initial-refresh growth and restores them when it settles', async () => {
+    const form = setupDom([
+      { code: 'CMOR1', checked: true, availability: { value: 10, unit: 'ha' }, chosenArea: 1 },
+      { code: 'CLIG3', availability: { value: 10, unit: 'ha' } }
+    ])
+    const fetchQueue = deferredFetchQueue()
+    global.fetch = fetchQueue.mock
+    initSelectActionsPage(form)
+
+    fetchQueue.resolveNext({
+      actions: [
+        { code: 'CMOR1', availability: { value: 2, unit: 'ha' } },
+        { code: 'CLIG3', availability: { value: 9, unit: 'ha' } }
+      ]
+    })
+    await flushPromises()
+    expect(checkbox(form, 'CMOR1').disabled).toBe(true)
+    expect(checkbox(form, 'CLIG3').disabled).toBe(true)
+
+    fetchQueue.resolveNext({
+      actions: [
+        { code: 'CMOR1', availability: { value: 0, unit: 'ha' } },
+        { code: 'CLIG3', availability: { value: 7, unit: 'ha' } }
+      ]
+    })
+    await flushPromises()
+    expect(checkbox(form, 'CMOR1').disabled).toBe(false)
+    expect(checkbox(form, 'CLIG3').disabled).toBe(false)
+    expect(submitButton(form).disabled).toBe(false)
+  })
+
+  it('restores action selection when the initial refresh fails', async () => {
+    const form = setupDom([
+      { code: 'CMOR1', checked: true, availability: { value: 10, unit: 'ha' }, chosenArea: 1 },
+      { code: 'CLIG3', availability: { value: 10, unit: 'ha' } }
+    ])
+    global.fetch = vi.fn().mockRejectedValue(new Error('Network unavailable'))
+    initSelectActionsPage(form)
+    expect(checkbox(form, 'CLIG3').disabled).toBe(true)
+
+    await flushPromises()
+    expect(checkbox(form, 'CLIG3').disabled).toBe(false)
+    expect(submitButton(form).disabled).toBe(false)
+  })
+
   it('blocks a submit across a growth follow-up chain, only releasing once the whole chain settles', async () => {
     const form = setupDom([
       { code: 'CMOR1', checked: true, availability: { value: 10, unit: 'ha' }, chosenArea: 1 },
       { code: 'CLIG3', availability: { value: 10, unit: 'ha' } }
     ])
-    // Settle the untriggered init refresh (CMOR1 starts checked)
-    await initSettled(form, fetchOk({ actions: [] }))
+    // Settle the initial refresh with availability for both actions.
+    await initSettled(
+      form,
+      fetchOk({
+        actions: [
+          { code: 'CMOR1', availability: { value: 0, unit: 'ha' } },
+          { code: 'CLIG3', availability: { value: 9, unit: 'ha' } }
+        ]
+      })
+    )
 
     const fetchQueue = deferredFetchQueue()
     global.fetch = fetchQueue.mock

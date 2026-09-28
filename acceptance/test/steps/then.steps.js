@@ -67,7 +67,9 @@ Then('(the user )should see task title {string}', async function (text) {
 })
 
 Then('(the user )should (still )be (back )at URL {string}', async function (expectedPath) {
-  await expect(this.page).toHaveURL(new RegExp(expectedPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
+  const escapedPath = expectedPath.replace(/^\//, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const pathPattern = new RegExp(`/${escapedPath}(?:/|$)`)
+  await expect(this.page).toHaveURL((url) => pathPattern.test(url.pathname))
 })
 
 Then('(the user )should see the following answers', async function (dataTable) {
