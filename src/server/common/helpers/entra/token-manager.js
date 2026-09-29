@@ -6,6 +6,7 @@ import { config } from '~/src/config/config.js'
 import { ExternalApiError } from '~/src/server/common/utils/errors/ExternalApiError.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
 import { log, logger, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { isExpired, logUnderlyingCredentialExpiry } from '~/src/server/common/helpers/auth/service-token.js'
 
 const clientAssertionType = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
 
@@ -13,6 +14,18 @@ const msInSec = 1000
 const secsInMins = 60
 const numMins = 5
 const expirationBuffer = numMins * secsInMins * msInSec // refresh tokens 5 minutes before actual expiry
+
+// CDP (per #cdp-support, 2026-09-29): the ECS task's own container credentials
+// are refreshed ~300s before they expire, with jitter. Requesting the library's
+// 300s default therefore asks for the same width as that refresh window itself -
+// a request landing close to the refresh boundary can ask for a token that would
+// outlive the (about to be replaced) container credentials, and STS rejects it
+// ("Requested token expiry time must be before the original session's expiry
+// time" - seen in prod 2026-09-28). A much shorter duration leaves comfortable
+// room regardless of where in the refresh cycle the request lands. This is the
+// client_assertion sent to Entra, unrelated to expirationBuffer above (which
+// governs the separate Entra-issued access token).
+const WEB_IDENTITY_DURATION_SECONDS = 60
 
 /** @type {WebIdentityTokenProvider | null} */
 let webIdentityTokenProvider = null
@@ -25,7 +38,8 @@ let webIdentityTokenProvider = null
 function getWebIdentityTokenProvider() {
   if (!webIdentityTokenProvider) {
     webIdentityTokenProvider = new WebIdentityTokenProvider({
-      audience: config.get('entra.webIdentity.audience')
+      audience: config.get('entra.webIdentity.audience'),
+      durationSeconds: WEB_IDENTITY_DURATION_SECONDS
     })
   }
   return webIdentityTokenProvider
@@ -123,6 +137,12 @@ class FederatedTokenProviderError extends Error {
 /**
  * Requests a signed Web Identity token from AWS STS and returns the
  * client_assertion request params for it.
+ *
+ * WebIdentityTokenProvider.getCredentials() can return a stale, already-expired
+ * token after a failed refresh (it logs the failure but returns the last cached
+ * token rather than null/throwing) - checking the token's own `exp` here stops
+ * that stale token being sent to Entra as a client_assertion, where it would
+ * only fail with a more confusing error (e.g. invalid_client).
  * @param {string} clientId - Client ID
  * @param {string} scope - Scope of the token
  * @returns {Promise<URLSearchParams>}
@@ -134,11 +154,16 @@ async function buildWebIdentityTokenRequestParams(clientId, scope) {
   try {
     clientAssertion = await getWebIdentityTokenProvider().getCredentials(logger)
   } catch (error) {
+    await logUnderlyingCredentialExpiry(getWebIdentityTokenProvider(), 'entra')
     throw new FederatedTokenProviderError({ audience }, /** @type {Error} */ (error))
   }
 
-  if (!clientAssertion) {
-    throw new FederatedTokenProviderError({ audience }, new Error('Web Identity token provider returned no token'))
+  if (!clientAssertion || isExpired(clientAssertion)) {
+    await logUnderlyingCredentialExpiry(getWebIdentityTokenProvider(), 'entra')
+    throw new FederatedTokenProviderError(
+      { audience },
+      new Error('Web Identity token provider returned no valid token')
+    )
   }
 
   return createTokenRequestParams(clientId, scope, clientAssertion)

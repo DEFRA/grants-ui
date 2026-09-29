@@ -1,7 +1,12 @@
 import { vi } from 'vitest'
+import jwt from 'jsonwebtoken'
 import { MockProvider, WebIdentityTokenProvider } from '@defra/hapi-auth-oidc'
 import { config } from '~/src/config/config.js'
 import { getServiceToken, getWebIdentityTokenProvider } from './service-token.js'
+
+const SECRET = 'test-secret'
+const validToken = () => jwt.sign({}, SECRET, { expiresIn: '5m' })
+const expiredToken = () => jwt.sign({}, SECRET, { expiresIn: '-5m' })
 
 const mockGetCredentials = vi.fn()
 const mockMockProviderGetCredentials = vi.fn()
@@ -50,7 +55,8 @@ describe('service-token', () => {
       expect(provider).toBeInstanceOf(WebIdentityTokenProvider)
       expect(WebIdentityTokenProvider).toHaveBeenCalledWith({
         audience: [audience],
-        earlyRefreshMs
+        earlyRefreshMs,
+        durationSeconds: 60
       })
     })
 
@@ -68,38 +74,94 @@ describe('service-token', () => {
     const mockProvider = { getCredentials: mockGetCredentials }
 
     test('returns the token and logs success when available', async () => {
-      mockGetCredentials.mockResolvedValue('a-token')
+      const token = validToken()
+      mockGetCredentials.mockResolvedValue(token)
 
-      const token = await getServiceToken(mockProvider, 'audience', 'label')
+      const result = await getServiceToken(mockProvider, 'audience', 'label')
 
-      expect(token).toBe('a-token')
+      expect(result).toBe(token)
       expect(mockLogger.info).toHaveBeenCalledWith('[label] Web Identity token ready (audience=audience)')
     })
 
-    test('returns undefined and logs warning when token is null', async () => {
+    test('returns undefined and logs warning when the token is null', async () => {
       mockGetCredentials.mockResolvedValue(null)
 
       const token = await getServiceToken(mockProvider, 'audience', 'label')
 
       expect(token).toBeUndefined()
-      expect(mockLogger.warn).toHaveBeenCalledWith('[label] no Web Identity token available (audience=audience)')
+      expect(mockGetCredentials).toHaveBeenCalledTimes(1)
+      expect(mockLogger.warn).toHaveBeenCalledWith('[label] no valid Web Identity token available (audience=audience)')
     })
 
-    test('returns undefined and logs warning when token is undefined', async () => {
+    test('returns undefined and logs warning when the token is undefined', async () => {
       mockGetCredentials.mockResolvedValue(undefined)
 
       const token = await getServiceToken(mockProvider, 'audience', 'label')
 
       expect(token).toBeUndefined()
-      expect(mockLogger.warn).toHaveBeenCalledWith('[label] no Web Identity token available (audience=audience)')
+      expect(mockGetCredentials).toHaveBeenCalledTimes(1)
+      expect(mockLogger.warn).toHaveBeenCalledWith('[label] no valid Web Identity token available (audience=audience)')
     })
 
     test('passes the logger to the provider', async () => {
-      mockGetCredentials.mockResolvedValue('token')
+      mockGetCredentials.mockResolvedValue(validToken())
 
       await getServiceToken(mockProvider, 'audience', 'label')
 
       expect(mockGetCredentials).toHaveBeenCalledWith(mockLogger)
+    })
+
+    test('does not retry when the token is stale - surfaces the failure immediately', async () => {
+      mockGetCredentials.mockResolvedValueOnce(expiredToken()).mockResolvedValueOnce(validToken())
+
+      const token = await getServiceToken(mockProvider, 'audience', 'label')
+
+      expect(token).toBeUndefined()
+      expect(mockGetCredentials).toHaveBeenCalledTimes(1)
+      expect(mockLogger.warn).toHaveBeenCalledWith('[label] no valid Web Identity token available (audience=audience)')
+    })
+
+    test('treats an undecodable token as invalid', async () => {
+      mockGetCredentials.mockResolvedValue('not-a-jwt')
+
+      const token = await getServiceToken(mockProvider, 'audience', 'label')
+
+      expect(token).toBeUndefined()
+      expect(mockGetCredentials).toHaveBeenCalledTimes(1)
+    })
+
+    test('logs how close the underlying ECS task credentials were to expiry when no valid token was obtained', async () => {
+      mockGetCredentials.mockResolvedValue(null)
+      const expiration = new Date(Date.now() + 42_000)
+      const mockStsCredentials = vi.fn().mockResolvedValue({ expiration })
+      const providerWithSts = {
+        getCredentials: mockGetCredentials,
+        stsClient: { config: { credentials: mockStsCredentials } }
+      }
+
+      await getServiceToken(providerWithSts, 'audience', 'label')
+
+      expect(mockLogger.warn).toHaveBeenCalledWith(expect.stringContaining(expiration.toISOString()))
+    })
+
+    test('does not throw if the provider has no stsClient (e.g. MockProvider)', async () => {
+      mockGetCredentials.mockResolvedValue(null)
+
+      await expect(getServiceToken(mockProvider, 'audience', 'label')).resolves.toBeUndefined()
+    })
+
+    test('does not throw if reading the underlying credential expiry itself fails', async () => {
+      mockGetCredentials.mockResolvedValue(null)
+      const mockStsCredentials = vi.fn().mockRejectedValue(new Error('cannot read credentials'))
+      const providerWithSts = {
+        getCredentials: mockGetCredentials,
+        stsClient: { config: { credentials: mockStsCredentials } }
+      }
+
+      await expect(getServiceToken(providerWithSts, 'audience', 'label')).resolves.toBeUndefined()
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('could not read underlying ECS task credential expiry')
+      )
     })
   })
 })
