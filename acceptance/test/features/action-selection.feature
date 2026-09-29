@@ -1,3 +1,4 @@
+@runme
 Feature: Action Selection
 
     Scenario: Add and remove land parcels and select actions
@@ -296,7 +297,7 @@ Feature: Action Selection
         And should see heading "Review land parcels and actions"
         And should see the following parcel summary cards
             | PARCEL      | ACTION              | QUANTITY | YEARLY PAYMENT |
-            | SD7323 4596 | Manage ponds (WBD1) | 2 count  | £514.00        |
+            | SD7323 4596 | Manage ponds (WBD1) | 2 ponds  | £514.00        |
             |             | Subtotal            |          | £514.00        |
         And should see total yearly payment "£514.00"
 
