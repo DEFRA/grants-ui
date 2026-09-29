@@ -13,6 +13,7 @@ import {
   DEBUG_SERVICE,
   DIM,
   GREEN,
+  LOCAL_SERVICES,
   PRE_UP_SCRIPT,
   RED,
   RESET_COLOR,
@@ -225,20 +226,17 @@ export async function cmdCheck(dryRun = false) {
  * @param {number | null} scale
  * @param {boolean} dryRun
  * @param {string[]} [localServices]
- * @param {boolean} [interactive] When true, a failure returns its status instead of exiting the process.
  * @returns {{ status: number, elapsedSeconds: string | null }}
  */
-export function cmdUp(selectedAddons, scale, dryRun, localServices = [], interactive = false) {
+export function cmdUp(selectedAddons, scale, dryRun, localServices = []) {
   if (selectedAddons.includes('tailscale') && selectedAddons.includes('ha')) {
     console.error('Tailscale mode cannot be combined with the HA proxy.')
-    if (!interactive) process.exit(1)
     return { status: 1, elapsedSeconds: null }
   }
   const runningFiles = getRunningComposeFiles()
   if (tailscaleEnabled(runningFiles) && !selectedAddons.includes('tailscale')) {
     const switchStatus = cmdTailscale(false, dryRun)
     if (switchStatus !== 0) {
-      if (!interactive) process.exit(switchStatus)
       return { status: switchStatus, elapsedSeconds: null }
     }
   }
@@ -248,7 +246,6 @@ export function cmdUp(selectedAddons, scale, dryRun, localServices = [], interac
       createdPorts = enableTailscaleServe(dryRun)
     } catch (error) {
       console.error(error.message)
-      if (!interactive) process.exit(1)
       return { status: 1, elapsedSeconds: null }
     }
   }
@@ -264,7 +261,6 @@ export function cmdUp(selectedAddons, scale, dryRun, localServices = [], interac
   const preStatus = runPreUpScript(dryRun)
   if (preStatus !== 0) {
     disableTailscaleServe(dryRun, createdPorts)
-    if (!interactive) process.exit(preStatus)
     return { status: preStatus, elapsedSeconds: null }
   }
   const startTime = Date.now()
@@ -289,27 +285,23 @@ export function cmdUp(selectedAddons, scale, dryRun, localServices = [], interac
       const disableStatus = runApplyFormDefs('disable', dryRun)
       const applyStatus = disableStatus || runApplyFormDefs('enable', dryRun, selectedFormDefIds)
       if (applyStatus !== 0) {
-        if (!interactive) process.exit(applyStatus)
         return { status: applyStatus, elapsedSeconds }
       }
     } else if (hasLocalFormDefs()) {
       const applyStatus = runApplyFormDefs('disable', dryRun)
       if (applyStatus !== 0) {
-        if (!interactive) process.exit(applyStatus)
         return { status: applyStatus, elapsedSeconds }
       }
     }
   }
-  if (status !== 0 && !interactive) process.exit(status)
   return { status, elapsedSeconds }
 }
 
 /**
  * @param {boolean} dryRun
- * @param {boolean} [interactive]
  * @returns {number}
  */
-export function cmdDown(dryRun, interactive = false) {
+export function cmdDown(dryRun) {
   const state = loadState()
   const tailscaleOn = tailscaleEnabled(getRunningComposeFiles()) || state?.addons?.includes('tailscale')
   let fileArgs
@@ -332,7 +324,6 @@ export function cmdDown(dryRun, interactive = false) {
 
   if (getTailscaleShareIds(state).length && revokeAllTailscaleSharesSync(dryRun) !== 0) {
     console.error('Containers remain running because one or more Tailscale shares could not be revoked.')
-    if (!interactive) process.exit(1)
     return 1
   }
   let status = runCompose([...fileArgs, 'down', '--remove-orphans', '--rmi', 'local'], dryRun)
@@ -341,11 +332,14 @@ export function cmdDown(dryRun, interactive = false) {
     // Keep state so next `up` can pre-select the same addons
     console.log(`  ${GREEN}✔${RESET_COLOR}  Containers stopped.\n`)
   }
-  if (status !== 0 && !interactive) process.exit(status)
   return status
 }
 
-export function cmdDebug(interactive = false, dryRun = false) {
+/**
+ * @param {boolean} [dryRun]
+ * @returns {number}
+ */
+export function cmdDebug(dryRun = false) {
   if (dryRun) {
     console.log(`Restart ${DEBUG_SERVICE} in debug mode (port 9229)`)
     return 0
@@ -358,7 +352,6 @@ export function cmdDebug(interactive = false, dryRun = false) {
     console.error(
       `\n  ${RED}✖${RESET_COLOR}  ${DEBUG_SERVICE} is not running and no saved state found. Start containers first.\n`
     )
-    if (!interactive) process.exit(1)
     return 1
   }
 
@@ -373,7 +366,6 @@ export function cmdDebug(interactive = false, dryRun = false) {
   // Stop the service first so the override takes effect cleanly
   const stopped = spawnSync('docker', ['compose', ...fileArgs, 'stop', DEBUG_SERVICE], { cwd: ROOT, stdio: 'inherit' })
   if (stopped.status !== 0) {
-    if (!interactive) process.exit(stopped.status ?? 1)
     return stopped.status ?? 1
   }
 
@@ -391,7 +383,6 @@ export function cmdDebug(interactive = false, dryRun = false) {
     )
   }
 
-  if (!interactive) process.exit(result.status ?? 1)
   return result.status ?? 1
 }
 
@@ -472,12 +463,7 @@ export function cmdReset(dryRun) {
   }
 
   // Remove specific defradigital images (mirrors docker:reset npm script)
-  const resetImages = [
-    'defradigital/fg-gas-backend',
-    'defradigital/grants-ui-dal-stub',
-    'defradigital/land-grants-api',
-    'defradigital/land-grants-postgres-seeded'
-  ]
+  const resetImages = LOCAL_SERVICES.filter((s) => s.removeOnReset).map((s) => s.image)
   const imageList = dryRun
     ? { status: 0, stdout: resetImages.join('\n') }
     : spawnSync('docker', ['images', '--format', '{{.Repository}}'], { encoding: 'utf8' })
@@ -533,13 +519,11 @@ export function cmdReset(dryRun) {
 /**
  * @param {string[]} services
  * @param {boolean} dryRun
- * @param {boolean} [interactive]
  * @returns {number}
  */
-export function cmdRestart(services, dryRun, interactive = false) {
+export function cmdRestart(services, dryRun) {
   if (!services?.length) {
     console.log(`\n  ${YELLOW}⚠${RESET_COLOR}  No running containers to restart.\n`)
-    if (!interactive) process.exit(0)
     return 0
   }
 
@@ -557,6 +541,5 @@ export function cmdRestart(services, dryRun, interactive = false) {
   if (status === 0 && !dryRun) {
     console.log(`  ${GREEN}✔${RESET_COLOR}  Restarted: ${services.join(', ')}.\n`)
   }
-  if (status !== 0 && !interactive) process.exit(status)
   return status
 }
