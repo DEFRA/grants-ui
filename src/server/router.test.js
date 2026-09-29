@@ -34,6 +34,9 @@ vi.mock('~/src/server/print-submitted-application/print-submitted-application.co
 vi.mock('./application-deleted/index.js', () => ({
   applicationDeleted: { plugin: { name: 'application-deleted', register: vi.fn() } }
 }))
+vi.mock('./application-window-closed/index.js', () => ({
+  applicationWindowClosed: { plugin: { name: 'application-window-closed', register: vi.fn() } }
+}))
 vi.mock('~/src/server/common/map/map.plugin.js', () => ({
   mapPlugin: { plugin: { name: 'map', register: vi.fn() } }
 }))
@@ -90,6 +93,7 @@ describe('router', () => {
     await router.plugin.register(mockServer)
 
     expect(registeredPlugins).toContain('application-deleted')
+    expect(registeredPlugins).toContain('application-window-closed')
   })
 
   it('should not register devTools or journeyRunnerPlugin in production', async () => {
