@@ -112,6 +112,19 @@ function buildAgreementSummary(payment) {
 const formatActionLabel = (description, code) => (isNonEmptyString(description) ? `${description} (${code})` : code)
 
 /**
+ * Selects the grammatical display unit for a priced quantity, falling back to
+ * the payment API's machine unit when older saved state has no display labels.
+ * @param {number} quantity
+ * @param {ActionData | undefined} actionState
+ * @param {string} unit
+ * @returns {string}
+ */
+function getQuantityDisplayUnit(quantity, actionState, unit) {
+  const displayUnit = quantity === 1 ? actionState?.displayUnit : actionState?.displayUnitPlural
+  return displayUnit ?? unit
+}
+
+/**
  * Builds the view model for the "Your land and actions" payment summary page. It
  * groups the API response for display and never looks up rates, multiplies
  * quantities, rounds, or works out the application total, which always comes
@@ -221,11 +234,10 @@ function addPricedParcelActions(parcels, payment, landParcels) {
 
     const actionState = landParcels?.[parcelKey]?.actionsObj?.[code]
     const requirementText = getConsentRequirementText(actionState?.consents)
-    const displayUnit = quantity === 1 ? actionState?.displayUnit : actionState?.displayUnitPlural
 
     parcel.actions.push({
       action: formatActionLabel(description, code),
-      area: formatArea(quantity, unit, displayUnit ?? unit),
+      area: formatArea(quantity, unit, getQuantityDisplayUnit(quantity, actionState, unit)),
       yearlyPayment: formatPrice(annualPaymentPence),
       changeHref: withConfirmLandAndActionsOrigin(changeActionsHref(sheetId, parcelId), {
         changeActions: true
@@ -308,5 +320,5 @@ function buildAdditionalYearlyPayments(payment) {
 
 /**
  * @import { PaymentCalculation } from '~/src/server/land-grants/types/payment.d.js'
- * @import { LandParcels } from '~/src/server/land-grants/types/form-state.d.js'
+ * @import { ActionData, LandParcels } from '~/src/server/land-grants/types/form-state.d.js'
  */
