@@ -132,6 +132,18 @@ async function resolveGasStatus(containersRunning, runningComposeFiles) {
   return gasMockActive ? await getGasStatus() : null
 }
 
+/**
+ * Tailscale address and active-share segments appended to the status line.
+ * @param {string[] | null} runningComposeFiles
+ * @returns {string}
+ */
+function tailscaleStatusLine(runningComposeFiles) {
+  const address = runningComposeFiles ? (getRunningAppBaseUrl() ?? 'address unavailable') : 'enabled · app not running'
+  const shareCount = getTailscaleShareIds().length
+  const sharesSegment = shareCount ? `  ${GAS_DIVIDER}  ${tailscaleSharesStatusSegment(shareCount)}` : ''
+  return `  ${GAS_DIVIDER}  ${tailscaleStatusSegment(address)}${sharesSegment}`
+}
+
 export async function refreshRuntimeStatus(
   runningComposeFiles = getRunningComposeFiles(),
   tailscaleOn = tailscaleEnabled(runningComposeFiles)
@@ -139,15 +151,7 @@ export async function refreshRuntimeStatus(
   const gasStatus = await resolveGasStatus(!!runningComposeFiles, runningComposeFiles)
   const runtimeLine = buildStatusLine(runningComposeFiles)
   const gasLine = gasStatus === null ? runtimeLine : `${runtimeLine}  ${GAS_DIVIDER}  ${gasStatusSegment(gasStatus)}`
-  const tailscaleLine = tailscaleOn
-    ? `  ${GAS_DIVIDER}  ${tailscaleStatusSegment(
-        runningComposeFiles ? (getRunningAppBaseUrl() ?? 'address unavailable') : 'enabled · app not running'
-      )}${
-        getTailscaleShareIds().length
-          ? `  ${GAS_DIVIDER}  ${tailscaleSharesStatusSegment(getTailscaleShareIds().length)}`
-          : ''
-      }`
-    : ''
+  const tailscaleLine = tailscaleOn ? tailscaleStatusLine(runningComposeFiles) : ''
   setRuntimeStatusLine(gasLine + tailscaleLine)
   return gasStatus
 }
@@ -206,7 +210,7 @@ async function handleRestartCommand(dryRun) {
     return `${DIM}No containers selected — restart cancelled${RESET_COLOR}`
   }
 
-  const restartStatus = await runInteractiveAction('restart', [selectedServices, dryRun, true], 'Restarting containers')
+  const restartStatus = await runInteractiveAction('restart', [selectedServices, dryRun], 'Restarting containers')
 
   const postRestartFiles = getRunningComposeFiles()
   return restartStatus !== 0
@@ -244,7 +248,7 @@ async function handleUpCommand(dryRun, savedState) {
   const started = Date.now()
   const upStatus = await runInteractiveAction(
     'up',
-    [selectedAddons, scale, dryRun, selectedLocalServices, true],
+    [selectedAddons, scale, dryRun, selectedLocalServices],
     'Starting containers'
   )
   const elapsedSeconds = ((Date.now() - started) / 1000).toFixed(1)
@@ -467,6 +471,19 @@ export async function handleChecksCommand(dryRun) {
 }
 
 /**
+ * @param {Partial<CommandContext>} tailscaleContext
+ * @returns {string | undefined}
+ */
+function tailscaleToolDescription(tailscaleContext) {
+  if (tailscaleContext.tailscaleOn) {
+    const shareCount = getTailscaleShareIds(tailscaleContext.savedState).length
+    return shareCount ? `Tailscale on · ${shareCount} share(s) active` : 'Tailscale on'
+  }
+  if (tailscaleContext.tailscaleAvailable === false) return tailscaleContext.tailscaleAvailabilityDescription
+  return 'Enable Tailscale mode — HTTPS phone testing and external sharing'
+}
+
+/**
  * @param {boolean} dryRun
  * @param {Partial<CommandContext>} [tailscaleContext]
  */
@@ -498,11 +515,7 @@ export async function handleToolsCommand(dryRun, tailscaleContext = {}) {
     {
       key: 'tailscale',
       label: 'tailscale & sharing ⇢',
-      description: tailscaleContext.tailscaleOn
-        ? `Tailscale on${getTailscaleShareIds(tailscaleContext.savedState).length ? ` · ${getTailscaleShareIds(tailscaleContext.savedState).length} share(s) active` : ''}`
-        : tailscaleContext.tailscaleAvailable === false
-          ? tailscaleContext.tailscaleAvailabilityDescription
-          : 'Enable Tailscale mode — HTTPS phone testing and external sharing',
+      description: tailscaleToolDescription(tailscaleContext),
       ...(tailscaleContext.tailscaleAvailable === false ? { disabled: true } : {})
     },
     { key: 'audit:logs', label: 'audit logs', description: 'Show audit entries from grants-ui container logs' },
@@ -1042,13 +1055,39 @@ async function handleDockerLifecycleCommand(command, dryRun) {
   }
 
   const labels = { down: 'Stopping containers', debug: 'Starting debugger', reset: 'Resetting Docker stack' }
-  const args = command === 'debug' ? [true, dryRun] : [dryRun, true]
-  const runStatus = await runInteractiveAction(command, args, labels[command])
+  const runStatus = await runInteractiveAction(command, [dryRun], labels[command])
 
   const postRunFiles = getRunningComposeFiles()
   return runStatus !== 0
     ? `${RED}✖${RESET_COLOR}  Docker exited with code ${runStatus} — check output above`
     : buildStatusLine(postRunFiles)
+}
+
+/**
+ * @param {{ canCreateShare: boolean, tailscaleServiceRunning: boolean, tailscaleOn: boolean, containersRunning: boolean, apiKeyHint: string }} status
+ * @returns {string}
+ */
+function createShareDescription({
+  canCreateShare,
+  tailscaleServiceRunning,
+  tailscaleOn,
+  containersRunning,
+  apiKeyHint
+}) {
+  if (canCreateShare) return 'Create and copy a single-use invitation'
+  if (!tailscaleServiceRunning) return 'Connect Tailscale first'
+  if (!tailscaleOn || !containersRunning) return 'Start grants-ui with Tailscale mode first'
+  return apiKeyHint
+}
+
+/**
+ * @param {{ tailscaleServiceRunning: boolean, apiKeyEntered: boolean, shareCount: number, apiKeyHint: string }} status
+ * @returns {string}
+ */
+function activeSharesDescription({ tailscaleServiceRunning, apiKeyEntered, shareCount, apiKeyHint }) {
+  if (!tailscaleServiceRunning) return 'Connect Tailscale first'
+  if (!apiKeyEntered) return apiKeyHint
+  return shareCount ? `${shareCount} gt-created share(s) can be revoked` : 'No gt-created shares'
 }
 
 /** Tailscale mode and external-share actions, kept together to make active access obvious. */
@@ -1092,25 +1131,24 @@ export async function handleTailscaleCommand(ctx) {
       {
         key: 'create',
         label: 'share grants-ui',
-        description: canCreateShare
-          ? 'Create and copy a single-use invitation'
-          : !tailscaleServiceRunning
-            ? 'Connect Tailscale first'
-            : !tailscaleOn || !containersRunning
-              ? 'Start grants-ui with Tailscale mode first'
-              : apiKeyHint,
+        description: createShareDescription({
+          canCreateShare,
+          tailscaleServiceRunning,
+          tailscaleOn,
+          containersRunning,
+          apiKeyHint
+        }),
         disabled: !canCreateShare
       },
       {
         key: 'shares',
         label: 'active shares ⇢',
-        description: !tailscaleServiceRunning
-          ? 'Connect Tailscale first'
-          : !apiKeyEntered
-            ? apiKeyHint
-            : shareIds.length
-              ? `${shareIds.length} gt-created share(s) can be revoked`
-              : 'No gt-created shares',
+        description: activeSharesDescription({
+          tailscaleServiceRunning,
+          apiKeyEntered,
+          shareCount: shareIds.length,
+          apiKeyHint
+        }),
         disabled: !canManageShares
       },
       {
@@ -1150,9 +1188,10 @@ export async function handleTailscaleCommand(ctx) {
       containersRunning = !!files
       tailscaleOn = containersRunning ? tailscaleEnabled(files) : (loadState()?.addons?.includes('tailscale') ?? false)
       await refreshRuntimeStatus(files, tailscaleOn)
+      const modeState = tailscaleOn ? 'enabled' : 'disabled'
       statusLine =
         status === 0
-          ? `${GREEN}✔${RESET_COLOR}  Tailscale mode ${tailscaleOn ? 'enabled' : 'disabled'}`
+          ? `${GREEN}✔${RESET_COLOR}  Tailscale mode ${modeState}`
           : `${RED}✖${RESET_COLOR}  Tailscale switch failed — check output`
       continue
     }

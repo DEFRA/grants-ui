@@ -39,8 +39,7 @@ const actions = {
   'tailscale-share:revoke': revokeTailscaleShare,
   'tailscale-share:revoke-all': revokeAllTailscaleShares,
   'tailscale-policy:setup': setupTailscaleSharingPolicy,
-  up: (addons, scale, dryRun, localServices, interactive) =>
-    cmdUp(addons, scale, dryRun, localServices, interactive).status,
+  up: (addons, scale, dryRun, localServices) => cmdUp(addons, scale, dryRun, localServices).status,
   down: cmdDown,
   debug: cmdDebug,
   reset: cmdReset,
