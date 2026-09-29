@@ -48,3 +48,7 @@ ignore:
     - '@defra/forms-engine-plugin > *':
         reason: 'Awaiting Defra Forms dependency updates.'
         expires: '2026-10-31'
+  'SNYK-JS-SHELLQUOTE-20250993':
+    - '@defra/forms-engine-plugin > *':
+        reason: 'Fix shell-quote@1.11.0 is inside the min-release-age window; add override once it clears.'
+        expires: '2026-10-06'
