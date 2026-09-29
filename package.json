@@ -83,7 +83,8 @@
     "js-yaml": "4.3.2",
     "svgo@3": "3.3.5",
     "svgo@4": "4.1.0",
-    "fast-uri": "3.1.7"
+    "fast-uri": "3.1.7",
+    "shell-quote": "1.11.0"
   },
   "dependencies": {
     "@aws-sdk/client-sns": "3.1131.0",
