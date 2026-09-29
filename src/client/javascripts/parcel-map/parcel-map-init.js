@@ -79,6 +79,8 @@ export function initMap(host, { multiSelect, skeleton, isLoading, cleanups }) {
     center: MAP_DEFAULT_CENTER,
     zoom: MAP_DEFAULT_ZOOM,
     minZoom: MAP_MIN_ZOOM,
+    // Let wheel and trackpad scrolling move the page while the pointer is over the map.
+    scrollZoom: false,
     urlPosition: 'none'
   })
 
