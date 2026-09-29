@@ -151,14 +151,6 @@ describe('TotalEstimatedCostController', () => {
       expect(mockH.view).toHaveBeenCalledWith(controller.viewName, expect.objectContaining({ baseModel: 'data' }))
     })
 
-    it('should throw GrantApplicationServiceError on failure', async () => {
-      vi.spyOn(controller, 'setState').mockRejectedValue(new Error('Test Error'))
-
-      const handler = controller.makeGetRouteHandler()
-
-      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow('Failed to calculate total estimated cost')
-    })
-
     it('uses the derived-state settings from the page definition', () => {
       expect(controller.derivedState).toMatchObject({
         requiresAcknowledgement: true
@@ -175,9 +167,8 @@ describe('TotalEstimatedCostController', () => {
         await handler(mockRequest, mockContext, mockH)
         expect.fail('Should have thrown')
       } catch (error) {
-        expect(error.message).toBe('Failed to calculate total estimated cost')
-        const [refreshError] = error.causeErrors
-        const [cause] = refreshError.causeErrors
+        expect(error.message).toBe('Failed to refresh derived answers')
+        const [cause] = error.causeErrors
         expect(cause.message).toBe('Missing required configuration: config.costs')
       }
     })
@@ -191,9 +182,8 @@ describe('TotalEstimatedCostController', () => {
         await handler(mockRequest, mockContext, mockH)
         expect.fail('Should have thrown')
       } catch (error) {
-        expect(error.message).toBe('Failed to calculate total estimated cost')
-        const [refreshError] = error.causeErrors
-        const [cause] = refreshError.causeErrors
+        expect(error.message).toBe('Failed to refresh derived answers')
+        const [cause] = error.causeErrors
         expect(cause.message).toBe(
           'Missing required configuration: config.costs.reservoirCostPerUnit, config.costs.distNetworkCostPerUnit, config.costs.tanksCostPerUnit, config.costs.grantMaxRate'
         )
@@ -213,9 +203,8 @@ describe('TotalEstimatedCostController', () => {
         await handler(mockRequest, mockContext, mockH)
         expect.fail('Should have thrown')
       } catch (error) {
-        expect(error.message).toBe('Failed to calculate total estimated cost')
-        const [refreshError] = error.causeErrors
-        const [cause] = refreshError.causeErrors
+        expect(error.message).toBe('Failed to refresh derived answers')
+        const [cause] = error.causeErrors
         expect(cause.message).toBe('Missing required configuration: config.costs.reservoirCostPerUnit')
       }
     })

@@ -99,6 +99,12 @@ describe('LogCodes', () => {
         `Error invoking GAS action submit for grant ${TEST_GRANT_TYPES.EXAMPLE_GRANT_WITH_AUTH}: Connection timeout`
       ],
       [
+        'GRANT_SCORING_SERVICE_ACTION_ERROR',
+        'error',
+        { action: 'submit', grantCode: 'water-management', errorMessage: 'Connection timeout' },
+        `Error invoking grant scoring action submit for grant ${'water-management'}: Connection timeout`
+      ],
+      [
         'VIEW_PATH_CHECK',
         'debug',
         { index: 0, path: '/app/views', exists: true, isAbsolute: true },

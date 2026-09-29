@@ -85,6 +85,11 @@ export const SYSTEM = {
     messageFunc: (messageOptions) =>
       `Error invoking GAS action ${messageOptions.action} for grant ${messageOptions.grantCode}: ${messageOptions.errorMessage}`
   },
+  GRANT_SCORING_SERVICE_ACTION_ERROR: {
+    level: 'error',
+    messageFunc: (messageOptions) =>
+      `Error invoking grant scoring action ${messageOptions.action} for grant ${messageOptions.grantCode}: ${messageOptions.errorMessage}`
+  },
   BACKEND_AUTH_CONFIG_ERROR: {
     level: 'error',
     messageFunc: (messageOptions) =>

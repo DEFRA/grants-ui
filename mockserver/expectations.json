@@ -393,5 +393,20 @@
         ]
       }
     }
+  },
+  {
+    "id": "grants-scoring-api-200",
+    "priority": 0,
+    "httpRequest": {
+      "method": "GET",
+      "path": "/scoring/water-management"
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "body": {
+        "score": 50,
+        "band": "Average"
+      }
+    }
   }
 ]

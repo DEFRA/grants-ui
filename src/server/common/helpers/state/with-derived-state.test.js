@@ -1,6 +1,7 @@
 import { withDerivedState } from './with-derived-state.js'
 import { catchAll } from '../errors.js'
 import { log } from '../logging/log.js'
+import { ExternalApiError } from '~/src/server/common/utils/errors/ExternalApiError.js'
 
 function fixture(options = {}) {
   class Page extends withDerivedState(class {}, {
@@ -21,6 +22,101 @@ function fixture(options = {}) {
 }
 
 describe('withDerivedState', () => {
+  describe('configured calculation inputs', () => {
+    it('reads input paths from the form definition', () => {
+      const Page = withDerivedState(class {})
+      const page = new Page(
+        {
+          def: {
+            metadata: {
+              pageConfig: {
+                '/result': {
+                  derivedState: {
+                    stateKeys: ['result'],
+                    calculationInputs: ['county'],
+                    requiresAcknowledgement: true
+                  }
+                }
+              }
+            }
+          }
+        },
+        { path: '/result' }
+      )
+      expect(page.derivedState.calculationInputs).toEqual(['county'])
+      expect(Object.isFrozen(page.derivedState.calculationInputs)).toBe(true)
+    })
+
+    it('migrates missing snapshots and skips both calculation and writes when fresh', async () => {
+      const { page, context, request } = fixture({ calculationInputs: ['quantity'] })
+      await expect(page.isStateStale(request, context)).resolves.toBe(true)
+      expect(page.getCalculatedAnswers).not.toHaveBeenCalled()
+      const before = structuredClone(context.state)
+      const saved = await page.refreshState(request, context)
+      expect(context.state).toEqual(before)
+      expect(saved.additionalAnswers).toEqual(before.additionalAnswers)
+      context.state = JSON.parse(JSON.stringify(saved))
+      await expect(page.isStateStale(request, context)).resolves.toBe(false)
+      await expect(page.refreshState(request, context)).resolves.toBe(context.state)
+      expect(page.getCalculatedAnswers).toHaveBeenCalledTimes(1)
+      expect(page.setState).toHaveBeenCalledTimes(1)
+    })
+
+    it('tracks nested configured inputs while ignoring unrelated state', async () => {
+      const { page, context, request } = fixture({ calculationInputs: ['quantity', 'additionalAnswers.otherResult'] })
+      context.state = await page.refreshState(request, context)
+      context.state.unrelated = 'changed'
+      await expect(page.isStateStale(request, context)).resolves.toBe(false)
+      context.state.additionalAnswers.otherResult = 'changed'
+      await expect(page.isStateStale(request, context)).resolves.toBe(true)
+      expect(page.getCalculatedAnswers).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps missing inputs stable across persistence and distinguishes null', async () => {
+      const { page, context, request } = fixture({ calculationInputs: ['optional'] })
+      context.state = await page.refreshState(request, context)
+      await expect(page.isStateStale(request, context)).resolves.toBe(false)
+      context.state.optional = null
+      await expect(page.isStateStale(request, context)).resolves.toBe(true)
+    })
+
+    it('treats missing results as stale even when inputs match', async () => {
+      const { page, context, request } = fixture({ calculationInputs: ['quantity'] })
+      context.state = await page.refreshState(request, context)
+      delete context.state.additionalAnswers.total
+      await expect(page.isStateStale(request, context)).resolves.toBe(true)
+    })
+
+    it('preserves other page snapshots and invalidates changed input configuration', async () => {
+      const { page, context, request } = fixture({ calculationInputs: ['quantity'] })
+      context.state.derivedStateSnapshots = { '/other': { inputs: [] } }
+      context.state = await page.refreshState(request, context)
+      expect(context.state.derivedStateSnapshots['/other']).toEqual({ inputs: [] })
+      const { page: updatedPage } = fixture({ calculationInputs: ['quantity', 'newInput'] })
+      await expect(updatedPage.isStateStale(request, context)).resolves.toBe(true)
+      expect(updatedPage.getCalculatedAnswers).not.toHaveBeenCalled()
+    })
+
+    it.each(['calculate', 'persist'])('keeps stale results and inputs intact on %s failure', async (stage) => {
+      const { page, context, request } = fixture({ calculationInputs: ['quantity'] })
+      context.state = await page.refreshState(request, context)
+      context.state.quantity = 12
+      const before = structuredClone(context.state)
+      const operation = stage === 'calculate' ? page.getCalculatedAnswers : page.setState
+      operation.mockRejectedValueOnce(new Error('Unavailable'))
+      await expect(page.refreshState(request, context)).rejects.toThrow('Failed to refresh derived answers')
+      expect(context.state).toEqual(before)
+      await expect(page.isStateStale(request, context)).resolves.toBe(true)
+    })
+
+    it.each([[], null, 'quantity', ['quantity', 'quantity'], [''], ['a..b'], ['__proto__.x'], ['x.constructor']])(
+      'rejects invalid calculationInputs: %j',
+      (calculationInputs) => {
+        expect(() => fixture({ calculationInputs })).toThrow('Invalid derived-state calculationInputs')
+      }
+    )
+  })
+
   it('compares local calculated answers and detects an edited input', async () => {
     const { page, context, request } = fixture()
 
@@ -84,7 +180,10 @@ describe('withDerivedState', () => {
     async (answers) => {
       const { page, context, request } = fixture()
       page.getCalculatedAnswers.mockResolvedValue(answers)
-      await expect(page.refreshState(request, context)).rejects.toThrow('Failed to refresh derived answers')
+      await expect(page.refreshState(request, context)).rejects.toMatchObject({
+        message: 'Calculation must return exactly its owned state keys',
+        details: { source: 'withDerivedState', reason: 'derived_state_contract_invalid', status: 500 }
+      })
       expect(page.setState).not.toHaveBeenCalled()
     }
   )
@@ -106,12 +205,54 @@ describe('withDerivedState', () => {
     }
   })
 
-  it('lets the global handler log a calculation failure and render the HTTP 500 page', async () => {
+  it.each([
+    ['isStateStale', 'getCalculatedAnswers'],
+    ['refreshState', 'getCalculatedAnswers'],
+    ['refreshState', 'setState']
+  ])('preserves a structured error from %s / %s through the global handler', async (method, stage) => {
+    const { page, context, request } = fixture()
+    const originalError = new ExternalApiError({
+      message: 'Calculation service unavailable',
+      source: 'calculation-service',
+      reason: 'service_unavailable',
+      status: 503
+    }).from(new Error('Connection refused'))
+    const before = structuredClone(context.state)
+    page[stage].mockRejectedValue(originalError)
+    log.mockClear()
+
+    const error = await page[method](request, context).catch((error) => error)
+
+    expect(error).toBe(originalError)
+    expect(error.effectErrors.size).toBe(0)
+    expect(context.state).toEqual(before)
+    expect(log).not.toHaveBeenCalled()
+    const errorRequest = { response: error }
+    const h = { view: vi.fn().mockReturnThis(), code: vi.fn().mockReturnThis(), request: { app: {} } }
+
+    catchAll(errorRequest, h)
+
+    expect(log).toHaveBeenCalledTimes(2)
+    expect(log).toHaveBeenNthCalledWith(1, originalError.logCode, originalError.details, errorRequest)
+    expect(log).toHaveBeenNthCalledWith(
+      2,
+      expect.any(Object),
+      expect.objectContaining({ errorMessage: 'Connection refused', isChainedError: true }),
+      errorRequest
+    )
+    expect(h.view).toHaveBeenCalledWith('errors/503', { supportEmail: null })
+    expect(h.code).toHaveBeenCalledWith(503)
+  })
+
+  it.each([
+    ['isStateStale', 'check'],
+    ['refreshState', 'refresh']
+  ])('lets the global handler log an ordinary %s failure and render the HTTP 500 page', async (method, operation) => {
     const { page, context, request } = fixture()
     page.getCalculatedAnswers.mockRejectedValue(new Error('API unavailable'))
     log.mockClear()
 
-    const error = await page.refreshState(request, context).catch((error) => error)
+    const error = await page[method](request, context).catch((error) => error)
     expect(log).not.toHaveBeenCalled()
     const errorRequest = { response: error }
     const h = { view: vi.fn().mockReturnThis(), code: vi.fn().mockReturnThis(), request: { app: {} } }
@@ -120,7 +261,11 @@ describe('withDerivedState', () => {
 
     expect(log).toHaveBeenCalledWith(
       error.logCode,
-      expect.objectContaining({ errorMessage: 'Failed to refresh derived answers' }),
+      expect.objectContaining({
+        errorMessage: `Failed to ${operation} derived answers`,
+        source: `withDerivedState.${operation}`,
+        reason: 'derived_state_failure'
+      }),
       errorRequest
     )
     expect(h.view).toHaveBeenCalledWith('errors/500', { supportEmail: null })

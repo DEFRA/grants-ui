@@ -1,30 +1,18 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { withDerivedState } from '~/src/server/common/helpers/state/with-derived-state.js'
-import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
 
 export default class TotalEstimatedCostController extends withDerivedState(QuestionPageController) {
   /**
    * Handle GET requests to the total estimated cost page
    */
   makeGetRouteHandler() {
-    const fn = async (request, context, h) => {
-      try {
-        context.state = await this.refreshState(request, context)
+    return async (request, context, h) => {
+      context.state = await this.refreshState(request, context)
 
-        const baseViewModel = this.getViewModel(request, context)
-        return h.view(this.viewName, baseViewModel)
-      } catch (error) {
-        const systemError = new SystemError({
-          message: 'Failed to calculate total estimated cost',
-          source: 'TotalEstimatedCostController.makeGetRouteHandler',
-          reason: 'grants_ui_controller_failure'
-        }).from(/** @type {Error} */ (error))
-        systemError.logCode = LogCodes.SYSTEM.GENERIC_ERROR
-        throw systemError
-      }
+      const baseViewModel = this.getViewModel(request, context)
+      return h.view(this.viewName, baseViewModel)
     }
-    return fn
   }
 
   /**
