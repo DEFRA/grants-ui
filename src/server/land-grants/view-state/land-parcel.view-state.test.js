@@ -314,6 +314,33 @@ describe('land-parcel-state.manager', () => {
       })
     })
 
+    it('should preserve display units separately from the machine unit', () => {
+      const actionsWithDisplayUnits = [
+        {
+          code: 'WBD1',
+          description: 'Manage ponds',
+          quantityRequired: true,
+          availability: { value: 10, unit: 'count' },
+          displayUnit: 'pond',
+          displayUnitPlural: 'ponds'
+        }
+      ]
+
+      const result = addSelectedActionsToState(
+        {},
+        { landAction: 'WBD1', landActionQuantity_WBD1: '4' },
+        actionsWithDisplayUnits,
+        { sheetId: 'AB1234', parcelId: '5678' }
+      )
+
+      expect(result.landParcels['AB1234-5678'].actionsObj.WBD1).toMatchObject({
+        value: 4,
+        unit: 'count',
+        displayUnit: 'pond',
+        displayUnitPlural: 'ponds'
+      })
+    })
+
     it('should create state from multiple selected actions (payload value is an array)', () => {
       const state = {}
       const payload = { landAction: ['SAM1', 'SAM2'] }

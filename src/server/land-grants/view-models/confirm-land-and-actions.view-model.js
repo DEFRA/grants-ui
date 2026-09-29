@@ -219,11 +219,13 @@ function addPricedParcelActions(parcels, payment, landParcels) {
       parcels.set(parcelKey, parcel)
     }
 
-    const requirementText = getConsentRequirementText(landParcels?.[parcelKey]?.actionsObj?.[code]?.consents)
+    const actionState = landParcels?.[parcelKey]?.actionsObj?.[code]
+    const requirementText = getConsentRequirementText(actionState?.consents)
+    const displayUnit = quantity === 1 ? actionState?.displayUnit : actionState?.displayUnitPlural
 
     parcel.actions.push({
       action: formatActionLabel(description, code),
-      area: formatArea(quantity, unit),
+      area: formatArea(quantity, unit, displayUnit ?? unit),
       yearlyPayment: formatPrice(annualPaymentPence),
       changeHref: withConfirmLandAndActionsOrigin(changeActionsHref(sheetId, parcelId), {
         changeActions: true
