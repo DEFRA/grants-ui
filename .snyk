@@ -48,3 +48,7 @@ ignore:
     - '@defra/forms-engine-plugin > *':
         reason: 'Awaiting Defra Forms dependency updates.'
         expires: '2026-10-31'
+  'SNYK-JS-SHELLQUOTE-20250993':
+    - '@defra/forms-engine-plugin > @defra/interactive-map > @easyops-cn/docusaurus-search-local > @docusaurus/plugin-content-docs > @docusaurus/core > webpack-dev-server > launch-editor > shell-quote':
+        reason: 'No fix available (launch-editor@latest still requires vulnerable shell-quote@^1.8.4). Not reachable: launch-editor only calls shellQuote.parse() on LAUNCH_EDITOR/local editor config, never the vulnerable quote() function, and only runs via webpack-dev-server in local development - never in the production build.'
+        expires: '2026-12-31'
