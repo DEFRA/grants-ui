@@ -52,3 +52,7 @@ ignore:
     - '@defra/forms-engine-plugin > *':
         reason: 'Fix shell-quote@1.11.0 is inside the min-release-age window; add override once it clears.'
         expires: '2026-10-06'
+  'SNYK-JS-SERIALIZEJAVASCRIPT-20302847':
+    - '@defra/forms-engine-plugin > *':
+        reason: 'Fix serialize-javascript@7.1.2 is inside the min-release-age window; bump override once it clears.'
+        expires: '2026-10-07'
