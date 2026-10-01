@@ -115,6 +115,11 @@ export const SYSTEM = {
     messageFunc: (messageOptions) =>
       `Invalid redirect rules in form "${messageOptions.formName}" | reason=${messageOptions.reason}`
   },
+  INVALID_APPLICATION_WINDOW: {
+    level: 'error',
+    messageFunc: (messageOptions) =>
+      `Invalid application window in form "${messageOptions.formName}" | closesAt=${messageOptions.closesAt}`
+  },
   CONSOLIDATED_VIEW_API_ERROR: {
     level: 'error',
     messageFunc: (messageOptions) => {

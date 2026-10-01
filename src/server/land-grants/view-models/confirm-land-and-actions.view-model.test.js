@@ -83,16 +83,45 @@ describe('buildConfirmLandAndActionsViewModel', () => {
       {
         'SD1234-5678': {
           size: { unit: 'ha', value: 0.5 },
-          actionsObj: { WBD1: { value: 4, unit: 'count', consents: ['hefer'] } }
+          actionsObj: {
+            WBD1: {
+              value: 4,
+              unit: 'count',
+              displayUnit: 'pond',
+              displayUnitPlural: 'ponds',
+              consents: ['hefer']
+            }
+          }
         }
       }
     )
 
     expect(model.parcels[0].actions[0]).toMatchObject({
       action: 'Manage ponds (WBD1)',
-      area: '4 count',
+      area: '4 ponds',
       requirementText: 'HEFER required'
     })
+  })
+
+  it('uses the singular display unit for a quantity of one', () => {
+    const model = buildConfirmLandAndActionsViewModel(
+      {
+        ...payment,
+        parcelItems: {
+          1: { ...parcelItems[1], code: 'WBD1', description: 'Manage ponds', quantity: 1, unit: 'count' }
+        }
+      },
+      {
+        'SD1234-5678': {
+          size: { unit: 'ha', value: 0.5 },
+          actionsObj: {
+            WBD1: { value: 1, unit: 'count', displayUnit: 'pond', displayUnitPlural: 'ponds' }
+          }
+        }
+      }
+    )
+
+    expect(model.parcels[0].actions[0].area).toBe('1 pond')
   })
 
   it('groups actions into a card per parcel', () => {

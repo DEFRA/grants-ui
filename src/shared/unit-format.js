@@ -44,11 +44,12 @@ export function unitAlternativeLabel(availability) {
  * through unchanged rather than being validated here.
  * @param {unknown} quantity
  * @param {unknown} unit
+ * @param {unknown} [displayUnit=unit] - Label to render while `unit` controls numeric precision
  * @returns {string}
  */
-export function formatArea(quantity, unit) {
+export function formatArea(quantity, unit, displayUnit = unit) {
   const area = formatQuantity(quantity, unit)
-  return [area, unit].filter((part) => part !== undefined && part !== null && part !== '').join(' ')
+  return [area, displayUnit].filter((part) => part !== undefined && part !== null && part !== '').join(' ')
 }
 
 /**

@@ -8,7 +8,7 @@ import { hasAvailableLand } from '~/src/shared/availability.js'
 import { getAddedActionsForStateParcel } from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
 import { escapeHtml } from '~/src/server/common/utils/escape-html.js'
 import { error, log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
-import { isNoActionsMockEnabled } from '~/src/server/dev-tools/mock-overrides.js'
+import { isNoActionsMockEnabled } from '~/src/server/common/helpers/mock-overrides.js'
 import {
   CONFIRM_LAND_AND_ACTIONS_PATH,
   isFromConfirmLandAndActions,

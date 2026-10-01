@@ -65,7 +65,7 @@ export function hasSubmittedNonZeroQuantity(payload, actionInfo) {
  * uncompeted total, not what's left once a sibling's claim is accounted for.
  * @param {object} payload - Form payload
  * @param {Action} actionInfo - The action's data from the API
- * @returns {{ description: string, version: string, consents: string[], value: number, unit: string }}
+ * @returns {{ description: string, version: string, consents: string[], value: number, unit: string, displayUnit?: string, displayUnitPlural?: string }}
  */
 function buildActionStateEntry(payload, actionInfo) {
   const hasQuantityOverride = hasSubmittedQuantity(payload, actionInfo)
@@ -79,7 +79,9 @@ function buildActionStateEntry(payload, actionInfo) {
         ? payload[getActionQuantityFieldName(actionInfo.code)]
         : (getAvailabilityLimit(actionInfo?.availability) ?? 0)
     ),
-    unit: actionInfo?.availability?.unit ?? ''
+    unit: actionInfo?.availability?.unit ?? '',
+    ...(actionInfo.displayUnit != null && { displayUnit: actionInfo.displayUnit }),
+    ...(actionInfo.displayUnitPlural != null && { displayUnitPlural: actionInfo.displayUnitPlural })
   }
 }
 
@@ -338,6 +340,8 @@ export function findActionInfoFromState(landParcels, parcelKey, action) {
  * @property {string} code - Action code
  * @property {string} description - Action description
  * @property {string} version - Action version
+ * @property {string | null} [displayUnit] - Singular presentation label
+ * @property {string | null} [displayUnitPlural] - Plural presentation label
  * @property {boolean} [quantityRequired] - Whether the user must enter a quantity
  * @property {string[]} [consents] - Array of consent type keys required (e.g., ['sssi', 'hefer'])
  * @property {string} [guidanceUrl] - URL to the action's guidance page
