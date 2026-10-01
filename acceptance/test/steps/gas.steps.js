@@ -127,7 +127,8 @@ Then(
     expect(request.body.json.metadata.clientClaimRef).toEqual(claimNumber.toLowerCase())
     expect(request.body.json.claim).toEqual({
       entitlementId: '000000000000000000000001',
-      totalClaimAmountPence: 255330
+      totalClaimAmountPence: 255330,
+      quantity: 85.1099
     })
   }
 )
