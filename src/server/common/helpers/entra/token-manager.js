@@ -6,6 +6,7 @@ import { config } from '~/src/config/config.js'
 import { ExternalApiError } from '~/src/server/common/utils/errors/ExternalApiError.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
 import { log, logger, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { isExpired, logUnderlyingCredentialExpiry } from '~/src/server/common/helpers/auth/service-token.js'
 
 const clientAssertionType = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
 
@@ -13,6 +14,12 @@ const msInSec = 1000
 const secsInMins = 60
 const numMins = 5
 const expirationBuffer = numMins * secsInMins * msInSec // refresh tokens 5 minutes before actual expiry
+
+// Library default (300s) collides with the ~300s ECS container credential
+// refresh window, causing STS to occasionally reject the request (prod, 2026-09-28).
+// See #cdp-support, 2026-09-29. Unrelated to expirationBuffer above, which
+// governs the separate Entra-issued access token.
+const WEB_IDENTITY_DURATION_SECONDS = 60
 
 /** @type {WebIdentityTokenProvider | null} */
 let webIdentityTokenProvider = null
@@ -25,7 +32,8 @@ let webIdentityTokenProvider = null
 function getWebIdentityTokenProvider() {
   if (!webIdentityTokenProvider) {
     webIdentityTokenProvider = new WebIdentityTokenProvider({
-      audience: config.get('entra.webIdentity.audience')
+      audience: config.get('entra.webIdentity.audience'),
+      durationSeconds: WEB_IDENTITY_DURATION_SECONDS
     })
   }
   return webIdentityTokenProvider
@@ -122,7 +130,8 @@ class FederatedTokenProviderError extends Error {
 
 /**
  * Requests a signed Web Identity token from AWS STS and returns the
- * client_assertion request params for it.
+ * client_assertion request params for it. Checks the token's own `exp` since
+ * getCredentials() can silently return a stale token after a failed refresh.
  * @param {string} clientId - Client ID
  * @param {string} scope - Scope of the token
  * @returns {Promise<URLSearchParams>}
@@ -134,11 +143,16 @@ async function buildWebIdentityTokenRequestParams(clientId, scope) {
   try {
     clientAssertion = await getWebIdentityTokenProvider().getCredentials(logger)
   } catch (error) {
+    await logUnderlyingCredentialExpiry(getWebIdentityTokenProvider(), 'entra')
     throw new FederatedTokenProviderError({ audience }, /** @type {Error} */ (error))
   }
 
-  if (!clientAssertion) {
-    throw new FederatedTokenProviderError({ audience }, new Error('Web Identity token provider returned no token'))
+  if (!clientAssertion || isExpired(clientAssertion)) {
+    await logUnderlyingCredentialExpiry(getWebIdentityTokenProvider(), 'entra')
+    throw new FederatedTokenProviderError(
+      { audience },
+      new Error('Web Identity token provider returned no valid token')
+    )
   }
 
   return createTokenRequestParams(clientId, scope, clientAssertion)

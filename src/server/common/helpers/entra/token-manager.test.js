@@ -1,8 +1,10 @@
 import { vi } from 'vitest'
+import jwt from 'jsonwebtoken'
+import { WebIdentityTokenProvider } from '@defra/hapi-auth-oidc'
 import { config } from '~/src/config/config.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
-import { log } from '~/src/server/common/helpers/logging/log.js'
+import { log, logger } from '~/src/server/common/helpers/logging/log.js'
 import {
   clearTokenState,
   createClientSecretTokenRequestParams,
@@ -23,11 +25,15 @@ vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
   }
 })
 
+const validWebIdentityToken = () => jwt.sign({}, 'test-secret', { expiresIn: '5m' })
+
 const mockGetCredentials = vi.fn()
+const mockStsCredentials = vi.fn()
 
 vi.mock('@defra/hapi-auth-oidc', () => ({
   WebIdentityTokenProvider: vi.fn().mockImplementation(function WebIdentityTokenProvider() {
     this.getCredentials = mockGetCredentials
+    this.stsClient = { config: { credentials: mockStsCredentials } }
   })
 }))
 
@@ -50,7 +56,8 @@ describe('Token Manager', () => {
     vi.clearAllMocks()
 
     retry.mockImplementation((operation) => operation())
-    mockGetCredentials.mockResolvedValue('mock-web-identity-token')
+    mockGetCredentials.mockResolvedValue(validWebIdentityToken())
+    mockStsCredentials.mockReset()
   })
 
   describe('isTokenExpired', () => {
@@ -104,8 +111,23 @@ describe('Token Manager', () => {
   })
 
   describe('refreshToken', () => {
+    test('requests a Web Identity token with a short duration, not the library default', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ access_token: 'new-access-token', expires_in: 3600 })
+      })
+
+      await refreshToken()
+
+      expect(WebIdentityTokenProvider).toHaveBeenCalledWith(
+        expect.objectContaining({ audience: ['mock-audience'], durationSeconds: 60 })
+      )
+    })
+
     test('successfully refreshes token using a Web Identity client assertion', async () => {
       const mockToken = 'new-access-token'
+      const webIdentityToken = validWebIdentityToken()
+      mockGetCredentials.mockResolvedValue(webIdentityToken)
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: () =>
@@ -133,7 +155,7 @@ describe('Token Manager', () => {
         client_id: 'mock-client-id',
         scope: 'mock-client-id/.default',
         client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
-        client_assertion: 'mock-web-identity-token',
+        client_assertion: webIdentityToken,
         grant_type: 'client_credentials'
       })
     })
@@ -180,6 +202,51 @@ describe('Token Manager', () => {
       expect(log).not.toHaveBeenCalledWith(LogCodes.SYSTEM.ENTRA_TOKEN_ENDPOINT_ERROR, expect.anything())
     })
 
+    test('logs the underlying ECS task credential expiry when the Web Identity token cannot be obtained', async () => {
+      mockGetCredentials.mockRejectedValueOnce(new Error('sts unavailable'))
+      const expiration = new Date(Date.now() + 42_000)
+      mockStsCredentials.mockResolvedValue({ expiration })
+
+      await expect(refreshToken()).rejects.toThrow('Entra token refresh failed')
+
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining(expiration.toISOString()))
+    })
+
+    test('throws error when the Web Identity token provider returns a stale token, logging it as an STS failure', async () => {
+      const expiredToken = jwt.sign({}, 'test-secret', { expiresIn: '-5m' })
+      mockGetCredentials.mockResolvedValueOnce(expiredToken)
+
+      await expect(refreshToken()).rejects.toThrow('Entra token refresh failed')
+      expect(mockFetch).not.toHaveBeenCalled()
+
+      expect(log).toHaveBeenCalledWith(LogCodes.SYSTEM.ENTRA_WEB_IDENTITY_ERROR, {
+        audience: ['mock-audience'],
+        errorMessage: 'Web Identity token provider returned no valid token'
+      })
+    })
+
+    test('logs the underlying ECS task credential expiry when the token returned is stale', async () => {
+      const expiredToken = jwt.sign({}, 'test-secret', { expiresIn: '-5m' })
+      mockGetCredentials.mockResolvedValueOnce(expiredToken)
+      const expiration = new Date(Date.now() + 7_000)
+      mockStsCredentials.mockResolvedValue({ expiration })
+
+      await expect(refreshToken()).rejects.toThrow('Entra token refresh failed')
+
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining(expiration.toISOString()))
+    })
+
+    test('does not throw if reading the underlying credential expiry itself fails', async () => {
+      mockGetCredentials.mockRejectedValueOnce(new Error('sts unavailable'))
+      mockStsCredentials.mockRejectedValue(new Error('cannot read credentials'))
+
+      await expect(refreshToken()).rejects.toThrow('Entra token refresh failed')
+
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('could not read underlying ECS task credential expiry')
+      )
+    })
+
     test('throws error when the Web Identity token provider returns no token, logging it as an STS failure', async () => {
       mockGetCredentials.mockResolvedValueOnce(undefined)
 
@@ -188,7 +255,7 @@ describe('Token Manager', () => {
 
       expect(log).toHaveBeenCalledWith(LogCodes.SYSTEM.ENTRA_WEB_IDENTITY_ERROR, {
         audience: ['mock-audience'],
-        errorMessage: 'Web Identity token provider returned no token'
+        errorMessage: 'Web Identity token provider returned no valid token'
       })
     })
 
