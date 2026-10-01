@@ -20,7 +20,7 @@ fi
 #   ACCEPTANCE_SUITES="grants-ui-acceptance-tests" ./tools/run-acceptance-tests.sh
 # The grasslands/ woodland suites include @ci tests that assume
 # CI-seeded allowlist state absent in a plain local stack.
-ACCEPTANCE_SUITES="${ACCEPTANCE_SUITES:-grants-ui-acceptance-tests grants-ui-grasslands-tests grants-ui-woodland-tests}"
+ACCEPTANCE_SUITES="${ACCEPTANCE_SUITES:-grants-ui-acceptance-tests grants-config-grasslands-grants-ui-tests grants-ui-woodland-tests}"
 
 HOOK=""
 for suite in $ACCEPTANCE_SUITES; do

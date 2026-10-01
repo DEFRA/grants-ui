@@ -161,7 +161,9 @@ MAX_INSTANCES=4 ./tools/run-acceptance-tests.sh
 
 The grants-ui acceptance tests live in the `acceptance/` directory of this repository and are built locally as part of the Docker test run — there is no separate image to publish.
 
-Other journey test repositories (grasslands, woodland grant) must:
+The grasslands journey tests live in `test/grants-ui/` of [grants-config-grasslands](https://github.com/DEFRA/grants-config-grasslands). The `grants-config-grasslands-grants-ui-tests` service builds them straight from that repository at the latest release tag (`GRASSLANDS_TAG`, resolved by `docker-compose-smoke-test.sh`), so the tests and the GAS schema they validate against always match the config version under test. Nothing is published for them.
+
+Other journey test repositories (woodland grant) must:
 
 - Publish an image to Docker Hub as per the services
 - Allow a command to be passed to the entrypoint script

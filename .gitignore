@@ -31,6 +31,7 @@ compose/config-broker/local-form-definitions/*
 /.grants-ui-cli-sonar.json
 /.scannerwork/
 /acceptance/schemas/
+# No longer generated (grasslands tests now carry their own schema); kept so stale local copies stay untracked
 /grants-ui-grasslands-tests-schemas/
 /grants-ui-woodland-tests-schemas/
 AGENTS.local.md
