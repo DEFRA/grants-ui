@@ -1,3 +1,5 @@
+import { escapeHtml } from '~/src/server/common/utils/escape-html.js'
+
 const HTTP_STATUS = {
   NOT_FOUND: 404
 }
@@ -19,13 +21,13 @@ export async function generateFormNotFoundResponse(slug, h, options = {}) {
     .response(
       `
     <html>
-      <head><title>${title}</title></head>
+      <head><title>${escapeHtml(title)}</title></head>
       <body style="font-family: system-ui, sans-serif; margin: 40px;">
         <div style="background: #ffe6cc; padding: 15px; border-left: 4px solid #f47738; margin-bottom: 30px;">
-          <strong>⚠️ ${errorMessage}</strong><br>
-          Form slug "${slug}" not found in grants-ui-backend.
+          <strong>⚠️ ${escapeHtml(errorMessage)}</strong><br>
+          Form slug "${escapeHtml(slug)}" not found in grants-ui-backend.
         </div>
-        <p><a href="${backLink}">← Back to Dev Tools</a></p>
+        <p><a href="${escapeHtml(backLink)}">← Back to Dev Tools</a></p>
       </body>
     </html>
   `

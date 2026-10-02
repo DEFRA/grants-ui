@@ -43,17 +43,16 @@ describe('refreshTokens', () => {
 
     expect(getOidcConfig).toHaveBeenCalledTimes(1)
 
-    // Verify Wreck.post was called with the correct parameters
-    const expectedUrl =
-      'https://test-token-endpoint.com?client_id=test-client-id&client_secret=test-client-secret&grant_type=refresh_token&scope=openid offline_access test-client-id&refresh_token=old-refresh-token&redirect_uri=https://test-redirect-url.com'
     const expectedOptions = {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       },
+      payload:
+        'client_id=test-client-id&client_secret=test-client-secret&grant_type=refresh_token&scope=openid+offline_access+test-client-id&refresh_token=old-refresh-token&redirect_uri=https%3A%2F%2Ftest-redirect-url.com',
       json: true,
       timeout: 10000
     }
-    expect(Wreck.post).toHaveBeenCalledWith(expectedUrl, expectedOptions)
+    expect(Wreck.post).toHaveBeenCalledWith('https://test-token-endpoint.com', expectedOptions)
 
     expect(result).toEqual(mockPayload)
   })

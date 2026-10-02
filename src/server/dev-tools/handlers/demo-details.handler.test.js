@@ -11,6 +11,7 @@ import { processSections } from '../../common/services/details-page/index.js'
 import { buildDemoMappedData, buildDemoRequest } from '../helpers/index.js'
 import { generateFormNotFoundResponse, resolveFormDefinition } from '../utils/index.js'
 import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
+import { HTML_INJECTION } from '~/src/__mocks__/escape-mocks.js'
 import { debug } from '../../common/helpers/logging/log.js'
 
 const mockDemoMappedData = {
@@ -201,6 +202,18 @@ describe('demo-details.handler', () => {
         })
       )
       expect(processSections).not.toHaveBeenCalled()
+    })
+
+    test('should escape the slug in the no config message', async () => {
+      resolveFormDefinition.mockResolvedValue(mockDefinitionWithoutConfig)
+      mockRequest = mockHapiRequest({
+        server: { methods: { getFormService: () => ({}) } },
+        params: { slug: HTML_INJECTION }
+      })
+
+      await demoDetailsHandler(mockRequest, mockH)
+
+      expect(mockH.view.mock.calls[0][1].sections[0].summaryList.rows[0].value.html).toBeEscaped()
     })
 
     test('should return form not found response when form does not exist', async () => {
