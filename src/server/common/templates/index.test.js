@@ -51,6 +51,81 @@ const renderPage = (viewModel) =>
   )
 
 describe('index.html view page-level config', () => {
+  describe('component map settings', () => {
+    const postcodeContext = (postcode) => ({
+      state: { additionalAnswers: { applicant: { business: { address: { postalCode: postcode } } } } }
+    })
+
+    it('exposes the saved postcode on any form page when component maps are enabled', () => {
+      const $ = renderPage({ componentMapsEnabled: true, context: postcodeContext('SW1A 1AA') })
+      expect($('#component-map-settings').attr('data-map-postcode')).toBe('SW1A 1AA')
+      expect($('#component-map-settings').is('[hidden]')).toBe(true)
+    })
+
+    it('reads postalCode rather than city from the saved business address', () => {
+      const context = postcodeContext('SW1A 1AA')
+      context.state.additionalAnswers.applicant.business.address.city = 'London'
+      const $ = renderPage({ componentMapsEnabled: true, context })
+      expect($('#component-map-settings').attr('data-map-postcode')).toBe('SW1A 1AA')
+      expect($('#component-map-settings').attr('data-map-city')).toBeUndefined()
+      expect($.html()).not.toContain('London')
+    })
+
+    it('renders independent options for each map component, ignoring page config', () => {
+      const $ = renderPage({
+        componentMapsEnabled: true,
+        page: {
+          ...makePage({ '/check-your-answers': { hideMapHelpPanel: false } }),
+          collection: {
+            fields: [
+              { type: 'OsGridRefField', name: 'location' },
+              { type: 'LatLongField', name: 'coordinates', options: { hideMapHelpPanel: false } },
+              { type: 'GeospatialField', name: 'boundary', options: { zoomToPostcode: false } },
+              { type: 'TextField', name: 'description', options: { hideMapHelpPanel: false } }
+            ]
+          }
+        }
+      })
+      expect($('[data-map-component]')).toHaveLength(3)
+      expect($('[data-map-component="location"]').attr('data-hide-map-help-panel')).toBe('true')
+      expect($('[data-map-component="location"]').attr('data-zoom-to-postcode')).toBe('true')
+      expect($('[data-map-component="coordinates"]').attr('data-hide-map-help-panel')).toBe('false')
+      expect($('[data-map-component="coordinates"]').attr('data-zoom-to-postcode')).toBe('true')
+      expect($('[data-map-component="boundary"]').attr('data-hide-map-help-panel')).toBe('true')
+      expect($('[data-map-component="boundary"]').attr('data-zoom-to-postcode')).toBe('false')
+    })
+
+    it('escapes component names in the settings markup', () => {
+      const name = '"><script id="injected">alert(1)</script>'
+      const $ = renderPage({
+        componentMapsEnabled: true,
+        page: { ...makePage({}), collection: { fields: [{ type: 'OsGridRefField', name }] } }
+      })
+      expect($('[data-map-component]').attr('data-map-component')).toBe(name)
+      expect($('#injected')).toHaveLength(0)
+    })
+
+    it.each([undefined, {}, { state: {} }, postcodeContext(null)])('allows missing postcode state (%j)', (context) => {
+      const $ = renderPage({ componentMapsEnabled: true, context })
+      expect($('#component-map-settings').attr('data-map-postcode')).toBe('')
+    })
+
+    it('escapes postcode text without exposing other application state', () => {
+      const postcode = '"><script id="injected">alert(1)</script>'
+      const context = postcodeContext(postcode)
+      context.state.additionalAnswers.unrelated = 'unrelated-answer'
+      const $ = renderPage({ componentMapsEnabled: true, context })
+      expect($('#component-map-settings').attr('data-map-postcode')).toBe(postcode)
+      expect($('#injected')).toHaveLength(0)
+      expect($.html()).not.toContain('unrelated-answer')
+    })
+
+    it('omits map settings when component maps are disabled', () => {
+      const $ = renderPage({ componentMapsEnabled: false, context: postcodeContext('SW1A 1AA') })
+      expect($('#component-map-settings')).toHaveLength(0)
+    })
+  })
+
   describe('hideBackLink', () => {
     it('renders the back link by default', () => {
       const $ = renderPage({ page: makePage({ '/check-your-answers': {} }) })
