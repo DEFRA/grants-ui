@@ -16,19 +16,20 @@ async function refreshTokens(refreshToken, request) {
   try {
     const { token_endpoint: url } = await getOidcConfig()
 
-    const query = [
-      `client_id=${String(config.get('defraId.clientId'))}`,
-      `client_secret=${String(config.get('defraId.clientSecret'))}`,
-      'grant_type=refresh_token',
-      `scope=openid offline_access ${String(config.get('defraId.clientId'))}`,
-      `refresh_token=${refreshToken}`,
-      `redirect_uri=${String(config.get('defraId.redirectUrl'))}`
-    ].join('&')
+    const body = new URLSearchParams({
+      client_id: String(config.get('defraId.clientId')),
+      client_secret: String(config.get('defraId.clientSecret')),
+      grant_type: 'refresh_token',
+      scope: `openid offline_access ${String(config.get('defraId.clientId'))}`,
+      refresh_token: refreshToken,
+      redirect_uri: String(config.get('defraId.redirectUrl'))
+    }).toString()
 
-    const { payload } = await Wreck.post(`${url}?${query}`, {
+    const { payload } = await Wreck.post(url, {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       },
+      payload: body,
       json: true,
       timeout: TOKEN_REFRESH_TIMEOUT_MS
     })

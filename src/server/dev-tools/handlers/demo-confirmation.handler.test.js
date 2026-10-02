@@ -10,6 +10,7 @@ import {
   MOCK_FORMS
 } from '../../confirmation/__test-fixtures__/confirmation-test-fixtures.js'
 import { MOCK_DEMO_DATA } from '../__test-fixtures__/mock-demo-data.js'
+import { HTML_INJECTION } from '~/src/__mocks__/escape-mocks.js'
 
 vi.mock('../../confirmation/services/confirmation.service.js')
 vi.mock('../helpers/index.js')
@@ -131,6 +132,14 @@ describe('demo-confirmation.handler', () => {
           html: expect.stringContaining('Development Error')
         })
       })
+    })
+
+    test('should escape the error message in the fallback content', async () => {
+      resolveFormDefinition.mockRejectedValue(new Error(HTML_INJECTION))
+
+      await demoConfirmationHandler(mockRequest, mockH)
+
+      expect(ConfirmationService.buildViewModel.mock.calls[0][0].confirmationContent.html).toBeEscaped()
     })
   })
 })

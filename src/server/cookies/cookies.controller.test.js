@@ -66,7 +66,10 @@ describe('cookies.controller', () => {
 
     it.each([
       { returnUrl: 123, expectedReferrer: '/', description: 'numeric returnUrl' },
-      { returnUrl: null, expectedReferrer: '/', description: 'null returnUrl' }
+      { returnUrl: null, expectedReferrer: '/', description: 'null returnUrl' },
+      { returnUrl: '//evil.test', expectedReferrer: '/', description: 'protocol-relative returnUrl' },
+      { returnUrl: '/\\evil.test', expectedReferrer: '/', description: 'backslash protocol-relative returnUrl' },
+      { returnUrl: ['/a', '/b'], expectedReferrer: '/', description: 'repeated returnUrl param' }
     ])('should default to "/" for invalid returnUrl: $description', async ({ returnUrl, expectedReferrer }) => {
       const mockRequest = createMockRequest({
         query: { returnUrl }
@@ -90,6 +93,11 @@ describe('cookies.controller', () => {
         payload: { analytics: true, returnUrl: 'https://evil.com' },
         expected: null,
         description: 'absolute URL (security) — re-renders page'
+      },
+      {
+        payload: { analytics: true, returnUrl: '/\\evil.test' },
+        expected: null,
+        description: 'backslash protocol-relative URL (security) — re-renders page'
       },
       {
         payload: { analytics: true, returnUrl: '/page?param=value' },

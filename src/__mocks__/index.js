@@ -34,3 +34,5 @@ export {
 export { setupControllerMocks, makeQuestionPageControllerMock } from './controller-mocks.js'
 
 export { mockFilters } from './filters-mocks.js'
+
+export { HTML_INJECTION } from './escape-mocks.js'

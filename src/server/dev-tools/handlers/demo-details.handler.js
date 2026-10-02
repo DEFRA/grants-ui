@@ -2,6 +2,7 @@ import { buildDemoMappedData, buildDemoRequest } from '../helpers/index.js'
 import { generateFormNotFoundResponse, resolveFormDefinition } from '../utils/index.js'
 import { processSections } from '../../common/services/details-page/index.js'
 import { debug, LogCodes } from '../../common/helpers/logging/log.js'
+import { escapeHtml } from '../../common/utils/escape-html.js'
 
 const CHECK_DETAILS_VIEW = 'check-details'
 
@@ -72,7 +73,7 @@ export function generateFallbackViewModel(error) {
           rows: [
             {
               key: { text: 'Error' },
-              value: { html: `<strong>Development Error</strong><br/>${error.message}` }
+              value: { html: `<strong>Development Error</strong><br/>${escapeHtml(error.message)}` }
             }
           ]
         }
@@ -128,7 +129,7 @@ export async function demoDetailsHandler(request, h) {
                 {
                   key: { text: 'Status' },
                   value: {
-                    html: `<strong>Development Mode</strong><br/>No displaySections config found in form metadata.detailsPage for: ${form.title} (${slug})`
+                    html: `<strong>Development Mode</strong><br/>No displaySections config found in form metadata.detailsPage for: ${escapeHtml(form.title)} (${escapeHtml(slug)})`
                   }
                 }
               ]

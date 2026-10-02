@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 import { generateFormNotFoundResponse } from './generate-form-not-found-response.js'
 import { mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
+import { HTML_INJECTION } from '~/src/__mocks__/escape-mocks.js'
 
 describe('generate-form-not-found-response', () => {
   let mockH
@@ -31,5 +32,11 @@ describe('generate-form-not-found-response', () => {
     expect(htmlContent).toContain('<title>Custom Title</title>')
     expect(htmlContent).toContain('⚠️ Custom Error')
     expect(htmlContent).toContain('<a href="/custom-back">← Back to Dev Tools</a>')
+  })
+
+  test('should escape the slug before writing it into the HTML', async () => {
+    await generateFormNotFoundResponse(HTML_INJECTION, mockH)
+
+    expect(mockH.response.mock.calls[0][0]).toBeEscaped()
   })
 })
