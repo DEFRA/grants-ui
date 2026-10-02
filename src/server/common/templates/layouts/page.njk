@@ -173,6 +173,19 @@
 
 {% block bodyEnd %}
   {% if componentMapsEnabled %}
+    <div
+      id="component-map-settings"
+      data-map-postcode="{{ context.state.additionalAnswers.applicant.business.address.postalCode | default('', true) | escape }}"
+      hidden
+    >
+      {% for component in componentMapOptions(page) %}
+        <div
+          data-map-component="{{ component.name | escape }}"
+          data-hide-map-help-panel="{{ 'true' if component.hideMapHelpPanel else 'false' }}"
+          data-zoom-to-postcode="{{ 'true' if component.zoomToPostcode else 'false' }}"
+        ></div>
+      {% endfor %}
+    </div>
     <script nonce="{{ cspNonce }}">
       window.componentMapsEnabled = true
     </script>
