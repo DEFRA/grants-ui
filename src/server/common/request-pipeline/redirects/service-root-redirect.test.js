@@ -91,6 +91,12 @@ describe('serviceRootRedirect', () => {
       }
     },
     {
+      desc: 'the application window is closed',
+      setup: () => {
+        request.app.model.def.metadata.applicationWindow = { closesAt: '2000-01-01T00:00:00Z' }
+      }
+    },
+    {
       desc: 'the grant has no preSubmission rule',
       setup: () => {
         request.app.model.def.metadata.grantRedirectRules = {}

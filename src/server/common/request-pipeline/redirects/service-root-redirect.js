@@ -1,4 +1,5 @@
 import { getFormsCacheService } from '../../helpers/forms-cache/forms-cache.js'
+import { isApplicationWindowOpen } from '../../helpers/application-window.js'
 import {
   buildRedirectUrl,
   hasMeaningfulPreSubmissionState,
@@ -30,6 +31,39 @@ function isDispatchRedirect(response) {
 }
 
 /**
+ * Resolves whether this request is a candidate for the pre-submission.
+ * @param {import('@hapi/hapi').Request} request
+ * @returns {{ slug: string, preSubmissionRule: any } | null}
+ */
+function resolvePreSubmissionCandidate(request) {
+  const slug = request.params?.slug
+
+  if (request.method !== 'get' || request.route?.path !== SLUG_ROOT_ROUTE || !slug) {
+    return null
+  }
+
+  if (!isDispatchRedirect(request.response)) {
+    return null
+  }
+
+  const def = /** @type {{ startPage?: string, metadata?: Record<string, any> } | undefined} */ (
+    /** @type {{ model?: { def?: unknown } }} */ (request.app).model?.def
+  )
+
+  if (def?.startPage !== CHECK_DETAILS_START_PAGE) {
+    return null
+  }
+
+  const preSubmissionRule = def.metadata?.grantRedirectRules?.preSubmission?.[0]
+
+  if (!preSubmissionRule) {
+    return null
+  }
+
+  return { slug, preSubmissionRule }
+}
+
+/**
  * Redirects a user with an in-progress application away from the grant's start page.
  * @param {import('@hapi/hapi').Request} request
  * @param {import('@hapi/hapi').ResponseToolkit} h
@@ -37,27 +71,15 @@ function isDispatchRedirect(response) {
  */
 export async function serviceRootRedirect(request, h) {
   try {
-    const slug = request.params?.slug
+    const candidate = resolvePreSubmissionCandidate(request)
 
-    if (request.method !== 'get' || request.route?.path !== SLUG_ROOT_ROUTE || !slug) {
+    if (!candidate) {
       return h.continue
     }
 
-    if (!isDispatchRedirect(request.response)) {
-      return h.continue
-    }
+    const { slug, preSubmissionRule } = candidate
 
-    const def = /** @type {{ startPage?: string, metadata?: Record<string, any> } | undefined} */ (
-      /** @type {{ model?: { def?: unknown } }} */ (request.app).model?.def
-    )
-
-    if (def?.startPage !== CHECK_DETAILS_START_PAGE) {
-      return h.continue
-    }
-
-    const preSubmissionRule = def.metadata?.grantRedirectRules?.preSubmission?.[0]
-
-    if (!preSubmissionRule) {
+    if (!isApplicationWindowOpen(request)) {
       return h.continue
     }
 

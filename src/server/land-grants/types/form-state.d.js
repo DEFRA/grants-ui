@@ -5,6 +5,8 @@
  * @typedef {Object} ActionData
  * @property {number} value - The claimed area for this action
  * @property {string} unit - Unit of measurement (e.g., "ha")
+ * @property {string} [displayUnit] - Singular presentation label (e.g., "pond")
+ * @property {string} [displayUnitPlural] - Plural presentation label (e.g., "ponds")
  * @property {string} description - Action description with code
  * @property {string} version - Action version
  * @property {string[]} consents - Consent keys this action requires (e.g., "sssi", "hefer")

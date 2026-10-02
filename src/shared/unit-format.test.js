@@ -60,6 +60,10 @@ describe('formatArea', () => {
     expect(formatArea(0, unit)).toBe(`0 ${unit}`)
   })
 
+  it('uses the machine unit for precision and a separate unit for display', () => {
+    expect(formatArea(4, 'count', 'ponds')).toBe('4 ponds')
+  })
+
   it('pads a numeric area to four decimal places and appends the unit', () => {
     expect(formatArea(2, 'ha')).toBe('2.0000 ha')
     expect(formatArea(31.89, 'hectares')).toBe('31.8900 hectares')

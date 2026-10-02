@@ -25,7 +25,7 @@ describe('backend-sourced form deployment config', () => {
       'arn:aws:sns:eu-west-2:000000000000:gfr__sns___reporting_events'
     )
     expect(gas.environment.GAS__SNS__AGREEMENT_STATUS_UPDATED_TOPIC_ARN).toBe(
-      'arn:aws:sns:eu-west-2:000000000000:agreement_status_updated_fifo.fifo'
+      'arn:aws:sns:eu-west-2:000000000000:gas__sns__agreement_status_updated_fifo.fifo'
     )
     expect(gas.environment.GAS__SNS__CREATE_PAYMENT_TOPIC_ARN).toBe(
       'arn:aws:sns:eu-west-2:000000000000:gas__sns__create_payment_fifo.fifo'

@@ -48,3 +48,15 @@ ignore:
     - '@defra/forms-engine-plugin > *':
         reason: 'Awaiting Defra Forms dependency updates.'
         expires: '2026-10-31'
+  'SNYK-JS-SHELLQUOTE-20250993':
+    - '@defra/forms-engine-plugin > *':
+        reason: 'Fix shell-quote@1.11.0 is inside the min-release-age window; add override once it clears.'
+        expires: '2026-10-06'
+  'SNYK-JS-SERIALIZEJAVASCRIPT-20302847':
+    - '@defra/forms-engine-plugin > *':
+        reason: 'Fix serialize-javascript@7.1.2 is inside the min-release-age window; bump override once it clears.'
+        expires: '2026-10-07'
+  'SNYK-JS-URIJS-20341609':
+    - '@defra/forms-engine-plugin > *':
+        reason: 'No fixed version exists for uri-js (Snyk: "no fixed version"). Not reachable: this chain is docusaurus build tooling for @defra/interactive-map own docs site, which grants-ui never builds - the package is only imported client-side as a map UI component. Even where ajv@6 calls URI.parse/resolve, it only processes JSON Schema $id/$ref identifiers, never request data.'
+        expires: '2026-12-31'
