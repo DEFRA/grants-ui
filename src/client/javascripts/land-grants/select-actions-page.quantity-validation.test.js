@@ -33,12 +33,80 @@ describe('quantity input validation', () => {
     return form
   }
 
+  async function initPondAction(summaryErrors = []) {
+    const form = setupDom(
+      [
+        {
+          code: 'WBD1',
+          description: 'Manage ponds: WBD1',
+          displayUnitPlural: 'ponds',
+          checked: true,
+          availability: { value: null, unit: 'count' },
+          requiresMaxQuantity: true,
+          unrestricted: true
+        }
+      ],
+      { summaryErrors }
+    )
+    await initSettled(form, fetchOk({ actions: [] }))
+    return form
+  }
+
   beforeEach(() => {
     window.history.pushState({}, '', '/select-actions?parcelId=SD6843-7039')
   })
 
   afterEach(() => {
     vi.restoreAllMocks()
+  })
+
+  it.each([
+    ['0', 'Enter a number greater than 0'],
+    ['0.1', 'Enter a whole number of ponds, for example 1 or 2'],
+    ['-1', 'Enter a number of ponds, for example 1 or 2'],
+    ['abc', 'Enter a number of ponds, for example 1 or 2']
+  ])('reports invalid pond quantity %j on blur without requesting availability', async (value, message) => {
+    const form = await initPondAction()
+    const input = await typeQuantity(form, 'WBD1', value)
+
+    expect(errorFor('WBD1').textContent).toContain(message)
+    expect(document.querySelector('.govuk-error-summary__list a').textContent).toBe(message)
+    expect(input.value).toBe(value)
+    expect(global.fetch).not.toHaveBeenCalled()
+  })
+
+  it('leaves empty ponds quiet on blur, clears a previous error and accepts a subsequent count', async () => {
+    const form = await initPondAction()
+
+    await typeQuantity(form, 'WBD1', '')
+    expect(errorFor('WBD1')).toBeNull()
+
+    await typeQuantity(form, 'WBD1', '0')
+    expect(errorFor('WBD1')).not.toBeNull()
+
+    const input = await typeQuantity(form, 'WBD1', '  ')
+    expect(input.value).toBe('')
+    expect(errorFor('WBD1')).toBeNull()
+    expect(document.querySelector('.govuk-error-summary')).toBeNull()
+    expect(input.classList).not.toContain('govuk-input--error')
+    expect(input.hasAttribute('aria-describedby')).toBe(false)
+    expect(global.fetch).not.toHaveBeenCalled()
+
+    await typeQuantity(form, 'WBD1', '2')
+    expect(errorFor('WBD1')).toBeNull()
+    expect(sentPlannedActions()).toEqual([{ actionCode: 'WBD1', quantity: 2, unit: 'count' }])
+  })
+
+  it('clears the server summary when an empty pond field is blurred', async () => {
+    const form = await initPondAction([
+      { href: '#landActionQuantity_WBD1', text: 'Enter a quantity for Manage ponds: WBD1' }
+    ])
+
+    await typeQuantity(form, 'WBD1', '')
+
+    expect(errorFor('WBD1')).toBeNull()
+    expect(document.querySelector('.govuk-error-summary')).toBeNull()
+    expect(global.fetch).not.toHaveBeenCalled()
   })
 
   it('rejects fractional square metres before sending a HEF1 claim and accepts a whole quantity', async () => {

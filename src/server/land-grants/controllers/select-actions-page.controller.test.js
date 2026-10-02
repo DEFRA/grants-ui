@@ -67,6 +67,7 @@ describe('SelectActionsPageController', () => {
     description: 'Manage ponds: WBD1',
     version: '1',
     ratePerUnitGbp: 100,
+    displayUnitPlural: 'ponds',
     quantityRequired: true,
     availability: { unit: 'count', value: null },
     heferRequired: true
@@ -560,10 +561,10 @@ describe('SelectActionsPageController', () => {
     )
 
     test.each([
-      ['0', 'Value must be greater than 0'],
-      ['-11', 'Value must be greater than 0'],
-      ['11.22001', 'Must be a whole number'],
-      ['as', 'Must be numbers'],
+      ['0', 'Enter a number greater than 0'],
+      ['-1', 'Enter a number of ponds, for example 1 or 2'],
+      ['0.1', 'Enter a whole number of ponds, for example 1 or 2'],
+      ['abc', 'Enter a number of ponds, for example 1 or 2'],
       ['', 'Enter a quantity for Manage ponds: WBD1']
     ])('rejects WBD1 quantity %j on submission and retains the input', async (quantity, text) => {
       fetchActionsForParcel.mockResolvedValue({

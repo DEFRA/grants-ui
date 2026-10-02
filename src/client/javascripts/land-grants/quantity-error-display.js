@@ -49,7 +49,7 @@ function getOrCreateErrorSummary(quantityInput) {
   if (!column) {
     return null
   }
-  const existing = column.querySelector(ERROR_SUMMARY_SELECTOR)
+  const existing = quantityInput.closest('main')?.querySelector(ERROR_SUMMARY_SELECTOR)
   if (existing) {
     return /** @type {HTMLElement} */ (existing)
   }
@@ -103,7 +103,7 @@ function upsertErrorSummaryEntry(quantityInput, message) {
  * @param {HTMLInputElement} quantityInput
  */
 function removeErrorSummaryEntry(quantityInput) {
-  const summary = quantityInput.form?.parentElement?.querySelector(ERROR_SUMMARY_SELECTOR)
+  const summary = quantityInput.closest('main')?.querySelector(ERROR_SUMMARY_SELECTOR)
   const list = summary?.querySelector(ERROR_SUMMARY_LIST_SELECTOR)
   list?.querySelector(`a[href="#${quantityInput.id}"]`)?.closest('li')?.remove()
   if (list?.children.length === 0) {

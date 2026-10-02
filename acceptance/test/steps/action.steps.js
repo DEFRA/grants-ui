@@ -100,6 +100,11 @@ Then('(the user )should see error {string} for action {string}', async function 
   await expect(this.page.locator(`#landActionQuantity_${action}-error`)).toContainText(errorText)
 })
 
+Then('(the user )should not see an error for action {string}', async function (action) {
+  await expect(this.page.locator(`.govuk-error-summary__list a[href="#landActionQuantity_${action}"]`)).toHaveCount(0)
+  await expect(this.page.locator(`#landActionQuantity_${action}-error`)).toHaveCount(0)
+})
+
 Then('(the user )should be unable to select action {string}', async function (action) {
   await expect(this.page.locator(`//input[@type='checkbox'][@value='${action}']`)).toBeDisabled()
 })

@@ -65,7 +65,7 @@ function getActionQuantityErrorText(action, rawValue) {
   const availableQuantity = action.availability?.value ?? undefined
 
   if (rawValue !== '' && requiresWholeNumber(action.availability?.unit)) {
-    return getQuantityError(rawValue, availableQuantity, action.availability?.unit)
+    return getQuantityError(rawValue, availableQuantity, action.availability?.unit, action.displayUnitPlural)
   }
 
   // Empty, zero and negative area claims all require the user to enter a quantity.
@@ -108,5 +108,5 @@ export function validateSelectedActionQuantities(payload, actions) {
 }
 
 /**
- * @import { Action } from '../view-state/land-parcel.view-state.js'
+ * @import { Action } from '../types/select-actions-view-model.d.js'
  */

@@ -197,6 +197,7 @@ export function mapActionToViewModel(
     attributes: {
       'data-action-description': action.description,
       'data-available-unit': action.availability?.unit,
+      'data-display-unit-plural': action.displayUnitPlural ?? undefined,
       // A non-quantity action's pass/fail threshold - static, never touched by the client.
       'data-total-available-area': getAvailabilityLimit(getStaticAvailability(action)),
       // Stamped per-checkbox (not a single form-wide flag) so protection survives
