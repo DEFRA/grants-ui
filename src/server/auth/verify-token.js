@@ -11,9 +11,12 @@ import { createPublicKey } from 'node:crypto'
  */
 async function verifyToken(token) {
   try {
+    const decoded = Jwt.token.decode(token)
+    // @hapi/jwt's header type omits `kid`, though Defra ID tokens carry it
+    const { kid } = /** @type {{ kid?: string }} */ (decoded.decoded.header)
     const keys = await fetchJwksKeys()
-    const pem = convertJwkToPem(keys)
-    const decoded = verifyTokenSignature(token, pem)
+    const pem = convertJwkToPem(selectSigningKey(keys, kid))
+    verifyTokenSignature(decoded, pem)
     logSuccessfulVerification(decoded)
   } catch (error) {
     handleVerificationError(/** @type {ErrorResponse} */ (error), token)
@@ -42,22 +45,35 @@ async function fetchJwksKeys() {
 }
 
 /**
+ * Pick the key that signed the token. During a key rotation the signing key
+ * may not be first in the set, so match on the token header's `kid`.
  * @param {Record<string, unknown>[]} keys - raw JWKS `keys` array
- * @returns {string}
+ * @param {string | undefined} kid - key ID from the token header
+ * @returns {Record<string, unknown>}
  */
-function convertJwkToPem(keys) {
-  return createPublicKey({ key: keys[0], format: 'jwk' }).export({ format: 'pem', type: 'spki' })
+function selectSigningKey(keys, kid) {
+  const key = keys.find((k) => k.kid === kid)
+  if (!key) {
+    throw new Error(`No JWK matches token kid "${kid}"`)
+  }
+  return key
 }
 
 /**
- * @param {string} token
- * @param {string} pem
- * @returns {import('@hapi/jwt').HapiJwt.Artifacts}
+ * @param {Record<string, unknown>} key - a single JWK from the JWKS `keys` array
+ * @returns {string}
  */
-function verifyTokenSignature(token, pem) {
-  const decoded = Jwt.token.decode(token)
+function convertJwkToPem(key) {
+  return createPublicKey({ key, format: 'jwk' }).export({ format: 'pem', type: 'spki' })
+}
+
+/**
+ * @param {import('@hapi/jwt').HapiJwt.Artifacts} decoded
+ * @param {string} pem
+ * @returns {void}
+ */
+function verifyTokenSignature(decoded, pem) {
   Jwt.token.verify(decoded, { key: pem, algorithm: 'RS256' })
-  return decoded
 }
 
 /**

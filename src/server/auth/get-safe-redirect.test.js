@@ -1,4 +1,4 @@
-import { getSafeRedirect } from './get-safe-redirect.js'
+import { getSafeRedirect, isSafeRedirect } from './get-safe-redirect.js'
 
 describe('getSafeRedirect', () => {
   it('should return the redirect path when it starts with a slash', () => {
@@ -38,4 +38,17 @@ describe('getSafeRedirect', () => {
     expect(() => getSafeRedirect(false)).toThrow(TypeError)
     expect(() => getSafeRedirect({ startsWith: () => true })).toThrow(TypeError)
   })
+})
+
+describe('isSafeRedirect', () => {
+  it.each(['/', '/dashboard', '/page?param=value'])('should accept same-origin relative path %s', (redirect) => {
+    expect(isSafeRedirect(redirect)).toBe(true)
+  })
+
+  it.each(['', 'dashboard', 'https://evil.test', '//evil.test', '/\\evil.test', null, undefined, 0, ['/a', '/b']])(
+    'should reject %j',
+    (redirect) => {
+      expect(isSafeRedirect(redirect)).toBe(false)
+    }
+  )
 })
