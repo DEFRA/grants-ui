@@ -23,9 +23,14 @@ services:
     networks:
       - grants-ui-net
 
-  grants-ui-grasslands-tests:
-    image: defradigital/grants-ui-grasslands-tests
-    pull_policy: always
+  # Built from the journey tests co-located in grants-config-grasslands, at the
+  # config release under test. GRASSLANDS_TAG is set by tools/docker-compose-smoke-test.sh.
+  grants-config-grasslands-grants-ui-tests:
+    image: grants-config-grasslands-grants-ui-tests
+    pull_policy: build
+    build:
+      context: https://github.com/DEFRA/grants-config-grasslands.git#${GRASSLANDS_TAG:-main}
+      dockerfile: test/grants-ui/Dockerfile
     environment:
       MAX_INSTANCES: 3
       NODE_EXTRA_CA_CERTS: /etc/ssl/certs/nginx.crt
@@ -38,7 +43,6 @@ services:
       MONGO_URI: mongodb://mongodb:27017/
     volumes:
       - ./nginx/certs:/etc/ssl/certs:ro
-      - ./grants-ui-grasslands-tests-schemas:/app/test/schemas:ro
     command: ['npm', 'run', 'test:ci']
     networks:
       - grants-ui-net
