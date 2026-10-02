@@ -6,7 +6,7 @@ import { updateApplicationStatus } from '../../helpers/status/update-application
 import { getApplicationStatus } from '../../services/grant-application/grant-application.service.js'
 import { log, LogCodes } from '../../helpers/logging/log.js'
 import { mintLockToken } from '../../helpers/lock/lock-token.js'
-import { getCacheKey } from '../../helpers/state/get-cache-key-helper.js'
+import { getCacheKey, buildSessionKey } from '../../helpers/state/get-cache-key-helper.js'
 import agreements from '~/src/config/agreements.js'
 import { getGrantCode } from '../../helpers/grant-code.js'
 import { getGrantVersion } from '../../helpers/grant-version.js'
@@ -118,7 +118,8 @@ async function persistStatus(request, newStatus, previousStatus, grantId, existi
   }
 
   if (newStatus !== ApplicationStatus.CLEARED) {
-    const { sbi, grantCode } = getCacheKey(request)
+    const cacheKey = getCacheKey(request)
+    const { sbi, grantCode } = cacheKey
     const grantVersion = getGrantVersion(request)
     const contactId = request.auth?.credentials?.contactId || request.auth?.credentials?.crn
 
@@ -135,7 +136,7 @@ async function persistStatus(request, newStatus, previousStatus, grantId, existi
 
     await updateApplicationStatus(
       newStatus,
-      `${sbi}:${grantId}`,
+      buildSessionKey(cacheKey),
       /** @type {{ lockToken?: string, grantVersion?: string }} */ ({ lockToken, grantVersion })
     )
   }

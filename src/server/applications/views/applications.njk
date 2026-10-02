@@ -1,0 +1,21 @@
+{% extends "layouts/page.njk" %}
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <h1 class="govuk-heading-xl">Your applications</h1>
+
+      {% if applications.length %}
+        <ul class="govuk-list">
+          {% for application in applications %}
+            <li>
+              <a class="govuk-link" href="/{{ slug }}?ref={{ application.referenceNumber | urlencode }}"
+                >{{ application.referenceNumber }}</a
+              >
+              {% if application.updatedAt %}(updated {{ application.updatedAt }}){% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

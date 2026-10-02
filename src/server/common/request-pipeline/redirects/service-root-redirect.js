@@ -5,9 +5,9 @@ import {
   resolvePreSubmissionDestination,
   shouldHandlePreSubmission
 } from './forms-status-redirect.js'
+import { SLUG_ROOT_ROUTE } from '../../constants/routes.js'
 
 const CHECK_DETAILS_START_PAGE = '/check-details'
-const SLUG_ROOT_ROUTE = '/{slug}'
 const REDIRECTION_MIN = 300
 const REDIRECTION_MAX = 399
 

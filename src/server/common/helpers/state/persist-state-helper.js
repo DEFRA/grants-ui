@@ -13,7 +13,7 @@ const MAX_DB_STATE_SIZE_BYTES = config.get('session.cache.maxDbStateSizeBytes')
  * Persists a given state object to the Grants UI backend API.
  *
  * @param {Record<string, unknown>} state - The state object to persist. Can include form/session data.
- * @param {string} key - The cache/session key to identify this state.
+ * @param {string} key - The cache/session key to identify this state (`sbi:grantCode` or `sbi:grantCode:referenceNumber`).
  * @param {{grantVersion?: unknown, lockToken?: string}} [options] - Optional grant version, lock token to identify who is locking the state.
  * @returns {Promise<void>} Resolves once the state is sent to the backend.
  */
@@ -24,6 +24,10 @@ export async function persistStateToApi(state, key, { lockToken, grantVersion } 
 
   const url = new URL('/state/', GRANTS_UI_BACKEND_ENDPOINT)
 
+  // `POST /state` has no `referenceNumber` field: the backend derives it from
+  // `state.$$__referenceNumber` itself, and its schema rejects unknown
+  // top-level fields - so any referenceNumber in the key is deliberately not
+  // forwarded here.
   const { sbi, grantCode } = parseSessionKey(key)
 
   log(LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG, {

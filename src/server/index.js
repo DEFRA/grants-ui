@@ -50,6 +50,7 @@ import { pageHideBackLink, pageRpaDetails } from '../config/nunjucks/page-config
 import { StatePersistenceService } from './common/services/state-persistence/state-persistence.service.js'
 import { router } from './router.js'
 import allowlist from '~/src/server/common/helpers/allowlist/allowlist.js'
+import multiApplication from '~/src/server/common/helpers/multi-application/multi-application.js'
 import ConfirmMethaneDetailsController from '~/src/server/non-land-grants/methane/controllers/confirm-methane-details.controller.js'
 import TaskListPageController from '~/src/server/task-list/task-list-page.controller.js'
 import TaskPageController from '~/src/server/task-list/task-page.controller.js'
@@ -217,6 +218,7 @@ const registerPlugins = async (server) => {
     permissions,
     contentSecurityPolicy,
     allowlist,
+    multiApplication,
     auditPublisher
   ])
 
@@ -280,7 +282,9 @@ export async function createServer() {
   // Prime the combined form-definition + state response once per request, before
   // the forms-engine-plugin resolves the form model. Runs after auth (so sbi/owner
   // are known) so the request-less form-definition path and getState can both
-  // reuse the single backend call.
+  // reuse the single backend call. Registered after the `multiApplication` plugin
+  // (see registerPlugins above), so an invalid/foreign `?ref=` is already rejected
+  // by the time this primes state.
   server.ext('onPostAuth', async (request, h) => {
     const slug = request.params?.slug
     if (slug && request.auth?.isAuthenticated && request.auth?.credentials?.contactId) {

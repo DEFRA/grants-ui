@@ -27,7 +27,8 @@ vi.mock('../../helpers/state/fetch-saved-state-helper.js', () => ({
 vi.mock('../../helpers/state/persist-state-helper.js', () => ({
   persistStateToApi: vi.fn()
 }))
-vi.mock('~/src/server/common/helpers/state/get-cache-key-helper.js', () => ({
+vi.mock('~/src/server/common/helpers/state/get-cache-key-helper.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   getCacheKey: vi.fn()
 }))
 

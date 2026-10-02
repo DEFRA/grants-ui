@@ -100,4 +100,84 @@ describe('applicationDeletedRedirect', () => {
     expect(h.redirect).toHaveBeenCalledWith('/application-deleted')
     expect(result).toBe(takeover)
   })
+
+  it('preserves ?ref= on the redirect so a multi-application delete stays scoped to that application', () => {
+    const takeover = Symbol('takeover')
+
+    h.redirect.mockReturnValue({
+      takeover: () => takeover
+    })
+
+    const request = {
+      params: {
+        slug: 'test-grant'
+      },
+      path: '/test-grant/start',
+      query: {
+        ref: 'REF-A'
+      }
+    }
+
+    const context = {
+      state: {
+        applicationStatus: 'PURGED'
+      }
+    }
+
+    const result = applicationDeletedRedirect(request, h, context)
+
+    expect(h.redirect).toHaveBeenCalledWith('/test-grant/application-deleted?ref=REF-A')
+    expect(result).toBe(takeover)
+  })
+
+  it('url-encodes a ref containing special characters', () => {
+    const takeover = Symbol('takeover')
+
+    h.redirect.mockReturnValue({
+      takeover: () => takeover
+    })
+
+    const request = {
+      params: {
+        slug: 'test-grant'
+      },
+      path: '/test-grant/start',
+      query: {
+        ref: 'REF A/1'
+      }
+    }
+
+    const context = {
+      state: {
+        applicationStatus: 'PURGED'
+      }
+    }
+
+    applicationDeletedRedirect(request, h, context)
+
+    expect(h.redirect).toHaveBeenCalledWith('/test-grant/application-deleted?ref=REF%20A%2F1')
+  })
+
+  it('returns h.continue when already on application-deleted page, ref included', () => {
+    const request = {
+      params: {
+        slug: 'test-grant'
+      },
+      path: '/test-grant/application-deleted',
+      query: {
+        ref: 'REF-A'
+      }
+    }
+
+    const context = {
+      state: {
+        applicationStatus: 'PURGED'
+      }
+    }
+
+    const result = applicationDeletedRedirect(request, h, context)
+
+    expect(result).toBe(h.continue)
+    expect(h.redirect).not.toHaveBeenCalled()
+  })
 })

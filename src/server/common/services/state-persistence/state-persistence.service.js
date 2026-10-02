@@ -1,4 +1,4 @@
-import { getCacheKey } from '~/src/server/common/helpers/state/get-cache-key-helper.js'
+import { getCacheKey, buildSessionKey } from '~/src/server/common/helpers/state/get-cache-key-helper.js'
 import { getGrantVersion } from '~/src/server/common/helpers/grant-version.js'
 import { clearSavedStateFromApi } from '../../helpers/state/fetch-saved-state-helper.js'
 import { getStateWithDefinition, resolveVersion } from '../../helpers/state/state-with-definition-context.js'
@@ -177,8 +177,7 @@ export class StatePersistenceService extends CacheService {
    * @returns string
    */
   _Key(request) {
-    const { sbi, grantCode } = getCacheKey(request)
-    return `${sbi}:${grantCode}`
+    return buildSessionKey(getCacheKey(request))
   }
 
   /**

@@ -22,7 +22,8 @@ vi.mock('../../../common/helpers/forms-cache/forms-cache.js', () => ({
 vi.mock('../../../common/helpers/lock/lock-token.js', () => ({
   mintLockToken: vi.fn().mockReturnValue('mock-lock-token')
 }))
-vi.mock('../../../common/helpers/state/get-cache-key-helper.js', () => ({
+vi.mock('../../../common/helpers/state/get-cache-key-helper.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   getCacheKey: vi.fn().mockReturnValue({ sbi: '12345', grantCode: 'grant-a' })
 }))
 vi.mock('../../../../config/agreements.js', () => ({
