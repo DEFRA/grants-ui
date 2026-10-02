@@ -347,9 +347,13 @@ export default class DeclarationPageController extends SummaryPageController {
 
     const currentClaim = getCurrentClaim(state)
 
-    if (currentClaim?.entitlementId == null || currentClaim.totalClaimAmountPence == null) {
+    if (
+      currentClaim?.entitlementId == null ||
+      currentClaim.totalClaimAmountPence == null ||
+      currentClaim.totalEligibleArea == null
+    ) {
       throw new SystemError({
-        message: 'Cannot submit a claim with missing entitlement ID or claim amount',
+        message: 'Cannot submit a claim with missing entitlement ID, claim amount or quantity',
         source: 'DeclarationController.buildClaimData',
         reason: 'incomplete_claim'
       })
@@ -365,7 +369,11 @@ export default class DeclarationPageController extends SummaryPageController {
         clientClaimRef: currentClaim.claimNumber.toLowerCase(),
         configVersion
       },
-      { entitlementId: currentClaim.entitlementId, totalClaimAmountPence: currentClaim.totalClaimAmountPence }
+      {
+        entitlementId: currentClaim.entitlementId,
+        totalClaimAmountPence: currentClaim.totalClaimAmountPence,
+        quantity: currentClaim.totalEligibleArea
+      }
     )
   }
 
