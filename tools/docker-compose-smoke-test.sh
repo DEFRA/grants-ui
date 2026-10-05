@@ -59,9 +59,10 @@ if [ -z "$GRASSLANDS_TAG" ]; then
   exit 1
 fi
 
-echo "Fetching grasslands GAS schema at version $GRASSLANDS_TAG"
-mkdir -p grants-ui-grasslands-tests-schemas
-curl -fL "https://raw.githubusercontent.com/DEFRA/grants-config-grasslands/$GRASSLANDS_TAG/configurations/grasslands/gas/gas.json" -o grants-ui-grasslands-tests-schemas/gas.schema.json
+# The grasslands journey tests (and the GAS schema they validate against) are
+# built from grants-config-grasslands at this tag; see compose.tests.yml.
+echo "Using grasslands journey tests at version $GRASSLANDS_TAG"
+export GRASSLANDS_TAG
 
 WOODLAND_TAG=$(curl -s https://api.github.com/repos/DEFRA/grants-config-woodland/tags | jq -r '.[0].name')
 
