@@ -71,9 +71,10 @@ if [ -z "$WOODLAND_TAG" ]; then
   exit 1
 fi
 
-echo "Fetching woodland GAS schema at version $WOODLAND_TAG"
-mkdir -p grants-ui-woodland-tests-schemas
-curl -fL "https://raw.githubusercontent.com/DEFRA/grants-config-woodland/$WOODLAND_TAG/configurations/woodland/gas/gas.json" -o grants-ui-woodland-tests-schemas/gas.schema.json
+# The woodland journey tests (and the GAS schema they validate against) are
+# built from grants-config-woodland at this tag; see compose.tests.yml.
+echo "Using woodland journey tests at version $WOODLAND_TAG"
+export WOODLAND_TAG
 
 COMPOSE_COMMAND='docker compose -f compose.infra.yml -f compose.grants-ui.yml -f compose.ha.yml -f compose.land-grants.yml -f compose.ci.yml'
 DIAGNOSTICS_DUMPED=false
