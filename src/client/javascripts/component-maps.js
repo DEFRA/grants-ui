@@ -1,5 +1,6 @@
 import { geospatialMap, map } from '@defra/forms-engine-plugin/shared.js'
-import { processLocation } from '~/node_modules/@defra/forms-engine-plugin/.server/client/javascripts/location-map.js'
+import { processLocation } from './location-map.js'
+import { isValidEastingNorthing } from './map-coordinate-utils.js'
 
 const MAP_FIELDS = [
   '.app-location-field[data-locationtype="osgridreffield"]',
@@ -13,6 +14,29 @@ const POSTCODE_VIEW_ZOOM = 10
 
 const normalisePostcode = (postcode) => (typeof postcode === 'string' ? postcode.replace(/\s+/g, '').toUpperCase() : '')
 
+function findPostcodeMatch(results, postcode) {
+  const name = normalisePostcode(postcode)
+  const matches = results
+    .map((result) => result?.GAZETTEER_ENTRY)
+    .filter(
+      (entry) =>
+        entry &&
+        typeof entry.LOCAL_TYPE === 'string' &&
+        entry.LOCAL_TYPE.toLowerCase() === 'postcode' &&
+        normalisePostcode(entry.NAME1) === name
+    )
+  return matches.length === 1 ? matches[0] : undefined
+}
+
+function postcodeEntryCenter(entry) {
+  const { GEOMETRY_X: easting, GEOMETRY_Y: northing } = entry
+  if (!isValidEastingNorthing({ easting, northing })) {
+    return undefined
+  }
+  const { lat, long } = map.eastingNorthingToLatLong({ easting, northing })
+  return Number.isFinite(lat) && Number.isFinite(long) ? [long, lat] : undefined
+}
+
 /** Resolve a unique exact postcode; fuzzy or ambiguous results retain the UK view. */
 async function findPostcodeCenter(postcode) {
   const controller = new window.AbortController()
@@ -23,38 +47,12 @@ async function findPostcodeCenter(postcode) {
       signal: controller.signal
     })
     if (!response.ok) {
-      return
+      return undefined
     }
 
     const data = await response.json()
-    const name = normalisePostcode(postcode)
-    const matches = (data.results ?? [])
-      .map((result) => result?.GAZETTEER_ENTRY)
-      .filter(
-        (entry) =>
-          entry &&
-          typeof entry.LOCAL_TYPE === 'string' &&
-          entry.LOCAL_TYPE.toLowerCase() === 'postcode' &&
-          normalisePostcode(entry.NAME1) === name
-      )
-    if (matches.length !== 1) {
-      return
-    }
-
-    const { GEOMETRY_X: easting, GEOMETRY_Y: northing } = matches[0]
-    if (
-      !Number.isFinite(easting) ||
-      !Number.isFinite(northing) ||
-      easting < 0 ||
-      easting > 700000 ||
-      northing < 0 ||
-      northing > 1300000
-    ) {
-      return
-    }
-
-    const { lat, long } = map.eastingNorthingToLatLong({ easting, northing })
-    return Number.isFinite(lat) && Number.isFinite(long) ? [long, lat] : undefined
+    const entry = findPostcodeMatch(data.results ?? [], postcode)
+    return entry ? postcodeEntryCenter(entry) : undefined
   } catch {
     // Postcode lookup is optional. The existing proxy logs upstream failures.
     return undefined

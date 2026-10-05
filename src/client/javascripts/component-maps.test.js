@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { geospatialMap, map } from '@defra/forms-engine-plugin/shared.js'
-import { processLocation } from '~/node_modules/@defra/forms-engine-plugin/.server/client/javascripts/location-map.js'
+import { processLocation } from './location-map.js'
 import { initialiseComponentMaps } from './component-maps.js'
 
 vi.mock('@defra/forms-engine-plugin/shared.js', () => ({
@@ -11,7 +11,7 @@ vi.mock('@defra/forms-engine-plugin/shared.js', () => ({
     formSubmitFactory: vi.fn(() => vi.fn())
   }
 }))
-vi.mock('~/node_modules/@defra/forms-engine-plugin/.server/client/javascripts/location-map.js', () => ({
+vi.mock('./location-map.js', () => ({
   processLocation: vi.fn()
 }))
 
