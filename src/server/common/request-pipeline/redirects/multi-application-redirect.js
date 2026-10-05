@@ -67,5 +67,7 @@ export async function multiApplicationRedirect(request, h) {
     return h.continue
   }
 
+  // make sure we drop any stale referenceNumbers from session data
+  clearApplicationFromSession(request)
   return h.redirect(`/${slug}/applications`).takeover()
 }

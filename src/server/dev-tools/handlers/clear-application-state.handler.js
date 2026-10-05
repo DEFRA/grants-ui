@@ -2,6 +2,7 @@ import { getFormsCacheService } from '../../common/helpers/forms-cache/forms-cac
 import { resolveFormDefinition } from '../utils/index.js'
 import { clearParcelCache } from '~/src/server/land-grants/services/parcel-cache.js'
 import { clearSavedStateFromApiByContext } from '~/src/server/common/helpers/state/fetch-saved-state-helper.js'
+import { clearApplicationFromSession } from '~/src/server/common/helpers/state/get-cache-key-helper.js'
 import { mintLockToken } from '~/src/server/common/helpers/lock/lock-token.js'
 import { log, LogCodes } from '../../common/helpers/logging/log.js'
 import { YarKeys } from '~/src/server/common/constants/session-keys.js'
@@ -54,7 +55,10 @@ async function clearStateWithSlug(request) {
 
   if (clearError) {
     log(LogCodes.SYSTEM.SERVER_ERROR, { errorMessage: clearError.message }, request)
+    return
   }
+
+  clearApplicationFromSession(request)
 }
 
 /**
@@ -96,4 +100,5 @@ async function clearStateWithoutSlug(request) {
   }
 
   request.yar?.clear(YarKeys.GRANT_APPLICATION_CONTEXT)
+  clearApplicationFromSession(request)
 }

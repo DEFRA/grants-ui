@@ -94,7 +94,15 @@ async function persistStatus(request, newStatus, previousStatus, existingState =
   const cacheService = getFormsCacheService(request.server)
 
   if (newStatus === ApplicationStatus.CLEARED) {
+    // Must carry the existing $$__referenceNumber forward: without it, the
+    // backend can't tell which application this save belongs to and - for a
+    // multi-application grant - rejects it with "Missing $$__referenceNumber"
+    // (400), so the clear silently never persists (the error is logged, not
+    // thrown - see persistStateToApi). Single-application grants never hit
+    // this, since the backend only enforces the check when
+    // allowMultipleApplications is true.
     await cacheService.setState(request, {
+      $$__referenceNumber: existingState.$$__referenceNumber,
       applicationStatus: newStatus
     })
   }

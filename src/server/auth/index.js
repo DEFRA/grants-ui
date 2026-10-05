@@ -516,8 +516,7 @@ async function handleOidcSignOut(request, h) {
   // agreement. Done before the cookie/cache teardown below so a failure there
   // cannot leave the stale context behind.
   request.yar?.clear(YarKeys.GRANT_APPLICATION_CONTEXT)
-  // Same reasoning for the persisted multi-application reference number (see getCacheKey):
-  // a later sign-in must not inherit a previous session's referenceNumber.
+  // Remove any previously saved refNumber on session
   clearApplicationFromSession(request)
 
   if (request.auth.isAuthenticated) {
@@ -547,8 +546,7 @@ function handleOrganisationRedirect(request, h) {
   // Switching organisation changes the acting business, so any stored grant
   // application context belongs to the previous SBI - drop it.
   request.yar.clear(YarKeys.GRANT_APPLICATION_CONTEXT)
-  // Same reasoning for the persisted multi-application reference number (see getCacheKey):
-  // it belongs to the previous SBI's application, not the newly selected one.
+  // Remove any previously saved refNumber on session
   clearApplicationFromSession(request)
   const safeRedirect = getSafeRedirect(redirect)
   return h.redirect(safeRedirect)

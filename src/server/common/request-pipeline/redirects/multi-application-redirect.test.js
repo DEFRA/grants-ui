@@ -217,7 +217,7 @@ describe('multiApplicationRedirect', () => {
       expect(result).toBe(takeover)
     })
 
-    it('does not touch the persisted ref when redirecting to the applications stub (the stub clears it itself)', async () => {
+    it('clears any stale persisted ref when redirecting to the applications stub (which application is active is no longer known)', async () => {
       h.redirect.mockReturnValue({ takeover: () => Symbol('takeover') })
       listApplicationsFromApi.mockResolvedValue([{ applicationRef: 'REF-1' }, { referenceNumber: 'REF-2' }])
       const request = makeRequest()
@@ -225,7 +225,7 @@ describe('multiApplicationRedirect', () => {
       await multiApplicationRedirect(request, h)
 
       expect(setApplicationInSession).not.toHaveBeenCalled()
-      expect(clearApplicationFromSession).not.toHaveBeenCalled()
+      expect(clearApplicationFromSession).toHaveBeenCalledWith(request)
     })
   })
 })
