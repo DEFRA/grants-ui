@@ -38,9 +38,8 @@ export async function multiApplicationRedirect(request, h) {
     }
     storeApplicationInSession(request, getGrantCode(request), ref)
 
-    // The ref is now in session, so we no longer need it on the URL. The
-    // root route already redirects to the start of the journey on its own;
-    // elsewhere we redirect ourselves to drop `?ref=` from the address bar.
+    // Root redirects to the journey start on its own; elsewhere, strip `?ref=`
+    // from the address bar ourselves now that it's safely in session.
     if (isRootRequest) {
       return h.continue
     }
