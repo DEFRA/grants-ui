@@ -1,62 +1,39 @@
 # Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities
 version: v1.25.0
 ignore:
-  'SNYK-JS-PROXYADDR-19812342':
-    - '@defra/forms-engine-plugin > *':
-        reason: 'Awaiting Defra Forms dependency updates.'
-        expires: '2026-10-31'
-  'SNYK-JS-FASTURI-19846649':
-    - '@defra/forms-engine-plugin > *':
-        reason: 'Awaiting Defra Forms dependency updates.'
-        expires: '2026-10-31'
   'SNYK-JS-INFLIGHT-6095116':
-    - '@defra/forms-engine-plugin > *':
-        reason: 'Awaiting Defra Forms dependency updates.'
+    - '@defra/forms-engine-plugin > @defra/interactive-map > *':
+        reason: 'Rechecked 2026-10-05: forms-engine-plugin@4.23.0 brings interactive-map@0.0.22-alpha > polygon-splitter@0.0.11 > glob@8.1.0 > inflight@1.0.6. No fixed inflight release. The published polygon-splitter runtime does not import glob; its browser bundle does not load inflight. Remove when polygon-splitter drops or updates glob.'
         expires: '2026-10-31'
-    - '@defra/interactive-map > *':
-        reason: 'Awaiting Defra map dependency updates.'
-        expires: '2026-10-31'
-  'SNYK-JS-IMAGESIZE-17295814':
-    - '@defra/forms-engine-plugin > *':
-        reason: 'Awaiting Defra Forms dependency updates.'
-        expires: '2026-10-31'
-  'SNYK-JS-IMAGESIZE-17295816':
-    - '@defra/forms-engine-plugin > *':
-        reason: 'Awaiting Defra Forms dependency updates.'
-        expires: '2026-10-31'
-  'SNYK-JS-COMPRESSION-19778377':
-    - '@defra/forms-engine-plugin > *':
-        reason: 'Awaiting Defra Forms dependency updates.'
+    - '@defra/interactive-map > polygon-splitter > glob > inflight':
+        reason: 'Rechecked 2026-10-05 on interactive-map@0.0.51-apha: polygon-splitter@0.0.11 declares glob@8.1.0 but its published runtime does not import it. No fixed inflight release; inflight is not included in the browser runtime. Remove when polygon-splitter drops or updates glob.'
         expires: '2026-10-31'
   'SNYK-JS-BRACES-19963945':
-    - '@defra/forms-engine-plugin > *':
-        reason: 'Awaiting Defra Forms dependency updates.'
+    - '@defra/forms-engine-plugin > @defra/interactive-map > *':
+        reason: 'Rechecked 2026-10-05 on forms-engine-plugin@4.23.0: interactive-map@0.0.22-alpha brings Docusaurus@3.10.2 > chokidar/globby > braces@3.0.3. No fixed braces release. This is the map package documentation build tooling, which grants-ui never runs or bundles for applicants. Remove when braces is fixed or upstream drops these dependencies.'
         expires: '2026-10-31'
   'SNYK-JS-HTTPCACHESEMANTICS-19964064':
-    - '@defra/forms-engine-plugin > *':
-        reason: 'Awaiting Defra Forms dependency updates.'
+    - '@defra/forms-engine-plugin > @defra/interactive-map > *':
+        reason: 'Rechecked 2026-10-05 on forms-engine-plugin@4.23.0: Docusaurus@3.10.2 > update-notifier@6.0.2 > got@12.6.1 > cacheable-request@10.2.14 > http-cache-semantics@4.3.0. Snyk reports no fixed release. Only used by the map documentation update notifier, which grants-ui never runs. Remove when fixed or the documentation dependencies are dropped.'
         expires: '2026-10-31'
   'SNYK-JS-HTTPCACHESEMANTICS-19964068':
-    - '@defra/forms-engine-plugin > *':
-        reason: 'Awaiting Defra Forms dependency updates.'
+    - '@defra/forms-engine-plugin > @defra/interactive-map > *':
+        reason: 'Rechecked 2026-10-05 on forms-engine-plugin@4.23.0: Docusaurus@3.10.2 > update-notifier@6.0.2 > got@12.6.1 > cacheable-request@10.2.14 > http-cache-semantics@4.3.0. Snyk reports no fixed release. Only used by the map documentation update notifier, which grants-ui never runs. Remove when fixed or the documentation dependencies are dropped.'
         expires: '2026-10-31'
   'SNYK-JS-URIJS-19963961':
-    - '@defra/forms-engine-plugin > *':
-        reason: 'Awaiting Defra Forms dependency updates.'
+    - '@defra/forms-engine-plugin > @defra/interactive-map > *':
+        reason: 'Rechecked 2026-10-05 on forms-engine-plugin@4.23.0: Docusaurus@3.10.2 > file-loader@6.2.0 > schema-utils@3.3.0 > ajv@6.15.0 > uri-js@4.4.1. No fixed release. This documentation build chain is never run by grants-ui; Ajv handles static schema identifiers, not applicant input. Remove when fixed or upstream drops the documentation dependencies.'
         expires: '2026-10-31'
   'SNYK-JS-URIJS-19963963':
-    - '@defra/forms-engine-plugin > *':
-        reason: 'Awaiting Defra Forms dependency updates.'
+    - '@defra/forms-engine-plugin > @defra/interactive-map > *':
+        reason: 'Rechecked 2026-10-05 on forms-engine-plugin@4.23.0: Docusaurus@3.10.2 > file-loader@6.2.0 > schema-utils@3.3.0 > ajv@6.15.0 > uri-js@4.4.1. No fixed release. This documentation build chain is never run by grants-ui; Ajv handles static schema identifiers, not applicant input. Remove when fixed or upstream drops the documentation dependencies.'
         expires: '2026-10-31'
   'SNYK-JS-SHELLQUOTE-20250993':
-    - '@defra/forms-engine-plugin > *':
-        reason: 'Fix shell-quote@1.11.0 is inside the min-release-age window; add override once it clears.'
+    - '@defra/forms-engine-plugin > @defra/interactive-map > *':
+        reason: 'Rechecked 2026-10-05 on forms-engine-plugin@4.23.0: Docusaurus@3.10.2 > webpack-dev-server@5.2.6 > launch-editor@2.14.1 > shell-quote@1.10.0. The documentation dev server is never run by grants-ui. Fixed shell-quote@1.11.0 was published 2026-09-29T02:34:24Z and clears the seven-day cooldown on 2026-10-06 after 02:34 UTC; add the override and remove this exception then.'
         expires: '2026-10-06'
-  'SNYK-JS-SERIALIZEJAVASCRIPT-20302847':
-    - '@defra/forms-engine-plugin > *':
-        reason: 'Fix serialize-javascript@7.1.2 is inside the min-release-age window; bump override once it clears.'
-        expires: '2026-10-07'
   'SNYK-JS-URIJS-20341609':
-    - '@defra/forms-engine-plugin > *':
-        reason: 'No fixed version exists for uri-js (Snyk: "no fixed version"). Not reachable: this chain is docusaurus build tooling for @defra/interactive-map own docs site, which grants-ui never builds - the package is only imported client-side as a map UI component. Even where ajv@6 calls URI.parse/resolve, it only processes JSON Schema $id/$ref identifiers, never request data.'
-        expires: '2026-12-31'
+    - '@defra/forms-engine-plugin > @defra/interactive-map > *':
+        reason: 'Rechecked 2026-10-05 on forms-engine-plugin@4.23.0: Docusaurus@3.10.2 > file-loader@6.2.0 > schema-utils@3.3.0 > ajv@6.15.0 > uri-js@4.4.1. No fixed release. This documentation build chain is never run by grants-ui; Ajv handles static schema identifiers, not applicant input. Remove when fixed or upstream drops the documentation dependencies.'
+        expires: '2026-10-31'
+patch: {}
