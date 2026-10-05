@@ -257,7 +257,6 @@ export async function clearSavedStateFromApiByContext({ sbi, grantCode, grantVer
  * @property {string} [sbi]
  * @property {string} [grantCode]
  * @property {string} [grantVersion] - The grant version this state belongs to
- * @property {boolean} [allowMultipleApplications] - Write-time mirror of the grant definition's own flag (see `DefinitionDocument`); not independently settable per application
  * @property {Record<string, unknown>} [state] - The actual saved form state
  */
 
@@ -276,7 +275,6 @@ export async function clearSavedStateFromApiByContext({ sbi, grantCode, grantVer
  * @property {number} [minor]
  * @property {number} [patch]
  * @property {'active' | 'draft'} [status] - The publication status of this version
- * @property {boolean} [allowMultipleApplications] - From the grant's authored `metadata.allowMultipleApplications`; same for every application under this grant+version
  * @property {string} [updatedAt] - When this version was last updated (changes on publish)
  * @property {FormDefinition} [definition] - The actual form definition
  */

@@ -7,16 +7,16 @@ import { YarKeys } from '../../constants/session-keys.js'
  * Generates a cache key from a Hapi request by extracting user, business, and grant identifiers.
  *
  * `applicationRef` resolves a multi-application grant's `?ref=` routing (see
- * the `?ref=` routing feature). This is a pure read: it never persists
- * anything to session (that is `multiApplicationRedirect`'s job, gated on
- * the grant's own `allowMultipleApplications` flag, so a single-application
- * grant's session/backend-call shape is never touched by this feature at
- * all) - it only reads whichever of these is present, in priority order:
+ * the `?ref=` routing feature). This is a pure read: it never stores
+ * anything in session (that is `multiApplicationRedirect`'s job - a
+ * single-application grant's session/backend-call shape is untouched by this
+ * feature, since it only ever has 0 or 1 application) - it only reads
+ * whichever of these is present, in priority order:
  * - `?ref=` on the current request's URL.
- * - Otherwise, a value already persisted to session for the current
+ * - Otherwise, a value already stored in session for the current
  *   `grantCode`, if one exists.
  * - It is omitted entirely for single-application requests (or once a
- *   persisted application is cleared, see {@link clearPersistedApplication}),
+ *   stored application is cleared, see {@link clearApplicationFromSession}),
  *   which continue to resolve the one application for `(sbi, grantCode)`
  *   exactly as before.
  *
@@ -35,19 +35,19 @@ export const getCacheKey = (request) => {
   }
 
   const queryRef = /** @type {string | undefined} */ (request.query?.ref) || undefined
-  const applicationRef = queryRef ?? readPersistedApplication(request, grantCode)
+  const applicationRef = queryRef ?? readApplicationFromSession(request, grantCode)
 
   return applicationRef ? { sbi, grantCode, applicationRef } : { sbi, grantCode }
 }
 
 /**
- * Reads the session-persisted `applicationRef` for the given grant, if any.
+ * Reads the session-stored `applicationRef` for the given grant, if any.
  *
  * @param {import('@defra/forms-engine-plugin/engine/types.js').AnyRequest} request
  * @param {string} grantCode
  * @returns {string | undefined}
  */
-function readPersistedApplication(request, grantCode) {
+function readApplicationFromSession(request, grantCode) {
   const stored = /** @type {{ grantCode?: string, applicationRef?: string } | undefined} */ (
     request.yar?.get(YarKeys.APPLICATION_REF)
   )
@@ -56,7 +56,7 @@ function readPersistedApplication(request, grantCode) {
 }
 
 /**
- * Persists `applicationRef` to session, scoped to `grantCode` so a second
+ * Stores `applicationRef` in session, scoped to `grantCode` so a second
  * multi-application grant in the same session cannot pick up the wrong
  * application.
  *
@@ -69,19 +69,19 @@ function readPersistedApplication(request, grantCode) {
  * @param {string} grantCode
  * @param {string} applicationRef
  */
-export function persistApplication(request, grantCode, applicationRef) {
+export function storeApplicationInSession(request, grantCode, applicationRef) {
   request.yar?.set(YarKeys.APPLICATION_REF, { grantCode, applicationRef })
 }
 
 /**
- * Clears the session-persisted application, if any. Called when the user
- * lands somewhere that means "which application this is isn't known" (e.g.
- * the applications list), so a stale reference from a previous application
+ * Clears the session-stored application, if any. Called when the user lands
+ * somewhere that means "which application this is isn't known" (e.g. the
+ * applications list), so a stale reference from a previous application
  * cannot leak back in on the next request that omits `?ref=`.
  *
  * @param {import('@defra/forms-engine-plugin/engine/types.js').AnyRequest} request
  */
-export function clearPersistedApplication(request) {
+export function clearApplicationFromSession(request) {
   request.yar?.clear(YarKeys.APPLICATION_REF)
 }
 

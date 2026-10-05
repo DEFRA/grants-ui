@@ -26,8 +26,8 @@ export default {
 const FORMS_ENGINE_PLUGIN_NAME = '@defra/forms-engine-plugin'
 
 /**
- * Hapi `onPostAuth` extension that resolves `?ref=` routing for grants that
- * allow multiple applications per SBI (see {@link multiApplicationRedirect}).
+ * Hapi `onPostAuth` extension that resolves `?ref=` routing for an SBI that
+ * holds more than one application for a grant (see {@link multiApplicationRedirect}).
  *
  * Must run before the forms-engine-plugin's own handler calls `page.getState`
  * (primed separately by the state-with-definition `onPostAuth` extension in

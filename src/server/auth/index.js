@@ -14,7 +14,7 @@ import { releaseAllApplicationLocksForOwnerFromApi } from '../common/helpers/loc
 import { ViewError } from '~/src/server/common/utils/errors/ViewError.js'
 import { AuthError } from '~/src/server/common/utils/errors/AuthError.js'
 import { YarKeys } from '~/src/server/common/constants/session-keys.js'
-import { clearPersistedApplication } from '~/src/server/common/helpers/state/get-cache-key-helper.js'
+import { clearApplicationFromSession } from '~/src/server/common/helpers/state/get-cache-key-helper.js'
 import { clearCachedPermissions } from '../common/helpers/permissions/clear-cached-permissions.js'
 
 const UNKNOWN_USER = 'unknown'
@@ -518,7 +518,7 @@ async function handleOidcSignOut(request, h) {
   request.yar?.clear(YarKeys.GRANT_APPLICATION_CONTEXT)
   // Same reasoning for the persisted multi-application reference number (see getCacheKey):
   // a later sign-in must not inherit a previous session's applicationRef.
-  clearPersistedApplication(request)
+  clearApplicationFromSession(request)
 
   if (request.auth.isAuthenticated) {
     validateState(request, request.query.state)
@@ -549,7 +549,7 @@ function handleOrganisationRedirect(request, h) {
   request.yar.clear(YarKeys.GRANT_APPLICATION_CONTEXT)
   // Same reasoning for the persisted multi-application reference number (see getCacheKey):
   // it belongs to the previous SBI's application, not the newly selected one.
-  clearPersistedApplication(request)
+  clearApplicationFromSession(request)
   const safeRedirect = getSafeRedirect(redirect)
   return h.redirect(safeRedirect)
 }

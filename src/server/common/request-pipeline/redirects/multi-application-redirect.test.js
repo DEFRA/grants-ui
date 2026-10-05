@@ -4,7 +4,7 @@ import { getStateWithDefinition } from '../../helpers/state/state-with-definitio
 import { listApplicationsFromApi } from '../../helpers/state/fetch-saved-state-helper.js'
 import { getAuthenticatedSbi } from '../../helpers/auth/get-auth-identifiers.js'
 import { getGrantCode } from '../../helpers/grant-code.js'
-import { getCacheKey, persistApplication, clearPersistedApplication } from '../../helpers/state/get-cache-key-helper.js'
+import { getCacheKey, storeApplicationInSession, clearApplicationFromSession } from '../../helpers/state/get-cache-key-helper.js'
 
 vi.mock('../../helpers/state/state-with-definition-context.js', () => ({
   getStateWithDefinition: vi.fn()
@@ -25,8 +25,8 @@ vi.mock('../../helpers/grant-code.js', () => ({
 
 vi.mock('../../helpers/state/get-cache-key-helper.js', () => ({
   getCacheKey: vi.fn(),
-  persistApplication: vi.fn(),
-  clearPersistedApplication: vi.fn()
+  storeApplicationInSession: vi.fn(),
+  clearApplicationFromSession: vi.fn()
 }))
 
 describe('multiApplicationRedirect', () => {
@@ -35,13 +35,10 @@ describe('multiApplicationRedirect', () => {
     redirect: vi.fn()
   }
 
-  const MULTI_APP_ENVELOPE = { definition: { allowMultipleApplications: true }, state: null }
-
   beforeEach(() => {
     vi.clearAllMocks()
     getCacheKey.mockReturnValue({ sbi: 'sbi-1', grantCode: 'test-grant' })
     getGrantCode.mockReturnValue('test-grant')
-    getStateWithDefinition.mockResolvedValue(MULTI_APP_ENVELOPE)
   })
 
   const makeRequest = (query = {}, routePath = '/{slug}') => ({
@@ -50,73 +47,42 @@ describe('multiApplicationRedirect', () => {
     route: { path: routePath }
   })
 
-  describe('single-application schemes (no allowMultipleApplications)', () => {
-    it('continues immediately without touching applications/session at all', async () => {
-      getStateWithDefinition.mockResolvedValue({ definition: {}, state: null })
-      const request = makeRequest({ ref: 'anything' })
-
-      const result = await multiApplicationRedirect(request, h)
-
-      expect(result).toBe(h.continue)
-      expect(listApplicationsFromApi).not.toHaveBeenCalled()
-      expect(getCacheKey).not.toHaveBeenCalled()
-      expect(persistApplication).not.toHaveBeenCalled()
-      expect(clearPersistedApplication).not.toHaveBeenCalled()
-      expect(h.redirect).not.toHaveBeenCalled()
-    })
-
-    it('continues when the envelope itself is missing (treated as not multi-application)', async () => {
-      getStateWithDefinition.mockResolvedValue(null)
-      const request = makeRequest()
-
-      const result = await multiApplicationRedirect(request, h)
-
-      expect(result).toBe(h.continue)
-      expect(listApplicationsFromApi).not.toHaveBeenCalled()
-    })
-
-    it('also respects allowMultipleApplications mirrored on state instead of definition', async () => {
-      getStateWithDefinition.mockResolvedValue({ definition: {}, state: { allowMultipleApplications: false } })
-      const request = makeRequest()
-
-      const result = await multiApplicationRedirect(request, h)
-
-      expect(result).toBe(h.continue)
-      expect(listApplicationsFromApi).not.toHaveBeenCalled()
-    })
-  })
-
   describe('with a ref in the query string', () => {
     it('continues and persists the ref when the backend resolves state for that ref', async () => {
-      getStateWithDefinition.mockResolvedValue({
-        definition: { allowMultipleApplications: true },
-        state: { state: { foo: 'bar' } }
-      })
+      getStateWithDefinition.mockResolvedValue({ state: { state: { foo: 'bar' } } })
       const request = makeRequest({ ref: 'REF-1' })
 
       const result = await multiApplicationRedirect(request, h)
 
       expect(result).toBe(h.continue)
-      expect(persistApplication).toHaveBeenCalledWith(request, 'test-grant', 'REF-1')
+      expect(storeApplicationInSession).toHaveBeenCalledWith(request, 'test-grant', 'REF-1')
       expect(getAuthenticatedSbi).not.toHaveBeenCalled()
+      expect(listApplicationsFromApi).not.toHaveBeenCalled()
     })
 
     it('throws 404 when the backend finds no state for that ref (unrecognised or belongs to another business)', async () => {
-      getStateWithDefinition.mockResolvedValue({ definition: { allowMultipleApplications: true }, state: null })
+      getStateWithDefinition.mockResolvedValue({ state: null })
       const request = makeRequest({ ref: 'REF-BOGUS' })
 
       await expect(multiApplicationRedirect(request, h)).rejects.toMatchObject({
         isBoom: true,
         output: { statusCode: 404 }
       })
-      expect(persistApplication).not.toHaveBeenCalled()
+      expect(storeApplicationInSession).not.toHaveBeenCalled()
+    })
+
+    it('throws 404 when the envelope itself is missing', async () => {
+      getStateWithDefinition.mockResolvedValue(null)
+      const request = makeRequest({ ref: 'REF-BOGUS' })
+
+      await expect(multiApplicationRedirect(request, h)).rejects.toMatchObject({
+        isBoom: true,
+        output: { statusCode: 404 }
+      })
     })
 
     it('ignores any session-persisted ref (the URL ref always wins, getCacheKey is never consulted)', async () => {
-      getStateWithDefinition.mockResolvedValue({
-        definition: { allowMultipleApplications: true },
-        state: { state: { foo: 'bar' } }
-      })
+      getStateWithDefinition.mockResolvedValue({ state: { state: { foo: 'bar' } } })
       const request = makeRequest({ ref: 'REF-1' })
 
       await multiApplicationRedirect(request, h)
@@ -143,8 +109,8 @@ describe('multiApplicationRedirect', () => {
 
       await multiApplicationRedirect(request, h)
 
-      expect(persistApplication).not.toHaveBeenCalled()
-      expect(clearPersistedApplication).not.toHaveBeenCalled()
+      expect(storeApplicationInSession).not.toHaveBeenCalled()
+      expect(clearApplicationFromSession).not.toHaveBeenCalled()
     })
   })
 
@@ -172,6 +138,15 @@ describe('multiApplicationRedirect', () => {
       expect(listApplicationsFromApi).toHaveBeenCalled()
     })
 
+    it('never consults getStateWithDefinition or the allowMultipleApplications flag - branches purely on count', async () => {
+      listApplicationsFromApi.mockResolvedValue([{ applicationRef: 'REF-1' }])
+      const request = makeRequest()
+
+      await multiApplicationRedirect(request, h)
+
+      expect(getStateWithDefinition).not.toHaveBeenCalled()
+    })
+
     it('continues and clears any persisted ref when the sbi has no applications yet (start new)', async () => {
       listApplicationsFromApi.mockResolvedValue([])
       const request = makeRequest()
@@ -180,7 +155,7 @@ describe('multiApplicationRedirect', () => {
 
       expect(result).toBe(h.continue)
       expect(h.redirect).not.toHaveBeenCalled()
-      expect(clearPersistedApplication).toHaveBeenCalledWith(request)
+      expect(clearApplicationFromSession).toHaveBeenCalledWith(request)
     })
 
     it('pins the single application as the active ref and continues', async () => {
@@ -189,7 +164,7 @@ describe('multiApplicationRedirect', () => {
 
       const result = await multiApplicationRedirect(request, h)
 
-      expect(persistApplication).toHaveBeenCalledWith(request, 'test-grant', 'REF-1')
+      expect(storeApplicationInSession).toHaveBeenCalledWith(request, 'test-grant', 'REF-1')
       expect(result).toBe(h.continue)
       expect(h.redirect).not.toHaveBeenCalled()
     })
@@ -200,7 +175,7 @@ describe('multiApplicationRedirect', () => {
 
       await multiApplicationRedirect(request, h)
 
-      expect(clearPersistedApplication).not.toHaveBeenCalled()
+      expect(clearApplicationFromSession).not.toHaveBeenCalled()
     })
 
     it('redirects to the applications stub when the sbi has more than one application', async () => {
@@ -222,8 +197,8 @@ describe('multiApplicationRedirect', () => {
 
       await multiApplicationRedirect(request, h)
 
-      expect(persistApplication).not.toHaveBeenCalled()
-      expect(clearPersistedApplication).not.toHaveBeenCalled()
+      expect(storeApplicationInSession).not.toHaveBeenCalled()
+      expect(clearApplicationFromSession).not.toHaveBeenCalled()
     })
   })
 })

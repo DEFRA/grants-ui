@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { getCacheKey, parseSessionKey, persistApplication, clearPersistedApplication } from './get-cache-key-helper.js'
+import { getCacheKey, parseSessionKey, storeApplicationInSession, clearApplicationFromSession } from './get-cache-key-helper.js'
 
 /** A minimal in-memory stand-in for Hapi's `request.yar`. */
 function makeYar(initial) {
@@ -241,31 +241,31 @@ describe('getCacheKey', () => {
   })
 })
 
-describe('persistApplication', () => {
+describe('storeApplicationInSession', () => {
   it('writes grantCode and applicationRef to session', () => {
     const yar = makeYar()
 
-    persistApplication({ yar }, 'grant789', 'REF-1')
+    storeApplicationInSession({ yar }, 'grant789', 'REF-1')
 
     expect(yar.set).toHaveBeenCalledWith('applicationRef', { grantCode: 'grant789', applicationRef: 'REF-1' })
   })
 
   it('does not throw when request.yar is absent', () => {
-    expect(() => persistApplication({}, 'grant789', 'REF-1')).not.toThrow()
+    expect(() => storeApplicationInSession({}, 'grant789', 'REF-1')).not.toThrow()
   })
 })
 
-describe('clearPersistedApplication', () => {
+describe('clearApplicationFromSession', () => {
   it('clears the session-persisted applicationRef', () => {
     const yar = makeYar({ grantCode: 'grant789', applicationRef: 'REF-1' })
 
-    clearPersistedApplication({ yar })
+    clearApplicationFromSession({ yar })
 
     expect(yar.clear).toHaveBeenCalledWith('applicationRef')
   })
 
   it('does not throw when request.yar is absent', () => {
-    expect(() => clearPersistedApplication({})).not.toThrow()
+    expect(() => clearApplicationFromSession({})).not.toThrow()
   })
 })
 
