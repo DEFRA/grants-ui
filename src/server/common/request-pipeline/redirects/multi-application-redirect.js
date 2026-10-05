@@ -1,5 +1,5 @@
 import { notFound } from '@hapi/boom'
-import { getAuthenticatedSbi } from '../../helpers/auth/get-auth-identifiers.js'
+import { getAuthenticatedCrn, getAuthenticatedSbi } from '../../helpers/auth/get-auth-identifiers.js'
 import { getGrantCode } from '../../helpers/grant-code.js'
 import { getStateWithDefinition } from '../../helpers/state/state-with-definition-context.js'
 import { listApplicationsFromApi } from '../../helpers/state/fetch-saved-state-helper.js'
@@ -31,13 +31,13 @@ function resolveAllowMultipleApplications(stateWithDef) {
  * definition) are intended to be completely unaffected by this feature:
  * nothing is ever persisted to session for them (`getCacheKey` itself never
  * writes - only this function does, and only past the flag check below), so
- * no `referenceNumber` is ever added to a later backend call that did not
+ * no `applicationRef` is ever added to a later backend call that did not
  * already carry one. The one unavoidable exception is the
  * definition-resolving backend call below (`getStateWithDefinition`) itself:
  * the engine's own model resolution already goes through this same call for
  * every request (see `resolveBackendDefinition`), scoped by whatever `?ref=`
  * happens to be on the URL - harmless for a single-application grant, since
- * that scheme's saved state never has a `referenceNumber` to match against,
+ * that scheme's saved state never has an `applicationRef` to match against,
  * so the lookup behaves exactly as it would with no ref at all.
  *
  * Routing (see the ticket's dev notes), for `allowMultipleApplications: true`
@@ -99,13 +99,14 @@ export async function multiApplicationRedirect(request, h) {
 
   const slug = request.params.slug
   const isRootRequest = request.route?.path === SLUG_ROOT_ROUTE
-  if (!isRootRequest && getCacheKey(request).referenceNumber) {
+  if (!isRootRequest && getCacheKey(request).applicationRef) {
     return h.continue
   }
 
+  const crn = getAuthenticatedCrn(request)
   const sbi = getAuthenticatedSbi(request)
   const grantCode = getGrantCode(request)
-  const applications = await listApplicationsFromApi({ sbi, grantCode })
+  const applications = await listApplicationsFromApi({ crn, sbi, grantCode })
 
   if (applications.length === 0) {
     clearPersistedApplication(request)
@@ -113,7 +114,7 @@ export async function multiApplicationRedirect(request, h) {
   }
 
   if (applications.length === 1) {
-    persistApplication(request, grantCode, applications[0].referenceNumber)
+    persistApplication(request, grantCode, applications[0].applicationRef)
     return h.continue
   }
 

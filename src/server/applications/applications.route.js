@@ -1,4 +1,4 @@
-import { getAuthenticatedSbi } from '../common/helpers/auth/get-auth-identifiers.js'
+import { getAuthenticatedCrn, getAuthenticatedSbi } from '../common/helpers/auth/get-auth-identifiers.js'
 import { getGrantCode } from '../common/helpers/grant-code.js'
 import { listApplicationsFromApi } from '../common/helpers/state/fetch-saved-state-helper.js'
 import { clearPersistedApplication } from '../common/helpers/state/get-cache-key-helper.js'
@@ -14,9 +14,10 @@ export const listApplicationsRoute = {
   handler: async (request, h) => {
     clearPersistedApplication(request)
 
+    const crn = getAuthenticatedCrn(request)
     const sbi = getAuthenticatedSbi(request)
     const grantCode = getGrantCode(request)
-    const applications = await listApplicationsFromApi({ sbi, grantCode })
+    const applications = await listApplicationsFromApi({ crn, sbi, grantCode })
 
     return h.view('applications', {
       pageTitle: 'Your applications',

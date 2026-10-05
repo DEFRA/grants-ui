@@ -11,6 +11,7 @@
               <a class="govuk-link" href="/{{ slug }}?ref={{ application.referenceNumber | urlencode }}"
                 >{{ application.referenceNumber }}</a
               >
+              {% if application.applicationStatus %}({{ application.applicationStatus | lower }}){% endif %}
               {% if application.updatedAt %}(updated {{ application.updatedAt }}){% endif %}
             </li>
           {% endfor %}

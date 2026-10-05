@@ -1,19 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { listApplicationsRoute } from './applications.route.js'
 import { listApplicationsFromApi } from '../common/helpers/state/fetch-saved-state-helper.js'
-import { getAuthenticatedSbi } from '../common/helpers/auth/get-auth-identifiers.js'
+import { getAuthenticatedCrn, getAuthenticatedSbi } from '../common/helpers/auth/get-auth-identifiers.js'
 
 vi.mock('../common/helpers/state/fetch-saved-state-helper.js', () => ({
   listApplicationsFromApi: vi.fn()
 }))
 
 vi.mock('../common/helpers/auth/get-auth-identifiers.js', () => ({
+  getAuthenticatedCrn: vi.fn(() => 'crn-1'),
   getAuthenticatedSbi: vi.fn(() => 'sbi-1')
 }))
 
 describe('listApplicationsRoute', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    getAuthenticatedCrn.mockReturnValue('crn-1')
     getAuthenticatedSbi.mockReturnValue('sbi-1')
   })
 
@@ -30,7 +32,7 @@ describe('listApplicationsRoute', () => {
 
     await listApplicationsRoute.handler(makeRequest(), h)
 
-    expect(listApplicationsFromApi).toHaveBeenCalledWith({ sbi: 'sbi-1', grantCode: 'test-grant' })
+    expect(listApplicationsFromApi).toHaveBeenCalledWith({ crn: 'crn-1', sbi: 'sbi-1', grantCode: 'test-grant' })
     expect(view).toHaveBeenCalledWith('applications', {
       pageTitle: 'Your applications',
       slug: 'test-grant',
