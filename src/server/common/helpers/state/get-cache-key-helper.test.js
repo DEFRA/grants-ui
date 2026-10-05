@@ -1,5 +1,10 @@
 import { vi } from 'vitest'
-import { getCacheKey, parseSessionKey, storeApplicationInSession, clearApplicationFromSession } from './get-cache-key-helper.js'
+import {
+  getCacheKey,
+  parseSessionKey,
+  storeApplicationInSession,
+  clearApplicationFromSession
+} from './get-cache-key-helper.js'
 
 /** A minimal in-memory stand-in for Hapi's `request.yar`. */
 function makeYar(initial) {
@@ -122,7 +127,7 @@ describe('getCacheKey', () => {
     expect(() => getCacheKey(request)).toThrow('Missing grantCode')
   })
 
-  it('includes applicationRef when a ref query param is present', () => {
+  it('includes referenceNumber when a ref query param is present', () => {
     const request = {
       auth: {
         credentials: {
@@ -141,11 +146,11 @@ describe('getCacheKey', () => {
     expect(getCacheKey(request)).toEqual({
       sbi: 'business456',
       grantCode: 'grant789',
-      applicationRef: 'REF-1'
+      referenceNumber: 'REF-1'
     })
   })
 
-  it('omits applicationRef when there is no ref query param and nothing persisted', () => {
+  it('omits referenceNumber when there is no ref query param and nothing persisted', () => {
     const request = {
       auth: {
         credentials: {
@@ -177,12 +182,12 @@ describe('getCacheKey', () => {
 
     const result = getCacheKey(request)
 
-    expect(result).toEqual({ sbi: 'business456', grantCode: 'grant789', applicationRef: 'REF-1' })
+    expect(result).toEqual({ sbi: 'business456', grantCode: 'grant789', referenceNumber: 'REF-1' })
     expect(yar.set).not.toHaveBeenCalled()
   })
 
-  it('falls back to the session-persisted applicationRef when the URL has none', () => {
-    const yar = makeYar({ grantCode: 'grant789', applicationRef: 'REF-1' })
+  it('falls back to the session-persisted referenceNumber when the URL has none', () => {
+    const yar = makeYar({ grantCode: 'grant789', referenceNumber: 'REF-1' })
     const request = {
       auth: { credentials: { crn: 'user123', sbi: 'business456' } },
       params: { slug: 'grant789' },
@@ -193,12 +198,12 @@ describe('getCacheKey', () => {
     expect(getCacheKey(request)).toEqual({
       sbi: 'business456',
       grantCode: 'grant789',
-      applicationRef: 'REF-1'
+      referenceNumber: 'REF-1'
     })
   })
 
   it('a new ref on the URL overrides the persisted one, without writing to session', () => {
-    const yar = makeYar({ grantCode: 'grant789', applicationRef: 'REF-1' })
+    const yar = makeYar({ grantCode: 'grant789', referenceNumber: 'REF-1' })
     const request = {
       auth: { credentials: { crn: 'user123', sbi: 'business456' } },
       params: { slug: 'grant789' },
@@ -209,13 +214,13 @@ describe('getCacheKey', () => {
     expect(getCacheKey(request)).toEqual({
       sbi: 'business456',
       grantCode: 'grant789',
-      applicationRef: 'REF-2'
+      referenceNumber: 'REF-2'
     })
     expect(yar.set).not.toHaveBeenCalled()
   })
 
-  it('ignores a persisted applicationRef for a different grantCode', () => {
-    const yar = makeYar({ grantCode: 'other-grant', applicationRef: 'REF-1' })
+  it('ignores a persisted referenceNumber for a different grantCode', () => {
+    const yar = makeYar({ grantCode: 'other-grant', referenceNumber: 'REF-1' })
     const request = {
       auth: { credentials: { crn: 'user123', sbi: 'business456' } },
       params: { slug: 'grant789' },
@@ -242,12 +247,12 @@ describe('getCacheKey', () => {
 })
 
 describe('storeApplicationInSession', () => {
-  it('writes grantCode and applicationRef to session', () => {
+  it('writes grantCode and referenceNumber to session', () => {
     const yar = makeYar()
 
     storeApplicationInSession({ yar }, 'grant789', 'REF-1')
 
-    expect(yar.set).toHaveBeenCalledWith('applicationRef', { grantCode: 'grant789', applicationRef: 'REF-1' })
+    expect(yar.set).toHaveBeenCalledWith('referenceNumber', { grantCode: 'grant789', referenceNumber: 'REF-1' })
   })
 
   it('does not throw when request.yar is absent', () => {
@@ -256,12 +261,12 @@ describe('storeApplicationInSession', () => {
 })
 
 describe('clearApplicationFromSession', () => {
-  it('clears the session-persisted applicationRef', () => {
-    const yar = makeYar({ grantCode: 'grant789', applicationRef: 'REF-1' })
+  it('clears the session-persisted referenceNumber', () => {
+    const yar = makeYar({ grantCode: 'grant789', referenceNumber: 'REF-1' })
 
     clearApplicationFromSession({ yar })
 
-    expect(yar.clear).toHaveBeenCalledWith('applicationRef')
+    expect(yar.clear).toHaveBeenCalledWith('referenceNumber')
   })
 
   it('does not throw when request.yar is absent', () => {

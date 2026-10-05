@@ -4,7 +4,11 @@ import { getStateWithDefinition } from '../../helpers/state/state-with-definitio
 import { listApplicationsFromApi } from '../../helpers/state/fetch-saved-state-helper.js'
 import { getAuthenticatedSbi } from '../../helpers/auth/get-auth-identifiers.js'
 import { getGrantCode } from '../../helpers/grant-code.js'
-import { getCacheKey, storeApplicationInSession, clearApplicationFromSession } from '../../helpers/state/get-cache-key-helper.js'
+import {
+  getCacheKey,
+  storeApplicationInSession,
+  clearApplicationFromSession
+} from '../../helpers/state/get-cache-key-helper.js'
 
 vi.mock('../../helpers/state/state-with-definition-context.js', () => ({
   getStateWithDefinition: vi.fn()
@@ -116,7 +120,7 @@ describe('multiApplicationRedirect', () => {
 
   describe('no ref, on a sub-page, with a ref already persisted to session', () => {
     it('trusts the persisted ref and continues without re-counting applications', async () => {
-      getCacheKey.mockReturnValue({ sbi: 'sbi-1', grantCode: 'test-grant', applicationRef: 'REF-1' })
+      getCacheKey.mockReturnValue({ sbi: 'sbi-1', grantCode: 'test-grant', referenceNumber: 'REF-1' })
       const request = makeRequest({}, '/{slug}/{path}/{itemId?}')
 
       const result = await multiApplicationRedirect(request, h)
@@ -127,7 +131,7 @@ describe('multiApplicationRedirect', () => {
     })
 
     it('does not touch the persisted ref', async () => {
-      getCacheKey.mockReturnValue({ sbi: 'sbi-1', grantCode: 'test-grant', applicationRef: 'REF-1' })
+      getCacheKey.mockReturnValue({ sbi: 'sbi-1', grantCode: 'test-grant', referenceNumber: 'REF-1' })
       const request = makeRequest({}, '/{slug}/{path}/{itemId?}')
 
       await multiApplicationRedirect(request, h)
@@ -152,7 +156,7 @@ describe('multiApplicationRedirect', () => {
 
   describe('no ref, on the /{slug} root', () => {
     it('always re-evaluates via listApplicationsFromApi, even when a ref is persisted', async () => {
-      getCacheKey.mockReturnValue({ sbi: 'sbi-1', grantCode: 'test-grant', applicationRef: 'REF-1' })
+      getCacheKey.mockReturnValue({ sbi: 'sbi-1', grantCode: 'test-grant', referenceNumber: 'REF-1' })
       listApplicationsFromApi.mockResolvedValue([{ applicationRef: 'REF-1' }])
       const request = makeRequest({}, '/{slug}')
 
@@ -204,7 +208,7 @@ describe('multiApplicationRedirect', () => {
     it('redirects to the applications stub when the sbi has more than one application', async () => {
       const takeover = Symbol('takeover')
       h.redirect.mockReturnValue({ takeover: () => takeover })
-      listApplicationsFromApi.mockResolvedValue([{ applicationRef: 'REF-1' }, { applicationRef: 'REF-2' }])
+      listApplicationsFromApi.mockResolvedValue([{ applicationRef: 'REF-1' }, { referenceNumber: 'REF-2' }])
       const request = makeRequest()
 
       const result = await multiApplicationRedirect(request, h)
@@ -215,7 +219,7 @@ describe('multiApplicationRedirect', () => {
 
     it('does not touch the persisted ref when redirecting to the applications stub (the stub clears it itself)', async () => {
       h.redirect.mockReturnValue({ takeover: () => Symbol('takeover') })
-      listApplicationsFromApi.mockResolvedValue([{ applicationRef: 'REF-1' }, { applicationRef: 'REF-2' }])
+      listApplicationsFromApi.mockResolvedValue([{ applicationRef: 'REF-1' }, { referenceNumber: 'REF-2' }])
       const request = makeRequest()
 
       await multiApplicationRedirect(request, h)

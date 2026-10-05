@@ -517,7 +517,7 @@ async function handleOidcSignOut(request, h) {
   // cannot leave the stale context behind.
   request.yar?.clear(YarKeys.GRANT_APPLICATION_CONTEXT)
   // Same reasoning for the persisted multi-application reference number (see getCacheKey):
-  // a later sign-in must not inherit a previous session's applicationRef.
+  // a later sign-in must not inherit a previous session's referenceNumber.
   clearApplicationFromSession(request)
 
   if (request.auth.isAuthenticated) {

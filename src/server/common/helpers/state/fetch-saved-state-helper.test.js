@@ -200,7 +200,7 @@ describe('State API helpers', () => {
         mockParseSessionKey.mockReturnValue({
           sbi: TEST_USER_IDS.ORGANISATION_ID,
           grantCode: TEST_USER_IDS.GRANT_ID,
-          applicationRef: 'REF-1'
+          referenceNumber: 'REF-1'
         })
         mockFetch.mockResolvedValue(createMockFetchResponse({ data: { state: null, upgraded: false } }))
 
@@ -352,7 +352,7 @@ describe('State API helpers', () => {
         mockParseSessionKey.mockReturnValue({
           sbi: TEST_USER_IDS.ORGANISATION_ID,
           grantCode: TEST_USER_IDS.GRANT_ID,
-          applicationRef: 'REF-1'
+          referenceNumber: 'REF-1'
         })
         mockFetch.mockResolvedValue(createMockFetchResponse({ data: MOCK_STATE_DATA.DEFAULT }))
 
@@ -438,7 +438,7 @@ describe('State API helpers', () => {
 
       it('GETs /applications and returns the applications array', async () => {
         const applications = [
-          { applicationRef: 'REF-1', referenceNumber: 'REF-1', grantVersion: '1.0.0', updatedAt: '2026-01-01' }
+          { applicationRef: 'REF-1', grantVersion: '1.0.0', updatedAt: '2026-01-01' }
         ]
         mockFetch.mockResolvedValue(createMockFetchResponse({ data: { applications } }))
 

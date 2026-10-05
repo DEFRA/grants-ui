@@ -6,11 +6,11 @@ import { YarKeys } from '../../constants/session-keys.js'
 /**
  * Generates a cache key from a Hapi request by extracting user, business, and grant identifiers.
  *
- * `applicationRef` is read from `?ref=`, falling back to whatever is stored
+ * `referenceNumber` is read from `?ref=`, falling back to whatever is stored
  * in session. A pure read - storing/clearing is `multiApplicationRedirect`'s job.
  *
  * @param {import('@defra/forms-engine-plugin/engine/types.js').AnyRequest} request - The Hapi request object containing authentication credentials and route parameters.
- * @returns {{ sbi: string, grantCode: string, applicationRef?: string }} An object containing identifiers to be used as a cache key.
+ * @returns {{ sbi: string, grantCode: string, referenceNumber?: string }} An object containing identifiers to be used as a cache key.
  * @throws {Error} If authentication credentials, user ID, business relationship, or grant ID are missing or malformed.
  */
 export const getCacheKey = (request) => {
@@ -24,36 +24,36 @@ export const getCacheKey = (request) => {
   }
 
   const queryRef = /** @type {string | undefined} */ (request.query?.ref) || undefined
-  const applicationRef = queryRef ?? readApplicationFromSession(request, grantCode)
+  const referenceNumber = queryRef ?? readApplicationFromSession(request, grantCode)
 
-  return applicationRef ? { sbi, grantCode, applicationRef } : { sbi, grantCode }
+  return referenceNumber ? { sbi, grantCode, referenceNumber } : { sbi, grantCode }
 }
 
 /**
- * Reads the session-stored `applicationRef` for the given grant, if any.
+ * Reads the session-stored `referenceNumber` for the given grant, if any.
  *
  * @param {import('@defra/forms-engine-plugin/engine/types.js').AnyRequest} request
  * @param {string} grantCode
  * @returns {string | undefined}
  */
 function readApplicationFromSession(request, grantCode) {
-  const stored = /** @type {{ grantCode?: string, applicationRef?: string } | undefined} */ (
-    request.yar?.get(YarKeys.APPLICATION_REF)
+  const stored = /** @type {{ grantCode?: string, referenceNumber?: string } | undefined} */ (
+    request.yar?.get(YarKeys.APPLICATION_REF_NUMBER)
   )
 
-  return stored?.grantCode === grantCode ? stored.applicationRef : undefined
+  return stored?.grantCode === grantCode ? stored.referenceNumber : undefined
 }
 
 /**
- * Stores `applicationRef` in session, scoped to `grantCode` so a second
+ * Stores `referenceNumber` in session, scoped to `grantCode` so a second
  * multi-application grant in the same session can't pick up the wrong one.
  *
  * @param {import('@defra/forms-engine-plugin/engine/types.js').AnyRequest} request
  * @param {string} grantCode
- * @param {string} applicationRef
+ * @param {string} referenceNumber
  */
-export function storeApplicationInSession(request, grantCode, applicationRef) {
-  request.yar?.set(YarKeys.APPLICATION_REF, { grantCode, applicationRef })
+export function storeApplicationInSession(request, grantCode, referenceNumber) {
+  request.yar?.set(YarKeys.APPLICATION_REF_NUMBER, { grantCode, referenceNumber })
 }
 
 /**
@@ -63,7 +63,7 @@ export function storeApplicationInSession(request, grantCode, applicationRef) {
  * @param {import('@defra/forms-engine-plugin/engine/types.js').AnyRequest} request
  */
 export function clearApplicationFromSession(request) {
-  request.yar?.clear(YarKeys.APPLICATION_REF)
+  request.yar?.clear(YarKeys.APPLICATION_REF_NUMBER)
 }
 
 /**
@@ -73,24 +73,24 @@ export function clearApplicationFromSession(request) {
  * every construction site should go through this rather than interpolating
  * the string directly, so the two stay in lockstep.
  *
- * @param {{ sbi: string, grantCode: string, applicationRef?: string }} params
+ * @param {{ sbi: string, grantCode: string, referenceNumber?: string }} params
  * @returns {string}
  */
-export function buildSessionKey({ sbi, grantCode, applicationRef }) {
-  return applicationRef ? `${sbi}:${grantCode}:${applicationRef}` : `${sbi}:${grantCode}`
+export function buildSessionKey({ sbi, grantCode, referenceNumber }) {
+  return referenceNumber ? `${sbi}:${grantCode}:${referenceNumber}` : `${sbi}:${grantCode}`
 }
 
 /**
  * Parses a session key into its components.
  *
  * Accepts two shapes: `sbi:grantCode` for the standard single-application
- * flow, and `sbi:grantCode:applicationRef` for a multi-application grant
+ * flow, and `sbi:grantCode:referenceNumber` for a multi-application grant
  * opened via `?ref=`. Any other segment count is rejected rather than
- * silently truncated, since a caller-supplied `applicationRef` could
+ * silently truncated, since a caller-supplied `referenceNumber` could
  * otherwise be mistaken for (or mask) a malformed key.
  *
- * @param {string} sessionKey - Colon-separated key (`sbi:grantCode` or `sbi:grantCode:applicationRef`)
- * @returns {{ sbi: string, grantCode: string, applicationRef?: string }} Parsed values
+ * @param {string} sessionKey - Colon-separated key (`sbi:grantCode` or `sbi:grantCode:referenceNumber`)
+ * @returns {{ sbi: string, grantCode: string, referenceNumber?: string }} Parsed values
  * @throws {Error} If sessionKey is invalid or missing parts
  */
 export function parseSessionKey(sessionKey) {
@@ -104,7 +104,7 @@ export function parseSessionKey(sessionKey) {
     throw BaseError.wrap(new Error(`Invalid session key format: ${sessionKey}`))
   }
 
-  const [sbi, grantCode, applicationRef] = parts
+  const [sbi, grantCode, referenceNumber] = parts
 
-  return applicationRef ? { sbi, grantCode, applicationRef } : { sbi, grantCode }
+  return referenceNumber ? { sbi, grantCode, referenceNumber } : { sbi, grantCode }
 }

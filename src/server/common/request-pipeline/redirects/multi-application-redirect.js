@@ -3,7 +3,11 @@ import { getAuthenticatedCrn, getAuthenticatedSbi } from '../../helpers/auth/get
 import { getGrantCode } from '../../helpers/grant-code.js'
 import { getStateWithDefinition } from '../../helpers/state/state-with-definition-context.js'
 import { listApplicationsFromApi } from '../../helpers/state/fetch-saved-state-helper.js'
-import { getCacheKey, storeApplicationInSession, clearApplicationFromSession } from '../../helpers/state/get-cache-key-helper.js'
+import {
+  getCacheKey,
+  storeApplicationInSession,
+  clearApplicationFromSession
+} from '../../helpers/state/get-cache-key-helper.js'
 import { SLUG_ROOT_ROUTE } from '../../constants/routes.js'
 
 /**
@@ -45,7 +49,7 @@ export async function multiApplicationRedirect(request, h) {
 
   const slug = request.params.slug
 
-  if (!isRootRequest && getCacheKey(request).applicationRef) {
+  if (!isRootRequest && getCacheKey(request).referenceNumber) {
     return h.continue
   }
 

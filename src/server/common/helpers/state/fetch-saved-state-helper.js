@@ -27,18 +27,18 @@ function logApiError(logCode = LogCodes.SYSTEM.EXTERNAL_API_ERROR) {
 
 /**
  * Constructs the endpoint URL for the state API based on the session key
- * @param {string} key - The session key (`sbi:grantCode` or `sbi:grantCode:applicationRef`)
+ * @param {string} key - The session key (`sbi:grantCode` or `sbi:grantCode:referenceNumber`)
  * @param {string | number} grantVersion - The grant definition version
  * @returns {string}
  */
 function getEndpoint(key, grantVersion) {
-  const { sbi, grantCode, applicationRef } = parseSessionKey(key)
+  const { sbi, grantCode, referenceNumber } = parseSessionKey(key)
   const url = new URL('/state/', GRANTS_UI_BACKEND_ENDPOINT)
   url.searchParams.set('sbi', sbi)
   url.searchParams.set('grantCode', grantCode)
   url.searchParams.set('grantVersion', /** @type {string} */ (grantVersion))
-  if (applicationRef) {
-    url.searchParams.set('applicationRef', applicationRef)
+  if (referenceNumber) {
+    url.searchParams.set('applicationRef', referenceNumber)
   }
   return url.href
 }
@@ -109,7 +109,7 @@ async function callStateApi(key, method, request, { lockToken, grantVersion } = 
  * The backend resolves the active grant version itself, so this read does not
  * need a `grantVersion` (the lock token is minted without one).
  *
- * @param {string} key - The session key (`sbi:grantCode` or `sbi:grantCode:applicationRef`)
+ * @param {string} key - The session key (`sbi:grantCode` or `sbi:grantCode:referenceNumber`)
  * @param {AnyRequest} request - The request object
  * @param {{lockToken?: string}} [options]
  * @returns {Promise<StateWithDefinitionEnvelope | null>} The envelope, or `null` on 404 / unconfigured backend
@@ -121,7 +121,7 @@ export async function fetchStateWithDefinitionFromApi(key, request, { lockToken 
 
   const logDebug = logApiError(LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG)
   const logError = logApiError()
-  const { sbi, grantCode, applicationRef } = parseSessionKey(key)
+  const { sbi, grantCode, referenceNumber } = parseSessionKey(key)
   const method = 'POST'
   const endpoint = new URL('/state/with-definition', GRANTS_UI_BACKEND_ENDPOINT).href
 
@@ -132,7 +132,7 @@ export async function fetchStateWithDefinitionFromApi(key, request, { lockToken 
     response = await fetch(endpoint, {
       method,
       headers: await createApiHeadersForGrantsUiBackend({ lockToken }),
-      body: JSON.stringify({ sbi, grantCode, includeDefinition: true, applicationRef })
+      body: JSON.stringify({ sbi, grantCode, includeDefinition: true, applicationRef: referenceNumber })
     })
   } catch (err) {
     logError(request, { method, endpoint, identity: key, errorMessage: /** @type {Error} */ (err).message })
@@ -162,7 +162,7 @@ export async function fetchStateWithDefinitionFromApi(key, request, { lockToken 
 }
 
 /**
- * @param {string} key - The session key (`sbi:grantCode` or `sbi:grantCode:applicationRef`)
+ * @param {string} key - The session key (`sbi:grantCode` or `sbi:grantCode:referenceNumber`)
  * @param {AnyRequest} request
  * @param {{lockToken?: string, grantVersion?: string | number}} [options]
  */
@@ -180,7 +180,7 @@ export async function clearSavedStateFromApi(key, request, { lockToken, grantVer
  * `allowlist.client.js`) and rejects a caller-supplied `sbi` with a 400.
  *
  * @param {{ crn: string, sbi: string, grantCode: string }} params
- * @returns {Promise<{ applicationRef: string, referenceNumber: string, grantVersion: string, createdAt: string, updatedAt: string, applicationStatus: string | null, submittedAt: string | null }[]>}
+ * @returns {Promise<{ applicationRef: string, grantVersion: string, createdAt: string, updatedAt: string, applicationStatus: string | null, submittedAt: string | null }[]>}
  *   An empty array when the backend is unconfigured or returns no applications.
  */
 export async function listApplicationsFromApi({ crn, sbi, grantCode }) {
@@ -206,7 +206,7 @@ export async function listApplicationsFromApi({ crn, sbi, grantCode }) {
   }
 
   const json = await response.json()
-  return /** @type {{ applications: { applicationRef: string, referenceNumber: string, grantVersion: string, createdAt: string, updatedAt: string, applicationStatus: string | null, submittedAt: string | null }[] }} */ (
+  return /** @type {{ applications: { applicationRef: string, grantVersion: string, createdAt: string, updatedAt: string, applicationStatus: string | null, submittedAt: string | null }[] }} */ (
     json
   ).applications
 }
