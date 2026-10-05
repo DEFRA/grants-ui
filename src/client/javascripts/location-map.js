@@ -7,7 +7,7 @@ const MIN_LATITUDE = 49.85
 const MAX_LATITUDE = 60.859
 const MIN_LONGITUDE = -13.687
 const MAX_LONGITUDE = 1.767
-const OS_GRID_REFERENCE_PATTERN = /^([a-z]{2})\s?(\d{6}|\d{8}|\d{10}|\d{3}\s\d{3}|\d{4}\s\d{4}|\d{5}\s\d{5})$/i
+const OS_GRID_REFERENCE_PATTERN = /^([a-z]{2})\s?((?:\d\d){3,5}|\d{3}\s\d{3}|\d{4}\s\d{4}|\d{5}\s\d{5})$/i
 const OS_GRID_SQUARE_LETTERS = {
   S: 'ABCDEFGHJKLMNOPQRSTUVWXYZ',
   N: 'ABCDEFGHJKLMNOPQRSTUVWXYZ',
