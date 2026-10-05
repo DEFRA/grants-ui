@@ -5,7 +5,7 @@ import { getStateWithDefinition } from '../../helpers/state/state-with-definitio
 import { listApplicationsFromApi } from '../../helpers/state/fetch-saved-state-helper.js'
 import {
   getCacheKey,
-  storeApplicationInSession,
+  setApplicationInSession,
   clearApplicationFromSession
 } from '../../helpers/state/get-cache-key-helper.js'
 import { SLUG_ROOT_ROUTE } from '../../constants/routes.js'
@@ -36,7 +36,7 @@ export async function multiApplicationRedirect(request, h) {
     if (!stateWithDef?.state) {
       throw notFound('Unknown application reference')
     }
-    storeApplicationInSession(request, getGrantCode(request), ref)
+    setApplicationInSession(request, ref)
 
     // Root redirects to the journey start on its own; elsewhere, strip `?ref=`
     // from the address bar ourselves now that it's safely in session.
@@ -63,7 +63,7 @@ export async function multiApplicationRedirect(request, h) {
   }
 
   if (applications.length === 1) {
-    storeApplicationInSession(request, grantCode, applications[0].applicationRef)
+    setApplicationInSession(request, applications[0].applicationRef)
     return h.continue
   }
 

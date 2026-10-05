@@ -2,7 +2,7 @@ import { vi } from 'vitest'
 import {
   getCacheKey,
   parseSessionKey,
-  storeApplicationInSession,
+  setApplicationInSession,
   clearApplicationFromSession
 } from './get-cache-key-helper.js'
 
@@ -246,17 +246,17 @@ describe('getCacheKey', () => {
   })
 })
 
-describe('storeApplicationInSession', () => {
+describe('setApplicationInSession', () => {
   it('writes grantCode and referenceNumber to session', () => {
     const yar = makeYar()
 
-    storeApplicationInSession({ yar }, 'grant789', 'REF-1')
+    setApplicationInSession({ yar, params: { slug: 'grant789' } }, 'REF-1')
 
     expect(yar.set).toHaveBeenCalledWith('referenceNumber', { grantCode: 'grant789', referenceNumber: 'REF-1' })
   })
 
   it('does not throw when request.yar is absent', () => {
-    expect(() => storeApplicationInSession({}, 'grant789', 'REF-1')).not.toThrow()
+    expect(() => setApplicationInSession({ params: { slug: 'grant789' } }, 'REF-1')).not.toThrow()
   })
 })
 

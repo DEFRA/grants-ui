@@ -6,7 +6,7 @@ import { getAuthenticatedSbi } from '../../helpers/auth/get-auth-identifiers.js'
 import { getGrantCode } from '../../helpers/grant-code.js'
 import {
   getCacheKey,
-  storeApplicationInSession,
+  setApplicationInSession,
   clearApplicationFromSession
 } from '../../helpers/state/get-cache-key-helper.js'
 
@@ -29,7 +29,7 @@ vi.mock('../../helpers/grant-code.js', () => ({
 
 vi.mock('../../helpers/state/get-cache-key-helper.js', () => ({
   getCacheKey: vi.fn(),
-  storeApplicationInSession: vi.fn(),
+  setApplicationInSession: vi.fn(),
   clearApplicationFromSession: vi.fn()
 }))
 
@@ -60,7 +60,7 @@ describe('multiApplicationRedirect', () => {
       const result = await multiApplicationRedirect(request, h)
 
       expect(result).toBe(h.continue)
-      expect(storeApplicationInSession).toHaveBeenCalledWith(request, 'test-grant', 'REF-1')
+      expect(setApplicationInSession).toHaveBeenCalledWith(request, 'REF-1')
       expect(getAuthenticatedSbi).not.toHaveBeenCalled()
       expect(listApplicationsFromApi).not.toHaveBeenCalled()
     })
@@ -73,7 +73,7 @@ describe('multiApplicationRedirect', () => {
         isBoom: true,
         output: { statusCode: 404 }
       })
-      expect(storeApplicationInSession).not.toHaveBeenCalled()
+      expect(setApplicationInSession).not.toHaveBeenCalled()
     })
 
     it('throws 404 when the envelope itself is missing', async () => {
@@ -136,7 +136,7 @@ describe('multiApplicationRedirect', () => {
 
       await multiApplicationRedirect(request, h)
 
-      expect(storeApplicationInSession).not.toHaveBeenCalled()
+      expect(setApplicationInSession).not.toHaveBeenCalled()
       expect(clearApplicationFromSession).not.toHaveBeenCalled()
     })
   })
@@ -191,7 +191,7 @@ describe('multiApplicationRedirect', () => {
 
       const result = await multiApplicationRedirect(request, h)
 
-      expect(storeApplicationInSession).toHaveBeenCalledWith(request, 'test-grant', 'REF-1')
+      expect(setApplicationInSession).toHaveBeenCalledWith(request, 'REF-1')
       expect(result).toBe(h.continue)
       expect(h.redirect).not.toHaveBeenCalled()
     })
@@ -224,7 +224,7 @@ describe('multiApplicationRedirect', () => {
 
       await multiApplicationRedirect(request, h)
 
-      expect(storeApplicationInSession).not.toHaveBeenCalled()
+      expect(setApplicationInSession).not.toHaveBeenCalled()
       expect(clearApplicationFromSession).not.toHaveBeenCalled()
     })
   })

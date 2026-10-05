@@ -24,9 +24,9 @@ export const getCacheKey = (request) => {
   }
 
   const queryRef = /** @type {string | undefined} */ (request.query?.ref) || undefined
-  const referenceNumber = queryRef ?? readApplicationFromSession(request, grantCode)
+  const referenceNumber = queryRef ?? getReferenceNumberFromSession(request, grantCode)
 
-  return referenceNumber ? { sbi, grantCode, referenceNumber } : { sbi, grantCode }
+  return { sbi, grantCode, referenceNumber }
 }
 
 /**
@@ -36,7 +36,7 @@ export const getCacheKey = (request) => {
  * @param {string} grantCode
  * @returns {string | undefined}
  */
-function readApplicationFromSession(request, grantCode) {
+function getReferenceNumberFromSession(request, grantCode) {
   const stored = /** @type {{ grantCode?: string, referenceNumber?: string } | undefined} */ (
     request.yar?.get(YarKeys.APPLICATION_REF_NUMBER)
   )
@@ -49,10 +49,10 @@ function readApplicationFromSession(request, grantCode) {
  * multi-application grant in the same session can't pick up the wrong one.
  *
  * @param {import('@defra/forms-engine-plugin/engine/types.js').AnyRequest} request
- * @param {string} grantCode
  * @param {string} referenceNumber
  */
-export function storeApplicationInSession(request, grantCode, referenceNumber) {
+export function setApplicationInSession(request, referenceNumber) {
+  const grantCode = getGrantCode(request)
   request.yar?.set(YarKeys.APPLICATION_REF_NUMBER, { grantCode, referenceNumber })
 }
 
