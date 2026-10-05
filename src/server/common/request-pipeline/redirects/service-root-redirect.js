@@ -6,11 +6,12 @@ import {
   resolvePreSubmissionDestination,
   shouldHandlePreSubmission
 } from './forms-status-redirect.js'
-import { SLUG_ROOT_ROUTE } from '../../constants/routes.js'
 
 const CHECK_DETAILS_START_PAGE = '/check-details'
 const REDIRECTION_MIN = 300
 const REDIRECTION_MAX = 399
+
+export const SLUG_ROOT_ROUTE = '/{slug}'
 
 /**
  * Determines whether the response is the forms-engine-plugin's own start-page redirect.

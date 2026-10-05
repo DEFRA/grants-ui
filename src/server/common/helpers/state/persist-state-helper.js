@@ -25,9 +25,7 @@ export async function persistStateToApi(state, key, { lockToken, grantVersion } 
   const url = new URL('/state/', GRANTS_UI_BACKEND_ENDPOINT)
 
   // `POST /state` has no `referenceNumber` field: the backend derives it from
-  // `state.$$__referenceNumber` itself, and its schema rejects unknown
-  // top-level fields - so any referenceNumber in the key is deliberately not
-  // forwarded here.
+  // `state.$$__referenceNumber`
   const { sbi, grantCode } = parseSessionKey(key)
 
   log(LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG, {

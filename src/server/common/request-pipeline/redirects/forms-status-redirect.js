@@ -95,11 +95,11 @@ async function persistStatus(request, newStatus, previousStatus, existingState =
 
   // Dropping $$__referenceNumber here is intentional for a standard (single-application)
   // grant: it's how the forms-engine-plugin knows to mint a fresh one on the next load,
-  // giving the applicant a clean slate - this is long-standing behaviour and must not change.
+  // giving the applicant a clean slate.
   // A multi-application grant can't afford that: the backend keys each application's document
   // by its ref (see saveApplicationState), so a save with no ref is ambiguous and is rejected
-  // with a 400 - silently, since that error is only ever logged, never thrown. For those grants
-  // the ref has to be carried forward so the status update actually reaches the right document.
+  // with a 400. For those grants the ref has to be carried forward so the status update
+  // actually reaches the right document.
   const allowMultipleApplications = request.app.model?.def?.metadata?.allowMultipleApplications === true
 
   if (newStatus === ApplicationStatus.CLEARED) {
