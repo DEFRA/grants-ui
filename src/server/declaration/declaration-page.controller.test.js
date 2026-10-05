@@ -778,6 +778,8 @@ describe('DeclarationPageController', () => {
               claimNumber: 'REF123-C1',
               status: 'IN_PROGRESS',
               entitlementId: 'mongo-entitlement-id',
+              totalEligibleArea: 24.95,
+              unit: 'ha',
               totalClaimAmountPence: 150000
             }
           ]
@@ -821,7 +823,7 @@ describe('DeclarationPageController', () => {
           configVersion: '1.1.1',
           submittedAt: expect.any(String)
         },
-        claim: { entitlementId: 'mongo-entitlement-id', totalClaimAmountPence: 150000 }
+        claim: { entitlementId: 'mongo-entitlement-id', totalClaimAmountPence: 150000, quantity: 24.95 }
       })
     })
 
@@ -830,17 +832,43 @@ describe('DeclarationPageController', () => {
       ['no claims array at all', {}],
       [
         'a missing entitlement ID',
-        { claims: [{ claimNumber: 'REF123-C1', status: 'IN_PROGRESS', totalClaimAmountPence: 150000 }] }
+        {
+          claims: [
+            { claimNumber: 'REF123-C1', status: 'IN_PROGRESS', totalEligibleArea: 24.95, totalClaimAmountPence: 150000 }
+          ]
+        }
       ],
       [
         'a missing claim amount',
-        { claims: [{ claimNumber: 'REF123-C1', status: 'IN_PROGRESS', entitlementId: 'mongo-entitlement-id' }] }
+        {
+          claims: [
+            {
+              claimNumber: 'REF123-C1',
+              status: 'IN_PROGRESS',
+              entitlementId: 'mongo-entitlement-id',
+              totalEligibleArea: 24.95
+            }
+          ]
+        }
+      ],
+      [
+        'a missing quantity',
+        {
+          claims: [
+            {
+              claimNumber: 'REF123-C1',
+              status: 'IN_PROGRESS',
+              entitlementId: 'mongo-entitlement-id',
+              totalClaimAmountPence: 150000
+            }
+          ]
+        }
       ]
     ])('buildSubmissionData refuses to build a claim payload with %s', (_label, stateOverrides) => {
       const context = { ...claimContext, state: { $$__referenceNumber: 'REF123', ...stateOverrides } }
 
       expect(() => claimController.buildSubmissionData(claimRequest, context)).toThrow(
-        'Cannot submit a claim with missing entitlement ID or claim amount'
+        'Cannot submit a claim with missing entitlement ID, claim amount or quantity'
       )
     })
 
@@ -854,13 +882,42 @@ describe('DeclarationPageController', () => {
               claimNumber: 'REF123-C1',
               status: 'IN_PROGRESS',
               entitlementId: 'mongo-entitlement-id',
+              totalEligibleArea: 24.95,
               totalClaimAmountPence: 0
             }
           ]
         }
       }
 
-      expect(() => claimController.buildSubmissionData(claimRequest, context)).not.toThrow()
+      expect(claimController.buildSubmissionData(claimRequest, context).claim).toEqual({
+        entitlementId: 'mongo-entitlement-id',
+        totalClaimAmountPence: 0,
+        quantity: 24.95
+      })
+    })
+
+    test('buildSubmissionData accepts a genuine zero quantity', () => {
+      const context = {
+        ...claimContext,
+        state: {
+          $$__referenceNumber: 'REF123',
+          claims: [
+            {
+              claimNumber: 'REF123-C1',
+              status: 'IN_PROGRESS',
+              entitlementId: 'mongo-entitlement-id',
+              totalEligibleArea: 0,
+              totalClaimAmountPence: 150000
+            }
+          ]
+        }
+      }
+
+      expect(claimController.buildSubmissionData(claimRequest, context).claim).toEqual({
+        entitlementId: 'mongo-entitlement-id',
+        totalClaimAmountPence: 150000,
+        quantity: 0
+      })
     })
 
     test('POST surfaces an incomplete claim as a submission failure without calling GAS', async () => {
@@ -869,7 +926,7 @@ describe('DeclarationPageController', () => {
       const handler = claimController.makePostRouteHandler()
 
       await expect(handler(claimRequest, context, mockH)).rejects.toThrow(
-        'Cannot submit a claim with missing entitlement ID or claim amount'
+        'Cannot submit a claim with missing entitlement ID, claim amount or quantity'
       )
 
       expect(submitClaim).not.toHaveBeenCalled()
@@ -886,6 +943,8 @@ describe('DeclarationPageController', () => {
               claimNumber: 'REF123-C1',
               status: 'IN_PROGRESS',
               entitlementId: 'mongo-entitlement-id',
+              totalEligibleArea: 24.95,
+              unit: 'ha',
               totalClaimAmountPence: 150000
             }
           ]
@@ -897,7 +956,7 @@ describe('DeclarationPageController', () => {
         expect(submitClaim).toHaveBeenCalledWith(
           'woodland',
           expect.objectContaining({
-            claim: { entitlementId: 'mongo-entitlement-id', totalClaimAmountPence: 150000 }
+            claim: { entitlementId: 'mongo-entitlement-id', totalClaimAmountPence: 150000, quantity: 24.95 }
           }),
           claimRequest
         )
