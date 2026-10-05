@@ -102,11 +102,7 @@ export function parseSessionKey(sessionKey) {
   const MAX_SESSION_KEY_PARTS = 3
   const parts = sessionKey.split(':')
 
-  if (
-    parts.length < MIN_SESSION_KEY_PARTS ||
-    parts.length > MAX_SESSION_KEY_PARTS ||
-    parts.some((part) => !part)
-  ) {
+  if (parts.length < MIN_SESSION_KEY_PARTS || parts.length > MAX_SESSION_KEY_PARTS || parts.some((part) => !part)) {
     throw BaseError.wrap(new Error(`Invalid session key format: ${sessionKey}`))
   }
 
