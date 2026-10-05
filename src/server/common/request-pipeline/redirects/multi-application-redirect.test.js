@@ -186,24 +186,24 @@ describe('multiApplicationRedirect', () => {
       expect(clearApplicationFromSession).toHaveBeenCalledWith(request)
     })
 
-    it('pins the single application as the active ref and continues', async () => {
+    it('continues without pinning a ref when there is exactly one application - the backend resolves it unaided', async () => {
       listApplicationsFromApi.mockResolvedValue([{ applicationRef: 'REF-1' }])
       const request = makeRequest()
 
       const result = await multiApplicationRedirect(request, h)
 
-      expect(setApplicationInSession).toHaveBeenCalledWith(request, 'REF-1')
+      expect(setApplicationInSession).not.toHaveBeenCalled()
       expect(result).toBe(h.continue)
       expect(h.redirect).not.toHaveBeenCalled()
     })
 
-    it('does not clear the persisted ref when there is exactly one application', async () => {
+    it('clears any stale persisted ref when there is exactly one application', async () => {
       listApplicationsFromApi.mockResolvedValue([{ applicationRef: 'REF-1' }])
       const request = makeRequest()
 
       await multiApplicationRedirect(request, h)
 
-      expect(clearApplicationFromSession).not.toHaveBeenCalled()
+      expect(clearApplicationFromSession).toHaveBeenCalledWith(request)
     })
 
     it('redirects to the applications stub when the sbi has more than one application', async () => {

@@ -404,7 +404,6 @@ describe('formsStatusRedirect', () => {
     request.app.model.def.metadata.allowMultipleApplications = false
     context.state = {
       applicationStatus: 'SUBMITTED',
-      // eslint-disable-next-line camelcase
       $$__referenceNumber: 'REF-001',
       someFormField: 'form-value'
     }
@@ -423,7 +422,6 @@ describe('formsStatusRedirect', () => {
     request.app.model.def.metadata.allowMultipleApplications = true
     context.state = {
       applicationStatus: 'SUBMITTED',
-      // eslint-disable-next-line camelcase
       $$__referenceNumber: 'REF-001',
       someFormField: 'form-value'
     }
@@ -433,7 +431,6 @@ describe('formsStatusRedirect', () => {
 
     expect(mockCacheService.setState).toHaveBeenCalledWith(request, {
       applicationStatus: ApplicationStatus.REOPENED,
-      // eslint-disable-next-line camelcase
       $$__referenceNumber: 'REF-001',
       previousReferenceNumber: 'REF-001',
       someFormField: 'form-value'
@@ -459,7 +456,6 @@ describe('formsStatusRedirect', () => {
     request.app.model.def.metadata.allowMultipleApplications = false
     context.state = {
       applicationStatus: 'SUBMITTED',
-      // eslint-disable-next-line camelcase
       $$__referenceNumber: 'REF-001',
       someFormField: 'form-value'
     }
@@ -476,7 +472,6 @@ describe('formsStatusRedirect', () => {
     request.app.model.def.metadata.allowMultipleApplications = true
     context.state = {
       applicationStatus: 'SUBMITTED',
-      // eslint-disable-next-line camelcase
       $$__referenceNumber: 'REF-001',
       someFormField: 'form-value'
     }
@@ -486,7 +481,6 @@ describe('formsStatusRedirect', () => {
 
     expect(mockCacheService.setState).toHaveBeenCalledWith(request, {
       applicationStatus: ApplicationStatus.CLEARED,
-      // eslint-disable-next-line camelcase
       $$__referenceNumber: 'REF-001'
     })
   })

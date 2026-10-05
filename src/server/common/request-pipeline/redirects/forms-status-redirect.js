@@ -108,7 +108,6 @@ async function persistStatus(request, newStatus, previousStatus, existingState =
       /** @type {FormSubmissionState} */ (
         /** @type {unknown} */ ({
           applicationStatus: newStatus,
-          // eslint-disable-next-line camelcase
           ...(allowMultipleApplications && { $$__referenceNumber: existingState.$$__referenceNumber })
         })
       )
@@ -126,6 +125,7 @@ async function persistStatus(request, newStatus, previousStatus, existingState =
           ...rest,
           // eslint-disable-next-line camelcase
           ...(allowMultipleApplications && { $$__referenceNumber }),
+          // eslint-disable-next-line camelcase
           previousReferenceNumber: $$__referenceNumber,
           applicationStatus: newStatus
         })

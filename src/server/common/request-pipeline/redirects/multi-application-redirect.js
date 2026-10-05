@@ -59,13 +59,14 @@ export async function multiApplicationRedirect(request, h) {
   const grantCode = getGrantCode(request)
   const applications = await listApplicationsFromApi({ crn, sbi, grantCode })
 
-  if (applications.length === 0) {
+  if (applications.length <= 1) {
+    // 0 or 1 application resolves correctly without a ref at all - the
+    // backend's own lookup falls back to the SBI's one and only document
+    // when no ref is given. Storing one here would be pure risk with no
+    // benefit: if it ever went stale (e.g. after a later reference-number
+    // change) it would silently stop matching anything, breaking status
+    // updates for every grant, not just multi-application ones.
     clearApplicationFromSession(request)
-    return h.continue
-  }
-
-  if (applications.length === 1) {
-    setApplicationInSession(request, applications[0].applicationRef)
     return h.continue
   }
 
