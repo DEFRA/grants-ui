@@ -93,15 +93,26 @@ async function persistStatus(request, newStatus, previousStatus, existingState =
 
   const cacheService = getFormsCacheService(request.server)
 
+  // Dropping $$__referenceNumber here is intentional for a standard (single-application)
+  // grant: it's how the forms-engine-plugin knows to mint a fresh one on the next load,
+  // giving the applicant a clean slate - this is long-standing behaviour and must not change.
+  // A multi-application grant can't afford that: the backend keys each application's document
+  // by its ref (see saveApplicationState), so a save with no ref is ambiguous and is rejected
+  // with a 400 - silently, since that error is only ever logged, never thrown. For those grants
+  // the ref has to be carried forward so the status update actually reaches the right document.
+  const allowMultipleApplications = request.app.model?.def?.metadata?.allowMultipleApplications === true
+
   if (newStatus === ApplicationStatus.CLEARED) {
-    // Carry the existing ref forward: on a multi-application grant, the
-    // backend needs it to know which application this save belongs to and
-    // 400s without it. That error is only logged, never thrown, so the
-    // clear would otherwise silently fail to persist.
-    await cacheService.setState(request, {
-      $$__referenceNumber: existingState.$$__referenceNumber,
-      applicationStatus: newStatus
-    })
+    await cacheService.setState(
+      request,
+      /** @type {FormSubmissionState} */ (
+        /** @type {unknown} */ ({
+          applicationStatus: newStatus,
+          // eslint-disable-next-line camelcase
+          ...(allowMultipleApplications && { $$__referenceNumber: existingState.$$__referenceNumber })
+        })
+      )
+    )
   }
 
   if (newStatus === ApplicationStatus.REOPENED) {
@@ -114,6 +125,7 @@ async function persistStatus(request, newStatus, previousStatus, existingState =
         /** @type {unknown} */ ({
           ...rest,
           // eslint-disable-next-line camelcase
+          ...(allowMultipleApplications && { $$__referenceNumber }),
           previousReferenceNumber: $$__referenceNumber,
           applicationStatus: newStatus
         })

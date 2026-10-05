@@ -400,6 +400,46 @@ describe('formsStatusRedirect', () => {
     })
   })
 
+  it('drops the reference number on REOPENED for a standard grant, matching existing behaviour', async () => {
+    request.app.model.def.metadata.allowMultipleApplications = false
+    context.state = {
+      applicationStatus: 'SUBMITTED',
+      // eslint-disable-next-line camelcase
+      $$__referenceNumber: 'REF-001',
+      someFormField: 'form-value'
+    }
+    mockGasStatus('APPLICATION_AMEND')
+
+    await formsStatusRedirect(request, h, context)
+
+    expect(mockCacheService.setState).toHaveBeenCalledWith(request, {
+      applicationStatus: ApplicationStatus.REOPENED,
+      previousReferenceNumber: 'REF-001',
+      someFormField: 'form-value'
+    })
+  })
+
+  it('keeps the reference number on REOPENED for a multi-application grant, so the status update targets the right document', async () => {
+    request.app.model.def.metadata.allowMultipleApplications = true
+    context.state = {
+      applicationStatus: 'SUBMITTED',
+      // eslint-disable-next-line camelcase
+      $$__referenceNumber: 'REF-001',
+      someFormField: 'form-value'
+    }
+    mockGasStatus('APPLICATION_AMEND')
+
+    await formsStatusRedirect(request, h, context)
+
+    expect(mockCacheService.setState).toHaveBeenCalledWith(request, {
+      applicationStatus: ApplicationStatus.REOPENED,
+      // eslint-disable-next-line camelcase
+      $$__referenceNumber: 'REF-001',
+      previousReferenceNumber: 'REF-001',
+      someFormField: 'form-value'
+    })
+  })
+
   it('does not preserve existing form state when transitioning to CLEARED (withdrawal)', async () => {
     context.state = {
       applicationStatus: 'SUBMITTED',
@@ -412,6 +452,42 @@ describe('formsStatusRedirect', () => {
 
     expect(mockCacheService.setState).toHaveBeenCalledWith(request, {
       applicationStatus: ApplicationStatus.CLEARED
+    })
+  })
+
+  it('drops the reference number on CLEARED for a standard grant, so the next load mints a fresh one', async () => {
+    request.app.model.def.metadata.allowMultipleApplications = false
+    context.state = {
+      applicationStatus: 'SUBMITTED',
+      // eslint-disable-next-line camelcase
+      $$__referenceNumber: 'REF-001',
+      someFormField: 'form-value'
+    }
+    mockGasStatus('APPLICATION_WITHDRAWN')
+
+    await formsStatusRedirect(request, h, context)
+
+    expect(mockCacheService.setState).toHaveBeenCalledWith(request, {
+      applicationStatus: ApplicationStatus.CLEARED
+    })
+  })
+
+  it('keeps the reference number on CLEARED for a multi-application grant, so the save targets the right document', async () => {
+    request.app.model.def.metadata.allowMultipleApplications = true
+    context.state = {
+      applicationStatus: 'SUBMITTED',
+      // eslint-disable-next-line camelcase
+      $$__referenceNumber: 'REF-001',
+      someFormField: 'form-value'
+    }
+    mockGasStatus('APPLICATION_WITHDRAWN')
+
+    await formsStatusRedirect(request, h, context)
+
+    expect(mockCacheService.setState).toHaveBeenCalledWith(request, {
+      applicationStatus: ApplicationStatus.CLEARED,
+      // eslint-disable-next-line camelcase
+      $$__referenceNumber: 'REF-001'
     })
   })
 

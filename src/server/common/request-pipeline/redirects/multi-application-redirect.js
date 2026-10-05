@@ -3,11 +3,7 @@ import { getAuthenticatedCrn, getAuthenticatedSbi } from '../../helpers/auth/get
 import { getGrantCode } from '../../helpers/grant-code.js'
 import { getStateWithDefinition } from '../../helpers/state/state-with-definition-context.js'
 import { listApplicationsFromApi } from '../../helpers/state/fetch-saved-state-helper.js'
-import {
-  getCacheKey,
-  setApplicationInSession,
-  clearApplicationFromSession
-} from '../../helpers/state/get-cache-key-helper.js'
+import { setApplicationInSession, clearApplicationFromSession } from '../../helpers/state/get-cache-key-helper.js'
 import { SLUG_ROOT_ROUTE } from '../../constants/routes.js'
 
 /**
@@ -22,6 +18,13 @@ import { SLUG_ROOT_ROUTE } from '../../constants/routes.js'
  * `allowMultipleApplications` flag: the flag is only resolvable once an
  * application is already picked (it's scoped per `pinnedMajor`), which is
  * circular when no ref is given yet - exactly this function's job to decide.
+ *
+ * The count check (`listApplicationsFromApi`) only runs for the root route -
+ * it's the sole entry point where "which application is this?" is still an
+ * open question. Every other page is already inside a specific journey, so
+ * it just continues: re-running the count there would be a wasted backend
+ * call on every page, and could stamp an unrelated application's ref into
+ * session mid-journey if the SBI's application count changed since entry.
  *
  * @param {import('@defra/forms-engine-plugin/engine/types.js').AnyRequest} request
  * @param {import('@hapi/hapi').ResponseToolkit} h
@@ -46,12 +49,11 @@ export async function multiApplicationRedirect(request, h) {
     return h.redirect(request.path).takeover()
   }
 
-  const slug = request.params.slug
-
-  if (!isRootRequest && getCacheKey(request).referenceNumber) {
+  if (!isRootRequest) {
     return h.continue
   }
 
+  const slug = request.params.slug
   const crn = getAuthenticatedCrn(request)
   const sbi = getAuthenticatedSbi(request)
   const grantCode = getGrantCode(request)

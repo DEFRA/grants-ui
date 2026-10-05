@@ -142,14 +142,15 @@ describe('multiApplicationRedirect', () => {
   })
 
   describe('no ref, on a sub-page, with nothing persisted', () => {
-    it('falls through to the application-count logic, same as the root route', async () => {
+    it('continues without checking application count - only the root route resolves that', async () => {
       getCacheKey.mockReturnValue({ sbi: 'sbi-1', grantCode: 'test-grant' })
-      listApplicationsFromApi.mockResolvedValue([{ applicationRef: 'REF-1' }])
       const request = makeRequest({}, '/{slug}/{path}/{itemId?}')
 
       const result = await multiApplicationRedirect(request, h)
 
-      expect(listApplicationsFromApi).toHaveBeenCalled()
+      expect(listApplicationsFromApi).not.toHaveBeenCalled()
+      expect(setApplicationInSession).not.toHaveBeenCalled()
+      expect(clearApplicationFromSession).not.toHaveBeenCalled()
       expect(result).toBe(h.continue)
     })
   })

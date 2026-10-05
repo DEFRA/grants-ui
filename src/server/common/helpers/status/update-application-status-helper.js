@@ -45,7 +45,8 @@ export async function updateApplicationStatus(
       method: 'PATCH',
       headers: await createApiHeadersForGrantsUiBackend({ lockToken }),
       body: JSON.stringify({
-        ...(referenceNumber && { referenceNumber }),
+        // The backend's own field name for this is still applicationRef.
+        ...(referenceNumber && { applicationRef: referenceNumber }),
         state: {
           applicationStatus
         }
