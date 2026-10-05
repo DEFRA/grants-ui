@@ -25,6 +25,7 @@ import { SLUG_ROOT_ROUTE } from '../../constants/routes.js'
  */
 export async function multiApplicationRedirect(request, h) {
   const ref = /** @type {string | undefined} */ (request.query?.ref)
+  const isRootRequest = request.route?.path === SLUG_ROOT_ROUTE
 
   if (ref) {
     const stateWithDef = await getStateWithDefinition(request)
@@ -32,11 +33,18 @@ export async function multiApplicationRedirect(request, h) {
       throw notFound('Unknown application reference')
     }
     storeApplicationInSession(request, getGrantCode(request), ref)
-    return h.continue
+
+    // The ref is now in session, so we no longer need it on the URL. The
+    // root route already redirects to the start of the journey on its own;
+    // elsewhere we redirect ourselves to drop `?ref=` from the address bar.
+    if (isRootRequest) {
+      return h.continue
+    }
+    return h.redirect(request.path).takeover()
   }
 
   const slug = request.params.slug
-  const isRootRequest = request.route?.path === SLUG_ROOT_ROUTE
+
   if (!isRootRequest && getCacheKey(request).applicationRef) {
     return h.continue
   }

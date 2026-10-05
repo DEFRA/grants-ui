@@ -282,10 +282,7 @@ export async function createServer() {
   // Prime the combined form-definition + state response once per request, before
   // the forms-engine-plugin resolves the form model. Runs after auth (so sbi/owner
   // are known) so the request-less form-definition path and getState can both
-  // reuse the single backend call (memoised on `request.app.stateWithDefinition`,
-  // see `getStateWithDefinition`). Registered after the `multiApplication` plugin
-  // (see registerPlugins above), so an invalid/foreign `?ref=` is already rejected
-  // by the time this primes state.
+  // reuse the single backend call.
   server.ext('onPostAuth', async (request, h) => {
     const slug = request.params?.slug
     if (slug && request.auth?.isAuthenticated && request.auth?.credentials?.contactId) {

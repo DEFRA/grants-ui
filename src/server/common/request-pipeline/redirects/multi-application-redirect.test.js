@@ -41,9 +41,10 @@ describe('multiApplicationRedirect', () => {
     getGrantCode.mockReturnValue('test-grant')
   })
 
-  const makeRequest = (query = {}, routePath = '/{slug}') => ({
+  const makeRequest = (query = {}, routePath = '/{slug}', path = '/test-grant') => ({
     params: { slug: 'test-grant' },
     query,
+    path,
     route: { path: routePath }
   })
 
@@ -88,6 +89,28 @@ describe('multiApplicationRedirect', () => {
       await multiApplicationRedirect(request, h)
 
       expect(getCacheKey).not.toHaveBeenCalled()
+    })
+
+    it('continues on the root route, leaving the redirect to the entry page to the forms-engine-plugin itself', async () => {
+      getStateWithDefinition.mockResolvedValue({ state: { state: { foo: 'bar' } } })
+      const request = makeRequest({ ref: 'REF-1' }, '/{slug}')
+
+      const result = await multiApplicationRedirect(request, h)
+
+      expect(result).toBe(h.continue)
+      expect(h.redirect).not.toHaveBeenCalled()
+    })
+
+    it('redirects to the same sub-page with the query string stripped, now that the ref is in session', async () => {
+      const takeover = Symbol('takeover')
+      h.redirect.mockReturnValue({ takeover: () => takeover })
+      getStateWithDefinition.mockResolvedValue({ state: { state: { foo: 'bar' } } })
+      const request = makeRequest({ ref: 'REF-1' }, '/{slug}/{path}/{itemId?}', '/test-grant/summary')
+
+      const result = await multiApplicationRedirect(request, h)
+
+      expect(h.redirect).toHaveBeenCalledWith('/test-grant/summary')
+      expect(result).toBe(takeover)
     })
   })
 
