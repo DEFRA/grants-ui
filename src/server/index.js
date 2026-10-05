@@ -218,7 +218,7 @@ const registerPlugins = async (server) => {
     permissions,
     contentSecurityPolicy,
     allowlist,
-    multiApplication,
+    // multiApplication, // Enable the plugin redirect when landing page ready
     auditPublisher
   ])
 
