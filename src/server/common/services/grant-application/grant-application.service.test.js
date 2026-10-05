@@ -214,7 +214,8 @@ describe('Grant Application service (token present)', () => {
       },
       {
         entitlementId: 'test-entitlement',
-        totalClaimAmountPence: 150000
+        totalClaimAmountPence: 150000,
+        quantity: 24.95
       }
     )
     const mockResponse = {
@@ -281,7 +282,7 @@ describe('Grant Application service (token present)', () => {
           grantCode: code,
           referenceNumber: 'claim-ref-123',
           claimReferenceNumber: 'claim-ref-123-c01',
-          answers: { entitlementId: 'test-entitlement', totalClaimAmountPence: 150000 }
+          answers: { entitlementId: 'test-entitlement', totalClaimAmountPence: 150000, quantity: 24.95 }
         }
       })
     })
