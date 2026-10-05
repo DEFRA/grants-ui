@@ -47,9 +47,14 @@ services:
     networks:
       - grants-ui-net
 
-  grants-ui-woodland-tests:
-    image: defradigital/grants-ui-woodland-tests
-    pull_policy: always
+  # Built from the journey tests co-located in grants-config-woodland, at the
+  # config release under test. WOODLAND_TAG is set by tools/docker-compose-smoke-test.sh.
+  grants-config-woodland-grants-ui-tests:
+    image: grants-config-woodland-grants-ui-tests
+    pull_policy: build
+    build:
+      context: https://github.com/DEFRA/grants-config-woodland.git#${WOODLAND_TAG:-main}
+      dockerfile: test/grants-ui/Dockerfile
     environment:
       MAX_INSTANCES: 3
       NODE_EXTRA_CA_CERTS: /etc/ssl/certs/nginx.crt
@@ -62,7 +67,6 @@ services:
       MONGO_URI: mongodb://mongodb:27017/
     volumes:
       - ./nginx/certs:/etc/ssl/certs:ro
-      - ./grants-ui-woodland-tests-schemas:/app/test/schemas:ro
     command: ['npm', 'run', 'test:ci']
     networks:
       - grants-ui-net
