@@ -83,11 +83,10 @@ function mapStatusToUrl(fromGrantsStatus, gasStatus, redirectRules = []) {
  * @param {AnyFormRequest} request - The Hapi forms request object
  * @param {string} newStatus - The new status to persist
  * @param {string} previousStatus - The previous status for comparison
- * @param {string} grantId - The grant ID
  * @param {FormSubmissionState} existingState - The existing state to preserve when updating session cache
  * @returns {Promise<void>}
  */
-async function persistStatus(request, newStatus, previousStatus, grantId, existingState = {}) {
+async function persistStatus(request, newStatus, previousStatus, existingState = {}) {
   if (newStatus === previousStatus) {
     return
   }
@@ -522,7 +521,7 @@ async function handlePostSubmission(request, h, context, previousStatus, grantCo
   const postSubmissionRules = grantRedirectRules?.postSubmission ?? []
   const rule = mapStatusToUrl(previousStatus, gasStatus, postSubmissionRules)
 
-  await persistStatus(request, rule.toGrantsStatus, previousStatus, grantId, context.state)
+  await persistStatus(request, rule.toGrantsStatus, previousStatus, context.state)
 
   const isAgreementsRedirect = rule.toPath === agreements.get('baseUrl')
   const redirectUrl = isAgreementsRedirect ? rule.toPath : buildRedirectUrl(grantId, rule.toPath)
@@ -781,7 +780,7 @@ async function handleReturningClaimWindow(request, h, context, redirectContext) 
     return undefined
   }
 
-  await persistStatus(request, rule.toGrantsStatus, ApplicationStatus.CLAIM_SUBMITTED, grantId, context.state)
+  await persistStatus(request, rule.toGrantsStatus, ApplicationStatus.CLAIM_SUBMITTED, context.state)
 
   const grantVersion = getGrantVersion(request)
   const { sbi } = getCacheKey(request)

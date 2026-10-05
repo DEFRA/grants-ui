@@ -98,9 +98,15 @@ export function parseSessionKey(sessionKey) {
     throw BaseError.wrap(new Error('Invalid session key: must be a non-empty string'))
   }
 
+  const MIN_SESSION_KEY_PARTS = 2
+  const MAX_SESSION_KEY_PARTS = 3
   const parts = sessionKey.split(':')
 
-  if (parts.length < 2 || parts.length > 3 || parts.some((part) => !part)) {
+  if (
+    parts.length < MIN_SESSION_KEY_PARTS ||
+    parts.length > MAX_SESSION_KEY_PARTS ||
+    parts.some((part) => !part)
+  ) {
     throw BaseError.wrap(new Error(`Invalid session key format: ${sessionKey}`))
   }
 
