@@ -437,9 +437,7 @@ describe('State API helpers', () => {
       })
 
       it('GETs /applications and returns the applications array', async () => {
-        const applications = [
-          { applicationRef: 'REF-1', grantVersion: '1.0.0', updatedAt: '2026-01-01' }
-        ]
+        const applications = [{ applicationRef: 'REF-1', grantVersion: '1.0.0', updatedAt: '2026-01-01' }]
         mockFetch.mockResolvedValue(createMockFetchResponse({ data: { applications } }))
 
         const result = await listApplicationsFromApi({ crn: 'crn-1', sbi: '123456789', grantCode: 'farm-payments' })
