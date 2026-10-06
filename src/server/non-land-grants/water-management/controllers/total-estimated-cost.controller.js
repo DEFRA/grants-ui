@@ -116,60 +116,25 @@ export default class TotalEstimatedCostController extends withDerivedState(Quest
       throw new Error('Missing required configuration: config.costs')
     }
 
-    // @ts-ignore
-    const {
-      reservoirClayHighCostPerUnit,
-      reservoirClayLowCostPerUnit,
-      reservoirSyntheticHighCostPerUnit,
-      reservoirSyntheticLowCostPerUnit,
-      distNetworkCostPerUnit,
-      tanksCostPerUnit,
-      grantMaxRate
-    } = costsConfig
+    const requiredConfigKeys = [
+      'reservoirClayHighCostPerUnit',
+      'reservoirClayLowCostPerUnit',
+      'reservoirSyntheticHighCostPerUnit',
+      'reservoirSyntheticLowCostPerUnit',
+      'distNetworkCostPerUnit',
+      'tanksCostPerUnit',
+      'grantMaxRate'
+    ]
 
-    if (
-      reservoirClayHighCostPerUnit === undefined ||
-      reservoirClayLowCostPerUnit === undefined ||
-      reservoirSyntheticHighCostPerUnit === undefined ||
-      reservoirSyntheticLowCostPerUnit === undefined ||
-      distNetworkCostPerUnit === undefined ||
-      tanksCostPerUnit === undefined ||
-      grantMaxRate === undefined
-    ) {
-      const missing = []
-      if (reservoirClayHighCostPerUnit === undefined) {
-        missing.push('config.costs.reservoirClayHighCostPerUnit')
-      }
-      if (reservoirClayLowCostPerUnit === undefined) {
-        missing.push('config.costs.reservoirClayLowCostPerUnit')
-      }
-      if (reservoirSyntheticHighCostPerUnit === undefined) {
-        missing.push('config.costs.reservoirSyntheticHighCostPerUnit')
-      }
-      if (reservoirSyntheticLowCostPerUnit === undefined) {
-        missing.push('config.costs.reservoirSyntheticLowCostPerUnit')
-      }
-      if (distNetworkCostPerUnit === undefined) {
-        missing.push('config.costs.distNetworkCostPerUnit')
-      }
-      if (tanksCostPerUnit === undefined) {
-        missing.push('config.costs.tanksCostPerUnit')
-      }
-      if (grantMaxRate === undefined) {
-        missing.push('config.costs.grantMaxRate')
-      }
-      log(LogCodes.SYSTEM.CONFIG_MISSING, { missing }, hapiRequest)
-      throw new Error(`Missing required configuration: ${missing.join(', ')}`)
+    const missingConfigKeys = requiredConfigKeys
+      .filter((key) => costsConfig[key] === undefined)
+      .map((key) => `config.costs.${key}`)
+
+    if (missingConfigKeys.length > 0) {
+      log(LogCodes.SYSTEM.CONFIG_MISSING, { missing: missingConfigKeys }, hapiRequest)
+      throw new Error(`Missing required configuration: ${missingConfigKeys.join(', ')}`)
     }
 
-    return {
-      reservoirClayHighCostPerUnit,
-      reservoirClayLowCostPerUnit,
-      reservoirSyntheticHighCostPerUnit,
-      reservoirSyntheticLowCostPerUnit,
-      distNetworkCostPerUnit,
-      tanksCostPerUnit,
-      grantMaxRate
-    }
+    return costsConfig
   }
 }
