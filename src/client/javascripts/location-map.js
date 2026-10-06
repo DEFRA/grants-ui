@@ -18,19 +18,16 @@ const OS_GRID_SQUARE_LETTERS = {
 }
 
 function readLatLong(inputs) {
-  const lat = Number(inputs[0].value.trim())
-  const long = Number(inputs[1].value.trim())
+  const [lat, long] = inputs.map(({ value }) => Number(value.trim() || NaN))
   const validLatitude = lat >= MIN_LATITUDE && lat <= MAX_LATITUDE
   const validLongitude = long >= MIN_LONGITUDE && long <= MAX_LONGITUDE
-  return lat && long && validLatitude && validLongitude ? { lat, long } : undefined
+  return validLatitude && validLongitude ? { lat, long } : undefined
 }
 
 function readEastingNorthing(inputs) {
-  const easting = Number(inputs[0].value.trim())
-  const northing = Number(inputs[1].value.trim())
-  return easting && northing && isValidEastingNorthing({ easting, northing })
-    ? mapHelpers.eastingNorthingToLatLong({ easting, northing })
-    : undefined
+  const [easting, northing] = inputs.map(({ value }) => Number(value.trim() || NaN))
+  const point = { easting, northing }
+  return isValidEastingNorthing(point) ? mapHelpers.eastingNorthingToLatLong(point) : undefined
 }
 
 function readOsGridReference(inputs) {
@@ -86,7 +83,7 @@ function addHelpPanel(map) {
 }
 
 /** Initialise and bind a location field using the forms engine's public map helpers. */
-export function processLocation(config, location, index) {
+export function processLocation(config, location, index, { hideMapHelpPanel = true } = {}) {
   if (!(location instanceof window.HTMLDivElement)) {
     return
   }
@@ -122,7 +119,9 @@ export function processLocation(config, location, index) {
       }
     }
     inputs.forEach((input) => input.addEventListener('change', updateMap, false))
-    addHelpPanel(map)
+    if (!hideMapHelpPanel) {
+      addHelpPanel(map)
+    }
     interactPlugin.enable()
   })
 }

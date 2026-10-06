@@ -61,7 +61,7 @@ async function findPostcodeCenter(postcode) {
   }
 }
 
-/** Close each asynchronously rendered help panel once, through its normal UI handler. */
+/** Close the engine's asynchronously rendered geospatial help panel once, through its normal UI handler. */
 function hideInitialHelpPanel(field) {
   const closePanel = () => {
     const panel = field.querySelector('.im-c-panel[id$="-panel-info"]')
@@ -119,27 +119,30 @@ export async function initialiseComponentMaps() {
     form.addEventListener('submit', map.formSubmitFactory(buttons), false)
   })
 
-  const initialise = (field, index, process) => {
+  const prepareMap = (field) => {
     const options = optionsFor(field)
     Object.assign(
       map.defaultConfig,
       center && options.zoomToPostcode ? { center, zoom: POSTCODE_VIEW_ZOOM } : DEFAULT_VIEW
     )
-    if (options.hideMapHelpPanel) {
-      hideInitialHelpPanel(field)
-    }
-    process({ apiPath: '/api', assetPath: '/public/assets' }, field, index)
+    return options
   }
+  const config = { apiPath: '/api', assetPath: '/public/assets' }
 
   // Each engine helper copies the default synchronously; keep native indices for saved URL views.
   try {
     document.querySelectorAll('.app-location-field').forEach((field, index) => {
       if (field.matches(MAP_FIELDS)) {
-        initialise(field, index, processLocation)
+        processLocation(config, field, index, prepareMap(field))
       }
     })
     document.querySelectorAll('.app-geospatial-field').forEach((field, index) => {
-      initialise(field, index, geospatialMap.processGeospatial)
+      const options = prepareMap(field)
+      if (options.hideMapHelpPanel) {
+        hideInitialHelpPanel(field)
+      }
+      // @ts-expect-error - The engine defaults omitted tile data but requires it in its config type.
+      geospatialMap.processGeospatial(config, field, index)
     })
   } finally {
     Object.assign(map.defaultConfig, DEFAULT_VIEW)

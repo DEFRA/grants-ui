@@ -23,6 +23,12 @@ const CASES = [
   { type: 'eastingnorthingfield', values: ['530000', '180000'], written: ['530000', '180000'] },
   { type: 'osgridreffield', values: ['SP 4178 2432'], written: ['SP 4178 2432'] }
 ]
+const ZERO_COORDINATE_CASES = [
+  { type: 'latlongfield', values: ['51.5074', '0'], center: [0, POINT.lat] },
+  { type: 'eastingnorthingfield', values: ['0', '180000'], center: CENTER },
+  { type: 'eastingnorthingfield', values: ['530000', '0'], center: CENTER },
+  { type: 'eastingnorthingfield', values: ['0', '0'], center: CENTER }
+]
 const handlers = new Map()
 const instance = { on: vi.fn(), addPanel: vi.fn() }
 const interactPlugin = { enable: vi.fn() }
@@ -75,13 +81,19 @@ describe('location map adapter', () => {
   test.each([
     ...CASES.map(({ type, values }) => ({ type, values: values.map(() => '') })),
     { type: 'latlongfield', values: ['invalid', '-0.1276'] },
-    { type: 'latlongfield', values: ['51.5074', '0'] },
+    { type: 'latlongfield', values: ['51.5074', ''] },
+    { type: 'latlongfield', values: ['51.5074', '   '] },
+    { type: 'latlongfield', values: ['51.5074', 'invalid'] },
+    { type: 'latlongfield', values: ['0', '-0.1276'] },
     { type: 'latlongfield', values: ['61', '-0.1276'] },
     { type: 'latlongfield', values: ['51.5074', '-14'] },
+    { type: 'eastingnorthingfield', values: ['', '180000'] },
+    { type: 'eastingnorthingfield', values: ['530000', '   '] },
+    { type: 'eastingnorthingfield', values: ['invalid', '180000'] },
+    { type: 'eastingnorthingfield', values: ['530000', 'Infinity'] },
     { type: 'eastingnorthingfield', values: ['-1', '180000'] },
     { type: 'eastingnorthingfield', values: ['700001', '180000'] },
     { type: 'eastingnorthingfield', values: ['530000', '1300001'] },
-    { type: 'eastingnorthingfield', values: ['530000', '0'] },
     { type: 'osgridreffield', values: ['not a grid reference'] },
     { type: 'osgridreffield', values: ['SI 4178 2432'] },
     { type: 'osgridreffield', values: ['TA 417 2432'] }
@@ -89,6 +101,40 @@ describe('location map adapter', () => {
     processLocation(CONFIG, addField(type, values), 0)
     expect(map.createMap).toHaveBeenCalledWith('map_0', map.defaultConfig, CONFIG)
   })
+
+  test.each(ZERO_COORDINATE_CASES)('centres $type on saved zero coordinates ($values)', ({ type, values, center }) => {
+    processLocation(CONFIG, addField(type, values), 0)
+    expect(map.createMap).toHaveBeenCalledWith(
+      'map_0',
+      { center, zoom: '16', markers: [{ id: 'location', coords: center }] },
+      CONFIG
+    )
+    if (type === 'eastingnorthingfield') {
+      expect(map.eastingNorthingToLatLong).toHaveBeenCalledWith({
+        easting: Number(values[0]),
+        northing: Number(values[1])
+      })
+    }
+  })
+
+  test.each(ZERO_COORDINATE_CASES)(
+    'centres $type when changed to zero coordinates ($values)',
+    ({ type, values, center }) => {
+      const field = addField(
+        type,
+        values.map(() => '')
+      )
+      processLocation(CONFIG, field, 0)
+      const provider = {}
+      handlers.get(map.EVENTS.mapReady)({ map: provider })
+      const inputs = [...field.querySelectorAll('input')]
+      inputs.forEach((input, index) => {
+        input.value = values[index]
+      })
+      inputs[1].dispatchEvent(new window.Event('change'))
+      expect(map.centerMap).toHaveBeenCalledWith(instance, provider, center)
+    }
+  )
 
   test.each(['sp41782432', 'SP417 243', 'SP 41782 24321', 'HL 4178 2432', 'JM 4178 2432'])(
     'accepts supported grid reference formats (%s)',
@@ -107,7 +153,7 @@ describe('location map adapter', () => {
     processLocation(CONFIG, field, 0)
     const provider = {}
     handlers.get(map.EVENTS.mapReady)({ map: provider })
-    expect(instance.addPanel).toHaveBeenCalledWith('info', expect.objectContaining({ label: 'How to use the map' }))
+    expect(instance.addPanel).not.toHaveBeenCalled()
     expect(interactPlugin.enable).toHaveBeenCalledTimes(1)
     const inputs = [...field.querySelectorAll('input')]
     inputs[0].dispatchEvent(new window.Event('change'))
@@ -120,6 +166,26 @@ describe('location map adapter', () => {
     expect(map.centerMap).toHaveBeenCalledWith(instance, provider, CENTER)
     handlers.get(map.EVENTS.interactMarkerChange)({ coords: CENTER })
     expect(inputs.map((input) => input.value)).toEqual(written)
+  })
+
+  test.each([undefined, {}, { hideMapHelpPanel: true }])(
+    'does not create the help panel when hidden (%j)',
+    (options) => {
+      processLocation(CONFIG, addField('latlongfield', ['', '']), 0, options)
+      handlers.get(map.EVENTS.mapReady)({ map: {} })
+      expect(instance.addPanel).not.toHaveBeenCalled()
+      expect(interactPlugin.enable).toHaveBeenCalledTimes(1)
+    }
+  )
+
+  test('creates the help panel when the component opts in', () => {
+    processLocation(CONFIG, addField('latlongfield', ['', '']), 0, { hideMapHelpPanel: false })
+    handlers.get(map.EVENTS.mapReady)({ map: {} })
+    expect(instance.addPanel).toHaveBeenCalledWith(
+      'info',
+      expect.objectContaining({ label: 'How to use the map', desktop: expect.objectContaining({ open: true }) })
+    )
+    expect(interactPlugin.enable).toHaveBeenCalledTimes(1)
   })
 
   test('skips unsupported fields and missing input containers', () => {

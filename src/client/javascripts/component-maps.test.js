@@ -105,7 +105,8 @@ describe('forms component maps', () => {
     expect(processLocation).toHaveBeenCalledWith(
       { apiPath: '/api', assetPath: '/public/assets' },
       document.querySelector('.app-location-field'),
-      0
+      0,
+      { hideMapHelpPanel: true, zoomToPostcode: true }
     )
     expect(initialViews).toEqual([UK_VIEW])
   })
@@ -261,22 +262,20 @@ describe('forms component maps', () => {
     expect(initialViews).toEqual([UK_VIEW])
   })
 
-  test('closes only the initial help panel in each map, including delayed rendering', async () => {
+  test('closes only the initial geospatial help panel, including delayed rendering', async () => {
     document.body.insertAdjacentHTML('beforeend', '<div class="app-geospatial-field"></div>')
     await initialiseComponentMaps()
     const fields = document.querySelectorAll('.app-location-field, .app-geospatial-field')
-    const unrelated = addHelpPanel(fields[0], 'map_0', 'search')
-    const first = addHelpPanel(fields[0])
+    const unrelated = addHelpPanel(fields[1], 'geospatialmap_0', 'search')
+    const locationPanel = addHelpPanel(fields[0])
     const second = addHelpPanel(fields[1], 'geospatialmap_0')
-    await vi.waitFor(() => {
-      expect(first.close).toHaveBeenCalledTimes(1)
-      expect(second.close).toHaveBeenCalledTimes(1)
-    })
+    await vi.waitFor(() => expect(second.close).toHaveBeenCalledTimes(1))
     expect(unrelated.close).not.toHaveBeenCalled()
-    first.panel.hidden = false
-    first.panel.append(document.createElement('span'))
+    expect(locationPanel.close).not.toHaveBeenCalled()
+    second.panel.hidden = false
+    second.panel.append(document.createElement('span'))
     await Promise.resolve()
-    expect(first.close).toHaveBeenCalledTimes(1)
+    expect(second.close).toHaveBeenCalledTimes(1)
   })
 
   test('keeps the opted-out component help panel open while still centring on the postcode', async () => {
@@ -284,6 +283,12 @@ describe('forms component maps', () => {
     addOptions('location', { hideMapHelpPanel: 'false' })
     document.body.insertAdjacentHTML('beforeend', '<div class="app-geospatial-field"></div>')
     await initialiseComponentMaps()
+    expect(processLocation).toHaveBeenCalledWith(
+      { apiPath: '/api', assetPath: '/public/assets' },
+      document.querySelector('.app-location-field'),
+      0,
+      { hideMapHelpPanel: false, zoomToPostcode: true }
+    )
     const fields = document.querySelectorAll('.app-location-field, .app-geospatial-field')
     const first = addHelpPanel(fields[0])
     const second = addHelpPanel(fields[1], 'geospatialmap_0')
@@ -297,17 +302,35 @@ describe('forms component maps', () => {
     ])
   })
 
-  test('closes help panels when explicitly enabled on the component', async () => {
-    addPostcode('')
-    addOptions('location', { hideMapHelpPanel: 'true' })
+  test.each(['true', 'false'])(
+    'passes the location help panel setting directly to the adapter (%s)',
+    async (setting) => {
+      addPostcode('')
+      addOptions('location', { hideMapHelpPanel: setting })
+      await initialiseComponentMaps()
+      expect(processLocation).toHaveBeenCalledWith(
+        { apiPath: '/api', assetPath: '/public/assets' },
+        document.querySelector('.app-location-field'),
+        0,
+        { hideMapHelpPanel: setting === 'true', zoomToPostcode: true }
+      )
+    }
+  )
+
+  test('keeps the opted-out geospatial help panel open', async () => {
+    document.body.innerHTML = '<div class="app-geospatial-field"><textarea name="boundary"></textarea></div>'
+    addOptions('boundary', { hideMapHelpPanel: 'false' })
     await initialiseComponentMaps()
-    const { close } = addHelpPanel(document.querySelector('.app-location-field'))
-    await vi.waitFor(() => expect(close).toHaveBeenCalledTimes(1))
+    const { panel, close } = addHelpPanel(document.querySelector('.app-geospatial-field'), 'geospatialmap_0')
+    await Promise.resolve()
+    expect(close).not.toHaveBeenCalled()
+    expect(panel.hidden).toBe(false)
   })
 
   test('waits for the help panel to open before closing it', async () => {
-    const field = document.querySelector('.app-location-field')
-    const { panel, close } = addHelpPanel(field)
+    document.body.innerHTML = '<div class="app-geospatial-field"></div>'
+    const field = document.querySelector('.app-geospatial-field')
+    const { panel, close } = addHelpPanel(field, 'geospatialmap_0')
     panel.hidden = true
     await initialiseComponentMaps()
     expect(close).not.toHaveBeenCalled()
@@ -316,21 +339,21 @@ describe('forms component maps', () => {
   })
 
   test('disconnects pending help observers when leaving the page', async () => {
+    document.body.innerHTML = '<div class="app-geospatial-field"></div>'
     await initialiseComponentMaps()
     window.dispatchEvent(new window.Event('pagehide'))
-    const { close } = addHelpPanel(document.querySelector('.app-location-field'))
+    const { close } = addHelpPanel(document.querySelector('.app-geospatial-field'), 'geospatialmap_0')
     await Promise.resolve()
     expect(close).not.toHaveBeenCalled()
   })
 
-  test('skips the postcode lookup when every component opts out but still auto-hides help', async () => {
+  test('skips the postcode lookup when every component opts out but still hides location help', async () => {
     addPostcode('SW1A 1AA')
     addOptions('location', { zoomToPostcode: 'false' })
     await initialiseComponentMaps()
     expect(fetch).not.toHaveBeenCalled()
     expect(initialViews).toEqual([UK_VIEW])
-    const { close } = addHelpPanel(document.querySelector('.app-location-field'))
-    await vi.waitFor(() => expect(close).toHaveBeenCalledTimes(1))
+    expect(processLocation.mock.calls[0][3]).toEqual({ hideMapHelpPanel: true, zoomToPostcode: false })
   })
 
   test('applies independent views to maps on the same page and preserves native map indices', async () => {
@@ -350,16 +373,14 @@ describe('forms component maps', () => {
     expect(fetch).toHaveBeenCalledTimes(1)
     expect(initialViews).toEqual([{ center: [-0.1276, 51.5074], zoom: 10 }, UK_VIEW, UK_VIEW])
     expect(processLocation.mock.calls.map((call) => call[2])).toEqual([1, 2])
+    expect(processLocation.mock.calls.map((call) => call[3])).toEqual([
+      { hideMapHelpPanel: true, zoomToPostcode: true },
+      { hideMapHelpPanel: false, zoomToPostcode: false }
+    ])
     expect(geospatialMap.processGeospatial.mock.calls[0][2]).toBe(0)
     const fields = document.querySelectorAll('.app-location-field, .app-geospatial-field')
-    const postcodePanel = addHelpPanel(fields[1], 'map_1')
-    const optedOutPanel = addHelpPanel(fields[2], 'map_2')
     const ukPanel = addHelpPanel(fields[3], 'geospatialmap_0')
-    await vi.waitFor(() => {
-      expect(postcodePanel.close).toHaveBeenCalledTimes(1)
-      expect(ukPanel.close).toHaveBeenCalledTimes(1)
-    })
-    expect(optedOutPanel.close).not.toHaveBeenCalled()
+    await vi.waitFor(() => expect(ukPanel.close).toHaveBeenCalledTimes(1))
   })
 
   test('installs the engine submit handler only once per form with mixed map types', async () => {

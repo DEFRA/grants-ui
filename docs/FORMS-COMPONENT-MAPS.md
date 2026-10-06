@@ -1,6 +1,6 @@
 # Forms component maps
 
-Grants UI initialises the forms engine's `OsGridRefField`, `EastingNorthingField`, `LatLongField` and `GeospatialField` maps on any form page. Each component's `options` controls postcode centring and automatic help-panel closure. Both are enabled by default; no page-specific route or controller is needed.
+Grants UI initialises the forms engine's `OsGridRefField`, `EastingNorthingField`, `LatLongField` and `GeospatialField` maps on any form page. Each component's `options` controls postcode centring and hiding the help panel. Both are enabled by default; no page-specific route or controller is needed.
 
 ```yaml
 components:
@@ -8,7 +8,7 @@ components:
     type: OsGridRefField
     title: Where is the location?
     options:
-      hideMapHelpPanel: false # Keep the initial map help panel open
+      hideMapHelpPanel: false # Show the map help panel
       zoomToPostcode: false  # Use the UK overview instead of the saved postcode
 ```
 
@@ -28,6 +28,18 @@ Maps and search require `FORMS_MAPS_API_KEY` and `FORMS_MAPS_API_SECRET`, with O
 
 ## Help panel
 
-When `options.hideMapHelpPanel` is enabled, Grants UI observes that forms map until its initial `info` panel appears and closes it through the panel's normal close button. This allows the map to recalculate its layout. Other panels and the optional “How to find location details” guidance are unaffected. The observer disconnects after closing the panel or when leaving the page. Users can reopen the help panel normally.
+When `options.hideMapHelpPanel` is enabled, Grants UI skips creating the `info` panel for `OsGridRefField`, `EastingNorthingField` and `LatLongField` maps. Set it to `false` to create the help panel and show it initially. An omitted panel cannot be reopened.
 
-Implementation lives in `src/client/javascripts/component-maps.js`, the `componentMapOptions` Nunjucks global and the shared `layouts/page.njk` template. The integration uses the engine's `map.defaultConfig`, `geospatialMap.processGeospatial` and internal `processLocation` helper (imported from the installed package through the existing `~` project resolver, without a dedicated alias). Each helper copies the component's starting view synchronously; Grants UI then restores the shared default. Native map indices and form-submit protection are retained. Verify these integration points and the help panel DOM when upgrading the forms engine or interactive map dependencies.
+For `GeospatialField`, the forms engine creates the help panel internally without a configuration option to omit it. Grants UI observes that map until its initial `info` panel appears and closes it through the panel's normal close button, allowing the map to recalculate its layout. The observer disconnects after closing the panel or when leaving the page. Users can reopen the geospatial help panel normally. Other panels and the optional “How to find location details” guidance are unaffected.
+
+Implementation lives in `src/client/javascripts/component-maps.js`, `src/client/javascripts/location-map.js`, the `componentMapOptions` Nunjucks global and the shared `layouts/page.njk` template. The integration uses the engine's public `map` helpers and `geospatialMap.processGeospatial`, with a local `processLocation` adapter that accepts the per-component options. Each helper copies the component's starting view synchronously; Grants UI then restores the shared default. Native map indices and form-submit protection are retained. Verify these integration points and the geospatial help panel DOM when upgrading the forms engine or interactive map dependencies.
+
+## Dependency compatibility tests
+
+Grants UI retains its own `@defra/interactive-map` dependency for the land parcel map. The forms engine can resolve a different version. Compatibility checks exercise the installed combination without forcing either map to use the other's version.
+
+`src/client/javascripts/location-map-compatibility.test.js` renders the installed engine's location templates and uses its real coordinate conversions to check input markup, coordinate order, units and grid reference formatting. Only map creation is replaced in these unit checks. Run it with `npx vitest run src/client/javascripts/location-map-compatibility.test.js --coverage.enabled=false`.
+
+`acceptance/test/features/component-map-compatibility.feature` loads the production application bundle and both production stylesheets into a browser fixture. Map creation, MapLibre, plugins, events and coordinate helpers are real; only the document and external map service requests are substituted. It checks all three location types, saved answers taking precedence over the postcode, independent postcode and UK starting views, input changes and map centring, real clicks updating the inputs, zero longitude, blank inputs and both help-panel settings. It also checks for browser exceptions. The fixture adds no application route and needs no live OS API credentials.
+
+The browser scenario runs in the normal acceptance suite in pull-request CI, including dependency updates. To select it against the local acceptance stack, run `npm --prefix acceptance run test:ci -- --name "Location maps support saved answers"`.
