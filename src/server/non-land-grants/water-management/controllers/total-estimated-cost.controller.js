@@ -70,16 +70,19 @@ export default class TotalEstimatedCostController extends withDerivedState(Quest
 
     let minGrantReached
     if (reservoirCost > 0 || waterDistributionNetworkCost > 0) {
-      minGrantReached = estimatedMaxGrant >= 35000
+      const MIN_GRANT = 35000
+      minGrantReached = estimatedMaxGrant >= MIN_GRANT
     } else {
       // water tanks only, min grant reduced to £15,000
-      minGrantReached = estimatedMaxGrant >= 15000
+      const MIN_GRANT_TANKS_ONLY = 15000
+      minGrantReached = estimatedMaxGrant >= MIN_GRANT_TANKS_ONLY
     }
 
     let maxGrantReached = false
-    if (estimatedMaxGrant > 350000) {
+    const MAX_GRANT = 350000
+    if (estimatedMaxGrant > MAX_GRANT) {
       maxGrantReached = true
-      estimatedMaxGrant = 350000
+      estimatedMaxGrant = MAX_GRANT
     }
 
     return {
