@@ -170,6 +170,62 @@ describe('TotalEstimatedCostController', () => {
       expect(mockH.view).toHaveBeenCalledWith(controller.viewName, expect.objectContaining({ baseModel: 'data' }))
     })
 
+    it('should handle synthetic reservoir lining', () => {
+      mockContext.state.itemsPlanningToInstall = ['RESERVOIR']
+      mockContext.state.reservoirLining = 'synthetic'
+      mockContext.state.howMuchWater = 100
+
+      const results = controller.getCalculatedAnswers(mockRequest, mockContext.state)
+
+      expect(results.reservoirHighCostPerUnit).toBe(3.5)
+      expect(results.reservoirLowCostPerUnit).toBe(3.0)
+      expect(results.reservoirCost).toBe(350)
+    })
+
+    it('should calculate tiered reservoir cost for large volumes', () => {
+      mockContext.state.itemsPlanningToInstall = ['RESERVOIR']
+      mockContext.state.reservoirLining = 'clay'
+      mockContext.state.howMuchWater = 15000 // 10000 * 2.5 + 5000 * 2.0 = 25000 + 10000 = 35000
+
+      const results = controller.getCalculatedAnswers(mockRequest, mockContext.state)
+
+      expect(results.reservoirCost).toBe(35000)
+    })
+
+    it('should set minGrantReached to true when total estimated grant is at or above £35,000 for reservoir', () => {
+      mockContext.state.itemsPlanningToInstall = ['RESERVOIR']
+      mockContext.state.howMuchWater = 35000 // 35000 * 2.5 (avg 2.5) * 0.4 = ... wait
+      // totalEstimatedCost = 10000 * 2.5 + 25000 * 2.0 = 25000 + 50000 = 75000
+      // estimatedMaxGrant = 75000 * 0.4 = 30000 (still below 35000)
+
+      mockContext.state.howMuchWater = 50000
+      // totalEstimatedCost = 10000 * 2.5 + 40000 * 2.0 = 25000 + 80000 = 105000
+      // estimatedMaxGrant = 105000 * 0.4 = 42000 (above 35000)
+
+      const results = controller.getCalculatedAnswers(mockRequest, mockContext.state)
+      expect(results.minGrantReached).toBe(true)
+    })
+
+    it('should set minGrantReached to true when total estimated grant is at or above £15,000 for tanks only', () => {
+      mockContext.state.itemsPlanningToInstall = ['WATER_STORAGE_TANKS']
+      mockContext.state.waterStorageCapacity = 25000 // 25000 * 1.5 = 37500
+      // estimatedMaxGrant = 37500 * 0.4 = 15000
+
+      const results = controller.getCalculatedAnswers(mockRequest, mockContext.state)
+      expect(results.minGrantReached).toBe(true)
+    })
+
+    it('should cap estimatedMaxGrant at £350,000 and set maxGrantReached to true', () => {
+      mockContext.state.itemsPlanningToInstall = ['WATER_STORAGE_TANKS']
+      mockContext.state.waterStorageCapacity = 1000000 // 1,000,000 * 1.5 = 1,500,000
+      // estimatedMaxGrantBeforeReduction = 1,500,000 * 0.4 = 600,000
+
+      const results = controller.getCalculatedAnswers(mockRequest, mockContext.state)
+      expect(results.estimatedMaxGrantBeforeReduction).toBe(600000)
+      expect(results.estimatedMaxGrant).toBe(350000)
+      expect(results.maxGrantReached).toBe(true)
+    })
+
     it('uses the derived-state settings from the page definition', () => {
       expect(controller.derivedState).toMatchObject({
         requiresAcknowledgement: true
