@@ -19,43 +19,89 @@ export default class TotalEstimatedCostController extends withDerivedState(Quest
    * Calculates the derived answers without changing persisted state.
    * @param {import('@defra/forms-engine-plugin/types').AnyFormRequest} request
    * @param {any} state
-   * @returns {Record<string, number>}
+   * @returns {Record<string, any>}
    */
   getCalculatedAnswers(request, state) {
-    const { reservoirCostPerUnit, distNetworkCostPerUnit, tanksCostPerUnit, grantMaxRate } =
-      this.validatePageConfig(request)
+    const {
+      reservoirClayHighCostPerUnit,
+      reservoirClayLowCostPerUnit,
+      reservoirSyntheticHighCostPerUnit,
+      reservoirSyntheticLowCostPerUnit,
+      distNetworkCostPerUnit,
+      tanksCostPerUnit,
+      grantMaxRate
+    } = this.validatePageConfig(request)
+
     const {
       itemsPlanningToInstall = [],
+      reservoirLining,
       howMuchWater = 0,
       waterDistributionLength = 0,
       waterStorageCapacity = 0
     } = state
 
-    const reservoirCost = itemsPlanningToInstall.includes('RESERVOIR') ? reservoirCostPerUnit * howMuchWater : 0
+    let reservoirCost = 0
+    let reservoirHighCostPerUnit = reservoirClayHighCostPerUnit
+    let reservoirLowCostPerUnit = reservoirClayLowCostPerUnit
+    if (itemsPlanningToInstall.includes('RESERVOIR')) {
+      if (reservoirLining === 'synthetic') {
+        reservoirHighCostPerUnit = reservoirSyntheticHighCostPerUnit
+        reservoirLowCostPerUnit = reservoirSyntheticLowCostPerUnit
+      }
+      if (howMuchWater > 10000) {
+        reservoirCost = reservoirHighCostPerUnit * 10000 + reservoirLowCostPerUnit * (howMuchWater - 10000)
+      } else {
+        reservoirCost = reservoirHighCostPerUnit * howMuchWater
+      }
+    }
+
     const waterDistributionNetworkCost = itemsPlanningToInstall.includes('WATER_DISTRIBUTION_NETWORK')
       ? distNetworkCostPerUnit * waterDistributionLength
       : 0
+
     const waterTanksCost = itemsPlanningToInstall.includes('WATER_STORAGE_TANKS')
       ? tanksCostPerUnit * waterStorageCapacity
       : 0
+
     const totalEstimatedCost = reservoirCost + waterDistributionNetworkCost + waterTanksCost
 
+    let estimatedMaxGrant = totalEstimatedCost * grantMaxRate
+    const estimatedMaxGrantBeforeReduction = estimatedMaxGrant
+
+    let minGrantReached
+    if (reservoirCost > 0 || waterDistributionNetworkCost > 0) {
+      minGrantReached = estimatedMaxGrant >= 35000
+    } else {
+      // water tanks only, min grant reduced to £15,000
+      minGrantReached = estimatedMaxGrant >= 15000
+    }
+
+    let maxGrantReached = false
+    if (estimatedMaxGrant > 350000) {
+      maxGrantReached = true
+      estimatedMaxGrant = 350000
+    }
+
     return {
-      reservoirCostPerUnit,
+      reservoirHighCostPerUnit,
+      reservoirLowCostPerUnit,
       distNetworkCostPerUnit,
       tanksCostPerUnit,
       reservoirCost,
       waterDistributionNetworkCost,
       waterTanksCost,
       totalEstimatedCost,
-      estimatedMaxGrant: totalEstimatedCost * grantMaxRate
+      estimatedMaxGrantBeforeReduction,
+      estimatedMaxGrant,
+      minGrantReached,
+      maxGrantReached
     }
   }
 
   /**
    * Validates the costs configuration in the form metadata.
    * @param {import('@defra/forms-engine-plugin/types').AnyFormRequest} request
-   * @returns {{reservoirCostPerUnit: number, distNetworkCostPerUnit: number, tanksCostPerUnit: number, grantMaxRate: number}}
+   * @returns {{reservoirClayHighCostPerUnit: number, reservoirClayLowCostPerUnit: number, reservoirSyntheticHighCostPerUnit: number, reservoirSyntheticLowCostPerUnit: number, distNetworkCostPerUnit: number, tanksCostPerUnit: number, grantMaxRate: number}}
    * @private
    */
   validatePageConfig(request) {
@@ -68,17 +114,37 @@ export default class TotalEstimatedCostController extends withDerivedState(Quest
     }
 
     // @ts-ignore
-    const { reservoirCostPerUnit, distNetworkCostPerUnit, tanksCostPerUnit, grantMaxRate } = costsConfig
+    const {
+      reservoirClayHighCostPerUnit,
+      reservoirClayLowCostPerUnit,
+      reservoirSyntheticHighCostPerUnit,
+      reservoirSyntheticLowCostPerUnit,
+      distNetworkCostPerUnit,
+      tanksCostPerUnit,
+      grantMaxRate
+    } = costsConfig
 
     if (
-      reservoirCostPerUnit === undefined ||
+      reservoirClayHighCostPerUnit === undefined ||
+      reservoirClayLowCostPerUnit === undefined ||
+      reservoirSyntheticHighCostPerUnit === undefined ||
+      reservoirSyntheticLowCostPerUnit === undefined ||
       distNetworkCostPerUnit === undefined ||
       tanksCostPerUnit === undefined ||
       grantMaxRate === undefined
     ) {
       const missing = []
-      if (reservoirCostPerUnit === undefined) {
-        missing.push('config.costs.reservoirCostPerUnit')
+      if (reservoirClayHighCostPerUnit === undefined) {
+        missing.push('config.costs.reservoirClayHighCostPerUnit')
+      }
+      if (reservoirClayLowCostPerUnit === undefined) {
+        missing.push('config.costs.reservoirClayLowCostPerUnit')
+      }
+      if (reservoirSyntheticHighCostPerUnit === undefined) {
+        missing.push('config.costs.reservoirSyntheticHighCostPerUnit')
+      }
+      if (reservoirSyntheticLowCostPerUnit === undefined) {
+        missing.push('config.costs.reservoirSyntheticLowCostPerUnit')
       }
       if (distNetworkCostPerUnit === undefined) {
         missing.push('config.costs.distNetworkCostPerUnit')
@@ -93,6 +159,14 @@ export default class TotalEstimatedCostController extends withDerivedState(Quest
       throw new Error(`Missing required configuration: ${missing.join(', ')}`)
     }
 
-    return { reservoirCostPerUnit, distNetworkCostPerUnit, tanksCostPerUnit, grantMaxRate }
+    return {
+      reservoirClayHighCostPerUnit,
+      reservoirClayLowCostPerUnit,
+      reservoirSyntheticHighCostPerUnit,
+      reservoirSyntheticLowCostPerUnit,
+      distNetworkCostPerUnit,
+      tanksCostPerUnit,
+      grantMaxRate
+    }
   }
 }

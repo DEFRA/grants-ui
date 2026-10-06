@@ -62,18 +62,30 @@ function createJourney(ResultController = TotalEstimatedCostTaskPageController) 
             excludeFromTaskCompletion: true,
             derivedState: {
               stateKeys: [
-                'reservoirCostPerUnit',
+                'reservoirHighCostPerUnit',
+                'reservoirLowCostPerUnit',
                 'distNetworkCostPerUnit',
                 'tanksCostPerUnit',
                 'reservoirCost',
                 'waterDistributionNetworkCost',
                 'waterTanksCost',
                 'totalEstimatedCost',
-                'estimatedMaxGrant'
+                'estimatedMaxGrantBeforeReduction',
+                'estimatedMaxGrant',
+                'minGrantReached',
+                'maxGrantReached'
               ],
               requiresAcknowledgement: true
             },
-            costs: { reservoirCostPerUnit: 2.5, distNetworkCostPerUnit: 5, tanksCostPerUnit: 1.5, grantMaxRate: 0.4 }
+            costs: {
+              reservoirClayHighCostPerUnit: 2.5,
+              reservoirClayLowCostPerUnit: 2.0,
+              reservoirSyntheticHighCostPerUnit: 3.5,
+              reservoirSyntheticLowCostPerUnit: 3.0,
+              distNetworkCostPerUnit: 5,
+              tanksCostPerUnit: 1.5,
+              grantMaxRate: 0.4
+            }
           },
           '/summary': {
             derivedStatePages: ['/total-estimated-cost'],

@@ -26,19 +26,26 @@ describe('TotalEstimatedCostController', () => {
               excludeFromTaskCompletion: true,
               derivedState: {
                 stateKeys: [
-                  'reservoirCostPerUnit',
+                  'reservoirHighCostPerUnit',
+                  'reservoirLowCostPerUnit',
                   'distNetworkCostPerUnit',
                   'tanksCostPerUnit',
                   'reservoirCost',
                   'waterDistributionNetworkCost',
                   'waterTanksCost',
                   'totalEstimatedCost',
-                  'estimatedMaxGrant'
+                  'estimatedMaxGrantBeforeReduction',
+                  'estimatedMaxGrant',
+                  'minGrantReached',
+                  'maxGrantReached'
                 ],
                 requiresAcknowledgement: true
               },
               costs: {
-                reservoirCostPerUnit: 2.5,
+                reservoirClayHighCostPerUnit: 2.5,
+                reservoirClayLowCostPerUnit: 2.0,
+                reservoirSyntheticHighCostPerUnit: 3.5,
+                reservoirSyntheticLowCostPerUnit: 3.0,
                 distNetworkCostPerUnit: 5,
                 tanksCostPerUnit: 1.5,
                 grantMaxRate: 0.4
@@ -91,14 +98,18 @@ describe('TotalEstimatedCostController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(mergeAdditionalAnswers).toHaveBeenCalledWith(expect.anything(), {
-        reservoirCostPerUnit: 2.5,
+        reservoirHighCostPerUnit: 2.5,
+        reservoirLowCostPerUnit: 2.0,
         distNetworkCostPerUnit: 5,
         tanksCostPerUnit: 1.5,
         reservoirCost: 250,
         waterDistributionNetworkCost: 250,
         waterTanksCost: 300,
         totalEstimatedCost: 800,
-        estimatedMaxGrant: 320
+        estimatedMaxGrantBeforeReduction: 320,
+        estimatedMaxGrant: 320,
+        minGrantReached: false,
+        maxGrantReached: false
       })
       expect(controller.setState).toHaveBeenCalled()
       expect(mockH.view).toHaveBeenCalledWith(controller.viewName, expect.objectContaining({ baseModel: 'data' }))
@@ -111,14 +122,18 @@ describe('TotalEstimatedCostController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(mergeAdditionalAnswers).toHaveBeenCalledWith(expect.anything(), {
-        reservoirCostPerUnit: 2.5,
+        reservoirHighCostPerUnit: 2.5,
+        reservoirLowCostPerUnit: 2.0,
         distNetworkCostPerUnit: 5,
         tanksCostPerUnit: 1.5,
         reservoirCost: 250,
         waterDistributionNetworkCost: 0,
         waterTanksCost: 0,
         totalEstimatedCost: 250,
-        estimatedMaxGrant: 100
+        estimatedMaxGrantBeforeReduction: 100,
+        estimatedMaxGrant: 100,
+        minGrantReached: false,
+        maxGrantReached: false
       })
       expect(controller.setState).toHaveBeenCalled()
       expect(mockH.view).toHaveBeenCalledWith(controller.viewName, expect.objectContaining({ baseModel: 'data' }))
@@ -138,14 +153,18 @@ describe('TotalEstimatedCostController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(mergeAdditionalAnswers).toHaveBeenCalledWith(expect.anything(), {
-        reservoirCostPerUnit: 2.5,
+        reservoirHighCostPerUnit: 2.5,
+        reservoirLowCostPerUnit: 2.0,
         distNetworkCostPerUnit: 5,
         tanksCostPerUnit: 1.5,
         reservoirCost: 0,
         waterDistributionNetworkCost: 250,
         waterTanksCost: 300,
         totalEstimatedCost: 550,
-        estimatedMaxGrant: 220
+        estimatedMaxGrantBeforeReduction: 220,
+        estimatedMaxGrant: 220,
+        minGrantReached: false,
+        maxGrantReached: false
       })
       expect(controller.setState).toHaveBeenCalled()
       expect(mockH.view).toHaveBeenCalledWith(controller.viewName, expect.objectContaining({ baseModel: 'data' }))
@@ -185,12 +204,12 @@ describe('TotalEstimatedCostController', () => {
         expect(error.message).toBe('Failed to refresh derived answers')
         const [cause] = error.causeErrors
         expect(cause.message).toBe(
-          'Missing required configuration: config.costs.reservoirCostPerUnit, config.costs.distNetworkCostPerUnit, config.costs.tanksCostPerUnit, config.costs.grantMaxRate'
+          'Missing required configuration: config.costs.reservoirClayHighCostPerUnit, config.costs.reservoirClayLowCostPerUnit, config.costs.reservoirSyntheticHighCostPerUnit, config.costs.reservoirSyntheticLowCostPerUnit, config.costs.distNetworkCostPerUnit, config.costs.tanksCostPerUnit, config.costs.grantMaxRate'
         )
       }
     })
 
-    it('should throw if only reservoirCostPerUnit is missing', async () => {
+    it('should throw if any reservoir cost unit is missing', async () => {
       mockRequest.app.model.def.metadata.pageConfig['/total-estimated-cost'].costs = {
         distNetworkCostPerUnit: 5,
         tanksCostPerUnit: 1.5,
@@ -205,7 +224,9 @@ describe('TotalEstimatedCostController', () => {
       } catch (error) {
         expect(error.message).toBe('Failed to refresh derived answers')
         const [cause] = error.causeErrors
-        expect(cause.message).toBe('Missing required configuration: config.costs.reservoirCostPerUnit')
+        expect(cause.message).toBe(
+          'Missing required configuration: config.costs.reservoirClayHighCostPerUnit, config.costs.reservoirClayLowCostPerUnit, config.costs.reservoirSyntheticHighCostPerUnit, config.costs.reservoirSyntheticLowCostPerUnit'
+        )
       }
     })
   })
@@ -214,14 +235,18 @@ describe('TotalEstimatedCostController', () => {
     it('returns true when an item selection has changed the calculated total', async () => {
       mockContext.state.itemsPlanningToInstall = ['RESERVOIR']
       mockContext.state.additionalAnswers = {
-        reservoirCostPerUnit: 2.5,
+        reservoirHighCostPerUnit: 2.5,
+        reservoirLowCostPerUnit: 2.0,
         distNetworkCostPerUnit: 5,
         tanksCostPerUnit: 1.5,
         reservoirCost: 250,
         waterDistributionNetworkCost: 250,
         waterTanksCost: 300,
         totalEstimatedCost: 800,
-        estimatedMaxGrant: 320
+        estimatedMaxGrantBeforeReduction: 320,
+        estimatedMaxGrant: 320,
+        minGrantReached: false,
+        maxGrantReached: false
       }
 
       await expect(controller.isStateStale(mockRequest, mockContext)).resolves.toBe(true)
@@ -229,14 +254,18 @@ describe('TotalEstimatedCostController', () => {
 
     it('returns false when all saved calculated values match', async () => {
       mockContext.state.additionalAnswers = {
-        reservoirCostPerUnit: 2.5,
+        reservoirHighCostPerUnit: 2.5,
+        reservoirLowCostPerUnit: 2.0,
         distNetworkCostPerUnit: 5,
         tanksCostPerUnit: 1.5,
         reservoirCost: 0,
         waterDistributionNetworkCost: 0,
         waterTanksCost: 0,
         totalEstimatedCost: 0,
-        estimatedMaxGrant: 0
+        estimatedMaxGrantBeforeReduction: 0,
+        estimatedMaxGrant: 0,
+        minGrantReached: false,
+        maxGrantReached: false
       }
 
       await expect(controller.isStateStale(mockRequest, mockContext)).resolves.toBe(false)

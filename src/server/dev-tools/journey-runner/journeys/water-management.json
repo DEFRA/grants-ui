@@ -11,22 +11,24 @@
     "slug": "tasks",
     "name": "Task list — check-your-eligibility",
     "type": "clickLink",
-    "linkSlug": "crops-growing"
+    "linkSlug": "sectors-irrigated"
   },
   {
     "section": "check-your-eligibility",
-    "slug": "crops-growing",
-    "name": "Crops growing — yes",
-    "type": "radios",
-    "fieldName": "cropsGrowing",
-    "value": "FOOD_INDUSTRY"
+    "slug": "sectors-irrigated",
+    "name": "Sectors irrigated — first option selected",
+    "type": "checkboxes",
+    "fieldName": "sectorsIrrigated"
   },
   {
     "section": "check-your-eligibility",
-    "slug": "county-project-located",
-    "name": "County project located — selects first option",
-    "type": "selectField",
-    "fieldName": "countyProjectLocated"
+    "slug": "project-located",
+    "name": "Project located — example easting and northing",
+    "type": "textFields",
+    "fields": {
+      "projectLocated__easting": "286394",
+      "projectLocated__northing": "128750"
+    }
   },
   {
     "section": "check-your-eligibility",
