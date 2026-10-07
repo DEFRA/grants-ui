@@ -59,8 +59,8 @@ describe('ScoreResultsController', () => {
         projectLocated__easting: '286394',
         projectLocated__northing: '286394',
         businessesUsingWater: 'FIVE_OR_MORE',
-        planning: 'NN',
-        abstraction: 'NN'
+        havePlanningPermission: 'NN',
+        haveAbstractionLicence: 'NN'
       }
     }
     mockH = {

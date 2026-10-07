@@ -26,9 +26,9 @@ export default class ScoreResultsController extends withDerivedState(QuestionPag
       sectorsIrrigated,
       projectLocated__easting: easting,
       projectLocated__northing: northing,
-      businessesUsingWater = 'FIVE_OR_MORE',
-      planning = 'NN',
-      abstraction = 'NN'
+      businessesUsingWater,
+      havePlanningPermission: planning,
+      haveAbstractionLicence: abstraction
     } = state
 
     const { totalScore, sectorScore, scarcityScore, collaborationScore, planningAbstractionScore } =
