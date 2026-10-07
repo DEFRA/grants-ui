@@ -119,7 +119,7 @@ describe('Grant Application service (token present)', () => {
         entityid: 'abc123',
         details: {
           grantCode: code,
-          referenceNumber: 'abc123',
+          referenceNumber: 'ABC123',
           answers: payload.answers
         }
       })
@@ -140,8 +140,8 @@ describe('Grant Application service (token present)', () => {
         entityid: 'abc123',
         details: {
           grantCode: code,
-          referenceNumber: 'abc123',
-          previousReferenceNumber: 'prev-001',
+          referenceNumber: 'ABC123',
+          previousReferenceNumber: 'PREV-001',
           answers: resubmitPayload.answers
         }
       })
@@ -280,8 +280,8 @@ describe('Grant Application service (token present)', () => {
         entityid: 'claim-ref-123',
         details: {
           grantCode: code,
-          referenceNumber: 'claim-ref-123',
-          claimReferenceNumber: 'claim-ref-123-c01',
+          referenceNumber: 'CLAIM-REF-123',
+          claimReferenceNumber: 'CLAIM-REF-123-C01',
           answers: { entitlementId: 'test-entitlement', totalClaimAmountPence: 150000, quantity: 24.95 }
         }
       })
@@ -303,9 +303,9 @@ describe('Grant Application service (token present)', () => {
         entityid: 'claim-ref-123',
         details: {
           grantCode: code,
-          referenceNumber: 'claim-ref-123',
-          previousReferenceNumber: 'prev-claim-001',
-          claimReferenceNumber: 'claim-ref-123-c01',
+          referenceNumber: 'CLAIM-REF-123',
+          previousReferenceNumber: 'PREV-CLAIM-001',
+          claimReferenceNumber: 'CLAIM-REF-123-C01',
           answers: resubmitPayload.claim
         }
       })
