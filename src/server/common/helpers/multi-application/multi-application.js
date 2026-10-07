@@ -159,7 +159,10 @@ const reattachApplicationRefToRenderedLinks = async (request, h) => {
     return `${attr}=${quote}${withApplicationRef(request, unescaped).replaceAll('&', '&amp;')}${quote}`
   })
 
-  const replacement = h.response(rewritten).code(response.statusCode ?? OK).type('text/html')
+  const replacement = h
+    .response(rewritten)
+    .code(response.statusCode ?? OK)
+    .type('text/html')
 
   for (const [name, value] of Object.entries(response.headers ?? {})) {
     replacement.header(name, value)

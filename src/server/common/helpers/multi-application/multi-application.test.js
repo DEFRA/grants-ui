@@ -404,13 +404,22 @@ describe('multiApplication plugin - reattaching the ref to rendered links', () =
       variety,
       statusCode,
       headers,
-      source: { manager: { render: vi.fn().mockResolvedValue(html) }, template: 'page.html', context: { title: 'x' }, options: { layout: 'l' } }
+      source: {
+        manager: { render: vi.fn().mockResolvedValue(html) },
+        template: 'page.html',
+        context: { title: 'x' },
+        options: { layout: 'l' }
+      }
     }
   })
 
   /** Runs the hook and returns the HTML handed to `h.response`. */
   const render = async (request) => {
-    const replacement = { code: vi.fn().mockReturnThis(), type: vi.fn().mockReturnThis(), header: vi.fn().mockReturnThis() }
+    const replacement = {
+      code: vi.fn().mockReturnThis(),
+      type: vi.fn().mockReturnThis(),
+      header: vi.fn().mockReturnThis()
+    }
     const toolkit = mockHapiResponseToolkit({ response: vi.fn(() => replacement) })
     const result = await registerAndGetRenderedLinksHandler(server)(request, toolkit)
     return { result, replacement, toolkit, html: toolkit.response.mock.calls[0]?.[0] }
@@ -434,7 +443,12 @@ describe('multiApplication plugin - reattaching the ref to rendered links', () =
 
     await render(request)
 
-    expect(request.response.source.manager.render).toHaveBeenCalledWith('page.html', { title: 'x' }, { layout: 'l' }, request)
+    expect(request.response.source.manager.render).toHaveBeenCalledWith(
+      'page.html',
+      { title: 'x' },
+      { layout: 'l' },
+      request
+    )
   })
 
   it('puts the ref on every same-grant href and form action', async () => {
@@ -450,7 +464,9 @@ describe('multiApplication plugin - reattaching the ref to rendered links', () =
   })
 
   it('appends to an existing, HTML-escaped query string without re-encoding it', async () => {
-    const request = makeViewRequest({ html: '<a href="/test-grant/page?returnUrl=%2Ftest-grant%2Fsummary&amp;page=2">x</a>' })
+    const request = makeViewRequest({
+      html: '<a href="/test-grant/page?returnUrl=%2Ftest-grant%2Fsummary&amp;page=2">x</a>'
+    })
 
     const { html } = await render(request)
 

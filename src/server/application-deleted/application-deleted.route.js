@@ -37,7 +37,7 @@ export const applicationDeletedGetRoute = {
           ),
           {
             applicationStatus: ApplicationStatus.PURGED,
-             
+
             ...(referenceNumber && { $$__referenceNumber: referenceNumber })
           }
         )

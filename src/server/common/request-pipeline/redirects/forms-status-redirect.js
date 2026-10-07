@@ -165,7 +165,11 @@ async function persistReopened(request, existingState) {
   const cacheService = getFormsCacheService(request.server)
   const previousReferenceNumber = existingState.$$__referenceNumber
   const reopened = /** @type {FormSubmissionState} */ (
-    /** @type {unknown} */ ({ ...existingState, previousReferenceNumber, applicationStatus: ApplicationStatus.REOPENED })
+    /** @type {unknown} */ ({
+      ...existingState,
+      previousReferenceNumber,
+      applicationStatus: ApplicationStatus.REOPENED
+    })
   )
   delete reopened.$$__referenceNumber
 
@@ -179,7 +183,9 @@ async function persistReopened(request, existingState) {
 
   await cacheService.setState(
     request,
-    /** @type {FormSubmissionState} */ (/** @type {unknown} */ ({ ...reopened, $$__referenceNumber: newReferenceNumber }))
+    /** @type {FormSubmissionState} */ (
+      /** @type {unknown} */ ({ ...reopened, $$__referenceNumber: newReferenceNumber })
+    )
   )
   await cacheService.clearApplicationState(request, String(previousReferenceNumber))
   setApplicationRef(request, newReferenceNumber)
