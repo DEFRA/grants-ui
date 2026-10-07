@@ -29,6 +29,7 @@ compose/config-broker-local.staging.*
 compose/config-broker/local-form-definitions/*
 !compose/config-broker/local-form-definitions/README.md
 /.grants-ui-cli-state.json
+/.grants-ui-cli-state.json.*.tmp
 /.grants-ui-cli-sonar.json
 /.scannerwork/
 /acceptance/schemas/

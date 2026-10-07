@@ -4,7 +4,16 @@ import * as fs from 'node:fs'
 import { loadState, saveInspectorSelection, saveState, saveTailscaleShareIds, STATE_VERSION } from './cli-state.js'
 import { STATE_FILE } from './constants.js'
 
-vi.mock('node:fs', () => ({ chmodSync: vi.fn(), existsSync: vi.fn(), readFileSync: vi.fn(), writeFileSync: vi.fn() }))
+vi.mock('node:fs', () => ({
+  chmodSync: vi.fn(),
+  existsSync: vi.fn(),
+  readFileSync: vi.fn(),
+  renameSync: vi.fn(),
+  rmSync: vi.fn(),
+  writeFileSync: vi.fn()
+}))
+
+const TMP_FILE = `${STATE_FILE}.${process.pid}.tmp`
 
 const written = () => JSON.parse(String(vi.mocked(fs.writeFileSync).mock.calls[0][1]))
 
@@ -57,8 +66,12 @@ test.each([
 ])('saving %s writes an owner-only, versioned file, even when it already exists', (_, save) => {
   vi.mocked(fs.readFileSync).mockReturnValue('{}')
   save()
-  expect(fs.writeFileSync).toHaveBeenCalledWith(STATE_FILE, expect.any(String), { mode: 0o600 })
-  expect(fs.chmodSync).toHaveBeenCalledWith(STATE_FILE, 0o600)
+  expect(fs.writeFileSync).toHaveBeenCalledWith(TMP_FILE, expect.any(String), { mode: 0o600 })
+  expect(fs.chmodSync).toHaveBeenCalledWith(TMP_FILE, 0o600)
+  expect(fs.renameSync).toHaveBeenCalledWith(TMP_FILE, STATE_FILE)
+  expect(vi.mocked(fs.chmodSync).mock.invocationCallOrder[0]).toBeLessThan(
+    vi.mocked(fs.renameSync).mock.invocationCallOrder[0]
+  )
   expect(written().version).toBe(STATE_VERSION)
 })
 
@@ -75,6 +88,16 @@ test('a failed write is non-fatal', () => {
   })
   expect(() => saveState([], null)).not.toThrow()
   expect(fs.writeFileSync).toHaveBeenCalled()
+})
+
+test('a failed write leaves the saved state untouched and removes the temp file', () => {
+  vi.mocked(fs.readFileSync).mockReturnValue('{}')
+  vi.mocked(fs.writeFileSync).mockImplementationOnce(() => {
+    throw new Error('ENOSPC')
+  })
+  saveState([], null)
+  expect(fs.renameSync).not.toHaveBeenCalled()
+  expect(fs.rmSync).toHaveBeenCalledWith(TMP_FILE, { force: true })
 })
 
 test('loading with nothing saved returns null', () => {
@@ -124,4 +147,16 @@ test('loading a legacy localFormDefs file leaves selections unset so they can be
   const state = loadState()
   expect(state).toEqual({ addons: [], scale: null, localServices: [], localFormDefs: true })
   expect(state).not.toHaveProperty('localFormDefSelections')
+})
+
+test('loading drops invalid selections without reviving the legacy localFormDefs migration', () => {
+  vi.mocked(fs.readFileSync).mockReturnValue(
+    JSON.stringify({ localFormDefs: true, localFormDefSelections: ['grant-a', null] })
+  )
+  expect(loadState()).toMatchObject({ localFormDefs: true, localFormDefSelections: ['grant-a'] })
+})
+
+test('loading resets non-array selections to empty even with the legacy localFormDefs flag', () => {
+  vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ localFormDefs: true, localFormDefSelections: 'grant-a' }))
+  expect(loadState()).toMatchObject({ localFormDefs: true, localFormDefSelections: [] })
 })

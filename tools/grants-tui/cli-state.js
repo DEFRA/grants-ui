@@ -41,6 +41,21 @@ const isStringArray = (value) => Array.isArray(value) && value.every((v) => type
 const isPlainObject = (value) => typeof value === 'object' && value !== null && !Array.isArray(value)
 
 /**
+ * Leave selections unset only when absent and a legacy `localFormDefs` flag awaits
+ * migration; otherwise keep the valid string entries
+ * @param {Record<string, unknown>} state
+ */
+function normaliseFormDefSelections(state) {
+  if (!('localFormDefSelections' in state)) {
+    if (state.localFormDefs !== true) state.localFormDefSelections = []
+  } else if (!isStringArray(state.localFormDefSelections)) {
+    state.localFormDefSelections = Array.isArray(state.localFormDefSelections)
+      ? state.localFormDefSelections.filter((id) => typeof id === 'string')
+      : []
+  }
+}
+
+/**
  * Fill missing required keys and drop known keys with the wrong type
  * @param {Record<string, unknown>} raw
  * @returns {CliState}
@@ -55,21 +70,26 @@ function normaliseState(raw) {
   if ('tailscaleShareIds' in state && !Array.isArray(state.tailscaleShareIds)) delete state.tailscaleShareIds
   if ('stateInspector' in state && !isPlainObject(state.stateInspector)) delete state.stateInspector
   if ('localFormDefs' in state && typeof state.localFormDefs !== 'boolean') delete state.localFormDefs
-  if (!isStringArray(state.localFormDefSelections)) {
-    if (state.localFormDefs === true) delete state.localFormDefSelections
-    else state.localFormDefSelections = []
-  }
+  normaliseFormDefSelections(state)
   return /** @type {CliState} */ (state)
 }
 
 /**
- * Merge a patch into the saved state and write it owner-only
+ * Merge a patch into the saved state and write it owner-only. Writes to a temp file
+ * and renames it over the original, so a failed write keeps the last valid state.
  * @param {Partial<CliState>} patch
  */
 function writeState(patch) {
   const state = { ...(loadState() ?? emptyState()), ...patch, version: STATE_VERSION }
-  fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2), { mode: 0o600 })
-  fs.chmodSync(STATE_FILE, 0o600)
+  const tmpFile = `${STATE_FILE}.${process.pid}.tmp`
+  try {
+    fs.writeFileSync(tmpFile, JSON.stringify(state, null, 2), { mode: 0o600 })
+    fs.chmodSync(tmpFile, 0o600)
+    fs.renameSync(tmpFile, STATE_FILE)
+  } catch (error) {
+    fs.rmSync(tmpFile, { force: true })
+    throw error
+  }
 }
 
 export function saveState(addons, scale, localServices = [], localFormDefSelections = []) {
