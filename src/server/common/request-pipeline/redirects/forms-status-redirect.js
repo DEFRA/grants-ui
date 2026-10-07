@@ -17,6 +17,7 @@ import { generateUniqueReference } from '@defra/forms-engine-plugin/engine/refer
 import agreements from '~/src/config/agreements.js'
 import { getGrantCode } from '../../helpers/grant-code.js'
 import { getGrantVersion } from '../../helpers/grant-version.js'
+import { isStoredByReference } from '../../helpers/state/state-with-definition-context.js'
 import { YarKeys } from '../../constants/session-keys.js'
 import { hasAnyItemWithNonEmptyKey } from '../../utils/objects.js'
 
@@ -85,10 +86,8 @@ function mapStatusToUrl(fromGrantsStatus, gasStatus, redirectRules = []) {
 }
 
 /**
- * Persists the new status. A single-application grant saves in place as it
- * always has. A ref-keyed application (see {@link isKeyedByReference}) cannot
- * keep its old ref (GAS and other services hold records under it), so CLEARED
- * deletes its document and REOPENED re-saves it under a newly minted ref.
+ * Persists the new status: CLEARED and REOPENED change the stored state (see
+ * {@link persistCleared} / {@link persistReopened}); every other status is a PATCH.
  *
  * @param {AnyFormRequest} request - The Hapi forms request object
  * @param {string} newStatus - The new status to persist
@@ -101,83 +100,89 @@ async function persistStatus(request, newStatus, previousStatus, existingState =
     return
   }
 
-  const cacheService = getFormsCacheService(request.server)
-  // eslint-disable-next-line camelcase
-  const { $$__referenceNumber, applicationStatus: _previousApplicationStatus, ...rest } = existingState
-  const keyedByReference = isKeyedByReference(request) && Boolean($$__referenceNumber)
-
   if (newStatus === ApplicationStatus.CLEARED) {
-    if (keyedByReference) {
-      await cacheService.clearApplicationState(request, /** @type {string} */ ($$__referenceNumber))
-      setApplicationRef(request, undefined)
-    } else {
-      await cacheService.setState(request, {
-        applicationStatus: newStatus
-      })
-    }
+    await persistCleared(request, existingState)
+    return
   }
 
   if (newStatus === ApplicationStatus.REOPENED) {
-    const reopened = /** @type {FormSubmissionState} */ (
-      /** @type {unknown} */ ({
-        ...rest,
-        // eslint-disable-next-line camelcase
-        previousReferenceNumber: $$__referenceNumber,
-        applicationStatus: newStatus
-      })
-    )
-
-    if (keyedByReference) {
-      // Same prefix the forms engine uses when it mints a reference itself.
-      const prefix = String(request.app.model?.def?.metadata?.referenceNumberPrefix ?? '')
-      const newReferenceNumber = generateUniqueReference(prefix)
-
-      await cacheService.setState(
-        request,
-        /** @type {FormSubmissionState} */ (
-          /** @type {unknown} */ ({ ...reopened, $$__referenceNumber: newReferenceNumber })
-        )
-      )
-      await cacheService.clearApplicationState(request, /** @type {string} */ ($$__referenceNumber))
-      setApplicationRef(request, newReferenceNumber)
-    } else {
-      await cacheService.setState(request, reopened)
-    }
+    await persistReopened(request, existingState)
   }
 
-  if (newStatus !== ApplicationStatus.CLEARED) {
-    const cacheKey = getCacheKey(request)
-    const { sbi, grantCode } = cacheKey
-    const grantVersion = getGrantVersion(request)
-    const contactId = request.auth?.credentials?.contactId || request.auth?.credentials?.crn
+  const cacheKey = getCacheKey(request)
+  const { sbi, grantCode } = cacheKey
+  const grantVersion = getGrantVersion(request)
+  const contactId = request.auth?.credentials?.contactId || request.auth?.credentials?.crn
 
-    if (!contactId) {
-      throw new Error('Missing user identity (contactId/crn) for lock token')
-    }
-
-    const lockToken = mintLockToken({
-      userId: String(contactId),
-      sbi,
-      grantCode,
-      grantVersion
-    })
-
-    await updateApplicationStatus(
-      newStatus,
-      buildSessionKey(cacheKey),
-      /** @type {{ lockToken?: string, grantVersion?: string }} */ ({ lockToken, grantVersion })
-    )
+  if (!contactId) {
+    throw new Error('Missing user identity (contactId/crn) for lock token')
   }
+
+  const lockToken = mintLockToken({
+    userId: String(contactId),
+    sbi,
+    grantCode,
+    grantVersion
+  })
+
+  await updateApplicationStatus(
+    newStatus,
+    buildSessionKey(cacheKey),
+    /** @type {{ lockToken?: string, grantVersion?: string }} */ ({ lockToken, grantVersion })
+  )
 }
 
 /**
- * The grant allows several applications, or the request arrived scoped to one.
+ * CLEARED (withdrawn). Single-application: reset the document to the bare
+ * status, as always. Multi-application: the old ref must not live on (GAS
+ * and other services hold records under it), so the document is deleted.
  *
  * @param {AnyFormRequest} request
- * @returns {boolean}
+ * @param {FormSubmissionState} existingState
  */
-function isKeyedByReference(request) {
-  return request.app.model?.def?.metadata?.allowMultipleApplications === true || Boolean(getApplicationRef(request))
+async function persistCleared(request, existingState) {
+  const cacheService = getFormsCacheService(request.server)
+
+  if (!(await isStoredByReference(request))) {
+    await cacheService.setState(request, { applicationStatus: ApplicationStatus.CLEARED })
+    return
+  }
+
+  await cacheService.clearApplicationState(request, String(existingState.$$__referenceNumber))
+  setApplicationRef(request, undefined)
+}
+
+/**
+ * REOPENED. Single-application: keep the answers, drop `$$__referenceNumber`
+ * so the forms engine mints a new one on the next load. Multi-application:
+ * mint it here, save under the new ref, delete the old document and re-scope
+ * the request to the new ref.
+ *
+ * @param {AnyFormRequest} request
+ * @param {FormSubmissionState} existingState
+ */
+async function persistReopened(request, existingState) {
+  const cacheService = getFormsCacheService(request.server)
+  const previousReferenceNumber = existingState.$$__referenceNumber
+  const reopened = /** @type {FormSubmissionState} */ (
+    /** @type {unknown} */ ({ ...existingState, previousReferenceNumber, applicationStatus: ApplicationStatus.REOPENED })
+  )
+  delete reopened.$$__referenceNumber
+
+  if (!(await isStoredByReference(request))) {
+    await cacheService.setState(request, reopened)
+    return
+  }
+
+  const prefix = String(request.app.model?.def?.metadata?.referenceNumberPrefix ?? '')
+  const newReferenceNumber = generateUniqueReference(prefix)
+
+  await cacheService.setState(
+    request,
+    /** @type {FormSubmissionState} */ (/** @type {unknown} */ ({ ...reopened, $$__referenceNumber: newReferenceNumber }))
+  )
+  await cacheService.clearApplicationState(request, String(previousReferenceNumber))
+  setApplicationRef(request, newReferenceNumber)
 }
 
 /**
@@ -583,7 +588,10 @@ async function handlePostSubmission(request, h, context, previousStatus, grantCo
   const postSubmissionRules = grantRedirectRules?.postSubmission ?? []
   const rule = mapStatusToUrl(previousStatus, gasStatus, postSubmissionRules)
 
+  const refBefore = getApplicationRef(request)
   await persistStatus(request, rule.toGrantsStatus, previousStatus, context.state)
+  // A reopen or withdrawal changes the ref; the URL must change with it even if the path does not.
+  const refChanged = getApplicationRef(request) !== refBefore
 
   const isAgreementsRedirect = rule.toPath === agreements.get('baseUrl')
   const redirectUrl = isAgreementsRedirect ? rule.toPath : buildRedirectUrl(grantId, rule.toPath)
@@ -593,7 +601,7 @@ async function handlePostSubmission(request, h, context, previousStatus, grantCo
     buildGrantApplicationContext(request, grantCode, getGrantVersion(request), clientRef)
   )
 
-  if (request.path === redirectUrl) {
+  if (request.path === redirectUrl && !refChanged) {
     return h.continue
   }
 

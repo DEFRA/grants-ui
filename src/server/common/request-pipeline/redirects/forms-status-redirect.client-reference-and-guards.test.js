@@ -17,6 +17,9 @@ vi.mock('../../../common/services/grant-application/grant-application.service.js
 vi.mock('../../../common/helpers/status/update-application-status-helper.js', () => ({
   updateApplicationStatus: vi.fn()
 }))
+vi.mock('../../helpers/state/state-with-definition-context.js', () => ({
+  isStoredByReference: vi.fn().mockResolvedValue(false)
+}))
 vi.mock('../../../common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: vi.fn()
 }))

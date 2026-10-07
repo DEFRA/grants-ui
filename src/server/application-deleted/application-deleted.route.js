@@ -1,7 +1,8 @@
 import { ApplicationStatus } from '../common/constants/application-status.js'
 import { getFormsCacheService } from '../common/helpers/forms-cache/forms-cache.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
-import { getApplicationRef, setApplicationRef } from '../common/helpers/state/get-cache-key-helper.js'
+import { setApplicationRef } from '../common/helpers/state/get-cache-key-helper.js'
+import { isStoredByReference } from '../common/helpers/state/state-with-definition-context.js'
 
 function logStateClearFailure(request, err) {
   log(
@@ -26,10 +27,9 @@ export const applicationDeletedGetRoute = {
       const state = await cacheService.getState(request)
 
       if (state?.applicationStatus === ApplicationStatus.PURGED) {
-        // A ref-keyed application must keep its `$$__referenceNumber` (the backend
-        // rejects a save without it); a single-application grant drops it as before.
-        // eslint-disable-next-line camelcase
-        const $$__referenceNumber = getApplicationRef(request) ? state.$$__referenceNumber : undefined
+        // A document keyed by reference must keep its `$$__referenceNumber` (the backend
+        // rejects a save without it); a standard grant drops it as before.
+        const referenceNumber = (await isStoredByReference(request)) ? state.$$__referenceNumber : undefined
 
         await cacheService.setState(
           /** @type {import('@defra/forms-engine-plugin/engine/types.js').AnyFormRequest} */ (
@@ -37,8 +37,8 @@ export const applicationDeletedGetRoute = {
           ),
           {
             applicationStatus: ApplicationStatus.PURGED,
-            // eslint-disable-next-line camelcase
-            ...($$__referenceNumber && { $$__referenceNumber })
+             
+            ...(referenceNumber && { $$__referenceNumber: referenceNumber })
           }
         )
 

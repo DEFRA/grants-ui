@@ -25,6 +25,11 @@ vi.mock('../common/helpers/forms-cache/forms-cache.js', () => ({
   }))
 }))
 
+const isStoredByReference = vi.fn()
+vi.mock('../common/helpers/state/state-with-definition-context.js', () => ({
+  isStoredByReference: (...args) => isStoredByReference(...args)
+}))
+
 describe('applicationDeletedRoute', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -94,20 +99,22 @@ describe('applicationDeletedRoute', () => {
     )
   })
 
-  it('keeps $$__referenceNumber on the reset when the request names an application - a multi-application grant keys the document by it and rejects a save without one', async () => {
+  it('keeps $$__referenceNumber on the reset when the document is keyed by reference, which the backend rejects a save without', async () => {
     const request = { params: { slug: 'test-grant' }, query: { ref: 'REF-1' }, server: {} }
     const h = { view: vi.fn() }
     getState.mockResolvedValue({ applicationStatus: 'PURGED', $$__referenceNumber: 'REF-1', answer: 'x' })
+    isStoredByReference.mockResolvedValueOnce(true)
 
     await applicationDeletedGetRoute.handler(/** @type {any} */ (request), /** @type {any} */ (h))
 
     expect(setState).toHaveBeenCalledWith(request, { applicationStatus: 'PURGED', $$__referenceNumber: 'REF-1' })
   })
 
-  it('drops $$__referenceNumber on the reset for a single-application grant (no ref on the request), so a fresh one is minted next time', async () => {
+  it('drops $$__referenceNumber on the reset for a standard grant, so a fresh one is minted next time', async () => {
     const request = { params: { slug: 'test-grant' }, query: {}, server: {} }
     const h = { view: vi.fn() }
     getState.mockResolvedValue({ applicationStatus: 'PURGED', $$__referenceNumber: 'REF-1', answer: 'x' })
+    isStoredByReference.mockResolvedValueOnce(false)
 
     await applicationDeletedGetRoute.handler(/** @type {any} */ (request), /** @type {any} */ (h))
 
@@ -118,6 +125,7 @@ describe('applicationDeletedRoute', () => {
     const request = { params: { slug: 'test-grant' }, query: { ref: 'REF-1' }, server: {} }
     const h = { view: vi.fn() }
     getState.mockResolvedValue({ applicationStatus: 'PURGED', $$__referenceNumber: 'REF-1' })
+    isStoredByReference.mockResolvedValueOnce(true)
     setState.mockRejectedValueOnce(new Error('Failed to persist state: 400 - Bad Request'))
 
     await applicationDeletedGetRoute.handler(/** @type {any} */ (request), /** @type {any} */ (h))

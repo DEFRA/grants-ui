@@ -131,6 +131,18 @@ export function getStateWithDefinition(request) {
 }
 
 /**
+ * Whether the backend stores this application's document keyed by its
+ * reference (it marks such documents `allowMultipleApplications`), as opposed
+ * to the single document per grant version of a standard grant.
+ *
+ * @param {AnyRequest} request
+ * @returns {Promise<boolean>}
+ */
+export async function isStoredByReference(request) {
+  return (await getStateWithDefinition(request))?.state?.allowMultipleApplications === true
+}
+
+/**
  * Resolves the grant version the backend used, from the combined envelope:
  * the upgraded `toVersion`, else the persisted `state.grantVersion`, else the
  * semver derived from the returned `definition`.

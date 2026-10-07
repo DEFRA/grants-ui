@@ -4,6 +4,7 @@ import { getApplicationRef, withApplicationRef } from '../state/get-cache-key-he
 const FORMS_ENGINE_PLUGIN_NAME = '@defra/forms-engine-plugin'
 const REDIRECT_MIN = 300
 const REDIRECT_MAX = 399
+const OK = 200
 
 /**
  * Keeps `?ref=` attached to every request of a journey. The forms-engine-plugin
@@ -18,7 +19,11 @@ export default {
       server.ext('onPostAuth', (request, h) => multiApplicationHandler(request, h))
       server.ext('onPreHandler', (request, h) => hideApplicationRefFromFormsEngine(request, h))
       server.ext('onPreResponse', (request, h) => reattachApplicationRef(request, h))
-      server.ext('onPreResponse', (request, h) => reattachApplicationRefToRenderedLinks(request, h))
+      // Runs last: it replaces the view with rendered HTML, so extensions that
+      // add view context (the dev journey runner) must have run already.
+      server.ext('onPreResponse', (request, h) => reattachApplicationRefToRenderedLinks(request, h), {
+        after: ['journey-runner']
+      })
     }
   }
 }
@@ -126,7 +131,7 @@ const isSameGrantLink = (slug, pageUrl, link) => {
 /**
  * Puts `?ref=` on every same-grant link of a rendered page. Links are plain
  * paths with no hook to add a query, so the view is rendered here, rewritten
- * and returned in place of the original, headers and status carried over.
+ * and returned in place of the original, keeping its status and headers.
  *
  * @param {Request} request
  * @param {ResponseToolkit} h
@@ -138,7 +143,7 @@ const reattachApplicationRefToRenderedLinks = async (request, h) => {
   const response = /** @type {ViewResponse} */ (request.response)
   const source = response?.source
 
-  if (!ref || !slug || response?.variety !== 'view' || !source?.manager) {
+  if (!ref || !slug || !source || response.variety !== 'view') {
     return h.continue
   }
 
@@ -151,19 +156,10 @@ const reattachApplicationRefToRenderedLinks = async (request, h) => {
       return match
     }
 
-    const withRef = withApplicationRef(request, unescaped)
-
-    if (withRef === unescaped) {
-      return match
-    }
-
-    return `${attr}=${quote}${withRef.replaceAll('&', '&amp;')}${quote}`
+    return `${attr}=${quote}${withApplicationRef(request, unescaped).replaceAll('&', '&amp;')}${quote}`
   })
 
-  const replacement = h
-    .response(rewritten)
-    .code(response.statusCode ?? 200)
-    .type('text/html')
+  const replacement = h.response(rewritten).code(response.statusCode ?? OK).type('text/html')
 
   for (const [name, value] of Object.entries(response.headers ?? {})) {
     replacement.header(name, value)

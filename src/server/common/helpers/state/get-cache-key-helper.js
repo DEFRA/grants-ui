@@ -70,11 +70,11 @@ export function setApplicationRef(request, ref) {
   }
 
   if (mutableRequest.query && 'ref' in mutableRequest.query) {
-    const { ref: _ref, ...queryWithoutRef } = mutableRequest.query
-    mutableRequest.query = queryWithoutRef
+    mutableRequest.query = { ...mutableRequest.query }
+    delete mutableRequest.query.ref
   }
 
-  mutableRequest.app.stateWithDefinition = undefined
+  delete mutableRequest.app.stateWithDefinition
 }
 
 /**
@@ -104,9 +104,10 @@ export function withApplicationRef(request, url) {
     return url
   }
 
+  const params = query ? `${query}&` : ''
   const refParam = new URLSearchParams({ ref }).toString()
 
-  return `${path}?${query ? `${query}&` : ''}${refParam}${hash}`
+  return `${path}?${params}${refParam}${hash}`
 }
 
 /**

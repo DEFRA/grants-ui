@@ -7,6 +7,7 @@ import { formsStatusRedirect } from './forms-status-redirect.js'
 import { setupRedirectTest, mockGasStatus } from './forms-status-redirect.test-helpers.js'
 import { getCacheKey } from '../../helpers/state/get-cache-key-helper.js'
 import { generateUniqueReference } from '@defra/forms-engine-plugin/engine/referenceNumbers.js'
+import { isStoredByReference } from '../../helpers/state/state-with-definition-context.js'
 
 vi.mock('../../../common/helpers/logging/log.js', async () => {
   const { mockLogHelper } = await import('~/src/__mocks__')
@@ -35,6 +36,9 @@ vi.mock('../../../../config/agreements.js', () => ({
 }))
 vi.mock('@defra/forms-engine-plugin/engine/referenceNumbers.js', () => ({
   generateUniqueReference: vi.fn((prefix) => `${prefix}-NEW-REF`)
+}))
+vi.mock('../../helpers/state/state-with-definition-context.js', () => ({
+  isStoredByReference: vi.fn().mockResolvedValue(false)
 }))
 
 describe('formsStatusRedirect', () => {
@@ -348,7 +352,11 @@ describe('formsStatusRedirect', () => {
       request.path = '/grant-a/confirmation'
     })
 
-    describe('single-application grant (unchanged from main)', () => {
+    describe('standard grant, document keyed by version (unchanged from main)', () => {
+      beforeEach(() => {
+        isStoredByReference.mockResolvedValue(false)
+      })
+
       it('CLEARED resets the state to the bare status in place, dropping the reference so a fresh one is minted next load', async () => {
         mockGasStatus('APPLICATION_WITHDRAWN')
 
@@ -375,6 +383,17 @@ describe('formsStatusRedirect', () => {
         expect(updateApplicationStatus).toHaveBeenCalledWith('REOPENED', '12345:grant-a', expect.anything())
         expect(h.redirect).toHaveBeenCalledWith('/grant-a/summary')
       })
+    })
+
+    it('CLEARED with a ref on the URL redirects even when already on the destination page, so the deleted ref leaves the address bar', async () => {
+      isStoredByReference.mockResolvedValue(true)
+      request.query = { ref: 'GLD-OLD-REF' }
+      request.path = '/grant-a/start'
+      mockGasStatus('APPLICATION_WITHDRAWN')
+
+      await formsStatusRedirect(request, h, context)
+
+      expect(h.redirect).toHaveBeenCalledWith('/grant-a/start')
     })
 
     describe.each([
@@ -444,6 +463,15 @@ describe('formsStatusRedirect', () => {
 
         expect(mockCacheService.clearApplicationState).toHaveBeenCalledWith(request, 'GLD-OLD-REF')
         expect(order).toEqual(['save', 'delete'])
+      })
+
+      it('REOPENED redirects even when already on the destination page, so the address bar shows the new ref', async () => {
+        request.path = '/grant-a/summary'
+        mockGasStatus('APPLICATION_AMEND')
+
+        await formsStatusRedirect(request, h, context)
+
+        expect(h.redirect).toHaveBeenCalledWith('/grant-a/summary?ref=GLD-NEW-REF')
       })
 
       it('REOPENED re-scopes the request to the new reference, so the status update and the redirect use it', async () => {

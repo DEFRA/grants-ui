@@ -404,24 +404,16 @@ describe('multiApplication plugin - reattaching the ref to rendered links', () =
       variety,
       statusCode,
       headers,
-      source: {
-        manager: { render: vi.fn().mockResolvedValue(html) },
-        template: 'page.html',
-        context: { title: 'x' },
-        options: { layout: 'l' }
-      }
+      source: { manager: { render: vi.fn().mockResolvedValue(html) }, template: 'page.html', context: { title: 'x' }, options: { layout: 'l' } }
     }
   })
 
-  /** Captures what `h.response(...)` was built with. */
-  const makeToolkit = () => {
-    const replacement = {
-      code: vi.fn().mockReturnThis(),
-      type: vi.fn().mockReturnThis(),
-      header: vi.fn().mockReturnThis()
-    }
+  /** Runs the hook and returns the HTML handed to `h.response`. */
+  const render = async (request) => {
+    const replacement = { code: vi.fn().mockReturnThis(), type: vi.fn().mockReturnThis(), header: vi.fn().mockReturnThis() }
     const toolkit = mockHapiResponseToolkit({ response: vi.fn(() => replacement) })
-    return { toolkit, replacement }
+    const result = await registerAndGetRenderedLinksHandler(server)(request, toolkit)
+    return { result, replacement, toolkit, html: toolkit.response.mock.calls[0]?.[0] }
   }
 
   beforeEach(() => {
@@ -430,146 +422,89 @@ describe('multiApplication plugin - reattaching the ref to rendered links', () =
     h = mockHapiResponseToolkit()
   })
 
-  it('registers a second onPreResponse extension', () => {
+  it('registers a second onPreResponse extension that runs after the dev journey runner, which adds view context', () => {
     multiApplication.plugin.register(server)
     const calls = server.ext.mock.calls.filter(([event]) => event === 'onPreResponse')
     expect(calls).toHaveLength(2)
+    expect(calls[1][2]).toEqual({ after: ['journey-runner'] })
   })
 
-  it('renders the view through the manager Vision attached to the response, with the same template, context, options and request', async () => {
-    const handler = registerAndGetRenderedLinksHandler(server)
+  it('renders through the view manager Vision attached to the response, with the same template, context, options and request', async () => {
     const request = makeViewRequest({ html: '<a href="/test-grant/tasks">Tasks</a>' })
-    const { toolkit } = makeToolkit()
 
-    await handler(request, toolkit)
+    await render(request)
 
-    expect(request.response.source.manager.render).toHaveBeenCalledWith(
-      'page.html',
-      { title: 'x' },
-      { layout: 'l' },
-      request
-    )
+    expect(request.response.source.manager.render).toHaveBeenCalledWith('page.html', { title: 'x' }, { layout: 'l' }, request)
   })
 
   it('puts the ref on every same-grant href and form action', async () => {
-    const handler = registerAndGetRenderedLinksHandler(server)
     const request = makeViewRequest({
       html: '<a href="/test-grant/tasks">Tasks</a><form action="/test-grant/page"></form><a href=\'/test-grant\'>Root</a>'
     })
-    const { toolkit } = makeToolkit()
 
-    await handler(request, toolkit)
+    const { html } = await render(request)
 
-    expect(toolkit.response).toHaveBeenCalledWith(
+    expect(html).toBe(
       '<a href="/test-grant/tasks?ref=REF-1">Tasks</a><form action="/test-grant/page?ref=REF-1"></form><a href=\'/test-grant?ref=REF-1\'>Root</a>'
     )
   })
 
   it('appends to an existing, HTML-escaped query string without re-encoding it', async () => {
-    const handler = registerAndGetRenderedLinksHandler(server)
-    const request = makeViewRequest({
-      html: '<a href="/test-grant/page?returnUrl=%2Ftest-grant%2Fsummary&amp;page=2">x</a>'
-    })
-    const { toolkit } = makeToolkit()
+    const request = makeViewRequest({ html: '<a href="/test-grant/page?returnUrl=%2Ftest-grant%2Fsummary&amp;page=2">x</a>' })
 
-    await handler(request, toolkit)
+    const { html } = await render(request)
 
-    expect(toolkit.response).toHaveBeenCalledWith(
-      '<a href="/test-grant/page?returnUrl=%2Ftest-grant%2Fsummary&amp;page=2&amp;ref=REF-1">x</a>'
-    )
+    expect(html).toBe('<a href="/test-grant/page?returnUrl=%2Ftest-grant%2Fsummary&amp;page=2&amp;ref=REF-1">x</a>')
   })
 
   it('keeps a fragment at the end of the link', async () => {
-    const handler = registerAndGetRenderedLinksHandler(server)
-    const request = makeViewRequest({ html: '<a href="/test-grant/page#main">x</a>' })
-    const { toolkit } = makeToolkit()
+    const { html } = await render(makeViewRequest({ html: '<a href="/test-grant/page#main">x</a>' }))
 
-    await handler(request, toolkit)
-
-    expect(toolkit.response).toHaveBeenCalledWith('<a href="/test-grant/page?ref=REF-1#main">x</a>')
+    expect(html).toBe('<a href="/test-grant/page?ref=REF-1#main">x</a>')
   })
 
   it('leaves a link that already names an application alone', async () => {
-    const handler = registerAndGetRenderedLinksHandler(server)
-    const request = makeViewRequest({ html: '<a href="/test-grant/page?ref=REF-OTHER">x</a>' })
-    const { toolkit } = makeToolkit()
+    const { html } = await render(makeViewRequest({ html: '<a href="/test-grant/page?ref=REF-OTHER">x</a>' }))
 
-    await handler(request, toolkit)
-
-    expect(toolkit.response).toHaveBeenCalledWith('<a href="/test-grant/page?ref=REF-OTHER">x</a>')
-  })
-
-  it('does not leak the ref to links outside the grant journey', async () => {
-    const handler = registerAndGetRenderedLinksHandler(server)
-    const html =
-      '<a href="/auth/sign-out">a</a><a href="/other-grant/page">b</a><a href="/test-grants/page">c</a><a href="https://x.test/test-grant/page">d</a><a href="//test-grant.evil.test/x">e</a>'
-    const request = makeViewRequest({ html })
-    const { toolkit } = makeToolkit()
-
-    await handler(request, toolkit)
-
-    expect(toolkit.response).toHaveBeenCalledWith(html)
+    expect(html).toBe('<a href="/test-grant/page?ref=REF-OTHER">x</a>')
   })
 
   it('puts the ref on a document-relative link too, since the browser resolves it inside the grant', async () => {
-    const handler = registerAndGetRenderedLinksHandler(server)
     const request = makeViewRequest({
       html: '<a href="remove-parcel?parcelId=SD1">a</a><a href="select-actions?parcelId=SD1&amp;origin=confirm">b</a><a href="?page=2">c</a><a href="./tasks">d</a>',
       path: '/test-grant/confirm-land-and-actions'
     })
-    const { toolkit } = makeToolkit()
 
-    await handler(request, toolkit)
+    const { html } = await render(request)
 
-    expect(toolkit.response).toHaveBeenCalledWith(
+    expect(html).toBe(
       '<a href="remove-parcel?parcelId=SD1&amp;ref=REF-1">a</a><a href="select-actions?parcelId=SD1&amp;origin=confirm&amp;ref=REF-1">b</a><a href="?page=2&amp;ref=REF-1">c</a><a href="./tasks?ref=REF-1">d</a>'
     )
   })
 
-  it('leaves a relative link alone when it resolves outside the grant', async () => {
-    const handler = registerAndGetRenderedLinksHandler(server)
-    const html = '<a href="../other-grant/page">a</a><a href="../../x">b</a>'
-    const request = makeViewRequest({ html, path: '/test-grant/page' })
-    const { toolkit } = makeToolkit()
+  it('leaves a relative link alone when it resolves outside the grant, or on the grant root page', async () => {
+    const outside = '<a href="../other-grant/page">a</a><a href="../../x">b</a>'
+    expect((await render(makeViewRequest({ html: outside, path: '/test-grant/page' }))).html).toBe(outside)
 
-    await handler(request, toolkit)
-
-    expect(toolkit.response).toHaveBeenCalledWith(html)
+    const root = '<a href="tasks">a</a>'
+    expect((await render(makeViewRequest({ html: root, path: '/test-grant' }))).html).toBe(root)
   })
 
-  it('leaves a relative link alone on the grant root page, where it would resolve to a top-level path', async () => {
-    const handler = registerAndGetRenderedLinksHandler(server)
-    const html = '<a href="tasks">a</a>'
-    const request = makeViewRequest({ html, path: '/test-grant' })
-    const { toolkit } = makeToolkit()
-
-    await handler(request, toolkit)
-
-    expect(toolkit.response).toHaveBeenCalledWith(html)
-  })
-
-  it('leaves fragment-only, empty, mailto and javascript links alone', async () => {
-    const handler = registerAndGetRenderedLinksHandler(server)
+  it('does not leak the ref to links outside the grant journey', async () => {
     const html =
-      '<a href="#main">a</a><a href="">b</a><a href="mailto:x@y.test">c</a><a href="javascript:void(0)">d</a>'
-    const request = makeViewRequest({ html })
-    const { toolkit } = makeToolkit()
+      '<a href="/auth/sign-out">a</a><a href="/other-grant/page">b</a><a href="/test-grants/page">c</a><a href="https://x.test/test-grant/page">d</a><a href="//test-grant.evil.test/x">e</a><a href="#main">f</a><a href="">g</a><a href="mailto:x@y.test">h</a>'
 
-    await handler(request, toolkit)
-
-    expect(toolkit.response).toHaveBeenCalledWith(html)
+    expect((await render(makeViewRequest({ html }))).html).toBe(html)
   })
 
   it('carries the status code and every header already set on the view response over to the replacement', async () => {
-    const handler = registerAndGetRenderedLinksHandler(server)
     const request = makeViewRequest({
       html: '<a href="/test-grant/tasks">x</a>',
       statusCode: 404,
       headers: { 'content-security-policy': "default-src 'self'", 'referrer-policy': 'no-referrer' }
     })
-    const { toolkit, replacement } = makeToolkit()
 
-    const result = await handler(request, toolkit)
+    const { result, replacement } = await render(request)
 
     expect(result).toBe(replacement)
     expect(replacement.code).toHaveBeenCalledWith(404)
@@ -579,30 +514,18 @@ describe('multiApplication plugin - reattaching the ref to rendered links', () =
   })
 
   it('does nothing when the request has no ref', async () => {
-    const handler = registerAndGetRenderedLinksHandler(server)
     const request = makeViewRequest({ html: '<a href="/test-grant/tasks">x</a>', ref: null })
 
-    const result = await handler(request, h)
+    const result = await registerAndGetRenderedLinksHandler(server)(request, h)
 
     expect(result).toBe(h.continue)
     expect(request.response.source.manager.render).not.toHaveBeenCalled()
   })
 
-  it('does nothing for a response that is not a view (e.g. a redirect)', async () => {
+  it('does nothing for a response that is not a view, or a request with no slug', async () => {
     const handler = registerAndGetRenderedLinksHandler(server)
-    const request = makeViewRequest({ html: '', variety: 'plain', statusCode: 303 })
 
-    const result = await handler(request, h)
-
-    expect(result).toBe(h.continue)
-  })
-
-  it('does nothing when the request has no slug (non-journey route)', async () => {
-    const handler = registerAndGetRenderedLinksHandler(server)
-    const request = makeViewRequest({ html: '<a href="/test-grant/tasks">x</a>', slug: '' })
-
-    const result = await handler(request, h)
-
-    expect(result).toBe(h.continue)
+    expect(await handler(makeViewRequest({ html: '', variety: 'plain' }), h)).toBe(h.continue)
+    expect(await handler(makeViewRequest({ html: '', slug: '' }), h)).toBe(h.continue)
   })
 })
