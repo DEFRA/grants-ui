@@ -91,6 +91,7 @@ export function hasMeaningfulState(state, additionalBaseKeys = new Set()) {
     '$$__referenceNumber',
     'applicationStatus',
     'additionalAnswers',
+    'lastSavedPath',
     ...additionalBaseKeys
   ])
 
@@ -173,7 +174,11 @@ function preSubmissionRedirect(request, h, context) {
     return h.continue
   }
 
-  const destinationPath = resolvePreSubmissionDestination(preSubmissionRedirectRule, context.state)
+  const destinationPath = resolvePreSubmissionDestination(
+    preSubmissionRedirectRule,
+    context.state,
+    request.app.model?.def
+  )
   if (destinationPath === null) {
     return h.continue
   }
@@ -200,20 +205,23 @@ function preSubmissionRedirect(request, h, context) {
  *
  * @param {RedirectRule} rule - The pre-submission redirect rule.
  * @param {FormSubmissionState} state - The current form state.
+ * @param {{ metadata?: { allowMultipleApplications?: boolean }, pages?: { path: string }[] }} [definition] - Definition used to validate a saved multi-application destination.
  * @returns {string | null} The path to redirect to, or `null` to continue without redirecting.
  */
-export function resolvePreSubmissionDestination(rule, state) {
+export function resolvePreSubmissionDestination(rule, state, definition) {
   const requirement = rule.requiresAnyItemWithNonEmptyKey
-  if (!requirement) {
-    return rule.toPath
+  if (requirement && !hasAnyItemWithNonEmptyKey(getStateValue(state, requirement.collection), requirement.key)) {
+    return rule.incompleteToPath ?? null
   }
-
-  const collection = getStateValue(state, requirement.collection)
-  if (hasAnyItemWithNonEmptyKey(collection, requirement.key)) {
-    return rule.toPath
+  const savedPath = state.lastSavedPath
+  if (
+    definition?.metadata?.allowMultipleApplications === true &&
+    typeof savedPath === 'string' &&
+    definition.pages?.some((page) => page.path === savedPath)
+  ) {
+    return savedPath
   }
-
-  return rule.incompleteToPath ?? null
+  return rule.toPath
 }
 
 /**

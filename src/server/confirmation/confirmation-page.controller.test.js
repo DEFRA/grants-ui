@@ -290,6 +290,30 @@ describe('ConfirmationPageController', () => {
     })
   })
 
+  test.each([
+    { enabled: true, type: 'application', expected: '/test-form/applications' },
+    { enabled: false, type: 'application', expected: undefined },
+    { enabled: true, type: 'claim', expected: undefined }
+  ])(
+    'shows another-application action only for enabled application confirmations ($enabled, $type)',
+    ({ enabled, type, expected }) => {
+      controller.model.def.metadata.allowMultipleApplications = enabled
+      controller.pageDef = { path: '/confirmation' }
+      controller.model.def.metadata.pageConfig = { '/confirmation': { confirmationType: type } }
+      controller.buildAndRenderConfirmationResponse(
+        null,
+        { referenceNumber: 'REF-1' },
+        controller.model.def,
+        'test-form',
+        mockH
+      )
+      expect(mockH.view).toHaveBeenCalledWith(
+        'confirmation-page',
+        expect.objectContaining({ startAnotherApplicationUrl: expected })
+      )
+    }
+  )
+
   describe('confirmationType', () => {
     test('defaults to application when no config is set', () => {
       expect(controller.confirmationType).toBe('application')

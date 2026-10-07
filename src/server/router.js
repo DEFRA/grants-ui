@@ -1,4 +1,5 @@
 import inert from '@hapi/inert'
+import { listApplications } from './applications/index.js'
 import { config } from '~/src/config/config.js'
 import { auth } from '~/src/server/auth/index.js'
 import { serveStaticFiles } from '~/src/server/common/helpers/serve-static-files.js'
@@ -33,7 +34,7 @@ export const router = {
       await server.register([auth])
 
       // Application specific routes, add your own routes here
-      await server.register([home, agreements, cookies, applicationDeleted, applicationWindowClosed])
+      await server.register([home, agreements, cookies, applicationDeleted, applicationWindowClosed, listApplications])
 
       await server.register([mapPlugin, landGrantsActionsPlugin])
 

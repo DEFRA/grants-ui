@@ -1,4 +1,5 @@
 {% extends "layouts/page.njk" %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
 {% set backLink = false %}
 {% from "govuk/components/panel/macro.njk" import govukPanel %}
 {% from "dev-mode-banner/macro.njk" import appDevModeBanner %}
@@ -51,6 +52,13 @@
       </ul>
 
       {{ defraSupportDetails({ typeOfSupport: 'question', email: supportEmail }) }}
+    {% endif %}
+
+    {% if startAnotherApplicationUrl %}
+      <form method="post" action="{{ startAnotherApplicationUrl }}">
+        <input type="hidden" name="crumb" value="{{ crumb }}" />
+        {{ govukButton({ text: "Start another application" }) }}
+      </form>
     {% endif %}
 
     {% if feedbackSurveyUrl %}

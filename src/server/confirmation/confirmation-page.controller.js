@@ -167,7 +167,14 @@ export default class ConfirmationPageController extends StatusPageController {
       components
     })
 
-    return h.view('confirmation-page', viewModel)
+    return h.view('confirmation-page', {
+      ...viewModel,
+      startAnotherApplicationUrl:
+        this.confirmationType === ConfirmationType.APPLICATION &&
+        this.model.def.metadata?.allowMultipleApplications === true
+          ? `/${slug}/applications`
+          : undefined
+    })
   }
 
   /**

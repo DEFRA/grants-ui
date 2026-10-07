@@ -1,0 +1,71 @@
+{% extends "layouts/page.njk" %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/tag/macro.njk" import govukTag %}
+{% from "support-details/macro.njk" import defraSupportDetails %}
+{% set backLink = false %}
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <h1 class="govuk-heading-xl">{{ pageTitle }}</h1>
+    </div>
+  </div>
+  <h2 class="govuk-heading-l">Applications</h2>
+  {% if applications.length %}
+    <table class="govuk-table">
+      <caption class="govuk-table__caption govuk-visually-hidden">
+        Applications
+      </caption>
+      <thead class="govuk-table__head">
+        <tr class="govuk-table__row">
+          <th scope="col" class="govuk-table__header">Reference number</th>
+          <th scope="col" class="govuk-table__header">Date created</th>
+          <th scope="col" class="govuk-table__header">Date submitted</th>
+          <th scope="col" class="govuk-table__header">Status</th>
+          <th scope="col" class="govuk-table__header">Action</th>
+        </tr>
+      </thead>
+      <tbody class="govuk-table__body">
+        {% for application in applications %}
+          <tr class="govuk-table__row">
+            <th scope="row" class="govuk-table__header govuk-!-font-weight-regular">
+              {{ application.referenceNumber }}
+            </th>
+            <td class="govuk-table__cell">{{ application.createdAt | formatDate("d MMMM yyyy") }}</td>
+            <td class="govuk-table__cell">
+              {% if application.submittedAt %}
+                {{ application.submittedAt | formatDate("d MMMM yyyy") }}
+              {% else %}
+                —
+              {% endif %}
+            </td>
+            <td class="govuk-table__cell">
+              {{ govukTag({ text: application.statusText, classes: application.statusClasses }) }}
+            </td>
+            <td class="govuk-table__cell">
+              <a class="govuk-link" href="{{ application.href }}"
+                >{{ application.actionText }}<span class="govuk-visually-hidden">
+                  {{ application.referenceNumber }}</span
+                ></a
+              >
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="govuk-body">You have no applications for this grant.</p>
+  {% endif %}
+  {{
+    defraSupportDetails({
+      typeOfSupport: "question",
+      summaryText: "If you have a question about your application",
+      email: supportEmail
+    })
+  }}
+  {% if canStartApplication %}
+    <form method="post">
+      <input type="hidden" name="crumb" value="{{ crumb }}" />
+      {{ govukButton({ text: "Start a new application" }) }}
+    </form>
+  {% endif %}
+{% endblock %}

@@ -51,7 +51,7 @@ function resolvePreSubmissionCandidate(request) {
     /** @type {{ model?: { def?: unknown } }} */ (request.app).model?.def
   )
 
-  if (def?.startPage !== CHECK_DETAILS_START_PAGE) {
+  if (def?.startPage !== CHECK_DETAILS_START_PAGE && def?.metadata?.allowMultipleApplications !== true) {
     return null
   }
 
@@ -99,7 +99,11 @@ export async function serviceRootRedirect(request, h) {
     // a land parcel but no actions is sent to `incompleteToPath`
     // (the select-land-parcel page) rather than straight to the check-answers
     // page. Un-gated grants continue to use the rule's `toPath`.
-    const destinationPath = resolvePreSubmissionDestination(preSubmissionRule, /** @type {any} */ (state))
+    const destinationPath = resolvePreSubmissionDestination(
+      preSubmissionRule,
+      /** @type {any} */ (state),
+      /** @type {any} */ (request.app).model?.def
+    )
     if (destinationPath === null) {
       return h.continue
     }
