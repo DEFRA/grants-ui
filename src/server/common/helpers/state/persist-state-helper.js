@@ -3,6 +3,7 @@ import { config } from '~/src/config/config.js'
 import { parseSessionKey } from './get-cache-key-helper.js'
 import { createApiHeadersForGrantsUiBackend } from '../auth/backend-auth-helper.js'
 import { debug, log, LogCodes } from '../logging/log.js'
+import { createBoomError } from '../errors.js'
 
 // @ts-ignore - TS2589: Type instantiation excessively deep (convict type complexity)
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
@@ -55,21 +56,13 @@ export async function persistStateToApi(state, key, { lockToken, grantVersion } 
     throw new Error(`State payload size (${bodySize} bytes) exceeds limit (${MAX_DB_STATE_SIZE_BYTES} bytes)`)
   }
 
+  let response
   try {
-    const response = await fetch(url.href, {
+    response = await fetch(url.href, {
       method: 'POST',
       headers: await createApiHeadersForGrantsUiBackend({ lockToken }),
       body
     })
-
-    if (!response.ok) {
-      log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
-        method: 'POST',
-        endpoint: url.href,
-        identity: key,
-        errorMessage: `${response.status} - ${response.statusText}`
-      })
-    }
   } catch (err) {
     debug(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
       method: 'POST',
@@ -79,5 +72,18 @@ export async function persistStateToApi(state, key, { lockToken, grantVersion } 
     })
     // NOSONAR TODO: See TGC-873
     // throw err
+    return
+  }
+
+  // A refused save (e.g. 400) means nothing was persisted: surface it.
+  if (!response.ok) {
+    const errorMessage = `${response.status} - ${response.statusText}`
+    log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+      method: 'POST',
+      endpoint: url.href,
+      identity: key,
+      errorMessage
+    })
+    throw createBoomError(response.status, `Failed to persist state: ${errorMessage}`)
   }
 }

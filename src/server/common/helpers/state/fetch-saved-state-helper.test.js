@@ -402,6 +402,17 @@ describe('State API helpers', () => {
         expect(createApiHeadersForGrantsUiBackend).toHaveBeenCalledWith({ lockToken: 'test-lock-token' })
       })
 
+      it('scopes the DELETE to one application when an applicationRef is given', async () => {
+        mockFetch.mockResolvedValue(createMockFetchResponse({ ok: true, status: HTTP_STATUS.OK, data: {} }))
+
+        await clearSavedStateFromApiByContext(byContextArgs({ applicationRef: 'REF-1' }))
+
+        expect(mockFetch).toHaveBeenCalledWith(
+          `${TEST_BACKEND_URL}/state/?sbi=123456789&grantCode=farm-payments&grantVersion=1.0.0&applicationRef=REF-1`,
+          expect.objectContaining({ method: 'DELETE' })
+        )
+      })
+
       it('resolves without throwing on 404', async () => {
         mockFetch.mockResolvedValue(createMockFetchResponse({ ok: false, status: HTTP_STATUS.NOT_FOUND }))
 

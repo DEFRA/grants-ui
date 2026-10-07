@@ -351,6 +351,19 @@ describe('formsStatusRedirect', () => {
       }
     )
 
+    it('carries ?ref= onto the /agreement redirect when the request is scoped to an application (multi-application)', async () => {
+      request.query = { ref: 'REF-1' }
+      mockGasStatus('OFFER_SENT')
+
+      await formsStatusRedirect(request, h, context)
+
+      expect(h.redirect).toHaveBeenCalledWith('/agreement?ref=REF-1')
+      expect(request.yar.set).toHaveBeenCalledWith(
+        YarKeys.GRANT_APPLICATION_CONTEXT,
+        expect.objectContaining({ applicationRef: 'REF-1' })
+      )
+    })
+
     it('does not redirect farm-payments to /agreement when GAS status is RECEIVED', async () => {
       mockGasStatus('RECEIVED')
 

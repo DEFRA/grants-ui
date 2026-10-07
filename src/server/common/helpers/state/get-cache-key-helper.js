@@ -1,13 +1,13 @@
 import { getGrantCode } from '../grant-code.js'
 import { BaseError } from '../../utils/errors/BaseError.js'
 import { getAuthenticatedCrn, getAuthenticatedSbi } from '../auth/get-auth-identifiers.js'
-import { YarKeys } from '../../constants/session-keys.js'
 
 /**
  * Generates a cache key from a Hapi request by extracting user, business, and grant identifiers.
  *
- * `referenceNumber` is read from `?ref=`, falling back to whatever is stored
- * in session. A pure read - storing/clearing is `multiApplicationRedirect`'s job.
+ * `referenceNumber` comes from the request (see {@link getApplicationRef}),
+ * never from session: a session is shared across tabs, so two applications
+ * open at once would overwrite each other.
  *
  * @param {import('@defra/forms-engine-plugin/engine/types.js').AnyRequest} request - The Hapi request object containing authentication credentials and route parameters.
  * @returns {{ sbi: string, grantCode: string, referenceNumber?: string }} An object containing identifiers to be used as a cache key.
@@ -23,47 +23,90 @@ export const getCacheKey = (request) => {
     throw BaseError.wrap(new Error('Missing grantCode'))
   }
 
-  const queryRef = /** @type {string | undefined} */ (request.query?.ref) || undefined
-  const referenceNumber = queryRef ?? getReferenceNumberFromSession(request, grantCode)
+  const referenceNumber = getApplicationRef(request)
 
   return { sbi, grantCode, referenceNumber }
 }
 
 /**
- * Reads the session-stored `referenceNumber` for the given grant, if any.
+ * The application reference this request is for. The multi-application
+ * plugin moves it from `request.query.ref` to `request.app.applicationRef`
+ * in `onPreHandler`, so both places are checked.
  *
- * @param {import('@defra/forms-engine-plugin/engine/types.js').AnyRequest} request
- * @param {string} grantCode
+ * @param {{ app?: unknown, query?: unknown }} request
  * @returns {string | undefined}
  */
-function getReferenceNumberFromSession(request, grantCode) {
-  const stored = /** @type {{ grantCode?: string, referenceNumber?: string } | undefined} */ (
-    request.yar?.get(YarKeys.APPLICATION_REF_NUMBER)
+export function getApplicationRef(request) {
+  const app = /** @type {{ applicationRef?: unknown } | undefined} */ (request.app)
+  const stashed = app?.applicationRef
+
+  if (typeof stashed === 'string' && stashed) {
+    return stashed
+  }
+
+  const query = /** @type {{ ref?: unknown } | undefined} */ (request.query)
+  const fromQuery = query?.ref
+
+  return typeof fromQuery === 'string' && fromQuery ? fromQuery : undefined
+}
+
+/**
+ * Re-scopes the request to another application (or none): updates the stash,
+ * drops `ref` from the query and forgets the memoised state envelope.
+ *
+ * @param {{ app?: unknown, query?: unknown }} request
+ * @param {string} [ref]
+ */
+export function setApplicationRef(request, ref) {
+  const mutableRequest = /** @type {{ query?: Record<string, unknown>, app: Record<string, unknown> }} */ (
+    /** @type {unknown} */ (request)
   )
+  mutableRequest.app ??= {}
 
-  return stored?.grantCode === grantCode ? stored.referenceNumber : undefined
+  if (ref) {
+    mutableRequest.app.applicationRef = ref
+  } else {
+    delete mutableRequest.app.applicationRef
+  }
+
+  if (mutableRequest.query && 'ref' in mutableRequest.query) {
+    const { ref: _ref, ...queryWithoutRef } = mutableRequest.query
+    mutableRequest.query = queryWithoutRef
+  }
+
+  mutableRequest.app.stateWithDefinition = undefined
 }
 
 /**
- * Stores `referenceNumber` in session, scoped to `grantCode` so a second
- * multi-application grant in the same session can't pick up the wrong one.
+ * Appends the request's ref to a URL, keeping its query and fragment as they
+ * are. A `ref` already on the target wins.
  *
- * @param {import('@defra/forms-engine-plugin/engine/types.js').AnyRequest} request
- * @param {string} referenceNumber
+ * @param {Parameters<typeof getApplicationRef>[0]} request
+ * @param {string} url
+ * @returns {string}
  */
-export function setApplicationInSession(request, referenceNumber) {
-  const grantCode = getGrantCode(request)
-  request.yar?.set(YarKeys.APPLICATION_REF_NUMBER, { grantCode, referenceNumber })
-}
+export function withApplicationRef(request, url) {
+  const ref = getApplicationRef(request)
 
-/**
- * Clears the session-stored application, so a stale ref can't leak back in
- * on a later request that omits `?ref=`.
- *
- * @param {import('@defra/forms-engine-plugin/engine/types.js').AnyRequest} request
- */
-export function clearApplicationFromSession(request) {
-  request.yar?.clear(YarKeys.APPLICATION_REF_NUMBER)
+  if (!ref) {
+    return url
+  }
+
+  const hashIndex = url.indexOf('#')
+  const hash = hashIndex === -1 ? '' : url.slice(hashIndex)
+  const beforeHash = hashIndex === -1 ? url : url.slice(0, hashIndex)
+
+  const queryIndex = beforeHash.indexOf('?')
+  const path = queryIndex === -1 ? beforeHash : beforeHash.slice(0, queryIndex)
+  const query = queryIndex === -1 ? '' : beforeHash.slice(queryIndex + 1)
+
+  if (new URLSearchParams(query).has('ref')) {
+    return url
+  }
+
+  const refParam = new URLSearchParams({ ref }).toString()
+
+  return `${path}?${query ? `${query}&` : ''}${refParam}${hash}`
 }
 
 /**

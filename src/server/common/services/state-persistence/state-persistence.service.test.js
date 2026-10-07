@@ -200,6 +200,24 @@ describe('StatePersistenceService', () => {
     expect(lockModule.mintLockToken).toHaveBeenCalledWith(lockTokenArgs(1))
   })
 
+  test('clearApplicationState deletes the one application named, scoped by its reference, under the resolved version', async () => {
+    const request = { ...fakeRequest, app: { grantVersion: 1 } }
+
+    await service.clearApplicationState(request, 'REF-1')
+
+    expect(fetchModule.clearSavedStateFromApi).toHaveBeenCalledWith(`${SESSION_KEY}:REF-1`, request, persistOptions(1))
+    expect(lockModule.mintLockToken).toHaveBeenCalledWith(lockTokenArgs(1))
+  })
+
+  test('clearApplicationState scopes by the given reference even when the request itself carries a different one', async () => {
+    getCacheKey.mockReturnValue({ ...CACHE_KEY, referenceNumber: 'REF-ON-REQUEST' })
+    const request = { ...fakeRequest, app: { grantVersion: 1 } }
+
+    await service.clearApplicationState(request, 'REF-1')
+
+    expect(fetchModule.clearSavedStateFromApi).toHaveBeenCalledWith(`${SESSION_KEY}:REF-1`, request, persistOptions(1))
+  })
+
   test('clearState(force=true) logs and rethrows if clearSavedStateFromApi fails', async () => {
     const err = new Error('clear failed')
     fetchModule.clearSavedStateFromApi.mockRejectedValue(err)

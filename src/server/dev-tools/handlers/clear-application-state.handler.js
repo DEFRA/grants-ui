@@ -2,7 +2,6 @@ import { getFormsCacheService } from '../../common/helpers/forms-cache/forms-cac
 import { resolveFormDefinition } from '../utils/index.js'
 import { clearParcelCache } from '~/src/server/land-grants/services/parcel-cache.js'
 import { clearSavedStateFromApiByContext } from '~/src/server/common/helpers/state/fetch-saved-state-helper.js'
-import { clearApplicationFromSession } from '~/src/server/common/helpers/state/get-cache-key-helper.js'
 import { mintLockToken } from '~/src/server/common/helpers/lock/lock-token.js'
 import { log, LogCodes } from '../../common/helpers/logging/log.js'
 import { YarKeys } from '~/src/server/common/constants/session-keys.js'
@@ -55,10 +54,7 @@ async function clearStateWithSlug(request) {
 
   if (clearError) {
     log(LogCodes.SYSTEM.SERVER_ERROR, { errorMessage: clearError.message }, request)
-    return
   }
-
-  clearApplicationFromSession(request)
 }
 
 /**
@@ -68,11 +64,15 @@ async function clearStateWithoutSlug(request) {
   const credentials = /** @type {{ sbi?: string, contactId?: string }} */ (request.auth?.credentials)
   const sbi = credentials?.sbi
   const contactId = credentials?.contactId
-  const grantApplicationContext = /** @type {{ grantCode?: string, grantVersion?: string | number } | null} */ (
-    request.yar?.get(YarKeys.GRANT_APPLICATION_CONTEXT)
-  )
+  const grantApplicationContext =
+    /** @type {{ grantCode?: string, grantVersion?: string | number, applicationRef?: string } | null} */ (
+      request.yar?.get(YarKeys.GRANT_APPLICATION_CONTEXT)
+    )
   const grantCode = grantApplicationContext?.grantCode
   const grantVersion = grantApplicationContext?.grantVersion
+  // Scopes the delete to the application the user left the journey from; without
+  // it, an SBI with several applications on this version could lose a different one.
+  const applicationRef = grantApplicationContext?.applicationRef
 
   if (!sbi || !grantCode || !grantVersion || !contactId) {
     log(
@@ -89,7 +89,7 @@ async function clearStateWithoutSlug(request) {
 
   let clearError
   try {
-    await clearSavedStateFromApiByContext({ sbi, grantCode, grantVersion, lockToken })
+    await clearSavedStateFromApiByContext({ sbi, grantCode, grantVersion, lockToken, applicationRef })
   } catch (err) {
     clearError = /** @type {Error} */ (err)
   }
@@ -100,5 +100,4 @@ async function clearStateWithoutSlug(request) {
   }
 
   request.yar?.clear(YarKeys.GRANT_APPLICATION_CONTEXT)
-  clearApplicationFromSession(request)
 }

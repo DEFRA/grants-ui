@@ -1,6 +1,7 @@
 import { ApplicationStatus } from '../common/constants/application-status.js'
 import { getFormsCacheService } from '../common/helpers/forms-cache/forms-cache.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
+import { getApplicationRef, setApplicationRef } from '../common/helpers/state/get-cache-key-helper.js'
 
 function logStateClearFailure(request, err) {
   log(
@@ -25,12 +26,19 @@ export const applicationDeletedGetRoute = {
       const state = await cacheService.getState(request)
 
       if (state?.applicationStatus === ApplicationStatus.PURGED) {
+        // A ref-keyed application must keep its `$$__referenceNumber` (the backend
+        // rejects a save without it); a single-application grant drops it as before.
+        // eslint-disable-next-line camelcase
+        const $$__referenceNumber = getApplicationRef(request) ? state.$$__referenceNumber : undefined
+
         await cacheService.setState(
           /** @type {import('@defra/forms-engine-plugin/engine/types.js').AnyFormRequest} */ (
             /** @type {unknown} */ (request)
           ),
           {
-            applicationStatus: ApplicationStatus.PURGED
+            applicationStatus: ApplicationStatus.PURGED,
+            // eslint-disable-next-line camelcase
+            ...($$__referenceNumber && { $$__referenceNumber })
           }
         )
 
@@ -67,6 +75,9 @@ export const applicationDeletedPostRoute = {
       /** @type {import('@defra/forms-engine-plugin/types').AnyFormRequest} */ (/** @type {unknown} */ (request)),
       true
     )
+
+    // The application no longer exists: its ref must not be put back on the redirect.
+    setApplicationRef(request, undefined)
 
     return h.redirect(`/${request.params.slug}`)
   }

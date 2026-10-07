@@ -172,6 +172,22 @@ export class StatePersistenceService extends CacheService {
   }
 
   /**
+   * Deletes one application's document, scoped by its reference (unlike
+   * {@link clearState}, which is keyed from the request).
+   *
+   * @param {AnyRequest} request
+   * @param {string} referenceNumber
+   * @returns {Promise<void>}
+   */
+  async clearApplicationState(request, referenceNumber) {
+    const { sbi, grantCode } = getCacheKey(request)
+    const key = buildSessionKey({ sbi, grantCode, referenceNumber })
+    const grantVersion = await this._resolveActiveGrantVersion(request)
+    const lockToken = this._buildLockToken(request, grantVersion)
+    await clearSavedStateFromApi(key, request, { lockToken, grantVersion })
+  }
+
+  /**
    * Generate a unique key for this request.
    * @param {AnyRequest} request
    * @returns string

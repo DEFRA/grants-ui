@@ -100,11 +100,14 @@ describe('persistStateToApi', () => {
       )
     })
 
-    it('logs error when response is not ok', async () => {
-      const failedResponse = createMockFetchResponse({ ok: false, status: 500, statusText: 'Internal Server Error' })
+    it('logs and throws when the backend refuses the save - the state was not persisted, so callers must not report success', async () => {
+      const failedResponse = createMockFetchResponse({ ok: false, status: 400, statusText: 'Bad Request' })
       fetch.mockResolvedValue(failedResponse)
 
-      await persistStateToApi(testState, key)
+      await expect(persistStateToApi(testState, key)).rejects.toMatchObject({
+        isBoom: true,
+        output: { statusCode: 400 }
+      })
 
       expect(fetch).toHaveBeenCalledTimes(1)
       expect(log).toHaveBeenCalledWith(

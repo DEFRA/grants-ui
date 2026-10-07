@@ -215,10 +215,12 @@ export async function listApplicationsFromApi({ crn, sbi, grantCode }) {
  * Deletes the state document for a specific grant by sbi, grantCode and grantVersion.
  * Used when the request has no form model (e.g. clearing state from the agreements proxy page).
  *
- * @param {{ sbi: string, grantCode: string, grantVersion: string | number, lockToken: string }} params
+ * `applicationRef` scopes the delete to one application.
+ *
+ * @param {{ sbi: string, grantCode: string, grantVersion: string | number, lockToken: string, applicationRef?: string }} params
  * @returns {Promise<void>}
  */
-export async function clearSavedStateFromApiByContext({ sbi, grantCode, grantVersion, lockToken }) {
+export async function clearSavedStateFromApiByContext({ sbi, grantCode, grantVersion, lockToken, applicationRef }) {
   if (!GRANTS_UI_BACKEND_ENDPOINT?.length) {
     return
   }
@@ -227,6 +229,9 @@ export async function clearSavedStateFromApiByContext({ sbi, grantCode, grantVer
   url.searchParams.set('sbi', sbi)
   url.searchParams.set('grantCode', grantCode)
   url.searchParams.set('grantVersion', String(grantVersion))
+  if (applicationRef) {
+    url.searchParams.set('applicationRef', applicationRef)
+  }
 
   const response = await fetch(url.href, {
     method: 'DELETE',
@@ -257,6 +262,8 @@ export async function clearSavedStateFromApiByContext({ sbi, grantCode, grantVer
  * @property {string} [sbi]
  * @property {string} [grantCode]
  * @property {string} [grantVersion] - The grant version this state belongs to
+ * @property {string} [applicationRef] - The application's reference (stamped on every document)
+ * @property {boolean} [allowMultipleApplications] - Whether the backend keys this document by `applicationRef` rather than version
  * @property {Record<string, unknown>} [state] - The actual saved form state
  */
 
@@ -271,6 +278,7 @@ export async function clearSavedStateFromApiByContext({ sbi, grantCode, grantVer
  *
  * @typedef {object} DefinitionDocument
  * @property {string} [grantCode]
+ * @property {boolean} [allowMultipleApplications] - Hoisted by the backend from the definition's metadata
  * @property {number} [major]
  * @property {number} [minor]
  * @property {number} [patch]

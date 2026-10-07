@@ -6,7 +6,14 @@ import { updateApplicationStatus } from '../../helpers/status/update-application
 import { getApplicationStatus } from '../../services/grant-application/grant-application.service.js'
 import { log, LogCodes } from '../../helpers/logging/log.js'
 import { mintLockToken } from '../../helpers/lock/lock-token.js'
-import { getCacheKey, buildSessionKey } from '../../helpers/state/get-cache-key-helper.js'
+import {
+  getApplicationRef,
+  getCacheKey,
+  buildSessionKey,
+  setApplicationRef,
+  withApplicationRef
+} from '../../helpers/state/get-cache-key-helper.js'
+import { generateUniqueReference } from '@defra/forms-engine-plugin/engine/referenceNumbers.js'
 import agreements from '~/src/config/agreements.js'
 import { getGrantCode } from '../../helpers/grant-code.js'
 import { getGrantVersion } from '../../helpers/grant-version.js'
@@ -78,8 +85,11 @@ function mapStatusToUrl(fromGrantsStatus, gasStatus, redirectRules = []) {
 }
 
 /**
- * Persists the new status to the appropriate storage
- * Uses cache service for CLEARED status, otherwise updates application status
+ * Persists the new status. A single-application grant saves in place as it
+ * always has. A ref-keyed application (see {@link isKeyedByReference}) cannot
+ * keep its old ref (GAS and other services hold records under it), so CLEARED
+ * deletes its document and REOPENED re-saves it under a newly minted ref.
+ *
  * @param {AnyFormRequest} request - The Hapi forms request object
  * @param {string} newStatus - The new status to persist
  * @param {string} previousStatus - The previous status for comparison
@@ -92,45 +102,47 @@ async function persistStatus(request, newStatus, previousStatus, existingState =
   }
 
   const cacheService = getFormsCacheService(request.server)
-
-  // Dropping $$__referenceNumber here is intentional for a standard (single-application)
-  // grant: it's how the forms-engine-plugin knows to mint a fresh one on the next load,
-  // giving the applicant a clean slate.
-  // A multi-application grant can't afford that: the backend keys each application's document
-  // by its ref (see saveApplicationState), so a save with no ref is ambiguous and is rejected
-  // with a 400. For those grants the ref has to be carried forward so the status update
-  // actually reaches the right document.
-  const allowMultipleApplications = request.app.model?.def?.metadata?.allowMultipleApplications === true
+  // eslint-disable-next-line camelcase
+  const { $$__referenceNumber, applicationStatus: _previousApplicationStatus, ...rest } = existingState
+  const keyedByReference = isKeyedByReference(request) && Boolean($$__referenceNumber)
 
   if (newStatus === ApplicationStatus.CLEARED) {
-    await cacheService.setState(
-      request,
-      /** @type {FormSubmissionState} */ (
-        /** @type {unknown} */ ({
-          applicationStatus: newStatus,
-          ...(allowMultipleApplications && { $$__referenceNumber: existingState.$$__referenceNumber })
-        })
-      )
-    )
+    if (keyedByReference) {
+      await cacheService.clearApplicationState(request, /** @type {string} */ ($$__referenceNumber))
+      setApplicationRef(request, undefined)
+    } else {
+      await cacheService.setState(request, {
+        applicationStatus: newStatus
+      })
+    }
   }
 
   if (newStatus === ApplicationStatus.REOPENED) {
-    // eslint-disable-next-line camelcase
-    const { $$__referenceNumber, applicationStatus, ...rest } = existingState
-
-    await cacheService.setState(
-      request,
-      /** @type {FormSubmissionState} */ (
-        /** @type {unknown} */ ({
-          ...rest,
-          // eslint-disable-next-line camelcase
-          ...(allowMultipleApplications && { $$__referenceNumber }),
-          // eslint-disable-next-line camelcase
-          previousReferenceNumber: $$__referenceNumber,
-          applicationStatus: newStatus
-        })
-      )
+    const reopened = /** @type {FormSubmissionState} */ (
+      /** @type {unknown} */ ({
+        ...rest,
+        // eslint-disable-next-line camelcase
+        previousReferenceNumber: $$__referenceNumber,
+        applicationStatus: newStatus
+      })
     )
+
+    if (keyedByReference) {
+      // Same prefix the forms engine uses when it mints a reference itself.
+      const prefix = String(request.app.model?.def?.metadata?.referenceNumberPrefix ?? '')
+      const newReferenceNumber = generateUniqueReference(prefix)
+
+      await cacheService.setState(
+        request,
+        /** @type {FormSubmissionState} */ (
+          /** @type {unknown} */ ({ ...reopened, $$__referenceNumber: newReferenceNumber })
+        )
+      )
+      await cacheService.clearApplicationState(request, /** @type {string} */ ($$__referenceNumber))
+      setApplicationRef(request, newReferenceNumber)
+    } else {
+      await cacheService.setState(request, reopened)
+    }
   }
 
   if (newStatus !== ApplicationStatus.CLEARED) {
@@ -156,6 +168,16 @@ async function persistStatus(request, newStatus, previousStatus, existingState =
       /** @type {{ lockToken?: string, grantVersion?: string }} */ ({ lockToken, grantVersion })
     )
   }
+}
+
+/**
+ * The grant allows several applications, or the request arrived scoped to one.
+ *
+ * @param {AnyFormRequest} request
+ * @returns {boolean}
+ */
+function isKeyedByReference(request) {
+  return request.app.model?.def?.metadata?.allowMultipleApplications === true || Boolean(getApplicationRef(request))
 }
 
 /**
@@ -483,6 +505,29 @@ export function buildRedirectUrl(grantId, path) {
 }
 
 /**
+ * Context the agreements service (and the clear-state tool) act on after the
+ * user leaves the journey; `applicationRef` scopes a later clear.
+ *
+ * @param {AnyFormRequest} request
+ * @param {string} grantCode
+ * @param {string | number | undefined} grantVersion
+ * @param {string} clientRef
+ * @returns {{ grantCode: string, grantVersion: string | number | undefined, clientRef: string, sbi: string, applicationRef?: string }}
+ */
+function buildGrantApplicationContext(request, grantCode, grantVersion, clientRef) {
+  const { sbi } = getCacheKey(request)
+  const applicationRef = getApplicationRef(request)
+
+  return {
+    grantCode,
+    grantVersion,
+    clientRef: clientRef.toLowerCase(),
+    sbi,
+    ...(applicationRef && { applicationRef })
+  }
+}
+
+/**
  * Handles post-submission redirects and status updates after a form has been submitted.
  *
  * ARCHITECTURAL NOTE
@@ -543,14 +588,10 @@ async function handlePostSubmission(request, h, context, previousStatus, grantCo
   const isAgreementsRedirect = rule.toPath === agreements.get('baseUrl')
   const redirectUrl = isAgreementsRedirect ? rule.toPath : buildRedirectUrl(grantId, rule.toPath)
 
-  const grantVersion = getGrantVersion(request)
-  const { sbi } = getCacheKey(request)
-  request.yar.set(YarKeys.GRANT_APPLICATION_CONTEXT, {
-    grantCode,
-    grantVersion,
-    clientRef: clientRef.toLowerCase(),
-    sbi
-  })
+  request.yar.set(
+    YarKeys.GRANT_APPLICATION_CONTEXT,
+    buildGrantApplicationContext(request, grantCode, getGrantVersion(request), clientRef)
+  )
 
   if (request.path === redirectUrl) {
     return h.continue
@@ -567,7 +608,8 @@ async function handlePostSubmission(request, h, context, previousStatus, grantCo
     request.yar.set(YarKeys.STATUS_CHANGE_REDIRECT, redirectUrl)
   }
 
-  return h.redirect(redirectUrl).takeover()
+  // Off-journey (agreements) redirect: the plugin hook only re-adds the ref to in-journey URLs.
+  return h.redirect(withApplicationRef(request, redirectUrl)).takeover()
 }
 
 /**
@@ -799,14 +841,10 @@ async function handleReturningClaimWindow(request, h, context, redirectContext) 
 
   await persistStatus(request, rule.toGrantsStatus, ApplicationStatus.CLAIM_SUBMITTED, context.state)
 
-  const grantVersion = getGrantVersion(request)
-  const { sbi } = getCacheKey(request)
-  request.yar.set(YarKeys.GRANT_APPLICATION_CONTEXT, {
-    grantCode,
-    grantVersion,
-    clientRef: clientRef.toLowerCase(),
-    sbi
-  })
+  request.yar.set(
+    YarKeys.GRANT_APPLICATION_CONTEXT,
+    buildGrantApplicationContext(request, grantCode, getGrantVersion(request), clientRef)
+  )
 
   const redirectUrl = buildRedirectUrl(grantId, rule.toPath)
   if (request.path === redirectUrl) {

@@ -49,11 +49,6 @@ const STALE_CONTEXT = {
   sbi: '106284736'
 }
 
-const STALE_APPLICATION_REF = {
-  grantCode: 'multi-app-grant',
-  referenceNumber: 'REF-STALE'
-}
-
 /**
  * Builds a Hapi server with the auth router registered. `authenticated` controls
  * whether the stub `defra-id` scheme reports an authenticated user (mirrors a
@@ -117,7 +112,6 @@ async function buildServer({ authenticated = true } = {}) {
     options: { auth: false },
     handler: (request, h) => {
       request.yar.set(YarKeys.GRANT_APPLICATION_CONTEXT, STALE_CONTEXT)
-      request.yar.set(YarKeys.APPLICATION_REF_NUMBER, STALE_APPLICATION_REF)
       request.yar.set('permissions:crn-1:sbi-1', [{ id: 'group-1', level: 'SUBMIT' }])
       request.yar.set('permissions:crn-2:sbi-1', [{ id: 'group-2', level: 'VIEW' }])
       request.yar.set('permissions:crn-1:sbi-2', [])
@@ -131,7 +125,6 @@ async function buildServer({ authenticated = true } = {}) {
     options: { auth: false },
     handler: (request) => ({
       context: request.yar.get(YarKeys.GRANT_APPLICATION_CONTEXT) ?? null,
-      referenceNumber: request.yar.get(YarKeys.APPLICATION_REF_NUMBER) ?? null,
       permissions: request.yar.get('permissions:crn-1:sbi-1'),
       otherUserPermissions: request.yar.get('permissions:crn-2:sbi-1'),
       otherBusinessPermissions: request.yar.get('permissions:crn-1:sbi-2'),
@@ -252,38 +245,6 @@ describe('auth router - GRANT_APPLICATION_CONTEXT clearing', () => {
       const { context } = await contextAfter(server, '/auth/organisation')
 
       expect(context).toBeNull()
-    })
-  })
-})
-
-describe('auth router - APPLICATION_REF clearing', () => {
-  afterEach(() => vi.clearAllMocks())
-
-  describe('/auth/sign-out-oidc', () => {
-    it('clears the persisted multi-application ref for an authenticated sign-out', async () => {
-      const server = await buildServer({ authenticated: true })
-
-      const { referenceNumber } = await contextAfter(server, '/auth/sign-out-oidc?state=xyz')
-
-      expect(referenceNumber).toBeNull()
-    })
-
-    it('clears the persisted multi-application ref even when the session is already gone', async () => {
-      const server = await buildServer({ authenticated: false })
-
-      const { referenceNumber } = await contextAfter(server, '/auth/sign-out-oidc?state=xyz')
-
-      expect(referenceNumber).toBeNull()
-    })
-  })
-
-  describe('/auth/organisation', () => {
-    it('clears the persisted multi-application ref on organisation switch', async () => {
-      const server = await buildServer({ authenticated: true })
-
-      const { referenceNumber } = await contextAfter(server, '/auth/organisation')
-
-      expect(referenceNumber).toBeNull()
     })
   })
 })

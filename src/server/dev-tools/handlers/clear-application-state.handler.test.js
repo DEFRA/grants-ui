@@ -4,7 +4,6 @@ import { getFormsCacheService } from '../../common/helpers/forms-cache/forms-cac
 
 import { resolveFormDefinition } from '../utils/index.js'
 import { clearSavedStateFromApiByContext } from '~/src/server/common/helpers/state/fetch-saved-state-helper.js'
-import { clearApplicationFromSession } from '~/src/server/common/helpers/state/get-cache-key-helper.js'
 import { mintLockToken } from '~/src/server/common/helpers/lock/lock-token.js'
 import { log } from '../../common/helpers/logging/log.js'
 import { YarKeys } from '~/src/server/common/constants/session-keys.js'
@@ -19,10 +18,6 @@ vi.mock('../utils/index.js', () => ({
 
 vi.mock('~/src/server/common/helpers/state/fetch-saved-state-helper.js', () => ({
   clearSavedStateFromApiByContext: vi.fn()
-}))
-
-vi.mock('~/src/server/common/helpers/state/get-cache-key-helper.js', () => ({
-  clearApplicationFromSession: vi.fn()
 }))
 
 vi.mock('~/src/server/common/helpers/lock/lock-token.js', () => ({
@@ -114,23 +109,6 @@ describe('clearApplicationStateHandler', () => {
       expect(mockH.redirect).toHaveBeenCalledWith('/test-slug')
       expect(result).toEqual({ redirect: '/test-slug' })
     })
-
-    it('should clear any stale multi-application ref from session after a successful clear', async () => {
-      mockRequest.params.slug = 'my-application'
-
-      await clearApplicationStateHandler(mockRequest, mockH)
-
-      expect(clearApplicationFromSession).toHaveBeenCalledWith(mockRequest)
-    })
-
-    it('should not clear the multi-application ref from session when clearState fails', async () => {
-      mockRequest.params.slug = 'test-slug'
-      mockCacheService.clearState.mockRejectedValue(new Error('Cache clear failed'))
-
-      await clearApplicationStateHandler(mockRequest, mockH)
-
-      expect(clearApplicationFromSession).not.toHaveBeenCalled()
-    })
   })
 
   describe('when slug is not provided', () => {
@@ -203,7 +181,26 @@ describe('clearApplicationStateHandler', () => {
         sbi: '123456789',
         grantCode: 'farm-payments',
         grantVersion: '2.0.0',
-        lockToken: 'mock-lock-token'
+        lockToken: 'mock-lock-token',
+        applicationRef: undefined
+      })
+    })
+
+    it('scopes the clear to the application the user left the journey from when the context names one', async () => {
+      mockRequest.yar.get.mockReturnValue({
+        grantCode: 'farm-payments',
+        grantVersion: '2.0.0',
+        applicationRef: 'REF-1'
+      })
+
+      await clearApplicationStateHandler(mockRequest, mockH)
+
+      expect(clearSavedStateFromApiByContext).toHaveBeenCalledWith({
+        sbi: '123456789',
+        grantCode: 'farm-payments',
+        grantVersion: '2.0.0',
+        lockToken: 'mock-lock-token',
+        applicationRef: 'REF-1'
       })
     })
 
@@ -213,26 +210,12 @@ describe('clearApplicationStateHandler', () => {
       expect(mockRequest.yar.clear).toHaveBeenCalledWith(YarKeys.GRANT_APPLICATION_CONTEXT)
     })
 
-    it('should clear any stale multi-application ref from session after successful clear', async () => {
-      await clearApplicationStateHandler(mockRequest, mockH)
-
-      expect(clearApplicationFromSession).toHaveBeenCalledWith(mockRequest)
-    })
-
     it('should not clear yar when clearSavedStateFromApiByContext fails', async () => {
       clearSavedStateFromApiByContext.mockRejectedValue(new Error('API error'))
 
       await clearApplicationStateHandler(mockRequest, mockH)
 
       expect(mockRequest.yar.clear).not.toHaveBeenCalled()
-    })
-
-    it('should not clear the multi-application ref from session when clearSavedStateFromApiByContext fails', async () => {
-      clearSavedStateFromApiByContext.mockRejectedValue(new Error('API error'))
-
-      await clearApplicationStateHandler(mockRequest, mockH)
-
-      expect(clearApplicationFromSession).not.toHaveBeenCalled()
     })
 
     it('should not call clearSavedStateFromApiByContext when grantVersion is not set in yar', async () => {

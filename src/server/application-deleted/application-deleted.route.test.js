@@ -94,6 +94,43 @@ describe('applicationDeletedRoute', () => {
     )
   })
 
+  it('keeps $$__referenceNumber on the reset when the request names an application - a multi-application grant keys the document by it and rejects a save without one', async () => {
+    const request = { params: { slug: 'test-grant' }, query: { ref: 'REF-1' }, server: {} }
+    const h = { view: vi.fn() }
+    getState.mockResolvedValue({ applicationStatus: 'PURGED', $$__referenceNumber: 'REF-1', answer: 'x' })
+
+    await applicationDeletedGetRoute.handler(/** @type {any} */ (request), /** @type {any} */ (h))
+
+    expect(setState).toHaveBeenCalledWith(request, { applicationStatus: 'PURGED', $$__referenceNumber: 'REF-1' })
+  })
+
+  it('drops $$__referenceNumber on the reset for a single-application grant (no ref on the request), so a fresh one is minted next time', async () => {
+    const request = { params: { slug: 'test-grant' }, query: {}, server: {} }
+    const h = { view: vi.fn() }
+    getState.mockResolvedValue({ applicationStatus: 'PURGED', $$__referenceNumber: 'REF-1', answer: 'x' })
+
+    await applicationDeletedGetRoute.handler(/** @type {any} */ (request), /** @type {any} */ (h))
+
+    expect(setState).toHaveBeenCalledWith(request, { applicationStatus: 'PURGED' })
+  })
+
+  it('logs a failure, not a success, when the backend refuses the reset', async () => {
+    const request = { params: { slug: 'test-grant' }, query: { ref: 'REF-1' }, server: {} }
+    const h = { view: vi.fn() }
+    getState.mockResolvedValue({ applicationStatus: 'PURGED', $$__referenceNumber: 'REF-1' })
+    setState.mockRejectedValueOnce(new Error('Failed to persist state: 400 - Bad Request'))
+
+    await applicationDeletedGetRoute.handler(/** @type {any} */ (request), /** @type {any} */ (h))
+
+    expect(log).toHaveBeenCalledWith(
+      'STATE_CLEAR_FAILURE',
+      { slug: 'test-grant', errorMessage: 'Failed to persist state: 400 - Bad Request' },
+      request
+    )
+    expect(log).not.toHaveBeenCalledWith('STATE_CLEAR_SUCCESS', expect.anything(), expect.anything())
+    expect(h.view).toHaveBeenCalled()
+  })
+
   it('does not clear state when application status is not PURGED', async () => {
     const { applicationDeletedGetRoute } = await import('./application-deleted.route.js')
 
@@ -213,6 +250,24 @@ describe('applicationDeletedPostRoute', () => {
     expect(clearState).toHaveBeenCalledWith(request, true)
 
     expect(redirect).toHaveBeenCalledWith('/test-grant')
+  })
+
+  it('forgets the deleted application ref on the request, so the redirect cannot carry it', async () => {
+    const { applicationDeletedPostRoute } = await import('./application-deleted.route.js')
+    const request = {
+      params: { slug: 'test-grant' },
+      query: { ref: 'REF-1' },
+      app: { applicationRef: 'REF-1' },
+      server: {}
+    }
+    const h = { redirect: vi.fn() }
+    clearState.mockResolvedValue(undefined)
+
+    await applicationDeletedPostRoute.handler(/** @type {any} */ (request), /** @type {any} */ (h))
+
+    expect(request.query.ref).toBeUndefined()
+    expect(request.app.applicationRef).toBeUndefined()
+    expect(h.redirect).toHaveBeenCalledWith('/test-grant')
   })
 
   it('propagates errors from clearState', async () => {
