@@ -2,7 +2,7 @@
 import { beforeEach, expect, test, vi } from 'vitest'
 import { spawnSync } from 'node:child_process'
 import { cmdDebug, cmdDown, cmdReset, cmdUp } from './commands.js'
-import { getSelectedFormDefIds, runApplyFormDefs } from './form-defs.js'
+import { getSelectedFormDefIds, runApplyFormDefs, runRefreshExamples } from './form-defs.js'
 import { clearState, getTailscaleShareIds, loadState } from './cli-state.js'
 import { enableTailscaleServe, disableTailscaleServe } from './tailscale-serve.js'
 import { revokeAllTailscaleSharesSync } from './tailscale-share.js'
@@ -19,7 +19,8 @@ vi.mock('./docker.js', () => ({
 vi.mock('./form-defs.js', () => ({
   hasLocalFormDefs: vi.fn(() => false),
   getSelectedFormDefIds: vi.fn(() => []),
-  runApplyFormDefs: vi.fn(() => 0)
+  runApplyFormDefs: vi.fn(() => 0),
+  runRefreshExamples: vi.fn(() => 0)
 }))
 vi.mock('./cli-state.js', () => ({
   loadState: vi.fn(() => null),
@@ -45,6 +46,13 @@ test('up reports a failed override apply instead of success after Docker started
   vi.mocked(runApplyFormDefs).mockReturnValueOnce(8)
   expect(cmdUp([], null, false, []).status).toBe(8)
   expect(runApplyFormDefs).toHaveBeenCalledTimes(1)
+})
+
+test('up republishes checked-in examples before reconciling overrides and returns refresh failures', () => {
+  vi.mocked(runRefreshExamples).mockReturnValueOnce(6)
+  expect(cmdUp([], null, false, []).status).toBe(6)
+  expect(runRefreshExamples).toHaveBeenCalledWith(false, false, false)
+  expect(runApplyFormDefs).not.toHaveBeenCalled()
 })
 
 test('up configures Tailscale before starting containers', () => {

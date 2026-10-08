@@ -85,6 +85,7 @@ import { runInteractiveLoop } from './grants-tui/tui-loop.js'
 import { cmdTailscale } from './grants-tui/tailscale.js'
 import { cmdTailscaleShare } from './grants-tui/tailscale-share.js'
 import { cmdTailscaleSetup } from './grants-tui/tailscale-policy.js'
+import { runRefreshExamples } from './grants-tui/form-defs.js'
 
 // Sweep of stale tool logs from tmpdir. macOS auto-clears windows tmpdir
 // after ~3 days
@@ -168,6 +169,11 @@ async function main() {
   }
 
   // Non-interactive commands
+  if (argv[0] === 'refresh-examples') {
+    releaseStdin()
+    process.exitCode = runRefreshExamples(dryRun, argv.includes('--reset-applications'))
+    return
+  }
   if (argv[0] === 'tailscale') {
     releaseStdin()
     process.exitCode = cmdTailscale(argv[1] === 'on', dryRun)

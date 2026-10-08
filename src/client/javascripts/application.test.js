@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 vi.mock('@defra/forms-engine-plugin/shared.js', () => ({

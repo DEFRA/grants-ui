@@ -194,7 +194,7 @@ describe('context', () => {
 
       expect(contextResult.getAssetPath('application.js')).toMatch(/\/public\/.*application\.js/)
       expect(contextResult.getAssetPath('stylesheets/application.scss')).toMatch(
-        /\/public\/.*stylesheets\/application\.scss/
+        /\/public\/.*stylesheets\/application\.css/
       )
 
       const path1 = contextResult.getAssetPath('test.js')

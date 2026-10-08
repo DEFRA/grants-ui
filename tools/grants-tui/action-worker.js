@@ -3,7 +3,7 @@
 // Synchronous command helpers run here so they cannot block the TUI animation.
 // Inherited stdout/stderr both point at the run's log, including grandchildren.
 import { cmdCheck, cmdDebug, cmdDown, cmdReset, cmdRestart, cmdSnyk, cmdUp } from './commands.js'
-import { runApplyFormDefs } from './form-defs.js'
+import { runApplyFormDefs, runRefreshExamples } from './form-defs.js'
 import { cmdJourney } from './journey.js'
 import { generateGasOffer } from './gas-offer.js'
 import { prepareGasClaim } from './gas-prepare-claim.js'
@@ -56,6 +56,7 @@ const actions = {
   check: cmdCheck,
   snyk: cmdSnyk,
   'form-defs': runApplyFormDefs,
+  'refresh-examples': runRefreshExamples,
   'prepare-claim': (application, dryRun) => {
     const result = prepareGasClaim(application, { dryRun })
     if (dryRun) {

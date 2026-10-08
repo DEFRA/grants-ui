@@ -1,9 +1,38 @@
 /* eslint-disable no-console, curly */
 
 import { spawnSync } from 'node:child_process'
+import { readdirSync } from 'node:fs'
+import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import { APPLY_FORM_DEFS_SCRIPT, DIM, RESET_COLOR, ROOT } from './constants.js'
 import { discoverOverrides } from '../apply-local-form-defs.mjs'
+import { loadState } from './cli-state.js'
+import { EXAMPLES_DIRECTORY } from '../prepare-example-grants.js'
+
+export function runRefreshExamples(dryRun = false, resetApplications = false, reapplyOverrides = true) {
+  if (dryRun) {
+    console.log('Would refresh checked-in example grants')
+    return 0
+  }
+  const args = [fileURLToPath(new URL('../refresh-example-grants.js', import.meta.url))]
+  if (resetApplications) {
+    args.push('--reset-applications')
+  }
+  const result = spawnSync(process.execPath, args, { cwd: ROOT, stdio: 'inherit' })
+  if (result.status !== 0) {
+    return result.status ?? 1
+  }
+  const exampleGrants = new Set(
+    readdirSync(join(ROOT, EXAMPLES_DIRECTORY), { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+  )
+  const selection = reapplyOverrides
+    ? getSelectedFormDefIds(loadState()).filter((id) => exampleGrants.has(id.split('::')[0]))
+    : []
+  return selection.length ? runApplyFormDefs('enable', false, selection) : 0
+}
 
 // ---------------------------------------------------------------------------
 // Local form-definition override helpers
