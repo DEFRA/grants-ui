@@ -1,0 +1,26 @@
+engine: V2
+name: Example Grant With Closed Window
+metadata:
+  id: 1d11b13c-281e-469b-891f-3b87407925e9
+  surveyLabel: Example grant with closed window
+  referenceNumberPrefix: EGCW
+  grantRedirectRules: null
+  permissions:
+    enforce: false
+  applicationWindow:
+    closesAt: '2026-01-01T00:00:00Z'
+pages:
+  - title: Example Grant With Closed Window
+    path: /start
+    controller: TerminalPageController
+    components:
+      - name: startInfo
+        title: Html
+        type: Html
+        content: <p class="govuk-body">If you see this page, the application window for this grant is open.</p>
+        id: 9bfed91f-7bc9-4344-a3a8-4f1e07d0b3df
+    id: cd53939a-2b99-4af4-800b-f83c6d008531
+sections: []
+lists: []
+conditions: []
+schema: 2
