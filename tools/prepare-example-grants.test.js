@@ -267,6 +267,7 @@ if (url.pathname.endsWith('/tags')) {
     const bundles = await prepareExampleGrants({ root })
     expect(bundles.map((bundle) => bundle.grant).sort()).toEqual([
       'example-grant-with-auth',
+      'example-grant-with-closed-window',
       'example-grant-with-map',
       'example-grant-with-task-list',
       'example-grant-with-task-list-hide-questions',

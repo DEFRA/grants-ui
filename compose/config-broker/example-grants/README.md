@@ -54,7 +54,7 @@ The acceptance submission schema is extracted from the GAS `PRE_AWARD.questions`
 schema into ignored `acceptance/schemas/`; do not maintain a second schema copy.
 
 Example allowlists contain only `local` settings, directly in each bundle.
-Four use `allowAll: true`; `example-whitelist` retains a restricted CRN/SBI list
+Five use `allowAll: true`; `example-whitelist` retains a restricted CRN/SBI list
 to exercise both allowed and denied access in acceptance tests.
 The allowlists in `../local-allowlists/` are now only for externally managed configs.
 Developer-local overrides in `../local-form-definitions/` remain optional.
