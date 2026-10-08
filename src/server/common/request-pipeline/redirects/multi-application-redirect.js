@@ -88,7 +88,7 @@ async function resolveWithRef(request, h, envelope) {
  */
 async function resolveWithoutRef(request, h, envelope) {
   // Single-application scheme: exactly as before, no applications lookup.
-  if (!(isMultiApplication(envelope))) {
+  if (!isMultiApplication(envelope)) {
     return h.continue
   }
 

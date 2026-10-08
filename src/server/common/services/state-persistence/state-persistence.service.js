@@ -113,8 +113,9 @@ export class StatePersistenceService extends CacheService {
    * @returns {Promise<boolean>}
    */
   async _allowsMultipleApplications(request) {
-    const model = /** @type {{ model?: { def?: { metadata?: { allowMultipleApplications?: boolean } } } }} */ (request.app)
-      .model
+    const model = /** @type {{ model?: { def?: { metadata?: { allowMultipleApplications?: boolean } } } }} */ (
+      request.app
+    ).model
     if (model?.def?.metadata?.allowMultipleApplications === true) {
       return true
     }

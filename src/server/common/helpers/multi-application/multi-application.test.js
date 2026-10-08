@@ -116,7 +116,10 @@ describe('multiApplication plugin', () => {
 
   it('runs even when request.route is absent, as long as the request names a grant', async () => {
     const handler = registerAndGetHandler(server)
-    const request = mockHapiRequest({ params: { slug: 'test-grant' }, auth: { isAuthenticated: true, credentials: { contactId: 'c1' } } })
+    const request = mockHapiRequest({
+      params: { slug: 'test-grant' },
+      auth: { isAuthenticated: true, credentials: { contactId: 'c1' } }
+    })
 
     await handler(request, h)
 
