@@ -22,8 +22,8 @@
   },
   {
     "section": "check-your-eligibility",
-    "slug": "project-located",
-    "name": "Project located — example easting and northing",
+    "slug": "where-project-located",
+    "name": "Where is project located — easting and northing",
     "type": "textFields",
     "fields": {
       "projectLocated__easting": "530000",
@@ -41,10 +41,68 @@
   {
     "section": "check-your-eligibility",
     "slug": "eligible-organisation",
-    "name": "Eligible organisation - yes",
+    "name": "Eligible organisation - no",
     "type": "yesNo",
     "fieldName": "eligibleOrganisation",
-    "value": "true"
+    "value": "false"
+  },
+  {
+    "section": "check-your-eligibility",
+    "slug": "organisation-type",
+    "name": "Organisation type - landlord",
+    "type": "radios",
+    "fieldName": "organisationType",
+    "value": "LANDOWNER_LANDLORD"
+  },
+  {
+    "section": "check-your-eligibility",
+    "slug": "how-many-businesses-will-use-the-water",
+    "name": "How many businesses will use the water - Five or more",
+    "type": "radios",
+    "fieldName": "businessesUsingWater",
+    "value": "FIVE_OR_MORE"
+  },
+  {
+    "section": "check-your-eligibility",
+    "slug": "where-water-will-come-from",
+    "name": "Where water will come from - selects all options",
+    "type": "checkboxes",
+    "fieldName": "whereWaterWillComeFrom",
+    "selectAll": true
+  },
+  {
+    "section": "check-your-eligibility",
+    "slug": "have-planning-permission",
+    "name": "Have planning permission — yes",
+    "type": "radios",
+    "fieldName": "havePlanningPermission",
+    "value": "Y"
+  },
+  {
+    "section": "check-your-eligibility",
+    "slug": "planning-permission-reference-number",
+    "name": "Planning permission reference number - abc123",
+    "type": "textFields",
+    "fields": {
+      "planningPermissionReferenceNumber": "abc123"
+    }
+  },
+  {
+    "section": "check-your-eligibility",
+    "slug": "need-abstraction-licence",
+    "name": "Need abstraction licence — yes",
+    "type": "radios",
+    "fieldName": "haveAbstractionLicence",
+    "value": "Y"
+  },
+  {
+    "section": "check-your-eligibility",
+    "slug": "abstraction-licence-consent-number",
+    "name": "Abstraction licence consent number - def456",
+    "type": "textFields",
+    "fields": {
+      "abstractionLicenceConsentNumber": "def456"
+    }
   },
   {
     "section": "check-your-eligibility",
@@ -53,105 +111,53 @@
     "type": "submitOnly"
   },
   {
-    "section": "business-details",
+    "section": "project-details-estimated-costs",
     "slug": "tasks",
-    "name": "Task list — business-details",
+    "name": "Task list — project-details-estimated-costs",
     "type": "clickLink",
-    "linkSlug": "organisation-type"
+    "linkSlug": "expected-project-start-date"
   },
   {
-    "section": "business-details",
-    "slug": "organisation-type",
-    "name": "Organisation type - landlord",
-    "type": "radios",
-    "fieldName": "organisationType",
-    "value": "LANDLORD"
-  },
-  {
-    "section": "business-details",
-    "slug": "have-management-control",
-    "name": "Have management control - yes",
-    "type": "yesNo",
-    "fieldName": "haveManagementControl",
-    "value": "true"
-  },
-  {
-    "section": "project-details",
-    "slug": "tasks",
-    "name": "Task list — project-details",
-    "type": "clickLink",
-    "linkSlug": "how-much-water"
-  },
-  {
-    "section": "project-details",
-    "slug": "how-much-water",
-    "name": "How much water",
-    "type": "numberField",
-    "fieldName": "howMuchWater",
-    "value": "10000"
-  },
-  {
-    "section": "project-details",
-    "slug": "where-water-will-come-from",
-    "name": "Where water will come from - selects all options",
-    "type": "checkboxes",
-    "fieldName": "whereWaterWillComeFrom",
-    "selectAll": true
-  },
-  {
-    "section": "project-details",
-    "slug": "have-planning-permission",
-    "name": "Have planning permission — yes",
-    "type": "yesNo",
-    "fieldName": "havePlanningPermission",
-    "value": "true"
-  },
-  {
-    "section": "project-details",
-    "slug": "need-abstraction-licence",
-    "name": "Need abstraction licence — not needed",
-    "type": "radios",
-    "fieldName": "needAbstractionLicence",
-    "value": "LICENSE_NOT_NEEDED"
-  },
-  {
-    "section": "project-details",
-    "slug": "supplying-other-farms",
-    "name": "Supplying other farms — selects first option",
-    "type": "selectField",
-    "fieldName": "supplyingOtherFarms"
-  },
-  {
-    "section": "project-details",
+    "section": "project-details-estimated-costs",
     "slug": "expected-project-start-date",
     "name": "Expected project start date - current month year",
     "type": "monthYear",
     "fieldName": "expectedProjectStartDate"
   },
   {
-    "section": "estimated-costs",
-    "slug": "tasks",
-    "name": "Task list — estimated-costs",
-    "type": "clickLink",
-    "linkSlug": "items-planning-to-install"
-  },
-  {
-    "section": "estimated-costs",
+    "section": "project-details-estimated-costs",
     "slug": "items-planning-to-install",
     "name": "Items planning to install - selects first option",
     "type": "checkboxes",
-    "fieldName": "itemsPlanningToInstall"
+    "fieldName": "itemsPlanningToInstall",
+    "selectAll": true
   },
   {
-    "section": "estimated-costs",
-    "slug": "reservoir-lining",
-    "name": "Reservoir lining - synthetic",
-    "type": "radios",
-    "fieldName": "reservoirLining",
-    "value": "synthetic"
+    "section": "project-details-estimated-costs",
+    "slug": "reservoir-storage-capacity",
+    "name": "Reservoir storage capacity - 25,000m³",
+    "type": "numberField",
+    "fieldName": "howMuchWater",
+    "value": "25000"
   },
   {
-    "section": "estimated-costs",
+    "section": "project-details-estimated-costs",
+    "slug": "water-distribution-length",
+    "name": "Water distribution length - 10,000m",
+    "type": "numberField",
+    "fieldName": "waterDistributionLength",
+    "value": "10000"
+  },
+  {
+    "section": "project-details-estimated-costs",
+    "slug": "water-storage-capacity",
+    "name": "Water storage capacity - 1000m³",
+    "type": "numberField",
+    "fieldName": "waterStorageCapacity",
+    "value": "1000"
+  },
+  {
+    "section": "project-details-estimated-costs",
     "slug": "total-estimated-cost",
     "name": "Total estimated cost",
     "type": "submitOnly"
