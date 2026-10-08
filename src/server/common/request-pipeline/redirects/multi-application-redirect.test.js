@@ -115,11 +115,22 @@ describe('multiApplicationRedirect', () => {
   })
 
   describe('malformed ref', () => {
-    it('404s a ref outside the reference format before touching the backend', async () => {
+    it('404s on a multi-application grant, without listing applications', async () => {
+      getStateWithDefinition.mockResolvedValue(multiGrant())
       const request = makeRequest({ query: { ref: 'INVALID:REF' }, routePath: SUB_PAGE, path: '/test-grant/tasks' })
 
       await expect(multiApplicationRedirect(request, h)).rejects.toMatchObject({ output: { statusCode: 404 } })
-      expect(getStateWithDefinition).not.toHaveBeenCalled()
+      expect(listApplicationsFromApi).not.toHaveBeenCalled()
+    })
+
+    it('is ignored on a single-application grant like any other stray parameter', async () => {
+      getStateWithDefinition.mockResolvedValue(singleGrant())
+      const request = makeRequest({ query: { ref: 'INVALID:REF', foo: '1' }, routePath: SUB_PAGE, path: '/test-grant/tasks' })
+
+      const result = await multiApplicationRedirect(request, h)
+
+      expect(h.redirect).toHaveBeenCalledWith('/test-grant/tasks?foo=1')
+      expect(result).toBe(takeover)
       expect(listApplicationsFromApi).not.toHaveBeenCalled()
     })
   })
@@ -333,6 +344,38 @@ describe('multiApplicationRedirect', () => {
       )
       listApplicationsFromApi.mockResolvedValue([{ applicationRef: 'REF-1' }, { applicationRef: 'REF-2' }])
       const request = makeRequest({ routePath: SUB_PAGE, path: '/test-grant/summary' })
+
+      await multiApplicationRedirect(request, h)
+
+      expect(h.redirect).toHaveBeenCalledWith('/test-grant/applications')
+    })
+  })
+
+  describe('the allowMultipleApplications flag changing', () => {
+    it('false -> true takes effect at once: the lone, still version-keyed application gets its ref attached', async () => {
+      getStateWithDefinition.mockResolvedValue(multiGrant({ applicationRef: 'REF-1', allowMultipleApplications: false, state: {} }))
+      listApplicationsFromApi.mockResolvedValue([{ applicationRef: 'REF-1' }])
+      const request = makeRequest({ routePath: SUB_PAGE, path: '/test-grant/tasks' })
+
+      await multiApplicationRedirect(request, h)
+
+      expect(h.redirect).toHaveBeenCalledWith('/test-grant/tasks?ref=REF-1')
+    })
+
+    it('true -> false with one application: stays scoped until its next save re-keys the document (it really is still keyed by reference)', async () => {
+      getStateWithDefinition.mockResolvedValue(singleGrant({ applicationRef: 'REF-1', allowMultipleApplications: true, state: {} }))
+      const request = makeRequest({ query: { ref: 'REF-1' }, routePath: SUB_PAGE, path: '/test-grant/tasks' })
+
+      const result = await multiApplicationRedirect(request, h)
+
+      expect(result).toBe(h.continue)
+      expect(listApplicationsFromApi).not.toHaveBeenCalled()
+    })
+
+    it('true -> false with several applications keeps treating the grant as multi-application', async () => {
+      getStateWithDefinition.mockResolvedValue(singleGrant({ applicationRef: 'REF-1', allowMultipleApplications: true, state: {} }))
+      listApplicationsFromApi.mockResolvedValue([{ applicationRef: 'REF-1' }, { applicationRef: 'REF-2' }])
+      const request = makeRequest({ routePath: SUB_PAGE, path: '/test-grant/tasks' })
 
       await multiApplicationRedirect(request, h)
 

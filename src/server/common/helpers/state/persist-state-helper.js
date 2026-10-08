@@ -2,7 +2,7 @@ import 'dotenv/config'
 import { config } from '~/src/config/config.js'
 import { parseSessionKey } from './get-cache-key-helper.js'
 import { createApiHeadersForGrantsUiBackend } from '../auth/backend-auth-helper.js'
-import { debug, log, LogCodes } from '../logging/log.js'
+import { log, LogCodes } from '../logging/log.js'
 import { createBoomError } from '../errors.js'
 
 // @ts-ignore - TS2589: Type instantiation excessively deep (convict type complexity)
@@ -57,6 +57,7 @@ export async function persistStateToApi(state, key, { lockToken, grantVersion } 
   }
 
   let response
+  let networkError
   try {
     response = await fetch(url.href, {
       method: 'POST',
@@ -64,15 +65,14 @@ export async function persistStateToApi(state, key, { lockToken, grantVersion } 
       body
     })
   } catch (err) {
-    debug(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
-      method: 'POST',
-      endpoint: url.href,
-      identity: key,
-      errorMessage: /** @type {Error} */ (err).message
-    })
-    // NOSONAR TODO: See TGC-873
-    // throw err
-    return
+    networkError = /** @type {Error} */ (err)
+  }
+
+  // Nothing was persisted: surface it (a reopen must not delete the old document after a lost save).
+  if (networkError || !response) {
+    const errorMessage = networkError?.message ?? 'No response'
+    log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, { method: 'POST', endpoint: url.href, identity: key, errorMessage })
+    throw networkError ?? new Error(errorMessage)
   }
 
   // A refused save (e.g. 400) means nothing was persisted: surface it.

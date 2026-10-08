@@ -453,6 +453,18 @@ describe('formsStatusRedirect', () => {
         })
       })
 
+      it('REOPENED never deletes the old document when saving the replacement fails (e.g. the backend was unreachable)', async () => {
+        mockCacheService.setState.mockRejectedValueOnce(new Error('fetch failed'))
+        mockGasStatus('APPLICATION_AMEND')
+
+        await formsStatusRedirect(request, h, context)
+
+        // The post-submission error handler turns the failure into the fallback redirect; what matters
+        // is that nothing was deleted and the request was not moved onto a reference that was never saved.
+        expect(mockCacheService.clearApplicationState).not.toHaveBeenCalled()
+        expect(request.app.referenceNumber).not.toBe('GLD-NEW-REF')
+      })
+
       it('REOPENED deletes the old document only after the new one is saved', async () => {
         const order = []
         mockCacheService.setState.mockImplementation(async () => order.push('save'))

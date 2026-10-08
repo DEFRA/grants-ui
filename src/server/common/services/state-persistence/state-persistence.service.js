@@ -1,4 +1,9 @@
-import { getCacheKey, buildSessionKey } from '~/src/server/common/helpers/state/get-cache-key-helper.js'
+import {
+  getCacheKey,
+  buildSessionKey,
+  getReferenceNumber,
+  setReferenceNumber
+} from '~/src/server/common/helpers/state/get-cache-key-helper.js'
 import { getGrantVersion } from '~/src/server/common/helpers/grant-version.js'
 import { clearSavedStateFromApi } from '../../helpers/state/fetch-saved-state-helper.js'
 import { getStateWithDefinition, resolveVersion } from '../../helpers/state/state-with-definition-context.js'
@@ -92,7 +97,28 @@ export class StatePersistenceService extends CacheService {
     const grantVersion = await this._resolveActiveGrantVersion(request)
     const lockToken = this._buildLockToken(request, grantVersion)
     await persistStateToApi(state, key, { lockToken, grantVersion })
+
+    // A brand-new application of a multi-application grant: scope the creating request to the
+    // reference the forms engine just minted, so this very response's links and redirects carry it.
+    const referenceNumber = state?.$$__referenceNumber
+    if (referenceNumber && !getReferenceNumber(request) && (await this._allowsMultipleApplications(request))) {
+      setReferenceNumber(request, String(referenceNumber))
+    }
+
     return state
+  }
+
+  /**
+   * @param {AnyRequest} request
+   * @returns {Promise<boolean>}
+   */
+  async _allowsMultipleApplications(request) {
+    const model = /** @type {{ model?: { def?: { metadata?: { allowMultipleApplications?: boolean } } } }} */ (request.app)
+      .model
+    if (model?.def?.metadata?.allowMultipleApplications === true) {
+      return true
+    }
+    return (await getStateWithDefinition(request))?.definition?.allowMultipleApplications === true
   }
 
   /**

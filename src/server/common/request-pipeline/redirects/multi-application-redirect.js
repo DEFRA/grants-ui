@@ -21,15 +21,41 @@ export async function multiApplicationRedirect(request, h) {
   }
 
   const ref = getReferenceNumber(request)
+  const stateWithDef = await getStateWithDefinition(request)
 
   if (!ref && request.query?.ref) {
-    // Present but not a reference number: nothing to look up.
-    throw notFound('Unknown application reference')
+    // Present but not a reference number: unknown on a multi-application grant, ignored on a
+    // single-application one like any other stray parameter.
+    if (isMultiApplication(stateWithDef)) {
+      throw notFound('Unknown application reference')
+    }
+    return ignoreReference(request, h)
   }
 
-  const envelope = await getStateWithDefinition(request)
+  return ref ? resolveWithRef(request, h, stateWithDef) : resolveWithoutRef(request, h, stateWithDef)
+}
 
-  return ref ? resolveWithRef(request, h, envelope) : resolveWithoutRef(request, h, envelope)
+/**
+ * Single-application scheme: drop the ref and carry on (a POST keeps its payload).
+ *
+ * @param {AnyRequest} request
+ * @param {ResponseToolkit} h
+ */
+function ignoreReference(request, h) {
+  setReferenceNumber(request, undefined)
+  return request.method === 'get' ? h.redirect(currentUrl(request)).takeover() : h.continue
+}
+
+/**
+ * Flag on, or documents the backend keys by reference (it marks them: flagged grant, or an SBI
+ * already holding several). A grant that just turned the flag off stays multi-application until
+ * its documents are next saved, when the backend re-keys and re-marks them - that is the accurate view.
+ *
+ * @param {StateWithDefinitionEnvelope | null} envelope
+ * @returns {boolean}
+ */
+function isMultiApplication(envelope) {
+  return allowsMultipleApplications(envelope) || envelope?.state?.allowMultipleApplications === true
 }
 
 /**
@@ -38,9 +64,7 @@ export async function multiApplicationRedirect(request, h) {
  * @param {StateWithDefinitionEnvelope | null} envelope
  */
 async function resolveWithRef(request, h, envelope) {
-  const storedByReference = allowsMultipleApplications(envelope) || envelope?.state?.allowMultipleApplications === true
-
-  if (storedByReference) {
+  if (isMultiApplication(envelope)) {
     if (!envelope?.state) {
       throw notFound('Unknown application reference')
     }
@@ -54,8 +78,7 @@ async function resolveWithRef(request, h, envelope) {
   }
 
   // Single-application scheme: a stray ref is ignored, even one matching its only document.
-  setReferenceNumber(request, undefined)
-  return request.method === 'get' ? h.redirect(currentUrl(request)).takeover() : h.continue
+  return ignoreReference(request, h)
 }
 
 /**
@@ -64,12 +87,8 @@ async function resolveWithRef(request, h, envelope) {
  * @param {StateWithDefinitionEnvelope | null} envelope - the backend's unscoped pick
  */
 async function resolveWithoutRef(request, h, envelope) {
-  // The backend marks every document it keys by reference (flagged grant, or an SBI that already
-  // holds several), so the marker catches the unflagged-but-several case without a lookup here.
-  const isMultiApplication = allowsMultipleApplications(envelope) || envelope?.state?.allowMultipleApplications === true
-
   // Single-application scheme: exactly as before, no applications lookup.
-  if (!isMultiApplication) {
+  if (!(isMultiApplication(envelope))) {
     return h.continue
   }
 

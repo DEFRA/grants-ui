@@ -32,7 +32,6 @@ vi.doMock('../logging/log.js', async () => {
 
 let persistStateToApi
 let log
-let debug
 let LogCodes
 
 describe('persistStateToApi', () => {
@@ -54,7 +53,6 @@ describe('persistStateToApi', () => {
       persistStateToApi = helper.persistStateToApi
       const logModule = await import('../logging/log.js')
       log = logModule.log
-      debug = logModule.debug
       LogCodes = logModule.LogCodes
       vi.clearAllMocks()
     })
@@ -120,14 +118,14 @@ describe('persistStateToApi', () => {
       )
     })
 
-    it('logs error when fetch fails', async () => {
+    it('logs and rethrows when fetch fails - a lost save must never look successful', async () => {
       const networkError = new Error(ERROR_MESSAGES.NETWORK_ERROR)
       fetch.mockRejectedValue(networkError)
 
-      await persistStateToApi(testState, key)
+      await expect(persistStateToApi(testState, key)).rejects.toBe(networkError)
 
       expect(fetch).toHaveBeenCalledTimes(1)
-      expect(debug).toHaveBeenCalledWith(
+      expect(log).toHaveBeenCalledWith(
         LogCodes.SYSTEM.EXTERNAL_API_ERROR,
         expect.objectContaining({
           endpoint: expect.stringContaining('/state/'),

@@ -200,6 +200,31 @@ describe('StatePersistenceService', () => {
     expect(lockModule.mintLockToken).toHaveBeenCalledWith(lockTokenArgs(1))
   })
 
+  test('setState scopes the creating request to the reference the engine minted, on a multi-application grant', async () => {
+    const request = { ...fakeRequest, app: { grantVersion: 1, model: { def: { metadata: { allowMultipleApplications: true } } } }, query: {} }
+
+    await service.setState(request, { $$__referenceNumber: 'REF-NEW', answer: 'x' })
+
+    expect(request.app.referenceNumber).toBe('REF-NEW')
+  })
+
+  test('setState leaves a single-application request unscoped', async () => {
+    const request = { ...fakeRequest, app: { grantVersion: 1, model: { def: { metadata: {} } } }, query: {} }
+    contextModule.getStateWithDefinition.mockResolvedValue({ definition: { allowMultipleApplications: false }, state: null })
+
+    await service.setState(request, { $$__referenceNumber: 'REF-NEW' })
+
+    expect(request.app.referenceNumber).toBeUndefined()
+  })
+
+  test('setState does not re-scope a request that already names its application', async () => {
+    const request = { ...fakeRequest, app: { grantVersion: 1, referenceNumber: 'REF-1', model: { def: { metadata: { allowMultipleApplications: true } } } }, query: {} }
+
+    await service.setState(request, { $$__referenceNumber: 'REF-1' })
+
+    expect(request.app.referenceNumber).toBe('REF-1')
+  })
+
   test('clearApplicationState deletes the one application named, scoped by its reference, under the resolved version', async () => {
     const request = { ...fakeRequest, app: { grantVersion: 1 } }
 
