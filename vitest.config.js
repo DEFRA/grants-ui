@@ -5,7 +5,7 @@ export default {
   root: '.',
   test: {
     globals: true,
-    environment: 'jsdom',
+    environment: 'node',
     setupFiles: ['./.vitest/setup-file.js'],
     include: ['**/src/**/*.test.js', '**/scripts/**/*.test.js', '**/tools/**/*.test.js'],
     exclude: ['**/node_modules/**', '**/.stryker-tmp/**', '**/*.contract.test.js', '**/.claude/**'],

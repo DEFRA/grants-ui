@@ -1,7 +1,8 @@
 import * as fs from 'node:fs'
 import * as os from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { runInNewContext } from 'node:vm'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   applyLocalOverrideNameSuffix,
   buildDisableScript,
@@ -93,6 +94,16 @@ describe('findRepoVersion', () => {
 })
 
 describe('discoverOverrides', () => {
+  it('ignores the retired example config repo without affecting real grant repos', () => {
+    writeSiblingOverride('example-grants', 'example-grant-with-auth')
+    writeSiblingOverride('woodland', 'woodland')
+    writeRepoVersion('example-grant-with-auth', '3.27.1')
+    writeRepoVersion('woodland', '1.40.16')
+
+    const { overrides, warnings } = discover()
+    expect(warnings).toEqual([])
+    expect(overrides.map(({ grant }) => grant)).toEqual(['woodland'])
+  })
   it('pairs each override with its bumped repo version', () => {
     writeOverride('woodland')
     writeRepoVersion('woodland', '1.2.3')
@@ -348,6 +359,59 @@ describe('buildEnableScript', () => {
   it('stamps a fresh updatedAt so the forms-engine model cache is invalidated', () => {
     const script = buildEnableScript(overrides, { definitionsByGrant })
     expect(script).toContain('doc.updatedAt = new Date()')
+  })
+
+  it.each([
+    {
+      label: 'enables multiple applications',
+      metadata: { allowMultipleApplications: true },
+      baseFlag: false,
+      expected: true
+    },
+    {
+      label: 'disables multiple applications',
+      metadata: { allowMultipleApplications: false },
+      baseFlag: true,
+      expected: false
+    },
+    { label: 'defaults omitted metadata to false', metadata: undefined, baseFlag: true, expected: false },
+    { label: 'defaults an omitted flag to false', metadata: {}, baseFlag: true, expected: false },
+    { label: 'rejects a string flag', metadata: { allowMultipleApplications: 'true' }, baseFlag: true, expected: false }
+  ])('$label using the override rather than the base document', ({ metadata, baseFlag, expected }) => {
+    const definition = { engine: 'V2', name: 'Woodland', metadata }
+    const base = { grantCode: 'woodland', major: 1, minor: 2, patch: 3, allowMultipleApplications: baseFlag }
+    const coll = {
+      findOne: vi.fn().mockReturnValueOnce(null).mockReturnValueOnce(base),
+      replaceOne: vi.fn()
+    }
+    const script = buildEnableScript(overrides, { definitionsByGrant: { woodland: definition } })
+
+    runInNewContext(script, { db: { getCollection: () => coll }, print: vi.fn() })
+
+    expect(coll.replaceOne).toHaveBeenCalledExactlyOnceWith(
+      { grantCode: 'woodland', major: 1, minor: 2, patch: 4 },
+      expect.objectContaining({ definition, allowMultipleApplications: expected }),
+      { upsert: true }
+    )
+  })
+
+  it('refreshes the flag when only the previously published override exists', () => {
+    const existing = { grantCode: 'woodland', major: 1, minor: 2, patch: 4, allowMultipleApplications: false }
+    const definition = { engine: 'V2', name: 'Woodland', metadata: { allowMultipleApplications: true } }
+    const coll = {
+      findOne: vi.fn().mockReturnValueOnce(existing).mockReturnValueOnce(null),
+      find: () => ({ toArray: () => [] }),
+      replaceOne: vi.fn()
+    }
+    const script = buildEnableScript(overrides, { definitionsByGrant: { woodland: definition } })
+
+    runInNewContext(script, { db: { getCollection: () => coll }, print: vi.fn() })
+
+    expect(coll.replaceOne).toHaveBeenCalledExactlyOnceWith(
+      { grantCode: 'woodland', major: 1, minor: 2, patch: 4 },
+      expect.objectContaining({ definition, allowMultipleApplications: true }),
+      { upsert: true }
+    )
   })
 
   it('is idempotent: reuses an already-present bumped doc as the template', () => {

@@ -102,7 +102,7 @@ Then('the GAS submission should be valid against the {string} schema', async fun
   const request = await Gas.getApplicationSubmission(referenceNumbers.current)
   expect(request).toBeDefined()
 
-  const ajv = new Ajv({ strict: false, formats: { 'date-time': true } })
+  const ajv = new Ajv({ strict: false, allErrors: true, formats: { 'date-time': true } })
   const validate = ajv.compile(schema)
   const valid = validate(request.body.json.answers)
   if (!valid) {

@@ -4,6 +4,7 @@ import { stripVTControlCharacters } from 'node:util'
 import {
   buildMainMenuItems,
   handleChecksCommand,
+  handleRefreshExamplesCommand,
   handleGasStateTool,
   handleTailscaleCommand,
   handleTailscaleSharesCommand,
@@ -211,6 +212,22 @@ test('the main menu groups checks into one entry', () => {
   expect(keys).not.toContain('tailscale')
   expect(keys).not.toEqual(expect.arrayContaining(['lint']))
   expect(keys.filter((key) => ['format', 'test', 'sonar', 'snyk', 'check'].includes(key))).toEqual([])
+})
+
+test('example refresh is available only while containers are running', () => {
+  expect(buildMainMenuItems(null, false).find((item) => item.key === 'refresh-examples')?.disabled).toBe(true)
+  expect(buildMainMenuItems(null, true).find((item) => item.key === 'refresh-examples')?.disabled).toBe(false)
+})
+
+test.each(['keep', 'reset'])('example refresh passes the chosen application reset policy (%s)', async (choice) => {
+  vi.mocked(radioMenu).mockResolvedValueOnce(choice)
+  vi.mocked(runInteractiveAction).mockResolvedValueOnce(0)
+  expect(stripVTControlCharacters(await handleRefreshExamplesCommand(false))).toContain('Example grants refreshed')
+  expect(runInteractiveAction).toHaveBeenCalledWith(
+    'refresh-examples',
+    [false, choice === 'reset'],
+    'Refreshing example grants'
+  )
 })
 
 test('Tailscale and sharing is available from Tools while running and reflects the actual mode', async () => {

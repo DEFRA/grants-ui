@@ -6,6 +6,8 @@ afterEach(() => vi.restoreAllMocks())
 
 test.each([
   ['up', '--tailscale'],
+  ['refresh-examples', '--dry-run'],
+  ['refresh-examples', '--reset-applications'],
   ['tailscale', 'on'],
   ['tailscale', 'off', '--dry-run'],
   ['share', 'create'],

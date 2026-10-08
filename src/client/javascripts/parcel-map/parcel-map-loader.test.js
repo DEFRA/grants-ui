@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 // @ts-nocheck
 import { vi, describe, it, expect, afterEach } from 'vitest'
 import { parseParcelResponse, fetchParcelData } from './parcel-map-loader.js'
