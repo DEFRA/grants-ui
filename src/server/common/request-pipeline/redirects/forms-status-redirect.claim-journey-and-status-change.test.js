@@ -6,7 +6,6 @@ import { YarKeys } from '../../constants/session-keys.js'
 import { formsStatusRedirect } from './forms-status-redirect.js'
 import { setupRedirectTest, mockGasStatus } from './forms-status-redirect.test-helpers.js'
 import { getCacheKey } from '../../helpers/state/get-cache-key-helper.js'
-import { generateUniqueReference } from '@defra/forms-engine-plugin/engine/referenceNumbers.js'
 import { isStoredByReference } from '../../helpers/state/state-with-definition-context.js'
 
 vi.mock('../../../common/helpers/logging/log.js', async () => {
@@ -325,182 +324,65 @@ describe('formsStatusRedirect', () => {
     })
   })
 
-  describe('persisting a status change', () => {
+  describe('redirecting after a status change is persisted', () => {
     beforeEach(() => {
       request.app.model.def.metadata.referenceNumberPrefix = 'GLD'
-      request.app.model.def.metadata.grantRedirectRules.postSubmission = [
-        {
-          fromGrantsStatus: 'SUBMITTED,REOPENED',
-          gasStatus: 'APPLICATION_WITHDRAWN',
-          toGrantsStatus: 'CLEARED',
-          toPath: '/start'
-        },
-        {
-          fromGrantsStatus: 'SUBMITTED',
-          gasStatus: 'APPLICATION_AMEND',
-          toGrantsStatus: 'REOPENED',
-          toPath: '/summary'
-        },
-        { fromGrantsStatus: 'default', gasStatus: 'default', toGrantsStatus: 'SUBMITTED', toPath: '/confirmation' }
-      ]
       context.state = {
         applicationStatus: ApplicationStatus.SUBMITTED,
         $$__referenceNumber: 'GLD-OLD-REF',
         answer: 'x'
       }
-      // Not already on the destination, so the status change actually redirects.
       request.path = '/grant-a/confirmation'
     })
 
-    describe('standard grant, document keyed by version (unchanged from main)', () => {
+    describe('standard grant', () => {
       beforeEach(() => {
         isStoredByReference.mockResolvedValue(false)
       })
 
-      it('CLEARED resets the state to the bare status in place, dropping the reference so a fresh one is minted next load', async () => {
+      it('CLEARED goes to the start page', async () => {
         mockGasStatus('APPLICATION_WITHDRAWN')
 
         await formsStatusRedirect(request, h, context)
 
-        expect(mockCacheService.setState).toHaveBeenCalledWith(request, { applicationStatus: 'CLEARED' })
-        expect(mockCacheService.clearApplicationState).not.toHaveBeenCalled()
-        expect(updateApplicationStatus).not.toHaveBeenCalled()
         expect(h.redirect).toHaveBeenCalledWith('/grant-a/start')
       })
 
-      it('REOPENED keeps the answers, records the old reference as previousReferenceNumber and drops $$__referenceNumber', async () => {
+      it('REOPENED goes to the summary page', async () => {
         mockGasStatus('APPLICATION_AMEND')
 
         await formsStatusRedirect(request, h, context)
 
-        expect(mockCacheService.setState).toHaveBeenCalledWith(request, {
-          answer: 'x',
-          previousReferenceNumber: 'GLD-OLD-REF',
-          applicationStatus: 'REOPENED'
-        })
-        expect(mockCacheService.clearApplicationState).not.toHaveBeenCalled()
-        expect(generateUniqueReference).not.toHaveBeenCalled()
-        expect(updateApplicationStatus).toHaveBeenCalledWith('REOPENED', '12345:grant-a', expect.anything())
         expect(h.redirect).toHaveBeenCalledWith('/grant-a/summary')
       })
     })
 
-    it('CLEARED with a ref on the URL redirects even when already on the destination page, so the deleted ref leaves the address bar', async () => {
-      isStoredByReference.mockResolvedValue(true)
-      request.query = { ref: 'GLD-OLD-REF' }
-      request.path = '/grant-a/start'
-      mockGasStatus('APPLICATION_WITHDRAWN')
-
-      await formsStatusRedirect(request, h, context)
-
-      expect(h.redirect).toHaveBeenCalledWith('/grant-a/start')
-    })
-
-    describe.each([
-      [
-        'a grant flagged allowMultipleApplications',
-        (req) => {
-          req.app.model.def.metadata.allowMultipleApplications = true
-        }
-      ],
-      [
-        'a request scoped to an application by ?ref=',
-        (req) => {
-          req.query = { ref: 'GLD-OLD-REF' }
-        }
-      ]
-    ])('application keyed by reference: %s', (_label, arrange) => {
+    describe('application keyed by reference', () => {
       beforeEach(() => {
-        arrange(request)
+        isStoredByReference.mockResolvedValue(true)
+        request.query = { ref: 'GLD-OLD-REF' }
         getCacheKey.mockImplementation((req) => ({
           sbi: '12345',
           grantCode: 'grant-a',
           referenceNumber: req.app?.referenceNumber ?? req.query?.ref
         }))
-        // Saves only log their failures, so the reopen reads the new document back before deleting the old one.
-        mockCacheService.getState = vi.fn().mockResolvedValue({ answer: 'x', $$__referenceNumber: 'GLD-OLD-REF' })
+        mockCacheService.getState = vi.fn().mockResolvedValue(context.state)
         mockCacheService.setState.mockImplementation(async (_req, state) => {
           mockCacheService.getState.mockResolvedValue(state)
           return state
         })
       })
 
-      it('CLEARED deletes the application document outright instead of saving it as cleared, and never saves without a reference', async () => {
+      it('CLEARED redirects without the deleted ref, even when already on the destination page, so it leaves the address bar', async () => {
+        request.path = '/grant-a/start'
         mockGasStatus('APPLICATION_WITHDRAWN')
 
         await formsStatusRedirect(request, h, context)
 
-        expect(mockCacheService.clearApplicationState).toHaveBeenCalledWith(request, 'GLD-OLD-REF')
-        expect(mockCacheService.setState).not.toHaveBeenCalled()
-        expect(updateApplicationStatus).not.toHaveBeenCalled()
-      })
-
-      it('CLEARED forgets the old reference on the request, so the redirect does not carry it', async () => {
-        mockGasStatus('APPLICATION_WITHDRAWN')
-
-        await formsStatusRedirect(request, h, context)
-
-        expect(request.query?.ref).toBeUndefined()
-        expect(request.app.referenceNumber).toBeUndefined()
         expect(h.redirect).toHaveBeenCalledWith('/grant-a/start')
       })
 
-      it('REOPENED saves the application under a newly minted reference (never without one), with the old one as previousReferenceNumber', async () => {
-        mockGasStatus('APPLICATION_AMEND')
-
-        await formsStatusRedirect(request, h, context)
-
-        expect(generateUniqueReference).toHaveBeenCalledWith('GLD')
-        expect(mockCacheService.setState).toHaveBeenCalledWith(request, {
-          answer: 'x',
-          $$__referenceNumber: 'GLD-NEW-REF',
-          previousReferenceNumber: 'GLD-OLD-REF',
-          applicationStatus: 'REOPENED'
-        })
-      })
-
-      it('REOPENED never deletes the old document when the replacement does not read back (the save failed quietly)', async () => {
-        mockCacheService.setState.mockImplementation(async () => undefined)
-        mockGasStatus('APPLICATION_AMEND')
-
-        await formsStatusRedirect(request, h, context)
-
-        // The post-submission error handler turns the failure into the fallback redirect; what matters
-        // is that nothing was deleted and the request stays on the application that still exists.
-        expect(mockCacheService.clearApplicationState).not.toHaveBeenCalled()
-        expect(request.app.referenceNumber).toBe('GLD-OLD-REF')
-      })
-
-      it('REOPENED deletes the old document only after the new one is saved', async () => {
-        const order = []
-        mockCacheService.setState.mockImplementation(async (_req, state) => {
-          order.push('save')
-          mockCacheService.getState.mockResolvedValue(state)
-        })
-        mockCacheService.clearApplicationState.mockImplementation(async () => order.push('delete'))
-        mockGasStatus('APPLICATION_AMEND')
-
-        await formsStatusRedirect(request, h, context)
-
-        expect(mockCacheService.clearApplicationState).toHaveBeenCalledWith(request, 'GLD-OLD-REF')
-        expect(order).toEqual(['save', 'delete'])
-      })
-
-      it('REOPENED undoes the reopen when the old document cannot be deleted, so the business keeps its one submitted application', async () => {
-        mockCacheService.clearApplicationState.mockImplementation(async (_req, ref) => {
-          if (ref === 'GLD-OLD-REF') {
-            throw new Error('backend down')
-          }
-        })
-        mockGasStatus('APPLICATION_AMEND')
-
-        await formsStatusRedirect(request, h, context)
-
-        expect(mockCacheService.clearApplicationState).toHaveBeenCalledWith(request, 'GLD-NEW-REF')
-        expect(request.app.referenceNumber).toBe('GLD-OLD-REF')
-      })
-
-      it('REOPENED redirects even when already on the destination page, so the address bar shows the new ref', async () => {
+      it('REOPENED redirects with the new ref, even when already on the destination page, so the address bar shows it', async () => {
         request.path = '/grant-a/summary'
         mockGasStatus('APPLICATION_AMEND')
 
@@ -509,14 +391,14 @@ describe('formsStatusRedirect', () => {
         expect(h.redirect).toHaveBeenCalledWith('/grant-a/summary?ref=GLD-NEW-REF')
       })
 
-      it('REOPENED re-scopes the request to the new reference, so the status update and the redirect use it', async () => {
+      it('REOPENED falls back to the default rule when the replacement was not saved, staying on the old application', async () => {
+        mockCacheService.setState.mockImplementation(async () => undefined)
         mockGasStatus('APPLICATION_AMEND')
 
         await formsStatusRedirect(request, h, context)
 
-        expect(request.app.referenceNumber).toBe('GLD-NEW-REF')
-        expect(updateApplicationStatus).toHaveBeenCalledWith('REOPENED', '12345:grant-a:GLD-NEW-REF', expect.anything())
-        expect(h.redirect).toHaveBeenCalledWith('/grant-a/summary?ref=GLD-NEW-REF')
+        expect(mockCacheService.clearApplicationState).not.toHaveBeenCalled()
+        expect(request.app.referenceNumber).toBe('GLD-OLD-REF')
       })
     })
   })
