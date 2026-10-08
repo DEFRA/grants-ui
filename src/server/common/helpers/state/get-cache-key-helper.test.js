@@ -1,10 +1,10 @@
 import { vi } from 'vitest'
 import {
-  getApplicationRef,
+  getReferenceNumber,
   getCacheKey,
   parseSessionKey,
-  setApplicationRef,
-  withApplicationRef
+  setReferenceNumber,
+  withReferenceNumber
 } from './get-cache-key-helper.js'
 
 /** A minimal in-memory stand-in for Hapi's `request.yar`. */
@@ -237,84 +237,84 @@ describe('getCacheKey', () => {
   })
 })
 
-describe('getApplicationRef', () => {
+describe('getReferenceNumber', () => {
   it('returns the ref from the query', () => {
-    expect(getApplicationRef({ query: { ref: 'REF-1' } })).toBe('REF-1')
+    expect(getReferenceNumber({ query: { ref: 'REF-1' } })).toBe('REF-1')
   })
 
   it('prefers the ref stashed on request.app over the query', () => {
-    expect(getApplicationRef({ app: { referenceNumber: 'REF-APP' }, query: { ref: 'REF-Q' } })).toBe('REF-APP')
+    expect(getReferenceNumber({ app: { referenceNumber: 'REF-APP' }, query: { ref: 'REF-Q' } })).toBe('REF-APP')
   })
 
   it('falls back to the query when the stash is empty', () => {
-    expect(getApplicationRef({ app: {}, query: { ref: 'REF-Q' } })).toBe('REF-Q')
+    expect(getReferenceNumber({ app: {}, query: { ref: 'REF-Q' } })).toBe('REF-Q')
   })
 
   it('returns undefined when neither is set', () => {
-    expect(getApplicationRef({ app: {}, query: {} })).toBeUndefined()
-    expect(getApplicationRef({})).toBeUndefined()
+    expect(getReferenceNumber({ app: {}, query: {} })).toBeUndefined()
+    expect(getReferenceNumber({})).toBeUndefined()
   })
 
   it('ignores a ref outside the reference format, which would corrupt the colon-separated session key', () => {
-    expect(getApplicationRef({ query: { ref: 'INVALID:REF' } })).toBeUndefined()
-    expect(getApplicationRef({ query: { ref: 'a b' } })).toBeUndefined()
-    expect(getApplicationRef({ query: { ref: 'GLD-ABC-123' } })).toBe('GLD-ABC-123')
+    expect(getReferenceNumber({ query: { ref: 'INVALID:REF' } })).toBeUndefined()
+    expect(getReferenceNumber({ query: { ref: 'a b' } })).toBeUndefined()
+    expect(getReferenceNumber({ query: { ref: 'GLD-ABC-123' } })).toBe('GLD-ABC-123')
   })
 
   it('ignores a ref that is not a non-empty string', () => {
-    expect(getApplicationRef({ query: { ref: ['A', 'B'] } })).toBeUndefined()
-    expect(getApplicationRef({ query: { ref: '' } })).toBeUndefined()
+    expect(getReferenceNumber({ query: { ref: ['A', 'B'] } })).toBeUndefined()
+    expect(getReferenceNumber({ query: { ref: '' } })).toBeUndefined()
   })
 })
 
-describe('setApplicationRef', () => {
+describe('setReferenceNumber', () => {
   it('stashes the new ref on request.app, removes the old one from the query and forgets the memoised envelope', () => {
     const request = {
       app: { referenceNumber: 'OLD', stateWithDefinition: Promise.resolve(null) },
       query: { ref: 'OLD', a: '1' }
     }
 
-    setApplicationRef(request, 'NEW')
+    setReferenceNumber(request, 'NEW')
 
     expect(request.app.referenceNumber).toBe('NEW')
     expect(request.query).toEqual({ a: '1' })
     expect(request.app.stateWithDefinition).toBeUndefined()
-    expect(getApplicationRef(request)).toBe('NEW')
+    expect(getReferenceNumber(request)).toBe('NEW')
   })
 
   it('clears the ref altogether when called without one', () => {
     const request = { app: { referenceNumber: 'OLD' }, query: { ref: 'OLD' } }
 
-    setApplicationRef(request, undefined)
+    setReferenceNumber(request, undefined)
 
     expect(request.app.referenceNumber).toBeUndefined()
     expect(request.query).toEqual({})
-    expect(getApplicationRef(request)).toBeUndefined()
+    expect(getReferenceNumber(request)).toBeUndefined()
   })
 
   it('copes with a request that has no app or query yet', () => {
     const request = {}
 
-    setApplicationRef(request, 'NEW')
+    setReferenceNumber(request, 'NEW')
 
     expect(request.app.referenceNumber).toBe('NEW')
     expect(request.query).toBeUndefined()
   })
 })
 
-describe('withApplicationRef', () => {
+describe('withReferenceNumber', () => {
   const requestWithRef = (ref) => ({ query: ref ? { ref } : {} })
 
   it('appends the request ref to a bare path', () => {
-    expect(withApplicationRef(requestWithRef('REF-1'), '/grant/summary')).toBe('/grant/summary?ref=REF-1')
+    expect(withReferenceNumber(requestWithRef('REF-1'), '/grant/summary')).toBe('/grant/summary?ref=REF-1')
   })
 
   it('returns the url untouched when the request has no ref', () => {
-    expect(withApplicationRef(requestWithRef(), '/grant/summary')).toBe('/grant/summary')
+    expect(withReferenceNumber(requestWithRef(), '/grant/summary')).toBe('/grant/summary')
   })
 
   it('preserves query parameters already on the target', () => {
-    const result = withApplicationRef(requestWithRef('REF-1'), '/grant/summary?returnUrl=%2Ftasks&page=2')
+    const result = withReferenceNumber(requestWithRef('REF-1'), '/grant/summary?returnUrl=%2Ftasks&page=2')
 
     const params = new URLSearchParams(result.split('?')[1])
     expect(result.startsWith('/grant/summary?')).toBe(true)
@@ -324,31 +324,31 @@ describe('withApplicationRef', () => {
   })
 
   it('does not overwrite a ref the target already carries', () => {
-    expect(withApplicationRef(requestWithRef('REF-1'), '/grant/summary?ref=REF-2')).toBe('/grant/summary?ref=REF-2')
+    expect(withReferenceNumber(requestWithRef('REF-1'), '/grant/summary?ref=REF-2')).toBe('/grant/summary?ref=REF-2')
   })
 
   it('appends to an existing query string without re-encoding what is already there', () => {
-    expect(withApplicationRef(requestWithRef('REF-1'), '/grant/summary?returnUrl=%2Ftasks&page=2')).toBe(
+    expect(withReferenceNumber(requestWithRef('REF-1'), '/grant/summary?returnUrl=%2Ftasks&page=2')).toBe(
       '/grant/summary?returnUrl=%2Ftasks&page=2&ref=REF-1'
     )
   })
 
   it('keeps a fragment at the end of the url', () => {
-    expect(withApplicationRef(requestWithRef('REF-1'), '/grant/summary#main')).toBe('/grant/summary?ref=REF-1#main')
-    expect(withApplicationRef(requestWithRef('REF-1'), '/grant/summary?a=1#main')).toBe(
+    expect(withReferenceNumber(requestWithRef('REF-1'), '/grant/summary#main')).toBe('/grant/summary?ref=REF-1#main')
+    expect(withReferenceNumber(requestWithRef('REF-1'), '/grant/summary?a=1#main')).toBe(
       '/grant/summary?a=1&ref=REF-1#main'
     )
   })
 
   it('reads the ref stashed on request.app too', () => {
-    expect(withApplicationRef({ app: { referenceNumber: 'REF-1' }, query: {} }, '/grant/summary')).toBe(
+    expect(withReferenceNumber({ app: { referenceNumber: 'REF-1' }, query: {} }, '/grant/summary')).toBe(
       '/grant/summary?ref=REF-1'
     )
   })
 
   it('ignores a ref outside the reference format (letters, digits, hyphens), so nothing needs escaping', () => {
-    expect(withApplicationRef(requestWithRef('a b&c'), '/grant/summary')).toBe('/grant/summary')
-    expect(withApplicationRef(requestWithRef('gld-abc-123'), '/grant/summary')).toBe('/grant/summary?ref=gld-abc-123')
+    expect(withReferenceNumber(requestWithRef('a b&c'), '/grant/summary')).toBe('/grant/summary')
+    expect(withReferenceNumber(requestWithRef('gld-abc-123'), '/grant/summary')).toBe('/grant/summary?ref=gld-abc-123')
   })
 })
 

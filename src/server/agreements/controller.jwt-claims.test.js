@@ -63,6 +63,35 @@ describe('agreements user context JWT - real signing', () => {
     expect(payload.grantCode).toBe('farm-payments')
   })
 
+  test('a ?grant= on the URL overrides the stored grantCode, so two tabs on different grants do not share one', async () => {
+    mockRequest.query = { grant: 'woodland' }
+
+    const payload = jwt.decode(await signedToken())
+
+    expect(payload.grantCode).toBe('woodland')
+    expect(payload.clientRef).toBe('sfi123456')
+  })
+
+  test('single application: the grant the redirect puts on the URL matches the stored one, so the token is unchanged', async () => {
+    mockRequest.query = {}
+    const before = jwt.decode(await signedToken())
+
+    mockRequest.query = { grant: 'farm-payments' }
+    const after = jwt.decode(await signedToken())
+
+    expect(after.grantCode).toBe(before.grantCode)
+    expect(after.clientRef).toBe(before.clientRef)
+    expect(after.sbi).toBe(before.sbi)
+  })
+
+  test('ignores a ?grant= that is not a grant code', async () => {
+    mockRequest.query = { grant: 'not a code!' }
+
+    const payload = jwt.decode(await signedToken())
+
+    expect(payload.grantCode).toBe('farm-payments')
+  })
+
   test('without a ?ref= the stored clientRef is used', async () => {
     mockRequest.query = {}
 

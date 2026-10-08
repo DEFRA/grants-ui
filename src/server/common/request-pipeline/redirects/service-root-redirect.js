@@ -1,6 +1,6 @@
 import { getFormsCacheService } from '../../helpers/forms-cache/forms-cache.js'
 import { isApplicationWindowOpen } from '../../helpers/application-window.js'
-import { withApplicationRef } from '../../helpers/state/get-cache-key-helper.js'
+import { withReferenceNumber } from '../../helpers/state/get-cache-key-helper.js'
 import {
   buildRedirectUrl,
   hasMeaningfulPreSubmissionState,
@@ -106,7 +106,7 @@ export async function serviceRootRedirect(request, h) {
 
     // This extension is registered after the multi-application plugin, so its redirect is never
     // seen by that plugin's ref-reattaching hook: the ref has to be carried explicitly here.
-    return h.redirect(withApplicationRef(request, buildRedirectUrl(slug, destinationPath))).takeover()
+    return h.redirect(withReferenceNumber(request, buildRedirectUrl(slug, destinationPath))).takeover()
   } catch {
     return h.continue
   }

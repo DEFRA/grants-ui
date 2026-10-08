@@ -1,7 +1,7 @@
 import { config } from '~/src/config/config.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { YarKeys } from '~/src/server/common/constants/session-keys.js'
-import { getApplicationRef } from '~/src/server/common/helpers/state/get-cache-key-helper.js'
+import { getReferenceNumber } from '~/src/server/common/helpers/state/get-cache-key-helper.js'
 import Jwt from '@hapi/jwt'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
@@ -78,12 +78,19 @@ function resolveGrantApplicationContext(request, authenticatedSbi) {
     return null
   }
 
-  // The session holds one context for the whole browser; a `?ref=` on the URL
-  // names the application this tab is on, so it wins (multi-application grants).
-  const ref = getApplicationRef(request)
+  // The session holds one context for the whole browser; `?grant=` and `?ref=` on the URL
+  // name the grant and application this tab is on, so they win over it.
+  const grant = /** @type {{ grant?: unknown }} */ (request.query ?? {}).grant
+  const ref = getReferenceNumber(request)
 
-  return ref ? { ...storedContext, clientRef: ref.toLowerCase() } : storedContext
+  return {
+    ...storedContext,
+    ...(typeof grant === 'string' && GRANT_CODE_PATTERN.test(grant) && { grantCode: grant }),
+    ...(ref && { clientRef: ref.toLowerCase() })
+  }
 }
+
+const GRANT_CODE_PATTERN = /^[a-z0-9-]+$/i
 
 /**
  * Builds proxy headers for the request

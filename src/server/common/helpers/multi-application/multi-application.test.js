@@ -100,32 +100,27 @@ describe('multiApplication plugin', () => {
     expect(result).toBe(takenOver)
   })
 
-  it('does not run for a route registered in a different plugin realm (e.g. /applications) - would otherwise redirect to itself', async () => {
+  it('runs for a custom grant route outside the forms-engine realm too (e.g. application-deleted), so a bad ref 404s there as well', async () => {
     const handler = registerAndGetHandler(server)
     const request = mockHapiRequest({
       params: { slug: 'test-grant' },
+      path: '/test-grant/application-deleted',
       auth: { isAuthenticated: true, credentials: { contactId: 'c1' } },
-      route: { realm: { plugin: 'applications' } }
+      route: { realm: { plugin: 'router' } }
     })
 
-    const result = await handler(request, h)
+    await handler(request, h)
 
-    expect(result).toBe(h.continue)
-    expect(multiApplicationRedirect).not.toHaveBeenCalled()
+    expect(multiApplicationRedirect).toHaveBeenCalledWith(request, h)
   })
 
-  it('does not run when request.route is absent', async () => {
+  it('runs even when request.route is absent, as long as the request names a grant', async () => {
     const handler = registerAndGetHandler(server)
-    const request = mockHapiRequest({
-      params: { slug: 'test-grant' },
-      auth: { isAuthenticated: true, credentials: { contactId: 'c1' } }
-    })
-    delete request.route
+    const request = mockHapiRequest({ params: { slug: 'test-grant' }, auth: { isAuthenticated: true, credentials: { contactId: 'c1' } } })
 
-    const result = await handler(request, h)
+    await handler(request, h)
 
-    expect(result).toBe(h.continue)
-    expect(multiApplicationRedirect).not.toHaveBeenCalled()
+    expect(multiApplicationRedirect).toHaveBeenCalled()
   })
 })
 

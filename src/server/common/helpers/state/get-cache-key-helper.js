@@ -5,7 +5,7 @@ import { getAuthenticatedCrn, getAuthenticatedSbi } from '../auth/get-auth-ident
 /**
  * Generates a cache key from a Hapi request by extracting user, business, and grant identifiers.
  *
- * `referenceNumber` comes from the request (see {@link getApplicationRef}),
+ * `referenceNumber` comes from the request (see {@link getReferenceNumber}),
  * never from session: a session is shared across tabs, so two applications
  * open at once would overwrite each other.
  *
@@ -23,7 +23,7 @@ export const getCacheKey = (request) => {
     throw BaseError.wrap(new Error('Missing grantCode'))
   }
 
-  const referenceNumber = getApplicationRef(request)
+  const referenceNumber = getReferenceNumber(request)
 
   return { sbi, grantCode, referenceNumber }
 }
@@ -36,7 +36,7 @@ export const getCacheKey = (request) => {
  * @param {{ app?: unknown, query?: unknown }} request
  * @returns {string | undefined}
  */
-export function getApplicationRef(request) {
+export function getReferenceNumber(request) {
   const app = /** @type {{ referenceNumber?: string } | undefined} */ (request.app)
 
   if (app?.referenceNumber) {
@@ -60,7 +60,7 @@ export const REFERENCE_NUMBER_PATTERN = /^[A-Z0-9-]+$/i
  * @param {{ app?: unknown, query?: unknown }} request
  * @param {string} [ref]
  */
-export function setApplicationRef(request, ref) {
+export function setReferenceNumber(request, ref) {
   const mutableRequest = /** @type {{ query?: Record<string, unknown>, app: Record<string, unknown> }} */ (
     /** @type {unknown} */ (request)
   )
@@ -84,12 +84,12 @@ export function setApplicationRef(request, ref) {
  * Appends the request's ref to a URL, keeping its query and fragment as they
  * are. A `ref` already on the target wins.
  *
- * @param {Parameters<typeof getApplicationRef>[0]} request
+ * @param {Parameters<typeof getReferenceNumber>[0]} request
  * @param {string} url
  * @returns {string}
  */
-export function withApplicationRef(request, url) {
-  const ref = getApplicationRef(request)
+export function withReferenceNumber(request, url) {
+  const ref = getReferenceNumber(request)
 
   if (!ref) {
     return url

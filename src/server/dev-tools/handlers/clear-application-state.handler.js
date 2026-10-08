@@ -5,7 +5,7 @@ import { clearSavedStateFromApiByContext } from '~/src/server/common/helpers/sta
 import { mintLockToken } from '~/src/server/common/helpers/lock/lock-token.js'
 import { log, LogCodes } from '../../common/helpers/logging/log.js'
 import { YarKeys } from '~/src/server/common/constants/session-keys.js'
-import { getApplicationRef } from '~/src/server/common/helpers/state/get-cache-key-helper.js'
+import { getReferenceNumber } from '~/src/server/common/helpers/state/get-cache-key-helper.js'
 
 /**
  * @typedef {import('@hapi/hapi').Request & {
@@ -73,7 +73,7 @@ async function clearStateWithoutSlug(request) {
   const grantVersion = grantApplicationContext?.grantVersion
   // Scopes the delete to one application. The ref on the URL names this tab's application;
   // the session context is shared by every tab, so it is only the fallback.
-  const applicationRef = getApplicationRef(request) ?? grantApplicationContext?.applicationRef
+  const applicationRef = getReferenceNumber(request) ?? grantApplicationContext?.applicationRef
 
   if (!sbi || !grantCode || !grantVersion || !contactId) {
     log(

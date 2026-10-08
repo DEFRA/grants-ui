@@ -1,7 +1,7 @@
 import { notFound } from '@hapi/boom'
 import { getAuthenticatedCrn, getAuthenticatedSbi } from '../../helpers/auth/get-auth-identifiers.js'
 import { getGrantCode } from '../../helpers/grant-code.js'
-import { getApplicationRef, setApplicationRef } from '../../helpers/state/get-cache-key-helper.js'
+import { getReferenceNumber, setReferenceNumber } from '../../helpers/state/get-cache-key-helper.js'
 import { getStateWithDefinition } from '../../helpers/state/state-with-definition-context.js'
 import { listApplicationsFromApi } from '../../helpers/state/fetch-saved-state-helper.js'
 
@@ -20,7 +20,7 @@ export async function multiApplicationRedirect(request, h) {
     return h.continue
   }
 
-  const ref = getApplicationRef(request)
+  const ref = getReferenceNumber(request)
 
   if (!ref && request.query?.ref) {
     // Present but not a reference number: nothing to look up.
@@ -54,7 +54,7 @@ async function resolveWithRef(request, h, envelope) {
   }
 
   // Single-application scheme: a stray ref is ignored, even one matching its only document.
-  setApplicationRef(request, undefined)
+  setReferenceNumber(request, undefined)
   return request.method === 'get' ? h.redirect(currentUrl(request)).takeover() : h.continue
 }
 
@@ -99,13 +99,10 @@ async function resolveWithoutRef(request, h, envelope) {
  * @param {string} applicationRef
  */
 function scopeToApplication(request, h, applicationRef) {
-  if (request.method === 'get') {
-    setApplicationRef(request, undefined)
-    return h.redirect(currentUrl(request, applicationRef)).takeover()
-  }
+  // Scoped for the rest of this request too (later redirect producers read the ref from it).
+  setReferenceNumber(request, applicationRef)
 
-  setApplicationRef(request, applicationRef)
-  return h.continue
+  return request.method === 'get' ? h.redirect(currentUrl(request, applicationRef)).takeover() : h.continue
 }
 
 /**

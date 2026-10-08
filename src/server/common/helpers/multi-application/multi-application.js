@@ -1,7 +1,7 @@
 import { multiApplicationRedirect } from '../../request-pipeline/redirects/multi-application-redirect.js'
 import { REDIRECTION_MAX, REDIRECTION_MIN } from '../../request-pipeline/redirects/service-root-redirect.js'
 import { statusCodes } from '../../constants/status-codes.js'
-import { getApplicationRef, withApplicationRef } from '../state/get-cache-key-helper.js'
+import { getReferenceNumber, withReferenceNumber } from '../state/get-cache-key-helper.js'
 
 // The plugin's registered name: Hapi records it on every route the plugin registers.
 const FORMS_ENGINE_PLUGIN_NAME = '@defra/forms-engine-plugin'
@@ -19,12 +19,12 @@ export default {
       // 1. Route the request: validate ?ref=, or pick 0/1/many -> start / continue / selector.
       server.ext('onPostAuth', (request, h) => multiApplicationHandler(request, h))
       // 2. Move ref from request.query to request.app so the forms engine never strips it.
-      server.ext('onPreHandler', (request, h) => hideApplicationRefFromFormsEngine(request, h))
+      server.ext('onPreHandler', (request, h) => hideReferenceNumberFromFormsEngine(request, h))
       // 3. Put ?ref= back on every same-grant redirect (the plugin drops query params on POST).
-      server.ext('onPreResponse', (request, h) => reattachApplicationRef(request, h))
+      server.ext('onPreResponse', (request, h) => reattachReferenceNumber(request, h))
       // 4. Put ?ref= on every same-grant link of the rendered page; last, as it replaces the view
       //    with HTML and the dev journey runner still needs to add its view context before that.
-      server.ext('onPreResponse', (request, h) => reattachApplicationRefToRenderedLinks(request, h), {
+      server.ext('onPreResponse', (request, h) => reattachReferenceNumberToRenderedLinks(request, h), {
         after: ['journey-runner']
       })
     }
@@ -45,7 +45,7 @@ const isFormsEngineRoute = (request) => request.route?.realm?.plugin === FORMS_E
  * @param {ResponseToolkit} h
  * @returns {symbol}
  */
-const hideApplicationRefFromFormsEngine = (request, h) => {
+const hideReferenceNumberFromFormsEngine = (request, h) => {
   if (!isFormsEngineRoute(request)) {
     return h.continue
   }
@@ -84,8 +84,8 @@ const staysInJourney = (slug, location) => location.startsWith(`/${slug}/`) || l
  * @param {ResponseToolkit} h
  * @returns {symbol}
  */
-const reattachApplicationRef = (request, h) => {
-  const ref = getApplicationRef(request)
+const reattachReferenceNumber = (request, h) => {
+  const ref = getReferenceNumber(request)
   const slug = request.params?.slug
   const response = /** @type {{ statusCode?: number, headers?: Record<string, string> }} */ (request.response)
   const headers = response?.headers
@@ -104,7 +104,7 @@ const reattachApplicationRef = (request, h) => {
     return h.continue
   }
 
-  headers.location = withApplicationRef(request, location)
+  headers.location = withReferenceNumber(request, location)
 
   return h.continue
 }
@@ -140,8 +140,8 @@ const isSameGrantLink = (slug, pageUrl, link) => {
  * @param {ResponseToolkit} h
  * @returns {Promise<symbol | ResponseObject>}
  */
-const reattachApplicationRefToRenderedLinks = async (request, h) => {
-  const ref = getApplicationRef(request)
+const reattachReferenceNumberToRenderedLinks = async (request, h) => {
+  const ref = getReferenceNumber(request)
   const slug = request.params?.slug
   const response = /** @type {ViewResponse} */ (request.response)
   const source = response?.source
@@ -159,7 +159,7 @@ const reattachApplicationRefToRenderedLinks = async (request, h) => {
       return match
     }
 
-    return `${attr}=${quote}${withApplicationRef(request, unescaped).replaceAll('&', '&amp;')}${quote}`
+    return `${attr}=${quote}${withReferenceNumber(request, unescaped).replaceAll('&', '&amp;')}${quote}`
   })
 
   const replacement = h
@@ -175,21 +175,17 @@ const reattachApplicationRefToRenderedLinks = async (request, h) => {
 }
 
 /**
- * Runs {@link multiApplicationRedirect} for the plugin's own journey routes,
- * before `page.getState` can create a blank application for a bad `?ref=`.
+ * Runs {@link multiApplicationRedirect} for every grant route, before the plugin's
+ * `page.getState` can create a blank application for a bad `?ref=`.
  *
  * @param {Request} request
  * @param {ResponseToolkit} h
  * @returns {Promise<symbol | ResponseObject>}
  */
 const multiApplicationHandler = async (request, h) => {
-  const slug = request.params?.slug
-  if (
-    !slug ||
-    !request.auth?.isAuthenticated ||
-    !request.auth?.credentials?.contactId ||
-    !isFormsEngineRoute(request)
-  ) {
+  // Every grant route, the custom ones (application-deleted, ...) included: an unknown or
+  // malformed ref must 404 there too, never fall back to an unscoped read or delete.
+  if (!request.params?.slug || !request.auth?.isAuthenticated || !request.auth?.credentials?.contactId) {
     return h.continue
   }
 

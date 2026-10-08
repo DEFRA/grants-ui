@@ -7,11 +7,11 @@ import { getApplicationStatus } from '../../services/grant-application/grant-app
 import { log, LogCodes } from '../../helpers/logging/log.js'
 import { mintLockToken } from '../../helpers/lock/lock-token.js'
 import {
-  getApplicationRef,
+  getReferenceNumber,
   getCacheKey,
   buildSessionKey,
-  setApplicationRef,
-  withApplicationRef
+  setReferenceNumber,
+  withReferenceNumber
 } from '../../helpers/state/get-cache-key-helper.js'
 import { generateUniqueReference } from '@defra/forms-engine-plugin/engine/referenceNumbers.js'
 import agreements from '~/src/config/agreements.js'
@@ -149,7 +149,7 @@ async function persistCleared(request, existingState) {
   }
 
   await cacheService.clearApplicationState(request, String(existingState.$$__referenceNumber))
-  setApplicationRef(request, undefined)
+  setReferenceNumber(request, undefined)
 }
 
 /**
@@ -188,7 +188,7 @@ async function persistReopened(request, existingState) {
     )
   )
   await cacheService.clearApplicationState(request, String(previousReferenceNumber))
-  setApplicationRef(request, newReferenceNumber)
+  setReferenceNumber(request, newReferenceNumber)
 }
 
 /**
@@ -527,7 +527,7 @@ export function buildRedirectUrl(grantId, path) {
  */
 function buildGrantApplicationContext(request, grantCode, grantVersion, clientRef) {
   const { sbi } = getCacheKey(request)
-  const applicationRef = getApplicationRef(request)
+  const applicationRef = getReferenceNumber(request)
 
   return {
     grantCode,
@@ -594,10 +594,10 @@ async function handlePostSubmission(request, h, context, previousStatus, grantCo
   const postSubmissionRules = grantRedirectRules?.postSubmission ?? []
   const rule = mapStatusToUrl(previousStatus, gasStatus, postSubmissionRules)
 
-  const refBefore = getApplicationRef(request)
+  const refBefore = getReferenceNumber(request)
   await persistStatus(request, rule.toGrantsStatus, previousStatus, context.state)
   // A reopen or withdrawal changes the ref; the URL must change with it even if the path does not.
-  const refChanged = getApplicationRef(request) !== refBefore
+  const refChanged = getReferenceNumber(request) !== refBefore
 
   const isAgreementsRedirect = rule.toPath === agreements.get('baseUrl')
   const redirectUrl = isAgreementsRedirect ? rule.toPath : buildRedirectUrl(grantId, rule.toPath)
@@ -622,8 +622,12 @@ async function handlePostSubmission(request, h, context, previousStatus, grantCo
     request.yar.set(YarKeys.STATUS_CHANGE_REDIRECT, redirectUrl)
   }
 
-  // Off-journey (agreements) redirect: the plugin hook only re-adds the ref to in-journey URLs.
-  return h.redirect(withApplicationRef(request, redirectUrl)).takeover()
+  // Off-journey (agreements), multi-application only: the session context is shared by every tab,
+  // so the URL names this tab's grant and application. A single-application grant redirects as on main.
+  const referenceNumber = getReferenceNumber(request)
+  const target =
+    isAgreementsRedirect && referenceNumber ? `${redirectUrl}?grant=${encodeURIComponent(grantCode)}` : redirectUrl
+  return h.redirect(withReferenceNumber(request, target)).takeover()
 }
 
 /**

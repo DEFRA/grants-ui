@@ -1,7 +1,7 @@
 import { ApplicationStatus } from '../common/constants/application-status.js'
 import { getFormsCacheService } from '../common/helpers/forms-cache/forms-cache.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
-import { setApplicationRef } from '../common/helpers/state/get-cache-key-helper.js'
+import { setReferenceNumber } from '../common/helpers/state/get-cache-key-helper.js'
 import { isStoredByReference } from '../common/helpers/state/state-with-definition-context.js'
 
 function logStateClearFailure(request, err) {
@@ -77,7 +77,7 @@ export const applicationDeletedPostRoute = {
     )
 
     // The application no longer exists: its ref must not be put back on the redirect.
-    setApplicationRef(request, undefined)
+    setReferenceNumber(request, undefined)
 
     return h.redirect(`/${request.params.slug}`)
   }
