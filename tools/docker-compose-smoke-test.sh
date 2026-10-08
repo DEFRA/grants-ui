@@ -28,29 +28,8 @@ else
     exit 1
 fi
 
-rm -fr compose/config-broker-local
-
-EXAMPLE_TAG=$(curl -s https://api.github.com/repos/DEFRA/grants-config-example-grants/tags | jq -r '.[0].name')
-
-if [ -z "$EXAMPLE_TAG" ]; then
-  echo "Error: Could not fetch example-grant-with-auth tag"
-  exit 1
-fi
-
-if [ "${USE_LOCAL_CONFIG_DEFINITION:-true}" = "true" ]; then
-  echo "Using local version of the config"
-  "$(dirname "$0")/setup-local-config.sh"
-else
-  echo "Using version $EXAMPLE_TAG of the config for example-grant-with-auth"
-
-  mkdir -p compose/config-broker-local/example-grant-with-auth@$EXAMPLE_TAG
-  curl -L https://raw.githubusercontent.com/DEFRA/grants-config-example-grants/$EXAMPLE_TAG/configurations/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml -o compose/config-broker-local/example-grant-with-auth@$EXAMPLE_TAG/example-grant-with-auth.yaml
-  sed "s/^version:.*/version: $EXAMPLE_TAG/" compose/config-broker/release.yml > compose/config-broker-local/release.yml
-fi
-
-echo "Fetching example-grant-with-auth GAS schema at version $EXAMPLE_TAG"
-mkdir -p acceptance/schemas
-curl -fL "https://raw.githubusercontent.com/DEFRA/grants-config-example-grants/$EXAMPLE_TAG/configurations/example-grant-with-auth/gas/gas.json" -o acceptance/schemas/example-grant-with-auth-submission.schema.json
+# Both local and CI runs use this checkout's examples and downloaded real configs.
+"$(dirname "$0")/setup-local-config.sh"
 
 GRASSLANDS_TAG=$(curl -s https://api.github.com/repos/DEFRA/grants-config-grasslands/tags | jq -r '.[0].name')
 
@@ -129,8 +108,8 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "Running pre-emptive volume cleanse..."
-docker volume prune -f
+echo "Cleaning up this test project's previous stack..."
+eval "${COMPOSE_COMMAND} down -v"
 echo "Building docker compose containers..."
 eval "${COMPOSE_COMMAND} build --quiet > /dev/null 2>&1"
 echo "Starting services with docker compose..."

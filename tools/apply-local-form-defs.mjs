@@ -301,7 +301,11 @@ function discoverSiblingOverrides(siblingReposDir, configBrokerLocalDir, warning
   repoEntries.sort((a, b) => a.name.localeCompare(b.name))
 
   for (const repo of repoEntries) {
-    if (!repo.isDirectory() || !repo.name.startsWith(SIBLING_REPO_PREFIX)) {
+    if (
+      !repo.isDirectory() ||
+      !repo.name.startsWith(SIBLING_REPO_PREFIX) ||
+      repo.name === 'grants-config-example-grants'
+    ) {
       continue
     }
     const configurationsDir = join(siblingReposDir, repo.name, 'configurations')
@@ -547,6 +551,9 @@ function apply(e) {
   doc.patch = e.bumped.patch;
   if ('version' in doc) { doc.version = e.bumped.version; }
   doc.definition = e.definition;
+  // Match backend ingestion: state saves read the top-level flag, not the
+  // nested definition metadata. Recompute it instead of inheriting the template.
+  doc.allowMultipleApplications = e.definition?.metadata?.allowMultipleApplications === true;
   // Stamp a fresh updatedAt so grants-ui's forms-engine model cache (keyed and
   // invalidated only when the definition doc's updatedAt changes) rebuilds the
   // compiled model with the override content. Without this the bumped doc

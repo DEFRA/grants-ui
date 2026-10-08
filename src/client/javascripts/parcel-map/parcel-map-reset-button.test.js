@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 // @ts-nocheck
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { attachResetButton } from './parcel-map-reset-button.js'

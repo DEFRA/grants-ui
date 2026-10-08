@@ -1,0 +1,499 @@
+{
+  "_id": {
+    "$oid": "69b82dfdb5fbf9d13f70f190"
+  },
+  "code": "example-grant-with-auth",
+  "metadata": {
+    "description": "Example grant with auth",
+    "startDate": {
+      "$date": "2026-03-16T15:52:14.999Z"
+    }
+  },
+  "actions": [],
+  "phases": [
+    {
+      "code": "PRE_AWARD",
+      "name": "Pre-award",
+      "description": "Pre-award phase",
+      "questions": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "ExampleGrantWithAuthApplicationPayload",
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "yesNoField",
+          "autocompleteField",
+          "radiosField",
+          "checkboxesField",
+          "numberFieldValidation",
+          "numberFieldRouting",
+          "datePartsField__day",
+          "datePartsField__month",
+          "datePartsField__year",
+          "monthYearField__month",
+          "monthYearField__year",
+          "selectField",
+          "multilineTextField",
+          "emailAddressField",
+          "telephoneNumberField",
+          "ukAddressField__addressLine1",
+          "ukAddressField__town",
+          "ukAddressField__postcode",
+          "eastingNorthingField__easting",
+          "eastingNorthingField__northing",
+          "osGridRefField",
+          "nationalGridFieldNumberField",
+          "latLongField__latitude",
+          "latLongField__longitude",
+          "geospatialField",
+          "projectName",
+          "projectBudget",
+          "repeatItems",
+          "landParcels"
+        ],
+        "properties": {
+          "referenceNumber": {
+            "type": "string"
+          },
+          "yesNoField": {
+            "type": "boolean"
+          },
+          "autocompleteField": {
+            "type": "string"
+          },
+          "radiosField": {
+            "type": "string"
+          },
+          "checkboxesField": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "numberFieldValidation": {
+            "type": "number"
+          },
+          "numberFieldRouting": {
+            "type": "number"
+          },
+          "datePartsField__day": {
+            "type": "number"
+          },
+          "datePartsField__month": {
+            "type": "number"
+          },
+          "datePartsField__year": {
+            "type": "number"
+          },
+          "monthYearField__month": {
+            "type": "number"
+          },
+          "monthYearField__year": {
+            "type": "number"
+          },
+          "selectField": {
+            "type": "string"
+          },
+          "multilineTextField": {
+            "type": "string"
+          },
+          "emailAddressField": {
+            "type": "string",
+            "format": "email"
+          },
+          "telephoneNumberField": {
+            "type": "string"
+          },
+          "ukAddressField__uprn": {
+            "type": ["string", "null"]
+          },
+          "ukAddressField__addressLine1": {
+            "type": "string"
+          },
+          "ukAddressField__addressLine2": {
+            "type": ["string", "null"]
+          },
+          "ukAddressField__town": {
+            "type": "string"
+          },
+          "ukAddressField__county": {
+            "type": ["string", "null"]
+          },
+          "ukAddressField__postcode": {
+            "type": "string"
+          },
+          "eastingNorthingField__easting": {
+            "type": "number"
+          },
+          "eastingNorthingField__northing": {
+            "type": "number"
+          },
+          "osGridRefField": {
+            "type": "string"
+          },
+          "nationalGridFieldNumberField": {
+            "type": "string"
+          },
+          "latLongField__latitude": {
+            "type": "number"
+          },
+          "latLongField__longitude": {
+            "type": "number"
+          },
+          "geospatialField": {
+            "type": "array",
+            "minItems": 1,
+            "description": "GeoJSON-style feature objects captured by the GeospatialField component"
+          },
+          "hiddenField": {
+            "type": ["string", "null"]
+          },
+          "projectName": {
+            "type": "string"
+          },
+          "projectDescription": {
+            "type": "string"
+          },
+          "projectBudget": {
+            "type": "number"
+          },
+          "repeatItems": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object"
+            },
+            "description": "RepeatPage items, each holding repeatItemName (string) and repeatItemAmount (number)"
+          },
+          "landParcels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "detailsConfirmed": {
+            "type": "boolean"
+          },
+          "totalHectaresForSelectedParcels": {
+            "type": "number"
+          },
+          "detailsConfirmedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "applicant": {
+            "type": "object",
+            "description": "Business and customer details sourced from the DAL via the check-details controller",
+            "properties": {
+              "business": {
+                "type": "object",
+                "properties": {
+                  "reference": {
+                    "type": ["string", "null"]
+                  },
+                  "name": {
+                    "type": ["string", "null"]
+                  },
+                  "vat": {
+                    "type": ["string", "null"]
+                  },
+                  "email": {
+                    "type": "object",
+                    "properties": {
+                      "address": {
+                        "type": ["string", "null"]
+                      }
+                    }
+                  },
+                  "phone": {
+                    "type": "object",
+                    "properties": {
+                      "mobile": {
+                        "type": ["string", "null"]
+                      },
+                      "landline": {
+                        "type": ["string", "null"]
+                      }
+                    }
+                  },
+                  "address": {
+                    "type": "object",
+                    "properties": {
+                      "line1": {
+                        "type": ["string", "null"]
+                      },
+                      "line2": {
+                        "type": ["string", "null"]
+                      },
+                      "line3": {
+                        "type": ["string", "null"]
+                      },
+                      "line4": {
+                        "type": ["string", "null"]
+                      },
+                      "line5": {
+                        "type": ["string", "null"]
+                      },
+                      "street": {
+                        "type": ["string", "null"]
+                      },
+                      "city": {
+                        "type": ["string", "null"]
+                      },
+                      "postalCode": {
+                        "type": ["string", "null"]
+                      },
+                      "uprn": {
+                        "type": ["string", "null"]
+                      },
+                      "county": {
+                        "type": ["string", "null"]
+                      },
+                      "buildingName": {
+                        "type": ["string", "null"]
+                      },
+                      "buildingNumberRange": {
+                        "type": ["string", "null"]
+                      },
+                      "dependentLocality": {
+                        "type": ["string", "null"]
+                      },
+                      "doubleDependentLocality": {
+                        "type": ["string", "null"]
+                      },
+                      "flatName": {
+                        "type": ["string", "null"]
+                      },
+                      "pafOrganisationName": {
+                        "type": ["string", "null"]
+                      }
+                    }
+                  }
+                }
+              },
+              "customer": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "object",
+                    "properties": {
+                      "title": {
+                        "type": ["string", "null"]
+                      },
+                      "first": {
+                        "type": ["string", "null"]
+                      },
+                      "middle": {
+                        "type": ["string", "null"]
+                      },
+                      "last": {
+                        "type": ["string", "null"]
+                      }
+                    }
+                  }
+                }
+              },
+              "countyParishHoldings": {
+                "type": ["string", "null"]
+              }
+            }
+          }
+        }
+      },
+      "stages": [
+        {
+          "code": "REVIEW_APPLICATION",
+          "name": "Review Application",
+          "description": "Review the application for eligibility",
+          "statuses": [
+            {
+              "code": "APPLICATION_RECEIVED",
+              "validFrom": []
+            },
+            {
+              "code": "IN_REVIEW",
+              "validFrom": [
+                {
+                  "code": "APPLICATION_RECEIVED",
+                  "processes": []
+                }
+              ]
+            },
+            {
+              "code": "AGREEMENT_GENERATING",
+              "validFrom": [
+                {
+                  "code": "IN_REVIEW",
+                  "processes": []
+                }
+              ],
+              "processes": ["GENERATE_OFFER"]
+            },
+            {
+              "code": "APPLICATION_WITHDRAWN",
+              "validFrom": [
+                {
+                  "code": "IN_REVIEW",
+                  "processes": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "REVIEW_OFFER",
+          "name": "Review Offer",
+          "description": "Review the offer made to the applicant",
+          "statuses": [
+            {
+              "code": "OFFER_SENT",
+              "validFrom": [
+                {
+                  "code": "PRE_AWARD:REVIEW_APPLICATION:AGREEMENT_GENERATING",
+                  "processes": []
+                }
+              ],
+              "processes": ["STORE_AGREEMENT_CASE"]
+            }
+          ]
+        },
+        {
+          "code": "CUSTOMER_AGREEMENT_REVIEW",
+          "name": "Customer Agreement Review",
+          "description": "Customer reviews the agreement offer",
+          "statuses": [
+            {
+              "code": "OFFER_SENT",
+              "validFrom": [
+                {
+                  "code": "PRE_AWARD:REVIEW_OFFER:OFFER_SENT",
+                  "processes": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "POST_AGREEMENT_MONITORING",
+      "name": "Post Agreement Monitoring",
+      "stages": [
+        {
+          "code": "MONITORING",
+          "name": "Monitoring",
+          "statuses": [
+            {
+              "code": "OFFER_ACCEPTED",
+              "validFrom": [
+                {
+                  "code": "PRE_AWARD:CUSTOMER_AGREEMENT_REVIEW:AGREEMENT_OFFERED",
+                  "processes": []
+                }
+              ],
+              "processes": ["UPDATE_AGREEMENT_CASE"]
+            },
+            {
+              "code": "COMPLETE_AGREEMENT",
+              "validFrom": [
+                {
+                  "code": "OFFER_ACCEPTED",
+                  "processes": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "externalStatusMap": {
+    "phases": [
+      {
+        "code": "PRE_AWARD",
+        "stages": [
+          {
+            "code": "REVIEW_APPLICATION",
+            "statuses": [
+              {
+                "code": "IN_REVIEW",
+                "source": "CW",
+                "mappedTo": "PRE_AWARD:REVIEW_APPLICATION:IN_REVIEW"
+              },
+              {
+                "code": "AGREEMENT_GENERATING",
+                "source": "CW",
+                "mappedTo": "PRE_AWARD:REVIEW_APPLICATION:AGREEMENT_GENERATING"
+              },
+              {
+                "code": "APPLICATION_REJECTED",
+                "source": "CW",
+                "mappedTo": "PRE_AWARD:REVIEW_APPLICATION:APPLICATION_REJECTED"
+              },
+              {
+                "code": "offered",
+                "source": "AS",
+                "mappedTo": "PRE_AWARD:REVIEW_OFFER:OFFER_SENT"
+              }
+            ]
+          },
+          {
+            "code": "REVIEW_OFFER",
+            "statuses": [
+              {
+                "code": "rejected",
+                "source": "AS",
+                "mappedTo": "PRE_AWARD:REVIEW_OFFER:OFFER_REJECTED"
+              }
+            ]
+          },
+          {
+            "code": "CUSTOMER_AGREEMENT_REVIEW",
+            "statuses": [
+              {
+                "code": "AGREEMENT_OFFERED",
+                "source": "CW",
+                "mappedTo": "PRE_AWARD:CUSTOMER_AGREEMENT_REVIEW:AGREEMENT_OFFERED"
+              },
+              {
+                "code": "accepted",
+                "source": "AS",
+                "mappedTo": "POST_AGREEMENT_MONITORING:MONITORING:OFFER_ACCEPTED"
+              },
+              {
+                "code": "withdrawn",
+                "source": "AS",
+                "mappedTo": "PRE_AWARD:CUSTOMER_AGREEMENT_REVIEW:OFFER_WITHDRAWN"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": "POST_AGREEMENT_MONITORING",
+        "stages": [
+          {
+            "code": "MONITORING",
+            "statuses": [
+              {
+                "code": "OFFER_ACCEPTED",
+                "source": "CW",
+                "mappedTo": "POST_AGREEMENT_MONITORING:MONITORING:OFFER_ACCEPTED"
+              },
+              {
+                "code": "COMPLETE_AGREEMENT",
+                "source": "CW",
+                "mappedTo": "POST_AGREEMENT_MONITORING:MONITORING:COMPLETE_AGREEMENT"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "amendablePositions": [
+    "PRE_AWARD:REVIEW_APPLICATION:APPLICATION_AMEND",
+    "PRE_AWARD:REVIEW_OFFER:APPLICATION_AMEND",
+    "PRE_AWARD:CUSTOMER_AGREEMENT_REVIEW:APPLICATION_AMEND"
+  ]
+}

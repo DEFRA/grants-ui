@@ -26,7 +26,7 @@ import {
   YELLOW
 } from './constants.js'
 import { composeFileArgs, getLocalImages, getRunningComposeFiles, runCompose } from './docker.js'
-import { hasLocalFormDefs, getSelectedFormDefIds, runApplyFormDefs } from './form-defs.js'
+import { hasLocalFormDefs, getSelectedFormDefIds, runApplyFormDefs, runRefreshExamples } from './form-defs.js'
 import { cmdSonar } from './sonar.js'
 import { getTailscaleShareIds, loadState, saveState, clearState } from './cli-state.js'
 import { cmdTest, testLogPath } from './tests.js'
@@ -270,6 +270,12 @@ export function cmdUp(selectedAddons, scale, dryRun, localServices = []) {
   // recover; removing it could strand an already-recreated UI at its new URL.
   if (status === 0 && !dryRun) {
     elapsedSeconds = ((Date.now() - startTime) / 1000).toFixed(1)
+    // Publish changed checked-in bundles even when broker startup has already
+    // run against this persisted volume.
+    const refreshStatus = runRefreshExamples(false, false, false)
+    if (refreshStatus !== 0) {
+      return { status: refreshStatus, elapsedSeconds }
+    }
     const selectedFormDefIds = getSelectedFormDefIds(loadState())
     saveState(selectedAddons, scale, localServices, selectedFormDefIds)
     console.log(

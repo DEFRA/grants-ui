@@ -6,7 +6,7 @@ const common = {
   paths: ['test/features/**/*.feature'],
   require: ['test/support/world.js', 'test/steps/*.js'],
   requireModule: [],
-  tags: '@runme',
+  tags: '@runme and not @disabled-pmf',
   format: ['progress-bar'],
   parallel: 1
 }

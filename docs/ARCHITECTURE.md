@@ -252,7 +252,7 @@ metadata:
 
 ### Example Complete Configuration
 
-See [`example-grant-with-task-list.yaml`](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-task-list/grants-ui/example-grant-with-task-list.yaml) in the grants config repo for a complete working example that demonstrates:
+See [`example-grant-with-task-list.yaml`](../compose/config-broker/example-grants/example-grant-with-task-list/grants-ui/example-grant-with-task-list.yaml) in this repo for a complete working example that demonstrates:
 
 - Multiple sections with different types of tasks
 - Above and below positioned guidance components

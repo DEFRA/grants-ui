@@ -5,6 +5,7 @@ import TaskListPage from '../page-objects/task-list.page.js'
 import AutocompleteField from '../page-objects/auto-complete.field.js'
 import DatePartsField from '../page-objects/date-parts.field.js'
 import MonthYearField from '../page-objects/month-year.field.js'
+import GeospatialField from '../page-objects/geospatial.field.js'
 
 When('(the user )clicks on {string}', async function (text) {
   await this.page.locator(`//*[contains(text(),'${text}')]`).click()
@@ -90,6 +91,11 @@ When('the user enters the following', async function (dataTable) {
       await element.fill(row.VALUE)
     }
   }
+})
+
+When('the user adds a point named {string} for GeospatialField {string}', async function (description, label) {
+  const geospatialField = new GeospatialField(this.page, label)
+  await geospatialField.addPoint(description)
 })
 
 When('(the user )confirms and sends', async function () {

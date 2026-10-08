@@ -22,10 +22,6 @@ export BASE_URL="${BASE_URL:-http://localhost:3000}"
 export BASE_BACKEND_URL="${BASE_BACKEND_URL:-http://localhost:3001}"
 export MONGO_URI="${MONGO_URI:-mongodb://127.0.0.1:27017/?directConnection=true}"
 
-mkdir -p schemas
-TAGS_JSON=$(curl -sf --ssl-no-revoke https://api.github.com/repos/DEFRA/grants-config-example-grants/tags)
-TAG=$(echo "$TAGS_JSON" | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>process.stdout.write(JSON.parse(d)[0].name))")
-echo "Fetching example-grant-with-auth GAS schema at version $TAG"
-curl -fL --ssl-no-revoke "https://raw.githubusercontent.com/DEFRA/grants-config-example-grants/$TAG/configurations/example-grant-with-auth/gas/gas.json" -o schemas/example-grant-with-auth-submission.schema.json
+node ../tools/prepare-example-grants.js --schemas
 
 ./node_modules/.bin/cucumber-js --config cucumber.local.js
