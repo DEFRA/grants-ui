@@ -6,6 +6,10 @@
 
 A YAML-configured grant application form engine built on Node.js, Hapi, and the [DXT Forms Engine](https://github.com/DEFRA/dxt-forms-engine). Supports multiple grant types with Defra ID authentication, task lists, save-and-return, and submission to GAS.
 
+Development and acceptance-test [example grant configs](compose/config-broker/example-grants/README.md)
+live in this repo. Edit their YAML/JSON and run `gt refresh-examples` to publish
+changes to the local stack; technical versions are generated automatically.
+
 ## Quick Start
 
 ```bash

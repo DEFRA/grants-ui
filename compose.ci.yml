@@ -6,6 +6,11 @@ services:
       DEFRA_ID_SIGN_OUT_REDIRECT_URL: https://grants-ui-proxy:4000/auth/sign-out-oidc
       APP_BASE_URL: https://grants-ui-proxy:4000
       CV_API_STUB_URL: https://grants-ui-proxy:4008/graphql
+      # Journey tests submit location data directly and do not need OS maps.
+      # Keep forms-engine maps disabled even when a local .env has credentials.
+      # The forms-engine configuration requires a non-empty key.
+      FORMS_MAPS_API_KEY: 'acceptance-map-key'
+      FORMS_MAPS_API_SECRET: ''
 
   fcp-defra-id-stub:
     environment:

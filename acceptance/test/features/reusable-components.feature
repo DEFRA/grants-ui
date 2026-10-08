@@ -166,7 +166,7 @@ Feature: Reusable Components
             | National Grid field number  | NG 1234 5678   |
             | Latitude                    | 51.519450      |
             | Longitude                   | -0.127758      |
-            | GeospatialField             | [{"type":"Feature","properties":{"description":"Example location","coordinateGridReference":"ST 00001","centroidGridReference":"ST 00001"},"geometry":{"coordinates":[-2.5723699109417737,53.2380485215034],"type":"Point"},"id":"a"}] |
+        And the user adds a point named "Example location" for GeospatialField "GeospatialField"
         And continues
 
         # hidden-field
