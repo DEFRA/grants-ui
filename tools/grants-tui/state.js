@@ -13,13 +13,14 @@ const RESULT_MARKER = 'GT_STATE_RESULT:'
 /**
  * Build the exact application-state filter. SBI values are persisted as strings.
  *
- * @param {{ grantCode: string, sbi: string|number, grantVersion?: string }} options
+ * @param {{ grantCode: string, sbi: string|number, grantVersion?: string, applicationRef?: string|null }} options
  */
-export function buildStateQuery({ grantCode, sbi, grantVersion }) {
+export function buildStateQuery({ grantCode, sbi, grantVersion, applicationRef }) {
   return {
     grantCode,
     sbi: String(sbi),
-    ...(grantVersion ? { grantVersion } : {})
+    ...(grantVersion ? { grantVersion } : {}),
+    ...(applicationRef !== undefined ? { applicationRef } : {})
   }
 }
 
@@ -27,7 +28,7 @@ export function buildStateQuery({ grantCode, sbi, grantVersion }) {
  * Build a read-only mongosh script. JSON.stringify safely quotes user-provided
  * filter values before they are embedded in JavaScript.
  *
- * @param {Record<string, string>} query
+ * @param {Record<string, string|null>} query
  */
 export function buildStateScript(query) {
   return (
@@ -43,7 +44,7 @@ export function buildStateScript(query) {
 export function buildStateCatalogScript() {
   return (
     `const documents = db.getCollection(${JSON.stringify(STATE_COLLECTION)})\n` +
-    '.find({}, { _id: 0, grantCode: 1, sbi: 1, grantVersion: 1 }).toArray();\n' +
+    '.find({}, { _id: 0, grantCode: 1, sbi: 1, grantVersion: 1, applicationRef: 1 }).toArray();\n' +
     `print(${JSON.stringify(RESULT_MARKER)} + EJSON.stringify(documents));\n`
   )
 }
@@ -72,7 +73,7 @@ function stateCommand(input) {
  */
 
 /**
- * @param {{ grantCode: string, sbi: string, grantVersion?: string }} options
+ * @param {{ grantCode: string, sbi: string, grantVersion?: string, applicationRef?: string|null }} options
  * @param {AbortSignal | undefined} signal
  * @param {StateExecutor} [execute]
  */
@@ -131,11 +132,11 @@ function fetchStateScript(input, signal, execute) {
 /**
  * Inspect persisted application state through the local MongoDB container.
  *
- * @param {{ grantCode: string, sbi: string, grantVersion?: string, json?: boolean }} options
+ * @param {{ grantCode: string, sbi: string, grantVersion?: string, applicationRef?: string|null, json?: boolean }} options
  * @param {typeof spawnSync} [spawn]
  * @returns {number} process exit code
  */
-export function cmdState({ grantCode, sbi, grantVersion, json = false }, spawn = spawnSync) {
+export function cmdState({ grantCode, sbi, grantVersion, applicationRef, json = false }, spawn = spawnSync) {
   if (!grantCode || !sbi) {
     console.error(
       `\n  ${RED}✖${RESET_COLOR}  Usage: gt state <grant-code> --sbi <sbi> [--grant-version <version>] [--json]\n`
@@ -143,7 +144,9 @@ export function cmdState({ grantCode, sbi, grantVersion, json = false }, spawn =
     return 2
   }
 
-  const { args, input } = stateCommand(buildStateScript(buildStateQuery({ grantCode, sbi, grantVersion })))
+  const { args, input } = stateCommand(
+    buildStateScript(buildStateQuery({ grantCode, sbi, grantVersion, applicationRef }))
+  )
   const result = spawn('docker', args, {
     input,
     cwd: ROOT,

@@ -219,3 +219,41 @@ test('each selected version creates a separate refresh baseline and queries only
   expect(fetch).toHaveBeenCalledWith({ grantCode: 'example-grant', sbi: '123456789', grantVersion: '2.0.0' }, signal)
   expect(result.text).not.toContain('1.0.0')
 })
+
+test('offers all references and scopes the selected state to one application', async () => {
+  vi.mocked(fetchStateCatalog).mockResolvedValue(
+    ['REF-1', 'REF-2', 'REF-3', 'REF-4'].map((applicationRef) => ({ ...document, sbi: '123456789', applicationRef }))
+  )
+  vi.mocked(radioMenu)
+    .mockResolvedValueOnce('example-grant')
+    .mockResolvedValueOnce('123456789')
+    .mockResolvedValueOnce('1.0.0')
+    .mockResolvedValueOnce('REF-3')
+  await inspectState()
+  expect(vi.mocked(radioMenu).mock.calls[3][0].map((item) => item.key)).toEqual(['REF-1', 'REF-2', 'REF-3', 'REF-4'])
+  expect(saveInspectorSelection).toHaveBeenCalledExactlyOnceWith({
+    grantCode: 'example-grant',
+    sbi: '123456789',
+    grantVersion: '1.0.0',
+    applicationRef: 'REF-3'
+  })
+  expect(viewText).toHaveBeenCalledWith(
+    expect.objectContaining({ subtitle: expect.stringContaining('Reference REF-3') })
+  )
+})
+
+test('opens a sole referenced application without an extra selection menu', async () => {
+  vi.mocked(fetchStateCatalog).mockResolvedValue([{ ...document, sbi: '123456789', applicationRef: 'REF-1' }])
+  vi.mocked(radioMenu)
+    .mockResolvedValueOnce('example-grant')
+    .mockResolvedValueOnce('123456789')
+    .mockResolvedValueOnce('1.0.0')
+  await inspectState()
+  expect(vi.mocked(radioMenu).mock.calls.some((call) => call[1] === 'Select an application reference')).toBe(false)
+  expect(saveInspectorSelection).toHaveBeenCalledExactlyOnceWith({
+    grantCode: 'example-grant',
+    sbi: '123456789',
+    grantVersion: '1.0.0',
+    applicationRef: 'REF-1'
+  })
+})
