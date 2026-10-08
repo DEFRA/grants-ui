@@ -49,6 +49,19 @@ describe('multiApplicationRedirect', () => {
     route: { path: routePath }
   })
 
+  describe('backend unavailable', () => {
+    it('continues without deciding anything, so the failure surfaces later with full context (as on main)', async () => {
+      getStateWithDefinition.mockRejectedValue(new Error('backend down'))
+      const request = makeRequest({ query: { ref: 'REF-1' } })
+
+      const result = await multiApplicationRedirect(request, h)
+
+      expect(result).toBe(h.continue)
+      expect(listApplicationsFromApi).not.toHaveBeenCalled()
+      expect(h.redirect).not.toHaveBeenCalled()
+    })
+  })
+
   describe('multi-application grant, with a ref', () => {
     it('continues when the backend resolves state for that ref, without listing applications', async () => {
       getStateWithDefinition.mockResolvedValue(multiGrant())

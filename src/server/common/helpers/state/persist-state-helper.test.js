@@ -32,6 +32,7 @@ vi.doMock('../logging/log.js', async () => {
 
 let persistStateToApi
 let log
+let debug
 let LogCodes
 
 describe('persistStateToApi', () => {
@@ -53,6 +54,7 @@ describe('persistStateToApi', () => {
       persistStateToApi = helper.persistStateToApi
       const logModule = await import('../logging/log.js')
       log = logModule.log
+      debug = logModule.debug
       LogCodes = logModule.LogCodes
       vi.clearAllMocks()
     })
@@ -98,14 +100,11 @@ describe('persistStateToApi', () => {
       )
     })
 
-    it('logs and throws when the backend refuses the save - the state was not persisted, so callers must not report success', async () => {
-      const failedResponse = createMockFetchResponse({ ok: false, status: 400, statusText: 'Bad Request' })
+    it('logs error when response is not ok', async () => {
+      const failedResponse = createMockFetchResponse({ ok: false, status: 500, statusText: 'Internal Server Error' })
       fetch.mockResolvedValue(failedResponse)
 
-      await expect(persistStateToApi(testState, key)).rejects.toMatchObject({
-        isBoom: true,
-        output: { statusCode: 400 }
-      })
+      await persistStateToApi(testState, key)
 
       expect(fetch).toHaveBeenCalledTimes(1)
       expect(log).toHaveBeenCalledWith(
@@ -118,14 +117,14 @@ describe('persistStateToApi', () => {
       )
     })
 
-    it('logs and rethrows when fetch fails - a lost save must never look successful', async () => {
+    it('logs error when fetch fails', async () => {
       const networkError = new Error(ERROR_MESSAGES.NETWORK_ERROR)
       fetch.mockRejectedValue(networkError)
 
-      await expect(persistStateToApi(testState, key)).rejects.toBe(networkError)
+      await persistStateToApi(testState, key)
 
       expect(fetch).toHaveBeenCalledTimes(1)
-      expect(log).toHaveBeenCalledWith(
+      expect(debug).toHaveBeenCalledWith(
         LogCodes.SYSTEM.EXTERNAL_API_ERROR,
         expect.objectContaining({
           endpoint: expect.stringContaining('/state/'),

@@ -417,6 +417,12 @@ describe('formsStatusRedirect', () => {
           grantCode: 'grant-a',
           referenceNumber: req.app?.referenceNumber ?? req.query?.ref
         }))
+        // Saves only log their failures, so the reopen reads the new document back before deleting the old one.
+        mockCacheService.getState = vi.fn().mockResolvedValue({ answer: 'x', $$__referenceNumber: 'GLD-OLD-REF' })
+        mockCacheService.setState.mockImplementation(async (_req, state) => {
+          mockCacheService.getState.mockResolvedValue(state)
+          return state
+        })
       })
 
       it('CLEARED deletes the application document outright instead of saving it as cleared, and never saves without a reference', async () => {
@@ -453,21 +459,24 @@ describe('formsStatusRedirect', () => {
         })
       })
 
-      it('REOPENED never deletes the old document when saving the replacement fails (e.g. the backend was unreachable)', async () => {
-        mockCacheService.setState.mockRejectedValueOnce(new Error('fetch failed'))
+      it('REOPENED never deletes the old document when the replacement does not read back (the save failed quietly)', async () => {
+        mockCacheService.setState.mockImplementation(async () => undefined)
         mockGasStatus('APPLICATION_AMEND')
 
         await formsStatusRedirect(request, h, context)
 
         // The post-submission error handler turns the failure into the fallback redirect; what matters
-        // is that nothing was deleted and the request was not moved onto a reference that was never saved.
+        // is that nothing was deleted and the request stays on the application that still exists.
         expect(mockCacheService.clearApplicationState).not.toHaveBeenCalled()
-        expect(request.app.referenceNumber).not.toBe('GLD-NEW-REF')
+        expect(request.app.referenceNumber).toBe('GLD-OLD-REF')
       })
 
       it('REOPENED deletes the old document only after the new one is saved', async () => {
         const order = []
-        mockCacheService.setState.mockImplementation(async () => order.push('save'))
+        mockCacheService.setState.mockImplementation(async (_req, state) => {
+          order.push('save')
+          mockCacheService.getState.mockResolvedValue(state)
+        })
         mockCacheService.clearApplicationState.mockImplementation(async () => order.push('delete'))
         mockGasStatus('APPLICATION_AMEND')
 

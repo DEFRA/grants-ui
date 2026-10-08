@@ -23,7 +23,13 @@ export async function multiApplicationRedirect(request, h) {
   }
 
   const ref = getReferenceNumber(request)
-  const stateWithDef = await getStateWithDefinition(request)
+  let stateWithDef
+  try {
+    stateWithDef = await getStateWithDefinition(request)
+  } catch {
+    // Surfaced later by getState / the definition loader with full context, as the priming hook does.
+    return h.continue
+  }
 
   if (!ref && request.query?.ref) {
     // Present but not a reference number: unknown on a multi-application grant, ignored on a

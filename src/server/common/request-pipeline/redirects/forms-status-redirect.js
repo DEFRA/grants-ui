@@ -20,6 +20,7 @@ import { getGrantVersion } from '../../helpers/grant-version.js'
 import { isStoredByReference } from '../../helpers/state/state-with-definition-context.js'
 import { YarKeys } from '../../constants/session-keys.js'
 import { hasAnyItemWithNonEmptyKey } from '../../utils/objects.js'
+import { ExternalApiError } from '../../utils/errors/ExternalApiError.js'
 
 const APPLICATION_NOT_SUBMITTED_MESSAGE = 'Application not submitted'
 
@@ -187,8 +188,19 @@ async function persistReopened(request, existingState) {
       /** @type {unknown} */ ({ ...reopened, $$__referenceNumber: newReferenceNumber })
     )
   )
-  await cacheService.clearApplicationState(request, String(previousReferenceNumber))
   setReferenceNumber(request, newReferenceNumber)
+
+  // Saves only log their failures, so read the new document back before deleting the old one.
+  const saved = await cacheService.getState(request)
+  if (saved?.$$__referenceNumber !== newReferenceNumber) {
+    setReferenceNumber(request, String(previousReferenceNumber))
+    throw new ExternalApiError({
+      message: 'Reopened application was not saved; keeping the submitted one',
+      source: 'persistReopened',
+      reason: 'state_not_persisted'
+    })
+  }
+  await cacheService.clearApplicationState(request, String(previousReferenceNumber))
 }
 
 /**

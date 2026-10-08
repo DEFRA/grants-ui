@@ -2,6 +2,7 @@ import { config } from '~/src/config/config.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { YarKeys } from '~/src/server/common/constants/session-keys.js'
 import { getReferenceNumber } from '~/src/server/common/helpers/state/get-cache-key-helper.js'
+import { listApplicationsFromApi } from '~/src/server/common/helpers/state/fetch-saved-state-helper.js'
 import Jwt from '@hapi/jwt'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
@@ -57,12 +58,17 @@ function buildTargetUri(baseUrl, path) {
  * mismatched context makes the upstream service reject the request instead.
  * @param {AnyRequest} request - The incoming request object
  * @param {string | number | undefined} authenticatedSbi - SBI from the authenticated credentials
- * @returns {{ grantCode?: string, clientRef?: string } | null}
+ * @returns {Promise<{ grantCode?: string, clientRef?: string } | null>}
  */
-function resolveGrantApplicationContext(request, authenticatedSbi) {
+async function resolveGrantApplicationContext(request, authenticatedSbi) {
   const storedContext = /** @type {{ grantCode?: string, clientRef?: string, sbi?: string | number } | null} */ (
     request.yar?.get(YarKeys.GRANT_APPLICATION_CONTEXT)
   )
+
+  const urlContext = await resolveUrlContext(request, storedContext?.grantCode)
+  if (urlContext) {
+    return urlContext
+  }
 
   if (!storedContext) {
     return null
@@ -78,16 +84,51 @@ function resolveGrantApplicationContext(request, authenticatedSbi) {
     return null
   }
 
-  // The session holds one context for the whole browser; `?grant=` and `?ref=` on the URL
-  // name the grant and application this tab is on, so they win over it.
-  const grant = request.query?.grant
-  const ref = getReferenceNumber(request)
+  return storedContext
+}
 
-  return {
-    ...storedContext,
-    ...(typeof grant === 'string' && GRANT_CODE_PATTERN.test(grant) && { grantCode: grant }),
-    ...(ref && { clientRef: ref.toLowerCase() })
+/**
+ * Multi-application tabs name their application on the URL (`?grant=&ref=`). The ref is accepted
+ * only when it is one of this business's own applications, and is then stored as the session
+ * context so the agreements requests that follow (which carry no query) act on the same one.
+ * @param {AnyRequest} request
+ * @param {string | undefined} storedGrantCode
+ * @returns {Promise<{ grantCode: string, clientRef: string, sbi: unknown, applicationRef: string, grantVersion: string } | null>}
+ */
+async function resolveUrlContext(request, storedGrantCode) {
+  const ref = getReferenceNumber(request)
+  const grant = request.query?.grant
+  const grantCode = typeof grant === 'string' && GRANT_CODE_PATTERN.test(grant) ? grant : storedGrantCode
+  if (!ref || !grantCode) {
+    return null
   }
+
+  const { sbi, crn } = /** @type {{ sbi?: string | number, crn?: string | number }} */ (request.auth?.credentials ?? {})
+  if (sbi == null || crn == null) {
+    return null
+  }
+
+  let applications
+  try {
+    applications = await listApplicationsFromApi({ crn: String(crn), sbi: String(sbi), grantCode })
+  } catch {
+    return null
+  }
+
+  const application = applications.find((candidate) => candidate.applicationRef === ref)
+  if (!application) {
+    return null
+  }
+
+  const context = {
+    grantCode,
+    grantVersion: application.grantVersion,
+    clientRef: ref.toLowerCase(),
+    sbi,
+    applicationRef: ref
+  }
+  request.yar?.set(YarKeys.GRANT_APPLICATION_CONTEXT, context)
+  return context
 }
 
 const GRANT_CODE_PATTERN = /^[a-z0-9-]+$/i
@@ -98,16 +139,16 @@ const GRANT_CODE_PATTERN = /^[a-z0-9-]+$/i
  *  - 'source' from grants-ui service will always be 'defra'
  * @param {string} token - The API token
  * @param {AnyRequest} request - The incoming request object
- * @returns {Record<string, string>} The proxy headers object
+ * @returns {Promise<Record<string, string>>} The proxy headers object
  */
-function buildProxyHeaders(token, request) {
+async function buildProxyHeaders(token, request) {
   const sbi = request?.auth?.credentials?.sbi
   const crn = request?.auth?.credentials?.crn
   const sub = (typeof crn === 'string' && crn !== '') || typeof crn === 'number' ? String(crn) : undefined
   const source = 'defra'
   const jwtSecret = config.get('agreements.jwtSecret')
   const audience = /** @type {string[]} */ (config.get('agreements.jwtAudience'))
-  const grantApplicationContext = resolveGrantApplicationContext(
+  const grantApplicationContext = await resolveGrantApplicationContext(
     request,
     /** @type {string | number | undefined} */ (sbi)
   )
@@ -180,7 +221,7 @@ export const getAgreementController = {
       const { path } = request.params
 
       const uri = buildTargetUri(baseUrl, path)
-      const headers = buildProxyHeaders(token, request)
+      const headers = await buildProxyHeaders(token, request)
       const apiResponse = await Promise.resolve(
         h.proxy({
           mapUri: () => ({ uri, headers }),

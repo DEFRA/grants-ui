@@ -2,8 +2,7 @@ import 'dotenv/config'
 import { config } from '~/src/config/config.js'
 import { parseSessionKey } from './get-cache-key-helper.js'
 import { createApiHeadersForGrantsUiBackend } from '../auth/backend-auth-helper.js'
-import { log, LogCodes } from '../logging/log.js'
-import { createBoomError } from '../errors.js'
+import { debug, log, LogCodes } from '../logging/log.js'
 
 // @ts-ignore - TS2589: Type instantiation excessively deep (convict type complexity)
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
@@ -14,7 +13,7 @@ const MAX_DB_STATE_SIZE_BYTES = config.get('session.cache.maxDbStateSizeBytes')
  * Persists a given state object to the Grants UI backend API.
  *
  * @param {Record<string, unknown>} state - The state object to persist. Can include form/session data.
- * @param {string} key - The cache/session key to identify this state (`sbi:grantCode` or `sbi:grantCode:referenceNumber`).
+ * @param {string} key - The cache/session key to identify this state.
  * @param {{grantVersion?: unknown, lockToken?: string}} [options] - Optional grant version, lock token to identify who is locking the state.
  * @returns {Promise<void>} Resolves once the state is sent to the backend.
  */
@@ -25,8 +24,6 @@ export async function persistStateToApi(state, key, { lockToken, grantVersion } 
 
   const url = new URL('/state/', GRANTS_UI_BACKEND_ENDPOINT)
 
-  // `POST /state` has no `referenceNumber` field: the backend derives it from
-  // `state.$$__referenceNumber`
   const { sbi, grantCode } = parseSessionKey(key)
 
   log(LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG, {
@@ -56,34 +53,29 @@ export async function persistStateToApi(state, key, { lockToken, grantVersion } 
     throw new Error(`State payload size (${bodySize} bytes) exceeds limit (${MAX_DB_STATE_SIZE_BYTES} bytes)`)
   }
 
-  let response
-  let networkError
   try {
-    response = await fetch(url.href, {
+    const response = await fetch(url.href, {
       method: 'POST',
       headers: await createApiHeadersForGrantsUiBackend({ lockToken }),
       body
     })
+
+    if (!response.ok) {
+      log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+        method: 'POST',
+        endpoint: url.href,
+        identity: key,
+        errorMessage: `${response.status} - ${response.statusText}`
+      })
+    }
   } catch (err) {
-    networkError = /** @type {Error} */ (err)
-  }
-
-  // Nothing was persisted: surface it (a reopen must not delete the old document after a lost save).
-  if (networkError || !response) {
-    const errorMessage = networkError?.message ?? 'No response'
-    log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, { method: 'POST', endpoint: url.href, identity: key, errorMessage })
-    throw networkError ?? new Error(errorMessage)
-  }
-
-  // A refused save (e.g. 400) means nothing was persisted: surface it.
-  if (!response.ok) {
-    const errorMessage = `${response.status} - ${response.statusText}`
-    log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
+    debug(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
       method: 'POST',
       endpoint: url.href,
       identity: key,
-      errorMessage
+      errorMessage: /** @type {Error} */ (err).message
     })
-    throw createBoomError(response.status, `Failed to persist state: ${errorMessage}`)
+    // NOSONAR TODO: See TGC-873
+    // throw err
   }
 }

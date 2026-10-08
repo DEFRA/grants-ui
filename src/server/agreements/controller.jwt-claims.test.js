@@ -1,6 +1,7 @@
 import { vi } from 'vitest'
 import jwt from 'jsonwebtoken'
 import { getAgreementController } from './controller.js'
+import { listApplicationsFromApi } from '~/src/server/common/helpers/state/fetch-saved-state-helper.js'
 import { config } from '~/src/config/config.js'
 import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 import { agreementsConfigValues } from '~/src/__mocks__/config-mocks.js'
@@ -11,6 +12,10 @@ vi.mock('~/src/config/config.js', async () => {
   const { mockConfigSimple } = await import('~/src/__mocks__')
   return mockConfigSimple()
 })
+
+vi.mock('~/src/server/common/helpers/state/fetch-saved-state-helper.js', () => ({
+  listApplicationsFromApi: vi.fn()
+}))
 
 vi.mock('~/src/server/common/helpers/logging/log-codes.js', async () => {
   const { mockLogCodesHelper } = await import('~/src/__mocks__')
@@ -48,27 +53,75 @@ describe('agreements user context JWT - real signing', () => {
       headers: {},
       auth: { isAuthenticated: true, credentials: { sbi: SBI, crn: 'CRN123' } },
       app: { cspNonce: 'test-nonce' },
-      yar: { get: vi.fn().mockReturnValue({ grantCode: 'farm-payments', clientRef: 'sfi123456' }) }
+      yar: { get: vi.fn().mockReturnValue({ grantCode: 'farm-payments', clientRef: 'sfi123456' }), set: vi.fn() }
     })
 
     config.get.mockImplementation(agreementsConfigValues())
+    listApplicationsFromApi.mockResolvedValue([{ applicationRef: 'GLD-ABC-123', grantVersion: '1.0.0' }])
   })
 
-  test('a ?ref= on the URL overrides the stored clientRef, so two tabs on two applications do not share one', async () => {
+  test("a ?ref= on the URL names this tab's application, so two tabs on two applications do not share one", async () => {
     mockRequest.query = { ref: 'GLD-ABC-123' }
 
     const payload = jwt.decode(await signedToken())
 
+    expect(listApplicationsFromApi).toHaveBeenCalledWith({ crn: 'CRN123', sbi: SBI, grantCode: 'farm-payments' })
     expect(payload.clientRef).toBe('gld-abc-123')
     expect(payload.grantCode).toBe('farm-payments')
   })
 
-  test('a ?grant= on the URL overrides the stored grantCode, so two tabs on different grants do not share one', async () => {
+  test('the accepted URL context is stored in the session, so the agreements requests that follow (no query) act on the same application', async () => {
+    mockRequest.query = { grant: 'woodland', ref: 'GLD-ABC-123' }
+
+    await signedToken()
+
+    expect(mockRequest.yar.set).toHaveBeenCalledWith('grantApplicationContext', {
+      grantCode: 'woodland',
+      grantVersion: '1.0.0',
+      clientRef: 'gld-abc-123',
+      sbi: SBI,
+      applicationRef: 'GLD-ABC-123'
+    })
+  })
+
+  test('a ?grant= with the ref names the grant the application is looked up under', async () => {
+    mockRequest.query = { grant: 'woodland', ref: 'GLD-ABC-123' }
+
+    const payload = jwt.decode(await signedToken())
+
+    expect(listApplicationsFromApi).toHaveBeenCalledWith(expect.objectContaining({ grantCode: 'woodland' }))
+    expect(payload.grantCode).toBe('woodland')
+    expect(payload.clientRef).toBe('gld-abc-123')
+  })
+
+  test("a ref that is not one of this business's applications is ignored and nothing is stored", async () => {
+    listApplicationsFromApi.mockResolvedValue([{ applicationRef: 'GLD-SOMEONE-ELSE', grantVersion: '1.0.0' }])
+    mockRequest.query = { ref: 'GLD-ABC-123' }
+
+    const payload = jwt.decode(await signedToken())
+
+    expect(payload.clientRef).toBe('sfi123456')
+    expect(payload.grantCode).toBe('farm-payments')
+    expect(mockRequest.yar.set).not.toHaveBeenCalled()
+  })
+
+  test('when the applications list cannot be fetched the stored context is used', async () => {
+    listApplicationsFromApi.mockRejectedValue(new Error('backend down'))
+    mockRequest.query = { ref: 'GLD-ABC-123' }
+
+    const payload = jwt.decode(await signedToken())
+
+    expect(payload.clientRef).toBe('sfi123456')
+    expect(mockRequest.yar.set).not.toHaveBeenCalled()
+  })
+
+  test('a ?grant= without a ref changes nothing', async () => {
     mockRequest.query = { grant: 'woodland' }
 
     const payload = jwt.decode(await signedToken())
 
-    expect(payload.grantCode).toBe('woodland')
+    expect(listApplicationsFromApi).not.toHaveBeenCalled()
+    expect(payload.grantCode).toBe('farm-payments')
     expect(payload.clientRef).toBe('sfi123456')
   })
 
@@ -84,11 +137,12 @@ describe('agreements user context JWT - real signing', () => {
     expect(after.sbi).toBe(before.sbi)
   })
 
-  test('ignores a ?grant= that is not a grant code', async () => {
-    mockRequest.query = { grant: 'not a code!' }
+  test('ignores a ?grant= that is not a grant code and looks the ref up under the stored grant', async () => {
+    mockRequest.query = { grant: 'not a code!', ref: 'GLD-ABC-123' }
 
     const payload = jwt.decode(await signedToken())
 
+    expect(listApplicationsFromApi).toHaveBeenCalledWith(expect.objectContaining({ grantCode: 'farm-payments' }))
     expect(payload.grantCode).toBe('farm-payments')
   })
 
