@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 // @ts-nocheck
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { attachTooltip } from './parcel-map-tooltip.js'

@@ -117,6 +117,8 @@ Beyond the standard scripts, the application includes contract testing via `npm 
 
 Acceptance tests are run against a containerised system with stubs for Defra ID and GAS. The system is stood up by `docker-compose-smoke-test.sh`, which accepts test hooks to run after the system is healthy.
 
+GeospatialField journey steps populate the submitted textarea with a fixed GeoJSON point, including its description and grid references. The acceptance stack disables forms-engine maps through `compose.ci.yml`, so these journeys do not require Ordnance Survey credentials, map clicks or software GPU rendering. Form validation, persistence, check answers and GAS submission still use the normal journey flow; map drawing itself is not covered by these steps.
+
 ### Compose Files
 
 There is an override file `compose.ci.yml` which stands the system up at `https://grants-ui-proxy:4000`. Test suites are run in their own containers on the same Docker network.

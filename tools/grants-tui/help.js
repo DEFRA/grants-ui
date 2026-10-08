@@ -25,6 +25,7 @@ ${BOLD}Commands:${RESET_COLOR}
   down    Stop containers (uses saved state — no need to re-select)
   debug   Restart grants-ui in debug mode (detached, port 9229)
   restart Restart running containers (selectable; uses --no-deps)
+  refresh-examples Publish edited example configs; --reset-applications clears their backend application data
   tailscale on|off  Switch Tailscale mode live (updates URLs and Serve proxies)
   share   Create, list and revoke external Tailscale shares (requires ${'GRANTS_UI_TAILSCALE_API_KEY'})
   setup   Preview/apply the restrictive external-sharing policy (requires ${'GRANTS_UI_TAILSCALE_API_KEY'})

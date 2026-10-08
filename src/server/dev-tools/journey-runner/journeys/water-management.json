@@ -26,8 +26,8 @@
     "name": "Project located — example easting and northing",
     "type": "textFields",
     "fields": {
-      "projectLocated__easting": "286394",
-      "projectLocated__northing": "128750"
+      "projectLocated__easting": "530000",
+      "projectLocated__northing": "180000"
     }
   },
   {
