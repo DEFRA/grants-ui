@@ -191,7 +191,7 @@ Extends `SummaryPageController` (wrapped in `withTaskContext`). This is the chec
 
 ### Example journey YAML
 
-A complete working example is [`example-grant-with-map.yaml`](https://github.com/DEFRA/grants-config-example-grants/blob/main/configurations/example-grant-with-map/grants-ui/example-grant-with-map.yaml) in the grants config repo (served from `grants-ui-backend` at runtime). It demonstrates:
+A complete working example is [`example-grant-with-map.yaml`](../compose/config-broker/example-grants/example-grant-with-map/grants-ui/example-grant-with-map.yaml) in this repo (served from `grants-ui-backend` at runtime). It demonstrates:
 
 - Single parcel selection with `MapSelectPageController`
 - Actions selection with `SelectLandActionsPageController` (receives `?parcelId=` from the redirect)

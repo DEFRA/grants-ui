@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it } from 'vitest'
 import { runInNewContext } from 'node:vm'
 import { initSelectActionsPage } from '~/src/client/javascripts/land-grants/select-actions-events.js'

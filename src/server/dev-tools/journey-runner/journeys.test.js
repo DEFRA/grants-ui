@@ -10,13 +10,17 @@ import { parse } from 'yaml'
  * unmatched page as `journey complete`, which the `gt journey` CLI counts as a
  * SUCCESS marker, so a journey that stops halfway still exits zero.
  *
- * The form definitions live in `compose/config-broker-local/`, which is
- * gitignored and populated by the local config-broker sync, so the suite skips
- * itself when that directory is absent (CI, fresh clone).
+ * Example form definitions are checked in, so their drift checks also run in
+ * CI and fresh clones. Real grant checks additionally use the gitignored
+ * config-broker-local tree when it has been populated by local setup.
  */
 
 const journeysDir = resolve(import.meta.dirname, './journeys')
 const configBrokerDir = resolve(import.meta.dirname, '../../../../compose/config-broker-local')
+const exampleGrantsDir = resolve(import.meta.dirname, '../../../../compose/config-broker/example-grants')
+const exampleGrants = readdirSync(exampleGrantsDir, { withFileTypes: true })
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => entry.name)
 
 /**
  * Pages that sit outside the forward page walk: terminal/exit pages, post-submit
@@ -38,6 +42,10 @@ const OFF_JOURNEY_CONTROLLERS = new Set([
  */
 const NO_FORM_DEFINITION = new Set(['methane'])
 
+// PMF remains deployable, but its dedicated external config repo is not wired
+// into local setup yet. Check its journey when an external config is available.
+const OPTIONAL_FORM_DEFINITION = new Set(['pigs-might-fly'])
+
 /**
  * Map every grant slug that has a locally synced form definition to its YAML path.
  * @returns {Record<string, string>}
@@ -45,9 +53,15 @@ const NO_FORM_DEFINITION = new Set(['methane'])
 function findFormDefinitions() {
   /** @type {Record<string, string>} */
   const definitions = {}
-  for (const dir of readdirSync(configBrokerDir)) {
+  for (const slug of exampleGrants) {
+    const path = resolve(exampleGrantsDir, slug, 'grants-ui', `${slug}.yaml`)
+    if (existsSync(path)) {
+      definitions[slug] = path
+    }
+  }
+  for (const dir of existsSync(configBrokerDir) ? readdirSync(configBrokerDir) : []) {
     const [slug] = dir.split('@')
-    if (slug === dir) {
+    if (slug === dir || exampleGrants.includes(slug)) {
       continue
     }
     const path = resolve(configBrokerDir, dir, 'grants-ui', `${slug}.yaml`)
@@ -83,12 +97,15 @@ const journeySlugs = existsSync(journeysDir)
       .map((file) => basename(file, '.json'))
   : []
 
-const formDefinitions = existsSync(configBrokerDir) ? findFormDefinitions() : {}
+const formDefinitions = findFormDefinitions()
 const comparable = journeySlugs.filter((slug) => formDefinitions[slug])
 
 describe.skipIf(!comparable.length)('journey definitions match their form definitions', () => {
   it('every grant with a journey has a form definition (or is listed as having none)', () => {
-    const unexplained = journeySlugs.filter((slug) => !formDefinitions[slug] && !NO_FORM_DEFINITION.has(slug))
+    const expected = journeySlugs.filter((slug) => exampleGrants.includes(slug) || existsSync(configBrokerDir))
+    const unexplained = expected.filter(
+      (slug) => !formDefinitions[slug] && !NO_FORM_DEFINITION.has(slug) && !OPTIONAL_FORM_DEFINITION.has(slug)
+    )
     expect(unexplained).toEqual([])
   })
 

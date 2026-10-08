@@ -13,6 +13,7 @@ export function validateArgs(argv) {
     'down',
     'debug',
     'restart',
+    'refresh-examples',
     'reset',
     'test',
     'sonar',
@@ -79,6 +80,7 @@ export function validateArgs(argv) {
     '--grant-version',
     '--json',
     '--apply',
+    '--reset-applications',
     ...LOCAL_SERVICES.map((s) => `--local-${s.key}`)
   ])
 

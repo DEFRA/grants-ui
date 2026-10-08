@@ -1,3 +1,6 @@
+# Temporarily disabled until the deployable PMF config and acceptance suite move
+# to their own config repo. PMF is not one of grants-ui's local example grants.
+@disabled-pmf
 Feature: Pigs Might Fly
 
     Scenario: Application is successfully submitted through the pigs-might-fly journey

@@ -42,6 +42,14 @@ The main menu status line collapses the always-on `compose.infra` + `compose.gra
 
 ### Non-interactive mode
 
+Example grant configs are checked in under
+[`compose/config-broker/example-grants`](../compose/config-broker/example-grants/README.md).
+Edit them directly and use **refresh example grants** in `gt`, or
+`gt refresh-examples`, to publish changes to a running stack. Technical versions
+are generated automatically; no external example repo or manual version bump is
+needed. Add `--reset-applications` only when you want to clear the examples'
+saved application state, locks and submissions in Grants UI Backend.
+
 ```bash
 # Start the stack (optionally with addons)
 gt up
