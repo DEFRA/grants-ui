@@ -327,4 +327,42 @@ describe('TotalEstimatedCostController', () => {
       await expect(controller.isStateStale(mockRequest, mockContext)).resolves.toBe(false)
     })
   })
+
+  describe('getNextPath', () => {
+    it('should return super.getNextPath(context) when minGrantReached is true', () => {
+      mockContext.state.additionalAnswers = { minGrantReached: true }
+      // The controller instance already has getNextPath mocked by setupControllerMocks
+      // We need to bypass the instance mock to test the class implementation
+      const originalInstanceGetNextPath = controller.getNextPath
+      delete controller.getNextPath
+
+      const superGetNextPath = QuestionPageController.prototype.getNextPath
+      QuestionPageController.prototype.getNextPath = vi.fn().mockReturnValue('/next-page')
+
+      try {
+        const result = controller.getNextPath(mockContext)
+        expect(result).toBe('/next-page')
+      } finally {
+        QuestionPageController.prototype.getNextPath = superGetNextPath
+        controller.getNextPath = originalInstanceGetNextPath
+      }
+    })
+
+    it('should return /exit-total-estimated-cost when minGrantReached is false', () => {
+      mockContext.state.additionalAnswers = { minGrantReached: false }
+      const originalInstanceGetNextPath = controller.getNextPath
+      delete controller.getNextPath
+
+      const superGetNextPath = QuestionPageController.prototype.getNextPath
+      QuestionPageController.prototype.getNextPath = vi.fn().mockReturnValue('/next-page')
+
+      try {
+        const result = controller.getNextPath(mockContext)
+        expect(result).toBe('/exit-total-estimated-cost')
+      } finally {
+        QuestionPageController.prototype.getNextPath = superGetNextPath
+        controller.getNextPath = originalInstanceGetNextPath
+      }
+    })
+  })
 })

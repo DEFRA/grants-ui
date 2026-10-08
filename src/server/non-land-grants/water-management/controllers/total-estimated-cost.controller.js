@@ -16,6 +16,16 @@ export default class TotalEstimatedCostController extends withDerivedState(Quest
   }
 
   /**
+   * Override getNextPath to redirect to exit page when minimum grant amount not reached
+   * @param context
+   * @returns {*}
+   */
+  getNextPath(context) {
+    const minGrantReached = context.state.additionalAnswers.minGrantReached
+    return minGrantReached ? super.getNextPath(context) : '/exit-total-estimated-cost'
+  }
+
+  /**
    * Calculates the derived answers without changing persisted state.
    * @param {import('@defra/forms-engine-plugin/types').AnyFormRequest} request
    * @param {any} state
