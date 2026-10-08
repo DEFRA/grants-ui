@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest'
 import { attachParcelLabels } from './parcel-map-labels.js'
 import { makeMlMap } from './test-helpers.js'

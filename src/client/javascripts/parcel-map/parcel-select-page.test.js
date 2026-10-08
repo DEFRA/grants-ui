@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 // @ts-nocheck
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { initParcelSelectPage } from './parcel-select-page.js'

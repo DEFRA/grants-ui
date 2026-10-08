@@ -28,10 +28,10 @@ ignore:
     - '@defra/forms-engine-plugin > @defra/interactive-map > *':
         reason: 'Rechecked 2026-10-05 on forms-engine-plugin@4.23.0: Docusaurus@3.10.2 > file-loader@6.2.0 > schema-utils@3.3.0 > ajv@6.15.0 > uri-js@4.4.1. No fixed release. This documentation build chain is never run by grants-ui; Ajv handles static schema identifiers, not applicant input. Remove when fixed or upstream drops the documentation dependencies.'
         expires: '2026-10-31'
-  'SNYK-JS-SHELLQUOTE-20250993':
-    - '@defra/forms-engine-plugin > @defra/interactive-map > *':
-        reason: 'Rechecked 2026-10-05 on forms-engine-plugin@4.23.0: Docusaurus@3.10.2 > webpack-dev-server@5.2.6 > launch-editor@2.14.1 > shell-quote@1.10.0. The documentation dev server is never run by grants-ui. Fixed shell-quote@1.11.0 was published 2026-09-29T02:34:24Z and clears the seven-day cooldown on 2026-10-06 after 02:34 UTC; add the override and remove this exception then.'
-        expires: '2026-10-06'
+  'SNYK-JS-SPRINTFJS-20532016':
+    - 'global-agent > roarr > sprintf-js':
+        reason: 'Checked 2026-10-07: global-agent@3.0.0 > roarr@2.15.4 > sprintf-js@1.1.3. No fixed sprintf-js release; the only fix is global-agent v4 (drops roarr from 4.1.0). global-agent is pinned to 3.0.0 because 4.1.3 broke the OIDC well-known fetch over the CDP egress proxy (#968, #969). Remove when global-agent v4 is re-verified in a CDP environment.'
+        expires: '2026-11-06'
   'SNYK-JS-URIJS-20341609':
     - '@defra/forms-engine-plugin > @defra/interactive-map > *':
         reason: 'Rechecked 2026-10-05 on forms-engine-plugin@4.23.0: Docusaurus@3.10.2 > file-loader@6.2.0 > schema-utils@3.3.0 > ajv@6.15.0 > uri-js@4.4.1. No fixed release. This documentation build chain is never run by grants-ui; Ajv handles static schema identifiers, not applicant input. Remove when fixed or upstream drops the documentation dependencies.'

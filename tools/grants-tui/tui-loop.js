@@ -90,6 +90,12 @@ export function buildMainMenuItems(savedState, containersRunning) {
       disabled: !containersRunning
     },
     { key: 'local', label: 'local ⇢', description: localDesc },
+    {
+      key: 'refresh-examples',
+      label: 'refresh example grants ⇢',
+      description: 'Publish edited example configs from this checkout',
+      disabled: !containersRunning
+    },
     // Only while form-def overrides are active, surface a direct action right
     // below `local` to re-publish the YAML overrides into Mongo, so devs can
     // iterate on the definition and refresh without toggling the override
@@ -450,6 +456,29 @@ async function handleRefreshOverridesCommand(dryRun) {
   return applyStatus !== 0
     ? `${RED}✖${RESET_COLOR}  Form-def overrides refresh failed — check output above`
     : `${PURPLE}✔  Form-def overrides refreshed${RESET_COLOR}`
+}
+
+export async function handleRefreshExamplesCommand(dryRun) {
+  const choice = await radioMenu(
+    [
+      { key: 'keep', label: 'refresh', description: 'Keep saved example applications' },
+      {
+        key: 'reset',
+        label: 'refresh and reset example applications',
+        description: 'Delete example application state, locks and submissions in Grants UI Backend'
+      }
+    ],
+    'Refresh example grants'
+  )
+  if (choice === '__quit__') return ''
+  const status = await runInteractiveAction(
+    'refresh-examples',
+    [dryRun, choice === 'reset'],
+    'Refreshing example grants'
+  )
+  return status === 0
+    ? `${GREEN}✔${RESET_COLOR}  Example grants refreshed`
+    : `${RED}✖${RESET_COLOR}  Example refresh failed — check output above`
 }
 
 /** @param {boolean} dryRun */
@@ -1254,6 +1283,7 @@ const COMMAND_HANDLERS = {
   up: (ctx) => handleUpCommand(ctx.dryRun, ctx.savedState),
   local: (ctx) => handleLocalCommand(ctx.dryRun, ctx.savedState, ctx.containersRunning),
   'refresh-overrides': (ctx) => handleRefreshOverridesCommand(ctx.dryRun),
+  'refresh-examples': (ctx) => handleRefreshExamplesCommand(ctx.dryRun),
   checks: (ctx) => handleChecksCommand(ctx.dryRun),
   tools: (ctx) => handleToolsCommand(ctx.dryRun, ctx),
   down: (ctx) => handleDockerLifecycleCommand('down', ctx.dryRun),

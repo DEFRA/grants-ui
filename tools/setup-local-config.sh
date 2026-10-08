@@ -14,17 +14,12 @@ CONFIG_REPO_URL_ROOT="https://github.com/$CONFIG_REPO_OWNER"
 CONFIG_REPO_API_URL_ROOT="https://api.github.com/repos/$CONFIG_REPO_OWNER"
 CONFIG_REPO_RAW_URL_ROOT="https://raw.githubusercontent.com/$CONFIG_REPO_OWNER"
 CONFIG_REPOS=(
-  grants-config-example-grants
   grants-config-woodland
   grants-config-farm-payments
   grants-config-grasslands
   grants-config-land-grants
   grants-config-water-management
 )
-
-# Newline-separated "grant_name|version" entries collected while pulling config,
-# used to generate the local release.yml from the actual pulled versions.
-DISCOVERED_GRANTS=""
 
 github_api_get() {
   local url="$1"
@@ -229,45 +224,6 @@ apply_local_allowlists() {
   done
 }
 
-record_grant_version() {
-  local grant_name="$1"
-  local grant_version="$2"
-  local existing
-
-  while IFS= read -r existing; do
-    [ -n "$existing" ] || continue
-    if [ "${existing%%|*}" = "$grant_name" ]; then
-      return 0
-    fi
-  done <<< "$DISCOVERED_GRANTS"
-
-  DISCOVERED_GRANTS+="$grant_name|$grant_version"$'\n'
-}
-
-generate_release_file() {
-  local target_file="$1"
-  local entry
-  local grant_name
-  local grant_version
-
-  {
-    echo "releases:"
-    while IFS= read -r entry; do
-      [ -n "$entry" ] || continue
-
-      grant_name="${entry%%|*}"
-      grant_version="${entry#*|}"
-
-      echo "  - name: $grant_name"
-      echo "    version: $grant_version"
-      echo "    notes: Example for local usage"
-      echo "    environments:"
-      echo "      - name: local"
-      echo "        status: active"
-    done <<< "$DISCOVERED_GRANTS"
-  } > "$target_file"
-}
-
 if ! command -v curl >/dev/null 2>&1; then
   echo "Missing required command: curl" >&2
   exit 1
@@ -304,6 +260,9 @@ fall_back_to_cache_or_fail() {
   echo "$1" >&2
   if [ "$(count_cached_config_files)" -gt 0 ]; then
     echo "Keeping existing cached config at $CONFIG_BROKER_LOCAL and continuing offline." >&2
+    node "$PROJECT_ROOT/tools/replace-directory-contents.js" "$CONFIG_BROKER_LOCAL" "$CONFIG_BROKER_LOCAL_STAGING"
+    node "$PROJECT_ROOT/tools/prepare-example-grants.js" "$CONFIG_BROKER_LOCAL_STAGING"
+    node "$PROJECT_ROOT/tools/replace-directory-contents.js" "$CONFIG_BROKER_LOCAL_STAGING" "$CONFIG_BROKER_LOCAL"
     exit 0
   fi
   echo "No cached config found at $CONFIG_BROKER_LOCAL to fall back to." >&2
@@ -359,16 +318,13 @@ for config_repo in "${CONFIG_REPOS[@]}"; do
         fall_back_to_cache_or_fail "Failed to download $config_file_path from $config_repo."
       fi
     fi
-    record_grant_version "$grant_name" "$repo_version"
   done <<< "$config_file_paths"
 done
 
+node "$PROJECT_ROOT/tools/prepare-example-grants.js" "$CONFIG_BROKER_LOCAL_STAGING"
+
 if ! apply_local_allowlists "$CONFIG_BROKER_LOCAL_STAGING"; then
   fall_back_to_cache_or_fail "Failed to apply local allowlists."
-fi
-
-if ! generate_release_file "$CONFIG_BROKER_LOCAL_STAGING/release.yml"; then
-  fall_back_to_cache_or_fail "Failed to generate release.yml."
 fi
 
 # Full rebuild succeeded: refresh the live folder's contents without replacing
