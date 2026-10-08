@@ -80,7 +80,7 @@ function resolveGrantApplicationContext(request, authenticatedSbi) {
 
   // The session holds one context for the whole browser; `?grant=` and `?ref=` on the URL
   // name the grant and application this tab is on, so they win over it.
-  const grant = /** @type {{ grant?: unknown }} */ (request.query ?? {}).grant
+  const grant = request.query?.grant
   const ref = getReferenceNumber(request)
 
   return {

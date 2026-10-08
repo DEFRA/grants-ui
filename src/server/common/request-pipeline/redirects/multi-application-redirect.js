@@ -5,6 +5,8 @@ import { getReferenceNumber, setReferenceNumber } from '../../helpers/state/get-
 import { getStateWithDefinition } from '../../helpers/state/state-with-definition-context.js'
 import { listApplicationsFromApi } from '../../helpers/state/fetch-saved-state-helper.js'
 
+const UNKNOWN_REFERENCE = 'Unknown application reference'
+
 /**
  * `?ref=` routing (onPostAuth, before the plugin loads state). A grant is
  * multi-application when its definition is flagged or the backend already
@@ -27,7 +29,7 @@ export async function multiApplicationRedirect(request, h) {
     // Present but not a reference number: unknown on a multi-application grant, ignored on a
     // single-application one like any other stray parameter.
     if (isMultiApplication(stateWithDef)) {
-      throw notFound('Unknown application reference')
+      throw notFound(UNKNOWN_REFERENCE)
     }
     return ignoreReference(request, h)
   }
@@ -66,7 +68,7 @@ function isMultiApplication(envelope) {
 async function resolveWithRef(request, h, envelope) {
   if (isMultiApplication(envelope)) {
     if (!envelope?.state) {
-      throw notFound('Unknown application reference')
+      throw notFound(UNKNOWN_REFERENCE)
     }
     return h.continue
   }
@@ -74,7 +76,7 @@ async function resolveWithRef(request, h, envelope) {
   // Not flagged and no ref-keyed document for this ref: single-application scheme, unless
   // the SBI already holds several (keyed by ref by the backend), in which case the ref is simply unknown.
   if (!envelope?.state && (await listApplications(request)).length > 1) {
-    throw notFound('Unknown application reference')
+    throw notFound(UNKNOWN_REFERENCE)
   }
 
   // Single-application scheme: a stray ref is ignored, even one matching its only document.
