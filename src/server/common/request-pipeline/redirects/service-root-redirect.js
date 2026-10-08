@@ -8,8 +8,8 @@ import {
 } from './forms-status-redirect.js'
 
 const CHECK_DETAILS_START_PAGE = '/check-details'
-const REDIRECTION_MIN = 300
-const REDIRECTION_MAX = 399
+export const REDIRECTION_MIN = 300
+export const REDIRECTION_MAX = 399
 
 export const SLUG_ROOT_ROUTE = '/{slug}'
 

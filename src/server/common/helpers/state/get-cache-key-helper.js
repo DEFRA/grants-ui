@@ -30,24 +30,21 @@ export const getCacheKey = (request) => {
 
 /**
  * The application reference this request is for. The multi-application
- * plugin moves it from `request.query.ref` to `request.app.applicationRef`
+ * plugin moves it from `request.query.ref` to `request.app.referenceNumber`
  * in `onPreHandler`, so both places are checked.
  *
  * @param {{ app?: unknown, query?: unknown }} request
  * @returns {string | undefined}
  */
 export function getApplicationRef(request) {
-  const app = /** @type {{ applicationRef?: unknown } | undefined} */ (request.app)
-  const stashed = app?.applicationRef
+  const app = /** @type {{ referenceNumber?: string } | undefined} */ (request.app)
 
-  if (typeof stashed === 'string' && stashed) {
-    return stashed
+  if (app?.referenceNumber) {
+    return app.referenceNumber
   }
 
-  const query = /** @type {{ ref?: unknown } | undefined} */ (request.query)
-  const fromQuery = query?.ref
-
-  return typeof fromQuery === 'string' && fromQuery ? fromQuery : undefined
+  const query = /** @type {{ ref?: string } | undefined} */ (request.query)
+  return typeof query?.ref === 'string' && query.ref ? query.ref : undefined
 }
 
 /**
@@ -64,9 +61,9 @@ export function setApplicationRef(request, ref) {
   mutableRequest.app ??= {}
 
   if (ref) {
-    mutableRequest.app.applicationRef = ref
+    mutableRequest.app.referenceNumber = ref
   } else {
-    delete mutableRequest.app.applicationRef
+    delete mutableRequest.app.referenceNumber
   }
 
   if (mutableRequest.query && 'ref' in mutableRequest.query) {

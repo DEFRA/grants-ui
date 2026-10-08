@@ -265,7 +265,7 @@ describe('applicationDeletedPostRoute', () => {
     const request = {
       params: { slug: 'test-grant' },
       query: { ref: 'REF-1' },
-      app: { applicationRef: 'REF-1' },
+      app: { referenceNumber: 'REF-1' },
       server: {}
     }
     const h = { redirect: vi.fn() }
@@ -274,7 +274,7 @@ describe('applicationDeletedPostRoute', () => {
     await applicationDeletedPostRoute.handler(/** @type {any} */ (request), /** @type {any} */ (h))
 
     expect(request.query.ref).toBeUndefined()
-    expect(request.app.applicationRef).toBeUndefined()
+    expect(request.app.referenceNumber).toBeUndefined()
     expect(h.redirect).toHaveBeenCalledWith('/test-grant')
   })
 

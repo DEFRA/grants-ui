@@ -73,7 +73,7 @@ describe('multiApplicationRedirect', () => {
 
     it('reads the ref from request.app too (a POST scoped in place earlier in the same request)', async () => {
       getStateWithDefinition.mockResolvedValue(multiGrant())
-      const request = makeRequest({ app: { applicationRef: 'REF-1' } })
+      const request = makeRequest({ app: { referenceNumber: 'REF-1' } })
 
       const result = await multiApplicationRedirect(request, h)
 
@@ -147,13 +147,13 @@ describe('multiApplicationRedirect', () => {
       const request = makeRequest({
         query: { ref: 'REF-1', a: '1' },
         routePath: SUB_PAGE,
-        app: { applicationRef: 'REF-1', stateWithDefinition: Promise.resolve(null) }
+        app: { referenceNumber: 'REF-1', stateWithDefinition: Promise.resolve(null) }
       })
 
       await multiApplicationRedirect(request, h)
 
       expect(request.query).toEqual({ a: '1' })
-      expect(request.app.applicationRef).toBeUndefined()
+      expect(request.app.referenceNumber).toBeUndefined()
       expect(request.app.stateWithDefinition).toBeUndefined()
     })
 
@@ -218,7 +218,7 @@ describe('multiApplicationRedirect', () => {
 
       expect(result).toBe(h.continue)
       expect(h.redirect).not.toHaveBeenCalled()
-      expect(request.app.applicationRef).toBeUndefined()
+      expect(request.app.referenceNumber).toBeUndefined()
     })
 
     describe('one live application shadowed by a purged one (the list hides purged applications, the unscoped read does not)', () => {
@@ -250,7 +250,7 @@ describe('multiApplicationRedirect', () => {
 
         expect(result).toBe(h.continue)
         expect(h.redirect).not.toHaveBeenCalled()
-        expect(request.app.applicationRef).toBe('REF-LIVE')
+        expect(request.app.referenceNumber).toBe('REF-LIVE')
       })
 
       it('does not attach a ref when the purged document IS the listed one (nothing is shadowed)', async () => {

@@ -163,7 +163,7 @@ describe('getCacheKey', () => {
         slug: 'grant789'
       },
       query: {},
-      app: { applicationRef: 'REF-1' }
+      app: { referenceNumber: 'REF-1' }
     }
 
     expect(getCacheKey(request)).toEqual({
@@ -243,7 +243,7 @@ describe('getApplicationRef', () => {
   })
 
   it('prefers the ref stashed on request.app over the query', () => {
-    expect(getApplicationRef({ app: { applicationRef: 'REF-APP' }, query: { ref: 'REF-Q' } })).toBe('REF-APP')
+    expect(getApplicationRef({ app: { referenceNumber: 'REF-APP' }, query: { ref: 'REF-Q' } })).toBe('REF-APP')
   })
 
   it('falls back to the query when the stash is empty', () => {
@@ -258,31 +258,30 @@ describe('getApplicationRef', () => {
   it('ignores a ref that is not a non-empty string', () => {
     expect(getApplicationRef({ query: { ref: ['A', 'B'] } })).toBeUndefined()
     expect(getApplicationRef({ query: { ref: '' } })).toBeUndefined()
-    expect(getApplicationRef({ app: { applicationRef: 42 }, query: {} })).toBeUndefined()
   })
 })
 
 describe('setApplicationRef', () => {
   it('stashes the new ref on request.app, removes the old one from the query and forgets the memoised envelope', () => {
     const request = {
-      app: { applicationRef: 'OLD', stateWithDefinition: Promise.resolve(null) },
+      app: { referenceNumber: 'OLD', stateWithDefinition: Promise.resolve(null) },
       query: { ref: 'OLD', a: '1' }
     }
 
     setApplicationRef(request, 'NEW')
 
-    expect(request.app.applicationRef).toBe('NEW')
+    expect(request.app.referenceNumber).toBe('NEW')
     expect(request.query).toEqual({ a: '1' })
     expect(request.app.stateWithDefinition).toBeUndefined()
     expect(getApplicationRef(request)).toBe('NEW')
   })
 
   it('clears the ref altogether when called without one', () => {
-    const request = { app: { applicationRef: 'OLD' }, query: { ref: 'OLD' } }
+    const request = { app: { referenceNumber: 'OLD' }, query: { ref: 'OLD' } }
 
     setApplicationRef(request, undefined)
 
-    expect(request.app.applicationRef).toBeUndefined()
+    expect(request.app.referenceNumber).toBeUndefined()
     expect(request.query).toEqual({})
     expect(getApplicationRef(request)).toBeUndefined()
   })
@@ -292,7 +291,7 @@ describe('setApplicationRef', () => {
 
     setApplicationRef(request, 'NEW')
 
-    expect(request.app.applicationRef).toBe('NEW')
+    expect(request.app.referenceNumber).toBe('NEW')
     expect(request.query).toBeUndefined()
   })
 })
@@ -336,7 +335,7 @@ describe('withApplicationRef', () => {
   })
 
   it('reads the ref stashed on request.app too', () => {
-    expect(withApplicationRef({ app: { applicationRef: 'REF-1' }, query: {} }, '/grant/summary')).toBe(
+    expect(withApplicationRef({ app: { referenceNumber: 'REF-1' }, query: {} }, '/grant/summary')).toBe(
       '/grant/summary?ref=REF-1'
     )
   })

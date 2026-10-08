@@ -415,7 +415,7 @@ describe('formsStatusRedirect', () => {
         getCacheKey.mockImplementation((req) => ({
           sbi: '12345',
           grantCode: 'grant-a',
-          referenceNumber: req.app?.applicationRef ?? req.query?.ref
+          referenceNumber: req.app?.referenceNumber ?? req.query?.ref
         }))
       })
 
@@ -435,7 +435,7 @@ describe('formsStatusRedirect', () => {
         await formsStatusRedirect(request, h, context)
 
         expect(request.query?.ref).toBeUndefined()
-        expect(request.app.applicationRef).toBeUndefined()
+        expect(request.app.referenceNumber).toBeUndefined()
         expect(h.redirect).toHaveBeenCalledWith('/grant-a/start')
       })
 
@@ -479,7 +479,7 @@ describe('formsStatusRedirect', () => {
 
         await formsStatusRedirect(request, h, context)
 
-        expect(request.app.applicationRef).toBe('GLD-NEW-REF')
+        expect(request.app.referenceNumber).toBe('GLD-NEW-REF')
         expect(updateApplicationStatus).toHaveBeenCalledWith('REOPENED', '12345:grant-a:GLD-NEW-REF', expect.anything())
         expect(h.redirect).toHaveBeenCalledWith('/grant-a/summary?ref=GLD-NEW-REF')
       })

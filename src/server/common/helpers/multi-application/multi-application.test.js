@@ -234,7 +234,7 @@ describe('multiApplication plugin - reattaching the ref to redirects', () => {
   it('reads the ref from request.app once the onPreHandler has moved it off the query', () => {
     const handler = registerAndGetPreResponse(server)
     const request = makeRequest({ ref: null })
-    request.app = { applicationRef: 'REF-APP' }
+    request.app = { referenceNumber: 'REF-APP' }
 
     handler(request, h)
 
@@ -322,7 +322,7 @@ describe('multiApplication plugin - hiding the ref from the forms engine', () =>
     const result = handler(request, h)
 
     expect(request.query).toEqual({})
-    expect(request.app.applicationRef).toBe('REF-1')
+    expect(request.app.referenceNumber).toBe('REF-1')
     expect(result).toBe(h.continue)
   })
 
@@ -333,7 +333,7 @@ describe('multiApplication plugin - hiding the ref from the forms engine', () =>
     handler(request, h)
 
     expect(request.query).toEqual({ returnUrl: '/test-grant/summary' })
-    expect(request.app.applicationRef).toBe('REF-1')
+    expect(request.app.referenceNumber).toBe('REF-1')
   })
 
   it('leaves a route outside the forms engine (e.g. the applications selector) untouched', () => {
@@ -343,7 +343,7 @@ describe('multiApplication plugin - hiding the ref from the forms engine', () =>
     handler(request, h)
 
     expect(request.query).toEqual({ ref: 'REF-1' })
-    expect(request.app.applicationRef).toBeUndefined()
+    expect(request.app.referenceNumber).toBeUndefined()
   })
 
   it('does nothing when the request has no ref', () => {
@@ -353,7 +353,7 @@ describe('multiApplication plugin - hiding the ref from the forms engine', () =>
     handler(request, h)
 
     expect(request.query).toEqual({ returnUrl: '/x' })
-    expect(request.app.applicationRef).toBeUndefined()
+    expect(request.app.referenceNumber).toBeUndefined()
   })
 
   it('ignores a ref that is not a single string (e.g. repeated ?ref=)', () => {
@@ -363,7 +363,7 @@ describe('multiApplication plugin - hiding the ref from the forms engine', () =>
     handler(request, h)
 
     expect(request.query).toEqual({ ref: ['A', 'B'] })
-    expect(request.app.applicationRef).toBeUndefined()
+    expect(request.app.referenceNumber).toBeUndefined()
   })
 
   it('does not throw when request.app is absent', () => {
@@ -372,7 +372,7 @@ describe('multiApplication plugin - hiding the ref from the forms engine', () =>
     delete request.app
 
     expect(() => handler(request, h)).not.toThrow()
-    expect(request.app.applicationRef).toBe('REF-1')
+    expect(request.app.referenceNumber).toBe('REF-1')
   })
 })
 
@@ -399,7 +399,7 @@ describe('multiApplication plugin - reattaching the ref to rendered links', () =
     path,
     url: new URL(path, 'http://localhost:3000'),
     query: {},
-    app: ref ? { applicationRef: ref } : {},
+    app: ref ? { referenceNumber: ref } : {},
     response: {
       variety,
       statusCode,

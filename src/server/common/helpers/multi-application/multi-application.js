@@ -1,10 +1,10 @@
 import { multiApplicationRedirect } from '../../request-pipeline/redirects/multi-application-redirect.js'
+import { REDIRECTION_MAX, REDIRECTION_MIN } from '../../request-pipeline/redirects/service-root-redirect.js'
+import { statusCodes } from '../../constants/status-codes.js'
 import { getApplicationRef, withApplicationRef } from '../state/get-cache-key-helper.js'
 
+// The plugin's registered name: Hapi records it on every route the plugin registers.
 const FORMS_ENGINE_PLUGIN_NAME = '@defra/forms-engine-plugin'
-const REDIRECT_MIN = 300
-const REDIRECT_MAX = 399
-const OK = 200
 
 /**
  * Keeps `?ref=` attached to every request of a journey. The forms-engine-plugin
@@ -16,11 +16,14 @@ export default {
   plugin: {
     name: 'multi-application',
     register: (server) => {
+      // 1. Route the request: validate ?ref=, or pick 0/1/many -> start / continue / selector.
       server.ext('onPostAuth', (request, h) => multiApplicationHandler(request, h))
+      // 2. Move ref from request.query to request.app so the forms engine never strips it.
       server.ext('onPreHandler', (request, h) => hideApplicationRefFromFormsEngine(request, h))
+      // 3. Put ?ref= back on every same-grant redirect (the plugin drops query params on POST).
       server.ext('onPreResponse', (request, h) => reattachApplicationRef(request, h))
-      // Runs last: it replaces the view with rendered HTML, so extensions that
-      // add view context (the dev journey runner) must have run already.
+      // 4. Put ?ref= on every same-grant link of the rendered page; last, as it replaces the view
+      //    with HTML and the dev journey runner still needs to add its view context before that.
       server.ext('onPreResponse', (request, h) => reattachApplicationRefToRenderedLinks(request, h), {
         after: ['journey-runner']
       })
@@ -35,7 +38,7 @@ export default {
 const isFormsEngineRoute = (request) => request.route?.realm?.plugin === FORMS_ENGINE_PLUGIN_NAME
 
 /**
- * Moves `ref` off `request.query` onto `request.app.applicationRef` for
+ * Moves `ref` off `request.query` onto `request.app.referenceNumber` for
  * forms-engine routes, so the plugin never sees a query to strip.
  *
  * @param {Request} request
@@ -54,11 +57,11 @@ const hideApplicationRefFromFormsEngine = (request, h) => {
   }
 
   // `query` is typed read-only but is a plain property at runtime.
-  const mutableRequest = /** @type {{ query: Record<string, unknown>, app: { applicationRef?: string } }} */ (
+  const mutableRequest = /** @type {{ query: Record<string, unknown>, app: { referenceNumber?: string } }} */ (
     /** @type {unknown} */ (request)
   )
   mutableRequest.app ??= {}
-  mutableRequest.app.applicationRef = ref
+  mutableRequest.app.referenceNumber = ref
   mutableRequest.query = queryWithoutRef
 
   return h.continue
@@ -90,8 +93,8 @@ const reattachApplicationRef = (request, h) => {
 
   const isRedirect =
     typeof response?.statusCode === 'number' &&
-    response.statusCode >= REDIRECT_MIN &&
-    response.statusCode <= REDIRECT_MAX
+    response.statusCode >= REDIRECTION_MIN &&
+    response.statusCode <= REDIRECTION_MAX
 
   if (!ref || !slug || !isRedirect || !headers || typeof location !== 'string') {
     return h.continue
@@ -161,7 +164,7 @@ const reattachApplicationRefToRenderedLinks = async (request, h) => {
 
   const replacement = h
     .response(rewritten)
-    .code(response.statusCode ?? OK)
+    .code(response.statusCode ?? statusCodes.ok)
     .type('text/html')
 
   for (const [name, value] of Object.entries(response.headers ?? {})) {
