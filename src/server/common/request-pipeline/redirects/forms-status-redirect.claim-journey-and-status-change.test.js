@@ -486,6 +486,20 @@ describe('formsStatusRedirect', () => {
         expect(order).toEqual(['save', 'delete'])
       })
 
+      it('REOPENED undoes the reopen when the old document cannot be deleted, so the business keeps its one submitted application', async () => {
+        mockCacheService.clearApplicationState.mockImplementation(async (_req, ref) => {
+          if (ref === 'GLD-OLD-REF') {
+            throw new Error('backend down')
+          }
+        })
+        mockGasStatus('APPLICATION_AMEND')
+
+        await formsStatusRedirect(request, h, context)
+
+        expect(mockCacheService.clearApplicationState).toHaveBeenCalledWith(request, 'GLD-NEW-REF')
+        expect(request.app.referenceNumber).toBe('GLD-OLD-REF')
+      })
+
       it('REOPENED redirects even when already on the destination page, so the address bar shows the new ref', async () => {
         request.path = '/grant-a/summary'
         mockGasStatus('APPLICATION_AMEND')

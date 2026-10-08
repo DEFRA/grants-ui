@@ -149,8 +149,25 @@ async function persistCleared(request, existingState) {
     return
   }
 
-  await cacheService.clearApplicationState(request, String(existingState.$$__referenceNumber))
+  await cacheService.clearApplicationState(request, storedReferenceNumber(request, existingState))
   setReferenceNumber(request, undefined)
+}
+
+/**
+ * The ref a ref-keyed document is stored under: on the document, else the request's.
+ *
+ * @param {AnyFormRequest} request
+ * @param {FormSubmissionState} existingState
+ * @returns {string}
+ */
+function storedReferenceNumber(request, existingState) {
+  const referenceNumber = existingState.$$__referenceNumber ?? getReferenceNumber(request)
+
+  if (!referenceNumber) {
+    throw new Error('Missing reference number for a ref-keyed application')
+  }
+
+  return String(referenceNumber)
 }
 
 /**
@@ -164,11 +181,10 @@ async function persistCleared(request, existingState) {
  */
 async function persistReopened(request, existingState) {
   const cacheService = getFormsCacheService(request.server)
-  const previousReferenceNumber = existingState.$$__referenceNumber
   const reopened = /** @type {FormSubmissionState} */ (
     /** @type {unknown} */ ({
       ...existingState,
-      previousReferenceNumber,
+      previousReferenceNumber: existingState.$$__referenceNumber,
       applicationStatus: ApplicationStatus.REOPENED
     })
   )
@@ -179,6 +195,7 @@ async function persistReopened(request, existingState) {
     return
   }
 
+  const previousReferenceNumber = storedReferenceNumber(request, existingState)
   const prefix = String(request.app.model?.def?.metadata?.referenceNumberPrefix ?? '')
   const newReferenceNumber = generateUniqueReference(prefix)
 
@@ -193,14 +210,22 @@ async function persistReopened(request, existingState) {
   // Saves only log their failures, so read the new document back before deleting the old one.
   const saved = await cacheService.getState(request)
   if (saved?.$$__referenceNumber !== newReferenceNumber) {
-    setReferenceNumber(request, String(previousReferenceNumber))
+    setReferenceNumber(request, previousReferenceNumber)
     throw new ExternalApiError({
       message: 'Reopened application was not saved; keeping the submitted one',
       source: 'persistReopened',
       reason: 'state_not_persisted'
     })
   }
-  await cacheService.clearApplicationState(request, String(previousReferenceNumber))
+
+  try {
+    await cacheService.clearApplicationState(request, previousReferenceNumber)
+  } catch (err) {
+    // Both documents are live: undo the reopen so the business keeps its one submitted application.
+    await cacheService.clearApplicationState(request, newReferenceNumber)
+    setReferenceNumber(request, previousReferenceNumber)
+    throw err
+  }
 }
 
 /**

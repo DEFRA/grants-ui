@@ -354,6 +354,16 @@ describe('multiApplication plugin - hiding the ref from the forms engine', () =>
     expect(request.app.referenceNumber).toBeUndefined()
   })
 
+  it('never stashes a malformed ref (one a colon would corrupt the session key with)', () => {
+    const handler = registerAndGetPreHandler(server)
+    const request = makeRequest({ query: { ref: 'a:b' } })
+
+    handler(request, h)
+
+    expect(request.query).toEqual({ ref: 'a:b' })
+    expect(request.app.referenceNumber).toBeUndefined()
+  })
+
   it('ignores a ref that is not a single string (e.g. repeated ?ref=)', () => {
     const handler = registerAndGetPreHandler(server)
     const request = makeRequest({ query: { ref: ['A', 'B'] } })
@@ -403,7 +413,7 @@ describe('multiApplication plugin - reattaching the ref to rendered links', () =
       statusCode,
       headers,
       source: {
-        manager: { render: vi.fn().mockResolvedValue(html) },
+        manager: { _render: vi.fn().mockResolvedValue(html) },
         template: 'page.html',
         context: { title: 'x' },
         options: { layout: 'l' }
@@ -411,16 +421,12 @@ describe('multiApplication plugin - reattaching the ref to rendered links', () =
     }
   })
 
-  /** Runs the hook and returns the HTML handed to `h.response`. */
+  /** Runs the hook, then renders through the manager as Vision does at marshal time. */
   const render = async (request) => {
-    const replacement = {
-      code: vi.fn().mockReturnThis(),
-      type: vi.fn().mockReturnThis(),
-      header: vi.fn().mockReturnThis()
-    }
-    const toolkit = mockHapiResponseToolkit({ response: vi.fn(() => replacement) })
-    const result = await registerAndGetRenderedLinksHandler(server)(request, toolkit)
-    return { result, replacement, toolkit, html: toolkit.response.mock.calls[0]?.[0] }
+    const original = request.response.source.manager
+    const result = await registerAndGetRenderedLinksHandler(server)(request, h)
+    const html = await request.response.source.manager._render('compiled', { title: 'x' }, request)
+    return { result, original, html }
   }
 
   beforeEach(() => {
@@ -436,17 +442,22 @@ describe('multiApplication plugin - reattaching the ref to rendered links', () =
     expect(calls[1][2]).toEqual({ after: ['journey-runner'] })
   })
 
-  it('renders through the view manager Vision attached to the response, with the same template, context, options and request', async () => {
+  it('wraps the render Vision does at marshal time, passing its arguments through to the original manager', async () => {
     const request = makeViewRequest({ html: '<a href="/test-grant/tasks">Tasks</a>' })
 
-    await render(request)
+    const { result, original } = await render(request)
 
-    expect(request.response.source.manager.render).toHaveBeenCalledWith(
-      'page.html',
-      { title: 'x' },
-      { layout: 'l' },
-      request
+    expect(result).toBe(h.continue)
+    expect(original._render).toHaveBeenCalledWith('compiled', { title: 'x' }, request)
+    expect(Object.getPrototypeOf(request.response.source.manager)).toBe(original)
+  })
+
+  it('leaves an unparsable link alone instead of failing the page', async () => {
+    const { html } = await render(
+      makeViewRequest({ html: '<a href="http://[bad">x</a><a href="/test-grant/tasks">y</a>' })
     )
+
+    expect(html).toBe('<a href="http://[bad">x</a><a href="/test-grant/tasks?ref=REF-1">y</a>')
   })
 
   it('puts the ref on every same-grant href and form action', async () => {
@@ -511,29 +522,26 @@ describe('multiApplication plugin - reattaching the ref to rendered links', () =
     expect((await render(makeViewRequest({ html }))).html).toBe(html)
   })
 
-  it('carries the status code and every header already set on the view response over to the replacement', async () => {
-    const request = makeViewRequest({
-      html: '<a href="/test-grant/tasks">x</a>',
-      statusCode: 404,
-      headers: { 'content-security-policy': "default-src 'self'", 'referrer-policy': 'no-referrer' }
-    })
+  it('leaves the view response itself untouched (status, headers, variety), only wrapping its render', async () => {
+    const headers = { 'content-security-policy': "default-src 'self'", 'referrer-policy': 'no-referrer' }
+    const request = makeViewRequest({ html: '<a href="/test-grant/tasks">x</a>', statusCode: 404, headers })
 
-    const { result, replacement } = await render(request)
+    const { result } = await render(request)
 
-    expect(result).toBe(replacement)
-    expect(replacement.code).toHaveBeenCalledWith(404)
-    expect(replacement.type).toHaveBeenCalledWith('text/html')
-    expect(replacement.header).toHaveBeenCalledWith('content-security-policy', "default-src 'self'")
-    expect(replacement.header).toHaveBeenCalledWith('referrer-policy', 'no-referrer')
+    expect(result).toBe(h.continue)
+    expect(request.response.statusCode).toBe(404)
+    expect(request.response.headers).toBe(headers)
+    expect(request.response.variety).toBe('view')
   })
 
   it('does nothing when the request has no ref', async () => {
     const request = makeViewRequest({ html: '<a href="/test-grant/tasks">x</a>', ref: null })
+    const original = request.response.source.manager
 
     const result = await registerAndGetRenderedLinksHandler(server)(request, h)
 
     expect(result).toBe(h.continue)
-    expect(request.response.source.manager.render).not.toHaveBeenCalled()
+    expect(request.response.source.manager).toBe(original)
   })
 
   it('does nothing for a response that is not a view, or a request with no slug', async () => {

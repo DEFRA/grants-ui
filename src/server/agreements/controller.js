@@ -4,6 +4,7 @@ import { YarKeys } from '~/src/server/common/constants/session-keys.js'
 import { getReferenceNumber } from '~/src/server/common/helpers/state/get-cache-key-helper.js'
 import { listApplicationsFromApi } from '~/src/server/common/helpers/state/fetch-saved-state-helper.js'
 import Jwt from '@hapi/jwt'
+import { notFound } from '@hapi/boom'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
@@ -108,16 +109,12 @@ async function resolveUrlContext(request, storedGrantCode) {
     return null
   }
 
-  let applications
-  try {
-    applications = await listApplicationsFromApi({ crn: String(crn), sbi: String(sbi), grantCode })
-  } catch {
-    return null
-  }
+  // A list failure propagates: never fall back to the session's (possibly another tab's) application.
+  const applications = await listApplicationsFromApi({ crn: String(crn), sbi: String(sbi), grantCode })
 
   const application = applications.find((candidate) => candidate.applicationRef === ref)
   if (!application) {
-    return null
+    throw notFound('Unknown application reference')
   }
 
   const context = {
@@ -242,6 +239,11 @@ export const getAgreementController = {
 
       return apiResponse
     } catch (error) {
+      // An unknown ?ref= is this service's own not-found, not an upstream failure: render the 404 page.
+      if (/** @type {ErrorResponse} */ (error).output?.statusCode === statusCodes.notFound) {
+        throw error
+      }
+
       logAgreementsUpstreamError(request, /** @type {ErrorResponse} */ (error))
 
       if (/** @type {Error} */ (error).message.includes('Missing required configuration')) {

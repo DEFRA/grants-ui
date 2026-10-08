@@ -1,7 +1,6 @@
 import { multiApplicationRedirect } from '../../request-pipeline/redirects/multi-application-redirect.js'
 import { REDIRECTION_MAX, REDIRECTION_MIN } from '../../request-pipeline/redirects/service-root-redirect.js'
-import { statusCodes } from '../../constants/status-codes.js'
-import { getReferenceNumber, withReferenceNumber } from '../state/get-cache-key-helper.js'
+import { getReferenceNumber, REFERENCE_NUMBER_PATTERN, withReferenceNumber } from '../state/get-cache-key-helper.js'
 
 // The plugin's registered name: Hapi records it on every route the plugin registers.
 const FORMS_ENGINE_PLUGIN_NAME = '@defra/forms-engine-plugin'
@@ -22,8 +21,8 @@ export default {
       server.ext('onPreHandler', (request, h) => hideReferenceNumberFromFormsEngine(request, h))
       // 3. Put ?ref= back on every same-grant redirect (the plugin drops query params on POST).
       server.ext('onPreResponse', (request, h) => reattachReferenceNumber(request, h))
-      // 4. Put ?ref= on every same-grant link of the rendered page; last, as it replaces the view
-      //    with HTML and the dev journey runner still needs to add its view context before that.
+      // 4. Put ?ref= on every same-grant link of the rendered page; after the dev journey runner,
+      //    which also wraps the view's render.
       server.ext('onPreResponse', (request, h) => reattachReferenceNumberToRenderedLinks(request, h), {
         after: ['journey-runner']
       })
@@ -52,7 +51,8 @@ const hideReferenceNumberFromFormsEngine = (request, h) => {
 
   const { ref, ...queryWithoutRef } = request.query ?? {}
 
-  if (typeof ref !== 'string' || !ref) {
+  // Same validation as reading it from the query: a malformed ref is never stashed.
+  if (typeof ref !== 'string' || !REFERENCE_NUMBER_PATTERN.test(ref)) {
     return h.continue
   }
 
@@ -126,33 +126,24 @@ const isSameGrantLink = (slug, pageUrl, link) => {
     return false
   }
 
-  const resolved = new URL(link, pageUrl)
+  try {
+    const resolved = new URL(link, pageUrl)
 
-  return resolved.origin === pageUrl.origin && staysInJourney(slug, resolved.pathname)
+    return resolved.origin === pageUrl.origin && staysInJourney(slug, resolved.pathname)
+  } catch {
+    // Unparsable (e.g. user-entered) link: left as it is rather than failing the page.
+    return false
+  }
 }
 
 /**
- * Puts `?ref=` on every same-grant link of a rendered page. Links are plain
- * paths with no hook to add a query, so the view is rendered here, rewritten
- * and returned in place of the original, keeping its status and headers.
- *
  * @param {Request} request
- * @param {ResponseToolkit} h
- * @returns {Promise<symbol | ResponseObject>}
+ * @param {string} slug
+ * @param {string} html
+ * @returns {string}
  */
-const reattachReferenceNumberToRenderedLinks = async (request, h) => {
-  const ref = getReferenceNumber(request)
-  const slug = request.params?.slug
-  const response = /** @type {ViewResponse} */ (request.response)
-  const source = response?.source
-
-  if (!ref || !slug || !source || response.variety !== 'view') {
-    return h.continue
-  }
-
-  const rendered = await source.manager.render(source.template, source.context, source.options, request)
-
-  const rewritten = rendered.replace(LINK_ATTRIBUTE_PATTERN, (match, attr, quote, url) => {
+const rewriteLinks = (request, slug, html) =>
+  html.replace(LINK_ATTRIBUTE_PATTERN, (match, attr, quote, url) => {
     const unescaped = url.replaceAll('&amp;', '&')
 
     if (!isSameGrantLink(slug, request.url, unescaped)) {
@@ -162,16 +153,34 @@ const reattachReferenceNumberToRenderedLinks = async (request, h) => {
     return `${attr}=${quote}${withReferenceNumber(request, unescaped).replaceAll('&', '&amp;')}${quote}`
   })
 
-  const replacement = h
-    .response(rewritten)
-    .code(response.statusCode ?? statusCodes.ok)
-    .type('text/html')
+/**
+ * Puts `?ref=` on every same-grant link of a rendered page. Vision renders the
+ * view at marshal time through `source.manager._render`, so that is wrapped on
+ * this one response: the view response itself (status, headers, cookies,
+ * settings) is left untouched.
+ *
+ * @param {Request} request
+ * @param {ResponseToolkit} h
+ * @returns {symbol}
+ */
+const reattachReferenceNumberToRenderedLinks = (request, h) => {
+  const ref = getReferenceNumber(request)
+  const slug = request.params?.slug
+  const response = /** @type {ViewResponse} */ (request.response)
+  const source = response?.source
+  const manager = source?.manager
 
-  for (const [name, value] of Object.entries(response.headers ?? {})) {
-    replacement.header(name, value)
+  if (!ref || !slug || !manager || response.variety !== 'view') {
+    return h.continue
   }
 
-  return replacement
+  source.manager = Object.create(manager, {
+    _render: {
+      value: async (...args) => rewriteLinks(request, slug, await manager._render(...args))
+    }
+  })
+
+  return h.continue
 }
 
 /**
@@ -203,5 +212,5 @@ const multiApplicationHandler = async (request, h) => {
  * @property {string} [variety]
  * @property {number} [statusCode]
  * @property {Record<string, string>} [headers]
- * @property {{ manager: { render: (template: string, context: object, options: object | undefined, request: Request) => Promise<string> }, template: string, context: object, options?: object }} [source]
+ * @property {{ manager: { _render: (...args: unknown[]) => Promise<string> }, template: string, context: object, options?: object }} [source]
  */

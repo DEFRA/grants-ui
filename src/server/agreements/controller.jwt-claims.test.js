@@ -94,24 +94,28 @@ describe('agreements user context JWT - real signing', () => {
     expect(payload.clientRef).toBe('gld-abc-123')
   })
 
-  test("a ref that is not one of this business's applications is ignored and nothing is stored", async () => {
+  test("a ref that is not one of this business's applications is rejected with a 404 rather than falling back to the stored (possibly another tab's) application", async () => {
     listApplicationsFromApi.mockResolvedValue([{ applicationRef: 'GLD-SOMEONE-ELSE', grantVersion: '1.0.0' }])
     mockRequest.query = { ref: 'GLD-ABC-123' }
 
-    const payload = jwt.decode(await signedToken())
+    // Thrown, so Hapi renders the standard 404 page rather than the upstream-error JSON.
+    await expect(getAgreementController.handler(mockRequest, mockH)).rejects.toMatchObject({
+      isBoom: true,
+      output: { statusCode: 404 }
+    })
 
-    expect(payload.clientRef).toBe('sfi123456')
-    expect(payload.grantCode).toBe('farm-payments')
+    expect(mockH.proxy).not.toHaveBeenCalled()
     expect(mockRequest.yar.set).not.toHaveBeenCalled()
   })
 
-  test('when the applications list cannot be fetched the stored context is used', async () => {
+  test('when the applications list cannot be fetched the request fails instead of using the stored context', async () => {
     listApplicationsFromApi.mockRejectedValue(new Error('backend down'))
     mockRequest.query = { ref: 'GLD-ABC-123' }
 
-    const payload = jwt.decode(await signedToken())
+    await getAgreementController.handler(mockRequest, mockH)
 
-    expect(payload.clientRef).toBe('sfi123456')
+    expect(mockH.proxy).not.toHaveBeenCalled()
+    expect(mockH.code).toHaveBeenCalledWith(503)
     expect(mockRequest.yar.set).not.toHaveBeenCalled()
   })
 
