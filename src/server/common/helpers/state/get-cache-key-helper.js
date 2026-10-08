@@ -43,9 +43,15 @@ export function getApplicationRef(request) {
     return app.referenceNumber
   }
 
-  const query = /** @type {{ ref?: string } | undefined} */ (request.query)
-  return typeof query?.ref === 'string' && query.ref ? query.ref : undefined
+  // Hapi gives an array for a repeated query parameter; that is not a usable ref. Nor is
+  // anything outside the reference format (a colon would corrupt the `sbi:grant:ref` key).
+  const query = /** @type {{ ref?: string | string[] } | undefined} */ (request.query)
+
+  return typeof query?.ref === 'string' && REFERENCE_NUMBER_PATTERN.test(query.ref) ? query.ref : undefined
 }
+
+/** Reference numbers as the forms engine mints them: `PREFIX-XXX-XXX`, letters, digits and hyphens only. */
+export const REFERENCE_NUMBER_PATTERN = /^[A-Z0-9-]+$/i
 
 /**
  * Re-scopes the request to another application (or none): updates the stash,

@@ -1,5 +1,6 @@
 import { getFormsCacheService } from '../../helpers/forms-cache/forms-cache.js'
 import { isApplicationWindowOpen } from '../../helpers/application-window.js'
+import { withApplicationRef } from '../../helpers/state/get-cache-key-helper.js'
 import {
   buildRedirectUrl,
   hasMeaningfulPreSubmissionState,
@@ -8,10 +9,9 @@ import {
 } from './forms-status-redirect.js'
 
 const CHECK_DETAILS_START_PAGE = '/check-details'
+const SLUG_ROOT_ROUTE = '/{slug}'
 export const REDIRECTION_MIN = 300
 export const REDIRECTION_MAX = 399
-
-export const SLUG_ROOT_ROUTE = '/{slug}'
 
 /**
  * Determines whether the response is the forms-engine-plugin's own start-page redirect.
@@ -104,7 +104,9 @@ export async function serviceRootRedirect(request, h) {
       return h.continue
     }
 
-    return h.redirect(buildRedirectUrl(slug, destinationPath)).takeover()
+    // This extension is registered after the multi-application plugin, so its redirect is never
+    // seen by that plugin's ref-reattaching hook: the ref has to be carried explicitly here.
+    return h.redirect(withApplicationRef(request, buildRedirectUrl(slug, destinationPath))).takeover()
   } catch {
     return h.continue
   }

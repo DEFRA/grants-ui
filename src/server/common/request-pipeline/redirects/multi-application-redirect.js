@@ -1,17 +1,15 @@
 import { notFound } from '@hapi/boom'
-import { ApplicationStatus } from '../../constants/application-status.js'
 import { getAuthenticatedCrn, getAuthenticatedSbi } from '../../helpers/auth/get-auth-identifiers.js'
 import { getGrantCode } from '../../helpers/grant-code.js'
 import { getApplicationRef, setApplicationRef } from '../../helpers/state/get-cache-key-helper.js'
 import { getStateWithDefinition } from '../../helpers/state/state-with-definition-context.js'
 import { listApplicationsFromApi } from '../../helpers/state/fetch-saved-state-helper.js'
-import { SLUG_ROOT_ROUTE } from './service-root-redirect.js'
 
 /**
  * `?ref=` routing (onPostAuth, before the plugin loads state). A grant is
  * multi-application when its definition is flagged or the backend already
  * stores the SBI's documents keyed by ref (`allowMultipleApplications` on the doc). With a ref it must resolve (404 otherwise; a
- * single-application grant just drops it). Without one: 0/1 continue, 2+ selector.
+ * single-application grant just drops it). Without one: 0 continue, 1 attach its ref, 2+ selector.
  *
  * @param {import('@defra/forms-engine-plugin/engine/types.js').AnyRequest} request
  * @param {import('@hapi/hapi').ResponseToolkit} h
@@ -23,6 +21,12 @@ export async function multiApplicationRedirect(request, h) {
   }
 
   const ref = getApplicationRef(request)
+
+  if (!ref && request.query?.ref) {
+    // Present but not a reference number: nothing to look up.
+    throw notFound('Unknown application reference')
+  }
+
   const envelope = await getStateWithDefinition(request)
 
   return ref ? resolveWithRef(request, h, envelope) : resolveWithoutRef(request, h, envelope)
@@ -34,17 +38,22 @@ export async function multiApplicationRedirect(request, h) {
  * @param {StateWithDefinitionEnvelope | null} envelope
  */
 async function resolveWithRef(request, h, envelope) {
-  if (envelope?.state) {
+  const storedByReference = allowsMultipleApplications(envelope) || envelope?.state?.allowMultipleApplications === true
+
+  if (storedByReference) {
+    if (!envelope?.state) {
+      throw notFound('Unknown application reference')
+    }
     return h.continue
   }
 
-  const isMultiApplication = allowsMultipleApplications(envelope) || (await listApplications(request)).length > 1
-
-  if (isMultiApplication) {
+  // Not flagged and no ref-keyed document for this ref: single-application scheme, unless
+  // the SBI already holds several (keyed by ref by the backend), in which case the ref is simply unknown.
+  if (!envelope?.state && (await listApplications(request)).length > 1) {
     throw notFound('Unknown application reference')
   }
 
-  // Single-application grant: a stray ref is ignored (POST keeps its payload).
+  // Single-application scheme: a stray ref is ignored, even one matching its only document.
   setApplicationRef(request, undefined)
   return request.method === 'get' ? h.redirect(currentUrl(request)).takeover() : h.continue
 }
@@ -55,10 +64,12 @@ async function resolveWithRef(request, h, envelope) {
  * @param {StateWithDefinitionEnvelope | null} envelope - the backend's unscoped pick
  */
 async function resolveWithoutRef(request, h, envelope) {
-  const isRootRequest = request.route?.path === SLUG_ROOT_ROUTE
+  // The backend marks every document it keys by reference (flagged grant, or an SBI that already
+  // holds several), so the marker catches the unflagged-but-several case without a lookup here.
   const isMultiApplication = allowsMultipleApplications(envelope) || envelope?.state?.allowMultipleApplications === true
 
-  if (!isMultiApplication && !isRootRequest) {
+  // Single-application scheme: exactly as before, no applications lookup.
+  if (!isMultiApplication) {
     return h.continue
   }
 
@@ -68,31 +79,18 @@ async function resolveWithoutRef(request, h, envelope) {
     return h.redirect(applicationsSelectorPath(request)).takeover()
   }
 
-  if (applications.length === 1 && isShadowedByPurgedApplication(envelope, applications[0])) {
+  // Documents are keyed by reference, so even the sole application must be named on every request.
+  if (applications.length === 1) {
     return scopeToApplication(request, h, applications[0].applicationRef)
   }
 
-  // 0 or 1 application: no ref needed, as before.
+  // No live application: the forms engine creates one on this request and the next request picks up
+  // its ref. The unscoped read may still have found a purged document (the list hides those); forget it.
+  if (envelope?.state) {
+    const app = /** @type {{ stateWithDefinition?: Promise<StateWithDefinitionEnvelope | null> }} */ (request.app)
+    app.stateWithDefinition = Promise.resolve({ ...envelope, state: null })
+  }
   return h.continue
-}
-
-/**
- * The applications list hides PURGED documents but the unscoped state read
- * does not, so with one live and one purged application the read can land on
- * the purged one.
- *
- * @param {StateWithDefinitionEnvelope | null} envelope
- * @param {{ applicationRef: string }} live
- * @returns {boolean}
- */
-function isShadowedByPurgedApplication(envelope, live) {
-  const picked = envelope?.state
-
-  return (
-    picked?.state?.applicationStatus === ApplicationStatus.PURGED &&
-    Boolean(live.applicationRef) &&
-    picked.applicationRef !== live.applicationRef
-  )
 }
 
 /**

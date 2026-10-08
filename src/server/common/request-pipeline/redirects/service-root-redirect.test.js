@@ -41,6 +41,15 @@ describe('serviceRootRedirect', () => {
     }
   })
 
+  it('carries the application ref on the redirect - this extension runs after the multi-application plugin, whose hook cannot see its redirect', async () => {
+    getState.mockResolvedValue({ businessDetailsUpToDate: true })
+    request.query = { ref: 'REF-A' }
+
+    await serviceRootRedirect(request, h)
+
+    expect(h.redirect).toHaveBeenCalledWith('/woodland/tasks?ref=REF-A')
+  })
+
   it.each([undefined, 'CLEARED'])(
     'redirects an in-progress %s application from the service root to the preSubmission path',
     async (applicationStatus) => {

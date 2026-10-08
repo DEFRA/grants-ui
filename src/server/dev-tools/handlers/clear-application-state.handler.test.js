@@ -204,6 +204,19 @@ describe('clearApplicationStateHandler', () => {
       })
     })
 
+    it('prefers the ref on the URL over the shared session context, which another tab may have overwritten', async () => {
+      mockRequest.query = { ref: 'REF-A' }
+      mockRequest.yar.get.mockReturnValue({
+        grantCode: 'farm-payments',
+        grantVersion: '2.0.0',
+        applicationRef: 'REF-B'
+      })
+
+      await clearApplicationStateHandler(mockRequest, mockH)
+
+      expect(clearSavedStateFromApiByContext).toHaveBeenCalledWith(expect.objectContaining({ applicationRef: 'REF-A' }))
+    })
+
     it('should clear GRANT_APPLICATION_CONTEXT from yar after successful clear', async () => {
       await clearApplicationStateHandler(mockRequest, mockH)
 

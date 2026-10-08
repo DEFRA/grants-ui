@@ -255,6 +255,12 @@ describe('getApplicationRef', () => {
     expect(getApplicationRef({})).toBeUndefined()
   })
 
+  it('ignores a ref outside the reference format, which would corrupt the colon-separated session key', () => {
+    expect(getApplicationRef({ query: { ref: 'INVALID:REF' } })).toBeUndefined()
+    expect(getApplicationRef({ query: { ref: 'a b' } })).toBeUndefined()
+    expect(getApplicationRef({ query: { ref: 'GLD-ABC-123' } })).toBe('GLD-ABC-123')
+  })
+
   it('ignores a ref that is not a non-empty string', () => {
     expect(getApplicationRef({ query: { ref: ['A', 'B'] } })).toBeUndefined()
     expect(getApplicationRef({ query: { ref: '' } })).toBeUndefined()
@@ -340,8 +346,9 @@ describe('withApplicationRef', () => {
     )
   })
 
-  it('encodes a ref that needs escaping', () => {
-    expect(withApplicationRef(requestWithRef('a b&c'), '/grant/summary')).toBe('/grant/summary?ref=a+b%26c')
+  it('ignores a ref outside the reference format (letters, digits, hyphens), so nothing needs escaping', () => {
+    expect(withApplicationRef(requestWithRef('a b&c'), '/grant/summary')).toBe('/grant/summary')
+    expect(withApplicationRef(requestWithRef('gld-abc-123'), '/grant/summary')).toBe('/grant/summary?ref=gld-abc-123')
   })
 })
 

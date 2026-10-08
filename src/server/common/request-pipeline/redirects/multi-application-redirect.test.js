@@ -114,10 +114,34 @@ describe('multiApplicationRedirect', () => {
     })
   })
 
+  describe('malformed ref', () => {
+    it('404s a ref outside the reference format before touching the backend', async () => {
+      const request = makeRequest({ query: { ref: 'INVALID:REF' }, routePath: SUB_PAGE, path: '/test-grant/tasks' })
+
+      await expect(multiApplicationRedirect(request, h)).rejects.toMatchObject({ output: { statusCode: 404 } })
+      expect(getStateWithDefinition).not.toHaveBeenCalled()
+      expect(listApplicationsFromApi).not.toHaveBeenCalled()
+    })
+  })
+
   describe('single-application grant, with a ref (ignored, as before multi-application support)', () => {
     beforeEach(() => {
       getStateWithDefinition.mockResolvedValue(singleGrant(null))
       listApplicationsFromApi.mockResolvedValue([{ applicationRef: 'REF-1' }])
+    })
+
+    it("ignores a ref even when it matches the grant's single, version-keyed document (every document carries an applicationRef)", async () => {
+      getStateWithDefinition.mockResolvedValue(
+        singleGrant({ applicationRef: 'REF-1', allowMultipleApplications: false, state: { foo: 'bar' } })
+      )
+      const request = makeRequest({ query: { ref: 'REF-1' }, routePath: SUB_PAGE, path: '/test-grant/tasks' })
+
+      const result = await multiApplicationRedirect(request, h)
+
+      expect(h.redirect).toHaveBeenCalledWith('/test-grant/tasks')
+      expect(result).toBe(takeover)
+      expect(request.query).toEqual({})
+      expect(listApplicationsFromApi).not.toHaveBeenCalled()
     })
 
     it('redirects a GET to the same URL without the ref, keeping every other query parameter', async () => {
@@ -210,81 +234,68 @@ describe('multiApplicationRedirect', () => {
       expect(h.redirect).not.toHaveBeenCalled()
     })
 
-    it('continues with no ref when the sbi has exactly one application - it stays ref-less for the whole journey, as on a single-application grant', async () => {
+    it('starts afresh when no live application remains, forgetting the purged document the unscoped read found', async () => {
+      const purged = multiGrant({
+        applicationRef: 'REF-PURGED',
+        allowMultipleApplications: true,
+        state: { applicationStatus: 'PURGED', answer: 'x' }
+      })
+      getStateWithDefinition.mockResolvedValue(purged)
+      listApplicationsFromApi.mockResolvedValue([])
+      const request = makeRequest({
+        routePath: SUB_PAGE,
+        path: '/test-grant/tasks',
+        app: { stateWithDefinition: Promise.resolve(purged) }
+      })
+
+      const result = await multiApplicationRedirect(request, h)
+
+      expect(result).toBe(h.continue)
+      expect(h.redirect).not.toHaveBeenCalled()
+      await expect(request.app.stateWithDefinition).resolves.toEqual({ ...purged, state: null })
+    })
+
+    it('attaches the sole application ref to a GET - documents are keyed by reference, so every request must name one', async () => {
       listApplicationsFromApi.mockResolvedValue([{ applicationRef: 'REF-1' }])
-      const request = makeRequest({ routePath: SUB_PAGE, path: '/test-grant/summary' })
+      const request = makeRequest({
+        query: { parcelId: 'SD1' },
+        routePath: SUB_PAGE,
+        path: '/test-grant/remove-parcel',
+        app: { stateWithDefinition: Promise.resolve(multiGrant()) }
+      })
+
+      const result = await multiApplicationRedirect(request, h)
+
+      expect(h.redirect).toHaveBeenCalledWith('/test-grant/remove-parcel?parcelId=SD1&ref=REF-1')
+      expect(result).toBe(takeover)
+      expect(request.app.stateWithDefinition).toBeUndefined()
+    })
+
+    it('scopes a POST to the sole application in place, keeping its payload', async () => {
+      listApplicationsFromApi.mockResolvedValue([{ applicationRef: 'REF-1' }])
+      const request = makeRequest({ routePath: SUB_PAGE, path: '/test-grant/page', method: 'post' })
 
       const result = await multiApplicationRedirect(request, h)
 
       expect(result).toBe(h.continue)
       expect(h.redirect).not.toHaveBeenCalled()
-      expect(request.app.referenceNumber).toBeUndefined()
+      expect(request.app.referenceNumber).toBe('REF-1')
     })
 
-    describe('one live application shadowed by a purged one (the list hides purged applications, the unscoped read does not)', () => {
-      const purgedPick = () => multiGrant({ applicationRef: 'REF-PURGED', state: { applicationStatus: 'PURGED' } })
-
-      it('attaches the live application ref to a GET so the next read is scoped to it', async () => {
-        getStateWithDefinition.mockResolvedValue(purgedPick())
-        listApplicationsFromApi.mockResolvedValue([{ applicationRef: 'REF-LIVE' }])
-        const request = makeRequest({
-          query: { parcelId: 'SD1' },
-          routePath: SUB_PAGE,
-          path: '/test-grant/summary',
-          app: { stateWithDefinition: Promise.resolve(purgedPick()) }
+    it('attaches the sole live ref even when the unscoped read landed on a purged sibling (the list hides purged documents)', async () => {
+      getStateWithDefinition.mockResolvedValue(
+        multiGrant({
+          applicationRef: 'REF-PURGED',
+          allowMultipleApplications: true,
+          state: { applicationStatus: 'PURGED' }
         })
+      )
+      listApplicationsFromApi.mockResolvedValue([{ applicationRef: 'REF-LIVE' }])
+      const request = makeRequest({ routePath: SUB_PAGE, path: '/test-grant/tasks' })
 
-        const result = await multiApplicationRedirect(request, h)
+      await multiApplicationRedirect(request, h)
 
-        expect(h.redirect).toHaveBeenCalledWith('/test-grant/summary?parcelId=SD1&ref=REF-LIVE')
-        expect(result).toBe(takeover)
-        expect(request.app.stateWithDefinition).toBeUndefined()
-      })
-
-      it('scopes a POST in place instead, keeping its payload', async () => {
-        getStateWithDefinition.mockResolvedValue(purgedPick())
-        listApplicationsFromApi.mockResolvedValue([{ applicationRef: 'REF-LIVE' }])
-        const request = makeRequest({ routePath: SUB_PAGE, path: '/test-grant/page', method: 'post' })
-
-        const result = await multiApplicationRedirect(request, h)
-
-        expect(result).toBe(h.continue)
-        expect(h.redirect).not.toHaveBeenCalled()
-        expect(request.app.referenceNumber).toBe('REF-LIVE')
-      })
-
-      it('does not attach a ref when the purged document IS the listed one (nothing is shadowed)', async () => {
-        getStateWithDefinition.mockResolvedValue(purgedPick())
-        listApplicationsFromApi.mockResolvedValue([{ applicationRef: 'REF-PURGED' }])
-        const request = makeRequest({ routePath: SUB_PAGE, path: '/test-grant/page' })
-
-        const result = await multiApplicationRedirect(request, h)
-
-        expect(result).toBe(h.continue)
-        expect(h.redirect).not.toHaveBeenCalled()
-      })
-
-      it('does not attach a ref when the unscoped read already picked the live application', async () => {
-        getStateWithDefinition.mockResolvedValue(multiGrant({ applicationRef: 'REF-LIVE', state: { foo: 'bar' } }))
-        listApplicationsFromApi.mockResolvedValue([{ applicationRef: 'REF-LIVE' }])
-        const request = makeRequest({ routePath: SUB_PAGE, path: '/test-grant/page' })
-
-        const result = await multiApplicationRedirect(request, h)
-
-        expect(result).toBe(h.continue)
-        expect(h.redirect).not.toHaveBeenCalled()
-      })
-    })
-
-    it('leaves a request for the selector itself alone, so it cannot redirect to itself forever', async () => {
-      listApplicationsFromApi.mockResolvedValue([{ applicationRef: 'REF-1' }, { applicationRef: 'REF-2' }])
-      const request = makeRequest({ routePath: SUB_PAGE, path: '/test-grant/applications' })
-
-      const result = await multiApplicationRedirect(request, h)
-
-      expect(result).toBe(h.continue)
-      expect(h.redirect).not.toHaveBeenCalled()
-      expect(getStateWithDefinition).not.toHaveBeenCalled()
+      expect(h.redirect).toHaveBeenCalledWith('/test-grant/tasks?ref=REF-LIVE')
     })
 
     it('redirects the root to the applications selector when the sbi has more than one application', async () => {
@@ -343,36 +354,27 @@ describe('multiApplicationRedirect', () => {
       expect(listApplicationsFromApi).not.toHaveBeenCalled()
     })
 
-    it('does not list applications for a version-keyed document just because it carries an applicationRef (every document does)', async () => {
-      getStateWithDefinition.mockResolvedValue(
-        singleGrant({ applicationRef: 'REF-1', allowMultipleApplications: false, state: { foo: 'bar' } })
-      )
-      const request = makeRequest({ routePath: SUB_PAGE, path: '/test-grant/summary' })
+    it('continues on the root without listing applications either - no new dependency for the existing flow', async () => {
+      const result = await multiApplicationRedirect(makeRequest(), h)
 
-      const result = await multiApplicationRedirect(request, h)
+      expect(result).toBe(h.continue)
+      expect(listApplicationsFromApi).not.toHaveBeenCalled()
+      expect(h.redirect).not.toHaveBeenCalled()
+    })
+
+    it('continues on the root with no document yet (new application)', async () => {
+      getStateWithDefinition.mockResolvedValue(singleGrant(null))
+
+      const result = await multiApplicationRedirect(makeRequest(), h)
 
       expect(result).toBe(h.continue)
       expect(listApplicationsFromApi).not.toHaveBeenCalled()
     })
 
-    it('continues on the root when the sbi has no applications yet', async () => {
-      listApplicationsFromApi.mockResolvedValue([])
-
-      const result = await multiApplicationRedirect(makeRequest(), h)
-
-      expect(result).toBe(h.continue)
-    })
-
-    it('continues on the root with exactly one application - the backend resolves it unaided, as it always has', async () => {
-      listApplicationsFromApi.mockResolvedValue([{ applicationRef: 'REF-1' }])
-
-      const result = await multiApplicationRedirect(makeRequest(), h)
-
-      expect(result).toBe(h.continue)
-      expect(h.redirect).not.toHaveBeenCalled()
-    })
-
-    it('still sends the root to the selector when the sbi somehow holds several', async () => {
+    it('sends the root to the selector when the sbi holds several ref-keyed documents (the backend marks them)', async () => {
+      getStateWithDefinition.mockResolvedValue(
+        singleGrant({ applicationRef: 'REF-2', allowMultipleApplications: true, state: {} })
+      )
       listApplicationsFromApi.mockResolvedValue([{ applicationRef: 'REF-1' }, { applicationRef: 'REF-2' }])
 
       const result = await multiApplicationRedirect(makeRequest(), h)
