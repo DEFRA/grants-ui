@@ -54,6 +54,23 @@ describe('agreements user context JWT - real signing', () => {
     config.get.mockImplementation(agreementsConfigValues())
   })
 
+  test('a ?ref= on the URL overrides the stored clientRef, so two tabs on two applications do not share one', async () => {
+    mockRequest.query = { ref: 'GLD-ABC-123' }
+
+    const payload = jwt.decode(await signedToken())
+
+    expect(payload.clientRef).toBe('gld-abc-123')
+    expect(payload.grantCode).toBe('farm-payments')
+  })
+
+  test('without a ?ref= the stored clientRef is used', async () => {
+    mockRequest.query = {}
+
+    const payload = jwt.decode(await signedToken())
+
+    expect(payload.clientRef).toBe('sfi123456')
+  })
+
   test('signs a verifiable HS256 token carrying every expected claim', async () => {
     const token = await signedToken()
 
