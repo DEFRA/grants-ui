@@ -1,7 +1,6 @@
-@runme
 Feature: Action Selection
 
-    Scenario: Add and remove land parcels and select actions
+    Scenario: User can add and remove land parcels and select actions
         Given there is no application data for SBI "106514040" and grant "example-grant-with-map"
 
         # start
@@ -35,38 +34,38 @@ Feature: Action Selection
             |        |                                                       | hectares available                                               |     |
         When the user selects action "CSAM3"
 
-        # RULE: partial action hectares cannot be zero
+        # RULE: partial area action specified area cannot be zero
         When the user enters "0" hectares for action "CSAM3"
         And continues
         Then the user should see error "Enter a quantity for Herbal leys: CSAM3" for action "CSAM3"
 
-        # RULE: partial action hectares cannot exceed available hectares
+        # RULE: partial area action specified area cannot exceed available area
         When the user enters "0.277" hectares for action "CSAM3"
         And continues
         Then the user should see error "Enter up to 0.276 hectares" for action "CSAM3"
 
-        # RULE: partial action hectares must be 4 decimal places or less
+        # RULE: partial area action hectares must be 4 decimal places or less
         When the user enters "0.27666" hectares for action "CSAM3"
         And continues
         Then the user should see error "Quantity for Herbal leys: CSAM3 must be 4 decimal places or fewer" for action "CSAM3"
 
-        # RULE: partial action hectares cannot be empty
+        # RULE: partial area action specified area cannot be empty
         When the user enters "" hectares for action "CSAM3"
         And continues
         Then the user should see error "Enter a quantity for Herbal leys: CSAM3" for action "CSAM3"
 
-        # RULE: partial action cannot be selected once a total action has been selected taking all available hectares
+        # RULE: partial area action cannot be selected once a total area action has been selected taking all available area
         When the user deselects action "CSAM3"
         And the user selects action "CLIG3"
         Then the user should be unable to select action "CSAM3"
 
-        # RULE: selecting a partial area action with less than the available hectares allows a total area action to subsequently be selected
+        # RULE: selecting a partial area action with less than the available area allows a total area action to subsequently be selected
         When the user deselects action "CLIG3"
         And the user selects action "CSAM3"
         And enters "0.1" hectares for action "CSAM3"
         Then the user should be able to select action "CLIG3"
 
-        # RULE: selecting a partial area action with all available hectares does not allow a total area action to subsequently be selected
+        # RULE: selecting a partial area action with all available area does not allow a total area action to subsequently be selected
         When the user enters "0.276" hectares for action "CSAM3"
         Then the user should be unable to select action "CLIG3"
 
@@ -229,7 +228,7 @@ Feature: Action Selection
         # And should see the following error messages
         #     | There are no actions available for parcel SK0972 7313. Select another land parcel to continue. |
 
-        # RULE: a land parcel with pre-existing agreement for the total area prevents incompatible actions being shown
+        # RULE: a land parcel with pre-existing agreement for the total available area prevents incompatible actions being shown
         Then the user should be at URL "select-land-parcel"
         When the user selects parcel "SK0971 5761" of area "0.6116" hectares on the map
         And continues
@@ -239,7 +238,7 @@ Feature: Action Selection
             | CLIG3 |
             | SCR2  |
 
-        # RULE: a land parcel with pre-existing agreement for less than the total area reduces the available area for incompatible actions
+        # RULE: a land parcel with pre-existing agreement for less than the total available area reduces the available area for incompatible actions
         When the user navigates backward
         Then the user should be at URL "select-land-parcel"
         When the user selects parcel "SK0971 4561" of area "0.112" hectares on the map
@@ -261,47 +260,62 @@ Feature: Action Selection
         And continues
         Then the user should be at URL "select-actions-for-land-parcel"
 
-        # RULE: count-based action shows its payment rate per singular unit and its quantity in plural units
+        # RULE: count-based action shows payment rate per singular unit and quantity in plural units
         When the user selects action "WBD1"
         Then the user should see the following actions with guidance
             | ACTION | DESCRIPTION        | GUIDANCE                         | URL |
             | WBD1   | Manage ponds: WBD1 | Payment rate per year: £257/pond | Yes |
         And should see unit "ponds" for action "WBD1"
 
-        # RULE: count-based action cannot be zero
+        # RULE: count-based action quantity cannot be zero
         When the user enters "0" ponds for action "WBD1"
         And continues
         Then the user should see error "Value must be greater than 0" for action "WBD1"
 
-        # RULE: count-based action cannot be negative
+        # RULE: count-based action quantity cannot be negative
         When the user enters "-1" ponds for action "WBD1"
         And continues
         Then the user should see error "Value must be greater than 0" for action "WBD1"
 
-        # RULE: count-based action must be numeric
+        # RULE: count-based action quantity must be a whole number
+        When the user enters "2.5" ponds for action "WBD1"
+        And continues
+        Then the user should see error "Must be a whole number" for action "WBD1"
+
+        # RULE: count-based action quantity must be numeric
         When the user enters "abc" ponds for action "WBD1"
         And continues
         Then the user should see error "Must be numbers" for action "WBD1"
 
-        # RULE: count-based action cannot be empty
+        # RULE: count-based action quantity cannot be empty
         When the user enters "" ponds for action "WBD1"
         And continues
         Then the user should see error "Enter a quantity for Manage ponds: WBD1" for action "WBD1"
 
         # RULE: count-based action can be applied to an eligible land parcel
         When the user enters "2" ponds for action "WBD1"
+
+        # RULE: partial area action square metres must be a whole number
+        When the user selects action "HEF1"
+        And the user enters "10.5" m² for action "HEF1"
+        And continues
+        Then the user should see error "Must be a whole number" for action "HEF1"
+
+        # RULE: partial area action in square metres can be applied to an eligible land parcel
+        When the user enters "10" m² for action "HEF1"
         And continues
 
         # confirm-land-and-actions
         Then the user should be at URL "confirm-land-and-actions"
         And should see heading "Review land parcels and actions"
         And should see the following parcel summary cards
-            | PARCEL      | ACTION              | QUANTITY | YEARLY PAYMENT |
-            | SD7323 4596 | Manage ponds (WBD1) | 2 ponds  | £514.00        |
-            |             | Subtotal            |          | £514.00        |
-        And should see total yearly payment "£514.00"
+            | PARCEL      | ACTION                                                              | QUANTITY | YEARLY PAYMENT |
+            | SD7323 4596 | Maintain weatherproof traditional farm or forestry buildings (HEF1) | 10 sqm   | £50.00         |
+            |             | Manage ponds (WBD1)                                                 | 2 ponds  | £514.00        |
+            |             | Subtotal                                                            |          | £564.00        |
+        And should see total yearly payment "£564.00"
 
-    Scenario: User is advised when both SSSI and HEFER apply to a land parcel
+    Scenario: User is told when both SSSI and HEFER apply to a land parcel
         Given there is no application data for SBI "106592443" and grant "example-grant-with-map"
 
         # start
@@ -336,7 +350,7 @@ Feature: Action Selection
             |        |                                                       | SSSI consent and HEFER required       |     |
             |        |                                                       | 26.9088 hectares available             |     |
 
-    Scenario: User is advised when either SSSI or HEFER applies to a land parcel
+    Scenario: User is told when either SSSI or HEFER alone applies to a land parcel
         Given there is no application data for SBI "300000100" and grant "example-grant-with-map"
 
         # start
