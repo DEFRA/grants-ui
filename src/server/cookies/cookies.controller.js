@@ -1,6 +1,7 @@
 import { context } from '~/src/config/nunjucks/context/context.js'
 import { config } from '~/src/config/config.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { isSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 
 const GA_COOKIE_REGEX = /^_ga$|^_ga_.*$|^_gid$|^_gat_.*$|^_dc_gtm_.*$/
 
@@ -35,18 +36,6 @@ const removeAnalytics = (request, h) => {
 }
 
 /**
- * Validates that a URL is safe for redirection (relative URLs only)
- * @param {string|string[]} url - The URL to validate
- * @returns {boolean} True if the URL is a safe relative URL
- */
-const isValidReturnUrl = (url) => {
-  if (!url || typeof url !== 'string') {
-    return false
-  }
-  return url.startsWith('/') && !url.startsWith('//')
-}
-
-/**
  * Controller for the cookies page
  * Allows users to view cookie information and manage their consent preferences
  * @satisfies {Partial<ServerRoute>}
@@ -54,7 +43,7 @@ const isValidReturnUrl = (url) => {
 export const cookiesController = {
   async handler(request, h) {
     const rawReturnUrl = request.query.returnUrl || '/'
-    const returnUrl = isValidReturnUrl(rawReturnUrl) ? rawReturnUrl : '/'
+    const returnUrl = isSafeRedirect(rawReturnUrl) ? rawReturnUrl : '/'
     const success = request.query.success === 'true'
     log(LogCodes.COOKIES.PAGE_LOAD, { returnUrl, referer: request.headers.referer }, request)
     const ctx = await context(request)
@@ -112,7 +101,7 @@ export const cookiesPostController = {
     }
 
     // Synchronous mode from banner — redirect back to the original page
-    if (isValidReturnUrl(returnUrl)) {
+    if (isSafeRedirect(returnUrl)) {
       const redirectResponse = h.redirect(returnUrl)
       redirectResponse.state(cookieName, consentValue, cookieOptions)
       return redirectResponse

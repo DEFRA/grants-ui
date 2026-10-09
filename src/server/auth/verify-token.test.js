@@ -11,6 +11,7 @@ vi.mock('./get-oidc-config.js')
 
 // A minimal valid RSA public JWK (2048-bit) for use in tests
 const mockJwk = {
+  kid: 'current-key',
   kty: 'RSA',
   n: 'pjdss8ZaDfEH6K6U7GeW2nxDqR4IP049fk1fK0lndimbMMVBdPv_hSpm8T8EtBDxrUdi1OHZfMhUixGyw-zqKseqagMZahScmB4YPQLQbhxov6J4XHEbrba5AgIAjyZiL9LxkaRfrxbNklyiR68W2ihbkd9GCLOyHrWLaXYwRWq_4WdytDSOD6-ZXSVLinOgm4SS1ekLFOwmuTNs4LRRreaqx9RB_4DA8-pBl8dalCDywytHg_42vQ',
   e: 'AQAB'
@@ -19,8 +20,10 @@ const mockJwk = {
 describe('verifyToken', () => {
   const mockToken = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signature'
   const mockDecodedToken = {
-    header: { alg: 'RS256' },
-    payload: { sub: '1234567890' }
+    decoded: {
+      header: { alg: 'RS256', kid: 'current-key' },
+      payload: { sub: '1234567890' }
+    }
   }
 
   beforeEach(() => {
@@ -50,7 +53,7 @@ describe('verifyToken', () => {
     })
   })
 
-  it('should convert the first JWK to a PEM and pass it to token verify', async () => {
+  it('should convert the JWK to a PEM and pass it to token verify', async () => {
     await verifyToken(mockToken)
     expect(Jwt.token.verify).toHaveBeenCalledWith(
       mockDecodedToken,
@@ -59,6 +62,28 @@ describe('verifyToken', () => {
         algorithm: 'RS256'
       })
     )
+  })
+
+  it('should use the JWK matching the token kid when it is not first in the set', async () => {
+    // No modulus, so converting this key throws: the test fails if verifyToken picks it over the kid match
+    const otherJwk = { kid: 'other-key', kty: 'RSA', e: 'AQAB' }
+    Wreck.get.mockResolvedValue({ payload: { keys: [otherJwk, mockJwk] } })
+
+    await verifyToken(mockToken)
+
+    expect(Jwt.token.verify).toHaveBeenCalledWith(
+      mockDecodedToken,
+      expect.objectContaining({ key: expect.stringContaining('-----BEGIN PUBLIC KEY-----') })
+    )
+  })
+
+  it('should reject with a jwk_conversion log when no JWK matches the token kid', async () => {
+    Wreck.get.mockResolvedValue({ payload: { keys: [{ ...mockJwk, kid: 'other-key' }] } })
+
+    await expect(verifyToken(mockToken)).rejects.toThrow('No JWK matches token kid "current-key"')
+
+    expect(Jwt.token.verify).not.toHaveBeenCalled()
+    expect(log).toHaveBeenCalledWith(expect.any(Object), expect.objectContaining({ step: 'jwk_conversion' }))
   })
 
   it('should decode the JWT token', async () => {

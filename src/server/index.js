@@ -96,7 +96,6 @@ const createHapiServer = () => {
           includeSubDomains: true,
           preload: false
         },
-        xss: 'enabled',
         noSniff: true,
         xframe: true
       }

@@ -2,6 +2,7 @@ import { buildDemoData } from '../helpers/index.js'
 import { generateFormNotFoundResponse, resolveFormDefinition } from '../utils/index.js'
 import { ConfirmationService } from '../../confirmation/services/confirmation.service.js'
 import { debug, LogCodes } from '../../common/helpers/logging/log.js'
+import { escapeHtml } from '../../common/utils/escape-html.js'
 
 /**
  * Load confirmation content with development fallback
@@ -70,7 +71,7 @@ export function generateFallbackViewModel(error) {
     confirmationContent: {
       html: `<h2 class="govuk-heading-m">Development Error</h2>
              <p class="govuk-body"><strong>⚠️ Development mode error occurred.</strong></p>
-             <p class="govuk-body">Error: ${error.message}</p>
+             <p class="govuk-body">Error: ${escapeHtml(error.message)}</p>
              <p class="govuk-body">This page is for development testing only.</p>`
     }
   })

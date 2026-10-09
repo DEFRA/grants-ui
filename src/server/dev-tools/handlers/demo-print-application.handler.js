@@ -6,6 +6,7 @@ import {
 } from '../../common/helpers/print-application-service/print-application-service.js'
 import { generateFormNotFoundResponse, resolveFormDefinition } from '../utils/index.js'
 import { debug, LogCodes } from '../../common/helpers/logging/log.js'
+import { escapeHtml } from '../../common/utils/escape-html.js'
 
 /**
  * Main demo print application handler
@@ -68,7 +69,7 @@ export async function demoPrintApplicationHandler(request, h) {
       <body style="font-family: system-ui, sans-serif; margin: 40px;">
         <div style="background: #ffe6cc; padding: 15px; border-left: 4px solid #f47738; margin-bottom: 30px;">
           <strong>Development Mode Error</strong><br>
-          ${/** @type {Error} */ (error).message}
+          ${escapeHtml(/** @type {Error} */ (error).message)}
         </div>
         <p><a href="/dev">Back to Dev Tools</a></p>
       </body>

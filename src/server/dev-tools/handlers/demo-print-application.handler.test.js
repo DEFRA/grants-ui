@@ -10,6 +10,7 @@ import { mockHapiRequest, mockHapiResponseToolkit } from '~/src/__mocks__/hapi-m
 import { debug, LogCodes } from '../../common/helpers/logging/log.js'
 import { MOCK_SINGLE_PAGE_DEFINITION } from '~/src/__test-fixtures__/mock-forms-cache.js'
 import { MOCK_DEMO_DATA } from '../__test-fixtures__/mock-demo-data.js'
+import { HTML_INJECTION } from '~/src/__mocks__/escape-mocks.js'
 
 vi.mock('../../common/helpers/print-application-service/print-application-service.js')
 vi.mock('../helpers/index.js')
@@ -127,6 +128,14 @@ describe('demo-print-application.handler', () => {
     )
     expect(mockH.response).toHaveBeenCalledWith(expect.stringContaining('Something broke'))
     expect(mockH.type).toHaveBeenCalledWith('text/html')
+  })
+
+  test('should escape the error message in the fallback HTML response', async () => {
+    resolveFormDefinition.mockRejectedValue(new Error(HTML_INJECTION))
+
+    await demoPrintApplicationHandler(mockRequest, mockH)
+
+    expect(mockH.response.mock.calls[0][0]).toBeEscaped()
   })
 
   test('should pass submittedAt as ISO string', async () => {

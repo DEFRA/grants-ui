@@ -1,4 +1,5 @@
 import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
+import { escapeHtml } from '~/src/server/common/utils/escape-html.js'
 import { formatPrice } from '~/src/server/common/utils/payment.js'
 import {
   changeActionsHref,
@@ -19,12 +20,15 @@ import {
  * @returns {object} HTML object with links
  */
 function createLinks(data) {
-  const parcel = `${data.sheetId} ${data.parcelId}`
+  const parcel = escapeHtml(`${data.sheetId} ${data.parcelId}`)
+  const code = escapeHtml(data.code)
+  const changeHref = escapeHtml(changeActionsHref(data.sheetId, data.parcelId))
+  const removeHref = escapeHtml(removeActionHref(data.sheetId, data.parcelId, data.code))
   const links = []
 
   links.push(
-    `<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='${changeActionsHref(data.sheetId, data.parcelId)}'>Change</a><span class="govuk-visually-hidden"> land action ${data.code} for parcel ${parcel}</span></li>
-    <li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='${removeActionHref(data.sheetId, data.parcelId, data.code)}'>Remove</a><span class="govuk-visually-hidden"> land action ${data.code} for parcel ${parcel}</span></li>`
+    `<li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='${changeHref}'>Change</a><span class="govuk-visually-hidden"> land action ${code} for parcel ${parcel}</span></li>
+    <li class='govuk-summary-list__actions-list-item'><a class='govuk-link' href='${removeHref}'>Remove</a><span class="govuk-visually-hidden"> land action ${code} for parcel ${parcel}</span></li>`
   )
 
   return {

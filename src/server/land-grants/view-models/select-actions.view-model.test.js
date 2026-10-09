@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { configState } from '~/src/__mocks__/config-mocks.js'
+import { HTML_INJECTION } from '~/src/__mocks__/escape-mocks.js'
 import { filterEnabledLandActions } from '../utils/enabled-land-actions.js'
 import {
   getChosenAreaFieldsHtml,
@@ -418,6 +419,12 @@ describe('select-actions.view-model', () => {
       expect(result.conditional.html).toContain('id="landActionQuantity_WBD1"')
       expect(result.conditional.html).toContain('inputmode="numeric"')
       expect(getChosenAreaFieldsHtml([action], [])).toBe('')
+    })
+
+    it('should escape the action code in the hidden chosen-area field', () => {
+      const action = { code: HTML_INJECTION, quantityRequired: false }
+
+      expect(getChosenAreaFieldsHtml([action], [])).toBeEscaped()
     })
 
     it('should not render a "null available" hint for a non-quantity action with no limit', () => {
