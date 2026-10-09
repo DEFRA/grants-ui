@@ -10,6 +10,32 @@ import { debug, log, LogCodes } from '../logging/log.js'
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
 // @ts-ignore - TS2589: Type instantiation excessively deep (convict type complexity)
 const MAX_DB_STATE_SIZE_BYTES = config.get('session.cache.maxDbStateSizeBytes')
+const SAVE_APPLICATION_ERROR_MESSAGE = 'Unable to save the application'
+
+/** @param {Record<string, unknown>} payload @param {string} key */
+function buildStateRequestBody(payload, key) {
+  const body = JSON.stringify(payload)
+  const bodySize = Buffer.byteLength(body)
+  if (bodySize > MAX_DB_STATE_SIZE_BYTES) {
+    log(LogCodes.SYSTEM.STATE_SIZE_EXCEEDED, {
+      size: bodySize,
+      limit: MAX_DB_STATE_SIZE_BYTES,
+      sessionKey: key
+    })
+    throw new Error(`State payload size (${bodySize} bytes) exceeds limit (${MAX_DB_STATE_SIZE_BYTES} bytes)`)
+  }
+  return body
+}
+
+/** @param {string} reason @param {number} status */
+function createPersistenceError(reason, status) {
+  return new SessionError({
+    message: SAVE_APPLICATION_ERROR_MESSAGE,
+    source: 'persistStateToApi',
+    reason,
+    status
+  })
+}
 
 /**
  * Persists a given state object to the Grants UI backend API.
@@ -22,12 +48,7 @@ const MAX_DB_STATE_SIZE_BYTES = config.get('session.cache.maxDbStateSizeBytes')
 export async function persistStateToApi(state, key, { lockToken, grantVersion, failOnError = false } = {}) {
   if (!GRANTS_UI_BACKEND_ENDPOINT?.length) {
     if (failOnError) {
-      throw new SessionError({
-        message: 'Unable to save the application',
-        source: 'persistStateToApi',
-        reason: 'Backend endpoint is not configured',
-        status: statusCodes.serviceUnavailable
-      })
+      throw createPersistenceError('Backend endpoint is not configured', statusCodes.serviceUnavailable)
     }
     return
   }
@@ -46,22 +67,7 @@ export async function persistStateToApi(state, key, { lockToken, grantVersion, f
     }
   })
 
-  const body = JSON.stringify({
-    sbi,
-    grantCode,
-    grantVersion,
-    state
-  })
-
-  const bodySize = Buffer.byteLength(body)
-  if (bodySize > MAX_DB_STATE_SIZE_BYTES) {
-    log(LogCodes.SYSTEM.STATE_SIZE_EXCEEDED, {
-      size: bodySize,
-      limit: MAX_DB_STATE_SIZE_BYTES,
-      sessionKey: key
-    })
-    throw new Error(`State payload size (${bodySize} bytes) exceeds limit (${MAX_DB_STATE_SIZE_BYTES} bytes)`)
-  }
+  const body = buildStateRequestBody({ sbi, grantCode, grantVersion, state }, key)
 
   try {
     const response = await fetch(url.href, {
@@ -72,12 +78,7 @@ export async function persistStateToApi(state, key, { lockToken, grantVersion, f
 
     if (!response.ok) {
       if (failOnError) {
-        throw new SessionError({
-          message: 'Unable to save the application',
-          source: 'persistStateToApi',
-          reason: `Backend returned HTTP ${response.status}`,
-          status: statusCodes.badGateway
-        })
+        throw createPersistenceError(`Backend returned HTTP ${response.status}`, statusCodes.badGateway)
       }
       log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
         method: 'POST',
@@ -91,12 +92,7 @@ export async function persistStateToApi(state, key, { lockToken, grantVersion, f
       if (err instanceof SessionError) {
         throw err
       }
-      throw new SessionError({
-        message: 'Unable to save the application',
-        source: 'persistStateToApi',
-        reason: 'Backend request failed',
-        status: statusCodes.badGateway
-      }).from(/** @type {Error} */ (err))
+      throw createPersistenceError('Backend request failed', statusCodes.badGateway).from(/** @type {Error} */ (err))
     }
     debug(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
       method: 'POST',

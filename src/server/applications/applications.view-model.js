@@ -17,20 +17,25 @@ export function buildApplicationsViewModel(request, definition, applications) {
         application.applicationStatus === ApplicationStatus.CLAIM_STARTED ||
         application.applicationStatus === ApplicationStatus.CLAIM_SUBMITTED
       const submitted = isClaim || application.applicationStatus === ApplicationStatus.SUBMITTED
-      let statusText = 'Draft'
-      let statusClasses = 'govuk-tag--red'
+      let statusText
+      let statusClasses
       if (submitted) {
         statusText = 'Submitted'
         statusClasses = 'govuk-tag--green'
       } else if (application.applicationStatus === ApplicationStatus.REOPENED) {
         statusText = 'Returned for amendments'
         statusClasses = 'govuk-tag--yellow'
+      } else {
+        statusText = 'Draft'
+        statusClasses = 'govuk-tag--red'
       }
-      let actionText = 'Continue application'
+      let actionText
       if (isClaim) {
         actionText = 'View claim'
       } else if (submitted) {
         actionText = 'View application'
+      } else {
+        actionText = 'Continue application'
       }
       return {
         ...application,
