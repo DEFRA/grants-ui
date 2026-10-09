@@ -1,11 +1,18 @@
+import { getRoutingDefinition } from '../../helpers/definition/routing-definition.js'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { multiApplicationRedirect } from './multi-application-redirect.js'
 import { getStateWithDefinition } from '../../helpers/state/state-with-definition-context.js'
 import { listApplicationsFromApi } from '../../helpers/state/fetch-saved-state-helper.js'
 import { getGrantCode } from '../../helpers/grant-code.js'
 
-vi.mock('../../helpers/state/state-with-definition-context.js', () => ({
+vi.mock('../../helpers/state/state-with-definition-context.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   getStateWithDefinition: vi.fn()
+}))
+
+vi.mock('../../helpers/definition/routing-definition.js', async (importOriginal) => ({
+  ...(await importOriginal()),
+  getRoutingDefinition: vi.fn()
 }))
 
 vi.mock('../../helpers/state/fetch-saved-state-helper.js', () => ({
@@ -36,6 +43,7 @@ describe('multiApplicationRedirect', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    getRoutingDefinition.mockImplementation(() => getStateWithDefinition())
     getGrantCode.mockReturnValue('test-grant')
   })
 
@@ -457,4 +465,46 @@ describe('multiApplicationRedirect', () => {
       expect(result).toBe(h.continue)
     })
   })
+})
+
+it('reaches the selector without opening a state document even when an editing read would be locked', async () => {
+  getRoutingDefinition.mockResolvedValueOnce({ definition: { allowMultipleApplications: true }, state: null })
+  getStateWithDefinition.mockRejectedValueOnce(Object.assign(new Error('Locked'), { statusCode: 423 }))
+  listApplicationsFromApi.mockResolvedValueOnce([{ applicationRef: 'REF-1' }, { applicationRef: 'REF-2' }])
+  const request = {
+    method: 'get',
+    route: { path: ROOT },
+    params: { slug: 'test-grant' },
+    path: '/test-grant',
+    query: {},
+    app: {}
+  }
+  const h = { continue: Symbol('continue'), redirect: vi.fn().mockReturnValue({ takeover: () => 'selector' }) }
+  const priorReads = getStateWithDefinition.mock.calls.length
+  expect(await multiApplicationRedirect(request, h)).toBe('selector')
+  expect(h.redirect).toHaveBeenCalledWith('/test-grant/applications')
+  expect(getStateWithDefinition.mock.calls.length).toBe(priorReads)
+})
+
+it.each([0, 1])('routes %i applications from a lock-free root read', async (count) => {
+  getRoutingDefinition.mockResolvedValueOnce({ definition: { allowMultipleApplications: true }, state: null })
+  listApplicationsFromApi.mockResolvedValueOnce(count ? [{ applicationRef: 'REF-ONLY' }] : [])
+  const request = {
+    method: 'get',
+    route: { path: ROOT },
+    params: { slug: 'test-grant' },
+    path: '/test-grant',
+    url: new URL('http://localhost:3000/test-grant'),
+    query: {},
+    app: {}
+  }
+  const h = { continue: Symbol('continue'), redirect: vi.fn().mockReturnValue({ takeover: () => 'scoped' }) }
+  const priorReads = getStateWithDefinition.mock.calls.length
+  expect(await multiApplicationRedirect(request, h)).toBe(count ? 'scoped' : h.continue)
+  expect(getStateWithDefinition.mock.calls.length).toBe(priorReads)
+  if (count) {
+    expect(h.redirect).toHaveBeenCalledWith('/test-grant?ref=REF-ONLY')
+  } else {
+    expect(await request.app.stateWithDefinition).toMatchObject({ state: null })
+  }
 })

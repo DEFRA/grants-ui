@@ -1,3 +1,4 @@
+import { getRoutingDefinition, isUnscopedGrantRoot } from '../definition/routing-definition.js'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
   bindRequestContext,
@@ -7,12 +8,13 @@ import {
   resolveVersion,
   runWithRequest
 } from './state-with-definition-context.js'
-import { fetchStateWithDefinitionFromApi } from './fetch-saved-state-helper.js'
+import { fetchStateWithDefinitionFromApi, fetchLatestDefinitionFromApi } from './fetch-saved-state-helper.js'
 import { mintLockToken } from '../lock/lock-token.js'
 import { getCacheKey } from './get-cache-key-helper.js'
 
 vi.mock('./fetch-saved-state-helper.js', () => ({
-  fetchStateWithDefinitionFromApi: vi.fn()
+  fetchStateWithDefinitionFromApi: vi.fn(),
+  fetchLatestDefinitionFromApi: vi.fn()
 }))
 
 vi.mock('../lock/lock-token.js', () => ({
@@ -32,7 +34,49 @@ describe('state-with-definition-context', () => {
 
   const makeRequest = (credentials = { contactId: 'c1' }) => ({ app: {}, auth: { credentials } })
 
+  it('shares the lock-free routing read without replacing a later application-state read', async () => {
+    const request = makeRequest()
+    fetchLatestDefinitionFromApi.mockResolvedValueOnce({})
+    fetchStateWithDefinitionFromApi.mockResolvedValueOnce({ state: { state: { answer: 'saved' } } })
+    const first = getRoutingDefinition(request)
+    expect(getRoutingDefinition(request)).toBe(first)
+    await first
+    expect(request.app.stateWithDefinition).toBeUndefined()
+    await getStateWithDefinition(request)
+    expect(fetchLatestDefinitionFromApi).toHaveBeenCalledExactlyOnceWith('grant-a')
+    expect(fetchStateWithDefinitionFromApi).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports definition upstream failures as a structured 502 and caches the failed read', async () => {
+    const request = makeRequest()
+    fetchLatestDefinitionFromApi.mockRejectedValueOnce(new Error('Backend down'))
+    const promise = getRoutingDefinition(request)
+    await expect(promise).rejects.toMatchObject({
+      details: { status: 502, source: 'getRoutingDefinition', reason: 'Definition request failed' }
+    })
+    expect(getRoutingDefinition(request)).toBe(promise)
+    expect(fetchLatestDefinitionFromApi).toHaveBeenCalledTimes(1)
+  })
+
+  it('uses lock-free entry routing only for a GET grant root without any reference', () => {
+    const request = { ...makeRequest(), method: 'get', route: { path: '/{slug}' }, query: {} }
+    expect(isUnscopedGrantRoot(request)).toBe(true)
+    expect(isUnscopedGrantRoot({ ...request, query: { ref: 'REF-1' } })).toBe(false)
+    expect(isUnscopedGrantRoot({ ...request, query: { ref: '' } })).toBe(false)
+    expect(isUnscopedGrantRoot({ ...request, method: 'post' })).toBe(false)
+    expect(isUnscopedGrantRoot({ ...request, app: { referenceNumber: 'REF-1' } })).toBe(false)
+  })
+
   describe('getStateWithDefinition (single-flight)', () => {
+    it('uses a lock-free definition-only read for the selector', async () => {
+      const request = { ...makeRequest(), route: { path: '/{slug}/applications' } }
+      fetchLatestDefinitionFromApi.mockResolvedValue({})
+      await getStateWithDefinition(request)
+      expect(fetchLatestDefinitionFromApi).toHaveBeenCalledExactlyOnceWith('grant-a')
+      expect(fetchStateWithDefinitionFromApi).not.toHaveBeenCalled()
+      expect(mintLockToken).not.toHaveBeenCalled()
+    })
+
     it('issues exactly one backend call and memoizes the promise on request.app', async () => {
       const request = makeRequest()
       fetchStateWithDefinitionFromApi.mockResolvedValue({ state: { foo: 'bar' }, upgraded: false })

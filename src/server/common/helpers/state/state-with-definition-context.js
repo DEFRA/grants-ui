@@ -1,3 +1,4 @@
+import { getRoutingDefinition } from '../definition/routing-definition.js'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { getCacheKey, buildSessionKey } from './get-cache-key-helper.js'
 import { fetchStateWithDefinitionFromApi } from './fetch-saved-state-helper.js'
@@ -122,9 +123,10 @@ export function getStateWithDefinition(request) {
     const cacheKey = getCacheKey(request)
     const key = buildSessionKey(cacheKey)
 
-    app.stateWithDefinition = fetchStateWithDefinitionFromApi(key, request, {
-      lockToken: buildReadLockToken(request)
-    })
+    app.stateWithDefinition =
+      request.route?.path === '/{slug}/applications'
+        ? getRoutingDefinition(request)
+        : fetchStateWithDefinitionFromApi(key, request, { lockToken: buildReadLockToken(request) })
   }
 
   return app.stateWithDefinition

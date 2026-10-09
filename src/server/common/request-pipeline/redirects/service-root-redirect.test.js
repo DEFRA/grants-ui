@@ -50,6 +50,43 @@ describe('serviceRootRedirect', () => {
     expect(h.redirect).toHaveBeenCalledWith('/woodland/tasks?ref=REF-A')
   })
 
+  it.each([true, false])(
+    'uses the configured draft destination for both single and multiple applications (%s)',
+    async (enabled) => {
+      request.app.model.def.metadata.allowMultipleApplications = enabled
+      request.app.model.def.pages = [{ path: '/project-details' }]
+      getState.mockResolvedValue({ businessDetailsUpToDate: true, lastSavedPath: '/project-details' })
+      await serviceRootRedirect(request, h)
+      expect(h.redirect).toHaveBeenCalledWith('/woodland/tasks')
+    }
+  )
+
+  it('keeps the pre-submission gate ahead of the saved destination', async () => {
+    request.app.model.def.metadata.allowMultipleApplications = true
+    request.app.model.def.pages = [{ path: '/tasks' }]
+    request.app.model.def.metadata.grantRedirectRules.preSubmission = [
+      {
+        toPath: '/tasks',
+        incompleteToPath: '/select-land-parcel',
+        requiresAnyItemWithNonEmptyKey: { collection: 'landParcels', key: 'actions' }
+      }
+    ]
+    getState.mockResolvedValue({ businessDetailsUpToDate: true, lastSavedPath: '/tasks', landParcels: {} })
+    await serviceRootRedirect(request, h)
+    expect(h.redirect).toHaveBeenCalledWith('/woodland/select-land-parcel')
+  })
+
+  it('resumes a multi-application example grant whose start page is /start from a selector click', async () => {
+    request.app.model.def.startPage = '/start'
+    request.app.model.def.metadata.allowMultipleApplications = true
+    request.app.model.def.pages = [{ path: '/start' }, { path: '/project-details' }]
+    request.headers = { 'sec-fetch-site': 'same-origin' }
+    request.query = { ref: 'REF-A' }
+    getState.mockResolvedValue({ answer: 'saved', lastSavedPath: '/project-details' })
+    await serviceRootRedirect(request, h)
+    expect(h.redirect).toHaveBeenCalledWith('/woodland/tasks?ref=REF-A')
+  })
+
   it.each([undefined, 'CLEARED'])(
     'redirects an in-progress %s application from the service root to the preSubmission path',
     async (applicationStatus) => {

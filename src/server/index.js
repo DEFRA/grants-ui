@@ -1,3 +1,4 @@
+import { getRoutingDefinition, isUnscopedGrantRoot } from './common/helpers/definition/routing-definition.js'
 import plugin from '@defra/forms-engine-plugin'
 import Bell from '@hapi/bell'
 import Cookie from '@hapi/cookie'
@@ -283,12 +284,17 @@ export async function createServer() {
   // Prime the combined form-definition + state response once per request, before
   // the forms-engine-plugin resolves the form model. Runs after auth (so sbi/owner
   // are known) so the request-less form-definition path and getState can both
-  // reuse the single backend call.
+  // reuse the single backend call. Unscoped root visits only prime the definition:
+  // routing must decide whether to show the selector before acquiring an editing lock.
   server.ext('onPostAuth', async (request, h) => {
     const slug = request.params?.slug
     if (slug && request.auth?.isAuthenticated && request.auth?.credentials?.contactId) {
       try {
-        await getStateWithDefinition(request)
+        if (isUnscopedGrantRoot(request)) {
+          await getRoutingDefinition(request)
+        } else {
+          await getStateWithDefinition(request)
+        }
       } catch {
         // Surfaced later by getState / the definition loader with full context.
       }

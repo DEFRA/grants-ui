@@ -3,6 +3,7 @@ import { getAuthenticatedCrn, getAuthenticatedSbi } from '../../helpers/auth/get
 import { getGrantCode } from '../../helpers/grant-code.js'
 import { getReferenceNumber, setReferenceNumber } from '../../helpers/state/get-cache-key-helper.js'
 import { getStateWithDefinition } from '../../helpers/state/state-with-definition-context.js'
+import { getRoutingDefinition, isUnscopedGrantRoot } from '../../helpers/definition/routing-definition.js'
 import { listApplicationsFromApi } from '../../helpers/state/fetch-saved-state-helper.js'
 
 const UNKNOWN_REFERENCE = 'Unknown application reference'
@@ -23,6 +24,13 @@ export async function multiApplicationRedirect(request, h) {
   }
 
   const ref = getReferenceNumber(request)
+  if (isUnscopedGrantRoot(request)) {
+    const definition = await getRoutingDefinition(request)
+    if (allowsMultipleApplications(definition)) {
+      return resolveWithoutRef(request, h, definition)
+    }
+    // Standard grants retain their existing state resolution and locking behaviour.
+  }
   let stateWithDef
   try {
     stateWithDef = await getStateWithDefinition(request)
@@ -113,7 +121,7 @@ async function resolveWithoutRef(request, h, envelope) {
 
   // No live application: the forms engine creates one on this request and the next request picks up
   // its ref. The unscoped read may still have found a purged document (the list hides those); forget it.
-  if (envelope?.state) {
+  if (envelope && (envelope.state || isUnscopedGrantRoot(request))) {
     const app = /** @type {{ stateWithDefinition?: Promise<StateWithDefinitionEnvelope | null> }} */ (request.app)
     app.stateWithDefinition = Promise.resolve({ ...envelope, state: null })
   }

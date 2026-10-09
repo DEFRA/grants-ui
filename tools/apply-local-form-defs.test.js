@@ -340,6 +340,28 @@ describe('buildEnableScript', () => {
   const overrides = [{ grant: 'woodland', file: '/x.yaml', repoVersion: '1.2.3', bumpedVersion: '1.2.4' }]
   const definitionsByGrant = { woodland: { engine: 'V2', name: 'Woodland' } }
 
+  it.each([true, false, undefined])('synchronises the persistence flag with override metadata (%s)', (enabled) => {
+    /** @type {{ allowMultipleApplications?: boolean, patch?: number }} */
+    let saved = {}
+    const base = { grantCode: 'woodland', major: 1, minor: 2, patch: 3, allowMultipleApplications: enabled !== true }
+    const script = buildEnableScript(overrides, {
+      definitionsByGrant: { woodland: { engine: 'V2', metadata: { allowMultipleApplications: enabled } } }
+    })
+    runInNewContext(script, {
+      db: {
+        getCollection: () => ({
+          findOne: () => base,
+          replaceOne: (_filter, document) => {
+            saved = document
+          }
+        })
+      },
+      print: () => {}
+    })
+    expect(saved.allowMultipleApplications).toBe(enabled === true)
+    expect(saved.patch).toBe(4)
+  })
+
   it('embeds the definition and upserts the bumped version', () => {
     const script = buildEnableScript(overrides, { definitionsByGrant })
 

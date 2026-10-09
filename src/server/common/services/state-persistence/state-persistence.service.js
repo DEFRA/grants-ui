@@ -90,13 +90,14 @@ export class StatePersistenceService extends CacheService {
    *
    * @param {AnyFormRequest} request
    * @param {FormSubmissionState} state
+   * @param {{failOnError?: boolean}} [options] - Require a successful backend save before continuing.
    * @returns {Promise<FormSubmissionState>} the persisted state
    */
-  async setState(request, state) {
+  async setState(request, state, options = {}) {
     const key = this._Key(request)
     const grantVersion = await this._resolveActiveGrantVersion(request)
     const lockToken = this._buildLockToken(request, grantVersion)
-    await persistStateToApi(state, key, { lockToken, grantVersion })
+    await persistStateToApi(state, key, { lockToken, grantVersion, ...options })
 
     // A brand-new application of a multi-application grant: scope the creating request to the
     // reference the forms engine just minted, so this very response's links and redirects carry it.
