@@ -208,6 +208,7 @@ Feature: Application Amendment
 
         # reopened landing page
         Then the user should be at URL "reopened"
+        And the page is analyzed for accessibility
         When the user continues
 
         # summary
