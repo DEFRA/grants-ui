@@ -15,6 +15,7 @@ Feature: User Permissions
         Given the user navigates to "/example-grant-with-auth"
         And logs in as CRN "1062311183"
         Then the user should see heading "You do not have permission to view this page"
+        And the page is analyzed for accessibility
         And an unauthorised audit event should be published for entity "application" and grant "example-grant-with-auth" with CRN "1062311183" and SBI "106238911" and reason "permission"
 
         # unlock from CRN 1062311183

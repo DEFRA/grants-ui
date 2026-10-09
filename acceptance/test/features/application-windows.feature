@@ -10,3 +10,4 @@ Feature: Application Windows
         # application-window-closed
         Then the user should be at URL "application-window-closed"
         And should see heading "The application window for this grant has closed"
+        And the page is analyzed for accessibility
