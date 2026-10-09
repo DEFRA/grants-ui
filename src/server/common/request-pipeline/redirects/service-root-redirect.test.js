@@ -51,13 +51,13 @@ describe('serviceRootRedirect', () => {
   })
 
   it.each([true, false])(
-    'resumes a saved draft destination only for a multi-application grant (%s)',
+    'uses the configured draft destination for both single and multiple applications (%s)',
     async (enabled) => {
       request.app.model.def.metadata.allowMultipleApplications = enabled
       request.app.model.def.pages = [{ path: '/project-details' }]
       getState.mockResolvedValue({ businessDetailsUpToDate: true, lastSavedPath: '/project-details' })
       await serviceRootRedirect(request, h)
-      expect(h.redirect).toHaveBeenCalledWith(enabled ? '/woodland/project-details' : '/woodland/tasks')
+      expect(h.redirect).toHaveBeenCalledWith('/woodland/tasks')
     }
   )
 
@@ -84,7 +84,7 @@ describe('serviceRootRedirect', () => {
     request.query = { ref: 'REF-A' }
     getState.mockResolvedValue({ answer: 'saved', lastSavedPath: '/project-details' })
     await serviceRootRedirect(request, h)
-    expect(h.redirect).toHaveBeenCalledWith('/woodland/project-details?ref=REF-A')
+    expect(h.redirect).toHaveBeenCalledWith('/woodland/tasks?ref=REF-A')
   })
 
   it.each([undefined, 'CLEARED'])(

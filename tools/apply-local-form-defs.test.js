@@ -1,5 +1,4 @@
 import * as fs from 'node:fs'
-import { runInNewContext } from 'node:vm'
 import * as os from 'node:os'
 import { join } from 'node:path'
 import { runInNewContext } from 'node:vm'
