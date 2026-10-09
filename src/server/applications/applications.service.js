@@ -1,4 +1,5 @@
 import { ApplicationStatus } from '../common/constants/application-status.js'
+import { statusCodes } from '../common/constants/status-codes.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
 import { getFormsCacheService } from '../common/helpers/forms-cache/forms-cache.js'
 
@@ -10,10 +11,14 @@ export async function saveApplicationResumePath(request, h) {
     request.method !== 'post' ||
     request.route?.realm?.plugin !== '@defra/forms-engine-plugin' ||
     definition?.metadata?.allowMultipleApplications !== true ||
-    request.params.path === 'applications' ||
+    request.params.path === 'applications'
+  ) {
+    return h.continue
+  }
+  if (
     !location ||
-    request.response.statusCode < 300 ||
-    request.response.statusCode >= 400
+    request.response.statusCode < statusCodes.multipleChoices ||
+    request.response.statusCode >= statusCodes.badRequest
   ) {
     return h.continue
   }
