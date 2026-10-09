@@ -1,3 +1,4 @@
+import Jwt from '@hapi/jwt'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import 'dotenv/config'
 import { config } from '~/src/config/config.js'
@@ -8,6 +9,7 @@ import { createBoomError } from '../errors.js'
 import { getGrantVersion } from '../grant-version.js'
 
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
+const GRANTS_UI_BACKEND_JWT_SECRET = config.get('session.cache.jwtSecret')
 
 /**
  * Logging function for API errors
@@ -25,16 +27,19 @@ function logApiError(logCode = LogCodes.SYSTEM.EXTERNAL_API_ERROR) {
 
 /**
  * Constructs the endpoint URL for the state API based on the session key
- * @param {string} key - The session key
+ * @param {string} key - The session key (`sbi:grantCode` or `sbi:grantCode:referenceNumber`)
  * @param {string | number} grantVersion - The grant definition version
  * @returns {string}
  */
 function getEndpoint(key, grantVersion) {
-  const { sbi, grantCode } = parseSessionKey(key)
+  const { sbi, grantCode, referenceNumber } = parseSessionKey(key)
   const url = new URL('/state/', GRANTS_UI_BACKEND_ENDPOINT)
   url.searchParams.set('sbi', sbi)
   url.searchParams.set('grantCode', grantCode)
   url.searchParams.set('grantVersion', /** @type {string} */ (grantVersion))
+  if (referenceNumber) {
+    url.searchParams.set('applicationRef', referenceNumber)
+  }
   return url.href
 }
 
@@ -104,7 +109,7 @@ async function callStateApi(key, method, request, { lockToken, grantVersion } = 
  * The backend resolves the active grant version itself, so this read does not
  * need a `grantVersion` (the lock token is minted without one).
  *
- * @param {string} key - The session key (`sbi:grantCode`)
+ * @param {string} key - The session key (`sbi:grantCode` or `sbi:grantCode:referenceNumber`)
  * @param {AnyRequest} request - The request object
  * @param {{lockToken?: string}} [options]
  * @returns {Promise<StateWithDefinitionEnvelope | null>} The envelope, or `null` on 404 / unconfigured backend
@@ -116,7 +121,7 @@ export async function fetchStateWithDefinitionFromApi(key, request, { lockToken 
 
   const logDebug = logApiError(LogCodes.SYSTEM.EXTERNAL_API_CALL_DEBUG)
   const logError = logApiError()
-  const { sbi, grantCode } = parseSessionKey(key)
+  const { sbi, grantCode, referenceNumber } = parseSessionKey(key)
   const method = 'POST'
   const endpoint = new URL('/state/with-definition', GRANTS_UI_BACKEND_ENDPOINT).href
 
@@ -127,7 +132,7 @@ export async function fetchStateWithDefinitionFromApi(key, request, { lockToken 
     response = await fetch(endpoint, {
       method,
       headers: await createApiHeadersForGrantsUiBackend({ lockToken }),
-      body: JSON.stringify({ sbi, grantCode, includeDefinition: true })
+      body: JSON.stringify({ sbi, grantCode, includeDefinition: true, applicationRef: referenceNumber })
     })
   } catch (err) {
     logError(request, { method, endpoint, identity: key, errorMessage: /** @type {Error} */ (err).message })
@@ -157,7 +162,7 @@ export async function fetchStateWithDefinitionFromApi(key, request, { lockToken 
 }
 
 /**
- * @param {string} key
+ * @param {string} key - The session key (`sbi:grantCode` or `sbi:grantCode:referenceNumber`)
  * @param {AnyRequest} request
  * @param {{lockToken?: string, grantVersion?: string | number}} [options]
  */
@@ -166,13 +171,56 @@ export async function clearSavedStateFromApi(key, request, { lockToken, grantVer
 }
 
 /**
+ * Lists the applications the authenticated business holds for a grant, via
+ * `GET /applications`. Used to resolve `?ref=` routing (0/1/many
+ * applications) for multi-application grants.
+ *
+ * The SBI is not sent as a query param - the backend derives it from the
+ * signed `x-user-context` JWT (same pattern as `fetchAllowedGrantDetails` in
+ * `allowlist.client.js`) and rejects a caller-supplied `sbi` with a 400.
+ *
+ * @param {{ crn: string, sbi: string, grantCode: string }} params
+ * @returns {Promise<{ applicationRef: string, grantVersion: string, createdAt: string, updatedAt: string, applicationStatus: string | null, submittedAt: string | null }[]>}
+ *   An empty array when the backend is unconfigured or returns no applications.
+ */
+export async function listApplicationsFromApi({ crn, sbi, grantCode }) {
+  if (!GRANTS_UI_BACKEND_ENDPOINT?.length) {
+    return []
+  }
+
+  const url = new URL('/applications', GRANTS_UI_BACKEND_ENDPOINT)
+  url.searchParams.set('grantCode', grantCode)
+
+  const userContext = Jwt.token.generate({ crn, sbi }, GRANTS_UI_BACKEND_JWT_SECRET)
+
+  const response = await fetch(url.href, {
+    method: 'GET',
+    headers: {
+      ...(await createApiHeadersForGrantsUiBackend({})),
+      'x-user-context': userContext
+    }
+  })
+
+  if (!response.ok) {
+    throw createBoomError(response.status, `Failed to list applications: ${response.status}`)
+  }
+
+  const json = await response.json()
+  return /** @type {{ applications: { applicationRef: string, grantVersion: string, createdAt: string, updatedAt: string, applicationStatus: string | null, submittedAt: string | null }[] }} */ (
+    json
+  ).applications
+}
+
+/**
  * Deletes the state document for a specific grant by sbi, grantCode and grantVersion.
  * Used when the request has no form model (e.g. clearing state from the agreements proxy page).
  *
- * @param {{ sbi: string, grantCode: string, grantVersion: string | number, lockToken: string }} params
+ * `applicationRef` scopes the delete to one application.
+ *
+ * @param {{ sbi: string, grantCode: string, grantVersion: string | number, lockToken: string, applicationRef?: string }} params
  * @returns {Promise<void>}
  */
-export async function clearSavedStateFromApiByContext({ sbi, grantCode, grantVersion, lockToken }) {
+export async function clearSavedStateFromApiByContext({ sbi, grantCode, grantVersion, lockToken, applicationRef }) {
   if (!GRANTS_UI_BACKEND_ENDPOINT?.length) {
     return
   }
@@ -181,6 +229,9 @@ export async function clearSavedStateFromApiByContext({ sbi, grantCode, grantVer
   url.searchParams.set('sbi', sbi)
   url.searchParams.set('grantCode', grantCode)
   url.searchParams.set('grantVersion', String(grantVersion))
+  if (applicationRef) {
+    url.searchParams.set('applicationRef', applicationRef)
+  }
 
   const response = await fetch(url.href, {
     method: 'DELETE',
@@ -211,6 +262,8 @@ export async function clearSavedStateFromApiByContext({ sbi, grantCode, grantVer
  * @property {string} [sbi]
  * @property {string} [grantCode]
  * @property {string} [grantVersion] - The grant version this state belongs to
+ * @property {string} [applicationRef] - The application's reference (stamped on every document)
+ * @property {boolean} [allowMultipleApplications] - Whether the backend keys this document by `applicationRef` rather than version
  * @property {Record<string, unknown>} [state] - The actual saved form state
  */
 
@@ -225,6 +278,7 @@ export async function clearSavedStateFromApiByContext({ sbi, grantCode, grantVer
  *
  * @typedef {object} DefinitionDocument
  * @property {string} [grantCode]
+ * @property {boolean} [allowMultipleApplications] - Hoisted by the backend from the definition's metadata
  * @property {number} [major]
  * @property {number} [minor]
  * @property {number} [patch]

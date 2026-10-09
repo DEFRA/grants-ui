@@ -11,6 +11,7 @@ const AUTH_SCHEME = 'Bearer'
 export const TEST_BACKEND_URL = 'https://test-backend'
 export const TEST_AUTH_TOKEN = 'test-auth-token'
 export const TEST_ENCRYPTION_KEY = 'test-encryption-key-32-chars-long'
+export const TEST_JWT_SECRET = 'test-jwt-secret-32-chars-long!!'
 export const TEST_REPOSITORY_NAME = 'test-repo'
 export const TEST_SERVICE_VERSION = '1.0.0'
 
@@ -37,6 +38,7 @@ export const CONFIG_KEYS = {
   API_ENDPOINT: 'session.cache.apiEndpoint',
   AUTH_TOKEN: 'session.cache.authToken',
   ENCRYPTION_KEY: 'session.cache.encryptionKey',
+  JWT_SECRET: 'session.cache.jwtSecret',
   MAX_DB_STATE_SIZE_BYTES: 'session.cache.maxDbStateSizeBytes',
   LOG: 'log',
   GIT_REPOSITORY_NAME: 'gitRepositoryName',
@@ -87,6 +89,7 @@ export const MOCK_CONFIG_VALUES = {
     [CONFIG_KEYS.API_ENDPOINT]: TEST_BACKEND_URL,
     [CONFIG_KEYS.AUTH_TOKEN]: TEST_AUTH_TOKEN,
     [CONFIG_KEYS.ENCRYPTION_KEY]: TEST_ENCRYPTION_KEY,
+    [CONFIG_KEYS.JWT_SECRET]: TEST_JWT_SECRET,
     [CONFIG_KEYS.MAX_DB_STATE_SIZE_BYTES]: 51200,
     [CONFIG_KEYS.LOG]: TEST_LOG_CONFIG,
     [CONFIG_KEYS.GIT_REPOSITORY_NAME]: TEST_REPOSITORY_NAME,

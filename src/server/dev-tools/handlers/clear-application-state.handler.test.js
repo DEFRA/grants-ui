@@ -181,8 +181,40 @@ describe('clearApplicationStateHandler', () => {
         sbi: '123456789',
         grantCode: 'farm-payments',
         grantVersion: '2.0.0',
-        lockToken: 'mock-lock-token'
+        lockToken: 'mock-lock-token',
+        applicationRef: undefined
       })
+    })
+
+    it('scopes the clear to the application the user left the journey from when the context names one', async () => {
+      mockRequest.yar.get.mockReturnValue({
+        grantCode: 'farm-payments',
+        grantVersion: '2.0.0',
+        applicationRef: 'REF-1'
+      })
+
+      await clearApplicationStateHandler(mockRequest, mockH)
+
+      expect(clearSavedStateFromApiByContext).toHaveBeenCalledWith({
+        sbi: '123456789',
+        grantCode: 'farm-payments',
+        grantVersion: '2.0.0',
+        lockToken: 'mock-lock-token',
+        applicationRef: 'REF-1'
+      })
+    })
+
+    it('prefers the ref on the URL over the shared session context, which another tab may have overwritten', async () => {
+      mockRequest.query = { ref: 'REF-A' }
+      mockRequest.yar.get.mockReturnValue({
+        grantCode: 'farm-payments',
+        grantVersion: '2.0.0',
+        applicationRef: 'REF-B'
+      })
+
+      await clearApplicationStateHandler(mockRequest, mockH)
+
+      expect(clearSavedStateFromApiByContext).toHaveBeenCalledWith(expect.objectContaining({ applicationRef: 'REF-A' }))
     })
 
     it('should clear GRANT_APPLICATION_CONTEXT from yar after successful clear', async () => {
