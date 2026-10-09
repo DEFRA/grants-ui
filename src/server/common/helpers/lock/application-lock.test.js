@@ -29,7 +29,15 @@ describe('releaseAllApplicationLocksForOwnerFromApi', () => {
       vi.resetModules()
       vi.doMock('~/src/config/config.js', () => ({
         config: {
-          get: vi.fn(() => 'http://localhost:3000')
+          get: vi.fn((key) => {
+            if (key === 'session.cache.apiEndpoint') {
+              return 'http://localhost:3000'
+            }
+            if (key === 'applicationLock.releaseTimeoutMs') {
+              return 5000
+            }
+            return undefined
+          })
         }
       }))
       const helper = await import('./application-lock.js')
@@ -43,6 +51,7 @@ describe('releaseAllApplicationLocksForOwnerFromApi', () => {
     })
 
     afterEach(() => {
+      vi.useRealTimers()
       vi.doUnmock('~/src/config/config.js')
     })
 
@@ -117,19 +126,27 @@ describe('releaseAllApplicationLocksForOwnerFromApi', () => {
     })
 
     it('handles fetch being aborted (timeout)', async () => {
+      vi.useFakeTimers()
       const abortError = new Error('The operation was aborted')
       abortError.name = 'AbortError'
 
-      fetch.mockRejectedValue(abortError)
+      fetch.mockImplementation(
+        (_url, { signal }) =>
+          new Promise((_resolve, reject) => {
+            signal.addEventListener('abort', () => reject(abortError), { once: true })
+          })
+      )
 
-      const result = await releaseAllApplicationLocksForOwnerFromApi({ ownerId })
+      const result = releaseAllApplicationLocksForOwnerFromApi({ ownerId })
+      await vi.advanceTimersByTimeAsync(5000)
 
-      expect(result).toEqual({ ok: false, releasedCount: 0 })
+      await expect(result).resolves.toEqual({ ok: false, releasedCount: 0 })
 
       expect(log).toHaveBeenCalledWith(
         LogCodes.APPLICATION_LOCKS.RELEASE_TIMEOUT,
         expect.objectContaining({
-          ownerId
+          ownerId,
+          timeoutMs: 5000
         })
       )
     })

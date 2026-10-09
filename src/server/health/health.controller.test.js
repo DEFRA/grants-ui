@@ -1,22 +1,22 @@
 import { vi } from 'vitest'
-import { createServer } from '~/src/server/index.js'
+import Hapi from '@hapi/hapi'
+import { unauthorized } from '@hapi/boom'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { healthController } from './health.controller.js'
-import Wreck from '@hapi/wreck'
+import { health } from './index.js'
 
 describe('#healthController', () => {
   /** @type {Server} */
   let server
 
   beforeAll(async () => {
-    // Mock the well-known OIDC config before server starts
-    Wreck.get.mockResolvedValue({
-      payload: {
-        authorization_endpoint: 'https://mock-auth/authorize',
-        token_endpoint: 'https://mock-auth/token'
-      }
-    })
-    server = await createServer()
+    server = Hapi.server()
+    server.auth.scheme('test-session', () => ({
+      authenticate: (_request, h) => h.unauthenticated(unauthorized(null, 'test-session'))
+    }))
+    server.auth.strategy('session', 'test-session')
+    server.auth.default('session')
+    await server.register(health)
     await server.initialize()
   })
 
@@ -24,7 +24,7 @@ describe('#healthController', () => {
     await server.stop({ timeout: 0 })
   })
 
-  test('Should provide expected response', async () => {
+  test('Should provide expected response without authentication', async () => {
     const { result, statusCode } = await server.inject({
       method: 'GET',
       url: '/health'
