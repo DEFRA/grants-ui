@@ -1,4 +1,6 @@
 import 'dotenv/config'
+import { SessionError } from '../../utils/errors/SessionError.js'
+import { statusCodes } from '../../constants/status-codes.js'
 import { config } from '~/src/config/config.js'
 import { parseSessionKey } from './get-cache-key-helper.js'
 import { createApiHeadersForGrantsUiBackend } from '../auth/backend-auth-helper.js'
@@ -14,11 +16,19 @@ const MAX_DB_STATE_SIZE_BYTES = config.get('session.cache.maxDbStateSizeBytes')
  *
  * @param {Record<string, unknown>} state - The state object to persist. Can include form/session data.
  * @param {string} key - The cache/session key to identify this state.
- * @param {{grantVersion?: unknown, lockToken?: string}} [options] - Optional grant version, lock token to identify who is locking the state.
+ * @param {{grantVersion?: unknown, lockToken?: string, failOnError?: boolean}} [options] - Optional grant version, lock token to identify who is locking the state.
  * @returns {Promise<void>} Resolves once the state is sent to the backend.
  */
-export async function persistStateToApi(state, key, { lockToken, grantVersion } = {}) {
+export async function persistStateToApi(state, key, { lockToken, grantVersion, failOnError = false } = {}) {
   if (!GRANTS_UI_BACKEND_ENDPOINT?.length) {
+    if (failOnError) {
+      throw new SessionError({
+        message: 'Unable to save the application',
+        source: 'persistStateToApi',
+        reason: 'Backend endpoint is not configured',
+        status: statusCodes.serviceUnavailable
+      })
+    }
     return
   }
 
@@ -61,6 +71,14 @@ export async function persistStateToApi(state, key, { lockToken, grantVersion } 
     })
 
     if (!response.ok) {
+      if (failOnError) {
+        throw new SessionError({
+          message: 'Unable to save the application',
+          source: 'persistStateToApi',
+          reason: `Backend returned HTTP ${response.status}`,
+          status: statusCodes.badGateway
+        })
+      }
       log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
         method: 'POST',
         endpoint: url.href,
@@ -69,6 +87,17 @@ export async function persistStateToApi(state, key, { lockToken, grantVersion } 
       })
     }
   } catch (err) {
+    if (failOnError) {
+      if (err instanceof SessionError) {
+        throw err
+      }
+      throw new SessionError({
+        message: 'Unable to save the application',
+        source: 'persistStateToApi',
+        reason: 'Backend request failed',
+        status: statusCodes.badGateway
+      }).from(/** @type {Error} */ (err))
+    }
     debug(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {
       method: 'POST',
       endpoint: url.href,

@@ -1,4 +1,4 @@
-import { saveApplicationResumePath } from './applications/applications.service.js'
+import { getRoutingDefinition, isUnscopedGrantRoot } from './common/helpers/definition/routing-definition.js'
 import plugin from '@defra/forms-engine-plugin'
 import Bell from '@hapi/bell'
 import Cookie from '@hapi/cookie'
@@ -71,12 +71,7 @@ import permissions from '../plugins/permissions.js'
 import { formsRequestPipeline } from './common/request-pipeline/forms-request-pipeline.js'
 import { serviceRootRedirect } from './common/request-pipeline/redirects/service-root-redirect.js'
 import { auditPublisher } from '~/src/server/common/helpers/audit/audit.js'
-import {
-  bindRequestContext,
-  getStateWithDefinition,
-  getRoutingDefinition,
-  isUnscopedGrantRoot
-} from './common/helpers/state/state-with-definition-context.js'
+import { bindRequestContext, getStateWithDefinition } from './common/helpers/state/state-with-definition-context.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
 
@@ -325,7 +320,6 @@ export async function createServer() {
     expiresIn: config.get('session.cookie.cache.ttl')
   })
 
-  server.ext('onPreResponse', saveApplicationResumePath)
   server.ext('onPreResponse', catchAll)
 
   return server

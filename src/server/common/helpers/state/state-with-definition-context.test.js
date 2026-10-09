@@ -1,11 +1,10 @@
+import { getRoutingDefinition, isUnscopedGrantRoot } from '../definition/routing-definition.js'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
   bindRequestContext,
   currentRequest,
   enterRequestContext,
   getStateWithDefinition,
-  getRoutingDefinition,
-  isUnscopedGrantRoot,
   resolveVersion,
   runWithRequest
 } from './state-with-definition-context.js'
@@ -46,6 +45,17 @@ describe('state-with-definition-context', () => {
     await getStateWithDefinition(request)
     expect(fetchLatestDefinitionFromApi).toHaveBeenCalledExactlyOnceWith('grant-a')
     expect(fetchStateWithDefinitionFromApi).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports definition upstream failures as a structured 502 and caches the failed read', async () => {
+    const request = makeRequest()
+    fetchLatestDefinitionFromApi.mockRejectedValueOnce(new Error('Backend down'))
+    const promise = getRoutingDefinition(request)
+    await expect(promise).rejects.toMatchObject({
+      details: { status: 502, source: 'getRoutingDefinition', reason: 'Definition request failed' }
+    })
+    expect(getRoutingDefinition(request)).toBe(promise)
+    expect(fetchLatestDefinitionFromApi).toHaveBeenCalledTimes(1)
   })
 
   it('uses lock-free entry routing only for a GET grant root without any reference', () => {

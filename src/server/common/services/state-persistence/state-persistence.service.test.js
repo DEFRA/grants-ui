@@ -136,6 +136,18 @@ describe('StatePersistenceService', () => {
     expect(lockModule.mintLockToken).toHaveBeenCalledWith(lockTokenArgs(1))
   })
 
+  test('strict creation propagates persistence failure without selecting the new reference', async () => {
+    const error = new Error('Backend refused save')
+    const request = { ...fakeRequest, app: { grantVersion: 1 } }
+    const state = { $$__referenceNumber: 'REF-NEW' }
+    persistModule.persistStateToApi.mockRejectedValueOnce(error)
+    await expect(service.setState(request, state, { failOnError: true })).rejects.toBe(error)
+    expect(persistModule.persistStateToApi).toHaveBeenCalledWith(state, SESSION_KEY, {
+      ...persistOptions(1),
+      failOnError: true
+    })
+  })
+
   test('setState throws when no grant version can be resolved', async () => {
     contextModule.getStateWithDefinition.mockResolvedValue(undefined)
     contextModule.resolveVersion.mockReturnValue(undefined)

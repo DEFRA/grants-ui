@@ -1,12 +1,17 @@
+import { getRoutingDefinition } from '../../helpers/definition/routing-definition.js'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { multiApplicationRedirect } from './multi-application-redirect.js'
-import { getStateWithDefinition, getRoutingDefinition } from '../../helpers/state/state-with-definition-context.js'
+import { getStateWithDefinition } from '../../helpers/state/state-with-definition-context.js'
 import { listApplicationsFromApi } from '../../helpers/state/fetch-saved-state-helper.js'
 import { getGrantCode } from '../../helpers/grant-code.js'
 
 vi.mock('../../helpers/state/state-with-definition-context.js', async (importOriginal) => ({
   ...(await importOriginal()),
-  getStateWithDefinition: vi.fn(),
+  getStateWithDefinition: vi.fn()
+}))
+
+vi.mock('../../helpers/definition/routing-definition.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   getRoutingDefinition: vi.fn()
 }))
 

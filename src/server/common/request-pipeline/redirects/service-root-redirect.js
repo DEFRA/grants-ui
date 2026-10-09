@@ -99,11 +99,7 @@ export async function serviceRootRedirect(request, h) {
     // a land parcel but no actions is sent to `incompleteToPath`
     // (the select-land-parcel page) rather than straight to the check-answers
     // page. Un-gated grants continue to use the rule's `toPath`.
-    const destinationPath = resolvePreSubmissionDestination(
-      preSubmissionRule,
-      /** @type {any} */ (state),
-      /** @type {any} */ (request.app).model?.def
-    )
+    const destinationPath = resolvePreSubmissionDestination(preSubmissionRule, /** @type {any} */ (state))
     if (destinationPath === null) {
       return h.continue
     }

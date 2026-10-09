@@ -1,6 +1,7 @@
+import { getRoutingDefinition } from '../definition/routing-definition.js'
 import { AsyncLocalStorage } from 'node:async_hooks'
-import { getCacheKey, buildSessionKey, getReferenceNumber } from './get-cache-key-helper.js'
-import { fetchStateWithDefinitionFromApi, fetchLatestDefinitionFromApi } from './fetch-saved-state-helper.js'
+import { getCacheKey, buildSessionKey } from './get-cache-key-helper.js'
+import { fetchStateWithDefinitionFromApi } from './fetch-saved-state-helper.js'
 import { mintLockToken } from '../lock/lock-token.js'
 
 /**
@@ -129,33 +130,6 @@ export function getStateWithDefinition(request) {
   }
 
   return app.stateWithDefinition
-}
-
-/** A grant entry visit that has not selected an application. @param {AnyRequest} request */
-export function isUnscopedGrantRoot(request) {
-  return (
-    request.method === 'get' &&
-    request.route?.path === '/{slug}' &&
-    !getReferenceNumber(request) &&
-    !Object.hasOwn(request.query ?? {}, 'ref')
-  )
-}
-
-/**
- * Resolve the latest definition for a routing decision without opening an application.
- * Keep this separate from the state envelope so a definition-only read cannot mask
- * a later state read (in particular for single-application grants).
- * @param {AnyRequest} request
- * @returns {Promise<StateWithDefinitionEnvelope | null>}
- */
-export function getRoutingDefinition(request) {
-  const app = /** @type {{ routingDefinition?: Promise<StateWithDefinitionEnvelope | null> }} */ (request.app)
-  if (!app.routingDefinition) {
-    app.routingDefinition = fetchLatestDefinitionFromApi(getCacheKey(request).grantCode).then((definition) =>
-      definition ? { definition, state: null, upgraded: false } : null
-    )
-  }
-  return app.routingDefinition
 }
 
 /**
