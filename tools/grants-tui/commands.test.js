@@ -35,6 +35,18 @@ vi.mock('./tailscale-serve.js', () => ({
 }))
 vi.mock('./tailscale-share.js', () => ({ revokeAllTailscaleSharesSync: vi.fn(() => 0) }))
 
+/**
+ * @param {Partial<import('./cli-state.js').CliState>} overrides
+ * @returns {import('./cli-state.js').CliState}
+ */
+const savedState = (overrides) => ({
+  addons: [],
+  scale: null,
+  localServices: [],
+  localFormDefSelections: [],
+  ...overrides
+})
+
 beforeEach(() => {
   vi.clearAllMocks()
   vi.mocked(spawnSync).mockReturnValue({ status: 0, stdout: '', stderr: '', pid: 1, output: [], signal: null })
@@ -71,7 +83,7 @@ test('HA and Tailscale fail before Serve or Docker changes', () => {
 })
 
 test('down removes matching proxies after the containers stop', () => {
-  vi.mocked(loadState).mockReturnValueOnce({ addons: ['tailscale'], tailscaleShareIds: ['share-1'] })
+  vi.mocked(loadState).mockReturnValueOnce(savedState({ addons: ['tailscale'], tailscaleShareIds: ['share-1'] }))
   vi.mocked(getTailscaleShareIds).mockReturnValueOnce(['share-1'])
   expect(cmdDown(false)).toBe(0)
   expect(revokeAllTailscaleSharesSync).toHaveBeenCalledWith(false)
@@ -85,7 +97,7 @@ test('down removes matching proxies after the containers stop', () => {
 })
 
 test('down omits the Tailscale environment overlay from Compose interpolation', () => {
-  vi.mocked(loadState).mockReturnValueOnce({ addons: ['land-grants', 'tailscale'] })
+  vi.mocked(loadState).mockReturnValueOnce(savedState({ addons: ['land-grants', 'tailscale'] }))
 
   expect(cmdDown(false)).toBe(0)
 
@@ -93,7 +105,7 @@ test('down omits the Tailscale environment overlay from Compose interpolation', 
 })
 
 test('down leaves the stack running when a share cannot be revoked', () => {
-  vi.mocked(loadState).mockReturnValueOnce({ addons: ['tailscale'], tailscaleShareIds: ['share-1'] })
+  vi.mocked(loadState).mockReturnValueOnce(savedState({ addons: ['tailscale'], tailscaleShareIds: ['share-1'] }))
   vi.mocked(getTailscaleShareIds).mockReturnValueOnce(['share-1'])
   vi.mocked(revokeAllTailscaleSharesSync).mockReturnValueOnce(1)
   vi.spyOn(console, 'error').mockImplementation(() => {})
