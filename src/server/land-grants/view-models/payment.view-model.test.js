@@ -6,6 +6,7 @@ import {
   mapPaymentInfoToParcelItems,
   mapAdditionalYearlyPayments
 } from './payment.view-model.js'
+import { HTML_INJECTION } from '~/src/__mocks__/escape-mocks.js'
 describe('payment-view-model.mapper', () => {
   describe('createParcelItemRow', () => {
     it('should create row with all columns', () => {
@@ -25,7 +26,35 @@ describe('payment-view-model.mapper', () => {
       expect(result[1].text).toBe('10 hectares')
       expect(result[2].text).toBe('£100.50')
       expect(result[3].html).toContain('select-actions-for-land-parcel?parcelId=AB1234-5678')
-      expect(result[3].html).toContain('remove-action?parcelId=AB1234-5678&action=SAM1')
+      expect(result[3].html).toContain('remove-action?parcelId=AB1234-5678&amp;action=SAM1')
+    })
+
+    it('should escape the action code written into the links HTML', () => {
+      const result = createParcelItemRow({
+        sheetId: 'AB1234',
+        parcelId: '5678',
+        code: HTML_INJECTION,
+        description: 'Test Action',
+        quantity: '10 hectares',
+        annualPaymentPence: 10050
+      })
+
+      expect(result[3].html).toBeEscaped()
+      // the remove link URL-encodes the code, then HTML-escapes the ' that encodeURIComponent leaves alone
+      expect(result[3].html).toContain(`action=%3Cscript%3E%22&#039;%26%3C%2Fscript%3E`)
+    })
+
+    it('should escape the parcel reference written into the links HTML', () => {
+      const result = createParcelItemRow({
+        sheetId: HTML_INJECTION,
+        parcelId: HTML_INJECTION,
+        code: 'SAM1',
+        description: 'Test Action',
+        quantity: '10 hectares',
+        annualPaymentPence: 10050
+      })
+
+      expect(result[3].html).toBeEscaped()
     })
 
     it('should include hidden text for accessibility', () => {

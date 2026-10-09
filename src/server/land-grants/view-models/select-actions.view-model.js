@@ -10,6 +10,7 @@ import { getActionChosenAreaDisplayId, getActionQuantityFieldName } from '~/src/
 import { requiresQuantityInput } from '~/src/shared/action-quantity-type.js'
 import { isLandAreaUnit, requiresWholeNumber } from '~/src/shared/unit-types.js'
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
+import { escapeHtml } from '~/src/server/common/utils/escape-html.js'
 import { areaWithUnit, availableArea, formatUnit, unitAlternativeLabel } from '~/src/shared/unit-format.js'
 import { getAvailabilityLimit, hasAvailableLand } from '~/src/shared/availability.js'
 import { formatParcelReference } from '~/src/shared/format-parcel.js'
@@ -219,7 +220,7 @@ export function getChosenAreaFieldsHtml(actions, addedActions) {
   return actions
     .filter((action) => !requiresQuantityInput(action))
     .map((action) => {
-      const fieldName = getActionQuantityFieldName(action.code)
+      const fieldName = escapeHtml(getActionQuantityFieldName(action.code))
       const chosenArea = Number(addedActions.find((a) => a.code === action.code)?.value)
       const value = Number.isFinite(chosenArea) && chosenArea > 0 ? chosenArea : 0
       return `<input type="hidden" id="${fieldName}" name="${fieldName}" value="${value}">`
