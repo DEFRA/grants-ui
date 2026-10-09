@@ -72,12 +72,13 @@ function buildRequestUrl(url, queryParams) {
  * Validates the HTTP response and throws a typed error if the request failed.
  *
  * @param {Response} response - Fetch response object
+ * @param {string} url - API endpoint URL
  * @param {string} grantCode - Grant code for error context
  * @returns {Promise<Response>} The original response if successful
  * @throws {GrantScoringServiceError}
  * @private
  */
-async function handleResponse(response, grantCode) {
+async function handleResponse(response, url, grantCode) {
   if (!response.ok) {
     const error = await response.json()
     const responseErrorMessage = error?.message ? ` - ${error.message}` : ''
@@ -87,6 +88,7 @@ async function handleResponse(response, grantCode) {
       reason: 'grant_scoring_http_failure',
       status: 500,
       service: 'grant-scoring-service',
+      endpoint: url,
       grantCode,
       upstreamStatus: response.status
     })
@@ -119,7 +121,7 @@ export async function makeScoringApiRequest(url, grantCode, _request, options = 
       serviceName: 'GrantScoringService.makeScoringApiRequest'
     })
 
-    await handleResponse(response, grantCode)
+    await handleResponse(response, url, grantCode)
 
     return response
   } catch (error) {

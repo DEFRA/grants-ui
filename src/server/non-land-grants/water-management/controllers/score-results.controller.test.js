@@ -29,7 +29,13 @@ describe('ScoreResultsController', () => {
           pageConfig: {
             '/score-results': {
               derivedState: {
-                stateKeys: ['eligibilityScore', 'eligibilityBand'],
+                stateKeys: [
+                  'totalScore',
+                  'sectorScore',
+                  'scarcityScore',
+                  'collaborationScore',
+                  'planningAbstractionScore'
+                ],
                 requiresAcknowledgement: false
               }
             }
@@ -49,7 +55,12 @@ describe('ScoreResultsController', () => {
     mockContext = {
       relevantPages: [controller],
       state: {
-        countyProjectLocated: 'CHESHIRE'
+        sectorsIrrigated: ['Soft & Cane Fruit'],
+        projectLocated__easting: '286394',
+        projectLocated__northing: '286394',
+        businessesUsingWater: 'FIVE_OR_MORE',
+        havePlanningPermission: 'NN',
+        haveAbstractionLicence: 'NN'
       }
     }
     mockH = {
@@ -67,17 +78,31 @@ describe('ScoreResultsController', () => {
 
   describe('makeGetRouteHandler', () => {
     it('should set scoreResults based on scoring service and render view', async () => {
-      invokeGrantScoringGetAction.mockResolvedValueOnce({ score: 75, band: 'High' })
+      invokeGrantScoringGetAction.mockResolvedValueOnce({
+        totalScore: 75,
+        sectorScore: 20,
+        scarcityScore: 20,
+        collaborationScore: 20,
+        planningAbstractionScore: 15
+      })
       const handler = controller.makeGetRouteHandler()
 
       await handler(mockRequest, mockContext, mockH)
 
       expect(invokeGrantScoringGetAction).toHaveBeenCalledWith('water-management', mockRequest, {
-        county: 'CHESHIRE'
+        sectorsIrrigated: ['Soft & Cane Fruit'],
+        easting: '286394',
+        northing: '286394',
+        businessesUsingWater: 'FIVE_OR_MORE',
+        planning: 'NN',
+        abstraction: 'NN'
       })
       expect(mergeAdditionalAnswers).toHaveBeenCalledWith(expect.anything(), {
-        eligibilityScore: 75,
-        eligibilityBand: 'High'
+        totalScore: 75,
+        sectorScore: 20,
+        scarcityScore: 20,
+        collaborationScore: 20,
+        planningAbstractionScore: 15
       })
       expect(controller.setState).toHaveBeenCalled()
       expect(mockH.view).toHaveBeenCalledWith(controller.viewName, expect.objectContaining({ baseModel: 'data' }))
