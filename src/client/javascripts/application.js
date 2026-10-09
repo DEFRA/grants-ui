@@ -1,12 +1,9 @@
-import { initAll, initMaps } from '@defra/forms-engine-plugin/shared.js'
+import { initAll } from '@defra/forms-engine-plugin/shared.js'
+import { initialiseComponentMaps } from './component-maps.js'
 import './cookie-consent.js'
 import '../../server/cookies/cookie-preferences.js'
 import '../../server/cookies/append-return-url.js'
 
 initAll()
-if (window.componentMapsEnabled) {
-  initMaps({
-    apiPath: '/api',
-    assetPath: '/public/assets'
-  })
-}
+// eslint-disable-next-line no-void -- Map setup runs asynchronously without blocking page startup.
+void initialiseComponentMaps()

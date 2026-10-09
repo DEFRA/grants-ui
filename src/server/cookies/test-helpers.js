@@ -1,6 +1,33 @@
 // @ts-ignore // no bundled type declarations
 import { JSDOM, VirtualConsole } from 'jsdom'
 
+/** @type {Array<() => void>} */
+const domCleanups = []
+
+const saveDOMGlobals = () =>
+  ['document', 'window', 'location'].map((name) => ({
+    name,
+    descriptor: Object.getOwnPropertyDescriptor(globalThis, name)
+  }))
+
+/** @param {ReturnType<typeof saveDOMGlobals>} globals */
+const restoreDOMGlobals = (globals) => {
+  for (const { name, descriptor } of globals) {
+    if (descriptor) {
+      Object.defineProperty(globalThis, name, descriptor)
+    } else {
+      Reflect.deleteProperty(globalThis, name)
+    }
+  }
+}
+
+/** Closes test windows and restores the globals they replaced, in reverse creation order. */
+export const cleanupDOM = () => {
+  while (domCleanups.length) {
+    domCleanups.pop()?.()
+  }
+}
+
 /**
  * Sets up a JSDOM instance with the provided HTML and configures the global document and window objects.
  * Suppresses JSDOM navigation errors to prevent test failures when testing navigation behaviour.
@@ -10,6 +37,7 @@ import { JSDOM, VirtualConsole } from 'jsdom'
  * @returns {{dom: JSDOM, document: Document, window: Window}} The JSDOM instance and references to document and window
  */
 export const setupDOM = (html, url = 'http://localhost') => {
+  const originalGlobals = saveDOMGlobals()
   const virtualConsole = new VirtualConsole()
   virtualConsole.on('jsdomError', () => {})
 
@@ -26,6 +54,11 @@ export const setupDOM = (html, url = 'http://localhost') => {
   })
   globalThis.window = dom.window
   globalThis.location = dom.window.location
+
+  domCleanups.push(() => {
+    dom.window.close()
+    restoreDOMGlobals(originalGlobals)
+  })
 
   return { dom, document: dom.window.document, window: dom.window }
 }
@@ -78,31 +111,14 @@ export const getScriptCount = (document) => document.head.querySelectorAll('scri
  * @returns {Promise<{listenerAdded: boolean, document: Document, window: Window}>}
  */
 export const setupLoadingDocument = async (html, importCallback) => {
-  const virtualConsole = new VirtualConsole()
-  virtualConsole.on('jsdomError', () => {})
-
-  const dom = new JSDOM(html, {
-    url: 'http://localhost',
-    pretendToBeVisual: true,
-    virtualConsole
-  })
+  const originalGlobals = saveDOMGlobals()
+  const { dom } = setupDOM(html)
 
   Object.defineProperty(dom.window.document, 'readyState', {
     writable: false,
     configurable: true,
     value: 'loading'
   })
-
-  const originalDocument = globalThis.document
-  const originalWindow = globalThis.window
-
-  Object.defineProperty(globalThis, 'document', {
-    value: dom.window.document,
-    configurable: true,
-    writable: true
-  })
-  globalThis.window = dom.window
-  globalThis.location = dom.window.location
 
   let listenerAdded = false
   const originalAddEventListener = globalThis.document.addEventListener
@@ -119,14 +135,12 @@ export const setupLoadingDocument = async (html, importCallback) => {
     return originalAddEventListener.call(globalThis.document, event, handler)
   }
 
-  await importCallback()
-
-  Object.defineProperty(globalThis, 'document', {
-    value: originalDocument,
-    configurable: true,
-    writable: true
-  })
-  globalThis.window = originalWindow
+  try {
+    await importCallback()
+  } finally {
+    dom.window.document.addEventListener = originalAddEventListener
+    restoreDOMGlobals(originalGlobals)
+  }
 
   return {
     listenerAdded,
