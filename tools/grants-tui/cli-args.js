@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 
-import { LOCAL_SERVICES, RED, RESET_COLOR, TEST_TARGETS } from './constants.js'
+import { ADDONS, LOCAL_SERVICES, RED, RESET_COLOR, TEST_TARGETS } from './constants.js'
 
 /**
  * Validate argv against known commands/flags.
@@ -59,10 +59,7 @@ export function validateArgs(argv) {
     '--version',
     '-v',
     '--scale',
-    '--land-grants',
-    '--gas',
-    '--ha',
-    '--tailscale',
+    ...ADDONS.map((a) => `--${a.key}`),
     '--down',
     '--skip-tests',
     '--changed',
