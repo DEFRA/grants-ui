@@ -10,7 +10,7 @@ const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
  * Sends a PATCH to the Grants UI backend to update the stored application status.
  *
  * @param {string} applicationStatus - The new application status to persist.
- * @param {string} key - The session key in `sbi:grantCode` form.
+ * @param {string} key - The session key in `sbi:grantCode` or `sbi:grantCode:referenceNumber` form.
  * @param {{ lockToken?: string, grantVersion?: string | number }} options - Lock token and grant version.
  * @returns {Promise<void>} Resolves once the update request completes.
  */
@@ -27,7 +27,7 @@ export async function updateApplicationStatus(
     throw new Error('Missing grantVersion for application status update')
   }
 
-  const { sbi, grantCode } = parseSessionKey(key)
+  const { sbi, grantCode, referenceNumber } = parseSessionKey(key)
 
   const url = new URL(`/state/${sbi}/${grantCode}/${grantVersion}`, GRANTS_UI_BACKEND_ENDPOINT)
 
@@ -45,6 +45,8 @@ export async function updateApplicationStatus(
       method: 'PATCH',
       headers: await createApiHeadersForGrantsUiBackend({ lockToken }),
       body: JSON.stringify({
+        // The backend's own field name for this is still applicationRef.
+        ...(referenceNumber && { applicationRef: referenceNumber }),
         state: {
           applicationStatus
         }

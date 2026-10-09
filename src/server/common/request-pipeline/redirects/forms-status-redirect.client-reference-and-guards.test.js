@@ -17,13 +17,17 @@ vi.mock('../../../common/services/grant-application/grant-application.service.js
 vi.mock('../../../common/helpers/status/update-application-status-helper.js', () => ({
   updateApplicationStatus: vi.fn()
 }))
+vi.mock('../../helpers/state/state-with-definition-context.js', () => ({
+  isStoredByReference: vi.fn().mockResolvedValue(false)
+}))
 vi.mock('../../../common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: vi.fn()
 }))
 vi.mock('../../../common/helpers/lock/lock-token.js', () => ({
   mintLockToken: vi.fn().mockReturnValue('mock-lock-token')
 }))
-vi.mock('../../../common/helpers/state/get-cache-key-helper.js', () => ({
+vi.mock('../../../common/helpers/state/get-cache-key-helper.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   getCacheKey: vi.fn().mockReturnValue({ sbi: '12345', grantCode: 'grant-a' })
 }))
 vi.mock('../../../../config/agreements.js', () => ({
@@ -349,6 +353,19 @@ describe('formsStatusRedirect', () => {
         })
       }
     )
+
+    it('carries the grant and ?ref= onto the /agreement redirect, so each tab names its own application', async () => {
+      request.query = { ref: 'REF-1' }
+      mockGasStatus('OFFER_SENT')
+
+      await formsStatusRedirect(request, h, context)
+
+      expect(h.redirect).toHaveBeenCalledWith('/agreement?grant=grant-a&ref=REF-1')
+      expect(request.yar.set).toHaveBeenCalledWith(
+        YarKeys.GRANT_APPLICATION_CONTEXT,
+        expect.objectContaining({ applicationRef: 'REF-1' })
+      )
+    })
 
     it('does not redirect farm-payments to /agreement when GAS status is RECEIVED', async () => {
       mockGasStatus('RECEIVED')

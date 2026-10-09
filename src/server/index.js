@@ -51,6 +51,7 @@ import { componentMapOptions } from '../config/nunjucks/component-map-options.js
 import { StatePersistenceService } from './common/services/state-persistence/state-persistence.service.js'
 import { router } from './router.js'
 import allowlist from '~/src/server/common/helpers/allowlist/allowlist.js'
+import multiApplication from '~/src/server/common/helpers/multi-application/multi-application.js'
 import ConfirmMethaneDetailsController from '~/src/server/non-land-grants/methane/controllers/confirm-methane-details.controller.js'
 import TaskListPageController from '~/src/server/task-list/task-list-page.controller.js'
 import TaskPageController from '~/src/server/task-list/task-page.controller.js'
@@ -219,6 +220,7 @@ const registerPlugins = async (server) => {
     permissions,
     contentSecurityPolicy,
     allowlist,
+    multiApplication,
     auditPublisher
   ])
 

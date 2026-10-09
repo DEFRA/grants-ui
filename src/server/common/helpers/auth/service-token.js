@@ -67,6 +67,12 @@ export async function logUnderlyingCredentialExpiry(webIdentityTokenProvider, la
  * Returns a valid AWS STS Web Identity token, refreshing it if expired.
  * Sent as the raw Bearer token - no second exchange, unlike the Entra flow.
  * No retry on failure: fails fast rather than masking a genuine STS problem.
+ *
+ * MockProvider's token is a plain UUID, not a JWT, so the `exp`-based
+ * `isExpired` check (meant for real STS tokens) is skipped for it - otherwise
+ * `jwt.decode` can't parse it, it's always treated as expired, and local dev
+ * under `web_identity` auth never sends an Authorization header at all.
+ *
  * @param {WebIdentityTokenProvider | MockProvider} webIdentityTokenProvider
  * @param {string} [audience]
  * @param {string} [label]
@@ -74,7 +80,8 @@ export async function logUnderlyingCredentialExpiry(webIdentityTokenProvider, la
  */
 export async function getServiceToken(webIdentityTokenProvider, audience, label) {
   const token = await webIdentityTokenProvider.getCredentials(logger)
-  if (token && !isExpired(token)) {
+  const isMock = webIdentityTokenProvider instanceof MockProvider
+  if (token && (isMock || !isExpired(token))) {
     logger.info(`[${label}] Web Identity token ready (audience=${audience})`)
     return token
   }
