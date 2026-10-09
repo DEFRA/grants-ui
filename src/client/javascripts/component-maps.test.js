@@ -1,22 +1,35 @@
+// @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { geospatialMap, map } from '@defra/forms-engine-plugin/shared.js'
 import { processLocation } from './location-map.js'
 import { initialiseComponentMaps } from './component-maps.js'
 
-vi.mock('@defra/forms-engine-plugin/shared.js', () => ({
-  geospatialMap: { processGeospatial: vi.fn() },
-  map: {
-    defaultConfig: { center: [-2.421975, 53.825564], zoom: '6' },
-    eastingNorthingToLatLong: vi.fn(),
-    formSubmitFactory: vi.fn(() => vi.fn())
+vi.hoisted(() => {
+  vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener() {}, removeEventListener() {} }))
+})
+
+vi.mock('@defra/forms-engine-plugin/shared.js', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    geospatialMap: { ...actual.geospatialMap, processGeospatial: vi.fn() },
+    map: {
+      ...actual.map,
+      defaultConfig: { center: [-2.421975, 53.825564], zoom: '6' },
+      eastingNorthingToLatLong: vi.fn(),
+      osGridRefToLatLong: vi.fn(),
+      formSubmitFactory: vi.fn(() => vi.fn())
+    }
   }
-}))
-vi.mock('./location-map.js', () => ({
+})
+vi.mock('./location-map.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   processLocation: vi.fn()
 }))
 
 const UK_VIEW = { center: [-2.421975, 53.825564], zoom: '6' }
 const initialViews = []
+const initialUrl = window.location.href
 const gazetteerEntry = (name = 'SW1A 1AA', type = 'Postcode', coordinates = {}) => ({
   GAZETTEER_ENTRY: { NAME1: name, LOCAL_TYPE: type, GEOMETRY_X: 530000, GEOMETRY_Y: 180000, ...coordinates }
 })
@@ -67,11 +80,13 @@ describe('forms component maps', () => {
       '<div class="app-location-field" data-locationtype="osgridreffield"><input name="location" value="" /></div>'
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response([gazetteerEntry()])))
     vi.mocked(map.eastingNorthingToLatLong).mockReturnValue({ lat: 51.5074, long: -0.1276 })
+    vi.mocked(map.osGridRefToLatLong).mockReturnValue({ lat: 51.5074, long: -0.1276 })
   })
 
   afterEach(() => {
     window.dispatchEvent(new window.Event('pagehide'))
     document.body.innerHTML = ''
+    window.history.replaceState(null, '', initialUrl)
     delete window.componentMapsEnabled
     vi.unstubAllGlobals()
     vi.useRealTimers()
@@ -138,9 +153,81 @@ describe('forms component maps', () => {
     window.history.replaceState(null, '', '?map_0:center=-1.5,53&map_0:zoom=14')
     addPostcode('SW1A 1AA')
     await initialiseComponentMaps()
+    expect(fetch).not.toHaveBeenCalled()
     expect(input.value).toBe('SP 4178 2432')
     expect(window.location.search).toBe('?map_0:center=-1.5,53&map_0:zoom=14')
     window.history.replaceState(null, '', previousUrl)
+  })
+
+  test.each([
+    { type: 'osgridreffield', values: ['SP 4178 2432'] },
+    { type: 'eastingnorthingfield', values: ['530000', '180000'] },
+    { type: 'eastingnorthingfield', values: ['0', '0'] },
+    { type: 'latlongfield', values: ['51.5074', '-0.1276'] },
+    { type: 'latlongfield', values: ['51.5074', '0'] }
+  ])('skips the postcode lookup for a usable $type answer ($values)', async ({ type, values }) => {
+    document.body.innerHTML = `<div class="app-location-field" data-locationtype="${type}">
+      ${values.map((value) => `<input class="govuk-input" value="${value}" />`).join('')}
+    </div>`
+    addPostcode('SW1A 1AA')
+    await initialiseComponentMaps()
+    expect(fetch).not.toHaveBeenCalled()
+    expect(processLocation).toHaveBeenCalledTimes(1)
+    expect([...document.querySelectorAll('input')].map((input) => input.value)).toEqual(values)
+  })
+
+  test.each([
+    { type: 'osgridreffield', values: ['not a grid reference'] },
+    { type: 'eastingnorthingfield', values: ['530000', ''] },
+    { type: 'latlongfield', values: ['51.5074', ''] },
+    { type: 'latlongfield', values: ['61', '-0.1276'] }
+  ])('looks up the postcode for an unusable $type answer ($values)', async ({ type, values }) => {
+    document.body.innerHTML = `<div class="app-location-field" data-locationtype="${type}">
+      ${values.map((value) => `<input class="govuk-input" value="${value}" />`).join('')}
+    </div>`
+    addPostcode('SW1A 1AA')
+    await initialiseComponentMaps()
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(initialViews).toEqual([{ center: [-0.1276, 51.5074], zoom: 10 }])
+  })
+
+  test('skips the postcode lookup for saved geospatial features', async () => {
+    document.body.innerHTML = '<div class="app-geospatial-field"><textarea class="govuk-textarea"></textarea></div>'
+    const input = document.querySelector('textarea')
+    const value = JSON.stringify([
+      { type: 'Feature', geometry: { type: 'Point', coordinates: [-0.1276, 51.5074] }, properties: {} }
+    ])
+    input.value = value
+    addPostcode('SW1A 1AA')
+    await initialiseComponentMaps()
+    expect(fetch).not.toHaveBeenCalled()
+    expect(geospatialMap.processGeospatial).toHaveBeenCalledTimes(1)
+    expect(input.value).toBe(value)
+  })
+
+  test.each(['', '   ', '[]', 'invalid JSON', '[{"type":"Feature","geometry":null}]'])(
+    'looks up the postcode when geospatial data supplies no usable bounds (%s)',
+    async (value) => {
+      document.body.innerHTML = '<div class="app-geospatial-field"><textarea class="govuk-textarea"></textarea></div>'
+      document.querySelector('textarea').value = value
+      addPostcode('SW1A 1AA')
+      await initialiseComponentMaps()
+      expect(fetch).toHaveBeenCalledTimes(1)
+      expect(initialViews).toEqual([{ center: [-0.1276, 51.5074], zoom: 10 }])
+    }
+  )
+
+  test.each([
+    { markup: '<div class="app-location-field" data-locationtype="osgridreffield"><input /></div>', id: 'map_0' },
+    { markup: '<div class="app-geospatial-field"><textarea></textarea></div>', id: 'geospatialmap_0' }
+  ])('skips the postcode lookup for a saved $id URL view without an answer', async ({ markup, id }) => {
+    document.body.innerHTML = markup
+    window.history.replaceState(null, '', `?${id}:center=-1.5,53&${id}:zoom=14`)
+    addPostcode('SW1A 1AA')
+    await initialiseComponentMaps()
+    expect(fetch).not.toHaveBeenCalled()
+    expect(initialViews).toEqual([UK_VIEW])
+    expect(window.location.search).toBe(`?${id}:center=-1.5,53&${id}:zoom=14`)
   })
 
   test('uses only an exact postcode match, ignoring fuzzy matches and other result types', async () => {

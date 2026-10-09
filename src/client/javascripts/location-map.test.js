@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { map } from '@defra/forms-engine-plugin/shared.js'
 import { processLocation } from './location-map.js'

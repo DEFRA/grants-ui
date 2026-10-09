@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createEmptyPage, setupDOM, setupLoadingDocument } from './test-helpers.js'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { cleanupDOM, createEmptyPage, setupDOM, setupLoadingDocument } from './test-helpers.js'
 
 const createPageWithCookieBanner = (cookiePolicyUrl = '/cookies') => `
   <!DOCTYPE html>
@@ -33,6 +33,8 @@ describe('append-return-url', () => {
   beforeEach(() => {
     vi.resetModules()
   })
+
+  afterEach(cleanupDOM)
 
   it('should exit early if cookie banner is not present', async () => {
     const setup = setupDOM(createEmptyPage(), 'http://localhost/some-page?foo=bar')

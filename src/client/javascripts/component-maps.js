@@ -1,5 +1,5 @@
 import { geospatialMap, map } from '@defra/forms-engine-plugin/shared.js'
-import { processLocation } from './location-map.js'
+import { processLocation, readLocationPoint } from './location-map.js'
 import { isValidEastingNorthing } from './map-coordinate-utils.js'
 
 const MAP_FIELDS = [
@@ -61,6 +61,23 @@ async function findPostcodeCenter(postcode) {
   }
 }
 
+function hasSavedAnswer(field) {
+  if (!field.matches('.app-geospatial-field')) {
+    return Boolean(readLocationPoint(field))
+  }
+  const input = field.querySelector('textarea.govuk-textarea')
+  if (!(input instanceof window.HTMLTextAreaElement)) {
+    return false
+  }
+  try {
+    const geojson = geospatialMap.getGeoJSON(input)
+    return geojson.features.length > 0 && geospatialMap.getBoundingBox(geojson).every(Number.isFinite)
+  } catch {
+    // Defer invalid saved data to the engine's normal initialisation handling.
+    return false
+  }
+}
+
 /** Close the engine's asynchronously rendered geospatial help panel once, through its normal UI handler. */
 function hideInitialHelpPanel(field) {
   const closePanel = () => {
@@ -106,9 +123,19 @@ export async function initialiseComponentMaps() {
     const name = field.querySelector('input[name], textarea[name]')?.getAttribute('name')?.split('__')[0]
     return optionsByName.get(name) ?? { hideMapHelpPanel: true, zoomToPostcode: true }
   }
+  const locationFields = [...document.querySelectorAll('.app-location-field')]
+  const geospatialFields = [...document.querySelectorAll('.app-geospatial-field')]
+  const savedView = new window.URLSearchParams(window.location.search)
+  const hasSavedView = (field) => {
+    const geospatial = field.matches('.app-geospatial-field')
+    const index = (geospatial ? geospatialFields : locationFields).indexOf(field)
+    const id = `${geospatial ? 'geospatialmap' : 'map'}_${index}`
+    return Boolean(savedView.get(`${id}:center`) && savedView.get(`${id}:zoom`))
+  }
   const postcode = settings?.dataset.mapPostcode?.trim().toUpperCase().replace(/\s+/g, ' ')
   const center =
-    postcode && fields.some((field) => optionsFor(field).zoomToPostcode)
+    postcode &&
+    fields.some((field) => optionsFor(field).zoomToPostcode && !hasSavedView(field) && !hasSavedAnswer(field))
       ? await findPostcodeCenter(postcode)
       : undefined
 
@@ -131,12 +158,12 @@ export async function initialiseComponentMaps() {
 
   // Each engine helper copies the default synchronously; keep native indices for saved URL views.
   try {
-    document.querySelectorAll('.app-location-field').forEach((field, index) => {
+    locationFields.forEach((field, index) => {
       if (field.matches(MAP_FIELDS)) {
         processLocation(config, field, index, prepareMap(field))
       }
     })
-    document.querySelectorAll('.app-geospatial-field').forEach((field, index) => {
+    geospatialFields.forEach((field, index) => {
       const options = prepareMap(field)
       if (options.hideMapHelpPanel) {
         hideInitialHelpPanel(field)

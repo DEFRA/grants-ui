@@ -16,8 +16,7 @@ class GrantsUiWorld {
     this.browser = await chromium.launch({
       headless: HEADLESS,
       executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,
-      // Allow real WebGL map rendering in CI containers without GPU hardware.
-      args: ['--no-sandbox', '--disable-dev-shm-usage', '--enable-unsafe-swiftshader']
+      args: ['--no-sandbox', '--disable-dev-shm-usage']
     })
     this.context = await this.browser.newContext({
       baseURL: BASE_URL,

@@ -67,6 +67,13 @@ const LOCATION_TYPES = {
   }
 }
 
+/** Read a usable saved location with the same validation used to initialise its map. */
+export function readLocationPoint(location) {
+  const type = LOCATION_TYPES[location.dataset.locationtype ?? '']
+  const inputs = [...location.querySelectorAll('input.govuk-input')]
+  return type && inputs.length === type.inputCount ? type.read(inputs) : undefined
+}
+
 function addHelpPanel(map) {
   const layout = { slot: 'drawer', open: true, dismissible: true, modal: false }
   map.addPanel('info', {
@@ -97,7 +104,7 @@ export function processLocation(config, location, index, { hideMapHelpPanel = tr
     throw new Error(`Expected ${type.inputCount} inputs for ${location.dataset.locationtype}`)
   }
 
-  const point = type.read(inputs)
+  const point = readLocationPoint(location)
   /** @type {[number, number] | undefined} */
   const center = point ? [point.long, point.lat] : undefined
   const initConfig = center
