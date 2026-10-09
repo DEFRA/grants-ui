@@ -62,18 +62,30 @@ function createJourney(ResultController = TotalEstimatedCostTaskPageController) 
             excludeFromTaskCompletion: true,
             derivedState: {
               stateKeys: [
-                'reservoirCostPerUnit',
+                'reservoirHighCostPerUnit',
+                'reservoirLowCostPerUnit',
                 'distNetworkCostPerUnit',
                 'tanksCostPerUnit',
                 'reservoirCost',
                 'waterDistributionNetworkCost',
                 'waterTanksCost',
                 'totalEstimatedCost',
-                'estimatedMaxGrant'
+                'estimatedMaxGrantBeforeReduction',
+                'estimatedMaxGrant',
+                'minGrantReached',
+                'maxGrantReached'
               ],
               requiresAcknowledgement: true
             },
-            costs: { reservoirCostPerUnit: 2.5, distNetworkCostPerUnit: 5, tanksCostPerUnit: 1.5, grantMaxRate: 0.4 }
+            costs: {
+              reservoirClayHighCostPerUnit: 2.5,
+              reservoirClayLowCostPerUnit: 2.0,
+              reservoirSyntheticHighCostPerUnit: 3.5,
+              reservoirSyntheticLowCostPerUnit: 3.0,
+              distNetworkCostPerUnit: 5,
+              tanksCostPerUnit: 1.5,
+              grantMaxRate: 0.4
+            }
           },
           '/summary': {
             derivedStatePages: ['/total-estimated-cost'],
@@ -128,7 +140,7 @@ function createJourney(ResultController = TotalEstimatedCostTaskPageController) 
   let state = {
     $$__referenceNumber: 'test-reference',
     itemsPlanningToInstall: ['RESERVOIR'],
-    howMuchWater: 100,
+    howMuchWater: 100000,
     otherAnswer: 'Provided'
   }
   const initialCostPage = new TotalEstimatedCostTaskPageController(model, costPage.pageDef)
@@ -185,10 +197,10 @@ describe('Check answers derived-state navigation with the forms engine', () => {
     const journey = createJourney()
     const edit = await journey.dispatch('/grant/amount?returnUrl=%2Fgrant%2Fsummary', {
       method: 'post',
-      payload: { action: 'validate', howMuchWater: '200' }
+      payload: { action: 'validate', howMuchWater: '200000' }
     })
     expect(edit.location).toBe('/grant/summary')
-    expect(journey.state().additionalAnswers.totalEstimatedCost).toBe(250)
+    expect(journey.state().additionalAnswers.totalEstimatedCost).toBe(205000)
     expect(getCompletionStats({ page: { def: journey.model.def } }, journey.model, journey.state())).toEqual({
       completed: 2,
       total: 2,
@@ -201,7 +213,7 @@ describe('Check answers derived-state navigation with the forms engine', () => {
 
     const calculated = await journey.dispatch(detour.location)
     expect(calculated.statusCode).toBe(200)
-    expect(journey.state().additionalAnswers.totalEstimatedCost).toBe(500)
+    expect(journey.state().additionalAnswers.totalEstimatedCost).toBe(405000)
 
     const continued = await journey.dispatch(detour.location, { method: 'post', payload: { action: 'continue' } })
     expect(continued.statusCode).toBe(303)
@@ -211,7 +223,7 @@ describe('Check answers derived-state navigation with the forms engine', () => {
     expect(summary.viewName).toBe('check-responses-page')
     expect(summary.viewModel.checkAnswers[0].summaryList.rows).toContainEqual({
       key: { text: 'Total estimated cost' },
-      value: { text: 500 }
+      value: { text: 405000 }
     })
   })
 
@@ -226,7 +238,7 @@ describe('Check answers derived-state navigation with the forms engine', () => {
 
     const edit = await journey.dispatch('/grant/amount?returnUrl=%2Fgrant%2Fsummary', {
       method: 'post',
-      payload: { action: 'validate', howMuchWater: '100' }
+      payload: { action: 'validate', howMuchWater: '100000' }
     })
     // Simulate returning to the checkbox page from Check answers and removing
     // one selection: the summary must require the user to review the new total.
@@ -238,15 +250,15 @@ describe('Check answers derived-state navigation with the forms engine', () => {
 
     await journey.dispatch(detour.location)
     expect(journey.state().additionalAnswers).toMatchObject({
-      reservoirCost: 250,
+      reservoirCost: 205000,
       waterDistributionNetworkCost: 0,
-      totalEstimatedCost: 250
+      totalEstimatedCost: 205000
     })
   })
 
   it('redirects a direct Check answers POST to recalculate before proceeding', async () => {
     const journey = createJourney()
-    journey.state().howMuchWater = 200
+    journey.state().howMuchWater = 200000
 
     const result = await journey.dispatch('/grant/summary', { method: 'post', payload: { action: 'continue' } })
 
@@ -256,13 +268,13 @@ describe('Check answers derived-state navigation with the forms engine', () => {
 
   it('keeps incomplete questions ahead of recalculation', async () => {
     const journey = createJourney()
-    journey.state().howMuchWater = 200
+    journey.state().howMuchWater = 100000
     delete journey.state().otherAnswer
 
     const result = await journey.dispatch('/grant/summary')
 
     expect(result.location).toBe('/grant/other-details')
-    expect(journey.state().additionalAnswers.totalEstimatedCost).toBe(250)
+    expect(journey.state().additionalAnswers.totalEstimatedCost).toBe(205000)
   })
 
   it('omits both the detour and saved calculated rows when their page becomes inapplicable', async () => {
@@ -275,7 +287,7 @@ describe('Check answers derived-state navigation with the forms engine', () => {
     const summary = await journey.dispatch(edit.location)
 
     expect(summary.viewName).toBe('check-responses-page')
-    expect(journey.state().additionalAnswers.totalEstimatedCost).toBe(250)
+    expect(journey.state().additionalAnswers.totalEstimatedCost).toBe(205000)
     expect(summary.viewModel.checkAnswers.flatMap((section) => section.summaryList.rows)).not.toContainEqual(
       expect.objectContaining({ key: { text: 'Total estimated cost' } })
     )
@@ -284,26 +296,26 @@ describe('Check answers derived-state navigation with the forms engine', () => {
   it('refreshes a calculated result without a page visit and checks it again on GET and POST', async () => {
     const journey = createJourney(AutomaticResultController)
     const persist = vi.spyOn(journey.costPage, 'setState')
-    journey.state().howMuchWater = 200
+    journey.state().howMuchWater = 200000
 
     const summary = await journey.dispatch('/grant/summary')
 
     expect(summary.viewName).toBe('check-responses-page')
     expect(summary.viewModel.checkAnswers[0].summaryList.rows).toContainEqual({
       key: { text: 'Total estimated cost' },
-      value: { text: 500 }
+      value: { text: 500000 }
     })
-    expect(journey.state().additionalAnswers.totalEstimatedCost).toBe(500)
+    expect(journey.state().additionalAnswers.totalEstimatedCost).toBe(500000)
     expect(persist).toHaveBeenCalledTimes(1)
 
     const revisited = await journey.dispatch('/grant/summary')
     expect(revisited.viewName).toBe('check-responses-page')
     expect(persist).toHaveBeenCalledTimes(1)
 
-    journey.state().howMuchWater = 300
+    journey.state().howMuchWater = 300000
     const submitted = await journey.dispatch('/grant/summary', { method: 'post', payload: { action: 'continue' } })
     expect(submitted.location).toBe('/grant/declaration')
-    expect(journey.state().additionalAnswers.totalEstimatedCost).toBe(750)
+    expect(journey.state().additionalAnswers.totalEstimatedCost).toBe(750000)
     expect(persist).toHaveBeenCalledTimes(2)
   })
 })

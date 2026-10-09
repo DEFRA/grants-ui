@@ -404,8 +404,11 @@
     "httpResponse": {
       "statusCode": 200,
       "body": {
-        "score": 50,
-        "band": "Average"
+        "totalScore": 80,
+        "sectorScore": 25,
+        "scarcityScore": 40,
+        "collaborationScore": 10,
+        "planningAbstractionScore": 5
       }
     }
   }
