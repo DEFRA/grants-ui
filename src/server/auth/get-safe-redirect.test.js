@@ -28,6 +28,15 @@ describe('getSafeRedirect', () => {
     expect(getSafeRedirect('///example.com')).toBe('/home')
   })
 
+  it('should return /home when the path contains control characters (open redirect variants)', () => {
+    expect(getSafeRedirect('/\t/evil.test')).toBe('/home')
+    expect(getSafeRedirect('/\n/evil.test')).toBe('/home')
+    expect(getSafeRedirect('/\r/evil.test')).toBe('/home')
+    expect(getSafeRedirect('/\t\\evil.test')).toBe('/home')
+    expect(getSafeRedirect('/dashboard\u0000')).toBe('/home')
+    expect(getSafeRedirect('/dashboard\u007F')).toBe('/home')
+  })
+
   it('should handle empty strings correctly', () => {
     // Empty strings
     expect(getSafeRedirect('')).toBe('/home')
@@ -45,10 +54,19 @@ describe('isSafeRedirect', () => {
     expect(isSafeRedirect(redirect)).toBe(true)
   })
 
-  it.each(['', 'dashboard', 'https://evil.test', '//evil.test', '/\\evil.test', null, undefined, 0, ['/a', '/b']])(
-    'should reject %j',
-    (redirect) => {
-      expect(isSafeRedirect(redirect)).toBe(false)
-    }
-  )
+  it.each([
+    '',
+    'dashboard',
+    'https://evil.test',
+    '//evil.test',
+    '/\\evil.test',
+    '/\t/evil.test',
+    '/\n/evil.test',
+    null,
+    undefined,
+    0,
+    ['/a', '/b']
+  ])('should reject %j', (redirect) => {
+    expect(isSafeRedirect(redirect)).toBe(false)
+  })
 })

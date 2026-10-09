@@ -16,6 +16,7 @@ Feature: Allowlisting
         # home
         Given the user navigates to "/home"
         Then the user should see "Example Whitelist" in their available grants
+        And the page is analyzed for accessibility
 
         # reload the browser session and login again
         Given the user starts a new browser session
@@ -25,6 +26,7 @@ Feature: Allowlisting
         # journey-unauthorised
         Then the user should be at URL "journey-unauthorised"
         And should see heading "You are not able to complete this grant application"
+        And the page is analyzed for accessibility
         And an unauthorised audit event should be published for entity "application" and grant "example-whitelist" with CRN "1100955380" and SBI "115425713" and reason "allowlist"
 
         # home

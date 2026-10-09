@@ -28,6 +28,7 @@ Feature: Purging
         # the user is redirected to the application deleted page
         Then the user should be at URL "application-deleted"
         And should see heading "Your draft application has been deleted"
+        And the page is analyzed for accessibility
 
         # reloading the browser session and logging back in again should still show the deleted warning
         Given the user starts a new browser session

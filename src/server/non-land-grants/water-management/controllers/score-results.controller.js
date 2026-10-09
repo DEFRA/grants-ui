@@ -22,14 +22,31 @@ export default class ScoreResultsController extends withDerivedState(QuestionPag
    * @returns {Promise<Record<string, any>>}
    */
   async getCalculatedAnswers(request, state) {
-    const { countyProjectLocated } = state
+    const {
+      sectorsIrrigated,
+      projectLocated__easting: easting,
+      projectLocated__northing: northing,
+      businessesUsingWater,
+      havePlanningPermission: planning,
+      haveAbstractionLicence: abstraction
+    } = state
 
-    const { score: eligibilityScore, band: eligibilityBand } = await invokeGrantScoringGetAction(
-      'water-management',
-      request,
-      { county: countyProjectLocated }
-    )
+    const { totalScore, sectorScore, scarcityScore, collaborationScore, planningAbstractionScore } =
+      await invokeGrantScoringGetAction('water-management', request, {
+        sectorsIrrigated,
+        easting,
+        northing,
+        businessesUsingWater,
+        planning,
+        abstraction
+      })
 
-    return { eligibilityScore, eligibilityBand }
+    return {
+      totalScore,
+      sectorScore,
+      scarcityScore,
+      collaborationScore,
+      planningAbstractionScore
+    }
   }
 }

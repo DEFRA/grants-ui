@@ -1,3 +1,5 @@
+const CONTROL_CHARACTERS = /\p{Cc}/u
+
 /**
  * Whether `redirect` is a same-origin relative path.
  *
@@ -10,7 +12,13 @@
  * @returns {redirect is string}
  */
 function isSafeRedirect(redirect) {
-  return typeof redirect === 'string' && redirect.startsWith('/') && redirect[1] !== '/' && redirect[1] !== '\\'
+  return (
+    typeof redirect === 'string' &&
+    redirect.startsWith('/') &&
+    redirect[1] !== '/' &&
+    redirect[1] !== '\\' &&
+    !CONTROL_CHARACTERS.test(redirect)
+  )
 }
 
 /**
