@@ -2,11 +2,12 @@ import { geospatialMap, map } from '@defra/forms-engine-plugin/shared.js'
 import { processLocation, readLocationPoint } from './location-map.js'
 import { isValidEastingNorthing } from './map-coordinate-utils.js'
 
+const GEOSPATIAL_FIELD_SELECTOR = '.app-geospatial-field'
 const MAP_FIELDS = [
   '.app-location-field[data-locationtype="osgridreffield"]',
   '.app-location-field[data-locationtype="eastingnorthingfield"]',
   '.app-location-field[data-locationtype="latlongfield"]',
-  '.app-geospatial-field'
+  GEOSPATIAL_FIELD_SELECTOR
 ].join(', ')
 const DEFAULT_VIEW = { center: map.defaultConfig.center, zoom: map.defaultConfig.zoom }
 const POSTCODE_LOOKUP_TIMEOUT_MS = 2000
@@ -20,8 +21,7 @@ function findPostcodeMatch(results, postcode) {
     .map((result) => result?.GAZETTEER_ENTRY)
     .filter(
       (entry) =>
-        entry &&
-        typeof entry.LOCAL_TYPE === 'string' &&
+        typeof entry?.LOCAL_TYPE === 'string' &&
         entry.LOCAL_TYPE.toLowerCase() === 'postcode' &&
         normalisePostcode(entry.NAME1) === name
     )
@@ -62,7 +62,7 @@ async function findPostcodeCenter(postcode) {
 }
 
 function hasSavedAnswer(field) {
-  if (!field.matches('.app-geospatial-field')) {
+  if (!field.matches(GEOSPATIAL_FIELD_SELECTOR)) {
     return Boolean(readLocationPoint(field))
   }
   const input = field.querySelector('textarea.govuk-textarea')
@@ -124,10 +124,10 @@ export async function initialiseComponentMaps() {
     return optionsByName.get(name) ?? { hideMapHelpPanel: true, zoomToPostcode: true }
   }
   const locationFields = [...document.querySelectorAll('.app-location-field')]
-  const geospatialFields = [...document.querySelectorAll('.app-geospatial-field')]
+  const geospatialFields = [...document.querySelectorAll(GEOSPATIAL_FIELD_SELECTOR)]
   const savedView = new window.URLSearchParams(window.location.search)
   const hasSavedView = (field) => {
-    const geospatial = field.matches('.app-geospatial-field')
+    const geospatial = field.matches(GEOSPATIAL_FIELD_SELECTOR)
     const index = (geospatial ? geospatialFields : locationFields).indexOf(field)
     const id = `${geospatial ? 'geospatialmap' : 'map'}_${index}`
     return Boolean(savedView.get(`${id}:center`) && savedView.get(`${id}:zoom`))

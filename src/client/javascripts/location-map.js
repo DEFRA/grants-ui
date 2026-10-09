@@ -18,14 +18,14 @@ const OS_GRID_SQUARE_LETTERS = {
 }
 
 function readLatLong(inputs) {
-  const [lat, long] = inputs.map(({ value }) => Number(value.trim() || NaN))
+  const [lat, long] = inputs.map(({ value }) => Number(value.trim() || Number.NaN))
   const validLatitude = lat >= MIN_LATITUDE && lat <= MAX_LATITUDE
   const validLongitude = long >= MIN_LONGITUDE && long <= MAX_LONGITUDE
   return validLatitude && validLongitude ? { lat, long } : undefined
 }
 
 function readEastingNorthing(inputs) {
-  const [easting, northing] = inputs.map(({ value }) => Number(value.trim() || NaN))
+  const [easting, northing] = inputs.map(({ value }) => Number(value.trim() || Number.NaN))
   const point = { easting, northing }
   return isValidEastingNorthing(point) ? mapHelpers.eastingNorthingToLatLong(point) : undefined
 }
@@ -71,7 +71,7 @@ const LOCATION_TYPES = {
 export function readLocationPoint(location) {
   const type = LOCATION_TYPES[location.dataset.locationtype ?? '']
   const inputs = [...location.querySelectorAll('input.govuk-input')]
-  return type && inputs.length === type.inputCount ? type.read(inputs) : undefined
+  return inputs.length === type?.inputCount ? type.read(inputs) : undefined
 }
 
 function addHelpPanel(map) {
