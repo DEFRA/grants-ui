@@ -174,11 +174,7 @@ function preSubmissionRedirect(request, h, context) {
     return h.continue
   }
 
-  const destinationPath = resolvePreSubmissionDestination(
-    preSubmissionRedirectRule,
-    context.state,
-    request.app.model?.def
-  )
+  const destinationPath = resolvePreSubmissionDestination(preSubmissionRedirectRule, context.state)
   if (destinationPath === null) {
     return h.continue
   }
@@ -205,21 +201,12 @@ function preSubmissionRedirect(request, h, context) {
  *
  * @param {RedirectRule} rule - The pre-submission redirect rule.
  * @param {FormSubmissionState} state - The current form state.
- * @param {{ metadata?: { allowMultipleApplications?: boolean }, pages?: { path: string }[] }} [definition] - Definition used to validate a saved multi-application destination.
  * @returns {string | null} The path to redirect to, or `null` to continue without redirecting.
  */
-export function resolvePreSubmissionDestination(rule, state, definition) {
+export function resolvePreSubmissionDestination(rule, state) {
   const requirement = rule.requiresAnyItemWithNonEmptyKey
   if (requirement && !hasAnyItemWithNonEmptyKey(getStateValue(state, requirement.collection), requirement.key)) {
     return rule.incompleteToPath ?? null
-  }
-  const savedPath = state.lastSavedPath
-  if (
-    definition?.metadata?.allowMultipleApplications === true &&
-    typeof savedPath === 'string' &&
-    definition.pages?.some((page) => page.path === savedPath)
-  ) {
-    return savedPath
   }
   return rule.toPath
 }

@@ -72,6 +72,7 @@ it('lists the current business and grant with reference links and meaningful sta
 it('creates a fresh reference without copying the existing application or clearing authentication', async () => {
   await startApplicationRoute.handler(request, h)
   const state = cache.setState.mock.calls[0][1]
+  expect(cache.setState.mock.calls[0][2]).toEqual({ failOnError: true })
   expect(Object.keys(state)).toEqual(['$$__referenceNumber'])
   expect(state.$$__referenceNumber).toBeTruthy()
   expect(setReferenceNumber).toHaveBeenCalledWith(request, state.$$__referenceNumber)

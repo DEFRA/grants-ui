@@ -2,11 +2,8 @@ import { notFound } from '@hapi/boom'
 import { getAuthenticatedCrn, getAuthenticatedSbi } from '../../helpers/auth/get-auth-identifiers.js'
 import { getGrantCode } from '../../helpers/grant-code.js'
 import { getReferenceNumber, setReferenceNumber } from '../../helpers/state/get-cache-key-helper.js'
-import {
-  getStateWithDefinition,
-  getRoutingDefinition,
-  isUnscopedGrantRoot
-} from '../../helpers/state/state-with-definition-context.js'
+import { getStateWithDefinition } from '../../helpers/state/state-with-definition-context.js'
+import { getRoutingDefinition, isUnscopedGrantRoot } from '../../helpers/definition/routing-definition.js'
 import { listApplicationsFromApi } from '../../helpers/state/fetch-saved-state-helper.js'
 
 const UNKNOWN_REFERENCE = 'Unknown application reference'

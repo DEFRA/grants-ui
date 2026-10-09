@@ -151,11 +151,6 @@ export const SYSTEM = {
     messageFunc: (messageOptions) =>
       `Failed to parse session key: error=${messageOptions.errorMessage}, path=${messageOptions.requestPath}`
   },
-  APPLICATION_RESUME_SAVE_FAILED: {
-    level: 'warn',
-    messageFunc: (details) =>
-      `Unable to save application resume path: path=${details.requestPath}, error=${details.errorMessage}`
-  },
   SESSION_STATE_FETCH_FAILED: {
     level: 'error',
     messageFunc: (messageOptions) =>
