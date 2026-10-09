@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { afterEach, describe, it, expect, beforeEach, vi } from 'vitest'
 import {
+  cleanupDOM,
   setupDOM,
   createEmptyPage,
   clickWithNavigationHandling,
@@ -45,6 +46,8 @@ describe('cookie-preferences', () => {
     document = setup.document
     window = setup.window
   })
+
+  afterEach(cleanupDOM)
 
   it('should exit early if form is not present', async () => {
     const setup = setupDOM(createEmptyPage())

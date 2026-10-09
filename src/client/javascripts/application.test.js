@@ -2,8 +2,11 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
 vi.mock('@defra/forms-engine-plugin/shared.js', () => ({
-  initAll: vi.fn(),
-  initMaps: vi.fn()
+  initAll: vi.fn()
+}))
+
+vi.mock('./component-maps.js', () => ({
+  initialiseComponentMaps: vi.fn()
 }))
 
 describe('#application', () => {
@@ -23,24 +26,21 @@ describe('#application', () => {
     expect(initAll).toHaveBeenCalledTimes(1)
   })
 
-  test('initialises maps when component maps are enabled', async () => {
+  test('delegates enabled map setup to the shared initialiser', async () => {
     window.componentMapsEnabled = true
 
     await import('./application.js')
-    const { initMaps } = await import('@defra/forms-engine-plugin/shared.js')
+    const { initialiseComponentMaps } = await import('./component-maps.js')
 
-    expect(initMaps).toHaveBeenCalledWith({
-      apiPath: '/api',
-      assetPath: '/public/assets'
-    })
+    expect(initialiseComponentMaps).toHaveBeenCalledTimes(1)
   })
 
-  test('does not initialise maps when component maps are disabled', async () => {
+  test('delegates disabled map setup to the shared initialiser', async () => {
     window.componentMapsEnabled = false
 
     await import('./application.js')
-    const { initMaps } = await import('@defra/forms-engine-plugin/shared.js')
+    const { initialiseComponentMaps } = await import('./component-maps.js')
 
-    expect(initMaps).not.toHaveBeenCalled()
+    expect(initialiseComponentMaps).toHaveBeenCalledTimes(1)
   })
 })

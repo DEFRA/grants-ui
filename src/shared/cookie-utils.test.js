@@ -1,33 +1,28 @@
-import { describe, test, expect, beforeEach, vi } from 'vitest'
+import { afterEach, describe, test, expect, beforeEach, vi } from 'vitest'
 import { JSDOM } from 'jsdom'
 
 describe('deleteGoogleAnalyticsCookies', () => {
   let document
-  let window
+  const doms = []
+
+  const setupDOM = (url = 'http://localhost') => {
+    const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>', { url })
+    doms.push(dom)
+    vi.stubGlobal('document', dom.window.document)
+    vi.stubGlobal('window', dom.window)
+    vi.stubGlobal('location', dom.window.location)
+    return dom
+  }
 
   beforeEach(() => {
     vi.resetModules()
 
-    const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>', {
-      url: 'http://localhost'
-    })
+    document = setupDOM().window.document
+  })
 
-    document = dom.window.document
-    window = dom.window
-
-    Object.defineProperty(globalThis, 'document', {
-      value: document,
-      configurable: true,
-      writable: true
-    })
-    globalThis.window = window
-
-    document.cookie.split(';').forEach((cookie) => {
-      const name = cookie.split('=')[0].trim()
-      if (name) {
-        document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`
-      }
-    })
+  afterEach(() => {
+    doms.splice(0).forEach((dom) => dom.window.close())
+    vi.unstubAllGlobals()
   })
 
   test.each([
@@ -71,17 +66,7 @@ describe('deleteGoogleAnalyticsCookies', () => {
   test('should try parent domains for multi-level hostnames', async () => {
     vi.resetModules()
 
-    const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>', {
-      url: 'http://grants-ui.dev.cdp-int.defra.cloud'
-    })
-
-    Object.defineProperty(globalThis, 'document', {
-      value: dom.window.document,
-      configurable: true,
-      writable: true
-    })
-    globalThis.window = dom.window
-    globalThis.location = dom.window.location
+    const dom = setupDOM('http://grants-ui.dev.cdp-int.defra.cloud')
 
     dom.window.document.cookie = '_ga=GA1.2.123456789.1234567890; path=/'
     dom.window.document.cookie = '_ga_2LGPW4C0HS=GS2.1.s1764340424; path=/'

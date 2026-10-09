@@ -47,6 +47,7 @@ import { formatCurrency } from '../config/nunjucks/filters/format-currency.js'
 import { formatDate } from '../config/nunjucks/filters/format-date.js'
 import { gridColumnClass } from '../config/nunjucks/grid-column.js'
 import { pageHideBackLink, pageRpaDetails } from '../config/nunjucks/page-config.js'
+import { componentMapOptions } from '../config/nunjucks/component-map-options.js'
 import { StatePersistenceService } from './common/services/state-persistence/state-persistence.service.js'
 import { router } from './router.js'
 import allowlist from '~/src/server/common/helpers/allowlist/allowlist.js'
@@ -140,6 +141,7 @@ const registerFormsPlugin = async (server, prefix = '') => {
       globals: {
         gridColumnClass,
         pageHideBackLink,
+        componentMapOptions,
         pageRpaDetails
       },
       nunjucks: {
