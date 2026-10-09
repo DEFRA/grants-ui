@@ -3,6 +3,7 @@ import { publishAuditEvent } from '@defra/fcp-audit-publisher'
 import { getStartPath } from '@defra/forms-engine-plugin/engine/helpers.js'
 import { config } from '~/src/config/config.js'
 import { ApplicationStatus } from '~/src/server/common/constants/application-status.js'
+import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { buildAuditEvent, mapEnvironment, resolveAuditEntityFields } from './audit-event.js'
 import { getPermissionResource } from '../permissions/page-permissions.js'
@@ -195,6 +196,50 @@ const answersFromPayload = (payload) => {
 }
 
 /**
+ * Reads the application reference number from the journey state
+ * @param {import('@hapi/hapi').Request} request
+ * @returns {Promise<string | undefined>}
+ */
+const getReferenceNumber = async (request) => {
+  try {
+    const state = await getFormsCacheService(request.server).getState(request)
+    const referenceNumber = state?.$$__referenceNumber
+    return typeof referenceNumber === 'string' ? referenceNumber.toUpperCase() : undefined
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * Sends the "navigate" event for a page POST that moved the user to the next
+ * page.
+ * @param {import('@hapi/hapi').Request} request
+ * @returns {void}
+ */
+const auditPageNavigation = (request) => {
+  getReferenceNumber(request)
+    .then((referenceNumber) =>
+      request.sendAuditEventInBackground({
+        action: 'navigate',
+        entity: 'page',
+        entityid: request.params?.path,
+        details: {
+          grant: request.params?.slug,
+          ...(referenceNumber && { referenceNumber }),
+          answers: answersFromPayload(request.payload)
+        }
+      })
+    )
+    .catch((err) =>
+      log(
+        { ...LogCodes.AUDIT.EVENT_PUBLISH_FAILED, error: /** @type {Error} */ (err) },
+        { entityid: request.params?.path, action: 'navigate', errorMessage: /** @type {Error} */ (err).message },
+        request
+      )
+    )
+}
+
+/**
  * Builds the request-bound publish function. It constructs the FCP Audit event
  * from the given options, publishes it, and centralises success/failure logging
  * so every call site behaves consistently. Failures are logged, never thrown:
@@ -273,12 +318,7 @@ export const auditPublisher = {
         } else if (isSuccessfulClaimAccess(request)) {
           request.sendAuditEventInBackground({ action: 'authorised', entity: 'claim' })
         } else if (isSuccessfulPageNavigation(request)) {
-          request.sendAuditEventInBackground({
-            action: 'navigate',
-            entity: 'page',
-            entityid: request.params?.path,
-            details: { grant: request.params?.slug, answers: answersFromPayload(request.payload) }
-          })
+          auditPageNavigation(request)
         } else if (isUnauthenticatedGrantAccess(request)) {
           request.sendAuditEventInBackground({
             action: 'unauthorised',

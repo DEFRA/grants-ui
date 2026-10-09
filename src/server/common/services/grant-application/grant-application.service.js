@@ -226,8 +226,8 @@ function auditApplicationSubmission(code, payload, request) {
     entityid: metadata.clientRef,
     details: {
       grantCode: code,
-      referenceNumber: metadata.clientRef,
-      ...(isResubmit && { previousReferenceNumber: metadata.previousClientRef }),
+      referenceNumber: metadata.clientRef?.toUpperCase(),
+      ...(isResubmit && { previousReferenceNumber: metadata.previousClientRef?.toUpperCase() }),
       answers: payload?.answers
     }
   })
@@ -268,9 +268,9 @@ function auditClaimSubmission(code, payload, request) {
     entityid: metadata.clientRef,
     details: {
       grantCode: code,
-      referenceNumber: metadata.clientRef,
-      claimReferenceNumber: metadata.clientClaimRef,
-      ...(isResubmit && { previousReferenceNumber: metadata.previousClientRef }),
+      referenceNumber: metadata.clientRef?.toUpperCase(),
+      claimReferenceNumber: metadata.clientClaimRef?.toUpperCase(),
+      ...(isResubmit && { previousReferenceNumber: metadata.previousClientRef?.toUpperCase() }),
       answers: payload?.claim
     }
   })

@@ -17,6 +17,11 @@ vi.mock('./audit-event.js', () => ({
   mapEnvironment: vi.fn(() => 'cdp-test')
 }))
 
+const mockGetState = vi.fn()
+vi.mock('~/src/server/common/helpers/forms-cache/forms-cache.js', () => ({
+  getFormsCacheService: vi.fn(() => ({ getState: mockGetState }))
+}))
+
 const DEFAULT_CONFIG = {
   'audit.enabled': true,
   'aws.endpointUrl': null,
@@ -311,6 +316,10 @@ describe('audit-publisher plugin', () => {
     })
 
     describe('page navigation', () => {
+      beforeEach(() => {
+        mockGetState.mockResolvedValue({})
+      })
+
       const navRequest = (overrides = {}) => ({
         method: 'post',
         auth: { isAuthenticated: true },
@@ -322,24 +331,72 @@ describe('audit-publisher plugin', () => {
         ...overrides
       })
 
-      test('sends a "navigate" event with the page name as entityid and answers (crumb/action stripped)', () => {
+      test('sends a "navigate" event with the page name as entityid, the state reference number and answers (crumb/action stripped)', async () => {
+        mockGetState.mockResolvedValue({ $$__referenceNumber: 'ABC-123-DEF' })
         const request = navRequest()
 
         const result = handler(request, h)
         expect(result).toBe(h.continue)
+        await flushPromises()
 
         expect(request.sendAuditEventInBackground).toHaveBeenCalledWith({
           action: 'navigate',
           entity: 'page',
           entityid: 'some-question',
-          details: { grant: 'my-grant', answers: { favouriteColour: 'blue' } }
+          details: { grant: 'my-grant', referenceNumber: 'ABC-123-DEF', answers: { favouriteColour: 'blue' } }
         })
       })
 
-      test('sends the payload through unchanged as answers when it is not an object', () => {
+      test('uppercases the reference number from state', async () => {
+        mockGetState.mockResolvedValue({ $$__referenceNumber: 'abc-123-def' })
+        const request = navRequest()
+
+        handler(request, h)
+        await flushPromises()
+
+        expect(request.sendAuditEventInBackground).toHaveBeenCalledWith(
+          expect.objectContaining({ details: expect.objectContaining({ referenceNumber: 'ABC-123-DEF' }) })
+        )
+      })
+
+      test.each([
+        ['state has no reference number', () => mockGetState.mockResolvedValue({})],
+        ['the reference number is not a string', () => mockGetState.mockResolvedValue({ $$__referenceNumber: 123 })],
+        ['the state read fails', () => mockGetState.mockRejectedValue(new Error('backend down'))]
+      ])('sends the event without a reference number when %s', async (_label, arrange) => {
+        arrange()
+        const request = navRequest()
+
+        handler(request, h)
+        await flushPromises()
+
+        expect(request.sendAuditEventInBackground).toHaveBeenCalledWith(
+          expect.objectContaining({ details: { grant: 'my-grant', answers: { favouriteColour: 'blue' } } })
+        )
+      })
+
+      test('logs a publish failure when sending the navigate event throws', async () => {
+        const request = navRequest({
+          sendAuditEventInBackground: vi.fn(() => {
+            throw new Error('send failed')
+          })
+        })
+
+        handler(request, h)
+        await flushPromises()
+
+        expect(log).toHaveBeenCalledWith(
+          expect.objectContaining({ ...LogCodes.AUDIT.EVENT_PUBLISH_FAILED, error: expect.any(Error) }),
+          { entityid: 'some-question', action: 'navigate', errorMessage: 'send failed' },
+          request
+        )
+      })
+
+      test('sends the payload through unchanged as answers when it is not an object', async () => {
         const request = navRequest({ payload: undefined })
 
         handler(request, h)
+        await flushPromises()
 
         expect(request.sendAuditEventInBackground).toHaveBeenCalledWith(
           expect.objectContaining({ details: { grant: 'my-grant', answers: undefined } })
@@ -355,10 +412,11 @@ describe('audit-publisher plugin', () => {
         ['the response is a 302 submission redirect', { response: { statusCode: 302 } }],
         ['the response is a 200 re-render', { response: { statusCode: 200 } }],
         ['the response is an error', { response: new Error('boom') }]
-      ])('does not send a navigate event when %s', (_label, overrides) => {
+      ])('does not send a navigate event when %s', async (_label, overrides) => {
         const request = navRequest(overrides)
 
         const result = handler(request, h)
+        await flushPromises()
 
         expect(request.sendAuditEventInBackground).not.toHaveBeenCalled()
         expect(result).toBe(h.continue)
