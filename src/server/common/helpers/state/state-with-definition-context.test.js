@@ -19,7 +19,8 @@ vi.mock('../lock/lock-token.js', () => ({
   mintLockToken: vi.fn(() => 'READ-LOCK')
 }))
 
-vi.mock('./get-cache-key-helper.js', () => ({
+vi.mock('./get-cache-key-helper.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   getCacheKey: vi.fn(() => ({ sbi: 'biz-1', grantCode: 'grant-a' }))
 }))
 

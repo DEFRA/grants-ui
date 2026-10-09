@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
-import { getCacheKey } from './get-cache-key-helper.js'
+import { getCacheKey, buildSessionKey } from './get-cache-key-helper.js'
 import { fetchStateWithDefinitionFromApi } from './fetch-saved-state-helper.js'
 import { mintLockToken } from '../lock/lock-token.js'
 
@@ -119,8 +119,8 @@ export function getStateWithDefinition(request) {
   const app = /** @type {{ stateWithDefinition?: Promise<StateWithDefinitionEnvelope | null> }} */ (request.app)
 
   if (!app.stateWithDefinition) {
-    const { sbi, grantCode } = getCacheKey(request)
-    const key = `${sbi}:${grantCode}`
+    const cacheKey = getCacheKey(request)
+    const key = buildSessionKey(cacheKey)
 
     app.stateWithDefinition = fetchStateWithDefinitionFromApi(key, request, {
       lockToken: buildReadLockToken(request)
@@ -128,6 +128,18 @@ export function getStateWithDefinition(request) {
   }
 
   return app.stateWithDefinition
+}
+
+/**
+ * Whether the backend stores this application's document keyed by its
+ * reference (it marks such documents `allowMultipleApplications`), as opposed
+ * to the single document per grant version of a standard grant.
+ *
+ * @param {AnyRequest} request
+ * @returns {Promise<boolean>}
+ */
+export async function isStoredByReference(request) {
+  return (await getStateWithDefinition(request))?.state?.allowMultipleApplications === true
 }
 
 /**

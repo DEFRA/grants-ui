@@ -17,13 +17,17 @@ vi.mock('../../../common/services/grant-application/grant-application.service.js
 vi.mock('../../../common/helpers/status/update-application-status-helper.js', () => ({
   updateApplicationStatus: vi.fn()
 }))
+vi.mock('../../helpers/state/state-with-definition-context.js', () => ({
+  isStoredByReference: vi.fn().mockResolvedValue(false)
+}))
 vi.mock('../../../common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: vi.fn()
 }))
 vi.mock('../../../common/helpers/lock/lock-token.js', () => ({
   mintLockToken: vi.fn().mockReturnValue('mock-lock-token')
 }))
-vi.mock('../../../common/helpers/state/get-cache-key-helper.js', () => ({
+vi.mock('../../../common/helpers/state/get-cache-key-helper.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   getCacheKey: vi.fn().mockReturnValue({ sbi: '12345', grantCode: 'grant-a' })
 }))
 vi.mock('../../../../config/agreements.js', () => ({
@@ -399,11 +403,45 @@ describe('formsStatusRedirect', () => {
     })
   })
 
+  it('drops the reference number on REOPENED for a standard grant, matching existing behaviour', async () => {
+    request.app.model.def.metadata.allowMultipleApplications = false
+    context.state = {
+      applicationStatus: 'SUBMITTED',
+      $$__referenceNumber: 'REF-001',
+      someFormField: 'form-value'
+    }
+    mockGasStatus('APPLICATION_AMEND')
+
+    await formsStatusRedirect(request, h, context)
+
+    expect(mockCacheService.setState).toHaveBeenCalledWith(request, {
+      applicationStatus: ApplicationStatus.REOPENED,
+      previousReferenceNumber: 'REF-001',
+      someFormField: 'form-value'
+    })
+  })
+
   it('does not preserve existing form state when transitioning to CLEARED (withdrawal)', async () => {
     context.state = {
       applicationStatus: 'SUBMITTED',
       someFormField: 'form-value',
       anotherField: { nested: 'data' }
+    }
+    mockGasStatus('APPLICATION_WITHDRAWN')
+
+    await formsStatusRedirect(request, h, context)
+
+    expect(mockCacheService.setState).toHaveBeenCalledWith(request, {
+      applicationStatus: ApplicationStatus.CLEARED
+    })
+  })
+
+  it('drops the reference number on CLEARED for a standard grant, so the next load mints a fresh one', async () => {
+    request.app.model.def.metadata.allowMultipleApplications = false
+    context.state = {
+      applicationStatus: 'SUBMITTED',
+      $$__referenceNumber: 'REF-001',
+      someFormField: 'form-value'
     }
     mockGasStatus('APPLICATION_WITHDRAWN')
 

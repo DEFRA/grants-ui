@@ -125,6 +125,25 @@ describe('updateApplicationStatus', () => {
       expect(log).not.toHaveBeenCalledWith(LogCodes.SYSTEM.EXTERNAL_API_ERROR, expect.anything())
     })
 
+    it('includes applicationRef (the backend field name) in the body when the session key carries a referenceNumber', async () => {
+      mockParseSessionKey.mockReturnValue({
+        sbi: TEST_USER_IDS.ORGANISATION_ID,
+        grantCode: TEST_USER_IDS.GRANT_ID,
+        referenceNumber: 'REF-1'
+      })
+      fetch.mockResolvedValue(createMockFetchResponse())
+
+      await updateApplicationStatus(APPLICATION_STATUS, KEY, { grantVersion: '1.0.0' })
+
+      const [calledUrl, options] = fetch.mock.calls[0]
+      expect(calledUrl).toBe(
+        new URL(`/state/${TEST_USER_IDS.ORGANISATION_ID}/${TEST_USER_IDS.GRANT_ID}/1.0.0`, TEST_BACKEND_URL).href
+      )
+      expect(options.body).toBe(
+        JSON.stringify({ applicationRef: 'REF-1', state: { applicationStatus: APPLICATION_STATUS } })
+      )
+    })
+
     it('passes lockToken to createApiHeadersForGrantsUiBackend when provided', async () => {
       fetch.mockResolvedValue(createMockFetchResponse())
       const lockToken = 'test-lock-token-123'

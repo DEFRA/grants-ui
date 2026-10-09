@@ -195,6 +195,40 @@ describe('State API helpers', () => {
 
         expect(createApiHeadersForGrantsUiBackend).toHaveBeenCalledWith({ lockToken })
       })
+
+      it('includes applicationRef in the POST body when the session key carries one', async () => {
+        mockParseSessionKey.mockReturnValue({
+          sbi: TEST_USER_IDS.ORGANISATION_ID,
+          grantCode: TEST_USER_IDS.GRANT_ID,
+          referenceNumber: 'REF-1'
+        })
+        mockFetch.mockResolvedValue(createMockFetchResponse({ data: { state: null, upgraded: false } }))
+
+        await fetchStateWithDefinitionFromApi(key, mockRequest)
+
+        expect(mockFetch).toHaveBeenCalledWith(
+          expect.stringContaining('/state/with-definition'),
+          expect.objectContaining({
+            body: JSON.stringify({
+              sbi: TEST_USER_IDS.ORGANISATION_ID,
+              grantCode: TEST_USER_IDS.GRANT_ID,
+              includeDefinition: true,
+              applicationRef: 'REF-1'
+            })
+          })
+        )
+      })
+
+      it('omits applicationRef from the POST body when the session key has none', async () => {
+        mockFetch.mockResolvedValue(createMockFetchResponse({ data: { state: null, upgraded: false } }))
+
+        await fetchStateWithDefinitionFromApi(key, mockRequest)
+
+        expect(mockFetch).toHaveBeenCalledWith(
+          expect.stringContaining('/state/with-definition'),
+          expect.objectContaining({ body: withDefinitionBody(true) })
+        )
+      })
     })
 
     describe('Without backend endpoint configured', () => {
@@ -313,6 +347,27 @@ describe('State API helpers', () => {
 
         expect(createApiHeadersForGrantsUiBackend).toHaveBeenCalledWith({ lockToken })
       })
+
+      it('includes applicationRef in the query string when the session key carries one', async () => {
+        mockParseSessionKey.mockReturnValue({
+          sbi: TEST_USER_IDS.ORGANISATION_ID,
+          grantCode: TEST_USER_IDS.GRANT_ID,
+          referenceNumber: 'REF-1'
+        })
+        mockFetch.mockResolvedValue(createMockFetchResponse({ data: MOCK_STATE_DATA.DEFAULT }))
+
+        await clearSavedStateFromApi(key, mockRequest)
+
+        expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('applicationRef=REF-1'), expect.anything())
+      })
+
+      it('omits applicationRef from the query string when the session key has none', async () => {
+        mockFetch.mockResolvedValue(createMockFetchResponse({ data: MOCK_STATE_DATA.DEFAULT }))
+
+        await clearSavedStateFromApi(key, mockRequest)
+
+        expect(mockFetch).toHaveBeenCalledWith(expect.not.stringContaining('applicationRef'), expect.anything())
+      })
     })
 
     describe('Without backend endpoint configured', () => {
@@ -347,6 +402,17 @@ describe('State API helpers', () => {
         expect(createApiHeadersForGrantsUiBackend).toHaveBeenCalledWith({ lockToken: 'test-lock-token' })
       })
 
+      it('scopes the DELETE to one application when an applicationRef is given', async () => {
+        mockFetch.mockResolvedValue(createMockFetchResponse({ ok: true, status: HTTP_STATUS.OK, data: {} }))
+
+        await clearSavedStateFromApiByContext(byContextArgs({ applicationRef: 'REF-1' }))
+
+        expect(mockFetch).toHaveBeenCalledWith(
+          `${TEST_BACKEND_URL}/state/?sbi=123456789&grantCode=farm-payments&grantVersion=1.0.0&applicationRef=REF-1`,
+          expect.objectContaining({ method: 'DELETE' })
+        )
+      })
+
       it('resolves without throwing on 404', async () => {
         mockFetch.mockResolvedValue(createMockFetchResponse({ ok: false, status: HTTP_STATUS.NOT_FOUND }))
 
@@ -368,6 +434,58 @@ describe('State API helpers', () => {
       it('returns without calling fetch when endpoint is not configured', async () => {
         await expect(clearSavedStateFromApiByContext(byContextArgs())).resolves.toBeUndefined()
 
+        expect(mockFetch).not.toHaveBeenCalled()
+      })
+    })
+  })
+
+  describe('listApplicationsFromApi', () => {
+    let listApplicationsFromApi
+
+    describe('With backend configured correctly', () => {
+      loadHelperModule((helper) => {
+        listApplicationsFromApi = helper.listApplicationsFromApi
+      })
+
+      it('GETs /applications and returns the applications array', async () => {
+        const applications = [{ applicationRef: 'REF-1', grantVersion: '1.0.0', updatedAt: '2026-01-01' }]
+        mockFetch.mockResolvedValue(createMockFetchResponse({ data: { applications } }))
+
+        const result = await listApplicationsFromApi({ crn: 'crn-1', sbi: '123456789', grantCode: 'farm-payments' })
+
+        expect(result).toEqual(applications)
+        expect(mockFetch).toHaveBeenCalledWith(
+          `${TEST_BACKEND_URL}/applications?grantCode=farm-payments`,
+          expect.objectContaining({
+            method: 'GET',
+            headers: expect.objectContaining({ 'x-user-context': expect.any(String) })
+          })
+        )
+      })
+
+      it('throws a Boom error on a non-OK response', async () => {
+        mockFetch.mockResolvedValue(createMockFetchResponse({ ok: false, status: HTTP_STATUS.INTERNAL_SERVER_ERROR }))
+
+        const error = await listApplicationsFromApi({
+          crn: 'crn-1',
+          sbi: '123456789',
+          grantCode: 'farm-payments'
+        }).catch((e) => e)
+
+        expect(error.isBoom).toBe(true)
+        expect(error.output.statusCode).toBe(500)
+      })
+    })
+
+    describe('Without backend endpoint configured', () => {
+      loadHelperModule((helper) => {
+        listApplicationsFromApi = helper.listApplicationsFromApi
+      }, createMockConfigWithoutEndpoint)
+
+      it('returns an empty array when GRANTS_UI_BACKEND_ENDPOINT is not configured', async () => {
+        const result = await listApplicationsFromApi({ crn: 'crn-1', sbi: '123456789', grantCode: 'farm-payments' })
+
+        expect(result).toEqual([])
         expect(mockFetch).not.toHaveBeenCalled()
       })
     })

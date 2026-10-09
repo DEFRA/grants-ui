@@ -1,7 +1,10 @@
 import { config } from '~/src/config/config.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { YarKeys } from '~/src/server/common/constants/session-keys.js'
+import { getReferenceNumber } from '~/src/server/common/helpers/state/get-cache-key-helper.js'
+import { listApplicationsFromApi } from '~/src/server/common/helpers/state/fetch-saved-state-helper.js'
 import Jwt from '@hapi/jwt'
+import { notFound } from '@hapi/boom'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
@@ -56,12 +59,17 @@ function buildTargetUri(baseUrl, path) {
  * mismatched context makes the upstream service reject the request instead.
  * @param {AnyRequest} request - The incoming request object
  * @param {string | number | undefined} authenticatedSbi - SBI from the authenticated credentials
- * @returns {{ grantCode?: string, clientRef?: string } | null}
+ * @returns {Promise<{ grantCode?: string, clientRef?: string } | null>}
  */
-function resolveGrantApplicationContext(request, authenticatedSbi) {
+async function resolveGrantApplicationContext(request, authenticatedSbi) {
   const storedContext = /** @type {{ grantCode?: string, clientRef?: string, sbi?: string | number } | null} */ (
     request.yar?.get(YarKeys.GRANT_APPLICATION_CONTEXT)
   )
+
+  const urlContext = await resolveUrlContext(request, storedContext?.grantCode)
+  if (urlContext) {
+    return urlContext
+  }
 
   if (!storedContext) {
     return null
@@ -81,21 +89,63 @@ function resolveGrantApplicationContext(request, authenticatedSbi) {
 }
 
 /**
+ * Multi-application tabs name their application on the URL (`?grant=&ref=`). The ref is accepted
+ * only when it is one of this business's own applications, and is then stored as the session
+ * context so the agreements requests that follow (which carry no query) act on the same one.
+ * @param {AnyRequest} request
+ * @param {string | undefined} storedGrantCode
+ * @returns {Promise<{ grantCode: string, clientRef: string, sbi: unknown, applicationRef: string, grantVersion: string } | null>}
+ */
+async function resolveUrlContext(request, storedGrantCode) {
+  const ref = getReferenceNumber(request)
+  const grant = request.query?.grant
+  const grantCode = typeof grant === 'string' && GRANT_CODE_PATTERN.test(grant) ? grant : storedGrantCode
+  if (!ref || !grantCode) {
+    return null
+  }
+
+  const { sbi, crn } = /** @type {{ sbi?: string | number, crn?: string | number }} */ (request.auth?.credentials ?? {})
+  if (sbi == null || crn == null) {
+    return null
+  }
+
+  // A list failure propagates: never fall back to the session's (possibly another tab's) application.
+  const applications = await listApplicationsFromApi({ crn: String(crn), sbi: String(sbi), grantCode })
+
+  const application = applications.find((candidate) => candidate.applicationRef === ref)
+  if (!application) {
+    throw notFound('Unknown application reference')
+  }
+
+  const context = {
+    grantCode,
+    grantVersion: application.grantVersion,
+    clientRef: ref.toLowerCase(),
+    sbi,
+    applicationRef: ref
+  }
+  request.yar?.set(YarKeys.GRANT_APPLICATION_CONTEXT, context)
+  return context
+}
+
+const GRANT_CODE_PATTERN = /^[a-z0-9-]+$/i
+
+/**
  * Builds proxy headers for the request
  *  - 'sbi' should be provided by the defra-id service
  *  - 'source' from grants-ui service will always be 'defra'
  * @param {string} token - The API token
  * @param {AnyRequest} request - The incoming request object
- * @returns {Record<string, string>} The proxy headers object
+ * @returns {Promise<Record<string, string>>} The proxy headers object
  */
-function buildProxyHeaders(token, request) {
+async function buildProxyHeaders(token, request) {
   const sbi = request?.auth?.credentials?.sbi
   const crn = request?.auth?.credentials?.crn
   const sub = (typeof crn === 'string' && crn !== '') || typeof crn === 'number' ? String(crn) : undefined
   const source = 'defra'
   const jwtSecret = config.get('agreements.jwtSecret')
   const audience = /** @type {string[]} */ (config.get('agreements.jwtAudience'))
-  const grantApplicationContext = resolveGrantApplicationContext(
+  const grantApplicationContext = await resolveGrantApplicationContext(
     request,
     /** @type {string | number | undefined} */ (sbi)
   )
@@ -168,7 +218,7 @@ export const getAgreementController = {
       const { path } = request.params
 
       const uri = buildTargetUri(baseUrl, path)
-      const headers = buildProxyHeaders(token, request)
+      const headers = await buildProxyHeaders(token, request)
       const apiResponse = await Promise.resolve(
         h.proxy({
           mapUri: () => ({ uri, headers }),
@@ -189,6 +239,11 @@ export const getAgreementController = {
 
       return apiResponse
     } catch (error) {
+      // An unknown ?ref= is this service's own not-found, not an upstream failure: render the 404 page.
+      if (/** @type {ErrorResponse} */ (error).output?.statusCode === statusCodes.notFound) {
+        throw error
+      }
+
       logAgreementsUpstreamError(request, /** @type {ErrorResponse} */ (error))
 
       if (/** @type {Error} */ (error).message.includes('Missing required configuration')) {

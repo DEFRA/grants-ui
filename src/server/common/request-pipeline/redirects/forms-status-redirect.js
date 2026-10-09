@@ -1,16 +1,14 @@
 import { forbidden } from '@hapi/boom'
 import { ApplicationStatus } from '../../constants/application-status.js'
 import { statusCodes } from '../../constants/status-codes.js'
-import { getFormsCacheService } from '../../helpers/forms-cache/forms-cache.js'
-import { updateApplicationStatus } from '../../helpers/status/update-application-status-helper.js'
 import { getApplicationStatus } from '../../services/grant-application/grant-application.service.js'
 import { log, LogCodes } from '../../helpers/logging/log.js'
-import { mintLockToken } from '../../helpers/lock/lock-token.js'
-import { getCacheKey } from '../../helpers/state/get-cache-key-helper.js'
+import { getReferenceNumber, getCacheKey, withReferenceNumber } from '../../helpers/state/get-cache-key-helper.js'
 import agreements from '~/src/config/agreements.js'
 import { getGrantCode } from '../../helpers/grant-code.js'
 import { getGrantVersion } from '../../helpers/grant-version.js'
 import { YarKeys } from '../../constants/session-keys.js'
+import { persistStatus } from '../../helpers/status/persist-application-status.js'
 import { hasAnyItemWithNonEmptyKey } from '../../utils/objects.js'
 
 const APPLICATION_NOT_SUBMITTED_MESSAGE = 'Application not submitted'
@@ -75,70 +73,6 @@ function mapStatusToUrl(fromGrantsStatus, gasStatus, redirectRules = []) {
   }
 
   return match
-}
-
-/**
- * Persists the new status to the appropriate storage
- * Uses cache service for CLEARED status, otherwise updates application status
- * @param {AnyFormRequest} request - The Hapi forms request object
- * @param {string} newStatus - The new status to persist
- * @param {string} previousStatus - The previous status for comparison
- * @param {string} grantId - The grant ID
- * @param {FormSubmissionState} existingState - The existing state to preserve when updating session cache
- * @returns {Promise<void>}
- */
-async function persistStatus(request, newStatus, previousStatus, grantId, existingState = {}) {
-  if (newStatus === previousStatus) {
-    return
-  }
-
-  const cacheService = getFormsCacheService(request.server)
-
-  if (newStatus === ApplicationStatus.CLEARED) {
-    await cacheService.setState(request, {
-      applicationStatus: newStatus
-    })
-  }
-
-  if (newStatus === ApplicationStatus.REOPENED) {
-    // eslint-disable-next-line camelcase
-    const { $$__referenceNumber, applicationStatus, ...rest } = existingState
-
-    await cacheService.setState(
-      request,
-      /** @type {FormSubmissionState} */ (
-        /** @type {unknown} */ ({
-          ...rest,
-          // eslint-disable-next-line camelcase
-          previousReferenceNumber: $$__referenceNumber,
-          applicationStatus: newStatus
-        })
-      )
-    )
-  }
-
-  if (newStatus !== ApplicationStatus.CLEARED) {
-    const { sbi, grantCode } = getCacheKey(request)
-    const grantVersion = getGrantVersion(request)
-    const contactId = request.auth?.credentials?.contactId || request.auth?.credentials?.crn
-
-    if (!contactId) {
-      throw new Error('Missing user identity (contactId/crn) for lock token')
-    }
-
-    const lockToken = mintLockToken({
-      userId: String(contactId),
-      sbi,
-      grantCode,
-      grantVersion
-    })
-
-    await updateApplicationStatus(
-      newStatus,
-      `${sbi}:${grantId}`,
-      /** @type {{ lockToken?: string, grantVersion?: string }} */ ({ lockToken, grantVersion })
-    )
-  }
 }
 
 /**
@@ -466,6 +400,29 @@ export function buildRedirectUrl(grantId, path) {
 }
 
 /**
+ * Context the agreements service (and the clear-state tool) act on after the
+ * user leaves the journey; `applicationRef` scopes a later clear.
+ *
+ * @param {AnyFormRequest} request
+ * @param {string} grantCode
+ * @param {string | number | undefined} grantVersion
+ * @param {string} clientRef
+ * @returns {{ grantCode: string, grantVersion: string | number | undefined, clientRef: string, sbi: string, applicationRef?: string }}
+ */
+function buildGrantApplicationContext(request, grantCode, grantVersion, clientRef) {
+  const { sbi } = getCacheKey(request)
+  const applicationRef = getReferenceNumber(request)
+
+  return {
+    grantCode,
+    grantVersion,
+    clientRef: clientRef.toLowerCase(),
+    sbi,
+    ...(applicationRef && { applicationRef })
+  }
+}
+
+/**
  * Handles post-submission redirects and status updates after a form has been submitted.
  *
  * ARCHITECTURAL NOTE
@@ -521,21 +478,20 @@ async function handlePostSubmission(request, h, context, previousStatus, grantCo
   const postSubmissionRules = grantRedirectRules?.postSubmission ?? []
   const rule = mapStatusToUrl(previousStatus, gasStatus, postSubmissionRules)
 
-  await persistStatus(request, rule.toGrantsStatus, previousStatus, grantId, context.state)
+  const refBefore = getReferenceNumber(request)
+  await persistStatus(request, rule.toGrantsStatus, previousStatus, context.state)
+  // A reopen or withdrawal changes the ref; the URL must change with it even if the path does not.
+  const refChanged = getReferenceNumber(request) !== refBefore
 
   const isAgreementsRedirect = rule.toPath === agreements.get('baseUrl')
   const redirectUrl = isAgreementsRedirect ? rule.toPath : buildRedirectUrl(grantId, rule.toPath)
 
-  const grantVersion = getGrantVersion(request)
-  const { sbi } = getCacheKey(request)
-  request.yar.set(YarKeys.GRANT_APPLICATION_CONTEXT, {
-    grantCode,
-    grantVersion,
-    clientRef: clientRef.toLowerCase(),
-    sbi
-  })
+  request.yar.set(
+    YarKeys.GRANT_APPLICATION_CONTEXT,
+    buildGrantApplicationContext(request, grantCode, getGrantVersion(request), clientRef)
+  )
 
-  if (request.path === redirectUrl) {
+  if (request.path === redirectUrl && !refChanged) {
     return h.continue
   }
 
@@ -550,7 +506,12 @@ async function handlePostSubmission(request, h, context, previousStatus, grantCo
     request.yar.set(YarKeys.STATUS_CHANGE_REDIRECT, redirectUrl)
   }
 
-  return h.redirect(redirectUrl).takeover()
+  // Off-journey (agreements), multi-application only: the session context is shared by every tab,
+  // so the URL names this tab's grant and application. A single-application grant redirects as on main.
+  const referenceNumber = getReferenceNumber(request)
+  const target =
+    isAgreementsRedirect && referenceNumber ? `${redirectUrl}?grant=${encodeURIComponent(grantCode)}` : redirectUrl
+  return h.redirect(withReferenceNumber(request, target)).takeover()
 }
 
 /**
@@ -780,16 +741,12 @@ async function handleReturningClaimWindow(request, h, context, redirectContext) 
     return undefined
   }
 
-  await persistStatus(request, rule.toGrantsStatus, ApplicationStatus.CLAIM_SUBMITTED, grantId, context.state)
+  await persistStatus(request, rule.toGrantsStatus, ApplicationStatus.CLAIM_SUBMITTED, context.state)
 
-  const grantVersion = getGrantVersion(request)
-  const { sbi } = getCacheKey(request)
-  request.yar.set(YarKeys.GRANT_APPLICATION_CONTEXT, {
-    grantCode,
-    grantVersion,
-    clientRef: clientRef.toLowerCase(),
-    sbi
-  })
+  request.yar.set(
+    YarKeys.GRANT_APPLICATION_CONTEXT,
+    buildGrantApplicationContext(request, grantCode, getGrantVersion(request), clientRef)
+  )
 
   const redirectUrl = buildRedirectUrl(grantId, rule.toPath)
   if (request.path === redirectUrl) {

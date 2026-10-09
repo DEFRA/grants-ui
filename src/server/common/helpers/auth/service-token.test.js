@@ -130,6 +130,16 @@ describe('service-token', () => {
       expect(mockGetCredentials).toHaveBeenCalledTimes(1)
     })
 
+    test('trusts a MockProvider token even though it is not a JWT', async () => {
+      mockMockProviderGetCredentials.mockResolvedValue('not-a-jwt')
+      const mockProviderInstance = new MockProvider({})
+
+      const token = await getServiceToken(mockProviderInstance, 'audience', 'label')
+
+      expect(token).toBe('not-a-jwt')
+      expect(mockLogger.info).toHaveBeenCalledWith('[label] Web Identity token ready (audience=audience)')
+    })
+
     test('logs how close the underlying ECS task credentials were to expiry when no valid token was obtained', async () => {
       mockGetCredentials.mockResolvedValue(null)
       const expiration = new Date(Date.now() + 42_000)
