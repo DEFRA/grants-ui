@@ -77,6 +77,7 @@ ${BOLD}Examples:${RESET_COLOR}
   gt                                 # interactive
   gt up                              # core only
   gt up --land-grants --gas
+  gt up --scoring --local-grants-scoring-api
   gt up --ha --scale 3
   gt up --tailscale                   # configure Serve and start with HTTPS tailnet URLs
   gt tailscale on                     # enable while running, preserving other addons
