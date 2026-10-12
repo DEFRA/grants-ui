@@ -25,15 +25,18 @@ export function getLocalImages() {
 /**
  * Write a temporary docker-compose override file that replaces the image for
  * each selected service with its `<name>:local` variant.
+ * Services with an addon requirement are only included when its Compose file is active.
  * Returns the path to the temp file, or null if nothing to override.
  */
-function writeTempOverride(localServiceKeys) {
+function writeTempOverride(localServiceKeys, files) {
   if (!localServiceKeys.length) return null
   const hostPlatform = `linux/${os.arch() === 'x64' ? 'amd64' : os.arch()}`
   const services = {}
   for (const key of localServiceKeys) {
     const svc = LOCAL_SERVICES.find((s) => s.key === key)
     if (!svc) continue
+    const addon = ADDONS.find((a) => a.key === svc.addon)
+    if (addon && !files.some((f) => basename(f) === addon.composeFile)) continue
     const localImage = svc.key + ':local'
     services[svc.composeService] = { image: localImage, pull_policy: 'never', platform: hostPlatform }
   }
@@ -70,7 +73,7 @@ export function composeFileArgs(selectedAddonKeys, localServiceKeys = []) {
   const files = composeFiles(selectedAddonKeys)
   const args = files.flatMap((f) => ['-f', f])
   if (localServiceKeys.length) {
-    const tmp = writeTempOverride(localServiceKeys)
+    const tmp = writeTempOverride(localServiceKeys, files)
     if (tmp) args.push('-f', tmp)
   }
   return args
@@ -85,7 +88,7 @@ export function tailscaleComposeArgs(runningFiles, enabled, localServices = []) 
       !f.includes('grants-ui-cli-debug-override-')
   )
   if (enabled) files.push(resolve(ROOT, 'compose.tailscale.yml'))
-  const localOverride = writeTempOverride(localServices)
+  const localOverride = writeTempOverride(localServices, files)
   if (localOverride) files.push(localOverride)
   if (runningFiles.some((f) => f.includes('grants-ui-cli-debug-override-'))) {
     const debugOverride = resolve(os.tmpdir(), `grants-ui-cli-debug-override-${process.pid}.yml`)

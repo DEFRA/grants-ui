@@ -11,6 +11,7 @@
 - [Docker Compose](#docker-compose)
 - [Tailscale phone testing](#tailscale-phone-testing)
 - [GAS Compose (`compose.gas.yml`)](#gas-compose-composegasyml)
+- [Scoring Compose (`compose.scoring.yml`)](#scoring-compose-composescoringyml)
 - [High-Availability (HA) Local Proxy](#high-availability-ha-local-proxy)
 - [Debugging with Docker](#debugging-with-docker)
 
@@ -22,7 +23,7 @@
 
 ### Interactive mode
 
-Running `gt` with no arguments opens a menu-driven interface where you can toggle addon services (Land Grants, GAS, HA proxy, Tailscale), set a replica scale, choose which `defradigital/*` images to replace with a locally-built `<service>:local` image, and toggle [local form-definition overrides](#local-form-definition-overrides). Selections are persisted in `.grants-ui-cli-state.json` (git-ignored) so the next run pre-selects the same options.
+Running `gt` with no arguments opens a menu-driven interface where you can toggle addon services (Land Grants, GAS, Scoring, HA proxy, Tailscale), set a replica scale, choose which `defradigital/*` images to replace with a locally-built `<service>:local` image, and toggle [local form-definition overrides](#local-form-definition-overrides). Selections are persisted in `.grants-ui-cli-state.json` (git-ignored) so the next run pre-selects the same options.
 
 The `tools` menu's `tailscale & sharing` action enables or disables [Tailscale phone testing](#tailscale-phone-testing).
 When the stack is running, it applies the change immediately. Before startup, it saves the selection for the `up` menu.
@@ -55,7 +56,8 @@ saved application state, locks and submissions in Grants UI Backend.
 gt up
 gt up --gas                        # include GAS (fg-gas-backend + floci)
 gt up --land-grants                # include Land Grants API + Postgres
-gt up --gas --land-grants --ha     # all addons + HA proxy
+gt up --scoring                    # include Grants Scoring API
+gt up --gas --land-grants --scoring --ha  # service addons + HA proxy
 gt up --ha --scale 2               # run 2 replicas of grants-ui / grants-ui-backend (requires --ha)
 gt up --tailscale                  # start with HTTPS tailnet URLs and configure Serve
 gt tailscale on                    # switch the running stack to Tailscale
@@ -65,6 +67,7 @@ gt share list                      # show gt-created shares (without invite URLs
 gt share revoke <share-id>         # revoke one share
 gt share revoke-all                # revoke every gt-created share
 gt up --local-grants-ui-backend    # use locally-built grants-ui-backend:local
+gt up --scoring --local-grants-scoring-api  # use grants-scoring-api:local
 
 # Stop the stack (uses saved state automatically)
 gt down
@@ -86,6 +89,7 @@ Append an entry to the `ADDONS` array in `tools/grants-tui/constants.js`. Each e
 ### Adding new local-image overrides
 
 Append an entry to the `LOCAL_SERVICES` array in `tools/grants-tui/constants.js` with `key`, `composeService`, and `image`.
+For a service that requires an addon, set `addon` to its addon key so a saved local-image selection only applies when that addon is included.
 
 ### Local form-definition overrides
 
@@ -333,6 +337,26 @@ To start the stack with GAS manually (without the TUI):
 
 ```bash
 docker compose -f compose.infra.yml -f compose.grants-ui.yml -f compose.gas.yml up -d
+```
+
+## Scoring Compose (`compose.scoring.yml`)
+
+Select **Scoring** in `gt` or run `gt up --scoring` to add `grants-scoring-api` from `defradigital/grants-scoring-api:latest`. The runtime line shows `Running: Core, Scoring`.
+
+The service uses the stack's MongoDB and Floci on `grants-ui-net`, waits for MongoDB replica-set readiness, and exposes port `3013` to avoid the Grants UI Backend port `3001`. Grants UI waits for its health check and receives `SCORING_SERVICE_URL=http://grants-scoring-api:3013`. Without the overlay, the core Compose configuration continues to use MockServer by default.
+
+To use a locally built `grants-scoring-api:local` image, select it in the **local** menu or run:
+
+```bash
+gt up --scoring --local-grants-scoring-api
+```
+
+The local image selection is saved and only applies when Scoring is selected. `gt down`, debug, restart, and Tailscale switching preserve the scoring overlay through the existing addon handling. `gt reset` removes its container with the stack and includes its published image in image cleanup.
+
+To start it without `gt`:
+
+```bash
+docker compose -f compose.infra.yml -f compose.grants-ui.yml -f compose.scoring.yml up -d
 ```
 
 ## High-Availability (HA) Local Proxy

@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 // ---------------------------------------------------------------------------
 // Version
 // ---------------------------------------------------------------------------
-export const VERSION = '1.11.0'
+export const VERSION = '1.12.0'
 
 // ---------------------------------------------------------------------------
 // Cross-platform: detect ANSI support
@@ -124,6 +124,13 @@ export const LOCAL_SERVICES = [
     removeOnReset: true
   },
   {
+    key: 'grants-scoring-api',
+    composeService: 'grants-scoring-api',
+    image: 'defradigital/grants-scoring-api',
+    addon: 'scoring',
+    removeOnReset: true
+  },
+  {
     key: 'land-grants-api',
     composeService: 'land-grants-backend',
     image: 'defradigital/land-grants-api',
@@ -153,6 +160,12 @@ export const ADDONS = [
     label: 'GAS',
     description: 'Grants Application Service (fg-gas-backend + floci)',
     composeFile: 'compose.gas.yml'
+  },
+  {
+    key: 'scoring',
+    label: 'Scoring',
+    description: 'Grants Scoring API (uses shared MongoDB + Floci)',
+    composeFile: 'compose.scoring.yml'
   },
   {
     key: 'tailscale',
