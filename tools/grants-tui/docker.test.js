@@ -1,9 +1,12 @@
 // @vitest-environment node
 import { beforeEach, expect, test, vi } from 'vitest'
 import { spawnSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { stripVTControlCharacters } from 'node:util'
+import { parse } from 'yaml'
 import {
   buildStatusLine,
+  composeFileArgs,
   getAllServices,
   getRunningComposeFiles,
   getRunningServices,
@@ -128,6 +131,39 @@ test('Tailscale has its own runtime section instead of a duplicate core addon la
   expect(stripVTControlCharacters(buildStatusLine(['compose.grants-ui.yml', 'compose.tailscale.yml']))).toBe(
     'Running: Core'
   )
+})
+
+test('scoring is optional even when its local image override is saved', () => {
+  expect(composeFileArgs([], ['grants-scoring-api'])).toEqual([
+    '-f',
+    'compose.infra.yml',
+    '-f',
+    'compose.grants-ui.yml'
+  ])
+  expect(composeFileArgs(['scoring'])).toEqual([
+    '-f',
+    'compose.infra.yml',
+    '-f',
+    'compose.grants-ui.yml',
+    '-f',
+    'compose.scoring.yml'
+  ])
+  expect(stripVTControlCharacters(buildStatusLine(['compose.grants-ui.yml', 'compose.scoring.yml']))).toBe(
+    'Running: Core, Scoring'
+  )
+})
+
+test('scoring local images survive live Tailscale switching', () => {
+  const args = composeFileArgs(['scoring'], ['grants-scoring-api'])
+  const override = parse(readFileSync(args[args.length - 1], 'utf8'))
+  expect(override.services['grants-scoring-api']).toMatchObject({
+    image: 'grants-scoring-api:local',
+    pull_policy: 'never'
+  })
+  const files = args.filter((arg) => arg !== '-f')
+  const switched = tailscaleComposeArgs(files, true, ['grants-scoring-api'])
+  expect(switched).toContain('compose.scoring.yml')
+  expect(parse(readFileSync(switched[switched.length - 1], 'utf8'))).toEqual(override)
 })
 
 test('journey defaults to the running Tailscale public URL', () => {

@@ -8,6 +8,8 @@ test.each([
   ['up', '--tailscale'],
   ['refresh-examples', '--dry-run'],
   ['refresh-examples', '--reset-applications'],
+  ['up', '--scoring'],
+  ['up', '--scoring', '--local-grants-scoring-api'],
   ['tailscale', 'on'],
   ['tailscale', 'off', '--dry-run'],
   ['share', 'create'],

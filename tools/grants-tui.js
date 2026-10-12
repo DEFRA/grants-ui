@@ -9,7 +9,7 @@
  *   node tools/grants-tui.js   (direct)
  *
  * Usage (non-interactive):
- *   gt up [--land-grants] [--gas] [--ha | --tailscale] [--scale <n>] [--dry-run]
+ *   gt up [--land-grants] [--gas] [--scoring] [--ha | --tailscale] [--scale <n>] [--dry-run]
  *   gt tailscale on|off          # switch browser URLs and Serve proxies while running
  *   gt share create|list|revoke   # create and manage external Tailscale invitations
  *   gt setup tailscale-sharing     # preview the restrictive external-sharing policy
