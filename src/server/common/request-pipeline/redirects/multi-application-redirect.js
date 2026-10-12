@@ -3,7 +3,7 @@ import { getAuthenticatedCrn, getAuthenticatedSbi } from '../../helpers/auth/get
 import { getGrantCode } from '../../helpers/grant-code.js'
 import { getReferenceNumber, setReferenceNumber } from '../../helpers/state/get-cache-key-helper.js'
 import { getStateWithDefinition } from '../../helpers/state/state-with-definition-context.js'
-import { getRoutingDefinition, isUnscopedGrantRoot } from '../../helpers/definition/routing-definition.js'
+import { tryRoutingDefinition, isUnscopedGrantRoot } from '../../helpers/definition/routing-definition.js'
 import { listApplicationsFromApi } from '../../helpers/state/fetch-saved-state-helper.js'
 
 const UNKNOWN_REFERENCE = 'Unknown application reference'
@@ -25,7 +25,7 @@ export async function multiApplicationRedirect(request, h) {
 
   const ref = getReferenceNumber(request)
   if (isUnscopedGrantRoot(request)) {
-    const definition = await getRoutingDefinition(request)
+    const definition = await tryRoutingDefinition(request)
     if (allowsMultipleApplications(definition)) {
       return resolveWithoutRef(request, h, definition)
     }

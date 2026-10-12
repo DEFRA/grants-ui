@@ -12,16 +12,19 @@ import { isWindowClosedMockEnabled } from './mock-overrides.js'
  * An unparseable `closesAt` is logged and treated as closed.
  * @param {import('@defra/forms-engine-plugin/engine/types.js').AnyRequest} request
  * @param {Date} [now]
+ * @param {{name?: string, metadata?: {applicationWindow?: ApplicationWindow}}} [definition]
  * @returns {boolean}
  */
-export function isApplicationWindowOpen(request, now = new Date()) {
+export function isApplicationWindowOpen(request, now = new Date(), definition = undefined) {
   if (isWindowClosedMockEnabled(request)) {
     return false
   }
 
-  const def = /** @type {{ name?: string, metadata?: { applicationWindow?: ApplicationWindow } } | undefined} */ (
-    /** @type {{ model?: { def?: unknown } }} */ (request.app).model?.def
-  )
+  const def =
+    definition ??
+    /** @type {{ name?: string, metadata?: { applicationWindow?: ApplicationWindow } } | undefined} */ (
+      /** @type {{ model?: { def?: unknown } }} */ (request.app).model?.def
+    )
   const closesAt = def?.metadata?.applicationWindow?.closesAt
 
   if (!closesAt) {

@@ -1,3 +1,4 @@
+import { TagClasses } from '../common/constants/tag-classes.js'
 import { ApplicationStatus } from '../common/constants/application-status.js'
 import { isApplicationWindowOpen } from '../common/helpers/application-window.js'
 
@@ -11,40 +12,44 @@ export function buildApplicationsViewModel(request, definition, applications) {
     serviceUrl: `/${request.params.slug}`,
     supportEmail: definition.metadata?.supportEmail ?? 'ruralpayments@defra.gov.uk',
     slug: request.params.slug,
-    canStartApplication: isApplicationWindowOpen(request),
-    applications: applications.map((application) => {
-      const isClaim =
-        application.applicationStatus === ApplicationStatus.CLAIM_STARTED ||
-        application.applicationStatus === ApplicationStatus.CLAIM_SUBMITTED
-      const submitted = isClaim || application.applicationStatus === ApplicationStatus.SUBMITTED
-      let statusText
-      let statusClasses
-      if (submitted) {
-        statusText = 'Submitted'
-        statusClasses = 'govuk-tag--green'
-      } else if (application.applicationStatus === ApplicationStatus.REOPENED) {
-        statusText = 'Returned for amendments'
-        statusClasses = 'govuk-tag--yellow'
-      } else {
-        statusText = 'Draft'
-        statusClasses = 'govuk-tag--red'
-      }
-      let actionText
-      if (isClaim) {
-        actionText = 'View claim'
-      } else if (submitted) {
-        actionText = 'View application'
-      } else {
-        actionText = 'Continue application'
-      }
-      return {
-        ...application,
-        referenceNumber: application.applicationRef,
-        statusText,
-        statusClasses,
-        actionText,
-        href: `/${request.params.slug}${application.applicationStatus === ApplicationStatus.SUBMITTED ? '/print-submitted-application' : ''}?ref=${encodeURIComponent(application.applicationRef)}`
-      }
-    })
+    canStartApplication: isApplicationWindowOpen(request, undefined, definition),
+    applications: applications
+      .filter(
+        (application) => typeof application.applicationRef === 'string' && application.applicationRef.trim().length > 0
+      )
+      .map((application) => {
+        const isClaim =
+          application.applicationStatus === ApplicationStatus.CLAIM_STARTED ||
+          application.applicationStatus === ApplicationStatus.CLAIM_SUBMITTED
+        const submitted = isClaim || application.applicationStatus === ApplicationStatus.SUBMITTED
+        let statusText
+        let statusClasses
+        if (submitted) {
+          statusText = 'Submitted'
+          statusClasses = TagClasses.GREEN
+        } else if (application.applicationStatus === ApplicationStatus.REOPENED) {
+          statusText = 'Returned for amendments'
+          statusClasses = TagClasses.YELLOW
+        } else {
+          statusText = 'Draft'
+          statusClasses = TagClasses.RED
+        }
+        let actionText
+        if (isClaim) {
+          actionText = 'View claim'
+        } else if (submitted) {
+          actionText = 'View application'
+        } else {
+          actionText = 'Continue application'
+        }
+        return {
+          ...application,
+          referenceNumber: application.applicationRef,
+          statusText,
+          statusClasses,
+          actionText,
+          href: `/${request.params.slug}${application.applicationStatus === ApplicationStatus.SUBMITTED ? '/print-submitted-application' : ''}?ref=${encodeURIComponent(application.applicationRef)}`
+        }
+      })
   }
 }

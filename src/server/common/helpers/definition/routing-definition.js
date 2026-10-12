@@ -1,3 +1,4 @@
+import { cachedMultipleApplications, rememberMultipleApplications } from './multiple-applications-cache.js'
 import { getCacheKey, getReferenceNumber } from '../state/get-cache-key-helper.js'
 import { fetchLatestDefinitionFromApi } from '../state/fetch-saved-state-helper.js'
 import { ExternalApiError } from '../../utils/errors/ExternalApiError.js'
@@ -24,7 +25,10 @@ export function getRoutingDefinition(request) {
   const app = /** @type {{ routingDefinition?: Promise<StateWithDefinitionEnvelope | null> }} */ (request.app)
   if (!app.routingDefinition) {
     app.routingDefinition = fetchLatestDefinitionFromApi(getCacheKey(request).grantCode)
-      .then((definition) => (definition ? { definition, state: null, upgraded: false } : null))
+      .then((definition) => {
+        rememberMultipleApplications(getCacheKey(request).grantCode, definition)
+        return definition ? { definition, state: null, upgraded: false } : null
+      })
       .catch((error) => {
         throw new ExternalApiError({
           message: 'Unable to load the grant definition',
@@ -42,3 +46,18 @@ export function getRoutingDefinition(request) {
  * @import { AnyRequest } from '@defra/forms-engine-plugin/engine/types.js'
  * @import { StateWithDefinitionEnvelope } from '../state/fetch-saved-state-helper.js'
  */
+
+/** Use lock-free routing for unknown/multi schemes, falling back to the normal state read on failure.
+ * @param {AnyRequest} request @returns {Promise<StateWithDefinitionEnvelope | null>}
+ */
+export async function tryRoutingDefinition(request) {
+  if (cachedMultipleApplications(getCacheKey(request).grantCode) === false) {
+    return null
+  }
+  try {
+    return await getRoutingDefinition(request)
+  } catch {
+    // The normal state/definition endpoint remains the authoritative fallback.
+    return null
+  }
+}

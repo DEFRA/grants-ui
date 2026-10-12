@@ -1,17 +1,19 @@
-import { listApplicationsController, startApplicationController } from './applications.controller.js'
+import { ApplicationsController } from './applications.controller.js'
 
 /** @satisfies {ServerRoute} */
 export const listApplicationsRoute = {
   method: 'GET',
   path: '/{slug}/applications',
-  ...listApplicationsController
+  options: { app: { definitionOnly: true } },
+  handler: ApplicationsController.list
 }
 
 /** @satisfies {ServerRoute} */
 export const startApplicationRoute = {
   method: 'POST',
   path: '/{slug}/applications',
-  ...startApplicationController
+  options: { app: { definitionOnly: true } },
+  handler: ApplicationsController.start
 }
 
 /** @import { ServerRoute } from '@hapi/hapi' */

@@ -1,3 +1,4 @@
+import { cachedMultipleApplications } from '../definition/multiple-applications-cache.js'
 import { getRoutingDefinition, isUnscopedGrantRoot } from '../definition/routing-definition.js'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
@@ -68,13 +69,11 @@ describe('state-with-definition-context', () => {
   })
 
   describe('getStateWithDefinition (single-flight)', () => {
-    it('uses a lock-free definition-only read for the selector', async () => {
-      const request = { ...makeRequest(), route: { path: '/{slug}/applications' } }
-      fetchLatestDefinitionFromApi.mockResolvedValue({})
-      await getStateWithDefinition(request)
-      expect(fetchLatestDefinitionFromApi).toHaveBeenCalledExactlyOnceWith('grant-a')
-      expect(fetchStateWithDefinitionFromApi).not.toHaveBeenCalled()
-      expect(mintLockToken).not.toHaveBeenCalled()
+    it('learns the single-application flag from the existing combined state read', async () => {
+      getCacheKey.mockReturnValue({ sbi: 'biz-1', grantCode: 'state-learned-single' })
+      fetchStateWithDefinitionFromApi.mockResolvedValue({ definition: { allowMultipleApplications: false } })
+      await getStateWithDefinition(makeRequest())
+      expect(cachedMultipleApplications('state-learned-single')).toBe(false)
     })
 
     it('issues exactly one backend call and memoizes the promise on request.app', async () => {
