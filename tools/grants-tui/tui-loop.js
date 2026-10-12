@@ -44,7 +44,7 @@ import { GAS_DIVIDER, gasStatusSegment, getGasStatus, setGasStatus } from './gas
 import { gasStatusChoices, getGasGrant, listGasApplications, updateGasApplication } from './gas-state.js'
 import { journeySteps, listJourneys } from './journey.js'
 import { journeyCrnOptions, wontCompleteReason } from '../../src/server/dev-tools/journey-runner/journey-meta.js'
-import { getTailscaleShareIds, loadState, saveState } from './cli-state.js'
+import { emptyState, getTailscaleShareIds, loadState, saveState } from './cli-state.js'
 import { promptScale, promptText, promptTextWithOptions, radioMenu, setRuntimeStatusLine, toggleMenu } from './tui.js'
 import { tailscaleEnabled, tailscaleSharesStatusSegment, tailscaleStatusSegment } from './tailscale.js'
 import { TAILSCALE_SHARE_API_KEY } from './tailscale-share.js'
@@ -402,7 +402,7 @@ async function handleLocalCommand(dryRun, savedState, containersRunning) {
     .filter((i) => i.selected && !i.disabled && i.key.startsWith(FORMDEF_KEY_PREFIX))
     .map((i) => i.key.slice(FORMDEF_KEY_PREFIX.length))
   // Persist local selections into saved state (create state if none exists)
-  const currentState = loadState() || { addons: [], scale: null, localServices: [], localFormDefSelections: [] }
+  const currentState = loadState() ?? emptyState()
   saveState(currentState.addons, currentState.scale, newLocalServices, newFormDefIds)
 
   if (containersRunning) {

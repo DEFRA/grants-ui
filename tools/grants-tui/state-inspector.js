@@ -150,7 +150,7 @@ export async function inspectState(dryRun = false) {
     return
   }
   const saved = loadState()?.stateInspector ?? {}
-  const menu = (values, title, initialKey = undefined, versions = false) =>
+  const menu = (values, title, /** @type {string | undefined} */ initialKey = undefined, versions = false) =>
     radioMenu(
       values.map((value, index) => ({
         key: value,

@@ -101,6 +101,10 @@ test('an initial connection failure gives retry guidance', async () => {
 
 test('loads grant/SBI menus and always offers the latest version first, ignoring a saved older version', async () => {
   vi.mocked(loadState).mockReturnValue({
+    addons: [],
+    scale: null,
+    localServices: [],
+    localFormDefSelections: [],
     stateInspector: { grantCode: 'example-grant', sbi: '123456789', grantVersion: '1.0.0' }
   })
   vi.mocked(fetchStateCatalog).mockResolvedValue([

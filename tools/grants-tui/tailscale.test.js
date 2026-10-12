@@ -25,7 +25,12 @@ beforeEach(() => {
   vi.spyOn(console, 'log').mockImplementation(() => {})
   vi.spyOn(console, 'error').mockImplementation(() => {})
   vi.mocked(getRunningComposeFiles).mockReturnValue(localFiles)
-  vi.mocked(loadState).mockReturnValue({ addons: ['land-grants'], scale: null, localServices: ['grants-ui-backend'] })
+  vi.mocked(loadState).mockReturnValue({
+    addons: ['land-grants'],
+    scale: null,
+    localServices: ['grants-ui-backend'],
+    localFormDefSelections: []
+  })
   vi.mocked(runCompose).mockReturnValue(0)
   vi.mocked(enableTailscaleServe).mockReturnValue([443, 8443])
   vi.mocked(disableTailscaleServe).mockReturnValue(0)

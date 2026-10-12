@@ -15,6 +15,9 @@ beforeEach(() => {
 
 test('manual refresh reapplies selected example overrides but leaves real grant overrides alone', () => {
   vi.mocked(loadState).mockReturnValueOnce({
+    addons: [],
+    scale: null,
+    localServices: [],
     localFormDefSelections: ['example-grant-with-auth::local', 'woodland::repo:grants-config-woodland']
   })
   expect(runRefreshExamples()).toBe(0)
