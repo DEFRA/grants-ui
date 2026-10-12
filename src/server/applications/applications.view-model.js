@@ -32,7 +32,7 @@ export function buildApplicationsViewModel(request, definition, applications) {
           statusClasses = TagClasses.YELLOW
         } else {
           statusText = 'Draft'
-          statusClasses = TagClasses.RED
+          statusClasses = TagClasses.BLUE
         }
         let actionText
         if (isClaim) {
