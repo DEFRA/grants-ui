@@ -1,7 +1,7 @@
 import { it, expect, vi, beforeEach } from 'vitest'
 import { listApplicationsRoute, startApplicationRoute } from './applications.route.js'
 import { listApplicationsFromApi } from '../common/helpers/state/fetch-saved-state-helper.js'
-import { getStateWithDefinition } from '../common/helpers/state/state-with-definition-context.js'
+import { getRoutingDefinition } from '../common/helpers/definition/routing-definition.js'
 import { getFormsCacheService } from '../common/helpers/forms-cache/forms-cache.js'
 import { setReferenceNumber } from '../common/helpers/state/get-cache-key-helper.js'
 import { isApplicationWindowOpen } from '../common/helpers/application-window.js'
@@ -12,9 +12,9 @@ vi.mock('../common/helpers/auth/get-auth-identifiers.js', () => ({
   getAuthenticatedSbi: vi.fn(() => 'sbi-1')
 }))
 vi.mock('../common/helpers/state/state-with-definition-context.js', () => ({
-  getStateWithDefinition: vi.fn(),
   resolveVersion: vi.fn(() => '1.0.0')
 }))
+vi.mock('../common/helpers/definition/routing-definition.js', () => ({ getRoutingDefinition: vi.fn() }))
 vi.mock('../common/helpers/forms-cache/forms-cache.js', () => ({ getFormsCacheService: vi.fn() }))
 vi.mock('../common/helpers/state/get-cache-key-helper.js', () => ({
   setReferenceNumber: vi.fn()
@@ -35,7 +35,7 @@ beforeEach(() => {
   h = { view: vi.fn(), redirect: vi.fn().mockReturnThis(), code: vi.fn().mockReturnThis() }
   cache = { setState: vi.fn() }
   getFormsCacheService.mockReturnValue(cache)
-  getStateWithDefinition.mockResolvedValue({ definition: { definition } })
+  getRoutingDefinition.mockResolvedValue({ definition: { definition } })
   listApplicationsFromApi.mockResolvedValue([])
   isApplicationWindowOpen.mockReturnValue(true)
 })
@@ -72,11 +72,11 @@ it('lists the current business and grant with reference links and meaningful sta
 it('creates a fresh reference without copying the existing application or clearing authentication', async () => {
   await startApplicationRoute.handler(request, h)
   const state = cache.setState.mock.calls[0][1]
-  expect(cache.setState.mock.calls[0][2]).toEqual({ failOnError: true })
+  expect(cache.setState.mock.calls[0][2]).toEqual({ failOnError: true, allowMultipleApplications: true })
   expect(Object.keys(state)).toEqual(['$$__referenceNumber'])
   expect(state.$$__referenceNumber).toBeTruthy()
   expect(setReferenceNumber).toHaveBeenCalledWith(request, state.$$__referenceNumber)
-  expect(h.redirect).toHaveBeenCalledWith(`/test-grant/start?ref=${encodeURIComponent(state.$$__referenceNumber)}`)
+  expect(h.redirect).toHaveBeenCalledWith(`/test-grant?ref=${encodeURIComponent(state.$$__referenceNumber)}`)
   expect(h.code).toHaveBeenCalledWith(303)
   expect(request.yar.clear).not.toHaveBeenCalledWith('sbi')
 })
@@ -87,7 +87,7 @@ it('does not select a reference when persistence fails', async () => {
   expect(h.redirect).not.toHaveBeenCalled()
 })
 it('blocks selector and creation for single-application grants', async () => {
-  getStateWithDefinition.mockResolvedValue({ definition: { definition: { metadata: {} } } })
+  getRoutingDefinition.mockResolvedValue({ definition: { definition: { metadata: {} } } })
   for (const route of [listApplicationsRoute, startApplicationRoute]) {
     await expect(route.handler(request, h)).rejects.toMatchObject({ details: { status: 404 } })
   }
@@ -102,7 +102,7 @@ it('blocks creation when the application window is closed', async () => {
 })
 
 it('uses the scheme short name and configured support email on the selector', async () => {
-  getStateWithDefinition.mockResolvedValue({
+  getRoutingDefinition.mockResolvedValue({
     definition: {
       definition: {
         ...definition,
@@ -137,7 +137,7 @@ it.each(['CLAIM_STARTED', 'CLAIM_SUBMITTED'])(
   }
 )
 it('keeps selector creation available without granular role checks', async () => {
-  getStateWithDefinition.mockResolvedValue({
+  getRoutingDefinition.mockResolvedValue({
     definition: {
       definition: {
         ...definition,
@@ -151,4 +151,27 @@ it('keeps selector creation available without granular role checks', async () =>
   await startApplicationRoute.handler(request, h)
   expect(cache.setState).toHaveBeenCalledTimes(1)
   expect(request.can).not.toHaveBeenCalled()
+})
+
+it('does not manufacture form state or a form model when displaying the selector', async () => {
+  await listApplicationsRoute.handler(request, h)
+  expect(request.app.model).toBeUndefined()
+  expect(request.app.stateWithDefinition).toBeUndefined()
+  expect(isApplicationWindowOpen).toHaveBeenCalledWith(request, undefined, definition)
+})
+
+it('does not create links for application records with missing references', async () => {
+  listApplicationsFromApi.mockResolvedValue([
+    { applicationRef: undefined },
+    { applicationRef: null },
+    { applicationRef: '' },
+    { applicationRef: 'REF-VALID' }
+  ])
+  await listApplicationsRoute.handler(request, h)
+  expect(h.view).toHaveBeenCalledWith(
+    'applications',
+    expect.objectContaining({
+      applications: [expect.objectContaining({ href: '/test-grant?ref=REF-VALID' })]
+    })
+  )
 })

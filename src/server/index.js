@@ -1,4 +1,8 @@
-import { getRoutingDefinition, isUnscopedGrantRoot } from './common/helpers/definition/routing-definition.js'
+import {
+  getRoutingDefinition,
+  tryRoutingDefinition,
+  isUnscopedGrantRoot
+} from './common/helpers/definition/routing-definition.js'
 import plugin from '@defra/forms-engine-plugin'
 import Bell from '@hapi/bell'
 import Cookie from '@hapi/cookie'
@@ -290,8 +294,17 @@ export async function createServer() {
     const slug = request.params?.slug
     if (slug && request.auth?.isAuthenticated && request.auth?.credentials?.contactId) {
       try {
-        if (isUnscopedGrantRoot(request)) {
+        if (/** @type {{definitionOnly?: boolean}} */ (request.route.settings.app)?.definitionOnly === true) {
           await getRoutingDefinition(request)
+        } else if (isUnscopedGrantRoot(request)) {
+          const envelope = await tryRoutingDefinition(request)
+          const definition = envelope?.definition
+          if (!(
+            definition?.allowMultipleApplications === true ||
+            definition?.definition?.metadata?.allowMultipleApplications === true
+          )) {
+            await getStateWithDefinition(request)
+          }
         } else {
           await getStateWithDefinition(request)
         }

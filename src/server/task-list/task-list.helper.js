@@ -1,3 +1,4 @@
+import { TagClasses } from '../common/constants/tag-classes.js'
 /**
  * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/index.js'
  */
@@ -43,23 +44,23 @@ export const TASK_STATUS = Object.freeze({
 export const TASK_STATUS_CONFIG = Object.freeze({
   [TASK_STATUS.completed]: {
     text: 'Completed',
-    classes: 'govuk-tag--green'
+    classes: TagClasses.GREEN
   },
   [TASK_STATUS.inProgress]: {
     text: 'In progress',
-    classes: 'govuk-tag--blue'
+    classes: TagClasses.BLUE
   },
   [TASK_STATUS.notStarted]: {
     text: 'Not started',
-    classes: 'govuk-tag--yellow'
+    classes: TagClasses.YELLOW
   },
   [TASK_STATUS.cannotStart]: {
     text: 'Cannot start yet',
-    classes: 'govuk-tag--grey'
+    classes: TagClasses.GREY
   },
   [TASK_STATUS.cannotContinue]: {
     text: 'On hold',
-    classes: 'govuk-tag--purple'
+    classes: TagClasses.PURPLE
   }
 })
 

@@ -57,7 +57,7 @@
     {% if startAnotherApplicationUrl %}
       <form method="post" action="{{ startAnotherApplicationUrl }}">
         <input type="hidden" name="crumb" value="{{ crumb }}" />
-        {{ govukButton({ text: "Start another application" }) }}
+        {{ govukButton({ text: "Start a new application", preventDoubleClick: true }) }}
       </form>
     {% endif %}
 
