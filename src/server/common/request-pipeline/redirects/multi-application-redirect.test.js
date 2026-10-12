@@ -1,4 +1,4 @@
-import { getRoutingDefinition } from '../../helpers/definition/routing-definition.js'
+import { tryRoutingDefinition } from '../../helpers/definition/routing-definition.js'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { multiApplicationRedirect } from './multi-application-redirect.js'
 import { getStateWithDefinition } from '../../helpers/state/state-with-definition-context.js'
@@ -12,7 +12,7 @@ vi.mock('../../helpers/state/state-with-definition-context.js', async (importOri
 
 vi.mock('../../helpers/definition/routing-definition.js', async (importOriginal) => ({
   ...(await importOriginal()),
-  getRoutingDefinition: vi.fn()
+  tryRoutingDefinition: vi.fn()
 }))
 
 vi.mock('../../helpers/state/fetch-saved-state-helper.js', () => ({
@@ -43,7 +43,7 @@ describe('multiApplicationRedirect', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    getRoutingDefinition.mockImplementation(() => getStateWithDefinition())
+    tryRoutingDefinition.mockImplementation(() => getStateWithDefinition())
     getGrantCode.mockReturnValue('test-grant')
   })
 
@@ -468,7 +468,7 @@ describe('multiApplicationRedirect', () => {
 })
 
 it('reaches the selector without opening a state document even when an editing read would be locked', async () => {
-  getRoutingDefinition.mockResolvedValueOnce({ definition: { allowMultipleApplications: true }, state: null })
+  tryRoutingDefinition.mockResolvedValueOnce({ definition: { allowMultipleApplications: true }, state: null })
   getStateWithDefinition.mockRejectedValueOnce(Object.assign(new Error('Locked'), { statusCode: 423 }))
   listApplicationsFromApi.mockResolvedValueOnce([{ applicationRef: 'REF-1' }, { applicationRef: 'REF-2' }])
   const request = {
@@ -487,7 +487,7 @@ it('reaches the selector without opening a state document even when an editing r
 })
 
 it.each([0, 1])('routes %i applications from a lock-free root read', async (count) => {
-  getRoutingDefinition.mockResolvedValueOnce({ definition: { allowMultipleApplications: true }, state: null })
+  tryRoutingDefinition.mockResolvedValueOnce({ definition: { allowMultipleApplications: true }, state: null })
   listApplicationsFromApi.mockResolvedValueOnce(count ? [{ applicationRef: 'REF-ONLY' }] : [])
   const request = {
     method: 'get',

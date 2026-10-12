@@ -12,6 +12,14 @@ vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
   return mockLogHelper()
 })
 
+it('uses an explicitly supplied definition without a manufactured request model', () => {
+  expect(
+    isApplicationWindowOpen({ app: {} }, new Date('2026-10-12T12:00:00Z'), {
+      metadata: { applicationWindow: { closesAt: '2026-10-01T00:00:00Z' } }
+    })
+  ).toBe(false)
+})
+
 describe('isApplicationWindowOpen', () => {
   const now = new Date('2026-10-01T12:00:00Z')
 

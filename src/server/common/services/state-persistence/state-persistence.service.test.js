@@ -212,6 +212,18 @@ describe('StatePersistenceService', () => {
     expect(lockModule.mintLockToken).toHaveBeenCalledWith(lockTokenArgs(1))
   })
 
+  test('creates from an explicit definition flag without manufacturing a model or reading state', async () => {
+    const request = { ...fakeRequest, app: { grantVersion: 1 }, query: {} }
+    const state = { $$__referenceNumber: 'REF-NEW' }
+    await service.setState(request, state, { failOnError: true, allowMultipleApplications: true })
+    expect(contextModule.getStateWithDefinition).not.toHaveBeenCalled()
+    expect(request.app.model).toBeUndefined()
+    expect(persistModule.persistStateToApi).toHaveBeenCalledWith(state, SESSION_KEY, {
+      ...persistOptions(1),
+      failOnError: true
+    })
+  })
+
   test('setState scopes the creating request to the reference the engine minted, on a multi-application grant', async () => {
     const request = {
       ...fakeRequest,

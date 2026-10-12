@@ -41,6 +41,15 @@ describe('serviceRootRedirect', () => {
     }
   })
 
+  it('leaves a newly created reference-only application on the normal start-page path', async () => {
+    request.app.model.def.startPage = '/start'
+    request.app.model.def.metadata.allowMultipleApplications = true
+    request.query = { ref: 'REF-NEW' }
+    getState.mockResolvedValue({ $$__referenceNumber: 'REF-NEW' })
+    expect(await serviceRootRedirect(request, h)).toBe(h.continue)
+    expect(h.redirect).not.toHaveBeenCalled()
+  })
+
   it('carries the application ref on the redirect - this extension runs after the multi-application plugin, whose hook cannot see its redirect', async () => {
     getState.mockResolvedValue({ businessDetailsUpToDate: true })
     request.query = { ref: 'REF-A' }

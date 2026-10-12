@@ -65,7 +65,7 @@
   {% if canStartApplication %}
     <form method="post">
       <input type="hidden" name="crumb" value="{{ crumb }}" />
-      {{ govukButton({ text: "Start a new application" }) }}
+      {{ govukButton({ text: "Start a new application", preventDoubleClick: true }) }}
     </form>
   {% endif %}
 {% endblock %}
