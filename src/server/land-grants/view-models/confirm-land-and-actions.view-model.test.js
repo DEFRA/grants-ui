@@ -60,7 +60,7 @@ const payment = {
 describe('buildConfirmLandAndActionsViewModel', () => {
   it.each([
     ['count', '4 count'],
-    ['sqm', '4 sqm'],
+    ['sqm', '4 m²'],
     ['m', '4.0000 m'],
     ['ha', '4.0000 ha']
   ])('formats parcel action quantities using the payment unit %s', (unit, area) => {

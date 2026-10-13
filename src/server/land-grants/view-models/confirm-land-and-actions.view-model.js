@@ -1,6 +1,6 @@
 import { formatPrice } from '~/src/server/common/utils/payment.js'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
-import { formatArea } from '~/src/shared/unit-format.js'
+import { formatArea, unitAlternativeLabel } from '~/src/shared/unit-format.js'
 import { stringifyParcel } from '~/src/shared/format-parcel.js'
 import {
   changeActionsHref,
@@ -113,7 +113,7 @@ const formatActionLabel = (description, code) => (isNonEmptyString(description) 
 
 /**
  * Selects the grammatical display unit for a priced quantity, falling back to
- * the payment API's machine unit when older saved state has no display labels.
+ * the payment API's machine unit when saved state has no display labels.
  * @param {number} quantity
  * @param {ActionData | undefined} actionState
  * @param {string} unit
@@ -121,7 +121,7 @@ const formatActionLabel = (description, code) => (isNonEmptyString(description) 
  */
 function getQuantityDisplayUnit(quantity, actionState, unit) {
   const displayUnit = quantity === 1 ? actionState?.displayUnit : actionState?.displayUnitPlural
-  return displayUnit ?? unit
+  return displayUnit ?? (unit ? unitAlternativeLabel({ unit }) : unit)
 }
 
 /**
