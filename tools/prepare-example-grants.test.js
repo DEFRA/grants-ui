@@ -269,6 +269,7 @@ if (url.pathname.endsWith('/tags')) {
       'example-grant-with-auth',
       'example-grant-with-closed-window',
       'example-grant-with-map',
+      'example-grant-with-multi-applications',
       'example-grant-with-task-list',
       'example-grant-with-task-list-hide-questions',
       'example-whitelist'

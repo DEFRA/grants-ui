@@ -72,6 +72,24 @@ Then('(the user )should (still )be (back )at URL {string}', async function (expe
   await expect(this.page).toHaveURL((url) => pathPattern.test(url.pathname))
 })
 
+// Multi-application grants name the application on the URL (`?ref=`).
+const applicationReferenceInUrl = (page) => new URL(page.url()).searchParams.get('ref')
+
+Then('(the user )should see an application reference in the URL', async function () {
+  const ref = applicationReferenceInUrl(this.page)
+  expect(ref).toMatch(/^[A-Z0-9-]+$/)
+  this.applicationReference = ref
+})
+
+Then('(the user )should see no application reference in the URL', async function () {
+  expect(applicationReferenceInUrl(this.page)).toBeNull()
+})
+
+Then('(the user )should be on the same application as before', async function () {
+  expect(this.applicationReference).toBeDefined()
+  expect(applicationReferenceInUrl(this.page)).toBe(this.applicationReference)
+})
+
 Then('(the user )should see the following answers', async function (dataTable) {
   const expectedAnswers = []
   let summaryAnswer = {}

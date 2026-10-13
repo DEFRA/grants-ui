@@ -1,0 +1,57 @@
+engine: V2
+name: Example Grant With Multiple Applications
+metadata:
+  id: 53f61c80-64c1-492d-81be-4d031d5eead9
+  surveyLabel: Example grant with multiple applications
+  enabledInProd: false
+  allowMultipleApplications: true
+  grantRedirectRules: null
+  permissions:
+    enforce: false
+pages:
+  - title: Example Grant With Multiple Applications
+    path: /start
+    components:
+      - name: startInfo
+        title: Html
+        type: Html
+        content: <p class="govuk-body">This grant allows a business to hold several applications at once. Each application is identified by the <code>?ref=</code> on the URL and keeps its own answers; opening the grant with no reference lists the business's applications. Give this application a name below to tell it apart from the others.</p>
+        id: ef9f8591-a45b-46de-87d3-0224b8e24757
+      - name: applicationName
+        title: Application name
+        type: TextField
+        hint: A short name to tell this application apart from any others you start for this grant, for example "North field" or "Barn conversion"
+        options:
+          required: true
+          customValidationMessages:
+            string.empty: Enter a name for this application
+        schema:
+          max: 100
+        shortDescription: Application name
+        id: f0e820d7-f2e1-4d19-9f4a-2d524820f609
+    id: 60816d4c-4b05-43a7-b89a-ef7f5601403c
+  - title: Check your answers
+    path: /summary
+    controller: CheckResponsesPageController
+    id: bb40a15e-7963-4934-a093-eb53d9ffd7ed
+  - title: Confirm and send
+    path: /declaration
+    controller: DeclarationPageController
+    id: ac559186-a506-4a14-8930-964157309df5
+  - title: Confirmation
+    path: /confirmation
+    controller: ConfirmationPageController
+    id: 78d0fdfb-c16d-4f33-b4ac-a93e0f810eee
+    config:
+      panelTitle: 'Application submitted'
+      panelText: 'Your reference number'
+    components:
+      - name: confirmationContent
+        id: 57631c9a-cc85-4e52-9fc0-ac299590d2de
+        type: Html
+        content: |
+          <p class="govuk-body">This is an example grant with no real next steps. Open the grant again without a reference to see this application alongside any others.</p>
+sections: []
+lists: []
+conditions: []
+schema: 2
