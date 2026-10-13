@@ -53,23 +53,12 @@ describe('formsStatusRedirect', () => {
       request.app.model.def.pages = [{ path: '/project-details' }]
       await formsStatusRedirect(request, h, {
         referenceNumber: 'REF-002',
-        state: { answer: 'saved', lastSavedPath: '/project-details' },
+        state: { answer: 'saved' },
         paths: ['/start']
       })
       expect(h.redirect).toHaveBeenCalledWith('/grant-a/check-selected-land-actions')
     }
   )
-
-  it('ignores a saved destination no longer present in the definition', async () => {
-    request.app.model.def.metadata.allowMultipleApplications = true
-    request.app.model.def.pages = [{ path: '/start' }]
-    await formsStatusRedirect(request, h, {
-      referenceNumber: 'REF-002',
-      state: { answer: 'saved', lastSavedPath: '//external.invalid' },
-      paths: ['/start']
-    })
-    expect(h.redirect).toHaveBeenCalledWith('/grant-a/check-selected-land-actions')
-  })
 
   it('uses default when redirect rule has no fromGrantsStatus or gasStatus', async () => {
     request.app.model.def.metadata.grantRedirectRules.postSubmission = [

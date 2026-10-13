@@ -1,8 +1,4 @@
-import {
-  getRoutingDefinition,
-  tryRoutingDefinition,
-  isUnscopedGrantRoot
-} from './common/helpers/definition/routing-definition.js'
+import { tryRoutingDefinition, isUnscopedGrantRoot } from './common/helpers/definition/routing-definition.js'
 import plugin from '@defra/forms-engine-plugin'
 import Bell from '@hapi/bell'
 import Cookie from '@hapi/cookie'
@@ -291,12 +287,13 @@ export async function createServer() {
   // reuse the single backend call. Unscoped root visits only prime the definition:
   // routing must decide whether to show the selector before acquiring an editing lock.
   server.ext('onPostAuth', async (request, h) => {
+    if (/** @type {{definitionOnly?: boolean}} */ (request.route.settings.app)?.definitionOnly === true) {
+      return h.continue
+    }
     const slug = request.params?.slug
     if (slug && request.auth?.isAuthenticated && request.auth?.credentials?.contactId) {
       try {
-        if (/** @type {{definitionOnly?: boolean}} */ (request.route.settings.app)?.definitionOnly === true) {
-          await getRoutingDefinition(request)
-        } else if (isUnscopedGrantRoot(request)) {
+        if (isUnscopedGrantRoot(request)) {
           const envelope = await tryRoutingDefinition(request)
           const definition = envelope?.definition
           if (!(
