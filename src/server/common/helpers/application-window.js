@@ -11,11 +11,11 @@ import { isWindowClosedMockEnabled } from './mock-overrides.js'
  * `metadata.applicationWindow.closesAt`. A grant with no `closesAt` is always open.
  * An unparseable `closesAt` is logged and treated as closed.
  * @param {import('@defra/forms-engine-plugin/engine/types.js').AnyRequest} request
- * @param {Date} [now]
  * @param {{name?: string, metadata?: {applicationWindow?: ApplicationWindow}}} [definition]
+ * @param {Date} [now]
  * @returns {boolean}
  */
-export function isApplicationWindowOpen(request, now = new Date(), definition = undefined) {
+export function isApplicationWindowOpen(request, definition = undefined, now = new Date()) {
   if (isWindowClosedMockEnabled(request)) {
     return false
   }

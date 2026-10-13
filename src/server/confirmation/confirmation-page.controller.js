@@ -237,7 +237,7 @@ export default class ConfirmationPageController extends StatusPageController {
           slug,
           h,
           components,
-          isApplicationWindowOpen(request, undefined, this.model.def)
+          isApplicationWindowOpen(request, this.model.def)
         )
       } catch (error) {
         return this.handleError(

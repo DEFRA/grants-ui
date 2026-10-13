@@ -64,13 +64,13 @@ describe('serviceRootRedirect', () => {
     async (enabled) => {
       request.app.model.def.metadata.allowMultipleApplications = enabled
       request.app.model.def.pages = [{ path: '/project-details' }]
-      getState.mockResolvedValue({ businessDetailsUpToDate: true, lastSavedPath: '/project-details' })
+      getState.mockResolvedValue({ businessDetailsUpToDate: true })
       await serviceRootRedirect(request, h)
       expect(h.redirect).toHaveBeenCalledWith('/woodland/tasks')
     }
   )
 
-  it('keeps the pre-submission gate ahead of the saved destination', async () => {
+  it('keeps the pre-submission gate ahead of the configured destination', async () => {
     request.app.model.def.metadata.allowMultipleApplications = true
     request.app.model.def.pages = [{ path: '/tasks' }]
     request.app.model.def.metadata.grantRedirectRules.preSubmission = [
@@ -80,7 +80,7 @@ describe('serviceRootRedirect', () => {
         requiresAnyItemWithNonEmptyKey: { collection: 'landParcels', key: 'actions' }
       }
     ]
-    getState.mockResolvedValue({ businessDetailsUpToDate: true, lastSavedPath: '/tasks', landParcels: {} })
+    getState.mockResolvedValue({ businessDetailsUpToDate: true, landParcels: {} })
     await serviceRootRedirect(request, h)
     expect(h.redirect).toHaveBeenCalledWith('/woodland/select-land-parcel')
   })
@@ -91,7 +91,7 @@ describe('serviceRootRedirect', () => {
     request.app.model.def.pages = [{ path: '/start' }, { path: '/project-details' }]
     request.headers = { 'sec-fetch-site': 'same-origin' }
     request.query = { ref: 'REF-A' }
-    getState.mockResolvedValue({ answer: 'saved', lastSavedPath: '/project-details' })
+    getState.mockResolvedValue({ answer: 'saved' })
     await serviceRootRedirect(request, h)
     expect(h.redirect).toHaveBeenCalledWith('/woodland/tasks?ref=REF-A')
   })

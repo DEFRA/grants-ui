@@ -12,7 +12,7 @@ export function buildApplicationsViewModel(request, definition, applications) {
     serviceUrl: `/${request.params.slug}`,
     supportEmail: definition.metadata?.supportEmail ?? 'ruralpayments@defra.gov.uk',
     slug: request.params.slug,
-    canStartApplication: isApplicationWindowOpen(request, undefined, definition),
+    canStartApplication: isApplicationWindowOpen(request, definition),
     applications: applications
       .filter(
         (application) => typeof application.applicationRef === 'string' && application.applicationRef.trim().length > 0

@@ -4,6 +4,11 @@ import { maskCrn } from '~/src/server/common/helpers/logging/mask-crn.js'
  * @type {Object<string, import('./definition.js').LogCodesDefinition>}
  */
 export const SYSTEM = {
+  ROUTING_DEFINITION_FALLBACK: {
+    level: 'warn',
+    messageFunc: (details) =>
+      `Unable to load routing definition; using state read: grantCode=${details.grantCode}, error=${details.errorMessage}`
+  },
   GENERIC_ERROR: {
     level: 'error',
     messageFunc: (messageOptions) => `An error occurred: ${messageOptions.errorMessage}`

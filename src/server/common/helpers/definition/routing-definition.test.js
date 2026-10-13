@@ -1,7 +1,10 @@
+import { log, LogCodes } from '../logging/log.js'
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { getRoutingDefinition, tryRoutingDefinition } from './routing-definition.js'
 import { rememberMultipleApplications, cachedMultipleApplications } from './multiple-applications-cache.js'
 import { fetchLatestDefinitionFromApi } from '../state/fetch-saved-state-helper.js'
+
+vi.mock('../logging/log.js', async (importOriginal) => ({ ...(await importOriginal()), log: vi.fn() }))
 
 vi.mock('../state/fetch-saved-state-helper.js', () => ({ fetchLatestDefinitionFromApi: vi.fn() }))
 vi.mock('../state/get-cache-key-helper.js', () => ({
@@ -66,6 +69,11 @@ describe('definition routing', () => {
     expect(await tryRoutingDefinition(request)).toBeNull()
     expect(await tryRoutingDefinition(request)).toBeNull()
     expect(fetchLatestDefinitionFromApi).toHaveBeenCalledTimes(1)
+    expect(log).toHaveBeenCalledExactlyOnceWith(
+      LogCodes.SYSTEM.ROUTING_DEFINITION_FALLBACK,
+      expect.objectContaining({ grantCode, errorMessage: 'Unable to load the grant definition' }),
+      request
+    )
     await expect(getRoutingDefinition(request)).rejects.toMatchObject({ details: { status: 502 } })
   })
 })

@@ -31,7 +31,7 @@ export async function loadDefinition(request) {
   return definition
 }
 
-export const ApplicationsController = {
+export class ApplicationsController {
   /** @param {Request} request @param {ResponseToolkit} h */
   async list(request, h) {
     const definition = await loadDefinition(request)
@@ -40,11 +40,12 @@ export const ApplicationsController = {
     const grantCode = getGrantCode(request)
     const applications = await listApplicationsFromApi({ crn, sbi, grantCode })
     return h.view('applications', buildApplicationsViewModel(request, definition, applications))
-  },
+  }
+
   /** @param {Request} request @param {ResponseToolkit} h */
   async start(request, h) {
     const definition = await loadDefinition(request)
-    if (!isApplicationWindowOpen(request, undefined, definition)) {
+    if (!isApplicationWindowOpen(request, definition)) {
       return h.redirect(`/${request.params.slug}/application-window-closed`).code(statusCodes.seeOther)
     }
     const reference = generateUniqueReference(/** @type {string} */ (definition.metadata?.referenceNumberPrefix ?? ''))
