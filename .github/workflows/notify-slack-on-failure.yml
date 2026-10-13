@@ -1,0 +1,112 @@
+name: Notify Slack on Workflow Failure
+
+# Posts an alert to #grants-ui-support when one of the workflows listed below
+# finishes with a failure. It runs after the watched workflow completes, so it
+# also catches failures that happen outside a step (runner errors, failed job
+# dependencies, reusable workflows, release PR creation on merge).
+#
+# Requires a SLACK_WEBHOOK_URL secret holding the channel's incoming webhook.
+#
+# To test the alert without breaking a pipeline, run this workflow manually
+# and pass the ID of any previous run (the number at the end of its URL).
+
+on:
+  workflow_run:
+    workflows:
+      - Publish
+      - Publish Hot Fix
+      - Check Blocked Dependencies
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'ID of a previous workflow run to report on'
+        required: true
+        type: string
+
+permissions:
+  actions: read
+
+jobs:
+  notify:
+    name: Post failure to Slack
+    if: github.event_name == 'workflow_dispatch' || contains(fromJSON('["failure", "timed_out"]'), github.event.workflow_run.conclusion)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Collect failed jobs and steps
+        id: failure
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const failedConclusions = ['failure', 'timed_out']
+            const { owner, repo } = context.repo
+            const isTest = context.eventName === 'workflow_dispatch'
+
+            let run = context.payload.workflow_run
+            if (!run) {
+              const response = await github.rest.actions.getWorkflowRun({
+                owner,
+                repo,
+                run_id: Number(context.payload.inputs.run_id)
+              })
+              run = response.data
+            }
+
+            // Use the workflow's own name: run.name holds the custom run-name in
+            // repos that set one, which is the commit message in the config repos.
+            const workflow = context.payload.workflow
+              || (await github.rest.actions.getWorkflow({ owner, repo, workflow_id: run.workflow_id })).data
+
+            const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
+              owner,
+              repo,
+              run_id: run.id,
+              filter: 'latest',
+              per_page: 100
+            })
+
+            const failedLines = jobs
+              .filter((job) => failedConclusions.includes(job.conclusion))
+              .map((job) => {
+                const step = (job.steps || []).find((s) => failedConclusions.includes(s.conclusion))
+                const label = step ? `${job.name} › ${step.name}` : job.name
+                return `• <${job.html_url}|${label}>`
+              })
+
+            if (failedLines.length === 0) {
+              failedLines.push('• No failed step recorded. The run may have failed before any step started.')
+            }
+
+            const repoUrl = `${context.serverUrl}/${owner}/${repo}`
+            const shortSha = run.head_sha.slice(0, 7)
+            const commitTitle = (run.head_commit?.message || '').split('\n')[0]
+            const actor = run.triggering_actor?.login || run.actor?.login || 'unknown'
+
+            const title = isTest
+              ? `:test_tube: Test alert for ${owner}/${repo} (run ${run.run_number} was ${run.conclusion})`
+              : `:rotating_light: ${owner}/${repo}: ${workflow.name} failed`
+
+            const details = [
+              `*Repository:* <${repoUrl}|${owner}/${repo}>`,
+              `*Workflow:* <${run.html_url}|${workflow.name} #${run.run_number}> (${run.event} on ${run.head_branch})`,
+              `*Commit:* <${repoUrl}/commit/${run.head_sha}|${shortSha}> ${commitTitle}`,
+              `*Triggered by:* ${actor}`,
+              '*Failed:*',
+              ...failedLines
+            ].join('\n')
+
+            core.setOutput('title', title)
+            core.setOutput('details', details)
+            core.setOutput('run_url', run.html_url)
+
+      - name: Send Slack alert
+        uses: ravsamhq/notify-slack-action@be814b201e233b2dc673608aa46e5447c8ab13f2 # v2.5.0
+        with:
+          status: failure
+          notify_when: failure
+          notification_title: ${{ steps.failure.outputs.title }}
+          message_format: ${{ steps.failure.outputs.details }}
+          footer: '<${{ steps.failure.outputs.run_url }}|View run>'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
