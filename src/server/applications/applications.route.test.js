@@ -157,7 +157,7 @@ it('does not manufacture form state or a form model when displaying the selector
   await listApplicationsRoute.handler(request, h)
   expect(request.app.model).toBeUndefined()
   expect(request.app.stateWithDefinition).toBeUndefined()
-  expect(isApplicationWindowOpen).toHaveBeenCalledWith(request, undefined, definition)
+  expect(isApplicationWindowOpen).toHaveBeenCalledWith(request, definition)
 })
 
 it('does not create links for application records with missing references', async () => {

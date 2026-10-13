@@ -1,3 +1,4 @@
+import { log, LogCodes } from '../logging/log.js'
 import { cachedMultipleApplications, rememberMultipleApplications } from './multiple-applications-cache.js'
 import { getCacheKey, getReferenceNumber } from '../state/get-cache-key-helper.js'
 import { fetchLatestDefinitionFromApi } from '../state/fetch-saved-state-helper.js'
@@ -24,9 +25,10 @@ export function isUnscopedGrantRoot(request) {
 export function getRoutingDefinition(request) {
   const app = /** @type {{ routingDefinition?: Promise<StateWithDefinitionEnvelope | null> }} */ (request.app)
   if (!app.routingDefinition) {
-    app.routingDefinition = fetchLatestDefinitionFromApi(getCacheKey(request).grantCode)
+    const { grantCode } = getCacheKey(request)
+    app.routingDefinition = fetchLatestDefinitionFromApi(grantCode)
       .then((definition) => {
-        rememberMultipleApplications(getCacheKey(request).grantCode, definition)
+        rememberMultipleApplications(grantCode, definition)
         return definition ? { definition, state: null, upgraded: false } : null
       })
       .catch((error) => {
@@ -56,8 +58,26 @@ export async function tryRoutingDefinition(request) {
   }
   try {
     return await getRoutingDefinition(request)
-  } catch {
+  } catch (error) {
+    logRoutingFallback(request, error)
     // The normal state/definition endpoint remains the authoritative fallback.
     return null
   }
+}
+
+/** @param {AnyRequest} request @param {unknown} error */
+function logRoutingFallback(request, error) {
+  const app = /** @type {{routingDefinitionFallbackLogged?: boolean}} */ (request.app)
+  if (app.routingDefinitionFallbackLogged) {
+    return
+  }
+  app.routingDefinitionFallbackLogged = true
+  log(
+    LogCodes.SYSTEM.ROUTING_DEFINITION_FALLBACK,
+    {
+      grantCode: getCacheKey(request).grantCode,
+      errorMessage: error instanceof Error ? error.message : String(error)
+    },
+    request
+  )
 }

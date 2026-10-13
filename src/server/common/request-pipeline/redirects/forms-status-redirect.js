@@ -91,7 +91,6 @@ export function hasMeaningfulState(state, additionalBaseKeys = new Set()) {
     '$$__referenceNumber',
     'applicationStatus',
     'additionalAnswers',
-    'lastSavedPath',
     ...additionalBaseKeys
   ])
 
