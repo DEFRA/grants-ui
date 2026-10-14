@@ -6,6 +6,7 @@ import maplibreProvider from '@defra/interactive-map/providers/maplibre'
 // @ts-ignore — no type declarations shipped with this package
 import createInteractPlugin from '@defra/interactive-map/plugins/interact'
 import { getMapStyle, withParcelHitTolerance } from './map-helpers.js'
+import { attachWheelZoom } from './parcel-map-wheel-zoom.js'
 import {
   MAP_LABEL,
   PARCEL_ID_PROPERTY,
@@ -79,7 +80,7 @@ export function initMap(host, { multiSelect, skeleton, isLoading, cleanups }) {
     center: MAP_DEFAULT_CENTER,
     zoom: MAP_DEFAULT_ZOOM,
     minZoom: MAP_MIN_ZOOM,
-    // Let wheel and trackpad scrolling move the page while the pointer is over the map.
+    // Wheel zoom stays disabled until the modifier gate is attached on map:ready.
     scrollZoom: false,
     urlPosition: 'none'
   })
@@ -100,6 +101,7 @@ export function initMap(host, { multiSelect, skeleton, isLoading, cleanups }) {
       let mlInstance = null
       mapInstance.on('map:ready', (/** @type {{ map: MLMap }} */ { map: m }) => {
         mlInstance = m
+        attachWheelZoom(m, cleanups)
         const onError = (/** @type {unknown} */ err) => {
           console.error('[parcel-map] maplibre error', err)
           if (isLoading()) {

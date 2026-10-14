@@ -7,3 +7,23 @@
 .map-select-parcel .govuk-summary-list__row[hidden] {
   display: none;
 }
+
+.parcel-map-wheel-hint {
+  @include govuk-font(19);
+
+  position: absolute;
+  z-index: 2;
+  bottom: 48px;
+  left: 50%;
+  width: max-content;
+  max-width: calc(100% - 60px);
+  padding: 10px 16px;
+  transform: translateX(-50%);
+  border: 2px solid govuk-colour('blue');
+  border-left-width: 5px;
+  color: govuk-colour('black');
+  background: govuk-colour('white');
+  box-shadow: 0 3px 8px rgb(11, 12, 12, 0.2);
+  text-align: center;
+  pointer-events: none;
+}
