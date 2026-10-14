@@ -56,6 +56,12 @@
   },
   {
     "section": "check-your-eligibility",
+    "slug": "what-landlords-need-to-do",
+    "name": "What you need to do",
+    "type": "submitOnly"
+  },
+  {
+    "section": "check-your-eligibility",
     "slug": "how-many-businesses-will-use-the-water",
     "name": "How many businesses will use the water - Five or more",
     "type": "radios",
