@@ -89,7 +89,7 @@ export default class TotalEstimatedCostController extends withDerivedState(Quest
     }
 
     let maxGrantReached = false
-    const MAX_GRANT = 350000
+    const MAX_GRANT = 300000
     if (estimatedMaxGrant > MAX_GRANT) {
       maxGrantReached = true
       estimatedMaxGrant = MAX_GRANT
