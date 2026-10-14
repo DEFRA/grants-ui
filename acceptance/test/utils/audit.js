@@ -59,10 +59,13 @@ export const deleteScenarioAuditQueue = async ({ queueUrl, subscriptionArn }) =>
  * Polls the given queue until a matching audit event arrives or the timeout
  * elapses.
  * @param {string} queueUrl - URL of the queue to poll (a scenario's own dedicated queue).
- * @param {{ entity: string, action: string, entityId: string, crn?: string, sbi?: string, reason?: string, grant?: string, answers?: Record<string, unknown> }} criteria - crn and sbi must be provided together
+ * @param {{ entity: string, action: string, entityId: string, crn?: string, sbi?: string, reason?: string, grant?: string, referenceNumber?: RegExp, answers?: Record<string, unknown> }} criteria - crn and sbi must be provided together
  * @returns {Promise<Record<string, unknown> | null>}
  */
-export const waitForAuditEvent = async (queueUrl, { entity, action, entityId, crn, sbi, reason, grant, answers }) => {
+export const waitForAuditEvent = async (
+  queueUrl,
+  { entity, action, entityId, crn, sbi, reason, grant, referenceNumber, answers }
+) => {
   const deadline = Date.now() + POLL_TIMEOUT_MS
   const seen = new Set()
 
@@ -90,6 +93,7 @@ export const waitForAuditEvent = async (queueUrl, { entity, action, entityId, cr
           (crn === undefined || (body.audit.accounts.crn === crn && body.audit.accounts.sbi === sbi)) &&
           (reason === undefined || body.audit.details.reason === reason) &&
           (grant === undefined || body.audit.details.grant === grant) &&
+          (referenceNumber === undefined || referenceNumber.test(body.audit.details.referenceNumber ?? '')) &&
           (answers === undefined ||
             Object.entries(answers).every(([key, value]) => body.audit.details.answers?.[key] === value))
         ) {

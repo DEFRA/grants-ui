@@ -28,6 +28,7 @@ async function assertNavigateAuditEvent(world, { grantCode, entityId, crn, sbi, 
     crn,
     sbi,
     grant: grantCode,
+    referenceNumber: /^[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+$/,
     answers
   })
   expect(event).not.toBeNull()
