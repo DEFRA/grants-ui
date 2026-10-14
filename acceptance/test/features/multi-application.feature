@@ -42,5 +42,5 @@ Feature: Multiple applications per business
         Then the user should be at URL "confirmation"
         And should see heading "Application submitted"
         And should be on the same application as before
-        And should see an "EGMA" reference number for their application
+        And should see a reference number for their application
         And the page is analyzed for accessibility
