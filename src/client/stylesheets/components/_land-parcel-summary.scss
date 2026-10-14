@@ -7,8 +7,39 @@
   color: $govuk-secondary-text-colour;
 }
 
-.land-parcel-summary__table .govuk-table__cell {
-  white-space: nowrap;
+.land-parcel-summary__table {
+  // Each parcel has its own table; content must not determine column boundaries.
+  table-layout: fixed;
+
+  .govuk-table__header,
+  .govuk-table__cell {
+    overflow-wrap: anywhere;
+  }
+}
+
+.land-parcel-summary__column--action {
+  width: 45%;
+
+  @include govuk-media-query($from: tablet) {
+    width: 50%;
+  }
+}
+
+.land-parcel-summary__column--action-read-only {
+  width: 60%;
+}
+
+.land-parcel-summary__column--quantity,
+.land-parcel-summary__column--payment {
+  width: 20%;
+}
+
+.land-parcel-summary__column--change {
+  width: 15%;
+
+  @include govuk-media-query($from: tablet) {
+    width: 10%;
+  }
 }
 
 .land-parcel-summary-card__subtotal .govuk-table__cell,
