@@ -1,6 +1,6 @@
 Feature: Allowlisting
 
-    Scenario: Attempt to access an allowlist-enabled journey with allowlisted and non-allowlisted CRNs and SBIs
+    Scenario: Attempt to access an allowlist-enabled journey with allowlisted and non-allowlisted SBIs
         Given there is no application data for SBI "108633093" and grant "example-whitelist"
         And there is no application data for SBI "115425713" and grant "example-whitelist"
 

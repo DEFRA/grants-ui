@@ -279,7 +279,6 @@ if (url.pathname.endsWith('/tags')) {
       expect(Object.keys(allowlist)).toEqual(['local'])
       if (grant === 'example-whitelist') {
         expect(allowlist.local.allowAll).not.toBe(true)
-        expect(allowlist.local.crns.length).toBeGreaterThan(0)
         expect(allowlist.local.sbis.length).toBeGreaterThan(0)
       } else {
         expect(allowlist).toEqual({ local: { allowAll: true } })
