@@ -44,3 +44,9 @@ Feature: Multiple applications per business
         And should be on the same application as before
         And should see a reference number for their application
         And the page is analyzed for accessibility
+
+        # the grant root with no reference still opens the business's only application, now submitted;
+        # the applications selector is only shown once a business holds two or more
+        When the user navigates to "/example-grant-with-multi-applications"
+        Then the user should be at URL "confirmation"
+        And should be on the same application as before
