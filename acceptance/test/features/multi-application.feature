@@ -45,8 +45,28 @@ Feature: Multiple applications per business
         And should see a reference number for their application
         And the page is analyzed for accessibility
 
-        # the grant root with no reference still opens the business's only application, now submitted;
-        # the applications selector is only shown once a business holds two or more
+        # the grant root with no reference still opens the business's only application, now submitted
         When the user navigates to "/example-grant-with-multi-applications"
         Then the user should be at URL "confirmation"
+        And should be on the same application as before
+
+        # a second application started from the confirmation page gets its own reference
+        When the user clicks button "Start a new application"
+        Then the user should be at URL "start"
+        And should be on a different application from before
+
+        # with two applications, the grant root now lists them
+        When the user navigates to "/example-grant-with-multi-applications"
+        Then the user should be at URL "applications"
+        And should see heading "Your Example Grant With Multiple Applications applications"
+        And should see 2 applications listed
+        And should see the following applications listed
+            | APPLICATION | STATUS    | ACTION               |
+            | previous    | Submitted | View application     |
+            | current     | Draft     | Continue application |
+        And the page is analyzed for accessibility
+
+        # each application opens under its own reference
+        When the user clicks on "Continue application"
+        Then the user should be at URL "start"
         And should be on the same application as before
