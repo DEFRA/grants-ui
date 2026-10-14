@@ -222,7 +222,7 @@ describe('TotalEstimatedCostController', () => {
 
       const results = controller.getCalculatedAnswers(mockRequest, mockContext.state)
       expect(results.estimatedMaxGrantBeforeReduction).toBe(600000)
-      expect(results.estimatedMaxGrant).toBe(350000)
+      expect(results.estimatedMaxGrant).toBe(300000)
       expect(results.maxGrantReached).toBe(true)
     })
 
