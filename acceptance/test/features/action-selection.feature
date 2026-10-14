@@ -310,7 +310,7 @@ Feature: Action Selection
         And should see heading "Review land parcels and actions"
         And should see the following parcel summary cards
             | PARCEL      | ACTION                                                                 | QUANTITY | YEARLY PAYMENT |
-            | SD7323 4596 | Maintain weatherproof traditional farm or forestry buildings (HEF1_26) | 10 sqm   | £50.00         |
+            | SD7323 4596 | Maintain weatherproof traditional farm or forestry buildings (HEF1_26) | 10 m²    | £50.00         |
             |             | Manage ponds (WBD1_26)                                                 | 2 ponds  | £514.00        |
             |             | Subtotal                                                               |          | £564.00        |
         And should see total yearly payment "£564.00"
