@@ -11,16 +11,8 @@ const MAPLIBRE_WHEEL_STEP = 4.000244140625
 // A fresh document resets guidance; no browser/session storage is needed.
 const pageGuidance = { usedModifier: false }
 
-/**
- * Require Ctrl/Cmd for mouse-wheel zoom or two-finger touchpad panning,
- * leaving ordinary scrolling to the page. Browser wheel events have no device
- * flag, so touchpad detection uses pixel deltas and continuity within a gesture.
- * Keep MapLibre's native zoom handling, including trackpad pinch zoom.
- * @param {import('maplibre-gl').Map} ml
- * @param {Array<() => void>} cleanups
- */
-export function attachWheelZoom(ml, cleanups) {
-  const container = ml.getCanvasContainer()
+/** @param {HTMLElement} container */
+function createWheelHint(container) {
   const hint = document.createElement('div')
   hint.className = 'parcel-map-wheel-hint'
   hint.hidden = true
@@ -28,20 +20,6 @@ export function attachWheelZoom(ml, cleanups) {
   hint.setAttribute('aria-hidden', 'true')
   const modifier = /Mac/i.test(navigator.platform || navigator.userAgent) ? 'Cmd' : 'Ctrl'
   container.appendChild(hint)
-
-  let ctrlHeld = false
-  let touchpadGesture = false
-  let lastScrollTime = -Infinity
-
-  /** @param {KeyboardEvent} event */
-  const onKeyChange = (event) => {
-    ctrlHeld = event.ctrlKey
-  }
-  const resetGesture = () => {
-    ctrlHeld = false
-    touchpadGesture = false
-    lastScrollTime = -Infinity
-  }
 
   /** @type {ReturnType<typeof globalThis.setTimeout> | undefined} */
   let hintTimeout
@@ -53,7 +31,7 @@ export function attachWheelZoom(ml, cleanups) {
     pageGuidance.usedModifier = true
     hideHint()
   }
-  const showHint = () => {
+  const showHint = (touchpadGesture) => {
     if (pageGuidance.usedModifier) {
       return
     }
@@ -66,8 +44,79 @@ export function attachWheelZoom(ml, cleanups) {
     hintTimeout = globalThis.setTimeout(hideHint, HINT_DURATION_MS)
   }
 
+  const remove = () => {
+    hideHint()
+    hint.remove()
+  }
+  return { hide: hideHint, show: showHint, learnModifier, remove }
+}
+
+/** @param {WheelEvent} event */
+function isTouchpadScroll(event, deltaMode, deltaX, deltaY) {
+  const horizontalTouchpad = deltaX !== 0 && !event.shiftKey && (deltaMode === 0 || !Number.isInteger(event.deltaX))
+  const fineVerticalScroll = deltaY !== 0 && Math.abs(deltaY) < TOUCHPAD_MAX_INITIAL_DELTA_PX
+  return horizontalTouchpad || fineVerticalScroll
+}
+
+function createScrollGesture() {
+  let ctrlHeld = false
+  let touchpadGesture = false
+  let lastScrollTime = -Infinity
+
+  /** @param {KeyboardEvent} event */
+  const onKeyChange = (event) => {
+    ctrlHeld = event.ctrlKey
+  }
+  const reset = () => {
+    ctrlHeld = false
+    touchpadGesture = false
+    lastScrollTime = -Infinity
+  }
+  // Browsers synthesise Ctrl + wheel for pinch, even on Mac. A physical
+  // Ctrl keypress distinguishes Ctrl + two-finger scrolling from that pinch.
   /** @param {WheelEvent} event */
-  const onWheel = (event) => {
+  const isPinch = (event) => event.ctrlKey && !ctrlHeld
+
+  /** @param {WheelEvent} event */
+  const classify = (event, deltaMode, deltaX, deltaY) => {
+    if (isPinch(event)) {
+      return touchpadGesture
+    }
+    const now = Date.now()
+    if (now - lastScrollTime > SCROLL_GESTURE_GAP_MS) {
+      touchpadGesture = false
+    }
+    lastScrollTime = now
+
+    const mouseWheel = deltaMode === 2 || (deltaY !== 0 && deltaY % MAPLIBRE_WHEEL_STEP === 0)
+    if (mouseWheel) {
+      touchpadGesture = false
+      return touchpadGesture
+    }
+    if (isTouchpadScroll(event, deltaMode, deltaX, deltaY)) {
+      // Retain the classification when the same gesture speeds up or has
+      // larger momentum deltas; do not switch from panning to zoom mid-gesture.
+      touchpadGesture = true
+    }
+    return touchpadGesture
+  }
+
+  return { onKeyChange, reset, isPinch, classify }
+}
+
+/** @param {WheelEvent} event */
+function shouldZoom(event, pinch, touchpadGesture) {
+  return (event.ctrlKey || event.metaKey) && (pinch || !touchpadGesture) && event.deltaY !== 0
+}
+
+/**
+ * @param {import('maplibre-gl').Map} ml
+ * @param {ReturnType<typeof createScrollGesture>} gesture
+ * @param {ReturnType<typeof createWheelHint>} hint
+ */
+function createWheelHandler(ml, gesture, hint) {
+  /** @param {WheelEvent} event */
+  return (event) => {
     // Read the units first: some browsers adapt the deltas when deltaMode is read.
     const deltaMode = event.deltaMode
     if (event.deltaX === 0 && event.deltaY === 0) {
@@ -80,36 +129,16 @@ export function attachWheelZoom(ml, cleanups) {
     const deltaX = event.deltaX * scale
     const deltaY = event.deltaY * scale
 
-    // Browsers synthesise Ctrl + wheel for pinch, even on Mac. A physical
-    // Ctrl keypress distinguishes Ctrl + two-finger scrolling from that pinch.
-    const pinch = event.ctrlKey && !ctrlHeld
-    if (!pinch) {
-      const now = Date.now()
-      if (now - lastScrollTime > SCROLL_GESTURE_GAP_MS) {
-        touchpadGesture = false
-      }
-      lastScrollTime = now
+    const pinch = gesture.isPinch(event)
+    const touchpadGesture = gesture.classify(event, deltaMode, deltaX, deltaY)
 
-      const mouseWheel = deltaMode === 2 || (deltaY !== 0 && deltaY % MAPLIBRE_WHEEL_STEP === 0)
-      if (mouseWheel) {
-        touchpadGesture = false
-      } else if (
-        (deltaX !== 0 && !event.shiftKey && (deltaMode === 0 || !Number.isInteger(event.deltaX))) ||
-        (deltaY !== 0 && Math.abs(deltaY) < TOUCHPAD_MAX_INITIAL_DELTA_PX)
-      ) {
-        // Retain the classification when the same gesture speeds up or has
-        // larger momentum deltas; do not switch from panning to zoom mid-gesture.
-        touchpadGesture = true
-      }
-    }
-
-    if ((event.ctrlKey || event.metaKey) && (pinch || !touchpadGesture) && event.deltaY !== 0) {
+    if (shouldZoom(event, pinch, touchpadGesture)) {
       ml.scrollZoom.enable()
       if (!pinch) {
-        learnModifier()
+        hint.learnModifier()
       } else {
         // Pinch zoom does not demonstrate knowledge of modifier scrolling.
-        hideHint()
+        hint.hide()
       }
       return
     }
@@ -118,29 +147,43 @@ export function attachWheelZoom(ml, cleanups) {
     if ((event.ctrlKey || event.metaKey) && touchpadGesture) {
       event.preventDefault()
       ml.panBy([deltaX, deltaY], { duration: 0 })
-      learnModifier()
-    } else if (event.deltaY !== 0 || event.deltaX !== 0) {
-      showHint()
+      hint.learnModifier()
+    } else {
+      hint.show(touchpadGesture)
     }
   }
+}
+
+/**
+ * Require Ctrl/Cmd for mouse-wheel zoom or two-finger touchpad panning,
+ * leaving ordinary scrolling to the page. Browser wheel events have no device
+ * flag, so touchpad detection uses pixel deltas and continuity within a gesture.
+ * Keep MapLibre's native zoom handling, including trackpad pinch zoom.
+ * @param {import('maplibre-gl').Map} ml
+ * @param {Array<() => void>} cleanups
+ */
+export function attachWheelZoom(ml, cleanups) {
+  const container = ml.getCanvasContainer()
+  const hint = createWheelHint(container)
+  const gesture = createScrollGesture()
+  const onWheel = createWheelHandler(ml, gesture, hint)
 
   // Run before MapLibre's bubbling wheel listener. Only modifier panning or
   // native zoom cancels scrolling; ordinary events keep their default action.
   ml.scrollZoom.disable()
   container.addEventListener('wheel', onWheel, { capture: true, passive: false })
-  container.addEventListener('mouseleave', hideHint)
-  window.addEventListener('keydown', onKeyChange, true)
-  window.addEventListener('keyup', onKeyChange, true)
-  window.addEventListener('blur', resetGesture)
+  container.addEventListener('mouseleave', hint.hide)
+  window.addEventListener('keydown', gesture.onKeyChange, true)
+  window.addEventListener('keyup', gesture.onKeyChange, true)
+  window.addEventListener('blur', gesture.reset)
 
   cleanups.push(() => {
     container.removeEventListener('wheel', onWheel, true)
-    container.removeEventListener('mouseleave', hideHint)
-    window.removeEventListener('keydown', onKeyChange, true)
-    window.removeEventListener('keyup', onKeyChange, true)
-    window.removeEventListener('blur', resetGesture)
+    container.removeEventListener('mouseleave', hint.hide)
+    window.removeEventListener('keydown', gesture.onKeyChange, true)
+    window.removeEventListener('keyup', gesture.onKeyChange, true)
+    window.removeEventListener('blur', gesture.reset)
     ml.scrollZoom.disable()
-    hideHint()
     hint.remove()
   })
 }
