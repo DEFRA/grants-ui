@@ -72,47 +72,6 @@ Then('(the user )should (still )be (back )at URL {string}', async function (expe
   await expect(this.page).toHaveURL((url) => pathPattern.test(url.pathname))
 })
 
-// Multi-application grants name the application on the URL (`?ref=`).
-const applicationReferenceInUrl = (page) => new URL(page.url()).searchParams.get('ref')
-
-Then('(the user )should see an application reference in the URL', async function () {
-  const ref = applicationReferenceInUrl(this.page)
-  expect(ref).toMatch(/^[A-Z0-9-]+$/)
-  this.applicationReference = ref
-})
-
-Then('(the user )should see no application reference in the URL', async function () {
-  expect(applicationReferenceInUrl(this.page)).toBeNull()
-})
-
-Then('(the user )should be on a different application from before', async function () {
-  const ref = applicationReferenceInUrl(this.page)
-  expect(ref).toMatch(/^[A-Z0-9-]+$/)
-  expect(ref).not.toBe(this.applicationReference)
-  this.previousApplicationReference = this.applicationReference
-  this.applicationReference = ref
-})
-
-Then('(the user )should see {int} application(s) listed', async function (count) {
-  await expect(this.page.locator('//table//tbody/tr')).toHaveCount(count)
-})
-
-Then('(the user )should see the following applications listed', async function (dataTable) {
-  for (const row of dataTable.hashes()) {
-    const reference = { current: this.applicationReference, previous: this.previousApplicationReference }[
-      row.APPLICATION
-    ]
-    const tableRow = this.page.locator(`//table//tbody/tr[th[contains(normalize-space(.), '${reference}')]]`)
-    await expect(tableRow).toContainText(row.STATUS)
-    await expect(tableRow.getByRole('link')).toContainText(row.ACTION)
-  }
-})
-
-Then('(the user )should be on the same application as before', async function () {
-  expect(this.applicationReference).toBeDefined()
-  expect(applicationReferenceInUrl(this.page)).toBe(this.applicationReference)
-})
-
 Then('(the user )should see the following answers', async function (dataTable) {
   const expectedAnswers = []
   let summaryAnswer = {}
