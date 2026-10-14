@@ -12,7 +12,7 @@ Feature: Multiple applications per business
         Given the user navigates to "/example-grant-with-multi-applications"
         And logs in as CRN "1100949763"
         Then the user should be at URL "start"
-        And should see heading "Example Grant With Multi Applications"
+        And should see heading "Example Grant With Multiple Applications"
         And should see no application reference in the URL
         And the page is analyzed for accessibility
         When the user enters "North field" for "Application name"
