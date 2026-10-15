@@ -1,3 +1,4 @@
+@runme
 Feature: Action Selection
 
     Scenario: User can add and remove land parcels and select actions
@@ -25,7 +26,7 @@ Feature: Action Selection
         And should see the following actions with guidance
             | ACTION   | DESCRIPTION                                              | GUIDANCE                                                         | URL |
             | CSAM3_26 | Herbal leys: CSAM3_26                                    | Payment rate per year: £224/ha                                   | Yes |
-            |          |                                                          | 0.276 hectares available                                         |     |
+            |          |                                                          | 0.2760 hectares available                                        |     |
             | CLIG3_26 | Manage grassland with very low nutrient inputs: CLIG3_26 | Payment rate per year: £151/ha                                   | Yes |
             |          |                                                          | 0.2760 hectares available                                        |     |
             |          |                                                          | This action will use all the available area on this land parcel. |     |
@@ -406,9 +407,9 @@ Feature: Action Selection
         And should see the following actions with guidance
             | ACTION   | DESCRIPTION                                              | GUIDANCE                       | URL |
             | CSAM3_26 | Herbal leys: CSAM3_26                                    | Payment rate per year: £224/ha | Yes |
-            |          |                                                          | 108.86 hectares available      |     |
+            |          |                                                          | 108.8600 hectares available    |     |
             | CLIG3_26 | Manage grassland with very low nutrient inputs: CLIG3_26 | Payment rate per year: £151/ha | Yes |
             |          |                                                          | HEFER required                 |     |
             |          |                                                          | 108.8600 hectares available    |     |
             | SCR2_26  | Manage scrub and open habitat mosaics: SCR2_26           | Payment rate per year: £350/ha | Yes |
-            |          |                                                          | 108.86 hectares available      |     |
+            |          |                                                          | 108.8600 hectares available    |     |
