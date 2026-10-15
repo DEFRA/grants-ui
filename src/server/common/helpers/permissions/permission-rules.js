@@ -1,5 +1,5 @@
 /**
- * @typedef {'VIEW' | 'AMEND' | 'SUBMIT'} PermissionLevel
+ * @typedef {'VIEW' | 'AMEND' | 'SUBMIT' | 'MAKE_LEGAL_CHANGES' | 'FULL_PERMISSION'} PermissionLevel
  */
 /**
  * @typedef {'view' | 'amend' | 'submit'} PermissionAction
@@ -27,6 +27,15 @@ export const permissionRules = /** @type {const} */ {
       view: ['VIEW', 'AMEND', 'SUBMIT'],
       amend: ['AMEND', 'SUBMIT'],
       submit: ['SUBMIT']
+    }
+  },
+  businessDetails: {
+    permissionGroup: 'BUSINESS_DETAILS',
+
+    permissions: {
+      view: ['MAKE_LEGAL_CHANGES', 'FULL_PERMISSION'],
+      amend: ['MAKE_LEGAL_CHANGES', 'FULL_PERMISSION'],
+      submit: ['MAKE_LEGAL_CHANGES', 'FULL_PERMISSION']
     }
   }
 }
