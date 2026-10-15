@@ -485,7 +485,7 @@ Grant journeys support fine-grained permission enforcement configured in the for
 metadata:
   permissions:
     enforce: true # Enable or disable permission checks for the grant
-    resource: csApplications # Default grant-wide resource ('csApplications' or 'csAgreements')
+    resource: csApplications # Default grant-wide resource ('csApplications', 'csAgreements', or 'businessDetails')
     pageAccess:
       default: amend # Default required permission for pages ('view', 'amend', or 'submit')
       rules:
@@ -522,6 +522,19 @@ metadata:
         returnUrl: /claim-summary
         returnText: Return to summary
 ```
+
+To require business details permissions across every page, use a single default without page-specific rules:
+
+```yaml
+metadata:
+  permissions:
+    enforce: true
+    resource: businessDetails
+    pageAccess:
+      default: submit
+```
+
+Both `MAKE_LEGAL_CHANGES` and `FULL_PERMISSION` levels from DAL satisfy this default.
 
 #### Mixed Journey Resource Gating
 
