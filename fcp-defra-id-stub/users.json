@@ -462,6 +462,42 @@
       ]
     },
     {
+      "crn": 1062311188,
+      "firstName": "James",
+      "lastName": "FullPermission-BusinessDetails",
+      "organisations": [
+        {
+          "organisationId": "32",
+          "sbi": 106238911,
+          "name": "Test Farm"
+        }
+      ]
+    },
+    {
+      "crn": 1062311189,
+      "firstName": "James",
+      "lastName": "MakeLegalChanges-BusinessDetails",
+      "organisations": [
+        {
+          "organisationId": "32",
+          "sbi": 106238911,
+          "name": "Test Farm"
+        }
+      ]
+    },
+    {
+      "crn": 1062311190,
+      "firstName": "James",
+      "lastName": "NoPerms-BusinessDetails",
+      "organisations": [
+        {
+          "organisationId": "32",
+          "sbi": 106238911,
+          "name": "Test Farm"
+        }
+      ]
+    },
+    {
       "crn": 1102838829,
       "firstName": "Edward",
       "lastName": "Jones",
