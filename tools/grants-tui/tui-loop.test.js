@@ -33,7 +33,8 @@ vi.mock('./docker.js', async (importOriginal) => ({
   ...(await importOriginal()),
   getRunningComposeFiles: vi.fn(),
   getRunningServices: vi.fn(),
-  getRunningAppBaseUrl: vi.fn(() => 'https://test.example.ts.net')
+  getRunningAppBaseUrl: vi.fn(() => 'https://test.example.ts.net'),
+  journeyBaseUrl: vi.fn(() => 'http://localhost:3000')
 }))
 vi.mock('./gas.js', async (importOriginal) => ({ ...(await importOriginal()), getGasStatus: vi.fn() }))
 vi.mock('./actions.js', async (importOriginal) => ({
