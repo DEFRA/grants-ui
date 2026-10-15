@@ -132,17 +132,17 @@ describe('parcelsHandler', () => {
         area: { value: 2.5 },
         actions: fields.includes('actions')
           ? [
-              { code: 'CLIG3', availability: { value: 0, unit: 'ha' } },
-              { code: 'CSAM3', availability: { value: 0, unit: 'ha' } },
-              { code: 'SCR2', availability: { value: 2, unit: 'ha' } },
-              { code: 'WBD1', availability: { value: 3, unit: 'ha' } }
+              { code: 'CLIG3', isAvailable: true, availability: { value: 0, unit: 'ha' } },
+              { code: 'CSAM3', isAvailable: false, availability: { value: 2, unit: 'ha' } },
+              { code: 'SCR2', isAvailable: false, availability: { value: 2, unit: 'ha' } },
+              { code: 'WBD1', isAvailable: true, availability: { value: null, unit: 'count' } }
             ]
           : []
       }
     ])
     fetchParcelTileLocation.mockResolvedValue(null)
     const request = makeRequest()
-    request.query.enabledLandActions = ['CLIG3', 'CSAM3', 'SCR2']
+    request.query.enabledLandActions = ['CLIG3', 'CSAM3', 'SCR2', 'WBD1']
     const h = makeH()
 
     await parcelsHandler(request, h)
@@ -150,7 +150,7 @@ describe('parcelsHandler', () => {
     expect(fetchParcels).toHaveBeenCalledWith(request, expectedUserContext, enabled ? ['size', 'actions'] : ['size'])
 
     const [{ features }] = h.response.mock.calls[0]
-    expect(features[0].properties.actionCount).toBe(enabled ? 1 : undefined)
+    expect(features[0].properties.actionCount).toBe(enabled ? 2 : undefined)
   })
 
   it('continues with null bbox when fetchParcelTileLocation returns null', async () => {

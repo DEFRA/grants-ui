@@ -6,6 +6,7 @@ import { formatParcelReference, parseLandParcel, stringifyParcel } from '~/src/s
 
 export const CMOR1 = {
   code: 'CMOR1',
+  isAvailable: true,
   description: 'Assess moorland and produce a written record: CMOR1',
   availability: { unit: 'ha', value: 10 },
   ratePerUnitGbp: 16,
@@ -14,6 +15,7 @@ export const CMOR1 = {
 
 export const UPL1 = {
   code: 'UPL1',
+  isAvailable: true,
   description: 'Moderate livestock grazing on moorland: UPL1',
   availability: { unit: 'ha', value: 5 },
   ratePerUnitGbp: 33
@@ -21,6 +23,7 @@ export const UPL1 = {
 
 export const UPL2 = {
   code: 'UPL2',
+  isAvailable: true,
   description: 'Heavy livestock grazing on moorland: UPL2',
   availability: { unit: 'ha', value: 3 },
   ratePerUnitGbp: 45

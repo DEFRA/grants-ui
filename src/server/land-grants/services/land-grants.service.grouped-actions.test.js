@@ -17,11 +17,13 @@ import {
 
 const apiUPL8 = {
   code: 'UPL8',
+  isAvailable: true,
   availability: { value: 12.0, unit: 'ha' },
   description: 'Shepherding livestock on moorland'
 }
 const apiUPL10 = {
   code: 'UPL10',
+  isAvailable: true,
   availability: { value: 8.0, unit: 'ha' },
   description: 'Shepherding livestock on moorland'
 }
@@ -62,11 +64,13 @@ describe('land-grants service', () => {
           apiCMOR1,
           {
             code: 'UPL1',
+            isAvailable: true,
             availability: { value: 20.75, unit: 'ha' },
             description: 'Moderate livestock grazing on moorland'
           },
           {
             code: 'UPL2',
+            isAvailable: true,
             availability: { value: 15.25, unit: 'ha' },
             description: 'Moderate livestock grazing on moorland'
           }
@@ -110,11 +114,13 @@ describe('land-grants service', () => {
             actions: [
               {
                 code: 'UPL1',
+                isAvailable: true,
                 availability: { value: 20.75, unit: 'ha' },
                 description: 'Moderate livestock grazing on moorland: UPL1'
               },
               {
                 code: 'UPL2',
+                isAvailable: true,
                 availability: { value: 15.25, unit: 'ha' },
                 description: 'Moderate livestock grazing on moorland: UPL2'
               }
@@ -122,6 +128,31 @@ describe('land-grants service', () => {
           }
         ]
       })
+    })
+
+    it('excludes unavailable actions and empty groups while retaining available actions with zero area', async () => {
+      configState.set('landGrants.enableSSSIFeature', true)
+      parcelsWithGroups.mockResolvedValueOnce(
+        parcelResponse(
+          [
+            { ...apiCMOR1, isAvailable: false },
+            { ...apiUPL8, isAvailable: true, availability: { value: 0, unit: 'ha' } },
+            { ...apiUPL10, isAvailable: false, sssiConsentRequired: true }
+          ],
+          moorlandAndShepherdingGroups
+        )
+      )
+
+      const result = await fetchGrouped()
+
+      expect(result.actions).toEqual([
+        expect.objectContaining({
+          name: 'Shepherding livestock on moorland',
+          totalAvailableArea: { value: 0, unit: 'ha', unitFullName: 'hectares' },
+          consents: [],
+          actions: [expect.objectContaining({ code: 'UPL8', isAvailable: true })]
+        })
+      ])
     })
 
     it.each([
@@ -276,16 +307,19 @@ describe('land-grants service', () => {
               {
                 code: 'UPL1',
                 availability: { value: 15.0, unit: 'ha' },
+                isAvailable: true,
                 description: 'Moderate livestock grazing on moorland'
               },
               {
                 code: 'UPL2',
                 availability: { value: 25.5, unit: 'ha' },
+                isAvailable: true,
                 description: 'Moderate livestock grazing on moorland'
               },
               {
                 code: 'UPL3',
                 availability: { value: 10.0, unit: 'ha' },
+                isAvailable: true,
                 description: 'Moderate livestock grazing on moorland'
               }
             ]
@@ -317,16 +351,19 @@ describe('land-grants service', () => {
               {
                 code: 'UPL1',
                 availability: { value: 15.0, unit: 'ha' },
+                isAvailable: true,
                 description: 'Moderate livestock grazing on moorland: UPL1'
               },
               {
                 code: 'UPL2',
                 availability: { value: 25.5, unit: 'ha' },
+                isAvailable: true,
                 description: 'Moderate livestock grazing on moorland: UPL2'
               },
               {
                 code: 'UPL3',
                 availability: { value: 10.0, unit: 'ha' },
+                isAvailable: true,
                 description: 'Moderate livestock grazing on moorland: UPL3'
               }
             ]
@@ -379,9 +416,15 @@ describe('land-grants service', () => {
           {
             code: 'UPL8',
             availability: { value: null, unit: 'ha', type: 'partial' },
+            isAvailable: true,
             description: 'No restriction'
           },
-          { code: 'UPL10', availability: { value: 8, unit: 'm' }, description: 'Shepherding livestock' }
+          {
+            code: 'UPL10',
+            isAvailable: true,
+            availability: { value: 8, unit: 'm' },
+            description: 'Shepherding livestock'
+          }
         ],
         [{ name: 'Shepherding livestock on moorland', actions: ['UPL8', 'UPL10'] }]
       )
@@ -398,6 +441,7 @@ describe('land-grants service', () => {
           {
             code: 'UPL8',
             availability: { value: null, unit: 'ha', type: 'partial' },
+            isAvailable: true,
             description: 'No restriction'
           }
         ],
@@ -434,11 +478,13 @@ describe('land-grants service', () => {
             {
               code: 'UPL8',
               availability: { value: 12.0, unit: 'ha' },
+              isAvailable: true,
               description: 'Shepherding livestock on moorland: UPL8'
             },
             {
               code: 'UPL10',
               availability: { value: 8.0, unit: 'ha' },
+              isAvailable: true,
               description: 'Shepherding livestock on moorland: UPL10'
             }
           ]
@@ -458,18 +504,21 @@ describe('land-grants service', () => {
             {
               code: 'CMOR1',
               availability: { value: 10.5, unit: 'ha' },
+              isAvailable: true,
               description: 'Assess moorland and produce a written record',
               sssiConsentRequired: false
             },
             {
               code: 'UPL1',
               availability: { value: 20.75, unit: 'ha' },
+              isAvailable: true,
               description: 'Moderate livestock grazing on moorland',
               sssiConsentRequired: false
             },
             {
               code: 'UPL2',
               availability: { value: 15.25, unit: 'ha' },
+              isAvailable: true,
               description: 'Moderate livestock grazing on moorland',
               sssiConsentRequired: true
             }
@@ -504,6 +553,7 @@ describe('land-grants service', () => {
                 {
                   code: 'CMOR1',
                   availability: { value: 10.5, unit: 'ha' },
+                  isAvailable: true,
                   description: 'Assess moorland and produce a written record: CMOR1',
                   sssiConsentRequired: false
                 }
@@ -521,12 +571,14 @@ describe('land-grants service', () => {
                 {
                   code: 'UPL1',
                   availability: { value: 20.75, unit: 'ha' },
+                  isAvailable: true,
                   description: 'Moderate livestock grazing on moorland: UPL1',
                   sssiConsentRequired: false
                 },
                 {
                   code: 'UPL2',
                   availability: { value: 15.25, unit: 'ha' },
+                  isAvailable: true,
                   description: 'Moderate livestock grazing on moorland: UPL2',
                   sssiConsentRequired: true
                 }
