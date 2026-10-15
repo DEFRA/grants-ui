@@ -59,18 +59,10 @@ jobs:
 
             if (context.eventName === 'check_run') {
               const check = context.payload.check_run
-              // SonarCloud lists each failed condition as a markdown link followed by the required threshold.
-              const conditions = [...(check.output?.summary || '').matchAll(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)\s*(\([^)]*\))?/g)]
-                .filter((m) => !/analysis details|SonarQube for IDE/i.test(m[1]))
-                .map((m) => `• <${m[2]}|${esc(m[1])}> ${esc(m[3] || '')}`.trim())
-
               core.setOutput('title', `:rotating_light: ${owner}/${repo}: ${esc(check.name)} failed on ${check.check_suite.head_branch}`)
               core.setOutput('details', [
                 `*Repository:* <${repoUrl}|${owner}/${repo}>`,
-                `*Check:* <${check.html_url}|${esc(check.name)}> (${esc(check.output?.title || check.conclusion)})`,
-                `*Commit:* <${repoUrl}/commit/${check.head_sha}|${check.head_sha.slice(0, 7)}>`,
-                '*Failed conditions:*',
-                ...(conditions.length ? conditions : ['• See the analysis for details'])
+                `*Check:* <${check.html_url}|${esc(check.name)}> (${esc(check.output?.title || check.conclusion)})`
               ].join('\n'))
               core.setOutput('run_url', check.details_url || check.html_url)
               return
@@ -111,20 +103,14 @@ jobs:
               failedLines.push('• No failed step recorded. The run may have failed before any step started.')
             }
 
-            const shortSha = run.head_sha.slice(0, 7)
-            const commitTitle = esc((run.head_commit?.message || '').split('\n')[0])
-            const actor = run.triggering_actor?.login || run.actor?.login || 'unknown'
-
             const title = isTest
               ? `:test_tube: Test alert for ${owner}/${repo} (run ${run.run_number} was ${run.conclusion})`
               : `:rotating_light: ${owner}/${repo}: ${esc(workflow.name)} failed`
 
             const details = [
               `*Repository:* <${repoUrl}|${owner}/${repo}>`,
-              `*Workflow:* <${run.html_url}|${esc(workflow.name)} #${run.run_number}> (${run.event} on ${run.head_branch})`,
-              `*Commit:* <${repoUrl}/commit/${run.head_sha}|${shortSha}> ${commitTitle}`,
-              `*Triggered by:* ${actor}`,
-              '*Failed:*',
+              `*Workflow:* <${run.html_url}|${esc(workflow.name)} #${run.run_number}>`,
+              '*Failed step:*',
               ...failedLines
             ].join('\n')
 
