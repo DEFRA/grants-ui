@@ -40,8 +40,4 @@ ignore:
     - '@defra/forms-engine-plugin > @defra/interactive-map > *':
         reason: 'Rechecked 2026-10-05 on forms-engine-plugin@4.23.0: Docusaurus@3.10.2 > file-loader@6.2.0 > schema-utils@3.3.0 > ajv@6.15.0 > uri-js@4.4.1. No fixed release. This documentation build chain is never run by grants-ui; Ajv handles static schema identifiers, not applicant input. Remove when fixed or upstream drops the documentation dependencies.'
         expires: '2026-10-31'
-  'SNYK-JS-QS-20943482':
-    - '*':
-        reason: 'Checked 2026-10-15: qs@6.16.0 reached via forms-engine-plugin@4.23.0 > interactive-map@0.0.22-alpha > Docusaurus > webpack-dev-server > express (documentation tooling grants-ui never runs) and via @pact-foundation/pact (dev only). Fixed in qs@6.16.1, published 2026-10-14, which .npmrc min-release-age=7 blocks until 2026-10-21. Then bump the qs override in package.json to 6.16.1 and remove this entry.'
-        expires: '2026-10-23'
 patch: {}
