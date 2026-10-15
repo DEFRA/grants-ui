@@ -13,6 +13,11 @@ name: Notify Slack on Workflow Failure
 #
 # To test the alert without breaking a pipeline, run this workflow manually
 # and pass the ID of any previous run (the number at the end of its URL).
+#
+# Other Grants UI repositories reuse this file through workflow_call. Their
+# caller workflow holds the triggers and the watched list; the event, the
+# repository and the secret all come from the caller, so this logic runs
+# unchanged for them. Changes here reach every repository on its next alert.
 
 on:
   workflow_run:
@@ -31,6 +36,9 @@ on:
         description: 'ID of a previous workflow run to report on'
         required: true
         type: string
+  # Lets the other Grants UI repositories call this workflow. No inputs: the
+  # event, repository and secret come from the caller.
+  workflow_call:
 
 permissions:
   actions: read
