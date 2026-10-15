@@ -1,9 +1,13 @@
 name: Notify Slack on Workflow Failure
 
-# Posts an alert to #grants-ui-support when one of the workflows listed below
-# finishes with a failure. It runs after the watched workflow completes, so it
-# also catches failures that happen outside a step (runner errors, failed job
-# dependencies, reusable workflows, release PR creation on merge).
+# Posts an alert to #grants-ui-support when:
+#   - one of the workflows listed below finishes with a failure. This runs after
+#     the watched workflow completes, so it also catches failures that happen
+#     outside a step (runner errors, failed job dependencies, reusable
+#     workflows, release PR creation on merge).
+#   - the SonarCloud quality gate fails on main. SonarCloud evaluates the gate
+#     after the scan step has already passed and reports the result as its own
+#     check on the commit, so it never fails the workflow itself.
 #
 # Requires a SLACK_WEBHOOK_URL secret holding the channel's incoming webhook.
 #
@@ -18,6 +22,9 @@ on:
       - Check Blocked Dependencies
     types:
       - completed
+  check_run:
+    types:
+      - completed
   workflow_dispatch:
     inputs:
       run_id:
@@ -27,20 +34,70 @@ on:
 
 permissions:
   actions: read
+  contents: read
 
 jobs:
   notify:
     name: Post failure to Slack
-    if: github.event_name == 'workflow_dispatch' || contains(fromJSON('["failure", "timed_out"]'), github.event.workflow_run.conclusion)
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      || (github.event_name == 'workflow_run' && contains(fromJSON('["failure", "timed_out"]'), github.event.workflow_run.conclusion))
+      || (github.event_name == 'check_run' && github.event.check_run.conclusion == 'failure' && github.event.check_run.app.slug == 'sonarqubecloud')
     runs-on: ubuntu-latest
     steps:
-      - name: Collect failed jobs and steps
+      - name: Collect failure details
         id: failure
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
-            const failedConclusions = ['failure', 'timed_out']
             const { owner, repo } = context.repo
+            const repoUrl = `${context.serverUrl}/${owner}/${repo}`
+            const repoLink = `<${repoUrl}|${owner}/${repo}>`
+            const failedConclusions = ['failure', 'timed_out']
+
+            if (context.eventName === 'check_run') {
+              const check = context.payload.check_run
+
+              // Only alert for main. GitHub records the branch on the check suite
+              // when it knows it; otherwise confirm the commit is in main's history.
+              let branch = check.check_suite?.head_branch
+              if (!branch) {
+                const { data } = await github.rest.repos.compareCommits({ owner, repo, base: check.head_sha, head: 'main' })
+                branch = ['identical', 'ahead'].includes(data.status) ? 'main' : null
+              }
+              if (branch !== 'main') {
+                core.info(`Ignoring ${check.name} failure on ${branch || 'an unknown branch'}`)
+                core.setOutput('skip', 'true')
+                return
+              }
+
+              const { data: commit } = await github.rest.repos.getCommit({ owner, repo, ref: check.head_sha })
+              const commitTitle = (commit.commit.message || '').split('\n')[0]
+              const author = commit.author?.login || commit.commit.author?.name || 'unknown'
+
+              // SonarCloud lists each failed condition as a markdown link followed by
+              // the required threshold in brackets.
+              const summary = check.output?.summary || ''
+              const conditions = [...summary.matchAll(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)\s*(\([^)]*\))?/g)]
+                .filter((m) => !/analysis details|SonarQube for IDE/i.test(m[1]))
+                .map((m) => `• <${m[2]}|${m[1]}> ${m[3] || ''}`.trim())
+              if (conditions.length === 0) {
+                conditions.push(`• ${check.output?.title || 'Quality gate failed'}`)
+              }
+
+              core.setOutput('title', `:rotating_light: ${owner}/${repo}: ${check.name} failed on main`)
+              core.setOutput('details', [
+                `*Repository:* ${repoLink}`,
+                `*Check:* <${check.html_url}|${check.name}> (${check.output?.title || check.conclusion})`,
+                `*Commit:* <${repoUrl}/commit/${check.head_sha}|${check.head_sha.slice(0, 7)}> ${commitTitle}`,
+                `*Author:* ${author}`,
+                '*Failed conditions:*',
+                ...conditions
+              ].join('\n'))
+              core.setOutput('link', `<${check.details_url || check.html_url}|View analysis>`)
+              return
+            }
+
             const isTest = context.eventName === 'workflow_dispatch'
 
             let run = context.payload.workflow_run
@@ -78,7 +135,6 @@ jobs:
               failedLines.push('• No failed step recorded. The run may have failed before any step started.')
             }
 
-            const repoUrl = `${context.serverUrl}/${owner}/${repo}`
             const shortSha = run.head_sha.slice(0, 7)
             const commitTitle = (run.head_commit?.message || '').split('\n')[0]
             const actor = run.triggering_actor?.login || run.actor?.login || 'unknown'
@@ -87,26 +143,25 @@ jobs:
               ? `:test_tube: Test alert for ${owner}/${repo} (run ${run.run_number} was ${run.conclusion})`
               : `:rotating_light: ${owner}/${repo}: ${workflow.name} failed`
 
-            const details = [
-              `*Repository:* <${repoUrl}|${owner}/${repo}>`,
+            core.setOutput('title', title)
+            core.setOutput('details', [
+              `*Repository:* ${repoLink}`,
               `*Workflow:* <${run.html_url}|${workflow.name} #${run.run_number}> (${run.event} on ${run.head_branch})`,
               `*Commit:* <${repoUrl}/commit/${run.head_sha}|${shortSha}> ${commitTitle}`,
               `*Triggered by:* ${actor}`,
               '*Failed:*',
               ...failedLines
-            ].join('\n')
-
-            core.setOutput('title', title)
-            core.setOutput('details', details)
-            core.setOutput('run_url', run.html_url)
+            ].join('\n'))
+            core.setOutput('link', `<${run.html_url}|View run>`)
 
       - name: Send Slack alert
+        if: steps.failure.outputs.skip != 'true'
         uses: ravsamhq/notify-slack-action@be814b201e233b2dc673608aa46e5447c8ab13f2 # v2.5.0
         with:
           status: failure
           notify_when: failure
           notification_title: ${{ steps.failure.outputs.title }}
           message_format: ${{ steps.failure.outputs.details }}
-          footer: '<${{ steps.failure.outputs.run_url }}|View run>'
+          footer: ${{ steps.failure.outputs.link }}
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
