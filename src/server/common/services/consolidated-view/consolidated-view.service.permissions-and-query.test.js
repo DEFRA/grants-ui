@@ -2,6 +2,7 @@ import { vi } from 'vitest'
 import { config } from '~/src/config/config.js'
 import { mockFetch } from '~/src/__mocks__'
 import { fetchBusinessPermissions, executeConfigDrivenQuery } from './consolidated-view.service.js'
+import { can } from '~/src/server/common/helpers/permissions/can.js'
 import {
   mockSbi,
   mockCrn,
@@ -78,6 +79,24 @@ describe('Consolidated View Service - Permissions and query', () => {
       expect(body.query).toContain('level')
       expect(body.query).toContain('functions')
     })
+
+    it.each(['MAKE_LEGAL_CHANGES', 'FULL_PERMISSION'])(
+      'uses BUSINESS_DETAILS level %s from DAL to allow all actions',
+      async (level) => {
+        const permissionGroups = [...mockPermissionGroups, { id: 'BUSINESS_DETAILS', level, functions: [] }]
+        mockFetchInstance.mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ data: { customer: { business: { permissionGroups } } } })
+        })
+
+        const result = await fetchBusinessPermissions(mockRequest)
+
+        expect(result).toEqual(permissionGroups)
+        expect(can(result, 'view', 'businessDetails')).toBe(true)
+        expect(can(result, 'amend', 'businessDetails')).toBe(true)
+        expect(can(result, 'submit', 'businessDetails')).toBe(true)
+      }
+    )
 
     it('should return empty array when business is null', async () => {
       mockFetchInstance.mockResolvedValueOnce({
