@@ -98,8 +98,9 @@ export function attachResetButton(ml, bbox, mapEl, cleanups) {
     announcer.textContent = ''
   }
 
-  // Real center/zoom are only known once fitBounds settles.
+  // Real center/zoom are only known once fitBounds settles. Listens once.
   const onIdle = () => {
+    ml.off('idle', onIdle)
     initialCenter = ml.getCenter()
     initialZoom = ml.getZoom()
   }
@@ -121,7 +122,8 @@ export function attachResetButton(ml, bbox, mapEl, cleanups) {
     fitToParcels(ml, bbox, { animate: true })
   }
 
-  ml.once('idle', onIdle)
+  ml.on('idle', onIdle)
+  cleanups.push(() => ml.off('idle', onIdle))
   ml.on('moveend', onMoveEnd)
   cleanups.push(() => ml.off('moveend', onMoveEnd))
   button.addEventListener('click', onClick)

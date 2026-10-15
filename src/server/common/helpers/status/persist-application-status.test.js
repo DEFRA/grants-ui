@@ -6,6 +6,7 @@ import { setupRedirectTest } from '../../request-pipeline/redirects/forms-status
 import { getCacheKey } from '../state/get-cache-key-helper.js'
 import { generateUniqueReference } from '@defra/forms-engine-plugin/engine/referenceNumbers.js'
 import { isStoredByReference } from '../state/state-with-definition-context.js'
+import { mintLockToken } from '../lock/lock-token.js'
 
 vi.mock('../../helpers/logging/log.js', async () => {
   const { mockLogHelper } = await import('~/src/__mocks__')
@@ -64,6 +65,23 @@ describe('persistStatus', () => {
       lockToken: 'mock-lock-token',
       grantVersion: '1.0.0'
     })
+  })
+
+  it('mints the lock token for the crn when the credentials carry no contactId', async () => {
+    request.auth.credentials = { sbi: '12345', crn: 'CRN123' }
+
+    await persistStatus(request, SUBMITTED, REOPENED, existingState())
+
+    expect(mintLockToken).toHaveBeenCalledWith(expect.objectContaining({ userId: 'CRN123' }))
+  })
+
+  it('refuses to persist without a user identity for the lock token', async () => {
+    request.auth.credentials = { sbi: '12345' }
+
+    await expect(persistStatus(request, SUBMITTED, REOPENED, existingState())).rejects.toThrow(
+      'Missing user identity (contactId/crn) for lock token'
+    )
+    expect(updateApplicationStatus).not.toHaveBeenCalled()
   })
 
   describe('standard grant, document keyed by version (unchanged from main)', () => {
@@ -141,6 +159,25 @@ describe('persistStatus', () => {
         previousReferenceNumber: 'GLD-OLD-REF',
         applicationStatus: REOPENED
       })
+    })
+
+    it('REOPENED refuses to proceed when neither the stored state nor the request carries a reference', async () => {
+      request.query = {}
+      request.app.referenceNumber = undefined
+
+      await expect(persistStatus(request, REOPENED, SUBMITTED, { applicationStatus: SUBMITTED })).rejects.toThrow(
+        'Missing reference number for a ref-keyed application'
+      )
+      expect(generateUniqueReference).not.toHaveBeenCalled()
+    })
+
+    it('REOPENED mints the new reference without a prefix when the grant metadata has none', async () => {
+      delete request.app.model.def.metadata.referenceNumberPrefix
+
+      await persistStatus(request, REOPENED, SUBMITTED, existingState())
+
+      expect(generateUniqueReference).toHaveBeenCalledWith('')
+      expect(request.app.referenceNumber).toBe('-NEW-REF')
     })
 
     it('REOPENED re-scopes the request to the new reference, so the status update uses it', async () => {
