@@ -25,6 +25,7 @@ export const withUserContext =
 
 export const apiCMOR1 = {
   code: 'CMOR1',
+  isAvailable: true,
   availability: { value: 10.5, unit: 'ha' },
   description: 'Assess moorland and produce a written record'
 }

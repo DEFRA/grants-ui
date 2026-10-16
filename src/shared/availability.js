@@ -8,10 +8,10 @@ export function getAvailabilityLimit(availability) {
 }
 
 /**
- * Whether an action still has land left to claim.
- * @param {{ availability?: { value?: number | null, unit?: string } | null, staticAvailability?: { value?: number | null, unit?: string } | null } | null} [action]
+ * Whether the API allows an action on the parcel, independently of its quantity limit.
+ * @param {{ isAvailable?: boolean } | null} [action]
  * @returns {boolean}
  */
-export function hasAvailableLand(action) {
-  return getAvailabilityLimit(action?.staticAvailability ?? action?.availability) !== 0
+export function isActionAvailable(action) {
+  return action?.isAvailable === true
 }

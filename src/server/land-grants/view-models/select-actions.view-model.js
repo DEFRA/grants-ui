@@ -12,7 +12,7 @@ import { isLandAreaUnit, requiresWholeNumber } from '~/src/shared/unit-types.js'
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
 import { escapeHtml } from '~/src/server/common/utils/escape-html.js'
 import { areaWithUnit, availableArea, formatUnit, unitAlternativeLabel } from '~/src/shared/unit-format.js'
-import { getAvailabilityLimit, hasAvailableLand } from '~/src/shared/availability.js'
+import { getAvailabilityLimit, isActionAvailable } from '~/src/shared/availability.js'
 import { formatParcelReference } from '~/src/shared/format-parcel.js'
 import { SELECTED_ACTIONS_FIELD_NAME } from '~/src/server/land-grants/utils/selected-actions-field.js'
 import { getActionConsentKeys } from '~/src/server/land-grants/utils/consent-types.js'
@@ -249,17 +249,6 @@ export function getParcelSummaryList(sheetId, parcelId, size) {
 }
 
 /**
- * A 0-available action is dropped from the initial render, unless it was
- * already saved to a previous selection - a saved choice must never silently disappear.
- * @param {Action} action
- * @param {Array<{code: string}>} addedActions
- * @returns {boolean}
- */
-function isVisibleOnInitialLoad(action, addedActions) {
-  return hasAvailableLand(action) || addedActions.some((a) => a.code === action.code)
-}
-
-/**
  * Maps a flat list of actions to view models for rendering
  * @param {Array<Action>} actions - Flat array of actions
  * @param {Array<{code: string, description: string}>} addedActions - Actions already added to the parcel
@@ -268,7 +257,7 @@ function isVisibleOnInitialLoad(action, addedActions) {
  * @returns {Array<CheckboxItem>} Flat array of mapped action checkboxes
  */
 export function mapActionsToViewModel(actions, addedActions, quantityErrorsByCode = {}, hasErrors = false) {
-  const visibleActions = actions.filter((action) => isVisibleOnInitialLoad(action, addedActions))
+  const visibleActions = actions.filter(isActionAvailable)
   return visibleActions.map((action, index) =>
     mapActionToViewModel(action, addedActions, quantityErrorsByCode, index === 0, hasErrors)
   )

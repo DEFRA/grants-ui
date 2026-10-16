@@ -232,20 +232,37 @@ describe('land-grants service', () => {
       expect(result).toEqual({ consents: ['sssi', 'hefer'] })
     })
 
-    it('counts enabled actions with available land while retaining all parcel consents', async () => {
+    it('counts enabled actions using isAvailable while retaining all parcel consents', async () => {
       parcelsWithActions.mockResolvedValueOnce(
         parcelResponse([
-          { code: 'CMOR1', description: 'Assess moorland', availability: { value: 10 } },
-          { code: 'UPL1', description: 'Winter feeding', availability: { value: 0 }, sssiConsentRequired: true },
-          { code: 'UPL2', description: 'Supplementary feeding' },
-          { code: 'OTHER1', description: 'Other action', availability: { value: 5 }, heferRequired: true }
+          { code: 'CMOR1', isAvailable: true, description: 'Assess moorland', availability: { value: 0 } },
+          {
+            code: 'UPL1',
+            isAvailable: false,
+            description: 'Winter feeding',
+            availability: { value: 10 },
+            sssiConsentRequired: true
+          },
+          {
+            code: 'WBD1',
+            isAvailable: true,
+            description: 'Manage ponds',
+            availability: { value: null, unit: 'count' }
+          },
+          {
+            code: 'OTHER1',
+            isAvailable: true,
+            description: 'Other action',
+            availability: { value: 5 },
+            heferRequired: true
+          }
         ])
       )
 
       const result = await fetchConsentRequirementsForParcel({
         parcelId: 'PARCEL456',
         sheetId: 'SHEET123',
-        enabledLandActions: ['CMOR1', 'UPL1', 'UPL2']
+        enabledLandActions: ['CMOR1', 'UPL1', 'WBD1']
       })
 
       expect(result).toEqual({ consents: ['sssi', 'hefer'], actionCount: 2 })
@@ -254,8 +271,8 @@ describe('land-grants service', () => {
     it('reuses the unfiltered consent cache across enabled action lists', async () => {
       parcelsWithActions.mockResolvedValueOnce(
         parcelResponse([
-          { code: 'CMOR1', description: 'Assess moorland', availability: { value: 10 } },
-          { code: 'UPL1', description: 'Winter feeding', availability: { value: 0 } }
+          { code: 'CMOR1', isAvailable: true, description: 'Assess moorland', availability: { value: 0 } },
+          { code: 'UPL1', isAvailable: false, description: 'Winter feeding', availability: { value: 10 } }
         ])
       )
 

@@ -197,7 +197,7 @@ describe('MapSelectPageController', () => {
 
   describe('handlePost — action eligibility', () => {
     const withActions = { enabledLandActions: ['CLIG3', 'CSAM3'] }
-    const zeroFor = (code) => ({ code, availability: { value: 0, unit: 'ha' } })
+    const unavailableFor = (code) => ({ code, isAvailable: false, availability: { value: 2.5, unit: 'ha' } })
     const savedActionsFor = (parcelId) => ({
       landParcels: { [parcelId]: { actionsObj: { CLIG3: { description: 'x', value: 1 } } } }
     })
@@ -262,7 +262,7 @@ describe('MapSelectPageController', () => {
     })
 
     it('proceeds when the parcel has eligible actions', async () => {
-      fetchActionsForParcel.mockResolvedValue({ actions: [{ code: 'CLIG3' }] })
+      fetchActionsForParcel.mockResolvedValue({ actions: [{ code: 'CLIG3', isAvailable: true }] })
       const controller = makeController({}, withActions)
       const h = makeH()
 
@@ -295,7 +295,7 @@ describe('MapSelectPageController', () => {
 
     it('errors when any one of several multi-selected parcels has no actions', async () => {
       fetchActionsForParcel
-        .mockResolvedValueOnce({ actions: [{ code: 'CLIG3' }] })
+        .mockResolvedValueOnce({ actions: [{ code: 'CLIG3', isAvailable: true }] })
         .mockResolvedValueOnce({ actions: [] })
       const controller = makeController({ multiSelect: true }, withActions)
       const h = makeH()
@@ -354,9 +354,9 @@ describe('MapSelectPageController', () => {
       expect(controller.setState).toHaveBeenCalled()
     })
 
-    it('rejects a parcel whose every action has no land left, though the API returned them', async () => {
+    it('rejects a parcel whose actions are all unavailable despite having positive area', async () => {
       fetchActionsForParcel.mockResolvedValue({
-        actions: [zeroFor('CLIG3'), zeroFor('CSAM3')]
+        actions: [unavailableFor('CLIG3'), unavailableFor('CSAM3')]
       })
       const controller = makeController({}, withActions)
       const h = makeH()
@@ -372,9 +372,9 @@ describe('MapSelectPageController', () => {
       expect(controller.setState).not.toHaveBeenCalled()
     })
 
-    it('proceeds when only some of the parcel actions have no land left', async () => {
+    it('proceeds when an action is available even with zero area', async () => {
       fetchActionsForParcel.mockResolvedValue({
-        actions: [zeroFor('CLIG3'), { code: 'CSAM3', availability: { value: 2.5, unit: 'ha' } }]
+        actions: [unavailableFor('CLIG3'), { code: 'CSAM3', isAvailable: true, availability: { value: 0, unit: 'ha' } }]
       })
       const controller = makeController({}, withActions)
       const h = makeH()
@@ -385,10 +385,8 @@ describe('MapSelectPageController', () => {
       expect(controller.proceed).toHaveBeenCalled()
     })
 
-    it('proceeds for an all-zero parcel that already has actions saved against it', async () => {
-      // The select-actions page still renders a saved action with no land left,
-      // so re-selecting such a parcel to change it must not be blocked here.
-      fetchActionsForParcel.mockResolvedValue({ actions: [zeroFor('CLIG3')] })
+    it('rejects a parcel with only unavailable actions even when it has saved actions', async () => {
+      fetchActionsForParcel.mockResolvedValue({ actions: [unavailableFor('CLIG3')] })
       const controller = makeController({ multiSelect: true }, withActions)
       const h = makeH()
 
@@ -398,14 +396,14 @@ describe('MapSelectPageController', () => {
         h
       )
 
-      expect(controller.setState).toHaveBeenCalled()
-      expect(controller.proceed).toHaveBeenCalled()
+      expectNoActionsError(h)
+      expect(controller.setState).not.toHaveBeenCalled()
     })
 
-    it('still rejects an all-zero parcel with saved actions in single-parcel-submission mode', async () => {
+    it('rejects an unavailable parcel with saved actions in single-parcel-submission mode', async () => {
       // handlePost wipes landParcels here, so those saved actions would not
       // survive to the select-actions render.
-      fetchActionsForParcel.mockResolvedValue({ actions: [zeroFor('CLIG3')] })
+      fetchActionsForParcel.mockResolvedValue({ actions: [unavailableFor('CLIG3')] })
       const controller = makeController({}, { ...withActions, singleParcelSubmission: true })
       const h = makeH()
 
@@ -420,7 +418,7 @@ describe('MapSelectPageController', () => {
     })
 
     it('fetches each parcel once when the same parcel is submitted twice', async () => {
-      fetchActionsForParcel.mockResolvedValue({ actions: [{ code: 'CLIG3' }] })
+      fetchActionsForParcel.mockResolvedValue({ actions: [{ code: 'CLIG3', isAvailable: true }] })
       const controller = makeController({ multiSelect: true }, withActions)
       const h = makeH()
 
