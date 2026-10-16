@@ -144,6 +144,20 @@ describe('parcel-map web component', () => {
       expect(el.querySelector('[role="alert"]')).toBeNull()
     })
 
+    it('attaches modifier wheel zoom when ready and removes it on disconnect', async () => {
+      const el = await mountReady()
+      const canvas = ml.getCanvas()
+      const container = ml.getCanvasContainer()
+
+      canvas.dispatchEvent(new window.WheelEvent('wheel', { bubbles: true, deltaY: 100, ctrlKey: true }))
+      expect(ml.scrollZoom.enable).toHaveBeenCalledOnce()
+
+      el.remove()
+      expect(container.querySelector('.parcel-map-wheel-hint')).toBeNull()
+      canvas.dispatchEvent(new window.WheelEvent('wheel', { bubbles: true, deltaY: 100, ctrlKey: true }))
+      expect(ml.scrollZoom.enable).toHaveBeenCalledOnce()
+    })
+
     it('requests parcel metadata for the enabled actions on the map page', async () => {
       await mountReady({ 'data-enabled-land-actions': 'CLIG3, CSAM3' })
 
