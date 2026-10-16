@@ -119,7 +119,7 @@ describe('initSelectActionsPage - submit', () => {
     const quantityInput = quantityInputFor(form, 'CLIG3')
     expect(clig3.disabled).toBe(false)
     expect(quantityInput.disabled).toBe(false)
-    expect(hintFor('CLIG3').textContent).toBe('0 hectares available')
+    expect(hintFor('CLIG3').textContent).toBe('0.0000 hectares available')
   })
 
   it('refreshes the hint to the raw response value after a refresh, not the typed value plus it', async () => {
@@ -332,7 +332,7 @@ describe('initSelectActionsPage - submit', () => {
     const csam3 = checkbox(form, 'CSAM3')
     expect(getChosenAreaFieldValue(clig3)).toBe('22.9957')
     expect(csam3.disabled).toBe(true)
-    expect(hintFor('CSAM3').textContent).toBe('0 hectares available')
+    expect(hintFor('CSAM3').textContent).toBe('0.0000 hectares available')
     expect(csam3.closest('.govuk-checkboxes__item').textContent).toContain(
       'Not compatible with other selected actions.'
     )
