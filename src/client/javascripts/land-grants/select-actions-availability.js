@@ -9,9 +9,7 @@
 import {
   getQuantityError,
   isValidQuantity,
-  normaliseQuantityInput,
-  QUANTITY_ERRORS,
-  QUANTITY_PRECISION
+  normaliseQuantityInput
 } from '../../../shared/action-quantity-validation.js'
 import {
   AVAILABLE_UNIT_ATTR,
@@ -30,7 +28,7 @@ import {
 import { clearQuantityError, showQuantityError } from './quantity-error-display.js'
 import { availableArea, formatUnit } from '../../../shared/unit-format.js'
 import { getAvailabilityLimit, isActionAvailable } from '../../../shared/availability.js'
-import { isLandAreaUnit, requiresWholeNumber } from '../../../shared/unit-types.js'
+import { isLandAreaUnit } from '../../../shared/unit-types.js'
 
 const UNAVAILABLE_MESSAGE = 'Not compatible with other selected actions.'
 const UNAVAILABLE_CLASS = 'select-actions-unavailable-message'
@@ -115,37 +113,6 @@ export function getValidTypedQuantity(checkbox) {
 }
 
 /**
- * Rewrites generic quantity-validation errors to include the action label, so
- * blur-time feedback matches the server-side wording for that specific action.
- * @param {HTMLInputElement} checkbox
- * @param {string} rawValue
- * @param {string} message
- * @returns {string}
- */
-function actionSpecificQuantityMessage(checkbox, rawValue, message) {
-  const actionText =
-    checkbox.dataset.actionDescription?.trim() ||
-    checkbox.closest(CHECKBOX_ITEM_SELECTOR)?.querySelector('label')?.textContent?.trim() ||
-    checkbox.value
-
-  if (rawValue === '') {
-    return `Enter a quantity for ${actionText}`
-  }
-  if (requiresWholeNumber(checkbox.getAttribute(AVAILABLE_UNIT_ATTR))) {
-    return message
-  }
-  if (Number(rawValue) <= 0) {
-    return `Enter a quantity for ${actionText}`
-  }
-  const quantityErrorMessages = new Set([QUANTITY_ERRORS.NOT_A_NUMBER, QUANTITY_ERRORS.TOO_MANY_DECIMAL_PLACES])
-  if (!quantityErrorMessages.has(message)) {
-    return message
-  }
-
-  return `Quantity for ${actionText} must be ${QUANTITY_PRECISION} decimal places or fewer`
-}
-
-/**
  * Rewrites a quantity field to its normalised form (".5" becomes "0.5") and
  * shows the matching blur-time validation error for the action it belongs to.
  * @param {HTMLInputElement} checkbox
@@ -162,9 +129,8 @@ export function normaliseAndValidateQuantity(checkbox) {
     getTotalAvailableArea(checkbox),
     checkbox.getAttribute(AVAILABLE_UNIT_ATTR)
   )
-  const displayMessage = message == null ? null : actionSpecificQuantityMessage(checkbox, rawValue, message)
-  if (displayMessage) {
-    showQuantityError(quantityInput, displayMessage)
+  if (message) {
+    showQuantityError(quantityInput, message)
   } else {
     clearQuantityError(quantityInput)
   }
