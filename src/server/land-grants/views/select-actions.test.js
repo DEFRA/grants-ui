@@ -18,6 +18,25 @@ const normalise = (text) => text.replace(/\s+/g, ' ').trim()
 const linksNamed = ($, name) => $('main a').filter((_, link) => normalise($(link).text()) === name)
 
 describe('select-actions.html', () => {
+  it('shows the selection error inline above the action checkboxes', () => {
+    const $ = renderPage({ selectedActionsErrorText: 'Select at least one action' })
+    const formGroup = $('.select-actions-checkboxes').closest('.govuk-form-group')
+
+    expect(formGroup.hasClass('govuk-form-group--error')).toBe(true)
+    expect(normalise(formGroup.find('#landAction-error').text())).toBe('Error: Select at least one action')
+    expect(formGroup.children().index(formGroup.find('#landAction-error'))).toBeLessThan(
+      formGroup.children().index(formGroup.find('.select-actions-checkboxes'))
+    )
+    expect($('#landAction').length).toBe(1)
+  })
+
+  it('shows no inline selection error without one', () => {
+    const $ = renderPage()
+
+    expect($('#landAction-error')).toHaveLength(0)
+    expect($('.govuk-form-group--error')).toHaveLength(0)
+  })
+
   it('leaves the form usable when JavaScript is disabled', () => {
     const $ = renderPage()
     expect($('#select-actions-controls').attr('disabled')).toBeUndefined()

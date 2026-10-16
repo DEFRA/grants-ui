@@ -5,6 +5,13 @@ import {
   validateSelectedActions,
   validateSelectedActionQuantities
 } from './land-actions.validator.js'
+import { QUANTITY_ERRORS } from '~/src/shared/action-quantity-validation.js'
+import { UNIT_COUNT, UNIT_HECTARES, UNIT_SQUARE_METRES } from '~/src/shared/unit-types.js'
+
+const HECTARES_INVALID = QUANTITY_ERRORS[UNIT_HECTARES].INVALID
+const HECTARES_MORE_THAN_AVAILABLE = QUANTITY_ERRORS[UNIT_HECTARES].MORE_THAN_AVAILABLE
+const SQUARE_METRES_INVALID = QUANTITY_ERRORS[UNIT_SQUARE_METRES].INVALID
+const PONDS_INVALID = QUANTITY_ERRORS[UNIT_COUNT].INVALID
 
 describe('land-actions.validator', () => {
   describe('extractLandActionFields', () => {
@@ -151,34 +158,28 @@ describe('land-actions.validator', () => {
       const result = validateSelectedActionQuantities(payload, withSecondQuantity)
 
       expect(result).toEqual([
-        { text: 'Enter a quantity for Herbal leys', href: '#landActionQuantity_CSAM3', code: 'CSAM3' },
-        { text: 'Enter a quantity for Low input', href: '#landActionQuantity_UPL8', code: 'UPL8' }
+        { text: HECTARES_INVALID, href: '#landActionQuantity_CSAM3', code: 'CSAM3' },
+        { text: HECTARES_INVALID, href: '#landActionQuantity_UPL8', code: 'UPL8' }
       ])
     })
 
     it.each([
-      ['is not submitted at all', undefined, 'Enter a quantity for Herbal leys'],
-      ['is empty', '', 'Enter a quantity for Herbal leys'],
-      ['is whitespace only', '  ', 'Enter a quantity for Herbal leys'],
-      ['has more than 4 decimal places', '3.14159', 'Quantity for Herbal leys must be 4 decimal places or fewer'],
-      [
-        'has more than one decimal point',
-        '14.211.442121',
-        'Quantity for Herbal leys must be 4 decimal places or fewer'
-      ],
-      ['is not numeric', 'abc', 'Quantity for Herbal leys must be 4 decimal places or fewer'],
-      ['is scientific notation', '1e5', 'Quantity for Herbal leys must be 4 decimal places or fewer'],
-      ['is 0', '0', 'Enter a quantity for Herbal leys'],
-      ['is negative', '-3.25', 'Enter a quantity for Herbal leys'],
-      // Caught by the nothing-to-claim branch, not the precision rule that
-      // shares its shape - the order of the two is what decides this.
-      ['is negative with more than 4 decimal places', '-3.14159', 'Enter a quantity for Herbal leys']
-    ])('should return an error when the submitted quantity %s', (_description, quantity, text) => {
+      ['is not submitted at all', undefined],
+      ['is empty', ''],
+      ['is whitespace only', '  '],
+      ['has more than 4 decimal places', '3.14159'],
+      ['has more than one decimal point', '14.211.442121'],
+      ['is not numeric', 'abc'],
+      ['is scientific notation', '1e5'],
+      ['is 0', '0'],
+      ['is negative', '-3.25'],
+      ['is negative with more than 4 decimal places', '-3.14159']
+    ])('should return the hectares error when the submitted quantity %s', (_description, quantity) => {
       const payload = { landAction: 'CSAM3', ...(quantity != null && { landActionQuantity_CSAM3: quantity }) }
 
       const result = validateSelectedActionQuantities(payload, actions)
 
-      expect(result).toEqual([{ text, href: '#landActionQuantity_CSAM3', code: 'CSAM3' }])
+      expect(result).toEqual([{ text: HECTARES_INVALID, href: '#landActionQuantity_CSAM3', code: 'CSAM3' }])
     })
 
     it('should use the same maximum quantity error as on-blur validation', () => {
@@ -189,7 +190,7 @@ describe('land-actions.validator', () => {
 
       const result = validateSelectedActionQuantities(payload, actionsWithLimitedArea)
 
-      expect(result).toEqual([{ text: 'Enter up to 0.276 hectares', href: '#landActionQuantity_CSAM3', code: 'CSAM3' }])
+      expect(result).toEqual([{ text: HECTARES_MORE_THAN_AVAILABLE, href: '#landActionQuantity_CSAM3', code: 'CSAM3' }])
     })
 
     it.each([
@@ -207,15 +208,15 @@ describe('land-actions.validator', () => {
     })
 
     // SCR2 requires a quantity like CSAM3, so the rules above already cover it -
-    // these pin that they report against SCR2's own description and field id.
-    it('should require a quantity for SCR2, naming it in the error', () => {
+    // these pin that they report against SCR2's own field id.
+    it('should require a quantity for SCR2', () => {
       const payload = { landAction: 'SCR2' }
 
       const result = validateSelectedActionQuantities(payload, actions)
 
       expect(result).toEqual([
         {
-          text: 'Enter a quantity for Manage scrub and open habitat mosaics: SCR2',
+          text: HECTARES_INVALID,
           href: '#landActionQuantity_SCR2',
           code: 'SCR2'
         }
@@ -229,20 +230,14 @@ describe('land-actions.validator', () => {
 
       expect(result).toEqual([
         {
-          text: 'Quantity for Manage scrub and open habitat mosaics: SCR2 must be 4 decimal places or fewer',
+          text: HECTARES_INVALID,
           href: '#landActionQuantity_SCR2',
           code: 'SCR2'
         }
       ])
     })
 
-    it.each([
-      ['0', 'Value must be greater than 0'],
-      ['-11', 'Value must be greater than 0'],
-      ['11.22001', 'Must be a whole number'],
-      ['as', 'Must be numbers'],
-      ['', 'Enter a quantity for Maintain weatherproof traditional farm or forestry buildings']
-    ])('rejects invalid HEF1 quantity %j on the server', (quantity, text) => {
+    it.each(['0', '-11', '1.2', '11.22001', 'as', ''])('rejects invalid HEF1 quantity %j on the server', (quantity) => {
       const hef1 = {
         code: 'HEF1',
         description: 'Maintain weatherproof traditional farm or forestry buildings',
@@ -252,11 +247,11 @@ describe('land-actions.validator', () => {
       }
       expect(
         validateSelectedActionQuantities({ landAction: 'HEF1', landActionQuantity_HEF1: quantity }, [hef1])
-      ).toEqual([{ text, href: '#landActionQuantity_HEF1', code: 'HEF1' }])
+      ).toEqual([{ text: SQUARE_METRES_INVALID, href: '#landActionQuantity_HEF1', code: 'HEF1' }])
     })
 
     it.each([
-      ['a fraction', '4.5', [{ text: 'Must be a whole number', href: '#landActionQuantity_COUNT', code: 'COUNT' }]],
+      ['a fraction', '4.5', [{ text: PONDS_INVALID, href: '#landActionQuantity_COUNT', code: 'COUNT' }]],
       ['a positive integer', '4', []]
     ])('validates count quantities when the unit requires whole numbers: %s', (_description, quantity, expected) => {
       const countAction = {

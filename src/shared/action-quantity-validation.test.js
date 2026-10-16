@@ -1,4 +1,4 @@
-import { requiresWholeNumber, UNIT_COUNT, UNIT_SQUARE_METRES } from './unit-types.js'
+import { requiresWholeNumber, UNIT_COUNT, UNIT_HECTARES, UNIT_SQUARE_METRES } from './unit-types.js'
 import {
   getQuantityError,
   isValidQuantity,
@@ -26,53 +26,77 @@ describe('normaliseQuantityInput', () => {
 })
 
 describe('getQuantityError', () => {
-  describe.each(['sqm', 'count'])('whole-number quantities in %s', (unit) => {
+  const HECTARES = QUANTITY_ERRORS[UNIT_HECTARES]
+  const SQUARE_METRES = QUANTITY_ERRORS[UNIT_SQUARE_METRES]
+  const PONDS = QUANTITY_ERRORS[UNIT_COUNT]
+
+  it.each([
+    [UNIT_HECTARES, 'Enter number of hectares, up to 4 decimal places – for example, 12.3456'],
+    [UNIT_SQUARE_METRES, 'Enter number of square metres, rounded down to the nearest whole number – for example, 234'],
+    [UNIT_COUNT, 'Enter number of ponds – for example, 2']
+  ])('uses the content-designed invalid message for %s', (unit, expected) => {
+    expect(getQuantityError('', undefined, unit)).toBe(expected)
+  })
+
+  it.each([
+    [UNIT_HECTARES, 'Enter a number that is not higher than the available hectares'],
+    [UNIT_SQUARE_METRES, 'Enter a number that is not higher than the available square metres']
+  ])('uses the content-designed more-than-available message for %s', (unit, expected) => {
+    expect(getQuantityError('201', 200, unit)).toBe(expected)
+  })
+
+  describe.each([
+    [UNIT_SQUARE_METRES, SQUARE_METRES],
+    [UNIT_COUNT, PONDS]
+  ])('whole-number quantities in %s', (unit, errors) => {
     it.each([
-      ['0', 'Value must be greater than 0'],
-      ['-11', 'Value must be greater than 0'],
-      ['11.22001', 'Must be a whole number'],
-      ['4.0000000000000001', 'Must be a whole number'],
-      ['as', 'Must be numbers'],
-      ['1e2', 'Must be numbers'],
-      ['9007199254740992', 'Number is too large'],
-      ['', 'Must be numbers']
-    ])('rejects %j with %j', (raw, expected) => {
-      expect(getQuantityError(raw, undefined, unit)).toBe(expected)
+      '0',
+      '-11',
+      '1.2',
+      '11.22001',
+      '4.0000000000000001',
+      'as',
+      '1e2',
+      '9007199254740992',
+      '99999999999999999999',
+      ''
+    ])('rejects %j', (raw) => {
+      expect(getQuantityError(raw, undefined, unit)).toBe(errors.INVALID)
       expect(isValidQuantity(raw, undefined, unit)).toBe(false)
     })
 
-    it.each(['1', '4', ' 12 ', '99999', '4.00000'])('accepts %j without a parcel-area limit', (raw) => {
-      expect(getQuantityError(raw, undefined, unit)).toBeNull()
-      expect(isValidQuantity(raw, undefined, unit)).toBe(true)
+    it.each(['1', '4', ' 12 ', '99999', '4.00000', '9007199254740991'])(
+      'accepts %j without a parcel-area limit',
+      (raw) => {
+        expect(getQuantityError(raw, undefined, unit)).toBeNull()
+        expect(isValidQuantity(raw, undefined, unit)).toBe(true)
+      }
+    )
+
+    it('checks the whole-number rule before the available-area rule', () => {
+      expect(getQuantityError('300.5', 200, unit)).toBe(errors.INVALID)
     })
   })
 
   const AVAILABLE = 11.22
 
-  it.each([
-    ['20', QUANTITY_ERRORS.MORE_THAN_AVAILABLE(AVAILABLE)],
-    ['0', QUANTITY_ERRORS.NOT_GREATER_THAN_ZERO],
-    ['-11', QUANTITY_ERRORS.NEGATIVE],
-    ['11.22001', QUANTITY_ERRORS.TOO_MANY_DECIMAL_PLACES],
-    ['as', QUANTITY_ERRORS.NOT_A_NUMBER]
-  ])('reports %j as %j', (raw, expected) => {
-    expect(getQuantityError(raw, AVAILABLE)).toBe(expected)
-  })
+  it.each(['0', '-11', '11.22001', '-11.22001', 'as', '1e5', '14.211.442121', '0x10', 'Infinity', '5 ha', ''])(
+    'rejects hectares quantity %j',
+    (raw) => {
+      expect(getQuantityError(raw, AVAILABLE, UNIT_HECTARES)).toBe(HECTARES.INVALID)
+    }
+  )
 
   it.each([['11.2200'], ['11.22'], ['10'], ['.5'], ['0.5'], ['0.0001']])('accepts %j', (raw) => {
     expect(getQuantityError(raw, AVAILABLE)).toBeNull()
   })
 
-  it.each([['1e5'], ['14.211.442121'], ['0x10'], ['Infinity'], ['5 ha'], ['']])('rejects %j as not a number', (raw) => {
-    expect(getQuantityError(raw, AVAILABLE)).toBe(QUANTITY_ERRORS.NOT_A_NUMBER)
-  })
-
-  it('checks the negative rule before the precision rule', () => {
-    expect(getQuantityError('-11.22001', AVAILABLE)).toBe(QUANTITY_ERRORS.NEGATIVE)
+  it('reports a quantity above the available area', () => {
+    expect(getQuantityError('20', AVAILABLE)).toBe(HECTARES.MORE_THAN_AVAILABLE)
   })
 
   it('checks the precision rule before the available-area rule', () => {
-    expect(getQuantityError('99.99999', AVAILABLE)).toBe(QUANTITY_ERRORS.TOO_MANY_DECIMAL_PLACES)
+    expect(getQuantityError('99.99999', AVAILABLE)).toBe(HECTARES.INVALID)
   })
 
   it.each([[undefined], [null]])('accepts any positive quantity when max is %j', (max) => {
@@ -80,52 +104,16 @@ describe('getQuantityError', () => {
   })
 
   it('rejects an over-available quantity when the ceiling is 0', () => {
-    expect(getQuantityError('0.0001', 0)).toBe(QUANTITY_ERRORS.MORE_THAN_AVAILABLE(0))
-  })
-
-  it('gives negative input a different message to zero', () => {
-    expect(getQuantityError('0', AVAILABLE)).not.toBe(getQuantityError('-1', AVAILABLE))
-  })
-
-  it.each([UNIT_SQUARE_METRES, UNIT_COUNT])('requires whole numbers for %s', (unit) => {
-    expect(getQuantityError('4', undefined, unit)).toBeNull()
-    expect(getQuantityError('4.5', undefined, unit)).toBe(QUANTITY_ERRORS.NOT_WHOLE_NUMBER)
+    expect(getQuantityError('0.0001', 0)).toBe(HECTARES.MORE_THAN_AVAILABLE)
   })
 
   it('does not require whole numbers for hectares', () => {
-    expect(getQuantityError('4.5', undefined, 'ha')).toBeNull()
+    expect(getQuantityError('4.5', undefined, UNIT_HECTARES)).toBeNull()
   })
 
-  it.each([
-    ['0', 'Value must be greater than 0'],
-    ['-11', 'Value must be greater than 0'],
-    ['11.22001', QUANTITY_ERRORS.NOT_WHOLE_NUMBER],
-    ['as', 'Must be numbers']
-  ])('rejects invalid square-metre quantity %j with %s', (raw, expected) => {
-    expect(getQuantityError(raw, undefined, 'sqm')).toBe(expected)
-  })
-
-  it.each(['m2', ' SQM ', 'SQM'])('does not infer whole numbers for unsupported spelling %j', (unit) => {
+  it.each([undefined, null, 'm2', ' SQM ', 'SQM'])('treats unit %j as hectares', (unit) => {
     expect(requiresWholeNumber(unit)).toBe(false)
-    expect(getQuantityError('11.22001', undefined, unit)).toBe(QUANTITY_ERRORS.TOO_MANY_DECIMAL_PLACES)
-  })
-
-  it('checks positivity before the whole-number rule', () => {
-    expect(getQuantityError('-11.22001', undefined, UNIT_SQUARE_METRES)).toBe('Value must be greater than 0')
-  })
-
-  it('accepts the largest safe whole-number quantity', () => {
-    const quantity = '9007199254740991'
-
-    expect(getQuantityError(quantity, undefined, UNIT_SQUARE_METRES)).toBeNull()
-    expect(isValidQuantity(quantity, undefined, UNIT_SQUARE_METRES)).toBe(true)
-  })
-
-  it('rejects an unsafe whole-number quantity without changing the ticket errors', () => {
-    const quantity = '99999999999999999999'
-
-    expect(getQuantityError(quantity, undefined, UNIT_SQUARE_METRES)).toBe(QUANTITY_ERRORS.TOO_LARGE)
-    expect(isValidQuantity(quantity, undefined, UNIT_SQUARE_METRES)).toBe(false)
+    expect(getQuantityError('11.22001', undefined, unit)).toBe(HECTARES.INVALID)
   })
 })
 
