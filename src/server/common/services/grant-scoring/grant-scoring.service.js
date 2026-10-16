@@ -4,13 +4,18 @@ import { getScoringServiceToken } from '~/src/server/common/helpers/auth/scoring
 import { withTraceId } from '@defra/hapi-tracing'
 import { GrantScoringServiceError } from '~/src/server/common/utils/errors/GrantScoringServiceError.js'
 
+/**
+ * Query string values: primitives only, serialised with toString().
+ * @typedef {Record<string, string | number | boolean | null | undefined>} QueryParams
+ */
+
 const SCORING_SERVICE_URL = config.get('scoring.serviceUrl')
 
 /**
  * Invokes a GET action on the Grant Scoring Service
  * @param {string} grantCode - Grant code
  * @param {import('@defra/forms-engine-plugin/types').AnyFormRequest} request
- * @param {Record<string, unknown>} [queryParams] - Optional query parameters
+ * @param {QueryParams} [queryParams] - Optional query parameters
  * @returns {Promise<any>} - Promise that resolves to the response JSON
  * @throws {GrantScoringServiceError}
  */
@@ -47,7 +52,7 @@ async function buildRequestOptions(method) {
  * Builds a full request URL including query parameters (if provided).
  *
  * @param {string} url - Base API URL
- * @param {Record<string, unknown>} [queryParams] - Optional query parameters
+ * @param {QueryParams} [queryParams] - Optional query parameters
  * @returns {string} Fully constructed URL
  * @private
  */
@@ -104,7 +109,7 @@ async function handleResponse(response, url, grantCode) {
  * @param {import('@defra/forms-engine-plugin/types').AnyFormRequest} _request
  * @param {object} [options] - Request options
  * @param {string} [options.method] - HTTP method (GET, POST, etc.)
- * @param {Record<string, unknown>} [options.queryParams] - Query parameters for GET requests
+ * @param {QueryParams} [options.queryParams] - Query parameters for GET requests
  * @returns {Promise<Response>} - Promise that resolves to the response
  * @throws {GrantScoringServiceError}
  */

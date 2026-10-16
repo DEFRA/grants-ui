@@ -35,7 +35,8 @@ export async function persistStatus(request, newStatus, previousStatus, existing
   const cacheKey = getCacheKey(request)
   const { sbi, grantCode } = cacheKey
   const grantVersion = getGrantVersion(request)
-  const contactId = request.auth?.credentials?.contactId || request.auth?.credentials?.crn
+  const credentials = request.auth?.credentials
+  const contactId = /** @type {string | number | undefined} */ (credentials?.contactId || credentials?.crn)
 
   if (!contactId) {
     throw new Error('Missing user identity (contactId/crn) for lock token')
@@ -83,7 +84,8 @@ async function persistCleared(request, existingState) {
  * @returns {string}
  */
 function storedReferenceNumber(request, existingState) {
-  const referenceNumber = existingState.$$__referenceNumber ?? getReferenceNumber(request)
+  const referenceNumber =
+    /** @type {string | undefined} */ (existingState.$$__referenceNumber) ?? getReferenceNumber(request)
 
   if (!referenceNumber) {
     throw new Error('Missing reference number for a ref-keyed application')
@@ -118,7 +120,9 @@ async function persistReopened(request, existingState) {
   }
 
   const previousReferenceNumber = storedReferenceNumber(request, existingState)
-  const prefix = String(request.app.model?.def?.metadata?.referenceNumberPrefix ?? '')
+  const prefix = String(
+    /** @type {string | undefined} */ (request.app.model?.def?.metadata?.referenceNumberPrefix) ?? ''
+  )
   const newReferenceNumber = generateUniqueReference(prefix)
 
   await cacheService.setState(

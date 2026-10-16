@@ -359,7 +359,9 @@ export default class DeclarationPageController extends SummaryPageController {
       })
     }
 
-    const { previousClientRef: _previousClientRef, ...identifiers } = this.buildIdentifiers(request, context)
+    // Claims carry the current identifiers only, never the previous client reference.
+    const identifiers = { ...this.buildIdentifiers(request, context) }
+    delete identifiers.previousClientRef
     const configVersion = resolveGasConfigVersion(request)
 
     return buildClaimPayload(
