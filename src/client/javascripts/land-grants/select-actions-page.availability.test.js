@@ -70,7 +70,7 @@ describe('initSelectActionsPage - availability', () => {
     })
     await toggle(form, 'CLIG3')
 
-    expect(hintFor('CSAM3').textContent).toBe('0 hectares available')
+    expect(hintFor('CSAM3').textContent).toBe('0.0000 hectares available')
     global.fetch.mockClear()
 
     await typeQuantity(form, 'CSAM3', '0.05')
@@ -628,21 +628,25 @@ describe('initSelectActionsPage - availability', () => {
     expect(upl1.disabled).toBe(false)
   })
 
-  it('updates the quantity input max and hint from the response for an UNCHECKED quantity-required action', async () => {
+  it.each([
+    [12, '12.0000'],
+    [5.32, '5.3200'],
+    [0.241, '0.2410']
+  ])('updates an unchecked quantity action from API availability %s with hint %s', async (value, expected) => {
     const form = setupDom([
       { code: 'CMOR1', checked: true, availability: { value: 10, unit: 'ha' } },
       { code: 'CSAM3', availability: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 }
     ])
     global.fetch = fetchOk({
-      actions: [{ code: 'CSAM3', availability: { value: 12, unit: 'ha' }, requiresMaxQuantity: 12 }]
+      actions: [{ code: 'CSAM3', availability: { value, unit: 'ha' }, requiresMaxQuantity: value }]
     })
     initSelectActionsPage(form)
 
     await toggle(form, 'CMOR1')
 
     const quantityInput = quantityInputFor(form, 'CSAM3')
-    expect(quantityInput.max).toBe('12')
-    expect(hintFor('CSAM3').textContent).toBe('12 hectares available')
+    expect(quantityInput.max).toBe(String(value))
+    expect(hintFor('CSAM3').textContent).toBe(`${expected} hectares available`)
   })
 
   it('checking an action with no quantity typed yet leaves its own hint/max at the un-competed full total (nothing confirmed yet to send)', async () => {
