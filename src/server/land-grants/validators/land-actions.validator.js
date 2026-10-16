@@ -1,8 +1,7 @@
 import { getSelectedActionCodes, SELECTED_ACTIONS_FIELD_NAME } from '../utils/selected-actions-field.js'
 import { getActionQuantityFieldName } from '~/src/shared/action-quantity-field.js'
 import { requiresQuantityInput } from '~/src/shared/action-quantity-type.js'
-import { requiresWholeNumber } from '~/src/shared/unit-types.js'
-import { QUANTITY_PRECISION, getQuantityError } from '~/src/shared/action-quantity-validation.js'
+import { getQuantityError } from '~/src/shared/action-quantity-validation.js'
 
 /**
  * Validators for land actions selection
@@ -56,32 +55,6 @@ export function validateSelectedActions(payload) {
 }
 
 /**
- * Returns the appropriate quantity error message for a selected action.
- * @param {Action} action
- * @param {string} rawValue
- * @returns {string | null}
- */
-function getActionQuantityErrorText(action, rawValue) {
-  const availableQuantity = action.availability?.value ?? undefined
-
-  if (rawValue !== '' && requiresWholeNumber(action.availability?.unit)) {
-    return getQuantityError(rawValue, availableQuantity, action.availability?.unit)
-  }
-
-  // Empty, zero and negative area claims all require the user to enter a quantity.
-  if (rawValue === '' || Number(rawValue) <= 0) {
-    return `Enter a quantity for ${action.description}`
-  }
-
-  // Preserve the action-specific format message for decimals and non-numeric input.
-  if (getQuantityError(rawValue)) {
-    return `Quantity for ${action.description} must be ${QUANTITY_PRECISION} decimal places or fewer`
-  }
-
-  return getQuantityError(rawValue, availableQuantity, action.availability?.unit)
-}
-
-/**
  * Validate that every selected, quantity-required action has a submitted
  * quantity that satisfies the shared rules (see getQuantityError). Each error
  * carries the action's code so the caller can also highlight its specific
@@ -98,7 +71,7 @@ export function validateSelectedActionQuantities(payload, actions) {
 
   for (const action of applicableActions) {
     const rawValue = String(payload[getActionQuantityFieldName(action.code)] ?? '').trim()
-    const text = getActionQuantityErrorText(action, rawValue)
+    const text = getQuantityError(rawValue, action.availability?.value ?? undefined, action.availability?.unit)
     if (text) {
       errors.push({ text, href: `#${getActionQuantityFieldName(action.code)}`, code: action.code })
     }

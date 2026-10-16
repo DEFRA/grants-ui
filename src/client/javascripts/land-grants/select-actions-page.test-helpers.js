@@ -2,6 +2,8 @@
 import { vi } from 'vitest'
 import { initSelectActionsPage } from './select-actions-page.js'
 import { unitLabel, unitAlternativeLabel } from '~/src/shared/unit-format.js'
+import { QUANTITY_ERRORS } from '~/src/shared/action-quantity-validation.js'
+import { UNIT_HECTARES } from '~/src/shared/unit-types.js'
 
 export const areaText = (value) => `${Number(value).toFixed(4)} hectares`
 
@@ -39,7 +41,7 @@ function quantityConditionalHtml({
   }
   const inputClass = `govuk-input${hasError ? ' govuk-input--error' : ''}`
   const errorMessage = hasError
-    ? `<p id="landActionQuantity_${code}-error" class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> Enter a number of hectares, for example 12.5 or 100</p>`
+    ? `<p id="landActionQuantity_${code}-error" class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> ${QUANTITY_ERRORS[UNIT_HECTARES].INVALID}</p>`
     : ''
   return `
     <div class="govuk-checkboxes__conditional${checked ? '' : ` ${HIDDEN_CLASS}`}" id="${conditionalId}">

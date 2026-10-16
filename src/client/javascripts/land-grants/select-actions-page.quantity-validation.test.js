@@ -12,10 +12,18 @@ import {
   toggle,
   typeQuantity
 } from './select-actions-page.test-helpers.js'
+import { QUANTITY_ERRORS } from '~/src/shared/action-quantity-validation.js'
+import { UNIT_HECTARES, UNIT_SQUARE_METRES } from '~/src/shared/unit-types.js'
+
+const HECTARES_INVALID = QUANTITY_ERRORS[UNIT_HECTARES].INVALID
+const HECTARES_MORE_THAN_AVAILABLE = QUANTITY_ERRORS[UNIT_HECTARES].MORE_THAN_AVAILABLE
+const SQUARE_METRES_INVALID = QUANTITY_ERRORS[UNIT_SQUARE_METRES].INVALID
+const SQUARE_METRES_MORE_THAN_AVAILABLE = QUANTITY_ERRORS[UNIT_SQUARE_METRES].MORE_THAN_AVAILABLE
 
 describe('quantity input validation', () => {
   const errorFor = (code) => document.getElementById(`landActionQuantity_${code}-error`)
   const formGroupFor = (form, code) => quantityInputFor(form, code).closest('.govuk-form-group')
+  const CSAM3_AVAILABLE_HA = 11.22
 
   async function initSingleAction({ quantityValue = '', checked = true, hasError = false } = {}) {
     const form = setupDom([
@@ -23,8 +31,8 @@ describe('quantity input validation', () => {
         code: 'CSAM3',
         description: 'Herbal leys: CSAM3',
         checked,
-        availability: { value: 11.22, unit: 'ha' },
-        requiresMaxQuantity: 11.22,
+        availability: { value: CSAM3_AVAILABLE_HA, unit: 'ha' },
+        requiresMaxQuantity: CSAM3_AVAILABLE_HA,
         quantityValue,
         hasError
       },
@@ -55,7 +63,7 @@ describe('quantity input validation', () => {
     await initSettled(form, fetchOk({ actions: [] }))
 
     await typeQuantity(form, 'HEF1', '4.5')
-    expect(errorFor('HEF1').textContent).toContain('Must be a whole number')
+    expect(errorFor('HEF1').textContent).toContain(SQUARE_METRES_INVALID)
     expect(global.fetch).not.toHaveBeenCalled()
 
     await typeQuantity(form, 'HEF1', '4')
@@ -85,13 +93,13 @@ describe('quantity input validation', () => {
     expect(hintFor('HEF1').textContent).toBe('12 square metres available')
 
     await typeQuantity(form, 'HEF1', '13')
-    expect(errorFor('HEF1').textContent).toContain('More than available area')
+    expect(errorFor('HEF1').textContent).toContain(SQUARE_METRES_MORE_THAN_AVAILABLE)
     expect(global.fetch).toHaveBeenCalledTimes(1)
 
     // Zero, negative, and non-numeric values are covered by shared validation;
     // this case only protects the unit-specific fractional rule.
     await typeQuantity(form, 'HEF1', '12.5')
-    expect(errorFor('HEF1').textContent).toContain('Must be a whole number')
+    expect(errorFor('HEF1').textContent).toContain(SQUARE_METRES_INVALID)
     expect(global.fetch).toHaveBeenCalledTimes(1)
   })
 
@@ -112,11 +120,12 @@ describe('quantity input validation', () => {
   // Every error is reported in both places, like every other error on this
   // page: the summary at the top, and the message on the field itself.
   it.each([
-    ['20', 'Enter up to 11.22 hectares'],
-    ['0', 'Enter a quantity for Herbal leys: CSAM3'],
-    ['-11', 'Enter a quantity for Herbal leys: CSAM3'],
-    ['11.22001', 'Quantity for Herbal leys: CSAM3 must be 4 decimal places or fewer'],
-    ['as', 'Quantity for Herbal leys: CSAM3 must be 4 decimal places or fewer']
+    ['20', HECTARES_MORE_THAN_AVAILABLE], // above CSAM3_AVAILABLE_HA
+    ['0', HECTARES_INVALID],
+    ['-11', HECTARES_INVALID],
+    ['11.22001', HECTARES_INVALID],
+    ['as', HECTARES_INVALID],
+    ['', HECTARES_INVALID]
   ])('reports %j everywhere an error is shown, on blur', async (value, message) => {
     const form = await initSingleAction()
 
@@ -156,9 +165,7 @@ describe('quantity input validation', () => {
         }
       ],
       {
-        summaryErrors: [
-          { href: '#landActionQuantity_CSAM3', text: 'Enter a number of hectares, for example 12.5 or 100' }
-        ]
+        summaryErrors: [{ href: '#landActionQuantity_CSAM3', text: HECTARES_INVALID }]
       }
     )
     await initSettled(form, fetchOk({ actions: [] }))
@@ -167,7 +174,7 @@ describe('quantity input validation', () => {
 
     const links = document.querySelectorAll('.govuk-error-summary__list a')
     expect(links).toHaveLength(1)
-    expect(links[0].textContent).toBe('Enter up to 11.22 hectares')
+    expect(links[0].textContent).toBe(HECTARES_MORE_THAN_AVAILABLE)
   })
 
   it('lists one entry per failing action when more than one is wrong', async () => {
@@ -194,8 +201,8 @@ describe('quantity input validation', () => {
 
     const links = [...document.querySelectorAll('.govuk-error-summary__list a')]
     expect(links.map((a) => [a.getAttribute('href'), a.textContent])).toEqual([
-      ['#landActionQuantity_CSAM3', 'Enter up to 11.22 hectares'],
-      ['#landActionQuantity_UPL8', 'Quantity for Low input must be 4 decimal places or fewer']
+      ['#landActionQuantity_CSAM3', HECTARES_MORE_THAN_AVAILABLE],
+      ['#landActionQuantity_UPL8', HECTARES_INVALID]
     ])
   })
 
@@ -206,14 +213,6 @@ describe('quantity input validation', () => {
 
     expect(input.value).toBe('11.22001')
     expect(global.fetch).not.toHaveBeenCalled()
-  })
-
-  it('uses the server-side required message for an empty field', async () => {
-    const form = await initSingleAction()
-
-    await typeQuantity(form, 'CSAM3', '')
-
-    expect(errorFor('CSAM3').textContent).toContain('Enter a quantity for Herbal leys: CSAM3')
   })
 
   it('clears the error on the first real edit, without waiting for the new value to be valid', async () => {
@@ -256,7 +255,7 @@ describe('quantity input validation', () => {
 
     input.dispatchEvent(new Event('blur'))
 
-    expect(errorFor('CSAM3').textContent).toContain('Enter a quantity for Herbal leys: CSAM3')
+    expect(errorFor('CSAM3').textContent).toContain(HECTARES_INVALID)
   })
 
   it('does not flag a part-typed decimal mid-keystroke', async () => {
