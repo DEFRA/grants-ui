@@ -139,9 +139,10 @@ function getStaticAvailability(action) {
 function getHintHtml(action, needsQuantity, chosenArea) {
   const requirementText = getConsentRequirementText(getActionConsentKeys(action))
   const limit = getAvailabilityLimit(action.availability)
-  const availabilityText = needsQuantity
-    ? `${limit} ${formatUnit(action.availability?.unit)} available`
-    : availableArea(limit ?? 0, action.availability?.unit)
+  const availabilityText =
+    needsQuantity && !isLandAreaUnit(action.availability?.unit)
+      ? `${limit} ${formatUnit(action.availability?.unit)} available`
+      : availableArea(limit ?? 0, action.availability?.unit)
   return landGrantsViewEnv.render(ACTION_HINT_TEMPLATE, {
     rate: String(action.ratePerUnitGbp?.toFixed(2).replace(/\.00$/, '')),
     rateUnit: action.displayUnit ?? unitAlternativeLabel(action.availability),
