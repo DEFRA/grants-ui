@@ -112,9 +112,12 @@ const reattachReferenceNumber = (request, h) => {
 /** Every `href`/`action` attribute: 1 attribute name, 2 quote, 3 value. */
 const LINK_ATTRIBUTE_PATTERN = /(href|action)=(["'])([^"']*)\2/g
 
-/** Hoek's `escapeHtml` writes `?`, `=`, `/` and `#` as `&#x..;`, so a link must be decoded before it is parsed. */
+/**
+ * Hoek's `escapeHtml` writes `?`, `=`, `/` and `#` as `&#x..;`, so a link must be decoded before it is parsed.
+ * Five hex digits keep every match below U+10FFFF, the most `fromCodePoint` accepts.
+ */
 const decodeAttribute = (value) =>
-  value.replace(/&amp;|&#x([0-9a-f]+);/gi, (_, hex) => (hex ? String.fromCharCode(Number.parseInt(hex, 16)) : '&'))
+  value.replace(/&amp;|&#x([0-9a-f]{1,5});/gi, (_, hex) => (hex ? String.fromCodePoint(Number.parseInt(hex, 16)) : '&'))
 
 /**
  * Resolves the link against the page it is on (as the browser would) and
