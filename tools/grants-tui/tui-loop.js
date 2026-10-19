@@ -51,6 +51,7 @@ import { TAILSCALE_SHARE_API_KEY } from './tailscale-share.js'
 import { getTailscaleSharingPolicyStatus } from './tailscale-policy.js'
 import { getTailscaleAvailability } from './tailscale-serve.js'
 import { inspectState } from './state-inspector.js'
+import { getLocalServiceRepo } from './local-images.js'
 
 // ---------------------------------------------------------------------------
 // Main menu
@@ -73,6 +74,11 @@ export function buildMainMenuItems(savedState, containersRunning) {
   const localDesc = localActiveParts.length
     ? `${PURPLE}${localActiveParts.join(' + ')}${RESET_COLOR}`
     : 'Override services & form definitions locally'
+  const refreshDescription = localCount
+    ? localFormDefsOn
+      ? 'Rebuild images, restart services & re-apply form-def overrides'
+      : 'Rebuild local images & restart services'
+    : 'Re-apply local form-def overrides'
 
   return [
     {
@@ -90,17 +96,9 @@ export function buildMainMenuItems(savedState, containersRunning) {
       disabled: !containersRunning
     },
     { key: 'local', label: 'local ⇢', description: localDesc },
-    {
-      key: 'refresh-examples',
-      label: 'refresh example grants ⇢',
-      description: 'Publish edited example configs from this checkout',
-      disabled: !containersRunning
-    },
-    // Only while form-def overrides are active, surface a direct action right
-    // below `local` to re-publish the YAML overrides into Mongo, so devs can
-    // iterate on the definition and refresh without toggling the override
-    // off and on again. Rendered in the same purple as the override status.
-    ...(localFormDefsOn
+    // Refresh enabled images and form definitions without toggling them off
+    // and on again. Rendered in the same purple as the override status.
+    ...(localCount || localFormDefsOn
       ? [
           {
             key: 'refresh-overrides',
@@ -108,13 +106,17 @@ export function buildMainMenuItems(savedState, containersRunning) {
             // other menu labels. Colour is applied in radioMenu's draw loop so
             // it can be faded at rest and full purple when highlighted.
             label: ' ↳ refresh overrides',
-            description: containersRunning
-              ? 'Re-apply local form-def overrides'
-              : 'Start containers first to refresh overrides',
+            description: containersRunning ? refreshDescription : 'Start containers first to refresh overrides',
             disabled: !containersRunning
           }
         ]
       : []),
+    {
+      key: 'refresh-examples',
+      label: 'refresh example grants ⇢',
+      description: 'Publish edited example configs from this checkout',
+      disabled: !containersRunning
+    },
     { key: 'checks', label: 'checks ⇢', description: 'Tests, lint, security scans and pre-PR checks' },
     {
       key: 'tools',
@@ -362,19 +364,27 @@ async function applyRunningLocalOverrideChanges(
  * @param {boolean} containersRunning
  * @returns {Promise<string>}
  */
-async function handleLocalCommand(dryRun, savedState, containersRunning) {
+export async function handleLocalCommand(dryRun, savedState, containersRunning) {
   const localImages = getLocalImages()
   const previousLocalServices = savedState?.localServices ?? []
   const previousLocalServiceSet = new Set(previousLocalServices)
   const previousFormDefIds = getSelectedFormDefIds(savedState)
   const previousFormDefIdSet = new Set(previousFormDefIds)
-  const localServiceItems = LOCAL_SERVICES.map((s) => ({
-    ...s,
-    label: s.key,
-    description: localImages.has(s.key + ':local') ? 'local image available' : 'not available locally',
-    disabled: !localImages.has(s.key + ':local'),
-    selected: previousLocalServiceSet.has(s.key) && localImages.has(s.key + ':local')
-  }))
+  const localServiceItems = LOCAL_SERVICES.map((s) => {
+    const hasImage = localImages.has(s.key + ':local')
+    const repo = hasImage ? null : getLocalServiceRepo(s.key)
+    return {
+      ...s,
+      label: s.key,
+      description: hasImage
+        ? 'local image available'
+        : repo
+          ? `build from ../${s.key} on apply`
+          : 'no local image or sibling Dockerfile',
+      disabled: !hasImage && !repo,
+      selected: previousLocalServiceSet.has(s.key) && hasImage
+    }
+  })
 
   // One toggle per discoverable form-definition override (folder + sibling
   // `grants-config-*` repos). The `formdef|` key prefix distinguishes these
@@ -401,6 +411,12 @@ async function handleLocalCommand(dryRun, savedState, containersRunning) {
   const newFormDefIds = localToggled
     .filter((i) => i.selected && !i.disabled && i.key.startsWith(FORMDEF_KEY_PREFIX))
     .map((i) => i.key.slice(FORMDEF_KEY_PREFIX.length))
+  for (const key of newLocalServices.filter((key) => !localImages.has(key + ':local'))) {
+    const status = await runInteractiveAction('build-local-image', [key, dryRun], `Building ${key}:local`)
+    if (status !== 0) {
+      return `${RED}✖${RESET_COLOR}  Build failed or cancelled for ${key}:local — selections not saved; l → output`
+    }
+  }
   // Persist local selections into saved state (create state if none exists)
   const currentState = loadState() ?? emptyState()
   saveState(currentState.addons, currentState.scale, newLocalServices, newFormDefIds)
@@ -445,17 +461,56 @@ async function handleLocalCommand(dryRun, savedState, containersRunning) {
 }
 
 /** @param {boolean} dryRun */
-async function handleRefreshOverridesCommand(dryRun) {
-  // Re-publish the selected YAML overrides into Mongo so freshly-edited
-  // definitions (in the local folder or a sibling repo) are served without
-  // toggling the override off and on.
-  const refreshIds = getSelectedFormDefIds(loadState())
-  const applyStatus = refreshIds.length
-    ? await runInteractiveAction('form-defs', ['enable', dryRun, refreshIds], 'Refreshing form-def overrides')
-    : 0
-  return applyStatus !== 0
-    ? `${RED}✖${RESET_COLOR}  Form-def overrides refresh failed — check output above`
-    : `${PURPLE}✔  Form-def overrides refreshed${RESET_COLOR}`
+export async function handleRefreshOverridesCommand(dryRun) {
+  const state = loadState()
+  const localServices = state?.localServices ?? []
+  const refreshIds = getSelectedFormDefIds(state)
+  const messages = []
+
+  // Finish all builds before recreating containers, then publish form
+  // definitions against the refreshed services.
+  for (const key of localServices) {
+    const status = await runInteractiveAction('build-local-image', [key, dryRun], `Rebuilding ${key}:local`)
+    if (status !== 0) {
+      return `${RED}✖${RESET_COLOR}  Override refresh stopped: rebuild failed or cancelled for ${key}:local — l → output`
+    }
+  }
+  if (localServices.length) {
+    messages.push(
+      `${dryRun ? 'rebuild' : 'rebuilt'} ${localServices.length} local image${localServices.length > 1 ? 's' : ''}`
+    )
+    const runningSet = new Set(getRunningServices())
+    const servicesToRestart = LOCAL_SERVICES.filter(
+      (service) => localServices.includes(service.key) && runningSet.has(service.composeService)
+    ).map((service) => service.composeService)
+    if (servicesToRestart.length) {
+      const status = await runInteractiveAction(
+        'restart',
+        [servicesToRestart, dryRun, true],
+        'Restarting services with rebuilt local images'
+      )
+      if (status !== 0) {
+        return `${RED}✖${RESET_COLOR}  Local images rebuilt; service restart failed or cancelled — l → output`
+      }
+      messages.push(`${dryRun ? 'restart' : 'restarted'} ${servicesToRestart.join(', ')}`)
+    }
+  }
+  if (refreshIds.length) {
+    const status = await runInteractiveAction(
+      'form-defs',
+      ['enable', dryRun, refreshIds],
+      'Re-applying form-def overrides'
+    )
+    if (status !== 0) {
+      return `${RED}✖${RESET_COLOR}  ${messages.length ? messages.join(' · ') + '; ' : ''}Form-def override refresh failed or cancelled — l → output`
+    }
+    messages.push(
+      `${dryRun ? 're-apply' : 're-applied'} ${refreshIds.length} form-def override${refreshIds.length > 1 ? 's' : ''}`
+    )
+  }
+  return messages.length
+    ? `${PURPLE}✔  ${dryRun ? 'Override refresh preview' : 'Overrides refreshed'}: ${messages.join(' · ')}${RESET_COLOR}`
+    : `${DIM}No local overrides enabled${RESET_COLOR}`
 }
 
 export async function handleRefreshExamplesCommand(dryRun) {
@@ -1370,17 +1425,18 @@ async function browseOutput(command, lastRun) {
 }
 
 /**
- * Run a command handler and return the status line to show: the handler's own,
- * unless it started an action, in which case that action's outcome.
+ * Show the latest action's outcome, or preserve the handler's summary when it
+ * describes several actions such as rebuilding and refreshing overrides.
  * @param {(context: object) => Promise<string>} handler
  * @param {object} context
  * @param {ReturnType<typeof getLastRun>} lastRun  last run before the handler started
+ * @param {boolean} [preserveSummary] keep a multi-action handler's complete result
  * @returns {Promise<string>}
  */
-async function runCommandHandler(handler, context, lastRun) {
+export async function runCommandHandler(handler, context, lastRun, preserveSummary = false) {
   const statusLine = await handler(context)
   const completed = getLastRun()
-  if (completed === lastRun) return statusLine
+  if (completed === lastRun || preserveSummary) return statusLine
   return completed.logPath ? actionStatus(completed) : `${RED}✖${RESET_COLOR}  Could not run action: ${completed.error}`
 }
 
@@ -1436,7 +1492,7 @@ export async function runInteractiveLoop(dryRun) {
         tailscaleAvailabilityDescription: tailscaleAvailability.description,
         tailscaleSession
       }
-      statusLine = await runCommandHandler(COMMAND_HANDLERS[command], context, lastRun)
+      statusLine = await runCommandHandler(COMMAND_HANDLERS[command], context, lastRun, command === 'refresh-overrides')
     }
   }
 

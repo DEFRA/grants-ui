@@ -17,15 +17,15 @@
 
 - **Defra ID Integration**: Primary authentication service using OpenID Connect (OIDC) protocol
   - For detailed environment variable configuration, see [Getting Started - DEFRA ID Integration](./GETTING-STARTED.md#defra-id-integration)
-- **Allowlist System**: Per-grant access control that restricts which signed-in users can enter a journey, based on their CRN (Customer Reference Number) and SBI (Single Business Identifier):
+- **Allowlist System**: Per-grant access control that restricts which signed-in users can enter a journey, based on their SBI (Single Business Identifier):
   - Allow lists come from the grants-ui-backend allowlist endpoint
-- **User & Page Permissions System**: Role-based access control evaluated against user permissions from Consolidated View DAL, supporting application (`csApplications`) and claims (`csAgreements`) journeys
+- **User & Page Permissions System**: Role-based access control evaluated against user permissions from Consolidated View DAL, supporting application (`csApplications`), claims (`csAgreements`), and business details (`businessDetails`) permissions
 
 ### Allowlist Functionality
 
-Allowlisting restricts access to specific grant journeys based on the signed-in user's Customer Reference Number (CRN) and Single Business Identifier (SBI). At runtime, the allowlist plugin ([`src/server/common/helpers/allowlist/allowlist.js`](../src/server/common/helpers/allowlist/allowlist.js)) runs on `onPostAuth`: for an authenticated request that includes a grant slug, it asks grants-ui-backend which grants the user's CRN/SBI may access via `GET /allowlist/grants` (`src/server/auth/services/allowlist.client.js`). If the requested grant code is not included in the returned list, access is denied — the user is redirected to `/auth/journey-unauthorised` and an `unauthorised` audit event (reason `allowlist`) is published. The check fails closed: if the backend call errors, access is refused.
+Allowlisting restricts access to specific grant journeys based on the signed-in user's Single Business Identifier (SBI). At runtime, the allowlist plugin ([`src/server/common/helpers/allowlist/allowlist.js`](../src/server/common/helpers/allowlist/allowlist.js)) runs on `onPostAuth`: for an authenticated request that includes a grant slug, it asks grants-ui-backend which grants the user's SBI may access via `GET /allowlist/grants` (`src/server/auth/services/allowlist.client.js`). If the requested grant code is not included in the returned list, access is denied — the user is redirected to `/auth/journey-unauthorised` and an `unauthorised` audit event (reason `allowlist`) is published. The check fails closed: if the backend call errors, access is refused.
 
-The authenticated `/home` route uses the same endpoint to display active grants available to the user's current CRN
+The authenticated `/home` route uses the same endpoint to display active grants available to the user's current SBI
 and SBI. The endpoint supplies the grant title and description as well as its code. An empty successful response renders
 the no-available-grants guidance; an upstream failure is not treated as an empty allowlist.
 
@@ -41,14 +41,17 @@ Permissions are grouped by resource type:
 
 - `csApplications`: Countryside Stewardship application journeys (`COUNTRYSIDE_STEWARDSHIP_APPLICATIONS`)
 - `csAgreements`: Countryside Stewardship claims journeys (`COUNTRYSIDE_STEWARDSHIP_AGREEMENTS`)
+- `businessDetails`: Business details permissions (`BUSINESS_DETAILS`)
 
-Each permission group in DAL assigns a user a permission level (`VIEW`, `AMEND`, or `SUBMIT`). Grants UI evaluates access against required actions:
+Countryside Stewardship permission groups in DAL assign a user a permission level (`VIEW`, `AMEND`, or `SUBMIT`). Grants UI evaluates access against required actions:
 
 | Required Action | Allowed Levels            | Description                                                       |
 | :-------------- | :------------------------ | :---------------------------------------------------------------- |
 | `view`          | `VIEW`, `AMEND`, `SUBMIT` | Read-only access to view journey summaries or confirmation pages. |
 | `amend`         | `AMEND`, `SUBMIT`         | Edit answers, upload data, and progress through active journeys.  |
 | `submit`        | `SUBMIT`                  | Submit completed grant applications or claims.                    |
+
+For `businessDetails`, both DAL levels `MAKE_LEGAL_CHANGES` and `FULL_PERMISSION` allow all three actions (`view`, `amend`, and `submit`). Other levels and missing permission groups deny access. The existing DAL query and session cache include this group alongside the Countryside Stewardship groups.
 
 #### Permission Enforcement Behaviour
 

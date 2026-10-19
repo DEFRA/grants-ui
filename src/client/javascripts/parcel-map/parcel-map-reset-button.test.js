@@ -289,13 +289,14 @@ describe('attachResetButton', () => {
     expect(announcer.textContent).toBe('sentinel-not-cleared')
   })
 
-  it('registers a cleanup for the moveend listener and the click handler', () => {
+  it('registers a cleanup for the idle and moveend listeners and the click handler', () => {
     const mapEl = makeMapEl()
     const ml = makeMl()
     attachResetButton(ml, BBOX, mapEl, cleanups)
 
-    expect(cleanups).toHaveLength(2)
+    expect(cleanups).toHaveLength(3)
     cleanups.forEach((off) => off())
+    expect(ml.off).toHaveBeenCalledWith('idle', expect.any(Function))
     expect(ml.off).toHaveBeenCalledWith('moveend', expect.any(Function))
   })
 })

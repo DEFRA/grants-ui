@@ -23,6 +23,33 @@ describe('can', () => {
     })
   })
 
+  describe('BUSINESS_DETAILS', () => {
+    it.each(['MAKE_LEGAL_CHANGES', 'FULL_PERMISSION'])('allows all actions when level is %s', (level) => {
+      const permissionGroups = [{ id: 'BUSINESS_DETAILS', level }]
+
+      expect(can(permissionGroups, 'view', 'businessDetails')).toBe(true)
+      expect(can(permissionGroups, 'amend', 'businessDetails')).toBe(true)
+      expect(can(permissionGroups, 'submit', 'businessDetails')).toBe(true)
+    })
+
+    it.each(['VIEW', 'AMEND', 'SUBMIT', 'NO_ACCESS', 'INVALID'])('denies all actions when level is %s', (level) => {
+      const permissionGroups = [{ id: 'BUSINESS_DETAILS', level }]
+
+      expect(can(permissionGroups, 'view', 'businessDetails')).toBe(false)
+      expect(can(permissionGroups, 'amend', 'businessDetails')).toBe(false)
+      expect(can(permissionGroups, 'submit', 'businessDetails')).toBe(false)
+    })
+
+    it('denies access when only Countryside Stewardship permissions are present', () => {
+      const permissionGroups = [
+        { id: 'COUNTRYSIDE_STEWARDSHIP_APPLICATIONS', level: 'SUBMIT' },
+        { id: 'COUNTRYSIDE_STEWARDSHIP_AGREEMENTS', level: 'SUBMIT' }
+      ]
+
+      expect(can(permissionGroups, 'submit', 'businessDetails')).toBe(false)
+    })
+  })
+
   describe('permission hierarchy', () => {
     it('should allow VIEW when user has VIEW', () => {
       const permissionGroups = [

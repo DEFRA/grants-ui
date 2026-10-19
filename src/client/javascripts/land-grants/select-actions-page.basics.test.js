@@ -414,7 +414,7 @@ describe('initSelectActionsPage - basics', () => {
 
     initSelectActionsPage(form)
 
-    expect(hintFor('CSAM3').textContent).toBe('15.25 hectares available')
+    expect(hintFor('CSAM3').textContent).toBe('15.2500 hectares available')
   })
 
   // The route validates crumb in restful mode (X-CSRF-Token header) rather

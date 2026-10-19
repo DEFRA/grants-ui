@@ -442,7 +442,7 @@ whether it renders Html components or uses a custom view.
 ### Tactical grants landing page
 
 After signing in without a retained grant-journey return URL, users arrive at `/home`. While
-`externalLinks.sfd.enabled` is false, this route displays the active grants available to the user's CRN and current SBI
+`externalLinks.sfd.enabled` is false, this route displays the active grants available to the user's current SBI
 from the Grants UI Backend allowlist endpoint. An authenticated request to `/` redirects to `/home`; an unauthenticated
 request continues to display the sign-in page.
 
@@ -463,7 +463,7 @@ for updating business details. A missing or invalid homepage URL falls back to t
 ### Allowlist System
 
 - **Backend allowlist**: Per-grant access control driven by the grants-ui-backend allowlist endpoint
-- **CRN/SBI based**: Access is decided from the signed-in user's Customer Reference Number and Single Business Identifier
+- **SBI based**: Access is decided from the signed-in user's Single Business Identifier
 - **Access Control**: Users who are not allowlisted for the grant are redirected to `/auth/journey-unauthorised`
 - **Example**: [Allowlist plugin](../src/server/common/helpers/allowlist/allowlist.js)
 - **Details**: see [Auth & Security – Allowlist Functionality](./AUTH-AND-SECURITY.md#allowlist-functionality) for the full mechanism, including the audit event and fail-closed behaviour
@@ -485,7 +485,7 @@ Grant journeys support fine-grained permission enforcement configured in the for
 metadata:
   permissions:
     enforce: true # Enable or disable permission checks for the grant
-    resource: csApplications # Default grant-wide resource ('csApplications' or 'csAgreements')
+    resource: csApplications # Default grant-wide resource ('csApplications', 'csAgreements', or 'businessDetails')
     pageAccess:
       default: amend # Default required permission for pages ('view', 'amend', or 'submit')
       rules:
@@ -522,6 +522,19 @@ metadata:
         returnUrl: /claim-summary
         returnText: Return to summary
 ```
+
+To require business details permissions across every page, use a single default without page-specific rules:
+
+```yaml
+metadata:
+  permissions:
+    enforce: true
+    resource: businessDetails
+    pageAccess:
+      default: submit
+```
+
+Both `MAKE_LEGAL_CHANGES` and `FULL_PERMISSION` levels from DAL satisfy this default.
 
 #### Mixed Journey Resource Gating
 

@@ -226,8 +226,19 @@ describe('select-actions.view-model', () => {
 
       const result = mapActionToViewModel(action, [])
 
-      expect(result.html).toContain('<span id="landActionQuantity_UPL2-hint">3 hectares available</span>')
+      expect(result.html).toContain('<span id="landActionQuantity_UPL2-hint">3.0000 hectares available</span>')
       expect(result.conditional.html).not.toContain('landActionQuantity_UPL2-hint">')
+    })
+
+    it.each([
+      [5.3, '5.3000'],
+      [5.32, '5.3200'],
+      [0.241, '0.2410'],
+      [1.3473, '1.3473']
+    ])('formats quantity-action availability %s as %s hectares', (value, expected) => {
+      const result = mapActionToViewModel(csam3({ value, unit: 'ha' }), [])
+
+      expect(result.html).toContain(`${expected} hectares available`)
     })
 
     it('should put the availability directly after the payment rate in the checkbox hint', () => {
@@ -468,7 +479,7 @@ describe('select-actions.view-model', () => {
 
       expect(result.conditional).toBeDefined()
       expect(result.conditional.html).toContain('max="0"')
-      expect(result.html).toContain('<span id="landActionQuantity_CSAM3-hint">0 hectares available</span>')
+      expect(result.html).toContain('<span id="landActionQuantity_CSAM3-hint">0.0000 hectares available</span>')
     })
 
     it.each([[null], [undefined]])(

@@ -15,7 +15,7 @@ pages:
       - name: startInfo
         title: Html
         type: Html
-        content: <p class="govuk-body">If you see this page, the CRN you are using has been whitelisted for this grant application.</p>
+        content: <p class="govuk-body">If you see this page, the SBI you are using has been whitelisted for this grant application.</p>
         id: 433902ae-69b0-4ab4-a476-5f1b6d241728
     id: ade0d58c-d8cb-48d2-8172-5f9512c3e430
 sections: []
