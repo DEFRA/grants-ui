@@ -1,6 +1,19 @@
+import Joi from 'joi'
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { withDerivedState } from '~/src/server/common/helpers/state/with-derived-state.js'
+
+const costsSchema = Joi.object({
+  reservoirClayHighCostPerUnit: Joi.number().required(),
+  reservoirClayLowCostPerUnit: Joi.number().required(),
+  reservoirSyntheticHighCostPerUnit: Joi.number().required(),
+  reservoirSyntheticLowCostPerUnit: Joi.number().required(),
+  distNetworkCostPerUnit: Joi.number().required(),
+  tanksCostPerUnit: Joi.number().required(),
+  grantMaxRate: Joi.number().required()
+})
+  .unknown(true)
+  .required()
 
 export default class TotalEstimatedCostController extends withDerivedState(QuestionPageController) {
   /**
@@ -121,30 +134,14 @@ export default class TotalEstimatedCostController extends withDerivedState(Quest
     const costsConfig = request.app.model?.def?.metadata?.pageConfig?.[this.path]?.costs
     const hapiRequest = /** @type {import('@hapi/hapi').Request} */ (/** @type {unknown} */ (request))
 
-    if (!costsConfig) {
-      log(LogCodes.SYSTEM.CONFIG_MISSING, { missing: ['config.costs'] }, hapiRequest)
-      throw new Error('Missing required configuration: config.costs')
+    // Report every missing or invalid cost unit at once rather than the first one.
+    const { error, value } = costsSchema.validate(costsConfig, { abortEarly: false })
+    if (error) {
+      const missing = error.details.map(({ path }) => ['config.costs', ...path].join('.'))
+      log(LogCodes.SYSTEM.CONFIG_MISSING, { missing }, hapiRequest)
+      throw new Error(`Missing required configuration: ${missing.join(', ')}`)
     }
 
-    const requiredConfigKeys = [
-      'reservoirClayHighCostPerUnit',
-      'reservoirClayLowCostPerUnit',
-      'reservoirSyntheticHighCostPerUnit',
-      'reservoirSyntheticLowCostPerUnit',
-      'distNetworkCostPerUnit',
-      'tanksCostPerUnit',
-      'grantMaxRate'
-    ]
-
-    const missingConfigKeys = requiredConfigKeys
-      .filter((key) => costsConfig[key] === undefined)
-      .map((key) => `config.costs.${key}`)
-
-    if (missingConfigKeys.length > 0) {
-      log(LogCodes.SYSTEM.CONFIG_MISSING, { missing: missingConfigKeys }, hapiRequest)
-      throw new Error(`Missing required configuration: ${missingConfigKeys.join(', ')}`)
-    }
-
-    return costsConfig
+    return value
   }
 }

@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+import { escapeHtml } from '@hapi/hoek'
 import { buildNotificationBannerConfig } from '~/src/config/nunjucks/context/build-notification-banner-config.js'
 
 const baseBanner = {
@@ -55,7 +56,7 @@ describe('buildNotificationBannerConfig', () => {
       classes,
       html:
         `<p class="govuk-notification-banner__heading">${baseBanner.text}</p>` +
-        '<p class="govuk-body"><a class="govuk-notification-banner__link" href="https://gov.uk/deadline">Read more</a></p>'
+        `<p class="govuk-body"><a class="govuk-notification-banner__link" href="${escapeHtml('https://gov.uk/deadline')}">Read more</a></p>`
     })
   })
 
@@ -71,8 +72,8 @@ describe('buildNotificationBannerConfig', () => {
     )
 
     expect(result.html).toBe(
-      '<p class="govuk-notification-banner__heading">Deadline &lt;b&gt;soon&lt;/b&gt; &amp; final</p>' +
-        '<p class="govuk-body"><a class="govuk-notification-banner__link" href="https://gov.uk/?a=1&amp;b=2">Read &quot;more&quot;</a></p>'
+      '<p class="govuk-notification-banner__heading">Deadline &lt;b&gt;soon&lt;&#x2f;b&gt; &amp; final</p>' +
+        '<p class="govuk-body"><a class="govuk-notification-banner__link" href="https:&#x2f;&#x2f;gov.uk&#x2f;&#x3f;a&#x3d;1&amp;b&#x3d;2">Read &quot;more&quot;</a></p>'
     )
   })
 
@@ -90,7 +91,7 @@ describe('buildNotificationBannerConfig', () => {
       { ...baseBanner, link: { text: 'Read more', href: '/updates' } },
       '/example/page-one'
     )
-    expect(result.html).toContain('href="/updates"')
+    expect(result.html).toContain(`href="${escapeHtml('/updates')}"`)
   })
 
   test.each([{ text: 'Read more' }, { href: 'https://gov.uk' }, {}])(

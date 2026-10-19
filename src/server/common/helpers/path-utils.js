@@ -1,30 +1,5 @@
+import { reach } from '@hapi/hoek'
 import { DANGEROUS_KEYS } from '~/src/server/common/utils/objects.js'
-
-/**
- * @param {unknown} current
- * @param {string} part
- * @returns {unknown}
- */
-function resolvePathPart(current, part) {
-  const arrayMatch = /^(\w+)\[(\d+)\]$/.exec(part)
-
-  if (arrayMatch) {
-    const [, arrayName, indexStr] = arrayMatch
-    if (DANGEROUS_KEYS.has(arrayName)) {
-      return undefined
-    }
-    const index = Number.parseInt(indexStr, 10)
-    return /** @type {Record<string, unknown[]> | null | undefined} */ (current)?.[arrayName]?.[index]
-  }
-
-  if (DANGEROUS_KEYS.has(part)) {
-    return undefined
-  }
-  if (current !== null && typeof current === 'object' && part in current) {
-    return /** @type {Record<string, unknown>} */ (current)[part]
-  }
-  return undefined
-}
 
 /**
  * Strips the leading `data.` prefix and any `[digit]` array indices from a
@@ -51,16 +26,11 @@ export function resolvePath(obj, path) {
     return undefined
   }
 
-  const parts = path.split('.')
-  /** @type {unknown} */
-  let current = obj
-
-  for (const part of parts) {
-    if (current === null || current === undefined) {
-      return undefined
-    }
-    current = resolvePathPart(current, part)
+  // Hoek walks array indices as plain segments, so `items[0].name` becomes `items.0.name`.
+  const chain = path.replaceAll(/\[(\d+)\]/g, '.$1').split('.')
+  if (chain.some((key) => DANGEROUS_KEYS.has(key))) {
+    return undefined
   }
 
-  return current
+  return reach(obj, chain)
 }

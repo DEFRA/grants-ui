@@ -1,5 +1,5 @@
 import { expect } from 'vitest'
-import { escapeHtml } from '~/src/server/common/utils/escape-html.js'
+import { escapeHtml } from '@hapi/hoek'
 
 /**
  * A value containing every character `escapeHtml` rewrites, for feeding into

@@ -31,7 +31,7 @@ describe('generate-form-not-found-response', () => {
     const htmlContent = mockH.response.mock.calls[0][0]
     expect(htmlContent).toContain('<title>Custom Title</title>')
     expect(htmlContent).toContain('⚠️ Custom Error')
-    expect(htmlContent).toContain('<a href="/custom-back">← Back to Dev Tools</a>')
+    expect(htmlContent).toContain('<a href="&#x2f;custom-back">← Back to Dev Tools</a>')
   })
 
   test('should escape the slug before writing it into the HTML', async () => {

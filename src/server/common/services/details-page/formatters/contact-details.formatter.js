@@ -1,5 +1,5 @@
 import { formatPhone } from '~/src/server/land-grants/utils/format-phone.js'
-import { escapeHtml } from '~/src/server/common/utils/escape-html.js'
+import { escapeHtml } from '@hapi/hoek'
 
 /**
  * Contact details formatter - formats phone and email as HTML with line breaks
