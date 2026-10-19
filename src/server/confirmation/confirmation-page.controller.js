@@ -1,3 +1,4 @@
+import { isApplicationWindowOpen } from '../common/helpers/application-window.js'
 import nunjucks from 'nunjucks'
 import { StatusPageController } from '@defra/forms-engine-plugin/controllers/StatusPageController.js'
 import { config } from '~/src/config/config.js'
@@ -153,9 +154,18 @@ export default class ConfirmationPageController extends StatusPageController {
    * @param {string} slug - Form slug
    * @param {Pick<ResponseToolkit, 'view'>} h - Hapi response toolkit
    * @param {object[]} [components] - Rendered page components for the confirmation body
+   * @param {boolean} [applicationWindowOpen] - Whether new applications can be started.
    * @returns {ResponseObject} Hapi response
    */
-  buildAndRenderConfirmationResponse(confirmationContent, sessionData, form, slug, h, components) {
+  buildAndRenderConfirmationResponse(
+    confirmationContent,
+    sessionData,
+    form,
+    slug,
+    h,
+    components,
+    applicationWindowOpen = true
+  ) {
     const viewModel = ConfirmationService.buildViewModel({
       referenceNumber: sessionData.referenceNumber,
       businessName: sessionData.businessName,
@@ -167,7 +177,15 @@ export default class ConfirmationPageController extends StatusPageController {
       components
     })
 
-    return h.view('confirmation-page', viewModel)
+    return h.view('confirmation-page', {
+      ...viewModel,
+      startAnotherApplicationUrl:
+        this.confirmationType === ConfirmationType.APPLICATION &&
+        this.model.def.metadata?.allowMultipleApplications === true &&
+        applicationWindowOpen
+          ? `/${slug}/applications`
+          : undefined
+    })
   }
 
   /**
@@ -218,7 +236,8 @@ export default class ConfirmationPageController extends StatusPageController {
           this.model.def,
           slug,
           h,
-          components
+          components,
+          isApplicationWindowOpen(request, this.model.def)
         )
       } catch (error) {
         return this.handleError(

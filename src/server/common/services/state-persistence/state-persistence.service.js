@@ -88,20 +88,25 @@ export class StatePersistenceService extends CacheService {
    * under it would persist to the *old* version document and the migrated read
    * would return the answer blanked. Prefer the resolved active version.
    *
-   * @param {AnyFormRequest} request
+   * @param {AnyRequest} request
    * @param {FormSubmissionState} state
+   * @param {{failOnError?: boolean, allowMultipleApplications?: boolean}} [options] - Require a successful backend save before continuing.
    * @returns {Promise<FormSubmissionState>} the persisted state
    */
-  async setState(request, state) {
+  async setState(request, state, { allowMultipleApplications, ...options } = {}) {
     const key = this._Key(request)
     const grantVersion = await this._resolveActiveGrantVersion(request)
     const lockToken = this._buildLockToken(request, grantVersion)
-    await persistStateToApi(state, key, { lockToken, grantVersion })
+    await persistStateToApi(state, key, { lockToken, grantVersion, ...options })
 
     // A brand-new application of a multi-application grant: scope the creating request to the
     // reference the forms engine just minted, so this very response's links and redirects carry it.
     const referenceNumber = /** @type {string | undefined} */ (state?.$$__referenceNumber)
-    if (referenceNumber && !getReferenceNumber(request) && (await this._allowsMultipleApplications(request))) {
+    if (
+      referenceNumber &&
+      !getReferenceNumber(request) &&
+      (allowMultipleApplications ?? (await this._allowsMultipleApplications(request)))
+    ) {
       setReferenceNumber(request, String(referenceNumber))
     }
 

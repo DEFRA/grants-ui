@@ -204,16 +204,10 @@ function preSubmissionRedirect(request, h, context) {
  */
 export function resolvePreSubmissionDestination(rule, state) {
   const requirement = rule.requiresAnyItemWithNonEmptyKey
-  if (!requirement) {
-    return rule.toPath
+  if (requirement && !hasAnyItemWithNonEmptyKey(getStateValue(state, requirement.collection), requirement.key)) {
+    return rule.incompleteToPath ?? null
   }
-
-  const collection = getStateValue(state, requirement.collection)
-  if (hasAnyItemWithNonEmptyKey(collection, requirement.key)) {
-    return rule.toPath
-  }
-
-  return rule.incompleteToPath ?? null
+  return rule.toPath
 }
 
 /**
