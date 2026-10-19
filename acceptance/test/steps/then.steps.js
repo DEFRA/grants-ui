@@ -72,6 +72,46 @@ Then('(the user )should (still )be (back )at URL {string}', async function (expe
   await expect(this.page).toHaveURL((url) => pathPattern.test(url.pathname))
 })
 
+Then('(the user )should have an application reference in the URL', async function () {
+  await expect(this.page).toHaveURL((url) => /^[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+$/i.test(url.searchParams.get('ref') ?? ''))
+  referenceNumbers.push(new URL(this.page.url()).searchParams.get('ref'))
+})
+
+Then('(the user )should have application reference {string} in the URL', async function (reference) {
+  const expected = transformStepArgument(reference).trim()
+  await expect(this.page).toHaveURL((url) => url.searchParams.get('ref')?.toUpperCase() === expected.toUpperCase())
+})
+
+Then('(the user )should not have application reference {string} in the URL', async function (reference) {
+  const expected = transformStepArgument(reference).trim()
+  await expect(this.page).toHaveURL((url) => {
+    const ref = url.searchParams.get('ref')
+    return Boolean(ref) && ref.toUpperCase() !== expected.toUpperCase()
+  })
+})
+
+Then('(the user )should see the following applications', async function (dataTable) {
+  const expected = dataTable.hashes().map((row) => ({
+    reference: transformStepArgument(row.REFERENCE).trim().toUpperCase(),
+    status: row.STATUS,
+    action: row.ACTION
+  }))
+  // In the order listed: newest first.
+  const rows = this.page.locator('table.govuk-table tbody tr')
+  await expect(rows).toHaveCount(expected.length)
+  const actual = await rows.evaluateAll((trs) =>
+    trs.map((tr) => {
+      const reference = tr.querySelector('th').textContent.trim()
+      return {
+        reference: reference.toUpperCase(),
+        status: tr.querySelector('.govuk-tag').textContent.trim(),
+        action: tr.querySelector('a').textContent.replace(reference, '').trim()
+      }
+    })
+  )
+  expect(actual).toEqual(expected)
+})
+
 Then('(the user )should see the following answers', async function (dataTable) {
   const expectedAnswers = []
   let summaryAnswer = {}
