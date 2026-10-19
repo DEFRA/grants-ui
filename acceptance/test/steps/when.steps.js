@@ -6,6 +6,7 @@ import AutocompleteField from '../page-objects/auto-complete.field.js'
 import DatePartsField from '../page-objects/date-parts.field.js'
 import MonthYearField from '../page-objects/month-year.field.js'
 import GeospatialField from '../page-objects/geospatial.field.js'
+import { transformStepArgument } from '../utils/step-argument-transformation.js'
 
 When('(the user )clicks on {string}', async function (text) {
   await this.page.locator(`//*[contains(text(),'${text}')]`).click()
@@ -13,6 +14,15 @@ When('(the user )clicks on {string}', async function (text) {
 
 When('(the user )clicks button {string}', async function (text) {
   await this.page.getByRole('button', { name: text }).click()
+})
+
+When('(the user )clicks {string} for application {string}', async function (text, reference) {
+  const ref = transformStepArgument(reference).trim()
+  await this.page
+    .locator('table.govuk-table tbody tr')
+    .filter({ has: this.page.locator('th', { hasText: ref }) })
+    .getByRole('link', { name: text })
+    .click()
 })
 
 When('(the user )waits for {int} seconds', async function (seconds) {

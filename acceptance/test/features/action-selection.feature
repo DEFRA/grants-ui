@@ -1,4 +1,3 @@
-@runme
 Feature: Action Selection
 
     Scenario: User can add and remove land parcels and select actions
