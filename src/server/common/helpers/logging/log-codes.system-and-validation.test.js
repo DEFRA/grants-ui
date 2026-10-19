@@ -487,6 +487,11 @@ describe('LogCodes', () => {
       expect(() => validateLogCodes(invalidLogCodes)).toThrow()
     })
 
+    it('accepts a log code that carries extra keys', () => {
+      const logCodes = { TEST: { EXTRA: { level: 'info', messageFunc: () => 'x', description: 'why it fires' } } }
+      expect(() => validateLogCodes(logCodes)).not.toThrow()
+    })
+
     it('should throw error for nested validation failure', () => {
       const invalidLogCodes = {
         TEST: {

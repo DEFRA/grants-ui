@@ -112,6 +112,10 @@ const reattachReferenceNumber = (request, h) => {
 /** Every `href`/`action` attribute: 1 attribute name, 2 quote, 3 value. */
 const LINK_ATTRIBUTE_PATTERN = /(href|action)=(["'])([^"']*)\2/g
 
+/** Hoek's `escapeHtml` writes `?`, `=`, `/` and `#` as `&#x..;`, so a link must be decoded before it is parsed. */
+const decodeAttribute = (value) =>
+  value.replace(/&amp;|&#x([0-9a-f]+);/gi, (_, hex) => (hex ? String.fromCharCode(Number.parseInt(hex, 16)) : '&'))
+
 /**
  * Resolves the link against the page it is on (as the browser would) and
  * checks it stays inside this grant. Bare fragments never leave the page.
@@ -144,13 +148,18 @@ const isSameGrantLink = (slug, pageUrl, link) => {
  */
 const rewriteLinks = (request, slug, html) =>
   html.replace(LINK_ATTRIBUTE_PATTERN, (match, attr, quote, url) => {
-    const unescaped = url.replaceAll('&amp;', '&')
+    const unescaped = decodeAttribute(url)
 
     if (!isSameGrantLink(slug, request.url, unescaped)) {
       return match
     }
 
-    return `${attr}=${quote}${withReferenceNumber(request, unescaped).replaceAll('&', '&amp;')}${quote}`
+    // Decoding can restore the delimiting quote (hoek writes `'` as `&#x27;`), so it is escaped again.
+    const escaped = withReferenceNumber(request, unescaped)
+      .replaceAll('&', '&amp;')
+      .replaceAll(quote, quote === '"' ? '&quot;' : '&#x27;')
+
+    return `${attr}=${quote}${escaped}${quote}`
   })
 
 /**

@@ -7,7 +7,7 @@ export { LogCodes }
 const logCodeSchema = Joi.object({
   level: Joi.string().valid('info', 'debug', 'warn', 'error').required(),
   messageFunc: Joi.function().required()
-})
+}).unknown()
 
 // A value with either leaf key is a log code; anything else must be a non-empty group of them.
 const looksLikeLogCode = Joi.object({ level: Joi.any(), messageFunc: Joi.any() }).or('level', 'messageFunc').unknown()

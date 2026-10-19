@@ -48,6 +48,12 @@ describe('resolvePath', () => {
     expect(resolvePath(obj, 'foo.bar.baz')).toBeUndefined()
   })
 
+  it('does not read into a string or count an index from the end of an array', () => {
+    expect(resolvePath({ name: 'bob' }, 'name.0')).toBeUndefined()
+    expect(resolvePath({ name: 'bob' }, 'name.length')).toBeUndefined()
+    expect(resolvePath({ items: ['a', 'b'] }, 'items.-1')).toBeUndefined()
+  })
+
   it('returns non-object values correctly', () => {
     const obj = {
       string: 'hello',

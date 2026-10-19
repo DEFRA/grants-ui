@@ -27,10 +27,12 @@ export function resolvePath(obj, path) {
   }
 
   // Hoek walks array indices as plain segments, so `items[0].name` becomes `items.0.name`.
+  // It also counts a negative index from the end of an array, which this path syntax does not.
   const chain = path.replaceAll(/\[(\d+)\]/g, '.$1').split('.')
-  if (chain.some((key) => DANGEROUS_KEYS.has(key))) {
+  if (chain.some((key) => DANGEROUS_KEYS.has(key) || key.startsWith('-'))) {
     return undefined
   }
 
-  return reach(obj, chain)
+  // Hoek reads into strings too (`name.0`, `name.length`); only objects are descended.
+  return chain.reduce((current, key) => (typeof current === 'object' ? reach(current, [key]) : undefined), obj)
 }
