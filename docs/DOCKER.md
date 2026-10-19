@@ -82,6 +82,10 @@ gt --help
 gt --version
 ```
 
+In the interactive **local** menu, services without a local image can also be selected when a sibling checkout named after the service contains a root `Dockerfile` (for example, `../grants-ui-backend/Dockerfile`). These rows show **build from ../<repo-name> on apply**. Applying the selection runs `docker build -t <repo-name>:local .` in each selected checkout before saving and enabling the overrides. Existing images are reused. If a build fails or is cancelled, selections are not saved; press `l` to inspect the build output.
+
+With local images or form-definition overrides enabled, **refresh overrides** appears in the main menu and is available while the stack is running. It rebuilds every enabled local service image from its sibling checkout, recreates the matching running services, then re-applies the enabled form-definition overrides. Every enabled image needs a sibling checkout with a root `Dockerfile` to rebuild. A failed or cancelled build stops the refresh before any services are restarted; press `l` for output.
+
 ### Adding new addon services
 
 Append an entry to the `ADDONS` array in `tools/grants-tui/constants.js`. Each entry needs a `key`, `label`, `description`, and `composeFile`.
