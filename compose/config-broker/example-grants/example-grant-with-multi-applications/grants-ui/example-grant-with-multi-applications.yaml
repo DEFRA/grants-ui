@@ -5,7 +5,8 @@ metadata:
   surveyLabel: Example grant with multiple applications
   enabledInProd: false
   allowMultipleApplications: true
-  grantRedirectRules: null
+  grantRedirectRules:
+    excludedPaths: ['print-submitted-application']
   permissions:
     enforce: false
 pages:
@@ -51,6 +52,12 @@ pages:
         type: Html
         content: |
           <p class="govuk-body">This is an example grant with no real next steps. Open the grant again without a reference to see this application alongside any others.</p>
+
+          <p class="govuk-body"><a class="govuk-link" href="/{{SLUG}}/print-submitted-application" target="_blank">View / Print submitted application (opens in new tab)</a></p>
+  - title: PrintSubmittedApplication
+    path: /print-submitted-application
+    controller: PrintSubmittedApplicationController
+    id: 3c9e2b71-5d4a-4f8e-9a16-7b0c2e8d4f53
 sections: []
 lists: []
 conditions: []
