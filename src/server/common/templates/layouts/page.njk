@@ -152,7 +152,7 @@
     ]
   %}
 
-  {% if cdpEnvironment !== 'prod' %}
+  {% if cdpEnvironment !== 'prod' and not hideClearApplicationState %}
     {%
       set footerItems = footerItems.concat([{
         href: "./clear-application-state",

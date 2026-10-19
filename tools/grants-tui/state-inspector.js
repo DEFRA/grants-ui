@@ -61,7 +61,7 @@ export function createStateRefresh(selection, fetch = fetchState) {
   return async (signal) => {
     try {
       const documents = await fetch(selection, signal)
-      // Exact version queries normally return one document; never display multiple.
+      // The selection scopes the version and application reference.
       const document = documents[0] ?? null
       current = stateView(document, previous)
       previous = document
@@ -134,7 +134,7 @@ export async function inspectState(dryRun = false) {
     await viewText({
       title: 'Application state · read-only',
       subtitle: 'Dry run',
-      text: 'Would list grants, SBIs and versions from MongoDB, then query one selected version.'
+      text: 'Would list grants, SBIs and versions from MongoDB, then select an application reference when there are several applications.'
     })
     return
   }
@@ -154,7 +154,7 @@ export async function inspectState(dryRun = false) {
     radioMenu(
       values.map((value, index) => ({
         key: value,
-        label: outputLines(value).join(' '),
+        label: value === '__legacy__' ? 'Application without a reference' : outputLines(value).join(' '),
         description: versions && index === 0 ? 'Latest' : ''
       })),
       title,
@@ -178,15 +178,39 @@ export async function inspectState(dryRun = false) {
           true
         )
         if (grantVersion === '__quit__') break
-        const selection = { grantCode, sbi, grantVersion }
-        saveInspectorSelection(selection)
-        Object.assign(saved, selection)
-        await viewText({
-          title: 'Application state · read-only',
-          subtitle: `Grant ${grantCode} · SBI ${sbi} · Version ${grantVersion}`,
-          text: 'Fetching state…',
-          refresh: createStateRefresh(selection)
-        })
+        const applications = [
+          ...new Set(
+            catalog
+              .filter((row) => row.grantCode === grantCode && row.sbi === sbi && row.grantVersion === grantVersion)
+              .map((row) => row.applicationRef ?? null)
+          )
+        ].sort()
+        while (true) {
+          const applicationRef =
+            applications.length > 1
+              ? await menu(
+                  applications.map((ref) => ref ?? '__legacy__'),
+                  'Select an application reference'
+                )
+              : applications[0]
+          if (applicationRef === '__quit__') break
+          const reference = applicationRef === '__legacy__' ? null : applicationRef
+          const selection = {
+            grantCode,
+            sbi,
+            grantVersion,
+            ...(reference ? { applicationRef: reference } : applications.length > 1 ? { applicationRef: null } : {})
+          }
+          saveInspectorSelection(selection)
+          Object.assign(saved, selection)
+          await viewText({
+            title: 'Application state · read-only',
+            subtitle: `Grant ${grantCode} · SBI ${sbi} · Version ${grantVersion}${reference ? ` · Reference ${reference}` : ''}`,
+            text: 'Fetching state…',
+            refresh: createStateRefresh(selection)
+          })
+          if (applications.length <= 1) break
+        }
       }
     }
   }

@@ -31,6 +31,7 @@ vi.mock('./get-cache-key-helper.js', () => ({
   parseSessionKey: mockParseSessionKey
 }))
 
+let fetchLatestDefinitionFromApi
 let fetchStateWithDefinitionFromApi
 let clearSavedStateFromApi
 let clearSavedStateFromApiByContext
@@ -99,8 +100,32 @@ describe('State API helpers', () => {
   describe('fetchStateWithDefinitionFromApi', () => {
     describe('With backend configured correctly', () => {
       loadHelperModule((helper) => {
+        fetchLatestDefinitionFromApi = helper.fetchLatestDefinitionFromApi
         fetchStateWithDefinitionFromApi = helper.fetchStateWithDefinitionFromApi
         clearSavedStateFromApi = helper.clearSavedStateFromApi
+      })
+
+      it('GETs the definition with service authentication and no lock token or state payload', async () => {
+        const definition = { major: 1, minor: 0, patch: 0, definition: { pages: [] } }
+        mockFetch.mockResolvedValue(createMockFetchResponse({ data: definition }))
+        expect(await fetchLatestDefinitionFromApi('test-grant')).toEqual(definition)
+        expect(mockFetch).toHaveBeenCalledWith(
+          expect.stringMatching(/\/definitions\/test-grant$/),
+          expect.objectContaining({ method: 'GET' })
+        )
+        expect(mockFetch.mock.calls[0][1].body).toBeUndefined()
+        expect(createApiHeadersForGrantsUiBackend).toHaveBeenCalledWith({})
+      })
+      it('returns null when no active definition exists', async () => {
+        mockFetch.mockResolvedValue(createMockFetchResponse({ ok: false, status: 404 }))
+        expect(await fetchLatestDefinitionFromApi('missing')).toBeNull()
+      })
+      it('propagates a definition API failure', async () => {
+        mockFetch.mockResolvedValue(createMockFetchResponse({ ok: false, status: 503 }))
+        await expect(fetchLatestDefinitionFromApi('test-grant')).rejects.toMatchObject({
+          message: 'Failed to fetch grant definition: 503',
+          output: { statusCode: 500 }
+        })
       })
 
       it('POSTs to /state/with-definition and returns the envelope', async () => {
