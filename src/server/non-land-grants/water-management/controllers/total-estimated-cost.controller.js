@@ -3,7 +3,6 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { withDerivedState } from '~/src/server/common/helpers/state/with-derived-state.js'
 
-// Only presence is checked; values are used as configured.
 const required = Joi.any().required()
 const costsSchema = Joi.object({
   reservoirClayHighCostPerUnit: required,
