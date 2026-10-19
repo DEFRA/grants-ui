@@ -101,7 +101,7 @@ export class StatePersistenceService extends CacheService {
 
     // A brand-new application of a multi-application grant: scope the creating request to the
     // reference the forms engine just minted, so this very response's links and redirects carry it.
-    const referenceNumber = state?.$$__referenceNumber
+    const referenceNumber = /** @type {string | undefined} */ (state?.$$__referenceNumber)
     if (
       referenceNumber &&
       !getReferenceNumber(request) &&
