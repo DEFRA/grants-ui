@@ -100,6 +100,32 @@ describe('persistStateToApi', () => {
       )
     })
 
+    it.each([401, 423, 500])('rejects HTTP %s when creation requires a successful save', async (status) => {
+      fetch.mockResolvedValue(createMockFetchResponse({ ok: false, status }))
+      await expect(persistStateToApi(testState, key, { failOnError: true })).rejects.toMatchObject({
+        details: { status: 502, reason: `Backend returned HTTP ${status}` }
+      })
+      expect(log).not.toHaveBeenCalledWith(LogCodes.SYSTEM.EXTERNAL_API_ERROR, expect.anything())
+    })
+
+    it('preserves the network failure when creation requires a successful save', async () => {
+      const cause = new Error('Connection refused')
+      fetch.mockRejectedValue(cause)
+      try {
+        await persistStateToApi(testState, key, { failOnError: true })
+        expect.fail('Expected save to fail')
+      } catch (error) {
+        expect(error.details).toMatchObject({ status: 502, reason: 'Backend request failed' })
+        expect(error.causeErrors.size).toBe(1)
+      }
+      expect(debug).not.toHaveBeenCalled()
+    })
+
+    it('resolves a successful strict save', async () => {
+      fetch.mockResolvedValue(createMockFetchResponse())
+      await expect(persistStateToApi(testState, key, { failOnError: true })).resolves.toBeUndefined()
+    })
+
     it('logs error when response is not ok', async () => {
       const failedResponse = createMockFetchResponse({ ok: false, status: 500, statusText: 'Internal Server Error' })
       fetch.mockResolvedValue(failedResponse)
@@ -222,6 +248,13 @@ describe('persistStateToApi', () => {
 
     afterEach(() => {
       vi.doUnmock('~/src/config/config.js')
+    })
+
+    it('rejects a strict save when the backend endpoint is not configured', async () => {
+      await expect(persistStateToApi(testState, key, { failOnError: true })).rejects.toMatchObject({
+        details: { status: 503 }
+      })
+      expect(fetch).not.toHaveBeenCalled()
     })
 
     it('should return early when backend endpoint is not configured', async () => {

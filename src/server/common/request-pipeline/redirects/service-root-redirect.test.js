@@ -41,12 +41,58 @@ describe('serviceRootRedirect', () => {
     }
   })
 
+  it('leaves a newly created reference-only application on the normal start-page path', async () => {
+    request.app.model.def.startPage = '/start'
+    request.app.model.def.metadata.allowMultipleApplications = true
+    request.query = { ref: 'REF-NEW' }
+    getState.mockResolvedValue({ $$__referenceNumber: 'REF-NEW' })
+    expect(await serviceRootRedirect(request, h)).toBe(h.continue)
+    expect(h.redirect).not.toHaveBeenCalled()
+  })
+
   it('carries the application ref on the redirect - this extension runs after the multi-application plugin, whose hook cannot see its redirect', async () => {
     getState.mockResolvedValue({ businessDetailsUpToDate: true })
     request.query = { ref: 'REF-A' }
 
     await serviceRootRedirect(request, h)
 
+    expect(h.redirect).toHaveBeenCalledWith('/woodland/tasks?ref=REF-A')
+  })
+
+  it.each([true, false])(
+    'uses the configured draft destination for both single and multiple applications (%s)',
+    async (enabled) => {
+      request.app.model.def.metadata.allowMultipleApplications = enabled
+      request.app.model.def.pages = [{ path: '/project-details' }]
+      getState.mockResolvedValue({ businessDetailsUpToDate: true })
+      await serviceRootRedirect(request, h)
+      expect(h.redirect).toHaveBeenCalledWith('/woodland/tasks')
+    }
+  )
+
+  it('keeps the pre-submission gate ahead of the configured destination', async () => {
+    request.app.model.def.metadata.allowMultipleApplications = true
+    request.app.model.def.pages = [{ path: '/tasks' }]
+    request.app.model.def.metadata.grantRedirectRules.preSubmission = [
+      {
+        toPath: '/tasks',
+        incompleteToPath: '/select-land-parcel',
+        requiresAnyItemWithNonEmptyKey: { collection: 'landParcels', key: 'actions' }
+      }
+    ]
+    getState.mockResolvedValue({ businessDetailsUpToDate: true, landParcels: {} })
+    await serviceRootRedirect(request, h)
+    expect(h.redirect).toHaveBeenCalledWith('/woodland/select-land-parcel')
+  })
+
+  it('resumes a multi-application example grant whose start page is /start from a selector click', async () => {
+    request.app.model.def.startPage = '/start'
+    request.app.model.def.metadata.allowMultipleApplications = true
+    request.app.model.def.pages = [{ path: '/start' }, { path: '/project-details' }]
+    request.headers = { 'sec-fetch-site': 'same-origin' }
+    request.query = { ref: 'REF-A' }
+    getState.mockResolvedValue({ answer: 'saved' })
+    await serviceRootRedirect(request, h)
     expect(h.redirect).toHaveBeenCalledWith('/woodland/tasks?ref=REF-A')
   })
 

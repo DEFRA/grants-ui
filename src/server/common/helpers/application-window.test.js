@@ -12,6 +12,18 @@ vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
   return mockLogHelper()
 })
 
+it('uses an explicitly supplied definition without a manufactured request model', () => {
+  expect(
+    isApplicationWindowOpen(
+      { app: {} },
+      {
+        metadata: { applicationWindow: { closesAt: '2026-10-01T00:00:00Z' } }
+      },
+      new Date('2026-10-12T12:00:00Z')
+    )
+  ).toBe(false)
+})
+
 describe('isApplicationWindowOpen', () => {
   const now = new Date('2026-10-01T12:00:00Z')
 
@@ -36,7 +48,7 @@ describe('isApplicationWindowOpen', () => {
       open: false
     }
   ])('is open=$open when $label', ({ applicationWindow, open }) => {
-    expect(isApplicationWindowOpen(buildRequest(applicationWindow), now)).toBe(open)
+    expect(isApplicationWindowOpen(buildRequest(applicationWindow), undefined, now)).toBe(open)
     expect(log).not.toHaveBeenCalled()
   })
 
@@ -45,7 +57,7 @@ describe('isApplicationWindowOpen', () => {
       app: { model: { def: { name: 'Test grant', metadata: { applicationWindow: { closesAt: 'not-a-date' } } } } }
     }
 
-    expect(isApplicationWindowOpen(request, now)).toBe(false)
+    expect(isApplicationWindowOpen(request, undefined, now)).toBe(false)
     expect(log).toHaveBeenCalledWith(
       LogCodes.SYSTEM.INVALID_APPLICATION_WINDOW,
       { formName: 'Test grant', closesAt: 'not-a-date' },
@@ -54,12 +66,12 @@ describe('isApplicationWindowOpen', () => {
   })
 
   it('is open when the request has no form model', () => {
-    expect(isApplicationWindowOpen({ app: {} }, now)).toBe(true)
+    expect(isApplicationWindowOpen({ app: {} }, undefined, now)).toBe(true)
   })
 
   it('is closed when the dev-tools mock is enabled, even inside the window', () => {
     vi.mocked(isWindowClosedMockEnabled).mockReturnValue(true)
 
-    expect(isApplicationWindowOpen(buildRequest({ closesAt: '2026-10-01T12:00:01Z' }), now)).toBe(false)
+    expect(isApplicationWindowOpen(buildRequest({ closesAt: '2026-10-01T12:00:01Z' }), undefined, now)).toBe(false)
   })
 })
