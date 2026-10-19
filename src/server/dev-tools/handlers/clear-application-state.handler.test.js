@@ -86,6 +86,18 @@ describe('clearApplicationStateHandler', () => {
       }
     })
 
+    it('forgets the deleted application ref so the redirect is not re-scoped to it', async () => {
+      mockRequest.params.slug = 'my-application'
+      mockRequest.query = { ref: 'REF-1', other: 'kept' }
+      mockRequest.app.referenceNumber = 'REF-1'
+
+      await clearApplicationStateHandler(mockRequest, mockH)
+
+      expect(mockRequest.app.referenceNumber).toBeUndefined()
+      expect(mockRequest.query).toEqual({ other: 'kept' })
+      expect(mockH.redirect).toHaveBeenCalledWith('/my-application')
+    })
+
     it('should pass correct parameters to clearState', async () => {
       mockRequest.params.slug = 'test-slug'
 

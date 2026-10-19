@@ -51,7 +51,7 @@ function resolvePreSubmissionCandidate(request) {
     /** @type {{ model?: { def?: unknown } }} */ (request.app).model?.def
   )
 
-  if (def?.startPage !== CHECK_DETAILS_START_PAGE) {
+  if (def?.startPage !== CHECK_DETAILS_START_PAGE && def?.metadata?.allowMultipleApplications !== true) {
     return null
   }
 

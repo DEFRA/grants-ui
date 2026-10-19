@@ -46,7 +46,7 @@ test('catalog fetch projects only selection metadata from the state collection',
     return { stdin }
   })
   const script = buildStateCatalogScript()
-  expect(script).toContain('.find({}, { _id: 0, grantCode: 1, sbi: 1, grantVersion: 1 })')
+  expect(script).toContain('.find({}, { _id: 0, grantCode: 1, sbi: 1, grantVersion: 1, applicationRef: 1 })')
   expect(script).toContain('state__grant_application_state')
   const rows = await fetchStateCatalog(new AbortController().signal, execute)
   expect(rows).toEqual([{ grantCode: 'example', sbi: '123456789', grantVersion: '1.0.0' }])
@@ -123,4 +123,10 @@ describe('cmdState', () => {
 
     expect(cmdState({ grantCode: 'EGWA', sbi: '' }, vi.fn())).toBe(2)
   })
+})
+
+test('application selection scopes the Mongo query to its reference', () => {
+  expect(buildStateQuery({ grantCode: 'example', sbi: '123', grantVersion: '1.0.0', applicationRef: 'REF-2' })).toEqual(
+    { grantCode: 'example', sbi: '123', grantVersion: '1.0.0', applicationRef: 'REF-2' }
+  )
 })

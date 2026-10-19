@@ -136,6 +136,18 @@ describe('StatePersistenceService', () => {
     expect(lockModule.mintLockToken).toHaveBeenCalledWith(lockTokenArgs(1))
   })
 
+  test('strict creation propagates persistence failure without selecting the new reference', async () => {
+    const error = new Error('Backend refused save')
+    const request = { ...fakeRequest, app: { grantVersion: 1 } }
+    const state = { $$__referenceNumber: 'REF-NEW' }
+    persistModule.persistStateToApi.mockRejectedValueOnce(error)
+    await expect(service.setState(request, state, { failOnError: true })).rejects.toBe(error)
+    expect(persistModule.persistStateToApi).toHaveBeenCalledWith(state, SESSION_KEY, {
+      ...persistOptions(1),
+      failOnError: true
+    })
+  })
+
   test('setState throws when no grant version can be resolved', async () => {
     contextModule.getStateWithDefinition.mockResolvedValue(undefined)
     contextModule.resolveVersion.mockReturnValue(undefined)
@@ -198,6 +210,18 @@ describe('StatePersistenceService', () => {
 
     expect(fetchModule.clearSavedStateFromApi).toHaveBeenCalledWith(SESSION_KEY, request, persistOptions(1))
     expect(lockModule.mintLockToken).toHaveBeenCalledWith(lockTokenArgs(1))
+  })
+
+  test('creates from an explicit definition flag without manufacturing a model or reading state', async () => {
+    const request = { ...fakeRequest, app: { grantVersion: 1 }, query: {} }
+    const state = { $$__referenceNumber: 'REF-NEW' }
+    await service.setState(request, state, { failOnError: true, allowMultipleApplications: true })
+    expect(contextModule.getStateWithDefinition).not.toHaveBeenCalled()
+    expect(request.app.model).toBeUndefined()
+    expect(persistModule.persistStateToApi).toHaveBeenCalledWith(state, SESSION_KEY, {
+      ...persistOptions(1),
+      failOnError: true
+    })
   })
 
   test('setState scopes the creating request to the reference the engine minted, on a multi-application grant', async () => {
