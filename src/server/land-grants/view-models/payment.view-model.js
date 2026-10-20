@@ -1,5 +1,5 @@
 import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
-import { escapeHtml } from '~/src/server/common/utils/escape-html.js'
+import { escapeHtml } from '@hapi/hoek'
 import { formatPrice } from '~/src/server/common/utils/payment.js'
 import {
   changeActionsHref,

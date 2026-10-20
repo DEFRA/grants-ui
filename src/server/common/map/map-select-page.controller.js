@@ -5,7 +5,7 @@ import { fetchActionsForParcel } from '~/src/server/land-grants/services/land-gr
 import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
 import { formatParcelReference, parseLandParcel } from '~/src/shared/format-parcel.js'
 import { isActionAvailable } from '~/src/shared/availability.js'
-import { escapeHtml } from '~/src/server/common/utils/escape-html.js'
+import { escapeHtml } from '@hapi/hoek'
 import { error, log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { isNoActionsMockEnabled } from '~/src/server/common/helpers/mock-overrides.js'
 import {

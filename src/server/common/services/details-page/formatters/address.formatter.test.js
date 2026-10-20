@@ -33,7 +33,7 @@ describe('address formatter', () => {
     }
 
     const expectedOutput = {
-      html: '&lt;b&gt;456 Elm St&lt;/b&gt;<br/>Los Angeles<br/>90001'
+      html: '&lt;b&gt;456 Elm St&lt;&#x2f;b&gt;<br/>Los Angeles<br/>90001'
     }
 
     expect(addressFormatter(inputAddress)).toEqual(expectedOutput)

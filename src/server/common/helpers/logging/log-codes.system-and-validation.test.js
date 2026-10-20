@@ -487,6 +487,11 @@ describe('LogCodes', () => {
       expect(() => validateLogCodes(invalidLogCodes)).toThrow()
     })
 
+    it('accepts a log code that carries extra keys', () => {
+      const logCodes = { TEST: { EXTRA: { level: 'info', messageFunc: () => 'x', description: 'why it fires' } } }
+      expect(() => validateLogCodes(logCodes)).not.toThrow()
+    })
+
     it('should throw error for nested validation failure', () => {
       const invalidLogCodes = {
         TEST: {
@@ -497,7 +502,9 @@ describe('LogCodes', () => {
           }
         }
       }
-      expect(() => validateLogCodes(invalidLogCodes)).toThrow('Invalid log code definition for "INVALID"')
+      expect(() => validateLogCodes(invalidLogCodes)).toThrow(
+        'Invalid log code definition: "TEST.CATEGORY.INVALID.messageFunc" is required'
+      )
     })
   })
 
@@ -505,17 +512,15 @@ describe('LogCodes', () => {
     it('should throw wrapped error when log code validation fails at startup', async () => {
       vi.resetModules()
 
-      vi.doMock('./log-code-validator.js', () => ({
-        validateLogCode: () => {
-          throw new Error('Invalid level')
-        }
+      vi.doMock('./log-codes/definition.js', () => ({
+        LogCodes: { TEST: { INVALID: { level: 'invalid', messageFunc: () => 'test' } } }
       }))
 
       await expect(async () => {
         await import('./log-codes.js')
       }).rejects.toThrow('Log code validation failed')
 
-      vi.doUnmock('./log-code-validator.js')
+      vi.doUnmock('./log-codes/definition.js')
       vi.resetModules()
     })
   })

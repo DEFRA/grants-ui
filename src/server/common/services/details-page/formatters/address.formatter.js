@@ -1,4 +1,4 @@
-import { escapeHtml } from '~/src/server/common/utils/escape-html.js'
+import { escapeHtml } from '@hapi/hoek'
 
 /**
  * @typedef {object} Address

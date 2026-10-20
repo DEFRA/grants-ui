@@ -10,7 +10,7 @@ import { getActionChosenAreaDisplayId, getActionQuantityFieldName } from '~/src/
 import { requiresQuantityInput } from '~/src/shared/action-quantity-type.js'
 import { isLandAreaUnit, requiresWholeNumber } from '~/src/shared/unit-types.js'
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
-import { escapeHtml } from '~/src/server/common/utils/escape-html.js'
+import { escapeHtml } from '@hapi/hoek'
 import { areaWithUnit, availableArea, formatUnit, unitAlternativeLabel } from '~/src/shared/unit-format.js'
 import { getAvailabilityLimit, isActionAvailable } from '~/src/shared/availability.js'
 import { formatParcelReference } from '~/src/shared/format-parcel.js'
