@@ -5,7 +5,7 @@ import { clearSavedStateFromApiByContext } from '~/src/server/common/helpers/sta
 import { mintLockToken } from '~/src/server/common/helpers/lock/lock-token.js'
 import { log, LogCodes } from '../../common/helpers/logging/log.js'
 import { YarKeys } from '~/src/server/common/constants/session-keys.js'
-import { getReferenceNumber } from '~/src/server/common/helpers/state/get-cache-key-helper.js'
+import { getReferenceNumber, setReferenceNumber } from '~/src/server/common/helpers/state/get-cache-key-helper.js'
 
 /**
  * @typedef {import('@hapi/hapi').Request & {
@@ -30,6 +30,10 @@ export async function clearApplicationStateHandler(request, h) {
   }
 
   clearParcelCache()
+
+  // The deleted application's ref must not follow the user: the multi-application plugin
+  // re-attaches the request's ref to same-grant redirects, which would 404 on the grant root.
+  setReferenceNumber(request, undefined)
 
   return h.redirect(`/${slug}`)
 }

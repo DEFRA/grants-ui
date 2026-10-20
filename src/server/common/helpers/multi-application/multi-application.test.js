@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import multiApplication from './multi-application.js'
 import { multiApplicationRedirect } from '../../request-pipeline/redirects/multi-application-redirect.js'
 import { mockHapiRequest, mockHapiResponseToolkit, mockHapiServer } from '~/src/__mocks__/hapi-mocks.js'
+import { escapeHtml } from '@hapi/hoek'
+import { createParcelItemRow } from '~/src/server/land-grants/view-models/payment.view-model.js'
 
 vi.mock('../../request-pipeline/redirects/multi-application-redirect.js', () => ({
   multiApplicationRedirect: vi.fn()
@@ -480,6 +482,29 @@ describe('multiApplication plugin - reattaching the ref to rendered links', () =
     const { html } = await render(request)
 
     expect(html).toBe('<a href="/test-grant/page?returnUrl=%2Ftest-grant%2Fsummary&amp;page=2&amp;ref=REF-1">x</a>')
+  })
+
+  it('puts the ref on a link whose href was escaped by hoek, which writes ?, = and / as numeric entities', async () => {
+    const [, , , { html: links }] = createParcelItemRow({
+      sheetId: 'AB1234',
+      parcelId: '5678',
+      code: 'SAM1',
+      description: 'x',
+      quantity: 1,
+      annualPaymentPence: 100
+    })
+    const request = makeViewRequest({ html: links, path: '/test-grant/check-selected-land-actions' })
+
+    const { html } = await render(request)
+
+    expect(html).toContain(`href='select-actions-for-land-parcel?parcelId=AB1234-5678&amp;ref=REF-1'`)
+    expect(html).toContain(`href='remove-action?parcelId=AB1234-5678&amp;action=SAM1&amp;ref=REF-1'`)
+  })
+
+  it('still leaves a hoek-escaped link alone when it leaves the grant', async () => {
+    const html = `<a href="${escapeHtml('/updates')}">a</a><a href="${escapeHtml('https://gov.uk/deadline')}">b</a>`
+
+    expect((await render(makeViewRequest({ html }))).html).toBe(html)
   })
 
   it('keeps a fragment at the end of the link', async () => {

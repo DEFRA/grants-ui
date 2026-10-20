@@ -1,3 +1,4 @@
+import { primeApplicationContext } from './common/request-pipeline/prime-application-context.js'
 import plugin from '@defra/forms-engine-plugin'
 import Bell from '@hapi/bell'
 import Cookie from '@hapi/cookie'
@@ -70,7 +71,7 @@ import permissions from '../plugins/permissions.js'
 import { formsRequestPipeline } from './common/request-pipeline/forms-request-pipeline.js'
 import { serviceRootRedirect } from './common/request-pipeline/redirects/service-root-redirect.js'
 import { auditPublisher } from '~/src/server/common/helpers/audit/audit.js'
-import { bindRequestContext, getStateWithDefinition } from './common/helpers/state/state-with-definition-context.js'
+import { bindRequestContext } from './common/helpers/state/state-with-definition-context.js'
 
 const SESSION_CACHE_NAME = 'session.cache.name'
 
@@ -280,21 +281,7 @@ export async function createServer() {
     return h.continue
   })
 
-  // Prime the combined form-definition + state response once per request, before
-  // the forms-engine-plugin resolves the form model. Runs after auth (so sbi/owner
-  // are known) so the request-less form-definition path and getState can both
-  // reuse the single backend call.
-  server.ext('onPostAuth', async (request, h) => {
-    const slug = request.params?.slug
-    if (slug && request.auth?.isAuthenticated && request.auth?.credentials?.contactId) {
-      try {
-        await getStateWithDefinition(request)
-      } catch {
-        // Surfaced later by getState / the definition loader with full context.
-      }
-    }
-    return h.continue
-  })
+  server.ext('onPostAuth', primeApplicationContext)
 
   server.ext('onPreHandler', (request, h) => {
     /** @type {string[]} */

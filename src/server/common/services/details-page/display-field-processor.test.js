@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { escapeHtml } from '@hapi/hoek'
 import { processDisplayFields, processSections } from './display-field-processor.js'
 
 describe('processDisplayFields', () => {
@@ -77,7 +78,7 @@ describe('processDisplayFields', () => {
 
       expect(result.rows).toHaveLength(1)
       expect(result.rows[0].key).toEqual({ text: 'Contact details' })
-      expect(result.rows[0].value.html).toContain('john@smithfarms.com')
+      expect(result.rows[0].value.html).toContain(escapeHtml('john@smithfarms.com'))
     })
   })
 
@@ -193,7 +194,7 @@ describe('processDisplayFields', () => {
       const result = processDisplayFields(config, mockMappedData, mockRequest)
 
       expect(result.rows).toHaveLength(1)
-      expect(result.rows[0].value.html).toContain('john@smithfarms.com')
+      expect(result.rows[0].value.html).toContain(escapeHtml('john@smithfarms.com'))
     })
   })
 

@@ -14,6 +14,7 @@ import { ROOT } from './constants.js'
 import { cmdTailscale } from './tailscale.js'
 import { createTailscaleShare, revokeAllTailscaleShares, revokeTailscaleShare } from './tailscale-share.js'
 import { setupTailscaleSharingPolicy } from './tailscale-policy.js'
+import { buildLocalImage } from './local-images.js'
 
 function runNpmScript(script, dryRun) {
   console.log(`npm run ${script}`)
@@ -56,6 +57,7 @@ const actions = {
   check: cmdCheck,
   snyk: cmdSnyk,
   'form-defs': runApplyFormDefs,
+  'build-local-image': buildLocalImage,
   'refresh-examples': runRefreshExamples,
   'prepare-claim': (application, dryRun) => {
     const result = prepareGasClaim(application, { dryRun })

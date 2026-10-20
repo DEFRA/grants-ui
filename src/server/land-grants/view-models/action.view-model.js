@@ -3,7 +3,7 @@
  * Handles transformation of action objects into checkbox/form items with hints.
  */
 
-import { escapeHtml } from '~/src/server/common/utils/escape-html.js'
+import { escapeHtml } from '@hapi/hoek'
 
 const SSSI_CONSENT_LINK =
   './fptt-information#sec-10-get-all-necessary-regulatory-consents-permissions-and-licences-in-place'
