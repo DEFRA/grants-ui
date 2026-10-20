@@ -499,7 +499,11 @@ async function handleSignOut(request, h) {
   )
 
   const signOutUrl = await getSignOutUrl(request, request.auth.credentials.token)
-  return h.redirect(signOutUrl)
+  // Rendered as a page with an instant meta refresh rather than a 302: the URL
+  // carries the whole Defra ID token, so a Location header plus the usual response
+  // headers can exceed the CDP SSL sidecar's 4KB nginx header buffer and surface
+  // as "SSL Sidecar - Bad Gateway". No-store because the body holds the token.
+  return h.view('signing-out', { signOutUrl }).header('cache-control', 'no-store')
 }
 
 /**

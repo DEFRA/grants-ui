@@ -1,0 +1,18 @@
+{% extends "layouts/page.njk" %}
+{% set pageTitle = "Signing you out" %}
+
+{% block head %}
+  {{ super() }}
+  <meta http-equiv="refresh" content="0; url={{ signOutUrl }}" />
+{% endblock %}
+
+{% block content %}
+  <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+      <h1 class="govuk-heading-l">Signing you out</h1>
+      <p class="govuk-body">
+        If you are not redirected, <a class="govuk-link" href="{{ signOutUrl }}">continue signing out</a>.
+      </p>
+    </div>
+  </div>
+{% endblock %}

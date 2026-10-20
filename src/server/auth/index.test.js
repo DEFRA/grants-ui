@@ -3,6 +3,8 @@ import Cookie from '@hapi/cookie'
 import Hapi from '@hapi/hapi'
 import Yar from '@hapi/yar'
 import { auth } from '~/src/server/auth/index.js'
+import { getSignOutUrl } from '~/src/server/auth/get-sign-out-url.js'
+import { nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
 import { YarKeys } from '~/src/server/common/constants/session-keys.js'
 import permissionsPlugin from '~/src/plugins/permissions.js'
 import { fetchBusinessPermissions } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
@@ -25,6 +27,10 @@ vi.mock('~/src/server/auth/state.js', () => ({
 
 vi.mock('~/src/server/auth/get-sign-out-url.js', () => ({
   getSignOutUrl: vi.fn().mockResolvedValue('https://defra-id.example/logout')
+}))
+
+vi.mock('~/src/config/nunjucks/context/context.js', () => ({
+  context: () => ({ getAssetPath: (/** @type {string} */ assetPath) => `/public/${assetPath}` })
 }))
 
 vi.mock('~/src/server/auth/verify-token.js', () => ({
@@ -132,7 +138,7 @@ async function buildServer({ authenticated = true } = {}) {
     })
   })
 
-  await server.register(auth)
+  await server.register([nunjucksConfig, auth])
   await server.register(permissionsPlugin)
   server.route({
     method: 'GET',
@@ -172,18 +178,18 @@ describe('auth router - permissions cache clearing', () => {
   afterEach(() => vi.clearAllMocks())
 
   it.each([
-    ['/auth/sign-out', true],
-    ['/auth/sign-out', false],
-    ['/auth/sign-out-oidc?state=xyz', true],
-    ['/auth/sign-out-oidc?state=xyz', false]
+    ['/auth/sign-out', true, 200],
+    ['/auth/sign-out', false, 302],
+    ['/auth/sign-out-oidc?state=xyz', true, 302],
+    ['/auth/sign-out-oidc?state=xyz', false, 302]
   ])(
     'scopes permissions cleanup to the current user and business at %s (authenticated: %s)',
-    async (url, authenticated) => {
+    async (url, authenticated, expectedStatus) => {
       const server = await buildServer({ authenticated })
       try {
         const result = await contextAfter(server, url)
 
-        expect(result.status).toBe(302)
+        expect(result.status).toBe(expectedStatus)
         expect(result.permissions).toEqual(authenticated ? null : [{ id: 'group-1', level: 'SUBMIT' }])
         expect(result.otherUserPermissions).toEqual([{ id: 'group-2', level: 'VIEW' }])
         expect(result.otherBusinessPermissions).toEqual([])
@@ -207,6 +213,39 @@ describe('auth router - permissions cache clearing', () => {
       }
     }
   )
+})
+
+describe('auth router - /auth/sign-out', () => {
+  afterEach(() => vi.clearAllMocks())
+
+  it('hands the Defra ID sign-out URL to the browser in the page body, not a Location header', async () => {
+    const server = await buildServer({ authenticated: true })
+    try {
+      const response = await server.inject({ method: 'GET', url: '/auth/sign-out' })
+
+      expect(response.statusCode).toBe(200)
+      expect(response.headers.location).toBeUndefined()
+      expect(response.headers['content-type']).toContain('text/html')
+      expect(response.headers['cache-control']).toBe('no-store')
+      expect(response.payload).toContain('http-equiv="refresh" content="0; url=https://defra-id.example/logout"')
+      expect(getSignOutUrl).toHaveBeenCalledWith(expect.anything(), 'stub-token')
+    } finally {
+      await server.stop()
+    }
+  })
+
+  it('redirects an unauthenticated request straight home', async () => {
+    const server = await buildServer({ authenticated: false })
+    try {
+      const response = await server.inject({ method: 'GET', url: '/auth/sign-out' })
+
+      expect(response.statusCode).toBe(302)
+      expect(response.headers.location).toBe('/')
+      expect(getSignOutUrl).not.toHaveBeenCalled()
+    } finally {
+      await server.stop()
+    }
+  })
 })
 
 describe('auth router - GRANT_APPLICATION_CONTEXT clearing', () => {

@@ -67,6 +67,10 @@ When permission enforcement is enabled for a grant, each page request is evaluat
    - Progress is preserved, and the user is provided a return link back to their task list or summary.
 4. **Unauthorised Users**: Users with no permissions for the resource receive a `403 Forbidden` response and an `unauthorised` audit event with reason `permission` (`entity: 'application'` for `csApplications` or `entity: 'claim'` for `csAgreements`).
 
+### Sign-out
+
+`GET /auth/sign-out` builds the Defra ID end-session URL (`post_logout_redirect_uri`, `id_token_hint`, `state`) and hands it to the browser in a small page with an instant `<meta http-equiv="refresh">`, not as a `302 Location` header. The `id_token_hint` is the user's full Defra ID token, which grows with the number of business relationships, and together with the CSP, security and session cookie headers a `Location` header carrying it can exceed the 4KB header buffer of the nginx [cdp-ssl-sidecar](https://github.com/DEFRA/cdp-ssl-sidecar) in front of every CDP service. nginx then fails the whole response as `{"statusCode":502, "message":"SSL Sidecar - Bad Gateway"}`. The page is sent with `Cache-Control: no-store` because its body contains the token. Defra ID redirects back to `/auth/sign-out-oidc`, which verifies `state` and tears down the session.
+
 ## Rate Limiting
 
 The application implements rate limiting to protect against abuse and denial-of-service attacks (CWE-400: Uncontrolled Resource Consumption). Rate limiting is implemented using [hapi-rate-limit](https://github.com/wraithgar/hapi-rate-limit).
