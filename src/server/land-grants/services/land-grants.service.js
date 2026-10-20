@@ -197,7 +197,7 @@ export async function fetchActionsForParcel(parcel, userContext) {
  * so it isn't returned here - the client already has it from initial render.
  * @param {{ parcelId: string, sheetId: string, plannedActions: PlannedAction[] }} params
  * @param {LandGrantsUserContext} userContext
- * @returns {Promise<{ actions: Array<{ code: string, availability?: ActionAvailability }> }>}
+ * @returns {Promise<{ actions: Array<{ code: string, isAvailable: boolean, availability?: ActionAvailability }> }>}
  * @throws {Error}
  */
 export async function fetchActionsWithPlannedActions({ parcelId, sheetId, plannedActions }, userContext) {
@@ -206,6 +206,7 @@ export async function fetchActionsWithPlannedActions({ parcelId, sheetId, planne
   const foundParcel = parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)
   const actions = (foundParcel?.actions || []).map(mapAction).map((action) => ({
     code: action.code,
+    isAvailable: action.isAvailable,
     availability: action.availability
   }))
 
