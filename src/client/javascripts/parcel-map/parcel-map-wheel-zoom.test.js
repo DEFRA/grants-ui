@@ -15,7 +15,12 @@ describe('parcel map wheel zoom', () => {
   const pressCtrl = () => window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Control', ctrlKey: true }))
 
   const wheel = (options = {}) => {
-    const event = new window.WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: 100, ...options })
+    const event = new window.WheelEvent('wheel', {
+      bubbles: true,
+      cancelable: true,
+      deltaY: 4.000244140625,
+      ...options
+    })
     canvas.dispatchEvent(event)
     return event
   }
@@ -65,8 +70,8 @@ describe('parcel map wheel zoom', () => {
     const event = wheel(options)
 
     expect(event.defaultPrevented).toBe(false)
-    expect(nativeWheel).toHaveBeenCalledWith(event)
-    expect(zoomEnabled).toBe(false)
+    expect(nativeWheel).not.toHaveBeenCalled()
+    expect(zoomEnabled).toBe(true)
     expect(hint.hidden).toBe(false)
     expect(hint.textContent).toMatch(/^Hold Ctrl and scroll( with two fingers to move| to zoom) the map$/)
     expect(hint.childElementCount).toBe(0)
@@ -91,8 +96,209 @@ describe('parcel map wheel zoom', () => {
   it('returns to page scrolling on the first event after releasing the modifier', () => {
     wheel({ ctrlKey: true })
 
+    nativeWheel.mockClear()
     expect(wheel().defaultPrevented).toBe(false)
-    expect(zoomEnabled).toBe(false)
+    expect(nativeWheel).not.toHaveBeenCalled()
+    expect(zoomEnabled).toBe(true)
+  })
+
+  it.each(['wheel', 'pinch'])('keeps native zoom enabled after %s and subsequent ordinary scrolling', (gesture) => {
+    if (gesture === 'wheel') {
+      pressCtrl()
+    }
+    const firstZoom = wheel({ ctrlKey: true })
+    window.dispatchEvent(new window.KeyboardEvent('keyup', { key: 'Control' }))
+    const pageScroll = wheel({ deltaY: 2 })
+    const nextZoom = wheel({ ctrlKey: true })
+
+    expect(nativeWheel.mock.calls.map(([event]) => event)).toEqual([firstZoom, nextZoom])
+    expect(pageScroll.defaultPrevented).toBe(false)
+    expect(ml.scrollZoom.enable).toHaveBeenCalledOnce()
+    expect(ml.scrollZoom.disable).not.toHaveBeenCalled()
+  })
+
+  it.each(['wheel', 'pinch', 'buffered wheel'])(
+    'finishes native %s zoom and accepts another zoom after ordinary scrolling',
+    async (type) => {
+      const { ScrollZoomHandler } = await import('maplibre-gl/src/ui/handler/scroll_zoom.ts')
+      cleanups.forEach((cleanup) => cleanup())
+      cleanups = []
+      container.removeEventListener('wheel', nativeWheel)
+      ml.transform = {
+        zoom: 10,
+        scale: 1024,
+        getCameraLngLat: () => ({ lng: 0, lat: 0 }),
+        applyConstrain: (_center, zoom) => ({ zoom })
+      }
+      ml.getZoomSnap = () => 0
+      ml.cooperativeGestures = { isEnabled: () => false }
+      let framePending = false
+      const render = () => {
+        if (framePending) {
+          return
+        }
+        framePending = true
+        globalThis.setTimeout(() => {
+          framePending = false
+          // HandlerManager skips disabled handlers, including animation frames.
+          if (!ml.scrollZoom.isEnabled()) {
+            return
+          }
+          const result = ml.scrollZoom.renderFrame()
+          if (result) {
+            ml.transform.zoom += result.zoomDelta
+            ml.transform.scale = 2 ** ml.transform.zoom
+            if (result.needsRenderFrame) {
+              render()
+            }
+          }
+        }, 16)
+      }
+      ml.scrollZoom = new ScrollZoomHandler(ml, render)
+      container.addEventListener('wheel', (event) => ml.scrollZoom.wheel(event))
+      attachWheelZoom(ml, cleanups)
+      cleanups.push(() => ml.scrollZoom.reset())
+      if (type !== 'pinch') {
+        pressCtrl()
+      }
+      const deltaY = type === 'buffered wheel' ? -20 : type === 'wheel' ? -4.000244140625 : -1.5
+      wheel({ ctrlKey: true, deltaY })
+      if (type === 'wheel') {
+        vi.advanceTimersByTime(16)
+      } else if (type === 'buffered wheel') {
+        vi.advanceTimersByTime(40)
+      }
+      window.dispatchEvent(new window.KeyboardEvent('keyup', { key: 'Control' }))
+      const beforeScroll = ml.transform.zoom
+      expect(wheel({ deltaY: 2 }).defaultPrevented).toBe(false)
+      vi.advanceTimersByTime(450)
+
+      expect(ml.transform.zoom).toBeGreaterThan(beforeScroll)
+      expect(ml.scrollZoom.isZooming()).toBe(false)
+      const finishedZoom = ml.transform.zoom
+      pressCtrl()
+      wheel({ ctrlKey: true, deltaY: -4.000244140625 })
+      vi.advanceTimersByTime(450)
+      expect(ml.transform.zoom).toBeGreaterThan(finishedZoom)
+      expect(ml.scrollZoom.isZooming()).toBe(false)
+    }
+  )
+
+  it.each([4, 10, 20, 39])('zooms for an isolated %spx mouse-wheel tick after classification', (deltaY) => {
+    pressCtrl()
+    const event = wheel({ ctrlKey: true, deltaY, clientX: 25, clientY: 50 })
+
+    expect(event.defaultPrevented).toBe(true)
+    expect(nativeWheel).not.toHaveBeenCalled()
+    expect(ml.panBy).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(39)
+    expect(nativeWheel).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(1)
+    expect(nativeWheel).toHaveBeenCalledExactlyOnceWith(event)
+    expect(event.target).toBe(canvas)
+    expect(event.clientX).toBe(25)
+    expect(event.clientY).toBe(50)
+    expect(ml.panBy).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    [19, true],
+    [20, false],
+    [30, false]
+  ])('classifies repeated 10px events %sms apart (touchpad: %s)', (gap, touchpad) => {
+    pressCtrl()
+    const first = wheel({ ctrlKey: true, deltaY: 10 })
+    vi.advanceTimersByTime(gap)
+    const second = wheel({ ctrlKey: true, deltaY: 10 })
+
+    if (touchpad) {
+      expect(ml.panBy.mock.calls).toEqual([
+        [[0, 10], { duration: 0 }],
+        [[0, 10], { duration: 0 }]
+      ])
+      expect(nativeWheel).not.toHaveBeenCalled()
+    } else {
+      expect(nativeWheel.mock.calls.map(([event]) => event)).toEqual([first, second])
+      expect(ml.panBy).not.toHaveBeenCalled()
+    }
+    vi.advanceTimersByTime(40)
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('keeps a fast trackpad gesture panning when its momentum deltas increase', () => {
+    pressCtrl()
+    wheel({ ctrlKey: true, deltaY: 10 })
+    vi.advanceTimersByTime(10)
+    wheel({ ctrlKey: true, deltaY: 10 })
+    vi.advanceTimersByTime(16)
+    wheel({ ctrlKey: true, deltaY: 120 })
+
+    expect(ml.panBy).toHaveBeenLastCalledWith([0, 120], { duration: 0 })
+    expect(nativeWheel).not.toHaveBeenCalled()
+  })
+
+  it('uses ordinary scroll timing to classify a trackpad before the modifier is pressed', () => {
+    expect(wheel({ deltaY: 10 }).defaultPrevented).toBe(false)
+    vi.advanceTimersByTime(10)
+    pressCtrl()
+    const event = wheel({ ctrlKey: true, deltaY: 10 })
+
+    expect(event.defaultPrevented).toBe(true)
+    expect(ml.panBy).toHaveBeenCalledExactlyOnceWith([0, 10], { duration: 0 })
+    expect(nativeWheel).not.toHaveBeenCalled()
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('keeps reminders until an ambiguous modifier gesture is classified', () => {
+    wheel()
+    vi.advanceTimersByTime(401)
+    pressCtrl()
+    wheel({ ctrlKey: true, deltaY: 20 })
+
+    expect(hint.hidden).toBe(false)
+    vi.advanceTimersByTime(40)
+    expect(hint.hidden).toBe(true)
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('preserves the original line units when an ambiguous event resolves to wheel zoom', () => {
+    pressCtrl()
+    const event = wheel({ ctrlKey: true, deltaY: 0.25, deltaMode: window.WheelEvent.DOM_DELTA_LINE })
+    vi.advanceTimersByTime(40)
+
+    expect(nativeWheel).toHaveBeenCalledExactlyOnceWith(event)
+    expect(event.deltaY).toBe(0.25)
+    expect(event.deltaMode).toBe(window.WheelEvent.DOM_DELTA_LINE)
+    expect(ml.panBy).not.toHaveBeenCalled()
+  })
+
+  it('normalises buffered line-based events once when timing identifies a trackpad', () => {
+    pressCtrl()
+    wheel({ ctrlKey: true, deltaY: 0.25, deltaMode: window.WheelEvent.DOM_DELTA_LINE })
+    vi.advanceTimersByTime(10)
+    wheel({ ctrlKey: true, deltaY: 0.25, deltaMode: window.WheelEvent.DOM_DELTA_LINE })
+
+    expect(ml.panBy.mock.calls).toEqual([
+      [[0, 10], { duration: 0 }],
+      [[0, 10], { duration: 0 }]
+    ])
+    expect(nativeWheel).not.toHaveBeenCalled()
+  })
+
+  it.each(['blur', 'teardown'])('cancels buffered wheel events on %s', (reason) => {
+    pressCtrl()
+    wheel({ ctrlKey: true, deltaY: 20 })
+    if (reason === 'blur') {
+      window.dispatchEvent(new Event('blur'))
+    } else {
+      cleanups.forEach((cleanup) => cleanup())
+      cleanups = []
+    }
+    vi.advanceTimersByTime(40)
+
+    expect(nativeWheel).not.toHaveBeenCalled()
+    expect(ml.panBy).not.toHaveBeenCalled()
+    expect(vi.getTimerCount()).toBe(0)
   })
 
   it('allows ordinary horizontal touchpad scrolling to move the page and shows the hint', () => {
@@ -106,7 +312,7 @@ describe('parcel map wheel zoom', () => {
     const otherMap = makeMlMap()
     attachWheelZoom(otherMap, cleanups)
     const otherContainer = otherMap.getCanvasContainer()
-    otherMap.getCanvas().dispatchEvent(new window.WheelEvent('wheel', { bubbles: true, deltaY: 10 }))
+    otherMap.getCanvas().dispatchEvent(new window.WheelEvent('wheel', { bubbles: true, deltaY: 2 }))
 
     expect(otherContainer.querySelector('.parcel-map-wheel-hint').textContent).toBe(
       'Hold Cmd and scroll with two fingers to move the map'
@@ -127,7 +333,7 @@ describe('parcel map wheel zoom', () => {
     expect(zoomEnabled).toBe(true)
     expect(wheel({ ctrlKey: true, deltaX: 1.5, deltaY: 2.5 }).defaultPrevented).toBe(true)
     expect(ml.panBy).toHaveBeenCalledWith([1.5, 2.5], { duration: 0 })
-    expect(zoomEnabled).toBe(false)
+    expect(zoomEnabled).toBe(true)
     window.dispatchEvent(new window.KeyboardEvent('keyup', { key: 'Control' }))
     expect(wheel({ deltaY: 2.5 }).defaultPrevented).toBe(false)
     expect(hint.hidden).toBe(true)
@@ -154,7 +360,7 @@ describe('parcel map wheel zoom', () => {
   })
 
   it.each([
-    ['vertical', { deltaX: 0, deltaY: 0.25 }, [0, 10]],
+    ['vertical', { deltaX: 0, deltaY: 0.05 }, [0, 2]],
     ['horizontal', { deltaX: -0.5, deltaY: 0 }, [-20, 0]],
     ['diagonal', { deltaX: 0.25, deltaY: -0.5 }, [10, -20]]
   ])('normalises fine line-based %s touchpad scrolling for panning', (_name, deltas, offset) => {
@@ -165,16 +371,16 @@ describe('parcel map wheel zoom', () => {
     expect(wheel({ ...options, ctrlKey: true }).defaultPrevented).toBe(true)
 
     expect(ml.panBy).toHaveBeenCalledWith(offset, { duration: 0 })
-    expect(zoomEnabled).toBe(false)
+    expect(nativeWheel).not.toHaveBeenCalled()
   })
 
   it('keeps faster line-based scrolling in the same touchpad gesture', () => {
     pressCtrl()
-    wheel({ ctrlKey: true, deltaY: 0.1, deltaMode: window.WheelEvent.DOM_DELTA_LINE })
+    wheel({ ctrlKey: true, deltaY: 0.05, deltaMode: window.WheelEvent.DOM_DELTA_LINE })
     wheel({ ctrlKey: true, deltaY: 3, deltaMode: window.WheelEvent.DOM_DELTA_LINE })
 
     expect(ml.panBy).toHaveBeenLastCalledWith([0, 120], { duration: 0 })
-    expect(zoomEnabled).toBe(false)
+    expect(nativeWheel).not.toHaveBeenCalled()
   })
 
   it('leaves discrete line-based horizontal wheel movement to the browser', () => {
@@ -186,8 +392,8 @@ describe('parcel map wheel zoom', () => {
   })
 
   it.each([
-    ['Ctrl + vertical touchpad scroll', { ctrlKey: true, deltaY: 10 }, [0, 10]],
-    ['Cmd + vertical touchpad scroll', { metaKey: true, deltaY: -10 }, [0, -10]],
+    ['Ctrl + vertical touchpad scroll', { ctrlKey: true, deltaY: 2 }, [0, 2]],
+    ['Cmd + vertical touchpad scroll', { metaKey: true, deltaY: -2 }, [0, -2]],
     ['Ctrl + horizontal touchpad scroll', { ctrlKey: true, deltaX: 100, deltaY: 0 }, [100, 0]],
     ['Cmd + horizontal touchpad scroll', { metaKey: true, deltaX: -100, deltaY: 0 }, [-100, 0]],
     ['Ctrl + diagonal touchpad scroll', { ctrlKey: true, deltaX: 0.5, deltaY: 1.5 }, [0.5, 1.5]],
@@ -198,7 +404,7 @@ describe('parcel map wheel zoom', () => {
 
     expect(ml.panBy).toHaveBeenCalledWith(offset, { duration: 0 })
     expect(event.defaultPrevented).toBe(true)
-    expect(zoomEnabled).toBe(false)
+    expect(nativeWheel).not.toHaveBeenCalled()
     expect(hint.hidden).toBe(true)
   })
 
@@ -208,7 +414,7 @@ describe('parcel map wheel zoom', () => {
     wheel({ deltaY: 120, ctrlKey: true })
 
     expect(ml.panBy).toHaveBeenCalledWith([0, 120], { duration: 0 })
-    expect(zoomEnabled).toBe(false)
+    expect(nativeWheel).not.toHaveBeenCalled()
   })
 
   it('recognises a mouse wheel after the touchpad gesture ends', () => {
@@ -216,6 +422,7 @@ describe('parcel map wheel zoom', () => {
     vi.advanceTimersByTime(401)
     pressCtrl()
     wheel({ deltaY: 120, ctrlKey: true })
+    vi.advanceTimersByTime(40)
 
     expect(ml.panBy).not.toHaveBeenCalled()
     expect(zoomEnabled).toBe(true)
@@ -245,13 +452,13 @@ describe('parcel map wheel zoom', () => {
 
   it('restores page scrolling immediately when the panning modifier is released', () => {
     pressCtrl()
-    wheel({ ctrlKey: true, deltaY: 10 })
+    wheel({ ctrlKey: true, deltaY: 2 })
     ml.panBy.mockClear()
     window.dispatchEvent(new window.KeyboardEvent('keyup', { key: 'Control' }))
 
-    expect(wheel({ deltaY: 10 }).defaultPrevented).toBe(false)
+    expect(wheel({ deltaY: 2 }).defaultPrevented).toBe(false)
     expect(ml.panBy).not.toHaveBeenCalled()
-    expect(zoomEnabled).toBe(false)
+    expect(nativeWheel).not.toHaveBeenCalled()
   })
 
   it('clears physical key state when the window loses focus, preserving subsequent pinch zoom', () => {
@@ -263,12 +470,42 @@ describe('parcel map wheel zoom', () => {
     expect(zoomEnabled).toBe(true)
   })
 
+  it.each(['pointermove', 'pointerdown'])('recovers a missed Ctrl keydown from %s after focus returns', (type) => {
+    window.dispatchEvent(new Event('blur'))
+    window.dispatchEvent(new Event('focus'))
+    canvas.dispatchEvent(new window.MouseEvent(type, { bubbles: true, ctrlKey: true }))
+    wheel({ ctrlKey: true, deltaY: 2 })
+
+    expect(ml.panBy).toHaveBeenCalledExactlyOnceWith([0, 2], { duration: 0 })
+    expect(nativeWheel).not.toHaveBeenCalled()
+  })
+
+  it('recovers a missed Ctrl release from pointer movement and preserves pinch zoom', () => {
+    pressCtrl()
+    canvas.dispatchEvent(new window.MouseEvent('pointermove', { bubbles: true, ctrlKey: false }))
+    const event = wheel({ ctrlKey: true, deltaY: -2 })
+
+    expect(nativeWheel).toHaveBeenCalledExactlyOnceWith(event)
+    expect(ml.panBy).not.toHaveBeenCalled()
+    wheel()
+    expect(hint.hidden).toBe(false)
+  })
+
+  it('preserves pinch zoom when wheel input is the first event after focus returns', () => {
+    window.dispatchEvent(new Event('blur'))
+    window.dispatchEvent(new Event('focus'))
+    const event = wheel({ ctrlKey: true, deltaY: -2 })
+
+    expect(nativeWheel).toHaveBeenCalledExactlyOnceWith(event)
+    expect(ml.panBy).not.toHaveBeenCalled()
+  })
+
   it('ignores wheel events without movement', () => {
     pressCtrl()
     wheel({ ctrlKey: true, deltaX: 0, deltaY: 0 })
 
     expect(ml.panBy).not.toHaveBeenCalled()
-    expect(zoomEnabled).toBe(false)
+    expect(nativeWheel).not.toHaveBeenCalled()
     expect(hint.hidden).toBe(true)
   })
 
@@ -310,8 +547,8 @@ describe('parcel map wheel zoom', () => {
   it.each([
     ['Ctrl mouse-wheel zoom', { ctrlKey: true, deltaY: 120 }],
     ['Cmd mouse-wheel zoom', { metaKey: true, deltaY: 120 }],
-    ['Ctrl touchpad pan', { ctrlKey: true, deltaY: 10 }],
-    ['Cmd touchpad pan', { metaKey: true, deltaY: 10 }]
+    ['Ctrl touchpad pan', { ctrlKey: true, deltaY: 2 }],
+    ['Cmd touchpad pan', { metaKey: true, deltaY: 2 }]
   ])('stops reminders for this page after %s', (_name, options) => {
     wheel()
     pressCtrl()
@@ -364,19 +601,23 @@ describe('parcel map wheel zoom', () => {
     expect(hint.getAttribute('aria-hidden')).toBe('true')
   })
 
-  it.each(['keydown', 'touchstart', 'touchmove', 'click'])('leaves %s events untouched', (type) => {
-    const listener = vi.fn()
-    container.addEventListener(type, listener)
-    const event = new Event(type, { bubbles: true, cancelable: true })
-    canvas.dispatchEvent(event)
+  it.each(['keydown', 'touchstart', 'touchmove', 'click', 'pointermove', 'pointerdown'])(
+    'leaves %s events untouched',
+    (type) => {
+      const listener = vi.fn()
+      container.addEventListener(type, listener)
+      const event = new Event(type, { bubbles: true, cancelable: true })
+      canvas.dispatchEvent(event)
 
-    expect(listener).toHaveBeenCalledWith(event)
-    expect(event.defaultPrevented).toBe(false)
-    expect(ml.scrollZoom.enable).not.toHaveBeenCalled()
-    expect(hint.hidden).toBe(true)
-  })
+      expect(listener).toHaveBeenCalledWith(event)
+      expect(event.defaultPrevented).toBe(false)
+      expect(ml.scrollZoom.enable).toHaveBeenCalledOnce()
+      expect(hint.hidden).toBe(true)
+    }
+  )
 
   it('removes listeners, hint and timers on teardown', () => {
+    const removeListener = vi.spyOn(window, 'removeEventListener')
     wheel()
     cleanups.forEach((cleanup) => cleanup())
     cleanups = []
@@ -385,5 +626,8 @@ describe('parcel map wheel zoom', () => {
     expect(vi.getTimerCount()).toBe(0)
     expect(wheel({ ctrlKey: true }).defaultPrevented).toBe(false)
     expect(zoomEnabled).toBe(false)
+    for (const type of ['keydown', 'keyup', 'pointermove', 'pointerdown']) {
+      expect(removeListener).toHaveBeenCalledWith(type, expect.any(Function), true)
+    }
   })
 })
