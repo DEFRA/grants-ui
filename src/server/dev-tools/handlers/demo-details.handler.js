@@ -2,7 +2,7 @@ import { buildDemoMappedData, buildDemoRequest } from '../helpers/index.js'
 import { generateFormNotFoundResponse, resolveFormDefinition } from '../utils/index.js'
 import { processSections } from '../../common/services/details-page/index.js'
 import { debug, LogCodes } from '../../common/helpers/logging/log.js'
-import { escapeHtml } from '../../common/utils/escape-html.js'
+import { escapeHtml } from '@hapi/hoek'
 
 const CHECK_DETAILS_VIEW = 'check-details'
 

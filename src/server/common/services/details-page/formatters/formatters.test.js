@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { escapeHtml } from '@hapi/hoek'
 import { textFormatter } from './text.formatter.js'
 import { fullNameFormatter } from './full-name.formatter.js'
 import { addressFormatter } from './address.formatter.js'
@@ -58,7 +59,7 @@ describe('contactDetailsFormatter', () => {
     const values = ['01234567890', 'test@example.com']
     const result = contactDetailsFormatter(values)
     expect(result).toHaveProperty('html')
-    expect(result.html).toContain('test@example.com')
+    expect(result.html).toContain(escapeHtml('test@example.com'))
   })
 
   it('should handle only phone', () => {
@@ -70,7 +71,7 @@ describe('contactDetailsFormatter', () => {
   it('should handle only email', () => {
     const values = [null, 'test@example.com']
     expect(contactDetailsFormatter(values)).toEqual({
-      html: 'test@example.com'
+      html: escapeHtml('test@example.com')
     })
   })
 

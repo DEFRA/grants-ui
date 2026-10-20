@@ -2,7 +2,7 @@ import { buildDemoData } from '../helpers/index.js'
 import { generateFormNotFoundResponse, resolveFormDefinition } from '../utils/index.js'
 import { ConfirmationService } from '../../confirmation/services/confirmation.service.js'
 import { debug, LogCodes } from '../../common/helpers/logging/log.js'
-import { escapeHtml } from '../../common/utils/escape-html.js'
+import { escapeHtml } from '@hapi/hoek'
 
 /**
  * Load confirmation content with development fallback

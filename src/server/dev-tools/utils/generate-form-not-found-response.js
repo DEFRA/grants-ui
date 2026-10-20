@@ -1,4 +1,4 @@
-import { escapeHtml } from '~/src/server/common/utils/escape-html.js'
+import { escapeHtml } from '@hapi/hoek'
 
 const HTTP_STATUS = {
   NOT_FOUND: 404
