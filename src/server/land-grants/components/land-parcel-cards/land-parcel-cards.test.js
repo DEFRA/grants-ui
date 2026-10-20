@@ -30,6 +30,7 @@ describe('land parcel table columns', () => {
     expect(tables).toHaveLength(2)
 
     for (const table of tables.toArray()) {
+      expect($(table).hasClass('govuk-table--small-text-until-tablet')).toBe(true)
       expect($(table).parent().hasClass('govuk-summary-card__content')).toBe(true)
       expect($(table).closest('[tabindex], [role="region"]')).toHaveLength(0)
       const columns = $(table).find('colgroup col')

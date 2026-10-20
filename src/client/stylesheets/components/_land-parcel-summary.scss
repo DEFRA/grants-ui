@@ -7,7 +7,14 @@
   color: $govuk-secondary-text-colour;
 }
 
-// On small screens, retain the standard GOV.UK table layout and text wrapping.
+// Keep the automatic table layout on mobile, with the smaller size agreed with UX.
+@include govuk-media-query($until: tablet) {
+  .land-parcel-summary__table {
+    font-size: govuk-px-to-rem(14);
+    line-height: 1.4;
+  }
+}
+
 @include govuk-media-query($from: tablet) {
   .land-parcel-summary__table {
     // Separate parcel tables need shared proportions to align their columns.
