@@ -2,11 +2,11 @@
 import { PARCELS_API_URL, FETCH_MAX_ATTEMPTS, FETCH_RETRY_DELAY_MS } from './config.js'
 
 /**
- * @import { MetaIndex } from './map-helpers.js'
+ * @import { MetaIndex } from './helpers.js'
+ * @import { BBox } from './bounds.js'
  */
 
 /**
- * @typedef {{ minLng: number, minLat: number, maxLng: number, maxLat: number }} BBox
  * @typedef {{ parcelIds: string[], metaIndex: MetaIndex, bbox: BBox | null }} ParcelData
  */
 

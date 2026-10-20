@@ -1,27 +1,14 @@
-import { fitToParcels } from './map-helpers.js'
+import { fitToParcels } from './helpers.js'
+import { createAnnouncer } from './announcer.js'
+import { boundsCentre } from './bounds.js'
 import {
   MSG_SHOW_ALL_PARCELS,
   MSG_SHOW_ALL_PARCELS_AVAILABLE,
-  SHOW_ALL_BUTTON_STYLES,
   SHOW_ALL_BUTTON_CLASS,
-  SHOW_ALL_BUTTON_FOCUS_STYLE,
   SHOW_ALL_ICON_SVG,
   SHOW_ALL_MOVE_THRESHOLD_PX,
   ZOOM_DRIFT_TOLERANCE
 } from './config.js'
-
-const FOCUS_STYLE_MARKER = 'data-parcel-map-show-all-focus-style'
-
-// Injected once document-wide, guarded against duplicates.
-function ensureFocusStyleInjected() {
-  if (document.head.querySelector(`style[${FOCUS_STYLE_MARKER}]`)) {
-    return
-  }
-  const style = document.createElement('style')
-  style.setAttribute(FOCUS_STYLE_MARKER, '')
-  style.textContent = SHOW_ALL_BUTTON_FOCUS_STYLE
-  document.head.appendChild(style)
-}
 
 /**
  * Screen-pixel distance from the map's current center to initialCenter.
@@ -49,39 +36,28 @@ function hasMovedFromInitialView(ml, initialCenter, initialZoom) {
 
 /**
  * Adds the "Show all parcels" button.
- * @param {MLMap} ml
- * @param {BBox | null} bbox
- * @param {HTMLDivElement | null} mapEl
- * @param {Array<() => void>} cleanups
+ * @param {Pick<MapContext, 'ml' | 'store' | 'mapEl' | 'cleanups'>} context
  * @returns {HTMLButtonElement | undefined}
  */
-export function attachResetButton(ml, bbox, mapEl, cleanups) {
+export function attachResetButton({ ml, store, mapEl, cleanups }) {
   const wrapper = mapEl?.parentElement
+  const { bbox } = store
   if (!wrapper || !bbox) {
     return undefined
   }
 
-  ensureFocusStyleInjected()
-
   const button = /** @type {HTMLButtonElement} */ (document.createElement('button'))
   button.type = 'button'
   button.className = SHOW_ALL_BUTTON_CLASS
-  button.style.cssText = SHOW_ALL_BUTTON_STYLES
   button.hidden = true
   button.innerHTML = `${SHOW_ALL_ICON_SVG}<span>${MSG_SHOW_ALL_PARCELS}</span>`
   wrapper.appendChild(button)
 
-  const announcer = document.createElement('div')
-  announcer.className = 'govuk-visually-hidden'
-  announcer.setAttribute('role', 'status')
-  announcer.setAttribute('aria-live', 'polite')
-  wrapper.appendChild(announcer)
+  const announcer = createAnnouncer(wrapper)
 
   // Placeholder until onIdle refines it to the real fitted center.
-  let initialCenter = {
-    lng: (bbox.minLng + bbox.maxLng) / 2,
-    lat: (bbox.minLat + bbox.maxLat) / 2
-  }
+  const [centreLng, centreLat] = boundsCentre(bbox)
+  let initialCenter = { lng: centreLng, lat: centreLat }
   let initialZoom = ml.getZoom()
 
   const showButton = () => {
@@ -89,13 +65,11 @@ export function attachResetButton(ml, bbox, mapEl, cleanups) {
       return
     }
     button.hidden = false
-    button.style.display = 'inline-flex'
-    announcer.textContent = MSG_SHOW_ALL_PARCELS_AVAILABLE
+    announcer.announce(MSG_SHOW_ALL_PARCELS_AVAILABLE)
   }
   const hideButton = () => {
     button.hidden = true
-    button.style.display = 'none'
-    announcer.textContent = ''
+    announcer.clear()
   }
 
   // Real center/zoom are only known once fitBounds settles. Listens once.
@@ -134,5 +108,5 @@ export function attachResetButton(ml, bbox, mapEl, cleanups) {
 
 /**
  * @import { Map as MLMap } from 'maplibre-gl'
- * @import { BBox } from './parcel-map-loader.js'
+ * @import { MapContext } from './element.js'
  */

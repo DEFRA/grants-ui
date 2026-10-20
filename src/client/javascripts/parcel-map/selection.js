@@ -1,29 +1,24 @@
-import { COMPOUND_ID_EXPR, hideTooltip } from './map-helpers.js'
+import { COMPOUND_ID_EXPR, hideTooltip } from './helpers.js'
 import {
   LAYER_ID_FILL,
   FILL_OPACITY_DEFAULT,
   FILL_OPACITY_SELECTED,
   SELECTION_NONE_SENTINEL,
   SELECT_FEATURE_EVENT,
-  EVENT_SELECTION
+  EVENT_SELECTION,
+  SELECTION_SOURCE_MAP
 } from './config.js'
 
 /**
- * @import { Map as MLMap } from 'maplibre-gl'
+ * @import { MapContext } from './element.js'
  */
 
 /**
  * Bridges the interact plugin's selection state to the component's public API:
  * re-applies the fill-opacity highlight and re-dispatches selection changes as
- * `parcel-map:selection` events on `host`.
- * @param {{
- *   host: HTMLElement,
- *   mapInstance: { on: Function, off?: Function, emit: Function },
- *   ml: MLMap,
- *   tooltip: HTMLElement | undefined,
- *   cleanups: Array<() => void>,
- *   multiSelect: boolean
- * }} params
+ * `parcel-map:selection` events on `host`, tagged with where the selection came
+ * from (a map click unless setNextSource() says otherwise).
+ * @param {Pick<MapContext, 'host' | 'mapInstance' | 'ml' | 'cleanups' | 'multiSelect'> & { tooltip: HTMLElement | undefined }} context
  */
 export function attachSelectionRelay({ host, mapInstance, ml, tooltip, cleanups, multiSelect }) {
   /** @param {string[]} selectedIds */
@@ -43,6 +38,9 @@ export function attachSelectionRelay({ host, mapInstance, ml, tooltip, cleanups,
   // Clearing the selection via the map's own "clear" action (e.g. the Change
   // link) must not be re-asserted — only a click-driven toggle-off should be.
   let suppressReassert = false
+  let nextSource = SELECTION_SOURCE_MAP
+  /** @type {Set<string>} */
+  let selectedIds = new Set()
 
   const onSelectionChange = (
     /** @type {{ selectedFeatures: Array<{ featureId: string | number, layerId?: unknown, idProperty?: unknown, properties?: Record<string, unknown>, geometry?: unknown }> }} */ {
@@ -61,13 +59,16 @@ export function attachSelectionRelay({ host, mapInstance, ml, tooltip, cleanups,
     }
 
     const selectedParcels = selectedFeatures.map((f) => ({ id: String(f.featureId), ...f.properties }))
-    applyHighlight(selectedParcels.map((p) => p.id))
+    selectedIds = new Set(selectedParcels.map((p) => p.id))
+    applyHighlight([...selectedIds])
     if (selectedParcels.length === 0 && tooltip) {
       hideTooltip(tooltip)
     }
     lastSelectedFeature = selectedFeatures.length === 1 ? selectedFeatures[0] : null
     suppressReassert = false
-    host.dispatchEvent(new CustomEvent(EVENT_SELECTION, { bubbles: true, detail: { selectedParcels } }))
+    const source = nextSource
+    nextSource = SELECTION_SOURCE_MAP
+    host.dispatchEvent(new CustomEvent(EVENT_SELECTION, { bubbles: true, detail: { selectedParcels, source } }))
   }
 
   mapInstance.on('interact:selectionchange', onSelectionChange)
@@ -78,6 +79,12 @@ export function attachSelectionRelay({ host, mapInstance, ml, tooltip, cleanups,
     // (not a re-click) is allowed to actually clear.
     allowNextClear: () => {
       suppressReassert = true
-    }
+    },
+    /** @param {string} source */
+    setNextSource: (source) => {
+      nextSource = source
+    },
+    /** @param {string} id */
+    isSelected: (id) => selectedIds.has(id)
   }
 }

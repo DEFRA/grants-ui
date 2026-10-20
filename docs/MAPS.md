@@ -249,7 +249,7 @@ Selection is handled by the `@defra/interactive-map` **interact plugin**, not ra
 - **Touch:** a crosshair with a "Select" action button
 - **Keyboard:** <kbd>Enter</kbd> selects at the crosshair target; <kbd>Tab</kbd> opens a listbox of parcels navigable with arrow keys
 
-The plugin only selects a polygon on an exact geometric hit, which is impractical for small zoomed-out parcels. The component adds a rendered-pixel fallback (see `withParcelHitTolerance` in `map-helpers.js`) so parcels stay selectable at any zoom, by pointer and by keyboard.
+The plugin only selects a polygon on an exact geometric hit, which is impractical for small zoomed-out parcels. The component adds a rendered-pixel fallback (see `withParcelMapProvider` in `helpers.js`) so parcels stay selectable at any zoom, by pointer and by keyboard.
 
 The component listens to the plugin's selection events and re-dispatches them as `parcel-map:selection`, so page-level consumers are unaffected by the plugin internals.
 
@@ -296,7 +296,7 @@ The `@defra/interactive-map` CSS must also be loaded. It is copied by webpack's 
 
 ### Basemap provider
 
-The basemap is Ordnance Survey's raster basemap, served through the server-side proxy described below. `getMapStyle` in `map-helpers.js` resolves its style/attribution. It is authoritative UK survey data, including the farmland/parcel boundary detail the journey depends on.
+The basemap is Ordnance Survey's raster basemap, served through the server-side proxy described below. `getMapStyle` in `helpers.js` resolves its style/attribution. It is authoritative UK survey data, including the farmland/parcel boundary detail the journey depends on.
 
 ---
 

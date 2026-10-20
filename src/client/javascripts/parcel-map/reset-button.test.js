@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // @ts-nocheck
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { attachResetButton } from './parcel-map-reset-button.js'
+import { attachResetButton } from './reset-button.js'
 import {
   MSG_SHOW_ALL_PARCELS,
   MSG_SHOW_ALL_PARCELS_AVAILABLE,
@@ -46,68 +46,53 @@ describe('attachResetButton', () => {
 
   it('returns undefined when the map element has no wrapper parent', () => {
     const orphan = document.createElement('div')
-    expect(attachResetButton(makeMl(), BBOX, orphan, cleanups)).toBeUndefined()
+    expect(attachResetButton({ ml: makeMl(), store: { bbox: BBOX }, mapEl: orphan, cleanups })).toBeUndefined()
   })
 
   it('returns undefined when the map element is null', () => {
-    expect(attachResetButton(makeMl(), BBOX, null, cleanups)).toBeUndefined()
+    expect(attachResetButton({ ml: makeMl(), store: { bbox: BBOX }, mapEl: null, cleanups })).toBeUndefined()
   })
 
   it('returns undefined when there is no bbox', () => {
     const mapEl = makeMapEl()
-    expect(attachResetButton(makeMl(), null, mapEl, cleanups)).toBeUndefined()
+    expect(attachResetButton({ ml: makeMl(), store: { bbox: null }, mapEl, cleanups })).toBeUndefined()
   })
 
-  it('is hidden by default (no inline display fighting the hidden attribute) and labelled "Show all parcels"', () => {
+  it('is hidden by default, with no inline style, and labelled "Show all parcels"', () => {
     const mapEl = makeMapEl()
-    const button = attachResetButton(makeMl(), BBOX, mapEl, cleanups)
+    const button = attachResetButton({ ml: makeMl(), store: { bbox: BBOX }, mapEl, cleanups })
 
     expect(button.hidden).toBe(true)
-    // The bug this guards: 'display:inline-flex' baked into the base cssText
-    // overrides [hidden]'s UA display:none, so the button showed on load
-    // regardless of the `hidden` property.
-    expect(button.style.display).not.toBe('inline-flex')
-    expect(button.textContent).toContain(MSG_SHOW_ALL_PARCELS)
-  })
-
-  it('carries the class the GOV.UK-style focus ring is scoped to, and injects that style once', () => {
-    const mapEl = makeMapEl()
-    const button = attachResetButton(makeMl(), BBOX, mapEl, cleanups)
-
+    // Layout, colours and the focus ring live in _parcel-map.scss under this class.
+    expect(button.getAttribute('style')).toBeNull()
     expect(button.classList.contains(SHOW_ALL_BUTTON_CLASS)).toBe(true)
-    expect(document.head.querySelectorAll('style[data-parcel-map-show-all-focus-style]')).toHaveLength(1)
-
-    // A second <parcel-map> instance on the same page must not duplicate it.
-    attachResetButton(makeMl(), BBOX, makeMapEl(), [])
-    expect(document.head.querySelectorAll('style[data-parcel-map-show-all-focus-style]')).toHaveLength(1)
+    expect(button.textContent).toContain(MSG_SHOW_ALL_PARCELS)
   })
 
   it('stays hidden when drift is below the threshold (incidental nudge)', () => {
     const mapEl = makeMapEl()
     const ml = makeMl({ offsetPx: SHOW_ALL_MOVE_THRESHOLD_PX - 1 })
-    const button = attachResetButton(ml, BBOX, mapEl, cleanups)
+    const button = attachResetButton({ ml, store: { bbox: BBOX }, mapEl, cleanups })
 
     ml._emit('moveend')
 
     expect(button.hidden).toBe(true)
-    expect(button.style.display).not.toBe('inline-flex')
   })
 
   it('shows the button once drift reaches the threshold', () => {
     const mapEl = makeMapEl()
     const ml = makeMl({ offsetPx: SHOW_ALL_MOVE_THRESHOLD_PX })
-    const button = attachResetButton(ml, BBOX, mapEl, cleanups)
+    const button = attachResetButton({ ml, store: { bbox: BBOX }, mapEl, cleanups })
 
     ml._emit('moveend')
 
     expect(button.hidden).toBe(false)
-    expect(button.style.display).toBe('inline-flex')
   })
 
   it('hides itself immediately and triggers an animated re-fit when clicked', () => {
     const mapEl = makeMapEl()
     const ml = makeMl({ offsetPx: SHOW_ALL_MOVE_THRESHOLD_PX })
-    const button = attachResetButton(ml, BBOX, mapEl, cleanups)
+    const button = attachResetButton({ ml, store: { bbox: BBOX }, mapEl, cleanups })
 
     ml._emit('moveend')
     expect(button.hidden).toBe(false)
@@ -115,7 +100,6 @@ describe('attachResetButton', () => {
     button.click()
 
     expect(button.hidden).toBe(true)
-    expect(button.style.display).toBe('none')
     expect(ml.fitBounds).toHaveBeenCalledWith(
       [
         [BBOX.minLng, BBOX.minLat],
@@ -128,7 +112,7 @@ describe('attachResetButton', () => {
   it('ignores the moveend fired by its own reset animation', () => {
     const mapEl = makeMapEl()
     const ml = makeMl({ offsetPx: SHOW_ALL_MOVE_THRESHOLD_PX })
-    const button = attachResetButton(ml, BBOX, mapEl, cleanups)
+    const button = attachResetButton({ ml, store: { bbox: BBOX }, mapEl, cleanups })
 
     ml._emit('moveend')
     expect(button.hidden).toBe(false)
@@ -145,7 +129,7 @@ describe('attachResetButton', () => {
   it('resumes normal drift-checking on the next moveend after a reset', () => {
     const mapEl = makeMapEl()
     const ml = makeMl({ offsetPx: SHOW_ALL_MOVE_THRESHOLD_PX })
-    const button = attachResetButton(ml, BBOX, mapEl, cleanups)
+    const button = attachResetButton({ ml, store: { bbox: BBOX }, mapEl, cleanups })
 
     ml._emit('moveend')
     button.click()
@@ -162,7 +146,7 @@ describe('attachResetButton', () => {
   it('does not hide itself when the user pans back to the initial view without clicking the button', () => {
     const mapEl = makeMapEl()
     const ml = makeMl({ offsetPx: SHOW_ALL_MOVE_THRESHOLD_PX })
-    const button = attachResetButton(ml, BBOX, mapEl, cleanups)
+    const button = attachResetButton({ ml, store: { bbox: BBOX }, mapEl, cleanups })
 
     ml._emit('moveend')
     expect(button.hidden).toBe(false)
@@ -179,7 +163,7 @@ describe('attachResetButton', () => {
   it('shows the button on a zoom change alone, even with the center unchanged', () => {
     const mapEl = makeMapEl()
     const ml = makeMl()
-    const button = attachResetButton(ml, BBOX, mapEl, cleanups)
+    const button = attachResetButton({ ml, store: { bbox: BBOX }, mapEl, cleanups })
 
     ml._emit('idle')
     ml.getZoom.mockReturnValue(INITIAL_ZOOM + 1)
@@ -191,7 +175,7 @@ describe('attachResetButton', () => {
   it('ignores a negligible zoom change below the tolerance', () => {
     const mapEl = makeMapEl()
     const ml = makeMl()
-    const button = attachResetButton(ml, BBOX, mapEl, cleanups)
+    const button = attachResetButton({ ml, store: { bbox: BBOX }, mapEl, cleanups })
 
     ml._emit('idle')
     ml.getZoom.mockReturnValue(INITIAL_ZOOM + 0.01)
@@ -203,7 +187,7 @@ describe('attachResetButton', () => {
   it('does not hide once shown, even when zoom returns to its initial-view value', () => {
     const mapEl = makeMapEl()
     const ml = makeMl()
-    const button = attachResetButton(ml, BBOX, mapEl, cleanups)
+    const button = attachResetButton({ ml, store: { bbox: BBOX }, mapEl, cleanups })
 
     ml._emit('idle')
     ml.getZoom.mockReturnValue(INITIAL_ZOOM + 1)
@@ -220,7 +204,7 @@ describe('attachResetButton', () => {
     const mapEl = makeMapEl()
     // Simulates fitBounds not having applied yet when attachResetButton runs.
     const ml = makeMl({ zoom: 4 })
-    const button = attachResetButton(ml, BBOX, mapEl, cleanups)
+    const button = attachResetButton({ ml, store: { bbox: BBOX }, mapEl, cleanups })
 
     // fitBounds settles after attach; idle reports the real fitted zoom.
     ml.getZoom.mockReturnValue(INITIAL_ZOOM)
@@ -238,7 +222,7 @@ describe('attachResetButton', () => {
     ml.getCenter.mockReturnValue(fittedCenter)
     ml.project.mockImplementation((lngLat) => (lngLat === fittedCenter ? { x: 0, y: 0 } : { x: 999, y: 0 }))
 
-    const button = attachResetButton(ml, BBOX, mapEl, cleanups)
+    const button = attachResetButton({ ml, store: { bbox: BBOX }, mapEl, cleanups })
     ml._emit('idle')
 
     // The map is still exactly at the real fitted center, not the bbox
@@ -251,7 +235,7 @@ describe('attachResetButton', () => {
   it('announces the button becoming available via a visually-hidden live region', () => {
     const mapEl = makeMapEl()
     const ml = makeMl({ offsetPx: SHOW_ALL_MOVE_THRESHOLD_PX })
-    attachResetButton(ml, BBOX, mapEl, cleanups)
+    attachResetButton({ ml, store: { bbox: BBOX }, mapEl, cleanups })
     const announcer = mapEl.parentElement.querySelector('[role="status"]')
 
     expect(announcer).not.toBeNull()
@@ -265,7 +249,7 @@ describe('attachResetButton', () => {
   it('clears the announcement once the button is clicked', () => {
     const mapEl = makeMapEl()
     const ml = makeMl({ offsetPx: SHOW_ALL_MOVE_THRESHOLD_PX })
-    const button = attachResetButton(ml, BBOX, mapEl, cleanups)
+    const button = attachResetButton({ ml, store: { bbox: BBOX }, mapEl, cleanups })
     const announcer = mapEl.parentElement.querySelector('[role="status"]')
 
     ml._emit('moveend')
@@ -279,7 +263,7 @@ describe('attachResetButton', () => {
   it('does not re-announce on repeated moveends while already shown', () => {
     const mapEl = makeMapEl()
     const ml = makeMl({ offsetPx: SHOW_ALL_MOVE_THRESHOLD_PX })
-    attachResetButton(ml, BBOX, mapEl, cleanups)
+    attachResetButton({ ml, store: { bbox: BBOX }, mapEl, cleanups })
     const announcer = mapEl.parentElement.querySelector('[role="status"]')
 
     ml._emit('moveend')
@@ -292,7 +276,7 @@ describe('attachResetButton', () => {
   it('registers a cleanup for the idle and moveend listeners and the click handler', () => {
     const mapEl = makeMapEl()
     const ml = makeMl()
-    attachResetButton(ml, BBOX, mapEl, cleanups)
+    attachResetButton({ ml, store: { bbox: BBOX }, mapEl, cleanups })
 
     expect(cleanups).toHaveLength(3)
     cleanups.forEach((off) => off())

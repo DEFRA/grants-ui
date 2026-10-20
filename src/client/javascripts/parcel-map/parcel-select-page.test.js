@@ -124,6 +124,31 @@ describe('initParcelSelectPage', () => {
     expect(document.activeElement).toBe(details)
   })
 
+  it('scrolls smoothly to the selected parcel details on a map pick, or without animation under reduced motion', () => {
+    const mapEl = setupDom()
+    const details = document.getElementById('selected-parcel-details')
+
+    fire(mapEl, EVENT_SELECTION, { selectedParcels: [{ id: 'SD7148-9160' }] })
+    expect(details.scrollIntoView).toHaveBeenCalledWith({ block: 'start', behavior: 'smooth' })
+
+    globalThis.matchMedia = vi.fn().mockReturnValue({ matches: true })
+    fire(mapEl, EVENT_SELECTION, { selectedParcels: [{ id: 'SD7148-9161' }] })
+    expect(details.scrollIntoView).toHaveBeenLastCalledWith({ block: 'start', behavior: 'auto' })
+    delete globalThis.matchMedia
+  })
+
+  it('neither moves focus nor scrolls for a parcel picked from the map search box', () => {
+    const mapEl = setupDom()
+    const details = document.getElementById('selected-parcel-details')
+    const before = document.activeElement
+
+    fire(mapEl, EVENT_SELECTION, { selectedParcels: [{ id: 'SD7148-9160' }], source: 'search' })
+
+    expect(details.hidden).toBe(false)
+    expect(document.activeElement).toBe(before)
+    expect(details.scrollIntoView).not.toHaveBeenCalled()
+  })
+
   it('preserves error-summary focus when restoring a selection after a rejected submission', () => {
     const mapEl = setupDom({ selectedParcels: 'SD7148-9160', errors: true })
     mapEl.selectParcels.mockImplementation((ids) =>

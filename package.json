@@ -16,7 +16,7 @@
   "scripts": {
     "build": "run-s build:frontend build:server",
     "build:frontend": "NODE_ENV=production webpack",
-    "build:server": "NODE_ENV=production babel --delete-dir-on-start --ignore \"**/*.test.js\" --ignore \"**/test-helpers\" --ignore \"**/__mocks__\" --copy-files --no-copy-ignored --out-dir ./.server ./src",
+    "build:server": "NODE_ENV=production babel --delete-dir-on-start --ignore \"**/*.test.js\" --ignore \"**/test-helpers\" --ignore \"**/test-helpers.js\" --ignore \"**/*.test-helpers.js\" --ignore \"**/__mocks__\" --copy-files --no-copy-ignored --out-dir ./.server ./src",
     "dev": "run-p frontend:watch server:watch",
     "dev:debug": "run-p frontend:watch server:debug",
     "docker:up": "./tools/setup-local-config.sh && docker compose -f compose.infra.yml -f compose.grants-ui.yml up -d --wait && node tools/refresh-example-grants.js",

@@ -17,8 +17,12 @@ vi.mock('@defra/interactive-map/providers/maplibre', () => ({
 vi.mock('@defra/interactive-map/plugins/interact', () => ({
   default: vi.fn(() => ({ enable: vi.fn(), disable: vi.fn(), clear: vi.fn() }))
 }))
+vi.mock('@defra/interactive-map/plugins/search', () => ({
+  default: vi.fn((options) => ({ id: 'search', ...options }))
+}))
 import InteractiveMap from '@defra/interactive-map'
 import createInteractPlugin from '@defra/interactive-map/plugins/interact'
+import createSearchPlugin from '@defra/interactive-map/plugins/search'
 import {
   LAYER_ID_FILL,
   LAYER_ID_OUTLINE,
@@ -30,7 +34,9 @@ import {
   EVENT_READY,
   EVENT_ERROR,
   EVENT_SELECTION,
-  MSG_LOADING
+  MSG_LOADING,
+  SELECTION_SOURCE_MAP,
+  SELECTION_SOURCE_SEARCH
 } from './config.js'
 import { makeMlMap } from './test-helpers.js'
 
@@ -270,6 +276,22 @@ describe('parcel-map web component', () => {
     })
   })
 
+  describe('map container', () => {
+    it('publishes the map height as a CSS variable, so the search results list can be sized to it', async () => {
+      global.fetch = fetchOk(PARCELS_RESPONSE)
+      const el = await mountElement({ style: 'height:640px' })
+
+      expect(el.querySelector('.parcel-map__wrapper').style.getPropertyValue('--parcel-map-height')).toBe('640px')
+    })
+
+    it('falls back to the default height when the element has none', async () => {
+      global.fetch = fetchOk(PARCELS_RESPONSE)
+      const el = await mountElement()
+
+      expect(el.querySelector('.parcel-map__wrapper').style.getPropertyValue('--parcel-map-height')).toBe('500px')
+    })
+  })
+
   describe('InteractiveMap options', () => {
     it('uses the OS Maps style, OS min zoom 7, no URL sync, and an accessible mapLabel', async () => {
       await mountReady()
@@ -357,6 +379,22 @@ describe('parcel-map web component', () => {
       expect(options.plugins).toContain(pluginInstance)
     })
 
+    it('adds the parcel search plugin, without a result marker, alongside it', async () => {
+      await mountReady()
+
+      const searchInstance = createSearchPlugin.mock.results.at(-1).value
+      const [, options] = InteractiveMap.mock.calls.at(-1)
+      expect(options.plugins).toContain(searchInstance)
+      expect(createSearchPlugin).toHaveBeenCalledWith(
+        expect.objectContaining({
+          showMarker: false,
+          noResultsMessage: 'No matching land parcels',
+          searchErrorMessage: 'Search is unavailable',
+          customDatasets: [expect.objectContaining({ name: 'parcels' })]
+        })
+      )
+    })
+
     it('enables the plugin once parcels are on the map', async () => {
       await mountReady()
 
@@ -381,13 +419,45 @@ describe('parcel-map web component', () => {
   })
 
   describe('selection bridge', () => {
-    it('dispatches parcel-map:selection with the plugin-selected parcel IDs', async () => {
+    it('dispatches parcel-map:selection with the plugin-selected parcel IDs, sourced from the map', async () => {
       const el = await mountReady()
 
       const selectionEvent = waitForEvent(el, EVENT_SELECTION)
       emitSelectionChange([{ featureId: 'SD7148-9160' }])
       const e = await selectionEvent
       expect(e.detail.selectedParcels.map((p) => p.id)).toEqual(['SD7148-9160'])
+      expect(e.detail.source).toBe(SELECTION_SOURCE_MAP)
+    })
+
+    it('tags the selection event with the source selectParcels() was given, for that selection only', async () => {
+      const el = await mountReady()
+      attachInteractListener()
+
+      const fromSearch = waitForEvent(el, EVENT_SELECTION)
+      el.selectParcels(['SD7148-9160'], { source: SELECTION_SOURCE_SEARCH })
+      await vi.waitFor(() => expect(lastMapInstance().emit).toHaveBeenCalled())
+      emitSelectionChange([{ featureId: 'SD7148-9160' }])
+      expect((await fromSearch).detail.source).toBe(SELECTION_SOURCE_SEARCH)
+
+      const fromMap = waitForEvent(el, EVENT_SELECTION)
+      emitSelectionChange([{ featureId: 'SD7148-9161' }])
+      expect((await fromMap).detail.source).toBe(SELECTION_SOURCE_MAP)
+    })
+
+    it('selects the parcel picked from the search box without touching the page scroll', async () => {
+      await mountReady()
+      attachInteractListener()
+      globalThis.scrollTo = vi.fn()
+
+      lastMapInstance()._emit('search:match', { id: 'SD7148-9160' })
+
+      await vi.waitFor(() =>
+        expect(lastMapInstance().emit).toHaveBeenCalledWith(
+          SELECT_FEATURE_EVENT,
+          expect.objectContaining({ featureId: 'SD7148-9160' })
+        )
+      )
+      expect(globalThis.scrollTo).not.toHaveBeenCalled()
     })
 
     it('dispatches selectedParcels with the feature id and properties', async () => {
@@ -512,6 +582,20 @@ describe('parcel-map web component', () => {
       expect(lastMapInstance().emit).toHaveBeenCalledTimes(2)
     })
 
+    it('selectParcels() leaves a parcel that is already selected alone, so a search pick does not toggle it off', async () => {
+      const el = await mountReady({ 'multi-select': 'true' })
+      attachInteractListener()
+      emitSelectionChange([{ featureId: 'SD7148-9160' }])
+
+      el.selectParcels(['SD7148-9160', 'SD7148-9161'], { source: SELECTION_SOURCE_SEARCH })
+
+      expect(lastMapInstance().emit).toHaveBeenCalledTimes(1)
+      expect(lastMapInstance().emit).toHaveBeenCalledWith(
+        SELECT_FEATURE_EVENT,
+        expect.objectContaining({ featureId: 'SD7148-9161' })
+      )
+    })
+
     it('selectParcels() emits once for a repeated id in multi-select', async () => {
       const el = await mountReady({ 'multi-select': 'true' })
       attachInteractListener()
@@ -560,6 +644,15 @@ describe('parcel-map web component', () => {
         expect(lastMapInstance().emit).toHaveBeenCalledWith(SELECT_FEATURE_EVENT, expect.anything())
       })
 
+      it('does not leave a search source armed when the plugin never subscribed', async () => {
+        el.selectParcels(['SD7148-9160'], { source: SELECTION_SOURCE_SEARCH })
+        vi.advanceTimersByTime(SELECT_LISTENER_POLL_MS * SELECT_LISTENER_MAX_POLLS)
+
+        const fromMap = waitForEvent(el, EVENT_SELECTION)
+        emitSelectionChange([{ featureId: 'SD7148-9161' }])
+        expect((await fromMap).detail.source).toBe(SELECTION_SOURCE_MAP)
+      })
+
       it('stops waiting when the element is torn down', () => {
         el.selectParcels(['SD7148-9160'])
         el.remove()
@@ -579,7 +672,7 @@ describe('parcel-map web component', () => {
         lngLat: { lng: 0, lat: 0 }
       })
       const tooltip = el.querySelector('[role="tooltip"]')
-      expect(tooltip.style.display).toBe('block')
+      expect(tooltip.hidden).toBe(false)
 
       const cleared = waitForEvent(el, EVENT_SELECTION)
       emitSelectionChange([{ featureId: 'SD7148-9160' }])
@@ -587,7 +680,7 @@ describe('parcel-map web component', () => {
       emitSelectionChange([])
       await cleared
 
-      expect(tooltip.style.display).toBe('none')
+      expect(tooltip.hidden).toBe(true)
     })
   })
 
