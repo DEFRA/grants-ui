@@ -30,11 +30,8 @@ describe('land parcel table columns', () => {
     expect(tables).toHaveLength(2)
 
     for (const table of tables.toArray()) {
-      const container = $(table).parent()
-      expect(container.hasClass('land-parcel-summary__table-container')).toBe(true)
-      expect(container.attr('role')).toBe('region')
-      expect(container.attr('tabindex')).toBe('0')
-      expect(container.attr('aria-label')).toBe($(table).find('caption').text().trim())
+      expect($(table).parent().hasClass('govuk-summary-card__content')).toBe(true)
+      expect($(table).closest('[tabindex], [role="region"]')).toHaveLength(0)
       const columns = $(table).find('colgroup col')
       expect(columns.toArray().map((column) => $(column).attr('class'))).toEqual([
         undefined,
