@@ -1,3 +1,4 @@
+import { rememberMultipleApplications } from '../definition/multiple-applications-cache.js'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { getCacheKey, buildSessionKey } from './get-cache-key-helper.js'
 import { fetchStateWithDefinitionFromApi } from './fetch-saved-state-helper.js'
@@ -124,6 +125,9 @@ export function getStateWithDefinition(request) {
 
     app.stateWithDefinition = fetchStateWithDefinitionFromApi(key, request, {
       lockToken: buildReadLockToken(request)
+    }).then((envelope) => {
+      rememberMultipleApplications(cacheKey.grantCode, envelope?.definition)
+      return envelope
     })
   }
 

@@ -132,7 +132,12 @@ export async function fetchStateWithDefinitionFromApi(key, request, { lockToken 
     response = await fetch(endpoint, {
       method,
       headers: await createApiHeadersForGrantsUiBackend({ lockToken }),
-      body: JSON.stringify({ sbi, grantCode, includeDefinition: true, applicationRef: referenceNumber })
+      body: JSON.stringify({
+        sbi,
+        grantCode,
+        includeDefinition: true,
+        applicationRef: referenceNumber
+      })
     })
   } catch (err) {
     logError(request, { method, endpoint, identity: key, errorMessage: /** @type {Error} */ (err).message })
@@ -302,3 +307,23 @@ export async function clearSavedStateFromApiByContext({ sbi, grantCode, grantVer
  * @property {string} [fromVersion] - The version the state was upgraded from (when `upgraded`)
  * @property {string} [toVersion] - The version the state was upgraded to (when `upgraded`)
  */
+
+/**
+ * Read the latest active definition without application state or a lock-owner token.
+ * @param {string} grantCode
+ * @returns {Promise<StateWithDefinitionEnvelope['definition']|null>}
+ */
+export async function fetchLatestDefinitionFromApi(grantCode) {
+  if (!GRANTS_UI_BACKEND_ENDPOINT?.length) {
+    return null
+  }
+  const url = new URL(`/definitions/${encodeURIComponent(grantCode)}`, GRANTS_UI_BACKEND_ENDPOINT)
+  const response = await fetch(url.href, { method: 'GET', headers: await createApiHeadersForGrantsUiBackend({}) })
+  if (response.status === statusCodes.notFound) {
+    return null
+  }
+  if (!response.ok) {
+    throw createBoomError(response.status, `Failed to fetch grant definition: ${response.status}`)
+  }
+  return response.json()
+}
