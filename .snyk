@@ -1,6 +1,26 @@
 # Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities
 version: v1.25.0
 ignore:
+  'SNYK-JS-FASTURI-21279301':
+    - '@defra/forms-engine-plugin > @defra/interactive-map > *':
+        reason: 'Checked 2026-10-20 on forms-engine-plugin@4.23.0: interactive-map@0.0.22-alpha installs Docusaurus > webpack > schema-utils@4.5.0 > ajv@8.20.0 > fast-uri@3.1.8 in production. The scheme-injection issue requires reference: "suffix", which Ajv does not pass. Ajv resolves package-owned schema identifiers; grants-ui does not run the map documentation tooling or use this resolver for applicant URLs. Fixed fast-uri@3.1.9 was published 2026-10-19T23:05:26.357Z; the seven-day cooldown ends 2026-10-26T23:05:26.357Z. Remove this ignore and upgrade when eligible.'
+        expires: '2026-10-27'
+  'SNYK-JS-FASTURI-21279303':
+    - '@defra/forms-engine-plugin > @defra/interactive-map > *':
+        reason: 'Checked 2026-10-20 on forms-engine-plugin@4.23.0: interactive-map@0.0.22-alpha installs Docusaurus > webpack > schema-utils@4.5.0 > ajv@8.20.0 > fast-uri@3.1.8 in production. The encoded-scheme issue affects URI normalization and becomes XSS when the result is used for browser navigation. This path resolves package-owned JSON Schema identifiers, not applicant URLs or browser hrefs; the map documentation tooling is not run by grants-ui. Fixed fast-uri@3.1.9 was published 2026-10-19T23:05:26.357Z; the seven-day cooldown ends 2026-10-26T23:05:26.357Z. Remove this ignore and upgrade when eligible.'
+        expires: '2026-10-27'
+  'SNYK-JS-FASTURI-21279304':
+    - '@defra/forms-engine-plugin > @defra/interactive-map > *':
+        reason: 'Checked 2026-10-20 on forms-engine-plugin@4.23.0: interactive-map@0.0.22-alpha installs Docusaurus > webpack > schema-utils@4.5.0 > ajv@8.20.0 > fast-uri@3.1.8 in production. The host-spoofing issue requires attacker-controlled URI authorities. Ajv uses this dependency to resolve package-owned schema identifiers; grants-ui does not pass applicant-controlled schema identifiers to this tooling or use it for outbound request authorization. Fixed fast-uri@3.1.9 was published 2026-10-19T23:05:26.357Z; the seven-day cooldown ends 2026-10-26T23:05:26.357Z. Remove this ignore and upgrade when eligible.'
+        expires: '2026-10-27'
+  'SNYK-JS-FASTURI-21279306':
+    - '@defra/forms-engine-plugin > @defra/interactive-map > *':
+        reason: 'Checked 2026-10-20 on forms-engine-plugin@4.23.0: interactive-map@0.0.22-alpha installs Docusaurus > webpack > schema-utils@4.5.0 > ajv@8.20.0 > fast-uri@3.1.8 in production. Relative-path normalization can substitute URI targets. This Ajv path resolves package-owned schema identifiers; grants-ui does not run the map documentation tooling or use its normalized output for applicant navigation, filesystem access or outbound requests. Fixed fast-uri@3.1.9 was published 2026-10-19T23:05:26.357Z; the seven-day cooldown ends 2026-10-26T23:05:26.357Z. Remove this ignore and upgrade when eligible.'
+        expires: '2026-10-27'
+  'SNYK-JS-PICOMATCH-21248802':
+    - '@defra/forms-engine-plugin > @defra/interactive-map > *':
+        reason: 'Checked 2026-10-20 on forms-engine-plugin@4.23.0: interactive-map@0.0.22-alpha installs Docusaurus > globby/fast-glob/micromatch, chokidar/anymatch/readdirp and jest-util > picomatch@2.3.2 in production. ReDoS requires an attacker-controlled repeated-extglob pattern. These documentation paths use source-file and watch patterns, not applicant form values; grants-ui does not run Docusaurus. Its own build/watch tooling also uses repository-controlled patterns. No fixed picomatch release is available, including 4.0.7. Remove when a fixed version is released or the documentation dependencies are dropped; review within one month.'
+        expires: '2026-11-20'
   'SNYK-JS-QS-20943482':
     - '@defra/forms-engine-plugin > @defra/interactive-map > *':
         reason: 'Checked 2026-10-15 on forms-engine-plugin@4.23.0: interactive-map@0.0.22-alpha brings Docusaurus@3.10.2 > webpack-dev-server@5.2.6 > express@4.22.3 > qs@6.16.0. This documentation tooling is installed in production but is not run by grants-ui. The issue requires qs.stringify with arrayFormat: "comma"; Express uses qs.parse, and no affected stringify call was found in grants-ui or the forms engine server runtime. Fixed qs@6.16.1 was published 2026-10-14T22:06:17Z and is inside the seven-day cooldown. Remove this ignore and bump the qs override once the cooldown ends on 2026-10-21T22:06:17Z.'
@@ -10,7 +30,7 @@ ignore:
         reason: 'Rechecked 2026-10-05: forms-engine-plugin@4.23.0 brings interactive-map@0.0.22-alpha > polygon-splitter@0.0.11 > glob@8.1.0 > inflight@1.0.6. No fixed inflight release. The published polygon-splitter runtime does not import glob; its browser bundle does not load inflight. Remove when polygon-splitter drops or updates glob.'
         expires: '2026-10-31'
     - '@defra/interactive-map > polygon-splitter > glob > inflight':
-        reason: 'Rechecked 2026-10-05 on interactive-map@0.0.51-apha: polygon-splitter@0.0.11 declares glob@8.1.0 but its published runtime does not import it. No fixed inflight release; inflight is not included in the browser runtime. Remove when polygon-splitter drops or updates glob.'
+        reason: 'Rechecked 2026-10-20 on interactive-map@0.0.54-alpha: polygon-splitter@0.0.11 declares glob@8.1.0 but its published runtime does not import it. No fixed inflight release; inflight is not included in the browser runtime. Remove when polygon-splitter drops or updates glob.'
         expires: '2026-10-31'
   'SNYK-JS-BRACES-19963945':
     - '@defra/forms-engine-plugin > @defra/interactive-map > *':
