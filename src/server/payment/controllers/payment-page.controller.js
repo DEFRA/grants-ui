@@ -1,39 +1,28 @@
 import nunjucks from 'nunjucks'
+import Joi from 'joi'
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { resolveStrategy } from '~/src/server/payment/resolve-strategy.js'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
 import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
 
-/**
- * @param {{ next?: string, addMoreActions?: string }} redirects
- * @param {boolean} showAddMoreActionsQuestion
- * @param {string} path
- * @returns {{ nextPath: string, addMoreActionsPath: string | undefined }}
- */
-function resolveRedirects(redirects, showAddMoreActionsQuestion, path) {
-  if (!redirects.next) {
-    const systemError = new SystemError({
-      message: `"redirects.next" is required in config for page "${path}"`,
-      source: 'PaymentPageController',
-      reason: 'invalid_config'
+// The page config block may carry keys used by other features, so unknown keys are allowed.
+const configSchema = Joi.object({
+  paymentStrategy: Joi.string(),
+  showPaymentActions: Joi.boolean().default(false),
+  showAddMoreActionsQuestion: Joi.boolean().default(false),
+  paymentExplanation: Joi.string().allow('', null).default(null),
+  showSupportLink: Joi.boolean().allow(null).default(null),
+  redirects: Joi.object({
+    next: Joi.string().required(),
+    addMoreActions: Joi.string().when('...showAddMoreActionsQuestion', {
+      is: true,
+      then: Joi.required().messages({
+        'any.required': '{{#label}} is required when showAddMoreActionsQuestion is true'
+      })
     })
-    throw systemError
-  }
-
-  if (showAddMoreActionsQuestion && !redirects.addMoreActions) {
-    const systemError = new SystemError({
-      message: `"redirects.addMoreActions" is required in config when showAddMoreActionsQuestion is true for page "${path}"`,
-      source: 'PaymentPageController',
-      reason: 'invalid_config'
-    })
-    throw systemError
-  }
-  return {
-    nextPath: redirects.next,
-    addMoreActionsPath: redirects.addMoreActions ?? undefined
-  }
-}
+  })
+}).unknown(true)
 
 /**
  * @param {{ paymentStrategy?: string, showPaymentActions?: boolean, showAddMoreActionsQuestion?: boolean, paymentExplanation?: string, showSupportLink?: boolean, redirects?: { next?: string, addMoreActions?: string } }} config
@@ -41,17 +30,23 @@ function resolveRedirects(redirects, showAddMoreActionsQuestion, path) {
  */
 function resolveConfig(config, path) {
   const strategy = resolveStrategy(config.paymentStrategy)
-  const showAddMoreActionsQuestion = config.showAddMoreActionsQuestion ?? false
-  const { nextPath, addMoreActionsPath } = resolveRedirects(config.redirects ?? {}, showAddMoreActionsQuestion, path)
+  const { error, value } = configSchema.validate({ ...config, redirects: config.redirects ?? {} })
+  if (error) {
+    throw new SystemError({
+      message: `${error.message} in config for page "${path}"`,
+      source: 'PaymentPageController',
+      reason: 'invalid_config'
+    }).from(error)
+  }
 
   return {
     strategy,
-    showPaymentActions: config.showPaymentActions ?? false,
-    showAddMoreActionsQuestion,
-    paymentExplanation: config.paymentExplanation ?? null,
-    showSupportLink: config.showSupportLink ?? null,
-    nextPath,
-    addMoreActionsPath
+    showPaymentActions: value.showPaymentActions,
+    showAddMoreActionsQuestion: value.showAddMoreActionsQuestion,
+    paymentExplanation: value.paymentExplanation,
+    showSupportLink: value.showSupportLink,
+    nextPath: value.redirects.next,
+    addMoreActionsPath: value.redirects.addMoreActions
   }
 }
 

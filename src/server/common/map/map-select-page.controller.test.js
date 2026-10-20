@@ -256,7 +256,7 @@ describe('MapSelectPageController', () => {
       expect(h.view).toHaveBeenCalledWith(
         'map-select-parcel',
         expect.objectContaining({
-          errors: [expect.objectContaining({ html: expect.stringContaining('&lt;img src=x&gt; 9160') })]
+          errors: [expect.objectContaining({ html: expect.stringContaining('&lt;img src&#x3d;x&gt; 9160') })]
         })
       )
     })

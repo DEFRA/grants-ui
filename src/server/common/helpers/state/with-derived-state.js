@@ -1,4 +1,5 @@
 import { isDeepStrictEqual } from 'node:util'
+import Joi from 'joi'
 import { mergeAdditionalAnswers } from './additional-answers-helper.js'
 import { BaseError } from '~/src/server/common/utils/errors/BaseError.js'
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
@@ -10,6 +11,21 @@ import { DANGEROUS_KEYS } from '~/src/server/common/utils/objects.js'
  * @property {boolean} requiresAcknowledgement - Visit the result page when stale; false permits an automatic refresh.
  * @property {string[]} [calculationInputs] - State paths whose values determine calculation freshness.
  */
+
+// A state key is a single top-level key; a calculation input is a dot-path of such keys.
+const stateKeySchema = Joi.string()
+  .invalid(...DANGEROUS_KEYS)
+  .pattern(/^[^.]+$/)
+const inputPathSchema = Joi.string().custom((path, helpers) =>
+  path.split('.').every((key) => key && !DANGEROUS_KEYS.has(key)) ? path : helpers.error('any.invalid')
+)
+const optionsSchema = Joi.object({
+  stateKeys: Joi.array().items(stateKeySchema).min(1).unique().required(),
+  requiresAcknowledgement: Joi.boolean().strict().required(),
+  calculationInputs: Joi.array().items(inputPathSchema).min(1).unique()
+})
+  .unknown(true)
+  .required()
 
 /**
  * Adds derived-answer freshness and persistence without changing navigation or task counting.
@@ -139,42 +155,18 @@ function validateCalculatedAnswers(answers, stateKeys) {
 
 /** @param {DerivedStateOptions | undefined} options */
 function validateOptions(options) {
-  const { stateKeys, requiresAcknowledgement, calculationInputs } = options ?? {}
-  if (!isValidStateKeys(stateKeys) || typeof requiresAcknowledgement !== 'boolean') {
-    throw contractError('Invalid derived-state options')
-  }
-  if (calculationInputs !== undefined && !isValidCalculationInputs(calculationInputs)) {
-    throw contractError('Invalid derived-state calculationInputs')
+  const { error, value } = optionsSchema.validate(options)
+  if (error) {
+    const [key] = error.details[0].path
+    throw contractError(
+      key === 'calculationInputs' ? 'Invalid derived-state calculationInputs' : 'Invalid derived-state options'
+    )
   }
   return {
-    stateKeys: Object.freeze([...stateKeys]),
-    requiresAcknowledgement,
-    ...(calculationInputs ? { calculationInputs: Object.freeze([...calculationInputs]) } : {})
+    stateKeys: Object.freeze([...value.stateKeys]),
+    requiresAcknowledgement: value.requiresAcknowledgement,
+    ...(value.calculationInputs ? { calculationInputs: Object.freeze([...value.calculationInputs]) } : {})
   }
-}
-
-/**
- * @param {unknown} stateKeys
- * @returns {stateKeys is string[]}
- */
-function isValidStateKeys(stateKeys) {
-  return (
-    Array.isArray(stateKeys) &&
-    stateKeys.length > 0 &&
-    new Set(stateKeys).size === stateKeys.length &&
-    stateKeys.every((key) => typeof key === 'string' && key && !DANGEROUS_KEYS.has(key) && !key.includes('.'))
-  )
-}
-
-function isValidCalculationInputs(calculationInputs) {
-  return (
-    Array.isArray(calculationInputs) &&
-    calculationInputs.length > 0 &&
-    new Set(calculationInputs).size === calculationInputs.length &&
-    calculationInputs.every(
-      (path) => typeof path === 'string' && path.split('.').every((key) => key && !DANGEROUS_KEYS.has(key))
-    )
-  )
 }
 
 function contractError(message) {

@@ -6,7 +6,7 @@ import {
 } from '../../common/helpers/print-application-service/print-application-service.js'
 import { generateFormNotFoundResponse, resolveFormDefinition } from '../utils/index.js'
 import { debug, LogCodes } from '../../common/helpers/logging/log.js'
-import { escapeHtml } from '../../common/utils/escape-html.js'
+import { escapeHtml } from '@hapi/hoek'
 
 /**
  * Main demo print application handler

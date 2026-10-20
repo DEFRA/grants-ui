@@ -1,5 +1,5 @@
 import { config } from '~/src/config/config.js'
-import { escapeHtml } from '~/src/server/common/utils/escape-html.js'
+import { escapeHtml } from '@hapi/hoek'
 
 /**
  * Whether an href is safe to render as a link. Allows only http(s) URLs and same-origin

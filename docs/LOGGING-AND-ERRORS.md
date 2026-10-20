@@ -183,7 +183,6 @@ src/server/common/helpers/logging/
 ├── log.js                 # Structured logging wrapper
 ├── log-codes.js           # Re-exports LogCodes, validates at import
 ├── log-codes/             # Structured log definitions (one file per category)
-├── log-code-validator.js  # Log code validation
 ├── mask-crn.js             # CRN masking helper for logs
 ├── upstream-error.js       # Upstream error helpers
 └── *.test.js             # Test files

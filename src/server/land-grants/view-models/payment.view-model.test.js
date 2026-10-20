@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { escapeHtml } from '@hapi/hoek'
 import {
   createParcelItemRow,
   buildLandParcelHeaderActions,
@@ -25,8 +26,8 @@ describe('payment-view-model.mapper', () => {
       expect(result[0].text).toBe('Test Action: SAM1')
       expect(result[1].text).toBe('10 hectares')
       expect(result[2].text).toBe('£100.50')
-      expect(result[3].html).toContain('select-actions-for-land-parcel?parcelId=AB1234-5678')
-      expect(result[3].html).toContain('remove-action?parcelId=AB1234-5678&amp;action=SAM1')
+      expect(result[3].html).toContain(escapeHtml('select-actions-for-land-parcel?parcelId=AB1234-5678'))
+      expect(result[3].html).toContain(escapeHtml('remove-action?parcelId=AB1234-5678&action=SAM1'))
     })
 
     it('should escape the action code written into the links HTML', () => {
@@ -40,8 +41,8 @@ describe('payment-view-model.mapper', () => {
       })
 
       expect(result[3].html).toBeEscaped()
-      // the remove link URL-encodes the code, then HTML-escapes the ' that encodeURIComponent leaves alone
-      expect(result[3].html).toContain(`action=%3Cscript%3E%22&#039;%26%3C%2Fscript%3E`)
+      // the remove link URL-encodes the code, then HTML-escapes the whole href
+      expect(result[3].html).toContain(escapeHtml(`action=${encodeURIComponent(HTML_INJECTION)}`))
     })
 
     it('should escape the parcel reference written into the links HTML', () => {
