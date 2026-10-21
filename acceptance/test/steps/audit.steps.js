@@ -90,3 +90,19 @@ Then(
     expect(event).not.toBeNull()
   }
 )
+
+Then(
+  'an unauthorised audit event should be published for entity {string} and grant {string} with CRN {string} and SBI {string} and reason {string} and reference number {string}',
+  async function (entity, grantCode, crn, sbi, reason, referenceNumber) {
+    const event = await waitForAuditEvent(this.auditQueue.queueUrl, {
+      entity,
+      action: 'unauthorised',
+      entityId: grantCode,
+      crn,
+      sbi,
+      reason,
+      referenceNumber: transformStepArgument(referenceNumber)
+    })
+    expect(event).not.toBeNull()
+  }
+)

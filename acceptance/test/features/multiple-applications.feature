@@ -113,3 +113,8 @@ Feature: Multiple Applications
             | {THIRD REFERENCE NUMBER}  | Submitted | View application     |
             | {SECOND REFERENCE NUMBER} | Draft     | Continue application |
             | {FIRST REFERENCE NUMBER}  | Submitted | View application     |
+
+        # unknown application reference, denied and audited
+        Given the user navigates to "/example-grant-with-multi-applications?ref=INVALID-REFERENCE-NUMBER"
+        Then the user should see heading "Page not found"
+        And an unauthorised audit event should be published for entity "application" and grant "example-grant-with-multi-applications" with CRN "1100962289" and SBI "106557382" and reason "unknown-reference" and reference number "INVALID-REFERENCE-NUMBER"
