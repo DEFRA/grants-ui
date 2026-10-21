@@ -5,6 +5,7 @@ import Yar from '@hapi/yar'
 import { auth } from '~/src/server/auth/index.js'
 import { getSignOutUrl } from '~/src/server/auth/get-sign-out-url.js'
 import { nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
+import { contentSecurityPolicy } from '~/src/plugins/content-security-policy.js'
 import { YarKeys } from '~/src/server/common/constants/session-keys.js'
 import permissionsPlugin from '~/src/plugins/permissions.js'
 import { fetchBusinessPermissions } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
@@ -59,10 +60,27 @@ const STALE_CONTEXT = {
  * Builds a Hapi server with the auth router registered. `authenticated` controls
  * whether the stub `defra-id` scheme reports an authenticated user (mirrors a
  * live session cookie surviving into the OIDC sign-out callback).
- * @param {{ authenticated?: boolean }} [opts]
+ * `securityHeaders` adds the production HSTS/frame/sniff options and the CSP
+ * plugin so response header sizes match what the SSL sidecar sees.
+ * @param {{ authenticated?: boolean, securityHeaders?: boolean }} [opts]
  */
-async function buildServer({ authenticated = true } = {}) {
-  const server = Hapi.server()
+async function buildServer({ authenticated = true, securityHeaders = false } = {}) {
+  const server = Hapi.server(
+    securityHeaders
+      ? {
+          routes: {
+            security: {
+              hsts: { maxAge: 31536000, includeSubDomains: true, preload: false },
+              noSniff: true,
+              xframe: true
+            }
+          }
+        }
+      : {}
+  )
+  if (securityHeaders) {
+    await server.register(contentSecurityPolicy)
+  }
 
   await server.register([
     Cookie,
@@ -229,6 +247,57 @@ describe('auth router - /auth/sign-out', () => {
       expect(response.headers['cache-control']).toBe('no-store')
       expect(response.payload).toContain('http-equiv="refresh" content="0; url=https://defra-id.example/logout"')
       expect(getSignOutUrl).toHaveBeenCalledWith(expect.anything(), 'stub-token')
+    } finally {
+      await server.stop()
+    }
+  })
+
+  it('keeps a >4KB Defra ID token out of the response headers and delivers it in the page body', async () => {
+    // Mirrors the failure in TGC-1787: the SSL sidecar (nginx) rejects any upstream
+    // response whose status line + headers exceed its 4KB buffer, and the token
+    // alone can be that big for users linked to many businesses.
+    const SIDECAR_HEADER_BUFFER_BYTES = 4096
+    const toBase64Url = (/** @type {object} */ value) => Buffer.from(JSON.stringify(value)).toString('base64url')
+    const relationship = (/** @type {number} */ i) =>
+      `rel-${String(i).padStart(4, '0')}-4a5b-4c6d-8e9f-0a1b2c3d4e5f:10${String(i).padStart(7, '0')}:Example Farming Partnership ${i} Ltd:1:Agent:1`
+    const payload = {
+      sub: 'b1ed40af-8f20-42f9-a015-75c199850a51',
+      contactId: '1100000001',
+      firstName: 'Test',
+      lastName: 'Agent',
+      currentRelationshipId: 'rel-0001-4a5b-4c6d-8e9f-0a1b2c3d4e5f',
+      relationships: Array.from({ length: 20 }, (_, i) => relationship(i + 1)),
+      roles: Array.from(
+        { length: 20 },
+        (_, i) => `rel-${String(i + 1).padStart(4, '0')}-4a5b-4c6d-8e9f-0a1b2c3d4e5f:Agent:3`
+      )
+    }
+    const token = `${toBase64Url({ alg: 'RS256', typ: 'JWT' })}.${toBase64Url(payload)}.${'s'.repeat(342)}`
+    expect(token.length).toBeGreaterThan(SIDECAR_HEADER_BUFFER_BYTES)
+    const signOutUrl = `https://defra-id.example/signout?post_logout_redirect_uri=https://app.example/auth/sign-out-oidc&id_token_hint=${token}&state=eyJpZCI6ImFiYyJ9`
+    vi.mocked(getSignOutUrl).mockResolvedValueOnce(signOutUrl)
+
+    const server = await buildServer({ authenticated: true, securityHeaders: true })
+    try {
+      const response = await server.inject({ method: 'GET', url: '/auth/sign-out' })
+
+      expect(response.statusCode).toBe(200)
+      expect(response.headers['content-security-policy']).toBeDefined()
+      expect(response.headers['strict-transport-security']).toBeDefined()
+      expect(response.headers.location).toBeUndefined()
+
+      // Serialise the header block the way the sidecar receives it over HTTP/1.1.
+      const headerLines = Object.entries(response.headers).flatMap(([name, value]) =>
+        (Array.isArray(value) ? value : [value]).map((v) => `${name}: ${v}`)
+      )
+      const headerBlock = `HTTP/1.1 ${response.statusCode} OK\r\n${headerLines.join('\r\n')}\r\n\r\n`
+      expect(headerBlock).not.toContain(token)
+      expect(Buffer.byteLength(headerBlock)).toBeLessThan(SIDECAR_HEADER_BUFFER_BYTES)
+
+      // The browser still gets the complete URL, token included, in the body.
+      const escapedUrl = signOutUrl.replaceAll('&', '&amp;')
+      expect(response.payload).toContain(`http-equiv="refresh" content="0; url=${escapedUrl}"`)
+      expect(response.payload).toContain(`href="${escapedUrl}"`)
     } finally {
       await server.stop()
     }
