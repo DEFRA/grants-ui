@@ -2,7 +2,7 @@ import { config } from '~/src/config/config.js'
 import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { validateState } from '~/src/server/auth/state.js'
 import { verifyToken } from '~/src/server/auth/verify-token.js'
-import { getSignOutRequest, getSignOutUrl } from './get-sign-out-url.js'
+import { getSignOutRequest, getSignOutUrl, toSignOutUrl } from './get-sign-out-url.js'
 import { debug, log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import {
   logSuccessfulSignIn,
@@ -521,7 +521,7 @@ async function handleSignOut(request, h) {
   const form = await getSignOutRequest(request, token)
   const { authorization_endpoint: b2cEndpoint } = await getOidcConfig()
   allowFormActionTo(request, [new URL(form.endpoint).origin, new URL(b2cEndpoint).origin])
-  return h.view('signing-out', { form }).header('cache-control', 'no-store')
+  return h.view('signing-out', { form, signOutUrl: toSignOutUrl(form) }).header('cache-control', 'no-store')
 }
 
 /**

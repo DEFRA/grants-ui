@@ -32,14 +32,22 @@ async function getSignOutRequest(request, token) {
  * @returns {Promise<string>}
  */
 async function getSignOutUrl(request, token) {
-  const { endpoint, fields } = await getSignOutRequest(request, token)
+  return toSignOutUrl(await getSignOutRequest(request, token))
+}
+
+/**
+ * Format an end-session request as its GET URL.
+ * @param {SignOutRequest} signOutRequest
+ * @returns {string}
+ */
+function toSignOutUrl({ endpoint, fields }) {
   const query = Object.entries(fields)
     .map(([name, value]) => `${name}=${value}`)
     .join('&')
   return encodeURI(`${endpoint}?${query}`)
 }
 
-export { getSignOutRequest, getSignOutUrl }
+export { getSignOutRequest, getSignOutUrl, toSignOutUrl }
 
 /**
  * @import { AnyRequest } from '@defra/forms-engine-plugin/engine/types.js'

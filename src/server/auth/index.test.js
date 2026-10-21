@@ -31,7 +31,8 @@ vi.mock('~/src/server/auth/state.js', () => ({
   validateState: vi.fn()
 }))
 
-vi.mock('~/src/server/auth/get-sign-out-url.js', () => ({
+vi.mock('~/src/server/auth/get-sign-out-url.js', async () => ({
+  toSignOutUrl: (await vi.importActual('~/src/server/auth/get-sign-out-url.js')).toSignOutUrl,
   getSignOutUrl: vi.fn().mockResolvedValue('https://defra-id.example/logout'),
   getSignOutRequest: vi.fn().mockResolvedValue({
     endpoint: 'https://defra-id.example/signout',
@@ -344,6 +345,10 @@ describe('auth router - /auth/sign-out', () => {
       )
       expect(response.payload).toContain(`name="id_token_hint" value="${token}"`)
       expect(response.payload).toContain('name="state" value="abc"')
+      // Manual fallback link carries the same request as a GET, with the same state.
+      expect(response.payload).toContain(
+        `href="https://defra-id.example/signout?post_logout_redirect_uri=https://grants-ui.example.com/auth/sign-out-oidc&amp;id_token_hint=${token}&amp;state=abc"`
+      )
       const nonce = response.headers['x-csp-nonce']
       expect(response.payload).toContain(`<script nonce="${nonce}">`)
       expect(response.payload).toContain("document.getElementById('defra-id-sign-out').submit()")

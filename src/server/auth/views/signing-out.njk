@@ -1,10 +1,12 @@
 {% extends "layouts/page.njk" %}
-{% from "govuk/components/button/macro.njk" import govukButton %}
 {% set pageTitle = "Signing you out" %}
+{# A transition page: keep it as bare as Defra ID's own sign-out page. #}
+{% set hidePhaseBanner = true %}
+{% set hideAccountBar = true %}
 
 {% block head %}
   {{ super() }}
-  {% if signOutUrl %}
+  {% if not form %}
     <meta http-equiv="refresh" content="0; url={{ signOutUrl }}" />
   {% endif %}
 {% endblock %}
@@ -12,19 +14,17 @@
 {% block content %}
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
-      <h1 class="govuk-heading-l">Signing you out</h1>
+      <h1 class="govuk-visually-hidden">Signing you out</h1>
+      <p class="govuk-body">
+        Please wait while we sign you out. If you are not redirected in 5 seconds click
+        <a class="govuk-link" href="{{ signOutUrl }}">here</a>.
+      </p>
       {% if form %}
         <form method="post" action="{{ form.endpoint }}" id="defra-id-sign-out">
           {% for name, value in form.fields %}
             <input type="hidden" name="{{ name }}" value="{{ value }}" />
           {% endfor %}
-          <p class="govuk-body">If you are not redirected, continue signing out.</p>
-          {{ govukButton({ text: "Continue signing out" }) }}
         </form>
-      {% else %}
-        <p class="govuk-body">
-          If you are not redirected, <a class="govuk-link" href="{{ signOutUrl }}">continue signing out</a>.
-        </p>
       {% endif %}
     </div>
   </div>
