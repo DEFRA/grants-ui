@@ -64,6 +64,7 @@ describe('SelectActionsPageController', () => {
   ]
   const wbd1 = {
     code: 'WBD1',
+    isAvailable: true,
     description: 'Manage ponds: WBD1',
     version: '1',
     ratePerUnitGbp: 100,
@@ -665,6 +666,7 @@ describe('SelectActionsPageController', () => {
       }
       const totalAction = {
         code: 'CLIG3',
+        isAvailable: true,
         description: 'Manage grassland',
         quantityRequired: false,
         availability: { value: 3.189, unit: 'ha', type: 'total' }
