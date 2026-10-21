@@ -56,10 +56,20 @@ export const deleteScenarioAuditQueue = async ({ queueUrl, subscriptionArn }) =>
 }
 
 /**
+ * True when the event's reference number matches the expected one: a RegExp
+ * matches any reference of that shape, a string must match exactly.
+ * @param {RegExp | string} expected
+ * @param {string | undefined} actual
+ * @returns {boolean}
+ */
+const matchesReferenceNumber = (expected, actual) =>
+  expected instanceof RegExp ? expected.test(actual ?? '') : actual === expected
+
+/**
  * Polls the given queue until a matching audit event arrives or the timeout
  * elapses.
  * @param {string} queueUrl - URL of the queue to poll (a scenario's own dedicated queue).
- * @param {{ entity: string, action: string, entityId: string, crn?: string, sbi?: string, reason?: string, grant?: string, referenceNumber?: RegExp, answers?: Record<string, unknown> }} criteria - crn and sbi must be provided together
+ * @param {{ entity: string, action: string, entityId: string, crn?: string, sbi?: string, reason?: string, grant?: string, referenceNumber?: RegExp | string, answers?: Record<string, unknown> }} criteria - crn and sbi must be provided together
  * @returns {Promise<Record<string, unknown> | null>}
  */
 export const waitForAuditEvent = async (
@@ -93,7 +103,8 @@ export const waitForAuditEvent = async (
           (crn === undefined || (body.audit.accounts.crn === crn && body.audit.accounts.sbi === sbi)) &&
           (reason === undefined || body.audit.details.reason === reason) &&
           (grant === undefined || body.audit.details.grant === grant) &&
-          (referenceNumber === undefined || referenceNumber.test(body.audit.details.referenceNumber ?? '')) &&
+          (referenceNumber === undefined ||
+            matchesReferenceNumber(referenceNumber, body.audit.details.referenceNumber)) &&
           (answers === undefined ||
             Object.entries(answers).every(([key, value]) => body.audit.details.answers?.[key] === value))
         ) {

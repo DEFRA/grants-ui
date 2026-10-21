@@ -16,22 +16,24 @@ The events, identified by their `action`, are:
 
 An **`unauthorised`** event (always `status: 'denied'`) distinguishes the denial case via `details.reason`:
 
-| `details.reason`    | Signed in? | Meaning                                                         | Emitted from                                                                |
-| ------------------- | ---------- | --------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `not-authenticated` | No         | Not signed in - came to a grant and was bounced to sign-in      | `audit.js` (the `onPreResponse` hook)                                       |
-| `allowlist`         | Yes        | Signed in, but the grant is not in the user's backend allowlist | `src/server/common/helpers/allowlist/allowlist.js`                          |
-| `permission`        | Yes        | Insufficient user permissions for the requested page            | `src/server/common/request-pipeline/permissions/enforce-page-permission.js` |
+| `details.reason`    | Signed in? | Meaning                                                                                                                                                                                                                                                               | Emitted from                                                                 |
+| ------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `not-authenticated` | No         | Not signed in - came to a grant and was bounced to sign-in                                                                                                                                                                                                            | `audit.js` (the `onPreResponse` hook)                                        |
+| `allowlist`         | Yes        | Signed in, but the grant is not in the user's backend allowlist                                                                                                                                                                                                       | `src/server/common/helpers/allowlist/allowlist.js`                           |
+| `permission`        | Yes        | Insufficient user permissions for the requested page                                                                                                                                                                                                                  | `src/server/common/request-pipeline/permissions/enforce-page-permission.js`  |
+| `unknown-reference` | Yes        | Signed in, but the `?ref=` application is not one of this SBI's (unknown, malformed, or another SBI's - these cannot be told apart); the request still 404s. `details.referenceNumber` holds the requested ref, uppercased, and is left out when the ref is malformed | `src/server/common/request-pipeline/redirects/multi-application-redirect.js` |
 
 Publishing is **fire-and-forget** and gated behind a feature flag, so it never adds latency to - or breaks - the user's request, and is off by default.
 
 The implementation lives in:
 
-| File                                                   | Role                                                                                                |
-| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| `src/server/common/helpers/audit/audit.js`             | Hapi plugin (`auditPublisher`) - registers the `onPreResponse` hook and owns the SNS client         |
-| `src/server/common/helpers/audit/audit-event.js`       | Builds the event payload; maps the environment; sanitises the client IP                             |
-| `src/server/common/helpers/logging/log-codes/audit.js` | `AUDIT.EVENT_PUBLISHED` / `AUDIT.EVENT_PUBLISH_FAILED` log codes                                    |
-| `src/server/common/helpers/allowlist/allowlist.js`     | Emits `unauthorised` (`reason: 'allowlist'`) when a signed-in user is not allowlisted for the grant |
+| File                                                                         | Role                                                                                                                                     |
+| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/server/common/helpers/audit/audit.js`                                   | Hapi plugin (`auditPublisher`) - registers the `onPreResponse` hook and owns the SNS client                                              |
+| `src/server/common/helpers/audit/audit-event.js`                             | Builds the event payload; maps the environment; sanitises the client IP                                                                  |
+| `src/server/common/helpers/logging/log-codes/audit.js`                       | `AUDIT.EVENT_PUBLISHED` / `AUDIT.EVENT_PUBLISH_FAILED` log codes                                                                         |
+| `src/server/common/helpers/allowlist/allowlist.js`                           | Emits `unauthorised` (`reason: 'allowlist'`) when a signed-in user is not allowlisted for the grant                                      |
+| `src/server/common/request-pipeline/redirects/multi-application-redirect.js` | Emits `unauthorised` (`reason: 'unknown-reference'`) when a signed-in user requests an application by `?ref=` that their SBI cannot open |
 
 The plugin is registered in `src/server/index.js`.
 
