@@ -61,9 +61,13 @@ function processField(fieldConfig, mappedData, request) {
 
   if (!formattedValue) {
     const condition = fieldConfig.showIfEmptyWhen
-    const matchesCondition = condition
-      ? condition.values.some((value) => value === resolvePath(mappedData, condition.sourcePath))
-      : false
+    const conditionValue = condition ? resolvePath(mappedData, condition.sourcePath) : undefined
+    const matchesCondition =
+      condition &&
+      (typeof conditionValue === 'string' ||
+        typeof conditionValue === 'number' ||
+        typeof conditionValue === 'boolean') &&
+      condition.values.includes(conditionValue)
 
     const showEmpty = fieldConfig.hideIfEmpty === false || matchesCondition
 
