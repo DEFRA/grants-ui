@@ -7,8 +7,28 @@
   color: $govuk-secondary-text-colour;
 }
 
-.land-parcel-summary__table .govuk-table__cell {
-  white-space: nowrap;
+// Keep the automatic table layout on mobile, with the smaller size agreed with UX.
+@include govuk-media-query($until: tablet) {
+  .land-parcel-summary__table {
+    font-size: govuk-px-to-rem(14);
+    line-height: 1.4;
+  }
+}
+
+@include govuk-media-query($from: tablet) {
+  .land-parcel-summary__table {
+    // Separate parcel tables need shared proportions to align their columns.
+    table-layout: fixed;
+  }
+
+  .land-parcel-summary__column--quantity,
+  .land-parcel-summary__column--payment {
+    width: 20%;
+  }
+
+  .land-parcel-summary__column--change {
+    width: 10%;
+  }
 }
 
 .land-parcel-summary-card__subtotal .govuk-table__cell,
