@@ -60,27 +60,4 @@ ignore:
     - '@defra/forms-engine-plugin > @defra/interactive-map > *':
         reason: 'Rechecked 2026-10-05 on forms-engine-plugin@4.23.0: Docusaurus@3.10.2 > file-loader@6.2.0 > schema-utils@3.3.0 > ajv@6.15.0 > uri-js@4.4.1. No fixed release. This documentation build chain is never run by grants-ui; Ajv handles static schema identifiers, not applicant input. Remove when fixed or upstream drops the documentation dependencies.'
         expires: '2026-10-31'
-  'SNYK-JS-FASTURI-21279301':
-    - '@defra/forms-engine-plugin > @defra/interactive-map > *':
-        reason: 'Checked 2026-10-20 on forms-engine-plugin@4.23.0: interactive-map@0.0.22-alpha brings Docusaurus@3.10.2 > webpack@5.111.1 > schema-utils@4.5.0 > ajv@8.20.0 > fast-uri@3.1.8. This documentation build tooling is installed in production but never run by grants-ui; Ajv only validates static webpack plugin options there, not applicant input. Fixed fast-uri@3.1.9 was published 2026-10-19T23:05:26Z and is inside the seven-day cooldown. Remove this ignore and add a fast-uri 3.1.9 override once the cooldown ends on 2026-10-26T23:05:26Z.'
-        expires: '2026-10-27'
-  'SNYK-JS-FASTURI-21279303':
-    - '@defra/forms-engine-plugin > @defra/interactive-map > *':
-        reason: 'Checked 2026-10-20 on forms-engine-plugin@4.23.0: interactive-map@0.0.22-alpha brings Docusaurus@3.10.2 > webpack@5.111.1 > schema-utils@4.5.0 > ajv@8.20.0 > fast-uri@3.1.8. This documentation build tooling is installed in production but never run by grants-ui; Ajv only validates static webpack plugin options there, not applicant input. Fixed fast-uri@3.1.9 was published 2026-10-19T23:05:26Z and is inside the seven-day cooldown. Remove this ignore and add a fast-uri 3.1.9 override once the cooldown ends on 2026-10-26T23:05:26Z.'
-        expires: '2026-10-27'
-  'SNYK-JS-FASTURI-21279304':
-    - '@defra/forms-engine-plugin > @defra/interactive-map > *':
-        reason: 'Checked 2026-10-20 on forms-engine-plugin@4.23.0: interactive-map@0.0.22-alpha brings Docusaurus@3.10.2 > webpack@5.111.1 > schema-utils@4.5.0 > ajv@8.20.0 > fast-uri@3.1.8. This documentation build tooling is installed in production but never run by grants-ui; Ajv only validates static webpack plugin options there, not applicant input. Fixed fast-uri@3.1.9 was published 2026-10-19T23:05:26Z and is inside the seven-day cooldown. Remove this ignore and add a fast-uri 3.1.9 override once the cooldown ends on 2026-10-26T23:05:26Z.'
-        expires: '2026-10-27'
-  'SNYK-JS-FASTURI-21279306':
-    - '@defra/forms-engine-plugin > @defra/interactive-map > *':
-        reason: 'Checked 2026-10-20 on forms-engine-plugin@4.23.0: interactive-map@0.0.22-alpha brings Docusaurus@3.10.2 > webpack@5.111.1 > schema-utils@4.5.0 > ajv@8.20.0 > fast-uri@3.1.8. This documentation build tooling is installed in production but never run by grants-ui; Ajv only validates static webpack plugin options there, not applicant input. Fixed fast-uri@3.1.9 was published 2026-10-19T23:05:26Z and is inside the seven-day cooldown. Remove this ignore and add a fast-uri 3.1.9 override once the cooldown ends on 2026-10-26T23:05:26Z.'
-        expires: '2026-10-27'
-  'SNYK-JS-PICOMATCH-21248802':
-    - '@defra/forms-engine-plugin > @defra/interactive-map > *':
-        reason: 'Checked 2026-10-20 on forms-engine-plugin@4.23.0: interactive-map@0.0.22-alpha brings Docusaurus@3.10.2 > micromatch/jest-util > picomatch@2.3.2. Snyk reports no fixed picomatch release in any major. This is the map package documentation build tooling, which grants-ui never runs; the ReDoS needs attacker-supplied glob patterns and grants-ui passes no user input to any glob matcher. Remove when picomatch is fixed or upstream drops the documentation dependencies.'
-        expires: '2026-11-19'
-    - '@defra/forms-engine-plugin > chokidar > *':
-        reason: 'Checked 2026-10-20 on forms-engine-plugin@4.23.0: the plugin declares chokidar@3.6.0 > anymatch/readdirp > picomatch@2.3.2 but nothing in its published source imports chokidar. The only production importer is nunjucks FileSystemLoader, which requires chokidar solely when nunjucks.watch is true; that option defaults to isDevelopment and no CDP environment sets it, and even then chokidar.watch receives our own template directories, never user input. Snyk reports no fixed picomatch release. Remove when picomatch is fixed or the plugin drops chokidar.'
-        expires: '2026-11-19'
 patch: {}
