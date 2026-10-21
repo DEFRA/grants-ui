@@ -139,6 +139,47 @@ describe('parcel-map web component', () => {
   })
 
   describe('lifecycle', () => {
+    it('does not call the interact API while a deferred map is still loading', async () => {
+      // The real plugin starts as a descriptor; its API is attached asynchronously.
+      const plugin = {}
+      createInteractPlugin.mockReturnValueOnce(plugin)
+      let resolveData
+      global.fetch = vi.fn(
+        () =>
+          new Promise((resolve) => {
+            resolveData = resolve
+          })
+      )
+      const el = await mountElement({ 'defer-loading': '' })
+      const ready = waitForEvent(el, EVENT_READY)
+      el.removeAttribute('defer-loading')
+      expect(() => el.clearSelection()).not.toThrow()
+
+      plugin.enable = vi.fn()
+      plugin.clear = vi.fn()
+      resolveData({ ok: true, json: async () => PARCELS_RESPONSE })
+      await ready
+      el.clearSelection()
+      expect(plugin.clear).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not load a deferred map until the map view is activated', async () => {
+      global.fetch = fetchOk(PARCELS_RESPONSE)
+      const el = await mountElement({ 'defer-loading': '' })
+      expect(InteractiveMap).not.toHaveBeenCalled()
+      expect(global.fetch).not.toHaveBeenCalled()
+
+      const ready = waitForEvent(el, EVENT_READY)
+      el.removeAttribute('defer-loading')
+      await ready
+      expect(global.fetch).toHaveBeenCalledTimes(1)
+      expect(InteractiveMap).toHaveBeenCalledTimes(1)
+
+      el.setAttribute('defer-loading', '')
+      el.removeAttribute('defer-loading')
+      expect(global.fetch).toHaveBeenCalledTimes(1)
+    })
+
     it('dispatches parcel-map:ready when map and data load successfully', async () => {
       const el = await mountReady()
       expect(el.querySelector('[role="alert"]')).toBeNull()
@@ -566,6 +607,25 @@ describe('parcel-map web component', () => {
         attachInteractListener()
         vi.advanceTimersByTime(SELECT_LISTENER_POLL_MS * SELECT_LISTENER_MAX_POLLS)
 
+        expect(lastMapInstance().emit).not.toHaveBeenCalled()
+      })
+
+      it('replaces a pending selection with the latest list selection', () => {
+        el.selectParcels(['SD7148-9160'])
+        el.selectParcels(['SD7148-9161'])
+        attachInteractListener()
+        vi.advanceTimersByTime(SELECT_LISTENER_POLL_MS * SELECT_LISTENER_MAX_POLLS)
+        expect(lastMapInstance().emit).toHaveBeenCalledExactlyOnceWith(
+          SELECT_FEATURE_EVENT,
+          expect.objectContaining({ featureId: 'SD7148-9161' })
+        )
+      })
+
+      it('cancels a pending selection when the user clears it', () => {
+        el.selectParcels(['SD7148-9160'])
+        el.clearSelection()
+        attachInteractListener()
+        vi.advanceTimersByTime(SELECT_LISTENER_POLL_MS * SELECT_LISTENER_MAX_POLLS)
         expect(lastMapInstance().emit).not.toHaveBeenCalled()
       })
     })

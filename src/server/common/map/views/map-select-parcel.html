@@ -8,46 +8,46 @@
   <div class="govuk-body">
     <div class="govuk-grid-row">
       <div class="{{ gridColumnClass(page, 'full') }}">
-        {% if errors %}
-          {{
-            govukErrorSummary({
-              titleText: "There is a problem",
-              errorList: errors
-            })
-          }}
-        {% endif %}
+        <div class="govuk-grid-row">
+          <div class="govuk-grid-column-three-quarters-from-desktop parcel-selection-main">
+            {% if errors %}
+              {{
+                govukErrorSummary({
+                  titleText: "There is a problem",
+                  errorList: errors
+                })
+              }}
+            {% endif %}
 
-        {# role="alert" announces the reveal to screen readers without moving focus.
-         No href on the error item — there is nothing on the page to jump to
-         (the map tears itself down when the account has no parcels). #}
-        <div id="map-no-parcels-error" role="alert" hidden>
-          {{
-            govukErrorSummary({
-              titleText: "There is a problem",
-              errorList: [{
-                text: "No land parcels were found for your account."
-              }]
-            })
-          }}
+            {% if sectionTitle and sectionTitle.length and (sectionTitle !== pageTitle) %}
+              <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">{{- sectionTitle -}}</h2>
+            {% endif %}
+            <h1 class="govuk-heading-l" id="parcel-selection-heading">{{ pageTitle }}</h1>
+
+            <p class="govuk-body" id="parcel-selection-hint">
+              Select {{ 'one or more parcels' if multiSelect else 'a parcel' }} from the
+              <span id="parcel-selection-map-hint" hidden>map or the </span>list of your parcels.
+            </p>
+
+            {% if not multiSelect %}
+              <p class="govuk-inset-text">
+                You need to add each parcel individually. You can select actions and supplements for each parcel when
+                you continue through the service.
+              </p>
+            {% endif %}
+          </div>
         </div>
-
-        {% if sectionTitle and sectionTitle.length and (sectionTitle !== pageTitle) %}
-          <h2 class="govuk-caption-l govuk-!-margin-top-0" id="section-title">{{- sectionTitle -}}</h2>
-        {% endif %}
-        <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
-        <p class="govuk-body">
-          Select a land parcel from the map. You'll be able to select actions for the land on the next page (and add
-          more land parcels when you have finished).
-        </p>
-        <noscript>
-          <p class="govuk-body">The interactive map requires JavaScript to be enabled in your browser.</p>
-        </noscript>
 
         <form method="post" action="{{ formAction }}" id="parcel-select-form">
           <input type="hidden" name="crumb" value="{{ crumb }}" />
 
           <div class="govuk-grid-row">
-            <div class="govuk-grid-column-three-quarters-from-desktop">
+            <div class="govuk-grid-column-three-quarters-from-desktop parcel-selection-main">
+              <p class="govuk-body" id="parcel-view-toggle-container" hidden>
+                <a class="govuk-link govuk-link--no-visited-state" href="{{ formAction }}" id="parcel-view-toggle"
+                  >View parcels as a list</a
+                >
+              </p>
               <div class="govuk-form-group {% if errors and errors.length %}govuk-form-group--error{% endif %}">
                 {% if errors %}
                   {% set errorDescribedByIds = [] %}
@@ -63,36 +63,40 @@
                     }}
                   {% endfor %}
                 {% endif %}
+                {% include "parcel-list.html" %}
 
-                {# tabindex makes the element a focus target: the error-summary links and
-                 the "Change" link below all point at #parcel-map, and govuk-frontend
-                 cannot move focus to a custom element without it. #}
+                {# tabindex makes the element a focus target: the "Change" link below and,
+                 once JavaScript shows the map view, the error-summary links point at
+                 #parcel-map, and govuk-frontend cannot move focus to a custom element without it. #}
                 {# data-selected-parcels re-seeds the map after a rejected submit —
                  parcel-select-page.js reselects these ids once the map is ready. #}
-                <parcel-map
-                  id="parcel-map"
-                  role="group"
-                  tabindex="-1"
-                  multi-select="{{ 'true' if multiSelect else 'false' }}"
-                  data-enabled-land-actions="{{ (enabledLandActions | default([])) | join(',') }}"
-                  data-selected-parcels="{{ selectedParcelIds | join(',') if selectedParcelIds else '' }}"
-                  aria-label="Land parcel selection map"
-                  {% if errors and errors.length %}aria-describedby="{{ errorDescribedByIds | join(' ') }}"{% endif %}
-                  style="display:block;width:100%;height:500px;position:relative"
-                >
-                </parcel-map>
+                <div id="parcel-map-view" hidden>
+                  <parcel-map
+                    defer-loading
+                    id="parcel-map"
+                    role="group"
+                    tabindex="-1"
+                    multi-select="{{ 'true' if multiSelect else 'false' }}"
+                    data-enabled-land-actions="{{ (enabledLandActions | default([])) | join(',') }}"
+                    data-selected-parcels="{{ selectedParcelIds | join(',') if selectedParcelIds else '' }}"
+                    aria-label="Land parcel selection map"
+                    {% if errors and errors.length %}aria-describedby="{{ errorDescribedByIds | join(' ') }}"{% endif %}
+                    style="display:block;width:100%;height:500px;position:relative"
+                  >
+                  </parcel-map>
+                </div>
               </div>
 
-              {# Hidden inputs written by the parcel-map:selection listener; also used by no-JS fallback.
-               Pre-filled on a re-render so a rejected selection survives even without JS. #}
+              {# The map submits hidden inputs; the list submits native controls.
+                 Disabled until JavaScript activates the map to avoid duplicate values. #}
               <div id="selected-parcels-inputs" aria-hidden="true">
                 {% for parcelId in selectedParcelIds %}
-                  <input type="hidden" name="landParcels" value="{{ parcelId }}" />
+                  <input type="hidden" name="landParcels" value="{{ parcelId }}" disabled />
                 {% endfor %}
               </div>
             </div>
 
-            <div class="govuk-grid-column-one-quarter-from-desktop">
+            <div class="govuk-grid-column-one-quarter-from-desktop parcel-selection-sidebar">
               <table class="govuk-table" id="parcel-map-totals">
                 <caption class="govuk-table__caption">
                   {{ auth.organisationName }}
@@ -100,18 +104,22 @@
                 <tbody class="govuk-table__body">
                   <tr class="govuk-table__row">
                     <th scope="row" class="govuk-table__header govuk-!-font-weight-regular">Available land parcels</th>
-                    <td class="govuk-table__cell govuk-table__cell--numeric" id="parcel-map-total-count">&ndash;</td>
+                    <td class="govuk-table__cell govuk-table__cell--numeric" id="parcel-map-total-count">
+                      {{ parcels.length }}
+                    </td>
                   </tr>
                   <tr class="govuk-table__row">
                     <th scope="row" class="govuk-table__header govuk-!-font-weight-regular">Total area (hectares)</th>
-                    <td class="govuk-table__cell govuk-table__cell--numeric" id="parcel-map-total-area">&ndash;</td>
+                    <td class="govuk-table__cell govuk-table__cell--numeric" id="parcel-map-total-area">
+                      {{ totalArea }}
+                    </td>
                   </tr>
                 </tbody>
               </table>
             </div>
           </div>
 
-          <div class="govuk-grid-row">
+          <div class="govuk-grid-row" id="parcel-map-details-view" hidden>
             <div
               id="selected-parcel-details"
               class="govuk-grid-column-three-quarters-from-desktop"
@@ -168,19 +176,21 @@
                 </p>
               </div>
             </div>
-
+          </div>
+          <div class="govuk-grid-row">
             <div class="govuk-grid-column-three-quarters-from-desktop">
               {{
                 govukButton({
                 text: "Continue",
                 preventDoubleClick: true,
-                attributes: { id: "map-select-continue" }
+                attributes: { id: "map-select-continue" },
+                disabled: parcels is defined and not parcels.length
                 })
               }}
               {% if cancelHref %}
-                <a class="govuk-link govuk-link--no-visited-state govuk-!-display-block" href="{{ cancelHref }}"
-                  >Cancel</a
-                >
+                <div>
+                  <a class="govuk-link govuk-link--no-visited-state" href="{{ cancelHref }}">Cancel</a>
+                </div>
               {% endif %}
             </div>
           </div>

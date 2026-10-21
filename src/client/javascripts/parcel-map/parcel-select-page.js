@@ -1,20 +1,21 @@
 // Page-level wiring for the land-parcel selection form. Consumes the three
 // public events emitted by <parcel-map> and drives this journey's form DOM
-// (hidden inputs, hint, live summary, no-parcels error, Continue button).
+// (hidden inputs, map/list views, selected parcel details, live summary).
 import {
   ENABLED_LAND_ACTIONS_ATTRIBUTE,
-  ERROR_REASON_NO_PARCELS,
+  DEFER_LOADING_ATTRIBUTE,
   EVENT_ERROR,
   EVENT_READY,
   EVENT_SELECTION,
+  PARCEL_DETAILS_REQUEST_TIMEOUT_MS,
   TOTAL_AREA_DECIMAL_PLACES
 } from './config.js'
 import { formatParcelReference } from '../../../shared/format-parcel.js'
+import { initParcelViewToggle, restoreParcelViewSelection } from './parcel-view-toggle.js'
+import { createParcelListDetailsRenderer, renderRequirementItems, requirementsText } from './parcel-list-details.js'
 
 // DOM ids this script expects map-select-parcel.html to provide.
 const DOM_ID_PARCEL_MAP = 'parcel-map'
-const DOM_ID_MAP_NO_PARCELS_ERROR = 'map-no-parcels-error'
-const DOM_ID_MAP_SELECT_CONTINUE = 'map-select-continue'
 const DOM_ID_PARCEL_MAP_TOTAL_COUNT = 'parcel-map-total-count'
 const DOM_ID_PARCEL_MAP_TOTAL_AREA = 'parcel-map-total-area'
 const DOM_ID_SELECTED_PARCEL_DETAILS = 'selected-parcel-details'
@@ -29,7 +30,6 @@ const DOM_ID_REQUIREMENTS_ROW = 'selected-parcel-requirements-row'
 const DOM_ID_REQUIREMENTS_INTRO = 'selected-parcel-requirements-intro'
 const DOM_ID_REQUIREMENTS_LIST = 'selected-parcel-requirements-list'
 const DOM_ID_REQUIREMENTS_STATUS = 'selected-parcel-requirements-status'
-const SELECTOR_ERROR_SUMMARY_MAP_LINK = `.govuk-error-summary a[href="#${DOM_ID_PARCEL_MAP}"]`
 const DATASET_SELECTED_PARCELS = 'selectedParcels'
 
 /** @param {string} id */
@@ -109,6 +109,7 @@ const writeHiddenInputs = (selectedIds) => {
     input.type = 'hidden'
     input.name = 'landParcels'
     input.value = id
+    input.disabled = document.getElementById('land-parcels')?.hidden === false
     container.appendChild(input)
   })
 }
@@ -116,12 +117,13 @@ const writeHiddenInputs = (selectedIds) => {
 /**
  * Fetches the parcel's requirements notice, worded by the server so the copy
  * lives in one place. An empty items array means nothing applies; null means
- * the lookup failed.
+ * the lookup failed or was aborted.
  * @param {string} parcelId
- * @param {string[]} [enabledLandActions]
- * @returns {Promise<{ intro: string, items: string[], actionCount?: number } | null>}
+ * @param {string[]} enabledLandActions
+ * @param {AbortSignal} signal
+ * @returns {Promise<ParcelNotice | null>}
  */
-const fetchConsentNotice = async (parcelId, enabledLandActions = []) => {
+const fetchConsentNotice = async (parcelId, enabledLandActions, signal) => {
   const crumb = /** @type {HTMLInputElement | null} */ (document.querySelector('input[name="crumb"]'))?.value
   const params = new URLSearchParams()
   enabledLandActions.forEach((action) => params.append('enabledLandActions', action))
@@ -134,7 +136,8 @@ const fetchConsentNotice = async (parcelId, enabledLandActions = []) => {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json', ...(crumb ? { 'X-CSRF-Token': crumb } : {}) },
-      body: '{}'
+      body: '{}',
+      signal
     })
     if (!response.ok) {
       return null
@@ -163,35 +166,35 @@ const clearRequirements = () => {
   setText(DOM_ID_REQUIREMENTS_STATUS, '')
 }
 
-/**
- * @param {string} intro
- * @param {string[]} items
- */
-const showRequirements = (intro, items) => {
-  setText(DOM_ID_REQUIREMENTS_INTRO, intro)
-  const list = document.getElementById(DOM_ID_REQUIREMENTS_LIST)
-  // textContent, never innerHTML: this copy arrives over fetch.
-  list?.replaceChildren(
-    ...items.map((item) => {
-      const li = document.createElement('li')
-      li.textContent = item
-      return li
-    })
-  )
+/** @param {ParcelNotice} notice */
+const showRequirements = (notice) => {
+  setText(DOM_ID_REQUIREMENTS_INTRO, notice.intro)
+  renderRequirementItems(document.getElementById(DOM_ID_REQUIREMENTS_LIST), notice.items)
   unhide(DOM_ID_REQUIREMENTS_ROW)
-  // One utterance: the intro alone tells a screen-reader user nothing.
-  setText(DOM_ID_REQUIREMENTS_STATUS, `${intro} ${items.join(', ')}`)
+  setText(DOM_ID_REQUIREMENTS_STATUS, requirementsText(notice))
 }
 
 /**
- * Keeps the selected parcel details in step with the current selection. The
- * notice belongs to the selected parcel, so every selection event, including
- * deselection and multi-selection, invalidates any lookup still in flight and
- * clears the row before asking for a new one.
+ * @param {ParcelNotice} notice
+ * @param {unknown} fallbackActionCount - The map's bulk count, used when the lookup did not count actions.
+ * @returns {ParcelNotice}
+ */
+const withActionCount = (notice, fallbackActionCount) => {
+  const actionCount = notice.actionCount ?? fallbackActionCount
+  return typeof actionCount === 'number' ? { ...notice, actionCount } : notice
+}
+
+/**
+ * Keeps the selected parcel details in step with the current selection.
+ * Both views share cached details and at most one request. Changing the
+ * selection aborts a request for a different parcel, so the latest selection
+ * is fetched straight away and a stale response can never replace it. A
+ * request that hangs is aborted after a timeout and reported as a failure.
  * @param {HTMLElement} mapEl
  * @returns {(selectedParcels: SelectedParcel[], metaIndex: import('./map-helpers.js').MetaIndex) => Promise<void>}
  */
 function createSelectedParcelDetailsUpdater(mapEl) {
+  const listDetails = createParcelListDetailsRenderer()
   const enabledActions = [
     ...new Set(
       (mapEl.getAttribute(ENABLED_LAND_ACTIONS_ATTRIBUTE) ?? '')
@@ -200,32 +203,76 @@ function createSelectedParcelDetailsUpdater(mapEl) {
         .filter(Boolean)
     )
   ]
-  let requestId = 0
+  /** @type {Map<string, ParcelNotice>} */
+  const notices = new Map()
+  /** @type {import('./map-helpers.js').MetaIndex} */
+  let latestMetaIndex = {}
+  /** @type {{ id: string, controller: AbortController } | null} */
+  let inFlight = null
 
-  return async function updateSelectedParcelDetails(selectedParcels, metaIndex) {
-    requestId += 1
-    const thisRequestId = requestId
-    clearRequirements()
-
-    if (selectedParcels.length !== 1) {
-      return
-    }
-
-    const [{ id }] = selectedParcels
-    const hasBulkActionCount = typeof metaIndex[id]?.actionCount === 'number'
-    const notice = await fetchConsentNotice(id, hasBulkActionCount ? [] : enabledActions)
-    if (thisRequestId !== requestId) {
-      return
-    }
-
+  /**
+   * @param {string} id
+   * @param {ParcelNotice | null} notice
+   */
+  const show = (id, notice) => {
     if (notice?.items.length) {
-      showRequirements(notice.intro, notice.items)
+      showRequirements(notice)
     }
-    if (typeof notice?.actionCount === 'number') {
-      renderSelectedParcelDetails(selectedParcels, {
-        [id]: { ...metaIndex[id], id, actionCount: notice.actionCount }
+    if (typeof notice?.actionCount === 'number' && typeof latestMetaIndex[id]?.actionCount !== 'number') {
+      renderSelectedParcelDetails([{ id }], {
+        [id]: { ...latestMetaIndex[id], id, actionCount: notice.actionCount }
       })
     }
+    listDetails.render(id, notice)
+  }
+
+  return async function updateSelectedParcelDetails(selectedParcels, metaIndex) {
+    clearRequirements()
+    latestMetaIndex = metaIndex
+    const id = selectedParcels.length === 1 ? selectedParcels[0].id : undefined
+
+    if (inFlight && inFlight.id !== id) {
+      inFlight.controller.abort()
+      inFlight = null
+    }
+    if (!id) {
+      listDetails.clear()
+      return
+    }
+    const cached = notices.get(id)
+    if (cached) {
+      show(id, cached)
+      return
+    }
+    // The same parcel is already loading, for example after switching views:
+    // that response renders against the latest metaIndex.
+    if (inFlight) {
+      return
+    }
+
+    listDetails.startLoading(id)
+    const request = { id, controller: new AbortController() }
+    inFlight = request
+    const timeout = setTimeout(() => request.controller.abort(), PARCEL_DETAILS_REQUEST_TIMEOUT_MS)
+    const bulkActionCount = metaIndex[id]?.actionCount
+    const notice = await fetchConsentNotice(
+      id,
+      typeof bulkActionCount === 'number' ? [] : enabledActions,
+      request.controller.signal
+    )
+    clearTimeout(timeout)
+    // Superseded by a different selection. A timed-out request is still
+    // current, so it falls through and reports the failure.
+    if (inFlight !== request) {
+      return
+    }
+    inFlight = null
+
+    const result = notice && withActionCount(notice, latestMetaIndex[id]?.actionCount ?? bulkActionCount)
+    if (result) {
+      notices.set(id, result)
+    }
+    show(id, result)
   }
 }
 
@@ -241,49 +288,89 @@ export function initParcelSelectPage(mapEl) {
   /** @type {import('./map-helpers.js').MetaIndex} */
   let metaIndex = {}
 
+  restoreParcelViewSelection(mapEl)
   const serverSelectedIds = (mapEl.dataset[DATASET_SELECTED_PARCELS] ?? '').split(',').filter(Boolean)
+  writeHiddenInputs(serverSelectedIds)
+  let selectedIds = serverSelectedIds
+  let mapSelectedIds = /** @type {string[]} */ ([])
+  let syncingMap = false
   /** @type {string | undefined} */
   let selectedParcelId = serverSelectedIds[0]
 
   const mapWithSelection = /** @type {HTMLElement & {
     clearSelection?: () => void,
     selectParcels?: (ids: string[]) => void,
-    focusParcels?: () => void
+    focusParcels?: () => void,
+    resize?: () => void
   }} */ (mapEl)
+  const updateSelectedParcelDetails = createSelectedParcelDetailsUpdater(mapEl)
+
+  const syncMapSelection = () => {
+    mapEl.removeAttribute(DEFER_LOADING_ATTRIBUTE)
+    mapWithSelection.resize?.()
+    const selectedParcels = selectedIds.map((id) => ({ id }))
+    renderSelectedParcelDetails(selectedParcels, metaIndex)
+    updateSelectedParcelDetails(selectedParcels, metaIndex)
+    if (selectedIds.join(',') === mapSelectedIds.join(',')) {
+      return
+    }
+    // clearSelection emits synchronously; keep the form selection intact while
+    // replacing the map's previous selection. selectParcels can complete later.
+    syncingMap = true
+    mapWithSelection.clearSelection?.()
+    syncingMap = false
+    mapWithSelection.selectParcels?.(selectedIds)
+  }
+  const viewToggle = initParcelViewToggle({
+    onListSelection: (ids) => {
+      selectedIds = ids
+      selectedParcelId = ids.length === 1 ? ids[0] : undefined
+      writeHiddenInputs(ids)
+      updateSelectedParcelDetails(
+        ids.map((id) => ({ id })),
+        {}
+      )
+    },
+    onMapView: syncMapSelection,
+    getSelectedIds: () => selectedIds
+  })
+  if (viewToggle?.isList() && selectedIds.length) {
+    updateSelectedParcelDetails(
+      selectedIds.map((id) => ({ id })),
+      {}
+    )
+  }
 
   /** @param {ReadyDetail} detail */
   const handleReady = (detail) => {
     metaIndex = detail.metaIndex ?? {}
     updateMapTotals(metaIndex, detail.parcelIds ?? [])
 
-    if (serverSelectedIds.length > 0) {
-      mapWithSelection.selectParcels?.(serverSelectedIds)
+    if (!viewToggle?.isList()) {
+      syncMapSelection()
     }
   }
 
-  /** @param {ParcelMapErrorDetail} detail */
-  const handleError = (detail) => {
-    const btn = /** @type {HTMLButtonElement | null} */ (document.getElementById(DOM_ID_MAP_SELECT_CONTINUE))
-    if (btn) {
-      btn.disabled = true
-    }
-    if (detail.reason === ERROR_REASON_NO_PARCELS) {
-      unhide(DOM_ID_MAP_NO_PARCELS_ERROR)
-    }
+  // A basemap/tiles failure must not disable the working text-list form. The
+  // server renders the no-parcels and parcel-load errors, so none is shown here.
+  const handleError = () => {
+    viewToggle?.showList()
   }
 
   mapEl.addEventListener(EVENT_READY, (/** @type {Event} */ e) => {
     handleReady(/** @type {CustomEvent<ReadyDetail>} */ (e).detail ?? {})
   })
 
-  mapEl.addEventListener(EVENT_ERROR, (/** @type {Event} */ e) => {
-    handleError(/** @type {CustomEvent<ParcelMapErrorDetail>} */ (e).detail)
-  })
-  const updateSelectedParcelDetails = createSelectedParcelDetailsUpdater(mapEl)
-
+  mapEl.addEventListener(EVENT_ERROR, handleError)
   mapEl.addEventListener(EVENT_SELECTION, (/** @type {Event} */ e) => {
     const { selectedParcels } = /** @type {CustomEvent<SelectionDetail>} */ (e).detail
-    writeHiddenInputs(selectedParcels.map((p) => p.id))
+    mapSelectedIds = selectedParcels.map((p) => p.id)
+    if (syncingMap || viewToggle?.isList()) {
+      return
+    }
+    selectedIds = mapSelectedIds
+    writeHiddenInputs(selectedIds)
+    viewToggle?.syncSelection(selectedIds)
     renderSelectedParcelDetails(selectedParcels, metaIndex)
     updateSelectedParcelDetails(selectedParcels, metaIndex)
     const nextParcelId = selectedParcels.length === 1 ? selectedParcels[0].id : undefined
@@ -304,9 +391,8 @@ export function initParcelSelectPage(mapEl) {
   if (lastReady) {
     handleReady(/** @type {ReadyDetail} */ (lastReady.detail ?? {}))
   }
-  const lastError = mapWithHistory.getLastEvent?.(EVENT_ERROR)
-  if (lastError) {
-    handleError(/** @type {ParcelMapErrorDetail} */ (lastError.detail))
+  if (mapWithHistory.getLastEvent?.(EVENT_ERROR)) {
+    handleError()
   }
 
   const changeLink = document.getElementById(DOM_ID_SELECTED_PARCEL_CHANGE)
@@ -315,8 +401,13 @@ export function initParcelSelectPage(mapEl) {
     mapWithSelection.clearSelection?.()
   })
 
-  document.querySelectorAll(SELECTOR_ERROR_SUMMARY_MAP_LINK).forEach((link) => {
-    link.addEventListener('click', () => mapWithSelection.focusParcels?.())
+  // The toggle retargets these links at the active view, so bind them all once.
+  viewToggle?.errorLinks.forEach((link) => {
+    link.addEventListener('click', () => {
+      if (!viewToggle?.isList()) {
+        mapWithSelection.focusParcels?.()
+      }
+    })
   })
 }
 
@@ -338,6 +429,5 @@ initParcelSelectPage(document.getElementById(DOM_ID_PARCEL_MAP))
  */
 
 /**
- * @typedef {object} ParcelMapErrorDetail
- * @property {string} reason
+ * @typedef {import('./parcel-list-details.js').ParcelNotice} ParcelNotice
  */
