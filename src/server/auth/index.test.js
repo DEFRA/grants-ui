@@ -47,6 +47,13 @@ vi.mock('~/src/config/nunjucks/context/context.js', () => ({
   context: () => ({ getAssetPath: (/** @type {string} */ assetPath) => `/public/${assetPath}` })
 }))
 
+vi.mock('~/src/server/auth/get-oidc-config.js', () => ({
+  getOidcConfig: vi.fn().mockResolvedValue({
+    authorization_endpoint: 'https://b2c.example/tenant/oauth2/v2.0/authorize',
+    end_session_endpoint: 'https://defra-id.example/signout'
+  })
+}))
+
 vi.mock('~/src/server/auth/verify-token.js', () => ({
   verifyToken: vi.fn().mockResolvedValue(true)
 }))
@@ -327,7 +334,10 @@ describe('auth router - /auth/sign-out', () => {
       const headerBlock = serialiseHeaders(response)
       expect(headerBlock).not.toContain(token)
       expect(Buffer.byteLength(headerBlock)).toBeLessThan(SIDECAR_HEADER_BUFFER_BYTES)
-      expect(response.headers['content-security-policy']).toContain("form-action 'self' https:;")
+      // Only the hub and B2C origins from the discovery document, only on this response.
+      expect(response.headers['content-security-policy']).toContain(
+        "form-action 'self' https://defra-id.example https://b2c.example;"
+      )
 
       expect(response.payload).toContain(
         'name="post_logout_redirect_uri" value="https://grants-ui.example.com/auth/sign-out-oidc"'

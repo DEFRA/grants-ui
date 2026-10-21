@@ -182,12 +182,12 @@ describe('contentSecurityPolicy plugin', () => {
     it('appends the form-action source a handler allowed for that response', async () => {
       const request = makeRequest()
       await onRequest(request, h)
-      allowFormActionTo(request, 'https:')
+      allowFormActionTo(request, ['https://idp.example', 'https://b2c.example', 'https://idp.example'])
 
       await onPreResponse(request, h)
 
       const cspHeader = mockHeader.mock.calls.find(([name]) => name === 'Content-Security-Policy')?.[1]
-      expect(cspHeader).toContain("form-action 'self' https:;")
+      expect(cspHeader).toContain("form-action 'self' https://idp.example https://b2c.example;")
     })
 
     it('should keep form-action self when SFD is enabled but URL is malformed', async () => {

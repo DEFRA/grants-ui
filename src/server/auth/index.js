@@ -16,6 +16,7 @@ import { AuthError } from '~/src/server/common/utils/errors/AuthError.js'
 import { YarKeys } from '~/src/server/common/constants/session-keys.js'
 import { clearCachedPermissions } from '../common/helpers/permissions/clear-cached-permissions.js'
 import { allowFormActionTo } from '~/src/plugins/content-security-policy.js'
+import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 
 const UNKNOWN_USER = 'unknown'
 // Stub environments differ from real Defra ID only by this host in the well-known URL.
@@ -515,10 +516,11 @@ async function handleSignOut(request, h) {
     const signOutUrl = await getSignOutUrl(request, token)
     return h.view('signing-out', { signOutUrl }).header('cache-control', 'no-store')
   }
-  // Defra ID recommends POST. The submission is redirected through B2C and
-  // possibly federated IdPs, so this page may post to any https site.
+  // Defra ID recommends POST. The submission is redirected from the hub to B2C
+  // and back, so this page may post to those two origins.
   const form = await getSignOutRequest(request, token)
-  allowFormActionTo(request, 'https:')
+  const { authorization_endpoint: b2cEndpoint } = await getOidcConfig()
+  allowFormActionTo(request, [new URL(form.endpoint).origin, new URL(b2cEndpoint).origin])
   return h.view('signing-out', { form }).header('cache-control', 'no-store')
 }
 

@@ -4,9 +4,9 @@ import { error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 /**
  * @param {string} nonce
- * @param {string} [extraFormActionSource] - set by a handler whose page posts a form elsewhere
+ * @param {string[]} [extraFormActionSources] - set by a handler whose page posts a form elsewhere
  */
-const defaultContentPolicy = (nonce, extraFormActionSource) => {
+const defaultContentPolicy = (nonce, extraFormActionSources = []) => {
   const gtm = 'https://www.googletagmanager.com'
   const gtmWildCard = 'https://*.googletagmanager.com'
   const ga4 = 'https://www.google-analytics.com'
@@ -37,9 +37,7 @@ const defaultContentPolicy = (nonce, extraFormActionSource) => {
     }
   }
 
-  if (extraFormActionSource) {
-    formActionSrc.push(extraFormActionSource)
-  }
+  formActionSrc.push(...extraFormActionSources)
 
   return [
     "default-src 'self'",
@@ -66,14 +64,14 @@ function generateNewNonce() {
 }
 
 /**
- * Let the page of this response submit forms to `source` as well as 'self'.
- * Browsers check form-action against every redirect a submission follows, so a
- * handler whose page posts to another site uses this for that one response.
+ * Let the page of this response submit forms to these origins as well as 'self'.
+ * Browsers check form-action against every redirect a submission follows, so
+ * list every origin in the chain.
  * @param {Request} request
- * @param {string} source - CSP source expression, e.g. 'https:' or an origin
+ * @param {string[]} origins
  */
-export function allowFormActionTo(request, source) {
-  request.app.cspFormAction = source
+export function allowFormActionTo(request, origins) {
+  request.app.cspFormAction = [...new Set(origins)]
 }
 
 export const contentSecurityPolicy = {
