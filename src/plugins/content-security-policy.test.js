@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest'
-import { contentSecurityPolicy as plugin } from '~/src/plugins/content-security-policy.js'
+import { allowFormActionTo, contentSecurityPolicy as plugin } from '~/src/plugins/content-security-policy.js'
 
 const mockError = vi.fn()
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
@@ -179,15 +179,15 @@ describe('contentSecurityPolicy plugin', () => {
       expect(cspHeader).not.toContain('update-sbi')
     })
 
-    it('allowlists a per-request form-action origin set on request.app.cspFormAction', async () => {
+    it('appends the form-action source a handler allowed for that response', async () => {
       const request = makeRequest()
       await onRequest(request, h)
-      request.app.cspFormAction = 'https://defra-id.example'
+      allowFormActionTo(request, 'https:')
 
       await onPreResponse(request, h)
 
       const cspHeader = mockHeader.mock.calls.find(([name]) => name === 'Content-Security-Policy')?.[1]
-      expect(cspHeader).toContain("form-action 'self' https://defra-id.example;")
+      expect(cspHeader).toContain("form-action 'self' https:;")
     })
 
     it('should keep form-action self when SFD is enabled but URL is malformed', async () => {

@@ -4,9 +4,9 @@ import { error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 /**
  * @param {string} nonce
- * @param {string} [extraFormActionOrigin] - set by a handler whose page posts a form to another origin
+ * @param {string} [extraFormActionSource] - set by a handler whose page posts a form elsewhere
  */
-const defaultContentPolicy = (nonce, extraFormActionOrigin) => {
+const defaultContentPolicy = (nonce, extraFormActionSource) => {
   const gtm = 'https://www.googletagmanager.com'
   const gtmWildCard = 'https://*.googletagmanager.com'
   const ga4 = 'https://www.google-analytics.com'
@@ -37,8 +37,8 @@ const defaultContentPolicy = (nonce, extraFormActionOrigin) => {
     }
   }
 
-  if (extraFormActionOrigin) {
-    formActionSrc.push(extraFormActionOrigin)
+  if (extraFormActionSource) {
+    formActionSrc.push(extraFormActionSource)
   }
 
   return [
@@ -63,6 +63,17 @@ const defaultContentPolicy = (nonce, extraFormActionOrigin) => {
  */
 function generateNewNonce() {
   return randomBytes(16).toString('base64')
+}
+
+/**
+ * Let the page of this response submit forms to `source` as well as 'self'.
+ * Browsers check form-action against every redirect a submission follows, so a
+ * handler whose page posts to another site uses this for that one response.
+ * @param {Request} request
+ * @param {string} source - CSP source expression, e.g. 'https:' or an origin
+ */
+export function allowFormActionTo(request, source) {
+  request.app.cspFormAction = source
 }
 
 export const contentSecurityPolicy = {

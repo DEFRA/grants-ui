@@ -41,7 +41,7 @@ declare module '@hapi/hapi' {
   // resolve because the plugin's .d.ts uses path aliases (~/src/...).
   interface RequestApplicationState {
     cspNonce?: string
-    /** Extra origin allowed in this response's CSP form-action (set by the sign-out handler). */
+    /** Extra source allowed in this response's CSP form-action (set by the sign-out handler). */
     cspFormAction?: string
     model?: FormModel
   }

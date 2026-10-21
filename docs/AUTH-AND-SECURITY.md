@@ -71,7 +71,7 @@ When permission enforcement is enabled for a grant, each page request is evaluat
 
 `GET /auth/sign-out` returns a small page (`Cache-Control: no-store`) that sends the browser to the Defra ID end-session endpoint with `post_logout_redirect_uri`, `id_token_hint` and `state`, rather than answering with a `302`. The `id_token_hint` is the user's full Defra ID token (2-4KB, growing with each business relationship); in a `Location` header it pushed the response past the 4KB header buffer of the nginx [cdp-ssl-sidecar](https://github.com/DEFRA/cdp-ssl-sidecar), which fails the response as `502 "SSL Sidecar - Bad Gateway"`. The hint cannot be dropped: Defra ID's onboarding guide requires it for the redirect back, otherwise the user is left on a generic Defra services page.
 
-- Real Defra ID: the page POSTs a form, auto-submitted by a nonce'd script with a button fallback. This is Defra ID's recommendation and keeps the token out of the URL. The handler allows the IdP origin in that response's CSP `form-action`.
+- Real Defra ID: the page POSTs a form, auto-submitted by a nonce'd script with a button fallback. This is Defra ID's recommendation and keeps the token out of the URL. Browsers check `form-action` against every redirect the submission follows (hub, B2C, federated IdPs), so that one response's CSP allows `form-action 'self' https:`.
 - fcp-defra-id-stub (host of `DEFRA_ID_WELL_KNOWN_URL` starts with `fcp-defra-id-stub`: local, dev, perf-test): an instant `<meta http-equiv="refresh">` to the GET URL, because the stub only accepts GET.
 
 Defra ID returns the user to `/auth/sign-out-oidc`, which verifies `state` and tears down the session.

@@ -327,7 +327,7 @@ describe('auth router - /auth/sign-out', () => {
       const headerBlock = serialiseHeaders(response)
       expect(headerBlock).not.toContain(token)
       expect(Buffer.byteLength(headerBlock)).toBeLessThan(SIDECAR_HEADER_BUFFER_BYTES)
-      expect(response.headers['content-security-policy']).toContain("form-action 'self' https://defra-id.example;")
+      expect(response.headers['content-security-policy']).toContain("form-action 'self' https:;")
 
       expect(response.payload).toContain(
         'name="post_logout_redirect_uri" value="https://grants-ui.example.com/auth/sign-out-oidc"'
@@ -381,7 +381,6 @@ describe('auth router - /auth/sign-out', () => {
 
       expect(response.statusCode).toBe(302)
       expect(response.headers['content-security-policy']).toContain("form-action 'self';")
-      expect(response.headers['content-security-policy']).not.toContain('defra-id.example')
     } finally {
       await server.stop()
     }
