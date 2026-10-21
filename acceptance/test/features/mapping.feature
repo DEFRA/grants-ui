@@ -37,26 +37,23 @@ Feature: Mapping
         And should see heading "Select actions for this land parcel"
 
     Scenario: User exiting without choosing actions should resume on the select land parcel page
-        Given there is no application data for SBI "300000005" and grant "example-grant-with-map"
+        Given there is no application data for SBI "300000034" and grant "example-grant-with-map"
 
         # start
         Given the user navigates to "/example-grant-with-map"
-        And logs in as CRN "1300000005"
+        And logs in as CRN "1300000034"
         Then the user should see heading "Apply for Example Grant with Map"
         When the user clicks on "Start now"
 
         # select-land-parcel
         Then the user should be at URL "select-land-parcel"
         And should see heading "Select a land parcel"
+        # WBD1_26 is available on this parcel, so Continue reaches action selection.
         Given the map has the following land parcels available for selection
             | PARCEL      | HECTARES |
-            | SD5852-1436 | 177.7497 |
-            | SD6163-1441 | 2.6897   |
-            | SD7147-1461 | 120.5784 |
-            | SD8542-1488 | 2.5076   |
-            | SD7446-1499 | 2.2947   |
-        And the user selects parcel "SD6163 1441" of area "2.6897" hectares on the map
-        Then the user should see "SD6163 1441" totalling "2.6897" hectares in the selected parcel summary
+            | SD5349-3815 | 6.3614   |
+        When the user selects parcel "SD5349 3815" of area "6.3614" hectares on the map
+        Then the user should see "SD5349 3815" totalling "6.3614" hectares in the selected parcel summary
         And continues
 
         # select-actions-for-land-parcel
@@ -66,7 +63,7 @@ Feature: Mapping
         # reload the browser session and resume the journey
         Given the user starts a new browser session
         And navigates to "/example-grant-with-map"
-        And logs in as CRN "1300000005"
+        And logs in as CRN "1300000034"
 
         # resume should return to select-land-parcel, not select-actions-for-land-parcel
         Then the user should be at URL "select-land-parcel"
