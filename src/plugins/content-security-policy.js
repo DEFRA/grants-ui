@@ -2,7 +2,11 @@ import { randomBytes } from 'node:crypto'
 import { config } from '~/src/config/config.js'
 import { error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
-const defaultContentPolicy = (/** @type {string} */ nonce) => {
+/**
+ * @param {string} nonce
+ * @param {string} [extraFormActionOrigin] - set by a handler whose page posts a form to another origin
+ */
+const defaultContentPolicy = (nonce, extraFormActionOrigin) => {
   const gtm = 'https://www.googletagmanager.com'
   const gtmWildCard = 'https://*.googletagmanager.com'
   const ga4 = 'https://www.google-analytics.com'
@@ -31,6 +35,10 @@ const defaultContentPolicy = (/** @type {string} */ nonce) => {
         error(LogCodes.SYSTEM.CSP_SFD_UPDATE_URL_INVALID, { sfdUpdateUrl })
       }
     }
+  }
+
+  if (extraFormActionOrigin) {
+    formActionSrc.push(extraFormActionOrigin)
   }
 
   return [
@@ -77,7 +85,10 @@ export const contentSecurityPolicy = {
       }
 
       if (typeof response.header === 'function') {
-        response.header('Content-Security-Policy', defaultContentPolicy(/** @type {string} */ (nonce)))
+        response.header(
+          'Content-Security-Policy',
+          defaultContentPolicy(/** @type {string} */ (nonce), request.app.cspFormAction)
+        )
         response.header('Referrer-Policy', 'no-referrer')
 
         // Only set this header in non-production environments for debugging

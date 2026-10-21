@@ -1,18 +1,40 @@
 {% extends "layouts/page.njk" %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
 {% set pageTitle = "Signing you out" %}
 
 {% block head %}
   {{ super() }}
-  <meta http-equiv="refresh" content="0; url={{ signOutUrl }}" />
+  {% if signOutUrl %}
+    <meta http-equiv="refresh" content="0; url={{ signOutUrl }}" />
+  {% endif %}
 {% endblock %}
 
 {% block content %}
   <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
       <h1 class="govuk-heading-l">Signing you out</h1>
-      <p class="govuk-body">
-        If you are not redirected, <a class="govuk-link" href="{{ signOutUrl }}">continue signing out</a>.
-      </p>
+      {% if form %}
+        <form method="post" action="{{ form.endpoint }}" id="defra-id-sign-out">
+          {% for name, value in form.fields %}
+            <input type="hidden" name="{{ name }}" value="{{ value }}" />
+          {% endfor %}
+          <p class="govuk-body">If you are not redirected, continue signing out.</p>
+          {{ govukButton({ text: "Continue signing out" }) }}
+        </form>
+      {% else %}
+        <p class="govuk-body">
+          If you are not redirected, <a class="govuk-link" href="{{ signOutUrl }}">continue signing out</a>.
+        </p>
+      {% endif %}
     </div>
   </div>
+{% endblock %}
+
+{% block bodyEnd %}
+  {{ super() }}
+  {% if form %}
+    <script nonce="{{ cspNonce }}">
+      document.getElementById('defra-id-sign-out').submit()
+    </script>
+  {% endif %}
 {% endblock %}

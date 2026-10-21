@@ -179,6 +179,17 @@ describe('contentSecurityPolicy plugin', () => {
       expect(cspHeader).not.toContain('update-sbi')
     })
 
+    it('allowlists a per-request form-action origin set on request.app.cspFormAction', async () => {
+      const request = makeRequest()
+      await onRequest(request, h)
+      request.app.cspFormAction = 'https://defra-id.example'
+
+      await onPreResponse(request, h)
+
+      const cspHeader = mockHeader.mock.calls.find(([name]) => name === 'Content-Security-Policy')?.[1]
+      expect(cspHeader).toContain("form-action 'self' https://defra-id.example;")
+    })
+
     it('should keep form-action self when SFD is enabled but URL is malformed', async () => {
       enableSfd('not a url')
 

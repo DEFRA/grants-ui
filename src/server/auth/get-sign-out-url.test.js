@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import { config } from '~/src/config/config.js'
 import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
-import { getSignOutUrl } from '~/src/server/auth/get-sign-out-url.js'
+import { getSignOutRequest, getSignOutUrl } from '~/src/server/auth/get-sign-out-url.js'
 import { createState } from '~/src/server/auth/state.js'
 
 vi.mock('~/src/config/config.js')
@@ -59,6 +59,22 @@ describe('getSignOutUrl', () => {
     await getSignOutUrl(mockRequest, mockToken)
 
     expect(createState).toHaveBeenCalledWith(mockRequest)
+  })
+
+  it('exposes the endpoint and fields for the POST form of the request', async () => {
+    const mockRequest = { session: {} }
+
+    const result = await getSignOutRequest(mockRequest, 'mock-id-token')
+
+    expect(createState).toHaveBeenCalledWith(mockRequest)
+    expect(result).toEqual({
+      endpoint: 'https://auth.example.com/logout',
+      fields: {
+        post_logout_redirect_uri: 'https://myapp.example.com/signed-out',
+        id_token_hint: 'mock-id-token',
+        state: 'mock-state-value'
+      }
+    })
   })
 
   it('should handle empty token correctly', async () => {

@@ -2,7 +2,7 @@ import { config } from '~/src/config/config.js'
 import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { validateState } from '~/src/server/auth/state.js'
 import { verifyToken } from '~/src/server/auth/verify-token.js'
-import { getSignOutUrl } from './get-sign-out-url.js'
+import { getSignOutRequest, getSignOutUrl } from './get-sign-out-url.js'
 import { debug, log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import {
   logSuccessfulSignIn,
@@ -17,6 +17,8 @@ import { YarKeys } from '~/src/server/common/constants/session-keys.js'
 import { clearCachedPermissions } from '../common/helpers/permissions/clear-cached-permissions.js'
 
 const UNKNOWN_USER = 'unknown'
+// Stub environments differ from real Defra ID only by this host in the well-known URL.
+const DEFRA_ID_STUB_HOST_PREFIX = 'fcp-defra-id-stub'
 const USER_AGENT = 'user-agent'
 const HTTP_FOUND = 302
 
@@ -448,6 +450,12 @@ async function handleOidcSignIn(request, h) {
   }
 }
 
+/** @returns {boolean} true when DEFRA_ID_WELL_KNOWN_URL points at fcp-defra-id-stub */
+function usesDefraIdStub() {
+  const wellKnownUrl = String(config.get('defraId.wellKnownUrl'))
+  return URL.canParse(wellKnownUrl) && new URL(wellKnownUrl).hostname.startsWith(DEFRA_ID_STUB_HOST_PREFIX)
+}
+
 /**
  * @param {RequestWithCookieAuth} request
  * @param {ResponseToolkit} h
@@ -498,12 +506,18 @@ async function handleSignOut(request, h) {
     request
   )
 
-  const signOutUrl = await getSignOutUrl(request, request.auth.credentials.token)
-  // Rendered as a page with an instant meta refresh rather than a 302: the URL
-  // carries the whole Defra ID token, so a Location header plus the usual response
-  // headers can exceed the CDP SSL sidecar's 4KB nginx header buffer and surface
-  // as "SSL Sidecar - Bad Gateway". No-store because the body holds the token.
-  return h.view('signing-out', { signOutUrl }).header('cache-control', 'no-store')
+  // A page, not a 302: the token in the end-session request would push the
+  // response headers past the CDP SSL sidecar's 4KB limit (nginx 502).
+  const token = request.auth.credentials.token
+  if (usesDefraIdStub()) {
+    // The stub only accepts GET.
+    const signOutUrl = await getSignOutUrl(request, token)
+    return h.view('signing-out', { signOutUrl }).header('cache-control', 'no-store')
+  }
+  // Defra ID recommends POST; allow the IdP origin in this response's CSP form-action.
+  const form = await getSignOutRequest(request, token)
+  request.app.cspFormAction = new URL(form.endpoint).origin
+  return h.view('signing-out', { form }).header('cache-control', 'no-store')
 }
 
 /**

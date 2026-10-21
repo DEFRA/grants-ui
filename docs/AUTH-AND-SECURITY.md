@@ -69,7 +69,16 @@ When permission enforcement is enabled for a grant, each page request is evaluat
 
 ### Sign-out
 
-`GET /auth/sign-out` builds the Defra ID end-session URL (`post_logout_redirect_uri`, `id_token_hint`, `state`) and hands it to the browser in a small page with an instant `<meta http-equiv="refresh">`, not as a `302 Location` header. The `id_token_hint` is the user's full Defra ID token, which grows with the number of business relationships, and together with the CSP, security and session cookie headers a `Location` header carrying it can exceed the 4KB header buffer of the nginx [cdp-ssl-sidecar](https://github.com/DEFRA/cdp-ssl-sidecar) in front of every CDP service. nginx then fails the whole response as `{"statusCode":502, "message":"SSL Sidecar - Bad Gateway"}`. The page is sent with `Cache-Control: no-store` because its body contains the token. Defra ID redirects back to `/auth/sign-out-oidc`, which verifies `state` and tears down the session.
+`GET /auth/sign-out` builds the Defra ID end-session request (`post_logout_redirect_uri`, `id_token_hint`, `state`) and returns a small page that sends the browser on to the end-session endpoint. It is not a `302`: the `id_token_hint` is the user's full Defra ID token, which grows with the number of business relationships, and together with the CSP, security and session cookie headers a `Location` header carrying it can exceed the 4KB header buffer of the nginx [cdp-ssl-sidecar](https://github.com/DEFRA/cdp-ssl-sidecar) in front of every CDP service. nginx then fails the whole response as `{"statusCode":502, "message":"SSL Sidecar - Bad Gateway"}`. The page is sent with `Cache-Control: no-store` because its body contains the token. Defra ID redirects back to `/auth/sign-out-oidc`, which verifies `state` and tears down the session.
+
+How the page sends the request depends on the identity provider:
+
+- Real Defra ID: a form POSTs the three fields, submitted on load by a nonce'd inline script, with a "Continue signing out" button for users without JavaScript. This is what the Defra Customer Identity onboarding guide recommends when the hint is included, and it keeps the token out of the URL, browser history and IdP request logs. The handler allows the IdP origin in that one response's CSP `form-action`.
+- fcp-defra-id-stub (local, dev, perf-test): an instant `<meta http-equiv="refresh">` to the GET URL with a fallback link, because the stub only accepts GET on its sign-out route.
+
+Which provider is in use is read from `DEFRA_ID_WELL_KNOWN_URL`: a host starting with `fcp-defra-id-stub` means the stub. There is no separate switch; the discovery URL is the only configuration that differs between stub and real Defra ID environments.
+
+The hint itself cannot be dropped to shorten the request: the same guide states that when `post_logout_redirect_uri` is used the `id_token_hint` MUST be included, and without a valid hint the user is left on a generic list of Defra services instead of being returned.
 
 ## Rate Limiting
 
