@@ -1,4 +1,6 @@
 import { createPageRenderer } from '~/src/server/common/test-helpers/component-helpers.js'
+import { config } from '~/src/config/config.js'
+import { buildApplicationsViewModel } from '../applications.view-model.js'
 
 const render = createPageRenderer(import.meta.url, 'applications.njk', {
   pageTitle: 'Your Water Management grant applications',
@@ -62,4 +64,32 @@ it('keeps support available when there are no applications and the window is clo
   expect($('main').text()).toContain('You have no applications for this grant.')
   expect($('.govuk-details').length).toBe(1)
   expect($('main form').length).toBe(0)
+})
+
+it('includes the scheme, selection journey and current URL in the phase banner feedback link', () => {
+  const surveyUrl = config.get('feedback.surveyUrl')
+  config.set('feedback.surveyUrl', 'https://qualtrics.example/jfe/form/SV_test')
+  try {
+    const pageUrl = 'https://grants.example/water-management/applications'
+    const request = {
+      params: { slug: 'water-management' },
+      path: '/water-management/applications',
+      url: new URL(pageUrl),
+      app: {}
+    }
+    const definition = {
+      metadata: { shortName: 'Water Management grant round 3 (WMG R3)', allowMultipleApplications: true }
+    }
+    const $ = render(buildApplicationsViewModel(request, definition, []))
+    const feedbackUrl = new URL($('.govuk-phase-banner a').attr('href'))
+
+    expect(feedbackUrl.origin + feedbackUrl.pathname).toBe('https://qualtrics.example/jfe/form/SV_test')
+    expect(Object.fromEntries(feedbackUrl.searchParams)).toEqual({
+      grant: 'Water Management grant round 3 (WMG R3)',
+      journey: 'application-selection',
+      url: pageUrl
+    })
+  } finally {
+    config.set('feedback.surveyUrl', surveyUrl)
+  }
 })

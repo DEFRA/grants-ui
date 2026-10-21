@@ -40,6 +40,8 @@ Separately from GA4/GTM, the app links out to a Qualtrics feedback survey via a 
 
 The link is built per-request by `src/server/common/helpers/feedback-survey.js` (`buildFeedbackSurveyUrl`), which appends `grant`, `journey`, and `url` query params so responses can be segmented by grant and journey stage (in-progress/submitted, or claim in-progress/submitted). It is rendered from `src/server/common/templates/layouts/page.njk` and `dxt-form.njk`.
 
+Application selector pages (`/{slug}/applications`) use `journey=application-selection`, the form definition's `metadata.shortName` for `grant`, and the current absolute page URL for `url`. For Water Management, the short name is `Water Management grant round 3 (WMG R3)`.
+
 ## Access Requests & Support
 
 Analytics access and support is managed by the Grants Enablement team. To request access, please send a request to the [#grants-ui-support](https://defra-digital-team.slack.com/archives/C08RCBK5J3E) slack channel under Defra Digital Team workspace.
