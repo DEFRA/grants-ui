@@ -43,12 +43,30 @@ export async function multiApplicationRedirect(request, h) {
     // Present but not a reference number: unknown on a multi-application grant, ignored on a
     // single-application one like any other stray parameter.
     if (isMultiApplication(stateWithDef)) {
+      auditUnknownReference(request)
       throw notFound(UNKNOWN_REFERENCE)
     }
     return ignoreReference(request, h)
   }
 
-  return ref ? resolveWithRef(request, h, stateWithDef) : resolveWithoutRef(request, h, stateWithDef)
+  return ref ? resolveWithRef(request, h, stateWithDef, ref) : resolveWithoutRef(request, h, stateWithDef)
+}
+
+/**
+ * Publishes an `unauthorised` audit event for a `?ref=` this business cannot open.
+ * @param {AnyRequest} request
+ * @param {string} [referenceNumber]
+ */
+function auditUnknownReference(request, referenceNumber) {
+  request.sendAuditEventInBackground({
+    action: 'unauthorised',
+    status: 'denied',
+    details: {
+      reason: 'unknown-reference',
+      grant: request.params.slug,
+      ...(referenceNumber && { referenceNumber: referenceNumber.toUpperCase() })
+    }
+  })
 }
 
 /**
@@ -78,10 +96,12 @@ function isMultiApplication(envelope) {
  * @param {AnyRequest} request
  * @param {ResponseToolkit} h
  * @param {StateWithDefinitionEnvelope | null} envelope
+ * @param {string} ref
  */
-async function resolveWithRef(request, h, envelope) {
+async function resolveWithRef(request, h, envelope, ref) {
   if (isMultiApplication(envelope)) {
     if (!envelope?.state) {
+      auditUnknownReference(request, ref)
       throw notFound(UNKNOWN_REFERENCE)
     }
     return h.continue
@@ -90,6 +110,7 @@ async function resolveWithRef(request, h, envelope) {
   // Not flagged and no ref-keyed document for this ref: single-application scheme, unless
   // the SBI already holds several (keyed by ref by the backend), in which case the ref is simply unknown.
   if (!envelope?.state && (await listApplications(request)).length > 1) {
+    auditUnknownReference(request, ref)
     throw notFound(UNKNOWN_REFERENCE)
   }
 
