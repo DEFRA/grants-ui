@@ -37,7 +37,7 @@ describe('initSelectActionsPage - submit', () => {
       { code: 'CSAM3', availability: { value: 5, unit: 'ha' }, requiresMaxQuantity: 5 }
     ])
     global.fetch = fetchOk({
-      actions: [{ code: 'CSAM3', availability: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
+      actions: [{ code: 'CSAM3', isAvailable: false, availability: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
     })
     initSelectActionsPage(form)
 
@@ -60,7 +60,7 @@ describe('initSelectActionsPage - submit', () => {
     csam3.disabled = true
 
     global.fetch = fetchOk({
-      actions: [{ code: 'CSAM3', availability: { value: 5, unit: 'ha' }, requiresMaxQuantity: 5 }]
+      actions: [{ code: 'CSAM3', isAvailable: true, availability: { value: 5, unit: 'ha' }, requiresMaxQuantity: 5 }]
     })
     initSelectActionsPage(form)
 
@@ -81,7 +81,7 @@ describe('initSelectActionsPage - submit', () => {
       }
     ])
     global.fetch = fetchOk({
-      actions: [{ code: 'CSAM3', availability: { value: 5, unit: 'ha' }, requiresMaxQuantity: 5 }]
+      actions: [{ code: 'CSAM3', isAvailable: true, availability: { value: 5, unit: 'ha' }, requiresMaxQuantity: 5 }]
     })
     initSelectActionsPage(form)
     await flushPromises()
@@ -109,7 +109,7 @@ describe('initSelectActionsPage - submit', () => {
       }
     ])
     global.fetch = fetchOk({
-      actions: [{ code: 'CLIG3', availability: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
+      actions: [{ code: 'CLIG3', isAvailable: false, availability: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
     })
     initSelectActionsPage(form)
 
@@ -133,7 +133,9 @@ describe('initSelectActionsPage - submit', () => {
       }
     ])
     global.fetch = fetchOk({
-      actions: [{ code: 'CLIG3', availability: { value: 0.2271, unit: 'ha' }, requiresMaxQuantity: 0.2271 }]
+      actions: [
+        { code: 'CLIG3', isAvailable: true, availability: { value: 0.2271, unit: 'ha' }, requiresMaxQuantity: 0.2271 }
+      ]
     })
     initSelectActionsPage(form)
 
@@ -159,9 +161,9 @@ describe('initSelectActionsPage - submit', () => {
     ])
     global.fetch = fetchOk({
       actions: [
-        { code: 'CSAM3', availability: { value: 0.2271, unit: 'ha' }, requiresMaxQuantity: 0.2271 },
-        { code: 'CLIG3', availability: { value: 0.2271, unit: 'ha' } },
-        { code: 'CMOR1', availability: { value: 0.0301, unit: 'ha' } }
+        { code: 'CSAM3', isAvailable: true, availability: { value: 0.2271, unit: 'ha' }, requiresMaxQuantity: 0.2271 },
+        { code: 'CLIG3', isAvailable: true, availability: { value: 0.2271, unit: 'ha' } },
+        { code: 'CMOR1', isAvailable: true, availability: { value: 0.0301, unit: 'ha' } }
       ]
     })
     initSelectActionsPage(form)
@@ -170,9 +172,9 @@ describe('initSelectActionsPage - submit', () => {
     const clig3Checkbox = checkbox(form, 'CLIG3')
     global.fetch = fetchOk({
       actions: [
-        { code: 'CSAM3', availability: { value: 0.2271, unit: 'ha' }, requiresMaxQuantity: 0.2271 },
-        { code: 'CLIG3', availability: { value: 0, unit: 'ha' } },
-        { code: 'CMOR1', availability: { value: 0.0301, unit: 'ha' } }
+        { code: 'CSAM3', isAvailable: true, availability: { value: 0.2271, unit: 'ha' }, requiresMaxQuantity: 0.2271 },
+        { code: 'CLIG3', isAvailable: false, availability: { value: 0, unit: 'ha' } },
+        { code: 'CMOR1', isAvailable: true, availability: { value: 0.0301, unit: 'ha' } }
       ]
     })
     await toggle(form, 'CLIG3', true)
@@ -182,9 +184,9 @@ describe('initSelectActionsPage - submit', () => {
     const cmor1Checkbox = checkbox(form, 'CMOR1')
     global.fetch = fetchOk({
       actions: [
-        { code: 'CSAM3', availability: { value: 0.2271, unit: 'ha' }, requiresMaxQuantity: 0.2271 },
-        { code: 'CLIG3', availability: { value: 0, unit: 'ha' } },
-        { code: 'CMOR1', availability: { value: 0, unit: 'ha' } }
+        { code: 'CSAM3', isAvailable: true, availability: { value: 0.2271, unit: 'ha' }, requiresMaxQuantity: 0.2271 },
+        { code: 'CLIG3', isAvailable: false, availability: { value: 0, unit: 'ha' } },
+        { code: 'CMOR1', isAvailable: false, availability: { value: 0, unit: 'ha' } }
       ]
     })
     await toggle(form, 'CMOR1', true)
@@ -223,8 +225,8 @@ describe('initSelectActionsPage - submit', () => {
         json: () =>
           Promise.resolve({
             actions: [
-              { code: 'CLIG3', availability: { value: surplus, unit: 'ha' } },
-              { code: 'CMOR1', availability: { value: surplus, unit: 'ha' } }
+              { code: 'CLIG3', isAvailable: true, availability: { value: surplus, unit: 'ha' } },
+              { code: 'CMOR1', isAvailable: true, availability: { value: surplus, unit: 'ha' } }
             ]
           })
       })
@@ -269,8 +271,8 @@ describe('initSelectActionsPage - submit', () => {
         json: () =>
           Promise.resolve({
             actions: [
-              { code: 'CLIG3', availability: { value: stillFree ? 20 : 0, unit: 'ha' } },
-              { code: 'CMOR1', availability: { value: stillFree ? 20 : 0, unit: 'ha' } }
+              { code: 'CLIG3', isAvailable: true, availability: { value: stillFree ? 20 : 0, unit: 'ha' } },
+              { code: 'CMOR1', isAvailable: true, availability: { value: stillFree ? 20 : 0, unit: 'ha' } }
             ]
           })
       })
@@ -318,10 +320,11 @@ describe('initSelectActionsPage - submit', () => {
             actions: [
               {
                 code: 'CSAM3',
+                isAvailable: csam3Available > 0,
                 availability: { value: csam3Available, unit: 'ha' },
                 requiresMaxQuantity: csam3Available
               },
-              { code: 'CLIG3', availability: { value: clig3Available, unit: 'ha' } }
+              { code: 'CLIG3', isAvailable: clig3Available > 0, availability: { value: clig3Available, unit: 'ha' } }
             ]
           })
       })
@@ -362,8 +365,8 @@ describe('initSelectActionsPage - submit', () => {
         json: () =>
           Promise.resolve({
             actions: [
-              { code: 'CLIG3', availability: { value, unit: 'ha' } },
-              { code: 'CMOR1', availability: { value, unit: 'ha' } }
+              { code: 'CLIG3', isAvailable: true, availability: { value, unit: 'ha' } },
+              { code: 'CMOR1', isAvailable: true, availability: { value, unit: 'ha' } }
             ]
           })
       })
@@ -392,7 +395,8 @@ describe('initSelectActionsPage - submit', () => {
       resolveFirst = () =>
         resolve({
           ok: true,
-          json: () => Promise.resolve({ actions: [{ code: 'UPL1', availability: { value: 0, unit: 'ha' } }] })
+          json: () =>
+            Promise.resolve({ actions: [{ code: 'UPL1', isAvailable: false, availability: { value: 0, unit: 'ha' } }] })
         })
     })
     global.fetch = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ actions: [] }) })
@@ -405,7 +409,8 @@ describe('initSelectActionsPage - submit', () => {
       .mockImplementationOnce(() =>
         Promise.resolve({
           ok: true,
-          json: () => Promise.resolve({ actions: [{ code: 'UPL1', availability: { value: 5, unit: 'ha' } }] })
+          json: () =>
+            Promise.resolve({ actions: [{ code: 'UPL1', isAvailable: true, availability: { value: 5, unit: 'ha' } }] })
         })
       )
 
@@ -480,14 +485,16 @@ describe('initSelectActionsPage - submit', () => {
 
     expect(cmor1Checkbox.disabled).toBe(true)
 
-    fetchQueue.resolveNext({ actions: [{ code: 'CMOR1', availability: { value: 0.1, unit: 'ha' } }] })
+    fetchQueue.resolveNext({
+      actions: [{ code: 'CMOR1', isAvailable: true, availability: { value: 0.1, unit: 'ha' } }]
+    })
     await flushPromises()
 
     // The growth follow-up's own request is now in flight - CMOR1 must
     // still read as disabled, not have flashed back to enabled in between.
     expect(cmor1Checkbox.disabled).toBe(true)
 
-    fetchQueue.resolveNext({ actions: [{ code: 'CMOR1', availability: { value: 0, unit: 'ha' } }] })
+    fetchQueue.resolveNext({ actions: [{ code: 'CMOR1', isAvailable: false, availability: { value: 0, unit: 'ha' } }] })
     await flushPromises()
 
     expect(cmor1Checkbox.disabled).toBe(false)
@@ -545,8 +552,8 @@ describe('initSelectActionsPage - submit', () => {
 
     fetchMock.resolve({
       actions: [
-        { code: 'CSAM3', availability: { value: 0, unit: 'ha' } },
-        { code: 'SCR2', availability: { value: 0, unit: 'ha' } }
+        { code: 'CSAM3', isAvailable: false, availability: { value: 0, unit: 'ha' } },
+        { code: 'SCR2', isAvailable: false, availability: { value: 0, unit: 'ha' } }
       ]
     })
     await flushPromises()
@@ -588,14 +595,22 @@ describe('initSelectActionsPage - submit', () => {
     expect(quantityInputFor(form, 'CSAM3').disabled).toBe(true)
 
     fetchMock.resolve({
-      actions: ['CSAM3', 'CLIG3', 'SCR2'].map((code) => ({ code, availability: { value: 0.3174, unit: 'ha' } }))
+      actions: ['CSAM3', 'CLIG3', 'SCR2'].map((code) => ({
+        code,
+        isAvailable: true,
+        availability: { value: 0.3174, unit: 'ha' }
+      }))
     })
     await flushPromises()
 
     expect(clig3.disabled).toBe(false)
     expect(quantityInputFor(form, 'CSAM3').disabled).toBe(false)
     global.fetch = fetchOk({
-      actions: ['CSAM3', 'CLIG3', 'SCR2'].map((code) => ({ code, availability: { value: 0, unit: 'ha' } }))
+      actions: ['CSAM3', 'CLIG3', 'SCR2'].map((code) => ({
+        code,
+        isAvailable: false,
+        availability: { value: 0, unit: 'ha' }
+      }))
     })
     await toggle(form, 'CLIG3', true)
 
@@ -614,8 +629,8 @@ describe('initSelectActionsPage - submit', () => {
 
     fetchQueue.resolveNext({
       actions: [
-        { code: 'CMOR1', availability: { value: 2, unit: 'ha' } },
-        { code: 'CLIG3', availability: { value: 9, unit: 'ha' } }
+        { code: 'CMOR1', isAvailable: true, availability: { value: 2, unit: 'ha' } },
+        { code: 'CLIG3', isAvailable: true, availability: { value: 9, unit: 'ha' } }
       ]
     })
     await flushPromises()
@@ -624,8 +639,8 @@ describe('initSelectActionsPage - submit', () => {
 
     fetchQueue.resolveNext({
       actions: [
-        { code: 'CMOR1', availability: { value: 0, unit: 'ha' } },
-        { code: 'CLIG3', availability: { value: 7, unit: 'ha' } }
+        { code: 'CMOR1', isAvailable: false, availability: { value: 0, unit: 'ha' } },
+        { code: 'CLIG3', isAvailable: true, availability: { value: 7, unit: 'ha' } }
       ]
     })
     await flushPromises()
@@ -658,8 +673,8 @@ describe('initSelectActionsPage - submit', () => {
       form,
       fetchOk({
         actions: [
-          { code: 'CMOR1', availability: { value: 0, unit: 'ha' } },
-          { code: 'CLIG3', availability: { value: 9, unit: 'ha' } }
+          { code: 'CMOR1', isAvailable: false, availability: { value: 0, unit: 'ha' } },
+          { code: 'CLIG3', isAvailable: true, availability: { value: 9, unit: 'ha' } }
         ]
       })
     )
@@ -673,7 +688,7 @@ describe('initSelectActionsPage - submit', () => {
 
     // CMOR1 sent 1 (its chosenArea); this reports 2 MORE ha freed up for it,
     // so its new chosen area becomes 1 + 2 = 3
-    fetchQueue.resolveNext({ actions: [{ code: 'CMOR1', availability: { value: 2, unit: 'ha' } }] })
+    fetchQueue.resolveNext({ actions: [{ code: 'CMOR1', isAvailable: true, availability: { value: 2, unit: 'ha' } }] })
     await flushPromises()
 
     expect(getChosenAreaFieldValue(checkbox(form, 'CMOR1'))).toBe('3')
@@ -682,7 +697,7 @@ describe('initSelectActionsPage - submit', () => {
     expect(isSubmitBlocked(form)).toBe(true)
 
     // No further headroom this round - the chain ends here.
-    fetchQueue.resolveNext({ actions: [{ code: 'CMOR1', availability: { value: 0, unit: 'ha' } }] })
+    fetchQueue.resolveNext({ actions: [{ code: 'CMOR1', isAvailable: false, availability: { value: 0, unit: 'ha' } }] })
     await flushPromises()
 
     expect(checkbox(form, 'CMOR1').disabled).toBe(false)
@@ -731,12 +746,12 @@ describe('initSelectActionsPage - submit', () => {
 
     // Growth reported - a follow-up request fires, button must stay disabled
     // rather than flash enabled in the gap before that follow-up's own fetch.
-    fetchQueue.resolveNext({ actions: [{ code: 'CMOR1', availability: { value: 2, unit: 'ha' } }] })
+    fetchQueue.resolveNext({ actions: [{ code: 'CMOR1', isAvailable: true, availability: { value: 2, unit: 'ha' } }] })
     await flushPromises()
 
     expect(submitButton(form).disabled).toBe(true)
 
-    fetchQueue.resolveNext({ actions: [{ code: 'CMOR1', availability: { value: 0, unit: 'ha' } }] })
+    fetchQueue.resolveNext({ actions: [{ code: 'CMOR1', isAvailable: false, availability: { value: 0, unit: 'ha' } }] })
     await flushPromises()
 
     expect(submitButton(form).disabled).toBe(false)
