@@ -29,9 +29,9 @@ Feature: Action Selection
             | CLIG3_26 | Manage grassland with very low nutrient inputs: CLIG3_26 | Payment rate per year: £151/ha                                   | Yes |
             |          |                                                          | 0.2760 hectares available                                        |     |
             |          |                                                          | This action will use all the available area on this land parcel. |     |
-            | WBD1_26  | Manage ponds: WBD1_26                                    | Payment rate per year: £257/pond                                 | Yes |
             | SCR2_26  | Manage scrub and open habitat mosaics: SCR2_26           | Payment rate per year: £350/ha                                   | Yes |
             |          |                                                          | hectares available                                               |     |
+        And should not see action "WBD1_26"
         When the user selects action "CSAM3_26"
 
         # RULE: partial area action specified area cannot be zero
@@ -220,28 +220,22 @@ Feature: Action Selection
         When the user clicks on "Select a land parcel and add actions"
 
         # RULE: a land parcel with no eligible action is rejected on the map page
-        # TODO: Re-enable when WBD1_26 is not available on all land parcels
-        # Then the user should be at URL "select-land-parcel"
-        # When the user selects parcel "SK0972 7313" of area "0.2460" hectares on the map
-        # And continues
-        # Then the user should still be at URL "select-land-parcel"
-        # And should see the following error messages
-        #     | There are no actions available for parcel SK0972 7313. Select another land parcel to continue. |
-
-        # RULE: a land parcel with pre-existing agreement for the total available area prevents incompatible actions being shown
         Then the user should be at URL "select-land-parcel"
+        When the user selects parcel "SK0972 7313" of area "0.2460" hectares on the map
+        And continues
+        Then the user should still be at URL "select-land-parcel"
+        And should see the following error messages
+            | There are no actions available for parcel SK0972 7313. Select another land parcel to continue. |
+
+        # RULE: a pre-existing agreement using all available area leaves no eligible actions for this grant
         When the user selects parcel "SK0971 5761" of area "0.6116" hectares on the map
         And continues
-        Then the user should be at URL "select-actions-for-land-parcel"
-        And should not see the following actions
-            | CSAM3_26 |
-            | CLIG3_26 |
-            | SCR2_26  |
+        Then the user should still be at URL "select-land-parcel"
+        And should see the following error messages
+            | There are no actions available for parcel SK0971 5761. Select another land parcel to continue. |
 
         # RULE: a land parcel with pre-existing agreement for less than the total available area reduces the available area for incompatible actions
-        When the user navigates backward
-        Then the user should be at URL "select-land-parcel"
-        When the user selects parcel "SK0971 4561" of area "0.112" hectares on the map
+        When the user selects parcel "SK0971 4561" of area "0.0112" hectares on the map
         And continues
         Then the user should be at URL "select-actions-for-land-parcel"
         And should see the following selected land parcel
@@ -350,19 +344,19 @@ Feature: Action Selection
             |          |                                                          | SSSI consent and HEFER required |     |
             |          |                                                          | 26.9088 hectares available      |     |
 
-    Scenario: User is told when either SSSI or HEFER alone applies to a land parcel
-        Given there is no application data for SBI "300000100" and grant "example-grant-with-map"
+    Scenario: User is told when only SSSI consent applies to a land parcel
+        Given there is no application data for SBI "121428499" and grant "example-grant-with-map"
 
         # start
         Given the user navigates to "/example-grant-with-map"
-        And logs in as CRN "1300000100"
+        And logs in as CRN "1102760349"
         Then the user should see heading "Apply for Example Grant with Map"
         When the user clicks on "Start now"
 
         # select-land-parcel, parcel has SSSI intersection
         Then the user should be at URL "select-land-parcel"
         And should see heading "Select a land parcel"
-        When the user selects parcel "SD5848 9205" of area "169.8586" hectares on the map
+        When the user selects parcel "SD6251 8952" of area "0.7196" hectares on the map
         Then the user should see the following requirements applied to the land parcel
             | Some actions require:                               |
             | site of special scientific interest (SSSI) consent  |
@@ -371,23 +365,31 @@ Feature: Action Selection
         # select-actions-for-land-parcel, parcel has SSSI intersection
         Then the user should be at URL "select-actions-for-land-parcel"
         And should see the following selected land parcel
-            | FIELD             | VALUE             |
-            | Parcel reference  | SD5848 9205       |
-            | Total area        | 169.8586 hectares |
+            | FIELD             | VALUE            |
+            | Parcel reference  | SD6251 8952      |
+            | Total area        | 0.7196 hectares  |
         And should see the following consent advice
             | Some actions on this parcel need SSSI consent (opens in new tab). We’ll show this on those actions. |
         And should see the following actions with guidance
             | ACTION   | DESCRIPTION                                              | GUIDANCE                       | URL |
             | CSAM3_26 | Herbal leys: CSAM3_26                                    | Payment rate per year: £224/ha | Yes |
-            |          |                                                          | 0.1028 hectares available      |     |
+            |          |                                                          | 0.6873 hectares available      |     |
             | CLIG3_26 | Manage grassland with very low nutrient inputs: CLIG3_26 | Payment rate per year: £151/ha | Yes |
             |          |                                                          | SSSI consent required          |     |
-            |          |                                                          | 169.8586 hectares available    |     |
+            |          |                                                          | 0.7196 hectares available      |     |
             | SCR2_26  | Manage scrub and open habitat mosaics: SCR2_26           | Payment rate per year: £350/ha | Yes |
-            |          |                                                          | 0.1028 hectares available      |     |
+            |          |                                                          | 0.6873 hectares available      |     |
+
+    Scenario: User is told when only HEFER applies to a land parcel
+        Given there is no application data for SBI "300000100" and grant "example-grant-with-map"
+
+        # start
+        Given the user navigates to "/example-grant-with-map"
+        And logs in as CRN "1300000100"
+        Then the user should see heading "Apply for Example Grant with Map"
+        When the user clicks on "Start now"
 
         # select-land-parcel, parcel has HEFER intersection
-        When the user decides to change their land parcel
         Then the user should be at URL "select-land-parcel"
         When the user selects parcel "NU1514 2607" of area "110.5436" hectares on the map
         Then the user should see the following requirements applied to the land parcel
@@ -395,7 +397,7 @@ Feature: Action Selection
             | a Historic Environment Farm Environment Record (HEFER)  |
         When the user continues
 
-        # select-actions-for-land-parcel, parcel has SSSI intersection
+        # select-actions-for-land-parcel, parcel has HEFER intersection
         Then the user should be at URL "select-actions-for-land-parcel"
         And should see the following selected land parcel
             | FIELD             | VALUE             |
@@ -404,11 +406,10 @@ Feature: Action Selection
         And should see the following consent advice
             | Some actions on this parcel need an SFI HEFER (opens in new tab). We’ll show this on those actions. |
         And should see the following actions with guidance
-            | ACTION   | DESCRIPTION                                              | GUIDANCE                       | URL |
-            | CSAM3_26 | Herbal leys: CSAM3_26                                    | Payment rate per year: £224/ha | Yes |
-            |          |                                                          | 0.0001 hectares available      |     |
-            | CLIG3_26 | Manage grassland with very low nutrient inputs: CLIG3_26 | Payment rate per year: £151/ha | Yes |
-            |          |                                                          | HEFER required                 |     |
-            |          |                                                          | 108.8600 hectares available    |     |
-            | SCR2_26  | Manage scrub and open habitat mosaics: SCR2_26           | Payment rate per year: £350/ha | Yes |
-            |          |                                                          | 0.0001 hectares available      |     |
+            | ACTION  | DESCRIPTION           | GUIDANCE                        | URL |
+            | WBD1_26 | Manage ponds: WBD1_26 | Payment rate per year: £257/pond | Yes |
+            |         |                       | HEFER required                  |     |
+        And should not see the following actions
+            | CSAM3_26 |
+            | CLIG3_26 |
+            | SCR2_26  |

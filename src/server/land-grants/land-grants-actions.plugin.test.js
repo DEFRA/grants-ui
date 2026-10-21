@@ -104,7 +104,7 @@ describe('landGrantsActionsPlugin', () => {
   it('returns the recomputed actions for an authorised parcel', async () => {
     fetchAuthorisedParcelIds.mockResolvedValue(['SD7946-0155'])
     const plannedActions = [{ actionCode: 'CSAM3', quantity: 1.5, unit: 'ha' }]
-    const apiResult = { actions: [{ code: 'CSAM3', availability: { value: 1.5, unit: 'ha' } }] }
+    const apiResult = { actions: [{ code: 'CSAM3', isAvailable: false, availability: { value: 1.5, unit: 'ha' } }] }
     fetchActionsWithPlannedActions.mockResolvedValue(apiResult)
     const request = makeRequest({ parcelId: 'SD7946-0155', plannedActions })
     const h = makeH()

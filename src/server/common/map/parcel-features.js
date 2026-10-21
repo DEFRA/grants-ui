@@ -1,12 +1,12 @@
 import { stringifyParcel } from '~/src/shared/format-parcel.js'
 import { filterEnabledLandActions } from '~/src/server/land-grants/utils/enabled-land-actions.js'
-import { hasAvailableLand } from '~/src/shared/availability.js'
+import { isActionAvailable } from '~/src/shared/availability.js'
 
 /**
  * Normalises hydrated parcels into the flat shape the map response is built
  * from: the compound "SHEET-PARCEL" id, its two components, and area in
  * hectares (null when the size API supplied none), and the count of enabled
- * actions that have land available when action counts are enabled.
+ * actions the API marks as available when action counts are enabled.
  * @param {HydratedParcel[]} parcels
  * @param {string[]} [enabledLandActions] - Omit when action counts are disabled.
  * @returns {{ id: string, sheetId: string, parcelId: string, areaHa: number | null, actionCount?: number }[]}
@@ -18,7 +18,7 @@ export function toParcelData(parcels, enabledLandActions) {
     parcelId: p.parcelId,
     areaHa: p.area?.value == null ? null : Number(p.area.value),
     actionCount: enabledLandActions
-      ? filterEnabledLandActions(p.actions ?? [], enabledLandActions).filter(hasAvailableLand).length
+      ? filterEnabledLandActions(p.actions ?? [], enabledLandActions).filter(isActionAvailable).length
       : undefined
   }))
 }

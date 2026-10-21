@@ -29,7 +29,7 @@ import {
 } from './action-checkbox-state.js'
 import { clearQuantityError, showQuantityError } from './quantity-error-display.js'
 import { availableArea, formatUnit } from '../../../shared/unit-format.js'
-import { getAvailabilityLimit } from '../../../shared/availability.js'
+import { getAvailabilityLimit, isActionAvailable } from '../../../shared/availability.js'
 import { isLandAreaUnit, requiresWholeNumber } from '../../../shared/unit-types.js'
 
 const UNAVAILABLE_MESSAGE = 'Not compatible with other selected actions.'
@@ -377,17 +377,16 @@ function clearUnavailable(checkbox) {
 }
 
 /**
- * Not selected: unavailable when there's nothing (or not enough, for a typed amount)
- * left to claim. An action with no limit at all can never be unavailable - comparing
- * a null value would coerce it to 0 and reject any typed amount above zero.
+ * Not selected: the API determines eligibility. A typed quantity must also fit
+ * within any numeric limit; a null limit only removes that quantity bound.
  * @param {HTMLInputElement} checkbox
  * @param {HTMLInputElement | null} quantityInput
- * @param {ActionAvailability | null} [availability]
+ * @param {ActionAvailabilityUpdate} action
  */
-function applyUncheckedAvailability(checkbox, quantityInput, availability) {
-  const limit = getAvailabilityLimit(availability)
+function applyUncheckedAvailability(checkbox, quantityInput, action) {
+  const limit = getAvailabilityLimit(action.availability)
   const isUnavailable =
-    limit != null && quantityInput ? limit === 0 || limit < (getValidTypedQuantity(checkbox) ?? 0) : limit === 0
+    !isActionAvailable(action) || (limit != null && quantityInput && limit < (getValidTypedQuantity(checkbox) ?? 0))
   if (isUnavailable) {
     markUnavailable(checkbox)
   } else {
@@ -449,7 +448,7 @@ function applyCheckedNonQuantityAvailability(checkbox, availabilityValue, sentQu
  * re-enabled/disabled by fresh availability, since that reflects what OTHER
  * actions are doing, not a correction to its own rejected value.
  * @param {HTMLInputElement} checkbox
- * @param {{ availability?: ActionAvailability | null }} action
+ * @param {ActionAvailabilityUpdate} action
  * @param {number | undefined} sentQuantity - What we claimed for this action, if checked and included.
  * @param {boolean} isProtected
  * @param {boolean} allowGrowth - Whether a non-quantity action may grow this pass (see applyRefreshResponse).
@@ -474,7 +473,7 @@ function applyAvailability(checkbox, action, sentQuantity, isProtected, allowGro
   syncNonQuantityHint(checkbox, action)
 
   if (!checkbox.checked) {
-    applyUncheckedAvailability(checkbox, quantityInput, availability)
+    applyUncheckedAvailability(checkbox, quantityInput, action)
     return false
   }
   if (isProtected) {
@@ -486,8 +485,7 @@ function applyAvailability(checkbox, action, sentQuantity, isProtected, allowGro
     return false
   }
   if (limit == null) {
-    // Nothing can make an unrestricted action incompatible, but disableOtherActions
-    // disabled it at the start of this refresh and this is its only way back.
+    // Keep the existing selection editable when it has no quantity bound.
     clearUnavailable(checkbox)
     return false
   }
@@ -501,7 +499,7 @@ function applyAvailability(checkbox, action, sentQuantity, isProtected, allowGro
  */
 
 /**
- * @typedef {{ code: string, availability?: ActionAvailability | null }} ActionAvailabilityUpdate
+ * @typedef {{ code: string, isAvailable: boolean, availability?: ActionAvailability | null }} ActionAvailabilityUpdate
  */
 
 /**

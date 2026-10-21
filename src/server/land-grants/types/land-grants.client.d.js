@@ -57,6 +57,7 @@
  * @property {string} code - The action code
  * @property {string} description - The action description
  * @property {string} version - The action version
+ * @property {boolean} isAvailable - Whether the action is eligible for this parcel
  * @property {boolean} [quantityRequired] - Whether the user must enter a quantity
  * @property {boolean} [sssiConsentRequired] - If action needs SSSI consent
  * @property {boolean} [heferRequired] - If action needs HEFER report

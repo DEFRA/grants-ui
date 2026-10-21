@@ -17,7 +17,7 @@ import {
 } from '~/src/server/land-grants/services/land-grants.client.js'
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
 import { formatUnit } from '~/src/shared/unit-format.js'
-import { getAvailabilityLimit, hasAvailableLand } from '~/src/shared/availability.js'
+import { getAvailabilityLimit, isActionAvailable } from '~/src/shared/availability.js'
 import {
   getCachedParcel,
   getCachedSbiParcels,
@@ -152,7 +152,7 @@ function groupActions(actionsForParcel, enabledActions, groupDefinitions) {
   const groups = []
   groupDefinitions.forEach((group) => {
     const actionsInGroup = actionsForParcel.filter(
-      (a) => enabledActions.includes(a.code) && group.actions.includes(a.code)
+      (a) => isActionAvailable(a) && enabledActions.includes(a.code) && group.actions.includes(a.code)
     )
     if (actionsInGroup.length > 0) {
       groups.push(createGroup(group.name, actionsInGroup))
@@ -197,7 +197,7 @@ export async function fetchActionsForParcel(parcel, userContext) {
  * so it isn't returned here - the client already has it from initial render.
  * @param {{ parcelId: string, sheetId: string, plannedActions: PlannedAction[] }} params
  * @param {LandGrantsUserContext} userContext
- * @returns {Promise<{ actions: Array<{ code: string, availability?: ActionAvailability }> }>}
+ * @returns {Promise<{ actions: Array<{ code: string, isAvailable: boolean, availability?: ActionAvailability }> }>}
  * @throws {Error}
  */
 export async function fetchActionsWithPlannedActions({ parcelId, sheetId, plannedActions }, userContext) {
@@ -206,6 +206,7 @@ export async function fetchActionsWithPlannedActions({ parcelId, sheetId, planne
   const foundParcel = parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)
   const actions = (foundParcel?.actions || []).map(mapAction).map((action) => ({
     code: action.code,
+    isAvailable: action.isAvailable,
     availability: action.availability
   }))
 
@@ -220,7 +221,7 @@ export async function fetchActionsWithPlannedActions({ parcelId, sheetId, planne
  * it even when the action carrying it is not one this grant offers. Cached
  * under its own prefix so it never collides with the journey-filtered entries
  * fetchActionsForParcel writes. When enabledLandActions is supplied, actionCount
- * reports the enabled actions that still have available land while consents
+ * reports the enabled actions the API marks as available while consents
  * continue to cover every action.
  * @param {{ parcelId?: string, sheetId?: string, enabledLandActions?: string[] }} parcel
  * @param {LandGrantsUserContext} userContext
@@ -241,7 +242,7 @@ export async function fetchConsentRequirementsForParcel({ parcelId, sheetId, ena
   const enabledActions = normaliseEnabledLandActions(enabledLandActions)
 
   if (enabledActions.length > 0) {
-    result.actionCount = filterEnabledLandActions(actions, enabledActions).filter(hasAvailableLand).length
+    result.actionCount = filterEnabledLandActions(actions, enabledActions).filter(isActionAvailable).length
   }
 
   return result

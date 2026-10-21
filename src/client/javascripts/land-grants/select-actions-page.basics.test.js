@@ -129,8 +129,8 @@ describe('initSelectActionsPage - basics', () => {
     )
     global.fetch = fetchOk({
       actions: [
-        { code: 'CSAM3', availability: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 },
-        { code: 'CLIG3', availability: { value: 0, unit: 'ha' } }
+        { code: 'CSAM3', isAvailable: false, availability: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 },
+        { code: 'CLIG3', isAvailable: false, availability: { value: 0, unit: 'ha' } }
       ]
     })
 
@@ -164,7 +164,9 @@ describe('initSelectActionsPage - basics', () => {
       ],
       { hasErrors: true }
     )
-    global.fetch = fetchOk({ actions: [{ code: 'CLIG3', availability: { value: 1.3008, unit: 'ha' } }] })
+    global.fetch = fetchOk({
+      actions: [{ code: 'CLIG3', isAvailable: true, availability: { value: 1.3008, unit: 'ha' } }]
+    })
     initSelectActionsPage(form)
     await flushPromises()
 
@@ -181,7 +183,8 @@ describe('initSelectActionsPage - basics', () => {
       const value = clig3Quantity >= 6.3008 ? 0 : 5
       return Promise.resolve({
         ok: true,
-        json: () => Promise.resolve({ actions: [{ code: 'CLIG3', availability: { value, unit: 'ha' } }] })
+        json: () =>
+          Promise.resolve({ actions: [{ code: 'CLIG3', isAvailable: true, availability: { value, unit: 'ha' } }] })
       })
     })
     await toggle(form, 'CLIG3', true)
@@ -373,8 +376,8 @@ describe('initSelectActionsPage - basics', () => {
     ])
     global.fetch = fetchOk({
       actions: [
-        { code: 'CSAM3', availability: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 },
-        { code: 'CLIG3', availability: { value: 0, unit: 'ha' } }
+        { code: 'CSAM3', isAvailable: false, availability: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 },
+        { code: 'CLIG3', isAvailable: false, availability: { value: 0, unit: 'ha' } }
       ]
     })
 
@@ -483,7 +486,10 @@ describe('initSelectActionsPage - basics', () => {
       },
       { code: 'CLIG3', availability: { value: 0.3271, unit: 'ha' } }
     ])
-    await initSettled(form, fetchOk({ actions: [{ code: 'CLIG3', availability: { value: 0.2271, unit: 'ha' } }] }))
+    await initSettled(
+      form,
+      fetchOk({ actions: [{ code: 'CLIG3', isAvailable: true, availability: { value: 0.2271, unit: 'ha' } }] })
+    )
 
     await toggle(form, 'CSAM3')
 
@@ -511,11 +517,13 @@ describe('initSelectActionsPage - basics', () => {
       .fn()
       .mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({ actions: [{ code: 'CLIG3', availability: { value: 2.5, unit: 'ha' } }] })
+        json: () =>
+          Promise.resolve({ actions: [{ code: 'CLIG3', isAvailable: true, availability: { value: 2.5, unit: 'ha' } }] })
       })
       .mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ actions: [{ code: 'CLIG3', availability: { value: 0, unit: 'ha' } }] })
+        json: () =>
+          Promise.resolve({ actions: [{ code: 'CLIG3', isAvailable: false, availability: { value: 0, unit: 'ha' } }] })
       })
     initSelectActionsPage(form)
     await flushPromises()
@@ -527,7 +535,10 @@ describe('initSelectActionsPage - basics', () => {
 
   it('reverts a total action to what it would claim again once it is deselected', async () => {
     const form = setupDom([{ code: 'CLIG3', checked: true, availability: { value: 31.89, unit: 'ha' } }])
-    await initSettled(form, fetchOk({ actions: [{ code: 'CLIG3', availability: { value: 31.89, unit: 'ha' } }] }))
+    await initSettled(
+      form,
+      fetchOk({ actions: [{ code: 'CLIG3', isAvailable: true, availability: { value: 31.89, unit: 'ha' } }] })
+    )
 
     await toggle(form, 'CLIG3', false)
     expect(getChosenAreaFieldValue(checkbox(form, 'CLIG3'))).toBe('0')
@@ -551,7 +562,14 @@ describe('initSelectActionsPage - basics', () => {
       ok: true,
       json: () =>
         Promise.resolve({
-          actions: [{ code: 'CSAM3', availability: { value: 0.0771, unit: 'ha' }, requiresMaxQuantity: 0.0771 }]
+          actions: [
+            {
+              code: 'CSAM3',
+              isAvailable: true,
+              availability: { value: 0.0771, unit: 'ha' },
+              requiresMaxQuantity: 0.0771
+            }
+          ]
         })
     })
     initSelectActionsPage(form)
@@ -607,8 +625,8 @@ describe('initSelectActionsPage - basics', () => {
       form,
       fetchOk({
         actions: [
-          { code: 'CSAM3', availability: { value: 18.5, unit: 'ha' } },
-          { code: 'UPL1', availability: { value: 5, unit: 'ha' } }
+          { code: 'CSAM3', isAvailable: true, availability: { value: 18.5, unit: 'ha' } },
+          { code: 'UPL1', isAvailable: true, availability: { value: 5, unit: 'ha' } }
         ]
       })
     )
@@ -626,7 +644,7 @@ describe('initSelectActionsPage - basics', () => {
     const upl1 = checkbox(form, 'UPL1')
     upl1.disabled = true
 
-    global.fetch = fetchOk({ actions: [{ code: 'UPL1', availability: { value: 5, unit: 'ha' } }] })
+    global.fetch = fetchOk({ actions: [{ code: 'UPL1', isAvailable: true, availability: { value: 5, unit: 'ha' } }] })
     initSelectActionsPage(form)
 
     upl1.dispatchEvent(new Event('change', { bubbles: true }))

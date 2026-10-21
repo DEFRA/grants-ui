@@ -37,6 +37,7 @@ const HAS_NO_PARCELS = { parcels: [] }
 const HAS_5677 = { parcels: [{ sheetId: 'SD7861', parcelId: '5677' }] }
 const actionWithLimitedAvailability = like({
   code: string('CLIG3'),
+  isAvailable: boolean(true),
   description: string('Manage grassland with very low nutrient inputs'),
   ratePerUnitGbp: number(151),
   quantityRequired: boolean(false),
@@ -44,6 +45,7 @@ const actionWithLimitedAvailability = like({
 })
 const actionWithUnrestrictedAvailability = like({
   code: string('WBD1'),
+  isAvailable: boolean(true),
   description: string('Manage ponds'),
   ratePerUnitGbp: number(257),
   displayUnit: string('pond'),
@@ -76,9 +78,11 @@ const expectActionAvailability = (response) => {
   expect(actions).toEqual(
     expect.arrayContaining([
       expect.objectContaining({
+        isAvailable: expect.any(Boolean),
         availability: expect.objectContaining({ unit: 'ha', value: expect.any(Number) })
       }),
       expect.objectContaining({
+        isAvailable: expect.any(Boolean),
         availability: { unit: 'count', value: null },
         displayUnit: 'pond',
         displayUnitPlural: 'ponds'
