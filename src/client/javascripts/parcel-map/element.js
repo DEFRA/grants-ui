@@ -89,7 +89,7 @@ export class ParcelMap extends HTMLElement {
   connectedCallback() {
     this.#state = STATE_IDLE
     this.#lastEvent = null
-    this.#init()
+    this.#init().catch(() => this.#fail(ERROR_REASON_UNAVAILABLE))
   }
 
   disconnectedCallback() {
@@ -154,14 +154,9 @@ export class ParcelMap extends HTMLElement {
     }
 
     if (!ml || !data) {
-      this.#teardown()
-      this.#state = STATE_ERROR
-      this.#showError(MSG_ERROR_UNAVAILABLE)
-      this.#dispatchTerminal(EVENT_ERROR, { reason: ERROR_REASON_UNAVAILABLE })
+      this.#fail(ERROR_REASON_UNAVAILABLE)
     } else if (data.parcelIds.length === 0) {
-      this.#teardown()
-      this.#state = STATE_ERROR
-      this.#dispatchTerminal(EVENT_ERROR, { reason: ERROR_REASON_NO_PARCELS })
+      this.#fail(ERROR_REASON_NO_PARCELS)
     } else {
       Object.assign(this.#store, data)
       this.#ml = ml
@@ -190,6 +185,23 @@ export class ParcelMap extends HTMLElement {
 
       this.#dispatchTerminal(EVENT_READY, { parcelIds: data.parcelIds, metaIndex: data.metaIndex })
     }
+  }
+
+  /**
+   * Tears the map down and reports why: the overlay for an unavailable map,
+   * and the error event for the page in either case.
+   * @param {string} reason
+   */
+  #fail(reason) {
+    if (this.#state === STATE_ERROR) {
+      return
+    }
+    this.#teardown()
+    this.#state = STATE_ERROR
+    if (reason === ERROR_REASON_UNAVAILABLE) {
+      this.#showError(MSG_ERROR_UNAVAILABLE)
+    }
+    this.#dispatchTerminal(EVENT_ERROR, { reason })
   }
 
   /** @param {string} message */

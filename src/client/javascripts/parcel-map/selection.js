@@ -21,9 +21,9 @@ import {
  * @param {Pick<MapContext, 'host' | 'mapInstance' | 'ml' | 'cleanups' | 'multiSelect'> & { tooltip: HTMLElement | undefined }} context
  */
 export function attachSelectionRelay({ host, mapInstance, ml, tooltip, cleanups, multiSelect }) {
-  /** @param {string[]} selectedIds */
-  const applyHighlight = (selectedIds) => {
-    const matchList = selectedIds.length > 0 ? selectedIds : [SELECTION_NONE_SENTINEL]
+  /** @param {string[]} ids */
+  const applyHighlight = (ids) => {
+    const matchList = ids.length > 0 ? ids : [SELECTION_NONE_SENTINEL]
     ml.setPaintProperty(LAYER_ID_FILL, 'fill-opacity', [
       'match',
       COMPOUND_ID_EXPR,

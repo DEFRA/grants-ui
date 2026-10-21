@@ -421,9 +421,8 @@ export function showTooltip(tooltip, id, props, x, y, mapEl) {
   const title = document.createElement('strong')
   title.className = CLASS_TOOLTIP_TITLE
   title.textContent = formatParcelReference(id) || MSG_UNKNOWN_PARCEL
-  const rows = [
-    tooltipRow(`Total area: ${areaHa == null ? MSG_UNKNOWN_AREA : `${areaHa.toFixed(AREA_DECIMAL_PLACES)} ha`}`)
-  ]
+  const area = areaHa == null ? MSG_UNKNOWN_AREA : `${areaHa.toFixed(AREA_DECIMAL_PLACES)} ha`
+  const rows = [tooltipRow(`Total area: ${area}`)]
   if (typeof actionCount === 'number') {
     rows.push(tooltipRow(`Available actions: ${actionCount}`))
   }

@@ -192,6 +192,16 @@ describe('parcel-map web component', () => {
       expect(e.detail.reason).toBe(reason)
     })
 
+    it('reports an unexpected failure during initialisation as the map being unavailable', async () => {
+      global.fetch = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.reject(new Error('bad json')) })
+      const el = await mountElement()
+
+      const e = await waitForEvent(el, EVENT_ERROR)
+
+      expect(e.detail.reason).toBe('unavailable')
+      expect(el.querySelector('[role="alert"]')).not.toBeNull()
+    })
+
     it('replaces the skeleton with an error overlay after an error', async () => {
       global.fetch = vi.fn().mockResolvedValue({ ok: false })
       const el = await mountElement()

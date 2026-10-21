@@ -27,7 +27,7 @@ import {
 const DATASET_NAME = 'parcels'
 
 /** @param {string} value */
-const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)
 
 /**
  * Wraps the matched characters in <mark>, tolerating the space in the display
@@ -38,7 +38,7 @@ const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
  */
 export function markMatch(display, query) {
   const compact = compactParcelReference(query)
-  const match = compact ? new RegExp([...compact].map(escapeRegExp).join('[\\s-]*'), 'i').exec(display) : null
+  const match = compact ? new RegExp([...compact].map(escapeRegExp).join(String.raw`[\s-]*`), 'i').exec(display) : null
   if (!match) {
     return htmlEncode(display)
   }
@@ -141,9 +141,9 @@ async function fetchParcelBbox(id) {
 /**
  * Looks up the picked parcel's extent, then selects it and animates the map to
  * it. A failed lookup selects nothing and reports search as unavailable.
- * @param {Pick<MapContext, 'host' | 'mapInstance' | 'ml' | 'mapEl' | 'store' | 'cleanups'>} context
+ * @param {Pick<MapContext, 'host' | 'mapInstance' | 'ml' | 'mapEl' | 'cleanups'>} context
  */
-export function attachParcelSearch({ host, mapInstance, ml, mapEl, store, cleanups }) {
+export function attachParcelSearch({ host, mapInstance, ml, mapEl, cleanups }) {
   const wrapper = mapEl?.parentElement
   const status = wrapper ? createAnnouncer(wrapper, { className: CLASS_SEARCH_STATUS }) : null
   let active = true

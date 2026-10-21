@@ -154,10 +154,10 @@ function buildLabelFeatures(ml) {
   const boundsById = new Map()
   for (const fragment of fragments) {
     const id = fragment.properties?.[PARCEL_ID_PROPERTY]
-    if (typeof id !== 'string' && typeof id !== 'number') {
-      continue
-    }
-    const fragmentBounds = boundsOfPolygon(/** @type {GeoJSON.Polygon | GeoJSON.MultiPolygon} */ (fragment.geometry))
+    const hasId = typeof id === 'string' || typeof id === 'number'
+    const fragmentBounds = hasId
+      ? boundsOfPolygon(/** @type {GeoJSON.Polygon | GeoJSON.MultiPolygon} */ (fragment.geometry))
+      : null
     if (!fragmentBounds) {
       continue
     }
