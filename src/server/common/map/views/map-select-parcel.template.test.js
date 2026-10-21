@@ -99,7 +99,7 @@ describe('map-select-parcel.html', () => {
     expect(cancel.attr('href')).toBe('/test-grant/confirm-land-and-actions')
   })
 
-  it('server-renders a usable text list, details and totals with no JavaScript-only controls visible', () => {
+  it('server-renders a usable text list and totals with extra details hidden without JavaScript', () => {
     const $ = renderPage({
       parcels: [
         {
@@ -127,11 +127,11 @@ describe('map-select-parcel.html', () => {
     expect(normalise(firstDetailsRow.find('dd').text())).toBe('38.7654 ha')
     expect(firstDetailsRow.attr('hidden')).toBeUndefined()
     expect($('#land-parcels').attr('hidden')).toBeUndefined()
-    expect($('[data-parcel-details]').attr('hidden')).toBeUndefined()
+    expect($('[data-parcel-details]').attr('hidden')).toBeDefined()
     expect($('[data-parcel-actions-row]').attr('hidden')).toBeDefined()
     expect($('[data-parcel-requirements-row]').attr('hidden')).toBeDefined()
     expect($('[data-parcel-action-count]').text()).toBe('')
-    expect(normalise($('noscript').text())).toContain('Continue to see available actions and any requirements')
+    expect($('#land-parcels noscript')).toHaveLength(0)
     expect(normalise($('#land-parcels').text())).toContain('Added to application')
     expect($('#land-parcels').text()).not.toContain('Land covers')
     expect(normalise($('#parcel-map-total-count').text())).toBe('1')
@@ -141,13 +141,14 @@ describe('map-select-parcel.html', () => {
     expect($('#selected-parcels-inputs input').attr('disabled')).toBeDefined()
   })
 
-  it('describes only the server-checked parcel by its details panel', () => {
+  it('describes parcels only by their hints before JavaScript reveals their details', () => {
     const $ = renderPage({
       parcels: ['SO3757-3184', 'SO3757-3185'].map((id) => ({ id, reference: id.replace('-', ' '), area: '1.0000 ha' })),
       selectedParcelIds: ['SO3757-3185']
     })
     expect($('#land-parcel-1').attr('aria-describedby')).toBe('land-parcel-1-hint')
-    expect($('#land-parcel-2').attr('aria-describedby')).toBe('land-parcel-2-hint land-parcel-2-details')
+    expect($('#land-parcel-2').attr('aria-describedby')).toBe('land-parcel-2-hint')
+    expect($('[data-parcel-details][hidden]')).toHaveLength(2)
   })
 
   it.each([

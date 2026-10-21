@@ -14,8 +14,6 @@
       {% set isChecked = parcel.id in (selectedParcelIds or []) %}
       <div class="parcel-list-item">
         <div class="{{ controlClass }}__item">
-          {# Only a checked parcel's details are visible, so only it is described by them.
-             JavaScript keeps this in step as the selection changes. #}
           <input
             class="{{ controlClass }}__input"
             id="{{ inputId }}"
@@ -23,7 +21,7 @@
             type="{{ 'checkbox' if multiSelect else 'radio' }}"
             value="{{ parcel.id }}"
             aria-labelledby="{{ inputId }}-reference"
-            aria-describedby="{{ inputId }}-hint{{ (' ' + inputId + '-details') if isChecked }}"
+            aria-describedby="{{ inputId }}-hint"
             {% if isChecked %}checked{% endif %}
           />
           <label class="govuk-label {{ controlClass }}__label parcel-list-label" for="{{ inputId }}">
@@ -41,9 +39,8 @@
             </span>
           </label>
         </div>
-        {# This is information, not a conditional question: keep it separate from
-           GOV.UK's conditional-radio API. CSS follows the native checked state without JS. #}
-        <div class="parcel-list-details" id="{{ inputId }}-details" data-parcel-details="{{ parcel.id }}">
+        {# JavaScript reveals details and associates them with the selected input. #}
+        <div class="parcel-list-details" id="{{ inputId }}-details" data-parcel-details="{{ parcel.id }}" hidden>
           <dl class="govuk-summary-list govuk-!-font-size-16">
             <div class="govuk-summary-list__row">
               <dt class="govuk-summary-list__key">Total area</dt>
@@ -71,11 +68,6 @@
           <p class="govuk-inset-text govuk-!-font-size-16" data-parcel-no-actions hidden>
             There are no actions available for this land parcel. Select another land parcel to continue.
           </p>
-          <noscript>
-            <p class="govuk-body govuk-!-font-size-16">
-              Continue to see available actions and any requirements for this land parcel.
-            </p>
-          </noscript>
         </div>
       </div>
     {% endfor %}
