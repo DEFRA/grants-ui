@@ -226,30 +226,8 @@ function createSelectedParcelDetailsUpdater(mapEl) {
     listDetails.render(id, notice)
   }
 
-  return async function updateSelectedParcelDetails(selectedParcels, metaIndex) {
-    clearRequirements()
-    latestMetaIndex = metaIndex
-    const id = selectedParcels.length === 1 ? selectedParcels[0].id : undefined
-
-    if (inFlight && inFlight.id !== id) {
-      inFlight.controller.abort()
-      inFlight = null
-    }
-    if (!id) {
-      listDetails.clear()
-      return
-    }
-    const cached = notices.get(id)
-    if (cached) {
-      show(id, cached)
-      return
-    }
-    // The same parcel is already loading, for example after switching views:
-    // that response renders against the latest metaIndex.
-    if (inFlight) {
-      return
-    }
-
+  /** @param {string} id @param {import('./map-helpers.js').MetaIndex} metaIndex */
+  const loadNotice = async (id, metaIndex) => {
     listDetails.startLoading(id)
     const request = { id, controller: new AbortController() }
     inFlight = request
@@ -274,6 +252,84 @@ function createSelectedParcelDetailsUpdater(mapEl) {
     }
     show(id, result)
   }
+
+  return async function updateSelectedParcelDetails(selectedParcels, metaIndex) {
+    clearRequirements()
+    latestMetaIndex = metaIndex
+    const id = selectedParcels.length === 1 ? selectedParcels[0].id : undefined
+
+    if (inFlight && inFlight.id !== id) {
+      inFlight.controller.abort()
+      inFlight = null
+    }
+    if (!id) {
+      listDetails.clear()
+      return
+    }
+    const cached = notices.get(id)
+    if (cached) {
+      show(id, cached)
+      return
+    }
+    // The same parcel is already loading, for example after switching views:
+    // that response renders against the latest metaIndex.
+    if (!inFlight) {
+      await loadNotice(id, metaIndex)
+    }
+  }
+}
+
+/**
+ * Attach terminal-event listeners and replay an event emitted before this
+ * script loaded, when customElements.define() upgraded the map element.
+ * @param {HTMLElement} mapEl
+ * @param {(detail: ReadyDetail) => void} handleReady
+ * @param {() => void} handleError
+ */
+function bindMapStatusEvents(mapEl, handleReady, handleError) {
+  mapEl.addEventListener(EVENT_READY, (event) => {
+    handleReady(/** @type {CustomEvent<ReadyDetail>} */ (event).detail ?? {})
+  })
+  mapEl.addEventListener(EVENT_ERROR, handleError)
+
+  const mapWithHistory = /** @type {HTMLElement & { getLastEvent?: (type: string) => CustomEvent | null }} */ (mapEl)
+  const lastReady = mapWithHistory.getLastEvent?.(EVENT_READY)
+  if (lastReady) {
+    handleReady(/** @type {ReadyDetail} */ (lastReady.detail ?? {}))
+  }
+  if (mapWithHistory.getLastEvent?.(EVENT_ERROR)) {
+    handleError()
+  }
+}
+
+/**
+ * @param {HTMLElement & { clearSelection?: () => void, focusParcels?: () => void }} mapEl
+ * @param {{ errorLinks: Element[], isList: () => boolean } | null} viewToggle
+ */
+function bindParcelNavigation(mapEl, viewToggle) {
+  document.getElementById(DOM_ID_SELECTED_PARCEL_CHANGE)?.addEventListener('click', (event) => {
+    event.preventDefault()
+    mapEl.clearSelection?.()
+  })
+  // The toggle retargets these links at the active view, so bind them all once.
+  viewToggle?.errorLinks.forEach((link) => {
+    link.addEventListener('click', () => {
+      if (!viewToggle.isList()) {
+        mapEl.focusParcels?.()
+      }
+    })
+  })
+}
+
+/** @param {SelectedParcel[]} selectedParcels @param {string | undefined} previousId */
+function focusSelectedParcelDetails(selectedParcels, previousId) {
+  const id = selectedParcels.length === 1 ? selectedParcels[0].id : undefined
+  if (id && id !== previousId) {
+    const details = document.getElementById(DOM_ID_SELECTED_PARCEL_DETAILS)
+    details?.focus({ preventScroll: true })
+    details?.scrollIntoView({ block: 'start' })
+  }
+  return id
 }
 
 /**
@@ -310,7 +366,7 @@ export function initParcelSelectPage(mapEl) {
     mapWithSelection.resize?.()
     const selectedParcels = selectedIds.map((id) => ({ id }))
     renderSelectedParcelDetails(selectedParcels, metaIndex)
-    updateSelectedParcelDetails(selectedParcels, metaIndex)
+    void updateSelectedParcelDetails(selectedParcels, metaIndex)
     if (selectedIds.join(',') === mapSelectedIds.join(',')) {
       return
     }
@@ -326,7 +382,7 @@ export function initParcelSelectPage(mapEl) {
       selectedIds = ids
       selectedParcelId = ids.length === 1 ? ids[0] : undefined
       writeHiddenInputs(ids)
-      updateSelectedParcelDetails(
+      void updateSelectedParcelDetails(
         ids.map((id) => ({ id })),
         {}
       )
@@ -335,7 +391,7 @@ export function initParcelSelectPage(mapEl) {
     getSelectedIds: () => selectedIds
   })
   if (viewToggle?.isList() && selectedIds.length) {
-    updateSelectedParcelDetails(
+    void updateSelectedParcelDetails(
       selectedIds.map((id) => ({ id })),
       {}
     )
@@ -357,11 +413,6 @@ export function initParcelSelectPage(mapEl) {
     viewToggle?.showList()
   }
 
-  mapEl.addEventListener(EVENT_READY, (/** @type {Event} */ e) => {
-    handleReady(/** @type {CustomEvent<ReadyDetail>} */ (e).detail ?? {})
-  })
-
-  mapEl.addEventListener(EVENT_ERROR, handleError)
   mapEl.addEventListener(EVENT_SELECTION, (/** @type {Event} */ e) => {
     const { selectedParcels } = /** @type {CustomEvent<SelectionDetail>} */ (e).detail
     mapSelectedIds = selectedParcels.map((p) => p.id)
@@ -372,43 +423,12 @@ export function initParcelSelectPage(mapEl) {
     writeHiddenInputs(selectedIds)
     viewToggle?.syncSelection(selectedIds)
     renderSelectedParcelDetails(selectedParcels, metaIndex)
-    updateSelectedParcelDetails(selectedParcels, metaIndex)
-    const nextParcelId = selectedParcels.length === 1 ? selectedParcels[0].id : undefined
-    if (nextParcelId && nextParcelId !== selectedParcelId) {
-      const details = document.getElementById(DOM_ID_SELECTED_PARCEL_DETAILS)
-      details?.focus({ preventScroll: true })
-      details?.scrollIntoView({ block: 'start' })
-    }
-    selectedParcelId = nextParcelId
+    void updateSelectedParcelDetails(selectedParcels, metaIndex)
+    selectedParcelId = focusSelectedParcelDetails(selectedParcels, selectedParcelId)
   })
 
-  // customElements.define() upgrades an already-parsed <parcel-map> synchronously,
-  // so its data fetch can resolve — dispatching EVENT_READY/EVENT_ERROR — before this
-  // script (loaded via a later <script type="module">) has attached the listeners
-  // above. getLastEvent() catches up on whichever terminal event already fired.
-  const mapWithHistory = /** @type {HTMLElement & { getLastEvent?: (type: string) => CustomEvent | null } } */ (mapEl)
-  const lastReady = mapWithHistory.getLastEvent?.(EVENT_READY)
-  if (lastReady) {
-    handleReady(/** @type {ReadyDetail} */ (lastReady.detail ?? {}))
-  }
-  if (mapWithHistory.getLastEvent?.(EVENT_ERROR)) {
-    handleError()
-  }
-
-  const changeLink = document.getElementById(DOM_ID_SELECTED_PARCEL_CHANGE)
-  changeLink?.addEventListener('click', (e) => {
-    e.preventDefault()
-    mapWithSelection.clearSelection?.()
-  })
-
-  // The toggle retargets these links at the active view, so bind them all once.
-  viewToggle?.errorLinks.forEach((link) => {
-    link.addEventListener('click', () => {
-      if (!viewToggle?.isList()) {
-        mapWithSelection.focusParcels?.()
-      }
-    })
-  })
+  bindMapStatusEvents(mapEl, handleReady, handleError)
+  bindParcelNavigation(mapWithSelection, viewToggle)
 }
 
 initParcelSelectPage(document.getElementById(DOM_ID_PARCEL_MAP))

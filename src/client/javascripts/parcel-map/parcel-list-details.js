@@ -113,18 +113,18 @@ function renderParcelListDetails(parcelId, notice, statusText = ERROR_MESSAGE) {
  * overwriting the current parcel's live announcement.
  */
 export function createParcelListDetailsRenderer() {
-  /** @type {ReturnType<typeof setTimeout> | undefined} */
-  let timer
-  /** @type {string | undefined} */
-  let loadingParcelId
-  /** @type {number | undefined} */
-  let shownAt
+  /** @type {ReturnType<typeof setTimeout> | null} */
+  let timer = null
+  /** @type {string | null} */
+  let loadingParcelId = null
+  /** @type {number | null} */
+  let shownAt = null
 
   const cancel = () => {
-    clearTimeout(timer)
-    timer = undefined
-    loadingParcelId = undefined
-    shownAt = undefined
+    clearTimeout(timer ?? undefined)
+    timer = null
+    loadingParcelId = null
+    shownAt = null
   }
 
   // No single parcel is selected: drop pending feedback and any details shown
@@ -149,10 +149,10 @@ export function createParcelListDetailsRenderer() {
   /** @param {string} parcelId @param {ParcelNotice | null} notice */
   const render = (parcelId, notice) => {
     const remaining =
-      loadingParcelId === parcelId && shownAt !== undefined
+      loadingParcelId === parcelId && shownAt !== null
         ? Math.max(0, PARCEL_DETAILS_LOADING_MIN_DURATION_MS - (Date.now() - shownAt))
         : 0
-    clearTimeout(timer)
+    clearTimeout(timer ?? undefined)
     const finish = () => {
       cancel()
       renderParcelListDetails(parcelId, notice)

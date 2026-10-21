@@ -127,7 +127,7 @@ describe('parcel map and list views', () => {
     expect(list().hidden).toBe(true)
     expect(document.body.classList.contains('map-select-parcel--map')).toBe(true)
     expect(link.textContent).toBe('View parcels as a list')
-    expect(link.getAttribute('href')).toBe(window.location.pathname + window.location.search)
+    expect(link.href).toBe(new URL(window.location.pathname + window.location.search, window.location.origin).href)
     link.focus()
     expect(clickToggle()).toBe(true)
     // Nothing is switched or initialised in the old document before navigation.
@@ -189,9 +189,25 @@ describe('parcel map and list views', () => {
     window.history.replaceState(null, '', `${path}#land-parcels`)
     setup()
     const link = document.getElementById('parcel-view-toggle')
-    expect(link.getAttribute('href')).toBe(path)
+    expect(link.href).toBe(new URL(path, window.location.origin).href)
+    expect(link.hash).toBe('')
     expect(clickToggle()).toBe(true)
     expect(JSON.parse(window.sessionStorage.getItem(PARCEL_SELECTION_STORAGE_KEY)).path).toBe(path)
+  })
+
+  it.each([
+    '//external.example/select-parcel?origin=confirm-land-and-actions',
+    '/javascript:alert(1)?next=javascript:alert(1)',
+    '/select-parcel?next=%22%3E%3Cscript%3Ealert(1)%3C/script%3E'
+  ])('keeps the toggle on the current origin and path for %s', (path) => {
+    window.history.replaceState(null, '', window.location.origin + path + '#land-parcels')
+    setup()
+    const link = document.getElementById('parcel-view-toggle')
+    expect(link.origin).toBe(window.location.origin)
+    expect(link.protocol).toBe(window.location.protocol)
+    expect(link.pathname).toBe(window.location.pathname)
+    expect(link.search).toBe(window.location.search)
+    expect(link.hash).toBe('')
   })
 
   it.each([

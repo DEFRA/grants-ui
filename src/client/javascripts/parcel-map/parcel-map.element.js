@@ -80,14 +80,14 @@ export class ParcelMap extends HTMLElement {
     this.#state = STATE_IDLE
     this.#lastEvent = null
     if (!this.hasAttribute(DEFER_LOADING_ATTRIBUTE)) {
-      this.#init()
+      void this.#init()
     }
   }
 
-  /** @param {string} name @param {string | null} oldValue @param {string | null} value */
-  attributeChangedCallback(name, oldValue, value) {
+  /** @param {string} name @param {string | null} _oldValue @param {string | null} value */
+  attributeChangedCallback(name, _oldValue, value) {
     if (name === DEFER_LOADING_ATTRIBUTE && value === null && this.isConnected && this.#state === STATE_IDLE) {
-      this.#init()
+      void this.#init()
     }
   }
 

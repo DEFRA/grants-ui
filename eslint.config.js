@@ -29,6 +29,9 @@ export default [
   },
   {
     files: ['src/client/**/*.js'],
+    rules: {
+      'no-void': ['error', { allowAsStatement: true }]
+    },
     languageOptions: {
       globals: {
         window: 'readonly',

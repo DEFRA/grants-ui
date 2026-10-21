@@ -30,6 +30,22 @@ export function restoreParcelViewSelection(mapEl) {
   }
 }
 
+/** @param {HTMLInputElement[]} inputs @param {Element[]} panels @param {string[]} ids */
+function syncParcelSelection(inputs, panels, ids) {
+  inputs.forEach((input) => {
+    input.checked = ids.includes(input.value)
+    const describedBy = [`${input.id}-hint`]
+    if (input.checked) {
+      describedBy.push(`${input.id}-details`)
+    }
+    input.setAttribute('aria-describedby', describedBy.join(' '))
+  })
+  panels.forEach((panel) => {
+    const element = /** @type {HTMLElement} */ (panel)
+    element.hidden = !ids.includes(element.dataset.parcelDetails ?? '')
+  })
+}
+
 /**
  * Enhance the server-rendered list without changing the form's field names.
  * Only the active view's inputs submit, so the selection cannot be duplicated.
@@ -49,7 +65,10 @@ export function initParcelViewToggle({ onListSelection, onMapView, getSelectedId
   const inputs = [...list.querySelectorAll('input')]
   const panels = [...list.querySelectorAll('[data-parcel-details]')]
   const path = window.location.pathname + window.location.search
-  link.setAttribute('href', path)
+  // A query-only link reloads this path without its fragment. Set the query
+  // through the URL property so location data cannot supply a link protocol.
+  link.setAttribute('href', '?')
+  ;/** @type {HTMLAnchorElement} */ (link).search = window.location.search
   const errorLinks = [...document.querySelectorAll('.govuk-error-summary a[href="#land-parcels"]')]
   let view = 'map'
   try {
@@ -59,16 +78,7 @@ export function initParcelViewToggle({ onListSelection, onMapView, getSelectedId
   }
 
   /** @param {string[]} ids */
-  const syncSelection = (ids) => {
-    inputs.forEach((input) => {
-      input.checked = ids.includes(input.value)
-      input.setAttribute('aria-describedby', `${input.id}-hint${input.checked ? ` ${input.id}-details` : ''}`)
-    })
-    panels.forEach((panel) => {
-      const element = /** @type {HTMLElement} */ (panel)
-      element.hidden = !ids.includes(element.dataset.parcelDetails ?? '')
-    })
-  }
+  const syncSelection = (ids) => syncParcelSelection(inputs, panels, ids)
 
   const applyView = () => {
     const isMap = view === 'map'

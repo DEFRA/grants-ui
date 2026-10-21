@@ -121,7 +121,8 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
     const errors = [.../** @type {Array<Record<string, unknown>>} */ (extra.errors ?? [])]
     if (!result.ok) {
       errors.push({ text: 'Unable to load your land parcels. Try again later.' })
-    } else if (!parcels.length) {
+    }
+    if (result.ok && !parcels.length) {
       errors.push({ text: 'No land parcels were found for your account.' })
     }
     return h.view(
