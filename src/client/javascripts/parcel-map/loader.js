@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { PARCELS_API_URL, FETCH_MAX_ATTEMPTS, FETCH_RETRY_DELAY_MS } from './config.js'
 
 /**
@@ -12,8 +11,8 @@ import { PARCELS_API_URL, FETCH_MAX_ATTEMPTS, FETCH_RETRY_DELAY_MS } from './con
 
 /**
  * Fetches the authenticated user's parcels, retrying once after a short delay.
- * Returns null when every attempt fails — the caller treats that as an
- * `unavailable` error. Contains no map knowledge, only fetch + retry.
+ * Returns null when every attempt fails; the element reports that as the map
+ * being unavailable. Contains no map knowledge, only fetch + retry.
  * @param {string[]} enabledLandActions
  * @returns {Promise<ParcelData | null>}
  */
@@ -22,25 +21,29 @@ export async function fetchParcelData(enabledLandActions = []) {
   enabledLandActions.forEach((action) => params.append('enabledLandActions', action))
   const query = params.toString()
   const url = query ? `${PARCELS_API_URL}?${query}` : PARCELS_API_URL
+  return attemptFetch(url, FETCH_MAX_ATTEMPTS)
+}
 
-  /** @type {unknown} */
-  let lastError
-  for (let attempt = 0; attempt < FETCH_MAX_ATTEMPTS; attempt++) {
-    if (attempt > 0) {
-      await new Promise((resolve) => globalThis.setTimeout(resolve, FETCH_RETRY_DELAY_MS))
+/**
+ * One attempt, retrying after a short delay while attempts remain.
+ * @param {string} url
+ * @param {number} attemptsLeft
+ * @returns {Promise<ParcelData | null>}
+ */
+async function attemptFetch(url, attemptsLeft) {
+  try {
+    const resp = await fetch(url)
+    if (!resp.ok) {
+      throw new Error(`HTTP ${resp.status}`)
     }
-    try {
-      const resp = await fetch(url)
-      if (resp.ok) {
-        return await parseParcelResponse(resp)
-      }
-      lastError = new Error(`HTTP ${resp.status}`)
-    } catch (err) {
-      lastError = err
+    return await parseParcelResponse(resp)
+  } catch {
+    if (attemptsLeft <= 1) {
+      return null
     }
+    await new Promise((resolve) => globalThis.setTimeout(resolve, FETCH_RETRY_DELAY_MS))
+    return attemptFetch(url, attemptsLeft - 1)
   }
-  console.error('[parcel-map] parcels fetch failed', lastError)
-  return null
 }
 
 /**
