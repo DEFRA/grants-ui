@@ -59,15 +59,22 @@ function processField(fieldConfig, mappedData, request) {
   const formatter = getFormatter(fieldConfig.format ?? 'text')
   const formattedValue = formatter(value)
 
-  const hideIfEmpty = fieldConfig.hideIfEmpty !== false
+  if (!formattedValue) {
+    const condition = fieldConfig.showIfEmptyWhen
+    const matchesCondition = condition
+      ? condition.values.some((value) => value === resolvePath(mappedData, condition.sourcePath))
+      : false
 
-  if (!formattedValue && hideIfEmpty) {
-    return null
+    const showEmpty = fieldConfig.hideIfEmpty === false || matchesCondition
+
+    if (!showEmpty) {
+      return null
+    }
   }
 
   return {
     key: { text: fieldConfig.label },
-    value: formattedValue || { text: '' }
+    value: formattedValue || { text: fieldConfig.emptyText ?? '' }
   }
 }
 
