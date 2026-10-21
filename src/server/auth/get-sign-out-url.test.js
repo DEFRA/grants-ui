@@ -20,7 +20,7 @@ describe('getSignOutUrl', () => {
       end_session_endpoint: 'https://auth.example.com/logout'
     })
 
-    config.get.mockReturnValue('https://myapp.example.com/signed-out')
+    config.get.mockReturnValue('https://grants-ui.example.com/signed-out')
 
     createState.mockReturnValue('mock-state-value')
   })
@@ -36,19 +36,19 @@ describe('getSignOutUrl', () => {
     expect(createState).toHaveBeenCalledWith(mockRequest)
 
     const expectedUrl =
-      'https://auth.example.com/logout?post_logout_redirect_uri=https://myapp.example.com/signed-out&id_token_hint=mock-id-token&state=mock-state-value'
+      'https://auth.example.com/logout?post_logout_redirect_uri=https://grants-ui.example.com/signed-out&id_token_hint=mock-id-token&state=mock-state-value'
     expect(result).toBe(expectedUrl)
   })
 
   it('should handle special characters in redirect URL correctly', async () => {
     const mockRequest = { session: {} }
     const mockToken = 'mock-id-token'
-    config.get.mockReturnValue('https://myapp.example.com/signed-out?param=value&special=true')
+    config.get.mockReturnValue('https://grants-ui.example.com/signed-out?param=value&special=true')
 
     const result = await getSignOutUrl(mockRequest, mockToken)
 
     expect(result).toMatch(
-      /post_logout_redirect_uri=https:\/\/myapp\.example\.com\/signed-out\?param=value&special=true/
+      /post_logout_redirect_uri=https:\/\/grants-ui\.example\.com\/signed-out\?param=value&special=true/
     )
   })
 
@@ -70,7 +70,7 @@ describe('getSignOutUrl', () => {
     expect(result).toEqual({
       endpoint: 'https://auth.example.com/logout',
       fields: {
-        post_logout_redirect_uri: 'https://myapp.example.com/signed-out',
+        post_logout_redirect_uri: 'https://grants-ui.example.com/signed-out',
         id_token_hint: 'mock-id-token',
         state: 'mock-state-value'
       }

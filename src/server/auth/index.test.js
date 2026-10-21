@@ -36,7 +36,7 @@ vi.mock('~/src/server/auth/get-sign-out-url.js', () => ({
   getSignOutRequest: vi.fn().mockResolvedValue({
     endpoint: 'https://defra-id.example/signout',
     fields: {
-      post_logout_redirect_uri: 'https://app.example/auth/sign-out-oidc',
+      post_logout_redirect_uri: 'https://grants-ui.example.com/auth/sign-out-oidc',
       id_token_hint: 'stub-token',
       state: 'abc'
     }
@@ -309,7 +309,11 @@ describe('auth router - /auth/sign-out', () => {
     const token = buildLargeToken()
     vi.mocked(getSignOutRequest).mockResolvedValueOnce({
       endpoint: 'https://defra-id.example/signout',
-      fields: { post_logout_redirect_uri: 'https://app.example/auth/sign-out-oidc', id_token_hint: token, state: 'abc' }
+      fields: {
+        post_logout_redirect_uri: 'https://grants-ui.example.com/auth/sign-out-oidc',
+        id_token_hint: token,
+        state: 'abc'
+      }
     })
 
     const server = await buildServer({ authenticated: true, securityHeaders: true })
@@ -326,7 +330,7 @@ describe('auth router - /auth/sign-out', () => {
       expect(response.headers['content-security-policy']).toContain("form-action 'self' https://defra-id.example;")
 
       expect(response.payload).toContain(
-        'name="post_logout_redirect_uri" value="https://app.example/auth/sign-out-oidc"'
+        'name="post_logout_redirect_uri" value="https://grants-ui.example.com/auth/sign-out-oidc"'
       )
       expect(response.payload).toContain(`name="id_token_hint" value="${token}"`)
       expect(response.payload).toContain('name="state" value="abc"')
@@ -344,7 +348,7 @@ describe('auth router - /auth/sign-out', () => {
       'https://fcp-defra-id-stub.dev.cdp-int.defra.cloud/idphub/b2c/b2c_1a_cui_cpdev_signupsigninsfi/.well-known/openid-configuration'
     )
     const token = buildLargeToken()
-    const signOutUrl = `https://stub.example/signout?post_logout_redirect_uri=https://app.example/auth/sign-out-oidc&id_token_hint=${token}&state=abc`
+    const signOutUrl = `https://stub.example/signout?post_logout_redirect_uri=https://grants-ui.example.com/auth/sign-out-oidc&id_token_hint=${token}&state=abc`
     vi.mocked(getSignOutUrl).mockResolvedValueOnce(signOutUrl)
 
     const server = await buildServer({ authenticated: true, securityHeaders: true })

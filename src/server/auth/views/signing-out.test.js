@@ -5,7 +5,7 @@ const renderPage = createPageRenderer(import.meta.url, 'signing-out.njk')
 const form = {
   endpoint: 'https://defra-id.example/signout',
   fields: {
-    post_logout_redirect_uri: 'https://app.example/auth/sign-out-oidc',
+    post_logout_redirect_uri: 'https://grants-ui.example.com/auth/sign-out-oidc',
     id_token_hint: 'eyJhbGciOi.payload.sig',
     state: 'abc&def'
   }
@@ -25,7 +25,7 @@ describe('signing-out.njk', () => {
 
   test('falls back to an instant GET meta refresh with a link when given a URL (stub environments)', () => {
     const signOutUrl =
-      'https://stub.example/signout?post_logout_redirect_uri=https://app.example/cb&id_token_hint=tok&state=abc'
+      'https://stub.example/signout?post_logout_redirect_uri=https://grants-ui.example.com/cb&id_token_hint=tok&state=abc'
     const $ = renderPage({ signOutUrl })
 
     expect($('meta[http-equiv="refresh"]').attr('content')).toBe(`0; url=${signOutUrl}`)
