@@ -68,30 +68,17 @@ $parcel-map-gutter: 12px;
   white-space: nowrap;
 }
 
-// Shown only while it carries a message.
-.parcel-map__status {
-  position: absolute;
-  bottom: $parcel-map-gutter;
-  left: 50%;
-  z-index: 2;
-  max-width: calc(100% - 2 * #{$parcel-map-gutter});
-  padding: 8px 12px;
-  font-family: $parcel-map-font;
-  font-size: 16px;
-  color: $parcel-map-text;
-  background: #ffffff;
-  border: 2px solid $parcel-map-error;
-  transform: translateX(-50%);
-
-  &:empty {
-    display: none;
-  }
+// Our "Search is unavailable" panel reuses the vendor's status class. Once
+// cleared it would still draw over the vendor's own status panel.
+.parcel-map__wrapper .im-c-search__status:empty {
+  display: none;
 }
 
 // The vendor sizes the results list to the viewport, but this inline map clips
-// at its edge. 80px covers the gutter and the search input.
+// at its edge. 130px covers the gutter and search input above the list and
+// the "Show all parcels" button below it.
 .parcel-map__wrapper .im-c-search-suggestions {
-  max-height: calc(var(--parcel-map-height) - 80px);
+  max-height: calc(var(--parcel-map-height) - 130px);
 }
 
 // The vendor search box toggles display, so give it a fade-in of our own.

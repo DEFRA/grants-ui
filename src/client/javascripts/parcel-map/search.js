@@ -12,7 +12,11 @@ import {
   PARCEL_BBOX_URL,
   PARCEL_SEARCH_URL,
   SEARCH_FIT_MAX_ZOOM,
+  SEARCH_FORM_SELECTOR,
+  SEARCH_INPUT_SELECTOR,
   SEARCH_MATCH_EVENT,
+  SEARCH_OPEN_BUTTON_SELECTOR,
+  SEARCH_OPEN_EVENT,
   SEARCH_PLACEHOLDER,
   SEARCH_SUGGESTIONS_SELECTOR,
   SELECTION_SOURCE_SEARCH
@@ -141,12 +145,36 @@ async function fetchParcelBbox(id) {
 /**
  * Looks up the picked parcel's extent, then selects it and animates the map to
  * it. A failed lookup selects nothing and reports search as unavailable.
- * @param {Pick<MapContext, 'host' | 'mapInstance' | 'ml' | 'mapEl' | 'cleanups'>} context
+ * @param {Pick<MapContext, 'host' | 'mapInstance' | 'ml' | 'cleanups'>} context
  */
-export function attachParcelSearch({ host, mapInstance, ml, mapEl, cleanups }) {
-  const wrapper = mapEl?.parentElement
-  const status = wrapper ? createAnnouncer(wrapper, { className: CLASS_SEARCH_STATUS }) : null
+export function attachParcelSearch({ host, mapInstance, ml, cleanups }) {
   let active = true
+  /** @type {ReturnType<typeof createAnnouncer> | null} */
+  let status = null
+  const clearStatus = () => status?.clear()
+
+  // The plugin has no API for a message of ours, so drive it as a user would:
+  // reopen its box, clear the input (its own handler then drops the stale
+  // results list) and show the message under it, styled as its status panel.
+  const showUnavailable = () => {
+    const form = /** @type {HTMLElement | null} */ (host.querySelector(SEARCH_FORM_SELECTOR))
+    const input = /** @type {HTMLInputElement | null} */ (form?.querySelector(SEARCH_INPUT_SELECTOR) ?? null)
+    if (!form || !input) {
+      return
+    }
+    const openButton = /** @type {HTMLButtonElement | null} */ (host.querySelector(SEARCH_OPEN_BUTTON_SELECTOR))
+    openButton?.click()
+    input.value = ''
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    status ??= createAnnouncer(form, { className: CLASS_SEARCH_STATUS })
+    status.announce(MSG_SEARCH_ERROR)
+  }
+  const clearOnTyping = (/** @type {Event} */ event) => {
+    if (/** @type {Element} */ (event.target).matches?.(SEARCH_INPUT_SELECTOR)) {
+      clearStatus()
+    }
+  }
+  host.addEventListener('input', clearOnTyping, true)
   /** @type {() => void} */
   let stopFit = () => {}
   /** @type {Map<string, BBox>} extents the bbox route has confirmed */
@@ -174,13 +202,13 @@ export function attachParcelSearch({ host, mapInstance, ml, mapEl, cleanups }) {
     if (globalThis.scrollX !== scroll.x || globalThis.scrollY !== scroll.y) {
       globalThis.scrollTo(scroll.x, scroll.y)
     }
-    status?.clear()
+    clearStatus()
     const bbox = located.get(id) ?? (await fetchParcelBbox(id))
     if (!active) {
       return
     }
     if (!bbox) {
-      status?.announce(MSG_SEARCH_ERROR)
+      showUnavailable()
       return
     }
     located.set(id, bbox)
@@ -190,11 +218,14 @@ export function attachParcelSearch({ host, mapInstance, ml, mapEl, cleanups }) {
   }
 
   mapInstance.on(SEARCH_MATCH_EVENT, onMatch)
+  mapInstance.on(SEARCH_OPEN_EVENT, clearStatus)
   cleanups.push(() => {
     active = false
     stopFit()
     mapInstance.off?.(SEARCH_MATCH_EVENT, onMatch)
+    mapInstance.off?.(SEARCH_OPEN_EVENT, clearStatus)
     host.removeEventListener('mousedown', keepInputFocus, true)
+    host.removeEventListener('input', clearOnTyping, true)
     globalThis.removeEventListener('scroll', trackScroll)
   })
 }

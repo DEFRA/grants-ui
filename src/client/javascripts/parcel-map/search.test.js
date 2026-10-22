@@ -47,15 +47,18 @@ function makeMapInstance() {
   }
 }
 
+// The host with the vendor search DOM the module drives: open button, form, input.
 function makeHost() {
-  const wrapper = document.createElement('div')
-  const mapEl = document.createElement('div')
-  wrapper.appendChild(mapEl)
   const host = document.createElement('div')
-  host.appendChild(wrapper)
+  host.innerHTML = `
+    <button type="button" aria-controls="m-search-form">Search</button>
+    <form id="m-search-form"><input id="m-search-input" type="search" /></form>
+  `
   document.body.appendChild(host)
   host.selectParcels = vi.fn()
-  return { host, mapEl }
+  const openClicks = vi.fn()
+  host.querySelector('button').addEventListener('click', openClicks)
+  return { host, openClicks, form: host.querySelector('form'), input: host.querySelector('input') }
 }
 
 const fetchJson = (body, ok = true) => vi.fn().mockResolvedValue({ ok, json: () => Promise.resolve(body) })
@@ -184,9 +187,9 @@ describe('attachParcelSearch', () => {
   })
 
   function attach() {
-    const { host, mapEl } = makeHost()
-    attachParcelSearch({ host, mapInstance, ml, mapEl, cleanups })
-    return { host, status: mapEl.parentElement.querySelector('[role="status"]') }
+    const made = makeHost()
+    attachParcelSearch({ host: made.host, mapInstance, ml, cleanups })
+    return { ...made, status: () => made.form.querySelector('[role="status"]') }
   }
 
   const FITTED = [
@@ -223,20 +226,60 @@ describe('attachParcelSearch', () => {
   it.each([
     ['the route fails', () => fetchJson({}, false)],
     ['the network fails', () => vi.fn().mockRejectedValue(new Error('offline'))]
-  ])('selects nothing and reports search as unavailable when %s', async (_name, makeFetch) => {
-    globalThis.fetch = makeFetch()
-    const { host, status } = attach()
+  ])(
+    'selects nothing, reopens the search box emptied and reports it unavailable inside it when %s',
+    async (_name, makeFetch) => {
+      globalThis.fetch = makeFetch()
+      const { host, openClicks, input, status } = attach()
+      input.value = 'SD7148 9160'
+      const inputEvents = vi.fn()
+      input.addEventListener('input', inputEvents)
+
+      mapInstance._emit('search:match', { id: 'SD7148-9160' })
+      await flush()
+
+      expect(host.selectParcels).not.toHaveBeenCalled()
+      expect(ml.fitBounds).not.toHaveBeenCalled()
+      expect(openClicks).toHaveBeenCalledTimes(1)
+      expect(input.value).toBe('')
+      expect(inputEvents).toHaveBeenCalledTimes(1)
+      expect(status().className).toBe('im-c-search__status')
+      expect(status().textContent).toBe(MSG_SEARCH_ERROR)
+
+      // The next pick clears it.
+      mapInstance._emit('search:match', { id: 'SD7148-9161' })
+      expect(status().textContent).toBe('')
+    }
+  )
+
+  it('clears the message when the search box is opened again or the user types', async () => {
+    globalThis.fetch = fetchJson({}, false)
+    const { input, status } = attach()
+
+    mapInstance._emit('search:match', { id: 'SD7148-9160' })
+    await flush()
+    expect(status().textContent).toBe(MSG_SEARCH_ERROR)
+
+    mapInstance._emit('search:open')
+    expect(status().textContent).toBe('')
+
+    mapInstance._emit('search:match', { id: 'SD7148-9160' })
+    await flush()
+    expect(status().textContent).toBe(MSG_SEARCH_ERROR)
+
+    input.dispatchEvent(new globalThis.Event('input', { bubbles: true }))
+    expect(status().textContent).toBe('')
+  })
+
+  it('shows nothing when the vendor search form is not on the page', async () => {
+    globalThis.fetch = fetchJson({}, false)
+    const { host, form } = attach()
+    form.remove()
 
     mapInstance._emit('search:match', { id: 'SD7148-9160' })
     await flush()
 
-    expect(host.selectParcels).not.toHaveBeenCalled()
-    expect(ml.fitBounds).not.toHaveBeenCalled()
-    expect(status.textContent).toBe(MSG_SEARCH_ERROR)
-
-    // The next pick clears it.
-    mapInstance._emit('search:match', { id: 'SD7148-9161' })
-    expect(status.textContent).toBe('')
+    expect(host.querySelector('[role="status"]')).toBeNull()
   })
 
   it('does not select until the extent has been looked up', async () => {

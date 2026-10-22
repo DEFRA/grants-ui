@@ -105,7 +105,14 @@ export const SELECT_LISTENER_POLL_MS = 20
 export const SELECT_LISTENER_MAX_POLLS = 25
 
 export const SEARCH_MATCH_EVENT = 'search:match'
+export const SEARCH_OPEN_EVENT = 'search:open'
+// The vendor search plugin's DOM: its open button, form, input, results list
+// and the status panel it shows under the input.
+export const SEARCH_OPEN_BUTTON_SELECTOR = 'button[aria-controls$="-search-form"]'
+export const SEARCH_FORM_SELECTOR = '[id$="-search-form"]'
+export const SEARCH_INPUT_SELECTOR = 'input[id$="-search-input"]'
 export const SEARCH_SUGGESTIONS_SELECTOR = '.im-c-search-suggestions'
+export const CLASS_SEARCH_STATUS = 'im-c-search__status'
 // Lets _parcel-map.scss size the results list to the map.
 export const CSS_VAR_MAP_HEIGHT = '--parcel-map-height'
 
@@ -132,7 +139,6 @@ export const CLASS_OVERLAY_LABEL = 'parcel-map__overlay-label'
 export const CLASS_TOOLTIP = 'parcel-map__tooltip'
 export const CLASS_TOOLTIP_TITLE = 'parcel-map__tooltip-title'
 export const CLASS_TOOLTIP_ROW = 'parcel-map__tooltip-row'
-export const CLASS_SEARCH_STATUS = 'parcel-map__status'
 export const CLASS_VISUALLY_HIDDEN = 'govuk-visually-hidden'
 export const SHOW_ALL_BUTTON_CLASS = 'map-reset-view-button'
 
