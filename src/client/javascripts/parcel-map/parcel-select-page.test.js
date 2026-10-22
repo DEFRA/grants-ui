@@ -124,17 +124,13 @@ describe('initParcelSelectPage', () => {
     expect(document.activeElement).toBe(details)
   })
 
-  it('scrolls smoothly to the selected parcel details on a map pick, or without animation under reduced motion', () => {
+  it('leaves the page where it is on a map pick', () => {
     const mapEl = setupDom()
     const details = document.getElementById('selected-parcel-details')
 
     fire(mapEl, EVENT_SELECTION, { selectedParcels: [{ id: 'SD7148-9160' }] })
-    expect(details.scrollIntoView).toHaveBeenCalledWith({ block: 'start', behavior: 'smooth' })
 
-    globalThis.matchMedia = vi.fn().mockReturnValue({ matches: true })
-    fire(mapEl, EVENT_SELECTION, { selectedParcels: [{ id: 'SD7148-9161' }] })
-    expect(details.scrollIntoView).toHaveBeenLastCalledWith({ block: 'start', behavior: 'auto' })
-    delete globalThis.matchMedia
+    expect(details.scrollIntoView).not.toHaveBeenCalled()
   })
 
   it('neither moves focus nor scrolls for a parcel picked from the map search box', () => {

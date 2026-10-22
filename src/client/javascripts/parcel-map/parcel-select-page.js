@@ -33,9 +33,6 @@ const DOM_ID_REQUIREMENTS_STATUS = 'selected-parcel-requirements-status'
 const SELECTOR_ERROR_SUMMARY_MAP_LINK = `.govuk-error-summary a[href="#${DOM_ID_PARCEL_MAP}"]`
 const DATASET_SELECTED_PARCELS = 'selectedParcels'
 
-// Smooth unless the user has asked for less motion.
-const scrollBehaviour = () => (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth')
-
 /** @param {string} id */
 const unhide = (id) => {
   const el = document.getElementById(id)
@@ -295,7 +292,6 @@ export function initParcelSelectPage(mapEl) {
     if (nextParcelId && nextParcelId !== selectedParcelId && source !== SELECTION_SOURCE_SEARCH) {
       const details = document.getElementById(DOM_ID_SELECTED_PARCEL_DETAILS)
       details?.focus({ preventScroll: true })
-      details?.scrollIntoView({ block: 'start', behavior: scrollBehaviour() })
     }
     selectedParcelId = nextParcelId
   })
