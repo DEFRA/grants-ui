@@ -26,16 +26,6 @@ async function getSignOutRequest(request, token) {
 }
 
 /**
- * Build the Defra Identity end-session URL for the current user (GET form, used with the stub).
- * @param {AnyRequest} request
- * @param {string} token
- * @returns {Promise<string>}
- */
-async function getSignOutUrl(request, token) {
-  return toSignOutUrl(await getSignOutRequest(request, token))
-}
-
-/**
  * Format an end-session request as its GET URL.
  * @param {SignOutRequest} signOutRequest
  * @returns {string}
@@ -47,7 +37,7 @@ function toSignOutUrl({ endpoint, fields }) {
   return encodeURI(`${endpoint}?${query}`)
 }
 
-export { getSignOutRequest, getSignOutUrl, toSignOutUrl }
+export { getSignOutRequest, toSignOutUrl }
 
 /**
  * @import { AnyRequest } from '@defra/forms-engine-plugin/engine/types.js'

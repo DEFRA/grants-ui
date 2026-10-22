@@ -2,7 +2,7 @@ import { config } from '~/src/config/config.js'
 import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { validateState } from '~/src/server/auth/state.js'
 import { verifyToken } from '~/src/server/auth/verify-token.js'
-import { getSignOutRequest, getSignOutUrl, toSignOutUrl } from './get-sign-out-url.js'
+import { getSignOutRequest, toSignOutUrl } from './get-sign-out-url.js'
 import { debug, log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import {
   logSuccessfulSignIn,
@@ -19,8 +19,6 @@ import { allowFormActionTo } from '~/src/plugins/content-security-policy.js'
 import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 
 const UNKNOWN_USER = 'unknown'
-// Stub environments differ from real Defra ID only by this host in the well-known URL.
-const DEFRA_ID_STUB_HOST_PREFIX = 'fcp-defra-id-stub'
 const USER_AGENT = 'user-agent'
 const HTTP_FOUND = 302
 
@@ -452,12 +450,6 @@ async function handleOidcSignIn(request, h) {
   }
 }
 
-/** @returns {boolean} true when DEFRA_ID_WELL_KNOWN_URL points at fcp-defra-id-stub */
-function usesDefraIdStub() {
-  const wellKnownUrl = String(config.get('defraId.wellKnownUrl'))
-  return URL.canParse(wellKnownUrl) && new URL(wellKnownUrl).hostname.startsWith(DEFRA_ID_STUB_HOST_PREFIX)
-}
-
 /**
  * @param {RequestWithCookieAuth} request
  * @param {ResponseToolkit} h
@@ -510,15 +502,9 @@ async function handleSignOut(request, h) {
 
   // A page, not a 302: the token in the end-session request would push the
   // response headers past the CDP SSL sidecar's 4KB limit (nginx 502).
-  const token = request.auth.credentials.token
-  if (usesDefraIdStub()) {
-    // The stub only accepts GET.
-    const signOutUrl = await getSignOutUrl(request, token)
-    return h.view('signing-out', { signOutUrl }).header('cache-control', 'no-store')
-  }
   // Defra ID recommends POST. The submission is redirected from the hub to B2C
   // and back, so this page may post to those two origins.
-  const form = await getSignOutRequest(request, token)
+  const form = await getSignOutRequest(request, request.auth.credentials.token)
   const { authorization_endpoint: b2cEndpoint } = await getOidcConfig()
   allowFormActionTo(request, [new URL(form.endpoint).origin, new URL(b2cEndpoint).origin])
   return h.view('signing-out', { form, signOutUrl: toSignOutUrl(form) }).header('cache-control', 'no-store')

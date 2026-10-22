@@ -3,7 +3,7 @@ import Cookie from '@hapi/cookie'
 import Hapi from '@hapi/hapi'
 import Yar from '@hapi/yar'
 import { auth } from '~/src/server/auth/index.js'
-import { getSignOutRequest, getSignOutUrl } from '~/src/server/auth/get-sign-out-url.js'
+import { getSignOutRequest } from '~/src/server/auth/get-sign-out-url.js'
 import { configState } from '~/src/__mocks__/config-mocks.js'
 import { nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
 import { contentSecurityPolicy } from '~/src/plugins/content-security-policy.js'
@@ -33,7 +33,6 @@ vi.mock('~/src/server/auth/state.js', () => ({
 
 vi.mock('~/src/server/auth/get-sign-out-url.js', async () => ({
   toSignOutUrl: (await vi.importActual('~/src/server/auth/get-sign-out-url.js')).toSignOutUrl,
-  getSignOutUrl: vi.fn().mockResolvedValue('https://defra-id.example/logout'),
   getSignOutRequest: vi.fn().mockResolvedValue({
     endpoint: 'https://defra-id.example/signout',
     fields: {
@@ -352,38 +351,6 @@ describe('auth router - /auth/sign-out', () => {
       const nonce = response.headers['x-csp-nonce']
       expect(response.payload).toContain(`<script nonce="${nonce}">`)
       expect(response.payload).toContain("document.getElementById('defra-id-sign-out').submit()")
-    } finally {
-      await server.stop()
-    }
-  })
-
-  it('uses an instant GET meta refresh when the well-known URL points at fcp-defra-id-stub', async () => {
-    configState.set(
-      'defraId.wellKnownUrl',
-      'https://fcp-defra-id-stub.dev.cdp-int.defra.cloud/idphub/b2c/b2c_1a_cui_cpdev_signupsigninsfi/.well-known/openid-configuration'
-    )
-    const token = buildLargeToken()
-    const signOutUrl = `https://stub.example/signout?post_logout_redirect_uri=https://grants-ui.example.com/auth/sign-out-oidc&id_token_hint=${token}&state=abc`
-    vi.mocked(getSignOutUrl).mockResolvedValueOnce(signOutUrl)
-
-    const server = await buildServer({ authenticated: true, securityHeaders: true })
-    try {
-      const response = await server.inject({ method: 'GET', url: '/auth/sign-out' })
-
-      expect(response.statusCode).toBe(200)
-      expect(response.headers.location).toBeUndefined()
-      expect(response.headers['cache-control']).toBe('no-store')
-      expect(getSignOutRequest).not.toHaveBeenCalled()
-
-      const headerBlock = serialiseHeaders(response)
-      expect(headerBlock).not.toContain(token)
-      expect(Buffer.byteLength(headerBlock)).toBeLessThan(SIDECAR_HEADER_BUFFER_BYTES)
-      expect(response.headers['content-security-policy']).toContain("form-action 'self';")
-
-      const escapedUrl = signOutUrl.replaceAll('&', '&amp;')
-      expect(response.payload).toContain(`http-equiv="refresh" content="0; url=${escapedUrl}"`)
-      expect(response.payload).toContain(`href="${escapedUrl}"`)
-      expect(response.payload).not.toContain('form method="post"')
     } finally {
       await server.stop()
     }

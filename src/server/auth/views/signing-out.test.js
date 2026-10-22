@@ -24,7 +24,6 @@ describe('signing-out.njk', () => {
     for (const [name, value] of Object.entries(form.fields)) {
       expect($form.find(`input[type="hidden"][name="${name}"]`).attr('value')).toBe(value)
     }
-    expect($('meta[http-equiv="refresh"]')).toHaveLength(0)
     expect($('script[nonce="n0nce"]').text()).toContain("getElementById('defra-id-sign-out').submit()")
   })
 
@@ -34,15 +33,6 @@ describe('signing-out.njk', () => {
     expect($('main h1').text().trim()).toBe('Signing you out')
     expect(sentence($)).toBe('Please wait while we sign you out. If you are not redirected in 5 seconds click here.')
     expect($('main p a.govuk-link').attr('href')).toBe(signOutUrl)
-  })
-
-  test('falls back to an instant GET meta refresh when there is no form (stub environments)', () => {
-    const $ = renderPage({ signOutUrl })
-
-    expect($('meta[http-equiv="refresh"]').attr('content')).toBe(`0; url=${signOutUrl}`)
-    expect($('main p a.govuk-link').attr('href')).toBe(signOutUrl)
-    expect($('form#defra-id-sign-out')).toHaveLength(0)
-    expect($('script').filter((_, el) => $(el).text().includes('defra-id-sign-out'))).toHaveLength(0)
   })
 
   test('renders without the phase banner and account bar, like a transition page', () => {
