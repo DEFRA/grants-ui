@@ -71,7 +71,12 @@ export function validateSelectedActionQuantities(payload, actions) {
 
   for (const action of applicableActions) {
     const rawValue = String(payload[getActionQuantityFieldName(action.code)] ?? '').trim()
-    const text = getQuantityError(rawValue, action.availability?.value ?? undefined, action.availability?.unit)
+    const text = getQuantityError(
+      rawValue,
+      action.availability?.value ?? undefined,
+      action.availability?.unit,
+      action.displayUnitPlural
+    )
     if (text) {
       errors.push({ text, href: `#${getActionQuantityFieldName(action.code)}`, code: action.code })
     }

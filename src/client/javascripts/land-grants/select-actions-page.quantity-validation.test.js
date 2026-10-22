@@ -71,6 +71,26 @@ describe('quantity input validation', () => {
     expect(sentPlannedActions()).toEqual([{ actionCode: 'HEF1', quantity: 4, unit: 'sqm' }])
   })
 
+  it.each([
+    ['ponds', 'Enter number of ponds – for example, 2'],
+    [undefined, 'Enter a whole number – for example, 2']
+  ])('shows the count error for display unit %j on blur', async (displayUnitPlural, expected) => {
+    const form = setupDom([
+      {
+        code: 'WBD1',
+        checked: true,
+        availability: { value: null, unit: 'count' },
+        displayUnitPlural,
+        requiresMaxQuantity: true,
+        unrestricted: true
+      }
+    ])
+    await initSettled(form, fetchOk({ actions: [] }))
+
+    await typeQuantity(form, 'WBD1', '4.5')
+    expect(errorFor('WBD1').textContent).toContain(expected)
+  })
+
   it('keeps bounded square-metre limits and unit propagation through refreshes', async () => {
     const form = setupDom([
       {

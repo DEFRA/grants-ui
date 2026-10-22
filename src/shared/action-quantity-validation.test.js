@@ -1,6 +1,7 @@
-import { requiresWholeNumber, UNIT_COUNT, UNIT_HECTARES, UNIT_SQUARE_METRES } from './unit-types.js'
+import { requiresWholeNumber, UNIT_COUNT, UNIT_HECTARES, UNIT_METRES, UNIT_SQUARE_METRES } from './unit-types.js'
 import {
   getQuantityError,
+  getQuantityErrors,
   isValidQuantity,
   normaliseQuantityInput,
   QUANTITY_ERRORS
@@ -28,26 +29,44 @@ describe('normaliseQuantityInput', () => {
 describe('getQuantityError', () => {
   const HECTARES = QUANTITY_ERRORS[UNIT_HECTARES]
   const SQUARE_METRES = QUANTITY_ERRORS[UNIT_SQUARE_METRES]
-  const PONDS = QUANTITY_ERRORS[UNIT_COUNT]
 
   it.each([
     [UNIT_HECTARES, 'Enter number of hectares, up to 4 decimal places – for example, 12.3456'],
     [UNIT_SQUARE_METRES, 'Enter number of square metres, rounded down to the nearest whole number – for example, 234'],
-    [UNIT_COUNT, 'Enter number of ponds – for example, 2']
+    [UNIT_METRES, 'Enter number of metres, up to 4 decimal places – for example, 12.3456']
   ])('uses the content-designed invalid message for %s', (unit, expected) => {
     expect(getQuantityError('', undefined, unit)).toBe(expected)
   })
 
   it.each([
     [UNIT_HECTARES, 'Enter a number that is not higher than the available hectares'],
-    [UNIT_SQUARE_METRES, 'Enter a number that is not higher than the available square metres']
+    [UNIT_SQUARE_METRES, 'Enter a number that is not higher than the available square metres'],
+    [UNIT_METRES, 'Enter a number that is not higher than the available metres']
   ])('uses the content-designed more-than-available message for %s', (unit, expected) => {
     expect(getQuantityError('201', 200, unit)).toBe(expected)
   })
 
+  it('does not require whole numbers for metres', () => {
+    expect(getQuantityError('4.5', undefined, UNIT_METRES)).toBeNull()
+  })
+
+  it.each([
+    ['ponds', 'Enter number of ponds – for example, 2', 'Enter a number that is not higher than the available ponds'],
+    ['trees', 'Enter number of trees – for example, 2', 'Enter a number that is not higher than the available trees'],
+    [undefined, 'Enter a whole number – for example, 2', 'Enter a number that is not higher than the number available'],
+    [null, 'Enter a whole number – for example, 2', 'Enter a number that is not higher than the number available']
+  ])('words count errors for display unit %j', (displayUnitPlural, invalid, moreThanAvailable) => {
+    expect(getQuantityError('', undefined, UNIT_COUNT, displayUnitPlural)).toBe(invalid)
+    expect(getQuantityError('3', 2, UNIT_COUNT, displayUnitPlural)).toBe(moreThanAvailable)
+  })
+
+  it('ignores a display unit for measured units', () => {
+    expect(getQuantityError('', undefined, UNIT_HECTARES, 'ponds')).toBe(HECTARES.INVALID)
+  })
+
   describe.each([
     [UNIT_SQUARE_METRES, SQUARE_METRES],
-    [UNIT_COUNT, PONDS]
+    [UNIT_COUNT, getQuantityErrors(UNIT_COUNT)]
   ])('whole-number quantities in %s', (unit, errors) => {
     it.each([
       '0',

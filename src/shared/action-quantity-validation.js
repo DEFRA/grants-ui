@@ -3,15 +3,19 @@
  * validator and the client-side page script.
  */
 
-import { requiresWholeNumber, UNIT_COUNT, UNIT_HECTARES, UNIT_SQUARE_METRES } from './unit-types.js'
+import { requiresWholeNumber, UNIT_COUNT, UNIT_HECTARES, UNIT_METRES, UNIT_SQUARE_METRES } from './unit-types.js'
 
 export const QUANTITY_PRECISION = 4
 
 const PLAIN_DECIMAL = /^-?(\d+(\.\d*)?|\.\d+)$/
 
 /**
- * Content-designed messages for each unit.
- * @type {Record<string, { INVALID: string, MORE_THAN_AVAILABLE: string }>}
+ * @typedef {{ INVALID: string, MORE_THAN_AVAILABLE: string }} QuantityErrors
+ */
+
+/**
+ * Content-designed messages for each measured unit.
+ * @type {Record<string, QuantityErrors>}
  */
 export const QUANTITY_ERRORS = {
   [UNIT_HECTARES]: {
@@ -22,18 +26,40 @@ export const QUANTITY_ERRORS = {
     INVALID: 'Enter number of square metres, rounded down to the nearest whole number – for example, 234',
     MORE_THAN_AVAILABLE: 'Enter a number that is not higher than the available square metres'
   },
-  [UNIT_COUNT]: {
-    INVALID: 'Enter number of ponds – for example, 2',
-    MORE_THAN_AVAILABLE: 'Enter a number that is not higher than the available ponds'
+  [UNIT_METRES]: {
+    INVALID: `Enter number of metres, up to ${QUANTITY_PRECISION} decimal places – for example, 12.3456`,
+    MORE_THAN_AVAILABLE: 'Enter a number that is not higher than the available metres'
+  }
+}
+
+/**
+ * Messages for a counted action
+ * @param {string | null} [displayUnitPlural]
+ * @returns {QuantityErrors}
+ */
+function getCountErrors(displayUnitPlural) {
+  if (!displayUnitPlural) {
+    return {
+      INVALID: 'Enter a whole number – for example, 2',
+      MORE_THAN_AVAILABLE: 'Enter a number that is not higher than the number available'
+    }
+  }
+  return {
+    INVALID: `Enter number of ${displayUnitPlural} – for example, 2`,
+    MORE_THAN_AVAILABLE: `Enter a number that is not higher than the available ${displayUnitPlural}`
   }
 }
 
 /**
  * The messages for a unit, falling back to hectares for any unit without its own.
  * @param {string | null | undefined} unit
- * @returns {{ INVALID: string, MORE_THAN_AVAILABLE: string }}
+ * @param {string | null} [displayUnitPlural] - What a counted action counts, e.g. "ponds"
+ * @returns {QuantityErrors}
  */
-export function getQuantityErrors(unit) {
+export function getQuantityErrors(unit, displayUnitPlural) {
+  if (unit === UNIT_COUNT) {
+    return getCountErrors(displayUnitPlural)
+  }
   return QUANTITY_ERRORS[unit ?? UNIT_HECTARES] ?? QUANTITY_ERRORS[UNIT_HECTARES]
 }
 
@@ -95,11 +121,12 @@ function isWellFormedQuantity(value, wholeNumber) {
  * @param {string | number | null | undefined} raw - Typed value, normalised or not
  * @param {number} [max] - Claimable ceiling; omitted means unrestricted
  * @param {string | null} [unit] - Square metres and counts require whole numbers.
+ * @param {string | null} [displayUnitPlural] - What a counted action counts, e.g. "ponds"
  * @returns {string | null}
  */
-export function getQuantityError(raw, max, unit) {
+export function getQuantityError(raw, max, unit, displayUnitPlural) {
   const value = normaliseQuantityInput(raw)
-  const errors = getQuantityErrors(unit)
+  const errors = getQuantityErrors(unit, displayUnitPlural)
 
   if (!isWellFormedQuantity(value, requiresWholeNumber(unit))) {
     return errors.INVALID

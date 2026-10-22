@@ -13,6 +13,7 @@ import {
 } from '../../../shared/action-quantity-validation.js'
 import {
   AVAILABLE_UNIT_ATTR,
+  DISPLAY_UNIT_PLURAL_ATTR,
   LIVE_AVAILABLE_AREA_ATTR,
   clearChosenArea,
   getChosenArea,
@@ -127,7 +128,8 @@ export function normaliseAndValidateQuantity(checkbox) {
   const message = getQuantityError(
     rawValue,
     getTotalAvailableArea(checkbox),
-    checkbox.getAttribute(AVAILABLE_UNIT_ATTR)
+    checkbox.getAttribute(AVAILABLE_UNIT_ATTR),
+    checkbox.getAttribute(DISPLAY_UNIT_PLURAL_ATTR)
   )
   if (message) {
     showQuantityError(quantityInput, message)

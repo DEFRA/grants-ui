@@ -5,13 +5,13 @@ import {
   validateSelectedActions,
   validateSelectedActionQuantities
 } from './land-actions.validator.js'
-import { QUANTITY_ERRORS } from '~/src/shared/action-quantity-validation.js'
+import { getQuantityErrors, QUANTITY_ERRORS } from '~/src/shared/action-quantity-validation.js'
 import { UNIT_COUNT, UNIT_HECTARES, UNIT_SQUARE_METRES } from '~/src/shared/unit-types.js'
 
 const HECTARES_INVALID = QUANTITY_ERRORS[UNIT_HECTARES].INVALID
 const HECTARES_MORE_THAN_AVAILABLE = QUANTITY_ERRORS[UNIT_HECTARES].MORE_THAN_AVAILABLE
 const SQUARE_METRES_INVALID = QUANTITY_ERRORS[UNIT_SQUARE_METRES].INVALID
-const PONDS_INVALID = QUANTITY_ERRORS[UNIT_COUNT].INVALID
+const PONDS_INVALID = getQuantityErrors(UNIT_COUNT, 'ponds').INVALID
 
 describe('land-actions.validator', () => {
   describe('extractLandActionFields', () => {
@@ -259,7 +259,8 @@ describe('land-actions.validator', () => {
         description: 'Count action',
         version: '1.0.0',
         quantityRequired: true,
-        availability: { unit: 'count', value: null }
+        availability: { unit: 'count', value: null },
+        displayUnitPlural: 'ponds'
       }
 
       expect(

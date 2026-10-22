@@ -9,7 +9,7 @@ import {
 import SelectActionsPageController from './select-actions-page.controller.js'
 import { error, log } from '~/src/server/common/helpers/logging/log.js'
 import { config } from '~/src/config/config.js'
-import { QUANTITY_ERRORS } from '~/src/shared/action-quantity-validation.js'
+import { getQuantityErrors, QUANTITY_ERRORS } from '~/src/shared/action-quantity-validation.js'
 import { UNIT_COUNT, UNIT_HECTARES } from '~/src/shared/unit-types.js'
 import {
   CMOR1,
@@ -50,7 +50,7 @@ vi.mock('~/src/shared/format-parcel.js')
 
 const HECTARES_INVALID = QUANTITY_ERRORS[UNIT_HECTARES].INVALID
 const HECTARES_MORE_THAN_AVAILABLE = QUANTITY_ERRORS[UNIT_HECTARES].MORE_THAN_AVAILABLE
-const PONDS_INVALID = QUANTITY_ERRORS[UNIT_COUNT].INVALID
+const PONDS_INVALID = getQuantityErrors(UNIT_COUNT, 'ponds').INVALID
 
 describe('SelectActionsPageController', () => {
   const post = () => controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
@@ -76,6 +76,7 @@ describe('SelectActionsPageController', () => {
     ratePerUnitGbp: 100,
     quantityRequired: true,
     availability: { unit: 'count', value: null },
+    displayUnitPlural: 'ponds',
     heferRequired: true
   }
 
