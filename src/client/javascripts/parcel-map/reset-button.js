@@ -35,7 +35,7 @@ function hasMovedFromInitialView(ml, initialCenter, initialZoom) {
 }
 
 /**
- * Adds the "Show all parcels" button.
+ * Adds the "View all land parcels" button.
  * @param {Pick<MapContext, 'ml' | 'store' | 'mapEl' | 'cleanups'>} context
  * @returns {HTMLButtonElement | undefined}
  */

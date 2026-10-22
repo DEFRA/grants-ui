@@ -58,7 +58,7 @@ describe('attachResetButton', () => {
     expect(attachResetButton({ ml: makeMl(), store: { bbox: null }, mapEl, cleanups })).toBeUndefined()
   })
 
-  it('is hidden by default, with no inline style, and labelled "Show all parcels"', () => {
+  it('is hidden by default, with no inline style, and labelled "View all land parcels"', () => {
     const mapEl = makeMapEl()
     const button = attachResetButton({ ml: makeMl(), store: { bbox: BBOX }, mapEl, cleanups })
 

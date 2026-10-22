@@ -143,17 +143,16 @@ export const CLASS_VISUALLY_HIDDEN = 'govuk-visually-hidden'
 export const SHOW_ALL_BUTTON_CLASS = 'map-reset-view-button'
 
 export const SHOW_ALL_ICON_SVG =
-  '<svg class="map-reset-view-button__icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
-  '<path d="M8 4H4v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>' +
-  '<path d="M16 4h4v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>' +
-  '<path d="M8 20H4v-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>' +
-  '<path d="M16 20h4v-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>' +
-  '<rect x="7" y="7" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2"></rect>' +
+  '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" class="im-c-icon">' +
+  '<path d="M3 7V5a2 2 0 0 1 2-2h2"></path>' +
+  '<path d="M17 3h2a2 2 0 0 1 2 2v2"></path>' +
+  '<path d="M21 17v2a2 2 0 0 1-2 2h-2"></path>' +
+  '<path d="M7 21H5a2 2 0 0 1-2-2v-2"></path>' +
   '</svg>'
 
-// Screen-pixel drift before "Show all parcels" appears; filters out incidental nudges.
+// Screen-pixel drift before "View all land parcels" appears; filters out incidental nudges.
 export const SHOW_ALL_MOVE_THRESHOLD_PX = 100
 export const ZOOM_DRIFT_TOLERANCE = 0.1
 
-export const MSG_SHOW_ALL_PARCELS = 'Show all parcels'
-export const MSG_SHOW_ALL_PARCELS_AVAILABLE = 'Show all parcels button now available'
+export const MSG_SHOW_ALL_PARCELS = 'View all land parcels'
+export const MSG_SHOW_ALL_PARCELS_AVAILABLE = 'View all land parcels button now available'

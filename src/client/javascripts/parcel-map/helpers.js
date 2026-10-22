@@ -319,7 +319,7 @@ export function buildSkeleton() {
  * @param {import('maplibre-gl').Map | null} ml
  * @param {BBox | null} bbox
  * @param {{ animate?: boolean, maxZoom?: number }} [options]  animate defaults to false (used for the
- *   instant initial fit); pass true for a user-triggered move (e.g. "Show all parcels")
+ *   instant initial fit); pass true for a user-triggered move (e.g. "View all land parcels")
  */
 export function fitToParcels(ml, bbox, { animate = false, maxZoom } = {}) {
   if (!ml || !bbox) {

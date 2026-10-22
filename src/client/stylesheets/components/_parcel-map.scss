@@ -7,6 +7,10 @@ $parcel-map-background: #f3f2f1;
 $parcel-map-error: #d4351c;
 $parcel-map-focus: #ffdd00;
 $parcel-map-gutter: 12px;
+// Matches the vendor's own map buttons (search, map controls).
+$parcel-map-button-shadow:
+  0 -2px 20px rgb(0, 0, 0, 0.1),
+  0 0 12px rgb(0, 0, 0, 0.1);
 
 .parcel-map__wrapper {
   position: relative;
@@ -76,7 +80,7 @@ $parcel-map-gutter: 12px;
 
 // The vendor sizes the results list to the viewport, but this inline map clips
 // at its edge. 130px covers the gutter and search input above the list and
-// the "Show all parcels" button below it.
+// the "View all land parcels" button below it.
 .parcel-map__wrapper .im-c-search-suggestions {
   max-height: calc(var(--parcel-map-height) - 130px);
 }
@@ -107,16 +111,17 @@ $parcel-map-gutter: 12px;
   display: inline-flex;
   gap: 8px;
   align-items: center;
+  min-height: 40px;
   margin: 0;
-  padding: 8px 12px;
+  padding: 0 12px;
   font-family: $parcel-map-font;
   font-size: 16px;
   font-weight: 400;
   line-height: 1.25;
   color: $parcel-map-text;
   background: #ffffff;
-  border: 2px solid $parcel-map-text;
-  box-shadow: 0 2px 4px rgb(11, 12, 12, 0.15);
+  border: 0;
+  box-shadow: $parcel-map-button-shadow;
   cursor: pointer;
 
   &[hidden] {
@@ -124,13 +129,13 @@ $parcel-map-gutter: 12px;
   }
 
   &:hover {
-    background-color: var(--button-hover-color);
+    background-color: $parcel-map-background;
   }
 
   &:focus {
     outline: 3px solid transparent;
     box-shadow:
       0 0 0 3px $parcel-map-focus,
-      0 2px 4px rgb(11, 12, 12, 0.15);
+      $parcel-map-button-shadow;
   }
 }
