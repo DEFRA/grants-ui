@@ -8,22 +8,32 @@
   display: none;
 }
 
-.parcel-map-wheel-hint {
-  @include govuk-font(19);
+// Gesture guidance is permanently visible below the map.
+parcel-map .maplibregl-cooperative-gesture-screen {
+  display: none;
+}
 
-  position: absolute;
-  z-index: 2;
-  bottom: 48px;
-  left: 50%;
-  width: max-content;
-  max-width: calc(100% - 60px);
-  padding: 10px 16px;
-  transform: translateX(-50%);
-  border: 2px solid govuk-colour('blue');
-  border-left-width: 5px;
+// The map wrapper also needs to allow the browser's single-finger scrolling.
+parcel-map .im-o-app--inline,
+parcel-map .maplibregl-cooperative-gestures,
+parcel-map .maplibregl-cooperative-gestures .maplibregl-canvas {
+  touch-action: pan-x pan-y;
+}
+
+@media not all and (pointer: coarse) {
+  parcel-map .im-c-cross-hair-button {
+    // Override the map library's inline display style.
+    // stylelint-disable-next-line declaration-no-important
+    display: none !important;
+  }
+}
+
+.parcel-map-wheel-hint {
+  @include govuk-font(16);
+
+  padding: 10px 15px;
+  border: var(--app-border-width) solid var(--app-border-color);
+  border-top: 0;
   color: govuk-colour('black');
   background: govuk-colour('white');
-  box-shadow: 0 3px 8px rgb(11, 12, 12, 0.2);
-  text-align: center;
-  pointer-events: none;
 }
