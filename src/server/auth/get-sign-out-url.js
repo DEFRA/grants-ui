@@ -3,13 +3,13 @@ import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 import { createState } from '~/src/server/auth/state.js'
 
 /**
- * Build the Defra Identity end-session URL for the current user.
+ * Build the Defra Identity end-session request (endpoint and parameters) for the current user.
  * @param {AnyRequest} request
  * @param {string} token
- * @returns {Promise<string>}
+ * @returns {Promise<SignOutRequest>}
  */
-async function getSignOutUrl(request, token) {
-  const { end_session_endpoint: url } = await getOidcConfig()
+async function getSignOutRequest(request, token) {
+  const { end_session_endpoint: endpoint } = await getOidcConfig()
 
   /** @type {string} */
   const signOutRedirectUrl = config.get('defraId.signOutRedirectUrl')
@@ -19,12 +19,32 @@ async function getSignOutUrl(request, token) {
   // The `createState` function generates a unique state value and stores it in the session
   const state = createState(request)
 
-  const query = [`post_logout_redirect_uri=${signOutRedirectUrl}`, `id_token_hint=${token}`, `state=${state}`].join('&')
-  return encodeURI(`${url}?${query}`)
+  return {
+    endpoint,
+    fields: { post_logout_redirect_uri: signOutRedirectUrl, id_token_hint: token, state }
+  }
 }
 
-export { getSignOutUrl }
+/**
+ * Format an end-session request as its GET URL.
+ * @param {SignOutRequest} signOutRequest
+ * @returns {string}
+ */
+function toSignOutUrl({ endpoint, fields }) {
+  const query = Object.entries(fields)
+    .map(([name, value]) => `${name}=${value}`)
+    .join('&')
+  return encodeURI(`${endpoint}?${query}`)
+}
+
+export { getSignOutRequest, toSignOutUrl }
 
 /**
  * @import { AnyRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ */
+
+/**
+ * @typedef {object} SignOutRequest
+ * @property {string} endpoint - Defra Identity end_session_endpoint
+ * @property {{ post_logout_redirect_uri: string, id_token_hint: string, state: string }} fields
  */

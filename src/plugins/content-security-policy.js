@@ -2,7 +2,11 @@ import { randomBytes } from 'node:crypto'
 import { config } from '~/src/config/config.js'
 import { error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
-const defaultContentPolicy = (/** @type {string} */ nonce) => {
+/**
+ * @param {string} nonce
+ * @param {string[]} [extraFormActionSources] - set by a handler whose page posts a form elsewhere
+ */
+const defaultContentPolicy = (nonce, extraFormActionSources = []) => {
   const gtm = 'https://www.googletagmanager.com'
   const gtmWildCard = 'https://*.googletagmanager.com'
   const ga4 = 'https://www.google-analytics.com'
@@ -33,6 +37,8 @@ const defaultContentPolicy = (/** @type {string} */ nonce) => {
     }
   }
 
+  formActionSrc.push(...extraFormActionSources)
+
   return [
     "default-src 'self'",
     "base-uri 'self'",
@@ -57,6 +63,17 @@ function generateNewNonce() {
   return randomBytes(16).toString('base64')
 }
 
+/**
+ * Let the page of this response submit forms to these origins as well as 'self'.
+ * Browsers check form-action against every redirect a submission follows, so
+ * list every origin in the chain.
+ * @param {Request} request
+ * @param {string[]} origins
+ */
+export function allowFormActionTo(request, origins) {
+  request.app.cspFormAction = [...new Set(origins)]
+}
+
 export const contentSecurityPolicy = {
   name: 'content-security-policy',
   register: (/** @type {Server} */ server) => {
@@ -77,7 +94,10 @@ export const contentSecurityPolicy = {
       }
 
       if (typeof response.header === 'function') {
-        response.header('Content-Security-Policy', defaultContentPolicy(/** @type {string} */ (nonce)))
+        response.header(
+          'Content-Security-Policy',
+          defaultContentPolicy(/** @type {string} */ (nonce), request.app.cspFormAction)
+        )
         response.header('Referrer-Policy', 'no-referrer')
 
         // Only set this header in non-production environments for debugging
