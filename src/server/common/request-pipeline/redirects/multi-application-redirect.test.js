@@ -54,7 +54,14 @@ describe('multiApplicationRedirect', () => {
     url: new URL(`${path}?${new URLSearchParams(query)}`, 'http://localhost:3000'),
     method,
     app,
-    route: { path: routePath }
+    route: { path: routePath },
+    sendAuditEventInBackground: vi.fn()
+  })
+
+  const unknownReferenceAudit = (referenceNumber) => ({
+    action: 'unauthorised',
+    status: 'denied',
+    details: { reason: 'unknown-reference', grant: 'test-grant', ...(referenceNumber && { referenceNumber }) }
   })
 
   describe('backend unavailable', () => {
@@ -80,6 +87,7 @@ describe('multiApplicationRedirect', () => {
       expect(result).toBe(h.continue)
       expect(listApplicationsFromApi).not.toHaveBeenCalled()
       expect(h.redirect).not.toHaveBeenCalled()
+      expect(request.sendAuditEventInBackground).not.toHaveBeenCalled()
     })
 
     it('throws 404 when the backend finds no state for that ref (unrecognised or belongs to another business)', async () => {
@@ -88,8 +96,18 @@ describe('multiApplicationRedirect', () => {
 
       await expect(multiApplicationRedirect(request, h)).rejects.toMatchObject({
         isBoom: true,
+        message: 'Unknown application reference',
         output: { statusCode: 404 }
       })
+    })
+
+    it('audits the denied ref as unauthorised, uppercased', async () => {
+      getStateWithDefinition.mockResolvedValue(multiGrant(null))
+      const request = makeRequest({ query: { ref: 'ref-bogus' } })
+
+      await expect(multiApplicationRedirect(request, h)).rejects.toMatchObject({ output: { statusCode: 404 } })
+
+      expect(request.sendAuditEventInBackground).toHaveBeenCalledExactlyOnceWith(unknownReferenceAudit('REF-BOGUS'))
     })
 
     it('reads the ref from request.app too (a POST scoped in place earlier in the same request)', async () => {
@@ -144,6 +162,15 @@ describe('multiApplicationRedirect', () => {
       expect(listApplicationsFromApi).not.toHaveBeenCalled()
     })
 
+    it('audits the denial without the malformed value', async () => {
+      getStateWithDefinition.mockResolvedValue(multiGrant())
+      const request = makeRequest({ query: { ref: 'INVALID:REF' }, routePath: SUB_PAGE, path: '/test-grant/tasks' })
+
+      await expect(multiApplicationRedirect(request, h)).rejects.toMatchObject({ output: { statusCode: 404 } })
+
+      expect(request.sendAuditEventInBackground).toHaveBeenCalledExactlyOnceWith(unknownReferenceAudit())
+    })
+
     it('is ignored on a single-application grant like any other stray parameter', async () => {
       getStateWithDefinition.mockResolvedValue(singleGrant())
       const request = makeRequest({
@@ -157,6 +184,7 @@ describe('multiApplicationRedirect', () => {
       expect(h.redirect).toHaveBeenCalledWith('/test-grant/tasks?foo=1')
       expect(result).toBe(takeover)
       expect(listApplicationsFromApi).not.toHaveBeenCalled()
+      expect(request.sendAuditEventInBackground).not.toHaveBeenCalled()
     })
   })
 
@@ -232,6 +260,7 @@ describe('multiApplicationRedirect', () => {
       const request = makeRequest({ query: { ref: 'REF-BOGUS' } })
 
       await expect(multiApplicationRedirect(request, h)).resolves.toBe(takeover)
+      expect(request.sendAuditEventInBackground).not.toHaveBeenCalled()
     })
 
     it("keeps a ref that resolves to one of the SBI's applications even when the definition is not flagged (the backend keys those by ref regardless)", async () => {
@@ -252,6 +281,7 @@ describe('multiApplicationRedirect', () => {
       const request = makeRequest({ query: { ref: 'REF-BOGUS' } })
 
       await expect(multiApplicationRedirect(request, h)).rejects.toMatchObject({ output: { statusCode: 404 } })
+      expect(request.sendAuditEventInBackground).toHaveBeenCalledExactlyOnceWith(unknownReferenceAudit('REF-BOGUS'))
     })
   })
 
@@ -342,6 +372,7 @@ describe('multiApplicationRedirect', () => {
 
       expect(h.redirect).toHaveBeenCalledWith('/test-grant/applications')
       expect(result).toBe(takeover)
+      expect(request.sendAuditEventInBackground).not.toHaveBeenCalled()
     })
 
     it('sends a deep link (or a URL whose ref was removed) to the selector when there are several applications - never an arbitrary one', async () => {
