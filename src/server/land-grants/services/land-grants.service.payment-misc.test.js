@@ -178,8 +178,24 @@ describe('land-grants service', () => {
             parcelId: 'PARCEL456',
             sheetId: 'SHEET123',
             actions: [
-              { code: 'CMOR1', availability: { value: 8, unit: 'ha' }, description: 'Assess moorland' },
-              { code: 'UPL1', availability: { value: 0, unit: 'ha' }, description: 'Moderate grazing' }
+              {
+                code: 'CMOR1',
+                isAvailable: true,
+                availability: { value: 8, unit: 'ha' },
+                description: 'Assess moorland'
+              },
+              {
+                code: 'UPL1',
+                isAvailable: false,
+                availability: { value: 5, unit: 'ha' },
+                description: 'Moderate grazing'
+              },
+              {
+                code: 'WBD1',
+                isAvailable: false,
+                availability: { value: null, unit: 'count' },
+                description: 'Manage ponds'
+              }
             ]
           }
         ]
@@ -201,8 +217,9 @@ describe('land-grants service', () => {
       )
       expect(result).toEqual({
         actions: [
-          { code: 'CMOR1', availability: { value: 8, unit: 'ha' } },
-          { code: 'UPL1', availability: { value: 0, unit: 'ha' } }
+          { code: 'CMOR1', isAvailable: true, availability: { value: 8, unit: 'ha' } },
+          { code: 'UPL1', isAvailable: false, availability: { value: 5, unit: 'ha' } },
+          { code: 'WBD1', isAvailable: false, availability: { value: null, unit: 'count' } }
         ]
       })
     })

@@ -72,7 +72,10 @@ describe('quantity input validation', () => {
         requiresMaxQuantity: 12
       }
     ])
-    await initSettled(form, fetchOk({ actions: [{ code: 'HEF1', availability: { value: 12, unit: 'sqm' } }] }))
+    await initSettled(
+      form,
+      fetchOk({ actions: [{ code: 'HEF1', isAvailable: true, availability: { value: 12, unit: 'sqm' } }] })
+    )
 
     const input = quantityInputFor(form, 'HEF1')
     expect(hintFor('HEF1').textContent).toBe('12 square metres available')

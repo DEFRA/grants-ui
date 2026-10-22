@@ -21,6 +21,7 @@ describe('select-actions.view-model', () => {
   const sam1 = (extra) => ({ code: 'SAM1', description: 'Test Action 1', ratePerUnitGbp: 100.5, ...extra })
   const csam3 = (availability) => ({
     code: 'CSAM3',
+    isAvailable: true,
     description: 'Herbal leys: CSAM3',
     quantityRequired: true,
     availability: { ...availability, type: 'partial' }
@@ -29,6 +30,7 @@ describe('select-actions.view-model', () => {
   describe('mapActionToViewModel', () => {
     const wbd1 = {
       code: 'WBD1',
+      isAvailable: true,
       description: 'Manage ponds: WBD1',
       version: '1',
       ratePerUnitGbp: 100,
@@ -66,8 +68,8 @@ describe('select-actions.view-model', () => {
       expect(mapActionsToViewModel(filterEnabledLandActions([wbd1], ['WBD1']), [])).toHaveLength(1)
     })
 
-    it('hides WBD1 when the backend reports no availability for an existing incompatible agreement', () => {
-      expect(mapActionsToViewModel([{ ...wbd1, availability: { unit: 'count', value: 0 } }], [])).toEqual([])
+    it('hides WBD1 when the backend marks it unavailable despite an unrestricted quantity', () => {
+      expect(mapActionsToViewModel([{ ...wbd1, isAvailable: false }], [])).toEqual([])
     })
 
     it('should render just the description with no guidance link when no guidance URL is set', () => {
@@ -538,11 +540,26 @@ describe('select-actions.view-model', () => {
   })
 
   describe('mapActionsToViewModel', () => {
+    it.each([
+      ['GRH12', false, { value: 1.5, unit: 'ha' }, []],
+      ['GRH12', true, { value: 0, unit: 'ha' }, ['GRH12']],
+      ['WBD1', true, { value: null, unit: 'count' }, ['WBD1']],
+      ['WBD1', false, { value: null, unit: 'count' }, []],
+      ['GRH12', undefined, { value: 5, unit: 'ha' }, []]
+    ])(
+      'renders %s using isAvailable=%s independently of quantity limits',
+      (code, isAvailable, availability, expected) => {
+        const actions = [{ code, isAvailable, availability, description: 'Action' }]
+
+        expect(mapActionsToViewModel(actions, []).map((item) => item.value)).toEqual(expected)
+      }
+    )
+
     it('should map a flat list of actions, giving only the first item the bare field name as its id', () => {
       const actions = [
-        { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100, quantityRequired: false },
-        { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200, quantityRequired: false },
-        { code: 'SAM3', description: 'Action 3', ratePerUnitGbp: 150, quantityRequired: false }
+        { code: 'SAM1', isAvailable: true, description: 'Action 1', ratePerUnitGbp: 100, quantityRequired: false },
+        { code: 'SAM2', isAvailable: true, description: 'Action 2', ratePerUnitGbp: 200, quantityRequired: false },
+        { code: 'SAM3', isAvailable: true, description: 'Action 3', ratePerUnitGbp: 150, quantityRequired: false }
       ]
 
       const result = mapActionsToViewModel(actions, [])
@@ -558,8 +575,8 @@ describe('select-actions.view-model', () => {
 
     it('should forward hasErrors to mark every checked action with data-error-on-load', () => {
       const actions = [
-        { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100, quantityRequired: false },
-        { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200, quantityRequired: false }
+        { code: 'SAM1', isAvailable: true, description: 'Action 1', ratePerUnitGbp: 100, quantityRequired: false },
+        { code: 'SAM2', isAvailable: true, description: 'Action 2', ratePerUnitGbp: 200, quantityRequired: false }
       ]
       const addedActions = [{ code: 'SAM1', description: 'Action 1' }]
 
@@ -571,8 +588,8 @@ describe('select-actions.view-model', () => {
 
     it('should mark a previously added action as checked', () => {
       const actions = [
-        { code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100, quantityRequired: false },
-        { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200, quantityRequired: false }
+        { code: 'SAM1', isAvailable: true, description: 'Action 1', ratePerUnitGbp: 100, quantityRequired: false },
+        { code: 'SAM2', isAvailable: true, description: 'Action 2', ratePerUnitGbp: 200, quantityRequired: false }
       ]
       const addedActions = [{ code: 'SAM2', description: 'Action 2' }]
 
@@ -588,9 +605,10 @@ describe('select-actions.view-model', () => {
           code: 'CSAM3',
           description: 'Herbal leys: CSAM3',
           quantityRequired: true,
+          isAvailable: true,
           availability: { value: 5, unit: 'ha', type: 'partial' }
         },
-        { code: 'SAM2', description: 'Action 2', ratePerUnitGbp: 200, quantityRequired: false }
+        { code: 'SAM2', isAvailable: true, description: 'Action 2', ratePerUnitGbp: 200, quantityRequired: false }
       ]
 
       const result = mapActionsToViewModel(actions, [], { CSAM3: 'Too much land' })
@@ -598,21 +616,23 @@ describe('select-actions.view-model', () => {
       expect(result.find((item) => item.value === 'CSAM3').conditional.html).toContain('govuk-input--error')
     })
 
-    it('should omit an action with 0 available area, moving the bare field name id to the first visible item', () => {
+    it('omits an unavailable action with positive area and gives the first visible item the bare field name id', () => {
       const actions = [
         {
           code: 'SAM1',
           description: 'Action 1',
           ratePerUnitGbp: 100,
           quantityRequired: false,
-          availability: { value: 0, unit: 'ha' }
+          isAvailable: false,
+          availability: { value: 5, unit: 'ha' }
         },
         {
           code: 'SAM2',
           description: 'Action 2',
           ratePerUnitGbp: 200,
           quantityRequired: false,
-          availability: { value: 5, unit: 'ha' }
+          isAvailable: true,
+          availability: { value: 0, unit: 'ha' }
         }
       ]
 
@@ -622,15 +642,16 @@ describe('select-actions.view-model', () => {
       expect(result[0].id).toBe('landAction')
     })
 
-    it('should not omit an action with a competed 0 availability when its staticAvailability is non-zero', () => {
+    it('renders an available action even with zero current and static availability', () => {
       const actions = [
         {
           code: 'CLIG3',
           description: 'Manage grassland',
           ratePerUnitGbp: 151,
           quantityRequired: false,
+          isAvailable: true,
           availability: { value: 0, unit: 'ha' },
-          staticAvailability: { value: 0.3271, unit: 'ha' }
+          staticAvailability: { value: 0, unit: 'ha' }
         }
       ]
 
@@ -640,13 +661,14 @@ describe('select-actions.view-model', () => {
       expect(result[0].checked).toBe(false)
     })
 
-    it('should still render an action with 0 available area when it was already added', () => {
+    it('hides an unavailable action even when it was already added', () => {
       const actions = [
         {
           code: 'SAM1',
           description: 'Action 1',
           ratePerUnitGbp: 100,
           quantityRequired: false,
+          isAvailable: false,
           availability: { value: 0, unit: 'ha' }
         }
       ]
@@ -654,12 +676,13 @@ describe('select-actions.view-model', () => {
 
       const result = mapActionsToViewModel(actions, addedActions)
 
-      expect(result.map((item) => item.value)).toEqual(['SAM1'])
-      expect(result[0].checked).toBe(true)
+      expect(result).toEqual([])
     })
 
     it('should not omit an action with no availability at all', () => {
-      const actions = [{ code: 'SAM1', description: 'Action 1', ratePerUnitGbp: 100, quantityRequired: false }]
+      const actions = [
+        { code: 'SAM1', isAvailable: true, description: 'Action 1', ratePerUnitGbp: 100, quantityRequired: false }
+      ]
 
       const result = mapActionsToViewModel(actions, [])
 

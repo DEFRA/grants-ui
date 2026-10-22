@@ -29,12 +29,52 @@ describe('initSelectActionsPage - availability', () => {
     vi.useRealTimers()
   })
 
+  it.each([
+    ['GRH12_26', { value: 5, unit: 'ha' }, false],
+    ['WBD1_26', { value: null, unit: 'count' }, false],
+    ['WBD1_26', { value: null, unit: 'count' }, true],
+    ['CLIG3_26', { value: 0, unit: 'ha' }, true],
+    ['GRH12_26', { value: 5, unit: 'ha' }, undefined]
+  ])('%s with availability %j honours isAvailable=%s', async (code, availability, isAvailable) => {
+    const form = setupDom([
+      { code, availability },
+      { code: 'CMOR1', availability: { value: 1, unit: 'ha' } }
+    ])
+
+    await initSettled(form, fetchOk({ actions: [{ code, isAvailable, availability }] }))
+    await toggle(form, 'CMOR1', false)
+
+    expect(checkbox(form, code).disabled).toBe(isAvailable !== true)
+  })
+
+  it('re-enables an unchecked pond action only when the API marks it available', async () => {
+    const code = 'WBD1_26'
+    const availability = { value: null, unit: 'count' }
+    const form = setupDom([
+      { code, availability, requiresMaxQuantity: true, unrestricted: true },
+      { code: 'CMOR1', availability: { value: 1, unit: 'ha' } }
+    ])
+    await initSettled(form, fetchOk({ actions: [{ code, isAvailable: false, availability }] }))
+    await toggle(form, 'CMOR1', false)
+    expect(checkbox(form, code).disabled).toBe(true)
+    expect(quantityInputFor(form, code).disabled).toBe(true)
+
+    global.fetch = fetchOk({ actions: [{ code, isAvailable: true, availability }] })
+    await toggle(form, 'CMOR1', false)
+
+    expect(checkbox(form, code).disabled).toBe(false)
+    expect(quantityInputFor(form, code).disabled).toBe(false)
+    expect(quantityInputFor(form, code).hasAttribute('max')).toBe(false)
+  })
+
   it('still fires a request when typing a valid quantity within the latest refreshed max', async () => {
     const form = setupDom([
       { code: 'CLIG3', checked: true, availability: { value: 0.3271, unit: 'ha' }, requiresMaxQuantity: 0.3271 }
     ])
     global.fetch = fetchOk({
-      actions: [{ code: 'CLIG3', availability: { value: 0.2271, unit: 'ha' }, requiresMaxQuantity: 0.2271 }]
+      actions: [
+        { code: 'CLIG3', isAvailable: true, availability: { value: 0.2271, unit: 'ha' }, requiresMaxQuantity: 0.2271 }
+      ]
     })
     initSelectActionsPage(form)
 
@@ -60,13 +100,15 @@ describe('initSelectActionsPage - availability', () => {
       { code: 'CLIG3', availability: { value: 0.3271, unit: 'ha' } }
     ])
     global.fetch = fetchOk({
-      actions: [{ code: 'CSAM3', availability: { value: 0.1, unit: 'ha' }, requiresMaxQuantity: 0.1 }]
+      actions: [
+        { code: 'CSAM3', isAvailable: true, availability: { value: 0.1, unit: 'ha' }, requiresMaxQuantity: 0.1 }
+      ]
     })
     initSelectActionsPage(form)
     await flushPromises()
 
     global.fetch = fetchOk({
-      actions: [{ code: 'CSAM3', availability: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
+      actions: [{ code: 'CSAM3', isAvailable: false, availability: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
     })
     await toggle(form, 'CLIG3')
 
@@ -91,24 +133,28 @@ describe('initSelectActionsPage - availability', () => {
       { code: 'CLIG3', availability: { value: 0.3271, unit: 'ha' } }
     ])
     global.fetch = fetchOk({
-      actions: [{ code: 'CSAM3', availability: { value: 0.1, unit: 'ha' }, requiresMaxQuantity: 0.1 }]
+      actions: [
+        { code: 'CSAM3', isAvailable: true, availability: { value: 0.1, unit: 'ha' }, requiresMaxQuantity: 0.1 }
+      ]
     })
     initSelectActionsPage(form)
     await flushPromises()
 
     global.fetch = fetchOk({
-      actions: [{ code: 'CSAM3', availability: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
+      actions: [{ code: 'CSAM3', isAvailable: false, availability: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
     })
     await toggle(form, 'CLIG3')
 
     global.fetch = fetchOk({
-      actions: [{ code: 'CSAM3', availability: { value: 0.05, unit: 'ha' }, requiresMaxQuantity: 0.05 }]
+      actions: [
+        { code: 'CSAM3', isAvailable: true, availability: { value: 0.05, unit: 'ha' }, requiresMaxQuantity: 0.05 }
+      ]
     })
     await typeQuantity(form, 'CSAM3', '0.05')
     global.fetch.mockClear()
 
     global.fetch = fetchOk({
-      actions: [{ code: 'CSAM3', availability: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
+      actions: [{ code: 'CSAM3', isAvailable: false, availability: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
     })
     await typeQuantity(form, 'CSAM3', '0.10')
 
@@ -128,13 +174,15 @@ describe('initSelectActionsPage - availability', () => {
       { code: 'CLIG3', availability: { value: 0.3271, unit: 'ha' } }
     ])
     global.fetch = fetchOk({
-      actions: [{ code: 'CSAM3', availability: { value: 0.1, unit: 'ha' }, requiresMaxQuantity: 0.1 }]
+      actions: [
+        { code: 'CSAM3', isAvailable: true, availability: { value: 0.1, unit: 'ha' }, requiresMaxQuantity: 0.1 }
+      ]
     })
     initSelectActionsPage(form)
     await flushPromises()
 
     global.fetch = fetchOk({
-      actions: [{ code: 'CSAM3', availability: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
+      actions: [{ code: 'CSAM3', isAvailable: false, availability: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 }]
     })
     await toggle(form, 'CLIG3')
     global.fetch.mockClear()
@@ -158,7 +206,9 @@ describe('initSelectActionsPage - availability', () => {
     ])
 
     global.fetch = fetchOk({
-      actions: [{ code: 'CSAM3', availability: { value: 0.2271, unit: 'ha' }, requiresMaxQuantity: 0.2271 }]
+      actions: [
+        { code: 'CSAM3', isAvailable: true, availability: { value: 0.2271, unit: 'ha' }, requiresMaxQuantity: 0.2271 }
+      ]
     })
     const csam3QuantityInput = quantityInputFor(form, 'CSAM3')
     initSelectActionsPage(form)
@@ -166,8 +216,8 @@ describe('initSelectActionsPage - availability', () => {
 
     global.fetch = fetchOk({
       actions: [
-        { code: 'CSAM3', availability: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 },
-        { code: 'CLIG3', availability: { value: 0.2271, unit: 'ha' } }
+        { code: 'CSAM3', isAvailable: false, availability: { value: 0, unit: 'ha' }, requiresMaxQuantity: 0 },
+        { code: 'CLIG3', isAvailable: true, availability: { value: 0.2271, unit: 'ha' } }
       ]
     })
     await toggle(form, 'CLIG3')
@@ -178,8 +228,8 @@ describe('initSelectActionsPage - availability', () => {
 
     global.fetch = fetchOk({
       actions: [
-        { code: 'CSAM3', availability: { value: 0.1271, unit: 'ha' }, requiresMaxQuantity: 0.1271 },
-        { code: 'CMOR1', availability: { value: 9.8, unit: 'ha' } }
+        { code: 'CSAM3', isAvailable: true, availability: { value: 0.1271, unit: 'ha' }, requiresMaxQuantity: 0.1271 },
+        { code: 'CMOR1', isAvailable: true, availability: { value: 9.8, unit: 'ha' } }
       ]
     })
     await toggle(form, 'CMOR1')
@@ -223,8 +273,8 @@ describe('initSelectActionsPage - availability', () => {
     csam3QuantityInput.dispatchEvent(new Event('input', { bubbles: true }))
     global.fetch = fetchOk({
       actions: [
-        { code: 'CSAM3', availability: { value: 0.2271, unit: 'ha' } },
-        { code: 'CLIG3', availability: { value: 0.2271, unit: 'ha' } }
+        { code: 'CSAM3', isAvailable: true, availability: { value: 0.2271, unit: 'ha' } },
+        { code: 'CLIG3', isAvailable: true, availability: { value: 0.2271, unit: 'ha' } }
       ]
     })
     csam3QuantityInput.dispatchEvent(new Event('blur'))
@@ -371,8 +421,8 @@ describe('initSelectActionsPage - availability', () => {
 
     fetchMock.resolve({
       actions: [
-        { code: 'CMOR1', availability: { value: 0, unit: 'ha' } },
-        { code: 'UPL1', availability: { value: 5, unit: 'ha' }, requiresMaxQuantity: 5 }
+        { code: 'CMOR1', isAvailable: false, availability: { value: 0, unit: 'ha' } },
+        { code: 'UPL1', isAvailable: true, availability: { value: 5, unit: 'ha' }, requiresMaxQuantity: 5 }
       ]
     })
     await flushPromises()
@@ -400,14 +450,16 @@ describe('initSelectActionsPage - availability', () => {
 
     expect(clig3Item.querySelector('.select-actions-refresh-banner')).not.toBeNull()
 
-    fetchQueue.resolveNext({ actions: [{ code: 'CMOR1', availability: { value: 0.1, unit: 'ha' } }] })
+    fetchQueue.resolveNext({
+      actions: [{ code: 'CMOR1', isAvailable: true, availability: { value: 0.1, unit: 'ha' } }]
+    })
     await flushPromises()
 
     // The growth follow-up's own request is now in flight - banner must
     // still be visible, not toggled off and back on.
     expect(clig3Item.querySelector('.select-actions-refresh-banner')).not.toBeNull()
 
-    fetchQueue.resolveNext({ actions: [{ code: 'CMOR1', availability: { value: 0, unit: 'ha' } }] })
+    fetchQueue.resolveNext({ actions: [{ code: 'CMOR1', isAvailable: false, availability: { value: 0, unit: 'ha' } }] })
     await flushPromises()
 
     expect(clig3Item.querySelector('.select-actions-refresh-banner')).toBeNull()
@@ -485,8 +537,8 @@ describe('initSelectActionsPage - availability', () => {
       form,
       fetchOk({
         actions: [
-          { code: 'CSAM3', availability: { value: null, unit: 'ha' } },
-          { code: 'CLIG3', availability: { value: 45.2, unit: 'ha' } }
+          { code: 'CSAM3', isAvailable: true, availability: { value: null, unit: 'ha' } },
+          { code: 'CLIG3', isAvailable: true, availability: { value: 45.2, unit: 'ha' } }
         ]
       })
     )
@@ -508,8 +560,8 @@ describe('initSelectActionsPage - availability', () => {
       form,
       fetchOk({
         actions: [
-          { code: 'CSAM3', availability: { value: null, unit: 'ha' } },
-          { code: 'CLIG3', availability: { value: 45.2, unit: 'ha' } }
+          { code: 'CSAM3', isAvailable: true, availability: { value: null, unit: 'ha' } },
+          { code: 'CLIG3', isAvailable: true, availability: { value: 45.2, unit: 'ha' } }
         ]
       })
     )
@@ -542,7 +594,7 @@ describe('initSelectActionsPage - availability', () => {
       { code: 'CMOR1', checked: true, availability: { value: 10, unit: 'ha' } },
       { code: 'UPL1', availability: { value: 5, unit: 'ha' } }
     ])
-    global.fetch = fetchOk({ actions: [{ code: 'UPL1', availability: { value: 0, unit: 'ha' } }] })
+    global.fetch = fetchOk({ actions: [{ code: 'UPL1', isAvailable: false, availability: { value: 0, unit: 'ha' } }] })
     initSelectActionsPage(form)
 
     const cmor1 = checkbox(form, 'CMOR1')
@@ -563,7 +615,7 @@ describe('initSelectActionsPage - availability', () => {
     message.textContent = 'Not compatible with other selected actions.'
     upl1.closest('.govuk-checkboxes__item').appendChild(message)
 
-    global.fetch = fetchOk({ actions: [{ code: 'UPL1', availability: { value: 5, unit: 'ha' } }] })
+    global.fetch = fetchOk({ actions: [{ code: 'UPL1', isAvailable: true, availability: { value: 5, unit: 'ha' } }] })
     initSelectActionsPage(form)
 
     upl1.dispatchEvent(new Event('change', { bubbles: true }))
@@ -583,7 +635,9 @@ describe('initSelectActionsPage - availability', () => {
         quantityValue: '2'
       }
     ])
-    global.fetch = fetchOk({ actions: [{ code: 'CSAM3', availability: { value: 18.5, unit: 'ha' } }] })
+    global.fetch = fetchOk({
+      actions: [{ code: 'CSAM3', isAvailable: true, availability: { value: 18.5, unit: 'ha' } }]
+    })
     initSelectActionsPage(form)
     await flushPromises()
 
@@ -618,7 +672,7 @@ describe('initSelectActionsPage - availability', () => {
       { code: 'CMOR1', checked: true, availability: { value: 10, unit: 'ha' } },
       { code: 'UPL1', availability: { value: 5, unit: 'ha' } }
     ])
-    global.fetch = fetchOk({ actions: [{ code: 'UPL1', availability: { value: 2, unit: 'ha' } }] })
+    global.fetch = fetchOk({ actions: [{ code: 'UPL1', isAvailable: true, availability: { value: 2, unit: 'ha' } }] })
     initSelectActionsPage(form)
 
     await toggle(form, 'CMOR1')
@@ -638,7 +692,7 @@ describe('initSelectActionsPage - availability', () => {
       { code: 'CSAM3', availability: { value: 18.5, unit: 'ha' }, requiresMaxQuantity: 18.5 }
     ])
     global.fetch = fetchOk({
-      actions: [{ code: 'CSAM3', availability: { value, unit: 'ha' }, requiresMaxQuantity: value }]
+      actions: [{ code: 'CSAM3', isAvailable: true, availability: { value, unit: 'ha' }, requiresMaxQuantity: value }]
     })
     initSelectActionsPage(form)
 

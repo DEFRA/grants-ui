@@ -3,6 +3,7 @@
  * @property {string} code - Action code
  * @property {string} description - Action description
  * @property {string} version - Action version
+ * @property {boolean} isAvailable - Whether the API allows this action on the parcel
  * @property {boolean} [quantityRequired] - Whether the user must enter a quantity
  * @property {number} [ratePerUnitGbp] - Payment rate per unit in GBP
  * @property {string | null} [displayUnit] - Singular unit label used for the payment rate

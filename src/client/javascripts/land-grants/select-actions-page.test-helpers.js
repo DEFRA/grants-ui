@@ -203,6 +203,7 @@ export function mockApi(baseAreasByCode) {
     const competingCodes = new Set(plannedActions.map((p) => p.actionCode))
     const actions = Object.entries(baseAreasByCode).map(([code, value]) => ({
       code,
+      isAvailable: competingCodes.size === 0 && value > 0,
       availability: {
         value: competingCodes.size > 0 ? 0 : value,
         unit: 'ha'
