@@ -9,6 +9,7 @@ import { areaWithUnit } from '../../../shared/unit-format.js'
 
 export const CHECKBOX_NAME = 'landAction'
 export const AVAILABLE_UNIT_ATTR = 'data-available-unit'
+export const DISPLAY_UNIT_PLURAL_ATTR = 'data-display-unit-plural'
 export const TOTAL_AVAILABLE_AREA_ATTR = 'data-total-available-area'
 export const LIVE_AVAILABLE_AREA_ATTR = 'data-live-available-area'
 export const TOTAL_CHOSEN_AREA_ATTR = 'data-total-chosen-area'
