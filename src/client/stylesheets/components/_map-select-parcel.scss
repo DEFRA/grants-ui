@@ -22,9 +22,7 @@ parcel-map .maplibregl-cooperative-gestures .maplibregl-canvas {
 
 @media not all and (pointer: coarse) {
   parcel-map .im-c-cross-hair-button {
-    // Override the map library's inline display style.
-    // stylelint-disable-next-line declaration-no-important
-    display: none !important;
+    visibility: hidden;
   }
 }
 
