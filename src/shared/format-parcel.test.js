@@ -1,6 +1,33 @@
-import { formatParcelReference, isValidCompoundParcelId, parseLandParcel, stringifyParcel } from './format-parcel.js'
+import {
+  compareParcelReferences,
+  formatParcelReference,
+  isValidCompoundParcelId,
+  parseLandParcel,
+  stringifyParcel
+} from './format-parcel.js'
 
 describe('format-parcel', () => {
+  describe('compareParcelReferences', () => {
+    const references = ['ZZ1234-0001', 'SD6351-8781', 'SD6252-7537', 'SD6351-0012', 'AA1234-9999']
+    const expected = ['AA1234-9999', 'SD6252-7537', 'SD6351-0012', 'SD6351-8781', 'ZZ1234-0001']
+
+    it('orders saved references across sheet prefixes, sheet numbers and parcel numbers', () => {
+      expect([...references].sort(compareParcelReferences)).toEqual(expected)
+    })
+
+    it('applies the same order to parcel objects used by both selection controllers', () => {
+      const parcels = references.map((reference) => {
+        const [sheetId, parcelId] = parseLandParcel(reference)
+        return { sheetId, parcelId }
+      })
+      expect(parcels.sort(compareParcelReferences).map(stringifyParcel)).toEqual(expected)
+    })
+
+    it('compares object and string representations consistently', () => {
+      expect(compareParcelReferences({ sheetId: 'SD6351', parcelId: '0012' }, 'SD6351-0012')).toBe(0)
+    })
+  })
+
   describe('isValidCompoundParcelId', () => {
     it('should accept a well-formed compound parcel id', () => {
       expect(isValidCompoundParcelId('SD7946-0155')).toBe(true)

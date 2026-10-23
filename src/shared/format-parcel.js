@@ -41,3 +41,13 @@ export const formatParcelReference = (parcel) => {
 /**
  * @typedef {{ sheetId: string, parcelId: string }} ParcelIdentifier
  */
+
+/**
+ * Compares full parcel references by sheet ID, then parcel ID.
+ * Accepts parcel objects and compound IDs without changing their stored format.
+ * @param {ParcelIdentifier | string} left
+ * @param {ParcelIdentifier | string} right
+ * @returns {number}
+ */
+export const compareParcelReferences = (left, right) =>
+  formatParcelReference(left).localeCompare(formatParcelReference(right), 'en', { numeric: true })

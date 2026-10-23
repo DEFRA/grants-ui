@@ -1,3 +1,4 @@
+import { compareParcelReferences } from '~/src/shared/format-parcel.js'
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 import { resolvePath } from '~/src/server/common/helpers/path-utils.js'
 import { getTaskPageBackLink } from '~/src/server/task-list/task-list.helper.js'
@@ -129,7 +130,7 @@ export default class CheckResponsesPageController extends SummaryPageController 
    * @param {any[]} landParcels
    */
   #applyParcelReferences(viewModel, landParcels) {
-    const displayValue = landParcels.join(', ')
+    const displayValue = [...landParcels].sort(compareParcelReferences).join(', ')
     viewModel.details?.forEach((detail, di) => {
       const ii = detail.items?.findIndex((/** @type {any} */ item) => item.name === 'landParcels') ?? -1
       if (ii !== -1 && viewModel.checkAnswers) {
