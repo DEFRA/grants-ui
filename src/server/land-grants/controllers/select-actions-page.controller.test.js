@@ -9,6 +9,8 @@ import {
 import SelectActionsPageController from './select-actions-page.controller.js'
 import { error, log } from '~/src/server/common/helpers/logging/log.js'
 import { config } from '~/src/config/config.js'
+import { getQuantityErrors, QUANTITY_ERRORS } from '~/src/shared/action-quantity-validation.js'
+import { UNIT_COUNT, UNIT_HECTARES } from '~/src/shared/unit-types.js'
 import {
   CMOR1,
   makeLandGrantsRequest,
@@ -46,6 +48,10 @@ vi.mock('~/src/config/config.js', async () => {
 vi.mock('~/src/server/land-grants/services/land-grants.service.js')
 vi.mock('~/src/shared/format-parcel.js')
 
+const HECTARES_INVALID = QUANTITY_ERRORS[UNIT_HECTARES].INVALID
+const HECTARES_MORE_THAN_AVAILABLE = QUANTITY_ERRORS[UNIT_HECTARES].MORE_THAN_AVAILABLE
+const PONDS_INVALID = getQuantityErrors(UNIT_COUNT, 'ponds').INVALID
+
 describe('SelectActionsPageController', () => {
   const post = () => controller.makePostRouteHandler()(mockRequest, mockContext, mockH)
   const get = () => controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
@@ -70,6 +76,7 @@ describe('SelectActionsPageController', () => {
     ratePerUnitGbp: 100,
     quantityRequired: true,
     availability: { unit: 'count', value: null },
+    displayUnitPlural: 'ponds',
     heferRequired: true
   }
 
@@ -370,9 +377,19 @@ describe('SelectActionsPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions',
         expect.objectContaining({
-          errors: [{ text: 'Select at least one action', href: '#landAction' }]
+          errors: [{ text: 'Select at least one action', href: '#landAction' }],
+          selectedActionsErrorText: 'Select at least one action'
         })
       )
+    })
+
+    test('should not show an inline selection error when only a quantity is wrong', async () => {
+      mockRequest.payload = { landAction: 'UPL2', landActionQuantity_UPL2: 'as' }
+
+      await post()
+
+      const [, model] = mockH.view.mock.calls[0]
+      expect(model.selectedActionsErrorText).toBeUndefined()
     })
 
     test('should update state and proceed on valid submission', async () => {
@@ -560,28 +577,25 @@ describe('SelectActionsPageController', () => {
       }
     )
 
-    test.each([
-      ['0', 'Value must be greater than 0'],
-      ['-11', 'Value must be greater than 0'],
-      ['11.22001', 'Must be a whole number'],
-      ['as', 'Must be numbers'],
-      ['', 'Enter a quantity for Manage ponds: WBD1']
-    ])('rejects WBD1 quantity %j on submission and retains the input', async (quantity, text) => {
-      fetchActionsForParcel.mockResolvedValue({
-        actions: [wbd1],
-        parcel: { sheetId: 'sheet1', parcelId: 'parcel1', size: { unit: 'ha', value: 0.5 } }
-      })
-      mockRequest.payload = { landAction: 'WBD1', landActionQuantity_WBD1: quantity }
+    test.each(['0', '-11', '1.2', '11.22001', 'as', ''])(
+      'rejects WBD1 quantity %j on submission and retains the input',
+      async (quantity) => {
+        fetchActionsForParcel.mockResolvedValue({
+          actions: [wbd1],
+          parcel: { sheetId: 'sheet1', parcelId: 'parcel1', size: { unit: 'ha', value: 0.5 } }
+        })
+        mockRequest.payload = { landAction: 'WBD1', landActionQuantity_WBD1: quantity }
 
-      await post()
+        await post()
 
-      const [, model] = mockH.view.mock.calls[0]
-      expect(model.errors).toEqual([{ text, href: '#landActionQuantity_WBD1', code: 'WBD1' }])
-      expect(model.actionItems[0].conditional.html).toContain(`value="${quantity}"`)
-      expect(controller.setState).not.toHaveBeenCalled()
-      expect(controller.proceed).not.toHaveBeenCalled()
-      expect(validateApplication).not.toHaveBeenCalled()
-    })
+        const [, model] = mockH.view.mock.calls[0]
+        expect(model.errors).toEqual([{ text: PONDS_INVALID, href: '#landActionQuantity_WBD1', code: 'WBD1' }])
+        expect(model.actionItems[0].conditional.html).toContain(`value="${quantity}"`)
+        expect(controller.setState).not.toHaveBeenCalled()
+        expect(controller.proceed).not.toHaveBeenCalled()
+        expect(validateApplication).not.toHaveBeenCalled()
+      }
+    )
 
     test('should keep the original uncompeted actions when the recompute fetch fails', async () => {
       mockRequest.payload = {
@@ -597,27 +611,14 @@ describe('SelectActionsPageController', () => {
     })
 
     test.each([
-      [
-        'has no submitted quantity',
-        { landAction: 'UPL2' },
-        'Enter a quantity for Heavy livestock grazing on moorland: UPL2'
-      ],
-      [
-        'has a submitted quantity of 0',
-        { landAction: 'UPL2', landActionQuantity_UPL2: '0' },
-        'Enter a quantity for Heavy livestock grazing on moorland: UPL2'
-      ],
-      [
-        'has a non-numeric submitted quantity',
-        { landAction: 'UPL2', landActionQuantity_UPL2: 'as' },
-        'Quantity for Heavy livestock grazing on moorland: UPL2 must be 4 decimal places or fewer'
-      ],
+      ['has no submitted quantity', { landAction: 'UPL2' }],
+      ['has a submitted quantity of 0', { landAction: 'UPL2', landActionQuantity_UPL2: '0' }],
+      ['has a non-numeric submitted quantity', { landAction: 'UPL2', landActionQuantity_UPL2: 'as' }],
       [
         'has a submitted quantity with more than 4 decimal places',
-        { landAction: 'UPL2', landActionQuantity_UPL2: '11.22001' },
-        'Quantity for Heavy livestock grazing on moorland: UPL2 must be 4 decimal places or fewer'
+        { landAction: 'UPL2', landActionQuantity_UPL2: '11.22001' }
       ]
-    ])('should show an error and not save state when a quantity-required action %s', async (_case, payload, text) => {
+    ])('should show an error and not save state when a quantity-required action %s', async (_case, payload) => {
       mockRequest.payload = payload
 
       await post()
@@ -625,7 +626,7 @@ describe('SelectActionsPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions',
         expect.objectContaining({
-          errors: [{ text, href: '#landActionQuantity_UPL2', code: 'UPL2' }]
+          errors: [{ text: HECTARES_INVALID, href: '#landActionQuantity_UPL2', code: 'UPL2' }]
         })
       )
       expect(controller.setState).not.toHaveBeenCalled()
@@ -650,7 +651,13 @@ describe('SelectActionsPageController', () => {
       expect(mockH.view).toHaveBeenCalledWith(
         'select-actions',
         expect.objectContaining({
-          errors: [{ text: 'Enter up to 0.276 hectares', href: '#landActionQuantity_UPL2', code: 'UPL2' }]
+          errors: [
+            {
+              text: HECTARES_MORE_THAN_AVAILABLE,
+              href: '#landActionQuantity_UPL2',
+              code: 'UPL2'
+            }
+          ]
         })
       )
       expect(controller.setState).not.toHaveBeenCalled()
@@ -688,7 +695,7 @@ describe('SelectActionsPageController', () => {
         expect.objectContaining({
           errors: [
             {
-              text: 'Quantity for Heavy livestock grazing on moorland: UPL2 must be 4 decimal places or fewer',
+              text: HECTARES_INVALID,
               href: '#landActionQuantity_UPL2',
               code: 'UPL2'
             }
