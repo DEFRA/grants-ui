@@ -1,1 +1,3 @@
 @use 'pkg:@defra/interactive-map/css';
+@use 'pkg:@defra/interactive-map/plugins/search/css' as search-css;
+@use 'components/parcel-map';

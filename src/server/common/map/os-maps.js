@@ -8,8 +8,10 @@ const SERVICE_OS_MAPS = 'os-maps'
 const MAP_STYLE_SPEC_VERSION = 8
 const OS_TILE_SIZE_PX = 256
 
+// OS serves zooms 7-16 on the OpenData plan; 17-20 are Premium and 403
+// otherwise. MapLibre scales the zoom 16 tiles up beyond this.
 export const OS_MIN_ZOOM = 7
-export const OS_MAX_ZOOM = 20
+export const OS_MAX_ZOOM = 16
 
 /** Everything before the first `?` — OS Maps query strings carry the API key. */
 const stripQueryString = (/** @type {string} */ url) => url.split('?')[0]

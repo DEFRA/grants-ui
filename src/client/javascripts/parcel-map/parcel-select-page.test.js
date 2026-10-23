@@ -124,6 +124,27 @@ describe('initParcelSelectPage', () => {
     expect(document.activeElement).toBe(details)
   })
 
+  it('leaves the page where it is on a map pick', () => {
+    const mapEl = setupDom()
+    const details = document.getElementById('selected-parcel-details')
+
+    fire(mapEl, EVENT_SELECTION, { selectedParcels: [{ id: 'SD7148-9160' }] })
+
+    expect(details.scrollIntoView).not.toHaveBeenCalled()
+  })
+
+  it('neither moves focus nor scrolls for a parcel picked from the map search box', () => {
+    const mapEl = setupDom()
+    const details = document.getElementById('selected-parcel-details')
+    const before = document.activeElement
+
+    fire(mapEl, EVENT_SELECTION, { selectedParcels: [{ id: 'SD7148-9160' }], source: 'search' })
+
+    expect(details.hidden).toBe(false)
+    expect(document.activeElement).toBe(before)
+    expect(details.scrollIntoView).not.toHaveBeenCalled()
+  })
+
   it('preserves error-summary focus when restoring a selection after a rejected submission', () => {
     const mapEl = setupDom({ selectedParcels: 'SD7148-9160', errors: true })
     mapEl.selectParcels.mockImplementation((ids) =>
