@@ -2,6 +2,8 @@
 import { vi } from 'vitest'
 import { initSelectActionsPage } from './select-actions-page.js'
 import { unitLabel, unitAlternativeLabel } from '~/src/shared/unit-format.js'
+import { QUANTITY_ERRORS } from '~/src/shared/action-quantity-validation.js'
+import { UNIT_HECTARES } from '~/src/shared/unit-types.js'
 
 export const areaText = (value) => `${Number(value).toFixed(4)} hectares`
 
@@ -39,7 +41,7 @@ function quantityConditionalHtml({
   }
   const inputClass = `govuk-input${hasError ? ' govuk-input--error' : ''}`
   const errorMessage = hasError
-    ? `<p id="landActionQuantity_${code}-error" class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> Enter a number of hectares, for example 12.5 or 100</p>`
+    ? `<p id="landActionQuantity_${code}-error" class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> ${QUANTITY_ERRORS[UNIT_HECTARES].INVALID}</p>`
     : ''
   return `
     <div class="govuk-checkboxes__conditional${checked ? '' : ` ${HIDDEN_CLASS}`}" id="${conditionalId}">
@@ -86,6 +88,7 @@ export function checkboxItemHtml({
   description = code,
   checked = false,
   availability,
+  displayUnitPlural,
   requiresMaxQuantity,
   unrestricted = false,
   quantityValue = '',
@@ -97,6 +100,7 @@ export function checkboxItemHtml({
   const hasChosenAreaPanel = !requiresMaxQuantity && availability?.value != null
   const descriptionAttr = ` data-action-description="${description}"`
   const unitAttr = availability ? ` data-available-unit="${availability.unit}"` : ''
+  const displayUnitPluralAttr = displayUnitPlural ? ` data-display-unit-plural="${displayUnitPlural}"` : ''
   const totalAreaAttr = availability ? ` data-total-available-area="${availability.value ?? ''}"` : ''
   const ariaControlsAttr = requiresMaxQuantity || hasChosenAreaPanel ? ` aria-controls="${conditionalId}"` : ''
 
@@ -122,7 +126,7 @@ export function checkboxItemHtml({
 
   return `
     <div class="govuk-checkboxes__item">
-      <input class="govuk-checkboxes__input" id="landAction-${code}" name="landAction" type="checkbox" value="${code}"${checked ? ' checked' : ''}${descriptionAttr}${unitAttr}${totalAreaAttr}${ariaControlsAttr}${errorOnLoadAttr(errorOnLoad)}>
+      <input class="govuk-checkboxes__input" id="landAction-${code}" name="landAction" type="checkbox" value="${code}"${checked ? ' checked' : ''}${descriptionAttr}${unitAttr}${displayUnitPluralAttr}${totalAreaAttr}${ariaControlsAttr}${errorOnLoadAttr(errorOnLoad)}>
       <label for="landAction-${code}">${description}</label>
       ${availabilityHint}
     </div>
