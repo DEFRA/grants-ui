@@ -61,6 +61,7 @@ function stubInteractiveMap({ mode = 'ready', ml, capture, once = false } = {}) 
       this._handlers[event].push(cb)
     })
     this.destroy = vi.fn()
+    this.toggleButtonState = vi.fn()
     this._emit = (event, payload) => {
       ;(this._handlers[event] ?? []).forEach((fn) => fn(payload))
     }
@@ -136,12 +137,33 @@ describe('parcel-map web component', () => {
   afterEach(() => {
     document.body.innerHTML = ''
     vi.restoreAllMocks()
+    vi.unstubAllGlobals()
   })
 
   describe('lifecycle', () => {
     it('dispatches parcel-map:ready when map and data load successfully', async () => {
       const el = await mountReady()
       expect(el.querySelector('[role="alert"]')).toBeNull()
+    })
+
+    it('attaches modifier wheel zoom when ready and removes it on disconnect', async () => {
+      const el = await mountReady()
+      const canvas = ml.getCanvas()
+      const container = ml.getCanvasContainer()
+      const hint = el.querySelector('.parcel-map-wheel-hint')
+      expect(hint).not.toBeNull()
+      expect(hint.hidden).toBe(false)
+      expect(hint.previousElementSibling.id).toMatch(/^parcel-map-/)
+      expect(hint.previousElementSibling.style.height).toBe('500px')
+      expect(container.contains(hint)).toBe(false)
+
+      canvas.dispatchEvent(new window.WheelEvent('wheel', { bubbles: true, deltaY: 100, ctrlKey: true }))
+      expect(ml.scrollZoom.enable).toHaveBeenCalledOnce()
+
+      el.remove()
+      expect(el.querySelector('.parcel-map-wheel-hint')).toBeNull()
+      canvas.dispatchEvent(new window.WheelEvent('wheel', { bubbles: true, deltaY: 100, ctrlKey: true }))
+      expect(ml.scrollZoom.enable).toHaveBeenCalledOnce()
     })
 
     it('requests parcel metadata for the enabled actions on the map page', async () => {
@@ -277,8 +299,30 @@ describe('parcel-map web component', () => {
       const [, options] = InteractiveMap.mock.calls.at(-1)
       expect(options.mapStyle.url).toBe('/api/map/os-basemap')
       expect(options.minZoom).toBe(7)
+      expect(options.cooperativeGestures).toBe(true)
       expect(options.urlPosition).toBe('none')
       expect(options.mapLabel).toEqual(expect.stringContaining('land parcels'))
+    })
+
+    it.each([
+      ['desktop', false, 1280, true, 'Hold the Ctrl key and scroll to zoom'],
+      ['narrow desktop', false, 320, true, 'Hold the Ctrl key and scroll to zoom'],
+      ['touch phone', true, 320, false, 'Use two fingers to move or zoom'],
+      ['wide touch tablet', true, 1280, false, 'Use two fingers to move or zoom']
+    ])('sets the initial controls and helper text for %s', async (_device, touch, width, expanded, message) => {
+      vi.stubGlobal(
+        'matchMedia',
+        vi.fn(() => ({ matches: touch }))
+      )
+      vi.stubGlobal('innerWidth', width)
+      vi.spyOn(navigator, 'platform', 'get').mockReturnValue('Win32')
+      const el = await mountReady()
+      const map = lastMapInstance()
+      map._emit('app:ready')
+
+      expect(window.matchMedia).toHaveBeenCalledWith('(pointer: coarse)')
+      expect(map.toggleButtonState).toHaveBeenCalledExactlyOnceWith('mapControls', 'expanded', expanded)
+      expect(el.querySelector('.parcel-map-wheel-hint').textContent).toBe(message)
     })
   })
 

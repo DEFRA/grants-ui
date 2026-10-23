@@ -229,6 +229,17 @@ function createSelectedParcelDetailsUpdater(mapEl) {
   }
 }
 
+/** @param {ParcelMapErrorDetail} detail */
+const handleMapError = (detail) => {
+  const btn = /** @type {HTMLButtonElement | null} */ (document.getElementById(DOM_ID_MAP_SELECT_CONTINUE))
+  if (btn) {
+    btn.disabled = true
+  }
+  if (detail.reason === ERROR_REASON_NO_PARCELS) {
+    unhide(DOM_ID_MAP_NO_PARCELS_ERROR)
+  }
+}
+
 /**
  * Wire the page's form DOM to a <parcel-map> element's events.
  * @param {HTMLElement | null} mapEl
@@ -261,23 +272,12 @@ export function initParcelSelectPage(mapEl) {
     }
   }
 
-  /** @param {ParcelMapErrorDetail} detail */
-  const handleError = (detail) => {
-    const btn = /** @type {HTMLButtonElement | null} */ (document.getElementById(DOM_ID_MAP_SELECT_CONTINUE))
-    if (btn) {
-      btn.disabled = true
-    }
-    if (detail.reason === ERROR_REASON_NO_PARCELS) {
-      unhide(DOM_ID_MAP_NO_PARCELS_ERROR)
-    }
-  }
-
   mapEl.addEventListener(EVENT_READY, (/** @type {Event} */ e) => {
     handleReady(/** @type {CustomEvent<ReadyDetail>} */ (e).detail ?? {})
   })
 
   mapEl.addEventListener(EVENT_ERROR, (/** @type {Event} */ e) => {
-    handleError(/** @type {CustomEvent<ParcelMapErrorDetail>} */ (e).detail)
+    handleMapError(/** @type {CustomEvent<ParcelMapErrorDetail>} */ (e).detail)
   })
   const updateSelectedParcelDetails = createSelectedParcelDetailsUpdater(mapEl)
 
@@ -306,7 +306,7 @@ export function initParcelSelectPage(mapEl) {
   }
   const lastError = mapWithHistory.getLastEvent?.(EVENT_ERROR)
   if (lastError) {
-    handleError(/** @type {ParcelMapErrorDetail} */ (lastError.detail))
+    handleMapError(/** @type {ParcelMapErrorDetail} */ (lastError.detail))
   }
 
   const changeLink = document.getElementById(DOM_ID_SELECTED_PARCEL_CHANGE)

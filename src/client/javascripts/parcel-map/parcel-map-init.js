@@ -6,6 +6,7 @@ import maplibreProvider from '@defra/interactive-map/providers/maplibre'
 // @ts-ignore — no type declarations shipped with this package
 import createInteractPlugin from '@defra/interactive-map/plugins/interact'
 import { getMapStyle, withParcelHitTolerance } from './map-helpers.js'
+import { attachWheelZoom } from './parcel-map-wheel-zoom.js'
 import {
   MAP_LABEL,
   PARCEL_ID_PROPERTY,
@@ -40,12 +41,14 @@ import {
  * }}
  */
 export function initMap(host, { multiSelect, skeleton, isLoading, cleanups }) {
+  const touch = window.matchMedia?.('(pointer: coarse)').matches ?? false
   const wrapper = document.createElement('div')
-  wrapper.style.cssText = 'position:relative;width:100%;height:100%'
+  wrapper.style.cssText = 'position:relative;width:100%'
 
   const mapEl = /** @type {HTMLDivElement} */ (document.createElement('div'))
   mapEl.id = `parcel-map-${crypto.randomUUID()}`
-  mapEl.style.cssText = 'width:100%;height:100%'
+  mapEl.style.width = '100%'
+  mapEl.style.height = host.style.height || MAP_DEFAULT_HEIGHT
   wrapper.appendChild(mapEl)
 
   if (skeleton) {
@@ -72,16 +75,21 @@ export function initMap(host, { multiSelect, skeleton, isLoading, cleanups }) {
   const mapInstance = new InteractiveMap(mapEl.id, {
     behaviour: 'inline',
     mapLabel: MAP_LABEL,
-    containerHeight: host.style.height || MAP_DEFAULT_HEIGHT,
+    containerHeight: mapEl.style.height,
     mapProvider: withParcelHitTolerance(maplibreProvider()),
     mapStyle: getMapStyle(),
     plugins: [interactPlugin],
     center: MAP_DEFAULT_CENTER,
     zoom: MAP_DEFAULT_ZOOM,
     minZoom: MAP_MIN_ZOOM,
-    // Let wheel and trackpad scrolling move the page while the pointer is over the map.
+    // Wheel zoom stays disabled until the modifier gate is attached on map:ready.
     scrollZoom: false,
+    cooperativeGestures: true,
     urlPosition: 'none'
+  })
+
+  mapInstance.on('app:ready', () => {
+    mapInstance.toggleButtonState('mapControls', 'expanded', !touch)
   })
 
   const ready = /** @type {Promise<MLMap | null>} */ (
@@ -100,6 +108,7 @@ export function initMap(host, { multiSelect, skeleton, isLoading, cleanups }) {
       let mlInstance = null
       mapInstance.on('map:ready', (/** @type {{ map: MLMap }} */ { map: m }) => {
         mlInstance = m
+        attachWheelZoom(m, cleanups, wrapper, touch)
         const onError = (/** @type {unknown} */ err) => {
           console.error('[parcel-map] maplibre error', err)
           if (isLoading()) {
