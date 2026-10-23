@@ -21,6 +21,18 @@ ignore:
     - '@defra/forms-engine-plugin > @defra/interactive-map > *':
         reason: 'Checked 2026-10-20 on forms-engine-plugin@4.23.0: interactive-map@0.0.22-alpha installs Docusaurus > globby/fast-glob/micromatch, chokidar/anymatch/readdirp and jest-util > picomatch@2.3.2 in production. ReDoS requires an attacker-controlled repeated-extglob pattern. These documentation paths use source-file and watch patterns, not applicant form values; grants-ui does not run Docusaurus. Its own build/watch tooling also uses repository-controlled patterns. No fixed picomatch release is available, including 4.0.7. Remove when a fixed version is released or the documentation dependencies are dropped; review within one month.'
         expires: '2026-11-20'
+  'SNYK-JS-WEBPACKDEVSERVER-21430996':
+    - '@defra/forms-engine-plugin > @defra/interactive-map > *':
+        reason: 'Checked 2026-10-23 on forms-engine-plugin@4.23.0: interactive-map@0.0.22-alpha installs Docusaurus@3.10.2 > webpack-dev-server@5.2.6 in production. The information-exposure issue affects a running dev server; this documentation tooling is installed but never run by grants-ui, and nothing serves it to applicants. Fixed webpack-dev-server@5.2.7 was published 2026-10-18T21:59:49.295Z; the seven-day cooldown ends 2026-10-25T21:59:49.295Z. Remove this ignore and add a webpack-dev-server override when eligible.'
+        expires: '2026-10-26'
+  'SNYK-JS-WEBPACKDEVSERVER-21431002':
+    - '@defra/forms-engine-plugin > @defra/interactive-map > *':
+        reason: 'Checked 2026-10-23 on forms-engine-plugin@4.23.0: interactive-map@0.0.22-alpha installs Docusaurus@3.10.2 > webpack-dev-server@5.2.6 in production. The origin-validation issue requires a running dev server reachable from an attacker-controlled page; this documentation tooling is installed but never run by grants-ui. Fixed webpack-dev-server@5.2.7 was published 2026-10-18T21:59:49.295Z; the seven-day cooldown ends 2026-10-25T21:59:49.295Z. Remove this ignore and add a webpack-dev-server override when eligible.'
+        expires: '2026-10-26'
+  'SNYK-JS-BODYPARSER-21431495':
+    - '@defra/forms-engine-plugin > @defra/interactive-map > *':
+        reason: 'Checked 2026-10-23 on forms-engine-plugin@4.23.0: interactive-map@0.0.22-alpha brings Docusaurus@3.10.2 > webpack-dev-server@5.2.6 > express@4.22.3 > body-parser@1.20.8. The uncaught exception needs requests to that Express server, which only runs as the documentation dev server and is never started by grants-ui; the application server is Hapi and does not use body-parser. Fixed body-parser@1.20.9 was published 2026-10-22T11:38:27.889Z; the seven-day cooldown ends 2026-10-29T11:38:27.889Z. Remove this ignore and add a body-parser override when eligible.'
+        expires: '2026-10-30'
   'SNYK-JS-QS-20943482':
     - '@defra/forms-engine-plugin > @defra/interactive-map > *':
         reason: 'Checked 2026-10-15 on forms-engine-plugin@4.23.0: interactive-map@0.0.22-alpha brings Docusaurus@3.10.2 > webpack-dev-server@5.2.6 > express@4.22.3 > qs@6.16.0. This documentation tooling is installed in production but is not run by grants-ui. The issue requires qs.stringify with arrayFormat: "comma"; Express uses qs.parse, and no affected stringify call was found in grants-ui or the forms engine server runtime. Fixed qs@6.16.1 was published 2026-10-14T22:06:17Z and is inside the seven-day cooldown. Remove this ignore and bump the qs override once the cooldown ends on 2026-10-21T22:06:17Z.'
