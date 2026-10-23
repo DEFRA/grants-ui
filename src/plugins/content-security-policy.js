@@ -9,15 +9,17 @@ const defaultContentPolicy = (/** @type {string} */ nonce) => {
   const ga4WildCard = 'https://*.google-analytics.com'
   const self = "'self'"
   const statsDblClick = 'https://stats.g.doubleclick.net'
+  // The forms engine's aerial basemap loads Esri World Imagery tiles directly.
+  const esriImagery = 'https://services.arcgisonline.com'
   // Hash for GOV.UK Frontend inline progressive enhancement script.
   // This is a known hash published by the Design System team.
   // See: https://frontend.design-system.service.gov.uk/import-javascript/
   const govukFrontendHash = "'sha256-GUQ5ad8JK5KmEWmROf3LZd9ge94daqNvd8xy9YS1iDw='"
 
   const scriptSrc = [self, "'strict-dynamic'", `'nonce-${nonce}'`, govukFrontendHash, gtmWildCard, ga4].join(' ')
-  const connectSrc = [self, ga4, statsDblClick, ga4WildCard, gtmWildCard].join(' ')
+  const connectSrc = [self, ga4, statsDblClick, ga4WildCard, gtmWildCard, esriImagery].join(' ')
   const fontSrc = [self, 'data:', 'https://fonts.gstatic.com'].join(' ')
-  const imgSrc = [self, 'data:', 'blob:', ga4, statsDblClick, ga4WildCard].join(' ')
+  const imgSrc = [self, 'data:', 'blob:', ga4, statsDblClick, ga4WildCard, esriImagery].join(' ')
   const workerSrc = [self, 'blob:'].join(' ')
 
   const formActionSrc = [self]
