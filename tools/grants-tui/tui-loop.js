@@ -931,12 +931,12 @@ async function journeyStepCommonLand(ctx) {
 
 /**
  * One combined "how should this run go" menu: run to the end, force a
- * dev-tools mock, or (headed only) stop the browser on a chosen page for
- * inspection. "Window closed" applies to every journey and sits right after
- * the default; "no eligible actions" only applies to journeys with a map step
+ * dev-tools mock, or stop at a chosen page. "Window closed" applies to every
+ * journey and sits right after the default; "no eligible actions" only applies
+ * to journeys with a map step
  * (the local seed gives every parcel at least one action, so it's the only
- * way to reach that page's error); the per-page stop points only make sense
- * when watching the browser headed, so they're appended just for that mode.
+ * way to reach that page's error). Headed runs leave the browser open for
+ * inspection; headless runs exit when they reach the chosen page.
  * @param {JourneyWizardCtx} ctx
  */
 async function journeyStepStop(ctx) {
@@ -957,13 +957,11 @@ async function journeyStepStop(ctx) {
           }
         ]
       : []),
-    ...(ctx.mode === 'headed'
-      ? journeySteps(ctx.chosen).map((s, i) => ({
-          key: String(i + 1),
-          label: `${i + 1}. ${s.slug}`,
-          description: s.name === s.slug ? '' : s.name
-        }))
-      : [])
+    ...journeySteps(ctx.chosen).map((s, i) => ({
+      key: String(i + 1),
+      label: `${i + 1}. ${s.slug}`,
+      description: s.name === s.slug ? '' : s.name
+    }))
   ]
   const picked = await radioMenu(stopItems, `Run '${ctx.chosen}' how?`, { hint: BACK_HINT })
   if (picked === '__quit__') return { type: 'back' }
@@ -1060,7 +1058,9 @@ async function handleJourneyCommand(dryRun) {
       },
       dryRun
     ],
-    ctx.stop ? `Running journey ${ctx.chosen} — close browser when finished` : `Running journey ${ctx.chosen}`
+    ctx.stop && ctx.mode === 'headed'
+      ? `Running journey ${ctx.chosen} — close browser when finished`
+      : `Running journey ${ctx.chosen}`
   )
 
   return code === 0

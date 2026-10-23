@@ -2,6 +2,29 @@
 import { expect, test } from 'vitest'
 import { createProgressTracker } from './progress.js'
 
+test('journey progress reports pages and stop points while keeping sign-in details out of the status', () => {
+  const progress = createProgressTracker('journey')
+  expect(progress('▶ npx playwright install chromium (acceptance/)')).toBe('Journey: preparing Chromium')
+  expect(progress('[journey-runner] Signing in via DefraID stub as CRN test-crn')).toBe('Journey: signing in')
+  expect(progress('[journey-runner] Clearing application state')).toBe('Journey: clearing application state')
+  expect(progress('[journey-runner] Waiting for engine on http://localhost:3000/test-grant/start')).toBe(
+    'Journey: waiting for runner'
+  )
+  expect(progress('[journey-runner] Step 1: Start')).toBe('Journey: step 1 — Start')
+  expect(progress('\x1b[32m[journey-runner] Step 2: Applicant details\x1b[0m')).toBe(
+    'Journey: step 2 — Applicant details'
+  )
+  expect(progress('[journey-runner] Arrived at "Check answers" (step 3) - stopping here')).toBe(
+    'Journey: stopped at Check answers (step 3)'
+  )
+  expect(progress('[journey-runner] Browser left open — close the window (or press Ctrl+C) to exit.')).toBe(
+    'Journey: close browser when finished'
+  )
+  expect(progress('[journey-runner] Selected parcel(s): test-parcel')).toBeNull()
+  expect(progress('secret-bearing application output')).toBeNull()
+  expect(createProgressTracker('up')('[journey-runner] Step 1: Start')).toBeNull()
+})
+
 test('tracks completed unit test files, including failures, without double counting', () => {
   const progress = createProgressTracker('test', ['unit'])
   expect(progress(' RUN v4.1.11 /workspace')).toBe('unit: collecting tests')

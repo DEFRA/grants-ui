@@ -151,14 +151,16 @@ gt journey woodland --common-land yes                 # walk the common-land gui
 
 #### Or pick from the interactive menu
 
-Prefer not to remember slugs and flags? Run `gt` with no arguments to open the interactive TUI, then choose **`journey ⇢`** from the main menu. It walks you through the same options as prompts — no flags needed:
+Prefer not to remember slugs and flags? Run `gt` with no arguments to open the interactive TUI, then choose **Tools → `journey ⇢`**. It walks you through the same options as prompts — no flags needed:
 
 1. **Journey** — pick from the discovered journey definitions (each annotated with the CRN it uses, or a ⚠ warning if it can't complete on a standard local stack).
 2. **CRN** — only asked when a journey has more than one known-good CRN (e.g. woodland); otherwise the right CRN is chosen automatically.
 3. **Headed or headless** — headless runs in the background (bundled Chromium); headed watches it in your installed Google Chrome.
 4. **Clear state?** — keep the saved application state (resume where it left off) or reset to step 1, matching the footer "Clear application state" link.
 5. **Common land or shared grazing?** — only asked for journeys with a `yesNo` step that supports it (currently woodland): **Yes** shows the guidance page and adds the "What you need to do" section to the confirmation page; **No** is the standard journey with only the default confirmation content — so either branch is reachable without editing the journey file.
-6. **Run '\<journey\>' how?** — one combined menu: **Run to the end** (default), **Window closed** (see [below](#application-window-closed)), **Mock no eligible actions** for journeys with a map step (see [below](#land-parcels-with-no-eligible-actions)), or — headed runs only — halt the browser on a chosen page for inspection.
+6. **Run '\<journey\>' how?** — one combined menu: **Run to the end** (default), **Window closed** (see [below](#application-window-closed)), **Mock no eligible actions** for journeys with a map step (see [below](#land-parcels-with-no-eligible-actions)), or stop before processing a chosen page. Headed runs leave the browser open for inspection; headless runs exit when they reach the chosen page.
+
+While a journey runs, the TUI status shows the current step number and page name, along with setup and sign-in progress.
 
 Journeys flagged as won't-complete (e.g. **farm-payments**, **methane**) make you acknowledge why before running. The `journey ⇢` item is disabled until the Docker stack is up; for a plain `npm run dev` server use the `gt journey <slug>` form above instead.
 
