@@ -196,6 +196,10 @@ export default {
         {
           from: path.join(interactiveMapPath, 'assets/images'),
           to: 'assets/interactive-map/assets/images'
+        },
+        {
+          from: path.join(defraFormsPath, 'src/client/images/esri-logo.png'),
+          to: 'assets/interactive-map/assets/images/esri-logo.png'
         }
       ]
     })
