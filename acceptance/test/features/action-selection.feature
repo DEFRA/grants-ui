@@ -36,23 +36,25 @@ Feature: Action Selection
 
         # RULE: partial area action specified area cannot be zero
         When the user enters "0" hectares for action "CSAM3_26"
-        And continues
-        Then the user should see error "Enter a quantity for Herbal leys: CSAM3_26" for action "CSAM3_26"
+        # client-side validation on blur should show the same error as a subsequent postback
+        Then the user should see error "Enter number of hectares, up to 4 decimal places – for example, 12.3456" for action "CSAM3_26"
+        When the user continues
+        Then the user should see error "Enter number of hectares, up to 4 decimal places – for example, 12.3456" for action "CSAM3_26"
 
         # RULE: partial area action specified area cannot exceed available area
         When the user enters "0.277" hectares for action "CSAM3_26"
         And continues
-        Then the user should see error "Enter up to 0.276 hectares" for action "CSAM3_26"
+        Then the user should see error "Enter a number that is not higher than the available hectares" for action "CSAM3_26"
 
         # RULE: partial area action hectares must be 4 decimal places or less
         When the user enters "0.27666" hectares for action "CSAM3_26"
         And continues
-        Then the user should see error "Quantity for Herbal leys: CSAM3_26 must be 4 decimal places or fewer" for action "CSAM3_26"
+        Then the user should see error "Enter number of hectares, up to 4 decimal places – for example, 12.3456" for action "CSAM3_26"
 
         # RULE: partial area action specified area cannot be empty
         When the user enters "" hectares for action "CSAM3_26"
         And continues
-        Then the user should see error "Enter a quantity for Herbal leys: CSAM3_26" for action "CSAM3_26"
+        Then the user should see error "Enter number of hectares, up to 4 decimal places – for example, 12.3456" for action "CSAM3_26"
 
         # RULE: partial area action cannot be selected once a total area action has been selected taking all available area
         When the user deselects action "CSAM3_26"
@@ -263,28 +265,30 @@ Feature: Action Selection
 
         # RULE: count-based action quantity cannot be zero
         When the user enters "0" ponds for action "WBD1_26"
-        And continues
-        Then the user should see error "Value must be greater than 0" for action "WBD1_26"
+        # client-side validation on blur should show the same error as a subsequent postback
+        Then the user should see error "Enter number of ponds – for example, 2" for action "WBD1_26"
+        When the user continues
+        Then the user should see error "Enter number of ponds – for example, 2" for action "WBD1_26"
 
         # RULE: count-based action quantity cannot be negative
         When the user enters "-1" ponds for action "WBD1_26"
         And continues
-        Then the user should see error "Value must be greater than 0" for action "WBD1_26"
+        Then the user should see error "Enter number of ponds – for example, 2" for action "WBD1_26"
 
         # RULE: count-based action quantity must be a whole number
         When the user enters "2.5" ponds for action "WBD1_26"
         And continues
-        Then the user should see error "Must be a whole number" for action "WBD1_26"
+        Then the user should see error "Enter number of ponds – for example, 2" for action "WBD1_26"
 
         # RULE: count-based action quantity must be numeric
         When the user enters "abc" ponds for action "WBD1_26"
         And continues
-        Then the user should see error "Must be numbers" for action "WBD1_26"
+        Then the user should see error "Enter number of ponds – for example, 2" for action "WBD1_26"
 
         # RULE: count-based action quantity cannot be empty
         When the user enters "" ponds for action "WBD1_26"
         And continues
-        Then the user should see error "Enter a quantity for Manage ponds: WBD1_26" for action "WBD1_26"
+        Then the user should see error "Enter number of ponds – for example, 2" for action "WBD1_26"
 
         # RULE: count-based action can be applied to an eligible land parcel
         When the user enters "2" ponds for action "WBD1_26"
@@ -292,8 +296,10 @@ Feature: Action Selection
         # RULE: partial area action square metres must be a whole number
         When the user selects action "HEF1_26"
         And the user enters "10.5" m² for action "HEF1_26"
-        And continues
-        Then the user should see error "Must be a whole number" for action "HEF1_26"
+        # client-side validation on blur should show the same error as a subsequent postback
+        Then the user should see error "Enter number of square metres, rounded down to the nearest whole number – for example, 234" for action "HEF1_26"
+        When the user continues
+        Then the user should see error "Enter number of square metres, rounded down to the nearest whole number – for example, 234" for action "HEF1_26"
 
         # RULE: partial area action in square metres can be applied to an eligible land parcel
         When the user enters "10" m² for action "HEF1_26"

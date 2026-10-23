@@ -497,7 +497,7 @@ async function handlePostSubmission(request, h, context, previousStatus, grantCo
   // no marker) then correctly applies the steady-state rule.
   const isStatusChange = rule.toGrantsStatus !== previousStatus
   if (isStatusChange) {
-    request.yar.set(YarKeys.STATUS_CHANGE_REDIRECT, redirectUrl)
+    request.yar.set(YarKeys.STATUS_CHANGE_REDIRECT, statusChangeMarker(request, redirectUrl))
   }
 
   // Off-journey (agreements), multi-application only: the session context is shared by every tab,
@@ -618,6 +618,19 @@ async function handlePostSubmissionWithFallback(request, h, context, redirectCon
 }
 
 /**
+ * The one-shot marker for a path. It names the application as well (a single-application grant has
+ * no ref, so it stays the bare path), so another application's request on the same page cannot spend it.
+ *
+ * @param {AnyFormRequest} request
+ * @param {string} path
+ * @returns {string}
+ */
+function statusChangeMarker(request, path) {
+  const referenceNumber = getReferenceNumber(request)
+  return referenceNumber ? `${path}?ref=${referenceNumber}` : path
+}
+
+/**
  * Consumes the one-shot status-change redirect marker.
  *
  * When a grants-side status change redirects the user to a destination page, a session marker
@@ -638,7 +651,7 @@ function consumeStatusChangeRedirect(request, h) {
 
   request.yar.clear(YarKeys.STATUS_CHANGE_REDIRECT)
 
-  return request.path === statusChangeRedirect ? h.continue : undefined
+  return statusChangeRedirect === statusChangeMarker(request, request.path) ? h.continue : undefined
 }
 
 /**
@@ -750,7 +763,7 @@ async function handleReturningClaimWindow(request, h, context, redirectContext) 
   // Record the one-shot navigation so the immediately-following request (now
   // CLAIM_STARTED) does not re-evaluate the steady-state rule and bounce the
   // user off the fresh claim start page.
-  request.yar.set(YarKeys.STATUS_CHANGE_REDIRECT, redirectUrl)
+  request.yar.set(YarKeys.STATUS_CHANGE_REDIRECT, statusChangeMarker(request, redirectUrl))
   return h.redirect(redirectUrl).takeover()
 }
 
