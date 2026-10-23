@@ -18,6 +18,7 @@ import { createParcelListDetailsRenderer, renderRequirementItems, requirementsTe
 const DOM_ID_PARCEL_MAP = 'parcel-map'
 const DOM_ID_PARCEL_MAP_TOTAL_COUNT = 'parcel-map-total-count'
 const DOM_ID_PARCEL_MAP_TOTAL_AREA = 'parcel-map-total-area'
+const DOM_ID_CONTINUE = 'map-select-continue'
 const DOM_ID_SELECTED_PARCEL_DETAILS = 'selected-parcel-details'
 const DOM_ID_SELECTED_PARCEL_REFERENCE = 'selected-parcel-reference'
 const DOM_ID_SELECTED_PARCEL_AREA = 'selected-parcel-area'
@@ -400,7 +401,15 @@ export function initParcelSelectPage(mapEl) {
   /** @param {ReadyDetail} detail */
   const handleReady = (detail) => {
     metaIndex = detail.metaIndex ?? {}
-    updateMapTotals(metaIndex, detail.parcelIds ?? [])
+    const parcelIds = detail.parcelIds ?? []
+    updateMapTotals(metaIndex, parcelIds)
+
+    // The map can recover after the server lookup rendered Continue disabled.
+    const button = /** @type {HTMLButtonElement | null} */ (document.getElementById(DOM_ID_CONTINUE))
+    if (parcelIds.length && button) {
+      button.disabled = false
+      button.setAttribute('aria-disabled', 'false')
+    }
 
     if (!viewToggle?.isList()) {
       syncMapSelection()

@@ -7,6 +7,7 @@ import {
   EVENT_ERROR,
   EVENT_SELECTION,
   ERROR_REASON_UNAVAILABLE,
+  ERROR_REASON_NO_PARCELS,
   PARCEL_DETAILS_LOADING_DELAY_MS,
   PARCEL_DETAILS_LOADING_MIN_DURATION_MS
 } from './config.js'
@@ -485,6 +486,64 @@ describe('parcel map and list views', () => {
     // The toggle GET clears the previous POST validation error.
     expect(document.querySelector('.govuk-error-summary')).toBeNull()
     expect(submittedIds()).toEqual([PARCEL_B])
+  })
+
+  it.each([false, true])(
+    're-enables Continue after a failed server lookup when the map loads parcels with multiSelect=%s',
+    async (multiSelect) => {
+      const page = setup({
+        multiSelect,
+        parcels: [],
+        errors: [{ text: 'Unable to load your land parcels. Try again later.' }]
+      })
+      const button = document.getElementById('map-select-continue')
+      expect(button.disabled).toBe(true)
+      expect(button.getAttribute('aria-disabled')).toBe('true')
+
+      page.ready()
+
+      expect(button.disabled).toBe(false)
+      expect(button.getAttribute('aria-disabled')).toBe('false')
+      const selectedIds = multiSelect ? [PARCEL_A, PARCEL_B] : [PARCEL_A]
+      page.selectOnMap(selectedIds)
+      await flush()
+      const submit = vi.fn((event) => event.preventDefault())
+      document.getElementById('parcel-select-form').addEventListener('submit', submit)
+      button.click()
+
+      expect(submit).toHaveBeenCalledOnce()
+      expect(submittedIds()).toEqual(selectedIds)
+    }
+  )
+
+  it('re-enables Continue when the map loaded parcels before the page listener attached', () => {
+    setup(
+      { parcels: [] },
+      {
+        lastEvent: new CustomEvent(EVENT_READY, {
+          detail: { parcelIds: [PARCEL_A], metaIndex: { [PARCEL_A]: { areaHa: 12.3456 } } }
+        })
+      }
+    )
+
+    const button = document.getElementById('map-select-continue')
+    expect(button.disabled).toBe(false)
+    expect(button.getAttribute('aria-disabled')).toBe('false')
+  })
+
+  it.each([
+    ['an unavailable map', EVENT_ERROR, { reason: ERROR_REASON_UNAVAILABLE }],
+    ['no parcels', EVENT_ERROR, { reason: ERROR_REASON_NO_PARCELS }],
+    ['an empty parcel result', EVENT_READY, { parcelIds: [] }],
+    ['a missing parcel result', EVENT_READY, {}]
+  ])('keeps Continue disabled after a failed server lookup with %s', (_label, type, detail) => {
+    const page = setup({ parcels: [] })
+
+    page.map.dispatchEvent(new CustomEvent(type, { detail }))
+
+    const button = document.getElementById('map-select-continue')
+    expect(button.disabled).toBe(true)
+    expect(button.getAttribute('aria-disabled')).toBe('true')
   })
 
   it('falls back to the list when the map fails, leaving Continue usable and the preference intact', () => {
