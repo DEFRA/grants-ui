@@ -36,7 +36,9 @@ Feature: Action Selection
 
         # RULE: partial area action specified area cannot be zero
         When the user enters "0" hectares for action "CSAM3_26"
-        And continues
+        # client-side validation on blur should show the same error as a subsequent postback
+        Then the user should see error "Enter number of hectares, up to 4 decimal places – for example, 12.3456" for action "CSAM3_26"
+        When the user continues
         Then the user should see error "Enter number of hectares, up to 4 decimal places – for example, 12.3456" for action "CSAM3_26"
 
         # RULE: partial area action specified area cannot exceed available area
@@ -263,7 +265,9 @@ Feature: Action Selection
 
         # RULE: count-based action quantity cannot be zero
         When the user enters "0" ponds for action "WBD1_26"
-        And continues
+        # client-side validation on blur should show the same error as a subsequent postback
+        Then the user should see error "Enter number of ponds – for example, 2" for action "WBD1_26"
+        When the user continues
         Then the user should see error "Enter number of ponds – for example, 2" for action "WBD1_26"
 
         # RULE: count-based action quantity cannot be negative
@@ -292,7 +296,9 @@ Feature: Action Selection
         # RULE: partial area action square metres must be a whole number
         When the user selects action "HEF1_26"
         And the user enters "10.5" m² for action "HEF1_26"
-        And continues
+        # client-side validation on blur should show the same error as a subsequent postback
+        Then the user should see error "Enter number of square metres, rounded down to the nearest whole number – for example, 234" for action "HEF1_26"
+        When the user continues
         Then the user should see error "Enter number of square metres, rounded down to the nearest whole number – for example, 234" for action "HEF1_26"
 
         # RULE: partial area action in square metres can be applied to an eligible land parcel
