@@ -135,9 +135,7 @@
             </fieldset>
             <div>
               {% if cancelHref %}
-                <a class="govuk-link govuk-link--no-visited-state govuk-!-display-block" href="{{ cancelHref }}"
-                  >Cancel</a
-                >
+                <a class="govuk-link govuk-link--no-visited-state" href="{{ cancelHref }}">Cancel</a>
               {% endif %}
             </div>
           </form>
@@ -156,9 +154,9 @@
               })
             }}
             {% if cancelHref %}
-              <a class="govuk-link govuk-link--no-visited-state govuk-!-display-block" href="{{ cancelHref }}"
-                >Cancel</a
-              >
+              <div>
+                <a class="govuk-link govuk-link--no-visited-state" href="{{ cancelHref }}">Cancel</a>
+              </div>
             {% endif %}
           </div>
         {% endif %}

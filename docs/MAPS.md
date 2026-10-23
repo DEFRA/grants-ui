@@ -164,15 +164,17 @@ pages:
 | ------------- | --------- | ------- | ------------------------------------------------ |
 | `multiSelect` | `boolean` | `false` | Allow selecting more than one parcel. See above. |
 
+With `multiSelect`, the text list renders checkboxes instead of radios, and the map and list keep every selected parcel when switching views. Available actions and requirements are only shown when exactly one parcel is selected.
+
 ### What the page controllers do
 
 #### `MapSelectPageController`
 
 Extends `QuestionPageController` (wrapped in `withTaskContext`). Renders `map-select-parcel.html`.
 
-**GET** passes `multiSelect` and `formAction` to the view.
+**GET** loads the user's parcels with `fetchParcels` (references and areas only, sharing the per-SBI cache with the map routes) and passes the server-rendered list (`parcels`, `totalArea`) to the view, together with `multiSelect`, `enabledLandActions` and `formAction`. A failed lookup renders a generic error summary and logs the upstream detail; an account with no parcels renders a "No land parcels were found" error summary and a disabled Continue button.
 
-**POST** reads `landParcels` from the request payload (written by the JS selection listener as hidden inputs). Validates that at least one parcel was selected; returns the form with an inline error if not. It then checks each selected parcel has at least one eligible action (skipped when the grant has no `enabledLandActions`); if any selected parcel has none, the form re-renders with an inline error instead of proceeding — state is left untouched so a previously completed selection isn't destroyed. On success:
+**POST** reads `landParcels` from the request payload: the list's native radios/checkboxes in the list view, or hidden inputs written by `parcel-select-page.js` in the map view. Only the active view's inputs are enabled, so a value is never submitted twice. Validates that at least one parcel was selected; returns the form with an inline error if not. It then checks each selected parcel has at least one eligible action (skipped when the grant has no `enabledLandActions`); if any selected parcel has none, the form re-renders with an inline error instead of proceeding — state is left untouched so a previously completed selection isn't destroyed. A re-render keeps these validation errors alongside any parcel-lookup error. On success:
 
 - Writes `selectedParcelId` (first parcel), `selectedParcelIds` (full array), and `selectedParcelsDisplay` (comma-separated string) to session state.
 - In single-select mode, appends `?parcelId=<id>` to the redirect URL so downstream controllers (e.g. `SelectLandActionsPageController`) receive the parcel ID via query string.
@@ -204,15 +206,26 @@ A complete working example is [`example-grant-with-map.yaml`](../compose/config-
 
 ### Attributes
 
-| Attribute      | Values               | Default   | Description                                    |
-| -------------- | -------------------- | --------- | ---------------------------------------------- |
-| `multi-select` | `"true"` / `"false"` | `"false"` | Allow selecting more than one parcel at a time |
+| Attribute       | Values               | Default   | Description                                                                                    |
+| --------------- | -------------------- | --------- | ---------------------------------------------------------------------------------------------- |
+| `multi-select`  | `"true"` / `"false"` | `"false"` | Allow selecting more than one parcel at a time                                                 |
+| `defer-loading` | boolean attribute    | absent    | Do not initialise the map until the attribute is removed (used while the list view is showing) |
 
 **Single-select:** clicking a parcel selects it and deselects any previously selected one. Clicking the same parcel again deselects it.
 
 **Multi-select:** clicking toggles each parcel independently. Multiple parcels can be selected simultaneously.
 
 `multi-select` is read once when the component connects. Changing it afterwards has no effect (re-create the element to reconfigure).
+
+### Methods
+
+| Method               | Description                                                                                                  |
+| -------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `selectParcels(ids)` | Select the given parcel IDs once the map is ready                                                            |
+| `clearSelection()`   | Deselect every parcel                                                                                        |
+| `focusParcels()`     | Re-fit the viewport to every selectable parcel                                                               |
+| `resize()`           | Resize the map to its container and re-fit the parcels; call after showing a map that was initialised hidden |
+| `getLastEvent(type)` | The last `parcel-map:ready`/`parcel-map:error` event, for listeners attached after it fired                  |
 
 ### Height
 
@@ -271,7 +284,8 @@ The plugin needs a single property that uniquely identifies each parcel feature.
 - While initialising, the component shows a grey "Loading map…" skeleton (`role="status"`).
 - The parcels fetch is retried once (after 1 s) on failure; the map load itself has a 10 s timeout. The relevant constants (`FETCH_MAX_ATTEMPTS`, `FETCH_RETRY_DELAY_MS`, `MAP_LOAD_TIMEOUT_MS`) live in `config.js`.
 - On an `'unavailable'` error the component replaces the map with an inline "There was a problem loading the map." overlay (`role="alert"`).
-- On a `'no-parcels'` error it renders nothing. Messaging is left to the page (`map-select-parcel.html` un-hides a GOV.UK error summary and disables the continue button).
+- On a `'no-parcels'` error it renders nothing. Messaging is left to the page: `MapSelectPageController` already renders the GOV.UK error summary and a disabled Continue button server-side.
+- On `map-select-parcel.html`, any map error switches the page to the text list in-page (without changing the saved view preference), so the form stays usable.
 - The viewport is fitted to the parcels' bounding box on load; the map does not persist its viewport in the URL (`urlPosition: 'none'`).
 - Zoom-out is capped at `MAP_MIN_ZOOM` (7), because the OS raster basemap has no tiles below z7, so without the cap users could zoom out into a blank void.
 
@@ -322,6 +336,8 @@ Fetches the authenticated user's parcels from the DAL, enriches them with area d
 The features carry properties only, no geometry: the component uses `PARCEL_TILES_URL` (a client-side constant in `config.js`) as the vector tile source and streams geometry from `/api/map/parcel-tiles/{z}/{x}/{y}`. Returns `503` if the land-grants API is unavailable.
 
 `ENABLE_LAND_GRANT_MAP_ACTION_COUNT` controls whether the map fetches action counts on load for its tooltips. It defaults to `false`; selecting a parcel still loads its count for the details panel.
+
+The parcel list uses only basic parcel references and areas on entry, regardless of that setting. Action counts and SSSI/HEFER requirements are fetched through the single-parcel consents endpoint only when exactly one parcel is selected. At most one request runs at a time: changing the selection aborts a request for a different parcel and fetches the new one straight away, and a request that takes longer than `PARCEL_DETAILS_REQUEST_TIMEOUT_MS` (10 s) is aborted and reported as a failure. Successful responses are cached for the page, so switching views in-page does not refetch. The map starts when the user chooses the map view, so a saved list preference does not trigger map requests or bulk action calculations. Switching views saves the browser preference in localStorage and follows a GET link back to the same page. A one-use, journey-URL-scoped sessionStorage value carries the current selection (every selected parcel, in multi-select) across that navigation; selected-parcel details are fetched again in the new document. If browser storage is blocked, the views switch in-page instead. Without JavaScript, the list remains selectable and Continue opens the selected parcel's actions and requirements on the next page.
 
 ### `GET /api/map/parcel-tiles/{z}/{x}/{y}`
 

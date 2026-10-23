@@ -2,13 +2,7 @@
 // @ts-nocheck
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { initParcelSelectPage } from './parcel-select-page.js'
-import {
-  ERROR_REASON_NO_PARCELS,
-  ERROR_REASON_UNAVAILABLE,
-  EVENT_ERROR,
-  EVENT_READY,
-  EVENT_SELECTION
-} from './config.js'
+import { EVENT_READY, EVENT_SELECTION, PARCEL_DETAILS_REQUEST_TIMEOUT_MS } from './config.js'
 
 const SSSI = 'site of special scientific interest (SSSI) consent'
 const HEFER = 'a Historic Environment Farm Environment Record (HEFER)'
@@ -34,9 +28,7 @@ function setupDom({
   document.body.innerHTML = `
     <input type="hidden" name="crumb" value="test-crumb">
     ${errors ? '<div class="govuk-error-summary"><a id="error-link" href="#parcel-map">There is a problem</a></div>' : ''}
-    <div id="map-no-parcels-error" hidden></div>
     <div id="selected-parcels-inputs"></div>
-    <button id="map-select-continue">Continue</button>
     <table>
       <tr><td id="parcel-map-total-count"></td></tr>
       <tr><td id="parcel-map-total-area"></td></tr>
@@ -91,20 +83,6 @@ describe('initParcelSelectPage', () => {
 
   it('is a no-op when passed no element', () => {
     expect(() => initParcelSelectPage(null)).not.toThrow()
-  })
-
-  it('disables Continue and shows the no-parcels error on a no-parcels error', () => {
-    const mapEl = setupDom()
-    fire(mapEl, EVENT_ERROR, { reason: ERROR_REASON_NO_PARCELS })
-    expect(document.getElementById('map-select-continue').disabled).toBe(true)
-    expect(document.getElementById('map-no-parcels-error').hidden).toBe(false)
-  })
-
-  it('disables Continue but leaves the no-parcels summary hidden on an unavailable error', () => {
-    const mapEl = setupDom()
-    fire(mapEl, EVENT_ERROR, { reason: ERROR_REASON_UNAVAILABLE })
-    expect(document.getElementById('map-select-continue').disabled).toBe(true)
-    expect(document.getElementById('map-no-parcels-error').hidden).toBe(true)
   })
 
   it('moves focus to the selected parcel details, but not for deselection', () => {
@@ -196,7 +174,6 @@ describe('initParcelSelectPage', () => {
 
     expect(document.getElementById('selected-parcel-actions-row').hidden).toBe(true)
     expect(document.getElementById('summary-parcel-no-actions').hidden).toBe(true)
-    expect(document.getElementById('map-select-continue').disabled).toBe(false)
   })
 
   it('shows the no-actions message when the selected parcel has no available actions', () => {
@@ -267,12 +244,6 @@ describe('initParcelSelectPage', () => {
     expect(document.getElementById('parcel-map-total-area').textContent).toBe('3.2500')
   })
 
-  it('catches up on EVENT_ERROR that fired before this script attached its listener', () => {
-    setupDom({ lastEvent: new CustomEvent(EVENT_ERROR, { detail: { reason: ERROR_REASON_NO_PARCELS } }) })
-    expect(document.getElementById('map-select-continue').disabled).toBe(true)
-    expect(document.getElementById('map-no-parcels-error').hidden).toBe(false)
-  })
-
   it('reselects the parcels the server sent back once the map is ready', () => {
     const mapEl = setupDom({ selectedParcels: 'SD7148-9160,SD7148-9161' })
     fire(mapEl, EVENT_READY, { parcelIds: ['SD7148-9160'], metaIndex: {} })
@@ -289,18 +260,6 @@ describe('initParcelSelectPage', () => {
     const mapEl = setupDom()
     fire(mapEl, EVENT_READY, { parcelIds: ['SD7148-9160'], metaIndex: {} })
     expect(mapEl.selectParcels).not.toHaveBeenCalled()
-  })
-
-  it('refocuses the map on the parcels when an error summary link is clicked, without blocking its own focus move', () => {
-    const mapEl = setupDom({ errors: true })
-    const errorLink = document.getElementById('error-link')
-    let defaultPrevented = false
-    errorLink.addEventListener('click', (e) => {
-      defaultPrevented = e.defaultPrevented
-    })
-    errorLink.click()
-    expect(mapEl.focusParcels).toHaveBeenCalled()
-    expect(defaultPrevented).toBe(false)
   })
 
   it('clears the map selection, without navigating, when the Change link is clicked', () => {
@@ -341,7 +300,8 @@ describe('initParcelSelectPage', () => {
           method: 'POST',
           credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': 'test-crumb' },
-          body: '{}'
+          body: '{}',
+          signal: expect.any(AbortSignal)
         }
       )
     })
@@ -369,7 +329,6 @@ describe('initParcelSelectPage', () => {
       select(mapEl, ['SD7148-9160'])
       await flush()
       expect(details()).toEqual(expected)
-      expect(document.getElementById('map-select-continue').disabled).toBe(false)
     })
 
     it.each([[[]], [['SD7148-9161']], [['SD7148-9160', 'SD7148-9161']]])(
@@ -423,7 +382,8 @@ describe('initParcelSelectPage', () => {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': 'test-crumb' },
-        body: '{}'
+        body: '{}',
+        signal: expect.any(AbortSignal)
       })
     })
 
@@ -466,7 +426,6 @@ describe('initParcelSelectPage', () => {
       await flush()
 
       expect(requirements()).toEqual(EMPTY)
-      expect(document.getElementById('map-select-continue').disabled).toBe(false)
     })
 
     it('removes the previous bullets when the selection changes to a parcel with none', async () => {
@@ -537,6 +496,90 @@ describe('initParcelSelectPage', () => {
       await flush()
 
       expect(requirements()).toEqual({ hidden: false, intro: INTRO, items: [HEFER], status: `${INTRO} ${HEFER}` })
+    })
+  })
+
+  describe('cancelling consent requests', () => {
+    const select = (mapEl, ids) => fire(mapEl, EVENT_SELECTION, { selectedParcels: ids.map((id) => ({ id })) })
+    const signalFor = (call) => global.fetch.mock.calls[call][1].signal
+    // Settles like a real fetch: rejects once its signal is aborted.
+    const pendingUntilAborted = (_url, { signal }) =>
+      new Promise((_resolve, reject) => {
+        signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))
+      })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('aborts a request for a different parcel and fetches the new selection straight away', async () => {
+      global.fetch = vi
+        .fn()
+        .mockImplementationOnce(pendingUntilAborted)
+        .mockResolvedValueOnce(noticeResponse([HEFER]))
+      const mapEl = setupDom()
+
+      select(mapEl, ['SD7148-9160'])
+      select(mapEl, ['SD7148-9161'])
+      await flush()
+
+      expect(signalFor(0).aborted).toBe(true)
+      expect(global.fetch).toHaveBeenCalledTimes(2)
+      expect(global.fetch.mock.calls[1][0]).toContain('SD7148-9161')
+      expect(requirements()).toEqual({ hidden: false, intro: INTRO, items: [HEFER], status: `${INTRO} ${HEFER}` })
+    })
+
+    it.each([
+      ['deselection', []],
+      ['a second parcel being added', ['SD7148-9160', 'SD7148-9161']]
+    ])('aborts the request on %s', async (_name, ids) => {
+      global.fetch = vi.fn().mockImplementationOnce(pendingUntilAborted)
+      const mapEl = setupDom({ multiSelect: true })
+
+      select(mapEl, ['SD7148-9160'])
+      select(mapEl, ids)
+      await flush()
+
+      expect(signalFor(0).aborted).toBe(true)
+      expect(global.fetch).toHaveBeenCalledTimes(1)
+      expect(requirements()).toEqual(EMPTY)
+    })
+
+    it('reuses the request already loading when the same parcel is selected again', async () => {
+      let resolveFirst
+      global.fetch = vi.fn().mockReturnValueOnce(new Promise((resolve) => (resolveFirst = resolve)))
+      const mapEl = setupDom()
+
+      select(mapEl, ['SD7148-9160'])
+      select(mapEl, ['SD7148-9160'])
+      resolveFirst(noticeResponse([SSSI]))
+      await flush()
+
+      expect(global.fetch).toHaveBeenCalledTimes(1)
+      expect(signalFor(0).aborted).toBe(false)
+      expect(requirements().items).toEqual([SSSI])
+    })
+
+    it('abandons a hung request after the timeout and retries on the next selection', async () => {
+      vi.useFakeTimers()
+      global.fetch = vi
+        .fn()
+        .mockImplementationOnce(pendingUntilAborted)
+        .mockResolvedValueOnce(noticeResponse([SSSI]))
+      const mapEl = setupDom()
+
+      select(mapEl, ['SD7148-9160'])
+      await vi.advanceTimersByTimeAsync(PARCEL_DETAILS_REQUEST_TIMEOUT_MS - 1)
+      expect(signalFor(0).aborted).toBe(false)
+      await vi.advanceTimersByTimeAsync(1)
+      expect(signalFor(0).aborted).toBe(true)
+      expect(requirements()).toEqual(EMPTY)
+
+      select(mapEl, [])
+      select(mapEl, ['SD7148-9160'])
+      await vi.advanceTimersByTimeAsync(0)
+      expect(global.fetch).toHaveBeenCalledTimes(2)
+      expect(requirements().items).toEqual([SSSI])
     })
   })
 })

@@ -1,0 +1,76 @@
+{% from "govuk/components/tag/macro.njk" import govukTag %}
+
+<fieldset
+  class="govuk-fieldset"
+  id="land-parcels"
+  tabindex="-1"
+  aria-describedby="{{ ('parcel-selection-hint ' + (errorDescribedByIds | join(' '))) if errors and errors.length else 'parcel-selection-hint' }}"
+>
+  <legend class="govuk-fieldset__legend govuk-visually-hidden">{{ pageTitle }}</legend>
+  {% set controlClass = "govuk-checkboxes" if multiSelect else "govuk-radios" %}
+  <div class="{{ controlClass }}">
+    {% for parcel in parcels %}
+      {% set inputId = "land-parcel-" + loop.index %}
+      {% set isChecked = parcel.id in (selectedParcelIds or []) %}
+      <div class="parcel-list-item">
+        <div class="{{ controlClass }}__item">
+          <input
+            class="{{ controlClass }}__input"
+            id="{{ inputId }}"
+            name="landParcels"
+            type="{{ 'checkbox' if multiSelect else 'radio' }}"
+            value="{{ parcel.id }}"
+            aria-labelledby="{{ inputId }}-reference"
+            aria-describedby="{{ inputId }}-hint"
+            {% if isChecked %}checked{% endif %}
+          />
+          <label class="govuk-label {{ controlClass }}__label parcel-list-label" for="{{ inputId }}">
+            <span id="{{ inputId }}-reference">{{ parcel.reference }}</span>
+            <span
+              class="govuk-hint govuk-!-display-block govuk-!-font-size-16 govuk-!-margin-top-1 govuk-!-margin-bottom-0"
+              id="{{ inputId }}-hint"
+            >
+              Total area: {{ parcel.area }}
+              {% if parcel.added %}
+                <span class="govuk-!-display-block govuk-!-margin-top-2">
+                  {{ govukTag({ text: "Added to application", classes: "govuk-tag--green parcel-list-tag govuk-!-font-size-16" }) }}
+                </span>
+              {% endif %}
+            </span>
+          </label>
+        </div>
+        {# JavaScript reveals details and associates them with the selected input. #}
+        <div class="parcel-list-details" id="{{ inputId }}-details" data-parcel-details="{{ parcel.id }}" hidden>
+          <dl class="govuk-summary-list govuk-!-font-size-16">
+            <div class="govuk-summary-list__row">
+              <dt class="govuk-summary-list__key">Total area</dt>
+              <dd class="govuk-summary-list__value">{{ parcel.area }}</dd>
+            </div>
+            <div class="govuk-summary-list__row" data-parcel-actions-row hidden>
+              <dt class="govuk-summary-list__key">Available actions</dt>
+              <dd class="govuk-summary-list__value" data-parcel-action-count></dd>
+            </div>
+            <div class="govuk-summary-list__row" data-parcel-details-status hidden>
+              <dt class="govuk-summary-list__key">Available actions</dt>
+              <dd class="govuk-summary-list__value" data-parcel-details-status-text></dd>
+            </div>
+            <div class="govuk-summary-list__row" data-parcel-requirements-row hidden>
+              <dt class="govuk-summary-list__key">Requirements</dt>
+              <dd class="govuk-summary-list__value">
+                <p class="govuk-body govuk-!-font-size-16 govuk-!-margin-bottom-1" data-parcel-requirements-intro></p>
+                <ul
+                  class="govuk-list govuk-list--bullet govuk-!-font-size-16 govuk-!-margin-bottom-0"
+                  data-parcel-requirements-list
+                ></ul>
+              </dd>
+            </div>
+          </dl>
+          <p class="govuk-inset-text govuk-!-font-size-16" data-parcel-no-actions hidden>
+            There are no actions available for this land parcel. Select another land parcel to continue.
+          </p>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</fieldset>
+<output class="govuk-visually-hidden" id="parcel-list-status"></output>

@@ -11,6 +11,7 @@ export const TAG_NAME = 'parcel-map'
 
 export const MULTI_SELECT_ATTRIBUTE = 'multi-select'
 export const ENABLED_LAND_ACTIONS_ATTRIBUTE = 'data-enabled-land-actions'
+export const DEFER_LOADING_ATTRIBUTE = 'defer-loading'
 
 const COLOR_GOV_UK_BLUE = '#1d70b8'
 export const PARCEL_COLORS = [
@@ -29,6 +30,10 @@ export const LAYER_LINE_WIDTH = 1.5
 export const FIT_BOUNDS_PADDING = 40
 export const AREA_DECIMAL_PLACES = 4
 export const TOTAL_AREA_DECIMAL_PLACES = 4
+export const PARCEL_DETAILS_LOADING_DELAY_MS = 500
+export const PARCEL_DETAILS_LOADING_MIN_DURATION_MS = 500
+// A hung consents lookup is abandoned so the details stop showing "Loading…".
+export const PARCEL_DETAILS_REQUEST_TIMEOUT_MS = 10000
 
 // Feature property carrying the compound "SHEET-PARCEL" ID, stamped onto the
 // vector tiles by the grants-ui tile proxy. The interact plugin uses it to

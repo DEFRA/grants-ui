@@ -1,9 +1,62 @@
+@use 'sass:math';
 @use 'govuk-frontend' as *;
 
-.map-select-parcel .govuk-width-container {
+// Mirrors govuk-frontend's conditional reveal, which keeps these private: the
+// border is centred under the 44px radio/checkbox touch target and the
+// details line up with the label text.
+$parcel-list-touch-target-size: 44px;
+$parcel-list-label-padding: govuk-spacing(3);
+$parcel-list-details-border-width: $govuk-border-width-narrow;
+$parcel-list-details-margin-left: math.div($parcel-list-touch-target-size, 2) - math.div(
+    $parcel-list-details-border-width,
+    2
+  );
+
+.map-select-parcel--map .govuk-width-container {
   @include govuk-width-container(1400px);
 }
 
-.map-select-parcel .govuk-summary-list__row[hidden] {
-  display: none;
+.map-select-parcel {
+  [hidden] {
+    display: none;
+  }
+
+  .parcel-list-item {
+    margin-bottom: govuk-spacing(2);
+  }
+
+  .parcel-list-item:has(.parcel-list-details:not([hidden])) {
+    @include govuk-responsive-margin(5, 'bottom');
+  }
+
+  .parcel-list-label {
+    align-self: flex-start;
+  }
+
+  .parcel-list-details {
+    margin-left: $parcel-list-details-margin-left;
+    padding-left: $parcel-list-details-margin-left + $parcel-list-label-padding;
+    border-left: $parcel-list-details-border-width solid $govuk-border-colour;
+    clear: both;
+
+    .govuk-summary-list {
+      margin-bottom: 0;
+    }
+  }
+
+  .parcel-list-tag {
+    max-width: none;
+  }
+
+  &:not(.map-select-parcel--map) {
+    @include govuk-media-query($from: desktop) {
+      .parcel-selection-main {
+        width: 66.6667%;
+      }
+
+      .parcel-selection-sidebar {
+        width: 33.3333%;
+      }
+    }
+  }
 }
