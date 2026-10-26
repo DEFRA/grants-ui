@@ -7,23 +7,51 @@ import { logUpstreamError } from '~/src/server/common/helpers/logging/upstream-e
 import { fetchParcels, fetchParcelTileLocation } from '~/src/server/land-grants/services/land-grants.service.js'
 import {
   fetchParcelTile,
+  locateParcelTiles,
   LAND_GRANTS_ACTION_SIZE,
   LAND_GRANTS_ACTIONS
 } from '~/src/server/land-grants/services/land-grants.client.js'
-import { stringifyParcel } from '~/src/shared/format-parcel.js'
+import { compactParcelReference, stringifyParcel } from '~/src/shared/format-parcel.js'
 import { ROUTES } from './map-routes.js'
 import { toParcelData, toGeoJsonFeatures } from './parcel-features.js'
 import { withCompoundParcelIds } from './mvt-compound-id.js'
 import { buildOsBasemapStyle, fetchOsTile } from './os-maps.js'
 import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
+import { fetchAuthorisedParcelIds } from '~/src/server/land-grants/services/parcel-cache.js'
+import { getAuthorisedParcel } from '~/src/server/land-grants/services/parcel-authorisation.js'
 
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
 const TILE_CACHE_MAX_AGE_SECONDS = config.get('maps.land.tileCacheMaxAgeSeconds')
 const SERVICE_LAND_GRANTS = 'land-grants-api'
+const SERVICE_CONSOLIDATED_VIEW = 'consolidated-view'
 const CACHE_CONTROL_HEADER = 'Cache-Control'
 // Generic, so the upstream land-grants response body never reaches the browser;
 // the real message is preserved in logUpstreamError.
 const PARCELS_ERROR_MESSAGE = 'Unable to load your land parcels'
+const SEARCH_ERROR_MESSAGE = 'Unable to search your land parcels'
+const BBOX_ERROR_MESSAGE = 'Unable to locate the land parcel'
+
+/**
+ * The signed-in user's parcels, or the status to answer with when the
+ * land-grants lookup failed (logged here against `endpoint`).
+ * @param {Request} request
+ * @param {string} endpoint
+ * @param {string[]} [fields]
+ * @returns {Promise<{ ok: true, parcels: HydratedParcel[], userContext: LandGrantsUserContext } | { ok: false, status: number }>}
+ */
+async function loadUserParcels(request, endpoint, fields = [LAND_GRANTS_ACTION_SIZE]) {
+  const formRequest = /** @type {AnyFormRequest} */ (/** @type {unknown} */ (request))
+  const userContext = getLandGrantsUserContext(formRequest)
+  const result = await attempt(() => fetchParcels(formRequest, userContext, fields))
+  if (result.ok) {
+    return { ok: true, parcels: result.value, userContext }
+  }
+
+  const err = /** @type {Error & { code?: unknown, status?: unknown }} */ (result.error)
+  const upstreamStatus = readUpstreamStatus(err)
+  logUpstreamError({ endpoint, service: SERVICE_LAND_GRANTS, upstreamStatus, errorMessage: err.message }, request)
+  return { ok: false, status: upstreamStatus ?? statusCodes.serviceUnavailable }
+}
 
 /**
  * Returns the signed-in user's parcels as GeoJSON features (id, sheet_id,
@@ -33,36 +61,87 @@ const PARCELS_ERROR_MESSAGE = 'Unable to load your land parcels'
  * @param {ResponseToolkit} h
  */
 export async function parcelsHandler(request, h) {
-  const formRequest = /** @type {AnyFormRequest} */ (/** @type {unknown} */ (request))
-  const userContext = getLandGrantsUserContext(formRequest)
   const enabledLandActions = /** @type {{ enabledLandActions?: string[] }} */ (request.query)?.enabledLandActions ?? []
   const enableActionCount = config.get('landGrants.enableMapActionCount')
   const fields = [LAND_GRANTS_ACTION_SIZE]
   if (enableActionCount && enabledLandActions.length) {
     fields.push(LAND_GRANTS_ACTIONS)
   }
-  const result = await attempt(() => fetchParcels(formRequest, userContext, fields))
-
-  if (!result.ok) {
-    const err = /** @type {Error & { code?: unknown, status?: unknown }} */ (result.error)
-    const upstreamStatus = readUpstreamStatus(err)
-    logUpstreamError(
-      { endpoint: ROUTES.parcels, service: SERVICE_LAND_GRANTS, upstreamStatus, errorMessage: err.message },
-      request
-    )
-    return h.response({ error: PARCELS_ERROR_MESSAGE }).code(upstreamStatus ?? statusCodes.serviceUnavailable)
+  const loaded = await loadUserParcels(request, ROUTES.parcels, fields)
+  if (!loaded.ok) {
+    return h.response({ error: PARCELS_ERROR_MESSAGE }).code(loaded.status)
   }
 
-  const parcelData = toParcelData(result.value, enableActionCount ? enabledLandActions : undefined)
+  const parcelData = toParcelData(loaded.parcels, enableActionCount ? enabledLandActions : undefined)
   const features = toGeoJsonFeatures(parcelData)
   const bbox = await fetchParcelTileLocation(
     parcelData.map((p) => p.id),
-    userContext
+    loaded.userContext
   )
 
   // User-specific: never let the browser replay this for a different signed-in
   // user against the same URL after a logout/login.
   return h.response({ features, bbox }).code(statusCodes.ok).header(CACHE_CONTROL_HEADER, 'no-store')
+}
+
+/**
+ * Parcel IDs from the user's holding matching the typed query, ignoring case
+ * and the space or hyphen. Served from the consolidated view, so typing never
+ * reaches the land-grants API.
+ * @param {Request} request
+ * @param {ResponseToolkit} h
+ */
+export async function parcelSearchHandler(request, h) {
+  const formRequest = /** @type {AnyFormRequest} */ (/** @type {unknown} */ (request))
+  const parcelIds = await fetchAuthorisedParcelIds(formRequest)
+  if (!parcelIds) {
+    logUpstreamError(
+      {
+        endpoint: ROUTES.parcelSearch,
+        service: SERVICE_CONSOLIDATED_VIEW,
+        upstreamStatus: null,
+        errorMessage: 'Unable to load the authorised parcel ids'
+      },
+      request
+    )
+    return h.response({ error: SEARCH_ERROR_MESSAGE }).code(statusCodes.serviceUnavailable)
+  }
+
+  // A query of only separators compacts to nothing, which would match every parcel.
+  const query = compactParcelReference(/** @type {{ q: string }} */ (request.query).q)
+  const matches = query
+    ? parcelIds.filter((id) => compactParcelReference(id).includes(query)).sort((a, b) => a.localeCompare(b))
+    : []
+
+  return h.response({ parcelIds: matches }).code(statusCodes.ok).header(CACHE_CONTROL_HEADER, 'no-store')
+}
+
+/**
+ * The WGS84 bounding box of one of the signed-in user's parcels, for the map
+ * to frame a search result whose geometry it has not drawn yet.
+ * @param {Request} request
+ * @param {ResponseToolkit} h
+ */
+export async function parcelBboxHandler(request, h) {
+  const parcel = await getAuthorisedParcel(request)
+  if (!parcel) {
+    return h.response().code(statusCodes.forbidden)
+  }
+
+  const userContext = getLandGrantsUserContext(parcel.formRequest)
+  // locateParcelTiles logs its own upstream failures and throws with the
+  // upstream status on `.code`/`.status`, so an outage is not reported as 404.
+  const located = await attempt(() => locateParcelTiles([request.params.parcelId], LAND_GRANTS_API_URL, userContext))
+  if (!located.ok) {
+    const status = readUpstreamStatus(/** @type {Error & { code?: unknown, status?: unknown }} */ (located.error))
+    return h.response({ error: BBOX_ERROR_MESSAGE }).code(status ?? statusCodes.serviceUnavailable)
+  }
+  const bbox = located.value?.bbox
+  if (!bbox) {
+    return h.response({ error: BBOX_ERROR_MESSAGE }).code(statusCodes.notFound)
+  }
+
+  return h.response({ bbox }).code(statusCodes.ok).header(CACHE_CONTROL_HEADER, 'no-store')
 }
 
 /**
@@ -75,29 +154,15 @@ export async function parcelsHandler(request, h) {
  */
 export async function tilesHandler(request, h) {
   const { z, x, y } = request.params
-  const formRequest = /** @type {AnyFormRequest} */ (/** @type {unknown} */ (request))
-  const userContext = getLandGrantsUserContext(formRequest)
-  const parcelsResult = await attempt(() => fetchParcels(formRequest, userContext))
-
-  if (!parcelsResult.ok) {
-    const err = /** @type {Error & { code?: unknown, status?: unknown }} */ (parcelsResult.error)
-    const upstreamStatus = readUpstreamStatus(err)
-    logUpstreamError(
-      {
-        endpoint: ROUTES.parcelTiles,
-        service: SERVICE_LAND_GRANTS,
-        upstreamStatus,
-        errorMessage: err.message
-      },
-      request
-    )
-    return h.response().code(upstreamStatus ?? statusCodes.serviceUnavailable)
+  const loaded = await loadUserParcels(request, ROUTES.parcelTiles)
+  if (!loaded.ok) {
+    return h.response().code(loaded.status)
   }
-  const parcelIds = parcelsResult.value.map((p) => stringifyParcel(p))
+  const parcelIds = loaded.parcels.map((p) => stringifyParcel(p))
 
   // fetchParcelTile logs its own upstream failures and throws with the upstream
   // status on `.code`/`.status`; a 404 tile is not retried, a 5xx is.
-  const tileResult = await attempt(() => fetchParcelTile(parcelIds, z, x, y, LAND_GRANTS_API_URL, userContext))
+  const tileResult = await attempt(() => fetchParcelTile(parcelIds, z, x, y, LAND_GRANTS_API_URL, loaded.userContext))
   if (!tileResult.ok) {
     const status = readUpstreamStatus(/** @type {Error & { code?: unknown, status?: unknown }} */ (tileResult.error))
     return h.response().code(status ?? statusCodes.serviceUnavailable)
@@ -164,4 +229,6 @@ export async function osTileProxyHandler(request, h) {
 /**
  * @import { Request, ResponseToolkit } from '@hapi/hapi'
  * @import { AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { HydratedParcel } from './types.js'
+ * @import { LandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
  */

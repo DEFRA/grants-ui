@@ -1,4 +1,6 @@
 export const PARCELS_API_URL = '/api/map/parcels'
+export const PARCEL_SEARCH_URL = '/api/map/parcels/search'
+export const PARCEL_BBOX_URL = '/api/map/parcels/{parcelId}/bbox'
 export const PARCEL_TILES_URL = '/api/map/parcel-tiles/{z}/{x}/{y}'
 
 export const MAP_STYLE_URL = '/api/map/os-basemap'
@@ -42,7 +44,7 @@ export const PARCEL_ID_PROPERTY = 'id'
 export const PARCEL_CLICK_TOLERANCE_PX = 10
 export const SOURCE_ID_PARCELS = 'parcels'
 // GeoJSON source the label layer reads from — one deduplicated point per
-// parcel id, rebuilt on 'idle' by parcel-map-labels.js.
+// parcel id, rebuilt on 'idle' by labels.js.
 export const SOURCE_ID_PARCEL_LABELS = 'parcels-labels'
 
 export const LAYER_ID_FILL = 'parcels-fill'
@@ -59,6 +61,8 @@ export const LABEL_CLUSTER_TEXT_COLOR = '#ffffff'
 // Zoom ceiling when fitting to a clicked cluster's bounds — kept separate
 // from LABEL_CLUSTER_MAX_ZOOM, which is too low to double as this cap.
 export const CLUSTER_EXPAND_MAX_ZOOM = 14
+// Zoom ceiling when framing a searched parcel; the basemap is unreadable beyond it.
+export const SEARCH_FIT_MAX_ZOOM = 18
 
 export const FILL_OPACITY_DEFAULT = 0.2
 export const FILL_OPACITY_SELECTED = 0.5
@@ -67,8 +71,8 @@ export const MAP_DEFAULT_LNG = -1.5
 export const MAP_DEFAULT_LAT = 52.5
 export const MAP_DEFAULT_CENTER = /** @type {[number, number]} */ ([MAP_DEFAULT_LNG, MAP_DEFAULT_LAT])
 export const MAP_DEFAULT_ZOOM = 12
-// The OS raster basemap only exists for zooms 7–20 (mirrors OS_MIN_ZOOM in
-// map.plugin.js). Constrain the map so users can't zoom out into blank void.
+// The OS raster basemap starts at zoom 7 (mirrors OS_MIN_ZOOM in os-maps.js).
+// Constrain the map so users can't zoom out into blank void.
 export const MAP_MIN_ZOOM = 7
 export const MAP_LOAD_TIMEOUT_MS = 10000
 export const FETCH_MAX_ATTEMPTS = 2
@@ -100,93 +104,55 @@ export const SELECT_FEATURE_EVENT = 'interact:selectFeature'
 export const SELECT_LISTENER_POLL_MS = 20
 export const SELECT_LISTENER_MAX_POLLS = 25
 
+export const SEARCH_MATCH_EVENT = 'search:match'
+export const SEARCH_OPEN_EVENT = 'search:open'
+// The vendor search plugin's DOM: its open button, form, input, results list
+// and the status panel it shows under the input.
+export const SEARCH_OPEN_BUTTON_SELECTOR = 'button[aria-controls$="-search-form"]'
+export const SEARCH_FORM_SELECTOR = '[id$="-search-form"]'
+export const SEARCH_INPUT_SELECTOR = 'input[id$="-search-input"]'
+export const SEARCH_SUGGESTIONS_SELECTOR = '.im-c-search-suggestions'
+export const CLASS_SEARCH_STATUS = 'im-c-search__status'
+// Lets _parcel-map.scss size the results list to the map.
+export const CSS_VAR_MAP_HEIGHT = '--parcel-map-height'
+
 export const EVENT_READY = 'parcel-map:ready'
 export const EVENT_ERROR = 'parcel-map:error'
 export const EVENT_SELECTION = 'parcel-map:selection'
 
+// On EVENT_SELECTION; the page does not scroll for a search pick.
+export const SELECTION_SOURCE_MAP = 'map'
+export const SELECTION_SOURCE_SEARCH = 'search'
+
+export const SEARCH_PLACEHOLDER = 'Search by parcel ID'
+export const MSG_SEARCH_NO_RESULTS = 'No matching land parcels'
+export const MSG_SEARCH_ERROR = 'Search is unavailable'
+
 export const ERROR_REASON_UNAVAILABLE = 'unavailable'
 export const ERROR_REASON_NO_PARCELS = 'no-parcels'
 
-const POSITION_ABSOLUTE = 'position:absolute'
-
-export const ERROR_OVERLAY_STYLES = [
-  POSITION_ABSOLUTE,
-  'inset:0',
-  'background:#f3f2f1',
-  'border:2px solid #b1b4b6',
-  'border-radius:4px',
-  'display:flex',
-  'align-items:center',
-  'justify-content:center',
-  'z-index:1'
-].join(';')
-
-export const ERROR_LABEL_STYLES = 'font-family:GDS Transport,arial,sans-serif;font-size:16px;color:#505a5f'
-
-export const TOOLTIP_STYLES = [
-  POSITION_ABSOLUTE,
-  'z-index:9999',
-  'background:#fff',
-  'border:2px solid #b1b4b6',
-  'border-radius:4px',
-  'padding:12px 14px',
-  'font-size:14px',
-  'font-family:GDS Transport,arial,sans-serif',
-  'line-height:1.4',
-  'max-width:220px',
-  'box-shadow:0 2px 8px rgba(0,0,0,0.18)',
-  'pointer-events:none',
-  'display:none'
-].join(';')
+// Styled in src/client/stylesheets/components/_parcel-map.scss.
+export const CLASS_WRAPPER = 'parcel-map__wrapper'
+export const CLASS_CANVAS = 'parcel-map__canvas'
+export const CLASS_OVERLAY = 'parcel-map__overlay'
+export const CLASS_OVERLAY_LABEL = 'parcel-map__overlay-label'
+export const CLASS_TOOLTIP = 'parcel-map__tooltip'
+export const CLASS_TOOLTIP_TITLE = 'parcel-map__tooltip-title'
+export const CLASS_TOOLTIP_ROW = 'parcel-map__tooltip-row'
+export const CLASS_VISUALLY_HIDDEN = 'govuk-visually-hidden'
+export const SHOW_ALL_BUTTON_CLASS = 'map-reset-view-button'
 
 export const SHOW_ALL_ICON_SVG =
-  '<svg class="map-reset-view-button__icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
-  '<path d="M8 4H4v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>' +
-  '<path d="M16 4h4v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>' +
-  '<path d="M8 20H4v-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>' +
-  '<path d="M16 20h4v-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>' +
-  '<rect x="7" y="7" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2"></rect>' +
+  '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" class="im-c-icon">' +
+  '<path d="M3 7V5a2 2 0 0 1 2-2h2"></path>' +
+  '<path d="M17 3h2a2 2 0 0 1 2 2v2"></path>' +
+  '<path d="M21 17v2a2 2 0 0 1-2 2h-2"></path>' +
+  '<path d="M7 21H5a2 2 0 0 1-2-2v-2"></path>' +
   '</svg>'
 
-// Screen-pixel drift before "Show all parcels" appears; filters out incidental nudges.
+// Screen-pixel drift before "View all land parcels" appears; filters out incidental nudges.
 export const SHOW_ALL_MOVE_THRESHOLD_PX = 100
 export const ZOOM_DRIFT_TOLERANCE = 0.1
 
-export const MSG_SHOW_ALL_PARCELS = 'Show all parcels'
-export const MSG_SHOW_ALL_PARCELS_AVAILABLE = 'Show all parcels button now available'
-
-// Layout only — background/border/box-shadow/hover/focus live in
-// SHOW_ALL_BUTTON_FOCUS_STYLE so :hover/:focus can override them.
-export const SHOW_ALL_BUTTON_STYLES = [
-  POSITION_ABSOLUTE,
-  'top:12px',
-  'left:12px',
-  'z-index:2',
-  'align-items:center',
-  'gap:8px',
-  'margin:0',
-  'padding:8px 12px',
-  'font-size:16px',
-  'font-weight:400',
-  'line-height:1.25',
-  'font-family:GDS Transport,arial,sans-serif',
-  'color:#0b0c0c',
-  'cursor:pointer'
-].join(';')
-
-export const SHOW_ALL_BUTTON_CLASS = 'map-reset-view-button'
-
-export const SHOW_ALL_BUTTON_FOCUS_STYLE = `
-  .${SHOW_ALL_BUTTON_CLASS} {
-    background: #ffffff;
-    border: 2px solid #0b0c0c;
-    box-shadow: 0 2px 4px rgba(11,12,12,0.15);
-  }
-  .${SHOW_ALL_BUTTON_CLASS}:hover {
-    background-color: var(--button-hover-color);
-  }
-  .${SHOW_ALL_BUTTON_CLASS}:focus {
-    outline: 3px solid transparent;
-    box-shadow: 0 0 0 3px #ffdd00, 0 2px 4px rgba(11,12,12,0.15);
-  }
-`
+export const MSG_SHOW_ALL_PARCELS = 'View all land parcels'
+export const MSG_SHOW_ALL_PARCELS_AVAILABLE = 'View all land parcels button now available'
