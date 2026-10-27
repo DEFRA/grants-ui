@@ -193,13 +193,9 @@ The Grasslands map page rejects Continue when the selected parcel has no eligibl
 
 The wording deliberately matches the select-actions page's own empty state (`src/server/land-grants/views/select-actions.html`) — one condition, one message, whichever page the user reaches first.
 
-**That state _was_ reachable from local data on CRN `1103313150`** (parcels `SK0972-6811` and `SK0972-7313`, on land cover classes 551 and 332 that no action maps to) with the retired `grants-ui-dal-stub`. grants-platform-dal-stub has no synthetic persona for it yet; until one is added, use `--mock-no-actions` below. The original flow was: Every enabled action comes back with `availability.value: 0`, and the parcel is rejected:
+**No synthetic persona reaches that state yet.** The retired stub had a user whose parcels sat on land cover classes 551 and 332, which no action maps to; grants-platform-dal-stub has no equivalent. Until one is added, use `--mock-no-actions` below. The real flow is: every enabled action comes back with `availability.value: 0`, and the parcel is rejected.
 
-```sh
-gt journey grasslands --crn 1103313150 --parcel SK0972-6811
-```
-
-That CRN is offered in the TUI's journey picker for grasslands, and `--crn` overrides it from the command line. Pass the parcel in its **hyphenated** form (`SK0972-6811`, not `SK0972 6811`) — the runner matches the ids the map API returns.
+When a persona exists, `--crn` selects it and `--parcel` picks the parcel. Pass the parcel in its **hyphenated** form (`SK0972-6811`, not `SK0972 6811`) — the runner matches the ids the map API returns.
 
 Note the shape of the data, because it is easy to get wrong: the action list comes back **non-empty** and it is the availability that is zero. A guard counting returned actions rather than claimable ones misses this entirely. `acceptance/test/features/action-selection.feature` covers both parcels against the seeded API, and is the real regression guard for the detection logic.
 

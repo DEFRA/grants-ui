@@ -94,8 +94,8 @@ describe('backend form definition readiness probe', () => {
       encryptionKey: 'encryption_key',
       lockTokenSecret: 'dev-lock-secret',
       grantCode: 'example-grant-with-auth',
-      userId: '1100957269',
-      sbi: '107593059'
+      userId: '9000000001',
+      sbi: '800000001'
     })
   })
 

@@ -1,11 +1,12 @@
 ### Land Grants API - HTTP Client
 
-# Local WBD1 fixture: CRN 1300000034, Valley Estate (SBI 300000034).
-# Authenticate as this CRN when obtaining defraIdToken for these requests.
+# Synthetic persona 9000000001 (Green Farm, SBI 800000001) from grants-platform-dal-stub;
+# authenticate as this CRN when obtaining defraIdToken. The parcel comes from the
+# land-grants-api seed and carries WBD1 availability.
 # landGrantsUrl, landGrantsAuthToken and defraIdToken use the selected HTTP
 # Client environment; keep credentials in http-client.private.env.json.
-@testSbi = 300000034
-@testCrn = 1300000034
+@testSbi = 800000001
+@testCrn = 9000000001
 @testSheetId = SD5349
 @testParcelId = 3815
 @testApplicationId = http-client-wbd1
