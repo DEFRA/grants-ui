@@ -103,7 +103,7 @@ See [Local form-definition overrides](DOCKER.md#local-form-definition-overrides)
 Inspect the application state persisted in the local Grants UI Backend database:
 
 ```bash
-gt state example-grant-with-auth --sbi 106238911
+gt state example-grant-with-auth --sbi 800000001
 ```
 
 Use `--grant-version <version>` to select an exact grant version, or `--json` for machine-readable output. Without

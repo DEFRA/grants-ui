@@ -25,8 +25,8 @@ services:
 
   # Synthetic-data stub of the DAL (https://github.com/DEFRA/grants-platform-dal-stub).
   # grants-ui reaches it through the same code path as the real DAL, with
-  # CV_API_AUTH_ENABLED=false. Until the image is published, build it from a
-  # sibling checkout via the `gt` TUI `local` menu (grants-platform-dal-stub:local).
+  # CV_API_AUTH_ENABLED=false. The `gt` TUI `local` menu can swap in a sibling
+  # build (grants-platform-dal-stub:local) in place of the published image.
   grants-platform-dal-stub:
     image: defradigital/grants-platform-dal-stub:latest
     pull_policy: always

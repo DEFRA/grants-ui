@@ -13,7 +13,7 @@ import { redisSchema } from './redis.js'
 import { rateLimitSchema } from './rate-limit.js'
 import { devToolsSchema } from './dev-tools.js'
 import { validateBackendAuthConfig } from './validate-backend-auth.js'
-import { validateConsolidatedViewAuthConfig } from '~/src/config/validate-consolidated-view-auth.js'
+import { validateConsolidatedViewAuthConfig } from './validate-consolidated-view-auth.js'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 

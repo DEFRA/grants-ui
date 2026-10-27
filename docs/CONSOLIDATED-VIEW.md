@@ -11,9 +11,11 @@ CV_API_ENDPOINT="http://grants-platform-dal-stub:3008/graphql"
 CV_API_AUTH_ENABLED=false
 ```
 
-`CV_API_AUTH_ENABLED=false` skips the Entra token request, so no `ENTRA_*` settings are needed. It is refused when `ENVIRONMENT` is `test` or `prod`, because the live DAL always requires the token. Sign in with one of the stub's synthetic CRNs (`1300000001` is the happy path; see the stub's README); the Defra ID stub's `users.json` lists the same CRN and SBI pairs.
+`CV_API_AUTH_ENABLED=false` skips the Entra token request, so no `ENTRA_*` settings are needed. It is refused when `ENVIRONMENT` is `test` or `prod`, because the live DAL always requires the token. Sign in with one of the stub's synthetic CRNs (`9000000001` is the happy path; see the stub's README); the Defra ID stub's `users.json` lists the same CRN and SBI pairs.
 
-Until the stub's image is published, build it from a sibling checkout: in the `gt` TUI pick `local` and enable `grants-platform-dal-stub`, which builds `grants-platform-dal-stub:local` from `../grants-platform-dal-stub` and overrides the compose image.
+Running `npm run dev` on the host instead of in Docker needs the stub's host address in `.env`: `CV_API_ENDPOINT="http://localhost:3008/graphql"` and `CV_API_AUTH_ENABLED=false` (see `.env.example`).
+
+To run a sibling checkout of the stub instead of the published image, pick `local` in the `gt` TUI and enable `grants-platform-dal-stub`, which builds `grants-platform-dal-stub:local` from `../grants-platform-dal-stub` and overrides the compose image.
 
 The proxied CI/HA stack (`compose.ci.yml`, `compose.ha.yml`) reaches the same stub through nginx on port 4008.
 
