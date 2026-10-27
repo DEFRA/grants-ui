@@ -13,6 +13,7 @@ import { redisSchema } from './redis.js'
 import { rateLimitSchema } from './rate-limit.js'
 import { devToolsSchema } from './dev-tools.js'
 import { validateBackendAuthConfig } from './validate-backend-auth.js'
+import { validateConsolidatedViewAuthConfig } from '~/src/config/validate-consolidated-view-auth.js'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -130,17 +131,11 @@ const convictConfig = {
     }
   },
   consolidatedView: {
-    mockDALEnabled: {
-      doc: 'Consolidated View API mock enabled',
+    authEnabled: {
+      doc: 'Send an Entra bearer token with Consolidated View API requests. Set to false only when CV_API_ENDPOINT points at grants-platform-dal-stub, which ignores authentication. Refused in test and prod.',
       format: Boolean,
-      default: false,
-      env: 'CV_API_MOCK_ENABLED'
-    },
-    stubUrl: {
-      doc: 'Consolidate View API stub endpoint',
-      format: String,
-      default: '',
-      env: 'CV_API_STUB_URL'
+      default: true,
+      env: 'CV_API_AUTH_ENABLED'
     },
     apiEndpoint: {
       doc: 'Consolidated View API endpoint',
@@ -425,6 +420,7 @@ export const config = convict({
 config.validate({ allowed: 'strict' })
 
 validateBackendAuthConfig(config)
+validateConsolidatedViewAuthConfig(config)
 
 /**
  * @import { SchemaObj } from 'convict'
