@@ -61,6 +61,9 @@ jobs:
   docker:
     name: Docker Build and Acceptance and Performance Tests
     runs-on: ubuntu-latest
+    # TGC-1813: This job fetches config and journey-test repos anonymously.
+    # Re-enable it when those repos are public again or the fetches use credentials.
+    if: github.event.repository.private == false
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
