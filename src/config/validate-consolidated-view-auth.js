@@ -7,7 +7,7 @@
 const ENVIRONMENTS_REQUIRING_AUTH = new Set(['test', 'prod'])
 
 /**
- * @param {import('convict').Config<any>} config
+ * @param {Record<string, any>} config - The convict config object; typed loosely for the same reason as validateBackendAuthConfig
  */
 export function validateConsolidatedViewAuthConfig(config) {
   const authEnabled = config.get('consolidatedView.authEnabled')
