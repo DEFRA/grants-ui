@@ -1,5 +1,5 @@
 import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
-import { resolvePath } from '~/src/server/common/helpers/path-utils.js'
+import { findPageByPath, resolveAdditionalAnswerSections } from '~/src/server/common/helpers/additional-answers.js'
 import { getTaskPageBackLink } from '~/src/server/task-list/task-list.helper.js'
 import { buildConfirmLandAndActionsViewModel } from '~/src/server/land-grants/view-models/confirm-land-and-actions.view-model.js'
 import { CONFIRM_LAND_AND_ACTIONS_PATH } from '~/src/server/land-grants/utils/confirm-land-and-actions-navigation.js'
@@ -192,12 +192,11 @@ export default class CheckResponsesPageController extends SummaryPageController 
    * @param {Set<string>} [excludedStateValues]
    */
   #appendAdditionalSections(viewModel, additionalSections, state, relevantPages, excludedStateValues = new Set()) {
-    if (!Array.isArray(additionalSections) || !viewModel.checkAnswers) {
+    if (!viewModel.checkAnswers) {
       return
     }
 
     const { checkAnswers } = viewModel
-    const relevantPagePaths = new Set(relevantPages.map((page) => page.path.replace(/^\//, '')))
     const sections = this.model.sections ?? []
     const summariesBySection = new Map(
       (viewModel.details ?? []).map((detail, index) => [
@@ -206,23 +205,14 @@ export default class CheckResponsesPageController extends SummaryPageController 
       ])
     )
 
-    additionalSections.forEach((section) => {
-      if (section.page && !relevantPagePaths.has(section.page.replace(/^\//, ''))) {
-        return
-      }
-
-      const configuredItems = section.items ?? []
-      const items = configuredItems.filter((item) => !excludedStateValues.has(item.stateValue))
-
-      // The detailed land and actions summary already renders totalPayment in
-      // the shared payment card, so do not add the former configured duplicate.
-      if (configuredItems.length > 0 && items.length === 0) {
-        return
-      }
-
-      const rows = items.map((item) => ({
+    const resolvedSections = resolveAdditionalAnswerSections(additionalSections, state, {
+      relevantPages,
+      excludedStateValues
+    })
+    resolvedSections.forEach((section) => {
+      const rows = section.items.map((item) => ({
         key: { text: item.title },
-        value: { text: resolvePath(state, item.stateValue) ?? 'Not provided' }
+        value: { text: item.value }
       }))
 
       if (!section.title && section.page) {
@@ -246,7 +236,7 @@ export default class CheckResponsesPageController extends SummaryPageController 
    * @returns {any}
    */
   #getOwningSectionSummary(checkAnswers, pagePath, summariesBySection) {
-    const ownerPage = this.model.def.pages.find((page) => page.path.replace(/^\//, '') === pagePath.replace(/^\//, ''))
+    const ownerPage = findPageByPath(this.model.def.pages, pagePath)
     if (!ownerPage) {
       return undefined
     }
@@ -388,19 +378,6 @@ export default class CheckResponsesPageController extends SummaryPageController 
 }
 
 /**
- * @typedef {object} AdditionalSectionItem
- * @property {string} title - Row label shown in the summary list
- * @property {string} stateValue - Dot-notation path to read from form state for the row value
- */
-
-/**
- * @typedef {object} AdditionalSection
- * @property {string} [title] - Heading for a separate section; omit to use the owning page's section
- * @property {string} [page] - Applicable owning page path; also selects its section when title is omitted
- * @property {AdditionalSectionItem[]} [items] - Rows to render in this section
- */
-
-/**
  * @typedef {object} DerivedStatePage
  * @property {string} path
  * @property {{ requiresAcknowledgement: boolean }} [derivedState]
@@ -413,4 +390,5 @@ export default class CheckResponsesPageController extends SummaryPageController 
  * @import { ResponseObject } from '@hapi/hapi'
  * @import { FormModel, SummaryViewModel } from '@defra/forms-engine-plugin/engine/models/index.js'
  * @import { PageSummary } from '@defra/forms-model'
+ * @import { AdditionalSection } from '~/src/server/common/helpers/additional-answers.js'
  */

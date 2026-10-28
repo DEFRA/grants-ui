@@ -117,6 +117,14 @@ describe('PrintSubmittedApplicationController', () => {
       expect(h.view).toHaveBeenCalledWith('print-submitted-application', { test: 'viewModel' })
     })
 
+    test('passes relevant pages to omit additional answers from excluded pages', async () => {
+      const relevantPages = [{ path: '/score-results' }]
+
+      await controller.makeGetRouteHandler()(request, { relevantPages }, h)
+
+      expect(buildPrintViewModel).toHaveBeenCalledWith(expect.objectContaining({ relevantPages }))
+    })
+
     test('returns 403 when application status is not SUBMITTED', async () => {
       getFormsCacheService.mockReturnValue({
         getState: vi.fn().mockResolvedValue({ applicationStatus: ApplicationStatus.REOPENED })
