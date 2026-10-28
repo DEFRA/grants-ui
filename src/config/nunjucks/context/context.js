@@ -50,7 +50,8 @@ const extractCookieConsentConfig = (request) => {
  * @returns {void}
  */
 const loadWebpackManifest = (request) => {
-  if (!webpackManifest) {
+  // Watch builds change asset filenames without restarting the server.
+  if (!config.get('isProduction') || !webpackManifest) {
     try {
       webpackManifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
     } catch (error) {
