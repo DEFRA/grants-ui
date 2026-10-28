@@ -388,7 +388,7 @@ The `http-client.private.env.json` file contains per-environment secrets require
 
 Generate the skeleton locally with the bundled tool rather than hand-crafting it:
 
-- `npm run http-client:init` -- creates (or updates) `http-client.private.env.json` with an entry for every environment listed in `http-client.env.json`, leaving the hand-populated secrets as empty strings and generating the encrypted bearer tokens under the `local` environment. To generate the encrypted tokens under another environment, run the tool directly and pass `--env`, for example `node ./tools/init-http-client-secrets.js --env dev`.
+- `npm run http-client:init` -- creates (or updates) `http-client.private.env.json` with an entry for every environment listed in `http-client.env.json`, leaving the hand-populated secrets as empty strings and generating the Land Grants encrypted bearer token under the `local` environment. To generate the encrypted token under another environment, run the tool directly and pass `--env`, for example `node ./tools/init-http-client-secrets.js --env dev`.
 - Existing values are preserved on re-run, and obsolete keys are dropped.
 - A present-but-empty (or whitespace-only) `http-client.private.env.json` is treated the same as a missing file and (re)initialised rather than failing to parse.
 - The `local` `serviceToken` is pre-filled from `GAS_API_AUTH_TOKEN` in `compose.gas.yml` so it matches the token the local GAS backend accepts (any value you have already set is preserved).
@@ -399,14 +399,12 @@ The generated skeleton looks like this (one block per environment):
 ```json
 {
   "local": {
-    "entraClientId": "",
-    "entraClientSecret": "",
-    "entraTenantId": "",
+    "dalAccessToken": "",
 
     "serviceToken": "<pre-filled-from-compose.gas.yml>",
     "x-api-key": "",
 
-    "brokerAuthToken": "<generated-local-broker-auth-token>",
+    "brokerAuthToken": "",
 
     "landGrantsAuthToken": "<generated-local-land-grants-api-token>",
 
@@ -417,7 +415,7 @@ The generated skeleton looks like this (one block per environment):
 
 Populate the placeholders as follows (do **not** paste real secrets into the repo):
 
-- `entraClientId`, `entraClientSecret`, `entraTenantId` -- Microsoft Entra ID client-credentials details used by `dal.http` to obtain a service-to-service OAuth2 token. Set these under the environment you intend to call the DAL from (for example `test`).
+- `dalAccessToken` -- an Entra access token for requests made by `dal.http`.
 - `x-api-key` -- obtain this per-environment value from the CDP portal user profile page:
   - `https://portal.cdp-int.defra.cloud/user-profile`
 - `serviceToken` -- a GAS service token which must be minted and configured in GAS for each environment:
@@ -425,7 +423,8 @@ Populate the placeholders as follows (do **not** paste real secrets into the rep
   - register it in GAS (for example by adding it to the appropriate collection in GAS MongoDB)
   - use the raw token value here
   - for `local`, this is pre-filled automatically from `GAS_API_AUTH_TOKEN` in `compose.gas.yml`, which matches the token seeded into the local GAS backend
-- `brokerAuthToken` and `landGrantsAuthToken` -- AES-256-GCM encrypted + base64 bearer tokens for the config broker (`broker.http`) and Land Grants API (`land-grants.http`). These are **not** raw tokens: the backing services expect the same encrypted format the app produces (see `encryptToken` in `src/server/common/helpers/auth/encrypt-token.js`). `npm run http-client:init` generates both for you; the raw tokens and encryption keys are read from your `.env` file, defaulting to the `compose.grants-ui.yml` / `compose.land-grants.yml` development values (`GRANTS_CONFIG_BROKER_AUTH_TOKEN` / `GRANTS_CONFIG_BROKER_ENCRYPTION_KEY` and `LAND_GRANTS_API_AUTH_TOKEN` / `LAND_GRANTS_API_ENCRYPTION_KEY`) when unset.
+- `brokerAuthToken` -- a Web Identity token accepted by the config broker. Local broker requests do not require authentication.
+- `landGrantsAuthToken` -- an AES-256-GCM encrypted bearer token for the Land Grants API. `npm run http-client:init` generates it using `LAND_GRANTS_API_AUTH_TOKEN` and `LAND_GRANTS_API_ENCRYPTION_KEY`.
 - `defraIdToken` -- a Defra Identity access token for the signed-in user, forwarded via the `x-forwarded-authorization` header
 
 Once `http-client.private.env.json` is created and populated, you can:
