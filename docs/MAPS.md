@@ -66,7 +66,7 @@ This adds `land-grants-backend` on `:3009` and its seeded Postgres. Both images 
 The map routes are all session-authed, so the map cannot load until you have signed in.
 
 1. Open http://localhost:3000/auth/sign-in and pick a pre-seeded user from the Defra ID stub (no real credentials needed).
-2. **Use CRN `9000000001`** (Alice Carter, Green Farm). The DAL stub only knows its synthetic personas (see `fcp-defra-id-stub/README.md`); this one has ten parcels seeded in the land-grants API, so the map has something to draw.
+2. **Use CRN `9000000001`** (Florence Test-Lockwood, Test Alder Carr Farm). The DAL stub only knows its synthetic personas (see `fcp-defra-id-stub/README.md`); this one has ten parcels seeded in the land-grants API, so the map has something to draw.
 
 ### Open the map
 

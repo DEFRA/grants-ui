@@ -1,12 +1,12 @@
 Feature: GAS Error-Handling
 
     Scenario: Handle unexpected GAS errors with a generic response to the user
-        Given there is no application data for SBI "115646286" and grant "example-grant-with-auth"
-        And the next application submitted to GAS for SBI "115646286" will return HTTP 429 "Too many requests" for 3 requests
+        Given there is no application data for SBI "800000017" and grant "example-grant-with-auth"
+        And the next application submitted to GAS for SBI "800000017" will return HTTP 429 "Too many requests" for 3 requests
 
         # start
         Given the user navigates to "/example-grant-with-auth"
-        And logs in as CRN "1100988734"
+        And logs in as CRN "9000000021"
         Then the user should see heading "Example Grant"
         When the user clicks on "Start now"
 

@@ -1,11 +1,11 @@
 Feature: SBI-Driven Applications
 
     Scenario: Begin a journey as an applicant, continue as an agent and complete the application as the applicant, checking application locking is enforced along the way
-        Given there is no application data for SBI "119000002" and grant "example-grant-with-auth"
+        Given there is no application data for SBI "800000020" and grant "example-grant-with-auth"
 
         # login as applicant farmer
         Given the user navigates to "/example-grant-with-auth"
-        And logs in as CRN "1109990002"
+        And logs in as CRN "9000000030"
 
         # start
         Then the user should be at URL "start"
@@ -34,15 +34,15 @@ Feature: SBI-Driven Applications
         # reload the browser session and login again as the agent, selecting the same SBI
         Given the user starts a new browser session
         And navigates to "/example-grant-with-auth"
-        And logs in as CRN "1109990001"
-        And selects SBI "119000002"
+        And logs in as CRN "9000000029"
+        And selects SBI "800000020"
         And continues
 
         # application still locked by first user
         Then the user should see heading "Another applicant is currently editing this application. You cannot access it until their session ends."
 
         # unlock the application using the admin endpoint
-        Given there is no application lock for CRN "1109990002" and SBI "119000002" and grant "example-grant-with-auth"
+        Given there is no application lock for CRN "9000000030" and SBI "800000020" and grant "example-grant-with-auth"
         And the user navigates to "/example-grant-with-auth"
 
         # radios-field, now the second user has access to the first unanswered question
@@ -72,7 +72,7 @@ Feature: SBI-Driven Applications
         # first user logs back in
         Given the user starts a new browser session
         And navigates to "/example-grant-with-auth"
-        And logs in as CRN "1109990002"
+        And logs in as CRN "9000000030"
 
         # checkboxes-field, first user is at the first unanswered question
         Then the user should be at URL "checkboxes-field"
@@ -222,4 +222,4 @@ Feature: SBI-Driven Applications
         And should see an "EGWA" reference number for their application
 
         # GAS
-        Then the reference number along with SBI "119000002" and CRN "1109990002" should be submitted to GAS
+        Then the reference number along with SBI "800000020" and CRN "9000000030" should be submitted to GAS

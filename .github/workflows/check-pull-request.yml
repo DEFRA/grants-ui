@@ -63,6 +63,8 @@ jobs:
     runs-on: ubuntu-latest
     # TGC-1813: This job fetches config and journey-test repos anonymously.
     # Re-enable it when those repos are public again or the fetches use credentials.
+    # Until then run the suite locally:
+    # ACCEPTANCE_SUITES=grants-ui-acceptance-tests ./tools/run-acceptance-tests.sh
     if: github.event.repository.private == false
     steps:
       - name: Checkout code
