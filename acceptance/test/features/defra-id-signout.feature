@@ -1,13 +1,13 @@
 Feature: Defra ID Signout
 
     Scenario: Sign out of Defra ID and sign in as another user
-        Given there is no application data for SBI "115722586" and grant "example-grant-with-auth"
-        And there is no application data for SBI "115680267" and grant "example-grant-with-auth"
+        Given there is no application data for SBI "800000023" and grant "example-grant-with-auth"
+        And there is no application data for SBI "800000019" and grant "example-grant-with-auth"
 
         # login as user 1
         Given the user navigates to "/example-grant-with-auth"
-        And logs in as CRN "1101003693"
-        Then the user should see SBI "115722586" as the logged in organisation
+        And logs in as CRN "9000000032"
+        Then the user should see SBI "800000023" as the logged in organisation
 
         # start
         Then the user should be at URL "start"
@@ -35,8 +35,8 @@ Feature: Defra ID Signout
         # sign-out and sign in as user 2
         Given the user signs out of Defra ID
         And navigates to "/example-grant-with-auth"
-        And logs in as CRN "1100995056"
-        Then the user should see SBI "115680267" as the logged in organisation
+        And logs in as CRN "9000000023"
+        Then the user should see SBI "800000019" as the logged in organisation
 
         # start
         Then the user should be at URL "start"
@@ -64,8 +64,8 @@ Feature: Defra ID Signout
         # sign-out and sign in again as user 1
         Given the user signs out of Defra ID
         And navigates to "/example-grant-with-auth"
-        And logs in as CRN "1101003693"
-        Then the user should see SBI "115722586" as the logged in organisation
+        And logs in as CRN "9000000032"
+        Then the user should see SBI "800000023" as the logged in organisation
 
         # radios-field, first unanswered question
         Then the user should be at URL "radios-field"

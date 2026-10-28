@@ -4,11 +4,11 @@
 Feature: Pigs Might Fly
 
     Scenario: Application is successfully submitted through the pigs-might-fly journey
-        Given there is no application data for SBI "106498131" and grant "pigs-might-fly"
+        Given there is no application data for SBI "800000016" and grant "pigs-might-fly"
 
         # start
         Given the user navigates to "/pigs-might-fly"
-        And logs in as CRN "1100946268"
+        And logs in as CRN "9000000020"
         Then the user should see heading "Check if you can apply for a Pigs Might Fly Grant"
         When the user clicks on "Start now"
 
@@ -74,13 +74,13 @@ Feature: Pigs Might Fly
         And should see a reference number for their application
 
         # validate Mongo state storage
-        And the following application state should be stored for CRN "1100946268" and SBI "106498131" and grant "pigs-might-fly"
+        And the following application state should be stored for CRN "9000000020" and SBI "800000016" and grant "pigs-might-fly"
             | FIELD                | VALUE              |
             | $$__referenceNumber  | {REFERENCE NUMBER} |
             | applicationStatus    | SUBMITTED          |
-            | submittedBy          | 1100946268         |
+            | submittedBy          | 9000000020         |
 
         # validate Mongo submission storage
-        And the following application submissions should be stored for CRN "1100946268" and SBI "106498131" and grant "pigs-might-fly"
+        And the following application submissions should be stored for CRN "9000000020" and SBI "800000016" and grant "pigs-might-fly"
             | REFERENCE NUMBER   | CRN        |
-            | {REFERENCE NUMBER} | 1100946268 |
+            | {REFERENCE NUMBER} | 9000000020 |

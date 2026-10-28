@@ -161,6 +161,22 @@ until READINESS_OUTPUT=$(node ./tools/check-backend-form-definition-ready.js 2>&
 done
 echo "${READINESS_OUTPUT}"
 
+# land-grants-api only learns its actions when the config broker's land-grants
+# message has been consumed from SQS, which can land after the stack reports
+# healthy. Until then every parcel has no actions and no consent requirements.
+echo "Waiting for land-grants-api to have loaded its actions config..."
+ATTEMPTS=0
+until [ "$(eval "${COMPOSE_COMMAND} exec -T land-grants-backend-postgres sh -c 'psql -U \"\$POSTGRES_USER\" -d \"\$POSTGRES_DB\" -tAc \"select count(*) from actions\"'" 2>/dev/null | tr -d '[:space:]')" -gt 0 ] 2>/dev/null; do
+    if [ ${ATTEMPTS} -eq ${MAX_ATTEMPTS} ]; then
+        echo "Error: Timed out waiting for land-grants-api actions config."
+        exit 1
+    fi
+    printf 'a'
+    ATTEMPTS=$(($ATTEMPTS+1))
+    sleep 3
+done
+echo " land-grants-api actions config loaded."
+
 # Apply any local form-definition overrides (compose/config-broker/local-form-definitions)
 # on top of the ingested repo definitions, so the acceptance run exercises
 # form-def changes that are not yet merged into the config repos.

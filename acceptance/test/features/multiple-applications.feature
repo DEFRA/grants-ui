@@ -1,11 +1,11 @@
 Feature: Multiple Applications
 
     Scenario: Create multiple applications for the same SBI for a grant with the allowMultipleApplications setting enabled
-        Given there is no application data for SBI "106557382" and grant "example-grant-with-multi-applications"
+        Given there is no application data for SBI "800000018" and grant "example-grant-with-multi-applications"
 
         # login
         Given the user navigates to "/example-grant-with-multi-applications"
-        And logs in as CRN "1100962289"
+        And logs in as CRN "9000000022"
 
         # start, first application
         Then the user should be at URL "start"
@@ -20,7 +20,7 @@ Feature: Multiple Applications
         # new browser session, first application resumes
         Given the user starts a new browser session
         And navigates to "/example-grant-with-multi-applications"
-        And logs in as CRN "1100962289"
+        And logs in as CRN "9000000022"
         Then the user should be at URL "summary"
         And should have application reference "{FIRST REFERENCE NUMBER}" in the URL
         And should see the following answers
@@ -39,7 +39,7 @@ Feature: Multiple Applications
         # new browser session, confirmation still shown for submitted single application
         Given the user starts a new browser session
         And navigates to "/example-grant-with-multi-applications"
-        And logs in as CRN "1100962289"
+        And logs in as CRN "9000000022"
         Then the user should be at URL "confirmation"
         And should have application reference "{FIRST REFERENCE NUMBER}" in the URL
         When the user clicks button "Start a new application"
@@ -57,7 +57,7 @@ Feature: Multiple Applications
         # new browser session, now multiple applications shows the selector
         Given the user starts a new browser session
         And navigates to "/example-grant-with-multi-applications"
-        And logs in as CRN "1100962289"
+        And logs in as CRN "9000000022"
         Then the user should be at URL "applications"
         And should see the following applications
             | REFERENCE                 | STATUS    | ACTION               |
@@ -106,7 +106,7 @@ Feature: Multiple Applications
         # new browser session, several applications show the selector
         Given the user starts a new browser session
         And navigates to "/example-grant-with-multi-applications"
-        And logs in as CRN "1100962289"
+        And logs in as CRN "9000000022"
         Then the user should be at URL "applications"
         And should see the following applications
             | REFERENCE                 | STATUS    | ACTION               |
@@ -117,4 +117,4 @@ Feature: Multiple Applications
         # unknown application reference, denied and audited
         Given the user navigates to "/example-grant-with-multi-applications?ref=INVALID-REFERENCE-NUMBER"
         Then the user should see heading "Page not found"
-        And an unauthorised audit event should be published for entity "application" and grant "example-grant-with-multi-applications" with CRN "1100962289" and SBI "106557382" and reason "unknown-reference" and reference number "INVALID-REFERENCE-NUMBER"
+        And an unauthorised audit event should be published for entity "application" and grant "example-grant-with-multi-applications" with CRN "9000000022" and SBI "800000018" and reason "unknown-reference" and reference number "INVALID-REFERENCE-NUMBER"

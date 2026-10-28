@@ -1,11 +1,11 @@
 Feature: Purging
 
     Scenario: A user whose application has been purged sees the application deleted page
-        Given there is no application data for SBI "300000002" and grant "example-grant-with-auth"
+        Given there is no application data for SBI "800000022" and grant "example-grant-with-auth"
 
         # start
         Given the user navigates to "/example-grant-with-auth"
-        And logs in as CRN "1300000002"
+        And logs in as CRN "9000000031"
         Then the user should see heading "Example Grant"
         When the user clicks on "Start now"
 
@@ -18,12 +18,12 @@ Feature: Purging
         Then the user should be at URL "yes-no-field"
 
         # directly manipulate the backend's stored state to simulate the application having been purged
-        Given the application status in the backend for CRN "1300000002" and SBI "300000002" and grant "example-grant-with-auth" is now "PURGED"
+        Given the application status in the backend for CRN "9000000031" and SBI "800000022" and grant "example-grant-with-auth" is now "PURGED"
 
         # reload the browser session and log back in
         Given the user starts a new browser session
         And navigates to "/example-grant-with-auth"
-        And logs in as CRN "1300000002"
+        And logs in as CRN "9000000031"
 
         # the user is redirected to the application deleted page
         Then the user should be at URL "application-deleted"
@@ -33,7 +33,7 @@ Feature: Purging
         # reloading the browser session and logging back in again should still show the deleted warning
         Given the user starts a new browser session
         And navigates to "/example-grant-with-auth"
-        And logs in as CRN "1300000002"
+        And logs in as CRN "9000000031"
 
         Then the user should be at URL "application-deleted"
         And should see heading "Your draft application has been deleted"

@@ -7,7 +7,7 @@
 export const DEFAULT_CRN = '9000000001'
 
 /**
- * SBI 800000001 (Green Farm) test users, one per Countryside Stewardship
+ * SBI 800000001 (Test Alder Carr Farm) test users, one per Countryside Stewardship
  * permission level, from the grants-platform-dal-stub relationship fixtures.
  * @type {{crn: string, note: string}[]}
  */
