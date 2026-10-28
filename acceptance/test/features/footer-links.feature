@@ -1,11 +1,11 @@
 Feature: Footer Links
 
     Scenario: Footer should contain expected links
-        Given there is no application data for SBI "106281016" and grant "example-grant-with-auth"
+        Given there is no application data for SBI "800000005" and grant "example-grant-with-auth"
 
         # start
         Given the user navigates to "/example-grant-with-auth"
-        And logs in as CRN "1100961682"
+        And logs in as CRN "9000000019"
         Then the user should see heading "Example Grant"
 
         # footer links

@@ -1,11 +1,11 @@
 Feature: Clear Application State
 
     Scenario: Clicking the 'Clear application state' footer link in non-prod environments clears saved journey answers
-        Given there is no application data for SBI "106834980" and grant "example-grant-with-auth"
+        Given there is no application data for SBI "800000011" and grant "example-grant-with-auth"
 
         # start
         Given the user navigates to "/example-grant-with-auth"
-        And logs in as CRN "1101006005"
+        And logs in as CRN "9000000024"
         Then the user should be at URL "start"
         When the user clicks on "Start now"
 
@@ -26,7 +26,7 @@ Feature: Clear Application State
         # new browser session
         Given the user starts a new browser session
         And navigates to "/example-grant-with-auth"
-        And logs in as CRN "1101006005"
+        And logs in as CRN "9000000024"
 
         # start
         Then the user should be at URL "start"
