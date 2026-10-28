@@ -51,11 +51,15 @@ export default class PrintSubmittedApplicationController extends StatusPageContr
 
   /**
    * Reads the YAML form definition, builds the print view model and renders the view.
-   * @param {object} form - Form object
+   * @param {object} params
+   * @param {object} params.form
+   * @param {Record<string, any>} params.state
+   * @param {string} params.slug
+   * @param {{ path: string }[]} [params.relevantPages]
    * @param request
    * @param {ResponseToolkit} h
    */
-  async buildPrintResponse({ form, state, slug }, request, h) {
+  async buildPrintResponse({ form, state, slug, relevantPages }, request, h) {
     const definition = this.model.def
 
     enrichDefinitionWithListItems(definition)
@@ -88,7 +92,8 @@ export default class PrintSubmittedApplicationController extends StatusPageContr
       sessionData,
       configurablePrintContent,
       applicantDetailsSections,
-      page: this
+      page: this,
+      relevantPages
     })
 
     return h.view('print-submitted-application', viewModel)
@@ -101,12 +106,12 @@ export default class PrintSubmittedApplicationController extends StatusPageContr
    */
   makeGetRouteHandler() {
     /**
-     * Handle GET requests to the score page.
+     * Handle GET requests to view the submitted application.
      * @param {object} request - Hapi request object
-     * @param {FormContext} _context
+     * @param {FormContext} context
      * @param {object} h - Hapi response toolkit
      */
-    return async (request, _context, h) => {
+    return async (request, context, h) => {
       try {
         const cacheService = getFormsCacheService(request.server)
         const state = await cacheService.getState(request)
@@ -122,7 +127,8 @@ export default class PrintSubmittedApplicationController extends StatusPageContr
           {
             form,
             state,
-            slug
+            slug,
+            relevantPages: context.relevantPages
           },
           request,
           h
