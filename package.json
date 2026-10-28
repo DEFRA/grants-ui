@@ -24,7 +24,7 @@
     "docker:down": "docker compose -f compose.infra.yml -f compose.grants-ui.yml down --remove-orphans",
     "docker:debug": "node ./tools/docker-debug.js",
     "docker:cycle-ui": "docker compose -f compose.infra.yml -f compose.grants-ui.yml up -d --force-recreate grants-ui",
-    "docker:reset": "docker compose -f compose.infra.yml -f compose.grants-ui.yml down --volumes --remove-orphans --rmi local && docker volume ls --format '{{.Name}}' | grep -E '^[a-f0-9]{64}$' | xargs docker volume rm && docker rmi -f defradigital/fg-gas-backend defradigital/grants-scoring-api defradigital/grants-ui-dal-stub defradigital/land-grants-api defradigital/land-grants-postgres-seeded 2>/dev/null; docker volume rm -f grants-ui_postgres_data 2>/dev/null; true",
+    "docker:reset": "docker compose -f compose.infra.yml -f compose.grants-ui.yml down --volumes --remove-orphans --rmi local && docker volume ls --format '{{.Name}}' | grep -E '^[a-f0-9]{64}$' | xargs docker volume rm && docker rmi -f defradigital/fg-gas-backend defradigital/grants-scoring-api defradigital/grants-platform-dal-stub defradigital/land-grants-api defradigital/land-grants-postgres-seeded 2>/dev/null; docker volume rm -f grants-ui_postgres_data 2>/dev/null; true",
     "docker:floci:purge": "docker compose -f compose.infra.yml -f compose.grants-ui.yml stop floci && docker compose rm -f floci",
     "docker:ha:up": "./tools/setup-local-config.sh && docker compose -f compose.infra.yml -f compose.grants-ui.yml -f compose.ha.yml up -d --wait --scale grants-ui=2 --scale grants-ui-backend=2 && node tools/refresh-example-grants.js",
     "docker:ha:down": "docker compose -f compose.infra.yml -f compose.grants-ui.yml -f compose.ha.yml down --remove-orphans",

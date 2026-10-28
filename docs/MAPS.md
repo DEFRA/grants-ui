@@ -66,7 +66,7 @@ This adds `land-grants-backend` on `:3009` and its seeded Postgres. Both images 
 The map routes are all session-authed, so the map cannot load until you have signed in.
 
 1. Open http://localhost:3000/auth/sign-in and pick a pre-seeded user from the Defra ID stub (no real credentials needed).
-2. **Use CRN `1102838829`** (Edward Jones). The DAL stub only returns land parcels for this CRN. Sign in as anyone else and the component correctly reports `no-parcels` and renders nothing.
+2. **Use CRN `9000000001`** (Alice Carter, Green Farm). The DAL stub only knows its synthetic personas (see `fcp-defra-id-stub/README.md`); this one has ten parcels seeded in the land-grants API, so the map has something to draw.
 
 ### Open the map
 
@@ -86,7 +86,7 @@ http://localhost:3000/example-grant-with-map/start, then continue to `/select-la
 | Symptom                                             | Most likely cause                                                                                                           |
 | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | "There was a problem loading the map."              | Missing or wrong `LAND_MAPS_API_KEY`, or the key's OS project lacks the OS Maps API product (`401` on `/api/map/os-tiles`). |
-| Basemap draws, but no parcels and no error          | Signed in as a CRN other than `1102838829`.                                                                                 |
+| Basemap draws, but no parcels and no error          | Signed in as a persona whose parcels are not seeded in the land-grants API; use `9000000001`.                               |
 | Basemap draws, parcels missing                      | Running `docker:up` rather than `docker:landgrants:up`, so there is no land-grants API to serve parcel geometry.            |
 | Changes to `webpack.config.js` appear to do nothing | It isn't volume-mounted. Run `npm run docker:rebuild && npm run docker:up`.                                                 |
 

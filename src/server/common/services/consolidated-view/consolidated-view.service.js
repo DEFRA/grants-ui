@@ -67,6 +67,9 @@ async function getConsolidatedViewRequestOptions(request, { method = 'POST', que
   const { credentials: { token } = {} } = request.auth ?? {}
 
   const developerKey = config.get('consolidatedView.developerKey')
+  // False only when pointing at grants-platform-dal-stub, which ignores auth;
+  // skipping the token fetch lets a local grants-ui run with no Entra config.
+  const authEnabled = config.get('consolidatedView.authEnabled')
 
   const isLocal = config.get('cdpEnvironment') === 'local'
 
@@ -75,7 +78,7 @@ async function getConsolidatedViewRequestOptions(request, { method = 'POST', que
     ...(isLocal && { 'Accept-Encoding': 'identity' }),
     'gateway-type': 'external',
     'x-forwarded-authorization': token,
-    Authorization: `Bearer ${await getValidToken()}`,
+    ...(authEnabled && { Authorization: `Bearer ${await getValidToken()}` }),
     ...(isLocal && developerKey && { 'x-api-key': developerKey })
   }
 
@@ -139,7 +142,7 @@ async function makeConsolidatedViewRequest(request, query, { toleratedPaths } = 
 }
 
 /**
- * Generic function to fetch data from Consolidated View with mock support
+ * Generic function to fetch data from Consolidated View
  * @param {AnyFormRequest} request
  * @param {object} params - Request parameters
  * @param {string} params.query - GraphQL query
@@ -149,13 +152,10 @@ async function makeConsolidatedViewRequest(request, query, { toleratedPaths } = 
  * @throws {ConsolidatedViewError} - If the API request fails
  */
 async function fetchFromConsolidatedView(request, { query, formatResponse, toleratedPaths }) {
-  const mockDALEnabled = config.get('consolidatedView.mockDALEnabled')
-  const { credentials: { sbi, crn } = {} } = request.auth ?? {}
+  const { credentials: { sbi } = {} } = request.auth ?? {}
 
   try {
-    const responseJson = mockDALEnabled
-      ? await makeStubRequest({ query, sbi, crn })
-      : await makeConsolidatedViewRequest(request, query, { toleratedPaths })
+    const responseJson = await makeConsolidatedViewRequest(request, query, { toleratedPaths })
 
     if (!responseJson.errors?.length) {
       log(LogCodes.SYSTEM.CONSOLIDATED_VIEW_SUCCESS, { sbi }, request)
@@ -196,54 +196,6 @@ function logConsolidatedViewUpstreamError(request, sbi, error) {
     },
     request
   )
-}
-
-/**
- * @param {{ query: string, sbi?: unknown, crn?: unknown }} params
- * @returns {Promise<GraphQLResponse>}
- */
-async function makeStubRequest({ query, sbi, crn }) {
-  const stubUrl = config.get('consolidatedView.stubUrl')
-
-  const response = await fetch(stubUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      query,
-      variables: {
-        sbi,
-        crn
-      }
-    })
-  })
-
-  if (!response.ok) {
-    throw new ConsolidatedViewError({
-      message: 'Stub request failed',
-      status: response.status,
-      responseBody: await response.text(),
-      sbi,
-      source: 'makeStubRequest',
-      reason: 'api_error'
-    })
-  }
-
-  const json = await response.json()
-
-  if (json.errors?.length) {
-    throw new ConsolidatedViewError({
-      message: json.errors[0].message,
-      status: statusCodes.badGateway,
-      responseBody: json.errors[0].message,
-      sbi,
-      source: 'makeStubRequest',
-      reason: 'api_error'
-    })
-  }
-
-  return json
 }
 
 /**

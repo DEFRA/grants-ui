@@ -47,7 +47,7 @@ ${BOLD}Other flags:${RESET_COLOR}
   --version      Show version number
 
 ${BOLD}Journey flags (for 'journey'):${RESET_COLOR}
-  --crn <crn>      DefraID CRN to sign in as (default: the journey's allowlisted CRN, e.g. woodland → 1100943757)
+  --crn <crn>      DefraID CRN to sign in as (default: the journey's allowlisted CRN, e.g. 9000000001)
   --stop <n|sect>  Stop before step <n> (1-indexed) or run only section <sect>
   --parcel <ref>   Land parcel the map step selects, e.g. SD6843-7039 (overrides the step's own value)
   --common-land <yes|no>  Answer a common-land/grazing-rights yesNo step this way, e.g. woodland (default: no)
@@ -98,7 +98,7 @@ ${BOLD}Examples:${RESET_COLOR}
   gt journey grasslands --mock-no-actions --headed       # see the "no actions available" error on the map page
   gt journey example-grant-with-auth --mock-window-closed --headed   # see the application-window-closed page
   gt journey woodland --common-land yes                  # walk the common-land guidance + confirmation branch
-  gt state example-grant-with-auth --sbi 106238911        # inspect saved application state
+  gt state example-grant-with-auth --sbi 800000001        # inspect saved application state
   gt sonar                           # local SonarQube scan of src/
   gt sonar --changed                 # scope scan to src files changed vs main (approx. CI PR view)
   gt sonar --down                    # stop the local SonarQube server
