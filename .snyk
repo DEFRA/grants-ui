@@ -1,6 +1,10 @@
 # Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities
 version: v1.25.0
 ignore:
+  'SNYK-JS-FOLLOWREDIRECTS-21762031':
+    - '@defra/forms-engine-plugin > @defra/interactive-map > @easyops-cn/docusaurus-search-local > @docusaurus/plugin-content-docs > @docusaurus/core > webpack-dev-server > http-proxy-middleware > http-proxy > follow-redirects':
+        reason: 'Checked 2026-10-28 on forms-engine-plugin@4.23.0: interactive-map@0.0.22-alpha installs Docusaurus@3.10.2 > webpack-dev-server@5.2.7 > http-proxy-middleware@2.0.10 > http-proxy@1.18.1 > follow-redirects@1.16.1 in production. Custom credential disclosure requires a cross-realm sensitiveHeaders array and an attacker-controlled cross-origin redirect. Grants UI runs Hapi, not the map documentation dev server; http-proxy only uses follow-redirects when followRedirects is enabled and setupOutgoing does not forward sensitiveHeaders. Fixed follow-redirects@1.16.2 was published 2026-10-25T21:32:25.963Z; the seven-day cooldown ends 2026-11-01T21:32:25.963Z. Remove this ignore and upgrade the transitive dependency when eligible; reassess if the documentation server is enabled or this dependency path changes.'
+        expires: '2026-11-02'
   'SNYK-JS-HAPICONTENT-21691242':
     - '@hapi/hapi > @hapi/subtext > *':
         reason: 'Checked 2026-10-26 on hapi@21.4.10: content@6.0.2 disposition() is called by pez when parsing multipart Content-Disposition headers. Hapi defaults payload.multipart to false and grants-ui does not enable it; subtext rejects multipart before invoking pez. The forms engine POST routes set parse: true only and inherit this default. Content.type(), used for ordinary request Content-Type headers, is unaffected. Fixed content@6.0.3 was published 2026-10-21T16:25:10.784Z; the seven-day cooldown ends 2026-10-28T16:25:10.784Z. Remove this ignore and upgrade when eligible; reassess before enabling multipart.'
