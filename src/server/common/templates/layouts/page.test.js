@@ -33,7 +33,7 @@ const renderPage = ({ govukBranding }) =>
       grantPhase: govukBranding ? 'public-beta' : 'private-beta',
       assetPath: '/public/assets/rebrand',
       defraAssetPath: '/public/assets/defra',
-      serviceName: 'Farm and land service',
+      serviceName: 'Farm and Land Service',
       serviceUrl: '/',
       getAssetPath: (asset) => `/public/${asset}`,
       cookiesPolicy: { confirmed: true, analytics: false },

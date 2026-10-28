@@ -22,7 +22,7 @@ metadata:
   supportEmail: support@defra.gov.uk
   cookieConsent:
     enabled: true
-    serviceName: Farm and land service
+    serviceName: Farm and Land Service
     cookiePolicyUrl: /cookies
     expiryDays: 365
   permissions:

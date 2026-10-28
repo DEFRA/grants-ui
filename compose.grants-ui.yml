@@ -34,7 +34,7 @@ services:
       SESSION_COOKIE_TTL: ${SESSION_COOKIE_TTL:-2419200000}
       SESSION_CACHE_TTL: 14400000
       FEEDBACK_SURVEY_URL: '${FEEDBACK_SURVEY_URL:-https://defragroup.eu.qualtrics.com/jfe/form/SV_0pL2USQ2uiEKK6G}'
-      SERVICE_NAME: ${SERVICE_NAME:-Farm and land service}
+      SERVICE_NAME: ${SERVICE_NAME:-Farm and Land Service}
       COOKIE_POLICY_URL: ${COOKIE_POLICY_URL:-/cookies}
       COOKIE_CONSENT_EXPIRY_DAYS: ${COOKIE_CONSENT_EXPIRY_DAYS:-365}
       # Default: grants-platform-dal-stub, reached through the same code path as the
