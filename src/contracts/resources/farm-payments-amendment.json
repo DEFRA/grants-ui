@@ -2,9 +2,9 @@
   "metadata": {
     "previousClientRef": "44e-85c-692",
     "clientRef": "55f-12a-999",
-    "crn": "1102760349",
+    "crn": "9000000602",
     "frn": "2396577132",
-    "sbi": "121428499",
+    "sbi": "800000603",
     "configVersion": "1.0.0",
     "submittedAt": "2026-02-12T09:29:00.297Z"
   },
@@ -18,7 +18,7 @@
     "scheme": "SFI",
     "applicant": {
       "business": {
-        "name": "John Woodcock",
+        "name": "Test Rowan Farm",
         "reference": "2396577132",
         "address": {
           "city": "Clitheroe",
@@ -30,14 +30,14 @@
         },
         "landlinePhoneNumber": "01697 751072",
         "mobilePhoneNumber": "+44 7900 123456",
-        "email": "cliffspencetasabbeyfarmf@mrafyebbasatecnepsffilcm.com.test"
+        "email": "rowan.farm@example.test"
       },
       "customer": {
         "name": {
           "title": "Mr.",
-          "first": "Antony",
+          "first": "Edmund",
           "middle": null,
-          "last": "Williams"
+          "last": "Test-Hartley"
         }
       }
     },

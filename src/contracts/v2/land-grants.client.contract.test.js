@@ -791,7 +791,7 @@ describe('validate', () => {
       {
         applicationId: '34E-8CA-45D',
         requester: 'grants-ui',
-        applicantCrn: '1100014934',
+        applicantCrn: '9000000603',
         landActions: [{ ...PARCEL_8083, actions: [{ code: 'CMOR1', quantity: 'invalid quantity provided' }] }]
       },
       'Unprocessable Entity',
@@ -804,7 +804,7 @@ describe('validate', () => {
       {
         applicationId: '34E-8CA-45D',
         requester: 'grants-ui',
-        applicantCrn: '1100014934',
+        applicantCrn: '9000000603',
         landActions: [{ ...PARCEL_8083, actions: [{ code: 'CMOR1', quantity: -0.14472089 }] }]
       },
       'Unprocessable Entity',
@@ -826,7 +826,7 @@ describe('validate', () => {
       {
         applicationId: '34E-8CA-45D',
         requester: 'grants-ui',
-        applicantCrn: '1100014934',
+        applicantCrn: '9000000603',
         landActions: [{ sheetId: 'NONEXIST', parcelId: '9999', actions: [{ code: 'CMOR1', quantity: 0.14472089 }] }]
       },
       'Bad Request',

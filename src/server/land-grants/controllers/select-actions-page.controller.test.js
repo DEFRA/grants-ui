@@ -333,7 +333,7 @@ describe('SelectActionsPageController', () => {
 
       expect(error).toHaveBeenCalledWith(
         expect.objectContaining({ level: 'error', messageFunc: expect.any(Function) }),
-        expect.objectContaining({ sbi: '106284736', sheetId: 'sheet1', parcelId: 'parcel1' }),
+        expect.objectContaining({ sbi: '800000602', sheetId: 'sheet1', parcelId: 'parcel1' }),
         mockRequest
       )
     })
