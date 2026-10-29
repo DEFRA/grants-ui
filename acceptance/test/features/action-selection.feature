@@ -1,11 +1,11 @@
 Feature: Action Selection
 
     Scenario: User can add and remove land parcels and select actions
-        Given there is no application data for SBI "106514040" and grant "example-grant-with-map"
+        Given there is no application data for SBI "800000007" and grant "example-grant-with-map"
 
         # start
         Given the user navigates to "/example-grant-with-map"
-        And logs in as CRN "1103313150"
+        And logs in as CRN "9000000027"
         Then the user should see heading "Apply for Example Grant with Map"
         When the user clicks on "Start now"
 
@@ -36,23 +36,25 @@ Feature: Action Selection
 
         # RULE: partial area action specified area cannot be zero
         When the user enters "0" hectares for action "CSAM3_26"
-        And continues
-        Then the user should see error "Enter a quantity for Herbal leys: CSAM3_26" for action "CSAM3_26"
+        # client-side validation on blur should show the same error as a subsequent postback
+        Then the user should see error "Enter number of hectares, up to 4 decimal places – for example, 12.3456" for action "CSAM3_26"
+        When the user continues
+        Then the user should see error "Enter number of hectares, up to 4 decimal places – for example, 12.3456" for action "CSAM3_26"
 
         # RULE: partial area action specified area cannot exceed available area
         When the user enters "0.277" hectares for action "CSAM3_26"
         And continues
-        Then the user should see error "Enter up to 0.276 hectares" for action "CSAM3_26"
+        Then the user should see error "Enter a number that is not higher than the available hectares" for action "CSAM3_26"
 
         # RULE: partial area action hectares must be 4 decimal places or less
         When the user enters "0.27666" hectares for action "CSAM3_26"
         And continues
-        Then the user should see error "Quantity for Herbal leys: CSAM3_26 must be 4 decimal places or fewer" for action "CSAM3_26"
+        Then the user should see error "Enter number of hectares, up to 4 decimal places – for example, 12.3456" for action "CSAM3_26"
 
         # RULE: partial area action specified area cannot be empty
         When the user enters "" hectares for action "CSAM3_26"
         And continues
-        Then the user should see error "Enter a quantity for Herbal leys: CSAM3_26" for action "CSAM3_26"
+        Then the user should see error "Enter number of hectares, up to 4 decimal places – for example, 12.3456" for action "CSAM3_26"
 
         # RULE: partial area action cannot be selected once a total area action has been selected taking all available area
         When the user deselects action "CSAM3_26"
@@ -263,28 +265,30 @@ Feature: Action Selection
 
         # RULE: count-based action quantity cannot be zero
         When the user enters "0" ponds for action "WBD1_26"
-        And continues
-        Then the user should see error "Value must be greater than 0" for action "WBD1_26"
+        # client-side validation on blur should show the same error as a subsequent postback
+        Then the user should see error "Enter number of ponds – for example, 2" for action "WBD1_26"
+        When the user continues
+        Then the user should see error "Enter number of ponds – for example, 2" for action "WBD1_26"
 
         # RULE: count-based action quantity cannot be negative
         When the user enters "-1" ponds for action "WBD1_26"
         And continues
-        Then the user should see error "Value must be greater than 0" for action "WBD1_26"
+        Then the user should see error "Enter number of ponds – for example, 2" for action "WBD1_26"
 
         # RULE: count-based action quantity must be a whole number
         When the user enters "2.5" ponds for action "WBD1_26"
         And continues
-        Then the user should see error "Must be a whole number" for action "WBD1_26"
+        Then the user should see error "Enter number of ponds – for example, 2" for action "WBD1_26"
 
         # RULE: count-based action quantity must be numeric
         When the user enters "abc" ponds for action "WBD1_26"
         And continues
-        Then the user should see error "Must be numbers" for action "WBD1_26"
+        Then the user should see error "Enter number of ponds – for example, 2" for action "WBD1_26"
 
         # RULE: count-based action quantity cannot be empty
         When the user enters "" ponds for action "WBD1_26"
         And continues
-        Then the user should see error "Enter a quantity for Manage ponds: WBD1_26" for action "WBD1_26"
+        Then the user should see error "Enter number of ponds – for example, 2" for action "WBD1_26"
 
         # RULE: count-based action can be applied to an eligible land parcel
         When the user enters "2" ponds for action "WBD1_26"
@@ -292,8 +296,10 @@ Feature: Action Selection
         # RULE: partial area action square metres must be a whole number
         When the user selects action "HEF1_26"
         And the user enters "10.5" m² for action "HEF1_26"
-        And continues
-        Then the user should see error "Must be a whole number" for action "HEF1_26"
+        # client-side validation on blur should show the same error as a subsequent postback
+        Then the user should see error "Enter number of square metres, rounded down to the nearest whole number – for example, 234" for action "HEF1_26"
+        When the user continues
+        Then the user should see error "Enter number of square metres, rounded down to the nearest whole number – for example, 234" for action "HEF1_26"
 
         # RULE: partial area action in square metres can be applied to an eligible land parcel
         When the user enters "10" m² for action "HEF1_26"
@@ -310,11 +316,11 @@ Feature: Action Selection
         And should see total yearly payment "£564.00"
 
     Scenario: User is told when both SSSI and HEFER apply to a land parcel
-        Given there is no application data for SBI "106592443" and grant "example-grant-with-map"
+        Given there is no application data for SBI "800000009" and grant "example-grant-with-map"
 
         # start
         Given the user navigates to "/example-grant-with-map"
-        And logs in as CRN "1100946543"
+        And logs in as CRN "9000000015"
         Then the user should see heading "Apply for Example Grant with Map"
         When the user clicks on "Start now"
 
@@ -345,11 +351,11 @@ Feature: Action Selection
             |          |                                                          | 26.9088 hectares available      |     |
 
     Scenario: User is told when only SSSI consent applies to a land parcel
-        Given there is no application data for SBI "121428499" and grant "example-grant-with-map"
+        Given there is no application data for SBI "800000021" and grant "example-grant-with-map"
 
         # start
         Given the user navigates to "/example-grant-with-map"
-        And logs in as CRN "1102760349"
+        And logs in as CRN "9000000025"
         Then the user should see heading "Apply for Example Grant with Map"
         When the user clicks on "Start now"
 
@@ -381,11 +387,11 @@ Feature: Action Selection
             |          |                                                          | 0.6873 hectares available      |     |
 
     Scenario: User is told when only HEFER applies to a land parcel
-        Given there is no application data for SBI "300000100" and grant "example-grant-with-map"
+        Given there is no application data for SBI "800000024" and grant "example-grant-with-map"
 
         # start
         Given the user navigates to "/example-grant-with-map"
-        And logs in as CRN "1300000100"
+        And logs in as CRN "9000000033"
         Then the user should see heading "Apply for Example Grant with Map"
         When the user clicks on "Start now"
 

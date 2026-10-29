@@ -1,31 +1,30 @@
-import { resolveFeatureId, showTooltip, hideTooltip } from './map-helpers.js'
-import { LAYER_ID_FILL, LAYER_ID_LABEL_CLUSTER, TOOLTIP_STYLES } from './config.js'
+import { resolveFeatureId, showTooltip, hideTooltip } from './helpers.js'
+import { CLASS_TOOLTIP, LAYER_ID_FILL, LAYER_ID_LABEL_CLUSTER } from './config.js'
 
 /**
- * @import { Map as MLMap } from 'maplibre-gl'
- * @import { ParcelProperties, MetaIndex } from './map-helpers.js'
+ * @import { ParcelProperties } from './helpers.js'
+ * @import { MapContext } from './element.js'
  */
 
 /**
  * Adds the parcel tooltip and its MapLibre hover listeners, registering
  * each `off` into `cleanups` so teardown removes every one. Returns the tooltip
  * element (or undefined if the map wrapper isn't present).
- * @param {MLMap} ml
- * @param {MetaIndex} metaIndex
- * @param {HTMLDivElement | null} mapEl
- * @param {Array<() => void>} cleanups
+ * @param {Pick<MapContext, 'ml' | 'store' | 'mapEl' | 'cleanups'>} context
  * @returns {HTMLElement | undefined}
  */
-export function attachTooltip(ml, metaIndex, mapEl, cleanups) {
+export function attachTooltip({ ml, store, mapEl, cleanups }) {
   const wrapper = mapEl?.parentElement
   if (!wrapper) {
     return undefined
   }
+  const { metaIndex } = store
 
   const tooltip = document.createElement('div')
+  tooltip.className = CLASS_TOOLTIP
   tooltip.setAttribute('role', 'tooltip')
   tooltip.setAttribute('aria-live', 'polite')
-  tooltip.style.cssText = TOOLTIP_STYLES
+  tooltip.hidden = true
   wrapper.appendChild(tooltip)
 
   const onTooltipMove = (

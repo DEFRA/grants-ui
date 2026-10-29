@@ -148,7 +148,7 @@ describe('landGrantsActionsPlugin', () => {
     expect(error).toHaveBeenCalledWith(
       'FETCH_ACTIONS_ERROR',
       {
-        sbi: '106284736',
+        sbi: '800000602',
         sheetId: 'SD7946',
         parcelId: '0155',
         errorMessage: 'upstream down',
@@ -191,7 +191,7 @@ describe('landGrantsActionsPlugin', () => {
 
       expect(fetchConsentRequirementsForParcel).toHaveBeenCalledWith(
         { parcelId: '0155', sheetId: 'SD7946', enabledLandActions: ['CMOR1', 'UPL1'] },
-        { defraIdToken: 'defra-id-access-token', sbi: '106284736' }
+        { defraIdToken: 'defra-id-access-token', sbi: '800000602' }
       )
       expect(h.response).toHaveBeenCalledWith({
         intro: 'Some actions require:',
@@ -219,7 +219,7 @@ describe('landGrantsActionsPlugin', () => {
 
       expect(fetchConsentRequirementsForParcel).toHaveBeenCalledWith(
         { parcelId: '0155', sheetId: 'SD7946' },
-        { defraIdToken: 'defra-id-access-token', sbi: '106284736' }
+        { defraIdToken: 'defra-id-access-token', sbi: '800000602' }
       )
       expect(h.response).toHaveBeenCalledWith({
         intro: 'Some actions require:',
@@ -272,7 +272,7 @@ describe('landGrantsActionsPlugin', () => {
       expect(h._responseObj.code).toHaveBeenCalledWith(503)
       expect(error).toHaveBeenCalledWith(
         'FETCH_ACTIONS_ERROR',
-        { sbi: '106284736', sheetId: 'SD7946', parcelId: '0155', errorMessage: 'upstream down', statusCode: 502 },
+        { sbi: '800000602', sheetId: 'SD7946', parcelId: '0155', errorMessage: 'upstream down', statusCode: 502 },
         request
       )
     })

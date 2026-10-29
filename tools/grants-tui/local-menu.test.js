@@ -58,7 +58,7 @@ test('offers sibling builds and existing images, disabling unavailable services'
     disabled: false,
     selected: true
   })
-  expect(items.find((item) => item.key === 'grants-ui-dal-stub')).toMatchObject({ disabled: true })
+  expect(items.find((item) => item.key === 'grants-platform-dal-stub')).toMatchObject({ disabled: true })
   expect(runInteractiveAction).not.toHaveBeenCalled()
   expect(saveState).not.toHaveBeenCalled()
 })

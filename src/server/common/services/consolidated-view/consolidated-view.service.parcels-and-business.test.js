@@ -1,5 +1,4 @@
 import { vi } from 'vitest'
-import { config } from '~/src/config/config.js'
 import { mockFetch } from '~/src/__mocks__'
 import {
   fetchBusinessAndCustomerInformation,
@@ -15,7 +14,6 @@ import {
   mockRequest,
   mockParcelsResponse,
   mockBusinessCustomerResponse,
-  mockStubModeConfig,
   resetConsolidatedViewMocks
 } from './consolidated-view.service.test-helpers.js'
 
@@ -178,30 +176,6 @@ describe('Consolidated View Service - Parcels and business', () => {
         mockRequest
       )
     })
-
-    it('should use stub endpoint in mock mode', async () => {
-      config.set('consolidatedView', mockStubModeConfig)
-
-      mockFetchInstance.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            business: {
-              info: { reference: 'MOCK-REF123' },
-              countyParishHoldings: [{ cphNumber: 'MOCK-CPH67890' }]
-            },
-            customer: {
-              info: { name: { first: 'Jane', last: 'Smith' } }
-            }
-          }
-        })
-      })
-
-      await fetchBusinessAndCPH(mockRequest)
-
-      const [url] = mockFetchInstance.mock.calls[0]
-      expect(url).toBe('http://stub/graphql')
-    })
   })
 
   describe('fetchBusinessAndCustomerInformation', () => {
@@ -323,94 +297,6 @@ describe('Consolidated View Service - Parcels and business', () => {
         expect(error.details.status).toBe(500)
         expect(error.details.responseBody).toBe('Server error')
       }
-    })
-  })
-
-  describe('Mock mode functionality', () => {
-    it('should return formatted business and customer info in stub mode', async () => {
-      config.set('consolidatedView', mockStubModeConfig)
-
-      const stubResponse = {
-        data: {
-          business: {
-            info: {
-              name: 'Mock Business',
-              reference: 'MOCK-REF456',
-              email: { address: 'mock@business.com' },
-              phone: {
-                mobile: '07987654321',
-                landline: '01987654321'
-              },
-              address: {
-                line1: '456 Mock Street',
-                city: 'Mock City',
-                postalCode: 'MC1 2DE'
-              }
-            }
-          },
-          customer: {
-            info: {
-              name: {
-                title: 'Mrs',
-                first: 'Jane',
-                middle: 'Mary',
-                last: 'Smith'
-              }
-            }
-          }
-        }
-      }
-
-      mockFetchInstance.mockResolvedValueOnce({
-        ok: true,
-        json: async () => stubResponse
-      })
-
-      const result = await fetchBusinessAndCustomerInformation(mockRequest)
-
-      expect(result).toEqual({
-        business: {
-          name: 'Mock Business',
-          reference: 'MOCK-REF456',
-          address: {
-            line1: '456 Mock Street',
-            city: 'Mock City',
-            postalCode: 'MC1 2DE'
-          },
-          landlinePhoneNumber: '01987654321',
-          mobilePhoneNumber: '07987654321',
-          email: 'mock@business.com'
-        },
-        customer: stubResponse.data.customer.info
-      })
-
-      const [url] = mockFetchInstance.mock.calls[0]
-      expect(url).toBe('http://stub/graphql')
-    })
-
-    it('should throw ConsolidatedViewError when stub returns non-OK response', async () => {
-      config.set('consolidatedView', mockStubModeConfig)
-
-      mockFetchInstance.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        text: async () => 'Stub failure'
-      })
-
-      await expect(fetchParcelsFromDal(mockRequest)).rejects.toThrow('Stub request failed')
-    })
-
-    it('should throw ConsolidatedViewError when stub returns GraphQL errors', async () => {
-      config.set('consolidatedView', mockStubModeConfig)
-
-      mockFetchInstance.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          errors: [{ message: 'GraphQL error occurred' }]
-        })
-      })
-
-      await expect(fetchParcelsFromDal(mockRequest)).rejects.toThrow('GraphQL error occurred')
     })
   })
 })

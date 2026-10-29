@@ -3,11 +3,11 @@ Feature: Address Handling
     addresses by preference and ensuring the address shown to the user is sent to GAS.
 
     Scenario: Applicant with a structured (UPRN) address sees it formatted correctly and it is sent to GAS
-        Given there is no application data for SBI "106700730" and grant "example-grant-with-auth"
+        Given there is no application data for SBI "800000010" and grant "example-grant-with-auth"
 
         # start
         Given the user navigates to "/example-grant-with-auth"
-        And logs in as CRN "1103823647"
+        And logs in as CRN "9000000028"
         Then the user should see heading "Example Grant"
         When the user clicks on "Start now"
 
@@ -15,10 +15,10 @@ Feature: Address Handling
         Then the user should be at URL "check-details"
         And should see heading "Check your details"
         And should see the following organisation address
-            | Top Farm Two                      |
-            | Saxby-All-Saints Gisburn Road     |
-            | Clitheroe                         |
-            | BB7 4LQ                           |
+            | Test Hazel Croft Farm Holdings |
+            | 410 Test Lane                  |
+            | Mockford                       |
+            | ZZ10 1ZZ                       |
         When the user selects "Yes"
         And continues
 
@@ -148,19 +148,19 @@ Feature: Address Handling
         And should see an "EGWA" reference number for their application
 
         # GAS
-        Then the reference number along with SBI "106700730" and CRN "1103823647" should be submitted to GAS
+        Then the reference number along with SBI "800000010" and CRN "9000000028" should be submitted to GAS
         And the GAS submission should contain applicant business address
-            | line1      | Top Farm Two                  |
-            | line2      | Saxby-All-Saints Gisburn Road |
-            | city       | Clitheroe                     |
-            | postalCode | BB7 4LQ                       |
+            | line1      | Test Hazel Croft Farm Holdings |
+            | line2      | 410 Test Lane                  |
+            | city       | Mockford                       |
+            | postalCode | ZZ10 1ZZ                       |
 
     Scenario: Applicant with an unstructured (no UPRN) address sees it formatted correctly and it is sent to GAS
-        Given there is no application data for SBI "106450896" and grant "example-grant-with-auth"
+        Given there is no application data for SBI "800000006" and grant "example-grant-with-auth"
 
         # start
         Given the user navigates to "/example-grant-with-auth"
-        And logs in as CRN "1102821879"
+        And logs in as CRN "9000000026"
         Then the user should see heading "Example Grant"
         When the user clicks on "Start now"
 
@@ -168,9 +168,9 @@ Feature: Address Handling
         Then the user should be at URL "check-details"
         And should see heading "Check your details"
         And should see the following organisation address
-            | Silver Grange Farm |
-            | Alnwick            |
-            | NE66 4LT           |
+            | Test Cedar Hollow Farm House |
+            | Mockford                     |
+            | ZZ6 2ZZ                      |
         When the user selects "Yes"
         And continues
 
@@ -300,9 +300,9 @@ Feature: Address Handling
         And should see an "EGWA" reference number for their application
 
         # GAS
-        Then the reference number along with SBI "106450896" and CRN "1102821879" should be submitted to GAS
+        Then the reference number along with SBI "800000006" and CRN "9000000026" should be submitted to GAS
         And the GAS submission should contain applicant business address
-            | line1      | Silver Grange Farm |
-            | city       | Alnwick            |
-            | postalCode | NE66 4LT           |
+            | line1      | Test Cedar Hollow Farm House |
+            | city       | Mockford                     |
+            | postalCode | ZZ6 2ZZ                      |
 

@@ -3,7 +3,7 @@ import { config } from '~/src/config/config.js'
 import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
 
-export const mockSbi = 106284736
+export const mockSbi = 800000602
 export const mockCrn = 'CRN123456'
 export const mockToken = 'mock-token-123'
 export const mockDefraIdToken = 'mock-defra-id-token-123'
@@ -64,15 +64,8 @@ export const mockBusinessCustomerResponse = {
   }
 }
 
-export const mockStubModeConfig = {
-  apiEndpoint: 'https://api.example.com/graphql',
-  mockDALEnabled: true,
-  stubUrl: 'http://stub/graphql' // NOSONAR - local dev stub only, fetch is mocked in tests
-}
-
 /**
- * Also sets a baseline consolidatedView config (mock mode off); tests needing
- * stub mode override it via config.set before calling the service.
+ * Also sets a baseline consolidatedView config.
  */
 export function resetConsolidatedViewMocks(mockFetchInstance) {
   vi.clearAllMocks()
@@ -95,7 +88,7 @@ export function resetConsolidatedViewMocks(mockFetchInstance) {
   })
   config.set('consolidatedView', {
     apiEndpoint: 'https://api.example.com/graphql',
-    mockDALEnabled: false,
+    authEnabled: true,
     toleratedFailurePaths: [],
     developerKey: ''
   })

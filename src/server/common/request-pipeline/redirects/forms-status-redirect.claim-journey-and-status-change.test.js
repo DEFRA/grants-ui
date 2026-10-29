@@ -322,6 +322,33 @@ describe('formsStatusRedirect', () => {
       expect(request.yar.clear).toHaveBeenCalledWith(YarKeys.STATUS_CHANGE_REDIRECT)
       expect(h.redirect).toHaveBeenCalledWith('/grant-a/summary')
     })
+
+    it("does not let another application spend the marker: a withdrawal's marker for /start does not skip the next application's GAS check there", async () => {
+      // Saved with no ref after the withdrawn application was deleted; the multi-application routing then
+      // sent that request to the applications page, so the marker was never consumed.
+      request.yar.get.mockReturnValue('/grant-a/start')
+      request.path = '/grant-a/start'
+      request.app.referenceNumber = 'REF-B'
+      request.headers = { 'sec-fetch-site': 'none' }
+      mockGasStatus('APPLICATION_AMEND')
+
+      await formsStatusRedirect(request, h, context)
+
+      expect(request.yar.clear).toHaveBeenCalledWith(YarKeys.STATUS_CHANGE_REDIRECT)
+      expect(getApplicationStatus).toHaveBeenCalled()
+    })
+
+    it('still honours the marker on the next request of the same application', async () => {
+      context.state = { applicationStatus: ApplicationStatus.REOPENED, previousReferenceNumber: 'OLD-REF' }
+      request.yar.get.mockReturnValue('/grant-a/reopened?ref=REF-NEW')
+      request.path = '/grant-a/reopened'
+      request.app.referenceNumber = 'REF-NEW'
+
+      const result = await formsStatusRedirect(request, h, context)
+
+      expect(result).toBe(h.continue)
+      expect(getApplicationStatus).not.toHaveBeenCalled()
+    })
   })
 
   describe('redirecting after a status change is persisted', () => {
@@ -380,6 +407,14 @@ describe('formsStatusRedirect', () => {
         await formsStatusRedirect(request, h, context)
 
         expect(h.redirect).toHaveBeenCalledWith('/grant-a/start')
+      })
+
+      it('REOPENED records the one-shot marker under the new ref, so only the reopened application can spend it', async () => {
+        mockGasStatus('APPLICATION_AMEND')
+
+        await formsStatusRedirect(request, h, context)
+
+        expect(request.yar.set).toHaveBeenCalledWith(YarKeys.STATUS_CHANGE_REDIRECT, '/grant-a/summary?ref=GLD-NEW-REF')
       })
 
       it('REOPENED redirects with the new ref, even when already on the destination page, so the address bar shows it', async () => {

@@ -16,7 +16,7 @@
   "scripts": {
     "build": "run-s build:frontend build:server",
     "build:frontend": "NODE_ENV=production webpack",
-    "build:server": "NODE_ENV=production babel --delete-dir-on-start --ignore \"**/*.test.js\" --ignore \"**/test-helpers\" --ignore \"**/__mocks__\" --copy-files --no-copy-ignored --out-dir ./.server ./src",
+    "build:server": "NODE_ENV=production babel --delete-dir-on-start --ignore \"**/*.test.js\" --ignore \"**/test-helpers\" --ignore \"**/test-helpers.js\" --ignore \"**/*.test-helpers.js\" --ignore \"**/__mocks__\" --copy-files --no-copy-ignored --out-dir ./.server ./src",
     "dev": "run-p frontend:watch server:watch",
     "dev:debug": "run-p frontend:watch server:debug",
     "docker:up": "./tools/setup-local-config.sh && docker compose -f compose.infra.yml -f compose.grants-ui.yml up -d --wait && node tools/refresh-example-grants.js",
@@ -24,7 +24,7 @@
     "docker:down": "docker compose -f compose.infra.yml -f compose.grants-ui.yml down --remove-orphans",
     "docker:debug": "node ./tools/docker-debug.js",
     "docker:cycle-ui": "docker compose -f compose.infra.yml -f compose.grants-ui.yml up -d --force-recreate grants-ui",
-    "docker:reset": "docker compose -f compose.infra.yml -f compose.grants-ui.yml down --volumes --remove-orphans --rmi local && docker volume ls --format '{{.Name}}' | grep -E '^[a-f0-9]{64}$' | xargs docker volume rm && docker rmi -f defradigital/fg-gas-backend defradigital/grants-scoring-api defradigital/grants-ui-dal-stub defradigital/land-grants-api defradigital/land-grants-postgres-seeded 2>/dev/null; docker volume rm -f grants-ui_postgres_data 2>/dev/null; true",
+    "docker:reset": "docker compose -f compose.infra.yml -f compose.grants-ui.yml down --volumes --remove-orphans --rmi local && docker volume ls --format '{{.Name}}' | grep -E '^[a-f0-9]{64}$' | xargs docker volume rm && docker rmi -f defradigital/fg-gas-backend defradigital/grants-scoring-api defradigital/grants-platform-dal-stub defradigital/land-grants-api defradigital/land-grants-postgres-seeded 2>/dev/null; docker volume rm -f grants-ui_postgres_data 2>/dev/null; true",
     "docker:floci:purge": "docker compose -f compose.infra.yml -f compose.grants-ui.yml stop floci && docker compose rm -f floci",
     "docker:ha:up": "./tools/setup-local-config.sh && docker compose -f compose.infra.yml -f compose.grants-ui.yml -f compose.ha.yml up -d --wait --scale grants-ui=2 --scale grants-ui-backend=2 && node tools/refresh-example-grants.js",
     "docker:ha:down": "docker compose -f compose.infra.yml -f compose.grants-ui.yml -f compose.ha.yml down --remove-orphans",
@@ -74,6 +74,7 @@
   "author": "Defra DDTS",
   "license": "OGL-UK-3.0",
   "overrides": {
+    "webpack-dev-server": "5.2.7",
     "launch-editor": "2.14.2",
     "serialize-javascript": "7.1.2",
     "sirv": "3.0.2",

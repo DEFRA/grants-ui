@@ -30,7 +30,7 @@ vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
 const JWT_SECRET = 'test-jwt-secret'
 const TTL_SEC = 300
 const AUDIENCE = ['agreements-ui', 'gas']
-const SBI = '106284736'
+const SBI = '800000602'
 
 describe('agreements user context JWT - real signing', () => {
   let mockRequest
@@ -254,8 +254,8 @@ describe('agreements user context JWT - real signing', () => {
   })
 
   test('stringifies a numeric CRN rather than dropping it', async () => {
-    mockRequest.auth.credentials = { sbi: SBI, crn: 1100943757 }
+    mockRequest.auth.credentials = { sbi: SBI, crn: 9000000604 }
 
-    expect(jwt.decode(await signedToken()).sub).toBe('1100943757')
+    expect(jwt.decode(await signedToken()).sub).toBe('9000000604')
   })
 })

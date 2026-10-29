@@ -90,7 +90,7 @@ describe('SelectLandParcelPageController', () => {
     fetchParcels.mockResolvedValue(PARCELS_WITH_SIZE)
 
     mockRequest = makeLandGrantsRequest()
-    mockContext = setupContext({ sbi: 117235001, customerReference: 1100598138 })
+    mockContext = setupContext({ sbi: 800000606, customerReference: 9000000609 })
     mockH = makeViewToolkit(renderedViewMock)
   })
 

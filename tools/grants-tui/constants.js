@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 // ---------------------------------------------------------------------------
 // Version
 // ---------------------------------------------------------------------------
-export const VERSION = '1.13.0'
+export const VERSION = '1.14.0'
 
 // ---------------------------------------------------------------------------
 // Cross-platform: detect ANSI support
@@ -112,9 +112,9 @@ export const LOCAL_SERVICES = [
   { key: 'grants-ui-backend', composeService: 'grants-ui-backend', image: 'defradigital/grants-ui-backend' },
   { key: 'grants-config-broker', composeService: 'grants-config-broker', image: 'defradigital/grants-config-broker' },
   {
-    key: 'grants-ui-dal-stub',
-    composeService: 'grants-ui-dal-stub',
-    image: 'defradigital/grants-ui-dal-stub',
+    key: 'grants-platform-dal-stub',
+    composeService: 'grants-platform-dal-stub',
+    image: 'defradigital/grants-platform-dal-stub',
     removeOnReset: true
   },
   {

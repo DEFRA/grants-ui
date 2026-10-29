@@ -146,6 +146,16 @@ describe('contentSecurityPolicy plugin', () => {
       expect(policy).not.toContain('cartocdn.com')
     })
 
+    it.each(['connect-src', 'img-src'])('allows Esri aerial tiles in %s', async (directive) => {
+      const policy = await getCspHeader()
+      const sources = policy
+        .split('; ')
+        .find((entry) => entry.startsWith(`${directive} `))
+        .split(' ')
+
+      expect(sources).toContain('https://services.arcgisonline.com')
+    })
+
     it.each([
       { initialContext: {}, description: 'empty context object' },
       { initialContext: undefined, description: 'undefined context' },

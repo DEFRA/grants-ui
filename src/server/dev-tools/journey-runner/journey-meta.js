@@ -2,22 +2,20 @@
 // so it loads without the server's `~/` alias.
 
 // Generic CRN for the many grants whose allowlist is `allowAll: true`.
-export const DEFAULT_CRN = '1102838829'
+// All CRNs here are synthetic personas from grants-platform-dal-stub (see its
+// README); the Defra ID stub's users.json must list the same CRN/SBI pairs.
+export const DEFAULT_CRN = '9000000001'
 
 /**
- * SBI 106238911 test users, one per Countryside Stewardship permission level
- * (from the grants-ui-dal-stub 106238911-<crn>.json fixtures). …181–184 share a
- * level across csApplications/csAgreements; …185–187 are agreements-only.
+ * SBI 800000001 (Test Alder Carr Farm) test users, one per Countryside Stewardship
+ * permission level, from the grants-platform-dal-stub relationship fixtures.
  * @type {{crn: string, note: string}[]}
  */
 const CS_PERMISSION_CRNS = [
-  { crn: '1062311181', note: 'csApplications: SUBMIT, csAgreements: SUBMIT' },
-  { crn: '1062311182', note: 'csApplications: AMEND, csAgreements: AMEND' },
-  { crn: '1062311183', note: 'csApplications: VIEW, csAgreements: VIEW' },
-  { crn: '1062311184', note: 'csApplications: n/a, csAgreements: n/a' },
-  { crn: '1062311185', note: 'csApplications: n/a, csAgreements: SUBMIT' },
-  { crn: '1062311186', note: 'csApplications: n/a, csAgreements: AMEND' },
-  { crn: '1062311187', note: 'csApplications: n/a, csAgreements: VIEW' }
+  { crn: '9000000001', note: 'csApplications: SUBMIT, csAgreements: SUBMIT (every group at its highest level)' },
+  { crn: '9000000002', note: 'csApplications: AMEND, csAgreements: AMEND' },
+  { crn: '9000000003', note: 'csApplications: VIEW, csAgreements: VIEW' },
+  { crn: '9000000004', note: 'no permission groups' }
 ]
 
 /**
@@ -29,12 +27,11 @@ const CS_PERMISSION_CRNS = [
 export const JOURNEY_CRNS = {
   'example-grant-with-auth': [...CS_PERMISSION_CRNS],
   woodland: [...CS_PERMISSION_CRNS],
-  'farm-payments': [{ crn: '1102838829', note: 'farm-payments allowlist + seeded land parcels' }],
+  'farm-payments': [{ crn: '9000000001', note: 'farm-payments allowlist + seeded land parcels' }],
 
-  grasslands: [
-    { crn: '1102838829', note: 'parcels with eligible actions — the happy path' },
-    { crn: '1103313150', note: 'SK0972-6811 / SK0972-7313 have no eligible actions' }
-  ]
+  // The former "no eligible actions" CRN (parcels SK0972-6811/7313) has no
+  // synthetic persona yet; add one to grants-platform-dal-stub to restore it.
+  grasslands: [{ crn: '9000000001', note: 'parcels with eligible actions — the happy path' }]
   // methane is `allowAll` once seeded (see SELF_SEED_GRANTS), so it uses DEFAULT_CRN.
 }
 

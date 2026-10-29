@@ -17,7 +17,7 @@ import { config } from '~/src/config/config.js'
 import { mapPlugin } from './map.plugin.js'
 import { ROUTES } from './map-routes.js'
 import { osTileParams, parcelTileParams } from './tile-params.js'
-import { parcelsQuery } from './parcels-query.js'
+import { parcelsQuery, parcelSearchQuery, parcelBboxParams } from './parcels-query.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log.js'
 
 function makeServer() {
@@ -38,9 +38,11 @@ describe('mapPlugin route registration', () => {
     mapPlugin.plugin.register(server)
   })
 
-  it('registers exactly the four production routes', () => {
+  it('registers exactly the six production routes', () => {
     expect(server._routes.map((r) => r.path)).toEqual([
       ROUTES.parcels,
+      ROUTES.parcelSearch,
+      ROUTES.parcelBbox,
       ROUTES.parcelTiles,
       ROUTES.osBasemap,
       ROUTES.osTiles
@@ -58,6 +60,8 @@ describe('mapPlugin route registration', () => {
     expect(byPath[ROUTES.osTiles].options.validate).toBe(osTileParams)
     expect(byPath[ROUTES.parcelTiles].options.validate).toBe(parcelTileParams)
     expect(byPath[ROUTES.parcels].options.validate).toBe(parcelsQuery)
+    expect(byPath[ROUTES.parcelSearch].options.validate).toBe(parcelSearchQuery)
+    expect(byPath[ROUTES.parcelBbox].options.validate).toBe(parcelBboxParams)
     expect(byPath[ROUTES.osBasemap].options.validate).toBeUndefined()
   })
 

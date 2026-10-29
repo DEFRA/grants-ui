@@ -3,12 +3,12 @@ import { config } from '~/src/config/config.js'
 import { mockFetch } from '~/src/__mocks__'
 import { fetchBusinessPermissions, executeConfigDrivenQuery } from './consolidated-view.service.js'
 import { can } from '~/src/server/common/helpers/permissions/can.js'
+import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
 import {
   mockSbi,
   mockCrn,
   mockToken,
   mockRequest,
-  mockStubModeConfig,
   resetConsolidatedViewMocks
 } from './consolidated-view.service.test-helpers.js'
 
@@ -98,6 +98,26 @@ describe('Consolidated View Service - Permissions and query', () => {
       }
     )
 
+    it('omits the Entra token and does not fetch one when CV_API_AUTH_ENABLED is false', async () => {
+      config.set('consolidatedView.authEnabled', false)
+      getValidToken.mockClear()
+
+      mockFetchInstance.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: { customer: { business: { permissionGroups: mockPermissionGroups } } } })
+      })
+
+      const result = await fetchBusinessPermissions(mockRequest)
+
+      expect(result).toEqual(mockPermissionGroups)
+      expect(getValidToken).not.toHaveBeenCalled()
+
+      const [[url, calledOptions]] = mockFetchInstance.mock.calls
+      expect(url).toBe('https://api.example.com/graphql')
+      expect(calledOptions.headers.Authorization).toBeUndefined()
+      expect(calledOptions.headers['x-forwarded-authorization']).toBe(mockRequest.auth.credentials.token)
+    })
+
     it('should return empty array when business is null', async () => {
       mockFetchInstance.mockResolvedValueOnce({
         ok: true,
@@ -133,31 +153,6 @@ describe('Consolidated View Service - Permissions and query', () => {
 
       expect(result).toEqual([])
     })
-
-    it('should execute query against stub in mock mode', async () => {
-      config.set('consolidatedView', mockStubModeConfig)
-
-      mockFetchInstance.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          data: {
-            customer: {
-              business: {
-                permissionGroups: mockPermissionGroups
-              }
-            }
-          }
-        })
-      })
-
-      const result = await fetchBusinessPermissions(mockRequest)
-
-      expect(result).toEqual(mockPermissionGroups)
-
-      const [url] = mockFetchInstance.mock.calls[0]
-
-      expect(url).toBe('http://stub/graphql')
-    })
   })
 
   describe('executeConfigDrivenQuery', () => {
@@ -182,34 +177,6 @@ describe('Consolidated View Service - Permissions and query', () => {
       const [[, calledOptions]] = mockFetchInstance.mock.calls
       const body = JSON.parse(calledOptions.body)
       expect(body.query).toBe(query)
-    })
-
-    it('should execute query against stub in mock mode', async () => {
-      config.set('consolidatedView', mockStubModeConfig)
-
-      const stubResponse = {
-        data: {
-          business: {
-            info: {
-              name: 'Mock Business'
-            }
-          }
-        }
-      }
-
-      mockFetchInstance.mockResolvedValueOnce({
-        ok: true,
-        json: async () => stubResponse
-      })
-
-      const query = 'query { business { info { name } } }'
-
-      const result = await executeConfigDrivenQuery(mockRequest, query)
-
-      expect(result.data.business.info.name).toBe('Mock Business')
-
-      const [url] = mockFetchInstance.mock.calls[0]
-      expect(url).toBe('http://stub/graphql')
     })
 
     it('should format address fields in the response using UPRN logic when uprn is present', async () => {

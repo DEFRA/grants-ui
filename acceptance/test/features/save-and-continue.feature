@@ -2,11 +2,11 @@ Feature: Save and Continue
 
     Scenario: Use the Save and Continue feature, checking which pages are returned to when resuming a journey
         # clear Mongo state storage
-        Given there is no application data for SBI "115460751" and grant "example-grant-with-auth"
+        Given there is no application data for SBI "800000015" and grant "example-grant-with-auth"
 
         # start
         Given the user navigates to "/example-grant-with-auth"
-        And logs in as CRN "1100960953"
+        And logs in as CRN "9000000018"
         Then the user should see heading "Example Grant"
         When the user clicks on "Start now"
 
@@ -29,12 +29,12 @@ Feature: Save and Continue
         Then the user should be at URL "radios-field"
 
         # validate Mongo state storage
-        Then there should be application state stored for CRN "1100960953" and SBI "115460751" and grant "example-grant-with-auth"
+        Then there should be application state stored for CRN "9000000018" and SBI "800000015" and grant "example-grant-with-auth"
 
         # reload the browser session and go to /start
         Given the user starts a new browser session
         And navigates to "/example-grant-with-auth"
-        And logs in as CRN "1100960953"
+        And logs in as CRN "9000000018"
 
         # radios-field, should return to first unanswered question on resumption of uncompleted journey
         Then the user should be at URL "radios-field"
@@ -161,7 +161,7 @@ Feature: Save and Continue
         # reload the browser session and go to /start
         Given the user starts a new browser session
         And navigates to "/example-grant-with-auth"
-        And logs in as CRN "1100960953"
+        And logs in as CRN "9000000018"
 
         # summary, should return to summary with all previous answers on resumption of completed but unsubmitted journey
         Then the user should be at URL "summary"

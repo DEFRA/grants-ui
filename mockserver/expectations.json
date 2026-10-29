@@ -1,5 +1,22 @@
 [
   {
+    "id": "cw-local-operator-roles-200",
+    "priority": 0,
+    "httpRequest": {
+      "method": "GET",
+      "path": "/api/users/00000000-0000-4000-8000-000000000001/roles"
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "headers": {
+        "Content-Type": ["application/json"]
+      },
+      "body": {
+        "appRoles": [{ "roleName": "ROLE_WMP" }, { "roleName": "ROLE_WMP_CLAIMS" }]
+      }
+    }
+  },
+  {
     "id": "gas-applications-post-204",
     "priority": 0,
     "httpRequest": {

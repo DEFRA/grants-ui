@@ -167,6 +167,13 @@ metadata:
                     - path: flatName
                     - path: pafOrganisationName
                 - path: vat
+                - path: legalStatus
+                  fields:
+                    - path: type
+                - path: registrationNumbers
+                  fields:
+                    - path: companiesHouse
+                    - path: charityCommission
             - path: countyParishHoldings
               fields:
                 - path: cphNumber
@@ -200,6 +207,22 @@ metadata:
             format: address
           - label: VAT registration number
             sourcePath: business.vat
+          - label: Legal Status
+            sourcePath: business.legalStatus.type
+          - label: Company Registration Number
+            sourcePath: business.registrationNumbers.companiesHouse
+            showIfEmptyWhen:
+              sourcePath: business.legalStatus.type
+              values:
+                - Private Ltd Company
+            emptyText: Not entered
+          - label: Registered Charity Number
+            sourcePath: business.registrationNumbers.charityCommission
+            showIfEmptyWhen:
+              sourcePath: business.legalStatus.type
+              values:
+                - Charity
+            emptyText: Not entered
       - title: County parish holding (CPH) numbers
         fields:
           - label: CPH number
