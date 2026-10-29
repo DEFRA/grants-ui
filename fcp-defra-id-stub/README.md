@@ -21,5 +21,11 @@ different grants may share a persona, because application state, locks and audit
 keyed per grant. Scenarios on the same grant never share an SBI: each wipes its SBI's state for
 that grant at the start, and the suite runs scenarios in parallel.
 
+CRN `9000000035` (SBI `800000026` Test Heather Ling Farm) is the persona for the water
+management journey tests in
+[grants-config-water-management](https://github.com/DEFRA/grants-config-water-management).
+Those tests wipe the SBI's water-management state at the start of every run, so don't use it
+for other water-management scenarios or manual testing.
+
 The stub's README has the full persona list and how to add one. When adding a persona there,
 add the same CRN, SBI and names here so it can sign in locally.
