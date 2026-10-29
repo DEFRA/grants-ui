@@ -6,7 +6,6 @@ import {
   fetchConsentRequirementsForParcel as fetchConsentRequirementsForParcelService
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import { parcelsWithGroups, parcelsWithActions } from '~/src/server/land-grants/services/land-grants.client.js'
-import { clearParcelCache } from '~/src/server/land-grants/services/parcel-cache.js'
 import { configState } from '~/src/__mocks__/config-mocks.js'
 import {
   apiCMOR1,
@@ -17,6 +16,8 @@ import {
   mockUserContext,
   withUserContext
 } from './land-grants.service.test-helpers.js'
+import { useCachedMethodServer } from '~/src/server/common/helpers/cache/cached-method.test-helpers.js'
+import { parcelCachePlugin } from '~/src/server/land-grants/services/parcel-cache.js'
 
 const fetchFlat = (enabled = enabledLandActions) =>
   fetchActionsForParcel({ parcelId: 'PARCEL456', sheetId: 'SHEET123', enabledLandActions: enabled })
@@ -38,13 +39,14 @@ vi.mock('~/src/config/config.js', async () => {
 })
 
 describe('land-grants service', () => {
+  useCachedMethodServer(parcelCachePlugin)
+
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
   describe('fetchActionsForParcel', () => {
     beforeEach(() => {
-      clearParcelCache()
       configState.reset()
     })
 
@@ -156,7 +158,6 @@ describe('land-grants service', () => {
     const mockApiResponse = parcelResponse([apiCMOR1])
 
     beforeEach(() => {
-      clearParcelCache()
       configState.reset()
       parcelsWithActions.mockResolvedValue(mockApiResponse)
     })
@@ -193,7 +194,6 @@ describe('land-grants service', () => {
 
   describe('fetchConsentRequirementsForParcel', () => {
     beforeEach(() => {
-      clearParcelCache()
       configState.reset()
       configState.set('landGrants.enableSSSIFeature', true)
       configState.set('landGrants.enableHeferFeature', true)

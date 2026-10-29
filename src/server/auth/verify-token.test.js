@@ -2,7 +2,8 @@ import { vi } from 'vitest'
 import Jwt from '@hapi/jwt'
 import Wreck from '@hapi/wreck'
 import { getOidcConfig } from './get-oidc-config.js'
-import { verifyToken } from './verify-token.js'
+import { jwksCachePlugin, verifyToken } from './verify-token.js'
+import { useCachedMethodServer } from '~/src/server/common/helpers/cache/cached-method.test-helpers.js'
 import { log } from '~/src/server/common/helpers/logging/log.js'
 
 // Mock dependencies
@@ -18,6 +19,8 @@ const mockJwk = {
 }
 
 describe('verifyToken', () => {
+  useCachedMethodServer(jwksCachePlugin)
+
   const mockToken = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signature'
   const mockDecodedToken = {
     decoded: {
@@ -75,6 +78,33 @@ describe('verifyToken', () => {
       mockDecodedToken,
       expect.objectContaining({ key: expect.stringContaining('-----BEGIN PUBLIC KEY-----') })
     )
+  })
+
+  it('should reuse the cached JWKS across verifications', async () => {
+    await verifyToken(mockToken)
+    await verifyToken(mockToken)
+
+    expect(Wreck.get).toHaveBeenCalledTimes(1)
+  })
+
+  it('should fetch the JWKS again when the cached set has no key for the token kid', async () => {
+    const otherJwk = { kid: 'other-key', kty: 'RSA', e: 'AQAB' }
+    Wreck.get.mockResolvedValueOnce({ payload: { keys: [otherJwk] } })
+    Wreck.get.mockResolvedValueOnce({ payload: { keys: [otherJwk, mockJwk] } })
+
+    await verifyToken(mockToken)
+
+    expect(Wreck.get).toHaveBeenCalledTimes(2)
+    expect(Jwt.token.verify).toHaveBeenCalledTimes(1)
+  })
+
+  it('should not cache a failed JWKS fetch', async () => {
+    Wreck.get.mockRejectedValueOnce(new Error('JWKS fetch failed'))
+
+    await expect(verifyToken(mockToken)).rejects.toThrow('JWKS fetch failed')
+    await verifyToken(mockToken)
+
+    expect(Wreck.get).toHaveBeenCalledTimes(2)
   })
 
   it('should reject with a jwk_conversion log when no JWK matches the token kid', async () => {

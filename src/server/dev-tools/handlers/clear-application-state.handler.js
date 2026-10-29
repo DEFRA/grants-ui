@@ -29,7 +29,7 @@ export async function clearApplicationStateHandler(request, h) {
     await clearStateWithoutSlug(request)
   }
 
-  clearParcelCache()
+  await clearParcelCache(/** @type {{ sbi?: string }} */ (request.auth?.credentials)?.sbi)
 
   // The deleted application's ref must not follow the user: the multi-application plugin
   // re-attaches the request's ref to same-grant redirects, which would 404 on the grant root.

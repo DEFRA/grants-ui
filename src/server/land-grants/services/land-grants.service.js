@@ -18,12 +18,7 @@ import {
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
 import { formatUnit } from '~/src/shared/unit-format.js'
 import { getAvailabilityLimit, isActionAvailable } from '~/src/shared/availability.js'
-import {
-  getCachedParcel,
-  getCachedSbiParcels,
-  setCachedParcel,
-  setCachedSbiParcels
-} from '~/src/server/land-grants/services/parcel-cache.js'
+import { cachedParcelActions, cachedSbiParcels, sbiParcelsKey } from '~/src/server/land-grants/services/parcel-cache.js'
 import {
   filterEnabledLandActions,
   normaliseEnabledLandActions
@@ -105,40 +100,36 @@ async function fetchParcelActions(
 ) {
   const parcelKey = stringifyParcel({ sheetId, parcelId })
   const enabledActions = normaliseEnabledLandActions(enabledLandActions)
-  const cacheKey = buildParcelActionsCacheKey(`${cacheKeyPrefix}${parcelKey}`, enabledActions)
-  const cached = plannedActions.length === 0 ? getCachedParcel(cacheKey) : null
 
-  if (cached) {
-    return cached
+  const load = async () => {
+    const parcelIds = [parcelKey]
+    const { parcels, groups: groupDefinitions = [] } = await fetchParcelsWithFields(
+      parcelIds,
+      LAND_GRANTS_API_URL,
+      userContext,
+      plannedActions
+    )
+    const foundParcel = parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)
+    const actionsForParcel = foundParcel?.actions?.map(mapAction) || []
+
+    return {
+      parcel: {
+        sheetId,
+        parcelId,
+        size: {
+          unitFullName: formatAreaUnit(foundParcel?.size?.unit ?? ''),
+          unit: foundParcel?.size?.unit ?? '',
+          value: foundParcel?.size?.value ?? 0
+        }
+      },
+      actions: transformActions(actionsForParcel, enabledActions, groupDefinitions)
+    }
   }
 
-  const parcelIds = [parcelKey]
-  const { parcels, groups: groupDefinitions = [] } = await fetchParcelsWithFields(
-    parcelIds,
-    LAND_GRANTS_API_URL,
-    userContext,
-    plannedActions
-  )
-  const foundParcel = parcels?.find((p) => p.parcelId === parcelId && p.sheetId === sheetId)
-  const actionsForParcel = foundParcel?.actions?.map(mapAction) || []
-
-  const result = {
-    parcel: {
-      sheetId,
-      parcelId,
-      size: {
-        unitFullName: formatAreaUnit(foundParcel?.size?.unit ?? ''),
-        unit: foundParcel?.size?.unit ?? '',
-        value: foundParcel?.size?.value ?? 0
-      }
-    },
-    actions: transformActions(actionsForParcel, enabledActions, groupDefinitions)
+  if (plannedActions.length > 0) {
+    return load()
   }
-
-  if (plannedActions.length === 0) {
-    setCachedParcel(cacheKey, result)
-  }
-  return result
+  return cachedParcelActions(buildParcelActionsCacheKey(`${cacheKeyPrefix}${parcelKey}`, enabledActions), load)
 }
 
 /**
@@ -298,15 +289,6 @@ async function fetchParcelsSize(parcelIds, userContext, fields) {
 }
 
 /**
- * In-flight parcel loads keyed by SBI and query mode. Map tile requests arrive in parallel
- * bursts; without this, every request that misses the value cache would fire
- * its own DAL + size-API round trip. Entries remove themselves on settle, so
- * failures are never cached and the next call retries.
- * @type {Map<unknown, Promise<HydratedParcel[]>>}
- */
-const inflightParcelsBySbi = new Map()
-
-/**
  * Fetches parcels with area data for a given SBI. Concurrent calls for the
  * same SBI and query mode share a single upstream load.
  * @param {AnyFormRequest} request
@@ -317,35 +299,20 @@ const inflightParcelsBySbi = new Map()
  */
 export async function fetchParcels(request, userContext, fields = [LAND_GRANTS_ACTION_SIZE]) {
   const sbi = request.auth?.credentials?.sbi
-  const cacheKey = `${sbi}:${[...fields].sort((a, b) => a.localeCompare(b)).join(',')}`
-  const cached = getCachedSbiParcels(cacheKey)
-
-  if (cached) {
-    return cached
-  }
-
-  let inflight = inflightParcelsBySbi.get(cacheKey)
-  if (!inflight) {
-    inflight = loadParcelsForSbi(request, cacheKey, userContext, fields).finally(() =>
-      inflightParcelsBySbi.delete(cacheKey)
-    )
-    inflightParcelsBySbi.set(cacheKey, inflight)
-  }
-  return inflight
+  return cachedSbiParcels(sbiParcelsKey(sbi, fields), () => loadParcelsForSbi(request, userContext, fields))
 }
 
 /**
  * @param {AnyFormRequest} request
- * @param {unknown} cacheKey
  * @param {LandGrantsUserContext} userContext
  * @param {string[]} fields
  * @returns {Promise<HydratedParcel[]>}
  */
-async function loadParcelsForSbi(request, cacheKey, userContext, fields) {
+async function loadParcelsForSbi(request, userContext, fields) {
   const parcels = await fetchParcelsFromDal(request)
   const parcelKeys = parcels.map(stringifyParcel)
   const sizes = await fetchParcelsSize(parcelKeys, userContext, fields)
-  const hydratedParcels = parcels.map((p) => {
+  return parcels.map((p) => {
     const key = stringifyParcel(p)
     const parcelData = sizes[key]
     return {
@@ -354,9 +321,6 @@ async function loadParcelsForSbi(request, cacheKey, userContext, fields) {
       ...(parcelData?.actions !== undefined ? { actions: parcelData.actions } : {})
     }
   })
-
-  setCachedSbiParcels(cacheKey, hydratedParcels)
-  return hydratedParcels
 }
 
 /**

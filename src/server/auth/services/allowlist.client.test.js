@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import Jwt from '@hapi/jwt'
-import { fetchAllowedGrantDetails, fetchAllowedGrants } from './allowlist.client.js'
+import { allowlistCachePlugin, fetchAllowedGrantDetails, fetchAllowedGrants } from './allowlist.client.js'
+import { useCachedMethodServer } from '~/src/server/common/helpers/cache/cached-method.test-helpers.js'
 import { logUpstreamError } from '~/src/server/common/helpers/logging/upstream-error.js'
 import { createApiHeadersForGrantsUiBackend } from '~/src/server/common/helpers/auth/backend-auth-helper.js'
 import { createMockFetchResponse, mockFetch } from '~/src/__mocks__/hapi-mocks.js'
@@ -23,6 +24,8 @@ const SBI = '123456789'
 
 describe('fetchAllowedGrants', () => {
   let fetch
+
+  useCachedMethodServer(allowlistCachePlugin)
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -126,5 +129,49 @@ describe('fetchAllowedGrants', () => {
     expect(logUpstreamError).toHaveBeenCalledWith(
       expect.objectContaining({ endpoint: '/allowlist/grants', upstreamStatus: null, errorMessage: 'ECONNREFUSED' })
     )
+  })
+
+  describe('caching', () => {
+    const grants = [{ code: 'woodland', title: 'Woodland', description: null, url: null }]
+
+    it('calls the backend once per crn and sbi while the cache is fresh', async () => {
+      fetch.mockResolvedValue(createMockFetchResponse({ data: { grants } }))
+
+      await fetchAllowedGrants(CRN, SBI)
+      await fetchAllowedGrantDetails(CRN, SBI)
+      await fetchAllowedGrants(CRN, SBI)
+
+      expect(fetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('calls the backend separately for a different sbi', async () => {
+      fetch.mockResolvedValue(createMockFetchResponse({ data: { grants } }))
+
+      await fetchAllowedGrants(CRN, SBI)
+      await fetchAllowedGrants(CRN, '987654321')
+
+      expect(fetch).toHaveBeenCalledTimes(2)
+    })
+
+    it('calls the backend again after 60 seconds', async () => {
+      vi.useFakeTimers()
+      fetch.mockResolvedValue(createMockFetchResponse({ data: { grants } }))
+
+      await fetchAllowedGrants(CRN, SBI)
+      vi.advanceTimersByTime(60 * 1000 + 1)
+      await fetchAllowedGrants(CRN, SBI)
+
+      expect(fetch).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not cache a failed call', async () => {
+      fetch
+        .mockRejectedValueOnce(new Error('connect ECONNREFUSED'))
+        .mockResolvedValueOnce(createMockFetchResponse({ data: { grants } }))
+
+      await expect(fetchAllowedGrants(CRN, SBI)).rejects.toThrow('connect ECONNREFUSED')
+      expect(await fetchAllowedGrants(CRN, SBI)).toEqual(['woodland'])
+      expect(fetch).toHaveBeenCalledTimes(2)
+    })
   })
 })

@@ -52,6 +52,10 @@ import { componentMapOptions } from '../config/nunjucks/component-map-options.js
 import { StatePersistenceService } from './common/services/state-persistence/state-persistence.service.js'
 import { router } from './router.js'
 import allowlist from '~/src/server/common/helpers/allowlist/allowlist.js'
+import { allowlistCachePlugin } from '~/src/server/auth/services/allowlist.client.js'
+import { jwksCachePlugin } from '~/src/server/auth/verify-token.js'
+import { entraTokenPlugin } from '~/src/server/common/helpers/entra/token-manager.js'
+import { parcelCachePlugin } from '~/src/server/land-grants/services/parcel-cache.js'
 import multiApplication from '~/src/server/common/helpers/multi-application/multi-application.js'
 import ConfirmMethaneDetailsController from '~/src/server/non-land-grants/methane/controllers/confirm-methane-details.controller.js'
 import TaskListPageController from '~/src/server/task-list/task-list-page.controller.js'
@@ -215,6 +219,10 @@ const registerPlugins = async (server) => {
     requestTracing,
     pulse,
     sessionCache,
+    allowlistCachePlugin,
+    entraTokenPlugin,
+    jwksCachePlugin,
+    parcelCachePlugin,
     nunjucksConfig,
     sso,
     permissions,

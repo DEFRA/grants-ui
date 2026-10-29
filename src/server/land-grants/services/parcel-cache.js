@@ -1,74 +1,102 @@
 import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
+import {
+  defineCachedMethod,
+  GENERATE_TIMEOUT_HEADROOM_MS,
+  retryWindowMs
+} from '~/src/server/common/helpers/cache/cached-method.js'
 import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { LAND_GRANTS_ACTION_SIZE, LAND_GRANTS_ACTIONS } from '~/src/server/land-grants/services/land-grants.client.js'
 import { stringifyParcel } from '~/src/shared/format-parcel.js'
 
 const SECONDS_PER_MINUTE = 60
 const MS_PER_SECOND = 1000
 const CACHE_TTL_MINUTES = 5
 const CACHE_TTL_MS = CACHE_TTL_MINUTES * SECONDS_PER_MINUTE * MS_PER_SECOND
-const CACHE_MAX_ENTRIES = 500
 
-function createCache() {
-  const store = new Map()
-  return {
-    get(key) {
-      const entry = store.get(key)
-      if (!entry) {
-        return null
-      }
-      if (Date.now() > entry.expiresAt) {
-        store.delete(key)
-        return null
-      }
-      return entry.value
-    },
-    set(key, value) {
-      if (store.size >= CACHE_MAX_ENTRIES) {
-        const now = Date.now()
-        for (const [k, e] of store) {
-          if (now > e.expiresAt) {
-            store.delete(k)
-            break
-          }
-        }
-        if (store.size >= CACHE_MAX_ENTRIES) {
-          store.delete(store.keys().next().value)
-        }
-      }
-      store.set(key, { value, expiresAt: Date.now() + CACHE_TTL_MS })
-    },
-    clear() {
-      store.clear()
+const ENTRA_TOKEN_TIMEOUT_SECONDS = 15
+const LAND_GRANTS_TIMEOUT_SECONDS = 30
+const CONSOLIDATED_VIEW_TIMEOUT_SECONDS = 30
+
+const ENTRA_TOKEN_WINDOW_MS = retryWindowMs(ENTRA_TOKEN_TIMEOUT_SECONDS * MS_PER_SECOND)
+const LAND_GRANTS_WINDOW_MS = retryWindowMs(LAND_GRANTS_TIMEOUT_SECONDS * MS_PER_SECOND)
+const CONSOLIDATED_VIEW_WINDOW_MS =
+  retryWindowMs(CONSOLIDATED_VIEW_TIMEOUT_SECONDS * MS_PER_SECOND) + ENTRA_TOKEN_WINDOW_MS
+const SBI_PARCEL_FIELDS = [[LAND_GRANTS_ACTION_SIZE], [LAND_GRANTS_ACTION_SIZE, LAND_GRANTS_ACTIONS]]
+
+/**
+ * @param {string} _key
+ * @param {() => Promise<unknown>} load
+ * @returns {Promise<unknown>}
+ */
+const runLoader = (_key, load) => load()
+
+/**
+ * @param {unknown} _sbi
+ * @param {AnyFormRequest} request
+ * @returns {Promise<string[]>}
+ */
+async function loadAuthorisedParcelIds(_sbi, request) {
+  const landParcels = (await fetchParcelsFromDal(request)) || []
+  return landParcels.map((parcel) => stringifyParcel(parcel))
+}
+
+const authorisedParcelIds = defineCachedMethod('landGrants.authorisedParcelIds', loadAuthorisedParcelIds, {
+  expiresIn: CACHE_TTL_MS,
+  generateTimeout: CONSOLIDATED_VIEW_WINDOW_MS + GENERATE_TIMEOUT_HEADROOM_MS,
+  generateKey: String
+})
+
+const sbiParcels = defineCachedMethod('landGrants.sbiParcels', runLoader, {
+  expiresIn: CACHE_TTL_MS,
+  // Loads the SBI's parcels from consolidated view, then their sizes from land grants.
+  generateTimeout: CONSOLIDATED_VIEW_WINDOW_MS + LAND_GRANTS_WINDOW_MS + GENERATE_TIMEOUT_HEADROOM_MS,
+  generateKey: (key) => key
+})
+
+const parcelActions = defineCachedMethod('landGrants.parcelActions', runLoader, {
+  expiresIn: CACHE_TTL_MS,
+  generateTimeout: LAND_GRANTS_WINDOW_MS + GENERATE_TIMEOUT_HEADROOM_MS,
+  generateKey: (key) => key
+})
+
+export const parcelCachePlugin = {
+  plugin: {
+    name: 'parcel-cache',
+    register(/** @type {Server} */ server) {
+      authorisedParcelIds.register(server)
+      sbiParcels.register(server)
+      parcelActions.register(server)
     }
   }
 }
 
-const parcelActionsCache = createCache()
-const sbiParcelsCache = createCache()
-const authParcelsCache = createCache()
-
-export function getCachedParcel(key) {
-  return parcelActionsCache.get(key) ?? null
+/**
+ * @param {unknown} sbi
+ * @param {string[]} fields
+ * @returns {string}
+ */
+export function sbiParcelsKey(sbi, fields) {
+  return `${sbi}:${[...fields].sort((a, b) => a.localeCompare(b)).join(',')}`
 }
 
-export function setCachedParcel(key, data) {
-  parcelActionsCache.set(key, data)
+/**
+ * @template T
+ * @param {string} key
+ * @param {() => Promise<T>} load
+ * @returns {Promise<T>}
+ */
+export function cachedSbiParcels(key, load) {
+  return /** @type {Promise<T>} */ (sbiParcels.call(key, load))
 }
 
-export function getCachedSbiParcels(sbi) {
-  return sbiParcelsCache.get(sbi) ?? null
-}
-
-export function setCachedSbiParcels(sbi, data) {
-  sbiParcelsCache.set(sbi, data)
-}
-
-export function getCachedAuthParcels(sbi) {
-  return authParcelsCache.get(sbi) ?? null
-}
-
-export function setCachedAuthParcels(sbi, data) {
-  authParcelsCache.set(sbi, data)
+/**
+ * @template T
+ * @param {string} key
+ * @param {() => Promise<T>} load
+ * @returns {Promise<T>}
+ */
+export function cachedParcelActions(key, load) {
+  return /** @type {Promise<T>} */ (parcelActions.call(key, load))
 }
 
 /**
@@ -76,21 +104,13 @@ export function setCachedAuthParcels(sbi, data) {
  * cache when available. On a cache miss, fetches from the consolidated view
  * and populates the cache; on fetch failure, returns null without caching so
  * the next call retries.
- * @param {import('@defra/forms-engine-plugin/engine/types.js').AnyFormRequest} request
+ * @param {AnyFormRequest} request
  * @returns {Promise<string[] | null>}
  */
 export async function fetchAuthorisedParcelIds(request) {
   const sbi = request.auth?.credentials?.sbi
-  const cached = getCachedAuthParcels(sbi)
-  if (cached) {
-    return cached
-  }
-
   try {
-    const landParcels = (await fetchParcelsFromDal(request)) || []
-    const parcelIds = landParcels.map((parcel) => stringifyParcel(parcel))
-    setCachedAuthParcels(sbi, parcelIds)
-    return parcelIds
+    return await authorisedParcelIds.call(sbi, request)
   } catch (error) {
     debug(
       LogCodes.SYSTEM.EXTERNAL_API_ERROR,
@@ -104,8 +124,18 @@ export async function fetchAuthorisedParcelIds(request) {
   }
 }
 
-export function clearParcelCache() {
-  parcelActionsCache.clear()
-  sbiParcelsCache.clear()
-  authParcelsCache.clear()
+/**
+ * @param {unknown} sbi
+ * @returns {Promise<void>}
+ */
+export async function clearParcelCache(sbi) {
+  await Promise.all([
+    authorisedParcelIds.drop(sbi),
+    ...SBI_PARCEL_FIELDS.map((fields) => sbiParcels.drop(sbiParcelsKey(sbi, fields)))
+  ])
 }
+
+/**
+ * @import { Server } from '@hapi/hapi'
+ * @import { AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
+ */

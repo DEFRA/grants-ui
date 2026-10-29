@@ -2,7 +2,10 @@ import Jwt from '@hapi/jwt'
 import Wreck from '@hapi/wreck'
 import { getOidcConfig } from './get-oidc-config.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { defineCachedMethod, UNRETRIED_GENERATE_TIMEOUT_MS } from '~/src/server/common/helpers/cache/cached-method.js'
 import { createPublicKey } from 'node:crypto'
+
+const JWKS_CACHE_TTL_MS = 60 * 60 * 1000
 
 /**
  * Verify a Defra Identity access token against the OIDC JWKS endpoint.
@@ -14,8 +17,7 @@ async function verifyToken(token) {
     const decoded = Jwt.token.decode(token)
     // @hapi/jwt's header type omits `kid`, though Defra ID tokens carry it
     const { kid } = /** @type {{ kid?: string }} */ (decoded.decoded.header)
-    const keys = await fetchJwksKeys()
-    const pem = convertJwkToPem(selectSigningKey(keys, kid))
+    const pem = convertJwkToPem(await findSigningKey(kid))
     verifyTokenSignature(decoded, pem)
     logSuccessfulVerification(decoded)
   } catch (error) {
@@ -42,6 +44,34 @@ async function fetchJwksKeys() {
   }
 
   return keys
+}
+
+const jwks = defineCachedMethod('auth.jwks', fetchJwksKeys, {
+  expiresIn: JWKS_CACHE_TTL_MS,
+  generateTimeout: UNRETRIED_GENERATE_TIMEOUT_MS,
+  generateKey: () => 'jwks'
+})
+
+export const jwksCachePlugin = {
+  plugin: {
+    name: 'jwks-cache',
+    register(/** @type {Server} */ server) {
+      jwks.register(server)
+    }
+  }
+}
+
+/**
+ * @param {string | undefined} kid
+ * @returns {Promise<Record<string, unknown>>}
+ */
+async function findSigningKey(kid) {
+  const cachedKey = (await jwks.call()).find((k) => k.kid === kid)
+  if (cachedKey) {
+    return cachedKey
+  }
+  await jwks.drop()
+  return selectSigningKey(await jwks.call(), kid)
 }
 
 /**
@@ -142,6 +172,8 @@ function determineVerificationStep(error, defaultStep) {
 export { verifyToken }
 
 /**
+ * @import { Server } from '@hapi/hapi'
+ *
  * @typedef {Error & { alreadyLogged?: boolean }} ErrorResponse
  *
  * @typedef {{ decoded?: { payload?: any }, payload?: any }} DecodedToken
