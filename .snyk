@@ -1,6 +1,16 @@
 # Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities
 version: v1.25.0
 ignore:
+  'SNYK-JS-MAPLIBREGL-21826908':
+    - '@defra/interactive-map > maplibre-gl':
+        reason: 'Checked 2026-10-29 on interactive-map@0.0.54-alpha > maplibre-gl@5.24.0: the DOM.sanitize() bypass (GHSA-jrc7-96c5-q579) needs the attribution control to render untrusted attribution HTML. The parcel map sets a fixed OS attribution string (getMapStyleAttribution) and loads its style from the grants-ui /api/map/os-basemap proxy, so applicants cannot supply attribution content. The fix, maplibre-gl 6.4.1+, needs interactive-map@0.0.55-alpha, a breaking MapLibre v6 upgrade (WebGL2, separate worker file, v6 API for the direct MapLibre calls in parcel-map) that needs browser testing. Remove this ignore when that upgrade lands.'
+        expires: '2026-11-28'
+    - '@defra/forms-engine-plugin > maplibre-gl':
+        reason: 'Checked 2026-10-29 on forms-engine-plugin@4.23.0: the engine depends on maplibre-gl ^5.24.0 directly and through interactive-map@0.0.22-alpha, and no 4.x release moves to maplibre-gl 6.4.1+. Its map.js sets fixed OS and Esri attribution strings and loads styles from the grants-ui /api/maps/vts proxy; geospatial-map.js adds GeoJSON datasets from the same API without attribution. Applicants cannot supply the attribution HTML the DOM.sanitize() bypass needs. Remove this ignore when forms-engine-plugin moves to maplibre-gl 6.4.1+; reassess if map attribution or style sources become configurable.'
+        expires: '2026-11-28'
+    - '@defra/forms-engine-plugin > @defra/interactive-map > maplibre-gl':
+        reason: 'Checked 2026-10-29 on forms-engine-plugin@4.23.0 > interactive-map@0.0.22-alpha > maplibre-gl@5.24.0: same maps as the direct forms-engine-plugin path, with fixed OS and Esri attribution strings and styles from the grants-ui /api/maps/vts proxy, so applicants cannot supply attribution HTML. No forms-engine-plugin 4.x release moves interactive-map to maplibre-gl 6.4.1+. Remove this ignore when it does; reassess if map attribution or style sources become configurable.'
+        expires: '2026-11-28'
   'SNYK-JS-FOLLOWREDIRECTS-21762031':
     - '@defra/forms-engine-plugin > @defra/interactive-map > @easyops-cn/docusaurus-search-local > @docusaurus/plugin-content-docs > @docusaurus/core > webpack-dev-server > http-proxy-middleware > http-proxy > follow-redirects':
         reason: 'Checked 2026-10-28 on forms-engine-plugin@4.23.0: interactive-map@0.0.22-alpha installs Docusaurus@3.10.2 > webpack-dev-server@5.2.7 > http-proxy-middleware@2.0.10 > http-proxy@1.18.1 > follow-redirects@1.16.1 in production. Custom credential disclosure requires a cross-realm sensitiveHeaders array and an attacker-controlled cross-origin redirect. Grants UI runs Hapi, not the map documentation dev server; http-proxy only uses follow-redirects when followRedirects is enabled and setupOutgoing does not forward sensitiveHeaders. Fixed follow-redirects@1.16.2 was published 2026-10-25T21:32:25.963Z; the seven-day cooldown ends 2026-11-01T21:32:25.963Z. Remove this ignore and upgrade the transitive dependency when eligible; reassess if the documentation server is enabled or this dependency path changes.'
