@@ -2,7 +2,7 @@ import { config } from '~/src/config/config.js'
 import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { validateState } from '~/src/server/auth/state.js'
 import { verifyToken } from '~/src/server/auth/verify-token.js'
-import { getSignOutUrl } from './get-sign-out-url.js'
+import { getSignOutRequest, toSignOutUrl } from './get-sign-out-url.js'
 import { debug, log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import {
   logSuccessfulSignIn,
@@ -15,6 +15,8 @@ import { ViewError } from '~/src/server/common/utils/errors/ViewError.js'
 import { AuthError } from '~/src/server/common/utils/errors/AuthError.js'
 import { YarKeys } from '~/src/server/common/constants/session-keys.js'
 import { clearCachedPermissions } from '../common/helpers/permissions/clear-cached-permissions.js'
+import { allowFormActionTo } from '~/src/plugins/content-security-policy.js'
+import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
 
 const UNKNOWN_USER = 'unknown'
 const USER_AGENT = 'user-agent'
@@ -498,8 +500,14 @@ async function handleSignOut(request, h) {
     request
   )
 
-  const signOutUrl = await getSignOutUrl(request, request.auth.credentials.token)
-  return h.redirect(signOutUrl)
+  // A page, not a 302: the token in the end-session request would push the
+  // response headers past the CDP SSL sidecar's 4KB limit (nginx 502).
+  // Defra ID recommends POST. The submission is redirected from the hub to B2C
+  // and back, so this page may post to those two origins.
+  const form = await getSignOutRequest(request, request.auth.credentials.token)
+  const { authorization_endpoint: b2cEndpoint } = await getOidcConfig()
+  allowFormActionTo(request, [new URL(form.endpoint).origin, new URL(b2cEndpoint).origin])
+  return h.view('signing-out', { form, signOutUrl: toSignOutUrl(form) }).header('cache-control', 'no-store')
 }
 
 /**
