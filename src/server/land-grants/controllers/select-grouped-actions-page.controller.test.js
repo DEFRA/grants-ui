@@ -236,7 +236,7 @@ describe('SelectGroupedActionsPageController', () => {
           messageFunc: expect.any(Function)
         }),
         expect.objectContaining({
-          sbi: '106284736',
+          sbi: '800000602',
           sheetId: 'sheet1',
           parcelId: 'parcel1'
         }),

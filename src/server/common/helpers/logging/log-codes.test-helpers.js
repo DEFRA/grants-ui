@@ -17,8 +17,8 @@ export const getValidatedLogCode = (category, name, expectedLevel) => {
 }
 
 export const TEST_USER_IDS = {
-  DEFAULT: '1100943757',
-  MASKED: '******3757',
+  DEFAULT: '9000000604',
+  MASKED: '******0604',
   CONTACT_ID: '12345'
 }
 
@@ -62,7 +62,7 @@ export const TEST_REFERENCE_NUMBERS = {
 }
 
 export const TEST_SBI = {
-  DEFAULT: '106284736'
+  DEFAULT: '800000602'
 }
 
 export const TEST_AGREEMENT_TYPES = {

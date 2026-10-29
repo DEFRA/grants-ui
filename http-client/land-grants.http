@@ -1,6 +1,6 @@
 ### Land Grants API - HTTP Client
 
-# Synthetic persona 9000000001 (Green Farm, SBI 800000001) from grants-platform-dal-stub;
+# Synthetic persona 9000000001 (Test Alder Carr Farm, SBI 800000001) from grants-platform-dal-stub;
 # authenticate as this CRN when obtaining defraIdToken. The parcel comes from the
 # land-grants-api seed and carries WBD1 availability.
 # landGrantsUrl, landGrantsAuthToken and defraIdToken use the selected HTTP
@@ -37,7 +37,7 @@ GET {{landGrantsUrl}}/health
 ### Map load: sizes and actions for the business's parcels
 # @name getMapParcels
 # parcelsHandler -> fetchParcels -> parcelsWithSize (when enabledLandActions is set).
-# The initial parcel IDs come from the DAL; these are Valley Estate's five mock parcels.
+# The initial parcel IDs come from the DAL; these are five example parcels.
 POST {{landGrantsUrl}}/api/v2/parcels
 Content-Type: application/json
 Authorization: Bearer {{landGrantsAuthToken}}

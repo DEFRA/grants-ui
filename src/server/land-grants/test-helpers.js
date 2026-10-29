@@ -30,7 +30,7 @@ export const UPL2 = {
 }
 
 /** The credentials the controllers forward to the land-grants service. */
-export const USER_CONTEXT = { defraIdToken: 'defra-id-access-token', sbi: '106284736' }
+export const USER_CONTEXT = { defraIdToken: 'defra-id-access-token', sbi: '800000602' }
 
 /** What `fetchParcels` resolves with for an authenticated caller. */
 export const PARCELS_WITH_SIZE = [
