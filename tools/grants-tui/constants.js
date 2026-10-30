@@ -140,6 +140,12 @@ export const LOCAL_SERVICES = [
   { key: 'fcp-defra-id-stub', composeService: 'fcp-defra-id-stub', image: 'defradigital/fcp-defra-id-stub' }
 ]
 
+// Reset also removes the seeded database image, which has no local build override.
+export const RESET_IMAGES = [
+  ...LOCAL_SERVICES.filter((service) => service.removeOnReset).map((service) => service.image),
+  'defradigital/land-grants-postgres-seeded'
+]
+
 // ---------------------------------------------------------------------------
 // Addon definitions — add new services here
 // ---------------------------------------------------------------------------

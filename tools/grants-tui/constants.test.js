@@ -2,7 +2,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { afterEach, expect, test, vi } from 'vitest'
-import { ADDONS, LOCAL_SERVICES, ROOT, TEST_TARGETS } from './constants.js'
+import { ADDONS, RESET_IMAGES, ROOT, TEST_TARGETS } from './constants.js'
 
 const NON_ADDON_COMPOSE_FILES = [
   'compose.ci.yml',
@@ -81,7 +81,6 @@ test('every npm test script is a test target or explicitly not one', () => {
 
 test('reset removes the same images as the docker:reset npm script', () => {
   const rmiArgs = scripts['docker:reset'].match(/docker rmi -f ([^;&|]+?)\s*2>/)?.[1].split(/\s+/)
-  const resetImages = LOCAL_SERVICES.filter((s) => s.removeOnReset).map((s) => s.image)
   expect(rmiArgs, 'could not find the `docker rmi -f … 2>` list in docker:reset').toBeDefined()
-  expect([...resetImages].sort()).toEqual([...(rmiArgs ?? [])].sort())
+  expect([...RESET_IMAGES].sort()).toEqual([...(rmiArgs ?? [])].sort())
 })
