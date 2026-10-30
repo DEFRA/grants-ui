@@ -37,3 +37,7 @@ compose/config-broker/local-form-definitions/*
 /grants-ui-grasslands-tests-schemas/
 /grants-ui-woodland-tests-schemas/
 AGENTS.local.md
+
+# Personal, portable Grants TUI themes
+/.grants-ui-cli-theme.json
+/.grants-ui-cli-themes/
