@@ -1,8 +1,8 @@
 // @vitest-environment node
 import { readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { expect, test } from 'vitest'
-import { ADDONS, LOCAL_SERVICES, ROOT, TEST_TARGETS } from './constants.js'
+import { afterEach, expect, test, vi } from 'vitest'
+import { ADDONS, RESET_IMAGES, ROOT, TEST_TARGETS } from './constants.js'
 
 const NON_ADDON_COMPOSE_FILES = [
   'compose.ci.yml',
@@ -16,6 +16,38 @@ const NON_ADDON_COMPOSE_FILES = [
 const NON_TARGET_TEST_SCRIPTS = ['test:unit', 'test:stryker', 'test:watch', 'test:acceptance:rebuild']
 
 const { scripts } = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf8'))
+const originalIsTTY = process.stdout.isTTY
+
+afterEach(() => {
+  process.stdout.isTTY = originalIsTTY
+  vi.unstubAllEnvs()
+})
+
+test('GT_THEME=default uses the standard appearance and colour aliases', async () => {
+  process.stdout.isTTY = true
+  vi.stubEnv('TERM', 'xterm-256color')
+  vi.stubEnv('NO_COLOR', '')
+  vi.stubEnv('GT_THEME', 'default')
+  vi.resetModules()
+  const constants = await import('./constants.js')
+  expect(constants.ACCENT).toBe('\x1b[36m')
+  expect(constants.GREEN).toBe(constants.THEME.colours.success)
+  expect(constants.RED).toBe(constants.THEME.colours.error)
+  expect(constants.ARROW).toBe(constants.IS_WINDOWS ? '>' : '❯')
+  const { HEADER } = await import('./tui.js')
+  expect(HEADER.join('\n')).toContain(constants.IS_WINDOWS ? 'Grants TUI' : constants.THEME.wordmark[0])
+  expect(HEADER).toHaveLength(constants.IS_WINDOWS ? 4 : 6)
+})
+
+test.each(['pipe', 'NO_COLOR', 'dumb'])('theme colours respect %s output', async (mode) => {
+  process.stdout.isTTY = mode !== 'pipe'
+  vi.stubEnv('GT_THEME', 'default')
+  vi.stubEnv('TERM', mode === 'dumb' ? 'dumb' : 'xterm-256color')
+  vi.stubEnv('NO_COLOR', mode === 'NO_COLOR' ? '1' : '')
+  vi.resetModules()
+  const { THEME } = await import('./constants.js')
+  expect(Object.values(THEME.colours).every((colour) => colour === '')).toBe(true)
+})
 
 test('every root compose.*.yml is an addon or explicitly not one', () => {
   const composeFiles = readdirSync(ROOT).filter((f) => /^compose\..+\.yml$/.test(f))
@@ -49,7 +81,6 @@ test('every npm test script is a test target or explicitly not one', () => {
 
 test('reset removes the same images as the docker:reset npm script', () => {
   const rmiArgs = scripts['docker:reset'].match(/docker rmi -f ([^;&|]+?)\s*2>/)?.[1].split(/\s+/)
-  const resetImages = LOCAL_SERVICES.filter((s) => s.removeOnReset).map((s) => s.image)
   expect(rmiArgs, 'could not find the `docker rmi -f … 2>` list in docker:reset').toBeDefined()
-  expect([...resetImages].sort()).toEqual([...(rmiArgs ?? [])].sort())
+  expect([...RESET_IMAGES].sort()).toEqual([...(rmiArgs ?? [])].sort())
 })
