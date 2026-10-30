@@ -1,6 +1,7 @@
 import { landActionWithCode } from '~/src/server/land-grants/utils/land-action-with-code.js'
 import { escapeHtml } from '@hapi/hoek'
 import { formatPrice } from '~/src/server/common/utils/payment.js'
+import { formatThousands } from '~/src/shared/format-number.js'
 import {
   changeActionsHref,
   landParcelReference,
@@ -46,7 +47,7 @@ export function createParcelItemRow(data) {
 
   return [
     { text: landActionWithCode(data.description, data.code) },
-    { text: data.quantity, format: 'numeric' },
+    { text: formatThousands(data.quantity), format: 'numeric' },
     { text: formatPrice(data.annualPaymentPence), format: 'numeric' },
     linksCell
   ]

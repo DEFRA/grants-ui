@@ -103,7 +103,9 @@ function extractQuestions(components, answers, includeUnanswered = false) {
         label:
           (component.shortDescription || component.title || '') +
           (includeUnanswered && component.options?.required === false ? ' (optional)' : ''),
-        answer: formatAnswer(component, resolveAnswer(component, answers)) || (includeUnanswered ? 'Not provided' : ''),
+        answer:
+          formatAnswer(component, resolveAnswer(component, answers), answers.$$__numberFieldInputs?.[component.name]) ||
+          (includeUnanswered ? 'Not provided' : ''),
         ...(locationHint ? { locationHint } : {})
       }
     })

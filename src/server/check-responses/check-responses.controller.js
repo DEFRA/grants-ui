@@ -1,5 +1,5 @@
 import { compareParcelReferences } from '~/src/shared/format-parcel.js'
-import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
+import { GrantsSummaryPageController } from '~/src/server/common/controllers/summary-page.controller.js'
 import { findPageByPath, resolveAdditionalAnswerSections } from '~/src/server/common/helpers/additional-answers.js'
 import { getTaskPageBackLink } from '~/src/server/task-list/task-list.helper.js'
 import { buildConfirmLandAndActionsViewModel } from '~/src/server/land-grants/view-models/confirm-land-and-actions.view-model.js'
@@ -7,7 +7,7 @@ import { CONFIRM_LAND_AND_ACTIONS_PATH } from '~/src/server/land-grants/utils/co
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { applyRepeatAnswerCards, buildRepeatAnswerCards } from './repeat-answers.js'
 
-export default class CheckResponsesPageController extends SummaryPageController {
+export default class CheckResponsesPageController extends GrantsSummaryPageController {
   /**
    * @param {FormModel} model
    * @param {PageSummary} pageDef

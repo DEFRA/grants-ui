@@ -5,6 +5,7 @@ import { resolveApplicationWindowClosedPath } from './redirects/application-wind
 import { applyLocationHints } from '../map/location-hints.js'
 import { enableRepeatTaskContext } from '~/src/server/task-list/repeat-task-context.js'
 import { enableRepeatPageItemNames } from '../helpers/repeat-page-item-names.js'
+import { preserveNumberFieldInputs } from '../helpers/state/preserve-number-field-inputs.js'
 
 /**
  * Pipeline handler that delegates to forms status redirect, then enforces page permissions.
@@ -42,6 +43,7 @@ export async function formsRequestPipeline(request, h, context) {
 
   if (permissionResult === h.continue) {
     applyLocationHints(request, context)
+    preserveNumberFieldInputs(request, context)
     enableRepeatPageItemNames(request)
     enableRepeatTaskContext(request)
   }
