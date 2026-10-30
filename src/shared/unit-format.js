@@ -1,5 +1,6 @@
 import { formatAreaUnit } from './format-area-unit.js'
 import { formatLinearUnit } from './format-linear-unit.js'
+import { formatThousands } from './format-number.js'
 import { requiresWholeNumber, UNIT_SQUARE_METRES } from './unit-types.js'
 
 /**
@@ -48,7 +49,8 @@ export function unitAlternativeLabel(availability) {
  * @returns {string}
  */
 export function formatArea(quantity, unit, displayUnit = unit) {
-  const area = formatQuantity(quantity, unit)
+  const value = formatQuantity(quantity, unit)
+  const area = typeof value === 'number' || typeof value === 'string' ? formatThousands(value) : value
   return [area, displayUnit].filter((part) => part !== undefined && part !== null && part !== '').join(' ')
 }
 

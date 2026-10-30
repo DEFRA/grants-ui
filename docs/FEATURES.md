@@ -126,6 +126,32 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Custom validation messages
 - **Example**: [Example Grant – Number field page (/number-field)](../compose/config-broker/example-grants/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – project cost entry with £ prefix and range validation
 
+Set `format: thousands` on a `NumberField` to add en-GB thousands separators on Check answers and
+the submitted application print page:
+
+```yaml
+- type: NumberField
+  name: waterStorageCapacity
+  title: Water storage capacity
+  format: thousands
+  schema:
+    precision: 2
+```
+
+Formatting is opt-in: omit `format` for SBIs, years, reference numbers and other values that must stay
+unformatted. `thousands` is the only supported playback format, and it is only valid on a `NumberField`.
+`schema.precision` remains the maximum allowed decimal places, not a fixed display precision.
+
+An entered `125000.50` is displayed as `125,000.50`; `125000.5` is displayed as `125,000.5`.
+The input is not comma-formatted, and stored numeric answers and GAS submissions remain numeric.
+Entered precision is retained separately in `$$__numberFieldInputs` in Grants UI Backend state.
+Older answers without that metadata use the precision still present in their stored value; trailing zeros
+already discarded by the forms engine cannot be recovered until the applicant re-enters the answer.
+
+API-driven land-action quantities always use thousands separators on playback, including availability
+hints, action review, Check answers cards and print cards. Existing unit labels and decimal precision
+are retained; editable action quantity inputs and request payloads remain unformatted.
+
 ### Date Components
 
 #### DatePartsField

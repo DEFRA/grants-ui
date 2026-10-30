@@ -28,6 +28,7 @@ import {
 } from './action-checkbox-state.js'
 import { clearQuantityError, showQuantityError } from './quantity-error-display.js'
 import { availableArea, formatUnit } from '../../../shared/unit-format.js'
+import { formatThousands } from '../../../shared/format-number.js'
 import { getAvailabilityLimit, isActionAvailable } from '../../../shared/availability.js'
 import { isLandAreaUnit } from '../../../shared/unit-types.js'
 
@@ -43,7 +44,7 @@ const CHECKBOX_ITEM_SELECTOR = '.govuk-checkboxes__item'
  * @param {string} unit
  */
 const availabilityHintText = (value, unit) =>
-  isLandAreaUnit(unit) ? availableArea(value, unit) : `${value} ${formatUnit(unit)} available`
+  isLandAreaUnit(unit) ? availableArea(value, unit) : `${formatThousands(value)} ${formatUnit(unit)} available`
 
 /**
  * A non-quantity checkbox has no conditional panel, so its banner is lazily created/removed here instead.

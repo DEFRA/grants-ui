@@ -217,6 +217,20 @@ describe('select-actions.view-model', () => {
       expect(result.html).toContain('<span id="landActionQuantity_CLIG3-hint">12.5000 hectares available</span>')
     })
 
+    it('groups large API availability in the read-only action hint', () => {
+      const action = {
+        code: 'CLIG3',
+        description: 'Manage grassland',
+        quantityRequired: false,
+        availability: { value: 2000, unit: 'm' }
+      }
+
+      const result = mapActionToViewModel(action, [])
+
+      expect(result.html).toContain('2,000.0000 metres available')
+      expect(result.conditional.html).toContain('2,000.0000 metres')
+    })
+
     it('should show the availability in the checkbox hint for a quantity-required action, not inside its conditional', () => {
       const action = {
         code: 'UPL2',

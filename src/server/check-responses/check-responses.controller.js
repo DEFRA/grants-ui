@@ -1,11 +1,11 @@
-import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
+import { GrantsSummaryPageController } from '~/src/server/common/controllers/summary-page.controller.js'
 import { resolvePath } from '~/src/server/common/helpers/path-utils.js'
 import { getTaskPageBackLink } from '~/src/server/task-list/task-list.helper.js'
 import { buildConfirmLandAndActionsViewModel } from '~/src/server/land-grants/view-models/confirm-land-and-actions.view-model.js'
 import { CONFIRM_LAND_AND_ACTIONS_PATH } from '~/src/server/land-grants/utils/confirm-land-and-actions-navigation.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 
-export default class CheckResponsesPageController extends SummaryPageController {
+export default class CheckResponsesPageController extends GrantsSummaryPageController {
   /**
    * @param {FormModel} model
    * @param {PageSummary} pageDef

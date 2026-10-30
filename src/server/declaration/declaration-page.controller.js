@@ -1,5 +1,5 @@
 import nunjucks from 'nunjucks'
-import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
+import { GrantsSummaryPageController } from '~/src/server/common/controllers/summary-page.controller.js'
 import {
   getClaimConfirmationPath,
   getConfirmationPath,
@@ -100,7 +100,7 @@ const DECLARATION_STRATEGIES = {
   }
 }
 
-export default class DeclarationPageController extends SummaryPageController {
+export default class DeclarationPageController extends GrantsSummaryPageController {
   /**
    * @param {FormModel} model
    * @param {PageSummary} pageDef
