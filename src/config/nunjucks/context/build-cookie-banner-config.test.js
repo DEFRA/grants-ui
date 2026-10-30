@@ -107,11 +107,11 @@ describe('buildCookieBannerConfig', () => {
   })
 
   test('should use service name in ariaLabel and heading', () => {
-    const serviceName = 'Farm and land service'
+    const serviceName = 'Farm and Land Service'
     const result = buildCookieBannerConfig(serviceName, 'cookie_consent', 365, undefined, '/cookies')
 
-    expect(result.ariaLabel).toBe('Cookies on Farm and land service')
-    expect(result.messages[0].headingText).toBe('Cookies on Farm and land service')
+    expect(result.ariaLabel).toBe('Cookies on Farm and Land Service')
+    expect(result.messages[0].headingText).toBe('Cookies on Farm and Land Service')
   })
 
   test('should use custom cookie policy URL when provided', () => {

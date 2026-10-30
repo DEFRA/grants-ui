@@ -71,7 +71,7 @@ const convictConfig = {
   serviceName: {
     doc: 'Applications Service Name',
     format: String,
-    default: 'Farm and land service',
+    default: 'Farm and Land Service',
     env: 'SERVICE_NAME'
   },
   root: {
