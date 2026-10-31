@@ -2,7 +2,6 @@
 import { vi } from 'vitest'
 import { fetchGroupedActionsForParcel as fetchGroupedActionsForParcelService } from '~/src/server/land-grants/services/land-grants.service.js'
 import { parcelsWithGroups } from '~/src/server/land-grants/services/land-grants.client.js'
-import { clearParcelCache } from '~/src/server/land-grants/services/parcel-cache.js'
 import { configState } from '~/src/__mocks__/config-mocks.js'
 import {
   apiCMOR1,
@@ -14,6 +13,8 @@ import {
   withUserContext,
   CACHE_TTL_MS
 } from './land-grants.service.test-helpers.js'
+import { useCachedMethodServer } from '~/src/server/common/helpers/cache/cached-method.test-helpers.js'
+import { parcelCachePlugin } from '~/src/server/land-grants/services/parcel-cache.js'
 
 const apiUPL8 = {
   code: 'UPL8',
@@ -47,13 +48,14 @@ vi.mock('~/src/config/config.js', async () => {
 })
 
 describe('land-grants service', () => {
+  useCachedMethodServer(parcelCachePlugin)
+
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
   describe('fetchGroupedActionsForParcel', () => {
     beforeEach(() => {
-      clearParcelCache()
       configState.reset()
       configState.set('landGrants.enableSSSIFeature', false)
     })
@@ -596,7 +598,6 @@ describe('land-grants service', () => {
     const parcelArgs = { parcelId: 'PARCEL456', sheetId: 'SHEET123', enabledLandActions: ['CMOR1'] }
 
     beforeEach(() => {
-      clearParcelCache()
       configState.reset()
     })
 

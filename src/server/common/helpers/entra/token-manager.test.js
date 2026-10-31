@@ -9,10 +9,11 @@ import {
   clearTokenState,
   createClientSecretTokenRequestParams,
   createTokenRequestParams,
+  entraTokenPlugin,
   getValidToken,
-  isTokenExpired,
   refreshToken
 } from '~/src/server/common/helpers/entra/token-manager.js'
+import { useCachedMethodServer } from '~/src/server/common/helpers/cache/cached-method.test-helpers.js'
 
 vi.mock('~/src/server/common/helpers/retry.js')
 
@@ -41,6 +42,8 @@ const mockFetch = vi.fn()
 global.fetch = mockFetch
 
 describe('Token Manager', () => {
+  useCachedMethodServer(entraTokenPlugin)
+
   beforeEach(() => {
     config.set('entra', {
       tokenEndpoint: 'https://login.microsoftonline.com',
@@ -58,27 +61,6 @@ describe('Token Manager', () => {
     retry.mockImplementation((operation) => operation())
     mockGetCredentials.mockResolvedValue(validWebIdentityToken())
     mockStsCredentials.mockReset()
-  })
-
-  describe('isTokenExpired', () => {
-    test('returns true when no expiry time provided', () => {
-      expect(isTokenExpired(null)).toBe(true)
-    })
-
-    test('returns true when token is expired', () => {
-      const expiredTime = Date.now() - 1000 // 1 second ago
-      expect(isTokenExpired(expiredTime)).toBe(true)
-    })
-
-    test('returns true when token expires within 5 minutes', () => {
-      const almostExpiredTime = Date.now() + 4 * 60 * 1000 // 4 minutes from now
-      expect(isTokenExpired(almostExpiredTime)).toBe(true)
-    })
-
-    test('returns false when token is valid and not near expiry', () => {
-      const validTime = Date.now() + 10 * 60 * 1000 // 10 minutes from now
-      expect(isTokenExpired(validTime)).toBe(false)
-    })
   })
 
   describe('createTokenRequestParams', () => {
@@ -341,6 +323,52 @@ describe('Token Manager', () => {
       const newToken = await getValidToken()
       expect(newToken).toBe('new-access-token')
       expect(mockFetch).toHaveBeenCalledTimes(2)
+    })
+
+    test('shares one refresh between concurrent callers', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ access_token: 'new-access-token', expires_in: 3600 })
+      })
+
+      const tokens = await Promise.all([getValidToken(), getValidToken(), getValidToken()])
+
+      expect(tokens).toEqual(['new-access-token', 'new-access-token', 'new-access-token'])
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+    })
+
+    test('refreshes 5 minutes before the token expires', async () => {
+      vi.useFakeTimers()
+      mockGetCredentials.mockImplementation(async () => validWebIdentityToken())
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ access_token: 'new-access-token', expires_in: 3600 })
+      })
+
+      await getValidToken()
+      vi.advanceTimersByTime((3600 - 5 * 60) * 1000 - 1)
+      await getValidToken()
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+
+      vi.advanceTimersByTime(2)
+      await getValidToken()
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+    })
+
+    test('does not cache a failed refresh', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: 'Server Error',
+        text: () => Promise.resolve('')
+      })
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ access_token: 'new-access-token', expires_in: 3600 })
+      })
+
+      await expect(getValidToken()).rejects.toThrow('Entra token refresh failed')
+      expect(await getValidToken()).toBe('new-access-token')
     })
   })
 })
