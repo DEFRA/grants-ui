@@ -221,7 +221,8 @@ if (url.pathname.endsWith('/tags')) {
     expect(result.stderr).not.toContain('Failed')
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('Config broker local folder rebuilt')
-    for (const grant of ['woodland', 'farm-payments', 'grasslands', 'water-management']) {
+    // woodland is left out while grants-config-woodland is private (its allowlist is woodland.yaml.disabled).
+    for (const grant of ['farm-payments', 'grasslands', 'water-management']) {
       expect(await readFile(join(cache, `${grant}@1.2.3/grants-ui/allowlist.yaml`), 'utf8')).toBe(
         await readFile(join(ROOT, `compose/config-broker/local-allowlists/${grant}.yaml`), 'utf8')
       )
@@ -234,7 +235,7 @@ if (url.pathname.endsWith('/tags')) {
     ).toBe('name: Example\n')
     expect(parse(await readFile(join(cache, 'release.yml'), 'utf8')).releases).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ name: 'woodland', version: '1.2.3' }),
+        expect.objectContaining({ name: 'grasslands', version: '1.2.3' }),
         expect.objectContaining({ name: 'example-grant-with-auth', version: '3.27.1' })
       ])
     )

@@ -43,17 +43,19 @@ fi
 echo "Using grasslands journey tests at version $GRASSLANDS_TAG"
 export GRASSLANDS_TAG
 
-WOODLAND_TAG=$(curl -s https://api.github.com/repos/DEFRA/grants-config-woodland/tags | jq -r '.[0].name')
-
-if [ -z "$WOODLAND_TAG" ]; then
-  echo "Error: Could not fetch woodland tag"
-  exit 1
-fi
-
-# The woodland journey tests (and the GAS schema they validate against) are
-# built from grants-config-woodland at this tag; see compose.tests.yml.
-echo "Using woodland journey tests at version $WOODLAND_TAG"
-export WOODLAND_TAG
+# Commented out while grants-config-woodland is private; the woodland suite is
+# also disabled in tools/run-acceptance-tests.sh.
+# WOODLAND_TAG=$(curl -s https://api.github.com/repos/DEFRA/grants-config-woodland/tags | jq -r '.[0].name')
+#
+# if [ -z "$WOODLAND_TAG" ]; then
+#   echo "Error: Could not fetch woodland tag"
+#   exit 1
+# fi
+#
+# # The woodland journey tests (and the GAS schema they validate against) are
+# # built from grants-config-woodland at this tag; see compose.tests.yml.
+# echo "Using woodland journey tests at version $WOODLAND_TAG"
+# export WOODLAND_TAG
 
 COMPOSE_COMMAND='docker compose -f compose.infra.yml -f compose.grants-ui.yml -f compose.ha.yml -f compose.land-grants.yml -f compose.ci.yml'
 DIAGNOSTICS_DUMPED=false

@@ -61,16 +61,15 @@ jobs:
   docker:
     name: Docker Build and Acceptance and Performance Tests
     runs-on: ubuntu-latest
-    # TGC-1813: This job fetches config and journey-test repos anonymously.
-    # Re-enable it when those repos are public again or the fetches use credentials.
-    # Until then run the suite locally:
-    # ACCEPTANCE_SUITES=grants-ui-acceptance-tests ./tools/run-acceptance-tests.sh
-    if: github.event.repository.private == false
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # The workflow token avoids the anonymous GitHub API rate limit when
+      # tools/setup-local-config.sh downloads config from the public config repos.
       - name: Build grants-ui and run acceptance tests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           chmod +x ./tools/run-acceptance-tests.sh
           ./tools/run-acceptance-tests.sh
