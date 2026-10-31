@@ -102,8 +102,8 @@ describe('private config repo authentication', () => {
       .trim()
       .split('\n')
       .map((line) => JSON.parse(line))
-    expect(requests).toHaveLength(15)
-    for (const grant of ['woodland', 'farm-payments', 'grasslands', 'land-grants', 'water-management']) {
+    expect(requests).toHaveLength(12)
+    for (const grant of ['farm-payments', 'grasslands', 'land-grants', 'water-management']) {
       expect(await readFile(join(root, `compose/config-broker-local/${grant}@1.2.3/grants-ui/form.yaml`), 'utf8')).toBe(
         'name: Downloaded config\n'
       )

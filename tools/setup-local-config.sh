@@ -13,7 +13,9 @@ CONFIG_REPO_OWNER="DEFRA"
 CONFIG_REPO_URL_ROOT="https://github.com/$CONFIG_REPO_OWNER"
 CONFIG_REPO_API_URL_ROOT="https://api.github.com/repos/$CONFIG_REPO_OWNER"
 CONFIG_REPOS=(
-  grants-config-woodland
+  # Commented out while grants-config-woodland is private. To re-enable, also rename
+  # compose/config-broker/local-allowlists/woodland.yaml.disabled back to woodland.yaml.
+  # grants-config-woodland
   grants-config-farm-payments
   grants-config-grasslands
   grants-config-land-grants
