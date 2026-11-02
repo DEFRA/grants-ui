@@ -3,6 +3,14 @@ import { formatThousands } from '~/src/shared/format-number.js'
 const NUMBER_PATTERN = /^[+-]?(?:\d+\.?\d*|\.\d+)$/
 
 /**
+ * @param {unknown} value
+ * @returns {value is string}
+ */
+function isDecimalString(value) {
+  return typeof value === 'string' && NUMBER_PATTERN.test(value)
+}
+
+/**
  * Formats an answer when a NumberField explicitly opts into thousands grouping.
  * @param {{ type?: string, format?: string }} component
  * @param {unknown} value
@@ -17,9 +25,12 @@ export function formatNumberAnswer(component, value, rawInput) {
     return String(value)
   }
 
-  const valueNumber =
-    typeof value === 'number' || (typeof value === 'string' && NUMBER_PATTERN.test(value)) ? Number(value) : NaN
-  const rawIsValid = typeof rawInput === 'string' && NUMBER_PATTERN.test(rawInput)
-  const input = rawIsValid && Number(rawInput) === valueNumber ? rawInput : value
-  return formatThousands(typeof input === 'number' || typeof input === 'string' ? input : String(input))
+  if (
+    isDecimalString(rawInput) &&
+    (typeof value === 'number' || isDecimalString(value)) &&
+    Number(rawInput) === Number(value)
+  ) {
+    return formatThousands(rawInput)
+  }
+  return formatThousands(String(value))
 }
