@@ -40,7 +40,7 @@ describe('parcel-cache', () => {
 
   describe.each([
     ['cachedSbiParcels', cachedSbiParcels],
-    ['cachedParcelActions', cachedParcelActions]
+    ['cachedParcelActions', (key, load) => cachedParcelActions(SBI, key, load)]
   ])('%s', (_name, cached) => {
     it('loads on a miss and serves the cached value on a hit', async () => {
       const load = vi.fn().mockResolvedValue({ actions: [] })
@@ -129,6 +129,60 @@ describe('parcel-cache', () => {
   })
 
   describe('clearParcelCache', () => {
+    it('reloads grouped actions, flat actions and consent requirements after a reset', async () => {
+      const keys = ['SD5649-9215:CMOR1', 'flat:SD5649-9215:CMOR1', 'consents:SD5649-9215:']
+      const load = vi.fn().mockResolvedValue({ actions: ['original'] })
+
+      for (const key of keys) {
+        await cachedParcelActions(SBI, key, load)
+      }
+      expect(load).toHaveBeenCalledTimes(3)
+
+      await clearParcelCache(SBI)
+      load.mockResolvedValue({ actions: ['updated'] })
+
+      for (const key of keys) {
+        expect(await cachedParcelActions(SBI, key, load)).toEqual({ actions: ['updated'] })
+      }
+      expect(load).toHaveBeenCalledTimes(6)
+    })
+
+    it('keeps actions for other SBIs cached, including the same parcel', async () => {
+      const key = 'flat:SD5649-9215:CMOR1'
+      const load = vi.fn().mockResolvedValue({ actions: [] })
+
+      await cachedParcelActions(SBI, key, load)
+      await cachedParcelActions('999999999', key, load)
+      expect(load).toHaveBeenCalledTimes(2)
+
+      await clearParcelCache(SBI)
+      await cachedParcelActions(SBI, key, load)
+      await cachedParcelActions('999999999', key, load)
+
+      expect(load).toHaveBeenCalledTimes(3)
+    })
+
+    it('does not reuse an action load that finishes after a reset', async () => {
+      const started = Promise.withResolvers()
+      const pending = Promise.withResolvers()
+      const key = 'flat:SD5649-9215:CMOR1'
+      const originalLoad = cachedParcelActions(SBI, key, () => {
+        started.resolve()
+        return pending.promise
+      })
+      await started.promise
+
+      await clearParcelCache(SBI)
+      const load = vi.fn().mockResolvedValue({ actions: ['updated'] })
+      expect(await cachedParcelActions(SBI, key, load)).toEqual({ actions: ['updated'] })
+
+      pending.resolve({ actions: ['original'] })
+      await originalLoad
+
+      expect(await cachedParcelActions(SBI, key, load)).toEqual({ actions: ['updated'] })
+      expect(load).toHaveBeenCalledTimes(1)
+    })
+
     it("drops the SBI's parcel ids and parcels for every fields combination", async () => {
       fetchParcelsFromDal.mockResolvedValue([])
       const load = vi.fn().mockResolvedValue([])

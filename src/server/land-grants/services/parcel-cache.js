@@ -1,8 +1,10 @@
+import { randomUUID } from 'node:crypto'
 import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import {
   defineCachedMethod,
   GENERATE_TIMEOUT_HEADROOM_MS,
-  retryWindowMs
+  retryWindowMs,
+  UNRETRIED_GENERATE_TIMEOUT_MS
 } from '~/src/server/common/helpers/cache/cached-method.js'
 import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { LAND_GRANTS_ACTION_SIZE, LAND_GRANTS_ACTIONS } from '~/src/server/land-grants/services/land-grants.client.js'
@@ -59,6 +61,18 @@ const parcelActions = defineCachedMethod('landGrants.parcelActions', runLoader, 
   generateKey: (key) => key
 })
 
+// A shared version invalidates every action-key variant for an SBI without scanning Redis.
+// Old entries expire normally, and an in-flight load cannot repopulate the new version.
+const parcelActionsVersion = defineCachedMethod(
+  'landGrants.parcelActionsVersion',
+  async (/** @type {unknown} */ _sbi) => randomUUID(),
+  {
+    expiresIn: CACHE_TTL_MS,
+    generateTimeout: UNRETRIED_GENERATE_TIMEOUT_MS,
+    generateKey: String
+  }
+)
+
 export const parcelCachePlugin = {
   plugin: {
     name: 'parcel-cache',
@@ -66,6 +80,7 @@ export const parcelCachePlugin = {
       authorisedParcelIds.register(server)
       sbiParcels.register(server)
       parcelActions.register(server)
+      parcelActionsVersion.register(server)
     }
   }
 }
@@ -91,12 +106,14 @@ export function cachedSbiParcels(key, load) {
 
 /**
  * @template T
+ * @param {string} sbi
  * @param {string} key
  * @param {() => Promise<T>} load
  * @returns {Promise<T>}
  */
-export function cachedParcelActions(key, load) {
-  return /** @type {Promise<T>} */ (parcelActions.call(key, load))
+export async function cachedParcelActions(sbi, key, load) {
+  const version = await parcelActionsVersion.call(sbi)
+  return /** @type {Promise<T>} */ (parcelActions.call(`${sbi}:${version}:${key}`, load))
 }
 
 /**
@@ -131,6 +148,7 @@ export async function fetchAuthorisedParcelIds(request) {
 export async function clearParcelCache(sbi) {
   await Promise.all([
     authorisedParcelIds.drop(sbi),
+    parcelActionsVersion.drop(sbi),
     ...SBI_PARCEL_FIELDS.map((fields) => sbiParcels.drop(sbiParcelsKey(sbi, fields)))
   ])
 }

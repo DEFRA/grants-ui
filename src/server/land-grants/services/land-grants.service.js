@@ -129,7 +129,11 @@ async function fetchParcelActions(
   if (plannedActions.length > 0) {
     return load()
   }
-  return cachedParcelActions(buildParcelActionsCacheKey(`${cacheKeyPrefix}${parcelKey}`, enabledActions), load)
+  return cachedParcelActions(
+    userContext.sbi,
+    buildParcelActionsCacheKey(`${cacheKeyPrefix}${parcelKey}`, enabledActions),
+    load
+  )
 }
 
 /**
