@@ -15,6 +15,12 @@ describe('number playback configuration', () => {
     )
   })
 
+  it('rejects playback formatting on a repeating page', () => {
+    const form = definition({ type: 'NumberField', name: 'amount', format: 'thousands' })
+    form.pages[0].repeat = { options: { name: 'items' } }
+    expect(() => validateNumberFormats(form)).toThrow(SystemError)
+  })
+
   it('validates number fields inside conditional list items', () => {
     const form = {
       lists: [

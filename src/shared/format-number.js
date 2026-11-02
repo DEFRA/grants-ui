@@ -1,6 +1,13 @@
-const NUMBER_PATTERN = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/
+const NUMBER_PATTERN = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/
 const INTEGER_FORMATTER = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 })
-const SCIENTIFIC_FORMATTER = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 100 })
+
+/**
+ * @param {unknown} value
+ * @returns {value is string}
+ */
+export function isDecimalString(value) {
+  return typeof value === 'string' && NUMBER_PATTERN.test(value)
+}
 
 /**
  * Formats a number with en-GB thousands grouping while preserving the decimal
@@ -10,11 +17,8 @@ const SCIENTIFIC_FORMATTER = new Intl.NumberFormat('en-GB', { maximumFractionDig
  */
 export function formatThousands(value) {
   const input = String(value)
-  if (!NUMBER_PATTERN.test(input)) {
+  if (!isDecimalString(input)) {
     return input
-  }
-  if (/[eE]/.test(input)) {
-    return SCIENTIFIC_FORMATTER.format(Number(input))
   }
 
   const sign = input.startsWith('-') || input.startsWith('+') ? input[0] : ''
@@ -22,4 +26,12 @@ export function formatThousands(value) {
   const [integerPart, ...fraction] = unsigned.split('.')
   const groupedInteger = INTEGER_FORMATTER.format(BigInt(integerPart || '0'))
   return [sign + groupedInteger, ...fraction].join('.')
+}
+
+/**
+ * Group the numeric part of a payment quantity, preserving any supplied unit.
+ * @param {number | string} quantity
+ */
+export function formatActionQuantity(quantity) {
+  return String(quantity).replace(/^\S+/, formatThousands)
 }

@@ -1,4 +1,4 @@
-import { GrantsSummaryPageController } from '~/src/server/common/controllers/summary-page.controller.js'
+import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
 import { getRequiredConsents } from '~/src/server/common/utils/consents.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 import {
@@ -17,7 +17,7 @@ import { log, debug } from '~/src/server/common/helpers/logging/log.js'
 import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 import { getGrantCode } from '../../common/helpers/grant-code.js'
 
-export default class SubmissionPageController extends GrantsSummaryPageController {
+export default class SubmissionPageController extends SummaryPageController {
   /**
    * @param {FormModel} model
    * @param {PageSummary} pageDef
