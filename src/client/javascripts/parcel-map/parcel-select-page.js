@@ -63,6 +63,22 @@ const updateMapTotals = (metaIndex, parcelIds) => {
   setText(DOM_ID_PARCEL_MAP_TOTAL_AREA, totalArea.toFixed(TOTAL_AREA_DECIMAL_PLACES))
 }
 
+/** @param {ReadyDetail} detail */
+const updateMapFromReadyDetail = (detail) => {
+  const metaIndex = detail.metaIndex ?? {}
+  const parcelIds = detail.parcelIds ?? []
+  updateMapTotals(metaIndex, parcelIds)
+
+  // The map can recover after the server lookup rendered Continue disabled.
+  const button = /** @type {HTMLButtonElement | null} */ (document.getElementById(DOM_ID_CONTINUE))
+  if (parcelIds.length && button) {
+    button.disabled = false
+    button.setAttribute('aria-disabled', 'false')
+  }
+
+  return metaIndex
+}
+
 /**
  * @param {SelectedParcel[]} selectedParcels
  * @param {import('./helpers.js').MetaIndex} [metaIndex]
@@ -400,17 +416,7 @@ export function initParcelSelectPage(mapEl) {
 
   /** @param {ReadyDetail} detail */
   const handleReady = (detail) => {
-    metaIndex = detail.metaIndex ?? {}
-    const parcelIds = detail.parcelIds ?? []
-    updateMapTotals(metaIndex, parcelIds)
-
-    // The map can recover after the server lookup rendered Continue disabled.
-    const button = /** @type {HTMLButtonElement | null} */ (document.getElementById(DOM_ID_CONTINUE))
-    if (parcelIds.length && button) {
-      button.disabled = false
-      button.setAttribute('aria-disabled', 'false')
-    }
-
+    metaIndex = updateMapFromReadyDetail(detail)
     if (!viewToggle?.isList()) {
       syncMapSelection()
     }
