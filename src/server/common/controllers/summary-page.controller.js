@@ -8,30 +8,37 @@ export class GrantsSummaryPageController extends EngineSummaryPageController {
    */
   getSummaryViewModel(request, context) {
     const viewModel = super.getSummaryViewModel(request, context)
-    const inputs = /** @type {Record<string, string> | undefined} */ (context.state?.$$__numberFieldInputs)
-
-    viewModel?.details?.forEach((detail, sectionIndex) => {
-      detail.items?.forEach((item, rowIndex) => {
-        const component = /** @type {{ type: string, format?: string } | undefined} */ (
-          this.model?.componentDefMap?.get(item.name)
-        )
-        const value = item.state?.[item.name]
-        if (
-          component?.type !== 'NumberField' ||
-          component.format !== 'thousands' ||
-          value === null ||
-          value === undefined ||
-          value === ''
-        ) {
-          return
-        }
-        const formatted = formatNumberAnswer(component, value, inputs?.[item.name])
-        item.value = formatted
-        const row = viewModel.checkAnswers[sectionIndex].summaryList.rows[rowIndex]
-        row.value = { classes: row.value.classes, text: formatted }
-      })
-    })
-
+    formatSummaryNumberAnswers(viewModel, context)
     return viewModel
   }
+}
+
+/**
+ * @param {import('@defra/forms-engine-plugin/engine/models/index.js').SummaryViewModel} viewModel
+ * @param {import('@defra/forms-engine-plugin/types').FormContext} context
+ */
+export function formatSummaryNumberAnswers(viewModel, context) {
+  const inputs = /** @type {Record<string, string> | undefined} */ (context.state?.$$__numberFieldInputs)
+
+  viewModel?.details?.forEach((detail, sectionIndex) => {
+    detail.items?.forEach((item, rowIndex) => {
+      const component = /** @type {{ type: string, format?: string } | undefined} */ (
+        context.componentDefMap?.get(item.name)
+      )
+      const value = item.state?.[item.name]
+      if (
+        component?.type !== 'NumberField' ||
+        component.format !== 'thousands' ||
+        value === null ||
+        value === undefined ||
+        value === ''
+      ) {
+        return
+      }
+      const formatted = formatNumberAnswer(component, value, inputs?.[item.name])
+      item.value = formatted
+      const row = viewModel.checkAnswers[sectionIndex].summaryList.rows[rowIndex]
+      row.value = { classes: row.value.classes, text: formatted }
+    })
+  })
 }

@@ -30,16 +30,19 @@ describe('payment-view-model.mapper', () => {
       expect(result[3].html).toContain(escapeHtml('remove-action?parcelId=AB1234-5678&action=SAM1'))
     })
 
-    it('groups numeric action quantities without changing parcel identifiers', () => {
+    it.each([
+      [12500.5, '12,500.5'],
+      ['12500.50 hectares', '12,500.50 hectares']
+    ])('groups action quantity %s', (quantity, expected) => {
       const result = createParcelItemRow({
         sheetId: 'AB1234',
         parcelId: '5678',
         code: 'SAM1',
         description: 'Test Action',
-        quantity: 12500.5,
+        quantity,
         annualPaymentPence: 10050
       })
-      expect(result[1].text).toBe('12,500.5')
+      expect(result[1].text).toBe(expected)
       expect(result[3].html).toContain('AB1234-5678')
     })
 

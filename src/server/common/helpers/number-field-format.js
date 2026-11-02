@@ -1,14 +1,4 @@
-import { formatThousands } from '~/src/shared/format-number.js'
-
-const NUMBER_PATTERN = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/
-
-/**
- * @param {unknown} value
- * @returns {value is string}
- */
-function isDecimalString(value) {
-  return typeof value === 'string' && NUMBER_PATTERN.test(value)
-}
+import { formatThousands, isDecimalString } from '~/src/shared/format-number.js'
 
 /**
  * Formats an answer when a NumberField explicitly opts into thousands grouping.

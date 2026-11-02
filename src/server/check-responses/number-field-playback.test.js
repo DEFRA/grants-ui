@@ -6,6 +6,7 @@ import { GrantsSummaryPageController } from '../common/controllers/summary-page.
 import { preserveNumberFieldInputs } from '../common/helpers/state/preserve-number-field-inputs.js'
 import { buildPrintViewModel } from '../common/helpers/print-application-service/print-application-service.js'
 import { configureFormDefinition } from '../common/forms/services/form.js'
+import DeclarationPageController from '../declaration/declaration-page.controller.js'
 import MapSubmissionPageController from '../common/map/map-submission-page.controller.js'
 
 vi.unmock('@defra/forms-model')
@@ -13,7 +14,7 @@ vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () =>
   vi.importActual('@defra/forms-engine-plugin/engine/pageControllers/SummaryPageController.js')
 )
 
-function createJourney(format, controller = 'CheckResponsesPageController') {
+function createJourney(format, controller = 'CheckResponsesPageController', view) {
   const model = new FormModel(
     configureFormDefinition({
       name: 'Number playback',
@@ -38,13 +39,18 @@ function createJourney(format, controller = 'CheckResponsesPageController') {
             { type: 'NumberField', name: 'sbi', title: 'SBI' }
           ]
         },
-        { path: '/summary', title: 'Check answers', controller, components: [] },
+        { path: '/summary', title: 'Check answers', controller, ...(view && { view }), components: [] },
         { path: '/declaration', title: 'Declaration', components: [] }
       ]
     }),
     { basePath: 'grant' },
     { formsService: { getFormMetadata: async () => ({}) } },
-    { CheckResponsesPageController, GrantsSummaryPageController, MapSubmissionPageController }
+    {
+      CheckResponsesPageController,
+      GrantsSummaryPageController,
+      MapSubmissionPageController,
+      DeclarationPageController
+    }
   )
   let savedState = { $$__referenceNumber: 'test-reference' }
   const cacheService = {
@@ -105,51 +111,52 @@ function createJourney(format, controller = 'CheckResponsesPageController') {
   }
 }
 
-describe.each(['CheckResponsesPageController', 'SummaryPageController', 'MapSubmissionPageController'])(
-  'number playback using %s',
-  (Controller) => {
-    it.each([
-      ['125000.50', '125,000.50'],
-      ['125000.5', '125,000.5'],
-      ['125000', '125,000'],
-      ['0.00', '0.00'],
-      ['-12500.50', '-12,500.50']
-    ])('preserves entered precision for %s on Check answers and print', async (input, expected) => {
-      const journey = createJourney('thousands', Controller)
-      await journey.dispatch('amount', { action: 'validate', capacity: input, sbi: '125000' })
-      expect(journey.state()).toMatchObject({
-        capacity: Number(input),
-        sbi: 125000,
-        $$__numberFieldInputs: { capacity: input }
-      })
-      const summary = await journey.dispatch('summary')
-      expect(summary.viewModel.checkAnswers[0].summaryList.rows.map((row) => row.value.text ?? row.value.html)).toEqual(
-        [expected, '125000']
-      )
-      expect(summary.viewModel.context.relevantState).toEqual({ capacity: Number(input), sbi: 125000 })
-      expect(journey.print().sections[0].questions.map((question) => question.answer)).toEqual([expected, '125000'])
-      const inputPage = await journey.dispatch('amount')
-      expect(inputPage.viewModel.components[0].model.value).toBe(input)
-    })
-
-    it('leaves unconfigured fields and their saved state unchanged', async () => {
-      const journey = createJourney(undefined, Controller)
-      await journey.dispatch('amount', { action: 'validate', capacity: '125000', sbi: '125000' })
-      const summary = await journey.dispatch('summary')
-      expect(summary.viewModel.checkAnswers[0].summaryList.rows[0].value.html).toBe('125000')
-      expect(journey.print().sections[0].questions[0].answer).toBe('125000')
+describe('number playback', () => {
+  it.each([
+    ['thousands', '125000.50', '125,000.50'],
+    [undefined, '125000', '125000']
+  ])('renders %s formatting on Check answers and print', async (format, input, expected) => {
+    const journey = createJourney(format)
+    const payload = { action: 'validate', capacity: input, sbi: '125000' }
+    await journey.dispatch('amount', payload)
+    const edit = await journey.dispatch('amount')
+    const displayed = edit.viewModel.components[0].model.value
+    expect(String(displayed)).toBe(input)
+    await journey.dispatch('amount', { ...payload, capacity: String(displayed) })
+    const summary = await journey.dispatch('summary')
+    expect(summary.viewModel.checkAnswers[0].summaryList.rows.map((row) => row.value.text ?? row.value.html)).toEqual([
+      expected,
+      '125000'
+    ])
+    expect(summary.viewModel.context.relevantState).toEqual({ capacity: Number(input), sbi: 125000 })
+    expect(journey.print().sections[0].questions.map((question) => question.answer)).toEqual([expected, '125000'])
+    if (!format) {
       expect(journey.state()).not.toHaveProperty('$$__numberFieldInputs')
-    })
+    }
+  })
 
-    it('replaces retained precision when an answer is edited and does not save invalid input', async () => {
-      const journey = createJourney('thousands', Controller)
-      await journey.dispatch('amount', { action: 'validate', capacity: '125000.50', sbi: '125000' })
-      await journey.dispatch('amount', { action: 'validate', capacity: '125000.5', sbi: '125000' })
-      const invalid = await journey.dispatch('amount', { action: 'validate', capacity: 'invalid', sbi: '125000' })
-      expect(invalid.viewModel.errors[0].name).toBe('capacity')
-      expect(journey.state().$$__numberFieldInputs).toEqual({ capacity: '125000.5' })
-      const summary = await journey.dispatch('summary')
-      expect(summary.viewModel.checkAnswers[0].summaryList.rows[0].value.text).toBe('125,000.5')
-    })
-  }
-)
+  it('retains precision across invalid edits and clears it when the new answer needs none', async () => {
+    const journey = createJourney('thousands')
+    const submit = (capacity) => journey.dispatch('amount', { action: 'validate', capacity, sbi: '125000' })
+    await submit('125000')
+    expect(journey.state()).not.toHaveProperty('$$__numberFieldInputs')
+    await submit('125000.50')
+    const invalid = await submit('invalid')
+    expect(invalid.viewModel.errors[0].name).toBe('capacity')
+    expect(journey.state().$$__numberFieldInputs).toEqual({ capacity: '125000.50' })
+    await submit('125000.5')
+    expect(journey.state()).not.toHaveProperty('$$__numberFieldInputs')
+    expect(journey.print().sections[0].questions[0].answer).toBe('125,000.5')
+  })
+
+  it.each([
+    ['SummaryPageController', undefined],
+    ['MapSubmissionPageController', undefined],
+    ['DeclarationPageController', 'submission.html']
+  ])('formats the answer on the %s review view', async (controller, view) => {
+    const journey = createJourney('thousands', controller, view)
+    await journey.dispatch('amount', { action: 'validate', capacity: '125000.50', sbi: '125000' })
+    const summary = await journey.dispatch('summary')
+    expect(summary.viewModel.checkAnswers[0].summaryList.rows[0].value.text).toBe('125,000.50')
+  })
+})

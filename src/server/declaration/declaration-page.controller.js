@@ -1,5 +1,6 @@
 import nunjucks from 'nunjucks'
-import { GrantsSummaryPageController } from '~/src/server/common/controllers/summary-page.controller.js'
+import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
+import { formatSummaryNumberAnswers } from '~/src/server/common/controllers/summary-page.controller.js'
 import {
   getClaimConfirmationPath,
   getConfirmationPath,
@@ -100,7 +101,7 @@ const DECLARATION_STRATEGIES = {
   }
 }
 
-export default class DeclarationPageController extends GrantsSummaryPageController {
+export default class DeclarationPageController extends SummaryPageController {
   /**
    * @param {FormModel} model
    * @param {PageSummary} pageDef
@@ -194,6 +195,9 @@ export default class DeclarationPageController extends GrantsSummaryPageControll
    */
   getSummaryViewModel(request, context) {
     const viewModel = super.getSummaryViewModel(request, context)
+    if (this.viewName === 'submission.html') {
+      formatSummaryNumberAnswers(viewModel, context)
+    }
 
     const { pageDef } = this
 

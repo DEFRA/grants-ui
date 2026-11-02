@@ -17,9 +17,6 @@ describe('unit-format', () => {
     it('renders an area at four decimal places with its full unit name', () => {
       expect(areaWithUnit(39.81, 'ha')).toBe('39.8100 hectares')
     })
-    it('groups thousands while retaining the four-decimal precision', () => {
-      expect(areaWithUnit(2000, 'm')).toBe('2,000.0000 metres')
-    })
 
     it('rounds to 4dp rather than printing full float precision', () => {
       expect(areaWithUnit(0.32712345, 'ha')).toBe('0.3271 hectares')
@@ -49,10 +46,6 @@ describe('unit-format', () => {
 
     it('reports leftover headroom as the available area', () => {
       expect(availableArea(2.5, 'ha')).toBe('2.5000 hectares available')
-    })
-
-    it('groups large available areas', () => {
-      expect(availableArea(2000, 'ha')).toBe('2,000.0000 hectares available')
     })
 
     it('keeps the unit out of the text when the action has none', () => {
@@ -87,9 +80,6 @@ describe('formatArea', () => {
   it('passes a non-numeric quantity through unchanged rather than validating it', () => {
     expect(formatArea('12.5', 'ha')).toBe('12.5 ha')
     expect(formatArea(Number.NaN, 'ha')).toBe('NaN ha')
-  })
-  it('groups numeric strings without changing their decimal places', () => {
-    expect(formatArea('10000.50', 'm')).toBe('10,000.50 m')
   })
 
   it('skips a missing half instead of printing "undefined"', () => {

@@ -6,7 +6,7 @@ import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
 export function validateNumberFormats(definition) {
   for (const page of definition.pages ?? []) {
     if ('components' in page) {
-      validateComponents(page.components)
+      validateComponents(page.components, !('repeat' in page))
     }
   }
   for (const list of definition.lists ?? []) {
@@ -14,24 +14,33 @@ export function validateNumberFormats(definition) {
   }
 }
 
-/** @param {any[] | undefined} components */
-function validateComponents(components) {
+/**
+ * @param {any[] | undefined} components
+ * @param {boolean} allowFormat
+ */
+function validateComponents(components, allowFormat) {
   for (const component of components ?? []) {
-    if (component.format !== undefined && (component.type !== 'NumberField' || component.format !== 'thousands')) {
+    if (
+      component.format !== undefined &&
+      (!allowFormat || component.type !== 'NumberField' || component.format !== 'thousands')
+    ) {
       throw new SystemError({
         message: `Invalid playback format for component '${component.name}'`,
         source: 'validateNumberFormats',
-        reason: 'format must be thousands and can only be configured on a NumberField',
+        reason: 'format must be thousands and can only be configured on a NumberField on a non-repeating page',
         status: 500
       })
     }
-    validateItems(component.items)
+    validateItems(component.items, allowFormat)
   }
 }
 
-/** @param {any[] | undefined} items */
-function validateItems(items) {
+/**
+ * @param {any[] | undefined} items
+ * @param {boolean} [allowFormat]
+ */
+function validateItems(items, allowFormat = true) {
   for (const item of items ?? []) {
-    validateComponents(item.conditional?.components)
+    validateComponents(item.conditional?.components, allowFormat)
   }
 }
