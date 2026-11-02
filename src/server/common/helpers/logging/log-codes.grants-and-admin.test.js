@@ -130,8 +130,8 @@ describe('LogCodes', () => {
       [
         'CONTEXT_SBI_MISMATCH',
         'warn',
-        { contextSbi: '106284736', authenticatedSbi: '106514040' },
-        'Ignoring stored grant application context: context SBI=106284736 does not match authenticated SBI=106514040'
+        { contextSbi: '800000602', authenticatedSbi: '800000605' },
+        'Ignoring stored grant application context: context SBI=800000602 does not match authenticated SBI=800000605'
       ]
     ])
   })

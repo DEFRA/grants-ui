@@ -63,7 +63,7 @@ describe('Agreements Controller', () => {
       auth: {
         isAuthenticated: true,
         credentials: {
-          sbi: '106284736',
+          sbi: '800000602',
           crn: 'CRN123'
         }
       },

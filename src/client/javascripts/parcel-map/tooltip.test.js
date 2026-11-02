@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // @ts-nocheck
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { attachTooltip } from './parcel-map-tooltip.js'
+import { attachTooltip } from './tooltip.js'
 import { LAYER_ID_FILL, LAYER_ID_LABEL_CLUSTER } from './config.js'
 import { makeMlMap } from './test-helpers.js'
 
@@ -29,35 +29,35 @@ describe('attachTooltip', () => {
 
   it('returns undefined when the map element has no wrapper parent', () => {
     const orphan = document.createElement('div')
-    expect(attachTooltip(ml, META_INDEX, orphan, cleanups)).toBeUndefined()
+    expect(attachTooltip({ ml, store: { metaIndex: META_INDEX }, mapEl: orphan, cleanups })).toBeUndefined()
   })
 
   it('returns undefined when the map element is null', () => {
-    expect(attachTooltip(ml, META_INDEX, null, cleanups)).toBeUndefined()
+    expect(attachTooltip({ ml, store: { metaIndex: META_INDEX }, mapEl: null, cleanups })).toBeUndefined()
   })
 
   it('shows the tooltip with parcel id and area on a fill-layer hover', () => {
     const mapEl = makeMapEl()
-    const tooltip = attachTooltip(ml, META_INDEX, mapEl, cleanups)
+    const tooltip = attachTooltip({ ml, store: { metaIndex: META_INDEX }, mapEl, cleanups })
 
     ml._emitLayer('mousemove', LAYER_ID_FILL, {
       features: [{ properties: { id: 'SD7148-9160' } }],
       lngLat: { lng: 0, lat: 0 }
     })
 
-    expect(tooltip.style.display).toBe('block')
-    expect(tooltip.innerHTML).toContain('SD7148 9160')
-    expect(tooltip.innerHTML).toContain('2.5000 ha')
-    expect(tooltip.innerHTML).not.toContain('Available actions')
+    expect(tooltip.hidden).toBe(false)
+    expect(tooltip.textContent).toContain('SD7148 9160')
+    expect(tooltip.textContent).toContain('2.5000 ha')
+    expect(tooltip.textContent).not.toContain('Available actions')
   })
 
   it('ignores a fill-layer hover move that carries no feature', () => {
     const mapEl = makeMapEl()
-    const tooltip = attachTooltip(ml, META_INDEX, mapEl, cleanups)
+    const tooltip = attachTooltip({ ml, store: { metaIndex: META_INDEX }, mapEl, cleanups })
 
     ml._emitLayer('mousemove', LAYER_ID_FILL, { features: [], lngLat: { lng: 0, lat: 0 } })
 
-    expect(tooltip.style.display).not.toBe('block')
+    expect(tooltip.hidden).toBe(true)
   })
 
   it('hides the tooltip instead of showing it when a cluster badge sits on top of the parcel at that point', () => {
@@ -69,8 +69,8 @@ describe('attachTooltip', () => {
         )
     })
     const mapEl = makeMapEl()
-    const tooltip = attachTooltip(ml, META_INDEX, mapEl, cleanups)
-    tooltip.style.display = 'block'
+    const tooltip = attachTooltip({ ml, store: { metaIndex: META_INDEX }, mapEl, cleanups })
+    tooltip.hidden = false
 
     ml._emitLayer('mousemove', LAYER_ID_FILL, {
       features: [{ properties: { id: 'SD7148-9160' } }],
@@ -78,25 +78,25 @@ describe('attachTooltip', () => {
       point: { x: 5, y: 5 }
     })
 
-    expect(tooltip.style.display).toBe('none')
+    expect(tooltip.hidden).toBe(true)
   })
 
   it('toggles the pointer cursor and hides the tooltip on hover enter/leave', () => {
     const mapEl = makeMapEl()
-    const tooltip = attachTooltip(ml, META_INDEX, mapEl, cleanups)
-    tooltip.style.display = 'block'
+    const tooltip = attachTooltip({ ml, store: { metaIndex: META_INDEX }, mapEl, cleanups })
+    tooltip.hidden = false
 
     ml._emitLayer('mouseenter', LAYER_ID_FILL)
     expect(ml.getCanvas().style.cursor).toBe('pointer')
 
     ml._emitLayer('mouseleave', LAYER_ID_FILL)
     expect(ml.getCanvas().style.cursor).toBe('')
-    expect(tooltip.style.display).toBe('none')
+    expect(tooltip.hidden).toBe(true)
   })
 
   it('registers a cleanup per listener that removes it via ml.off', () => {
     const mapEl = makeMapEl()
-    attachTooltip(ml, META_INDEX, mapEl, cleanups)
+    attachTooltip({ ml, store: { metaIndex: META_INDEX }, mapEl, cleanups })
 
     expect(cleanups).toHaveLength(ml.on.mock.calls.length)
     cleanups.forEach((off) => off())

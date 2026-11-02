@@ -31,31 +31,50 @@ vi.mock('~/src/server/land-grants/services/land-grants.service.js', () => ({
 
 vi.mock('~/src/server/land-grants/services/land-grants.client.js', async (importOriginal) => ({
   ...(await importOriginal()),
-  fetchParcelTile: vi.fn()
+  fetchParcelTile: vi.fn(),
+  locateParcelTiles: vi.fn()
 }))
 
 vi.mock('~/src/server/common/map/mvt-compound-id.js', () => ({
   withCompoundParcelIds: vi.fn((buf) => buf)
 }))
 
-vi.mock('~/src/shared/format-parcel.js', () => ({
+vi.mock('~/src/shared/format-parcel.js', async (importOriginal) => ({
+  ...(await importOriginal()),
   stringifyParcel: vi.fn((p) => `${p.sheetId}-${p.parcelId}`)
 }))
 
-import { parcelsHandler, tilesHandler, osBasemapHandler, osTileProxyHandler } from './handlers.js'
+vi.mock('~/src/server/land-grants/services/parcel-cache.js', () => ({
+  fetchAuthorisedParcelIds: vi.fn()
+}))
+
+vi.mock('~/src/server/land-grants/services/parcel-authorisation.js', () => ({
+  getAuthorisedParcel: vi.fn()
+}))
+
+import {
+  parcelsHandler,
+  parcelSearchHandler,
+  parcelBboxHandler,
+  tilesHandler,
+  osBasemapHandler,
+  osTileProxyHandler
+} from './handlers.js'
 import { config } from '~/src/config/config.js'
 import { fetchParcels, fetchParcelTileLocation } from '~/src/server/land-grants/services/land-grants.service.js'
-import { fetchParcelTile } from '~/src/server/land-grants/services/land-grants.client.js'
+import { fetchParcelTile, locateParcelTiles } from '~/src/server/land-grants/services/land-grants.client.js'
 import { withCompoundParcelIds } from '~/src/server/common/map/mvt-compound-id.js'
+import { fetchAuthorisedParcelIds } from '~/src/server/land-grants/services/parcel-cache.js'
+import { getAuthorisedParcel } from '~/src/server/land-grants/services/parcel-authorisation.js'
 import { mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
 
 const makeH = () => mockHapiResponseToolkit({ bytes: vi.fn().mockReturnThis() })
 
-function makeRequest(params = {}) {
+function makeRequest(params = {}, query = {}) {
   return {
     auth: { credentials: { token: 'defra-id-access-token', sbi: '123456789' } },
     params,
-    query: {},
+    query,
     yar: { get: vi.fn(), set: vi.fn() }
   }
 }
@@ -182,6 +201,121 @@ describe('parcelsHandler', () => {
   })
 })
 
+describe('parcelSearchHandler', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  const holding = ['SD7148-9161', 'SD7148-9160', 'SJ0001-0002']
+
+  it('returns the matching ids in alphanumeric order, never cacheable', async () => {
+    fetchAuthorisedParcelIds.mockResolvedValue(holding)
+    const h = makeH()
+
+    await parcelSearchHandler(makeRequest({}, { q: '7148' }), h)
+
+    expect(h.response).toHaveBeenCalledWith({ parcelIds: ['SD7148-9160', 'SD7148-9161'] })
+    expect(h.code).toHaveBeenCalledWith(200)
+    expect(h.header).toHaveBeenCalledWith('Cache-Control', 'no-store')
+  })
+
+  it.each(['sd7148 916', 'SD7148-916', 'SD7148916'])('matches %s ignoring case, spaces and hyphens', async (q) => {
+    fetchAuthorisedParcelIds.mockResolvedValue(holding)
+    const h = makeH()
+
+    await parcelSearchHandler(makeRequest({}, { q }), h)
+
+    expect(h.response).toHaveBeenCalledWith({ parcelIds: ['SD7148-9160', 'SD7148-9161'] })
+  })
+
+  it('returns an empty list when nothing matches', async () => {
+    fetchAuthorisedParcelIds.mockResolvedValue(holding)
+    const h = makeH()
+
+    await parcelSearchHandler(makeRequest({}, { q: 'ZZZ' }), h)
+
+    expect(h.response).toHaveBeenCalledWith({ parcelIds: [] })
+  })
+
+  it('matches nothing for a query of only separators, rather than the whole holding', async () => {
+    fetchAuthorisedParcelIds.mockResolvedValue(holding)
+    const h = makeH()
+
+    await parcelSearchHandler(makeRequest({}, { q: '---' }), h)
+
+    expect(h.response).toHaveBeenCalledWith({ parcelIds: [] })
+  })
+
+  it('answers 503 when the holding cannot be loaded', async () => {
+    fetchAuthorisedParcelIds.mockResolvedValue(null)
+    const h = makeH()
+
+    await parcelSearchHandler(makeRequest({}, { q: 'SD' }), h)
+
+    expect(h.response).toHaveBeenCalledWith({ error: 'Unable to search your land parcels' })
+    expect(h.code).toHaveBeenCalledWith(503)
+  })
+})
+
+describe('parcelBboxHandler', () => {
+  const bbox = { minLng: -2.5, minLat: 51.4, maxLng: -2.3, maxLat: 51.6 }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('returns the bbox of a parcel the user holds, never cacheable', async () => {
+    const request = makeRequest({ parcelId: 'SD7148-9160' })
+    getAuthorisedParcel.mockResolvedValue({ formRequest: request, sheetId: 'SD7148', parcelId: '9160' })
+    locateParcelTiles.mockResolvedValue({ bbox })
+    const h = makeH()
+
+    await parcelBboxHandler(request, h)
+
+    expect(locateParcelTiles).toHaveBeenCalledWith(['SD7148-9160'], 'https://land-grants-api', expectedUserContext)
+    expect(h.response).toHaveBeenCalledWith({ bbox })
+    expect(h.code).toHaveBeenCalledWith(200)
+    expect(h.header).toHaveBeenCalledWith('Cache-Control', 'no-store')
+  })
+
+  it('answers 403 for a parcel the user does not hold, without calling upstream', async () => {
+    getAuthorisedParcel.mockResolvedValue(null)
+    const h = makeH()
+
+    await parcelBboxHandler(makeRequest({ parcelId: 'SD7148-9160' }), h)
+
+    expect(locateParcelTiles).not.toHaveBeenCalled()
+    expect(h.code).toHaveBeenCalledWith(403)
+  })
+
+  it('answers 404 when upstream has no location for the parcel', async () => {
+    const request = makeRequest({ parcelId: 'SD7148-9160' })
+    getAuthorisedParcel.mockResolvedValue({ formRequest: request, sheetId: 'SD7148', parcelId: '9160' })
+    locateParcelTiles.mockResolvedValue({ bbox: null })
+    const h = makeH()
+
+    await parcelBboxHandler(request, h)
+
+    expect(h.response).toHaveBeenCalledWith({ error: 'Unable to locate the land parcel' })
+    expect(h.code).toHaveBeenCalledWith(404)
+  })
+
+  it.each([
+    ['passes the upstream status through', Object.assign(new Error('upstream'), { code: 502 }), 502],
+    ['answers 503 without an upstream status', new Error('offline'), 503]
+  ])('%s when the lookup fails, rather than answering 404', async (_name, error, expected) => {
+    const request = makeRequest({ parcelId: 'SD7148-9160' })
+    getAuthorisedParcel.mockResolvedValue({ formRequest: request, sheetId: 'SD7148', parcelId: '9160' })
+    locateParcelTiles.mockRejectedValue(error)
+    const h = makeH()
+
+    await parcelBboxHandler(request, h)
+
+    expect(h.response).toHaveBeenCalledWith({ error: 'Unable to locate the land parcel' })
+    expect(h.code).toHaveBeenCalledWith(expected)
+  })
+})
+
 describe('tilesHandler', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -274,6 +408,8 @@ describe('osBasemapHandler', () => {
     expect(style.version).toBe(8)
     expect(style.sources['os-raster'].type).toBe('raster')
     expect(style.sources['os-raster'].tiles).toEqual(['http://localhost:3000/api/map/os-tiles/{z}/{x}/{y}'])
+    // 16: zooms 17-20 are Premium data on the OS Maps API.
+    expect(style.sources['os-raster'].maxzoom).toBe(16)
     expect(style.layers).toEqual([{ id: 'os-basemap', type: 'raster', source: 'os-raster' }])
     expect(style.sources['os-raster'].attribution).toContain('Crown copyright')
     expect(style.sources['os-raster'].attribution).toContain(String(new Date().getFullYear()))

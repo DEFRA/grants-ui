@@ -1,13 +1,13 @@
 import Joi from 'joi'
 import { error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
-import { fetchAuthorisedParcelIds } from '~/src/server/land-grants/services/parcel-cache.js'
+import { getAuthorisedParcel } from '~/src/server/land-grants/services/parcel-authorisation.js'
 import {
   fetchActionsWithPlannedActions,
   fetchConsentRequirementsForParcel
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import { getConsentNotice } from '~/src/server/land-grants/view-models/consent.view-model.js'
-import { COMPOUND_PARCEL_ID_PATTERN, parseLandParcel } from '~/src/shared/format-parcel.js'
+import { COMPOUND_PARCEL_ID_PATTERN } from '~/src/shared/format-parcel.js'
 import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
 import { UNITS } from '~/src/shared/unit-types.js'
 import { parcelsQuery } from '~/src/server/common/map/parcels-query.js'
@@ -29,25 +29,6 @@ const plannedActionsValidation = {
       )
       .required()
   })
-}
-
-/**
- * Returns the parcel a request may act on, or null when the caller is not
- * authorised for it. A failed authorisation lookup counts as not authorised.
- * @param {Request} request
- * @returns {Promise<{ formRequest: AnyFormRequest, sheetId: string, parcelId: string } | null>}
- */
-async function authorisedParcel(request) {
-  const formRequest = /** @type {AnyFormRequest} */ (/** @type {unknown} */ (request))
-  const { parcelId: compoundParcelId } = request.params
-
-  const authorisedParcelIds = await fetchAuthorisedParcelIds(formRequest)
-  if (!authorisedParcelIds?.includes(compoundParcelId)) {
-    return null
-  }
-
-  const [sheetId, parcelId] = parseLandParcel(compoundParcelId)
-  return { formRequest, sheetId, parcelId }
 }
 
 /**
@@ -83,7 +64,7 @@ function upstreamFailure(request, h, err, { sheetId, parcelId }) {
  * @param {ResponseToolkit} h
  */
 async function actionsHandler(request, h) {
-  const parcel = await authorisedParcel(request)
+  const parcel = await getAuthorisedParcel(request)
   if (!parcel) {
     return h.response().code(statusCodes.forbidden)
   }
@@ -109,7 +90,7 @@ async function actionsHandler(request, h) {
  * @param {ResponseToolkit} h
  */
 async function consentsHandler(request, h) {
-  const parcel = await authorisedParcel(request)
+  const parcel = await getAuthorisedParcel(request)
   if (!parcel) {
     return h.response().code(statusCodes.forbidden)
   }
@@ -169,6 +150,5 @@ export const landGrantsActionsPlugin = {
 
 /**
  * @import { Request, ResponseToolkit } from '@hapi/hapi'
- * @import { AnyFormRequest } from '@defra/forms-engine-plugin/engine/types.js'
  * @import { PlannedAction } from '~/src/server/land-grants/types/land-grants.client.d.js'
  */

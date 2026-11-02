@@ -66,6 +66,9 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Build grants-ui and run acceptance tests
+        env:
+          # Authenticates the config downloads; anonymous API calls are capped at 60/hour
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           chmod +x ./tools/run-acceptance-tests.sh
           ./tools/run-acceptance-tests.sh

@@ -1,11 +1,11 @@
 Feature: Mapping
 
     Scenario: User selects land parcels from a map
-        Given there is no application data for SBI "106842593" and grant "example-grant-with-map"
+        Given there is no application data for SBI "800000012" and grant "example-grant-with-map"
 
         # start
         Given the user navigates to "/example-grant-with-map"
-        And logs in as CRN "1100945520"
+        And logs in as CRN "9000000014"
         Then the user should see heading "Apply for Example Grant with Map"
         When the user clicks on "Start now"
 
@@ -16,7 +16,7 @@ Feature: Mapping
             | PARCEL      | HECTARES |
             | SD6352-8774 | 11.1006  |
             | SD6351-8781 | 68.0498  |
-        Then the user should see "Wilson Arable Crops" has 2 available land parcels totalling "79.1504" hectares
+        Then the user should see "Test Juniper Fold Farm" has 2 available land parcels totalling "79.1504" hectares
 
         # select a land parcel
         When the user selects parcel "SD6351 8781" of area "68.0498" hectares on the map
@@ -37,11 +37,11 @@ Feature: Mapping
         And should see heading "Select actions for this land parcel"
 
     Scenario: User exiting without choosing actions should resume on the select land parcel page
-        Given there is no application data for SBI "300000034" and grant "example-grant-with-map"
+        Given there is no application data for SBI "800000023" and grant "example-grant-with-map"
 
         # start
         Given the user navigates to "/example-grant-with-map"
-        And logs in as CRN "1300000034"
+        And logs in as CRN "9000000032"
         Then the user should see heading "Apply for Example Grant with Map"
         When the user clicks on "Start now"
 
@@ -63,7 +63,7 @@ Feature: Mapping
         # reload the browser session and resume the journey
         Given the user starts a new browser session
         And navigates to "/example-grant-with-map"
-        And logs in as CRN "1300000034"
+        And logs in as CRN "9000000032"
 
         # resume should return to select-land-parcel, not select-actions-for-land-parcel
         Then the user should be at URL "select-land-parcel"

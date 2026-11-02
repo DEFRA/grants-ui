@@ -133,10 +133,10 @@ describe('LogCodes', () => {
         'RELATIONSHIP_PARSE_ERROR',
         'error',
         {
-          relationships: '1100014934:106284736:Test Organisation:default-organisation-id:relationship:relationshipLoa',
+          relationships: '9000000603:800000602:Test Organisation:default-organisation-id:relationship:relationshipLoa',
           reason: 'Invalid format: not enough fields'
         },
-        'extractFarmDetails: Invalid relationship format | relationships="1100014934:106284736:Test Organisation:default-organisation-id:relationship:relationshipLoa" | reason=Invalid format: not enough fields'
+        'extractFarmDetails: Invalid relationship format | relationships="9000000603:800000602:Test Organisation:default-organisation-id:relationship:relationshipLoa" | reason=Invalid format: not enough fields'
       ],
       [
         'CONFIG_MISSING',

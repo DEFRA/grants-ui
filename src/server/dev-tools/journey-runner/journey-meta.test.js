@@ -27,7 +27,7 @@ describe('journey-meta', () => {
     it('returns the journey-specific CRNs, most suitable first', () => {
       const options = journeyCrnOptions('grasslands')
 
-      expect(options.map((o) => o.crn)).toEqual(['1102838829', '1103313150'])
+      expect(options.map((o) => o.crn)).toEqual(['9000000001'])
     })
 
     it('falls back to the allowAll default CRN for unlisted journeys', () => {
@@ -37,7 +37,7 @@ describe('journey-meta', () => {
 
   describe('defaultCrn', () => {
     it('returns the first listed CRN for a journey with its own allowlist', () => {
-      expect(defaultCrn('woodland')).toBe('1062311181')
+      expect(defaultCrn('woodland')).toBe('9000000001')
     })
 
     it('returns DEFAULT_CRN for an unlisted journey', () => {

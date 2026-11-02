@@ -8,6 +8,7 @@ import {
   EVENT_READY,
   EVENT_SELECTION,
   PARCEL_DETAILS_REQUEST_TIMEOUT_MS,
+  SELECTION_SOURCE_SEARCH,
   TOTAL_AREA_DECIMAL_PLACES
 } from './config.js'
 import { formatParcelReference } from '../../../shared/format-parcel.js'
@@ -53,7 +54,7 @@ const setText = (id, text) => {
 }
 
 /**
- * @param {import('./map-helpers.js').MetaIndex} metaIndex
+ * @param {import('./helpers.js').MetaIndex} metaIndex
  * @param {string[]} parcelIds
  */
 const updateMapTotals = (metaIndex, parcelIds) => {
@@ -64,7 +65,7 @@ const updateMapTotals = (metaIndex, parcelIds) => {
 
 /**
  * @param {SelectedParcel[]} selectedParcels
- * @param {import('./map-helpers.js').MetaIndex} [metaIndex]
+ * @param {import('./helpers.js').MetaIndex} [metaIndex]
  */
 const renderSelectedParcelDetails = (selectedParcels, metaIndex = {}) => {
   const details = document.getElementById(DOM_ID_SELECTED_PARCEL_DETAILS)
@@ -192,7 +193,7 @@ const withActionCount = (notice, fallbackActionCount) => {
  * is fetched straight away and a stale response can never replace it. A
  * request that hangs is aborted after a timeout and reported as a failure.
  * @param {HTMLElement} mapEl
- * @returns {(selectedParcels: SelectedParcel[], metaIndex: import('./map-helpers.js').MetaIndex) => Promise<void>}
+ * @returns {(selectedParcels: SelectedParcel[], metaIndex: import('./helpers.js').MetaIndex) => Promise<void>}
  */
 function createSelectedParcelDetailsUpdater(mapEl) {
   const listDetails = createParcelListDetailsRenderer()
@@ -206,7 +207,7 @@ function createSelectedParcelDetailsUpdater(mapEl) {
   ]
   /** @type {Map<string, ParcelNotice>} */
   const notices = new Map()
-  /** @type {import('./map-helpers.js').MetaIndex} */
+  /** @type {import('./helpers.js').MetaIndex} */
   let latestMetaIndex = {}
   /** @type {{ id: string, controller: AbortController } | null} */
   let inFlight = null
@@ -227,7 +228,7 @@ function createSelectedParcelDetailsUpdater(mapEl) {
     listDetails.render(id, notice)
   }
 
-  /** @param {string} id @param {import('./map-helpers.js').MetaIndex} metaIndex */
+  /** @param {string} id @param {import('./helpers.js').MetaIndex} metaIndex */
   const loadNotice = async (id, metaIndex) => {
     listDetails.startLoading(id)
     const request = { id, controller: new AbortController() }
@@ -322,13 +323,12 @@ function bindParcelNavigation(mapEl, viewToggle) {
   })
 }
 
-/** @param {SelectedParcel[]} selectedParcels @param {string | undefined} previousId */
-function focusSelectedParcelDetails(selectedParcels, previousId) {
+/** @param {SelectedParcel[]} selectedParcels @param {string | undefined} previousId @param {string} [source] */
+function focusSelectedParcelDetails(selectedParcels, previousId, source) {
   const id = selectedParcels.length === 1 ? selectedParcels[0].id : undefined
-  if (id && id !== previousId) {
+  if (id && id !== previousId && source !== SELECTION_SOURCE_SEARCH) {
     const details = document.getElementById(DOM_ID_SELECTED_PARCEL_DETAILS)
     details?.focus({ preventScroll: true })
-    details?.scrollIntoView({ block: 'start' })
   }
   return id
 }
@@ -342,7 +342,7 @@ export function initParcelSelectPage(mapEl) {
     return
   }
 
-  /** @type {import('./map-helpers.js').MetaIndex} */
+  /** @type {import('./helpers.js').MetaIndex} */
   let metaIndex = {}
 
   restoreParcelViewSelection(mapEl)
@@ -423,7 +423,7 @@ export function initParcelSelectPage(mapEl) {
   }
 
   mapEl.addEventListener(EVENT_SELECTION, (/** @type {Event} */ e) => {
-    const { selectedParcels } = /** @type {CustomEvent<SelectionDetail>} */ (e).detail
+    const { selectedParcels, source } = /** @type {CustomEvent<SelectionDetail>} */ (e).detail
     mapSelectedIds = selectedParcels.map((p) => p.id)
     if (syncingMap || viewToggle?.isList()) {
       return
@@ -433,7 +433,7 @@ export function initParcelSelectPage(mapEl) {
     viewToggle?.syncSelection(selectedIds)
     renderSelectedParcelDetails(selectedParcels, metaIndex)
     void updateSelectedParcelDetails(selectedParcels, metaIndex)
-    selectedParcelId = focusSelectedParcelDetails(selectedParcels, selectedParcelId)
+    selectedParcelId = focusSelectedParcelDetails(selectedParcels, selectedParcelId, source)
   })
 
   bindMapStatusEvents(mapEl, handleReady, handleError)
@@ -445,7 +445,7 @@ initParcelSelectPage(document.getElementById(DOM_ID_PARCEL_MAP))
 /**
  * @typedef {object} ReadyDetail
  * @property {string[]} [parcelIds]
- * @property {import('./map-helpers.js').MetaIndex} [metaIndex]
+ * @property {import('./helpers.js').MetaIndex} [metaIndex]
  */
 
 /**
@@ -455,6 +455,7 @@ initParcelSelectPage(document.getElementById(DOM_ID_PARCEL_MAP))
 /**
  * @typedef {object} SelectionDetail
  * @property {SelectedParcel[]} selectedParcels
+ * @property {string} [source]
  */
 
 /**

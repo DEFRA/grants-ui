@@ -1,4 +1,10 @@
-import { formatParcelReference, isValidCompoundParcelId, parseLandParcel, stringifyParcel } from './format-parcel.js'
+import {
+  compactParcelReference,
+  formatParcelReference,
+  isValidCompoundParcelId,
+  parseLandParcel,
+  stringifyParcel
+} from './format-parcel.js'
 
 describe('format-parcel', () => {
   describe('isValidCompoundParcelId', () => {
@@ -80,5 +86,17 @@ describe('format-parcel', () => {
       expect(formatParcelReference({ sheetId: undefined, parcelId: undefined })).toBe('')
       expect(formatParcelReference('')).toBe('')
     })
+  })
+})
+
+describe('compactParcelReference', () => {
+  it.each([
+    ['sd7946 0155', 'SD79460155'],
+    ['SD7946-0155', 'SD79460155'],
+    [' sd 7946 ', 'SD7946'],
+    [null, ''],
+    [undefined, '']
+  ])('normalises %s to %s', (input, expected) => {
+    expect(compactParcelReference(input)).toBe(expected)
   })
 })

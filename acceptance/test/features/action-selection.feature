@@ -1,11 +1,11 @@
 Feature: Action Selection
 
     Scenario: User can add and remove land parcels and select actions
-        Given there is no application data for SBI "106514040" and grant "example-grant-with-map"
+        Given there is no application data for SBI "800000007" and grant "example-grant-with-map"
 
         # start
         Given the user navigates to "/example-grant-with-map"
-        And logs in as CRN "1103313150"
+        And logs in as CRN "9000000027"
         Then the user should see heading "Apply for Example Grant with Map"
         When the user clicks on "Start now"
 
@@ -316,11 +316,11 @@ Feature: Action Selection
         And should see total yearly payment "£564.00"
 
     Scenario: User is told when both SSSI and HEFER apply to a land parcel
-        Given there is no application data for SBI "106592443" and grant "example-grant-with-map"
+        Given there is no application data for SBI "800000009" and grant "example-grant-with-map"
 
         # start
         Given the user navigates to "/example-grant-with-map"
-        And logs in as CRN "1100946543"
+        And logs in as CRN "9000000015"
         Then the user should see heading "Apply for Example Grant with Map"
         When the user clicks on "Start now"
 
@@ -351,11 +351,11 @@ Feature: Action Selection
             |          |                                                          | 26.9088 hectares available      |     |
 
     Scenario: User is told when only SSSI consent applies to a land parcel
-        Given there is no application data for SBI "121428499" and grant "example-grant-with-map"
+        Given there is no application data for SBI "800000021" and grant "example-grant-with-map"
 
         # start
         Given the user navigates to "/example-grant-with-map"
-        And logs in as CRN "1102760349"
+        And logs in as CRN "9000000025"
         Then the user should see heading "Apply for Example Grant with Map"
         When the user clicks on "Start now"
 
@@ -387,11 +387,11 @@ Feature: Action Selection
             |          |                                                          | 0.6873 hectares available      |     |
 
     Scenario: User is told when only HEFER applies to a land parcel
-        Given there is no application data for SBI "300000100" and grant "example-grant-with-map"
+        Given there is no application data for SBI "800000024" and grant "example-grant-with-map"
 
         # start
         Given the user navigates to "/example-grant-with-map"
-        And logs in as CRN "1300000100"
+        And logs in as CRN "9000000033"
         Then the user should see heading "Apply for Example Grant with Map"
         When the user clicks on "Start now"
 

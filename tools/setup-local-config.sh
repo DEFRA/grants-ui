@@ -12,7 +12,6 @@ LOCAL_ALLOWLISTS_DIR="$PROJECT_ROOT/compose/config-broker/local-allowlists"
 CONFIG_REPO_OWNER="DEFRA"
 CONFIG_REPO_URL_ROOT="https://github.com/$CONFIG_REPO_OWNER"
 CONFIG_REPO_API_URL_ROOT="https://api.github.com/repos/$CONFIG_REPO_OWNER"
-CONFIG_REPO_RAW_URL_ROOT="https://raw.githubusercontent.com/$CONFIG_REPO_OWNER"
 CONFIG_REPOS=(
   grants-config-woodland
   grants-config-farm-payments
@@ -21,8 +20,16 @@ CONFIG_REPOS=(
   grants-config-water-management
 )
 
+# Resolve once so metadata and file downloads use the same credentials. Explicit
+# environment tokens take precedence over the developer's GitHub CLI session.
+CONFIG_GITHUB_TOKEN="${GITHUB_TOKEN:-${GH_TOKEN:-}}"
+if [ -z "$CONFIG_GITHUB_TOKEN" ] && command -v gh >/dev/null 2>&1; then
+  CONFIG_GITHUB_TOKEN="$(gh auth token --hostname github.com 2>/dev/null || true)"
+fi
+
 github_api_get() {
   local url="$1"
+  local accept="${2:-application/vnd.github+json}"
   local curl_args=(
     --fail
     --show-error
@@ -30,18 +37,17 @@ github_api_get() {
     --location
     --retry 3
     --retry-delay 1
-    --header "Accept: application/vnd.github+json"
+    --header "Accept: $accept"
     --header "X-GitHub-Api-Version: 2022-11-28"
   )
 
-  if [ -n "${GITHUB_TOKEN:-}" ]; then
-    curl_args+=(--header "Authorization: Bearer $GITHUB_TOKEN")
-  elif [ -n "${GH_TOKEN:-}" ]; then
-    curl_args+=(--header "Authorization: Bearer $GH_TOKEN")
+  if [ -n "$CONFIG_GITHUB_TOKEN" ]; then
+    curl_args+=(--header "Authorization: Bearer $CONFIG_GITHUB_TOKEN")
   fi
 
-  if ! curl "${curl_args[@]}" "$url"; then
+  if ! curl "${curl_args[@]}" "${@:3}" "$url"; then
     echo "Error accessing $url" >&2
+    echo "Config repos are private: run 'gh auth login --hostname github.com' or export GITHUB_TOKEN / GH_TOKEN with read access to the DEFRA config repos (including any required organisation approval or SSO authorisation)." >&2
     return 1
   fi
 }
@@ -164,20 +170,13 @@ download_config_file() {
   local config_file_path="$2"
   local target_file="$3"
   local ref="$4"
-  local raw_url="$CONFIG_REPO_RAW_URL_ROOT/$config_repo/$ref/$config_file_path"
+  local contents_url="$CONFIG_REPO_API_URL_ROOT/$config_repo/contents/$config_file_path"
   local target_file_tmp="$target_file.tmp"
-  local curl_args=(
-    --fail
-    --show-error
-    --silent
-    --location
-    --retry 3
-    --retry-delay 1
-  )
 
-  if ! curl "${curl_args[@]}" "$raw_url" --output "$target_file_tmp"; then
+  if ! github_api_get "$contents_url" "application/vnd.github.raw+json" \
+    --get --data-urlencode "ref=$ref" --output "$target_file_tmp"; then
     rm -f "$target_file_tmp"
-    echo "Error downloading $raw_url" >&2
+    echo "Error downloading $contents_url" >&2
     return 1
   fi
 
@@ -266,7 +265,7 @@ fall_back_to_cache_or_fail() {
     exit 0
   fi
   echo "No cached config found at $CONFIG_BROKER_LOCAL to fall back to." >&2
-  echo "An internet connection is required to download the config at least once." >&2
+  echo "An internet connection and GitHub authentication with access to the private config repos are required to download the config at least once." >&2
   exit 1
 }
 

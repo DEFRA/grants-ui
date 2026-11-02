@@ -16,8 +16,8 @@ const DEFAULT_AUTH_TOKEN = 'auth_token'
 const DEFAULT_ENCRYPTION_KEY = 'encryption_key'
 const DEFAULT_LOCK_TOKEN_SECRET = 'dev-lock-secret'
 const DEFAULT_GRANT_CODE = 'example-grant-with-auth'
-const DEFAULT_USER_ID = '1100957269'
-const DEFAULT_SBI = '107593059'
+const DEFAULT_USER_ID = '9000000001'
+const DEFAULT_SBI = '800000001'
 
 function required(value, name) {
   if (!value) {

@@ -92,7 +92,12 @@ function createAdminEntitlement(application, totalHectares, spawn) {
         expiresAt: new Date(Date.now() + 60000) });
       const response = await fetch('http://127.0.0.1:' + (process.env.PORT || '3102') +
         '/grant-admin/grants/${application.code}/applications/${application.clientRef}/claims/entitlements', {
-          method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + rawToken },
+          method: 'POST', headers: {
+            'content-type': 'application/json', authorization: 'Bearer ' + rawToken,
+            // Synthetic operator with claim roles in mockserver/expectations.json.
+            'x-actor-id': '00000000-0000-4000-8000-000000000001',
+            'x-actor': 'Local grants operator'
+          },
           body: ${JSON.stringify(JSON.stringify(request))}
         });
       const body = await response.text();

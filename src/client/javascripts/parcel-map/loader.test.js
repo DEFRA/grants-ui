@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 // @ts-nocheck
 import { vi, describe, it, expect, afterEach } from 'vitest'
-import { parseParcelResponse, fetchParcelData } from './parcel-map-loader.js'
+import { parseParcelResponse, fetchParcelData } from './loader.js'
+import { FETCH_MAX_ATTEMPTS, FETCH_RETRY_DELAY_MS } from './config.js'
 
 const resp = (body) => ({ ok: true, json: () => Promise.resolve(body) })
 
@@ -57,6 +58,36 @@ describe('fetchParcelData', () => {
     const data = await fetchParcelData()
     expect(data.parcelIds).toEqual(['A'])
     expect(global.fetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('retries once after a failed attempt, then gives up with null', async () => {
+    vi.useFakeTimers()
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 503 })
+      .mockResolvedValueOnce({ ok: false, status: 503 })
+    global.fetch = fetchMock
+
+    const pending = fetchParcelData()
+    await vi.advanceTimersByTimeAsync(FETCH_RETRY_DELAY_MS)
+
+    expect(await pending).toBeNull()
+    expect(fetchMock).toHaveBeenCalledTimes(FETCH_MAX_ATTEMPTS)
+    vi.useRealTimers()
+  })
+
+  it('returns the data from a retry that succeeds', async () => {
+    vi.useFakeTimers()
+    global.fetch = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ features: [], bbox: null }) })
+
+    const pending = fetchParcelData()
+    await vi.advanceTimersByTimeAsync(FETCH_RETRY_DELAY_MS)
+
+    expect(await pending).toEqual({ parcelIds: [], metaIndex: {}, bbox: null })
+    vi.useRealTimers()
   })
 
   it('passes each enabled land action to the parcels endpoint', async () => {

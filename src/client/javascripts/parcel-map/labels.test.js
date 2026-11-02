@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest'
-import { attachParcelLabels } from './parcel-map-labels.js'
+import { attachParcelLabels } from './labels.js'
 import { makeMlMap } from './test-helpers.js'
 import { CLUSTER_EXPAND_MAX_ZOOM } from './config.js'
 
@@ -13,7 +13,7 @@ function setup({ sourceFeatures = [] } = {}) {
     querySourceFeatures: vi.fn().mockReturnValue(sourceFeatures)
   })
   const cleanups = []
-  attachParcelLabels(ml, cleanups)
+  attachParcelLabels({ ml, cleanups })
   return { ml, setData, cleanups }
 }
 
@@ -76,7 +76,7 @@ describe('attachParcelLabels', () => {
       getSource: vi.fn().mockReturnValue({ setData }),
       querySourceFeatures
     })
-    attachParcelLabels(ml, [])
+    attachParcelLabels({ ml, cleanups: [] })
 
     ml._emit('idle')
     expect(setData).toHaveBeenCalledTimes(1)
@@ -194,7 +194,7 @@ describe('attachParcelLabels', () => {
     expect(setData.mock.calls[0][0].features).toHaveLength(0)
 
     const noSource = makeMlMap({ getSource: vi.fn().mockReturnValue(undefined) })
-    attachParcelLabels(noSource, [])
+    attachParcelLabels({ ml: noSource, cleanups: [] })
     expect(() => noSource._emit('idle')).not.toThrow()
   })
 
@@ -206,7 +206,7 @@ describe('attachParcelLabels', () => {
         getSource: vi.fn().mockReturnValue({ getClusterLeaves }),
         fitBounds
       })
-      attachParcelLabels(ml, [])
+      attachParcelLabels({ ml, cleanups: [] })
       const cluster = {
         properties: { cluster_id: clusterId, point_count: pointCount },
         geometry: { type: 'Point', coordinates: [-2.45, 51.45] }
@@ -266,7 +266,7 @@ describe('attachParcelLabels', () => {
         getSource: vi.fn().mockReturnValue({ getClusterLeaves }),
         queryRenderedFeatures: vi.fn().mockReturnValue([{ properties: { cluster_id: 5, point_count: 8 } }])
       })
-      attachParcelLabels(ml, [])
+      attachParcelLabels({ ml, cleanups: [] })
 
       ml._emit('mousemove', { point: { x: 5, y: 5 } })
       // Simulates the vendor's own same-tick 'mousemove' handler clobbering
@@ -278,7 +278,7 @@ describe('attachParcelLabels', () => {
 
     it('does not touch the cursor on mousemove when the point misses every cluster badge', async () => {
       const ml = makeMlMap({ queryRenderedFeatures: vi.fn().mockReturnValue([]) })
-      attachParcelLabels(ml, [])
+      attachParcelLabels({ ml, cleanups: [] })
       ml.getCanvas().style.cursor = ''
 
       ml._emit('mousemove', { point: { x: 5, y: 5 } })
@@ -301,7 +301,7 @@ describe('attachParcelLabels', () => {
         ]
       })
       const ml = makeMlMap({ getStyle })
-      attachParcelLabels(ml, [])
+      attachParcelLabels({ ml, cleanups: [] })
 
       ml._emit('styledata')
 
@@ -314,7 +314,7 @@ describe('attachParcelLabels', () => {
         layers: [{ id: 'parcels-fill' }, { id: 'parcels-label-cluster' }, { id: 'parcels-label-cluster-count' }]
       })
       const ml = makeMlMap({ getStyle })
-      attachParcelLabels(ml, [])
+      attachParcelLabels({ ml, cleanups: [] })
 
       ml._emit('styledata')
 
@@ -323,7 +323,7 @@ describe('attachParcelLabels', () => {
 
     it('does nothing before the cluster layers exist', () => {
       const ml = makeMlMap({ getLayer: vi.fn().mockReturnValue(false) })
-      attachParcelLabels(ml, [])
+      attachParcelLabels({ ml, cleanups: [] })
 
       expect(() => ml._emit('styledata')).not.toThrow()
       expect(ml.moveLayer).not.toHaveBeenCalled()

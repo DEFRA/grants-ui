@@ -1,11 +1,11 @@
 Feature: Application Windows
 
     Scenario: User cannot start a new application after the application window for a grant has closed
-        Given there is no application data for SBI "106206183" and grant "example-grant-with-closed-window"
+        Given there is no application data for SBI "800000015" and grant "example-grant-with-closed-window"
 
         # login
         Given the user navigates to "/example-grant-with-closed-window"
-        And logs in as CRN "1100947604"
+        And logs in as CRN "9000000018"
 
         # application-window-closed
         Then the user should be at URL "application-window-closed"

@@ -25,6 +25,17 @@ export function createProgressTracker(action, args = []) {
   const healthyServices = new Set()
   return (rawLine) => {
     const line = stripVTControlCharacters(rawLine).trim()
+    if (action === 'journey') {
+      if (/▶\s+npx playwright install chromium\b/.test(line)) return 'Journey: preparing Chromium'
+      if (line.startsWith('[journey-runner] Signing in via DefraID stub')) return 'Journey: signing in'
+      if (line === '[journey-runner] Clearing application state') return 'Journey: clearing application state'
+      if (line.startsWith('[journey-runner] Waiting for engine on ')) return 'Journey: waiting for runner'
+      const step = line.match(/^\[journey-runner\] Step (\d+): (.+)$/)
+      if (step) return `Journey: step ${step[1]} — ${step[2]}`
+      const stopped = line.match(/^\[journey-runner\] Arrived at "(.+)" \(step (\d+)\) - stopping here$/)
+      if (stopped) return `Journey: stopped at ${stopped[1]} (step ${stopped[2]})`
+      if (line.startsWith('[journey-runner] Browser left open')) return 'Journey: close browser when finished'
+    }
     const testCommand = line.match(/▶\s+npm run (test(?::contracts|:acceptance)?)(?:\s|$)/)
     if (testCommand) {
       suite = testCommand[1] === 'test' ? 'unit' : testCommand[1].slice(5)

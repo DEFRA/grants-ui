@@ -1,11 +1,11 @@
 Feature: Application Withdrawal
 
     Scenario: A withdrawn application can be re-submitted as a new application
-        Given there is no application data for SBI "106527272" and grant "example-grant-with-auth"
+        Given there is no application data for SBI "800000008" and grant "example-grant-with-auth"
 
         # start
         Given the user navigates to "/example-grant-with-auth"
-        And logs in as CRN "1100954058"
+        And logs in as CRN "9000000016"
         Then the user should see heading "Example Grant"
         When the user clicks on "Start now"
 
@@ -141,11 +141,11 @@ Feature: Application Withdrawal
         And should see an "EGWA" reference number for their application
 
         # validate Mongo state storage
-        And the following application state should be stored for CRN "1100954058" and SBI "106527272" and grant "example-grant-with-auth"
+        And the following application state should be stored for CRN "9000000016" and SBI "800000008" and grant "example-grant-with-auth"
             | FIELD                | VALUE              |
             | $$__referenceNumber  | {REFERENCE NUMBER} |
             | applicationStatus    | SUBMITTED          |
-            | submittedBy          | 1100954058         |
+            | submittedBy          | 9000000016         |
             | autocompleteField    | ENG                |
             | multilineTextField   | Lorem ipsum        |
             | emailAddressField    | test@example.com   |
@@ -153,12 +153,12 @@ Feature: Application Withdrawal
             | projectName          | Test project       |
 
         # validate Mongo submission storage
-        And the following application submissions should be stored for CRN "1100954058" and SBI "106527272" and grant "example-grant-with-auth"
+        And the following application submissions should be stored for CRN "9000000016" and SBI "800000008" and grant "example-grant-with-auth"
             | REFERENCE NUMBER   | CRN        |
-            | {REFERENCE NUMBER} | 1100954058 |
+            | {REFERENCE NUMBER} | 9000000016 |
 
         # GAS
-        And the reference number along with SBI "106527272" and CRN "1100954058" should be submitted to GAS
+        And the reference number along with SBI "800000008" and CRN "9000000016" should be submitted to GAS
 
         # application is withdrawn in GAS
         Given the application status in GAS is now "APPLICATION_WITHDRAWN"
@@ -166,9 +166,9 @@ Feature: Application Withdrawal
         # user revisits grants-ui
         And the user starts a new browser session
         And navigates to "/example-grant-with-auth/yes-no-field"
-        And logs in as CRN "1100954058"
+        And logs in as CRN "9000000016"
         Then the user should be at URL "start"
-        And the grants-ui application status for CRN "1100954058" and SBI "106527272" and grant "example-grant-with-auth" should still be "CLEARED"
+        And the grants-ui application status for CRN "9000000016" and SBI "800000008" and grant "example-grant-with-auth" should still be "CLEARED"
 
         # submit a new application
         When the user clicks on "Start now"
@@ -306,11 +306,11 @@ Feature: Application Withdrawal
         And should see an "EGWA" reference number for their application
 
         # validate Mongo state storage
-        And the following application state should be stored for CRN "1100954058" and SBI "106527272" and grant "example-grant-with-auth"
+        And the following application state should be stored for CRN "9000000016" and SBI "800000008" and grant "example-grant-with-auth"
             | FIELD                | VALUE                      |
             | $$__referenceNumber  | {CURRENT REFERENCE NUMBER} |
             | applicationStatus    | SUBMITTED                  |
-            | submittedBy          | 1100954058                 |
+            | submittedBy          | 9000000016                 |
             | autocompleteField    | WLS                        |
             | multilineTextField   | Lorem ipsum dolor sit amet |
             | emailAddressField    | test@example.com           |
@@ -318,10 +318,10 @@ Feature: Application Withdrawal
             | projectName          | Test project               |
 
         # validate Mongo submission storage, both submissions should be present
-        And the following application submissions should be stored for CRN "1100954058" and SBI "106527272" and grant "example-grant-with-auth"
+        And the following application submissions should be stored for CRN "9000000016" and SBI "800000008" and grant "example-grant-with-auth"
             | REFERENCE NUMBER            | CRN        |
-            | {CURRENT REFERENCE NUMBER}  | 1100954058 |
-            | {ORIGINAL REFERENCE NUMBER} | 1100954058 |
+            | {CURRENT REFERENCE NUMBER}  | 9000000016 |
+            | {ORIGINAL REFERENCE NUMBER} | 9000000016 |
 
         # GAS
-        And the reference number along with SBI "106527272" and CRN "1100954058" should be submitted to GAS
+        And the reference number along with SBI "800000008" and CRN "9000000016" should be submitted to GAS

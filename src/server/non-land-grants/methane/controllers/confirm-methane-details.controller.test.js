@@ -70,10 +70,10 @@ describe('ConfirmMethaneDetailsController', () => {
         isAuthenticated: true,
         credentials: {
           currentRelationshipId: 'SBI123456',
-          contactId: '1100014934',
-          relationships: ['1101629797:SBI123456'],
+          contactId: '9000000603',
+          relationships: ['9000000607:SBI123456'],
           sbi: 'SBI123456',
-          crn: '1100014934',
+          crn: '9000000603',
           name: 'John Doe'
         }
       }
