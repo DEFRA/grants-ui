@@ -41,3 +41,11 @@ export const formatParcelReference = (parcel) => {
 /**
  * @typedef {{ sheetId: string, parcelId: string }} ParcelIdentifier
  */
+
+/**
+ * Normalises a parcel reference for matching: uppercase, without the space or
+ * hyphen, so "sd7946 0155" and "SD7946-0155" compare equal.
+ * @param {string | null | undefined} value
+ * @returns {string}
+ */
+export const compactParcelReference = (value) => (value ?? '').replace(/[\s-]/g, '').toUpperCase()

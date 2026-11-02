@@ -35,12 +35,12 @@ describe.each([
 describe('osTileParams max zoom', () => {
   const validate = (params) => osTileParams.params.validate(params).error
 
-  it('accepts the OS max zoom of 20', () => {
-    expect(validate({ z: 20, x: 0, y: 0 })).toBeUndefined()
+  it('accepts the OS max zoom of 16', () => {
+    expect(validate({ z: 16, x: 0, y: 0 })).toBeUndefined()
   })
 
   it('rejects z above the OS max zoom', () => {
-    expect(validate({ z: 21, x: 0, y: 0 })).toBeDefined()
+    expect(validate({ z: 17, x: 0, y: 0 })).toBeDefined()
   })
 })
 

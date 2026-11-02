@@ -70,7 +70,7 @@ describe('Grant Application service (token present)', () => {
       metadata: {
         clientRef: 'abc123',
         submittedAt: '2025-04-22T12:00:00Z',
-        sbi: '106284736',
+        sbi: '800000602',
         frn: '1234567890',
         crn: '1234567890'
       },

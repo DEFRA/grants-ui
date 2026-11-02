@@ -4,11 +4,11 @@ Feature: Reusable Components
     - Checking GOV.UK phase is observed
 
     Scenario: Use all available components in example journey and analyze accessibility
-        Given there is no application data for SBI "107593059" and grant "example-grant-with-auth"
+        Given there is no application data for SBI "800000013" and grant "example-grant-with-auth"
 
         # start
         Given the user navigates to "/example-grant-with-auth"
-        And logs in as CRN "1100957269"
+        And logs in as CRN "9000000017"
         Then the user should see heading "Example Grant"
         And the page is analyzed for accessibility
         And the user should see a notification banner

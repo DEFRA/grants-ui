@@ -37,9 +37,10 @@ services:
       SERVICE_NAME: ${SERVICE_NAME:-Farm and land service}
       COOKIE_POLICY_URL: ${COOKIE_POLICY_URL:-/cookies}
       COOKIE_CONSENT_EXPIRY_DAYS: ${COOKIE_CONSENT_EXPIRY_DAYS:-365}
-      CV_API_MOCK_ENABLED: ${CV_API_MOCK_ENABLED:-true}
-      CV_API_ENDPOINT: '${CV_API_ENDPOINT:-}'
-      CV_API_STUB_URL: '${CV_API_STUB_URL:-http://grants-ui-dal-stub:3008/graphql}'
+      # Default: grants-platform-dal-stub, reached through the same code path as the
+      # real DAL; the stub ignores auth so no Entra settings are needed locally.
+      CV_API_ENDPOINT: '${CV_API_ENDPOINT:-http://grants-platform-dal-stub:3008/graphql}'
+      CV_API_AUTH_ENABLED: ${CV_API_AUTH_ENABLED:-false}
       CV_API_DEVELOPER_KEY: '${CV_API_DEVELOPER_KEY:-}'
       ENTRA_INTERNAL_TOKEN_URL: '${ENTRA_INTERNAL_TOKEN_URL:-}'
       ENTRA_INTERNAL_TENANT_ID: '${ENTRA_INTERNAL_TENANT_ID:-}'
@@ -112,7 +113,8 @@ services:
 
   grants-ui-backend:
     image: defradigital/grants-ui-backend
-    pull_policy: always
+    # Private on Docker Hub since the repository went private; use the local copy and pull by hand when logged in.
+    pull_policy: missing
     depends_on:
       floci:
         condition: service_healthy

@@ -1,6 +1,23 @@
 # Consolidated View API (DAL)
 
-The Consolidated View API provides business data via a GraphQL endpoint. By default, the app uses a local stub (`grants-ui-dal-stub`). To test against the live DAL, follow the steps below.
+The Consolidated View API provides business data via a GraphQL endpoint. By default the local stack uses [grants-platform-dal-stub](https://github.com/DEFRA/grants-platform-dal-stub), which executes the real DAL schema from synthetic fixtures, so grants-ui talks to it through exactly the code path it uses for the live DAL. To test against the live DAL instead, follow the steps below.
+
+## Local development with grants-platform-dal-stub (default)
+
+`compose.infra.yml` runs the stub and `compose.grants-ui.yml` points at it:
+
+```env
+CV_API_ENDPOINT="http://grants-platform-dal-stub:3008/graphql"
+CV_API_AUTH_ENABLED=false
+```
+
+`CV_API_AUTH_ENABLED=false` skips the Entra token request, so no `ENTRA_*` settings are needed. It is refused when `ENVIRONMENT` is `test` or `prod`, because the live DAL always requires the token. Sign in with one of the stub's synthetic CRNs (`9000000001` is the happy path; see the stub's README); the Defra ID stub's `users.json` lists the same CRN and SBI pairs.
+
+Running `npm run dev` on the host instead of in Docker needs the stub's host address in `.env`: `CV_API_ENDPOINT="http://localhost:3008/graphql"` and `CV_API_AUTH_ENABLED=false` (see `.env.example`).
+
+To run a sibling checkout of the stub instead of the published image, pick `local` in the `gt` TUI and enable `grants-platform-dal-stub`, which builds `grants-platform-dal-stub:local` from `../grants-platform-dal-stub` and overrides the compose image.
+
+The proxied CI/HA stack (`compose.ci.yml`, `compose.ha.yml`) reaches the same stub through nginx on port 4008.
 
 ## Local development with the live DAL
 
@@ -22,7 +39,7 @@ grants-ui is being migrated environment by environment to authenticate to Entra 
 Set the following in your `.env` file:
 
 ```env
-CV_API_MOCK_ENABLED=false
+CV_API_AUTH_ENABLED=true
 CV_API_ENDPOINT="<dal-endpoint>"
 CV_API_DEVELOPER_KEY=<your-api-key>
 
@@ -46,4 +63,4 @@ Leave `ENTRA_AUTH_METHOD` unset locally (and in the Docker Compose setup below) 
 | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `403 Forbidden` with `{"message":"Forbidden"}` | `CV_API_DEVELOPER_KEY` is missing, expired, or not passed into the Docker container. Check `compose.grants-ui.yml` includes the env var and your `.env` has a valid key.                                                                                                                                                    |
 | `401 Unauthorized`                             | Entra ID credentials are invalid or expired. If `ENTRA_AUTH_METHOD` is `client_secret` (or unset), check `ENTRA_INTERNAL_CLIENT_SECRET`; if it's `web_identity`, check the Entra App Registration's Web Identity federated credential has an Audience matching `ENTRA_FEDERATED_CREDENTIALS_AUDIENCE` for that environment. |
-| Requests hit the stub instead of live DAL      | `CV_API_MOCK_ENABLED` is still `true` (the default). Set it to `false`.                                                                                                                                                                                                                                                     |
+| Requests hit the stub instead of live DAL      | `CV_API_ENDPOINT` still points at `grants-platform-dal-stub`. Set it to the live DAL URL and `CV_API_AUTH_ENABLED=true`.                                                                                                                                                                                                    |

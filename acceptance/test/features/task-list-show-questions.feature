@@ -1,11 +1,11 @@
 Feature: Task Lists Showing Questions
 
     Scenario: Complete a task list based grant application showing all questions
-        Given there is no application data for SBI "106604915" and grant "example-grant-with-task-list"
+        Given there is no application data for SBI "800000012" and grant "example-grant-with-task-list"
 
         # start
         Given the user navigates to "example-grant-with-task-list"
-        And logs in as CRN "1100957579"
+        And logs in as CRN "9000000014"
         Then the user should be at URL "start"
         Then the user should see heading "Apply for Example Grant with Task List"
         And the page is analyzed for accessibility

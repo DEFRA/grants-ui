@@ -1,10 +1,12 @@
-import { buildSkeleton, buildOverlay, buildColorExpr, addParcelsToMap, fitToParcels } from './map-helpers.js'
-import { fetchParcelData } from './parcel-map-loader.js'
-import { initMap } from './parcel-map-init.js'
-import { attachTooltip } from './parcel-map-tooltip.js'
-import { attachParcelLabels } from './parcel-map-labels.js'
-import { attachSelectionRelay } from './parcel-map-selection.js'
-import { attachResetButton } from './parcel-map-reset-button.js'
+import { buildSkeleton, buildOverlay, buildColorExpr, addParcelsToMap, fitToParcels } from './helpers.js'
+import { fetchParcelData } from './loader.js'
+import { initMap } from './init.js'
+import { attachTooltip } from './tooltip.js'
+import { attachParcelLabels } from './labels.js'
+import { attachSelectionRelay } from './selection.js'
+import { attachResetButton } from './reset-button.js'
+import { attachParcelSearch } from './search.js'
+import { createParcelStore } from './store.js'
 import {
   MULTI_SELECT_ATTRIBUTE,
   ENABLED_LAND_ACTIONS_ATTRIBUTE,
@@ -16,6 +18,7 @@ import {
   MSG_ERROR_UNAVAILABLE,
   EVENT_READY,
   EVENT_ERROR,
+  SELECTION_SOURCE_MAP,
   ERROR_REASON_UNAVAILABLE,
   ERROR_REASON_NO_PARCELS,
   STATE_IDLE,
@@ -24,9 +27,23 @@ import {
   STATE_ERROR
 } from './config.js'
 
+/**
+ * What every attached module (tooltip, labels, reset button, selection relay,
+ * search) is handed once the map and the parcel data are ready.
+ * @typedef {object} MapContext
+ * @property {ParcelMap} host  the <parcel-map> element
+ * @property {ReturnType<typeof initMap>['mapInstance']} mapInstance
+ * @property {ReturnType<typeof initMap>['interactPlugin']} interactPlugin
+ * @property {import('maplibre-gl').Map} ml
+ * @property {HTMLDivElement | null} mapEl
+ * @property {import('./store.js').ParcelStore} store
+ * @property {Array<() => void>} cleanups  each module registers its own `off`s here
+ * @property {boolean} multiSelect
+ */
+
 // <parcel-map multi-select="true|false">
 // Lifecycle shell: owns the state machine and event dispatch, and delegates map
-// bootstrap, data loading, tooltip and selection wiring to focused modules.
+// bootstrap, data loading, tooltip, selection and search wiring to focused modules.
 export class ParcelMap extends HTMLElement {
   /** @type {typeof STATE_IDLE | typeof STATE_LOADING | typeof STATE_READY | typeof STATE_ERROR} */
   #state = STATE_IDLE
@@ -40,12 +57,8 @@ export class ParcelMap extends HTMLElement {
   /** @type {import('maplibre-gl').Map | null} */
   #ml = null
 
-  /** Parcel metadata by compound id.
-   * @type {import('./map-helpers.js').MetaIndex} */
-  #metaIndex = {}
-
-  /** @type {import('./parcel-map-loader.js').BBox | null} */
-  #bbox = null
+  /** @type {import('./store.js').ParcelStore} */
+  #store = createParcelStore()
 
   /** @type {HTMLDivElement | null} */
   #mapEl = null
@@ -59,7 +72,7 @@ export class ParcelMap extends HTMLElement {
   /** @type {Array<() => void>} */
   #mlCleanup = []
 
-  /** @type {{ allowNextClear: () => void } | null} */
+  /** @type {ReturnType<typeof attachSelectionRelay> | null} */
   #selectionRelay = null
 
   /** @type {ReturnType<typeof globalThis.setTimeout> | null} */
@@ -76,7 +89,7 @@ export class ParcelMap extends HTMLElement {
   connectedCallback() {
     this.#state = STATE_IDLE
     this.#lastEvent = null
-    this.#init()
+    this.#init().catch(() => this.#fail(ERROR_REASON_UNAVAILABLE))
   }
 
   disconnectedCallback() {
@@ -102,8 +115,7 @@ export class ParcelMap extends HTMLElement {
     this.#interactPlugin = null
     this.#selectionRelay = null
     this.#ml = null
-    this.#metaIndex = {}
-    this.#bbox = null
+    this.#store = createParcelStore()
     this.#mapEl?.parentElement?.remove()
     this.#mapEl = null
     this.#skeleton?.remove()
@@ -142,31 +154,29 @@ export class ParcelMap extends HTMLElement {
     }
 
     if (!ml || !data) {
-      this.#teardown()
-      this.#state = STATE_ERROR
-      this.#showError(MSG_ERROR_UNAVAILABLE)
-      this.#dispatchTerminal(EVENT_ERROR, { reason: ERROR_REASON_UNAVAILABLE })
+      this.#fail(ERROR_REASON_UNAVAILABLE)
     } else if (data.parcelIds.length === 0) {
-      this.#teardown()
-      this.#state = STATE_ERROR
-      this.#dispatchTerminal(EVENT_ERROR, { reason: ERROR_REASON_NO_PARCELS })
+      this.#fail(ERROR_REASON_NO_PARCELS)
     } else {
-      const colorExpr = buildColorExpr(data.parcelIds)
-      addParcelsToMap(ml, data, colorExpr)
-      attachParcelLabels(ml, this.#mlCleanup)
+      Object.assign(this.#store, data)
       this.#ml = ml
-      this.#metaIndex = data.metaIndex
-      this.#bbox = data.bbox
-      const tooltip = attachTooltip(ml, data.metaIndex, this.#mapEl, this.#mlCleanup)
-      attachResetButton(ml, data.bbox, this.#mapEl, this.#mlCleanup)
-      this.#selectionRelay = attachSelectionRelay({
+      addParcelsToMap(ml, data, buildColorExpr(data.parcelIds))
+      /** @type {MapContext} */
+      const context = {
         host: this,
-        mapInstance: this.#mapInstance,
+        mapInstance,
+        interactPlugin,
         ml,
-        tooltip,
+        mapEl: this.#mapEl,
+        store: this.#store,
         cleanups: this.#mlCleanup,
         multiSelect
-      })
+      }
+      attachParcelLabels(context)
+      const tooltip = attachTooltip(context)
+      attachResetButton(context)
+      this.#selectionRelay = attachSelectionRelay({ ...context, tooltip })
+      attachParcelSearch(context)
       this.#interactPlugin?.enable()
 
       this.#state = STATE_READY
@@ -175,6 +185,23 @@ export class ParcelMap extends HTMLElement {
 
       this.#dispatchTerminal(EVENT_READY, { parcelIds: data.parcelIds, metaIndex: data.metaIndex })
     }
+  }
+
+  /**
+   * Tears the map down and reports why: the overlay for an unavailable map,
+   * and the error event for the page in either case.
+   * @param {string} reason
+   */
+  #fail(reason) {
+    if (this.#state === STATE_ERROR) {
+      return
+    }
+    this.#teardown()
+    this.#state = STATE_ERROR
+    if (reason === ERROR_REASON_UNAVAILABLE) {
+      this.#showError(MSG_ERROR_UNAVAILABLE)
+    }
+    this.#dispatchTerminal(EVENT_ERROR, { reason })
   }
 
   /** @param {string} message */
@@ -212,35 +239,45 @@ export class ParcelMap extends HTMLElement {
 
   /**
    * Selects parcels as if the user had clicked them, so a selection the server
-   * sent back (e.g. after a rejected submit) survives the re-render.
+   * sent back (e.g. after a rejected submit) survives the re-render. `source`
+   * is passed on in the selection event (see SELECTION_SOURCE_*).
    * @param {string[]} ids
+   * @param {{ source?: string }} [options]
    */
-  selectParcels(ids) {
+  selectParcels(ids, { source = SELECTION_SOURCE_MAP } = {}) {
     if (this.#state !== STATE_READY) {
       return
     }
-    const known = [...new Set(ids)].filter((id) => this.#metaIndex[id])
+    const known = [...new Set(ids)].filter((id) => this.#store.metaIndex[id])
     const multiSelect = this.getAttribute(MULTI_SELECT_ATTRIBUTE) === 'true'
-    const toSelect = multiSelect ? known : known.slice(0, 1)
+    // The plugin treats selecting a selected parcel as a toggle-off, so one the
+    // user already has (e.g. picked again from the search box) is left as is.
+    const toSelect = (multiSelect ? known : known.slice(0, 1)).filter((id) => !this.#selectionRelay?.isSelected(id))
     if (toSelect.length === 0) {
       return
     }
 
-    this.#whenInteractListening(() => {
+    this.#whenInteractListening((listening) => {
       for (const id of toSelect) {
+        // Only a plugin that is listening answers with a selection change; an
+        // armed source would otherwise tag the user's next map click.
+        if (listening) {
+          this.#selectionRelay?.setNextSource(source)
+        }
         this.#mapInstance?.emit(SELECT_FEATURE_EVENT, {
           featureId: id,
           layerId: LAYER_ID_FILL,
           idProperty: PARCEL_ID_PROPERTY,
-          properties: this.#metaIndex[id]
+          properties: this.#store.metaIndex[id]
         })
       }
     })
   }
 
   /**
-   * Runs `apply` once the interact plugin is listening for SELECT_FEATURE_EVENT.
-   * @param {() => void} apply
+   * Runs `apply` once the interact plugin is listening for SELECT_FEATURE_EVENT,
+   * or with `false` once the wait runs out.
+   * @param {(listening: boolean) => void} apply
    */
   #whenInteractListening(apply) {
     const isListening = () => {
@@ -256,8 +293,9 @@ export class ParcelMap extends HTMLElement {
         return
       }
       polls += 1
-      if (isListening() || polls >= SELECT_LISTENER_MAX_POLLS) {
-        apply()
+      const listening = isListening()
+      if (listening || polls >= SELECT_LISTENER_MAX_POLLS) {
+        apply(listening)
         return
       }
       this.#pendingSelect = globalThis.setTimeout(poll, SELECT_LISTENER_POLL_MS)
@@ -267,6 +305,6 @@ export class ParcelMap extends HTMLElement {
 
   // Re-fits the viewport to every selectable parcel, undoing any pan/zoom.
   focusParcels() {
-    fitToParcels(this.#ml, this.#bbox)
+    fitToParcels(this.#ml, this.#store.bbox)
   }
 }

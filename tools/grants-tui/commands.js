@@ -13,10 +13,10 @@ import {
   DEBUG_SERVICE,
   DIM,
   GREEN,
-  LOCAL_SERVICES,
   PRE_UP_SCRIPT,
   RED,
   RESET_COLOR,
+  RESET_IMAGES,
   ROOT,
   SNYK,
   SNYK_EXIT,
@@ -469,13 +469,12 @@ export function cmdReset(dryRun) {
   }
 
   // Remove specific defradigital images (mirrors docker:reset npm script)
-  const resetImages = LOCAL_SERVICES.filter((s) => s.removeOnReset).map((s) => s.image)
   const imageList = dryRun
-    ? { status: 0, stdout: resetImages.join('\n') }
+    ? { status: 0, stdout: RESET_IMAGES.join('\n') }
     : spawnSync('docker', ['images', '--format', '{{.Repository}}'], { encoding: 'utf8' })
   recordStatus(imageList.status ?? 1)
   const availableImages = new Set((imageList.stdout ?? '').trim().split('\n').filter(Boolean))
-  const imagesToRemove = resetImages.filter((image) => availableImages.has(image))
+  const imagesToRemove = RESET_IMAGES.filter((image) => availableImages.has(image))
   if (imagesToRemove.length) {
     console.log(`\n  ${DIM}Removing defradigital images…${RESET_COLOR}\n`)
     recordStatus(

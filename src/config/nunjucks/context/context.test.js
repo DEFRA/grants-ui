@@ -272,7 +272,7 @@ describe('context', () => {
   describe('Session and authentication handling', () => {
     test('Should provide correct auth properties when authenticated', async () => {
       const credentials = {
-        sbi: '106284736',
+        sbi: '800000602',
         crn: 'crn123',
         name: 'John Doe',
         organisationName: 'Farm 1',
@@ -286,7 +286,7 @@ describe('context', () => {
 
       expect(contextResult.auth).toEqual({
         isAuthenticated: true,
-        sbi: '106284736',
+        sbi: '800000602',
         crn: 'crn123',
         name: 'John Doe',
         organisationName: 'Farm 1',
