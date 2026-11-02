@@ -5,7 +5,7 @@ import * as fs from 'node:fs'
 import * as os from 'node:os'
 import { basename, resolve } from 'node:path'
 
-import { ADDONS, BOLD, DIM, LOCAL_SERVICES, PURPLE, RED, RESET_COLOR, ROOT } from './constants.js'
+import { ADDONS, BOLD, DIM, LOCAL_SERVICES, LOCAL_COLOUR, RED, RESET_COLOR, ROOT } from './constants.js'
 import { getSelectedFormDefIds } from './form-defs.js'
 import { GAS_DIVIDER } from './gas.js'
 import { loadState } from './cli-state.js'
@@ -156,7 +156,9 @@ export function buildStatusLine(runningFiles) {
   const localBits = []
   if (localKeys.length) localBits.push(localKeys.join(', '))
   if (formDefCount) localBits.push(`${formDefCount} form-def overrides`)
-  const localSuffix = localBits.length ? `  ${GAS_DIVIDER}  ${PURPLE}Local: ${localBits.join(', ')}${RESET_COLOR}` : ''
+  const localSuffix = localBits.length
+    ? `  ${GAS_DIVIDER}  ${LOCAL_COLOUR}Local: ${localBits.join(', ')}${RESET_COLOR}`
+    : ''
   const runningWord = isDebugging ? `${RED}Debugging${RESET_COLOR}` : 'Running'
   return `${runningWord}: ${BOLD}${labels.join(', ')}${RESET_COLOR}${localSuffix}`
 }

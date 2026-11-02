@@ -63,47 +63,47 @@ describe('parcel-cache', () => {
 
   describe('getCachedSbiParcels', () => {
     it('returns null for unknown SBI', () => {
-      expect(getCachedSbiParcels('106284736')).toBeNull()
+      expect(getCachedSbiParcels('800000602')).toBeNull()
     })
 
     it('returns stored parcels', () => {
       const parcels = [{ parcelId: '9215', sheetId: 'SD5649', area: {} }]
-      setCachedSbiParcels('106284736', parcels)
-      expect(getCachedSbiParcels('106284736')).toEqual(parcels)
+      setCachedSbiParcels('800000602', parcels)
+      expect(getCachedSbiParcels('800000602')).toEqual(parcels)
     })
 
     it('expires after 5 minutes', () => {
       vi.useFakeTimers()
-      setCachedSbiParcels('106284736', [])
+      setCachedSbiParcels('800000602', [])
       vi.advanceTimersByTime(TTL + 1)
-      expect(getCachedSbiParcels('106284736')).toBeNull()
+      expect(getCachedSbiParcels('800000602')).toBeNull()
     })
   })
 
   describe('getCachedAuthParcels', () => {
     it('returns null for unknown SBI', () => {
-      expect(getCachedAuthParcels('106284736')).toBeNull()
+      expect(getCachedAuthParcels('800000602')).toBeNull()
     })
 
     it('returns stored parcel strings', () => {
       const parcels = ['SD5649-9215', 'SD7846-4509']
-      setCachedAuthParcels('106284736', parcels)
-      expect(getCachedAuthParcels('106284736')).toEqual(parcels)
+      setCachedAuthParcels('800000602', parcels)
+      expect(getCachedAuthParcels('800000602')).toEqual(parcels)
     })
 
     it('expires after 5 minutes', () => {
       vi.useFakeTimers()
-      setCachedAuthParcels('106284736', ['SD5649-9215'])
+      setCachedAuthParcels('800000602', ['SD5649-9215'])
       vi.advanceTimersByTime(TTL + 1)
-      expect(getCachedAuthParcels('106284736')).toBeNull()
+      expect(getCachedAuthParcels('800000602')).toBeNull()
     })
   })
 
   describe('fetchAuthorisedParcelIds', () => {
-    const mockRequest = { auth: { credentials: { sbi: '106284736' } } }
+    const mockRequest = { auth: { credentials: { sbi: '800000602' } } }
 
     it('uses cached parcels instead of fetching when cache hit', async () => {
-      setCachedAuthParcels('106284736', ['sheet1-parcel1', 'sheet2-parcel2'])
+      setCachedAuthParcels('800000602', ['sheet1-parcel1', 'sheet2-parcel2'])
 
       const result = await fetchAuthorisedParcelIds(mockRequest)
 
@@ -118,7 +118,7 @@ describe('parcel-cache', () => {
 
       expect(fetchParcelsFromDal).toHaveBeenCalledWith(mockRequest)
       expect(result).toEqual(['sheet1-parcel1'])
-      expect(getCachedAuthParcels('106284736')).toEqual(['sheet1-parcel1'])
+      expect(getCachedAuthParcels('800000602')).toEqual(['sheet1-parcel1'])
     })
 
     it('logs and returns null without caching when fetchParcelsFromDal throws', async () => {
@@ -128,7 +128,7 @@ describe('parcel-cache', () => {
       const result = await fetchAuthorisedParcelIds(mockRequest)
 
       expect(result).toBeNull()
-      expect(getCachedAuthParcels('106284736')).toBeNull()
+      expect(getCachedAuthParcels('800000602')).toBeNull()
       expect(debug).toHaveBeenCalledWith(
         'EXTERNAL_API_ERROR',
         {
@@ -143,14 +143,14 @@ describe('parcel-cache', () => {
   describe('clearParcelCache', () => {
     it('clears all three caches', () => {
       setCachedParcel('SD5649-9215', { actions: [] })
-      setCachedSbiParcels('106284736', [])
-      setCachedAuthParcels('106284736', ['SD5649-9215'])
+      setCachedSbiParcels('800000602', [])
+      setCachedAuthParcels('800000602', ['SD5649-9215'])
 
       clearParcelCache()
 
       expect(getCachedParcel('SD5649-9215')).toBeNull()
-      expect(getCachedSbiParcels('106284736')).toBeNull()
-      expect(getCachedAuthParcels('106284736')).toBeNull()
+      expect(getCachedSbiParcels('800000602')).toBeNull()
+      expect(getCachedAuthParcels('800000602')).toBeNull()
     })
   })
 

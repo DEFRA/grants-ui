@@ -2,26 +2,55 @@
 
 import * as readline from 'node:readline'
 import { stripVTControlCharacters } from 'node:util'
+import stringWidth from 'string-width'
 
 import {
+  ACCENT,
   ARROW,
   BOLD,
   CIRCLE,
   CLEAR_SCREEN,
-  CYAN,
   DIM,
-  FADED_PURPLE,
-  GREEN,
   HIDE_CURSOR,
   INVERSE,
   IS_WINDOWS,
   KEYS,
-  PURPLE,
   RESET_COLOR,
   SHOW_CURSOR,
+  THEME,
   TICK,
   VERSION
 } from './constants.js'
+
+const { colours, symbols } = THEME
+// All selection markers share a column, including per-item overrides with a
+// different display width. UTF-16 length does not measure terminal columns.
+const ARROW_WIDTH = Math.max(
+  visibleLen(ARROW),
+  ...Object.values(THEME.items).map((item) => visibleLen(item.arrow ?? ARROW))
+)
+const TOGGLE_WIDTH = Math.max(visibleLen(TICK), visibleLen(CIRCLE))
+
+function itemTheme(key = '') {
+  return Object.hasOwn(THEME.items, key) ? THEME.items[key] : {}
+}
+
+function selectionArrow(active, key = '', colour = ACCENT) {
+  const marker = itemTheme(key).arrow ?? ARROW
+  return active ? `${colour}${padVisible(marker, ARROW_WIDTH)}${RESET_COLOR}` : ' '.repeat(ARROW_WIDTH)
+}
+
+function menuColours(item) {
+  const style = itemTheme(item.key)
+  const local = item.key === 'local' || item.key === 'refresh-overrides'
+  return {
+    active: item.colour ?? style.colour ?? (local ? colours.local : colours.menuSelected),
+    resting:
+      item.colour ??
+      style.restingColour ??
+      (item.key === 'refresh-overrides' ? colours.localMuted : local ? colours.local : colours.menuItem)
+  }
+}
 
 /**
  * Length of a string ignoring ANSI colour escapes, so padding maths line up.
@@ -29,7 +58,7 @@ import {
  * @returns {number}
  */
 export function visibleLen(str) {
-  return str.replace(/\x1b\[[0-9;]*m/g, '').length
+  return stringWidth(str)
 }
 
 /**
@@ -48,44 +77,45 @@ export function truncateVisible(str, width) {
   if (visibleLen(str) <= width) return str
   let length = 0
   let result = ''
-  for (const token of str.match(/\x1b\[[0-9;]*m|[^\x1b]/gu) ?? []) {
-    if (token.startsWith('\x1b')) result += token
-    else {
-      if (length >= width - 1) break
-      result += token
-      length++
-    }
+  for (const token of displayTokens(str)) {
+    const tokenWidth = visibleLen(token)
+    if (length + tokenWidth > width - 1) break
+    result += token
+    length += tokenWidth
   }
   return result + '…' + RESET_COLOR
+}
+
+// Split visible text into graphemes while preserving ANSI styling sequences.
+const graphemes = new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+function displayTokens(str) {
+  return str
+    .split(/(\x1b\[[0-9;]*m)/g)
+    .flatMap((part) =>
+      part.startsWith('\x1b') ? [part] : Array.from(graphemes.segment(part), ({ segment }) => segment)
+    )
 }
 
 // ---------------------------------------------------------------------------
 // Shared screen renderer
 // ---------------------------------------------------------------------------
 
-// "Grants TUI" drawn with Unicode half-block glyphs so the name renders three
-// terminal rows tall while staying legible, with cyan "go faster" stripes down
-// the left gutter. Generated once and kept as literals (no runtime font engine).
-const STRIPES = '╱╱╱'
-const WORDMARK = [
-  '▄▀▀▀  █▀▀▀▄ ▄▀▀▀▄ █▄  █ ▀▀█▀▀ ▄▀▀▀▀    ▀▀█▀▀ █   █ ▀█▀',
-  '█  ▄▄ ██▀▀  █▄▄▄█ █ ▀▄█   █    ▀▀▀▄      █   █   █  █',
-  '▀▄▄▄▀ █ ▀▀▄ █   █ █   █   █   ▄▄▄▄▀      █   ▀▄▄▄▀ ▄█▄'
-]
-
 // Half-block glyphs are unreliable on legacy Windows consoles, so fall back to a
 // plain single-line title there.
 export const HEADER = IS_WINDOWS
   ? [
       '',
-      `  ${BOLD}${GREEN}Grants TUI${RESET_COLOR}  ${DIM}v${VERSION}${RESET_COLOR}`,
-      `  ${DIM}${'─'.repeat(40)}${RESET_COLOR}`,
+      `  ${BOLD}${colours.header}${THEME.title}${RESET_COLOR}  ${DIM}v${VERSION}${RESET_COLOR}`,
+      `  ${colours.border}${symbols.border.repeat(40)}${RESET_COLOR}`,
       ''
     ]
   : [
       '',
-      ...WORDMARK.map((line) => `  ${PURPLE}${STRIPES}${RESET_COLOR}  ${BOLD}${GREEN}${line}${RESET_COLOR}`),
-      `  ${DIM}Grants Platform Toolkit · v${VERSION}${RESET_COLOR}`,
+      ...THEME.wordmark.map(
+        (line, index) =>
+          `  ${colours.logo}${THEME.logo[index]}${RESET_COLOR}  ${BOLD}${colours.header}${line}${RESET_COLOR}`
+      ),
+      `  ${DIM}${THEME.subtitle} · v${VERSION}${RESET_COLOR}`,
       ''
     ]
 
@@ -106,18 +136,18 @@ function runtimeRows() {
   const rows = []
   let row = indent
   let length = 0
-  for (const token of runtimeStatusLine.match(/\x1b\[[0-9;]*m|[^\x1b]/gu) ?? []) {
+  for (const token of displayTokens(runtimeStatusLine)) {
     if (token.startsWith('\x1b')) {
       row += token
       continue
     }
-    if (length === contentWidth) {
+    if (length + visibleLen(token) > contentWidth) {
       rows.push(row)
       row = indent
       length = 0
     }
     row += token
-    length++
+    length += visibleLen(token)
   }
   rows.push(row)
   return rows
@@ -134,7 +164,7 @@ function screenLines(bodyLines, statusLine) {
     ? [
         '',
         `  ${statusLine || `${DIM}Ready${RESET_COLOR}`}`,
-        `  ${DIM}${(IS_WINDOWS ? '-' : '─').repeat(Math.max(1, width - 2))}${RESET_COLOR}`,
+        `  ${colours.border}${symbols.border.repeat(Math.max(1, width - 2))}${RESET_COLOR}`,
         ...runtimeRows()
       ]
     : statusLine
@@ -160,15 +190,14 @@ export function renderScreen(bodyLines, statusLine = commandStatusLine) {
 }
 
 /** Shared layout for the selectable menu and its disabled running state. */
-function radioMenuBody(items, title, hint, cursor) {
+function radioMenuBody(items, title, hint, cursor, arrowThemeKey) {
   const labelWidth = Math.max(...items.map((item) => visibleLen(item.label))) + 2
-  const body = [`  ${BOLD}${title}${RESET_COLOR}`, `  ${DIM}${hint}${RESET_COLOR}`, '']
+  const body = [`  ${colours.heading}${BOLD}${title}${RESET_COLOR}`, `  ${DIM}${hint}${RESET_COLOR}`, '']
   items.forEach((item, index) => {
     const active = index === cursor && !item.disabled
-    const colour = item.colour ?? (item.key === 'refresh-overrides' ? PURPLE : CYAN)
-    const arrow = active ? `${colour}${ARROW}${RESET_COLOR}` : ' '
-    const restingColour = item.colour ?? (item.key === 'refresh-overrides' ? FADED_PURPLE : '')
-    const labelColour = item.disabled ? DIM : active ? `${colour}${BOLD}` : restingColour
+    const style = menuColours(item)
+    const arrow = selectionArrow(active, arrowThemeKey ?? item.key, style.active)
+    const labelColour = item.disabled ? DIM : active ? `${style.active}${BOLD}` : style.resting
     const label = padVisible(`${labelColour}${item.label}${RESET_COLOR}`, labelWidth)
     body.push(`  ${arrow}  ${label}  ${DIM}${item.description}${RESET_COLOR}`)
   })
@@ -196,7 +225,12 @@ export function showBusyMenu(items, message, cancel, animate = true, title = 'Wh
   let cancelling = false
   let statusRow = 1
   const width = () => Math.max(1, (process.stdout.columns || 100) - 3)
-  const status = () => shimmerText((cancelling ? 'Cancelling…' : message).slice(0, width()), frame++, animate)
+  const status = () =>
+    shimmerText(
+      stripVTControlCharacters(truncateVisible(cancelling ? 'Cancelling…' : message, width())),
+      frame++,
+      animate
+    )
   const draw = () => {
     const maxItems = menuCapacity()
     const body = radioMenuBody(
@@ -206,7 +240,7 @@ export function showBusyMenu(items, message, cancel, animate = true, title = 'Wh
       -1
     )
     if (items.length > maxItems) body.push(`     … ${items.length - maxItems} more actions`)
-    const menu = body.map((line) => `${DIM}${stripVTControlCharacters(line).slice(0, width())}${RESET_COLOR}`)
+    const menu = body.map((line) => `${DIM}${truncateVisible(stripVTControlCharacters(line), width())}${RESET_COLOR}`)
     const lines = screenLines(menu, status())
     statusRow = lines.length - (runtimeStatusLine ? runtimeRows().length + 2 : 1)
     process.stdout.write(HIDE_CURSOR + CLEAR_SCREEN + lines.slice(0, -1).join('\n'))
@@ -267,13 +301,20 @@ function makeCleanup(onKey) {
  * prompt for a new mocked GAS status.
  * @param {MenuItem[]} items
  * @param {string} title
- * @param {{ hint?: string, statusLine?: string, gasEditable?: boolean, outputAvailable?: boolean, initialKey?: string }} [opts]
+ * @param {{ hint?: string, statusLine?: string, gasEditable?: boolean, outputAvailable?: boolean, initialKey?: string, arrowThemeKey?: string }} [opts]
  * @returns {Promise<string>}
  */
 export async function radioMenu(
   items,
   title,
-  { hint = '', statusLine = commandStatusLine, gasEditable = false, outputAvailable = false, initialKey } = {}
+  {
+    hint = '',
+    statusLine = commandStatusLine,
+    gasEditable = false,
+    outputAvailable = false,
+    initialKey,
+    arrowThemeKey
+  } = {}
 ) {
   return new Promise((resolve) => {
     let cursor = items.findIndex((i) => i.key === initialKey && !i.disabled)
@@ -286,7 +327,7 @@ export async function radioMenu(
       const maxItems = menuCapacity()
       const start = Math.max(0, Math.min(cursor - Math.floor(maxItems / 2), items.length - maxItems))
       const visibleItems = items.slice(start, start + maxItems)
-      const body = radioMenuBody(visibleItems, title, hintText, cursor - start)
+      const body = radioMenuBody(visibleItems, title, hintText, cursor - start, arrowThemeKey)
       if (items.length > maxItems) {
         body.push(`  ${DIM}${start + 1}–${start + visibleItems.length} of ${items.length}${RESET_COLOR}`)
       }
@@ -364,13 +405,13 @@ export async function promptText(
     let selected = initial.length > 0
 
     function draw() {
-      const value = mask ? '•'.repeat(buffer.length) : buffer
+      const value = mask ? symbols.mask.repeat(buffer.length) : buffer
       const shown = selected ? `${INVERSE}${value}${RESET_COLOR}` : value
       const body = [
-        `  ${BOLD}${title}${RESET_COLOR}`,
+        `  ${colours.heading}${BOLD}${title}${RESET_COLOR}`,
         `  ${DIM}${hint}${RESET_COLOR}`,
         '',
-        `  ${CYAN}${ARROW}${RESET_COLOR}  ${shown}${DIM}▏${RESET_COLOR}`
+        `  ${selectionArrow(true)}  ${colours.text}${shown}${DIM}${symbols.caret}${RESET_COLOR}`
       ]
       renderScreen(body)
     }
@@ -449,17 +490,21 @@ export async function promptTextWithOptions(
     function draw() {
       const fieldActive = cursor === fieldIndex
       const shown = selected ? `${INVERSE}${buffer}${RESET_COLOR}` : buffer
-      const caret = fieldActive ? `${DIM}▏${RESET_COLOR}` : ''
-      const fieldArrow = fieldActive ? `${CYAN}${ARROW}${RESET_COLOR}` : ' '
-      const body = [`  ${BOLD}${title}${RESET_COLOR}`, `  ${DIM}${hint}${RESET_COLOR}`, '']
+      const caret = fieldActive ? `${DIM}${symbols.caret}${RESET_COLOR}` : ''
+      const fieldArrow = selectionArrow(fieldActive)
+      const body = [`  ${colours.heading}${BOLD}${title}${RESET_COLOR}`, `  ${DIM}${hint}${RESET_COLOR}`, '']
       options.forEach((opt, i) => {
         const active = cursor === i
-        const arrow = active ? `${CYAN}${ARROW}${RESET_COLOR}` : ' '
-        const label = active ? `${CYAN}${BOLD}${opt}${RESET_COLOR}` : opt
+        const arrow = selectionArrow(active, '', colours.menuSelected)
+        const label = `${active ? colours.menuSelected + BOLD : colours.menuItem}${opt}${RESET_COLOR}`
         body.push(`  ${arrow}  ${label}`)
       })
       // The text field renders last, with a fixed-width bottom border beneath it.
-      body.push('', `  ${fieldArrow}  ${shown}${caret}`, `     ${DIM}${'─'.repeat(fieldWidth)}${RESET_COLOR}`)
+      body.push(
+        '',
+        `  ${fieldArrow}  ${colours.text}${shown}${caret}${RESET_COLOR}`,
+        `  ${' '.repeat(ARROW_WIDTH + 2)}${colours.border}${symbols.border.repeat(fieldWidth)}${RESET_COLOR}`
+      )
       renderScreen(body)
     }
 
@@ -529,7 +574,7 @@ export async function toggleMenu(items, title) {
 
     function draw() {
       const body = [
-        `  ${BOLD}${title}${RESET_COLOR}`,
+        `  ${colours.heading}${BOLD}${title}${RESET_COLOR}`,
         `  ${DIM}↑ ↓  navigate    space → toggle    a → select all    enter → confirm    esc → back${RESET_COLOR}`,
         ''
       ]
@@ -539,15 +584,19 @@ export async function toggleMenu(items, title) {
         const active = i + start === cursor
         const disabled = !!item.disabled
         const selected = item.selected
-        const arrow = active ? `${CYAN}${ARROW}${RESET_COLOR}` : ' '
+        const style = menuColours(item)
+        const arrow = selectionArrow(active && !disabled, item.key, style.active)
         let marker, rawLabel, desc
         if (disabled) {
-          marker = `${DIM}${CIRCLE}${RESET_COLOR}`
+          marker = `${DIM}${padVisible(CIRCLE, TOGGLE_WIDTH)}${RESET_COLOR}`
           rawLabel = `${DIM}${item.label}${RESET_COLOR}`
           desc = `${DIM}${item.description}${RESET_COLOR}`
         } else {
-          marker = selected ? `${GREEN}${TICK}${RESET_COLOR}` : `${DIM}${CIRCLE}${RESET_COLOR}`
-          rawLabel = selected ? `${GREEN}${item.label}${RESET_COLOR}` : item.label
+          marker = selected
+            ? `${colours.selected}${padVisible(TICK, TOGGLE_WIDTH)}${RESET_COLOR}`
+            : `${DIM}${padVisible(CIRCLE, TOGGLE_WIDTH)}${RESET_COLOR}`
+          const labelColour = active ? style.active + BOLD : selected ? colours.selected : style.resting
+          rawLabel = `${labelColour}${item.label}${RESET_COLOR}`
           desc = `${DIM}${item.description}${RESET_COLOR}`
         }
         const label = padVisible(rawLabel, LABEL_WIDTH)

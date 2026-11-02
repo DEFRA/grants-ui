@@ -40,16 +40,16 @@ describe('backend form definition readiness probe', () => {
 
   it('mints a read lock token without a grantVersion claim', () => {
     const token = mintReadLockToken({
-      userId: '1103823647',
-      sbi: '106700730',
+      userId: '9000000601',
+      sbi: '800000601',
       grantCode: 'example-grant-with-auth',
       secret: 'dev-lock-secret',
       nowSeconds: 1234567890
     })
 
     expect(decodeJwtPayload(token)).toEqual({
-      sub: '1103823647',
-      sbi: '106700730',
+      sub: '9000000601',
+      sbi: '800000601',
       grantCode: 'example-grant-with-auth',
       typ: 'lock',
       iat: 1234567890,
@@ -64,8 +64,8 @@ describe('backend form definition readiness probe', () => {
       authToken: 'auth_token',
       encryptionKey: 'encryption_key',
       lockTokenSecret: 'dev-lock-secret',
-      userId: '1103823647',
-      sbi: '106700730',
+      userId: '9000000601',
+      sbi: '800000601',
       grantCode: 'example-grant-with-auth',
       nowSeconds: 1234567890,
       iv: Buffer.alloc(12, 1)
@@ -78,7 +78,7 @@ describe('backend form definition readiness probe', () => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        sbi: '106700730',
+        sbi: '800000601',
         grantCode: 'example-grant-with-auth',
         includeDefinition: true
       })

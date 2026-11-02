@@ -88,8 +88,8 @@ describe('RemoveActionPageController', () => {
       auth: {
         isAuthenticated: true,
         credentials: {
-          sbi: '106284736',
-          crn: '1102838829',
+          sbi: '800000602',
+          crn: '9000000608',
           name: 'John Doe',
           organisationName: 'Farm 1',
           role: 'admin',

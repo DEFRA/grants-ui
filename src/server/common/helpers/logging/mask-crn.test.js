@@ -3,11 +3,11 @@ import { maskCrn } from '~/src/server/common/helpers/logging/mask-crn.js'
 
 describe('maskCrn', () => {
   test('reveals only the last 4 digits of a CRN', () => {
-    expect(maskCrn('1100943757')).toBe('******3757')
+    expect(maskCrn('9000000604')).toBe('******0604')
   })
 
   test('masks a number CRN', () => {
-    expect(maskCrn(1100943838)).toBe('******3838')
+    expect(maskCrn(9000000606)).toBe('******0606')
   })
 
   test('masks the shortest maskable CRN, leaving one star', () => {

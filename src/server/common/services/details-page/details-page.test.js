@@ -32,7 +32,7 @@ describe('Details Page Utilities', () => {
     it('should build a GraphQL query from YAML config', () => {
       const result = buildGraphQLQuery(
         simpleConfig.metadata.detailsPage.query,
-        createMockRequest('CRN123456', '106284736')
+        createMockRequest('CRN123456', '800000602')
       )
 
       const expectedQuery = `query Business {
@@ -44,7 +44,7 @@ describe('Details Page Utilities', () => {
       }
     }
   }
-  business(sbi: "106284736") {
+  business(sbi: "800000602") {
     info {
       name
       reference

@@ -8,6 +8,8 @@ export default {
     include: ['**/src/**/*.test.js', '**/scripts/**/*.test.js', '**/tools/**/*.test.js'],
     exclude: ['**/node_modules/**', '**/.stryker-tmp/**', '**/*.contract.test.js', '**/.claude/**'],
     env: {
+      // Personal TUI themes must not affect tests; theme tests select their own files.
+      GT_THEME: 'default',
       GAS_API_AUTH_TOKEN: '00000000-0000-0000-0000-000000000000'
     },
     reporters: ['default', CoverageAnalyserReporter()],
