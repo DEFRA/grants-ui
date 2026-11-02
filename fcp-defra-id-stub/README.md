@@ -21,11 +21,21 @@ different grants may share a persona, because application state, locks and audit
 keyed per grant. Scenarios on the same grant never share an SBI: each wipes its SBI's state for
 that grant at the start, and the suite runs scenarios in parallel.
 
-CRN `9000000035` (SBI `800000026` Test Heather Ling Farm) is the persona for the water
-management journey tests in
-[grants-config-water-management](https://github.com/DEFRA/grants-config-water-management).
-Those tests wipe the SBI's water-management state at the start of every run, so don't use it
-for other water-management scenarios or manual testing.
+The journey tests in the grant config repos use these personas:
+
+- CRN `9000000035` (SBI `800000026` Test Heather Ling Farm) for
+  [grants-config-water-management](https://github.com/DEFRA/grants-config-water-management)
+- CRN `9000000036` (SBI `800000027` Test Foxglove Farm) for
+  [grants-config-grasslands](https://github.com/DEFRA/grants-config-grasslands), whose parcels
+  include the ones its journey test selects
+- CRNs `9000000024` (SBI `800000011` Test Ivy Lodge Farm) and `9000000013` (SBI `800000014` Test
+  Maple Rise Farm) for the application journey and lifecycle tests in
+  [grants-config-woodland](https://github.com/DEFRA/grants-config-woodland). These are also
+  acceptance-suite personas, so keep their parcels `SD6252 7537`, `SD6351 8781` and
+  `SD6352 8774` if an acceptance scenario changes them
+
+Those tests wipe the SBI's state for their grant at the start of every run, so don't use these
+SBIs for other scenarios on the same grant or for manual testing of that grant.
 
 The stub's README has the full persona list and how to add one. When adding a persona there,
 add the same CRN, SBI and names here so it can sign in locally.

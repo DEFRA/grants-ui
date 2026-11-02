@@ -41,6 +41,90 @@ esc     go back / quit
 
 The main menu status line collapses the always-on `compose.infra` + `compose.grants-ui` services into a single **Core** entry, with any addons listed after it. When GAS is served by the mockserver, the current mocked application status is shown in yellow. Press `g` to select a new status and `enter` to apply it — `gt` reads and writes it directly against the mockserver expectation (the same one the `gas-status:get` / `gas-status:set` npm scripts target).
 
+### Local themes
+
+Grants TUI automatically loads `.grants-ui-cli-theme.json` from the repository root.
+This file is git-ignored: send the JSON file to another developer and have them
+save it at the same location to use the same theme. Restart `gt` after editing it.
+Without a local file, the standard appearance is used.
+
+To keep several themes, store them in the ignored `.grants-ui-cli-themes/` folder,
+or anywhere outside the checkout, and select one with `GT_THEME`:
+
+```bash
+GT_THEME=.grants-ui-cli-themes/personal.json gt
+GT_THEME="$HOME/themes/personal.json" gt
+GT_THEME=default gt                # bypass the local file
+```
+
+Relative paths are resolved from the repository root, including when `gt` is run
+from a subdirectory. `GT_THEME` selects a file rather than a built-in theme name.
+Missing, empty or unreadable files, malformed JSON and invalid settings silently
+use the complete default theme. This also applies to a file selected by `GT_THEME`.
+
+Theme files contain JSON data only. Settings are optional and merge with the
+defaults in [`theme.js`](../tools/grants-tui/theme.js). For example:
+
+```json
+{
+  "version": 1,
+  "colours": {
+    "accent": "orange",
+    "menuItem": "orange",
+    "menuSelected": "gold",
+    "local": "orange",
+    "localMuted": "dim orange"
+  },
+  "symbols": { "arrow": ">", "caret": "|" },
+  "items": {
+    "reset": { "arrow": "!", "colour": "red", "restingColour": "yellow" }
+  }
+}
+```
+
+| Setting    | Themeable elements                                                                                                                                                                                    |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `title`    | Complete plain title on Windows (defaults to “Grants TUI”)                                                                                                                                            |
+| `subtitle` | Caption below the large header                                                                                                                                                                        |
+| `wordmark` | Three strings for the complete large header, including “GRANTS TUI”; no text is prepended                                                                                                             |
+| `logo`     | Three strings for the logo or pictogram to the left of the header                                                                                                                                     |
+| `colours`  | `accent`, `header`, `logo`, `heading`, `text`, `menuItem`, `menuSelected`, `local`, `localMuted`, `muted`, `border`, `selected`, `success`, `warning`, `error`, `secondary`, `secondaryMuted`, `link` |
+| `symbols`  | `arrow`, `selected`, `unselected`, `caret`, `border`, `mask`                                                                                                                                          |
+| `items`    | Menu item keys mapped to optional `arrow`, active `colour` and `restingColour` overrides                                                                                                              |
+
+`heading` colours menu and prompt titles, including “What do you want to do?”.
+
+`items.reset.arrow` also supplies the selection marker for every choice in the
+reset confirmation menu. If omitted, those choices use the default `symbols.arrow`.
+
+`menuItem` controls resting menu labels; `menuSelected` controls the keyboard-focused
+label and marker in menus, toggle menus and preset lists. `selected` colours the
+checked toggle marker and checked labels when they do not have keyboard focus.
+Every omitted colour uses its own built-in default, independently of other colour
+overrides. For example, omitting `colours.logo` keeps the default magenta logo,
+even when `accent` is orange.
+
+`local` controls local/refresh menu items, local override descriptions, the runtime
+Local badge and override success messages. `localMuted` controls the resting refresh
+label. Their defaults are magenta and dim magenta. Item overrides and explicit
+action colours take precedence; disabled items remain muted.
+
+Colours accept readable names: `default` (terminal colour), `black`, `red`, `green`,
+`yellow`, `blue`, `magenta` / `purple`, `cyan`, `white`, `grey` / `gray`, `orange`,
+`pink`, `gold`, `lime`, `teal` and `dim`. Prefix a colour with `dim ` for a muted
+shade, such as `dim orange` or `dim #ff8700`; the older `dim-magenta` spelling also
+works. Names ignore case and surrounding spaces. A `#rrggbb` string or an integer
+from 0 to 255 is also supported. `orange` keeps the same shade as palette index 208.
+Status colours also apply to command output.
+
+Text must be single-line and contain no terminal control characters. The border
+symbol must occupy one terminal column; menu markers may be wider and are padded
+to keep labels aligned.
+
+Colours respect `NO_COLOR`, `TERM=dumb` and non-TTY output. Windows keeps ASCII
+selection markers, input symbols and borders, and a plain header for console
+compatibility.
+
 ### Non-interactive mode
 
 Example grant configs are checked in under

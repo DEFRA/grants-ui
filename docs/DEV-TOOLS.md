@@ -84,9 +84,26 @@ DEV_DEMO_CRN=1234567890
 
 The `gt up` flow runs `tools/setup-local-config.sh` first, which rebuilds `compose/config-broker-local` by pulling the `DEFRA/grants-config-*` repos from GitHub.
 
+### GitHub authentication for private config repos
+
+Developers need access to all five config repos: `grants-config-woodland`, `grants-config-farm-payments`, `grants-config-grasslands`, `grants-config-land-grants` and `grants-config-water-management`.
+
+With the [GitHub CLI](https://cli.github.com/manual/gh_auth_login) installed, sign in once and then start the stack:
+
+```bash
+gh auth login --hostname github.com
+gt up
+```
+
+The setup script automatically uses the active GitHub CLI account for `github.com` when neither `GITHUB_TOKEN` nor `GH_TOKEN` is exported. Alternatively, export either variable in the shell that runs `gt`; `GITHUB_TOKEN` takes precedence over `GH_TOKEN`. These variables are read from the shell environment, so adding them only to the Docker `.env` file does not authenticate the setup script.
+
+For a fine-grained personal access token, select the `DEFRA` resource owner, all five repos above, and **Contents: Read-only** repository permission. Complete any organisation approval required for that token. A classic token needs the `repo` scope and, where required, SSO authorisation. See [GitHub's token guidance](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
+
+Both metadata requests and file downloads use the same authentication. A first run requires internet access and valid credentials; an existing cache remains available if a later download fails. Git/SSH access alone does not authenticate these HTTPS API requests.
+
 ### Offline-safe config pull
 
-The config tree is built into a temporary staging folder and only swapped into `config-broker-local` after a **fully successful** pull. If GitHub is unreachable (e.g. you're offline), the staging folder is discarded and the existing `config-broker-local` folder is left untouched as a working "cached" copy. As long as that folder already holds config files, the script prints a clear "keeping existing cached config … continuing offline" message and exits **successfully**, so `up` completes and the config broker keeps working without internet. Only when there is no cached config to fall back to (the folder is missing or empty — typically a first run that has never pulled) does the script exit non-zero with a useful error explaining that an internet connection is required to download the config at least once.
+The config tree is built into a temporary staging folder and only swapped into `config-broker-local` after a **fully successful** pull. If GitHub is unreachable (e.g. you're offline), the staging folder is discarded and the existing `config-broker-local` folder is left untouched as a working "cached" copy. As long as that folder already holds config files, the script prints a clear "keeping existing cached config … continuing offline" message and exits **successfully**, so `up` completes and the config broker keeps working without internet. Only when there is no cached config to fall back to (the folder is missing or empty — typically a first run that has never pulled) does the script exit non-zero with a useful error explaining that an internet connection and GitHub authentication are required to download the config at least once.
 
 ### Skip re-downloading when already at the latest version
 

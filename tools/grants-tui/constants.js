@@ -1,11 +1,12 @@
 import * as os from 'node:os'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { loadTheme } from './theme.js'
 
 // ---------------------------------------------------------------------------
 // Version
 // ---------------------------------------------------------------------------
-export const VERSION = '1.14.0'
+export const VERSION = '1.15.0'
 
 // ---------------------------------------------------------------------------
 // Cross-platform: detect ANSI support
@@ -136,13 +137,13 @@ export const LOCAL_SERVICES = [
     image: 'defradigital/land-grants-api',
     removeOnReset: true
   },
-  {
-    key: 'land-grants-postgres-seeded',
-    composeService: 'land-grants-backend-postgres',
-    image: 'defradigital/land-grants-postgres-seeded',
-    removeOnReset: true
-  },
   { key: 'fcp-defra-id-stub', composeService: 'fcp-defra-id-stub', image: 'defradigital/fcp-defra-id-stub' }
+]
+
+// Reset also removes the seeded database image, which has no local build override.
+export const RESET_IMAGES = [
+  ...LOCAL_SERVICES.filter((service) => service.removeOnReset).map((service) => service.image),
+  'defradigital/land-grants-postgres-seeded'
 ]
 
 // ---------------------------------------------------------------------------
@@ -185,19 +186,22 @@ export const ADDONS = [
 // ANSI helpers
 // ---------------------------------------------------------------------------
 
-// Named colour/style helpers — degrade gracefully when ANSI is unsupported
-export const CYAN = ANSI ? '\x1b[36m' : ''
-export const BLUE = ANSI ? '\x1b[34m' : ''
+export const IS_WINDOWS = process.platform === 'win32'
+export const THEME = loadTheme({ root: ROOT, selection: process.env.GT_THEME, ansi: ANSI, windows: IS_WINDOWS })
+
+// Keep colour aliases for command output; the theme supplies their semantic roles.
+export const ACCENT = THEME.colours.accent
+export const CYAN = ACCENT
+export const BLUE = THEME.colours.link
+export const GREEN = THEME.colours.success
+export const YELLOW = THEME.colours.warning
+export const RED = THEME.colours.error
+export const PURPLE = THEME.colours.secondary
+export const FADED_PURPLE = THEME.colours.secondaryMuted
+export const LOCAL_COLOUR = THEME.colours.local
+export const DIM = THEME.colours.muted
 export const BOLD = ANSI ? '\x1b[1m' : ''
-export const DIM = ANSI ? '\x1b[2m' : ''
 export const RESET_COLOR = ANSI ? '\x1b[0m' : ''
-export const GREEN = ANSI ? '\x1b[32m' : ''
-export const YELLOW = ANSI ? '\x1b[33m' : ''
-export const RED = ANSI ? '\x1b[31m' : ''
-export const PURPLE = ANSI ? '\x1b[35m' : ''
-// Dimmed purple for the resting state of purple sub-items, so the highlighted
-// (full-purple) state is easier to distinguish at a glance.
-export const FADED_PURPLE = ANSI ? '\x1b[2;35m' : ''
 // Reverse video — used to render pre-filled prompt text as "selected" so it's
 // obvious the whole value will be replaced the moment you start typing.
 export const INVERSE = ANSI ? '\x1b[7m' : ''
@@ -211,11 +215,9 @@ export const CLEAR_SCREEN = ANSI ? '\x1b[2J\x1b[H' : ''
 export const ALT_SCREEN_ENTER = ANSI ? '\x1b[?1049h' : ''
 export const ALT_SCREEN_EXIT = ANSI ? '\x1b[?1049l' : ''
 
-// Use ASCII fallbacks on Windows where some fonts lack these glyphs
-export const IS_WINDOWS = process.platform === 'win32'
-export const TICK = IS_WINDOWS ? '[x]' : '◉'
-export const CIRCLE = IS_WINDOWS ? '[ ]' : '○'
-export const ARROW = IS_WINDOWS ? '>' : '❯'
+export const TICK = THEME.symbols.selected
+export const CIRCLE = THEME.symbols.unselected
+export const ARROW = THEME.symbols.arrow
 
 export const KEYS = {
   UP: '\u001b[A',

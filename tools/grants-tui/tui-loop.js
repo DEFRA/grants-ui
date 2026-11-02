@@ -9,6 +9,7 @@ import {
   GREEN,
   HIDE_CURSOR,
   LOCAL_SERVICES,
+  LOCAL_COLOUR,
   PURPLE,
   RED,
   RESET_COLOR,
@@ -72,7 +73,7 @@ export function buildMainMenuItems(savedState, containersRunning) {
     localActiveParts.push(`${formDefSelectionCount} form-def override${formDefSelectionCount > 1 ? 's' : ''}`)
   }
   const localDesc = localActiveParts.length
-    ? `${PURPLE}${localActiveParts.join(' + ')}${RESET_COLOR}`
+    ? `${LOCAL_COLOUR}${localActiveParts.join(' + ')}${RESET_COLOR}`
     : 'Override services & form definitions locally'
   const refreshDescription = localCount
     ? localFormDefsOn
@@ -97,14 +98,14 @@ export function buildMainMenuItems(savedState, containersRunning) {
     },
     { key: 'local', label: 'local ⇢', description: localDesc },
     // Refresh enabled images and form definitions without toggling them off
-    // and on again. Rendered in the same purple as the override status.
+    // and on again. Styled using the local/refresh theme colours.
     ...(localCount || localFormDefsOn
       ? [
           {
             key: 'refresh-overrides',
             // Thin space before the glyph nudges it into alignment with the
             // other menu labels. Colour is applied in radioMenu's draw loop so
-            // it can be faded at rest and full purple when highlighted.
+            // it can use separate resting and selected theme colours.
             label: ' ↳ refresh overrides',
             description: containersRunning ? refreshDescription : 'Start containers first to refresh overrides',
             disabled: !containersRunning
@@ -353,7 +354,7 @@ async function applyRunningLocalOverrideChanges(
     messages.push(`Form-def overrides: ${newFormDefIds.length} active`)
   }
 
-  return messages.length ? `${PURPLE}✔  ${messages.join('  ·  ')}${RESET_COLOR}` : null
+  return messages.length ? `${LOCAL_COLOUR}✔  ${messages.join('  ·  ')}${RESET_COLOR}` : null
 }
 
 /**
@@ -456,7 +457,7 @@ export async function handleLocalCommand(dryRun, savedState, containersRunning) 
     summaryParts.push(`${newFormDefIds.length} form-def override${newFormDefIds.length > 1 ? 's' : ''}`)
   }
   return summaryParts.length
-    ? `${PURPLE}✔  ${summaryParts.join('  ·  ')}${RESET_COLOR}`
+    ? `${LOCAL_COLOUR}✔  ${summaryParts.join('  ·  ')}${RESET_COLOR}`
     : `${DIM}Local overrides updated${RESET_COLOR}`
 }
 
@@ -509,7 +510,7 @@ export async function handleRefreshOverridesCommand(dryRun) {
     )
   }
   return messages.length
-    ? `${PURPLE}✔  ${dryRun ? 'Override refresh preview' : 'Overrides refreshed'}: ${messages.join(' · ')}${RESET_COLOR}`
+    ? `${LOCAL_COLOUR}✔  ${dryRun ? 'Override refresh preview' : 'Overrides refreshed'}: ${messages.join(' · ')}${RESET_COLOR}`
     : `${DIM}No local overrides enabled${RESET_COLOR}`
 }
 
@@ -1110,7 +1111,8 @@ async function handleDockerLifecycleCommand(command, dryRun) {
       { key: 'no', label: 'No', description: 'Cancel and return to main menu' }
     ]
     const confirmed = await radioMenu(confirmItems, `${YELLOW}⚠  Confirm reset?${RESET_COLOR}`, {
-      hint: '↑ ↓  navigate    enter → select    esc → cancel'
+      hint: '↑ ↓  navigate    enter → select    esc → cancel',
+      arrowThemeKey: 'reset'
     })
     if (confirmed !== 'yes') {
       return confirmed === '__quit__' ? '' : `${DIM}Reset cancelled${RESET_COLOR}`
