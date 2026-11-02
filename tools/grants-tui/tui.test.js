@@ -1,10 +1,36 @@
 // @vitest-environment node
-import { afterEach, expect, test, vi } from 'vitest'
+import { afterAll, afterEach, expect, test, vi } from 'vitest'
 import { stripVTControlCharacters } from 'node:util'
-import { radioMenu, renderScreen, setRuntimeStatusLine, shimmerText, showBusyMenu, toggleMenu } from './tui.js'
+import {
+  radioMenu,
+  renderScreen,
+  setRuntimeStatusLine,
+  shimmerText,
+  showBusyMenu,
+  toggleMenu,
+  truncateVisible,
+  visibleLen
+} from './tui.js'
+
+vi.hoisted(() => vi.stubEnv('GT_THEME', 'default'))
+afterAll(() => vi.unstubAllEnvs())
 
 const originalRows = process.stdout.rows
 const originalColumns = process.stdout.columns
+
+test.each([
+  [2, '…'],
+  [3, '🚀…'],
+  [4, '🚀 …']
+])('truncation at %s columns fits an emoji without splitting its surrogate pair', (width, expected) => {
+  expect(stripVTControlCharacters(truncateVisible('🚀 menu', width))).toBe(expected)
+})
+
+test.each(['👩‍💻', '🏳️‍🌈', '界', 'é'])('width and truncation preserve the grapheme %s', (symbol) => {
+  const width = visibleLen(symbol)
+  expect(stripVTControlCharacters(truncateVisible(`\x1b[36m${symbol} hello`, width + 1))).toBe(`${symbol}…`)
+  expect(visibleLen(truncateVisible(`${symbol} hello`, width))).toBeLessThanOrEqual(width)
+})
 
 test.each([
   ['older', 'older'],

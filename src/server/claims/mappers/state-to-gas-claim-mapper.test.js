@@ -8,9 +8,9 @@ describe('buildClaimPayload', () => {
         grantCode: 'woodland',
         clientRef: 'wmp-6hb-jbe',
         clientClaimRef: 'wmp-6hb-jbe-c01',
-        sbi: '113593357',
-        crn: '1100943757',
-        frn: '1100943757',
+        sbi: '800000604',
+        crn: '9000000604',
+        frn: '9000000604',
         configVersion: '1.14.0'
       },
       { entitlementId: 'mongo-entitlement-id', totalClaimAmountPence: 150000, quantity: 24.95 }
@@ -21,9 +21,9 @@ describe('buildClaimPayload', () => {
         grantCode: 'woodland',
         clientRef: 'wmp-6hb-jbe',
         clientClaimRef: 'wmp-6hb-jbe-c01',
-        sbi: '113593357',
-        crn: '1100943757',
-        frn: '1100943757',
+        sbi: '800000604',
+        crn: '9000000604',
+        frn: '9000000604',
         configVersion: '1.14.0',
         submittedAt: expect.any(String)
       },

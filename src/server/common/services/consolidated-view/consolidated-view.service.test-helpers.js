@@ -3,7 +3,7 @@ import { config } from '~/src/config/config.js'
 import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
 
-export const mockSbi = 106284736
+export const mockSbi = 800000602
 export const mockCrn = 'CRN123456'
 export const mockToken = 'mock-token-123'
 export const mockDefraIdToken = 'mock-defra-id-token-123'
