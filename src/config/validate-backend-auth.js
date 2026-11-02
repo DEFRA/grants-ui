@@ -22,8 +22,6 @@ export function validateBackendAuthConfig(config) {
       missingKeys.push('GRANTS_UI_BACKEND_ENCRYPTION_KEY')
     }
 
-    log(LogCodes.SYSTEM.BACKEND_AUTH_CONFIG_ERROR, { missingKeys })
-
     throw new Error(
       'Backend authentication configuration incomplete. ' +
         `When GRANTS_UI_BACKEND_URL is set, the following environment variables are required: ${missingKeys.join(', ')}`
