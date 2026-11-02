@@ -41,7 +41,7 @@ const mockData = {
   customer: {
     name: { first: 'John', middle: 'A', last: 'Smith' }
   },
-  countyParishHoldings: ['12/345/6789', '12/345/6790']
+  countyParishHoldings: '12/345/6789'
 }
 
 describe('ConfirmMethaneDetailsController', () => {
@@ -224,6 +224,15 @@ describe('ConfirmMethaneDetailsController', () => {
       expect(result.rows).not.toContain(null)
       expect(result.rows.some((row) => row?.key?.text === 'Business name')).toBe(true)
     })
+
+    it('should omit the CPH row when a tolerated CPH failure leaves it undefined', async () => {
+      vi.mocked(fetchBusinessAndCPH).mockResolvedValue({ ...mockData, countyParishHoldings: undefined })
+
+      const result = await controller.buildFarmDetails(mockRequest)
+
+      expect(result.rows.some((row) => row?.key?.text === 'County Parish Holdings')).toBe(false)
+      expect(result.rows.some((row) => row?.key?.text === 'Business name')).toBe(true)
+    })
   })
 
   describe('createVATRow', () => {
@@ -244,20 +253,17 @@ describe('ConfirmMethaneDetailsController', () => {
   })
 
   describe('createCPHRow', () => {
-    it('should return CPH row when holdings are provided', () => {
-      const holdings = ['12/345/6789', '12/345/6790']
-
-      const result = controller.createCPHRow(holdings)
+    it('should return CPH row when a CPH number is provided', () => {
+      const result = controller.createCPHRow('12/345/6789')
 
       expect(result).toEqual({
         key: { text: 'County Parish Holdings' },
-        value: { text: holdings }
+        value: { text: '12/345/6789' }
       })
     })
 
-    it('should return null when holdings array is empty', () => {
-      const result = controller.createCPHRow([])
-      expect(result).toBeNull()
+    it.each([undefined, null, ''])('should return null when the CPH number is %j', (countyParishHoldings) => {
+      expect(controller.createCPHRow(countyParishHoldings)).toBeNull()
     })
   })
 

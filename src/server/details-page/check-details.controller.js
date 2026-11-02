@@ -1,11 +1,9 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { TerminalPageController } from '@defra/forms-engine-plugin/controllers/TerminalPageController.js'
 import { buildGraphQLQuery, mapResponse, processSections } from '../common/services/details-page/index.js'
-import {
-  executeConfigDrivenQuery,
-  hasOnlyToleratedFailures
-} from '../common/services/consolidated-view/consolidated-view.service.js'
-import { debug, log, LogCodes } from '../common/helpers/logging/log.js'
+import { executeConfigDrivenQuery } from '../common/services/consolidated-view/consolidated-view.service.js'
+import { log, LogCodes } from '../common/helpers/logging/log.js'
+import { BaseError } from '../common/utils/errors/BaseError.js'
 import { mergeAdditionalAnswers } from '../common/helpers/state/additional-answers-helper.js'
 import { ComponentType, ControllerType } from '@defra/forms-model'
 import { config } from '~/src/config/config.js'
@@ -15,6 +13,19 @@ const ERROR_TITLE = 'There is a problem'
 const UPDATE_DETAILS_PATH = '/update-details'
 const SFD_UPDATE_ACTION = 'updateDetailsOnSfd'
 const sfdUpdateUrlCache = new WeakMap()
+
+/**
+ * Logs failures handled locally by the details page.
+ * @param {Error} error
+ * @param {AnyFormRequest} request
+ */
+function logDetailsError(error, request) {
+  if (error instanceof BaseError) {
+    error.log(request)
+  } else {
+    log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, { endpoint: 'ConsolidatedView', errorMessage: error.message }, request)
+  }
+}
 
 /**
  * @param {object} controller
@@ -397,11 +408,7 @@ export default class CheckDetailsController extends withTaskContext(QuestionPage
       )
       return this.proceed(request, h, this.getNextPath(context))
     } catch (error) {
-      debug(
-        LogCodes.SYSTEM.EXTERNAL_API_ERROR,
-        { endpoint: 'ConsolidatedView', errorMessage: /** @type {Error} */ (error).message },
-        request
-      )
+      logDetailsError(/** @type {Error} */ (error), request)
       return h.view(this.viewName, {
         ...baseViewModel,
         error: {
@@ -423,27 +430,6 @@ export default class CheckDetailsController extends withTaskContext(QuestionPage
     const query = buildGraphQLQuery(detailsConfig.query, request)
     const response = await executeConfigDrivenQuery(request, query, { toleratedPaths })
 
-    if (response?.errors?.length > 0) {
-      if (!hasOnlyToleratedFailures(response.errors, toleratedPaths)) {
-        log(
-          LogCodes.SYSTEM.EXTERNAL_API_ERROR,
-          { endpoint: 'ConsolidatedView', errorMessage: response.errors[0].message },
-          request
-        )
-        throw new Error(response.errors[0].message)
-      }
-
-      log(
-        LogCodes.SYSTEM.CONSOLIDATED_VIEW_PARTIAL_SUCCESS,
-        {
-          sbi: request.auth?.credentials?.sbi,
-          failedPaths: response.errors.map((e) => e.path?.join('.')).join(', '),
-          statusCode: 'graphql-errors'
-        },
-        request
-      )
-    }
-
     const mappedData = mapResponse(detailsConfig.responseMapping, response)
     const sections = processSections(detailsConfig.displaySections, mappedData, request)
     return { sections, mappedData }
@@ -458,7 +444,7 @@ export default class CheckDetailsController extends withTaskContext(QuestionPage
    * @returns {ResponseObject}
    */
   handleError(error, baseViewModel, h, request) {
-    debug(LogCodes.SYSTEM.EXTERNAL_API_ERROR, { endpoint: 'ConsolidatedView', errorMessage: error.message }, request)
+    logDetailsError(error, request)
     return h.view(this.viewName, {
       ...baseViewModel,
       error: {

@@ -19,20 +19,25 @@ export function hasOnlyToleratedFailures(errors, toleratedPaths) {
   )
 }
 
+// A well-formed GraphQL error or an unusable response body is deterministic for the same query,
+// so retrying only adds latency and upstream load.
+const NON_RETRYABLE_REASONS = new Set(['graphql_errors', 'invalid_response'])
+
+/**
+ * @param {Error} error
+ * @returns {boolean}
+ */
+function isRetryableConsolidatedViewError(error) {
+  return !(error instanceof ConsolidatedViewError && NON_RETRYABLE_REASONS.has(error.details.reason))
+}
+
 /**
  * @param {GraphQLResponse | undefined} parsed
- * @param {number} statusCode
- * @param {unknown} sbi
- * @param {string[]} [toleratedPaths]
- * @returns {GraphQLResponse | null}
+ * @returns {boolean}
  */
-function extractToleratedPartialSuccess(parsed, statusCode, sbi, toleratedPaths) {
-  if (parsed?.data && parsed?.errors?.length && hasOnlyToleratedFailures(parsed.errors, toleratedPaths)) {
-    const failedPaths = parsed.errors.map((/** @type {GraphQLError} */ e) => e.path?.join('.')).join(', ')
-    log(LogCodes.SYSTEM.CONSOLIDATED_VIEW_PARTIAL_SUCCESS, { sbi, failedPaths, statusCode }, undefined)
-    return parsed
-  }
-  return null
+function hasUsableData(parsed) {
+  const data = parsed?.data
+  return Boolean(data && typeof data === 'object' && !Array.isArray(data) && Object.values(data).some((v) => v != null))
 }
 
 /**
@@ -106,25 +111,60 @@ async function makeConsolidatedViewRequest(request, query, { toleratedPaths } = 
 
   const fetchOperation = async () => {
     const response = await fetch(CV_API_ENDPOINT, await getConsolidatedViewRequestOptions(request, { query }))
+    let parsed
+    let responseText
 
-    if (!response.ok) {
-      const responseText = await response.text()
-
-      let parsed
+    if (response.ok) {
+      try {
+        parsed = await response.json()
+      } catch (error) {
+        throw new ConsolidatedViewError({
+          message: 'Failed to fetch business data: invalid JSON response',
+          status: statusCodes.badGateway,
+          statusCode: response.status,
+          sbi,
+          source: 'makeConsolidatedViewRequest',
+          reason: 'invalid_response'
+        }).from(/** @type {Error} */ (error))
+      }
+    } else {
+      responseText = await response.text()
       try {
         parsed = JSON.parse(responseText)
       } catch {
-        // not JSON — fall through to throw
+        // Non-JSON HTTP failures retain their status and response body below.
       }
+    }
 
-      const partialSuccess = extractToleratedPartialSuccess(parsed, response.status, sbi, toleratedPaths)
-      if (partialSuccess) {
-        return partialSuccess
+    // DAL query failures can arrive with either HTTP 200 or a legacy error status.
+    // Inspect the GraphQL envelope before deciding whether the request succeeded.
+    if (Array.isArray(parsed?.errors) && parsed.errors.length) {
+      if (hasUsableData(parsed) && hasOnlyToleratedFailures(parsed.errors, toleratedPaths)) {
+        const failedPaths = parsed.errors.map((/** @type {GraphQLError} */ e) => e.path?.join('.')).join(', ')
+        log(
+          LogCodes.SYSTEM.CONSOLIDATED_VIEW_PARTIAL_SUCCESS,
+          { sbi, failedPaths, statusCode: response.status },
+          request
+        )
+        return parsed
       }
 
       throw new ConsolidatedViewError({
+        message: `Failed to fetch business data: ${parsed.errors.map((/** @type {GraphQLError} */ e) => e.message || 'Unknown DAL error').join('; ')}`,
+        status: statusCodes.badGateway,
+        statusCode: response.status,
+        responseBody: JSON.stringify({ errors: parsed.errors }),
+        sbi,
+        source: 'makeConsolidatedViewRequest',
+        reason: 'graphql_errors'
+      })
+    }
+
+    if (!response.ok) {
+      throw new ConsolidatedViewError({
         message: `Failed to fetch business data: ${response.status} ${response.statusText}`,
         status: response.status,
+        statusCode: response.status,
         responseBody: responseText,
         sbi,
         source: 'makeConsolidatedViewRequest',
@@ -132,11 +172,23 @@ async function makeConsolidatedViewRequest(request, query, { toleratedPaths } = 
       })
     }
 
-    return response.json()
+    if (!hasUsableData(parsed) || (parsed.errors !== undefined && !Array.isArray(parsed.errors))) {
+      throw new ConsolidatedViewError({
+        message: 'Failed to fetch business data: missing data or invalid GraphQL response',
+        status: statusCodes.badGateway,
+        statusCode: response.status,
+        sbi,
+        source: 'makeConsolidatedViewRequest',
+        reason: 'invalid_response'
+      })
+    }
+
+    return parsed
   }
 
   return retry(fetchOperation, {
     timeout: 30000,
+    shouldRetry: isRetryableConsolidatedViewError,
     serviceName: 'ConsolidatedView.fetchBusinessData'
   })
 }
@@ -163,8 +215,6 @@ async function fetchFromConsolidatedView(request, { query, formatResponse, toler
 
     return formatResponse(responseJson)
   } catch (error) {
-    logConsolidatedViewUpstreamError(request, sbi, error)
-
     if (error instanceof ConsolidatedViewError) {
       throw error
     } else {
@@ -178,24 +228,6 @@ async function fetchFromConsolidatedView(request, { query, formatResponse, toler
       }).from(/** @type {Error} */ (error))
     }
   }
-}
-
-/**
- * @param {AnyFormRequest} request
- * @param {unknown} sbi
- * @param {unknown} error
- */
-function logConsolidatedViewUpstreamError(request, sbi, error) {
-  const upstream = /** @type {UpstreamError} */ (error)
-  log(
-    LogCodes.SYSTEM.CONSOLIDATED_VIEW_API_ERROR,
-    {
-      sbi,
-      statusCode: upstream.status ?? upstream.statusCode ?? null,
-      errorMessage: upstream.message
-    },
-    request
-  )
 }
 
 /**
@@ -466,7 +498,7 @@ export async function fetchBusinessAndCPH(request, { toleratedPaths } = {}) {
 
   const formatResponse = (/** @type {GraphQLResponse} */ r) => ({
     business: r.data?.business?.info,
-    countyParishHoldings: r.data?.business.countyParishHoldings[0].cphNumber, // just selecting the first cphNumber for demo purposes
+    countyParishHoldings: r.data?.business?.countyParishHoldings?.[0]?.cphNumber,
     customer: r.data?.customer?.info
   })
 
@@ -485,14 +517,6 @@ export async function fetchBusinessAndCPH(request, { toleratedPaths } = {}) {
 
 /**
  * @typedef {{ data?: Record<string, any>, errors?: GraphQLError[] } & Record<string, any>} GraphQLResponse
- */
-
-/**
- * @typedef {{
- *   message?: string,
- *   status?: number,
- *   statusCode?: number
- * } & Record<string, any>} UpstreamError
  */
 
 /**

@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
-import { debug } from '~/src/server/common/helpers/logging/log.js'
+import { log } from '~/src/server/common/helpers/logging/log.js'
+import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
+import { ConsolidatedViewError } from '~/src/server/common/utils/errors/ConsolidatedViewError.js'
 import {
   clearParcelCache,
   fetchAuthorisedParcelIds,
@@ -17,8 +19,7 @@ vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.servic
 }))
 
 vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  debug: vi.fn(),
-  LogCodes: { SYSTEM: { EXTERNAL_API_ERROR: 'EXTERNAL_API_ERROR' } }
+  log: vi.fn()
 }))
 
 const SECONDS_PER_MINUTE = 60
@@ -121,20 +122,42 @@ describe('parcel-cache', () => {
       expect(getCachedAuthParcels('800000602')).toEqual(['sheet1-parcel1'])
     })
 
-    it('logs and returns null without caching when fetchParcelsFromDal throws', async () => {
-      const mockError = new Error('API connection failed')
+    it('logs the Consolidated View error and returns null without caching when fetchParcelsFromDal throws', async () => {
+      const mockError = new ConsolidatedViewError({
+        message: 'Failed to fetch business data: Business not found',
+        status: 502,
+        statusCode: 200,
+        sbi: '800000602',
+        source: 'makeConsolidatedViewRequest',
+        reason: 'graphql_errors'
+      })
       fetchParcelsFromDal.mockRejectedValue(mockError)
 
       const result = await fetchAuthorisedParcelIds(mockRequest)
 
       expect(result).toBeNull()
       expect(getCachedAuthParcels('800000602')).toBeNull()
-      expect(debug).toHaveBeenCalledWith(
-        'EXTERNAL_API_ERROR',
-        {
-          endpoint: 'fetchAuthorisedParcelIds (consolidated view)',
-          errorMessage: 'fetch parcel data for auth check: API connection failed'
-        },
+      expect(log).toHaveBeenCalledExactlyOnceWith(
+        LogCodes.SYSTEM.CONSOLIDATED_VIEW_API_ERROR,
+        expect.objectContaining({
+          errorMessage: 'Failed to fetch business data: Business not found',
+          statusCode: 200,
+          sbi: '800000602'
+        }),
+        mockRequest
+      )
+    })
+
+    it('wraps and logs unexpected errors and returns null without caching', async () => {
+      fetchParcelsFromDal.mockRejectedValue(new Error('API connection failed'))
+
+      const result = await fetchAuthorisedParcelIds(mockRequest)
+
+      expect(result).toBeNull()
+      expect(getCachedAuthParcels('800000602')).toBeNull()
+      expect(log).toHaveBeenCalledExactlyOnceWith(
+        LogCodes.SYSTEM.GENERIC_ERROR,
+        expect.objectContaining({ errorMessage: 'API connection failed', reason: 'wrappedError' }),
         mockRequest
       )
     })

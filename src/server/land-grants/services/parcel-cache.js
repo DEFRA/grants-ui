@@ -1,5 +1,5 @@
 import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
-import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { BaseError } from '~/src/server/common/utils/errors/BaseError.js'
 import { stringifyParcel } from '~/src/shared/format-parcel.js'
 
 const SECONDS_PER_MINUTE = 60
@@ -92,14 +92,8 @@ export async function fetchAuthorisedParcelIds(request) {
     setCachedAuthParcels(sbi, parcelIds)
     return parcelIds
   } catch (error) {
-    debug(
-      LogCodes.SYSTEM.EXTERNAL_API_ERROR,
-      {
-        endpoint: 'fetchAuthorisedParcelIds (consolidated view)',
-        errorMessage: `fetch parcel data for auth check: ${/** @type {Error} */ (error).message}`
-      },
-      request
-    )
+    const handledError = error instanceof BaseError ? error : BaseError.wrap(/** @type {Error} */ (error))
+    handledError.log(request)
     return null
   }
 }
