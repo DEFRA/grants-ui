@@ -1,4 +1,4 @@
-const NUMBER_PATTERN = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/
+const NUMBER_PATTERN = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/
 const INTEGER_FORMATTER = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 0 })
 const SCIENTIFIC_FORMATTER = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 100 })
 
@@ -19,7 +19,7 @@ export function formatThousands(value) {
 
   const sign = input.startsWith('-') || input.startsWith('+') ? input[0] : ''
   const unsigned = sign ? input.slice(1) : input
-  const [integerPart, fractionalPart] = unsigned.split('.')
+  const [integerPart, ...fraction] = unsigned.split('.')
   const groupedInteger = INTEGER_FORMATTER.format(BigInt(integerPart || '0'))
-  return `${sign}${groupedInteger}${fractionalPart === undefined ? '' : `.${fractionalPart}`}`
+  return [sign + groupedInteger, ...fraction].join('.')
 }

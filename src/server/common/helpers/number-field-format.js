@@ -1,6 +1,6 @@
 import { formatThousands } from '~/src/shared/format-number.js'
 
-const NUMBER_PATTERN = /^[+-]?(?:\d+\.?\d*|\.\d+)$/
+const NUMBER_PATTERN = /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/
 
 /**
  * @param {unknown} value
@@ -18,7 +18,7 @@ function isDecimalString(value) {
  * @returns {string}
  */
 export function formatNumberAnswer(component, value, rawInput) {
-  if (value === null || value === undefined) {
+  if (typeof value !== 'number' && typeof value !== 'string') {
     return ''
   }
   if (component.type !== 'NumberField' || component.format !== 'thousands') {
@@ -32,5 +32,5 @@ export function formatNumberAnswer(component, value, rawInput) {
   ) {
     return formatThousands(rawInput)
   }
-  return formatThousands(String(value))
+  return formatThousands(value)
 }
