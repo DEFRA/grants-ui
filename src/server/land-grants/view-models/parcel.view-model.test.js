@@ -2,6 +2,20 @@ import { describe, it, expect } from 'vitest'
 import { formatParcelForView, buildParcelHint, mapParcelsToViewModel } from './parcel.view-model.js'
 
 describe('parcel-view-model.mapper', () => {
+  it('orders full parcel references without changing the fetched array or parcel hints', () => {
+    const parcels = [
+      { sheetId: 'SD6352', parcelId: '8774', area: { value: 11, unit: 'ha' } },
+      { sheetId: 'SD6351', parcelId: '8781', area: { value: 68, unit: 'ha' } },
+      { sheetId: 'SD6252', parcelId: '7537', area: { value: 1, unit: 'ha' } },
+      { sheetId: 'SD6351', parcelId: '0012', area: { value: 2, unit: 'ha' } }
+    ]
+    const original = structuredClone(parcels)
+    const result = mapParcelsToViewModel(parcels)
+    expect(result.map(({ value }) => value)).toEqual(['SD6252-7537', 'SD6351-0012', 'SD6351-8781', 'SD6352-8774'])
+    expect(result[1]).toMatchObject({ text: 'SD6351 0012', hint: { text: 'Total size 2 hectares' } })
+    expect(parcels).toEqual(original)
+  })
+
   describe('buildParcelHint', () => {
     it('should build hint with area only when no actions', () => {
       const parcel = {

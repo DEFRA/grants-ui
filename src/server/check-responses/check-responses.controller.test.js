@@ -263,14 +263,15 @@ describe('CheckResponsesPageController', () => {
 
     it('should replace land parcels in both details and checkAnswers', () => {
       const context = mockContext({
-        state: { landParcels: ['A', 'B'] }
+        state: { landParcels: ['SD6352-8774', 'SD6351-8781', 'SD6351-0012'] }
       })
 
       const result = controller.getSummaryViewModel(mockRequest, context)
 
       expect(result.checkAnswers[0].summaryList.rows[0].value).toEqual({
-        html: 'A, B'
+        html: 'SD6351-0012, SD6351-8781, SD6352-8774'
       })
+      expect(context.state.landParcels).toEqual(['SD6352-8774', 'SD6351-8781', 'SD6351-0012'])
     })
 
     it('should not modify when landParcels is missing', () => {
