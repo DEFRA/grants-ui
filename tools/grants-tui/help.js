@@ -46,6 +46,12 @@ ${BOLD}Other flags:${RESET_COLOR}
   --help         Show this help
   --version      Show version number
 
+${BOLD}Local themes:${RESET_COLOR}
+  .grants-ui-cli-theme.json     Auto-loaded from the repo root (git-ignored); share this file with other developers
+  GT_THEME=<path>               Use another theme JSON file (relative to the repo root, or absolute)
+  GT_THEME=default              Use the standard appearance
+  Theme settings: docs/DOCKER.md#local-themes
+
 ${BOLD}Journey flags (for 'journey'):${RESET_COLOR}
   --crn <crn>      DefraID CRN to sign in as (default: the journey's allowlisted CRN, e.g. 9000000001)
   --stop <n|sect>  Stop before step <n> (1-indexed) or run only section <sect>
