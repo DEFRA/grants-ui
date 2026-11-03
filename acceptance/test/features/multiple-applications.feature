@@ -1,5 +1,5 @@
 Feature: Multiple Applications
-@runme
+
     Scenario: Create multiple applications for the same SBI for a grant with the allowMultipleApplications setting enabled
         Given there is no application data for SBI "800000018" and grant "example-grant-with-multi-applications"
 
