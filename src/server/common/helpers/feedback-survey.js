@@ -14,6 +14,7 @@ export const SURVEY_PARAMS = {
  * Values for the `journey` param.
  */
 export const JOURNEY = {
+  selection: 'application-selection',
   inProgress: 'application-inprogress',
   submitted: 'application-submitted',
   claimInProgress: 'claim-inprogress',
@@ -40,6 +41,10 @@ export const SUBMITTED_PATH_SUFFIXES = ['/confirmation', '/print-submitted-appli
  * @returns {string} The journey param value
  */
 export function resolveJourney(path) {
+  if (path?.endsWith('/applications')) {
+    return JOURNEY.selection
+  }
+
   if (CLAIM_SUBMITTED_PATH_SUFFIXES.some((suffix) => path?.endsWith(suffix))) {
     return JOURNEY.claimSubmitted
   }
@@ -69,12 +74,11 @@ function getAbsoluteUrl(request) {
 /**
  * Resolves the grant label from form metadata, falling back to the
  * sentence-cased form definition filename.
- * @param {import('@hapi/hapi').Request} request - Hapi request object
+ * @param {{ shortName?: string, surveyLabel?: string } | undefined} metadata - Form metadata
  * @param {string} slug - Form definition filename without the extension
  * @returns {string} The grant label
  */
-function resolveGrantLabel(request, slug) {
-  const metadata = /** @type {any} */ (request)?.app?.model?.def?.metadata
+function resolveGrantLabel(metadata, slug) {
   const shortName = metadata?.shortName ?? metadata?.surveyLabel
   if (shortName) {
     return shortName
@@ -89,9 +93,10 @@ function resolveGrantLabel(request, slug) {
  * grant / journey / url params appended. Returns null when no form definition
  * filename or survey URL is configured — callers should hide the CTA in that case.
  * @param {import('@hapi/hapi').Request} request - Hapi request object
+ * @param {{ shortName?: string, surveyLabel?: string }} [metadata] - Metadata for pages outside the forms engine
  * @returns {string | null} The survey URL, or null if the CTA should not render
  */
-export function buildFeedbackSurveyUrl(request) {
+export function buildFeedbackSurveyUrl(request, metadata = /** @type {any} */ (request)?.app?.model?.def?.metadata) {
   const slug = request?.params?.slug
   if (!slug) {
     return null
@@ -102,7 +107,7 @@ export function buildFeedbackSurveyUrl(request) {
     return null
   }
 
-  const grant = resolveGrantLabel(request, slug)
+  const grant = resolveGrantLabel(metadata, slug)
 
   const params = new URLSearchParams({
     [SURVEY_PARAMS.grant]: grant,

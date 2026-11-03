@@ -13,6 +13,14 @@ Then('(the user )should see the following selected land parcel', async function 
   }
 })
 
+Then('(the user )should see land parcels in alphanumeric order', async function () {
+  const labels = this.page.locator('input[name="landParcels"] + label')
+  await expect(labels.first()).toBeVisible()
+  const parcels = (await labels.allInnerTexts()).map((text) => text.trim())
+  const sortedParcels = [...parcels].sort((a, b) => a.localeCompare(b, 'en', { numeric: true }))
+  expect(parcels).toEqual(sortedParcels)
+})
+
 Then('(the user )should see the following parcel summary cards', async function (dataTable) {
   let parcelReference = ''
   let rowIndex = 0
