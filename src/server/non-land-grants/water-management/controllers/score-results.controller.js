@@ -17,11 +17,11 @@ export default class ScoreResultsController extends withDerivedState(QuestionPag
 
   /**
    * Calculates the derived answers without changing persisted state.
-   * @param {import('@defra/forms-engine-plugin/types').AnyFormRequest} request
+   * @param {import('@defra/forms-engine-plugin/types').AnyFormRequest} _request
    * @param {any} state
    * @returns {Promise<Record<string, any>>}
    */
-  async getCalculatedAnswers(request, state) {
+  async getCalculatedAnswers(_request, state) {
     const {
       sectorsIrrigated,
       projectLocated__easting: easting,
@@ -32,7 +32,7 @@ export default class ScoreResultsController extends withDerivedState(QuestionPag
     } = state
 
     const { totalScore, sectorScore, scarcityScore, collaborationScore, planningAbstractionScore } =
-      await invokeGrantScoringGetAction('water-management', request, {
+      await invokeGrantScoringGetAction('scoring/water-management', 'water-management', {
         sectorsIrrigated,
         easting,
         northing,

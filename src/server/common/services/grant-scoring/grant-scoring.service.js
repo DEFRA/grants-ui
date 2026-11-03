@@ -13,18 +13,15 @@ const SCORING_SERVICE_URL = config.get('scoring.serviceUrl')
 
 /**
  * Invokes a GET action on the Grant Scoring Service
+ * @param {string} endpointPath - examples `scoring/water-management` and `validate/location`
  * @param {string} grantCode - Grant code
- * @param {import('@defra/forms-engine-plugin/types').AnyFormRequest} request
  * @param {QueryParams} [queryParams] - Optional query parameters
  * @returns {Promise<any>} - Promise that resolves to the response JSON
  * @throws {GrantScoringServiceError}
  */
-export async function invokeGrantScoringGetAction(grantCode, request, queryParams = {}) {
-  const url = `${SCORING_SERVICE_URL}/scoring/${grantCode}`
-  const response = await makeScoringApiRequest(url, grantCode, request, {
-    method: 'GET',
-    queryParams
-  })
+export async function invokeGrantScoringGetAction(endpointPath, grantCode, queryParams = {}) {
+  const url = `${SCORING_SERVICE_URL}/${endpointPath}`
+  const response = await makeScoringApiRequest(url, grantCode, { method: 'GET', queryParams })
   return response.json()
 }
 
@@ -106,14 +103,13 @@ async function handleResponse(response, url, grantCode) {
  * Makes a request to the Grant Scoring Service API
  * @param {string} url - API endpoint URL
  * @param {string} grantCode - Grant code for error context
- * @param {import('@defra/forms-engine-plugin/types').AnyFormRequest} _request
  * @param {object} [options] - Request options
  * @param {string} [options.method] - HTTP method (GET, POST, etc.)
  * @param {QueryParams} [options.queryParams] - Query parameters for GET requests
  * @returns {Promise<Response>} - Promise that resolves to the response
  * @throws {GrantScoringServiceError}
  */
-export async function makeScoringApiRequest(url, grantCode, _request, options = {}) {
+export async function makeScoringApiRequest(url, grantCode, options = {}) {
   const { method = 'GET', queryParams } = options
 
   try {
