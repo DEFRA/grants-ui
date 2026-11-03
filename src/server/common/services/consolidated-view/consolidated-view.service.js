@@ -33,7 +33,7 @@ function isRetryableConsolidatedViewError(error) {
 
 /**
  * @param {GraphQLResponse | undefined} parsed
- * @returns {boolean}
+ * @returns {parsed is GraphQLResponse}
  */
 function hasUsableData(parsed) {
   const data = parsed?.data
@@ -97,6 +97,41 @@ async function getConsolidatedViewRequestOptions(request, { method = 'POST', que
 }
 
 /**
+ * Parses the response body while preserving non-JSON HTTP failures.
+ * @param {Response} response
+ * @param {unknown} sbi
+ * @returns {Promise<{ parsed?: GraphQLResponse, responseText?: string }>}
+ */
+async function parseConsolidatedViewResponse(response, sbi) {
+  let parsed
+  let responseText
+
+  if (response.ok) {
+    try {
+      parsed = await response.json()
+    } catch (error) {
+      throw new ConsolidatedViewError({
+        message: 'Failed to fetch business data: invalid JSON response',
+        status: statusCodes.badGateway,
+        statusCode: response.status,
+        sbi,
+        source: 'makeConsolidatedViewRequest',
+        reason: 'invalid_response'
+      }).from(/** @type {Error} */ (error))
+    }
+  } else {
+    responseText = await response.text()
+    try {
+      parsed = JSON.parse(responseText)
+    } catch {
+      // Non-JSON HTTP failures retain their status and response body below.
+    }
+  }
+
+  return { parsed, responseText }
+}
+
+/**
  * Makes a request to the Consolidated View API
  * @param {AnyFormRequest} request
  * @param {string} query - GraphQL query
@@ -111,30 +146,7 @@ async function makeConsolidatedViewRequest(request, query, { toleratedPaths } = 
 
   const fetchOperation = async () => {
     const response = await fetch(CV_API_ENDPOINT, await getConsolidatedViewRequestOptions(request, { query }))
-    let parsed
-    let responseText
-
-    if (response.ok) {
-      try {
-        parsed = await response.json()
-      } catch (error) {
-        throw new ConsolidatedViewError({
-          message: 'Failed to fetch business data: invalid JSON response',
-          status: statusCodes.badGateway,
-          statusCode: response.status,
-          sbi,
-          source: 'makeConsolidatedViewRequest',
-          reason: 'invalid_response'
-        }).from(/** @type {Error} */ (error))
-      }
-    } else {
-      responseText = await response.text()
-      try {
-        parsed = JSON.parse(responseText)
-      } catch {
-        // Non-JSON HTTP failures retain their status and response body below.
-      }
-    }
+    const { parsed, responseText } = await parseConsolidatedViewResponse(response, sbi)
 
     // DAL query failures can arrive with either HTTP 200 or a legacy error status.
     // Inspect the GraphQL envelope before deciding whether the request succeeded.
