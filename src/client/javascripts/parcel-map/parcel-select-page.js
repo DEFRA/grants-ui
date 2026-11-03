@@ -7,6 +7,7 @@ import {
   EVENT_ERROR,
   EVENT_READY,
   EVENT_SELECTION,
+  SELECTION_SOURCE_SEARCH,
   TOTAL_AREA_DECIMAL_PLACES
 } from './config.js'
 import { formatParcelReference } from '../../../shared/format-parcel.js'
@@ -52,7 +53,7 @@ const setText = (id, text) => {
 }
 
 /**
- * @param {import('./map-helpers.js').MetaIndex} metaIndex
+ * @param {import('./helpers.js').MetaIndex} metaIndex
  * @param {string[]} parcelIds
  */
 const updateMapTotals = (metaIndex, parcelIds) => {
@@ -63,7 +64,7 @@ const updateMapTotals = (metaIndex, parcelIds) => {
 
 /**
  * @param {SelectedParcel[]} selectedParcels
- * @param {import('./map-helpers.js').MetaIndex} [metaIndex]
+ * @param {import('./helpers.js').MetaIndex} [metaIndex]
  */
 const renderSelectedParcelDetails = (selectedParcels, metaIndex = {}) => {
   const details = document.getElementById(DOM_ID_SELECTED_PARCEL_DETAILS)
@@ -189,7 +190,7 @@ const showRequirements = (intro, items) => {
  * deselection and multi-selection, invalidates any lookup still in flight and
  * clears the row before asking for a new one.
  * @param {HTMLElement} mapEl
- * @returns {(selectedParcels: SelectedParcel[], metaIndex: import('./map-helpers.js').MetaIndex) => Promise<void>}
+ * @returns {(selectedParcels: SelectedParcel[], metaIndex: import('./helpers.js').MetaIndex) => Promise<void>}
  */
 function createSelectedParcelDetailsUpdater(mapEl) {
   const enabledActions = [
@@ -238,7 +239,7 @@ export function initParcelSelectPage(mapEl) {
     return
   }
 
-  /** @type {import('./map-helpers.js').MetaIndex} */
+  /** @type {import('./helpers.js').MetaIndex} */
   let metaIndex = {}
 
   const serverSelectedIds = (mapEl.dataset[DATASET_SELECTED_PARCELS] ?? '').split(',').filter(Boolean)
@@ -282,15 +283,15 @@ export function initParcelSelectPage(mapEl) {
   const updateSelectedParcelDetails = createSelectedParcelDetailsUpdater(mapEl)
 
   mapEl.addEventListener(EVENT_SELECTION, (/** @type {Event} */ e) => {
-    const { selectedParcels } = /** @type {CustomEvent<SelectionDetail>} */ (e).detail
+    const { selectedParcels, source } = /** @type {CustomEvent<SelectionDetail>} */ (e).detail
     writeHiddenInputs(selectedParcels.map((p) => p.id))
     renderSelectedParcelDetails(selectedParcels, metaIndex)
     updateSelectedParcelDetails(selectedParcels, metaIndex)
     const nextParcelId = selectedParcels.length === 1 ? selectedParcels[0].id : undefined
-    if (nextParcelId && nextParcelId !== selectedParcelId) {
+    // A pick from the map's search box keeps the user where they are.
+    if (nextParcelId && nextParcelId !== selectedParcelId && source !== SELECTION_SOURCE_SEARCH) {
       const details = document.getElementById(DOM_ID_SELECTED_PARCEL_DETAILS)
       details?.focus({ preventScroll: true })
-      details?.scrollIntoView({ block: 'start' })
     }
     selectedParcelId = nextParcelId
   })
@@ -325,7 +326,7 @@ initParcelSelectPage(document.getElementById(DOM_ID_PARCEL_MAP))
 /**
  * @typedef {object} ReadyDetail
  * @property {string[]} [parcelIds]
- * @property {import('./map-helpers.js').MetaIndex} [metaIndex]
+ * @property {import('./helpers.js').MetaIndex} [metaIndex]
  */
 
 /**
@@ -335,6 +336,7 @@ initParcelSelectPage(document.getElementById(DOM_ID_PARCEL_MAP))
 /**
  * @typedef {object} SelectionDetail
  * @property {SelectedParcel[]} selectedParcels
+ * @property {string} [source]
  */
 
 /**

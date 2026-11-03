@@ -26,4 +26,6 @@
  * @property {string} [sourceType] - "data" (default) or "credentials"
  * @property {string} [format] - Formatter name: "text", "fullName", "address", "contactDetails"
  * @property {boolean} [hideIfEmpty] - If true (default), row is hidden when value is empty
+ * @property {{ sourcePath: string, values: Array<string | number | boolean> }} [showIfEmptyWhen] - Retain an empty row when the mapped value matches any listed value
+ * @property {string} [emptyText] - Fallback text for a retained empty row
  */

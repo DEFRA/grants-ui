@@ -1,12 +1,12 @@
 Feature: Application Amendment
 
     Scenario: A submitted application can be amended and re-submitted as a new application multiple times
-        Given there is no application data for SBI "115482347" and grant "example-grant-with-auth"
+        Given there is no application data for SBI "800000016" and grant "example-grant-with-auth"
 
         # start
         Given the user navigates to "/example-grant-with-auth"
-        Given the user logs in as CRN "1100964517"
-        Then an authorised audit event should be published for entity "application" and grant "example-grant-with-auth" with CRN "1100964517" and SBI "115482347"
+        Given the user logs in as CRN "9000000020"
+        Then an authorised audit event should be published for entity "application" and grant "example-grant-with-auth" with CRN "9000000020" and SBI "800000016"
         And the user should see heading "Example Grant"
         When the user clicks on "Start now"
 
@@ -14,7 +14,7 @@ Feature: Application Amendment
         Then the user should be at URL "check-details"
         When the user selects "Yes"
         And continues
-        Then a navigate audit event should be published for grant "example-grant-with-auth" and entityId "check-details" with CRN "1100964517" and SBI "115482347" with the following answers
+        Then a navigate audit event should be published for grant "example-grant-with-auth" and entityId "check-details" with CRN "9000000020" and SBI "800000016" with the following answers
             | FIELD             | VALUE |
             | detailsConfirmed  | true  |
 
@@ -22,7 +22,7 @@ Feature: Application Amendment
         Then the user should be at URL "yes-no-field"
         When the user selects "Yes"
         And continues
-        Then a navigate audit event should be published for grant "example-grant-with-auth" and entityId "yes-no-field" with CRN "1100964517" and SBI "115482347" with the following answers
+        Then a navigate audit event should be published for grant "example-grant-with-auth" and entityId "yes-no-field" with CRN "9000000020" and SBI "800000016" with the following answers
             | FIELD      | VALUE |
             | yesNoField | true  |
 
@@ -176,14 +176,14 @@ Feature: Application Amendment
         Then the user should be at URL "confirmation"
         And should see heading "Details submitted"
         And should see an "EGWA" reference number for their application
-        And a submit audit event should be published for entity "application" and entityId "{FIRST REFERENCE NUMBER}" with CRN "1100964517" and SBI "115482347"
+        And a submit audit event should be published for entity "application" and entityId "{FIRST REFERENCE NUMBER}" with CRN "9000000020" and SBI "800000016"
 
         # validate Mongo state storage
-        And the following application state should be stored for CRN "1100964517" and SBI "115482347" and grant "example-grant-with-auth"
+        And the following application state should be stored for CRN "9000000020" and SBI "800000016" and grant "example-grant-with-auth"
             | FIELD                | VALUE                    |
             | $$__referenceNumber  | {FIRST REFERENCE NUMBER} |
             | applicationStatus    | SUBMITTED                |
-            | submittedBy          | 1100964517               |
+            | submittedBy          | 9000000020               |
             | autocompleteField    | ENG                      |
             | multilineTextField   | Lorem ipsum              |
             | emailAddressField    | test@example.com         |
@@ -191,12 +191,12 @@ Feature: Application Amendment
             | projectName          | Test project             |
 
         # validate Mongo submission storage
-        And the following application submissions should be stored for CRN "1100964517" and SBI "115482347" and grant "example-grant-with-auth"
+        And the following application submissions should be stored for CRN "9000000020" and SBI "800000016" and grant "example-grant-with-auth"
             | REFERENCE NUMBER         | CRN        |
-            | {FIRST REFERENCE NUMBER} | 1100964517 |
+            | {FIRST REFERENCE NUMBER} | 9000000020 |
 
         # GAS
-        And the reference number along with SBI "115482347" and CRN "1100964517" should be submitted to GAS
+        And the reference number along with SBI "800000016" and CRN "9000000020" should be submitted to GAS
 
         # application is marked as awaiting amendment in GAS
         Given the application status in GAS is now "APPLICATION_AMEND"
@@ -204,7 +204,7 @@ Feature: Application Amendment
         # user revisits grants-ui
         And the user starts a new browser session
         And navigates to "/example-grant-with-auth/yes-no-field"
-        And logs in as CRN "1100964517"
+        And logs in as CRN "9000000020"
 
         # reopened landing page
         Then the user should be at URL "reopened"
@@ -213,10 +213,10 @@ Feature: Application Amendment
 
         # summary
         Then the user should be at URL "summary"
-        And the grants-ui application status for CRN "1100964517" and SBI "115482347" and grant "example-grant-with-auth" should be "REOPENED"
+        And the grants-ui application status for CRN "9000000020" and SBI "800000016" and grant "example-grant-with-auth" should be "REOPENED"
 
         # validate Mongo state storage
-        And the following application state should be stored for CRN "1100964517" and SBI "115482347" and grant "example-grant-with-auth"
+        And the following application state should be stored for CRN "9000000020" and SBI "800000016" and grant "example-grant-with-auth"
             | FIELD                   | VALUE                    |
             | previousReferenceNumber | {FIRST REFERENCE NUMBER} |
             | applicationStatus       | REOPENED                 |
@@ -232,7 +232,7 @@ Feature: Application Amendment
         # user revisits grants-ui
         And the user starts a new browser session
         And navigates to "/example-grant-with-auth/yes-no-field"
-        And logs in as CRN "1100964517"
+        And logs in as CRN "9000000020"
 
         # should still get redirected to reopened landing page until application resubmitted
         Then the user should be at URL "reopened"
@@ -280,15 +280,15 @@ Feature: Application Amendment
         Then the user should be at URL "confirmation"
         And should see heading "Details submitted"
         And should see an "EGWA" reference number for their application
-        And a resubmit audit event should be published for entity "{SECOND REFERENCE NUMBER}" with CRN "1100964517" and SBI "115482347"
+        And a resubmit audit event should be published for entity "{SECOND REFERENCE NUMBER}" with CRN "9000000020" and SBI "800000016"
 
         # validate Mongo state storage
-        And the following application state should be stored for CRN "1100964517" and SBI "115482347" and grant "example-grant-with-auth"
+        And the following application state should be stored for CRN "9000000020" and SBI "800000016" and grant "example-grant-with-auth"
             | FIELD                   | VALUE                     |
             | $$__referenceNumber     | {SECOND REFERENCE NUMBER} |
             | previousReferenceNumber | {FIRST REFERENCE NUMBER}  |
             | applicationStatus       | SUBMITTED                 |
-            | submittedBy             | 1100964517                |
+            | submittedBy             | 9000000020                |
             | autocompleteField       | WLS                       |
             | multilineTextField      | Lorem ipsum               |
             | emailAddressField       | test@example.com          |
@@ -296,13 +296,13 @@ Feature: Application Amendment
             | projectName             | Test project              |
 
         # validate Mongo submission storage, we should we have 2 entries now
-        And the following application submissions should be stored for CRN "1100964517" and SBI "115482347" and grant "example-grant-with-auth"
+        And the following application submissions should be stored for CRN "9000000020" and SBI "800000016" and grant "example-grant-with-auth"
             | REFERENCE NUMBER          | PREVIOUS REFERENCE NUMBER | CRN        |
-            | {SECOND REFERENCE NUMBER} | {FIRST REFERENCE NUMBER}  | 1100964517 |
-            | {FIRST REFERENCE NUMBER}  |                           | 1100964517 |
+            | {SECOND REFERENCE NUMBER} | {FIRST REFERENCE NUMBER}  | 9000000020 |
+            | {FIRST REFERENCE NUMBER}  |                           | 9000000020 |
 
         # GAS
-        And the reference number and previous reference number along with SBI "115482347" and CRN "1100964517" should be submitted to GAS
+        And the reference number and previous reference number along with SBI "800000016" and CRN "9000000020" should be submitted to GAS
 
         # application is marked as awaiting amendment for the second time in GAS
         Given the application status in GAS is now "APPLICATION_AMEND"
@@ -310,7 +310,7 @@ Feature: Application Amendment
         # user revisits grants-ui
         And the user starts a new browser session
         And navigates to "/example-grant-with-auth/yes-no-field"
-        And logs in as CRN "1100964517"
+        And logs in as CRN "9000000020"
 
         # reopened landing page
         Then the user should be at URL "reopened"
@@ -318,10 +318,10 @@ Feature: Application Amendment
 
         # summary
         Then the user should be at URL "summary"
-        And the grants-ui application status for CRN "1100964517" and SBI "115482347" and grant "example-grant-with-auth" should be "REOPENED"
+        And the grants-ui application status for CRN "9000000020" and SBI "800000016" and grant "example-grant-with-auth" should be "REOPENED"
 
         # validate Mongo state storage
-        And the following application state should be stored for CRN "1100964517" and SBI "115482347" and grant "example-grant-with-auth"
+        And the following application state should be stored for CRN "9000000020" and SBI "800000016" and grant "example-grant-with-auth"
             | FIELD                   | VALUE                     |
             | previousReferenceNumber | {SECOND REFERENCE NUMBER} |
             | applicationStatus       | REOPENED                  |
@@ -376,15 +376,15 @@ Feature: Application Amendment
         Then the user should be at URL "confirmation"
         And should see heading "Details submitted"
         And should see an "EGWA" reference number for their application
-        And a resubmit audit event should be published for entity "{THIRD REFERENCE NUMBER}" with CRN "1100964517" and SBI "115482347"
+        And a resubmit audit event should be published for entity "{THIRD REFERENCE NUMBER}" with CRN "9000000020" and SBI "800000016"
 
         # validate Mongo state storage
-        And the following application state should be stored for CRN "1100964517" and SBI "115482347" and grant "example-grant-with-auth"
+        And the following application state should be stored for CRN "9000000020" and SBI "800000016" and grant "example-grant-with-auth"
             | FIELD                   | VALUE                     |
             | $$__referenceNumber     | {THIRD REFERENCE NUMBER}  |
             | previousReferenceNumber | {SECOND REFERENCE NUMBER} |
             | applicationStatus       | SUBMITTED                 |
-            | submittedBy             | 1100964517                |
+            | submittedBy             | 9000000020                |
             | autocompleteField       | FRA                       |
             | multilineTextField      | Lorem ipsum               |
             | emailAddressField       | test@example.com          |
@@ -392,11 +392,11 @@ Feature: Application Amendment
             | projectName             | Test project              |
 
         # validate Mongo submission storage, we should we have 3 entries now
-        And the following application submissions should be stored for CRN "1100964517" and SBI "115482347" and grant "example-grant-with-auth"
+        And the following application submissions should be stored for CRN "9000000020" and SBI "800000016" and grant "example-grant-with-auth"
             | REFERENCE NUMBER          | PREVIOUS REFERENCE NUMBER | CRN        |
-            | {THIRD REFERENCE NUMBER}  | {SECOND REFERENCE NUMBER} | 1100964517 |
-            | {SECOND REFERENCE NUMBER} | {FIRST REFERENCE NUMBER}  | 1100964517 |
-            | {FIRST REFERENCE NUMBER}  |                           | 1100964517 |
+            | {THIRD REFERENCE NUMBER}  | {SECOND REFERENCE NUMBER} | 9000000020 |
+            | {SECOND REFERENCE NUMBER} | {FIRST REFERENCE NUMBER}  | 9000000020 |
+            | {FIRST REFERENCE NUMBER}  |                           | 9000000020 |
 
         # GAS
-        And the reference number and previous reference number along with SBI "115482347" and CRN "1100964517" should be submitted to GAS
+        And the reference number and previous reference number along with SBI "800000016" and CRN "9000000020" should be submitted to GAS

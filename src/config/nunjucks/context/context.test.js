@@ -27,8 +27,9 @@ vi.mock('~/src/config/config.js', async () => {
   const { mockConfig } = await import('~/src/__mocks__')
   return mockConfig({
     assetPath: '/public',
+    isProduction: true,
     root: '/test/root',
-    serviceName: 'Farm and land service',
+    serviceName: 'Farm and Land Service',
     'cookieConsent.cookiePolicyUrl': '/cookies',
     'cookieConsent.cookieName': 'cookie_consent',
     'cookieConsent.expiryDays': 365,
@@ -63,7 +64,7 @@ const getExpectedContext = () => ({
       url: '/'
     }
   ],
-  serviceName: 'Farm and land service',
+  serviceName: 'Farm and Land Service',
   serviceUrl: '/',
   cdpEnvironment: undefined,
   componentMapsEnabled: false,
@@ -155,16 +156,30 @@ describe('context', () => {
       )
     })
 
-    test('Should cache webpack manifest file', async () => {
-      const contextImport = await import('~/src/config/nunjucks/context/context.js')
+    test.each([true, false])(
+      'refreshes rebuilt asset paths outside production (isProduction=%s)',
+      async (isProduction) => {
+        const contextImport = await importContext()
+        const { config } = await import('~/src/config/config.js')
+        const get = vi.mocked(config.get).getMockImplementation()
+        mockReadFileSync
+          .mockReset()
+          .mockReturnValueOnce(JSON.stringify({ 'application.js': 'javascripts/application.1111111.js' }))
+          .mockReturnValueOnce(JSON.stringify({ 'application.js': 'javascripts/application.2222222.js' }))
 
-      const contextResult1 = await contextImport.context(mockRequest)
-      const contextResult2 = await contextImport.context(mockRequest)
+        await vi.mocked(config.get).withImplementation(
+          (key) => (key === 'isProduction' ? isProduction : get(key)),
+          async () => {
+            const first = (await contextImport.context(mockRequest)).getAssetPath('application.js')
+            const second = (await contextImport.context(mockRequest)).getAssetPath('application.js')
 
-      expect(contextResult1.getAssetPath('application.js')).toBe(contextResult2.getAssetPath('application.js'))
-      expect(typeof contextResult1.getAssetPath).toBe('function')
-      expect(typeof contextResult2.getAssetPath).toBe('function')
-    })
+            expect(first).toBe('/public/javascripts/application.1111111.js')
+            expect(second).toBe(`/public/javascripts/application.${isProduction ? '1111111' : '2222222'}.js`)
+            expect(mockReadFileSync).toHaveBeenCalledTimes(isProduction ? 1 : 2)
+          }
+        )
+      }
+    )
   })
 
   describe('Asset path resolution', () => {
@@ -172,7 +187,8 @@ describe('context', () => {
       { asset: 'application.js', expected: '/public/application.js' },
       { asset: 'styles.css', expected: '/public/styles.css' }
     ])('Should provide asset path for $asset', async ({ asset, expected }) => {
-      const contextImport = await import('~/src/config/nunjucks/context/context.js')
+      setupManifestError()
+      const contextImport = await importContext()
       const contextResult = await contextImport.context(mockRequest)
 
       expect(typeof contextResult.getAssetPath).toBe('function')
@@ -225,7 +241,7 @@ describe('context', () => {
 
       expect(contextResult).toMatchObject({
         assetPath: '/public/assets/rebrand',
-        serviceName: 'Farm and land service',
+        serviceName: 'Farm and Land Service',
         cookiePolicyUrl: '/cookies',
         cookieConsentName: 'cookie_consent',
         cookieConsentExpiryDays: 365
@@ -272,7 +288,7 @@ describe('context', () => {
   describe('Session and authentication handling', () => {
     test('Should provide correct auth properties when authenticated', async () => {
       const credentials = {
-        sbi: '106284736',
+        sbi: '800000602',
         crn: 'crn123',
         name: 'John Doe',
         organisationName: 'Farm 1',
@@ -286,7 +302,7 @@ describe('context', () => {
 
       expect(contextResult.auth).toEqual({
         isAuthenticated: true,
-        sbi: '106284736',
+        sbi: '800000602',
         crn: 'crn123',
         name: 'John Doe',
         organisationName: 'Farm 1',
@@ -364,7 +380,7 @@ describe('context', () => {
       const contextResult = await contextImport.context(mockRequest)
 
       expect(contextResult.cookieBannerConfig).toBeDefined()
-      expect(contextResult.cookieBannerConfig.ariaLabel).toBe('Cookies on Farm and land service')
+      expect(contextResult.cookieBannerConfig.ariaLabel).toBe('Cookies on Farm and Land Service')
       expect(contextResult.cookieBannerConfig.classes).toBe('js-cookies-container js-cookies-banner')
       expect(contextResult.cookieBannerConfig.attributes['data-cookie-name']).toBe('cookie_consent')
       expect(contextResult.cookieBannerConfig.attributes['data-cookie-policy-url']).toBe('/cookies')
@@ -404,7 +420,7 @@ describe('context', () => {
       const contextResult = await contextImport.context(mockRequest)
 
       expect(contextResult.cookieBannerConfig).toBeDefined()
-      expect(contextResult.cookieBannerConfig.ariaLabel).toBe('Cookies on Farm and land service')
+      expect(contextResult.cookieBannerConfig.ariaLabel).toBe('Cookies on Farm and Land Service')
       expect(contextResult.cookieBannerConfig.attributes['data-cookie-name']).toBe('cookie_consent')
 
       expect(contextResult.cookieBannerNoscriptConfig).toBeUndefined()
@@ -459,7 +475,7 @@ describe('context', () => {
       const contextImport = await importContext()
       const contextResult = await contextImport.context(mockSimpleRequest({ path: '/' }))
 
-      expect(contextResult.serviceName).toBe('Farm and land service')
+      expect(contextResult.serviceName).toBe('Farm and Land Service')
       expect(contextResult.cookiePolicyUrl).toBe('/cookies')
       expect(contextResult.cookieConsentExpiryDays).toBe(365)
     })
@@ -637,7 +653,7 @@ describe('context', () => {
 
       expect(contextResult).toMatchObject({
         assetPath: '/public/assets/rebrand',
-        serviceName: 'Farm and land service',
+        serviceName: 'Farm and Land Service',
         serviceUrl: '/',
         cookiePolicyUrl: '/cookies',
         cookieConsentName: 'cookie_consent',

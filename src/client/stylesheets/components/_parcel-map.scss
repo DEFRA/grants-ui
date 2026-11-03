@@ -1,0 +1,141 @@
+// The <parcel-map> element's own chrome around the vendor map.
+$parcel-map-font: 'GDS Transport', arial, sans-serif;
+$parcel-map-text: #0b0c0c;
+$parcel-map-secondary-text: #505a5f;
+$parcel-map-border: #b1b4b6;
+$parcel-map-background: #f3f2f1;
+$parcel-map-error: #d4351c;
+$parcel-map-focus: #ffdd00;
+$parcel-map-gutter: 12px;
+// Matches the vendor's own map buttons (search, map controls).
+$parcel-map-button-shadow:
+  0 -2px 20px rgb(0, 0, 0, 0.1),
+  0 0 12px rgb(0, 0, 0, 0.1);
+
+.parcel-map__wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.parcel-map__canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.parcel-map__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $parcel-map-background;
+  border: 2px solid $parcel-map-border;
+  border-radius: 4px;
+}
+
+.parcel-map__overlay-label {
+  font-family: $parcel-map-font;
+  font-size: 16px;
+  color: $parcel-map-secondary-text;
+}
+
+.parcel-map__tooltip {
+  position: absolute;
+  z-index: 9999;
+  max-width: 220px;
+  padding: 12px 14px;
+  font-family: $parcel-map-font;
+  font-size: 14px;
+  line-height: 1.4;
+  background: #ffffff;
+  border: 2px solid $parcel-map-border;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgb(0, 0, 0, 0.18);
+  pointer-events: none;
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+.parcel-map__tooltip-title {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 15px;
+}
+
+.parcel-map__tooltip-row {
+  padding: 2px 12px 2px 0;
+  color: $parcel-map-secondary-text;
+  white-space: nowrap;
+}
+
+// Our "Search is unavailable" panel reuses the vendor's status class. Once
+// cleared it would still draw over the vendor's own status panel.
+.parcel-map__wrapper .im-c-search__status:empty {
+  display: none;
+}
+
+// The vendor sizes the results list to the viewport, but this inline map clips
+// at its edge. 130px covers the gutter and search input above the list and
+// the "View all land parcels" button below it.
+.parcel-map__wrapper .im-c-search-suggestions {
+  max-height: calc(var(--parcel-map-height) - 130px);
+}
+
+// The vendor search box toggles display, so give it a fade-in of our own.
+@keyframes parcel-map-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.parcel-map__wrapper .im-c-search-form {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: parcel-map-fade-in 200ms ease-out;
+  }
+}
+
+// Bottom-left, clear of the search box the vendor map places top-left.
+.map-reset-view-button {
+  position: absolute;
+  bottom: $parcel-map-gutter;
+  left: $parcel-map-gutter;
+  z-index: 2;
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 40px;
+  margin: 0;
+  padding: 0 12px;
+  font-family: $parcel-map-font;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.25;
+  color: $parcel-map-text;
+  background: #ffffff;
+  border: 0;
+  box-shadow: $parcel-map-button-shadow;
+  cursor: pointer;
+
+  &[hidden] {
+    display: none;
+  }
+
+  &:hover {
+    background-color: $parcel-map-background;
+  }
+
+  &:focus {
+    outline: 3px solid transparent;
+    box-shadow:
+      0 0 0 3px $parcel-map-focus,
+      $parcel-map-button-shadow;
+  }
+}

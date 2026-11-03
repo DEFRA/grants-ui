@@ -50,9 +50,11 @@ export default {
     poll: 1000
   },
   output: {
-    filename: NODE_ENV === 'production' ? 'javascripts/[name].[contenthash:7].min.js' : 'javascripts/[name].js',
+    filename:
+      NODE_ENV === 'production' ? 'javascripts/[name].[contenthash:7].min.js' : 'javascripts/[name].[contenthash:7].js',
 
-    chunkFilename: NODE_ENV === 'production' ? 'javascripts/[name].[chunkhash:7].min.js' : 'javascripts/[name].js',
+    chunkFilename:
+      NODE_ENV === 'production' ? 'javascripts/[name].[chunkhash:7].min.js' : 'javascripts/[name].[chunkhash:7].js',
 
     path: path.join(dirname, '.public'),
     publicPath: '/public/',
@@ -196,6 +198,10 @@ export default {
         {
           from: path.join(interactiveMapPath, 'assets/images'),
           to: 'assets/interactive-map/assets/images'
+        },
+        {
+          from: path.join(defraFormsPath, 'src/client/images/esri-logo.png'),
+          to: 'assets/interactive-map/assets/images/esri-logo.png'
         }
       ]
     })

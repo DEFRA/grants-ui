@@ -27,6 +27,9 @@ jobs:
         uses: DEFRA/cdp-build-action/build@54ced5c5344c8b9620561a1628fe8f3d858e9871 # main
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          # TGC-1813: Temporarily disable public DockerHub publishing while repos are private.
+          # Remove this override when the repos are public again; ECR publishing stays enabled.
+          push-dockerhub: false
 
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0

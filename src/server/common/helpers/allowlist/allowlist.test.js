@@ -12,7 +12,7 @@ vi.mock('~/src/server/common/helpers/logging/log-codes.js', async () => {
   return mockLogCodesHelper()
 })
 
-const CRN = '1101009926'
+const CRN = '9000000605'
 const SBI = '105123456'
 const SLUG = 'woodland'
 

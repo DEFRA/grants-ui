@@ -66,7 +66,7 @@ This adds `land-grants-backend` on `:3009` and its seeded Postgres. Both images 
 The map routes are all session-authed, so the map cannot load until you have signed in.
 
 1. Open http://localhost:3000/auth/sign-in and pick a pre-seeded user from the Defra ID stub (no real credentials needed).
-2. **Use CRN `1102838829`** (Edward Jones). The DAL stub only returns land parcels for this CRN. Sign in as anyone else and the component correctly reports `no-parcels` and renders nothing.
+2. **Use CRN `9000000001`** (Florence Test-Lockwood, Test Alder Carr Farm). The DAL stub only knows its synthetic personas (see `fcp-defra-id-stub/README.md`); this one has ten parcels seeded in the land-grants API, so the map has something to draw.
 
 ### Open the map
 
@@ -86,7 +86,7 @@ http://localhost:3000/example-grant-with-map/start, then continue to `/select-la
 | Symptom                                             | Most likely cause                                                                                                           |
 | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | "There was a problem loading the map."              | Missing or wrong `LAND_MAPS_API_KEY`, or the key's OS project lacks the OS Maps API product (`401` on `/api/map/os-tiles`). |
-| Basemap draws, but no parcels and no error          | Signed in as a CRN other than `1102838829`.                                                                                 |
+| Basemap draws, but no parcels and no error          | Signed in as a persona whose parcels are not seeded in the land-grants API; use `9000000001`.                               |
 | Basemap draws, parcels missing                      | Running `docker:up` rather than `docker:landgrants:up`, so there is no land-grants API to serve parcel geometry.            |
 | Changes to `webpack.config.js` appear to do nothing | It isn't volume-mounted. Run `npm run docker:rebuild && npm run docker:up`.                                                 |
 
@@ -249,7 +249,7 @@ Selection is handled by the `@defra/interactive-map` **interact plugin**, not ra
 - **Touch:** a crosshair with a "Select" action button
 - **Keyboard:** <kbd>Enter</kbd> selects at the crosshair target; <kbd>Tab</kbd> opens a listbox of parcels navigable with arrow keys
 
-The plugin only selects a polygon on an exact geometric hit, which is impractical for small zoomed-out parcels. The component adds a rendered-pixel fallback (see `withParcelHitTolerance` in `map-helpers.js`) so parcels stay selectable at any zoom, by pointer and by keyboard.
+The plugin only selects a polygon on an exact geometric hit, which is impractical for small zoomed-out parcels. The component adds a rendered-pixel fallback (see `withParcelMapProvider` in `helpers.js`) so parcels stay selectable at any zoom, by pointer and by keyboard.
 
 The component listens to the plugin's selection events and re-dispatches them as `parcel-map:selection`, so page-level consumers are unaffected by the plugin internals.
 
@@ -296,7 +296,7 @@ The `@defra/interactive-map` CSS must also be loaded. It is copied by webpack's 
 
 ### Basemap provider
 
-The basemap is Ordnance Survey's raster basemap, served through the server-side proxy described below. `getMapStyle` in `map-helpers.js` resolves its style/attribution. It is authoritative UK survey data, including the farmland/parcel boundary detail the journey depends on.
+The basemap is Ordnance Survey's raster basemap, served through the server-side proxy described below. `getMapStyle` in `helpers.js` resolves its style/attribution. It is authoritative UK survey data, including the farmland/parcel boundary detail the journey depends on.
 
 ---
 

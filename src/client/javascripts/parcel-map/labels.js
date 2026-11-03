@@ -1,7 +1,8 @@
 import { formatParcelReference } from '../../../shared/format-parcel.js'
+import { boundsCentre, boundsOfPolygon, boundsOfPositions, unionBounds } from './bounds.js'
+import { fitToParcels } from './helpers.js'
 import {
   CLUSTER_EXPAND_MAX_ZOOM,
-  FIT_BOUNDS_PADDING,
   LAYER_ID_LABEL_CLUSTER,
   LAYER_ID_LABEL_CLUSTER_COUNT,
   PARCEL_ID_PROPERTY,
@@ -11,20 +12,21 @@ import {
 
 /**
  * @import { Map as MLMap, GeoJSONSource, MapMouseEvent, MapGeoJSONFeature } from 'maplibre-gl'
+ * @import { BBox } from './bounds.js'
+ * @import { MapContext } from './element.js'
  */
 
 /**
- * Keeps the label GeoJSON source (see buildParcelLabelLayer in map-helpers.js)
+ * Keeps the label GeoJSON source (see buildParcelLabelLayer in helpers.js)
  * in sync with the parcel vector tiles: one Point feature per parcel id, at
  * the combined bounding-box centre of every rendered fragment of that parcel
  * — a parcel split across tiles has one fragment per tile, so this is what
  * keeps it labelled exactly once regardless of tiling. Also wires up
  * click-to-zoom on the cluster badges the source's clustering produces when
  * parcels are too close together to label individually.
- * @param {MLMap} ml
- * @param {Array<() => void>} cleanups
+ * @param {Pick<MapContext, 'ml' | 'cleanups'>} context
  */
-export function attachParcelLabels(ml, cleanups) {
+export function attachParcelLabels({ ml, cleanups }) {
   // setData() re-renders, which can re-fire 'idle' — only call it when the
   // features actually changed, to avoid a needless idle -> setData loop.
   /** @type {string | null} */
@@ -74,19 +76,9 @@ function attachClusters(ml, cleanups) {
     source
       .getClusterLeaves(clusterId, pointCount, 0)
       .then((leaves) => {
-        const bbox = boundsOfPoints(leaves)
-        if (!bbox) {
-          return
-        }
-        ml.fitBounds(
-          [
-            [bbox.minLng, bbox.minLat],
-            [bbox.maxLng, bbox.maxLat]
-          ],
-          // Capped so a tight bbox (e.g. a 2-3 parcel cluster) doesn't zoom
-          // in further than useful to split it apart.
-          { padding: FIT_BOUNDS_PADDING, maxZoom: CLUSTER_EXPAND_MAX_ZOOM }
-        )
+        // Capped so a tight bbox (e.g. a 2-3 parcel cluster) doesn't zoom
+        // in further than useful to split it apart.
+        fitToParcels(ml, boundsOfPoints(leaves), { animate: true, maxZoom: CLUSTER_EXPAND_MAX_ZOOM })
       })
       .catch(Boolean) // ignore: e.g. the cluster no longer exists after a concurrent setData
   }
@@ -140,21 +132,10 @@ function attachClusters(ml, cleanups) {
  * getClusterLeaves — the ungrouped parcel label points a cluster badge
  * stands in for.
  * @param {GeoJSON.Feature[]} points
- * @returns {{ minLng: number, minLat: number, maxLng: number, maxLat: number } | null}
+ * @returns {BBox | null}
  */
 function boundsOfPoints(points) {
-  if (points.length === 0) {
-    return null
-  }
-  const bounds = { minLng: Infinity, minLat: Infinity, maxLng: -Infinity, maxLat: -Infinity }
-  for (const point of points) {
-    const [lng, lat] = /** @type {GeoJSON.Point} */ (point.geometry).coordinates
-    bounds.minLng = Math.min(bounds.minLng, lng)
-    bounds.minLat = Math.min(bounds.minLat, lat)
-    bounds.maxLng = Math.max(bounds.maxLng, lng)
-    bounds.maxLat = Math.max(bounds.maxLat, lat)
-  }
-  return bounds
+  return boundsOfPositions(points.map((point) => /** @type {GeoJSON.Point} */ (point.geometry).coordinates))
 }
 
 // Bounds are floating-point lng/lat, so two computations of an otherwise-
@@ -169,58 +150,40 @@ const FINGERPRINT_DECIMAL_PLACES = 6
 function buildLabelFeatures(ml) {
   const fragments = ml.querySourceFeatures(SOURCE_ID_PARCELS, { sourceLayer: SOURCE_ID_PARCELS })
 
-  /** @type {Map<string, { minLng: number, minLat: number, maxLng: number, maxLat: number }>} */
+  /** @type {Map<string, BBox>} */
   const boundsById = new Map()
   for (const fragment of fragments) {
     const id = fragment.properties?.[PARCEL_ID_PROPERTY]
-    if (typeof id !== 'string' && typeof id !== 'number') {
+    const hasId = typeof id === 'string' || typeof id === 'number'
+    const fragmentBounds = hasId
+      ? boundsOfPolygon(/** @type {GeoJSON.Polygon | GeoJSON.MultiPolygon} */ (fragment.geometry))
+      : null
+    if (!fragmentBounds) {
       continue
     }
-    extendBounds(boundsById, String(id), /** @type {GeoJSON.Polygon | GeoJSON.MultiPolygon} */ (fragment.geometry))
+    const seen = boundsById.get(String(id))
+    boundsById.set(String(id), seen ? unionBounds(seen, fragmentBounds) : fragmentBounds)
   }
 
   // Sorted by id so the fingerprint doesn't depend on fragment/iteration
   // order, only on which parcels are present and where.
   const entries = [...boundsById].sort(([a], [b]) => a.localeCompare(b))
 
-  const features = entries.map(([id, { minLng, minLat, maxLng, maxLat }]) => ({
+  const features = entries.map(([id, bounds]) => ({
     type: /** @type {const} */ ('Feature'),
     geometry: {
       type: /** @type {const} */ ('Point'),
-      coordinates: [(minLng + maxLng) / 2, (minLat + maxLat) / 2]
+      coordinates: boundsCentre(bounds)
     },
     properties: { id, label: formatParcelReference(id) }
   }))
 
   const fingerprint = entries
-    .map(([id, { minLng, minLat, maxLng, maxLat }]) => {
-      const lng = ((minLng + maxLng) / 2).toFixed(FINGERPRINT_DECIMAL_PLACES)
-      const lat = ((minLat + maxLat) / 2).toFixed(FINGERPRINT_DECIMAL_PLACES)
-      return `${id}:${lng},${lat}`
+    .map(([id, bounds]) => {
+      const [lng, lat] = boundsCentre(bounds)
+      return `${id}:${lng.toFixed(FINGERPRINT_DECIMAL_PLACES)},${lat.toFixed(FINGERPRINT_DECIMAL_PLACES)}`
     })
     .join('|')
 
   return { features: { type: 'FeatureCollection', features }, fingerprint }
-}
-
-/**
- * Widens `boundsById.get(id)` (creating it if absent) to cover every
- * coordinate in `geometry`.
- * @param {Map<string, { minLng: number, minLat: number, maxLng: number, maxLat: number }>} boundsById
- * @param {string} id
- * @param {GeoJSON.Polygon | GeoJSON.MultiPolygon} geometry
- */
-function extendBounds(boundsById, id, geometry) {
-  const existing = boundsById.get(id)
-  const bounds = existing ?? { minLng: Infinity, minLat: Infinity, maxLng: -Infinity, maxLat: -Infinity }
-  const rings = geometry.type === 'MultiPolygon' ? geometry.coordinates.flat() : geometry.coordinates
-  for (const ring of rings) {
-    for (const [lng, lat] of ring) {
-      bounds.minLng = Math.min(bounds.minLng, lng)
-      bounds.minLat = Math.min(bounds.minLat, lat)
-      bounds.maxLng = Math.max(bounds.maxLng, lng)
-      bounds.maxLat = Math.max(bounds.maxLat, lat)
-    }
-  }
-  boundsById.set(id, bounds)
 }

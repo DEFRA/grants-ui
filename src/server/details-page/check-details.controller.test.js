@@ -210,7 +210,7 @@ describe('CheckDetailsController', () => {
         isAuthenticated: true,
         credentials: {
           sbi: 'SBI123456',
-          crn: '1100014934'
+          crn: '9000000603'
         }
       },
       payload: {}

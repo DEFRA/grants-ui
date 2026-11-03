@@ -96,7 +96,7 @@ describe('ConfirmLandAndActionsPageController', () => {
       query: {},
       payload: {},
       yar: { get: vi.fn(), clear: vi.fn() },
-      auth: { isAuthenticated: true, credentials: { token: 'defra-id-token', sbi: '106284736' } }
+      auth: { isAuthenticated: true, credentials: { token: 'defra-id-token', sbi: '800000602' } }
     }
     mockContext = { state: { landParcels, payment } }
     mockH = { view: vi.fn().mockReturnValue('rendered view'), redirect: vi.fn().mockReturnValue('redirected away') }
@@ -133,7 +133,7 @@ describe('ConfirmLandAndActionsPageController', () => {
       expect(calculateLandActionsPayment).toHaveBeenCalledTimes(1)
       expect(calculateLandActionsPayment).toHaveBeenCalledWith(mockContext.state, {
         defraIdToken: 'defra-id-token',
-        sbi: '106284736'
+        sbi: '800000602'
       })
 
       const model = mockH.view.mock.calls[0][1]
@@ -259,7 +259,7 @@ describe('ConfirmLandAndActionsPageController', () => {
         expect.objectContaining({
           endpoint: 'Land grants API',
           service: 'land-grants',
-          errorMessage: expect.stringContaining('for sbi 106284736')
+          errorMessage: expect.stringContaining('for sbi 800000602')
         }),
         mockRequest
       )

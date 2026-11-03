@@ -1,7 +1,9 @@
 import {
   AREA_DECIMAL_PLACES,
-  ERROR_LABEL_STYLES,
-  ERROR_OVERLAY_STYLES,
+  CLASS_OVERLAY,
+  CLASS_OVERLAY_LABEL,
+  CLASS_TOOLTIP_ROW,
+  CLASS_TOOLTIP_TITLE,
   FILL_OPACITY_DEFAULT,
   FIT_BOUNDS_PADDING,
   getMapStyleAttribution,
@@ -28,6 +30,7 @@ import {
   PARCEL_COLORS,
   PARCEL_ID_PROPERTY,
   PARCEL_TILES_URL,
+  SEARCH_FIT_MAX_ZOOM,
   SOURCE_ID_PARCEL_LABELS,
   SOURCE_ID_PARCELS,
   TOOLTIP_FALLBACK_MAP_WIDTH,
@@ -36,9 +39,11 @@ import {
   TOOLTIP_VERTICAL_OFFSET
 } from './config.js'
 import { formatParcelReference } from '../../../shared/format-parcel.js'
+import { boundsToLngLatPairs } from './bounds.js'
 
 /**
  * @import { MapGeoJSONFeature } from 'maplibre-gl'
+ * @import { BBox } from './bounds.js'
  */
 
 /**
@@ -92,7 +97,7 @@ const IS_CLUSTER_FILTER = ['has', 'point_count']
 
 /**
  * The parcel label symbol layer, reading from the deduplicated GeoJSON source
- * (see parcel-map-labels.js) rather than the vector tile source, which would
+ * (see labels.js) rather than the vector tile source, which would
  * place one label per tile a parcel's geometry appears in. Filtered to
  * unclustered points — a clustered point gets the count badge instead (see
  * buildParcelLabelClusterLayers).
@@ -169,22 +174,19 @@ export function getMapStyle() {
 }
 
 /**
- * Falls back to the nearest rendered parcel within PARCEL_CLICK_TOLERANCE_PX
- * when the interact plugin's strict inside-the-shape hit test finds nothing —
- * common for small parcels at low zoom. Also suppresses hits on a cluster
- * badge, so its click doesn't also select the parcel sitting behind it (the
- * interact plugin hit-tests every map click, not just ones on its own layer).
- *
- * Wrapped via `load()` because the map library hands us a provider
- * *descriptor*, not the provider itself — the real class only exists once
- * `load()` resolves.
+ * Tailors the vendor map provider to the parcel map: hit-tests with a pixel
+ * tolerance (small parcels are otherwise unclickable, and a cluster badge must
+ * not also select the parcel behind it), and animates every fit, which the
+ * vendor only does while MapLibre reports the style loaded.
+ * Wrapped via `load()`: the library hands us a descriptor whose provider class
+ * only exists once `load()` resolves.
  * @param {{ load: () => Promise<{ MapProvider: new (...args: never[]) => { map?: import('maplibre-gl').Map } }> }} descriptor
  */
-export function withParcelHitTolerance(descriptor) {
+export function withParcelMapProvider(descriptor) {
   const originalLoad = descriptor.load
   descriptor.load = async () => {
     const result = await originalLoad()
-    class ParcelHitToleranceProvider extends result.MapProvider {
+    class ParcelMapProvider extends result.MapProvider {
       /**
        * @param {{ x: number, y: number }} point
        * @param {{ radius?: number }} [options]
@@ -211,8 +213,25 @@ export function withParcelHitTolerance(descriptor) {
         )
         return nearestFeatureToPoint(this.map, point, rendered)
       }
+
+      /** @param {unknown} bounds  `[minLng, minLat, maxLng, maxLat]`, or null for a search result (framed by attachParcelSearch) */
+      fitToBounds(bounds) {
+        if (bounds === null) {
+          return undefined
+        }
+        if (!this.map || !Array.isArray(bounds) || bounds.length !== 4) {
+          // @ts-ignore — base method exists on the runtime provider
+          return super.fitToBounds(bounds)
+        }
+        const [minLng, minLat, maxLng, maxLat] = bounds
+        return fitToParcels(
+          this.map,
+          { minLng, minLat, maxLng, maxLat },
+          { animate: true, maxZoom: SEARCH_FIT_MAX_ZOOM }
+        )
+      }
     }
-    return { ...result, MapProvider: ParcelHitToleranceProvider }
+    return { ...result, MapProvider: ParcelMapProvider }
   }
   return descriptor
 }
@@ -282,9 +301,9 @@ export function buildOverlay(message, { role, ariaLabel }) {
   if (ariaLabel) {
     el.setAttribute('aria-label', ariaLabel)
   }
-  el.style.cssText = ERROR_OVERLAY_STYLES
+  el.className = CLASS_OVERLAY
   const label = document.createElement('span')
-  label.style.cssText = ERROR_LABEL_STYLES
+  label.className = CLASS_OVERLAY_LABEL
   label.textContent = message
   el.appendChild(label)
   return el
@@ -296,31 +315,28 @@ export function buildSkeleton() {
 }
 
 /**
- * Fits the viewport to the parcels' bounding box.
+ * Fits the viewport to a bounding box.
  * @param {import('maplibre-gl').Map | null} ml
- * @param {{ minLng: number, minLat: number, maxLng: number, maxLat: number } | null} bbox
- * @param {{ animate?: boolean }} [options]  animate defaults to false (used for the
- *   instant initial fit); pass true for a user-triggered reset (e.g. "Show all parcels")
+ * @param {BBox | null} bbox
+ * @param {{ animate?: boolean, maxZoom?: number }} [options]  animate defaults to false (used for the
+ *   instant initial fit); pass true for a user-triggered move (e.g. "View all land parcels")
  */
-export function fitToParcels(ml, bbox, { animate = false } = {}) {
+export function fitToParcels(ml, bbox, { animate = false, maxZoom } = {}) {
   if (!ml || !bbox) {
     return
   }
-  const { minLng, minLat, maxLng, maxLat } = bbox
-  ml.fitBounds(
-    [
-      [Number(minLng), Number(minLat)],
-      [Number(maxLng), Number(maxLat)]
-    ],
-    { padding: FIT_BOUNDS_PADDING, animate }
-  )
+  ml.fitBounds(boundsToLngLatPairs(bbox), {
+    padding: FIT_BOUNDS_PADDING,
+    animate,
+    ...(maxZoom === undefined ? {} : { maxZoom })
+  })
 }
 
 /**
  * Fits the viewport to the parcels' bounding box, then adds the parcel
  * vector-tile source streamed from the grants-ui tile proxy.
  * @param {import('maplibre-gl').Map} ml
- * @param {{ bbox: { minLng: number, minLat: number, maxLng: number, maxLat: number } | null }} data
+ * @param {{ bbox: BBox | null }} data
  * @param {unknown[]} colorExpr  MapLibre `match` expression
  */
 export function addParcelsToMap(ml, { bbox }, colorExpr) {
@@ -381,6 +397,17 @@ export function resolveFeatureId(feature) {
 }
 
 /**
+ * @param {string} text
+ * @returns {HTMLDivElement}
+ */
+function tooltipRow(text) {
+  const row = document.createElement('div')
+  row.className = CLASS_TOOLTIP_ROW
+  row.textContent = text
+  return row
+}
+
+/**
  * @param {HTMLElement} tooltip
  * @param {string} id
  * @param {ParcelProperties} props
@@ -391,26 +418,23 @@ export function resolveFeatureId(feature) {
 export function showTooltip(tooltip, id, props, x, y, mapEl) {
   const areaHa = props.areaHa == null ? null : Number(props.areaHa)
   const actionCount = props.actionCount
-  tooltip.innerHTML = `
-    <strong style="display:block;margin-bottom:8px;font-size:15px">${htmlEncode(formatParcelReference(id) || MSG_UNKNOWN_PARCEL)}</strong>
-    <div style="color:#505a5f;padding:2px 12px 2px 0;white-space:nowrap">
-      Total area: ${areaHa == null ? MSG_UNKNOWN_AREA : htmlEncode(areaHa.toFixed(AREA_DECIMAL_PLACES) + ' ha')}
-    </div>
-    ${
-      typeof actionCount === 'number'
-        ? `<div style="color:#505a5f;padding:2px 12px 2px 0;white-space:nowrap">
-      Available actions: ${actionCount}
-    </div>`
-        : ''
-    }`
+  const title = document.createElement('strong')
+  title.className = CLASS_TOOLTIP_TITLE
+  title.textContent = formatParcelReference(id) || MSG_UNKNOWN_PARCEL
+  const area = areaHa == null ? MSG_UNKNOWN_AREA : `${areaHa.toFixed(AREA_DECIMAL_PLACES)} ha`
+  const rows = [tooltipRow(`Total area: ${area}`)]
+  if (typeof actionCount === 'number') {
+    rows.push(tooltipRow(`Available actions: ${actionCount}`))
+  }
+  tooltip.replaceChildren(title, ...rows)
   tooltip.style.left = `${Math.min(x + TOOLTIP_OFFSET_X, (mapEl?.offsetWidth ?? TOOLTIP_FALLBACK_MAP_WIDTH) - TOOLTIP_MAX_WIDTH)}px`
   tooltip.style.top = `${y - TOOLTIP_VERTICAL_OFFSET}px`
-  tooltip.style.display = 'block'
+  tooltip.hidden = false
 }
 
 /** @param {HTMLElement} tooltip */
 export function hideTooltip(tooltip) {
-  tooltip.style.display = 'none'
+  tooltip.hidden = true
 }
 
 /** @param {string} value @returns {string} */

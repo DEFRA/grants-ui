@@ -117,7 +117,10 @@
                 govukCheckboxes({
                   name: actionFieldName,
                   items: actionItems,
-                  classes: "select-actions-checkboxes"
+                  classes: "select-actions-checkboxes",
+                  errorMessage: {
+                    text: selectedActionsErrorText
+                  } if selectedActionsErrorText else undefined
                 })
               }}
 

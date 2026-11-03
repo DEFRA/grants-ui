@@ -130,6 +130,92 @@ describe('processDisplayFields', () => {
         value: { text: '' }
       })
     })
+
+    it.each(['Limited Company', 42, false, 0])(
+      'should retain an empty row when the condition matches %s',
+      (conditionValue) => {
+        const config = [
+          {
+            label: 'Missing field',
+            sourcePath: 'nonexistent.path',
+            hideIfEmpty: true,
+            showIfEmptyWhen: { sourcePath: 'business.type.type', values: ['Other', conditionValue] }
+          }
+        ]
+        const mappedData = { business: { type: { type: conditionValue } } }
+
+        const result = processDisplayFields(config, mappedData, mockRequest)
+
+        expect(result).toEqual({
+          rows: [{ key: { text: 'Missing field' }, value: { text: '' } }]
+        })
+      }
+    )
+
+    it.each([
+      ['a different value', 'Partnership', ['Limited Company']],
+      ['a missing value', undefined, ['Limited Company']],
+      ['a null value', null, ['Limited Company']],
+      ['an object value', { type: 'Limited Company' }, ['Limited Company']],
+      ['a number against a string', 0, ['0']],
+      ['a boolean against a number', false, [0]],
+      ['an empty list of allowed values', 'Limited Company', []]
+    ])('should hide an empty row for %s', (_description, conditionValue, values) => {
+      const config = [
+        {
+          label: 'Missing field',
+          sourcePath: 'nonexistent.path',
+          showIfEmptyWhen: { sourcePath: 'business.type.type', values },
+          emptyText: 'Not provided'
+        }
+      ]
+      const mappedData = { business: { type: { type: conditionValue } } }
+
+      const result = processDisplayFields(config, mappedData, mockRequest)
+
+      expect(result).toEqual({ rows: [] })
+    })
+
+    it.each([
+      ['hideIfEmpty is false', { hideIfEmpty: false }],
+      [
+        'hideIfEmpty is false and the condition does not match',
+        {
+          hideIfEmpty: false,
+          showIfEmptyWhen: { sourcePath: 'business.type.type', values: ['Partnership'] }
+        }
+      ],
+      ['the condition matches', { showIfEmptyWhen: { sourcePath: 'business.type.type', values: ['Limited Company'] } }]
+    ])('should use emptyText when %s', (_description, options) => {
+      const config = [{ label: 'Missing field', sourcePath: 'nonexistent.path', ...options, emptyText: 'Not provided' }]
+
+      const result = processDisplayFields(config, mockMappedData, mockRequest)
+
+      expect(result).toEqual({
+        rows: [{ key: { text: 'Missing field' }, value: { text: 'Not provided' } }]
+      })
+    })
+
+    it.each(['Limited Company', 'Partnership'])(
+      'should preserve a populated formatted value when the condition expects %s',
+      (conditionValue) => {
+        const config = [
+          {
+            label: 'Address',
+            sourcePath: 'business.address',
+            format: 'address',
+            showIfEmptyWhen: { sourcePath: 'business.type.type', values: [conditionValue] },
+            emptyText: 'Not provided'
+          }
+        ]
+
+        const result = processDisplayFields(config, mockMappedData, mockRequest)
+
+        expect(result).toEqual({
+          rows: [{ key: { text: 'Address' }, value: { html: '123 Farm Road<br/>Manchester<br/>M1 1AA' } }]
+        })
+      }
+    )
   })
 
   describe('field ordering', () => {

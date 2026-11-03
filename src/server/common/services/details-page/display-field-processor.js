@@ -48,6 +48,25 @@ function resolveFieldValue(fieldConfig, mappedData, request) {
 }
 
 /**
+ * Checks whether mapped data matches the condition for retaining an empty row
+ * @param {DisplayFieldConfig['showIfEmptyWhen']} condition - The optional condition
+ * @param {Record<string, unknown>} mappedData - The mapped API response data
+ * @returns {boolean} Whether the condition matches
+ */
+function matchesEmptyCondition(condition, mappedData) {
+  if (!condition) {
+    return false
+  }
+
+  const conditionValue = resolvePath(mappedData, condition.sourcePath)
+
+  return (
+    (typeof conditionValue === 'string' || typeof conditionValue === 'number' || typeof conditionValue === 'boolean') &&
+    condition.values.includes(conditionValue)
+  )
+}
+
+/**
  * Processes a single display field config into a summary list row
  * @param {DisplayFieldConfig} fieldConfig - The field configuration
  * @param {Record<string, unknown>} mappedData - The mapped API response data
@@ -59,15 +78,18 @@ function processField(fieldConfig, mappedData, request) {
   const formatter = getFormatter(fieldConfig.format ?? 'text')
   const formattedValue = formatter(value)
 
-  const hideIfEmpty = fieldConfig.hideIfEmpty !== false
+  if (!formattedValue) {
+    const matchesCondition = matchesEmptyCondition(fieldConfig.showIfEmptyWhen, mappedData)
+    const showEmpty = fieldConfig.hideIfEmpty === false || matchesCondition
 
-  if (!formattedValue && hideIfEmpty) {
-    return null
+    if (!showEmpty) {
+      return null
+    }
   }
 
   return {
     key: { text: fieldConfig.label },
-    value: formattedValue || { text: '' }
+    value: formattedValue || { text: fieldConfig.emptyText ?? '' }
   }
 }
 

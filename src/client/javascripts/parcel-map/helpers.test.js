@@ -6,7 +6,7 @@ import {
   buildParcelLabelLayer,
   buildParcelLabelClusterLayers,
   getMapStyle,
-  withParcelHitTolerance,
+  withParcelMapProvider,
   nearestFeatureToPoint,
   getScreenBounds,
   buildSkeleton,
@@ -17,7 +17,7 @@ import {
   hideTooltip,
   htmlEncode,
   fitToParcels
-} from './map-helpers.js'
+} from './helpers.js'
 import { makeMlMap } from './test-helpers.js'
 import { LAYER_ID_LABEL_CLUSTER } from './config.js'
 
@@ -230,7 +230,7 @@ describe('getScreenBounds', () => {
   })
 })
 
-describe('withParcelHitTolerance', () => {
+describe('withParcelMapProvider', () => {
   function makeDescriptor(baseGetFeaturesAtPoint) {
     class BaseProvider {
       getFeaturesAtPoint(...args) {
@@ -244,7 +244,7 @@ describe('withParcelHitTolerance', () => {
 
   it('returns the base provider hits unchanged when there are any', async () => {
     const descriptor = makeDescriptor(() => [{ id: 'hit' }])
-    const { MapProvider } = await withParcelHitTolerance(descriptor).load()
+    const { MapProvider } = await withParcelMapProvider(descriptor).load()
     const provider = new MapProvider()
     provider.map = {
       getLayer: () => true,
@@ -256,7 +256,7 @@ describe('withParcelHitTolerance', () => {
 
   it('falls back to the nearest rendered parcel within tolerance when there are no exact hits', async () => {
     const descriptor = makeDescriptor(() => [])
-    const { MapProvider } = await withParcelHitTolerance(descriptor).load()
+    const { MapProvider } = await withParcelMapProvider(descriptor).load()
     const provider = new MapProvider()
     const nearby = {
       geometry: {
@@ -284,7 +284,7 @@ describe('withParcelHitTolerance', () => {
 
   it('returns no hits when the parcels layer is not on the map', async () => {
     const descriptor = makeDescriptor(() => [])
-    const { MapProvider } = await withParcelHitTolerance(descriptor).load()
+    const { MapProvider } = await withParcelMapProvider(descriptor).load()
     const provider = new MapProvider()
     provider.map = { getLayer: () => false }
 
@@ -293,7 +293,7 @@ describe('withParcelHitTolerance', () => {
 
   it('returns no hits when the point lands on a cluster badge, so the parcel behind it is not also selected', async () => {
     const descriptor = makeDescriptor(() => [{ id: 'hit' }])
-    const { MapProvider } = await withParcelHitTolerance(descriptor).load()
+    const { MapProvider } = await withParcelMapProvider(descriptor).load()
     const provider = new MapProvider()
     provider.map = {
       getLayer: () => true,
@@ -305,6 +305,63 @@ describe('withParcelHitTolerance', () => {
     }
 
     expect(provider.getFeaturesAtPoint({ x: 0, y: 0 })).toEqual([])
+  })
+})
+
+describe('withParcelMapProvider fitToBounds', () => {
+  function makeProvider(baseFitToBounds = vi.fn()) {
+    class BaseProvider {
+      fitToBounds(...args) {
+        return baseFitToBounds(...args)
+      }
+    }
+    return { descriptor: { load: async () => ({ MapProvider: BaseProvider }) }, baseFitToBounds }
+  }
+  const view = [
+    [-1.5, 51.5],
+    [-0.5, 52.5]
+  ]
+
+  it('animates a bounds array under the search zoom cap instead of the vendor fit', async () => {
+    const { descriptor, baseFitToBounds } = makeProvider()
+    const { MapProvider } = await withParcelMapProvider(descriptor).load()
+    const provider = new MapProvider()
+    provider.map = { fitBounds: vi.fn(), getBounds: () => ({ toArray: () => view }) }
+
+    provider.fitToBounds([-2.5, 51.4, -2.4, 51.5])
+
+    expect(baseFitToBounds).not.toHaveBeenCalled()
+    expect(provider.map.fitBounds).toHaveBeenCalledWith(
+      [
+        [-2.5, 51.4],
+        [-2.4, 51.5]
+      ],
+      expect.objectContaining({ animate: true, maxZoom: 18 })
+    )
+  })
+
+  it('leaves the map alone for a null extent, which a parcel search result carries so attachParcelSearch frames it', async () => {
+    const { descriptor, baseFitToBounds } = makeProvider()
+    const { MapProvider } = await withParcelMapProvider(descriptor).load()
+    const provider = new MapProvider()
+    provider.map = { fitBounds: vi.fn(), getBounds: () => ({ toArray: () => view }) }
+
+    expect(provider.fitToBounds(null)).toBeUndefined()
+
+    expect(provider.map.fitBounds).not.toHaveBeenCalled()
+    expect(baseFitToBounds).not.toHaveBeenCalled()
+  })
+
+  it('defers to the vendor fit for anything that is not a bounds array', async () => {
+    const { descriptor, baseFitToBounds } = makeProvider()
+    const { MapProvider } = await withParcelMapProvider(descriptor).load()
+    const provider = new MapProvider()
+    provider.map = { fitBounds: vi.fn(), getBounds: () => ({ toArray: () => view }) }
+    const geojson = { type: 'Point', coordinates: [0, 0] }
+
+    provider.fitToBounds(geojson)
+
+    expect(baseFitToBounds).toHaveBeenCalledWith(geojson)
   })
 })
 
@@ -335,7 +392,7 @@ describe('tooltip helpers', () => {
     const tooltip = document.createElement('div')
     showTooltip(tooltip, '<b>SD1</b>', { areaHa: 2.5 }, 10, 20, null)
 
-    expect(tooltip.style.display).toBe('block')
+    expect(tooltip.hidden).toBe(false)
     expect(tooltip.innerHTML).toContain('&lt;b&gt;SD1&lt;/b&gt;')
     expect(tooltip.innerHTML).toContain('2.5000 ha')
     expect(tooltip.innerHTML).not.toContain('Available actions')
@@ -358,10 +415,10 @@ describe('tooltip helpers', () => {
 
   it('hides the tooltip', () => {
     const tooltip = document.createElement('div')
-    tooltip.style.display = 'block'
+    tooltip.hidden = false
     hideTooltip(tooltip)
 
-    expect(tooltip.style.display).toBe('none')
+    expect(tooltip.hidden).toBe(true)
   })
 })
 

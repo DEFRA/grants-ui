@@ -177,6 +177,23 @@ test('reset supplies the core stack before the Land Grants overlay', () => {
   )
 })
 
+test('reset removes the seeded Postgres image when present and leaves unrelated images alone', () => {
+  vi.mocked(spawnSync).mockImplementation((_command, args) => ({
+    status: 0,
+    stdout: args?.[0] === 'images' ? 'defradigital/land-grants-postgres-seeded\nunrelated/image\n' : '',
+    stderr: '',
+    pid: 1,
+    output: [],
+    signal: null
+  }))
+  expect(cmdReset(false)).toBe(0)
+  expect(spawnSync).toHaveBeenCalledWith(
+    'docker',
+    ['rmi', '-f', 'defradigital/land-grants-postgres-seeded'],
+    expect.objectContaining({ stdio: 'inherit' })
+  )
+})
+
 test('reset dry-run does not query or change Docker', () => {
   expect(cmdReset(true)).toBe(0)
   expect(spawnSync).not.toHaveBeenCalled()

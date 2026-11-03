@@ -1,10 +1,10 @@
 Feature: Google Analytics
 
     Scenario: Grants should not fire GA requests before analytics cookie consent is given, and should fire after accepting cookies
-        Given there is no application data for SBI "113593357" and grant "example-grant-with-auth"
+        Given there is no application data for SBI "800000014" and grant "example-grant-with-auth"
         And the user starts a new browser session with GA request tracking
         And the user navigates to "/example-grant-with-auth"
-        And logs in as CRN "1100943757"
+        And logs in as CRN "9000000013"
         Then the user should see heading "Example Grant"
         And no GA collect requests should have fired after waiting 5 seconds
         When the user clicks on "Accept analytics cookies"
@@ -12,10 +12,10 @@ Feature: Google Analytics
         And a GA collect request should fire
 
     Scenario: Grants should fire GA no-script request when JavaScript is disabled
-        Given there is no application data for SBI "107173507" and grant "example-grant-with-auth"
+        Given there is no application data for SBI "800000012" and grant "example-grant-with-auth"
         And the user starts a new browser session with JavaScript disabled
         And the user navigates to "/example-grant-with-auth"
-        And logs in as CRN "1100943838"
+        And logs in as CRN "9000000014"
         When the user clicks on "Accept analytics cookies"
         And the user navigates to "/example-grant-with-auth/start"
         Then a GA ns.html request should have fired

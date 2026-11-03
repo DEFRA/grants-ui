@@ -8,7 +8,11 @@ import {
 } from '~/src/server/land-grants/view-state/land-parcel.view-state.js'
 import { getParcelIdFromQuery } from '../utils/parcel-request.utils.js'
 import { getLandGrantsUserContext } from '../services/land-grants-user-context.js'
-import { getQuantityErrorsByCode, normaliseQuantityFields } from '../utils/select-actions-payload.utils.js'
+import {
+  getQuantityErrorsByCode,
+  getSelectedActionsErrorText,
+  normaliseQuantityFields
+} from '../utils/select-actions-payload.utils.js'
 
 /** fallback path when no predecessor page is found. */
 const SELECT_LAND_PARCEL_PATH = '/select-land-parcel'
@@ -202,6 +206,7 @@ export default class SelectActionsBasePageController extends QuestionPageWithPar
       ...additionalState,
       parcelName: formatParcelReference({ sheetId, parcelId }),
       errors,
+      selectedActionsErrorText: getSelectedActionsErrorText(errors),
       existingLandParcels,
       singleParcelSubmission: this.singleParcelSubmission,
       pageTitle: `Select actions for land parcel ${formatParcelReference({ sheetId, parcelId })}`

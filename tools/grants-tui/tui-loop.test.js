@@ -505,14 +505,40 @@ test.each(['headless', 'headed'])('journey runs from Tools with arrows only for 
   )
 })
 
+test.each(['headless', 'headed'])('journey can stop at a selected page in %s mode', async (mode) => {
+  vi.mocked(getRunningComposeFiles).mockReturnValue(['compose.infra.yml', 'compose.grants-ui.yml'])
+  vi.mocked(journeySteps).mockReturnValue([
+    { slug: 'start', name: 'Start' },
+    { slug: 'check-answers', name: 'Check answers' }
+  ])
+  for (const choice of ['journey', 'test-grant', mode, 'keep', '2']) {
+    vi.mocked(radioMenu).mockResolvedValueOnce(choice)
+  }
+
+  await handleToolsCommand(true)
+
+  const stopMenu = vi.mocked(radioMenu).mock.calls.find((call) => call[1] === "Run 'test-grant' how?")
+  expect(stopMenu?.[0]).toEqual([
+    expect.objectContaining({ key: '__end__' }),
+    expect.objectContaining({ key: 'window-closed' }),
+    { key: '1', label: '1. start', description: 'Start' },
+    { key: '2', label: '2. check-answers', description: 'Check answers' }
+  ])
+  expect(runInteractiveAction).toHaveBeenCalledWith(
+    'journey',
+    ['test-grant', expect.objectContaining({ headed: mode === 'headed', stop: '2' }), true],
+    mode === 'headed' ? 'Running journey test-grant — close browser when finished' : 'Running journey test-grant'
+  )
+})
+
 test('journey with more than one known-good CRN prompts for a choice, and the pick reaches the run', async () => {
   vi.mocked(getRunningComposeFiles).mockReturnValue(['compose.infra.yml', 'compose.grants-ui.yml'])
   vi.mocked(journeySteps).mockReturnValue([])
   vi.mocked(journeyCrnOptions).mockReturnValue([
-    { crn: '1102838829', note: 'happy path' },
-    { crn: '1103313150', note: 'no eligible actions' }
+    { crn: '9000000608', note: 'happy path' },
+    { crn: '9000000610', note: 'no eligible actions' }
   ])
-  for (const choice of ['journey', 'test-grant', '1103313150', 'headless', 'keep', '__end__']) {
+  for (const choice of ['journey', 'test-grant', '9000000610', 'headless', 'keep', '__end__']) {
     vi.mocked(radioMenu).mockResolvedValueOnce(choice)
   }
 
@@ -521,12 +547,12 @@ test('journey with more than one known-good CRN prompts for a choice, and the pi
   const calls = vi.mocked(radioMenu).mock.calls
   expect(calls[2][1]).toBe("Select a CRN for 'test-grant'")
   expect(calls[2][0]).toEqual([
-    expect.objectContaining({ key: '1102838829', description: 'happy path' }),
-    expect.objectContaining({ key: '1103313150', description: 'no eligible actions' })
+    expect.objectContaining({ key: '9000000608', description: 'happy path' }),
+    expect.objectContaining({ key: '9000000610', description: 'no eligible actions' })
   ])
   expect(runInteractiveAction).toHaveBeenCalledWith(
     'journey',
-    ['test-grant', expect.objectContaining({ crn: '1103313150' }), true],
+    ['test-grant', expect.objectContaining({ crn: '9000000610' }), true],
     expect.any(String)
   )
 })
