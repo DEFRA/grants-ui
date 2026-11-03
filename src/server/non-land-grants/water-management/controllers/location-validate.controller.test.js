@@ -64,7 +64,7 @@ describe('LocationValidateController', () => {
       mockContext.state.additionalAnswers.locationFound = true
       const result = controller.getNextPath(mockContext)
       expect(result).toBe('/next-page')
-      expect(QuestionPageController.prototype.getNextPath).toHaveBeenCalled()
+      expect(QuestionPageController.prototype.getNextPath).toHaveBeenCalledWith(mockContext)
     })
 
     it('should return exit page when locationFound is false', () => {
@@ -78,9 +78,8 @@ describe('LocationValidateController', () => {
       expect(result).toBe('/exit-where-project-located')
     })
   })
-
   describe('makePostRouteHandler', () => {
-    it('should call parent handler and set state when scoring service succeeds', async () => {
+    it('should call parent handler and update context state when scoring service succeeds', async () => {
       invokeGrantScoringGetAction.mockResolvedValueOnce({})
 
       const handler = controller.makePostRouteHandler()
@@ -90,16 +89,11 @@ describe('LocationValidateController', () => {
         easting: '123456',
         northing: '654321'
       })
-      expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
-        additionalAnswers: {
-          locationFound: true
-        }
-      })
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/next-page')
-      expect(result).toBe('redirected')
+      expect(mockContext.state.additionalAnswers.locationFound).toBe(true)
+      expect(result).toBe('parent-handler-result')
     })
 
-    it('should set locationFound to false when scoring service returns 400', async () => {
+    it('should update context state with locationFound false when scoring service returns 400', async () => {
       const error = new Error('Bad Request')
       error._details = { upstreamStatus: 400 }
       invokeGrantScoringGetAction.mockRejectedValueOnce(error)
@@ -108,13 +102,8 @@ describe('LocationValidateController', () => {
       const result = await handler(mockRequest, mockContext, mockH)
 
       expect(invokeGrantScoringGetAction).toHaveBeenCalled()
-      expect(controller.setState).toHaveBeenCalledWith(mockRequest, {
-        additionalAnswers: {
-          locationFound: false
-        }
-      })
-      expect(controller.proceed).toHaveBeenCalledWith(mockRequest, mockH, '/exit-where-project-located')
-      expect(result).toBe('redirected')
+      expect(mockContext.state.additionalAnswers.locationFound).toBe(false)
+      expect(result).toBe('parent-handler-result')
     })
 
     it('should throw if scoring service fails with other error', async () => {
@@ -124,8 +113,6 @@ describe('LocationValidateController', () => {
 
       const handler = controller.makePostRouteHandler()
       await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow('Internal Server Error')
-
-      expect(controller.setState).not.toHaveBeenCalled()
     })
 
     it('should handle missing payload gracefully', async () => {
@@ -139,6 +126,15 @@ describe('LocationValidateController', () => {
         easting: undefined,
         northing: undefined
       })
+    })
+
+    it('should call parent handler immediately if there are validation errors', async () => {
+      mockContext.errors = { some: 'error' }
+      const handler = controller.makePostRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(invokeGrantScoringGetAction).not.toHaveBeenCalled()
+      expect(result).toBe('parent-handler-result')
     })
   })
 })
