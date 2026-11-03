@@ -49,3 +49,13 @@ export const formatParcelReference = (parcel) => {
  * @returns {string}
  */
 export const compactParcelReference = (value) => (value ?? '').replace(/[\s-]/g, '').toUpperCase()
+
+/**
+ * Compares full parcel references by sheet ID, then parcel ID.
+ * Accepts parcel objects and compound IDs without changing their stored format.
+ * @param {ParcelIdentifier | string} left
+ * @param {ParcelIdentifier | string} right
+ * @returns {number}
+ */
+export const compareParcelReferences = (left, right) =>
+  formatParcelReference(left).localeCompare(formatParcelReference(right), 'en', { numeric: true })
