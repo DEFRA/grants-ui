@@ -43,6 +43,19 @@ describe('formatAnswer', () => {
       ]
     }
 
+    test('should sort saved parcel selections without mutating answers', () => {
+      const values = ['SD6352-8774', 'SD6351-8781', 'SD6351-0012']
+      const original = [...values]
+      expect(formatAnswer({ type: 'CheckboxesField', name: 'landParcels' }, values)).toBe(
+        'SD6351-0012, SD6351-8781, SD6352-8774'
+      )
+      expect(values).toEqual(original)
+    })
+
+    test('should preserve the order of other checkbox answers', () => {
+      expect(formatAnswer(component, ['c', 'a'])).toBe('Option C, Option A')
+    })
+
     test('should join selected item labels with commas', () => {
       expect(formatAnswer(component, ['a', 'c'])).toBe('Option A, Option C')
     })

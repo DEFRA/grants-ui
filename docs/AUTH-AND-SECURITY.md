@@ -67,6 +67,14 @@ When permission enforcement is enabled for a grant, each page request is evaluat
    - Progress is preserved, and the user is provided a return link back to their task list or summary.
 4. **Unauthorised Users**: Users with no permissions for the resource receive a `403 Forbidden` response and an `unauthorised` audit event with reason `permission` (`entity: 'application'` for `csApplications` or `entity: 'claim'` for `csAgreements`).
 
+### Sign-out
+
+`GET /auth/sign-out` returns a small page (`Cache-Control: no-store`) that sends the browser to the Defra ID end-session endpoint with `post_logout_redirect_uri`, `id_token_hint` and `state`, rather than answering with a `302`. The `id_token_hint` is the user's full Defra ID token (2-4KB, growing with each business relationship); in a `Location` header it pushed the response past the 4KB header buffer of the nginx [cdp-ssl-sidecar](https://github.com/DEFRA/cdp-ssl-sidecar), which fails the response as `502 "SSL Sidecar - Bad Gateway"`. The hint cannot be dropped: Defra ID's onboarding guide requires it for the redirect back, otherwise the user is left on a generic Defra services page.
+
+The page POSTs the request in a form auto-submitted by a nonce'd script; the "click here" fallback is the same request as a GET link. This is Defra ID's recommendation and keeps the token out of the URL; fcp-defra-id-stub accepts the POST too. Browsers check `form-action` against every redirect the submission follows, so that one response's CSP also allows the hub and B2C origins taken from the discovery document (`end_session_endpoint`, `authorization_endpoint`). If Defra ID adds another hop the browser blocks the submission and the user keeps the link, so extend the list rather than loosen it.
+
+Defra ID returns the user to `/auth/sign-out-oidc`, which verifies `state` and tears down the session.
+
 ## Rate Limiting
 
 The application implements rate limiting to protect against abuse and denial-of-service attacks (CWE-400: Uncontrolled Resource Consumption). Rate limiting is implemented using [hapi-rate-limit](https://github.com/wraithgar/hapi-rate-limit).
