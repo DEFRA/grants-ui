@@ -1,4 +1,5 @@
-import { log, debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { logHandledError } from '~/src/server/common/helpers/logging/handled-error.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { fetchParcels } from '../services/land-grants.service.js'
 import QuestionPageWithParcelCheckController from '~/src/server/common/controllers/question-page-with-parcel-check.controller.js'
 import { mapParcelsToViewModel } from '~/src/server/land-grants/view-models/parcel.view-model.js'
@@ -33,15 +34,10 @@ export default class SelectLandParcelPageController extends QuestionPageWithParc
         const { landParcels } = state || {}
         parcels = mapParcelsToViewModel(fetchedParcels, landParcels)
       } catch (error) {
-        debug(
-          {
-            level: 'error',
-            error: /** @type {Error} */ (error),
-            messageFunc: () => 'Error fetching parcels for validation error rendering'
-          },
-          {},
-          request
-        )
+        logHandledError(error, request, {
+          fallbackCode: LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+          fallbackDetails: { endpoint: 'fetch parcels for validation error rendering' }
+        })
       }
 
       return h.view(this.viewName, {
@@ -101,15 +97,10 @@ export default class SelectLandParcelPageController extends QuestionPageWithParc
 
       return h.view(viewName, viewModel)
     } catch (error) {
-      debug(
-        {
-          level: 'error',
-          error: /** @type {Error} */ (error),
-          messageFunc: () => `Unexpected error when fetching parcel data`
-        },
-        {},
-        request
-      )
+      logHandledError(error, request, {
+        fallbackCode: LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+        fallbackDetails: { endpoint: 'fetch parcel data' }
+      })
       const errorMessage =
         'Unable to find parcel information, please try again later or contact the Rural Payments Agency.'
 

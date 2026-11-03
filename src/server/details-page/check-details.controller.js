@@ -3,7 +3,7 @@ import { TerminalPageController } from '@defra/forms-engine-plugin/controllers/T
 import { buildGraphQLQuery, mapResponse, processSections } from '../common/services/details-page/index.js'
 import { executeConfigDrivenQuery } from '../common/services/consolidated-view/consolidated-view.service.js'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
-import { BaseError } from '../common/utils/errors/BaseError.js'
+import { logHandledError } from '../common/helpers/logging/handled-error.js'
 import { mergeAdditionalAnswers } from '../common/helpers/state/additional-answers-helper.js'
 import { ComponentType, ControllerType } from '@defra/forms-model'
 import { config } from '~/src/config/config.js'
@@ -13,19 +13,6 @@ const ERROR_TITLE = 'There is a problem'
 const UPDATE_DETAILS_PATH = '/update-details'
 const SFD_UPDATE_ACTION = 'updateDetailsOnSfd'
 const sfdUpdateUrlCache = new WeakMap()
-
-/**
- * Logs failures handled locally by the details page.
- * @param {Error} error
- * @param {AnyFormRequest} request
- */
-function logDetailsError(error, request) {
-  if (error instanceof BaseError) {
-    error.log(request)
-  } else {
-    log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, { endpoint: 'ConsolidatedView', errorMessage: error.message }, request)
-  }
-}
 
 /**
  * @param {object} controller
@@ -326,16 +313,19 @@ export default class CheckDetailsController extends withTaskContext(QuestionPage
           // missing or malformed URL — log and fall through to the update-details page
           const updateUrl = getConfiguredSfdUpdateUrl(this)
           log(LogCodes.SYSTEM.SFD_UPDATE_URL_MISSING_ON_REDIRECT, { updateUrl: updateUrl ?? '' }, request)
-          const { [this.confirmationFieldName]: _, ...stateWithoutConfirmation } = state
+          const stateWithoutConfirmation = { ...state }
+          delete stateWithoutConfirmation[this.confirmationFieldName]
           await this.setState(request, { ...stateWithoutConfirmation, checkDetailsChangesPending: true })
           return this.proceed(request, h, this.getNextPath(context))
         }
       }
 
       // Clear checkDetailsChangesPending once user has selected Yes
-      const { checkDetailsChangesPending: _cleared, ...stateWithoutPending } = state
+      const stateWithoutPending = { ...state }
+      delete stateWithoutPending.checkDetailsChangesPending
       context.state = stateWithoutPending
-      const { checkDetailsChangesPending: _clearedPayload, ...payloadWithoutPending } = context.payload
+      const payloadWithoutPending = { ...context.payload }
+      delete payloadWithoutPending.checkDetailsChangesPending
       context.payload = payloadWithoutPending
 
       // Save state
@@ -381,7 +371,8 @@ export default class CheckDetailsController extends withTaskContext(QuestionPage
     const currentRelationshipId = /** @type {string} */ (request.auth.credentials.currentRelationshipId)
     const url = new URL(updateUrl)
     url.searchParams.set('ssoOrgId', currentRelationshipId)
-    const { [this.confirmationFieldName]: _, ...stateWithoutConfirmation } = state
+    const stateWithoutConfirmation = { ...state }
+    delete stateWithoutConfirmation[this.confirmationFieldName]
     await this.setState(request, { ...stateWithoutConfirmation, checkDetailsChangesPending: true })
     return h.redirect(url.toString())
   }
@@ -408,7 +399,10 @@ export default class CheckDetailsController extends withTaskContext(QuestionPage
       )
       return this.proceed(request, h, this.getNextPath(context))
     } catch (error) {
-      logDetailsError(/** @type {Error} */ (error), request)
+      logHandledError(error, request, {
+        fallbackCode: LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+        fallbackDetails: { endpoint: 'ConsolidatedView' }
+      })
       return h.view(this.viewName, {
         ...baseViewModel,
         error: {
@@ -444,7 +438,10 @@ export default class CheckDetailsController extends withTaskContext(QuestionPage
    * @returns {ResponseObject}
    */
   handleError(error, baseViewModel, h, request) {
-    logDetailsError(error, request)
+    logHandledError(error, request, {
+      fallbackCode: LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+      fallbackDetails: { endpoint: 'ConsolidatedView' }
+    })
     return h.view(this.viewName, {
       ...baseViewModel,
       error: {

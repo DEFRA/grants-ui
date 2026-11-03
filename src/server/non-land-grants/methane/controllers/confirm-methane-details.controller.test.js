@@ -10,19 +10,12 @@ import {
   createSbiRow
 } from '~/src/server/common/helpers/create-rows.js'
 import { setupControllerMocks } from '~/src/__mocks__/controller-mocks.js'
+import { log, logger, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { ConsolidatedViewError } from '~/src/server/common/utils/errors/ConsolidatedViewError.js'
 
 // Mock dependencies
 vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.service.js')
 vi.mock('~/src/server/common/helpers/create-rows.js')
-vi.mock('~/src/server/common/helpers/logging/log.js', async () => {
-  const { mockLoggerFactoryWithCustomMethods } = await import('~/src/__mocks__')
-
-  return {
-    logger: mockLoggerFactoryWithCustomMethods({
-      error: vi.fn()
-    })
-  }
-})
 
 const mockData = {
   business: {
@@ -128,6 +121,29 @@ describe('ConfirmMethaneDetailsController', () => {
       })
     })
 
+    it('logs preserved Consolidated View details once when rendering the local error view', async () => {
+      const error = new ConsolidatedViewError({
+        message: 'Business lookup failed',
+        source: 'makeConsolidatedViewRequest',
+        reason: 'api_error',
+        status: 502,
+        statusCode: 503,
+        responseBody: 'Service unavailable',
+        sbi: mockRequest.auth.credentials.sbi
+      })
+      vi.mocked(fetchBusinessAndCPH).mockRejectedValue(error)
+
+      const result = await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+
+      expect(log).toHaveBeenCalledExactlyOnceWith(error.logCode, error.details, mockRequest)
+      expect(logger.error).not.toHaveBeenCalled()
+      expect(mockH.view).toHaveBeenCalledWith(
+        'confirm-methane-details',
+        expect.objectContaining({ error: expect.objectContaining({ titleText: 'There is a problem' }) })
+      )
+      expect(result).toBe('mocked-view')
+    })
+
     it('should return view with farm details on successful request', async () => {
       const handler = controller.makeGetRouteHandler()
 
@@ -157,6 +173,15 @@ describe('ConfirmMethaneDetailsController', () => {
 
       await handler(mockRequest, mockContext, mockH)
 
+      expect(log).toHaveBeenCalledExactlyOnceWith(
+        { ...LogCodes.SYSTEM.EXTERNAL_API_ERROR, error },
+        {
+          endpoint: `fetch methane farm details for sbi ${mockRequest.auth.credentials.sbi}`,
+          errorMessage: error.message
+        },
+        mockRequest
+      )
+      expect(logger.error).not.toHaveBeenCalled()
       expect(mockH.view).toHaveBeenCalledWith('confirm-methane-details', {
         baseModel: 'data',
         error: {
@@ -311,6 +336,21 @@ describe('ConfirmMethaneDetailsController', () => {
   describe('makePostRouteHandler', () => {
     beforeEach(() => {
       vi.mocked(fetchBusinessAndCPH).mockResolvedValue(mockData)
+    })
+
+    it('propagates structured errors without logging locally', async () => {
+      const error = new ConsolidatedViewError({
+        message: 'Business lookup failed',
+        source: 'makeConsolidatedViewRequest',
+        reason: 'api_error'
+      })
+      vi.mocked(fetchBusinessAndCPH).mockRejectedValue(error)
+
+      await expect(controller.makePostRouteHandler()(mockRequest, mockContext, mockH)).rejects.toBe(error)
+
+      expect(log).not.toHaveBeenCalled()
+      expect(logger.error).not.toHaveBeenCalled()
+      expect(controller.setState).not.toHaveBeenCalled()
     })
 
     it('should handle POST request with SBI and proceed to next page', async () => {

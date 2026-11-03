@@ -6,9 +6,10 @@ import {
   createCustomerNameRow,
   createSbiRow
 } from '~/src/server/common/helpers/create-rows.js'
-import { logger } from '~/src/server/common/helpers/logging/log.js'
+import { LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { fetchBusinessAndCPH } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import { mergeAdditionalAnswers } from '~/src/server/common/helpers/state/additional-answers-helper.js'
+import { logHandledError } from '~/src/server/common/helpers/logging/handled-error.js'
 
 export default class ConfirmMethaneDetailsController extends QuestionPageController {
   viewName = 'confirm-methane-details'
@@ -36,7 +37,7 @@ export default class ConfirmMethaneDetailsController extends QuestionPageControl
         const farmDetails = await this.buildFarmDetails(request)
         return h.view(this.viewName, { ...baseViewModel, farmDetails })
       } catch (error) {
-        return this.handleError(sbi, error, baseViewModel, h)
+        return this.handleError(sbi, error, baseViewModel, h, request)
       }
     }
   }
@@ -91,8 +92,11 @@ export default class ConfirmMethaneDetailsController extends QuestionPageControl
   /**
    * Handle errors and return error view
    */
-  handleError(sbi, error, baseViewModel, h) {
-    logger.error({ err: error, sbi }, 'Unexpected error when fetching farm information')
+  handleError(sbi, error, baseViewModel, h, request) {
+    logHandledError(error, request, {
+      fallbackCode: LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+      fallbackDetails: { endpoint: `fetch methane farm details for sbi ${sbi}` }
+    })
 
     return h.view(this.viewName, {
       ...baseViewModel,

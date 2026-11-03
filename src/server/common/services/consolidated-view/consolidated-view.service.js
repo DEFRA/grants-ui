@@ -6,6 +6,8 @@ import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { ConsolidatedViewError } from '~/src/server/common/utils/errors/ConsolidatedViewError.js'
 import { statusCodes } from '../../constants/status-codes.js'
 
+const SERVER_ERROR_RANGE_END = 600
+
 /**
  * @param {GraphQLError[]} errors
  * @param {string[]} [toleratedPaths]
@@ -24,7 +26,7 @@ export function hasOnlyToleratedFailures(errors, toleratedPaths) {
  * @returns {boolean}
  */
 function isServerError(status) {
-  return typeof status === 'number' && status >= statusCodes.internalServerError && status < 600
+  return typeof status === 'number' && status >= statusCodes.internalServerError && status < SERVER_ERROR_RANGE_END
 }
 
 /**

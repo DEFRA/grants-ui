@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
-import { log } from '~/src/server/common/helpers/logging/log.js'
-import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { ConsolidatedViewError } from '~/src/server/common/utils/errors/ConsolidatedViewError.js'
 import {
   clearParcelCache,
@@ -18,16 +17,13 @@ vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.servic
   fetchParcelsFromDal: vi.fn()
 }))
 
-vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  log: vi.fn()
-}))
-
 const SECONDS_PER_MINUTE = 60
 const MS_PER_SECOND = 1000
 const TTL = 5 * SECONDS_PER_MINUTE * MS_PER_SECOND
 
 describe('parcel-cache', () => {
   beforeEach(() => {
+    vi.clearAllMocks()
     clearParcelCache()
   })
 
@@ -138,7 +134,7 @@ describe('parcel-cache', () => {
       expect(result).toBeNull()
       expect(getCachedAuthParcels('800000602')).toBeNull()
       expect(log).toHaveBeenCalledExactlyOnceWith(
-        LogCodes.SYSTEM.CONSOLIDATED_VIEW_API_ERROR,
+        mockError.logCode,
         expect.objectContaining({
           errorMessage: 'Failed to fetch business data: Business not found',
           statusCode: 200,
@@ -148,16 +144,21 @@ describe('parcel-cache', () => {
       )
     })
 
-    it('wraps and logs unexpected errors and returns null without caching', async () => {
-      fetchParcelsFromDal.mockRejectedValue(new Error('API connection failed'))
+    it('logs unexpected errors with context and returns null without caching', async () => {
+      const error = new Error('API connection failed')
+      fetchParcelsFromDal.mockRejectedValue(error)
 
       const result = await fetchAuthorisedParcelIds(mockRequest)
 
       expect(result).toBeNull()
       expect(getCachedAuthParcels('800000602')).toBeNull()
       expect(log).toHaveBeenCalledExactlyOnceWith(
-        LogCodes.SYSTEM.GENERIC_ERROR,
-        expect.objectContaining({ errorMessage: 'API connection failed', reason: 'wrappedError' }),
+        { ...LogCodes.SYSTEM.EXTERNAL_API_ERROR, error },
+        {
+          endpoint: 'fetch authorised parcel ids for sbi 800000602',
+          service: 'consolidated-view',
+          errorMessage: 'API connection failed'
+        },
         mockRequest
       )
     })

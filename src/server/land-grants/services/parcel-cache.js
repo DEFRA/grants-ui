@@ -1,5 +1,6 @@
 import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
-import { BaseError } from '~/src/server/common/utils/errors/BaseError.js'
+import { logHandledError } from '~/src/server/common/helpers/logging/handled-error.js'
+import { LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { stringifyParcel } from '~/src/shared/format-parcel.js'
 
 const SECONDS_PER_MINUTE = 60
@@ -92,8 +93,10 @@ export async function fetchAuthorisedParcelIds(request) {
     setCachedAuthParcels(sbi, parcelIds)
     return parcelIds
   } catch (error) {
-    const handledError = error instanceof BaseError ? error : BaseError.wrap(/** @type {Error} */ (error))
-    handledError.log(request)
+    logHandledError(error, request, {
+      fallbackCode: LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+      fallbackDetails: { endpoint: `fetch authorised parcel ids for sbi ${sbi}`, service: 'consolidated-view' }
+    })
     return null
   }
 }

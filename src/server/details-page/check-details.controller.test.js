@@ -422,7 +422,7 @@ describe('CheckDetailsController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(log).toHaveBeenCalledWith(
-        LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+        { ...LogCodes.SYSTEM.EXTERNAL_API_ERROR, error },
         { endpoint: 'ConsolidatedView', errorMessage: 'API unavailable' },
         mockRequest
       )
@@ -611,7 +611,7 @@ describe('CheckDetailsController', () => {
       const result = await controller.handleDetailsConfirmed(mockRequest, mockContext, mockConfig, mockH)
 
       expect(log).toHaveBeenCalledWith(
-        LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+        { ...LogCodes.SYSTEM.EXTERNAL_API_ERROR, error },
         { endpoint: 'ConsolidatedView', errorMessage: 'Data fetch failed' },
         mockRequest
       )
@@ -877,7 +877,7 @@ describe('CheckDetailsController', () => {
       const result = controller.handleError(error, baseViewModel, mockH, mockRequest)
 
       expect(log).toHaveBeenCalledWith(
-        LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+        { ...LogCodes.SYSTEM.EXTERNAL_API_ERROR, error },
         { endpoint: 'ConsolidatedView', errorMessage: 'Test error message' },
         mockRequest
       )
