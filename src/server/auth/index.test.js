@@ -3,6 +3,10 @@ import Cookie from '@hapi/cookie'
 import Hapi from '@hapi/hapi'
 import Yar from '@hapi/yar'
 import { auth } from '~/src/server/auth/index.js'
+import { getSignOutRequest } from '~/src/server/auth/get-sign-out-url.js'
+import { configState } from '~/src/__mocks__/config-mocks.js'
+import { nunjucksConfig } from '~/src/config/nunjucks/nunjucks.js'
+import { contentSecurityPolicy } from '~/src/plugins/content-security-policy.js'
 import { YarKeys } from '~/src/server/common/constants/session-keys.js'
 import permissionsPlugin from '~/src/plugins/permissions.js'
 import { fetchBusinessPermissions } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
@@ -12,10 +16,14 @@ vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.servic
 }))
 
 vi.mock('~/src/config/config.js', async () => {
-  const { mockConfig } = await import('~/src/__mocks__/config-mocks.js')
-  return mockConfig({
-    'rateLimit.authEndpointUserLimit': 1000,
-    'rateLimit.authEndpointPathLimit': 1000
+  const { mockConfigWithState } = await import('~/src/__mocks__/config-mocks.js')
+  return mockConfigWithState({
+    defaults: {
+      'rateLimit.authEndpointUserLimit': 1000,
+      'rateLimit.authEndpointPathLimit': 1000,
+      'defraId.wellKnownUrl':
+        'https://your-account.cpdev.cui.defra.gov.uk/idphub/b2c/b2c_1a_cui_cpdev_signupsigninsfi/.well-known/openid-configuration'
+    }
   })
 })
 
@@ -23,8 +31,27 @@ vi.mock('~/src/server/auth/state.js', () => ({
   validateState: vi.fn()
 }))
 
-vi.mock('~/src/server/auth/get-sign-out-url.js', () => ({
-  getSignOutUrl: vi.fn().mockResolvedValue('https://defra-id.example/logout')
+vi.mock('~/src/server/auth/get-sign-out-url.js', async () => ({
+  toSignOutUrl: (await vi.importActual('~/src/server/auth/get-sign-out-url.js')).toSignOutUrl,
+  getSignOutRequest: vi.fn().mockResolvedValue({
+    endpoint: 'https://defra-id.example/signout',
+    fields: {
+      post_logout_redirect_uri: 'https://grants-ui.example.com/auth/sign-out-oidc',
+      id_token_hint: 'stub-token',
+      state: 'abc'
+    }
+  })
+}))
+
+vi.mock('~/src/config/nunjucks/context/context.js', () => ({
+  context: () => ({ getAssetPath: (/** @type {string} */ assetPath) => `/public/${assetPath}` })
+}))
+
+vi.mock('~/src/server/auth/get-oidc-config.js', () => ({
+  getOidcConfig: vi.fn().mockResolvedValue({
+    authorization_endpoint: 'https://b2c.example/tenant/oauth2/v2.0/authorize',
+    end_session_endpoint: 'https://defra-id.example/signout'
+  })
 }))
 
 vi.mock('~/src/server/auth/verify-token.js', () => ({
@@ -53,10 +80,27 @@ const STALE_CONTEXT = {
  * Builds a Hapi server with the auth router registered. `authenticated` controls
  * whether the stub `defra-id` scheme reports an authenticated user (mirrors a
  * live session cookie surviving into the OIDC sign-out callback).
- * @param {{ authenticated?: boolean }} [opts]
+ * `securityHeaders` adds the production HSTS/frame/sniff options and the CSP
+ * plugin so response header sizes match what the SSL sidecar sees.
+ * @param {{ authenticated?: boolean, securityHeaders?: boolean }} [opts]
  */
-async function buildServer({ authenticated = true } = {}) {
-  const server = Hapi.server()
+async function buildServer({ authenticated = true, securityHeaders = false } = {}) {
+  const server = Hapi.server(
+    securityHeaders
+      ? {
+          routes: {
+            security: {
+              hsts: { maxAge: 31536000, includeSubDomains: true, preload: false },
+              noSniff: true,
+              xframe: true
+            }
+          }
+        }
+      : {}
+  )
+  if (securityHeaders) {
+    await server.register(contentSecurityPolicy)
+  }
 
   await server.register([
     Cookie,
@@ -132,7 +176,7 @@ async function buildServer({ authenticated = true } = {}) {
     })
   })
 
-  await server.register(auth)
+  await server.register([nunjucksConfig, auth])
   await server.register(permissionsPlugin)
   server.route({
     method: 'GET',
@@ -172,18 +216,18 @@ describe('auth router - permissions cache clearing', () => {
   afterEach(() => vi.clearAllMocks())
 
   it.each([
-    ['/auth/sign-out', true],
-    ['/auth/sign-out', false],
-    ['/auth/sign-out-oidc?state=xyz', true],
-    ['/auth/sign-out-oidc?state=xyz', false]
+    ['/auth/sign-out', true, 200],
+    ['/auth/sign-out', false, 302],
+    ['/auth/sign-out-oidc?state=xyz', true, 302],
+    ['/auth/sign-out-oidc?state=xyz', false, 302]
   ])(
     'scopes permissions cleanup to the current user and business at %s (authenticated: %s)',
-    async (url, authenticated) => {
+    async (url, authenticated, expectedStatus) => {
       const server = await buildServer({ authenticated })
       try {
         const result = await contextAfter(server, url)
 
-        expect(result.status).toBe(302)
+        expect(result.status).toBe(expectedStatus)
         expect(result.permissions).toEqual(authenticated ? null : [{ id: 'group-1', level: 'SUBMIT' }])
         expect(result.otherUserPermissions).toEqual([{ id: 'group-2', level: 'VIEW' }])
         expect(result.otherBusinessPermissions).toEqual([])
@@ -207,6 +251,135 @@ describe('auth router - permissions cache clearing', () => {
       }
     }
   )
+})
+
+// The SSL sidecar (nginx) rejects any upstream response whose status line plus
+// headers exceed its 4KB buffer (TGC-1787). A Defra ID token alone can be that
+// big for users linked to many businesses, so these tests use one.
+const SIDECAR_HEADER_BUFFER_BYTES = 4096
+
+function buildLargeToken() {
+  const toBase64Url = (/** @type {object} */ value) => Buffer.from(JSON.stringify(value)).toString('base64url')
+  const relationshipId = (/** @type {number} */ i) => `rel-${String(i).padStart(4, '0')}-4a5b-4c6d-8e9f-0a1b2c3d4e5f`
+  const payload = {
+    sub: 'b1ed40af-8f20-42f9-a015-75c199850a51',
+    contactId: '1100000001',
+    firstName: 'Test',
+    lastName: 'Agent',
+    currentRelationshipId: relationshipId(1),
+    relationships: Array.from(
+      { length: 20 },
+      (_, i) =>
+        `${relationshipId(i + 1)}:10${String(i + 1).padStart(7, '0')}:Example Farming Partnership ${i + 1} Ltd:1:Agent:1`
+    ),
+    roles: Array.from({ length: 20 }, (_, i) => `${relationshipId(i + 1)}:Agent:3`)
+  }
+  const token = `${toBase64Url({ alg: 'RS256', typ: 'JWT' })}.${toBase64Url(payload)}.${'s'.repeat(342)}`
+  expect(token.length).toBeGreaterThan(SIDECAR_HEADER_BUFFER_BYTES)
+  return token
+}
+
+/** Serialise response headers the way the sidecar receives them over HTTP/1.1. */
+function serialiseHeaders(/** @type {{ statusCode: number, headers: Record<string, any> }} */ response) {
+  const lines = Object.entries(response.headers).flatMap(([name, value]) =>
+    (Array.isArray(value) ? value : [value]).map((v) => `${name}: ${v}`)
+  )
+  return `HTTP/1.1 ${response.statusCode} OK\r\n${lines.join('\r\n')}\r\n\r\n`
+}
+
+describe('auth router - /auth/sign-out', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+    configState.reset()
+  })
+
+  it('renders a page that POSTs the end-session request to Defra ID instead of redirecting', async () => {
+    const server = await buildServer({ authenticated: true })
+    try {
+      const response = await server.inject({ method: 'GET', url: '/auth/sign-out' })
+
+      expect(response.statusCode).toBe(200)
+      expect(response.headers.location).toBeUndefined()
+      expect(response.headers['content-type']).toContain('text/html')
+      expect(response.headers['cache-control']).toBe('no-store')
+      expect(getSignOutRequest).toHaveBeenCalledWith(expect.anything(), 'stub-token')
+      expect(response.payload).toContain(
+        '<form method="post" action="https://defra-id.example/signout" id="defra-id-sign-out"'
+      )
+      expect(response.payload).toContain('name="id_token_hint" value="stub-token"')
+    } finally {
+      await server.stop()
+    }
+  })
+
+  it('keeps a >4KB Defra ID token out of the response headers and delivers it in the form body', async () => {
+    const token = buildLargeToken()
+    vi.mocked(getSignOutRequest).mockResolvedValueOnce({
+      endpoint: 'https://defra-id.example/signout',
+      fields: {
+        post_logout_redirect_uri: 'https://grants-ui.example.com/auth/sign-out-oidc',
+        id_token_hint: token,
+        state: 'abc'
+      }
+    })
+
+    const server = await buildServer({ authenticated: true, securityHeaders: true })
+    try {
+      const response = await server.inject({ method: 'GET', url: '/auth/sign-out' })
+
+      expect(response.statusCode).toBe(200)
+      expect(response.headers['strict-transport-security']).toBeDefined()
+      expect(response.headers.location).toBeUndefined()
+
+      const headerBlock = serialiseHeaders(response)
+      expect(headerBlock).not.toContain(token)
+      expect(Buffer.byteLength(headerBlock)).toBeLessThan(SIDECAR_HEADER_BUFFER_BYTES)
+      // Only the hub and B2C origins from the discovery document, only on this response.
+      expect(response.headers['content-security-policy']).toContain(
+        "form-action 'self' https://defra-id.example https://b2c.example;"
+      )
+
+      expect(response.payload).toContain(
+        'name="post_logout_redirect_uri" value="https://grants-ui.example.com/auth/sign-out-oidc"'
+      )
+      expect(response.payload).toContain(`name="id_token_hint" value="${token}"`)
+      expect(response.payload).toContain('name="state" value="abc"')
+      // Manual fallback link carries the same request as a GET, with the same state.
+      expect(response.payload).toContain(
+        `href="https://defra-id.example/signout?post_logout_redirect_uri=https://grants-ui.example.com/auth/sign-out-oidc&amp;id_token_hint=${token}&amp;state=abc"`
+      )
+      const nonce = response.headers['x-csp-nonce']
+      expect(response.payload).toContain(`<script nonce="${nonce}">`)
+      expect(response.payload).toContain("document.getElementById('defra-id-sign-out').submit()")
+    } finally {
+      await server.stop()
+    }
+  })
+
+  it('only relaxes CSP form-action on the signing-out page', async () => {
+    const server = await buildServer({ authenticated: false, securityHeaders: true })
+    try {
+      const response = await server.inject({ method: 'GET', url: '/auth/sign-out' })
+
+      expect(response.statusCode).toBe(302)
+      expect(response.headers['content-security-policy']).toContain("form-action 'self';")
+    } finally {
+      await server.stop()
+    }
+  })
+
+  it('redirects an unauthenticated request straight home', async () => {
+    const server = await buildServer({ authenticated: false })
+    try {
+      const response = await server.inject({ method: 'GET', url: '/auth/sign-out' })
+
+      expect(response.statusCode).toBe(302)
+      expect(response.headers.location).toBe('/')
+      expect(getSignOutRequest).not.toHaveBeenCalled()
+    } finally {
+      await server.stop()
+    }
+  })
 })
 
 describe('auth router - GRANT_APPLICATION_CONTEXT clearing', () => {
