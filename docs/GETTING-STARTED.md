@@ -198,7 +198,7 @@ which is formatted as a GUID string.
 | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
 | `SERVICE_VERSION`                            | Service version (injected in CDP environments)                                                                  | null                                         |
 | `ENVIRONMENT`                                | CDP environment name                                                                                            | `local`                                      |
-| `SERVICE_NAME`                               | Application service name                                                                                        | `Farm and land service`                      |
+| `SERVICE_NAME`                               | Application service name                                                                                        | `Farm and Land Service`                      |
 | `STATIC_CACHE_TIMEOUT`                       | Static asset cache timeout in milliseconds                                                                      | `604800000` (1 week)                         |
 | `ASSET_PATH`                                 | Path to static assets                                                                                           | `/public`                                    |
 | `TRACING_HEADER`                             | HTTP header for distributed tracing                                                                             | `x-cdp-request-id`                           |

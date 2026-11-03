@@ -1,3 +1,4 @@
+import { compareParcelReferences } from '~/src/shared/format-parcel.js'
 import { COMPONENT_TYPES, MONTH_NAMES } from '~/src/server/common/helpers/print-application-service/constants.js'
 
 /**
@@ -42,7 +43,8 @@ function formatCheckboxes(component, value) {
   if (!Array.isArray(value)) {
     return stringifyValue(value)
   }
-  return value.map((v) => lookupItemLabel(component, v)).join(', ')
+  const values = component.name === 'landParcels' ? [...value].sort(compareParcelReferences) : value
+  return values.map((v) => lookupItemLabel(component, v)).join(', ')
 }
 
 /**
@@ -178,5 +180,5 @@ export function formatAnswer(component, value) {
 
 /**
  * @typedef {{ text?: string, value?: unknown }} ListItem
- * @typedef {{ type: string, items?: ListItem[], list?: string | { items?: ListItem[] } }} Component
+ * @typedef {{ type: string, name?: string, items?: ListItem[], list?: string | { items?: ListItem[] } }} Component
  */

@@ -19,7 +19,7 @@ metadata:
       href: https://www.gov.uk/government/organisations/rural-payments-agency
   cookieConsent:
     enabled: true
-    serviceName: Farm and land service
+    serviceName: Farm and Land Service
     cookiePolicyUrl: /cookies
     expiryDays: 365
   grantRedirectRules:

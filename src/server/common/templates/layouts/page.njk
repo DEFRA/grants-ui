@@ -76,35 +76,39 @@
 
   {{ govukServiceNavigation({ serviceName: serviceName, serviceUrl: serviceUrl }) }}
 
-  <div class="govuk-width-container">
-    {% if feedbackSurveyUrl %}
-      {{
-        govukPhaseBanner({
-          tag: {
-            text: "Beta"
-          },
-          html: 'This is a new service. Your <a class="govuk-link" href="' + (feedbackSurveyUrl | escape) + '" target="_blank" rel="noopener noreferrer">feedback</a> will help us improve it.'
-        })
-      }}
-    {% else %}
-      {{
-        govukPhaseBanner({
-          tag: {
-            text: "Beta"
-          },
-          text: 'This is a new service.'
-        })
-      }}
-    {% endif %}
-  </div>
+  {% if not hidePhaseBanner %}
+    <div class="govuk-width-container">
+      {% if feedbackSurveyUrl %}
+        {{
+          govukPhaseBanner({
+            tag: {
+              text: "Beta"
+            },
+            html: 'This is a new service. Your <a class="govuk-link" href="' + (feedbackSurveyUrl | escape) + '" target="_blank" rel="noopener noreferrer">feedback</a> will help us improve it.'
+          })
+        }}
+      {% else %}
+        {{
+          govukPhaseBanner({
+            tag: {
+              text: "Beta"
+            },
+            text: 'This is a new service.'
+          })
+        }}
+      {% endif %}
+    </div>
+  {% endif %}
 
-  {{
-    defraAccountBar({
-      organisationName: auth.organisationName,
-      sbi: auth.sbi | default(""),
-      name: auth.name
-    })
-  }}
+  {% if not hideAccountBar %}
+    {{
+      defraAccountBar({
+        organisationName: auth.organisationName,
+        sbi: auth.sbi | default(""),
+        name: auth.name
+      })
+    }}
+  {% endif %}
 {% endblock %}
 
 {% block pageTitle %}
