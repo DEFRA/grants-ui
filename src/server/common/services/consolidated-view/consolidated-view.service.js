@@ -19,16 +19,28 @@ export function hasOnlyToleratedFailures(errors, toleratedPaths) {
   )
 }
 
-// A well-formed GraphQL error or an unusable response body is deterministic for the same query,
-// so retrying only adds latency and upstream load.
-const NON_RETRYABLE_REASONS = new Set(['graphql_errors', 'invalid_response'])
+/**
+ * @param {unknown} status
+ * @returns {boolean}
+ */
+function isServerError(status) {
+  return typeof status === 'number' && status >= statusCodes.internalServerError && status < 600
+}
 
 /**
  * @param {Error} error
  * @returns {boolean}
  */
 function isRetryableConsolidatedViewError(error) {
-  return !(error instanceof ConsolidatedViewError && NON_RETRYABLE_REASONS.has(error.details.reason))
+  if (!(error instanceof ConsolidatedViewError)) {
+    return true
+  }
+
+  if (error.details.reason === 'graphql_errors') {
+    return error.details.retryable === true
+  }
+
+  return error.details.reason !== 'invalid_response'
 }
 
 /**
@@ -168,7 +180,10 @@ async function makeConsolidatedViewRequest(request, query, { toleratedPaths } = 
         responseBody: JSON.stringify({ errors: parsed.errors }),
         sbi,
         source: 'makeConsolidatedViewRequest',
-        reason: 'graphql_errors'
+        reason: 'graphql_errors',
+        // DAL can report transient upstream failures inside a GraphQL envelope, including HTTP 200 responses.
+        retryable:
+          isServerError(response.status) || parsed.errors.some((error) => isServerError(error.extensions?.http?.status))
       })
     }
 
@@ -525,6 +540,7 @@ export async function fetchBusinessAndCPH(request, { toleratedPaths } = {}) {
  * @typedef {object} GraphQLError
  * @property {string} [message]
  * @property {string[]} [path]
+ * @property {{ http?: { status?: number } }} [extensions]
  */
 
 /**

@@ -188,6 +188,33 @@ describe('DAL response conventions', () => {
       expect(getShouldRetry()(error)).toBe(false)
     })
 
+    it.each([400, 403, 404])('does not retry a GraphQL error with upstream status %s', async (status) => {
+      const errors = [{ message: 'Permanent failure', extensions: { http: { status } } }]
+      mockFetchInstance.mockResolvedValueOnce(new Response(JSON.stringify({ errors })))
+
+      const error = await fetchBusinessPermissions(mockRequest).catch((err) => err)
+
+      expect(getShouldRetry()(error)).toBe(false)
+    })
+
+    it.each([
+      [500, undefined],
+      [503, undefined],
+      [200, 500],
+      [200, 503],
+      [404, 503]
+    ])('retries GraphQL errors with HTTP %s and upstream status %s', async (status, upstreamStatus) => {
+      const errors = [{ message: 'Service unavailable', extensions: { http: { status: upstreamStatus } } }]
+      mockFetchInstance.mockResolvedValueOnce(new Response(JSON.stringify({ errors }), { status }))
+
+      const error = await fetchBusinessPermissions(mockRequest).catch((err) => err)
+
+      expect(error.details).toEqual(
+        expect.objectContaining({ reason: 'graphql_errors', status: 502, statusCode: status })
+      )
+      expect(getShouldRetry()(error)).toBe(true)
+    })
+
     it.each([401, 500, 503])('retries a non-GraphQL HTTP %s failure', async (status) => {
       mockFetchInstance.mockResolvedValueOnce(new Response('Service unavailable', { status }))
 
@@ -204,6 +231,115 @@ describe('DAL response conventions', () => {
 
       expect(getShouldRetry()(error)).toBe(true)
       expect(getShouldRetry()(new Error('Operation timed out after 30000ms'))).toBe(true)
+    })
+
+    describe('with the real retry helper', () => {
+      beforeEach(async () => {
+        const { retry: realRetry } = await vi.importActual('~/src/server/common/helpers/retry.js')
+        retry.mockImplementationOnce(realRetry)
+        vi.useFakeTimers()
+      })
+
+      afterEach(() => {
+        vi.clearAllTimers()
+        vi.useRealTimers()
+      })
+
+      it.each([
+        [500, undefined],
+        [503, undefined],
+        [200, 500],
+        [200, 503]
+      ])('recovers after GraphQL errors with HTTP %s and upstream status %s', async (status, upstreamStatus) => {
+        const errors = [{ message: 'Service unavailable', extensions: { http: { status: upstreamStatus } } }]
+        const body = { data: { customer: { business: { permissionGroups: [] } } } }
+        mockFetchInstance
+          .mockResolvedValueOnce(new Response(JSON.stringify({ errors }), { status }))
+          .mockResolvedValueOnce(new Response(JSON.stringify(body)))
+
+        const result = fetchBusinessPermissions(mockRequest)
+        await vi.runAllTimersAsync()
+
+        await expect(result).resolves.toEqual([])
+        expect(mockFetchInstance).toHaveBeenCalledTimes(2)
+        expect(log).toHaveBeenCalledExactlyOnceWith(
+          LogCodes.SYSTEM.CONSOLIDATED_VIEW_SUCCESS,
+          { sbi: mockRequest.auth.credentials.sbi },
+          mockRequest
+        )
+      })
+
+      it('preserves all GraphQL errors and returns 502 after exhausting retries', async () => {
+        const errors = [
+          { message: 'Customer not found', extensions: { http: { status: 404 } } },
+          { message: 'Business service unavailable', extensions: { http: { status: 503 } } }
+        ]
+        mockFetchInstance.mockImplementation(() => Promise.resolve(new Response(JSON.stringify({ errors }))))
+
+        const result = fetchBusinessPermissions(mockRequest).catch((error) => error)
+        await vi.runAllTimersAsync()
+        const error = await result
+
+        expect(mockFetchInstance).toHaveBeenCalledTimes(3)
+        expect(error).toBeInstanceOf(ConsolidatedViewError)
+        expect(error.details).toEqual(
+          expect.objectContaining({
+            reason: 'graphql_errors',
+            status: 502,
+            statusCode: 200,
+            responseBody: JSON.stringify({ errors })
+          })
+        )
+        expect(log).not.toHaveBeenCalled()
+
+        const request = { ...mockRequest, response: error }
+        const h = { view: vi.fn().mockReturnThis(), code: vi.fn().mockReturnThis(), request: { app: {} } }
+        catchAll(request, h)
+
+        expect(h.view).toHaveBeenCalledWith('errors/500', { supportEmail: null })
+        expect(h.code).toHaveBeenCalledWith(502)
+        expect(log).toHaveBeenCalledExactlyOnceWith(
+          ErrorLogCodes.SYSTEM.CONSOLIDATED_VIEW_API_ERROR,
+          expect.objectContaining({ statusCode: 200, responseBody: JSON.stringify({ errors }) }),
+          request
+        )
+      })
+
+      it('fails permanent GraphQL errors after one attempt', async () => {
+        const errors = [{ message: 'Not found', extensions: { http: { status: 404 } } }]
+        mockFetchInstance.mockResolvedValueOnce(new Response(JSON.stringify({ errors })))
+
+        const result = fetchBusinessPermissions(mockRequest).catch((error) => error)
+        await vi.runAllTimersAsync()
+
+        expect(await result).toBeInstanceOf(ConsolidatedViewError)
+        expect(mockFetchInstance).toHaveBeenCalledTimes(1)
+      })
+
+      it('accepts tolerated transient failures with usable data after one attempt', async () => {
+        const body = {
+          data: { business: { info: { name: 'Test Business' }, countyParishHoldings: null } },
+          errors: [
+            {
+              message: 'Service unavailable',
+              path: ['business', 'countyParishHoldings'],
+              extensions: { http: { status: 503 } }
+            }
+          ]
+        }
+        mockFetchInstance.mockResolvedValueOnce(new Response(JSON.stringify(body), { status: 503 }))
+
+        const result = executeConfigDrivenQuery(mockRequest, query, { toleratedPaths: ['countyParishHoldings'] })
+        await vi.runAllTimersAsync()
+
+        await expect(result).resolves.toEqual(body)
+        expect(mockFetchInstance).toHaveBeenCalledTimes(1)
+        expect(log).toHaveBeenCalledExactlyOnceWith(
+          LogCodes.SYSTEM.CONSOLIDATED_VIEW_PARTIAL_SUCCESS,
+          expect.objectContaining({ failedPaths: 'business.countyParishHoldings', statusCode: 503 }),
+          mockRequest
+        )
+      })
     })
   })
 
