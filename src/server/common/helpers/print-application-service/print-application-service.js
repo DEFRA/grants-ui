@@ -93,7 +93,11 @@ function extractQuestions(components, answers) {
     })
     .map((component) => ({
       label: component.shortDescription || component.title || '',
-      answer: formatAnswer(component, resolveAnswer(component, answers))
+      answer: formatAnswer(
+        component,
+        resolveAnswer(component, answers),
+        answers.$$__numberFieldInputs?.[component.name]
+      )
     }))
 }
 

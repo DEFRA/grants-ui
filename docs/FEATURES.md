@@ -126,6 +126,22 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Custom validation messages
 - **Example**: [Example Grant – Number field page (/number-field)](../compose/config-broker/example-grants/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – project cost entry with £ prefix and range validation
 
+Set `format: thousands` on a `NumberField` on a non-repeating page to group its answer on
+Check answers and the submitted application print page.
+
+```yaml
+- type: NumberField
+  name: waterStorageCapacity
+  title: Water storage capacity
+  format: thousands
+  schema:
+    precision: 2
+```
+
+An entry of `125000.50` displays as `125,000.50`. Editable inputs stay ungrouped and submissions
+stay numeric. Omit `format` for identifiers such as SBIs and years. Older numeric answers display
+with the precision available in saved state. Land-action review and print cards also group quantities.
+
 ### Date Components
 
 #### DatePartsField

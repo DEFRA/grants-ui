@@ -6,7 +6,7 @@ import crumb from '@hapi/crumb'
 import h2o2 from '@hapi/h2o2'
 import hapi from '@hapi/hapi'
 
-import { SummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
+import { GrantsSummaryPageController } from '~/src/server/common/controllers/summary-page.controller.js'
 import path from 'node:path'
 import { config } from '~/src/config/config.js'
 import { context } from '~/src/config/nunjucks/context/context.js'
@@ -168,7 +168,7 @@ const registerFormsPlugin = async (server, prefix = '') => {
         ConfirmLandAndActionsPageController,
         ConsentPageController,
         PotentialFundingController,
-        SummaryPageController,
+        GrantsSummaryPageController,
         CheckResponsesPageController,
         StartClaimPageController,
         ConfirmMethaneDetailsController,

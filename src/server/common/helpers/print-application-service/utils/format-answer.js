@@ -1,3 +1,4 @@
+import { formatNumberAnswer } from '~/src/server/common/helpers/number-field-format.js'
 import { COMPONENT_TYPES, MONTH_NAMES } from '~/src/server/common/helpers/print-application-service/constants.js'
 
 /**
@@ -138,7 +139,7 @@ function formatStringValue(_component, value) {
   return stringifyValue(value)
 }
 
-/** @type {Record<string, (component: Component, value: any) => string>} */
+/** @type {Record<string, (component: Component, value: any, rawInput?: unknown) => string>} */
 const FORMATTERS = {
   [COMPONENT_TYPES.YesNoField]: formatYesNo,
   [COMPONENT_TYPES.CheckboxesField]: formatCheckboxes,
@@ -152,7 +153,7 @@ const FORMATTERS = {
   [COMPONENT_TYPES.LatLongField]: formatLatLong,
   [COMPONENT_TYPES.GeospatialField]: formatGeospatial,
   [COMPONENT_TYPES.TextField]: formatStringValue,
-  [COMPONENT_TYPES.NumberField]: formatStringValue,
+  [COMPONENT_TYPES.NumberField]: formatNumberAnswer,
   [COMPONENT_TYPES.EmailAddressField]: formatStringValue,
   [COMPONENT_TYPES.TelephoneNumberField]: formatStringValue,
   [COMPONENT_TYPES.MultilineTextField]: formatStringValue,
@@ -165,18 +166,19 @@ const FORMATTERS = {
  * Formats a raw answer value based on the component type
  * @param {Component} component - The form component definition
  * @param {unknown} value - The raw answer value
+ * @param {unknown} [rawInput] - The raw numeric input, when available
  * @returns {string} Formatted answer string
  */
-export function formatAnswer(component, value) {
+export function formatAnswer(component, value, rawInput) {
   if (value === undefined || value === null) {
     return ''
   }
 
   const formatter = FORMATTERS[component.type]
-  return formatter ? formatter(component, value) : stringifyValue(value)
+  return formatter ? formatter(component, value, rawInput) : stringifyValue(value)
 }
 
 /**
  * @typedef {{ text?: string, value?: unknown }} ListItem
- * @typedef {{ type: string, items?: ListItem[], list?: string | { items?: ListItem[] } }} Component
+ * @typedef {{ type: string, format?: string, items?: ListItem[], list?: string | { items?: ListItem[] } }} Component
  */
