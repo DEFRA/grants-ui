@@ -1,5 +1,5 @@
 Feature: Multiple Applications
-
+@runme
     Scenario: Create multiple applications for the same SBI for a grant with the allowMultipleApplications setting enabled
         Given there is no application data for SBI "800000018" and grant "example-grant-with-multi-applications"
 
@@ -10,6 +10,7 @@ Feature: Multiple Applications
         # start, first application
         Then the user should be at URL "start"
         And should see heading "Example Grant With Multiple Applications"
+        And should see a phase banner feedback link with journey "application-inprogress"
         When the user enters "Application 1" for "Application name"
         And continues
 
@@ -35,6 +36,7 @@ Feature: Multiple Applications
         # confirmation, first application
         Then the user should be at URL "confirmation"
         And should see heading "Application submitted"
+        And should see a phase banner feedback link with journey "application-submitted"
 
         # new browser session, confirmation still shown for submitted single application
         Given the user starts a new browser session
@@ -63,6 +65,7 @@ Feature: Multiple Applications
             | REFERENCE                 | STATUS    | ACTION               |
             | {SECOND REFERENCE NUMBER} | Draft     | Continue application |
             | {FIRST REFERENCE NUMBER}  | Submitted | View application     |
+        And should see a phase banner feedback link with journey "application-selection"
         When the user clicks button "Start a new application"
 
         # start, third application
