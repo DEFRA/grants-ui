@@ -15,7 +15,13 @@ export default class LocationValidateController extends QuestionPageController {
   }
 
   makePostRouteHandler() {
+    const parentHandler = super.makePostRouteHandler()
+
     return async (request, context, h) => {
+      if (context.errors) {
+        return parentHandler(request, context, h)
+      }
+
       const { projectLocated__easting: easting, projectLocated__northing: northing } = request.payload ?? {}
 
       let locationFound
@@ -31,9 +37,11 @@ export default class LocationValidateController extends QuestionPageController {
         }
       }
 
-      await this.setState(request, mergeAdditionalAnswers(context.state, { locationFound }))
+      context.state = mergeAdditionalAnswers(context.state, {
+        locationFound
+      })
 
-      return this.proceed(request, h, this.getNextPath(context))
+      return parentHandler(request, context, h)
     }
   }
 }
