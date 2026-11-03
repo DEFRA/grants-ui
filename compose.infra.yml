@@ -1,6 +1,6 @@
 services:
   fcp-defra-id-stub:
-    image: defradigital/fcp-defra-id-stub:0.47.0
+    image: defradigital/fcp-defra-id-stub:0.71.0
     networks:
       - grants-ui-net
     environment:
