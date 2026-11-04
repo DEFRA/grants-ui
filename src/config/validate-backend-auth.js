@@ -1,6 +1,3 @@
-import { log } from '~/src/server/common/helpers/logging/log.js'
-import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
-
 /**
  * Validates backend authentication configuration
  * @param {Record<string, any>} config - The convict config object (callers in this repo annotate it as `SchemaObj<any>`, which is structurally a string-keyed bag — typing it tighter cascades into widespread breakage)
@@ -21,8 +18,6 @@ export function validateBackendAuthConfig(config) {
     if (!encryptionKey) {
       missingKeys.push('GRANTS_UI_BACKEND_ENCRYPTION_KEY')
     }
-
-    log(LogCodes.SYSTEM.BACKEND_AUTH_CONFIG_ERROR, { missingKeys })
 
     throw new Error(
       'Backend authentication configuration incomplete. ' +
