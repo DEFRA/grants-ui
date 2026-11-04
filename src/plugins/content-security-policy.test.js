@@ -156,6 +156,16 @@ describe('contentSecurityPolicy plugin', () => {
       expect(sources).toContain('https://services.arcgisonline.com')
     })
 
+    it('allows GTM measurement images in img-src', async () => {
+      const policy = await getCspHeader()
+      const sources = policy
+        .split('; ')
+        .find((entry) => entry.startsWith('img-src '))
+        .split(' ')
+
+      expect(sources).toContain('https://www.googletagmanager.com')
+    })
+
     it.each([
       { initialContext: {}, description: 'empty context object' },
       { initialContext: undefined, description: 'undefined context' },

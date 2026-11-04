@@ -7,7 +7,6 @@ import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 import { log, logger } from '~/src/server/common/helpers/logging/log.js'
 import {
   clearTokenState,
-  createClientSecretTokenRequestParams,
   createTokenRequestParams,
   getValidToken,
   isTokenExpired,
@@ -46,8 +45,6 @@ describe('Token Manager', () => {
       tokenEndpoint: 'https://login.microsoftonline.com',
       tenantId: 'mock-tenant-id',
       clientId: 'mock-client-id',
-      clientSecret: '',
-      authMethod: 'web_identity',
       webIdentity: {
         audience: ['mock-audience']
       }
@@ -91,20 +88,6 @@ describe('Token Manager', () => {
         scope: 'test-scope',
         client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
         client_assertion: 'assertion',
-        grant_type: 'client_credentials'
-      })
-    })
-  })
-
-  describe('createClientSecretTokenRequestParams', () => {
-    test('creates correct URL search params', () => {
-      const params = createClientSecretTokenRequestParams('client-id', 'test-scope', 'secret')
-      const paramsObject = Object.fromEntries(params)
-
-      expect(paramsObject).toEqual({
-        client_id: 'client-id',
-        scope: 'test-scope',
-        client_secret: 'secret',
         grant_type: 'client_credentials'
       })
     })
@@ -257,41 +240,6 @@ describe('Token Manager', () => {
         audience: ['mock-audience'],
         errorMessage: 'Web Identity token provider returned no valid token'
       })
-    })
-
-    test('uses a client secret when authMethod is client_secret', async () => {
-      config.set('entra.authMethod', 'client_secret')
-      config.set('entra.clientSecret', 'a-client-secret')
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            access_token: 'secret-access-token',
-            expires_in: 3600
-          })
-      })
-
-      const token = await refreshToken()
-
-      expect(token).toBe('secret-access-token')
-      expect(mockGetCredentials).not.toHaveBeenCalled()
-      expect(log).toHaveBeenCalledWith(LogCodes.SYSTEM.ENTRA_TOKEN_REFRESH_ATTEMPT, { authMethod: 'client_secret' })
-
-      const [[, calledOptions]] = mockFetch.mock.calls
-      const bodyParams = new URLSearchParams(calledOptions.body)
-      expect(Object.fromEntries(bodyParams)).toEqual({
-        client_id: 'mock-client-id',
-        scope: 'mock-client-id/.default',
-        client_secret: 'a-client-secret',
-        grant_type: 'client_credentials'
-      })
-    })
-
-    test('throws error for an unrecognised authMethod', async () => {
-      config.set('entra.authMethod', 'not-a-real-provider')
-
-      await expect(refreshToken()).rejects.toThrow('Entra token refresh failed')
-      expect(mockFetch).not.toHaveBeenCalled()
     })
   })
 

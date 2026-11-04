@@ -47,6 +47,11 @@ describe('ScoreResultsController', () => {
       path: '/score-results',
       title: 'Score results'
     }
+
+    vi.spyOn(QuestionPageController.prototype, 'getViewModel').mockReturnValue({
+      baseModel: 'data'
+    })
+
     controller = new ScoreResultsController(mockModel, mockPageDef)
     controller.path = mockPageDef.path
     setupControllerMocks(controller)
@@ -67,17 +72,13 @@ describe('ScoreResultsController', () => {
       view: vi.fn().mockReturnValue('mocked-view')
     }
 
-    vi.spyOn(QuestionPageController.prototype, 'getViewModel').mockReturnValue({
-      baseModel: 'data'
-    })
-
     vi.spyOn(controller, 'setState').mockImplementation(async (req, state) => state)
 
     vi.clearAllMocks()
   })
 
   describe('makeGetRouteHandler', () => {
-    it('should set scoreResults based on scoring service and render view', async () => {
+    it('should refresh state and render view', async () => {
       invokeGrantScoringGetAction.mockResolvedValueOnce({
         totalScore: 75,
         sectorScore: 20,
@@ -85,41 +86,67 @@ describe('ScoreResultsController', () => {
         collaborationScore: 20,
         planningAbstractionScore: 15
       })
+
+      const handler = controller.makeGetRouteHandler()
+      const result = await handler(mockRequest, mockContext, mockH)
+
+      expect(invokeGrantScoringGetAction).toHaveBeenCalledWith(
+        'scoring/water-management',
+        'water-management',
+        expect.objectContaining({
+          sectorsIrrigated: ['Soft & Cane Fruit'],
+          easting: '286394',
+          northing: '286394',
+          businessesUsingWater: 'FIVE_OR_MORE',
+          planning: 'NN',
+          abstraction: 'NN'
+        })
+      )
+      expect(mergeAdditionalAnswers).toHaveBeenCalled()
+      expect(controller.setState).toHaveBeenCalled()
+      expect(mockH.view).toHaveBeenCalledWith(controller.viewName, expect.objectContaining({ baseModel: 'data' }))
+      expect(result).toBe('mocked-view')
+    })
+
+    it('should throw if refreshing state fails (e.g., scoring service error)', async () => {
+      invokeGrantScoringGetAction.mockRejectedValueOnce(new Error('Upstream failure'))
       const handler = controller.makeGetRouteHandler()
 
-      await handler(mockRequest, mockContext, mockH)
+      await expect(handler(mockRequest, mockContext, mockH)).rejects.toThrow('Failed to refresh derived answers')
+    })
+  })
 
-      expect(invokeGrantScoringGetAction).toHaveBeenCalledWith('water-management', mockRequest, {
-        sectorsIrrigated: ['Soft & Cane Fruit'],
-        easting: '286394',
-        northing: '286394',
-        businessesUsingWater: 'FIVE_OR_MORE',
-        planning: 'NN',
-        abstraction: 'NN'
-      })
-      expect(mergeAdditionalAnswers).toHaveBeenCalledWith(expect.anything(), {
+  describe('getCalculatedAnswers', () => {
+    it('should call invokeGrantScoringGetAction with correct parameters', async () => {
+      const scoringResponse = {
         totalScore: 75,
         sectorScore: 20,
         scarcityScore: 20,
         collaborationScore: 20,
         planningAbstractionScore: 15
-      })
-      expect(controller.setState).toHaveBeenCalled()
-      expect(mockH.view).toHaveBeenCalledWith(controller.viewName, expect.objectContaining({ baseModel: 'data' }))
-    })
-
-    it('should throw if invokeGrantScoringGetAction fails', async () => {
-      invokeGrantScoringGetAction.mockRejectedValueOnce(new Error('Failed to get grant eligibility score result'))
-      const handler = controller.makeGetRouteHandler()
-
-      try {
-        await handler(mockRequest, mockContext, mockH)
-        expect.fail('Should have thrown')
-      } catch (error) {
-        expect(error.message).toBe('Failed to refresh derived answers')
-        const [cause] = error.causeErrors
-        expect(cause.message).toBe('Failed to get grant eligibility score result')
       }
+      invokeGrantScoringGetAction.mockResolvedValueOnce(scoringResponse)
+
+      const state = {
+        sectorsIrrigated: ['A'],
+        projectLocated__easting: '1',
+        projectLocated__northing: '2',
+        businessesUsingWater: 'B',
+        havePlanningPermission: 'C',
+        haveAbstractionLicence: 'D'
+      }
+
+      const result = await controller.getCalculatedAnswers(mockRequest, state)
+
+      expect(invokeGrantScoringGetAction).toHaveBeenCalledWith('scoring/water-management', 'water-management', {
+        sectorsIrrigated: ['A'],
+        easting: '1',
+        northing: '2',
+        businessesUsingWater: 'B',
+        planning: 'C',
+        abstraction: 'D'
+      })
+      expect(result).toEqual(scoringResponse)
     })
   })
 })

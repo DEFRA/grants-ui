@@ -230,16 +230,14 @@ See [Consolidated View API](./CONSOLIDATED-VIEW.md) for configuration and live D
 
 #### Microsoft Entra (Internal Use)
 
-`ENTRA_AUTH_METHOD` selects how each environment authenticates to Entra: the stored client secret, or an AWS STS Web Identity federated credential. See [Consolidated View API](./CONSOLIDATED-VIEW.md#configuration) for how the migration works and which value to use where.
+Grants UI authenticates to Entra with an AWS STS Web Identity federated credential. See [Consolidated View API](./CONSOLIDATED-VIEW.md) for setup.
 
-| Variable                               | Description                                                                                                                                                   |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ENTRA_INTERNAL_TOKEN_URL`             | Microsoft Entra token endpoint                                                                                                                                |
-| `ENTRA_INTERNAL_TENANT_ID`             | Microsoft tenant ID                                                                                                                                           |
-| `ENTRA_INTERNAL_CLIENT_ID`             | Microsoft client ID                                                                                                                                           |
-| `ENTRA_AUTH_METHOD`                    | `client_secret` (default) or `web_identity`                                                                                                                   |
-| `ENTRA_FEDERATED_CREDENTIALS_AUDIENCE` | Audience requested on the STS Web Identity token when the auth method is `web_identity` (default: `Grants Application UI`, the App Registration display name) |
-| `ENTRA_INTERNAL_CLIENT_SECRET`         | Client secret, used when the auth method is `client_secret`                                                                                                   |
+| Variable                               | Description                                                        |
+| -------------------------------------- | ------------------------------------------------------------------ |
+| `ENTRA_INTERNAL_TOKEN_URL`             | Microsoft Entra token endpoint                                     |
+| `ENTRA_INTERNAL_TENANT_ID`             | Microsoft tenant ID                                                |
+| `ENTRA_INTERNAL_CLIENT_ID`             | Microsoft client ID                                                |
+| `ENTRA_FEDERATED_CREDENTIALS_AUDIENCE` | STS Web Identity token audience (default: `Grants Application UI`) |
 
 #### Development Tools Configuration
 

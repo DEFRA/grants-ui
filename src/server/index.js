@@ -63,6 +63,8 @@ import CheckDetailsController from '~/src/server/details-page/check-details.cont
 import CommonSelectLandParcelPageController from './land-grants/common/common-select-parcel/common-select-land-parcel-page.controller.js'
 import MapSelectPageController from '~/src/server/common/map/map-select-page.controller.js'
 import MapSubmissionPageController from '~/src/server/common/map/map-submission-page.controller.js'
+import LocationValidateController from '~/src/server/non-land-grants/water-management/controllers/location-validate.controller.js'
+import LocationValidateTaskPageController from '~/src/server/non-land-grants/water-management/controllers/location-validate-task-page.controller.js'
 import ScoreResultsController from '~/src/server/non-land-grants/water-management/controllers/score-results.controller.js'
 import ScoreResultsTaskPageController from '~/src/server/non-land-grants/water-management/controllers/score-results-task-page.controller.js'
 import TotalEstimatedCostController from '~/src/server/non-land-grants/water-management/controllers/total-estimated-cost.controller.js'
@@ -180,6 +182,8 @@ const registerFormsPlugin = async (server, prefix = '') => {
         WoodlandHectaresPageController,
         MapSelectPageController,
         MapSubmissionPageController,
+        LocationValidateController,
+        LocationValidateTaskPageController,
         ScoreResultsController,
         ScoreResultsTaskPageController,
         TotalEstimatedCostController,
