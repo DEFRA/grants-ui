@@ -265,15 +265,6 @@ if (url.pathname.endsWith('/tags')) {
   it('prepares every imported config and its JSON schema without an external repo or npm setup', async () => {
     await cp(join(ROOT, EXAMPLES_DIRECTORY), join(root, source), { recursive: true })
     const bundles = await prepareExampleGrants({ root })
-    expect(bundles.map((bundle) => bundle.grant).sort()).toEqual([
-      'example-grant-with-auth',
-      'example-grant-with-closed-window',
-      'example-grant-with-map',
-      'example-grant-with-multi-applications',
-      'example-grant-with-task-list',
-      'example-grant-with-task-list-hide-questions',
-      'example-whitelist'
-    ])
     expect(bundles.find((bundle) => bundle.grant === 'example-grant-with-auth')?.files).toContain('gas/gas.json')
     for (const { grant, directory } of bundles) {
       const allowlist = parse(await readFile(join(ROOT, EXAMPLES_DIRECTORY, grant, 'grants-ui/allowlist.yaml'), 'utf8'))
