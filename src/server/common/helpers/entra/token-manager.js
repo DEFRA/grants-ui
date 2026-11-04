@@ -95,23 +95,6 @@ export function createTokenRequestParams(clientId, scope, clientAssertion) {
 }
 
 /**
- * Creates the request parameters for a token request authenticated with a
- * client secret - see entra.clientSecret.
- * @param {string} clientId - Client ID
- * @param {string} scope - Scope of the token
- * @param {string} clientSecret - Client Secret
- * @returns {URLSearchParams} - URLSearchParams object with the request parameters
- */
-export function createClientSecretTokenRequestParams(clientId, scope, clientSecret) {
-  return new URLSearchParams({
-    client_id: clientId,
-    scope,
-    client_secret: clientSecret,
-    grant_type: 'client_credentials'
-  })
-}
-
-/**
  * Marks a failure to obtain a token from AWS STS, so refreshToken's catch can
  * log it distinctly from a failure at the Entra token endpoint itself.
  */
@@ -159,32 +142,6 @@ async function buildWebIdentityTokenRequestParams(clientId, scope) {
 }
 
 /**
- * Builds the request params for the Entra token exchange, using the
- * authentication method configured for this environment via entra.authMethod.
- * Web Identity federated credentials are being rolled out environment by
- * environment (see CDP Web Identity Federated Credentials guidance), so
- * environments without a working federated credential keep using
- * entra.clientSecret until theirs is ready.
- * @param {string} clientId - Client ID
- * @param {string} scope - Scope of the token
- * @returns {Promise<URLSearchParams>} - URLSearchParams object with the request parameters
- */
-async function buildTokenRequestParams(clientId, scope) {
-  const authMethod = config.get('entra.authMethod')
-
-  switch (authMethod) {
-    case 'web_identity':
-      return buildWebIdentityTokenRequestParams(clientId, scope)
-
-    case 'client_secret':
-      return createClientSecretTokenRequestParams(clientId, scope, config.get('entra.clientSecret'))
-
-    default:
-      throw new Error(`Unrecognised entra.authMethod: ${authMethod}`)
-  }
-}
-
-/**
  * @typedef {object} TokenResponse - The response from the token endpoint
  * @property {string} access_token - The OAuth2 access token
  * @property {number} expires_in - The number of seconds until the token expires
@@ -202,12 +159,12 @@ export async function refreshToken() {
   const tenantId = config.get('entra.tenantId')
   const clientId = config.get('entra.clientId')
   const scope = `${clientId}/.default`
-  const authMethod = config.get('entra.authMethod')
+  const authMethod = 'web_identity'
 
   try {
     log(LogCodes.SYSTEM.ENTRA_TOKEN_REFRESH_ATTEMPT, { authMethod })
 
-    const params = await buildTokenRequestParams(clientId, scope)
+    const params = await buildWebIdentityTokenRequestParams(clientId, scope)
 
     const response = await retry(
       () =>
@@ -264,8 +221,8 @@ export async function refreshToken() {
 /**
  * Logs why a token refresh failed, distinguishing a failure to obtain a Web
  * Identity token from AWS STS from a failure at the Entra token endpoint
- * itself (wrong client secret, audience mismatch, network error, etc).
- * @param {string} authMethod - 'web_identity' or 'client_secret'
+ * itself (audience mismatch, network error, etc).
+ * @param {string} authMethod - Authentication method
  * @param {Error & { context?: Record<string, unknown>, status?: number }} error
  * @returns {void}
  */
