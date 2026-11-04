@@ -29,13 +29,12 @@ real grant overrides are left untouched. Resets run only after successful ingest
 
 ### Format demo
 
-Open `http://localhost:3000/format-demo/start` to compare NumberField playback pipelines.
+Open `http://localhost:3000/format-demo/start` to compare NumberField playback formatters.
 The first page accepts GBP currency, an unformatted volume in m³, grouped digits, a
-fixed-two-decimal number, a percentage fraction, a four-decimal currency pipeline, a
-four-decimal percentage and currency with explicit precision. For example, entering
-`125000.5` for the pipeline `decimal:4|currency:gbp` displays `£125,000.5000`; entering
-`0.125` for `percent:4` displays `12.5000%`. Each field's hint gives an example input; the
-next page labels the answers with their configured format.
+fixed-two-decimal number, a percentage fraction, a four-decimal percentage and currency
+with explicit precision. For example, entering `125000.5` for `currency:gbp,4` displays
+`£125,000.5000`; entering `0.125` for `percent:4` displays `12.5000%`.
+Each field's hint gives an example input; the next page labels the answers with their configured format.
 
 Use **Change** to edit an answer or **Continue** on the review page to try another set of
 values. Inputs retain their original precision, even when playback rounds or scales the

@@ -83,19 +83,6 @@ pages:
           classes: govuk-!-width-one-third
         schema:
           precision: 5
-      - name: chainedCurrency
-        id: 4a2d4b0c-8f7d-4c1a-9e2b-6d5f3a7b8c90
-        type: NumberField
-        title: Currency with four decimal places
-        shortDescription: Four-decimal currency pipeline (decimal:4|currency:gbp)
-        format: decimal:4|currency:gbp
-        hint: Enter 125000.5 to see £125,000.5000 on the next page.
-        options:
-          required: true
-          classes: govuk-!-width-one-third
-        schema:
-          min: 0
-          precision: 4
       - name: precisePercentage
         id: 7e6f5a4b-3c2d-4f0e-9a8b-6c5d4e3f2a10
         type: NumberField

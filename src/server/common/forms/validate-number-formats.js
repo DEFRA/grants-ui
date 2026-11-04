@@ -28,7 +28,8 @@ function validateComponents(components, allowFormat) {
       throw new SystemError({
         message: `Invalid playback format for component '${component.name}'`,
         source: 'validateNumberFormats',
-        reason: 'format must be a valid number formatter pipeline on a NumberField on a non-repeating page',
+        reason:
+          'format must be a supported number formatter with valid arguments on a NumberField on a non-repeating page',
         status: 500
       })
     }
