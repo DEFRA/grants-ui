@@ -45,7 +45,7 @@ function createNumberFormatter(format) {
   if (name === 'thousands') {
     return args.length === 0 ? formatThousands : undefined
   }
-  if (name !== 'decimal' && name !== 'percent' && name !== 'currency') {
+  if (name !== 'decimal' && name !== 'currency') {
     return undefined
   }
   if (args.length > (name === 'currency' ? 2 : 1)) {
@@ -72,8 +72,6 @@ function createNumberFormatter(format) {
   if (fractionDigits !== undefined) {
     options.minimumFractionDigits = fractionDigits
     options.maximumFractionDigits = fractionDigits
-  } else if (name === 'percent') {
-    options.maximumFractionDigits = 2
   }
 
   const formatter = new Intl.NumberFormat('en-GB', options)
