@@ -7,6 +7,7 @@ $parcel-map-background: #f3f2f1;
 $parcel-map-error: #d4351c;
 $parcel-map-focus: #ffdd00;
 $parcel-map-gutter: 12px;
+$parcel-map-hint-height: 42px;
 // Matches the vendor's own map buttons (search, map controls).
 $parcel-map-button-shadow:
   0 -2px 20px rgb(0, 0, 0, 0.1),
@@ -105,7 +106,7 @@ $parcel-map-button-shadow:
 // Bottom-left, clear of the search box the vendor map places top-left.
 .map-reset-view-button {
   position: absolute;
-  bottom: $parcel-map-gutter;
+  bottom: $parcel-map-gutter + $parcel-map-hint-height;
   left: $parcel-map-gutter;
   z-index: 2;
   display: inline-flex;
