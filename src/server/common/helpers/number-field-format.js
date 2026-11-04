@@ -11,7 +11,7 @@ export function isNumberFormat(format) {
 
 /**
  * Formats a NumberField answer for playback without changing its stored value.
- * @param {{ type?: string, format?: string }} component
+ * @param {{ type?: string, schema?: { format?: string } }} component
  * @param {unknown} value
  * @param {unknown} [rawInput]
  * @returns {string}
@@ -20,7 +20,7 @@ export function formatNumberAnswer(component, value, rawInput) {
   if (typeof value !== 'number' && typeof value !== 'string') {
     return ''
   }
-  const formatter = component.type === 'NumberField' ? getNumberFormatter(component.format) : undefined
+  const formatter = component.type === 'NumberField' ? getNumberFormatter(component.schema?.format) : undefined
   if (!formatter) {
     return String(value)
   }

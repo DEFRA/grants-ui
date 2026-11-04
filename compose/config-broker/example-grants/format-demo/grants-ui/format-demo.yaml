@@ -25,7 +25,6 @@ pages:
         type: NumberField
         title: Amount in pounds sterling
         shortDescription: Currency (currency:gbp)
-        format: currency:gbp
         hint: Enter an amount without commas, for example 125000.50.
         options:
           required: true
@@ -34,6 +33,7 @@ pages:
         schema:
           min: 0
           precision: 2
+          format: currency:gbp
       - name: volumeCubicMetres
         id: 19b16250-7d01-4b58-af75-9fc49ef7f912
         type: NumberField
@@ -52,55 +52,54 @@ pages:
         type: NumberField
         title: Number with thousands separators
         shortDescription: Thousands separators (thousands)
-        format: thousands
         hint: Enter a number without commas, for example 1234567.8900. Entered decimal places are preserved on the next page.
         options:
           required: true
           classes: govuk-!-width-one-third
         schema:
           precision: 4
+          format: thousands
       - name: decimalNumber
         id: 8bb836c9-77db-4933-a221-ed2a29b70573
         type: NumberField
         title: Decimal number
         shortDescription: Two decimal places (decimal)
-        format: decimal
         hint: Enter a number without commas, for example 1234567.895. The next page rounds it to two decimal places.
         options:
           required: true
           classes: govuk-!-width-one-third
         schema:
           precision: 4
+          format: decimal
       - name: percentageFraction
         id: e48c43da-b49f-4146-9d96-9907432e3bd6
         type: NumberField
         title: Percentage as a fraction
         shortDescription: Percentage (percent)
-        format: percent
         hint: Enter a fraction, for example 0.125 for 12.5%. The next page displays up to two decimal places.
         options:
           required: true
           classes: govuk-!-width-one-third
         schema:
           precision: 5
+          format: percent
       - name: precisePercentage
         id: 7e6f5a4b-3c2d-4f0e-9a8b-6c5d4e3f2a10
         type: NumberField
         title: Percentage with four decimal places
         shortDescription: Four-decimal percentage (percent:4)
-        format: percent:4
         hint: Enter 0.125 to see 12.5000% on the next page.
         options:
           required: true
           classes: govuk-!-width-one-third
         schema:
           precision: 5
+          format: percent:4
       - name: explicitCurrency
         id: 9b8c7d6e-5f4a-4b2c-9d0e-8f7a6b5c4d32
         type: NumberField
         title: Currency with explicit precision
         shortDescription: Four-decimal currency (currency:gbp,4)
-        format: currency:gbp,4
         hint: Enter 125000.5 to see £125,000.5000 on the next page.
         options:
           required: true
@@ -108,6 +107,7 @@ pages:
         schema:
           min: 0
           precision: 4
+          format: currency:gbp,4
   - title: Check your formatted numbers
     path: /summary
     id: 640b5040-a802-40e7-a372-a1846b533a25
