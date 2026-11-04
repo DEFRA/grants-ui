@@ -4,6 +4,8 @@ import { mockRequestLogger } from '~/src/__mocks__/logger-mocks.js'
 import { fetchParcels } from '../../services/land-grants.service.js'
 import { mapParcelsToViewModel } from '../../view-models/parcel.view-model.js'
 import CommonSelectLandParcelPageController from './common-select-land-parcel-page.controller.js'
+import { debug, log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { ConsolidatedViewError } from '~/src/server/common/utils/errors/ConsolidatedViewError.js'
 
 vi.mock('../../services/land-grants.service.js', () => ({
   fetchParcels: vi.fn()
@@ -77,6 +79,40 @@ describe('CommonSelectLandParcelPageController', () => {
 
   afterEach(() => {
     vi.clearAllMocks()
+  })
+
+  it.each(['get', 'post'])('logs preserved Consolidated View details once on %s failure', async (method) => {
+    const controller = createController()
+    const request = setupRequest(method)
+    const context = setupContext()
+    const h = setupH()
+    const error = new ConsolidatedViewError({
+      message: 'Parcel lookup failed',
+      source: 'makeConsolidatedViewRequest',
+      reason: 'api_error',
+      status: 502,
+      statusCode: 503,
+      responseBody: 'Service unavailable',
+      sbi: request.auth.credentials.sbi
+    })
+    fetchParcels.mockRejectedValue(error)
+
+    const result = await (method === 'get'
+      ? controller.handleGet(request, context, h)
+      : controller.handlePost(request, context, h))
+
+    expect(log).toHaveBeenCalledExactlyOnceWith(error.logCode, error.details, request)
+    expect(debug).not.toHaveBeenCalled()
+    expect(h.view).toHaveBeenCalledWith(
+      'common-select-land-parcel',
+      expect.objectContaining({
+        errors:
+          method === 'get'
+            ? ['Unable to find parcel information, please try again later or contact the Rural Payments Agency.']
+            : 'Select a land parcel'
+      })
+    )
+    expect(result).toBe('view')
   })
 
   describe('constructor', () => {
@@ -167,7 +203,8 @@ describe('CommonSelectLandParcelPageController', () => {
     })
 
     it('handles fetch error', async () => {
-      fetchParcels.mockRejectedValue(new Error('fail'))
+      const error = new Error('fail')
+      fetchParcels.mockRejectedValue(error)
 
       const controller = createController()
       const request = setupRequest()
@@ -176,6 +213,12 @@ describe('CommonSelectLandParcelPageController', () => {
 
       await controller.handleGet(request, context, h)
 
+      expect(log).toHaveBeenCalledExactlyOnceWith(
+        { ...LogCodes.SYSTEM.EXTERNAL_API_ERROR, error },
+        { endpoint: 'fetch parcel data', errorMessage: 'fail' },
+        request
+      )
+      expect(debug).not.toHaveBeenCalled()
       expect(h.view).toHaveBeenCalledWith(
         'common-select-land-parcel',
         expect.objectContaining({
@@ -322,7 +365,8 @@ describe('CommonSelectLandParcelPageController', () => {
     })
 
     it('handles fetch error gracefully for validation', async () => {
-      fetchParcels.mockRejectedValue(new Error('fail'))
+      const error = new Error('fail')
+      fetchParcels.mockRejectedValue(error)
 
       const controller = createController()
       const request = setupRequest('post')
@@ -333,6 +377,12 @@ describe('CommonSelectLandParcelPageController', () => {
 
       await controller.handlePost(request, context, h)
 
+      expect(log).toHaveBeenCalledExactlyOnceWith(
+        { ...LogCodes.SYSTEM.EXTERNAL_API_ERROR, error },
+        { endpoint: 'fetch parcels for validation error rendering', errorMessage: 'fail' },
+        request
+      )
+      expect(debug).not.toHaveBeenCalled()
       expect(h.view).toHaveBeenCalledWith(
         'common-select-land-parcel',
         expect.objectContaining({

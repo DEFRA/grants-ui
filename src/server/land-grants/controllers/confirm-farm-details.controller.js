@@ -3,6 +3,7 @@ import { fetchBusinessAndCustomerInformation } from '../../common/services/conso
 import { createBusinessRows, createContactRows, createPersonRows } from '../../common/helpers/create-rows.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { mergeAdditionalAnswers } from '~/src/server/common/helpers/state/additional-answers-helper.js'
+import { logHandledError } from '~/src/server/common/helpers/logging/handled-error.js'
 
 export default class ConfirmFarmDetailsController extends QuestionPageController {
   viewName = 'confirm-farm-details'
@@ -108,14 +109,10 @@ export default class ConfirmFarmDetailsController extends QuestionPageController
    * Handle errors and return error view
    */
   handleError(sbi, error, baseViewModel, h, request) {
-    log(
-      LogCodes.SYSTEM.EXTERNAL_API_ERROR,
-      {
-        endpoint: `fetch farm details for sbi ${sbi}`,
-        errorMessage: error.message
-      },
-      request
-    )
+    logHandledError(error, request, {
+      fallbackCode: LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+      fallbackDetails: { endpoint: `fetch farm details for sbi ${sbi}` }
+    })
 
     return h.view(this.viewName, {
       ...baseViewModel,

@@ -1,4 +1,5 @@
-import { debug, log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { logHandledError } from '~/src/server/common/helpers/logging/handled-error.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { buildInvalidatedState } from '~/src/server/common/utils/state-invalidation.js'
 import LandGrantsQuestionWithAuthCheckController from '../../controllers/auth/land-grants-question-with-auth-check.controller.js'
 import { fetchParcels } from '../../services/land-grants.service.js'
@@ -141,15 +142,10 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
         })
       )
     } catch (error) {
-      debug(
-        {
-          level: 'error',
-          error: error instanceof Error ? error : undefined,
-          messageFunc: () => 'Unexpected error when fetching parcel data'
-        },
-        {},
-        request
-      )
+      logHandledError(error, request, {
+        fallbackCode: LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+        fallbackDetails: { endpoint: 'fetch parcel data' }
+      })
       return h.view(viewName, this.buildViewModel(request, context, { errors: [PARCEL_FETCH_ERROR_MESSAGE] }))
     }
   }
@@ -169,15 +165,10 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
       const userContext = getLandGrantsUserContext(request)
       fetchedParcels = await fetchParcels(request, userContext)
     } catch (error) {
-      debug(
-        {
-          level: 'error',
-          error: error instanceof Error ? error : undefined,
-          messageFunc: () => 'Error fetching parcels for validation error rendering'
-        },
-        {},
-        request
-      )
+      logHandledError(error, request, {
+        fallbackCode: LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+        fallbackDetails: { endpoint: 'fetch parcels for validation error rendering' }
+      })
     }
 
     if (!selectedParcelIds.length) {

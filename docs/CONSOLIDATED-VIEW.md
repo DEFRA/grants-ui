@@ -2,6 +2,14 @@
 
 The Consolidated View API provides business data via a GraphQL endpoint. By default the local stack uses [grants-platform-dal-stub](https://github.com/DEFRA/grants-platform-dal-stub), which executes the real DAL schema from synthetic fixtures, so grants-ui talks to it through exactly the code path it uses for the live DAL. To test against the live DAL instead, follow the steps below.
 
+## Response handling
+
+All DAL callers use the shared Consolidated View service to inspect both `errors` and `data`. HTTP 200 alone does not indicate a successful query. DAL query failures can also arrive with legacy HTTP error statuses, such as 404 for a missing customer or business; the same GraphQL error body is handled consistently regardless of that status.
+
+A non-empty `errors` array causes a `ConsolidatedViewError` with Grants UI status 502, retaining the upstream HTTP status and error details for logging. Configured `toleratedFailurePaths` allow partial responses only when every error matches an allowed path and `data` contains at least one non-null top-level result. Partial success is logged once by the shared service. An HTTP 200 response with missing, empty or entirely null data is also rejected. Empty result lists within valid data remain valid.
+
+HTTP failures without a GraphQL error array retain their HTTP status and response body. Network failures, timeouts and these HTTP failures are retried; GraphQL errors and invalid or unusable response bodies are not, because the same query returns the same result. Propagated failures are logged by the global error handler; callers that handle failures locally, such as the details page and the parcel authorisation cache, log them with `error.log(request)`.
+
 ## Local development with grants-platform-dal-stub (default)
 
 `compose.infra.yml` runs the stub and `compose.grants-ui.yml` points at it:

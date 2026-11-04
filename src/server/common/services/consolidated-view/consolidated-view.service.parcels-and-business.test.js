@@ -5,7 +5,6 @@ import {
   fetchParcelsFromDal,
   fetchBusinessAndCPH
 } from './consolidated-view.service.js'
-import { log } from '~/src/server/common/helpers/logging/log.js'
 import {
   mockSbi,
   mockCrn,
@@ -154,27 +153,11 @@ describe('Consolidated View Service - Parcels and business', () => {
         json: () => Promise.resolve(responseWithoutCPH)
       })
 
-      await expect(fetchBusinessAndCPH(mockRequest)).rejects.toThrow() // Will throw when trying to access [0] on undefined
-    })
-
-    it('should log CONSOLIDATED_VIEW_API_ERROR at error level on upstream failure', async () => {
-      mockFetchInstance.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-        statusText: 'Internal Server Error',
-        text: () => Promise.resolve('Server error')
+      await expect(fetchBusinessAndCPH(mockRequest)).resolves.toEqual({
+        business: responseWithoutCPH.data.business.info,
+        customer: responseWithoutCPH.data.customer.info,
+        countyParishHoldings: undefined
       })
-
-      await expect(fetchBusinessAndCPH(mockRequest)).rejects.toThrow()
-
-      expect(log).toHaveBeenCalledWith(
-        expect.objectContaining({ level: 'error' }),
-        expect.objectContaining({
-          sbi: mockSbi,
-          errorMessage: expect.stringContaining('500')
-        }),
-        mockRequest
-      )
     })
   })
 
