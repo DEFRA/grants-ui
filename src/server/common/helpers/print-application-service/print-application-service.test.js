@@ -96,7 +96,12 @@ describe('print-application-service', () => {
             {
               title: 'Amounts',
               components: [
-                { type: 'NumberField', name: 'formattedAmount', title: 'Formatted amount', format: 'thousands' },
+                {
+                  type: 'NumberField',
+                  name: 'formattedAmount',
+                  title: 'Formatted amount',
+                  schema: { format: 'thousands' }
+                },
                 { type: 'NumberField', name: 'plainAmount', title: 'Plain amount' }
               ]
             }

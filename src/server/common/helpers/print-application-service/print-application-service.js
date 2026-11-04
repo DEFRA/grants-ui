@@ -21,7 +21,7 @@ export const COMPOSITE_FIELD_PARTS = {
 
 /**
  * @typedef {{ text: string, value: string | number | boolean }} ListItem
- * @typedef {{ type: string, name: string, title: string, shortDescription?: string, list?: string, items?: ListItem[], options?: { required?: boolean, showApproximateLocation?: boolean } }} FormComponent
+ * @typedef {{ type: string, name: string, title: string, schema?: Record<string, unknown> & { format?: string }, shortDescription?: string, list?: string, items?: ListItem[], options?: { required?: boolean, showApproximateLocation?: boolean } }} FormComponent
  * @typedef {{ title: string, path?: string, section?: string, controller?: string, components?: FormComponent[], repeat?: { options: { name: string, title: string } } }} FormPage
  * @typedef {{ label: string, answer: string, locationHint?: string, repeatItems?: { title: string, questions: Question[] }[] }} Question
  * @typedef {{

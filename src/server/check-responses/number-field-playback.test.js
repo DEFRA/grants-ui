@@ -33,8 +33,7 @@ function createJourney(format, controller = 'CheckResponsesPageController', view
               type: 'NumberField',
               name: 'capacity',
               title: 'Capacity',
-              ...(format && { format }),
-              schema: { precision: 4 }
+              schema: { precision: 4, ...(format && { format }) }
             },
             { type: 'NumberField', name: 'sbi', title: 'SBI' }
           ]

@@ -21,15 +21,16 @@ export function validateNumberFormats(definition) {
  */
 function validateComponents(components, allowFormat) {
   for (const component of components ?? []) {
+    const format = component.schema?.format
     if (
-      component.format !== undefined &&
-      (!allowFormat || component.type !== 'NumberField' || !isNumberFormat(component.format))
+      component.format !== undefined ||
+      (format !== undefined && (!allowFormat || component.type !== 'NumberField' || !isNumberFormat(format)))
     ) {
       throw new SystemError({
         message: `Invalid playback format for component '${component.name}'`,
         source: 'validateNumberFormats',
         reason:
-          'format must be a supported number formatter with valid arguments on a NumberField on a non-repeating page',
+          'schema.format must be a supported number formatter on a NumberField on a non-repeating page; top-level format is not supported',
         status: 500
       })
     }

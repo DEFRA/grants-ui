@@ -126,7 +126,7 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Custom validation messages
 - **Example**: [Example Grant – Number field page (/number-field)](../compose/config-broker/example-grants/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – project cost entry with £ prefix and range validation
 
-Set `format` on a `NumberField` on a non-repeating page to format its answer on
+Set `schema.format` on a `NumberField` on a non-repeating page to format its answer on
 Check answers and the submitted application print page. Formatter names are case-sensitive:
 
 | Formatter   | Arguments          | Behaviour                                          |
@@ -147,9 +147,9 @@ for formatting. Currency conversion is never performed.
 - type: NumberField
   name: projectCost
   title: Project cost
-  format: currency:gbp,4
   schema:
     precision: 4
+    format: currency:gbp,4
 ```
 
 `decimal` defaults to two places. `percent` defaults to at most two places, while an
@@ -163,9 +163,9 @@ precision. Submissions stay numeric and are not scaled or rounded by playback fo
 or decimal values. Input `options.prefix` and `options.suffix` are separate from playback
 formatting. Formatting accepts no arbitrary expressions.
 
-Omit `format` for identifiers such as SBIs and years. Unsupported formats, formatting on
-other component types, and formatting on repeating pages are rejected when the definition is
-loaded. Older numeric answers retain only the precision available in saved state; `thousands`
+Omit `schema.format` for identifiers such as SBIs and years. Top-level `format`, unsupported
+formatters, formatting on other component types, and formatting on repeating pages are rejected
+when the definition is loaded. Older numeric answers retain only the precision available in saved state; `thousands`
 cannot recover discarded trailing zeros. Land-action review and print cards continue to group
 quantities.
 
