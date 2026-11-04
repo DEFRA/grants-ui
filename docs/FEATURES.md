@@ -133,7 +133,6 @@ Check answers and the submitted application print page. Formatter names are case
 | ----------- | ------------------ | -------------------------------------------------- |
 | `thousands` | none               | Group digits and preserve decimal precision        |
 | `decimal`   | optional `:places` | Fixed two decimals by default                      |
-| `percent`   | optional `:places` | Multiply by 100; default is up to two decimals     |
 | `currency`  | `:code[,places]`   | Currency symbol and standard or explicit precision |
 
 Use `name[:argument[,argument...]]` to select one formatter with optional arguments.
@@ -152,10 +151,9 @@ for formatting. Currency conversion is never performed.
     format: currency:gbp,4
 ```
 
-`decimal` defaults to two places. `percent` defaults to at most two places, while an
-explicit `places` value displays exactly that many decimals. `currency` uses the currency's
-standard precision unless `places` is supplied. For example, `currency:gbp,4` displays
-`125000.5` as `£125,000.5000`, and `percent:4` displays `0.125` as `12.5000%`.
+`decimal` defaults to two places, while an explicit `places` value displays exactly that many
+decimals. `currency` uses the currency's standard precision unless `places` is supplied.
+For example, `currency:gbp,4` displays `125000.5` as `£125,000.5000`.
 
 Formatting uses the `en-GB` locale. Editable inputs stay ungrouped and retain entered
 precision. Submissions stay numeric and are not scaled or rounded by playback formatting.

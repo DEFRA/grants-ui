@@ -10,7 +10,8 @@ describe('number playback configuration', () => {
     { type: 'NumberField', name: 'capacity', schema: { format: 'currency:invalid' } },
     { type: 'NumberField', name: 'capacity', schema: { format: 'constructor' } },
     { type: 'NumberField', name: 'capacity', schema: { format: '__proto__' } },
-    { type: 'TextField', name: 'reference', schema: { format: 'percent' } },
+    { type: 'NumberField', name: 'capacity', schema: { format: 'percent' } },
+    { type: 'NumberField', name: 'capacity', schema: { format: 'percent:4' } },
     { type: 'TextField', name: 'reference', schema: { format: 'decimal' } },
     { type: 'TextField', name: 'reference', schema: { format: 'currency:gbp,4' } },
     { type: 'NumberField', name: 'capacity', schema: { format: 'decimal:4|currency:gbp' } },
@@ -21,14 +22,11 @@ describe('number playback configuration', () => {
     expect(() => validateNumberFormats(definition(component))).toThrow(SystemError)
   })
 
-  it.each(['thousands', 'percent:4', 'decimal:4', 'currency:gbp,4'])(
-    'rejects %s formatting on a repeating page',
-    (format) => {
-      const form = definition({ type: 'NumberField', name: 'amount', schema: { format } })
-      form.pages[0].repeat = { options: { name: 'items' } }
-      expect(() => validateNumberFormats(form)).toThrow(SystemError)
-    }
-  )
+  it.each(['thousands', 'decimal:4', 'currency:gbp,4'])('rejects %s formatting on a repeating page', (format) => {
+    const form = definition({ type: 'NumberField', name: 'amount', schema: { format } })
+    form.pages[0].repeat = { options: { name: 'items' } }
+    expect(() => validateNumberFormats(form)).toThrow(SystemError)
+  })
 
   it('validates number fields inside conditional list items', () => {
     const form = {

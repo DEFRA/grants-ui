@@ -71,30 +71,6 @@ pages:
         schema:
           precision: 4
           format: decimal
-      - name: percentageFraction
-        id: e48c43da-b49f-4146-9d96-9907432e3bd6
-        type: NumberField
-        title: Percentage as a fraction
-        shortDescription: Percentage (percent)
-        hint: Enter a fraction, for example 0.125 for 12.5%. The next page displays up to two decimal places.
-        options:
-          required: true
-          classes: govuk-!-width-one-third
-        schema:
-          precision: 5
-          format: percent
-      - name: precisePercentage
-        id: 7e6f5a4b-3c2d-4f0e-9a8b-6c5d4e3f2a10
-        type: NumberField
-        title: Percentage with four decimal places
-        shortDescription: Four-decimal percentage (percent:4)
-        hint: Enter 0.125 to see 12.5000% on the next page.
-        options:
-          required: true
-          classes: govuk-!-width-one-third
-        schema:
-          precision: 5
-          format: percent:4
       - name: explicitCurrency
         id: 9b8c7d6e-5f4a-4b2c-9d0e-8f7a6b5c4d32
         type: NumberField

@@ -15,10 +15,6 @@ describe('formatNumberAnswer', () => {
   })
 
   test.each([
-    ['percent', 0, '0%'],
-    ['percent', 1, '100%'],
-    ['percent', -0.125, '-12.5%'],
-    ['percent', 0.12345, '12.35%'],
     ['decimal', 0, '0.00'],
     ['decimal', -125000.5, '-125,000.50'],
     ['decimal', 1.005, '1.01'],
