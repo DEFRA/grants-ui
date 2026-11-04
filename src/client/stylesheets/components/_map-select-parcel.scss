@@ -7,3 +7,31 @@
 .map-select-parcel .govuk-summary-list__row[hidden] {
   display: none;
 }
+
+// Gesture guidance is permanently visible below the map.
+parcel-map .maplibregl-cooperative-gesture-screen {
+  display: none;
+}
+
+// The map wrapper also needs to allow the browser's single-finger scrolling.
+parcel-map .im-o-app--inline,
+parcel-map .maplibregl-cooperative-gestures,
+parcel-map .maplibregl-cooperative-gestures .maplibregl-canvas {
+  touch-action: pan-x pan-y;
+}
+
+@media not all and (pointer: coarse) {
+  parcel-map .im-c-cross-hair-button {
+    visibility: hidden;
+  }
+}
+
+.parcel-map-wheel-hint {
+  @include govuk-font(16);
+
+  padding: 10px 15px;
+  border: var(--app-border-width) solid var(--app-border-color);
+  border-top: 0;
+  color: govuk-colour('black');
+  background: govuk-colour('white');
+}

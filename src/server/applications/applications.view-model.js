@@ -3,6 +3,7 @@ import { ApplicationStatus } from '../common/constants/application-status.js'
 import { isApplicationWindowOpen } from '../common/helpers/application-window.js'
 import { findRedirectRule } from '../common/request-pipeline/redirects/redirect-rules.js'
 import agreements from '~/src/config/agreements.js'
+import { buildFeedbackSurveyUrl } from '../common/helpers/feedback-survey.js'
 
 /**
  * Row link. Only an application GAS confirms is still simply submitted opens as its print view (a page the
@@ -33,6 +34,7 @@ export function buildApplicationsViewModel(
     serviceName: schemeName,
     serviceUrl: `/${request.params.slug}`,
     supportEmail: definition.metadata?.supportEmail ?? 'ruralpayments@defra.gov.uk',
+    feedbackSurveyUrl: buildFeedbackSurveyUrl(request, definition.metadata),
     slug: request.params.slug,
     canStartApplication: isApplicationWindowOpen(request, definition),
     applications: applications

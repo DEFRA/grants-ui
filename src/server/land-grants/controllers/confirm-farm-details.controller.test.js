@@ -3,6 +3,9 @@ import { config } from '~/src/config/config.js'
 import { fetchBusinessAndCustomerInformation } from '../../common/services/consolidated-view/consolidated-view.service.js'
 import ConfirmFarmDetailsController from './confirm-farm-details.controller.js'
 import { setupControllerMocks } from '~/src/__mocks__/controller-mocks.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { ConsolidatedViewError } from '~/src/server/common/utils/errors/ConsolidatedViewError.js'
+import { BaseError } from '~/src/server/common/utils/errors/BaseError.js'
 vi.mock('~/src/config/config.js')
 
 vi.mock('../../common/services/consolidated-view/consolidated-view.service.js')
@@ -67,6 +70,20 @@ describe('ConfirmFarmDetailsController', () => {
   })
 
   describe('POST route handler', () => {
+    it('propagates structured errors without logging locally', async () => {
+      const error = new ConsolidatedViewError({
+        message: 'Business lookup failed',
+        source: 'makeConsolidatedViewRequest',
+        reason: 'api_error'
+      })
+      fetchBusinessAndCustomerInformation.mockRejectedValue(error)
+
+      await expect(controller.makePostRouteHandler()(mockRequest, mockContext, mockH)).rejects.toBe(error)
+
+      expect(log).not.toHaveBeenCalled()
+      expect(controller.setState).not.toHaveBeenCalled()
+    })
+
     test('should update state with sbi and applicant details and proceed', async () => {
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
@@ -100,6 +117,45 @@ describe('ConfirmFarmDetailsController', () => {
   })
 
   describe('makeGetRouteHandler', () => {
+    it('logs each preserved cause once when handling a structured error locally', async () => {
+      const cause = BaseError.wrap(new Error('Connection failed'))
+      const error = new ConsolidatedViewError({
+        message: 'Business lookup failed',
+        source: 'fetchFromConsolidatedView',
+        reason: 'api_error'
+      }).from(cause)
+      fetchBusinessAndCustomerInformation.mockRejectedValue(error)
+
+      await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+
+      expect(log.mock.calls).toEqual([
+        [error.logCode, error.details, mockRequest],
+        [cause.logCode, { ...cause.details, isChainedError: true }, mockRequest]
+      ])
+    })
+
+    it('logs preserved Consolidated View details once when rendering the local error view', async () => {
+      const error = new ConsolidatedViewError({
+        message: 'Business lookup failed',
+        source: 'makeConsolidatedViewRequest',
+        reason: 'api_error',
+        status: 502,
+        statusCode: 503,
+        responseBody: 'Service unavailable',
+        sbi: mockRequest.auth.credentials.sbi
+      })
+      fetchBusinessAndCustomerInformation.mockRejectedValue(error)
+
+      const result = await controller.makeGetRouteHandler()(mockRequest, mockContext, mockH)
+
+      expect(log).toHaveBeenCalledExactlyOnceWith(error.logCode, error.details, mockRequest)
+      expect(mockH.view).toHaveBeenCalledWith(
+        'confirm-farm-details',
+        expect.objectContaining({ error: expect.objectContaining({ titleText: 'There is a problem' }) })
+      )
+      expect(result).toBe('mocked-view')
+    })
+
     it('should handle successful data fetch and render view', async () => {
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
@@ -121,6 +177,11 @@ describe('ConfirmFarmDetailsController', () => {
       const handler = controller.makeGetRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
 
+      expect(log).toHaveBeenCalledExactlyOnceWith(
+        { ...LogCodes.SYSTEM.EXTERNAL_API_ERROR, error },
+        { endpoint: `fetch farm details for sbi ${mockRequest.auth.credentials.sbi}`, errorMessage: error.message },
+        mockRequest
+      )
       expect(mockH.view).toHaveBeenCalledWith(
         'confirm-farm-details',
         expect.objectContaining({

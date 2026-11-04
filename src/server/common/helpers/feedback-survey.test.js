@@ -15,6 +15,7 @@ const mockSurveyRequest = (options, shortName) => ({
 
 describe('#resolveJourney', () => {
   test.each([
+    ['/water-management/applications', JOURNEY.selection],
     ['/woodland/confirmation', JOURNEY.submitted],
     ['/woodland/print-submitted-application', JOURNEY.submitted],
     ['/woodland/claim', JOURNEY.claimInProgress],

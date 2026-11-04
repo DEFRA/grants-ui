@@ -1,6 +1,13 @@
 # Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities
 version: v1.25.0
 ignore:
+  'SNYK-JS-FLAT-22148819':
+    - '@defra/forms-engine-plugin > @defra/interactive-map > @docusaurus/theme-common > @docusaurus/mdx-loader > @docusaurus/utils > @docusaurus/types > webpack-merge > flat':
+        reason: 'Checked 2026-11-03 on forms-engine-plugin@4.23.1 > interactive-map@0.0.22-alpha > Docusaurus@3.10.2 > webpack-merge@5.10.0 > flat@5.0.2. No fixed flat release. Resource exhaustion requires attacker-controlled numeric indices reaching unflatten() and subsequent array iteration or serialization. The installed webpack-merge calls only flatten(), never unflatten(). This documentation tooling is installed in production, but Grants UI runs Hapi and builds with webpack.config.js without running Docusaurus. Remove when flat is fixed or upstream drops it; reassess if these callers change.'
+        expires: '2026-12-03'
+    - '@defra/forms-engine-plugin > @defra/interactive-map > @easyops-cn/docusaurus-search-local > @docusaurus/plugin-content-docs > @docusaurus/core > webpack-merge > flat':
+        reason: 'Checked 2026-11-03 on forms-engine-plugin@4.23.1 > interactive-map@0.0.22-alpha > Docusaurus@3.10.2 > webpack-merge@6.0.1 > flat@5.0.2. No fixed flat release. Resource exhaustion requires attacker-controlled numeric indices reaching unflatten() and subsequent array iteration or serialization. The installed webpack-merge calls only flatten(), never unflatten(). This documentation tooling is installed in production, but Grants UI runs Hapi and builds with webpack.config.js without running Docusaurus. Remove when flat is fixed or upstream drops it; reassess if these callers change.'
+        expires: '2026-12-03'
   'SNYK-JS-MAPLIBREGL-21826908':
     - '@defra/interactive-map > maplibre-gl':
         reason: 'Checked 2026-10-29 on interactive-map@0.0.54-alpha > maplibre-gl@5.24.0: the DOM.sanitize() bypass (GHSA-jrc7-96c5-q579) needs the attribution control to render untrusted attribution HTML. The parcel map sets a fixed OS attribution string (getMapStyleAttribution) and loads its style from the grants-ui /api/map/os-basemap proxy, so applicants cannot supply attribution content. The fix, maplibre-gl 6.4.1+, needs interactive-map@0.0.55-alpha, a breaking MapLibre v6 upgrade (WebGL2, separate worker file, v6 API for the direct MapLibre calls in parcel-map) that needs browser testing. Remove this ignore when that upgrade lands.'
@@ -11,10 +18,6 @@ ignore:
     - '@defra/forms-engine-plugin > @defra/interactive-map > maplibre-gl':
         reason: 'Checked 2026-10-29 on forms-engine-plugin@4.23.0 > interactive-map@0.0.22-alpha > maplibre-gl@5.24.0: same maps as the direct forms-engine-plugin path, with fixed OS and Esri attribution strings and styles from the grants-ui /api/maps/vts proxy, so applicants cannot supply attribution HTML. No forms-engine-plugin 4.x release moves interactive-map to maplibre-gl 6.4.1+. Remove this ignore when it does; reassess if map attribution or style sources become configurable.'
         expires: '2026-11-28'
-  'SNYK-JS-QS-21755395':
-    - '@defra/forms-engine-plugin > @defra/interactive-map > *':
-        reason: 'Checked 2026-10-27 on forms-engine-plugin@4.23.0: interactive-map@0.0.22-alpha installs Docusaurus > webpack-dev-server@5.2.7 > express@4.22.3 > qs@6.16.1 (directly and via body-parser@1.20.8) in production. The issue is in qs.stringify when allowEmptyArrays is enabled and an attacker controls a key name. Express and body-parser only call qs.parse for query strings and urlencoded bodies; grants-ui is a Hapi app that neither imports qs nor runs webpack-dev-server or the map documentation tooling. Fixed qs@6.17.0 was published 2026-10-27T06:23:47.002Z; the seven-day cooldown ends 2026-11-03T06:23:47.002Z. Remove this ignore and bump the existing override when eligible.'
-        expires: '2026-11-04'
   'SNYK-JS-PICOMATCH-21248802':
     - '@defra/forms-engine-plugin > @defra/interactive-map > *':
         reason: 'Checked 2026-10-20 on forms-engine-plugin@4.23.0: interactive-map@0.0.22-alpha installs Docusaurus > globby/fast-glob/micromatch, chokidar/anymatch/readdirp and jest-util > picomatch@2.3.2 in production. ReDoS requires an attacker-controlled repeated-extglob pattern. These documentation paths use source-file and watch patterns, not applicant form values; grants-ui does not run Docusaurus. Its own build/watch tooling also uses repository-controlled patterns. No fixed picomatch release is available, including 4.0.7. Remove when a fixed version is released or the documentation dependencies are dropped; review within one month.'

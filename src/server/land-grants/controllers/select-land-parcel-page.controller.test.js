@@ -1,6 +1,7 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { vi } from 'vitest'
-import { debug } from '~/src/server/common/helpers/logging/log.js'
+import { debug, log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { ConsolidatedViewError } from '~/src/server/common/utils/errors/ConsolidatedViewError.js'
 import { fetchParcels } from '~/src/server/land-grants/services/land-grants.service.js'
 import SelectLandParcelPageController from './select-land-parcel-page.controller.js'
 import {
@@ -96,6 +97,36 @@ describe('SelectLandParcelPageController', () => {
 
   afterEach(vi.clearAllMocks)
 
+  it.each(['get', 'post'])('logs preserved Consolidated View details once on %s failure', async (method) => {
+    const error = new ConsolidatedViewError({
+      message: 'Parcel lookup failed',
+      source: 'makeConsolidatedViewRequest',
+      reason: 'api_error',
+      status: 502,
+      statusCode: 503,
+      responseBody: 'Service unavailable',
+      sbi: mockRequest.auth.credentials.sbi
+    })
+    fetchParcels.mockRejectedValue(error)
+    mockRequest.method = method
+    mockRequest.payload = { action: 'validate' }
+
+    const result = await (method === 'get' ? get() : post())
+
+    expect(log).toHaveBeenCalledExactlyOnceWith(error.logCode, error.details, mockRequest)
+    expect(debug).not.toHaveBeenCalled()
+    expect(mockH.view).toHaveBeenCalledWith(
+      'select-land-parcel',
+      expect.objectContaining({
+        errors:
+          method === 'get'
+            ? ['Unable to find parcel information, please try again later or contact the Rural Payments Agency.']
+            : 'Select a land parcel'
+      })
+    )
+    expect(result).toBe(renderedViewMock)
+  })
+
   describe('resolveParcelIds', () => {
     it('returns array from payload', () => {
       mockRequest.payload = { landParcels: 'p1' }
@@ -151,12 +182,12 @@ describe('SelectLandParcelPageController', () => {
 
       await get()
 
-      const [logCode, messageOptions, loggedRequest] = debug.mock.calls[0]
-      expect(logCode.level).toBe('error')
-      expect(logCode.error).toBe(thrown)
-      expect(logCode.messageFunc()).toBe('Unexpected error when fetching parcel data')
-      expect(messageOptions).toEqual({})
-      expect(loggedRequest).toBe(mockRequest)
+      expect(log).toHaveBeenCalledExactlyOnceWith(
+        { ...LogCodes.SYSTEM.EXTERNAL_API_ERROR, error: thrown },
+        { endpoint: 'fetch parcel data', errorMessage: thrown.message },
+        mockRequest
+      )
+      expect(debug).not.toHaveBeenCalled()
     })
   })
 
@@ -260,12 +291,12 @@ describe('SelectLandParcelPageController', () => {
 
       await post()
 
-      const [logCode, messageOptions, loggedRequest] = debug.mock.calls[0]
-      expect(logCode.level).toBe('error')
-      expect(logCode.error).toBe(thrown)
-      expect(logCode.messageFunc()).toBe('Error fetching parcels for validation error rendering')
-      expect(messageOptions).toEqual({})
-      expect(loggedRequest).toBe(mockRequest)
+      expect(log).toHaveBeenCalledExactlyOnceWith(
+        { ...LogCodes.SYSTEM.EXTERNAL_API_ERROR, error: thrown },
+        { endpoint: 'fetch parcels for validation error rendering', errorMessage: thrown.message },
+        mockRequest
+      )
+      expect(debug).not.toHaveBeenCalled()
     })
 
     it('should correctly calculate actions count', async () => {

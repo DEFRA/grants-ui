@@ -1,5 +1,5 @@
 import { formatAreaUnit } from '~/src/shared/format-area-unit.js'
-import { formatParcelReference, stringifyParcel } from '~/src/shared/format-parcel.js'
+import { compareParcelReferences, formatParcelReference, stringifyParcel } from '~/src/shared/format-parcel.js'
 
 /**
  * Maps land parcel data to view models for rendering in forms.
@@ -53,7 +53,7 @@ export function buildParcelHint(parcel, actionsForParcel) {
  * @returns {Array<RadioItem>} Array of radio items for view
  */
 export function mapParcelsToViewModel(parcels, landParcels = {}) {
-  return parcels.map((parcel) => {
+  return [...parcels].sort(compareParcelReferences).map((parcel) => {
     const parcelKey = stringifyParcel(parcel)
     const parcelData = landParcels?.[parcelKey]
     const actionsForParcel = parcelData?.actionsObj ? Object.keys(parcelData.actionsObj).length : 0
