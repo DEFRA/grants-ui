@@ -127,37 +127,53 @@ The Grants UI service supports a comprehensive set of form input components, eac
 - **Example**: [Example Grant – Number field page (/number-field)](../compose/config-broker/example-grants/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – project cost entry with £ prefix and range validation
 
 Set `format` on a `NumberField` on a non-repeating page to format its answer on
-Check answers and the submitted application print page. Supported values are case-sensitive:
+Check answers and the submitted application print page. Supported pipeline stages are
+case-sensitive and are applied from left to right:
 
-| Format         | Entered value | Playback      | Behaviour                                     |
-| -------------- | ------------- | ------------- | --------------------------------------------- |
-| `thousands`    | `125000.50`   | `125,000.50`  | Group digits; preserve entered decimal places |
-| `decimal`      | `125000.5`    | `125,000.50`  | Group digits; display two decimal places      |
-| `currency-gbp` | `125000.5`    | `£125,000.50` | GBP currency; display two decimal places      |
-| `percent`      | `0.125`       | `12.5%`       | Fraction × 100; up to two decimal places      |
+| Stage       | Arguments          | Behaviour                                           |
+| ----------- | ------------------ | --------------------------------------------------- |
+| `thousands` | none               | Group digits and preserve decimal precision         |
+| `decimal`   | optional `:places` | Fixed two decimals by default                       |
+| `percent`   | optional `:places` | Multiply by 100; default is up to two decimals      |
+| `currency`  | `:code[,places]`   | Currency symbol and standard or inherited precision |
+
+A stage uses `name[:argument[,argument...]]`; separate stages with `|` to build a pipeline.
+Whitespace around stages, names and arguments is ignored. A stage has at most one colon;
+empty stages or arguments, unknown names, extra arguments, quoted values and escaping are invalid.
+`places` is an integer from 0 to 100 (digit strings such as `04` are accepted). Currency `code` is a
+three-letter ISO currency supported by the runtime; it is case-insensitive and normalized
+for formatting. Currency conversion is never performed.
 
 ```yaml
 - type: NumberField
-  name: waterStorageCapacity
-  title: Water storage capacity
-  format: thousands
+  name: projectCost
+  title: Project cost
+  format: decimal:4|currency:gbp
   schema:
-    precision: 2
+    precision: 4
 ```
 
-Formatting uses the `en-GB` locale. `decimal` and `currency-gbp` round playback to two decimal
-places; `percent` rounds the percentage to at most two decimal places. For example, `0.12345`
-displays as `12.35%`. Percentage answers are fractions: `1` means `100%`, not `1%`.
+`decimal` defaults to two places. `percent` defaults to at most two places, while an
+explicit `places` value displays exactly that many decimals. `currency` uses the currency's
+standard precision unless `places` is supplied; it otherwise inherits an earlier explicit
+precision. Explicit precision propagates to later stages until overridden. Every stage
+rounds or transforms the result of the preceding stage, not the original input: for example,
+`decimal:2|decimal:1` applied to `1.249` produces `1.3`, while the reverse produces `1.20`.
+`decimal` and `thousands` retain an existing currency or percent decoration; `currency` and
+`percent` replace it. Thus `percent|currency:gbp` on `0.125` displays `£12.50`, and
+`percent|decimal:4` displays `12.5000%`.
 
-Editable inputs stay ungrouped and retain entered precision. Submissions stay numeric and are
-not scaled or rounded by playback formatting. `schema.precision` still controls input validation;
-set it high enough for the fractions or decimal values the question accepts.
-Input `options.prefix` and `options.suffix` are separate from playback formatting.
+Formatting uses the `en-GB` locale. Editable inputs stay ungrouped and retain entered
+precision. Submissions stay numeric and are not scaled or rounded by playback formatting.
+`schema.precision` still controls input validation; set it high enough for accepted fractions
+or decimal values. Input `options.prefix` and `options.suffix` are separate from playback
+formatting. Formatting accepts no arbitrary expressions.
 
-Omit `format` for identifiers such as SBIs and years. Unsupported formats, formatting on other
-component types, and formatting on repeating pages are rejected when the definition is loaded.
-Older numeric answers retain only the precision available in saved state; `thousands` cannot
-recover discarded trailing zeros. Land-action review and print cards continue to group quantities.
+Omit `format` for identifiers such as SBIs and years. Unsupported formats, formatting on
+other component types, and formatting on repeating pages are rejected when the definition is
+loaded. Older numeric answers retain only the precision available in saved state; `thousands`
+cannot recover discarded trailing zeros. Land-action review and print cards continue to group
+quantities.
 
 ### Date Components
 

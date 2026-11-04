@@ -22,9 +22,9 @@ describe('formatNumberAnswer', () => {
     ['decimal', 0, '0.00'],
     ['decimal', -125000.5, '-125,000.50'],
     ['decimal', 1.005, '1.01'],
-    ['currency-gbp', 0, '£0.00'],
-    ['currency-gbp', -125000.5, '-£125,000.50'],
-    ['currency-gbp', 1.005, '£1.01']
+    ['currency:gbp', 0, '£0.00'],
+    ['currency:gbp', -125000.5, '-£125,000.50'],
+    ['currency:gbp', 1.005, '£1.01']
   ])('formats %s value %s as %s', (format, value, expected) => {
     expect(formatNumberAnswer({ type: 'NumberField', format }, value)).toBe(expected)
   })

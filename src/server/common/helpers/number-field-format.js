@@ -1,18 +1,12 @@
-import { formatThousands, isDecimalString } from '~/src/shared/format-number.js'
-
-/** @type {Record<string, Intl.NumberFormat>} */
-const NUMBER_FORMATTERS = {
-  percent: new Intl.NumberFormat('en-GB', { style: 'percent', maximumFractionDigits: 2 }),
-  decimal: new Intl.NumberFormat('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
-  'currency-gbp': new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' })
-}
+import { isDecimalString } from '~/src/shared/format-number.js'
+import { getNumberFormatter } from './number-format-pipeline.js'
 
 /**
  * @param {unknown} format
  * @returns {format is string}
  */
 export function isNumberFormat(format) {
-  return typeof format === 'string' && (format === 'thousands' || Object.hasOwn(NUMBER_FORMATTERS, format))
+  return Boolean(getNumberFormatter(format))
 }
 
 /**
@@ -26,7 +20,8 @@ export function formatNumberAnswer(component, value, rawInput) {
   if (typeof value !== 'number' && typeof value !== 'string') {
     return ''
   }
-  if (component.type !== 'NumberField' || !isNumberFormat(component.format)) {
+  const formatter = component.type === 'NumberField' ? getNumberFormatter(component.format) : undefined
+  if (!formatter) {
     return String(value)
   }
 
@@ -37,7 +32,5 @@ export function formatNumberAnswer(component, value, rawInput) {
       ? rawInput
       : value
 
-  return component.format === 'thousands'
-    ? formatThousands(displayValue)
-    : NUMBER_FORMATTERS[component.format].format(Number(displayValue))
+  return formatter(displayValue)
 }

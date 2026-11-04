@@ -29,15 +29,19 @@ real grant overrides are left untouched. Resets run only after successful ingest
 
 ### Format demo
 
-Open `http://localhost:3000/format-demo/start` to compare NumberField playback formats.
-The first page accepts GBP currency, an unformatted volume in m³, a number with thousands
-separators, a fixed-two-decimal number and a percentage fraction. Each field's hint gives
-an example input; the next page labels the answers with their configured format.
+Open `http://localhost:3000/format-demo/start` to compare NumberField playback pipelines.
+The first page accepts GBP currency, an unformatted volume in m³, grouped digits, a
+fixed-two-decimal number, a percentage fraction, a four-decimal currency pipeline, a
+four-decimal percentage and currency with explicit precision. For example, entering
+`125000.5` for the pipeline `decimal:4|currency:gbp` displays `£125,000.5000`; entering
+`0.125` for `percent:4` displays `12.5000%`. Each field's hint gives an example input; the
+next page labels the answers with their configured format.
 
-Use **Change** to edit an answer or **Continue** on the review page to try another set of values.
-Inputs retain their original precision, even when playback rounds or scales the number.
-This two-page demo does not submit an application and needs no land-grants service.
-Edit `format-demo/grants-ui/format-demo.yaml` and run `gt refresh-examples` to publish changes.
+Use **Change** to edit an answer or **Continue** on the review page to try another set of
+values. Inputs retain their original precision, even when playback rounds or scales the
+number. This two-page demo does not submit an application and needs no land-grants service.
+Edit `format-demo/grants-ui/format-demo.yaml` and run `gt refresh-examples` to publish
+changes.
 
 ## Technical versions and ingestion
 

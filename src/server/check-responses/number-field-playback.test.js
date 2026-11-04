@@ -116,10 +116,15 @@ describe('number playback', () => {
     ['thousands', '125000.50', '125,000.50'],
     ['percent', '0.1250', '12.5%'],
     ['decimal', '125000.50', '125,000.50'],
-    ['currency-gbp', '125000.50', '£125,000.50'],
+    ['currency:gbp', '125000.50', '£125,000.50'],
     ['percent', '0.1234', '12.34%'],
     ['decimal', '125000.567', '125,000.57'],
-    ['currency-gbp', '125000.567', '£125,000.57'],
+    ['currency:gbp', '125000.567', '£125,000.57'],
+    ['decimal:4|currency:gbp', '125000.5000', '£125,000.5000'],
+    ['currency:gbp,4', '125000.5', '£125,000.5000'],
+    ['percent:4', '0.1250', '12.5000%'],
+    ['percent|decimal:4', '0.1250', '12.5000%'],
+    ['decimal:2|decimal:1', '1.2490', '1.3'],
     [undefined, '125000', '125000']
   ])('renders %s formatting on Check answers and print', async (format, input, expected) => {
     const journey = createJourney(format)
@@ -160,9 +165,9 @@ describe('number playback', () => {
     ['MapSubmissionPageController', undefined],
     ['DeclarationPageController', 'submission.html']
   ])('formats the answer on the %s review view', async (controller, view) => {
-    const journey = createJourney('thousands', controller, view)
+    const journey = createJourney('decimal:4|currency:gbp', controller, view)
     await journey.dispatch('amount', { action: 'validate', capacity: '125000.50', sbi: '125000' })
     const summary = await journey.dispatch('summary')
-    expect(summary.viewModel.checkAnswers[0].summaryList.rows[0].value.text).toBe('125,000.50')
+    expect(summary.viewModel.checkAnswers[0].summaryList.rows[0].value.text).toBe('£125,000.5000')
   })
 })
