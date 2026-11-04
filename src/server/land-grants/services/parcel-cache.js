@@ -6,8 +6,9 @@ import {
   retryWindowMs,
   UNRETRIED_GENERATE_TIMEOUT_MS
 } from '~/src/server/common/helpers/cache/cached-method.js'
-import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { LAND_GRANTS_ACTION_SIZE, LAND_GRANTS_ACTIONS } from '~/src/server/land-grants/services/land-grants.client.js'
+import { logHandledError } from '~/src/server/common/helpers/logging/handled-error.js'
 import { stringifyParcel } from '~/src/shared/format-parcel.js'
 
 const SECONDS_PER_MINUTE = 60
@@ -129,14 +130,10 @@ export async function fetchAuthorisedParcelIds(request) {
   try {
     return await authorisedParcelIds.call(sbi, request)
   } catch (error) {
-    debug(
-      LogCodes.SYSTEM.EXTERNAL_API_ERROR,
-      {
-        endpoint: 'fetchAuthorisedParcelIds (consolidated view)',
-        errorMessage: `fetch parcel data for auth check: ${/** @type {Error} */ (error).message}`
-      },
-      request
-    )
+    logHandledError(error, request, {
+      fallbackCode: LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+      fallbackDetails: { endpoint: `fetch authorised parcel ids for sbi ${sbi}`, service: 'consolidated-view' }
+    })
     return null
   }
 }

@@ -6,6 +6,7 @@ import maplibreProvider from '@defra/interactive-map/providers/maplibre'
 // @ts-ignore — no type declarations shipped with this package
 import createInteractPlugin from '@defra/interactive-map/plugins/interact'
 import { getMapStyle, withParcelMapProvider } from './helpers.js'
+import { attachWheelZoom } from './parcel-map-wheel-zoom.js'
 import { createParcelSearchPlugin } from './search.js'
 import {
   CLASS_CANVAS,
@@ -26,6 +27,31 @@ import {
  */
 
 /**
+ * Builds and inserts the map container alongside the loading skeleton.
+ * @param {HTMLElement} host
+ * @param {HTMLElement | null} skeleton
+ */
+function createMapContainer(host, skeleton) {
+  const containerHeight = host.style.height || MAP_DEFAULT_HEIGHT
+  const wrapper = document.createElement('div')
+  wrapper.className = CLASS_WRAPPER
+  wrapper.style.setProperty(CSS_VAR_MAP_HEIGHT, containerHeight)
+
+  const mapEl = /** @type {HTMLDivElement} */ (document.createElement('div'))
+  mapEl.id = `parcel-map-${crypto.randomUUID()}`
+  mapEl.className = CLASS_CANVAS
+  wrapper.appendChild(mapEl)
+
+  if (skeleton) {
+    skeleton.before(wrapper)
+  } else {
+    host.appendChild(wrapper)
+  }
+
+  return { containerHeight, wrapper, mapEl }
+}
+
+/**
  * Builds the map DOM, boots InteractiveMap with the interact and search
  * plugins, and resolves the raw MapLibre instance once the style is ready — or
  * null on load failure or the load timeout.
@@ -44,21 +70,8 @@ import {
  * }}
  */
 export function initMap(host, { multiSelect, skeleton, isLoading, cleanups }) {
-  const containerHeight = host.style.height || MAP_DEFAULT_HEIGHT
-  const wrapper = document.createElement('div')
-  wrapper.className = CLASS_WRAPPER
-  wrapper.style.setProperty(CSS_VAR_MAP_HEIGHT, containerHeight)
-
-  const mapEl = /** @type {HTMLDivElement} */ (document.createElement('div'))
-  mapEl.id = `parcel-map-${crypto.randomUUID()}`
-  mapEl.className = CLASS_CANVAS
-  wrapper.appendChild(mapEl)
-
-  if (skeleton) {
-    skeleton.before(wrapper)
-  } else {
-    host.appendChild(wrapper)
-  }
+  const touch = window.matchMedia?.('(pointer: coarse)').matches ?? false
+  const { containerHeight, wrapper, mapEl } = createMapContainer(host, skeleton)
 
   // Handles feature selection accessibly: pointer clicks, a touch crosshair +
   // Select button, and a keyboard-navigable feature listbox.
@@ -90,9 +103,14 @@ export function initMap(host, { multiSelect, skeleton, isLoading, cleanups }) {
     center: MAP_DEFAULT_CENTER,
     zoom: MAP_DEFAULT_ZOOM,
     minZoom: MAP_MIN_ZOOM,
-    // Let wheel and trackpad scrolling move the page while the pointer is over the map.
+    // Wheel zoom stays disabled until the modifier gate is attached on map:ready.
     scrollZoom: false,
+    cooperativeGestures: true,
     urlPosition: 'none'
+  })
+
+  mapInstance.on('app:ready', () => {
+    mapInstance.toggleButtonState('mapControls', 'expanded', !touch)
   })
 
   const ready = /** @type {Promise<MLMap | null>} */ (
@@ -107,6 +125,7 @@ export function initMap(host, { multiSelect, skeleton, isLoading, cleanups }) {
 
       mapInstance.on('map:ready', (/** @type {{ map: MLMap }} */ { map: m }) => {
         mlInstance = m
+        attachWheelZoom(m, cleanups, wrapper, touch)
         const onError = (/** @type {unknown} */ err) => {
           console.error('[parcel-map] maplibre error', err)
           if (isLoading()) {

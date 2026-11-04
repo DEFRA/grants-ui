@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
-import { debug } from '~/src/server/common/helpers/logging/log.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { ConsolidatedViewError } from '~/src/server/common/utils/errors/ConsolidatedViewError.js'
 import {
   cachedParcelActions,
   cachedSbiParcels,
@@ -13,11 +14,6 @@ import { parcelCachePlugin } from '~/src/server/land-grants/services/parcel-cach
 
 vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.service.js', () => ({
   fetchParcelsFromDal: vi.fn()
-}))
-
-vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  debug: vi.fn(),
-  LogCodes: { SYSTEM: { EXTERNAL_API_ERROR: 'EXTERNAL_API_ERROR' } }
 }))
 
 const SECONDS_PER_MINUTE = 60
@@ -108,17 +104,51 @@ describe('parcel-cache', () => {
       expect(fetchParcelsFromDal).toHaveBeenCalledTimes(2)
     })
 
-    it('logs and returns null without caching when fetchParcelsFromDal throws', async () => {
+    it('logs the Consolidated View error and returns null without caching when fetchParcelsFromDal throws', async () => {
+      const mockError = new ConsolidatedViewError({
+        message: 'Failed to fetch business data: Business not found',
+        status: 502,
+        statusCode: 200,
+        sbi: '800000602',
+        source: 'makeConsolidatedViewRequest',
+        reason: 'graphql_errors'
+      })
       fetchParcelsFromDal
-        .mockRejectedValueOnce(new Error('API connection failed'))
+        .mockRejectedValueOnce(mockError)
         .mockResolvedValueOnce([{ sheetId: 'sheet1', parcelId: 'parcel1' }])
 
-      expect(await fetchAuthorisedParcelIds(mockRequest)).toBeNull()
-      expect(debug).toHaveBeenCalledWith(
-        'EXTERNAL_API_ERROR',
+      const result = await fetchAuthorisedParcelIds(mockRequest)
+
+      expect(result).toBeNull()
+      expect(log).toHaveBeenCalledExactlyOnceWith(
+        mockError.logCode,
+        expect.objectContaining({
+          errorMessage: 'Failed to fetch business data: Business not found',
+          statusCode: 200,
+          sbi: '800000602'
+        }),
+        mockRequest
+      )
+
+      expect(await fetchAuthorisedParcelIds(mockRequest)).toEqual(['sheet1-parcel1'])
+      expect(fetchParcelsFromDal).toHaveBeenCalledTimes(2)
+    })
+
+    it('logs unexpected errors with context and returns null without caching', async () => {
+      const error = new Error('API connection failed')
+      fetchParcelsFromDal
+        .mockRejectedValueOnce(error)
+        .mockResolvedValueOnce([{ sheetId: 'sheet1', parcelId: 'parcel1' }])
+
+      const result = await fetchAuthorisedParcelIds(mockRequest)
+
+      expect(result).toBeNull()
+      expect(log).toHaveBeenCalledExactlyOnceWith(
+        { ...LogCodes.SYSTEM.EXTERNAL_API_ERROR, error },
         {
-          endpoint: 'fetchAuthorisedParcelIds (consolidated view)',
-          errorMessage: 'fetch parcel data for auth check: API connection failed'
+          endpoint: 'fetch authorised parcel ids for sbi 800000602',
+          service: 'consolidated-view',
+          errorMessage: 'API connection failed'
         },
         mockRequest
       )

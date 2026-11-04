@@ -17,6 +17,8 @@ This can be added to the [cdp-app-config](https://github.com/DEFRA/cdp-app-confi
 
 The container ID is validated client-side against `/^GTM-[A-Z0-9]+$/` before the GTM script (`googletagmanager.com/gtm.js`) is injected (`src/shared/cookie-utils.js`, `loadGoogleAnalytics`). GTM only loads if the user has given analytics cookie consent - see `src/server/common/templates/layouts/page.njk` and the cookie consent helpers.
 
+The shared Content Security Policy allows `https://www.googletagmanager.com` in `img-src` for GTM measurement images in all environments.
+
 ## Dashboards
 
 - [Google Analytics Non-prod (dev) dashboard](https://analytics.google.com/analytics/web/?authuser=1#/a179628664p387058420/reports/intelligenthome?params=_u..nav%3Dmaui)
@@ -39,6 +41,8 @@ These are considered non-critical for initial day 1 launch but should be address
 Separately from GA4/GTM, the app links out to a Qualtrics feedback survey via a phase-banner/confirmation-page CTA. This is configured via the `FEEDBACK_SURVEY_URL` environment variable (base Qualtrics survey URL); when unset, the CTA is hidden.
 
 The link is built per-request by `src/server/common/helpers/feedback-survey.js` (`buildFeedbackSurveyUrl`), which appends `grant`, `journey`, and `url` query params so responses can be segmented by grant and journey stage (in-progress/submitted, or claim in-progress/submitted). It is rendered from `src/server/common/templates/layouts/page.njk` and `dxt-form.njk`.
+
+Application selector pages (`/{slug}/applications`) use `journey=application-selection`, the form definition's `metadata.shortName` for `grant`, and the current absolute page URL for `url`. For Water Management, the short name is `Water Management grant round 3 (WMG R3)`.
 
 ## Access Requests & Support
 

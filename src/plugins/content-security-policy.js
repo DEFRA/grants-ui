@@ -23,7 +23,7 @@ const defaultContentPolicy = (nonce, extraFormActionSources = []) => {
   const scriptSrc = [self, "'strict-dynamic'", `'nonce-${nonce}'`, govukFrontendHash, gtmWildCard, ga4].join(' ')
   const connectSrc = [self, ga4, statsDblClick, ga4WildCard, gtmWildCard, esriImagery].join(' ')
   const fontSrc = [self, 'data:', 'https://fonts.gstatic.com'].join(' ')
-  const imgSrc = [self, 'data:', 'blob:', ga4, statsDblClick, ga4WildCard, esriImagery].join(' ')
+  const imgSrc = [self, 'data:', 'blob:', gtm, ga4, statsDblClick, ga4WildCard, esriImagery].join(' ')
   const workerSrc = [self, 'blob:'].join(' ')
 
   const formActionSrc = [self]

@@ -1,4 +1,6 @@
 ### Config Broker - HTTP Client
+# Set brokerAuthToken to a valid Web Identity token for deployed environments.
+# The local broker does not require authentication.
 
 # ─────────────────────────────────────────────
 # Health

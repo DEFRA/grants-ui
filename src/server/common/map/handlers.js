@@ -3,7 +3,8 @@ import { config } from '~/src/config/config.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { attempt } from '~/src/server/common/helpers/attempt.js'
 import { readUpstreamStatus } from '~/src/server/common/helpers/errors.js'
-import { logUpstreamError } from '~/src/server/common/helpers/logging/upstream-error.js'
+import { LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { logHandledError } from '~/src/server/common/helpers/logging/handled-error.js'
 import { fetchParcels, fetchParcelTileLocation } from '~/src/server/land-grants/services/land-grants.service.js'
 import {
   fetchParcelTile,
@@ -23,17 +24,16 @@ import { getAuthorisedParcel } from '~/src/server/land-grants/services/parcel-au
 const LAND_GRANTS_API_URL = config.get('landGrants.grantsServiceApiEndpoint')
 const TILE_CACHE_MAX_AGE_SECONDS = config.get('maps.land.tileCacheMaxAgeSeconds')
 const SERVICE_LAND_GRANTS = 'land-grants-api'
-const SERVICE_CONSOLIDATED_VIEW = 'consolidated-view'
 const CACHE_CONTROL_HEADER = 'Cache-Control'
 // Generic, so the upstream land-grants response body never reaches the browser;
-// the real message is preserved in logUpstreamError.
+// the real message is preserved in the structured error log.
 const PARCELS_ERROR_MESSAGE = 'Unable to load your land parcels'
 const SEARCH_ERROR_MESSAGE = 'Unable to search your land parcels'
 const BBOX_ERROR_MESSAGE = 'Unable to locate the land parcel'
 
 /**
  * The signed-in user's parcels, or the status to answer with when the
- * land-grants lookup failed (logged here against `endpoint`).
+ * parcel lookup failed (logged here, using `endpoint` for ordinary errors).
  * @param {Request} request
  * @param {string} endpoint
  * @param {string[]} [fields]
@@ -49,7 +49,10 @@ async function loadUserParcels(request, endpoint, fields = [LAND_GRANTS_ACTION_S
 
   const err = /** @type {Error & { code?: unknown, status?: unknown }} */ (result.error)
   const upstreamStatus = readUpstreamStatus(err)
-  logUpstreamError({ endpoint, service: SERVICE_LAND_GRANTS, upstreamStatus, errorMessage: err.message }, request)
+  logHandledError(err, request, {
+    fallbackCode: LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+    fallbackDetails: { endpoint, service: SERVICE_LAND_GRANTS, upstreamStatus: upstreamStatus ?? null }
+  })
   return { ok: false, status: upstreamStatus ?? statusCodes.serviceUnavailable }
 }
 
@@ -95,15 +98,7 @@ export async function parcelSearchHandler(request, h) {
   const formRequest = /** @type {AnyFormRequest} */ (/** @type {unknown} */ (request))
   const parcelIds = await fetchAuthorisedParcelIds(formRequest)
   if (!parcelIds) {
-    logUpstreamError(
-      {
-        endpoint: ROUTES.parcelSearch,
-        service: SERVICE_CONSOLIDATED_VIEW,
-        upstreamStatus: null,
-        errorMessage: 'Unable to load the authorised parcel ids'
-      },
-      request
-    )
+    // The parcel cache logs the lookup failure before returning null.
     return h.response({ error: SEARCH_ERROR_MESSAGE }).code(statusCodes.serviceUnavailable)
   }
 
