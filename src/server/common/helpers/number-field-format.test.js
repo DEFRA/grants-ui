@@ -14,6 +14,21 @@ describe('formatNumberAnswer', () => {
     expect(formatNumberAnswer(component, value, rawInput)).toBe(expected)
   })
 
+  test.each([
+    ['percent', 0, '0%'],
+    ['percent', 1, '100%'],
+    ['percent', -0.125, '-12.5%'],
+    ['percent', 0.12345, '12.35%'],
+    ['decimal', 0, '0.00'],
+    ['decimal', -125000.5, '-125,000.50'],
+    ['decimal', 1.005, '1.01'],
+    ['currency-gbp', 0, '£0.00'],
+    ['currency-gbp', -125000.5, '-£125,000.50'],
+    ['currency-gbp', 1.005, '£1.01']
+  ])('formats %s value %s as %s', (format, value, expected) => {
+    expect(formatNumberAnswer({ type: 'NumberField', format }, value)).toBe(expected)
+  })
+
   test.each([[null], [undefined], [{ amount: 125000 }], [[125000]]])('returns an empty string for %s', (value) => {
     expect(formatNumberAnswer({ type: 'NumberField', format: 'thousands' }, value)).toBe('')
   })

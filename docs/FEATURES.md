@@ -126,8 +126,15 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Custom validation messages
 - **Example**: [Example Grant – Number field page (/number-field)](../compose/config-broker/example-grants/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – project cost entry with £ prefix and range validation
 
-Set `format: thousands` on a `NumberField` on a non-repeating page to group its answer on
-Check answers and the submitted application print page.
+Set `format` on a `NumberField` on a non-repeating page to format its answer on
+Check answers and the submitted application print page. Supported values are case-sensitive:
+
+| Format         | Entered value | Playback      | Behaviour                                     |
+| -------------- | ------------- | ------------- | --------------------------------------------- |
+| `thousands`    | `125000.50`   | `125,000.50`  | Group digits; preserve entered decimal places |
+| `decimal`      | `125000.5`    | `125,000.50`  | Group digits; display two decimal places      |
+| `currency-gbp` | `125000.5`    | `£125,000.50` | GBP currency; display two decimal places      |
+| `percent`      | `0.125`       | `12.5%`       | Fraction × 100; up to two decimal places      |
 
 ```yaml
 - type: NumberField
@@ -138,9 +145,19 @@ Check answers and the submitted application print page.
     precision: 2
 ```
 
-An entry of `125000.50` displays as `125,000.50`. Editable inputs stay ungrouped and submissions
-stay numeric. Omit `format` for identifiers such as SBIs and years. Older numeric answers display
-with the precision available in saved state. Land-action review and print cards also group quantities.
+Formatting uses the `en-GB` locale. `decimal` and `currency-gbp` round playback to two decimal
+places; `percent` rounds the percentage to at most two decimal places. For example, `0.12345`
+displays as `12.35%`. Percentage answers are fractions: `1` means `100%`, not `1%`.
+
+Editable inputs stay ungrouped and retain entered precision. Submissions stay numeric and are
+not scaled or rounded by playback formatting. `schema.precision` still controls input validation;
+set it high enough for the fractions or decimal values the question accepts.
+Input `options.prefix` and `options.suffix` are separate from playback formatting.
+
+Omit `format` for identifiers such as SBIs and years. Unsupported formats, formatting on other
+component types, and formatting on repeating pages are rejected when the definition is loaded.
+Older numeric answers retain only the precision available in saved state; `thousands` cannot
+recover discarded trailing zeros. Land-action review and print cards continue to group quantities.
 
 ### Date Components
 

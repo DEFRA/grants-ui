@@ -1,5 +1,5 @@
 import { SummaryPageController as EngineSummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
-import { formatNumberAnswer } from '~/src/server/common/helpers/number-field-format.js'
+import { formatNumberAnswer, isNumberFormat } from '~/src/server/common/helpers/number-field-format.js'
 
 export class GrantsSummaryPageController extends EngineSummaryPageController {
   /**
@@ -28,7 +28,7 @@ export function formatSummaryNumberAnswers(viewModel, context) {
       const value = item.state?.[item.name]
       if (
         component?.type !== 'NumberField' ||
-        component.format !== 'thousands' ||
+        !isNumberFormat(component.format) ||
         value === null ||
         value === undefined ||
         value === ''

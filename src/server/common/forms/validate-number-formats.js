@@ -1,4 +1,5 @@
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
+import { isNumberFormat } from '../helpers/number-field-format.js'
 
 /**
  * @param {import('@defra/forms-model').FormDefinition} definition
@@ -22,12 +23,12 @@ function validateComponents(components, allowFormat) {
   for (const component of components ?? []) {
     if (
       component.format !== undefined &&
-      (!allowFormat || component.type !== 'NumberField' || component.format !== 'thousands')
+      (!allowFormat || component.type !== 'NumberField' || !isNumberFormat(component.format))
     ) {
       throw new SystemError({
         message: `Invalid playback format for component '${component.name}'`,
         source: 'validateNumberFormats',
-        reason: 'format must be thousands and can only be configured on a NumberField on a non-repeating page',
+        reason: 'format must be a supported number format on a NumberField on a non-repeating page',
         status: 500
       })
     }

@@ -1,5 +1,6 @@
 import { getPage } from '@defra/forms-engine-plugin/engine/helpers.js'
 import { formatThousands, isDecimalString } from '~/src/shared/format-number.js'
+import { isNumberFormat } from '../number-field-format.js'
 
 /** @typedef {import('@defra/forms-engine-plugin/types').FormContext} FormContext */
 
@@ -42,7 +43,7 @@ export function preserveNumberFieldInputs(request, context) {
   const names = page.collection.fields
     .filter((field) => {
       const definition = /** @type {{ format?: string } | undefined} */ (context.componentDefMap.get(field.name))
-      return field.type === 'NumberField' && definition?.format === 'thousands' && field.name in payload
+      return field.type === 'NumberField' && isNumberFormat(definition?.format) && field.name in payload
     })
     .map((field) => field.name)
   if (isPost) {

@@ -114,6 +114,12 @@ function createJourney(format, controller = 'CheckResponsesPageController', view
 describe('number playback', () => {
   it.each([
     ['thousands', '125000.50', '125,000.50'],
+    ['percent', '0.1250', '12.5%'],
+    ['decimal', '125000.50', '125,000.50'],
+    ['currency-gbp', '125000.50', '£125,000.50'],
+    ['percent', '0.1234', '12.34%'],
+    ['decimal', '125000.567', '125,000.57'],
+    ['currency-gbp', '125000.567', '£125,000.57'],
     [undefined, '125000', '125000']
   ])('renders %s formatting on Check answers and print', async (format, input, expected) => {
     const journey = createJourney(format)
