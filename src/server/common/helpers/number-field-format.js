@@ -1,5 +1,5 @@
 import { isDecimalString } from '~/src/shared/format-number.js'
-import { getNumberFormatter } from './number-format-pipeline.js'
+import { getNumberFormatter } from './number-formatter.js'
 
 /**
  * @param {unknown} format

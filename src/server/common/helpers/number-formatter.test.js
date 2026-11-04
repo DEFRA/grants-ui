@@ -1,4 +1,4 @@
-import { getNumberFormatter } from './number-format-pipeline.js'
+import { getNumberFormatter } from './number-formatter.js'
 
 describe('getNumberFormatter', () => {
   test.each([
@@ -24,6 +24,8 @@ describe('getNumberFormatter', () => {
     ['thousands:2'],
     ['thousands,decimal'],
     ['decimal||percent'],
+    ['decimal:4|currency:gbp'],
+    ['thousands|thousands'],
     ['currency'],
     ['currency:'],
     ['currency:gbp,'],
@@ -39,12 +41,6 @@ describe('getNumberFormatter', () => {
     expect(getNumberFormatter(format)).toBeUndefined()
   })
 
-  test('inherits explicit precision in a currency pipeline', () => {
-    const formatter = getNumberFormatter('decimal:4|currency:gbp')
-
-    expect(formatter(125000.5)).toBe('£125,000.5000')
-  })
-
   test.each([
     ['thousands', '125000.500', '125,000.500'],
     ['thousands', '+.500', '+0.500'],
@@ -52,9 +48,11 @@ describe('getNumberFormatter', () => {
     ['decimal:0', 125000.5, '125,001'],
     ['decimal:4', 125000.5, '125,000.5000'],
     ['percent', 0.12345, '12.35%'],
+    ['percent:0', 0.125, '13%'],
     ['percent:4', 0.125, '12.5000%'],
     ['currency:gbp', 125000.5, '£125,000.50'],
     ['currency:gbp,4', 125000.5, '£125,000.5000'],
+    ['currency:gbp,0', 125000.5, '£125,001'],
     ['currency:jpy', 125000.5, 'JP¥125,001']
   ])('formats %s', (format, value, expected) => {
     expect(getNumberFormatter(format)(value)).toBe(expected)
@@ -64,32 +62,8 @@ describe('getNumberFormatter', () => {
     expect(getNumberFormatter('currency:gbp')(-1)).toBe('-£1.00')
   })
 
-  test.each([
-    ['decimal:2|decimal:1', 1.249, '1.3'],
-    ['decimal:1|decimal:2', 1.249, '1.20'],
-    ['percent|percent', 0.125, '1,250%'],
-    ['percent:4|currency:gbp', 0.125, '£12.5000'],
-    ['currency:gbp|decimal:4', 125000.567, '£125,000.5700'],
-    ['decimal|currency:jpy', 125000.5, 'JP¥125,000.50'],
-    ['decimal:4|decimal|currency:gbp', 125000.5, '£125,000.50'],
-    ['decimal:4|currency:gbp,0', 125000.5, '£125,001'],
-    ['decimal:0|percent', 0.125, '0%'],
-    ['currency:gbp|thousands', -1, '-£1.00']
-  ])('applies stages left to right for %s', (format, value, expected) => {
-    expect(getNumberFormatter(format)(value)).toBe(expected)
-  })
-
-  test.each([
-    ['percent|decimal:4', 0.125, '12.5000%'],
-    ['currency:gbp|decimal:4', 125000.5, '£125,000.5000'],
-    ['currency:gbp|percent', 0.125, '13%'],
-    ['percent|currency:gbp', 0.125, '£12.50']
-  ])('retains or replaces decorations for %s', (format, value, expected) => {
-    expect(getNumberFormatter(format)(value)).toBe(expected)
-  })
-
-  test('trims stage names and arguments', () => {
-    expect(getNumberFormatter(' decimal: 4 | currency: gbp , 4 ')(125000.5)).toBe('£125,000.5000')
+  test('trims formatter names and arguments', () => {
+    expect(getNumberFormatter(' currency: gbp , 4 ')(125000.5)).toBe('£125,000.5000')
   })
 
   test('does not convert currency values', () => {

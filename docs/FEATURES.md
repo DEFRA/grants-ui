@@ -127,19 +127,18 @@ The Grants UI service supports a comprehensive set of form input components, eac
 - **Example**: [Example Grant – Number field page (/number-field)](../compose/config-broker/example-grants/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – project cost entry with £ prefix and range validation
 
 Set `format` on a `NumberField` on a non-repeating page to format its answer on
-Check answers and the submitted application print page. Supported pipeline stages are
-case-sensitive and are applied from left to right:
+Check answers and the submitted application print page. Formatter names are case-sensitive:
 
-| Stage       | Arguments          | Behaviour                                           |
-| ----------- | ------------------ | --------------------------------------------------- |
-| `thousands` | none               | Group digits and preserve decimal precision         |
-| `decimal`   | optional `:places` | Fixed two decimals by default                       |
-| `percent`   | optional `:places` | Multiply by 100; default is up to two decimals      |
-| `currency`  | `:code[,places]`   | Currency symbol and standard or inherited precision |
+| Formatter   | Arguments          | Behaviour                                          |
+| ----------- | ------------------ | -------------------------------------------------- |
+| `thousands` | none               | Group digits and preserve decimal precision        |
+| `decimal`   | optional `:places` | Fixed two decimals by default                      |
+| `percent`   | optional `:places` | Multiply by 100; default is up to two decimals     |
+| `currency`  | `:code[,places]`   | Currency symbol and standard or explicit precision |
 
-A stage uses `name[:argument[,argument...]]`; separate stages with `|` to build a pipeline.
-Whitespace around stages, names and arguments is ignored. A stage has at most one colon;
-empty stages or arguments, unknown names, extra arguments, quoted values and escaping are invalid.
+Use `name[:argument[,argument...]]` to select one formatter with optional arguments.
+Whitespace around the name and arguments is ignored. Empty or extra arguments, unknown names,
+multiple colons, quoted values, escaping and pipe chaining are invalid.
 `places` is an integer from 0 to 100 (digit strings such as `04` are accepted). Currency `code` is a
 three-letter ISO currency supported by the runtime; it is case-insensitive and normalized
 for formatting. Currency conversion is never performed.
@@ -148,20 +147,15 @@ for formatting. Currency conversion is never performed.
 - type: NumberField
   name: projectCost
   title: Project cost
-  format: decimal:4|currency:gbp
+  format: currency:gbp,4
   schema:
     precision: 4
 ```
 
 `decimal` defaults to two places. `percent` defaults to at most two places, while an
 explicit `places` value displays exactly that many decimals. `currency` uses the currency's
-standard precision unless `places` is supplied; it otherwise inherits an earlier explicit
-precision. Explicit precision propagates to later stages until overridden. Every stage
-rounds or transforms the result of the preceding stage, not the original input: for example,
-`decimal:2|decimal:1` applied to `1.249` produces `1.3`, while the reverse produces `1.20`.
-`decimal` and `thousands` retain an existing currency or percent decoration; `currency` and
-`percent` replace it. Thus `percent|currency:gbp` on `0.125` displays `£12.50`, and
-`percent|decimal:4` displays `12.5000%`.
+standard precision unless `places` is supplied. For example, `currency:gbp,4` displays
+`125000.5` as `£125,000.5000`, and `percent:4` displays `0.125` as `12.5000%`.
 
 Formatting uses the `en-GB` locale. Editable inputs stay ungrouped and retain entered
 precision. Submissions stay numeric and are not scaled or rounded by playback formatting.
