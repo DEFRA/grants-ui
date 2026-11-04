@@ -5,8 +5,16 @@ import { getRoutingDefinition } from '../common/helpers/definition/routing-defin
 import { getFormsCacheService } from '../common/helpers/forms-cache/forms-cache.js'
 import { setReferenceNumber } from '../common/helpers/state/get-cache-key-helper.js'
 import { isApplicationWindowOpen } from '../common/helpers/application-window.js'
+import { readGasStatuses } from './services/gas-status.service.js'
+import agreements from '~/src/config/agreements.js'
+import { loadSharedRedirectRules } from '../common/forms/services/form.js'
 
 vi.mock('../common/helpers/state/fetch-saved-state-helper.js', () => ({ listApplicationsFromApi: vi.fn() }))
+vi.mock('./services/gas-status.service.js', () => ({ readGasStatuses: vi.fn() }))
+vi.mock('../common/forms/services/form.js', () => ({
+  loadSharedRedirectRules: vi.fn(),
+  mergeGrantRedirectRules: vi.fn((grantRules, sharedRules) => ({ ...sharedRules, ...grantRules }))
+}))
 vi.mock('../common/helpers/auth/get-auth-identifiers.js', () => ({
   getAuthenticatedCrn: vi.fn(() => 'crn-1'),
   getAuthenticatedSbi: vi.fn(() => 'sbi-1')
@@ -26,27 +34,56 @@ const definition = {
   startPage: '/start',
   pages: []
 }
+const sharedRedirectRules = {
+  postSubmission: [
+    {
+      fromGrantsStatus: 'SUBMITTED,REOPENED',
+      gasStatus: 'APPLICATION_WITHDRAWN',
+      toGrantsStatus: 'CLEARED',
+      toPath: '/start'
+    },
+    { fromGrantsStatus: 'SUBMITTED', gasStatus: 'APPLICATION_AMEND', toGrantsStatus: 'REOPENED', toPath: '/summary' },
+    {
+      fromGrantsStatus: 'SUBMITTED',
+      gasStatus: 'OFFER_SENT,OFFER_WITHDRAWN,OFFER_ACCEPTED',
+      toGrantsStatus: 'SUBMITTED',
+      toPath: agreements.get('baseUrl')
+    },
+    { fromGrantsStatus: 'default', gasStatus: 'default', toGrantsStatus: 'SUBMITTED', toPath: '/confirmation' }
+  ]
+}
 let request
 let h
 let cache
 beforeEach(() => {
   vi.clearAllMocks()
   request = { params: { slug: 'test-grant' }, app: {}, yar: { clear: vi.fn() }, server: {} }
-  h = { view: vi.fn(), redirect: vi.fn().mockReturnThis(), code: vi.fn().mockReturnThis() }
+  h = {
+    view: vi.fn().mockReturnThis(),
+    header: vi.fn().mockReturnThis(),
+    redirect: vi.fn().mockReturnThis(),
+    code: vi.fn().mockReturnThis()
+  }
   cache = { setState: vi.fn() }
   getFormsCacheService.mockReturnValue(cache)
   getRoutingDefinition.mockResolvedValue({ definition: { definition } })
   listApplicationsFromApi.mockResolvedValue([])
+  readGasStatuses.mockResolvedValue(new Map())
+  loadSharedRedirectRules.mockResolvedValue(sharedRedirectRules)
   isApplicationWindowOpen.mockReturnValue(true)
 })
-it('lists the current business and grant with reference links and meaningful statuses', async () => {
-  listApplicationsFromApi.mockResolvedValue([
+it('lists the current business and grant with grant-root links and meaningful statuses', async () => {
+  const applications = [
     { applicationRef: 'REF-1', applicationStatus: null },
-    { applicationRef: 'REF-2', applicationStatus: 'SUBMITTED' },
-    { applicationRef: 'REF-3', applicationStatus: 'REOPENED' }
-  ])
+    { applicationRef: 'REF-2', applicationStatus: 'SUBMITTED', submittedAt: '2026-03-01T12:00:00Z' },
+    { applicationRef: 'REF-3', applicationStatus: 'REOPENED', submittedAt: '2026-02-01T12:00:00Z' }
+  ]
+  listApplicationsFromApi.mockResolvedValue(applications)
   await listApplicationsRoute.handler(request, h)
   expect(listApplicationsFromApi).toHaveBeenCalledWith({ crn: 'crn-1', sbi: 'sbi-1', grantCode: 'test-grant' })
+  // only the submitted application is checked against GAS
+  expect(readGasStatuses).toHaveBeenCalledWith(request, 'test-grant', [applications[1]])
+  expect(h.header).toHaveBeenCalledWith('Cache-Control', 'no-store')
   expect(h.view).toHaveBeenCalledWith(
     'applications',
     expect.objectContaining({
@@ -62,9 +99,105 @@ it('lists the current business and grant with reference links and meaningful sta
         expect.objectContaining({
           statusText: 'Submitted',
           actionText: 'View application',
-          href: '/test-grant/print-submitted-application?ref=REF-2'
+          submittedAt: '2026-03-01T12:00:00Z',
+          href: '/test-grant?ref=REF-2'
         }),
-        expect.objectContaining({ statusText: 'Returned for amendments' })
+        expect.objectContaining({
+          statusText: 'Returned for amendments',
+          actionText: 'Continue application',
+          submittedAt: null,
+          href: '/test-grant?ref=REF-3'
+        })
+      ]
+    })
+  )
+})
+
+it('shows a submitted application GAS has returned for amendments as returned, without writing anything', async () => {
+  listApplicationsFromApi.mockResolvedValue([
+    { applicationRef: 'REF-1', applicationStatus: 'SUBMITTED', submittedAt: '2026-03-01T12:00:00Z' }
+  ])
+  readGasStatuses.mockResolvedValue(new Map([['REF-1', 'APPLICATION_AMEND']]))
+  await listApplicationsRoute.handler(request, h)
+  expect(h.view).toHaveBeenCalledWith(
+    'applications',
+    expect.objectContaining({
+      applications: [
+        expect.objectContaining({
+          referenceNumber: 'REF-1',
+          statusText: 'Returned for amendments',
+          actionText: 'Continue application',
+          submittedAt: null,
+          href: '/test-grant?ref=REF-1'
+        })
+      ]
+    })
+  )
+  expect(cache.setState).not.toHaveBeenCalled()
+  expect(listApplicationsFromApi).toHaveBeenCalledTimes(1)
+})
+
+it.each([
+  ['RECEIVED', '/test-grant/print-submitted-application?ref=REF-1'],
+  ['OFFER_SENT', '/test-grant?ref=REF-1'],
+  ['APPLICATION_WITHDRAWN', '/test-grant?ref=REF-1']
+])(
+  'keeps a submitted application as Submitted when GAS answers %s and links it to %s: only a confirmed submission opens as its print view',
+  async (gasStatus, href) => {
+    listApplicationsFromApi.mockResolvedValue([
+      { applicationRef: 'REF-1', applicationStatus: 'SUBMITTED', submittedAt: '2026-03-01T12:00:00Z' }
+    ])
+    readGasStatuses.mockResolvedValue(new Map([['REF-1', gasStatus]]))
+    await listApplicationsRoute.handler(request, h)
+    expect(h.view).toHaveBeenCalledWith(
+      'applications',
+      expect.objectContaining({
+        applications: [
+          expect.objectContaining({
+            statusText: 'Submitted',
+            actionText: 'View application',
+            submittedAt: '2026-03-01T12:00:00Z',
+            href
+          })
+        ]
+      })
+    )
+  }
+)
+
+it("reads the GAS answer through the grant's own post-submission rules when it overrides the shared ones", async () => {
+  getRoutingDefinition.mockResolvedValue({
+    definition: {
+      definition: {
+        ...definition,
+        metadata: {
+          ...definition.metadata,
+          grantRedirectRules: {
+            postSubmission: [
+              { fromGrantsStatus: 'SUBMITTED', gasStatus: 'SENT_BACK', toGrantsStatus: 'REOPENED', toPath: '/tasks' }
+            ]
+          }
+        }
+      }
+    }
+  })
+  listApplicationsFromApi.mockResolvedValue([
+    { applicationRef: 'REF-1', applicationStatus: 'SUBMITTED' },
+    { applicationRef: 'REF-2', applicationStatus: 'SUBMITTED' }
+  ])
+  readGasStatuses.mockResolvedValue(
+    new Map([
+      ['REF-1', 'SENT_BACK'],
+      ['REF-2', 'APPLICATION_AMEND']
+    ])
+  )
+  await listApplicationsRoute.handler(request, h)
+  expect(h.view).toHaveBeenCalledWith(
+    'applications',
+    expect.objectContaining({
+      applications: [
+        expect.objectContaining({ referenceNumber: 'REF-1', statusText: 'Returned for amendments' }),
+        expect.objectContaining({ referenceNumber: 'REF-2', statusText: 'Submitted' })
       ]
     })
   )

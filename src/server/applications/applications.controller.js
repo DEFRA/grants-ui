@@ -1,3 +1,4 @@
+import { ApplicationStatus } from '../common/constants/application-status.js'
 import { YarKeys } from '../common/constants/session-keys.js'
 import { getRoutingDefinition } from '../common/helpers/definition/routing-definition.js'
 import { statusCodes } from '../common/constants/status-codes.js'
@@ -10,8 +11,10 @@ import { resolveVersion } from '../common/helpers/state/state-with-definition-co
 import { getFormsCacheService } from '../common/helpers/forms-cache/forms-cache.js'
 import { isApplicationWindowOpen } from '../common/helpers/application-window.js'
 import { PermissionError } from '../common/utils/errors/PermissionError.js'
+import { loadSharedRedirectRules, mergeGrantRedirectRules } from '../common/forms/services/form.js'
 
 import { buildApplicationsViewModel } from './applications.view-model.js'
+import { readGasStatuses } from './services/gas-status.service.js'
 
 /** @param {Request} request */
 export async function loadDefinition(request) {
@@ -39,7 +42,27 @@ export class ApplicationsController {
     const sbi = getAuthenticatedSbi(request)
     const grantCode = getGrantCode(request)
     const applications = await listApplicationsFromApi({ crn, sbi, grantCode })
-    return h.view('applications', buildApplicationsViewModel(request, definition, applications))
+    // Only submitted applications are checked against GAS, so one returned for amendments shows as such
+    // before it is opened: a draft is not in GAS and a reopened one is already known to await amendments.
+    const submitted = applications.filter(
+      (application) => application.applicationStatus === ApplicationStatus.SUBMITTED
+    )
+    const [gasStatuses, sharedRules] = await Promise.all([
+      readGasStatuses(request, grantCode, submitted),
+      loadSharedRedirectRules()
+    ])
+    const { postSubmission: postSubmissionRules = [] } = mergeGrantRedirectRules(
+      /** @type {object | undefined} */ (definition.metadata?.grantRedirectRules),
+      sharedRules
+    )
+    // Not kept by the browser: Back after a reopen or a submission must show the current rows,
+    // not a back-forward-cache copy with the superseded reference.
+    return h
+      .view(
+        'applications',
+        buildApplicationsViewModel(request, definition, applications, { gasStatuses, postSubmissionRules })
+      )
+      .header('Cache-Control', 'no-store')
   }
 
   /** @param {Request} request @param {ResponseToolkit} h */
