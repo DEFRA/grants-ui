@@ -10,7 +10,6 @@ import { getGrantVersion } from '../../helpers/grant-version.js'
 import { YarKeys } from '../../constants/session-keys.js'
 import { persistStatus } from '../../helpers/status/persist-application-status.js'
 import { hasAnyItemWithNonEmptyKey } from '../../utils/objects.js'
-import { findRedirectRule } from './redirect-rules.js'
 
 const APPLICATION_NOT_SUBMITTED_MESSAGE = 'Application not submitted'
 
@@ -43,20 +42,41 @@ const POST_SUBMISSION_PAGE_STATE_GUARDS = [
  */
 
 /**
- * Finds the first redirect rule that matches the given Grants UI status
- * and GAS (Grant Administration System) status.
+ * Whether a rule's status field covers a status. The field lists one or more statuses,
+ * comma-separated; 'default', or no value, covers every status.
  *
- * If a rule uses 'default', it matches any status for that field.
+ * @param {string | undefined} ruleStatuses
+ * @param {string} status
+ * @returns {boolean}
+ */
+function ruleCovers(ruleStatuses, status) {
+  const statuses = (ruleStatuses || 'default').split(',').map((value) => value.trim())
+  return statuses.includes(status) || statuses.includes('default')
+}
+
+/**
+ * Finds the first redirect rule matching a Grants UI status and a GAS status.
  *
- * @param {string} fromGrantsStatus - Current status in the Grants UI (previous state)
+ * @param {string} fromGrantsStatus - Current Grants UI status (previous state)
  * @param {string} gasStatus - Current status returned from GAS
- * @param {RedirectRule[]} redirectRules - Array of redirect rule objects to match against
- * @returns {RedirectRule} The first matching redirect rule
- * @throws {Error} If no matching rule is found
+ * @param {RedirectRule[]} redirectRules - Rules to match against, in order
+ * @returns {RedirectRule | undefined} `undefined` when no rule matches
+ */
+export function findRedirectRule(fromGrantsStatus, gasStatus, redirectRules = []) {
+  return redirectRules.find(
+    (rule) => ruleCovers(rule.fromGrantsStatus, fromGrantsStatus) && ruleCovers(rule.gasStatus, gasStatus)
+  )
+}
+
+/**
+ * As {@link findRedirectRule}, for the pipeline, where a status pair no rule covers is a
+ * configuration error.
  *
- * @example
- * const rule = mapStatusToUrl('SUBMITTED', 'APPLICATION_AMEND', redirectRules);
- * console.log(rule.toPath); // e.g., '/summary'
+ * @param {string} fromGrantsStatus
+ * @param {string} gasStatus
+ * @param {RedirectRule[]} redirectRules
+ * @returns {RedirectRule}
+ * @throws {Error} If no matching rule is found
  */
 function mapStatusToUrl(fromGrantsStatus, gasStatus, redirectRules = []) {
   const match = findRedirectRule(fromGrantsStatus, gasStatus, redirectRules)

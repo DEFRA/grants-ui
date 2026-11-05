@@ -1,7 +1,7 @@
 import { TagClasses } from '../common/constants/tag-classes.js'
 import { ApplicationStatus } from '../common/constants/application-status.js'
 import { isApplicationWindowOpen } from '../common/helpers/application-window.js'
-import { findRedirectRule } from '../common/request-pipeline/redirects/redirect-rules.js'
+import { findRedirectRule } from '../common/request-pipeline/redirects/forms-status-redirect.js'
 import agreements from '~/src/config/agreements.js'
 import { buildFeedbackSurveyUrl } from '../common/helpers/feedback-survey.js'
 

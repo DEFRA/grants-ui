@@ -3,7 +3,7 @@ import { getApplicationStatus } from '../../services/grant-application/grant-app
 import { updateApplicationStatus } from '../../helpers/status/update-application-status-helper.js'
 import { ApplicationStatus } from '../../constants/application-status.js'
 import { YarKeys } from '../../constants/session-keys.js'
-import { formsStatusRedirect, resolveClientReference } from './forms-status-redirect.js'
+import { findRedirectRule, formsStatusRedirect, resolveClientReference } from './forms-status-redirect.js'
 import { log, LogCodes } from '../../helpers/logging/log.js'
 import { setupRedirectTest, mockGasStatus } from './forms-status-redirect.test-helpers.js'
 
@@ -382,6 +382,37 @@ describe('formsStatusRedirect', () => {
       const result = await formsStatusRedirect(request, h, context)
       expect(result).toBe(h.continue)
       expect(h.redirect).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('findRedirectRule', () => {
+    const rules = [
+      {
+        fromGrantsStatus: 'SUBMITTED,REOPENED',
+        gasStatus: 'APPLICATION_WITHDRAWN',
+        toGrantsStatus: 'CLEARED',
+        toPath: '/start'
+      },
+      { fromGrantsStatus: 'SUBMITTED', gasStatus: 'APPLICATION_AMEND', toGrantsStatus: 'REOPENED', toPath: '/summary' },
+      { fromGrantsStatus: 'SUBMITTED', gasStatus: 'default', toGrantsStatus: 'SUBMITTED', toPath: '/confirmation' }
+    ]
+
+    it('returns the first rule whose statuses include the pair, comma-separated lists included', () => {
+      expect(findRedirectRule('REOPENED', 'APPLICATION_WITHDRAWN', rules)).toBe(rules[0])
+      expect(findRedirectRule('SUBMITTED', 'APPLICATION_AMEND', rules)).toBe(rules[1])
+    })
+
+    it("treats 'default' as matching any status for that field", () => {
+      expect(findRedirectRule('SUBMITTED', 'RECEIVED', rules)).toBe(rules[2])
+      expect(findRedirectRule('SUBMITTED', 'OFFER_SENT', [{ gasStatus: 'OFFER_SENT', toPath: '/agreement' }])).toEqual({
+        gasStatus: 'OFFER_SENT',
+        toPath: '/agreement'
+      })
+    })
+
+    it('returns undefined when no rule matches', () => {
+      expect(findRedirectRule('REOPENED', 'RECEIVED', rules)).toBeUndefined()
+      expect(findRedirectRule('SUBMITTED', 'RECEIVED')).toBeUndefined()
     })
   })
 })
