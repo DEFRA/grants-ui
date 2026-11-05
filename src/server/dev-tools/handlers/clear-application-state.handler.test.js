@@ -7,6 +7,7 @@ import { clearSavedStateFromApiByContext } from '~/src/server/common/helpers/sta
 import { mintLockToken } from '~/src/server/common/helpers/lock/lock-token.js'
 import { log } from '../../common/helpers/logging/log.js'
 import { YarKeys } from '~/src/server/common/constants/session-keys.js'
+import { clearParcelCache } from '~/src/server/land-grants/services/parcel-cache.js'
 
 vi.mock('../../common/helpers/forms-cache/forms-cache.js', () => ({
   getFormsCacheService: vi.fn()
@@ -22,6 +23,10 @@ vi.mock('~/src/server/common/helpers/state/fetch-saved-state-helper.js', () => (
 
 vi.mock('~/src/server/common/helpers/lock/lock-token.js', () => ({
   mintLockToken: vi.fn().mockReturnValue('mock-lock-token')
+}))
+
+vi.mock('~/src/server/land-grants/services/parcel-cache.js', () => ({
+  clearParcelCache: vi.fn()
 }))
 
 vi.mock('../../common/helpers/logging/log.js', () => ({
@@ -70,6 +75,15 @@ describe('clearApplicationStateHandler', () => {
       expect(mockCacheService.clearState).toHaveBeenCalledWith(mockRequest, true)
       expect(mockH.redirect).toHaveBeenCalledWith('/my-application')
       expect(result).toEqual({ redirect: '/my-application' })
+    })
+
+    it("should clear the signed-in SBI's cached parcels", async () => {
+      mockRequest.params.slug = 'my-application'
+      mockRequest.auth = { credentials: { sbi: '123456789' } }
+
+      await clearApplicationStateHandler(mockRequest, mockH)
+
+      expect(clearParcelCache).toHaveBeenCalledWith('123456789')
     })
 
     it('should handle different slug values', async () => {

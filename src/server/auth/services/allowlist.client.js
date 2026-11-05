@@ -2,20 +2,18 @@ import Jwt from '@hapi/jwt'
 import { config } from '~/src/config/config.js'
 import { createApiHeadersForGrantsUiBackend } from '~/src/server/common/helpers/auth/backend-auth-helper.js'
 import { logUpstreamError } from '~/src/server/common/helpers/logging/upstream-error.js'
+import { defineCachedMethod, UNRETRIED_GENERATE_TIMEOUT_MS } from '~/src/server/common/helpers/cache/cached-method.js'
 
 const ALLOWLIST_ENDPOINT = '/allowlist/grants'
 const SERVICE = 'grants-ui-backend'
+const ALLOWLIST_CACHE_TTL_MS = 60 * 1000
 
 /**
- * Fetches the grants the given user is permitted to access.
- * Returns an empty array when the user has no permitted grants (backend 200 + empty array).
- * Throws on non-2xx responses or network failures.
- *
  * @param {string} crn
  * @param {string} sbi
  * @returns {Promise<AllowedGrant[]>}
  */
-export async function fetchAllowedGrantDetails(crn, sbi) {
+async function requestAllowedGrantDetails(crn, sbi) {
   const baseUrl = config.get('session.cache.apiEndpoint')
   const jwtSecret = config.get('session.cache.jwtSecret')
   const url = `${baseUrl}${ALLOWLIST_ENDPOINT}`
@@ -61,6 +59,30 @@ export async function fetchAllowedGrantDetails(crn, sbi) {
   return body.grants ?? []
 }
 
+const allowedGrantDetails = defineCachedMethod('allowlist.grantDetails', requestAllowedGrantDetails, {
+  expiresIn: ALLOWLIST_CACHE_TTL_MS,
+  generateTimeout: UNRETRIED_GENERATE_TIMEOUT_MS,
+  generateKey: (crn, sbi) => `${crn}:${sbi}`
+})
+
+export const allowlistCachePlugin = {
+  plugin: {
+    name: 'allowlist-cache',
+    register(/** @type {Server} */ server) {
+      allowedGrantDetails.register(server)
+    }
+  }
+}
+
+/**
+ * @param {string} crn
+ * @param {string} sbi
+ * @returns {Promise<AllowedGrant[]>}
+ */
+export function fetchAllowedGrantDetails(crn, sbi) {
+  return allowedGrantDetails.call(crn, sbi)
+}
+
 /**
  * Fetches only the grant codes used by journey-level allowlist enforcement.
  *
@@ -79,4 +101,8 @@ export async function fetchAllowedGrants(crn, sbi) {
  * @property {string} title
  * @property {string|null} description
  * @property {string|null} url
+ */
+
+/**
+ * @import { Server } from '@hapi/hapi'
  */

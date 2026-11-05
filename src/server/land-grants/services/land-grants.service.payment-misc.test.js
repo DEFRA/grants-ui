@@ -13,9 +13,10 @@ import {
   parcelsWithActions,
   locateParcelTiles
 } from '~/src/server/land-grants/services/land-grants.client.js'
-import { clearParcelCache } from '~/src/server/land-grants/services/parcel-cache.js'
 import { configState } from '~/src/__mocks__/config-mocks.js'
 import { mockApiEndpoint, mockUserContext, withUserContext } from './land-grants.service.test-helpers.js'
+import { useCachedMethodServer } from '~/src/server/common/helpers/cache/cached-method.test-helpers.js'
+import { parcelCachePlugin } from '~/src/server/land-grants/services/parcel-cache.js'
 
 const calculateLandActionsPayment = withUserContext(calculateLandActionsPaymentService)
 const fetchActionsWithPlannedActions = withUserContext(fetchActionsWithPlannedActionsService)
@@ -36,6 +37,8 @@ vi.mock('~/src/config/config.js', async () => {
 })
 
 describe('land-grants service', () => {
+  useCachedMethodServer(parcelCachePlugin)
+
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -167,7 +170,6 @@ describe('land-grants service', () => {
 
   describe('fetchActionsWithPlannedActions', () => {
     beforeEach(() => {
-      clearParcelCache()
       configState.reset()
     })
 
