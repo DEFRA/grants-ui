@@ -204,16 +204,12 @@ const withActionCount = (notice, fallbackActionCount) => {
 }
 
 /**
- * Keeps the selected parcel details in step with the current selection.
- * Both views debounce uncached lookups and reuse pending requests per parcel.
- * Requests already sent finish and cache successful results, even after the
- * selection changes. Only the current parcel's response renders. Requests
- * that hang are aborted after a timeout and can be retried on reselection.
+ * Cache successful lookups and track requests until they finish or time out.
  * @param {HTMLElement} mapEl
- * @returns {(selectedParcels: SelectedParcel[], metaIndex: import('./helpers.js').MetaIndex) => void}
+ * @param {() => import('./helpers.js').MetaIndex} getMetaIndex
+ * @param {(id: string, notice: ParcelNotice | null) => void} onLoad
  */
-function createSelectedParcelDetailsUpdater(mapEl) {
-  const listDetails = createParcelListDetailsRenderer()
+function createParcelNoticeLoader(mapEl, getMetaIndex, onLoad) {
   const enabledActions = [
     ...new Set(
       (mapEl.getAttribute(ENABLED_LAND_ACTIONS_ATTRIBUTE) ?? '')
@@ -224,19 +220,52 @@ function createSelectedParcelDetailsUpdater(mapEl) {
   ]
   /** @type {Map<string, ParcelNotice>} */
   const notices = new Map()
-  /** @type {import('./helpers.js').MetaIndex} */
-  let latestMetaIndex = {}
   /** @type {Set<string>} */
   const inFlight = new Set()
+
+  /** @param {string} id */
+  const loadNotice = async (id) => {
+    const controller = new AbortController()
+    inFlight.add(id)
+    const timeout = setTimeout(() => controller.abort(), PARCEL_DETAILS_REQUEST_TIMEOUT_MS)
+    const bulkActionCount = getMetaIndex()[id]?.actionCount
+    const notice = await fetchConsentNotice(
+      id,
+      typeof bulkActionCount === 'number' ? [] : enabledActions,
+      controller.signal
+    )
+    clearTimeout(timeout)
+    inFlight.delete(id)
+
+    const result = notice && withActionCount(notice, getMetaIndex()[id]?.actionCount ?? bulkActionCount)
+    if (result) {
+      notices.set(id, result)
+    }
+    onLoad(id, result)
+  }
+
+  return { notices, inFlight, loadNotice }
+}
+
+/**
+ * Keeps the selected parcel details in step with the current selection.
+ * Both views debounce uncached lookups and reuse pending requests per parcel.
+ * Requests already sent finish and cache successful results, even after the
+ * selection changes. Only the current parcel's response renders. Requests
+ * that hang are aborted after a timeout and can be retried on reselection.
+ * @param {HTMLElement} mapEl
+ * @returns {(selectedParcels: SelectedParcel[], metaIndex: import('./helpers.js').MetaIndex) => void}
+ */
+function createSelectedParcelDetailsUpdater(mapEl) {
+  const listDetails = createParcelListDetailsRenderer()
+  /** @type {import('./helpers.js').MetaIndex} */
+  let latestMetaIndex = {}
   /** @type {string | undefined} */
   let selectedId
   /** @type {ReturnType<typeof setTimeout> | null} */
   let debounceTimer = null
 
-  /**
-   * @param {string} id
-   * @param {ParcelNotice | null} notice
-   */
+  /** @param {string} id @param {ParcelNotice | null} notice */
   const show = (id, notice) => {
     if (notice?.items.length) {
       showRequirements(notice)
@@ -248,29 +277,15 @@ function createSelectedParcelDetailsUpdater(mapEl) {
     }
     listDetails.render(id, notice)
   }
-
-  /** @param {string} id @param {import('./helpers.js').MetaIndex} metaIndex */
-  const loadNotice = async (id, metaIndex) => {
-    const controller = new AbortController()
-    inFlight.add(id)
-    const timeout = setTimeout(() => controller.abort(), PARCEL_DETAILS_REQUEST_TIMEOUT_MS)
-    const bulkActionCount = metaIndex[id]?.actionCount
-    const notice = await fetchConsentNotice(
-      id,
-      typeof bulkActionCount === 'number' ? [] : enabledActions,
-      controller.signal
-    )
-    clearTimeout(timeout)
-    inFlight.delete(id)
-
-    const result = notice && withActionCount(notice, latestMetaIndex[id]?.actionCount ?? bulkActionCount)
-    if (result) {
-      notices.set(id, result)
+  const { notices, inFlight, loadNotice } = createParcelNoticeLoader(
+    mapEl,
+    () => latestMetaIndex,
+    (id, notice) => {
+      if (selectedId === id) {
+        show(id, notice)
+      }
     }
-    if (selectedId === id) {
-      show(id, result)
-    }
-  }
+  )
 
   return function updateSelectedParcelDetails(selectedParcels, metaIndex) {
     clearRequirements()
@@ -307,7 +322,7 @@ function createSelectedParcelDetailsUpdater(mapEl) {
     listDetails.startLoading(id)
     debounceTimer = setTimeout(() => {
       debounceTimer = null
-      void loadNotice(id, latestMetaIndex)
+      loadNotice(id)
     }, PARCEL_DETAILS_DEBOUNCE_MS)
   }
 }
@@ -364,6 +379,34 @@ function focusSelectedParcelDetails(selectedParcels, previousId, source) {
   return id
 }
 
+/** @param {ParcelMapElement} mapEl */
+function createMapSelectionSync(mapEl) {
+  /** @type {string[]} */
+  let mapSelectedIds = []
+  let syncingMap = false
+
+  return {
+    /** @param {string[]} selectedIds */
+    sync: (selectedIds) => {
+      if (selectedIds.join(',') === mapSelectedIds.join(',')) {
+        return
+      }
+      // clearSelection emits synchronously; keep the form selection intact while
+      // replacing the map's previous selection. selectParcels can complete later.
+      syncingMap = true
+      mapEl.clearSelection?.()
+      syncingMap = false
+      mapEl.selectParcels?.(selectedIds)
+    },
+    /** @param {SelectedParcel[]} selectedParcels */
+    update: (selectedParcels) => {
+      mapSelectedIds = selectedParcels.map((parcel) => parcel.id)
+      return mapSelectedIds
+    },
+    isSyncing: () => syncingMap
+  }
+}
+
 /**
  * Wire the page's form DOM to a <parcel-map> element's events.
  * @param {HTMLElement | null} mapEl
@@ -380,17 +423,11 @@ export function initParcelSelectPage(mapEl) {
   const serverSelectedIds = (mapEl.dataset[DATASET_SELECTED_PARCELS] ?? '').split(',').filter(Boolean)
   writeHiddenInputs(serverSelectedIds)
   let selectedIds = serverSelectedIds
-  let mapSelectedIds = /** @type {string[]} */ ([])
-  let syncingMap = false
   /** @type {string | undefined} */
   let selectedParcelId = serverSelectedIds[0]
 
-  const mapWithSelection = /** @type {HTMLElement & {
-    clearSelection?: () => void,
-    selectParcels?: (ids: string[]) => void,
-    focusParcels?: () => void,
-    resize?: () => void
-  }} */ (mapEl)
+  const mapWithSelection = /** @type {ParcelMapElement} */ (mapEl)
+  const mapSelection = createMapSelectionSync(mapWithSelection)
   const updateSelectedParcelDetails = createSelectedParcelDetailsUpdater(mapEl)
 
   const syncMapSelection = () => {
@@ -398,23 +435,15 @@ export function initParcelSelectPage(mapEl) {
     mapWithSelection.resize?.()
     const selectedParcels = selectedIds.map((id) => ({ id }))
     renderSelectedParcelDetails(selectedParcels, metaIndex)
-    void updateSelectedParcelDetails(selectedParcels, metaIndex)
-    if (selectedIds.join(',') === mapSelectedIds.join(',')) {
-      return
-    }
-    // clearSelection emits synchronously; keep the form selection intact while
-    // replacing the map's previous selection. selectParcels can complete later.
-    syncingMap = true
-    mapWithSelection.clearSelection?.()
-    syncingMap = false
-    mapWithSelection.selectParcels?.(selectedIds)
+    updateSelectedParcelDetails(selectedParcels, metaIndex)
+    mapSelection.sync(selectedIds)
   }
   const viewToggle = initParcelViewToggle({
     onListSelection: (ids) => {
       selectedIds = ids
       selectedParcelId = ids.length === 1 ? ids[0] : undefined
       writeHiddenInputs(ids)
-      void updateSelectedParcelDetails(
+      updateSelectedParcelDetails(
         ids.map((id) => ({ id })),
         {}
       )
@@ -423,45 +452,51 @@ export function initParcelSelectPage(mapEl) {
     getSelectedIds: () => selectedIds
   })
   if (viewToggle?.isList() && selectedIds.length) {
-    void updateSelectedParcelDetails(
+    updateSelectedParcelDetails(
       selectedIds.map((id) => ({ id })),
       {}
     )
   }
 
-  /** @param {ReadyDetail} detail */
-  const handleReady = (detail) => {
-    metaIndex = updateMapFromReadyDetail(detail)
-    if (!viewToggle?.isList()) {
-      syncMapSelection()
-    }
-  }
-
-  // A basemap/tiles failure must not disable the working text-list form. The
-  // server renders the no-parcels and parcel-load errors, so none is shown here.
-  const handleError = () => {
-    viewToggle?.showList()
-  }
-
   mapEl.addEventListener(EVENT_SELECTION, (/** @type {Event} */ e) => {
     const { selectedParcels, source } = /** @type {CustomEvent<SelectionDetail>} */ (e).detail
-    mapSelectedIds = selectedParcels.map((p) => p.id)
-    if (syncingMap || viewToggle?.isList()) {
+    const mapSelectedIds = mapSelection.update(selectedParcels)
+    if (mapSelection.isSyncing() || viewToggle?.isList()) {
       return
     }
     selectedIds = mapSelectedIds
     writeHiddenInputs(selectedIds)
     viewToggle?.syncSelection(selectedIds)
     renderSelectedParcelDetails(selectedParcels, metaIndex)
-    void updateSelectedParcelDetails(selectedParcels, metaIndex)
+    updateSelectedParcelDetails(selectedParcels, metaIndex)
     selectedParcelId = focusSelectedParcelDetails(selectedParcels, selectedParcelId, source)
   })
 
-  bindMapStatusEvents(mapEl, handleReady, handleError)
+  bindMapStatusEvents(
+    mapEl,
+    (detail) => {
+      metaIndex = updateMapFromReadyDetail(detail)
+      if (!viewToggle?.isList()) {
+        syncMapSelection()
+      }
+    },
+    // A basemap/tiles failure must not disable the working text-list form. The
+    // server renders the no-parcels and parcel-load errors, so none is shown here.
+    () => viewToggle?.showList()
+  )
   bindParcelNavigation(mapWithSelection, viewToggle)
 }
 
 initParcelSelectPage(document.getElementById(DOM_ID_PARCEL_MAP))
+
+/**
+ * @typedef {HTMLElement & {
+ *   clearSelection?: () => void,
+ *   selectParcels?: (ids: string[]) => void,
+ *   focusParcels?: () => void,
+ *   resize?: () => void
+ * }} ParcelMapElement
+ */
 
 /**
  * @typedef {object} ReadyDetail
