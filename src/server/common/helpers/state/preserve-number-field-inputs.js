@@ -34,7 +34,7 @@ function saveInputs(context, names, payload) {
  * @param {FormContext} context
  */
 export function preserveNumberFieldInputs(request, context) {
-  if (context.errors || context.isForceAccess || !request.app.model) {
+  if (context.isForceAccess || !request.app.model) {
     return
   }
   const isPost = request.method === 'post'
@@ -48,6 +48,17 @@ export function preserveNumberFieldInputs(request, context) {
       return field.type === 'NumberField' && isNumberFormat(definition?.schema?.format) && field.name in payload
     })
     .map((field) => field.name)
+  if (context.errors) {
+    if (isPost) {
+      for (const name of names) {
+        const input = payload[name]
+        if (typeof input === 'string') {
+          context.payload = { ...context.payload, [name]: input }
+        }
+      }
+    }
+    return
+  }
   if (isPost) {
     saveInputs(context, names, payload)
     return

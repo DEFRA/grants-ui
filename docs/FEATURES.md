@@ -156,7 +156,7 @@ decimals. `currency` uses the currency's standard precision unless `places` is s
 For example, `currency:gbp,4` displays `125000.5` as `£125,000.5000`.
 
 Formatting uses the `en-GB` locale. Editable inputs stay ungrouped and retain entered
-precision. Submissions stay numeric and are not scaled or rounded by playback formatting.
+precision, including after validation errors. Submissions stay numeric and are not scaled or rounded by playback formatting.
 `schema.precision` still controls input validation; set it high enough for accepted fractions
 or decimal values. Input `options.prefix` and `options.suffix` are separate from playback
 formatting. Formatting accepts no arbitrary expressions.

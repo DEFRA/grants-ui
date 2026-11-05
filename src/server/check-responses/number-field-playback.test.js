@@ -154,6 +154,20 @@ describe('number playback', () => {
     expect(journey.print().sections[0].questions[0].answer).toBe('125,000.5')
   })
 
+  it('preserves entered precision when another field fails validation', async () => {
+    const journey = createJourney('thousands')
+    const invalid = await journey.dispatch('amount', { action: 'validate', capacity: '125000.50', sbi: '' })
+    expect(invalid.viewModel.errors[0].name).toBe('sbi')
+    const displayed = invalid.viewModel.components[0].model.value
+    expect(displayed).toBe('125000.50')
+    expect(journey.state()).not.toHaveProperty('$$__numberFieldInputs')
+
+    await journey.dispatch('amount', { action: 'validate', capacity: displayed, sbi: '125000' })
+    const summary = await journey.dispatch('summary')
+    expect(summary.viewModel.checkAnswers[0].summaryList.rows[0].value.text).toBe('125,000.50')
+    expect(summary.viewModel.context.relevantState.capacity).toBe(125000.5)
+  })
+
   it.each([
     ['SummaryPageController', undefined],
     ['MapSubmissionPageController', undefined],
