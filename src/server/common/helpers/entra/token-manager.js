@@ -7,6 +7,11 @@ import { ExternalApiError } from '~/src/server/common/utils/errors/ExternalApiEr
 import { retry } from '~/src/server/common/helpers/retry.js'
 import { log, logger, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { isExpired, logUnderlyingCredentialExpiry } from '~/src/server/common/helpers/auth/service-token.js'
+import {
+  defineCachedMethod,
+  GENERATE_TIMEOUT_HEADROOM_MS,
+  retryWindowMs
+} from '~/src/server/common/helpers/cache/cached-method.js'
 
 const clientAssertionType = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
 
@@ -14,6 +19,10 @@ const msInSec = 1000
 const secsInMins = 60
 const numMins = 5
 const expirationBuffer = numMins * secsInMins * msInSec // refresh tokens 5 minutes before actual expiry
+const tokenRequestTimeoutSecs = 15
+const TOKEN_REQUEST_TIMEOUT_MS = tokenRequestTimeoutSecs * msInSec
+const defaultTokenTtlMins = 55
+const DEFAULT_TOKEN_TTL_MS = defaultTokenTtlMins * secsInMins * msInSec
 
 // Library default (300s) collides with the ~300s ECS container credential
 // refresh window, causing STS to occasionally reject the request (prod, 2026-09-28).
@@ -40,39 +49,10 @@ function getWebIdentityTokenProvider() {
 }
 
 /**
- * @typedef {object} TokenState - The state of the OAuth2 token
- * @property {string|null} currentToken - The current OAuth2 token
- * @property {number|null} tokenExpiry - Expiry time of the token in milliseconds
- */
-
-/** @type {TokenState} */
-let tokenState = {
-  currentToken: null,
-  tokenExpiry: null
-}
-
-/**
- * Resets the in-memory OAuth2 token state.
  * @returns {void}
  */
 export function clearTokenState() {
-  tokenState = {
-    currentToken: null,
-    tokenExpiry: null
-  }
   webIdentityTokenProvider = null
-}
-
-/**
- * Checks if expiryTime has passed for a token
- * @param {number|null} expiryTime - Expiry Time of the token in milliseconds
- * @returns {boolean} - Boolean indicating if the token has expired
- */
-export function isTokenExpired(expiryTime) {
-  if (!expiryTime) {
-    return true
-  }
-  return Date.now() >= expiryTime - expirationBuffer
 }
 
 /**
@@ -90,23 +70,6 @@ export function createTokenRequestParams(clientId, scope, clientAssertion) {
     scope,
     client_assertion_type: clientAssertionType,
     client_assertion: clientAssertion,
-    grant_type: 'client_credentials'
-  })
-}
-
-/**
- * Creates the request parameters for a token request authenticated with a
- * client secret - see entra.clientSecret.
- * @param {string} clientId - Client ID
- * @param {string} scope - Scope of the token
- * @param {string} clientSecret - Client Secret
- * @returns {URLSearchParams} - URLSearchParams object with the request parameters
- */
-export function createClientSecretTokenRequestParams(clientId, scope, clientSecret) {
-  return new URLSearchParams({
-    client_id: clientId,
-    scope,
-    client_secret: clientSecret,
     grant_type: 'client_credentials'
   })
 }
@@ -159,32 +122,6 @@ async function buildWebIdentityTokenRequestParams(clientId, scope) {
 }
 
 /**
- * Builds the request params for the Entra token exchange, using the
- * authentication method configured for this environment via entra.authMethod.
- * Web Identity federated credentials are being rolled out environment by
- * environment (see CDP Web Identity Federated Credentials guidance), so
- * environments without a working federated credential keep using
- * entra.clientSecret until theirs is ready.
- * @param {string} clientId - Client ID
- * @param {string} scope - Scope of the token
- * @returns {Promise<URLSearchParams>} - URLSearchParams object with the request parameters
- */
-async function buildTokenRequestParams(clientId, scope) {
-  const authMethod = config.get('entra.authMethod')
-
-  switch (authMethod) {
-    case 'web_identity':
-      return buildWebIdentityTokenRequestParams(clientId, scope)
-
-    case 'client_secret':
-      return createClientSecretTokenRequestParams(clientId, scope, config.get('entra.clientSecret'))
-
-    default:
-      throw new Error(`Unrecognised entra.authMethod: ${authMethod}`)
-  }
-}
-
-/**
  * @typedef {object} TokenResponse - The response from the token endpoint
  * @property {string} access_token - The OAuth2 access token
  * @property {number} expires_in - The number of seconds until the token expires
@@ -194,20 +131,21 @@ async function buildTokenRequestParams(clientId, scope) {
  * Refreshes the OAuth2 token by making a POST request to the token endpoint.
  * @async
  * @function refreshToken
+ * @param {CacheFlags} [flags]
  * @returns {Promise<string>} The new access token.
  * @throws {Error} If the request fails or the response is not ok.
  */
-export async function refreshToken() {
+export async function refreshToken(flags = {}) {
   const tokenEndpoint = config.get('entra.tokenEndpoint')
   const tenantId = config.get('entra.tenantId')
   const clientId = config.get('entra.clientId')
   const scope = `${clientId}/.default`
-  const authMethod = config.get('entra.authMethod')
+  const authMethod = 'web_identity'
 
   try {
     log(LogCodes.SYSTEM.ENTRA_TOKEN_REFRESH_ATTEMPT, { authMethod })
 
-    const params = await buildTokenRequestParams(clientId, scope)
+    const params = await buildWebIdentityTokenRequestParams(clientId, scope)
 
     const response = await retry(
       () =>
@@ -219,7 +157,7 @@ export async function refreshToken() {
           body: params
         }),
       {
-        timeout: 15000,
+        timeout: TOKEN_REQUEST_TIMEOUT_MS,
         checkFetchResponse: true,
         serviceName: 'TokenManager.refreshToken'
       }
@@ -240,14 +178,11 @@ export async function refreshToken() {
       throw new Error('Invalid token response: missing or invalid access_token')
     }
 
-    tokenState = {
-      currentToken: data.access_token,
-      tokenExpiry: Date.now() + data.expires_in * 1000
-    }
+    flags.ttl = Math.max(0, data.expires_in * msInSec - expirationBuffer)
 
     log(LogCodes.SYSTEM.ENTRA_TOKEN_REFRESH_SUCCESS, { authMethod })
 
-    return tokenState.currentToken ?? ''
+    return data.access_token
   } catch (error) {
     logRefreshTokenError(authMethod, /** @type {Error} */ (error))
 
@@ -264,8 +199,8 @@ export async function refreshToken() {
 /**
  * Logs why a token refresh failed, distinguishing a failure to obtain a Web
  * Identity token from AWS STS from a failure at the Entra token endpoint
- * itself (wrong client secret, audience mismatch, network error, etc).
- * @param {string} authMethod - 'web_identity' or 'client_secret'
+ * itself (audience mismatch, network error, etc).
+ * @param {string} authMethod - Authentication method
  * @param {Error & { context?: Record<string, unknown>, status?: number }} error
  * @returns {void}
  */
@@ -285,6 +220,22 @@ function logRefreshTokenError(authMethod, error) {
   })
 }
 
+// One token serves every caller, so the key is fixed.
+const entraToken = defineCachedMethod('entra.token', refreshToken, {
+  expiresIn: DEFAULT_TOKEN_TTL_MS,
+  generateTimeout: retryWindowMs(TOKEN_REQUEST_TIMEOUT_MS) + GENERATE_TIMEOUT_HEADROOM_MS,
+  generateKey: () => 'token'
+})
+
+export const entraTokenPlugin = {
+  plugin: {
+    name: 'entra-token',
+    register(/** @type {Server} */ server) {
+      entraToken.register(server)
+    }
+  }
+}
+
 /**
  * Gets a valid token, refreshing if necessary
  * @async
@@ -292,10 +243,11 @@ function logRefreshTokenError(authMethod, error) {
  * @returns {Promise<string>} A valid access token
  * @throws {Error} If unable to get a valid token
  */
-export async function getValidToken() {
-  if (!isTokenExpired(tokenState.tokenExpiry) && tokenState.currentToken) {
-    return tokenState.currentToken
-  }
-
-  return refreshToken()
+export function getValidToken() {
+  return entraToken.call()
 }
+
+/**
+ * @import { Server } from '@hapi/hapi'
+ * @import { CacheFlags } from '~/src/server/common/helpers/cache/cached-method.js'
+ */

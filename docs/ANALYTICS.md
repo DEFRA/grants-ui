@@ -17,6 +17,8 @@ This can be added to the [cdp-app-config](https://github.com/DEFRA/cdp-app-confi
 
 The container ID is validated client-side against `/^GTM-[A-Z0-9]+$/` before the GTM script (`googletagmanager.com/gtm.js`) is injected (`src/shared/cookie-utils.js`, `loadGoogleAnalytics`). GTM only loads if the user has given analytics cookie consent - see `src/server/common/templates/layouts/page.njk` and the cookie consent helpers.
 
+The shared Content Security Policy allows `https://www.googletagmanager.com` in `img-src` for GTM measurement images in all environments.
+
 ## Dashboards
 
 - [Google Analytics Non-prod (dev) dashboard](https://analytics.google.com/analytics/web/?authuser=1#/a179628664p387058420/reports/intelligenthome?params=_u..nav%3Dmaui)
