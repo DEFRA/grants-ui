@@ -4,6 +4,28 @@
 {% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
 {% from "govuk/components/error-message/macro.njk" import govukErrorMessage %}
 
+{% block bodyStart %}
+  {# Apply the layout before any visible content, independently of the deferred modules. #}
+  <script nonce="{{ cspNonce }}">
+    ;(function () {
+      var isMap = true
+      try {
+        isMap = window.localStorage.getItem('grants-ui-parcel-view') !== 'list'
+      } catch {
+        // Match the toggle's default when storage is unavailable.
+      }
+      document.body.classList.toggle('map-select-parcel--map', isMap)
+      window.addEventListener('load', function () {
+        // Keep the native list usable if the page modules failed to enhance it.
+        if (document.getElementById('parcel-view-toggle-container').hidden) {
+          document.body.classList.remove('map-select-parcel--map')
+        }
+      })
+    })()
+  </script>
+  {{ super() }}
+{% endblock %}
+
 {% block content %}
   <div class="govuk-body">
     <div class="govuk-grid-row">
@@ -70,7 +92,7 @@
                  #parcel-map, and govuk-frontend cannot move focus to a custom element without it. #}
                 {# data-selected-parcels re-seeds the map after a rejected submit —
                  parcel-select-page.js reselects these ids once the map is ready. #}
-                <div id="parcel-map-view" hidden>
+                <div id="parcel-map-view" class="parcel-map-view" hidden>
                   <parcel-map
                     defer-loading
                     id="parcel-map"

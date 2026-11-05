@@ -1,5 +1,9 @@
 // @vitest-environment node
-import { describe, it, expect } from 'vitest'
+import { beforeAll, describe, it, expect } from 'vitest'
+import { JSDOM } from 'jsdom'
+import { compileAsync, NodePackageImporter } from 'sass-embedded'
+import { PARCEL_VIEW_STORAGE_KEY } from '~/src/client/javascripts/parcel-map/parcel-view-toggle.js'
+import { MAP_DEFAULT_HEIGHT } from '~/src/client/javascripts/parcel-map/config.js'
 import { createPageRenderer } from '~/src/server/common/test-helpers/component-helpers.js'
 
 const renderPage = createPageRenderer(import.meta.url, 'map-select-parcel.html', {
@@ -8,6 +12,82 @@ const renderPage = createPageRenderer(import.meta.url, 'map-select-parcel.html',
 })
 
 const normalise = (text) => text.replace(/\s+/g, ' ').trim()
+
+describe('parcel view before the page modules load', () => {
+  let css
+  beforeAll(async () => {
+    css = (
+      await compileAsync('src/client/stylesheets/components/_map-select-parcel.scss', {
+        loadPaths: ['src/client/stylesheets'],
+        importers: [new NodePackageImporter()],
+        quietDeps: true
+      })
+    ).css
+  })
+
+  function openPage({ preference, blockedStorage = false, javaScript = true } = {}) {
+    const $ = renderPage({ cspNonce: 'test-nonce' })
+    $('head').append(`<style>${css}</style>`)
+    return new JSDOM($.html(), {
+      url: 'https://grants.example/select-land-parcel',
+      ...(javaScript ? { runScripts: 'dangerously' } : {}),
+      beforeParse(window) {
+        if (preference) {
+          window.localStorage.setItem(PARCEL_VIEW_STORAGE_KEY, preference)
+        }
+        if (blockedStorage) {
+          Object.defineProperty(window, 'localStorage', {
+            get() {
+              throw new Error('Storage blocked')
+            }
+          })
+        }
+      }
+    })
+  }
+
+  it.each([undefined, 'map', 'invalid'])(
+    'uses the wide map layout immediately with preference %s and deferred modules still unloaded',
+    (preference) => {
+      const dom = openPage({ preference })
+      const { document, getComputedStyle } = dom.window
+      expect(document.body.firstElementChild.matches('script[nonce="test-nonce"]')).toBe(true)
+      expect(document.body.classList.contains('map-select-parcel--map')).toBe(true)
+      expect(getComputedStyle(document.querySelector('.govuk-width-container')).maxWidth).toBe('1400px')
+      expect(getComputedStyle(document.getElementById('land-parcels')).display).toBe('none')
+      expect(getComputedStyle(document.getElementById('parcel-map-view')).display).toBe('block')
+      expect(getComputedStyle(document.getElementById('parcel-map-view')).minHeight).toBe(MAP_DEFAULT_HEIGHT)
+      expect(document.getElementById('parcel-map').hasAttribute('defer-loading')).toBe(true)
+      dom.window.close()
+    }
+  )
+
+  it.each([{ preference: 'list' }, { javaScript: false }])('keeps the native list for %j', (options) => {
+    const dom = openPage(options)
+    expect(dom.window.document.body.classList.contains('map-select-parcel--map')).toBe(false)
+    expect(dom.window.getComputedStyle(dom.window.document.getElementById('land-parcels')).display).not.toBe('none')
+    expect(dom.window.getComputedStyle(dom.window.document.getElementById('parcel-map-view')).display).toBe('none')
+    dom.window.close()
+  })
+
+  it('matches the default map preference when storage is blocked', () => {
+    const dom = openPage({ blockedStorage: true })
+    expect(dom.window.document.body.classList.contains('map-select-parcel--map')).toBe(true)
+    dom.window.close()
+  })
+
+  it.each([false, true])('restores the native list on module failure only (enhanced=%s)', (enhanced) => {
+    const dom = openPage()
+    dom.window.document.getElementById('parcel-view-toggle-container').hidden = !enhanced
+    dom.window.dispatchEvent(new dom.window.Event('load'))
+    expect(dom.window.document.body.classList.contains('map-select-parcel--map')).toBe(enhanced)
+    if (!enhanced) {
+      expect(dom.window.getComputedStyle(dom.window.document.getElementById('land-parcels')).display).not.toBe('none')
+      expect(dom.window.getComputedStyle(dom.window.document.getElementById('parcel-map-view')).display).toBe('none')
+    }
+    dom.window.close()
+  })
+})
 
 describe('map-select-parcel.html', () => {
   it('shows a list-only hint without JavaScript, with map wording hidden until enhancement', () => {

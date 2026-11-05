@@ -1,7 +1,7 @@
 {% from "govuk/components/tag/macro.njk" import govukTag %}
 
 <fieldset
-  class="govuk-fieldset"
+  class="govuk-fieldset parcel-list"
   id="land-parcels"
   tabindex="-1"
   aria-describedby="{{ ('parcel-selection-hint ' + (errorDescribedByIds | join(' '))) if errors and errors.length else 'parcel-selection-hint' }}"

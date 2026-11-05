@@ -61,6 +61,17 @@ $parcel-list-details-margin-left: math.div($parcel-list-touch-target-size, 2) - 
   }
 }
 
+// The inline bootstrap applies the preference before the page modules load.
+// Keep the native list as the no-JavaScript fallback and reserve the map space.
+.map-select-parcel--map .parcel-list {
+  display: none;
+}
+
+.map-select-parcel--map .parcel-map-view[hidden] {
+  display: block;
+  min-height: 500px; // Matches MAP_DEFAULT_HEIGHT in parcel-map/config.js.
+}
+
 // Gesture guidance is permanently visible below the map.
 parcel-map .maplibregl-cooperative-gesture-screen {
   display: none;
