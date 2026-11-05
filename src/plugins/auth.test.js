@@ -2,12 +2,18 @@ import { vi } from 'vitest'
 import Bell from '@hapi/bell'
 import Cookie from '@hapi/cookie'
 import Hapi from '@hapi/hapi'
+import Iron from '@hapi/iron'
 import Jwt from '@hapi/jwt'
 import Yar from '@hapi/yar'
 import { config } from '~/src/config/config.js'
-import AuthPlugin, { getBellOptions, getCookieOptions, mapPayloadToProfile } from '~/src/plugins/auth.js'
+import AuthPlugin, {
+  AUTH_SESSION_VERSION,
+  buildUserCredentials,
+  getBellOptions,
+  getCookieOptions,
+  mapPayloadToProfile
+} from '~/src/plugins/auth.js'
 import { getOidcConfig } from '~/src/server/auth/get-oidc-config.js'
-import { getSafeRedirect } from '~/src/server/auth/get-safe-redirect.js'
 import { refreshTokens } from '~/src/server/auth/refresh-tokens.js'
 import { log, debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { AuthError } from '~/src/server/common/utils/errors/AuthError.js'
@@ -15,7 +21,6 @@ import { AuthError } from '~/src/server/common/utils/errors/AuthError.js'
 vi.mock('@hapi/jwt')
 vi.mock('~/src/server/auth/get-oidc-config')
 vi.mock('~/src/server/auth/refresh-tokens')
-vi.mock('~/src/server/auth/get-safe-redirect')
 
 const DEFAULT_CONFIG = {
   'defraId.clientId': 'test-client-id',
@@ -41,16 +46,19 @@ const MOCK_USERS = {
     firstName: 'John'
   },
   user123: {
+    version: 2,
     contactId: 'user123',
     token: 'expired-token',
     refreshToken: 'refresh-token'
   },
   user456: {
+    version: 2,
     contactId: 'user456',
     token: 'expired-token',
     refreshToken: 'refresh-token'
   },
   user789: {
+    version: 2,
     contactId: 'user789',
     organisationId: 'org456',
     token: 'expired-token',
@@ -146,7 +154,7 @@ const LOG_MESSAGES = {
       EMPTY_PAYLOAD: 'bell_profile_empty_payload',
       MISSING_FIELDS: 'bell_profile_missing_fields',
       PROCESSING_ERROR: 'bell_profile_processing_error',
-      REDIRECT_STORE_ERROR: 'bell_location_redirect_store_error',
+      REDIRECT_INVALID: 'bell_location_redirect_invalid',
       LOCATION_FUNCTION_ERROR: 'bell_location_function_error'
     }
   },
@@ -214,8 +222,6 @@ describe('Auth Plugin', () => {
 
     Jwt.token.decode.mockReturnValue(mockDecodedToken)
     Jwt.token.verifyTime = vi.fn()
-
-    getSafeRedirect.mockImplementation((path) => path)
 
     // Set up config mock with DEFAULT_CONFIG
     config.get.mockImplementation((key) => DEFAULT_CONFIG[key])
@@ -354,43 +360,51 @@ describe('Auth Plugin', () => {
       expect(credentials.profile.sessionId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)
     })
 
-    test('location function handles redirect parameter', () => {
+    test('location function returns the configured callback URL without storing the redirect', () => {
       const options = getBellOptions(mockOidcConfig)
-      const mockRequest = { ...MOCK_REQUESTS.withRedirect }
+      const mockRequest = { ...MOCK_REQUESTS.withRedirect, yar: { set: vi.fn() } }
 
       const result = options.location(mockRequest)
 
-      expect(getSafeRedirect).toHaveBeenCalledWith('/home')
-      expect(mockRequest.yar.set).toHaveBeenCalled()
+      expect(mockRequest.yar.set).not.toHaveBeenCalled()
       expect(result).toBe(DEFAULT_CONFIG['defraId.redirectUrl'])
     })
 
-    test('location function throws error if setting redirect yar key fails and logs it', () => {
+    test.each([
+      ['keeps a same-origin return URL', '/farm-payments/start?x=1', '/farm-payments/start?x=1'],
+      ['replaces a protocol-relative return URL with the safe default', '//evil.test', '/home'],
+      ['replaces an absolute external return URL with the safe default', 'https://evil.test', '/home']
+    ])('location function %s', (_label, redirect, expected) => {
       const options = getBellOptions(mockOidcConfig)
-      const mockRequest = {
-        query: { redirect: '/home' },
-        yar: {
-          set: vi.fn(() => {
-            throw new Error('Yar set error')
-          })
-        },
-        url: { href: 'http://localhost:3000/auth?redirect=%2Fhome' }, // Added url.href
-        method: 'GET',
-        headers: { host: 'localhost:3000', origin: 'http://localhost:3000' }
-      }
+      const mockRequest = { ...MOCK_REQUESTS.withRedirect, query: { redirect } }
 
       options.location(mockRequest)
 
+      expect(mockRequest.query.redirect).toBe(expected)
+    })
+
+    test('location function drops a return URL that is not a string and logs it', () => {
+      const options = getBellOptions(mockOidcConfig)
+      const mockRequest = { ...MOCK_REQUESTS.withRedirect, query: { redirect: ['/a', '/b'], other: 'kept' } }
+
+      const result = options.location(mockRequest)
+
+      expect(result).toBe(DEFAULT_CONFIG['defraId.redirectUrl'])
+      expect(mockRequest.query).toEqual({ other: 'kept' })
       expect(debug).toHaveBeenCalledWith(LogCodes.AUTH.SIGN_IN_FAILURE, {
         ...LOG_MESSAGES.signInFailure.baseFields,
-        errorMessage: 'Failed to store redirect parameter: Yar set error',
-        step: LOG_MESSAGES.signInFailure.steps.REDIRECT_STORE_ERROR,
-        redirectError: {
-          message: 'Yar set error',
-          stack: expect.any(String),
-          originalRedirect: expect.any(String)
-        }
+        errorMessage: 'Ignored redirect parameter of type object',
+        step: LOG_MESSAGES.signInFailure.steps.REDIRECT_INVALID
       })
+    })
+
+    test('location function leaves the query untouched when there is no return URL', () => {
+      const options = getBellOptions(mockOidcConfig)
+      const mockRequest = { ...MOCK_REQUESTS.authPage, query: { organisationId: '5447505' } }
+
+      options.location(mockRequest)
+
+      expect(mockRequest.query).toEqual({ organisationId: '5447505' })
     })
 
     test('location function throws error if config keys are not set', () => {
@@ -402,15 +416,7 @@ describe('Auth Plugin', () => {
       })
 
       const options = getBellOptions(mockOidcConfig)
-      const mockRequest = {
-        query: { redirect: '/home' },
-        yar: {
-          set: vi.fn()
-        },
-        url: { href: 'http://localhost:3000/auth?redirect=%2Fhome' },
-        method: 'GET',
-        headers: { host: 'localhost:3000', origin: 'http://localhost:3000' }
-      }
+      const mockRequest = { ...MOCK_REQUESTS.withRedirect }
 
       expect(() => options.location(mockRequest)).toThrow(AuthError)
     })
@@ -623,17 +629,11 @@ describe('Auth Plugin', () => {
       expect(options.cookie.isSameSite).toBe('Lax')
     })
 
-    test('redirectTo function returns correct URL', () => {
+    test('redirects unauthenticated requests to sign-in with the return URL appended', () => {
       const options = getCookieOptions()
-      const mockRequest = {
-        url: {
-          pathname: MOCK_REQUESTS.withRedirect.url.pathname,
-          search: MOCK_REQUESTS.withRedirect.url.search
-        }
-      }
 
-      const redirectUrl = options.redirectTo(mockRequest)
-      expect(redirectUrl).toBe('/auth/sign-in?redirect=/home?filter=active')
+      expect(options.redirectTo).toBe('/auth/sign-in')
+      expect(options.appendNext).toEqual({ name: 'redirect' })
     })
 
     test('validate function returns invalid when session not found', async () => {
@@ -653,6 +653,7 @@ describe('Auth Plugin', () => {
       const options = getCookieOptions()
 
       const userSession = {
+        version: AUTH_SESSION_VERSION,
         token: 'expired-token',
         refreshToken: 'refresh-token'
       }
@@ -674,6 +675,7 @@ describe('Auth Plugin', () => {
 
       expect(refreshTokens).toHaveBeenCalledWith('refresh-token', mockRequest)
       expect(server.app.cache.set).toHaveBeenCalledWith('test-session', {
+        version: AUTH_SESSION_VERSION,
         token: 'new-token',
         refreshToken: 'new-refresh-token'
       })
@@ -688,6 +690,7 @@ describe('Auth Plugin', () => {
         const options = getCookieOptions()
 
         const userSession = {
+          version: AUTH_SESSION_VERSION,
           token: 'expired-token',
           refreshToken: 'refresh-token'
         }
@@ -713,6 +716,7 @@ describe('Auth Plugin', () => {
       const options = getCookieOptions()
 
       const userSession = {
+        version: AUTH_SESSION_VERSION,
         token: 'valid-token',
         refreshToken: 'refresh-token'
       }
@@ -867,6 +871,236 @@ describe('Auth Plugin', () => {
         mockRequest
       )
     })
+
+    describe('legacy session upgrade', () => {
+      const legacySession = () => ({
+        isAuthenticated: true,
+        sessionId: 'test-session',
+        token: 'valid-token',
+        refreshToken: 'refresh-token',
+        ...MOCK_USERS.valid,
+        relationships: ['123456:987654:Farm 1:1234567890:relationship:relationshipLoa']
+      })
+
+      const expectedUpgradedFields = {
+        version: AUTH_SESSION_VERSION,
+        crn: '12345',
+        sbi: '987654',
+        name: 'John Doe',
+        organisationName: 'Farm 1',
+        relationshipId: '123456'
+      }
+
+      test('validate function upgrades an unversioned session to v2 and writes it back to the cache', async () => {
+        const options = getCookieOptions()
+        server.app.cache.get.mockResolvedValue(legacySession())
+
+        const mockRequest = { server, path: '/home' }
+        await options.validate(mockRequest, { sessionId: 'test-session' })
+
+        expect(server.app.cache.set).toHaveBeenCalledTimes(1)
+        expect(server.app.cache.set).toHaveBeenCalledWith('test-session', {
+          ...legacySession(),
+          ...expectedUpgradedFields
+        })
+      })
+
+      test('validate function saves only allowlisted fields when upgrading', async () => {
+        const options = getCookieOptions()
+        server.app.cache.get.mockResolvedValue({
+          ...legacySession(),
+          roles: ['123456:Agent:3'],
+          email: 'john.doe@example.com',
+          organisationId: 'org-1'
+        })
+
+        const mockRequest = { server, path: '/home' }
+        await options.validate(mockRequest, { sessionId: 'test-session' })
+
+        expect(server.app.cache.set).toHaveBeenCalledWith('test-session', {
+          ...legacySession(),
+          ...expectedUpgradedFields
+        })
+      })
+
+      test('validate function returns the upgraded session as credentials', async () => {
+        const options = getCookieOptions()
+        server.app.cache.get.mockResolvedValue(legacySession())
+
+        const mockRequest = { server, path: '/home' }
+        const result = await options.validate(mockRequest, { sessionId: 'test-session' })
+
+        expect(result).toEqual({
+          isValid: true,
+          credentials: { ...legacySession(), ...expectedUpgradedFields }
+        })
+      })
+
+      test('validate function logs the session upgrade without tokens', async () => {
+        const options = getCookieOptions()
+        server.app.cache.get.mockResolvedValue(legacySession())
+
+        const mockRequest = { server, path: '/home' }
+        await options.validate(mockRequest, { sessionId: 'test-session' })
+
+        expect(log).toHaveBeenCalledWith(
+          LogCodes.AUTH.SESSION_UPGRADED,
+          {
+            step: 'auth_session_upgraded',
+            userId: MOCK_USERS.valid.contactId,
+            sessionId: 'test-session',
+            fromVersion: 'unversioned',
+            toVersion: AUTH_SESSION_VERSION,
+            hasCrn: true,
+            hasSbi: true,
+            hasRelationshipId: true
+          },
+          mockRequest
+        )
+
+        const loggedValues = JSON.stringify(log.mock.calls.map(([, details]) => details))
+        expect(loggedValues).not.toContain('valid-token')
+        expect(loggedValues).not.toContain('refresh-token')
+      })
+
+      test('validate function does not upgrade a v2 session', async () => {
+        const options = getCookieOptions()
+        const v2Session = { ...legacySession(), ...expectedUpgradedFields }
+        server.app.cache.get.mockResolvedValue(v2Session)
+
+        const mockRequest = { server, path: '/home' }
+        const result = await options.validate(mockRequest, { sessionId: 'test-session' })
+
+        expect(server.app.cache.set).not.toHaveBeenCalled()
+        expect(log).not.toHaveBeenCalledWith(LogCodes.AUTH.SESSION_UPGRADED, expect.anything(), expect.anything())
+        expect(result).toEqual({ isValid: true, credentials: v2Session })
+      })
+
+      test('validate function upgrades a legacy session before skipping token refresh on sign-out', async () => {
+        const options = getCookieOptions()
+        server.app.cache.get.mockResolvedValue(legacySession())
+
+        const mockRequest = { server, path: '/auth/sign-out' }
+        const result = await options.validate(mockRequest, { sessionId: 'test-session' })
+
+        expect(Jwt.token.verifyTime).not.toHaveBeenCalled()
+        expect(result.credentials).toMatchObject(expectedUpgradedFields)
+      })
+    })
+  })
+
+  describe('buildUserCredentials', () => {
+    test('flattens the Defra ID profile and adds the app-friendly credential fields', () => {
+      const profile = {
+        ...MOCK_USERS.valid,
+        relationships: ['123456:987654:Farm 1:1234567890:relationship:relationshipLoa']
+      }
+
+      const result = buildUserCredentials(profile, {
+        version: AUTH_SESSION_VERSION,
+        token: 'a-token'
+      })
+
+      expect(result).toEqual({
+        ...profile,
+        version: AUTH_SESSION_VERSION,
+        token: 'a-token',
+        crn: '12345',
+        sbi: '987654',
+        name: 'John Doe',
+        organisationName: 'Farm 1',
+        relationshipId: '123456'
+      })
+    })
+
+    test('keeps only allowlisted Defra ID profile fields', () => {
+      const profile = {
+        ...MOCK_USERS.valid,
+        sessionId: 'session-abc',
+        relationships: ['123456:987654:Farm 1:1234567890:relationship:relationshipLoa'],
+        roles: ['123456:Agent:3'],
+        email: 'john.doe@example.com',
+        sub: 'subject-id'
+      }
+
+      const result = buildUserCredentials(profile)
+
+      expect(Object.keys(result).sort()).toEqual(
+        [
+          'sessionId',
+          'contactId',
+          'firstName',
+          'lastName',
+          'currentRelationshipId',
+          'relationships',
+          'crn',
+          'sbi',
+          'name',
+          'organisationName',
+          'relationshipId',
+          'version'
+        ].sort()
+      )
+    })
+
+    test('throws when the current relationship cannot be found', () => {
+      expect(() => buildUserCredentials({ ...MOCK_USERS.valid, currentRelationshipId: 'missing' })).toThrow(
+        'extractFarmDetails'
+      )
+    })
+  })
+
+  describe('mapPayloadToProfile', () => {
+    const h = { continue: Symbol('continue') }
+    const relationships = ['123456:987654:Farm 1:1234567890:relationship:relationshipLoa']
+    const builtCredentials = {
+      version: AUTH_SESSION_VERSION,
+      ...MOCK_USERS.valid,
+      relationships,
+      crn: '12345',
+      sbi: '987654',
+      name: 'John Doe',
+      organisationName: 'Farm 1',
+      relationshipId: '123456'
+    }
+
+    test('leaves already built v2 credentials untouched', () => {
+      const credentials = { ...builtCredentials }
+      const request = { auth: { isAuthenticated: true, credentials } }
+
+      const result = mapPayloadToProfile(request, h)
+
+      expect(result).toBe(h.continue)
+      expect(request.auth.credentials).toBe(credentials)
+    })
+
+    test('maps Bell callback credentials and keeps the preserved query', () => {
+      const bellCredentials = {
+        token: 'a-token',
+        refreshToken: 'a-refresh-token',
+        query: { redirect: '/farm-payments/start' },
+        profile: { ...MOCK_USERS.valid, relationships, sessionId: 'session-abc' }
+      }
+      const request = { auth: { isAuthenticated: true, credentials: bellCredentials } }
+
+      mapPayloadToProfile(request, h)
+
+      expect(request.auth.credentials).toMatchObject({
+        version: AUTH_SESSION_VERSION,
+        query: { redirect: '/farm-payments/start' },
+        profile: bellCredentials.profile,
+        crn: '12345',
+        sbi: '987654',
+        relationshipId: '123456'
+      })
+    })
+
+    test('does nothing for unauthenticated requests', () => {
+      const request = { auth: { isAuthenticated: false, credentials: null } }
+
+      expect(mapPayloadToProfile(request, h)).toBe(h.continue)
+      expect(request.auth.credentials).toBeNull()
+    })
   })
 
   describe('Setting up users details', () => {
@@ -948,6 +1182,28 @@ describe('Auth Plugin', () => {
       }
     }
 
+    test('only a safe return URL is preserved by Bell across the Defra ID round trip', async () => {
+      server.route({
+        method: 'GET',
+        path: '/auth/sign-in',
+        options: { auth: { strategy: 'defra-id', mode: 'try' } },
+        handler: () => 'unreachable'
+      })
+
+      const response = await server.inject({ method: 'GET', url: '/auth/sign-in?redirect=%2F%2Fevil.test' })
+
+      expect(response.statusCode).toBe(302)
+      expect(response.headers.location).toContain(OIDC_CONFIG_VALUES.full.authorization_endpoint)
+
+      const bellCookie = response.headers['set-cookie']
+        .find((cookie) => cookie.startsWith('bell-defra-id='))
+        .split(';')[0]
+        .replace('bell-defra-id=', '')
+      const state = await Iron.unseal(bellCookie, config.get('session.cookie.password'), Iron.defaults)
+
+      expect(state.query).toEqual({ redirect: '/home' })
+    })
+
     test('should transform credentials through manual mapPayloadToProfile call', async () => {
       const relationships = ['123456:987654:Farm 1:1234567890:relationship:relationshipLoa']
       const currentRelationshipId = '123456'
@@ -961,7 +1217,8 @@ describe('Auth Plugin', () => {
       expect(response.statusCode).toBe(200)
       const payload = JSON.parse(response.payload)
 
-      expect(payload.credentials).toEqual({
+      expect(payload.credentials).toMatchObject({
+        version: AUTH_SESSION_VERSION,
         profile: expect.any(Object),
         sbi: '987654',
         crn: '12345',
@@ -987,7 +1244,8 @@ describe('Auth Plugin', () => {
       expect(response.statusCode).toBe(200)
       const payload = JSON.parse(response.payload)
 
-      expect(payload.credentials).toEqual({
+      expect(payload.credentials).toMatchObject({
+        version: AUTH_SESSION_VERSION,
         profile: expect.any(Object),
         sbi: '987654',
         crn: '12345',
@@ -1023,7 +1281,8 @@ describe('Auth Plugin', () => {
       expect(response.statusCode).toBe(200)
       const payload = JSON.parse(response.payload)
 
-      expect(payload.credentials).toEqual({
+      expect(payload.credentials).toMatchObject({
+        version: AUTH_SESSION_VERSION,
         profile: expect.any(Object),
         sbi: '111222',
         crn: '12345',

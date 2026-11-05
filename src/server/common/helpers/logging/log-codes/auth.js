@@ -43,6 +43,11 @@ export const AUTH = {
     messageFunc: (messageOptions) =>
       `Session expired for CRN=${maskCrn(messageOptions.userId)}, session=${messageOptions.sessionId}`
   },
+  SESSION_UPGRADED: {
+    level: 'info',
+    messageFunc: (messageOptions) =>
+      `Auth session upgraded to current format for CRN=${maskCrn(messageOptions.userId)}, session=${messageOptions.sessionId} | step=${messageOptions.step} | fromVersion=${messageOptions.fromVersion} | toVersion=${messageOptions.toVersion} | hasCrn=${messageOptions.hasCrn} | hasSbi=${messageOptions.hasSbi} | hasRelationshipId=${messageOptions.hasRelationshipId}`
+  },
   UNAUTHORIZED_ACCESS: {
     level: 'error',
     messageFunc: (messageOptions) =>
