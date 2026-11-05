@@ -3,8 +3,9 @@ import { vi } from 'vitest'
 import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import { fetchParcels as fetchParcelsService } from '~/src/server/land-grants/services/land-grants.service.js'
 import { parcelsWithSize } from '~/src/server/land-grants/services/land-grants.client.js'
-import { clearParcelCache } from '~/src/server/land-grants/services/parcel-cache.js'
 import { CACHE_TTL_MS, mockApiEndpoint, mockUserContext, withUserContext } from './land-grants.service.test-helpers.js'
+import { useCachedMethodServer } from '~/src/server/common/helpers/cache/cached-method.test-helpers.js'
+import { parcelCachePlugin } from '~/src/server/land-grants/services/parcel-cache.js'
 
 const fetchParcels = withUserContext(fetchParcelsService)
 
@@ -24,6 +25,8 @@ vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.servic
 }))
 
 describe('land-grants service', () => {
+  useCachedMethodServer(parcelCachePlugin)
+
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -35,10 +38,6 @@ describe('land-grants service', () => {
       parcels: [{ parcelId: 'PARCEL1', sheetId: 'SHEET1', size: { total: 15.5, unit: 'ha' } }]
     }
     const oneParcelWithArea = [{ parcelId: 'PARCEL1', sheetId: 'SHEET1', area: { total: 15.5, unit: 'ha' } }]
-
-    beforeEach(() => {
-      clearParcelCache()
-    })
 
     it('should fetch parcels with size data successfully', async () => {
       const mockParcels = [
