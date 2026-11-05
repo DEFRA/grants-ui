@@ -579,7 +579,10 @@ export function buildUserCredentials(userData, existingCreds = {}) {
   const [relationshipId, sbi, organisationName] = extractFarmDetails(currentRelationship)
 
   const fieldsToKeepFromProfile = Object.fromEntries(
-    PROFILE_FIELDS_TO_KEEP_IN_SESSION_CACHE.filter((field) => userData[field] !== undefined).map((field) => [field, userData[field]])
+    PROFILE_FIELDS_TO_KEEP_IN_SESSION_CACHE.filter((field) => userData[field] !== undefined).map((field) => [
+      field,
+      userData[field]
+    ])
   )
 
   return {
