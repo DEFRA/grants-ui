@@ -5,13 +5,27 @@ import { findRedirectRule } from '../common/request-pipeline/redirects/redirect-
 import agreements from '~/src/config/agreements.js'
 import { buildFeedbackSurveyUrl } from '../common/helpers/feedback-survey.js'
 
-/**
- * Row link. Only an application GAS confirms is still simply submitted opens as its print view (a page the
- * grant excludes from the status redirect); every other row goes to the grant root and the status redirect decides.
- * @param {string} slug @param {string} applicationRef @param {boolean} viewsPrintPage
- */
-function applicationHref(slug, applicationRef, viewsPrintPage) {
-  return `/${slug}${viewsPrintPage ? '/print-submitted-application' : ''}?ref=${encodeURIComponent(applicationRef)}`
+const SUBMITTED_ROW = {
+  statusText: 'Submitted',
+  statusClasses: TagClasses.GREEN,
+  actionText: 'View application',
+  showsSubmittedAt: true
+}
+const CLAIM_ROW = { ...SUBMITTED_ROW, actionText: 'View claim' }
+const RETURNED_ROW = {
+  statusText: 'Returned for amendments',
+  statusClasses: TagClasses.YELLOW,
+  actionText: 'Continue application',
+  showsSubmittedAt: false
+}
+const DRAFT_ROW = { ...RETURNED_ROW, statusText: 'Draft', statusClasses: TagClasses.BLUE }
+
+/** How a row reads for each application status; any other status is a draft. */
+const ROW_BY_STATUS = {
+  [ApplicationStatus.SUBMITTED]: SUBMITTED_ROW,
+  [ApplicationStatus.CLAIM_STARTED]: CLAIM_ROW,
+  [ApplicationStatus.CLAIM_SUBMITTED]: CLAIM_ROW,
+  [ApplicationStatus.REOPENED]: RETURNED_ROW
 }
 
 /**
@@ -42,48 +56,42 @@ export function buildApplicationsViewModel(
         (application) => typeof application.applicationRef === 'string' && application.applicationRef.trim().length > 0
       )
       .map((application) => {
-        const isClaim =
-          application.applicationStatus === ApplicationStatus.CLAIM_STARTED ||
-          application.applicationStatus === ApplicationStatus.CLAIM_SUBMITTED
-        const gasRule = matchedGasRule(application, gasStatuses, postSubmissionRules)
-        const returned =
-          application.applicationStatus === ApplicationStatus.REOPENED ||
+        const gasRule = matchedGasPostSubmissionRule(application, gasStatuses, postSubmissionRules)
+        // GAS has the last word on a submitted application: returned for amendments shows as returned.
+        const status =
           gasRule?.toGrantsStatus === ApplicationStatus.REOPENED
-        const submitted = isClaim || (application.applicationStatus === ApplicationStatus.SUBMITTED && !returned)
-        // GAS keeps it SUBMITTED inside the journey: not returned, not withdrawn, not with the agreements service.
-        const confirmedSubmitted =
-          gasRule?.toGrantsStatus === ApplicationStatus.SUBMITTED && gasRule.toPath !== agreements.get('baseUrl')
-        let statusText
-        let statusClasses
-        if (submitted) {
-          statusText = 'Submitted'
-          statusClasses = TagClasses.GREEN
-        } else if (returned) {
-          statusText = 'Returned for amendments'
-          statusClasses = TagClasses.YELLOW
-        } else {
-          statusText = 'Draft'
-          statusClasses = TagClasses.BLUE
-        }
-        let actionText
-        if (isClaim) {
-          actionText = 'View claim'
-        } else if (submitted) {
-          actionText = 'View application'
-        } else {
-          actionText = 'Continue application'
-        }
+            ? ApplicationStatus.REOPENED
+            : application.applicationStatus
+        const row = ROW_BY_STATUS[status] ?? DRAFT_ROW
         return {
           ...application,
           referenceNumber: application.applicationRef,
-          submittedAt: submitted ? application.submittedAt : null,
-          statusText,
-          statusClasses,
-          actionText,
-          href: applicationHref(request.params.slug, application.applicationRef, confirmedSubmitted)
+          submittedAt: row.showsSubmittedAt ? application.submittedAt : null,
+          statusText: row.statusText,
+          statusClasses: row.statusClasses,
+          actionText: row.actionText,
+          href: applicationHref(request.params.slug, application.applicationRef, staysSubmittedInJourney(gasRule))
         }
       })
   }
+}
+
+/**
+ * Row link. Only an application GAS confirms is still simply submitted opens as its print view (a page the
+ * grant excludes from the status redirect); every other row goes to the grant root and the status redirect decides.
+ * @param {string} slug @param {string} applicationRef @param {boolean} viewsPrintPage
+ */
+function applicationHref(slug, applicationRef, viewsPrintPage) {
+  return `/${slug}${viewsPrintPage ? '/print-submitted-application' : ''}?ref=${encodeURIComponent(applicationRef)}`
+}
+
+/**
+ * Whether the matched rule keeps a submitted application SUBMITTED inside the journey:
+ * not returned, not withdrawn, not handed to the agreements service.
+ * @param {{ toGrantsStatus: string, toPath: string } | undefined} rule
+ */
+function staysSubmittedInJourney(rule) {
+  return rule?.toGrantsStatus === ApplicationStatus.SUBMITTED && rule.toPath !== agreements.get('baseUrl')
 }
 
 /**
@@ -92,7 +100,7 @@ export function buildApplicationsViewModel(
  * @param {any} application @param {Map<string, string>} gasStatuses @param {any[]} postSubmissionRules
  * @returns {{ toGrantsStatus: string, toPath: string } | undefined}
  */
-function matchedGasRule(application, gasStatuses, postSubmissionRules) {
+function matchedGasPostSubmissionRule(application, gasStatuses, postSubmissionRules) {
   if (application.applicationStatus !== ApplicationStatus.SUBMITTED) {
     return undefined
   }
