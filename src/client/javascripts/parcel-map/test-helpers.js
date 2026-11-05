@@ -33,6 +33,9 @@ export function makeMlMap(overrides = {}) {
 
   return {
     fitBounds: vi.fn(),
+    cameraForBounds: vi.fn().mockReturnValue(undefined),
+    easeTo: vi.fn(),
+    setLayerZoomRange: vi.fn(),
     panBy: vi.fn(),
     getSource: vi.fn().mockReturnValue(null),
     addSource: vi.fn(),

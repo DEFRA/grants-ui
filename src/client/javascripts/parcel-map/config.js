@@ -57,6 +57,7 @@ export const LABEL_CLUSTER_RADIUS_PX = 85
 export const LABEL_CLUSTER_MAX_ZOOM = 10
 export const LABEL_CLUSTER_COLOR = COLOR_GOV_UK_BLUE
 export const LABEL_CLUSTER_RADIUS = 14
+export const PARCEL_DETAIL_ZOOM = LABEL_CLUSTER_MAX_ZOOM + 1
 export const LABEL_CLUSTER_TEXT_COLOR = '#ffffff'
 // Zoom ceiling when fitting to a clicked cluster's bounds — kept separate
 // from LABEL_CLUSTER_MAX_ZOOM, which is too low to double as this cap.

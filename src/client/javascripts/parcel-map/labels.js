@@ -1,8 +1,9 @@
 import { formatParcelReference } from '../../../shared/format-parcel.js'
 import { boundsCentre, boundsOfPolygon, boundsOfPositions, unionBounds } from './bounds.js'
-import { fitToParcels } from './helpers.js'
+import { fitToParcels, showSingleParcelGroup } from './helpers.js'
 import {
   CLUSTER_EXPAND_MAX_ZOOM,
+  PARCEL_DETAIL_ZOOM,
   LAYER_ID_LABEL_CLUSTER,
   LAYER_ID_LABEL_CLUSTER_COUNT,
   PARCEL_ID_PROPERTY,
@@ -24,9 +25,10 @@ import {
  * keeps it labelled exactly once regardless of tiling. Also wires up
  * click-to-zoom on the cluster badges the source's clustering produces when
  * parcels are too close together to label individually.
- * @param {Pick<MapContext, 'ml' | 'cleanups'>} context
+ * @param {Pick<MapContext, 'ml' | 'cleanups'> & Partial<Pick<MapContext, 'store'>>} context
  */
-export function attachParcelLabels({ ml, cleanups }) {
+export function attachParcelLabels({ ml, cleanups, store }) {
+  let initialViewPending = Boolean(store?.parcelIds.length)
   // setData() re-renders, which can re-fire 'idle' — only call it when the
   // features actually changed, to avoid a needless idle -> setData loop.
   /** @type {string | null} */
@@ -39,6 +41,25 @@ export function attachParcelLabels({ ml, cleanups }) {
     }
     const { features, fingerprint } = buildLabelFeatures(ml)
     if (fingerprint === lastFingerprint) {
+      // Wait for all parcel labels to load and MapLibre to finish clustering.
+      if (
+        initialViewPending &&
+        features.features.length === store?.parcelIds.length &&
+        ml.isSourceLoaded(SOURCE_ID_PARCEL_LABELS)
+      ) {
+        const groups = new Map(
+          ml
+            .querySourceFeatures(SOURCE_ID_PARCEL_LABELS)
+            .map((feature) => [feature.properties?.cluster_id ?? feature.properties?.id, feature])
+        )
+        const count = [...groups.values()].reduce((total, feature) => total + (feature.properties?.point_count ?? 1), 0)
+        if (count === store.parcelIds.length) {
+          initialViewPending = false
+          if (groups.size === 1) {
+            showSingleParcelGroup(ml, store.bbox)
+          }
+        }
+      }
       return
     }
     lastFingerprint = fingerprint
@@ -70,15 +91,17 @@ function attachClusters(ml, cleanups) {
     const clusterId = cluster?.properties?.cluster_id
     const pointCount = cluster?.properties?.point_count
     const source = /** @type {GeoJSONSource | undefined} */ (ml.getSource(SOURCE_ID_PARCEL_LABELS))
-    if (!cluster || clusterId == null || typeof pointCount !== 'number' || !source) {
+    if (!cluster || (clusterId != null && typeof pointCount !== 'number')) {
       return
     }
-    source
-      .getClusterLeaves(clusterId, pointCount, 0)
-      .then((leaves) => {
-        // Capped so a tight bbox (e.g. a 2-3 parcel cluster) doesn't zoom
-        // in further than useful to split it apart.
-        fitToParcels(ml, boundsOfPoints(leaves), { animate: true, maxZoom: CLUSTER_EXPAND_MAX_ZOOM })
+    const leaves = clusterId == null ? Promise.resolve([cluster]) : source?.getClusterLeaves(clusterId, pointCount, 0)
+    leaves
+      ?.then((points) => {
+        fitToParcels(ml, boundsOfPoints(points), {
+          animate: true,
+          maxZoom: CLUSTER_EXPAND_MAX_ZOOM,
+          minZoom: PARCEL_DETAIL_ZOOM
+        })
       })
       .catch(Boolean) // ignore: e.g. the cluster no longer exists after a concurrent setData
   }
@@ -113,7 +136,19 @@ function attachClusters(ml, cleanups) {
     if (!ml.getLayer(LAYER_ID_LABEL_CLUSTER) || !ml.getLayer(LAYER_ID_LABEL_CLUSTER_COUNT)) {
       return
     }
-    const order = ml.getStyle()?.layers?.map((layer) => layer.id) ?? []
+    const layers = ml.getStyle()?.layers ?? []
+    // The vendor's selection and keyboard highlights do not inherit minzoom.
+    for (const layer of layers) {
+      if (
+        'source' in layer &&
+        layer.source === SOURCE_ID_PARCELS &&
+        /^(selected|active)-highlight/.test(layer.id) &&
+        layer.minzoom !== PARCEL_DETAIL_ZOOM
+      ) {
+        ml.setLayerZoomRange(layer.id, PARCEL_DETAIL_ZOOM, layer.maxzoom ?? 24)
+      }
+    }
+    const order = layers.map((layer) => layer.id)
     const CLUSTER_LAYER_COUNT = 2
     const lastTwo = order.slice(-CLUSTER_LAYER_COUNT)
     if (lastTwo[0] === LAYER_ID_LABEL_CLUSTER && lastTwo[1] === LAYER_ID_LABEL_CLUSTER_COUNT) {
@@ -128,14 +163,20 @@ function attachClusters(ml, cleanups) {
 }
 
 /**
- * The bounding box of a set of Point features, as returned by
- * getClusterLeaves — the ungrouped parcel label points a cluster badge
- * stands in for.
+ * Union of the parcel bounds carried by cluster leaves (or a singleton).
+ * Use point coordinates when parcel bounds are unavailable.
  * @param {GeoJSON.Feature[]} points
  * @returns {BBox | null}
  */
 function boundsOfPoints(points) {
-  return boundsOfPositions(points.map((point) => /** @type {GeoJSON.Point} */ (point.geometry).coordinates))
+  return points.reduce((bounds, point) => {
+    const properties = point.properties ?? {}
+    const { minLng, minLat, maxLng, maxLat } = properties
+    const box = [minLng, minLat, maxLng, maxLat].every(Number.isFinite)
+      ? { minLng, minLat, maxLng, maxLat }
+      : boundsOfPositions([/** @type {GeoJSON.Point} */ (point.geometry).coordinates])
+    return box ? (bounds ? unionBounds(bounds, box) : box) : bounds
+  }, /** @type {BBox | null} */ (null))
 }
 
 // Bounds are floating-point lng/lat, so two computations of an otherwise-
@@ -175,13 +216,14 @@ function buildLabelFeatures(ml) {
       type: /** @type {const} */ ('Point'),
       coordinates: boundsCentre(bounds)
     },
-    properties: { id, label: formatParcelReference(id) }
+    properties: { id, label: formatParcelReference(id), ...bounds }
   }))
 
   const fingerprint = entries
     .map(([id, bounds]) => {
-      const [lng, lat] = boundsCentre(bounds)
-      return `${id}:${lng.toFixed(FINGERPRINT_DECIMAL_PLACES)},${lat.toFixed(FINGERPRINT_DECIMAL_PLACES)}`
+      return `${id}:${Object.values(bounds)
+        .map((value) => value.toFixed(FINGERPRINT_DECIMAL_PLACES))
+        .join(',')}`
     })
     .join('|')
 
