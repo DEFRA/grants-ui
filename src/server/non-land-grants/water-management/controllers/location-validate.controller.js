@@ -24,18 +24,10 @@ export default class LocationValidateController extends QuestionPageController {
 
       const { projectLocated__easting: easting, projectLocated__northing: northing } = request.payload ?? {}
 
-      let locationFound
-      try {
-        await invokeGrantScoringGetAction('validate/location', 'water-management', { easting, northing })
-        locationFound = true
-      } catch (error) {
-        const validateLocationStatus = error._details?.upstreamStatus
-        if (validateLocationStatus === statusCodes.badRequest) {
-          locationFound = false
-        } else {
-          throw error
-        }
-      }
+      const { locationFound } = await invokeGrantScoringGetAction('validate/location', 'water-management', {
+        easting,
+        northing
+      })
 
       context.state = mergeAdditionalAnswers(context.state, {
         locationFound
