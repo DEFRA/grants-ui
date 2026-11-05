@@ -114,14 +114,60 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  window.dispatchEvent(new window.Event('pagehide'))
   document.body.innerHTML = ''
   delete window.componentMapsEnabled
   Object.assign(map.defaultConfig, UK_VIEW)
   vi.unstubAllGlobals()
+  vi.useRealTimers()
 })
 afterAll(() => vi.unstubAllGlobals())
 
 describe('location adapter compatibility with the installed forms engine', () => {
+  test.each(CASES)(
+    'resolves approximate labels for $type using the installed templates and coordinate conversions',
+    async ({ type, values, changed }) => {
+      vi.useFakeTimers()
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({ ok: true, json: async () => ({ label: 'London, England, UK' }) })
+      )
+      const field = renderLocation(type, values)
+      document.body.insertAdjacentHTML(
+        'beforeend',
+        '<div id="component-map-settings"><div data-map-component="location" data-show-approximate-location="true" data-approximate-location-prefix="Selected location:"></div></div>'
+      )
+      await initialiseComponentMaps()
+      const fixture = maps.get('map_0')
+      fixture.emit(map.EVENTS.mapReady, { map: fixture.provider })
+      await vi.advanceTimersByTimeAsync(300)
+      const label = field.querySelector('.app-approximate-location')
+      expect(field.querySelector('.map-container').nextElementSibling).toBe(label)
+      expect(label.textContent).toBe('Selected location: London, England, UK')
+      expect(label.querySelector('strong').textContent).toBe('Selected location:')
+      const inputs = [...field.querySelectorAll('input')]
+      expect(inputs.map((input) => input.value)).toEqual(values)
+      inputs.forEach((input, index) => {
+        input.value = changed[index]
+      })
+      inputs[0].dispatchEvent(new window.Event('change'))
+      await vi.advanceTimersByTimeAsync(300)
+      if (type !== 'LatLongField') {
+        expect(fetch).toHaveBeenLastCalledWith(
+          '/api/map/approximate-location?easting=531000&northing=181000',
+          expect.any(Object)
+        )
+      }
+      fixture.emit(map.EVENTS.interactMarkerChange, { coords: MARKER_CENTER })
+      await vi.advanceTimersByTimeAsync(300)
+      expect(fetch).toHaveBeenLastCalledWith(
+        '/api/map/approximate-location?easting=530591&northing=179571',
+        expect.any(Object)
+      )
+      expect(label.textContent).toBe('Selected location: London, England, UK')
+    }
+  )
+
   test.each(CASES)('reads real $type template markup using real coordinate helpers', ({ type, values, center }) => {
     const field = renderLocation(type, values)
     processLocation(CONFIG, field, 0)

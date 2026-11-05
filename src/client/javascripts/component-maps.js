@@ -112,16 +112,28 @@ export async function initialiseComponentMaps() {
   const settings = document.getElementById('component-map-settings')
   const optionsByName = new Map(
     [...(settings?.querySelectorAll('[data-map-component]') ?? [])].map((element) => {
-      const { mapComponent, hideMapHelpPanel, zoomToPostcode } = /** @type {HTMLElement} */ (element).dataset
+      const { mapComponent, hideMapHelpPanel, zoomToPostcode, showApproximateLocation, approximateLocationPrefix } =
+        /** @type {HTMLElement} */ (element).dataset
       return [
         mapComponent,
-        { hideMapHelpPanel: hideMapHelpPanel !== 'false', zoomToPostcode: zoomToPostcode !== 'false' }
+        {
+          hideMapHelpPanel: hideMapHelpPanel !== 'false',
+          zoomToPostcode: zoomToPostcode !== 'false',
+          showApproximateLocation: showApproximateLocation === 'true',
+          approximateLocationPrefix
+        }
       ]
     })
   )
   const optionsFor = (field) => {
     const name = field.querySelector('input[name], textarea[name]')?.getAttribute('name')?.split('__')[0]
-    return optionsByName.get(name) ?? { hideMapHelpPanel: true, zoomToPostcode: true }
+    return (
+      optionsByName.get(name) ?? {
+        hideMapHelpPanel: true,
+        zoomToPostcode: true,
+        showApproximateLocation: false
+      }
+    )
   }
   const locationFields = [...document.querySelectorAll('.app-location-field')]
   const geospatialFields = [...document.querySelectorAll(GEOSPATIAL_FIELD_SELECTOR)]
