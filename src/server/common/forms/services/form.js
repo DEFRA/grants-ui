@@ -12,8 +12,8 @@ import {
   resolveVersion
 } from '~/src/server/common/helpers/state/state-with-definition-context.js'
 
-/** @type {Promise<SharedRedirectRules> | undefined} */
-let sharedRedirectRules
+/** @type {Promise<SharedRedirectRules> | null} */
+let sharedRedirectRules = null
 
 /**
  * The shared redirect rules, read from YAML once per process.
@@ -22,7 +22,7 @@ let sharedRedirectRules
 export function loadSharedRedirectRules() {
   sharedRedirectRules ??= readSharedRedirectRules().catch((error) => {
     // A failed read is not kept: the next call tries the file again.
-    sharedRedirectRules = undefined
+    sharedRedirectRules = null
     throw error
   })
   return sharedRedirectRules
