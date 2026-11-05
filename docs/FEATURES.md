@@ -214,6 +214,10 @@ The form-definition loader exposes the page's `config:` block as `metadata.pageC
 This configuration displays saved values; it does not calculate or refresh them. For local calculations that need freshness
 checks, configure `derivedStatePages` separately as described in [Derived answers on custom pages](DERIVED-STATE-PAGES.md#check-answers-configuration).
 
+View application also uses this configuration to display the saved submission values, without recalculating them.
+Rows without a title appear with their owning page or task; titled sections follow the submitted answers. Values
+configured on multiple Check answers pages appear once, and `totalPayment` is omitted when the payment card displays it.
+
 ### Declaration Pages
 
 - **Purpose**: Final confirmation and submission

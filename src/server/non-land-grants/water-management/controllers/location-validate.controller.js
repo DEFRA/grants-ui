@@ -1,4 +1,3 @@
-import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { invokeGrantScoringGetAction } from '~/src/server/common/services/grant-scoring/grant-scoring.service.js'
 import { mergeAdditionalAnswers } from '~/src/server/common/helpers/state/additional-answers-helper.js'
@@ -24,18 +23,10 @@ export default class LocationValidateController extends QuestionPageController {
 
       const { projectLocated__easting: easting, projectLocated__northing: northing } = request.payload ?? {}
 
-      let locationFound
-      try {
-        await invokeGrantScoringGetAction('validate/location', 'water-management', { easting, northing })
-        locationFound = true
-      } catch (error) {
-        const validateLocationStatus = error._details?.upstreamStatus
-        if (validateLocationStatus === statusCodes.badRequest) {
-          locationFound = false
-        } else {
-          throw error
-        }
-      }
+      const { locationFound } = await invokeGrantScoringGetAction('validate/location', 'water-management', {
+        easting,
+        northing
+      })
 
       context.state = mergeAdditionalAnswers(context.state, {
         locationFound
