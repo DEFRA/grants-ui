@@ -32,6 +32,7 @@ export const LAYER_LINE_WIDTH = 1.5
 export const FIT_BOUNDS_PADDING = 40
 export const AREA_DECIMAL_PLACES = 4
 export const TOTAL_AREA_DECIMAL_PLACES = 4
+export const PARCEL_DETAILS_DEBOUNCE_MS = 250
 export const PARCEL_DETAILS_LOADING_DELAY_MS = 500
 export const PARCEL_DETAILS_LOADING_MIN_DURATION_MS = 500
 // A hung consents lookup is abandoned so the details stop showing "Loading…".

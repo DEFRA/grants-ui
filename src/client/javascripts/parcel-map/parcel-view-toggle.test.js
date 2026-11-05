@@ -8,6 +8,7 @@ import {
   EVENT_SELECTION,
   ERROR_REASON_UNAVAILABLE,
   ERROR_REASON_NO_PARCELS,
+  PARCEL_DETAILS_DEBOUNCE_MS,
   PARCEL_DETAILS_LOADING_DELAY_MS,
   PARCEL_DETAILS_LOADING_MIN_DURATION_MS
 } from './config.js'
@@ -34,6 +35,8 @@ const renderPage = createPageRenderer(
 )
 
 function setup(overrides = {}, { lastEvent } = {}) {
+  // Replacing the document simulates navigation, which discards its timers.
+  vi.clearAllTimers()
   const $ = renderPage(overrides)
   document.body.innerHTML = $('body').html()
   document.getElementById('selected-parcel-details').scrollIntoView = vi.fn()
@@ -102,7 +105,7 @@ const toggle = (overrides) => (clickToggle() ? setup(overrides) : undefined)
 const list = () => document.getElementById('land-parcels')
 const radio = (id) => list().querySelector(`input[value="${id}"]`)
 const submittedIds = () => new FormData(document.getElementById('parcel-select-form')).getAll('landParcels')
-const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
+const flush = () => vi.advanceTimersByTimeAsync(PARCEL_DETAILS_DEBOUNCE_MS)
 const noticeResponse = (items = ['site of special scientific interest (SSSI) consent'], actionCount = 2) => ({
   ok: true,
   json: async () => ({ intro: items.length ? 'Some actions require:' : '', items, actionCount })
@@ -110,6 +113,7 @@ const noticeResponse = (items = ['site of special scientific interest (SSSI) con
 
 describe('parcel map and list views', () => {
   beforeEach(() => {
+    vi.useFakeTimers()
     window.history.replaceState(null, '', '/')
     window.localStorage.clear()
     window.sessionStorage.clear()
@@ -374,8 +378,7 @@ describe('parcel map and list views', () => {
     expect(global.fetch.mock.calls.every(([url]) => url.includes(PARCEL_A))).toBe(true)
   })
 
-  it('delays radio loading feedback and holds it for the minimum duration without delaying the API request', async () => {
-    vi.useFakeTimers()
+  it('debounces the request while timing loading feedback from the selection', async () => {
     let resolveRequest
     global.fetch.mockImplementationOnce(
       () =>
@@ -388,9 +391,10 @@ describe('parcel map and list views', () => {
     radio(PARCEL_A).click()
     const panel = list().querySelector(`[data-parcel-details="${PARCEL_A}"]`)
     const status = panel.querySelector('[data-parcel-details-status]')
-    expect(global.fetch).toHaveBeenCalledTimes(1)
+    expect(global.fetch).not.toHaveBeenCalled()
     expect(status.hidden).toBe(true)
     await vi.advanceTimersByTimeAsync(PARCEL_DETAILS_LOADING_DELAY_MS)
+    expect(global.fetch).toHaveBeenCalledTimes(1)
     expect(status.hidden).toBe(false)
     resolveRequest(noticeResponse())
     await vi.advanceTimersByTimeAsync(PARCEL_DETAILS_LOADING_MIN_DURATION_MS - 1)
@@ -414,17 +418,23 @@ describe('parcel map and list views', () => {
     expect(global.fetch.mock.calls[0][0]).toContain(PARCEL_A)
   })
 
-  it('aborts the lookup for each radio the user moves past and fetches the latest straight away', async () => {
-    const page = setup()
-    page.ready()
-    toggle()
-    radio(PARCEL_A).click()
-    radio(PARCEL_B).click()
-    radio(PARCEL_A).click()
-    expect(global.fetch.mock.calls.map(([url]) => url.includes(PARCEL_A))).toEqual([true, false, true])
-    expect(global.fetch.mock.calls.map(([, { signal }]) => signal.aborted)).toEqual([true, true, false])
-    await flush()
-    expect(submittedIds()).toEqual([PARCEL_A])
+  it('fetches only the settled selection after three rapid passes over 34 radios', async () => {
+    const ids = Array.from({ length: 34 }, (_, i) => `SO3757-${3184 + i}`)
+    window.localStorage.setItem(PARCEL_VIEW_STORAGE_KEY, 'list')
+    setup({ parcels: ids.map((id) => ({ id, reference: id, area: '1 ha' })) })
+    for (let pass = 0; pass < 3; pass++) {
+      for (const id of ids) {
+        radio(id).click()
+        expect(submittedIds()).toEqual([id])
+        expect(document.getElementById('map-select-continue').disabled).toBe(false)
+        await vi.advanceTimersByTimeAsync(100)
+      }
+    }
+    await vi.advanceTimersByTimeAsync(PARCEL_DETAILS_DEBOUNCE_MS - 101)
+    expect(global.fetch).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(global.fetch).toHaveBeenCalledTimes(1)
+    expect(global.fetch.mock.calls[0][0]).toContain(ids.at(-1))
     expect(document.getElementById('parcel-list-status').textContent).toContain('SSSI')
   })
 
@@ -440,6 +450,7 @@ describe('parcel map and list views', () => {
     page.ready()
     toggle()
     radio(PARCEL_A).click()
+    await flush()
     radio(PARCEL_B).click()
     await flush()
     resolveFirst(noticeResponse(['SSSI'], 0))

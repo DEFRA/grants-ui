@@ -77,6 +77,13 @@ parcel-map .maplibregl-cooperative-gestures .maplibregl-canvas {
   parcel-map .im-c-cross-hair-button {
     visibility: hidden;
   }
+
+  // Expanded map controls also reveal the interact plugin's separate Select
+  // button. Hide its wrapper and, when it is the only action, the empty footer.
+  parcel-map .im-c-actions > .im-c-button-wrapper--select-at-target,
+  parcel-map .im-c-actions:has(> .im-c-button-wrapper--select-at-target:only-child) {
+    display: none;
+  }
 }
 
 .parcel-map-wheel-hint {

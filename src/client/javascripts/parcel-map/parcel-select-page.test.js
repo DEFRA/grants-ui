@@ -1,8 +1,13 @@
 // @vitest-environment jsdom
 // @ts-nocheck
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { initParcelSelectPage } from './parcel-select-page.js'
-import { EVENT_READY, EVENT_SELECTION, PARCEL_DETAILS_REQUEST_TIMEOUT_MS } from './config.js'
+import {
+  EVENT_READY,
+  EVENT_SELECTION,
+  PARCEL_DETAILS_DEBOUNCE_MS,
+  PARCEL_DETAILS_REQUEST_TIMEOUT_MS
+} from './config.js'
 
 const SSSI = 'site of special scientific interest (SSSI) consent'
 const HEFER = 'a Historic Environment Farm Environment Record (HEFER)'
@@ -65,7 +70,7 @@ function setupDom({
 }
 
 const fire = (mapEl, type, detail) => mapEl.dispatchEvent(new CustomEvent(type, { detail }))
-const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
+const flush = () => vi.advanceTimersByTimeAsync(PARCEL_DETAILS_DEBOUNCE_MS)
 const hiddenValues = () =>
   [...document.querySelectorAll('#selected-parcels-inputs input')].map((i) => ({ name: i.name, value: i.value }))
 const requirements = () => ({
@@ -77,8 +82,14 @@ const requirements = () => ({
 
 describe('initParcelSelectPage', () => {
   beforeEach(() => {
+    vi.useFakeTimers()
     document.body.innerHTML = ''
     global.fetch = vi.fn().mockResolvedValue(noticeResponse([]))
+  })
+
+  afterEach(() => {
+    vi.clearAllTimers()
+    vi.useRealTimers()
   })
 
   it('is a no-op when passed no element', () => {
@@ -367,6 +378,7 @@ describe('initParcelSelectPage', () => {
         }
         const mapEl = setupDom({ enabledLandActions: 'CLIG3' })
         select(mapEl, ['SD7148-9160'])
+        await flush()
         select(mapEl, ids)
         await flush()
         resolveFirst(respond(0))
@@ -481,6 +493,7 @@ describe('initParcelSelectPage', () => {
       const mapEl = setupDom()
 
       select(mapEl, ['SD7148-9160'])
+      await flush()
       select(mapEl, [])
       resolveConsents(noticeResponse([SSSI]))
       await flush()
@@ -494,6 +507,7 @@ describe('initParcelSelectPage', () => {
       const mapEl = setupDom({ multiSelect: true })
 
       select(mapEl, ['SD7148-9160'])
+      await flush()
       select(mapEl, ['SD7148-9160', 'SD7148-9161'])
       resolveConsents(noticeResponse([HEFER]))
       await flush()
@@ -511,6 +525,7 @@ describe('initParcelSelectPage', () => {
       const mapEl = setupDom()
 
       select(mapEl, ['SD7148-9160'])
+      await flush()
       select(mapEl, ['SD7148-9161'])
       await flush()
       resolveFirst(noticeResponse([SSSI]))
@@ -520,7 +535,7 @@ describe('initParcelSelectPage', () => {
     })
   })
 
-  describe('cancelling consent requests', () => {
+  describe('pending consent requests', () => {
     const select = (mapEl, ids) => fire(mapEl, EVENT_SELECTION, { selectedParcels: ids.map((id) => ({ id })) })
     const signalFor = (call) => global.fetch.mock.calls[call][1].signal
     // Settles like a real fetch: rejects once its signal is aborted.
@@ -529,11 +544,76 @@ describe('initParcelSelectPage', () => {
         signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))
       })
 
-    afterEach(() => {
-      vi.useRealTimers()
+    it.each([[[]], [['SD7148-9160', 'SD7148-9161']]])(
+      'cancels an unsent lookup when the selection becomes %j',
+      async (ids) => {
+        const mapEl = setupDom({ multiSelect: true })
+        select(mapEl, ['SD7148-9160'])
+        await vi.advanceTimersByTimeAsync(PARCEL_DETAILS_DEBOUNCE_MS - 1)
+        select(mapEl, ids)
+        await flush()
+        expect(global.fetch).not.toHaveBeenCalled()
+        expect(requirements()).toEqual(EMPTY)
+      }
+    )
+
+    it('caches a superseded successful response and renders it immediately on reselection', async () => {
+      let resolveFirst
+      global.fetch = vi
+        .fn()
+        .mockReturnValueOnce(new Promise((resolve) => (resolveFirst = resolve)))
+        .mockResolvedValueOnce(noticeResponse([HEFER], 2))
+      const mapEl = setupDom({ enabledLandActions: 'CLIG3' })
+
+      select(mapEl, ['SD7148-9160'])
+      await flush()
+      select(mapEl, ['SD7148-9161'])
+      await flush()
+      resolveFirst(noticeResponse([SSSI], 0))
+      await vi.advanceTimersByTimeAsync(0)
+      expect(requirements().items).toEqual([HEFER])
+      expect(document.getElementById('selected-parcel-actions').textContent).toBe('2')
+
+      select(mapEl, ['SD7148-9160'])
+      expect(requirements().items).toEqual([SSSI])
+      expect(document.getElementById('selected-parcel-actions').textContent).toBe('0')
+      await flush()
+      expect(global.fetch).toHaveBeenCalledTimes(2)
     })
 
-    it('aborts a request for a different parcel and fetches the new selection straight away', async () => {
+    it('cancels a pending lookup when returning to a cached parcel', async () => {
+      global.fetch.mockResolvedValue(noticeResponse([SSSI]))
+      const mapEl = setupDom()
+      select(mapEl, ['SD7148-9160'])
+      await flush()
+
+      select(mapEl, ['SD7148-9161'])
+      await vi.advanceTimersByTimeAsync(PARCEL_DETAILS_DEBOUNCE_MS - 1)
+      select(mapEl, ['SD7148-9160'])
+      expect(requirements().items).toEqual([SSSI])
+      await flush()
+      expect(global.fetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('retries a superseded failed lookup on reselection', async () => {
+      let resolveFirst
+      global.fetch
+        .mockReturnValueOnce(new Promise((resolve) => (resolveFirst = resolve)))
+        .mockResolvedValueOnce(noticeResponse([SSSI]))
+      const mapEl = setupDom()
+      select(mapEl, ['SD7148-9160'])
+      await flush()
+      select(mapEl, [])
+      resolveFirst({ ok: false })
+      await vi.advanceTimersByTimeAsync(0)
+
+      select(mapEl, ['SD7148-9160'])
+      await flush()
+      expect(global.fetch).toHaveBeenCalledTimes(2)
+      expect(requirements().items).toEqual([SSSI])
+    })
+
+    it('keeps a request for a different parcel running while loading the settled selection', async () => {
       global.fetch = vi
         .fn()
         .mockImplementationOnce(pendingUntilAborted)
@@ -541,10 +621,11 @@ describe('initParcelSelectPage', () => {
       const mapEl = setupDom()
 
       select(mapEl, ['SD7148-9160'])
+      await flush()
       select(mapEl, ['SD7148-9161'])
       await flush()
 
-      expect(signalFor(0).aborted).toBe(true)
+      expect(signalFor(0).aborted).toBe(false)
       expect(global.fetch).toHaveBeenCalledTimes(2)
       expect(global.fetch.mock.calls[1][0]).toContain('SD7148-9161')
       expect(requirements()).toEqual({ hidden: false, intro: INTRO, items: [HEFER], status: `${INTRO} ${HEFER}` })
@@ -553,15 +634,16 @@ describe('initParcelSelectPage', () => {
     it.each([
       ['deselection', []],
       ['a second parcel being added', ['SD7148-9160', 'SD7148-9161']]
-    ])('aborts the request on %s', async (_name, ids) => {
+    ])('keeps the request running without rendering on %s', async (_name, ids) => {
       global.fetch = vi.fn().mockImplementationOnce(pendingUntilAborted)
       const mapEl = setupDom({ multiSelect: true })
 
       select(mapEl, ['SD7148-9160'])
+      await flush()
       select(mapEl, ids)
       await flush()
 
-      expect(signalFor(0).aborted).toBe(true)
+      expect(signalFor(0).aborted).toBe(false)
       expect(global.fetch).toHaveBeenCalledTimes(1)
       expect(requirements()).toEqual(EMPTY)
     })
@@ -572,6 +654,8 @@ describe('initParcelSelectPage', () => {
       const mapEl = setupDom()
 
       select(mapEl, ['SD7148-9160'])
+      await flush()
+      select(mapEl, ['SD7148-9161'])
       select(mapEl, ['SD7148-9160'])
       resolveFirst(noticeResponse([SSSI]))
       await flush()
@@ -582,7 +666,6 @@ describe('initParcelSelectPage', () => {
     })
 
     it('abandons a hung request after the timeout and retries on the next selection', async () => {
-      vi.useFakeTimers()
       global.fetch = vi
         .fn()
         .mockImplementationOnce(pendingUntilAborted)
@@ -590,6 +673,7 @@ describe('initParcelSelectPage', () => {
       const mapEl = setupDom()
 
       select(mapEl, ['SD7148-9160'])
+      await flush()
       await vi.advanceTimersByTimeAsync(PARCEL_DETAILS_REQUEST_TIMEOUT_MS - 1)
       expect(signalFor(0).aborted).toBe(false)
       await vi.advanceTimersByTimeAsync(1)
@@ -598,7 +682,7 @@ describe('initParcelSelectPage', () => {
 
       select(mapEl, [])
       select(mapEl, ['SD7148-9160'])
-      await vi.advanceTimersByTimeAsync(0)
+      await flush()
       expect(global.fetch).toHaveBeenCalledTimes(2)
       expect(requirements().items).toEqual([SSSI])
     })

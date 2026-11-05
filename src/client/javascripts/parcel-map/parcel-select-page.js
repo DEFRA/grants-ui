@@ -7,6 +7,7 @@ import {
   EVENT_ERROR,
   EVENT_READY,
   EVENT_SELECTION,
+  PARCEL_DETAILS_DEBOUNCE_MS,
   PARCEL_DETAILS_REQUEST_TIMEOUT_MS,
   SELECTION_SOURCE_SEARCH,
   TOTAL_AREA_DECIMAL_PLACES
@@ -204,12 +205,12 @@ const withActionCount = (notice, fallbackActionCount) => {
 
 /**
  * Keeps the selected parcel details in step with the current selection.
- * Both views share cached details and at most one request. Changing the
- * selection aborts a request for a different parcel, so the latest selection
- * is fetched straight away and a stale response can never replace it. A
- * request that hangs is aborted after a timeout and reported as a failure.
+ * Both views debounce uncached lookups and reuse pending requests per parcel.
+ * Requests already sent finish and cache successful results, even after the
+ * selection changes. Only the current parcel's response renders. Requests
+ * that hang are aborted after a timeout and can be retried on reselection.
  * @param {HTMLElement} mapEl
- * @returns {(selectedParcels: SelectedParcel[], metaIndex: import('./helpers.js').MetaIndex) => Promise<void>}
+ * @returns {(selectedParcels: SelectedParcel[], metaIndex: import('./helpers.js').MetaIndex) => void}
  */
 function createSelectedParcelDetailsUpdater(mapEl) {
   const listDetails = createParcelListDetailsRenderer()
@@ -225,8 +226,12 @@ function createSelectedParcelDetailsUpdater(mapEl) {
   const notices = new Map()
   /** @type {import('./helpers.js').MetaIndex} */
   let latestMetaIndex = {}
-  /** @type {{ id: string, controller: AbortController } | null} */
-  let inFlight = null
+  /** @type {Set<string>} */
+  const inFlight = new Set()
+  /** @type {string | undefined} */
+  let selectedId
+  /** @type {ReturnType<typeof setTimeout> | null} */
+  let debounceTimer = null
 
   /**
    * @param {string} id
@@ -246,40 +251,39 @@ function createSelectedParcelDetailsUpdater(mapEl) {
 
   /** @param {string} id @param {import('./helpers.js').MetaIndex} metaIndex */
   const loadNotice = async (id, metaIndex) => {
-    listDetails.startLoading(id)
-    const request = { id, controller: new AbortController() }
-    inFlight = request
-    const timeout = setTimeout(() => request.controller.abort(), PARCEL_DETAILS_REQUEST_TIMEOUT_MS)
+    const controller = new AbortController()
+    inFlight.add(id)
+    const timeout = setTimeout(() => controller.abort(), PARCEL_DETAILS_REQUEST_TIMEOUT_MS)
     const bulkActionCount = metaIndex[id]?.actionCount
     const notice = await fetchConsentNotice(
       id,
       typeof bulkActionCount === 'number' ? [] : enabledActions,
-      request.controller.signal
+      controller.signal
     )
     clearTimeout(timeout)
-    // Superseded by a different selection. A timed-out request is still
-    // current, so it falls through and reports the failure.
-    if (inFlight !== request) {
-      return
-    }
-    inFlight = null
+    inFlight.delete(id)
 
     const result = notice && withActionCount(notice, latestMetaIndex[id]?.actionCount ?? bulkActionCount)
     if (result) {
       notices.set(id, result)
     }
-    show(id, result)
+    if (selectedId === id) {
+      show(id, result)
+    }
   }
 
-  return async function updateSelectedParcelDetails(selectedParcels, metaIndex) {
+  return function updateSelectedParcelDetails(selectedParcels, metaIndex) {
     clearRequirements()
     latestMetaIndex = metaIndex
     const id = selectedParcels.length === 1 ? selectedParcels[0].id : undefined
+    const selectionChanged = selectedId !== id
 
-    if (inFlight && inFlight.id !== id) {
-      inFlight.controller.abort()
-      inFlight = null
+    if (selectionChanged) {
+      clearTimeout(debounceTimer ?? undefined)
+      debounceTimer = null
+      listDetails.clear()
     }
+    selectedId = id
     if (!id) {
       listDetails.clear()
       return
@@ -289,11 +293,22 @@ function createSelectedParcelDetailsUpdater(mapEl) {
       show(id, cached)
       return
     }
-    // The same parcel is already loading, for example after switching views:
-    // that response renders against the latest metaIndex.
-    if (!inFlight) {
-      await loadNotice(id, metaIndex)
+    // Repeated updates for this selection must not restart its loading feedback
+    // or debounce. A reselected parcel can also reuse a request already sent.
+    if (inFlight.has(id)) {
+      if (selectionChanged) {
+        listDetails.startLoading(id)
+      }
+      return
     }
+    if (debounceTimer !== null) {
+      return
+    }
+    listDetails.startLoading(id)
+    debounceTimer = setTimeout(() => {
+      debounceTimer = null
+      void loadNotice(id, latestMetaIndex)
+    }, PARCEL_DETAILS_DEBOUNCE_MS)
   }
 }
 
