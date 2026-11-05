@@ -19,8 +19,8 @@ export function createApproximateLocation(container, prefix = DEFAULT_PREFIX) {
   label.setAttribute('aria-atomic', 'true')
   container.after(label)
 
-  /** @type {AbortController | undefined} */
-  let controller
+  /** @type {AbortController | null} */
+  let controller = null
   /** @type {number | undefined} */
   let debounce
   /** @type {number | undefined} */
@@ -30,7 +30,7 @@ export function createApproximateLocation(container, prefix = DEFAULT_PREFIX) {
     window.clearTimeout(debounce)
     window.clearTimeout(timeout)
     controller?.abort()
-    controller = undefined
+    controller = null
   }
   window.addEventListener('pagehide', cancel)
 
@@ -75,7 +75,7 @@ export function createApproximateLocation(container, prefix = DEFAULT_PREFIX) {
       } finally {
         if (controller === current) {
           window.clearTimeout(timeout)
-          controller = undefined
+          controller = null
         }
       }
     }, DEBOUNCE_MS)

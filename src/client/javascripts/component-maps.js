@@ -98,18 +98,7 @@ function hideInitialHelpPanel(field) {
   closePanel()
 }
 
-/** Initialise YAML-defined forms maps with a postcode default, preserving the engine's saved-answer/view precedence. */
-export async function initialiseComponentMaps() {
-  if (!window.componentMapsEnabled) {
-    return
-  }
-
-  const fields = [...document.querySelectorAll(MAP_FIELDS)]
-  if (!fields.length) {
-    return
-  }
-
-  const settings = document.getElementById('component-map-settings')
+function createMapOptionsResolver(settings) {
   const optionsByName = new Map(
     [...(settings?.querySelectorAll('[data-map-component]') ?? [])].map((element) => {
       const { mapComponent, hideMapHelpPanel, zoomToPostcode, showApproximateLocation, approximateLocationPrefix } =
@@ -125,7 +114,7 @@ export async function initialiseComponentMaps() {
       ]
     })
   )
-  const optionsFor = (field) => {
+  return (field) => {
     const name = field.querySelector('input[name], textarea[name]')?.getAttribute('name')?.split('__')[0]
     return (
       optionsByName.get(name) ?? {
@@ -135,6 +124,21 @@ export async function initialiseComponentMaps() {
       }
     )
   }
+}
+
+/** Initialise YAML-defined forms maps with a postcode default, preserving the engine's saved-answer/view precedence. */
+export async function initialiseComponentMaps() {
+  if (!window.componentMapsEnabled) {
+    return
+  }
+
+  const fields = [...document.querySelectorAll(MAP_FIELDS)]
+  if (!fields.length) {
+    return
+  }
+
+  const settings = document.getElementById('component-map-settings')
+  const optionsFor = createMapOptionsResolver(settings)
   const locationFields = [...document.querySelectorAll('.app-location-field')]
   const geospatialFields = [...document.querySelectorAll(GEOSPATIAL_FIELD_SELECTOR)]
   const savedView = new window.URLSearchParams(window.location.search)
