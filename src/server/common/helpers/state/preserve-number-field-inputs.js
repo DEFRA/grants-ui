@@ -42,10 +42,10 @@ export function preserveNumberFieldInputs(request, context) {
   const page = getPage(request.app.model, request)
   const names = page.collection.fields
     .filter((field) => {
-      const definition = /** @type {{ schema?: { format?: string } } | undefined} */ (
+      const definition = /** @type {{ options?: { format?: string } } | undefined} */ (
         context.componentDefMap.get(field.name)
       )
-      return field.type === 'NumberField' && isNumberFormat(definition?.schema?.format) && field.name in payload
+      return field.type === 'NumberField' && isNumberFormat(definition?.options?.format) && field.name in payload
     })
     .map((field) => field.name)
   if (context.errors) {

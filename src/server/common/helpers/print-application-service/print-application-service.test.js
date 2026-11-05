@@ -99,7 +99,7 @@ describe('print-application-service', () => {
                   type: 'NumberField',
                   name: 'formattedAmount',
                   title: 'Formatted amount',
-                  schema: { format: 'thousands' }
+                  options: { format: 'thousands' }
                 },
                 { type: 'NumberField', name: 'plainAmount', title: 'Plain amount' }
               ]

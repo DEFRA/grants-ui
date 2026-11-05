@@ -18,7 +18,7 @@ export const COMPOSITE_FIELD_PARTS = {
 
 /**
  * @typedef {{ text: string, value: string | number | boolean }} ListItem
- * @typedef {{ type: string, name: string, title: string, schema?: Record<string, unknown> & { format?: string }, shortDescription?: string, list?: string, items?: ListItem[] }} FormComponent
+ * @typedef {{ type: string, name: string, title: string, options?: Record<string, unknown> & { format?: string }, shortDescription?: string, list?: string, items?: ListItem[] }} FormComponent
  * @typedef {{ title: string, section?: string, controller?: string, components?: FormComponent[] }} FormPage
  * @typedef {{
  *   pages?: FormPage[],

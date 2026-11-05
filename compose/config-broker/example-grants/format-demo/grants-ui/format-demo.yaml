@@ -30,10 +30,10 @@ pages:
           required: true
           prefix: £
           classes: govuk-!-width-one-third
+          format: currency:gbp
         schema:
           min: 0
           precision: 2
-          format: currency:gbp
       - name: volumeCubicMetres
         id: 19b16250-7d01-4b58-af75-9fc49ef7f912
         type: NumberField
@@ -56,9 +56,9 @@ pages:
         options:
           required: true
           classes: govuk-!-width-one-third
+          format: thousands
         schema:
           precision: 4
-          format: thousands
       - name: decimalNumber
         id: 8bb836c9-77db-4933-a221-ed2a29b70573
         type: NumberField
@@ -68,9 +68,9 @@ pages:
         options:
           required: true
           classes: govuk-!-width-one-third
+          format: decimal
         schema:
           precision: 4
-          format: decimal
       - name: explicitCurrency
         id: 9b8c7d6e-5f4a-4b2c-9d0e-8f7a6b5c4d32
         type: NumberField
@@ -80,10 +80,10 @@ pages:
         options:
           required: true
           classes: govuk-!-width-one-third
+          format: currency:gbp,4
         schema:
           min: 0
           precision: 4
-          format: currency:gbp,4
   - title: Check your formatted numbers
     path: /summary
     id: 640b5040-a802-40e7-a372-a1846b533a25
