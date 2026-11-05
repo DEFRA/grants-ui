@@ -182,5 +182,5 @@ export function formatAnswer(component, value, rawInput) {
 
 /**
  * @typedef {{ text?: string, value?: unknown }} ListItem
- * @typedef {{ type: string, name?: string, schema?: { format?: string }, items?: ListItem[], list?: string | { items?: ListItem[] } }} Component
+ * @typedef {{ type: string, name?: string, options?: { format?: string }, items?: ListItem[], list?: string | { items?: ListItem[] } }} Component
  */

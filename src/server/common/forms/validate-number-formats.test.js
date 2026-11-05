@@ -5,25 +5,27 @@ const definition = (component) => ({ pages: [{ components: [component] }] })
 
 describe('number playback configuration', () => {
   it.each([
-    { type: 'TextField', name: 'reference', schema: { format: 'thousands' } },
-    { type: 'NumberField', name: 'capacity', schema: { format: 'currency' } },
-    { type: 'NumberField', name: 'capacity', schema: { format: 'currency:invalid' } },
-    { type: 'NumberField', name: 'capacity', schema: { format: 'constructor' } },
-    { type: 'NumberField', name: 'capacity', schema: { format: '__proto__' } },
-    { type: 'NumberField', name: 'capacity', schema: { format: 'percent' } },
-    { type: 'NumberField', name: 'capacity', schema: { format: 'percent:4' } },
-    { type: 'TextField', name: 'reference', schema: { format: 'decimal' } },
-    { type: 'TextField', name: 'reference', schema: { format: 'currency:gbp,4' } },
-    { type: 'NumberField', name: 'capacity', schema: { format: 'decimal:4|currency:gbp' } },
-    { type: 'NumberField', name: 'capacity', schema: { format: null } },
+    { type: 'TextField', name: 'reference', options: { format: 'thousands' } },
+    { type: 'NumberField', name: 'capacity', options: { format: 'currency' } },
+    { type: 'NumberField', name: 'capacity', options: { format: 'currency:invalid' } },
+    { type: 'NumberField', name: 'capacity', options: { format: 'constructor' } },
+    { type: 'NumberField', name: 'capacity', options: { format: '__proto__' } },
+    { type: 'NumberField', name: 'capacity', options: { format: 'percent' } },
+    { type: 'NumberField', name: 'capacity', options: { format: 'percent:4' } },
+    { type: 'TextField', name: 'reference', options: { format: 'decimal' } },
+    { type: 'TextField', name: 'reference', options: { format: 'currency:gbp,4' } },
+    { type: 'NumberField', name: 'capacity', options: { format: 'decimal:4|currency:gbp' } },
+    { type: 'NumberField', name: 'capacity', options: { format: null } },
     { type: 'NumberField', name: 'capacity', format: 'thousands' },
-    { type: 'NumberField', name: 'capacity', format: 'thousands', schema: { format: 'decimal' } }
+    { type: 'NumberField', name: 'capacity', format: 'thousands', options: { format: 'decimal' } },
+    { type: 'NumberField', name: 'capacity', schema: { format: 'thousands' } },
+    { type: 'NumberField', name: 'capacity', schema: { format: 'thousands' }, options: { format: 'decimal' } }
   ])('rejects invalid formatting as a configuration error: %j', (component) => {
     expect(() => validateNumberFormats(definition(component))).toThrow(SystemError)
   })
 
   it.each(['thousands', 'decimal:4', 'currency:gbp,4'])('rejects %s formatting on a repeating page', (format) => {
-    const form = definition({ type: 'NumberField', name: 'amount', schema: { format } })
+    const form = definition({ type: 'NumberField', name: 'amount', options: { format } })
     form.pages[0].repeat = { options: { name: 'items' } }
     expect(() => validateNumberFormats(form)).toThrow(SystemError)
   })
@@ -33,7 +35,9 @@ describe('number playback configuration', () => {
       lists: [
         {
           items: [
-            { conditional: { components: [{ type: 'TextField', name: 'reference', schema: { format: 'thousands' } }] } }
+            {
+              conditional: { components: [{ type: 'TextField', name: 'reference', options: { format: 'thousands' } }] }
+            }
           ]
         }
       ]

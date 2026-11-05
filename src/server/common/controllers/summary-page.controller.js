@@ -22,13 +22,13 @@ export function formatSummaryNumberAnswers(viewModel, context) {
 
   viewModel?.details?.forEach((detail, sectionIndex) => {
     detail.items?.forEach((item, rowIndex) => {
-      const component = /** @type {{ type: string, schema?: { format?: string } } | undefined} */ (
+      const component = /** @type {{ type: string, options?: { format?: string } } | undefined} */ (
         context.componentDefMap?.get(item.name)
       )
       const value = item.state?.[item.name]
       if (
         component?.type !== 'NumberField' ||
-        !isNumberFormat(component.schema?.format) ||
+        !isNumberFormat(component.options?.format) ||
         value === null ||
         value === undefined ||
         value === ''

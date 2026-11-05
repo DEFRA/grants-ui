@@ -34,7 +34,7 @@ The first page accepts GBP currency, an unformatted volume in m³, grouped digit
 fixed-two-decimal number and currency with explicit precision. For example, entering
 `125000.5` for `currency:gbp,4` displays `£125,000.5000`.
 Each field's hint gives an example input; the next page labels the answers with their configured format.
-Set each field's `schema.format` alongside its input-validation settings such as `schema.precision`.
+Set each field's `options.format` alongside presentation settings such as `options.prefix`; keep input-validation settings such as `precision` in `schema`.
 
 Use **Change** to edit an answer or **Continue** on the review page to try another set of
 values. Inputs retain their original precision, even when playback rounds the number.
