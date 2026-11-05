@@ -27,8 +27,13 @@ export function makeMlMap(overrides = {}) {
     on(event, wrapped)
   }
 
+  const canvasContainer = document.createElement('div')
+  const canvas = document.createElement('canvas')
+  canvasContainer.appendChild(canvas)
+
   return {
     fitBounds: vi.fn(),
+    panBy: vi.fn(),
     getSource: vi.fn().mockReturnValue(null),
     addSource: vi.fn(),
     addLayer: vi.fn(),
@@ -40,7 +45,9 @@ export function makeMlMap(overrides = {}) {
     querySourceFeatures: vi.fn().mockReturnValue([]),
     setPaintProperty: vi.fn(),
     project: vi.fn().mockReturnValue({ x: 100, y: 200 }),
-    getCanvas: vi.fn().mockReturnValue({ style: {} }),
+    getCanvas: vi.fn().mockReturnValue(canvas),
+    getCanvasContainer: vi.fn().mockReturnValue(canvasContainer),
+    scrollZoom: { enable: vi.fn(), disable: vi.fn() },
     getCenter: vi.fn().mockReturnValue({ lng: 0, lat: 0 }),
     getZoom: vi.fn().mockReturnValue(10),
     on: vi.fn(on),

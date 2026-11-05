@@ -412,7 +412,22 @@
     }
   },
   {
-    "id": "grants-scoring-api-200",
+    "id": "grants-scoring-api-wm-validate-200",
+    "priority": 0,
+    "httpRequest": {
+      "method": "GET",
+      "path": "/validate/location"
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "body": {
+        "message": "success",
+        "locationFound": true
+      }
+    }
+  },
+  {
+    "id": "grants-scoring-api-wm-score-200",
     "priority": 0,
     "httpRequest": {
       "method": "GET",

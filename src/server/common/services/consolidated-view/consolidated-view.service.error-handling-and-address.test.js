@@ -179,7 +179,7 @@ describe('Consolidated View Service - Error handling and address formatting', ()
       })
 
       await expect(executeConfigDrivenQuery(mockRequest, 'query { business { info { name } } }')).rejects.toThrow(
-        'Failed to fetch business data: 403 Forbidden'
+        'Failed to fetch business data: Forbidden'
       )
     })
 
@@ -189,16 +189,25 @@ describe('Consolidated View Service - Error handling and address formatting', ()
         JSON.stringify({
           data: { business: { info: null }, customer: { info: null } },
           errors: [{ message: 'Forbidden', path: ['business', 'info'] }]
-        })
+        }),
+        'Failed to fetch business data: Forbidden',
+        'graphql_errors'
       ],
       [
         'no data field',
         JSON.stringify({
           errors: [{ message: 'Forbidden', path: ['business', 'countyParishHoldings'] }]
-        })
+        }),
+        'Failed to fetch business data: Forbidden',
+        'graphql_errors'
       ],
-      ['invalid JSON body', 'Access denied - not JSON']
-    ])('should throw when 403 response has %s', async (_scenario, responseText) => {
+      [
+        'invalid JSON body',
+        'Access denied - not JSON',
+        'Failed to fetch business data: 403 Forbidden',
+        'api_response_not_ok'
+      ]
+    ])('should throw when 403 response has %s', async (_scenario, responseText, expectedMessage, expectedReason) => {
       mockFetchInstance.mockResolvedValueOnce({
         ok: false,
         status: 403,
@@ -206,7 +215,10 @@ describe('Consolidated View Service - Error handling and address formatting', ()
         text: () => Promise.resolve(responseText)
       })
 
-      await expect(fetchParcelsFromDal(mockRequest)).rejects.toThrow('Failed to fetch business data: 403 Forbidden')
+      const error = await fetchParcelsFromDal(mockRequest).catch((err) => err)
+
+      expect(error.message).toBe(expectedMessage)
+      expect(error.details.reason).toBe(expectedReason)
     })
   })
 

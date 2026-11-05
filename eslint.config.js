@@ -4,12 +4,14 @@ import vitestPlugin from '@vitest/eslint-plugin'
 import grantsUiPlugin from './.eslint/index.js'
 
 export default [
+  {
+    ignores: ['.server', '.public', 'coverage', 'node_modules', '.stryker-tmp', '.idea', '.vscode']
+  },
   ...neostandard({
     env: ['node'],
     // @ts-ignore
     jsx: false,
-    style: false,
-    ignores: ['.server', '.public', 'coverage', 'node_modules', '.stryker-tmp', '.idea', '.vscode']
+    style: false
   }),
   prettier,
   {

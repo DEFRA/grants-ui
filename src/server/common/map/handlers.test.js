@@ -67,6 +67,9 @@ import { withCompoundParcelIds } from '~/src/server/common/map/mvt-compound-id.j
 import { fetchAuthorisedParcelIds } from '~/src/server/land-grants/services/parcel-cache.js'
 import { getAuthorisedParcel } from '~/src/server/land-grants/services/parcel-authorisation.js'
 import { mockHapiResponseToolkit } from '~/src/__mocks__/hapi-mocks.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { ConsolidatedViewError } from '~/src/server/common/utils/errors/ConsolidatedViewError.js'
+import { ROUTES } from './map-routes.js'
 
 const makeH = () => mockHapiResponseToolkit({ bytes: vi.fn().mockReturnThis() })
 
@@ -96,6 +99,40 @@ const expectedUserContext = {
   defraIdToken: 'defra-id-access-token',
   sbi: '123456789'
 }
+
+describe('locally handled Consolidated View parcel failures', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it.each([
+    ['parcels', parcelsHandler],
+    ['tiles', tilesHandler]
+  ])('logs structured details once and preserves the %s error response', async (name, handler) => {
+    const request = makeRequest({ z: '12', x: '100', y: '200' })
+    const h = makeH()
+    const error = new ConsolidatedViewError({
+      message: 'Parcel lookup failed',
+      source: 'makeConsolidatedViewRequest',
+      reason: 'api_error',
+      status: 502,
+      statusCode: 503,
+      responseBody: 'Service unavailable',
+      sbi: request.auth.credentials.sbi
+    })
+    fetchParcels.mockRejectedValue(error)
+
+    await handler(request, h)
+
+    expect(log).toHaveBeenCalledExactlyOnceWith(error.logCode, error.details, request)
+    expect(h.code).toHaveBeenCalledExactlyOnceWith(503)
+    expect(h.response).toHaveBeenCalledExactlyOnceWith(
+      ...(name === 'parcels' ? [{ error: 'Unable to load your land parcels' }] : [])
+    )
+    expect(fetchParcelTile).not.toHaveBeenCalled()
+    expect(fetchParcelTileLocation).not.toHaveBeenCalled()
+  })
+})
 
 describe('parcelsHandler', () => {
   beforeEach(() => {
@@ -193,9 +230,20 @@ describe('parcelsHandler', () => {
   ])('returns a generic error and %s when fetchParcels throws', async (_name, error, status) => {
     fetchParcels.mockRejectedValue(error)
     const h = makeH()
+    const request = makeRequest()
 
-    await parcelsHandler(makeRequest(), h)
+    await parcelsHandler(request, h)
 
+    expect(log).toHaveBeenCalledExactlyOnceWith(
+      { ...LogCodes.SYSTEM.EXTERNAL_API_ERROR, error },
+      {
+        endpoint: ROUTES.parcels,
+        service: 'land-grants-api',
+        upstreamStatus: status === 503 ? null : status,
+        errorMessage: error.message
+      },
+      request
+    )
     expect(h.response).toHaveBeenCalledWith({ error: 'Unable to load your land parcels' })
     expect(h.code).toHaveBeenCalledWith(status)
   })
@@ -254,6 +302,7 @@ describe('parcelSearchHandler', () => {
 
     expect(h.response).toHaveBeenCalledWith({ error: 'Unable to search your land parcels' })
     expect(h.code).toHaveBeenCalledWith(503)
+    expect(log).not.toHaveBeenCalled()
   })
 })
 

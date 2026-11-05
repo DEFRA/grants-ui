@@ -7,12 +7,12 @@ import { LogCodes } from '~/src/server/common/helpers/logging/log-codes.js'
 import { log, logger } from '~/src/server/common/helpers/logging/log.js'
 import {
   clearTokenState,
-  createClientSecretTokenRequestParams,
   createTokenRequestParams,
+  entraTokenPlugin,
   getValidToken,
-  isTokenExpired,
   refreshToken
 } from '~/src/server/common/helpers/entra/token-manager.js'
+import { useCachedMethodServer } from '~/src/server/common/helpers/cache/cached-method.test-helpers.js'
 
 vi.mock('~/src/server/common/helpers/retry.js')
 
@@ -41,13 +41,13 @@ const mockFetch = vi.fn()
 global.fetch = mockFetch
 
 describe('Token Manager', () => {
+  useCachedMethodServer(entraTokenPlugin)
+
   beforeEach(() => {
     config.set('entra', {
       tokenEndpoint: 'https://login.microsoftonline.com',
       tenantId: 'mock-tenant-id',
       clientId: 'mock-client-id',
-      clientSecret: '',
-      authMethod: 'web_identity',
       webIdentity: {
         audience: ['mock-audience']
       }
@@ -60,27 +60,6 @@ describe('Token Manager', () => {
     mockStsCredentials.mockReset()
   })
 
-  describe('isTokenExpired', () => {
-    test('returns true when no expiry time provided', () => {
-      expect(isTokenExpired(null)).toBe(true)
-    })
-
-    test('returns true when token is expired', () => {
-      const expiredTime = Date.now() - 1000 // 1 second ago
-      expect(isTokenExpired(expiredTime)).toBe(true)
-    })
-
-    test('returns true when token expires within 5 minutes', () => {
-      const almostExpiredTime = Date.now() + 4 * 60 * 1000 // 4 minutes from now
-      expect(isTokenExpired(almostExpiredTime)).toBe(true)
-    })
-
-    test('returns false when token is valid and not near expiry', () => {
-      const validTime = Date.now() + 10 * 60 * 1000 // 10 minutes from now
-      expect(isTokenExpired(validTime)).toBe(false)
-    })
-  })
-
   describe('createTokenRequestParams', () => {
     test('creates correct URL search params', () => {
       const params = createTokenRequestParams('client-id', 'test-scope', 'assertion')
@@ -91,20 +70,6 @@ describe('Token Manager', () => {
         scope: 'test-scope',
         client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
         client_assertion: 'assertion',
-        grant_type: 'client_credentials'
-      })
-    })
-  })
-
-  describe('createClientSecretTokenRequestParams', () => {
-    test('creates correct URL search params', () => {
-      const params = createClientSecretTokenRequestParams('client-id', 'test-scope', 'secret')
-      const paramsObject = Object.fromEntries(params)
-
-      expect(paramsObject).toEqual({
-        client_id: 'client-id',
-        scope: 'test-scope',
-        client_secret: 'secret',
         grant_type: 'client_credentials'
       })
     })
@@ -258,41 +223,6 @@ describe('Token Manager', () => {
         errorMessage: 'Web Identity token provider returned no valid token'
       })
     })
-
-    test('uses a client secret when authMethod is client_secret', async () => {
-      config.set('entra.authMethod', 'client_secret')
-      config.set('entra.clientSecret', 'a-client-secret')
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            access_token: 'secret-access-token',
-            expires_in: 3600
-          })
-      })
-
-      const token = await refreshToken()
-
-      expect(token).toBe('secret-access-token')
-      expect(mockGetCredentials).not.toHaveBeenCalled()
-      expect(log).toHaveBeenCalledWith(LogCodes.SYSTEM.ENTRA_TOKEN_REFRESH_ATTEMPT, { authMethod: 'client_secret' })
-
-      const [[, calledOptions]] = mockFetch.mock.calls
-      const bodyParams = new URLSearchParams(calledOptions.body)
-      expect(Object.fromEntries(bodyParams)).toEqual({
-        client_id: 'mock-client-id',
-        scope: 'mock-client-id/.default',
-        client_secret: 'a-client-secret',
-        grant_type: 'client_credentials'
-      })
-    })
-
-    test('throws error for an unrecognised authMethod', async () => {
-      config.set('entra.authMethod', 'not-a-real-provider')
-
-      await expect(refreshToken()).rejects.toThrow('Entra token refresh failed')
-      expect(mockFetch).not.toHaveBeenCalled()
-    })
   })
 
   describe('getValidToken', () => {
@@ -341,6 +271,52 @@ describe('Token Manager', () => {
       const newToken = await getValidToken()
       expect(newToken).toBe('new-access-token')
       expect(mockFetch).toHaveBeenCalledTimes(2)
+    })
+
+    test('shares one refresh between concurrent callers', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ access_token: 'new-access-token', expires_in: 3600 })
+      })
+
+      const tokens = await Promise.all([getValidToken(), getValidToken(), getValidToken()])
+
+      expect(tokens).toEqual(['new-access-token', 'new-access-token', 'new-access-token'])
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+    })
+
+    test('refreshes 5 minutes before the token expires', async () => {
+      vi.useFakeTimers()
+      mockGetCredentials.mockImplementation(async () => validWebIdentityToken())
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ access_token: 'new-access-token', expires_in: 3600 })
+      })
+
+      await getValidToken()
+      vi.advanceTimersByTime((3600 - 5 * 60) * 1000 - 1)
+      await getValidToken()
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+
+      vi.advanceTimersByTime(2)
+      await getValidToken()
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+    })
+
+    test('does not cache a failed refresh', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: 'Server Error',
+        text: () => Promise.resolve('')
+      })
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ access_token: 'new-access-token', expires_in: 3600 })
+      })
+
+      await expect(getValidToken()).rejects.toThrow('Entra token refresh failed')
+      expect(await getValidToken()).toBe('new-access-token')
     })
   })
 })

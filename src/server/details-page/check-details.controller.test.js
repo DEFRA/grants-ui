@@ -3,14 +3,12 @@ import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/Q
 import { TerminalPageController } from '@defra/forms-engine-plugin/controllers/TerminalPageController.js'
 import CheckDetailsController, { UpdateDetailsPageController } from './check-details.controller.js'
 import { buildGraphQLQuery, mapResponse, processSections } from '../common/services/details-page/index.js'
-import {
-  executeConfigDrivenQuery,
-  hasOnlyToleratedFailures
-} from '../common/services/consolidated-view/consolidated-view.service.js'
-import { debug, log, LogCodes } from '../common/helpers/logging/log.js'
+import { executeConfigDrivenQuery } from '../common/services/consolidated-view/consolidated-view.service.js'
+import { log, LogCodes } from '../common/helpers/logging/log.js'
 import { setupControllerMocks } from '~/src/__mocks__/controller-mocks.js'
 import { config } from '~/src/config/config.js'
 import { mockContext } from '~/src/__mocks__/index.js'
+import { ConsolidatedViewError } from '../common/utils/errors/ConsolidatedViewError.js'
 
 vi.mock('~/src/config/config.js', () => ({
   config: {
@@ -196,7 +194,6 @@ describe('CheckDetailsController', () => {
     // Setup default mocks
     vi.mocked(buildGraphQLQuery).mockReturnValue('query { business { name } }')
     vi.mocked(executeConfigDrivenQuery).mockResolvedValue(mockApiResponse)
-    vi.mocked(hasOnlyToleratedFailures).mockReturnValue(false)
     vi.mocked(mapResponse).mockReturnValue(mockMappedData)
     vi.mocked(processSections).mockReturnValue(mockSections)
 
@@ -424,8 +421,8 @@ describe('CheckDetailsController', () => {
 
       await handler(mockRequest, mockContext, mockH)
 
-      expect(debug).toHaveBeenCalledWith(
-        LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+      expect(log).toHaveBeenCalledWith(
+        { ...LogCodes.SYSTEM.EXTERNAL_API_ERROR, error },
         { endpoint: 'ConsolidatedView', errorMessage: 'API unavailable' },
         mockRequest
       )
@@ -613,8 +610,8 @@ describe('CheckDetailsController', () => {
 
       const result = await controller.handleDetailsConfirmed(mockRequest, mockContext, mockConfig, mockH)
 
-      expect(debug).toHaveBeenCalledWith(
-        LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+      expect(log).toHaveBeenCalledWith(
+        { ...LogCodes.SYSTEM.EXTERNAL_API_ERROR, error },
         { endpoint: 'ConsolidatedView', errorMessage: 'Data fetch failed' },
         mockRequest
       )
@@ -671,21 +668,6 @@ describe('CheckDetailsController', () => {
       await expect(controller.fetchAndProcessData(mockRequest, mockConfig)).rejects.toThrow('Query execution failed')
     })
 
-    it('should log and throw when response contains non-tolerated GraphQL errors', async () => {
-      vi.mocked(executeConfigDrivenQuery).mockResolvedValue({
-        errors: [{ message: 'Field not found' }]
-      })
-      vi.mocked(hasOnlyToleratedFailures).mockReturnValue(false)
-
-      await expect(controller.fetchAndProcessData(mockRequest, mockConfig)).rejects.toThrow('Field not found')
-      expect(hasOnlyToleratedFailures).toHaveBeenCalledWith([{ message: 'Field not found' }], ['countyParishHoldings'])
-      expect(log).toHaveBeenCalledWith(
-        LogCodes.SYSTEM.EXTERNAL_API_ERROR,
-        { endpoint: 'ConsolidatedView', errorMessage: 'Field not found' },
-        mockRequest
-      )
-    })
-
     it('should continue processing when response contains only tolerated GraphQL errors', async () => {
       const partialResponse = {
         data: {
@@ -695,17 +677,12 @@ describe('CheckDetailsController', () => {
         errors: [{ message: 'Forbidden', path: ['business', 'countyParishHoldings'] }]
       }
       vi.mocked(executeConfigDrivenQuery).mockResolvedValue(partialResponse)
-      vi.mocked(hasOnlyToleratedFailures).mockReturnValue(true)
 
       const result = await controller.fetchAndProcessData(mockRequest, mockConfig)
 
-      expect(hasOnlyToleratedFailures).toHaveBeenCalledWith(partialResponse.errors, ['countyParishHoldings'])
-      expect(log).toHaveBeenCalledWith(
+      expect(log).not.toHaveBeenCalledWith(
         LogCodes.SYSTEM.CONSOLIDATED_VIEW_PARTIAL_SUCCESS,
-        expect.objectContaining({
-          sbi: 'SBI123456',
-          failedPaths: 'business.countyParishHoldings'
-        }),
+        expect.anything(),
         mockRequest
       )
       expect(mapResponse).toHaveBeenCalledWith(mockConfig.responseMapping, partialResponse)
@@ -720,14 +697,12 @@ describe('CheckDetailsController', () => {
       vi.mocked(executeConfigDrivenQuery).mockResolvedValue({
         errors: [{ message: 'Error' }]
       })
-      vi.mocked(hasOnlyToleratedFailures).mockReturnValue(true)
 
       await controller.fetchAndProcessData(mockRequest, configWithToleratedPaths)
 
       expect(executeConfigDrivenQuery).toHaveBeenCalledWith(mockRequest, expect.any(String), {
         toleratedPaths: ['customPath']
       })
-      expect(hasOnlyToleratedFailures).toHaveBeenCalledWith(expect.any(Array), ['customPath'])
     })
   })
 
@@ -869,14 +844,40 @@ describe('CheckDetailsController', () => {
   })
 
   describe('handleError', () => {
+    it('logs a handled DAL failure once with its upstream status and renders the retry message', () => {
+      const error = new ConsolidatedViewError({
+        message: 'Customer not found',
+        status: 502,
+        statusCode: 200,
+        source: 'makeConsolidatedViewRequest',
+        reason: 'graphql_errors'
+      })
+      vi.mocked(log).mockClear()
+
+      const result = controller.handleError(error, {}, mockH, mockRequest)
+
+      expect(log).toHaveBeenCalledExactlyOnceWith(
+        error.logCode,
+        expect.objectContaining({ statusCode: 200, errorMessage: 'Customer not found' }),
+        mockRequest
+      )
+      expect(mockH.view).toHaveBeenCalledWith('check-details', {
+        error: {
+          titleText: 'There is a problem',
+          errorList: [{ text: 'Unable to retrieve your details. Please try again later.', href: '' }]
+        }
+      })
+      expect(result).toBe('mocked-view')
+    })
+
     it('should log error and return error view model', () => {
       const error = new Error('Test error message')
       const baseViewModel = { serviceName: 'Test Service', serviceUrl: '/test' }
 
       const result = controller.handleError(error, baseViewModel, mockH, mockRequest)
 
-      expect(debug).toHaveBeenCalledWith(
-        LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+      expect(log).toHaveBeenCalledWith(
+        { ...LogCodes.SYSTEM.EXTERNAL_API_ERROR, error },
         { endpoint: 'ConsolidatedView', errorMessage: 'Test error message' },
         mockRequest
       )

@@ -5,6 +5,7 @@
   - [Throwing Errors](#throwing-errors)
   - [Chaining Errors](#chaining-errors)
   - [Managing Error Instances](#managing-error-instances)
+  - [Locally Handled Failures](#locally-handled-failures)
 - [Structured Logging System](#structured-logging-system)
   - [Core Components](#core-components)
   - [Directory Structure](#directory-structure)
@@ -32,8 +33,8 @@ This is a work in progress (as of 12/02/2026)
       `GenericError` currently)
 - [x] Global error handler to format responses and log errors
 - [ ] Update existing code to throw specific error classes instead of generic `Error`
-- [ ] Update existing code to remove any manual logging of errors in `try {} catch {}` blocks
-- [x] Create ESLint rule to forbid logging in `try {} catch {}` blocks (`grants-ui/try-catch-allowed-functions`,
+- [ ] Update existing code to remove manual logging of errors that are propagated to the global handler
+- [x] Create ESLint rule to restrict direct logging in `catch` blocks (`grants-ui/try-catch-allowed-functions`,
       configured in `eslint.config.js`)
 
 ### Introduction to structured errors
@@ -48,7 +49,8 @@ Errors are thrown with relevant context and caught by a global error handler tha
 error in a structured format.
 
 > [!IMPORTANT]
-> There is no need to log errors manually as long as the `BaseError` class is used consistently for propagation of all errors.
+> Let the global handler log propagated errors. If a failure is handled locally by returning a view, response, or fallback
+> value, log it at that handling boundary using `logHandledError`; the global handler will not receive the error.
 
 ### Constructing error classes
 
@@ -85,7 +87,7 @@ throw new ValidationError()
 
 There is a `preResponse` hook in the Hapi server that checks if the response is an error and if it is an instance of
 `BaseError`. If so, it logs the error using `BaseError::log` and formats the response with the appropriate status code
-and message. So there is never a need to log errors directly in `try {} catch {}` blocks.
+and message. Do not log an error before rethrowing it or returning it as an error response for the global handler.
 
 ### Chaining errors
 
@@ -152,6 +154,40 @@ try {
 
 For logging purposes we always want to find the root errors in the chain before starting to log. While there are no use cases to find the root errors outside of logging today, if needs be the root errors can be found using `BaseError.findRootErrors(error)` which will return an array of all root errors in the chain (i.e. all errors that do not have any parent errors attached to them).
 
+### Locally handled failures
+
+When a controller or service consumes a failure and returns a normal view, response, or fallback value, use
+`logHandledError` from `~/src/server/common/helpers/logging/handled-error.js`:
+
+```javascript
+import { logHandledError } from '~/src/server/common/helpers/logging/handled-error.js'
+import { LogCodes } from '~/src/server/common/helpers/logging/log.js'
+
+try {
+  return await fetchDetails(request)
+} catch (error) {
+  logHandledError(error, request, {
+    fallbackCode: LogCodes.SYSTEM.EXTERNAL_API_ERROR,
+    fallbackDetails: { endpoint: 'fetch details' }
+  })
+  return null
+}
+```
+
+For a `BaseError`, the helper calls its existing `.log(request)` method, retaining its log code, details, and cause chain.
+For an ordinary `Error`, it uses the supplied fallback code and context, including the error message and original error
+for stack logging. String throws retain their message; other thrown values use a generic message without serialising
+arbitrary data. The helper uses the log code's configured level and does not mutate the error or fallback configuration.
+
+Choose a suitable existing fallback log code, or define one when the failure needs a distinct logging policy. Do not use
+ad hoc `debug()` definitions or direct logger calls for these failures. Do not blindly wrap an existing `BaseError` with
+`BaseError.wrap()`, which creates a `GenericError` rather than preserving the existing logging policy and cause chain.
+
+Each failure should have one logging owner. After calling `logHandledError`, consume the failure instead of rethrowing it
+or logging it again. Callers receiving a fallback value from a service that already logged the failure should not log the
+same failure again. Distinct chained causes can produce additional log entries; the helper does not deduplicate repeated
+calls or change HTTP statuses, error views, or fallback values.
+
 ## Structured Logging System
 
 The application implements a comprehensive structured logging system providing consistent, searchable, and maintainable logging across all components.
@@ -185,6 +221,7 @@ src/server/common/helpers/logging/
 ├── log-codes/             # Structured log definitions (one file per category)
 ├── mask-crn.js             # CRN masking helper for logs
 ├── upstream-error.js       # Upstream error helpers
+├── handled-error.js        # Failures consumed locally, preserving BaseError logging policies
 └── *.test.js             # Test files
 ```
 

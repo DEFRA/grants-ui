@@ -1,185 +1,258 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchParcelsFromDal } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
-import { debug } from '~/src/server/common/helpers/logging/log.js'
+import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { ConsolidatedViewError } from '~/src/server/common/utils/errors/ConsolidatedViewError.js'
 import {
+  cachedParcelActions,
+  cachedSbiParcels,
   clearParcelCache,
   fetchAuthorisedParcelIds,
-  getCachedAuthParcels,
-  getCachedParcel,
-  getCachedSbiParcels,
-  setCachedAuthParcels,
-  setCachedParcel,
-  setCachedSbiParcels
+  sbiParcelsKey
 } from './parcel-cache.js'
+import { useCachedMethodServer } from '~/src/server/common/helpers/cache/cached-method.test-helpers.js'
+import { parcelCachePlugin } from '~/src/server/land-grants/services/parcel-cache.js'
 
 vi.mock('~/src/server/common/services/consolidated-view/consolidated-view.service.js', () => ({
   fetchParcelsFromDal: vi.fn()
 }))
 
-vi.mock('~/src/server/common/helpers/logging/log.js', () => ({
-  debug: vi.fn(),
-  LogCodes: { SYSTEM: { EXTERNAL_API_ERROR: 'EXTERNAL_API_ERROR' } }
-}))
-
 const SECONDS_PER_MINUTE = 60
 const MS_PER_SECOND = 1000
 const TTL = 5 * SECONDS_PER_MINUTE * MS_PER_SECOND
+const SBI = '800000602'
 
 describe('parcel-cache', () => {
+  useCachedMethodServer(parcelCachePlugin)
+
   beforeEach(() => {
-    clearParcelCache()
+    vi.clearAllMocks()
   })
 
-  afterEach(() => {
-    vi.useRealTimers()
+  describe('sbiParcelsKey', () => {
+    it('joins the sbi with the sorted fields', () => {
+      expect(sbiParcelsKey(SBI, ['size', 'actions'])).toBe(`${SBI}:actions,size`)
+    })
   })
 
-  describe('getCachedParcel', () => {
-    it('returns null for unknown key', () => {
-      expect(getCachedParcel('SD5649-9215')).toBeNull()
+  describe.each([
+    ['cachedSbiParcels', cachedSbiParcels],
+    ['cachedParcelActions', (key, load) => cachedParcelActions(SBI, key, load)]
+  ])('%s', (_name, cached) => {
+    it('loads on a miss and serves the cached value on a hit', async () => {
+      const load = vi.fn().mockResolvedValue({ actions: [] })
+
+      expect(await cached('key', load)).toEqual({ actions: [] })
+      expect(await cached('key', load)).toEqual({ actions: [] })
+      expect(load).toHaveBeenCalledTimes(1)
     })
 
-    it('returns stored value', () => {
-      const data = { actions: [], parcel: { parcelId: '9215', sheetId: 'SD5649' } }
-      setCachedParcel('SD5649-9215', data)
-      expect(getCachedParcel('SD5649-9215')).toEqual(data)
+    it('shares one load between concurrent calls for the same key', async () => {
+      const load = vi.fn().mockResolvedValue([])
+
+      await Promise.all([cached('key', load), cached('key', load), cached('key', load)])
+
+      expect(load).toHaveBeenCalledTimes(1)
     })
 
-    it('expires after 5 minutes', () => {
+    it('loads separately for different keys', async () => {
+      const load = vi.fn().mockResolvedValue([])
+
+      await cached('key-1', load)
+      await cached('key-2', load)
+
+      expect(load).toHaveBeenCalledTimes(2)
+    })
+
+    it('reloads after 5 minutes', async () => {
       vi.useFakeTimers()
-      setCachedParcel('SD5649-9215', { actions: [] })
+      const load = vi.fn().mockResolvedValue([])
+
+      await cached('key', load)
       vi.advanceTimersByTime(TTL + 1)
-      expect(getCachedParcel('SD5649-9215')).toBeNull()
+      await cached('key', load)
+
+      expect(load).toHaveBeenCalledTimes(2)
     })
 
-    it('is still valid just before expiry', () => {
-      vi.useFakeTimers()
-      const data = { actions: [] }
-      setCachedParcel('SD5649-9215', data)
-      vi.advanceTimersByTime(TTL - 1)
-      expect(getCachedParcel('SD5649-9215')).toEqual(data)
-    })
-  })
+    it('does not cache a failed load', async () => {
+      const load = vi.fn().mockRejectedValueOnce(new Error('upstream down')).mockResolvedValueOnce([])
 
-  describe('getCachedSbiParcels', () => {
-    it('returns null for unknown SBI', () => {
-      expect(getCachedSbiParcels('800000602')).toBeNull()
-    })
-
-    it('returns stored parcels', () => {
-      const parcels = [{ parcelId: '9215', sheetId: 'SD5649', area: {} }]
-      setCachedSbiParcels('800000602', parcels)
-      expect(getCachedSbiParcels('800000602')).toEqual(parcels)
-    })
-
-    it('expires after 5 minutes', () => {
-      vi.useFakeTimers()
-      setCachedSbiParcels('800000602', [])
-      vi.advanceTimersByTime(TTL + 1)
-      expect(getCachedSbiParcels('800000602')).toBeNull()
-    })
-  })
-
-  describe('getCachedAuthParcels', () => {
-    it('returns null for unknown SBI', () => {
-      expect(getCachedAuthParcels('800000602')).toBeNull()
-    })
-
-    it('returns stored parcel strings', () => {
-      const parcels = ['SD5649-9215', 'SD7846-4509']
-      setCachedAuthParcels('800000602', parcels)
-      expect(getCachedAuthParcels('800000602')).toEqual(parcels)
-    })
-
-    it('expires after 5 minutes', () => {
-      vi.useFakeTimers()
-      setCachedAuthParcels('800000602', ['SD5649-9215'])
-      vi.advanceTimersByTime(TTL + 1)
-      expect(getCachedAuthParcels('800000602')).toBeNull()
+      await expect(cached('key', load)).rejects.toThrow('upstream down')
+      expect(await cached('key', load)).toEqual([])
+      expect(load).toHaveBeenCalledTimes(2)
     })
   })
 
   describe('fetchAuthorisedParcelIds', () => {
-    const mockRequest = { auth: { credentials: { sbi: '800000602' } } }
+    const mockRequest = { auth: { credentials: { sbi: SBI } } }
 
-    it('uses cached parcels instead of fetching when cache hit', async () => {
-      setCachedAuthParcels('800000602', ['sheet1-parcel1', 'sheet2-parcel2'])
-
-      const result = await fetchAuthorisedParcelIds(mockRequest)
-
-      expect(fetchParcelsFromDal).not.toHaveBeenCalled()
-      expect(result).toEqual(['sheet1-parcel1', 'sheet2-parcel2'])
-    })
-
-    it('fetches and caches parcels on cache miss', async () => {
+    it('fetches parcel ids on a miss and serves them from cache after', async () => {
       fetchParcelsFromDal.mockResolvedValue([{ sheetId: 'sheet1', parcelId: 'parcel1' }])
 
-      const result = await fetchAuthorisedParcelIds(mockRequest)
-
+      expect(await fetchAuthorisedParcelIds(mockRequest)).toEqual(['sheet1-parcel1'])
+      expect(await fetchAuthorisedParcelIds(mockRequest)).toEqual(['sheet1-parcel1'])
+      expect(fetchParcelsFromDal).toHaveBeenCalledTimes(1)
       expect(fetchParcelsFromDal).toHaveBeenCalledWith(mockRequest)
-      expect(result).toEqual(['sheet1-parcel1'])
-      expect(getCachedAuthParcels('800000602')).toEqual(['sheet1-parcel1'])
     })
 
-    it('logs and returns null without caching when fetchParcelsFromDal throws', async () => {
-      const mockError = new Error('API connection failed')
-      fetchParcelsFromDal.mockRejectedValue(mockError)
+    it('caches per SBI', async () => {
+      fetchParcelsFromDal.mockResolvedValue([])
+
+      await fetchAuthorisedParcelIds(mockRequest)
+      await fetchAuthorisedParcelIds({ auth: { credentials: { sbi: '999999999' } } })
+
+      expect(fetchParcelsFromDal).toHaveBeenCalledTimes(2)
+    })
+
+    it('logs the Consolidated View error and returns null without caching when fetchParcelsFromDal throws', async () => {
+      const mockError = new ConsolidatedViewError({
+        message: 'Failed to fetch business data: Business not found',
+        status: 502,
+        statusCode: 200,
+        sbi: '800000602',
+        source: 'makeConsolidatedViewRequest',
+        reason: 'graphql_errors'
+      })
+      fetchParcelsFromDal
+        .mockRejectedValueOnce(mockError)
+        .mockResolvedValueOnce([{ sheetId: 'sheet1', parcelId: 'parcel1' }])
 
       const result = await fetchAuthorisedParcelIds(mockRequest)
 
       expect(result).toBeNull()
-      expect(getCachedAuthParcels('800000602')).toBeNull()
-      expect(debug).toHaveBeenCalledWith(
-        'EXTERNAL_API_ERROR',
+      expect(log).toHaveBeenCalledExactlyOnceWith(
+        mockError.logCode,
+        expect.objectContaining({
+          errorMessage: 'Failed to fetch business data: Business not found',
+          statusCode: 200,
+          sbi: '800000602'
+        }),
+        mockRequest
+      )
+
+      expect(await fetchAuthorisedParcelIds(mockRequest)).toEqual(['sheet1-parcel1'])
+      expect(fetchParcelsFromDal).toHaveBeenCalledTimes(2)
+    })
+
+    it('logs unexpected errors with context and returns null without caching', async () => {
+      const error = new Error('API connection failed')
+      fetchParcelsFromDal
+        .mockRejectedValueOnce(error)
+        .mockResolvedValueOnce([{ sheetId: 'sheet1', parcelId: 'parcel1' }])
+
+      const result = await fetchAuthorisedParcelIds(mockRequest)
+
+      expect(result).toBeNull()
+      expect(log).toHaveBeenCalledExactlyOnceWith(
+        { ...LogCodes.SYSTEM.EXTERNAL_API_ERROR, error },
         {
-          endpoint: 'fetchAuthorisedParcelIds (consolidated view)',
-          errorMessage: 'fetch parcel data for auth check: API connection failed'
+          endpoint: 'fetch authorised parcel ids for sbi 800000602',
+          service: 'consolidated-view',
+          errorMessage: 'API connection failed'
         },
         mockRequest
       )
+
+      expect(await fetchAuthorisedParcelIds(mockRequest)).toEqual(['sheet1-parcel1'])
+      expect(fetchParcelsFromDal).toHaveBeenCalledTimes(2)
     })
   })
 
   describe('clearParcelCache', () => {
-    it('clears all three caches', () => {
-      setCachedParcel('SD5649-9215', { actions: [] })
-      setCachedSbiParcels('800000602', [])
-      setCachedAuthParcels('800000602', ['SD5649-9215'])
+    it('reloads grouped actions, flat actions and consent requirements after a reset', async () => {
+      const keys = ['SD5649-9215:CMOR1', 'flat:SD5649-9215:CMOR1', 'consents:SD5649-9215:']
+      const load = vi.fn().mockResolvedValue({ actions: ['original'] })
 
-      clearParcelCache()
+      for (const key of keys) {
+        await cachedParcelActions(SBI, key, load)
+      }
+      expect(load).toHaveBeenCalledTimes(3)
 
-      expect(getCachedParcel('SD5649-9215')).toBeNull()
-      expect(getCachedSbiParcels('800000602')).toBeNull()
-      expect(getCachedAuthParcels('800000602')).toBeNull()
+      await clearParcelCache(SBI)
+      load.mockResolvedValue({ actions: ['updated'] })
+
+      for (const key of keys) {
+        expect(await cachedParcelActions(SBI, key, load)).toEqual({ actions: ['updated'] })
+      }
+      expect(load).toHaveBeenCalledTimes(6)
+    })
+
+    it('keeps actions for other SBIs cached, including the same parcel', async () => {
+      const key = 'flat:SD5649-9215:CMOR1'
+      const load = vi.fn().mockResolvedValue({ actions: [] })
+
+      await cachedParcelActions(SBI, key, load)
+      await cachedParcelActions('999999999', key, load)
+      expect(load).toHaveBeenCalledTimes(2)
+
+      await clearParcelCache(SBI)
+      await cachedParcelActions(SBI, key, load)
+      await cachedParcelActions('999999999', key, load)
+
+      expect(load).toHaveBeenCalledTimes(3)
+    })
+
+    it('does not reuse an action load that finishes after a reset', async () => {
+      const started = Promise.withResolvers()
+      const pending = Promise.withResolvers()
+      const key = 'flat:SD5649-9215:CMOR1'
+      const originalLoad = cachedParcelActions(SBI, key, () => {
+        started.resolve()
+        return pending.promise
+      })
+      await started.promise
+
+      await clearParcelCache(SBI)
+      const load = vi.fn().mockResolvedValue({ actions: ['updated'] })
+      expect(await cachedParcelActions(SBI, key, load)).toEqual({ actions: ['updated'] })
+
+      pending.resolve({ actions: ['original'] })
+      await originalLoad
+
+      expect(await cachedParcelActions(SBI, key, load)).toEqual({ actions: ['updated'] })
+      expect(load).toHaveBeenCalledTimes(1)
+    })
+
+    it("drops the SBI's parcel ids and parcels for every fields combination", async () => {
+      fetchParcelsFromDal.mockResolvedValue([])
+      const load = vi.fn().mockResolvedValue([])
+      const sizeKey = sbiParcelsKey(SBI, ['size'])
+      const actionsKey = sbiParcelsKey(SBI, ['size', 'actions'])
+
+      await fetchAuthorisedParcelIds({ auth: { credentials: { sbi: SBI } } })
+      await cachedSbiParcels(sizeKey, load)
+      await cachedSbiParcels(actionsKey, load)
+
+      await clearParcelCache(SBI)
+
+      await fetchAuthorisedParcelIds({ auth: { credentials: { sbi: SBI } } })
+      await cachedSbiParcels(sizeKey, load)
+      await cachedSbiParcels(actionsKey, load)
+
+      expect(fetchParcelsFromDal).toHaveBeenCalledTimes(2)
+      expect(load).toHaveBeenCalledTimes(4)
+    })
+
+    it("leaves other SBIs' entries cached", async () => {
+      const load = vi.fn().mockResolvedValue([])
+      const otherKey = sbiParcelsKey('999999999', ['size'])
+
+      await cachedSbiParcels(otherKey, load)
+      await clearParcelCache(SBI)
+      await cachedSbiParcels(otherKey, load)
+
+      expect(load).toHaveBeenCalledTimes(1)
     })
   })
 
-  describe('eviction at capacity', () => {
-    it('drops the oldest entry when full', () => {
-      vi.useFakeTimers()
+  describe('before the plugin is registered', () => {
+    it('throws rather than silently skipping the cache', async () => {
+      vi.resetModules()
+      const fresh = await import('./parcel-cache.js')
 
-      for (let i = 0; i < 500; i++) {
-        setCachedParcel(`key-${i}`, `value-${i}`)
-      }
-
-      setCachedParcel('key-500', 'value-500')
-
-      expect(getCachedParcel('key-0')).toBeNull()
-      expect(getCachedParcel('key-500')).toBe('value-500')
-    })
-
-    it('prefers evicting an expired entry over the oldest', () => {
-      vi.useFakeTimers()
-
-      for (let i = 0; i < 500; i++) {
-        setCachedParcel(`key-${i}`, `value-${i}`)
-      }
-
-      vi.advanceTimersByTime(TTL + 1)
-
-      setCachedParcel('key-500', 'value-500')
-
-      expect(getCachedParcel('key-500')).toBe('value-500')
+      expect(() => fresh.cachedSbiParcels('key', vi.fn())).toThrow(
+        'Cached method landGrants.sbiParcels is not registered'
+      )
     })
   })
 })
