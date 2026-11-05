@@ -64,7 +64,10 @@ describe('location map adapter', () => {
   })
 
   afterEach(() => {
+    window.dispatchEvent(new window.Event('pagehide'))
     document.body.innerHTML = ''
+    vi.unstubAllGlobals()
+    vi.useRealTimers()
   })
 
   test.each(CASES)('centres $type on a saved answer and retains the native index', ({ type, values }) => {
@@ -77,6 +80,7 @@ describe('location map adapter', () => {
     )
     expect(field.querySelector('.app-location-field-inputs').nextElementSibling.id).toBe('map_3')
     expect([...field.querySelectorAll('input')].map((input) => input.value)).toEqual(values)
+    expect(field.querySelector('.app-approximate-location')).toBeNull()
   })
 
   test.each([
@@ -187,6 +191,66 @@ describe('location map adapter', () => {
       expect.objectContaining({ label: 'How to use the map', desktop: expect.objectContaining({ open: true }) })
     )
     expect(interactPlugin.enable).toHaveBeenCalledTimes(1)
+  })
+
+  test.each(CASES)('looks up a saved $type answer when approximate locations are enabled', async ({ type, values }) => {
+    vi.useFakeTimers()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ label: 'London, England, UK' }) })
+    )
+    const field = addField(type, values)
+    processLocation(CONFIG, field, 0, { showApproximateLocation: true })
+    handlers.get(map.EVENTS.mapReady)({ map: {} })
+    await vi.advanceTimersByTimeAsync(300)
+    expect(field.querySelector('.app-approximate-location').textContent).toBe(
+      'Approximate location: London, England, UK'
+    )
+    expect([...field.querySelectorAll('input')].map((input) => input.value)).toEqual(values)
+  })
+
+  test.each(CASES)('does not label a saved $type answer until the map is ready', async ({ type, values }) => {
+    vi.useFakeTimers()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ label: 'London, England, UK' }) })
+    )
+    const field = addField(type, values)
+    processLocation(CONFIG, field, 0, { showApproximateLocation: true })
+    await vi.advanceTimersByTimeAsync(300)
+    expect(fetch).not.toHaveBeenCalled()
+    expect(field.querySelector('.app-approximate-location').textContent).toBe('')
+  })
+
+  test.each(CASES)('refreshes the $type label for coordinate edits and marker placement', async ({ type, values }) => {
+    vi.useFakeTimers()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ label: 'London, England, UK' }) })
+    )
+    const field = addField(
+      type,
+      values.map(() => '')
+    )
+    processLocation(CONFIG, field, 0, { showApproximateLocation: true })
+    handlers.get(map.EVENTS.mapReady)({ map: {} })
+    await vi.advanceTimersByTimeAsync(300)
+    expect(fetch).not.toHaveBeenCalled()
+    const inputs = [...field.querySelectorAll('input')]
+    inputs.forEach((input, index) => {
+      input.value = values[index]
+    })
+    inputs[0].dispatchEvent(new window.Event('change'))
+    await vi.advanceTimersByTimeAsync(300)
+    expect(fetch).toHaveBeenCalledTimes(1)
+    handlers.get(map.EVENTS.interactMarkerChange)({ coords: CENTER })
+    await vi.advanceTimersByTimeAsync(300)
+    expect(fetch).toHaveBeenCalledTimes(2)
+    expect(field.querySelector('.app-approximate-location').textContent).toContain('London')
+    inputs[0].value = ''
+    inputs[0].dispatchEvent(new window.Event('change'))
+    expect(field.querySelector('.app-approximate-location').textContent).toBe('')
+    expect(instance.on.mock.calls.map(([event]) => event)).toEqual(['map:ready', 'interact:markerchange'])
   })
 
   test('skips unsupported fields and missing input containers', () => {

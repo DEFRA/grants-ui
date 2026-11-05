@@ -1,5 +1,6 @@
 import { map as mapHelpers } from '@defra/forms-engine-plugin/shared.js'
 import { isValidEastingNorthing } from './map-coordinate-utils.js'
+import { createApproximateLocation } from './approximate-location.js'
 
 const ANSWER_VIEW_ZOOM = '16'
 const LAT_LONG_PRECISION = 7
@@ -90,7 +91,12 @@ function addHelpPanel(map) {
 }
 
 /** Initialise and bind a location field using the forms engine's public map helpers. */
-export function processLocation(config, location, index, { hideMapHelpPanel = true } = {}) {
+export function processLocation(
+  config,
+  location,
+  index,
+  { hideMapHelpPanel = true, showApproximateLocation = false, approximateLocationPrefix = '' } = {}
+) {
   if (!(location instanceof window.HTMLDivElement)) {
     return
   }
@@ -114,13 +120,20 @@ export function processLocation(config, location, index, { hideMapHelpPanel = tr
   container.id = `map_${index}`
   container.className = 'map-container'
   locationInputs.after(container)
+  const updateApproximateLocation = showApproximateLocation
+    ? createApproximateLocation(container, approximateLocationPrefix)
+    : undefined
   const { map, interactPlugin } = mapHelpers.createMap(container.id, initConfig, config)
   map.on(mapHelpers.EVENTS.mapReady, ({ map: provider }) => {
+    // Prime only once the map is ready, so the label always has the change listeners that keep it current.
+    updateApproximateLocation?.(point)
     map.on(mapHelpers.EVENTS.interactMarkerChange, ({ coords: [long, lat] }) => {
       type.write(inputs, { lat, long })
+      updateApproximateLocation?.({ lat, long })
     })
     const updateMap = () => {
       const updatedPoint = type.read(inputs)
+      updateApproximateLocation?.(updatedPoint)
       if (updatedPoint) {
         mapHelpers.centerMap(map, provider, [updatedPoint.long, updatedPoint.lat])
       }

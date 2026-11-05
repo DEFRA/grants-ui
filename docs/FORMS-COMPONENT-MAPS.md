@@ -1,6 +1,6 @@
 # Forms component maps
 
-Grants UI initialises the forms engine's `OsGridRefField`, `EastingNorthingField`, `LatLongField` and `GeospatialField` maps on any form page. Each component's `options` controls postcode centring and hiding the help panel. Both are enabled by default; no page-specific route or controller is needed.
+Grants UI initialises the forms engine's `OsGridRefField`, `EastingNorthingField`, `LatLongField` and `GeospatialField` maps on any form page. Each component's `options` controls postcode centring and hiding the help panel. Both are enabled by default; no page-specific route or controller is needed. Point-location components can also opt in to an approximate location label.
 
 ```yaml
 components:
@@ -12,7 +12,7 @@ components:
       zoomToPostcode: false  # Use the UK overview instead of the saved postcode
 ```
 
-Use YAML booleans, not quoted strings. Omit an option (or set it to `true`) to enable that behaviour. Settings apply only to that component, including when multiple maps share a page and when validation errors are rendered. The page's `config` object is not used for these options.
+Use YAML booleans, not quoted strings. Omit `hideMapHelpPanel` or `zoomToPostcode` (or set it to `true`) to enable that behaviour. Settings apply only to that component, including when multiple maps share a page and when validation errors are rendered. The page's `config` object is not used for these options.
 
 `zoomToPostcode` replaces `zoomToCity`. Update any existing form definitions that explicitly use the old option; it is no longer read.
 
@@ -34,10 +34,35 @@ For `GeospatialField`, the forms engine creates the help panel internally withou
 
 Implementation lives in `src/client/javascripts/component-maps.js`, `src/client/javascripts/location-map.js`, the `componentMapOptions` Nunjucks global and the shared `layouts/page.njk` template. The integration uses the engine's public `map` helpers and `geospatialMap.processGeospatial`, with a local `processLocation` adapter that accepts the per-component options. Each helper copies the component's starting view synchronously; Grants UI then restores the shared default. Native map indices and form-submit protection are retained. Verify these integration points and the geospatial help panel DOM when upgrading the forms engine or interactive map dependencies.
 
+## Approximate location
+
+Set `options.showApproximateLocation: true` to display a label below an `EastingNorthingField`, `LatLongField` or `OsGridRefField` map:
+
+```yaml
+components:
+  - name: projectLocation
+    title: Project location
+    type: EastingNorthingField
+    options:
+      required: true
+      showApproximateLocation: true
+      approximateLocationPrefix: 'Nearby location:' # Optional; defaults to 'Approximate location:'
+```
+
+This option defaults to `false` and is ignored for `GeospatialField`. The label describes the selected answer, for example “Approximate location: LS8, Leeds, England, UK”. It shows a saved answer once the map is ready, and updates when coordinate inputs change or a marker is placed. If the map does not initialise, no label is shown. Panning, zooming and postcode search alone do not update it. It is display-only and is not persisted or submitted to GAS.
+
+`options.approximateLocationPrefix` configures the prefix independently for each component. Omitted, blank or non-string values use “Approximate location:”. Include any punctuation in the configured text; a space separates it from the location. The prefix renders as plain text inside a semantic `<strong>` element, and the message uses `govuk-!-margin-top-1` spacing.
+
+The browser converts the selected point to British National Grid coordinates and calls `/api/map/approximate-location?easting=…&northing=…`. This generic endpoint supports journeys without sign-in, validates the coordinates and calls [OS Names nearest](https://docs.os.uk/os-apis/accessing-os-apis/os-names-api/technical-specification/nearest) using the existing `FORMS_MAPS_API_KEY` on the server. No additional credentials or forms engine package changes are needed.
+
+The nearest feature's postcode district, populated place and country supply the label, with missing parts omitted and a UK suffix. Postcode records without a postcode district use the outward code from their postcode. If no populated place is present, the district/borough or county/unitary authority is used. This is an approximate description of a nearby feature, not a verified address or point-in-boundary lookup. The search radius is 1 km; rural locations can have no match.
+
+Updates are debounced by 300 ms. Each change clears the previous label, cancels pending requests and ignores late responses. The OS request times out after two seconds, and the browser request after three seconds. Empty or invalid answers, missing matches and lookup failures leave the label empty without interrupting the map or form submission. Upstream failures are logged once on the server; the endpoint returns 503 for lookup failures and 200 with a null label for no match. Responses use `Cache-Control: no-store`. The label renders as text in a polite live region for assistive technology.
+
 ## Dependency compatibility tests
 
 Grants UI retains its own `@defra/interactive-map` dependency for the land parcel map. The forms engine can resolve a different version. Compatibility checks exercise the installed combination without forcing either map to use the other's version.
 
-`src/client/javascripts/location-map-compatibility.test.js` renders the installed engine's location templates and uses its real coordinate conversions and `centerMap` helper. It checks all three location types, saved answers taking precedence over the postcode, independent postcode and UK starting views, input changes, marker events, zero longitude, blank inputs and both help-panel settings. Map creation is replaced with a controlled event fixture; map readiness and marker placement are simulated, following the acceptance suite's approach of supplying map events instead of clicking a rendered map. These checks require no WebGL, SwiftShader or live OS API credentials.
+`src/client/javascripts/location-map-compatibility.test.js` renders the installed engine's location templates and uses its real coordinate conversions and `centerMap` helper. It checks all three location types, saved answers taking precedence over the postcode, independent postcode and UK starting views, input changes, marker events, approximate location labels, zero longitude, blank inputs and both help-panel settings. Map creation is replaced with a controlled event fixture; map readiness and marker placement are simulated, following the acceptance suite's approach of supplying map events instead of clicking a rendered map. These checks require no WebGL, SwiftShader or live OS API credentials.
 
 The compatibility checks run in the normal unit suite, including dependency updates. Run them with `npx vitest run src/client/javascripts/location-map-compatibility.test.js --coverage.enabled=false`. The acceptance suite continues to test land parcel selection through synthetic `parcel-map:ready` and `parcel-map:selection` events. Map rendering, plugin UI and canvas interactions are not covered by these checks.
