@@ -20,6 +20,23 @@ Feature: Reusable Components
         And should see heading "Check your details"
         And the page is analyzed for accessibility
         And the user should see a notification banner
+        And the user should be able to check the following details
+            | QUESTION                                | ANSWER                         |
+            | Applicant name                          | Dr Elsie T Test-Oakhurst       |
+            | Organisation name                       | Test Kestrel Moor Farm         |
+            | Single Business Identifier (SBI) number | 800000013                      |
+            | Business reference                      | 7000000013                     |
+            | Organisation email                      | contact+800000013@example.test |
+            | Mobile phone number                     | 07700900513                    |
+            | Landline phone number                   | 01632960513                    |
+            | Organisation address                    | Test Kestrel Moor Farm House   |
+            |                                         | Test Park                      |
+            |                                         | Mockford                       |
+            |                                         | ZZ13 2ZZ                       |
+            | VAT registration number                 | GB800000013                    |
+            | Legal Status                            | Private Ltd Company            |
+            | Company Registration Number             | Not entered                    |
+            | CPH number                              | 99/902/0013                    |
         When the user selects "No"
         And continues
 
