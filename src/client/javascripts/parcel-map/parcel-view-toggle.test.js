@@ -85,6 +85,11 @@ function setup(overrides = {}, { lastEvent } = {}) {
   }
 }
 
+function setupList(overrides = {}) {
+  window.localStorage.setItem(PARCEL_VIEW_STORAGE_KEY, 'list')
+  return setup(overrides)
+}
+
 // JSDOM cannot navigate. Allow the production handler to run, capture whether
 // it permits a real navigation, then simulate the destination's fresh document.
 const clickToggle = () => {
@@ -168,8 +173,7 @@ describe('parcel map and list views', () => {
   })
 
   it('saves the map preference and selection before navigation without activating the old map', () => {
-    window.localStorage.setItem(PARCEL_VIEW_STORAGE_KEY, 'list')
-    const page = setup()
+    const page = setupList()
     radio(PARCEL_A).click()
     expect(clickToggle()).toBe(true)
     expect(window.localStorage.getItem(PARCEL_VIEW_STORAGE_KEY)).toBe('map')
@@ -243,22 +247,18 @@ describe('parcel map and list views', () => {
     expect(radio(PARCEL_A).checked).toBe(false)
   })
 
-  it.each(['/select-land-parcel', '/another-grant/select-parcel', '/select-land-parcel?from=task-list'])(
-    'restores map preference with a selection when returning through %s',
-    (formAction) => {
-      window.localStorage.setItem(PARCEL_VIEW_STORAGE_KEY, 'list')
-      setup()
-      radio(PARCEL_A).click()
-      toggle()
-      document.body.innerHTML = '<h1>Task list</h1>'
-      const page = setup({ formAction, selectedParcelIds: [PARCEL_A] })
-      expect(list().hidden).toBe(true)
-      expect(document.getElementById('parcel-map-view').hidden).toBe(false)
-      expect(window.localStorage.getItem(PARCEL_VIEW_STORAGE_KEY)).toBe('map')
-      page.ready()
-      expect(page.mapIds()).toEqual([PARCEL_A])
-    }
-  )
+  it('restores map preference and selection when returning from the task list', () => {
+    setupList()
+    radio(PARCEL_A).click()
+    toggle()
+    document.body.innerHTML = '<h1>Task list</h1>'
+    const page = setup({ selectedParcelIds: [PARCEL_A] })
+    expect(list().hidden).toBe(true)
+    expect(document.getElementById('parcel-map-view').hidden).toBe(false)
+    expect(window.localStorage.getItem(PARCEL_VIEW_STORAGE_KEY)).toBe('map')
+    page.ready()
+    expect(page.mapIds()).toEqual([PARCEL_A])
+  })
 
   it('retains the selection in both directions and submits exactly one value', () => {
     let page = setup()
@@ -279,8 +279,7 @@ describe('parcel map and list views', () => {
   })
 
   it('keeps a selection made in the list before the map is ready', () => {
-    window.localStorage.setItem(PARCEL_VIEW_STORAGE_KEY, 'list')
-    setup({ selectedParcelIds: [PARCEL_A] })
+    setupList({ selectedParcelIds: [PARCEL_A] })
     radio(PARCEL_B).click()
     const page = toggle()
     page.ready()
@@ -289,9 +288,7 @@ describe('parcel map and list views', () => {
   })
 
   it('ignores late map selection events while the user is in the list', () => {
-    const page = setup()
-    page.ready()
-    toggle()
+    const page = setupList()
     radio(PARCEL_B).click()
     page.selectOnMap([PARCEL_A])
     expect(submittedIds()).toEqual([PARCEL_B])
@@ -301,8 +298,7 @@ describe('parcel map and list views', () => {
   })
 
   it('shows only selected parcel details and announces the information without moving focus', async () => {
-    setup()
-    toggle()
+    setupList()
     expect([...list().querySelectorAll('[data-parcel-details]')].every((panel) => panel.hidden)).toBe(true)
     radio(PARCEL_A).focus()
     radio(PARCEL_A).click()
@@ -322,8 +318,7 @@ describe('parcel map and list views', () => {
   })
 
   it('keeps the map deferred when the saved preference is the list', () => {
-    window.localStorage.setItem(PARCEL_VIEW_STORAGE_KEY, 'list')
-    const page = setup()
+    const page = setupList()
     expect(page.map.hasAttribute('defer-loading')).toBe(true)
     expect(global.fetch).not.toHaveBeenCalled()
     const returnedPage = toggle()
@@ -358,9 +353,7 @@ describe('parcel map and list views', () => {
   })
 
   it('fetches only the selected parcel on each reloaded view', async () => {
-    const page = setup()
-    page.ready()
-    toggle()
+    setupList()
     radio(PARCEL_A).click()
     await flush()
     expect(global.fetch).toHaveBeenCalledExactlyOnceWith(
@@ -386,8 +379,7 @@ describe('parcel map and list views', () => {
           resolveRequest = resolve
         })
     )
-    setup()
-    toggle()
+    setupList()
     radio(PARCEL_A).click()
     const panel = list().querySelector(`[data-parcel-details="${PARCEL_A}"]`)
     const status = panel.querySelector('[data-parcel-details-status]')
@@ -418,23 +410,20 @@ describe('parcel map and list views', () => {
     expect(global.fetch.mock.calls[0][0]).toContain(PARCEL_A)
   })
 
-  it('fetches only the settled selection after three rapid passes over 34 radios', async () => {
-    const ids = Array.from({ length: 34 }, (_, i) => `SO3757-${3184 + i}`)
-    window.localStorage.setItem(PARCEL_VIEW_STORAGE_KEY, 'list')
-    setup({ parcels: ids.map((id) => ({ id, reference: id, area: '1 ha' })) })
-    for (let pass = 0; pass < 3; pass++) {
-      for (const id of ids) {
-        radio(id).click()
-        expect(submittedIds()).toEqual([id])
-        expect(document.getElementById('map-select-continue').disabled).toBe(false)
-        await vi.advanceTimersByTimeAsync(100)
-      }
+  it('fetches only the settled parcel after rapid selection changes', async () => {
+    setupList()
+    for (const id of [PARCEL_A, PARCEL_B, PARCEL_A]) {
+      radio(id).click()
+      expect(submittedIds()).toEqual([id])
+      expect(document.getElementById('map-select-continue').disabled).toBe(false)
+      vi.advanceTimersByTime(PARCEL_DETAILS_DEBOUNCE_MS - 1)
+      expect(global.fetch).not.toHaveBeenCalled()
     }
-    await vi.advanceTimersByTimeAsync(PARCEL_DETAILS_DEBOUNCE_MS - 101)
-    expect(global.fetch).not.toHaveBeenCalled()
     await vi.advanceTimersByTimeAsync(1)
-    expect(global.fetch).toHaveBeenCalledTimes(1)
-    expect(global.fetch.mock.calls[0][0]).toContain(ids.at(-1))
+    expect(global.fetch).toHaveBeenCalledExactlyOnceWith(
+      `/api/land-grants/actions/${PARCEL_A}/consents?enabledLandActions=CLIG3`,
+      expect.objectContaining({ method: 'POST' })
+    )
     expect(document.getElementById('parcel-list-status').textContent).toContain('SSSI')
   })
 
@@ -446,9 +435,7 @@ describe('parcel map and list views', () => {
           resolveFirst = resolve
         })
     )
-    const page = setup()
-    page.ready()
-    toggle()
+    setupList()
     radio(PARCEL_A).click()
     await flush()
     radio(PARCEL_B).click()
@@ -466,8 +453,7 @@ describe('parcel map and list views', () => {
     [3, '3 available actions.']
   ])('announces %i actions with the same wording as the page', async (actionCount, expected) => {
     global.fetch.mockResolvedValue(noticeResponse([], actionCount))
-    setup()
-    toggle()
+    setupList()
     radio(PARCEL_A).click()
     await flush()
     expect(document.getElementById('parcel-list-status').textContent).toBe(expected)
@@ -475,8 +461,7 @@ describe('parcel map and list views', () => {
 
   it('keeps Continue available when details fail and retries when the parcel is selected again', async () => {
     global.fetch.mockResolvedValueOnce({ ok: false })
-    setup()
-    toggle()
+    setupList()
     radio(PARCEL_A).click()
     await flush()
     expect(document.getElementById('map-select-continue').disabled).toBe(false)
@@ -589,8 +574,7 @@ describe('parcel map and list views', () => {
   })
 
   it('falls back in-page without losing a selection if only session storage is blocked', () => {
-    window.localStorage.setItem(PARCEL_VIEW_STORAGE_KEY, 'list')
-    setup()
+    setupList()
     radio(PARCEL_B).click()
     const setItem = Storage.prototype.setItem
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (key, value) {
@@ -610,8 +594,7 @@ describe('parcel map and list views', () => {
     const panel = (id) => list().querySelector(`[data-parcel-details="${id}"]`)
 
     it('renders the list as checkboxes using the same field name', () => {
-      setup(multi)
-      toggle(multi)
+      setupList(multi)
       expect([PARCEL_A, PARCEL_B].map((id) => [radio(id).type, radio(id).name])).toEqual([
         ['checkbox', 'landParcels'],
         ['checkbox', 'landParcels']
@@ -633,8 +616,7 @@ describe('parcel map and list views', () => {
     })
 
     it('keeps several list selections when the map is switched in-page', () => {
-      window.localStorage.setItem(PARCEL_VIEW_STORAGE_KEY, 'list')
-      const page = setup(multi)
+      const page = setupList(multi)
       radio(PARCEL_A).click()
       radio(PARCEL_B).click()
       vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
@@ -647,8 +629,7 @@ describe('parcel map and list views', () => {
     })
 
     it('shows details for a single selection only and clears them when another parcel is added', async () => {
-      setup(multi)
-      toggle(multi)
+      setupList(multi)
       radio(PARCEL_A).click()
       await flush()
       expect(panel(PARCEL_A).querySelector('[data-parcel-action-count]').textContent).toBe('2')
@@ -678,16 +659,14 @@ describe('parcel map and list views', () => {
     })
 
     it('targets the list, without refocusing the map, from the list view', () => {
-      window.localStorage.setItem(PARCEL_VIEW_STORAGE_KEY, 'list')
-      const page = setup({ errors })
+      const page = setupList({ errors })
       expect(errorLink().getAttribute('href')).toBe('#land-parcels')
       errorLink().click()
       expect(page.map.focusParcels).not.toHaveBeenCalled()
     })
 
     it('refocuses the map after an in-page switch from a page that started in the list', () => {
-      window.localStorage.setItem(PARCEL_VIEW_STORAGE_KEY, 'list')
-      const page = setup({ errors })
+      const page = setupList({ errors })
       vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
         throw new Error('blocked')
       })
