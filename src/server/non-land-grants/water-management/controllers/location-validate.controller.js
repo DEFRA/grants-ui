@@ -1,4 +1,3 @@
-import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { invokeGrantScoringGetAction } from '~/src/server/common/services/grant-scoring/grant-scoring.service.js'
 import { mergeAdditionalAnswers } from '~/src/server/common/helpers/state/additional-answers-helper.js'
