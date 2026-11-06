@@ -10,6 +10,12 @@ import {
   LABEL_CLUSTER_COLOR,
   LABEL_CLUSTER_MAX_ZOOM,
   LABEL_CLUSTER_RADIUS,
+  LABEL_CLUSTER_MEDIUM_MIN_COUNT,
+  LABEL_CLUSTER_MEDIUM_RADIUS,
+  LABEL_CLUSTER_LARGE_MIN_COUNT,
+  LABEL_CLUSTER_LARGE_RADIUS,
+  PARCEL_DETAIL_ZOOM,
+  CLUSTER_EXPAND_MAX_ZOOM,
   LABEL_CLUSTER_RADIUS_PX,
   LABEL_CLUSTER_TEXT_COLOR,
   LABEL_HALO_COLOR,
@@ -72,6 +78,7 @@ export function buildParcelLayers(colorExpr) {
     fill: {
       id: LAYER_ID_FILL,
       type: 'fill',
+      minzoom: PARCEL_DETAIL_ZOOM,
       ...src,
       paint: {
         'fill-color': colorExpr,
@@ -84,7 +91,9 @@ export function buildParcelLayers(colorExpr) {
       ...src,
       paint: {
         'line-color': colorExpr,
-        'line-width': LAYER_LINE_WIDTH
+        'line-width': LAYER_LINE_WIDTH,
+        // Keep the vector source loading at overview zoom for parcel badge points.
+        'line-opacity': ['step', ['zoom'], 0, PARCEL_DETAIL_ZOOM, 1]
       }
     }
   }
@@ -109,6 +118,7 @@ export function buildParcelLabelLayer() {
   const labelFont = 'Arial Regular'
   return /** @type {import('maplibre-gl').SymbolLayerSpecification} */ ({
     id: LAYER_ID_LABEL,
+    minzoom: PARCEL_DETAIL_ZOOM,
     type: 'symbol',
     source: SOURCE_ID_PARCEL_LABELS,
     filter: /** @type {import('maplibre-gl').FilterSpecification} */ (['!', IS_CLUSTER_FILTER]),
@@ -128,12 +138,11 @@ export function buildParcelLabelLayer() {
 
 /**
  * The clustered-parcels badge: a filled circle plus its count text, shown
- * below LABEL_CLUSTER_MAX_ZOOM in place of individual labels for parcels too
- * close together on screen.
+ * below PARCEL_DETAIL_ZOOM. Unclustered points get a count of 1.
  * @returns {{ circle: import('maplibre-gl').CircleLayerSpecification, count: import('maplibre-gl').SymbolLayerSpecification }}
  */
 export function buildParcelLabelClusterLayers() {
-  const src = { source: SOURCE_ID_PARCEL_LABELS, filter: IS_CLUSTER_FILTER }
+  const src = { source: SOURCE_ID_PARCEL_LABELS, maxzoom: PARCEL_DETAIL_ZOOM }
   return {
     circle: /** @type {import('maplibre-gl').CircleLayerSpecification} */ ({
       id: LAYER_ID_LABEL_CLUSTER,
@@ -141,7 +150,15 @@ export function buildParcelLabelClusterLayers() {
       ...src,
       paint: {
         'circle-color': LABEL_CLUSTER_COLOR,
-        'circle-radius': LABEL_CLUSTER_RADIUS,
+        'circle-radius': [
+          'step',
+          ['coalesce', ['get', 'point_count'], 1],
+          LABEL_CLUSTER_RADIUS,
+          LABEL_CLUSTER_MEDIUM_MIN_COUNT,
+          LABEL_CLUSTER_MEDIUM_RADIUS,
+          LABEL_CLUSTER_LARGE_MIN_COUNT,
+          LABEL_CLUSTER_LARGE_RADIUS
+        ],
         'circle-stroke-width': 2,
         'circle-stroke-color': LABEL_HALO_COLOR
       }
@@ -151,7 +168,7 @@ export function buildParcelLabelClusterLayers() {
       type: 'symbol',
       ...src,
       layout: {
-        'text-field': ['get', 'point_count_abbreviated'],
+        'text-field': ['to-string', ['coalesce', ['get', 'point_count'], 1]],
         'text-font': ['Arial Regular'],
         'text-size': LAYER_TEXT_SIZE,
         'text-allow-overlap': true,
@@ -192,6 +209,9 @@ export function withParcelMapProvider(descriptor) {
        * @param {{ radius?: number }} [options]
        */
       getFeaturesAtPoint(point, options) {
+        if (this.map && this.map.getZoom() < PARCEL_DETAIL_ZOOM) {
+          return []
+        }
         if (
           this.map?.getLayer(LAYER_ID_LABEL_CLUSTER) &&
           this.map.queryRenderedFeatures([point.x, point.y], { layers: [LAYER_ID_LABEL_CLUSTER] }).length > 0
@@ -314,21 +334,41 @@ export function buildSkeleton() {
   return buildOverlay(MSG_LOADING, { role: 'status', ariaLabel: MSG_LOADING })
 }
 
+// Keep single-group holdings at parcel detail when resetting the map.
+const singleGroupMaps = new WeakSet()
+
+/** @param {import('maplibre-gl').Map} ml @param {BBox | null} bbox */
+export function showSingleParcelGroup(ml, bbox) {
+  singleGroupMaps.add(ml)
+  fitToParcels(ml, bbox)
+}
+
 /**
- * Fits the viewport to a bounding box.
+ * Fits parcel bounds, defaulting to the holding's overview or single-group detail view.
  * @param {import('maplibre-gl').Map | null} ml
  * @param {BBox | null} bbox
- * @param {{ animate?: boolean, maxZoom?: number }} [options]  animate defaults to false (used for the
+ * @param {{ animate?: boolean, maxZoom?: number, minZoom?: number }} [options]  animate defaults to false (used for the
  *   instant initial fit); pass true for a user-triggered move (e.g. "View all land parcels")
  */
-export function fitToParcels(ml, bbox, { animate = false, maxZoom } = {}) {
+export function fitToParcels(ml, bbox, { animate = false, maxZoom, minZoom } = {}) {
   if (!ml || !bbox) {
     return
+  }
+  if (maxZoom === undefined) {
+    maxZoom = singleGroupMaps.has(ml) ? CLUSTER_EXPAND_MAX_ZOOM : LABEL_CLUSTER_MAX_ZOOM
+    minZoom = singleGroupMaps.has(ml) ? PARCEL_DETAIL_ZOOM : minZoom
+  }
+  if (minZoom !== undefined) {
+    const camera = ml.cameraForBounds(boundsToLngLatPairs(bbox), { padding: FIT_BOUNDS_PADDING, maxZoom })
+    if (camera) {
+      ml.easeTo({ ...camera, zoom: Math.max(minZoom, camera.zoom ?? minZoom), animate })
+      return
+    }
   }
   ml.fitBounds(boundsToLngLatPairs(bbox), {
     padding: FIT_BOUNDS_PADDING,
     animate,
-    ...(maxZoom === undefined ? {} : { maxZoom })
+    maxZoom
   })
 }
 

@@ -81,6 +81,12 @@ http://localhost:3000/example-grant-with-map/start, then continue to `/select-la
 - **Continue** is clickable regardless of selection; submitting with nothing selected re-renders the page with an inline error (see `MapSelectPageController` below). On a successful submission the next page receives `?parcelId=`.
 - Network tab: `/api/map/parcels` returns `200`, `/api/map/os-tiles/{z}/{x}/{y}` returns `200` (`image/png`), and `/api/map/parcel-tiles/{z}/{x}/{y}` returns `200` (`application/x-protobuf`).
 
+### Parcel badges
+
+The existing MapLibre GeoJSON clustering groups nearby parcel label points below zoom 11. At overview zoom, unclustered points also show a `1` badge. Badge radii are 14px for 1–4 parcels, 20px for 5–19, and 26px for 20 or more. At zoom 11, badges give way to individual parcel boundaries and references.
+
+The initial view fits the holding at overview zoom. Once all parcel labels have loaded, a holding represented by a single MapLibre cluster opens at parcel detail instead. Badge clicks fit the bounds stored on the member label points and cross the detail threshold. This uses the existing loaded vector tiles and adds no parcel-location requests or grant configuration. Counts retain the existing dependence on the parcels available in loaded tiles.
+
 ### When it doesn't work
 
 | Symptom                                             | Most likely cause                                                                                                           |

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest'
+import { fitToParcels } from './helpers.js'
 import { attachParcelLabels } from './labels.js'
 import { makeMlMap } from './test-helpers.js'
 import { CLUSTER_EXPAND_MAX_ZOOM } from './config.js'
@@ -309,6 +310,29 @@ describe('attachParcelLabels', () => {
       expect(ml.moveLayer).toHaveBeenCalledWith('parcels-label-cluster-count')
     })
 
+    it('limits selection and keyboard highlights to detail zoom without changing other layers', () => {
+      const ml = makeMlMap({
+        getStyle: vi.fn().mockReturnValue({
+          layers: [
+            { id: 'selected-highlight-parcels-fill-line', source: 'parcels' },
+            { id: 'active-highlight-parcels-fill-line', source: 'parcels', maxzoom: 18 },
+            { id: 'active-highlight-other-line', source: 'other' },
+            { id: 'parcels-outline', source: 'parcels' },
+            { id: 'selected-highlight-parcels-fill-fill', source: 'parcels', minzoom: 11 },
+            { id: 'parcels-label-cluster' },
+            { id: 'parcels-label-cluster-count' }
+          ]
+        })
+      })
+      attachParcelLabels({ ml, cleanups: [] })
+      ml._emit('styledata')
+      expect(ml.setLayerZoomRange.mock.calls).toEqual([
+        ['selected-highlight-parcels-fill-line', 11, 24],
+        ['active-highlight-parcels-fill-line', 11, 18]
+      ])
+      expect(ml.moveLayer).not.toHaveBeenCalled()
+    })
+
     it('does nothing when the cluster layers are already last, avoiding a moveLayer -> styledata -> moveLayer loop', () => {
       const getStyle = vi.fn().mockReturnValue({
         layers: [{ id: 'parcels-fill' }, { id: 'parcels-label-cluster' }, { id: 'parcels-label-cluster-count' }]
@@ -328,5 +352,106 @@ describe('attachParcelLabels', () => {
       expect(() => ml._emit('styledata')).not.toThrow()
       expect(ml.moveLayer).not.toHaveBeenCalled()
     })
+  })
+  it.each([1, 5])('opens a complete single cluster of %i parcels at detail zoom, including on reset', (count) => {
+    const fragment = {
+      properties: { id: 'a' },
+      geometry: polygon([
+        [-2.5, 51.4],
+        [-2.4, 51.4],
+        [-2.4, 51.5],
+        [-2.5, 51.5]
+      ])
+    }
+    const ml = makeMlMap({
+      getSource: vi.fn().mockReturnValue({ setData: vi.fn() }),
+      querySourceFeatures: vi
+        .fn()
+        .mockImplementation((source) =>
+          source === 'parcels'
+            ? Array.from({ length: count }, (_, index) => ({ ...fragment, properties: { id: String(index) } }))
+            : [{ properties: count === 1 ? { id: '0' } : { cluster_id: 5, point_count: count } }]
+        ),
+      cameraForBounds: vi.fn().mockReturnValue({ center: [-2.45, 51.45], zoom: 9 })
+    })
+    const bbox = { minLng: -2.5, minLat: 51.4, maxLng: -2.4, maxLat: 51.5 }
+    attachParcelLabels({
+      ml,
+      cleanups: [],
+      store: { parcelIds: Array.from({ length: count }, (_, index) => String(index)), metaIndex: {}, bbox }
+    })
+    ml._emit('idle') // update source
+    ml._emit('idle') // source clustering has settled
+    expect(ml.easeTo).toHaveBeenLastCalledWith({ center: [-2.45, 51.45], zoom: 11, animate: false })
+    fitToParcels(ml, bbox, { animate: true })
+    expect(ml.easeTo).toHaveBeenLastCalledWith({ center: [-2.45, 51.45], zoom: 11, animate: true })
+  })
+
+  it('expands a singleton badge using its parcel bounds, rather than only its label point', () => {
+    const ml = makeMlMap({ cameraForBounds: vi.fn().mockReturnValue({ center: [-2.45, 51.45], zoom: 9 }) })
+    attachParcelLabels({ ml, cleanups: [] })
+    ml._emitLayer('click', 'parcels-label-cluster', {
+      features: [
+        {
+          properties: { id: 'a', minLng: -2.5, minLat: 51.4, maxLng: -2.4, maxLat: 51.5 },
+          geometry: { type: 'Point', coordinates: [-2.45, 51.45] }
+        }
+      ]
+    })
+    return vi.waitFor(() => {
+      expect(ml.cameraForBounds).toHaveBeenCalledWith(
+        [
+          [-2.5, 51.4],
+          [-2.4, 51.5]
+        ],
+        { padding: 40, maxZoom: 14 }
+      )
+      expect(ml.easeTo).toHaveBeenCalledWith({ center: [-2.45, 51.45], zoom: 11, animate: true })
+    })
+  })
+
+  it('waits for all parcels before deciding whether the initial holding has a single cluster', () => {
+    const fragment = {
+      properties: { id: 'a' },
+      geometry: polygon([
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1]
+      ])
+    }
+    const ml = makeMlMap({
+      getSource: vi.fn().mockReturnValue({ setData: vi.fn() }),
+      querySourceFeatures: vi.fn().mockReturnValue([fragment])
+    })
+    attachParcelLabels({ ml, cleanups: [], store: { parcelIds: ['a', 'b'], metaIndex: {}, bbox: null } })
+    ml._emit('idle')
+    ml._emit('idle')
+    expect(ml.fitBounds).not.toHaveBeenCalled()
+    expect(ml.easeTo).not.toHaveBeenCalled()
+  })
+  it('keeps multiple MapLibre groups in the holding overview', () => {
+    const fragments = ['a', 'b'].map((id) => ({
+      properties: { id },
+      geometry: polygon([
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1]
+      ])
+    }))
+    const ml = makeMlMap({
+      getSource: vi.fn().mockReturnValue({ setData: vi.fn() }),
+      querySourceFeatures: vi
+        .fn()
+        .mockImplementation((source) =>
+          source === 'parcels' ? fragments : [{ properties: { id: 'a' } }, { properties: { id: 'b' } }]
+        )
+    })
+    attachParcelLabels({ ml, cleanups: [], store: { parcelIds: ['a', 'b'], metaIndex: {}, bbox: null } })
+    ml._emit('idle')
+    ml._emit('idle')
+    expect(ml.easeTo).not.toHaveBeenCalled()
+    expect(ml.fitBounds).not.toHaveBeenCalled()
   })
 })
