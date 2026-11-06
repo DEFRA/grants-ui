@@ -55,6 +55,43 @@ const params = {
 }
 
 describe('print-submitted-application.html view', () => {
+  it.each([true, false])('renders saved derived answers when the journey has a task list: %s', (hasTaskList) => {
+    const $ = renderPage(
+      buildPrintViewModel({
+        ...params,
+        definition: {
+          sections: [{ id: 'project', title: 'Project details' }],
+          pages: [
+            ...(hasTaskList ? [{ title: 'Tasks', controller: 'TaskListPageController' }] : []),
+            { path: '/score-results', title: 'Score results', section: 'project' },
+            { path: '/total-estimated-cost', title: 'Total estimated cost', section: 'project' },
+            { path: '/summary', title: 'Check answers', controller: 'CheckResponsesPageController' }
+          ],
+          metadata: {
+            pageConfig: {
+              '/summary': {
+                additionalSections: [
+                  { page: '/score-results', items: [{ title: 'Score', stateValue: 'additionalAnswers.totalScore' }] },
+                  {
+                    page: '/total-estimated-cost',
+                    items: [{ title: 'Total estimated cost (£)', stateValue: 'additionalAnswers.totalEstimatedCost' }]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        answers: { additionalAnswers: { totalScore: 0, totalEstimatedCost: 125000 } }
+      })
+    )
+
+    const rows = $('.app-submitted-answers .govuk-summary-list__row')
+    expect(rows).toHaveLength(2)
+    expect(normalise(rows.eq(0).text())).toBe('Score 0')
+    expect(normalise(rows.eq(1).text())).toBe('Total estimated cost (£) 125000')
+    expect($('a').filter((_, link) => $(link).text().includes('Change'))).toHaveLength(0)
+  })
+
   it.each(['Select land and actions', 'Choose parcels and actions'])(
     'renders land and payment cards once under the configured task title %s',
     (taskTitle) => {
