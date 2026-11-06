@@ -82,9 +82,10 @@ const STALE_CONTEXT = {
  * live session cookie surviving into the OIDC sign-out callback).
  * `securityHeaders` adds the production HSTS/frame/sniff options and the CSP
  * plugin so response header sizes match what the SSL sidecar sees.
- * @param {{ authenticated?: boolean, securityHeaders?: boolean }} [opts]
+ * `credentials` overrides the stub `defra-id` credentials (e.g. Bell callback-shaped credentials).
+ * @param {{ authenticated?: boolean, securityHeaders?: boolean, credentials?: Record<string, unknown> }} [opts]
  */
-async function buildServer({ authenticated = true, securityHeaders = false } = {}) {
+async function buildServer({ authenticated = true, securityHeaders = false, credentials = undefined } = {}) {
   const server = Hapi.server(
     securityHeaders
       ? {
@@ -134,7 +135,7 @@ async function buildServer({ authenticated = true, securityHeaders = false } = {
         return h.unauthenticated(new Error('not authenticated'))
       }
       return h.authenticated({
-        credentials: {
+        credentials: credentials ?? {
           contactId: '1100000001',
           crn: 'crn-1',
           sbi: 'sbi-1',
@@ -160,6 +161,15 @@ async function buildServer({ authenticated = true, securityHeaders = false } = {
       request.yar.set('permissions:crn-2:sbi-1', [{ id: 'group-2', level: 'VIEW' }])
       request.yar.set('permissions:crn-1:sbi-2', [])
       request.yar.set('unrelated', 'preserved')
+      return h.response({ ok: true })
+    }
+  })
+  server.route({
+    method: 'GET',
+    path: '/test/seed-legacy-redirect',
+    options: { auth: false },
+    handler: (request, h) => {
+      request.yar.set('redirect', '/legacy-return-path')
       return h.response({ ok: true })
     }
   })
@@ -419,5 +429,118 @@ describe('auth router - GRANT_APPLICATION_CONTEXT clearing', () => {
 
       expect(context).toBeNull()
     })
+  })
+})
+
+describe('auth router - /auth/sign-in-oidc', () => {
+  afterEach(() => vi.clearAllMocks())
+
+  const profile = {
+    contactId: '1100000001',
+    firstName: 'Test',
+    lastName: 'User',
+    currentRelationshipId: 'rel-1',
+    relationships: ['rel-1:106284736:Example Farm Ltd:1:Employee:1'],
+    sessionId: 'session-abc'
+  }
+
+  /**
+   * @param {Record<string, string>} [query]
+   */
+  const bellCredentials = (query = {}) => ({
+    provider: 'defra-id',
+    token: 'stub-token',
+    refreshToken: 'stub-refresh-token',
+    query,
+    profile
+  })
+
+  it('stores a v2 session with the built user credentials', async () => {
+    const server = await buildServer({ credentials: bellCredentials() })
+    try {
+      const response = await server.inject({ url: '/auth/sign-in-oidc?state=xyz' })
+
+      expect(response.statusCode).toBe(302)
+      expect(server.app.cache.set).toHaveBeenCalledWith('session-abc', {
+        ...profile,
+        version: 2,
+        isAuthenticated: true,
+        token: 'stub-token',
+        refreshToken: 'stub-refresh-token',
+        crn: '1100000001',
+        sbi: '106284736',
+        name: 'Test User',
+        organisationName: 'Example Farm Ltd',
+        relationshipId: 'rel-1'
+      })
+    } finally {
+      await server.stop()
+    }
+  })
+
+  it('does not save Defra ID claims outside the allowlist', async () => {
+    const server = await buildServer({
+      credentials: {
+        ...bellCredentials(),
+        profile: { ...profile, roles: ['rel-1:Employee:3'], email: 'test.user@example.com' }
+      }
+    })
+    try {
+      await server.inject({ url: '/auth/sign-in-oidc?state=xyz' })
+
+      const [, sessionData] = vi.mocked(server.app.cache.set).mock.calls[0]
+      expect(sessionData).not.toHaveProperty('roles')
+      expect(sessionData).not.toHaveProperty('email')
+    } finally {
+      await server.stop()
+    }
+  })
+
+  it('redirects to the return URL preserved by Bell', async () => {
+    const server = await buildServer({ credentials: bellCredentials({ redirect: '/farm-payments/start?x=1' }) })
+    try {
+      const response = await server.inject({ url: '/auth/sign-in-oidc?state=xyz' })
+
+      expect(response.statusCode).toBe(302)
+      expect(response.headers.location).toBe('/farm-payments/start?x=1')
+    } finally {
+      await server.stop()
+    }
+  })
+
+  it('falls back to the safe default when the Bell return URL is external', async () => {
+    const server = await buildServer({ credentials: bellCredentials({ redirect: '//evil.test' }) })
+    try {
+      const response = await server.inject({ url: '/auth/sign-in-oidc?state=xyz' })
+
+      expect(response.headers.location).toBe('/home')
+    } finally {
+      await server.stop()
+    }
+  })
+
+  it('falls back to the legacy yar return URL for sign-ins started before deployment', async () => {
+    const server = await buildServer({ credentials: bellCredentials() })
+    try {
+      const seed = await server.inject({ url: '/test/seed-legacy-redirect' })
+      const cookie = seed.headers['set-cookie']?.[0].split(';')[0]
+
+      const response = await server.inject({ url: '/auth/sign-in-oidc?state=xyz', headers: { cookie } })
+
+      expect(response.headers.location).toBe('/legacy-return-path')
+    } finally {
+      await server.stop()
+    }
+  })
+
+  it('redirects to /home when no return URL was provided', async () => {
+    const server = await buildServer({ credentials: bellCredentials() })
+    try {
+      const response = await server.inject({ url: '/auth/sign-in-oidc?state=xyz' })
+
+      expect(response.headers.location).toBe('/home')
+    } finally {
+      await server.stop()
+    }
   })
 })

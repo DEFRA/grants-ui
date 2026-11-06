@@ -58,6 +58,21 @@ describe('LogCodes', () => {
         `Session expired for CRN=${TEST_USER_IDS.MASKED}, session=${TEST_SESSIONS.SESSION_123}`
       ],
       [
+        'SESSION_UPGRADED',
+        'info',
+        {
+          step: 'auth_session_upgraded',
+          userId: TEST_USER_IDS.DEFAULT,
+          sessionId: TEST_SESSIONS.SESSION_123,
+          fromVersion: 'unversioned',
+          toVersion: 2,
+          hasCrn: true,
+          hasSbi: true,
+          hasRelationshipId: true
+        },
+        `Auth session upgraded to current format for CRN=${TEST_USER_IDS.MASKED}, session=${TEST_SESSIONS.SESSION_123} | step=auth_session_upgraded | fromVersion=unversioned | toVersion=2 | hasCrn=true | hasSbi=true | hasRelationshipId=true`
+      ],
+      [
         'UNAUTHORIZED_ACCESS',
         'error',
         { path: TEST_PATHS.ADMIN, userId: TEST_USER_IDS.DEFAULT },
