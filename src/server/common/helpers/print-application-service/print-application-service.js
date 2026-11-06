@@ -2,6 +2,7 @@ import { formatAnswer } from './utils/format-answer.js'
 import { COMPONENT_TYPES, DISPLAY_ONLY_TYPES } from './constants.js'
 import { buildConfirmLandAndActionsViewModel } from '~/src/server/land-grants/view-models/confirm-land-and-actions.view-model.js'
 import { ComponentsRegistry } from '../../../confirmation/services/components.registry.js'
+import { findPageByPath, normalisePagePath, resolveAdditionalAnswerSections } from '../additional-answers.js'
 
 export const COMPOSITE_FIELD_PARTS = {
   [COMPONENT_TYPES.DatePartsField]: ['day', 'month', 'year'],
@@ -14,16 +15,19 @@ export const COMPOSITE_FIELD_PARTS = {
 /**
  * @import { PaymentCalculation } from '~/src/server/land-grants/types/payment.d.js'
  * @import { LandParcels } from '~/src/server/land-grants/types/form-state.d.js'
+ * @import { AdditionalSection } from '../additional-answers.js'
  */
 
 /**
  * @typedef {{ text: string, value: string | number | boolean }} ListItem
  * @typedef {{ type: string, name: string, title: string, shortDescription?: string, list?: string, items?: ListItem[] }} FormComponent
- * @typedef {{ title: string, section?: string, controller?: string, components?: FormComponent[] }} FormPage
+ * @typedef {{ title: string, path?: string, section?: string, controller?: string, components?: FormComponent[] }} FormPage
+ * @typedef {{ label: string, answer: string }} Question
  * @typedef {{
  *   pages?: FormPage[],
  *   sections?: { id?: string, title: string }[],
  *   metadata?: {
+ *     pageConfig?: Record<string, { additionalSections?: AdditionalSection[] }>,
  *     printPage?: {
  *       includeApplicationInTitle?: boolean
  *     }
@@ -102,17 +106,22 @@ function extractQuestions(components, answers) {
  * @param {FormPage[] | undefined} pages
  * @param {Answers} answers
  * @param {boolean} hasParcelCards
+ * @param {Map<string | undefined, Question[]>} [additionalQuestions]
  * @returns {{ title: string, questions: { label: string, answer: string }[] }[]}
  */
-function buildSections(pages, answers, hasParcelCards) {
+function buildSections(pages, answers, hasParcelCards, additionalQuestions = new Map()) {
   return (pages || [])
-    .filter((page) => !hasParcelCards || page.controller !== 'MapSelectPageController')
     .map((page) => ({
       title: page.title,
-      questions: extractQuestions(
-        page.components?.filter((component) => !hasParcelCards || component.name !== 'landParcels'),
-        answers
-      )
+      questions: [
+        ...extractQuestions(
+          hasParcelCards && page.controller === 'MapSelectPageController'
+            ? []
+            : page.components?.filter((component) => !hasParcelCards || component.name !== 'landParcels'),
+          answers
+        ),
+        ...(additionalQuestions.get(normalisePagePath(page.path)) ?? [])
+      ]
     }))
     .filter((section) => section.questions.length > 0)
 }
@@ -123,8 +132,9 @@ function buildSections(pages, answers, hasParcelCards) {
  * @param {Answers} answers
  * @param {boolean} hasParcelCards
  * @param {string | undefined} landAndActionsSectionId
+ * @param {Map<string | undefined, Question[]>} additionalQuestions
  */
-function buildTaskSections(definition, answers, hasParcelCards, landAndActionsSectionId) {
+function buildTaskSections(definition, answers, hasParcelCards, landAndActionsSectionId, additionalQuestions) {
   const titles = new Map((definition.sections || []).map((section) => [section.id, section.title]))
   /** @type {Map<string | undefined, { title: string, questions: { label: string, answer: string }[], showLandAndActions: boolean }>} */
   const groups = new Map()
@@ -133,12 +143,84 @@ function buildTaskSections(definition, answers, hasParcelCards, landAndActionsSe
     const sectionId = page.section && titles.has(page.section) ? page.section : undefined
     const group = groups.get(sectionId) ?? createTaskSection(titles, sectionId, landAndActionsSectionId)
     groups.set(sectionId, group)
-    for (const section of buildSections([page], answers, hasParcelCards)) {
+    for (const section of buildSections([page], answers, hasParcelCards, additionalQuestions)) {
       group.questions.push(...section.questions)
     }
   }
 
   return [...groups.values()].filter((section) => section.questions.length > 0 || section.showLandAndActions)
+}
+
+/**
+ * Checks whether additional answers have a valid owning page and section.
+ * @param {FormDefinition} definition
+ * @param {AdditionalSection} section
+ */
+function hasAdditionalSectionOwner(definition, section) {
+  const ownerPage = section.page && findPageByPath(definition.pages, section.page)
+  if (!ownerPage) {
+    return false
+  }
+
+  return !ownerPage.section || definition.sections?.some(({ id }) => id === ownerPage.section)
+}
+
+/**
+ * Reuses Check answers display configuration with the saved submission values.
+ * Page-owned rows join the existing page/task; titled sections follow the answers.
+ * @param {FormDefinition} definition
+ * @param {Answers} answers
+ * @param {boolean} hasLandAndActionsSummary
+ * @param {{ path: string }[] | undefined} relevantPages
+ */
+function buildAdditionalSections(definition, answers, hasLandAndActionsSummary, relevantPages) {
+  /** @type {Map<string | undefined, Question[]>} */
+  const questionsByPage = new Map()
+  /** @type {{ title: string, questions: Question[] }[]} */
+  const sections = []
+  const seenValues = new Set()
+  const excludedStateValues = hasLandAndActionsSummary ? new Set(['totalPayment']) : undefined
+
+  for (const summaryPage of definition.pages ?? []) {
+    if (summaryPage.controller !== 'CheckResponsesPageController' || !summaryPage.path) {
+      continue
+    }
+
+    const configuredSections = definition.metadata?.pageConfig?.[summaryPage.path]?.additionalSections
+    const resolvedSections = resolveAdditionalAnswerSections(configuredSections, answers, {
+      relevantPages,
+      excludedStateValues
+    })
+    const displayableSections = resolvedSections.filter(
+      (section) => section.title || hasAdditionalSectionOwner(definition, section)
+    )
+    for (const section of displayableSections) {
+      const path = normalisePagePath(section.page)
+      const questions = section.items
+        .filter(({ stateValue }) => {
+          if (seenValues.has(stateValue)) {
+            return false
+          }
+          seenValues.add(stateValue)
+          return true
+        })
+        .map(({ title, value }) => ({
+          label: title,
+          answer: formatAnswer({ type: COMPONENT_TYPES.TextField }, value)
+        }))
+
+      if (questions.length === 0) {
+        continue
+      }
+      if (section.title) {
+        sections.push({ title: section.title, questions })
+      } else {
+        questionsByPage.set(path, [...(questionsByPage.get(path) ?? []), ...questions])
+      }
+    }
+  }
+
+  return { questionsByPage, sections }
 }
 
 /**
@@ -255,6 +337,7 @@ function resolveComponentLists(components, listsById) {
  * @param {{ html: string }} [params.configurablePrintContent]
  * @param {{ person: { rows: object[] }, business: { rows: object[] }, contact: { rows: object[] } } | null} [params.applicantDetailsSections]
  * @param {{ path?: string, def?: { metadata?: { pageConfig?: Record<string, { width?: string }> } } }} [params.page]
+ * @param {{ path: string }[]} [params.relevantPages] - Applicable pages resolved by the forms engine
  */
 export function buildPrintViewModel({
   definition,
@@ -266,7 +349,8 @@ export function buildPrintViewModel({
   form,
   configurablePrintContent,
   applicantDetailsSections,
-  page
+  page,
+  relevantPages
 }) {
   let pageTitle = `${form.name} application`
 
@@ -283,6 +367,7 @@ export function buildPrintViewModel({
     definition,
     groupAnswersByTask && Boolean(landAndActionsSummary)
   )
+  const additional = buildAdditionalSections(definition, answers, Boolean(landAndActionsSummary), relevantPages)
 
   return {
     page,
@@ -298,9 +383,12 @@ export function buildPrintViewModel({
     },
     applicantDetailsSections,
     groupAnswersByTask,
-    sections: groupAnswersByTask
-      ? buildTaskSections(definition, answers, hasParcelCards, landAndActionsSectionId)
-      : buildSections(definition.pages, answers, hasParcelCards),
+    sections: [
+      ...(groupAnswersByTask
+        ? buildTaskSections(definition, answers, hasParcelCards, landAndActionsSectionId, additional.questionsByPage)
+        : buildSections(definition.pages, answers, hasParcelCards, additional.questionsByPage)),
+      ...additional.sections
+    ],
     landAndActionsSummary,
     landAndActionsGrouped: Boolean(landAndActionsSectionId),
     configurablePrintContent,
