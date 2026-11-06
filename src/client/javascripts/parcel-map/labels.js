@@ -40,30 +40,32 @@ export function attachParcelLabels({ ml, cleanups, store }) {
       return
     }
     const { features, fingerprint } = buildLabelFeatures(ml)
-    if (fingerprint === lastFingerprint) {
-      // Wait for all parcel labels to load and MapLibre to finish clustering.
-      if (
-        initialViewPending &&
-        features.features.length === store?.parcelIds.length &&
-        ml.isSourceLoaded(SOURCE_ID_PARCEL_LABELS)
-      ) {
-        const groups = new Map(
-          ml
-            .querySourceFeatures(SOURCE_ID_PARCEL_LABELS)
-            .map((feature) => [feature.properties?.cluster_id ?? feature.properties?.id, feature])
-        )
-        const count = [...groups.values()].reduce((total, feature) => total + (feature.properties?.point_count ?? 1), 0)
-        if (count === store.parcelIds.length) {
-          initialViewPending = false
-          if (groups.size === 1) {
-            showSingleParcelGroup(ml, store.bbox)
-          }
-        }
-      }
+    if (fingerprint !== lastFingerprint) {
+      lastFingerprint = fingerprint
+      source.setData(features)
       return
     }
-    lastFingerprint = fingerprint
-    source.setData(features)
+    // Wait for all parcel labels to load and MapLibre to finish clustering.
+    if (
+      !initialViewPending ||
+      features.features.length !== store?.parcelIds.length ||
+      !ml.isSourceLoaded(SOURCE_ID_PARCEL_LABELS)
+    ) {
+      return
+    }
+    const groups = new Map(
+      ml
+        .querySourceFeatures(SOURCE_ID_PARCEL_LABELS)
+        .map((feature) => [feature.properties?.cluster_id ?? feature.properties?.id, feature])
+    )
+    const count = [...groups.values()].reduce((total, feature) => total + (feature.properties?.point_count ?? 1), 0)
+    if (count !== store.parcelIds.length) {
+      return
+    }
+    initialViewPending = false
+    if (groups.size === 1) {
+      showSingleParcelGroup(ml, store.bbox)
+    }
   }
 
   ml.on('idle', recompute)
@@ -137,17 +139,7 @@ function attachClusters(ml, cleanups) {
       return
     }
     const layers = ml.getStyle()?.layers ?? []
-    // The vendor's selection and keyboard highlights do not inherit minzoom.
-    for (const layer of layers) {
-      if (
-        'source' in layer &&
-        layer.source === SOURCE_ID_PARCELS &&
-        /^(selected|active)-highlight/.test(layer.id) &&
-        layer.minzoom !== PARCEL_DETAIL_ZOOM
-      ) {
-        ml.setLayerZoomRange(layer.id, PARCEL_DETAIL_ZOOM, layer.maxzoom ?? 24)
-      }
-    }
+    syncHighlightZoom(ml, layers)
     const order = layers.map((layer) => layer.id)
     const CLUSTER_LAYER_COUNT = 2
     const lastTwo = order.slice(-CLUSTER_LAYER_COUNT)
@@ -160,6 +152,21 @@ function attachClusters(ml, cleanups) {
 
   ml.on('styledata', reassertOnTop)
   cleanups.push(() => ml.off('styledata', reassertOnTop))
+}
+
+/** @param {MLMap} ml @param {import('maplibre-gl').LayerSpecification[]} layers */
+function syncHighlightZoom(ml, layers) {
+  // The vendor's selection and keyboard highlights do not inherit minzoom.
+  for (const layer of layers) {
+    if (
+      'source' in layer &&
+      layer.source === SOURCE_ID_PARCELS &&
+      /^(selected|active)-highlight/.test(layer.id) &&
+      layer.minzoom !== PARCEL_DETAIL_ZOOM
+    ) {
+      ml.setLayerZoomRange(layer.id, PARCEL_DETAIL_ZOOM, layer.maxzoom ?? 24)
+    }
+  }
 }
 
 /**
@@ -175,7 +182,10 @@ function boundsOfPoints(points) {
     const box = [minLng, minLat, maxLng, maxLat].every(Number.isFinite)
       ? { minLng, minLat, maxLng, maxLat }
       : boundsOfPositions([/** @type {GeoJSON.Point} */ (point.geometry).coordinates])
-    return box ? (bounds ? unionBounds(bounds, box) : box) : bounds
+    if (!box) {
+      return bounds
+    }
+    return bounds ? unionBounds(bounds, box) : box
   }, /** @type {BBox | null} */ (null))
 }
 

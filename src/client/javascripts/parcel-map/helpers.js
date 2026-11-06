@@ -10,6 +10,10 @@ import {
   LABEL_CLUSTER_COLOR,
   LABEL_CLUSTER_MAX_ZOOM,
   LABEL_CLUSTER_RADIUS,
+  LABEL_CLUSTER_MEDIUM_MIN_COUNT,
+  LABEL_CLUSTER_MEDIUM_RADIUS,
+  LABEL_CLUSTER_LARGE_MIN_COUNT,
+  LABEL_CLUSTER_LARGE_RADIUS,
   PARCEL_DETAIL_ZOOM,
   CLUSTER_EXPAND_MAX_ZOOM,
   LABEL_CLUSTER_RADIUS_PX,
@@ -146,7 +150,15 @@ export function buildParcelLabelClusterLayers() {
       ...src,
       paint: {
         'circle-color': LABEL_CLUSTER_COLOR,
-        'circle-radius': ['step', ['coalesce', ['get', 'point_count'], 1], LABEL_CLUSTER_RADIUS, 5, 20, 20, 26],
+        'circle-radius': [
+          'step',
+          ['coalesce', ['get', 'point_count'], 1],
+          LABEL_CLUSTER_RADIUS,
+          LABEL_CLUSTER_MEDIUM_MIN_COUNT,
+          LABEL_CLUSTER_MEDIUM_RADIUS,
+          LABEL_CLUSTER_LARGE_MIN_COUNT,
+          LABEL_CLUSTER_LARGE_RADIUS
+        ],
         'circle-stroke-width': 2,
         'circle-stroke-color': LABEL_HALO_COLOR
       }
@@ -356,7 +368,7 @@ export function fitToParcels(ml, bbox, { animate = false, maxZoom, minZoom } = {
   ml.fitBounds(boundsToLngLatPairs(bbox), {
     padding: FIT_BOUNDS_PADDING,
     animate,
-    ...(maxZoom === undefined ? {} : { maxZoom })
+    maxZoom
   })
 }
 

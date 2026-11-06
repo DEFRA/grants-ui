@@ -310,6 +310,31 @@ describe('attachParcelLabels', () => {
       expect(ml.moveLayer).toHaveBeenCalledWith('parcels-label-cluster-count')
     })
 
+    it('limits selection and keyboard highlights to detail zoom without changing other layers', () => {
+      const ml = makeMlMap({
+        getStyle: vi
+          .fn()
+          .mockReturnValue({
+            layers: [
+              { id: 'selected-highlight-parcels-fill-line', source: 'parcels' },
+              { id: 'active-highlight-parcels-fill-line', source: 'parcels', maxzoom: 18 },
+              { id: 'active-highlight-other-line', source: 'other' },
+              { id: 'parcels-outline', source: 'parcels' },
+              { id: 'selected-highlight-parcels-fill-fill', source: 'parcels', minzoom: 11 },
+              { id: 'parcels-label-cluster' },
+              { id: 'parcels-label-cluster-count' }
+            ]
+          })
+      })
+      attachParcelLabels({ ml, cleanups: [] })
+      ml._emit('styledata')
+      expect(ml.setLayerZoomRange.mock.calls).toEqual([
+        ['selected-highlight-parcels-fill-line', 11, 24],
+        ['active-highlight-parcels-fill-line', 11, 18]
+      ])
+      expect(ml.moveLayer).not.toHaveBeenCalled()
+    })
+
     it('does nothing when the cluster layers are already last, avoiding a moveLayer -> styledata -> moveLayer loop', () => {
       const getStyle = vi.fn().mockReturnValue({
         layers: [{ id: 'parcels-fill' }, { id: 'parcels-label-cluster' }, { id: 'parcels-label-cluster-count' }]
