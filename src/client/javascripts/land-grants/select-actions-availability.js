@@ -29,6 +29,7 @@ import {
 import { clearQuantityError, showQuantityError } from './quantity-error-display.js'
 import { availableArea, formatUnit } from '../../../shared/unit-format.js'
 import { getAvailabilityLimit, isActionAvailable } from '../../../shared/availability.js'
+import { roundToFourDecimalPlaces } from '../../../shared/round-to-decimal-places.js'
 import { isLandAreaUnit } from '../../../shared/unit-types.js'
 
 const UNAVAILABLE_MESSAGE = 'Not compatible with other selected actions.'
@@ -151,7 +152,7 @@ function updateHintLive(checkbox) {
   }
   const typed = Number(quantityInput.value.trim())
   // Round to 4dp to absorb float noise (e.g. 0.3271 - 0.2 !== 0.1271 in JS).
-  const remaining = typed > 0 ? Math.max(0, Math.round((total - typed) * 10000) / 10000) : total
+  const remaining = typed > 0 ? Math.max(0, roundToFourDecimalPlaces(total - typed)) : total
   hint.textContent = availabilityHintText(remaining, unit)
 }
 
