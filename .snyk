@@ -1,6 +1,10 @@
 # Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities
 version: v1.25.0
 ignore:
+  'SNYK-JS-OPEN-22112123':
+    - '@defra/forms-engine-plugin > @defra/interactive-map > @easyops-cn/docusaurus-search-local > @docusaurus/plugin-content-docs > @docusaurus/core > open':
+        reason: 'Checked 2026-11-05 on forms-engine-plugin@4.23.1 > interactive-map@0.0.22-alpha > Docusaurus@3.10.2 > open@8.4.2. Exploitation requires attacker-controlled targets or app arguments reaching the Windows/WSL PowerShell browser launcher. Docusaurus calls open only from its start/serve documentation commands; Grants UI runs Hapi and webpack watch/build without running Docusaurus or passing applicant input to this launcher. Documentation tooling remains installed in production. Fixed open@11.0.4 cleared seven-day cooldown on 2026-09-21T20:36:00.110Z, but its ESM API removes open.apps used by Docusaurus, so do not force it into this legacy caller. The compatible webpack-dev-server path is overridden to v11.0.4. Remove when Docusaurus adopts a compatible fixed open release or upstream drops the documentation dependencies; reassess if callers or input sources change.'
+        expires: '2026-12-05'
   'SNYK-JS-FLAT-22148819':
     - '@defra/forms-engine-plugin > @defra/interactive-map > @docusaurus/theme-common > @docusaurus/mdx-loader > @docusaurus/utils > @docusaurus/types > webpack-merge > flat':
         reason: 'Checked 2026-11-03 on forms-engine-plugin@4.23.1 > interactive-map@0.0.22-alpha > Docusaurus@3.10.2 > webpack-merge@5.10.0 > flat@5.0.2. No fixed flat release. Resource exhaustion requires attacker-controlled numeric indices reaching unflatten() and subsequent array iteration or serialization. The installed webpack-merge calls only flatten(), never unflatten(). This documentation tooling is installed in production, but Grants UI runs Hapi and builds with webpack.config.js without running Docusaurus. Remove when flat is fixed or upstream drops it; reassess if these callers change.'
