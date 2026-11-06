@@ -411,14 +411,19 @@ Authorization: Bearer {{serviceToken}}
 }
 
 
-### Get available claim entitlements for Example Grant With Auth
+### Get available claim entitlements for Woodland Management Plan
 
-@clientRef = wmp-ehu-fkp
+# Replace with the grant application's reference number, lowercased as in Grants UI.
+@clientRef = wmp-fdk-s8t
 
 # @name getAvailableClaimEntitlements
+# Use availableClaims[0].data.totalHectares.value and originalTotalHectares.value
+# for adjustedAreaHa and originalAreaHa in land-grants.http, respectively.
 
 GET {{gasUrl}}/grants/woodland/entitlements/{{clientRef}}/available-claims HTTP/1.1
+Content-Type: application/json
 Authorization: Bearer {{serviceToken}}
+x-api-key: {{x-api-key}}
 
 ### Create entitlement
 

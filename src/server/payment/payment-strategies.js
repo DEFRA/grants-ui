@@ -82,10 +82,11 @@ export const paymentStrategies = {
      * @returns {Promise<PaymentStrategyResult>}
      */
     async calculatePayment(paymentContext, userContext) {
-      const { totalAreaHa, applicationId, sbi, crn } = paymentContext
+      const { data, applicationId, sbi, crn } = paymentContext
       const { payment, totalPence } = await calculateWmpPaymentByTotalArea(
         {
-          totalAreaHa,
+          totalAreaHa: data.totalHectares.value,
+          originalTotalAreaHa: data.originalTotalHectares.value,
           applicationId,
           sbi,
           crn
