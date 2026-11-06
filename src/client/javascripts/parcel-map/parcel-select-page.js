@@ -2,8 +2,8 @@
 // public events emitted by <parcel-map> and drives this journey's form DOM
 // (hidden inputs, map/list views, selected parcel details, live summary).
 import {
-  ENABLED_LAND_ACTIONS_ATTRIBUTE,
   DEFER_LOADING_ATTRIBUTE,
+  ENABLED_LAND_ACTIONS_ATTRIBUTE,
   EVENT_ERROR,
   EVENT_READY,
   EVENT_SELECTION,
@@ -265,7 +265,10 @@ function createSelectedParcelDetailsUpdater(mapEl) {
   /** @type {ReturnType<typeof setTimeout> | null} */
   let debounceTimer = null
 
-  /** @param {string} id @param {ParcelNotice | null} notice */
+  /**
+   * @param {string} id
+   * @param {ParcelNotice | null} notice
+   * */
   const show = (id, notice) => {
     if (notice?.items.length) {
       showRequirements(notice)
@@ -369,7 +372,11 @@ function bindParcelNavigation(mapEl, viewToggle) {
   })
 }
 
-/** @param {SelectedParcel[]} selectedParcels @param {string | undefined} previousId @param {string} [source] */
+/**
+ * @param {SelectedParcel[]} selectedParcels
+ * @param {string | undefined} previousId
+ * @param {string} [source]
+ * */
 function focusSelectedParcelDetails(selectedParcels, previousId, source) {
   const id = selectedParcels.length === 1 ? selectedParcels[0].id : undefined
   if (id && id !== previousId && source !== SELECTION_SOURCE_SEARCH) {
