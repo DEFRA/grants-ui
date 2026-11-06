@@ -322,7 +322,7 @@ function createSelectedParcelDetailsUpdater(mapEl) {
     listDetails.startLoading(id)
     debounceTimer = setTimeout(() => {
       debounceTimer = null
-      loadNotice(id)
+      void loadNotice(id)
     }, PARCEL_DETAILS_DEBOUNCE_MS)
   }
 }
