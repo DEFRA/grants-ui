@@ -891,21 +891,34 @@ describe('Auth Plugin', () => {
         relationshipId: '123456'
       }
 
-      test('validate function upgrades an unversioned session to v2 and writes it back to the cache', async () => {
+      const expireAccessToken = () => {
+        Jwt.token.verifyTime.mockImplementation(() => {
+          throw new Error('Token expired')
+        })
+        refreshTokens.mockResolvedValue({
+          access_token: 'new-token',
+          refresh_token: 'new-refresh-token'
+        })
+      }
+
+      test('validate function standardises an unversioned session for the request without writing to the cache', async () => {
         const options = getCookieOptions()
-        server.app.cache.get.mockResolvedValue(legacySession())
+        const cachedSession = legacySession()
+        server.app.cache.get.mockResolvedValue(cachedSession)
 
         const mockRequest = { server, path: '/home' }
-        await options.validate(mockRequest, { sessionId: 'test-session' })
+        const result = await options.validate(mockRequest, { sessionId: 'test-session' })
 
-        expect(server.app.cache.set).toHaveBeenCalledTimes(1)
-        expect(server.app.cache.set).toHaveBeenCalledWith('test-session', {
-          ...legacySession(),
-          ...expectedUpgradedFields
+        expect(result).toEqual({
+          isValid: true,
+          credentials: { ...legacySession(), ...expectedUpgradedFields }
         })
+        expect(server.app.cache.set).not.toHaveBeenCalled()
+        expect(cachedSession).toEqual(legacySession())
+        expect(log).not.toHaveBeenCalledWith(LogCodes.AUTH.SESSION_UPGRADED, expect.anything(), expect.anything())
       })
 
-      test('validate function saves only allowlisted fields when upgrading', async () => {
+      test('validate function standardises only allowlisted fields into the credentials', async () => {
         const options = getCookieOptions()
         server.app.cache.get.mockResolvedValue({
           ...legacySession(),
@@ -915,30 +928,55 @@ describe('Auth Plugin', () => {
         })
 
         const mockRequest = { server, path: '/home' }
-        await options.validate(mockRequest, { sessionId: 'test-session' })
+        const result = await options.validate(mockRequest, { sessionId: 'test-session' })
 
-        expect(server.app.cache.set).toHaveBeenCalledWith('test-session', {
-          ...legacySession(),
-          ...expectedUpgradedFields
-        })
+        expect(result.credentials).toEqual({ ...legacySession(), ...expectedUpgradedFields })
       })
 
-      test('validate function returns the upgraded session as credentials', async () => {
+      test('validate function persists the upgraded session when refreshing the token', async () => {
         const options = getCookieOptions()
-        server.app.cache.get.mockResolvedValue(legacySession())
+        server.app.cache.get.mockResolvedValue({
+          ...legacySession(),
+          roles: ['123456:Agent:3'],
+          email: 'john.doe@example.com',
+          organisationId: 'org-1'
+        })
+        expireAccessToken()
 
         const mockRequest = { server, path: '/home' }
         const result = await options.validate(mockRequest, { sessionId: 'test-session' })
 
-        expect(result).toEqual({
-          isValid: true,
-          credentials: { ...legacySession(), ...expectedUpgradedFields }
-        })
+        const expectedSession = {
+          ...legacySession(),
+          ...expectedUpgradedFields,
+          token: 'new-token',
+          refreshToken: 'new-refresh-token'
+        }
+        expect(server.app.cache.set).toHaveBeenCalledTimes(1)
+        expect(server.app.cache.set).toHaveBeenCalledWith('test-session', expectedSession)
+        expect(result).toEqual({ isValid: true, credentials: expectedSession })
       })
 
-      test('validate function logs the session upgrade without tokens', async () => {
+      test('validate function does not persist the upgraded session when the token refresh fails', async () => {
         const options = getCookieOptions()
         server.app.cache.get.mockResolvedValue(legacySession())
+        Jwt.token.verifyTime.mockImplementation(() => {
+          throw new Error('Token expired')
+        })
+        refreshTokens.mockRejectedValue(new Error('Refresh service unavailable'))
+
+        const mockRequest = { server, path: '/home' }
+        const result = await options.validate(mockRequest, { sessionId: 'test-session' })
+
+        expect(result).toEqual({ isValid: false })
+        expect(server.app.cache.set).not.toHaveBeenCalled()
+        expect(log).not.toHaveBeenCalledWith(LogCodes.AUTH.SESSION_UPGRADED, expect.anything(), expect.anything())
+      })
+
+      test('validate function logs the session upgrade on token refresh without tokens', async () => {
+        const options = getCookieOptions()
+        server.app.cache.get.mockResolvedValue(legacySession())
+        expireAccessToken()
 
         const mockRequest = { server, path: '/home' }
         await options.validate(mockRequest, { sessionId: 'test-session' })
@@ -961,6 +999,7 @@ describe('Auth Plugin', () => {
         const loggedValues = JSON.stringify(log.mock.calls.map(([, details]) => details))
         expect(loggedValues).not.toContain('valid-token')
         expect(loggedValues).not.toContain('refresh-token')
+        expect(loggedValues).not.toContain('new-token')
       })
 
       test('validate function does not upgrade a v2 session', async () => {
@@ -972,11 +1011,22 @@ describe('Auth Plugin', () => {
         const result = await options.validate(mockRequest, { sessionId: 'test-session' })
 
         expect(server.app.cache.set).not.toHaveBeenCalled()
-        expect(log).not.toHaveBeenCalledWith(LogCodes.AUTH.SESSION_UPGRADED, expect.anything(), expect.anything())
-        expect(result).toEqual({ isValid: true, credentials: v2Session })
+        expect(result.credentials).toBe(v2Session)
       })
 
-      test('validate function upgrades a legacy session before skipping token refresh on sign-out', async () => {
+      test('validate function does not log an upgrade when refreshing a v2 session', async () => {
+        const options = getCookieOptions()
+        server.app.cache.get.mockResolvedValue({ ...legacySession(), ...expectedUpgradedFields })
+        expireAccessToken()
+
+        const mockRequest = { server, path: '/home' }
+        await options.validate(mockRequest, { sessionId: 'test-session' })
+
+        expect(server.app.cache.set).toHaveBeenCalledTimes(1)
+        expect(log).not.toHaveBeenCalledWith(LogCodes.AUTH.SESSION_UPGRADED, expect.anything(), expect.anything())
+      })
+
+      test('validate function standardises a legacy session before skipping token refresh on sign-out', async () => {
         const options = getCookieOptions()
         server.app.cache.get.mockResolvedValue(legacySession())
 
@@ -984,6 +1034,7 @@ describe('Auth Plugin', () => {
         const result = await options.validate(mockRequest, { sessionId: 'test-session' })
 
         expect(Jwt.token.verifyTime).not.toHaveBeenCalled()
+        expect(server.app.cache.set).not.toHaveBeenCalled()
         expect(result.credentials).toMatchObject(expectedUpgradedFields)
       })
     })
