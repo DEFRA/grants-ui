@@ -46,82 +46,24 @@ export default class TotalEstimatedCostController extends withDerivedState(Quest
    * @returns {Record<string, any>}
    */
   getCalculatedAnswers(request, state) {
-    const {
-      reservoirClayHighCostPerUnit,
-      reservoirClayLowCostPerUnit,
-      reservoirSyntheticHighCostPerUnit,
-      reservoirSyntheticLowCostPerUnit,
-      distNetworkCostPerUnit,
-      tanksCostPerUnit,
-      grantMaxRate
-    } = this.validatePageConfig(request)
+    const config = this.validatePageConfig(request)
 
-    const {
-      itemsPlanningToInstall = [],
-      reservoirLining,
-      howMuchWater = 0,
-      waterDistributionLength = 0,
-      waterStorageCapacity = 0
-    } = state
+    const reservoirs = Reservoir.createAllFromState(state, config)
 
-    let reservoirCost = 0
-    let reservoirHighCostPerUnit = reservoirClayHighCostPerUnit
-    let reservoirLowCostPerUnit = reservoirClayLowCostPerUnit
-    if (itemsPlanningToInstall.includes('RESERVOIR')) {
-      if (reservoirLining === 'synthetic') {
-        reservoirHighCostPerUnit = reservoirSyntheticHighCostPerUnit
-        reservoirLowCostPerUnit = reservoirSyntheticLowCostPerUnit
-      }
-      if (howMuchWater > 10000) {
-        reservoirCost = reservoirHighCostPerUnit * 10000 + reservoirLowCostPerUnit * (howMuchWater - 10000)
-      } else {
-        reservoirCost = reservoirHighCostPerUnit * howMuchWater
-      }
-    }
-
-    const waterDistributionNetworkCost = itemsPlanningToInstall.includes('WATER_DISTRIBUTION_NETWORK')
-      ? distNetworkCostPerUnit * waterDistributionLength
-      : 0
-
-    const waterTanksCost = itemsPlanningToInstall.includes('WATER_STORAGE_TANKS')
-      ? tanksCostPerUnit * waterStorageCapacity
-      : 0
-
-    const totalEstimatedCost = reservoirCost + waterDistributionNetworkCost + waterTanksCost
-
-    let estimatedMaxGrant = totalEstimatedCost * grantMaxRate
-    const estimatedMaxGrantBeforeReduction = estimatedMaxGrant
-
-    let minGrantReached
-    if (reservoirCost > 0 || waterDistributionNetworkCost > 0) {
-      const MIN_GRANT = 35000
-      minGrantReached = estimatedMaxGrant >= MIN_GRANT
-    } else {
-      // water tanks only, min grant reduced to £15,000
-      const MIN_GRANT_TANKS_ONLY = 15000
-      minGrantReached = estimatedMaxGrant >= MIN_GRANT_TANKS_ONLY
-    }
-
-    let maxGrantReached = false
-    const MAX_GRANT = 300000
-    if (estimatedMaxGrant > MAX_GRANT) {
-      maxGrantReached = true
-      estimatedMaxGrant = MAX_GRANT
-    }
+    const costs = new EstimatedCosts(reservoirs, state, config)
 
     return {
-      reservoirHighCostPerUnit,
-      reservoirLowCostPerUnit,
-      distNetworkCostPerUnit,
-      tanksCostPerUnit,
-      reservoirCost,
-      waterDistributionNetworkCost,
-      waterTanksCost,
-      totalEstimatedCost,
-      estimatedMaxGrantBeforeReduction,
-      estimatedMaxGrant,
-      minGrantReached,
-      maxGrantReached
+      reservoirs,
+      reservoirCost: costs.reservoirCost,
+      distNetworkCostPerUnit: config.distNetworkCostPerUnit,
+      waterDistributionNetworkCost: costs.waterDistributionNetworkCost,
+      tanksCostPerUnit: config.tanksCostPerUnit,
+      waterTanksCost: costs.waterTanksCost,
+      totalEstimatedCost: costs.totalEstimatedCost,
+      estimatedMaxGrantBeforeReduction: costs.estimatedMaxGrantBeforeReduction,
+      estimatedMaxGrant: costs.estimatedMaxGrant,
+      minGrantReached: costs.minGrantReached,
+      maxGrantReached: costs.maxGrantReached
     }
   }
 
@@ -144,5 +86,108 @@ export default class TotalEstimatedCostController extends withDerivedState(Quest
     }
 
     return value
+  }
+}
+
+export class Reservoir {
+  constructor({ name, type, size, reservoirHighCostPerUnit, reservoirLowCostPerUnit }) {
+    this.name = name
+    this.type = type
+    this.size = size
+    this.reservoirHighCostPerUnit = reservoirHighCostPerUnit
+    this.reservoirLowCostPerUnit = reservoirLowCostPerUnit
+    this.cost = this.#calculateCost()
+  }
+
+  #calculateCost() {
+    if (this.size > 10000) {
+      return this.reservoirHighCostPerUnit * 10000 + this.reservoirLowCostPerUnit * (this.size - 10000)
+    }
+    return this.reservoirHighCostPerUnit * this.size
+  }
+
+  static createAllFromState(state, config) {
+    const {
+      itemsPlanningToInstall = [],
+      moreThanOneReservoir = false,
+      reservoirItems = [],
+      whatTypeOfReservoir,
+      howMuchWater = 0
+    } = state
+
+    if (!itemsPlanningToInstall.includes('RESERVOIR')) {
+      return []
+    }
+
+    if (moreThanOneReservoir) {
+      return reservoirItems.map((item) => {
+        const { reservoirItemName, reservoirItemWhatTypeOfReservoir, reservoirItemHowMuchWater } = item
+        const unitCosts = this.calculateUnitCosts(reservoirItemWhatTypeOfReservoir, config)
+        return new Reservoir({
+          name: reservoirItemName,
+          type: reservoirItemWhatTypeOfReservoir,
+          size: reservoirItemHowMuchWater,
+          ...unitCosts
+        })
+      })
+    }
+
+    const unitCosts = this.calculateUnitCosts(whatTypeOfReservoir, config)
+    return [
+      new Reservoir({
+        name: 'Unnamed reservoir',
+        type: whatTypeOfReservoir,
+        size: howMuchWater,
+        ...unitCosts
+      })
+    ]
+  }
+
+  static calculateUnitCosts(type, config) {
+    const isSynthetic = type === 'synthetic'
+    return {
+      reservoirHighCostPerUnit: isSynthetic
+        ? config.reservoirSyntheticHighCostPerUnit
+        : config.reservoirClayHighCostPerUnit,
+      reservoirLowCostPerUnit: isSynthetic
+        ? config.reservoirSyntheticLowCostPerUnit
+        : config.reservoirClayLowCostPerUnit
+    }
+  }
+}
+
+class EstimatedCosts {
+  #MIN_GRANT = 35000
+  #MIN_GRANT_TANKS_ONLY = 15000
+  #MAX_GRANT = 300000
+
+  constructor(reservoirs, state, config) {
+    const { itemsPlanningToInstall = [], waterDistributionLength = 0, waterStorageCapacity = 0 } = state
+
+    const reservoirCost = reservoirs.reduce((total, r) => total + r.cost, 0)
+
+    const waterDistributionNetworkCost = itemsPlanningToInstall.includes('WATER_DISTRIBUTION_NETWORK')
+      ? config.distNetworkCostPerUnit * waterDistributionLength
+      : 0
+
+    const waterTanksCost = itemsPlanningToInstall.includes('WATER_STORAGE_TANKS')
+      ? config.tanksCostPerUnit * waterStorageCapacity
+      : 0
+
+    const totalEstimatedCost = reservoirCost + waterDistributionNetworkCost + waterTanksCost
+
+    const estimatedMaxGrantBeforeReduction = totalEstimatedCost * config.grantMaxRate
+
+    const minGrantThreshold =
+      reservoirCost > 0 || waterDistributionNetworkCost > 0 ? this.#MIN_GRANT : this.#MIN_GRANT_TANKS_ONLY
+
+    this.reservoirCost = reservoirCost
+    this.waterDistributionNetworkCost = waterDistributionNetworkCost
+    this.waterTanksCost = waterTanksCost
+    this.totalEstimatedCost = totalEstimatedCost
+    this.estimatedMaxGrantBeforeReduction = estimatedMaxGrantBeforeReduction
+    this.minGrantReached = estimatedMaxGrantBeforeReduction >= minGrantThreshold
+    this.maxGrantReached = estimatedMaxGrantBeforeReduction > this.#MAX_GRANT
+    this.estimatedMaxGrant = Math.min(estimatedMaxGrantBeforeReduction, this.#MAX_GRANT)
   }
 }
