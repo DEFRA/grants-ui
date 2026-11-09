@@ -10,6 +10,7 @@ import { createParcelStore } from './store.js'
 import {
   MULTI_SELECT_ATTRIBUTE,
   ENABLED_LAND_ACTIONS_ATTRIBUTE,
+  DEFER_LOADING_ATTRIBUTE,
   LAYER_ID_FILL,
   PARCEL_ID_PROPERTY,
   SELECT_FEATURE_EVENT,
@@ -86,10 +87,21 @@ export class ParcelMap extends HTMLElement {
   /** @type {CustomEvent | null} */
   #lastEvent = null
 
+  static observedAttributes = [DEFER_LOADING_ATTRIBUTE]
+
   connectedCallback() {
     this.#state = STATE_IDLE
     this.#lastEvent = null
-    this.#init().catch(() => this.#fail(ERROR_REASON_UNAVAILABLE))
+    if (!this.hasAttribute(DEFER_LOADING_ATTRIBUTE)) {
+      this.#init().catch(() => this.#fail(ERROR_REASON_UNAVAILABLE))
+    }
+  }
+
+  /** @param {string} name @param {string | null} _oldValue @param {string | null} value */
+  attributeChangedCallback(name, _oldValue, value) {
+    if (name === DEFER_LOADING_ATTRIBUTE && value === null && this.isConnected && this.#state === STATE_IDLE) {
+      this.#init().catch(() => this.#fail(ERROR_REASON_UNAVAILABLE))
+    }
   }
 
   disconnectedCallback() {
@@ -233,6 +245,15 @@ export class ParcelMap extends HTMLElement {
 
   // Deselects every selected parcel
   clearSelection() {
+    if (this.#pendingSelect !== null) {
+      globalThis.clearTimeout(this.#pendingSelect)
+      this.#pendingSelect = null
+    }
+    // The plugin descriptor only gains its API once the map has loaded.
+    // List selections are synchronised again by the page's ready handler.
+    if (this.#state !== STATE_READY) {
+      return
+    }
     this.#selectionRelay?.allowNextClear()
     this.#interactPlugin?.clear()
   }
@@ -245,6 +266,10 @@ export class ParcelMap extends HTMLElement {
    * @param {{ source?: string }} [options]
    */
   selectParcels(ids, { source = SELECTION_SOURCE_MAP } = {}) {
+    if (this.#pendingSelect !== null) {
+      globalThis.clearTimeout(this.#pendingSelect)
+      this.#pendingSelect = null
+    }
     if (this.#state !== STATE_READY) {
       return
     }
@@ -301,6 +326,12 @@ export class ParcelMap extends HTMLElement {
       this.#pendingSelect = globalThis.setTimeout(poll, SELECT_LISTENER_POLL_MS)
     }
     poll()
+  }
+
+  // A map initialised in the hidden view must fit its parcels at its visible size.
+  resize() {
+    this.#ml?.resize()
+    fitToParcels(this.#ml, this.#store.bbox)
   }
 
   // Re-fits the viewport to every selectable parcel, undoing any pan/zoom.

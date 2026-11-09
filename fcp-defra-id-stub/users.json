@@ -429,6 +429,18 @@
           "name": "Test Foxglove Farm"
         }
       ]
+    },
+    {
+      "crn": 9000000041,
+      "firstName": "Wilhelmina",
+      "lastName": "Test-Ashdown",
+      "organisations": [
+        {
+          "organisationId": "7410032",
+          "sbi": 800000032,
+          "name": "Test Hawthorn Gill Farm"
+        }
+      ]
     }
   ]
 }
