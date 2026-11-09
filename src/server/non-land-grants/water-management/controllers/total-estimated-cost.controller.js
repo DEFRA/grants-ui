@@ -48,22 +48,33 @@ export default class TotalEstimatedCostController extends withDerivedState(Quest
   getCalculatedAnswers(request, state) {
     const config = this.validatePageConfig(request)
 
+    const { distNetworkCostPerUnit, tanksCostPerUnit } = config
+
     const reservoirs = Reservoir.createAllFromState(state, config)
 
-    const costs = new EstimatedCosts(reservoirs, state, config)
+    const {
+      reservoirCost,
+      waterDistributionNetworkCost,
+      waterTanksCost,
+      totalEstimatedCost,
+      estimatedMaxGrantBeforeReduction,
+      estimatedMaxGrant,
+      minGrantReached,
+      maxGrantReached
+    } = new EstimatedCosts(reservoirs, state, config)
 
     return {
       reservoirs,
-      reservoirCost: costs.reservoirCost,
-      distNetworkCostPerUnit: config.distNetworkCostPerUnit,
-      waterDistributionNetworkCost: costs.waterDistributionNetworkCost,
-      tanksCostPerUnit: config.tanksCostPerUnit,
-      waterTanksCost: costs.waterTanksCost,
-      totalEstimatedCost: costs.totalEstimatedCost,
-      estimatedMaxGrantBeforeReduction: costs.estimatedMaxGrantBeforeReduction,
-      estimatedMaxGrant: costs.estimatedMaxGrant,
-      minGrantReached: costs.minGrantReached,
-      maxGrantReached: costs.maxGrantReached
+      reservoirCost,
+      distNetworkCostPerUnit,
+      waterDistributionNetworkCost,
+      tanksCostPerUnit,
+      waterTanksCost,
+      totalEstimatedCost,
+      estimatedMaxGrantBeforeReduction,
+      estimatedMaxGrant,
+      minGrantReached,
+      maxGrantReached
     }
   }
 
@@ -120,16 +131,18 @@ export class Reservoir {
     }
 
     if (moreThanOneReservoir) {
-      return reservoirItems.map((item) => {
-        const { reservoirItemName, reservoirItemWhatTypeOfReservoir, reservoirItemHowMuchWater } = item
-        const unitCosts = this.calculateUnitCosts(reservoirItemWhatTypeOfReservoir, config)
-        return new Reservoir({
-          name: reservoirItemName,
-          type: reservoirItemWhatTypeOfReservoir,
-          size: reservoirItemHowMuchWater,
-          ...unitCosts
+      return reservoirItems
+        .map((item) => {
+          const { reservoirItemName, reservoirItemWhatTypeOfReservoir, reservoirItemHowMuchWater } = item
+          const unitCosts = this.calculateUnitCosts(reservoirItemWhatTypeOfReservoir, config)
+          return new Reservoir({
+            name: reservoirItemName,
+            type: reservoirItemWhatTypeOfReservoir,
+            size: reservoirItemHowMuchWater,
+            ...unitCosts
+          })
         })
-      })
+        .map((r) => ({ ...r }))
     }
 
     const unitCosts = this.calculateUnitCosts(whatTypeOfReservoir, config)
@@ -140,7 +153,7 @@ export class Reservoir {
         size: howMuchWater,
         ...unitCosts
       })
-    ]
+    ].map((r) => ({ ...r }))
   }
 
   static calculateUnitCosts(type, config) {
