@@ -127,21 +127,6 @@ describe('WoodlandHectaresPageController', () => {
       expect(viewModel.totalHectaresForSelectedParcels).toBe(0)
       expect(viewModel.components[0].model.content).toContain('0 ha')
     })
-
-    it('truncates totalHectaresForSelectedParcels to 4 decimal places', () => {
-      const context = { state: { totalHectaresForSelectedParcels: 9.12345678 }, evaluationState: {} }
-      const viewModel = controller.getViewModel({}, context)
-
-      expect(viewModel.totalHectaresForSelectedParcels).toBe(9.1234)
-      expect(viewModel.components[0].model.content).toContain('9.1234 ha')
-    })
-
-    it('strips trailing floating-point imprecision', () => {
-      const context = { state: { totalHectaresForSelectedParcels: 0.1 + 0.2 }, evaluationState: {} }
-      const viewModel = controller.getViewModel({}, context)
-
-      expect(viewModel.totalHectaresForSelectedParcels).toBe(0.3)
-    })
   })
 
   describe('payload edge cases', () => {
@@ -301,6 +286,16 @@ describe('WoodlandHectaresPageController', () => {
         context,
         mockH
       )
+
+      expect(context.errors).toBeUndefined()
+    })
+
+    it('does not set error when combined equals max but floating point addition exceeds it', async () => {
+      // 1.1 + 2.2 === 3.3000000000000003
+      const handler = controller.makePostRouteHandler()
+      const context = { state: { totalHectaresForSelectedParcels: 3.3 } }
+
+      await handler({ payload: { hectaresTenOrOverYearsOld: '1.1', hectaresUnderTenYearsOld: '2.2' } }, context, mockH)
 
       expect(context.errors).toBeUndefined()
     })

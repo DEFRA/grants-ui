@@ -6,6 +6,7 @@ import { fetchParcels } from '../../services/land-grants.service.js'
 import { mapParcelsToViewModel } from '../../view-models/parcel.view-model.js'
 import { getParcelIdFromQuery, getParcelIdsFromPayload } from '../../utils/parcel-request.utils.js'
 import { stringifyParcel } from '~/src/shared/format-parcel.js'
+import { roundToFourDecimalPlaces } from '~/src/shared/round-to-decimal-places.js'
 import { getLandGrantsUserContext } from '../../services/land-grants-user-context.js'
 
 const PARCEL_FETCH_ERROR_MESSAGE =
@@ -186,12 +187,13 @@ export default class CommonSelectLandParcelPageController extends LandGrantsQues
     const landParcelMetadata = selectedParcelIds.map((id) => {
       const parcel = parcelMap.get(id)
       const rawArea = parcel?.area?.value
-      const areaHa = rawArea == null ? null : (Number(rawArea) * 10000) / 10000
+      const areaHa = rawArea == null ? null : roundToFourDecimalPlaces(rawArea)
       return { parcelId: id, areaHa }
     })
 
-    const totalHectaresForSelectedParcels =
-      (landParcelMetadata.reduce((sum, { areaHa }) => sum + (areaHa ?? 0), 0) * 10000) / 10000
+    const totalHectaresForSelectedParcels = roundToFourDecimalPlaces(
+      landParcelMetadata.reduce((sum, { areaHa }) => sum + (areaHa ?? 0), 0)
+    )
 
     if (this.minimumAreaHa !== null && totalHectaresForSelectedParcels < this.minimumAreaHa) {
       const parcels = mapParcelsToViewModel(fetchedParcels)
