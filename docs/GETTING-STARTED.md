@@ -302,6 +302,11 @@ To update dependencies use [npm-check-updates](https://github.com/raineorshine/n
 ncu --interactive --format group
 ```
 
+For Undici security updates, update the pinned direct dependency and run `npm update undici --package-lock-only`
+to refresh Cheerio's transitive copy within its supported major version too. TGC-1706 requires patched releases
+8.12.4 and 7.30.2 respectively. For verified security patches newer than the seven-day release-age policy, pass
+`--min-release-age=0` to the targeted update command rather than changing `.npmrc` or ignoring the vulnerability.
+
 ### Formatting
 
 #### Windows prettier issue
