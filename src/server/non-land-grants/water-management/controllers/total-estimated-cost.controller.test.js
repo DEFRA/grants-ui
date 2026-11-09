@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import TotalEstimatedCostController from './total-estimated-cost.controller.js'
-import { Reservoir } from './total-estimated-cost.controller.js'
 import { setupControllerMocks } from '~/src/__mocks__/controller-mocks.js'
 import { mergeAdditionalAnswers } from '~/src/server/common/helpers/state/additional-answers-helper.js'
 
@@ -100,8 +99,8 @@ describe('TotalEstimatedCostController', () => {
       expect(mergeAdditionalAnswers).toHaveBeenCalledWith(expect.anything(), {
         reservoirs: [
           {
-            name: 'Unnamed reservoir',
-            type: undefined,
+            name: null,
+            type: null,
             reservoirHighCostPerUnit: 2.5,
             reservoirLowCostPerUnit: 2.0,
             size: 100,
@@ -132,8 +131,8 @@ describe('TotalEstimatedCostController', () => {
       expect(mergeAdditionalAnswers).toHaveBeenCalledWith(expect.anything(), {
         reservoirs: [
           {
-            name: 'Unnamed reservoir',
-            type: undefined,
+            name: null,
+            type: null,
             reservoirHighCostPerUnit: 2.5,
             reservoirLowCostPerUnit: 2.0,
             size: 100,
@@ -326,13 +325,14 @@ describe('TotalEstimatedCostController', () => {
       mockContext.state.howMuchWater = 100
       mockContext.state.additionalAnswers = {
         reservoirs: [
-          new Reservoir({
-            name: 'Unnamed reservoir',
-            type: undefined,
+          {
+            name: null,
+            type: null,
             reservoirHighCostPerUnit: 2.5,
             reservoirLowCostPerUnit: 2.0,
-            size: 100
-          })
+            size: 100,
+            cost: 250
+          }
         ],
         reservoirCost: 250,
         distNetworkCostPerUnit: 5,
@@ -350,7 +350,7 @@ describe('TotalEstimatedCostController', () => {
     })
   })
 
-  describe('Reservoir encapsulation', () => {
+  describe('Reservoir builder', () => {
     it('should handle multiple reservoirs when moreThanOneReservoir is true', () => {
       const reservoirItems = [
         {
