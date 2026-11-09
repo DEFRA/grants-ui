@@ -80,7 +80,9 @@ describe('LocationValidateController', () => {
   })
   describe('makePostRouteHandler', () => {
     it('should call parent handler and update context state when scoring service succeeds', async () => {
-      invokeGrantScoringGetAction.mockResolvedValueOnce({})
+      invokeGrantScoringGetAction.mockResolvedValueOnce({
+        locationFound: true
+      })
 
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
@@ -93,10 +95,10 @@ describe('LocationValidateController', () => {
       expect(result).toBe('parent-handler-result')
     })
 
-    it('should update context state with locationFound false when scoring service returns 400', async () => {
-      const error = new Error('Bad Request')
-      error._details = { upstreamStatus: 400 }
-      invokeGrantScoringGetAction.mockRejectedValueOnce(error)
+    it('should update context state with locationFound false when scoring service returns not found', async () => {
+      invokeGrantScoringGetAction.mockResolvedValueOnce({
+        locationFound: false
+      })
 
       const handler = controller.makePostRouteHandler()
       const result = await handler(mockRequest, mockContext, mockH)
@@ -106,7 +108,7 @@ describe('LocationValidateController', () => {
       expect(result).toBe('parent-handler-result')
     })
 
-    it('should throw if scoring service fails with other error', async () => {
+    it('should throw if scoring service fails with error', async () => {
       const error = new Error('Internal Server Error')
       error._details = { upstreamStatus: 500 }
       invokeGrantScoringGetAction.mockRejectedValueOnce(error)

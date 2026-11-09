@@ -4,6 +4,7 @@ import { analyzeAccessibility } from '../utils/accessibility.js'
 import referenceNumbers from '../utils/reference-number-store.js'
 import { transformStepArgument } from '../utils/step-argument-transformation.js'
 import AutocompleteField from '../page-objects/auto-complete.field.js'
+import CheckDetailsPage from '../page-objects/check-details.page.js'
 import DefraAccountBar from '../page-objects/defra-account-bar.js'
 import SummaryPage from '../page-objects/summary.page.js'
 import PrintSubmittedApplicationPage from '../page-objects/print-submitted-application.page.js'
@@ -133,6 +134,26 @@ Then('(the user )should see the following answers', async function (dataTable) {
   const summaryPage = new SummaryPage(this.page)
   const actualAnswers = await summaryPage.answers()
   expect(actualAnswers).toEqual(expectedAnswers)
+})
+
+Then('(the user )should be able to check the following details', async function (dataTable) {
+  const expectedDetails = []
+  let detail = {}
+
+  for (const row of dataTable.hashes()) {
+    if (row.QUESTION) {
+      detail = { question: row.QUESTION, answers: [] }
+      expectedDetails.push(detail)
+    }
+
+    if (row.ANSWER) {
+      detail.answers.push(row.ANSWER)
+    }
+  }
+
+  const checkDetailsPage = new CheckDetailsPage(this.page)
+  const actualDetails = await checkDetailsPage.details()
+  expect(actualDetails).toEqual(expectedDetails)
 })
 
 Then('(the user )should see the following submitted application details', async function (dataTable) {

@@ -232,6 +232,132 @@ describe('print-application-service', () => {
       expect(result.sections).toEqual([])
     })
 
+    describe('saved additional answers', () => {
+      const definition = {
+        sections: [{ id: 'costs', title: 'Project costs' }],
+        pages: [
+          { path: '/tasks', title: 'Tasks', controller: 'TaskListPageController' },
+          { path: '/score-results', title: 'Score results', section: 'costs' },
+          { path: '/total-estimated-cost', title: 'Total estimated cost', section: 'costs' },
+          { path: '/summary', title: 'Check answers', controller: 'CheckResponsesPageController' }
+        ],
+        metadata: {
+          pageConfig: {
+            '/summary': {
+              additionalSections: [
+                { page: '/score-results', items: [{ title: 'Score', stateValue: 'additionalAnswers.totalScore' }] },
+                {
+                  page: '/total-estimated-cost',
+                  items: [{ title: 'Total estimated cost (£)', stateValue: 'additionalAnswers.totalEstimatedCost' }]
+                }
+              ]
+            }
+          }
+        }
+      }
+      const answers = { additionalAnswers: { totalScore: 0, totalEstimatedCost: 125000 } }
+
+      test('places water-management derived answers in their owning task even without question components', () => {
+        const result = buildPrintViewModel({ ...baseParams, definition, answers })
+
+        expect(result.sections).toEqual([
+          {
+            title: 'Project costs',
+            showLandAndActions: false,
+            questions: [
+              { label: 'Score', answer: '0' },
+              { label: 'Total estimated cost (£)', answer: '125000' }
+            ]
+          }
+        ])
+        expect(answers).toEqual({ additionalAnswers: { totalScore: 0, totalEstimatedCost: 125000 } })
+      })
+
+      test('includes additional answers for journeys without a task list', () => {
+        const result = buildPrintViewModel({
+          ...baseParams,
+          definition: { ...definition, pages: definition.pages.slice(1) },
+          answers
+        })
+
+        expect(result.sections).toEqual([
+          { title: 'Score results', questions: [{ label: 'Score', answer: '0' }] },
+          { title: 'Total estimated cost', questions: [{ label: 'Total estimated cost (£)', answer: '125000' }] }
+        ])
+      })
+
+      test('excludes saved results belonging to pages outside the relevant journey', () => {
+        const result = buildPrintViewModel({
+          ...baseParams,
+          definition,
+          answers,
+          relevantPages: [{ path: '/score-results' }]
+        })
+
+        expect(result.sections[0].questions).toEqual([{ label: 'Score', answer: '0' }])
+      })
+
+      test('renders titled sections, preserves false, and uses the Check answers fallback for missing values', () => {
+        const titledDefinition = structuredClone(definition)
+        titledDefinition.metadata.pageConfig['/summary'].additionalSections = [
+          {
+            title: 'Calculated results',
+            items: [
+              { title: 'Eligible', stateValue: 'additionalAnswers.eligible' },
+              { title: 'Missing', stateValue: 'additionalAnswers.missing' },
+              { title: 'Empty', stateValue: 'additionalAnswers.empty' }
+            ]
+          }
+        ]
+        const result = buildPrintViewModel({
+          ...baseParams,
+          definition: titledDefinition,
+          answers: { additionalAnswers: { eligible: false, empty: null } }
+        })
+
+        expect(result.sections).toEqual([
+          {
+            title: 'Calculated results',
+            questions: [
+              { label: 'Eligible', answer: 'false' },
+              { label: 'Missing', answer: 'Not provided' },
+              { label: 'Empty', answer: 'Not provided' }
+            ]
+          }
+        ])
+      })
+
+      test('renders a value only once when multiple Check answers pages configure it', () => {
+        const repeatedDefinition = structuredClone(definition)
+        repeatedDefinition.pages.push({
+          path: '/other-summary',
+          title: 'Other check answers',
+          controller: 'CheckResponsesPageController'
+        })
+        repeatedDefinition.metadata.pageConfig['/other-summary'] = repeatedDefinition.metadata.pageConfig['/summary']
+
+        const result = buildPrintViewModel({ ...baseParams, definition: repeatedDefinition, answers })
+
+        expect(result.sections.flatMap((section) => section.questions)).toHaveLength(2)
+      })
+
+      test('ignores untitled sections with unknown owners and the total already shown on payment cards', () => {
+        const invalidDefinition = structuredClone(definition)
+        invalidDefinition.metadata.pageConfig['/summary'].additionalSections = [
+          { page: '/unknown', items: [{ title: 'Unknown', stateValue: 'additionalAnswers.totalScore' }] },
+          { title: 'Payment', items: [{ title: 'Annual payment', stateValue: 'totalPayment' }] }
+        ]
+        const result = buildPrintViewModel({
+          ...baseParams,
+          definition: invalidDefinition,
+          answers: { ...answers, totalPayment: '£1500.00', payment: MOCK_PAYMENT }
+        })
+
+        expect(result.sections).toEqual([])
+        expect(result.landAndActionsSummary).not.toBeNull()
+      })
+    })
+
     const datePartsDefinition = {
       pages: [{ title: 'Dates', components: [{ type: 'DatePartsField', name: 'startDate', title: 'Start date' }] }]
     }

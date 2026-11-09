@@ -1,6 +1,10 @@
 # Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities
 version: v1.25.0
 ignore:
+  'SNYK-JS-OPEN-22112123':
+    - '@defra/forms-engine-plugin > @defra/interactive-map > @easyops-cn/docusaurus-search-local > @docusaurus/plugin-content-docs > @docusaurus/core > open':
+        reason: 'Checked 2026-11-05 on forms-engine-plugin@4.23.1 > interactive-map@0.0.22-alpha > Docusaurus@3.10.2 > open@8.4.2. Exploitation requires attacker-controlled targets or app arguments reaching the Windows/WSL PowerShell browser launcher. Docusaurus calls open only from its start/serve documentation commands; Grants UI runs Hapi and webpack watch/build without running Docusaurus or passing applicant input to this launcher. Documentation tooling remains installed in production. Fixed open@11.0.4 cleared seven-day cooldown on 2026-09-21T20:36:00.110Z, but its ESM API removes open.apps used by Docusaurus, so do not force it into this legacy caller. The compatible webpack-dev-server path is overridden to v11.0.4. Remove when Docusaurus adopts a compatible fixed open release or upstream drops the documentation dependencies; reassess if callers or input sources change.'
+        expires: '2026-12-05'
   'SNYK-JS-FLAT-22148819':
     - '@defra/forms-engine-plugin > @defra/interactive-map > @docusaurus/theme-common > @docusaurus/mdx-loader > @docusaurus/utils > @docusaurus/types > webpack-merge > flat':
         reason: 'Checked 2026-11-03 on forms-engine-plugin@4.23.1 > interactive-map@0.0.22-alpha > Docusaurus@3.10.2 > webpack-merge@5.10.0 > flat@5.0.2. No fixed flat release. Resource exhaustion requires attacker-controlled numeric indices reaching unflatten() and subsequent array iteration or serialization. The installed webpack-merge calls only flatten(), never unflatten(). This documentation tooling is installed in production, but Grants UI runs Hapi and builds with webpack.config.js without running Docusaurus. Remove when flat is fixed or upstream drops it; reassess if these callers change.'
@@ -8,31 +12,42 @@ ignore:
     - '@defra/forms-engine-plugin > @defra/interactive-map > @easyops-cn/docusaurus-search-local > @docusaurus/plugin-content-docs > @docusaurus/core > webpack-merge > flat':
         reason: 'Checked 2026-11-03 on forms-engine-plugin@4.23.1 > interactive-map@0.0.22-alpha > Docusaurus@3.10.2 > webpack-merge@6.0.1 > flat@5.0.2. No fixed flat release. Resource exhaustion requires attacker-controlled numeric indices reaching unflatten() and subsequent array iteration or serialization. The installed webpack-merge calls only flatten(), never unflatten(). This documentation tooling is installed in production, but Grants UI runs Hapi and builds with webpack.config.js without running Docusaurus. Remove when flat is fixed or upstream drops it; reassess if these callers change.'
         expires: '2026-12-03'
+    - 'webpack-cli > webpack-merge > flat':
+        reason: 'Checked 2026-11-05 on webpack-cli@7.2.3 > webpack-merge@6.0.1 > flat@5.0.2. Resource exhaustion requires attacker-controlled numeric indices reaching unflatten() and subsequent array iteration or serialization. Installed webpack-merge calls flatten(), never unflatten(); webpack configuration is repository-controlled build input. Development tooling, outside applicant requests. No fixed flat release exists. Remove when webpack-merge drops flat or a fix is published; reassess if its calls change.'
+        expires: '2026-12-05'
   'SNYK-JS-MAPLIBREGL-21826908':
-    - '@defra/interactive-map > maplibre-gl':
-        reason: 'Checked 2026-10-29 on interactive-map@0.0.54-alpha > maplibre-gl@5.24.0: the DOM.sanitize() bypass (GHSA-jrc7-96c5-q579) needs the attribution control to render untrusted attribution HTML. The parcel map sets a fixed OS attribution string (getMapStyleAttribution) and loads its style from the grants-ui /api/map/os-basemap proxy, so applicants cannot supply attribution content. The fix, maplibre-gl 6.4.1+, needs interactive-map@0.0.55-alpha, a breaking MapLibre v6 upgrade (WebGL2, separate worker file, v6 API for the direct MapLibre calls in parcel-map) that needs browser testing. Remove this ignore when that upgrade lands.'
-        expires: '2026-11-28'
     - '@defra/forms-engine-plugin > maplibre-gl':
         reason: 'Checked 2026-10-29 on forms-engine-plugin@4.23.0: the engine depends on maplibre-gl ^5.24.0 directly and through interactive-map@0.0.22-alpha, and no 4.x release moves to maplibre-gl 6.4.1+. Its map.js sets fixed OS and Esri attribution strings and loads styles from the grants-ui /api/maps/vts proxy; geospatial-map.js adds GeoJSON datasets from the same API without attribution. Applicants cannot supply the attribution HTML the DOM.sanitize() bypass needs. Remove this ignore when forms-engine-plugin moves to maplibre-gl 6.4.1+; reassess if map attribution or style sources become configurable.'
         expires: '2026-11-28'
     - '@defra/forms-engine-plugin > @defra/interactive-map > maplibre-gl':
         reason: 'Checked 2026-10-29 on forms-engine-plugin@4.23.0 > interactive-map@0.0.22-alpha > maplibre-gl@5.24.0: same maps as the direct forms-engine-plugin path, with fixed OS and Esri attribution strings and styles from the grants-ui /api/maps/vts proxy, so applicants cannot supply attribution HTML. No forms-engine-plugin 4.x release moves interactive-map to maplibre-gl 6.4.1+. Remove this ignore when it does; reassess if map attribution or style sources become configurable.'
         expires: '2026-11-28'
-  'SNYK-JS-PICOMATCH-21248802':
-    - '@defra/forms-engine-plugin > @defra/interactive-map > *':
-        reason: 'Checked 2026-10-20 on forms-engine-plugin@4.23.0: interactive-map@0.0.22-alpha installs Docusaurus > globby/fast-glob/micromatch, chokidar/anymatch/readdirp and jest-util > picomatch@2.3.2 in production. ReDoS requires an attacker-controlled repeated-extglob pattern. These documentation paths use source-file and watch patterns, not applicant form values; grants-ui does not run Docusaurus. Its own build/watch tooling also uses repository-controlled patterns. No fixed picomatch release is available, including 4.0.7. Remove when a fixed version is released or the documentation dependencies are dropped; review within one month.'
-        expires: '2026-11-20'
   'SNYK-JS-INFLIGHT-6095116':
     - '@defra/forms-engine-plugin > @defra/interactive-map > *':
         reason: 'Rechecked 2026-11-02 on forms-engine-plugin@4.23.1 > interactive-map@0.0.22-alpha > polygon-splitter@0.0.11 > glob@8.1.0 > inflight@1.0.6. No fixed inflight release. The leak requires repeated asynchronous operations through inflight. The published polygon-splitter dist/polygonsplitter.mjs imports only geometry helpers, not glob; the map browser runtime does not execute inflight. These dependencies are installed in production. Remove when polygon-splitter drops glob or adopts a version without inflight.'
         expires: '2026-12-02'
     - '@defra/interactive-map > polygon-splitter > glob > inflight':
-        reason: 'Rechecked 2026-11-02 on interactive-map@0.0.54-alpha > polygon-splitter@0.0.11 > glob@8.1.0 > inflight@1.0.6. No fixed inflight release. The leak requires repeated asynchronous operations through inflight. The published polygon-splitter dist/polygonsplitter.mjs imports only geometry helpers, not glob; the map browser runtime does not execute inflight. These dependencies are installed in production. Remove when polygon-splitter drops glob or adopts a version without inflight.'
+        reason: 'Rechecked 2026-11-02 on interactive-map@0.0.58-alpha > polygon-splitter@0.0.11 > glob@8.1.0 > inflight@1.0.6. No fixed inflight release. The leak requires repeated asynchronous operations through inflight. The published polygon-splitter dist/polygonsplitter.mjs imports only geometry helpers, not glob; the map browser runtime does not execute inflight. These dependencies are installed in production. Remove when polygon-splitter drops glob or adopts a version without inflight.'
         expires: '2026-12-02'
+    - '@babel/cli > glob > inflight':
+        reason: 'Checked 2026-11-05 on @babel/cli@7.29.7 > glob@7.2.3 > inflight@1.0.6: inflight@1.0.6. The leak requires repeated asynchronous operations through inflight. This development path scans repository source files or the Pact logger''s installed help directory during build/test/CLI execution, not applicant input or server requests. No fixed inflight release exists. Remove when upstream drops legacy glob/inflight or a compatible fix is published.'
+        expires: '2026-12-05'
+    - 'clean-webpack-plugin > del > globby > glob > inflight':
+        reason: 'Checked 2026-11-05 on clean-webpack-plugin@4.0.0 > del@4.1.1 > globby@6.1.0 > glob@7.2.3 > inflight@1.0.6: inflight@1.0.6. The leak requires repeated asynchronous operations through inflight. This development path scans repository source files or the Pact logger''s installed help directory during build/test/CLI execution, not applicant input or server requests. No fixed inflight release exists. Remove when upstream drops legacy glob/inflight or a compatible fix is published.'
+        expires: '2026-12-05'
   'SNYK-JS-BRACES-19963945':
     - '@defra/forms-engine-plugin > @defra/interactive-map > *':
         reason: 'Rechecked 2026-11-02 on forms-engine-plugin@4.23.1 > interactive-map@0.0.22-alpha > Docusaurus@3.10.2 > chokidar/globby > braces@3.0.3. No fixed braces release. Stack exhaustion requires deeply nested attacker-controlled brace patterns. This documentation tooling is installed in production, but Grants UI runs Hapi and builds its browser assets with webpack.config.js, without running Docusaurus; build and watch patterns are repository-controlled. Remove when braces is fixed or upstream drops the documentation dependencies.'
         expires: '2026-12-02'
+    - '@babel/cli > chokidar > braces':
+        reason: 'Checked 2026-11-05 on @babel/cli@7.29.7 > chokidar@3.6.0 > braces@3.0.3: braces@3.0.3. Stack exhaustion requires deeply nested attacker-controlled brace patterns. The development watcher/build/stylelint paths take patterns from repository files and CLI configuration, not applicant form values; they do not run in the server request path. No fixed braces release exists. Remove when upstream drops braces or a fixed release is published; reassess if pattern sources change.'
+        expires: '2026-12-05'
+    - 'nodemon > chokidar > braces':
+        reason: 'Checked 2026-11-05 on nodemon@3.1.14 > chokidar@3.6.0 > braces@3.0.3: braces@3.0.3. Stack exhaustion requires deeply nested attacker-controlled brace patterns. The development watcher/build/stylelint paths take patterns from repository files and CLI configuration, not applicant form values; they do not run in the server request path. No fixed braces release exists. Remove when upstream drops braces or a fixed release is published; reassess if pattern sources change.'
+        expires: '2026-12-05'
+    - 'stylelint > fast-glob > micromatch > braces':
+        reason: 'Checked 2026-11-05 on stylelint@17.16.0 > fast-glob@3.3.3 > micromatch@4.0.8 > braces@3.0.3: braces@3.0.3. Stack exhaustion requires deeply nested attacker-controlled brace patterns. The development watcher/build/stylelint paths take patterns from repository files and CLI configuration, not applicant form values; they do not run in the server request path. No fixed braces release exists. Remove when upstream drops braces or a fixed release is published; reassess if pattern sources change.'
+        expires: '2026-12-05'
   'SNYK-JS-HTTPCACHESEMANTICS-19964064':
     - '@defra/forms-engine-plugin > @defra/interactive-map > *':
         reason: 'Rechecked 2026-11-02 on forms-engine-plugin@4.23.1 > interactive-map@0.0.22-alpha > Docusaurus@3.10.2 > update-notifier@6.0.2 > got@12.6.1 > cacheable-request@10.2.14 > http-cache-semantics@4.3.0. No fixed release. Cross-user disclosure requires a shared HTTP cache mishandling Vary: * responses. This dependency is installed in production for the map documentation update notifier; Grants UI runs Hapi and webpack, not Docusaurus, and does not use this notifier cache for applicant requests. Remove when fixed or upstream drops the documentation dependencies.'
@@ -45,18 +60,23 @@ ignore:
     - '@defra/forms-engine-plugin > @defra/interactive-map > *':
         reason: 'Rechecked 2026-11-02 on forms-engine-plugin@4.23.1 > interactive-map@0.0.22-alpha > Docusaurus@3.10.2 > file-loader@6.2.0 > schema-utils@3.3.0 > ajv@6.15.0 > uri-js@4.4.1. No fixed release. Exploitation requires attacker-controlled malformed percent-encoded URIs reaching pctDecChars and downstream use of decoded metacharacters. This documentation build chain is installed in production but is not run by Grants UI; its Ajv schema identifiers are tooling-controlled, not applicant input. Remove when fixed or upstream drops the documentation dependencies.'
         expires: '2026-12-02'
+    - 'eslint > @eslint/eslintrc > ajv > uri-js':
+        reason: 'Checked 2026-11-05 on eslint@9.39.5 > @eslint/eslintrc@3.3.7 > ajv@6.15.0 > uri-js@4.4.1. Exploitation requires attacker-controlled malformed percent-encoded URIs reaching pctDecChars and downstream use of decoded metacharacters. Ajv resolves repository-controlled ESLint configuration schema identifiers; applicant input does not reach those URIs. Development tooling, outside server requests. No fixed uri-js release exists. Remove when ESLint drops uri-js or a compatible fix is published; reassess if configuration sources change.'
+        expires: '2026-12-05'
   'SNYK-JS-URIJS-19963963':
     - '@defra/forms-engine-plugin > @defra/interactive-map > *':
         reason: 'Rechecked 2026-11-02 on forms-engine-plugin@4.23.1 > interactive-map@0.0.22-alpha > Docusaurus@3.10.2 > file-loader@6.2.0 > schema-utils@3.3.0 > ajv@6.15.0 > uri-js@4.4.1. No fixed release. The infinite loop requires attacker-controlled paths containing Unicode line or paragraph separators reaching removeDotSegments through URI normalization or resolution. This documentation build chain is installed in production but is not run by Grants UI; its Ajv schema identifiers are tooling-controlled, not applicant input. Remove when fixed or upstream drops the documentation dependencies.'
         expires: '2026-12-02'
-  'SNYK-JS-SPRINTFJS-20532016':
-    - 'global-agent > roarr > sprintf-js':
-        reason: 'Checked 2026-10-07: global-agent@3.0.0 > roarr@2.15.4 > sprintf-js@1.1.3. No fixed sprintf-js release; the only fix is global-agent v4 (drops roarr from 4.1.0). global-agent is pinned to 3.0.0 because 4.1.3 broke the OIDC well-known fetch over the CDP egress proxy (#968, #969). Remove when global-agent v4 is re-verified in a CDP environment.'
-        expires: '2026-11-06'
+    - 'eslint > @eslint/eslintrc > ajv > uri-js':
+        reason: 'Checked 2026-11-05 on eslint@9.39.5 > @eslint/eslintrc@3.3.7 > ajv@6.15.0 > uri-js@4.4.1. Exploitation requires attacker-controlled paths containing Unicode line or paragraph separators reaching removeDotSegments. Ajv resolves repository-controlled ESLint configuration schema identifiers; applicant input does not reach those URIs. Development tooling, outside server requests. No fixed uri-js release exists. Remove when ESLint drops uri-js or a compatible fix is published; reassess if configuration sources change.'
+        expires: '2026-12-05'
   'SNYK-JS-URIJS-20341609':
     - '@defra/forms-engine-plugin > @defra/interactive-map > *':
         reason: 'Rechecked 2026-11-02 on forms-engine-plugin@4.23.1 > interactive-map@0.0.22-alpha > Docusaurus@3.10.2 > file-loader@6.2.0 > schema-utils@3.3.0 > ajv@6.15.0 > uri-js@4.4.1. No fixed release. The exception requires an attacker-controlled mailto URI with a bare to query parameter reaching the URI parser. This documentation build chain is installed in production but is not run by Grants UI; its Ajv schema identifiers are tooling-controlled, not applicant input. Remove when fixed or upstream drops the documentation dependencies.'
         expires: '2026-12-02'
+    - 'eslint > @eslint/eslintrc > ajv > uri-js':
+        reason: 'Checked 2026-11-05 on eslint@9.39.5 > @eslint/eslintrc@3.3.7 > ajv@6.15.0 > uri-js@4.4.1. Exploitation requires attacker-controlled a mailto URI with a bare to query parameter reaching the URI parser. Ajv resolves repository-controlled ESLint configuration schema identifiers; applicant input does not reach those URIs. Development tooling, outside server requests. No fixed uri-js release exists. Remove when ESLint drops uri-js or a compatible fix is published; reassess if configuration sources change.'
+        expires: '2026-12-05'
   'SNYK-JS-HAPIJOI-22114210':
     - '@defra/forms-engine-plugin > blankie > @hapi/joi':
         reason: 'Checked 2026-11-02 on forms-engine-plugin@4.23.1 > blankie@5.0.0 > @hapi/joi@17.1.1. No fixed @hapi/joi release. ReDoS requires email({ multiple: true }) on untrusted input. Blankie lib/schema.js validates CSP plugin options using string, array, boolean and conditional rules; it never calls the email rule. Remove when Blankie replaces @hapi/joi or upstream provides a fix; reassess if the schema changes.'
@@ -69,55 +89,36 @@ ignore:
         reason: 'Checked 2026-11-02 on forms-engine-plugin@4.23.1 > interactive-map@0.0.22-alpha > polygon-splitter@0.0.11 > glob@8.1.0 > minimatch@5.1.9. Amplification requires attacker-controlled patterns with optimizationLevel >= 2; this installed version has no firstPhasePreProcess or optimizationLevel. The published polygon-splitter runtime does not import glob. Fixed minimatch@11.0.1 was published 2026-10-27T22:26:03.755Z and clears cooldown 2026-11-03T22:26:03.755Z; v11 is outside the glob dependency range. Remove when upstream drops glob or adopts compatible fixed dependencies.'
         expires: '2026-12-02'
     - '@defra/interactive-map > polygon-splitter > glob > minimatch':
-        reason: 'Checked 2026-11-02 on interactive-map@0.0.54-alpha > polygon-splitter@0.0.11 > glob@8.1.0 > minimatch@5.1.9. Amplification requires attacker-controlled patterns with optimizationLevel >= 2; this installed version has no firstPhasePreProcess or optimizationLevel. The published polygon-splitter runtime does not import glob. Fixed minimatch@11.0.1 was published 2026-10-27T22:26:03.755Z and clears cooldown 2026-11-03T22:26:03.755Z; v11 is outside the glob dependency range. Remove when upstream drops glob or adopts compatible fixed dependencies.'
+        reason: 'Checked 2026-11-02 on interactive-map@0.0.58-alpha > polygon-splitter@0.0.11 > glob@8.1.0 > minimatch@5.1.9. Amplification requires attacker-controlled patterns with optimizationLevel >= 2; this installed version has no firstPhasePreProcess or optimizationLevel. The published polygon-splitter runtime does not import glob. Fixed minimatch@11.0.1 was published 2026-10-27T22:26:03.755Z and clears cooldown 2026-11-03T22:26:03.755Z; v11 is outside the glob dependency range. Remove when upstream drops glob or adopts compatible fixed dependencies.'
         expires: '2026-12-02'
-  'SNYK-JS-JOI-22114209':
-    - 'joi':
-        reason: 'Checked 2026-11-02 on joi@17.13.8. ReDoS requires email({ multiple: true }) on untrusted input. Grants UI uses Joi for configuration and request schemas and defines no email rule. Fixed joi@17.13.9 was published 2026-10-28T10:04:26.342Z; the seven-day cooldown ends 2026-11-04T10:04:26.342Z. Remove this ignore and bump both the direct dependency and existing joi override when eligible; reassess if multiple-email validation is introduced.'
-        expires: '2026-11-05'
-    - '@defra/fcp-audit-publisher > joi':
-        reason: 'Checked 2026-11-02 on joi@17.13.8. ReDoS requires email({ multiple: true }) on untrusted input. The installed parent validates plugin options or audit payloads without a multiple-email rule. Fixed joi@17.13.9 was published 2026-10-28T10:04:26.342Z; the seven-day cooldown ends 2026-11-04T10:04:26.342Z. Remove this ignore and bump both the direct dependency and existing joi override when eligible; reassess if multiple-email validation is introduced.'
-        expires: '2026-11-05'
-    - '@defra/forms-engine-plugin > @defra/interactive-map > @docusaurus/theme-common > @docusaurus/mdx-loader > @docusaurus/utils > @docusaurus/types > joi':
-        reason: 'Checked 2026-11-02 on joi@17.13.8. ReDoS requires email({ multiple: true }) on untrusted input. This path is documentation validation installed with interactive-map@0.0.22-alpha; Grants UI runs Hapi and webpack without running Docusaurus. Fixed joi@17.13.9 was published 2026-10-28T10:04:26.342Z; the seven-day cooldown ends 2026-11-04T10:04:26.342Z. Remove this ignore and bump both the direct dependency and existing joi override when eligible; reassess if multiple-email validation is introduced.'
-        expires: '2026-11-05'
-    - '@hapi/catbox-redis > joi':
-        reason: 'Checked 2026-11-02 on joi@17.13.8. ReDoS requires email({ multiple: true }) on untrusted input. The installed parent validates plugin options or audit payloads without a multiple-email rule. Fixed joi@17.13.9 was published 2026-10-28T10:04:26.342Z; the seven-day cooldown ends 2026-11-04T10:04:26.342Z. Remove this ignore and bump both the direct dependency and existing joi override when eligible; reassess if multiple-email validation is introduced.'
-        expires: '2026-11-05'
-    - '@hapi/jwt > joi':
-        reason: 'Checked 2026-11-02 on joi@17.13.8. ReDoS requires email({ multiple: true }) on untrusted input. The installed parent validates plugin options or audit payloads without a multiple-email rule. Fixed joi@17.13.9 was published 2026-10-28T10:04:26.342Z; the seven-day cooldown ends 2026-11-04T10:04:26.342Z. Remove this ignore and bump both the direct dependency and existing joi override when eligible; reassess if multiple-email validation is introduced.'
-        expires: '2026-11-05'
-    - '@defra/hapi-auth-oidc > @hapi/jwt > joi':
-        reason: 'Checked 2026-11-02 on joi@17.13.8. ReDoS requires email({ multiple: true }) on untrusted input. The installed parent validates plugin options or audit payloads without a multiple-email rule. Fixed joi@17.13.9 was published 2026-10-28T10:04:26.342Z; the seven-day cooldown ends 2026-11-04T10:04:26.342Z. Remove this ignore and bump both the direct dependency and existing joi override when eligible; reassess if multiple-email validation is introduced.'
-        expires: '2026-11-05'
-    - '@hapi/bell > joi':
-        reason: 'Checked 2026-11-02 on joi@17.13.8. ReDoS requires email({ multiple: true }) on untrusted input. The installed parent validates plugin options or audit payloads without a multiple-email rule. Fixed joi@17.13.9 was published 2026-10-28T10:04:26.342Z; the seven-day cooldown ends 2026-11-04T10:04:26.342Z. Remove this ignore and bump both the direct dependency and existing joi override when eligible; reassess if multiple-email validation is introduced.'
-        expires: '2026-11-05'
-    - 'hapi-pulse > joi':
-        reason: 'Checked 2026-11-02 on joi@17.13.8. ReDoS requires email({ multiple: true }) on untrusted input. The installed parent validates plugin options or audit payloads without a multiple-email rule. Fixed joi@17.13.9 was published 2026-10-28T10:04:26.342Z; the seven-day cooldown ends 2026-11-04T10:04:26.342Z. Remove this ignore and bump both the direct dependency and existing joi override when eligible; reassess if multiple-email validation is introduced.'
-        expires: '2026-11-05'
-    - 'hapi-rate-limit > joi':
-        reason: 'Checked 2026-11-02 on joi@17.13.8. ReDoS requires email({ multiple: true }) on untrusted input. The installed parent validates plugin options or audit payloads without a multiple-email rule. Fixed joi@17.13.9 was published 2026-10-28T10:04:26.342Z; the seven-day cooldown ends 2026-11-04T10:04:26.342Z. Remove this ignore and bump both the direct dependency and existing joi override when eligible; reassess if multiple-email validation is introduced.'
-        expires: '2026-11-05'
-    - '@defra/forms-engine-plugin > @defra/interactive-map > @docusaurus/theme-common > @docusaurus/mdx-loader > @docusaurus/utils-validation > joi':
-        reason: 'Checked 2026-11-02 on joi@17.13.8. ReDoS requires email({ multiple: true }) on untrusted input. This path is documentation validation installed with interactive-map@0.0.22-alpha; Grants UI runs Hapi and webpack without running Docusaurus. Fixed joi@17.13.9 was published 2026-10-28T10:04:26.342Z; the seven-day cooldown ends 2026-11-04T10:04:26.342Z. Remove this ignore and bump both the direct dependency and existing joi override when eligible; reassess if multiple-email validation is introduced.'
-        expires: '2026-11-05'
-    - '@defra/forms-engine-plugin > @hapi/catbox-redis > joi':
-        reason: 'Checked 2026-11-02 on joi@17.13.8. ReDoS requires email({ multiple: true }) on untrusted input. The installed parent validates plugin options or audit payloads without a multiple-email rule. Fixed joi@17.13.9 was published 2026-10-28T10:04:26.342Z; the seven-day cooldown ends 2026-11-04T10:04:26.342Z. Remove this ignore and bump both the direct dependency and existing joi override when eligible; reassess if multiple-email validation is introduced.'
-        expires: '2026-11-05'
-    - '@defra/forms-engine-plugin > @hapi/jwt > joi':
-        reason: 'Checked 2026-11-02 on joi@17.13.8. ReDoS requires email({ multiple: true }) on untrusted input. The installed parent validates plugin options or audit payloads without a multiple-email rule. Fixed joi@17.13.9 was published 2026-10-28T10:04:26.342Z; the seven-day cooldown ends 2026-11-04T10:04:26.342Z. Remove this ignore and bump both the direct dependency and existing joi override when eligible; reassess if multiple-email validation is introduced.'
-        expires: '2026-11-05'
-    - '@defra/forms-engine-plugin > blipp > joi':
-        reason: 'Checked 2026-11-02 on joi@17.13.8. ReDoS requires email({ multiple: true }) on untrusted input. The installed parent validates plugin options or audit payloads without a multiple-email rule. Fixed joi@17.13.9 was published 2026-10-28T10:04:26.342Z; the seven-day cooldown ends 2026-11-04T10:04:26.342Z. Remove this ignore and bump both the direct dependency and existing joi override when eligible; reassess if multiple-email validation is introduced.'
-        expires: '2026-11-05'
-    - '@defra/forms-engine-plugin > hapi-pulse > joi':
-        reason: 'Checked 2026-11-02 on joi@17.13.8. ReDoS requires email({ multiple: true }) on untrusted input. The installed parent validates plugin options or audit payloads without a multiple-email rule. Fixed joi@17.13.9 was published 2026-10-28T10:04:26.342Z; the seven-day cooldown ends 2026-11-04T10:04:26.342Z. Remove this ignore and bump both the direct dependency and existing joi override when eligible; reassess if multiple-email validation is introduced.'
-        expires: '2026-11-05'
-    - '@defra/forms-engine-plugin > joi':
-        reason: 'Checked 2026-11-02 on joi@17.13.8. ReDoS requires email({ multiple: true }) on untrusted input. forms-engine-plugin@4.23.1 EmailAddressField and FileUploadField use email() with multiple disabled; forms-model email schemas also leave multiple disabled. Fixed joi@17.13.9 was published 2026-10-28T10:04:26.342Z; the seven-day cooldown ends 2026-11-04T10:04:26.342Z. Remove this ignore and bump both the direct dependency and existing joi override when eligible; reassess if multiple-email validation is introduced.'
-        expires: '2026-11-05'
-    - '@defra/hapi-auth-oidc > joi':
-        reason: 'Checked 2026-11-02 on joi@17.13.8. ReDoS requires email({ multiple: true }) on untrusted input. The installed parent validates plugin options or audit payloads without a multiple-email rule. Fixed joi@17.13.9 was published 2026-10-28T10:04:26.342Z; the seven-day cooldown ends 2026-11-04T10:04:26.342Z. Remove this ignore and bump both the direct dependency and existing joi override when eligible; reassess if multiple-email validation is introduced.'
-        expires: '2026-11-05'
+    - '@babel/cli > glob > minimatch':
+        reason: 'Checked 2026-11-05 on @babel/cli@7.29.7 > glob@7.2.3 > minimatch@3.1.5: minimatch@3.1.5. Amplification requires attacker-controlled patterns with optimizationLevel >= 2; installed minimatch v3/v5 has neither firstPhasePreProcess nor optimizationLevel. These callers use repository-controlled lint, build, package-script or help-file patterns. Fixed v11.0.3 cleared seven-day cooldown on 2026-11-04T20:00:34.713Z, but its object exports replace the callable API used by legacy callers. Modern v7+ paths are overridden to v11.0.3. Remove when upstream adopts a compatible fixed release; reassess if callers or pattern sources change.'
+        expires: '2026-12-05'
+    - 'clean-webpack-plugin > del > globby > glob > minimatch':
+        reason: 'Checked 2026-11-05 on clean-webpack-plugin@4.0.0 > del@4.1.1 > globby@6.1.0 > glob@7.2.3 > minimatch@3.1.5: minimatch@3.1.5. Amplification requires attacker-controlled patterns with optimizationLevel >= 2; installed minimatch v3/v5 has neither firstPhasePreProcess nor optimizationLevel. These callers use repository-controlled lint, build, package-script or help-file patterns. Fixed v11.0.3 cleared seven-day cooldown on 2026-11-04T20:00:34.713Z, but its object exports replace the callable API used by legacy callers. Modern v7+ paths are overridden to v11.0.3. Remove when upstream adopts a compatible fixed release; reassess if callers or pattern sources change.'
+        expires: '2026-12-05'
+    - 'eslint > @eslint/config-array > minimatch':
+        reason: 'Checked 2026-11-05 on eslint@9.39.5 > @eslint/config-array@0.21.2 > minimatch@3.1.5: minimatch@3.1.5. Amplification requires attacker-controlled patterns with optimizationLevel >= 2; installed minimatch v3/v5 has neither firstPhasePreProcess nor optimizationLevel. These callers use repository-controlled lint, build, package-script or help-file patterns. Fixed v11.0.3 cleared seven-day cooldown on 2026-11-04T20:00:34.713Z, but its object exports replace the callable API used by legacy callers. Modern v7+ paths are overridden to v11.0.3. Remove when upstream adopts a compatible fixed release; reassess if callers or pattern sources change.'
+        expires: '2026-12-05'
+    - 'npm-run-all > minimatch':
+        reason: 'Checked 2026-11-05 on npm-run-all@4.1.5 > minimatch@3.1.5: minimatch@3.1.5. Amplification requires attacker-controlled patterns with optimizationLevel >= 2; installed minimatch v3/v5 has neither firstPhasePreProcess nor optimizationLevel. These callers use repository-controlled lint, build, package-script or help-file patterns. Fixed v11.0.3 cleared seven-day cooldown on 2026-11-04T20:00:34.713Z, but its object exports replace the callable API used by legacy callers. Modern v7+ paths are overridden to v11.0.3. Remove when upstream adopts a compatible fixed release; reassess if callers or pattern sources change.'
+        expires: '2026-12-05'
+    - 'eslint > @eslint/eslintrc > minimatch':
+        reason: 'Checked 2026-11-05 on eslint@9.39.5 > @eslint/eslintrc@3.3.7 > minimatch@3.1.5: minimatch@3.1.5. Amplification requires attacker-controlled patterns with optimizationLevel >= 2; installed minimatch v3/v5 has neither firstPhasePreProcess nor optimizationLevel. These callers use repository-controlled lint, build, package-script or help-file patterns. Fixed v11.0.3 cleared seven-day cooldown on 2026-11-04T20:00:34.713Z, but its object exports replace the callable API used by legacy callers. Modern v7+ paths are overridden to v11.0.3. Remove when upstream adopts a compatible fixed release; reassess if callers or pattern sources change.'
+        expires: '2026-12-05'
+    - 'eslint > minimatch':
+        reason: 'Checked 2026-11-05 on eslint@9.39.5 > minimatch@3.1.5: minimatch@3.1.5. Amplification requires attacker-controlled patterns with optimizationLevel >= 2; installed minimatch v3/v5 has neither firstPhasePreProcess nor optimizationLevel. These callers use repository-controlled lint, build, package-script or help-file patterns. Fixed v11.0.3 cleared seven-day cooldown on 2026-11-04T20:00:34.713Z, but its object exports replace the callable API used by legacy callers. Modern v7+ paths are overridden to v11.0.3. Remove when upstream adopts a compatible fixed release; reassess if callers or pattern sources change.'
+        expires: '2026-12-05'
+  'SNYK-JS-DEEPMERGE-19964053':
+    - 'webpack-assets-manifest > deepmerge':
+        reason: 'Checked 2026-11-05 on webpack-assets-manifest@6.5.5 > deepmerge@4.3.1 (also installed through its types package). Prototype replacement needs an attacker-controlled source object containing __proto__ passed to mergeObject(). The plugin imports deepmerge only in maybeMerge() when options.merge is enabled; webpack.config.js uses new WebpackAssetsManifest() with merge disabled by default. This is build tooling, outside applicant requests. No fixed deepmerge release exists. Remove when upstream drops or fixes deepmerge; reassess if manifest merging is enabled.'
+        expires: '2026-12-05'
+    - '@types/webpack-assets-manifest > webpack-assets-manifest > deepmerge':
+        reason: 'Checked 2026-11-05 on webpack-assets-manifest@6.5.5 > deepmerge@4.3.1 (also installed through its types package). Prototype replacement needs an attacker-controlled source object containing __proto__ passed to mergeObject(). The plugin imports deepmerge only in maybeMerge() when options.merge is enabled; webpack.config.js uses new WebpackAssetsManifest() with merge disabled by default. This is build tooling, outside applicant requests. No fixed deepmerge release exists. Remove when upstream drops or fixes deepmerge; reassess if manifest merging is enabled.'
+        expires: '2026-12-05'
+# npm-only GHSA-3g3m-2fjr-6pw4: glob@9.3.5 remains under babel-plugin-module-resolver@5.0.3.
+# Glob AbortSignal cancellation affects asynchronous traversal of attacker-controlled patterns.
+# normalizeRoot() uses hasMagic()/sync() on repository-controlled Babel root paths, without AbortSignal.
+# glob@14.0.3 is cooldown-eligible but its ESM default export is incompatible with this caller
+# (production build and Jest fail with undefined hasMagic). Recheck upstream by 2026-12-05.
 patch: {}

@@ -421,7 +421,8 @@
     "httpResponse": {
       "statusCode": 200,
       "body": {
-        "message": "success"
+        "message": "success",
+        "locationFound": true
       }
     }
   },
