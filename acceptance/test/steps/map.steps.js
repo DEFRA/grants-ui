@@ -75,3 +75,56 @@ Then('(the user )should see the following requirements applied to the land parce
   const items = this.page.locator('#selected-parcel-requirements-list li')
   await expect(items).toHaveText(expectedItems)
 })
+
+// The map bundle is stubbed out in the world, so the map itself never renders: check the
+// view's hidden state rather than its visibility, which needs a non-empty bounding box.
+Then('(the user )should see the land parcels on a map', async function () {
+  await expect(this.page.locator('#parcel-map-view')).not.toHaveAttribute('hidden')
+  await expect(this.page.locator('#land-parcels')).toBeHidden()
+  await expect(this.page.locator('#parcel-view-toggle')).toHaveText('View parcels as a list')
+})
+
+Then('(the user )should see the following land parcels as a list', async function (dataTable) {
+  await expect(this.page.locator('#land-parcels')).toBeVisible()
+  await expect(this.page.locator('#parcel-map-view')).toHaveAttribute('hidden')
+  await expect(this.page.locator('#parcel-view-toggle')).toHaveText('View parcels on a map')
+  const rows = dataTable.hashes()
+  const items = this.page.locator('#land-parcels .parcel-list-item')
+  await expect(items).toHaveCount(rows.length)
+  for (const [index, row] of rows.entries()) {
+    const item = items.nth(index)
+    await expect(item.locator('[id$="-reference"]')).toHaveText(row.PARCEL)
+    await expect(item.locator('[id$="-hint"]')).toContainText(`Total area: ${row['TOTAL AREA']}`)
+    const tag = item.locator('.parcel-list-tag')
+    if (row.STATUS) {
+      await expect(tag).toHaveText(row.STATUS)
+    } else {
+      await expect(tag).toHaveCount(0)
+    }
+  }
+})
+
+Then(
+  '(the user )should see the following details for land parcel {string} in the list',
+  async function (reference, dataTable) {
+    const panel = this.page.locator(`[data-parcel-details="${reference.replace(' ', '-')}"]`)
+    await expect(panel).toBeVisible()
+    for (const row of dataTable.hashes()) {
+      // Rows for unavailable details stay in the DOM but hidden, so match visible rows only.
+      const detail = panel
+        .locator('.govuk-summary-list__row:visible')
+        .filter({ has: this.page.locator('dt', { hasText: row.FIELD }) })
+      await expect(detail.locator('dd')).toHaveText(row.VALUE)
+    }
+  }
+)
+
+Then(
+  '(the user )should see the following requirements for land parcel {string} in the list',
+  async function (reference, dataTable) {
+    const [intro, ...expectedItems] = dataTable.raw().map((row) => row[0])
+    const panel = this.page.locator(`[data-parcel-details="${reference.replace(' ', '-')}"]`)
+    await expect(panel.locator('[data-parcel-requirements-intro]')).toHaveText(intro)
+    await expect(panel.locator('[data-parcel-requirements-list] li')).toHaveText(expectedItems)
+  }
+)
