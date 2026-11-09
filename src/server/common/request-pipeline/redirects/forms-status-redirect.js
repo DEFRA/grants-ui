@@ -50,8 +50,8 @@ const POST_SUBMISSION_PAGE_STATE_GUARDS = [
  * @returns {boolean}
  */
 function ruleCovers(ruleStatuses, status) {
-  const statuses = (ruleStatuses || 'default').split(',').map((value) => value.trim())
-  return statuses.includes(status) || statuses.includes('default')
+  const statuses = new Set((ruleStatuses || 'default').split(',').map((value) => value.trim()))
+  return statuses.has(status) || statuses.has('default')
 }
 
 /**
