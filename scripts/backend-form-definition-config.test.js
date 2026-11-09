@@ -30,12 +30,21 @@ describe('backend-sourced form deployment config', () => {
     expect(gas.environment.GAS__SNS__CREATE_PAYMENT_TOPIC_ARN).toBe(
       'arn:aws:sns:eu-west-2:000000000000:gas__sns__create_payment_fifo.fifo'
     )
-    const mongoReady = gasComposeConfig.services['mongo-ready']
-    const token = gasComposeConfig.services['grants-ui'].environment.GAS_API_AUTH_TOKEN
-    expect(mongoReady.environment.GAS_API_AUTH_TOKEN_HASH).toBe(createHash('sha256').update(token).digest('hex'))
-    expect(mongoReady.environment.AFTER_REPLICA_SET_READY_COMMAND).toBe('bash /seed-local-gas-token.sh')
-    expect(mongoReady.volumes).toContain('./scripts/seed-local-gas-token.sh:/seed-local-gas-token.sh:ro')
     expect(gasSetup).toContain('create_standard_topic "gfr__sns___reporting_events"')
+  })
+
+  it('registers the local token after GAS migrations and before the UI starts', () => {
+    const gas = gasComposeConfig.services['fg-gas-backend']
+    const token = gasComposeConfig.services['grants-ui'].environment.GAS_API_AUTH_TOKEN
+
+    expect(gasComposeConfig.services['mongo-ready']).toBeUndefined()
+    expect(gasComposeConfig.services['gas-token-ready']).toBeUndefined()
+    expect(gasComposeConfig.services['grants-ui'].depends_on['fg-gas-backend']).toEqual({
+      condition: 'service_healthy'
+    })
+    expect(gas.environment.GAS_API_AUTH_TOKEN_HASH).toBe(createHash('sha256').update(token).digest('hex'))
+    expect(gas.command).toEqual(['/bin/sh', '-c', 'node scripts/seed-local-gas-token.mjs && exec scripts/run.sh'])
+    expect(gas.volumes).toContain('./scripts/seed-local-gas-token.mjs:/home/node/scripts/seed-local-gas-token.mjs:ro')
   })
 
   it('waits for grants-config-broker before starting grants-ui-backend', () => {
