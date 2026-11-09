@@ -132,6 +132,18 @@
         </div>
       {% endif %}
     {% endblock %}
+    <div class="govuk-grid-row">
+      <div class="govuk-grid-column-two-thirds">
+        {{
+          govukNotificationBanner({
+            titleText: "Important",
+            titleId: "planned-outage-banner-title",
+            text: "This service will be unavailable from 4:30pm on Friday 13 November to 9:00am on Monday 16 November",
+            classes: "govuk-!-margin-top-4 govuk-!-margin-bottom-0"
+          })
+        }}
+      </div>
+    </div>
     <main class="govuk-main-wrapper {{ mainClasses }}" id="main-content" role="main">
       {% block content %}{% endblock %}
     </main>
