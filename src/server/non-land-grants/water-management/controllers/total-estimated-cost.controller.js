@@ -108,8 +108,10 @@ export default class TotalEstimatedCostController extends withDerivedState(Quest
  * @returns {number}
  */
 function calculateReservoirCost(size, highCostPerUnit, lowCostPerUnit) {
-  if (size > 10000) {
-    return highCostPerUnit * 10000 + lowCostPerUnit * (size - 10000)
+  const TIERED_COST_THRESHOLD = 10000
+
+  if (size > TIERED_COST_THRESHOLD) {
+    return highCostPerUnit * TIERED_COST_THRESHOLD + lowCostPerUnit * (size - TIERED_COST_THRESHOLD)
   }
   return highCostPerUnit * size
 }
