@@ -152,17 +152,17 @@ export function buildReservoirs(state, config) {
   if (moreThanOneReservoir && reservoirItems.length > 0) {
     return reservoirItems.map((item) => {
       const { reservoirItemName, reservoirItemWhatTypeOfReservoir, reservoirItemHowMuchWater } = item
-      const unitCosts = getReservoirUnitCosts(reservoirItemWhatTypeOfReservoir, config)
+      const { reservoirHighCostPerUnit, reservoirLowCostPerUnit } = getReservoirUnitCosts(
+        reservoirItemWhatTypeOfReservoir,
+        config
+      )
       return {
         name: reservoirItemName,
         type: reservoirItemWhatTypeOfReservoir,
         size: reservoirItemHowMuchWater,
-        ...unitCosts,
-        cost: calculateReservoirCost(
-          reservoirItemHowMuchWater,
-          unitCosts.reservoirHighCostPerUnit,
-          unitCosts.reservoirLowCostPerUnit
-        )
+        reservoirHighCostPerUnit,
+        reservoirLowCostPerUnit,
+        cost: calculateReservoirCost(reservoirItemHowMuchWater, reservoirHighCostPerUnit, reservoirLowCostPerUnit)
       }
     })
   }
