@@ -67,7 +67,7 @@ Feature: Mapping
 
         # resume should return to select-land-parcel, not select-actions-for-land-parcel
         Then the user should be at URL "select-land-parcel"
-@runme
+
     Scenario: User selects land parcels from the text list alternative to the map
         Given there is no application data for SBI "800000032" and grant "example-grant-with-map"
 
