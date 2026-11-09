@@ -1,7 +1,11 @@
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { withTaskContext } from '~/src/server/task-list/task-list.helper.js'
 import { getParcelIdsFromPayload } from '~/src/server/land-grants/utils/parcel-request.utils.js'
-import { fetchActionsForParcel } from '~/src/server/land-grants/services/land-grants.service.js'
+import { fetchActionsForParcel, fetchParcels } from '~/src/server/land-grants/services/land-grants.service.js'
+import { buildParcelList } from './parcel-list.view-model.js'
+import { attempt } from '~/src/server/common/helpers/attempt.js'
+import { logUpstreamError } from '~/src/server/common/helpers/logging/upstream-error.js'
+import { readUpstreamStatus } from '~/src/server/common/helpers/errors.js'
 import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
 import { formatParcelReference, parseLandParcel } from '~/src/shared/format-parcel.js'
 import { isActionAvailable } from '~/src/shared/availability.js'
@@ -13,6 +17,10 @@ import {
   isFromConfirmLandAndActions,
   withConfirmLandAndActionsOrigin
 } from '~/src/server/land-grants/utils/confirm-land-and-actions-navigation.js'
+
+// fetchParcels combines the DAL parcel lookup with the land-grants parcel sizes.
+const PARCELS_UPSTREAM_ENDPOINT = 'Land parcels lookup'
+const SERVICE_LAND_GRANTS = 'land-grants-api'
 
 /** @param {string} selectedParcelId */
 const noEligibleActionsError = (selectedParcelId) =>
@@ -83,7 +91,49 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
    * @param {FormResponseToolkit} h
    */
   handleGet(request, context, h) {
-    return h.view(this.viewName, this.buildViewModel(request, context))
+    return this.renderSelection(request, context, h)
+  }
+
+  /**
+   * Render the text-list fallback using only the bulk parcel/area lookup.
+   * Actions and consent calculations happen only after a parcel is selected.
+   * @param {FormRequest | FormRequestPayload} request
+   * @param {FormContext} context
+   * @param {FormResponseToolkit} h
+   * @param {Record<string, unknown>} [extra]
+   */
+  async renderSelection(request, context, h, extra = {}) {
+    const result = await attempt(() => fetchParcels(request, getLandGrantsUserContext(request)))
+    if (!result.ok) {
+      const err = /** @type {Error & { code?: unknown, status?: unknown }} */ (result.error)
+      logUpstreamError(
+        {
+          endpoint: PARCELS_UPSTREAM_ENDPOINT,
+          service: SERVICE_LAND_GRANTS,
+          upstreamStatus: readUpstreamStatus(err),
+          errorMessage: err.message
+        },
+        request
+      )
+    }
+    const { parcels, totalArea } = buildParcelList(result.ok ? result.value : [], context.state)
+    // Keep any POST validation errors alongside a failure to load the list.
+    const errors = [.../** @type {Array<Record<string, unknown>>} */ (extra.errors ?? [])]
+    if (!result.ok) {
+      errors.push({ text: 'Unable to load your land parcels. Try again later.' })
+    }
+    if (result.ok && !parcels.length) {
+      errors.push({ text: 'No land parcels were found for your account.' })
+    }
+    return h.view(
+      this.viewName,
+      this.buildViewModel(request, context, {
+        parcels,
+        totalArea,
+        ...extra,
+        ...(errors.length ? { errors } : {})
+      })
+    )
   }
 
   /**
@@ -184,30 +234,24 @@ export default class MapSelectPageController extends withTaskContext(QuestionPag
 
     if (selectedParcelIds.length === 0) {
       const errorText = this.multiSelect
-        ? 'Select at least one land parcel on the map before you continue.'
-        : 'Select a land parcel on the map before you continue.'
-      return h.view(
-        this.viewName,
-        this.buildViewModel(request, context, {
-          errors: [{ text: errorText, href: '#parcel-map' }]
-        })
-      )
+        ? 'Select at least one land parcel before you continue.'
+        : 'Select a land parcel before you continue.'
+      return this.renderSelection(request, context, h, {
+        errors: [{ text: errorText, href: '#land-parcels' }]
+      })
     }
 
     const parcelsWithNoActions = await this.findParcelsWithNoActions(request, selectedParcelIds)
     if (parcelsWithNoActions.length > 0) {
       // State is deliberately left untouched: a rejected change must not destroy a
       // previously completed selection and its actions.
-      return h.view(
-        this.viewName,
-        this.buildViewModel(request, context, {
-          errors: parcelsWithNoActions.map((selectedParcelId) => ({
-            html: noEligibleActionsError(selectedParcelId),
-            href: '#parcel-map'
-          })),
-          selectedParcelIds
-        })
-      )
+      return this.renderSelection(request, context, h, {
+        errors: parcelsWithNoActions.map((selectedParcelId) => ({
+          html: noEligibleActionsError(selectedParcelId),
+          href: '#land-parcels'
+        })),
+        selectedParcelIds
+      })
     }
 
     const selectedParcelsDisplay = selectedParcelIds.join(', ')
