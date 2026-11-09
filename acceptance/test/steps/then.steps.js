@@ -293,12 +293,8 @@ Then('(the user )should see button {string}', async function (text) {
   await expect(this.page.locator(`//button[contains(text(),'${text}')]`)).toBeVisible()
 })
 
-Then('(the user )should see a notification banner', async function () {
-  await expect(this.page.locator('div.govuk-notification-banner')).toBeVisible()
-})
-
 Then('(the user )should see a notification banner saying {string}', async function (text) {
-  await expect(this.page.locator('div.govuk-notification-banner')).toContainText(text)
+  await expect(this.page.locator('.govuk-notification-banner', { hasText: text })).toBeVisible()
 })
 
 Then('(the user )should see {string}', async function (text) {
@@ -311,8 +307,8 @@ Then('(the user )should see full GOV.UK branding as a public beta service', asyn
   await expect(this.page.locator('html')).toHaveClass(/govuk-template--rebranded/)
 })
 
-Then('(the user )should not see a notification banner', async function () {
-  await expect(this.page.locator('div.govuk-notification-banner')).not.toBeVisible()
+Then('(the user )should not see a notification banner saying {string}', async function (text) {
+  await expect(this.page.locator('.govuk-notification-banner', { hasText: text })).not.toBeVisible()
 })
 
 const expectFeedbackLink = async (page, selector, text, journey) => {

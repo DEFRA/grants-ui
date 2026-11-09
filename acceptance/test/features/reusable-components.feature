@@ -11,7 +11,7 @@ Feature: Reusable Components
         And logs in as CRN "9000000017"
         Then the user should see heading "Example Grant"
         And the page is analyzed for accessibility
-        And the user should see a notification banner
+        And the user should see a notification banner saying "Draft applications must be submitted"
         And the user should see full GOV.UK branding as a public beta service
         When the user clicks on "Start now"
 
@@ -19,7 +19,7 @@ Feature: Reusable Components
         Then the user should be at URL "check-details"
         And should see heading "Check your details"
         And the page is analyzed for accessibility
-        And the user should see a notification banner
+        And the user should see a notification banner saying "Draft applications must be submitted"
         And the user should be able to check the following details
             | QUESTION                                | ANSWER                         |
             | Applicant name                          | Dr Elsie T Test-Oakhurst       |
@@ -320,7 +320,7 @@ Feature: Reusable Components
         And should see heading "Details submitted"
         And the page is analyzed for accessibility
         And should see an "EGWA" reference number for their application
-        And the user should not see a notification banner
+        And the user should not see a notification banner saying "Draft applications must be submitted"
         When the user clicks on "View / Print submitted application (opens in new tab)"
         Then a new tab should be opened at URL "print-submitted-application" and closed by the user
 
@@ -328,7 +328,7 @@ Feature: Reusable Components
         Given the user navigates to "/example-grant-with-auth/print-submitted-application"
         Then the user should see heading "Example grant with auth application"
         And the page is analyzed for accessibility
-        And the user should not see a notification banner
+        And the user should not see a notification banner saying "Draft applications must be submitted"
         Then the user should see the following submitted application details
             | Application number         | {REFERENCE NUMBER}                    |
             | Applicant details          |                                       |
