@@ -40,9 +40,11 @@ function addField(type, values) {
   field.dataset.locationtype = type
   const inputs = document.createElement('div')
   inputs.className = 'app-location-field-inputs'
-  values.forEach((value) => {
+  values.forEach((value, index) => {
     const input = document.createElement('input')
     input.className = 'govuk-input'
+    const parts = type === 'latlongfield' ? ['latitude', 'longitude'] : ['easting', 'northing']
+    input.name = type === 'osgridreffield' ? 'location' : `location__${parts[index]}`
     input.value = value
     inputs.append(input)
   })
@@ -79,8 +81,9 @@ describe('location map adapter', () => {
       CONFIG
     )
     expect(field.querySelector('.app-location-field-inputs').nextElementSibling.id).toBe('map_3')
-    expect([...field.querySelectorAll('input')].map((input) => input.value)).toEqual(values)
+    expect([...field.querySelectorAll('input.govuk-input')].map((input) => input.value)).toEqual(values)
     expect(field.querySelector('.app-approximate-location')).toBeNull()
+    expect(field.querySelector('input[type="hidden"]')).toBeNull()
   })
 
   test.each([
@@ -132,7 +135,7 @@ describe('location map adapter', () => {
       processLocation(CONFIG, field, 0)
       const provider = {}
       handlers.get(map.EVENTS.mapReady)({ map: provider })
-      const inputs = [...field.querySelectorAll('input')]
+      const inputs = [...field.querySelectorAll('input.govuk-input')]
       inputs.forEach((input, index) => {
         input.value = values[index]
       })
@@ -160,7 +163,7 @@ describe('location map adapter', () => {
     handlers.get(map.EVENTS.mapReady)({ map: provider })
     expect(instance.addPanel).not.toHaveBeenCalled()
     expect(interactPlugin.enable).toHaveBeenCalledTimes(1)
-    const inputs = [...field.querySelectorAll('input')]
+    const inputs = [...field.querySelectorAll('input.govuk-input')]
     inputs[0].dispatchEvent(new window.Event('change'))
     expect(map.centerMap).not.toHaveBeenCalled()
     inputs.forEach((input, index) => {
@@ -195,39 +198,62 @@ describe('location map adapter', () => {
 
   test.each(CASES)('looks up a saved $type answer when approximate locations are enabled', async ({ type, values }) => {
     vi.useFakeTimers()
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ label: 'London, England, UK' }) })
-    )
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ label: 'London' }) }))
     const field = addField(type, values)
     processLocation(CONFIG, field, 0, { showApproximateLocation: true })
     handlers.get(map.EVENTS.mapReady)({ map: {} })
     await vi.advanceTimersByTimeAsync(300)
-    expect(field.querySelector('.app-approximate-location').textContent).toBe(
-      'Approximate location: London, England, UK'
-    )
-    expect([...field.querySelectorAll('input')].map((input) => input.value)).toEqual(values)
+    expect(field.querySelector('.app-approximate-location').textContent).toBe('Approximate location: London')
+    expect([...field.querySelectorAll('input.govuk-input')].map((input) => input.value)).toEqual(values)
+    const metadata = field.querySelector('input[type="hidden"]')
+    expect(metadata.name).toBe('__mapLocationHint__location')
+    expect(JSON.parse(metadata.value)).toEqual({
+      text: 'Approximate location: London',
+      answer: Object.fromEntries(
+        [...field.querySelectorAll('input.govuk-input')].map((input) => [input.name, input.value])
+      )
+    })
   })
 
   test.each(CASES)('does not label a saved $type answer until the map is ready', async ({ type, values }) => {
     vi.useFakeTimers()
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ label: 'London, England, UK' }) })
-    )
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ label: 'London' }) }))
     const field = addField(type, values)
     processLocation(CONFIG, field, 0, { showApproximateLocation: true })
     await vi.advanceTimersByTimeAsync(300)
     expect(fetch).not.toHaveBeenCalled()
     expect(field.querySelector('.app-approximate-location').textContent).toBe('')
+    expect(field.querySelector('input[type="hidden"]').value).toBe('')
+  })
+
+  test('clears hidden metadata while typing and submits only a hint for the current answer', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ label: 'London, UK' }) }))
+    document.body.innerHTML = '<form></form>'
+    const field = addField('latlongfield', ['51.5074', '-0.1276'])
+    document.querySelector('form').append(field)
+    processLocation(CONFIG, field, 0, { showApproximateLocation: true, approximateLocationPrefix: 'Nearby:' })
+    handlers.get(map.EVENTS.mapReady)({ map: {} })
+    await vi.advanceTimersByTimeAsync(300)
+    const metadata = field.querySelector('input[type="hidden"]')
+    expect(JSON.parse(new window.FormData(document.querySelector('form')).get(metadata.name))).toEqual({
+      text: 'Nearby: London, UK',
+      answer: { location__latitude: '51.5074', location__longitude: '-0.1276' }
+    })
+    const latitude = field.querySelector('input.govuk-input')
+    latitude.value = '51.6'
+    latitude.dispatchEvent(new window.Event('input'))
+    expect(metadata.value).toBe('')
+    await vi.advanceTimersByTimeAsync(300)
+    expect(JSON.parse(metadata.value).answer.location__latitude).toBe('51.6')
+    latitude.value = ''
+    latitude.dispatchEvent(new window.Event('input'))
+    expect(metadata.value).toBe('')
   })
 
   test.each(CASES)('refreshes the $type label for coordinate edits and marker placement', async ({ type, values }) => {
     vi.useFakeTimers()
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ label: 'London, England, UK' }) })
-    )
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ label: 'London' }) }))
     const field = addField(
       type,
       values.map(() => '')
@@ -236,7 +262,7 @@ describe('location map adapter', () => {
     handlers.get(map.EVENTS.mapReady)({ map: {} })
     await vi.advanceTimersByTimeAsync(300)
     expect(fetch).not.toHaveBeenCalled()
-    const inputs = [...field.querySelectorAll('input')]
+    const inputs = [...field.querySelectorAll('input.govuk-input')]
     inputs.forEach((input, index) => {
       input.value = values[index]
     })

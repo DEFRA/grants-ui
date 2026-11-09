@@ -2,6 +2,7 @@ import { formsStatusRedirect } from '~/src/server/common/request-pipeline/redire
 import { enforcePagePermission } from './permissions/enforce-page-permission.js'
 import { applicationDeletedRedirect } from './redirects/application-deleted-redirect.js'
 import { resolveApplicationWindowClosedPath } from './redirects/application-window-closed-redirect.js'
+import { applyLocationHints } from '../map/location-hints.js'
 
 /**
  * Pipeline handler that delegates to forms status redirect, then enforces page permissions.
@@ -34,7 +35,11 @@ export async function formsRequestPipeline(request, h, context) {
     return redirectResult
   }
 
-  return enforcePagePermission(request, h, context)
+  const permissionResult = await enforcePagePermission(request, h, context)
+  if (permissionResult === h.continue) {
+    applyLocationHints(request, context)
+  }
+  return permissionResult
 }
 
 /**

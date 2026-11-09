@@ -6,7 +6,7 @@ import { createApproximateLocation } from './approximate-location.js'
 vi.mock('@defra/forms-engine-plugin/shared.js', () => ({ map: { latLongToEastingNorthing: vi.fn() } }))
 
 const POINT = { lat: 53.82, long: -1.51 }
-const LABEL = 'LS8, Leeds, England, UK'
+const LABEL = 'LS8, Leeds'
 const response = (label = LABEL) => ({ ok: true, json: vi.fn().mockResolvedValue({ label }) })
 const label = () => document.querySelector('.app-approximate-location')
 

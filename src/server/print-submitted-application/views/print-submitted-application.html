@@ -63,10 +63,18 @@
         {% set sectionRows = [] %}
       {% endif %}
       {% for question in section.questions %}
+        {% set answerValue = { text: question.answer, classes: "govuk-!-width-one-half" } %}
+        {% if question.locationHint %}
+          {% set answerHtml %}
+            {{ question.answer }}
+            <p class="govuk-body govuk-!-margin-top-1">{{ question.locationHint }}</p>
+          {% endset %}
+          {% set answerValue = { html: answerHtml, classes: "govuk-!-width-one-half" } %}
+        {% endif %}
         {%
           set sectionRows = sectionRows.concat([{
             key: { text: question.label, classes: "govuk-!-width-one-half" },
-            value: { text: question.answer, classes: "govuk-!-width-one-half" }
+            value: answerValue
           }])
         %}
       {% endfor %}

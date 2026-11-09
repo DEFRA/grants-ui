@@ -49,15 +49,25 @@ components:
       approximateLocationPrefix: 'Nearby location:' # Optional; defaults to 'Approximate location:'
 ```
 
-This option defaults to `false` and is ignored for `GeospatialField`. The label describes the selected answer, for example “Approximate location: LS8, Leeds, England, UK”. It shows a saved answer once the map is ready, and updates when coordinate inputs change or a marker is placed. If the map does not initialise, no label is shown. Panning, zooming and postcode search alone do not update it. It is display-only and is not persisted or submitted to GAS.
+This option defaults to `false` and is ignored for `GeospatialField`. The label describes the selected answer, for example “Approximate location: LS8, Leeds”. It shows a saved answer once the map is ready, and updates when coordinate inputs change or a marker is placed. If the map does not initialise, no label is shown. Panning, zooming and postcode search alone do not update it. It is display-only metadata: the full prefix and location text are saved with the answer in Grants UI Backend, but are not submitted to GAS.
 
 `options.approximateLocationPrefix` configures the prefix independently for each component. Omitted, blank or non-string values use “Approximate location:”. Include any punctuation in the configured text; a space separates it from the location. The prefix renders as plain text inside a semantic `<strong>` element, and the message uses `govuk-!-margin-top-1` spacing.
 
 The browser converts the selected point to British National Grid coordinates and calls `/api/map/approximate-location?easting=…&northing=…`. This generic endpoint supports journeys without sign-in, validates the coordinates and calls [OS Names nearest](https://docs.os.uk/os-apis/accessing-os-apis/os-names-api/technical-specification/nearest) using the existing `FORMS_MAPS_API_KEY` on the server. No additional credentials or forms engine package changes are needed.
 
-The nearest feature's postcode district, populated place and country supply the label, with missing parts omitted and a UK suffix. Postcode records without a postcode district use the outward code from their postcode. If no populated place is present, the district/borough or county/unitary authority is used. This is an approximate description of a nearby feature, not a verified address or point-in-boundary lookup. The search radius is 1 km; rural locations can have no match.
+The nearest feature's postcode district and populated place supply the label, with missing parts omitted. Country names and a UK suffix are not included. Postcode records without a postcode district use the outward code from their postcode. If no populated place is present, the district/borough or county/unitary authority is used. This is an approximate description of a nearby feature, not a verified address or point-in-boundary lookup. The search radius is 1 km; rural locations can have no match.
 
 Updates are debounced by 300 ms. Each change clears the previous label, cancels pending requests and ignores late responses. The OS request times out after two seconds, and the browser request after three seconds. Empty or invalid answers, missing matches and lookup failures leave the label empty without interrupting the map or form submission. Upstream failures are logged once on the server; the endpoint returns 503 for lookup failures and 200 with a null label for no match. Responses use `Cache-Control: no-store`. The label renders as text in a polite live region for assistive technology.
+
+### Saved hints on Check answers and view/print application
+
+For point fields with `showApproximateLocation: true`, the shared map adapter automatically creates an internal hidden input containing the full displayed text and the coordinate input values it describes. Each location change immediately clears the hidden value, including while typing, and only a successful current lookup repopulates it. Continuing before a lookup completes saves the answer without a hint; the hint never blocks submission.
+
+A shared `onPreHandler` hook removes this transport metadata before forms-engine validation. After redirect and permission checks, the forms request pipeline accepts bounded metadata only for opted-in point components on the resolved page and only when its coordinate values match the validated answer. It creates a new `context.state.mapLocationHints` object for the normal page POST to persist through the existing state helpers. Invalid metadata is ignored, changed or removed answers clear the old hint, and hints belonging to other pages are retained.
+
+The shared CYA view hook appends saved text beneath the existing coordinate values for both the engine’s standard summary view and Grants UI’s Check answers view. The full hint, including its prefix, uses normal font weight on CYA. It escapes the prefix and location as text, checks that the saved hint still matches the answer, and performs no location lookup. The coordinates and change link remain available without a hint. This decoration changes rendered rows only; it does not change the underlying answer detail values.
+
+The view/print application page uses the same saved-hint check and displays the full hint beneath the coordinate answer in normal font weight, including when answers are grouped by task. Only components with `showApproximateLocation: true` and hints matching their saved answer are included. No lookup is performed when viewing or printing an application.
 
 ## Dependency compatibility tests
 

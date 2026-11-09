@@ -128,10 +128,7 @@ describe('location adapter compatibility with the installed forms engine', () =>
     'resolves approximate labels for $type using the installed templates and coordinate conversions',
     async ({ type, values, changed }) => {
       vi.useFakeTimers()
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({ ok: true, json: async () => ({ label: 'London, England, UK' }) })
-      )
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ label: 'London' }) }))
       const field = renderLocation(type, values)
       document.body.insertAdjacentHTML(
         'beforeend',
@@ -143,9 +140,9 @@ describe('location adapter compatibility with the installed forms engine', () =>
       await vi.advanceTimersByTimeAsync(300)
       const label = field.querySelector('.app-approximate-location')
       expect(field.querySelector('.map-container').nextElementSibling).toBe(label)
-      expect(label.textContent).toBe('Selected location: London, England, UK')
+      expect(label.textContent).toBe('Selected location: London')
       expect(label.querySelector('strong').textContent).toBe('Selected location:')
-      const inputs = [...field.querySelectorAll('input')]
+      const inputs = [...field.querySelectorAll('input.govuk-input')]
       expect(inputs.map((input) => input.value)).toEqual(values)
       inputs.forEach((input, index) => {
         input.value = changed[index]
@@ -164,7 +161,7 @@ describe('location adapter compatibility with the installed forms engine', () =>
         '/api/map/approximate-location?easting=530591&northing=179571',
         expect.any(Object)
       )
-      expect(label.textContent).toBe('Selected location: London, England, UK')
+      expect(label.textContent).toBe('Selected location: London')
     }
   )
 
@@ -179,7 +176,7 @@ describe('location adapter compatibility with the installed forms engine', () =>
     expect(initialConfig.center[0]).toBeCloseTo(center[0], 5)
     expect(initialConfig.center[1]).toBeCloseTo(center[1], 5)
     expect(initialConfig.markers).toEqual([{ id: 'location', coords: initialConfig.center }])
-    expect([...field.querySelectorAll('input')].map((input) => input.value)).toEqual(values)
+    expect([...field.querySelectorAll('input.govuk-input')].map((input) => input.value)).toEqual(values)
   })
 
   test.each(CASES)(
@@ -188,7 +185,7 @@ describe('location adapter compatibility with the installed forms engine', () =>
       const field = renderLocation(type, values)
       processLocation(CONFIG, field, 0)
       const fixture = maps.get('map_0')
-      const inputs = [...field.querySelectorAll('input')]
+      const inputs = [...field.querySelectorAll('input.govuk-input')]
       expect(fixture.interactPlugin.enable).not.toHaveBeenCalled()
       fixture.emit(map.EVENTS.mapReady, { map: fixture.provider })
       expect(fixture.interactPlugin.enable).toHaveBeenCalledTimes(1)
@@ -213,7 +210,7 @@ describe('location adapter compatibility with the installed forms engine', () =>
     const fixture = maps.get('map_0')
     expect(fixture.initialConfig.center).toEqual([0, 51.5039908])
     fixture.emit(map.EVENTS.mapReady, { map: fixture.provider })
-    const inputs = [...field.querySelectorAll('input')]
+    const inputs = [...field.querySelectorAll('input.govuk-input')]
     fixture.emit(map.EVENTS.interactMarkerChange, { coords: [-0.1276, 51.5074] })
     inputs[1].value = '0'
     inputs[1].dispatchEvent(new window.Event('change'))

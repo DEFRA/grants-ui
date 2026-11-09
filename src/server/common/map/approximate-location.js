@@ -16,12 +16,11 @@ function formatLocation(entry) {
       : undefined
   const parts = [
     entry?.POSTCODE_DISTRICT || postcodeDistrict,
-    entry?.POPULATED_PLACE || entry?.DISTRICT_BOROUGH || entry?.COUNTY_UNITARY,
-    entry?.COUNTRY
+    entry?.POPULATED_PLACE || entry?.DISTRICT_BOROUGH || entry?.COUNTY_UNITARY
   ]
     .filter((part) => typeof part === 'string' && part.trim())
     .map((part) => part.trim())
-  return parts.length ? [...new Set([...parts, 'UK'])].join(', ') : null
+  return parts.length ? [...new Set(parts)].join(', ') : null
 }
 
 /**

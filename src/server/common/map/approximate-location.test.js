@@ -34,7 +34,7 @@ describe('approximate location API', () => {
   test('returns an approximate label without requiring sign-in or exposing credentials', async () => {
     const result = await server.inject(`${ROUTES.approximateLocation}${QUERY}`)
     expect(result.statusCode).toBe(200)
-    expect(result.result).toEqual({ label: 'LS8, Leeds, England, UK' })
+    expect(result.result).toEqual({ label: 'LS8, Leeds' })
     expect(result.headers['cache-control']).toBe('no-store')
     expect(result.payload).not.toContain('test-os-names-key')
     const [url, options] = vi.mocked(fetch).mock.calls[0]
@@ -50,15 +50,13 @@ describe('approximate location API', () => {
   })
 
   test.each([
-    [
-      { LOCAL_TYPE: 'Postcode', NAME1: 'LS8 1AA', POPULATED_PLACE: 'Leeds', COUNTRY: 'England' },
-      'LS8, Leeds, England, UK'
-    ],
-    [{ LOCAL_TYPE: 'Postcode', NAME1: 'sw1a1aa', COUNTRY: 'England' }, 'SW1A, England, UK'],
-    [{ DISTRICT_BOROUGH: 'Leeds', COUNTRY: 'England' }, 'Leeds, England, UK'],
-    [{ COUNTY_UNITARY: 'Highland', COUNTRY: 'Scotland' }, 'Highland, Scotland, UK'],
-    [{ POSTCODE_DISTRICT: 'LS8', POPULATED_PLACE: ' Leeds ', COUNTRY: 'England' }, 'LS8, Leeds, England, UK'],
-    [{ POPULATED_PLACE: 'UK', COUNTRY: 'UK' }, 'UK'],
+    [{ LOCAL_TYPE: 'Postcode', NAME1: 'LS8 1AA', POPULATED_PLACE: 'Leeds', COUNTRY: 'England' }, 'LS8, Leeds'],
+    [{ LOCAL_TYPE: 'Postcode', NAME1: 'sw1a1aa', COUNTRY: 'England' }, 'SW1A'],
+    [{ DISTRICT_BOROUGH: 'Leeds', COUNTRY: 'England' }, 'Leeds'],
+    [{ COUNTY_UNITARY: 'Highland', COUNTRY: 'Scotland' }, 'Highland'],
+    [{ POSTCODE_DISTRICT: 'LS8', POPULATED_PLACE: ' Leeds ', COUNTRY: 'England' }, 'LS8, Leeds'],
+    [{ POSTCODE_DISTRICT: 'Leeds', POPULATED_PLACE: 'Leeds', COUNTRY: 'England' }, 'Leeds'],
+    [{ COUNTRY: 'England' }, null],
     [{ NAME1: 'A nearby road' }, null],
     [{ POSTCODE_DISTRICT: 123, POPULATED_PLACE: '', COUNTRY: null }, null]
   ])('formats available context and omits missing values (%j)', async (entry, label) => {

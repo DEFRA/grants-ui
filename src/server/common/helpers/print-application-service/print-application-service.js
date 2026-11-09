@@ -3,6 +3,7 @@ import { COMPONENT_TYPES, DISPLAY_ONLY_TYPES } from './constants.js'
 import { buildConfirmLandAndActionsViewModel } from '~/src/server/land-grants/view-models/confirm-land-and-actions.view-model.js'
 import { ComponentsRegistry } from '../../../confirmation/services/components.registry.js'
 import { findPageByPath, normalisePagePath, resolveAdditionalAnswerSections } from '../additional-answers.js'
+import { getSavedLocationHint } from '../../map/location-hints.js'
 
 export const COMPOSITE_FIELD_PARTS = {
   [COMPONENT_TYPES.DatePartsField]: ['day', 'month', 'year'],
@@ -20,9 +21,9 @@ export const COMPOSITE_FIELD_PARTS = {
 
 /**
  * @typedef {{ text: string, value: string | number | boolean }} ListItem
- * @typedef {{ type: string, name: string, title: string, shortDescription?: string, list?: string, items?: ListItem[] }} FormComponent
+ * @typedef {{ type: string, name: string, title: string, shortDescription?: string, list?: string, items?: ListItem[], options?: object }} FormComponent
  * @typedef {{ title: string, path?: string, section?: string, controller?: string, components?: FormComponent[] }} FormPage
- * @typedef {{ label: string, answer: string }} Question
+ * @typedef {{ label: string, answer: string, locationHint?: string }} Question
  * @typedef {{
  *   pages?: FormPage[],
  *   sections?: { id?: string, title: string }[],
@@ -84,7 +85,7 @@ function resolveAnswer(component, answers) {
  * Builds question rows from a page's components and the submitted answers.
  * @param {FormComponent[] | undefined} components
  * @param {Answers} answers
- * @returns {{ label: string, answer: string }[]}
+ * @returns {Question[]}
  */
 function extractQuestions(components, answers) {
   return (components || [])
@@ -95,10 +96,14 @@ function extractQuestions(components, answers) {
       const rawAnswer = resolveAnswer(component, answers)
       return rawAnswer !== undefined && rawAnswer !== null
     })
-    .map((component) => ({
-      label: component.shortDescription || component.title || '',
-      answer: formatAnswer(component, resolveAnswer(component, answers))
-    }))
+    .map((component) => {
+      const locationHint = getSavedLocationHint(component, answers)
+      return {
+        label: component.shortDescription || component.title || '',
+        answer: formatAnswer(component, resolveAnswer(component, answers)),
+        ...(locationHint ? { locationHint } : {})
+      }
+    })
 }
 
 /**
@@ -107,7 +112,7 @@ function extractQuestions(components, answers) {
  * @param {Answers} answers
  * @param {boolean} hasParcelCards
  * @param {Map<string | undefined, Question[]>} [additionalQuestions]
- * @returns {{ title: string, questions: { label: string, answer: string }[] }[]}
+ * @returns {{ title: string, questions: Question[] }[]}
  */
 function buildSections(pages, answers, hasParcelCards, additionalQuestions = new Map()) {
   return (pages || [])
@@ -136,7 +141,7 @@ function buildSections(pages, answers, hasParcelCards, additionalQuestions = new
  */
 function buildTaskSections(definition, answers, hasParcelCards, landAndActionsSectionId, additionalQuestions) {
   const titles = new Map((definition.sections || []).map((section) => [section.id, section.title]))
-  /** @type {Map<string | undefined, { title: string, questions: { label: string, answer: string }[], showLandAndActions: boolean }>} */
+  /** @type {Map<string | undefined, { title: string, questions: Question[], showLandAndActions: boolean }>} */
   const groups = new Map()
 
   for (const page of definition.pages || []) {
@@ -232,7 +237,7 @@ function buildAdditionalSections(definition, answers, hasLandAndActionsSummary, 
 function createTaskSection(titles, sectionId, landAndActionsSectionId) {
   return {
     title: (sectionId && titles.get(sectionId)) || 'Submitted answers',
-    questions: /** @type {{ label: string, answer: string }[]} */ ([]),
+    questions: /** @type {Question[]} */ ([]),
     showLandAndActions: Boolean(landAndActionsSectionId && sectionId === landAndActionsSectionId)
   }
 }

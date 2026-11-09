@@ -1,6 +1,7 @@
 import { map as mapHelpers } from '@defra/forms-engine-plugin/shared.js'
 import { isValidEastingNorthing } from './map-coordinate-utils.js'
 import { createApproximateLocation } from './approximate-location.js'
+import { MAP_LOCATION_HINT_PREFIX } from '../../shared/map-location-hints.js'
 
 const ANSWER_VIEW_ZOOM = '16'
 const LAT_LONG_PRECISION = 7
@@ -90,6 +91,20 @@ function addHelpPanel(map) {
   })
 }
 
+/** Capture display metadata automatically without adding a forms-engine answer component. */
+function createHintMetadata(location, inputs) {
+  const name = inputs[0].name.split('__')[0]
+  const metadata = document.createElement('input')
+  metadata.type = 'hidden'
+  metadata.name = `${MAP_LOCATION_HINT_PREFIX}${name}`
+  location.append(metadata)
+  return (text) => {
+    metadata.value = text
+      ? JSON.stringify({ text, answer: Object.fromEntries(inputs.map((input) => [input.name, input.value])) })
+      : ''
+  }
+}
+
 /** Initialise and bind a location field using the forms engine's public map helpers. */
 export function processLocation(
   config,
@@ -121,15 +136,15 @@ export function processLocation(
   container.className = 'map-container'
   locationInputs.after(container)
   const updateApproximateLocation = showApproximateLocation
-    ? createApproximateLocation(container, approximateLocationPrefix)
+    ? createApproximateLocation(container, approximateLocationPrefix, createHintMetadata(location, inputs))
     : undefined
   const { map, interactPlugin } = mapHelpers.createMap(container.id, initConfig, config)
   map.on(mapHelpers.EVENTS.mapReady, ({ map: provider }) => {
     // Prime only once the map is ready, so the label always has the change listeners that keep it current.
-    updateApproximateLocation?.(point)
+    updateApproximateLocation?.(readLocationPoint(location))
     map.on(mapHelpers.EVENTS.interactMarkerChange, ({ coords: [long, lat] }) => {
       type.write(inputs, { lat, long })
-      updateApproximateLocation?.({ lat, long })
+      updateApproximateLocation?.(type.read(inputs))
     })
     const updateMap = () => {
       const updatedPoint = type.read(inputs)
@@ -139,6 +154,8 @@ export function processLocation(
       }
     }
     inputs.forEach((input) => input.addEventListener('change', updateMap, false))
+    // Clear stale metadata while typing, before a blur/change event or form submission.
+    inputs.forEach((input) => input.addEventListener('input', () => updateApproximateLocation?.(type.read(inputs))))
     if (!hideMapHelpPanel) {
       addHelpPanel(map)
     }

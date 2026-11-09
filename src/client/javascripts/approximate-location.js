@@ -1,18 +1,19 @@
 import { map } from '@defra/forms-engine-plugin/shared.js'
 import { isValidEastingNorthing } from './map-coordinate-utils.js'
+import { DEFAULT_LOCATION_HINT_PREFIX } from '../../shared/map-location-hints.js'
 
 const DEBOUNCE_MS = 300
 const LOOKUP_TIMEOUT_MS = 3000
-const DEFAULT_PREFIX = 'Approximate location:'
 
 /**
  * Add a live location label below a map and return its selected-point updater.
  * @param {HTMLDivElement} container
  * @param {string} [prefix]
+ * @param {(text: string) => void} [onChange]
  * @returns {(point?: { lat: number, long: number }) => void}
  */
-export function createApproximateLocation(container, prefix = DEFAULT_PREFIX) {
-  const prefixText = prefix.trim() || DEFAULT_PREFIX
+export function createApproximateLocation(container, prefix = DEFAULT_LOCATION_HINT_PREFIX, onChange = () => {}) {
+  const prefixText = prefix.trim() || DEFAULT_LOCATION_HINT_PREFIX
   const label = document.createElement('p')
   label.className = 'govuk-body govuk-!-margin-top-1 app-approximate-location'
   label.setAttribute('aria-live', 'polite')
@@ -37,6 +38,7 @@ export function createApproximateLocation(container, prefix = DEFAULT_PREFIX) {
   return (point) => {
     cancel()
     label.textContent = ''
+    onChange('')
     if (!point) {
       return
     }
@@ -69,6 +71,7 @@ export function createApproximateLocation(container, prefix = DEFAULT_PREFIX) {
           const strong = document.createElement('strong')
           strong.textContent = prefixText
           label.replaceChildren(strong, ` ${data.label}`)
+          onChange(label.textContent)
         }
       } catch {
         // The optional label must not interrupt the map. The endpoint logs lookup failures.
