@@ -116,6 +116,14 @@ describe('State API helpers', () => {
         expect(mockFetch.mock.calls[0][1].body).toBeUndefined()
         expect(createApiHeadersForGrantsUiBackend).toHaveBeenCalledWith({})
       })
+      it.each([1, 0])('asks for the latest definition within major %s when one is given', async (major) => {
+        mockFetch.mockResolvedValue(createMockFetchResponse({ data: { major } }))
+        expect(await fetchLatestDefinitionFromApi('test-grant', { major })).toEqual({ major })
+        expect(mockFetch).toHaveBeenCalledWith(
+          expect.stringMatching(new RegExp(`/definitions/test-grant\\?major=${major}$`)),
+          expect.objectContaining({ method: 'GET' })
+        )
+      })
       it('returns null when no active definition exists', async () => {
         mockFetch.mockResolvedValue(createMockFetchResponse({ ok: false, status: 404 }))
         expect(await fetchLatestDefinitionFromApi('missing')).toBeNull()

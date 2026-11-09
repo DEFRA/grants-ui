@@ -32,14 +32,15 @@ const ROW_BY_STATUS = {
  * @param {any} request
  * @param {any} definition
  * @param {any[]} applications
- * @param {{ gasStatuses?: Map<string, string>, postSubmissionRules?: any[] }} [gas] - GAS status by reference and the
- *   grant's post-submission rules, so a submitted application GAS has returned for amendments shows as returned
+ * @param {{ gasStatuses?: Map<string, string>, postSubmissionRules?: Map<string, ApplicationRules> }} [gas] - GAS
+ *   status and the post-submission rules each application answers to, both by reference, so a submitted application
+ *   GAS has returned for amendments shows as returned
  */
 export function buildApplicationsViewModel(
   request,
   definition,
   applications,
-  { gasStatuses = new Map(), postSubmissionRules = [] } = {}
+  { gasStatuses = new Map(), postSubmissionRules = new Map() } = {}
 ) {
   const schemeName = definition.metadata?.shortName ?? definition.name
   return {
@@ -56,7 +57,8 @@ export function buildApplicationsViewModel(
         (application) => typeof application.applicationRef === 'string' && application.applicationRef.trim().length > 0
       )
       .map((application) => {
-        const gasRule = matchedGasPostSubmissionRule(application, gasStatuses, postSubmissionRules)
+        const { rules, ownMajor = false } = postSubmissionRules.get(application.applicationRef) ?? {}
+        const gasRule = matchedGasPostSubmissionRule(application, gasStatuses, rules)
         // GAS has the last word on a submitted application: returned for amendments shows as returned.
         const status =
           gasRule?.toGrantsStatus === ApplicationStatus.REOPENED
@@ -70,15 +72,20 @@ export function buildApplicationsViewModel(
           statusText: row.statusText,
           statusClasses: row.statusClasses,
           actionText: row.actionText,
-          href: applicationHref(request.params.slug, application.applicationRef, staysSubmittedInJourney(gasRule))
+          href: applicationHref(
+            request.params.slug,
+            application.applicationRef,
+            ownMajor && staysSubmittedInJourney(gasRule)
+          )
         }
       })
   }
 }
 
 /**
- * Row link. Only an application GAS confirms is still simply submitted opens as its print view (a page the
- * grant excludes from the status redirect); every other row goes to the grant root and the status redirect decides.
+ * Row link. Only an application GAS confirms is still simply submitted, under its own major's rules, opens as its
+ * print view (a page the grant excludes from the status redirect); every other row goes to the grant root and the
+ * status redirect decides.
  * @param {string} slug @param {string} applicationRef @param {boolean} viewsPrintPage
  */
 function applicationHref(slug, applicationRef, viewsPrintPage) {
@@ -95,17 +102,20 @@ function staysSubmittedInJourney(rule) {
 }
 
 /**
- * The post-submission rule a submitted application's GAS status matches under the grant's rules;
+ * The post-submission rule a submitted application's GAS status matches under the given rules;
  * undefined when the application is not submitted or GAS could not be read.
- * @param {any} application @param {Map<string, string>} gasStatuses @param {any[]} postSubmissionRules
- * @returns {{ toGrantsStatus: string, toPath: string } | undefined}
+ * @param {any} application @param {Map<string, string>} gasStatuses @param {RedirectRule[] | undefined} rules
+ * @returns {RedirectRule | undefined}
  */
-function matchedGasPostSubmissionRule(application, gasStatuses, postSubmissionRules) {
+function matchedGasPostSubmissionRule(application, gasStatuses, rules) {
   if (application.applicationStatus !== ApplicationStatus.SUBMITTED) {
     return undefined
   }
   const gasStatus = gasStatuses.get(application.applicationRef)
-  return gasStatus === undefined
-    ? undefined
-    : findRedirectRule(ApplicationStatus.SUBMITTED, gasStatus, postSubmissionRules)
+  return gasStatus === undefined ? undefined : findRedirectRule(ApplicationStatus.SUBMITTED, gasStatus, rules)
 }
+
+/**
+ * @import { RedirectRule } from '../common/request-pipeline/redirects/forms-status-redirect.js'
+ * @import { ApplicationRules } from './services/post-submission-rules.service.js'
+ */
