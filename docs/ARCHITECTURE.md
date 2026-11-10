@@ -347,6 +347,7 @@ For local development and manual testing of the backing services, the request co
 - `http-client/gas.http` -- example requests for:
   - creating grant definitions in GAS for `example-grant-with-auth`
   - submitting example applications for those grants
+  - fetching available WMP claim entitlements, including adjusted and original areas
 - `http-client/broker.http` -- example requests against the grants config broker
 - `http-client/dal.http` -- example requests against the DAL
 - `http-client/land-grants.http` -- example requests against the Land Grants API, including the
@@ -432,6 +433,8 @@ Once `http-client.private.env.json` is created and populated, you can:
 1. Select the desired environment (e.g. `local` or `dev`, etc) in your HTTP client.
 2. Use the `Create ...` requests in `http-client/gas.http` to define grants in GAS.
 3. Use the corresponding `Submit application ...` requests to send example application payloads and verify end-to-end integration.
+
+To test a WMP claim payment, run `getAvailableClaimEntitlements` in `http-client/gas.http` with the application's lowercased reference number. Copy `availableClaims[0].data.totalHectares.value` into `adjustedAreaHa` and `originalTotalHectares.value` into `originalAreaHa` in `http-client/land-grants.http`, then run `calculateWmpPaymentByTotalArea` with the same application reference number and the authenticated user's SBI and CRN. The request sends both areas as `totalAreaHa` and `originalTotalAreaHa`. To check the agreement cap, keep the original area fixed and try adjusted areas below, equal to, and above it; the Land Grants API should calculate payment using the lower area.
 
 ### Grant Schema Updates
 

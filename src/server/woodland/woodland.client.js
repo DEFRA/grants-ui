@@ -55,17 +55,22 @@ export async function calculateWmp(
 
 /**
  * Calls the Land Grants API calculate-by-total-area endpoint.
- * @param {{ totalAreaHa: number, applicationId: string, sbi: string, crn?: string }} payload
+ * @param {{ totalAreaHa: number, originalTotalAreaHa: number, applicationId: string, sbi: string, crn?: string }} payload
  * @param {string} baseUrl
  * @param {LandGrantsUserContext} userContext
  * @returns {Promise<{ message: string, payment: PaymentCalculation }>}
  * @throws {Error}
  */
-export async function calculateWmpByTotalArea({ totalAreaHa, applicationId, sbi, crn }, baseUrl, userContext) {
+export async function calculateWmpByTotalArea(
+  { totalAreaHa, originalTotalAreaHa, applicationId, sbi, crn },
+  baseUrl,
+  userContext
+) {
   return postToLandGrantsApi(
     '/api/v1/wmp/payments/calculate-by-total-area',
     {
       totalAreaHa,
+      originalTotalAreaHa,
       applicationId,
       sbi,
       crn

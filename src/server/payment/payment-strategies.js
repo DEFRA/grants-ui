@@ -4,8 +4,8 @@ import {
 } from '~/src/server/land-grants/services/land-grants.service.js'
 import { calculateWmpPayment, calculateWmpPaymentByTotalArea } from '~/src/server/woodland/woodland.service.js'
 import {
-  mapPaymentInfoToParcelItems,
-  mapAdditionalYearlyPayments
+  mapAdditionalYearlyPayments,
+  mapPaymentInfoToParcelItems
 } from '~/src/server/land-grants/view-models/payment.view-model.js'
 import { formatPrice } from '~/src/server/common/utils/payment.js'
 
@@ -82,10 +82,12 @@ export const paymentStrategies = {
      * @returns {Promise<PaymentStrategyResult>}
      */
     async calculatePayment(paymentContext, userContext) {
-      const { totalAreaHa, applicationId, sbi, crn } = paymentContext
+      const { data, applicationId, sbi, crn } = paymentContext
       const { payment, totalPence } = await calculateWmpPaymentByTotalArea(
         {
-          totalAreaHa,
+          totalAreaHa: data.totalHectares.value,
+          // Optional chaining preserves the original payment behaviour until GAS sends originalTotalHectares.
+          originalTotalAreaHa: data.originalTotalHectares?.value,
           applicationId,
           sbi,
           crn
