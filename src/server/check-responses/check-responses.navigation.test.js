@@ -62,11 +62,10 @@ function createJourney(ResultController = TotalEstimatedCostTaskPageController) 
             excludeFromTaskCompletion: true,
             derivedState: {
               stateKeys: [
-                'reservoirHighCostPerUnit',
-                'reservoirLowCostPerUnit',
+                'reservoirs',
+                'reservoirCost',
                 'distNetworkCostPerUnit',
                 'tanksCostPerUnit',
-                'reservoirCost',
                 'waterDistributionNetworkCost',
                 'waterTanksCost',
                 'totalEstimatedCost',
