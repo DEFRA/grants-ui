@@ -50,20 +50,16 @@ function answerKey(field, answer) {
   }
   const values = keys.map((key) => {
     const value = answer[key]
-    if (typeof value !== 'string' && typeof value !== 'number') {
-      return undefined
-    }
-    const text = String(value).trim()
-    if (!text) {
-      return undefined
-    }
-    if (field.type === 'OsGridRefField') {
-      return text.toUpperCase().replace(/\s+/g, '')
-    }
-    const number = Number(text)
-    return Number.isFinite(number) ? number : undefined
+    return typeof value === 'string' || typeof value === 'number' ? String(value).trim() : ''
   })
-  return values.includes(undefined) ? undefined : JSON.stringify(values)
+  if (values.some((value) => !value)) {
+    return undefined
+  }
+  if (field.type === 'OsGridRefField') {
+    return JSON.stringify(values.map((value) => value.toUpperCase().replace(/\s+/g, '')))
+  }
+  const numbers = values.map(Number)
+  return numbers.every(Number.isFinite) ? JSON.stringify(numbers) : undefined
 }
 
 /** Return saved display text only for an enabled component whose answer still matches. */
