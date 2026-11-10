@@ -7,15 +7,15 @@ const decoratedPages = new WeakSet()
 /**
  * Adds task behaviour to the resolved repeat page without changing its engine
  * identity or wrapping a cached controller more than once.
- * @param {import('@defra/forms-engine-plugin/types').AnyFormRequest} request
+ * @param {import('@defra/forms-engine-plugin/types').AnyFormRequest} formRequest
  */
-export function enableRepeatTaskContext(request) {
-  const { model } = request.app
+export function enableRepeatTaskContext(formRequest) {
+  const { model } = formRequest.app
   if (!model || !getTaskListPath(model)) {
     return
   }
 
-  const page = getPage(model, request)
+  const page = getPage(model, formRequest)
   if (!(page instanceof RepeatPageController) || !page.pageDef.section || decoratedPages.has(page)) {
     return
   }
