@@ -12,7 +12,7 @@ vi.mock('~/src/server/common/services/grant-application/grant-application.servic
   getAvailableClaimEntitlements: vi.fn()
 }))
 
-const buildAvailableClaimsResponse = (totalHectaresValue) => ({
+const buildAvailableClaimsResponse = (totalHectaresValue, originalTotalHectaresValue = 150) => ({
   availableClaims: [
     {
       code: 'ENT_CS_CAPITAL_PA3',
@@ -20,6 +20,7 @@ const buildAvailableClaimsResponse = (totalHectaresValue) => ({
       description: 'The maximum eligible woodland area that can be claimed under PA3.',
       data: {
         totalHectares: { value: totalHectaresValue, decimalPlaces: 4, minValue: 0.5, maxValue: null },
+        originalTotalHectares: { value: originalTotalHectaresValue, decimalPlaces: 4, minValue: null, maxValue: null },
         actionCode: { value: 'PA3' },
         actionVersion: { value: '1.2.3' }
       }
@@ -117,6 +118,7 @@ describe('StartClaimPageController', () => {
       expect(data).toEqual({
         hasAvailableClaims: true,
         entitlementId: 'entitlement-123',
+        data: { totalHectares: { value: 455000 } },
         totalEligibleArea: 455000,
         unit: 'ha'
       })
@@ -133,6 +135,7 @@ describe('StartClaimPageController', () => {
       expect(getAvailableClaimEntitlements).toHaveBeenCalledWith('water-management', 'WMP-A1B2-C3D4', mockRequest)
       expect(data).toEqual({
         hasAvailableClaims: true,
+        data: buildAvailableClaimsResponse(455000).availableClaims[0].data,
         totalEligibleArea: 455000,
         unit: 'ha'
       })
@@ -180,6 +183,7 @@ describe('StartClaimPageController', () => {
       expect(getAvailableClaimEntitlements).toHaveBeenCalledWith('water-management', undefined, mockRequest)
       expect(data).toEqual({
         hasAvailableClaims: true,
+        data: buildAvailableClaimsResponse(455000).availableClaims[0].data,
         totalEligibleArea: 455000,
         unit: 'ha'
       })
@@ -403,7 +407,7 @@ describe('StartClaimPageController', () => {
       expect(resolveStrategy).toHaveBeenCalledWith('woodland-claim')
       expect(strategyCalculatePayment).toHaveBeenCalledWith(
         {
-          totalAreaHa: 156.1025,
+          data: buildAvailableClaimsResponse(156.1025).availableClaims[0].data,
           applicationId: 'WMP-A1B2-C3D4',
           sbi: '123456789',
           crn: '1234567890'
@@ -496,14 +500,14 @@ describe('StartClaimPageController', () => {
         auth: { credentials: { token: 'defra-id-token', sbi: '123456789', crn: '1234567890' } }
       }
       const context = { state: { $$__referenceNumber: 'WMP-A1B2-C3D4' } }
-      const gasData = { totalEligibleArea: 24.95, unit: 'ha', totalClaimAmountPence: 150000 }
+      const gasData = buildAvailableClaimsResponse(24.95).availableClaims[0].data
 
       const result = await controller.calculateClaimPayment(request, context, gasData)
 
       expect(resolveStrategy).toHaveBeenCalledWith('woodland-claim')
       expect(strategyCalculatePayment).toHaveBeenCalledWith(
         {
-          totalAreaHa: 24.95,
+          data: gasData,
           applicationId: 'WMP-A1B2-C3D4',
           sbi: '123456789',
           crn: '1234567890'
@@ -521,7 +525,7 @@ describe('StartClaimPageController', () => {
         method: 'GET',
         auth: { credentials: { token: 'defra-id-token', sbi: '123456789' } }
       }
-      const gasData = { totalEligibleArea: 24.95 }
+      const gasData = buildAvailableClaimsResponse(24.95).availableClaims[0].data
 
       const result = await controller.calculateClaimPayment(
         request,
@@ -540,7 +544,7 @@ describe('StartClaimPageController', () => {
         method: 'GET',
         auth: { credentials: { token: 'defra-id-token', sbi: '123456789' } }
       }
-      const gasData = { totalEligibleArea: 24.95 }
+      const gasData = buildAvailableClaimsResponse(24.95).availableClaims[0].data
 
       const result = await controller.calculateClaimPayment(request, { state: {} }, gasData)
 
@@ -554,7 +558,7 @@ describe('StartClaimPageController', () => {
         method: 'GET',
         auth: { credentials: { token: 'defra-id-token', sbi: '123456789' } }
       }
-      const gasData = {}
+      const gasData = undefined
 
       const result = await controller.calculateClaimPayment(
         request,

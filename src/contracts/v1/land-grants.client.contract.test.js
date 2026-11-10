@@ -225,6 +225,7 @@ describe('wmp/payments/calculate-by-total-area', () => {
 
     const payload = {
       totalAreaHa: 126.3397,
+      originalTotalAreaHa: 126.3397,
       applicationId: 'APP-123',
       sbi: '123456789',
       crn: '1234567890'
