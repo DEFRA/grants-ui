@@ -42,7 +42,7 @@ export function attachResetButton({ mapInstance, ml, store, mapEl, cleanups }) {
   const wrapper = mapEl?.parentElement
   const { bbox } = store
   if (!wrapper || !bbox) {
-    return undefined
+    return
   }
 
   let hidden = true
@@ -96,14 +96,15 @@ export function attachResetButton({ mapInstance, ml, store, mapEl, cleanups }) {
   cleanups.push(() => ml.off('idle', onIdle))
   ml.on('moveend', onMoveEnd)
   cleanups.push(() => ml.off('moveend', onMoveEnd))
+  const bottomLeft = 'bottom-left'
   mapInstance.addButton(SHOW_ALL_BUTTON_ID, {
     label: MSG_SHOW_ALL_PARCELS,
     iconSvgContent: SHOW_ALL_ICON_SVG,
     isHidden: true,
     onClick,
-    mobile: { slot: 'bottom-left' },
-    tablet: { slot: 'bottom-left' },
-    desktop: { slot: 'bottom-left' }
+    mobile: { slot: bottomLeft },
+    tablet: { slot: bottomLeft },
+    desktop: { slot: bottomLeft }
   })
 }
 
