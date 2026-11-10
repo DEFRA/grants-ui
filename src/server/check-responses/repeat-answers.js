@@ -2,7 +2,7 @@ import { RepeatPageController } from '@defra/forms-engine-plugin/controllers/Rep
 import { ItemField } from '@defra/forms-engine-plugin/engine/models/SummaryViewModel.js'
 import { evaluateTemplate, redirectPath } from '@defra/forms-engine-plugin/engine/helpers.js'
 import { getAnswerMarkdown, markdown } from '@defra/forms-engine-plugin/engine/components/helpers/components.js'
-import escape from 'lodash/escape.js'
+import escapeHtml from 'lodash/escape.js'
 
 /**
  * Associates each repeat answer row with cards built from relevant item state.
@@ -50,7 +50,7 @@ export function buildRepeatAnswerCards(viewModel, context, returnUrl) {
             },
             rows: page.collection.fields.map((field) => {
               const answer = ItemField(page, itemState, field, { path: page.path })
-              const value = markdown.parse(escape(getAnswerMarkdown(field, itemState)), { async: false }).trim()
+              const value = markdown.parse(escapeHtml(getAnswerMarkdown(field, itemState)), { async: false }).trim()
               return {
                 key: { text: evaluateTemplate(answer.title, itemContext) },
                 value: { html: value || 'Not provided', classes: 'app-prose-scope' }
