@@ -8,6 +8,9 @@ import TaskListPageController from '../task-list/task-list-page.controller.js'
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { withDerivedState } from '../common/helpers/state/with-derived-state.js'
 import { getCompletionStats } from '../task-list/task-list.helper.js'
+import { RepeatPageController } from '@defra/forms-engine-plugin/controllers/RepeatPageController.js'
+import { enableRepeatTaskContext } from '../task-list/repeat-task-context.js'
+import { randomUUID } from 'node:crypto'
 
 // Exercise the installed engine's context, validation and redirects rather than
 // the controller substitutes used by the default unit-test setup.
@@ -28,7 +31,7 @@ class AutomaticResultController extends withDerivedState(QuestionPageController,
   }
 }
 
-function createJourney(ResultController = TotalEstimatedCostTaskPageController) {
+function createJourney(ResultController = TotalEstimatedCostTaskPageController, { withRepeater = false } = {}) {
   const model = new FormModel(
     {
       name: 'Calculated answers test',
@@ -39,22 +42,24 @@ function createJourney(ResultController = TotalEstimatedCostTaskPageController) 
         { name: 'other', title: 'Other details' }
       ],
       lists: [],
-      conditions: [
-        {
-          name: 'includeCosts',
-          displayName: 'Include costs',
-          value: {
-            name: 'includeCosts',
-            conditions: [
-              {
-                field: { name: 'howMuchWater', type: 'NumberField', display: 'Water capacity' },
-                operator: 'is more than',
-                value: { type: 'Value', value: '0', display: '0' }
+      conditions: withRepeater
+        ? []
+        : [
+            {
+              name: 'includeCosts',
+              displayName: 'Include costs',
+              value: {
+                name: 'includeCosts',
+                conditions: [
+                  {
+                    field: { name: 'howMuchWater', type: 'NumberField', display: 'Water capacity' },
+                    operator: 'is more than',
+                    value: { type: 'Value', value: '0', display: '0' }
+                  }
+                ]
               }
-            ]
-          }
-        }
-      ],
+            }
+          ],
       metadata: {
         tasklist: { returnAfterSection: true },
         pageConfig: {
@@ -99,18 +104,35 @@ function createJourney(ResultController = TotalEstimatedCostTaskPageController) 
       },
       pages: [
         { path: '/task-list', title: 'Tasks', controller: 'TaskListPageController', components: [] },
-        {
-          path: '/amount',
-          title: 'Water capacity',
-          section: 'costs',
-          controller: 'TaskPageController',
-          components: [{ type: 'NumberField', name: 'howMuchWater', title: 'Water capacity' }]
-        },
+        ...(withRepeater
+          ? [
+              {
+                path: '/reservoir-items',
+                title: 'Reservoir items',
+                section: 'costs',
+                controller: 'RepeatPageController',
+                repeat: { options: { name: 'reservoirItems', title: 'Reservoir' }, schema: { min: 1, max: 5 } },
+                components: [
+                  { type: 'TextField', name: 'reservoirItemName', title: 'Name of your reservoir' },
+                  { type: 'TextField', name: 'reservoirItemWhatTypeOfReservoir', title: 'Reservoir type' },
+                  { type: 'NumberField', name: 'reservoirItemHowMuchWater', title: 'Reservoir storage capacity' }
+                ]
+              }
+            ]
+          : [
+              {
+                path: '/amount',
+                title: 'Water capacity',
+                section: 'costs',
+                controller: 'TaskPageController',
+                components: [{ type: 'NumberField', name: 'howMuchWater', title: 'Water capacity' }]
+              }
+            ]),
         {
           path: '/total-estimated-cost',
           title: 'Total estimated cost',
           section: 'costs',
-          condition: 'includeCosts',
+          condition: withRepeater ? undefined : 'includeCosts',
           controller: 'ConfiguredResultController',
           components: []
         },
@@ -142,6 +164,23 @@ function createJourney(ResultController = TotalEstimatedCostTaskPageController) 
     howMuchWater: 100000,
     otherAnswer: 'Provided'
   }
+  if (withRepeater) {
+    state.moreThanOneReservoir = true
+    state.reservoirItems = [
+      {
+        itemId: randomUUID(),
+        reservoirItemName: 'North reservoir',
+        reservoirItemWhatTypeOfReservoir: 'clay',
+        reservoirItemHowMuchWater: 100000
+      },
+      {
+        itemId: randomUUID(),
+        reservoirItemName: 'South reservoir',
+        reservoirItemWhatTypeOfReservoir: 'synthetic',
+        reservoirItemHowMuchWater: 200000
+      }
+    ]
+  }
   const initialCostPage = new TotalEstimatedCostTaskPageController(model, costPage.pageDef)
   state.additionalAnswers = initialCostPage.getCalculatedAnswers({ app: { model } }, state)
   const cacheService = {
@@ -162,6 +201,7 @@ function createJourney(ResultController = TotalEstimatedCostTaskPageController) 
     }
   })
   const h = {
+    continue: Symbol('continue'),
     redirect: (location) => response({ location }),
     view: (viewName, viewModel) => response({ viewName, viewModel })
   }
@@ -172,19 +212,31 @@ function createJourney(ResultController = TotalEstimatedCostTaskPageController) 
     state: () => state,
     async dispatch(path, { method = 'get', payload } = {}) {
       const url = new URL(path, 'http://localhost')
+      const [pagePath, itemId] = url.pathname.replace('/grant/', '').split('/')
       const request = {
         method,
         payload,
         url,
         path: url.pathname,
         query: Object.fromEntries(url.searchParams),
-        params: { slug: 'grant', path: url.pathname.replace('/grant/', '') },
+        params: { slug: 'grant', path: pagePath, itemId: itemId === 'summary' ? undefined : itemId },
         app: { model },
         yar: { flash: () => [] },
         server: { plugins: { 'forms-engine-plugin': { cacheService } } }
       }
-      return redirectOrMakeHandler(request, h, undefined, (page, context) => {
-        const handler = method === 'get' ? page.makeGetRouteHandler() : page.makePostRouteHandler()
+      const onRequest = () => {
+        enableRepeatTaskContext(request)
+        return h.continue
+      }
+      return redirectOrMakeHandler(request, h, onRequest, (page, context) => {
+        const isRepeat = page instanceof RepeatPageController
+        let factory = method === 'get' ? 'makeGetRouteHandler' : 'makePostRouteHandler'
+        if (isRepeat && request.path.endsWith('/summary')) {
+          factory = method === 'get' ? 'makeGetListSummaryRouteHandler' : 'makePostListSummaryRouteHandler'
+        } else if (isRepeat && request.path.endsWith('/confirm-delete')) {
+          factory = method === 'get' ? 'makeGetItemDeleteRouteHandler' : 'makePostItemDeleteRouteHandler'
+        }
+        const handler = page[factory]()
         return handler(request, context, h)
       })
     }
@@ -316,5 +368,122 @@ describe('Check answers derived-state navigation with the forms engine', () => {
     expect(submitted.location).toBe('/grant/declaration')
     expect(journey.state().additionalAnswers.totalEstimatedCost).toBe(750000)
     expect(persist).toHaveBeenCalledTimes(2)
+  })
+})
+
+async function openReservoirListFromCheckAnswers(journey) {
+  const summary = await journey.dispatch('/grant/summary')
+  const changeLink = summary.viewModel.checkAnswers
+    .flatMap((section) => section.summaryList.rows)
+    .flatMap((row) => row.actions?.items ?? [])
+    .find((action) => action.href.includes('/reservoir-items/summary'))
+  const list = await journey.dispatch(changeLink.href)
+  return { list, listHref: changeLink.href }
+}
+
+function reservoirActions(list) {
+  return list.viewModel.checkAnswers[0].summaryList.rows[0].actions.items
+}
+
+describe('water-management reservoir navigation from Check answers', () => {
+  it.each(['continue', 'back'])('returns an unchanged item to the list via %s before Check answers', async (action) => {
+    const journey = createJourney(TotalEstimatedCostTaskPageController, { withRepeater: true })
+    const { list, listHref } = await openReservoirListFromCheckAnswers(journey)
+    const editHref = reservoirActions(list)[0].href
+    const edit = await journey.dispatch(editHref)
+    expect(edit.viewModel.backLink).toEqual({ href: listHref, text: 'Go back to reservoir list' })
+
+    const result =
+      action === 'back'
+        ? { location: edit.viewModel.backLink.href }
+        : await journey.dispatch(editHref, {
+            method: 'post',
+            payload: { action: 'validate', ...journey.state().reservoirItems[0] }
+          })
+    expect(result.location).toBe(listHref)
+    const returnedList = await journey.dispatch(result.location)
+    expect(returnedList.viewName).toBe('repeat-list-summary')
+    expect(reservoirActions(returnedList)[0].href).toBe(editHref)
+
+    const continued = await journey.dispatch(result.location, { method: 'post', payload: { action: 'continue' } })
+    expect(continued.location).toBe('/grant/summary')
+    const checkAnswers = await journey.dispatch(continued.location)
+    expect(checkAnswers.viewName).toBe('check-responses-page')
+  })
+
+  it('returns a changed item to the list and recalculates only after list Continue', async () => {
+    const journey = createJourney(TotalEstimatedCostTaskPageController, { withRepeater: true })
+    const { list, listHref } = await openReservoirListFromCheckAnswers(journey)
+    const originalTotal = journey.state().additionalAnswers.totalEstimatedCost
+    const edit = await journey.dispatch(reservoirActions(list)[0].href, {
+      method: 'post',
+      payload: { action: 'validate', ...journey.state().reservoirItems[0], reservoirItemHowMuchWater: '200000' }
+    })
+
+    expect(edit.location).toBe(listHref)
+    const returnedList = await journey.dispatch(edit.location)
+    expect(returnedList.viewName).toBe('repeat-list-summary')
+    expect(journey.state().additionalAnswers.totalEstimatedCost).toBe(originalTotal)
+    const continued = await journey.dispatch(edit.location, { method: 'post', payload: { action: 'continue' } })
+    expect(continued.location).toBe('/grant/summary')
+    const detour = await journey.dispatch(continued.location)
+    expect(detour.location).toBe('/grant/total-estimated-cost?returnUrl=%2Fgrant%2Fsummary')
+
+    await journey.dispatch(detour.location)
+    expect(journey.state().additionalAnswers.totalEstimatedCost).toBeGreaterThan(originalTotal)
+    const confirmed = await journey.dispatch(detour.location, { method: 'post', payload: { action: 'continue' } })
+    expect(confirmed.location).toBe('/grant/summary')
+    const checkAnswers = await journey.dispatch(confirmed.location)
+    expect(checkAnswers.viewName).toBe('check-responses-page')
+  })
+
+  it.each(['back', 'cancel', 'confirm'])('returns delete %s to the list before onward navigation', async (action) => {
+    const journey = createJourney(TotalEstimatedCostTaskPageController, { withRepeater: true })
+    const { list, listHref } = await openReservoirListFromCheckAnswers(journey)
+    const deleteHref = reservoirActions(list)[1].href
+    const deletePage = await journey.dispatch(deleteHref)
+    expect(deletePage.viewName).toBe('item-delete')
+    expect(deletePage.viewModel.backLink).toEqual({ href: listHref, text: 'Back' })
+
+    const result =
+      action === 'back'
+        ? { location: deletePage.viewModel.backLink.href }
+        : await journey.dispatch(deleteHref, { method: 'post', payload: { confirm: action === 'confirm' } })
+    expect(result.location).toBe(listHref)
+    const returnedList = await journey.dispatch(result.location)
+    expect(returnedList.viewName).toBe('repeat-list-summary')
+    expect(journey.state().reservoirItems).toHaveLength(action === 'confirm' ? 1 : 2)
+    const continued = await journey.dispatch(result.location, { method: 'post', payload: { action: 'continue' } })
+    expect(continued.location).toBe('/grant/summary')
+    const checkAnswers = await journey.dispatch(continued.location)
+    if (action === 'confirm') {
+      expect(checkAnswers.location).toBe('/grant/total-estimated-cost?returnUrl=%2Fgrant%2Fsummary')
+    } else {
+      expect(checkAnswers.viewName).toBe('check-responses-page')
+    }
+  })
+
+  it('returns an added item to the list before recalculating', async () => {
+    const journey = createJourney(TotalEstimatedCostTaskPageController, { withRepeater: true })
+    const { listHref } = await openReservoirListFromCheckAnswers(journey)
+    const add = await journey.dispatch(listHref, { method: 'post', payload: { action: 'add-another' } })
+    const item = await journey.dispatch(add.location)
+    expect(item.viewModel.backLink).toEqual({ href: listHref, text: 'Go back to reservoir list' })
+    const saved = await journey.dispatch(add.location, {
+      method: 'post',
+      payload: {
+        action: 'validate',
+        reservoirItemName: 'New reservoir',
+        reservoirItemWhatTypeOfReservoir: 'clay',
+        reservoirItemHowMuchWater: '100000'
+      }
+    })
+    expect(saved.location).toBe(listHref)
+    const list = await journey.dispatch(saved.location)
+    expect(list.viewName).toBe('repeat-list-summary')
+    expect(journey.state().reservoirItems).toHaveLength(3)
+    const continued = await journey.dispatch(saved.location, { method: 'post', payload: { action: 'continue' } })
+    const checkAnswers = await journey.dispatch(continued.location)
+    expect(checkAnswers.location).toBe('/grant/total-estimated-cost?returnUrl=%2Fgrant%2Fsummary')
   })
 })
