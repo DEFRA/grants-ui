@@ -164,7 +164,8 @@ Feature: Application Amendment
             | Project name                   | Test project            |
             | Project description            | Project description     |
             | Project budget                 | 50000                   |
-            | Item                           | You have added 1 answer |
+            | Item name                      | Repeat item example     |
+            | Amount                         | 12000                   |
             | Select land parcels            | SD6351-8781             |
         When the user continues
 
@@ -268,7 +269,8 @@ Feature: Application Amendment
             | Project name                   | Test project            |
             | Project description            | Project description     |
             | Project budget                 | 50000                   |
-            | Item                           | You have added 1 answer |
+            | Item name                      | Repeat item example     |
+            | Amount                         | 12000                   |
             | Select land parcels            | SD6351-8781             |
         When the user continues
 
@@ -364,7 +366,8 @@ Feature: Application Amendment
             | Project name                   | Test project            |
             | Project description            | Project description     |
             | Project budget                 | 50000                   |
-            | Item                           | You have added 1 answer |
+            | Item name                      | Repeat item example     |
+            | Amount                         | 12000                   |
             | Select land parcels            | SD6351-8781             |
         When the user continues
 

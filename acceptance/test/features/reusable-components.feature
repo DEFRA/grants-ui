@@ -263,7 +263,8 @@ Feature: Reusable Components
             | Project name               | Test project                          |
             | Project description        | Project description                   |
             | Project budget             | 50000                                 |
-            | Item                       | You have added 1 answer               |
+            | Item name                  | Repeat item example                   |
+            | Amount                     | 12000                                 |
             | Select land parcels        | SD6252-7537, SD6351-8781, SD6352-8774 |
         When the user chooses to change their summary answer to question "Country"
 
@@ -305,7 +306,8 @@ Feature: Reusable Components
             | Project name               | Test project                          |
             | Project description        | Project description                   |
             | Project budget             | 50000                                 |
-            | Item                       | You have added 1 answer               |
+            | Item name                  | Repeat item example                   |
+            | Amount                     | 12000                                 |
             | Select land parcels        | SD6252-7537, SD6351-8781, SD6352-8774 |
         When the user continues
 
@@ -364,6 +366,8 @@ Feature: Reusable Components
             | Project name               | Test project                          |
             | Project description        | Project description                   |
             | Project budget             | 50000                                 |
+            | Item name                  | Repeat item example                   |
+            | Amount                     | 12000                                 |
             | Select land parcels        | SD6252-7537, SD6351-8781, SD6352-8774 |
         And should see the following configurable content
             | Configurable content                                                                                                                       |

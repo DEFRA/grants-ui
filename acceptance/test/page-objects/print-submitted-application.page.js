@@ -10,11 +10,12 @@ export default class PrintSubmittedApplicationPage {
   async submittedAnswers() {
     const submittedAnswers = []
 
-    for (let i = 1; ; i++) {
-      const row = this.page.locator(`//h2[text()='Submitted answers']/following-sibling::dl/div[${i}]`)
-      if (!(await row.isVisible().catch(() => false))) {
-        break
-      }
+    const rows = this.page.locator('main .app-submitted-answers > .govuk-summary-list__row')
+    await rows.first().waitFor({ state: 'visible' })
+    const rowCount = await rows.count()
+
+    for (let i = 0; i < rowCount; i++) {
+      const row = rows.nth(i)
 
       const question = (await row.locator('dt').textContent()).trim()
       const answer = (await row.locator('dd:nth-child(2)').textContent()).trim()

@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { createPageRenderer } from '~/src/server/common/test-helpers/component-helpers.js'
-import { buildPrintViewModel } from '~/src/server/common/helpers/print-application-service/print-application-service.js'
+import {
+  buildPrintViewModel,
+  enrichDefinitionWithListItems
+} from '~/src/server/common/helpers/print-application-service/print-application-service.js'
 
 const renderPage = createPageRenderer(import.meta.url, 'print-submitted-application.html')
 const normalise = (text) => text.replace(/\s+/g, ' ').trim()
@@ -55,6 +58,171 @@ const params = {
 }
 
 describe('print-submitted-application.html view', () => {
+  describe('saved repeat items', () => {
+    function repeatParams(hasTaskList = true) {
+      return {
+        ...params,
+        definition: enrichDefinitionWithListItems({
+          sections: [{ id: 'water', title: 'Water storage' }],
+          lists: [{ id: 'lining-options', items: [{ text: 'Clay lining', value: 'clay' }] }],
+          pages: [
+            ...(hasTaskList ? [{ title: 'Tasks', controller: 'TaskListPageController' }] : []),
+            {
+              path: '/before',
+              title: 'Before repeats',
+              section: 'water',
+              components: [{ type: 'TextField', name: 'before', title: 'Before repeats' }]
+            },
+            {
+              path: '/reservoirs',
+              title: 'Reservoir details',
+              controller: 'RepeatPageController',
+              section: 'water',
+              repeat: { options: { name: 'reservoirItems', title: 'Reservoir' } },
+              components: [
+                { type: 'TextField', name: 'name', title: 'Reservoir name' },
+                { type: 'NumberField', name: 'capacity', title: 'Storage capacity' },
+                { type: 'RadiosField', name: 'lining', title: 'Lining', list: 'lining-options' },
+                { type: 'YesNoField', name: 'covered', title: 'Covered' },
+                { type: 'DatePartsField', name: 'built', title: 'Date built' },
+                { type: 'MultilineTextField', name: 'notes', title: 'Notes', options: { required: false } },
+                { type: 'Html', name: 'help', title: 'Help text' },
+                { type: 'TextField', name: '$$internal', title: 'Internal' }
+              ]
+            },
+            {
+              path: '/after',
+              title: 'After repeats',
+              section: 'water',
+              components: [{ type: 'TextField', name: 'after', title: 'After repeats' }]
+            },
+            {
+              path: '/tanks',
+              title: 'Tank details',
+              controller: 'RepeatPageController',
+              section: 'water',
+              repeat: { options: { name: 'tanks', title: 'Tank' } },
+              components: [{ type: 'TextField', name: 'tankName', title: 'Tank name' }]
+            }
+          ]
+        }),
+        answers: {
+          before: 'First saved answer',
+          after: 'Last saved answer',
+          name: 'Stale top-level reservoir',
+          tankName: 'Stale top-level tank',
+          reservoirItems: [
+            {
+              itemId: 'first-reservoir',
+              name: 'North reservoir',
+              capacity: 0,
+              lining: 'clay',
+              covered: false,
+              built__day: 1,
+              built__month: 11,
+              built__year: 2026,
+              notes: 'First line\nSecond line',
+              help: 'Help text',
+              $$internal: 'Internal value'
+            },
+            { itemId: 'second-reservoir', name: 'South reservoir', capacity: 200000, covered: true, notes: null }
+          ],
+          tanks: [{ itemId: 'first-tank', tankName: 'Rainwater tank' }]
+        }
+      }
+    }
+
+    it.each([true, false])('renders all item fields in order with task grouping: %s', (hasTaskList) => {
+      const saved = repeatParams(hasTaskList)
+      const originalAnswers = structuredClone(saved.answers)
+      const $ = renderPage(buildPrintViewModel(saved))
+      const cards = $('.govuk-summary-card')
+      expect(
+        cards
+          .find('h3')
+          .map((_, title) => $(title).text().trim())
+          .get()
+      ).toEqual(['Reservoir 1', 'Reservoir 2', 'Tank 1'])
+      expect(
+        cards
+          .first()
+          .find('.govuk-summary-list__row')
+          .map((_, row) => normalise($(row).text()))
+          .get()
+      ).toEqual([
+        'Reservoir name North reservoir',
+        'Storage capacity 0',
+        'Lining Clay lining',
+        'Covered No',
+        'Date built 1 November 2026',
+        'Notes (optional) First line Second line'
+      ])
+      expect(
+        cards
+          .eq(1)
+          .find('.govuk-summary-list__row')
+          .map((_, row) => normalise($(row).text()))
+          .get()
+      ).toEqual([
+        'Reservoir name South reservoir',
+        'Storage capacity 200000',
+        'Lining Not provided',
+        'Covered Yes',
+        'Date built Not provided',
+        'Notes (optional) Not provided'
+      ])
+      expect(normalise(cards.last().text())).toBe('Tank 1 Tank name Rainwater tank')
+      const content = $('main').text()
+      expect(content.indexOf('First saved answer')).toBeLessThan(content.indexOf('Reservoir 1'))
+      expect(content.indexOf('Reservoir 2')).toBeLessThan(content.indexOf('Last saved answer'))
+      expect(content.indexOf('Last saved answer')).toBeLessThan(content.indexOf('Tank 1'))
+      expect(content).not.toContain('Stale top-level')
+      expect(content).not.toContain('Help text')
+      expect(content).not.toContain('Internal value')
+      expect(content).not.toContain('You have added')
+      expect(cards.find('a, table, dl dl')).toHaveLength(0)
+      expect(cards.find('.app-submitted-answers')).toHaveLength(3)
+      expect(cards.first().find('br')).toHaveLength(1)
+      expect($('main h2').text()).toBe(hasTaskList ? 'Water storage' : 'Submitted answers')
+      expect(saved.answers).toEqual(originalAnswers)
+    })
+
+    it('omits repeat pages outside the relevant journey even when saved items exist', () => {
+      const $ = renderPage(buildPrintViewModel({ ...repeatParams(), relevantPages: [{ path: '/reservoirs' }] }))
+      expect($('.govuk-summary-card')).toHaveLength(2)
+      expect($('main').text()).not.toContain('Rainwater tank')
+    })
+
+    it.each([
+      ['empty', []],
+      ['missing', undefined],
+      ['invalid', 'invalid'],
+      ['invalid items', [null]]
+    ])('handles %s repeat collections', (_label, tanks) => {
+      const saved = repeatParams()
+      saved.answers.tanks = tanks
+      const $ = renderPage(buildPrintViewModel(saved))
+      expect($('.govuk-summary-card')).toHaveLength(2)
+      expect($('main').text()).not.toContain('Tank name')
+      expect($('main').text()).not.toContain('Stale top-level')
+    })
+
+    it('escapes item titles and values while preserving multiline answers', () => {
+      const saved = repeatParams()
+      saved.definition.pages.find((page) => page.path === '/reservoirs').repeat.options.title = '<b>Reservoir</b>'
+      saved.answers.reservoirItems[0].name = '<img src=x onerror=alert(1)>'
+      saved.answers.reservoirItems[0].notes = '<script>alert(1)</script>\nA & B'
+      const $ = renderPage(buildPrintViewModel(saved))
+      const card = $('.govuk-summary-card').first()
+      expect(card.find('img, script, b')).toHaveLength(0)
+      expect(card.find('h3').text().trim()).toBe('<b>Reservoir</b> 1')
+      expect(card.text()).toContain('<img src=x onerror=alert(1)>')
+      expect(card.text()).toContain('<script>alert(1)</script>')
+      expect(card.text()).toContain('A & B')
+      expect(card.find('br')).toHaveLength(1)
+    })
+  })
+
   it.each([true, false])('renders saved derived answers when the journey has a task list: %s', (hasTaskList) => {
     const $ = renderPage(
       buildPrintViewModel({
