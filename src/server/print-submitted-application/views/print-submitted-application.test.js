@@ -44,6 +44,11 @@ const params = {
   answers: {
     selectedParcelsDisplay: 'SD1234-5678',
     landParcels: { 'SD1234-5678': { actionsObj: { CLIG3: { consents: ['sssi'] } } } },
+    projectName: 'Test project'
+  },
+  savedState: {
+    selectedParcelsDisplay: 'SD1234-5678',
+    landParcels: { 'SD1234-5678': { actionsObj: { CLIG3: { consents: ['sssi'] } } } },
     projectName: 'Test project',
     payment,
     agreementStartDate: '2026-01-01',
@@ -62,6 +67,7 @@ describe('print-submitted-application.html view', () => {
     function repeatParams(hasTaskList = true) {
       return {
         ...params,
+        savedState: {},
         definition: enrichDefinitionWithListItems({
           sections: [{ id: 'water', title: 'Water storage' }],
           lists: [{ id: 'lining-options', items: [{ text: 'Clay lining', value: 'clay' }] }],
@@ -209,8 +215,28 @@ describe('print-submitted-application.html view', () => {
     })
 
     it('omits repeat pages outside the relevant journey even when saved items exist', () => {
-      const $ = renderPage(buildPrintViewModel({ ...repeatParams(), relevantPages: [{ path: '/reservoirs' }] }))
+      const saved = repeatParams()
+      const $ = renderPage(
+        buildPrintViewModel({
+          ...saved,
+          savedState: saved.answers,
+          answers: { reservoirItems: saved.answers.reservoirItems }
+        })
+      )
       expect($('.govuk-summary-card')).toHaveLength(2)
+      expect($('main').text()).not.toContain('Rainwater tank')
+    })
+
+    it.each([true, false])('uses relevant state for answer rows with task grouping: %s', (hasTaskList) => {
+      const saved = repeatParams(hasTaskList)
+      const relevantState = { before: saved.answers.before, reservoirItems: saved.answers.reservoirItems }
+      const $ = renderPage(buildPrintViewModel({ ...saved, answers: relevantState, savedState: saved.answers }))
+
+      expect($('.govuk-summary-card')).toHaveLength(2)
+      expect($('main').text()).toContain('First saved answer')
+      expect($('main').text()).toContain('North reservoir')
+      expect($('main').text()).toContain('South reservoir')
+      expect($('main').text()).not.toContain('Last saved answer')
       expect($('main').text()).not.toContain('Rainwater tank')
     })
 
@@ -270,7 +296,7 @@ describe('print-submitted-application.html view', () => {
             }
           }
         },
-        answers: { additionalAnswers: { totalScore: 0, totalEstimatedCost: 125000 } }
+        savedState: { additionalAnswers: { totalScore: 0, totalEstimatedCost: 125000 } }
       })
     )
 
@@ -332,7 +358,8 @@ describe('print-submitted-application.html view', () => {
             questionPage('empty', 'unanswered')
           ]
         },
-        answers: { one: 'Answer one', two: 'Answer two', three: 'Answer three' }
+        answers: { one: 'Answer one', two: 'Answer two', three: 'Answer three' },
+        savedState: {}
       })
     )
 
@@ -353,7 +380,8 @@ describe('print-submitted-application.html view', () => {
         definition: {
           pages: [{ title: 'Tasks', controller: 'TaskListPageController' }, ...params.definition.pages]
         },
-        answers: { projectName: 'Test project' }
+        answers: { projectName: 'Test project' },
+        savedState: {}
       })
     )
 
@@ -412,6 +440,9 @@ describe('print-submitted-application.html view', () => {
         ...params,
         answers: {
           selectedParcelsDisplay: 'SD1234-5678',
+          landParcels: ['SD1234-5678']
+        },
+        savedState: {
           landParcels: ['SD1234-5678'],
           payment: {
             ...payment,
@@ -438,7 +469,10 @@ describe('print-submitted-application.html view', () => {
         answers: {
           selectedParcelsDisplay: 'SD1234-5678',
           landParcels: ['SD1234-5678'],
-          projectName: 'Woodland management plan',
+          projectName: 'Woodland management plan'
+        },
+        savedState: {
+          landParcels: ['SD1234-5678'],
           payment: {
             frequency: 'Single',
             agreementStartDate: '2026-01-01',
@@ -472,7 +506,8 @@ describe('print-submitted-application.html view', () => {
     const $ = renderPage(
       buildPrintViewModel({
         ...params,
-        answers: { selectedParcelsDisplay: 'SD1234-5678', landParcels: ['SD1234-5678'] }
+        answers: { selectedParcelsDisplay: 'SD1234-5678', landParcels: ['SD1234-5678'] },
+        savedState: {}
       })
     )
 
