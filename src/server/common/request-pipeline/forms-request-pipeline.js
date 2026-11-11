@@ -3,16 +3,16 @@ import { enforcePagePermission } from './permissions/enforce-page-permission.js'
 import { applicationDeletedRedirect } from './redirects/application-deleted-redirect.js'
 import { resolveApplicationWindowClosedPath } from './redirects/application-window-closed-redirect.js'
 import { applyLocationHints } from '../map/location-hints.js'
+import { preserveNumberFieldInputs } from '../helpers/state/preserve-number-field-inputs.js'
 import { enableRepeatTaskContext } from '~/src/server/task-list/repeat-task-context.js'
 import { enableRepeatPageItemNames } from '../helpers/repeat-page-item-names.js'
-import { preserveNumberFieldInputs } from '../helpers/state/preserve-number-field-inputs.js'
 
 /**
  * Pipeline handler that delegates to forms status redirect, then enforces page permissions.
  *
  * If a status redirect is required, the handler short-circuits and returns the redirect.
  * Otherwise, it continues to permission enforcement on the resolved destination page and,
- * when access is allowed, adds item wording and task-list behaviour to a resolved repeat page.
+ * when access is allowed, preserves number input precision and adds repeat-page behaviour.
  *
  * @async
  * @param {import('./types.js').PipelineRequest & AnyFormRequest} request
@@ -47,7 +47,6 @@ export async function formsRequestPipeline(request, h, context) {
     enableRepeatPageItemNames(request)
     enableRepeatTaskContext(request)
   }
-
   return permissionResult
 }
 

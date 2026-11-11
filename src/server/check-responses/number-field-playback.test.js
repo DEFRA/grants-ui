@@ -53,6 +53,7 @@ function createJourney(format, controller = 'CheckResponsesPageController', view
     }
   )
   let savedState = { $$__referenceNumber: 'test-reference' }
+  let answers = {}
   const cacheService = {
     getState: async () => structuredClone(savedState),
     setState: async (_request, state) => {
@@ -93,6 +94,7 @@ function createJourney(format, controller = 'CheckResponsesPageController', view
           return toolkit.continue
         },
         (page, context) => {
+          answers = context.relevantState
           const handler = payload ? page.makePostRouteHandler() : page.makeGetRouteHandler()
           return handler(request, context, h)
         }
@@ -101,7 +103,8 @@ function createJourney(format, controller = 'CheckResponsesPageController', view
     print() {
       return buildPrintViewModel({
         definition: model.def,
-        answers: savedState,
+        answers,
+        savedState,
         submittedAt: '2026-10-30T12:00:00.000Z',
         slug: 'grant',
         sessionData: {},

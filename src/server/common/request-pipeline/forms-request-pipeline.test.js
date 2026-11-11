@@ -32,7 +32,7 @@ vi.mock('~/src/server/common/request-pipeline/redirects/forms-status-redirect.js
 }))
 
 describe('formsRequestPipeline', () => {
-  const request = /** @type {any} */ ({})
+  const request = /** @type {any} */ ({ app: {} })
   const context = /** @type {any} */ ({})
 
   const h = {

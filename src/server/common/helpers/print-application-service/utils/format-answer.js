@@ -1,5 +1,5 @@
-import { compareParcelReferences } from '~/src/shared/format-parcel.js'
 import { formatNumberAnswer } from '~/src/server/common/helpers/number-field-format.js'
+import { compareParcelReferences } from '~/src/shared/format-parcel.js'
 import { COMPONENT_TYPES, MONTH_NAMES } from '~/src/server/common/helpers/print-application-service/constants.js'
 
 /**

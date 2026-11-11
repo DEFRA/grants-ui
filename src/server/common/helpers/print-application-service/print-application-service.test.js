@@ -109,7 +109,9 @@ describe('print-application-service', () => {
         },
         answers: {
           formattedAmount: 125000.5,
-          plainAmount: 125000.5,
+          plainAmount: 125000.5
+        },
+        savedState: {
           $$__numberFieldInputs: { formattedAmount: '125000.50' }
         }
       })

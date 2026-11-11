@@ -86,9 +86,10 @@ function resolveAnswer(component, answers) {
  * @param {FormComponent[] | undefined} components
  * @param {Answers} answers
  * @param {boolean} [includeUnanswered] - Include all repeat fields, including blank optional answers
+ * @param {Record<string, string>} [numberInputs]
  * @returns {Question[]}
  */
-function extractQuestions(components, answers, includeUnanswered = false) {
+function extractQuestions(components, answers, includeUnanswered = false, numberInputs) {
   return (components || [])
     .filter((component) => {
       if (!isAnswerableComponent(component)) {
@@ -104,7 +105,7 @@ function extractQuestions(components, answers, includeUnanswered = false) {
           (component.shortDescription || component.title || '') +
           (includeUnanswered && component.options?.required === false ? ' (optional)' : ''),
         answer:
-          formatAnswer(component, resolveAnswer(component, answers), answers.$$__numberFieldInputs?.[component.name]) ||
+          formatAnswer(component, resolveAnswer(component, answers), numberInputs?.[component.name]) ||
           (includeUnanswered ? 'Not provided' : ''),
         ...(locationHint ? { locationHint } : {})
       }
@@ -141,9 +142,10 @@ function extractRepeatQuestions(page, answers) {
  * @param {Answers} answers
  * @param {boolean} hasParcelCards
  * @param {Map<string | undefined, Question[]>} [additionalQuestions]
+ * @param {Record<string, string>} [numberInputs]
  * @returns {{ title: string, questions: Question[] }[]}
  */
-function buildSections(pages, answers, hasParcelCards, additionalQuestions = new Map()) {
+function buildSections(pages, answers, hasParcelCards, additionalQuestions = new Map(), numberInputs) {
   return (pages || [])
     .map((page) => {
       const components =
@@ -156,7 +158,7 @@ function buildSections(pages, answers, hasParcelCards, additionalQuestions = new
         questions: [
           ...(page.controller === 'RepeatPageController'
             ? extractRepeatQuestions(page, answers)
-            : extractQuestions(components, answers)),
+            : extractQuestions(components, answers, false, numberInputs)),
           ...(additionalQuestions.get(normalisePagePath(page.path)) ?? [])
         ]
       }
@@ -171,8 +173,16 @@ function buildSections(pages, answers, hasParcelCards, additionalQuestions = new
  * @param {boolean} hasParcelCards
  * @param {string | undefined} landAndActionsSectionId
  * @param {Map<string | undefined, Question[]>} additionalQuestions
+ * @param {Record<string, string>} [numberInputs]
  */
-function buildTaskSections(definition, answers, hasParcelCards, landAndActionsSectionId, additionalQuestions) {
+function buildTaskSections(
+  definition,
+  answers,
+  hasParcelCards,
+  landAndActionsSectionId,
+  additionalQuestions,
+  numberInputs
+) {
   const titles = new Map((definition.sections || []).map((section) => [section.id, section.title]))
   /** @type {Map<string | undefined, { title: string, questions: Question[], showLandAndActions: boolean }>} */
   const groups = new Map()
@@ -181,7 +191,7 @@ function buildTaskSections(definition, answers, hasParcelCards, landAndActionsSe
     const sectionId = page.section && titles.has(page.section) ? page.section : undefined
     const group = groups.get(sectionId) ?? createTaskSection(titles, sectionId, landAndActionsSectionId)
     groups.set(sectionId, group)
-    for (const section of buildSections([page], answers, hasParcelCards, additionalQuestions)) {
+    for (const section of buildSections([page], answers, hasParcelCards, additionalQuestions, numberInputs)) {
       group.questions.push(...section.questions)
     }
   }
@@ -409,6 +419,7 @@ export function buildPrintViewModel({
   )
   const additional = buildAdditionalSections(definition, savedState, Boolean(landAndActionsSummary), relevantPages)
   const printAnswers = { ...answers, mapLocationHints: savedState.mapLocationHints }
+  const numberInputs = /** @type {Record<string, string> | undefined} */ (savedState.$$__numberFieldInputs)
 
   return {
     page,
@@ -431,9 +442,10 @@ export function buildPrintViewModel({
             printAnswers,
             hasParcelCards,
             landAndActionsSectionId,
-            additional.questionsByPage
+            additional.questionsByPage,
+            numberInputs
           )
-        : buildSections(definition.pages, printAnswers, hasParcelCards, additional.questionsByPage)),
+        : buildSections(definition.pages, printAnswers, hasParcelCards, additional.questionsByPage, numberInputs)),
       ...additional.sections
     ],
     landAndActionsSummary,
