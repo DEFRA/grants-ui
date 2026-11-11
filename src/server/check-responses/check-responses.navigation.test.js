@@ -374,8 +374,8 @@ describe('Check answers derived-state navigation with the forms engine', () => {
 async function openReservoirListFromCheckAnswers(journey) {
   const summary = await journey.dispatch('/grant/summary')
   const changeLink = summary.viewModel.checkAnswers
-    .flatMap((section) => section.summaryList.rows)
-    .flatMap((row) => row.actions?.items ?? [])
+    .flatMap((section) => section.answerGroups ?? [])
+    .flatMap((answers) => answers.card?.actions?.items ?? [])
     .find((action) => action.href.includes('/reservoir-items/summary'))
   const list = await journey.dispatch(changeLink.href)
   return { list, listHref: changeLink.href }
