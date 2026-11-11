@@ -1,7 +1,8 @@
 {
   "watch": ["./src"],
   "env": {
-    "NODE_ENV": "development"
+    "NODE_ENV": "development",
+    "AWS_EMF_ENVIRONMENT": "Local"
   },
   "ignore": ["**/*.test.*", "./src/server/common/test-helpers", "./src/client"],
   "ext": "cjs,js,json,html,njk,yaml",

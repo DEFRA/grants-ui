@@ -56,10 +56,10 @@ const response = await withOutboundMetrics(
 
 ## Configuration
 
-| Setting               | Purpose                                                                                                                                                         |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ENABLE_METRICS`      | Turns emission on or off (`isMetricsEnabled`). Defaults to on when `NODE_ENV=production`. When off, calls are not instrumented.                                 |
-| `AWS_EMF_ENVIRONMENT` | Set to `Local` by `npm run dev` / `npm run dev:debug`, so metrics are printed to stdout and not sent to CloudWatch. **Do not set it in deployed environments.** |
+| Setting               | Purpose                                                                                                                                        |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ENABLE_METRICS`      | Turns emission on or off (`isMetricsEnabled`). Defaults to on when `NODE_ENV=production`. When off, calls are not instrumented.                |
+| `AWS_EMF_ENVIRONMENT` | Set to `Local` for local development, so metrics are printed to stdout and not sent to CloudWatch. **Do not set it in deployed environments.** |
 
 Metrics are sent in the background and never delay or fail the call being measured. If they cannot be sent, a
 `SYSTEM.METRICS_EMIT_FAILED` warning is logged.
