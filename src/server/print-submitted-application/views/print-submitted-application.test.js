@@ -132,6 +132,27 @@ describe('print-submitted-application.html view', () => {
       }
     }
 
+    it('excludes notification banners from repeat item answers even when unanswered fields are included', () => {
+      const saved = repeatParams()
+      saved.definition.pages
+        .find((page) => page.path === '/reservoirs')
+        .components.push({
+          type: 'NotificationBanner',
+          name: 'notice',
+          title: 'Important'
+        })
+
+      const $ = renderPage(buildPrintViewModel(saved))
+      const labels = $('.app-submitted-answers .govuk-summary-list__key')
+        .map((_, key) => normalise($(key).text()))
+        .get()
+
+      expect(labels).not.toContain('Important')
+      expect(labels.filter((label) => label === 'Reservoir name')).toHaveLength(2)
+      expect(normalise($('main').text())).toContain('North reservoir')
+      expect(normalise($('main').text())).toContain('South reservoir')
+    })
+
     it.each([true, false])('renders all item fields in order with task grouping: %s', (hasTaskList) => {
       const saved = repeatParams(hasTaskList)
       const originalAnswers = structuredClone(saved.answers)
