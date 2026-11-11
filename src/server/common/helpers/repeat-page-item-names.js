@@ -8,15 +8,15 @@ const decoratedPages = new WeakSet()
  * Names repeat items using the form definition. The engine creates its built-in
  * RepeatPageController before consulting custom controllers, so decorate the
  * resolved instance and retain its identity, validation and navigation.
- * @param {import('@defra/forms-engine-plugin/types').AnyFormRequest} request
+ * @param {import('@defra/forms-engine-plugin/types').AnyFormRequest} formRequest
  */
-export function enableRepeatPageItemNames(request) {
-  const { model } = request.app
+export function enableRepeatPageItemNames(formRequest) {
+  const { model } = formRequest.app
   if (!model) {
     return
   }
 
-  const page = getPage(model, request)
+  const page = getPage(model, formRequest)
   if (!(page instanceof RepeatPageController) || decoratedPages.has(page)) {
     return
   }
