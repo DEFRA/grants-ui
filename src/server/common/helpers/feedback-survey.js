@@ -1,4 +1,5 @@
 import { config } from '~/src/config/config.js'
+import { APPLICATIONS_PATH } from '../constants/applications-path.js'
 
 /**
  * Query-param names appended to the Qualtrics URL. Kept in one place so a
@@ -41,7 +42,7 @@ export const SUBMITTED_PATH_SUFFIXES = ['/confirmation', '/print-submitted-appli
  * @returns {string} The journey param value
  */
 export function resolveJourney(path) {
-  if (path?.endsWith('/applications')) {
+  if (path?.endsWith(APPLICATIONS_PATH)) {
     return JOURNEY.selection
   }
 
