@@ -43,11 +43,13 @@
               {{ govukTag({ text: application.statusText, classes: application.statusClasses }) }}
             </td>
             <td class="govuk-table__cell">
-              <a class="govuk-link" href="{{ application.href }}"
-                >{{ application.actionText }}<span class="govuk-visually-hidden">
-                  {{ application.referenceNumber }}</span
-                ></a
-              >
+              {% if application.href %}
+                <a class="govuk-link" href="{{ application.href }}"
+                  >{{ application.actionText }}<span class="govuk-visually-hidden">
+                    {{ application.referenceNumber }}</span
+                  ></a
+                >
+              {% endif %}
             </td>
           </tr>
         {% endfor %}
