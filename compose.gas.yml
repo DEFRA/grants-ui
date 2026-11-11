@@ -5,7 +5,7 @@ services:
         condition: service_healthy
     environment:
       GAS_API_URL: http://fg-gas-backend:3102
-      GAS_API_AUTH_TOKEN: 3e4a1b2c-5d6e-7f8a-9b0c-1d2e3f4a5b6c # This local dev token has been pre-hashed and inserted into mongo
+      GAS_API_AUTH_TOKEN: 3e4a1b2c-5d6e-7f8a-9b0c-1d2e3f4a5b6c # Registered during local GAS startup
 
   floci:
     volumes:
@@ -16,6 +16,11 @@ services:
     image: defradigital/fg-gas-backend:latest
     pull_policy: always
     restart: on-failure
+    # GAS's first migration recreates access_tokens. Complete migrations and
+    # register the local token before starting the server or reporting healthy.
+    command: ['/bin/sh', '-c', 'node scripts/seed-local-gas-token.mjs && exec scripts/run.sh']
+    volumes:
+      - ./scripts/seed-local-gas-token.mjs:/home/node/scripts/seed-local-gas-token.mjs:ro
     depends_on:
       mongodb:
         condition: service_healthy
@@ -36,9 +41,7 @@ services:
       LOG_FORMAT: pino-pretty
       MONGO_URI: mongodb://mongodb:27017/?replicaSet=mongoRepl
       MONGO_DATABASE: fg-gas-backend
-      # SHA-256 hash of the local grants-ui GAS_API_AUTH_TOKEN. GAS seeds this
-      # credential during startup, after Mongo's replica set is ready.
-      SERVICE_ACCESS_TOKEN_HASH: grants-ui:aada6ad875e96b5d661a227096d5df75065f9524c7a897008ae8a971a440f080
+      GAS_API_AUTH_TOKEN_HASH: aada6ad875e96b5d661a227096d5df75065f9524c7a897008ae8a971a440f080
       AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL:-http://floci:4566}
       AWS_REGION: eu-west-2
       AWS_DEFAULT_REGION: eu-west-2

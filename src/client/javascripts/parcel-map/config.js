@@ -146,7 +146,7 @@ export const CLASS_TOOLTIP = 'parcel-map__tooltip'
 export const CLASS_TOOLTIP_TITLE = 'parcel-map__tooltip-title'
 export const CLASS_TOOLTIP_ROW = 'parcel-map__tooltip-row'
 export const CLASS_VISUALLY_HIDDEN = 'govuk-visually-hidden'
-export const SHOW_ALL_BUTTON_CLASS = 'map-reset-view-button'
+export const SHOW_ALL_BUTTON_ID = 'map-reset-view-button'
 
 export const SHOW_ALL_ICON_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" class="im-c-icon">' +
