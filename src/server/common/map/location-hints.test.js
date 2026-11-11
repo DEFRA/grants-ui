@@ -190,7 +190,8 @@ describe('shared saved map hints', () => {
     const original = structuredClone(answers)
     const viewModel = buildPrintViewModel({
       definition: form.model.def,
-      answers,
+      answers: { location__easting: answers.location__easting, location__northing: answers.location__northing },
+      savedState: answers,
       form: { name: 'Test grant' },
       slug: 'test-grant',
       referenceNumber: answers.$$__referenceNumber,
