@@ -3,6 +3,7 @@ import { COMPONENT_TYPES, DISPLAY_ONLY_TYPES } from './constants.js'
 import { buildConfirmLandAndActionsViewModel } from '~/src/server/land-grants/view-models/confirm-land-and-actions.view-model.js'
 import { ComponentsRegistry } from '../../../confirmation/services/components.registry.js'
 import { findPageByPath, normalisePagePath, resolveAdditionalAnswerSections } from '../additional-answers.js'
+import { getSavedLocationHint } from '../../map/location-hints.js'
 
 export const COMPOSITE_FIELD_PARTS = {
   [COMPONENT_TYPES.DatePartsField]: ['day', 'month', 'year'],
@@ -20,9 +21,9 @@ export const COMPOSITE_FIELD_PARTS = {
 
 /**
  * @typedef {{ text: string, value: string | number | boolean }} ListItem
- * @typedef {{ type: string, name: string, title: string, shortDescription?: string, list?: string, items?: ListItem[], options?: { required?: boolean } }} FormComponent
+ * @typedef {{ type: string, name: string, title: string, shortDescription?: string, list?: string, items?: ListItem[], options?: { required?: boolean, showApproximateLocation?: boolean } }} FormComponent
  * @typedef {{ title: string, path?: string, section?: string, controller?: string, components?: FormComponent[], repeat?: { options: { name: string, title: string } } }} FormPage
- * @typedef {{ label: string, answer: string, repeatItems?: { title: string, questions: Question[] }[] }} Question
+ * @typedef {{ label: string, answer: string, locationHint?: string, repeatItems?: { title: string, questions: Question[] }[] }} Question
  * @typedef {{
  *   pages?: FormPage[],
  *   sections?: { id?: string, title: string }[],
@@ -96,12 +97,16 @@ function extractQuestions(components, answers, includeUnanswered = false) {
       const rawAnswer = resolveAnswer(component, answers)
       return includeUnanswered || (rawAnswer !== undefined && rawAnswer !== null)
     })
-    .map((component) => ({
-      label:
-        (component.shortDescription || component.title || '') +
-        (includeUnanswered && component.options?.required === false ? ' (optional)' : ''),
-      answer: formatAnswer(component, resolveAnswer(component, answers)) || (includeUnanswered ? 'Not provided' : '')
-    }))
+    .map((component) => {
+      const locationHint = getSavedLocationHint(component, answers)
+      return {
+        label:
+          (component.shortDescription || component.title || '') +
+          (includeUnanswered && component.options?.required === false ? ' (optional)' : ''),
+        answer: formatAnswer(component, resolveAnswer(component, answers)) || (includeUnanswered ? 'Not provided' : ''),
+        ...(locationHint ? { locationHint } : {})
+      }
+    })
 }
 
 /**
@@ -401,6 +406,7 @@ export function buildPrintViewModel({
     groupAnswersByTask && Boolean(landAndActionsSummary)
   )
   const additional = buildAdditionalSections(definition, savedState, Boolean(landAndActionsSummary), relevantPages)
+  const printAnswers = { ...answers, mapLocationHints: savedState.mapLocationHints }
 
   return {
     page,
@@ -418,8 +424,14 @@ export function buildPrintViewModel({
     groupAnswersByTask,
     sections: [
       ...(groupAnswersByTask
-        ? buildTaskSections(definition, answers, hasParcelCards, landAndActionsSectionId, additional.questionsByPage)
-        : buildSections(definition.pages, answers, hasParcelCards, additional.questionsByPage)),
+        ? buildTaskSections(
+            definition,
+            printAnswers,
+            hasParcelCards,
+            landAndActionsSectionId,
+            additional.questionsByPage
+          )
+        : buildSections(definition.pages, printAnswers, hasParcelCards, additional.questionsByPage)),
       ...additional.sections
     ],
     landAndActionsSummary,

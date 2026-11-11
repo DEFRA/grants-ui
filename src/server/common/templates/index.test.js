@@ -79,8 +79,16 @@ describe('index.html view page-level config', () => {
           collection: {
             fields: [
               { type: 'OsGridRefField', name: 'location' },
-              { type: 'LatLongField', name: 'coordinates', options: { hideMapHelpPanel: false } },
-              { type: 'GeospatialField', name: 'boundary', options: { zoomToPostcode: false } },
+              {
+                type: 'LatLongField',
+                name: 'coordinates',
+                options: { hideMapHelpPanel: false, showApproximateLocation: true }
+              },
+              {
+                type: 'GeospatialField',
+                name: 'boundary',
+                options: { zoomToPostcode: false, showApproximateLocation: true }
+              },
               { type: 'TextField', name: 'description', options: { hideMapHelpPanel: false } }
             ]
           }
@@ -93,6 +101,9 @@ describe('index.html view page-level config', () => {
       expect($('[data-map-component="coordinates"]').attr('data-zoom-to-postcode')).toBe('true')
       expect($('[data-map-component="boundary"]').attr('data-hide-map-help-panel')).toBe('true')
       expect($('[data-map-component="boundary"]').attr('data-zoom-to-postcode')).toBe('false')
+      expect($('[data-map-component="location"]').attr('data-show-approximate-location')).toBe('false')
+      expect($('[data-map-component="coordinates"]').attr('data-show-approximate-location')).toBe('true')
+      expect($('[data-map-component="boundary"]').attr('data-show-approximate-location')).toBe('false')
     })
 
     it('escapes component names in the settings markup', () => {
@@ -102,6 +113,25 @@ describe('index.html view page-level config', () => {
         page: { ...makePage({}), collection: { fields: [{ type: 'OsGridRefField', name }] } }
       })
       expect($('[data-map-component]').attr('data-map-component')).toBe(name)
+      expect($('#injected')).toHaveLength(0)
+    })
+
+    it('passes custom prefix text through escaped markup and omits missing prefixes', () => {
+      const prefix = 'Nearby "><script id="injected">location</script>:'
+      const $ = renderPage({
+        componentMapsEnabled: true,
+        page: {
+          ...makePage({}),
+          collection: {
+            fields: [
+              { type: 'EastingNorthingField', name: 'custom', options: { approximateLocationPrefix: prefix } },
+              { type: 'OsGridRefField', name: 'default' }
+            ]
+          }
+        }
+      })
+      expect($('[data-map-component="custom"]').attr('data-approximate-location-prefix')).toBe(prefix)
+      expect($('[data-map-component="default"]').attr('data-approximate-location-prefix')).toBeUndefined()
       expect($('#injected')).toHaveLength(0)
     })
 

@@ -121,7 +121,7 @@ describe('forms component maps', () => {
       { apiPath: '/api', assetPath: '/public/assets' },
       document.querySelector('.app-location-field'),
       0,
-      { hideMapHelpPanel: true, zoomToPostcode: true }
+      { hideMapHelpPanel: true, zoomToPostcode: true, showApproximateLocation: false }
     )
     expect(initialViews).toEqual([UK_VIEW])
   })
@@ -374,7 +374,7 @@ describe('forms component maps', () => {
       { apiPath: '/api', assetPath: '/public/assets' },
       document.querySelector('.app-location-field'),
       0,
-      { hideMapHelpPanel: false, zoomToPostcode: true }
+      { hideMapHelpPanel: false, zoomToPostcode: true, showApproximateLocation: false }
     )
     const fields = document.querySelectorAll('.app-location-field, .app-geospatial-field')
     const first = addHelpPanel(fields[0])
@@ -399,10 +399,24 @@ describe('forms component maps', () => {
         { apiPath: '/api', assetPath: '/public/assets' },
         document.querySelector('.app-location-field'),
         0,
-        { hideMapHelpPanel: setting === 'true', zoomToPostcode: true }
+        { hideMapHelpPanel: setting === 'true', zoomToPostcode: true, showApproximateLocation: false }
       )
     }
   )
+
+  test('passes approximate location options independently for each point map', async () => {
+    addOptions('location', { showApproximateLocation: 'true', approximateLocationPrefix: 'Nearby location:' })
+    document.body.insertAdjacentHTML(
+      'beforeend',
+      '<div class="app-location-field" data-locationtype="latlongfield"><input name="coordinates__lat" /></div>'
+    )
+    await initialiseComponentMaps()
+    expect(processLocation.mock.calls.map((call) => call[3].showApproximateLocation)).toEqual([true, false])
+    expect(processLocation.mock.calls.map((call) => call[3].approximateLocationPrefix)).toEqual([
+      'Nearby location:',
+      undefined
+    ])
+  })
 
   test('keeps the opted-out geospatial help panel open', async () => {
     document.body.innerHTML = '<div class="app-geospatial-field"><textarea name="boundary"></textarea></div>'
@@ -440,7 +454,11 @@ describe('forms component maps', () => {
     await initialiseComponentMaps()
     expect(fetch).not.toHaveBeenCalled()
     expect(initialViews).toEqual([UK_VIEW])
-    expect(processLocation.mock.calls[0][3]).toEqual({ hideMapHelpPanel: true, zoomToPostcode: false })
+    expect(processLocation.mock.calls[0][3]).toEqual({
+      hideMapHelpPanel: true,
+      zoomToPostcode: false,
+      showApproximateLocation: false
+    })
   })
 
   test('applies independent views to maps on the same page and preserves native map indices', async () => {
@@ -461,8 +479,8 @@ describe('forms component maps', () => {
     expect(initialViews).toEqual([{ center: [-0.1276, 51.5074], zoom: 10 }, UK_VIEW, UK_VIEW])
     expect(processLocation.mock.calls.map((call) => call[2])).toEqual([1, 2])
     expect(processLocation.mock.calls.map((call) => call[3])).toEqual([
-      { hideMapHelpPanel: true, zoomToPostcode: true },
-      { hideMapHelpPanel: false, zoomToPostcode: false }
+      { hideMapHelpPanel: true, zoomToPostcode: true, showApproximateLocation: false },
+      { hideMapHelpPanel: false, zoomToPostcode: false, showApproximateLocation: false }
     ])
     expect(geospatialMap.processGeospatial.mock.calls[0][2]).toBe(0)
     const fields = document.querySelectorAll('.app-location-field, .app-geospatial-field')

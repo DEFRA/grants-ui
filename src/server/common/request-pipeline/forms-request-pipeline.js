@@ -2,6 +2,7 @@ import { formsStatusRedirect } from '~/src/server/common/request-pipeline/redire
 import { enforcePagePermission } from './permissions/enforce-page-permission.js'
 import { applicationDeletedRedirect } from './redirects/application-deleted-redirect.js'
 import { resolveApplicationWindowClosedPath } from './redirects/application-window-closed-redirect.js'
+import { applyLocationHints } from '../map/location-hints.js'
 import { enableRepeatTaskContext } from '~/src/server/task-list/repeat-task-context.js'
 import { enableRepeatPageItemNames } from '../helpers/repeat-page-item-names.js'
 
@@ -40,6 +41,7 @@ export async function formsRequestPipeline(request, h, context) {
   const permissionResult = await enforcePagePermission(request, h, context)
 
   if (permissionResult === h.continue) {
+    applyLocationHints(request, context)
     enableRepeatPageItemNames(request)
     enableRepeatTaskContext(request)
   }

@@ -63,6 +63,108 @@ const params = {
 }
 
 describe('print-submitted-application.html view', () => {
+  it.each([true, false])(
+    'renders saved map hints in normal weight when the journey has a task list: %s',
+    (hasTaskList) => {
+      const components = [
+        {
+          name: 'grid',
+          type: 'EastingNorthingField',
+          title: 'Grid coordinates',
+          options: { showApproximateLocation: true }
+        },
+        {
+          name: 'point',
+          type: 'LatLongField',
+          title: 'Latitude and longitude',
+          options: { showApproximateLocation: true }
+        },
+        {
+          name: 'reference',
+          type: 'OsGridRefField',
+          title: 'Grid reference',
+          options: { showApproximateLocation: true }
+        }
+      ]
+      const answers = {
+        grid__easting: 432100,
+        grid__northing: 556200,
+        point: { latitude: 51.5, longitude: 0 },
+        reference: 'tq 30000 80000',
+        mapLocationHints: {
+          grid: { text: 'Approximate location: Washington', answer: '[432100,556200]' },
+          point: { text: 'Nearby: London', answer: '[51.5,0]' },
+          reference: { text: '<em>Nearby:</em> <img src=x onerror=alert(1)>', answer: '["TQ3000080000"]' }
+        }
+      }
+      const $ = renderPage(
+        buildPrintViewModel({
+          ...params,
+          definition: {
+            sections: [{ id: 'project', title: 'Project details' }],
+            pages: [
+              ...(hasTaskList ? [{ title: 'Tasks', controller: 'TaskListPageController' }] : []),
+              { title: 'Project location', section: 'project', components }
+            ]
+          },
+          answers: {
+            grid__easting: answers.grid__easting,
+            grid__northing: answers.grid__northing,
+            point: answers.point,
+            reference: answers.reference
+          },
+          savedState: answers
+        })
+      )
+      const rows = $('.app-submitted-answers .govuk-summary-list__value')
+      expect(rows.eq(0).text()).toContain('432100, 556200')
+      expect(rows.eq(1).text()).toContain('51.5, 0')
+      expect(rows.eq(2).text()).toContain('tq 30000 80000')
+      for (const [index, name] of ['grid', 'point', 'reference'].entries()) {
+        expect(rows.eq(index).find('p').text()).toBe(answers.mapLocationHints[name].text)
+      }
+      expect(rows.find('strong, b, em, img')).toHaveLength(0)
+      expect($('.app-submitted-answers a')).toHaveLength(0)
+    }
+  )
+
+  it.each([
+    { setting: undefined, hint: { text: 'Hidden location', answer: '[432100,556200]' } },
+    { setting: false, hint: { text: 'Hidden location', answer: '[432100,556200]' } },
+    { setting: true, hint: undefined },
+    { setting: true, hint: { text: 'Stale location', answer: '[432101,556200]' } },
+    { setting: true, hint: { text: 'Wrong answer type', answer: undefined } }
+  ])('omits disabled, missing and stale hints while retaining coordinates (%j)', ({ setting, hint }) => {
+    const $ = renderPage(
+      buildPrintViewModel({
+        ...params,
+        definition: {
+          pages: [
+            {
+              title: 'Project location',
+              components: [
+                {
+                  name: 'location',
+                  type: 'EastingNorthingField',
+                  title: 'Location',
+                  options: { showApproximateLocation: setting }
+                }
+              ]
+            }
+          ]
+        },
+        answers: {
+          location__easting: 432100,
+          location__northing: 556200
+        },
+        savedState: { mapLocationHints: { location: hint } }
+      })
+    )
+    const row = $('.app-submitted-answers .govuk-summary-list__value').first()
+    expect(normalise(row.text())).toBe('432100, 556200')
+    expect(row.find('p')).toHaveLength(0)
+  })
+
   describe('saved repeat items', () => {
     function repeatParams(hasTaskList = true) {
       return {
