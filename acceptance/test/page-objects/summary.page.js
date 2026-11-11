@@ -6,7 +6,7 @@ export default class SummaryPage {
   async answers() {
     const summaryAnswers = []
 
-    const rows = this.page.locator('main .check-answers-summary .govuk-summary-list > .govuk-summary-list__row')
+    const rows = this.page.locator('main .check-answers-summary > .govuk-summary-list > .govuk-summary-list__row')
     await rows.first().waitFor({ state: 'visible' })
     const rowCount = await rows.count()
 

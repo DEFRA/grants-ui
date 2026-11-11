@@ -136,6 +136,29 @@ Then('(the user )should see the following answers', async function (dataTable) {
   expect(actualAnswers).toEqual(expectedAnswers)
 })
 
+Then('(the user )should see the following summary cards', async function (dataTable) {
+  const expectedCards = []
+  for (const row of dataTable.hashes()) {
+    if (row.CARD) {
+      expectedCards.push({ title: row.CARD, rows: [] })
+    }
+    expectedCards.at(-1).rows.push({ question: row.QUESTION, answer: transformStepArgument(row.ANSWER) })
+  }
+
+  const cards = this.page.locator('main .govuk-summary-card')
+  await expect(cards).toHaveCount(expectedCards.length)
+  const actualCards = await cards.evaluateAll((elements) =>
+    elements.map((card) => ({
+      title: card.querySelector('.govuk-summary-card__title').textContent.trim(),
+      rows: [...card.querySelectorAll('.govuk-summary-list__row')].map((row) => ({
+        question: row.querySelector('.govuk-summary-list__key').textContent.trim(),
+        answer: row.querySelector('.govuk-summary-list__value').textContent.trim()
+      }))
+    }))
+  )
+  expect(actualCards).toEqual(expectedCards)
+})
+
 Then('(the user )should be able to check the following details', async function (dataTable) {
   const expectedDetails = []
   let detail = {}
