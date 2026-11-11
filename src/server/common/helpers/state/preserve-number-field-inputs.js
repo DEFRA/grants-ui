@@ -29,6 +29,34 @@ function saveInputs(context, names, payload) {
 }
 
 /**
+ * @param {FormContext} context
+ * @param {string[]} names
+ * @param {Record<string, unknown>} payload
+ */
+function restorePostedInputs(context, names, payload) {
+  for (const name of names) {
+    const input = payload[name]
+    if (typeof input === 'string') {
+      context.payload = { ...context.payload, [name]: input }
+    }
+  }
+}
+
+/**
+ * @param {FormContext} context
+ * @param {string[]} names
+ */
+function restoreSavedInputs(context, names) {
+  const inputs = /** @type {Record<string, string> | undefined} */ (context.state.$$__numberFieldInputs)
+  for (const name of names) {
+    const input = inputs?.[name]
+    if (isDecimalString(input) && Number(input) === context.state[name]) {
+      context.payload = { ...context.payload, [name]: input }
+    }
+  }
+}
+
+/**
  * Retain entered precision for playback and for revisiting a number question.
  * @param {import('@defra/forms-engine-plugin/types').AnyFormRequest} request
  * @param {FormContext} context
@@ -50,12 +78,7 @@ export function preserveNumberFieldInputs(request, context) {
     .map((field) => field.name)
   if (context.errors) {
     if (isPost) {
-      for (const name of names) {
-        const input = payload[name]
-        if (typeof input === 'string') {
-          context.payload = { ...context.payload, [name]: input }
-        }
-      }
+      restorePostedInputs(context, names, payload)
     }
     return
   }
@@ -63,11 +86,5 @@ export function preserveNumberFieldInputs(request, context) {
     saveInputs(context, names, payload)
     return
   }
-  const inputs = /** @type {Record<string, string> | undefined} */ (context.state.$$__numberFieldInputs)
-  for (const name of names) {
-    const input = inputs?.[name]
-    if (isDecimalString(input) && Number(input) === context.state[name]) {
-      context.payload = { ...context.payload, [name]: input }
-    }
-  }
+  restoreSavedInputs(context, names)
 }
