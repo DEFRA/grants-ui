@@ -85,11 +85,11 @@ function resolveAnswer(component, answers) {
  * Builds question rows from a page's components and the submitted answers.
  * @param {FormComponent[] | undefined} components
  * @param {Answers} answers
- * @param {boolean} [includeUnanswered] - Include all repeat fields, including blank optional answers
+ * @param {boolean} includeUnanswered - Include all repeat fields, including blank optional answers
  * @param {Record<string, string>} [numberInputs]
  * @returns {Question[]}
  */
-function extractQuestions(components, answers, includeUnanswered = false, numberInputs) {
+function extractQuestions(components, answers, includeUnanswered, numberInputs) {
   return (components || [])
     .filter((component) => {
       if (!isAnswerableComponent(component)) {
@@ -141,11 +141,11 @@ function extractRepeatQuestions(page, answers) {
  * @param {FormPage[] | undefined} pages
  * @param {Answers} answers
  * @param {boolean} hasParcelCards
- * @param {Map<string | undefined, Question[]>} [additionalQuestions]
+ * @param {Map<string | undefined, Question[]>} additionalQuestions
  * @param {Record<string, string>} [numberInputs]
  * @returns {{ title: string, questions: Question[] }[]}
  */
-function buildSections(pages, answers, hasParcelCards, additionalQuestions = new Map(), numberInputs) {
+function buildSections(pages, answers, hasParcelCards, additionalQuestions, numberInputs) {
   return (pages || [])
     .map((page) => {
       const components =
