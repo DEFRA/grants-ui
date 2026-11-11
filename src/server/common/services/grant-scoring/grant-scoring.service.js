@@ -3,6 +3,7 @@ import { retry } from '~/src/server/common/helpers/retry.js'
 import { getScoringServiceToken } from '~/src/server/common/helpers/auth/scoring-service-token.js'
 import { withTraceId } from '@defra/hapi-tracing'
 import { GrantScoringServiceError } from '~/src/server/common/utils/errors/GrantScoringServiceError.js'
+import { OutboundService, withOutboundMetrics } from '~/src/server/common/helpers/outbound-call-metrics.js'
 
 /**
  * Query string values: primitives only, serialised with toString().
@@ -116,7 +117,12 @@ export async function makeScoringApiRequest(url, grantCode, options = {}) {
     const requestUrl = buildRequestUrl(url, queryParams)
     const requestOptions = await buildRequestOptions(method)
 
-    const response = await retry(() => fetch(requestUrl, requestOptions), {
+    const scoringCall = () =>
+      withOutboundMetrics({ service: OutboundService.GRANT_SCORING, operation: 'score', scheme: grantCode }, () =>
+        fetch(requestUrl, requestOptions)
+      )
+
+    const response = await retry(scoringCall, {
       timeout: 30000,
       checkFetchResponse: true,
       serviceName: 'GrantScoringService.makeScoringApiRequest'

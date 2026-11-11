@@ -1,4 +1,9 @@
 import { createApiHeadersForGrantsUiBackend } from '../auth/backend-auth-helper.js'
+import {
+  NON_SCHEME_SPECIFIC,
+  OutboundService,
+  withOutboundMetrics
+} from '~/src/server/common/helpers/outbound-call-metrics.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { mintLockReleaseToken } from './lock-token.js'
 import { config } from '~/src/config/config.js'
@@ -71,14 +76,14 @@ export async function releaseAllApplicationLocksForOwnerFromApi({ ownerId }) {
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
   try {
-    const response = await fetch(url.href, {
-      method: 'DELETE',
-      headers: {
-        ...(await createApiHeadersForGrantsUiBackend()),
-        'x-application-lock-release': String(token)
-      },
-      signal: controller.signal
-    })
+    const headers = {
+      ...(await createApiHeadersForGrantsUiBackend()),
+      'x-application-lock-release': String(token)
+    }
+    const response = await withOutboundMetrics(
+      { service: OutboundService.GRANTS_UI_BACKEND, operation: 'releaseApplicationLocks', scheme: NON_SCHEME_SPECIFIC },
+      () => fetch(url.href, { method: 'DELETE', headers, signal: controller.signal })
+    )
 
     if (!response.ok) {
       log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {

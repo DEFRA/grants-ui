@@ -5,6 +5,7 @@ import { config } from '~/src/config/config.js'
 import { ApplicationStatus } from '~/src/server/common/constants/application-status.js'
 import { getFormsCacheService } from '~/src/server/common/helpers/forms-cache/forms-cache.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { OutboundService, withOutboundMetrics } from '~/src/server/common/helpers/outbound-call-metrics.js'
 import { buildAuditEvent, mapEnvironment, resolveAuditEntityFields } from './audit-event.js'
 import { getPermissionResource } from '../permissions/page-permissions.js'
 
@@ -251,7 +252,9 @@ const makeSendAuditEvent = (publisherConfig) => (request, opts) => {
   const { entity, entityid } = resolveAuditEntityFields(opts, request)
   const event = buildAuditEvent(request, opts)
 
-  return publishAuditEvent(event, publisherConfig)
+  return withOutboundMetrics({ service: OutboundService.AUDIT_SNS, operation: 'publishAuditEvent' }, () =>
+    publishAuditEvent(event, publisherConfig)
+  )
     .then(({ messageId }) =>
       log(LogCodes.AUDIT.EVENT_PUBLISHED, { messageId, entity, action: opts.action, entityid }, request)
     )

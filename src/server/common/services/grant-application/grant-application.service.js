@@ -1,6 +1,7 @@
 import { config } from '~/src/config/config.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
+import { OutboundService, withOutboundMetrics } from '~/src/server/common/helpers/outbound-call-metrics.js'
 import { statusCodes } from '../../constants/status-codes.js'
 
 const GAS_API_ENDPOINT = config.get('gas.apiEndpoint')
@@ -130,17 +131,23 @@ function logGasUpstreamError(request, url, error) {
  * @param {Record<string, unknown>} [options.payload] - Request payload for POST requests
  * @param {Record<string, unknown>} [options.queryParams] - Query parameters for GET requests
  * @param {Record<string, unknown>} [options.retryConfig] - Configuration for the retry mechanism
+ * @param {string} [options.operation] - Low-cardinality operation name for outbound call metrics
  * @returns {Promise<Response>} - Promise that resolves to the response
  * @throws {GrantApplicationServiceApiError} - If the API request fails
  */
 export async function makeGasApiRequest(url, grantCode, request, options = {}) {
-  const { method = 'POST', payload, queryParams, retryConfig = {} } = options
+  const { method = 'POST', payload, queryParams, retryConfig = {}, operation = 'request' } = options
 
   try {
     const requestUrl = buildRequestUrl(url, method, queryParams)
     const requestOptions = buildRequestOptions(method, payload)
 
-    const response = await retry(() => fetch(requestUrl, requestOptions), {
+    const gasCall = () =>
+      withOutboundMetrics({ service: OutboundService.GAS, operation, scheme: grantCode }, () =>
+        fetch(requestUrl, requestOptions)
+      )
+
+    const response = await retry(gasCall, {
       timeout: 30000,
       ...retryConfig,
       checkFetchResponse: true,
@@ -184,7 +191,8 @@ export async function invokeGasPostAction(code, name, payload, request) {
   const url = `${GAS_API_ENDPOINT}/grants/${code}/actions/${name}/invoke`
   const response = await makeGasApiRequest(url, code, request, {
     method: 'POST',
-    payload
+    payload,
+    operation: `invokePostAction.${name}`
   })
   return response.json()
 }
@@ -202,7 +210,8 @@ export async function invokeGasGetAction(code, name, request, queryParams = {}) 
   const url = `${GAS_API_ENDPOINT}/grants/${code}/actions/${name}/invoke`
   const response = await makeGasApiRequest(url, code, request, {
     method: 'GET',
-    queryParams
+    queryParams,
+    operation: `invokeGetAction.${name}`
   })
   return response.json()
 }
@@ -243,7 +252,11 @@ function auditApplicationSubmission(code, payload, request) {
  */
 export async function submitGrantApplication(code, payload, request) {
   const url = `${GAS_API_ENDPOINT}/grants/${mapFarmPaymentsGrantCode(code)}/applications`
-  const response = await makeGasApiRequest(url, code, request, { method: 'POST', payload })
+  const response = await makeGasApiRequest(url, code, request, {
+    method: 'POST',
+    payload,
+    operation: 'submitApplication'
+  })
 
   // Submission succeeded (makeGasApiRequest throws on non-2xx), so audit it.
   auditApplicationSubmission(code, payload, request)
@@ -287,7 +300,7 @@ function auditClaimSubmission(code, payload, request) {
 export async function submitClaim(code, payload, request) {
   const metadata = /** @type {Record<string, string | undefined>} */ (payload?.metadata ?? {})
   const url = `${GAS_API_ENDPOINT}/grants/${mapFarmPaymentsGrantCode(code)}/applications/${metadata.clientRef}/claims`
-  const response = await makeGasApiRequest(url, code, request, { method: 'POST', payload })
+  const response = await makeGasApiRequest(url, code, request, { method: 'POST', payload, operation: 'submitClaim' })
 
   // Submission succeeded (makeGasApiRequest throws on non-2xx), so audit it.
   auditClaimSubmission(code, payload, request)
@@ -305,7 +318,7 @@ export async function submitClaim(code, payload, request) {
  */
 export async function getApplicationStatus(code, clientRef, request) {
   const url = `${GAS_API_ENDPOINT}/grants/${mapFarmPaymentsGrantCode(code)}/applications/${clientRef}/status`
-  return makeGasApiRequest(url, code, request, { method: 'GET' })
+  return makeGasApiRequest(url, code, request, { method: 'GET', operation: 'getApplicationStatus' })
 }
 
 /**
@@ -318,7 +331,10 @@ export async function getApplicationStatus(code, clientRef, request) {
  */
 export async function getAvailableClaimEntitlements(code, clientRef, request) {
   const url = `${GAS_API_ENDPOINT}/grants/${code}/entitlements/${clientRef.toLowerCase()}/available-claims`
-  const response = await makeGasApiRequest(url, code, request, { method: 'GET' })
+  const response = await makeGasApiRequest(url, code, request, {
+    method: 'GET',
+    operation: 'getAvailableClaimEntitlements'
+  })
   return response.json()
 }
 

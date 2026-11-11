@@ -1,5 +1,6 @@
 import { config } from '~/src/config/config.js'
 import { attempt } from '~/src/server/common/helpers/attempt.js'
+import { OutboundService, withOutboundMetrics } from '~/src/server/common/helpers/outbound-call-metrics.js'
 import { logUpstreamError } from '~/src/server/common/helpers/logging/upstream-error.js'
 import { ROUTES } from './map-routes.js'
 
@@ -44,7 +45,9 @@ export async function fetchOsTile(z, x, y, request) {
   const upstream = buildOsTileUrl(z, x, y)
   const endpoint = stripQueryString(upstream)
 
-  const result = await attempt(() => fetch(upstream))
+  const result = await attempt(() =>
+    withOutboundMetrics({ service: OutboundService.OS_MAPS, operation: 'getTile' }, () => fetch(upstream))
+  )
   if (!result.ok) {
     logUpstreamError(
       { endpoint, service: SERVICE_OS_MAPS, upstreamStatus: null, errorMessage: result.error.message },

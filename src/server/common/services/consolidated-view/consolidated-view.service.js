@@ -2,6 +2,7 @@ import { config } from '~/src/config/config.js'
 import { getValidToken } from '~/src/server/common/helpers/entra/token-manager.js'
 import { escapeGraphQLString } from '~/src/server/common/helpers/graphql-utils.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
+import { OutboundService, withOutboundMetrics } from '~/src/server/common/helpers/outbound-call-metrics.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { ConsolidatedViewError } from '~/src/server/common/utils/errors/ConsolidatedViewError.js'
 import { statusCodes } from '../../constants/status-codes.js'
@@ -159,7 +160,11 @@ async function makeConsolidatedViewRequest(request, query, { toleratedPaths } = 
   const CV_API_ENDPOINT = config.get('consolidatedView.apiEndpoint')
 
   const fetchOperation = async () => {
-    const response = await fetch(CV_API_ENDPOINT, await getConsolidatedViewRequestOptions(request, { query }))
+    const requestOptions = await getConsolidatedViewRequestOptions(request, { query })
+    const response = await withOutboundMetrics(
+      { service: OutboundService.CONSOLIDATED_VIEW, operation: 'graphqlQuery' },
+      () => fetch(CV_API_ENDPOINT, requestOptions)
+    )
     const { parsed, responseText } = await parseConsolidatedViewResponse(response, sbi)
 
     // DAL query failures can arrive with either HTTP 200 or a legacy error status.

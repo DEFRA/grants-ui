@@ -2,6 +2,11 @@ import Jwt from '@hapi/jwt'
 import Wreck from '@hapi/wreck'
 import { getOidcConfig } from './get-oidc-config.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import {
+  NON_SCHEME_SPECIFIC,
+  OutboundService,
+  withOutboundMetrics
+} from '~/src/server/common/helpers/outbound-call-metrics.js'
 import { defineCachedMethod, UNRETRIED_GENERATE_TIMEOUT_MS } from '~/src/server/common/helpers/cache/cached-method.js'
 import { createPublicKey } from 'node:crypto'
 
@@ -31,7 +36,10 @@ async function verifyToken(token) {
  */
 async function fetchJwksKeys() {
   const { jwks_uri: uri } = await getOidcConfig()
-  const { payload } = await Wreck.get(uri, { json: true })
+  const { payload } = await withOutboundMetrics(
+    { service: OutboundService.DEFRA_ID, operation: 'getJwks', scheme: NON_SCHEME_SPECIFIC },
+    () => Wreck.get(uri, { json: true })
+  )
   const { keys } = payload
 
   if (!keys || keys.length === 0) {

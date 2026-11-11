@@ -5,6 +5,11 @@ import { WebIdentityTokenProvider } from '@defra/hapi-auth-oidc'
 import { config } from '~/src/config/config.js'
 import { ExternalApiError } from '~/src/server/common/utils/errors/ExternalApiError.js'
 import { retry } from '~/src/server/common/helpers/retry.js'
+import {
+  NON_SCHEME_SPECIFIC,
+  OutboundService,
+  withOutboundMetrics
+} from '~/src/server/common/helpers/outbound-call-metrics.js'
 import { log, logger, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { isExpired, logUnderlyingCredentialExpiry } from '~/src/server/common/helpers/auth/service-token.js'
 import {
@@ -149,13 +154,17 @@ export async function refreshToken(flags = {}) {
 
     const response = await retry(
       () =>
-        fetch(`${tokenEndpoint}/${tenantId}/oauth2/v2.0/token`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          },
-          body: params
-        }),
+        withOutboundMetrics(
+          { service: OutboundService.ENTRA, operation: 'getToken', scheme: NON_SCHEME_SPECIFIC },
+          () =>
+            fetch(`${tokenEndpoint}/${tenantId}/oauth2/v2.0/token`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+              },
+              body: params
+            })
+        ),
       {
         timeout: TOKEN_REQUEST_TIMEOUT_MS,
         checkFetchResponse: true,

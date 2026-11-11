@@ -218,5 +218,10 @@ export const SYSTEM = {
   ENTRA_TOKEN_REFRESH_SUCCESS: {
     level: 'info',
     messageFunc: (messageOptions) => `Entra token refresh succeeded via authMethod=${messageOptions.authMethod}`
+  },
+  METRICS_EMIT_FAILED: {
+    level: 'warn',
+    messageFunc: (messageOptions) =>
+      `Failed to emit metrics: service=${messageOptions.service} | operation=${messageOptions.operation} | error=${messageOptions.errorMessage}`
   }
 }
