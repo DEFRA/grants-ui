@@ -45,33 +45,9 @@ function createNumberFormatter(format) {
   if (name === 'thousands') {
     return args.length === 0 ? formatThousands : undefined
   }
-  if (name !== 'decimal' && name !== 'currency') {
+  const options = getIntlFormatOptions(name, args)
+  if (!options) {
     return undefined
-  }
-  if (args.length > (name === 'currency' ? 2 : 1)) {
-    return undefined
-  }
-
-  const currency = name === 'currency' ? args[0]?.toUpperCase() : undefined
-  if (name === 'currency' && (!currency || !/^[A-Z]{3}$/.test(currency) || !SUPPORTED_CURRENCIES.has(currency))) {
-    return undefined
-  }
-
-  const placesArg = args[name === 'currency' ? 1 : 0]
-  const places = placesArg === undefined ? undefined : parsePlaces(placesArg)
-  if (placesArg !== undefined && places === undefined) {
-    return undefined
-  }
-
-  /** @type {Intl.NumberFormatOptions} */
-  const options = { style: name }
-  if (name === 'currency') {
-    options.currency = currency
-  }
-  const fractionDigits = places ?? (name === 'decimal' ? 2 : undefined)
-  if (fractionDigits !== undefined) {
-    options.minimumFractionDigits = fractionDigits
-    options.maximumFractionDigits = fractionDigits
   }
 
   const formatter = new Intl.NumberFormat('en-GB', options)
@@ -82,6 +58,46 @@ function createNumberFormatter(format) {
     const number = Number(value)
     return Number.isFinite(number) ? formatter.format(number) : String(value)
   }
+}
+
+/**
+ * @param {string} name
+ * @param {string[]} args
+ * @returns {Intl.NumberFormatOptions | undefined}
+ */
+function getIntlFormatOptions(name, args) {
+  if (name === 'decimal') {
+    if (args.length > 1) {
+      return undefined
+    }
+    const places = args.length ? args[0] : '2'
+    return withFractionDigits({ style: 'decimal' }, places)
+  }
+  if (name !== 'currency' || args.length < 1 || args.length > 2) {
+    return undefined
+  }
+
+  const currency = args[0].toUpperCase()
+  if (!SUPPORTED_CURRENCIES.has(currency)) {
+    return undefined
+  }
+
+  /** @type {Intl.NumberFormatOptions} */
+  const options = { style: 'currency', currency }
+  return args.length === 2 ? withFractionDigits(options, args[1]) : options
+}
+
+/**
+ * @param {Intl.NumberFormatOptions} options
+ * @param {string} value
+ * @returns {Intl.NumberFormatOptions | undefined}
+ */
+function withFractionDigits(options, value) {
+  const places = parsePlaces(value)
+  if (places === undefined) {
+    return undefined
+  }
+  return { ...options, minimumFractionDigits: places, maximumFractionDigits: places }
 }
 
 /**

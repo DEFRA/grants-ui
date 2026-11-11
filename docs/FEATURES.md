@@ -155,6 +155,7 @@ for formatting. Currency conversion is never performed.
 `decimal` defaults to two places, while an explicit `places` value displays exactly that many
 decimals. `currency` uses the currency's standard precision unless `places` is supplied.
 For example, `currency:gbp,4` displays `125000.5` as `£125,000.5000`.
+An explicitly supplied precision must be valid; only an omitted precision uses these defaults.
 
 Formatting uses the `en-GB` locale. Editable inputs stay ungrouped and retain entered
 precision, including after validation errors. Submissions stay numeric and are not scaled or rounded by playback formatting.
