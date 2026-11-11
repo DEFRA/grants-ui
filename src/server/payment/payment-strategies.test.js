@@ -153,7 +153,7 @@ describe('paymentStrategies', () => {
 
   describe('woodland-claim.calculatePayment', () => {
     const mockPaymentContext = {
-      totalAreaHa: 24.95,
+      data: { totalHectares: { value: 24.95 }, originalTotalHectares: { value: 30 } },
       applicationId: 'WMP-A1B2-C3D4',
       sbi: '123456789',
       crn: '1234567890'
@@ -167,19 +167,27 @@ describe('paymentStrategies', () => {
       })
     })
 
-    it('calls calculateWmpPaymentByTotalArea with the payment context fields and user context', async () => {
-      await paymentStrategies['woodland-claim'].calculatePayment(mockPaymentContext, userContext)
+    it.each([24.95, 30, 35.1234])(
+      'maps adjusted area %s and original area from the GAS data block without capping either value',
+      async (totalHectares) => {
+        const paymentContext = {
+          ...mockPaymentContext,
+          data: { totalHectares: { value: totalHectares }, originalTotalHectares: { value: 30 } }
+        }
+        await paymentStrategies['woodland-claim'].calculatePayment(paymentContext, userContext)
 
-      expect(woodlandService.calculateWmpPaymentByTotalArea).toHaveBeenCalledWith(
-        {
-          totalAreaHa: 24.95,
-          applicationId: 'WMP-A1B2-C3D4',
-          sbi: '123456789',
-          crn: '1234567890'
-        },
-        userContext
-      )
-    })
+        expect(woodlandService.calculateWmpPaymentByTotalArea).toHaveBeenCalledWith(
+          {
+            totalAreaHa: totalHectares,
+            originalTotalAreaHa: 30,
+            applicationId: 'WMP-A1B2-C3D4',
+            sbi: '123456789',
+            crn: '1234567890'
+          },
+          userContext
+        )
+      }
+    )
 
     it('returns totalPence, totalPayment and payment', async () => {
       const result = await paymentStrategies['woodland-claim'].calculatePayment(mockPaymentContext, userContext)

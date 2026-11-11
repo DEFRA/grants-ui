@@ -26,11 +26,10 @@ describe('TotalEstimatedCostController', () => {
               excludeFromTaskCompletion: true,
               derivedState: {
                 stateKeys: [
-                  'reservoirHighCostPerUnit',
-                  'reservoirLowCostPerUnit',
+                  'reservoirs',
+                  'reservoirCost',
                   'distNetworkCostPerUnit',
                   'tanksCostPerUnit',
-                  'reservoirCost',
                   'waterDistributionNetworkCost',
                   'waterTanksCost',
                   'totalEstimatedCost',
@@ -98,11 +97,19 @@ describe('TotalEstimatedCostController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(mergeAdditionalAnswers).toHaveBeenCalledWith(expect.anything(), {
-        reservoirHighCostPerUnit: 2.5,
-        reservoirLowCostPerUnit: 2.0,
+        reservoirs: [
+          {
+            name: null,
+            type: null,
+            reservoirHighCostPerUnit: 2.5,
+            reservoirLowCostPerUnit: 2.0,
+            size: 100,
+            cost: 250
+          }
+        ],
+        reservoirCost: 250,
         distNetworkCostPerUnit: 5,
         tanksCostPerUnit: 1.5,
-        reservoirCost: 250,
         waterDistributionNetworkCost: 250,
         waterTanksCost: 300,
         totalEstimatedCost: 800,
@@ -122,11 +129,19 @@ describe('TotalEstimatedCostController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(mergeAdditionalAnswers).toHaveBeenCalledWith(expect.anything(), {
-        reservoirHighCostPerUnit: 2.5,
-        reservoirLowCostPerUnit: 2.0,
+        reservoirs: [
+          {
+            name: null,
+            type: null,
+            reservoirHighCostPerUnit: 2.5,
+            reservoirLowCostPerUnit: 2.0,
+            size: 100,
+            cost: 250
+          }
+        ],
+        reservoirCost: 250,
         distNetworkCostPerUnit: 5,
         tanksCostPerUnit: 1.5,
-        reservoirCost: 250,
         waterDistributionNetworkCost: 0,
         waterTanksCost: 0,
         totalEstimatedCost: 250,
@@ -153,11 +168,10 @@ describe('TotalEstimatedCostController', () => {
       await handler(mockRequest, mockContext, mockH)
 
       expect(mergeAdditionalAnswers).toHaveBeenCalledWith(expect.anything(), {
-        reservoirHighCostPerUnit: 2.5,
-        reservoirLowCostPerUnit: 2.0,
+        reservoirs: [],
+        reservoirCost: 0,
         distNetworkCostPerUnit: 5,
         tanksCostPerUnit: 1.5,
-        reservoirCost: 0,
         waterDistributionNetworkCost: 250,
         waterTanksCost: 300,
         totalEstimatedCost: 550,
@@ -172,19 +186,18 @@ describe('TotalEstimatedCostController', () => {
 
     it('should handle synthetic reservoir lining', () => {
       mockContext.state.itemsPlanningToInstall = ['RESERVOIR']
-      mockContext.state.reservoirLining = 'synthetic'
+      mockContext.state.whatTypeOfReservoir = 'synthetic'
       mockContext.state.howMuchWater = 100
 
       const results = controller.getCalculatedAnswers(mockRequest, mockContext.state)
 
-      expect(results.reservoirHighCostPerUnit).toBe(3.5)
-      expect(results.reservoirLowCostPerUnit).toBe(3.0)
+      expect(results.reservoirs[0].type).toBe('synthetic')
       expect(results.reservoirCost).toBe(350)
     })
 
     it('should calculate tiered reservoir cost for large volumes', () => {
       mockContext.state.itemsPlanningToInstall = ['RESERVOIR']
-      mockContext.state.reservoirLining = 'clay'
+      mockContext.state.whatTypeOfReservoir = 'clay'
       mockContext.state.howMuchWater = 15000 // 10000 * 2.5 + 5000 * 2.0 = 25000 + 10000 = 35000
 
       const results = controller.getCalculatedAnswers(mockRequest, mockContext.state)
@@ -291,30 +304,10 @@ describe('TotalEstimatedCostController', () => {
     it('returns true when an item selection has changed the calculated total', async () => {
       mockContext.state.itemsPlanningToInstall = ['RESERVOIR']
       mockContext.state.additionalAnswers = {
-        reservoirHighCostPerUnit: 2.5,
-        reservoirLowCostPerUnit: 2.0,
-        distNetworkCostPerUnit: 5,
-        tanksCostPerUnit: 1.5,
-        reservoirCost: 250,
-        waterDistributionNetworkCost: 250,
-        waterTanksCost: 300,
-        totalEstimatedCost: 800,
-        estimatedMaxGrantBeforeReduction: 320,
-        estimatedMaxGrant: 320,
-        minGrantReached: false,
-        maxGrantReached: false
-      }
-
-      await expect(controller.isStateStale(mockRequest, mockContext)).resolves.toBe(true)
-    })
-
-    it('returns false when all saved calculated values match', async () => {
-      mockContext.state.additionalAnswers = {
-        reservoirHighCostPerUnit: 2.5,
-        reservoirLowCostPerUnit: 2.0,
-        distNetworkCostPerUnit: 5,
-        tanksCostPerUnit: 1.5,
+        reservoirs: [],
         reservoirCost: 0,
+        distNetworkCostPerUnit: 5,
+        tanksCostPerUnit: 1.5,
         waterDistributionNetworkCost: 0,
         waterTanksCost: 0,
         totalEstimatedCost: 0,
@@ -324,7 +317,79 @@ describe('TotalEstimatedCostController', () => {
         maxGrantReached: false
       }
 
+      await expect(controller.isStateStale(mockRequest, mockContext)).resolves.toBe(true)
+    })
+
+    it('returns false when all saved calculated values match', async () => {
+      mockContext.state.itemsPlanningToInstall = ['RESERVOIR']
+      mockContext.state.howMuchWater = 100
+      mockContext.state.additionalAnswers = {
+        reservoirs: [
+          {
+            name: null,
+            type: null,
+            reservoirHighCostPerUnit: 2.5,
+            reservoirLowCostPerUnit: 2.0,
+            size: 100,
+            cost: 250
+          }
+        ],
+        reservoirCost: 250,
+        distNetworkCostPerUnit: 5,
+        tanksCostPerUnit: 1.5,
+        waterDistributionNetworkCost: 0,
+        waterTanksCost: 0,
+        totalEstimatedCost: 250,
+        estimatedMaxGrantBeforeReduction: 100,
+        estimatedMaxGrant: 100,
+        minGrantReached: false,
+        maxGrantReached: false
+      }
+
       await expect(controller.isStateStale(mockRequest, mockContext)).resolves.toBe(false)
+    })
+  })
+
+  describe('Reservoir builder', () => {
+    it('should handle multiple reservoirs when moreThanOneReservoir is true', () => {
+      const reservoirItems = [
+        {
+          reservoirItemName: 'Res 1',
+          reservoirItemWhatTypeOfReservoir: 'clay',
+          reservoirItemHowMuchWater: 5000
+        },
+        {
+          reservoirItemName: 'Res 2',
+          reservoirItemWhatTypeOfReservoir: 'synthetic',
+          reservoirItemHowMuchWater: 15000
+        }
+      ]
+
+      const state = {
+        itemsPlanningToInstall: ['RESERVOIR'],
+        moreThanOneReservoir: true,
+        reservoirItems
+      }
+
+      const results = controller.getCalculatedAnswers(mockRequest, state).reservoirs
+
+      expect(results).toHaveLength(2)
+      expect(results[0]).toMatchObject({
+        name: 'Res 1',
+        type: 'clay',
+        size: 5000,
+        cost: 12500,
+        reservoirHighCostPerUnit: 2.5,
+        reservoirLowCostPerUnit: 2.0
+      })
+      expect(results[1]).toMatchObject({
+        name: 'Res 2',
+        type: 'synthetic',
+        size: 15000,
+        cost: 10000 * 3.5 + 5000 * 3.0, // 35000 + 15000 = 50000
+        reservoirHighCostPerUnit: 3.5,
+        reservoirLowCostPerUnit: 3.0
+      })
     })
   })
 

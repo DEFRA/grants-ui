@@ -175,6 +175,16 @@ x-cdp-request-id: {{$uuid}}
 
 ### Calculate WMP payment by total area
 # @name calculateWmpPaymentByTotalArea
+# Copy availableClaims[0].data.totalHectares.value from getAvailableClaimEntitlements
+# into adjustedAreaHa, and originalTotalHectares.value into originalAreaHa.
+# These are hectares, not the scaled integer used by the GAS admin create endpoint.
+# With originalAreaHa = 50, try adjustedAreaHa = 45.5, 50 and 55.5 to check
+# reduced, unchanged and increased areas. The API should use the lower area.
+# Use the same application reference number as the GAS request.
+@wmpApplicationId = WMP-ABC-123
+@adjustedAreaHa = 55.5
+@originalAreaHa = 50
+
 POST {{landGrantsUrl}}/api/v1/wmp/payments/calculate-by-total-area
 Content-Type: application/json
 Authorization: Bearer {{landGrantsAuthToken}}
@@ -182,10 +192,11 @@ x-forwarded-authorization: {{defraIdToken}}
 x-cdp-request-id: {{$uuid}}
 
 {
-  "totalAreaHa": 126.3397,
-  "applicationId": "APP-123",
-  "sbi": "123456789",
-  "crn": "1234567890"
+  "totalAreaHa": {{adjustedAreaHa}},
+  "originalTotalAreaHa": {{originalAreaHa}},
+  "applicationId": "{{wmpApplicationId}}",
+  "sbi": "{{testSbi}}",
+  "crn": "{{testCrn}}"
 }
 
 ###

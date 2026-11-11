@@ -65,7 +65,7 @@ describe('calculateWmpByTotalArea', () => {
     })
 
     const result = await calculateWmpByTotalArea(
-      { totalAreaHa: 26.3397, applicationId: 'APP-123', sbi: '123456789', crn: '1234567890' },
+      { totalAreaHa: 26.3397, originalTotalAreaHa: 30, applicationId: 'APP-123', sbi: '123456789', crn: '1234567890' },
       'http://api',
       userContext
     )
@@ -74,6 +74,7 @@ describe('calculateWmpByTotalArea', () => {
       '/api/v1/wmp/payments/calculate-by-total-area',
       {
         totalAreaHa: 26.3397,
+        originalTotalAreaHa: 30,
         applicationId: 'APP-123',
         sbi: '123456789',
         crn: '1234567890'
