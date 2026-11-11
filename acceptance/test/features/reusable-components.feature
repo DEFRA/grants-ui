@@ -45,7 +45,7 @@ Feature: Reusable Components
         And should see heading "Contact the RPA to update your details"
         And the page is analyzed for accessibility
         When the user navigates backward
-        
+
         # check-details
         Then the user should be at URL "check-details"
         When the user selects "Yes"
@@ -230,7 +230,7 @@ Feature: Reusable Components
 
         # repeat-page (list summary)
         Then the user should be at URL "repeat-page"
-        And should see heading "You have added 2 answers"
+        And should see heading "You have added 2 items"
         And the page is analyzed for accessibility
         When the user continues
 
