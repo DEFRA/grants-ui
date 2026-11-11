@@ -150,8 +150,7 @@ it('shows a submitted application GAS has returned for amendments as returned, w
 
 it.each([
   ['RECEIVED', '/test-grant/print-submitted-application?ref=REF-1'],
-  ['OFFER_SENT', '/test-grant?ref=REF-1'],
-  ['APPLICATION_WITHDRAWN', '/test-grant?ref=REF-1']
+  ['OFFER_SENT', '/test-grant?ref=REF-1']
 ])(
   'keeps a submitted application as Submitted when GAS answers %s and links it to %s: only a confirmed submission opens as its print view',
   async (gasStatus, href) => {
@@ -274,44 +273,41 @@ it("reads each submitted application's GAS answer under the rules of its own gra
 it.each([
   ['the definition of its major cannot be read', { pinnedMajor: 0 }],
   ['the backend lists it without a pinned major', {}]
-])(
-  "labels a submitted application under the selector's own rules, linked to the grant root, when %s",
-  async (_, pinning) => {
-    fetchLatestDefinitionFromApi.mockRejectedValue(new Error('backend down'))
-    listApplicationsFromApi.mockResolvedValue([
-      { applicationRef: 'REF-1', applicationStatus: 'SUBMITTED', submittedAt: '2026-03-01T12:00:00Z', ...pinning },
-      { applicationRef: 'REF-2', applicationStatus: 'SUBMITTED', submittedAt: '2026-03-01T12:00:00Z', ...pinning }
+])('shows a submitted application by its stored status, linked to the grant root, when %s', async (_, pinning) => {
+  fetchLatestDefinitionFromApi.mockRejectedValue(new Error('backend down'))
+  listApplicationsFromApi.mockResolvedValue([
+    { applicationRef: 'REF-1', applicationStatus: 'SUBMITTED', submittedAt: '2026-03-01T12:00:00Z', ...pinning },
+    { applicationRef: 'REF-2', applicationStatus: 'SUBMITTED', submittedAt: '2026-03-01T12:00:00Z', ...pinning }
+  ])
+  readGasStatuses.mockResolvedValue(
+    new Map([
+      ['REF-1', 'APPLICATION_AMEND'],
+      ['REF-2', 'RECEIVED']
     ])
-    readGasStatuses.mockResolvedValue(
-      new Map([
-        ['REF-1', 'APPLICATION_AMEND'],
-        ['REF-2', 'RECEIVED']
-      ])
-    )
-    await listApplicationsRoute.handler(request, h)
-    expect(readGasStatuses.mock.calls[0][2]).toHaveLength(2)
-    expect(h.view).toHaveBeenCalledWith(
-      'applications',
-      expect.objectContaining({
-        applications: [
-          expect.objectContaining({
-            referenceNumber: 'REF-1',
-            statusText: 'Returned for amendments',
-            actionText: 'Continue application',
-            href: '/test-grant?ref=REF-1'
-          }),
-          // Confirmed submitted only under rules that may not be its own: no direct print view, the redirect decides.
-          expect.objectContaining({
-            referenceNumber: 'REF-2',
-            statusText: 'Submitted',
-            actionText: 'View application',
-            href: '/test-grant?ref=REF-2'
-          })
-        ]
-      })
-    )
-  }
-)
+  )
+  await listApplicationsRoute.handler(request, h)
+  expect(readGasStatuses.mock.calls[0][2]).toHaveLength(2)
+  expect(h.view).toHaveBeenCalledWith(
+    'applications',
+    expect.objectContaining({
+      // Only the selector's own rules are at hand, which may not be the application's: no verdict, the redirect decides.
+      applications: [
+        expect.objectContaining({
+          referenceNumber: 'REF-1',
+          statusText: 'Submitted',
+          actionText: 'View application',
+          href: '/test-grant?ref=REF-1'
+        }),
+        expect.objectContaining({
+          referenceNumber: 'REF-2',
+          statusText: 'Submitted',
+          actionText: 'View application',
+          href: '/test-grant?ref=REF-2'
+        })
+      ]
+    })
+  )
+})
 
 it('creates a fresh reference without copying the existing application or clearing authentication', async () => {
   await startApplicationRoute.handler(request, h)
@@ -418,4 +414,31 @@ it('does not create links for application records with missing references', asyn
       applications: [expect.objectContaining({ href: '/test-grant?ref=REF-VALID' })]
     })
   )
+})
+
+it('lists a submitted application GAS has withdrawn as withdrawn with no action, next to a draft, without writing anything', async () => {
+  listApplicationsFromApi.mockResolvedValue([
+    { applicationRef: 'REF-1', applicationStatus: null },
+    { applicationRef: 'REF-2', applicationStatus: 'SUBMITTED', pinnedMajor: 1, submittedAt: '2026-03-01T12:00:00Z' }
+  ])
+  readGasStatuses.mockResolvedValue(new Map([['REF-2', 'APPLICATION_WITHDRAWN']]))
+  await listApplicationsRoute.handler(request, h)
+  expect(h.view).toHaveBeenCalledWith(
+    'applications',
+    expect.objectContaining({
+      canStartApplication: true,
+      applications: [
+        expect.objectContaining({ referenceNumber: 'REF-1', statusText: 'Draft', href: '/test-grant?ref=REF-1' }),
+        expect.objectContaining({
+          referenceNumber: 'REF-2',
+          statusText: 'Withdrawn',
+          statusClasses: 'govuk-tag--grey',
+          actionText: null,
+          href: null,
+          submittedAt: '2026-03-01T12:00:00Z'
+        })
+      ]
+    })
+  )
+  expect(cache.setState).not.toHaveBeenCalled()
 })

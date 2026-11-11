@@ -93,3 +93,25 @@ it('includes the scheme, selection journey and current URL in the phase banner f
     config.set('feedback.surveyUrl', surveyUrl)
   }
 })
+
+it('renders a withdrawn application with its dates and no action link', () => {
+  const $ = render({
+    applications: [
+      {
+        referenceNumber: 'REF-WITHDRAWN',
+        createdAt: '2026-08-14T12:00:00Z',
+        submittedAt: '2026-08-15T12:00:00Z',
+        statusText: 'Withdrawn',
+        statusClasses: 'govuk-tag--grey',
+        actionText: null,
+        href: null
+      }
+    ]
+  })
+  const row = $('tbody tr').eq(0)
+  expect(row.find('td').eq(0).text().trim()).toBe('14 August 2026')
+  expect(row.find('td').eq(1).text().trim()).toBe('15 August 2026')
+  expect(row.find('.govuk-tag--grey').text().trim()).toBe('Withdrawn')
+  expect(row.find('a').length).toBe(0)
+  expect(row.find('td').eq(3).text().trim()).toBe('')
+})
