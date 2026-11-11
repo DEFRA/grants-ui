@@ -138,20 +138,22 @@ function extractRepeatQuestions(page, answers) {
  */
 function buildSections(pages, answers, hasParcelCards, additionalQuestions = new Map()) {
   return (pages || [])
-    .map((page) => ({
-      title: page.title,
-      questions: [
-        ...(page.controller === 'RepeatPageController'
-          ? extractRepeatQuestions(page, answers)
-          : extractQuestions(
-              hasParcelCards && page.controller === 'MapSelectPageController'
-                ? []
-                : page.components?.filter((component) => !hasParcelCards || component.name !== 'landParcels'),
-              answers
-            )),
-        ...(additionalQuestions.get(normalisePagePath(page.path)) ?? [])
-      ]
-    }))
+    .map((page) => {
+      const components =
+        hasParcelCards && page.controller === 'MapSelectPageController'
+          ? []
+          : page.components?.filter((component) => !hasParcelCards || component.name !== 'landParcels')
+
+      return {
+        title: page.title,
+        questions: [
+          ...(page.controller === 'RepeatPageController'
+            ? extractRepeatQuestions(page, answers)
+            : extractQuestions(components, answers)),
+          ...(additionalQuestions.get(normalisePagePath(page.path)) ?? [])
+        ]
+      }
+    })
     .filter((section) => section.questions.length > 0)
 }
 
