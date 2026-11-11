@@ -1,3 +1,4 @@
+import crypto from 'node:crypto'
 import { vi } from 'vitest'
 
 const TEST_ENCRYPTION_KEY = 'test-encryption-key-for-unit-tests-32-chars'
@@ -93,15 +94,45 @@ function setupLandGrantsMockConfig(value, encryptionKey = TEST_ENCRYPTION_KEY) {
 }
 
 describe('Backend Auth Helper', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
     vi.resetModules()
   })
 
   describe('createApiHeadersForGrantsUiBackend', () => {
+    it('reuses derived keys across calls to both backends', async () => {
+      const configValues = {
+        [CONFIG_SESSION_CACHE_AUTH_TOKEN]: 'backend-test-token',
+        [CONFIG_SESSION_CACHE_ENCRYPTION_KEY]: 'backend-test-secret',
+        [CONFIG_LAND_GRANTS_AUTH_TOKEN]: 'land-test-token',
+        [CONFIG_LAND_GRANTS_ENCRYPTION_KEY]: 'land-test-secret',
+        [CONFIG_TRACING_HEADER]: 'x-cdp-request-id'
+      }
+      mockConfigGet.mockImplementation((key) => configValues[key] || null)
+      const { createApiHeadersForGrantsUiBackend, createApiHeadersForLandGrantsBackend } =
+        await importBackendAuthHelper()
+      const scrypt = vi.spyOn(crypto, 'scryptSync')
+
+      const backendFirst = await createApiHeadersForGrantsUiBackend()
+      const landFirst = createApiHeadersForLandGrantsBackend()
+      const backendSecond = await createApiHeadersForGrantsUiBackend()
+      const landSecond = createApiHeadersForLandGrantsBackend()
+
+      expect(scrypt).toHaveBeenCalledTimes(2)
+      expect(scrypt).toHaveBeenCalledWith('backend-test-secret', 'salt', 32)
+      expect(scrypt).toHaveBeenCalledWith('land-test-secret', 'salt', 32)
+      expect(backendFirst.Authorization).not.toBe(backendSecond.Authorization)
+      expect(landFirst.Authorization).not.toBe(landSecond.Authorization)
+    })
+
     describe('when no token is configured', () => {
       it('should return base headers when no token is configured', async () => {
         setupMockConfig('', TEST_ENCRYPTION_KEY)
+        const scrypt = vi.spyOn(crypto, 'scryptSync')
 
         const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
         const headers = await createApiHeadersForGrantsUiBackend(HEADER_OBJECTS.CONTENT_TYPE_JSON)
@@ -109,6 +140,7 @@ describe('Backend Auth Helper', () => {
         expect(mockConfigGet).toHaveBeenCalledWith(CONFIG_SESSION_CACHE_AUTH_TOKEN)
         expect(headers).toEqual(HEADER_OBJECTS.CONTENT_TYPE_JSON)
         expect(headers.Authorization).toBeUndefined()
+        expect(scrypt).not.toHaveBeenCalled()
       })
     })
 
@@ -213,12 +245,14 @@ describe('Backend Auth Helper', () => {
 
       it('sends the Web Identity token as a raw Bearer token instead of the encrypted shared token', async () => {
         setupWebIdentityConfig()
+        const scrypt = vi.spyOn(crypto, 'scryptSync')
         mockGetBackendServiceToken.mockResolvedValue('a-web-identity-token')
 
         const { createApiHeadersForGrantsUiBackend } = await importBackendAuthHelper()
         const headers = await createApiHeadersForGrantsUiBackend()
 
         expect(mockGetBackendServiceToken).toHaveBeenCalled()
+        expect(scrypt).not.toHaveBeenCalled()
         expect(headers).toEqual({
           'Content-Type': CONTENT_TYPE_JSON,
           Authorization: 'Bearer a-web-identity-token'

@@ -145,12 +145,24 @@ describe('calculateWmpPaymentByTotalArea', () => {
     woodlandClient.calculateWmpByTotalArea.mockResolvedValueOnce({ message: 'success', payment: mockPayment })
 
     const result = await calculateWmpPaymentByTotalArea(
-      { totalAreaHa: 24.95, applicationId: 'WMP-A1B2-C3D4', sbi: '123456789', crn: '1234567890' },
+      {
+        totalAreaHa: 24.95,
+        originalTotalAreaHa: 30,
+        applicationId: 'WMP-A1B2-C3D4',
+        sbi: '123456789',
+        crn: '1234567890'
+      },
       userContext
     )
 
     expect(woodlandClient.calculateWmpByTotalArea).toHaveBeenCalledWith(
-      { totalAreaHa: 24.95, applicationId: 'WMP-A1B2-C3D4', sbi: '123456789', crn: '1234567890' },
+      {
+        totalAreaHa: 24.95,
+        originalTotalAreaHa: 30,
+        applicationId: 'WMP-A1B2-C3D4',
+        sbi: '123456789',
+        crn: '1234567890'
+      },
       'http://api',
       userContext
     )
@@ -164,7 +176,7 @@ describe('calculateWmpPaymentByTotalArea', () => {
 
       await expect(
         calculateWmpPaymentByTotalArea(
-          { totalAreaHa: 24.95, applicationId: 'WMP-A1B2-C3D4', sbi: '123456789' },
+          { totalAreaHa: 24.95, originalTotalAreaHa: 30, applicationId: 'WMP-A1B2-C3D4', sbi: '123456789' },
           userContext
         )
       ).rejects.toThrow('Land Grants API returned no agreementTotalPence for the claim payment')
@@ -178,7 +190,7 @@ describe('calculateWmpPaymentByTotalArea', () => {
     })
 
     const result = await calculateWmpPaymentByTotalArea(
-      { totalAreaHa: 24.95, applicationId: 'WMP-A1B2-C3D4', sbi: '123456789' },
+      { totalAreaHa: 24.95, originalTotalAreaHa: 30, applicationId: 'WMP-A1B2-C3D4', sbi: '123456789' },
       userContext
     )
 
@@ -190,7 +202,7 @@ describe('calculateWmpPaymentByTotalArea', () => {
 
     await expect(
       calculateWmpPaymentByTotalArea(
-        { totalAreaHa: 24.95, applicationId: 'WMP-A1B2-C3D4', sbi: '123456789' },
+        { totalAreaHa: 24.95, originalTotalAreaHa: 30, applicationId: 'WMP-A1B2-C3D4', sbi: '123456789' },
         userContext
       )
     ).rejects.toThrow('API error')

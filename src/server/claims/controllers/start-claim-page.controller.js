@@ -69,14 +69,14 @@ export default class StartClaimPageController extends QuestionPageController {
    * @returns {Promise<Record<string, string | number | boolean>>} data items keyed by item name
    */
   async fetchClaimData(request, context) {
-    const gasData = await this.fetchGasEntitlements(request, context)
+    const { data, ...gasData } = await this.fetchGasEntitlements(request, context)
 
     // An empty entitlement response means that there is no claim to calculate or submit.
     if (!gasData.hasAvailableClaims) {
       return gasData
     }
 
-    const paymentResult = await this.calculateClaimPayment(request, context, gasData)
+    const paymentResult = await this.calculateClaimPayment(request, context, data)
 
     return {
       ...gasData,
@@ -89,7 +89,8 @@ export default class StartClaimPageController extends QuestionPageController {
    *
    * Calls the GAS available-claims entitlements endpoint for the current grant
    * and application reference number. It maps the first available claim's
-   * identifier and `totalHectares.value` onto the page data. An empty (or
+   * identifier and `totalHectares.value` onto the page data, and passes its
+   * data block through for the payment strategy. An empty (or
    * absent) response is surfaced as `hasAvailableClaims: false` so the page
    * can show an unavailable state instead of a misleading payment total.
    * @param {AnyFormRequest} request
@@ -98,6 +99,7 @@ export default class StartClaimPageController extends QuestionPageController {
    *   hasAvailableClaims: boolean,
    *   entitlementId?: string,
    *   totalEligibleArea?: number,
+   *   data?: WoodlandClaimData,
    *   unit: 'ha'
    * }>} data mapped from the first available claim
    */
@@ -117,6 +119,7 @@ export default class StartClaimPageController extends QuestionPageController {
       hasAvailableClaims: Array.isArray(availableClaims) && availableClaims.length > 0,
       ...(entitlementId != null ? { entitlementId } : {}),
       ...(totalEligibleArea != null ? { totalEligibleArea } : {}),
+      ...(firstAvailableClaim?.data ? { data: firstAvailableClaim.data } : {}),
       unit: 'ha'
     }
   }
@@ -149,18 +152,18 @@ export default class StartClaimPageController extends QuestionPageController {
    * result.
    *
    * The payment context passed to the strategy is assembled from the GAS claim
-   * data (`totalEligibleArea` as `totalAreaHa`), the application reference
-   * number held in state (as `applicationId`) and the authenticated user's
+   * data block, the application reference number held in state (as
+   * `applicationId`) and the authenticated user's
    * `sbi`/`crn`.
    *
    * No-ops (returns `undefined`) when no `paymentStrategy` is configured, or
    * when the application reference number or total eligible area is missing.
    * @param {AnyFormRequest} request
    * @param {FormContext} context
-   * @param {Record<string, string | number | boolean>} gasData
+   * @param {WoodlandClaimData | undefined} data
    * @returns {Promise<PaymentStrategyResult | undefined>}
    */
-  async calculateClaimPayment(request, context, gasData) {
+  async calculateClaimPayment(request, context, data) {
     const paymentStrategy = /** @type {string | undefined} */ (this.pageConfig.paymentStrategy)
 
     if (!paymentStrategy) {
@@ -169,9 +172,7 @@ export default class StartClaimPageController extends QuestionPageController {
 
     const state = context.state ?? {}
     const referenceNumber = /** @type {string | undefined} */ (state.$$__referenceNumber)
-    const totalAreaHa = /** @type {number | undefined} */ (gasData.totalEligibleArea)
-
-    if (!referenceNumber || totalAreaHa == null) {
+    if (!referenceNumber || data?.totalHectares?.value == null) {
       return undefined
     }
 
@@ -181,7 +182,7 @@ export default class StartClaimPageController extends QuestionPageController {
 
     return strategy.calculatePayment(
       {
-        totalAreaHa,
+        data,
         applicationId: referenceNumber,
         sbi: /** @type {string} */ (credentials.sbi),
         crn: credentials.crn
@@ -323,5 +324,5 @@ export default class StartClaimPageController extends QuestionPageController {
  * @import { FormModel } from '@defra/forms-engine-plugin/engine/models/FormModel.js'
  * @import { FormContext, AnyFormRequest, FormResponseToolkit } from '@defra/forms-engine-plugin/types'
  * @import { ResponseObject } from '@hapi/hapi'
- * @import { PaymentStrategyResult } from '~/src/server/payment/payment-strategies.d.js'
+ * @import { PaymentStrategyResult, WoodlandClaimData } from '~/src/server/payment/payment-strategies.d.js'
  */
