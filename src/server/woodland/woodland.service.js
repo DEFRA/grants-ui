@@ -73,15 +73,18 @@ export async function calculateWmpPayment(
 }
 
 /**
- * Calculates a one-off WMP payment from a total eligible area.
- * @param {{ totalAreaHa: number, applicationId: string, sbi: string, crn?: string }} params
+ * Calculates a one-off WMP claim payment from the adjusted and original eligible areas.
+ * @param {{ totalAreaHa: number, originalTotalAreaHa: number, applicationId: string, sbi: string, crn?: string }} params
  * @param {LandGrantsUserContext} userContext
  * @returns {Promise<{ payment: PaymentCalculation, totalPence: number }>}
  * @throws {Error}
  */
-export async function calculateWmpPaymentByTotalArea({ totalAreaHa, applicationId, sbi, crn }, userContext) {
+export async function calculateWmpPaymentByTotalArea(
+  { totalAreaHa, originalTotalAreaHa, applicationId, sbi, crn },
+  userContext
+) {
   const { payment } = await calculateWmpByTotalArea(
-    { totalAreaHa, applicationId, sbi, crn },
+    { totalAreaHa, originalTotalAreaHa, applicationId, sbi, crn },
     LAND_GRANTS_API_URL,
     userContext
   )
