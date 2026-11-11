@@ -45,6 +45,7 @@ describe('print-application-service', () => {
         hasPlanning: true,
         projectCost: 50000
       },
+      savedState: {},
       referenceNumber: 'REF-123',
       submittedAt: '15 January 2025 at 10:30am',
       slug: MOCK_FORM_ENTRIES.exampleGrant.slug,
@@ -222,6 +223,14 @@ describe('print-application-service', () => {
       expect(result.sections).toEqual([])
     })
 
+    test('should omit all saved form answers when relevant state is empty', () => {
+      const result = buildPrintViewModel({ ...baseParams, answers: {}, savedState: baseParams.answers })
+
+      expect(result.sections).toEqual([])
+      expect(result.referenceNumber).toBe('REF-123')
+      expect(result.submittedAt).toBe(baseParams.submittedAt)
+    })
+
     test('should handle pages with no components', () => {
       const result = buildPrintViewModel({
         ...baseParams,
@@ -255,10 +264,10 @@ describe('print-application-service', () => {
           }
         }
       }
-      const answers = { additionalAnswers: { totalScore: 0, totalEstimatedCost: 125000 } }
+      const savedState = { additionalAnswers: { totalScore: 0, totalEstimatedCost: 125000 } }
 
       test('places water-management derived answers in their owning task even without question components', () => {
-        const result = buildPrintViewModel({ ...baseParams, definition, answers })
+        const result = buildPrintViewModel({ ...baseParams, definition, savedState, answers: {} })
 
         expect(result.sections).toEqual([
           {
@@ -270,14 +279,14 @@ describe('print-application-service', () => {
             ]
           }
         ])
-        expect(answers).toEqual({ additionalAnswers: { totalScore: 0, totalEstimatedCost: 125000 } })
+        expect(savedState).toEqual({ additionalAnswers: { totalScore: 0, totalEstimatedCost: 125000 } })
       })
 
       test('includes additional answers for journeys without a task list', () => {
         const result = buildPrintViewModel({
           ...baseParams,
           definition: { ...definition, pages: definition.pages.slice(1) },
-          answers
+          savedState
         })
 
         expect(result.sections).toEqual([
@@ -290,7 +299,7 @@ describe('print-application-service', () => {
         const result = buildPrintViewModel({
           ...baseParams,
           definition,
-          answers,
+          savedState,
           relevantPages: [{ path: '/score-results' }]
         })
 
@@ -312,7 +321,7 @@ describe('print-application-service', () => {
         const result = buildPrintViewModel({
           ...baseParams,
           definition: titledDefinition,
-          answers: { additionalAnswers: { eligible: false, empty: null } }
+          savedState: { additionalAnswers: { eligible: false, empty: null } }
         })
 
         expect(result.sections).toEqual([
@@ -336,7 +345,7 @@ describe('print-application-service', () => {
         })
         repeatedDefinition.metadata.pageConfig['/other-summary'] = repeatedDefinition.metadata.pageConfig['/summary']
 
-        const result = buildPrintViewModel({ ...baseParams, definition: repeatedDefinition, answers })
+        const result = buildPrintViewModel({ ...baseParams, definition: repeatedDefinition, savedState })
 
         expect(result.sections.flatMap((section) => section.questions)).toHaveLength(2)
       })
@@ -350,7 +359,7 @@ describe('print-application-service', () => {
         const result = buildPrintViewModel({
           ...baseParams,
           definition: invalidDefinition,
-          answers: { ...answers, totalPayment: '£1500.00', payment: MOCK_PAYMENT }
+          savedState: { ...savedState, totalPayment: '£1500.00', payment: MOCK_PAYMENT }
         })
 
         expect(result.sections).toEqual([])
@@ -482,11 +491,10 @@ describe('print-application-service', () => {
       expect(result[field]).toEqual(expected)
     })
 
-    test('should return shared parcel and payment cards when answers contain payment data', () => {
+    test('should return shared parcel and payment cards when saved state contains payment data', () => {
       const result = buildPrintViewModel({
         ...baseParams,
-        answers: {
-          ...baseParams.answers,
+        savedState: {
           payment: MOCK_PAYMENT
         }
       })
@@ -500,7 +508,7 @@ describe('print-application-service', () => {
     test('should render an annual payment of zero', () => {
       const result = buildPrintViewModel({
         ...baseParams,
-        answers: { payment: { annualTotalPence: 0, parcelItems: {}, agreementLevelItems: {} } }
+        savedState: { payment: { annualTotalPence: 0, parcelItems: {}, agreementLevelItems: {} } }
       })
 
       expect(result.landAndActionsSummary.applicationYearlyPayment).toBe('£0.00')
@@ -510,7 +518,7 @@ describe('print-application-service', () => {
       expect(() =>
         buildPrintViewModel({
           ...baseParams,
-          answers: { payment: { annualTotalPence, parcelItems: {}, agreementLevelItems: {} } }
+          savedState: { payment: { annualTotalPence, parcelItems: {}, agreementLevelItems: {} } }
         })
       ).toThrow('payment.annualTotalPence must be a non-negative integer')
     })

@@ -5,6 +5,11 @@ import { formsRequestPipeline } from './forms-request-pipeline.js'
 import { enforcePagePermission } from './permissions/enforce-page-permission.js'
 import { formsStatusRedirect } from './redirects/forms-status-redirect.js'
 import { enableRepeatTaskContext } from '~/src/server/task-list/repeat-task-context.js'
+import { enableRepeatPageItemNames } from '../helpers/repeat-page-item-names.js'
+
+vi.mock('../helpers/repeat-page-item-names.js', () => ({
+  enableRepeatPageItemNames: vi.fn()
+}))
 
 vi.mock('~/src/server/task-list/repeat-task-context.js', () => ({
   enableRepeatTaskContext: vi.fn()
@@ -53,6 +58,7 @@ describe('formsRequestPipeline', () => {
     expect(formsStatusRedirect).not.toHaveBeenCalled()
     expect(enforcePagePermission).not.toHaveBeenCalled()
     expect(enableRepeatTaskContext).not.toHaveBeenCalled()
+    expect(enableRepeatPageItemNames).not.toHaveBeenCalled()
     expect(result).toBe(redirectResponse)
   })
 
@@ -107,6 +113,7 @@ describe('formsRequestPipeline', () => {
     expect(enforcePagePermission).toHaveBeenCalledWith(request, h, context)
     expect(result).toBe(forbiddenResponse)
     expect(enableRepeatTaskContext).not.toHaveBeenCalled()
+    expect(enableRepeatPageItemNames).not.toHaveBeenCalled()
   })
 
   test('enables repeat task context after permissions allow the resolved page', async () => {
@@ -116,6 +123,9 @@ describe('formsRequestPipeline', () => {
     const result = await formsRequestPipeline(request, h, context)
 
     expect(enableRepeatTaskContext).toHaveBeenCalledExactlyOnceWith(request)
+    expect(enableRepeatPageItemNames).toHaveBeenCalledExactlyOnceWith(request)
+    expect(enforcePagePermission).toHaveBeenCalledBefore(vi.mocked(enableRepeatPageItemNames))
+    expect(enableRepeatPageItemNames).toHaveBeenCalledBefore(vi.mocked(enableRepeatTaskContext))
     expect(enforcePagePermission).toHaveBeenCalledBefore(vi.mocked(enableRepeatTaskContext))
     expect(result).toBe(h.continue)
   })

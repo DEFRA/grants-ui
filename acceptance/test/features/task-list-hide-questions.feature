@@ -99,7 +99,7 @@ Feature: Task Lists Hiding Questions
         # repeat-page (list summary)
         Then the user should be at URL "repeat-page/summary"
         And should see task title "Example task one"
-        And should see heading "You have added 1 answer"
+        And should see heading "You have added 1 repeat item"
         And the page is analyzed for accessibility
         When the user continues
 
@@ -190,7 +190,7 @@ Feature: Task Lists Hiding Questions
 
         # repeat-page (list summary) - retain the existing item
         Then the user should be at URL "repeat-page/summary"
-        And should see heading "You have added 1 answer"
+        And should see heading "You have added 1 repeat item"
         When the user continues
 
         # tasks - task one completed again, task two back to in progress, complete task two

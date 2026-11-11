@@ -200,11 +200,11 @@ function hasAdditionalSectionOwner(definition, section) {
  * Reuses Check answers display configuration with the saved submission values.
  * Page-owned rows join the existing page/task; titled sections follow the answers.
  * @param {FormDefinition} definition
- * @param {Answers} answers
+ * @param {Answers} savedState
  * @param {boolean} hasLandAndActionsSummary
  * @param {{ path: string }[] | undefined} relevantPages
  */
-function buildAdditionalSections(definition, answers, hasLandAndActionsSummary, relevantPages) {
+function buildAdditionalSections(definition, savedState, hasLandAndActionsSummary, relevantPages) {
   /** @type {Map<string | undefined, Question[]>} */
   const questionsByPage = new Map()
   /** @type {{ title: string, questions: Question[] }[]} */
@@ -218,7 +218,7 @@ function buildAdditionalSections(definition, answers, hasLandAndActionsSummary, 
     }
 
     const configuredSections = definition.metadata?.pageConfig?.[summaryPage.path]?.additionalSections
-    const resolvedSections = resolveAdditionalAnswerSections(configuredSections, answers, {
+    const resolvedSections = resolveAdditionalAnswerSections(configuredSections, savedState, {
       relevantPages,
       excludedStateValues
     })
@@ -270,10 +270,10 @@ function createTaskSection(titles, sectionId, landAndActionsSectionId) {
 
 /**
  * Builds the land and payment cards from submitted state for annual-payment journeys.
- * @param {Answers} answers
+ * @param {Answers} savedState
  */
-function buildSubmittedLandAndActionsSummary(answers) {
-  const payment = /** @type {PaymentCalculation | undefined} */ (answers.payment)
+function buildSubmittedLandAndActionsSummary(savedState) {
+  const payment = /** @type {PaymentCalculation | undefined} */ (savedState.payment)
 
   // Single-payment journeys such as Woodland do not supply an annual total.
   if (payment?.annualTotalPence === undefined) {
@@ -283,11 +283,11 @@ function buildSubmittedLandAndActionsSummary(answers) {
   return buildConfirmLandAndActionsViewModel(
     {
       ...payment,
-      agreementStartDate: /** @type {string} */ (answers.agreementStartDate ?? payment.agreementStartDate),
-      agreementEndDate: /** @type {string} */ (answers.agreementEndDate ?? payment.agreementEndDate),
-      agreementTotalPence: /** @type {number} */ (answers.agreementTotalPence ?? payment.agreementTotalPence)
+      agreementStartDate: /** @type {string} */ (savedState.agreementStartDate ?? payment.agreementStartDate),
+      agreementEndDate: /** @type {string} */ (savedState.agreementEndDate ?? payment.agreementEndDate),
+      agreementTotalPence: /** @type {number} */ (savedState.agreementTotalPence ?? payment.agreementTotalPence)
     },
-    Array.isArray(answers.landParcels) ? undefined : /** @type {LandParcels | undefined} */ (answers.landParcels)
+    Array.isArray(savedState.landParcels) ? undefined : /** @type {LandParcels | undefined} */ (savedState.landParcels)
   )
 }
 
@@ -359,7 +359,8 @@ function resolveComponentLists(components, listsById) {
  * Assembles the view model for the print-submitted-application template.
  * @param {object} params
  * @param {FormDefinition} params.definition
- * @param {Answers} params.answers
+ * @param {Answers} params.answers - Applicable form answers resolved by the forms engine
+ * @param {Answers} params.savedState - Full saved state, including calculated results
  * @param {string} [params.referenceNumber]
  * @param {string} params.submittedAt
  * @param {string} params.slug
@@ -373,6 +374,7 @@ function resolveComponentLists(components, listsById) {
 export function buildPrintViewModel({
   definition,
   answers,
+  savedState,
   referenceNumber,
   submittedAt,
   slug,
@@ -389,7 +391,7 @@ export function buildPrintViewModel({
     pageTitle = form.name
   }
 
-  const landAndActionsSummary = buildSubmittedLandAndActionsSummary(answers)
+  const landAndActionsSummary = buildSubmittedLandAndActionsSummary(savedState)
 
   const groupAnswersByTask =
     definition.pages?.some((formPage) => formPage.controller === 'TaskListPageController') ?? false
@@ -398,13 +400,7 @@ export function buildPrintViewModel({
     definition,
     groupAnswersByTask && Boolean(landAndActionsSummary)
   )
-  const additional = buildAdditionalSections(definition, answers, Boolean(landAndActionsSummary), relevantPages)
-  const answerPages = definition.pages?.filter(
-    (formPage) =>
-      formPage.controller !== 'RepeatPageController' ||
-      !relevantPages ||
-      relevantPages.some((relevantPage) => normalisePagePath(relevantPage.path) === normalisePagePath(formPage.path))
-  )
+  const additional = buildAdditionalSections(definition, savedState, Boolean(landAndActionsSummary), relevantPages)
 
   return {
     page,
@@ -422,14 +418,8 @@ export function buildPrintViewModel({
     groupAnswersByTask,
     sections: [
       ...(groupAnswersByTask
-        ? buildTaskSections(
-            { ...definition, pages: answerPages },
-            answers,
-            hasParcelCards,
-            landAndActionsSectionId,
-            additional.questionsByPage
-          )
-        : buildSections(answerPages, answers, hasParcelCards, additional.questionsByPage)),
+        ? buildTaskSections(definition, answers, hasParcelCards, landAndActionsSectionId, additional.questionsByPage)
+        : buildSections(definition.pages, answers, hasParcelCards, additional.questionsByPage)),
       ...additional.sections
     ],
     landAndActionsSummary,
