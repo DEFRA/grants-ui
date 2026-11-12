@@ -53,7 +53,7 @@ import { boundsToLngLatPairs } from './bounds.js'
  */
 
 /**
- * @typedef {{ sheet_id?: unknown, parcel_id?: unknown, areaHa?: unknown, actionCount?: unknown, [key: string]: unknown }} ParcelProperties
+ * @typedef {{ bounds?: BBox, sheet_id?: unknown, parcel_id?: unknown, areaHa?: unknown, actionCount?: unknown, [key: string]: unknown }} ParcelProperties
  * @typedef {{ id: string } & ParcelProperties} ParcelMeta
  * @typedef {Record<string, ParcelMeta>} MetaIndex
  */
@@ -88,12 +88,11 @@ export function buildParcelLayers(colorExpr) {
     outline: {
       id: LAYER_ID_OUTLINE,
       type: 'line',
+      minzoom: PARCEL_DETAIL_ZOOM,
       ...src,
       paint: {
         'line-color': colorExpr,
-        'line-width': LAYER_LINE_WIDTH,
-        // Keep the vector source loading at overview zoom for parcel badge points.
-        'line-opacity': ['step', ['zoom'], 0, PARCEL_DETAIL_ZOOM, 1]
+        'line-width': LAYER_LINE_WIDTH
       }
     }
   }

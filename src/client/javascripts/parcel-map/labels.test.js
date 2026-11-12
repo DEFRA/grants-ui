@@ -5,198 +5,60 @@ import { attachParcelLabels } from './labels.js'
 import { makeMlMap } from './test-helpers.js'
 import { CLUSTER_EXPAND_MAX_ZOOM } from './config.js'
 
-const polygon = (rings) => ({ type: 'Polygon', coordinates: [rings] })
+const bounds = { minLng: -2.5, minLat: 51.4, maxLng: -2.4, maxLat: 51.5 }
 
-function setup({ sourceFeatures = [] } = {}) {
+function makeStore(parcelIds) {
+  return {
+    parcelIds,
+    metaIndex: Object.fromEntries(parcelIds.map((id) => [id, { id, bounds }])),
+    bbox: bounds
+  }
+}
+
+function setup(parcelIds = []) {
   const setData = vi.fn()
-  const ml = makeMlMap({
-    getSource: vi.fn().mockReturnValue({ setData }),
-    querySourceFeatures: vi.fn().mockReturnValue(sourceFeatures)
-  })
+  const ml = makeMlMap({ getSource: vi.fn().mockReturnValue({ setData }) })
   const cleanups = []
-  attachParcelLabels({ ml, cleanups })
+  attachParcelLabels({ ml, cleanups, store: makeStore(parcelIds) })
   return { ml, setData, cleanups }
 }
 
 describe('attachParcelLabels', () => {
-  it('registers an idle listener and an off() cleanup for it', () => {
-    const { ml, cleanups } = setup()
-    expect(ml.on).toHaveBeenCalledWith('idle', expect.any(Function))
+  it('keeps all 51 holding labels when zoomed-out tiles omit small parcels', () => {
+    const { ml, setData } = setup(Array.from({ length: 51 }, (_, index) => String(index)))
+    ml._emit('idle')
+    expect(setData.mock.lastCall[0].features).toHaveLength(51)
+    // Tile changes must never replace the complete holding with visible polygons.
+    ml.querySourceFeatures.mockReturnValue([])
+    ml._emit('idle')
+    ml._emit('idle')
+    expect(setData).toHaveBeenCalledTimes(1)
+    expect(setData.mock.lastCall[0].features).toHaveLength(51)
+    expect(ml.querySourceFeatures).not.toHaveBeenCalledWith('parcels', expect.anything())
+  })
 
+  it('builds a point at the full parcel bounds centre and retains its bounds for badge clicks', () => {
+    const { ml, setData } = setup(['SD7148-9160'])
+    ml._emit('idle')
+    expect(setData.mock.lastCall[0].features).toEqual([
+      {
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [-2.45, 51.45] },
+        properties: { id: 'SD7148-9160', label: 'SD7148 9160', ...bounds }
+      }
+    ])
+  })
+
+  it('waits for the label source and removes event listeners on cleanup', () => {
+    const { ml, setData, cleanups } = setup(['a'])
+    ml.getSource.mockReturnValueOnce(undefined)
+    ml._emit('idle')
+    expect(setData).not.toHaveBeenCalled()
+    ml._emit('idle')
+    expect(setData).toHaveBeenCalledTimes(1)
     cleanups.forEach((off) => off())
     expect(ml.off).toHaveBeenCalledWith('idle', expect.any(Function))
-  })
-
-  it('wires up click-to-zoom and a pointer-cursor mousemove on the cluster badge layer, with matching cleanups', () => {
-    const { ml, cleanups } = setup()
-    expect(ml.on).toHaveBeenCalledWith('click', 'parcels-label-cluster', expect.any(Function))
-    expect(ml.on).toHaveBeenCalledWith('mousemove', expect.any(Function))
-
-    cleanups.forEach((off) => off())
     expect(ml.off).toHaveBeenCalledWith('click', 'parcels-label-cluster', expect.any(Function))
-    expect(ml.off).toHaveBeenCalledWith('mousemove', expect.any(Function))
-  })
-
-  it('does nothing until the map goes idle', () => {
-    const { setData } = setup()
-    expect(setData).not.toHaveBeenCalled()
-  })
-
-  it('only calls setData once when repeated idles produce the same features, avoiding an idle -> setData -> render -> idle cycle', () => {
-    const feature = {
-      properties: { id: 'SD7148-9160' },
-      geometry: polygon([
-        [-2.5, 51.4],
-        [-2.4, 51.4],
-        [-2.4, 51.5],
-        [-2.5, 51.5]
-      ])
-    }
-    const { ml, setData } = setup({ sourceFeatures: [feature] })
-
-    ml._emit('idle')
-    ml._emit('idle')
-    ml._emit('idle')
-
-    expect(setData).toHaveBeenCalledTimes(1)
-  })
-
-  it('calls setData again once the underlying features actually change', () => {
-    const feature = {
-      properties: { id: 'SD7148-9160' },
-      geometry: polygon([
-        [-2.5, 51.4],
-        [-2.4, 51.4],
-        [-2.4, 51.5],
-        [-2.5, 51.5]
-      ])
-    }
-    const querySourceFeatures = vi.fn().mockReturnValue([feature])
-    const setData = vi.fn()
-    const ml = makeMlMap({
-      getSource: vi.fn().mockReturnValue({ setData }),
-      querySourceFeatures
-    })
-    attachParcelLabels({ ml, cleanups: [] })
-
-    ml._emit('idle')
-    expect(setData).toHaveBeenCalledTimes(1)
-
-    const moved = {
-      ...feature,
-      geometry: polygon([
-        [-2.9, 51.4],
-        [-2.8, 51.4],
-        [-2.8, 51.5],
-        [-2.9, 51.5]
-      ])
-    }
-    querySourceFeatures.mockReturnValue([moved])
-    ml._emit('idle')
-
-    expect(setData).toHaveBeenCalledTimes(2)
-  })
-
-  it('builds one labelled point per parcel id from its rendered fragment', () => {
-    const feature = {
-      properties: { id: 'SD7148-9160' },
-      geometry: polygon([
-        [-2.5, 51.4],
-        [-2.4, 51.4],
-        [-2.4, 51.5],
-        [-2.5, 51.5]
-      ])
-    }
-    const { ml, setData } = setup({ sourceFeatures: [feature] })
-
-    ml._emit('idle')
-
-    expect(setData).toHaveBeenCalledTimes(1)
-    const collection = setData.mock.calls[0][0]
-    expect(collection.features).toHaveLength(1)
-    expect(collection.features[0]).toMatchObject({
-      type: 'Feature',
-      geometry: { type: 'Point', coordinates: [-2.45, 51.45] },
-      properties: { id: 'SD7148-9160', label: 'SD7148 9160' }
-    })
-  })
-
-  it('merges every fragment sharing an id into one point, so a parcel split across tiles labels once', () => {
-    // Two fragments of the same parcel, as a vector source would deliver for a
-    // polygon clipped at a tile boundary — disjoint boxes, same id.
-    const west = {
-      properties: { id: 'SD7148-9160' },
-      geometry: polygon([
-        [-2.5, 51.4],
-        [-2.45, 51.4],
-        [-2.45, 51.5],
-        [-2.5, 51.5]
-      ])
-    }
-    const east = {
-      properties: { id: 'SD7148-9160' },
-      geometry: polygon([
-        [-2.45, 51.4],
-        [-2.4, 51.4],
-        [-2.4, 51.5],
-        [-2.45, 51.5]
-      ])
-    }
-    const { ml, setData } = setup({ sourceFeatures: [west, east] })
-
-    ml._emit('idle')
-
-    const collection = setData.mock.calls[0][0]
-    expect(collection.features).toHaveLength(1)
-    // Centre of the combined bounds across both fragments, not either fragment alone.
-    expect(collection.features[0].geometry.coordinates).toEqual([-2.45, 51.45])
-  })
-
-  it('gives two distinct parcels two distinct labels', () => {
-    const a = {
-      properties: { id: 'SD7148-9160' },
-      geometry: polygon([
-        [-2.5, 51.4],
-        [-2.49, 51.4],
-        [-2.49, 51.41],
-        [-2.5, 51.41]
-      ])
-    }
-    const b = {
-      properties: { id: 'SD7148-9161' },
-      geometry: polygon([
-        [-2.3, 51.6],
-        [-2.29, 51.6],
-        [-2.29, 51.61],
-        [-2.3, 51.61]
-      ])
-    }
-    const { ml, setData } = setup({ sourceFeatures: [a, b] })
-
-    ml._emit('idle')
-
-    const ids = setData.mock.calls[0][0].features.map((f) => f.properties.id)
-    expect(ids.sort()).toEqual(['SD7148-9160', 'SD7148-9161'])
-  })
-
-  it('skips fragments with no usable id and does nothing when the label source is missing', () => {
-    const untagged = {
-      properties: {},
-      geometry: polygon([
-        [0, 0],
-        [1, 0],
-        [1, 1],
-        [0, 1]
-      ])
-    }
-    const { ml, setData } = setup({ sourceFeatures: [untagged] })
-
-    ml._emit('idle')
-    expect(setData.mock.calls[0][0].features).toHaveLength(0)
-
-    const noSource = makeMlMap({ getSource: vi.fn().mockReturnValue(undefined) })
-    attachParcelLabels({ ml: noSource, cleanups: [] })
-    expect(() => noSource._emit('idle')).not.toThrow()
   })
 
   describe('cluster click-to-zoom', () => {
@@ -354,31 +216,18 @@ describe('attachParcelLabels', () => {
     })
   })
   it.each([1, 5])('opens a complete single cluster of %i parcels at detail zoom, including on reset', (count) => {
-    const fragment = {
-      properties: { id: 'a' },
-      geometry: polygon([
-        [-2.5, 51.4],
-        [-2.4, 51.4],
-        [-2.4, 51.5],
-        [-2.5, 51.5]
-      ])
-    }
     const ml = makeMlMap({
       getSource: vi.fn().mockReturnValue({ setData: vi.fn() }),
       querySourceFeatures: vi
         .fn()
-        .mockImplementation((source) =>
-          source === 'parcels'
-            ? Array.from({ length: count }, (_, index) => ({ ...fragment, properties: { id: String(index) } }))
-            : [{ properties: count === 1 ? { id: '0' } : { cluster_id: 5, point_count: count } }]
-        ),
+        .mockReturnValue([{ properties: count === 1 ? { id: '0' } : { cluster_id: 5, point_count: count } }]),
       cameraForBounds: vi.fn().mockReturnValue({ center: [-2.45, 51.45], zoom: 9 })
     })
     const bbox = { minLng: -2.5, minLat: 51.4, maxLng: -2.4, maxLat: 51.5 }
     attachParcelLabels({
       ml,
       cleanups: [],
-      store: { parcelIds: Array.from({ length: count }, (_, index) => String(index)), metaIndex: {}, bbox }
+      store: makeStore(Array.from({ length: count }, (_, index) => String(index)))
     })
     ml._emit('idle') // update source
     ml._emit('idle') // source clustering has settled
@@ -410,45 +259,20 @@ describe('attachParcelLabels', () => {
     })
   })
 
-  it('waits for all parcels before deciding whether the initial holding has a single cluster', () => {
-    const fragment = {
-      properties: { id: 'a' },
-      geometry: polygon([
-        [0, 0],
-        [1, 0],
-        [1, 1],
-        [0, 1]
-      ])
-    }
-    const ml = makeMlMap({
-      getSource: vi.fn().mockReturnValue({ setData: vi.fn() }),
-      querySourceFeatures: vi.fn().mockReturnValue([fragment])
-    })
-    attachParcelLabels({ ml, cleanups: [], store: { parcelIds: ['a', 'b'], metaIndex: {}, bbox: null } })
+  it('waits for clustering to finish before deciding the initial view', () => {
+    const { ml } = setup(['a', 'b'])
+    ml.querySourceFeatures.mockReturnValue([{ properties: { id: 'a' } }])
     ml._emit('idle')
     ml._emit('idle')
-    expect(ml.fitBounds).not.toHaveBeenCalled()
     expect(ml.easeTo).not.toHaveBeenCalled()
+    ml.querySourceFeatures.mockReturnValue([{ properties: { cluster_id: 1, point_count: 2 } }])
+    ml._emit('idle')
+    expect(ml.fitBounds).toHaveBeenCalled()
   })
+
   it('keeps multiple MapLibre groups in the holding overview', () => {
-    const fragments = ['a', 'b'].map((id) => ({
-      properties: { id },
-      geometry: polygon([
-        [0, 0],
-        [1, 0],
-        [1, 1],
-        [0, 1]
-      ])
-    }))
-    const ml = makeMlMap({
-      getSource: vi.fn().mockReturnValue({ setData: vi.fn() }),
-      querySourceFeatures: vi
-        .fn()
-        .mockImplementation((source) =>
-          source === 'parcels' ? fragments : [{ properties: { id: 'a' } }, { properties: { id: 'b' } }]
-        )
-    })
-    attachParcelLabels({ ml, cleanups: [], store: { parcelIds: ['a', 'b'], metaIndex: {}, bbox: null } })
+    const { ml } = setup(['a', 'b'])
+    ml.querySourceFeatures.mockReturnValue([{ properties: { id: 'a' } }, { properties: { id: 'b' } }])
     ml._emit('idle')
     ml._emit('idle')
     expect(ml.easeTo).not.toHaveBeenCalled()

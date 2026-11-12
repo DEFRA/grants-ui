@@ -85,7 +85,7 @@ http://localhost:3000/example-grant-with-map/start, then continue to `/select-la
 
 The existing MapLibre GeoJSON clustering groups nearby parcel label points below zoom 11. At overview zoom, unclustered points also show a `1` badge. Badge radii are 14px for 1–4 parcels, 20px for 5–19, and 26px for 20 or more. At zoom 11, badges give way to individual parcel boundaries and references.
 
-The initial view fits the holding at overview zoom. Once all parcel labels have loaded, a holding represented by a single MapLibre cluster opens at parcel detail instead. Badge clicks fit the bounds stored on the member label points and cross the detail threshold. This uses the existing loaded vector tiles and adds no parcel-location requests or grant configuration. Counts retain the existing dependence on the parcels available in loaded tiles.
+The initial view fits the holding at overview zoom. Once MapLibre has clustered the complete holding, a single group opens at parcel detail instead. The existing bulk locate request supplies each parcel's full bounds, and badges use one stable point per parcel at its bounds centre. Badge clicks fit those bounds and cross the detail threshold. Polygon tiles only draw boundaries: parcels omitted at low tile zooms still contribute to badge counts. This requires the land-grants API locate response to include `parcels: [{ id, bounds }]`; no extra location requests or grant configuration are needed.
 
 ### When it doesn't work
 
@@ -318,14 +318,14 @@ Fetches the authenticated user's parcels from the DAL, enriches them with area d
     {
       "type": "Feature",
       "id": "SD7148-9160",
-      "properties": { "id": "SD7148-9160", "sheet_id": "SD7148", "parcel_id": "9160", "areaHa": 2.5 }
+      "properties": { "id": "SD7148-9160", "sheet_id": "SD7148", "parcel_id": "9160", "areaHa": 2.5, "bounds": { "minLng": -2.5, "minLat": 51.4, "maxLng": -2.4, "maxLat": 51.5 } }
     }
   ],
   "bbox": { "minLng": -2.5, "minLat": 51.4, "maxLng": -2.3, "maxLat": 51.6 }
 }
 ```
 
-The features carry properties only, no geometry: the component uses `PARCEL_TILES_URL` (a client-side constant in `config.js`) as the vector tile source and streams geometry from `/api/map/parcel-tiles/{z}/{x}/{y}`. Returns `503` if the land-grants API is unavailable.
+The features carry properties, including per-parcel `bounds`, but no polygon geometry: the component uses `PARCEL_TILES_URL` (a client-side constant in `config.js`) as the vector tile source and streams geometry from `/api/map/parcel-tiles/{z}/{x}/{y}`. Returns `503` if the land-grants API is unavailable.
 
 `ENABLE_LAND_GRANT_MAP_ACTION_COUNT` controls whether the map fetches action counts on load for its tooltips. It defaults to `false`; selecting a parcel still loads its count for the details panel.
 

@@ -95,6 +95,13 @@ const mockParcels = [
   { sheetId: 'SD7148', parcelId: '9160', area: { value: 2.5 } },
   { sheetId: 'SD7148', parcelId: '9161', area: { value: null } }
 ]
+const locations = {
+  bbox: { minLng: -2.5, minLat: 51.4, maxLng: -2.3, maxLat: 51.6 },
+  parcels: mockParcels.map((parcel) => ({
+    id: `${parcel.sheetId}-${parcel.parcelId}`,
+    bounds: { minLng: -2.5, minLat: 51.4, maxLng: -2.3, maxLat: 51.6 }
+  }))
+}
 const expectedUserContext = {
   defraIdToken: 'defra-id-access-token',
   sbi: '123456789'
@@ -141,26 +148,31 @@ describe('parcelsHandler', () => {
 
   it('returns features and bbox on success', async () => {
     fetchParcels.mockResolvedValue(mockParcels)
-    fetchParcelTileLocation.mockResolvedValue({ minLng: -2.5, minLat: 51.4, maxLng: -2.3, maxLat: 51.6 })
+    locateParcelTiles.mockResolvedValue(locations)
     const h = makeH()
 
     const request = makeRequest()
     await parcelsHandler(request, h)
 
     expect(fetchParcels).toHaveBeenCalledWith(request, expectedUserContext, ['size'])
-    expect(fetchParcelTileLocation).toHaveBeenCalledWith(['SD7148-9160', 'SD7148-9161'], expectedUserContext)
+    expect(locateParcelTiles).toHaveBeenCalledWith(
+      ['SD7148-9160', 'SD7148-9161'],
+      'https://land-grants-api',
+      expectedUserContext
+    )
     const [payload] = h.response.mock.calls[0]
     expect(payload.features).toEqual([
       expect.objectContaining({ id: 'SD7148-9160' }),
       expect.objectContaining({ id: 'SD7148-9161' })
     ])
+    expect(payload.features[0].properties.bounds).toEqual(locations.parcels[0].bounds)
     expect(payload.bbox).toEqual({ minLng: -2.5, minLat: 51.4, maxLng: -2.3, maxLat: 51.6 })
     expect(payload).not.toHaveProperty('tileUrl')
   })
 
   it('marks the response as never cacheable, so a different signed-in user never sees a stale response', async () => {
     fetchParcels.mockResolvedValue(mockParcels)
-    fetchParcelTileLocation.mockResolvedValue(null)
+    locateParcelTiles.mockResolvedValue(locations)
     const h = makeH()
 
     await parcelsHandler(makeRequest(), h)
@@ -170,7 +182,7 @@ describe('parcelsHandler', () => {
 
   it('maps areaHa to null when area value is null', async () => {
     fetchParcels.mockResolvedValue([{ sheetId: 'SD7148', parcelId: '9161', area: { value: null } }])
-    fetchParcelTileLocation.mockResolvedValue(null)
+    locateParcelTiles.mockResolvedValue(locations)
     const h = makeH()
 
     await parcelsHandler(makeRequest(), h)
@@ -196,7 +208,7 @@ describe('parcelsHandler', () => {
           : []
       }
     ])
-    fetchParcelTileLocation.mockResolvedValue(null)
+    locateParcelTiles.mockResolvedValue(locations)
     const request = makeRequest()
     request.query.enabledLandActions = ['CLIG3', 'CSAM3', 'SCR2', 'WBD1']
     const h = makeH()
@@ -209,15 +221,30 @@ describe('parcelsHandler', () => {
     expect(features[0].properties.actionCount).toBe(enabled ? 2 : undefined)
   })
 
-  it('continues with null bbox when fetchParcelTileLocation returns null', async () => {
+  it('does not serve misleading badge counts when parcel locations are incomplete', async () => {
     fetchParcels.mockResolvedValue(mockParcels)
-    fetchParcelTileLocation.mockResolvedValue(null)
+    locateParcelTiles.mockResolvedValue({ ...locations, parcels: locations.parcels.slice(0, 1) })
     const h = makeH()
-
     await parcelsHandler(makeRequest(), h)
+    expect(h.code).toHaveBeenCalledWith(503)
+    expect(h.response).toHaveBeenCalledWith({ error: 'Unable to load your land parcels' })
+  })
 
-    const [{ bbox }] = h.response.mock.calls[0]
-    expect(bbox).toBeNull()
+  it('returns a generic error when locating parcels fails', async () => {
+    fetchParcels.mockResolvedValue(mockParcels)
+    locateParcelTiles.mockRejectedValue(Object.assign(new Error('upstream'), { status: 502 }))
+    const h = makeH()
+    await parcelsHandler(makeRequest(), h)
+    expect(h.code).toHaveBeenCalledWith(502)
+    expect(h.response).toHaveBeenCalledWith({ error: 'Unable to load your land parcels' })
+  })
+
+  it('returns an empty holding without requesting locations', async () => {
+    fetchParcels.mockResolvedValue([])
+    const h = makeH()
+    await parcelsHandler(makeRequest(), h)
+    expect(h.response).toHaveBeenCalledWith({ features: [], bbox: null })
+    expect(locateParcelTiles).not.toHaveBeenCalled()
   })
 
   // Every failure returns the generic body — the raw upstream message must

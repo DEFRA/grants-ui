@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest'
 import { StyleLayer } from 'maplibre-gl/src/style/style_layer.ts'
-import { createPropertyExpression, latest } from '@maplibre/maplibre-gl-style-spec'
 import {
   COMPOUND_ID_EXPR,
   buildParcelLayers,
@@ -56,15 +55,12 @@ describe('buildParcelLayers', () => {
   })
 })
 
-describe('parcel tile loading at overview zoom', () => {
-  it('keeps the vector source active for badge points while making parcel outlines transparent', () => {
-    const { outline } = buildParcelLayers(['match', ['get', 'id'], 'a', '#1d70b8', '#1d70b8'])
-    const opacity = createPropertyExpression(outline.paint['line-opacity'], latest.paint_line['line-opacity'])
-    expect(opacity.result).toBe('success')
+describe('parcel boundaries at overview zoom', () => {
+  it('hides polygon layers below detail zoom without needing tiles to build badges', () => {
+    const { fill, outline } = buildParcelLayers(['match', ['get', 'id'], 'a', '#1d70b8', '#1d70b8'])
     for (const zoom of [7, 10, 10.99, 11, 14]) {
-      // MapLibre only loads a source if at least one of its layers is not hidden.
-      expect(StyleLayer.prototype.isHidden.call(outline, zoom)).toBe(false)
-      expect(opacity.value.evaluate({ zoom })).toBe(zoom < 11 ? 0 : 1)
+      expect(StyleLayer.prototype.isHidden.call(fill, zoom)).toBe(zoom < 11)
+      expect(StyleLayer.prototype.isHidden.call(outline, zoom)).toBe(zoom < 11)
     }
   })
 })
@@ -121,7 +117,7 @@ describe('buildParcelLabelClusterLayers', () => {
       26
     ])
     expect(buildParcelLayers([]).fill.minzoom).toBe(11)
-    expect(buildParcelLayers([]).outline.minzoom).toBeUndefined()
+    expect(buildParcelLayers([]).outline.minzoom).toBe(11)
     expect(buildParcelLabelLayer().minzoom).toBe(11)
   })
 
