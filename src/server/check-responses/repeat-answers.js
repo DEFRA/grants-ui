@@ -5,6 +5,8 @@ import { getAnswerMarkdown, markdown } from '@defra/forms-engine-plugin/engine/c
 import escapeHtml from 'lodash/escape.js'
 import { formatNumberAnswer } from '../common/helpers/number-formatter.js'
 
+const NOT_PROVIDED = 'Not provided'
+
 /**
  * Associates each repeat answer row with cards built from relevant item state.
  * Run while the engine's detail items and summary rows still share their indexes.
@@ -25,7 +27,7 @@ export function buildRepeatAnswerCards(viewModel, context, returnUrl) {
 
       const list = page.getListFromState(context.relevantState)
       if (!list.length) {
-        row.value = { text: 'Not provided' }
+        row.value = { text: NOT_PROVIDED }
         return
       }
 
@@ -60,9 +62,9 @@ export function buildRepeatAnswerCards(viewModel, context, returnUrl) {
                   ? {
                       html:
                         markdown.parse(escapeHtml(getAnswerMarkdown(field, itemState)), { async: false }).trim() ||
-                        'Not provided'
+                        NOT_PROVIDED
                     }
-                  : { text: formatted || 'Not provided' }
+                  : { text: formatted || NOT_PROVIDED }
               return {
                 key: { text: evaluateTemplate(answer.title, itemContext) },
                 value: { ...value, classes: 'app-prose-scope' }
