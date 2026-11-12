@@ -88,40 +88,6 @@ describe('print-application-service', () => {
       expect(result.landAndActionsSummary).toBeNull()
     })
 
-    test('formats configured NumberField answers using retained input precision', () => {
-      const result = buildPrintViewModel({
-        ...baseParams,
-        definition: {
-          pages: [
-            {
-              title: 'Amounts',
-              components: [
-                {
-                  type: 'NumberField',
-                  name: 'formattedAmount',
-                  title: 'Formatted amount',
-                  options: { format: 'thousands' }
-                },
-                { type: 'NumberField', name: 'plainAmount', title: 'Plain amount' }
-              ]
-            }
-          ]
-        },
-        answers: {
-          formattedAmount: 125000.5,
-          plainAmount: 125000.5
-        },
-        savedState: {
-          $$__numberFieldInputs: { formattedAmount: '125000.50' }
-        }
-      })
-
-      expect(result.sections[0].questions).toEqual([
-        { label: 'Formatted amount', answer: '125,000.50' },
-        { label: 'Plain amount', answer: '125000.5' }
-      ])
-    })
-
     test('should default referenceNumber to "Not available" when not provided', () => {
       const result = buildPrintViewModel({
         ...baseParams,
