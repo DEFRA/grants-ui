@@ -38,21 +38,23 @@ describe('mapPlugin route registration', () => {
     mapPlugin.plugin.register(server)
   })
 
-  it('registers exactly the six production routes', () => {
+  it('registers the production map routes', () => {
     expect(server._routes.map((r) => r.path)).toEqual([
       ROUTES.parcels,
       ROUTES.parcelSearch,
       ROUTES.parcelBbox,
       ROUTES.parcelTiles,
       ROUTES.osBasemap,
-      ROUTES.osTiles
+      ROUTES.osTiles,
+      ROUTES.approximateLocation
     ])
   })
 
-  it('requires session auth on every route', () => {
-    for (const route of server._routes) {
+  it('requires session auth on land parcel routes and allows public form location lookups', () => {
+    for (const route of server._routes.filter((route) => route.path !== ROUTES.approximateLocation)) {
       expect(route.options.auth).toEqual({ mode: 'required', strategy: 'session' })
     }
+    expect(server._routes.find((route) => route.path === ROUTES.approximateLocation).options.auth).toBe(false)
   })
 
   it('wires each route validation schema to the matching route', () => {

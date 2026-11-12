@@ -26,16 +26,16 @@ export default class PrintSubmittedApplicationController extends StatusPageContr
   /**
    * Builds applicant details sections for forms that have showApplicantDetails enabled.
    * @param request
-   * @param {Record<string, any>} state
+   * @param {Record<string, any>} savedState
    * @param {{ metadata?: { printPage?: { showApplicantDetails?: boolean } } }} definition
    * @returns {{ person: { rows: object[] }, business: { rows: object[] }, contact: { rows: object[] } } | null}
    */
-  resolveApplicantDetailsSections(request, state, definition) {
+  resolveApplicantDetailsSections(request, savedState, definition) {
     if (!definition.metadata?.printPage?.showApplicantDetails) {
       return null
     }
 
-    const applicantData = state.additionalAnswers?.applicant
+    const applicantData = savedState.additionalAnswers?.applicant
     if (!applicantData?.customer && !applicantData?.business?.name) {
       return null
     }
@@ -53,13 +53,14 @@ export default class PrintSubmittedApplicationController extends StatusPageContr
    * Reads the YAML form definition, builds the print view model and renders the view.
    * @param {object} params
    * @param {object} params.form
-   * @param {Record<string, any>} params.state
+   * @param {Record<string, any>} params.savedState
    * @param {string} params.slug
+   * @param {Record<string, unknown>} params.answers
    * @param {{ path: string }[]} [params.relevantPages]
    * @param request
    * @param {ResponseToolkit} h
    */
-  async buildPrintResponse({ form, state, slug, relevantPages }, request, h) {
+  async buildPrintResponse({ form, savedState, slug, answers, relevantPages }, request, h) {
     const definition = this.model.def
 
     enrichDefinitionWithListItems(definition)
@@ -69,7 +70,7 @@ export default class PrintSubmittedApplicationController extends StatusPageContr
       slug
     )
 
-    const applicant = state.additionalAnswers?.applicant || {}
+    const applicant = savedState.additionalAnswers?.applicant || {}
     const customerName = applicant.customer?.name
     const sessionData = {
       contactName: customerName
@@ -80,14 +81,15 @@ export default class PrintSubmittedApplicationController extends StatusPageContr
       sbi: /** @type {string | undefined} */ (request.auth?.credentials?.sbi)
     }
 
-    const applicantDetailsSections = this.resolveApplicantDetailsSections(request, state, definition)
+    const applicantDetailsSections = this.resolveApplicantDetailsSections(request, savedState, definition)
 
     const viewModel = buildPrintViewModel({
       definition,
       form,
-      answers: state,
-      referenceNumber: state.$$__referenceNumber,
-      submittedAt: state.submittedAt,
+      answers,
+      savedState,
+      referenceNumber: savedState.$$__referenceNumber,
+      submittedAt: savedState.submittedAt,
       slug,
       sessionData,
       configurablePrintContent,
@@ -114,9 +116,9 @@ export default class PrintSubmittedApplicationController extends StatusPageContr
     return async (request, context, h) => {
       try {
         const cacheService = getFormsCacheService(request.server)
-        const state = await cacheService.getState(request)
+        const savedState = await cacheService.getState(request)
 
-        if (!state || state?.applicationStatus !== ApplicationStatus.SUBMITTED) {
+        if (!savedState || savedState?.applicationStatus !== ApplicationStatus.SUBMITTED) {
           return h.response('Application not submitted').code(statusCodes.forbidden)
         }
 
@@ -126,8 +128,9 @@ export default class PrintSubmittedApplicationController extends StatusPageContr
         return this.buildPrintResponse(
           {
             form,
-            state,
+            savedState,
             slug,
+            answers: context.relevantState,
             relevantPages: context.relevantPages
           },
           request,

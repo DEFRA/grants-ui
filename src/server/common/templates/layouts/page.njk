@@ -187,6 +187,10 @@
           data-map-component="{{ component.name | escape }}"
           data-hide-map-help-panel="{{ 'true' if component.hideMapHelpPanel else 'false' }}"
           data-zoom-to-postcode="{{ 'true' if component.zoomToPostcode else 'false' }}"
+          data-show-approximate-location="{{ 'true' if component.showApproximateLocation else 'false' }}"
+          {% if component.approximateLocationPrefix is defined %}
+            data-approximate-location-prefix="{{ component.approximateLocationPrefix | escape }}"
+          {% endif %}
         ></div>
       {% endfor %}
     </div>
