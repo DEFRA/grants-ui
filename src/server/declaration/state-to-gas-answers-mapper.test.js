@@ -73,4 +73,14 @@ describe('transformAnswerKeysToText', () => {
     const result = transformAnswerKeysToText({}, componentDefMap, listDefMap)
     expect(result).toEqual({})
   })
+
+  it('preserves ordinary and repeated hidden-field values in submission answers', () => {
+    const definitions = new Map([
+      ['internal', { type: 'HiddenField' }],
+      ['items', { type: 'RepeatPageController' }]
+    ])
+    const state = { internal: 'Saved internal value', items: [{ internal: 'Saved repeat value', quantity: 0 }] }
+
+    expect(transformAnswerKeysToText(state, definitions, listDefMap)).toEqual(state)
+  })
 })

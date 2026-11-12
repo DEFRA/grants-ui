@@ -1,4 +1,4 @@
-import { DISPLAY_ONLY_TYPES } from '~/src/server/common/helpers/print-application-service/constants.js'
+import { DISPLAY_ONLY_TYPES } from '~/src/server/common/helpers/answer-components.js'
 
 export const MOCK_DISPLAY_ONLY_COMPONENTS = [...DISPLAY_ONLY_TYPES].map((type) => ({
   type,

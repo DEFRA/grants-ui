@@ -1,5 +1,3 @@
-export const DISPLAY_ONLY_TYPES = new Set(['Html', 'Details', 'InsetText', 'Markdown', 'List', 'NotificationBanner'])
-
 export const COMPONENT_TYPES = {
   YesNoField: 'YesNoField',
   TextField: 'TextField',
