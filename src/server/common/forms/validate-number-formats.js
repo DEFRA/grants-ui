@@ -1,5 +1,5 @@
 import { SystemError } from '~/src/server/common/utils/errors/SystemError.js'
-import { isNumberFormat } from '../helpers/number-field-format.js'
+import { getNumberFormatter } from '../helpers/number-formatter.js'
 
 /**
  * @param {import('@defra/forms-model').FormDefinition} definition
@@ -24,7 +24,7 @@ function validateComponents(components) {
     if (
       component.format !== undefined ||
       component.schema?.format !== undefined ||
-      (format !== undefined && (component.type !== 'NumberField' || !isNumberFormat(format)))
+      (format !== undefined && (component.type !== 'NumberField' || !getNumberFormatter(format)))
     ) {
       throw new SystemError({
         message: `Invalid playback format for component '${component.name}'`,

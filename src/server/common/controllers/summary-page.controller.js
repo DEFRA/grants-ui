@@ -1,5 +1,5 @@
 import { SummaryPageController as EngineSummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
-import { formatNumberAnswer, isNumberFormat } from '~/src/server/common/helpers/number-field-format.js'
+import { formatNumberAnswer } from '~/src/server/common/helpers/number-formatter.js'
 
 export class GrantsSummaryPageController extends EngineSummaryPageController {
   /**
@@ -25,17 +25,10 @@ export function formatSummaryNumberAnswers(viewModel, context) {
       const component = /** @type {{ type: string, options?: { format?: string } } | undefined} */ (
         context.componentDefMap?.get(item.name)
       )
-      const value = item.state?.[item.name]
-      if (
-        component?.type !== 'NumberField' ||
-        !isNumberFormat(component.options?.format) ||
-        value === null ||
-        value === undefined ||
-        value === ''
-      ) {
+      const formatted = formatNumberAnswer(component, item.state?.[item.name], inputs?.[item.name])
+      if (formatted === undefined || formatted === '') {
         return
       }
-      const formatted = formatNumberAnswer(component, value, inputs?.[item.name])
       item.value = formatted
       const row = viewModel.checkAnswers[sectionIndex].summaryList.rows[rowIndex]
       row.value = { classes: row.value.classes, text: formatted }

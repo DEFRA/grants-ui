@@ -1,4 +1,4 @@
-import { formatThousands } from '~/src/shared/format-number.js'
+import { formatThousands, isDecimalString } from '~/src/shared/format-number.js'
 
 const SUPPORTED_CURRENCIES = new Set(Intl.supportedValuesOf('currency'))
 
@@ -11,7 +11,7 @@ const FORMATTERS = new Map()
  * @returns {NumberFormatter | undefined}
  */
 export function getNumberFormatter(format) {
-  if (typeof format !== 'string' || format.includes('|')) {
+  if (typeof format !== 'string') {
     return undefined
   }
 
@@ -28,6 +28,35 @@ export function getNumberFormatter(format) {
 }
 
 /**
+ * Formats a configured NumberField without changing its stored value.
+ * @param {{ type?: string, options?: { format?: string } } | undefined} component
+ * @param {unknown} value
+ * @param {unknown} [rawInput]
+ * @returns {string | undefined} Undefined when no number format applies.
+ */
+export function formatNumberAnswer(component, value, rawInput) {
+  if (component?.type !== 'NumberField') {
+    return undefined
+  }
+  if (typeof value !== 'number' && typeof value !== 'string') {
+    return ''
+  }
+  const formatter = getNumberFormatter(component.options?.format)
+  if (!formatter) {
+    return undefined
+  }
+
+  const displayValue =
+    isDecimalString(rawInput) &&
+    (typeof value === 'number' || isDecimalString(value)) &&
+    Number(rawInput) === Number(value)
+      ? rawInput
+      : value
+
+  return formatter(displayValue)
+}
+
+/**
  * @param {string} format
  * @returns {NumberFormatter | undefined}
  */
@@ -38,9 +67,6 @@ function createNumberFormatter(format) {
   }
   const name = parts[0].trim()
   const args = parts.length === 2 ? parts[1].split(',').map((arg) => arg.trim()) : []
-  if (args.some((arg) => !arg)) {
-    return undefined
-  }
 
   if (name === 'thousands') {
     return args.length === 0 ? formatThousands : undefined
@@ -93,21 +119,9 @@ function getIntlFormatOptions(name, args) {
  * @returns {Intl.NumberFormatOptions | undefined}
  */
 function withFractionDigits(options, value) {
-  const places = parsePlaces(value)
-  if (places === undefined) {
+  const places = Number(value)
+  if (!/^\d+$/.test(value) || places > 100) {
     return undefined
   }
   return { ...options, minimumFractionDigits: places, maximumFractionDigits: places }
-}
-
-/**
- * @param {string} value
- * @returns {number | undefined}
- */
-function parsePlaces(value) {
-  if (!/^\d+$/.test(value)) {
-    return undefined
-  }
-  const places = Number(value)
-  return places <= 100 ? places : undefined
 }

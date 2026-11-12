@@ -1,4 +1,4 @@
-import { formatNumberAnswer } from '~/src/server/common/helpers/number-field-format.js'
+import { formatNumberAnswer } from '~/src/server/common/helpers/number-formatter.js'
 import { compareParcelReferences } from '~/src/shared/format-parcel.js'
 import { COMPONENT_TYPES, MONTH_NAMES } from '~/src/server/common/helpers/print-application-service/constants.js'
 
@@ -141,7 +141,7 @@ function formatStringValue(_component, value) {
   return stringifyValue(value)
 }
 
-/** @type {Record<string, (component: Component, value: any, rawInput?: unknown) => string>} */
+/** @type {Record<string, (component: Component, value: any, rawInput?: unknown) => string | undefined>} */
 const FORMATTERS = {
   [COMPONENT_TYPES.YesNoField]: formatYesNo,
   [COMPONENT_TYPES.CheckboxesField]: formatCheckboxes,
@@ -177,7 +177,7 @@ export function formatAnswer(component, value, rawInput) {
   }
 
   const formatter = FORMATTERS[component.type]
-  return formatter ? formatter(component, value, rawInput) : stringifyValue(value)
+  return formatter?.(component, value, rawInput) ?? stringifyValue(value)
 }
 
 /**

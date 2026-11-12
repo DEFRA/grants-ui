@@ -3,7 +3,7 @@ import { ItemField } from '@defra/forms-engine-plugin/engine/models/SummaryViewM
 import { evaluateTemplate, redirectPath } from '@defra/forms-engine-plugin/engine/helpers.js'
 import { getAnswerMarkdown, markdown } from '@defra/forms-engine-plugin/engine/components/helpers/components.js'
 import escapeHtml from 'lodash/escape.js'
-import { formatNumberAnswer, isNumberFormat } from '../common/helpers/number-field-format.js'
+import { formatNumberAnswer } from '../common/helpers/number-formatter.js'
 
 /**
  * Associates each repeat answer row with cards built from relevant item state.
@@ -54,10 +54,7 @@ export function buildRepeatAnswerCards(viewModel, context, returnUrl) {
               const component = /** @type {{ type: string, options?: { format?: string } } | undefined} */ (
                 context.componentDefMap.get(field.name)
               )
-              const formatted =
-                component?.type === 'NumberField' && isNumberFormat(component.options?.format)
-                  ? formatNumberAnswer(component, itemState[field.name])
-                  : undefined
+              const formatted = formatNumberAnswer(component, itemState[field.name])
               const value =
                 formatted === undefined
                   ? {
