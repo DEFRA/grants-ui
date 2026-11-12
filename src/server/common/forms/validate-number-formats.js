@@ -22,7 +22,7 @@ function validateComponents(components) {
   for (const component of components ?? []) {
     if (requiresComponentValidation(component) && !isFormatableNumberField(component)) {
       throw new SystemError({
-        message: `Invalid playback format for component '${component.name}'`,
+        message: `Invalid display formatting for component ${component.name}`,
         source: 'validateNumberFormats',
         reason:
           'options.format must be a supported number formatter on a NumberField; schema.format and top-level format are not supported',

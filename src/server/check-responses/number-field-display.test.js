@@ -17,7 +17,7 @@ vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () =>
 function createJourney(format, controller = 'CheckResponsesPageController', view) {
   const model = new FormModel(
     configureFormDefinition({
-      name: 'Number playback',
+      name: 'Number display formatting',
       engine: 'V2',
       startPage: '/amount',
       sections: [],
@@ -108,13 +108,13 @@ function createJourney(format, controller = 'CheckResponsesPageController', view
         submittedAt: '2026-10-30T12:00:00.000Z',
         slug: 'grant',
         sessionData: {},
-        form: { name: 'Number playback' }
+        form: { name: 'Number display formatting' }
       })
     }
   }
 }
 
-describe('number playback', () => {
+describe('number display formatting', () => {
   it.each([
     ['thousands', '125000.50', '125,000.50'],
     ['decimal', '125000.567', '125,000.57'],

@@ -57,7 +57,7 @@ function restoreSavedInputs(context, names) {
 }
 
 /**
- * Retain entered precision for playback and for revisiting a number question.
+ * Retain entered precision for display formatting and for revisiting a number question.
  * @param {import('@defra/forms-engine-plugin/types').AnyFormRequest} request
  * @param {FormContext} context
  */

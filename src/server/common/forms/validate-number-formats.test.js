@@ -3,7 +3,7 @@ import { SystemError } from '../utils/errors/SystemError.js'
 
 const definition = (component) => ({ pages: [{ components: [component] }] })
 
-describe('number playback configuration', () => {
+describe('number display formatting configuration', () => {
   it.each([
     { type: 'TextField', name: 'reference', options: { format: 'thousands' } },
     { type: 'NumberField', name: 'capacity', options: { format: 'currency:invalid' } },
