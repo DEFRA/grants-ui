@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { createPageRenderer } from '~/src/server/common/test-helpers/component-helpers.js'
-import { buildPrintViewModel } from '~/src/server/common/helpers/print-application-service/print-application-service.js'
+import {
+  buildPrintViewModel,
+  enrichDefinitionWithListItems
+} from '~/src/server/common/helpers/print-application-service/print-application-service.js'
 
 const renderPage = createPageRenderer(import.meta.url, 'print-submitted-application.html')
 const normalise = (text) => text.replace(/\s+/g, ' ').trim()
@@ -41,6 +44,11 @@ const params = {
   answers: {
     selectedParcelsDisplay: 'SD1234-5678',
     landParcels: { 'SD1234-5678': { actionsObj: { CLIG3: { consents: ['sssi'] } } } },
+    projectName: 'Test project'
+  },
+  savedState: {
+    selectedParcelsDisplay: 'SD1234-5678',
+    landParcels: { 'SD1234-5678': { actionsObj: { CLIG3: { consents: ['sssi'] } } } },
     projectName: 'Test project',
     payment,
     agreementStartDate: '2026-01-01',
@@ -55,6 +63,315 @@ const params = {
 }
 
 describe('print-submitted-application.html view', () => {
+  it.each([true, false])(
+    'renders saved map hints in normal weight when the journey has a task list: %s',
+    (hasTaskList) => {
+      const components = [
+        {
+          name: 'grid',
+          type: 'EastingNorthingField',
+          title: 'Grid coordinates',
+          options: { showApproximateLocation: true }
+        },
+        {
+          name: 'point',
+          type: 'LatLongField',
+          title: 'Latitude and longitude',
+          options: { showApproximateLocation: true }
+        },
+        {
+          name: 'reference',
+          type: 'OsGridRefField',
+          title: 'Grid reference',
+          options: { showApproximateLocation: true }
+        }
+      ]
+      const answers = {
+        grid__easting: 432100,
+        grid__northing: 556200,
+        point: { latitude: 51.5, longitude: 0 },
+        reference: 'tq 30000 80000',
+        mapLocationHints: {
+          grid: { text: 'Approximate location: Washington', answer: '[432100,556200]' },
+          point: { text: 'Nearby: London', answer: '[51.5,0]' },
+          reference: { text: '<em>Nearby:</em> <img src=x onerror=alert(1)>', answer: '["TQ3000080000"]' }
+        }
+      }
+      const $ = renderPage(
+        buildPrintViewModel({
+          ...params,
+          definition: {
+            sections: [{ id: 'project', title: 'Project details' }],
+            pages: [
+              ...(hasTaskList ? [{ title: 'Tasks', controller: 'TaskListPageController' }] : []),
+              { title: 'Project location', section: 'project', components }
+            ]
+          },
+          answers: {
+            grid__easting: answers.grid__easting,
+            grid__northing: answers.grid__northing,
+            point: answers.point,
+            reference: answers.reference
+          },
+          savedState: answers
+        })
+      )
+      const rows = $('.app-submitted-answers .govuk-summary-list__value')
+      expect(rows.eq(0).text()).toContain('432100, 556200')
+      expect(rows.eq(1).text()).toContain('51.5, 0')
+      expect(rows.eq(2).text()).toContain('tq 30000 80000')
+      for (const [index, name] of ['grid', 'point', 'reference'].entries()) {
+        expect(rows.eq(index).find('p').text()).toBe(answers.mapLocationHints[name].text)
+      }
+      expect(rows.find('strong, b, em, img')).toHaveLength(0)
+      expect($('.app-submitted-answers a')).toHaveLength(0)
+    }
+  )
+
+  it.each([
+    { setting: undefined, hint: { text: 'Hidden location', answer: '[432100,556200]' } },
+    { setting: false, hint: { text: 'Hidden location', answer: '[432100,556200]' } },
+    { setting: true, hint: undefined },
+    { setting: true, hint: { text: 'Stale location', answer: '[432101,556200]' } },
+    { setting: true, hint: { text: 'Wrong answer type', answer: undefined } }
+  ])('omits disabled, missing and stale hints while retaining coordinates (%j)', ({ setting, hint }) => {
+    const $ = renderPage(
+      buildPrintViewModel({
+        ...params,
+        definition: {
+          pages: [
+            {
+              title: 'Project location',
+              components: [
+                {
+                  name: 'location',
+                  type: 'EastingNorthingField',
+                  title: 'Location',
+                  options: { showApproximateLocation: setting }
+                }
+              ]
+            }
+          ]
+        },
+        answers: {
+          location__easting: 432100,
+          location__northing: 556200
+        },
+        savedState: { mapLocationHints: { location: hint } }
+      })
+    )
+    const row = $('.app-submitted-answers .govuk-summary-list__value').first()
+    expect(normalise(row.text())).toBe('432100, 556200')
+    expect(row.find('p')).toHaveLength(0)
+  })
+
+  describe('saved repeat items', () => {
+    function repeatParams(hasTaskList = true) {
+      return {
+        ...params,
+        savedState: {},
+        definition: enrichDefinitionWithListItems({
+          sections: [{ id: 'water', title: 'Water storage' }],
+          lists: [{ id: 'lining-options', items: [{ text: 'Clay lining', value: 'clay' }] }],
+          pages: [
+            ...(hasTaskList ? [{ title: 'Tasks', controller: 'TaskListPageController' }] : []),
+            {
+              path: '/before',
+              title: 'Before repeats',
+              section: 'water',
+              components: [{ type: 'TextField', name: 'before', title: 'Before repeats' }]
+            },
+            {
+              path: '/reservoirs',
+              title: 'Reservoir details',
+              controller: 'RepeatPageController',
+              section: 'water',
+              repeat: { options: { name: 'reservoirItems', title: 'Reservoir' } },
+              components: [
+                { type: 'TextField', name: 'name', title: 'Reservoir name' },
+                { type: 'NumberField', name: 'capacity', title: 'Storage capacity' },
+                { type: 'RadiosField', name: 'lining', title: 'Lining', list: 'lining-options' },
+                { type: 'YesNoField', name: 'covered', title: 'Covered' },
+                { type: 'DatePartsField', name: 'built', title: 'Date built' },
+                { type: 'MultilineTextField', name: 'notes', title: 'Notes', options: { required: false } },
+                { type: 'Html', name: 'help', title: 'Help text' },
+                { type: 'TextField', name: '$$internal', title: 'Internal' }
+              ]
+            },
+            {
+              path: '/after',
+              title: 'After repeats',
+              section: 'water',
+              components: [{ type: 'TextField', name: 'after', title: 'After repeats' }]
+            },
+            {
+              path: '/tanks',
+              title: 'Tank details',
+              controller: 'RepeatPageController',
+              section: 'water',
+              repeat: { options: { name: 'tanks', title: 'Tank' } },
+              components: [{ type: 'TextField', name: 'tankName', title: 'Tank name' }]
+            }
+          ]
+        }),
+        answers: {
+          before: 'First saved answer',
+          after: 'Last saved answer',
+          name: 'Stale top-level reservoir',
+          tankName: 'Stale top-level tank',
+          reservoirItems: [
+            {
+              itemId: 'first-reservoir',
+              name: 'North reservoir',
+              capacity: 0,
+              lining: 'clay',
+              covered: false,
+              built__day: 1,
+              built__month: 11,
+              built__year: 2026,
+              notes: 'First line\nSecond line',
+              help: 'Help text',
+              $$internal: 'Internal value'
+            },
+            { itemId: 'second-reservoir', name: 'South reservoir', capacity: 200000, covered: true, notes: null }
+          ],
+          tanks: [{ itemId: 'first-tank', tankName: 'Rainwater tank' }]
+        }
+      }
+    }
+
+    it('excludes notification banners from repeat item answers even when unanswered fields are included', () => {
+      const saved = repeatParams()
+      saved.definition.pages
+        .find((page) => page.path === '/reservoirs')
+        .components.push({
+          type: 'NotificationBanner',
+          name: 'notice',
+          title: 'Important'
+        })
+
+      const $ = renderPage(buildPrintViewModel(saved))
+      const labels = $('.app-submitted-answers .govuk-summary-list__key')
+        .map((_, key) => normalise($(key).text()))
+        .get()
+
+      expect(labels).not.toContain('Important')
+      expect(labels.filter((label) => label === 'Reservoir name')).toHaveLength(2)
+      expect(normalise($('main').text())).toContain('North reservoir')
+      expect(normalise($('main').text())).toContain('South reservoir')
+    })
+
+    it.each([true, false])('renders all item fields in order with task grouping: %s', (hasTaskList) => {
+      const saved = repeatParams(hasTaskList)
+      const originalAnswers = structuredClone(saved.answers)
+      const $ = renderPage(buildPrintViewModel(saved))
+      const cards = $('.govuk-summary-card')
+      expect(
+        cards
+          .find('h3')
+          .map((_, title) => $(title).text().trim())
+          .get()
+      ).toEqual(['Reservoir 1', 'Reservoir 2', 'Tank 1'])
+      expect(
+        cards
+          .first()
+          .find('.govuk-summary-list__row')
+          .map((_, row) => normalise($(row).text()))
+          .get()
+      ).toEqual([
+        'Reservoir name North reservoir',
+        'Storage capacity 0',
+        'Lining Clay lining',
+        'Covered No',
+        'Date built 1 November 2026',
+        'Notes (optional) First line Second line'
+      ])
+      expect(
+        cards
+          .eq(1)
+          .find('.govuk-summary-list__row')
+          .map((_, row) => normalise($(row).text()))
+          .get()
+      ).toEqual([
+        'Reservoir name South reservoir',
+        'Storage capacity 200000',
+        'Lining Not provided',
+        'Covered Yes',
+        'Date built Not provided',
+        'Notes (optional) Not provided'
+      ])
+      expect(normalise(cards.last().text())).toBe('Tank 1 Tank name Rainwater tank')
+      const content = $('main').text()
+      expect(content.indexOf('First saved answer')).toBeLessThan(content.indexOf('Reservoir 1'))
+      expect(content.indexOf('Reservoir 2')).toBeLessThan(content.indexOf('Last saved answer'))
+      expect(content.indexOf('Last saved answer')).toBeLessThan(content.indexOf('Tank 1'))
+      expect(content).not.toContain('Stale top-level')
+      expect(content).not.toContain('Help text')
+      expect(content).not.toContain('Internal value')
+      expect(content).not.toContain('You have added')
+      expect(cards.find('a, table, dl dl')).toHaveLength(0)
+      expect(cards.find('.app-submitted-answers')).toHaveLength(3)
+      expect(cards.first().find('br')).toHaveLength(1)
+      expect($('main h2').text()).toBe(hasTaskList ? 'Water storage' : 'Submitted answers')
+      expect(saved.answers).toEqual(originalAnswers)
+    })
+
+    it('omits repeat pages outside the relevant journey even when saved items exist', () => {
+      const saved = repeatParams()
+      const $ = renderPage(
+        buildPrintViewModel({
+          ...saved,
+          savedState: saved.answers,
+          answers: { reservoirItems: saved.answers.reservoirItems }
+        })
+      )
+      expect($('.govuk-summary-card')).toHaveLength(2)
+      expect($('main').text()).not.toContain('Rainwater tank')
+    })
+
+    it.each([true, false])('uses relevant state for answer rows with task grouping: %s', (hasTaskList) => {
+      const saved = repeatParams(hasTaskList)
+      const relevantState = { before: saved.answers.before, reservoirItems: saved.answers.reservoirItems }
+      const $ = renderPage(buildPrintViewModel({ ...saved, answers: relevantState, savedState: saved.answers }))
+
+      expect($('.govuk-summary-card')).toHaveLength(2)
+      expect($('main').text()).toContain('First saved answer')
+      expect($('main').text()).toContain('North reservoir')
+      expect($('main').text()).toContain('South reservoir')
+      expect($('main').text()).not.toContain('Last saved answer')
+      expect($('main').text()).not.toContain('Rainwater tank')
+    })
+
+    it.each([
+      ['empty', []],
+      ['missing', undefined],
+      ['invalid', 'invalid'],
+      ['invalid items', [null]]
+    ])('handles %s repeat collections', (_label, tanks) => {
+      const saved = repeatParams()
+      saved.answers.tanks = tanks
+      const $ = renderPage(buildPrintViewModel(saved))
+      expect($('.govuk-summary-card')).toHaveLength(2)
+      expect($('main').text()).not.toContain('Tank name')
+      expect($('main').text()).not.toContain('Stale top-level')
+    })
+
+    it('escapes item titles and values while preserving multiline answers', () => {
+      const saved = repeatParams()
+      saved.definition.pages.find((page) => page.path === '/reservoirs').repeat.options.title = '<b>Reservoir</b>'
+      saved.answers.reservoirItems[0].name = '<img src=x onerror=alert(1)>'
+      saved.answers.reservoirItems[0].notes = '<script>alert(1)</script>\nA & B'
+      const $ = renderPage(buildPrintViewModel(saved))
+      const card = $('.govuk-summary-card').first()
+      expect(card.find('img, script, b')).toHaveLength(0)
+      expect(card.find('h3').text().trim()).toBe('<b>Reservoir</b> 1')
+      expect(card.text()).toContain('<img src=x onerror=alert(1)>')
+      expect(card.text()).toContain('<script>alert(1)</script>')
+      expect(card.text()).toContain('A & B')
+      expect(card.find('br')).toHaveLength(1)
+    })
+  })
+
   it.each([true, false])('renders saved derived answers when the journey has a task list: %s', (hasTaskList) => {
     const $ = renderPage(
       buildPrintViewModel({
@@ -81,7 +398,7 @@ describe('print-submitted-application.html view', () => {
             }
           }
         },
-        answers: { additionalAnswers: { totalScore: 0, totalEstimatedCost: 125000 } }
+        savedState: { additionalAnswers: { totalScore: 0, totalEstimatedCost: 125000 } }
       })
     )
 
@@ -143,7 +460,8 @@ describe('print-submitted-application.html view', () => {
             questionPage('empty', 'unanswered')
           ]
         },
-        answers: { one: 'Answer one', two: 'Answer two', three: 'Answer three' }
+        answers: { one: 'Answer one', two: 'Answer two', three: 'Answer three' },
+        savedState: {}
       })
     )
 
@@ -164,7 +482,8 @@ describe('print-submitted-application.html view', () => {
         definition: {
           pages: [{ title: 'Tasks', controller: 'TaskListPageController' }, ...params.definition.pages]
         },
-        answers: { projectName: 'Test project' }
+        answers: { projectName: 'Test project' },
+        savedState: {}
       })
     )
 
@@ -223,6 +542,9 @@ describe('print-submitted-application.html view', () => {
         ...params,
         answers: {
           selectedParcelsDisplay: 'SD1234-5678',
+          landParcels: ['SD1234-5678']
+        },
+        savedState: {
           landParcels: ['SD1234-5678'],
           payment: {
             ...payment,
@@ -249,7 +571,10 @@ describe('print-submitted-application.html view', () => {
         answers: {
           selectedParcelsDisplay: 'SD1234-5678',
           landParcels: ['SD1234-5678'],
-          projectName: 'Woodland management plan',
+          projectName: 'Woodland management plan'
+        },
+        savedState: {
+          landParcels: ['SD1234-5678'],
           payment: {
             frequency: 'Single',
             agreementStartDate: '2026-01-01',
@@ -283,7 +608,8 @@ describe('print-submitted-application.html view', () => {
     const $ = renderPage(
       buildPrintViewModel({
         ...params,
-        answers: { selectedParcelsDisplay: 'SD1234-5678', landParcels: ['SD1234-5678'] }
+        answers: { selectedParcelsDisplay: 'SD1234-5678', landParcels: ['SD1234-5678'] },
+        savedState: {}
       })
     )
 

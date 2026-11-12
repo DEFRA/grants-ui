@@ -7,21 +7,19 @@ export default class PrintSubmittedApplicationPage {
     return (await this.page.locator("//p[contains(text(),'Application number:')]/strong").textContent()).trim()
   }
 
+  /** Rows of the main answer lists; repeat item cards are checked separately. */
   async submittedAnswers() {
-    const submittedAnswers = []
+    const rows = this.page.locator('main .app-submitted-answers > .govuk-summary-list__row')
+    await rows.first().waitFor({ state: 'visible' })
 
-    for (let i = 1; ; i++) {
-      const row = this.page.locator(`//h2[text()='Submitted answers']/following-sibling::dl/div[${i}]`)
-      if (!(await row.isVisible().catch(() => false))) {
-        break
-      }
-
-      const question = (await row.locator('dt').textContent()).trim()
-      const answer = (await row.locator('dd:nth-child(2)').textContent()).trim()
-      submittedAnswers.push({ question, answer })
-    }
-
-    return submittedAnswers
+    return rows.evaluateAll((elements) =>
+      elements
+        .filter((row) => !row.closest('.govuk-summary-card'))
+        .map((row) => ({
+          question: row.querySelector('dt').textContent.trim(),
+          answer: row.querySelector('dd:nth-child(2)').textContent.trim()
+        }))
+    )
   }
 
   async applicantDetails() {
