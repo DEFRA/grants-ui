@@ -5,6 +5,7 @@ import { getTaskPageBackLink } from '~/src/server/task-list/task-list.helper.js'
 import { buildConfirmLandAndActionsViewModel } from '~/src/server/land-grants/view-models/confirm-land-and-actions.view-model.js'
 import { CONFIRM_LAND_AND_ACTIONS_PATH } from '~/src/server/land-grants/utils/confirm-land-and-actions-navigation.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
+import { applyRepeatAnswerCards, buildRepeatAnswerCards } from './repeat-answers.js'
 
 export default class CheckResponsesPageController extends SummaryPageController {
   /**
@@ -338,6 +339,7 @@ export default class CheckResponsesPageController extends SummaryPageController 
     const sectionTitle = this.section?.hideTitle !== true ? this.section?.title : ''
 
     this.#excludeCheckDetailsEntries(viewModel)
+    const repeatCards = buildRepeatAnswerCards(viewModel, context, this.getHref(this.path))
     const state = /** @type {Record<string, any>} */ (/** @type {unknown} */ (context?.state ?? {}))
     const hasLandAndActionsSummary = this.#applyLandParcels(viewModel, state)
     this.#appendAdditionalSections(
@@ -347,6 +349,7 @@ export default class CheckResponsesPageController extends SummaryPageController 
       context.relevantPages,
       hasLandAndActionsSummary ? new Set(['totalPayment']) : undefined
     )
+    applyRepeatAnswerCards(viewModel, repeatCards)
 
     // SummaryViewModel is a class with a private `summaryDetails` member and does not
     // permit extra properties (`sectionTitle`), so a structural spread cannot satisfy

@@ -11,6 +11,11 @@ export function componentMapOptions(page) {
     .map((field) => ({
       name: field.name,
       hideMapHelpPanel: field.options?.hideMapHelpPanel !== false,
-      zoomToPostcode: field.options?.zoomToPostcode !== false
+      zoomToPostcode: field.options?.zoomToPostcode !== false,
+      showApproximateLocation: field.type !== 'GeospatialField' && field.options?.showApproximateLocation === true,
+      approximateLocationPrefix:
+        typeof field.options?.approximateLocationPrefix === 'string'
+          ? field.options.approximateLocationPrefix
+          : undefined
     }))
 }
