@@ -25,8 +25,15 @@
 
 /**
  * @typedef {object} WoodlandClaimPaymentContext
- * @property {number} totalAreaHa
+ * @property {WoodlandClaimData} data
  * @property {string} applicationId
  * @property {string} sbi
  * @property {string} [crn]
+ */
+
+/**
+ * GAS available claim data used to calculate a woodland claim payment.
+ * @typedef {object} WoodlandClaimData
+ * @property {{ value: number }} totalHectares
+ * @property {{ value: number }} originalTotalHectares
  */

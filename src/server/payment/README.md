@@ -128,9 +128,11 @@ Payment calculations go through the Land Grants API. The client layer ([`land-gr
 | ---------------- | --------------------------------------------------- | -------------------------------------------------------------------- |
 | `multiAction`    | `POST /api/v2/payments/calculate`                   | `{ parcel: [{ sheetId, parcelId, actions: [{ code, quantity }] }] }` |
 | `wmp`            | `POST /api/v1/wmp/payments/calculate`               | `{ parcelIds, newWoodlandAreaHa, oldWoodlandAreaHa }`                |
-| `woodland-claim` | `POST /api/v1/wmp/payments/calculate-by-total-area` | `{ totalAreaHa, applicationId, sbi, crn }`                           |
+| `woodland-claim` | `POST /api/v1/wmp/payments/calculate-by-total-area` | `{ totalAreaHa, originalTotalAreaHa, applicationId, sbi, crn }`      |
 
 `multiAction` and `wmp` are currently configured on `PaymentPageController` pages (e.g. `farm-payments.yaml`, `woodland.yaml`). `woodland-claim` is currently only configured on a `StartClaimPageController` page (the claims journey's "Review your claim" page) — not on a `PaymentPageController` page.
+
+`StartClaimPageController` passes the first available GAS claim's `data` block to the `woodland-claim` strategy. The strategy maps `totalHectares.value` to `totalAreaHa` and `originalTotalHectares.value` to `originalTotalAreaHa`. Both areas are sent unchanged so the Land Grants API can calculate payment using the lower area.
 
 ### `multiAction` response
 
