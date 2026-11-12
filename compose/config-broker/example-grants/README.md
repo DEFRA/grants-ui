@@ -27,21 +27,6 @@ it does not remove real grant applications or downstream GAS applications.
 Selected example form-definition overrides are reapplied after a manual refresh;
 real grant overrides are left untouched. Resets run only after successful ingestion.
 
-### Format demo
-
-Open `http://localhost:3000/format-demo/start` to compare NumberField playback formatters.
-The first page accepts GBP currency, an unformatted volume in m³, grouped digits, a
-fixed-two-decimal number and currency with explicit precision. For example, entering
-`125000.5` for `currency:gbp,4` displays `£125,000.5000`.
-Each field's hint gives an example input; the next page labels the answers with their configured format.
-Set each field's `options.format` alongside presentation settings such as `options.prefix`; keep input-validation settings such as `precision` in `schema`.
-
-Use **Change** to edit an answer or **Continue** on the review page to try another set of
-values. Inputs retain their original precision, even when playback rounds the number.
-This two-page demo does not submit an application and needs no land-grants service.
-Edit `format-demo/grants-ui/format-demo.yaml` and run `gt refresh-examples` to publish
-changes.
-
 ## Technical versions and ingestion
 
 There are no independent releases, tags or manual version bumps for these files.

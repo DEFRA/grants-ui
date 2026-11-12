@@ -126,49 +126,15 @@ The Grants UI service supports a comprehensive set of form input components, eac
   - Custom validation messages
 - **Example**: [Example Grant – Number field page (/number-field)](../compose/config-broker/example-grants/example-grant-with-auth/grants-ui/example-grant-with-auth.yaml) – project cost entry with £ prefix and range validation
 
-Set `options.format` on a `NumberField`, including on a repeating page, to format its answer on
-Check answers and the submitted application print page. Formatter names are case-sensitive:
+Set `options.format` on a `NumberField` to format answers on Check answers and print pages.
 
-| Formatter   | Arguments          | Behaviour                                          |
-| ----------- | ------------------ | -------------------------------------------------- |
-| `thousands` | none               | Group digits and preserve decimal precision        |
-| `decimal`   | optional `:places` | Fixed two decimals by default                      |
-| `currency`  | `:code[,places]`   | Currency symbol and standard or explicit precision |
-
-Use `name[:argument[,argument...]]` to select one formatter with optional arguments.
-Whitespace around the name and arguments is ignored. Empty or extra arguments, unknown names,
-multiple colons, quoted values, escaping and pipe chaining are invalid.
-`places` is an integer from 0 to 100 (digit strings such as `04` are accepted). Currency `code` is a
-three-letter ISO currency supported by the runtime; it is case-insensitive and normalized
-for formatting. Currency conversion is never performed.
-
-```yaml
-- type: NumberField
-  name: projectCost
-  title: Project cost
-  schema:
-    precision: 4
-  options:
-    format: currency:gbp,4
-```
-
-`decimal` defaults to two places, while an explicit `places` value displays exactly that many
-decimals. `currency` uses the currency's standard precision unless `places` is supplied.
-For example, `currency:gbp,4` displays `125000.5` as `£125,000.5000`.
-An explicitly supplied precision must be valid; only an omitted precision uses these defaults.
-
-Formatting uses the `en-GB` locale. Editable inputs stay ungrouped. Non-repeating number fields retain entered
-precision, including after validation errors; repeated answers use each item's saved numeric value.
-Submissions stay numeric and are not scaled or rounded by playback formatting.
-Print formatting reads retained input precision from the full saved state while displaying only applicable form answers.
-`schema.precision` still controls input validation; set it high enough for accepted fractions
-or decimal values. Input `options.prefix` and `options.suffix` are separate from playback
-formatting. Formatting accepts no arbitrary expressions.
-
-Omit `options.format` for identifiers such as SBIs and years. `schema.format`, top-level `format`, unsupported
-formatters and formatting on other component types are rejected when the definition is loaded.
-Older numeric answers and repeated answers retain only the precision available in saved state; `thousands`
-cannot recover discarded trailing zeros. Land-action review and print cards continue to group quantities.
+| `options.format` | Input      | Display         |
+| ---------------- | ---------- | --------------- |
+| `thousands`      | `125000.5` | `125,000.5`     |
+| `decimal`        | `125000.5` | `125,000.50`    |
+| `decimal:4`      | `125000.5` | `125,000.5000`  |
+| `currency:gbp`   | `125000.5` | `£125,000.50`   |
+| `currency:gbp,4` | `125000.5` | `£125,000.5000` |
 
 ### Date Components
 
