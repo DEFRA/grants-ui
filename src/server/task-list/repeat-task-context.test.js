@@ -5,6 +5,7 @@ import { RepeatPageController } from '@defra/forms-engine-plugin/controllers/Rep
 import TaskListPageController from './task-list-page.controller.js'
 import TaskPageController from './task-page.controller.js'
 import { enableRepeatTaskContext } from './repeat-task-context.js'
+import { enableRepeatPageItemNames } from '../common/helpers/repeat-page-item-names.js'
 import { buildTaskListData, getCompletionStats } from './task-list.helper.js'
 
 // Use the installed engine to cover its repeat validation and handler dispatch.
@@ -115,6 +116,7 @@ function createJourney({ tasklist = {}, min = 1, max = 3, sameSection = false, s
         request,
         h,
         () => {
+          enableRepeatPageItemNames(request)
           enableRepeatTaskContext(request)
           return h.continue
         },
@@ -238,15 +240,17 @@ describe('repeat task context with the forms engine', () => {
     const deletePath = `${add.location}/confirm-delete`
     const confirm = await journey.dispatch(deletePath)
     expect(confirm.viewName).toBe('item-delete')
+    expect(confirm.viewModel.pageTitle).toBe('Are you sure you want to remove this item?')
+    expect(confirm.viewModel.backLink).toEqual({ href: '/grant/items/summary', text: 'Back' })
     const deleted = await journey.dispatch(deletePath, { method: 'post', payload: { confirm: true } })
     expect(deleted.location).toBe('/grant/items/summary')
     expect(journey.state().items).toHaveLength(1)
   })
 
   it.each([
-    [2, 3, 1, 'continue', 'You must add at least 2 answers'],
-    [1, 2, 2, 'add-another', 'You can only add up to 2 answers'],
-    [1, 2, 3, 'continue', 'You can only add up to 2 answers']
+    [2, 3, 1, 'continue', 'You must add at least 2 items'],
+    [1, 2, 2, 'add-another', 'You can only add up to 2 items'],
+    [1, 2, 3, 'continue', 'You can only add up to 2 items']
   ])('preserves list limits min=%i max=%i count=%i action=%s', async (min, max, count, action, text) => {
     const journey = createJourney({ min, max })
     journey.state().items = Array.from({ length: count }, () => makeItem())

@@ -29,8 +29,9 @@ export async function demoPrintApplicationHandler(request, h) {
     enrichDefinitionWithListItems(definition)
 
     const answers = buildDemoPrintAnswers(definition)
+    const savedState = { ...answers }
     if (slug === 'farm-payments') {
-      answers.payment = buildDemoPayment()
+      savedState.payment = buildDemoPayment()
     }
     const demoData = buildDemoData()
 
@@ -43,6 +44,7 @@ export async function demoPrintApplicationHandler(request, h) {
       definition,
       form,
       answers,
+      savedState,
       referenceNumber: demoData.referenceNumber,
       submittedAt: new Date().toISOString(),
       slug,

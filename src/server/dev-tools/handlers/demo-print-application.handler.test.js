@@ -65,6 +65,7 @@ describe('demo-print-application.handler', () => {
         definition: mockDefinition,
         form: mockForm,
         answers: { field1: 'Demo text' },
+        savedState: { field1: 'Demo text' },
         referenceNumber: 'DEMO123',
         slug: 'test-form',
         sessionData: {
@@ -89,7 +90,8 @@ describe('demo-print-application.handler', () => {
 
     expect(buildPrintViewModel).toHaveBeenCalledWith(
       expect.objectContaining({
-        answers: { field1: 'Demo text', payment: { annualTotalPence: 100000, parcelItems: {} } }
+        answers: { field1: 'Demo text' },
+        savedState: { field1: 'Demo text', payment: { annualTotalPence: 100000, parcelItems: {} } }
       })
     )
   })
