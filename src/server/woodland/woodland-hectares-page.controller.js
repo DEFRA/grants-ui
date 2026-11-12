@@ -5,6 +5,7 @@ import { debug, LogCodes } from '~/src/server/common/helpers/logging/log.js'
 import { QuestionPageController } from '@defra/forms-engine-plugin/controllers/QuestionPageController.js'
 import { withTaskContext } from '~/src/server/task-list/task-list.helper.js'
 import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
+import { roundToFourDecimalPlaces } from '~/src/shared/round-to-decimal-places.js'
 
 /**
  * @import { AnyFormRequest, FormContext, FormSubmissionError } from '@defra/forms-engine-plugin/types'
@@ -15,8 +16,6 @@ const HECTARES_OVER_TEN_FIELD_NAME = 'hectaresTenOrOverYearsOld'
 const HECTARES_UNDER_TEN_FIELD_NAME = 'hectaresUnderTenYearsOld'
 
 const ERROR_BELOW_MINIMUM = `The total area of woodland must be at least ${MIN_WOODLAND_TOTAL_AREA_HA}ha`
-
-const truncTo4dp = (/** @type {number} */ value) => Math.trunc(value * 10000) / 10000
 
 const errorExceedsMax = (/** @type {number} */ max) =>
   `Total area of woodland cannot be more than total area of selected land parcels (${max}ha)`
@@ -62,7 +61,7 @@ export default class WoodlandHectaresPageController extends withTaskContext(Ques
    */
   getViewModel(request, context) {
     const { state } = context
-    const totalHectaresForSelectedParcels = truncTo4dp(Number(state['totalHectaresForSelectedParcels'] ?? 0))
+    const totalHectaresForSelectedParcels = Number(state['totalHectaresForSelectedParcels'] ?? 0)
     const viewModel = /** @type {Record<string, any>} */ (super.getViewModel(request, context))
 
     const guidanceIndex = viewModel.components?.findIndex(
@@ -99,10 +98,11 @@ export default class WoodlandHectaresPageController extends withTaskContext(Ques
       return missingErrors
     }
 
-    if (overTen + underTen < MIN_WOODLAND_TOTAL_AREA_HA) {
+    const totalWoodlandHa = roundToFourDecimalPlaces(overTen + underTen)
+    if (totalWoodlandHa < MIN_WOODLAND_TOTAL_AREA_HA) {
       return makeBothFieldsError(ERROR_BELOW_MINIMUM)
     }
-    if (overTen > totalHectaresForSelectedParcels || overTen + underTen > totalHectaresForSelectedParcels) {
+    if (overTen > totalHectaresForSelectedParcels || totalWoodlandHa > totalHectaresForSelectedParcels) {
       return makeBothFieldsError(errorExceedsMax(totalHectaresForSelectedParcels))
     }
     return []
@@ -189,7 +189,7 @@ export default class WoodlandHectaresPageController extends withTaskContext(Ques
       const { state } = context
       const payload = /** @type {Record<string, string>} */ (request.payload ?? {})
 
-      const totalHectaresForSelectedParcels = truncTo4dp(Number(state['totalHectaresForSelectedParcels']) || 0)
+      const totalHectaresForSelectedParcels = Number(state['totalHectaresForSelectedParcels']) || 0
       const overTen = Number.parseFloat(payload[HECTARES_OVER_TEN_FIELD_NAME])
       const underTen = Number.parseFloat(payload[HECTARES_UNDER_TEN_FIELD_NAME]) || 0
 

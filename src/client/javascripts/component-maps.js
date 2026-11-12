@@ -98,6 +98,34 @@ function hideInitialHelpPanel(field) {
   closePanel()
 }
 
+function createMapOptionsResolver(settings) {
+  const optionsByName = new Map(
+    [...(settings?.querySelectorAll('[data-map-component]') ?? [])].map((element) => {
+      const { mapComponent, hideMapHelpPanel, zoomToPostcode, showApproximateLocation, approximateLocationPrefix } =
+        /** @type {HTMLElement} */ (element).dataset
+      return [
+        mapComponent,
+        {
+          hideMapHelpPanel: hideMapHelpPanel !== 'false',
+          zoomToPostcode: zoomToPostcode !== 'false',
+          showApproximateLocation: showApproximateLocation === 'true',
+          approximateLocationPrefix
+        }
+      ]
+    })
+  )
+  return (field) => {
+    const name = field.querySelector('input[name], textarea[name]')?.getAttribute('name')?.split('__')[0]
+    return (
+      optionsByName.get(name) ?? {
+        hideMapHelpPanel: true,
+        zoomToPostcode: true,
+        showApproximateLocation: false
+      }
+    )
+  }
+}
+
 /** Initialise YAML-defined forms maps with a postcode default, preserving the engine's saved-answer/view precedence. */
 export async function initialiseComponentMaps() {
   if (!window.componentMapsEnabled) {
@@ -110,19 +138,7 @@ export async function initialiseComponentMaps() {
   }
 
   const settings = document.getElementById('component-map-settings')
-  const optionsByName = new Map(
-    [...(settings?.querySelectorAll('[data-map-component]') ?? [])].map((element) => {
-      const { mapComponent, hideMapHelpPanel, zoomToPostcode } = /** @type {HTMLElement} */ (element).dataset
-      return [
-        mapComponent,
-        { hideMapHelpPanel: hideMapHelpPanel !== 'false', zoomToPostcode: zoomToPostcode !== 'false' }
-      ]
-    })
-  )
-  const optionsFor = (field) => {
-    const name = field.querySelector('input[name], textarea[name]')?.getAttribute('name')?.split('__')[0]
-    return optionsByName.get(name) ?? { hideMapHelpPanel: true, zoomToPostcode: true }
-  }
+  const optionsFor = createMapOptionsResolver(settings)
   const locationFields = [...document.querySelectorAll('.app-location-field')]
   const geospatialFields = [...document.querySelectorAll(GEOSPATIAL_FIELD_SELECTOR)]
   const savedView = new window.URLSearchParams(window.location.search)

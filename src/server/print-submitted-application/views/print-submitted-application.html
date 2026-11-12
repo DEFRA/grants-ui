@@ -7,6 +7,57 @@
 
 {% set bodyCustomClass = "app-view-application" %}
 
+{% macro submittedAnswer(question, multiline = false) %}
+  {% if multiline %}
+    {{ question.answer | escape | nl2br }}
+  {% else %}
+    {{ question.answer }}
+  {% endif %}
+  {% if question.locationHint %}
+    <p class="govuk-body govuk-!-margin-top-1">{{ question.locationHint }}</p>
+  {% endif %}
+{% endmacro %}
+
+{% macro submittedAnswers(questions) %}
+  {% set rows = [] %}
+  {% for question in questions %}
+    {% if question.repeatItems %}
+      {% if rows | length %}
+        {{ govukSummaryList({ rows: rows, classes: "app-submitted-answers" }) }}
+        {% set rows = [] %}
+      {% endif %}
+      {% for item in question.repeatItems %}
+        {% set itemRows = [] %}
+        {% for field in item.questions %}
+          {%
+            set itemRows = itemRows.concat([{
+              key: { text: field.label, classes: "govuk-!-width-one-half" },
+              value: { html: submittedAnswer(field, true), classes: "govuk-!-width-one-half" }
+            }])
+          %}
+        {% endfor %}
+        {{
+          govukSummaryList({
+            rows: itemRows,
+            classes: "app-submitted-answers",
+            card: { title: { text: item.title, headingLevel: 3 } }
+          })
+        }}
+      {% endfor %}
+    {% else %}
+      {%
+        set rows = rows.concat([{
+          key: { text: question.label, classes: "govuk-!-width-one-half" },
+          value: { html: submittedAnswer(question), classes: "govuk-!-width-one-half" }
+        }])
+      %}
+    {% endif %}
+  {% endfor %}
+  {% if rows | length %}
+    {{ govukSummaryList({ rows: rows, classes: "app-submitted-answers" }) }}
+  {% endif %}
+{% endmacro %}
+
 {% block content %}
   {% call appTwoThirdsColumn({ columnClass: gridColumnClass(page) }) %}
     <h1 class="govuk-heading-l">{{ pageTitle }}</h1>
@@ -57,33 +108,22 @@
       {% endif %}
     {% endif %}
 
-    {% set sectionRows = [] %}
+    {% set submittedQuestions = [] %}
     {% for section in sections %}
       {% if groupAnswersByTask %}
-        {% set sectionRows = [] %}
-      {% endif %}
-      {% for question in section.questions %}
-        {%
-          set sectionRows = sectionRows.concat([{
-            key: { text: question.label, classes: "govuk-!-width-one-half" },
-            value: { text: question.answer, classes: "govuk-!-width-one-half" }
-          }])
-        %}
-      {% endfor %}
-      {% if groupAnswersByTask %}
         <h2 class="govuk-heading-m">{{ section.title }}</h2>
-        {% if sectionRows | length %}
-          {{ govukSummaryList({ rows: sectionRows, classes: "app-submitted-answers" }) }}
-        {% endif %}
+        {{ submittedAnswers(section.questions) }}
         {% if section.showLandAndActions %}
           {{ landParcelCards({ parcels: landAndActionsSummary.parcels, readOnly: true }) }}
           {{ paymentSummaryCard(landAndActionsSummary) }}
         {% endif %}
+      {% else %}
+        {% set submittedQuestions = submittedQuestions.concat(section.questions) %}
       {% endif %}
     {% endfor %}
-    {% if not groupAnswersByTask and sectionRows | length %}
+    {% if not groupAnswersByTask and submittedQuestions | length %}
       <h2 class="govuk-heading-m">Submitted answers</h2>
-      {{ govukSummaryList({ rows: sectionRows, classes: "app-submitted-answers" }) }}
+      {{ submittedAnswers(submittedQuestions) }}
     {% endif %}
 
     {% if landAndActionsSummary and not landAndActionsGrouped %}

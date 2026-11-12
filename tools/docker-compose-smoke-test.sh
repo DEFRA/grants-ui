@@ -93,8 +93,12 @@ cleanup() {
 
   if [ "${status}" -ne 0 ]; then
     echo ""
-    echo "Failure detected; dumping docker compose diagnostics before cleanup..."
-    dump_diagnostics
+    if [ "${ACCEPTANCE_DIAGNOSTICS:-false}" = "true" ]; then
+      echo "Failure detected; dumping docker compose diagnostics before cleanup..."
+      dump_diagnostics
+    else
+      echo "Failure detected. Set ACCEPTANCE_DIAGNOSTICS=true to dump docker compose diagnostics on failure."
+    fi
   fi
 
   echo ""

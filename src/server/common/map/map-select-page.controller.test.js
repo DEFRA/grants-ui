@@ -2,10 +2,13 @@
 import { vi } from 'vitest'
 import MapSelectPageController from './map-select-page.controller.js'
 import { setupControllerMocks } from '~/src/__mocks__/controller-mocks.js'
-import { fetchActionsForParcel } from '~/src/server/land-grants/services/land-grants.service.js'
+import { fetchActionsForParcel, fetchParcels } from '~/src/server/land-grants/services/land-grants.service.js'
 import { isNoActionsMockEnabled } from '~/src/server/common/helpers/mock-overrides.js'
 import { getLandGrantsUserContext } from '~/src/server/land-grants/services/land-grants-user-context.js'
 import { log, error, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import { logUpstreamError } from '~/src/server/common/helpers/logging/upstream-error.js'
+
+vi.mock('~/src/server/common/helpers/logging/upstream-error.js', () => ({ logUpstreamError: vi.fn() }))
 
 const PAGE_PATH = '/select-land-parcel'
 
@@ -29,7 +32,8 @@ vi.mock('~/src/server/task-list/task-list.helper.js', async (importOriginal) => 
 })
 
 vi.mock('~/src/server/land-grants/services/land-grants.service.js', () => ({
-  fetchActionsForParcel: vi.fn()
+  fetchActionsForParcel: vi.fn(),
+  fetchParcels: vi.fn()
 }))
 
 vi.mock('~/src/server/common/helpers/mock-overrides.js', () => ({
@@ -69,7 +73,7 @@ const expectNoActionsError = (h, parcelReferences = ['SD7148 9160'], selectedPar
     expect.objectContaining({
       errors: parcelReferences.map((reference) => ({
         html: noEligibleActionsError(reference),
-        href: '#parcel-map'
+        href: '#land-parcels'
       })),
       selectedParcelIds
     })
@@ -78,8 +82,10 @@ const expectNoActionsError = (h, parcelReferences = ['SD7148 9160'], selectedPar
 describe('MapSelectPageController', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    fetchParcels.mockResolvedValue([{ sheetId: 'SD7148', parcelId: '9160', area: { value: 1.5 }, actions: [] }])
     isNoActionsMockEnabled.mockReturnValue(false)
   })
+  afterEach(() => vi.restoreAllMocks())
 
   describe('constructor', () => {
     it.each([
@@ -109,13 +115,76 @@ describe('MapSelectPageController', () => {
   })
 
   describe('handleGet', () => {
+    it('requests only basic parcel data before a parcel is selected', async () => {
+      const h = makeH()
+      await makeController().handleGet(makeRequest(), makeContext(), h)
+      expect(fetchParcels).toHaveBeenCalledWith(expect.any(Object), expect.any(Object))
+    })
+
+    it('loads the list and totals on the server using the parcel service', async () => {
+      const h = makeH()
+      const request = makeRequest()
+      await makeController().handleGet(request, makeContext(), h)
+      expect(fetchParcels).toHaveBeenCalledExactlyOnceWith(request, expect.any(Object))
+      expect(h.view).toHaveBeenCalledWith(
+        'map-select-parcel',
+        expect.objectContaining({
+          parcels: [expect.objectContaining({ id: 'SD7148-9160', area: '1.5000 ha' })],
+          totalArea: '1.5000'
+        })
+      )
+    })
+
+    it('renders the parcel-fetch failure and logs the upstream error without exposing its message', async () => {
+      fetchParcels.mockRejectedValueOnce(new Error('upstream detail'))
+      const h = makeH()
+      await makeController().handleGet(makeRequest(), makeContext(), h)
+      expect(h.view).toHaveBeenCalledWith(
+        'map-select-parcel',
+        expect.objectContaining({
+          parcels: [],
+          errors: [{ text: 'Unable to load your land parcels. Try again later.' }]
+        })
+      )
+      expect(logUpstreamError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          endpoint: 'Land parcels lookup',
+          service: 'land-grants-api',
+          errorMessage: 'upstream detail'
+        }),
+        expect.any(Object)
+      )
+    })
+
+    it('logs the upstream status carried on the error code', async () => {
+      fetchParcels.mockRejectedValueOnce(Object.assign(new Error('bad gateway'), { code: 502 }))
+      await makeController().handleGet(makeRequest(), makeContext(), makeH())
+      expect(logUpstreamError).toHaveBeenCalledWith(
+        expect.objectContaining({ upstreamStatus: 502 }),
+        expect.any(Object)
+      )
+    })
+
+    it('renders the no-parcels error when the account has no land', async () => {
+      fetchParcels.mockResolvedValueOnce([])
+      const h = makeH()
+      await makeController().handleGet(makeRequest(), makeContext(), h)
+      expect(h.view).toHaveBeenCalledWith(
+        'map-select-parcel',
+        expect.objectContaining({
+          parcels: [],
+          errors: [{ text: 'No land parcels were found for your account.' }]
+        })
+      )
+    })
+
     it.each([
       ['defaults multiSelect false and sets formAction from the path', {}, { multiSelect: false }],
       ['passes multiSelect true when the page config sets it', { multiSelect: true }, { multiSelect: true }]
-    ])('renders the map view — %s', (_name, config, expected) => {
+    ])('renders the map view — %s', async (_name, config, expected) => {
       const h = makeH()
 
-      makeController(config).handleGet(makeRequest({}, '/my-path'), makeContext(), h)
+      await makeController(config).handleGet(makeRequest({}, '/my-path'), makeContext(), h)
 
       expect(h.view).toHaveBeenCalledWith(
         'map-select-parcel',
@@ -123,10 +192,10 @@ describe('MapSelectPageController', () => {
       )
     })
 
-    it('omits selectedParcelIds, so the view renders no pre-filled hidden inputs', () => {
+    it('omits selectedParcelIds, so the view renders no pre-filled hidden inputs', async () => {
       const h = makeH()
 
-      makeController().handleGet(makeRequest(), makeContext(), h)
+      await makeController().handleGet(makeRequest(), makeContext(), h)
 
       expect(h.view).toHaveBeenCalledWith(
         'map-select-parcel',
@@ -134,10 +203,10 @@ describe('MapSelectPageController', () => {
       )
     })
 
-    it('passes the grant journey enabled actions to the map view', () => {
+    it('passes the grant journey enabled actions to the map view', async () => {
       const h = makeH()
 
-      makeController({}, { enabledLandActions: ['CLIG3', 'CSAM3'] }).handleGet(makeRequest(), makeContext(), h)
+      await makeController({}, { enabledLandActions: ['CLIG3', 'CSAM3'] }).handleGet(makeRequest(), makeContext(), h)
 
       expect(h.view).toHaveBeenCalledWith(
         'map-select-parcel',
@@ -145,12 +214,12 @@ describe('MapSelectPageController', () => {
       )
     })
 
-    it('shows Cancel and preserves the confirmation-page origin in the form action when opened from there', () => {
+    it('shows Cancel and preserves the confirmation-page origin in the form action when opened from there', async () => {
       const h = makeH()
       const request = makeRequest({}, '/select-land-parcel')
       request.query = { origin: 'confirm-land-and-actions' }
 
-      makeController().handleGet(request, makeContext(), h)
+      await makeController().handleGet(request, makeContext(), h)
 
       expect(h.view).toHaveBeenCalledWith(
         'map-select-parcel',
@@ -161,10 +230,10 @@ describe('MapSelectPageController', () => {
       )
     })
 
-    it('does not show Cancel when opened as part of the normal journey', () => {
+    it('does not show Cancel when opened as part of the normal journey', async () => {
       const h = makeH()
 
-      makeController().handleGet(makeRequest(), makeContext(), h)
+      await makeController().handleGet(makeRequest(), makeContext(), h)
 
       expect(h.view).toHaveBeenCalledWith('map-select-parcel', expect.objectContaining({ cancelHref: undefined }))
     })
@@ -172,14 +241,14 @@ describe('MapSelectPageController', () => {
 
   describe('handlePost — validation', () => {
     it.each([
-      ['no landParcels key', {}, {}, 'Select a land parcel on the map before you continue.'],
-      ['an empty string', { landParcels: '' }, {}, 'Select a land parcel on the map before you continue.'],
-      ['an empty array', { landParcels: [] }, {}, 'Select a land parcel on the map before you continue.'],
+      ['no landParcels key', {}, {}, 'Select a land parcel before you continue.'],
+      ['an empty string', { landParcels: '' }, {}, 'Select a land parcel before you continue.'],
+      ['an empty array', { landParcels: [] }, {}, 'Select a land parcel before you continue.'],
       [
         'nothing selected in multi-select mode',
         {},
         { multiSelect: true },
-        'Select at least one land parcel on the map before you continue.'
+        'Select at least one land parcel before you continue.'
       ]
     ])('re-renders with an error given %s', async (_name, payload, config, errorText) => {
       const controller = makeController(config)
@@ -189,9 +258,26 @@ describe('MapSelectPageController', () => {
 
       expect(h.view).toHaveBeenCalledWith(
         'map-select-parcel',
-        expect.objectContaining({ errors: [{ text: errorText, href: '#parcel-map' }] })
+        expect.objectContaining({ errors: [{ text: errorText, href: '#land-parcels' }] })
       )
       expect(controller.setState).not.toHaveBeenCalled()
+    })
+
+    it('keeps the validation error when the parcel list also fails to load', async () => {
+      fetchParcels.mockRejectedValueOnce(new Error('upstream detail'))
+      const h = makeH()
+
+      await makeController().handlePost(makeRequest({}), makeContext(), h)
+
+      expect(h.view).toHaveBeenCalledWith(
+        'map-select-parcel',
+        expect.objectContaining({
+          errors: [
+            { text: 'Select a land parcel before you continue.', href: '#land-parcels' },
+            { text: 'Unable to load your land parcels. Try again later.' }
+          ]
+        })
+      )
     })
   })
 

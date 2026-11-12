@@ -13,6 +13,7 @@ export const TAG_NAME = 'parcel-map'
 
 export const MULTI_SELECT_ATTRIBUTE = 'multi-select'
 export const ENABLED_LAND_ACTIONS_ATTRIBUTE = 'data-enabled-land-actions'
+export const DEFER_LOADING_ATTRIBUTE = 'defer-loading'
 
 const COLOR_GOV_UK_BLUE = '#1d70b8'
 export const PARCEL_COLORS = [
@@ -31,6 +32,11 @@ export const LAYER_LINE_WIDTH = 1.5
 export const FIT_BOUNDS_PADDING = 40
 export const AREA_DECIMAL_PLACES = 4
 export const TOTAL_AREA_DECIMAL_PLACES = 4
+export const PARCEL_DETAILS_DEBOUNCE_MS = 250
+export const PARCEL_DETAILS_LOADING_DELAY_MS = 500
+export const PARCEL_DETAILS_LOADING_MIN_DURATION_MS = 500
+// A hung consents lookup is abandoned so the details stop showing "Loading…".
+export const PARCEL_DETAILS_REQUEST_TIMEOUT_MS = 10000
 
 // Feature property carrying the compound "SHEET-PARCEL" ID, stamped onto the
 // vector tiles by the grants-ui tile proxy. The interact plugin uses it to
@@ -145,7 +151,7 @@ export const CLASS_TOOLTIP = 'parcel-map__tooltip'
 export const CLASS_TOOLTIP_TITLE = 'parcel-map__tooltip-title'
 export const CLASS_TOOLTIP_ROW = 'parcel-map__tooltip-row'
 export const CLASS_VISUALLY_HIDDEN = 'govuk-visually-hidden'
-export const SHOW_ALL_BUTTON_CLASS = 'map-reset-view-button'
+export const SHOW_ALL_BUTTON_ID = 'map-reset-view-button'
 
 export const SHOW_ALL_ICON_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false" class="im-c-icon">' +

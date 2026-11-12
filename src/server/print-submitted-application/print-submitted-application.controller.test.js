@@ -125,6 +125,16 @@ describe('PrintSubmittedApplicationController', () => {
       expect(buildPrintViewModel).toHaveBeenCalledWith(expect.objectContaining({ relevantPages }))
     })
 
+    test('passes relevant state for answer rows while retaining saved submission data', async () => {
+      const relevantState = { moreThanOneReservoir: true, reservoirItems: [] }
+
+      await controller.makeGetRouteHandler()(request, { relevantState }, h)
+
+      expect(buildPrintViewModel).toHaveBeenCalledWith(
+        expect.objectContaining({ answers: relevantState, savedState: mockState, referenceNumber: 'REF-123' })
+      )
+    })
+
     test('returns 403 when application status is not SUBMITTED', async () => {
       getFormsCacheService.mockReturnValue({
         getState: vi.fn().mockResolvedValue({ applicationStatus: ApplicationStatus.REOPENED })
@@ -183,7 +193,8 @@ describe('PrintSubmittedApplicationController', () => {
       await controller.buildPrintResponse(
         {
           form: mockDefinition,
-          state: mockState,
+          savedState: mockState,
+          answers: {},
           slug: 'test-form'
         },
         request,
@@ -203,7 +214,8 @@ describe('PrintSubmittedApplicationController', () => {
       await controller.buildPrintResponse(
         {
           form: mockDefinition,
-          state: mockState,
+          savedState: mockState,
+          answers: {},
           slug: 'test-form'
         },
         request,

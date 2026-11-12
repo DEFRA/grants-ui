@@ -314,7 +314,8 @@ describe('CommonSelectLandParcelPageController', () => {
       expect(controller.setState).not.toHaveBeenCalled()
     })
 
-    it('passes parcel area sum to GAS', async () => {
+    it('passes parcel area sum to GAS rounded to 4 decimal places', async () => {
+      // 25.3874 + 169.8586 === 195.24599999999998 in floating point
       fetchParcels.mockResolvedValue([
         { sheetId: 'S1', parcelId: 'P1', area: { value: 25.3874 } },
         { sheetId: 'S2', parcelId: 'P2', area: { value: 169.8586 } }
@@ -330,13 +331,41 @@ describe('CommonSelectLandParcelPageController', () => {
 
       await controller.handlePost(request, context, h)
 
-      const expectedTotal = 25.3874 + 169.8586
       expect(controller.mergeState).toHaveBeenCalledWith(
         request,
         context.state,
         expect.objectContaining({
-          totalHectaresForSelectedParcels: expectedTotal,
-          additionalAnswers: { totalHectaresForSelectedParcels: expectedTotal }
+          totalHectaresForSelectedParcels: 195.246,
+          additionalAnswers: { totalHectaresForSelectedParcels: 195.246 }
+        })
+      )
+    })
+
+    it('rounds each parcel area to 4 decimal places', async () => {
+      fetchParcels.mockResolvedValue([
+        { sheetId: 'S1', parcelId: 'P1', area: { value: 1.23456789 } },
+        { sheetId: 'S2', parcelId: 'P2', area: { value: '2.00004' } }
+      ])
+
+      const controller = createController()
+      const request = setupRequest('post')
+      const context = setupContext({})
+      const h = setupH()
+
+      request.payload = { landParcels: ['S1-P1', 'S2-P2'] }
+      controller.mergeState = vi.fn()
+
+      await controller.handlePost(request, context, h)
+
+      expect(controller.mergeState).toHaveBeenCalledWith(
+        request,
+        context.state,
+        expect.objectContaining({
+          landParcelMetadata: [
+            { parcelId: 'S1-P1', areaHa: 1.2346 },
+            { parcelId: 'S2-P2', areaHa: 2 }
+          ],
+          totalHectaresForSelectedParcels: 3.2346
         })
       )
     })
