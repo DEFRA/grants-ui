@@ -17,8 +17,7 @@ async function verifyToken(token) {
     const decoded = Jwt.token.decode(token)
     // @hapi/jwt's header type omits `kid`, though Defra ID tokens carry it
     const { kid } = /** @type {{ kid?: string }} */ (decoded.decoded.header)
-    const pem = convertJwkToPem(await findSigningKey(kid))
-    verifyTokenSignature(decoded, pem)
+    await verifyTokenSignature(decoded, kid)
     logSuccessfulVerification(decoded)
   } catch (error) {
     handleVerificationError(/** @type {ErrorResponse} */ (error), token)
@@ -62,19 +61,6 @@ export const jwksCachePlugin = {
 }
 
 /**
- * @param {string | undefined} kid
- * @returns {Promise<Record<string, unknown>>}
- */
-async function findSigningKey(kid) {
-  const cachedKey = (await jwks.call()).find((k) => k.kid === kid)
-  if (cachedKey) {
-    return cachedKey
-  }
-  await jwks.drop()
-  return selectSigningKey(await jwks.call(), kid)
-}
-
-/**
  * Pick the key that signed the token. During a key rotation the signing key
  * may not be first in the set, so match on the token header's `kid`.
  * @param {Record<string, unknown>[]} keys - raw JWKS `keys` array
@@ -99,11 +85,26 @@ function convertJwkToPem(key) {
 
 /**
  * @param {import('@hapi/jwt').HapiJwt.Artifacts} decoded
- * @param {string} pem
- * @returns {void}
+ * @param {string | undefined} kid
+ * @returns {Promise<void>}
  */
-function verifyTokenSignature(decoded, pem) {
-  Jwt.token.verify(decoded, { key: pem, algorithm: 'RS256' })
+async function verifyTokenSignature(decoded, kid) {
+  const cachedKey = (await jwks.call()).find((key) => key.kid === kid)
+  if (cachedKey) {
+    const pem = convertJwkToPem(cachedKey)
+    try {
+      Jwt.token.verify(decoded, { key: pem, algorithm: 'RS256' })
+      return
+    } catch (error) {
+      if (!(error instanceof Error) || error.message !== 'Invalid token signature') {
+        throw error
+      }
+    }
+  }
+
+  await jwks.drop()
+  const refreshedKey = selectSigningKey(await jwks.call(), kid)
+  Jwt.token.verify(decoded, { key: convertJwkToPem(refreshedKey), algorithm: 'RS256' })
 }
 
 /**
