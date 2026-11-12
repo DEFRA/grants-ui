@@ -337,6 +337,9 @@ pages:
         title: Example number field
         options:
           required: true
+          format: decimal:2
+        schema:
+          precision: 2
         shortDescription: Number with guidance
 
   # Task pages - Example check and submit task
