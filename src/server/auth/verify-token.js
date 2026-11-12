@@ -102,7 +102,6 @@ async function verifyTokenSignature(decoded, kid) {
     }
   }
 
-  // A provider can replace its signing key without changing the key ID.
   await jwks.drop()
   const refreshedKey = selectSigningKey(await jwks.call(), kid)
   Jwt.token.verify(decoded, { key: convertJwkToPem(refreshedKey), algorithm: 'RS256' })
