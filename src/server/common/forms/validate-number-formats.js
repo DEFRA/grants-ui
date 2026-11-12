@@ -20,8 +20,14 @@ export function validateNumberFormats(definition) {
  */
 function validateComponents(components) {
   for (const component of components ?? []) {
-    if (requiresComponentValidation(component)) {
-      validateComponent(component)
+    if (requiresComponentValidation(component) && !isFormatableNumberField(component)) {
+      throw new SystemError({
+        message: `Invalid playback format for component '${component.name}'`,
+        source: 'validateNumberFormats',
+        reason:
+          'options.format must be a supported number formatter on a NumberField; schema.format and top-level format are not supported',
+        status: 500
+      })
     }
     validateItems(component.items)
   }
@@ -37,25 +43,16 @@ function requiresComponentValidation(component) {
 }
 
 /**
- * @param {any} component
+ * @param {any} field
+ * @returns {boolean}
  */
-function validateComponent(component) {
-  if (
-    component.type === 'NumberField' &&
-    component.format === undefined &&
-    component.schema?.format === undefined &&
-    getNumberFormatter(component.options?.format)
-  ) {
-    return
-  }
-
-  throw new SystemError({
-    message: `Invalid playback format for component '${component.name}'`,
-    source: 'validateNumberFormats',
-    reason:
-      'options.format must be a supported number formatter on a NumberField; schema.format and top-level format are not supported',
-    status: 500
-  })
+function isFormatableNumberField(field) {
+  return (
+    field.type === 'NumberField' &&
+    field.format === undefined &&
+    field.schema?.format === undefined &&
+    Boolean(getNumberFormatter(field.options?.format))
+  )
 }
 
 /**
