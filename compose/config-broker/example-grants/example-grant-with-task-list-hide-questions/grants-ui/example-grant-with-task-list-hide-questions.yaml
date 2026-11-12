@@ -260,6 +260,7 @@ pages:
         type: NumberField
         options:
           prefix: £
+          format: currency:gbp
           required: true
           classes: govuk-!-width-one-third
           customValidationMessages:

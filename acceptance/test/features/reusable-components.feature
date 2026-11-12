@@ -256,8 +256,8 @@ Feature: Reusable Components
             | Radio option               | Option one                            |
             | Checkbox options           | Option two                            |
             |                            | Option three                          |
-            | Enter amount               | 100000                                |
-            | Routing amount             | 50000                                 |
+            | Enter amount               | £100,000.00                           |
+            | Routing amount             | £50,000.00                            |
             | Date                       | {DATE IN A WEEK}                      |
             | Month and year             | August 2025                           |
             | Select option              | Option three                          |
@@ -277,14 +277,14 @@ Feature: Reusable Components
             | Hidden field               | Not provided                          |
             | Project name               | Test project                          |
             | Project description        | Project description                   |
-            | Project budget             | 50000                                 |
+            | Project budget             | £50,000.00                            |
             | Select land parcels        | SD6252-7537, SD6351-8781, SD6352-8774 |
         And should see the following summary cards
             | CARD   | QUESTION  | ANSWER             |
             | Item 1 | Item name | First repeat item  |
-            |        | Amount    | 1000               |
+            |        | Amount    | £1,000.00          |
             | Item 2 | Item name | Second repeat item |
-            |        | Amount    | 2000               |
+            |        | Amount    | £2,000.00          |
         When the user chooses to change their summary answer to question "Country"
 
         # autocomplete-field
@@ -303,8 +303,8 @@ Feature: Reusable Components
             | Radio option               | Option one                            |
             | Checkbox options           | Option two                            |
             |                            | Option three                          |
-            | Enter amount               | 100000                                |
-            | Routing amount             | 50000                                 |
+            | Enter amount               | £100,000.00                           |
+            | Routing amount             | £50,000.00                            |
             | Date                       | {DATE IN A WEEK}                      |
             | Month and year             | August 2025                           |
             | Select option              | Option three                          |
@@ -324,14 +324,14 @@ Feature: Reusable Components
             | Hidden field               | Not provided                          |
             | Project name               | Test project                          |
             | Project description        | Project description                   |
-            | Project budget             | 50000                                 |
+            | Project budget             | £50,000.00                            |
             | Select land parcels        | SD6252-7537, SD6351-8781, SD6352-8774 |
         And should see the following summary cards
             | CARD   | QUESTION  | ANSWER             |
             | Item 1 | Item name | First repeat item  |
-            |        | Amount    | 1000               |
+            |        | Amount    | £1,000.00          |
             | Item 2 | Item name | Second repeat item |
-            |        | Amount    | 2000               |
+            |        | Amount    | £2,000.00          |
         When the user continues
 
         # declaration
@@ -373,8 +373,8 @@ Feature: Reusable Components
             | Country                    | Wales                                 |
             | Radio option               | Option one                            |
             | Checkbox options           | Option two, Option three              |
-            | Enter amount               | 100000                                |
-            | Routing amount             | 50000                                 |
+            | Enter amount               | £100,000.00                           |
+            | Routing amount             | £50,000.00                            |
             | Date                       | {DATE IN A WEEK}                      |
             | Month and year             | August 2025                           |
             | Select option              | Option three                          |
@@ -388,14 +388,14 @@ Feature: Reusable Components
             | Latitude and longitude     | 51.51945, -0.127758                   |
             | Project name               | Test project                          |
             | Project description        | Project description                   |
-            | Project budget             | 50000                                 |
+            | Project budget             | £50,000.00                            |
             | Select land parcels        | SD6252-7537, SD6351-8781, SD6352-8774 |
         And should see the following summary cards
             | CARD   | QUESTION  | ANSWER             |
             | Item 1 | Item name | First repeat item  |
-            |        | Amount    | 1000               |
+            |        | Amount    | £1,000.00          |
             | Item 2 | Item name | Second repeat item |
-            |        | Amount    | 2000               |
+            |        | Amount    | £2,000.00          |
         And should see the following configurable content
             | Configurable content                                                                                                                       |
             | This is an example of configurable content on the print page, defined via the configurablePrintContent property in the form YAML metadata. |
