@@ -24,12 +24,6 @@ describe('number playback configuration', () => {
     expect(() => validateNumberFormats(definition(component))).toThrow(SystemError)
   })
 
-  it.each(['thousands', 'decimal:4', 'currency:gbp,4'])('rejects %s formatting on a repeating page', (format) => {
-    const form = definition({ type: 'NumberField', name: 'amount', options: { format } })
-    form.pages[0].repeat = { options: { name: 'items' } }
-    expect(() => validateNumberFormats(form)).toThrow(SystemError)
-  })
-
   it('validates number fields inside conditional list items', () => {
     const form = {
       lists: [

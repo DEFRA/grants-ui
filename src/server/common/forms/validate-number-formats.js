@@ -7,7 +7,7 @@ import { isNumberFormat } from '../helpers/number-field-format.js'
 export function validateNumberFormats(definition) {
   for (const page of definition.pages ?? []) {
     if ('components' in page) {
-      validateComponents(page.components, !('repeat' in page))
+      validateComponents(page.components)
     }
   }
   for (const list of definition.lists ?? []) {
@@ -17,34 +17,32 @@ export function validateNumberFormats(definition) {
 
 /**
  * @param {any[] | undefined} components
- * @param {boolean} allowFormat
  */
-function validateComponents(components, allowFormat) {
+function validateComponents(components) {
   for (const component of components ?? []) {
     const format = component.options?.format
     if (
       component.format !== undefined ||
       component.schema?.format !== undefined ||
-      (format !== undefined && (!allowFormat || component.type !== 'NumberField' || !isNumberFormat(format)))
+      (format !== undefined && (component.type !== 'NumberField' || !isNumberFormat(format)))
     ) {
       throw new SystemError({
         message: `Invalid playback format for component '${component.name}'`,
         source: 'validateNumberFormats',
         reason:
-          'options.format must be a supported number formatter on a NumberField on a non-repeating page; schema.format and top-level format are not supported',
+          'options.format must be a supported number formatter on a NumberField; schema.format and top-level format are not supported',
         status: 500
       })
     }
-    validateItems(component.items, allowFormat)
+    validateItems(component.items)
   }
 }
 
 /**
  * @param {any[] | undefined} items
- * @param {boolean} [allowFormat]
  */
-function validateItems(items, allowFormat = true) {
+function validateItems(items) {
   for (const item of items ?? []) {
-    validateComponents(item.conditional?.components, allowFormat)
+    validateComponents(item.conditional?.components)
   }
 }

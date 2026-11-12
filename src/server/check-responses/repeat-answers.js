@@ -3,6 +3,7 @@ import { ItemField } from '@defra/forms-engine-plugin/engine/models/SummaryViewM
 import { evaluateTemplate, redirectPath } from '@defra/forms-engine-plugin/engine/helpers.js'
 import { getAnswerMarkdown, markdown } from '@defra/forms-engine-plugin/engine/components/helpers/components.js'
 import escapeHtml from 'lodash/escape.js'
+import { formatNumberAnswer, isNumberFormat } from '../common/helpers/number-field-format.js'
 
 /**
  * Associates each repeat answer row with cards built from relevant item state.
@@ -50,10 +51,24 @@ export function buildRepeatAnswerCards(viewModel, context, returnUrl) {
             },
             rows: page.collection.fields.map((field) => {
               const answer = ItemField(page, itemState, field, { path: page.path })
-              const value = markdown.parse(escapeHtml(getAnswerMarkdown(field, itemState)), { async: false }).trim()
+              const component = /** @type {{ type: string, options?: { format?: string } } | undefined} */ (
+                context.componentDefMap.get(field.name)
+              )
+              const formatted =
+                component?.type === 'NumberField' && isNumberFormat(component.options?.format)
+                  ? formatNumberAnswer(component, itemState[field.name])
+                  : undefined
+              const value =
+                formatted === undefined
+                  ? {
+                      html:
+                        markdown.parse(escapeHtml(getAnswerMarkdown(field, itemState)), { async: false }).trim() ||
+                        'Not provided'
+                    }
+                  : { text: formatted || 'Not provided' }
               return {
                 key: { text: evaluateTemplate(answer.title, itemContext) },
-                value: { html: value || 'Not provided', classes: 'app-prose-scope' }
+                value: { ...value, classes: 'app-prose-scope' }
               }
             })
           }
