@@ -259,8 +259,6 @@ You can override the default behaviour by setting the `SESSION_CACHE_ENGINE` env
 Please note: CatboxMemory (`memory`) is _not_ suitable for production use! The cache will not be shared between each
 instance of the service and it will not persist between restarts.
 
-JWKS verification refreshes the cached keys once for an unknown key ID or signature mismatch, then repeats full token verification without bypassing signature or time checks.
-
 ```mermaid
 sequenceDiagram
   participant User
