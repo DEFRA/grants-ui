@@ -20,6 +20,7 @@
  * @property {string} sheet_id
  * @property {string} parcel_id
  * @property {number | null} areaHa
+ * @property {{ minLng: number, minLat: number, maxLng: number, maxLat: number }} [bounds]
  * @property {number} [actionCount]
  */
 

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest'
+import { StyleLayer } from 'maplibre-gl/src/style/style_layer.ts'
 import {
   COMPOUND_ID_EXPR,
   buildParcelLayers,
@@ -54,6 +55,16 @@ describe('buildParcelLayers', () => {
   })
 })
 
+describe('parcel boundaries at overview zoom', () => {
+  it('hides polygon layers below detail zoom without needing tiles to build badges', () => {
+    const { fill, outline } = buildParcelLayers(['match', ['get', 'id'], 'a', '#1d70b8', '#1d70b8'])
+    for (const zoom of [7, 10, 10.99, 11, 14]) {
+      expect(StyleLayer.prototype.isHidden.call(fill, zoom)).toBe(zoom < 11)
+      expect(StyleLayer.prototype.isHidden.call(outline, zoom)).toBe(zoom < 11)
+    }
+  })
+})
+
 describe('buildParcelLabelLayer', () => {
   it('labels with Arial Regular, reading from the parcels-labels GeoJSON source', () => {
     const layer = buildParcelLabelLayer()
@@ -82,15 +93,32 @@ describe('buildParcelLabelLayer', () => {
 })
 
 describe('buildParcelLabelClusterLayers', () => {
-  it('renders only clustered points', () => {
+  it('renders clusters and singleton badges only below detail zoom', () => {
     const { circle, count } = buildParcelLabelClusterLayers()
-    expect(circle.filter).toEqual(['has', 'point_count'])
-    expect(count.filter).toEqual(['has', 'point_count'])
+    expect(circle.filter).toBeUndefined()
+    expect(count.filter).toBeUndefined()
+    expect(circle.maxzoom).toBe(11)
+    expect(count.maxzoom).toBe(11)
   })
 
-  it('shows the abbreviated cluster count as the badge text', () => {
+  it('shows the exact count, with 1 for an unclustered parcel', () => {
     const { count } = buildParcelLabelClusterLayers()
-    expect(count.layout['text-field']).toEqual(['get', 'point_count_abbreviated'])
+    expect(count.layout['text-field']).toEqual(['to-string', ['coalesce', ['get', 'point_count'], 1]])
+  })
+
+  it('uses larger badges for counts of 5 and 25 than for 1', () => {
+    expect(buildParcelLabelClusterLayers().circle.paint['circle-radius']).toEqual([
+      'step',
+      ['coalesce', ['get', 'point_count'], 1],
+      14,
+      5,
+      20,
+      20,
+      26
+    ])
+    expect(buildParcelLayers([]).fill.minzoom).toBe(11)
+    expect(buildParcelLayers([]).outline.minzoom).toBe(11)
+    expect(buildParcelLabelLayer().minzoom).toBe(11)
   })
 
   it('reads from the parcels-labels GeoJSON source, same as the individual label layer', () => {
@@ -247,6 +275,7 @@ describe('withParcelMapProvider', () => {
     const { MapProvider } = await withParcelMapProvider(descriptor).load()
     const provider = new MapProvider()
     provider.map = {
+      getZoom: () => 12,
       getLayer: () => true,
       queryRenderedFeatures: vi.fn().mockReturnValue([])
     }
@@ -272,6 +301,7 @@ describe('withParcelMapProvider', () => {
       }
     }
     provider.map = {
+      getZoom: () => 12,
       getLayer: () => true,
       queryRenderedFeatures: vi
         .fn()
@@ -286,7 +316,10 @@ describe('withParcelMapProvider', () => {
     const descriptor = makeDescriptor(() => [])
     const { MapProvider } = await withParcelMapProvider(descriptor).load()
     const provider = new MapProvider()
-    provider.map = { getLayer: () => false }
+    provider.map = {
+      getZoom: () => 12,
+      getLayer: () => false
+    }
 
     expect(provider.getFeaturesAtPoint({ x: 0, y: 0 })).toEqual([])
   })
@@ -296,6 +329,7 @@ describe('withParcelMapProvider', () => {
     const { MapProvider } = await withParcelMapProvider(descriptor).load()
     const provider = new MapProvider()
     provider.map = {
+      getZoom: () => 12,
       getLayer: () => true,
       queryRenderedFeatures: vi
         .fn()
@@ -326,7 +360,11 @@ describe('withParcelMapProvider fitToBounds', () => {
     const { descriptor, baseFitToBounds } = makeProvider()
     const { MapProvider } = await withParcelMapProvider(descriptor).load()
     const provider = new MapProvider()
-    provider.map = { fitBounds: vi.fn(), getBounds: () => ({ toArray: () => view }) }
+    provider.map = {
+      getZoom: () => 12,
+      fitBounds: vi.fn(),
+      getBounds: () => ({ toArray: () => view })
+    }
 
     provider.fitToBounds([-2.5, 51.4, -2.4, 51.5])
 
@@ -344,7 +382,11 @@ describe('withParcelMapProvider fitToBounds', () => {
     const { descriptor, baseFitToBounds } = makeProvider()
     const { MapProvider } = await withParcelMapProvider(descriptor).load()
     const provider = new MapProvider()
-    provider.map = { fitBounds: vi.fn(), getBounds: () => ({ toArray: () => view }) }
+    provider.map = {
+      getZoom: () => 12,
+      fitBounds: vi.fn(),
+      getBounds: () => ({ toArray: () => view })
+    }
 
     expect(provider.fitToBounds(null)).toBeUndefined()
 
@@ -356,7 +398,11 @@ describe('withParcelMapProvider fitToBounds', () => {
     const { descriptor, baseFitToBounds } = makeProvider()
     const { MapProvider } = await withParcelMapProvider(descriptor).load()
     const provider = new MapProvider()
-    provider.map = { fitBounds: vi.fn(), getBounds: () => ({ toArray: () => view }) }
+    provider.map = {
+      getZoom: () => 12,
+      fitBounds: vi.fn(),
+      getBounds: () => ({ toArray: () => view })
+    }
     const geojson = { type: 'Point', coordinates: [0, 0] }
 
     provider.fitToBounds(geojson)

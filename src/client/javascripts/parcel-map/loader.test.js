@@ -11,7 +11,14 @@ describe('parseParcelResponse', () => {
     const data = await parseParcelResponse(
       resp({
         features: [
-          { id: 'SD7148-9160', properties: { sheet_id: 'SD7148', areaHa: 2.5 } },
+          {
+            id: 'SD7148-9160',
+            properties: {
+              sheet_id: 'SD7148',
+              areaHa: 2.5,
+              bounds: { minLng: -2.5, minLat: 51.4, maxLng: -2.4, maxLat: 51.5 }
+            }
+          },
           { id: 'SD7148-9161', properties: { sheet_id: 'SD7148', areaHa: null } }
         ],
         bbox: { minLng: -2.5, minLat: 51.4, maxLng: -2.3, maxLat: 51.6 }
@@ -20,6 +27,7 @@ describe('parseParcelResponse', () => {
 
     expect(data.parcelIds).toEqual(['SD7148-9160', 'SD7148-9161'])
     expect(data.metaIndex['SD7148-9160']).toMatchObject({ id: 'SD7148-9160', areaHa: 2.5 })
+    expect(data.metaIndex['SD7148-9160'].bounds).toEqual({ minLng: -2.5, minLat: 51.4, maxLng: -2.4, maxLat: 51.5 })
     expect(data.bbox).toEqual({ minLng: -2.5, minLat: 51.4, maxLng: -2.3, maxLat: 51.6 })
   })
 
