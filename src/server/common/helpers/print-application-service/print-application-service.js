@@ -85,6 +85,33 @@ function resolveAnswer(component, answers) {
 }
 
 /**
+ * Builds a question row from an answerable component.
+ * @param {FormComponent} component
+ * @param {unknown} answer
+ * @param {Answers} answers
+ * @param {boolean} includeUnanswered
+ * @param {import('../state/persist-formatting.js').NumberInputs} [numberInputs]
+ * @returns {Question}
+ */
+function buildQuestion(component, answer, answers, includeUnanswered, numberInputs) {
+  const locationHint = getSavedLocationHint(component, answers)
+  const numberFormatter =
+    component.type === COMPONENT_TYPES.NumberField ? getNumberFormatter(component.options?.format) : undefined
+  const displayValue =
+    numberFormatter && component.type === COMPONENT_TYPES.NumberField
+      ? getNumberDisplayValue(answer, numberInputs?.[component.name])
+      : answer
+
+  return {
+    label:
+      (component.shortDescription || component.title || '') +
+      (includeUnanswered && component.options?.required === false ? ' (optional)' : ''),
+    answer: formatAnswer(component, displayValue) || (includeUnanswered ? 'Not provided' : ''),
+    ...(locationHint ? { locationHint } : {})
+  }
+}
+
+/**
  * Builds question rows from a page's components and the submitted answers.
  * @param {FormComponent[] | undefined} components
  * @param {Answers} answers
@@ -93,30 +120,23 @@ function resolveAnswer(component, answers) {
  * @returns {Question[]}
  */
 function extractQuestions(components, answers, includeUnanswered, numberInputs) {
-  return (components || [])
-    .filter(isAnswerableComponent)
-    .map((component) => ({
-      component,
-      answer: resolveAnswer(component, answers)
-    }))
-    .filter(({ answer }) => includeUnanswered || (answer !== undefined && answer !== null))
-    .map(({ component, answer }) => {
-      const locationHint = getSavedLocationHint(component, answers)
-      const numberFormatter =
-        component.type === COMPONENT_TYPES.NumberField ? getNumberFormatter(component.options?.format) : undefined
-      const displayValue =
-        numberFormatter && component.type === COMPONENT_TYPES.NumberField
-          ? getNumberDisplayValue(answer, numberInputs?.[component.name])
-          : answer
+  /** @type {Question[]} */
+  const questions = []
 
-      return {
-        label:
-          (component.shortDescription || component.title || '') +
-          (includeUnanswered && component.options?.required === false ? ' (optional)' : ''),
-        answer: formatAnswer(component, displayValue) || (includeUnanswered ? 'Not provided' : ''),
-        ...(locationHint ? { locationHint } : {})
-      }
-    })
+  for (const component of components || []) {
+    if (!isAnswerableComponent(component)) {
+      continue
+    }
+
+    const answer = resolveAnswer(component, answers)
+    if (!includeUnanswered && (answer === undefined || answer === null)) {
+      continue
+    }
+
+    questions.push(buildQuestion(component, answer, answers, includeUnanswered, numberInputs))
+  }
+
+  return questions
 }
 
 /**

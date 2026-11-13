@@ -4,7 +4,7 @@ import {
   processConfigurablePrintContent
 } from './print-application-service.js'
 import { ComponentsRegistry } from '../../../confirmation/services/components.registry.js'
-import { MOCK_FORM_ENTRIES, MOCK_DISPLAY_ONLY_COMPONENTS } from '~/src/__test-fixtures__/mock-forms-cache.js'
+import { MOCK_DISPLAY_ONLY_COMPONENTS, MOCK_FORM_ENTRIES } from '~/src/__test-fixtures__/mock-forms-cache.js'
 import { MOCK_PAYMENT } from '~/src/__test-fixtures__/mock-payment.js'
 
 vi.mock('../../../confirmation/services/components.registry.js', () => ({
@@ -164,7 +164,7 @@ describe('print-application-service', () => {
       expect(result.sections[0].questions).toEqual([{ label: 'Visible field', answer: 'shown' }])
     })
 
-    test('should skip questions with null or undefined answers', () => {
+    test('should skip null or undefined answers while preserving falsy answers', () => {
       const result = buildPrintViewModel({
         ...baseParams,
         definition: {
@@ -174,15 +174,30 @@ describe('print-application-service', () => {
               components: [
                 { type: 'TextField', name: 'answered', title: 'Answered' },
                 { type: 'TextField', name: 'unanswered', title: 'Unanswered' },
-                { type: 'TextField', name: 'nullAnswer', title: 'Null' }
+                { type: 'TextField', name: 'nullAnswer', title: 'Null' },
+                { type: 'TextField', name: 'falseAnswer', title: 'False' },
+                { type: 'NumberField', name: 'zeroAnswer', title: 'Zero' },
+                { type: 'TextField', name: 'emptyAnswer', title: 'Empty' }
               ]
             }
           ]
         },
-        answers: { answered: 'yes', unanswered: undefined, nullAnswer: null }
+        answers: {
+          answered: 'yes',
+          unanswered: undefined,
+          nullAnswer: null,
+          falseAnswer: false,
+          zeroAnswer: 0,
+          emptyAnswer: ''
+        }
       })
 
-      expect(result.sections[0].questions).toEqual([{ label: 'Answered', answer: 'yes' }])
+      expect(result.sections[0].questions).toEqual([
+        { label: 'Answered', answer: 'yes' },
+        { label: 'False', answer: 'false' },
+        { label: 'Zero', answer: '0' },
+        { label: 'Empty', answer: '' }
+      ])
     })
 
     test('should prefer shortDescription over title for question labels', () => {
