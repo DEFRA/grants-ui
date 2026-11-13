@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { randomUUID } from 'node:crypto'
 import { FormModel } from '@defra/forms-engine-plugin/engine/models/FormModel.js'
 import { redirectOrMakeHandler } from '@defra/forms-engine-plugin/engine/routes/index.js'
 import CheckResponsesPageController from './check-responses.controller.js'
@@ -8,13 +9,15 @@ import { buildPrintViewModel } from '../common/helpers/print-application-service
 import { configureFormDefinition } from '../common/forms/services/form.js'
 import DeclarationPageController from '../declaration/declaration-page.controller.js'
 import MapSubmissionPageController from '../common/map/map-submission-page.controller.js'
+import { enableRepeatPageItemNames } from '../common/helpers/repeat-page-item-names.js'
+import { enableRepeatNumberFormatting } from '../common/helpers/repeat-page-number-formatting.js'
 
 vi.unmock('@defra/forms-model')
 vi.mock('@defra/forms-engine-plugin/controllers/SummaryPageController.js', () =>
   vi.importActual('@defra/forms-engine-plugin/engine/pageControllers/SummaryPageController.js')
 )
 
-function createJourney(format, controller = 'CheckResponsesPageController', view) {
+function createJourney(format, { controller = 'CheckResponsesPageController', view, repeat = false, components } = {}) {
   const model = new FormModel(
     configureFormDefinition({
       name: 'Number display formatting',
@@ -28,13 +31,17 @@ function createJourney(format, controller = 'CheckResponsesPageController', view
         {
           path: '/amount',
           title: 'Water storage capacity',
-          components: [
+          ...(repeat && {
+            controller: 'RepeatPageController',
+            repeat: { options: { name: 'amounts', title: 'Amount' }, schema: { min: 1, max: 5 } }
+          }),
+          components: components ?? [
             {
               type: 'NumberField',
               name: 'capacity',
               title: 'Capacity',
               schema: { precision: 4 },
-              options: { ...(format && { format }) }
+              options: { ...(format && { format }), ...(repeat && { required: false }) }
             },
             { type: 'NumberField', name: 'sbi', title: 'SBI' }
           ]
@@ -76,11 +83,12 @@ function createJourney(format, controller = 'CheckResponsesPageController', view
     model,
     state: () => savedState,
     async dispatch(path, payload) {
+      const [pagePath, itemId, action] = path.split('/')
       const request = {
         method: payload ? 'post' : 'get',
         payload,
         query: {},
-        params: { slug: 'grant', path },
+        params: { slug: 'grant', path: pagePath, itemId },
         path: `/grant/${path}`,
         app: { model },
         yar: { flash: () => [] },
@@ -91,11 +99,20 @@ function createJourney(format, controller = 'CheckResponsesPageController', view
         h,
         (req, toolkit, context) => {
           preserveNumberFieldInputs(req, context)
+          enableRepeatPageItemNames(req)
+          enableRepeatNumberFormatting(req)
           return toolkit.continue
         },
         (page, context) => {
           answers = context.relevantState
-          const handler = payload ? page.makePostRouteHandler() : page.makeGetRouteHandler()
+          let handler
+          if (itemId === 'summary') {
+            handler = payload ? page.makePostListSummaryRouteHandler() : page.makeGetListSummaryRouteHandler()
+          } else if (action === 'confirm-delete') {
+            handler = payload ? page.makePostItemDeleteRouteHandler() : page.makeGetItemDeleteRouteHandler()
+          } else {
+            handler = payload ? page.makePostRouteHandler() : page.makeGetRouteHandler()
+          }
           return handler(request, context, h)
         }
       )
@@ -168,9 +185,121 @@ describe('number display formatting', () => {
     ['MapSubmissionPageController', undefined],
     ['DeclarationPageController', 'submission.html']
   ])('formats the answer on the %s review view', async (controller, view) => {
-    const journey = createJourney('currency:gbp,4', controller, view)
+    const journey = createJourney('currency:gbp,4', { controller, view })
     await journey.dispatch('amount', { action: 'validate', capacity: '125000.50', sbi: '125000' })
     const summary = await journey.dispatch('summary')
     expect(summary.viewModel.checkAnswers[0].summaryList.rows[0].value.text).toBe('£125,000.5000')
+  })
+})
+
+describe('repeated number display formatting', () => {
+  const summaryValues = (viewModel) => viewModel.checkAnswers[0].answerGroups.map((group) => group.rows[0].value.text)
+  const printedValues = (journey) =>
+    journey.print().sections[0].questions[0].repeatItems.map((item) => item.questions[0].answer)
+
+  it.each([
+    ['thousands', '125000.50', '125,000.50'],
+    ['decimal', '125000.567', '125,000.57'],
+    ['decimal:4', '-125000.5', '-125,000.5000'],
+    ['currency:gbp', '0.00', '£0.00'],
+    ['currency:gbp,4', '125000.50', '£125,000.5000']
+  ])('preserves repeated %s answers on edit, item list, Check answers and print', async (format, input, expected) => {
+    const journey = createJourney(format, { repeat: true })
+    const itemId = randomUUID()
+    const payload = { action: 'validate', capacity: input, sbi: '125000' }
+    await journey.dispatch(`amount/${itemId}`, payload)
+    const edit = await journey.dispatch(`amount/${itemId}`)
+    expect(String(edit.viewModel.components[0].model.value)).toBe(input)
+    await journey.dispatch(`amount/${itemId}`, {
+      ...payload,
+      capacity: String(edit.viewModel.components[0].model.value)
+    })
+
+    const list = await journey.dispatch('amount/summary')
+    expect(list.viewModel.pageTitle).toBe('You have added 1 amount')
+    expect(list.viewModel.checkAnswers[0].summaryList.rows[0].value.text).toBe(expected)
+    const summary = await journey.dispatch('summary')
+    expect(summaryValues(summary.viewModel)).toEqual([expected])
+    expect(summary.viewModel.context.relevantState).toEqual({
+      amounts: [{ itemId, capacity: Number(input), sbi: 125000 }]
+    })
+    expect(printedValues(journey)).toEqual([expected])
+  })
+
+  it('keeps equal-valued items independent through invalid edits, changes and deletion', async () => {
+    const journey = createJourney('thousands', { repeat: true })
+    const firstId = randomUUID()
+    const secondId = randomUUID()
+    const submit = (id, capacity, sbi = '125000') =>
+      journey.dispatch(`amount/${id}`, { action: 'validate', capacity, sbi })
+    await submit(firstId, '125000.50')
+    await submit(secondId, '125000.500')
+    expect(summaryValues((await journey.dispatch('summary')).viewModel)).toEqual(['125,000.50', '125,000.500'])
+    expect(printedValues(journey)).toEqual(['125,000.50', '125,000.500'])
+
+    const invalid = await submit(firstId, '125000.5000', '')
+    expect(invalid.viewModel.errors[0].name).toBe('sbi')
+    expect(invalid.viewModel.components[0].model.value).toBe('125000.5000')
+    expect((await journey.dispatch(`amount/${firstId}`)).viewModel.components[0].model.value).toBe('125000.50')
+    expect((await journey.dispatch(`amount/${secondId}`)).viewModel.components[0].model.value).toBe('125000.500')
+
+    await submit(firstId, '125000.5')
+    expect(summaryValues((await journey.dispatch('summary')).viewModel)).toEqual(['125,000.5', '125,000.500'])
+    await journey.dispatch(`amount/${firstId}/confirm-delete`, { action: 'validate', confirm: true })
+    expect((await journey.dispatch(`amount/${secondId}`)).viewModel.components[0].model.value).toBe('125000.500')
+    expect(summaryValues((await journey.dispatch('summary')).viewModel)).toEqual(['125,000.500'])
+    expect(printedValues(journey)).toEqual(['125,000.500'])
+
+    await submit(secondId, '')
+    expect(summaryValues((await journey.dispatch('summary')).viewModel)).toEqual(['Not provided'])
+    expect(printedValues(journey)).toEqual(['Not provided'])
+    const list = await journey.dispatch('amount/summary')
+    expect(list.viewModel.checkAnswers[0].summaryList.rows[0].value.text).toBe('Not provided')
+  })
+
+  it('formats every numeric field without altering text or unformatted number fields', async () => {
+    const journey = createJourney(undefined, {
+      repeat: true,
+      components: [
+        { type: 'TextField', name: 'name', title: 'Name' },
+        { type: 'NumberField', name: 'capacity', title: 'Capacity', options: { format: 'thousands' } },
+        { type: 'NumberField', name: 'cost', title: 'Cost', options: { format: 'currency:gbp' } },
+        { type: 'NumberField', name: 'area', title: 'Area', options: { format: 'decimal:4' } },
+        { type: 'NumberField', name: 'sbi', title: 'SBI' }
+      ]
+    })
+    const itemId = randomUUID()
+    const payload = {
+      action: 'validate',
+      name: 'Reservoir',
+      capacity: '125000.50',
+      cost: '125000.500',
+      area: '12.340',
+      sbi: '125000'
+    }
+    await journey.dispatch(`amount/${itemId}`, payload)
+    const edit = await journey.dispatch(`amount/${itemId}`)
+    expect(edit.viewModel.components.map(({ model }) => String(model.value))).toEqual([
+      'Reservoir',
+      '125000.50',
+      '125000.500',
+      '12.340',
+      '125000'
+    ])
+    const list = await journey.dispatch('amount/summary')
+    expect(list.viewModel.checkAnswers[0].summaryList.rows[0].value.text).toBe('Reservoir')
+    const summary = await journey.dispatch('summary')
+    const expected = ['Reservoir', '125,000.50', '£125,000.50', '12.3400', '125000']
+    expect(
+      summary.viewModel.checkAnswers[0].answerGroups[0].rows.map(
+        ({ value }) => value.text ?? value.html.replace(/<[^>]*>/g, '')
+      )
+    ).toEqual(expected)
+    expect(journey.print().sections[0].questions[0].repeatItems[0].questions.map(({ answer }) => answer)).toEqual(
+      expected
+    )
+    expect(summary.viewModel.context.relevantState).toEqual({
+      amounts: [{ itemId, name: 'Reservoir', capacity: 125000.5, cost: 125000.5, area: 12.34, sbi: 125000 }]
+    })
   })
 })

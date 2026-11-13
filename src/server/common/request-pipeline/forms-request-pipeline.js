@@ -6,6 +6,7 @@ import { applyLocationHints } from '../map/location-hints.js'
 import { preserveNumberFieldInputs } from '../helpers/state/preserve-number-field-inputs.js'
 import { enableRepeatTaskContext } from '~/src/server/task-list/repeat-task-context.js'
 import { enableRepeatPageItemNames } from '../helpers/repeat-page-item-names.js'
+import { enableRepeatNumberFormatting } from '../helpers/repeat-page-number-formatting.js'
 
 /**
  * Pipeline handler that delegates to forms status redirect, then enforces page permissions.
@@ -45,6 +46,7 @@ export async function formsRequestPipeline(request, h, context) {
     applyLocationHints(request, context)
     preserveNumberFieldInputs(request, context)
     enableRepeatPageItemNames(request)
+    enableRepeatNumberFormatting(request)
     enableRepeatTaskContext(request)
   }
   return permissionResult

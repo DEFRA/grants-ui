@@ -4,6 +4,7 @@ import { buildConfirmLandAndActionsViewModel } from '~/src/server/land-grants/vi
 import { ComponentsRegistry } from '../../../confirmation/services/components.registry.js'
 import { findPageByPath, normalisePagePath, resolveAdditionalAnswerSections } from '../additional-answers.js'
 import { getSavedLocationHint } from '../../map/location-hints.js'
+import { getNumberFieldInputs } from '../state/preserve-number-field-inputs.js'
 
 export const COMPOSITE_FIELD_PARTS = {
   [COMPONENT_TYPES.DatePartsField]: ['day', 'month', 'year'],
@@ -86,7 +87,7 @@ function resolveAnswer(component, answers) {
  * @param {FormComponent[] | undefined} components
  * @param {Answers} answers
  * @param {boolean} includeUnanswered - Include all repeat fields, including blank optional answers
- * @param {Record<string, string>} [numberInputs]
+ * @param {import('../state/preserve-number-field-inputs.js').NumberInputs} [numberInputs]
  * @returns {Question[]}
  */
 function extractQuestions(components, answers, includeUnanswered, numberInputs) {
@@ -116,9 +117,10 @@ function extractQuestions(components, answers, includeUnanswered, numberInputs) 
  * Reads repeat fields exclusively from each saved item, never top-level state.
  * @param {FormPage} page
  * @param {Answers} answers
+ * @param {Answers} savedState
  * @returns {Question[]}
  */
-function extractRepeatQuestions(page, answers) {
+function extractRepeatQuestions(page, answers, savedState) {
   const { name, title } = page.repeat?.options ?? {}
   const values = name && answers[name]
   if (!Array.isArray(values)) {
@@ -129,7 +131,7 @@ function extractRepeatQuestions(page, answers) {
     .filter((item) => item !== null && typeof item === 'object' && !Array.isArray(item))
     .map((item, index) => ({
       title: `${title || page.title} ${index + 1}`,
-      questions: extractQuestions(page.components, item, true)
+      questions: extractQuestions(page.components, item, true, getNumberFieldInputs(savedState, name, item.itemId))
     }))
     .filter((item) => item.questions.length > 0)
 
@@ -142,10 +144,10 @@ function extractRepeatQuestions(page, answers) {
  * @param {Answers} answers
  * @param {boolean} hasParcelCards
  * @param {Map<string | undefined, Question[]>} additionalQuestions
- * @param {Record<string, string>} [numberInputs]
+ * @param {Answers} savedState
  * @returns {{ title: string, questions: Question[] }[]}
  */
-function buildSections(pages, answers, hasParcelCards, additionalQuestions, numberInputs) {
+function buildSections(pages, answers, hasParcelCards, additionalQuestions, savedState) {
   return (pages || [])
     .map((page) => {
       const components =
@@ -157,8 +159,8 @@ function buildSections(pages, answers, hasParcelCards, additionalQuestions, numb
         title: page.title,
         questions: [
           ...(page.controller === 'RepeatPageController'
-            ? extractRepeatQuestions(page, answers)
-            : extractQuestions(components, answers, false, numberInputs)),
+            ? extractRepeatQuestions(page, answers, savedState)
+            : extractQuestions(components, answers, false, getNumberFieldInputs(savedState))),
           ...(additionalQuestions.get(normalisePagePath(page.path)) ?? [])
         ]
       }
@@ -173,7 +175,7 @@ function buildSections(pages, answers, hasParcelCards, additionalQuestions, numb
  * @param {boolean} hasParcelCards
  * @param {string | undefined} landAndActionsSectionId
  * @param {Map<string | undefined, Question[]>} additionalQuestions
- * @param {Record<string, string>} [numberInputs]
+ * @param {Answers} savedState
  */
 function buildTaskSections(
   definition,
@@ -181,7 +183,7 @@ function buildTaskSections(
   hasParcelCards,
   landAndActionsSectionId,
   additionalQuestions,
-  numberInputs
+  savedState
 ) {
   const titles = new Map((definition.sections || []).map((section) => [section.id, section.title]))
   /** @type {Map<string | undefined, { title: string, questions: Question[], showLandAndActions: boolean }>} */
@@ -191,7 +193,7 @@ function buildTaskSections(
     const sectionId = page.section && titles.has(page.section) ? page.section : undefined
     const group = groups.get(sectionId) ?? createTaskSection(titles, sectionId, landAndActionsSectionId)
     groups.set(sectionId, group)
-    for (const section of buildSections([page], answers, hasParcelCards, additionalQuestions, numberInputs)) {
+    for (const section of buildSections([page], answers, hasParcelCards, additionalQuestions, savedState)) {
       group.questions.push(...section.questions)
     }
   }
@@ -419,7 +421,6 @@ export function buildPrintViewModel({
   )
   const additional = buildAdditionalSections(definition, savedState, Boolean(landAndActionsSummary), relevantPages)
   const printAnswers = { ...answers, mapLocationHints: savedState.mapLocationHints }
-  const numberInputs = /** @type {Record<string, string> | undefined} */ (savedState.$$__numberFieldInputs)
 
   return {
     page,
@@ -443,9 +444,9 @@ export function buildPrintViewModel({
             hasParcelCards,
             landAndActionsSectionId,
             additional.questionsByPage,
-            numberInputs
+            savedState
           )
-        : buildSections(definition.pages, printAnswers, hasParcelCards, additional.questionsByPage, numberInputs)),
+        : buildSections(definition.pages, printAnswers, hasParcelCards, additional.questionsByPage, savedState)),
       ...additional.sections
     ],
     landAndActionsSummary,

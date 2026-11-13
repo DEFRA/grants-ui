@@ -4,6 +4,7 @@ import { evaluateTemplate, redirectPath } from '@defra/forms-engine-plugin/engin
 import { getAnswerMarkdown, markdown } from '@defra/forms-engine-plugin/engine/components/helpers/components.js'
 import escapeHtml from 'lodash/escape.js'
 import { formatNumberAnswer } from '../common/helpers/number-formatter.js'
+import { getNumberFieldInputs } from '../common/helpers/state/preserve-number-field-inputs.js'
 
 const NOT_PROVIDED = 'Not provided'
 
@@ -36,6 +37,7 @@ export function buildRepeatAnswerCards(viewModel, context, returnUrl) {
         list.map((itemState, index) => {
           const itemContext = { ...context, relevantState: { ...context.relevantState, ...itemState } }
           const title = `${evaluateTemplate(page.repeat.options.title, itemContext)} ${index + 1}`
+          const inputs = getNumberFieldInputs(context.state, page.repeat.options.name, itemState.itemId)
           return {
             card: {
               title: { text: title },
@@ -56,7 +58,7 @@ export function buildRepeatAnswerCards(viewModel, context, returnUrl) {
               const component = /** @type {{ type: string, options?: { format?: string } } | undefined} */ (
                 context.componentDefMap.get(field.name)
               )
-              const formatted = formatNumberAnswer(component, itemState[field.name])
+              const formatted = formatNumberAnswer(component, itemState[field.name], inputs?.[field.name])
               const value =
                 formatted === undefined
                   ? {
