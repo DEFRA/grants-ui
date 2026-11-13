@@ -1,7 +1,7 @@
 const STORAGE_KEY = 'grants-ui:user-role-context'
 let publishedContext
 
-// Restore the value on each document; only the named event is deduplicated.
+// Publish the role only once for the active session/business context.
 // Storage contains an opaque context token, never a CRN, SBI or authentication token.
 export function publishUserRole() {
   const element = document.getElementById('user-role-analytics')
@@ -20,18 +20,11 @@ export function publishUserRole() {
     // Restricted storage must not prevent analytics or page rendering.
   }
 
-  globalThis.dataLayer = globalThis.dataLayer || []
-  if (previous !== context) {
-    globalThis.dataLayer.push({ event: 'user_role_loaded', userRole: role })
-  } else {
-    const latestRole = globalThis.dataLayer
-      .slice()
-      .reverse()
-      .find((entry) => entry && Object.hasOwn(entry, 'userRole'))
-    if (!latestRole || typeof latestRole !== 'object' || !('userRole' in latestRole) || latestRole.userRole !== role) {
-      globalThis.dataLayer.push({ userRole: role })
-    }
+  if (previous === context) {
+    return
   }
+  globalThis.dataLayer = globalThis.dataLayer || []
+  globalThis.dataLayer.push({ event: 'user_role_loaded', userRole: role })
   publishedContext = context
   try {
     localStorage.setItem(STORAGE_KEY, context)

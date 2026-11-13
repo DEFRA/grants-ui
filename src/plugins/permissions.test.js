@@ -236,6 +236,25 @@ describe('permissions plugin', () => {
     expect(fetchBusinessPermissions).toHaveBeenCalledTimes(1)
   })
 
+  test.each([undefined, [], { permissionGroups: [] }])(
+    'renders the unauthorised landing page without fetching DAL for cache %j',
+    async (cached) => {
+      if (cached) {
+        yarStore.set('permissions:crn-1:sbi-2', cached)
+      }
+      fetchBusinessPermissions.mockRejectedValue(new Error('DAL unavailable'))
+      const request = {
+        path: '/auth/journey-unauthorised',
+        yar,
+        app: {},
+        auth: { isAuthenticated: true, credentials: { sessionId: 'session-a', crn: 'crn-1', sbi: 'sbi-2' } }
+      }
+      expect(await onPostAuthHandler(request, h)).toBe(h.continue)
+      expect(request.app.userRoleAnalytics).toBeUndefined()
+      expect(fetchBusinessPermissions).not.toHaveBeenCalled()
+    }
+  )
+
   test('refreshes legacy array caches to obtain the role', async () => {
     yarStore.set('permissions:crn-1:sbi-1', [])
     fetchBusinessPermissions.mockResolvedValue({ role: 'Agent', permissionGroups: [] })

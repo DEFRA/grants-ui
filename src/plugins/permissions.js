@@ -8,10 +8,6 @@ const EXCLUDED_PATHS = ['/health', '/auth']
  * @returns {boolean}
  */
 function shouldSkip(request) {
-  // This authenticated landing page renders journey content after an allowlist redirect.
-  if (request.path === '/auth/journey-unauthorised') {
-    return false
-  }
   return EXCLUDED_PATHS.some((path) => request.path === path || request.path.startsWith(`${path}/`))
 }
 
@@ -50,11 +46,24 @@ export default {
          * @param {ResponseToolkit} h
          */
         async (request, h) => {
-          if (!request.auth.isAuthenticated || shouldSkip(request)) {
+          if (!request.auth.isAuthenticated) {
             return h.continue
           }
 
-          const { role, permissionGroups } = await getBusinessPermissions(/** @type {AnyFormRequest} */ (request))
+          const isUnauthorisedLandingPage = request.path === '/auth/journey-unauthorised'
+          if (shouldSkip(request) && !isUnauthorisedLandingPage) {
+            return h.continue
+          }
+
+          // This landing page must render even if DAL is unavailable. Reuse only
+          // permissions already resolved for the active business before the redirect.
+          const businessPermissions = isUnauthorisedLandingPage
+            ? request.yar?.get(getPermissionsCacheKey(request))
+            : await getBusinessPermissions(/** @type {AnyFormRequest} */ (request))
+          if (!businessPermissions || Array.isArray(businessPermissions)) {
+            return h.continue
+          }
+          const { role, permissionGroups } = businessPermissions
 
           const pipelineRequest = /** @type {PipelineRequest & { auth: { credentials: PermissionCredentials } }} */ (
             /** @type {unknown} */ (request)

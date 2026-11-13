@@ -15,7 +15,7 @@ beforeEach(async () => {
 })
 
 describe('business role analytics', () => {
-  it('sends the raw role once and restores it without an event on the next document', async () => {
+  it('sends the raw role once and does not push again on the next document', async () => {
     initialiseUserRoleAnalytics()
     publishUserRole()
     expect(globalThis.dataLayer).toEqual([{ event: 'user_role_loaded', userRole: 'Business Owner' }])
@@ -24,23 +24,7 @@ describe('business role analytics', () => {
     globalThis.dataLayer = []
     const nextPage = await import('./user-role-analytics.js')
     nextPage.initialiseUserRoleAnalytics()
-    expect(globalThis.dataLayer).toEqual([{ userRole: 'Business Owner' }])
-  })
-
-  it('does not repeat the role already seeded by the page template on refresh', () => {
-    localStorage.setItem('grants-ui:user-role-context', 'opaque-a')
-    globalThis.dataLayer = [{ userRole: 'Business Owner' }, { event: 'gtm.js' }]
-    initialiseUserRoleAnalytics()
-    expect(globalThis.dataLayer).toEqual([{ userRole: 'Business Owner' }, { event: 'gtm.js' }])
-  })
-
-  it('still sends the first named event when the template has seeded the role', () => {
-    globalThis.dataLayer = [{ userRole: 'Business Owner' }]
-    initialiseUserRoleAnalytics()
-    expect(globalThis.dataLayer).toEqual([
-      { userRole: 'Business Owner' },
-      { event: 'user_role_loaded', userRole: 'Business Owner' }
-    ])
+    expect(globalThis.dataLayer).toEqual([])
   })
 
   it('sends again for a different business context or a new authenticated session', () => {
