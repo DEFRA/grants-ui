@@ -103,7 +103,7 @@ function saveInputs(context, inputs, repeatName, itemId) {
  * @param {import('@defra/forms-engine-plugin/types').AnyFormRequest} request
  * @param {FormContext} context
  */
-export function preserveNumberFieldInputs(request, context) {
+export function persistFormatting(request, context) {
   if (context.isForceAccess || !request.app.model) {
     return
   }

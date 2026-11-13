@@ -3,7 +3,7 @@ import { enforcePagePermission } from './permissions/enforce-page-permission.js'
 import { applicationDeletedRedirect } from './redirects/application-deleted-redirect.js'
 import { resolveApplicationWindowClosedPath } from './redirects/application-window-closed-redirect.js'
 import { applyLocationHints } from '../map/location-hints.js'
-import { preserveNumberFieldInputs } from '../helpers/state/preserve-number-field-inputs.js'
+import { persistFormatting } from '../helpers/state/persist-formatting.js'
 import { enableRepeatTaskContext } from '~/src/server/task-list/repeat-task-context.js'
 import { enableRepeatPageItemNames } from '../helpers/repeat-page-item-names.js'
 import { enableRepeatNumberFormatting } from '../helpers/repeat-page-number-formatting.js'
@@ -44,7 +44,7 @@ export async function formsRequestPipeline(request, h, context) {
 
   if (permissionResult === h.continue) {
     applyLocationHints(request, context)
-    preserveNumberFieldInputs(request, context)
+    persistFormatting(request, context)
     enableRepeatPageItemNames(request)
     enableRepeatNumberFormatting(request)
     enableRepeatTaskContext(request)

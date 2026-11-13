@@ -1,7 +1,7 @@
 import { RepeatPageController } from '@defra/forms-engine-plugin/controllers/RepeatPageController.js'
 import { getPage } from '@defra/forms-engine-plugin/engine/helpers.js'
 import { formatNumberAnswer } from './number-formatter.js'
-import { getNumberFieldInputs } from './state/preserve-number-field-inputs.js'
+import { getNumberFieldInputs } from './state/persist-formatting.js'
 
 const decoratedPages = new WeakSet()
 

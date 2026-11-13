@@ -4,7 +4,7 @@ import { FormModel } from '@defra/forms-engine-plugin/engine/models/FormModel.js
 import { redirectOrMakeHandler } from '@defra/forms-engine-plugin/engine/routes/index.js'
 import CheckResponsesPageController from './check-responses.controller.js'
 import { GrantsSummaryPageController } from '../common/controllers/summary-page.controller.js'
-import { preserveNumberFieldInputs } from '../common/helpers/state/preserve-number-field-inputs.js'
+import { persistFormatting } from '../common/helpers/state/persist-formatting.js'
 import { buildPrintViewModel } from '../common/helpers/print-application-service/print-application-service.js'
 import { configureFormDefinition } from '../common/forms/services/form.js'
 import DeclarationPageController from '../declaration/declaration-page.controller.js'
@@ -98,7 +98,7 @@ function createJourney(format, { controller = 'CheckResponsesPageController', vi
         request,
         h,
         (req, toolkit, context) => {
-          preserveNumberFieldInputs(req, context)
+          persistFormatting(req, context)
           enableRepeatPageItemNames(req)
           enableRepeatNumberFormatting(req)
           return toolkit.continue

@@ -4,7 +4,7 @@ import { buildConfirmLandAndActionsViewModel } from '~/src/server/land-grants/vi
 import { ComponentsRegistry } from '../../../confirmation/services/components.registry.js'
 import { findPageByPath, normalisePagePath, resolveAdditionalAnswerSections } from '../additional-answers.js'
 import { getSavedLocationHint } from '../../map/location-hints.js'
-import { getNumberFieldInputs } from '../state/preserve-number-field-inputs.js'
+import { getNumberFieldInputs } from '../state/persist-formatting.js'
 
 export const COMPOSITE_FIELD_PARTS = {
   [COMPONENT_TYPES.DatePartsField]: ['day', 'month', 'year'],
@@ -87,7 +87,7 @@ function resolveAnswer(component, answers) {
  * @param {FormComponent[] | undefined} components
  * @param {Answers} answers
  * @param {boolean} includeUnanswered - Include all repeat fields, including blank optional answers
- * @param {import('../state/preserve-number-field-inputs.js').NumberInputs} [numberInputs]
+ * @param {import('../state/persist-formatting.js').NumberInputs} [numberInputs]
  * @returns {Question[]}
  */
 function extractQuestions(components, answers, includeUnanswered, numberInputs) {

@@ -4,7 +4,7 @@ import { evaluateTemplate, redirectPath } from '@defra/forms-engine-plugin/engin
 import { getAnswerMarkdown, markdown } from '@defra/forms-engine-plugin/engine/components/helpers/components.js'
 import escapeHtml from 'lodash/escape.js'
 import { formatNumberAnswer } from '../common/helpers/number-formatter.js'
-import { getNumberFieldInputs } from '../common/helpers/state/preserve-number-field-inputs.js'
+import { getNumberFieldInputs } from '../common/helpers/state/persist-formatting.js'
 
 const NOT_PROVIDED = 'Not provided'
 
