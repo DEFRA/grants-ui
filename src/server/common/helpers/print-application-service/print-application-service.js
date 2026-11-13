@@ -5,6 +5,8 @@ import { ComponentsRegistry } from '../../../confirmation/services/components.re
 import { findPageByPath, normalisePagePath, resolveAdditionalAnswerSections } from '../additional-answers.js'
 import { getSavedLocationHint } from '../../map/location-hints.js'
 import { getNumberFieldInputs } from '../state/persist-formatting.js'
+import { getNumberDisplayValue } from '../number-display-value.js'
+import { getNumberFormatter } from '../number-formatter.js'
 
 export const COMPOSITE_FIELD_PARTS = {
   [COMPONENT_TYPES.DatePartsField]: ['day', 'month', 'year'],
@@ -92,22 +94,26 @@ function resolveAnswer(component, answers) {
  */
 function extractQuestions(components, answers, includeUnanswered, numberInputs) {
   return (components || [])
-    .filter((component) => {
-      if (!isAnswerableComponent(component)) {
-        return false
-      }
-      const rawAnswer = resolveAnswer(component, answers)
-      return includeUnanswered || (rawAnswer !== undefined && rawAnswer !== null)
-    })
-    .map((component) => {
+    .filter(isAnswerableComponent)
+    .map((component) => ({
+      component,
+      answer: resolveAnswer(component, answers)
+    }))
+    .filter(({ answer }) => includeUnanswered || (answer !== undefined && answer !== null))
+    .map(({ component, answer }) => {
       const locationHint = getSavedLocationHint(component, answers)
+      const numberFormatter =
+        component.type === COMPONENT_TYPES.NumberField ? getNumberFormatter(component.options?.format) : undefined
+      const displayValue =
+        numberFormatter && component.type === COMPONENT_TYPES.NumberField
+          ? getNumberDisplayValue(answer, numberInputs?.[component.name])
+          : answer
+
       return {
         label:
           (component.shortDescription || component.title || '') +
           (includeUnanswered && component.options?.required === false ? ' (optional)' : ''),
-        answer:
-          formatAnswer(component, resolveAnswer(component, answers), numberInputs?.[component.name]) ||
-          (includeUnanswered ? 'Not provided' : ''),
+        answer: formatAnswer(component, displayValue) || (includeUnanswered ? 'Not provided' : ''),
         ...(locationHint ? { locationHint } : {})
       }
     })

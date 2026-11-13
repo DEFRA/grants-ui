@@ -141,7 +141,7 @@ function formatStringValue(_component, value) {
   return stringifyValue(value)
 }
 
-/** @type {Record<string, (component: Component, value: any, rawInput?: unknown) => string | undefined>} */
+/** @type {Record<string, (component: Component, value: any) => string | undefined>} */
 const FORMATTERS = {
   [COMPONENT_TYPES.YesNoField]: formatYesNo,
   [COMPONENT_TYPES.CheckboxesField]: formatCheckboxes,
@@ -168,16 +168,15 @@ const FORMATTERS = {
  * Formats a raw answer value based on the component type
  * @param {Component} component - The form component definition
  * @param {unknown} value - The raw answer value
- * @param {unknown} [rawInput] - The raw numeric input, when available
  * @returns {string} Formatted answer string
  */
-export function formatAnswer(component, value, rawInput) {
+export function formatAnswer(component, value) {
   if (value === undefined || value === null) {
     return ''
   }
 
   const formatter = FORMATTERS[component.type]
-  return formatter?.(component, value, rawInput) ?? stringifyValue(value)
+  return formatter?.(component, value) ?? stringifyValue(value)
 }
 
 /**

@@ -1,5 +1,4 @@
 import { formatThousands } from '~/src/shared/format-number.js'
-import { getNumberDisplayValue } from './number-display-value.js'
 
 const SUPPORTED_CURRENCIES = new Set(Intl.supportedValuesOf('currency'))
 
@@ -29,13 +28,12 @@ export function getNumberFormatter(format) {
 }
 
 /**
- * Formats a configured NumberField without changing its stored value.
+ * Formats a configured NumberField's display value.
  * @param {{ type?: string, options?: { format?: string } } | undefined} component
  * @param {unknown} value
- * @param {unknown} [rawInput]
  * @returns {string | undefined} Undefined when no number format applies.
  */
-export function formatNumberAnswer(component, value, rawInput) {
+export function formatNumberAnswer(component, value) {
   if (component?.type !== 'NumberField') {
     return undefined
   }
@@ -47,7 +45,7 @@ export function formatNumberAnswer(component, value, rawInput) {
     return undefined
   }
 
-  return formatter(getNumberDisplayValue(value, rawInput))
+  return formatter(value)
 }
 
 /**

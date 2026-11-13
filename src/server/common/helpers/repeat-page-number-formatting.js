@@ -1,6 +1,7 @@
 import { RepeatPageController } from '@defra/forms-engine-plugin/controllers/RepeatPageController.js'
 import { getPage } from '@defra/forms-engine-plugin/engine/helpers.js'
-import { formatNumberAnswer } from './number-formatter.js'
+import { formatNumberAnswer, getNumberFormatter } from './number-formatter.js'
+import { getNumberDisplayValue } from './number-display-value.js'
 import { getNumberFieldInputs } from './state/persist-formatting.js'
 
 const decoratedPages = new WeakSet()
@@ -32,7 +33,12 @@ export function enableRepeatNumberFormatting(formRequest) {
     const rows = viewModel.checkAnswers[0].summaryList.rows
     list.forEach((item, index) => {
       const inputs = getNumberFieldInputs(context.state, this.repeat.options.name, item.itemId)
-      const formatted = formatNumberAnswer(component, item[field.name], inputs?.[field.name])
+      const value = item[field.name]
+      const displayValue =
+        component?.type === 'NumberField' && getNumberFormatter(component.options?.format)
+          ? getNumberDisplayValue(value, inputs?.[field.name])
+          : value
+      const formatted = formatNumberAnswer(component, displayValue)
       if (formatted !== undefined) {
         rows[index].value = { ...rows[index].value, text: formatted || 'Not provided' }
       }

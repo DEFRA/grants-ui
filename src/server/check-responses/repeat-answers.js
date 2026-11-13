@@ -3,7 +3,8 @@ import { ItemField } from '@defra/forms-engine-plugin/engine/models/SummaryViewM
 import { evaluateTemplate, redirectPath } from '@defra/forms-engine-plugin/engine/helpers.js'
 import { getAnswerMarkdown, markdown } from '@defra/forms-engine-plugin/engine/components/helpers/components.js'
 import escapeHtml from 'lodash/escape.js'
-import { formatNumberAnswer } from '../common/helpers/number-formatter.js'
+import { formatNumberAnswer, getNumberFormatter } from '../common/helpers/number-formatter.js'
+import { getNumberDisplayValue } from '../common/helpers/number-display-value.js'
 import { getNumberFieldInputs } from '../common/helpers/state/persist-formatting.js'
 
 const NOT_PROVIDED = 'Not provided'
@@ -58,7 +59,12 @@ export function buildRepeatAnswerCards(viewModel, context, returnUrl) {
               const component = /** @type {{ type: string, options?: { format?: string } } | undefined} */ (
                 context.componentDefMap.get(field.name)
               )
-              const formatted = formatNumberAnswer(component, itemState[field.name], inputs?.[field.name])
+              const rawValue = itemState[field.name]
+              const displayValue =
+                component?.type === 'NumberField' && getNumberFormatter(component.options?.format)
+                  ? getNumberDisplayValue(rawValue, inputs?.[field.name])
+                  : rawValue
+              const formatted = formatNumberAnswer(component, displayValue)
               const value =
                 formatted === undefined
                   ? {

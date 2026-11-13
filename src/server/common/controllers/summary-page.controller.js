@@ -1,6 +1,6 @@
 import { SummaryPageController as EngineSummaryPageController } from '@defra/forms-engine-plugin/controllers/SummaryPageController.js'
-import { formatNumberAnswer } from '~/src/server/common/helpers/number-formatter.js'
-
+import { formatNumberAnswer, getNumberFormatter } from '~/src/server/common/helpers/number-formatter.js'
+import { getNumberDisplayValue } from '~/src/server/common/helpers/number-display-value.js'
 export class GrantsSummaryPageController extends EngineSummaryPageController {
   /**
    * @param {import('@defra/forms-engine-plugin/types').FormContextRequest} request
@@ -25,7 +25,12 @@ export function formatSummaryNumberAnswers(viewModel, context) {
       const component = /** @type {{ type: string, options?: { format?: string } } | undefined} */ (
         context.componentDefMap?.get(item.name)
       )
-      const formatted = formatNumberAnswer(component, item.state?.[item.name], inputs?.[item.name])
+      const value = item.state?.[item.name]
+      const displayValue =
+        component?.type === 'NumberField' && getNumberFormatter(component.options?.format)
+          ? getNumberDisplayValue(value, inputs?.[item.name])
+          : value
+      const formatted = formatNumberAnswer(component, displayValue)
       if (formatted === undefined || formatted === '') {
         return
       }
