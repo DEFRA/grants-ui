@@ -24,9 +24,9 @@ Object.entries(globals).forEach(([name, global]) => env.addGlobal(name, global))
 Object.entries(filters).forEach(([name, filter]) => env.addFilter(name, filter))
 
 /**
- * @param {{ govukBranding: boolean }} branding
+ * @param {{ govukBranding?: boolean, [key: string]: unknown }} branding
  */
-const renderPage = ({ govukBranding }) =>
+const renderPage = ({ govukBranding = false, ...context }) =>
   load(
     env.render('layouts/page.njk', {
       govukBranding,
@@ -38,7 +38,8 @@ const renderPage = ({ govukBranding }) =>
       getAssetPath: (asset) => `/public/${asset}`,
       cookiesPolicy: { confirmed: true, analytics: false },
       breadcrumbs: [],
-      auth: {}
+      auth: {},
+      ...context
     })
   )
 
@@ -93,5 +94,23 @@ describe('page layout branding phases', () => {
       expect(iconHrefs).toContain('/public/assets/rebrand/images/favicon.ico')
       expect(iconHrefs).not.toContain('/public/assets/defra/images/defra-favicon.ico')
     })
+  })
+})
+
+describe('business role analytics markup', () => {
+  test('exposes the raw role to browser code without pushing it from the template', () => {
+    const $ = renderPage({
+      gaTrackingId: 'GTM-TEST',
+      cookiesPolicy: { confirmed: true, analytics: true },
+      userRoleAnalytics: { role: 'Business Partner', token: 'opaque-context' }
+    })
+    expect($('#user-role-analytics').attr('data-role')).toBe('Business Partner')
+    expect($('#user-role-analytics').attr('data-context')).toBe('opaque-context')
+    const scripts = $('script')
+      .map((_index, script) => $(script).html())
+      .get()
+      .join('\n')
+    expect(scripts).not.toContain('userRole:')
+    expect(scripts).toContain("event: 'gtm.js'")
   })
 })
