@@ -260,6 +260,7 @@ pages:
         type: NumberField
         options:
           prefix: £
+          format: currency:gbp
           required: true
           classes: govuk-!-width-one-third
           customValidationMessages:
@@ -336,6 +337,9 @@ pages:
         title: Example number field
         options:
           required: true
+          format: decimal:2
+        schema:
+          precision: 2
         shortDescription: Number with guidance
 
   # Task pages - Example check and submit task

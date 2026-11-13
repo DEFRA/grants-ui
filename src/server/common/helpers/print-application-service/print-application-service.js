@@ -4,6 +4,9 @@ import { buildConfirmLandAndActionsViewModel } from '~/src/server/land-grants/vi
 import { ComponentsRegistry } from '../../../confirmation/services/components.registry.js'
 import { findPageByPath, normalisePagePath, resolveAdditionalAnswerSections } from '../additional-answers.js'
 import { getSavedLocationHint } from '../../map/location-hints.js'
+import { getNumberFieldInputs } from '../state/persist-formatting.js'
+import { getNumberDisplayValue } from '../number-display-value.js'
+import { getNumberFormatter } from '../number-formatter.js'
 
 export const COMPOSITE_FIELD_PARTS = {
   [COMPONENT_TYPES.DatePartsField]: ['day', 'month', 'year'],
@@ -21,7 +24,7 @@ export const COMPOSITE_FIELD_PARTS = {
 
 /**
  * @typedef {{ text: string, value: string | number | boolean }} ListItem
- * @typedef {{ type: string, name: string, title: string, shortDescription?: string, list?: string, items?: ListItem[], options?: { required?: boolean, showApproximateLocation?: boolean } }} FormComponent
+ * @typedef {{ type: string, name: string, title: string, options?: Record<string, unknown> & { format?: string, required?: boolean, showApproximateLocation?: boolean }, shortDescription?: string, list?: string, items?: ListItem[] }} FormComponent
  * @typedef {{ title: string, path?: string, section?: string, controller?: string, components?: FormComponent[], repeat?: { options: { name: string, title: string } } }} FormPage
  * @typedef {{ label: string, answer: string, locationHint?: string, repeatItems?: { title: string, questions: Question[] }[] }} Question
  * @typedef {{
@@ -82,40 +85,68 @@ function resolveAnswer(component, answers) {
 }
 
 /**
+ * Builds a question row from an answerable component.
+ * @param {FormComponent} component
+ * @param {unknown} answer
+ * @param {Answers} answers
+ * @param {boolean} includeUnanswered
+ * @param {import('../state/persist-formatting.js').NumberInputs} [numberInputs]
+ * @returns {Question}
+ */
+function buildQuestion(component, answer, answers, includeUnanswered, numberInputs) {
+  const locationHint = getSavedLocationHint(component, answers)
+  const numberFormatter =
+    component.type === COMPONENT_TYPES.NumberField ? getNumberFormatter(component.options?.format) : undefined
+  const displayValue =
+    numberFormatter && component.type === COMPONENT_TYPES.NumberField
+      ? getNumberDisplayValue(answer, numberInputs?.[component.name])
+      : answer
+
+  return {
+    label:
+      (component.shortDescription || component.title || '') +
+      (includeUnanswered && component.options?.required === false ? ' (optional)' : ''),
+    answer: formatAnswer(component, displayValue) || (includeUnanswered ? 'Not provided' : ''),
+    ...(locationHint ? { locationHint } : {})
+  }
+}
+
+/**
  * Builds question rows from a page's components and the submitted answers.
  * @param {FormComponent[] | undefined} components
  * @param {Answers} answers
- * @param {boolean} [includeUnanswered] - Include all repeat fields, including blank optional answers
+ * @param {boolean} includeUnanswered - Include all repeat fields, including blank optional answers
+ * @param {import('../state/persist-formatting.js').NumberInputs} [numberInputs]
  * @returns {Question[]}
  */
-function extractQuestions(components, answers, includeUnanswered = false) {
-  return (components || [])
-    .filter((component) => {
-      if (!isAnswerableComponent(component)) {
-        return false
-      }
-      const rawAnswer = resolveAnswer(component, answers)
-      return includeUnanswered || (rawAnswer !== undefined && rawAnswer !== null)
-    })
-    .map((component) => {
-      const locationHint = getSavedLocationHint(component, answers)
-      return {
-        label:
-          (component.shortDescription || component.title || '') +
-          (includeUnanswered && component.options?.required === false ? ' (optional)' : ''),
-        answer: formatAnswer(component, resolveAnswer(component, answers)) || (includeUnanswered ? 'Not provided' : ''),
-        ...(locationHint ? { locationHint } : {})
-      }
-    })
+function extractQuestions(components, answers, includeUnanswered, numberInputs) {
+  /** @type {Question[]} */
+  const questions = []
+
+  for (const component of components || []) {
+    if (!isAnswerableComponent(component)) {
+      continue
+    }
+
+    const answer = resolveAnswer(component, answers)
+    if (!includeUnanswered && (answer === undefined || answer === null)) {
+      continue
+    }
+
+    questions.push(buildQuestion(component, answer, answers, includeUnanswered, numberInputs))
+  }
+
+  return questions
 }
 
 /**
  * Reads repeat fields exclusively from each saved item, never top-level state.
  * @param {FormPage} page
  * @param {Answers} answers
+ * @param {Answers} savedState
  * @returns {Question[]}
  */
-function extractRepeatQuestions(page, answers) {
+function extractRepeatQuestions(page, answers, savedState) {
   const { name, title } = page.repeat?.options ?? {}
   const values = name && answers[name]
   if (!Array.isArray(values)) {
@@ -126,7 +157,7 @@ function extractRepeatQuestions(page, answers) {
     .filter((item) => item !== null && typeof item === 'object' && !Array.isArray(item))
     .map((item, index) => ({
       title: `${title || page.title} ${index + 1}`,
-      questions: extractQuestions(page.components, item, true)
+      questions: extractQuestions(page.components, item, true, getNumberFieldInputs(savedState, name, item.itemId))
     }))
     .filter((item) => item.questions.length > 0)
 
@@ -138,10 +169,11 @@ function extractRepeatQuestions(page, answers) {
  * @param {FormPage[] | undefined} pages
  * @param {Answers} answers
  * @param {boolean} hasParcelCards
- * @param {Map<string | undefined, Question[]>} [additionalQuestions]
+ * @param {Map<string | undefined, Question[]>} additionalQuestions
+ * @param {Answers} savedState
  * @returns {{ title: string, questions: Question[] }[]}
  */
-function buildSections(pages, answers, hasParcelCards, additionalQuestions = new Map()) {
+function buildSections(pages, answers, hasParcelCards, additionalQuestions, savedState) {
   return (pages || [])
     .map((page) => {
       const components =
@@ -153,8 +185,8 @@ function buildSections(pages, answers, hasParcelCards, additionalQuestions = new
         title: page.title,
         questions: [
           ...(page.controller === 'RepeatPageController'
-            ? extractRepeatQuestions(page, answers)
-            : extractQuestions(components, answers)),
+            ? extractRepeatQuestions(page, answers, savedState)
+            : extractQuestions(components, answers, false, getNumberFieldInputs(savedState))),
           ...(additionalQuestions.get(normalisePagePath(page.path)) ?? [])
         ]
       }
@@ -169,8 +201,16 @@ function buildSections(pages, answers, hasParcelCards, additionalQuestions = new
  * @param {boolean} hasParcelCards
  * @param {string | undefined} landAndActionsSectionId
  * @param {Map<string | undefined, Question[]>} additionalQuestions
+ * @param {Answers} savedState
  */
-function buildTaskSections(definition, answers, hasParcelCards, landAndActionsSectionId, additionalQuestions) {
+function buildTaskSections(
+  definition,
+  answers,
+  hasParcelCards,
+  landAndActionsSectionId,
+  additionalQuestions,
+  savedState
+) {
   const titles = new Map((definition.sections || []).map((section) => [section.id, section.title]))
   /** @type {Map<string | undefined, { title: string, questions: Question[], showLandAndActions: boolean }>} */
   const groups = new Map()
@@ -179,7 +219,7 @@ function buildTaskSections(definition, answers, hasParcelCards, landAndActionsSe
     const sectionId = page.section && titles.has(page.section) ? page.section : undefined
     const group = groups.get(sectionId) ?? createTaskSection(titles, sectionId, landAndActionsSectionId)
     groups.set(sectionId, group)
-    for (const section of buildSections([page], answers, hasParcelCards, additionalQuestions)) {
+    for (const section of buildSections([page], answers, hasParcelCards, additionalQuestions, savedState)) {
       group.questions.push(...section.questions)
     }
   }
@@ -429,9 +469,10 @@ export function buildPrintViewModel({
             printAnswers,
             hasParcelCards,
             landAndActionsSectionId,
-            additional.questionsByPage
+            additional.questionsByPage,
+            savedState
           )
-        : buildSections(definition.pages, printAnswers, hasParcelCards, additional.questionsByPage)),
+        : buildSections(definition.pages, printAnswers, hasParcelCards, additional.questionsByPage, savedState)),
       ...additional.sections
     ],
     landAndActionsSummary,

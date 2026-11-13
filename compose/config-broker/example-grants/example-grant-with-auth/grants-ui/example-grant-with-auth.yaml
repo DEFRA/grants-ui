@@ -484,6 +484,7 @@ pages:
         title: Enter amount
         options:
           prefix: £
+          format: currency:gbp
           required: true
           autocomplete: off
           classes: govuk-!-width-one-third
@@ -514,6 +515,7 @@ pages:
         title: Enter amount that may divert the journey
         options:
           prefix: £
+          format: currency:gbp
           required: true
           autocomplete: off
           classes: govuk-!-width-one-third
@@ -837,6 +839,7 @@ pages:
         hint: Enter the total project budget in pounds, for example 50000
         options:
           prefix: £
+          format: currency:gbp
           required: true
           autocomplete: off
           classes: govuk-!-width-one-third
@@ -878,6 +881,7 @@ pages:
         type: NumberField
         options:
           prefix: £
+          format: currency:gbp
           required: true
           classes: govuk-!-width-one-third
           customValidationMessages:
