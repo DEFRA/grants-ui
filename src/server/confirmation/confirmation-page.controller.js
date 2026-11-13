@@ -10,6 +10,7 @@ import { ComponentsRegistry } from './services/components.registry.js'
 import { isBoom } from '@hapi/boom'
 import { log, LogCodes } from '../common/helpers/logging/log.js'
 import { statusCodes } from '../common/constants/status-codes.js'
+import { applicationsSelectorPath } from '../common/constants/applications-path.js'
 
 /**
  * Selects which reference the confirmation panel displays. Set via the
@@ -183,7 +184,7 @@ export default class ConfirmationPageController extends StatusPageController {
         this.confirmationType === ConfirmationType.APPLICATION &&
         this.model.def.metadata?.allowMultipleApplications === true &&
         applicationWindowOpen
-          ? `/${slug}/applications`
+          ? applicationsSelectorPath(slug)
           : undefined
     })
   }

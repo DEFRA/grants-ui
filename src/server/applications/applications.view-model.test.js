@@ -37,7 +37,7 @@ it.each([
     'hint rules say it is returned',
     { rules, ownMajor: false },
     'APPLICATION_AMEND',
-    'Returned for amendments',
+    'Submitted',
     '/test-grant?ref=REF-1'
   ],
   ['it has no rules', undefined, 'APPLICATION_AMEND', 'Submitted', '/test-grant?ref=REF-1'],
@@ -74,5 +74,56 @@ it('shows no submitted date for a returned application and keeps it for a submit
   expect(viewModel.applications.map(({ submittedAt, actionText }) => ({ submittedAt, actionText }))).toEqual([
     { submittedAt: null, actionText: 'Continue application' },
     { submittedAt: '2026-03-01T12:00:00Z', actionText: 'View application' }
+  ])
+})
+
+const withdrawalRule = {
+  fromGrantsStatus: 'SUBMITTED,REOPENED',
+  gasStatus: 'STATUS_APPLICATION_WITHDRAWN,APPLICATION_WITHDRAWN',
+  toGrantsStatus: 'CLEARED',
+  toPath: '/start'
+}
+
+it('shows a submitted application GAS has withdrawn as withdrawn, with no action, under its own rules', () => {
+  const viewModel = buildApplicationsViewModel(request, definition, [submitted], {
+    gasStatuses: new Map([['REF-1', 'STATUS_APPLICATION_WITHDRAWN']]),
+    postSubmissionRules: new Map([['REF-1', { rules: [withdrawalRule, ...rules], ownMajor: true }]])
+  })
+
+  expect(viewModel.applications).toEqual([
+    expect.objectContaining({
+      referenceNumber: 'REF-1',
+      statusText: 'Withdrawn',
+      statusClasses: 'govuk-tag--grey',
+      actionText: null,
+      href: null,
+      submittedAt: '2026-03-01T12:00:00Z'
+    })
+  ])
+})
+
+it('leaves a withdrawal only hint rules report to the status redirect, like an unread GAS status', () => {
+  const viewModel = buildApplicationsViewModel(request, definition, [submitted], {
+    gasStatuses: new Map([['REF-1', 'STATUS_APPLICATION_WITHDRAWN']]),
+    postSubmissionRules: new Map([['REF-1', { rules: [withdrawalRule, ...rules], ownMajor: false }]])
+  })
+
+  expect(viewModel.applications).toEqual([
+    expect.objectContaining({ statusText: 'Submitted', actionText: 'View application', href: '/test-grant?ref=REF-1' })
+  ])
+})
+
+it('keeps a submitted application submitted when its rules do not clear the GAS status', () => {
+  const viewModel = buildApplicationsViewModel(request, definition, [submitted], {
+    gasStatuses: new Map([['REF-1', 'APPLICATION_WITHDRAWN']]),
+    postSubmissionRules: new Map([['REF-1', { rules, ownMajor: true }]])
+  })
+
+  expect(viewModel.applications).toEqual([
+    expect.objectContaining({
+      statusText: 'Submitted',
+      actionText: 'View application',
+      href: '/test-grant/print-submitted-application?ref=REF-1'
+    })
   ])
 })
