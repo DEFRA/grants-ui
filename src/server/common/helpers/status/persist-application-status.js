@@ -5,7 +5,7 @@ import { mintLockToken } from '../lock/lock-token.js'
 import { getReferenceNumber, getCacheKey, buildSessionKey, setReferenceNumber } from '../state/get-cache-key-helper.js'
 import { generateUniqueReference } from '@defra/forms-engine-plugin/engine/referenceNumbers.js'
 import { getGrantVersion } from '../grant-version.js'
-import { isStoredByReference } from '../state/state-with-definition-context.js'
+import { getStateWithDefinition, isStoredByReference } from '../state/state-with-definition-context.js'
 import { ExternalApiError } from '../../utils/errors/ExternalApiError.js'
 
 /**
@@ -124,12 +124,15 @@ async function persistReopened(request, existingState) {
     /** @type {string | undefined} */ (request.app.model?.def?.metadata?.referenceNumberPrefix) ?? ''
   )
   const newReferenceNumber = generateUniqueReference(prefix)
+  // The replacement is a new document; it keeps the start date of the one it supersedes.
+  const createdAt = /** @type {string | undefined} */ ((await getStateWithDefinition(request))?.state?.createdAt)
 
   await cacheService.setState(
     request,
     /** @type {FormSubmissionState} */ (
       /** @type {unknown} */ ({ ...reopened, $$__referenceNumber: newReferenceNumber })
-    )
+    ),
+    { createdAt }
   )
   setReferenceNumber(request, newReferenceNumber)
 

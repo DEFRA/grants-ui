@@ -243,6 +243,7 @@ The system organizes log codes into logical categories:
 - **PERMISSIONS**: Grant permission enforcement checks
 - **PRINT_APPLICATION**: Application print functionality
 - **PURGE**: Data purge events
+- **APPLICATIONS**: Applications selector events for grants allowing multiple applications
 - **SYSTEM**: System-level events and errors
 - **AUDIT**: Audit trail events
 

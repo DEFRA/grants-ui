@@ -11,8 +11,9 @@ const UNKNOWN_REFERENCE = 'Unknown application reference'
 /**
  * `?ref=` routing (onPostAuth, before the plugin loads state). A grant is
  * multi-application when its definition is flagged or the backend already
- * stores the SBI's documents keyed by ref (`allowMultipleApplications` on the doc). With a ref it must resolve (404 otherwise; a
- * single-application grant just drops it). Without one: 0 continue, 1 attach its ref, 2+ selector.
+ * stores the SBI's documents keyed by ref (`allowMultipleApplications` on the doc). With a ref it must resolve, or be
+ * the previous reference of a reopened application (redirected to the current one); 404 otherwise, and a
+ * single-application grant just drops it. Without one: 0 continue, 1 attach its ref, 2+ selector.
  *
  * @param {import('@defra/forms-engine-plugin/engine/types.js').AnyRequest} request
  * @param {import('@hapi/hapi').ResponseToolkit} h
@@ -100,11 +101,18 @@ function isMultiApplication(envelope) {
  */
 async function resolveWithRef(request, h, envelope, ref) {
   if (isMultiApplication(envelope)) {
-    if (!envelope?.state) {
-      auditUnknownReference(request, ref)
-      throw notFound(UNKNOWN_REFERENCE)
+    if (envelope?.state) {
+      return h.continue
     }
-    return h.continue
+    // A reopened application carries a new reference; its previous one still opens it.
+    const replacement = (await listApplications(request)).find(
+      (application) => application.previousReferenceNumber === ref
+    )
+    if (replacement) {
+      return scopeToApplication(request, h, replacement.applicationRef)
+    }
+    auditUnknownReference(request, ref)
+    throw notFound(UNKNOWN_REFERENCE)
   }
 
   // Not flagged and no ref-keyed document for this ref: single-application scheme, unless
