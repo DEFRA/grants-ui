@@ -13,11 +13,14 @@ const GOVUK_BRANDED_PHASES = new Set([PUBLIC_BETA, LIVE])
 /**
  * Resolves the branding configuration for the current request from the grant
  * definition metadata (`metadata.phase`). Defaults to Private Beta.
+ * Metadata from an already resolved definition can be supplied for pages
+ * rendered without a forms-engine model.
  * @param {import('~/src/config/nunjucks/context/context.js').ExtendedRequest} [request]
+ * @param {import('./context.js').FormMetadata} [metadata]
  * @returns {ServiceBranding}
  */
-export function buildServiceBranding(request) {
-  const phase = request?.app?.model?.def?.metadata?.phase
+export function buildServiceBranding(request, metadata = request?.app?.model?.def?.metadata) {
+  const phase = metadata?.phase
   const grantPhase =
     typeof phase === 'string' && (phase === PRIVATE_BETA || GOVUK_BRANDED_PHASES.has(phase)) ? phase : PRIVATE_BETA
 

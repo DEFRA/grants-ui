@@ -20,7 +20,7 @@
     {{ defraBrandBar({ defraAssetPath: defraAssetPath }) }}
   {% endif %}
 
-  {{ govukServiceNavigation({ serviceName: name | default(serviceName) , serviceUrl: serviceUrl }) }}
+  {{ govukServiceNavigation({ serviceName: name | default(serviceName), serviceUrl: serviceUrl, navigation: navigation }) }}
 
   <div class="govuk-width-container">
     {% if feedbackSurveyUrl %}
