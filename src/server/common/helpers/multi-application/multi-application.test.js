@@ -540,6 +540,14 @@ describe('multiApplication plugin - reattaching the ref to rendered links', () =
     expect((await render(makeViewRequest({ html: root, path: '/test-grant' }))).html).toBe(root)
   })
 
+  it('leaves the applications selector link without a ref', async () => {
+    const html = '<a href="/test-grant/applications">manage</a><a href="/test-grant/tasks">tasks</a>'
+
+    expect((await render(makeViewRequest({ html }))).html).toBe(
+      '<a href="/test-grant/applications">manage</a><a href="/test-grant/tasks?ref=REF-1">tasks</a>'
+    )
+  })
+
   it('does not leak the ref to links outside the grant journey', async () => {
     const html =
       '<a href="/auth/sign-out">a</a><a href="/other-grant/page">b</a><a href="/test-grants/page">c</a><a href="https://x.test/test-grant/page">d</a><a href="//test-grant.evil.test/x">e</a><a href="#main">f</a><a href="">g</a><a href="mailto:x@y.test">h</a>'

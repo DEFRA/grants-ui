@@ -1,5 +1,4 @@
 {% extends "layouts/page.njk" %}
-{% from "govuk/components/button/macro.njk" import govukButton %}
 {% set backLink = false %}
 {% from "govuk/components/panel/macro.njk" import govukPanel %}
 {% from "dev-mode-banner/macro.njk" import appDevModeBanner %}
@@ -55,10 +54,14 @@
     {% endif %}
 
     {% if startAnotherApplicationUrl %}
-      <form method="post" action="{{ startAnotherApplicationUrl }}">
-        <input type="hidden" name="crumb" value="{{ crumb }}" />
-        {{ govukButton({ text: "Start a new application", preventDoubleClick: true }) }}
-      </form>
+      <p class="govuk-body">
+        Go to <a class="govuk-link" href="{{ startAnotherApplicationUrl }}">manage your applications</a> to:
+      </p>
+      <ul class="govuk-list govuk-list--bullet">
+        <li>view this and other applications</li>
+        <li>start a new application</li>
+        <li>continue working on draft applications</li>
+      </ul>
     {% endif %}
 
     {% if feedbackSurveyUrl %}
