@@ -17,7 +17,7 @@ describe('TotalEstimatedCostController', () => {
   let mockContext
   let mockH
 
-  beforeEach(() => {
+  const setupControllerMocking = (tanksCostPerUnit = 1.5) => {
     const mockModel = {
       def: {
         metadata: {
@@ -46,7 +46,7 @@ describe('TotalEstimatedCostController', () => {
                 reservoirSyntheticHighCostPerUnit: 3.5,
                 reservoirSyntheticLowCostPerUnit: 3.0,
                 distNetworkCostPerUnit: 5,
-                tanksCostPerUnit: 1.5,
+                tanksCostPerUnit,
                 grantMaxRate: 0.4
               }
             }
@@ -87,6 +87,10 @@ describe('TotalEstimatedCostController', () => {
     vi.spyOn(controller, 'setState').mockImplementation(async (req, state) => state)
 
     vi.clearAllMocks()
+  }
+
+  beforeEach(() => {
+    setupControllerMocking()
   })
 
   describe('makeGetRouteHandler', () => {
@@ -203,6 +207,15 @@ describe('TotalEstimatedCostController', () => {
       const results = controller.getCalculatedAnswers(mockRequest, mockContext.state)
 
       expect(results.reservoirCost).toBe(35000)
+    })
+
+    it('should calculate total estimated cost including pence for non round inputs', () => {
+      setupControllerMocking(1.53)
+      mockContext.state.itemsPlanningToInstall = ['WATER_STORAGE_TANKS']
+      mockContext.state.waterStorageCapacity = 123
+
+      const results = controller.getCalculatedAnswers(mockRequest, mockContext.state)
+      expect(results.estimatedMaxGrantBeforeReduction).toBe(75.28)
     })
 
     it('should set minGrantReached to true when total estimated grant is at or above £35,000 for reservoir', () => {
@@ -413,7 +426,7 @@ describe('TotalEstimatedCostController', () => {
       }
     })
 
-    it('should return /exit-total-estimated-cost when minGrantReached is false', () => {
+    it('should return /exit-project-details-total-estimated-grant when minGrantReached is false', () => {
       mockContext.state.additionalAnswers = { minGrantReached: false }
       const originalInstanceGetNextPath = controller.getNextPath
       delete controller.getNextPath
@@ -423,7 +436,7 @@ describe('TotalEstimatedCostController', () => {
 
       try {
         const result = controller.getNextPath(mockContext)
-        expect(result).toBe('/exit-total-estimated-cost')
+        expect(result).toBe('/exit-project-details-total-estimated-grant')
       } finally {
         QuestionPageController.prototype.getNextPath = superGetNextPath
         controller.getNextPath = originalInstanceGetNextPath
