@@ -205,6 +205,15 @@ describe('TotalEstimatedCostController', () => {
       expect(results.reservoirCost).toBe(35000)
     })
 
+    it('should calculate total estimated cost including pence for non round inputs', () => {
+      mockContext.state.itemsPlanningToInstall = ['WATER_STORAGE_TANKS']
+      mockContext.state.whatTypeOfReservoir = 'clay'
+      mockContext.state.waterStorageCapacity = 123
+
+      const results = controller.getCalculatedAnswers(mockRequest, mockContext.state)
+      expect(results.estimatedMaxGrantBeforeReduction).toBe(73.8)
+    })
+
     it('should set minGrantReached to true when total estimated grant is at or above £35,000 for reservoir', () => {
       mockContext.state.itemsPlanningToInstall = ['RESERVOIR']
       mockContext.state.howMuchWater = 35000 // 35000 * 2.5 (avg 2.5) * 0.4 = ... wait
