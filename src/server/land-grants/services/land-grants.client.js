@@ -5,6 +5,7 @@ import { retry } from '~/src/server/common/helpers/retry.js'
 import { statusCodes } from '~/src/server/common/constants/status-codes.js'
 import { getConsentTypes } from '~/src/server/land-grants/utils/consent-types.js'
 import { validateLandGrantsUserContext } from './land-grants-user-context.js'
+import { OutboundService, withOutboundMetrics } from '~/src/server/common/helpers/outbound-call-metrics.js'
 
 const LAND_GRANTS_SERVICE = 'grants-ui-backend'
 
@@ -20,10 +21,12 @@ export const LAND_GRANTS_ACTIONS = 'actions'
  * @param {Record<string, unknown>} body
  * @param {string} baseUrl
  * @param {LandGrantsUserContext} userContext
+ * @param {string} [operation] - Low-cardinality name for metrics; defaults to `endpoint`, so pass one when the
+ *   endpoint contains variable path segments.
  * @returns {Promise<Response>}
  * @throws {Error & {code?: number, status?: number}}
  */
-export async function postToLandGrantsApiRaw(endpoint, body, baseUrl, userContext) {
+export async function postToLandGrantsApiRaw(endpoint, body, baseUrl, userContext, operation = endpoint) {
   const { defraIdToken } = validateLandGrantsUserContext(userContext)
   const url = `${baseUrl}${endpoint}`
   log(LogCodes.LAND_GRANTS.API_REQUEST, { endpoint, url })
@@ -34,14 +37,16 @@ export async function postToLandGrantsApiRaw(endpoint, body, baseUrl, userContex
 
   const apiOperation = async () => {
     attempts += 1
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: /** @type {HeadersInit} */ ({
-        ...createApiHeadersForLandGrantsBackend(),
-        'x-forwarded-authorization': defraIdToken
-      }),
-      body: JSON.stringify(body)
-    })
+    const response = await withOutboundMetrics({ service: OutboundService.LAND_GRANTS_API, operation }, () =>
+      fetch(url, {
+        method: 'POST',
+        headers: /** @type {HeadersInit} */ ({
+          ...createApiHeadersForLandGrantsBackend(),
+          'x-forwarded-authorization': defraIdToken
+        }),
+        body: JSON.stringify(body)
+      })
+    )
 
     if (!response.ok) {
       lastUpstreamStatus = response.status
@@ -119,7 +124,13 @@ export async function postToLandGrantsApi(endpoint, body, baseUrl, userContext) 
  */
 export async function fetchParcelTile(parcelIds, z, x, y, baseUrl, userContext) {
   const endpoint = `/api/v1/parcel-tiles/${z}/${x}/${y}`
-  const response = await postToLandGrantsApiRaw(endpoint, { parcelIds }, baseUrl, userContext)
+  const response = await postToLandGrantsApiRaw(
+    endpoint,
+    { parcelIds },
+    baseUrl,
+    userContext,
+    '/api/v1/parcel-tiles/{z}/{x}/{y}'
+  )
   const buffer = await response.arrayBuffer()
   return Buffer.from(buffer)
 }

@@ -7,6 +7,7 @@ import { createApiHeadersForGrantsUiBackend } from '../auth/backend-auth-helper.
 import { log, LogCodes } from '../logging/log.js'
 import { createBoomError } from '../errors.js'
 import { getGrantVersion } from '../grant-version.js'
+import { OutboundService, withOutboundMetrics } from '~/src/server/common/helpers/outbound-call-metrics.js'
 
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
 const GRANTS_UI_BACKEND_JWT_SECRET = config.get('session.cache.jwtSecret')
@@ -63,6 +64,9 @@ async function callStateApi(key, method, request, { lockToken, grantVersion } = 
 
   let response
   const endpoint = getEndpoint(key, resolvedVersion)
+  const { grantCode } = parseSessionKey(key)
+  const operationByMethod = { DELETE: 'clearState', GET: 'getState' }
+  const operation = operationByMethod[method] ?? `http:${method}`
 
   logDebug(request, {
     method,
@@ -71,10 +75,11 @@ async function callStateApi(key, method, request, { lockToken, grantVersion } = 
   })
 
   try {
-    response = await fetch(endpoint, {
-      method,
-      headers: await createApiHeadersForGrantsUiBackend({ lockToken })
-    })
+    const headers = await createApiHeadersForGrantsUiBackend({ lockToken })
+    response = await withOutboundMetrics(
+      { service: OutboundService.GRANTS_UI_BACKEND, operation, scheme: grantCode },
+      () => fetch(endpoint, { method, headers })
+    )
   } catch (err) {
     logError(request, { method, endpoint, identity: key, errorMessage: /** @type {Error} */ (err).message })
     throw err
@@ -129,16 +134,21 @@ export async function fetchStateWithDefinitionFromApi(key, request, { lockToken 
 
   let response
   try {
-    response = await fetch(endpoint, {
-      method,
-      headers: await createApiHeadersForGrantsUiBackend({ lockToken }),
-      body: JSON.stringify({
-        sbi,
-        grantCode,
-        includeDefinition: true,
-        applicationRef: referenceNumber
-      })
-    })
+    const headers = await createApiHeadersForGrantsUiBackend({ lockToken })
+    response = await withOutboundMetrics(
+      { service: OutboundService.GRANTS_UI_BACKEND, operation: 'getStateWithDefinition', scheme: grantCode },
+      () =>
+        fetch(endpoint, {
+          method,
+          headers,
+          body: JSON.stringify({
+            sbi,
+            grantCode,
+            includeDefinition: true,
+            applicationRef: referenceNumber
+          })
+        })
+    )
   } catch (err) {
     logError(request, { method, endpoint, identity: key, errorMessage: /** @type {Error} */ (err).message })
     throw err
@@ -198,13 +208,14 @@ export async function listApplicationsFromApi({ crn, sbi, grantCode }) {
 
   const userContext = Jwt.token.generate({ crn, sbi }, GRANTS_UI_BACKEND_JWT_SECRET)
 
-  const response = await fetch(url.href, {
-    method: 'GET',
-    headers: {
-      ...(await createApiHeadersForGrantsUiBackend({})),
-      'x-user-context': userContext
-    }
-  })
+  const headers = {
+    ...(await createApiHeadersForGrantsUiBackend({})),
+    'x-user-context': userContext
+  }
+  const response = await withOutboundMetrics(
+    { service: OutboundService.GRANTS_UI_BACKEND, operation: 'listApplications', scheme: grantCode },
+    () => fetch(url.href, { method: 'GET', headers })
+  )
 
   if (!response.ok) {
     throw createBoomError(response.status, `Failed to list applications: ${response.status}`)
@@ -238,10 +249,11 @@ export async function clearSavedStateFromApiByContext({ sbi, grantCode, grantVer
     url.searchParams.set('applicationRef', applicationRef)
   }
 
-  const response = await fetch(url.href, {
-    method: 'DELETE',
-    headers: await createApiHeadersForGrantsUiBackend({ lockToken })
-  })
+  const headers = await createApiHeadersForGrantsUiBackend({ lockToken })
+  const response = await withOutboundMetrics(
+    { service: OutboundService.GRANTS_UI_BACKEND, operation: 'clearState', scheme: grantCode },
+    () => fetch(url.href, { method: 'DELETE', headers })
+  )
 
   if (!response.ok && response.status !== statusCodes.notFound) {
     throw createBoomError(response.status, `Failed to clear state: ${response.status}`)
@@ -318,7 +330,11 @@ export async function fetchLatestDefinitionFromApi(grantCode) {
     return null
   }
   const url = new URL(`/definitions/${encodeURIComponent(grantCode)}`, GRANTS_UI_BACKEND_ENDPOINT)
-  const response = await fetch(url.href, { method: 'GET', headers: await createApiHeadersForGrantsUiBackend({}) })
+  const headers = await createApiHeadersForGrantsUiBackend({})
+  const response = await withOutboundMetrics(
+    { service: OutboundService.GRANTS_UI_BACKEND, operation: 'getDefinition', scheme: grantCode },
+    () => fetch(url.href, { method: 'GET', headers })
+  )
   if (response.status === statusCodes.notFound) {
     return null
   }

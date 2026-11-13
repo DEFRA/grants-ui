@@ -19,6 +19,8 @@ services:
       PORT: 3000
       NODE_ENV: ${NODE_ENV:-development}
       ENVIRONMENT: local
+      # Print EMF metrics to stdout instead of sending them to CloudWatch (local only).
+      AWS_EMF_ENVIRONMENT: Local
       REDIS_HOST: redis
       USE_SINGLE_INSTANCE_CACHE: true
       SESSION_CACHE_ENGINE: redis

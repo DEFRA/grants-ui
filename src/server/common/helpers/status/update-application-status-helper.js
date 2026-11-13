@@ -3,6 +3,7 @@ import { config } from '~/src/config/config.js'
 import { parseSessionKey } from '../state/get-cache-key-helper.js'
 import { createApiHeadersForGrantsUiBackend } from '../auth/backend-auth-helper.js'
 import { debug, log, LogCodes } from '../logging/log.js'
+import { OutboundService, withOutboundMetrics } from '~/src/server/common/helpers/outbound-call-metrics.js'
 
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
 
@@ -41,17 +42,22 @@ export async function updateApplicationStatus(
   })
 
   try {
-    const response = await fetch(url.href, {
-      method: 'PATCH',
-      headers: await createApiHeadersForGrantsUiBackend({ lockToken }),
-      body: JSON.stringify({
-        // The backend's own field name for this is still applicationRef.
-        ...(referenceNumber && { applicationRef: referenceNumber }),
-        state: {
-          applicationStatus
-        }
-      })
-    })
+    const headers = await createApiHeadersForGrantsUiBackend({ lockToken })
+    const response = await withOutboundMetrics(
+      { service: OutboundService.GRANTS_UI_BACKEND, operation: 'updateApplicationStatus', scheme: grantCode },
+      () =>
+        fetch(url.href, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify({
+            // The backend's own field name for this is still applicationRef.
+            ...(referenceNumber && { applicationRef: referenceNumber }),
+            state: {
+              applicationStatus
+            }
+          })
+        })
+    )
 
     if (!response.ok) {
       log(LogCodes.SYSTEM.EXTERNAL_API_ERROR, {

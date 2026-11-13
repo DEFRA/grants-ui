@@ -744,6 +744,18 @@ describe('Grant Application service (token present)', () => {
       })
       expect(result).toEqual(mockRawResponse)
     })
+
+    test('percent-encodes path segments so a decoded slug cannot change the GAS path', async () => {
+      const mockedFetch = mockFetch()
+      mockedFetch.mockResolvedValueOnce({ ok: true, json: vi.fn().mockResolvedValueOnce({}) })
+
+      await getApplicationStatus('../../admin?x=1#', 'client-ref')
+
+      expect(mockedFetch).toHaveBeenCalledWith(
+        `${gasApi}/grants/..%2F..%2Fadmin%3Fx%3D1%23/applications/client-ref/status`,
+        expect.any(Object)
+      )
+    })
   })
 
   describe('getAvailableClaimEntitlements', () => {

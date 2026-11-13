@@ -5,6 +5,7 @@ import { config } from '~/src/config/config.js'
 import { parseSessionKey } from './get-cache-key-helper.js'
 import { createApiHeadersForGrantsUiBackend } from '../auth/backend-auth-helper.js'
 import { debug, log, LogCodes } from '../logging/log.js'
+import { OutboundService, withOutboundMetrics } from '~/src/server/common/helpers/outbound-call-metrics.js'
 
 // @ts-ignore - TS2589: Type instantiation excessively deep (convict type complexity)
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
@@ -70,11 +71,11 @@ export async function persistStateToApi(state, key, { lockToken, grantVersion, f
   const body = buildStateRequestBody({ sbi, grantCode, grantVersion, state }, key)
 
   try {
-    const response = await fetch(url.href, {
-      method: 'POST',
-      headers: await createApiHeadersForGrantsUiBackend({ lockToken }),
-      body
-    })
+    const headers = await createApiHeadersForGrantsUiBackend({ lockToken })
+    const response = await withOutboundMetrics(
+      { service: OutboundService.GRANTS_UI_BACKEND, operation: 'saveState', scheme: grantCode },
+      () => fetch(url.href, { method: 'POST', headers, body })
+    )
 
     if (!response.ok) {
       if (failOnError) {

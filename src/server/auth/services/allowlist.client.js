@@ -3,6 +3,11 @@ import { config } from '~/src/config/config.js'
 import { createApiHeadersForGrantsUiBackend } from '~/src/server/common/helpers/auth/backend-auth-helper.js'
 import { logUpstreamError } from '~/src/server/common/helpers/logging/upstream-error.js'
 import { defineCachedMethod, UNRETRIED_GENERATE_TIMEOUT_MS } from '~/src/server/common/helpers/cache/cached-method.js'
+import {
+  NON_SCHEME_SPECIFIC,
+  OutboundService,
+  withOutboundMetrics
+} from '~/src/server/common/helpers/outbound-call-metrics.js'
 
 const ALLOWLIST_ENDPOINT = '/allowlist/grants'
 const SERVICE = 'grants-ui-backend'
@@ -25,7 +30,10 @@ async function requestAllowedGrantDetails(crn, sbi) {
     'x-user-context': userContext
   })
 
-  const response = await fetch(url, { method: 'GET', headers }).catch((error) => {
+  const response = await withOutboundMetrics(
+    { service: OutboundService.GRANTS_UI_BACKEND, operation: 'getAllowlist', scheme: NON_SCHEME_SPECIFIC },
+    () => fetch(url, { method: 'GET', headers })
+  ).catch((error) => {
     logUpstreamError({
       endpoint: ALLOWLIST_ENDPOINT,
       service: SERVICE,

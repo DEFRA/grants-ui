@@ -1,6 +1,11 @@
 import Wreck from '@hapi/wreck'
 import { config } from '~/src/config/config.js'
 import { log, LogCodes } from '~/src/server/common/helpers/logging/log.js'
+import {
+  NON_SCHEME_SPECIFIC,
+  OutboundService,
+  withOutboundMetrics
+} from '~/src/server/common/helpers/outbound-call-metrics.js'
 
 // This fetch happens on cold start (auth plugin registration). A
 // single transient blip here crash-loops the container, so give it a bounded
@@ -56,10 +61,10 @@ async function fetchOidcConfig() {
   let lastError
   for (let attempt = 1; attempt <= OIDC_FETCH_MAX_ATTEMPTS; attempt++) {
     try {
-      const { payload } = await Wreck.get(wellKnownUrl, {
-        json: true,
-        timeout: OIDC_FETCH_TIMEOUT_MS
-      })
+      const { payload } = await withOutboundMetrics(
+        { service: OutboundService.DEFRA_ID, operation: 'getOidcConfig', scheme: NON_SCHEME_SPECIFIC },
+        () => Wreck.get(wellKnownUrl, { json: true, timeout: OIDC_FETCH_TIMEOUT_MS })
+      )
 
       return payload
     } catch (error) {

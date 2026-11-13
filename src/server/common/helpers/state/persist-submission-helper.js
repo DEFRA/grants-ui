@@ -5,6 +5,7 @@ import { debug, log, LogCodes } from '../logging/log.js'
 import { mintLockToken } from '../lock/lock-token.js'
 import { getGrantCode } from '../grant-code.js'
 import { getGrantVersion } from '../grant-version.js'
+import { OutboundService, withOutboundMetrics } from '~/src/server/common/helpers/outbound-call-metrics.js'
 
 const GRANTS_UI_BACKEND_ENDPOINT = config.get('session.cache.apiEndpoint')
 
@@ -45,14 +46,19 @@ export async function persistSubmissionToApi(submission, request) {
   })
 
   try {
-    const response = await fetch(url.href, {
-      method: 'POST',
-      headers: await createApiHeadersForGrantsUiBackend({ lockToken }),
-      body: JSON.stringify({
-        ...submission,
-        grantVersion
-      })
-    })
+    const headers = await createApiHeadersForGrantsUiBackend({ lockToken })
+    const response = await withOutboundMetrics(
+      { service: OutboundService.GRANTS_UI_BACKEND, operation: 'saveSubmission', scheme: grantCode },
+      () =>
+        fetch(url.href, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            ...submission,
+            grantVersion
+          })
+        })
+    )
 
     if (!response.ok) {
       log(
