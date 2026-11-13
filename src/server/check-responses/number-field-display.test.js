@@ -190,6 +190,21 @@ describe('number display formatting', () => {
     const summary = await journey.dispatch('summary')
     expect(summary.viewModel.checkAnswers[0].summaryList.rows[0].value.text).toBe('£125,000.5000')
   })
+  it('ignores stale and malformed retained input for the saved answer', async () => {
+    const journey = createJourney('thousands')
+    await journey.dispatch('amount', { action: 'validate', capacity: '125000.50', sbi: '125000' })
+    journey.state().$$__numberFieldInputs = { capacity: 'not-a-number', sbi: '999999' }
+
+    const summary = await journey.dispatch('summary')
+
+    expect(
+      summary.viewModel.checkAnswers[0].summaryList.rows.map(
+        ({ value }) => value.text ?? value.html.replace(/<[^>]*>/g, '')
+      )
+    ).toEqual(['125,000.5', '125000'])
+    expect(journey.print().sections[0].questions.map((question) => question.answer)).toEqual(['125,000.5', '125000'])
+    expect(summary.viewModel.context.relevantState).toEqual({ capacity: 125000.5, sbi: 125000 })
+  })
 })
 
 describe('repeated number display formatting', () => {
@@ -300,6 +315,79 @@ describe('repeated number display formatting', () => {
     )
     expect(summary.viewModel.context.relevantState).toEqual({
       amounts: [{ itemId, name: 'Reservoir', capacity: 125000.5, cost: 125000.5, area: 12.34, sbi: 125000 }]
+    })
+  })
+
+  it('ignores retained input for unformatted fields and does not resurrect an optional blank', async () => {
+    const journey = createJourney(undefined, {
+      repeat: true,
+      components: [
+        { type: 'TextField', name: 'name', title: 'Name' },
+        {
+          type: 'NumberField',
+          name: 'capacity',
+          title: 'Capacity',
+          options: { format: 'thousands', required: false }
+        },
+        { type: 'NumberField', name: 'sbi', title: 'SBI' }
+      ]
+    })
+    const itemId = randomUUID()
+    await journey.dispatch(`amount/${itemId}`, {
+      action: 'validate',
+      name: '125000',
+      capacity: '125000.50',
+      sbi: '125000'
+    })
+    journey.state().$$__repeatNumberFieldInputs = {
+      amounts: { [itemId]: { name: '125000.00', capacity: 'invalid', sbi: '125000.000' } }
+    }
+
+    const list = await journey.dispatch('amount/summary')
+    const summary = await journey.dispatch('summary')
+    expect(
+      list.viewModel.checkAnswers[0].summaryList.rows.map(
+        ({ value }) => value.text ?? value.html.replace(/<[^>]*>/g, '')
+      )
+    ).toEqual(['125000'])
+    expect(
+      summary.viewModel.checkAnswers[0].answerGroups[0].rows.map(
+        ({ value }) => value.text ?? value.html.replace(/<[^>]*>/g, '')
+      )
+    ).toEqual(['125000', '125,000.5', '125000'])
+    expect(journey.print().sections[0].questions[0].repeatItems[0].questions.map(({ answer }) => answer)).toEqual([
+      '125000',
+      '125,000.5',
+      '125000'
+    ])
+    expect(summary.viewModel.context.relevantState).toEqual({
+      amounts: [{ itemId, name: '125000', capacity: 125000.5, sbi: 125000 }]
+    })
+
+    await journey.dispatch(`amount/${itemId}`, { action: 'validate', name: '125000', capacity: '', sbi: '125000' })
+    journey.state().$$__repeatNumberFieldInputs.amounts[itemId] = {
+      name: '125000.00',
+      capacity: '0.00',
+      sbi: '125000.000'
+    }
+    const blankSummary = await journey.dispatch('summary')
+    expect(
+      blankSummary.viewModel.checkAnswers[0].answerGroups[0].rows.map(
+        ({ value }) => value.text ?? value.html.replace(/<[^>]*>/g, '')
+      )
+    ).toEqual(['125000', 'Not provided', '125000'])
+    expect(journey.print().sections[0].questions[0].repeatItems[0].questions.map(({ answer }) => answer)).toEqual([
+      '125000',
+      'Not provided',
+      '125000'
+    ])
+    expect(
+      (await journey.dispatch('amount/summary')).viewModel.checkAnswers[0].summaryList.rows.map(
+        ({ value }) => value.text ?? value.html.replace(/<[^>]*>/g, '')
+      )
+    ).toEqual(['125000'])
+    expect(blankSummary.viewModel.context.relevantState).toEqual({
+      amounts: [{ itemId, name: '125000', capacity: null, sbi: 125000 }]
     })
   })
 })

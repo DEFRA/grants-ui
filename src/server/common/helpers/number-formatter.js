@@ -1,4 +1,5 @@
-import { formatThousands, isDecimalString } from '~/src/shared/format-number.js'
+import { formatThousands } from '~/src/shared/format-number.js'
+import { getNumberDisplayValue } from './number-display-value.js'
 
 const SUPPORTED_CURRENCIES = new Set(Intl.supportedValuesOf('currency'))
 
@@ -46,14 +47,7 @@ export function formatNumberAnswer(component, value, rawInput) {
     return undefined
   }
 
-  const displayValue =
-    isDecimalString(rawInput) &&
-    (typeof value === 'number' || isDecimalString(value)) &&
-    Number(rawInput) === Number(value)
-      ? rawInput
-      : value
-
-  return formatter(displayValue)
+  return formatter(getNumberDisplayValue(value, rawInput))
 }
 
 /**
