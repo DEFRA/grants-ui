@@ -451,8 +451,14 @@ from the Grants UI Backend allowlist endpoint. An authenticated request to `/` r
 request continues to display the sign-in page.
 
 When `externalLinks.sfd.enabled` is true and `externalLinks.sfd.homeUrl` is a valid HTTP(S) URL, `/home` redirects to
-the Single Front Door homepage instead. `SFD_HOME_URL` is separate from `SFD_UPDATE_URL`, which remains the destination
-for updating business details. A missing or invalid homepage URL falls back to the tactical landing page and is logged.
+the Farm and land service (Single Front Door) homepage instead. The redirect passes the signed-in user's
+`currentRelationshipId` as `ssoOrgId`, using the same business-selection handoff as updating business details. This still
+works after you sign out and sign back in, whether you sign in directly or through the Farm and land service
+link in the header. The relationship is always taken from the new sign-in, not from the earlier session. If a profile
+has no relationship ID, no SSO hint is added.
+
+`SFD_HOME_URL` is separate from `SFD_UPDATE_URL`, which remains the destination for updating business details.
+A missing or invalid homepage URL falls back to the tactical landing page and is logged.
 
 ### Defra ID Integration
 

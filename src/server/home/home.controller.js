@@ -28,7 +28,12 @@ export const homeController = {
       const configuredHomeUrl = config.get('externalLinks.sfd.homeUrl')
       const homeUrl = typeof configuredHomeUrl === 'string' ? configuredHomeUrl.trim() : ''
       if (validHttpUrl(homeUrl)) {
-        return h.redirect(homeUrl)
+        const url = new URL(homeUrl)
+        const { currentRelationshipId } = /** @type {LandingPageCredentials} */ (request.auth.credentials)
+        if (currentRelationshipId) {
+          url.searchParams.set('ssoOrgId', currentRelationshipId)
+        }
+        return h.redirect(url.toString())
       }
       log(LogCodes.SYSTEM.SFD_HOME_URL_MISSING_ON_REDIRECT, { homeUrl: homeUrl ?? '' }, request)
     }
@@ -57,6 +62,6 @@ export const indexController = {
 }
 
 /**
- * @typedef {{ crn: string, sbi: string, organisationName?: string }} LandingPageCredentials
+ * @typedef {{ crn: string, sbi: string, organisationName?: string, currentRelationshipId?: string }} LandingPageCredentials
  * @import { ServerRoute } from '@hapi/hapi'
  */
