@@ -36,7 +36,7 @@ export default class TotalEstimatedCostController extends withDerivedState(Quest
    */
   getNextPath(context) {
     const minGrantReached = context.state.additionalAnswers.minGrantReached
-    return minGrantReached ? super.getNextPath(context) : '/exit-total-estimated-cost'
+    return minGrantReached ? super.getNextPath(context) : '/exit-project-details-total-estimated-grant'
   }
 
   /**

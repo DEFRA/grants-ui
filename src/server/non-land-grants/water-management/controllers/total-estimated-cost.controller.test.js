@@ -413,7 +413,7 @@ describe('TotalEstimatedCostController', () => {
       }
     })
 
-    it('should return /exit-total-estimated-cost when minGrantReached is false', () => {
+    it('should return /exit-project-details-total-estimated-grant when minGrantReached is false', () => {
       mockContext.state.additionalAnswers = { minGrantReached: false }
       const originalInstanceGetNextPath = controller.getNextPath
       delete controller.getNextPath
@@ -423,7 +423,7 @@ describe('TotalEstimatedCostController', () => {
 
       try {
         const result = controller.getNextPath(mockContext)
-        expect(result).toBe('/exit-total-estimated-cost')
+        expect(result).toBe('/exit-project-details-total-estimated-grant')
       } finally {
         QuestionPageController.prototype.getNextPath = superGetNextPath
         controller.getNextPath = originalInstanceGetNextPath
