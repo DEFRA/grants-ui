@@ -41,6 +41,13 @@
       })
     }}
   {% elif cookiesPolicy.analytics and gaTrackingId %}
+    {# Make the business role available before GTM can send its initial page view. #}
+    {% if userRoleAnalytics %}
+      <script nonce="{{ cspNonce }}" data-role="{{ userRoleAnalytics.role | escape }}">
+        window.dataLayer = window.dataLayer || []
+        window.dataLayer.push({ userRole: document.currentScript.dataset.role })
+      </script>
+    {% endif %}
     {# Returning user who has accepted analytics — load GTM server-side #}
     <script nonce="{{ cspNonce }}" async src="https://www.googletagmanager.com/gtm.js?id={{ gaTrackingId }}"></script>
     <script nonce="{{ cspNonce }}">
@@ -176,6 +183,15 @@
 {% endblock %}
 
 {% block bodyEnd %}
+  {% if userRoleAnalytics and gaTrackingId %}
+    <div
+      id="user-role-analytics"
+      hidden
+      data-role="{{ userRoleAnalytics.role | escape }}"
+      data-context="{{ userRoleAnalytics.token | escape }}"
+      data-consent="{{ 'true' if cookiesPolicy.analytics else 'false' }}"
+    ></div>
+  {% endif %}
   {% if componentMapsEnabled %}
     <div
       id="component-map-settings"

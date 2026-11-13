@@ -160,7 +160,7 @@ describe('DAL response conventions', () => {
     const body = { data: { customer: { business: { permissionGroups: [] } } }, errors }
     mockFetchInstance.mockResolvedValueOnce(new Response(JSON.stringify(body)))
 
-    await expect(fetchBusinessPermissions(mockRequest)).resolves.toEqual([])
+    await expect(fetchBusinessPermissions(mockRequest)).resolves.toEqual({ role: undefined, permissionGroups: [] })
     expect(log).toHaveBeenCalledExactlyOnceWith(
       LogCodes.SYSTEM.CONSOLIDATED_VIEW_SUCCESS,
       { sbi: mockRequest.auth.credentials.sbi },
@@ -260,7 +260,7 @@ describe('DAL response conventions', () => {
         const result = fetchBusinessPermissions(mockRequest)
         await vi.runAllTimersAsync()
 
-        await expect(result).resolves.toEqual([])
+        await expect(result).resolves.toEqual({ role: undefined, permissionGroups: [] })
         expect(mockFetchInstance).toHaveBeenCalledTimes(2)
         expect(log).toHaveBeenCalledExactlyOnceWith(
           LogCodes.SYSTEM.CONSOLIDATED_VIEW_SUCCESS,

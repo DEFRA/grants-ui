@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { fetchBusinessPermissions } from '~/src/server/common/services/consolidated-view/consolidated-view.service.js'
 import { can } from '~/src/server/common/helpers/permissions/can.js'
 const EXCLUDED_PATHS = ['/health', '/auth']
@@ -7,6 +8,10 @@ const EXCLUDED_PATHS = ['/health', '/auth']
  * @returns {boolean}
  */
 function shouldSkip(request) {
+  // This authenticated landing page renders journey content after an allowlist redirect.
+  if (request.path === '/auth/journey-unauthorised') {
+    return false
+  }
   return EXCLUDED_PATHS.some((path) => request.path === path || request.path.startsWith(`${path}/`))
 }
 
@@ -19,15 +24,15 @@ async function getBusinessPermissions(request) {
   const cacheKey = getPermissionsCacheKey(request)
   const cached = request.yar?.get(cacheKey)
 
-  if (cached) {
+  if (cached && !Array.isArray(cached)) {
     return cached
   }
 
-  const permissionGroups = await fetchBusinessPermissions(request)
+  const businessPermissions = await fetchBusinessPermissions(request)
 
-  request.yar?.set(cacheKey, permissionGroups)
+  request.yar?.set(cacheKey, businessPermissions)
 
-  return permissionGroups
+  return businessPermissions
 }
 
 export default {
@@ -49,12 +54,27 @@ export default {
             return h.continue
           }
 
-          const permissionGroups = await getBusinessPermissions(/** @type {AnyFormRequest} */ (request))
+          const { role, permissionGroups } = await getBusinessPermissions(/** @type {AnyFormRequest} */ (request))
 
           const pipelineRequest = /** @type {PipelineRequest & { auth: { credentials: PermissionCredentials } }} */ (
             /** @type {unknown} */ (request)
           )
           pipelineRequest.auth.credentials.permissions = permissionGroups
+          const { sessionId, crn, sbi } = /** @type {{ sessionId?: string, crn?: string, sbi?: string }} */ (
+            request.auth.credentials
+          )
+          if (typeof role === 'string' && role && sessionId && crn && sbi) {
+            const previous = /** @type {{ sessionId: string, crn: string, sbi: string, token: string } | undefined} */ (
+              request.yar?.get('analyticsBusinessContext')
+            )
+            const current =
+              previous?.sessionId === sessionId && previous?.crn === crn && previous?.sbi === sbi
+                ? previous
+                : { sessionId, crn, sbi, token: randomUUID() }
+            request.yar?.set('analyticsBusinessContext', current)
+            const app = /** @type {{ userRoleAnalytics?: { role: string, token: string } }} */ (request.app)
+            app.userRoleAnalytics = { role, token: current.token }
+          }
           pipelineRequest.can = (action, resource) => {
             return can(
               /** @type {Array<{ id: string, level: PermissionLevel }>} */ (

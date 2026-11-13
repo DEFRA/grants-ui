@@ -77,7 +77,7 @@ describe('permissions plugin', () => {
   test('fetches permissions for authenticated non-excluded requests', async () => {
     const permissionGroups = ['group-1']
 
-    fetchBusinessPermissions.mockResolvedValue(permissionGroups)
+    fetchBusinessPermissions.mockResolvedValue({ permissionGroups })
 
     const request = {
       path: '/apply',
@@ -100,7 +100,7 @@ describe('permissions plugin', () => {
   test('caches permissions in yar keyed by crn+sbi on first call', async () => {
     const permissionGroups = ['group-1']
 
-    fetchBusinessPermissions.mockResolvedValue(permissionGroups)
+    fetchBusinessPermissions.mockResolvedValue({ permissionGroups })
 
     const request = {
       path: '/apply',
@@ -114,13 +114,13 @@ describe('permissions plugin', () => {
     await onPostAuthHandler(request, h)
 
     expect(fetchBusinessPermissions).toHaveBeenCalledTimes(1)
-    expect(yar.set).toHaveBeenCalledWith('permissions:crn-1:sbi-1', permissionGroups)
+    expect(yar.set).toHaveBeenCalledWith('permissions:crn-1:sbi-1', { permissionGroups })
   })
 
   test('reuses cached permissions on subsequent requests in same session', async () => {
     const permissionGroups = ['group-1']
 
-    fetchBusinessPermissions.mockResolvedValue(permissionGroups)
+    fetchBusinessPermissions.mockResolvedValue({ permissionGroups })
 
     const makeRequest = () => ({
       path: '/apply',
@@ -142,7 +142,9 @@ describe('permissions plugin', () => {
   })
 
   test('fetches separately for a different crn+sbi', async () => {
-    fetchBusinessPermissions.mockResolvedValueOnce(['group-1']).mockResolvedValueOnce(['group-2'])
+    fetchBusinessPermissions
+      .mockResolvedValueOnce({ permissionGroups: ['group-1'] })
+      .mockResolvedValueOnce({ permissionGroups: ['group-2'] })
 
     const firstRequest = {
       path: '/apply',
@@ -172,7 +174,7 @@ describe('permissions plugin', () => {
   test('adds request.can helper', async () => {
     const permissionGroups = ['group-1']
 
-    fetchBusinessPermissions.mockResolvedValue(permissionGroups)
+    fetchBusinessPermissions.mockResolvedValue({ permissionGroups })
 
     can.mockReturnValue(true)
 
@@ -192,6 +194,60 @@ describe('permissions plugin', () => {
     expect(can).toHaveBeenCalledWith(permissionGroups, 'submit', 'application')
 
     expect(result).toBe(true)
+  })
+
+  test('keeps the raw role and uses an opaque token that changes with session or business', async () => {
+    fetchBusinessPermissions.mockResolvedValue({ role: 'Business Owner', permissionGroups: [] })
+    const makeRequest = (sessionId = 'session-a', sbi = 'sbi-1') => ({
+      path: '/apply',
+      yar,
+      app: {},
+      auth: { isAuthenticated: true, credentials: { sessionId, crn: 'crn-1', sbi } }
+    })
+    const first = makeRequest()
+    await onPostAuthHandler(first, h)
+    expect(first.app.userRoleAnalytics.role).toBe('Business Owner')
+    expect(first.app.userRoleAnalytics.token).toEqual(expect.any(String))
+    const next = makeRequest()
+    await onPostAuthHandler(next, h)
+    expect(next.app.userRoleAnalytics).toEqual(first.app.userRoleAnalytics)
+    const otherBusiness = makeRequest('session-a', 'sbi-2')
+    await onPostAuthHandler(otherBusiness, h)
+    expect(otherBusiness.app.userRoleAnalytics.token).not.toBe(first.app.userRoleAnalytics.token)
+    const newSession = makeRequest('session-b')
+    await onPostAuthHandler(newSession, h)
+    expect(newSession.app.userRoleAnalytics.token).not.toBe(first.app.userRoleAnalytics.token)
+    expect(newSession.auth.credentials.permissions).toEqual([])
+  })
+
+  test('restores cached role analytics on the unauthorised landing page after redirect', async () => {
+    fetchBusinessPermissions.mockResolvedValue({ role: 'Business Partner', permissionGroups: [] })
+    const makeRequest = (path) => ({
+      path,
+      yar,
+      app: {},
+      auth: { isAuthenticated: true, credentials: { sessionId: 'session-a', crn: 'crn-1', sbi: 'sbi-2' } }
+    })
+    const journey = makeRequest('/farm-payments/start')
+    await onPostAuthHandler(journey, h)
+    const landingPage = makeRequest('/auth/journey-unauthorised')
+    await onPostAuthHandler(landingPage, h)
+    expect(landingPage.app.userRoleAnalytics).toEqual(journey.app.userRoleAnalytics)
+    expect(fetchBusinessPermissions).toHaveBeenCalledTimes(1)
+  })
+
+  test('refreshes legacy array caches to obtain the role', async () => {
+    yarStore.set('permissions:crn-1:sbi-1', [])
+    fetchBusinessPermissions.mockResolvedValue({ role: 'Agent', permissionGroups: [] })
+    const request = {
+      path: '/apply',
+      yar,
+      app: {},
+      auth: { isAuthenticated: true, credentials: { sessionId: 'session-a', crn: 'crn-1', sbi: 'sbi-1' } }
+    }
+    await onPostAuthHandler(request, h)
+    expect(fetchBusinessPermissions).toHaveBeenCalledTimes(1)
+    expect(request.app.userRoleAnalytics.role).toBe('Agent')
   })
 
   test('propagates errors from fetchBusinessPermissions', async () => {
