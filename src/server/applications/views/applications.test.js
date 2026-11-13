@@ -1,6 +1,7 @@
 import { createPageRenderer } from '~/src/server/common/test-helpers/component-helpers.js'
 import { config } from '~/src/config/config.js'
 import { buildApplicationsViewModel } from '../applications.view-model.js'
+import { context } from '~/src/config/nunjucks/context/context.js'
 
 const render = createPageRenderer(import.meta.url, 'applications.njk', {
   pageTitle: 'Your Water Management grant applications',
@@ -66,6 +67,21 @@ it('keeps support available when there are no applications and the window is clo
   expect($('main form').length).toBe(0)
 })
 
+it('marks the manage applications navigation link as the current page without a form model', () => {
+  const request = {
+    params: { slug: 'test-grant' },
+    path: '/test-grant/applications',
+    app: {}
+  }
+  const definition = { metadata: { allowMultipleApplications: true } }
+  const $ = render(buildApplicationsViewModel(request, definition, []))
+  const $link = $('.govuk-service-navigation__item--active a')
+
+  expect($link.text().trim()).toBe('Manage your applications')
+  expect($link.attr('href')).toBe('/test-grant/applications')
+  expect($link.attr('aria-current')).toBe('page')
+})
+
 it('includes the scheme, selection journey and current URL in the phase banner feedback link', () => {
   const surveyUrl = config.get('feedback.surveyUrl')
   config.set('feedback.surveyUrl', 'https://qualtrics.example/jfe/form/SV_test')
@@ -92,4 +108,63 @@ it('includes the scheme, selection journey and current URL in the phase banner f
   } finally {
     config.set('feedback.surveyUrl', surveyUrl)
   }
+})
+
+describe.each([
+  { template: 'applications.njk', path: 'applications', source: 'routingDefinition' },
+  { template: 'application-deleted.njk', path: 'application-deleted', source: 'stateWithDefinition' },
+  { template: 'application-window-closed.njk', path: 'application-window-closed', source: 'stateWithDefinition' }
+])('$path page phase styling', ({ template, path, source }) => {
+  const renderPage = createPageRenderer(import.meta.url, template, {}, [
+    'src/server/application-deleted/views',
+    'src/server/application-window-closed/views'
+  ])
+
+  it.each([true, false, undefined, 'true'])(
+    'shows the manage applications link only when explicitly enabled (%j)',
+    async (allowMultipleApplications) => {
+      const definition = { name: 'Test grant', metadata: { allowMultipleApplications } }
+      const request = {
+        params: { slug: 'test-grant' },
+        path: `/test-grant/${path}`,
+        app: { [source]: Promise.resolve({ definition: { definition } }) }
+      }
+      const viewModel = template === 'applications.njk' ? buildApplicationsViewModel(request, definition, []) : {}
+      const $ = renderPage({ ...(await context(request)), ...viewModel })
+      const $link = $('.govuk-service-navigation__list a[href="/test-grant/applications"]')
+
+      expect($link).toHaveLength(allowMultipleApplications === true ? 1 : 0)
+      if (allowMultipleApplications === true) {
+        expect($link.text().trim()).toBe('Manage your applications')
+        expect($link.attr('aria-current')).toBe(path === 'applications' ? 'page' : undefined)
+      }
+      expect(request.app.model).toBeUndefined()
+    }
+  )
+
+  it.each([
+    { phase: 'private-beta', branded: false },
+    { phase: 'public-beta', branded: true },
+    { phase: 'live', branded: true },
+    { phase: undefined, branded: false },
+    { phase: 'unknown', branded: false }
+  ])('uses the grant phase for its header, font and icons ($phase)', async ({ phase, branded }) => {
+    const definition = { name: 'Test grant', metadata: { phase, allowMultipleApplications: true } }
+    const request = {
+      params: { slug: 'test-grant' },
+      path: `/test-grant/${path}`,
+      app: { [source]: Promise.resolve({ definition: { definition } }) }
+    }
+    const viewModel = template === 'applications.njk' ? buildApplicationsViewModel(request, definition, []) : {}
+    const $ = renderPage({ ...(await context(request)), ...viewModel })
+
+    expect($('.govuk-header')).toHaveLength(branded ? 1 : 0)
+    expect($('.defra-brand-bar')).toHaveLength(branded ? 0 : 1)
+    expect($('body').hasClass('app-brand-restricted')).toBe(!branded)
+    expect($('link[rel="icon"]').first().attr('href')).toBe(
+      branded ? '/public/assets/rebrand/images/favicon.ico' : '/public/assets/defra/images/defra-favicon.ico'
+    )
+    expect($('.govuk-footer__crown')).toHaveLength(branded ? 1 : 0)
+    expect(request.app.model).toBeUndefined()
+  })
 })

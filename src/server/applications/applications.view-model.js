@@ -2,6 +2,7 @@ import { TagClasses } from '../common/constants/tag-classes.js'
 import { ApplicationStatus } from '../common/constants/application-status.js'
 import { isApplicationWindowOpen } from '../common/helpers/application-window.js'
 import { buildFeedbackSurveyUrl } from '../common/helpers/feedback-survey.js'
+import { buildNavigation } from '~/src/config/nunjucks/context/build-navigation.js'
 
 /** @param {any} request @param {any} definition @param {any[]} applications */
 export function buildApplicationsViewModel(request, definition, applications) {
@@ -11,6 +12,7 @@ export function buildApplicationsViewModel(request, definition, applications) {
     schemeName,
     serviceName: schemeName,
     serviceUrl: `/${request.params.slug}`,
+    navigation: buildNavigation(request, definition.metadata),
     supportEmail: definition.metadata?.supportEmail ?? 'ruralpayments@defra.gov.uk',
     feedbackSurveyUrl: buildFeedbackSurveyUrl(request, definition.metadata),
     slug: request.params.slug,
