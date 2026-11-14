@@ -117,7 +117,7 @@
     "convict": "6.2.5",
     "date-fns": "4.4.0",
     "dotenv": "18.0.9",
-    "global-agent": "3.0.0",
+    "global-agent": "4.1.6",
     "govuk-frontend": "5.14.0",
     "hapi-pino": "13.0.0",
     "hapi-pulse": "4.0.0",
